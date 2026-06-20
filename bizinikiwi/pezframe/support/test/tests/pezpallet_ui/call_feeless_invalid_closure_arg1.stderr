@@ -1,0 +1,5 @@
+error: Invalid pezpallet::call, feeless_if closure must have same number of arguments as the dispatchable function
+  --> tests/pezpallet_ui/call_feeless_invalid_closure_arg1.rs:31:27
+   |
+31 |         #[pezpallet::feeless_if(|| -> bool { true })]
+   |                                 ^

@@ -1,0 +1,60 @@
+# Pezkuwi DEV Network - Single Validator (Alice)
+# Relay Chain + Asset Hub + People Chain
+#
+# Usage: zombienet spawn -p native pezkuwi_dev_network.toml
+#
+# Ports:
+#   - Relay Chain Alice:    9944 (RPC), 9615 (Prometheus)
+#   - Asset Hub:            9945 (RPC)
+#   - People Chain:         9946 (RPC)
+#
+# DEV Başarı Kriterleri:
+#   - 3 runtime çalışmalı
+#   - Bloklar üretilmeli
+#   - Finalized olmalı
+#   - Alice hesabında genesis token'ları görülmeli
+
+[settings]
+timeout = 1000
+
+[relaychain]
+default_command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi"
+default_args = ["-lteyrchain=debug,runtime=debug"]
+chain = "pezkuwichain-dev"
+
+# Relay chain validator - DEV mode (only Alice)
+[[relaychain.nodes]]
+name = "alice"
+validator = true
+rpc_port = 9944
+prometheus_port = 9615
+
+# Asset Hub Teyrchain (Teyrchain ID: 1000)
+[[teyrchains]]
+id = 1000
+chain = "asset-hub-pezkuwichain-dev"
+cumulus_based = true
+# Genesis parachain olarak kaydet (extrinsic ile değil)
+# Bu ayar genesis'te paras storage'a ekleme yapar
+onboard_as_parachain = false
+
+[[teyrchains.collators]]
+name = "asset-hub-alice"
+validator = true
+command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+rpc_port = 9945
+args = ["-lteyrchain=debug", "--force-authoring"]
+
+# People Chain Teyrchain (Teyrchain ID: 1004)
+[[teyrchains]]
+id = 1004
+chain = "people-pezkuwichain-dev"
+cumulus_based = true
+onboard_as_parachain = false
+
+[[teyrchains.collators]]
+name = "people-alice"
+validator = true
+command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+rpc_port = 9946
+args = ["-lteyrchain=debug", "--force-authoring"]

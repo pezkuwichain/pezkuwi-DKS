@@ -1,0 +1,55 @@
+[package]
+name = "bizinikiwi-test-runtime-transaction-pool"
+version = "2.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+publish = false
+description = "Bizinikiwi utility: test runtime transaction pool"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+async-trait = { workspace = true }
+bizinikiwi-test-runtime-client = { workspace = true }
+codec = { workspace = true, default-features = true }
+futures = { workspace = true }
+log = { workspace = true }
+parking_lot = { workspace = true, default-features = true }
+pezsc-transaction-pool = { workspace = true, default-features = true }
+pezsc-transaction-pool-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+[features]
+default = ["std"]
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"pezsc-transaction-pool-api/runtime-benchmarks",
+	"pezsc-transaction-pool/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-test-runtime-client/std",
+	"log/std",
+	"pezsc-transaction-pool-api/std",
+	"pezsc-transaction-pool/std",
+	"pezsp-blockchain/std",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pezsc-transaction-pool-api/try-runtime",
+	"pezsc-transaction-pool/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

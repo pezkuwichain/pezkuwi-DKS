@@ -1,0 +1,61 @@
+[package]
+name = "pezpallet-bags-list-remote-tests"
+version = "4.0.0-dev"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME pezpallet bags list remote test"
+publish = false
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+# frame
+pezframe-election-provider-support = { workspace = true, default-features = true }
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezpallet-bags-list = { features = [
+	"fuzz",
+], workspace = true, default-features = true }
+pezpallet-staking = { workspace = true, default-features = true }
+
+# core
+pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+# utils
+remote-externalities = { workspace = true, default-features = true }
+
+# others
+log = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezframe-election-provider-support/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-bags-list/runtime-benchmarks",
+	"pezpallet-staking/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"remote-externalities/runtime-benchmarks",
+]
+std = ["log/std", "remote-externalities/std"]
+try-runtime = [
+	"pezframe-election-provider-support/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-bags-list/try-runtime",
+	"pezpallet-staking/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"remote-externalities/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

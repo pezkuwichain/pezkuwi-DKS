@@ -1,0 +1,53 @@
+[package]
+name = "pezpallet-salary"
+version = "13.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Paymaster"
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+log = { workspace = true }
+pezframe = { workspace = true, features = ["runtime"] }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-ranked-collective = { optional = true, workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezframe/std",
+	"pezpallet-ranked-collective/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe/runtime-benchmarks",
+	"pezpallet-ranked-collective/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe/try-runtime",
+	"pezpallet-ranked-collective?/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

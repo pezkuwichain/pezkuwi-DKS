@@ -1,0 +1,54 @@
+[package]
+name = "pezkuwi-node-core-prospective-teyrchains"
+version = "6.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "The Prospective Teyrchains subsystem. Tracks and handles prospective teyrchain fragments."
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+fatality = { workspace = true }
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives = { workspace = true, features = ["test"] }
+pezkuwi-primitives-test-helpers = { workspace = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true }
+rand = { workspace = true }
+rstest = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+]
+std = [
+	"gum/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-primitives-test-helpers/std",
+	"pezsp-tracing/std",
+	"rand/std",
+]
+serde = []
+with-tracing = []

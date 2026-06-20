@@ -1,0 +1,5 @@
+error: Invalid pezpallet::type_value, expected return type
+  --> tests/pezpallet_ui/type_value_no_return.rs:35:27
+   |
+35 |     #[pezpallet::type_value] fn Foo() {}
+   |                              ^^

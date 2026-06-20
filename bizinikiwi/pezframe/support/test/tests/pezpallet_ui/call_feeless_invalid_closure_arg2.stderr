@@ -1,0 +1,5 @@
+error: Invalid type: expected `&OriginFor<T>`
+  --> tests/pezpallet_ui/call_feeless_invalid_closure_arg2.rs:31:31
+   |
+31 |         #[pezpallet::feeless_if(|_: bool| -> bool { true })]
+   |                                     ^^^^

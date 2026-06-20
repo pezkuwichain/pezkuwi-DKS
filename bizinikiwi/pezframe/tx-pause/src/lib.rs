@@ -1,0 +1,324 @@
+// This file is part of Bizinikiwi.
+
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// SPDX-License-Identifier: Apache-2.0
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//! # Transaction Pause
+//!
+//! Allows dynamic, chain-state-based pausing and unpausing of specific extrinsics via call filters.
+//!
+//! ## Pezpallet API
+//!
+//! See the [`pezpallet`] module for more information about the interfaces this pezpallet exposes,
+//! including its configuration trait, dispatchables, storage items, events, and errors.
+//!
+//! ## Overview
+//!
+//! A dynamic call filter that can be controlled with extrinsics.
+//!
+//! Pausing an extrinsic means that the extrinsic CANNOT be called again until it is unpaused.
+//! The exception is calls that use `dispatch_bypass_filter`, typically only with the root origin.
+//!
+//! ### Primary Features
+//!
+//! - Calls that should never be paused can be added to a whitelist.
+//! - Separate origins are configurable for pausing and pausing.
+//! - Pausing is triggered using the string representation of the call.
+//! - Pauses can target a single extrinsic or an entire pezpallet.
+//! - Pauses can target future extrinsics or pallets.
+//!
+//! ### Example
+//!
+//! Configuration of call filters:
+//!
+//! ```ignore
+//! impl pezframe_system::Config for Runtime {
+//!   // …
+//!   type BaseCallFilter = InsideBoth<DefaultFilter, TxPause>;
+//!   // …
+//! }
+//! ```
+//!
+//! Pause specific all:
+#![doc = docify::embed!("src/tests.rs", can_pause_specific_call)]
+//!
+//! Unpause specific all:
+#![doc = docify::embed!("src/tests.rs", can_unpause_specific_call)]
+//!
+//! Pause all calls in a pezpallet:
+#![doc = docify::embed!("src/tests.rs", can_pause_all_calls_in_pallet_except_on_whitelist)]
+//!
+//! ## Low Level / Implementation Details
+//!
+//! ### Use Cost
+//!
+//! A storage map (`PausedCalls`) is used to store currently paused calls.
+//! Using the call filter will require a db read of that storage on each extrinsic.
+
+#![cfg_attr(not(feature = "std"), no_std)]
+#![deny(rustdoc::broken_intra_doc_links)]
+
+mod benchmarking;
+pub mod mock;
+mod tests;
+pub mod weights;
+
+extern crate alloc;
+
+use alloc::vec::Vec;
+use pezframe::{
+	prelude::*,
+	traits::{TransactionPause, TransactionPauseError},
+};
+pub use pezpallet::*;
+pub use weights::*;
+
+/// The stringy name of a pezpallet from [`GetCallMetadata`] for [`Config::RuntimeCall`] variants.
+pub type PalletNameOf<T> = BoundedVec<u8, <T as Config>::MaxNameLen>;
+
+/// The stringy name of a call (within a pezpallet) from [`GetCallMetadata`] for
+/// [`Config::RuntimeCall`] variants.
+pub type PalletCallNameOf<T> = BoundedVec<u8, <T as Config>::MaxNameLen>;
+
+/// A fully specified pezpallet ([`PalletNameOf`]) and optional call ([`PalletCallNameOf`])
+/// to partially or fully specify an item a variant of a  [`Config::RuntimeCall`].
+pub type RuntimeCallNameOf<T> = (PalletNameOf<T>, PalletCallNameOf<T>);
+
+#[pezframe::pezpallet]
+pub mod pezpallet {
+	use super::*;
+
+	#[pezpallet::pezpallet]
+	pub struct Pezpallet<T>(PhantomData<T>);
+
+	#[pezpallet::config]
+	pub trait Config: pezframe_system::Config {
+		/// The overarching event type.
+		#[allow(deprecated)]
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as pezframe_system::Config>::RuntimeEvent>;
+
+		/// The overarching call type.
+		type RuntimeCall: Parameter
+			+ Dispatchable<RuntimeOrigin = Self::RuntimeOrigin>
+			+ GetDispatchInfo
+			+ GetCallMetadata
+			+ From<pezframe_system::Call<Self>>
+			+ IsSubType<Call<Self>>
+			+ IsType<<Self as pezframe_system::Config>::RuntimeCall>;
+
+		/// The only origin that can pause calls.
+		type PauseOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// The only origin that can un-pause calls.
+		type UnpauseOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Contains all calls that cannot be paused.
+		///
+		/// The `TxMode` pezpallet cannot pause its own calls, and does not need to be explicitly
+		/// added here.
+		type WhitelistedCalls: Contains<RuntimeCallNameOf<Self>>;
+
+		/// Maximum length for pezpallet name and call name SCALE encoded string names.
+		///
+		/// TOO LONG NAMES WILL BE TREATED AS PAUSED.
+		#[pezpallet::constant]
+		type MaxNameLen: Get<u32>;
+
+		// Weight information for extrinsics in this pezpallet.
+		type WeightInfo: WeightInfo;
+	}
+
+	/// The set of calls that are explicitly paused.
+	#[pezpallet::storage]
+	pub type PausedCalls<T: Config> =
+		StorageMap<_, Blake2_128Concat, RuntimeCallNameOf<T>, (), OptionQuery>;
+
+	#[pezpallet::error]
+	pub enum Error<T> {
+		/// The call is paused.
+		IsPaused,
+
+		/// The call is unpaused.
+		IsUnpaused,
+
+		/// The call is whitelisted and cannot be paused.
+		Unpausable,
+
+		// The pezpallet or call does not exist in the runtime.
+		NotFound,
+	}
+
+	#[pezpallet::event]
+	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		/// This pezpallet, or a specific call is now paused.
+		CallPaused { full_name: RuntimeCallNameOf<T> },
+		/// This pezpallet, or a specific call is now unpaused.
+		CallUnpaused { full_name: RuntimeCallNameOf<T> },
+	}
+
+	/// Configure the initial state of this pezpallet in the genesis block.
+	#[pezpallet::genesis_config]
+	#[derive(DefaultNoBound)]
+	pub struct GenesisConfig<T: Config> {
+		/// Initially paused calls.
+		pub paused: Vec<RuntimeCallNameOf<T>>,
+	}
+
+	#[pezpallet::genesis_build]
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+		fn build(&self) {
+			for call in &self.paused {
+				Pezpallet::<T>::ensure_can_pause(&call).expect("Genesis data is known good; qed");
+				PausedCalls::<T>::insert(&call, ());
+			}
+		}
+	}
+
+	#[pezpallet::call]
+	impl<T: Config> Pezpallet<T> {
+		/// Pause a call.
+		///
+		/// Can only be called by [`Config::PauseOrigin`].
+		/// Emits an [`Event::CallPaused`] event on success.
+		#[pezpallet::call_index(0)]
+		#[pezpallet::weight(T::WeightInfo::pause())]
+		pub fn pause(origin: OriginFor<T>, full_name: RuntimeCallNameOf<T>) -> DispatchResult {
+			T::PauseOrigin::ensure_origin(origin)?;
+
+			Self::do_pause(full_name).map_err(Into::into)
+		}
+
+		/// Un-pause a call.
+		///
+		/// Can only be called by [`Config::UnpauseOrigin`].
+		/// Emits an [`Event::CallUnpaused`] event on success.
+		#[pezpallet::call_index(1)]
+		#[pezpallet::weight(T::WeightInfo::unpause())]
+		pub fn unpause(origin: OriginFor<T>, ident: RuntimeCallNameOf<T>) -> DispatchResult {
+			T::UnpauseOrigin::ensure_origin(origin)?;
+
+			Self::do_unpause(ident).map_err(Into::into)
+		}
+	}
+}
+
+impl<T: Config> Pezpallet<T> {
+	pub(crate) fn do_pause(ident: RuntimeCallNameOf<T>) -> Result<(), Error<T>> {
+		Self::ensure_can_pause(&ident)?;
+		PausedCalls::<T>::insert(&ident, ());
+		Self::deposit_event(Event::CallPaused { full_name: ident });
+
+		Ok(())
+	}
+
+	pub(crate) fn do_unpause(ident: RuntimeCallNameOf<T>) -> Result<(), Error<T>> {
+		Self::ensure_can_unpause(&ident)?;
+		PausedCalls::<T>::remove(&ident);
+		Self::deposit_event(Event::CallUnpaused { full_name: ident });
+
+		Ok(())
+	}
+
+	/// Return whether this call is paused.
+	pub fn is_paused(full_name: &RuntimeCallNameOf<T>) -> bool {
+		if T::WhitelistedCalls::contains(full_name) {
+			return false;
+		}
+
+		<PausedCalls<T>>::contains_key(full_name)
+	}
+
+	/// Same as [`Self::is_paused`] but for inputs unbound by max-encoded-len.
+	pub fn is_paused_unbound(pezpallet: Vec<u8>, call: Vec<u8>) -> bool {
+		let pezpallet = PalletNameOf::<T>::try_from(pezpallet);
+		let call = PalletCallNameOf::<T>::try_from(call);
+
+		match (pezpallet, call) {
+			(Ok(pezpallet), Ok(call)) => Self::is_paused(&(pezpallet, call)),
+			_ => true,
+		}
+	}
+
+	/// Ensure that this call can be paused.
+	pub fn ensure_can_pause(full_name: &RuntimeCallNameOf<T>) -> Result<(), Error<T>> {
+		// SAFETY: The `TxPause` pezpallet can never pause itself.
+		if full_name.0.as_slice() == <Self as PalletInfoAccess>::name().as_bytes() {
+			return Err(Error::<T>::Unpausable);
+		}
+
+		if T::WhitelistedCalls::contains(&full_name) {
+			return Err(Error::<T>::Unpausable);
+		}
+		if Self::is_paused(&full_name) {
+			return Err(Error::<T>::IsPaused);
+		}
+		Ok(())
+	}
+
+	/// Ensure that this call can be un-paused.
+	pub fn ensure_can_unpause(full_name: &RuntimeCallNameOf<T>) -> Result<(), Error<T>> {
+		if Self::is_paused(&full_name) {
+			// SAFETY: Everything that is paused, can be un-paused.
+			Ok(())
+		} else {
+			Err(Error::IsUnpaused)
+		}
+	}
+}
+
+impl<T: pezpallet::Config> Contains<<T as pezframe_system::Config>::RuntimeCall> for Pezpallet<T>
+where
+	<T as pezframe_system::Config>::RuntimeCall: GetCallMetadata,
+{
+	/// Return whether the call is allowed to be dispatched.
+	fn contains(call: &<T as pezframe_system::Config>::RuntimeCall) -> bool {
+		let CallMetadata { pezpallet_name, function_name } = call.get_call_metadata();
+		!Pezpallet::<T>::is_paused_unbound(pezpallet_name.into(), function_name.into())
+	}
+}
+
+impl<T: Config> TransactionPause for Pezpallet<T> {
+	type CallIdentifier = RuntimeCallNameOf<T>;
+
+	fn is_paused(full_name: Self::CallIdentifier) -> bool {
+		Self::is_paused(&full_name)
+	}
+
+	fn can_pause(full_name: Self::CallIdentifier) -> bool {
+		Self::ensure_can_pause(&full_name).is_ok()
+	}
+
+	fn pause(full_name: Self::CallIdentifier) -> Result<(), TransactionPauseError> {
+		Self::do_pause(full_name).map_err(Into::into)
+	}
+
+	fn unpause(full_name: Self::CallIdentifier) -> Result<(), TransactionPauseError> {
+		Self::do_unpause(full_name).map_err(Into::into)
+	}
+}
+
+impl<T: Config> From<Error<T>> for TransactionPauseError {
+	fn from(err: Error<T>) -> Self {
+		match err {
+			Error::<T>::NotFound => Self::NotFound,
+			Error::<T>::Unpausable => Self::Unpausable,
+			Error::<T>::IsPaused => Self::AlreadyPaused,
+			Error::<T>::IsUnpaused => Self::AlreadyUnpaused,
+			_ => Self::Unknown,
+		}
+	}
+}

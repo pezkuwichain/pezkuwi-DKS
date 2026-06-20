@@ -1,0 +1,5 @@
+error: Invalid pezpallet::storage, invalid number of generic generic arguments, expect more that 0 generic arguments.
+  --> tests/pezpallet_ui/storage_value_no_generic.rs:36:16
+   |
+36 |     type Foo<T> = StorageValue;
+   |                   ^^^^^^^^^^^^

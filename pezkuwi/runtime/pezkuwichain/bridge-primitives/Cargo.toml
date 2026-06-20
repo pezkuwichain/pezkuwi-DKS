@@ -1,0 +1,55 @@
+[package]
+name = "pezbp-pezkuwichain"
+description = "Primitives of Pezkuwichain runtime."
+version = "0.6.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bridge Dependencies
+pezbp-header-pez-chain = { workspace = true }
+pezbp-pezkuwi-core = { workspace = true }
+pezbp-runtime = { workspace = true }
+
+# Bizinikiwi Based Dependencies
+pezframe-support = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-std = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"pezbp-header-pez-chain/std",
+	"pezbp-pezkuwi-core/std",
+	"pezbp-runtime/std",
+	"pezframe-support/std",
+	"pezsp-api/std",
+	"pezsp-std/std",
+]
+runtime-benchmarks = [
+	"pezbp-header-pez-chain/runtime-benchmarks",
+	"pezbp-pezkuwi-core/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-header-pez-chain/try-runtime",
+	"pezbp-pezkuwi-core/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezsp-api/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

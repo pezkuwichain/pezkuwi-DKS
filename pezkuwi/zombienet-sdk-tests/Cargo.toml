@@ -1,0 +1,86 @@
+[package]
+name = "pezkuwi-zombienet-sdk-tests"
+version = "0.1.0"
+description = "Zomebienet-sdk tests."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+asset-hub-zagros-runtime = { workspace = true }
+codec = { workspace = true, features = ["derive"] }
+env_logger = { workspace = true }
+ethabi = { workspace = true }
+futures = { workspace = true }
+log = { workspace = true }
+pezcumulus-zombienet-sdk-helpers = { workspace = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-subxt = { workspace = true, default-features = false, features = [
+	"native",
+] }
+pezkuwi-zombienet-orchestrator = { workspace = true }
+pezkuwi-zombienet-sdk = { workspace = true }
+pezpallet-revive = { workspace = true, features = ["std"] }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }
+tokio-util = { workspace = true, features = ["time"] }
+
+[features]
+zombie-metadata = []
+zombie-ci = []
+runtime-benchmarks = [
+	"asset-hub-zagros-runtime/runtime-benchmarks",
+	"pezcumulus-zombienet-sdk-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-subxt/runtime-benchmarks",
+	"pezkuwi-zombienet-orchestrator/runtime-benchmarks",
+	"pezkuwi-zombienet-sdk/runtime-benchmarks",
+	"pezpallet-revive/runtime-benchmarks",
+	"pezsc-executor/runtime-benchmarks",
+	"pezsc-runtime-utilities/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"anyhow/std",
+	"codec/std",
+	"ethabi/std",
+	"log/std",
+	"pezcumulus-zombienet-sdk-helpers/std",
+	"pezkuwi-subxt/std",
+	"pezkuwi-zombienet-orchestrator/std",
+	"pezkuwi-zombienet-sdk/std",
+	"pezpallet-revive/std",
+	"pezsc-runtime-utilities/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"rand/std",
+	"serde/std",
+	"serde_json/std",
+]
+try-runtime = [
+	"asset-hub-zagros-runtime/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-subxt/try-runtime",
+	"pezpallet-revive/try-runtime",
+	"pezsc-executor/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+with-tracing = []
+
+[build-dependencies]
+bizinikiwi-build-script-utils = { workspace = true, default-features = true }
+pezsc-executor = { workspace = true, default-features = true }
+pezsc-runtime-utilities = { workspace = true, default-features = true }
+pezsp-io = { workspace = true }

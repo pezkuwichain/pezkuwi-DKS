@@ -1,0 +1,62 @@
+[package]
+name = "pezkuwi-node-core-pvf-checker"
+description = "Pezkuwi crate that implements the PVF pre-checking subsystem. Responsible for checking and voting for PVFs that are pending approval."
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+pezsp-keystore = { workspace = true, default-features = true }
+
+[dev-dependencies]
+futures-timer = { workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives-test-helpers = { workspace = true }
+pezsc-keystore = { workspace = true, default-features = true }
+pezsp-application-crypto = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsc-keystore/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"gum/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-primitives-test-helpers/std",
+	"pezsc-keystore/std",
+]
+try-runtime = [
+	"pezkuwi-primitives-test-helpers/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

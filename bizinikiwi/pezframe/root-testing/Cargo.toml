@@ -1,0 +1,51 @@
+[package]
+name = "pezpallet-root-testing"
+version = "4.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME root testing pezpallet"
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

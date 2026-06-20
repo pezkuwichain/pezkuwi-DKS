@@ -1,0 +1,51 @@
+[package]
+authors.workspace = true
+name = "pezcumulus-relay-chain-interface"
+version = "0.7.0"
+edition.workspace = true
+description = "Common interface for different relay chain datasources."
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+pezkuwi-overseer = { workspace = true, default-features = true }
+
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-version = { workspace = true }
+
+async-trait = { workspace = true }
+codec = { workspace = true, default-features = true }
+futures = { workspace = true }
+jsonrpsee-core = { workspace = true }
+thiserror = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+]
+std = [
+	"pezkuwi-overseer/std",
+	"pezsc-client-api/std",
+	"pezsc-network/std",
+	"pezsp-blockchain/std",
+	"pezsp-version/std",
+]
+serde = []

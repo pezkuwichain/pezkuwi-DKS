@@ -1,0 +1,63 @@
+[package]
+name = "zagros-runtime-constants"
+version = "7.0.0"
+description = "Constants used throughout the Zagros network."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[lints]
+workspace = true
+
+[dependencies]
+smallvec = { workspace = true, default-features = true }
+
+pezframe-support = { workspace = true }
+pezkuwi-primitives = { workspace = true }
+pezkuwi-runtime-common = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-weights = { workspace = true }
+
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"pezframe-support/std",
+	"pezkuwi-primitives/std",
+	"pezkuwi-runtime-common/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"pezsp-weights/std",
+	"xcm-builder/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-runtime-common/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+# Set timing constants (e.g. session period) to faster versions to speed up testing.
+fast-runtime = []
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-runtime-common/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

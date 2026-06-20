@@ -1,0 +1,118 @@
+[package]
+authors.workspace = true
+name = "pezcumulus-relay-chain-minimal-node"
+version = "0.7.0"
+edition.workspace = true
+description = "Minimal node implementation to be used in tandem with RPC or light-client mode."
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# pezkuwi deps
+pezkuwi-core-primitives = { workspace = true, default-features = true }
+pezkuwi-node-network-protocol = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-overseer = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+pezkuwi-network-bridge = { workspace = true, default-features = true }
+pezkuwi-service = { workspace = true, default-features = true }
+
+# bizinikiwi deps
+pezsc-authority-discovery = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsc-network-common = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = true }
+pezsc-tracing = { workspace = true, default-features = true }
+pezsc-utils = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-consensus-babe = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+prometheus-endpoint = { workspace = true, default-features = true }
+
+# pezcumulus deps
+pezcumulus-client-bootnodes = { workspace = true, default-features = true }
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+pezcumulus-relay-chain-interface = { workspace = true, default-features = true }
+pezcumulus-relay-chain-rpc-interface = { workspace = true, default-features = true }
+
+array-bytes = { workspace = true, default-features = true }
+async-channel = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+tracing = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-client-bootnodes/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-relay-chain-interface/runtime-benchmarks",
+	"pezcumulus-relay-chain-rpc-interface/runtime-benchmarks",
+	"pezkuwi-core-primitives/runtime-benchmarks",
+	"pezkuwi-network-bridge/runtime-benchmarks",
+	"pezkuwi-node-network-protocol/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-service/runtime-benchmarks",
+	"pezsc-authority-discovery/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-network-common/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsc-tracing/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"pezcumulus-client-bootnodes/std",
+	"pezcumulus-relay-chain-interface/std",
+	"pezcumulus-relay-chain-rpc-interface/std",
+	"pezkuwi-network-bridge/std",
+	"pezkuwi-node-network-protocol/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-overseer/std",
+	"pezkuwi-service/std",
+	"pezsc-authority-discovery/std",
+	"pezsc-client-api/std",
+	"pezsc-network-common/std",
+	"pezsc-network/std",
+	"pezsc-service/std",
+	"pezsc-tracing/std",
+	"pezsc-utils/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+	"prometheus-endpoint/std",
+]
+try-runtime = [
+	"pezcumulus-client-bootnodes/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-relay-chain-rpc-interface/try-runtime",
+	"pezkuwi-core-primitives/try-runtime",
+	"pezkuwi-node-network-protocol/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-service/try-runtime",
+	"pezsc-authority-discovery/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-network-common/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsc-tracing/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

@@ -1,0 +1,79 @@
+[package]
+name = "pezpallet-session"
+version = "28.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME sessions pezpallet"
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+impl-trait-for-tuples = { workspace = true }
+log = { workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+pezsp-core = { features = ["serde"], workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { features = ["serde"], workspace = true }
+pezsp-session = { workspace = true }
+pezsp-staking = { features = ["serde"], workspace = true }
+pezsp-state-machine = { workspace = true }
+pezsp-trie = { optional = true, workspace = true }
+scale-info = { features = ["derive", "serde"], workspace = true }
+
+[features]
+default = ["historical", "std"]
+historical = ["pezsp-trie"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-timestamp/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-session/std",
+	"pezsp-staking/std",
+	"pezsp-state-machine/std",
+	"pezsp-trie/std",
+	"scale-info/std",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-session/try-runtime",
+	"pezsp-staking/try-runtime",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-session/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie?/runtime-benchmarks",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

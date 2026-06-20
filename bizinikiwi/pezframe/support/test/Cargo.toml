@@ -1,0 +1,97 @@
+[package]
+name = "pezframe-support-test"
+version = "3.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+publish = false
+homepage.workspace = true
+repository.workspace = true
+description = "Pezkuwi SDK FRAME support: support test"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+frame-metadata = { features = ["current", "unstable"], workspace = true }
+pezframe-benchmarking = { workspace = true }
+pezframe-executive = { workspace = true }
+pezframe-support = { features = ["experimental"], workspace = true }
+pezframe-system = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-arithmetic = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-metadata-ir = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-state-machine = { optional = true, workspace = true, default-features = true }
+pezsp-version = { workspace = true }
+pretty_assertions = { workspace = true }
+rustversion = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { features = ["derive"], workspace = true }
+static_assertions = { workspace = true, default-features = true }
+trybuild = { features = ["diff"], workspace = true }
+# The "std" feature for this pezpallet is never activated on purpose, in order to test construct_runtime error message
+test-pezpallet = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"frame-metadata/std",
+	"pezframe-benchmarking/std",
+	"pezframe-executive/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-api/std",
+	"pezsp-arithmetic/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-metadata-ir/std",
+	"pezsp-runtime/std",
+	"pezsp-state-machine/std",
+	"pezsp-version/std",
+	"scale-info/std",
+	"serde/std",
+	"test-pezpallet/std",
+]
+experimental = ["pezframe-support/experimental", "pezframe-system/experimental"]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-executive/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine?/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+	"test-pezpallet/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking/try-runtime",
+	"pezframe-executive/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-version/try-runtime",
+	"test-pezpallet/try-runtime",
+]
+# WARNING:
+# Only CI runs with this feature enabled. This feature is for testing stuff related to the FRAME macros
+# in conjunction with rust features.
+frame-feature-testing = []
+frame-feature-testing-2 = []
+# Disable ui tests
+disable-ui-tests = []
+no-metadata-docs = ["pezframe-support/no-metadata-docs"]
+serde = []
+with-tracing = []
+tuples-96 = []

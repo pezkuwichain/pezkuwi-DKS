@@ -1,0 +1,29 @@
+[package]
+name = "pezsc-executor-common"
+version = "0.29.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "A set of common definitions that are needed for defining execution engines."
+documentation.workspace = true
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+pezsc-allocator = { workspace = true, default-features = true }
+pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
+pezsp-wasm-interface = { workspace = true, default-features = true }
+polkavm = { workspace = true }
+thiserror = { workspace = true }
+wasm-instrument = { workspace = true, default-features = true }
+
+[features]
+default = []
+std = ["pezsc-allocator/std", "polkavm/std"]

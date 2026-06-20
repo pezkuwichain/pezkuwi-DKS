@@ -1,0 +1,84 @@
+[package]
+name = "xcm-runtime-pezapis"
+version = "0.1.1"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+repository.workspace = true
+description = "XCM runtime APIs"
+documentation.workspace = true
+homepage = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive", "serde"], workspace = true }
+
+pezframe-support = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-weights = { workspace = true }
+xcm = { workspace = true }
+xcm-executor = { workspace = true }
+
+[dev-dependencies]
+hex-literal = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-assets = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-xcm = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-tracing = { workspace = true, default-features = true }
+tracing = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-pez-simulator = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-assets/std",
+	"pezpallet-balances/std",
+	"pezpallet-xcm/std",
+	"pezsp-api/std",
+	"pezsp-io/std",
+	"pezsp-weights/std",
+	"scale-info/std",
+	"tracing/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm-pez-simulator/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm-pez-simulator/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsp-api/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm-pez-simulator/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

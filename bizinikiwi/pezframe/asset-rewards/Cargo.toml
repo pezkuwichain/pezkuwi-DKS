@@ -1,0 +1,84 @@
+[package]
+name = "pezpallet-asset-rewards"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME asset rewards pezpallet"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { workspace = true }
+pezframe-benchmarking = { workspace = true, optional = true }
+pezframe-support = { workspace = true, features = ["experimental"] }
+pezframe-system = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-arithmetic = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+scale-info = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+pezpallet-assets = { workspace = true }
+pezpallet-assets-freezer = { workspace = true }
+pezpallet-balances = { workspace = true }
+primitive-types = { workspace = true, features = [
+	"codec",
+	"num-traits",
+	"scale-info",
+] }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-assets-freezer/std",
+	"pezpallet-assets/std",
+	"pezpallet-balances/std",
+	"pezsp-api/std",
+	"pezsp-arithmetic/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"primitive-types/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-assets-freezer/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-assets-freezer/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

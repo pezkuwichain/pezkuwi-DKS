@@ -1,0 +1,71 @@
+[package]
+name = "pezbridge-hub-zagros-emulated-chain"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Bridge Hub Zagros emulated chain"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-keyring = { workspace = true }
+
+# Pezkuwi Dependencies
+xcm = { workspace = true }
+
+# Bridge dependencies
+pezbp-messages = { workspace = true }
+
+# Pezcumulus
+emulated-integration-tests-common = { workspace = true }
+pezbridge-hub-common = { workspace = true }
+pezbridge-hub-zagros-runtime = { workspace = true, default-features = true }
+testnet-teyrchains-constants = { features = [
+	"zagros",
+], workspace = true, default-features = true }
+teyrchains-common = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezbp-messages/runtime-benchmarks",
+	"pezbridge-hub-common/runtime-benchmarks",
+	"pezbridge-hub-zagros-runtime/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"testnet-teyrchains-constants/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = [
+	"emulated-integration-tests-common/std",
+	"pezbp-messages/std",
+	"pezbridge-hub-common/std",
+	"pezframe-support/std",
+	"pezsp-core/std",
+	"pezsp-keyring/std",
+	"xcm/std",
+]
+try-runtime = [
+	"emulated-integration-tests-common/try-runtime",
+	"pezbp-messages/try-runtime",
+	"pezbridge-hub-common/try-runtime",
+	"pezbridge-hub-zagros-runtime/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"testnet-teyrchains-constants/try-runtime",
+	"teyrchains-common/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

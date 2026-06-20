@@ -1,0 +1,85 @@
+[package]
+name = "pezsnowbridge-beacon-primitives"
+description = "Snowbridge Beacon Primitives"
+version = "0.2.0"
+authors = ["Snowfork <contact@snowfork.com>"]
+edition.workspace = true
+repository.workspace = true
+license = "Apache-2.0"
+categories = ["cryptography::cryptocurrencies"]
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[dependencies]
+codec = { workspace = true }
+hex = { workspace = true }
+rlp = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { optional = true, features = [
+	"derive",
+], workspace = true, default-features = true }
+
+pezframe-support = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+byte-slice-cast = { workspace = true }
+ssz_rs = { workspace = true }
+ssz_rs_derive = { workspace = true }
+
+milagro-bls = { workspace = true }
+pezsnowbridge-ethereum = { workspace = true }
+
+[dev-dependencies]
+hex-literal = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"byte-slice-cast/std",
+	"codec/std",
+	"hex/std",
+	"milagro-bls/std",
+	"pezframe-support/std",
+	"pezsnowbridge-ethereum/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"rlp/std",
+	"scale-info/std",
+	"serde",
+	"ssz_rs/std",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezsnowbridge-ethereum/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezsnowbridge-ethereum/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = [
+	"codec/serde",
+	"dep:serde",
+	"hex/serde",
+	"pezsnowbridge-ethereum/serde",
+	"pezsp-core/serde",
+	"pezsp-runtime/serde",
+	"scale-info/serde",
+	"ssz_rs/serde",
+]
+experimental = []
+with-tracing = []
+tuples-96 = []

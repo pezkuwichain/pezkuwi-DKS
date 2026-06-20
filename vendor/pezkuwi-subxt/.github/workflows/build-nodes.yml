@@ -1,0 +1,73 @@
+name: Build Substrate and Polkadot Binaries
+
+on:
+  # Allow it to be manually ran to rebuild binary when needed:
+  workflow_dispatch: {}
+  # Run at 2am every day for nightly builds.
+  schedule:
+    - cron: "0 2 * * *"
+
+jobs:
+  tests:
+    name: Build Substrate and Polkadot Binaries
+    runs-on: parity-large
+    steps:
+      - name: checkout polkadot-sdk
+        uses: actions/checkout@v6
+        with:
+          repository: paritytech/polkadot-sdk
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler curl gcc make clang cmake llvm-dev libclang-dev
+
+      - name: Install Rust v1.88 toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.88
+          components: rust-src
+          target: wasm32-unknown-unknown
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: build substrate binary
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --manifest-path substrate/bin/node/cli/Cargo.toml
+
+      - name: build polkadot binary
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --manifest-path polkadot/Cargo.toml
+
+      - name: Strip binaries
+        run: |
+          cargo install cargo-strip
+          cargo strip
+
+      - name: upload substrate binary
+        uses: actions/upload-artifact@v5
+        with:
+          name: nightly-substrate-binary
+          path: target/release/substrate-node
+          retention-days: 2
+          if-no-files-found: error
+
+      # Note: Uncompressed polkadot binary is ~124MB -> too large for git (max 100MB) without git lfs. Compressed it is only ~45MB
+      - name: compress polkadot binary
+        run: |
+          tar -zcvf target/release/polkadot.tar.gz target/release/polkadot
+
+      - name: upload polkadot binary
+        uses: actions/upload-artifact@v5
+        with:
+          name: nightly-polkadot-binary
+          path: |
+            target/release/polkadot.tar.gz
+            target/release/polkadot-execute-worker
+            target/release/polkadot-prepare-worker
+          retention-days: 2
+          if-no-files-found: error

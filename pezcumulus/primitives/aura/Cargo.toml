@@ -1,0 +1,27 @@
+[package]
+name = "pezcumulus-primitives-aura"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Core primitives for Aura in Pezcumulus"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bizinikiwi
+pezsp-api = { workspace = true }
+pezsp-consensus-aura = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["pezsp-api/std", "pezsp-consensus-aura/std"]
+runtime-benchmarks = [
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-consensus-aura/runtime-benchmarks",
+]
+serde = []

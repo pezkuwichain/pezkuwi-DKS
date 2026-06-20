@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/pezkuwichain/pezkuwi-DKS/security/policy
+    about: Do NOT open a public issue. Report security/fund-risk issues privately (see SECURITY.md).
+  - name: Documentation & developer portal
+    url: https://docs.pezkuwichain.io
+    about: Guides and API documentation.

@@ -1,0 +1,64 @@
+[package]
+name = "pezkuwi-subxt-macro"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+autotests = false
+
+license.workspace = true
+repository.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+description = "Generate types and helpers for interacting with Bizinikiwi runtimes."
+
+[features]
+web = ["pezkuwi-subxt-codegen/web"]
+runtime-wasm-path = [
+	"pezsc-executor",
+	"pezsc-executor-common",
+	"pezsp-io",
+	"pezsp-maybe-compressed-blob",
+	"pezsp-state-machine",
+]
+runtime-metadata-insecure-url = ["pezkuwi-subxt-utils-fetchmetadata/url"]
+std = [
+	"codec/std",
+	"pezkuwi-subxt-codegen/std",
+	"pezkuwi-subxt-metadata/std",
+	"pezkuwi-subxt-utils-fetchmetadata/std",
+	"pezsc-executor-common?/std",
+	"pezsc-executor?/std",
+	"pezsp-io?/std",
+	"pezsp-state-machine?/std",
+]
+serde = []
+with-tracing = []
+runtime-benchmarks = [
+	"pezsc-executor?/runtime-benchmarks",
+	"pezsp-io?/runtime-benchmarks",
+	"pezsp-state-machine?/runtime-benchmarks",
+]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+codec = { package = "parity-scale-codec", workspace = true }
+darling = { workspace = true }
+pezkuwi-subxt-codegen = { workspace = true }
+pezkuwi-subxt-metadata = { workspace = true }
+pezkuwi-subxt-utils-fetchmetadata = { workspace = true }
+pezsc-executor = { workspace = true, optional = true }
+pezsc-executor-common = { workspace = true, optional = true }
+pezsp-io = { workspace = true, optional = true }
+pezsp-maybe-compressed-blob = { workspace = true, optional = true }
+pezsp-state-machine = { workspace = true, optional = true }
+proc-macro-error2 = { workspace = true }
+quote = { workspace = true }
+scale-typegen = { workspace = true }
+syn = { workspace = true }
+
+[lints]
+workspace = true

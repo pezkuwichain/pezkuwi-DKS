@@ -1,0 +1,5 @@
+error: A pezpallet::call requires either a concrete `#[pezpallet::weight($expr)]` or an inherited weight from the `#[pezpallet:call(weight($type))]` attribute, but none were given.
+  --> tests/pezpallet_ui/dev_mode_without_arg.rs:39:7
+   |
+39 |         pub fn my_call(_origin: OriginFor<T>) -> DispatchResult {
+   |             ^^

@@ -1,0 +1,45 @@
+[package]
+name = "pez-remote-ext-tests-bags-list"
+publish = false
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Pezkuwi SDK component: remote ext tests bags list"
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+zagros-runtime = { workspace = true, default-features = true }
+zagros-runtime-constants = { workspace = true, default-features = true }
+
+pezframe-system = { workspace = true, default-features = true }
+pezpallet-bags-list-remote-tests = { workspace = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+
+clap = { features = ["derive"], workspace = true }
+log = { workspace = true, default-features = true }
+tokio = { features = ["macros"], workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-bags-list-remote-tests/runtime-benchmarks",
+	"zagros-runtime-constants/runtime-benchmarks",
+	"zagros-runtime/runtime-benchmarks",
+]
+std = ["log/std", "pezpallet-bags-list-remote-tests/std"]
+try-runtime = [
+	"pezframe-system/try-runtime",
+	"pezpallet-bags-list-remote-tests/try-runtime",
+	"zagros-runtime-constants/try-runtime",
+	"zagros-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []

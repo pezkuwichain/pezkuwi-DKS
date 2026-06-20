@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n\t\t\tINSERT OR REPLACE INTO eth_to_bizinikiwi_blocks (ethereum_block_hash, bizinikiwi_block_hash)\n\t\t\tVALUES ($1, $2)\n\t\t\t",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "e3bac511b841a11e0ba605856b7c2a222ee3533661e2279b82547bbe5b3d4d28"
+}

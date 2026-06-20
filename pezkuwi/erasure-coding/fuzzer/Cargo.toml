@@ -1,0 +1,36 @@
+[package]
+name = "pez-erasure-coding-fuzzer"
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Pezkuwi SDK component: erasure coding fuzzer"
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+honggfuzz = { workspace = true }
+pezkuwi-erasure-coding = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+[[bin]]
+name = "reconstruct"
+path = "src/reconstruct.rs"
+
+[[bin]]
+name = "round_trip"
+path = "src/round_trip.rs"
+
+[features]
+runtime-benchmarks = [
+	"pezkuwi-erasure-coding/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+]
+std = ["pezkuwi-erasure-coding/std", "pezkuwi-pez-node-primitives/std"]

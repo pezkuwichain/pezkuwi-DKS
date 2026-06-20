@@ -1,0 +1,39 @@
+[package]
+name = "pezcumulus-primitives-proof-size-hostfunction"
+version = "0.2.0"
+authors.workspace = true
+edition.workspace = true
+description = "Hostfunction exposing storage proof size to the runtime."
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+pezsp-externalities = { workspace = true }
+pezsp-runtime-interface = { workspace = true }
+pezsp-trie = { workspace = true }
+
+[dev-dependencies]
+pezsp-core = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"pezsp-externalities/std",
+	"pezsp-runtime-interface/std",
+	"pezsp-trie/std",
+]
+runtime-benchmarks = [
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime-interface/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
+serde = []
+with-tracing = []

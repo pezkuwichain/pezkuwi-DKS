@@ -1,0 +1,47 @@
+[package]
+name = "pezkuwichain-zagros-system-emulated-network"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Pezkuwichain<>Zagros emulated bridged network"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Pezcumulus
+asset-hub-pezkuwichain-emulated-chain = { workspace = true }
+asset-hub-zagros-emulated-chain = { workspace = true }
+emulated-integration-tests-common = { workspace = true }
+pez-penpal-emulated-chain = { workspace = true }
+pezbridge-hub-pezkuwichain-emulated-chain = { workspace = true }
+pezbridge-hub-zagros-emulated-chain = { workspace = true }
+pezkuwichain-emulated-chain = { workspace = true }
+zagros-emulated-chain = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"asset-hub-pezkuwichain-emulated-chain/runtime-benchmarks",
+	"asset-hub-zagros-emulated-chain/runtime-benchmarks",
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pez-penpal-emulated-chain/runtime-benchmarks",
+	"pezbridge-hub-pezkuwichain-emulated-chain/runtime-benchmarks",
+	"pezbridge-hub-zagros-emulated-chain/runtime-benchmarks",
+	"pezkuwichain-emulated-chain/runtime-benchmarks",
+	"zagros-emulated-chain/runtime-benchmarks",
+]
+std = [
+	"asset-hub-pezkuwichain-emulated-chain/std",
+	"asset-hub-zagros-emulated-chain/std",
+	"emulated-integration-tests-common/std",
+	"pez-penpal-emulated-chain/std",
+	"pezbridge-hub-pezkuwichain-emulated-chain/std",
+	"pezbridge-hub-zagros-emulated-chain/std",
+	"pezkuwichain-emulated-chain/std",
+	"zagros-emulated-chain/std",
+]

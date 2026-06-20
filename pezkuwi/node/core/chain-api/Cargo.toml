@@ -1,0 +1,58 @@
+[package]
+name = "pezkuwi-node-core-chain-api"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "The Chain API subsystem provides access to chain related utility functions like block number to hash conversions."
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+pezkuwi-node-metrics = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-types = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-consensus-babe = { workspace = true, default-features = true }
+
+[dev-dependencies]
+codec = { workspace = true, default-features = true }
+futures = { features = ["thread-pool"], workspace = true }
+maplit = { workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-metrics/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-types/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-consensus-babe/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+]
+std = [
+	"gum/std",
+	"pezkuwi-node-metrics/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-types/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezsc-client-api/std",
+	"pezsc-consensus-babe/std",
+	"pezsp-blockchain/std",
+]
+serde = []

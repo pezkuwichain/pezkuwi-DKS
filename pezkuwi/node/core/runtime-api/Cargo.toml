@@ -1,0 +1,60 @@
+[package]
+name = "pezkuwi-node-core-runtime-api"
+version = "7.0.0"
+description = "Wrapper around the teyrchain-related runtime APIs"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+
+pezsp-consensus-babe = { workspace = true, default-features = true }
+
+pezkuwi-node-metrics = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-types = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+[dev-dependencies]
+async-trait = { workspace = true }
+futures = { features = ["thread-pool"], workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives-test-helpers = { workspace = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-metrics/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-types/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+]
+std = [
+	"gum/std",
+	"pezkuwi-node-metrics/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-types/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
+]
+serde = []

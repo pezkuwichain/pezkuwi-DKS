@@ -1,0 +1,132 @@
+[package]
+name = "pezsnowbridge-runtime-test-common"
+description = "Snowbridge Runtime Tests"
+version = "0.2.0"
+authors = ["Snowfork <contact@snowfork.com>"]
+edition.workspace = true
+license = "Apache-2.0"
+categories = ["cryptography::cryptocurrencies"]
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-message-queue = { workspace = true }
+pezpallet-session = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+pezpallet-utility = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+pezpallet-xcm = { workspace = true }
+xcm = { workspace = true }
+xcm-executor = { workspace = true }
+
+# Pezcumulus
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+pezpallet-collator-selection = { workspace = true }
+teyrchain-info = { workspace = true }
+teyrchains-runtimes-test-utils = { workspace = true }
+
+# Ethereum Bridge (Snowbridge)
+pezsnowbridge-core = { workspace = true }
+pezsnowbridge-pezpallet-ethereum-client = { workspace = true }
+pezsnowbridge-pezpallet-ethereum-client-fixtures = { workspace = true }
+pezsnowbridge-pezpallet-outbound-queue = { workspace = true }
+pezsnowbridge-pezpallet-system = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-collator-selection/std",
+	"pezpallet-message-queue/std",
+	"pezpallet-session/std",
+	"pezpallet-timestamp/std",
+	"pezpallet-utility/std",
+	"pezpallet-xcm/std",
+	"pezsnowbridge-core/std",
+	"pezsnowbridge-pezpallet-ethereum-client-fixtures/std",
+	"pezsnowbridge-pezpallet-ethereum-client/std",
+	"pezsnowbridge-pezpallet-outbound-queue/std",
+	"pezsnowbridge-pezpallet-system/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-keyring/std",
+	"pezsp-runtime/std",
+	"teyrchain-info/std",
+	"teyrchains-runtimes-test-utils/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+
+runtime-benchmarks = [
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-collator-selection/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-session/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsnowbridge-core/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-ethereum-client-fixtures/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-ethereum-client/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-outbound-queue/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-system/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"teyrchain-info/runtime-benchmarks",
+	"teyrchains-runtimes-test-utils/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+fast-runtime = []
+try-runtime = [
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-collator-selection/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-session/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsnowbridge-core/try-runtime",
+	"pezsnowbridge-pezpallet-ethereum-client/try-runtime",
+	"pezsnowbridge-pezpallet-outbound-queue/try-runtime",
+	"pezsnowbridge-pezpallet-system/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"teyrchain-info/try-runtime",
+	"teyrchains-runtimes-test-utils/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

@@ -1,0 +1,5 @@
+error: Duplicate #[pezpallet::no_default] attribute not allowed.
+  --> tests/pezpallet_ui/trait_item_duplicate_no_default.rs:27:4
+   |
+27 |         #[pezpallet::no_default]
+   |          ^^^^^^^^^^^^^^^^^^^^^^^

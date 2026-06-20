@@ -1,0 +1,19 @@
+# Pezkuwi ZombieNet SDK - Stable Rustfmt Configuration
+# Only stable features for compatibility with CI
+
+# Basic (stable)
+hard_tabs = true
+max_width = 100
+use_small_heuristics = "Max"
+
+# Imports (stable)
+reorder_imports = true
+reorder_modules = true
+
+# Consistency (stable)
+newline_style = "Unix"
+
+# Misc (stable)
+match_block_trailing_comma = true
+use_field_init_shorthand = true
+use_try_shorthand = true

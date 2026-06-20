@@ -1,0 +1,69 @@
+[package]
+name = "pezbp-bridge-hub-pezcumulus"
+description = "Primitives for BridgeHub teyrchain runtimes."
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bridge Dependencies
+pezbp-messages = { workspace = true }
+pezbp-pezkuwi-core = { workspace = true }
+pezbp-runtime = { workspace = true }
+
+# Bizinikiwi Based Dependencies
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-std = { workspace = true }
+teyrchains-common = { workspace = true }
+
+# Pezkuwi Dependencies
+pezkuwi-primitives = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"pezbp-messages/std",
+	"pezbp-pezkuwi-core/std",
+	"pezbp-runtime/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezkuwi-primitives/std",
+	"pezsp-api/std",
+	"pezsp-std/std",
+	"teyrchains-common/std",
+]
+runtime-benchmarks = [
+	"pezbp-messages/runtime-benchmarks",
+	"pezbp-pezkuwi-core/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-messages/try-runtime",
+	"pezbp-pezkuwi-core/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezsp-api/try-runtime",
+	"teyrchains-common/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

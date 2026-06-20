@@ -1,0 +1,118 @@
+[package]
+name = "pezcumulus-pezpallet-xcmp-queue"
+version = "0.7.1"
+authors.workspace = true
+edition.workspace = true
+description = "Pallet to queue outbound and inbound XCMP messages."
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+tracing = { workspace = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-message-queue = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+pezkuwi-runtime-common = { workspace = true }
+pezkuwi-runtime-teyrchains = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+
+# Pezcumulus
+pezcumulus-primitives-core = { workspace = true }
+
+# Optional import for weight accuracy testing
+approx = { workspace = true }
+# Optional import for benchmarking
+bounded-collections = { workspace = true }
+pezframe-benchmarking = { optional = true, workspace = true }
+
+# Bridges
+pezbp-xcm-bridge-hub-router = { optional = true, workspace = true }
+
+[dev-dependencies]
+# Bizinikiwi
+pezframe-support = { features = [
+	"experimental",
+], workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-pezpallet-teyrchain-system = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"approx/std",
+	"bounded-collections/std",
+	"codec/std",
+	"pezbp-xcm-bridge-hub-router?/std",
+	"pezcumulus-primitives-core/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezkuwi-runtime-common/std",
+	"pezkuwi-runtime-teyrchains/std",
+	"pezpallet-message-queue/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+	"tracing/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"pezbp-xcm-bridge-hub-router?/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-runtime-common/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-xcm-bridge-hub-router?/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-runtime-common/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+]
+bridging = ["pezbp-xcm-bridge-hub-router"]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

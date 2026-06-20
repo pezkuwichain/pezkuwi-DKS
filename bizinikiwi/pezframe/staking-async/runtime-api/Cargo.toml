@@ -1,0 +1,31 @@
+[package]
+name = "pezpallet-staking-async-runtime-api"
+version = "14.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "RPC runtime API for transaction payment FRAME pezpallet"
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+pezsp-api = { workspace = true }
+pezsp-staking = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["codec/std", "pezsp-api/std", "pezsp-staking/std"]
+runtime-benchmarks = [
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+]
+serde = []

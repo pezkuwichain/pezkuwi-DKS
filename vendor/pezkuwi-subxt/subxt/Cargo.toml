@@ -1,0 +1,209 @@
+[package]
+name = "pezkuwi-subxt"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+
+license.workspace = true
+readme = "../README.md"
+repository.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+description = "Submit extrinsics (transactions) to a Pezkuwi/Bizinikiwi node via RPC"
+keywords = ["bizinikiwi", "blockchain", "pezkuwi"]
+
+[lints]
+workspace = true
+
+[features]
+# For dev and documentation reasons we enable more features than are often desired.
+# it's recommended to use `--no-default-features` and then select what you need.
+default = ["jsonrpsee", "native"]
+
+# Enable this for native (ie non web/wasm builds).
+# Exactly 1 of "web" and "native" is expected.
+native = [
+	"pezkuwi-subxt-lightclient?/native",
+	"pezkuwi-subxt-rpcs/native",
+	"pezsp-crypto-hashing/std",
+	"tokio-util",
+	"tokio?/sync",
+]
+
+# Enable this for web/wasm builds.
+# Exactly 1 of "web" and "native" is expected.
+web = [
+	"pezkuwi-subxt-lightclient?/web",
+	"pezkuwi-subxt-macro/web",
+	"pezkuwi-subxt-rpcs/web",
+	"tokio?/sync",
+]
+
+# Feature flag to enable the default future executor.
+# Technically it's a hack enable to both but simplifies the conditional compilation
+# and subxt is selecting executor based on the used platform.
+#
+# For instance `wasm-bindgen-futures` panics if the platform isn't wasm32 and
+# similar for tokio that requires a tokio runtime to be initialized.
+runtime = ["tokio/rt", "wasm-bindgen-futures"]
+
+# Enable this to use the reconnecting rpc client
+reconnecting-rpc-client = ["pezkuwi-subxt-rpcs/reconnecting-rpc-client"]
+
+# Enable this to use jsonrpsee, which enables the jsonrpsee RPC client, and
+# a couple of util functions which rely on jsonrpsee.
+jsonrpsee = ["dep:jsonrpsee", "pezkuwi-subxt-rpcs/jsonrpsee", "runtime"]
+
+# Enable this to fetch and utilize the latest unstable metadata from a node.
+# The unstable metadata is subject to breaking changes and the subxt might
+# fail to decode the metadata properly. Use this to experiment with the
+# latest features exposed by the metadata.
+unstable-metadata = []
+
+# Activate this to expose the Light Client functionality.
+# Note that this feature is experimental and things may break or not work as expected.
+unstable-light-client = [
+	"pezkuwi-subxt-lightclient",
+	"pezkuwi-subxt-rpcs/unstable-light-client",
+]
+
+# Activate this to expose the ability to generate metadata from Wasm runtime files.
+runtime-wasm-path = ["pezkuwi-subxt-macro/runtime-wasm-path"]
+std = [
+	"bitvec/std",
+	"codec/std",
+	"either/std",
+	"frame-metadata/std",
+	"hex/std",
+	"pezkuwi-subxt-core/std",
+	"pezkuwi-subxt-lightclient?/std",
+	"pezkuwi-subxt-macro/std",
+	"pezkuwi-subxt-metadata/std",
+	"pezkuwi-subxt-rpcs/std",
+	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
+	"pezsp-keyring/std",
+	"pezsp-runtime/std",
+	"primitive-types/std",
+	"scale-info/std",
+	"serde/std",
+	"serde_json/std",
+	"tracing/std",
+]
+try-runtime = ["pezsp-keyring/try-runtime", "pezsp-runtime/try-runtime"]
+serde = []
+runtime-benchmarks = [
+	"pezkuwi-subxt-core/runtime-benchmarks",
+	"pezkuwi-subxt-macro/runtime-benchmarks",
+	"pezkuwi-subxt-rpcs/runtime-benchmarks",
+	"pezkuwi-subxt-signer/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+
+[dependencies]
+async-trait = { workspace = true }
+codec = { package = "parity-scale-codec", workspace = true, features = [
+	"derive",
+] }
+derive-where = { workspace = true }
+either = { workspace = true }
+frame-metadata = { workspace = true }
+futures = { workspace = true }
+hex = { workspace = true }
+pezsp-crypto-hashing = { workspace = true }
+scale-bits = { workspace = true, features = ["default"] }
+scale-decode = { workspace = true, features = ["default"] }
+scale-encode = { workspace = true, features = ["default"] }
+scale-info = { workspace = true, features = ["default"] }
+scale-value = { workspace = true, features = ["default"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["default", "raw_value"] }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+web-time = { workspace = true }
+
+# Provides some deserialization, types like U256/H256 and hashing impls like twox/blake256:
+primitive-types = { workspace = true, features = [
+	"codec",
+	"scale-info",
+	"serde",
+] }
+
+# Included if the "jsonrpsee" feature is enabled.
+jsonrpsee = { workspace = true, optional = true, features = [
+	"jsonrpsee-types",
+] }
+
+# Other pezkuwi-subxt crates we depend on.
+pezkuwi-subxt-core = { workspace = true, features = ["std"] }
+pezkuwi-subxt-lightclient = { workspace = true, optional = true, default-features = false }
+pezkuwi-subxt-macro = { workspace = true }
+pezkuwi-subxt-metadata = { workspace = true, features = ["std"] }
+pezkuwi-subxt-rpcs = { workspace = true, features = ["subxt"] }
+
+# For parsing urls to disallow insecure schemes
+url = { workspace = true }
+
+# Included if "native" feature is enabled
+tokio-util = { workspace = true, features = ["compat"], optional = true }
+
+# Included if the reconnecting rpc client feature is enabled
+# Only the `tokio/sync` is used in the reconnecting rpc client
+# and that compiles both for native and web.
+tokio = { workspace = true, optional = true }
+wasm-bindgen-futures = { workspace = true, optional = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+bitvec = { workspace = true }
+codec = { workspace = true, features = ["bit-vec", "derive"] }
+pezkuwi-subxt-rpcs = { workspace = true, features = [
+	"mock-rpc-client",
+	"subxt",
+] }
+pezkuwi-subxt-signer = { workspace = true, features = ["unstable-eth"] }
+pezsp-core = { workspace = true, features = ["std"] }
+pezsp-keyring = { workspace = true, features = ["std"] }
+pezsp-runtime = { workspace = true, features = ["std"] }
+scale-info = { workspace = true, features = ["bit-vec"] }
+tokio = { workspace = true, features = [
+	"macros",
+	"rt-multi-thread",
+	"sync",
+	"time",
+] }
+# Tracing subscriber is useful for light-client examples to ensure that
+# the `bootNodes` and chain spec are configured correctly. If all is fine, then
+# the light-client will emit INFO logs with
+# `GrandPa warp sync finished` and `Finalized block runtime ready.`
+tracing-subscriber = { workspace = true }
+# These deps are needed to test the reconnecting rpc client
+http-body = { workspace = true }
+hyper = { workspace = true }
+jsonrpsee = { workspace = true, features = ["server"] }
+tower = { workspace = true }
+
+[[example]]
+name = "light_client_basic"
+path = "examples/light_client_basic.rs"
+required-features = ["jsonrpsee", "unstable-light-client"]
+
+[[example]]
+name = "light_client_local_node"
+path = "examples/light_client_local_node.rs"
+required-features = ["jsonrpsee", "native", "unstable-light-client"]
+
+[[example]]
+name = "setup_reconnecting_rpc_client"
+path = "examples/setup_reconnecting_rpc_client.rs"
+required-features = ["reconnecting-rpc-client"]
+
+[package.metadata.docs.rs]
+features = ["default", "unstable-light-client"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.playground]
+features = ["default", "unstable-light-client"]

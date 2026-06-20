@@ -1,0 +1,57 @@
+[package]
+authors.workspace = true
+edition.workspace = true
+name = "pezstaging-teyrchain-info"
+version = "0.7.0"
+license = "Apache-2.0"
+description = "Pallet to store the teyrchain ID"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+
+pezsp-runtime = { workspace = true }
+
+pezcumulus-primitives-core = { workspace = true }
+
+[dev-dependencies]
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezcumulus-primitives-core/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+]
+try-runtime = [
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+serde = []
+experimental = []
+tuples-96 = []

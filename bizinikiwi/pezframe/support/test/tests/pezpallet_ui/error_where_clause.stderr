@@ -1,0 +1,5 @@
+error: Invalid pezpallet::error, where clause is not allowed on pezpallet error item
+  --> tests/pezpallet_ui/error_where_clause.rs:36:20
+   |
+36 |     pub enum Error<T> where u32: From<u8> {}
+   |                       ^^^^^

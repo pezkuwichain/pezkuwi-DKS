@@ -1,0 +1,51 @@
+[package]
+name = "pezpallet-revive-fixtures"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Fixtures for testing and benchmarking"
+homepage.workspace = true
+repository.workspace = true
+rust-version = "1.84"
+documentation.workspace = true
+publish = true
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy-core = { workspace = true, default-features = true, features = [
+	"sol-types",
+], optional = true }
+anyhow = { workspace = true, default-features = true, optional = true }
+pezsp-core = { workspace = true, default-features = true, optional = true }
+pezsp-io = { workspace = true, default-features = true, optional = true }
+
+[build-dependencies]
+anyhow = { workspace = true, default-features = true }
+cargo_metadata = { workspace = true }
+hex = { workspace = true, features = ["alloc"] }
+pezpallet-revive-uapi = { workspace = true }
+polkavm-linker = { version = "0.29.0" }
+serde_json = { workspace = true }
+toml = { workspace = true }
+
+[features]
+default = ["std"]
+# only when std is enabled all fixtures are available
+std = [
+	"alloy-core",
+	"anyhow",
+	"hex/std",
+	"pezpallet-revive-uapi/std",
+	"pezsp-core",
+	"pezsp-io",
+	"serde_json/std",
+]
+serde = []
+with-tracing = []
+runtime-benchmarks = ["pezsp-io?/runtime-benchmarks"]

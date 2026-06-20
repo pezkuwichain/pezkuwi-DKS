@@ -1,0 +1,67 @@
+[package]
+name = "pezpallet-scheduler"
+version = "29.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME Scheduler pezpallet"
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+docify = { workspace = true }
+log = { workspace = true }
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-weights = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+[dev-dependencies]
+bizinikiwi-test-utils = { workspace = true }
+pezpallet-preimage = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+runtime-benchmarks = [
+	"pezframe-benchmarking",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-preimage/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-preimage/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-weights/std",
+	"scale-info/std",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-preimage/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

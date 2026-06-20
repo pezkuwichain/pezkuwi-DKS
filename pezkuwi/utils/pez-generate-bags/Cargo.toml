@@ -1,0 +1,28 @@
+[package]
+name = "pezkuwi-voter-bags"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "CLI to generate voter bags for Pezkuwi runtimes"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+clap = { features = ["derive"], workspace = true }
+
+pez-generate-bags = { workspace = true, default-features = true }
+
+zagros-runtime = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pez-generate-bags/runtime-benchmarks",
+	"zagros-runtime/runtime-benchmarks",
+]
+std = ["pez-generate-bags/std"]
+try-runtime = ["pez-generate-bags/try-runtime", "zagros-runtime/try-runtime"]

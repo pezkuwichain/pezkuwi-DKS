@@ -1,0 +1,5 @@
+error: expected integer literal
+  --> tests/runtime_ui/invalid_pezpallet_index.rs:24:32
+   |
+24 |     #[runtime::pezpallet_index("0")]
+   |                                ^^^

@@ -1,0 +1,5 @@
+error: `#[pezpallet::genesis_config]` and `#[pezpallet::genesis_build]` attributes must be either both used or both not used, instead genesis_config is unused and genesis_build is used
+  --> tests/pezpallet_ui/genesis_inconsistent_build_config.rs:19:1
+   |
+19 | mod pezpallet {
+   | ^^^

@@ -1,0 +1,111 @@
+[package]
+name = "pezcumulus-client-consensus-common"
+description = "Pezcumulus specific common consensus implementations"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+codec = { features = ["derive"], workspace = true, default-features = true }
+dyn-clone = { workspace = true }
+futures = { workspace = true }
+log = { workspace = true, default-features = true }
+tracing = { workspace = true, default-features = true }
+
+# Bizinikiwi
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-consensus = { workspace = true, default-features = true }
+pezsc-consensus-babe = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-consensus-slots = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-timestamp = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
+pezsp-version = { workspace = true, default-features = true }
+prometheus-endpoint = { workspace = true, default-features = true }
+
+# Pezkuwi
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-client-pov-recovery = { workspace = true, default-features = true }
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+pezcumulus-relay-chain-interface = { workspace = true, default-features = true }
+pezcumulus-relay-chain-streams = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+
+[dev-dependencies]
+futures-timer = { workspace = true }
+tokio = { features = ["macros"], workspace = true }
+
+# Bizinikiwi
+pezsp-tracing = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-test-client = { workspace = true }
+pezcumulus-test-relay-sproof-builder = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-client-pov-recovery/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-relay-chain-interface/runtime-benchmarks",
+	"pezcumulus-relay-chain-streams/runtime-benchmarks",
+	"pezcumulus-test-client/runtime-benchmarks",
+	"pezcumulus-test-relay-sproof-builder/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-consensus-babe/runtime-benchmarks",
+	"pezsc-consensus/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus-slots/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-timestamp/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+]
+std = [
+	"log/std",
+	"pezcumulus-client-pov-recovery/std",
+	"pezcumulus-relay-chain-interface/std",
+	"pezcumulus-relay-chain-streams/std",
+	"pezcumulus-test-client/std",
+	"pezsc-client-api/std",
+	"pezsc-consensus-babe/std",
+	"pezsc-consensus/std",
+	"pezsc-network/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+	"prometheus-endpoint/std",
+]
+try-runtime = [
+	"pezcumulus-client-pov-recovery/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-test-client/try-runtime",
+	"pezcumulus-test-relay-sproof-builder/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-consensus-babe/try-runtime",
+	"pezsc-consensus/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-timestamp/try-runtime",
+	"pezsp-version/try-runtime",
+]
+serde = []
+with-tracing = []

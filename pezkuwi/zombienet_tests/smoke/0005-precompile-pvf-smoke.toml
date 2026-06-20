@@ -1,0 +1,32 @@
+[settings]
+timeout = 1000
+
+[relaychain]
+default_image = "{{ZOMBIENET_INTEGRATION_TEST_IMAGE}}"
+chain = "pezkuwichain-local"
+command = "pezkuwi"
+
+[[relaychain.nodes]]
+name = "alice"
+args = ["-lruntime=debug,teyrchain=trace"]
+
+[[relaychain.nodes]]
+name = "bob"
+args = ["-lruntime=debug,teyrchain=trace"]
+
+[[relaychain.nodes]]
+name = "charlie"
+args = ["-lruntime=debug,teyrchain=trace"]
+
+[[relaychain.nodes]]
+name = "dave"
+args = ["-lruntime=debug,teyrchain=trace"]
+
+[[teyrchains]]
+id = 100
+add_to_genesis = true
+
+[teyrchains.collator]
+name = "collator-100"
+image = "{{CUMULUS_IMAGE}}"
+command = "pezkuwi-teyrchain"

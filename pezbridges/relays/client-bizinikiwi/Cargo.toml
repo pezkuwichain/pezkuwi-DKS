@@ -1,0 +1,115 @@
+[package]
+name = "relay-bizinikiwi-client"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+publish = false
+description = "Pezkuwi SDK component: relay bizinikiwi client"
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+async-std = { features = ["attributes"], workspace = true }
+async-trait = { workspace = true }
+codec = { workspace = true, default-features = true }
+futures = { workspace = true }
+jsonrpsee = { features = ["macros", "ws-client"], workspace = true }
+num-traits = { workspace = true, default-features = true }
+quick_cache = { workspace = true }
+rand = { workspace = true, default-features = true }
+scale-info = { features = [
+	"derive",
+], workspace = true, default-features = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { features = [
+	"rt-multi-thread",
+], workspace = true, default-features = true }
+tracing = { workspace = true }
+
+# Bridge dependencies
+pez-finality-relay = { workspace = true }
+pezbp-header-pez-chain = { workspace = true, default-features = true }
+pezbp-messages = { workspace = true, default-features = true }
+pezbp-pezkuwi-core = { workspace = true, default-features = true }
+pezbp-runtime = { workspace = true, default-features = true }
+relay-utils = { workspace = true }
+
+# Bizinikiwi Dependencies
+pezframe-support = { workspace = true, default-features = true }
+pezpallet-transaction-payment = { workspace = true, default-features = true }
+pezpallet-transaction-payment-rpc-runtime-api = { workspace = true, default-features = true }
+pezpallet-utility = { workspace = true, default-features = true }
+pezsc-chain-spec = { workspace = true, default-features = true }
+pezsc-rpc-api = { workspace = true, default-features = true }
+pezsc-transaction-pool-api = { workspace = true, default-features = true }
+pezsp-consensus-grandpa = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-rpc = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-std = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
+pezsp-version = { workspace = true, default-features = true }
+
+# Pezkuwi Dependencies
+xcm = { workspace = true, default-features = true }
+
+[features]
+default = []
+test-helpers = []
+runtime-benchmarks = [
+	"pez-finality-relay/runtime-benchmarks",
+	"pezbp-header-pez-chain/runtime-benchmarks",
+	"pezbp-messages/runtime-benchmarks",
+	"pezbp-pezkuwi-core/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezpallet-transaction-payment-rpc-runtime-api/runtime-benchmarks",
+	"pezpallet-transaction-payment/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezsc-chain-spec/runtime-benchmarks",
+	"pezsc-rpc-api/runtime-benchmarks",
+	"pezsc-transaction-pool-api/runtime-benchmarks",
+	"pezsp-consensus-grandpa/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+	"relay-utils/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = [
+	"pez-finality-relay/std",
+	"pezsc-chain-spec/std",
+	"pezsc-rpc-api/std",
+	"pezsc-transaction-pool-api/std",
+	"pezsp-rpc/std",
+	"relay-utils/std",
+	"serde_json/std",
+	"tracing/std",
+]
+try-runtime = [
+	"pezbp-header-pez-chain/try-runtime",
+	"pezbp-messages/try-runtime",
+	"pezbp-pezkuwi-core/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezpallet-transaction-payment-rpc-runtime-api/try-runtime",
+	"pezpallet-transaction-payment/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezsc-chain-spec/try-runtime",
+	"pezsc-rpc-api/try-runtime",
+	"pezsc-transaction-pool-api/try-runtime",
+	"pezsp-consensus-grandpa/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-version/try-runtime",
+	"relay-utils/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

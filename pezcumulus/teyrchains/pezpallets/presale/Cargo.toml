@@ -1,0 +1,79 @@
+[package]
+name = "pezpallet-presale"
+version = "1.0.0"
+description = "PEZ token presale pezpallet - accepts wUSDT, distributes PEZ"
+authors.workspace = true
+homepage.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+documentation.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "3.6.12", default-features = false, features = [
+	"derive",
+	"max-encoded-len",
+] }
+log = { default-features = false, workspace = true }
+scale-info = { default-features = false, features = [
+	"derive",
+], workspace = true }
+serde = { features = ["alloc", "derive"], workspace = true }
+
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { default-features = false, workspace = true }
+pezframe-system = { default-features = false, workspace = true }
+pezsp-runtime = { default-features = false, workspace = true }
+pezsp-std = { default-features = false, workspace = true }
+
+pezpallet-assets = { default-features = false, workspace = true }
+pezpallet-balances = { default-features = false, workspace = true, optional = true }
+
+[dev-dependencies]
+pezpallet-balances = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-assets/std",
+	"pezpallet-balances?/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-balances",
+	"pezpallet-balances?/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-balances?/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

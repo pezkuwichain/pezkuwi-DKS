@@ -1,0 +1,160 @@
+[package]
+name = "pezcumulus-pezpallet-teyrchain-system"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+description = "Base pezpallet for pezcumulus-based teyrchains"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+array-bytes = { workspace = true }
+bytes = { workspace = true }
+codec = { features = ["derive"], workspace = true }
+environmental = { workspace = true }
+hashbrown = { workspace = true }
+impl-trait-for-tuples = { workspace = true }
+log = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+trie-db = { workspace = true }
+
+# Bizinikiwi
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-message-queue = { workspace = true }
+pezsp-consensus-babe = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-externalities = { workspace = true }
+pezsp-inherents = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-state-machine = { workspace = true }
+pezsp-std = { workspace = true }
+pezsp-trie = { workspace = true }
+pezsp-version = { workspace = true }
+
+# Pezkuwi
+pezkuwi-runtime-teyrchains = { workspace = true }
+pezkuwi-teyrchain-primitives = { features = ["wasm-api"], workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+
+# Pezcumulus
+pezcumulus-pezpallet-teyrchain-system-proc-macro = { workspace = true }
+pezcumulus-primitives-core = { workspace = true }
+pezcumulus-primitives-proof-size-hostfunction = { workspace = true }
+pezcumulus-primitives-teyrchain-inherent = { workspace = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+futures = { workspace = true }
+hex-literal = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+rstest = { workspace = true }
+trie-standardmap = { workspace = true }
+
+
+# Bizinikiwi
+pezsc-consensus = { workspace = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-consensus-slots = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+pezsp-version = { workspace = true, default-features = true }
+# Pezcumulus
+pezcumulus-test-client = { workspace = true }
+pezcumulus-test-relay-sproof-builder = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"bytes/std",
+	"codec/std",
+	"environmental/std",
+	"log/std",
+	"pezcumulus-pezpallet-teyrchain-system-proc-macro/std",
+	"pezcumulus-primitives-core/std",
+	"pezcumulus-primitives-proof-size-hostfunction/std",
+	"pezcumulus-primitives-teyrchain-inherent/std",
+	"pezcumulus-test-client/std",
+	"pezframe-benchmarking/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezkuwi-runtime-teyrchains/std",
+	"pezkuwi-teyrchain-primitives/std",
+	"pezpallet-message-queue/std",
+	"pezsc-consensus/std",
+	"pezsp-consensus-babe/std",
+	"pezsp-core/std",
+	"pezsp-externalities/std",
+	"pezsp-inherents/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-state-machine/std",
+	"pezsp-std/std",
+	"pezsp-tracing/std",
+	"pezsp-trie/std",
+	"scale-info/std",
+	"trie-db/std",
+	"xcm-builder/std",
+	"xcm/std",
+]
+
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-primitives-proof-size-hostfunction/runtime-benchmarks",
+	"pezcumulus-primitives-teyrchain-inherent/runtime-benchmarks",
+	"pezcumulus-test-client/runtime-benchmarks",
+	"pezcumulus-test-relay-sproof-builder/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezsc-consensus/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus-slots/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+
+try-runtime = [
+	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-test-client/try-runtime",
+	"pezcumulus-test-relay-sproof-builder/try-runtime",
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezsc-consensus/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-version/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

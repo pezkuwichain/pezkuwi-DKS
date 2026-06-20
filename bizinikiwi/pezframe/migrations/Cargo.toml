@@ -1,0 +1,74 @@
+[package]
+name = "pezpallet-migrations"
+version = "1.0.0"
+description = "FRAME pezpallet to execute multi-block migrations."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+docify = { workspace = true }
+impl-trait-for-tuples = { workspace = true }
+log = { workspace = true, default-features = true }
+scale-info = { features = ["derive"], workspace = true }
+
+pezframe = { workspace = true, features = ["runtime"] }
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+[dev-dependencies]
+pezframe-executive = { workspace = true, default-features = true }
+pezsp-tracing = { features = [
+	"std",
+], workspace = true, default-features = true }
+
+pretty_assertions = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezframe/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+]
+
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-executive/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-executive/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

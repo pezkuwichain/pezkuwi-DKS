@@ -1,0 +1,68 @@
+[package]
+name = "pezpallet-assets-precompiles"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Provides precompiles for `pezpallet-assets`"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+pez-ethereum-standards = { workspace = true }
+pezframe-support = { workspace = true }
+pezpallet-assets = { workspace = true }
+pezpallet-revive = { workspace = true }
+
+[dev-dependencies]
+codec = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+scale-info = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pez-ethereum-standards/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-assets/std",
+	"pezpallet-balances/std",
+	"pezpallet-revive/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-revive/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-revive/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

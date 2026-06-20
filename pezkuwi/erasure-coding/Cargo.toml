@@ -1,0 +1,39 @@
+[package]
+name = "pezkuwi-erasure-coding"
+version = "7.0.0"
+description = "Erasure coding used for Pezkuwi's availability system"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive", "std"], workspace = true }
+novelpoly = { workspace = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+criterion = { features = ["cargo_bench_support"], workspace = true }
+quickcheck = { workspace = true }
+
+[[bench]]
+name = "scaling_with_validators"
+harness = false
+
+[features]
+runtime-benchmarks = [
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
+std = ["codec/std", "pezkuwi-pez-node-primitives/std"]
+serde = []

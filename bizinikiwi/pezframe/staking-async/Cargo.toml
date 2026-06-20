@@ -1,0 +1,106 @@
+[package]
+name = "pezpallet-staking-async"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME pezpallet staking async"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+log = { workspace = true }
+pezframe-election-provider-support = { workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-staking-async-rc-client = { workspace = true }
+pezsp-application-crypto = { features = ["serde"], workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-npos-elections = { workspace = true }
+pezsp-runtime = { features = ["serde"], workspace = true }
+pezsp-staking = { features = ["serde"], workspace = true }
+rand = { features = ["alloc"], workspace = true }
+rand_chacha = { workspace = true }
+scale-info = { features = ["derive", "serde"], workspace = true }
+serde = { features = ["alloc", "derive"], workspace = true }
+
+# Optional imports for benchmarking
+pezframe-benchmarking = { optional = true, workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+bizinikiwi-test-utils = { workspace = true }
+env_logger = { workspace = true }
+pezframe-benchmarking = { workspace = true, default-features = true }
+pezframe-support = { features = [
+	"experimental",
+], workspace = true, default-features = true }
+pezpallet-bags-list = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+rand_chacha = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"anyhow/std",
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-election-provider-support/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-bags-list/std",
+	"pezpallet-balances/std",
+	"pezpallet-staking-async-rc-client/std",
+	"pezsp-application-crypto/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-npos-elections/std",
+	"pezsp-runtime/std",
+	"pezsp-staking/std",
+	"pezsp-tracing/std",
+	"rand/std",
+	"rand_chacha/std",
+	"scale-info/std",
+	"serde/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-election-provider-support/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-bags-list/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-staking-async-rc-client/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-npos-elections/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-election-provider-support/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-bags-list/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-staking-async-rc-client/try-runtime",
+	"pezsp-npos-elections/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-staking/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

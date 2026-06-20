@@ -1,0 +1,49 @@
+[package]
+name = "pezframe-metadata"
+version = "23.0.1"
+authors.workspace = true
+edition = "2021"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Metadata types for Kurdistan SDK runtimes"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+cfg-if = "1.0.0"
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = [
+	"derive",
+] }
+scale-info = { version = "2.0.0", default-features = false, optional = true, features = [
+	"derive",
+] }
+serde = { version = "1.0.101", default-features = false, optional = true, features = [
+	"derive",
+] }
+
+[features]
+default = ["current", "std"]
+
+# Feature flag for pre-V14 versions.
+legacy = []
+
+# The current stable metadata versions.
+current = ["scale-info"]
+
+# Unstable next metadata version.
+unstable = ["current"]
+
+# Serde support without relying on std features
+serde_full = ["codec/serde", "scale-info/serde", "serde", "serde/alloc"]
+
+# Scale decode support without relying on std features
+decode = ["scale-info/decode"]
+
+std = ["codec/std", "decode", "scale-info/std", "serde/std", "serde_full"]
+serde = ["codec/serde", "dep:serde", "scale-info?/serde"]
+
+[lints]
+workspace = true

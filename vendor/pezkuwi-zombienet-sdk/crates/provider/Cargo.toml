@@ -1,0 +1,59 @@
+[package]
+name = "pezkuwi-zombienet-provider"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+license.workspace = true
+repository.workspace = true
+description = "Pezkuwi Zombienet provider - Node execution through native provider"
+keywords = ["native", "pezkuwi", "provider", "zombienet"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+erased-serde = { workspace = true }
+flate2 = { workspace = true }
+futures = { workspace = true }
+hex = { workspace = true }
+k8s-openapi = { workspace = true, features = ["v1_28"] }
+kube = { workspace = true, features = ["runtime", "ws"] }
+nix = { workspace = true, features = ["signal"] }
+regex = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_json = { workspace = true, default-features = true }
+serde_yaml = { workspace = true }
+sha2 = { workspace = true }
+tar = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = [
+	"fs",
+	"macros",
+	"process",
+	"rt",
+	"time",
+] }
+tokio-util = { workspace = true, features = ["compat"] }
+tracing = { workspace = true }
+url = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+
+# Zomebienet deps
+configuration = { workspace = true }
+support = { workspace = true }
+
+[features]
+std = [
+	"anyhow/std",
+	"configuration/std",
+	"hex/std",
+	"serde/std",
+	"sha2/std",
+	"support/std",
+	"tracing/std",
+]
+serde = []

@@ -1,0 +1,132 @@
+[package]
+name = "pezframe-support"
+version = "28.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Support code for the runtime."
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+array-bytes = { workspace = true }
+bitflags = { workspace = true }
+codec = { features = ["derive", "max-encoded-len"], workspace = true }
+docify = { workspace = true }
+environmental = { workspace = true }
+frame-metadata = { features = ["current", "unstable"], workspace = true }
+impl-trait-for-tuples = { workspace = true }
+k256 = { features = ["ecdsa"], workspace = true }
+log = { workspace = true }
+macro_magic = { workspace = true }
+paste = { workspace = true, default-features = true }
+pez-binary-merkle-tree = { workspace = true }
+pezframe-support-procedural = { workspace = true }
+pezsp-api = { features = ["frame-metadata"], workspace = true }
+pezsp-arithmetic = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-crypto-hashing-proc-macro = { workspace = true, default-features = true }
+pezsp-debug-derive = { workspace = true }
+pezsp-genesis-builder = { workspace = true }
+pezsp-inherents = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-metadata-ir = { workspace = true }
+pezsp-runtime = { features = ["serde"], workspace = true }
+pezsp-staking = { workspace = true }
+pezsp-state-machine = { optional = true, workspace = true }
+pezsp-std = { workspace = true }
+pezsp-tracing = { workspace = true }
+pezsp-trie = { workspace = true }
+pezsp-weights = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { features = ["alloc", "derive"], workspace = true }
+serde_json = { features = ["alloc"], workspace = true }
+tt-call = { workspace = true }
+
+aquamarine = { workspace = true }
+
+[dev-dependencies]
+Inflector = { workspace = true }
+pezframe-system = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
+pezsp-timestamp = { workspace = true, default-features = true }
+pretty_assertions = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"environmental/std",
+	"frame-metadata/std",
+	"k256/std",
+	"log/std",
+	"pez-binary-merkle-tree/std",
+	"pezframe-support-procedural/std",
+	"pezsp-api/std",
+	"pezsp-arithmetic/std",
+	"pezsp-core/std",
+	"pezsp-crypto-hashing-proc-macro/std",
+	"pezsp-debug-derive/std",
+	"pezsp-genesis-builder/std",
+	"pezsp-inherents/std",
+	"pezsp-io/std",
+	"pezsp-metadata-ir/std",
+	"pezsp-runtime/std",
+	"pezsp-staking/std",
+	"pezsp-state-machine/std",
+	"pezsp-std/std",
+	"pezsp-tracing/std",
+	"pezsp-trie/std",
+	"pezsp-weights/std",
+	"scale-info/std",
+	"serde/std",
+	"serde_json/std",
+]
+runtime-benchmarks = [
+	"pez-binary-merkle-tree/runtime-benchmarks",
+	"pezframe-support-procedural/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-genesis-builder/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+	"pezsp-state-machine?/runtime-benchmarks",
+	"pezsp-timestamp/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-system/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-debug-derive/force-debug",
+	"pezsp-genesis-builder/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-staking/try-runtime",
+	"pezsp-timestamp/try-runtime",
+]
+experimental = ["pezframe-support-procedural/experimental"]
+# By default some types have documentation, `no-metadata-docs` allows to reduce the documentation
+# in the metadata.
+no-metadata-docs = [
+	"pezframe-support-procedural/no-metadata-docs",
+	"pezsp-api/no-metadata-docs",
+]
+# By default some types have documentation, `full-metadata-docs` allows to add documentation to
+# more types in the metadata.
+full-metadata-docs = ["scale-info/docs"]
+# Generate impl-trait for tuples with the given number of tuples. Will be needed as the number of
+# pallets in a runtime grows. Does increase the compile time!
+tuples-96 = ["pezframe-support-procedural/tuples-96"]
+tuples-128 = ["pezframe-support-procedural/tuples-128"]
+serde = []
+with-tracing = []

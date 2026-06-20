@@ -1,0 +1,112 @@
+[package]
+name = "pezpallet-contracts-mock-network"
+version = "3.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+description = "A mock network for testing pezpallet-contracts"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive", "max-encoded-len"], workspace = true }
+
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-runtime-teyrchains = { workspace = true, default-features = true }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+pezpallet-assets = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-contracts = { workspace = true, default-features = true }
+pezpallet-contracts-uapi = { workspace = true }
+pezpallet-message-queue = { workspace = true, default-features = true }
+pezpallet-timestamp = { workspace = true, default-features = true }
+pezpallet-xcm = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true }
+pezsp-tracing = { workspace = true, default-features = true }
+scale-info = { features = ["derive"], workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true, default-features = true }
+xcm-executor = { workspace = true }
+xcm-pez-simulator = { workspace = true, default-features = true }
+
+[dev-dependencies]
+pezpallet-contracts-fixtures = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-contracts-fixtures/std",
+	"pezpallet-contracts-uapi/std",
+	"pezpallet-contracts/std",
+	"pezpallet-timestamp/std",
+	"pezpallet-xcm/std",
+	"pezsp-api/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-keystore/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+	"xcm-executor/std",
+	"xcm-pez-simulator/std",
+	"xcm/std",
+]
+
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-contracts-fixtures/runtime-benchmarks",
+	"pezpallet-contracts/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm-pez-simulator/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-contracts-fixtures/try-runtime",
+	"pezpallet-contracts/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm-pez-simulator/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

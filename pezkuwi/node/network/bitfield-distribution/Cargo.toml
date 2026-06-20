@@ -1,0 +1,60 @@
+[package]
+name = "pezkuwi-availability-bitfield-distribution"
+version = "7.0.0"
+description = "Pezkuwi Bitfiled Distribution subsystem, which gossips signed availability bitfields used to compactly determine which backed candidates are available or not based on a 2/3+ quorum."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+futures = { workspace = true }
+futures-timer = { workspace = true }
+gum = { workspace = true, default-features = true }
+pezkuwi-node-network-protocol = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+bitvec = { features = ["alloc"], workspace = true }
+maplit = { workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezsp-application-crypto = { workspace = true, default-features = true }
+pezsp-authority-discovery = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true }
+rand_chacha = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-network-protocol/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-authority-discovery/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+]
+std = [
+	"bitvec/std",
+	"gum/std",
+	"pezkuwi-node-network-protocol/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezsp-tracing/std",
+]
+serde = []
+with-tracing = []

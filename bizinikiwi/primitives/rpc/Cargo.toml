@@ -1,0 +1,29 @@
+[package]
+name = "pezsp-rpc"
+version = "26.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Bizinikiwi RPC primitives and utilities."
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+pezsp-core = { workspace = true, default-features = true }
+rustc-hash = { workspace = true }
+serde = { features = ["derive"], workspace = true, default-features = true }
+
+[dev-dependencies]
+serde_json = { workspace = true, default-features = true }
+
+[features]
+std = []
+serde = []

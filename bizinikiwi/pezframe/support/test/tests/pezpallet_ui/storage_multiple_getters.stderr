@@ -1,0 +1,5 @@
+error: Invalid attribute: Duplicate attribute
+  --> tests/pezpallet_ui/storage_multiple_getters.rs:37:3
+   |
+37 |     #[pezpallet::getter(fn foo_error)]
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

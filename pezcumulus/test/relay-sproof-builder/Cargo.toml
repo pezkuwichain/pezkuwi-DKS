@@ -1,0 +1,52 @@
+[package]
+name = "pezcumulus-test-relay-sproof-builder"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Mocked relay state proof builder for testing Pezcumulus."
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+publish = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+
+# Bizinikiwi
+pezsp-runtime = { workspace = true }
+pezsp-state-machine = { workspace = true }
+pezsp-trie = { workspace = true }
+
+# Pezkuwi
+pezkuwi-primitives = { workspace = true }
+
+# Pezcumulus
+pezcumulus-primitives-core = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezcumulus-primitives-core/std",
+	"pezkuwi-primitives/std",
+	"pezsp-runtime/std",
+	"pezsp-state-machine/std",
+	"pezsp-trie/std",
+]
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
+try-runtime = [
+	"pezcumulus-primitives-core/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

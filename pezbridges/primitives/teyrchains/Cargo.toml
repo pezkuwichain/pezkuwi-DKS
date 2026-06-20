@@ -1,0 +1,60 @@
+[package]
+name = "pezbp-teyrchains"
+description = "Primitives of teyrchains module."
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+impl-trait-for-tuples = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+# Bridge dependencies
+pezbp-header-pez-chain = { workspace = true }
+pezbp-pezkuwi-core = { workspace = true }
+pezbp-runtime = { workspace = true }
+
+# Bizinikiwi dependencies
+pezframe-support = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezbp-header-pez-chain/std",
+	"pezbp-pezkuwi-core/std",
+	"pezbp-runtime/std",
+	"pezframe-support/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezbp-header-pez-chain/runtime-benchmarks",
+	"pezbp-pezkuwi-core/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-header-pez-chain/try-runtime",
+	"pezbp-pezkuwi-core/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

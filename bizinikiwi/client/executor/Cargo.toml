@@ -1,0 +1,106 @@
+[package]
+name = "pezsc-executor"
+version = "0.32.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "A crate that provides means of executing/dispatching calls into the runtime."
+documentation.workspace = true
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[[bench]]
+name = "bench"
+harness = false
+
+[dependencies]
+parking_lot = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+tracing = { workspace = true, default-features = true }
+
+codec = { workspace = true, default-features = true }
+pezsc-executor-common = { workspace = true, default-features = true }
+pezsc-executor-polkavm = { workspace = true, default-features = true }
+pezsc-executor-wasmtime = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-panic-handler = { workspace = true, default-features = true }
+pezsp-runtime-interface = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
+pezsp-version = { workspace = true, default-features = true }
+pezsp-wasm-interface = { workspace = true, default-features = true }
+
+[dev-dependencies]
+array-bytes = { workspace = true, default-features = true }
+assert_matches = { workspace = true }
+bizinikiwi-test-runtime = { workspace = true }
+criterion = { workspace = true, default-features = true }
+num_cpus = { workspace = true }
+paste = { workspace = true, default-features = true }
+pezsc-runtime-test = { workspace = true }
+pezsc-tracing = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
+pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+tempfile = { workspace = true }
+tracing-subscriber = { workspace = true }
+wat = { workspace = true }
+
+[features]
+default = ["std"]
+# This crate does not have `no_std` support, we just require this for tests
+std = [
+	"bizinikiwi-test-runtime/std",
+	"pezsc-executor-common/std",
+	"pezsc-executor-polkavm/std",
+	"pezsc-executor-wasmtime/std",
+	"pezsc-runtime-test/std",
+	"pezsc-tracing/std",
+	"pezsp-api/std",
+	"pezsp-core/std",
+	"pezsp-externalities/std",
+	"pezsp-io/std",
+	"pezsp-panic-handler/std",
+	"pezsp-runtime-interface/std",
+	"pezsp-runtime/std",
+	"pezsp-state-machine/std",
+	"pezsp-tracing/std",
+	"pezsp-trie/std",
+	"pezsp-version/std",
+	"pezsp-wasm-interface/std",
+]
+wasm-extern-trace = []
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime/runtime-benchmarks",
+	"pezsc-executor-wasmtime/runtime-benchmarks",
+	"pezsc-runtime-test/runtime-benchmarks",
+	"pezsc-tracing/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime-interface/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime/try-runtime",
+	"pezsc-runtime-test/try-runtime",
+	"pezsc-tracing/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-version/try-runtime",
+]
+serde = []
+with-tracing = []

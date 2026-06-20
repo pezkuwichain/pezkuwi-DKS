@@ -1,0 +1,78 @@
+[package]
+name = "asset-hub-zagros-emulated-chain"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Asset Hub Zagros emulated chain"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-keyring = { workspace = true }
+
+# Pezcumulus
+asset-hub-zagros-runtime = { workspace = true, default-features = true }
+emulated-integration-tests-common = { workspace = true }
+pezcumulus-primitives-core = { workspace = true }
+testnet-teyrchains-constants = { features = [
+	"zagros",
+], workspace = true, default-features = true }
+teyrchains-common = { workspace = true, default-features = true }
+zagros-emulated-chain = { workspace = true, default-features = true }
+
+# Pezkuwi
+xcm = { workspace = true }
+xcm-builder = { workspace = true, default-features = true }
+
+# Bridges
+pezbp-bridge-hub-zagros = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"asset-hub-zagros-runtime/runtime-benchmarks",
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezbp-bridge-hub-zagros/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"testnet-teyrchains-constants/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+	"zagros-emulated-chain/runtime-benchmarks",
+]
+std = [
+	"emulated-integration-tests-common/std",
+	"pezbp-bridge-hub-zagros/std",
+	"pezcumulus-primitives-core/std",
+	"pezframe-support/std",
+	"pezsp-core/std",
+	"pezsp-keyring/std",
+	"xcm/std",
+	"zagros-emulated-chain/std",
+]
+try-runtime = [
+	"asset-hub-zagros-runtime/try-runtime",
+	"emulated-integration-tests-common/try-runtime",
+	"pezbp-bridge-hub-zagros/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"testnet-teyrchains-constants/try-runtime",
+	"teyrchains-common/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm/try-runtime",
+	"zagros-emulated-chain/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

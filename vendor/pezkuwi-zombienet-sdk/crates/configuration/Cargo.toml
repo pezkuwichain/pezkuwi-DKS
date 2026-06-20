@@ -1,0 +1,32 @@
+[package]
+name = "pezkuwi-zombienet-configuration"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+license.workspace = true
+repository.workspace = true
+description = "Pezkuwi Zombienet configuration builder for network testing"
+keywords = ["configuration", "pezkuwi", "sdk", "zombienet"]
+
+[dependencies]
+anyhow = { workspace = true }
+lazy_static = { workspace = true }
+multiaddr = { workspace = true }
+regex = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["fs"] }
+toml = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true, features = ["serde"] }
+
+# zombienet deps
+support = { workspace = true }
+
+[features]
+std = ["anyhow/std", "serde/std", "support/std", "tracing/std"]
+serde = []

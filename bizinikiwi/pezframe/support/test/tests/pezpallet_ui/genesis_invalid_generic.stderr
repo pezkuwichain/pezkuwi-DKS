@@ -1,0 +1,13 @@
+error: Invalid genesis builder: expected `BuildGenesisConfig` (or the deprecated `GenesisBuild<T>` or `GenesisBuild<T, I>`)
+  --> tests/pezpallet_ui/genesis_invalid_generic.rs:36:7
+   |
+36 |     impl GenesisBuild for GenesisConfig {}
+   |          ^^^^^^^^^^^^
+
+error: expected `<`
+  --> tests/pezpallet_ui/genesis_invalid_generic.rs:18:1
+   |
+18 | #[pezframe_support::pezpallet]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `pezframe_support::pezpallet` (in Nightly builds, run with -Z macro-backtrace for more info)

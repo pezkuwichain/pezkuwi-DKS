@@ -1,0 +1,636 @@
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// This file is part of Pezcumulus.
+// SPDX-License-Identifier: Apache-2.0
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use crate::{
+	chain_spec::Extensions,
+	cli::DevSealMode,
+	common::{
+		command::NodeCommandRunner,
+		rpc::BuildRpcExtensions,
+		statement_store::{build_statement_store, new_statement_handler_proto},
+		types::{
+			TeyrchainBackend, TeyrchainBlockImport, TeyrchainClient, TeyrchainHostFunctions,
+			TeyrchainService,
+		},
+		ConstructNodeRuntimeApi, NodeBlock, NodeExtraArgs,
+	},
+};
+use codec::Encode;
+use futures::FutureExt;
+use log::info;
+use pezcumulus_client_bootnodes::{start_bootnode_tasks, StartBootnodeTasksParams};
+use pezcumulus_client_cli::CollatorOptions;
+use pezcumulus_client_service::{
+	build_network, build_relay_chain_interface, prepare_node_config, start_relay_chain_tasks,
+	BuildNetworkParams, CollatorSybilResistance, DARecoveryProfile, StartRelayChainTasksParams,
+	TeyrchainTracingExecuteBlock,
+};
+use pezcumulus_primitives_core::{BlockT, GetTeyrchainInfo, ParaId};
+use pezcumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface};
+use pezkuwi_primitives::CollatorPair;
+use pezsc_client_api::Backend;
+use pezsc_consensus::DefaultImportQueue;
+use pezsc_executor::{HeapAllocStrategy, DEFAULT_HEAP_ALLOC_STRATEGY};
+use pezsc_network::{
+	config::FullNetworkConfiguration, NetworkBackend, NetworkBlock, NetworkStateInfo, PeerId,
+};
+use pezsc_service::{Configuration, ImportQueue, PartialComponents, TaskManager};
+use pezsc_statement_store::Store;
+use pezsc_sysinfo::HwBench;
+use pezsc_telemetry::{TelemetryHandle, TelemetryWorker};
+use pezsc_tracing::tracing::Instrument;
+use pezsc_transaction_pool::TransactionPoolHandle;
+use pezsc_transaction_pool_api::OffchainTransactionPoolFactory;
+use pezsp_api::{ApiExt, ProvideRuntimeApi};
+use pezsp_keystore::KeystorePtr;
+use pezsp_runtime::traits::AccountIdConversion;
+use prometheus_endpoint::Registry;
+use std::{future::Future, pin::Pin, sync::Arc, time::Duration};
+use teyrchains_common::Hash;
+
+pub(crate) trait BuildImportQueue<
+	Block: BlockT,
+	RuntimeApi,
+	BlockImport: pezsc_consensus::BlockImport<Block>,
+>
+{
+	fn build_import_queue(
+		client: Arc<TeyrchainClient<Block, RuntimeApi>>,
+		block_import: TeyrchainBlockImport<Block, BlockImport>,
+		config: &Configuration,
+		telemetry_handle: Option<TelemetryHandle>,
+		task_manager: &TaskManager,
+	) -> pezsc_service::error::Result<DefaultImportQueue<Block>>;
+}
+
+pub(crate) trait StartConsensus<Block: BlockT, RuntimeApi, BI, BIAuxiliaryData>
+where
+	RuntimeApi: ConstructNodeRuntimeApi<Block, TeyrchainClient<Block, RuntimeApi>>,
+{
+	fn start_consensus(
+		client: Arc<TeyrchainClient<Block, RuntimeApi>>,
+		block_import: TeyrchainBlockImport<Block, BI>,
+		prometheus_registry: Option<&Registry>,
+		telemetry: Option<TelemetryHandle>,
+		task_manager: &TaskManager,
+		relay_chain_interface: Arc<dyn RelayChainInterface>,
+		transaction_pool: Arc<TransactionPoolHandle<Block, TeyrchainClient<Block, RuntimeApi>>>,
+		keystore: KeystorePtr,
+		relay_chain_slot_duration: Duration,
+		para_id: ParaId,
+		collator_key: CollatorPair,
+		collator_peer_id: PeerId,
+		overseer_handle: OverseerHandle,
+		announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
+		backend: Arc<TeyrchainBackend<Block>>,
+		node_extra_args: NodeExtraArgs,
+		block_import_extra_return_value: BIAuxiliaryData,
+	) -> Result<(), pezsc_service::Error>;
+}
+
+/// Checks that the hardware meets the requirements and print a warning otherwise.
+fn warn_if_slow_hardware(hwbench: &pezsc_sysinfo::HwBench) {
+	// Pezkuwi para-chains should generally use these requirements to ensure that the relay-chain
+	// will not take longer than expected to import its blocks.
+	if let Err(err) =
+		pezframe_benchmarking_cli::BIZINIKIWI_REFERENCE_HARDWARE.check_hardware(hwbench, false)
+	{
+		log::warn!(
+			"⚠️  The hardware does not meet the minimal requirements {} for role 'Authority' find out more at:\n\
+			https://wiki.network.pezkuwichain.io/docs/maintain-guides-how-to-validate-polkadot#reference-hardware",
+			err
+		);
+	}
+}
+
+pub(crate) trait InitBlockImport<Block: BlockT, RuntimeApi> {
+	type BlockImport: pezsc_consensus::BlockImport<Block> + Clone + Send + Sync;
+	type BlockImportAuxiliaryData;
+
+	fn init_block_import(
+		client: Arc<TeyrchainClient<Block, RuntimeApi>>,
+	) -> pezsc_service::error::Result<(Self::BlockImport, Self::BlockImportAuxiliaryData)>;
+}
+
+pub(crate) struct ClientBlockImport;
+
+impl<Block: BlockT, RuntimeApi> InitBlockImport<Block, RuntimeApi> for ClientBlockImport
+where
+	RuntimeApi: Send + ConstructNodeRuntimeApi<Block, TeyrchainClient<Block, RuntimeApi>>,
+{
+	type BlockImport = Arc<TeyrchainClient<Block, RuntimeApi>>;
+	type BlockImportAuxiliaryData = ();
+
+	fn init_block_import(
+		client: Arc<TeyrchainClient<Block, RuntimeApi>>,
+	) -> pezsc_service::error::Result<(Self::BlockImport, Self::BlockImportAuxiliaryData)> {
+		Ok((client.clone(), ()))
+	}
+}
+
+pub(crate) trait BaseNodeSpec {
+	type Block: NodeBlock;
+
+	type RuntimeApi: ConstructNodeRuntimeApi<
+		Self::Block,
+		TeyrchainClient<Self::Block, Self::RuntimeApi>,
+	>;
+
+	type BuildImportQueue: BuildImportQueue<
+		Self::Block,
+		Self::RuntimeApi,
+		<Self::InitBlockImport as InitBlockImport<Self::Block, Self::RuntimeApi>>::BlockImport,
+	>;
+
+	type InitBlockImport: self::InitBlockImport<Self::Block, Self::RuntimeApi>;
+
+	/// Retrieves teyrchain id.
+	fn teyrchain_id(
+		client: &TeyrchainClient<Self::Block, Self::RuntimeApi>,
+		teyrchain_config: &Configuration,
+	) -> Option<ParaId> {
+		let best_hash = client.chain_info().best_hash;
+		let para_id = if client
+			.runtime_api()
+			.has_api::<dyn GetTeyrchainInfo<Self::Block>>(best_hash)
+			.ok()
+			.filter(|has_api| *has_api)
+			.is_some()
+		{
+			client
+				.runtime_api()
+				.teyrchain_id(best_hash)
+				.inspect_err(|err| {
+					log::error!(
+								"`pezcumulus_primitives_core::GetTeyrchainInfo` runtime API call errored with {}",
+								err
+							);
+				})
+				.ok()?
+		} else {
+			ParaId::from(
+				Extensions::try_get(&*teyrchain_config.chain_spec).and_then(|ext| ext.para_id())?,
+			)
+		};
+
+		let teyrchain_account =
+			AccountIdConversion::<pezkuwi_primitives::AccountId>::into_account_truncating(&para_id);
+
+		info!("🪪 Teyrchain id: {:?}", para_id);
+		info!("🧾 Teyrchain Account: {}", teyrchain_account);
+
+		Some(para_id)
+	}
+
+	/// Starts a `ServiceBuilder` for a full service.
+	///
+	/// Use this macro if you don't actually need the full service, but just the builder in order to
+	/// be able to perform chain operations.
+	fn new_partial(
+		config: &Configuration,
+	) -> pezsc_service::error::Result<
+		TeyrchainService<
+			Self::Block,
+			Self::RuntimeApi,
+			<Self::InitBlockImport as InitBlockImport<Self::Block, Self::RuntimeApi>>::BlockImport,
+			<Self::InitBlockImport as InitBlockImport<Self::Block, Self::RuntimeApi>>::BlockImportAuxiliaryData
+		>
+	>{
+		let telemetry = config
+			.telemetry_endpoints
+			.clone()
+			.filter(|x| !x.is_empty())
+			.map(|endpoints| -> Result<_, pezsc_telemetry::Error> {
+				let worker = TelemetryWorker::new(16)?;
+				let telemetry = worker.handle().new_telemetry(endpoints);
+				Ok((worker, telemetry))
+			})
+			.transpose()?;
+
+		let heap_pages =
+			config.executor.default_heap_pages.map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| {
+				HeapAllocStrategy::Static { extra_pages: h as _ }
+			});
+
+		let executor = pezsc_executor::WasmExecutor::<TeyrchainHostFunctions>::builder()
+			.with_execution_method(config.executor.wasm_method)
+			.with_max_runtime_instances(config.executor.max_runtime_instances)
+			.with_runtime_cache_size(config.executor.runtime_cache_size)
+			.with_onchain_heap_alloc_strategy(heap_pages)
+			.with_offchain_heap_alloc_strategy(heap_pages)
+			.build();
+
+		let (client, backend, keystore_container, task_manager) =
+			pezsc_service::new_full_parts_record_import::<Self::Block, Self::RuntimeApi, _>(
+				config,
+				telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+				executor,
+				true,
+			)?;
+		let client = Arc::new(client);
+
+		let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
+
+		let telemetry = telemetry.map(|(worker, telemetry)| {
+			task_manager.spawn_handle().spawn("telemetry", None, worker.run());
+			telemetry
+		});
+
+		let transaction_pool = Arc::from(
+			pezsc_transaction_pool::Builder::new(
+				task_manager.spawn_essential_handle(),
+				client.clone(),
+				config.role.is_authority().into(),
+			)
+			.with_options(config.transaction_pool.clone())
+			.with_prometheus(config.prometheus_registry())
+			.build(),
+		);
+
+		let (block_import, block_import_auxiliary_data) =
+			Self::InitBlockImport::init_block_import(client.clone())?;
+
+		let block_import = TeyrchainBlockImport::new(block_import, backend.clone());
+
+		let import_queue = Self::BuildImportQueue::build_import_queue(
+			client.clone(),
+			block_import.clone(),
+			config,
+			telemetry.as_ref().map(|telemetry| telemetry.handle()),
+			&task_manager,
+		)?;
+
+		Ok(PartialComponents {
+			backend,
+			client,
+			import_queue,
+			keystore_container,
+			task_manager,
+			transaction_pool,
+			select_chain: (),
+			other: (block_import, telemetry, telemetry_worker_handle, block_import_auxiliary_data),
+		})
+	}
+}
+
+pub(crate) trait NodeSpec: BaseNodeSpec {
+	type BuildRpcExtensions: BuildRpcExtensions<
+		TeyrchainClient<Self::Block, Self::RuntimeApi>,
+		TeyrchainBackend<Self::Block>,
+		TransactionPoolHandle<Self::Block, TeyrchainClient<Self::Block, Self::RuntimeApi>>,
+		Store,
+	>;
+
+	type StartConsensus: StartConsensus<
+		Self::Block,
+		Self::RuntimeApi,
+		<Self::InitBlockImport as InitBlockImport<Self::Block, Self::RuntimeApi>>::BlockImport,
+		<Self::InitBlockImport as InitBlockImport<Self::Block, Self::RuntimeApi>>::BlockImportAuxiliaryData,
+	>;
+
+	const SYBIL_RESISTANCE: CollatorSybilResistance;
+
+	fn start_dev_node(
+		_config: Configuration,
+		_mode: DevSealMode,
+	) -> pezsc_service::error::Result<TaskManager> {
+		Err(pezsc_service::Error::Other("Dev not supported for this node type".into()))
+	}
+
+	/// Start a node with the given teyrchain spec.
+	///
+	/// This is the actual implementation that is abstract over the executor and the runtime api.
+	fn start_node<Net>(
+		teyrchain_config: Configuration,
+		pezkuwi_config: Configuration,
+		collator_options: CollatorOptions,
+		hwbench: Option<pezsc_sysinfo::HwBench>,
+		node_extra_args: NodeExtraArgs,
+	) -> Pin<Box<dyn Future<Output = pezsc_service::error::Result<TaskManager>>>>
+	where
+		Net: NetworkBackend<Self::Block, Hash>,
+	{
+		let fut = async move {
+			let teyrchain_config = prepare_node_config(teyrchain_config);
+			let teyrchain_public_addresses = teyrchain_config.network.public_addresses.clone();
+			let teyrchain_fork_id = teyrchain_config.chain_spec.fork_id().map(ToString::to_string);
+			let advertise_non_global_ips = teyrchain_config.network.allow_non_globals_in_dht;
+			let params = Self::new_partial(&teyrchain_config)?;
+			let (block_import, mut telemetry, telemetry_worker_handle, block_import_auxiliary_data) =
+				params.other;
+			let client = params.client.clone();
+			let backend = params.backend.clone();
+			let mut task_manager = params.task_manager;
+
+			// Resolve teyrchain id based on runtime, or based on chain spec.
+			let para_id = Self::teyrchain_id(&client, &teyrchain_config)
+				.ok_or("Failed to retrieve the teyrchain id")?;
+			let relay_chain_fork_id = pezkuwi_config.chain_spec.fork_id().map(ToString::to_string);
+			let (relay_chain_interface, collator_key, relay_chain_network, paranode_rx) =
+				build_relay_chain_interface(
+					pezkuwi_config,
+					&teyrchain_config,
+					telemetry_worker_handle,
+					&mut task_manager,
+					collator_options.clone(),
+					hwbench.clone(),
+				)
+				.await
+				.map_err(|e| pezsc_service::Error::Application(Box::new(e)))?;
+
+			let validator = teyrchain_config.role.is_authority();
+			let prometheus_registry = teyrchain_config.prometheus_registry().cloned();
+			let transaction_pool = params.transaction_pool.clone();
+			let import_queue_service = params.import_queue.service();
+			let mut net_config = FullNetworkConfiguration::<_, _, Net>::new(
+				&teyrchain_config.network,
+				prometheus_registry.clone(),
+			);
+
+			let metrics = Net::register_notification_metrics(
+				teyrchain_config.prometheus_config.as_ref().map(|config| &config.registry),
+			);
+
+			let statement_handler_proto = node_extra_args.enable_statement_store.then(|| {
+				new_statement_handler_proto(&*client, &teyrchain_config, &metrics, &mut net_config)
+			});
+
+			let (network, system_rpc_tx, tx_handler_controller, sync_service) =
+				build_network(BuildNetworkParams {
+					teyrchain_config: &teyrchain_config,
+					net_config,
+					client: client.clone(),
+					transaction_pool: transaction_pool.clone(),
+					para_id,
+					spawn_handle: task_manager.spawn_handle(),
+					relay_chain_interface: relay_chain_interface.clone(),
+					import_queue: params.import_queue,
+					sybil_resistance_level: Self::SYBIL_RESISTANCE,
+					metrics,
+				})
+				.await?;
+			let peer_id = network.local_peer_id();
+
+			let statement_store = statement_handler_proto
+				.map(|statement_handler_proto| {
+					build_statement_store(
+						&teyrchain_config,
+						&mut task_manager,
+						client.clone(),
+						network.clone(),
+						sync_service.clone(),
+						params.keystore_container.local_keystore(),
+						statement_handler_proto,
+					)
+				})
+				.transpose()?;
+
+			if teyrchain_config.offchain_worker.enabled {
+				let custom_extensions = {
+					let statement_store = statement_store.clone();
+					move |_hash| {
+						if let Some(statement_store) = &statement_store {
+							vec![Box::new(statement_store.clone().as_statement_store_ext())
+								as Box<_>]
+						} else {
+							vec![]
+						}
+					}
+				};
+
+				let offchain_workers =
+					pezsc_offchain::OffchainWorkers::new(pezsc_offchain::OffchainWorkerOptions {
+						runtime_api_provider: client.clone(),
+						keystore: Some(params.keystore_container.keystore()),
+						offchain_db: backend.offchain_storage(),
+						transaction_pool: Some(OffchainTransactionPoolFactory::new(
+							transaction_pool.clone(),
+						)),
+						network_provider: Arc::new(network.clone()),
+						is_validator: teyrchain_config.role.is_authority(),
+						enable_http_requests: true,
+						custom_extensions,
+					})?;
+				task_manager.spawn_handle().spawn(
+					"offchain-workers-runner",
+					"offchain-work",
+					offchain_workers.run(client.clone(), task_manager.spawn_handle()).boxed(),
+				);
+			}
+
+			let rpc_builder = {
+				let client = client.clone();
+				let transaction_pool = transaction_pool.clone();
+				let backend_for_rpc = backend.clone();
+				let statement_store = statement_store.clone();
+
+				Box::new(move |_| {
+					Self::BuildRpcExtensions::build_rpc_extensions(
+						client.clone(),
+						backend_for_rpc.clone(),
+						transaction_pool.clone(),
+						statement_store.clone(),
+					)
+				})
+			};
+
+			let database_path = teyrchain_config.database.path().map(|p| p.to_path_buf());
+
+			pezsc_service::spawn_tasks(pezsc_service::SpawnTasksParams {
+				rpc_builder,
+				client: client.clone(),
+				transaction_pool: transaction_pool.clone(),
+				task_manager: &mut task_manager,
+				config: teyrchain_config,
+				keystore: params.keystore_container.keystore(),
+				backend: backend.clone(),
+				network: network.clone(),
+				sync_service: sync_service.clone(),
+				system_rpc_tx,
+				tx_handler_controller,
+				telemetry: telemetry.as_mut(),
+				tracing_execute_block: Some(Arc::new(TeyrchainTracingExecuteBlock::new(
+					client.clone(),
+				))),
+			})?;
+
+			// Spawn the storage monitor
+			if let Some(database_path) = database_path {
+				pezsc_storage_monitor::StorageMonitorService::try_spawn(
+					node_extra_args.storage_monitor.clone(),
+					database_path,
+					&task_manager.spawn_essential_handle(),
+				)
+				.map_err(|e| pezsc_service::Error::Application(Box::new(e) as Box<_>))?;
+			}
+
+			if let Some(hwbench) = hwbench {
+				pezsc_sysinfo::print_hwbench(&hwbench);
+				if validator {
+					warn_if_slow_hardware(&hwbench);
+				}
+
+				if let Some(ref mut telemetry) = telemetry {
+					let telemetry_handle = telemetry.handle();
+					task_manager.spawn_handle().spawn(
+						"telemetry_hwbench",
+						None,
+						pezsc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
+					);
+				}
+			}
+
+			let announce_block = {
+				let sync_service = sync_service.clone();
+				Arc::new(move |hash, data| sync_service.announce_block(hash, data))
+			};
+
+			let relay_chain_slot_duration = Duration::from_secs(6);
+
+			let overseer_handle = relay_chain_interface
+				.overseer_handle()
+				.map_err(|e| pezsc_service::Error::Application(Box::new(e)))?;
+
+			start_relay_chain_tasks(StartRelayChainTasksParams {
+				client: client.clone(),
+				announce_block: announce_block.clone(),
+				para_id,
+				relay_chain_interface: relay_chain_interface.clone(),
+				task_manager: &mut task_manager,
+				da_recovery_profile: if validator {
+					DARecoveryProfile::Collator
+				} else {
+					DARecoveryProfile::FullNode
+				},
+				import_queue: import_queue_service,
+				relay_chain_slot_duration,
+				recovery_handle: Box::new(overseer_handle.clone()),
+				sync_service,
+				prometheus_registry: prometheus_registry.as_ref(),
+			})?;
+
+			start_bootnode_tasks(StartBootnodeTasksParams {
+				embedded_dht_bootnode: collator_options.embedded_dht_bootnode,
+				dht_bootnode_discovery: collator_options.dht_bootnode_discovery,
+				para_id,
+				task_manager: &mut task_manager,
+				relay_chain_interface: relay_chain_interface.clone(),
+				relay_chain_fork_id,
+				relay_chain_network,
+				request_receiver: paranode_rx,
+				teyrchain_network: network,
+				advertise_non_global_ips,
+				teyrchain_genesis_hash: client.chain_info().genesis_hash.encode(),
+				teyrchain_fork_id,
+				teyrchain_public_addresses,
+			});
+
+			if validator {
+				Self::StartConsensus::start_consensus(
+					client.clone(),
+					block_import,
+					prometheus_registry.as_ref(),
+					telemetry.as_ref().map(|t| t.handle()),
+					&task_manager,
+					relay_chain_interface.clone(),
+					transaction_pool,
+					params.keystore_container.keystore(),
+					relay_chain_slot_duration,
+					para_id,
+					collator_key.expect("Command line arguments do not allow this. qed"),
+					peer_id,
+					overseer_handle,
+					announce_block,
+					backend.clone(),
+					node_extra_args,
+					block_import_auxiliary_data,
+				)?;
+			}
+
+			Ok(task_manager)
+		};
+
+		Box::pin(Instrument::instrument(
+			fut,
+			pezsc_tracing::tracing::info_span!(
+				pezsc_tracing::logging::PREFIX_LOG_SPAN,
+				name = "Teyrchain"
+			),
+		))
+	}
+}
+
+pub(crate) trait DynNodeSpec: NodeCommandRunner {
+	/// Start node with manual or instant seal consensus.
+	fn start_dev_node(
+		self: Box<Self>,
+		config: Configuration,
+		mode: DevSealMode,
+	) -> pezsc_service::error::Result<TaskManager>;
+
+	/// Start the node.
+	fn start_node(
+		self: Box<Self>,
+		teyrchain_config: Configuration,
+		pezkuwi_config: Configuration,
+		collator_options: CollatorOptions,
+		hwbench: Option<HwBench>,
+		node_extra_args: NodeExtraArgs,
+	) -> Pin<Box<dyn Future<Output = pezsc_service::error::Result<TaskManager>>>>;
+}
+
+impl<T> DynNodeSpec for T
+where
+	T: NodeSpec + NodeCommandRunner,
+{
+	fn start_dev_node(
+		self: Box<Self>,
+		config: Configuration,
+		mode: DevSealMode,
+	) -> pezsc_service::error::Result<TaskManager> {
+		<Self as NodeSpec>::start_dev_node(config, mode)
+	}
+
+	fn start_node(
+		self: Box<Self>,
+		teyrchain_config: Configuration,
+		pezkuwi_config: Configuration,
+		collator_options: CollatorOptions,
+		hwbench: Option<HwBench>,
+		node_extra_args: NodeExtraArgs,
+	) -> Pin<Box<dyn Future<Output = pezsc_service::error::Result<TaskManager>>>> {
+		match teyrchain_config.network.network_backend {
+			pezsc_network::config::NetworkBackendType::Libp2p => {
+				<Self as NodeSpec>::start_node::<pezsc_network::NetworkWorker<_, _>>(
+					teyrchain_config,
+					pezkuwi_config,
+					collator_options,
+					hwbench,
+					node_extra_args,
+				)
+			},
+			pezsc_network::config::NetworkBackendType::Litep2p => {
+				<Self as NodeSpec>::start_node::<pezsc_network::Litep2pNetworkBackend>(
+					teyrchain_config,
+					pezkuwi_config,
+					collator_options,
+					hwbench,
+					node_extra_args,
+				)
+			},
+		}
+	}
+}

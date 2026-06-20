@@ -1,0 +1,58 @@
+[package]
+authors.workspace = true
+edition.workspace = true
+name = "pezcumulus-pezpallet-xcm"
+version = "0.7.0"
+license = "Apache-2.0"
+description = "Pallet for stuff specific to teyrchains' usage of XCM"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+xcm = { workspace = true }
+
+pezcumulus-primitives-core = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezcumulus-primitives-core/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+	"xcm/std",
+]
+try-runtime = [
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm/try-runtime",
+]
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

@@ -1,0 +1,78 @@
+[package]
+name = "asset-hub-pezkuwichain-emulated-chain"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Asset Hub Pezkuwichain emulated chain"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-keyring = { workspace = true }
+
+# Pezcumulus
+asset-hub-pezkuwichain-runtime = { workspace = true, default-features = true }
+emulated-integration-tests-common = { workspace = true }
+pezcumulus-primitives-core = { workspace = true }
+pezkuwichain-emulated-chain = { workspace = true }
+testnet-teyrchains-constants = { features = [
+	"pezkuwichain",
+], workspace = true, default-features = true }
+teyrchains-common = { workspace = true, default-features = true }
+
+# Pezkuwi
+xcm = { workspace = true }
+xcm-builder = { workspace = true, default-features = true }
+
+# Bridges
+pezbp-bridge-hub-pezkuwichain = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"asset-hub-pezkuwichain-runtime/runtime-benchmarks",
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezbp-bridge-hub-pezkuwichain/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezkuwichain-emulated-chain/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"testnet-teyrchains-constants/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = [
+	"emulated-integration-tests-common/std",
+	"pezbp-bridge-hub-pezkuwichain/std",
+	"pezcumulus-primitives-core/std",
+	"pezframe-support/std",
+	"pezkuwichain-emulated-chain/std",
+	"pezsp-core/std",
+	"pezsp-keyring/std",
+	"xcm/std",
+]
+try-runtime = [
+	"asset-hub-pezkuwichain-runtime/try-runtime",
+	"emulated-integration-tests-common/try-runtime",
+	"pezbp-bridge-hub-pezkuwichain/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezkuwichain-emulated-chain/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"testnet-teyrchains-constants/try-runtime",
+	"teyrchains-common/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

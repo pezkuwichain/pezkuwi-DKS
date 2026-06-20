@@ -1,0 +1,40 @@
+[package]
+name = "pezsp-consensus"
+version = "0.32.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Common utilities for building and using consensus engines in bizinikiwi."
+documentation.workspace = true
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+async-trait = { workspace = true }
+futures = { features = ["thread-pool"], workspace = true }
+log = { workspace = true, default-features = true }
+pezsp-inherents = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+futures = { workspace = true }
+
+[features]
+default = []
+runtime-benchmarks = [
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+]
+std = ["log/std"]
+try-runtime = ["pezsp-inherents/try-runtime", "pezsp-runtime/try-runtime"]
+serde = []

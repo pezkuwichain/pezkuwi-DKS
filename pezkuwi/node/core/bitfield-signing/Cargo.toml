@@ -1,0 +1,44 @@
+[package]
+name = "pezkuwi-node-core-bitfield-signing"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Bitfield signing subsystem for the Pezkuwi node"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+wasm-timer = { workspace = true }
+
+[dev-dependencies]
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives-test-helpers = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+]
+std = [
+	"gum/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-primitives-test-helpers/std",
+]

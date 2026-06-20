@@ -1,0 +1,24 @@
+[package]
+name = "pezkuwi-node-subsystem"
+description = "Subsystem traits and message definitions and the generated overseer"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+pezkuwi-node-subsystem-types = { workspace = true, default-features = true }
+pezkuwi-overseer = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezkuwi-node-subsystem-types/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+]
+std = ["pezkuwi-node-subsystem-types/std", "pezkuwi-overseer/std"]

@@ -1,0 +1,5 @@
+error: Invalid pezpallet::call, must have at least origin arg
+  --> tests/pezpallet_ui/call_no_origin.rs:34:7
+   |
+34 |         pub fn foo() {}
+   |             ^^

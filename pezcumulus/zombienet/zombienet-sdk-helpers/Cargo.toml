@@ -1,0 +1,36 @@
+[package]
+name = "pezcumulus-zombienet-sdk-helpers"
+version = "0.1.0"
+description = "Zomebienet-sdk helpers for teyrchain related tests."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true, default-features = true }
+codec = { workspace = true, features = ["derive"] }
+log = { workspace = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+pezkuwi-zombienet-sdk = { workspace = true }
+futures = { workspace = true }
+pezkuwi-zombienet-configuration = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+  "pezcumulus-primitives-core/runtime-benchmarks",
+  "pezkuwi-primitives/runtime-benchmarks",
+  "pezkuwi-zombienet-sdk/runtime-benchmarks",
+]
+std = [
+  "log/std",
+  "codec/std",
+  "pezkuwi-zombienet-configuration/std",
+  "pezkuwi-zombienet-sdk/std",
+]
+serde = []

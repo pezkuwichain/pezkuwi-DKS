@@ -1,0 +1,5 @@
+error: unexpected end of input, expected an expression
+  --> tests/pezpallet_ui/authorize_wrong_closure_3.rs:36:25
+   |
+36 |         #[pezpallet::authorize()]
+   |                               ^^

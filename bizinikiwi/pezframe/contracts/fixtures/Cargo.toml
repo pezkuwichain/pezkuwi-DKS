@@ -1,0 +1,37 @@
+[package]
+name = "pezpallet-contracts-fixtures"
+publish = true
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Fixtures for testing contracts pezpallet."
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+include = ["Cargo.toml", "build.rs", "contracts/**", "src/**"]
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+[build-dependencies]
+anyhow = { workspace = true, default-features = true }
+parity-wasm = { workspace = true }
+tempfile = { workspace = true }
+toml = { workspace = true }
+twox-hash = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = []
+try-runtime = ["pezframe-system/try-runtime", "pezsp-runtime/try-runtime"]
+serde = []
+experimental = []

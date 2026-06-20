@@ -1,0 +1,79 @@
+[package]
+name = "pezkuwi-node-core-dispute-coordinator"
+version = "7.0.0"
+description = "The node-side components that participate in disputes"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "dispute-coordinator-regression-bench"
+path = "benches/dispute-coordinator-regression-bench.rs"
+harness = false
+required-features = ["subsystem-benchmarks"]
+
+[dependencies]
+codec = { workspace = true, default-features = true }
+fatality = { workspace = true }
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+thiserror = { workspace = true }
+
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+pezsc-keystore = { workspace = true, default-features = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+futures-timer = { workspace = true }
+kvdb-memorydb = { workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives = { workspace = true, features = ["test"] }
+pezkuwi-primitives-test-helpers = { workspace = true }
+pezsp-application-crypto = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+
+pezkuwi-subsystem-bench = { workspace = true }
+
+[features]
+# If not enabled, the dispute coordinator will do nothing.
+disputes = []
+subsystem-benchmarks = []
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-subsystem-bench/runtime-benchmarks",
+	"pezsc-keystore/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+]
+std = [
+	"gum/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
+	"pezkuwi-subsystem-bench/std",
+	"pezsc-keystore/std",
+]
+serde = []
+with-tracing = []

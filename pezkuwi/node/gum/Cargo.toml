@@ -1,0 +1,25 @@
+[package]
+name = "pez-tracing-gum"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Stick logs together with the TraceID as provided by tempo"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+coarsetime = { workspace = true }
+gum-proc-macro = { workspace = true, default-features = true }
+pezkuwi-primitives = { features = [
+	"std",
+], workspace = true, default-features = true }
+tracing = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = ["pezkuwi-primitives/runtime-benchmarks"]
+std = []

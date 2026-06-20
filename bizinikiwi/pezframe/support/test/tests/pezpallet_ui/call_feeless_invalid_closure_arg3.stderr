@@ -1,0 +1,5 @@
+error: Invalid pezpallet::call, feeless_if closure argument must have a reference to the same type as the dispatchable function argument
+  --> tests/pezpallet_ui/call_feeless_invalid_closure_arg3.rs:31:46
+   |
+31 |         #[pezpallet::feeless_if(|_: &OriginFor<T>, _s: &u32| -> bool { true })]
+   |                                                    ^^

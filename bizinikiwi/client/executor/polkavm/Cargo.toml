@@ -1,0 +1,28 @@
+[package]
+name = "pezsc-executor-polkavm"
+version = "0.29.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "PolkaVM executor for Bizinikiwi"
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+log = { workspace = true }
+polkavm = { workspace = true }
+
+pezsc-executor-common = { workspace = true, default-features = true }
+pezsp-wasm-interface = { workspace = true, default-features = true }
+
+[features]
+std = ["log/std", "pezsc-executor-common/std", "polkavm/std"]
+serde = []

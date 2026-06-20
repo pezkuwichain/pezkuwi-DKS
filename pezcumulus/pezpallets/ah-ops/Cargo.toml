@@ -1,0 +1,72 @@
+[package]
+name = "pezpallet-ah-ops"
+description = "Operations cleanup pezpallet for the post-migration Asset Hub"
+license = "Apache-2.0"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true # for AHM only
+
+[dependencies]
+codec = { workspace = true, features = ["max-encoded-len"] }
+log = { workspace = true }
+pezframe-benchmarking = { workspace = true, optional = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+pezpallet-utility = { workspace = true }
+pezsp-application-crypto = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+scale-info = { workspace = true, features = ["derive"] }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-timestamp/std",
+	"pezpallet-utility/std",
+	"pezsp-application-crypto/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

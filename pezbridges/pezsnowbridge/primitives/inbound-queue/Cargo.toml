@@ -1,0 +1,99 @@
+[package]
+name = "pezsnowbridge-inbound-queue-primitives"
+description = "Snowbridge Inbound Queue Primitives"
+version = "0.9.0"
+authors = ["Snowfork <contact@snowfork.com>"]
+edition.workspace = true
+repository.workspace = true
+license = "Apache-2.0"
+categories = ["cryptography::cryptocurrencies"]
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[dependencies]
+alloy-core = { workspace = true, features = ["sol-types"] }
+codec = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+tracing = { workspace = true }
+
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+
+pezsnowbridge-beacon-primitives = { workspace = true }
+pezsnowbridge-core = { workspace = true }
+pezsnowbridge-verification-primitives = { workspace = true }
+
+pez-assets-common = { workspace = true }
+
+hex-literal = { workspace = true, default-features = true }
+
+[dev-dependencies]
+pezsnowbridge-test-utils = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"alloy-core/std",
+	"codec/std",
+	"pez-assets-common/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsnowbridge-beacon-primitives/std",
+	"pezsnowbridge-core/std",
+	"pezsnowbridge-test-utils/std",
+	"pezsnowbridge-verification-primitives/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"tracing/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"pez-assets-common/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsnowbridge-beacon-primitives/runtime-benchmarks",
+	"pezsnowbridge-core/runtime-benchmarks",
+	"pezsnowbridge-test-utils/runtime-benchmarks",
+	"pezsnowbridge-verification-primitives/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pez-assets-common/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsnowbridge-beacon-primitives/try-runtime",
+	"pezsnowbridge-core/try-runtime",
+	"pezsnowbridge-test-utils/try-runtime",
+	"pezsnowbridge-verification-primitives/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

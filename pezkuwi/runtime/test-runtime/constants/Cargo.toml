@@ -1,0 +1,38 @@
+[package]
+name = "peztest-runtime-constants"
+publish = false
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Pezkuwi SDK component: test runtime constants"
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+smallvec = { workspace = true, default-features = true }
+
+pezframe-support = { workspace = true }
+pezkuwi-primitives = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["pezframe-support/std", "pezkuwi-primitives/std", "pezsp-runtime/std"]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

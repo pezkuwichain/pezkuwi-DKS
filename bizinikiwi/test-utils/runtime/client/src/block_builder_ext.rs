@@ -1,0 +1,76 @@
+// This file is part of Bizinikiwi.
+
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// SPDX-License-Identifier: Apache-2.0
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//! Block Builder extensions for tests.
+
+use bizinikiwi_test_runtime::*;
+use pezsc_block_builder::BlockBuilderApi;
+use pezsp_api::{ApiExt, ProvideRuntimeApi};
+
+/// Extension trait for test block builder.
+pub trait BlockBuilderExt {
+	/// Add transfer extrinsic to the block.
+	fn push_transfer(
+		&mut self,
+		transfer: bizinikiwi_test_runtime::Transfer,
+	) -> Result<(), pezsp_blockchain::Error>;
+
+	/// Add unsigned storage change extrinsic to the block.
+	fn push_storage_change(
+		&mut self,
+		key: Vec<u8>,
+		value: Option<Vec<u8>>,
+	) -> Result<(), pezsp_blockchain::Error>;
+
+	/// Adds an extrinsic which pushes DigestItem to header's log
+	fn push_deposit_log_digest_item(
+		&mut self,
+		log: pezsp_runtime::generic::DigestItem,
+	) -> Result<(), pezsp_blockchain::Error>;
+}
+
+impl<'a, A> BlockBuilderExt
+	for pezsc_block_builder::BlockBuilder<'a, bizinikiwi_test_runtime::Block, A>
+where
+	A: ProvideRuntimeApi<bizinikiwi_test_runtime::Block>
+		+ pezsp_api::CallApiAt<bizinikiwi_test_runtime::Block>
+		+ 'a,
+	A::Api:
+		BlockBuilderApi<bizinikiwi_test_runtime::Block> + ApiExt<bizinikiwi_test_runtime::Block>,
+{
+	fn push_transfer(
+		&mut self,
+		transfer: bizinikiwi_test_runtime::Transfer,
+	) -> Result<(), pezsp_blockchain::Error> {
+		self.push(transfer.into_unchecked_extrinsic())
+	}
+
+	fn push_storage_change(
+		&mut self,
+		key: Vec<u8>,
+		value: Option<Vec<u8>>,
+	) -> Result<(), pezsp_blockchain::Error> {
+		self.push(ExtrinsicBuilder::new_storage_change(key, value).build())
+	}
+
+	fn push_deposit_log_digest_item(
+		&mut self,
+		log: pezsp_runtime::generic::DigestItem,
+	) -> Result<(), pezsp_blockchain::Error> {
+		self.push(ExtrinsicBuilder::new_deposit_log_digest_item(log).build())
+	}
+}

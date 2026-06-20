@@ -1,0 +1,53 @@
+[package]
+name = "pezcumulus-client-cli"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+description = "Teyrchain node CLI utilities."
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+clap = { features = ["derive"], workspace = true }
+codec = { workspace = true, default-features = true }
+url = { workspace = true }
+
+# Bizinikiwi
+pezsc-chain-spec = { workspace = true, default-features = true }
+pezsc-cli = { workspace = true, default-features = false }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = false }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezsc-chain-spec/runtime-benchmarks",
+	"pezsc-cli/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"pezsc-chain-spec/std",
+	"pezsc-cli/std",
+	"pezsc-client-api/std",
+	"pezsc-service/std",
+	"pezsp-blockchain/std",
+]
+try-runtime = [
+	"pezsc-chain-spec/try-runtime",
+	"pezsc-cli/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

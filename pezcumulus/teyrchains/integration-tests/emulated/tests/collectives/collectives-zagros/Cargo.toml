@@ -1,0 +1,103 @@
+[package]
+name = "collectives-zagros-integration-tests"
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Collectives Zagros runtime integration tests with xcm-pez-emulator"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezpallet-assets = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-message-queue = { workspace = true }
+pezpallet-treasury = { workspace = true }
+pezpallet-utility = { workspace = true }
+pezpallet-whitelist = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+collectives-zagros-runtime = { workspace = true }
+pezkuwi-runtime-common = { workspace = true, default-features = true }
+pezpallet-xcm = { workspace = true }
+xcm = { workspace = true }
+xcm-executor = { workspace = true }
+zagros-runtime-constants = { workspace = true, default-features = true }
+
+# Pezcumulus
+emulated-integration-tests-common = { workspace = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+pezcumulus-pezpallet-xcmp-queue = { workspace = true }
+zagros-system-emulated-network = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"collectives-zagros-runtime/runtime-benchmarks",
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-pezpallet-xcmp-queue/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezkuwi-runtime-common/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-treasury/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezpallet-whitelist/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+	"zagros-runtime-constants/runtime-benchmarks",
+	"zagros-system-emulated-network/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"emulated-integration-tests-common/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezcumulus-pezpallet-xcmp-queue/std",
+	"pezframe-support/std",
+	"pezpallet-assets/std",
+	"pezpallet-balances/std",
+	"pezpallet-message-queue/std",
+	"pezpallet-treasury/std",
+	"pezpallet-utility/std",
+	"pezpallet-whitelist/std",
+	"pezpallet-xcm/std",
+	"pezsp-runtime/std",
+	"xcm-executor/std",
+	"xcm/std",
+	"zagros-system-emulated-network/std",
+]
+try-runtime = [
+	"collectives-zagros-runtime/try-runtime",
+	"emulated-integration-tests-common/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-pezpallet-xcmp-queue/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezkuwi-runtime-common/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-treasury/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezpallet-whitelist/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+	"zagros-runtime-constants/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

@@ -1,0 +1,37 @@
+[settings]
+node_spawn_timeout = 240
+
+[relaychain]
+default_command = "{{PEZKUWI_BINARY}}"
+default_args = ["-lteyrchain=debug,xcm=trace"]
+chain = "zagros-local"
+[[relaychain.nodes]]
+name = "alice-zagros-validator"
+validator = true
+rpc_port = 9935
+ws_port = 9945
+balance = 2000000000000
+
+[[relaychain.nodes]]
+name = "bob-zagros-validator"
+validator = true
+rpc_port = 9936
+ws_port = 9946
+balance = 2000000000000
+
+[[teyrchains]]
+id = 1000
+chain = "asset-hub-zagros-local"
+cumulus_based = true
+
+[[teyrchains.collators]]
+name = "asset-hub-zagros-collator1"
+rpc_port = 9011
+ws_port = 9944
+command = "{{PEZKUWI_TEYRCHAIN_BINARY}}"
+args = ["-lteyrchain=debug,runtime::revive=debug"]
+
+[[teyrchains.collators]]
+name = "asset-hub-zagros-collator2"
+command = "{{PEZKUWI_TEYRCHAIN_BINARY}}"
+args = ["-lteyrchain=debug,runtime::revive=debug"]

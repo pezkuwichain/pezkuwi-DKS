@@ -1,0 +1,67 @@
+[package]
+name = "pezkuwi-overseer"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "System overseer of the Pezkuwi node"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+gum = { workspace = true, default-features = true }
+orchestra = { features = ["futures_channel"], workspace = true }
+pezkuwi-node-metrics = { workspace = true, default-features = true }
+pezkuwi-node-network-protocol = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-types = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+tikv-jemalloc-ctl = { optional = true, workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+tikv-jemalloc-ctl = { workspace = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+femme = { workspace = true }
+futures = { features = ["thread-pool"], workspace = true }
+metered = { features = ["futures_channel"], workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives-test-helpers = { workspace = true }
+
+[features]
+default = ["futures_channel"]
+expand = ["orchestra/expand"]
+futures_channel = ["metered/futures_channel", "orchestra/futures_channel"]
+jemalloc-allocator = ["dep:tikv-jemalloc-ctl"]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-metrics/runtime-benchmarks",
+	"pezkuwi-node-network-protocol/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-types/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+]
+std = [
+	"gum/std",
+	"pezkuwi-node-metrics/std",
+	"pezkuwi-node-network-protocol/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-types/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
+	"pezsc-client-api/std",
+]
+serde = []

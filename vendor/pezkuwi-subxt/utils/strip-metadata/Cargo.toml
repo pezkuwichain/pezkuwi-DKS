@@ -1,0 +1,34 @@
+[package]
+name = "pezkuwi-subxt-utils-stripmetadata"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+autotests = false
+
+license.workspace = true
+repository.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+description = "subxt utility to strip metadata"
+
+[dependencies]
+codec = { workspace = true }
+either = { workspace = true }
+frame-metadata = { workspace = true, features = ["current", "std"] }
+scale-info = { workspace = true, features = ["std"] }
+
+[package.metadata.docs.rs]
+features = ["url"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.playground]
+default-features = true
+
+[lints]
+workspace = true
+
+[features]
+std = ["codec/std", "either/std", "frame-metadata/std", "scale-info/std"]
+serde = []

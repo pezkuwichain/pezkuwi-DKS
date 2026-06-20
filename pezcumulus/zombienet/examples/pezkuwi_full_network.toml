@@ -1,0 +1,66 @@
+# Pezkuwi Full Multi-Chain Test Network
+# Relay Chain + Asset Hub + People Chain
+#
+# Usage: zombienet spawn -p native pezkuwi_full_network.toml
+#
+# Ports:
+#   - Relay Chain Alice:    9944 (RPC), 9615 (Prometheus)
+#   - Asset Hub:            9945 (RPC)
+#   - People Chain:         9946 (RPC)
+
+[settings]
+timeout = 1000
+
+[relaychain]
+default_command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi"
+default_args = ["-lteyrchain=debug,runtime=debug"]
+chain = "pezkuwichain-local"
+
+# Relay chain validators
+[[relaychain.nodes]]
+name = "alice"
+validator = true
+rpc_port = 9944
+prometheus_port = 9615
+
+[[relaychain.nodes]]
+name = "bob"
+validator = true
+
+# Asset Hub Teyrchain (Teyrchain ID: 1000)
+[[teyrchains]]
+id = 1000
+chain = "asset-hub-pezkuwichain-local"
+cumulus_based = true
+
+[[teyrchains.collators]]
+name = "asset-hub-collator-1"
+validator = true
+command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+rpc_port = 9945
+args = ["-lteyrchain=debug", "--force-authoring"]
+
+[[teyrchains.collators]]
+name = "asset-hub-collator-2"
+validator = true
+command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+args = ["-lteyrchain=debug", "--force-authoring"]
+
+# People Chain Teyrchain (Teyrchain ID: 1004)
+[[teyrchains]]
+id = 1004
+chain = "people-pezkuwichain-local"
+cumulus_based = true
+
+[[teyrchains.collators]]
+name = "people-collator-1"
+validator = true
+command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+rpc_port = 9946
+args = ["-lteyrchain=debug", "--force-authoring"]
+
+[[teyrchains.collators]]
+name = "people-collator-2"
+validator = true
+command = "/home/mamostehp/Pezkuwi-SDK/target/release/pezkuwi-teyrchain"
+args = ["-lteyrchain=debug", "--force-authoring"]

@@ -1,0 +1,112 @@
+[package]
+name = "pezcumulus-client-network"
+version = "0.7.0"
+authors.workspace = true
+description = "Pezcumulus-specific networking protocol"
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+codec = { features = ["derive"], workspace = true, default-features = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+parking_lot = { workspace = true, default-features = true }
+tracing = { workspace = true, default-features = true }
+
+# Bizinikiwi
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-version = { workspace = true, default-features = true }
+
+# Pezkuwi
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives-test-helpers = { workspace = true, default-features = true }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-relay-chain-interface = { workspace = true, default-features = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+tokio = { features = ["macros"], workspace = true, default-features = true }
+
+# Bizinikiwi
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+
+# Pezkuwi
+pezkuwi-test-client = { workspace = true }
+
+# Pezcumulus
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+pezcumulus-relay-chain-inprocess-interface = { workspace = true, default-features = true }
+pezcumulus-test-service = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-relay-chain-inprocess-interface/runtime-benchmarks",
+	"pezcumulus-relay-chain-interface/runtime-benchmarks",
+	"pezcumulus-test-service/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-test-client/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+]
+std = [
+	"pezcumulus-relay-chain-inprocess-interface/std",
+	"pezcumulus-relay-chain-interface/std",
+	"pezcumulus-test-service/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
+	"pezkuwi-test-client/std",
+	"pezsc-client-api/std",
+	"pezsc-network/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+]
+try-runtime = [
+	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-relay-chain-inprocess-interface/try-runtime",
+	"pezcumulus-test-service/try-runtime",
+	"pezkuwi-primitives-test-helpers/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-test-client/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-version/try-runtime",
+]
+serde = []

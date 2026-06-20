@@ -1,0 +1,95 @@
+[package]
+name = "pezpallet-ahm-test"
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "e2e unit tests for staking in AHM"
+publish = false
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dev-dependencies]
+codec = { features = ["derive"], workspace = true, default-features = true }
+log = { workspace = true }
+pezframe = { workspace = true, default-features = true }
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-session = { workspace = true, default-features = true }
+pezsp-staking = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+scale-info = { features = [
+	"derive",
+], workspace = true, default-features = true }
+
+# pallets we need in both
+pezpallet-balances = { workspace = true, default-features = true }
+
+# pallets that we need in AH
+pezframe-election-provider-support = { workspace = true, default-features = true }
+pezpallet-election-provider-multi-block = { workspace = true, default-features = true }
+pezpallet-staking-async = { workspace = true, default-features = true }
+pezpallet-staking-async-rc-client = { workspace = true, default-features = true }
+
+# pallets we need in the RC
+pezpallet-authorship = { workspace = true, default-features = true }
+pezpallet-session = { workspace = true, default-features = true }
+pezpallet-staking-async-ah-client = { workspace = true, default-features = true }
+pezpallet-timestamp = { workspace = true, default-features = true }
+# staking classic which will be replaced by ah-client
+pezpallet-offences = { workspace = true, default-features = true }
+pezpallet-root-offences = { workspace = true, default-features = true }
+pezpallet-staking = { workspace = true, default-features = true }
+
+[features]
+std = ["log/std", "pezframe-system/std"]
+try-runtime = [
+	"pezframe-election-provider-support/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe/try-runtime",
+	"pezpallet-authorship/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-election-provider-multi-block/try-runtime",
+	"pezpallet-offences/try-runtime",
+	"pezpallet-root-offences/try-runtime",
+	"pezpallet-session/try-runtime",
+	"pezpallet-staking-async-ah-client/try-runtime",
+	"pezpallet-staking-async-rc-client/try-runtime",
+	"pezpallet-staking-async/try-runtime",
+	"pezpallet-staking/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezsp-session/try-runtime",
+	"pezsp-staking/try-runtime",
+]
+runtime-benchmarks = [
+	"pezframe-election-provider-support/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe/runtime-benchmarks",
+	"pezpallet-authorship/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-election-provider-multi-block/runtime-benchmarks",
+	"pezpallet-offences/runtime-benchmarks",
+	"pezpallet-root-offences/runtime-benchmarks",
+	"pezpallet-session/runtime-benchmarks",
+	"pezpallet-staking-async-ah-client/runtime-benchmarks",
+	"pezpallet-staking-async-rc-client/runtime-benchmarks",
+	"pezpallet-staking-async/runtime-benchmarks",
+	"pezpallet-staking/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezsp-session/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

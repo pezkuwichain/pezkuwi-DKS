@@ -1,0 +1,53 @@
+[package]
+name = "pezframe-omni-bencher"
+version = "0.1.0"
+description = "Freestanding benchmark runner for any Pezkuwi runtime."
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+readme = "README.md"
+documentation = "https://docs.pezkuwichain.io/pezframe-omni-bencher"
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+clap = { features = ["derive"], workspace = true }
+pezcumulus-primitives-proof-size-hostfunction = { workspace = true, default-features = true }
+pezframe-benchmarking-cli = { workspace = true }
+pezsc-cli = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-statement-store = { workspace = true, default-features = true }
+tracing-subscriber = { workspace = true }
+
+[dev-dependencies]
+assert_cmd = { workspace = true }
+pezcumulus-test-runtime = { workspace = true }
+pezsc-chain-spec = { workspace = true }
+pezsp-genesis-builder = { workspace = true, default-features = true }
+tempfile = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-primitives-proof-size-hostfunction/runtime-benchmarks",
+	"pezcumulus-test-runtime/runtime-benchmarks",
+	"pezframe-benchmarking-cli/runtime-benchmarks",
+	"pezsc-chain-spec/runtime-benchmarks",
+	"pezsc-cli/runtime-benchmarks",
+	"pezsp-genesis-builder/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-statement-store/runtime-benchmarks",
+]
+std = ["pezframe-benchmarking-cli/std", "pezsc-chain-spec/std", "pezsc-cli/std"]
+try-runtime = [
+	"pezcumulus-test-runtime/try-runtime",
+	"pezframe-benchmarking-cli/try-runtime",
+	"pezsc-chain-spec/try-runtime",
+	"pezsc-cli/try-runtime",
+	"pezsp-genesis-builder/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-statement-store/try-runtime",
+]
+serde = []

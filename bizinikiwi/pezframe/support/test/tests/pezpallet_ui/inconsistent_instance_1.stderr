@@ -1,0 +1,29 @@
+error: Invalid generic declaration, trait is defined with instance but generic use none
+  --> tests/pezpallet_ui/inconsistent_instance_1.rs:27:23
+   |
+27 |     pub struct Pezpallet<T>(core::marker::PhantomData<T>);
+   |                          ^
+
+error: Invalid generic declaration, trait is defined with instance but generic use none
+  --> tests/pezpallet_ui/inconsistent_instance_1.rs:33:7
+   |
+33 |     impl<T: Config> Pezpallet<T> {}
+   |          ^
+
+error: Invalid generic declaration, trait is defined with instance but generic use none
+  --> tests/pezpallet_ui/inconsistent_instance_1.rs:33:18
+   |
+33 |     impl<T: Config> Pezpallet<T> {}
+   |                     ^^^^^^^^^
+
+error: Invalid generic declaration, trait is defined with instance but generic use none
+  --> tests/pezpallet_ui/inconsistent_instance_1.rs:30:47
+   |
+30 |     impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {}
+   |                                                  ^^^^^^^^^
+
+error: Invalid generic declaration, trait is defined with instance but generic use none
+  --> tests/pezpallet_ui/inconsistent_instance_1.rs:30:7
+   |
+30 |     impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {}
+   |          ^

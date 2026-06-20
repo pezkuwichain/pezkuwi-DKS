@@ -1,0 +1,74 @@
+[settings]
+node_spawn_timeout = 240
+
+[relaychain]
+default_command = "{{PEZKUWI_BINARY}}"
+default_args = ["-lteyrchain=debug,xcm=trace"]
+chain = "zagros-local"
+
+[[relaychain.nodes]]
+name = "alice-zagros-validator"
+validator = true
+rpc_port = 9945
+balance = 2000000000000
+
+[[relaychain.nodes]]
+name = "bob-zagros-validator"
+validator = true
+rpc_port = 9946
+balance = 2000000000000
+
+[[relaychain.nodes]]
+name = "charlie-zagros-validator"
+validator = true
+rpc_port = 9947
+balance = 2000000000000
+
+[[teyrchains]]
+id = 1002
+chain = "bridge-hub-zagros-local"
+cumulus_based = true
+
+# run alice as teyrchain collator
+[[teyrchains.collators]]
+name = "bridge-hub-zagros-collator1"
+validator = true
+command = "{{PEZKUWI_TEYRCHAIN_BINARY}}"
+rpc_port = 8945
+args = ["-lteyrchain=debug,runtime::bridge=trace,xcm=trace,txpool=trace"]
+
+# run bob as teyrchain collator
+[[teyrchains.collators]]
+name = "bridge-hub-zagros-collator2"
+validator = true
+command = "{{PEZKUWI_TEYRCHAIN_BINARY}}"
+rpc_port = 8946
+args = ["-lteyrchain=debug,runtime::bridge=trace,xcm=trace,txpool=trace"]
+
+[[teyrchains]]
+id = 1000
+chain = "asset-hub-zagros-local"
+cumulus_based = true
+
+[[teyrchains.collators]]
+name = "asset-hub-zagros-collator1"
+rpc_port = 9010
+command = "{{PEZKUWI_TEYRCHAIN_BINARY}}"
+args = ["-lteyrchain=debug,xcm=trace,runtime::bridge=trace,txpool=trace"]
+
+[[teyrchains.collators]]
+name = "asset-hub-zagros-collator2"
+command = "{{PEZKUWI_TEYRCHAIN_BINARY}}"
+args = ["-lteyrchain=debug,xcm=trace,runtime::bridge=trace,txpool=trace"]
+
+#[[hrmp_channels]]
+#sender = 1000
+#recipient = 1002
+#max_capacity = 4
+#max_message_size = 524288
+#
+#[[hrmp_channels]]
+#sender = 1002
+#recipient = 1000
+#max_capacity = 4
+#max_message_size = 524288

@@ -1,0 +1,48 @@
+[package]
+name = "pezkuwi-primitives-test-helpers"
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Test helpers for Pezkuwi runtime primitives"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["bit-vec", "derive"], workspace = true }
+pezkuwi-primitives = { features = [
+	"test",
+], workspace = true, default-features = true }
+pezsp-application-crypto = { workspace = true }
+pezsp-core = { features = ["std"], workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+scale-info = { features = ["bit-vec", "derive", "serde"], workspace = true }
+
+[dev-dependencies]
+bitvec = { features = ["alloc", "serde"], workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"bitvec/std",
+	"codec/std",
+	"pezsp-application-crypto/std",
+	"scale-info/std",
+]
+try-runtime = [
+	"pezkuwi-primitives/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

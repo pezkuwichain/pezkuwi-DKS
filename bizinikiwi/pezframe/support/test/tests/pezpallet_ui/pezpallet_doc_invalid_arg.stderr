@@ -1,0 +1,5 @@
+error: The `pezpallet_doc` received an unsupported argument. Supported format: `pezpallet_doc("PATH")`
+  --> tests/pezpallet_ui/pezpallet_doc_invalid_arg.rs:20:1
+   |
+20 | #[pezpallet_doc = "invalid"]
+   | ^

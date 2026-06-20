@@ -1,0 +1,35 @@
+[package]
+name = "pezsp-state-machine-fuzz"
+version = "0.0.0"
+publish = false
+license = "Apache-2.0"
+edition = "2021"
+description = "Pezkuwi SDK primitive: state machine fuzz"
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+authors = { workspace = true }
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+pezsp-runtime = { path = "../../runtime" }
+
+[dependencies.pezsp-state-machine]
+features = ["fuzzing"]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "fuzz_append"
+path = "fuzz_targets/fuzz_append.rs"
+test = false
+doc = false

@@ -1,0 +1,108 @@
+[package]
+name = "pezpallet-beefy-mmr"
+version = "28.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "BEEFY + MMR runtime utilities"
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+array-bytes = { optional = true, workspace = true, default-features = true }
+codec = { features = ["derive"], workspace = true }
+log = { workspace = true }
+pez-binary-merkle-tree = { workspace = true }
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-beefy = { workspace = true }
+pezpallet-mmr = { workspace = true }
+pezpallet-session = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-consensus-beefy = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-state-machine = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { optional = true, workspace = true, default-features = true }
+
+[dev-dependencies]
+array-bytes = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true }
+pezsp-staking = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"array-bytes",
+	"codec/std",
+	"log/std",
+	"pez-binary-merkle-tree/std",
+	"pezframe-benchmarking/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-beefy/std",
+	"pezpallet-mmr/std",
+	"pezpallet-session/std",
+	"pezsp-api/std",
+	"pezsp-consensus-beefy/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-staking/std",
+	"pezsp-state-machine/std",
+	"scale-info/std",
+	"serde",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-beefy/try-runtime",
+	"pezpallet-mmr/try-runtime",
+	"pezpallet-session/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-consensus-beefy/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-staking/try-runtime",
+]
+runtime-benchmarks = [
+	"pez-binary-merkle-tree/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-beefy/runtime-benchmarks",
+	"pezpallet-mmr/runtime-benchmarks",
+	"pezpallet-session/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-consensus-beefy/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+]
+serde = [
+	"array-bytes?/serde",
+	"codec/serde",
+	"dep:serde",
+	"log/serde",
+	"pezframe-benchmarking?/serde",
+	"pezpallet-beefy/serde",
+	"pezsp-consensus-beefy/serde",
+	"pezsp-core/serde",
+	"pezsp-runtime/serde",
+	"pezsp-staking/serde",
+	"scale-info/serde",
+]
+experimental = []
+with-tracing = []
+tuples-96 = []

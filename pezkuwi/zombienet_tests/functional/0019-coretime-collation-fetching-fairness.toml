@@ -1,0 +1,57 @@
+[settings]
+timeout = 1000
+
+[relaychain.genesis.runtimeGenesis.patch.configuration.config.scheduler_params]
+max_validators_per_core = 4
+num_cores = 1
+
+[relaychain.genesis.runtimeGenesis.patch.configuration.config.approval_voting_params]
+needed_approvals = 3
+
+[relaychain]
+default_image = "{{ZOMBIENET_INTEGRATION_TEST_IMAGE}}"
+chain = "pezkuwichain-local"
+command = "pezkuwi"
+
+[[relaychain.node_groups]]
+name = "validator"
+args = ["-lteyrchain=debug,teyrchain::collator-protocol=trace"]
+count = 4
+
+[[teyrchains]]
+id = 2000
+register_para = false
+onboard_as_teyrchain = false
+add_to_genesis = false
+chain = "glutton-zagros-local-2000"
+[teyrchains.genesis.runtimeGenesis.patch.glutton]
+compute = "50000000"
+storage = "2500000000"
+trashDataCount = 5120
+
+[teyrchains.collator]
+name = "collator-2000"
+image = "{{CUMULUS_IMAGE}}"
+command = "pezkuwi-teyrchain"
+args = [
+  "-lteyrchain=debug,teyrchain::collator-protocol=trace",
+  "--authoring",
+  "slot-based",
+]
+
+[[teyrchains]]
+id = 2001
+register_para = false
+onboard_as_teyrchain = false
+add_to_genesis = false
+chain = "glutton-zagros-local-2001"
+[teyrchains.genesis.runtimeGenesis.patch.glutton]
+compute = "50000000"
+storage = "2500000000"
+trashDataCount = 5120
+
+[teyrchains.collator]
+name = "collator-2001"
+image = "{{CUMULUS_IMAGE}}"
+command = "pezkuwi-teyrchain"
+args = ["-lteyrchain=debug"]

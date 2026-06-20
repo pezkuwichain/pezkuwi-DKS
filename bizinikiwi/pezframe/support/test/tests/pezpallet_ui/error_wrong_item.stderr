@@ -1,0 +1,5 @@
+error: Invalid pezpallet::error, expected item enum
+  --> tests/pezpallet_ui/error_wrong_item.rs:36:2
+   |
+36 |     pub struct Foo;
+   |     ^^^

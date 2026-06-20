@@ -1,0 +1,78 @@
+[package]
+name = "pezpallet-staking-score"
+version = "1.0.0"
+description = "PezkuwiChain Staking Score Calculation Pallet"
+authors.workspace = true
+homepage.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+documentation.workspace = true
+
+[dependencies]
+codec = { workspace = true, default-features = false, features = ["derive"] }
+pezframe-benchmarking = { workspace = true, optional = true }
+pezframe-support = { default-features = false, workspace = true }
+pezframe-system = { default-features = false, workspace = true }
+pezsp-runtime = { default-features = false, workspace = true }
+pezsp-std = { default-features = false, workspace = true }
+scale-info = { default-features = false, features = [
+	"derive",
+], workspace = true }
+serde = { version = "1.0.197", default-features = false, features = [
+	"derive",
+], optional = true }
+
+# PezkuwiChain primitives
+pezkuwi-primitives = { workspace = true, default-features = false }
+
+# dev / test dependencies (also used as optional for feature propagation)
+pezpallet-balances = { workspace = true, default-features = false, optional = true }
+pezsp-io = { workspace = true, default-features = false, optional = true }
+
+[dev-dependencies]
+pezpallet-balances = { workspace = true, features = ["std"] }
+pezsp-io = { workspace = true, features = ["std"] }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezkuwi-primitives/std",
+	"pezpallet-balances?/std",
+	"pezsp-io?/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde?/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezpallet-balances?/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = [
+	"codec/serde",
+	"dep:serde",
+	"pezsp-runtime/serde",
+	"scale-info/serde",
+]
+experimental = []
+with-tracing = []
+tuples-96 = []

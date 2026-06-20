@@ -1,0 +1,5 @@
+error: Invalid pezpallet::composite_enum, expected enum item
+  --> tests/pezpallet_ui/hold_reason_non_enum.rs:27:2
+   |
+27 |     pub struct HoldReason;
+   |     ^^^

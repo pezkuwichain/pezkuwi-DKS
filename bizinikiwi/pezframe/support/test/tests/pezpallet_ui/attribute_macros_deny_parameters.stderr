@@ -1,0 +1,5 @@
+error: unexpected token, expected `]`
+  --> tests/pezpallet_ui/attribute_macros_deny_parameters.rs:25:24
+   |
+25 |         #[pezpallet::constant(Hello)]
+   |                              ^^^^^^^

@@ -1,0 +1,72 @@
+[package]
+name = "pezbp-pezkuwi-bulletin"
+description = "Primitives of Pezkuwi Bulletin chain runtime."
+version = "0.4.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+# Bridge Dependencies
+pezbp-header-pez-chain = { workspace = true }
+pezbp-messages = { workspace = true }
+pezbp-pezkuwi-core = { workspace = true }
+pezbp-runtime = { workspace = true }
+
+# Bizinikiwi Based Dependencies
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezbp-header-pez-chain/std",
+	"pezbp-messages/std",
+	"pezbp-pezkuwi-core/std",
+	"pezbp-runtime/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-api/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezbp-header-pez-chain/runtime-benchmarks",
+	"pezbp-messages/runtime-benchmarks",
+	"pezbp-pezkuwi-core/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-header-pez-chain/try-runtime",
+	"pezbp-messages/try-runtime",
+	"pezbp-pezkuwi-core/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

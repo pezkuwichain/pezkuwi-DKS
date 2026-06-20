@@ -1,0 +1,141 @@
+[package]
+name = "emulated-integration-tests-common"
+version = "3.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Common resources for integration testing with xcm-pez-emulator"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true }
+hex-literal = { workspace = true }
+paste = { workspace = true, default-features = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezpallet-asset-conversion = { workspace = true, default-features = true }
+pezpallet-assets = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-message-queue = { workspace = true, default-features = true }
+pezpallet-whitelist = { workspace = true, default-features = true }
+pezsc-consensus-grandpa = { workspace = true, default-features = true }
+pezsp-authority-discovery = { workspace = true, default-features = true }
+pezsp-consensus-babe = { workspace = true, default-features = true }
+pezsp-consensus-beefy = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+# Pezkuwi
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-runtime-teyrchains = { workspace = true, default-features = true }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+pezpallet-xcm = { features = [
+	"test-utils",
+], workspace = true, default-features = true }
+xcm = { workspace = true, default-features = true }
+xcm-builder = { workspace = true, default-features = true }
+xcm-executor = { workspace = true, default-features = true }
+xcm-pez-simulator = { workspace = true, default-features = true }
+xcm-runtime-pezapis = { workspace = true, default-features = true }
+
+# Pezcumulus
+asset-test-pezutils = { workspace = true, default-features = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true, default-features = true }
+pezcumulus-pezpallet-xcmp-queue = { workspace = true, default-features = true }
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+teyrchains-common = { workspace = true, default-features = true }
+xcm-pez-emulator = { workspace = true, default-features = true }
+
+# Bridges
+pezbp-messages = { workspace = true, default-features = true }
+pezbp-xcm-bridge-hub = { workspace = true, default-features = true }
+pezpallet-bridge-messages = { workspace = true, default-features = true }
+pezpallet-xcm-bridge-hub = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"asset-test-pezutils/runtime-benchmarks",
+	"pezbp-messages/runtime-benchmarks",
+	"pezbp-xcm-bridge-hub/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-pezpallet-xcmp-queue/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-asset-conversion/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-bridge-messages/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-whitelist/runtime-benchmarks",
+	"pezpallet-xcm-bridge-hub/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsc-consensus-grandpa/runtime-benchmarks",
+	"pezsp-authority-discovery/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus-beefy/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm-pez-emulator/runtime-benchmarks",
+	"xcm-pez-simulator/runtime-benchmarks",
+	"xcm-runtime-pezapis/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"pezsc-consensus-grandpa/std",
+	"xcm-pez-emulator/std",
+	"xcm-pez-simulator/std",
+]
+try-runtime = [
+	"asset-test-pezutils/try-runtime",
+	"pezbp-messages/try-runtime",
+	"pezbp-xcm-bridge-hub/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-pezpallet-xcmp-queue/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-asset-conversion/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-bridge-messages/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-whitelist/try-runtime",
+	"pezpallet-xcm-bridge-hub/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsc-consensus-grandpa/try-runtime",
+	"pezsp-authority-discovery/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus-beefy/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"teyrchains-common/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm-pez-emulator/try-runtime",
+	"xcm-pez-simulator/try-runtime",
+	"xcm-runtime-pezapis/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

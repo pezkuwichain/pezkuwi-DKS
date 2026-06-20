@@ -1,0 +1,5 @@
+error: Invalid pezpallet::composite_enum, `HoldReason` must be public
+  --> tests/pezpallet_ui/hold_reason_not_pub.rs:27:5
+   |
+27 |     enum HoldReason {}
+   |     ^^^^

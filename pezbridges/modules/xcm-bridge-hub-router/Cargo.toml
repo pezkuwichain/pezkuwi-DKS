@@ -1,0 +1,80 @@
+[package]
+name = "pezpallet-xcm-bridge-hub-router"
+description = "Bridge hub interface for sibling/parent chains with dynamic fees support."
+version = "0.5.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true }
+scale-info = { features = ["bit-vec", "derive", "serde"], workspace = true }
+tracing = { workspace = true }
+
+# Bridge dependencies
+pezbp-xcm-bridge-hub-router = { workspace = true }
+
+# Bizinikiwi Dependencies
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+# Pezkuwi Dependencies
+pezkuwi-runtime-teyrchains = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+
+[dev-dependencies]
+pezsp-io = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezbp-xcm-bridge-hub-router/std",
+	"pezframe-benchmarking/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezkuwi-runtime-teyrchains/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"tracing/std",
+	"xcm-builder/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"pezbp-xcm-bridge-hub-router/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-xcm-bridge-hub-router/try-runtime",
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

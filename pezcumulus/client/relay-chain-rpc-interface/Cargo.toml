@@ -1,0 +1,82 @@
+[package]
+authors.workspace = true
+name = "pezcumulus-relay-chain-rpc-interface"
+version = "0.7.0"
+edition.workspace = true
+description = "Implementation of the RelayChainInterface trait that connects to a remote RPC-node."
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+pezkuwi-overseer = { workspace = true, default-features = true }
+
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+pezcumulus-relay-chain-interface = { workspace = true, default-features = true }
+
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-rpc-api = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = true }
+pezsp-authority-discovery = { workspace = true, default-features = true }
+pezsp-consensus-babe = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-storage = { workspace = true, default-features = true }
+pezsp-version = { workspace = true, default-features = true }
+prometheus-endpoint = { workspace = true, default-features = true }
+
+tokio = { features = ["sync"], workspace = true, default-features = true }
+
+async-trait = { workspace = true }
+codec = { workspace = true, default-features = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+jsonrpsee = { features = ["ws-client"], workspace = true }
+prometheus = { workspace = true }
+schnellru = { workspace = true }
+serde = { workspace = true, default-features = true }
+serde_json = { workspace = true, default-features = true }
+tracing = { workspace = true, default-features = true }
+url = { workspace = true }
+
+[dev-dependencies]
+portpicker = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-relay-chain-interface/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-rpc-api/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsp-authority-discovery/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+]
+std = [
+	"pezcumulus-relay-chain-interface/std",
+	"pezkuwi-overseer/std",
+	"pezsc-client-api/std",
+	"pezsc-rpc-api/std",
+	"pezsc-service/std",
+	"prometheus-endpoint/std",
+]
+try-runtime = [
+	"pezcumulus-primitives-core/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-rpc-api/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsp-authority-discovery/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-version/try-runtime",
+]
+serde = []

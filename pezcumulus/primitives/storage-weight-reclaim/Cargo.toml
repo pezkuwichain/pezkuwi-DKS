@@ -1,0 +1,72 @@
+[package]
+name = "pezcumulus-primitives-storage-weight-reclaim"
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+description = "Utilities to reclaim storage weight."
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+log = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+
+pezsp-runtime = { workspace = true }
+
+docify = { workspace = true }
+pezcumulus-primitives-core = { workspace = true }
+pezcumulus-primitives-proof-size-hostfunction = { workspace = true }
+
+[dev-dependencies]
+pezcumulus-test-runtime = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-trie = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezcumulus-primitives-core/std",
+	"pezcumulus-primitives-proof-size-hostfunction/std",
+	"pezframe-benchmarking/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-trie/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-primitives-proof-size-hostfunction/runtime-benchmarks",
+	"pezcumulus-test-runtime/runtime-benchmarks",
+	"pezframe-benchmarking?/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
+try-runtime = [
+	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-test-runtime/try-runtime",
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

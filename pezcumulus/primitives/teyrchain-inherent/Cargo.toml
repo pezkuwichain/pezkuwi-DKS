@@ -1,0 +1,44 @@
+[package]
+name = "pezcumulus-primitives-teyrchain-inherent"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+description = "Inherent that needs to be present in every teyrchain block. Contains messages and a relay chain storage-proof."
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { optional = true, workspace = true }
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+# Bizinikiwi
+pezsp-core = { workspace = true }
+pezsp-inherents = { workspace = true }
+pezsp-trie = { workspace = true }
+
+# Pezcumulus
+pezcumulus-primitives-core = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"async-trait",
+	"codec/std",
+	"pezcumulus-primitives-core/std",
+	"pezsp-core/std",
+	"pezsp-inherents/std",
+	"pezsp-trie/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
+serde = []

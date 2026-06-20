@@ -1,0 +1,54 @@
+[package]
+name = "pezpallet-whitelist"
+version = "27.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME pezpallet for whitelisting calls, and dispatching from a specific origin"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive", "max-encoded-len"], workspace = true }
+pezframe = { workspace = true, features = ["runtime"] }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+[dev-dependencies]
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-preimage = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezframe/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-preimage/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-preimage/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

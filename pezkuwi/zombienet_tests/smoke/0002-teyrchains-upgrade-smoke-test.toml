@@ -1,0 +1,38 @@
+[settings]
+timeout = 1000
+bootnode = true
+
+[relaychain]
+default_image = "{{ZOMBIENET_INTEGRATION_TEST_IMAGE}}"
+chain = "pezkuwichain-local"
+command = "pezkuwi"
+
+[[relaychain.nodes]]
+name = "alice"
+extra_args = ["--alice"]
+
+[[relaychain.nodes.env]]
+name = "RUST_LOG"
+value = "runtime=debug,teyrchain=trace,pezcumulus-collator=trace,aura=trace"
+
+[[relaychain.nodes]]
+name = "bob"
+extra_args = ["--bob"]
+
+[[relaychain.nodes.env]]
+name = "RUST_LOG"
+value = "runtime=debug,teyrchain=trace,pezcumulus-collator=trace,aura=trace"
+
+[[teyrchains]]
+id = 100
+addToGenesis = true
+cumulus_based = true
+
+[teyrchains.collator]
+name = "collator01"
+image = "{{CUMULUS_IMAGE}}"
+command = "pezkuwi-teyrchain"
+
+[[teyrchains.collator.env]]
+name = "RUST_LOG"
+value = "runtime=debug,teyrchain=trace,pezcumulus-collator=trace,aura=trace"

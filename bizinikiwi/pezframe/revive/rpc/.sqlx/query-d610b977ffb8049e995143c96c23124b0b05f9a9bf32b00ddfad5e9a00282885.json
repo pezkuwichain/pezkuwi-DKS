@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT EXISTS(SELECT 1 FROM eth_to_bizinikiwi_blocks WHERE bizinikiwi_block_hash = $1) AS \"exists!:bool\"",
+  "describe": {
+    "columns": [
+      {
+        "name": "exists!:bool",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d610b977ffb8049e995143c96c23124b0b05f9a9bf32b00ddfad5e9a00282885"
+}

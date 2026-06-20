@@ -1,0 +1,190 @@
+[package]
+name = "pezpallet-revive"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME pezpallet for PolkaVM contracts."
+readme = "README.md"
+include = ["CHANGELOG.md", "README.md", "build.rs", "src/**/*"]
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+alloy-consensus = { workspace = true }
+alloy-core = { workspace = true, features = ["rlp", "sol-types"] }
+alloy-trie = { workspace = true }
+codec = { features = ["derive", "max-encoded-len"], workspace = true }
+derive_more = { workspace = true, features = ["from", "try_into"] }
+environmental = { workspace = true }
+ethereum-types = { workspace = true, features = ["codec", "rlp", "serialize"] }
+hex-literal = { workspace = true }
+humantime-serde = { optional = true, workspace = true }
+impl-trait-for-tuples = { workspace = true }
+k256 = { features = ["alloc", "ecdsa"], workspace = true, optional = true }
+log = { workspace = true }
+num-bigint = { workspace = true }
+num-integer = { workspace = true }
+num-traits = { workspace = true }
+paste = { workspace = true }
+pez-ethereum-standards = { workspace = true }
+polkavm = { version = "0.29.1", default-features = false }
+polkavm-common = { version = "0.29.0", default-features = false, features = [
+	"alloc",
+] }
+rand = { workspace = true }
+rand_pcg = { workspace = true }
+revm = { workspace = true }
+rlp = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { features = ["alloc", "derive"], workspace = true }
+serde_json = { features = ["alloc"], workspace = true }
+
+# Pezkuwi SDK Dependencies
+bn = { workspace = true }
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezkuwi-subxt-signer = { workspace = true, optional = true, features = [
+	"subxt",
+	"unstable-eth",
+] }
+pezpallet-revive-fixtures = { workspace = true, optional = true }
+pezpallet-revive-proc-macro = { workspace = true }
+pezpallet-revive-uapi = { workspace = true, features = [
+	"precompiles-sol-interfaces",
+	"scale",
+] }
+pezpallet-transaction-payment = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-arithmetic = { workspace = true }
+pezsp-consensus-aura = { workspace = true, optional = true }
+pezsp-consensus-babe = { workspace = true, optional = true }
+pezsp-consensus-slots = { workspace = true, optional = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-version = { workspace = true }
+ripemd = { workspace = true }
+
+[dev-dependencies]
+alloy-consensus = { workspace = true, default-features = true }
+array-bytes = { workspace = true, default-features = true }
+assert_matches = { workspace = true }
+pretty_assertions = { workspace = true }
+secp256k1 = { workspace = true, features = ["recovery"] }
+serde_json = { workspace = true }
+test-case = { workspace = true }
+
+# Pezkuwi SDK Dependencies
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-proxy = { workspace = true, default-features = true }
+pezpallet-revive-fixtures = { workspace = true, default-features = true }
+pezpallet-timestamp = { workspace = true, default-features = true }
+pezpallet-utility = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true }
+pezsp-tracing = { workspace = true, default-features = true }
+proptest = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"alloy-consensus/serde",
+	"alloy-consensus/std",
+	"alloy-core/std",
+	"alloy-trie/std",
+	"codec/std",
+	"environmental/std",
+	"ethereum-types/std",
+	"humantime-serde",
+	"k256?/std",
+	"log/std",
+	"num-bigint/std",
+	"num-integer/std",
+	"num-traits/std",
+	"pez-ethereum-standards/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezkuwi-subxt-signer",
+	"pezkuwi-subxt-signer?/std",
+	"pezpallet-proxy/std",
+	"pezpallet-revive-fixtures?/std",
+	"pezpallet-revive-uapi/std",
+	"pezpallet-timestamp/std",
+	"pezpallet-transaction-payment/std",
+	"pezpallet-utility/std",
+	"pezsp-api/std",
+	"pezsp-arithmetic/std",
+	"pezsp-consensus-aura/std",
+	"pezsp-consensus-babe/std",
+	"pezsp-consensus-slots/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-keystore/std",
+	"pezsp-runtime/std",
+	"pezsp-state-machine/std",
+	"pezsp-version/std",
+	"polkavm-common/std",
+	"polkavm/std",
+	"rand/std",
+	"revm/std",
+	"ripemd/std",
+	"rlp/std",
+	"scale-info/std",
+	"secp256k1/std",
+	"serde/std",
+	"serde_json/std",
+]
+runtime-benchmarks = [
+	"k256",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-subxt-signer?/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-proxy/runtime-benchmarks",
+	"pezpallet-revive-fixtures",
+	"pezpallet-revive-fixtures?/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-transaction-payment/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-consensus-aura",
+	"pezsp-consensus-aura?/runtime-benchmarks",
+	"pezsp-consensus-babe",
+	"pezsp-consensus-babe?/runtime-benchmarks",
+	"pezsp-consensus-slots",
+	"pezsp-consensus-slots?/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-proxy/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-transaction-payment/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-consensus-aura?/try-runtime",
+	"pezsp-consensus-babe?/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-version/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

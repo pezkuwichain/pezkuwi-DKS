@@ -1,0 +1,110 @@
+[package]
+name = "pezkuwi-cli"
+description = "Pezkuwi Relay-chain Client Node"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.wasm-pack.profile.release]
+# `wasm-opt` has some problems on Linux, see
+# https://github.com/rustwasm/wasm-pack/issues/781 etc.
+wasm-opt = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+clap = { features = ["derive"], optional = true, workspace = true }
+futures = { workspace = true }
+log = { workspace = true, default-features = true }
+pyroscope = { optional = true, workspace = true }
+pyroscope_pprofrs = { optional = true, workspace = true }
+thiserror = { workspace = true }
+
+pezkuwi-service = { optional = true, workspace = true }
+
+pezframe-benchmarking-cli = { optional = true, workspace = true, default-features = true }
+pezkuwi-node-metrics = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezsc-cli = { optional = true, workspace = true, default-features = true }
+pezsc-network-types = { workspace = true, default-features = true }
+pezsc-service = { optional = true, workspace = true, default-features = true }
+pezsc-storage-monitor = { workspace = true, default-features = true }
+pezsc-sysinfo = { workspace = true, default-features = true }
+pezsc-tracing = { optional = true, workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+[build-dependencies]
+bizinikiwi-build-script-utils = { workspace = true, default-features = true }
+
+[features]
+default = ["cli", "db", "full-node"]
+db = ["pezkuwi-service/db"]
+metadata-hash = ["pezkuwi-service/metadata-hash"]
+service = ["dep:pezkuwi-service"]
+cli = [
+	"clap",
+	"pezframe-benchmarking-cli",
+	"pezsc-cli",
+	"pezsc-service",
+	"pezsc-tracing",
+	"service",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking-cli?/runtime-benchmarks",
+	"pezkuwi-node-metrics/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-service?/runtime-benchmarks",
+	"pezsc-cli?/runtime-benchmarks",
+	"pezsc-service?/runtime-benchmarks",
+	"pezsc-sysinfo/runtime-benchmarks",
+	"pezsc-tracing?/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+full-node = ["pezkuwi-service/full-node"]
+try-runtime = [
+	"pezframe-benchmarking-cli?/try-runtime",
+	"pezkuwi-service?/try-runtime",
+	"pezsc-cli?/try-runtime",
+	"pezsc-service?/try-runtime",
+	"pezsc-sysinfo/try-runtime",
+	"pezsc-tracing?/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+fast-runtime = ["pezkuwi-service/fast-runtime"]
+pyroscope = ["dep:pyroscope", "pyroscope_pprofrs"]
+
+# Configure the native runtimes to use.
+zagros-native = ["pezkuwi-service/zagros-native"]
+pezkuwichain-native = ["pezkuwi-service/pezkuwichain-native"]
+
+malus = ["full-node", "pezkuwi-service/malus"]
+runtime-metrics = [
+	"pezkuwi-node-metrics/runtime-metrics",
+	"pezkuwi-service/runtime-metrics",
+]
+std = [
+	"log/std",
+	"pezframe-benchmarking-cli?/std",
+	"pezkuwi-node-metrics/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-service?/std",
+	"pezsc-cli?/std",
+	"pezsc-network-types/std",
+	"pezsc-service?/std",
+	"pezsc-storage-monitor/std",
+	"pezsc-sysinfo/std",
+	"pezsc-tracing?/std",
+]
+serde = []

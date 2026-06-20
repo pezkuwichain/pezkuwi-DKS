@@ -1,0 +1,69 @@
+[package]
+name = "testnet-teyrchains-constants"
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+description = "Common constants for Testnet Teyrchains runtimes"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+smallvec = { workspace = true, default-features = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+pezkuwi-core-primitives = { workspace = true }
+pezkuwichain-runtime-constants = { optional = true, workspace = true }
+xcm = { workspace = true }
+zagros-runtime-constants = { optional = true, workspace = true }
+
+# Pezcumulus
+pezcumulus-primitives-core = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"pezcumulus-primitives-core/std",
+	"pezframe-support/std",
+	"pezkuwi-core-primitives/std",
+	"pezkuwichain-runtime-constants?/std",
+	"pezsp-runtime/std",
+	"xcm/std",
+	"zagros-runtime-constants?/std",
+]
+
+# Test runtimes specific features.
+pezkuwichain = ["pezkuwichain-runtime-constants"]
+zagros = ["zagros-runtime-constants"]
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezkuwi-core-primitives/runtime-benchmarks",
+	"pezkuwichain-runtime-constants?/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+	"zagros-runtime-constants?/runtime-benchmarks",
+]
+try-runtime = [
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezkuwi-core-primitives/try-runtime",
+	"pezkuwichain-runtime-constants?/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm/try-runtime",
+	"zagros-runtime-constants?/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

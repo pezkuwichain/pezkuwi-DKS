@@ -1,0 +1,80 @@
+[package]
+name = "pezsnowbridge-ethereum"
+description = "Snowbridge Ethereum"
+version = "0.3.0"
+authors = ["Snowfork <contact@snowfork.com>"]
+edition.workspace = true
+repository.workspace = true
+license = "Apache-2.0"
+categories = ["cryptography::cryptocurrencies"]
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[dependencies]
+alloy-consensus = { workspace = true }
+alloy-core = { workspace = true }
+alloy-primitives = { workspace = true }
+alloy-rlp = { workspace = true }
+codec = { features = ["derive"], workspace = true }
+ethbloom = { workspace = true }
+ethereum-types = { features = ["codec", "rlp", "serialize"], workspace = true }
+hex-literal = { workspace = true }
+parity-bytes = { workspace = true }
+rlp = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { optional = true, features = [
+	"derive",
+], workspace = true, default-features = true }
+serde-big-array = { optional = true, features = [
+	"const-generics",
+], workspace = true }
+
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+ethabi = { workspace = true }
+
+
+[features]
+default = ["std"]
+expensive_tests = []
+std = [
+	"alloy-consensus/std",
+	"alloy-core/std",
+	"alloy-primitives/std",
+	"alloy-rlp/std",
+	"codec/std",
+	"ethabi/std",
+	"ethbloom/std",
+	"ethereum-types/std",
+	"parity-bytes/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"rlp/std",
+	"scale-info/std",
+	"serde",
+	"serde-big-array",
+]
+runtime-benchmarks = [
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = ["pezsp-runtime/try-runtime"]
+serde = [
+	"alloy-consensus/serde",
+	"alloy-core/serde",
+	"alloy-primitives/serde",
+	"codec/serde",
+	"dep:serde",
+	"pezsp-runtime/serde",
+	"scale-info/serde",
+]
+with-tracing = []

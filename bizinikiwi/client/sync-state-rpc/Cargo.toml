@@ -1,0 +1,63 @@
+[package]
+name = "pezsc-sync-state-rpc"
+version = "0.34.0"
+authors.workspace = true
+description = "A RPC handler to create sync states for light clients."
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { workspace = true, default-features = true }
+jsonrpsee = { features = [
+	"client-core",
+	"macros",
+	"server-core",
+], workspace = true }
+pezsc-chain-spec = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-consensus-babe = { workspace = true, default-features = true }
+pezsc-consensus-epochs = { workspace = true, default-features = true }
+pezsc-consensus-grandpa = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+serde = { features = ["derive"], workspace = true, default-features = true }
+serde_json = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezsc-chain-spec/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-consensus-babe/runtime-benchmarks",
+	"pezsc-consensus-epochs/runtime-benchmarks",
+	"pezsc-consensus-grandpa/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"pezsc-chain-spec/std",
+	"pezsc-client-api/std",
+	"pezsc-consensus-babe/std",
+	"pezsc-consensus-epochs/std",
+	"pezsc-consensus-grandpa/std",
+	"pezsp-blockchain/std",
+]
+try-runtime = [
+	"pezsc-chain-spec/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-consensus-babe/try-runtime",
+	"pezsc-consensus-epochs/try-runtime",
+	"pezsc-consensus-grandpa/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

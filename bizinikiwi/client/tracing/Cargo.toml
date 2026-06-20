@@ -1,0 +1,86 @@
+[package]
+name = "pezsc-tracing"
+version = "28.0.0"
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+description = "Instrumentation implementation for bizinikiwi."
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[[bench]]
+name = "bench"
+harness = false
+
+[[bench]]
+name = "interest_cache_realistic"
+harness = false
+
+[[bench]]
+name = "interest_cache_diverse"
+harness = false
+
+[[bench]]
+name = "interest_cache_multithreaded"
+harness = false
+
+[dependencies]
+chrono = { workspace = true }
+codec = { workspace = true, default-features = true }
+console = { workspace = true }
+is-terminal = { workspace = true }
+libc = { workspace = true }
+log = { workspace = true, default-features = true }
+parking_lot = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-tracing-proc-macro = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-rpc = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+rustc-hash = { workspace = true }
+serde = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+tracing = { workspace = true, default-features = true }
+tracing-log = { workspace = true, features = ["interest-cache"] }
+tracing-subscriber = { workspace = true, features = [
+	"env-filter",
+	"parking_lot",
+] }
+
+[dev-dependencies]
+criterion = { workspace = true, default-features = true }
+regex = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["chrono", "parking_lot"] }
+
+[features]
+runtime-benchmarks = [
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"log/std",
+	"pezsc-client-api/std",
+	"pezsp-blockchain/std",
+	"pezsp-rpc/std",
+]
+try-runtime = [
+	"pezsc-client-api/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+with-tracing = []

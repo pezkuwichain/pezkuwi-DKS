@@ -1,0 +1,49 @@
+[package]
+name = "pezpallet-paged-list-fuzzer"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Fuzz storage types of pezpallet-paged-list"
+publish = false
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "pezpallet-paged-list-fuzzer"
+path = "src/paged_list.rs"
+
+[dependencies]
+arbitrary = { workspace = true }
+honggfuzz = { workspace = true }
+pezframe = { workspace = true, features = ["runtime"] }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-paged-list = { features = ["std"], workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezframe/std",
+	"pezpallet-paged-list/std",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe/runtime-benchmarks",
+	"pezpallet-paged-list/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe/try-runtime",
+	"pezpallet-paged-list/try-runtime",
+]
+experimental = []
+tuples-96 = []

@@ -1,0 +1,69 @@
+[package]
+name = "pezcumulus-client-consensus-relay-chain"
+description = "The relay-chain provided consensus algorithm"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+futures = { workspace = true }
+parking_lot = { workspace = true, default-features = true }
+tracing = { workspace = true, default-features = true }
+
+# Bizinikiwi
+pezsc-consensus = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-block-builder = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-inherents = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+prometheus-endpoint = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-client-consensus-common = { workspace = true, default-features = true }
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+pezcumulus-relay-chain-interface = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-client-consensus-common/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-relay-chain-interface/runtime-benchmarks",
+	"pezsc-consensus/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-block-builder/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"pezcumulus-client-consensus-common/std",
+	"pezcumulus-relay-chain-interface/std",
+	"pezsc-consensus/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+	"prometheus-endpoint/std",
+]
+try-runtime = [
+	"pezcumulus-client-consensus-common/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezsc-consensus/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-block-builder/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

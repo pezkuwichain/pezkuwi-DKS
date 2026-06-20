@@ -1,0 +1,91 @@
+[package]
+name = "pezpallet-bridge-beefy"
+version = "0.1.0"
+description = "Module implementing BEEFY on-chain light client used for bridging consensus of bizinikiwi-based chains."
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+publish = false
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { optional = true, workspace = true }
+tracing = { workspace = true }
+
+# Bridge Dependencies
+pezbp-beefy = { workspace = true }
+pezbp-runtime = { workspace = true }
+
+# Bizinikiwi Dependencies
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+[dev-dependencies]
+mmr-lib = { workspace = true, default-features = true }
+pezbp-test-utils = { workspace = true, default-features = true }
+pezpallet-beefy-mmr = { workspace = true, default-features = true }
+pezpallet-mmr = { workspace = true, default-features = true }
+pezsp-consensus-beefy = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezbp-beefy/std",
+	"pezbp-runtime/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde/std",
+	"tracing/std",
+]
+try-runtime = [
+	"pezbp-beefy/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezbp-test-utils/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-beefy-mmr/try-runtime",
+	"pezpallet-mmr/try-runtime",
+	"pezsp-consensus-beefy/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+runtime-benchmarks = [
+	"pezbp-beefy/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezbp-test-utils/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-beefy-mmr/runtime-benchmarks",
+	"pezpallet-mmr/runtime-benchmarks",
+	"pezsp-consensus-beefy/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+serde = [
+	"codec/serde",
+	"dep:serde",
+	"pezsp-consensus-beefy/serde",
+	"pezsp-core/serde",
+	"pezsp-runtime/serde",
+	"rand/serde",
+	"scale-info/serde",
+]
+experimental = []
+with-tracing = []
+tuples-96 = []

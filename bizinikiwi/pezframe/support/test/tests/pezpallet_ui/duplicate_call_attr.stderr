@@ -1,0 +1,5 @@
+error: Invalid duplicated attribute
+  --> tests/pezpallet_ui/duplicate_call_attr.rs:39:15
+   |
+39 |     #[pezpallet::call]
+   |                  ^^^^

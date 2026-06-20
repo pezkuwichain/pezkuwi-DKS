@@ -1,0 +1,120 @@
+// This file is part of Bizinikiwi.
+
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// SPDX-License-Identifier: Apache-2.0
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use pezframe_support::derive_impl;
+use pezframe_system::{
+	offchain::CreateTransactionBase, pezpallet_prelude::ExtrinsicFor, EnsureRoot,
+};
+use pezsp_core::{ConstU16, ConstU32, ConstU64, H256};
+use pezsp_runtime::{
+	traits::{BlakeTwo256, IdentityLookup},
+	BuildStorage,
+};
+
+type Block = pezframe_system::mocking::MockBlock<Test>;
+
+// Configure a mock runtime to test the pezpallet.
+pezframe_support::construct_runtime!(
+	pub enum Test
+	{
+		System: pezframe_system,
+		People: pezpallet_people,
+		DummyDim: crate
+	}
+);
+
+#[derive_impl(pezframe_system::config_preludes::TestDefaultConfig)]
+impl pezframe_system::Config for Test {
+	type BaseCallFilter = pezframe_support::traits::Everything;
+	type BlockWeights = ();
+	type BlockLength = ();
+	type DbWeight = ();
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeCall = RuntimeCall;
+	type Nonce = u64;
+	type Hash = H256;
+	type Hashing = BlakeTwo256;
+	type AccountId = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
+	type Block = Block;
+	type RuntimeEvent = RuntimeEvent;
+	type BlockHashCount = ConstU64<250>;
+	type Version = ();
+	type PalletInfo = PalletInfo;
+	type AccountData = ();
+	type OnNewAccount = ();
+	type OnKilledAccount = ();
+	type SystemWeightInfo = ();
+	type SS58Prefix = ConstU16<42>;
+	type OnSetCode = ();
+	type MaxConsumers = pezframe_support::traits::ConstU32<16>;
+}
+
+impl pezpallet_people::Config for Test {
+	type WeightInfo = ();
+	type RuntimeEvent = RuntimeEvent;
+	type Crypto = verifiable::demo_impls::Simple;
+	type AccountContexts = ();
+	type ChunkPageSize = ConstU32<8>;
+	type MaxRingSize = ConstU32<255>;
+	type OnboardingQueuePageSize = ConstU32<512>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+}
+
+impl crate::Config for Test {
+	type WeightInfo = ();
+	type RuntimeEvent = RuntimeEvent;
+	type UpdateOrigin = EnsureRoot<Self::AccountId>;
+	type MaxPersonBatchSize = ConstU32<1000>;
+	type People = People;
+}
+
+#[allow(dead_code)]
+pub fn advance_to(b: u64) {
+	while System::block_number() < b {
+		System::set_block_number(System::block_number() + 1);
+	}
+}
+
+impl CreateTransactionBase<pezpallet_people::Call<Self>> for Test {
+	type Extrinsic = ExtrinsicFor<Test>;
+	type RuntimeCall = RuntimeCall;
+}
+
+pub struct ConfigRecord;
+
+pub fn new_config() -> ConfigRecord {
+	ConfigRecord
+}
+
+pub struct TestExt(ConfigRecord);
+#[allow(dead_code)]
+impl TestExt {
+	pub fn new() -> Self {
+		Self(new_config())
+	}
+
+	pub fn execute_with<R>(self, f: impl Fn() -> R) -> R {
+		new_test_ext().execute_with(f)
+	}
+}
+
+pub fn new_test_ext() -> pezsp_io::TestExternalities {
+	let c = pezframe_system::GenesisConfig::<Test>::default().build_storage().unwrap();
+	pezsp_io::TestExternalities::from(c)
+}

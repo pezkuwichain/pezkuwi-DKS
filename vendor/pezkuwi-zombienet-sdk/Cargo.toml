@@ -1,0 +1,5 @@
+# This is a virtual manifest for the vendored pezkuwi-zombienet-sdk crates
+# Individual crates are managed by the main pezkuwi-sdk workspace
+
+[workspace]
+# Empty workspace - crates are part of parent workspace

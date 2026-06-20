@@ -1,0 +1,52 @@
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// This file is part of Pezkuwi.
+
+// Pezkuwi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Pezkuwi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
+
+//! Basic teyrchain that executes forever.
+
+#![no_std]
+#![cfg_attr(enable_alloc_error_handler, feature(alloc_error_handler))]
+
+// Make the WASM binary available.
+#[cfg(feature = "std")]
+include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
+
+#[cfg(feature = "std")]
+/// Wasm binary unwrapped. If built with `BUILD_DUMMY_WASM_BINARY`, the function panics.
+pub fn wasm_binary_unwrap() -> &'static [u8] {
+	WASM_BINARY.expect(
+		"Development wasm binary is not available. Testing is only \
+						supported with the flag disabled.",
+	)
+}
+
+#[cfg(not(feature = "std"))]
+#[panic_handler]
+pub fn panic(_info: &core::panic::PanicInfo) -> ! {
+	core::arch::wasm32::unreachable();
+}
+
+#[cfg(enable_alloc_error_handler)]
+#[alloc_error_handler]
+#[no_mangle]
+pub fn oom(_: core::alloc::Layout) -> ! {
+	core::intrinsics::abort();
+}
+
+#[cfg(not(feature = "std"))]
+#[no_mangle]
+pub extern "C" fn validate_block(_params: *const u8, _len: usize) -> u64 {
+	loop {}
+}

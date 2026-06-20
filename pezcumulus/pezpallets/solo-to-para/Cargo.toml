@@ -1,0 +1,61 @@
+[package]
+name = "pezcumulus-pezpallet-solo-to-para"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+description = "Adds functionality to migrate from a Solo to a Teyrchain"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-sudo = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+pezkuwi-primitives = { workspace = true }
+
+# Pezcumulus
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezkuwi-primitives/std",
+	"pezpallet-sudo/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+]
+try-runtime = [
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezpallet-sudo/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+runtime-benchmarks = [
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezpallet-sudo/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+serde = []
+experimental = []
+tuples-96 = []

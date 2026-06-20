@@ -1,0 +1,185 @@
+[package]
+name = "pezkuwi-subsystem-bench"
+description = "Subsystem performance benchmark client"
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+readme = "README.md"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lib]
+name = "pezkuwi_subsystem_bench"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "subsystem-bench"
+path = "src/cli/subsystem-bench.rs"
+
+# Prevent rustdoc error. Already documented from top-level Cargo.toml.
+doc = false
+
+[dependencies]
+async-trait = { workspace = true }
+bincode = { workspace = true }
+bitvec = { workspace = true, default-features = true }
+clap = { features = ["derive"], workspace = true }
+color-eyre = { workspace = true }
+colored = { workspace = true }
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+hex = { workspace = true, default-features = true }
+kvdb-memorydb = { workspace = true }
+pezkuwi-availability-bitfield-distribution = { workspace = true, default-features = true }
+pezkuwi-availability-distribution = { workspace = true, default-features = true }
+pezkuwi-availability-recovery = { features = [
+	"subsystem-benchmarks",
+], workspace = true, default-features = true }
+pezkuwi-dispute-distribution = { workspace = true, default-features = true }
+pezkuwi-node-core-av-store = { workspace = true, default-features = true }
+pezkuwi-node-core-dispute-coordinator = { workspace = true, default-features = true }
+pezkuwi-node-network-protocol = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-types = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-overseer = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, features = ["test"] }
+pezkuwi-statement-distribution = { workspace = true, default-features = true }
+# `rand` only supports uniform distribution, we need normal distribution for latency.
+pezsc-keystore = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true }
+rand = { workspace = true, default-features = true }
+rand_distr = { workspace = true }
+sha1 = { workspace = true }
+tikv-jemallocator = { features = [
+	"profiling",
+	"unprefixed_malloc_on_supported_platforms",
+], workspace = true, optional = true }
+
+codec = { features = [
+	"derive",
+	"std",
+], workspace = true, default-features = true }
+itertools = { workspace = true }
+pezkuwi-node-metrics = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives-test-helpers = { workspace = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsc-network-types = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = true }
+pezsp-application-crypto = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+prometheus = { workspace = true }
+prometheus-endpoint = { workspace = true, default-features = true }
+serde = { workspace = true, default-features = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+tokio = { features = [
+	"parking_lot",
+	"rt-multi-thread",
+], workspace = true, default-features = true }
+
+pezkuwi-approval-distribution = { workspace = true, default-features = true }
+pezkuwi-node-core-approval-voting = { workspace = true, default-features = true }
+pezkuwi-node-core-approval-voting-parallel = { workspace = true, default-features = true }
+pezsp-consensus-babe = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true }
+pezsp-timestamp = { workspace = true, default-features = true }
+
+orchestra = { features = ["futures_channel"], workspace = true }
+paste = { workspace = true, default-features = true }
+pyroscope = { workspace = true }
+pyroscope_pprofrs = { workspace = true }
+rand_chacha = { workspace = true, default-features = true }
+strum = { features = ["derive"], workspace = true, default-features = true }
+
+[features]
+default = []
+memprofile = ["dep:tikv-jemallocator"]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-approval-distribution/runtime-benchmarks",
+	"pezkuwi-availability-bitfield-distribution/runtime-benchmarks",
+	"pezkuwi-availability-distribution/runtime-benchmarks",
+	"pezkuwi-availability-recovery/runtime-benchmarks",
+	"pezkuwi-dispute-distribution/runtime-benchmarks",
+	"pezkuwi-node-core-approval-voting-parallel/runtime-benchmarks",
+	"pezkuwi-node-core-approval-voting/runtime-benchmarks",
+	"pezkuwi-node-core-av-store/runtime-benchmarks",
+	"pezkuwi-node-core-dispute-coordinator/runtime-benchmarks",
+	"pezkuwi-node-metrics/runtime-benchmarks",
+	"pezkuwi-node-network-protocol/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-types/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-statement-distribution/runtime-benchmarks",
+	"pezsc-keystore/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-timestamp/runtime-benchmarks",
+]
+std = [
+	"gum/std",
+	"pezkuwi-approval-distribution/std",
+	"pezkuwi-availability-bitfield-distribution/std",
+	"pezkuwi-availability-distribution/std",
+	"pezkuwi-availability-recovery/std",
+	"pezkuwi-dispute-distribution/std",
+	"pezkuwi-node-core-approval-voting-parallel/std",
+	"pezkuwi-node-core-approval-voting/std",
+	"pezkuwi-node-core-av-store/std",
+	"pezkuwi-node-core-dispute-coordinator/std",
+	"pezkuwi-node-metrics/std",
+	"pezkuwi-node-network-protocol/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-types/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-overseer/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
+	"pezkuwi-primitives/std",
+	"pezkuwi-statement-distribution/std",
+	"pezsc-keystore/std",
+	"pezsc-network-types/std",
+	"pezsc-network/std",
+	"pezsc-service/std",
+	"pezsp-consensus/std",
+	"pezsp-runtime/std",
+	"pezsp-tracing/std",
+	"prometheus-endpoint/std",
+	"serde_json/std",
+]
+try-runtime = [
+	"pezkuwi-node-core-approval-voting/try-runtime",
+	"pezkuwi-node-network-protocol/try-runtime",
+	"pezkuwi-node-subsystem-types/try-runtime",
+	"pezkuwi-primitives-test-helpers/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-timestamp/try-runtime",
+]
+serde = []
+with-tracing = []

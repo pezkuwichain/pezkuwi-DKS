@@ -1,0 +1,75 @@
+[package]
+name = "pezkuwi-zombienet-orchestrator"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+license.workspace = true
+repository.workspace = true
+description = "Pezkuwi Zombienet orchestrator - Network spawn through providers"
+keywords = ["orchestrator", "pezkuwi", "sdk", "zombienet"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+erased-serde = { workspace = true }
+fancy-regex = { workspace = true }
+futures = { workspace = true }
+glob-match = { workspace = true }
+hex = { workspace = true }
+libp2p = { workspace = true }
+libsecp256k1 = { workspace = true }
+multiaddr = { workspace = true }
+pezkuwi-subxt = { workspace = true, features = ["jsonrpsee", "native"] }
+pezkuwi-subxt-signer = { workspace = true }
+pezsc-chain-spec = { workspace = true }
+pezsp-core = { workspace = true }
+rand = { workspace = true }
+regex = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, default-features = true, features = [
+	"arbitrary_precision",
+] }
+sha2 = { workspace = true, default-features = false }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["time"] }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+# Zombienet deps
+configuration = { workspace = true }
+prom-metrics-parser = { workspace = true }
+provider = { workspace = true }
+support = { workspace = true }
+
+[dev-dependencies]
+lazy_static = { workspace = true }
+toml = { workspace = true }
+
+[features]
+std = [
+	"anyhow/std",
+	"configuration/std",
+	"hex/std",
+	"libsecp256k1/std",
+	"pezkuwi-subxt/std",
+	"pezsc-chain-spec/std",
+	"pezsp-core/std",
+	"prom-metrics-parser/std",
+	"provider/std",
+	"rand/std",
+	"serde/std",
+	"sha2/std",
+	"support/std",
+	"tracing/std",
+]
+serde = []
+runtime-benchmarks = [
+	"pezkuwi-subxt-signer/runtime-benchmarks",
+	"pezkuwi-subxt/runtime-benchmarks",
+	"pezsc-chain-spec/runtime-benchmarks",
+]

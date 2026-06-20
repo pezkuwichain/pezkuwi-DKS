@@ -1,0 +1,44 @@
+[package]
+name = "pezsp-runtime-interface-test"
+version = "2.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+publish = false
+homepage.workspace = true
+repository.workspace = true
+description = "Pezkuwi SDK primitive: runtime interface test"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+pezsc-executor = { workspace = true, default-features = true }
+pezsc-executor-common = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-runtime-interface = { workspace = true, default-features = true }
+pezsp-runtime-interface-test-wasm = { workspace = true }
+pezsp-runtime-interface-test-wasm-deprecated = { workspace = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+tracing = { workspace = true, default-features = true }
+tracing-core = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezsc-executor/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime-interface-test-wasm-deprecated/runtime-benchmarks",
+	"pezsp-runtime-interface-test-wasm/runtime-benchmarks",
+	"pezsp-runtime-interface/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+]
+std = ["pezsc-executor-common/std"]
+try-runtime = ["pezsc-executor/try-runtime", "pezsp-runtime/try-runtime"]
+serde = []
+with-tracing = []

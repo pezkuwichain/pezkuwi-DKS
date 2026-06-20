@@ -1,0 +1,124 @@
+[package]
+name = "pezpallet-trust"
+version = "1.0.0"
+description = "PezkuwiChain Trust Score Engine Pallet"
+authors.workspace = true
+homepage.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+documentation.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { workspace = true, default-features = false, features = ["derive"] }
+scale-info = { default-features = false, features = [
+	"derive",
+], workspace = true }
+serde = { version = "1.0", default-features = false, features = [
+	"derive",
+], optional = true }
+
+log = { default-features = false, workspace = true }
+pezframe-support = { default-features = false, workspace = true }
+pezframe-system = { default-features = false, workspace = true }
+pezsp-runtime = { default-features = false, workspace = true }
+pezsp-std = { default-features = false, workspace = true }
+
+# PezkuwiChain'in özel tiplerini ve trait'lerini içeren kütüphane
+pezkuwi-primitives = { workspace = true, default-features = false }
+
+# Palet bağımlılıkları (Trust puanı hesaplaması için gerekli)
+# Standart Bizinikiwi paletleri için path belirtilmez, workspace=true kullanılır.
+pezpallet-balances = { default-features = false, workspace = true }
+# Özel PezkuwiChain paletleri için workspace inheritance kullanılır.
+pezpallet-identity-kyc = { workspace = true, default-features = false }
+pezpallet-perwerde = { workspace = true, default-features = false }
+pezpallet-referral = { workspace = true, default-features = false }
+pezpallet-staking-score = { workspace = true, default-features = false }
+pezpallet-tiki = { workspace = true, default-features = false }
+
+
+# --- Test ve Benchmark için Gerekli İsteğe Bağlı Bağımlılıklar ---
+pezframe-benchmarking = { optional = true, workspace = true }
+pezsp-core = { workspace = true, default-features = false, optional = true }
+pezsp-io = { workspace = true, default-features = false, optional = true }
+
+[dev-dependencies]
+# Test için gerekli olan bağımlılıklar
+pezsp-core = { workspace = true, default-features = false }
+pezsp-io = { workspace = true, default-features = false }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	# Diğer paletlerin std özellikleri
+	"pezkuwi-primitives/std",
+	"pezpallet-balances/std",
+	"pezpallet-identity-kyc/std",
+	"pezpallet-perwerde/std",
+	"pezpallet-referral/std",
+	"pezpallet-staking-score/std",
+	"pezpallet-tiki/std",
+	"pezsp-core?/std",
+	"pezsp-io?/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde",
+	# serde'yi doğrudan feature olarak ekliyoruz
+	"serde?/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	# Diğer paletlerin runtime-benchmarks özellikleri
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-identity-kyc/runtime-benchmarks",
+	"pezpallet-perwerde/runtime-benchmarks",
+	"pezpallet-referral/runtime-benchmarks",
+	"pezpallet-staking-score/runtime-benchmarks",
+	"pezpallet-tiki/runtime-benchmarks",
+	"pezsp-core",
+	"pezsp-io",
+	"pezsp-io?/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	# Diğer paletlerin try-runtime özellikleri
+	"pezframe-benchmarking?/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-identity-kyc/try-runtime",
+	"pezpallet-perwerde/try-runtime",
+	"pezpallet-referral/try-runtime",
+	"pezpallet-staking-score/try-runtime",
+	"pezpallet-tiki/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = [
+	"codec/serde",
+	"dep:serde",
+	"log/serde",
+	"pezframe-benchmarking?/serde",
+	"pezpallet-perwerde/serde",
+	"pezpallet-staking-score/serde",
+	"pezsp-core?/serde",
+	"pezsp-runtime/serde",
+	"scale-info/serde",
+]
+experimental = []
+with-tracing = []
+tuples-96 = []

@@ -1,0 +1,79 @@
+[package]
+name = "pezsc-consensus-grandpa-rpc"
+version = "0.19.0"
+authors.workspace = true
+description = "RPC extensions for the GRANDPA finality gadget"
+repository.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+readme = "README.md"
+homepage.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true, default-features = true }
+finality-grandpa = { features = [
+	"derive-codec",
+], workspace = true, default-features = true }
+futures = { workspace = true }
+jsonrpsee = { features = [
+	"client-core",
+	"macros",
+	"server-core",
+], workspace = true }
+log = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-consensus-grandpa = { workspace = true, default-features = true }
+pezsc-rpc = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+serde = { features = ["derive"], workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+bizinikiwi-test-runtime-client = { workspace = true }
+pezsc-block-builder = { workspace = true, default-features = true }
+pezsc-rpc = { features = [
+	"test-helpers",
+], workspace = true, default-features = true }
+pezsp-consensus-grandpa = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+tokio = { features = ["macros"], workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"pezsc-block-builder/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-consensus-grandpa/runtime-benchmarks",
+	"pezsc-rpc/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus-grandpa/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-test-runtime-client/std",
+	"log/std",
+	"pezsc-block-builder/std",
+	"pezsc-client-api/std",
+	"pezsc-consensus-grandpa/std",
+	"pezsc-rpc/std",
+	"pezsp-blockchain/std",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pezsc-block-builder/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-consensus-grandpa/try-runtime",
+	"pezsc-rpc/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus-grandpa/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

@@ -1,0 +1,49 @@
+[settings]
+timeout = 1000
+
+[relaychain]
+default_image = "{{ZOMBIENET_INTEGRATION_TEST_IMAGE}}"
+chain = "pezkuwichain-local"
+
+
+[[relaychain.nodes]]
+name = "alice"
+args = ["-lteyrchain=debug,runtime=debug", "--db paritydb"]
+
+[[relaychain.nodes]]
+name = "bob"
+args = ["-lteyrchain=debug,runtime=debug", "--db rocksdb"]
+
+[[relaychain.nodes]]
+name = "charlie"
+args = ["-lteyrchain=debug,runtime=debug", "--db paritydb"]
+
+[[relaychain.nodes]]
+name = "dave"
+args = ["-lteyrchain=debug,runtime=debug", "--db rocksdb"]
+
+
+[[teyrchains]]
+id = 2000
+addToGenesis = true
+
+[teyrchains.collator]
+name = "collator01"
+image = "{{COL_IMAGE}}"
+command = "adder-collator"
+args = ["-lteyrchain=debug"]
+
+[[teyrchains]]
+id = 2001
+addToGenesis = true
+
+[teyrchains.collator]
+name = "collator02"
+image = "{{COL_IMAGE}}"
+command = "adder-collator"
+args = ["-lteyrchain=debug"]
+
+[types.Header]
+number = "u64"
+parent_hash = "Hash"
+post_state = "Hash"

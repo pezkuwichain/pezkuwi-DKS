@@ -1,0 +1,48 @@
+[package]
+name = "pezkuwi-zombienet-sdk"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+license.workspace = true
+repository.workspace = true
+description = "Pezkuwi Zombienet SDK - Network orchestration for Pezkuwi blockchain testing"
+keywords = ["blockchain", "pezkuwi", "sdk", "zombienet"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = { workspace = true }
+futures = { workspace = true }
+lazy_static = { workspace = true }
+pezkuwi-subxt = { workspace = true, features = ["native"] }
+pezkuwi-subxt-signer = { workspace = true, features = ["subxt"] }
+tokio = { workspace = true }
+
+# Zombienet deps
+configuration = { workspace = true }
+orchestrator = { workspace = true }
+provider = { workspace = true }
+support = { workspace = true }
+
+[dev-dependencies]
+k8s-openapi = { workspace = true, features = ["v1_28"] }
+kube = { workspace = true, features = ["runtime", "ws"] }
+serde_json = { workspace = true, default-features = true }
+tracing-subscriber = { workspace = true }
+
+[features]
+std = [
+	"configuration/std",
+	"orchestrator/std",
+	"pezkuwi-subxt/std",
+	"provider/std",
+	"support/std",
+]
+serde = []
+runtime-benchmarks = [
+	"orchestrator/runtime-benchmarks",
+	"pezkuwi-subxt-signer/runtime-benchmarks",
+	"pezkuwi-subxt/runtime-benchmarks",
+]

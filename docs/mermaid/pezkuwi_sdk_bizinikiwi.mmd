@@ -1,0 +1,8 @@
+flowchart LR
+	subgraph PezkuwiSDKChain[A Pezkuwi SDK-based blockchain]
+		Node
+		Runtime
+	end
+
+    FRAME -.-> Runtime
+    PezkuwiSDK[Pezkuwi SDK Node Libraries] -.-> Node

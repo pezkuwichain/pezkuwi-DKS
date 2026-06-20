@@ -1,0 +1,79 @@
+[package]
+name = "pezkuwi-node-subsystem-util"
+description = "Subsystem traits and message definitions"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+fatality = { workspace = true }
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+itertools = { workspace = true }
+parking_lot = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+thiserror = { workspace = true }
+
+metered = { features = ["futures_channel"], workspace = true }
+pezkuwi-erasure-coding = { workspace = true, default-features = true }
+pezkuwi-node-metrics = { workspace = true, default-features = true }
+pezkuwi-node-network-protocol = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-types = { workspace = true, default-features = true }
+pezkuwi-overseer = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+pezsp-application-crypto = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+
+kvdb = { workspace = true }
+parity-db = { workspace = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+futures = { features = ["thread-pool"], workspace = true }
+kvdb-shared-tests = { workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives-test-helpers = { workspace = true }
+tempfile = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-erasure-coding/runtime-benchmarks",
+	"pezkuwi-node-metrics/runtime-benchmarks",
+	"pezkuwi-node-network-protocol/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-types/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"gum/std",
+	"pezkuwi-erasure-coding/std",
+	"pezkuwi-node-metrics/std",
+	"pezkuwi-node-network-protocol/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-types/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-overseer/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
+]
+serde = []

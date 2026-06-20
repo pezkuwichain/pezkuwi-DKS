@@ -1,0 +1,33 @@
+[package]
+name = "pezsp-ss58-registry"
+version = "1.52.0"
+description = "Registry of known SS58 address types - PezkuwiChain fork"
+documentation.workspace = true
+license = "Apache-2.0"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+# Disable auto-discovery of benches as they require nightly
+bench = false
+
+[features]
+default = ["std"]
+std = ["num-format", "serde/std", "serde_json/std"]
+serde = []
+
+[dependencies]
+num-format = { version = "0.4.3", optional = true }
+
+[build-dependencies]
+Inflector = { version = "0.11.4", default-features = false }
+proc-macro2 = "1.0.36"
+quote = { version = "1.0.15", default-features = false }
+serde = { version = "1.0.136", default-features = false, features = [
+	"derive",
+	"std",
+] }
+serde_json = { version = "1.0.79", default-features = false, features = [
+	"std",
+] }
+unicode-xid = "0.2.2"

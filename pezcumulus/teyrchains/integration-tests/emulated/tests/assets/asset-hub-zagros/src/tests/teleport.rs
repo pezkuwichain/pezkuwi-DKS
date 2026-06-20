@@ -1,0 +1,793 @@
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// SPDX-License-Identifier: Apache-2.0
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use crate::{foreign_balance_on, imports::*};
+
+fn relay_origin_assertions(t: RelayToSystemParaTest) {
+	type RuntimeEvent = <Zagros as Chain>::RuntimeEvent;
+	Zagros::assert_xcm_pallet_attempted_complete(None);
+	assert_expected_events!(
+		Zagros,
+		vec![
+			// Amount to teleport is withdrawn from Sender
+			RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+				who: *who == t.sender.account_id,
+				amount: *amount == t.args.amount,
+			},
+		]
+	);
+}
+
+fn penpal_to_ah_foreign_assets_sender_assertions(t: ParaToSystemParaTest) {
+	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
+	let system_para_native_asset_location = RelayLocation::get();
+	let expected_asset_id = t.args.asset_id.unwrap();
+	let (_, expected_asset_amount) = non_fee_asset(&t.args.assets, &t.args.fee_asset_id).unwrap();
+
+	PenpalA::assert_xcm_pallet_attempted_complete(None);
+	assert_expected_events!(
+		PenpalA,
+		vec![
+			RuntimeEvent::ForeignAssets(
+				pezpallet_assets::Event::Burned { asset_id, owner, .. }
+			) => {
+				asset_id: *asset_id == system_para_native_asset_location,
+				owner: *owner == t.sender.account_id,
+			},
+			RuntimeEvent::Assets(pezpallet_assets::Event::Burned { asset_id, owner, balance }) => {
+				asset_id: *asset_id == expected_asset_id,
+				owner: *owner == t.sender.account_id,
+				balance: *balance == expected_asset_amount,
+			},
+		]
+	);
+}
+
+fn penpal_to_ah_foreign_assets_receiver_assertions(t: ParaToSystemParaTest) {
+	type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
+	let sov_penpal_on_ahr = AssetHubZagros::sovereign_account_id_of(
+		AssetHubZagros::sibling_location_of(PenpalA::para_id()),
+	);
+	let (_, expected_foreign_asset_amount) =
+		non_fee_asset(&t.args.assets, &t.args.fee_asset_id).unwrap();
+	let (_, fee_asset_amount) = fee_asset(&t.args.assets, &t.args.fee_asset_id).unwrap();
+
+	AssetHubZagros::assert_xcmp_queue_success(None);
+
+	assert_expected_events!(
+		AssetHubZagros,
+		vec![
+			// native asset reserve transfer for paying fees, withdrawn from Penpal's sov account
+			RuntimeEvent::Balances(
+				pezpallet_balances::Event::Burned { who, amount }
+			) => {
+				who: *who == sov_penpal_on_ahr.clone().into(),
+				amount: *amount >= fee_asset_amount / 2,
+			},
+			RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+				who: *who == t.receiver.account_id,
+			},
+			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, amount }) => {
+				asset_id: *asset_id == PenpalATeleportableAssetLocation::get(),
+				owner: *owner == t.receiver.account_id,
+				amount: *amount == expected_foreign_asset_amount,
+			},
+			RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { .. }) => {},
+		]
+	);
+}
+
+fn ah_to_penpal_foreign_assets_sender_assertions(t: SystemParaToParaTest) {
+	type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
+	AssetHubZagros::assert_xcm_pallet_attempted_complete(None);
+	let (expected_foreign_asset_id, expected_foreign_asset_amount) =
+		non_fee_asset(&t.args.assets, &t.args.fee_asset_id).unwrap();
+	assert_expected_events!(
+		AssetHubZagros,
+		vec![
+			// foreign asset is burned locally as part of teleportation
+			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Burned { asset_id, owner, balance }) => {
+				asset_id: *asset_id == expected_foreign_asset_id,
+				owner: *owner == t.sender.account_id,
+				balance: *balance == expected_foreign_asset_amount,
+			},
+		]
+	);
+}
+
+fn ah_to_penpal_foreign_assets_receiver_assertions(t: SystemParaToParaTest) {
+	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
+	let expected_asset_id = t.args.asset_id.unwrap();
+	let (_, expected_asset_amount) = non_fee_asset(&t.args.assets, &t.args.fee_asset_id).unwrap();
+	let checking_account = <PenpalA as PenpalAPallet>::PezkuwiXcm::check_account();
+	let system_para_native_asset_location = RelayLocation::get();
+
+	PenpalA::assert_xcmp_queue_success(None);
+
+	assert_expected_events!(
+		PenpalA,
+		vec![
+			// checking account burns local asset as part of incoming teleport
+			RuntimeEvent::Assets(pezpallet_assets::Event::Burned { asset_id, owner, balance }) => {
+				asset_id: *asset_id == expected_asset_id,
+				owner: *owner == checking_account,
+				balance: *balance == expected_asset_amount,
+			},
+			// local asset is teleported into account of receiver
+			RuntimeEvent::Assets(pezpallet_assets::Event::Issued { asset_id, owner, amount }) => {
+				asset_id: *asset_id == expected_asset_id,
+				owner: *owner == t.receiver.account_id,
+				amount: *amount == expected_asset_amount,
+			},
+			// native asset for fee is deposited to receiver
+			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				asset_id: *asset_id == system_para_native_asset_location,
+				owner: *owner == t.receiver.account_id,
+			},
+		]
+	);
+}
+
+fn relay_to_system_para_limited_teleport_assets(t: RelayToSystemParaTest) -> DispatchResult {
+	Dmp::make_teyrchain_reachable(AssetHubZagros::para_id());
+
+	<Zagros as ZagrosPallet>::XcmPallet::limited_teleport_assets(
+		t.signed_origin,
+		bx!(t.args.dest.into()),
+		bx!(t.args.beneficiary.into()),
+		bx!(t.args.assets.into()),
+		bx!(t.args.fee_asset_id.into()),
+		t.args.weight_limit,
+	)
+}
+
+fn para_to_system_para_transfer_assets(t: ParaToSystemParaTest) -> DispatchResult {
+	<PenpalA as PenpalAPallet>::PezkuwiXcm::transfer_assets_using_type_and_then(
+		t.signed_origin,
+		bx!(t.args.dest.into()),
+		bx!(t.args.assets.into()),
+		bx!(TransferType::Teleport),
+		bx!(t.args.fee_asset_id.into()),
+		bx!(TransferType::DestinationReserve),
+		bx!(VersionedXcm::from(
+			Xcm::<()>::builder_unsafe()
+				.deposit_asset(AllCounted(2), t.args.beneficiary)
+				.build()
+		)),
+		t.args.weight_limit,
+	)
+}
+
+fn system_para_to_para_transfer_assets(t: SystemParaToParaTest) -> DispatchResult {
+	<AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::transfer_assets_using_type_and_then(
+		t.signed_origin,
+		bx!(t.args.dest.into()),
+		bx!(t.args.assets.into()),
+		bx!(TransferType::Teleport),
+		bx!(t.args.fee_asset_id.into()),
+		bx!(TransferType::LocalReserve),
+		bx!(VersionedXcm::from(
+			Xcm::<()>::builder_unsafe()
+				.deposit_asset(AllCounted(2), t.args.beneficiary)
+				.build()
+		)),
+		t.args.weight_limit,
+	)
+}
+
+#[test]
+fn teleport_via_limited_teleport_assets_to_other_system_teyrchains_works() {
+	let amount = ASSET_HUB_ZAGROS_ED * 100;
+	let native_asset: Assets = (Parent, amount).into();
+	let fee_asset_id: AssetId = Parent.into();
+
+	test_teyrchain_is_trusted_teleporter!(
+		AssetHubZagros,        // Origin
+		vec![BridgeHubZagros], // Destinations
+		(native_asset, amount),
+		fee_asset_id,
+		limited_teleport_assets
+	);
+}
+
+#[test]
+fn teleport_via_transfer_assets_to_other_system_teyrchains_works() {
+	let amount = ASSET_HUB_ZAGROS_ED * 100;
+	let native_asset: Assets = (Parent, amount).into();
+	let fee_asset_id: AssetId = Parent.into();
+
+	test_teyrchain_is_trusted_teleporter!(
+		AssetHubZagros,        // Origin
+		vec![BridgeHubZagros], // Destinations
+		(native_asset, amount),
+		fee_asset_id,
+		transfer_assets
+	);
+}
+
+#[test]
+fn teleport_via_limited_teleport_assets_from_and_to_relay() {
+	let amount = ZAGROS_ED * 100;
+
+	test_relay_is_trusted_teleporter!(
+		Zagros,
+		vec![AssetHubZagros],
+		amount,
+		limited_teleport_assets
+	);
+
+	test_teyrchain_is_trusted_teleporter_for_relay!(
+		AssetHubZagros,
+		Zagros,
+		amount,
+		limited_teleport_assets
+	);
+}
+
+#[test]
+fn teleport_via_transfer_assets_from_and_to_relay() {
+	let amount = ZAGROS_ED * 100;
+
+	test_relay_is_trusted_teleporter!(Zagros, vec![AssetHubZagros], amount, transfer_assets);
+
+	test_teyrchain_is_trusted_teleporter_for_relay!(
+		AssetHubZagros,
+		Zagros,
+		amount,
+		transfer_assets
+	);
+}
+
+/// Limited Teleport of native asset from Relay Chain to Asset Hub
+/// shouldn't work when there is not enough balance in Asset Hub's `CheckAccount`
+#[test]
+fn limited_teleport_native_assets_from_relay_to_asset_hub_checking_acc_fails() {
+	let check_account = AssetHubZagros::execute_with(|| {
+		<AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::check_account()
+	});
+	let amount_to_send_larger_than_checking_acc: Balance =
+		AssetHubZagros::account_data_of(check_account).free + 1;
+	let destination = Zagros::child_location_of(AssetHubZagros::para_id());
+	let beneficiary_id = AssetHubZagrosReceiver::get().into();
+	let assets = (Here, amount_to_send_larger_than_checking_acc).into();
+	let fee_asset_id: AssetId = Here.into();
+
+	let test_args = TestContext {
+		sender: ZagrosSender::get(),
+		receiver: AssetHubZagrosReceiver::get(),
+		args: TestArgs::new_para(
+			destination,
+			beneficiary_id,
+			amount_to_send_larger_than_checking_acc,
+			assets,
+			None,
+			fee_asset_id,
+		),
+	};
+
+	let mut test = RelayToSystemParaTest::new(test_args);
+
+	let sender_balance_before = test.sender.balance;
+	let receiver_balance_before = test.receiver.balance;
+
+	fn para_dest_assertions_fails(_t: RelayToSystemParaTest) {
+		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
+		assert_expected_events!(
+			AssetHubZagros,
+			vec![
+				RuntimeEvent::MessageQueue(
+					pezpallet_message_queue::Event::Processed { success: false, .. }
+				) => {},
+			]
+		);
+	}
+
+	test.set_assertion::<AssetHubZagros>(para_dest_assertions_fails);
+	test.set_assertion::<Zagros>(relay_origin_assertions);
+	test.set_dispatchable::<Zagros>(relay_to_system_para_limited_teleport_assets);
+	test.assert();
+
+	let sender_balance_after = test.sender.balance;
+	let receiver_balance_after = test.receiver.balance;
+
+	let delivery_fees = Zagros::execute_with(|| {
+		xcm_helpers::teleport_assets_delivery_fees::<
+			<ZagrosXcmConfig as xcm_executor::Config>::XcmSender,
+		>(
+			test.args.assets.clone(),
+			test.args.fee_asset_id,
+			test.args.weight_limit,
+			test.args.beneficiary,
+			test.args.dest,
+		)
+	});
+
+	// Sender's balance is reduced
+	assert_eq!(
+		sender_balance_before - amount_to_send_larger_than_checking_acc - delivery_fees,
+		sender_balance_after
+	);
+	// Receiver's balance does not change
+	assert_eq!(receiver_balance_after, receiver_balance_before);
+}
+
+/// Checking account should correctly account for incoming teleports.
+#[test]
+fn limited_teleport_native_assets_from_relay_to_asset_hub_checking_acc_burn_works() {
+	// Init values for Relay Chain
+	let amount_to_send: Balance = ASSET_HUB_ZAGROS_ED * 1000;
+	let destination = Zagros::child_location_of(AssetHubZagros::para_id());
+	let beneficiary_id = AssetHubZagrosReceiver::get().into();
+	let assets = (Here, amount_to_send).into();
+	let fee_asset_id: AssetId = Here.into();
+
+	let test_args = TestContext {
+		sender: ZagrosSender::get(),
+		receiver: AssetHubZagrosReceiver::get(),
+		args: TestArgs::new_para(
+			destination,
+			beneficiary_id,
+			amount_to_send,
+			assets,
+			None,
+			fee_asset_id,
+		),
+	};
+
+	let mut test = RelayToSystemParaTest::new(test_args);
+
+	let sender_balance_before = test.sender.balance;
+	let receiver_balance_before = test.receiver.balance;
+
+	fn para_dest_assertions_works(t: RelayToSystemParaTest) {
+		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
+		assert_expected_events!(
+			AssetHubZagros,
+			vec![
+				// Amount to teleport is burned from Asset Hub's `CheckAccount`
+				RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+					who: *who == <AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::check_account(),
+					amount:  *amount == t.args.amount,
+				},
+				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+					who: *who == t.receiver.account_id,
+				},
+				RuntimeEvent::MessageQueue(
+					pezpallet_message_queue::Event::Processed { success: true, .. }
+				) => {},
+			]
+		);
+	}
+
+	test.set_assertion::<AssetHubZagros>(para_dest_assertions_works);
+	test.set_assertion::<Zagros>(relay_origin_assertions);
+	test.set_dispatchable::<Zagros>(relay_to_system_para_limited_teleport_assets);
+	test.assert();
+
+	let sender_balance_after = test.sender.balance;
+	let receiver_balance_after = test.receiver.balance;
+
+	let delivery_fees = Zagros::execute_with(|| {
+		xcm_helpers::teleport_assets_delivery_fees::<
+			<ZagrosXcmConfig as xcm_executor::Config>::XcmSender,
+		>(
+			test.args.assets.clone(),
+			test.args.fee_asset_id,
+			test.args.weight_limit,
+			test.args.beneficiary,
+			test.args.dest,
+		)
+	});
+
+	// Sender's balance is reduced
+	assert_eq!(sender_balance_before - amount_to_send - delivery_fees, sender_balance_after);
+	// Receiver's asset balance is increased
+	assert!(receiver_balance_after > receiver_balance_before);
+	// Receiver's asset balance increased by `amount_to_send - delivery_fees - bought_execution`;
+	// `delivery_fees` might be paid from transfer or JIT, also `bought_execution` is unknown but
+	// should be non-zero
+	assert!(receiver_balance_after < receiver_balance_before + amount_to_send);
+}
+
+/// Checking account should correctly account for outgoing teleports.
+#[test]
+fn limited_teleport_native_assets_from_asset_hub_to_relay_checking_acc_mint_works() {
+	// Init values for Relay Chain
+	let amount_to_send: Balance = ASSET_HUB_ZAGROS_ED * 1000;
+	let destination = AssetHubZagros::parent_location().into();
+	let beneficiary_id = ZagrosReceiver::get().into();
+	let assets = (Parent, amount_to_send).into();
+	let fee_asset_id: AssetId = Parent.into();
+
+	let test_args = TestContext {
+		sender: AssetHubZagrosSender::get(),
+		receiver: ZagrosReceiver::get(),
+		args: TestArgs::new_para(
+			destination,
+			beneficiary_id,
+			amount_to_send,
+			assets,
+			None,
+			fee_asset_id,
+		),
+	};
+
+	let mut test = SystemParaToRelayTest::new(test_args);
+
+	let sender_balance_before = test.sender.balance;
+	let receiver_balance_before = test.receiver.balance;
+
+	fn para_origin_assertions(t: SystemParaToRelayTest) {
+		AssetHubZagros::assert_xcm_pallet_attempted_complete(None);
+
+		AssetHubZagros::assert_teyrchain_system_ump_sent();
+
+		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
+		assert_expected_events!(
+			AssetHubZagros,
+			vec![
+				RuntimeEvent::Balances(
+					pezpallet_balances::Event::Burned { who, amount }
+				) => {
+					who: *who == t.sender.account_id,
+					amount: *amount == t.args.amount,
+				},
+				// Amount to teleport is burned from Asset Hub's `CheckAccount`
+				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, amount }) => {
+					who: *who == <AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::check_account(),
+					amount:  *amount == t.args.amount,
+				},
+			]
+		);
+	}
+
+	fn relay_dest_assertions(t: SystemParaToRelayTest) {
+		type RuntimeEvent = <Zagros as Chain>::RuntimeEvent;
+		assert_expected_events!(
+			Zagros,
+			vec![
+				RuntimeEvent::MessageQueue(
+					pezpallet_message_queue::Event::Processed { success: true, .. }
+				) => {},
+				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+					who: *who == t.receiver.account_id,
+				},
+			]
+		);
+	}
+
+	fn system_para_limited_teleport_assets(t: SystemParaToRelayTest) -> DispatchResult {
+		<AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::limited_teleport_assets(
+			t.signed_origin,
+			bx!(t.args.dest.into()),
+			bx!(t.args.beneficiary.into()),
+			bx!(t.args.assets.into()),
+			bx!(t.args.fee_asset_id.into()),
+			t.args.weight_limit,
+		)
+	}
+
+	test.set_assertion::<AssetHubZagros>(para_origin_assertions);
+	test.set_assertion::<Zagros>(relay_dest_assertions);
+	test.set_dispatchable::<AssetHubZagros>(system_para_limited_teleport_assets);
+	test.assert();
+
+	let sender_balance_after = test.sender.balance;
+	let receiver_balance_after = test.receiver.balance;
+
+	let delivery_fees = AssetHubZagros::execute_with(|| {
+		xcm_helpers::teleport_assets_delivery_fees::<
+			<AssetHubZagrosXcmConfig as xcm_executor::Config>::XcmSender,
+		>(
+			test.args.assets.clone(),
+			test.args.fee_asset_id,
+			test.args.weight_limit,
+			test.args.beneficiary,
+			test.args.dest,
+		)
+	});
+
+	// Sender's balance is reduced
+	assert_eq!(sender_balance_before - amount_to_send - delivery_fees, sender_balance_after);
+	// Receiver's asset balance is increased
+	assert!(receiver_balance_after > receiver_balance_before);
+	// Receiver's asset balance increased by `amount_to_send - delivery_fees - bought_execution`;
+	// `delivery_fees` might be paid from transfer or JIT, also `bought_execution` is unknown but
+	// should be non-zero
+	assert!(receiver_balance_after < receiver_balance_before + amount_to_send);
+}
+
+/// Bidirectional teleports of local Penpal assets to Asset Hub as foreign assets while paying
+/// fees using (reserve transferred) native asset.
+pub fn do_bidirectional_teleport_foreign_assets_between_para_and_asset_hub_using_xt(
+	para_to_ah_dispatchable: fn(ParaToSystemParaTest) -> DispatchResult,
+	ah_to_para_dispatchable: fn(SystemParaToParaTest) -> DispatchResult,
+) {
+	// Init values for Teyrchain
+	let fee_amount_to_send: Balance = ASSET_HUB_ZAGROS_ED * 1000;
+	let asset_location_on_penpal =
+		PenpalA::execute_with(|| PenpalLocalTeleportableToAssetHub::get());
+	let asset_id_on_penpal = match asset_location_on_penpal.last() {
+		Some(Junction::GeneralIndex(id)) => *id as u32,
+		_ => unreachable!(),
+	};
+	let asset_amount_to_send = ASSET_HUB_ZAGROS_ED * 1000;
+	let asset_owner = PenpalAssetOwner::get();
+	let system_para_native_asset_location = RelayLocation::get();
+	let sender = PenpalASender::get();
+	let penpal_check_account = <PenpalA as PenpalAPallet>::PezkuwiXcm::check_account();
+	let ah_as_seen_by_penpal = PenpalA::sibling_location_of(AssetHubZagros::para_id());
+	let penpal_assets: Assets = vec![
+		(Parent, fee_amount_to_send).into(),
+		(asset_location_on_penpal.clone(), asset_amount_to_send).into(),
+	]
+	.into();
+	let fee_asset_id: AssetId = Parent.into();
+
+	// fund Teyrchain's sender account
+	PenpalA::mint_foreign_asset(
+		<PenpalA as Chain>::RuntimeOrigin::signed(asset_owner.clone()),
+		system_para_native_asset_location.clone(),
+		sender.clone(),
+		fee_amount_to_send * 2,
+	);
+	// No need to create the asset (only mint) as it exists in genesis.
+	PenpalA::mint_asset(
+		<PenpalA as Chain>::RuntimeOrigin::signed(asset_owner.clone()),
+		asset_id_on_penpal,
+		sender.clone(),
+		asset_amount_to_send * 2,
+	);
+	// fund Teyrchain's check account to be able to teleport
+	PenpalA::fund_accounts(vec![(penpal_check_account.clone().into(), ASSET_HUB_ZAGROS_ED * 1000)]);
+
+	// prefund SA of Penpal on AssetHub with enough native tokens to pay for fees
+	let penpal_as_seen_by_ah = AssetHubZagros::sibling_location_of(PenpalA::para_id());
+	let sov_penpal_on_ah = AssetHubZagros::sovereign_account_id_of(penpal_as_seen_by_ah);
+	AssetHubZagros::fund_accounts(vec![(
+		sov_penpal_on_ah.clone().into(),
+		ASSET_HUB_ZAGROS_ED * 100_000_000_000,
+	)]);
+
+	// Init values for System Teyrchain
+	let foreign_asset_at_asset_hub =
+		Location::new(1, [Junction::Teyrchain(PenpalA::para_id().into())])
+			.appended_with(asset_location_on_penpal)
+			.unwrap();
+	let penpal_to_ah_beneficiary_id = AssetHubZagrosReceiver::get();
+
+	// Penpal to AH test args
+	let penpal_to_ah_test_args = TestContext {
+		sender: PenpalASender::get(),
+		receiver: AssetHubZagrosReceiver::get(),
+		args: TestArgs::new_para(
+			ah_as_seen_by_penpal,
+			penpal_to_ah_beneficiary_id,
+			asset_amount_to_send,
+			penpal_assets,
+			Some(asset_id_on_penpal),
+			fee_asset_id,
+		),
+	};
+	let mut penpal_to_ah = ParaToSystemParaTest::new(penpal_to_ah_test_args);
+	let penpal_sender_balance_before = foreign_balance_on!(
+		PenpalA,
+		system_para_native_asset_location.clone(),
+		&PenpalASender::get()
+	);
+
+	let ah_receiver_balance_before = penpal_to_ah.receiver.balance;
+
+	let penpal_sender_assets_before = PenpalA::execute_with(|| {
+		type Assets = <PenpalA as PenpalAPallet>::Assets;
+		<Assets as Inspect<_>>::balance(asset_id_on_penpal, &PenpalASender::get())
+	});
+	let ah_receiver_assets_before = foreign_balance_on!(
+		AssetHubZagros,
+		foreign_asset_at_asset_hub.clone(),
+		&AssetHubZagrosReceiver::get()
+	);
+
+	penpal_to_ah.set_assertion::<PenpalA>(penpal_to_ah_foreign_assets_sender_assertions);
+	penpal_to_ah.set_assertion::<AssetHubZagros>(penpal_to_ah_foreign_assets_receiver_assertions);
+	penpal_to_ah.set_dispatchable::<PenpalA>(para_to_ah_dispatchable);
+	penpal_to_ah.assert();
+
+	let penpal_sender_balance_after = foreign_balance_on!(
+		PenpalA,
+		system_para_native_asset_location.clone(),
+		&PenpalASender::get()
+	);
+
+	let ah_receiver_balance_after = penpal_to_ah.receiver.balance;
+
+	let penpal_sender_assets_after = PenpalA::execute_with(|| {
+		type Assets = <PenpalA as PenpalAPallet>::Assets;
+		<Assets as Inspect<_>>::balance(asset_id_on_penpal, &PenpalASender::get())
+	});
+	let ah_receiver_assets_after = foreign_balance_on!(
+		AssetHubZagros,
+		foreign_asset_at_asset_hub.clone(),
+		&AssetHubZagrosReceiver::get()
+	);
+
+	// Sender's balance is reduced
+	assert!(penpal_sender_balance_after < penpal_sender_balance_before);
+	// Receiver's balance is increased
+	assert!(ah_receiver_balance_after > ah_receiver_balance_before);
+	// Receiver's balance increased by `amount_to_send - delivery_fees - bought_execution`;
+	// `delivery_fees` might be paid from transfer or JIT, also `bought_execution` is unknown but
+	// should be non-zero
+	assert!(ah_receiver_balance_after < ah_receiver_balance_before + fee_amount_to_send);
+
+	// Sender's balance is reduced by exact amount
+	assert_eq!(penpal_sender_assets_before - asset_amount_to_send, penpal_sender_assets_after);
+	// Receiver's balance is increased by exact amount
+	assert_eq!(ah_receiver_assets_after, ah_receiver_assets_before + asset_amount_to_send);
+
+	///////////////////////////////////////////////////////////////////////
+	// Now test transferring foreign assets back from AssetHub to Penpal //
+	///////////////////////////////////////////////////////////////////////
+
+	// Move funds on AH from AHReceiver to AHSender
+	AssetHubZagros::execute_with(|| {
+		type ForeignAssets = <AssetHubZagros as AssetHubZagrosPallet>::ForeignAssets;
+		assert_ok!(ForeignAssets::transfer(
+			<AssetHubZagros as Chain>::RuntimeOrigin::signed(AssetHubZagrosReceiver::get()),
+			foreign_asset_at_asset_hub.clone().try_into().unwrap(),
+			AssetHubZagrosSender::get().into(),
+			asset_amount_to_send,
+		));
+	});
+
+	// Only send back half the amount.
+	let asset_amount_to_send = asset_amount_to_send / 2;
+	let fee_amount_to_send = fee_amount_to_send / 2;
+
+	let ah_to_penpal_beneficiary_id = PenpalAReceiver::get();
+	let penpal_as_seen_by_ah = AssetHubZagros::sibling_location_of(PenpalA::para_id());
+	let ah_assets: Assets = vec![
+		(Parent, fee_amount_to_send).into(),
+		(foreign_asset_at_asset_hub.clone(), asset_amount_to_send).into(),
+	]
+	.into();
+	let fee_asset_id: AssetId = Parent.into();
+
+	// AH to Penpal test args
+	let ah_to_penpal_test_args = TestContext {
+		sender: AssetHubZagrosSender::get(),
+		receiver: PenpalAReceiver::get(),
+		args: TestArgs::new_para(
+			penpal_as_seen_by_ah,
+			ah_to_penpal_beneficiary_id,
+			asset_amount_to_send,
+			ah_assets,
+			Some(asset_id_on_penpal),
+			fee_asset_id,
+		),
+	};
+	let mut ah_to_penpal = SystemParaToParaTest::new(ah_to_penpal_test_args);
+
+	let ah_sender_balance_before = ah_to_penpal.sender.balance;
+	let penpal_receiver_balance_before = foreign_balance_on!(
+		PenpalA,
+		system_para_native_asset_location.clone(),
+		&PenpalAReceiver::get()
+	);
+
+	let ah_sender_assets_before = foreign_balance_on!(
+		AssetHubZagros,
+		foreign_asset_at_asset_hub.clone(),
+		&AssetHubZagrosSender::get()
+	);
+	let penpal_receiver_assets_before = PenpalA::execute_with(|| {
+		type Assets = <PenpalA as PenpalAPallet>::Assets;
+		<Assets as Inspect<_>>::balance(asset_id_on_penpal, &PenpalAReceiver::get())
+	});
+
+	ah_to_penpal.set_assertion::<AssetHubZagros>(ah_to_penpal_foreign_assets_sender_assertions);
+	ah_to_penpal.set_assertion::<PenpalA>(ah_to_penpal_foreign_assets_receiver_assertions);
+	ah_to_penpal.set_dispatchable::<AssetHubZagros>(ah_to_para_dispatchable);
+	ah_to_penpal.assert();
+
+	let ah_sender_balance_after = ah_to_penpal.sender.balance;
+	let penpal_receiver_balance_after =
+		foreign_balance_on!(PenpalA, system_para_native_asset_location, &PenpalAReceiver::get());
+
+	let ah_sender_assets_after = foreign_balance_on!(
+		AssetHubZagros,
+		foreign_asset_at_asset_hub.clone(),
+		&AssetHubZagrosSender::get()
+	);
+	let penpal_receiver_assets_after = PenpalA::execute_with(|| {
+		type Assets = <PenpalA as PenpalAPallet>::Assets;
+		<Assets as Inspect<_>>::balance(asset_id_on_penpal, &PenpalAReceiver::get())
+	});
+
+	// Sender's balance is reduced
+	assert!(ah_sender_balance_after < ah_sender_balance_before);
+	// Receiver's balance is increased
+	assert!(penpal_receiver_balance_after > penpal_receiver_balance_before);
+	// Receiver's balance increased by `amount_to_send - delivery_fees - bought_execution`;
+	// `delivery_fees` might be paid from transfer or JIT, also `bought_execution` is unknown but
+	// should be non-zero
+	assert!(penpal_receiver_balance_after < penpal_receiver_balance_before + fee_amount_to_send);
+
+	// Sender's balance is reduced by exact amount
+	assert_eq!(ah_sender_assets_before - asset_amount_to_send, ah_sender_assets_after);
+	// Receiver's balance is increased by exact amount
+	assert_eq!(penpal_receiver_assets_after, penpal_receiver_assets_before + asset_amount_to_send);
+}
+
+/// Bidirectional teleports of local Penpal assets to Asset Hub as foreign assets should work
+/// (using native reserve-based transfer for fees)
+#[test]
+fn bidirectional_teleport_foreign_assets_between_para_and_asset_hub() {
+	do_bidirectional_teleport_foreign_assets_between_para_and_asset_hub_using_xt(
+		para_to_system_para_transfer_assets,
+		system_para_to_para_transfer_assets,
+	);
+}
+
+/// Teleport Native Asset from AssetHub to Teyrchain fails.
+#[test]
+fn teleport_to_untrusted_chain_fails() {
+	// Init values for Teyrchain Origin
+	let destination = AssetHubZagros::sibling_location_of(PenpalA::para_id());
+	let signed_origin =
+		<AssetHubZagros as Chain>::RuntimeOrigin::signed(AssetHubZagrosSender::get().into());
+	let roc_to_send: Balance = ZAGROS_ED * 10000;
+	let roc_location = RelayLocation::get();
+
+	// Assets to send
+	let assets: Vec<Asset> = vec![(roc_location.clone(), roc_to_send).into()];
+	let fee_id: AssetId = roc_location.into();
+
+	// this should fail
+	AssetHubZagros::execute_with(|| {
+		let result = <AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::transfer_assets_using_type_and_then(
+			signed_origin.clone(),
+			bx!(destination.clone().into()),
+			bx!(assets.clone().into()),
+			bx!(TransferType::Teleport),
+			bx!(fee_id.into()),
+			bx!(TransferType::Teleport),
+			bx!(VersionedXcm::from(Xcm::<()>::new())),
+			Unlimited,
+		);
+		assert_err!(
+			result,
+			DispatchError::Module(pezsp_runtime::ModuleError {
+				index: 31,
+				error: [2, 0, 0, 0],
+				message: Some("Filtered")
+			})
+		);
+	});
+
+	// this should also fail
+	AssetHubZagros::execute_with(|| {
+		let xcm: Xcm<asset_hub_zagros_runtime::RuntimeCall> = Xcm(vec![
+			WithdrawAsset(assets.into()),
+			InitiateTeleport { assets: Wild(All), dest: destination, xcm: Xcm::<()>::new() },
+		]);
+		let result = <AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::execute(
+			signed_origin,
+			bx!(xcm::VersionedXcm::from(xcm)),
+			Weight::MAX,
+		);
+		assert!(result.is_err());
+	});
+}

@@ -1,0 +1,298 @@
+[package]
+name = "coretime-zagros-runtime"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+description = "Zagros's Coretime teyrchain runtime"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { optional = true, features = [
+	"derive",
+], workspace = true, default-features = true }
+serde_json = { features = ["alloc"], workspace = true }
+tracing = { workspace = true }
+
+# Bizinikiwi
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-executive = { workspace = true }
+pezframe-metadata-hash-extension = { workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezframe-system-benchmarking = { optional = true, workspace = true }
+pezframe-system-rpc-runtime-api = { workspace = true }
+pezframe-try-runtime = { optional = true, workspace = true }
+pezpallet-aura = { workspace = true }
+pezpallet-authorship = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-broker = { workspace = true }
+pezpallet-message-queue = { workspace = true }
+pezpallet-multisig = { workspace = true }
+pezpallet-proxy = { workspace = true }
+pezpallet-session = { workspace = true }
+pezpallet-sudo = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+pezpallet-transaction-payment = { workspace = true }
+pezpallet-transaction-payment-rpc-runtime-api = { workspace = true }
+pezpallet-utility = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-block-builder = { workspace = true }
+pezsp-consensus-aura = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-genesis-builder = { workspace = true }
+pezsp-inherents = { workspace = true }
+pezsp-keyring = { workspace = true }
+pezsp-offchain = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-session = { workspace = true }
+pezsp-storage = { workspace = true }
+pezsp-transaction-pool = { workspace = true }
+pezsp-version = { workspace = true }
+
+# Pezkuwi
+pezkuwi-runtime-common = { workspace = true }
+pezkuwi-teyrchain-primitives = { workspace = true }
+pezpallet-xcm = { workspace = true }
+pezpallet-xcm-benchmarks = { optional = true, workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+xcm-runtime-pezapis = { workspace = true }
+zagros-runtime-constants = { workspace = true }
+
+# Pezcumulus
+pezcumulus-pezpallet-aura-ext = { workspace = true }
+pezcumulus-pezpallet-session-benchmarking = { workspace = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+pezcumulus-pezpallet-weight-reclaim = { workspace = true }
+pezcumulus-pezpallet-xcm = { workspace = true }
+pezcumulus-pezpallet-xcmp-queue = { workspace = true }
+pezcumulus-primitives-aura = { workspace = true }
+pezcumulus-primitives-core = { workspace = true }
+pezcumulus-primitives-utility = { workspace = true }
+
+pezpallet-collator-selection = { workspace = true }
+testnet-teyrchains-constants = { features = ["zagros"], workspace = true }
+teyrchain-info = { workspace = true }
+teyrchains-common = { workspace = true }
+
+[dev-dependencies]
+teyrchains-runtimes-test-utils = { workspace = true, default-features = true }
+
+[build-dependencies]
+bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"bizinikiwi-wasm-builder",
+	"bizinikiwi-wasm-builder?/std",
+	"codec/std",
+	"pezcumulus-pezpallet-aura-ext/std",
+	"pezcumulus-pezpallet-session-benchmarking/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezcumulus-pezpallet-weight-reclaim/std",
+	"pezcumulus-pezpallet-xcm/std",
+	"pezcumulus-pezpallet-xcmp-queue/std",
+	"pezcumulus-primitives-aura/std",
+	"pezcumulus-primitives-core/std",
+	"pezcumulus-primitives-utility/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-executive/std",
+	"pezframe-metadata-hash-extension/std",
+	"pezframe-support/std",
+	"pezframe-system-benchmarking?/std",
+	"pezframe-system-rpc-runtime-api/std",
+	"pezframe-system/std",
+	"pezframe-try-runtime?/std",
+	"pezkuwi-runtime-common/std",
+	"pezkuwi-teyrchain-primitives/std",
+	"pezpallet-aura/std",
+	"pezpallet-authorship/std",
+	"pezpallet-balances/std",
+	"pezpallet-broker/std",
+	"pezpallet-collator-selection/std",
+	"pezpallet-message-queue/std",
+	"pezpallet-multisig/std",
+	"pezpallet-proxy/std",
+	"pezpallet-session/std",
+	"pezpallet-sudo/std",
+	"pezpallet-timestamp/std",
+	"pezpallet-transaction-payment-rpc-runtime-api/std",
+	"pezpallet-transaction-payment/std",
+	"pezpallet-utility/std",
+	"pezpallet-xcm-benchmarks?/std",
+	"pezpallet-xcm/std",
+	"pezsp-api/std",
+	"pezsp-block-builder/std",
+	"pezsp-consensus-aura/std",
+	"pezsp-core/std",
+	"pezsp-genesis-builder/std",
+	"pezsp-inherents/std",
+	"pezsp-keyring/std",
+	"pezsp-offchain/std",
+	"pezsp-runtime/std",
+	"pezsp-session/std",
+	"pezsp-storage/std",
+	"pezsp-transaction-pool/std",
+	"pezsp-version/std",
+	"scale-info/std",
+	"serde",
+	"serde_json/std",
+	"testnet-teyrchains-constants/std",
+	"teyrchain-info/std",
+	"teyrchains-common/std",
+	"tracing/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm-runtime-pezapis/std",
+	"xcm/std",
+	"zagros-runtime-constants/std",
+]
+runtime-benchmarks = [
+	"bizinikiwi-wasm-builder?/runtime-benchmarks",
+	"pezcumulus-pezpallet-aura-ext/runtime-benchmarks",
+	"pezcumulus-pezpallet-session-benchmarking/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-pezpallet-weight-reclaim/runtime-benchmarks",
+	"pezcumulus-pezpallet-xcm/runtime-benchmarks",
+	"pezcumulus-pezpallet-xcmp-queue/runtime-benchmarks",
+	"pezcumulus-primitives-aura/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-primitives-utility/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-executive/runtime-benchmarks",
+	"pezframe-metadata-hash-extension/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system-benchmarking/runtime-benchmarks",
+	"pezframe-system-rpc-runtime-api/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe-try-runtime?/runtime-benchmarks",
+	"pezkuwi-runtime-common/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-aura/runtime-benchmarks",
+	"pezpallet-authorship/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-broker/runtime-benchmarks",
+	"pezpallet-collator-selection/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-multisig/runtime-benchmarks",
+	"pezpallet-proxy/runtime-benchmarks",
+	"pezpallet-session/runtime-benchmarks",
+	"pezpallet-sudo/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-transaction-payment-rpc-runtime-api/runtime-benchmarks",
+	"pezpallet-transaction-payment/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezpallet-xcm-benchmarks/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-block-builder/runtime-benchmarks",
+	"pezsp-consensus-aura/runtime-benchmarks",
+	"pezsp-genesis-builder/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-offchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-session/runtime-benchmarks",
+	"pezsp-transaction-pool/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+	"testnet-teyrchains-constants/runtime-benchmarks",
+	"teyrchain-info/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"teyrchains-runtimes-test-utils/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm-runtime-pezapis/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+	"zagros-runtime-constants/runtime-benchmarks",
+]
+try-runtime = [
+	"pezcumulus-pezpallet-aura-ext/try-runtime",
+	"pezcumulus-pezpallet-session-benchmarking/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-pezpallet-weight-reclaim/try-runtime",
+	"pezcumulus-pezpallet-xcm/try-runtime",
+	"pezcumulus-pezpallet-xcmp-queue/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-primitives-utility/try-runtime",
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-executive/try-runtime",
+	"pezframe-metadata-hash-extension/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system-benchmarking?/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe-try-runtime/try-runtime",
+	"pezkuwi-runtime-common/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-aura/try-runtime",
+	"pezpallet-authorship/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-broker/try-runtime",
+	"pezpallet-collator-selection/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-multisig/try-runtime",
+	"pezpallet-proxy/try-runtime",
+	"pezpallet-session/try-runtime",
+	"pezpallet-sudo/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-transaction-payment-rpc-runtime-api/try-runtime",
+	"pezpallet-transaction-payment/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezpallet-xcm-benchmarks?/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-block-builder/try-runtime",
+	"pezsp-consensus-aura/try-runtime",
+	"pezsp-genesis-builder/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-offchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-session/try-runtime",
+	"pezsp-transaction-pool/try-runtime",
+	"pezsp-version/try-runtime",
+	"testnet-teyrchains-constants/try-runtime",
+	"teyrchain-info/try-runtime",
+	"teyrchains-common/try-runtime",
+	"teyrchains-runtimes-test-utils/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm-runtime-pezapis/try-runtime",
+	"xcm/try-runtime",
+	"zagros-runtime-constants/try-runtime",
+]
+fast-runtime = ["zagros-runtime-constants/fast-runtime"]
+
+# Enable the metadata hash generation in the wasm builder.
+metadata-hash = ["bizinikiwi-wasm-builder/metadata-hash"]
+
+# A feature that should be enabled when the runtime should be built for on-chain
+# deployment. This will disable stuff that shouldn't be part of the on-chain wasm
+# to make it smaller, like logging for example.
+on-chain-release-build = ["metadata-hash"]
+serde = [
+	"codec/serde",
+	"dep:serde",
+	"pezframe-benchmarking?/serde",
+	"pezpallet-message-queue/serde",
+	"pezpallet-transaction-payment/serde",
+	"pezpallet-xcm/serde",
+	"pezsp-consensus-aura/serde",
+	"pezsp-core/serde",
+	"pezsp-runtime/serde",
+	"pezsp-storage/serde",
+	"pezsp-version/serde",
+	"scale-info/serde",
+]
+experimental = []
+with-tracing = []
+tuples-96 = []

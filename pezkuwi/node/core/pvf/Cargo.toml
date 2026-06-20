@@ -1,0 +1,120 @@
+[package]
+name = "pezkuwi-node-core-pvf"
+description = "Pezkuwi crate that implements the PVF validation host. Responsible for coordinating preparation and execution of PVFs."
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "host_prepare_pezkuwichain_runtime"
+harness = false
+
+[dependencies]
+always-assert = { workspace = true }
+array-bytes = { workspace = true, default-features = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+gum = { workspace = true, default-features = true }
+is_executable = { optional = true, workspace = true }
+pin-project = { workspace = true }
+rand = { workspace = true, default-features = true }
+slotmap = { workspace = true }
+strum = { features = ["derive"], workspace = true, default-features = true }
+tempfile = { workspace = true }
+thiserror = { workspace = true }
+tokio = { features = [
+	"fs",
+	"process",
+], workspace = true, default-features = true }
+
+codec = { features = ["derive"], workspace = true }
+
+pezkuwi-node-core-pvf-common = { workspace = true, default-features = true }
+pezkuwi-node-metrics = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+
+pezkuwi-node-core-pvf-execute-worker = { optional = true, workspace = true, default-features = true }
+pezkuwi-node-core-pvf-prepare-worker = { optional = true, workspace = true, default-features = true }
+pezsc-tracing = { workspace = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-maybe-compressed-blob = { optional = true, workspace = true, default-features = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+criterion = { features = [
+	"async_tokio",
+	"cargo_bench_support",
+], workspace = true }
+
+pezkuwi-node-core-pvf-common = { features = [
+	"test-utils",
+], workspace = true, default-features = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+# For benches and integration tests, depend on ourselves with the test-utils feature.
+pezkuwi-node-core-pvf = { features = [
+	"test-utils",
+], workspace = true, default-features = true }
+pezkuwichain-runtime = { workspace = true }
+
+test-teyrchain-adder = { workspace = true }
+test-teyrchain-halt = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+libc = { workspace = true }
+procfs = { workspace = true }
+rusty-fork = { workspace = true, default-features = true }
+pezsc-sysinfo = { workspace = true, default-features = true }
+
+[features]
+ci-only-tests = []
+jemalloc-allocator = ["pezkuwi-node-core-pvf-common/jemalloc-allocator"]
+# This feature is used to export test code to other crates without putting it in the production build.
+test-utils = [
+	"dep:is_executable",
+	"dep:pezkuwi-node-core-pvf-execute-worker",
+	"dep:pezkuwi-node-core-pvf-prepare-worker",
+	"dep:pezsp-maybe-compressed-blob",
+]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-common/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-execute-worker?/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-prepare-worker?/runtime-benchmarks",
+	"pezkuwi-node-core-pvf/runtime-benchmarks",
+	"pezkuwi-node-metrics/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezkuwichain-runtime/runtime-benchmarks",
+	"pezsc-sysinfo/runtime-benchmarks",
+	"pezsc-tracing/runtime-benchmarks",
+	"test-teyrchain-adder/runtime-benchmarks",
+	"test-teyrchain-halt/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"gum/std",
+	"pezkuwi-node-core-pvf-common/std",
+	"pezkuwi-node-core-pvf-execute-worker?/std",
+	"pezkuwi-node-core-pvf-prepare-worker?/std",
+	"pezkuwi-node-core-pvf/std",
+	"pezkuwi-node-metrics/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezsc-sysinfo/std",
+	"pezsc-tracing/std",
+]
+serde = []

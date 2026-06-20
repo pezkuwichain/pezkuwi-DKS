@@ -1,0 +1,46 @@
+[package]
+name = "pezpallet-staking-async-preset-store"
+version = "0.1.0"
+publish = false
+authors.workspace = true
+edition.workspace = true
+description = "Simple pezpallet to store the preset used to generate a runtime's genesis in state"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+
+[dependencies]
+codec = { workspace = true }
+pezframe = { workspace = true, features = ["runtime"] }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-staking-async-ah-client = { workspace = true }
+scale-info = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezframe/std",
+	"pezpallet-staking-async-ah-client/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe/runtime-benchmarks",
+	"pezpallet-staking-async-ah-client/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe/try-runtime",
+	"pezpallet-staking-async-ah-client/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

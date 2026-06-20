@@ -1,0 +1,73 @@
+[package]
+name = "zagros-emulated-chain"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Zagros emulated chain"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bizinikiwi
+pezpallet-staking = { workspace = true }
+pezsc-consensus-grandpa = { workspace = true }
+pezsp-authority-discovery = { workspace = true }
+pezsp-consensus-babe = { workspace = true }
+pezsp-consensus-beefy = { workspace = true, default-features = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+pezkuwi-primitives = { workspace = true }
+zagros-runtime = { workspace = true, default-features = true }
+zagros-runtime-constants = { workspace = true }
+
+# Pezcumulus
+emulated-integration-tests-common = { workspace = true }
+teyrchains-common = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezpallet-staking/runtime-benchmarks",
+	"pezsc-consensus-grandpa/runtime-benchmarks",
+	"pezsp-authority-discovery/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus-beefy/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"zagros-runtime-constants/runtime-benchmarks",
+	"zagros-runtime/runtime-benchmarks",
+]
+std = [
+	"emulated-integration-tests-common/std",
+	"pezkuwi-primitives/std",
+	"pezpallet-staking/std",
+	"pezsc-consensus-grandpa/std",
+	"pezsp-authority-discovery/std",
+	"pezsp-consensus-babe/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"zagros-runtime-constants/std",
+]
+try-runtime = [
+	"emulated-integration-tests-common/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezpallet-staking/try-runtime",
+	"pezsc-consensus-grandpa/try-runtime",
+	"pezsp-authority-discovery/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus-beefy/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"teyrchains-common/try-runtime",
+	"zagros-runtime-constants/try-runtime",
+	"zagros-runtime/try-runtime",
+]
+serde = []

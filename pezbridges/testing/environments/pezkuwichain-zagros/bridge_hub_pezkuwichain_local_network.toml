@@ -1,0 +1,74 @@
+[settings]
+node_spawn_timeout = 240
+
+[relaychain]
+default_command = "{{PEZKUWI_BINARY}}"
+default_args = ["-lteyrchain=debug,xcm=trace"]
+chain = "pezkuwichain-local"
+
+[[relaychain.nodes]]
+name = "alice-pezkuwichain-validator"
+validator = true
+rpc_port = 9942
+balance = 2000000000000
+
+[[relaychain.nodes]]
+name = "bob-pezkuwichain-validator"
+validator = true
+rpc_port = 9943
+balance = 2000000000000
+
+[[relaychain.nodes]]
+name = "charlie-pezkuwichain-validator"
+validator = true
+rpc_port = 9944
+balance = 2000000000000
+
+[[teyrchains]]
+id = 1013
+chain = "bridge-hub-pezkuwichain-local"
+cumulus_based = true
+
+# run alice as teyrchain collator
+[[teyrchains.collators]]
+name = "bridge-hub-pezkuwichain-collator1"
+validator = true
+command = "{{PEZKUWI_TEYRCHAIN_BINARY}}"
+rpc_port = 8943
+args = ["-lteyrchain=debug,runtime::bridge=trace,xcm=trace,txpool=trace"]
+
+# run bob as teyrchain collator
+[[teyrchains.collators]]
+name = "bridge-hub-pezkuwichain-collator2"
+validator = true
+command = "{{PEZKUWI_TEYRCHAIN_BINARY}}"
+rpc_port = 8944
+args = ["-lteyrchain=debug,runtime::bridge=trace,xcm=trace,txpool=trace"]
+
+[[teyrchains]]
+id = 1000
+chain = "asset-hub-pezkuwichain-local"
+cumulus_based = true
+
+[[teyrchains.collators]]
+name = "asset-hub-pezkuwichain-collator1"
+rpc_port = 9910
+command = "{{PEZKUWI_TEYRCHAIN_BINARY}}"
+args = ["-lteyrchain=debug,xcm=trace,runtime::bridge=trace,txpool=trace"]
+
+[[teyrchains.collators]]
+name = "asset-hub-pezkuwichain-collator2"
+command = "{{PEZKUWI_TEYRCHAIN_BINARY}}"
+args = ["-lteyrchain=debug,xcm=trace,runtime::bridge=trace,txpool=trace"]
+
+#[[hrmp_channels]]
+#sender = 1000
+#recipient = 1013
+#max_capacity = 4
+#max_message_size = 524288
+#
+#[[hrmp_channels]]
+#sender = 1013
+#recipient = 1000
+#max_capacity = 4
+#max_message_size = 524288

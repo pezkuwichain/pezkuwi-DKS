@@ -1,0 +1,74 @@
+[package]
+name = "pezbp-runtime"
+description = "Primitives that may be used at (bridges) runtime level."
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true }
+hash-db = { workspace = true }
+impl-trait-for-tuples = { workspace = true }
+num-traits = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { features = ["alloc", "derive"], workspace = true }
+tracing = { workspace = true }
+
+# Bizinikiwi Dependencies
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { features = ["serde"], workspace = true }
+pezsp-state-machine = { workspace = true }
+pezsp-std = { workspace = true }
+pezsp-trie = { workspace = true }
+trie-db = { workspace = true }
+
+[dev-dependencies]
+hex-literal = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"hash-db/std",
+	"num-traits/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-state-machine/std",
+	"pezsp-std/std",
+	"pezsp-trie/std",
+	"scale-info/std",
+	"serde/std",
+	"tracing/std",
+	"trie-db/std",
+]
+test-helpers = []
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

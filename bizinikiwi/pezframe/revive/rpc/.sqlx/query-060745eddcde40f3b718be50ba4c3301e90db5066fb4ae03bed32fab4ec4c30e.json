@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n\t\t\tSELECT bizinikiwi_block_hash\n\t\t\tFROM eth_to_bizinikiwi_blocks\n\t\t\tWHERE ethereum_block_hash = $1\n\t\t\t",
+  "describe": {
+    "columns": [
+      {
+        "name": "bizinikiwi_block_hash",
+        "ordinal": 0,
+        "type_info": "Blob"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "060745eddcde40f3b718be50ba4c3301e90db5066fb4ae03bed32fab4ec4c30e"
+}

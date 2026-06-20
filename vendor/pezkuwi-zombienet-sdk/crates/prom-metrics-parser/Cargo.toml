@@ -1,0 +1,21 @@
+[package]
+name = "pezkuwi-zombienet-prom-metrics-parser"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+license.workspace = true
+repository.workspace = true
+description = "Pezkuwi Zombienet Prometheus metrics parser"
+keywords = ["metrics", "pezkuwi", "prometheus", "zombienet"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pest = { workspace = true }
+pest_derive = { workspace = true }
+thiserror = { workspace = true }
+
+[features]
+std = []

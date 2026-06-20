@@ -1,0 +1,72 @@
+[package]
+name = "pezbp-relayers"
+description = "Primitives of relayers module."
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["bit-vec", "derive"], workspace = true }
+scale-info = { features = ["bit-vec", "derive"], workspace = true }
+
+# Bridge Dependencies
+pezbp-header-pez-chain = { workspace = true }
+pezbp-messages = { workspace = true }
+pezbp-runtime = { workspace = true }
+pezbp-teyrchains = { workspace = true }
+
+# Bizinikiwi Dependencies
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-utility = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+[dev-dependencies]
+hex-literal = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezbp-header-pez-chain/std",
+	"pezbp-messages/std",
+	"pezbp-runtime/std",
+	"pezbp-teyrchains/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-utility/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezbp-header-pez-chain/runtime-benchmarks",
+	"pezbp-messages/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezbp-teyrchains/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-header-pez-chain/try-runtime",
+	"pezbp-messages/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezbp-teyrchains/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

@@ -1,0 +1,100 @@
+[package]
+name = "pez-assets-common"
+version = "0.7.1"
+authors.workspace = true
+edition.workspace = true
+description = "Assets common utilities"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+impl-trait-for-tuples = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-asset-conversion = { workspace = true }
+pezpallet-assets = { workspace = true }
+pezpallet-revive = { workspace = true }
+pezpallet-revive-uapi = { workspace = true, features = ["scale"] }
+pezsp-api = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+pezpallet-xcm = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+
+# Pezcumulus
+pez-ethereum-standards = { workspace = true }
+pezcumulus-primitives-core = { workspace = true }
+teyrchains-common = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pez-ethereum-standards/std",
+	"pezcumulus-primitives-core/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-asset-conversion/std",
+	"pezpallet-assets/std",
+	"pezpallet-revive-uapi/std",
+	"pezpallet-revive/std",
+	"pezpallet-xcm/std",
+	"pezsp-api/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+	"serde/std",
+	"teyrchains-common/std",
+	"tracing/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-asset-conversion/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-revive/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-asset-conversion/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-revive/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"teyrchains-common/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

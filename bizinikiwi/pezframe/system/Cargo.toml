@@ -1,0 +1,74 @@
+[package]
+name = "pezframe-system"
+version = "28.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME system module"
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[[bench]]
+name = "bench"
+harness = false
+
+[dependencies]
+cfg-if = { workspace = true }
+codec = { features = ["derive"], workspace = true }
+docify = { workspace = true }
+log = { workspace = true }
+pezframe-support = { workspace = true }
+pezsp-core = { features = ["serde"], workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { features = ["serde"], workspace = true }
+pezsp-version = { features = ["serde"], workspace = true }
+pezsp-weights = { features = ["serde"], workspace = true }
+scale-info = { features = ["derive", "serde"], workspace = true }
+serde = { features = ["alloc", "derive"], workspace = true }
+
+[dev-dependencies]
+bizinikiwi-test-runtime-client = { workspace = true }
+criterion = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"bizinikiwi-test-runtime-client/std",
+	"codec/std",
+	"log/std",
+	"pezframe-support/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-version/std",
+	"pezsp-weights/std",
+	"scale-info/std",
+	"serde/std",
+]
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-version/try-runtime",
+]
+experimental = ["pezframe-support/experimental"]
+serde = []
+with-tracing = []
+tuples-96 = []

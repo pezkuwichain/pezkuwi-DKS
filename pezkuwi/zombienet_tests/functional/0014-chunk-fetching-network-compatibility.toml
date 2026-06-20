@@ -1,0 +1,51 @@
+[settings]
+timeout = 1000
+bootnode = true
+
+[relaychain.genesis.runtimeGenesis.patch.configuration.config.scheduler_params]
+  max_validators_per_core = 2
+
+[relaychain.genesis.runtimeGenesis.patch.configuration.config]
+  needed_approvals = 4
+
+[relaychain]
+default_image = "{{ZOMBIENET_INTEGRATION_TEST_IMAGE}}"
+chain = "pezkuwichain-local"
+default_command = "pezkuwi"
+
+[relaychain.default_resources]
+limits = { memory = "4G", cpu = "2" }
+requests = { memory = "2G", cpu = "1" }
+
+  [[relaychain.node_groups]]
+  # Use an image that doesn't speak /req_chunk/2 protocol.
+  image = "{{PEZKUWI_IMAGE}}:master-bde0bbe5"
+  command = "pezkuwi{{OLD_SUFFIX}}"
+  name = "old"
+  count = 2
+  args = ["-lteyrchain=debug,teyrchain::availability-recovery=trace,teyrchain::availability-distribution=trace"]
+
+  [[relaychain.node_groups]]
+  name = "new"
+  count = 2
+  args = ["-lteyrchain=debug,teyrchain::availability-recovery=trace,teyrchain::availability-distribution=trace,sub-libp2p=trace"]
+
+{% for id in range(2000,2002) %}
+[[teyrchains]]
+id = {{id}}
+addToGenesis = true
+cumulus_based = true
+chain = "glutton-zagros-local-{{id}}"
+    [teyrchains.genesis.runtimeGenesis.patch.glutton]
+    compute = "50000000"
+    storage = "2500000000"
+    trashDataCount = 5120
+
+    [teyrchains.collator]
+    name = "collator"
+    command = "pezkuwi-teyrchain{{OLD_SUFFIX}}"
+    # Use an old image that does not send out v2 receipts, as the old validators will still check the collator signatures.
+    image = "docker.io/paritypr/pezkuwi-teyrchain-debug:master-bde0bbe5"
+    args = ["-lteyrchain=debug"]
+
+{% endfor %}

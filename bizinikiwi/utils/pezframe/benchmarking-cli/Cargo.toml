@@ -1,0 +1,182 @@
+[package]
+name = "pezframe-benchmarking-cli"
+version = "32.0.1"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "CLI for benchmarking FRAME"
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+Inflector = { workspace = true }
+array-bytes = { workspace = true, default-features = true }
+chrono = { workspace = true }
+clap = { features = ["derive"], workspace = true }
+codec = { workspace = true, default-features = true }
+comfy-table = { workspace = true }
+env_filter = { workspace = true }
+gethostname = { workspace = true }
+handlebars = { workspace = true }
+itertools = { workspace = true }
+linked-hash-map = { workspace = true }
+log = { workspace = true, default-features = true }
+pezcumulus-client-teyrchain-inherent = { workspace = true, default-features = true }
+pezcumulus-primitives-proof-size-hostfunction = { workspace = true, default-features = true }
+pezframe-benchmarking = { workspace = true, default-features = true }
+pezframe-storage-access-test-runtime = { workspace = true, optional = true }
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-subxt = { workspace = true, features = ["native"] }
+pezkuwi-subxt-signer = { workspace = true, features = [
+	"sr25519",
+	"subxt",
+	"unstable-eth",
+] }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+pezsc-block-builder = { workspace = true, default-features = true }
+pezsc-chain-spec = { workspace = true }
+pezsc-cli = { workspace = true, default-features = false }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-client-db = { workspace = true, default-features = false }
+pezsc-executor = { workspace = true, default-features = true }
+pezsc-executor-common = { workspace = true }
+pezsc-executor-wasmtime = { workspace = true }
+pezsc-runtime-utilities = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = false }
+pezsc-sysinfo = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-block-builder = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-database = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true, default-features = true }
+pezsp-genesis-builder = { workspace = true, default-features = true }
+pezsp-inherents = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-runtime-interface = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-storage = { workspace = true, default-features = true }
+pezsp-timestamp = { workspace = true, default-features = true }
+pezsp-transaction-pool = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
+pezsp-version = { workspace = true, default-features = true }
+pezsp-wasm-interface = { workspace = true, default-features = true }
+rand = { features = ["small_rng"], workspace = true, default-features = true }
+rand_pcg = { workspace = true }
+serde = { workspace = true, default-features = true }
+serde_json = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+thousands = { workspace = true }
+
+[dev-dependencies]
+bizinikiwi-test-runtime = { workspace = true, default-features = true }
+pezcumulus-test-runtime = { workspace = true, default-features = true }
+zagros-runtime = { workspace = true, default-features = true }
+
+[features]
+default = []
+# Enable storage benchmark command
+storage-benchmark = ["pezframe-storage-access-test-runtime"]
+# Enable teyrchain/parachain benchmark inherent data
+teyrchain-benchmarks = ["pezcumulus-client-teyrchain-inherent/mock"]
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime/runtime-benchmarks",
+	"pezcumulus-client-teyrchain-inherent/runtime-benchmarks",
+	"pezcumulus-primitives-proof-size-hostfunction/runtime-benchmarks",
+	"pezcumulus-test-runtime/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-storage-access-test-runtime?/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-subxt-signer/runtime-benchmarks",
+	"pezkuwi-subxt/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsc-block-builder/runtime-benchmarks",
+	"pezsc-chain-spec/runtime-benchmarks",
+	"pezsc-cli/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-client-db/runtime-benchmarks",
+	"pezsc-executor-wasmtime/runtime-benchmarks",
+	"pezsc-executor/runtime-benchmarks",
+	"pezsc-runtime-utilities/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsc-sysinfo/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-block-builder/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-genesis-builder/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime-interface/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-timestamp/runtime-benchmarks",
+	"pezsp-transaction-pool/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+	"zagros-runtime/runtime-benchmarks",
+]
+rocksdb = ["pezsc-cli/rocksdb", "pezsc-client-db/rocksdb"]
+std = [
+	"log/std",
+	"pezcumulus-client-teyrchain-inherent/std",
+	"pezkuwi-subxt/std",
+	"pezsc-block-builder/std",
+	"pezsc-chain-spec/std",
+	"pezsc-cli/std",
+	"pezsc-client-api/std",
+	"pezsc-client-db/std",
+	"pezsc-executor-common/std",
+	"pezsc-executor-wasmtime/std",
+	"pezsc-runtime-utilities/std",
+	"pezsc-service/std",
+	"pezsc-sysinfo/std",
+	"pezsp-blockchain/std",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime/try-runtime",
+	"pezcumulus-client-teyrchain-inherent/try-runtime",
+	"pezcumulus-test-runtime/try-runtime",
+	"pezframe-benchmarking/try-runtime",
+	"pezframe-storage-access-test-runtime?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-subxt/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezsc-block-builder/try-runtime",
+	"pezsc-chain-spec/try-runtime",
+	"pezsc-cli/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-client-db/try-runtime",
+	"pezsc-executor/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsc-sysinfo/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-block-builder/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-genesis-builder/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-timestamp/try-runtime",
+	"pezsp-transaction-pool/try-runtime",
+	"pezsp-version/try-runtime",
+	"zagros-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

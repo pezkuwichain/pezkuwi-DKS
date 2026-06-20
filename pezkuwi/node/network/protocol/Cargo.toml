@@ -1,0 +1,61 @@
+[package]
+name = "pezkuwi-node-network-protocol"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Primitives types for the Node-side"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-channel = { workspace = true }
+async-trait = { workspace = true }
+bitvec = { workspace = true, default-features = true }
+codec = { features = ["derive"], workspace = true }
+derive_more = { workspace = true, default-features = true }
+fatality = { workspace = true }
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+hex = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezsc-authority-discovery = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsc-network-types = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+strum = { features = ["derive"], workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+rand_chacha = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsc-authority-discovery/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"gum/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezsc-authority-discovery/std",
+	"pezsc-network-types/std",
+	"pezsc-network/std",
+]
+try-runtime = [
+	"pezkuwi-primitives/try-runtime",
+	"pezsc-authority-discovery/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

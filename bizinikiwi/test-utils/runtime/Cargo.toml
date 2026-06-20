@@ -1,0 +1,210 @@
+[package]
+name = "bizinikiwi-test-runtime"
+version = "2.0.0"
+authors.workspace = true
+edition.workspace = true
+build = "build.rs"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+publish = false
+description = "Bizinikiwi utility: test runtime"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+pezframe-executive = { workspace = true }
+pezframe-metadata-hash-extension = { workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezframe-system-rpc-runtime-api = { workspace = true }
+pezpallet-babe = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+pezpallet-utility = { workspace = true }
+pezsc-service = { optional = true, workspace = true }
+pezsp-api = { workspace = true }
+pezsp-application-crypto = { features = ["serde"], workspace = true }
+pezsp-block-builder = { workspace = true }
+pezsp-consensus-aura = { features = ["serde"], workspace = true }
+pezsp-consensus-babe = { features = ["serde"], workspace = true }
+pezsp-consensus-grandpa = { features = ["serde"], workspace = true }
+pezsp-core = { features = ["serde"], workspace = true }
+pezsp-crypto-hashing = { workspace = true }
+pezsp-debug-derive = { workspace = true, default-features = false, features = [
+	"force-debug",
+] }
+pezsp-externalities = { workspace = true }
+pezsp-genesis-builder = { workspace = true }
+pezsp-inherents = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-keyring = { workspace = true }
+pezsp-offchain = { workspace = true }
+pezsp-runtime = { features = ["serde"], workspace = true }
+pezsp-session = { workspace = true }
+pezsp-state-machine = { workspace = true }
+pezsp-transaction-pool = { workspace = true }
+pezsp-trie = { workspace = true }
+pezsp-version = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+trie-db = { workspace = true }
+
+# 3rd party
+array-bytes = { optional = true, workspace = true, default-features = true }
+log = { workspace = true }
+serde_json = { workspace = true, features = ["alloc"] }
+tracing = { workspace = true, default-features = false }
+
+[dev-dependencies]
+bizinikiwi-test-runtime-client = { workspace = true }
+futures = { workspace = true }
+pezsc-block-builder = { workspace = true, default-features = true }
+pezsc-chain-spec = { workspace = true, default-features = true }
+pezsc-executor = { workspace = true, default-features = true }
+pezsc-executor-common = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+pretty_assertions = { workspace = true }
+serde = { features = ["alloc", "derive"], workspace = true }
+
+[build-dependencies]
+bizinikiwi-wasm-builder = { optional = true, features = [
+	"metadata-hash",
+], workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+
+std = [
+	"array-bytes",
+	"bizinikiwi-test-runtime-client/std",
+	"bizinikiwi-wasm-builder",
+	"bizinikiwi-wasm-builder?/std",
+	"codec/std",
+	"log/std",
+	"pezframe-executive/std",
+	"pezframe-metadata-hash-extension/std",
+	"pezframe-support/std",
+	"pezframe-system-rpc-runtime-api/std",
+	"pezframe-system/std",
+	"pezpallet-babe/std",
+	"pezpallet-balances/std",
+	"pezpallet-timestamp/std",
+	"pezpallet-utility/std",
+	"pezsc-block-builder/std",
+	"pezsc-chain-spec/std",
+	"pezsc-executor-common/std",
+	"pezsc-executor/std",
+	"pezsc-service",
+	"pezsc-service?/std",
+	"pezsp-api/std",
+	"pezsp-application-crypto/std",
+	"pezsp-block-builder/std",
+	"pezsp-consensus-aura/std",
+	"pezsp-consensus-babe/std",
+	"pezsp-consensus-grandpa/std",
+	"pezsp-consensus/std",
+	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
+	"pezsp-debug-derive/std",
+	"pezsp-externalities/std",
+	"pezsp-genesis-builder/std",
+	"pezsp-inherents/std",
+	"pezsp-io/std",
+	"pezsp-keyring/std",
+	"pezsp-offchain/std",
+	"pezsp-runtime/std",
+	"pezsp-session/std",
+	"pezsp-state-machine/std",
+	"pezsp-tracing/std",
+	"pezsp-transaction-pool/std",
+	"pezsp-trie/std",
+	"pezsp-version/std",
+	"scale-info/std",
+	"serde/std",
+	"serde_json/std",
+	"tracing/std",
+	"trie-db/std",
+]
+
+# Special feature to disable logging
+disable-logging = ["pezsp-api/disable-logging"]
+
+# This feature adds BLS crypto primitives.
+# It should not be used in production since the implementation and interface may still
+# be subject to significant changes.
+bls-experimental = ["pezsp-application-crypto/bls-experimental"]
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"bizinikiwi-wasm-builder?/runtime-benchmarks",
+	"pezframe-executive/runtime-benchmarks",
+	"pezframe-metadata-hash-extension/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system-rpc-runtime-api/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-babe/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezsc-block-builder/runtime-benchmarks",
+	"pezsc-chain-spec/runtime-benchmarks",
+	"pezsc-executor/runtime-benchmarks",
+	"pezsc-service?/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-block-builder/runtime-benchmarks",
+	"pezsp-consensus-aura/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus-grandpa/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-genesis-builder/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-offchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-session/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-transaction-pool/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pezframe-executive/try-runtime",
+	"pezframe-metadata-hash-extension/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-babe/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezsc-block-builder/try-runtime",
+	"pezsc-chain-spec/try-runtime",
+	"pezsc-executor/try-runtime",
+	"pezsc-service?/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-block-builder/try-runtime",
+	"pezsp-consensus-aura/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus-grandpa/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-genesis-builder/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-offchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-session/try-runtime",
+	"pezsp-transaction-pool/try-runtime",
+	"pezsp-version/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

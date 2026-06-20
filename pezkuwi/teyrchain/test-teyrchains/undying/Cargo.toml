@@ -1,0 +1,48 @@
+[package]
+name = "test-teyrchain-undying"
+description = "Test teyrchain for zombienet integration tests"
+build = "build.rs"
+publish = false
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+dlmalloc = { features = ["global"], workspace = true }
+log = { workspace = true }
+pezkuwi-primitives = { workspace = true, default-features = false }
+pezkuwi-teyrchain-primitives = { features = ["wasm-api"], workspace = true }
+tiny-keccak = { features = ["keccak"], workspace = true }
+
+# We need to make sure the global allocator is disabled until we have support of full bizinikiwi externalities
+pezsp-io = { features = ["disable_allocator"], workspace = true }
+
+[build-dependencies]
+bizinikiwi-wasm-builder = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"bizinikiwi-wasm-builder/std",
+	"codec/std",
+	"log/std",
+	"pezkuwi-primitives/std",
+	"pezkuwi-teyrchain-primitives/std",
+	"pezsp-io/std",
+]
+runtime-benchmarks = [
+	"bizinikiwi-wasm-builder/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+]
+serde = []
+with-tracing = []

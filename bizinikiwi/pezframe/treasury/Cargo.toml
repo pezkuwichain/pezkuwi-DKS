@@ -1,0 +1,84 @@
+[package]
+name = "pezpallet-treasury"
+version = "27.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME pezpallet to manage treasury"
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive", "max-encoded-len"], workspace = true }
+docify = { workspace = true }
+impl-trait-for-tuples = { workspace = true }
+log = { workspace = true }
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezsp-core = { optional = true, workspace = true }
+pezsp-runtime = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { features = [
+	"derive",
+], optional = true, workspace = true, default-features = true }
+
+[dev-dependencies]
+pezpallet-utility = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-utility/std",
+	"pezsp-core?/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+	"serde",
+]
+runtime-benchmarks = [
+	"dep:pezsp-core",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = [
+	"codec/serde",
+	"dep:serde",
+	"log/serde",
+	"pezframe-benchmarking?/serde",
+	"pezsp-core?/serde",
+	"pezsp-runtime/serde",
+	"scale-info/serde",
+]
+experimental = []
+with-tracing = []
+tuples-96 = []

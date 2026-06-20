@@ -1,0 +1,15 @@
+# This is a virtual manifest for the vendored pezkuwi-subxt crates
+# Individual crates are managed by the main pezkuwi-sdk workspace
+
+[workspace.package]
+authors = ["Kurdistan Tech Institute <admin@pezkuwichain.io>"]
+edition = "2021"
+version = "0.43.1"
+rust-version = "1.81"
+license = "Apache-2.0 OR GPL-3.0"
+repository = "https://github.com/pezkuwichain/pezkuwi-sdk"
+documentation = "https://docs.rs/pezkuwi-subxt"
+homepage = "https://www.pezkuwichain.io/"
+
+[workspace]
+# Empty workspace - crates are part of parent workspace

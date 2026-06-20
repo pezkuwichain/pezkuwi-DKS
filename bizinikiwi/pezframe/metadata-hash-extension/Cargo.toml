@@ -1,0 +1,69 @@
+[package]
+name = "pezframe-metadata-hash-extension"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME signed extension for verifying the metadata hash"
+documentation.workspace = true
+
+[dependencies]
+array-bytes = { workspace = true, default-features = true }
+codec = { features = ["derive"], workspace = true }
+const-hex = { workspace = true }
+docify = { workspace = true }
+log = { workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-runtime = { features = ["serde"], workspace = true }
+scale-info = { features = ["derive", "serde"], workspace = true }
+
+[dev-dependencies]
+bizinikiwi-test-runtime-client = { workspace = true }
+bizinikiwi-wasm-builder = { workspace = true, default-features = true }
+frame-metadata = { features = [
+	"current",
+	"unstable",
+], workspace = true, default-features = true }
+merkleized-metadata = { workspace = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+pezsp-transaction-pool = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"bizinikiwi-test-runtime-client/std",
+	"bizinikiwi-wasm-builder/std",
+	"codec/std",
+	"const-hex/std",
+	"log/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"bizinikiwi-wasm-builder/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-transaction-pool/runtime-benchmarks",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-transaction-pool/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []
+metadata-hash = ["bizinikiwi-wasm-builder/metadata-hash"]

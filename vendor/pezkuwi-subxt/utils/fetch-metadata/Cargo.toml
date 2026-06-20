@@ -1,0 +1,46 @@
+[package]
+name = "pezkuwi-subxt-utils-fetchmetadata"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+autotests = false
+
+license.workspace = true
+repository.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+description = "subxt utility to fetch metadata"
+
+[features]
+url = ["dep:jsonrpsee", "dep:tokio", "dep:url", "frame-metadata"]
+std = ["codec/std", "frame-metadata?/std", "hex/std"]
+serde = []
+
+[dependencies]
+codec = { package = "parity-scale-codec", workspace = true, features = [
+	"derive",
+	"std",
+] }
+hex = { workspace = true, features = ["std"] }
+thiserror = { workspace = true }
+
+# Optional dependencies for the `url` feature.
+frame-metadata = { workspace = true, optional = true, features = ["std"] }
+jsonrpsee = { workspace = true, features = [
+	"http-client",
+	"ws-client",
+], optional = true }
+tokio = { workspace = true, features = ["rt-multi-thread"], optional = true }
+url = { workspace = true, optional = true }
+
+[package.metadata.docs.rs]
+features = ["url"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.playground]
+default-features = true
+
+[lints]
+workspace = true

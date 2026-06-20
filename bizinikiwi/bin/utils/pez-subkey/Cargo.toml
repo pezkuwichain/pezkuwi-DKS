@@ -1,0 +1,29 @@
+[package]
+name = "pez-subkey"
+version = "9.0.0"
+authors.workspace = true
+description = "Generate and restore keys for Bizinikiwi based chains such as Pezkuwi, Dicle and a growing number of teyrchains and Bizinikiwi based projects."
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[[bin]]
+path = "src/main.rs"
+name = "pez-subkey"
+
+[dependencies]
+clap = { features = ["derive"], workspace = true }
+pezsc-cli = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = ["pezsc-cli/runtime-benchmarks"]
+std = ["pezsc-cli/std"]

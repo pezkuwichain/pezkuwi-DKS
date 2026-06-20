@@ -1,0 +1,104 @@
+[package]
+name = "pezframe-benchmarking"
+version = "28.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Macro for benchmarking a FRAME runtime."
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { workspace = true }
+linregress = { optional = true, workspace = true }
+log = { workspace = true }
+paste = { workspace = true, default-features = true }
+pezframe-support = { workspace = true }
+pezframe-support-procedural = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-application-crypto = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-runtime-interface = { workspace = true }
+pezsp-storage = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { optional = true, workspace = true, default-features = true }
+static_assertions = { workspace = true, default-features = true }
+
+[dev-dependencies]
+array-bytes = { workspace = true, default-features = true }
+pezpallet-example-basic = { workspace = true, default-features = true }
+pezsc-client-db = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true }
+rusty-fork = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"linregress",
+	"log/std",
+	"pezframe-support-procedural/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsc-client-db/std",
+	"pezsp-api/std",
+	"pezsp-application-crypto/std",
+	"pezsp-core/std",
+	"pezsp-externalities/std",
+	"pezsp-io/std",
+	"pezsp-keystore/std",
+	"pezsp-runtime-interface/std",
+	"pezsp-runtime/std",
+	"pezsp-state-machine/std",
+	"pezsp-storage/std",
+	"scale-info/std",
+	"serde",
+]
+runtime-benchmarks = [
+	"pezframe-support-procedural/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-example-basic/runtime-benchmarks",
+	"pezsc-client-db/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime-interface/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-example-basic/try-runtime",
+	"pezsc-client-db/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = [
+	"array-bytes/serde",
+	"codec/serde",
+	"dep:serde",
+	"log/serde",
+	"pezsp-application-crypto/serde",
+	"pezsp-core/serde",
+	"pezsp-runtime/serde",
+	"pezsp-storage/serde",
+	"scale-info/serde",
+]
+experimental = []
+with-tracing = []
+tuples-96 = []

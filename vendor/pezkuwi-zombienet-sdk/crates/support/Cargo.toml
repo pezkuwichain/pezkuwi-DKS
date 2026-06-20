@@ -1,0 +1,32 @@
+[package]
+name = "pezkuwi-zombienet-support"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+license.workspace = true
+repository.workspace = true
+description = "Pezkuwi Zombienet support - Common traits, structs and helpers"
+keywords = ["pezkuwi", "support", "zombienet"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+lazy_static = { workspace = true }
+nix = { workspace = true, features = ["signal"] }
+rand = { workspace = true }
+regex = { workspace = true }
+reqwest = { workspace = true }
+serde_json = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+
+[features]
+std = ["anyhow/std", "rand/std", "tracing/std"]
+serde = []

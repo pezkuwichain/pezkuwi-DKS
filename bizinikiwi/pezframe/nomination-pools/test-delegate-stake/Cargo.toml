@@ -1,0 +1,81 @@
+[package]
+name = "pezpallet-nomination-pools-test-delegate-stake"
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME nomination pools pezpallet tests with the staking pezpallet"
+publish = false
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dev-dependencies]
+codec = { features = ["derive"], workspace = true, default-features = true }
+scale-info = { features = [
+	"derive",
+], workspace = true, default-features = true }
+
+pezsp-core = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-staking = { workspace = true, default-features = true }
+
+pezframe-election-provider-support = { workspace = true, default-features = true }
+pezframe-support = { features = [
+	"experimental",
+], workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+
+pezpallet-bags-list = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-delegated-staking = { workspace = true, default-features = true }
+pezpallet-nomination-pools = { workspace = true, default-features = true }
+pezpallet-staking = { workspace = true, default-features = true }
+pezpallet-staking-reward-curve = { workspace = true, default-features = true }
+pezpallet-timestamp = { workspace = true, default-features = true }
+
+log = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezframe-election-provider-support/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-bags-list/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-delegated-staking/runtime-benchmarks",
+	"pezpallet-nomination-pools/runtime-benchmarks",
+	"pezpallet-staking-reward-curve/runtime-benchmarks",
+	"pezpallet-staking/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+]
+std = ["log/std", "pezpallet-staking-reward-curve/std"]
+try-runtime = [
+	"pezframe-election-provider-support/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-bags-list/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-delegated-staking/try-runtime",
+	"pezpallet-nomination-pools/try-runtime",
+	"pezpallet-staking-reward-curve/try-runtime",
+	"pezpallet-staking/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-staking/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

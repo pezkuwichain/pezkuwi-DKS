@@ -1,0 +1,115 @@
+[package]
+name = "pezkuwi-subxt-core"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+
+license.workspace = true
+readme = "README.md"
+repository.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+description = "A no-std compatible subset of Subxt's functionality"
+keywords = ["extrinsic", "no-std", "parity", "subxt"]
+
+[features]
+default = ["std"]
+std = [
+	"bitvec/std",
+	"blake2/std",
+	"codec/std",
+	"frame-decode/std",
+	"frame-metadata/std",
+	"hex/std",
+	"impl-serde/std",
+	"keccak-hash/std",
+	"pezkuwi-subxt-macro/std",
+	"pezkuwi-subxt-metadata/std",
+	"pezkuwi-subxt-signer/std",
+	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
+	"pezsp-keyring/std",
+	"pezsp-runtime/std",
+	"primitive-types/std",
+	"scale-info/std",
+	"serde/std",
+	"serde_json/std",
+	"tracing/std",
+]
+serde = []
+runtime-benchmarks = [
+	"pezkuwi-subxt-macro/runtime-benchmarks",
+	"pezkuwi-subxt-signer/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+
+[dependencies]
+codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
+	"derive",
+] }
+derive-where = { workspace = true }
+frame-decode = { workspace = true }
+frame-metadata = { workspace = true, default-features = false }
+hashbrown = { workspace = true }
+hex = { workspace = true }
+pezkuwi-subxt-metadata = { workspace = true, default-features = false }
+pezsp-crypto-hashing = { workspace = true }
+scale-bits = { workspace = true, default-features = false }
+scale-decode = { workspace = true, default-features = false, features = [
+	"derive",
+	"primitive-types",
+] }
+scale-encode = { workspace = true, default-features = false, features = [
+	"bits",
+	"derive",
+	"primitive-types",
+] }
+scale-info = { workspace = true, default-features = false, features = [
+	"bit-vec",
+] }
+scale-value = { workspace = true, default-features = false }
+serde = { workspace = true, default-features = false, features = ["derive"] }
+serde_json = { workspace = true, default-features = false, features = [
+	"alloc",
+	"raw_value",
+] }
+thiserror = { workspace = true }
+tracing = { workspace = true, default-features = false }
+
+# For ss58 encoding AccountId32 to serialize them properly:
+base58 = { workspace = true }
+blake2 = { workspace = true }
+
+# Provides some deserialization, types like U256/H256 and hashing impls like twox/blake256:
+impl-serde = { workspace = true, default-features = false }
+primitive-types = { workspace = true, default-features = false, features = [
+	"codec",
+	"scale-info",
+	"serde_no_std",
+] }
+
+# AccountId20
+keccak-hash = { workspace = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+bitvec = { workspace = true }
+codec = { workspace = true, features = ["bit-vec", "derive"] }
+pezkuwi-subxt-macro = { workspace = true }
+pezkuwi-subxt-signer = { workspace = true, features = ["sr25519", "subxt"] }
+pezsp-core = { workspace = true }
+pezsp-keyring = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+[package.metadata.docs.rs]
+default-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.playground]
+default-features = true
+
+[lints]
+workspace = true

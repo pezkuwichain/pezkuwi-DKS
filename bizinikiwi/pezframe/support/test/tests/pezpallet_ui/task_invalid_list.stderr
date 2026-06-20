@@ -1,0 +1,20 @@
+error: unused import: `pezframe_system::pezpallet_prelude::OriginFor`
+  --> tests/pezpallet_ui/task_invalid_list.rs:21:6
+   |
+21 |     use pezframe_system::pezpallet_prelude::OriginFor;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `-D unused-imports` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+error[E0689]: can't call method `map` on ambiguous numeric type `{integer}`
+  --> tests/pezpallet_ui/task_invalid_list.rs:18:1
+   |
+18 | #[pezframe_support::pezpallet(dev_mode)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: this error originates in the attribute macro `pezframe_support::pezpallet` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: you must specify a concrete type for this numeric value, like `i32`
+   |
+33 |         #[pezpallet::task_list(0_i32)]
+   |                                 ++++

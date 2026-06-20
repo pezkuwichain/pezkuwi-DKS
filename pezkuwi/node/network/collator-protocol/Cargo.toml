@@ -1,0 +1,96 @@
+[package]
+name = "pezkuwi-collator-protocol"
+version = "7.0.0"
+description = "Pezkuwi Collator Protocol subsystem. Allows collators and validators to talk to each other."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true, optional = true }
+bitvec = { features = ["alloc"], workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+gum = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+fatality = { workspace = true }
+pezkuwi-node-network-protocol = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+tokio-util = { workspace = true }
+# This should have really been a dev-dependency but clippy is complaining that it's not used with
+# experimental-collator-protocol disabled, while the rust compiler claims that having optional
+# dev-dependencies is not possible.
+tokio = { features = [
+	"macros",
+], workspace = true, default-features = true, optional = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+pezsp-tracing = { workspace = true }
+rstest = { workspace = true }
+
+codec = { features = ["std"], workspace = true, default-features = true }
+pezsc-keystore = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsp-core = { features = ["std"], workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+
+itertools = { workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives-test-helpers = { workspace = true }
+
+[features]
+default = []
+experimental-collator-protocol = ["async-trait", "tokio"]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-network-protocol/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsc-keystore/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"bitvec/std",
+	"gum/std",
+	"pezkuwi-node-network-protocol/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
+	"pezsc-keystore/std",
+	"pezsc-network/std",
+	"pezsp-tracing/std",
+]
+try-runtime = [
+	"pezkuwi-node-network-protocol/try-runtime",
+	"pezkuwi-primitives-test-helpers/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+with-tracing = []

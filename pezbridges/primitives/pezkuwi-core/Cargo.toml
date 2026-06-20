@@ -1,0 +1,73 @@
+[package]
+name = "pezbp-pezkuwi-core"
+description = "Primitives of Pezkuwi-like runtime."
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { optional = true, features = [
+	"derive",
+], workspace = true, default-features = true }
+
+# Bridge Dependencies
+pezbp-messages = { workspace = true }
+pezbp-runtime = { workspace = true }
+
+# Bizinikiwi Based Dependencies
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+[dev-dependencies]
+hex = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezbp-messages/std",
+	"pezbp-runtime/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde",
+]
+runtime-benchmarks = [
+	"pezbp-messages/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-messages/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = [
+	"codec/serde",
+	"dep:serde",
+	"hex/serde",
+	"pezsp-core/serde",
+	"pezsp-runtime/serde",
+	"scale-info/serde",
+]
+experimental = []
+tuples-96 = []

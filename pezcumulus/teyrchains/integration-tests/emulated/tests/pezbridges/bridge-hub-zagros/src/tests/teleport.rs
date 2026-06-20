@@ -1,0 +1,79 @@
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// SPDX-License-Identifier: Apache-2.0
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use crate::imports::*;
+
+#[test]
+fn teleport_via_limited_teleport_assets_to_other_system_teyrchains_works() {
+	let amount = BRIDGE_HUB_ZAGROS_ED * 100;
+	let native_asset: Assets = (Parent, amount).into();
+
+	let fee_asset_id: AssetId = Parent.into();
+	test_teyrchain_is_trusted_teleporter!(
+		BridgeHubZagros,      // Origin
+		vec![AssetHubZagros], // Destinations
+		(native_asset, amount),
+		fee_asset_id,
+		limited_teleport_assets
+	);
+}
+
+#[test]
+fn teleport_via_transfer_assets_to_other_system_teyrchains_works() {
+	let amount = BRIDGE_HUB_ZAGROS_ED * 100;
+	let native_asset: Assets = (Parent, amount).into();
+
+	let fee_asset_id: AssetId = Parent.into();
+	test_teyrchain_is_trusted_teleporter!(
+		BridgeHubZagros,      // Origin
+		vec![AssetHubZagros], // Destinations
+		(native_asset, amount),
+		fee_asset_id,
+		transfer_assets
+	);
+}
+
+#[test]
+fn teleport_via_limited_teleport_assets_from_and_to_relay() {
+	let amount = ZAGROS_ED * 100;
+
+	test_relay_is_trusted_teleporter!(
+		Zagros,
+		vec![BridgeHubZagros],
+		amount,
+		limited_teleport_assets
+	);
+
+	test_teyrchain_is_trusted_teleporter_for_relay!(
+		BridgeHubZagros,
+		Zagros,
+		amount,
+		limited_teleport_assets
+	);
+}
+
+#[test]
+fn teleport_via_transfer_assets_from_and_to_relay() {
+	let amount = ZAGROS_ED * 100;
+
+	test_relay_is_trusted_teleporter!(Zagros, vec![BridgeHubZagros], amount, transfer_assets);
+
+	test_teyrchain_is_trusted_teleporter_for_relay!(
+		BridgeHubZagros,
+		Zagros,
+		amount,
+		transfer_assets
+	);
+}

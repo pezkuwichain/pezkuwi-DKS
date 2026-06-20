@@ -1,0 +1,109 @@
+# cargo-deny v2 configuration for Pezkuwi SDK
+# https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+targets = [
+	{ triple = "wasm32-unknown-unknown" },
+	{ triple = "x86_64-unknown-linux-gnu" },
+	{ triple = "x86_64-unknown-linux-musl" },
+]
+# all-features prevents krates 0.20+ from panicking with "unable to locate std"
+# on workspace crates that have a std feature but don't enable it by default.
+all-features = true
+
+# Advisory database - check for known vulnerabilities
+# In v2: all vulnerability/unsound/notice advisories automatically emit errors.
+# Use `ignore` to suppress specific advisories.
+[advisories]
+yanked = "warn"
+# All unmaintained crates are transitive upstream dependencies we cannot replace.
+# Track via quarterly review instead of blocking CI.
+unmaintained = "none"
+ignore = [
+	# ── wasmtime ──────────────────────────────────────────────────────────────
+	# Fix requires wasmtime 42.0.2+ → cranelift-assembler-x64 0.129+ → rustc 1.91.0+
+	# Toolchain pinned to 1.88.0. Unblock when toolchain upgrades.
+	# We do NOT use Winch backend, Component Model, or 64-bit tables;
+	# most CVEs below only affect those code paths.
+	"RUSTSEC-2026-0006", # wasmtime: segfault with f64.copysign on x86-64
+	"RUSTSEC-2026-0020", # wasmtime: WASI guest-controlled resource exhaustion
+	"RUSTSEC-2026-0021", # wasmtime: panic in wasi:http/types.fields
+	"RUSTSEC-2026-0085", # wasmtime: panic lifting flags component value
+	"RUSTSEC-2026-0086", # wasmtime: host data leakage 64-bit tables + Winch
+	"RUSTSEC-2026-0087", # wasmtime: segfault f64x2.splat on Cranelift x86-64
+	"RUSTSEC-2026-0088", # wasmtime: data leakage pooling allocator instances
+	"RUSTSEC-2026-0089", # wasmtime: host panic table.fill with Winch
+	"RUSTSEC-2026-0091", # wasmtime: OOB write transcoding component model strings
+	"RUSTSEC-2026-0092", # wasmtime: panic transcoding misaligned UTF-16 strings
+	"RUSTSEC-2026-0093", # wasmtime: heap OOB read UTF-16 to latin1+utf16
+	"RUSTSEC-2026-0094", # wasmtime: masked return value table.grow Winch
+	"RUSTSEC-2026-0095", # wasmtime: Winch sandbox-escaping memory access
+	"RUSTSEC-2026-0096", # wasmtime: miscompiled guest heap aarch64 Cranelift
+
+	# ── rand 0.9.2 ────────────────────────────────────────────────────────────
+	# Unsound only when a custom Rust logger calls rand::rng() during init.
+	# No custom logger in our stack. No fixed version available yet.
+	"RUSTSEC-2026-0097", # rand: unsound with custom logger using rand::rng()
+
+	# ── webpki ────────────────────────────────────────────────────────────────
+	# Name-constraints and CRL parsing bugs in transitive webpki dep.
+	# We do not use CRLs or rely on certificate name constraints in our P2P/RPC stack.
+	"RUSTSEC-2026-0098", # webpki: URI name constraints incorrectly accepted
+	"RUSTSEC-2026-0099", # webpki: wildcard name constraints incorrectly accepted
+	"RUSTSEC-2026-0104", # webpki: reachable panic in CRL parsing (onlySomeReasons BIT STRING)
+]
+
+# License compliance
+# In v2: all licenses are denied unless explicitly allowed.
+# Removed v1 fields: unlicensed, deny, copyleft, allow-osi-fsf-free, default
+[licenses]
+confidence-threshold = 0.8
+allow = [
+	"Apache-2.0 WITH LLVM-exception",
+	"Apache-2.0",
+	"BSD-2-Clause",
+	"BSD-3-Clause",
+	"BSL-1.0",
+	"CC0-1.0",
+	"CDLA-Permissive-2.0",
+	"GPL-3.0-only WITH Classpath-exception-2.0",
+	"GPL-3.0-only",
+	"GPL-3.0-or-later WITH Classpath-exception-2.0",
+	"GPL-3.0-or-later",
+	"ISC",
+	"MIT",
+	"MIT-0",
+	"MPL-2.0",
+	"NCSA",
+	"OpenSSL",
+	"Unicode-3.0",
+	"Unicode-DFS-2016",
+	"Unlicense",
+	"Zlib",
+]
+exceptions = [
+	# ring uses a custom ISC-style license
+	{ allow = ["OpenSSL"], name = "ring" },
+]
+
+[licenses.private]
+ignore = true
+
+# Banned crates and duplicate version detection
+[bans]
+multiple-versions = "warn"
+wildcards = "allow"
+highlight = "simplest-path"
+deny = []
+skip = []
+skip-tree = []
+
+# Source origin checks
+[sources]
+unknown-registry = "warn"
+unknown-git = "warn"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = [
+	# Our serde fork with wasm32v1-none target fix (pending upstream merge)
+	"https://github.com/pezkuwichain/serde.git",
+]

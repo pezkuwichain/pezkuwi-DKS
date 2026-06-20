@@ -1,0 +1,43 @@
+[package]
+name = "test-teyrchain-adder"
+description = "Test teyrchain which adds to a number as its state transition"
+build = "build.rs"
+edition.workspace = true
+license.workspace = true
+version = "1.0.0"
+authors.workspace = true
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+dlmalloc = { features = ["global"], workspace = true }
+pezkuwi-teyrchain-primitives = { features = ["wasm-api"], workspace = true }
+tiny-keccak = { features = ["keccak"], workspace = true }
+
+# We need to make sure the global allocator is disabled until we have support of full bizinikiwi externalities
+pezsp-io = { features = ["disable_allocator"], workspace = true }
+
+[build-dependencies]
+bizinikiwi-wasm-builder = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"bizinikiwi-wasm-builder/std",
+	"codec/std",
+	"pezkuwi-teyrchain-primitives/std",
+	"pezsp-io/std",
+]
+runtime-benchmarks = [
+	"bizinikiwi-wasm-builder/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+]
+serde = []
+with-tracing = []

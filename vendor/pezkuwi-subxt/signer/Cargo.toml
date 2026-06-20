@@ -1,0 +1,142 @@
+[package]
+name = "pezkuwi-subxt-signer"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+
+license.workspace = true
+readme = "README.md"
+repository.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+description = "Sign extrinsics to be submitted by Subxt"
+keywords = ["extrinsic", "parity", "signer", "subxt"]
+
+[features]
+default = ["ecdsa", "sr25519", "std", "subxt"]
+std = [
+	"base64?/std",
+	"bip32?/std",
+	"bip39/std",
+	"codec/std",
+	"crypto_secretbox?/std",
+	"getrandom?/std",
+	"hex/std",
+	"hmac/std",
+	"keccak-hash?/std",
+	"pbkdf2/std",
+	"pezkuwi-subxt-core?/std",
+	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
+	"pezsp-keyring/std",
+	"regex/perf",
+	"regex/std",
+	"schnorrkel?/std",
+	"scrypt?/std",
+	"secp256k1?/std",
+	"serde?/std",
+	"serde_json?/std",
+	"sha2/std",
+	"zeroize/std",
+]
+
+# Pick the signer implementation(s) you need by enabling the
+# corresponding features. Note: I had more difficulties getting
+# ecdsa compiling to WASM on my mac; following this comment helped:
+# https://github.com/rust-bitcoin/rust-bitcoin/issues/930#issuecomment-1215538699
+sr25519 = ["schnorrkel"]
+ecdsa = ["secp256k1"]
+unstable-eth = ["bip32", "ecdsa", "keccak-hash", "secp256k1"]
+
+# Enable support for loading key pairs from pezkuwi-js json.
+pezkuwi-js-compat = [
+	"base64",
+	"crypto_secretbox",
+	"scrypt",
+	"serde",
+	"serde_json",
+	"sr25519",
+	"std",
+	"subxt",
+]
+
+# Make the keypair algorithms here compatible with Subxt's Signer trait,
+# so that they can be used to sign transactions for compatible chains.
+subxt = ["dep:pezkuwi-subxt-core"]
+
+# The getrandom package is used via schnorrkel. We need to enable the JS
+# feature on it if compiling for the web.
+web = ["getrandom/js"]
+serde = [
+	"bip39/serde",
+	"codec/serde",
+	"dep:serde",
+	"hex/serde",
+	"pezsp-core/serde",
+	"schnorrkel?/serde",
+	"secp256k1?/serde",
+	"secrecy/serde",
+	"zeroize/serde",
+]
+runtime-benchmarks = [
+	"pezkuwi-subxt-core?/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+]
+
+[dependencies]
+bip32 = { workspace = true, features = ["alloc", "secp256k1"], optional = true }
+bip39 = { workspace = true }
+cfg-if = { workspace = true }
+codec = { package = "parity-scale-codec", workspace = true, features = [
+	"derive",
+] }
+hex = { workspace = true }
+hmac = { workspace = true }
+keccak-hash = { workspace = true, optional = true }
+pbkdf2 = { workspace = true }
+pezkuwi-subxt-core = { workspace = true, optional = true, default-features = false }
+pezsp-crypto-hashing = { workspace = true }
+regex = { version = "1.10.2", default-features = false, features = ["unicode"] }
+schnorrkel = { workspace = true, optional = true, features = ["getrandom"] }
+secp256k1 = { workspace = true, optional = true, features = [
+	"alloc",
+	"recovery",
+] }
+secrecy = { workspace = true, features = ["alloc"] }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+zeroize = { workspace = true }
+
+# These are used if the pezkuwi-js-compat feature is enabled
+base64 = { workspace = true, optional = true, features = ["alloc"] }
+crypto_secretbox = { workspace = true, optional = true, features = [
+	"alloc",
+	"salsa20",
+] }
+scrypt = { workspace = true, default-features = false, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+
+# We only pull this in to enable the JS flag for schnorrkel to use.
+getrandom = { workspace = true, optional = true }
+
+[dev-dependencies]
+hex-literal = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-keyring = { workspace = true }
+proptest = { workspace = true }
+
+[package.metadata.cargo-machete]
+ignored = ["getrandom"]
+
+[package.metadata.docs.rs]
+default-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.playground]
+default-features = true
+
+[lints]
+workspace = true

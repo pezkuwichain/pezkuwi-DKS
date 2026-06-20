@@ -1,0 +1,145 @@
+[package]
+name = "pezkuwi"
+description = "Implementation of a `https://pezkuwichain.io` node in Rust based on the Bizinikiwi framework."
+license = "GPL-3.0-only"
+rust-version = "1.64.0"
+readme = "README.md"
+authors.workspace = true
+edition.workspace = true
+version = "6.0.0"
+default-run = "pezkuwi"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[badges]
+maintenance = { status = "actively-developed" }
+
+# Configuration for building a .deb package - for use with `cargo-deb`
+[package.metadata.deb]
+name = "pezkuwi"
+extended-description = "Implementation of a https://pezkuwichain.io node in Rust based on the Bizinikiwi framework."
+section = "misc"
+maintainer = "security@parity.io"
+license-file = ["LICENSE", "0"]
+# https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+maintainer-scripts = "scripts/packaging/deb-maintainer-scripts"
+assets = [
+	[
+		"target/release/pezkuwi",
+		"/usr/bin/",
+		"755",
+	],
+	[
+		"target/release/pezkuwi-prepare-worker",
+		"/usr/lib/pezkuwi/",
+		"755",
+	],
+	[
+		"target/release/pezkuwi-execute-worker",
+		"/usr/lib/pezkuwi/",
+		"755",
+	],
+	[
+		"scripts/packaging/pezkuwi.service",
+		"/lib/systemd/system/",
+		"644",
+	],
+]
+conf-files = ["/etc/default/pezkuwi"]
+
+[package.metadata.spellcheck]
+config = "./scripts/ci/gitlab/spellcheck.toml"
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "pezkuwi"
+path = "src/main.rs"
+
+[[bin]]
+name = "pezkuwi-execute-worker"
+path = "src/bin/execute-worker.rs"
+
+[[bin]]
+name = "pezkuwi-prepare-worker"
+path = "src/bin/prepare-worker.rs"
+
+[dependencies]
+color-eyre = { workspace = true }
+tikv-jemallocator = { optional = true, features = [
+	"unprefixed_malloc_on_supported_platforms",
+], workspace = true }
+
+# Crates in our workspace, defined as dependencies so we can pass them feature flags.
+pezkuwi-cli = { features = [
+	"pezkuwichain-native",
+	"zagros-native",
+], workspace = true, default-features = true }
+pezkuwi-node-core-pvf = { workspace = true, default-features = true }
+pezkuwi-node-core-pvf-prepare-worker = { workspace = true, default-features = true }
+pezkuwi-overseer = { workspace = true, default-features = true }
+
+# Needed for worker binaries.
+pezkuwi-node-core-pvf-common = { workspace = true, default-features = true }
+pezkuwi-node-core-pvf-execute-worker = { workspace = true, default-features = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+tikv-jemallocator = { workspace = true, features = [
+	"unprefixed_malloc_on_supported_platforms",
+] }
+
+[dev-dependencies]
+assert_cmd = { workspace = true }
+bizinikiwi-rpc-client = { workspace = true, default-features = true }
+nix = { features = ["signal"], workspace = true }
+pezkuwi-core-primitives = { workspace = true, default-features = true }
+tempfile = { workspace = true }
+tokio = { workspace = true, default-features = true }
+
+[build-dependencies]
+bizinikiwi-build-script-utils = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"bizinikiwi-rpc-client/runtime-benchmarks",
+	"pezkuwi-cli/runtime-benchmarks",
+	"pezkuwi-core-primitives/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-common/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-execute-worker/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-prepare-worker/runtime-benchmarks",
+	"pezkuwi-node-core-pvf/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+]
+try-runtime = [
+	"bizinikiwi-rpc-client/try-runtime",
+	"pezkuwi-cli/try-runtime",
+	"pezkuwi-core-primitives/try-runtime",
+]
+fast-runtime = ["pezkuwi-cli/fast-runtime"]
+runtime-metrics = ["pezkuwi-cli/runtime-metrics"]
+pyroscope = ["pezkuwi-cli/pyroscope"]
+jemalloc-allocator = [
+	"dep:tikv-jemallocator",
+	"pezkuwi-node-core-pvf-prepare-worker/jemalloc-allocator",
+	"pezkuwi-node-core-pvf/jemalloc-allocator",
+	"pezkuwi-overseer/jemalloc-allocator",
+]
+
+# Generate the metadata hash needed for CheckMetadataHash
+# in the builtin test runtimes (zagros and pezkuwichain).
+metadata-hash = ["pezkuwi-cli/metadata-hash"]
+
+# Enables timeout-based tests supposed to be run only in CI environment as they may be flaky
+# when run locally depending on system load
+ci-only-tests = ["pezkuwi-node-core-pvf/ci-only-tests"]
+std = [
+	"bizinikiwi-rpc-client/std",
+	"pezkuwi-cli/std",
+	"pezkuwi-node-core-pvf-common/std",
+	"pezkuwi-node-core-pvf-execute-worker/std",
+	"pezkuwi-node-core-pvf-prepare-worker/std",
+	"pezkuwi-node-core-pvf/std",
+	"pezkuwi-overseer/std",
+]

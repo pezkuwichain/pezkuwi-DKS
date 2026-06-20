@@ -1,0 +1,109 @@
+[package]
+name = "pezpallet-xcm-bridge-hub"
+description = "Module that adds dynamic bridges/lanes support to XCM infrastructure at the bridge hub."
+version = "0.2.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+tracing = { workspace = true }
+
+# Bridge Dependencies
+pezbp-messages = { workspace = true }
+pezbp-runtime = { workspace = true }
+pezbp-xcm-bridge-hub = { workspace = true }
+pezpallet-bridge-messages = { workspace = true }
+
+# Bizinikiwi Dependencies
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+# Pezkuwi Dependencies
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+
+[dev-dependencies]
+pezbp-header-pez-chain = { workspace = true }
+pezbp-xcm-bridge-hub-router = { workspace = true }
+pezkuwi-teyrchain-primitives = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-xcm-bridge-hub-router = { workspace = true }
+pezsp-io = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezbp-header-pez-chain/std",
+	"pezbp-messages/std",
+	"pezbp-runtime/std",
+	"pezbp-xcm-bridge-hub-router/std",
+	"pezbp-xcm-bridge-hub/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezkuwi-teyrchain-primitives/std",
+	"pezpallet-balances/std",
+	"pezpallet-bridge-messages/std",
+	"pezpallet-xcm-bridge-hub-router/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"tracing/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"pezbp-header-pez-chain/runtime-benchmarks",
+	"pezbp-messages/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezbp-xcm-bridge-hub-router/runtime-benchmarks",
+	"pezbp-xcm-bridge-hub/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-bridge-messages/runtime-benchmarks",
+	"pezpallet-xcm-bridge-hub-router/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-header-pez-chain/try-runtime",
+	"pezbp-messages/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezbp-xcm-bridge-hub-router/try-runtime",
+	"pezbp-xcm-bridge-hub/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-bridge-messages/try-runtime",
+	"pezpallet-xcm-bridge-hub-router/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

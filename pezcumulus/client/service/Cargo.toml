@@ -1,0 +1,146 @@
+[package]
+
+name = "pezcumulus-client-service"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+description = "Common functions used to assemble the components of a teyrchain node."
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-channel = { workspace = true }
+futures = { workspace = true }
+prometheus = { workspace = true }
+
+# Bizinikiwi
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-consensus = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsc-network-sync = { workspace = true, default-features = true }
+pezsc-network-transactions = { workspace = true, default-features = true }
+pezsc-rpc = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = true }
+pezsc-sysinfo = { workspace = true, default-features = true }
+pezsc-telemetry = { workspace = true, default-features = true }
+pezsc-tracing = { workspace = true, default-features = true }
+pezsc-transaction-pool = { workspace = true, default-features = true }
+pezsc-utils = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-transaction-pool = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
+
+# Pezkuwi
+pezkuwi-overseer = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-client-cli = { workspace = true, default-features = true }
+pezcumulus-client-collator = { workspace = true, default-features = true }
+pezcumulus-client-consensus-common = { workspace = true, default-features = true }
+pezcumulus-client-network = { workspace = true, default-features = true }
+pezcumulus-client-pov-recovery = { workspace = true, default-features = true }
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+pezcumulus-primitives-proof-size-hostfunction = { workspace = true, default-features = true }
+pezcumulus-relay-chain-inprocess-interface = { workspace = true, default-features = true }
+pezcumulus-relay-chain-interface = { workspace = true, default-features = true }
+pezcumulus-relay-chain-minimal-node = { workspace = true, default-features = true }
+pezcumulus-relay-chain-streams = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-client-cli/runtime-benchmarks",
+	"pezcumulus-client-collator/runtime-benchmarks",
+	"pezcumulus-client-consensus-common/runtime-benchmarks",
+	"pezcumulus-client-network/runtime-benchmarks",
+	"pezcumulus-client-pov-recovery/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-primitives-proof-size-hostfunction/runtime-benchmarks",
+	"pezcumulus-relay-chain-inprocess-interface/runtime-benchmarks",
+	"pezcumulus-relay-chain-interface/runtime-benchmarks",
+	"pezcumulus-relay-chain-minimal-node/runtime-benchmarks",
+	"pezcumulus-relay-chain-streams/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-consensus/runtime-benchmarks",
+	"pezsc-network-sync/runtime-benchmarks",
+	"pezsc-network-transactions/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsc-rpc/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsc-sysinfo/runtime-benchmarks",
+	"pezsc-tracing/runtime-benchmarks",
+	"pezsc-transaction-pool/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-transaction-pool/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
+std = [
+	"pezcumulus-client-cli/std",
+	"pezcumulus-client-collator/std",
+	"pezcumulus-client-consensus-common/std",
+	"pezcumulus-client-network/std",
+	"pezcumulus-client-pov-recovery/std",
+	"pezcumulus-relay-chain-inprocess-interface/std",
+	"pezcumulus-relay-chain-interface/std",
+	"pezcumulus-relay-chain-minimal-node/std",
+	"pezcumulus-relay-chain-streams/std",
+	"pezkuwi-overseer/std",
+	"pezsc-client-api/std",
+	"pezsc-consensus/std",
+	"pezsc-network-sync/std",
+	"pezsc-network-transactions/std",
+	"pezsc-network/std",
+	"pezsc-rpc/std",
+	"pezsc-service/std",
+	"pezsc-sysinfo/std",
+	"pezsc-telemetry/std",
+	"pezsc-tracing/std",
+	"pezsc-transaction-pool/std",
+	"pezsc-utils/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+]
+try-runtime = [
+	"pezcumulus-client-cli/try-runtime",
+	"pezcumulus-client-collator/try-runtime",
+	"pezcumulus-client-consensus-common/try-runtime",
+	"pezcumulus-client-network/try-runtime",
+	"pezcumulus-client-pov-recovery/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-relay-chain-inprocess-interface/try-runtime",
+	"pezcumulus-relay-chain-minimal-node/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-consensus/try-runtime",
+	"pezsc-network-sync/try-runtime",
+	"pezsc-network-transactions/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsc-rpc/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsc-sysinfo/try-runtime",
+	"pezsc-tracing/try-runtime",
+	"pezsc-transaction-pool/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-transaction-pool/try-runtime",
+]
+serde = []
+with-tracing = []

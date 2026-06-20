@@ -1,0 +1,26 @@
+[package]
+name = "pezkuwi-core-primitives"
+version = "7.0.0"
+description = "Core Pezkuwi types used by Relay Chains and teyrchains."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+[features]
+default = ["std"]
+std = ["codec/std", "pezsp-core/std", "pezsp-runtime/std", "scale-info/std"]
+runtime-benchmarks = ["pezsp-runtime/runtime-benchmarks"]
+try-runtime = ["pezsp-runtime/try-runtime"]
+serde = []

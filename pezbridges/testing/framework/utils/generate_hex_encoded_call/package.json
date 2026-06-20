@@ -1,0 +1,11 @@
+{
+  "name": "y",
+  "version": "y",
+  "description": "create a scale hex-encoded call values from given message",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@pezkuwi/api": "^14.0",
+    "@pezkuwi/util": "^13.1"
+  }
+}

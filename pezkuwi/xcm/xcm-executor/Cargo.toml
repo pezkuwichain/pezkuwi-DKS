@@ -1,0 +1,62 @@
+[package]
+name = "pezstaging-xcm-executor"
+description = "An abstract and configurable XCM message executor."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+version = "7.0.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+environmental = { workspace = true }
+impl-trait-for-tuples = { workspace = true }
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezsp-arithmetic = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-weights = { workspace = true }
+scale-info = { features = ["derive", "serde"], workspace = true }
+tracing = { workspace = true }
+xcm = { workspace = true }
+
+[features]
+default = ["std"]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"environmental/std",
+	"pezframe-benchmarking/std",
+	"pezframe-support/std",
+	"pezsp-arithmetic/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-weights/std",
+	"scale-info/std",
+	"tracing/std",
+	"xcm/std",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

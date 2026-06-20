@@ -1,0 +1,32 @@
+[package]
+name = "pez-equivocation-detector"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+description = "Equivocation detector"
+publish = false
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+async-std = { features = ["attributes"], workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+num-traits = { workspace = true, default-features = true }
+pez-finality-relay = { workspace = true }
+pezbp-header-pez-chain = { workspace = true, default-features = true }
+relay-utils = { workspace = true }
+tracing = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pez-finality-relay/runtime-benchmarks",
+	"pezbp-header-pez-chain/runtime-benchmarks",
+	"relay-utils/runtime-benchmarks",
+]
+std = ["pez-finality-relay/std", "relay-utils/std", "tracing/std"]

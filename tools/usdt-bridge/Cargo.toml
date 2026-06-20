@@ -1,0 +1,55 @@
+[workspace]
+
+[package]
+name = "usdt-bridge"
+version = "0.1.0"
+edition = "2021"
+description = "Custodial USDT Bridge: Polkadot Asset Hub <-> Pezkuwi Asset Hub (USDT.p)"
+authors = ["Dijital Kurdistan Tech Institute"]
+license = "Apache-2.0"
+
+[[bin]]
+name = "usdt-bridge"
+path = "src/main.rs"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.36", features = ["full"] }
+
+# Subxt for blockchain interaction
+subxt = { version = "0.38", features = ["substrate-compat"] }
+subxt-signer = { version = "0.38", features = ["sr25519", "subxt"] }
+
+# Crypto
+sp-core = { version = "34.0.0", default-features = false }
+sp-keyring = { version = "39.0.0" }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# CLI
+clap = { version = "4.4", features = ["derive"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Hex encoding
+hex = "0.4"
+
+# BIP39 mnemonic
+bip39 = "2.0"
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Async streams
+futures = "0.3"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Simple file-based storage (no native compilation needed)
+# Database tracking via JSON files for simplicity

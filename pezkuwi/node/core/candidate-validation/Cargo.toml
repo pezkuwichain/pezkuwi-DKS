@@ -1,0 +1,77 @@
+[package]
+name = "pezkuwi-node-core-candidate-validation"
+description = "Pezkuwi crate that implements the Candidate Validation subsystem. Handles requests to validate candidates according to a PVF."
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+gum = { workspace = true, default-features = true }
+
+codec = { features = ["bit-vec", "derive"], workspace = true }
+pezsp-application-crypto = { workspace = true }
+pezsp-keystore = { workspace = true }
+
+pezkuwi-node-metrics = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-overseer = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+
+[target.'cfg(not(any(target_os = "android", target_os = "unknown")))'.dependencies]
+pezkuwi-node-core-pvf = { workspace = true, default-features = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+futures = { features = ["thread-pool"], workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives = { workspace = true, features = ["test"] }
+pezkuwi-primitives-test-helpers = { workspace = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
+rstest = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-core-pvf/runtime-benchmarks",
+	"pezkuwi-node-metrics/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"gum/std",
+	"pezkuwi-node-core-pvf/std",
+	"pezkuwi-node-metrics/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-overseer/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
+	"pezsp-application-crypto/std",
+	"pezsp-keystore/std",
+]
+serde = []

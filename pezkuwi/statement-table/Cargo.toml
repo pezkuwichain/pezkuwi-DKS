@@ -1,0 +1,26 @@
+[package]
+name = "pezkuwi-statement-table"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Stores messages other authorities issue about candidates in Pezkuwi."
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+gum = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+]
+std = ["codec/std", "gum/std"]
+serde = []

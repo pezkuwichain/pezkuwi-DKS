@@ -1,0 +1,5 @@
+error: Invalid pezpallet::inherent, expected impl<..> ProvideInherent for Pezpallet<..>
+  --> tests/pezpallet_ui/inherent_invalid_item.rs:36:2
+   |
+36 |     impl Foo {}
+   |     ^^^^

@@ -1,0 +1,93 @@
+[package]
+name = "pezpallet-bridge-messages"
+description = "Module that allows bridged chains to exchange messages using lane concept."
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+tracing = { workspace = true }
+
+# Bridge dependencies
+pezbp-header-pez-chain = { workspace = true }
+pezbp-messages = { workspace = true }
+pezbp-runtime = { workspace = true }
+
+# Bizinikiwi Dependencies
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+pezsp-trie = { optional = true, workspace = true }
+
+[dev-dependencies]
+pezbp-runtime = { features = ["test-helpers"], workspace = true }
+pezbp-test-utils = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-bridge-grandpa = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezbp-header-pez-chain/std",
+	"pezbp-messages/std",
+	"pezbp-runtime/std",
+	"pezbp-test-utils/std",
+	"pezframe-benchmarking/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-bridge-grandpa/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"pezsp-trie/std",
+	"scale-info/std",
+	"tracing/std",
+]
+runtime-benchmarks = [
+	"pezbp-header-pez-chain/runtime-benchmarks",
+	"pezbp-messages/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezbp-runtime/test-helpers",
+	"pezbp-test-utils/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-bridge-grandpa/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-trie?/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-header-pez-chain/try-runtime",
+	"pezbp-messages/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezbp-test-utils/try-runtime",
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-bridge-grandpa/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+test-helpers = ["pezbp-runtime/test-helpers", "pezsp-trie"]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

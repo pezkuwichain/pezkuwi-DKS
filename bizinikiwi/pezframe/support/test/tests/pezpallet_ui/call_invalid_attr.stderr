@@ -1,0 +1,5 @@
+error: expected one of: `weight`, `call_index`, `feeless_if`, `authorize`, `weight_of_authorize`
+  --> tests/pezpallet_ui/call_invalid_attr.rs:31:16
+   |
+31 |         #[pezpallet::weird_attr]
+   |                      ^^^^^^^^^^

@@ -1,0 +1,5 @@
+error: Invalid pezpallet::call, feeless_if closure must return `bool`
+  --> tests/pezpallet_ui/call_feeless_invalid_closure_return.rs:31:46
+   |
+31 |         #[pezpallet::feeless_if(|_: &OriginFor<T>| -> u32 { 0 })]
+   |                                                    ^

@@ -1,0 +1,183 @@
+[package]
+name = "pezcumulus-test-runtime"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+publish = true
+description = "Pezkuwi SDK cumulus/teyrchain component: test runtime"
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde_json = { workspace = true }
+
+# Bizinikiwi
+pezframe-executive = { workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezframe-system-rpc-runtime-api = { workspace = true }
+pezpallet-aura = { workspace = true }
+pezpallet-authorship = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-glutton = { workspace = true }
+pezpallet-message-queue = { workspace = true }
+pezpallet-session = { workspace = true }
+pezpallet-sudo = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+pezpallet-transaction-payment = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-block-builder = { workspace = true }
+pezsp-consensus-aura = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-genesis-builder = { workspace = true }
+pezsp-inherents = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-keyring = { workspace = true }
+pezsp-offchain = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-session = { workspace = true }
+pezsp-transaction-pool = { workspace = true }
+pezsp-version = { workspace = true }
+
+# Pezcumulus
+pezcumulus-pezpallet-aura-ext = { workspace = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+pezcumulus-pezpallet-weight-reclaim = { workspace = true }
+pezcumulus-primitives-aura = { workspace = true }
+pezcumulus-primitives-core = { workspace = true }
+teyrchain-info = { workspace = true }
+
+[build-dependencies]
+bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"bizinikiwi-wasm-builder",
+	"bizinikiwi-wasm-builder?/std",
+	"codec/std",
+	"pezcumulus-pezpallet-aura-ext/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezcumulus-pezpallet-weight-reclaim/std",
+	"pezcumulus-primitives-aura/std",
+	"pezcumulus-primitives-core/std",
+	"pezframe-executive/std",
+	"pezframe-support/std",
+	"pezframe-system-rpc-runtime-api/std",
+	"pezframe-system/std",
+	"pezpallet-aura/std",
+	"pezpallet-authorship/std",
+	"pezpallet-balances/std",
+	"pezpallet-glutton/std",
+	"pezpallet-message-queue/std",
+	"pezpallet-session/std",
+	"pezpallet-sudo/std",
+	"pezpallet-timestamp/std",
+	"pezpallet-transaction-payment/std",
+	"pezsp-api/std",
+	"pezsp-block-builder/std",
+	"pezsp-consensus-aura/std",
+	"pezsp-core/std",
+	"pezsp-genesis-builder/std",
+	"pezsp-inherents/std",
+	"pezsp-io/std",
+	"pezsp-keyring/std",
+	"pezsp-offchain/std",
+	"pezsp-runtime/std",
+	"pezsp-session/std",
+	"pezsp-transaction-pool/std",
+	"pezsp-version/std",
+	"scale-info/std",
+	"serde_json/std",
+	"teyrchain-info/std",
+]
+increment-spec-version = []
+# A runtime which expects to build behind the relay chain tip.
+relay-parent-offset = []
+# A runtime with elastic-scaling configuration.
+elastic-scaling = []
+# A runtime with low slot duration of 500ms for low-latency testing with 12 cores.
+elastic-scaling-500ms = []
+# A runtime with a slot duration of 6s but parameters that allow multiple blocks per slot.
+elastic-scaling-multi-block-slot = []
+# A runtime with 12s slot duration which only authors one block per slot.
+sync-backing = []
+# A runtime with 6s slot duration which only authors one block per slot.
+async-backing = []
+# An elastic scaling runtime with 12s slots.
+elastic-scaling-12s-slot = []
+runtime-benchmarks = [
+	"bizinikiwi-wasm-builder?/runtime-benchmarks",
+	"pezcumulus-pezpallet-aura-ext/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-pezpallet-weight-reclaim/runtime-benchmarks",
+	"pezcumulus-primitives-aura/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-executive/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system-rpc-runtime-api/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-aura/runtime-benchmarks",
+	"pezpallet-authorship/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-glutton/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-session/runtime-benchmarks",
+	"pezpallet-sudo/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-transaction-payment/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-block-builder/runtime-benchmarks",
+	"pezsp-consensus-aura/runtime-benchmarks",
+	"pezsp-genesis-builder/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-offchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-session/runtime-benchmarks",
+	"pezsp-transaction-pool/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+	"teyrchain-info/runtime-benchmarks",
+]
+try-runtime = [
+	"pezcumulus-pezpallet-aura-ext/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-pezpallet-weight-reclaim/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-executive/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-aura/try-runtime",
+	"pezpallet-authorship/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-glutton/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-session/try-runtime",
+	"pezpallet-sudo/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-transaction-payment/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-block-builder/try-runtime",
+	"pezsp-consensus-aura/try-runtime",
+	"pezsp-genesis-builder/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-offchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-session/try-runtime",
+	"pezsp-transaction-pool/try-runtime",
+	"pezsp-version/try-runtime",
+	"teyrchain-info/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

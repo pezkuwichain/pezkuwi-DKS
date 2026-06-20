@@ -1,0 +1,28 @@
+error: Invalid pezpallet part specified, the pezpallet `Pezpallet` doesn't have the `Call` part. Available parts are: `Pezpallet`, `Storage`.
+  --> tests/construct_runtime_ui/use_undefined_part.rs:48:36
+   |
+48 |         Pezpallet: pezpallet use_parts { Call },
+   |                                          ^^^^
+
+error[E0412]: cannot find type `RuntimeCall` in this scope
+  --> tests/construct_runtime_ui/use_undefined_part.rs:40:64
+   |
+40 | pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<u32, RuntimeCall, Signature, ()>;
+   |                                                                ^^^^^^^^^^^ not found in this scope
+   |
+help: you might be missing a type parameter
+   |
+40 | pub type UncheckedExtrinsic<RuntimeCall> = generic::UncheckedExtrinsic<u32, RuntimeCall, Signature, ()>;
+   |                            +++++++++++++
+
+error[E0412]: cannot find type `Runtime` in this scope
+  --> tests/construct_runtime_ui/use_undefined_part.rs:42:28
+   |
+42 | impl pezpallet::Config for Runtime {}
+   |                            ^^^^^^^ not found in this scope
+   |
+help: there is an enum variant `pezsp_api::__private::TransactionType::Runtime`; try using the variant's enum
+   |
+42 - impl pezpallet::Config for Runtime {}
+42 + impl pezpallet::Config for pezsp_api::__private::TransactionType {}
+   |

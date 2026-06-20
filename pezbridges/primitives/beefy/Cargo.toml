@@ -1,0 +1,67 @@
+[package]
+name = "pezbp-beefy"
+description = "Primitives of pezpallet-bridge-beefy module."
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+publish = false
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["bit-vec", "derive"], workspace = true }
+scale-info = { features = ["bit-vec", "derive"], workspace = true }
+serde = { features = ["alloc", "derive"], workspace = true }
+
+# Bridge Dependencies
+pezbp-runtime = { workspace = true }
+
+# Bizinikiwi Dependencies
+pez-binary-merkle-tree = { workspace = true }
+pezframe-support = { workspace = true }
+pezpallet-beefy-mmr = { workspace = true }
+pezpallet-mmr = { workspace = true }
+pezsp-consensus-beefy = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pez-binary-merkle-tree/std",
+	"pezbp-runtime/std",
+	"pezframe-support/std",
+	"pezpallet-beefy-mmr/std",
+	"pezpallet-mmr/std",
+	"pezsp-consensus-beefy/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde/std",
+]
+runtime-benchmarks = [
+	"pez-binary-merkle-tree/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezpallet-beefy-mmr/runtime-benchmarks",
+	"pezpallet-mmr/runtime-benchmarks",
+	"pezsp-consensus-beefy/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-runtime/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezpallet-beefy-mmr/try-runtime",
+	"pezpallet-mmr/try-runtime",
+	"pezsp-consensus-beefy/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

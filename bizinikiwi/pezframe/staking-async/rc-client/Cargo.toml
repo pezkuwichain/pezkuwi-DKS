@@ -1,0 +1,53 @@
+[package]
+name = "pezpallet-staking-async-rc-client"
+description = "Pallet handling the communication with staking-ah-client. It's role is to glue the staking pezpallet (on AssetHub chain) and session pezpallet (on Relay Chain) in a transparent way."
+license = "Apache-2.0"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[dependencies]
+codec = { workspace = true, features = ["derive"] }
+impl-trait-for-tuples = "0.2.2"
+log = { workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { features = ["serde"], workspace = true }
+pezsp-staking = { features = ["serde"], workspace = true }
+scale-info = { workspace = true, features = ["derive"] }
+xcm = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"pezsp-staking/std",
+	"scale-info/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-staking/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

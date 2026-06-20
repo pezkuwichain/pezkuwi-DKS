@@ -1,0 +1,46 @@
+[package]
+name = "pezkuwi-node-core-pvf-execute-worker"
+description = "Pezkuwi crate that contains the logic for executing PVFs. Used by the pezkuwi-execute-worker binary."
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cfg-if = { workspace = true }
+cpu-time = { workspace = true }
+gum = { workspace = true, default-features = true }
+libc = { workspace = true }
+nix = { features = ["process", "resource", "sched"], workspace = true }
+
+codec = { features = ["derive"], workspace = true }
+
+pezkuwi-node-core-pvf-common = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+
+pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
+
+[features]
+builder = []
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-common/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"gum/std",
+	"pezkuwi-node-core-pvf-common/std",
+	"pezkuwi-pez-node-primitives/std",
+]
+serde = []

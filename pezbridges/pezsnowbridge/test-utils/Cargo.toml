@@ -1,0 +1,64 @@
+[package]
+name = "pezsnowbridge-test-utils"
+description = "Snowbridge test utilities"
+version = "0.1.0"
+authors = ["Snowfork <contact@snowfork.com>"]
+edition.workspace = true
+repository.workspace = true
+license = "Apache-2.0"
+categories = ["cryptography::cryptocurrencies"]
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[dependencies]
+codec = { workspace = true, default-features = true }
+pezbp-relayers = { workspace = true, default-features = true }
+pezframe-benchmarking = { optional = true, workspace = true, default-features = true }
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezpallet-asset-conversion = { workspace = true, default-features = true }
+pezsnowbridge-core = { workspace = true, default-features = true }
+pezsnowbridge-outbound-queue-primitives = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+scale-info = { features = [
+	"derive",
+], workspace = true, default-features = true }
+xcm = { workspace = true, default-features = true }
+xcm-builder = { workspace = true, default-features = true }
+xcm-executor = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezbp-relayers/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-asset-conversion/runtime-benchmarks",
+	"pezsnowbridge-core/runtime-benchmarks",
+	"pezsnowbridge-outbound-queue-primitives/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = []
+try-runtime = [
+	"pezbp-relayers/try-runtime",
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-asset-conversion/try-runtime",
+	"pezsnowbridge-core/try-runtime",
+	"pezsnowbridge-outbound-queue-primitives/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

@@ -1,0 +1,71 @@
+[package]
+name = "coretime-zagros-integration-tests"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Coretime Zagros runtime integration tests with xcm-pez-emulator"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezpallet-broker = { workspace = true, default-features = true }
+pezpallet-message-queue = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+pezkuwi-runtime-teyrchains = { workspace = true, default-features = true }
+xcm = { workspace = true }
+xcm-executor = { workspace = true }
+zagros-runtime-constants = { workspace = true, default-features = true }
+
+# Pezcumulus
+emulated-integration-tests-common = { workspace = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true, default-features = true }
+zagros-system-emulated-network = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezpallet-broker/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+	"zagros-runtime-constants/runtime-benchmarks",
+	"zagros-system-emulated-network/runtime-benchmarks",
+]
+std = [
+	"emulated-integration-tests-common/std",
+	"pezframe-support/std",
+	"pezpallet-message-queue/std",
+	"pezsp-runtime/std",
+	"xcm-executor/std",
+	"xcm/std",
+	"zagros-system-emulated-network/std",
+]
+try-runtime = [
+	"emulated-integration-tests-common/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezpallet-broker/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+	"zagros-runtime-constants/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

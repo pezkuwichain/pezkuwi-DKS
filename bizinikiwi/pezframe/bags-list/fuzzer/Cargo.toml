@@ -1,0 +1,38 @@
+[package]
+name = "pezpallet-bags-list-fuzzer"
+version = "4.0.0-dev"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Fuzzer for FRAME pezpallet bags list"
+publish = false
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "bags-list"
+path = "src/main.rs"
+
+[dependencies]
+honggfuzz = { workspace = true }
+pezframe-election-provider-support = { features = [
+	"fuzz",
+], workspace = true, default-features = true }
+pezpallet-bags-list = { features = [
+	"fuzz",
+], workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezframe-election-provider-support/runtime-benchmarks",
+	"pezpallet-bags-list/runtime-benchmarks",
+]
+std = []
+try-runtime = [
+	"pezframe-election-provider-support/try-runtime",
+	"pezpallet-bags-list/try-runtime",
+]

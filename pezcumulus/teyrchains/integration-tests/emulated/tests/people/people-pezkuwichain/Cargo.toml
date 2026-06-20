@@ -1,0 +1,65 @@
+[package]
+name = "people-pezkuwichain-integration-tests"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "People Pezkuwichain runtime integration tests with xcm-pez-emulator"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+xcm = { workspace = true }
+xcm-executor = { workspace = true }
+
+# Pezcumulus
+asset-test-pezutils = { workspace = true, default-features = true }
+emulated-integration-tests-common = { workspace = true }
+pezkuwichain-system-emulated-network = { workspace = true }
+teyrchains-common = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"asset-test-pezutils/runtime-benchmarks",
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezkuwichain-system-emulated-network/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = [
+	"emulated-integration-tests-common/std",
+	"pezframe-support/std",
+	"pezkuwichain-system-emulated-network/std",
+	"pezpallet-balances/std",
+	"pezsp-runtime/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+try-runtime = [
+	"asset-test-pezutils/try-runtime",
+	"emulated-integration-tests-common/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"teyrchains-common/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

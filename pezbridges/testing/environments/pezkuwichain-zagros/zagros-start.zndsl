@@ -1,0 +1,8 @@
+Description: Check if the Zagros teyrchains started producing blocks reliably
+Network: ./bridge_hub_zagros_local_network.toml
+Creds: config
+
+# ensure that initialization has completed
+asset-hub-zagros-collator1: reports block height is at least 10 within 180 seconds
+bridge-hub-zagros-collator1: reports block height is at least 10 within 180 seconds
+

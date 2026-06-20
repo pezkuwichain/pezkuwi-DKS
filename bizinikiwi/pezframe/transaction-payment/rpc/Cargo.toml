@@ -1,0 +1,48 @@
+[package]
+name = "pezpallet-transaction-payment-rpc"
+version = "30.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "RPC interface for the transaction payment pezpallet."
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { workspace = true, default-features = true }
+jsonrpsee = { features = [
+	"client-core",
+	"macros",
+	"server-core",
+], workspace = true }
+pezpallet-transaction-payment-rpc-runtime-api = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-rpc = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-weights = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezpallet-transaction-payment-rpc-runtime-api/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = ["pezsp-blockchain/std", "pezsp-rpc/std"]
+try-runtime = [
+	"pezpallet-transaction-payment-rpc-runtime-api/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

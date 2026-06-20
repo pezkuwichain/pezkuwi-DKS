@@ -1,0 +1,45 @@
+[package]
+name = "pez-generate-bags"
+version = "28.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Bag threshold generation script for pezpallet-bag-list"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# FRAME
+pezframe-election-provider-support = { workspace = true, default-features = true }
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezpallet-staking = { workspace = true, default-features = true }
+pezsp-staking = { workspace = true, default-features = true }
+
+# third party
+chrono = { workspace = true }
+num-format = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezframe-election-provider-support/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-staking/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+]
+std = []
+try-runtime = [
+	"pezframe-election-provider-support/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-staking/try-runtime",
+	"pezsp-staking/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

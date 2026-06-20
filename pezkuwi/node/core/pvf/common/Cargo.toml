@@ -1,0 +1,73 @@
+[package]
+name = "pezkuwi-node-core-pvf-common"
+description = "Pezkuwi crate that contains functionality related to PVFs that is shared by the PVF host and the PVF workers."
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cpu-time = { workspace = true }
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+libc = { workspace = true }
+nix = { features = ["resource", "sched"], workspace = true }
+thiserror = { workspace = true }
+
+codec = { features = ["derive"], workspace = true }
+
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+
+pezsc-executor = { workspace = true, default-features = true }
+pezsc-executor-common = { workspace = true, default-features = true }
+pezsc-executor-wasmtime = { workspace = true, default-features = true }
+
+pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+landlock = { workspace = true }
+
+[target.'cfg(all(target_os = "linux", target_arch = "x86_64"))'.dependencies]
+seccompiler = { workspace = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+wat = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+tempfile = { workspace = true }
+
+[features]
+# This feature is used to export test code to other crates without putting it in the production build.
+test-utils = []
+jemalloc-allocator = []
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsc-executor-wasmtime/runtime-benchmarks",
+	"pezsc-executor/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"gum/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezsc-executor-common/std",
+	"pezsc-executor-wasmtime/std",
+]
+serde = []
+with-tracing = []

@@ -1,0 +1,66 @@
+[package]
+name = "pezbp-header-pez-chain"
+description = "A common interface for describing what a bridge pezpallet should be able to do."
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true }
+finality-grandpa = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { features = ["alloc", "derive"], workspace = true }
+
+# Bridge dependencies
+pezbp-runtime = { workspace = true }
+
+# Bizinikiwi Dependencies
+pezframe-support = { workspace = true }
+pezsp-consensus-grandpa = { features = ["serde"], workspace = true }
+pezsp-core = { features = ["serde"], workspace = true }
+pezsp-runtime = { features = ["serde"], workspace = true }
+pezsp-std = { workspace = true }
+
+[dev-dependencies]
+hex = { workspace = true, default-features = true }
+hex-literal = { workspace = true, default-features = true }
+pezbp-test-utils = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"finality-grandpa/std",
+	"pezbp-runtime/std",
+	"pezframe-support/std",
+	"pezsp-consensus-grandpa/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde/std",
+]
+runtime-benchmarks = [
+	"pezbp-runtime/runtime-benchmarks",
+	"pezbp-test-utils/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezsp-consensus-grandpa/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-runtime/try-runtime",
+	"pezbp-test-utils/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezsp-consensus-grandpa/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

@@ -1,0 +1,25 @@
+[package]
+name = "contracts"
+version = "0.6.3"
+edition = "2021"
+
+# Binary targets are injected dynamically by the build script.
+# Note: workspace = true fields removed because this is compiled in a temp directory
+description = "Pezkuwi SDK component: contracts"
+documentation.workspace = true
+repository = "https://github.com/pezkuwichain/pezkuwi-sdk"
+homepage = "https://pezkuwichain.io"
+authors = ["Pezkuwi Chain <admin@pezkuwichain.io>"]
+license = "Apache-2.0"
+[[bin]]
+
+# All paths or versions are injected dynamically by the build script.
+[dependencies]
+common = { package = 'pezpallet-contracts-fixtures-common', path = "" }
+polkavm-derive = { version = "" }
+uapi = { package = 'pezpallet-contracts-uapi', path = "", default-features = false }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

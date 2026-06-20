@@ -1,0 +1,72 @@
+[package]
+name = "bizinikiwi-test-client"
+description = "Client testing utilities"
+version = "2.0.1"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+publish = false
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+array-bytes = { workspace = true, default-features = true }
+async-trait = { workspace = true }
+codec = { workspace = true, default-features = true }
+futures = { workspace = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-client-db = { features = [
+	"test-helpers",
+], workspace = true, default-features = false }
+pezsc-consensus = { workspace = true, default-features = true }
+pezsc-executor = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = false }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+serde = { workspace = true, default-features = true }
+serde_json = { workspace = true, default-features = true }
+tokio = { features = ["sync"], workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-client-db/runtime-benchmarks",
+	"pezsc-consensus/runtime-benchmarks",
+	"pezsc-executor/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"pezsc-client-api/std",
+	"pezsc-client-db/std",
+	"pezsc-consensus/std",
+	"pezsc-service/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+]
+try-runtime = [
+	"pezsc-client-api/try-runtime",
+	"pezsc-client-db/try-runtime",
+	"pezsc-consensus/try-runtime",
+	"pezsc-executor/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

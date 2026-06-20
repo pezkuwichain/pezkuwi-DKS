@@ -1,0 +1,45 @@
+[package]
+name = "pezkuwi-zombienet-cli"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+license.workspace = true
+repository.workspace = true
+description = "Pezkuwi Zombienet CLI - Network orchestration tool for Pezkuwi blockchain testing"
+keywords = ["blockchain", "cli", "pezkuwi", "zombienet"]
+
+[[bin]]
+name = "pezkuwi-zombienet"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+# Zombienet SDK deps
+configuration = { workspace = true }
+orchestrator = { workspace = true }
+pezkuwi-zombienet-sdk = { workspace = true }
+provider = { workspace = true }
+support = { workspace = true }
+
+[features]
+default = []
+std = [
+	"anyhow/std",
+	"configuration/std",
+	"orchestrator/std",
+	"pezkuwi-zombienet-sdk/std",
+	"provider/std",
+	"support/std",
+	"tracing/std",
+]
+runtime-benchmarks = [
+	"orchestrator/runtime-benchmarks",
+	"pezkuwi-zombienet-sdk/runtime-benchmarks",
+]

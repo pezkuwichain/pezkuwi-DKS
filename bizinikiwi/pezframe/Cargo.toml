@@ -1,0 +1,156 @@
+[package]
+name = "pezframe"
+version = "0.1.0"
+authors = [
+	"Kurdistan Tech Institute <info@pezkuwichain.io>",
+	"Parity Technologies <admin@parity.io>",
+]
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "The single package to get you started with building frame pallets and runtimes"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+# external deps
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { workspace = true }
+
+# primitive deps, used for developing FRAME pallets.
+pezsp-arithmetic = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# frame deps, for developing FRAME pallets.
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+
+# primitive types used for developing FRAME runtimes.
+pezsp-api = { optional = true, workspace = true }
+pezsp-block-builder = { optional = true, workspace = true }
+pezsp-consensus-aura = { optional = true, workspace = true }
+pezsp-consensus-grandpa = { optional = true, workspace = true }
+pezsp-genesis-builder = { optional = true, workspace = true }
+pezsp-inherents = { optional = true, workspace = true }
+pezsp-keyring = { optional = true, workspace = true }
+pezsp-offchain = { optional = true, workspace = true }
+pezsp-session = { optional = true, workspace = true }
+pezsp-storage = { optional = true, workspace = true }
+pezsp-transaction-pool = { optional = true, workspace = true }
+pezsp-version = { optional = true, workspace = true }
+
+pezframe-executive = { optional = true, workspace = true }
+pezframe-system-rpc-runtime-api = { optional = true, workspace = true }
+
+# Used for runtime benchmarking
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-system-benchmarking = { optional = true, workspace = true }
+
+# Used for try-runtime
+pezframe-try-runtime = { optional = true, workspace = true }
+
+docify = { workspace = true }
+log = { workspace = true }
+
+[features]
+default = ["runtime", "std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-executive?/std",
+	"pezframe-support/std",
+	"pezframe-system-benchmarking?/std",
+	"pezframe-system-rpc-runtime-api?/std",
+	"pezframe-system/std",
+	"pezframe-try-runtime?/std",
+	"pezsp-api?/std",
+	"pezsp-arithmetic/std",
+	"pezsp-block-builder?/std",
+	"pezsp-consensus-aura?/std",
+	"pezsp-consensus-grandpa?/std",
+	"pezsp-core/std",
+	"pezsp-genesis-builder?/std",
+	"pezsp-inherents?/std",
+	"pezsp-io/std",
+	"pezsp-keyring?/std",
+	"pezsp-offchain?/std",
+	"pezsp-runtime/std",
+	"pezsp-session?/std",
+	"pezsp-storage/std",
+	"pezsp-transaction-pool?/std",
+	"pezsp-version?/std",
+	"scale-info/std",
+	"serde/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-executive?/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system-benchmarking/runtime-benchmarks",
+	"pezframe-system-rpc-runtime-api?/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe-try-runtime?/runtime-benchmarks",
+	"pezsp-api?/runtime-benchmarks",
+	"pezsp-block-builder?/runtime-benchmarks",
+	"pezsp-consensus-aura?/runtime-benchmarks",
+	"pezsp-consensus-grandpa?/runtime-benchmarks",
+	"pezsp-genesis-builder?/runtime-benchmarks",
+	"pezsp-inherents?/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-keyring?/runtime-benchmarks",
+	"pezsp-offchain?/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-session?/runtime-benchmarks",
+	"pezsp-transaction-pool?/runtime-benchmarks",
+	"pezsp-version?/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-executive/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system-benchmarking?/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe-try-runtime/try-runtime",
+	"pezsp-api?/try-runtime",
+	"pezsp-block-builder?/try-runtime",
+	"pezsp-consensus-aura?/try-runtime",
+	"pezsp-consensus-grandpa?/try-runtime",
+	"pezsp-genesis-builder?/try-runtime",
+	"pezsp-inherents?/try-runtime",
+	"pezsp-keyring?/try-runtime",
+	"pezsp-offchain?/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-session?/try-runtime",
+	"pezsp-transaction-pool?/try-runtime",
+	"pezsp-version?/try-runtime",
+]
+experimental = ["pezframe-support/experimental", "pezframe-system/experimental"]
+runtime = [
+	"pezframe-executive",
+	"pezframe-system-rpc-runtime-api",
+	"pezsp-api",
+	"pezsp-block-builder",
+	"pezsp-consensus-aura",
+	"pezsp-consensus-grandpa",
+	"pezsp-genesis-builder",
+	"pezsp-inherents",
+	"pezsp-keyring",
+	"pezsp-offchain",
+	"pezsp-session",
+	"pezsp-storage",
+	"pezsp-transaction-pool",
+	"pezsp-version",
+]
+serde = []
+with-tracing = []
+tuples-96 = []

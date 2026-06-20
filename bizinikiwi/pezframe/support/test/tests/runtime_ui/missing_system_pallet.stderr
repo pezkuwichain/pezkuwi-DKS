@@ -1,0 +1,5 @@
+error: `System` pezpallet declaration is missing. Please add this line: `pub type System = pezframe_system;`
+  --> tests/runtime_ui/missing_system_pallet.rs:19:5
+   |
+19 | mod runtime {
+   |     ^^^^^^^

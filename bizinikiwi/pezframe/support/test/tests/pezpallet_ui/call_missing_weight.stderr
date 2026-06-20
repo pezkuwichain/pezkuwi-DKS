@@ -1,0 +1,5 @@
+error: A pezpallet::call requires either a concrete `#[pezpallet::weight($expr)]` or an inherited weight from the `#[pezpallet:call(weight($type))]` attribute, but none were given.
+  --> tests/pezpallet_ui/call_missing_weight.rs:34:7
+   |
+34 |         pub fn foo(origin: OriginFor<T>) -> DispatchResultWithPostInfo {}
+   |             ^^

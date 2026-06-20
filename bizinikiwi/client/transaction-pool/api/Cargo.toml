@@ -1,0 +1,37 @@
+[package]
+name = "pezsc-transaction-pool-api"
+version = "28.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Transaction pool client facing API."
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+codec = { workspace = true, default-features = true }
+futures = { workspace = true }
+indexmap = { workspace = true }
+log = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+serde = { features = ["derive"], workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = ["log/std", "pezsp-blockchain/std", "pezsp-core/std", "pezsp-runtime/std"]
+try-runtime = ["pezsp-blockchain/try-runtime", "pezsp-runtime/try-runtime"]
+serde = []

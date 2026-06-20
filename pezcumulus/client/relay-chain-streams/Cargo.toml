@@ -1,0 +1,42 @@
+[package]
+name = "pezcumulus-relay-chain-streams"
+version = "0.7.0"
+authors.workspace = true
+description = "Pezcumulus client common relay chain streams."
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+futures = { workspace = true }
+tracing = { workspace = true, default-features = true }
+
+# Bizinikiwi
+pezsp-api = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+
+# Pezkuwi
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-relay-chain-interface = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-relay-chain-interface/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+]
+std = [
+	"pezcumulus-relay-chain-interface/std",
+	"pezkuwi-node-subsystem/std",
+	"pezsp-consensus/std",
+]

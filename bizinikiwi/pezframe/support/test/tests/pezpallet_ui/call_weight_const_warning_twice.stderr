@@ -1,0 +1,32 @@
+error: invalid suffix `custom_prefix` for number literal
+  --> tests/pezpallet_ui/call_weight_const_warning_twice.rs:36:29
+   |
+36 |         #[pezpallet::weight(123_custom_prefix)]
+   |                             ^^^^^^^^^^^^^^^^^ invalid suffix `custom_prefix`
+   |
+   = help: the suffix must be one of the numeric types (`u32`, `isize`, `f32`, etc.)
+
+error: use of deprecated constant `pezpallet::warnings::ConstantWeight_0::_w`:
+               It is deprecated to use hard-coded constant as call weight.
+               Please instead benchmark all calls or put the pezpallet into `dev` mode.
+
+               For more info see:
+                   <https://github.com/pezkuwichain/pezkuwi-sdk/issues/215>
+  --> tests/pezpallet_ui/call_weight_const_warning_twice.rs:32:29
+   |
+32 |         #[pezpallet::weight(123)]
+   |                             ^^^
+   |
+   = note: `-D deprecated` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(deprecated)]`
+
+error: use of deprecated constant `pezpallet::warnings::ConstantWeight_1::_w`:
+               It is deprecated to use hard-coded constant as call weight.
+               Please instead benchmark all calls or put the pezpallet into `dev` mode.
+
+               For more info see:
+                   <https://github.com/pezkuwichain/pezkuwi-sdk/issues/215>
+  --> tests/pezpallet_ui/call_weight_const_warning_twice.rs:36:29
+   |
+36 |         #[pezpallet::weight(123_custom_prefix)]
+   |                             ^^^^^^^^^^^^^^^^^

@@ -1,0 +1,49 @@
+[package]
+name = "pezcumulus-pov-validator"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+homepage.workspace = true
+description = "A tool for validating PoVs locally"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+codec = { workspace = true }
+pezkuwi-pez-node-primitives = { workspace = true }
+pezkuwi-primitives = { workspace = true }
+pezkuwi-teyrchain-primitives = { workspace = true }
+pezsc-executor = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-maybe-compressed-blob = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsc-executor/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+]
+std = [
+	"anyhow/std",
+	"codec/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives/std",
+	"pezkuwi-teyrchain-primitives/std",
+	"pezsc-executor/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"tracing/std",
+]
+serde = []
+with-tracing = []

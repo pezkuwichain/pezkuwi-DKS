@@ -1,0 +1,60 @@
+[package]
+name = "pez-penpal-emulated-chain"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Penpal emulated chain"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-keyring = { workspace = true }
+
+# Pezkuwi
+xcm = { workspace = true }
+
+# Pezcumulus
+emulated-integration-tests-common = { workspace = true }
+pez-penpal-runtime = { workspace = true }
+pezcumulus-primitives-core = { workspace = true }
+teyrchains-common = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+  "emulated-integration-tests-common/runtime-benchmarks",
+  "pez-penpal-runtime/runtime-benchmarks",
+  "pezcumulus-primitives-core/runtime-benchmarks",
+  "pezframe-support/runtime-benchmarks",
+  "pezsp-keyring/runtime-benchmarks",
+  "teyrchains-common/runtime-benchmarks",
+  "xcm/runtime-benchmarks",
+]
+std = [
+  "emulated-integration-tests-common/std",
+  "pezcumulus-primitives-core/std",
+  "pezframe-support/std",
+  "pezsp-core/std",
+  "pezsp-keyring/std",
+  "xcm/std",
+]
+try-runtime = [
+  "emulated-integration-tests-common/try-runtime",
+  "pez-penpal-runtime/try-runtime",
+  "pezcumulus-primitives-core/try-runtime",
+  "pezframe-support/try-runtime",
+  "pezsp-keyring/try-runtime",
+  "teyrchains-common/try-runtime",
+  "xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

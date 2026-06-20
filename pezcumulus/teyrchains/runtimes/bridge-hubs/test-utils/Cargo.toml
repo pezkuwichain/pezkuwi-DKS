@@ -1,0 +1,160 @@
+[package]
+name = "pezbridge-hub-test-utils"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+description = "Utils for BridgeHub testing"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive", "max-encoded-len"], workspace = true }
+impl-trait-for-tuples = { workspace = true }
+tracing = { workspace = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+pezpallet-utility = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true }
+pezsp-std = { workspace = true }
+pezsp-tracing = { workspace = true, default-features = true }
+
+# Pezcumulus
+asset-test-pezutils = { workspace = true, default-features = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+pezcumulus-pezpallet-xcmp-queue = { workspace = true }
+teyrchains-common = { workspace = true }
+teyrchains-runtimes-test-utils = { workspace = true }
+
+# Pezkuwi
+pezpallet-xcm = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+
+# Bridges
+pezbp-header-pez-chain = { workspace = true }
+pezbp-messages = { workspace = true }
+pezbp-pezkuwi-core = { workspace = true }
+pezbp-relayers = { workspace = true }
+pezbp-runtime = { workspace = true }
+pezbp-test-utils = { workspace = true }
+pezbp-teyrchains = { workspace = true }
+pezpallet-bridge-grandpa = { workspace = true }
+pezpallet-bridge-messages = { features = ["test-helpers"], workspace = true }
+pezpallet-bridge-relayers = { workspace = true }
+pezpallet-bridge-teyrchains = { workspace = true }
+pezpallet-xcm-bridge-hub = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"asset-test-pezutils/std",
+	"codec/std",
+	"pezbp-header-pez-chain/std",
+	"pezbp-messages/std",
+	"pezbp-pezkuwi-core/std",
+	"pezbp-relayers/std",
+	"pezbp-runtime/std",
+	"pezbp-test-utils/std",
+	"pezbp-teyrchains/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezcumulus-pezpallet-xcmp-queue/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-bridge-grandpa/std",
+	"pezpallet-bridge-messages/std",
+	"pezpallet-bridge-relayers/std",
+	"pezpallet-bridge-teyrchains/std",
+	"pezpallet-timestamp/std",
+	"pezpallet-utility/std",
+	"pezpallet-xcm-bridge-hub/std",
+	"pezpallet-xcm/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"teyrchains-common/std",
+	"teyrchains-runtimes-test-utils/std",
+	"tracing/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"asset-test-pezutils/runtime-benchmarks",
+	"pezbp-header-pez-chain/runtime-benchmarks",
+	"pezbp-messages/runtime-benchmarks",
+	"pezbp-pezkuwi-core/runtime-benchmarks",
+	"pezbp-relayers/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezbp-test-utils/runtime-benchmarks",
+	"pezbp-teyrchains/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-pezpallet-xcmp-queue/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-bridge-grandpa/runtime-benchmarks",
+	"pezpallet-bridge-messages/runtime-benchmarks",
+	"pezpallet-bridge-relayers/runtime-benchmarks",
+	"pezpallet-bridge-teyrchains/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezpallet-xcm-bridge-hub/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"teyrchains-runtimes-test-utils/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"asset-test-pezutils/try-runtime",
+	"pezbp-header-pez-chain/try-runtime",
+	"pezbp-messages/try-runtime",
+	"pezbp-pezkuwi-core/try-runtime",
+	"pezbp-relayers/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezbp-test-utils/try-runtime",
+	"pezbp-teyrchains/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-pezpallet-xcmp-queue/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-bridge-grandpa/try-runtime",
+	"pezpallet-bridge-messages/try-runtime",
+	"pezpallet-bridge-relayers/try-runtime",
+	"pezpallet-bridge-teyrchains/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezpallet-xcm-bridge-hub/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"teyrchains-common/try-runtime",
+	"teyrchains-runtimes-test-utils/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

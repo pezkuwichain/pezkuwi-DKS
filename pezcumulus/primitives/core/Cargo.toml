@@ -1,0 +1,62 @@
+[package]
+name = "pezcumulus-primitives-core"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Pezcumulus related core primitive types and traits"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+tracing = { workspace = true }
+
+# Bizinikiwi
+pezsp-api = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-trie = { workspace = true }
+
+# Pezkuwi
+pezkuwi-core-primitives = { workspace = true }
+pezkuwi-primitives = { workspace = true }
+pezkuwi-teyrchain-primitives = { workspace = true }
+xcm = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezkuwi-core-primitives/std",
+	"pezkuwi-primitives/std",
+	"pezkuwi-teyrchain-primitives/std",
+	"pezsp-api/std",
+	"pezsp-runtime/std",
+	"pezsp-trie/std",
+	"scale-info/std",
+	"tracing/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"pezkuwi-core-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pezkuwi-core-primitives/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []

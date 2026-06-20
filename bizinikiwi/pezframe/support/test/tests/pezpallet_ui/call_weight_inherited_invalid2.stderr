@@ -1,0 +1,11 @@
+error[E0412]: cannot find type `prefix` in this scope
+  --> tests/pezpallet_ui/call_weight_inherited_invalid2.rs:39:27
+   |
+39 |     #[pezpallet::call(weight(prefix))]
+   |                              ^^^^^^ not found in this scope
+
+error[E0412]: cannot find type `prefix` in this scope
+  --> tests/pezpallet_ui/call_weight_inherited_invalid2.rs:60:29
+   |
+60 |     #[pezpallet::call(weight = prefix)]
+   |                                ^^^^^^ not found in this scope

@@ -1,0 +1,115 @@
+[package]
+name = "pezkuwi-node-core-approval-voting"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Approval Voting Subsystem of the Pezkuwi node"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "approval-voting-regression-bench"
+path = "benches/approval-voting-regression-bench.rs"
+harness = false
+required-features = ["subsystem-benchmarks"]
+
+[dependencies]
+async-trait = { workspace = true }
+bitvec = { features = ["alloc"], workspace = true }
+codec = { features = ["bit-vec", "derive"], workspace = true }
+derive_more = { workspace = true, default-features = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+gum = { workspace = true, default-features = true }
+itertools = { workspace = true }
+merlin = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+schnorrkel = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-overseer = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+rand = { workspace = true, default-features = true }
+rand_chacha = { workspace = true, default-features = true }
+# rand_core should match schnorrkel
+pezsc-keystore = { workspace = true }
+pezsp-application-crypto = { features = ["full_crypto"], workspace = true }
+pezsp-consensus = { workspace = true }
+pezsp-consensus-slots = { workspace = true }
+pezsp-runtime = { workspace = true }
+rand_core = { workspace = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+kvdb-memorydb = { workspace = true }
+parking_lot = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives = { workspace = true, features = ["test"] }
+pezkuwi-primitives-test-helpers = { workspace = true }
+pezsp-consensus-babe = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true }
+
+pezkuwi-subsystem-bench = { workspace = true }
+
+[features]
+subsystem-benchmarks = []
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-subsystem-bench/runtime-benchmarks",
+	"pezsc-keystore/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus-slots/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"bitvec/std",
+	"codec/std",
+	"gum/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-overseer/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
+	"pezkuwi-subsystem-bench/std",
+	"pezsc-keystore/std",
+	"pezsp-application-crypto/std",
+	"pezsp-consensus-slots/std",
+	"pezsp-consensus/std",
+	"pezsp-runtime/std",
+	"pezsp-tracing/std",
+	"rand_core/std",
+]
+try-runtime = [
+	"pezkuwi-primitives-test-helpers/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-subsystem-bench/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+with-tracing = []

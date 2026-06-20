@@ -1,0 +1,63 @@
+[package]
+name = "pezsc-consensus-beefy-rpc"
+version = "13.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+description = "RPC for the BEEFY Client gadget for bizinikiwi"
+homepage.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true, default-features = true }
+futures = { workspace = true }
+jsonrpsee = { features = [
+	"client-core",
+	"macros",
+	"server-core",
+], workspace = true }
+log = { workspace = true, default-features = true }
+parking_lot = { workspace = true, default-features = true }
+pezsc-consensus-beefy = { workspace = true, default-features = true }
+pezsc-rpc = { workspace = true, default-features = true }
+pezsp-application-crypto = { workspace = true, default-features = true }
+pezsp-consensus-beefy = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+serde = { features = ["derive"], workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+bizinikiwi-test-runtime-client = { workspace = true }
+pezsc-rpc = { features = [
+	"test-helpers",
+], workspace = true, default-features = true }
+tokio = { features = ["macros"], workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"pezsc-consensus-beefy/runtime-benchmarks",
+	"pezsc-rpc/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-consensus-beefy/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-test-runtime-client/std",
+	"log/std",
+	"pezsc-consensus-beefy/std",
+	"pezsc-rpc/std",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pezsc-consensus-beefy/try-runtime",
+	"pezsc-rpc/try-runtime",
+	"pezsp-consensus-beefy/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

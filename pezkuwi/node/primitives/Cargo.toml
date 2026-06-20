@@ -1,0 +1,53 @@
+[package]
+name = "pezkuwi-pez-node-primitives"
+description = "Primitives types for the Node-side"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bitvec = { features = ["alloc"], workspace = true }
+bounded-vec = { workspace = true }
+codec = { features = ["derive"], workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-teyrchain-primitives = { workspace = true }
+pezsc-keystore = { workspace = true }
+pezsp-application-crypto = { workspace = true, default-features = true }
+pezsp-consensus-babe = { workspace = true, default-features = true }
+pezsp-consensus-slots = { workspace = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
+schnorrkel = { workspace = true, default-features = true }
+serde = { features = ["derive"], workspace = true, default-features = true }
+thiserror = { workspace = true }
+
+[target.'cfg(not(target_os = "unknown"))'.dependencies]
+zstd = { workspace = true, default-features = false }
+
+[features]
+runtime-benchmarks = [
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsc-keystore/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus-slots/runtime-benchmarks",
+]
+std = [
+	"bitvec/std",
+	"codec/std",
+	"pezkuwi-teyrchain-primitives/std",
+	"pezsc-keystore/std",
+	"pezsp-consensus-slots/std",
+]
+serde = []
+experimental = []

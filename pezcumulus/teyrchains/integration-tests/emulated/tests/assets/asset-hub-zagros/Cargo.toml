@@ -1,0 +1,122 @@
+[package]
+name = "asset-hub-zagros-integration-tests"
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Asset Hub Zagros runtime integration tests with xcm-pez-emulator"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+assert_matches = { workspace = true }
+codec = { workspace = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-asset-conversion = { workspace = true }
+pezpallet-asset-rewards = { workspace = true }
+pezpallet-assets = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-message-queue = { workspace = true }
+pezpallet-treasury = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+pezkuwi-runtime-common = { workspace = true, default-features = true }
+pezpallet-xcm = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+xcm-runtime-pezapis = { workspace = true }
+
+# Pezcumulus
+asset-test-pezutils = { workspace = true, default-features = true }
+emulated-integration-tests-common = { workspace = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+pezcumulus-pezpallet-xcmp-queue = { workspace = true }
+teyrchains-common = { workspace = true, default-features = true }
+zagros-system-emulated-network = { workspace = true }
+
+[dev-dependencies]
+pezsp-tracing = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"asset-test-pezutils/runtime-benchmarks",
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-pezpallet-xcmp-queue/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-runtime-common/runtime-benchmarks",
+	"pezpallet-asset-conversion/runtime-benchmarks",
+	"pezpallet-asset-rewards/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-treasury/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm-runtime-pezapis/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+	"zagros-system-emulated-network/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"emulated-integration-tests-common/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezcumulus-pezpallet-xcmp-queue/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-asset-conversion/std",
+	"pezpallet-asset-rewards/std",
+	"pezpallet-assets/std",
+	"pezpallet-balances/std",
+	"pezpallet-message-queue/std",
+	"pezpallet-treasury/std",
+	"pezpallet-xcm/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm-runtime-pezapis/std",
+	"xcm/std",
+	"zagros-system-emulated-network/std",
+]
+try-runtime = [
+	"asset-test-pezutils/try-runtime",
+	"emulated-integration-tests-common/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-pezpallet-xcmp-queue/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-runtime-common/try-runtime",
+	"pezpallet-asset-conversion/try-runtime",
+	"pezpallet-asset-rewards/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-treasury/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"teyrchains-common/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm-runtime-pezapis/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

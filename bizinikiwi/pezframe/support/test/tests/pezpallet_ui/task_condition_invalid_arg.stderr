@@ -1,0 +1,23 @@
+error: unused import: `pezframe_system::pezpallet_prelude::OriginFor`
+  --> tests/pezpallet_ui/task_condition_invalid_arg.rs:21:6
+   |
+21 |     use pezframe_system::pezpallet_prelude::OriginFor;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `-D unused-imports` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+error[E0308]: mismatched types
+  --> tests/pezpallet_ui/task_condition_invalid_arg.rs:35:10
+   |
+32 |         #[pezpallet::task_condition(|flag: bool| flag)]
+   |                                     ----------------- arguments to this function are incorrect
+...
+35 |         fn foo(_i: u32) -> DispatchResult {
+   |                ^^ expected `bool`, found `u32`
+   |
+note: closure parameter defined here
+  --> tests/pezpallet_ui/task_condition_invalid_arg.rs:32:32
+   |
+32 |         #[pezpallet::task_condition(|flag: bool| flag)]
+   |                                      ^^^^^^^^^^

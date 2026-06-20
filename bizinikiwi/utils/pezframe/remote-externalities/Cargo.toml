@@ -1,0 +1,52 @@
+[package]
+name = "pezframe-remote-externalities"
+version = "0.35.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "An externalities provided environment that can load itself from remote nodes or cached files"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+bizinikiwi-rpc-client = { workspace = true, default-features = true }
+codec = { workspace = true, default-features = true }
+futures = { workspace = true }
+indicatif = { workspace = true }
+jsonrpsee = { features = ["http-client"], workspace = true }
+log = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+serde = { workspace = true, default-features = true }
+spinners = { workspace = true }
+tokio = { features = [
+	"macros",
+	"rt-multi-thread",
+], workspace = true, default-features = true }
+tokio-retry = { workspace = true }
+
+[dev-dependencies]
+pezsp-tracing = { workspace = true, default-features = true }
+
+[features]
+remote-test = []
+runtime-benchmarks = [
+	"bizinikiwi-rpc-client/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+]
+std = ["bizinikiwi-rpc-client/std", "log/std"]
+try-runtime = ["bizinikiwi-rpc-client/try-runtime", "pezsp-runtime/try-runtime"]
+serde = []
+with-tracing = []

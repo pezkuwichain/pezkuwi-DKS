@@ -1,0 +1,74 @@
+[package]
+name = "pezbp-asset-hub-pezkuwichain"
+description = "Primitives of AssetHubPezkuwichain teyrchain runtime."
+version = "0.4.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+repository.workspace = true
+documentation.workspace = true
+homepage = { workspace = true }
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+# Bizinikiwi Dependencies
+pezframe-support = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-core = { workspace = true }
+
+# Bridge Dependencies
+pezbp-bridge-hub-pezcumulus = { workspace = true }
+pezbp-messages = { workspace = true }
+pezbp-runtime = { workspace = true }
+pezbp-xcm-bridge-hub-router = { workspace = true }
+testnet-teyrchains-constants = { features = ["pezkuwichain"], workspace = true }
+
+# Pezkuwi dependencies
+xcm = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezbp-bridge-hub-pezcumulus/std",
+	"pezbp-messages/std",
+	"pezbp-runtime/std",
+	"pezbp-xcm-bridge-hub-router/std",
+	"pezframe-support/std",
+	"pezsp-api/std",
+	"pezsp-core/std",
+	"scale-info/std",
+	"testnet-teyrchains-constants/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"pezbp-bridge-hub-pezcumulus/runtime-benchmarks",
+	"pezbp-messages/runtime-benchmarks",
+	"pezbp-runtime/runtime-benchmarks",
+	"pezbp-xcm-bridge-hub-router/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"testnet-teyrchains-constants/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pezbp-bridge-hub-pezcumulus/try-runtime",
+	"pezbp-messages/try-runtime",
+	"pezbp-runtime/try-runtime",
+	"pezbp-xcm-bridge-hub-router/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezsp-api/try-runtime",
+	"testnet-teyrchains-constants/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

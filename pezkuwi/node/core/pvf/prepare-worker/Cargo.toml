@@ -1,0 +1,57 @@
+[package]
+name = "pezkuwi-node-core-pvf-prepare-worker"
+description = "Pezkuwi crate that contains the logic for preparing PVFs. Used by the pezkuwi-prepare-worker binary."
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "prepare_pezkuwichain_runtime"
+harness = false
+
+[dependencies]
+cfg-if = { workspace = true }
+gum = { workspace = true, default-features = true }
+libc = { workspace = true }
+nix = { features = ["process", "resource", "sched"], workspace = true }
+tikv-jemalloc-ctl = { optional = true, workspace = true }
+tikv-jemallocator = { optional = true, workspace = true }
+tracking-allocator = { workspace = true, default-features = true }
+
+codec = { features = ["derive"], workspace = true }
+
+pezkuwi-node-core-pvf-common = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+tikv-jemallocator = { workspace = true }
+tikv-jemalloc-ctl = { workspace = true }
+
+[dev-dependencies]
+criterion = { features = ["cargo_bench_support"], workspace = true }
+pezkuwichain-runtime = { workspace = true }
+
+[features]
+builder = []
+jemalloc-allocator = [
+	"dep:tikv-jemalloc-ctl",
+	"dep:tikv-jemallocator",
+	"pezkuwi-node-core-pvf-common/jemalloc-allocator",
+]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-common/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwichain-runtime/runtime-benchmarks",
+]
+std = ["codec/std", "gum/std", "pezkuwi-node-core-pvf-common/std"]
+serde = []

@@ -1,0 +1,85 @@
+[package]
+name = "pezpallet-alliance"
+version = "27.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "The Alliance pezpallet provides a collective for standard-setting industry collaboration."
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+array-bytes = { optional = true, workspace = true, default-features = true }
+log = { workspace = true }
+
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+pezsp-core = { workspace = true }
+pezsp-crypto-hashing = { optional = true, workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+
+pezpallet-collective = { optional = true, workspace = true }
+pezpallet-identity = { workspace = true }
+
+[dev-dependencies]
+array-bytes = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-collective = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-collective?/std",
+	"pezpallet-identity/std",
+	"pezsp-core/std",
+	"pezsp-crypto-hashing?/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"array-bytes",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-collective/runtime-benchmarks",
+	"pezpallet-identity/runtime-benchmarks",
+	"pezsp-crypto-hashing",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-collective?/try-runtime",
+	"pezpallet-identity/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

@@ -1,0 +1,89 @@
+[package]
+name = "pezsc-client-db"
+version = "0.35.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Client backend that uses RocksDB database as storage."
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[[bench]]
+name = "state_access"
+harness = false
+
+[lib]
+bench = false
+
+[dependencies]
+codec = { features = ["derive"], workspace = true, default-features = true }
+hash-db = { workspace = true, default-features = true }
+kvdb = { workspace = true }
+kvdb-memorydb = { workspace = true }
+kvdb-rocksdb = { optional = true, workspace = true }
+linked-hash-map = { workspace = true }
+log = { workspace = true, default-features = true }
+parity-db = { workspace = true }
+parking_lot = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-state-db = { workspace = true, default-features = true }
+pezsp-arithmetic = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-database = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
+prometheus-endpoint = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+sysinfo = { workspace = true }
+
+[dev-dependencies]
+array-bytes = { workspace = true, default-features = true }
+bizinikiwi-test-runtime-client = { workspace = true }
+criterion = { workspace = true, default-features = true }
+kvdb-rocksdb = { workspace = true }
+pez-kitchensink-runtime = { workspace = true }
+pezsp-tracing = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+tempfile = { workspace = true }
+
+[features]
+default = []
+test-helpers = []
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"pez-kitchensink-runtime/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
+rocksdb = ["kvdb-rocksdb"]
+std = [
+	"bizinikiwi-test-runtime-client/std",
+	"log/std",
+	"pezsc-client-api/std",
+	"pezsc-state-db/std",
+	"pezsp-blockchain/std",
+	"prometheus-endpoint/std",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pez-kitchensink-runtime/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []

@@ -1,0 +1,103 @@
+[package]
+authors.workspace = true
+name = "pezcumulus-relay-chain-inprocess-interface"
+version = "0.7.0"
+edition.workspace = true
+description = "Implementation of the RelayChainInterface trait for Pezkuwi full-nodes."
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-channel = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+
+# Bizinikiwi
+pezsc-cli = { workspace = true, default-features = false }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsc-sysinfo = { workspace = true, default-features = true }
+pezsc-telemetry = { workspace = true, default-features = true }
+pezsc-tracing = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+
+# Pezkuwi
+pezkuwi-cli = { features = ["cli"], workspace = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-service = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-client-bootnodes = { workspace = true, default-features = true }
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+pezcumulus-relay-chain-interface = { workspace = true, default-features = true }
+
+[dev-dependencies]
+# Bizinikiwi
+pezsp-keyring = { workspace = true, default-features = true }
+
+# Pezkuwi
+metered = { features = ["futures_channel"], workspace = true }
+pezkuwi-test-client = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-client-bootnodes/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-relay-chain-interface/runtime-benchmarks",
+	"pezkuwi-cli/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-service/runtime-benchmarks",
+	"pezkuwi-test-client/runtime-benchmarks",
+	"pezsc-cli/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsc-sysinfo/runtime-benchmarks",
+	"pezsc-tracing/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+]
+std = [
+	"pezcumulus-client-bootnodes/std",
+	"pezcumulus-relay-chain-interface/std",
+	"pezkuwi-cli/std",
+	"pezkuwi-service/std",
+	"pezkuwi-test-client/std",
+	"pezsc-cli/std",
+	"pezsc-client-api/std",
+	"pezsc-network/std",
+	"pezsc-sysinfo/std",
+	"pezsc-telemetry/std",
+	"pezsc-tracing/std",
+	"pezsp-consensus/std",
+]
+try-runtime = [
+	"pezcumulus-client-bootnodes/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezkuwi-cli/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-service/try-runtime",
+	"pezkuwi-test-client/try-runtime",
+	"pezsc-cli/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsc-sysinfo/try-runtime",
+	"pezsc-tracing/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

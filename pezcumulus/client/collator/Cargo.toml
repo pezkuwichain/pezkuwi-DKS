@@ -1,0 +1,99 @@
+[package]
+name = "pezcumulus-client-collator"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+description = "Common node-side functionality and glue code to collate teyrchain blocks."
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true, default-features = true }
+futures = { workspace = true }
+parking_lot = { workspace = true, default-features = true }
+tracing = { workspace = true, default-features = true }
+
+# Bizinikiwi
+pezsc-client-api = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+# Pezkuwi
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-overseer = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-client-consensus-common = { workspace = true, default-features = true }
+pezcumulus-client-network = { workspace = true, default-features = true }
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+
+[dev-dependencies]
+async-trait = { workspace = true }
+
+# Bizinikiwi
+pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+
+# Pezkuwi
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+
+# Pezcumulus
+pezcumulus-test-client = { workspace = true }
+pezcumulus-test-relay-sproof-builder = { workspace = true, default-features = true }
+pezcumulus-test-runtime = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-client-consensus-common/runtime-benchmarks",
+	"pezcumulus-client-network/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-test-client/runtime-benchmarks",
+	"pezcumulus-test-relay-sproof-builder/runtime-benchmarks",
+	"pezcumulus-test-runtime/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+]
+std = [
+	"pezcumulus-client-consensus-common/std",
+	"pezcumulus-client-network/std",
+	"pezcumulus-test-client/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-overseer/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezsc-client-api/std",
+	"pezsp-consensus/std",
+]
+try-runtime = [
+	"pezcumulus-client-consensus-common/try-runtime",
+	"pezcumulus-client-network/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-test-client/try-runtime",
+	"pezcumulus-test-relay-sproof-builder/try-runtime",
+	"pezcumulus-test-runtime/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+with-tracing = []

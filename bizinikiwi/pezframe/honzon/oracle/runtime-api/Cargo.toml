@@ -1,0 +1,27 @@
+[package]
+name = "pezpallet-oracle-runtime-api"
+version = "1.0.0"
+authors = [
+	"Acala Developers",
+	"Kurdistan Tech Institute <info@pezkuwichain.io>",
+	"Parity Technologies <admin@parity.io>",
+]
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Runtime API for the oracle pezpallet."
+documentation.workspace = true
+
+[dependencies]
+codec = { workspace = true, features = ["derive"] }
+pezsp-api = { workspace = true }
+pezsp-std = { workspace = true }
+scale-info = { workspace = true }
+
+
+[features]
+default = ["std"]
+std = ["codec/std", "pezsp-api/std", "pezsp-std/std", "scale-info/std"]
+runtime-benchmarks = ["pezsp-api/runtime-benchmarks"]
+serde = []

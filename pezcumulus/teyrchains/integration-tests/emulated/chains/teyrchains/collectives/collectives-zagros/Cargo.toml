@@ -1,0 +1,55 @@
+[package]
+name = "collectives-zagros-emulated-chain"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Collectives Zagros emulated chain"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezsp-core = { workspace = true }
+
+# Pezcumulus
+collectives-zagros-runtime = { workspace = true }
+emulated-integration-tests-common = { workspace = true }
+pezcumulus-primitives-core = { workspace = true }
+testnet-teyrchains-constants = { features = [
+	"zagros",
+], workspace = true, default-features = true }
+teyrchains-common = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"collectives-zagros-runtime/runtime-benchmarks",
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"testnet-teyrchains-constants/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+]
+std = [
+	"emulated-integration-tests-common/std",
+	"pezcumulus-primitives-core/std",
+	"pezframe-support/std",
+	"pezsp-core/std",
+]
+try-runtime = [
+	"collectives-zagros-runtime/try-runtime",
+	"emulated-integration-tests-common/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-support/try-runtime",
+	"testnet-teyrchains-constants/try-runtime",
+	"teyrchains-common/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

@@ -1,0 +1,53 @@
+[package]
+name = "bizinikiwi-state-trie-migration-rpc"
+version = "27.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Node-specific RPC methods for interaction with state trie migration."
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { workspace = true }
+serde = { features = ["derive"], workspace = true, default-features = true }
+
+pezsp-core = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
+trie-db = { workspace = true, default-features = true }
+
+jsonrpsee = { features = [
+	"client-core",
+	"macros",
+	"server-core",
+], workspace = true }
+
+# Bizinikiwi Dependencies
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-rpc-api = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-rpc-api/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
+std = ["codec/std", "pezsc-client-api/std", "pezsc-rpc-api/std"]
+try-runtime = [
+	"pezsc-client-api/try-runtime",
+	"pezsc-rpc-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

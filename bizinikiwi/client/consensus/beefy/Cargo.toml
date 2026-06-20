@@ -1,0 +1,110 @@
+[package]
+name = "pezsc-consensus-beefy"
+version = "13.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+description = "BEEFY Client gadget for bizinikiwi"
+homepage.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+array-bytes = { workspace = true, default-features = true }
+async-channel = { workspace = true }
+async-trait = { workspace = true }
+codec = { features = ["derive"], workspace = true, default-features = true }
+futures = { workspace = true }
+log = { workspace = true, default-features = true }
+parking_lot = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-consensus = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsc-network-gossip = { workspace = true, default-features = true }
+pezsc-network-sync = { workspace = true, default-features = true }
+pezsc-network-types = { workspace = true, default-features = true }
+pezsc-utils = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-application-crypto = { workspace = true, default-features = true }
+pezsp-arithmetic = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-consensus-beefy = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+prometheus-endpoint = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, default-features = true }
+wasm-timer = { workspace = true }
+
+[dev-dependencies]
+bizinikiwi-test-runtime-client = { workspace = true }
+pezsc-block-builder = { workspace = true, default-features = true }
+pezsc-network-test = { workspace = true }
+pezsp-mmr-primitives = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+serde = { workspace = true, default-features = true }
+
+[features]
+# This feature adds BLS crypto primitives. It should not be used in production since
+# the BLS implementation and interface may still be subject to significant change.
+bls-experimental = [
+	"pezsp-application-crypto/bls-experimental",
+	"pezsp-consensus-beefy/bls-experimental",
+	"pezsp-core/bls-experimental",
+]
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"pezsc-block-builder/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-consensus/runtime-benchmarks",
+	"pezsc-network-gossip/runtime-benchmarks",
+	"pezsc-network-sync/runtime-benchmarks",
+	"pezsc-network-test/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus-beefy/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-mmr-primitives/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-test-runtime-client/std",
+	"log/std",
+	"pezsc-block-builder/std",
+	"pezsc-client-api/std",
+	"pezsc-consensus/std",
+	"pezsc-network-gossip/std",
+	"pezsc-network-sync/std",
+	"pezsc-network-test/std",
+	"pezsc-network-types/std",
+	"pezsc-network/std",
+	"pezsc-utils/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+	"prometheus-endpoint/std",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pezsc-block-builder/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-consensus/try-runtime",
+	"pezsc-network-gossip/try-runtime",
+	"pezsc-network-sync/try-runtime",
+	"pezsc-network-test/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus-beefy/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-mmr-primitives/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+with-tracing = []

@@ -1,0 +1,64 @@
+[package]
+name = "pezcumulus-client-consensus-proposer"
+description = "A Bizinikiwi `Proposer` for building teyrchain blocks"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true, default-features = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+
+# Bizinikiwi
+pezsc-basic-authorship = { workspace = true }
+pezsc-block-builder = { workspace = true }
+pezsc-transaction-pool-api = { workspace = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-inherents = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-primitives-teyrchain-inherent = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezcumulus-primitives-teyrchain-inherent/runtime-benchmarks",
+	"pezsc-basic-authorship/runtime-benchmarks",
+	"pezsc-block-builder/runtime-benchmarks",
+	"pezsc-transaction-pool-api/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+]
+std = [
+	"pezsc-basic-authorship/std",
+	"pezsc-block-builder/std",
+	"pezsc-transaction-pool-api/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+]
+try-runtime = [
+	"pezsc-basic-authorship/try-runtime",
+	"pezsc-block-builder/try-runtime",
+	"pezsc-transaction-pool-api/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

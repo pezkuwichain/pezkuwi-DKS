@@ -1,0 +1,5 @@
+error: Invalid #[pezpallet::include_metadata] for `type RuntimeEvent`. The associated type `RuntimeEvent` is already collected in the metadata.
+  --> tests/pezpallet_ui/config_metadata_on_events.rs:26:4
+   |
+26 |         #[pezpallet::include_metadata]
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,0 +1,11 @@
+error: unexpected token, expected `)`
+  --> tests/pezpallet_ui/call_weight_inherited_invalid5.rs:31:53
+   |
+31 |     #[pezpallet::call(weight(<T as Config>::WeightInfo straycat))]
+   |                                                        ^^^^^^^^
+
+error: unexpected token, expected `)`
+  --> tests/pezpallet_ui/call_weight_inherited_invalid5.rs:51:55
+   |
+51 |     #[pezpallet::call(weight = <T as Config>::WeightInfo straycat)]
+   |                                                          ^^^^^^^^

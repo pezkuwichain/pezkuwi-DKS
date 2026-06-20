@@ -1,0 +1,5 @@
+error: Invalid pezpallet macro call: unexpected attribute. Macro call must be bare, such as `#[pezframe_support::pezpallet]` or `#[pezpallet]`, or must specify the `dev_mode` attribute, such as `#[pezframe_support::pezpallet(dev_mode)]` or #[pezpallet(dev_mode)].
+  --> tests/pezpallet_ui/attr_non_empty.rs:18:32
+   |
+18 | #[pezframe_support::pezpallet [foo]]
+   |                                ^^^

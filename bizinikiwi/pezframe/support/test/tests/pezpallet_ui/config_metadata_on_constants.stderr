@@ -1,0 +1,5 @@
+error: Invalid #[pezpallet::include_metadata]: conflict with #[pezpallet::constant]. Pezpallet constant already collect the metadata for the type.
+  --> tests/pezpallet_ui/config_metadata_on_constants.rs:26:10
+   |
+26 |            #[pezpallet::include_metadata]
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

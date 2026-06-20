@@ -1,0 +1,82 @@
+[package]
+name = "pezpallet-tiki"
+description = "PezkuwiChain Tiki (Role NFT) Management Pallet"
+version = "1.0.0"
+authors.workspace = true
+homepage.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+documentation.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { workspace = true, default-features = false, features = ["derive"] }
+log = { default-features = false, workspace = true }
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { default-features = false, workspace = true }
+pezframe-system = { default-features = false, workspace = true }
+pezpallet-balances = { default-features = false, optional = true, workspace = true }
+pezpallet-identity = { default-features = false, workspace = true }
+pezpallet-identity-kyc = { workspace = true, default-features = false }
+pezpallet-nfts = { default-features = false, workspace = true }
+pezsp-runtime = { default-features = false, workspace = true }
+pezsp-std = { default-features = false, workspace = true }
+scale-info = { default-features = false, features = [
+	"derive",
+], workspace = true }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+
+[dev-dependencies]
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-identity-kyc/std",
+	"pezpallet-identity/std",
+	"pezpallet-nfts/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde/std",
+]
+runtime-benchmarks = [
+	"dep:pezframe-benchmarking",
+	"dep:pezpallet-balances",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-identity-kyc/runtime-benchmarks",
+	"pezpallet-identity/runtime-benchmarks",
+	"pezpallet-nfts/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-identity-kyc/try-runtime",
+	"pezpallet-identity/try-runtime",
+	"pezpallet-nfts/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

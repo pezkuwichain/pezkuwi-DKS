@@ -1,0 +1,173 @@
+[package]
+name = "pezbridge-hub-zagros-integration-tests"
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Bridge Hub Zagros runtime integration tests with xcm-pez-emulator"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true }
+hex-literal = { workspace = true, default-features = true }
+scale-info = { workspace = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezpallet-asset-conversion = { workspace = true }
+pezpallet-assets = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-message-queue = { workspace = true, default-features = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+pezpallet-xcm = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+
+# Bridges
+pezpallet-bridge-messages = { workspace = true }
+pezpallet-bridge-relayers = { workspace = true }
+
+# Pezcumulus
+asset-hub-zagros-runtime = { workspace = true }
+emulated-integration-tests-common = { workspace = true }
+pezbp-asset-hub-zagros = { workspace = true }
+pezbridge-hub-common = { workspace = true }
+pezbridge-hub-zagros-runtime = { workspace = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+pezcumulus-pezpallet-xcmp-queue = { workspace = true }
+pezkuwichain-zagros-system-emulated-network = { workspace = true }
+testnet-teyrchains-constants = { features = [
+	"pezkuwichain",
+	"zagros",
+], workspace = true, default-features = true }
+teyrchains-common = { workspace = true, default-features = true }
+
+# Snowbridge
+pezsnowbridge-core = { workspace = true }
+pezsnowbridge-inbound-queue-primitives = { workspace = true }
+pezsnowbridge-outbound-queue-primitives = { workspace = true }
+pezsnowbridge-pezpallet-inbound-queue = { workspace = true }
+pezsnowbridge-pezpallet-inbound-queue-fixtures = { workspace = true }
+pezsnowbridge-pezpallet-inbound-queue-v2 = { workspace = true }
+pezsnowbridge-pezpallet-outbound-queue = { workspace = true }
+pezsnowbridge-pezpallet-outbound-queue-v2 = { workspace = true }
+pezsnowbridge-pezpallet-system = { workspace = true }
+pezsnowbridge-pezpallet-system-v2 = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"asset-hub-zagros-runtime/runtime-benchmarks",
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezbp-asset-hub-zagros/runtime-benchmarks",
+	"pezbridge-hub-common/runtime-benchmarks",
+	"pezbridge-hub-zagros-runtime/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-pezpallet-xcmp-queue/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezkuwichain-zagros-system-emulated-network/runtime-benchmarks",
+	"pezpallet-asset-conversion/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-bridge-messages/runtime-benchmarks",
+	"pezpallet-bridge-relayers/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsnowbridge-core/runtime-benchmarks",
+	"pezsnowbridge-inbound-queue-primitives/runtime-benchmarks",
+	"pezsnowbridge-outbound-queue-primitives/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-inbound-queue-fixtures/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-inbound-queue-v2/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-inbound-queue/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-outbound-queue-v2/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-outbound-queue/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-system-v2/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-system/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"testnet-teyrchains-constants/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"emulated-integration-tests-common/std",
+	"pezbp-asset-hub-zagros/std",
+	"pezbridge-hub-common/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezcumulus-pezpallet-xcmp-queue/std",
+	"pezframe-support/std",
+	"pezkuwichain-zagros-system-emulated-network/std",
+	"pezpallet-asset-conversion/std",
+	"pezpallet-assets/std",
+	"pezpallet-balances/std",
+	"pezpallet-bridge-messages/std",
+	"pezpallet-bridge-relayers/std",
+	"pezpallet-xcm/std",
+	"pezsnowbridge-core/std",
+	"pezsnowbridge-inbound-queue-primitives/std",
+	"pezsnowbridge-outbound-queue-primitives/std",
+	"pezsnowbridge-pezpallet-inbound-queue-fixtures/std",
+	"pezsnowbridge-pezpallet-inbound-queue-v2/std",
+	"pezsnowbridge-pezpallet-inbound-queue/std",
+	"pezsnowbridge-pezpallet-outbound-queue-v2/std",
+	"pezsnowbridge-pezpallet-outbound-queue/std",
+	"pezsnowbridge-pezpallet-system-v2/std",
+	"pezsnowbridge-pezpallet-system/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+try-runtime = [
+	"asset-hub-zagros-runtime/try-runtime",
+	"emulated-integration-tests-common/try-runtime",
+	"pezbp-asset-hub-zagros/try-runtime",
+	"pezbridge-hub-common/try-runtime",
+	"pezbridge-hub-zagros-runtime/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-pezpallet-xcmp-queue/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezpallet-asset-conversion/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-bridge-messages/try-runtime",
+	"pezpallet-bridge-relayers/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsnowbridge-core/try-runtime",
+	"pezsnowbridge-inbound-queue-primitives/try-runtime",
+	"pezsnowbridge-outbound-queue-primitives/try-runtime",
+	"pezsnowbridge-pezpallet-inbound-queue-fixtures/try-runtime",
+	"pezsnowbridge-pezpallet-inbound-queue-v2/try-runtime",
+	"pezsnowbridge-pezpallet-inbound-queue/try-runtime",
+	"pezsnowbridge-pezpallet-outbound-queue-v2/try-runtime",
+	"pezsnowbridge-pezpallet-outbound-queue/try-runtime",
+	"pezsnowbridge-pezpallet-system-v2/try-runtime",
+	"pezsnowbridge-pezpallet-system/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"testnet-teyrchains-constants/try-runtime",
+	"teyrchains-common/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

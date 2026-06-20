@@ -1,0 +1,117 @@
+[package]
+name = "pezpallet-revive-eth-rpc"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "An Ethereum JSON-RPC server for pezpallet-revive."
+default-run = "eth-rpc"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.pezkuwi-sdk]
+exclude-from-umbrella = true
+
+[[bin]]
+name = "eth-rpc"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive", "env"] }
+codec = { workspace = true, features = ["derive"] }
+futures = { workspace = true, features = ["thread-pool"] }
+hex = { workspace = true }
+jsonrpsee = { workspace = true, features = ["full"] }
+log = { workspace = true }
+pezkuwi-subxt = { workspace = true, default-features = true, features = [
+	"reconnecting-rpc-client",
+] }
+pezkuwi-subxt-signer = { workspace = true, features = ["unstable-eth"] }
+pezpallet-revive = { workspace = true, default-features = true }
+pezsc-cli = { workspace = true, default-features = true }
+pezsc-rpc = { workspace = true, default-features = true }
+pezsc-rpc-api = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = true }
+pezsp-arithmetic = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true }
+pezsp-rpc = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-timestamp = { workspace = true }
+pezsp-weights = { workspace = true, default-features = true }
+prometheus-endpoint = { workspace = true, default-features = true }
+rlp = { workspace = true }
+serde = { workspace = true, default-features = true, features = [
+	"alloc",
+	"derive",
+] }
+serde_json = { workspace = true }
+sqlx = { workspace = true, features = ["macros", "runtime-tokio", "sqlite"] }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+
+[dev-dependencies]
+env_logger = { workspace = true }
+pez-revive-dev-node = { workspace = true }
+pezpallet-revive-fixtures = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pretty_assertions = { workspace = true }
+
+[build-dependencies]
+git2 = { workspace = true }
+pez-revive-dev-runtime = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pez-revive-dev-node/runtime-benchmarks",
+	"pez-revive-dev-runtime/runtime-benchmarks",
+	"pezkuwi-subxt-signer/runtime-benchmarks",
+	"pezkuwi-subxt/runtime-benchmarks",
+	"pezpallet-revive-fixtures/runtime-benchmarks",
+	"pezpallet-revive/runtime-benchmarks",
+	"pezsc-cli/runtime-benchmarks",
+	"pezsc-rpc-api/runtime-benchmarks",
+	"pezsc-rpc/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-timestamp/runtime-benchmarks",
+]
+std = [
+	"anyhow/std",
+	"codec/std",
+	"hex/std",
+	"log/std",
+	"pezkuwi-subxt/std",
+	"pezsc-cli/std",
+	"pezsc-rpc-api/std",
+	"pezsc-rpc/std",
+	"pezsc-service/std",
+	"pezsp-crypto-hashing/std",
+	"pezsp-rpc/std",
+	"pezsp-timestamp/std",
+	"prometheus-endpoint/std",
+	"rlp/std",
+	"serde_json/std",
+]
+try-runtime = [
+	"pez-revive-dev-node/try-runtime",
+	"pez-revive-dev-runtime/try-runtime",
+	"pezkuwi-subxt/try-runtime",
+	"pezpallet-revive/try-runtime",
+	"pezsc-cli/try-runtime",
+	"pezsc-rpc-api/try-runtime",
+	"pezsc-rpc/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-timestamp/try-runtime",
+]
+serde = []
+with-tracing = []

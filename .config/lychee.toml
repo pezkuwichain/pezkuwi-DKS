@@ -1,0 +1,126 @@
+# Config file for lychee link checker: <https://github.com/lycheeverse/lychee>
+# Run with `lychee -c .config/lychee.toml ./**/*.rs ./**/*.prdoc`
+
+cache = true
+max_cache_age = "10d"
+max_redirects = 10
+max_retries = 3
+
+# User agent to send with each request.
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"
+
+# Exclude localhost et.al.
+exclude_all_private = true
+
+# Treat these codes as success condition:
+accept = [
+	# Ok
+	"200",
+	# Rate limited - GitHub likes to throw this.
+	"429",
+	# Service temporarily unavailable
+	"503",
+]
+
+exclude_path = ["./prdoc", "./target"]
+
+exclude = [
+	# Place holders (no need to fix these):
+	"http://visitme/",
+	"https://some.com/",
+	"https://visitme/",
+	# Zombienet test placeholders:
+	"http://test.com/",
+	"https://mycloudstorage.com/",
+	"https://storage.com/",
+	"https://www.backupsite.com/",
+	"https://www.urltomysnapshot.com/",
+	# TODO meta issue: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/134>
+	"https://github.com/ipfs/js-ipfs-bitswap/blob/",
+	"https://github.com/paritytech/bizinikiwi/pezframe/fast-unstake",
+	# Exclude wiki.network.pezkuwichain.io - SSL certificate hostname mismatch
+	"https://github.com/pezkuwichain/pezkuwi-sdk/bizinikiwi/pezframe/timestamp",
+	"https://github.com/zkcrypto/bls12_381/blob/e224ad4ea1babfc582ccd751c2bf128611d10936/src/test-data/mod.rs",
+	"https://polkadot.network/the-path-of-a-parachain-block/",
+	"https://research.web3.foundation/en/latest/polkadot/NPoS/3.%20Balancing.html",
+	"https://research.web3.foundation/en/latest/polkadot/Token%20Economics.html#inflation-model",
+	"https://research.web3.foundation/en/latest/polkadot/networking/3-avail-valid.html#topology",
+	"https://research.web3.foundation/en/latest/polkadot/overview/2-token-economics.html",
+	"https://research.web3.foundation/en/latest/polkadot/overview/2-token-economics.html#inflation-model",
+	"https://research.web3.foundation/en/latest/polkadot/slashing/npos.html",
+	"https://rpc.polkadot.io/",
+	"https://try-runtime.polkadot.io/",
+	"https://w3f.github.io/parachain-implementers-guide/node/approval/approval-distribution.html",
+	"https://w3f.github.io/parachain-implementers-guide/node/index.html",
+	"https://w3f.github.io/parachain-implementers-guide/protocol-chain-selection.html",
+	"https://w3f.github.io/parachain-implementers-guide/runtime/session_info.html",
+	"https://wiki.network.pezkuwichain.io/*",
+	# Genuinely broken, but exist as part of a signed statement. Rarely used, will be
+	# removed at some point.
+	"statement.polkadot.network",
+	# Behind a captcha (code 403):
+	"https://chainlist.org/chain/*",
+	"https://dl.acm.org",
+	"https://iohk.io/en/blog/posts/2023/11/03/partner-chains-are-coming-to-cardano/",
+	"https://polymesh.network",
+	"https://www.reddit.com/r/rust/comments/3spfh1/does_collect_allocate_more_than_once_while/",
+	# 403 rate limited:
+	"https://etherscan.io/block/11090290",
+	"https://exchange.pezkuwichain.app/.*",
+	"https://subscan.io/",
+	# Broken for link-checker CI, but works in browser and local machine
+	"http://www.gnu.org/licenses/",
+	"https://www.gnu.org/licenses/",
+	# Exclude strings which contain templates like {} and {:?}
+	"%7B%7D",
+	"%7B:\\?}",
+	# ============================================
+	# Sıfır Etki - Kapanmış/Rate-Limited Siteler
+	# ============================================
+	# Deprecated/shutdown sites
+	"https://invarch.network/",
+	"https://substrate.io/",
+	# Rate limited (403)
+	"https://aventus.io/",
+	"https://efinity.io/",
+	"https://fragnova.com/",
+	"https://gmordie.com/",
+	"https://parachain.capitaldex.exchange/",
+	"https://stackoverflow.com/.*",
+	# Server errors (5xx)
+	"http://laminar.network/",
+	"https://impactprotocol.network/",
+	"https://neatcoin.org/",
+	# Network/DNS errors (defunct chains)
+	"https://allfeat.network/",
+	"https://clover.finance/",
+	"https://composable.finance/",
+	"https://edgewa.re/",
+	"https://geek.gl/",
+	"https://ggxchain.io/",
+	"https://goro.network/",
+	"https://icenetwork.io/",
+	"https://jupiter.patract.io/",
+	"https://kabocha.network/",
+	"https://karmaco.in/",
+	"https://krigan.network/",
+	"https://luhn.network/",
+	"https://parachain.origintrail.io/",
+	"https://picasso.composable.finance/",
+	"https://polkadex.trade/",
+	"https://synesthesia.network/",
+	"https://uniarts.me/",
+	"https://www.sctl.xyz/",
+	# ============================================
+	# GitHub commit-specific URLs (cannot migrate)
+	# ============================================
+	"https://github.com/paritytech/polkadot-sdk/blob/.*/bizinikiwi/.*",
+	"https://github.com/pezkuwichain/pezkuwi-sdk/blob/[a-f0-9]+/.*",
+	"https://github.com/pezkuwichain/pezkuwi-sdk/issues/.*/commits/.*",
+	"https://github.com/pezkuwichain/pezkuwi-sdk/issues/.*/files.*",
+	"https://github.com/pezkuwichain/pezkuwi-sdk/tree/[a-f0-9]+/.*",
+	# Migrated bizinikiwi references
+	"https://github.com/pezkuwichain/bizinikiwi.*",
+	# External site temporarily down (503)
+	"https://use.ink/migrate-ink-contracts-to-polkadot-frame-parachain/",
+]

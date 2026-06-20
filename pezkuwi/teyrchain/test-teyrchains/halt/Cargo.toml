@@ -1,0 +1,24 @@
+[package]
+name = "test-teyrchain-halt"
+description = "Test teyrchain which executes forever"
+build = "build.rs"
+publish = false
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[build-dependencies]
+bizinikiwi-wasm-builder = { workspace = true, default-features = true }
+rustversion = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["bizinikiwi-wasm-builder/std"]
+runtime-benchmarks = ["bizinikiwi-wasm-builder/runtime-benchmarks"]

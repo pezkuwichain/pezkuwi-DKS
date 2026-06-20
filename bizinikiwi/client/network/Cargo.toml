@@ -1,0 +1,150 @@
+[package]
+description = "Bizinikiwi network protocol"
+name = "pezsc-network"
+version = "0.34.0"
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[[bench]]
+name = "notifications_protocol"
+harness = false
+
+[[bench]]
+name = "request_response_protocol"
+harness = false
+
+[dependencies]
+array-bytes = { workspace = true, default-features = true }
+async-channel = { workspace = true }
+async-trait = { workspace = true }
+asynchronous-codec = { workspace = true }
+bytes = { workspace = true, default-features = true }
+cid = { workspace = true }
+codec = { features = ["derive"], workspace = true, default-features = true }
+either = { workspace = true, default-features = true }
+fnv = { workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+ip_network = { workspace = true }
+libp2p = { features = [
+	"dns",
+	"identify",
+	"kad",
+	"macros",
+	"mdns",
+	"noise",
+	"ping",
+	"request-response",
+	"tcp",
+	"tokio",
+	"websocket",
+	"yamux",
+], workspace = true }
+linked_hash_set = { workspace = true }
+litep2p = { workspace = true }
+log = { workspace = true, default-features = true }
+mockall = { workspace = true }
+parking_lot = { workspace = true, default-features = true }
+partial_sort = { workspace = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-network-common = { workspace = true, default-features = true }
+pezsc-network-types = { workspace = true, default-features = true }
+pezsc-utils = { workspace = true, default-features = true }
+pezsp-arithmetic = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pin-project = { workspace = true }
+prometheus-endpoint = { workspace = true, default-features = true }
+prost = { workspace = true }
+rand = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+serde = { features = ["derive"], workspace = true, default-features = true }
+serde_json = { workspace = true, default-features = true }
+smallvec = { workspace = true, default-features = true }
+thiserror = { workspace = true }
+tokio = { features = [
+	"macros",
+	"sync",
+], workspace = true, default-features = true }
+tokio-stream = { workspace = true }
+unsigned-varint = { features = [
+	"asynchronous_codec",
+	"futures",
+], workspace = true }
+void = { workspace = true }
+wasm-timer = { workspace = true }
+zeroize = { workspace = true, default-features = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+bizinikiwi-test-runtime = { workspace = true }
+bizinikiwi-test-runtime-client = { workspace = true }
+multistream-select = { workspace = true }
+pezsc-block-builder = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+tempfile = { workspace = true }
+tokio = { features = [
+	"macros",
+	"rt-multi-thread",
+], workspace = true, default-features = true }
+tokio-util = { features = ["compat"], workspace = true }
+
+criterion = { workspace = true, default-features = true, features = [
+	"async_tokio",
+] }
+
+[build-dependencies]
+prost-build = { workspace = true }
+
+[features]
+default = []
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"bizinikiwi-test-runtime/runtime-benchmarks",
+	"pezsc-block-builder/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-network-common/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-test-runtime-client/std",
+	"log/std",
+	"pezsc-block-builder/std",
+	"pezsc-client-api/std",
+	"pezsc-network-common/std",
+	"pezsc-network-types/std",
+	"pezsc-utils/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+	"prometheus-endpoint/std",
+	"unsigned-varint/std",
+	"zeroize/std",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"bizinikiwi-test-runtime/try-runtime",
+	"pezsc-block-builder/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-network-common/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+with-tracing = []

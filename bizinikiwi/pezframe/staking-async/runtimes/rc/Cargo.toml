@@ -1,0 +1,423 @@
+[package]
+name = "pezpallet-staking-async-rc-runtime"
+build = "build.rs"
+version = "7.0.0"
+description = "Staking Async testnet Relay Chain runtime."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+publish = false
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bitvec = { features = ["alloc"], workspace = true }
+codec = { features = ["derive", "max-encoded-len"], workspace = true }
+log = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde = { workspace = true }
+serde_derive = { optional = true, workspace = true }
+serde_json = { features = ["alloc"], workspace = true }
+smallvec = { workspace = true, default-features = true }
+
+pez-binary-merkle-tree = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-application-crypto = { workspace = true }
+pezsp-arithmetic = { workspace = true }
+pezsp-authority-discovery = { workspace = true }
+pezsp-block-builder = { workspace = true }
+pezsp-consensus-babe = { workspace = true }
+pezsp-consensus-beefy = { workspace = true }
+pezsp-consensus-grandpa = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-genesis-builder = { workspace = true }
+pezsp-inherents = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-keyring = { workspace = true }
+pezsp-mmr-primitives = { workspace = true }
+pezsp-npos-elections = { workspace = true }
+pezsp-offchain = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-session = { workspace = true }
+pezsp-staking = { workspace = true }
+pezsp-storage = { workspace = true }
+pezsp-transaction-pool = { workspace = true }
+pezsp-version = { workspace = true }
+
+pezframe-election-provider-support = { workspace = true }
+pezframe-executive = { workspace = true }
+pezframe-metadata-hash-extension = { workspace = true }
+pezframe-support = { features = [
+	"experimental",
+	"tuples-96",
+], workspace = true }
+pezframe-system = { workspace = true }
+pezframe-system-rpc-runtime-api = { workspace = true }
+pezpallet-asset-rate = { workspace = true }
+pezpallet-authority-discovery = { workspace = true }
+pezpallet-authorship = { workspace = true }
+pezpallet-babe = { workspace = true }
+pezpallet-bags-list = { workspace = true }
+pezpallet-balances = { workspace = true }
+pezpallet-beefy = { workspace = true }
+pezpallet-beefy-mmr = { workspace = true }
+pezpallet-conviction-voting = { workspace = true }
+pezpallet-election-provider-multi-phase = { workspace = true }
+pezpallet-fast-unstake = { workspace = true }
+pezpallet-grandpa = { workspace = true }
+pezpallet-identity = { workspace = true }
+pezpallet-indices = { workspace = true }
+pezpallet-message-queue = { workspace = true }
+pezpallet-migrations = { workspace = true }
+pezpallet-mmr = { workspace = true }
+pezpallet-multisig = { workspace = true }
+pezpallet-offences = { workspace = true }
+pezpallet-parameters = { workspace = true }
+pezpallet-preimage = { workspace = true }
+pezpallet-proxy = { workspace = true }
+pezpallet-recovery = { workspace = true }
+pezpallet-referenda = { workspace = true }
+pezpallet-root-offences = { workspace = true }
+pezpallet-root-testing = { workspace = true }
+pezpallet-scheduler = { workspace = true }
+pezpallet-session = { workspace = true }
+pezpallet-staking = { workspace = true }
+pezpallet-staking-async-ah-client = { workspace = true }
+pezpallet-staking-async-preset-store = { workspace = true }
+pezpallet-staking-async-rc-client = { workspace = true }
+pezpallet-staking-async-rc-runtime-constants = { workspace = true }
+pezpallet-sudo = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+pezpallet-transaction-payment = { workspace = true }
+pezpallet-transaction-payment-rpc-runtime-api = { workspace = true }
+pezpallet-treasury = { workspace = true }
+pezpallet-utility = { workspace = true }
+pezpallet-vesting = { workspace = true }
+pezpallet-whitelist = { workspace = true }
+pezpallet-xcm = { workspace = true }
+pezpallet-xcm-benchmarks = { optional = true, workspace = true }
+
+hex-literal = { workspace = true, default-features = true }
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-system-benchmarking = { optional = true, workspace = true }
+pezframe-try-runtime = { optional = true, workspace = true }
+pezpallet-election-provider-support-benchmarking = { optional = true, workspace = true }
+pezpallet-offences-benchmarking = { optional = true, workspace = true }
+pezpallet-session-benchmarking = { optional = true, workspace = true }
+
+pezkuwi-primitives = { workspace = true }
+pezkuwi-runtime-common = { workspace = true }
+pezkuwi-runtime-teyrchains = { workspace = true }
+pezkuwi-teyrchain-primitives = { workspace = true }
+
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+xcm-runtime-pezapis = { workspace = true }
+
+[dev-dependencies]
+approx = { workspace = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true }
+remote-externalities = { workspace = true, default-features = true }
+serde_json = { workspace = true, default-features = true }
+tiny-keccak = { features = ["keccak"], workspace = true }
+tokio = { features = ["macros"], workspace = true, default-features = true }
+
+[build-dependencies]
+bizinikiwi-wasm-builder = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+no_std = []
+std = [
+	"bitvec/std",
+	"bizinikiwi-wasm-builder/std",
+	"codec/std",
+	"log/std",
+	"pez-binary-merkle-tree/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-election-provider-support/std",
+	"pezframe-executive/std",
+	"pezframe-metadata-hash-extension/std",
+	"pezframe-support/std",
+	"pezframe-system-benchmarking?/std",
+	"pezframe-system-rpc-runtime-api/std",
+	"pezframe-system/std",
+	"pezframe-try-runtime/std",
+	"pezkuwi-primitives/std",
+	"pezkuwi-runtime-common/std",
+	"pezkuwi-runtime-teyrchains/std",
+	"pezkuwi-teyrchain-primitives/std",
+	"pezpallet-asset-rate/std",
+	"pezpallet-authority-discovery/std",
+	"pezpallet-authorship/std",
+	"pezpallet-babe/std",
+	"pezpallet-bags-list/std",
+	"pezpallet-balances/std",
+	"pezpallet-beefy-mmr/std",
+	"pezpallet-beefy/std",
+	"pezpallet-conviction-voting/std",
+	"pezpallet-election-provider-multi-phase/std",
+	"pezpallet-election-provider-support-benchmarking?/std",
+	"pezpallet-fast-unstake/std",
+	"pezpallet-grandpa/std",
+	"pezpallet-identity/std",
+	"pezpallet-indices/std",
+	"pezpallet-message-queue/std",
+	"pezpallet-migrations/std",
+	"pezpallet-mmr/std",
+	"pezpallet-multisig/std",
+	"pezpallet-offences-benchmarking?/std",
+	"pezpallet-offences/std",
+	"pezpallet-parameters/std",
+	"pezpallet-preimage/std",
+	"pezpallet-proxy/std",
+	"pezpallet-recovery/std",
+	"pezpallet-referenda/std",
+	"pezpallet-root-offences/std",
+	"pezpallet-root-testing/std",
+	"pezpallet-scheduler/std",
+	"pezpallet-session-benchmarking?/std",
+	"pezpallet-session/std",
+	"pezpallet-staking-async-ah-client/std",
+	"pezpallet-staking-async-preset-store/std",
+	"pezpallet-staking-async-rc-client/std",
+	"pezpallet-staking-async-rc-runtime-constants/std",
+	"pezpallet-staking/std",
+	"pezpallet-sudo/std",
+	"pezpallet-timestamp/std",
+	"pezpallet-transaction-payment-rpc-runtime-api/std",
+	"pezpallet-transaction-payment/std",
+	"pezpallet-treasury/std",
+	"pezpallet-utility/std",
+	"pezpallet-vesting/std",
+	"pezpallet-whitelist/std",
+	"pezpallet-xcm-benchmarks?/std",
+	"pezpallet-xcm/std",
+	"pezsp-api/std",
+	"pezsp-application-crypto/std",
+	"pezsp-arithmetic/std",
+	"pezsp-authority-discovery/std",
+	"pezsp-block-builder/std",
+	"pezsp-consensus-babe/std",
+	"pezsp-consensus-beefy/std",
+	"pezsp-consensus-grandpa/std",
+	"pezsp-core/std",
+	"pezsp-genesis-builder/std",
+	"pezsp-inherents/std",
+	"pezsp-io/std",
+	"pezsp-mmr-primitives/std",
+	"pezsp-npos-elections/std",
+	"pezsp-offchain/std",
+	"pezsp-runtime/std",
+	"pezsp-session/std",
+	"pezsp-staking/std",
+	"pezsp-storage/std",
+	"pezsp-tracing/std",
+	"pezsp-transaction-pool/std",
+	"pezsp-version/std",
+	"remote-externalities/std",
+	"scale-info/std",
+	"serde/std",
+	"serde_derive",
+	"serde_json/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm-runtime-pezapis/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"bizinikiwi-wasm-builder/runtime-benchmarks",
+	"pez-binary-merkle-tree/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-election-provider-support/runtime-benchmarks",
+	"pezframe-executive/runtime-benchmarks",
+	"pezframe-metadata-hash-extension/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system-benchmarking/runtime-benchmarks",
+	"pezframe-system-rpc-runtime-api/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe-try-runtime?/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-runtime-common/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-asset-rate/runtime-benchmarks",
+	"pezpallet-authority-discovery/runtime-benchmarks",
+	"pezpallet-authorship/runtime-benchmarks",
+	"pezpallet-babe/runtime-benchmarks",
+	"pezpallet-bags-list/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-beefy-mmr/runtime-benchmarks",
+	"pezpallet-beefy/runtime-benchmarks",
+	"pezpallet-conviction-voting/runtime-benchmarks",
+	"pezpallet-election-provider-multi-phase/runtime-benchmarks",
+	"pezpallet-election-provider-support-benchmarking/runtime-benchmarks",
+	"pezpallet-fast-unstake/runtime-benchmarks",
+	"pezpallet-grandpa/runtime-benchmarks",
+	"pezpallet-identity/runtime-benchmarks",
+	"pezpallet-indices/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-migrations/runtime-benchmarks",
+	"pezpallet-mmr/runtime-benchmarks",
+	"pezpallet-multisig/runtime-benchmarks",
+	"pezpallet-offences-benchmarking/runtime-benchmarks",
+	"pezpallet-offences/runtime-benchmarks",
+	"pezpallet-parameters/runtime-benchmarks",
+	"pezpallet-preimage/runtime-benchmarks",
+	"pezpallet-proxy/runtime-benchmarks",
+	"pezpallet-recovery/runtime-benchmarks",
+	"pezpallet-referenda/runtime-benchmarks",
+	"pezpallet-root-offences/runtime-benchmarks",
+	"pezpallet-root-testing/runtime-benchmarks",
+	"pezpallet-scheduler/runtime-benchmarks",
+	"pezpallet-session-benchmarking/runtime-benchmarks",
+	"pezpallet-session/runtime-benchmarks",
+	"pezpallet-staking-async-ah-client/runtime-benchmarks",
+	"pezpallet-staking-async-preset-store/runtime-benchmarks",
+	"pezpallet-staking-async-rc-client/runtime-benchmarks",
+	"pezpallet-staking-async-rc-runtime-constants/runtime-benchmarks",
+	"pezpallet-staking/runtime-benchmarks",
+	"pezpallet-sudo/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-transaction-payment-rpc-runtime-api/runtime-benchmarks",
+	"pezpallet-transaction-payment/runtime-benchmarks",
+	"pezpallet-treasury/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezpallet-vesting/runtime-benchmarks",
+	"pezpallet-whitelist/runtime-benchmarks",
+	"pezpallet-xcm-benchmarks/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-authority-discovery/runtime-benchmarks",
+	"pezsp-block-builder/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus-beefy/runtime-benchmarks",
+	"pezsp-consensus-grandpa/runtime-benchmarks",
+	"pezsp-genesis-builder/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-mmr-primitives/runtime-benchmarks",
+	"pezsp-npos-elections/runtime-benchmarks",
+	"pezsp-offchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-session/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+	"pezsp-transaction-pool/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+	"remote-externalities/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm-runtime-pezapis/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-election-provider-support/try-runtime",
+	"pezframe-executive/try-runtime",
+	"pezframe-metadata-hash-extension/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system-benchmarking?/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe-try-runtime",
+	"pezframe-try-runtime/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-runtime-common/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-asset-rate/try-runtime",
+	"pezpallet-authority-discovery/try-runtime",
+	"pezpallet-authorship/try-runtime",
+	"pezpallet-babe/try-runtime",
+	"pezpallet-bags-list/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-beefy-mmr/try-runtime",
+	"pezpallet-beefy/try-runtime",
+	"pezpallet-conviction-voting/try-runtime",
+	"pezpallet-election-provider-multi-phase/try-runtime",
+	"pezpallet-election-provider-support-benchmarking?/try-runtime",
+	"pezpallet-fast-unstake/try-runtime",
+	"pezpallet-grandpa/try-runtime",
+	"pezpallet-identity/try-runtime",
+	"pezpallet-indices/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-migrations/try-runtime",
+	"pezpallet-mmr/try-runtime",
+	"pezpallet-multisig/try-runtime",
+	"pezpallet-offences-benchmarking?/try-runtime",
+	"pezpallet-offences/try-runtime",
+	"pezpallet-parameters/try-runtime",
+	"pezpallet-preimage/try-runtime",
+	"pezpallet-proxy/try-runtime",
+	"pezpallet-recovery/try-runtime",
+	"pezpallet-referenda/try-runtime",
+	"pezpallet-root-offences/try-runtime",
+	"pezpallet-root-testing/try-runtime",
+	"pezpallet-scheduler/try-runtime",
+	"pezpallet-session-benchmarking?/try-runtime",
+	"pezpallet-session/try-runtime",
+	"pezpallet-staking-async-ah-client/try-runtime",
+	"pezpallet-staking-async-preset-store/try-runtime",
+	"pezpallet-staking-async-rc-client/try-runtime",
+	"pezpallet-staking-async-rc-runtime-constants/try-runtime",
+	"pezpallet-staking/try-runtime",
+	"pezpallet-sudo/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-transaction-payment-rpc-runtime-api/try-runtime",
+	"pezpallet-transaction-payment/try-runtime",
+	"pezpallet-treasury/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezpallet-vesting/try-runtime",
+	"pezpallet-whitelist/try-runtime",
+	"pezpallet-xcm-benchmarks?/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-authority-discovery/try-runtime",
+	"pezsp-block-builder/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus-beefy/try-runtime",
+	"pezsp-consensus-grandpa/try-runtime",
+	"pezsp-genesis-builder/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-mmr-primitives/try-runtime",
+	"pezsp-npos-elections/try-runtime",
+	"pezsp-offchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-session/try-runtime",
+	"pezsp-staking/try-runtime",
+	"pezsp-transaction-pool/try-runtime",
+	"pezsp-version/try-runtime",
+	"remote-externalities/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm-runtime-pezapis/try-runtime",
+	"xcm/try-runtime",
+]
+
+# Enable the metadata hash generation in the wasm builder.
+metadata-hash = ["bizinikiwi-wasm-builder/metadata-hash"]
+
+# Set timing constants (e.g. session period) to faster versions to speed up testing.
+fast-runtime = []
+
+runtime-metrics = [
+	"pezkuwi-runtime-teyrchains/runtime-metrics",
+	"pezsp-io/with-tracing",
+]
+
+# A feature that should be enabled when the runtime should be built for on-chain
+# deployment. This will disable stuff that shouldn't be part of the on-chain wasm
+# to make it smaller, like logging for example.
+on-chain-release-build = ["metadata-hash"]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

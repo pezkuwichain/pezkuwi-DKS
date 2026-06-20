@@ -1,0 +1,58 @@
+[package]
+name = "pezpallet-tx-pause"
+version = "9.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME transaction pause pezpallet"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+docify = { workspace = true }
+pezframe = { workspace = true, features = ["runtime"] }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+[dev-dependencies]
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-proxy = { workspace = true, default-features = true }
+pezpallet-utility = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezframe/std",
+	"scale-info/std",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-proxy/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-proxy/try-runtime",
+	"pezpallet-utility/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

@@ -1,0 +1,11 @@
+error: Invalid feeless_if attribute: expected a closure
+  --> tests/pezpallet_ui/call_feeless_invalid_type.rs:31:27
+   |
+31 |         #[pezpallet::feeless_if(0)]
+   |                                 ^
+
+error: expected `|`
+  --> tests/pezpallet_ui/call_feeless_invalid_type.rs:31:27
+   |
+31 |         #[pezpallet::feeless_if(0)]
+   |                                 ^

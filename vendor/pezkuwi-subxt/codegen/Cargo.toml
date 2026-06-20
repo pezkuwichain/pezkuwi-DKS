@@ -1,0 +1,55 @@
+[package]
+name = "pezkuwi-subxt-codegen"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+license.workspace = true
+repository.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+description = "Generate an API for interacting with a Pezkuwi/Bizinikiwi node from FRAME metadata"
+
+[features]
+default = []
+web = ["getrandom/js"]
+std = [
+	"codec/std",
+	"frame-metadata?/std",
+	"getrandom?/std",
+	"pezkuwi-subxt-metadata/std",
+	"scale-info/std",
+]
+serde = []
+
+[dependencies]
+codec = { package = "parity-scale-codec", workspace = true, features = [
+	"derive",
+] }
+frame-metadata = { workspace = true, optional = true }
+heck = { workspace = true }
+pezkuwi-subxt-metadata = { workspace = true }
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+scale-info = { workspace = true }
+scale-typegen = { workspace = true }
+syn = { workspace = true }
+thiserror = { workspace = true }
+
+# Included if "web" feature is enabled, to enable its js feature.
+getrandom = { workspace = true, optional = true }
+
+[dev-dependencies]
+frame-metadata = { workspace = true }
+scale-info = { workspace = true, features = ["bit-vec"] }
+
+[package.metadata.docs.rs]
+features = ["default"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.playground]
+default-features = true
+
+[lints]
+workspace = true

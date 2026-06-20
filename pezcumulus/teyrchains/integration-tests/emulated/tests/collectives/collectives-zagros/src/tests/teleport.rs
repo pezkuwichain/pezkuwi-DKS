@@ -1,0 +1,117 @@
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// SPDX-License-Identifier: Apache-2.0
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use crate::imports::*;
+use emulated_integration_tests_common::{
+	test_relay_is_trusted_teleporter, test_teyrchain_is_trusted_teleporter_for_relay,
+};
+
+#[test]
+fn teleport_via_limited_teleport_assets_from_and_to_relay() {
+	let amount = ZAGROS_ED * 10;
+
+	test_relay_is_trusted_teleporter!(
+		Zagros,                  // Origin
+		vec![CollectivesZagros], // Destinations
+		amount,
+		limited_teleport_assets
+	);
+
+	test_teyrchain_is_trusted_teleporter_for_relay!(
+		CollectivesZagros, // Origin
+		Zagros,            // Destination
+		amount,
+		limited_teleport_assets
+	);
+}
+
+#[test]
+fn teleport_via_transfer_assets_from_and_to_relay() {
+	let amount = ZAGROS_ED * 10;
+
+	test_relay_is_trusted_teleporter!(
+		Zagros,                  // Origin
+		vec![CollectivesZagros], // Destinations
+		amount,
+		transfer_assets
+	);
+
+	test_teyrchain_is_trusted_teleporter_for_relay!(
+		CollectivesZagros, // Origin
+		Zagros,            // Destination
+		amount,
+		transfer_assets
+	);
+}
+
+#[test]
+fn teleport_via_limited_teleport_assets_from_collectives_to_asset_hub() {
+	let amount = ASSET_HUB_ZAGROS_ED * 100;
+	let native_asset: Assets = (Parent, amount).into();
+
+	let fee_asset_id: AssetId = Parent.into();
+	test_teyrchain_is_trusted_teleporter!(
+		CollectivesZagros,    // Origin
+		vec![AssetHubZagros], // Destinations
+		(native_asset, amount),
+		fee_asset_id,
+		limited_teleport_assets
+	);
+}
+
+#[test]
+fn teleport_via_transfer_assets_from_collectives_to_asset_hub() {
+	let amount = ASSET_HUB_ZAGROS_ED * 100;
+	let native_asset: Assets = (Parent, amount).into();
+
+	let fee_asset_id: AssetId = Parent.into();
+	test_teyrchain_is_trusted_teleporter!(
+		CollectivesZagros,    // Origin
+		vec![AssetHubZagros], // Destinations
+		(native_asset, amount),
+		fee_asset_id,
+		transfer_assets
+	);
+}
+
+#[test]
+fn teleport_via_limited_teleport_assets_from_asset_hub_to_collectives() {
+	let amount = COLLECTIVES_ZAGROS_ED * 100;
+	let native_asset: Assets = (Parent, amount).into();
+
+	let fee_asset_id: AssetId = Parent.into();
+	test_teyrchain_is_trusted_teleporter!(
+		AssetHubZagros,          // Origin
+		vec![CollectivesZagros], // Destinations
+		(native_asset, amount),
+		fee_asset_id,
+		limited_teleport_assets
+	);
+}
+
+#[test]
+fn teleport_via_transfer_assets_from_asset_hub_to_collectives() {
+	let amount = COLLECTIVES_ZAGROS_ED * 100;
+	let native_asset: Assets = (Parent, amount).into();
+
+	let fee_asset_id: AssetId = Parent.into();
+	test_teyrchain_is_trusted_teleporter!(
+		AssetHubZagros,          // Origin
+		vec![CollectivesZagros], // Destinations
+		(native_asset, amount),
+		fee_asset_id,
+		transfer_assets
+	);
+}

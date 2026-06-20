@@ -1,0 +1,10 @@
+flowchart LR
+
+	subgraph Pezkuwi[The Pezkuwi Relay Chain]
+		PezkuwiNode[Pezkuwi Node]
+		PezkuwiRuntime[Pezkuwi Runtime]
+	end
+
+    FRAME -.-> PezkuwiRuntime
+    PezkuwiSDK[Pezkuwi SDK Node Libraries] -.-> PezkuwiNode
+

@@ -1,0 +1,45 @@
+[package]
+name = "pezsp-runtime-interface-test-wasm"
+version = "2.0.0"
+authors.workspace = true
+edition.workspace = true
+build = "build.rs"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+publish = false
+description = "Pezkuwi SDK primitive: runtime interface test wasm"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+bytes = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-runtime-interface = { workspace = true }
+
+[build-dependencies]
+bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"bizinikiwi-wasm-builder",
+	"bizinikiwi-wasm-builder?/std",
+	"bytes/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime-interface/std",
+]
+serde = []
+with-tracing = []
+runtime-benchmarks = [
+	"bizinikiwi-wasm-builder?/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime-interface/runtime-benchmarks",
+]

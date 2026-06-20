@@ -1,0 +1,5 @@
+error: missing `#[pezpallet::task_condition(..)]` attribute
+  --> tests/pezpallet_ui/task_missing_condition.rs:32:6
+   |
+32 |         fn foo() -> DispatchResult {
+   |            ^^^

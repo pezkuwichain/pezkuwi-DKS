@@ -1,0 +1,23 @@
+[build]
+rustdocflags = [
+	"-Dwarnings",
+	"-Arustdoc::redundant_explicit_links", # stylistic
+]
+
+[env]
+# Needed for musl builds so user doesn't have to install musl-tools.
+CC_x86_64_unknown_linux_musl = { value = ".cargo/musl-gcc", force = true, relative = true }
+CXX_x86_64_unknown_linux_musl = { value = ".cargo/musl-g++", force = true, relative = true }
+CARGO_WORKSPACE_ROOT_DIR = { value = "", relative = true }
+SQLX_OFFLINE = "true"
+# Rust 1.96 removed the implicit `--allow-undefined` from wasm linking
+# (https://blog.rust-lang.org/2026/04/04/changes-to-webassembly-targets-and-handling-undefined-symbols/).
+# Bizinikiwi/Substrate runtimes import their host functions (`ext_*`) as undefined
+# wasm symbols resolved by the executor at runtime, so we restore that behavior for
+# the runtime wasm build. wasm-builder appends WASM_BUILD_RUSTFLAGS to the runtime's
+# wasm RUSTFLAGS; the resulting WASM is import-identical to the previous toolchain.
+WASM_BUILD_RUSTFLAGS = "-Clink-arg=--allow-undefined"
+
+[net]
+retry = 5
+# git-fetch-with-cli = true # commented because there is a risk that a runner can be banned by github

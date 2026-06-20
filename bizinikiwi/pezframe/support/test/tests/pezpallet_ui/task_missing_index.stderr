@@ -1,0 +1,5 @@
+error: missing `#[pezpallet::task_index(..)]` attribute
+  --> tests/pezpallet_ui/task_missing_index.rs:31:6
+   |
+31 |         fn foo() -> DispatchResult {
+   |            ^^^

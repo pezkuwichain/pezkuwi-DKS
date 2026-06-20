@@ -1,0 +1,108 @@
+[package]
+name = "pezkuwi-subxt-rpcs"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = true
+
+license.workspace = true
+readme = "README.md"
+repository.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+description = "Make RPC calls to Bizinikiwi based nodes"
+keywords = ["parity", "rpcs", "subxt"]
+
+[features]
+default = ["jsonrpsee", "native"]
+
+subxt = ["dep:pezkuwi-subxt-core"]
+jsonrpsee = ["dep:jsonrpsee", "dep:tokio-util"]
+
+unstable-light-client = ["dep:pezkuwi-subxt-lightclient"]
+
+reconnecting-rpc-client = ["dep:finito", "dep:tokio", "jsonrpsee", "tokio/sync"]
+
+mock-rpc-client = ["dep:tokio", "tokio/sync"]
+
+# Enable this for native (ie non web/wasm builds).
+# Exactly 1 of "web" and "native" is expected.
+native = [
+	"jsonrpsee?/async-client",
+	"jsonrpsee?/client-ws-transport-tls",
+	"jsonrpsee?/ws-client",
+	"pezkuwi-subxt-lightclient?/native",
+]
+
+# Enable this for web/wasm builds.
+# Exactly 1 of "web" and "native" is expected.
+web = [
+	"dep:wasm-bindgen-futures",
+	"finito?/wasm-bindgen",
+	"getrandom/js",
+	"jsonrpsee?/async-wasm-client",
+	"jsonrpsee?/client-web-transport",
+	"jsonrpsee?/wasm-client",
+	"pezkuwi-subxt-lightclient?/web",
+]
+std = [
+	"codec/std",
+	"frame-metadata/std",
+	"getrandom?/std",
+	"hex/std",
+	"impl-serde/std",
+	"pezkuwi-subxt-core?/std",
+	"pezkuwi-subxt-lightclient?/std",
+	"primitive-types/std",
+	"serde/std",
+	"serde_json/std",
+	"tracing/std",
+]
+serde = []
+runtime-benchmarks = ["pezkuwi-subxt-core?/runtime-benchmarks"]
+
+[dependencies]
+codec = { workspace = true }
+derive-where = { workspace = true }
+frame-metadata = { workspace = true, features = ["decode"] }
+futures = { workspace = true }
+getrandom = { workspace = true, optional = true }
+hex = { workspace = true }
+impl-serde = { workspace = true }
+primitive-types = { workspace = true, features = ["serde"] }
+serde = { workspace = true }
+serde_json = { workspace = true, features = ["default", "raw_value"] }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true }
+
+# Included with the jsonrpsee feature
+jsonrpsee = { workspace = true, optional = true }
+tokio-util = { workspace = true, features = ["compat"], optional = true }
+
+# Included with the reconnecting-rpc-client feature
+finito = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+
+# Included with the unstable-light-client feature
+pezkuwi-subxt-lightclient = { workspace = true, optional = true, default-features = false }
+
+# Included with the pezkuwi-subxt-core feature to impl Config for RpcConfig
+pezkuwi-subxt-core = { workspace = true, optional = true }
+
+# Included with WASM feature
+wasm-bindgen-futures = { workspace = true, optional = true }
+
+[dev-dependencies]
+http-body = { workspace = true }
+hyper = { workspace = true }
+jsonrpsee = { workspace = true, features = ["server"] }
+tower = { workspace = true }
+
+[package.metadata.docs.rs]
+default-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints]
+workspace = true

@@ -1,0 +1,25 @@
+# Rust / Cargo
+/target
+**/target
+*.rs.bk
+Cargo.lock.bak
+
+# WASM build artifacts
+**/wbuild
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local env / secrets — never commit
+.env
+*.key
+*.pem
+secrets/
+
+# Logs & local chain data
+*.log
+/chains
+/data

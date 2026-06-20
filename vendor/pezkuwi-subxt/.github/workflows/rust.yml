@@ -1,0 +1,529 @@
+name: Rust
+
+on:
+  push:
+    # Run jobs when commits are pushed to
+    # master or release-like branches:
+    branches:
+      - master
+      # If we want to backport changes to an old release, push a branch
+      # eg v0.40.x and CI will run on it. PRs merging to such branches 
+      # will also trigger CI.
+      - v0.[0-9]+.x
+  pull_request:
+    # Run jobs for any external PR that wants
+    # to merge to master, too:
+    branches:
+      - master
+      - v0.[0-9]+.x
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Increase wasm test timeout from 20 seconds (default) to 1 minute.
+  WASM_BINDGEN_TEST_TIMEOUT: 60
+
+jobs:
+  fmt:
+    name: Cargo fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Install Rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Cargo fmt
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: fmt
+          args: --all -- --check
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  machete:
+    name: "Check unused dependencies"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Use substrate and polkadot node binaries
+        uses: ./.github/workflows/actions/use-nodes
+
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Install cargo-machete
+        run: cargo install cargo-machete
+
+      - name: Check unused dependencies
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: machete
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  clippy:
+    name: Cargo clippy
+    runs-on: parity-large
+    needs: [fmt, machete]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Use substrate and polkadot node binaries
+        uses: ./.github/workflows/actions/use-nodes
+
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: clippy
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Run clippy
+        run: |
+          cargo clippy --all-targets --features unstable-light-client -- -D warnings
+          cargo clippy -p subxt-lightclient --no-default-features --features web -- -D warnings
+          cargo clippy -p subxt --no-default-features --features web -- -D warnings
+          cargo clippy -p subxt --no-default-features --features web,unstable-light-client -- -D warnings
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  wasm_clippy:
+    name: Cargo clippy (WASM)
+    runs-on: ubuntu-latest
+    needs: [fmt, machete]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Use substrate and polkadot node binaries
+        uses: ./.github/workflows/actions/use-nodes
+
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+          components: clippy
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Run clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -p subxt --no-default-features --features web,unstable-light-client,jsonrpsee --target wasm32-unknown-unknown -- -D warnings
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  check:
+    name: Cargo check
+    runs-on: parity-large
+    needs: [fmt, machete]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Use substrate and polkadot node binaries
+        uses: ./.github/workflows/actions/use-nodes
+
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Install cargo-hack
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-hack
+          version: 0.5
+
+      # A basic check over all targets together. This may lead to features being combined etc,
+      # and doesn't test combinations of different features.
+      - name: Cargo check all targets.
+        run: cargo check --all-targets
+
+      # Next, check each subxt feature in isolation.
+      # - `native` feature must always be enabled
+      # - `web` feature is always ignored.
+      - name: Cargo hack; check each subxt feature
+        run: cargo hack -p subxt --each-feature check --exclude-features web --features native
+
+      # Same with subxt-historic
+      - name: Cargo hack; check each subxt feature
+        run: cargo hack -p subxt-historic --each-feature check --exclude-features web --features native
+
+      # And with subxt-rpcs
+      - name: Cargo hack; check each subxt-rpcs feature
+        run: cargo hack -p subxt-rpcs --each-feature check --exclude-features web --features native
+
+      # And with subxt-signer (seems to work with a more basic check here; disable web if it becomes an issue).
+      - name: Cargo hack; check each subxt-signer feature
+        run: cargo hack -p subxt-signer --each-feature check
+
+      # And for subxt-lightclient.
+      - name: Cargo check subxt-lightclient
+        run: cargo hack -p subxt-lightclient --each-feature check --exclude-features web --features native
+
+      # Next, check all  other crates.
+      - name: Cargo hack; check each feature/crate on its own
+        run: cargo hack --exclude subxt --exclude subxt-historic --exclude subxt-signer --exclude subxt-lightclient --exclude subxt-rpcs --exclude-all-features --each-feature check --workspace
+
+      # Check the full examples, which aren't a part of the workspace so are otherwise ignored.
+      - name: Cargo check parachain-example
+        run: cargo check --manifest-path examples/parachain-example/Cargo.toml
+      - name: Cargo check ffi-example
+        run: cargo check --manifest-path examples/ffi-example/Cargo.toml
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  ffi_example:
+    name: Run FFI Example
+    runs-on: ubuntu-latest
+    needs: [check]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Use substrate and polkadot node binaries
+        uses: ./.github/workflows/actions/use-nodes
+
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Install 
+        uses: actions/setup-node@v4
+        with:
+          # Node version 20 and higher seem to cause an issue with the JS example so stick to 19 for now.
+          node-version: 19.x
+
+      - name: Cargo check/run ffi-example
+        run: |
+          # Start node on port 8000
+          substrate-node --dev --rpc-port 8000 > /dev/null 2>&1 &
+
+          # Build the Rust code (hopefully gives long enough for substrate server to start, too):
+          cd examples/ffi-example
+          cargo build
+
+          # Run the python version of the FFI code:
+          echo "Running Python FFI example..."
+          python3 src/main.py
+          echo "Python FFI example completed with exit code $?"
+          
+          # Run the node version of the FFI code
+          echo "Installing Node.js dependencies..."
+          npm i
+          echo "Running Node FFI example..."
+          node src/main.js
+          echo "Node FFI example completed with exit code $?"
+
+          pkill substrate-node
+
+  wasm_check:
+    name: Cargo check (WASM)
+    runs-on: ubuntu-latest
+    needs: [fmt, machete]
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Cargo check web features which require wasm32 target.
+        run: |
+          cargo check -p subxt-rpcs --target wasm32-unknown-unknown --no-default-features --features web
+          cargo check -p subxt-rpcs --target wasm32-unknown-unknown --no-default-features --features web,reconnecting-rpc-client
+
+      # Check WASM examples, which aren't a part of the workspace and so are otherwise missed:
+      - name: Cargo check WASM examples
+        run: |
+          cargo check --manifest-path examples/wasm-example/Cargo.toml --target wasm32-unknown-unknown
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  docs:
+    name: Check documentation and run doc tests
+    runs-on: parity-large
+    needs: [fmt, machete]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Use substrate and polkadot node binaries
+        uses: ./.github/workflows/actions/use-nodes
+
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Check internal documentation links
+        run: RUSTDOCFLAGS="--deny rustdoc::broken_intra_doc_links" cargo doc --workspace --no-deps --document-private-items
+
+      - name: Run cargo test on documentation
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: test
+          args: --doc --features reconnecting-rpc-client
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  tests:
+    name: "Test (Native)"
+    runs-on: parity-large
+    needs: [clippy, wasm_clippy, check, wasm_check, docs]
+    timeout-minutes: 45
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Use substrate and polkadot node binaries
+        uses: ./.github/workflows/actions/use-nodes
+
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Install cargo-nextest
+        run: cargo install cargo-nextest
+
+      - name: Run subxt-signer no-std tests
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: test
+          working-directory: signer/tests/no-std
+
+      - name: Run tests
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: nextest
+          args: run --workspace --features reconnecting-rpc-client
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  unstable_backend_tests:
+    name: "Test chainhead backend"
+    runs-on: parity-large
+    needs: [clippy, wasm_clippy, check, wasm_check, docs]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Use substrate and polkadot node binaries
+        uses: ./.github/workflows/actions/use-nodes
+
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Install cargo-nextest
+        run: cargo install cargo-nextest
+
+      - name: Run tests
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: nextest
+          args: run --workspace --features chainhead-backend
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  light_client_tests:
+    name: "Test (Light Client)"
+    runs-on: ubuntu-latest
+    needs: [clippy, wasm_clippy, check, wasm_check, docs]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      - name: Use substrate and polkadot node binaries
+        uses: ./.github/workflows/actions/use-nodes
+
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Run tests
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: test
+          args: --release --package integration-tests --features unstable-light-client
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  wasm_tests:
+    name: Test (WASM)
+    runs-on: ubuntu-latest
+    needs: [clippy, wasm_clippy, check, wasm_check, docs]
+    timeout-minutes: 30
+    env:
+      # Set timeout for wasm tests to be much bigger than the default 20 secs.
+      WASM_BINDGEN_TEST_TIMEOUT: 300
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install firefox
+        uses: browser-actions/setup-firefox@latest
+
+      - name: Install chrome
+        uses: browser-actions/setup-chrome@latest
+
+      - name: Use substrate and polkadot node binaries
+        uses: ./.github/workflows/actions/use-nodes
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      - name: Run subxt WASM tests
+        run: |
+          # `listen-addr` is used to configure p2p to accept websocket connections instead of TCP.
+          # `node-key` provides a deterministic p2p address.
+          substrate-node --dev --node-key 0000000000000000000000000000000000000000000000000000000000000001 --listen-addr /ip4/0.0.0.0/tcp/30333/ws > /dev/null 2>&1 &
+          wasm-pack test --headless --firefox
+          wasm-pack test --headless --chrome
+          pkill substrate-node
+        working-directory: testing/wasm-rpc-tests
+
+      - name: Run subxt-lightclient WASM tests
+        run: |
+          # `listen-addr` is used to configure p2p to accept websocket connections instead of TCP.
+          # `node-key` provides a deterministic p2p address.
+          substrate-node --dev --node-key 0000000000000000000000000000000000000000000000000000000000000001 --listen-addr /ip4/0.0.0.0/tcp/30333/ws > /dev/null 2>&1 &
+          wasm-pack test --headless --firefox
+          wasm-pack test --headless --chrome
+          pkill substrate-node
+        working-directory: testing/wasm-lightclient-tests
+
+      - name: Run subxt-signer WASM tests
+        run: |
+          wasm-pack test --headless --firefox
+          wasm-pack test --headless --chrome
+        working-directory: signer/tests/wasm
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5
+
+  no-std-tests:
+    name: "Test (no_std)"
+    runs-on: ubuntu-latest
+    needs: [machete, docs]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v6
+
+      # Note: needs nighly toolchain because otherwise we cannot define custom lang-items.
+      - name: Install Rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+          target: thumbv7em-none-eabi
+
+      - name: Install the gcc-arm-none-eabi linker
+        run: sudo apt install gcc-arm-none-eabi
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+
+      # Note: We currently do not have a way to run real tests in a `no_std` environment.
+      # We can only make sure that they compile to ARM thumb ISA.
+      # Running the binary and inspecting the output would require an actual machine with matching ISA or some sort of emulator.
+      - name: Compile `no-std-tests` crate to `thumbv7em-none-eabi` target.
+        run: cargo build --target thumbv7em-none-eabi
+        working-directory: testing/no-std-tests
+
+      - if: "failure()"
+        uses: "andymckay/cancel-action@a955d435292c0d409d104b57d8e78435a93a6ef1" # v0.5

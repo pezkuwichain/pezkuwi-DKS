@@ -1,0 +1,87 @@
+[package]
+name = "xcm-pez-simulator-fuzzer"
+description = "Examples of xcm-pez-simulator usage."
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[[bin]]
+path = "src/fuzz.rs"
+name = "xcm-fuzzer"
+
+[dependencies]
+arbitrary = { workspace = true }
+codec = { workspace = true, default-features = true }
+honggfuzz = { workspace = true }
+scale-info = { features = [
+	"derive",
+], workspace = true, default-features = true }
+
+pezframe-executive = { workspace = true, default-features = true }
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezframe-try-runtime = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-message-queue = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+
+pezkuwi-core-primitives = { workspace = true, default-features = true }
+pezkuwi-runtime-teyrchains = { workspace = true, default-features = true }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+pezpallet-xcm = { workspace = true, default-features = true }
+xcm = { workspace = true, default-features = true }
+xcm-builder = { workspace = true, default-features = true }
+xcm-executor = { workspace = true, default-features = true }
+xcm-pez-simulator = { workspace = true, default-features = true }
+
+[features]
+try-runtime = [
+	"pezframe-executive/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe-try-runtime/try-runtime",
+	"pezkuwi-core-primitives/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm-pez-simulator/try-runtime",
+	"xcm/try-runtime",
+]
+runtime-benchmarks = [
+	"pezframe-executive/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe-try-runtime/runtime-benchmarks",
+	"pezkuwi-core-primitives/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm-pez-simulator/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = ["xcm-pez-simulator/std"]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

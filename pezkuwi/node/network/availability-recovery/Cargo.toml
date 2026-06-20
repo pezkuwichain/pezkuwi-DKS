@@ -1,0 +1,83 @@
+[package]
+name = "pezkuwi-availability-recovery"
+description = "The Availability Recovery subsystem. Handles requests for recovering the availability data of included candidates."
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "availability-recovery-regression-bench"
+path = "benches/availability-recovery-regression-bench.rs"
+harness = false
+required-features = ["subsystem-benchmarks"]
+
+[dependencies]
+async-trait = { workspace = true }
+fatality = { workspace = true }
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, default-features = true }
+
+codec = { features = ["derive"], workspace = true }
+pezkuwi-erasure-coding = { workspace = true, default-features = true }
+pezkuwi-node-network-protocol = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+
+[dev-dependencies]
+assert_matches = { workspace = true }
+futures-timer = { workspace = true }
+rstest = { workspace = true }
+
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+pezkuwi-primitives-test-helpers = { workspace = true }
+pezkuwi-subsystem-bench = { workspace = true }
+
+[features]
+subsystem-benchmarks = []
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-erasure-coding/runtime-benchmarks",
+	"pezkuwi-node-network-protocol/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-subsystem-bench/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"gum/std",
+	"pezkuwi-erasure-coding/std",
+	"pezkuwi-node-network-protocol/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
+	"pezkuwi-subsystem-bench/std",
+	"pezsc-network/std",
+]
+serde = []
+with-tracing = []

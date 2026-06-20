@@ -1,0 +1,11 @@
+{
+  "polkadot_rpc": "wss://polkadot-asset-hub-rpc.polkadot.io",
+  "pezkuwi_rpc": "wss://asset-hub-rpc.pezkuwichain.io",
+  "polkadot_usdt_asset_id": 1984,
+  "pezkuwi_wusdt_asset_id": 1000,
+  "min_deposit": 10000000,
+  "min_withdraw": 10000000,
+  "fee_basis_points": 10,
+  "seed_path": "bridge_seed.json",
+  "db_path": "bridge_db.json"
+}

@@ -1,0 +1,67 @@
+[relaychain]
+default_command = "../../target/release/pezkuwi"
+default_args = ["-lteyrchain=debug"]
+chain = "zagros-local"
+
+[[relaychain.nodes]]
+name = "alice"
+validator = true
+
+[[relaychain.nodes]]
+name = "bob"
+validator = true
+
+[[relaychain.nodes]]
+name = "charlie"
+validator = true
+
+[[relaychain.nodes]]
+name = "dave"
+validator = true
+
+[[teyrchains]]
+id = 1000
+chain = "asset-hub-zagros-local"
+cumulus_based = true
+
+# run alice as teyrchain collator
+[[teyrchains.collators]]
+name = "alice"
+validator = true
+command = "../../target/release/pezkuwi-teyrchain"
+args = ["-lteyrchain=debug"]
+
+# run bob as teyrchain collator
+[[teyrchains.collators]]
+name = "bob"
+validator = true
+command = "../../target/release/pezkuwi-teyrchain"
+args = ["-lteyrchain=debug"]
+
+# run charlie as teyrchain collator
+[[teyrchains.collators]]
+name = "charlie"
+validator = true
+command = "../../target/release/pezkuwi-teyrchain"
+args = ["-lteyrchain=debug"]
+
+# run dave as teyrchain collator
+[[teyrchains.collators]]
+name = "dave"
+validator = true
+command = "../../target/release/pezkuwi-teyrchain"
+args = ["-lteyrchain=debug"]
+
+# run eve as teyrchain collator
+[[teyrchains.collators]]
+name = "eve"
+validator = true
+command = "../../target/release/pezkuwi-teyrchain"
+args = ["-lteyrchain=debug"]
+
+# run ferdie as teyrchain collator
+[[teyrchains.collators]]
+name = "ferdie"
+validator = true
+command = "../../target/release/pezkuwi-teyrchain"
+args = ["-lteyrchain=debug"]

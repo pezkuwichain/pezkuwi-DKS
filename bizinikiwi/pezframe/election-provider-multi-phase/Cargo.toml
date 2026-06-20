@@ -1,0 +1,101 @@
+[package]
+name = "pezpallet-election-provider-multi-phase"
+version = "27.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "PALLET two phase election providers"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+log = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+
+pezframe-election-provider-support = { workspace = true }
+pezsp-arithmetic = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-npos-elections = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Optional imports for benchmarking
+pezframe-benchmarking = { optional = true, workspace = true }
+rand = { features = ["alloc", "small_rng"], optional = true, workspace = true }
+strum = { features = ["derive"], optional = true, workspace = true }
+
+# optional for remote testing
+hex = { workspace = true, default-features = true, optional = true }
+remote-externalities = { workspace = true, default-features = true, optional = true }
+tokio = { features = [
+	"macros",
+], workspace = true, default-features = true, optional = true }
+
+[dev-dependencies]
+parking_lot = { workspace = true, default-features = true }
+pezframe-benchmarking = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+
+
+[features]
+remote-mining = ["hex", "remote-externalities", "tokio"]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-election-provider-support/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezsp-arithmetic/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-npos-elections/std",
+	"pezsp-runtime/std",
+	"pezsp-tracing/std",
+	"rand/std",
+	"remote-externalities?/std",
+	"scale-info/std",
+	"strum/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-election-provider-support/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-npos-elections/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"rand",
+	"remote-externalities?/runtime-benchmarks",
+	"strum",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-election-provider-support/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezsp-npos-elections/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"remote-externalities?/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

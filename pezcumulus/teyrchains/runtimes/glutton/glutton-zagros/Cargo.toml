@@ -1,0 +1,188 @@
+[package]
+name = "glutton-zagros-runtime"
+version = "3.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Glutton teyrchain runtime."
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde_json = { features = ["alloc"], workspace = true }
+
+# Bizinikiwi
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-executive = { workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezframe-system-benchmarking = { optional = true, workspace = true }
+pezframe-system-rpc-runtime-api = { workspace = true }
+pezframe-try-runtime = { optional = true, workspace = true }
+pezpallet-aura = { workspace = true }
+pezpallet-glutton = { workspace = true }
+pezpallet-message-queue = { workspace = true }
+pezpallet-sudo = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+pezsp-api = { workspace = true }
+pezsp-block-builder = { workspace = true }
+pezsp-consensus-aura = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-genesis-builder = { workspace = true }
+pezsp-inherents = { workspace = true }
+pezsp-keyring = { workspace = true }
+pezsp-offchain = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-session = { workspace = true }
+pezsp-storage = { workspace = true }
+pezsp-transaction-pool = { workspace = true }
+pezsp-version = { workspace = true }
+
+# Pezkuwi
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+
+# Pezcumulus
+pezcumulus-pezpallet-aura-ext = { workspace = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+pezcumulus-pezpallet-xcm = { workspace = true }
+pezcumulus-primitives-aura = { workspace = true }
+pezcumulus-primitives-core = { workspace = true }
+testnet-teyrchains-constants = { features = ["zagros"], workspace = true }
+teyrchain-info = { workspace = true }
+teyrchains-common = { workspace = true }
+
+[build-dependencies]
+bizinikiwi-wasm-builder = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+runtime-benchmarks = [
+	"bizinikiwi-wasm-builder/runtime-benchmarks",
+	"pezcumulus-pezpallet-aura-ext/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-pezpallet-xcm/runtime-benchmarks",
+	"pezcumulus-primitives-aura/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-executive/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system-benchmarking/runtime-benchmarks",
+	"pezframe-system-rpc-runtime-api/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe-try-runtime?/runtime-benchmarks",
+	"pezpallet-aura/runtime-benchmarks",
+	"pezpallet-glutton/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-sudo/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-block-builder/runtime-benchmarks",
+	"pezsp-consensus-aura/runtime-benchmarks",
+	"pezsp-genesis-builder/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-offchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-session/runtime-benchmarks",
+	"pezsp-transaction-pool/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+	"testnet-teyrchains-constants/runtime-benchmarks",
+	"teyrchain-info/runtime-benchmarks",
+	"teyrchains-common/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-wasm-builder/std",
+	"codec/std",
+	"pezcumulus-pezpallet-aura-ext/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezcumulus-pezpallet-xcm/std",
+	"pezcumulus-primitives-aura/std",
+	"pezcumulus-primitives-core/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-executive/std",
+	"pezframe-support/std",
+	"pezframe-system-benchmarking?/std",
+	"pezframe-system-rpc-runtime-api/std",
+	"pezframe-system/std",
+	"pezframe-try-runtime?/std",
+	"pezpallet-aura/std",
+	"pezpallet-glutton/std",
+	"pezpallet-message-queue/std",
+	"pezpallet-sudo/std",
+	"pezpallet-timestamp/std",
+	"pezsp-api/std",
+	"pezsp-block-builder/std",
+	"pezsp-consensus-aura/std",
+	"pezsp-core/std",
+	"pezsp-genesis-builder/std",
+	"pezsp-inherents/std",
+	"pezsp-keyring/std",
+	"pezsp-offchain/std",
+	"pezsp-runtime/std",
+	"pezsp-session/std",
+	"pezsp-storage/std",
+	"pezsp-transaction-pool/std",
+	"pezsp-version/std",
+	"scale-info/std",
+	"serde_json/std",
+	"testnet-teyrchains-constants/std",
+	"teyrchain-info/std",
+	"teyrchains-common/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+try-runtime = [
+	"pezcumulus-pezpallet-aura-ext/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-pezpallet-xcm/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-executive/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system-benchmarking?/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe-try-runtime/try-runtime",
+	"pezpallet-aura/try-runtime",
+	"pezpallet-glutton/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-sudo/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-block-builder/try-runtime",
+	"pezsp-consensus-aura/try-runtime",
+	"pezsp-genesis-builder/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-offchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-session/try-runtime",
+	"pezsp-transaction-pool/try-runtime",
+	"pezsp-version/try-runtime",
+	"testnet-teyrchains-constants/try-runtime",
+	"teyrchain-info/try-runtime",
+	"teyrchains-common/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
+]
+
+# A feature that should be enabled when the runtime should be built for on-chain
+# deployment. This will disable stuff that shouldn't be part of the on-chain wasm
+# to make it smaller, like logging for example.
+on-chain-release-build = []
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

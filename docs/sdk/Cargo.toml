@@ -1,0 +1,322 @@
+[package]
+name = "pezkuwi-sdk-docs"
+description = "The one stop shop for developers of the pezkuwi-sdk"
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage = "https://docs.pezkuwichain.io/sdk/"
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+# This crate is not publish-able to crates.io for now because of docify.
+publish = false
+version = "0.0.2"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Needed for all FRAME-based code
+codec = { workspace = true }
+pezframe = { features = [
+	"experimental",
+	"runtime",
+], workspace = true, default-features = true }
+pezpallet-contracts = { workspace = true }
+pezpallet-default-config-example = { workspace = true, default-features = true }
+pezpallet-example-offchain-worker = { workspace = true, default-features = true }
+pezpallet-examples = { workspace = true }
+scale-info = { workspace = true }
+
+# How we build docs in rust-docs
+docify = { workspace = true }
+serde_json = { workspace = true }
+simple-mermaid = { workspace = true }
+
+# Pezkuwi SDK deps, typically all should only be in scope such that we can link to their doc item.
+chain-spec-builder = { workspace = true, default-features = true }
+log = { workspace = true, default-features = true }
+node-cli = { workspace = true }
+pez-kitchensink-runtime = { workspace = true }
+pez-subkey = { workspace = true, default-features = true }
+pezframe-benchmarking = { workspace = true }
+pezframe-executive = { workspace = true }
+pezframe-metadata-hash-extension = { workspace = true, default-features = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezkuwi-sdk = { features = [
+	"runtime-full",
+], workspace = true, default-features = true }
+pezpallet-example-authorization-tx-extension = { workspace = true, default-features = true }
+pezpallet-example-single-block-migrations = { workspace = true, default-features = true }
+
+# Bizinikiwi Client
+pezsc-chain-spec = { workspace = true, default-features = true }
+pezsc-cli = { workspace = true, default-features = true }
+pezsc-client-db = { workspace = true, default-features = true }
+pezsc-consensus-aura = { workspace = true, default-features = true }
+pezsc-consensus-babe = { workspace = true, default-features = true }
+pezsc-consensus-beefy = { workspace = true, default-features = true }
+pezsc-consensus-grandpa = { workspace = true, default-features = true }
+pezsc-consensus-manual-seal = { workspace = true, default-features = true }
+pezsc-consensus-pow = { workspace = true, default-features = true }
+pezsc-executor = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsc-rpc = { workspace = true, default-features = true }
+pezsc-rpc-api = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = true }
+
+bizinikiwi-wasm-builder = { workspace = true, default-features = true }
+
+# Pezcumulus
+pezcumulus-client-service = { workspace = true, default-features = true }
+pezcumulus-pezpallet-aura-ext = { workspace = true, default-features = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true, default-features = true }
+pezcumulus-pezpallet-weight-reclaim = { workspace = true, default-features = true }
+pezcumulus-primitives-proof-size-hostfunction = { workspace = true, default-features = true }
+teyrchain-info = { workspace = true, default-features = true }
+
+# Omni Node
+pezkuwi-omni-node-lib = { workspace = true, default-features = true }
+
+# Pallets and FRAME internals
+pezpallet-asset-conversion-tx-payment = { workspace = true, default-features = true }
+pezpallet-asset-tx-payment = { workspace = true, default-features = true }
+pezpallet-assets = { workspace = true, default-features = true }
+pezpallet-aura = { workspace = true, default-features = true }
+pezpallet-babe = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-collective = { workspace = true, default-features = true }
+pezpallet-democracy = { workspace = true, default-features = true }
+pezpallet-grandpa = { workspace = true, default-features = true }
+pezpallet-nfts = { workspace = true, default-features = true }
+pezpallet-preimage = { workspace = true, default-features = true }
+pezpallet-scheduler = { workspace = true, default-features = true }
+pezpallet-skip-feeless-payment = { workspace = true, default-features = true }
+pezpallet-timestamp = { workspace = true, default-features = true }
+pezpallet-transaction-payment = { workspace = true, default-features = true }
+pezpallet-uniques = { workspace = true, default-features = true }
+
+# Primitives
+pezsp-api = { workspace = true, default-features = true }
+pezsp-arithmetic = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-genesis-builder = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-offchain = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-runtime-interface = { workspace = true, default-features = true }
+pezsp-std = { workspace = true, default-features = true }
+pezsp-storage = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+pezsp-version = { workspace = true, default-features = true }
+pezsp-weights = { workspace = true, default-features = true }
+
+# XCM
+pezpallet-xcm = { workspace = true }
+xcm = { workspace = true, default-features = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+xcm-pez-docs = { workspace = true }
+xcm-pez-simulator = { workspace = true }
+
+# Runtime guides
+pez-chain-spec-guide-runtime = { workspace = true, default-features = true }
+
+# Templates
+pez-minimal-template-runtime = { workspace = true, default-features = true }
+pez-solochain-template-runtime = { workspace = true, default-features = true }
+
+# local packages
+first-runtime = { workspace = true, default-features = true }
+
+[dev-dependencies]
+assert_cmd = { workspace = true }
+cmd_lib = { workspace = true }
+rand = { workspace = true, default-features = true }
+tokio = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"bizinikiwi-wasm-builder/runtime-benchmarks",
+	"chain-spec-builder/runtime-benchmarks",
+	"first-runtime/runtime-benchmarks",
+	"node-cli/runtime-benchmarks",
+	"pez-chain-spec-guide-runtime/runtime-benchmarks",
+	"pez-kitchensink-runtime/runtime-benchmarks",
+	"pez-minimal-template-runtime/runtime-benchmarks",
+	"pez-solochain-template-runtime/runtime-benchmarks",
+	"pez-subkey/runtime-benchmarks",
+	"pezcumulus-client-service/runtime-benchmarks",
+	"pezcumulus-pezpallet-aura-ext/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-pezpallet-weight-reclaim/runtime-benchmarks",
+	"pezcumulus-primitives-proof-size-hostfunction/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-executive/runtime-benchmarks",
+	"pezframe-metadata-hash-extension/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe/runtime-benchmarks",
+	"pezkuwi-omni-node-lib/runtime-benchmarks",
+	"pezkuwi-sdk/runtime-benchmarks",
+	"pezpallet-asset-conversion-tx-payment/runtime-benchmarks",
+	"pezpallet-asset-tx-payment/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-aura/runtime-benchmarks",
+	"pezpallet-babe/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-collective/runtime-benchmarks",
+	"pezpallet-contracts/runtime-benchmarks",
+	"pezpallet-default-config-example/runtime-benchmarks",
+	"pezpallet-democracy/runtime-benchmarks",
+	"pezpallet-example-authorization-tx-extension/runtime-benchmarks",
+	"pezpallet-example-offchain-worker/runtime-benchmarks",
+	"pezpallet-example-single-block-migrations/runtime-benchmarks",
+	"pezpallet-examples/runtime-benchmarks",
+	"pezpallet-grandpa/runtime-benchmarks",
+	"pezpallet-nfts/runtime-benchmarks",
+	"pezpallet-preimage/runtime-benchmarks",
+	"pezpallet-scheduler/runtime-benchmarks",
+	"pezpallet-skip-feeless-payment/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-transaction-payment/runtime-benchmarks",
+	"pezpallet-uniques/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsc-chain-spec/runtime-benchmarks",
+	"pezsc-cli/runtime-benchmarks",
+	"pezsc-client-db/runtime-benchmarks",
+	"pezsc-consensus-aura/runtime-benchmarks",
+	"pezsc-consensus-babe/runtime-benchmarks",
+	"pezsc-consensus-beefy/runtime-benchmarks",
+	"pezsc-consensus-grandpa/runtime-benchmarks",
+	"pezsc-consensus-manual-seal/runtime-benchmarks",
+	"pezsc-consensus-pow/runtime-benchmarks",
+	"pezsc-executor/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsc-rpc-api/runtime-benchmarks",
+	"pezsc-rpc/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-genesis-builder/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-offchain/runtime-benchmarks",
+	"pezsp-runtime-interface/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+	"teyrchain-info/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm-pez-docs/runtime-benchmarks",
+	"xcm-pez-simulator/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-wasm-builder/std",
+	"chain-spec-builder/std",
+	"codec/std",
+	"log/std",
+	"node-cli/std",
+	"pez-subkey/std",
+	"pezcumulus-client-service/std",
+	"pezframe-benchmarking/std",
+	"pezframe-executive/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezkuwi-omni-node-lib/std",
+	"pezpallet-contracts/std",
+	"pezpallet-xcm/std",
+	"pezsc-chain-spec/std",
+	"pezsc-cli/std",
+	"pezsc-client-db/std",
+	"pezsc-consensus-aura/std",
+	"pezsc-consensus-babe/std",
+	"pezsc-consensus-beefy/std",
+	"pezsc-consensus-grandpa/std",
+	"pezsc-consensus-manual-seal/std",
+	"pezsc-consensus-pow/std",
+	"pezsc-network/std",
+	"pezsc-rpc-api/std",
+	"pezsc-rpc/std",
+	"pezsc-service/std",
+	"scale-info/std",
+	"serde_json/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm-pez-docs/std",
+	"xcm-pez-simulator/std",
+]
+try-runtime = [
+	"first-runtime/try-runtime",
+	"node-cli/try-runtime",
+	"pez-chain-spec-guide-runtime/try-runtime",
+	"pez-kitchensink-runtime/try-runtime",
+	"pez-minimal-template-runtime/try-runtime",
+	"pez-solochain-template-runtime/try-runtime",
+	"pezcumulus-client-service/try-runtime",
+	"pezcumulus-pezpallet-aura-ext/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-pezpallet-weight-reclaim/try-runtime",
+	"pezframe-benchmarking/try-runtime",
+	"pezframe-executive/try-runtime",
+	"pezframe-metadata-hash-extension/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe/try-runtime",
+	"pezkuwi-omni-node-lib/try-runtime",
+	"pezkuwi-sdk/try-runtime",
+	"pezpallet-asset-conversion-tx-payment/try-runtime",
+	"pezpallet-asset-tx-payment/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-aura/try-runtime",
+	"pezpallet-babe/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-collective/try-runtime",
+	"pezpallet-contracts/try-runtime",
+	"pezpallet-default-config-example/try-runtime",
+	"pezpallet-democracy/try-runtime",
+	"pezpallet-example-authorization-tx-extension/try-runtime",
+	"pezpallet-example-offchain-worker/try-runtime",
+	"pezpallet-example-single-block-migrations/try-runtime",
+	"pezpallet-examples/try-runtime",
+	"pezpallet-grandpa/try-runtime",
+	"pezpallet-nfts/try-runtime",
+	"pezpallet-preimage/try-runtime",
+	"pezpallet-scheduler/try-runtime",
+	"pezpallet-skip-feeless-payment/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-transaction-payment/try-runtime",
+	"pezpallet-uniques/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsc-chain-spec/try-runtime",
+	"pezsc-cli/try-runtime",
+	"pezsc-client-db/try-runtime",
+	"pezsc-consensus-aura/try-runtime",
+	"pezsc-consensus-babe/try-runtime",
+	"pezsc-consensus-beefy/try-runtime",
+	"pezsc-consensus-grandpa/try-runtime",
+	"pezsc-consensus-manual-seal/try-runtime",
+	"pezsc-consensus-pow/try-runtime",
+	"pezsc-executor/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsc-rpc-api/try-runtime",
+	"pezsc-rpc/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-genesis-builder/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-offchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-version/try-runtime",
+	"teyrchain-info/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm-pez-docs/try-runtime",
+	"xcm-pez-simulator/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

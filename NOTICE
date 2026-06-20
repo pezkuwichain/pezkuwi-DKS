@@ -1,0 +1,79 @@
+Pezkuwi SDK
+Copyright (C) Kurdistan Tech Institute
+
+This product includes software originally developed by:
+  Parity Technologies (UK) Ltd. — https://www.parity.io
+  Web3 Foundation — https://web3.foundation
+
+================================================================================
+ORIGINAL WORK
+================================================================================
+
+Pezkuwi SDK is a derivative work based on Polkadot SDK:
+  Source: https://github.com/paritytech/polkadot-sdk
+  Snapshot: stable2512
+  Original License: Apache-2.0 AND GPL-3.0-only
+  Original Authors: Parity Technologies (UK) Ltd.
+
+================================================================================
+SIGNIFICANT CHANGES
+================================================================================
+
+The following significant modifications have been made to the original work:
+
+1. PROJECT RENAME AND REBRAND
+   - Project renamed from "Polkadot SDK" to "Pezkuwi SDK"
+   - Organization renamed from "Parity Technologies" to "Kurdistan Tech Institute"
+   - All crate prefixes updated (sp- -> pezsp-, sc- -> pezsc-, frame- -> pezframe-,
+     pallet- -> pezpallet-, cumulus- -> pezcumulus-)
+   - Core framework renamed from "Substrate" to "Bizinikiwi"
+   - Parachain infrastructure renamed from "Cumulus" to "PezCumulus"
+
+2. NETWORK CONFIGURATION
+   - Relay chain network renamed to "Pezkuwi" (was "Polkadot")
+   - Test networks renamed: Westend -> Zagros, Rococo -> Pezkuwichain
+   - Native token: HEZ (relay chain), PEZ (Asset Hub)
+   - Genesis configuration updated for Kurdistan Tech Institute deployment
+
+3. CUSTOM PALLETS ADDED
+   - pezpallet-presale: Token presale functionality
+   - pezpallet-tiki: Custom governance pallet
+   - pezpallet-referral: Referral program pallet
+   - pezpallet-identity-kyc: KYC identity verification
+
+4. INFRASTRUCTURE
+   - CI/CD pipeline adapted for self-hosted runners
+   - Build system updated for independent deployment
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+This repository also includes the following third-party components,
+each with their own license terms:
+
+  - vendor/ss58-registry: Copyright (C) Parity Technologies (UK) Ltd.
+    License: Apache-2.0
+    Source: https://github.com/paritytech/ss58-registry
+
+  - vendor/pezkuwi-subxt (based on subxt): Copyright (C) Parity Technologies (UK) Ltd.
+    License: Apache-2.0 OR GPL-3.0-only
+    Source: https://github.com/paritytech/subxt
+
+  - vendor/pezkuwi-zombienet-sdk (based on zombienet-sdk):
+    License: Apache-2.0 OR MIT
+    Source: https://github.com/paritytech/zombienet-sdk
+
+================================================================================
+LICENSE
+================================================================================
+
+Individual crates in this repository are licensed under either:
+  - Apache License, Version 2.0 (LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
+  - GNU General Public License, Version 3.0 (LICENSE-GPL3 or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+See individual crate Cargo.toml files for the applicable license per crate.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in this project shall be licensed under the applicable license
+of the receiving crate, without any additional terms or conditions.

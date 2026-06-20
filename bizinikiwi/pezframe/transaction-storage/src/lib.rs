@@ -1,0 +1,521 @@
+// This file is part of Bizinikiwi.
+
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// SPDX-License-Identifier: Apache-2.0
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//! Transaction storage pezpallet. Indexes transactions and manages storage proofs.
+
+// Ensure we're `no_std` when compiling for Wasm.
+#![cfg_attr(not(feature = "std"), no_std)]
+
+mod benchmarking;
+pub mod weights;
+
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+
+extern crate alloc;
+
+use alloc::vec::Vec;
+use codec::{Decode, Encode, MaxEncodedLen};
+use core::result;
+use pezframe_support::{
+	dispatch::GetDispatchInfo,
+	traits::{
+		fungible::{hold::Balanced, Inspect, Mutate, MutateHold},
+		tokens::fungible::Credit,
+		OnUnbalanced,
+	},
+};
+use pezsp_runtime::traits::{BlakeTwo256, Dispatchable, Hash, One, Saturating, Zero};
+use pezsp_transaction_storage_proof::{
+	encode_index, num_chunks, random_chunk, ChunkIndex, InherentError, TransactionStorageProof,
+	CHUNK_SIZE, INHERENT_IDENTIFIER,
+};
+
+/// A type alias for the balance type from this pezpallet's point of view.
+type BalanceOf<T> =
+	<<T as Config>::Currency as Inspect<<T as pezframe_system::Config>::AccountId>>::Balance;
+pub type CreditOf<T> = Credit<<T as pezframe_system::Config>::AccountId, <T as Config>::Currency>;
+
+// Re-export pezpallet items so that they can be accessed from the crate namespace.
+pub use pezpallet::*;
+pub use weights::WeightInfo;
+
+/// Maximum bytes that can be stored in one transaction.
+// Setting higher limit also requires raising the allocator limit.
+pub const DEFAULT_MAX_TRANSACTION_SIZE: u32 = 8 * 1024 * 1024;
+pub const DEFAULT_MAX_BLOCK_TRANSACTIONS: u32 = 512;
+
+/// State data for a stored transaction.
+#[derive(
+	Encode,
+	Decode,
+	Clone,
+	pezsp_runtime::RuntimeDebug,
+	PartialEq,
+	Eq,
+	scale_info::TypeInfo,
+	MaxEncodedLen,
+)]
+pub struct TransactionInfo {
+	/// Chunk trie root.
+	chunk_root: <BlakeTwo256 as Hash>::Output,
+	/// Plain hash of indexed data.
+	content_hash: <BlakeTwo256 as Hash>::Output,
+	/// Size of indexed data in bytes.
+	size: u32,
+	/// Total number of chunks added in the block with this transaction. This
+	/// is used to find transaction info by block chunk index using binary search.
+	///
+	/// Cumulative value of all previous transactions in the block; the last transaction holds the
+	/// total chunks value.
+	block_chunks: ChunkIndex,
+}
+
+impl TransactionInfo {
+	/// Get the number of total chunks.
+	///
+	/// See the `block_chunks` field of [`TransactionInfo`] for details.
+	pub fn total_chunks(txs: &[TransactionInfo]) -> ChunkIndex {
+		txs.last().map_or(0, |t| t.block_chunks)
+	}
+}
+
+#[pezframe_support::pezpallet]
+pub mod pezpallet {
+	use super::*;
+	use pezframe_support::pezpallet_prelude::*;
+	use pezframe_system::pezpallet_prelude::*;
+
+	/// A reason for this pezpallet placing a hold on funds.
+	#[pezpallet::composite_enum]
+	pub enum HoldReason {
+		/// The funds are held as deposit for the used storage.
+		StorageFeeHold,
+	}
+
+	#[pezpallet::config]
+	pub trait Config: pezframe_system::Config {
+		/// The overarching event type.
+		#[allow(deprecated)]
+		type RuntimeEvent: From<Event<Self>>
+			+ IsType<<Self as pezframe_system::Config>::RuntimeEvent>;
+		/// A dispatchable call.
+		type RuntimeCall: Parameter
+			+ Dispatchable<RuntimeOrigin = Self::RuntimeOrigin>
+			+ GetDispatchInfo
+			+ From<pezframe_system::Call<Self>>;
+		/// The fungible type for this pezpallet.
+		type Currency: Mutate<Self::AccountId>
+			+ MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>
+			+ Balanced<Self::AccountId>;
+		/// The overarching runtime hold reason.
+		type RuntimeHoldReason: From<HoldReason>;
+		/// Handler for the unbalanced decrease when fees are burned.
+		type FeeDestination: OnUnbalanced<CreditOf<Self>>;
+		/// Weight information for extrinsics in this pezpallet.
+		type WeightInfo: WeightInfo;
+		/// Maximum number of indexed transactions in the block.
+		type MaxBlockTransactions: Get<u32>;
+		/// Maximum data set in a single transaction in bytes.
+		type MaxTransactionSize: Get<u32>;
+	}
+
+	#[pezpallet::error]
+	pub enum Error<T> {
+		/// Invalid configuration.
+		NotConfigured,
+		/// Renewed extrinsic is not found.
+		RenewedNotFound,
+		/// Attempting to store an empty transaction
+		EmptyTransaction,
+		/// Proof was not expected in this block.
+		UnexpectedProof,
+		/// Proof failed verification.
+		InvalidProof,
+		/// Missing storage proof.
+		MissingProof,
+		/// Unable to verify proof because state data is missing.
+		MissingStateData,
+		/// Double proof check in the block.
+		DoubleCheck,
+		/// Storage proof was not checked in the block.
+		ProofNotChecked,
+		/// Transaction is too large.
+		TransactionTooLarge,
+		/// Too many transactions in the block.
+		TooManyTransactions,
+		/// Attempted to call `store` outside of block execution.
+		BadContext,
+	}
+
+	#[pezpallet::pezpallet]
+	pub struct Pezpallet<T>(_);
+
+	#[pezpallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
+		fn on_initialize(n: BlockNumberFor<T>) -> Weight {
+			// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/303 - Replace this with benchmarked weights.
+			let mut weight = Weight::zero();
+			let db_weight = T::DbWeight::get();
+
+			// Drop obsolete roots. The proof for `obsolete` will be checked later
+			// in this block, so we drop `obsolete` - 1.
+			weight.saturating_accrue(db_weight.reads(1));
+			let period = StoragePeriod::<T>::get();
+			let obsolete = n.saturating_sub(period.saturating_add(One::one()));
+			if obsolete > Zero::zero() {
+				weight.saturating_accrue(db_weight.writes(1));
+				Transactions::<T>::remove(obsolete);
+			}
+
+			// For `on_finalize`
+			weight.saturating_accrue(db_weight.reads_writes(3, 1));
+			weight
+		}
+
+		fn on_finalize(n: BlockNumberFor<T>) {
+			assert!(
+				ProofChecked::<T>::take() || {
+					// Proof is not required for early or empty blocks.
+					let number = pezframe_system::Pezpallet::<T>::block_number();
+					let period = StoragePeriod::<T>::get();
+					let target_number = number.saturating_sub(period);
+
+					target_number.is_zero() || {
+						// An empty block means no transactions were stored, relying on the fact
+						// below that we store transactions only if they contain chunks.
+						!Transactions::<T>::contains_key(target_number)
+					}
+				},
+				"Storage proof must be checked once in the block"
+			);
+			// Insert new transactions, iff they have chunks.
+			let transactions = BlockTransactions::<T>::take();
+			let total_chunks = TransactionInfo::total_chunks(&transactions);
+			if total_chunks != 0 {
+				Transactions::<T>::insert(n, transactions);
+			}
+		}
+	}
+
+	#[pezpallet::call]
+	impl<T: Config> Pezpallet<T> {
+		/// Index and store data off chain. Minimum data size is 1 bytes, maximum is
+		/// `MaxTransactionSize`. Data will be removed after `STORAGE_PERIOD` blocks, unless `renew`
+		/// is called.
+		/// ## Complexity
+		/// - O(n*log(n)) of data size, as all data is pushed to an in-memory trie.
+		#[pezpallet::call_index(0)]
+		#[pezpallet::weight(T::WeightInfo::store(data.len() as u32))]
+		pub fn store(origin: OriginFor<T>, data: Vec<u8>) -> DispatchResult {
+			ensure!(data.len() > 0, Error::<T>::EmptyTransaction);
+			ensure!(
+				data.len() <= T::MaxTransactionSize::get() as usize,
+				Error::<T>::TransactionTooLarge
+			);
+			let sender = ensure_signed(origin)?;
+			Self::apply_fee(sender, data.len() as u32)?;
+
+			// Chunk data and compute storage root
+			let chunk_count = num_chunks(data.len() as u32);
+			let chunks = data.chunks(CHUNK_SIZE).map(|c| c.to_vec()).collect();
+			let root =
+				pezsp_io::trie::blake2_256_ordered_root(chunks, pezsp_runtime::StateVersion::V1);
+
+			let content_hash = pezsp_io::hashing::blake2_256(&data);
+			let extrinsic_index =
+				pezframe_system::Pezpallet::<T>::extrinsic_index().ok_or(Error::<T>::BadContext)?;
+			pezsp_io::transaction_index::index(extrinsic_index, data.len() as u32, content_hash);
+
+			let mut index = 0;
+			BlockTransactions::<T>::mutate(|transactions| {
+				if transactions.len() + 1 > T::MaxBlockTransactions::get() as usize {
+					return Err(Error::<T>::TooManyTransactions);
+				}
+				let total_chunks = TransactionInfo::total_chunks(&transactions) + chunk_count;
+				index = transactions.len() as u32;
+				transactions
+					.try_push(TransactionInfo {
+						chunk_root: root,
+						size: data.len() as u32,
+						content_hash: content_hash.into(),
+						block_chunks: total_chunks,
+					})
+					.map_err(|_| Error::<T>::TooManyTransactions)?;
+				Ok(())
+			})?;
+			Self::deposit_event(Event::Stored { index });
+			Ok(())
+		}
+
+		/// Renew previously stored data. Parameters are the block number that contains
+		/// previous `store` or `renew` call and transaction index within that block.
+		/// Transaction index is emitted in the `Stored` or `Renewed` event.
+		/// Applies same fees as `store`.
+		/// ## Complexity
+		/// - O(1).
+		#[pezpallet::call_index(1)]
+		#[pezpallet::weight(T::WeightInfo::renew())]
+		pub fn renew(
+			origin: OriginFor<T>,
+			block: BlockNumberFor<T>,
+			index: u32,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			let transactions = Transactions::<T>::get(block).ok_or(Error::<T>::RenewedNotFound)?;
+			let info = transactions.get(index as usize).ok_or(Error::<T>::RenewedNotFound)?;
+			let extrinsic_index =
+				pezframe_system::Pezpallet::<T>::extrinsic_index().ok_or(Error::<T>::BadContext)?;
+
+			Self::apply_fee(sender, info.size)?;
+
+			pezsp_io::transaction_index::renew(extrinsic_index, info.content_hash.into());
+
+			let mut index = 0;
+			BlockTransactions::<T>::mutate(|transactions| {
+				if transactions.len() + 1 > T::MaxBlockTransactions::get() as usize {
+					return Err(Error::<T>::TooManyTransactions);
+				}
+				let chunks = num_chunks(info.size);
+				let total_chunks = TransactionInfo::total_chunks(&transactions) + chunks;
+				index = transactions.len() as u32;
+				transactions
+					.try_push(TransactionInfo {
+						chunk_root: info.chunk_root,
+						size: info.size,
+						content_hash: info.content_hash,
+						block_chunks: total_chunks,
+					})
+					.map_err(|_| Error::<T>::TooManyTransactions)
+			})?;
+			Self::deposit_event(Event::Renewed { index });
+			Ok(().into())
+		}
+
+		/// Check storage proof for block number `block_number() - StoragePeriod`.
+		/// If such a block does not exist, the proof is expected to be `None`.
+		///
+		/// ## Complexity
+		/// - Linear w.r.t the number of indexed transactions in the proved block for random
+		///   probing.
+		/// There's a DB read for each transaction.
+		#[pezpallet::call_index(2)]
+		#[pezpallet::weight((T::WeightInfo::check_proof_max(), DispatchClass::Mandatory))]
+		pub fn check_proof(
+			origin: OriginFor<T>,
+			proof: TransactionStorageProof,
+		) -> DispatchResultWithPostInfo {
+			ensure_none(origin)?;
+			ensure!(!ProofChecked::<T>::get(), Error::<T>::DoubleCheck);
+
+			// Get the target block metadata.
+			let number = pezframe_system::Pezpallet::<T>::block_number();
+			let period = StoragePeriod::<T>::get();
+			let target_number = number.saturating_sub(period);
+			ensure!(!target_number.is_zero(), Error::<T>::UnexpectedProof);
+			let transactions =
+				Transactions::<T>::get(target_number).ok_or(Error::<T>::MissingStateData)?;
+
+			// Verify the proof with a "random" chunk (randomness is based on the parent hash).
+			let parent_hash = pezframe_system::Pezpallet::<T>::parent_hash();
+			Self::verify_chunk_proof(proof, parent_hash.as_ref(), transactions.to_vec())?;
+			ProofChecked::<T>::put(true);
+			Self::deposit_event(Event::ProofChecked);
+			Ok(().into())
+		}
+	}
+
+	#[pezpallet::event]
+	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		/// Stored data under specified index.
+		Stored { index: u32 },
+		/// Renewed data under specified index.
+		Renewed { index: u32 },
+		/// Storage proof was successfully checked.
+		ProofChecked,
+	}
+
+	/// Collection of transaction metadata by block number.
+	#[pezpallet::storage]
+	pub type Transactions<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		BlockNumberFor<T>,
+		BoundedVec<TransactionInfo, T::MaxBlockTransactions>,
+		OptionQuery,
+	>;
+
+	#[pezpallet::storage]
+	/// Storage fee per byte.
+	pub type ByteFee<T: Config> = StorageValue<_, BalanceOf<T>>;
+
+	#[pezpallet::storage]
+	/// Storage fee per transaction.
+	pub type EntryFee<T: Config> = StorageValue<_, BalanceOf<T>>;
+
+	/// Storage period for data in blocks. Should match
+	/// `pezsp_storage_proof::DEFAULT_STORAGE_PERIOD` for block authoring.
+	#[pezpallet::storage]
+	pub type StoragePeriod<T: Config> = StorageValue<_, BlockNumberFor<T>, ValueQuery>;
+
+	// Intermediates
+	#[pezpallet::storage]
+	pub type BlockTransactions<T: Config> =
+		StorageValue<_, BoundedVec<TransactionInfo, T::MaxBlockTransactions>, ValueQuery>;
+
+	/// Was the proof checked in this block?
+	#[pezpallet::storage]
+	pub type ProofChecked<T: Config> = StorageValue<_, bool, ValueQuery>;
+
+	#[pezpallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub byte_fee: BalanceOf<T>,
+		pub entry_fee: BalanceOf<T>,
+		pub storage_period: BlockNumberFor<T>,
+	}
+
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self {
+				byte_fee: 10u32.into(),
+				entry_fee: 1000u32.into(),
+				storage_period: pezsp_transaction_storage_proof::DEFAULT_STORAGE_PERIOD.into(),
+			}
+		}
+	}
+
+	#[pezpallet::genesis_build]
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+		fn build(&self) {
+			ByteFee::<T>::put(&self.byte_fee);
+			EntryFee::<T>::put(&self.entry_fee);
+			StoragePeriod::<T>::put(&self.storage_period);
+		}
+	}
+
+	#[pezpallet::inherent]
+	impl<T: Config> ProvideInherent for Pezpallet<T> {
+		type Call = Call<T>;
+		type Error = InherentError;
+		const INHERENT_IDENTIFIER: InherentIdentifier = INHERENT_IDENTIFIER;
+
+		fn create_inherent(data: &InherentData) -> Option<Self::Call> {
+			let proof = data
+				.get_data::<TransactionStorageProof>(&Self::INHERENT_IDENTIFIER)
+				.unwrap_or(None);
+			proof.map(|proof| Call::check_proof { proof })
+		}
+
+		fn check_inherent(
+			_call: &Self::Call,
+			_data: &InherentData,
+		) -> result::Result<(), Self::Error> {
+			Ok(())
+		}
+
+		fn is_inherent(call: &Self::Call) -> bool {
+			matches!(call, Call::check_proof { .. })
+		}
+	}
+
+	impl<T: Config> Pezpallet<T> {
+		/// Get transaction storage information from outside of this pezpallet.
+		pub fn transaction_roots(
+			block: BlockNumberFor<T>,
+		) -> Option<BoundedVec<TransactionInfo, T::MaxBlockTransactions>> {
+			Transactions::<T>::get(block)
+		}
+		/// Get ByteFee storage information from outside of this pezpallet.
+		pub fn byte_fee() -> Option<BalanceOf<T>> {
+			ByteFee::<T>::get()
+		}
+		/// Get EntryFee storage information from outside of this pezpallet.
+		pub fn entry_fee() -> Option<BalanceOf<T>> {
+			EntryFee::<T>::get()
+		}
+
+		fn apply_fee(sender: T::AccountId, size: u32) -> DispatchResult {
+			let byte_fee = ByteFee::<T>::get().ok_or(Error::<T>::NotConfigured)?;
+			let entry_fee = EntryFee::<T>::get().ok_or(Error::<T>::NotConfigured)?;
+			let fee = byte_fee.saturating_mul(size.into()).saturating_add(entry_fee);
+			T::Currency::hold(&HoldReason::StorageFeeHold.into(), &sender, fee)?;
+			let (credit, _remainder) =
+				T::Currency::slash(&HoldReason::StorageFeeHold.into(), &sender, fee);
+			debug_assert!(_remainder.is_zero());
+			T::FeeDestination::on_unbalanced(credit);
+			Ok(())
+		}
+
+		/// Verifies that the provided proof corresponds to a randomly selected chunk from a list of
+		/// transactions.
+		pub(crate) fn verify_chunk_proof(
+			proof: TransactionStorageProof,
+			random_hash: &[u8],
+			infos: Vec<TransactionInfo>,
+		) -> Result<(), Error<T>> {
+			// Get the random chunk index - from all transactions in the block = [0..total_chunks).
+			let total_chunks: ChunkIndex = TransactionInfo::total_chunks(&infos);
+			ensure!(total_chunks != 0, Error::<T>::UnexpectedProof);
+			let selected_block_chunk_index = random_chunk(random_hash, total_chunks as _);
+
+			// Let's find the corresponding transaction and its "local" chunk index for "global"
+			// `selected_block_chunk_index`.
+			let (tx_info, tx_chunk_index) = {
+				// Binary search for the transaction that owns this `selected_block_chunk_index`
+				// chunk.
+				let tx_index = infos
+					.binary_search_by_key(&selected_block_chunk_index, |info| {
+						// Each `info.block_chunks` is cumulative count,
+						// so last chunk index = count - 1.
+						info.block_chunks.saturating_sub(1)
+					})
+					.unwrap_or_else(|tx_index| tx_index);
+
+				// Get the transaction and its local chunk index.
+				let tx_info = infos.get(tx_index).ok_or(Error::<T>::MissingStateData)?;
+				// We shouldn't reach this point; we rely on the fact that `fn store` does not allow
+				// empty transactions. Without this check, it would fail anyway below with
+				// `InvalidProof`.
+				ensure!(!tx_info.block_chunks.is_zero(), Error::<T>::EmptyTransaction);
+
+				// Convert a global chunk index into a transaction-local one.
+				let tx_chunks = num_chunks(tx_info.size);
+				let prev_chunks = tx_info.block_chunks - tx_chunks;
+				let tx_chunk_index = selected_block_chunk_index - prev_chunks;
+
+				(tx_info, tx_chunk_index)
+			};
+
+			// Verify the tx chunk proof.
+			ensure!(
+				pezsp_io::trie::blake2_256_verify_proof(
+					tx_info.chunk_root,
+					&proof.proof,
+					&encode_index(tx_chunk_index),
+					&proof.chunk,
+					pezsp_runtime::StateVersion::V1,
+				),
+				Error::<T>::InvalidProof
+			);
+
+			Ok(())
+		}
+	}
+}

@@ -1,0 +1,67 @@
+[package]
+name = "coretime-pezkuwichain-integration-tests"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Coretime Pezkuwichain runtime integration tests with xcm-pez-emulator"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezpallet-broker = { workspace = true, default-features = true }
+pezpallet-message-queue = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezkuwi
+pezkuwi-runtime-teyrchains = { workspace = true, default-features = true }
+pezkuwichain-runtime-constants = { workspace = true, default-features = true }
+xcm = { workspace = true }
+
+# Pezcumulus
+emulated-integration-tests-common = { workspace = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true, default-features = true }
+pezkuwichain-system-emulated-network = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezkuwichain-runtime-constants/runtime-benchmarks",
+	"pezkuwichain-system-emulated-network/runtime-benchmarks",
+	"pezpallet-broker/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = [
+	"emulated-integration-tests-common/std",
+	"pezframe-support/std",
+	"pezkuwichain-system-emulated-network/std",
+	"pezpallet-message-queue/std",
+	"pezsp-runtime/std",
+	"xcm/std",
+]
+try-runtime = [
+	"emulated-integration-tests-common/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezkuwichain-runtime-constants/try-runtime",
+	"pezpallet-broker/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+tuples-96 = []

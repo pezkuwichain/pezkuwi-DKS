@@ -1,0 +1,95 @@
+[package]
+name = "test-teyrchain-undying-collator"
+description = "Collator for the undying test teyrchain"
+edition.workspace = true
+license.workspace = true
+version = "1.0.0"
+authors.workspace = true
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "undying-collator"
+path = "src/main.rs"
+
+[dependencies]
+clap = { features = ["derive"], workspace = true }
+codec = { features = ["derive"], workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+log = { workspace = true, default-features = true }
+
+pezkuwi-cli = { workspace = true, default-features = true }
+pezkuwi-erasure-coding = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-service = { features = [
+	"pezkuwichain-native",
+], workspace = true, default-features = true }
+test-teyrchain-undying = { workspace = true }
+
+pezsc-cli = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+
+[dev-dependencies]
+pezkuwi-node-core-pvf = { features = [
+	"test-utils",
+], workspace = true, default-features = true }
+pezkuwi-test-service = { workspace = true }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+
+pezsp-keyring = { workspace = true, default-features = true }
+
+tokio = { features = ["macros"], workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"pezkuwi-cli/runtime-benchmarks",
+	"pezkuwi-erasure-coding/runtime-benchmarks",
+	"pezkuwi-node-core-pvf/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-service/runtime-benchmarks",
+	"pezkuwi-test-service/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsc-cli/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"test-teyrchain-undying/runtime-benchmarks",
+]
+std = [
+	"codec/std",
+	"log/std",
+	"pezkuwi-cli/std",
+	"pezkuwi-erasure-coding/std",
+	"pezkuwi-node-core-pvf/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-service/std",
+	"pezkuwi-test-service/std",
+	"pezsc-cli/std",
+	"pezsc-client-api/std",
+	"pezsc-service/std",
+]
+try-runtime = [
+	"pezkuwi-cli/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-service/try-runtime",
+	"pezkuwi-test-service/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezsc-cli/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsp-keyring/try-runtime",
+]
+serde = []

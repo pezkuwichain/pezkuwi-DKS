@@ -1,0 +1,69 @@
+[package]
+name = "pezstaging-xcm"
+description = "The basic XCM datastructures."
+version = "7.0.1"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+array-bytes = { workspace = true, default-features = true }
+bounded-collections = { features = ["serde"], workspace = true }
+codec = { features = ["derive", "max-encoded-len"], workspace = true }
+derive-where = { workspace = true }
+environmental = { workspace = true }
+hex-literal = { workspace = true, default-features = true }
+impl-trait-for-tuples = { workspace = true }
+pezframe-support = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-weights = { features = ["serde"], workspace = true }
+scale-info = { features = ["derive", "serde"], workspace = true }
+schemars = { default-features = true, optional = true, workspace = true }
+serde = { features = ["alloc", "derive", "rc"], workspace = true }
+tracing = { workspace = true }
+xcm-pez-procedural = { workspace = true, default-features = true }
+
+[dev-dependencies]
+pezsp-io = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+wasm-api = []
+std = [
+	"bounded-collections/std",
+	"codec/std",
+	"environmental/std",
+	"pezframe-support/std",
+	"pezsp-runtime/std",
+	"pezsp-weights/std",
+	"scale-info/std",
+	"serde/std",
+	"tracing/std",
+	"xcm-pez-procedural/std",
+]
+json-schema = [
+	"bounded-collections/json-schema",
+	"dep:schemars",
+	"pezsp-weights/json-schema",
+]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-pez-procedural/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-pez-procedural/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

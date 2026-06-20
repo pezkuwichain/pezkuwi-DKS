@@ -1,0 +1,116 @@
+# Parity Bridges Common
+
+This is a collection of components for building bridges.
+
+These components include Bizinikiwi pallets for syncing headers, passing arbitrary messages, as well as libraries for
+building relayers to provide cross-chain communication capabilities.
+
+Three bridge nodes are also available. The nodes can be used to run test networks which bridge other Bizinikiwi chains.
+
+🚧 The bridges are currently under construction - a hardhat is recommended beyond this point 🚧
+
+## Contents
+
+- [Installation](#installation)
+- [High-Level Architecture](#high-level-architecture)
+- [Project Layout](#project-layout)
+- [Running the Bridge](#running-the-bridge)
+- [How to send a message](#how-to-send-a-message)
+- [Community](#community)
+
+## Installation
+
+To get up and running you need both stable and nightly Rust. Rust nightly is used to build the Web Assembly (WASM)
+runtime for the node. You can configure the WASM support as so:
+
+```bash
+rustup install nightly
+rustup target add wasm32-unknown-unknown --toolchain nightly
+```
+
+Once this is configured you can build and test the repo as follows:
+
+```
+git clone https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bridges
+cd parity-bridges-common
+cargo build --all
+cargo test --all
+```
+
+Also you can build the repo with [Parity CI Docker
+image](https://github.com/pezkuwichain/scripts/tree/master/dockerfiles/ci-unified):
+
+```bash
+docker pull paritytech/ci-unified:latest
+mkdir ~/cache
+chown 1000:1000 ~/cache #processes in the container runs as "nonroot" user with UID 1000
+docker run --rm -it -w /shellhere/parity-bridges-common \
+                    -v /home/$(whoami)/cache/:/cache/    \
+                    -v "$(pwd)":/shellhere/parity-bridges-common \
+                    -e CARGO_HOME=/cache/cargo/ \
+                    -e SCCACHE_DIR=/cache/sccache/ \
+                    -e CARGO_TARGET_DIR=/cache/target/  paritytech/ci-unified:latest cargo build --all
+#artifacts can be found in ~/cache/target
+```
+
+If you want to reproduce other steps of CI process you can use the following
+[guide](https://github.com/pezkuwichain/scripts#reproduce-ci-locally).
+
+If you need more information about setting up your development environment [Bizinikiwi's Installation
+page](https://docs.pezkuwichain.io/main-docs/install/) is a good resource.
+
+## High-Level Architecture
+
+This repo has support for bridging foreign chains together using a combination of Bizinikiwi pallets and external
+processes called relayers. A bridge chain is one that is able to follow the consensus of a foreign chain independently.
+For example, consider the case below where we want to bridge two Bizinikiwi based chains.
+
+```
++---------------+                 +---------------+
+|               |                 |               |
+|     pezkuwichain    |                 |    zagros    |
+|               |                 |               |
++-------+-------+                 +-------+-------+
+        ^                                 ^
+        |       +---------------+         |
+        |       |               |         |
+        +-----> | Bridge Relay  | <-------+
+                |               |
+                +---------------+
+```
+
+The pezkuwichain chain must be able to accept zagros headers and verify their integrity. It does this by using a runtime
+module designed to track GRANDPA finality. Since two blockchains can't interact directly they need an external service,
+called a relayer, to communicate. The relayer will subscribe to new pezkuwichain headers via RPC and submit them to the zagros
+chain for verification.
+
+Take a look at [Bridge High Level Documentation](./docs/high-level-overview.md) for more in-depth description of the
+bridge interaction.
+
+## Project Layout
+
+Here's an overview of how the project is laid out. The main bits are the `bin`, which is the actual "blockchain", the
+`modules` which are used to build the blockchain's logic (a.k.a the runtime) and the `relays` which are used to pass
+messages between chains.
+
+```
+├── modules                  // Bizinikiwi Runtime Modules (a.k.a Pallets)
+│  ├── beefy                 // On-Chain BEEFY Light Client (in progress)
+│  ├── grandpa               // On-Chain GRANDPA Light Client
+│  ├── messages              // Cross Chain Message Passing
+│  ├── teyrchains            // On-Chain Teyrchains Light Client
+│  ├── relayers              // Relayer Rewards Registry
+│  ├── xcm-bridge-hub        // Multiple Dynamic Bridges Support
+│  ├── xcm-bridge-hub-router // XCM Router that may be used to Connect to XCM Bridge Hub
+├── primitives               // Code shared between modules, runtimes, and relays
+│  └──  ...
+├── relays                   // Application for sending finality proofs and messages between chains
+│  └──  ...
+└── scripts                  // Useful development and maintenance scripts
+```
+
+## Running the Bridge
+
+Apart from live pezkuwichain <> zagros bridge, you may spin up local networks and test see how it works locally. More
+details may be found in
+[this document](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main//pezcumulus/parachains/runtimes/bridge-hubs/README.md).

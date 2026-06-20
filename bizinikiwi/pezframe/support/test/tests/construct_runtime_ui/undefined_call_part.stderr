@@ -1,0 +1,15 @@
+error: `Pezpallet` does not have #[pezpallet::call] defined, perhaps you should remove `Call` from construct_runtime?
+  --> tests/construct_runtime_ui/undefined_call_part.rs:22:1
+   |
+22 |   #[pezframe_support::pezpallet]
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+66 | / construct_runtime! {
+67 | |     pub struct Runtime
+68 | |     {
+69 | |         System: pezframe_system::{Pezpallet, Call, Storage, Config<T>, Event<T>},
+...  |
+72 | | }
+   | |_- in this macro invocation
+   |
+   = note: this error originates in the macro `pezpallet::__bizinikiwi_call_check::is_call_part_defined` which comes from the expansion of the macro `pezframe_support::construct_runtime` (in Nightly builds, run with -Z macro-backtrace for more info)

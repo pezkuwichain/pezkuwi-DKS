@@ -1,0 +1,64 @@
+[package]
+description = "Gossiping for the Bizinikiwi network protocol"
+name = "pezsc-network-gossip"
+version = "0.34.0"
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+ahash = { workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+log = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsc-network-common = { workspace = true, default-features = true }
+pezsc-network-sync = { workspace = true, default-features = true }
+pezsc-network-types = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+prometheus-endpoint = { workspace = true, default-features = true }
+schnellru = { workspace = true }
+tracing = { workspace = true, default-features = true }
+
+[dev-dependencies]
+async-trait = { workspace = true }
+bizinikiwi-test-runtime-client = { workspace = true }
+codec = { features = ["derive"], workspace = true, default-features = true }
+quickcheck = { workspace = true }
+tokio = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"pezsc-network-common/runtime-benchmarks",
+	"pezsc-network-sync/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-test-runtime-client/std",
+	"log/std",
+	"pezsc-network-common/std",
+	"pezsc-network-sync/std",
+	"pezsc-network-types/std",
+	"pezsc-network/std",
+	"prometheus-endpoint/std",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pezsc-network-common/try-runtime",
+	"pezsc-network-sync/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

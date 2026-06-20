@@ -1,0 +1,5 @@
+error: Invalid pezpallet::call, only method accepted
+  --> tests/pezpallet_ui/call_invalid_const.rs:34:3
+   |
+34 |         const Foo: u8 = 3u8;
+   |         ^^^^^

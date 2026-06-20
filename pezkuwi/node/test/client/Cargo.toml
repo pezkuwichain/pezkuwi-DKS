@@ -1,0 +1,94 @@
+[package]
+name = "pezkuwi-test-client"
+publish = false
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Pezkuwi SDK relay chain component: test client"
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+
+# Pezkuwi dependencies
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-test-runtime = { workspace = true }
+pezkuwi-test-service = { workspace = true }
+
+# Bizinikiwi dependencies
+bizinikiwi-test-client = { workspace = true }
+pezframe-benchmarking = { workspace = true, default-features = true }
+pezsc-block-builder = { workspace = true, default-features = true }
+pezsc-consensus = { workspace = true, default-features = true }
+pezsc-service = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-consensus-babe = { workspace = true, default-features = true }
+pezsp-inherents = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-timestamp = { workspace = true, default-features = true }
+
+[dev-dependencies]
+futures = { workspace = true }
+pezsp-keyring = { workspace = true, default-features = true }
+
+[features]
+runtime-benchmarks = [
+	"bizinikiwi-test-client/runtime-benchmarks",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-test-runtime/runtime-benchmarks",
+	"pezkuwi-test-service/runtime-benchmarks",
+	"pezsc-block-builder/runtime-benchmarks",
+	"pezsc-consensus/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-timestamp/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-test-client/std",
+	"codec/std",
+	"pezkuwi-test-service/std",
+	"pezsc-block-builder/std",
+	"pezsc-consensus/std",
+	"pezsc-service/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+]
+try-runtime = [
+	"bizinikiwi-test-client/try-runtime",
+	"pezframe-benchmarking/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-test-runtime/try-runtime",
+	"pezkuwi-test-service/try-runtime",
+	"pezsc-block-builder/try-runtime",
+	"pezsc-consensus/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-timestamp/try-runtime",
+]
+serde = []
+with-tracing = []

@@ -1,0 +1,90 @@
+[package]
+name = "pezkuwi-primitives"
+version = "7.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Shared primitives used by Pezkuwi runtime"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bitvec = { features = ["alloc", "serde"], workspace = true }
+bounded-collections = { features = ["serde"], workspace = true }
+codec = { features = ["bit-vec", "derive"], workspace = true }
+hex-literal = { workspace = true, default-features = true }
+log = { workspace = true }
+scale-info = { features = ["bit-vec", "derive", "serde"], workspace = true }
+serde = { features = ["alloc", "derive"], workspace = true }
+thiserror = { workspace = true, optional = true }
+
+pezsp-api = { workspace = true }
+pezsp-application-crypto = { features = ["serde"], workspace = true }
+pezsp-arithmetic = { features = ["serde"], workspace = true }
+pezsp-authority-discovery = { features = ["serde"], workspace = true }
+pezsp-consensus-slots = { features = ["serde"], workspace = true }
+pezsp-core = { workspace = true }
+pezsp-inherents = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-keystore = { optional = true, workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-staking = { features = ["serde"], workspace = true }
+pezsp-std = { workspace = true, optional = true }
+
+pezkuwi-core-primitives = { workspace = true }
+pezkuwi-teyrchain-primitives = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"bitvec/std",
+	"bounded-collections/std",
+	"codec/std",
+	"log/std",
+	"pezkuwi-core-primitives/std",
+	"pezkuwi-teyrchain-primitives/std",
+	"pezsp-api/std",
+	"pezsp-application-crypto/std",
+	"pezsp-arithmetic/std",
+	"pezsp-authority-discovery/std",
+	"pezsp-consensus-slots/std",
+	"pezsp-core/std",
+	"pezsp-inherents/std",
+	"pezsp-io/std",
+	"pezsp-keystore",
+	"pezsp-keystore?/std",
+	"pezsp-runtime/std",
+	"pezsp-staking/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde/std",
+	"thiserror",
+]
+runtime-benchmarks = [
+	"pezkuwi-core-primitives/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-authority-discovery/runtime-benchmarks",
+	"pezsp-consensus-slots/runtime-benchmarks",
+	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+]
+test = []
+try-runtime = [
+	"pezkuwi-core-primitives/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-authority-discovery/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-staking/try-runtime",
+]
+serde = []
+with-tracing = []

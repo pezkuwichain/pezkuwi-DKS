@@ -1,0 +1,72 @@
+error: `Pezpallet` does not have #[pezpallet::validate_unsigned] defined, perhaps you should remove `ValidateUnsigned` from construct_runtime?
+  --> tests/construct_runtime_ui/undefined_validate_unsigned_part.rs:22:1
+   |
+22 |   #[pezframe_support::pezpallet]
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+66 | / construct_runtime! {
+67 | |     pub struct Runtime
+68 | |     {
+69 | |         System: pezframe_system::{Pezpallet, Call, Storage, Config<T>, Event<T>},
+...  |
+72 | | }
+   | |_- in this macro invocation
+   |
+   = note: this error originates in the macro `pezpallet::__bizinikiwi_validate_unsigned_check::is_validate_unsigned_part_defined` which comes from the expansion of the macro `pezframe_support::construct_runtime` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: no variant or associated item named `Pezpallet` found for enum `RuntimeCall` in the current scope
+  --> tests/construct_runtime_ui/undefined_validate_unsigned_part.rs:70:3
+   |
+66 | // construct_runtime! {
+67 | ||     pub struct Runtime
+68 | ||     {
+69 | ||         System: pezframe_system::{Pezpallet, Call, Storage, Config<T>, Event<T>},
+70 | ||         Pezpallet: pezpallet::{Pezpallet, ValidateUnsigned},
+   | ||     ----^^^^^^^^^ variant or associated item not found in `RuntimeCall`
+   | ||_____|
+   | |
+71 | |      }
+72 | |  }
+   | |__- variant or associated item `Pezpallet` not found for this enum
+
+error[E0599]: no function or associated item named `pre_dispatch` found for struct `pezpallet::Pezpallet` in the current scope
+  --> tests/construct_runtime_ui/undefined_validate_unsigned_part.rs:66:1
+   |
+28 |       pub struct Pezpallet<T>(_);
+   |       ----------------------- function or associated item `pre_dispatch` not found for this struct
+...
+66 |   construct_runtime! {
+   |  _^
+67 | |     pub struct Runtime
+68 | |     {
+69 | |         System: pezframe_system::{Pezpallet, Call, Storage, Config<T>, Event<T>},
+...  |
+72 | | }
+   | |_^ function or associated item not found in `Pezpallet<Runtime>`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following traits define an item `pre_dispatch`, perhaps you need to implement one of them:
+           candidate #1: `SignedExtension`
+           candidate #2: `ValidateUnsigned`
+   = note: this error originates in the macro `pezframe_support::construct_runtime` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0599]: no function or associated item named `validate_unsigned` found for struct `pezpallet::Pezpallet` in the current scope
+  --> tests/construct_runtime_ui/undefined_validate_unsigned_part.rs:66:1
+   |
+28 |       pub struct Pezpallet<T>(_);
+   |       ----------------------- function or associated item `validate_unsigned` not found for this struct
+...
+66 |   construct_runtime! {
+   |  _^
+67 | |     pub struct Runtime
+68 | |     {
+69 | |         System: pezframe_system::{Pezpallet, Call, Storage, Config<T>, Event<T>},
+...  |
+72 | | }
+   | |_^ function or associated item not found in `Pezpallet<Runtime>`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following traits define an item `validate_unsigned`, perhaps you need to implement one of them:
+           candidate #1: `SignedExtension`
+           candidate #2: `ValidateUnsigned`
+   = note: this error originates in the macro `pezframe_support::construct_runtime` (in Nightly builds, run with -Z macro-backtrace for more info)

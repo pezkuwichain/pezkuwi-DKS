@@ -1,0 +1,28 @@
+error: unused import: `pezframe_system::pezpallet_prelude::OriginFor`
+  --> tests/pezpallet_ui/task_invalid_condition.rs:21:6
+   |
+21 |     use pezframe_system::pezpallet_prelude::OriginFor;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `-D unused-imports` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+error[E0308]: mismatched types
+  --> tests/pezpallet_ui/task_invalid_condition.rs:18:1
+   |
+18 | #[pezframe_support::pezpallet(dev_mode)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | |
+   | expected integer, found `()`
+   | expected due to this
+   |
+   = note: this error originates in the attribute macro `pezframe_support::pezpallet` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0618]: expected function, found `{integer}`
+  --> tests/pezpallet_ui/task_invalid_condition.rs:32:31
+   |
+18 | #[pezframe_support::pezpallet(dev_mode)]
+   | ---------------------------------------- call expression requires function
+...
+32 |         #[pezpallet::task_condition(0)]
+   |                                     ^

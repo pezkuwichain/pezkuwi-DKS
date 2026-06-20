@@ -1,0 +1,142 @@
+[package]
+name = "pezkuwi-test-service"
+publish = false
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Pezkuwi SDK relay chain component: test service"
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+futures = { workspace = true }
+rand = { workspace = true, default-features = true }
+serde_json = { workspace = true, default-features = true }
+tokio = { workspace = true, default-features = true }
+
+# Pezkuwi dependencies
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-overseer = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezkuwi-runtime-common = { workspace = true, default-features = true }
+pezkuwi-runtime-teyrchains = { workspace = true, default-features = true }
+pezkuwi-service = { workspace = true, default-features = true }
+pezkuwi-test-runtime = { workspace = true }
+pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
+peztest-runtime-constants = { workspace = true, default-features = true }
+
+# Bizinikiwi dependencies
+bizinikiwi-test-client = { workspace = true }
+pezframe-system = { workspace = true, default-features = true }
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-staking = { workspace = true, default-features = true }
+pezpallet-transaction-payment = { workspace = true, default-features = true }
+pezsc-chain-spec = { workspace = true, default-features = true }
+pezsc-cli = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-consensus = { workspace = true, default-features = true }
+pezsc-consensus-grandpa = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsc-service = { workspace = true }
+pezsc-tracing = { workspace = true, default-features = true }
+pezsp-arithmetic = { workspace = true, default-features = true }
+pezsp-authority-discovery = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-consensus-babe = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+
+[dev-dependencies]
+pezpallet-balances = { workspace = true }
+tokio = { features = ["macros"], workspace = true, default-features = true }
+
+[features]
+runtime-metrics = ["pezkuwi-test-runtime/runtime-metrics"]
+runtime-benchmarks = [
+	"bizinikiwi-test-client/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-overseer/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezkuwi-runtime-common/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezkuwi-service/runtime-benchmarks",
+	"pezkuwi-test-runtime/runtime-benchmarks",
+	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-staking/runtime-benchmarks",
+	"pezpallet-transaction-payment/runtime-benchmarks",
+	"pezsc-chain-spec/runtime-benchmarks",
+	"pezsc-cli/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-consensus-grandpa/runtime-benchmarks",
+	"pezsc-consensus/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+	"pezsc-tracing/runtime-benchmarks",
+	"pezsp-authority-discovery/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"peztest-runtime-constants/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-test-client/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-overseer/std",
+	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-service/std",
+	"pezsc-chain-spec/std",
+	"pezsc-cli/std",
+	"pezsc-client-api/std",
+	"pezsc-consensus-grandpa/std",
+	"pezsc-consensus/std",
+	"pezsc-network/std",
+	"pezsc-service/std",
+	"pezsc-tracing/std",
+	"pezsp-blockchain/std",
+	"pezsp-consensus/std",
+]
+try-runtime = [
+	"bizinikiwi-test-client/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezkuwi-runtime-common/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezkuwi-service/try-runtime",
+	"pezkuwi-test-runtime/try-runtime",
+	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-staking/try-runtime",
+	"pezpallet-transaction-payment/try-runtime",
+	"pezsc-chain-spec/try-runtime",
+	"pezsc-cli/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-consensus-grandpa/try-runtime",
+	"pezsc-consensus/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsc-service/try-runtime",
+	"pezsc-tracing/try-runtime",
+	"pezsp-authority-discovery/try-runtime",
+	"pezsp-blockchain/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"peztest-runtime-constants/try-runtime",
+]
+serde = []
+experimental = []

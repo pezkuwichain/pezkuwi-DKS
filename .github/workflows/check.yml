@@ -1,0 +1,63 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  # Compliance is cheap and must always hold.
+  compliance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure license & attribution files present
+        run: |
+          set -e
+          test -f NOTICE
+          test -f LICENSE-APACHE
+          test -f LICENSE-GPL3
+          echo "compliance files present"
+
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: rustfmt
+        run: |
+          rustup component add rustfmt
+          cargo fmt --all --check
+
+  # Build the runtimes (the on-chain deliverable). This is the gating job.
+  # Heavy zombienet / emulated integration suites are intentionally NOT run here;
+  # they are available in-tree and run on demand, not on every push.
+  runtimes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android "$AGENT_TOOLSDIRECTORY" || true
+      - uses: Swatinem/rust-cache@v2
+      - name: Install runtime build targets
+        run: |
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+      - name: Build runtime WASM (check)
+        run: |
+          cargo check --locked \
+            -p pezkuwichain-runtime \
+            -p zagros-runtime \
+            -p asset-hub-pezkuwichain-runtime \
+            -p asset-hub-zagros-runtime \
+            -p people-pezkuwichain-runtime \
+            -p people-zagros-runtime

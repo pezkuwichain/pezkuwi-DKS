@@ -1,0 +1,5 @@
+error: number too large to fit in target type
+  --> tests/pezpallet_ui/call_invalid_index.rs:32:27
+   |
+32 |         #[pezpallet::call_index(256)]
+   |                                 ^^^

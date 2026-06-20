@@ -1,0 +1,5 @@
+error: Invalid duplicated attribute for `#[pezpallet::config]`. Please remove duplicates: without_automatic_metadata.
+  --> tests/pezpallet_ui/config_duplicate_attr.rs:23:15
+   |
+23 |     #[pezpallet::config(with_default, without_automatic_metadata, without_automatic_metadata)]
+   |                  ^^^^^^

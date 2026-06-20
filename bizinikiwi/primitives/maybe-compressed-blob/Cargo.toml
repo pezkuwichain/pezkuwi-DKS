@@ -1,0 +1,21 @@
+[package]
+name = "pezsp-maybe-compressed-blob"
+version = "11.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Handling of blobs, usually Wasm code, which may be compressed"
+documentation.workspace = true
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+zstd = { workspace = true }
+
+[features]
+experimental = []

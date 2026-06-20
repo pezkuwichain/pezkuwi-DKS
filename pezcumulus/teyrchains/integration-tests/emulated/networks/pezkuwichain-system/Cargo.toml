@@ -1,0 +1,44 @@
+[package]
+name = "pezkuwichain-system-emulated-network"
+version = "0.0.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+description = "Pezkuwichain System emulated network"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+# Pezcumulus
+asset-hub-pezkuwichain-emulated-chain = { workspace = true }
+coretime-pezkuwichain-emulated-chain = { workspace = true }
+emulated-integration-tests-common = { workspace = true }
+people-pezkuwichain-emulated-chain = { workspace = true }
+pez-penpal-emulated-chain = { workspace = true }
+pezbridge-hub-pezkuwichain-emulated-chain = { workspace = true }
+pezkuwichain-emulated-chain = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"asset-hub-pezkuwichain-emulated-chain/runtime-benchmarks",
+	"coretime-pezkuwichain-emulated-chain/runtime-benchmarks",
+	"emulated-integration-tests-common/runtime-benchmarks",
+	"people-pezkuwichain-emulated-chain/runtime-benchmarks",
+	"pez-penpal-emulated-chain/runtime-benchmarks",
+	"pezbridge-hub-pezkuwichain-emulated-chain/runtime-benchmarks",
+	"pezkuwichain-emulated-chain/runtime-benchmarks",
+]
+std = [
+	"asset-hub-pezkuwichain-emulated-chain/std",
+	"coretime-pezkuwichain-emulated-chain/std",
+	"emulated-integration-tests-common/std",
+	"people-pezkuwichain-emulated-chain/std",
+	"pez-penpal-emulated-chain/std",
+	"pezbridge-hub-pezkuwichain-emulated-chain/std",
+	"pezkuwichain-emulated-chain/std",
+]

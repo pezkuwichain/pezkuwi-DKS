@@ -1,0 +1,53 @@
+[package]
+name = "pezkuwi-teyrchain-primitives"
+description = "Types and utilities for creating and working with teyrchains"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+version = "6.0.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# note: special care is taken to avoid inclusion of `pezsp-io` externals when compiling
+# this crate for WASM. This is critical to avoid forcing all teyrchain WASM into implementing
+# various unnecessary Bizinikiwi-specific endpoints.
+array-bytes = { workspace = true }
+bounded-collections = { features = ["serde"], workspace = true }
+codec = { features = ["derive"], workspace = true }
+derive_more = { workspace = true, default-features = true }
+pezkuwi-core-primitives = { workspace = true }
+pezsp-core = { features = ["serde"], workspace = true }
+pezsp-runtime = { features = ["serde"], workspace = true }
+pezsp-weights = { workspace = true }
+scale-info = { features = ["derive", "serde"], workspace = true }
+
+# all optional crates.
+serde = { features = ["alloc", "derive"], workspace = true }
+
+[features]
+default = ["std"]
+wasm-api = []
+std = [
+	"bounded-collections/std",
+	"codec/std",
+	"pezkuwi-core-primitives/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"pezsp-weights/std",
+	"scale-info/std",
+	"serde/std",
+]
+runtime-benchmarks = [
+	"pezkuwi-core-primitives/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezkuwi-core-primitives/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []

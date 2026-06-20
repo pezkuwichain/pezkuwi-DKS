@@ -1,0 +1,14 @@
+# Default owners for everything in the repo
+*                       @pezkuwichain/core
+
+# Runtimes
+/relay/                 @pezkuwichain/runtime
+/system-parachains/     @pezkuwichain/runtime
+
+# Original pallets
+/pallets/               @pezkuwichain/runtime
+
+# Licensing & compliance — must be reviewed on any change
+/NOTICE                 @pezkuwichain/core
+/LICENSE-APACHE         @pezkuwichain/core
+/LICENSE-GPL3           @pezkuwichain/core

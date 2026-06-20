@@ -1,0 +1,76 @@
+[package]
+name = "xcm-pez-docs"
+description = "Documentation and guides for XCM"
+version = "0.1.0"
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+publish = false
+documentation.workspace = true
+homepage = { workspace = true }
+
+[dependencies]
+# For XCM stuff
+pezpallet-xcm = { workspace = true, default-features = true }
+xcm = { workspace = true, default-features = true }
+xcm-builder = { workspace = true, default-features = true }
+xcm-executor = { workspace = true, default-features = true }
+xcm-pez-simulator = { workspace = true, default-features = true }
+
+# For building FRAME runtimes
+codec = { workspace = true, default-features = true }
+pezframe = { features = ["runtime"], workspace = true, default-features = true }
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+pezkuwi-runtime-teyrchains = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+scale-info = { workspace = true }
+
+# Some pallets
+pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-message-queue = { workspace = true, default-features = true }
+
+# For building docs
+docify = { workspace = true }
+simple-mermaid = { workspace = true }
+
+[dev-dependencies]
+test-log = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezframe/runtime-benchmarks",
+	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-xcm/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm-pez-simulator/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
+std = ["scale-info/std", "xcm-pez-simulator/std"]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezframe/try-runtime",
+	"pezkuwi-runtime-teyrchains/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-message-queue/try-runtime",
+	"pezpallet-xcm/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm-pez-simulator/try-runtime",
+	"xcm/try-runtime",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

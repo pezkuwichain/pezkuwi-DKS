@@ -1,0 +1,107 @@
+[package]
+description = "Bizinikiwi offchain workers"
+name = "pezsc-offchain"
+version = "29.0.0"
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme = "README.md"
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+bytes = { workspace = true, default-features = true }
+codec = { features = ["derive"], workspace = true, default-features = true }
+fnv = { workspace = true }
+futures = { workspace = true }
+futures-timer = { workspace = true }
+http-body-util = { workspace = true }
+hyper = { features = [
+	"http1",
+	"http2",
+], workspace = true, default-features = true }
+hyper-rustls = { workspace = true }
+hyper-util = { features = [
+	"client-legacy",
+	"http1",
+	"http2",
+], workspace = true }
+num_cpus = { workspace = true }
+once_cell = { workspace = true }
+parking_lot = { workspace = true, default-features = true }
+pezsc-client-api = { workspace = true, default-features = true }
+pezsc-network = { workspace = true, default-features = true }
+pezsc-network-types = { workspace = true, default-features = true }
+pezsc-transaction-pool-api = { workspace = true, default-features = true }
+pezsc-utils = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+pezsp-offchain = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+rustls = { workspace = true }
+threadpool = { workspace = true }
+tracing = { workspace = true, default-features = true }
+
+[dev-dependencies]
+async-trait = { workspace = true }
+bizinikiwi-test-runtime-client = { workspace = true }
+pezsc-block-builder = { workspace = true, default-features = true }
+pezsc-client-db = { default-features = true, workspace = true }
+pezsc-transaction-pool = { workspace = true, default-features = true }
+pezsp-consensus = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+tokio = { workspace = true, default-features = true }
+
+[features]
+default = []
+runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"pezsc-block-builder/runtime-benchmarks",
+	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-client-db/runtime-benchmarks",
+	"pezsc-network/runtime-benchmarks",
+	"pezsc-transaction-pool-api/runtime-benchmarks",
+	"pezsc-transaction-pool/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-offchain/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-test-runtime-client/std",
+	"pezsc-block-builder/std",
+	"pezsc-client-api/std",
+	"pezsc-client-db/std",
+	"pezsc-network-types/std",
+	"pezsc-network/std",
+	"pezsc-transaction-pool-api/std",
+	"pezsc-transaction-pool/std",
+	"pezsc-utils/std",
+	"pezsp-consensus/std",
+	"rustls/std",
+]
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pezsc-block-builder/try-runtime",
+	"pezsc-client-api/try-runtime",
+	"pezsc-client-db/try-runtime",
+	"pezsc-network/try-runtime",
+	"pezsc-transaction-pool-api/try-runtime",
+	"pezsc-transaction-pool/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-consensus/try-runtime",
+	"pezsp-offchain/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = []
+with-tracing = []

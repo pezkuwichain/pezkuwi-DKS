@@ -1,0 +1,106 @@
+[package]
+name = "pezkuwi-test-malus"
+description = "Misbehaving nodes for local testnets, system and Simnet tests."
+version = "1.0.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+readme = "README.md"
+publish = false
+documentation.workspace = true
+repository = { workspace = true }
+homepage = { workspace = true }
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "malus"
+path = "src/malus.rs"
+
+# Use artifact dependencies once stable.
+# See https://github.com/rust-lang/cargo/issues/9096.
+[[bin]]
+name = "pezkuwi-execute-worker"
+path = "../../src/bin/execute-worker.rs"
+# Prevent rustdoc error. Already documented from top-level Cargo.toml.
+doc = false
+[[bin]]
+name = "pezkuwi-prepare-worker"
+path = "../../src/bin/prepare-worker.rs"
+# Prevent rustdoc error. Already documented from top-level Cargo.toml.
+doc = false
+
+[dependencies]
+assert_matches = { workspace = true }
+async-trait = { workspace = true }
+clap = { features = ["derive"], workspace = true }
+color-eyre = { workspace = true }
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+pezkuwi-cli = { features = [
+	"malus",
+	"pezkuwichain-native",
+	"zagros-native",
+], workspace = true, default-features = true }
+pezkuwi-erasure-coding = { workspace = true, default-features = true }
+pezkuwi-node-network-protocol = { workspace = true, default-features = true }
+pezkuwi-node-subsystem = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-types = { workspace = true, default-features = true }
+pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
+pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
+pezkuwi-primitives = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
+
+# Required for worker binaries to build.
+pezkuwi-node-core-pvf-common = { workspace = true, default-features = true }
+pezkuwi-node-core-pvf-execute-worker = { workspace = true, default-features = true }
+pezkuwi-node-core-pvf-prepare-worker = { workspace = true, default-features = true }
+
+[dev-dependencies]
+futures = { features = ["thread-pool"], workspace = true }
+pezkuwi-node-subsystem-test-helpers = { workspace = true }
+
+[build-dependencies]
+bizinikiwi-build-script-utils = { workspace = true, default-features = true }
+
+[features]
+default = []
+fast-runtime = ["pezkuwi-cli/fast-runtime"]
+runtime-benchmarks = [
+	"gum/runtime-benchmarks",
+	"pezkuwi-cli/runtime-benchmarks",
+	"pezkuwi-erasure-coding/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-common/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-execute-worker/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-prepare-worker/runtime-benchmarks",
+	"pezkuwi-node-network-protocol/runtime-benchmarks",
+	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
+	"pezkuwi-node-subsystem-types/runtime-benchmarks",
+	"pezkuwi-node-subsystem-util/runtime-benchmarks",
+	"pezkuwi-node-subsystem/runtime-benchmarks",
+	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+]
+std = [
+	"gum/std",
+	"pezkuwi-cli/std",
+	"pezkuwi-erasure-coding/std",
+	"pezkuwi-node-core-pvf-common/std",
+	"pezkuwi-node-core-pvf-execute-worker/std",
+	"pezkuwi-node-core-pvf-prepare-worker/std",
+	"pezkuwi-node-network-protocol/std",
+	"pezkuwi-node-subsystem-test-helpers/std",
+	"pezkuwi-node-subsystem-types/std",
+	"pezkuwi-node-subsystem-util/std",
+	"pezkuwi-node-subsystem/std",
+	"pezkuwi-pez-node-primitives/std",
+]
+try-runtime = [
+	"pezkuwi-cli/try-runtime",
+	"pezkuwi-node-network-protocol/try-runtime",
+	"pezkuwi-node-subsystem-types/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+]
+serde = []

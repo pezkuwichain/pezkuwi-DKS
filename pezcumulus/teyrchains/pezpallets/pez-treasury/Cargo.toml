@@ -1,0 +1,106 @@
+[package]
+name = "pezpallet-pez-treasury"
+version = "1.0.0"
+description = "PezkuwiChain Programmatic Treasury with Synthetic Halving"
+authors.workspace = true
+homepage.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+documentation.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { workspace = true, default-features = false, features = ["derive"] }
+scale-info = { default-features = false, features = [
+	"derive",
+], workspace = true }
+serde = { version = "1.0", default-features = false, features = [
+	"derive",
+], optional = true }
+
+log = { default-features = false, workspace = true }
+pezframe-support = { default-features = false, workspace = true }
+pezframe-system = { default-features = false, workspace = true }
+pezsp-runtime = { default-features = false, workspace = true }
+pezsp-std = { default-features = false, workspace = true }
+
+# PezkuwiChain'in özel tiplerini ve trait'lerini içeren kütüphane
+pezkuwi-primitives = { workspace = true, default-features = false }
+
+# Standart Bizinikiwi paletleri
+pezpallet-balances = { default-features = false, workspace = true }
+pezpallet-scheduler = { default-features = false, workspace = true }
+
+# Test ve Benchmark için Gerekli İsteğe Bağlı Bağımlılıklar
+pezframe-benchmarking = { optional = true, workspace = true }
+pezsp-core = { workspace = true, default-features = false, optional = true }
+pezsp-io = { workspace = true, default-features = false, optional = true }
+
+[dev-dependencies]
+# Test için gerekli olan bağımlılıklar
+pezsp-core = { workspace = true, default-features = false }
+pezsp-io = { workspace = true, default-features = false }
+pezpallet-assets = { workspace = true, default-features = false, features = [
+	"std",
+] } # <-- BU SATIRI EKLEYİN
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezkuwi-primitives/std",
+	"pezpallet-assets/std",
+	"pezpallet-balances/std",
+	"pezpallet-scheduler/std",
+	"pezsp-core?/std",
+	"pezsp-io?/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde",
+	"serde?/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking",
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-scheduler/runtime-benchmarks",
+	"pezsp-core",
+	"pezsp-io",
+	"pezsp-io?/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezpallet-assets/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-scheduler/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = [
+	"codec/serde",
+	"dep:serde",
+	"log/serde",
+	"pezframe-benchmarking?/serde",
+	"pezsp-core?/serde",
+	"pezsp-runtime/serde",
+	"scale-info/serde",
+]
+experimental = []
+with-tracing = []
+tuples-96 = []

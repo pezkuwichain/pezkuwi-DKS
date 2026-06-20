@@ -1,0 +1,142 @@
+[package]
+name = "pezpallet-welati"
+version = "1.0.0"
+description = "PezkuwiChain Governance and State Administration Pallet"
+authors.workspace = true
+homepage.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+documentation.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { workspace = true, default-features = false, features = [
+	"derive",
+	"max-encoded-len",
+] }
+scale-info = { default-features = false, features = [
+	"derive",
+], workspace = true }
+serde = { version = "1.0", default-features = false, features = [
+	"derive",
+], optional = true }
+
+log = { default-features = false, workspace = true }
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { default-features = false, workspace = true }
+pezframe-system = { default-features = false, workspace = true }
+pezsp-core = { workspace = true, default-features = false, optional = true }
+pezsp-io = { workspace = true, default-features = false, optional = true }
+pezsp-runtime = { default-features = false, workspace = true }
+pezsp-std = { default-features = false, workspace = true }
+
+# PezkuwiChain özel paletler
+pezpallet-identity-kyc = { workspace = true, default-features = false }
+pezpallet-referral = { workspace = true, default-features = false }
+pezpallet-tiki = { workspace = true, default-features = false }
+pezpallet-trust = { workspace = true, default-features = false }
+
+# Bizinikiwi core paletler
+pezpallet-collective = { default-features = false, workspace = true }
+pezpallet-democracy = { default-features = false, workspace = true }
+pezpallet-elections-phragmen = { default-features = false, workspace = true }
+pezpallet-scheduler = { default-features = false, workspace = true }
+pezpallet-timestamp = { default-features = false, workspace = true }
+
+[dev-dependencies]
+pezpallet-balances = { workspace = true, default-features = false }
+pezpallet-identity = { workspace = true, default-features = false }
+pezpallet-nfts = { workspace = true, default-features = false }
+pezpallet-staking-score = { workspace = true, default-features = false }
+pezsp-core = { workspace = true, default-features = false }
+pezsp-io = { workspace = true, default-features = false }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-balances/std",
+	"pezpallet-collective/std",
+	"pezpallet-democracy/std",
+	"pezpallet-elections-phragmen/std",
+	"pezpallet-identity-kyc/std",
+	"pezpallet-identity/std",
+	"pezpallet-nfts/std",
+	"pezpallet-referral/std",
+	"pezpallet-scheduler/std",
+	"pezpallet-staking-score/std",
+	"pezpallet-tiki/std",
+	"pezpallet-timestamp/std",
+	"pezpallet-trust/std",
+	"pezsp-core/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-std/std",
+	"scale-info/std",
+	"serde",
+	"serde?/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-collective/runtime-benchmarks",
+	"pezpallet-democracy/runtime-benchmarks",
+	"pezpallet-elections-phragmen/runtime-benchmarks",
+	"pezpallet-identity-kyc/runtime-benchmarks",
+	"pezpallet-identity/runtime-benchmarks",
+	"pezpallet-nfts/runtime-benchmarks",
+	"pezpallet-referral/runtime-benchmarks",
+	"pezpallet-scheduler/runtime-benchmarks",
+	"pezpallet-staking-score/runtime-benchmarks",
+	"pezpallet-tiki/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-trust/runtime-benchmarks",
+	"pezsp-core",
+	"pezsp-io",
+	"pezsp-io?/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-collective/try-runtime",
+	"pezpallet-democracy/try-runtime",
+	"pezpallet-elections-phragmen/try-runtime",
+	"pezpallet-identity-kyc/try-runtime",
+	"pezpallet-identity/try-runtime",
+	"pezpallet-nfts/try-runtime",
+	"pezpallet-referral/try-runtime",
+	"pezpallet-scheduler/try-runtime",
+	"pezpallet-staking-score/try-runtime",
+	"pezpallet-tiki/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezpallet-trust/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+serde = [
+	"codec/serde",
+	"dep:serde",
+	"log/serde",
+	"pezframe-benchmarking?/serde",
+	"pezpallet-democracy/serde",
+	"pezpallet-staking-score/serde",
+	"pezpallet-trust/serde",
+	"pezsp-core?/serde",
+	"pezsp-runtime/serde",
+	"scale-info/serde",
+]
+experimental = []
+with-tracing = []
+tuples-96 = []

@@ -1,0 +1,96 @@
+[package]
+name = "pezcumulus-pezpallet-aura-ext"
+version = "0.7.0"
+authors.workspace = true
+edition.workspace = true
+description = "AURA consensus extension pezpallet for teyrchains"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+
+# Bizinikiwi
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+pezpallet-aura = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+pezsp-application-crypto = { workspace = true }
+pezsp-consensus-aura = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+# Pezcumulus
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+
+# Pezcumulus
+pezcumulus-pezpallet-teyrchain-system = { workspace = true, default-features = true }
+pezcumulus-primitives-core = { workspace = true, default-features = true }
+pezcumulus-primitives-proof-size-hostfunction = { workspace = true, default-features = true }
+pezcumulus-test-relay-sproof-builder = { workspace = true, default-features = true }
+
+# Bizinikiwi
+pezsp-core = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
+pezsp-version = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezpallet-aura/std",
+	"pezpallet-timestamp/std",
+	"pezsp-application-crypto/std",
+	"pezsp-consensus-aura/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+]
+try-runtime = [
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-test-relay-sproof-builder/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-aura/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezsp-consensus-aura/try-runtime",
+	"pezsp-keyring/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezsp-version/try-runtime",
+]
+runtime-benchmarks = [
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-primitives-proof-size-hostfunction/runtime-benchmarks",
+	"pezcumulus-test-relay-sproof-builder/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-aura/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezsp-application-crypto/runtime-benchmarks",
+	"pezsp-consensus-aura/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+	"pezsp-version/runtime-benchmarks",
+]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []
