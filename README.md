@@ -10,7 +10,7 @@
 [![license](https://img.shields.io/badge/license-Apache--2.0%20%7C%20GPL--3.0-blue.svg)](#license--attribution)
 [![rust](https://img.shields.io/badge/rust-1.96-orange.svg)](./rust-toolchain.toml)
 [![website](https://img.shields.io/badge/web-pezkuwichain.io-018000.svg)](https://pezkuwichain.io)
-[![exchange](https://img.shields.io/badge/exchange-pex.mom-C8102E.svg)](https://pex.mom)
+[![exchange](https://img.shields.io/badge/exchange-pex.network-C8102E.svg)](https://pex.network)
 
 <img src="./docs/images/DijitalKurdistan.png" alt="Digital Kurdistan State" width="640" />
 
@@ -96,7 +96,7 @@ reproducible from a tagged commit together with the committed `Cargo.lock`.
 | Resource | URL |
 | --- | --- |
 | Website | [pezkuwichain.io](https://pezkuwichain.io) |
-| Exchange (PEX) | [pex.mom](https://pex.mom) |
+| Exchange (PEX) | [pex.network](https://pex.network) |
 | App | [app.pezkuwichain.io](https://app.pezkuwichain.io) |
 | Documentation | [docs.pezkuwichain.io](https://docs.pezkuwichain.io) |
 
