@@ -41,15 +41,19 @@ jobs:
   # Heavy zombienet / emulated integration suites are intentionally NOT run here;
   # they are available in-tree and run on demand, not on every push.
   runtimes:
-    runs-on: ubuntu-latest
+    # Self-hosted runner (dedicated, isolated box). For security on a public repo,
+    # this heavy job runs ONLY on push to a branch in this repo or on PRs that
+    # originate from this repo — never on pull requests from forks, so untrusted
+    # code cannot execute on the runner.
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, substrate-build]
     steps:
       - uses: actions/checkout@v4
-      - name: Free disk space
+      - name: Toolchain & targets
         run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android "$AGENT_TOOLSDIRECTORY" || true
-      - uses: Swatinem/rust-cache@v2
-      - name: Install runtime build targets
-        run: |
+          rustup show
           rustup component add rust-src
           rustup target add wasm32v1-none wasm32-unknown-unknown
       - name: Build runtime WASM (check)
