@@ -1,0 +1,88 @@
+name: test
+
+# Heavy correctness jobs that compile the workspace. They run on the dedicated
+# self-hosted build runners and — for security on this public repo — never on
+# pull requests from forks.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  # Unit/integration tests, split into partitions that spread across the runner pool.
+  test:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, substrate-build]
+    strategy:
+      fail-fast: false
+      matrix:
+        partition: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests (nextest, partition ${{ matrix.partition }}/2)
+        run: |
+          cargo nextest run --workspace --locked --no-fail-fast \
+            --partition count:${{ matrix.partition }}/2 \
+            --config-file .config/nextest.toml
+
+  # Doctests (nextest does not run these).
+  doc-test:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, substrate-build]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test --doc --workspace --locked
+
+  # Lint. The workspace lint policy is defined in the root Cargo.toml.
+  clippy:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, substrate-build]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo clippy --workspace --locked --no-deps -- -D warnings
+
+  # The runtimes must also build with the try-runtime feature — this is what makes
+  # safe storage migrations possible. A fund-critical gate before any upgrade.
+  check-try-runtime:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, substrate-build]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          cargo check --locked --features try-runtime \
+            -p pezkuwichain-runtime -p zagros-runtime \
+            -p asset-hub-pezkuwichain-runtime -p asset-hub-zagros-runtime \
+            -p people-pezkuwichain-runtime -p people-zagros-runtime
+
+  # Benchmarks must compile (weights are fund-critical: wrong weights enable DoS /
+  # fee miscalculation). We check compilation here; actual weight generation is a
+  # separate release-time step.
+  check-benches:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, substrate-build]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo check --workspace --locked --benches --features runtime-benchmarks
