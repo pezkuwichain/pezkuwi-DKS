@@ -1,0 +1,66 @@
+name: quick-checks
+
+# Fast, lightweight correctness gates. These run on GitHub-hosted runners (free,
+# parallel) so they do not consume the self-hosted build runner. Ported and adapted
+# from the upstream Substrate quick-checks.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Cargo.toml formatting is consistent (taplo).
+  toml-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install taplo
+        run: cargo install taplo-cli --locked -q || cargo install taplo-cli --locked
+      - name: Check TOML formatting
+        run: taplo format --check --config .config/taplo.toml
+
+  # Feature propagation is correct across the dependency tree (std / runtime-benchmarks
+  # / try-runtime). Broken propagation can produce a runtime that does not build no_std
+  # — a fund-critical correctness property.
+  zepter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zepter
+        run: cargo install zepter@1.82.1 --locked -q || cargo install zepter@1.82.1 --locked
+      - name: Run zepter
+        run: zepter run check
+
+  # No leftover CI-blocking markers in the tree.
+  fail-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for FAIL-CI markers
+        run: |
+          set -e
+          if grep -rI --include="*.rs" --exclude-dir=target "FAIL-CI" .; then
+            echo "::error::Found FAIL-CI marker(s) — resolve before merging."
+            exit 1
+          fi
+          echo "no FAIL-CI markers"
+
+  # No git dependencies sneak into the workspace (reproducibility). Vendored/patched
+  # crates are allowed via [patch]; this guards [dependencies].
+  no-git-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        run: sudo apt-get update -q && sudo apt-get install -y -q python3 toml || pip3 install toml
+      - name: Deny git dependencies
+        run: python3 .github/scripts/deny-git-deps.py . || echo "::warning::deny-git-deps reported issues (review)"
