@@ -22,7 +22,7 @@ jobs:
   toml-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install taplo
         run: cargo install taplo-cli --locked -q || cargo install taplo-cli --locked
       - name: Check TOML formatting
@@ -34,7 +34,7 @@ jobs:
   zepter:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install zepter
         run: cargo install zepter@1.82.1 --locked -q || cargo install zepter@1.82.1 --locked
       - name: Run zepter
@@ -44,7 +44,7 @@ jobs:
   fail-ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check for FAIL-CI markers
         run: |
           set -e
@@ -59,8 +59,9 @@ jobs:
   no-git-deps:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        run: sudo apt-get update -q && sudo apt-get install -y -q python3 toml || pip3 install toml
-      - name: Deny git dependencies
-        run: python3 .github/scripts/deny-git-deps.py . || echo "::warning::deny-git-deps reported issues (review)"
+      - uses: actions/checkout@v5
+      - name: Install checker deps
+        run: python3 -m pip install --break-system-packages "cargo-workspace>=1.2.4" toml
+      - name: Deny git dependencies in [workspace.dependencies]
+        # [patch.crates-io] entries (vendored/wasm-fix forks) are allowed and not checked.
+        run: python3 .github/scripts/deny-git-deps.py .
