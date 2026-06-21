@@ -33,7 +33,7 @@ jobs:
       matrix:
         partition: [1, 2]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Run tests (nextest, partition ${{ matrix.partition }}/2)
         run: |
           cargo nextest run --workspace --locked --no-fail-fast \
@@ -47,7 +47,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, substrate-build]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: cargo test --doc --workspace --locked
 
   # Lint. The workspace lint policy is defined in the root Cargo.toml.
@@ -57,7 +57,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, substrate-build]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: cargo clippy --workspace --locked --no-deps -- -D warnings
 
   # The runtimes must also build with the try-runtime feature — this is what makes
@@ -68,7 +68,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, substrate-build]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: |
           cargo check --locked --features try-runtime \
             -p pezkuwichain-runtime -p zagros-runtime \
@@ -84,5 +84,5 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, substrate-build]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: cargo check --workspace --locked --benches --features runtime-benchmarks
