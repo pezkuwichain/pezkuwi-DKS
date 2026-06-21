@@ -194,6 +194,9 @@ fn invoke_build(current_dir: &Path) -> Result<()> {
 			"--release",
 			"-Zbuild-std=core",
 			"-Zbuild-std-features=panic_immediate_abort",
+			// Rust 1.96+ gates custom `.json` target specs behind this flag.
+			// RUSTC_BOOTSTRAP=1 (above) permits the -Z flag on stable.
+			"-Zjson-target-spec",
 		])
 		.arg("--target")
 		.arg(polkavm_linker::target_json_64_path().unwrap());
