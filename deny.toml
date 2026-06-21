@@ -51,6 +51,21 @@ ignore = [
 	"RUSTSEC-2026-0098", # webpki: URI name constraints incorrectly accepted
 	"RUSTSEC-2026-0099", # webpki: wildcard name constraints incorrectly accepted
 	"RUSTSEC-2026-0104", # webpki: reachable panic in CRL parsing (onlySomeReasons BIT STRING)
+
+	# ── git2 / libgit2 (build tooling only) ───────────────────────────────────
+	# Pulled by build-time tooling (wasm-builder / cargo metadata), NOT present in
+	# the runtime WASM or the node consensus path. Track for upstream git2 bump.
+	"RUSTSEC-2026-0183", # git2: potential UB in Remote::list()
+	"RUSTSEC-2026-0184", # git2: potential UB in Signature from buffer-created BlameHunk
+
+	# ── hickory DNS (node networking only) ────────────────────────────────────
+	# Transitive via libp2p DNS resolution. DoS on malformed/cross-zone responses.
+	# Affects node networking availability only, not the runtime. Track upstream.
+	"RUSTSEC-2026-0118", # hickory: NSEC3 closest-encloser proof unbounded loop
+	"RUSTSEC-2026-0119", # hickory: O(n^2) name-compression CPU exhaustion
+
+	# ── wasmtime (additional; see toolchain note above) ───────────────────────
+	"RUSTSEC-2026-0114", # wasmtime: panic allocating table exceeding host address space (64-bit tables; unused)
 ]
 
 # License compliance

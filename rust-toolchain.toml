@@ -4,6 +4,6 @@
 # .cargo/config.toml so host-function imports (`ext_*`) link correctly. The
 # resulting runtime WASM is import-identical to prior toolchains.
 channel = "1.96.0"
-components = ["rustfmt", "clippy", "rust-src"]
-targets = ["wasm32v1-none", "wasm32-unknown-unknown"]
+components = ["clippy", "rust-src", "rustfmt"]
+targets = ["wasm32-unknown-unknown", "wasm32v1-none"]
 profile = "minimal"

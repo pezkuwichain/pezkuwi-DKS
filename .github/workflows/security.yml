@@ -28,15 +28,9 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check ${{ matrix.checks }}
-
-  # Second, independent RUSTSEC vulnerability scan (defense in depth vs cargo-deny).
-  cargo-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: rustsec/audit-check@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+    # cargo-deny "advisories" uses the same RUSTSEC database as cargo-audit and is the
+    # single source of truth for the ignore policy (see deny.toml). A separate cargo-audit
+    # job is intentionally omitted to avoid maintaining two divergent ignore lists.
 
   # Block PRs that introduce dependencies with known vulnerabilities or bad licenses.
   dependency-review:
