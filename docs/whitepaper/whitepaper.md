@@ -1,6 +1,6 @@
 # PezkuwiChain: A Sovereign Blockchain for a Digital Nation
-**Technical Whitepaper v4.0**
-**December 10, 2025**
+**Technical Whitepaper v5.0 — Mainnet Edition**
+**June 2026**
 **Prepared by:** Kurdistan Tech Ministry & PezkuwiChain Contributors
 
 ![PezkuwiChain Logo](../images/Pezkuwi_Logo_Horizontal_Pink_Black.png)
@@ -101,6 +101,13 @@ Our choice of a modular, open-source framework provides PezkuwiChain with a robu
 ![System Architecture](system_architecture.png)
 *Figure 1: PezkuwiChain System Architecture*
 
+### 4.1.1. Technological Heritage & Independence
+PezkuwiChain did not begin in a vacuum. We laid our first stone upon **Polkadot SDK** — the open-source framework engineered by Parity Technologies and the Web3 Foundation, among the most rigorously battle-tested infrastructure ever written for decentralized systems. We are grateful for it, and we say so plainly. The open-source ideal exists precisely so that a stateless nation — with no treasury to commission an army of engineers, and no sovereign to grant it permission — can stand on solid ground and build something of its own. Polkadot gave us that ground, and we honor it.
+
+From there our paths diverged — deliberately, and in time, completely. What began as a fork has forged its own soul: its own framework (**Bizinikiwi**), its own SDK (**Pezkuwi SDK**), its own brand, governance, token economy, and chain identity. Today the entire stack lives in a single self-contained repository that builds from source with **zero dependency on any external registry** — because a sovereign chain must remain buildable and verifiable no matter what happens to any third-party platform.
+
+We preserve our origins in full. Every license, attribution, and record of change is kept in our `NOTICE` and `LICENSE` files, exactly as the Apache-2.0 and GPL-3.0 licenses intend — not as a footnote, but as a matter of honor. We took what was freely given, we gave thanks, and we made it our own. This is the open-source ideal working as it was meant to: not extraction, but inheritance; not imitation, but independence.
+
 ### 4.2. Consensus Innovation: Trust-enhanced Nominated Proof-of-Stake (TNPoS)
 PezkuwiChain introduces a groundbreaking enhancement to traditional NPoS consensus by directly integrating a **Trust System**. This novel approach, termed TNPoS, combines the economic security of NPoS with a social reputation layer provided by the custom `pezpallet-trust`.
 
@@ -146,7 +153,7 @@ Governance is managed on-chain via the `welati` pezpallet, allowing PEZ holders 
 
 ---
 ## 11. Roadmap & 12. Use Cases
-The project followed a phased rollout from Testnet to a live Mainnet. It now focuses on ecosystem growth, including a grants program and dApp developer onboarding. Use cases range from Digital Identity and Democratic Governance to Decentralized Finance and Education.
+PezkuwiChain progressed through a disciplined, phased rollout — from Alpha and Beta testnets, through the Zagros staging network, to a **live Mainnet launched in January 2026**, secured today by an active validator set producing and finalizing blocks. With the network live, focus has shifted to ecosystem growth: a treasury-funded grants program, dApp developer onboarding, and the wallet, exchange, and citizenship applications already in production. Use cases range from Digital Identity and Democratic Governance to Decentralized Finance and Education.
 
 ---
 
@@ -169,7 +176,7 @@ The project operates under the Kurdistan Talent Institute License. It is a utili
 6.  **Bizinikiwi: A Blockchain Framework for a Multichain Future** - Parity Technologies.
 
 ### Project Resources
-1.  **PezkuwiChain GitHub Repository** - `https://github.com/pezkuwichain/pezkuwi-sdk`
+1.  **PezkuwiChain GitHub Repository** - `https://github.com/pezkuwichain/pezkuwi-DKS`
 2.  **pezpallet-pez-treasury Source Code** - `.../pezkuwi/pallets/pez-treasury`
 3.  **pezpallet-pez-rewards Source Code** - `.../pezkuwi/pallets/pez-rewards`
 4.  **pezpallet-trust Source Code** - `.../pezkuwi/pallets/trust`
@@ -179,7 +186,7 @@ The project operates under the Kurdistan Talent Institute License. It is a utili
 
 ### Official Channels
 *   **Website:** `https://pezkuwichain.io`
-*   **GitHub:** `https://github.com/pezkuwichain/pezkuwi-sdk`
+*   **GitHub:** `https://github.com/pezkuwichain/pezkuwi-DKS`
 *   **Documentation:** `https://docs.pezkuwichain.io`
 *   **Block Explorer:** `https://explorer.pezkuwichain.io`
 
@@ -221,8 +228,8 @@ The project operates under the Kurdistan Talent Institute License. It is a utili
 **Node Setup:**
 ```bash
 # Clone the repository
-git clone https://github.com/pezkuwichain/pezkuwi-sdk.git
-cd pezkuwi-sdk
+git clone https://github.com/pezkuwichain/pezkuwi-DKS.git
+cd pezkuwi-DKS
 # Compile the node
 cargo build --release
 # Run a development node

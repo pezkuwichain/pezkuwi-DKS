@@ -650,8 +650,8 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 all = { level = "allow", priority = 0 }
 bind_instead_of_map = { level = "allow", priority = 2 }              # stylistic
 borrowed-box = { level = "allow", priority = 2 }                     # Reasonable to fix this one
-complexity = { level = "warn", priority = 1 }                       # style/advisory (upstream-curated level)
-correctness = { level = "deny", priority = 1 }                      # real-bug lints: HARD gate, never ignored (fund-critical)
+complexity = { level = "warn", priority = 1 }                        # style/advisory (upstream-curated level)
+correctness = { level = "deny", priority = 1 }                       # real-bug lints: HARD gate, never ignored (fund-critical)
 default_constructed_unit_structs = { level = "allow", priority = 2 } # stylistic
 derivable_impls = { level = "allow", priority = 2 }                  # false positives
 eq_op = { level = "allow", priority = 2 }                            # In tests we test equality.
