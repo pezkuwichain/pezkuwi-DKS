@@ -65,7 +65,7 @@ pub fn eth(x: u128) -> U256 {
 	U256::from(1_000_000_000_000_000_000u128).saturating_mul(x.into())
 }
 
-pub const TYR: u128 = 1_000_000_000_000;
+pub const HEZ: u128 = 1_000_000_000_000;
 
 /// Identifier for a message channel
 #[derive(

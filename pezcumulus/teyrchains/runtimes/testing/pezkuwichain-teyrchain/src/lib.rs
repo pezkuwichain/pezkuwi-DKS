@@ -129,7 +129,7 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
-pub const TYR: Balance = 1_000_000_000_000;
+pub const HEZ: Balance = 1_000_000_000_000;
 pub const MILLIROC: Balance = 1_000_000_000;
 pub const MICROROC: Balance = 1_000_000;
 
@@ -426,8 +426,8 @@ pub type XcmOriginToTransactDispatchOrigin = (
 parameter_types! {
 	// One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
 	pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
-	// One TYR buys 1 second of weight.
-	pub const WeightPrice: (Location, u128) = (Location::parent(), TYR);
+	// One HEZ buys 1 second of weight.
+	pub const WeightPrice: (Location, u128) = (Location::parent(), HEZ);
 	pub const MaxInstructions: u32 = 100;
 }
 
@@ -480,7 +480,7 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTransactor = AssetTransactors;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
 	type IsReserve = Reserves;
-	type IsTeleporter = NativeAsset; // <- should be enough to allow teleportation of TYR
+	type IsTeleporter = NativeAsset; // <- should be enough to allow teleportation of HEZ
 	type UniversalLocation = UniversalLocation;
 	type Barrier = Barrier;
 	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
@@ -578,11 +578,11 @@ impl pezcumulus_ping::Config for Runtime {
 }
 
 parameter_types! {
-	pub const AssetDeposit: Balance = TYR;
-	pub const AssetAccountDeposit: Balance = TYR;
+	pub const AssetDeposit: Balance = HEZ;
+	pub const AssetAccountDeposit: Balance = HEZ;
 	pub const ApprovalDeposit: Balance = 100 * MILLIROC;
 	pub const AssetsStringLimit: u32 = 50;
-	pub const MetadataDepositBase: Balance = TYR;
+	pub const MetadataDepositBase: Balance = HEZ;
 	pub const MetadataDepositPerByte: Balance = 10 * MILLIROC;
 	pub const UnitBody: BodyId = BodyId::Unit;
 }

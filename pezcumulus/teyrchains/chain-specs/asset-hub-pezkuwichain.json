@@ -77,7 +77,7 @@
   "name": "Pezkuwichain Asset Hub",
   "properties": {
     "tokenDecimals": 12,
-    "tokenSymbol": "TYR"
+    "tokenSymbol": "HEZ"
   },
   "protocolId": null,
   "telemetryEndpoints": null

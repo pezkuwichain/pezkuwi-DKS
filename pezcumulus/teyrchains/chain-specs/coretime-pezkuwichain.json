@@ -69,7 +69,7 @@
   "properties": {
     "ss58Format": 42,
     "tokenDecimals": 12,
-    "tokenSymbol": "TYR"
+    "tokenSymbol": "HEZ"
   },
   "protocolId": null,
   "telemetryEndpoints": null

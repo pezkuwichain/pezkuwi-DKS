@@ -829,7 +829,7 @@ mod asset_hub_pezkuwichain_tests {
 				);
 			},
 			|| {
-				// `SwapFirstAssetTrader` - staking pot receives xcm fees in TYRs
+				// `SwapFirstAssetTrader` - staking pot receives xcm fees in HEZ
 				assert!(
 					Balances::free_balance(&staking_pot) > ExistentialDeposit::get()
 				);

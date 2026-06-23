@@ -72,7 +72,7 @@ pub(crate) fn bridged_wnd_at_ah_pezkuwichain() -> Location {
 	Location::new(2, [GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH))])
 }
 
-// TYR and wTYR
+// HEZ and wTYR
 pub(crate) fn bridged_roc_at_ah_zagros() -> Location {
 	Location::new(2, [GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH))])
 }

@@ -208,14 +208,14 @@ fn transfer_foreign_assets_from_asset_hub_to_para() {
 	let native_asset_location = RelayLocation::get();
 	let receiver = PenpalAReceiver::get();
 	let assets_owner = PenpalAssetOwner::get();
-	// Foreign asset used: bridged TYR
+	// Foreign asset used: bridged HEZ
 	let foreign_amount_to_send = ASSET_HUB_ZAGROS_ED * 10_000_000;
 	let roc_at_zagros_teyrchains = Location::new(
 		2,
 		[Junction::GlobalConsensus(NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH))],
 	);
 
-	// Configure destination chain to trust AH as reserve of TYR
+	// Configure destination chain to trust AH as reserve of HEZ
 	PenpalA::execute_with(|| {
 		assert_ok!(<PenpalA as Chain>::System::set_storage(
 			<PenpalA as Chain>::RuntimeOrigin::root(),
@@ -339,14 +339,14 @@ fn transfer_foreign_assets_from_para_to_asset_hub() {
 	let native_asset_location = RelayLocation::get();
 	let assets_owner = PenpalAssetOwner::get();
 
-	// Foreign asset used: bridged TYR
+	// Foreign asset used: bridged HEZ
 	let foreign_amount_to_send = ASSET_HUB_ZAGROS_ED * 10_000_000;
 	let roc_at_zagros_teyrchains = Location::new(
 		2,
 		[Junction::GlobalConsensus(NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH))],
 	);
 
-	// Configure destination chain to trust AH as reserve of TYR
+	// Configure destination chain to trust AH as reserve of HEZ
 	PenpalA::execute_with(|| {
 		assert_ok!(<PenpalA as Chain>::System::set_storage(
 			<PenpalA as Chain>::RuntimeOrigin::root(),
@@ -499,7 +499,7 @@ fn transfer_foreign_assets_from_para_to_para_through_asset_hub() {
 	let sov_of_receiver_on_ah = AssetHubZagros::sovereign_account_id_of(receiver_as_seen_by_ah);
 	let roc_to_send = ASSET_HUB_ZAGROS_ED * 10_000_000;
 
-	// Configure source and destination chains to trust AH as reserve of TYR
+	// Configure source and destination chains to trust AH as reserve of HEZ
 	PenpalA::execute_with(|| {
 		assert_ok!(<PenpalA as Chain>::System::set_storage(
 			<PenpalA as Chain>::RuntimeOrigin::root(),
@@ -519,7 +519,7 @@ fn transfer_foreign_assets_from_para_to_para_through_asset_hub() {
 		));
 	});
 
-	// Register TYR as foreign asset and transfer it around the Zagros ecosystem
+	// Register HEZ as foreign asset and transfer it around the Zagros ecosystem
 	let roc_at_zagros_teyrchains = Location::new(
 		2,
 		[Junction::GlobalConsensus(NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH))],

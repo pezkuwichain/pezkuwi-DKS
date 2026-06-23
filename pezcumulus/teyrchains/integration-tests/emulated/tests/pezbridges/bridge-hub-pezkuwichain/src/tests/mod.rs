@@ -53,7 +53,7 @@ pub(crate) fn bridge_hub_zagros_location() -> Location {
 	)
 }
 
-// TYR and wTYR
+// HEZ and wTYR
 pub(crate) fn roc_at_ah_pezkuwichain() -> Location {
 	Parent.into()
 }

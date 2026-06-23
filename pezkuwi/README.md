@@ -143,10 +143,10 @@ Connect to the global Zagros testnet by running:
 You can see your node on [Zagros telemetry](https://telemetry.pezkuwichain.io/#list/0xe143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2cfd15340213f3423e)
 (set a custom name with `--name "my custom name"`).
 
-### Obtaining HEZ, DCL, or TYR
+### Obtaining HEZ, DCL, or ZGR
 
 If you want to do anything on PezkuwiChain, Dicle, or Zagros, then you'll need to get an account and
-some HEZ, DCL, or TYR tokens, respectively. Follow the
+some HEZ, DCL, or ZGR tokens, respectively. Follow the
 [instructions](https://wiki.network.pezkuwichain.io/docs/learn-HEZ#obtaining-testnet-tokens) on the Wiki to obtain tokens for
 your testnet of choice.
 

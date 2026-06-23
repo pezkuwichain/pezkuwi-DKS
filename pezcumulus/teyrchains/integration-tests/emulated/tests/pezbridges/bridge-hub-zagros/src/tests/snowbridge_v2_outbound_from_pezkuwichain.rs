@@ -185,7 +185,7 @@ fn send_roc_from_asset_hub_pezkuwichain_to_ethereum() {
 	AssetHubPezkuwichain::force_xcm_version(asset_hub_zagros_global_location(), XCM_VERSION);
 	BridgeHubPezkuwichain::force_xcm_version(bridge_hub_zagros_location(), XCM_VERSION);
 
-	// send TYRs, use them for fees
+	// send HEZ, use them for fees
 	let local_fee_asset: Asset = (roc_at_asset_hub_pezkuwichain.clone(), roc_fee_amount).into();
 	let remote_fee_on_zagros: Asset =
 		(roc_at_asset_hub_pezkuwichain.clone(), roc_fee_amount).into();

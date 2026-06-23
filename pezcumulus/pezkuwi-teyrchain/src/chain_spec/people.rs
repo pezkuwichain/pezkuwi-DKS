@@ -134,7 +134,7 @@ pub mod pezkuwichain {
 	pub fn genesis_config() -> GenericChainSpec {
 		let mut properties = pezsc_chain_spec::Properties::new();
 		properties.insert("ss58Format".into(), 42.into());
-		properties.insert("tokenSymbol".into(), "TYR".into());
+		properties.insert("tokenSymbol".into(), "HEZ".into());
 		properties.insert("tokenDecimals".into(), 12.into());
 
 		GenericChainSpec::builder(
@@ -158,7 +158,7 @@ pub mod pezkuwichain {
 	) -> GenericChainSpec {
 		let mut properties = pezsc_chain_spec::Properties::new();
 		properties.insert("ss58Format".into(), 42.into());
-		properties.insert("tokenSymbol".into(), "TYR".into());
+		properties.insert("tokenSymbol".into(), "HEZ".into());
 		properties.insert("tokenDecimals".into(), 12.into());
 
 		GenericChainSpec::builder(

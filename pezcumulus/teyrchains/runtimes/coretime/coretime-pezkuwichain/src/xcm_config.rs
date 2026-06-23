@@ -186,7 +186,7 @@ pub type WaivedLocations = (
 );
 
 /// Cases where a remote origin is accepted as trusted Teleporter for a given asset:
-/// - TYR with the parent Relay Chain and sibling teyrchains.
+/// - HEZ with the parent Relay Chain and sibling teyrchains.
 pub type TrustedTeleporters = ConcreteAssetFromSystem<RocRelayLocation>;
 
 pub struct XcmConfig;
@@ -196,7 +196,7 @@ impl xcm_executor::Config for XcmConfig {
 	type XcmEventEmitter = PezkuwiXcm;
 	type AssetTransactor = AssetTransactors;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	// Coretime chain does not recognize a reserve location for any asset. Users must teleport TYR
+	// Coretime chain does not recognize a reserve location for any asset. Users must teleport HEZ
 	// where allowed (e.g. with the Relay Chain).
 	type IsReserve = ();
 	type IsTeleporter = TrustedTeleporters;

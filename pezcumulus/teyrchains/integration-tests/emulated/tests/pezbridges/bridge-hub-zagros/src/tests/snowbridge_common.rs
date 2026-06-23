@@ -434,7 +434,7 @@ pub fn erc20_token_location(token_id: H160) -> Location {
 	)
 }
 
-// TYR and wTYR
+// HEZ and wTYR
 pub(crate) fn roc_at_ah_pezkuwichain() -> Location {
 	Parent.into()
 }
@@ -507,7 +507,7 @@ pub fn register_roc_on_bh() {
 		type RuntimeEvent = <BridgeHubZagros as Chain>::RuntimeEvent;
 		type RuntimeOrigin = <BridgeHubZagros as Chain>::RuntimeOrigin;
 
-		// Register TYR on BH
+		// Register HEZ on BH
 		assert_ok!(<BridgeHubZagros as BridgeHubZagrosPallet>::EthereumSystem::register_token(
 			RuntimeOrigin::root(),
 			Box::new(VersionedLocation::from(bridged_roc_at_ah_zagros())),

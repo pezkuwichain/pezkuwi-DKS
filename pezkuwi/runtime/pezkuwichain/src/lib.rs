@@ -924,7 +924,7 @@ where
 }
 
 parameter_types! {
-	pub Prefix: &'static [u8] = b"Pay TYRs to the Pezkuwichain account:";
+	pub Prefix: &'static [u8] = b"Pay HEZ to the Pezkuwichain account:";
 }
 
 impl claims::Config for Runtime {
@@ -2573,7 +2573,7 @@ pezsp_api::impl_runtime_apis! {
 					Ok(AssetHub::get())
 				}
 				fn worst_case_holding(_depositable_count: u32) -> Assets {
-					// Pezkuwichain only knows about TYR
+					// Pezkuwichain only knows about HEZ
 					vec![Asset{
 						id: AssetId(TokenLocation::get()),
 						fun: Fungible(1_000_000 * UNITS),

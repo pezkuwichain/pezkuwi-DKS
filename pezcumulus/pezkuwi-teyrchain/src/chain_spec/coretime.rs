@@ -162,7 +162,7 @@ pub mod pezkuwichain {
 		// Pezkuwichain defaults
 		let mut properties = pezsc_chain_spec::Properties::new();
 		properties.insert("ss58Format".into(), 42.into());
-		properties.insert("tokenSymbol".into(), "TYR".into());
+		properties.insert("tokenSymbol".into(), "HEZ".into());
 		properties.insert("tokenDecimals".into(), 12.into());
 
 		let chain_type = runtime_type.into();

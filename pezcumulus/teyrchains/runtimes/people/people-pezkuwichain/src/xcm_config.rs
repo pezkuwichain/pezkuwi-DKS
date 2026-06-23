@@ -61,7 +61,7 @@ parameter_types! {
 	pub const MaxAssetsIntoHolding: u32 = 64;
 	pub const GovernanceLocation: Location = Location::parent();
 	pub const FellowshipLocation: Location = Location::parent();
-	/// The asset ID for the asset that we use to pay for message delivery fees. Just TYR.
+	/// The asset ID for the asset that we use to pay for message delivery fees. Just HEZ.
 	pub FeeAssetId: AssetId = AssetId(RelayLocation::get());
 	/// The base fee for the message delivery fees.
 	pub const BaseDeliveryFee: u128 = CENTS.saturating_mul(3);
@@ -225,10 +225,10 @@ impl xcm_executor::Config for XcmConfig {
 	type XcmEventEmitter = PezkuwiXcm;
 	type AssetTransactor = FungibleTransactor;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	// People chain does not recognize a reserve location for any asset. Users must teleport TYR
+	// People chain does not recognize a reserve location for any asset. Users must teleport HEZ
 	// where allowed (e.g. with the Relay Chain).
 	type IsReserve = ();
-	/// Only allow teleportation of TYR.
+	/// Only allow teleportation of HEZ.
 	type IsTeleporter = ConcreteAssetFromSystem<RelayLocation>;
 	type UniversalLocation = UniversalLocation;
 	type Barrier = Barrier;

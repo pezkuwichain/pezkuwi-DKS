@@ -36,7 +36,7 @@ use alloc::format;
 use alloc::{vec, vec::Vec};
 use pezframe_support::build_struct_json_patch;
 use pezkuwi_primitives::{AccountId, AssignmentId, SchedulerParams, ValidatorId};
-use pezkuwichain_runtime_constants::currency::UNITS as TYR;
+use pezkuwichain_runtime_constants::currency::UNITS as HEZ;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_babe::AuthorityId as BabeId;
 use pezsp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId;
@@ -50,16 +50,16 @@ use pezsp_keyring::Sr25519Keyring;
 // ============================================================================
 
 /// Founder allocation: 10% = 20,000,000 HEZ
-pub const HEZ_FOUNDER_ALLOCATION: u128 = 20_000_000 * TYR;
+pub const HEZ_FOUNDER_ALLOCATION: u128 = 20_000_000 * HEZ;
 
 /// Presale allocation: 50% = 100,000,000 HEZ
-pub const HEZ_PRESALE_ALLOCATION: u128 = 100_000_000 * TYR;
+pub const HEZ_PRESALE_ALLOCATION: u128 = 100_000_000 * HEZ;
 
 /// Kurdistan Treasury allocation: 20% = 40,000,000 HEZ
-pub const HEZ_TREASURY_ALLOCATION: u128 = 40_000_000 * TYR;
+pub const HEZ_TREASURY_ALLOCATION: u128 = 40_000_000 * HEZ;
 
 /// Airdrop allocation: 20% = 40,000,000 HEZ
-pub const HEZ_AIRDROP_ALLOCATION: u128 = 40_000_000 * TYR;
+pub const HEZ_AIRDROP_ALLOCATION: u128 = 40_000_000 * HEZ;
 
 // ===========================================================================
 // COMPILE-TIME VALIDATION: Ensure allocations sum to 200M genesis supply
@@ -69,7 +69,7 @@ const _: () = assert!(
 		+ HEZ_PRESALE_ALLOCATION
 		+ HEZ_TREASURY_ALLOCATION
 		+ HEZ_AIRDROP_ALLOCATION
-		== 200_000_000 * TYR,
+		== 200_000_000 * HEZ,
 	"HEZ allocations MUST sum to genesis supply (200M)"
 );
 
@@ -195,7 +195,7 @@ fn hez_allocations_sum_to_200m() {
 		+ HEZ_PRESALE_ALLOCATION
 		+ HEZ_TREASURY_ALLOCATION
 		+ HEZ_AIRDROP_ALLOCATION;
-	assert_eq!(total, 200_000_000 * TYR, "HEZ total supply must equal 200M");
+	assert_eq!(total, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
 }
 
 fn pezkuwichain_testnet_genesis(
@@ -214,7 +214,7 @@ fn pezkuwichain_testnet_genesis(
 ) -> serde_json::Value {
 	let endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(testnet_accounts);
 
-	const ENDOWMENT: u128 = 1_000_000 * TYR;
+	const ENDOWMENT: u128 = 1_000_000 * HEZ;
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
@@ -470,8 +470,8 @@ fn pezkuwichain_staging_testnet_config_genesis() -> serde_json::Value {
 		),
 	]);
 
-	const ENDOWMENT: u128 = 1_000_000 * TYR;
-	const STASH: u128 = 100 * TYR;
+	const ENDOWMENT: u128 = 1_000_000 * HEZ;
+	const STASH: u128 = 100 * HEZ;
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
@@ -985,7 +985,7 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	]);
 
 	// Validator stash amount
-	const STASH: u128 = 100 * TYR;
+	const STASH: u128 = 100 * HEZ;
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
@@ -1091,13 +1091,13 @@ fn pezkuwichain_mainnet_simulation_genesis() -> serde_json::Value {
 		),
 	]);
 
-	const STASH: u128 = 100 * TYR;
+	const STASH: u128 = 100 * HEZ;
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
 			balances: vec![
 				// Founder gets enough balance to pay for upgrades + testing
-				(founder_account.clone(), 1_000_000 * TYR),
+				(founder_account.clone(), 1_000_000 * HEZ),
 			]
 			.into_iter()
 			.chain(initial_authorities.iter().map(|x| (x.0.clone(), STASH * 2)))

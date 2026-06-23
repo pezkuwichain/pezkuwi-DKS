@@ -21,10 +21,10 @@ use pezframe_support::{
 use pezkuwi_runtime_common::impls::VersionedLocatableAsset;
 use pezkuwichain_runtime_constants::currency::GRAND;
 
-// Fund Treasury account on Asset Hub from Treasury account on Relay Chain with TYRs.
+// Fund Treasury account on Asset Hub from Treasury account on Relay Chain with HEZ.
 #[test]
 fn spend_roc_on_asset_hub() {
-	// initial treasury balance on Asset Hub in TYRs.
+	// initial treasury balance on Asset Hub in HEZ.
 	let treasury_balance = 9_000 * GRAND;
 	// the balance spend on Asset Hub.
 	let treasury_spend_balance = 1_000 * GRAND;
@@ -42,7 +42,7 @@ fn spend_roc_on_asset_hub() {
 		type Balances = <Pezkuwichain as PezkuwichainPallet>::Balances;
 		type Treasury = <Pezkuwichain as PezkuwichainPallet>::Treasury;
 
-		// Fund Treasury account on Asset Hub with TYRs.
+		// Fund Treasury account on Asset Hub with HEZ.
 
 		let root = <Pezkuwichain as Chain>::RuntimeOrigin::root();
 		let treasury_account = Treasury::account_id();

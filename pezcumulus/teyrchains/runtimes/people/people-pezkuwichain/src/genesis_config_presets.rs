@@ -29,7 +29,7 @@ use pezsp_core::{crypto::UncheckedInto, H256};
 use pezsp_genesis_builder::PresetId;
 use pezsp_keyring::Sr25519Keyring;
 use testnet_teyrchains_constants::pezkuwichain::{
-	currency::UNITS as TYR, xcm_version::SAFE_XCM_VERSION,
+	currency::UNITS as HEZ, xcm_version::SAFE_XCM_VERSION,
 };
 use teyrchains_common::{AccountId, AuraId};
 
@@ -162,7 +162,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				(Sr25519Keyring::Bob.to_account_id(), Sr25519Keyring::Bob.public().into()),
 			],
 			Sr25519Keyring::well_known().map(|x| x.to_account_id()).collect(),
-			TYR * 1_000_000,
+			HEZ * 1_000_000,
 			PEOPLE_PARA_ID,
 			// Founding citizens: Alice and Bob are founding citizens for testing
 			vec![
@@ -185,7 +185,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				Sr25519Keyring::AliceStash.to_account_id(),
 				Sr25519Keyring::BobStash.to_account_id(),
 			],
-			TYR * 1_000_000,
+			HEZ * 1_000_000,
 			PEOPLE_PARA_ID,
 			// Founding citizen: Alice is the founding citizen for dev
 			vec![(Sr25519Keyring::Alice.to_account_id(), default_founding_citizen_identity_hash())],

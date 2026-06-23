@@ -40,7 +40,7 @@ use pezpallet_bridge_messages::LaneIdOf;
 use pezpallet_bridge_relayers::extension::{
 	BridgeRelayersTransactionExtension, WithMessagesExtensionConfig,
 };
-use testnet_teyrchains_constants::pezkuwichain::currency::UNITS as TYR;
+use testnet_teyrchains_constants::pezkuwichain::currency::UNITS as HEZ;
 use teyrchains_common::xcm_config::{AllSiblingSystemTeyrchains, RelayOrOtherSystemTeyrchains};
 use xcm::{
 	latest::{prelude::*, ZAGROS_GENESIS_HASH},
@@ -70,7 +70,7 @@ parameter_types! {
 		]
 	);
 
-	pub storage BridgeDeposit: Balance = 5 * TYR;
+	pub storage BridgeDeposit: Balance = 5 * HEZ;
 }
 
 /// Proof of messages, coming from Zagros.
@@ -270,12 +270,12 @@ mod tests {
 	///
 	/// We want this tip to be large enough (delivery transactions with more messages = less
 	/// operational costs and a faster bridge), so this value should be significant.
-	const FEE_BOOST_PER_MESSAGE: Balance = 2 * TYR;
+	const FEE_BOOST_PER_MESSAGE: Balance = 2 * HEZ;
 
 	// see `FEE_BOOST_PER_MESSAGE` comment
-	const FEE_BOOST_PER_RELAY_HEADER: Balance = 2 * TYR;
+	const FEE_BOOST_PER_RELAY_HEADER: Balance = 2 * HEZ;
 	// see `FEE_BOOST_PER_MESSAGE` comment
-	const FEE_BOOST_PER_TEYRCHAIN_HEADER: Balance = 2 * TYR;
+	const FEE_BOOST_PER_TEYRCHAIN_HEADER: Balance = 2 * HEZ;
 
 	#[test]
 	fn ensure_bridge_hub_pezkuwichain_message_lane_weights_are_correct() {

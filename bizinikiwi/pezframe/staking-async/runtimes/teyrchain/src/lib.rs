@@ -2061,7 +2061,7 @@ impl_runtime_apis! {
 					Asset { fun: Fungible(UNITS), id: AssetId(ZagrosLocation::get()) },
 				));
 				pub const CheckedAccount: Option<(AccountId, xcm_builder::MintLocation)> = None;
-				// AssetHubNextZagros trusts AssetHubPezkuwichain as reserve for TYRs
+				// AssetHubNextZagros trusts AssetHubPezkuwichain as reserve for HEZ
 				pub TrustedReserve: Option<(Location, Asset)> = Some(
 					(
 						xcm_config::bridging::to_pezkuwichain::AssetHubPezkuwichain::get(),

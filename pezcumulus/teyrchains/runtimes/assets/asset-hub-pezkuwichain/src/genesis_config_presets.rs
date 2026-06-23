@@ -32,7 +32,7 @@ use pezsp_core::crypto::UncheckedInto;
 use pezsp_genesis_builder::PresetId;
 use pezsp_keyring::Sr25519Keyring;
 use testnet_teyrchains_constants::pezkuwichain::{
-	currency::UNITS as TYR, xcm_version::SAFE_XCM_VERSION,
+	currency::UNITS, xcm_version::SAFE_XCM_VERSION,
 };
 use teyrchains_common::{AccountId, AssetIdForTrustBackedAssets, AuraId};
 use xcm::latest::prelude::*;
@@ -62,16 +62,16 @@ pub const PEZ_DECIMALS: u8 = 12;
 pub const WUSDT_DECIMALS: u8 = 6;
 
 /// Treasury allocation: 20.25% = 1,012,500,000 PEZ
-pub const PEZ_TREASURY_ALLOCATION: Balance = 1_012_500_000 * TYR;
+pub const PEZ_TREASURY_ALLOCATION: Balance = 1_012_500_000 * UNITS;
 
 /// Founder allocation: 1.875% = 93,750,000 PEZ
-pub const PEZ_FOUNDER_ALLOCATION: Balance = 93_750_000 * TYR;
+pub const PEZ_FOUNDER_ALLOCATION: Balance = 93_750_000 * UNITS;
 
 /// Presale allocation: 1.875% = 93,750,000 PEZ
-pub const PEZ_PRESALE_ALLOCATION: Balance = 93_750_000 * TYR;
+pub const PEZ_PRESALE_ALLOCATION: Balance = 93_750_000 * UNITS;
 
 /// Rewards pool: 76% = 3,800,000,000 PEZ (distributed via sentetik halving)
-pub const PEZ_REWARDS_POOL: Balance = 3_800_000_000 * TYR;
+pub const PEZ_REWARDS_POOL: Balance = 3_800_000_000 * UNITS;
 
 /// Total PEZ supply: 5 Billion (derived from allocations)
 pub const PEZ_TOTAL_SUPPLY: Balance =
@@ -79,7 +79,7 @@ pub const PEZ_TOTAL_SUPPLY: Balance =
 
 // Compile-time verification that total equals expected 5 billion
 const _: () = assert!(
-	PEZ_TOTAL_SUPPLY == 5_000_000_000 * TYR,
+	PEZ_TOTAL_SUPPLY == 5_000_000_000 * UNITS,
 	"PEZ allocations must sum to exactly 5 billion tokens"
 );
 
@@ -322,7 +322,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 					Sr25519Keyring::AliceStash.to_account_id(),
 					Sr25519Keyring::BobStash.to_account_id(),
 				],
-				TYR * 1_000_000,
+				UNITS * 1_000_000,
 				1000.into(),
 				treasury_account,
 				founder_account,

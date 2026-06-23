@@ -27,13 +27,13 @@ fn main() {
 #[cfg(all(feature = "metadata-hash", feature = "std"))]
 fn main() {
 	bizinikiwi_wasm_builder::WasmBuilder::init_with_defaults()
-		.enable_metadata_hash("TYR", 12)
+		.enable_metadata_hash("HEZ", 12)
 		.build();
 
 	bizinikiwi_wasm_builder::WasmBuilder::init_with_defaults()
 		.set_file_name("fast_runtime_binary.rs")
 		.enable_feature("fast-runtime")
-		.enable_metadata_hash("TYR", 12)
+		.enable_metadata_hash("HEZ", 12)
 		.build();
 }
 

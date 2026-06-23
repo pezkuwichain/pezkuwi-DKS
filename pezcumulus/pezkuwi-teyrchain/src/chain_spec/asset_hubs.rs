@@ -71,7 +71,7 @@ pub fn asset_hub_zagros_config() -> GenericChainSpec {
 pub fn asset_hub_pezkuwichain_development_config() -> GenericChainSpec {
 	let mut properties = pezsc_chain_spec::Properties::new();
 	properties.insert("ss58Format".into(), 42.into());
-	properties.insert("tokenSymbol".into(), "TYR".into());
+	properties.insert("tokenSymbol".into(), "HEZ".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 	asset_hub_pezkuwichain_like_development_config(
 		properties,
@@ -101,7 +101,7 @@ fn asset_hub_pezkuwichain_like_development_config(
 pub fn asset_hub_pezkuwichain_local_config() -> GenericChainSpec {
 	let mut properties = pezsc_chain_spec::Properties::new();
 	properties.insert("ss58Format".into(), 42.into());
-	properties.insert("tokenSymbol".into(), "TYR".into());
+	properties.insert("tokenSymbol".into(), "HEZ".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 	asset_hub_pezkuwichain_like_local_config(
 		properties,
@@ -130,7 +130,7 @@ fn asset_hub_pezkuwichain_like_local_config(
 
 pub fn asset_hub_pezkuwichain_genesis_config() -> GenericChainSpec {
 	let mut properties = pezsc_chain_spec::Properties::new();
-	properties.insert("tokenSymbol".into(), "TYR".into());
+	properties.insert("tokenSymbol".into(), "HEZ".into());
 	properties.insert("tokenDecimals".into(), 12.into());
 	properties.insert("ss58Format".into(), 42.into());
 	GenericChainSpec::builder(

@@ -321,7 +321,7 @@ pub type TrustedReserves = (
 
 /// Cases where a remote origin is accepted as trusted Teleporter for a given asset:
 ///
-/// - TYR with the parent Relay Chain and sibling system teyrchains; and
+/// - HEZ with the parent Relay Chain and sibling system teyrchains; and
 /// - Sibling teyrchains' assets from where they originate (as `ForeignCreators`).
 pub type TrustedTeleporters = (
 	ConcreteAssetFromSystem<TokenLocation>,
@@ -518,7 +518,7 @@ pub mod bridging {
 		/// 1) an approximate cost of XCM execution (`ExportMessage` and surroundings) at Pezkuwichain bridge hub;
 		///
 		/// 2) the approximate cost of Pezkuwichain -> Zagros message delivery transaction on Zagros Bridge Hub,
-		///    converted into TYRs using 1:1 conversion rate;
+		///    converted into HEZ using 1:1 conversion rate;
 		///
 		/// 3) the approximate cost of Pezkuwichain -> Zagros message confirmation transaction on Pezkuwichain Bridge Hub.
 		pub storage XcmBridgeHubRouterBaseFee: Balance =
@@ -616,7 +616,7 @@ pub mod bridging {
 
 		parameter_types! {
 			/// User fee for ERC20 token transfer back to Ethereum.
-			/// (initially was calculated by test `OutboundQueue::calculate_fees` - ETH/TYR 1/400 and fee_per_gas 20 GWEI = 2200698000000 + *25%)
+			/// (initially was calculated by test `OutboundQueue::calculate_fees` - ETH/HEZ 1/400 and fee_per_gas 20 GWEI = 2200698000000 + *25%)
 			/// Needs to be more than fee calculated from DefaultFeeConfig FeeConfigRecord in snowbridge:teyrchain/pallets/outbound-queue/src/lib.rs
 			/// Pezkuwi uses 10 decimals, Dicle and Pezkuwichain 12 decimals.
 			pub const DefaultBridgeHubEthereumBaseFee: Balance = 3_833_568_200_000;

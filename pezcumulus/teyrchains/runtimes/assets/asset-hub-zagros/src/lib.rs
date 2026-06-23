@@ -2469,7 +2469,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 						&account,
 						<Balances as Inspect<_>>::minimum_balance(),
 					));
-					// register foreign TYRs
+					// register foreign HEZ
 					assert_ok!(ForeignAssets::force_create(
 						RuntimeOrigin::root(),
 						roc_id.clone().into(),

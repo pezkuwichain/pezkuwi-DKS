@@ -5,8 +5,8 @@
 	  - [Init bridge and run relayer between BridgeHubpezkuwichain and
 		BridgeHubzagros](#init-bridge-and-run-relayer-between-bridgehubpezkuwichain-and-bridgehubzagros)
 	  - [Initialize configuration for transfer asset over bridge
-		(TYRs/WNDs)](#initialize-configuration-for-transfer-asset-over-bridge-rocswnds)
-	  - [Send messages - transfer asset over bridge (TYRs/WNDs)](#send-messages---transfer-asset-over-bridge-rocswnds)
+		(HEZ/WNDs)](#initialize-configuration-for-transfer-asset-over-bridge-rocswnds)
+	  - [Send messages - transfer asset over bridge (HEZ/WNDs)](#send-messages---transfer-asset-over-bridge-rocswnds)
 	  - [Claim relayer's rewards on BridgeHubpezkuwichain and
 		BridgeHubzagros](#claim-relayers-rewards-on-bridgehubpezkuwichain-and-bridgehubzagros)
   - [How to test local BridgeHubDicle/BridgeHubPezkuwiChain](#how-to-test-local-bridgehubdiclebridgehubpezkuwi)
@@ -127,10 +127,10 @@ cd <pezkuwi-sdk-git-repo-dir>
 - zagros teyrchain: - https://pezkuwichain.io/?rpc=ws%3A%2F%2F127.0.0.1%3A8945#/chainstate - Pezpallet:
   **bridgepezkuwichainTeyrchains** - Keys: **parasInfo(None)**
 
-### Initialize configuration for transfer asset over bridge (TYRs/WNDs)
+### Initialize configuration for transfer asset over bridge (HEZ/WNDs)
 
 This initialization does several things:
-- creates `ForeignAssets` for wrappedTYRs/wrappedWNDs
+- creates `ForeignAssets` for wrappedHEZ/wrappedWNDs
 - drips SA for AssetHubpezkuwichain on AssetHubzagros (and vice versa) which holds reserved assets on source chains
 ```
 cd <pezkuwi-sdk-git-repo-dir>
@@ -141,13 +141,13 @@ cd <pezkuwi-sdk-git-repo-dir>
 ./bridges/testing/environments/pezkuwichain-zagros/bridges_pezkuwichain_zagros.sh init-bridge-hub-zagros-local
 ```
 
-### Send messages - transfer asset over bridge (TYRs/WNDs)
+### Send messages - transfer asset over bridge (HEZ/WNDs)
 
 Do reserve-backed transfers:
 ```
 cd <pezkuwi-sdk-git-repo-dir>
 
-# TYRs from pezkuwichain's Asset Hub to zagros's.
+# HEZ from pezkuwichain's Asset Hub to zagros's.
 ./bridges/testing/environments/pezkuwichain-zagros/bridges_pezkuwichain_zagros.sh reserve-transfer-assets-from-asset-hub-pezkuwichain-local
 ```
 ```
@@ -174,7 +174,7 @@ cd <pezkuwi-sdk-git-repo-dir>
 ```
 cd <pezkuwi-sdk-git-repo-dir>
 
-# wrappedTYRs from zagros's Asset Hub to pezkuwichain's.
+# wrappedHEZ from zagros's Asset Hub to pezkuwichain's.
 ./bridges/testing/environments/pezkuwichain-zagros/bridges_pezkuwichain_zagros.sh withdraw-reserve-assets-from-asset-hub-zagros-local
 ```
 

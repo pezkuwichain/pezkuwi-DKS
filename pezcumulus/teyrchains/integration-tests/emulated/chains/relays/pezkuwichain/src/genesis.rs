@@ -28,11 +28,11 @@ use pezkuwi_primitives::{AssignmentId, ValidatorId};
 use emulated_integration_tests_common::{
 	accounts, build_genesis_storage, get_host_config, validators,
 };
-use pezkuwichain_runtime_constants::currency::UNITS as TYR;
+use pezkuwichain_runtime_constants::currency::UNITS as HEZ;
 use teyrchains_common::Balance;
 
 pub const ED: Balance = pezkuwichain_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
-const ENDOWMENT: u128 = 1_000_000 * TYR;
+const ENDOWMENT: u128 = 1_000_000 * HEZ;
 
 fn session_keys(
 	babe: BabeId,

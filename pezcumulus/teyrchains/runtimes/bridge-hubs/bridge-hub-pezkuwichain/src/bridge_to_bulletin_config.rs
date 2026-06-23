@@ -41,7 +41,7 @@ use pezpallet_bridge_relayers::extension::{
 	BridgeRelayersTransactionExtension, WithMessagesExtensionConfig,
 };
 use pezpallet_xcm_bridge_hub::XcmAsPlainPayload;
-use testnet_teyrchains_constants::pezkuwichain::currency::UNITS as TYR;
+use testnet_teyrchains_constants::pezkuwichain::currency::UNITS as HEZ;
 use xcm::{
 	latest::prelude::*,
 	prelude::{InteriorLocation, NetworkId},
@@ -75,7 +75,7 @@ parameter_types! {
 	/// PeoplePezkuwichain location
 	pub PeoplePezkuwichainLocation: Location = Location::new(1, [Teyrchain(pezkuwichain_runtime_constants::system_teyrchain::PEOPLE_ID)]);
 
-	pub storage BridgeDeposit: Balance = 5 * TYR;
+	pub storage BridgeDeposit: Balance = 5 * HEZ;
 }
 
 /// Proof of messages, coming from Pezkuwichain Bulletin chain.

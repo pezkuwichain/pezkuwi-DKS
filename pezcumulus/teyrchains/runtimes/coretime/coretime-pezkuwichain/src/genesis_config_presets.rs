@@ -22,7 +22,7 @@ use pezframe_support::build_struct_json_patch;
 use pezsp_genesis_builder::PresetId;
 use pezsp_keyring::Sr25519Keyring;
 use testnet_teyrchains_constants::pezkuwichain::{
-	currency::UNITS as TYR, xcm_version::SAFE_XCM_VERSION,
+	currency::UNITS as HEZ, xcm_version::SAFE_XCM_VERSION,
 };
 use teyrchains_common::{AccountId, AuraId};
 
@@ -71,7 +71,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				(Sr25519Keyring::Bob.to_account_id(), Sr25519Keyring::Bob.public().into()),
 			],
 			Sr25519Keyring::well_known().map(|x| x.to_account_id()).collect(),
-			TYR * 1_000_000,
+			HEZ * 1_000_000,
 			CORETIME_PARA_ID,
 		),
 		pezsp_genesis_builder::DEV_RUNTIME_PRESET => coretime_pezkuwichain_genesis(
@@ -83,7 +83,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				Sr25519Keyring::AliceStash.to_account_id(),
 				Sr25519Keyring::BobStash.to_account_id(),
 			],
-			TYR * 1_000_000,
+			HEZ * 1_000_000,
 			CORETIME_PARA_ID,
 		),
 		_ => return None,

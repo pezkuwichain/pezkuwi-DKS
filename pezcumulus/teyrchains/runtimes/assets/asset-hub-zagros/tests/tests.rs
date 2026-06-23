@@ -1102,7 +1102,7 @@ fn receive_reserve_asset_deposited_roc_from_asset_hub_pezkuwichain_fees_paid_by_
 			ExistentialDeposit::get(),
 			AccountId::from([73; 32]),
 			block_author_account.clone(),
-			// receiving TYRs
+			// receiving HEZ
 			foreign_asset_create_params,
 			1000000000000,
 			|| {
@@ -1131,7 +1131,7 @@ fn receive_reserve_asset_deposited_roc_from_asset_hub_pezkuwichain_fees_paid_by_
 				);
 			},
 			|| {
-				// `SwapFirstAssetTrader` - staking pot receives xcm fees in TYRs
+				// `SwapFirstAssetTrader` - staking pot receives xcm fees in HEZ
 				assert!(
 					Balances::free_balance(&staking_pot) > ExistentialDeposit::get()
 				);
@@ -1182,7 +1182,7 @@ fn receive_reserve_asset_deposited_roc_from_asset_hub_pezkuwichain_fees_paid_by_
 		ExistentialDeposit::get(),
 		AccountId::from([73; 32]),
 		block_author_account.clone(),
-		// receiving TYRs
+		// receiving HEZ
 		foreign_asset_create_params,
 		1000000000000,
 		|| {

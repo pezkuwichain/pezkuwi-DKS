@@ -148,7 +148,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				dev_stakers,
 				1000.into(),
 				vec![
-			// bridged TYR
+			// bridged HEZ
 			(
 				Location::new(2, [GlobalConsensus(PezkuwichainNetwork::get())]),
 				GlobalConsensusConvertsFor::<UniversalLocation, AccountId>::convert_location(
@@ -159,7 +159,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			),
 			],
 				vec![
-					// bridged TYR to Bob
+					// bridged HEZ to Bob
 					(
 						Location::new(2, [GlobalConsensus(PezkuwichainNetwork::get())]),
 						Sr25519Keyring::Bob.to_account_id(),

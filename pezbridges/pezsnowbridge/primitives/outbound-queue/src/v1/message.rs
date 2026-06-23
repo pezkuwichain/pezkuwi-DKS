@@ -92,7 +92,7 @@ pub enum Command {
 	SetPricingParameters {
 		// ETH/HEZ exchange rate
 		exchange_rate: UD60x18,
-		// Cost of delivering a message from Ethereum to BridgeHub, in TYR/DCL/HEZ
+		// Cost of delivering a message from Ethereum to BridgeHub, in HEZ/DCL/ZGR
 		delivery_cost: u128,
 		// Fee multiplier
 		multiplier: UD60x18,

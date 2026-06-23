@@ -232,7 +232,7 @@ impl xcm_executor::Config for XcmConfig {
 	type XcmEventEmitter = PezkuwiXcm;
 	type AssetTransactor = AssetTransactors;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	// Coretime chain does not recognize a reserve location for any asset. Users must teleport TYR
+	// Coretime chain does not recognize a reserve location for any asset. Users must teleport ZGR
 	// where allowed (e.g. with the Relay Chain).
 	type IsReserve = ();
 	type IsTeleporter = TrustedTeleporters;

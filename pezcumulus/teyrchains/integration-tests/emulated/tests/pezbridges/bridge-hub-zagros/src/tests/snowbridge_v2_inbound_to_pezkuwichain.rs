@@ -472,7 +472,7 @@ fn send_roc_from_ethereum_to_pezkuwichain() {
 		));
 	});
 
-	// fund the AHW's SA on AHR with the TYR tokens held in reserve
+	// fund the AHW's SA on AHR with the HEZ tokens held in reserve
 	let sov_ahw_on_ahr =
 		AssetHubPezkuwichain::sovereign_account_of_teyrchain_on_other_global_consensus(
 			ByGenesis(ZAGROS_GENESIS_HASH),
@@ -581,14 +581,14 @@ fn send_roc_from_ethereum_to_pezkuwichain() {
 		assert_expected_events!(
 			AssetHubPezkuwichain,
 			vec![
-				// TYR is withdrawn from AHW's SA on AHR
+				// HEZ is withdrawn from AHW's SA on AHR
 				RuntimeEvent::Balances(
 					pezpallet_balances::Event::Burned { who, amount }
 				) => {
 					who: *who == sov_ahw_on_ahr,
 					amount: *amount == TOKEN_AMOUNT,
 				},
-				// TYRs deposited to beneficiary
+				// HEZ deposited to beneficiary
 				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
 					who: *who == AssetHubPezkuwichainReceiver::get(),
 				},
