@@ -108,14 +108,14 @@ impl StatementKind {
 	fn to_text(self) -> &'static [u8] {
 		match self {
 			StatementKind::Regular => {
-				&b"I hereby agree to the terms of the statement whose SHA-256 multihash is \
-				Qmc1XYqT6S39WNp2UeiRUrZichUWUPpGEThDE6dAb3f6Ny. (This may be found at the URL: \
-				https://statement.polkadot.network/regular.html)"[..]
+				&b"I hereby agree to the terms of the statement whose SHA-256 hash is \
+				95bf22e1fd1bbcd6a06ccac523a391a94e48c517c7db183b734ba72f955c21e8. (This may be found at the URL: \
+				https://statement.pex.network/regular.html)"[..]
 			},
 			StatementKind::Saft => {
-				&b"I hereby agree to the terms of the statement whose SHA-256 multihash is \
-				QmXEkMahfhHJPzT3RjkXiZVFi77ZeVeuxtAjhojGRNYckz. (This may be found at the URL: \
-				https://statement.polkadot.network/saft.html)"[..]
+				&b"I hereby agree to the terms of the statement whose SHA-256 hash is \
+				3921445529820f15f000cef9f143b74194516c96873fff4a829bac0162b35c59. (This may be found at the URL: \
+				https://statement.pex.network/saft.html)"[..]
 			},
 		}
 	}
