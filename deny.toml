@@ -21,10 +21,13 @@ yanked = "warn"
 unmaintained = "none"
 ignore = [
 	# ── wasmtime ──────────────────────────────────────────────────────────────
-	# Fix requires wasmtime 42.0.2+ → cranelift-assembler-x64 0.129+ → rustc 1.91.0+
-	# Toolchain pinned to 1.88.0. Unblock when toolchain upgrades.
-	# We do NOT use Winch backend, Component Model, or 64-bit tables;
-	# most CVEs below only affect those code paths.
+	# wasmtime is pinned at 37.x (the version sc-executor-wasmtime targets). Clearing
+	# these needs wasmtime 42.0.2+ — a 5-major-version bump requiring cranelift updates
+	# and executor API adaptation, so it is a dedicated, tested effort (issue #7), not a
+	# drop-in bump; we will NOT destabilize the fund-critical executor on a whim. The
+	# toolchain (now 1.96.0) no longer blocks it. Risk is contained regardless: these
+	# CVEs only affect the Winch backend, Component Model, or 64-bit tables — none of
+	# which PezkuwiChain's executor uses.
 	"RUSTSEC-2026-0006", # wasmtime: segfault with f64.copysign on x86-64
 	"RUSTSEC-2026-0020", # wasmtime: WASI guest-controlled resource exhaustion
 	"RUSTSEC-2026-0021", # wasmtime: panic in wasi:http/types.fields
