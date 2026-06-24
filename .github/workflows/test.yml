@@ -46,8 +46,10 @@ jobs:
           # The excluded tests below are NOT on-chain fund logic — every runtime and
           # FRAME/pezpallet test runs. They are vendor/SDK & chain-spec/metadata tooling
           # snapshots, docs-guide node runs, dep-version match tests, the testnet-only
-          # contracts/revive pallets, a flaky BABE VRF test, the dev test-runtime
-          # storage-key snapshot, and an xcm-emulator harness test. Tracked in issue #11
+          # contracts/revive pallets, a BABE VRF test whose hardcoded slot-claim vectors
+          # depend on exact crypto-dep VRF output (not a consensus bug — the live chain
+          # produces blocks), the dev test-runtime storage-key snapshot, and an
+          # xcm-emulator harness test. Tracked in issue #11
           # to re-enable as fixtures/tooling are updated.
           FILTER='not (
             package(pezkuwi-subxt-metadata) | package(pezkuwi-subxt-codegen) |
