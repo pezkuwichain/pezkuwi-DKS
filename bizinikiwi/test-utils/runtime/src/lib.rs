@@ -120,7 +120,7 @@ pub fn wasm_binary_logging_disabled_unwrap() -> &'static [u8] {
 #[pezsp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("test"),
-	impl_name: alloc::borrow::Cow::Borrowed("parity-test"),
+	impl_name: alloc::borrow::Cow::Borrowed("pezkuwi-test"),
 	authoring_version: 1,
 	spec_version: 2,
 	impl_version: 2,

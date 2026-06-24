@@ -173,7 +173,7 @@ pub mod fast_runtime_binary {
 #[pezsp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("zagros"),
-	impl_name: alloc::borrow::Cow::Borrowed("parity-zagros"),
+	impl_name: alloc::borrow::Cow::Borrowed("zagros"),
 	authoring_version: 2,
 	spec_version: 1_020_001,
 	impl_version: 0,

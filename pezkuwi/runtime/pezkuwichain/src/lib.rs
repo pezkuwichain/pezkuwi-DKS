@@ -172,7 +172,7 @@ pub mod fast_runtime_binary {
 #[pezsp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("pezkuwichain"),
-	impl_name: alloc::borrow::Cow::Borrowed("parity-pezkuwichain"),
+	impl_name: alloc::borrow::Cow::Borrowed("pezkuwichain"),
 	authoring_version: 0,
 	spec_version: 1_020_007,
 	impl_version: 0,

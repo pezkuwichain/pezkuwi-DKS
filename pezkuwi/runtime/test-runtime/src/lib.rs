@@ -117,7 +117,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 #[pezsp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("pezkuwi-test-runtime"),
-	impl_name: alloc::borrow::Cow::Borrowed("parity-pezkuwi-test-runtime"),
+	impl_name: alloc::borrow::Cow::Borrowed("pezkuwi-test-runtime"),
 	authoring_version: 2,
 	spec_version: 1056,
 	impl_version: 0,

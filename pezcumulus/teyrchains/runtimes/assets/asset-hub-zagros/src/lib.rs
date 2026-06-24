@@ -145,11 +145,13 @@ impl_opaque_keys! {
 
 #[pezsp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	// Note: "westmint" is the legacy name for this chain. It has been renamed to
-	// "asset-hub-zagros". Many wallets/tools depend on the `spec_name`, so it remains "westmint"
-	// for the time being. Wallets/tools should update to treat "asset-hub-zagros" equally.
-	spec_name: alloc::borrow::Cow::Borrowed("westmint"),
-	impl_name: alloc::borrow::Cow::Borrowed("westmint"),
+	// spec_name is "asset-hub-zagros", consistent with the already-rebranded mainnet
+	// Asset Hub ("asset-hub-pezkuwichain"). The upstream legacy name was "westmint";
+	// it is dropped here for full independence. This is a testnet identity change that
+	// takes effect via a runtime upgrade — tooling keyed on the old "westmint" name
+	// for the Zagros Asset Hub must update.
+	spec_name: alloc::borrow::Cow::Borrowed("asset-hub-zagros"),
+	impl_name: alloc::borrow::Cow::Borrowed("asset-hub-zagros"),
 	authoring_version: 1,
 	spec_version: 1_020_004,
 	impl_version: 0,
