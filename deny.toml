@@ -45,6 +45,12 @@ ignore = [
 	# No custom logger in our stack. No fixed version available yet.
 	"RUSTSEC-2026-0097", # rand: unsound with custom logger using rand::rng()
 
+	# ── memmap2 ───────────────────────────────────────────────────────────────
+	# Unsound unchecked pointer-offset in memory-mapping. Host-side only — memmap2
+	# is not reachable from the WASM runtime (no mmap in WASM), so it cannot affect
+	# on-chain/fund logic. Transitive dep; no fixed release for the pinned versions.
+	"RUSTSEC-2026-0186", # memmap2: unchecked pointer offset (unsound, host-side)
+
 	# ── webpki ────────────────────────────────────────────────────────────────
 	# Name-constraints and CRL parsing bugs in transitive webpki dep.
 	# We do not use CRLs or rely on certificate name constraints in our P2P/RPC stack.

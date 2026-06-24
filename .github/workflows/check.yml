@@ -65,3 +65,20 @@ jobs:
             -p asset-hub-zagros-runtime \
             -p people-pezkuwichain-runtime \
             -p people-zagros-runtime
+
+  # The runtimes must also build with the try-runtime feature — this is what makes
+  # safe storage migrations possible, a fund-critical gate before any upgrade. It is
+  # light (-p runtimes only), so it stays on the every-push fast path. The heavy
+  # full-workspace suites (tests, clippy, benches, doc-tests) run nightly in test.yml.
+  check-try-runtime:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, substrate-build]
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          cargo check --locked --features try-runtime \
+            -p pezkuwichain-runtime -p zagros-runtime \
+            -p asset-hub-pezkuwichain-runtime -p asset-hub-zagros-runtime \
+            -p people-pezkuwichain-runtime -p people-zagros-runtime

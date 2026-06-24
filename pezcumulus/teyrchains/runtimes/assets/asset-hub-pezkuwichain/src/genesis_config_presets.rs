@@ -31,9 +31,7 @@ use pezframe_support::build_struct_json_patch;
 use pezsp_core::crypto::UncheckedInto;
 use pezsp_genesis_builder::PresetId;
 use pezsp_keyring::Sr25519Keyring;
-use testnet_teyrchains_constants::pezkuwichain::{
-	currency::UNITS, xcm_version::SAFE_XCM_VERSION,
-};
+use testnet_teyrchains_constants::pezkuwichain::{currency::UNITS, xcm_version::SAFE_XCM_VERSION};
 use teyrchains_common::{AccountId, AssetIdForTrustBackedAssets, AuraId};
 use xcm::latest::prelude::*;
 use xcm_builder::GlobalConsensusConvertsFor;
