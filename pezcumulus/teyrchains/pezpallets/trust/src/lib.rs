@@ -361,19 +361,19 @@ pub mod pezpallet {
 			Ok(())
 		}
 
-		/// Periyodik güncellemeyi başlatan function
+		/// Function that starts the periodic update
 		#[pezpallet::call_index(2)]
 		#[pezpallet::weight(<T as Config>::WeightInfo::periodic_trust_score_update())]
 		pub fn periodic_trust_score_update(origin: OriginFor<T>) -> DispatchResult {
 			ensure_root(origin)?;
 
-			// Eğer önceki update devam ediyorsa bekle
+			// If a previous update is still in progress, wait
 			ensure!(!BatchUpdateInProgress::<T>::get(), Error::<T>::UpdateInProgress);
 
-			// Yeni periyodik güncellemeyi başlat
+			// Start the new periodic update
 			Self::update_all_trust_scores(OriginFor::<T>::root())?;
 
-			// Bir sonraki periyodik güncellemeyi schedule et
+			// Schedule the next periodic update
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
 			let next_update_block = current_block + T::UpdateInterval::get();
 

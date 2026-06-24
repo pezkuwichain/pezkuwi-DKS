@@ -64,7 +64,7 @@ type Block = pezframe_system::mocking::MockBlock<Test>;
 pub type AccountId = u64;
 pub type Balance = u128;
 
-// Runtime'ı oluştur - Identity ve IdentityKyc pezpallet'lerini de ekle
+// Build the runtime - also add the Identity and IdentityKyc pezpallets
 construct_runtime!(
 	pub enum Test
 	{
@@ -106,7 +106,7 @@ impl pezframe_system::Config for Test {
 	type MultiBlockMigrator = ();
 	type PreInherents = ();
 	type PostInherents = ();
-	type PostTransactions = (); // Eksik olan trait
+	type PostTransactions = (); // The missing trait
 	type ExtensionsWeightInfo = ();
 }
 
@@ -127,7 +127,7 @@ impl pezpallet_balances::Config for Test {
 	type DoneSlashHandler = ();
 }
 
-// pezpallet_identity::Config implementasyonu
+// pezpallet_identity::Config implementation
 parameter_types! {
 	pub const BasicDeposit: Balance = 1000;
 	pub const ByteDeposit: Balance = 10;
@@ -291,7 +291,7 @@ pub fn new_test_ext() -> pezsp_io::TestExternalities {
 	ext.execute_with(|| {
 		System::set_block_number(1);
 
-		// Tiki koleksiyonunu oluştur - mint permissions ile
+		// Create the Tiki collection - with mint permissions
 		assert_ok!(Nfts::force_create(
 			RuntimeOrigin::root(),
 			1, // owner

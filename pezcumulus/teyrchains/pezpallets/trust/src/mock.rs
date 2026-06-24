@@ -118,7 +118,7 @@ impl pezpallet_identity_kyc::Config for Test {
 
 parameter_types! {
 	pub const ScoreMultiplierBase: u128 = 1000;
-	pub const TrustUpdateInterval: u64 = 100; // Test için kısa interval
+	pub const TrustUpdateInterval: u64 = 100; // Short interval for tests
 	pub const MaxBatchSizeValue: u32 = 100; // Max users per batch
 }
 
@@ -153,7 +153,7 @@ impl pezpallet_trust::TikiScoreProvider<u64> for MockTikiScoreProvider {
 pub struct MockCitizenshipStatusProvider;
 impl pezpallet_trust::CitizenshipStatusProvider<u64> for MockCitizenshipStatusProvider {
 	fn is_citizen(who: &u64) -> bool {
-		// Test için: 1-100 arası hesaplar vatandaş, 999 değil
+		// For tests: accounts 1-100 are citizens, 999 is not
 		*who >= 1 && *who <= 100 && *who != 999
 	}
 }

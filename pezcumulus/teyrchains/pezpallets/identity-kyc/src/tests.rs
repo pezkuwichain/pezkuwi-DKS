@@ -8,7 +8,7 @@ use pezframe_support::{assert_noop, assert_ok, traits::Currency};
 use pezsp_core::H256;
 use pezsp_runtime::DispatchError;
 
-// Kolay erişim için paletimize bir takma ad veriyoruz.
+// We give our pallet an alias for easy access.
 type IdentityKycPallet = crate::Pezpallet<Test>;
 
 // ============================================================================

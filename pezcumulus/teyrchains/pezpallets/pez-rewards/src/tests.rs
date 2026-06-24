@@ -170,7 +170,7 @@ fn finalize_epoch_calculates_rewards_correctly() {
 			System::block_number() + crate::CLAIM_PERIOD_BLOCKS as u64
 		);
 
-		// FIX: Event'te trust_score_pool (90%) bekle
+		// FIX: Expect trust_score_pool (90%) in the event
 		System::assert_has_event(
 			Event::EpochRewardPoolCalculated {
 				epoch_index: 0,
@@ -188,7 +188,7 @@ fn finalize_epoch_calculates_rewards_correctly() {
 			}
 			.into(),
 		);
-		// FIX: Finalize sonrası ClaimPeriod
+		// FIX: ClaimPeriod after finalize
 		assert_eq!(PezRewards::epoch_status(0), EpochState::ClaimPeriod);
 		assert_eq!(PezRewards::epoch_status(1), EpochState::Open);
 	});
@@ -233,7 +233,7 @@ fn finalize_epoch_no_participants() {
 #[test]
 fn finalize_epoch_zero_trust_score_participant() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(dave()))); // Skor 0
+		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(dave()))); // Score 0
 																			 // FIX: Zero scores are now being recorded
 		assert_eq!(PezRewards::get_user_trust_score_for_epoch(0, &dave()), Some(0));
 
@@ -425,7 +425,7 @@ fn claim_reward_fails_for_wrong_epoch() {
 			Error::<Test>::ClaimPeriodExpired
 		);
 
-		// Epoch 999 yok -> ClaimPeriodExpired
+		// Epoch 999 does not exist -> ClaimPeriodExpired
 		assert_noop!(
 			PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 999),
 			Error::<Test>::ClaimPeriodExpired
@@ -440,8 +440,8 @@ fn claim_reward_fails_for_wrong_epoch() {
 #[test]
 fn close_epoch_works_after_claim_period() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // Claim etmeyecek
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(bob()))); // Claim edecek
+		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // Will not claim
+		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(bob()))); // Will claim
 
 		let incentive_pot = PezRewards::incentive_pot_account_id();
 		let _pot_balance_before_finalize = pez_balance(&incentive_pot);
@@ -453,7 +453,7 @@ fn close_epoch_works_after_claim_period() {
 		let _alice_reward = reward_pool.reward_per_trust_point * 100;
 		let bob_reward = reward_pool.reward_per_trust_point * 50;
 
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(bob()), 0)); // Bob claim etti
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(bob()), 0)); // Bob claimed
 
 		let clawback_recipient = ClawbackRecipient::get();
 		let balance_before = pez_balance(&clawback_recipient);
@@ -702,13 +702,13 @@ fn multiple_epochs_work_correctly() {
 
 		fund_incentive_pot(1_000_000_000_000_000);
 
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // 100 (Epoch 1 için)
+		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // 100 (for Epoch 1)
 		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root())); // Epoch 1'i finalize et
+		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root())); // Finalize Epoch 1
 
-		let reward_pool_1 = PezRewards::get_epoch_reward_pool(1).unwrap(); // Epoch 1 havuzu
+		let reward_pool_1 = PezRewards::get_epoch_reward_pool(1).unwrap(); // Epoch 1 pool
 		let reward1_1 = reward_pool_1.reward_per_trust_point * 100;
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 1)); // Epoch 1'den claim et
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 1)); // Claim from Epoch 1
 
 		// Check balances
 		let alice_balance = pez_balance(&alice());

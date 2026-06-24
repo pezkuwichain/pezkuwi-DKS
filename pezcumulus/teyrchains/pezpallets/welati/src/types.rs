@@ -13,13 +13,13 @@ use scale_info::TypeInfo;
 
 #[derive(RuntimeDebug, Eq, PartialEq)]
 pub enum ElectionOutcome<AccountId> {
-	/// Kazananlar belirlendi.
+	/// Winners have been determined.
 	Winners(BoundedVec<AccountId, ConstU32<201>>),
-	/// İkinci tur gerekli, bunlar da adaylar.
+	/// A runoff is required; these are the candidates.
 	RunoffRequired(BoundedVec<AccountId, ConstU32<2>>),
 }
 
-/// Devlet pozisyonları (seçimle gelinen makamlar)
+/// Government positions (elected offices)
 #[derive(
 	Encode,
 	Decode,
@@ -34,17 +34,17 @@ pub enum ElectionOutcome<AccountId> {
 )]
 #[codec(mel_bound())]
 pub enum GovernmentPosition {
-	/// Cumhurbaşkanı (Serok)
+	/// President (Serok)
 	Serok,
-	/// Parlamenter (Parlementer)
+	/// Member of Parliament (Parlementer)
 	Parlementer,
-	/// Meclis Başkanı (SerokiMeclise)
+	/// Speaker of Parliament (SerokiMeclise)
 	MeclisBaskanı,
-	/// Dîwan Üyesi (EndameDiwane)
+	/// Diwan Member (EndameDiwane)
 	EndameDiwane,
 }
 
-/// Devlet memuru rolleri (atama ile gelinen pozisyonlar)
+/// Civil servant roles (appointed positions)
 #[derive(
 	Encode,
 	Decode,
@@ -59,50 +59,50 @@ pub enum GovernmentPosition {
 )]
 #[codec(mel_bound())]
 pub enum OfficialRole {
-	// Adalet Bakanlığı altında
+	// Under the Ministry of Justice
 	Dadger,
 	Dozger,
 	Hiquqnas,
 	Noter,
 
-	// Hazine Bakanlığı altında
+	// Under the Ministry of the Treasury
 	Xezinedar,
 	Bacgir,
 	GerinendeyeCavkaniye,
 
-	// Teknoloji ve Altyapı Bakanlığı altında
+	// Under the Ministry of Technology and Infrastructure
 	OperatoreTore,
 	PisporeEwlehiyaSiber,
 	GerinendeyeDaneye,
 
-	// İçişleri ve İletişim Bakanlığı altında
+	// Under the Ministry of Internal Affairs and Communications
 	Berdevk,
 	Qeydkar,
 
-	// Dışişleri Bakanlığı altında
+	// Under the Ministry of Foreign Affairs
 	Balyoz,
 	Navbeynkar,
 	ParezvaneCandi,
 
-	// Denetim Bakanlığı altında
+	// Under the Ministry of Audit
 	Mufetis,
 	KaliteKontrolker,
 
-	// Ekonomi ve Ticaret Bakanlığı altında
+	// Under the Ministry of Economy and Trade
 	Bazargan,
 	RêvebereProjeyê,
 
-	// Milli Eğitim ve Diyanet Bakanlığı altında
+	// Under the Ministry of National Education and Religious Affairs
 	Feqi,
 	Perwerdekar,
 	Rewsenbir,
 	Mamoste,
 
-	// İstisnai atama (doğrudan Serok)
+	// Exceptional appointment (directly by Serok)
 	Mela,
 }
 
-/// Bakan pozisyonları (Wezîr alt kategorileri)
+/// Minister positions (Wezîr subcategories)
 #[derive(
 	Encode,
 	Decode,
@@ -117,25 +117,25 @@ pub enum OfficialRole {
 )]
 #[codec(mel_bound())]
 pub enum MinisterRole {
-	/// Adalet Bakanı
+	/// Minister of Justice
 	AdvaletWeziri,
-	/// Hazine Bakanı
+	/// Minister of the Treasury
 	XezineWeziri,
-	/// Teknoloji ve Altyapı Bakanı
+	/// Minister of Technology and Infrastructure
 	TeknolojîWeziri,
-	/// İçişleri ve İletişim Bakanı
+	/// Minister of Internal Affairs and Communications
 	NavxweWeziri,
-	/// Dışişleri Bakanı
+	/// Minister of Foreign Affairs
 	DerveWeziri,
-	/// Denetim Bakanı
+	/// Minister of Audit
 	DenetimWeziri,
-	/// Ekonomi ve Ticaret Bakanı
+	/// Minister of Economy and Trade
 	AbûrîWeziri,
-	/// Milli Eğitim ve Diyanet Bakanı
+	/// Minister of National Education and Religious Affairs
 	PerwerdeDiyanetWeziri,
 }
 
-/// Seçim türleri
+/// Election types
 #[derive(
 	Encode,
 	Decode,
@@ -150,17 +150,17 @@ pub enum MinisterRole {
 )]
 #[codec(mel_bound())]
 pub enum ElectionType {
-	/// Cumhurbaşkanlığı seçimi (özel kurallar)
+	/// Presidential election (special rules)
 	Presidential,
-	/// Parlamento seçimi (201 kişi)
+	/// Parliamentary election (201 members)
 	Parliamentary,
-	/// Meclis başkanlığı seçimi (parlamenterler arası)
+	/// Speaker election (among members of parliament)
 	SpeakerElection,
-	/// Dîwan üyesi seçimi
+	/// Diwan member election
 	ConstitutionalCourt,
 }
 
-/// Oy türleri
+/// Vote types
 #[derive(
 	Encode,
 	Decode,
@@ -175,36 +175,36 @@ pub enum ElectionType {
 )]
 #[codec(mel_bound())]
 pub enum VoteType {
-	/// Normal vatandaş oyu
+	/// Normal citizen vote
 	Citizen,
-	/// Ağırlıklı oy (Trust Puanı bazlı)
+	/// Weighted vote (based on Trust Score)
 	Weighted,
-	/// Delegasyon oyu
+	/// Delegated vote
 	Delegated,
 }
 
-/// Nominasyon bilgilerini tutan yapı
+/// Structure holding nomination information
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub struct NominationInfo<T: pezframe_system::Config> {
-	/// Nominasyonu yapan (Bakan)
+	/// The nominator (Minister)
 	pub nominator: T::AccountId,
-	/// Aday gösterilen kişi
+	/// The nominated person
 	pub nominee: T::AccountId,
-	/// Nominasyonun yapıldığı blok
+	/// The block at which the nomination was made
 	pub nominated_at: BlockNumberFor<T>,
-	/// Onaylanıp onaylanmadığı
+	/// Whether it has been approved
 	pub approved: bool,
-	/// Onaylayan (genellikle Serok)
+	/// The approver (usually Serok)
 	pub approver: Option<T::AccountId>,
-	/// Onaylanma tarihi
+	/// Approval date
 	pub approved_at: Option<BlockNumberFor<T>>,
-	/// Nominasyon durumu
+	/// Nomination status
 	pub status: NominationStatus,
 }
 
-/// Nominasyon durumları
+/// Nomination statuses
 #[derive(
 	Encode,
 	Decode,
@@ -219,19 +219,19 @@ pub struct NominationInfo<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum NominationStatus {
-	/// Bekleyen nominasyon
+	/// Pending nomination
 	Pending,
-	/// Onaylanmış
+	/// Approved
 	Approved,
-	/// Reddedilmiş
+	/// Rejected
 	Rejected,
-	/// İptal edilmiş
+	/// Cancelled
 	Cancelled,
-	/// Süresi dolmuş
+	/// Expired
 	Expired,
 }
 
-/// Kolektif karar türleri
+/// Collective decision types
 #[derive(
 	Encode,
 	Decode,
@@ -246,25 +246,25 @@ pub enum NominationStatus {
 )]
 #[codec(mel_bound())]
 pub enum CollectiveDecisionType {
-	/// Parlamento kararı (basit çoğunluk - %50+1)
+	/// Parliament decision (simple majority - 50%+1)
 	ParliamentSimpleMajority,
-	/// Parlamento süper çoğunluk kararı (2/3)
+	/// Parliament supermajority decision (2/3)
 	ParliamentSuperMajority,
-	/// Parlamento mutlak çoğunluk (3/4 - anayasa değişikliği)
+	/// Parliament absolute majority (3/4 - constitutional amendment)
 	ParliamentAbsoluteMajority,
-	/// Dîwan kararı (anayasal denetim - 2/3)
+	/// Diwan decision (constitutional review - 2/3)
 	ConstitutionalReview,
-	/// Dîwan ittifak kararı (tüm üyeler)
+	/// Diwan unanimous decision (all members)
 	ConstitutionalUnanimous,
-	/// Karma karar (Parlamento + Serok onayı)
+	/// Hybrid decision (Parliament + Serok approval)
 	HybridDecision,
-	/// Cumhurbaşkanı tek başına karar
+	/// President's sole decision
 	ExecutiveDecision,
-	/// Veto override (Parlamento 2/3 ile veto aşma)
+	/// Veto override (Parliament overriding a veto with 2/3)
 	VetoOverride,
 }
 
-/// Kolektif oylamanın durumu
+/// Status of a collective vote
 #[derive(
 	Encode,
 	Decode,
@@ -279,65 +279,65 @@ pub enum CollectiveDecisionType {
 )]
 #[codec(mel_bound())]
 pub enum ProposalStatus {
-	/// Taslak halinde (henüz oylamaya sunulmamış)
+	/// In draft (not yet submitted to a vote)
 	Draft,
-	/// Aktif oylama
+	/// Active vote
 	Active,
-	/// Kabul edildi
+	/// Accepted
 	Approved,
-	/// Reddedildi
+	/// Rejected
 	Rejected,
-	/// İptal edildi
+	/// Cancelled
 	Cancelled,
-	/// Zaman aşımı
+	/// Timed out
 	Expired,
-	/// Veto edildi (Serok tarafından)
+	/// Vetoed (by Serok)
 	Vetoed,
-	/// Anayasal denetimde (Dîwan'da)
+	/// Under constitutional review (at the Diwan)
 	UnderConstitutionalReview,
 }
 
-/// Kolektif teklif bilgileri
+/// Collective proposal information
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub struct CollectiveProposal<T: pezframe_system::Config> {
-	/// Teklif ID'si
+	/// Proposal ID
 	pub proposal_id: u32,
-	/// Teklif sahibi
+	/// Proposal owner
 	pub proposer: T::AccountId,
-	/// Teklif başlığı
+	/// Proposal title
 	pub title: BoundedVec<u8, ConstU32<100>>,
-	/// Teklif açıklaması
+	/// Proposal description
 	pub description: BoundedVec<u8, ConstU32<1000>>,
-	/// Teklif tarihi
+	/// Proposal date
 	pub proposed_at: BlockNumberFor<T>,
-	/// Oylama başlangıç tarihi
+	/// Voting start date
 	pub voting_starts_at: BlockNumberFor<T>,
-	/// Bitiş tarihi
+	/// End date
 	pub expires_at: BlockNumberFor<T>,
-	/// Karar türü
+	/// Decision type
 	pub decision_type: CollectiveDecisionType,
-	/// Mevcut durum
+	/// Current status
 	pub status: ProposalStatus,
-	/// Olumlu oylar
+	/// Aye votes
 	pub aye_votes: u32,
-	/// Olumsuz oylar
+	/// Nay votes
 	pub nay_votes: u32,
-	/// Çekimser oylar
+	/// Abstain votes
 	pub abstain_votes: u32,
-	/// Gerekli minimum oy sayısı
+	/// Required minimum number of votes
 	pub threshold: u32,
-	/// Oy veren üye sayısı
+	/// Number of members who voted
 	pub votes_cast: u32,
-	/// Öncelik seviyesi
+	/// Priority level
 	pub priority: ProposalPriority,
-	/// GÜNCELLENDİ: Teklif kabul edilirse çalıştırılacak olan çağrı (extrinsic).
+	/// UPDATED: The call (extrinsic) to be executed if the proposal is accepted.
 	#[codec(skip)]
 	pub call: Option<Box<<T as SystemConfig>::RuntimeCall>>,
 }
 
-/// Teklif öncelik seviyeleri
+/// Proposal priority levels
 #[derive(
 	Encode,
 	Decode,
@@ -352,36 +352,36 @@ pub struct CollectiveProposal<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum ProposalPriority {
-	/// Düşük öncelik
+	/// Low priority
 	Low,
-	/// Normal öncelik
+	/// Normal priority
 	Normal,
-	/// Yüksek öncelik
+	/// High priority
 	High,
-	/// Acil (24 saat içinde)
+	/// Urgent (within 24 hours)
 	Urgent,
-	/// Kritik (anında)
+	/// Critical (immediate)
 	Critical,
 }
 
-/// Kollektif oy bilgisi
+/// Collective vote information
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub struct CollectiveVote<T: pezframe_system::Config> {
-	/// Oy veren
+	/// Voter
 	pub voter: T::AccountId,
-	/// Teklif ID'si
+	/// Proposal ID
 	pub proposal_id: u32,
-	/// Oy türü
+	/// Vote type
 	pub vote: VoteChoice,
-	/// Oy verme zamanı
+	/// Time the vote was cast
 	pub voted_at: BlockNumberFor<T>,
-	/// Oy gerekçesi (opsiyonel)
+	/// Vote rationale (optional)
 	pub rationale: Option<BoundedVec<u8, ConstU32<500>>>,
 }
 
-/// Oy seçenekleri
+/// Vote options
 #[derive(
 	Encode,
 	Decode,
@@ -396,15 +396,15 @@ pub struct CollectiveVote<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum VoteChoice {
-	/// Evet
+	/// Yes
 	Aye,
-	/// Hayır
+	/// No
 	Nay,
-	/// Çekimser
+	/// Abstain
 	Abstain,
 }
 
-/// Parlamento üye bilgisi
+/// Parliament member information
 #[derive(
 	Encode,
 	Decode,
@@ -420,23 +420,23 @@ pub enum VoteChoice {
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub struct ParliamentMember<T: pezframe_system::Config> {
-	/// Üye hesabı
+	/// Member account
 	pub account: T::AccountId,
-	/// Seçilme tarihi
+	/// Election date
 	pub elected_at: BlockNumberFor<T>,
-	/// Görev süresi bitiş tarihi
+	/// Term end date
 	pub term_ends_at: BlockNumberFor<T>,
-	/// Katıldığı oylama sayısı
+	/// Number of votes participated in
 	pub votes_participated: u32,
-	/// Toplam oy hakkı sayısı
+	/// Total number of eligible votes
 	pub total_votes_eligible: u32,
-	/// Katılım oranı (yüzde)
+	/// Participation rate (percentage)
 	pub participation_rate: u8,
-	/// Özel komiteler
+	/// Special committees
 	pub committees: BoundedVec<CommitteeType, ConstU32<5>>,
 }
 
-/// Komite türleri
+/// Committee types
 #[derive(
 	Encode,
 	Decode,
@@ -451,23 +451,23 @@ pub struct ParliamentMember<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum CommitteeType {
-	/// Bütçe Komisyonu
+	/// Budget Committee
 	Budget,
-	/// Dışişleri Komisyonu
+	/// Foreign Affairs Committee
 	ForeignAffairs,
-	/// Adalet Komisyonu
+	/// Justice Committee
 	Justice,
-	/// Teknoloji Komisyonu
+	/// Technology Committee
 	Technology,
-	/// Eğitim Komisyonu
+	/// Education Committee
 	Education,
-	/// Sağlık Komisyonu
+	/// Health Committee
 	Health,
-	/// Anayasa Komisyonu
+	/// Constitutional Committee
 	Constitutional,
 }
 
-/// Dîwan üye bilgisi
+/// Diwan member information
 #[derive(
 	Encode,
 	Decode,
@@ -482,21 +482,21 @@ pub enum CommitteeType {
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub struct DiwanMember<T: pezframe_system::Config> {
-	/// Üye hesabı
+	/// Member account
 	pub account: T::AccountId,
-	/// Atanma tarihi
+	/// Appointment date
 	pub appointed_at: BlockNumberFor<T>,
-	/// Görev süresi (9 yıl)
+	/// Term length (9 years)
 	pub term_ends_at: BlockNumberFor<T>,
-	/// Atayan makam (Parlamento/Serok)
+	/// Appointing authority (Parliament/Serok)
 	pub appointed_by: AppointmentAuthority<T>,
-	/// Uzmanlık alanı
+	/// Area of specialization
 	pub specialization: ConstitutionalSpecialization,
-	/// Verdiği karar sayısı
+	/// Number of decisions made
 	pub decisions_made: u32,
 }
 
-/// Atama yetkisi
+/// Appointment authority
 #[derive(
 	Encode,
 	Decode,
@@ -511,13 +511,13 @@ pub struct DiwanMember<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub enum AppointmentAuthority<T: pezframe_system::Config> {
-	/// Parlamento tarafından atanan (6 kişi)
+	/// Appointed by Parliament (6 members)
 	Parliament,
-	/// Serok tarafından atanan (5 kişi)
+	/// Appointed by Serok (5 members)
 	President(T::AccountId),
 }
 
-/// Anayasal uzmanlık alanları
+/// Constitutional areas of specialization
 #[derive(
 	Encode,
 	Decode,
@@ -532,46 +532,46 @@ pub enum AppointmentAuthority<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum ConstitutionalSpecialization {
-	/// Temel haklar ve özgürlükler
+	/// Fundamental rights and freedoms
 	FundamentalRights,
-	/// Devlet organizasyonu
+	/// State organization
 	StateOrganization,
-	/// Ekonomik düzen
+	/// Economic order
 	EconomicOrder,
-	/// Sosyal haklar
+	/// Social rights
 	SocialRights,
-	/// Yargı bağımsızlığı
+	/// Judicial independence
 	JudicialIndependence,
-	/// Yerel yönetimler
+	/// Local governments
 	LocalGovernment,
-	/// Uluslararası hukuk
+	/// International law
 	InternationalLaw,
 }
 
-/// Atama süreci bilgisi
+/// Appointment process information
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub struct AppointmentProcess<T: pezframe_system::Config> {
-	/// Süreç ID'si
+	/// Process ID
 	pub process_id: u32,
-	/// Atama yapılacak pozisyon
+	/// Position to be filled by appointment
 	pub position: OfficialRole,
-	/// İlgili bakan (aday gösteren)
+	/// Relevant minister (the nominator)
 	pub nominating_minister: T::AccountId,
-	/// Aday
+	/// Candidate
 	pub nominee: T::AccountId,
-	/// Başlatılma tarihi
+	/// Initiation date
 	pub initiated_at: BlockNumberFor<T>,
-	/// Son karar tarihi
+	/// Final decision deadline
 	pub deadline: BlockNumberFor<T>,
-	/// Mevcut durum
+	/// Current status
 	pub status: AppointmentStatus,
-	/// Ek belgeler/gerekçe
+	/// Supporting documents/justification
 	pub documents: BoundedVec<BoundedVec<u8, ConstU32<1000>>, ConstU32<10>>,
 }
 
-/// Atama süreci durumları
+/// Appointment process statuses
 #[derive(
 	Encode,
 	Decode,
@@ -586,42 +586,42 @@ pub struct AppointmentProcess<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum AppointmentStatus {
-	/// Bakan nominasyonu bekliyor
+	/// Waiting for minister nomination
 	WaitingNomination,
-	/// Serok onayı bekliyor
+	/// Waiting for Serok approval
 	WaitingPresidentialApproval,
-	/// Parlamento onayı bekliyor (bazı pozisyonlar için)
+	/// Waiting for parliamentary approval (for some positions)
 	WaitingParliamentaryApproval,
-	/// Onaylandı
+	/// Approved
 	Approved,
-	/// Reddedildi
+	/// Rejected
 	Rejected,
-	/// Süre doldu
+	/// Expired
 	Expired,
 }
 
-/// Yönetişim metrikleri
+/// Governance metrics
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub struct GovernanceMetrics<T: pezframe_system::Config> {
-	/// Toplam aktif teklif sayısı
+	/// Total number of active proposals
 	pub active_proposals: u32,
-	/// Bu dönem geçen yasa sayısı
+	/// Number of laws passed this term
 	pub laws_passed_this_term: u32,
-	/// Parlamento katılım oranı
+	/// Parliament attendance rate
 	pub parliament_attendance_rate: u8,
-	/// Dîwan karar sayısı
+	/// Number of Diwan decisions
 	pub constitutional_decisions: u32,
-	/// Ortalama karar süresi (blok cinsinden)
+	/// Average decision time (in blocks)
 	pub average_decision_time: BlockNumberFor<T>,
-	/// Veto edilen yasa sayısı
+	/// Number of vetoed laws
 	pub vetoed_laws: u32,
-	/// Veto aşılan sayı
+	/// Number of vetoes overridden
 	pub veto_overrides: u32,
 }
 
-/// Seçim durumları
+/// Election statuses
 #[derive(
 	Encode,
 	Decode,
@@ -636,19 +636,19 @@ pub struct GovernanceMetrics<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum ElectionStatus {
-	/// Aday kayıt dönemi
+	/// Candidacy registration period
 	CandidacyPeriod,
-	/// Kampanya dönemi
+	/// Campaign period
 	CampaignPeriod,
-	/// Oy verme dönemi
+	/// Voting period
 	VotingPeriod,
-	/// Tamamlandı
+	/// Completed
 	Completed,
-	/// İptal edildi
+	/// Cancelled
 	Cancelled,
 }
 
-/// Aday bilgileri
+/// Candidate information
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
@@ -662,7 +662,7 @@ pub struct CandidateInfo<T: pezframe_system::Config> {
 	pub campaign_data: BoundedVec<u8, ConstU32<500>>,
 }
 
-/// Seçim sonuçları
+/// Election results
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
@@ -674,7 +674,7 @@ pub struct ElectionResult<T: pezframe_system::Config> {
 	pub finalized_at: BlockNumberFor<T>,
 }
 
-/// Seçim bölgesi bilgileri
+/// Electoral district information
 #[derive(
 	Encode,
 	Decode,
@@ -696,57 +696,57 @@ pub struct ElectoralDistrict {
 	pub geographic_bounds: Option<BoundedVec<u8, ConstU32<200>>>,
 }
 
-/// Seçim bilgilerini tutan yapı - Genişletilmiş versiyon
+/// Structure holding election information - Extended version
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub struct ElectionInfo<T: pezframe_system::Config> {
-	/// Seçim ID'si
+	/// Election ID
 	pub election_id: u32,
-	/// Seçim türü
+	/// Election type
 	pub election_type: ElectionType,
-	/// Seçimin başlangıç bloğu
+	/// Start block of the election
 	pub start_block: BlockNumberFor<T>,
-	/// Aday kayıt son tarihi
+	/// Candidacy registration deadline
 	pub candidacy_deadline: BlockNumberFor<T>,
-	/// Kampanya başlangıcı
+	/// Campaign start
 	pub campaign_start: BlockNumberFor<T>,
-	/// Oy verme başlangıcı
+	/// Voting start
 	pub voting_start: BlockNumberFor<T>,
-	/// Seçimin bitiş bloğu
+	/// End block of the election
 	pub end_block: BlockNumberFor<T>,
-	/// Adayların listesi
-	pub candidates: BoundedVec<T::AccountId, ConstU32<500>>, // Geniş limit
-	/// Toplam oy sayısı
+	/// List of candidates
+	pub candidates: BoundedVec<T::AccountId, ConstU32<500>>, // Generous limit
+	/// Total number of votes
 	pub total_votes: u32,
-	/// Seçim durumu
+	/// Election status
 	pub status: ElectionStatus,
-	/// Seçim bölgeleri
+	/// Electoral districts
 	pub districts: BoundedVec<ElectoralDistrict, ConstU32<50>>,
-	/// Minimum katılım oranı (yüzde olarak)
+	/// Minimum turnout rate (as a percentage)
 	pub minimum_turnout: u8,
 }
 
-/// Oy bilgilerini tutan yapı
+/// Structure holding vote information
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub struct ElectionVoteInfo<T: pezframe_system::Config> {
-	/// Oy veren kişi
+	/// The voter
 	pub voter: T::AccountId,
-	/// Oy verilen adaylar (çoklu oy için)
+	/// Candidates voted for (for multiple votes)
 	pub candidates: BoundedVec<T::AccountId, ConstU32<10>>,
-	/// Oyun verildiği blok
+	/// The block at which the vote was cast
 	pub vote_block: BlockNumberFor<T>,
-	/// Oyun ağırlığı (Trust Puanı bazlı olabilir)
+	/// Weight of the vote (may be based on Trust Score)
 	pub vote_weight: u32,
-	/// Oy türü (gizli/açık)
+	/// Vote type (secret/open)
 	pub vote_type: VoteType,
-	/// Seçim bölgesi
+	/// Electoral district
 	pub district_id: Option<u32>,
 }
 
-/// Seçim güvenlik önlemleri
+/// Election security measures
 #[derive(
 	Encode,
 	Decode,
@@ -761,17 +761,17 @@ pub struct ElectionVoteInfo<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum SecurityMeasure {
-	/// Çift oy kontrolü
+	/// Duplicate vote detection
 	DuplicateVoteDetection,
-	/// Kimlik doğrulama
+	/// Identity verification
 	IdentityVerification,
-	/// Oy gizliliği
+	/// Vote privacy
 	VotePrivacy,
-	/// Manipülasyon koruması
+	/// Manipulation prevention
 	ManipulationPrevention,
 }
 
-/// Oy gizlilik düzeyi
+/// Vote privacy level
 #[derive(
 	Encode,
 	Decode,
@@ -786,15 +786,15 @@ pub enum SecurityMeasure {
 )]
 #[codec(mel_bound())]
 pub enum VotePrivacyLevel {
-	/// Tamamen açık
+	/// Fully open
 	FullyOpen,
-	/// Kısmi gizli (sadece sonuç görünür)
+	/// Partially private (only the result is visible)
 	PartiallyPrivate,
-	/// Tamamen gizli
+	/// Fully private
 	FullyPrivate,
 }
 
-/// Çift oy önleme yöntemi
+/// Duplicate vote prevention method
 #[derive(
 	Encode,
 	Decode,
@@ -809,15 +809,15 @@ pub enum VotePrivacyLevel {
 )]
 #[codec(mel_bound())]
 pub enum DuplicateVoteMethod {
-	/// Hesap bazlı kontrol
+	/// Account-based check
 	AccountBased,
-	/// Kimlik bazlı kontrol
+	/// Identity-based check
 	IdentityBased,
-	/// Çoklu katman kontrol
+	/// Multi-layered check
 	MultiLayered,
 }
 
-/// Şeffaflık düzeyi
+/// Transparency level
 #[derive(
 	Encode,
 	Decode,
@@ -832,29 +832,29 @@ pub enum DuplicateVoteMethod {
 )]
 #[codec(mel_bound())]
 pub enum TransparencyLevel {
-	/// Minimum şeffaflık
+	/// Minimal transparency
 	Minimal,
-	/// Standart şeffaflık
+	/// Standard transparency
 	Standard,
-	/// Maksimum şeffaflık
+	/// Maximum transparency
 	Maximum,
 }
 
-/// Denetim gereksinimleri
+/// Audit requirements
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 pub struct AuditRequirements {
-	/// İç denetim gerekli mi?
+	/// Is internal audit required?
 	pub internal_audit_required: bool,
-	/// Dış denetim gerekli mi?
+	/// Is external audit required?
 	pub external_audit_required: bool,
-	/// Gerçek zamanlı izleme
+	/// Real-time monitoring
 	pub real_time_monitoring: bool,
-	/// Denetim raporu gerekli mi?
+	/// Is an audit report required?
 	pub audit_report_required: bool,
 }
 
-/// Oy ağırlık sistemi
+/// Vote weighting system
 #[derive(
 	Encode,
 	Decode,
@@ -869,15 +869,15 @@ pub struct AuditRequirements {
 )]
 #[codec(mel_bound())]
 pub enum VoteWeightMethod {
-	/// Eşit ağırlık
+	/// Equal weight
 	Equal,
-	/// Trust puanı bazlı
+	/// Based on Trust Score
 	TrustScoreBased,
-	/// Pozisyon bazlı
+	/// Position-based
 	PositionBased,
 }
 
-/// Kimlik doğrulama yöntemi
+/// Voter authentication method
 #[derive(
 	Encode,
 	Decode,
@@ -892,30 +892,30 @@ pub enum VoteWeightMethod {
 )]
 #[codec(mel_bound())]
 pub enum VoterAuthMethod {
-	/// KYC bazlı
+	/// KYC-based
 	KycBased,
 	/// Biometric
 	Biometric,
-	/// Çoklu faktör
+	/// Multi-factor
 	MultiFactor,
 }
 
-/// Kampanya düzenlemeleri
+/// Campaign regulations
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
 pub struct CampaignRegulations<T: pezframe_system::Config> {
-	/// Kampanya süresi (blok sayısı)
+	/// Campaign duration (number of blocks)
 	pub duration_blocks: BlockNumberFor<T>,
-	/// Maksimum harcama limiti
+	/// Maximum spending limit
 	pub spending_limit: Option<u128>,
-	/// İzin verilen etkinlik türleri
+	/// Allowed activity types
 	pub allowed_activities: BoundedVec<CampaignActivityType, ConstU32<20>>,
-	/// Yasaklanan etkinlik türleri
+	/// Prohibited activity types
 	pub prohibited_activities: BoundedVec<CampaignActivityType, ConstU32<20>>,
 }
 
-/// Kampanya etkinlik türleri
+/// Campaign activity types
 #[derive(
 	Encode,
 	Decode,
@@ -930,33 +930,33 @@ pub struct CampaignRegulations<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum CampaignActivityType {
-	/// Kitle toplantısı
+	/// Public rally
 	PublicRally,
-	/// Medya reklamı
+	/// Media advertisement
 	MediaAdvertisement,
-	/// Kapı kapı ziyaret
+	/// Door-to-door canvassing
 	DoorToDoorCanvassing,
-	/// Dijital kampanya
+	/// Digital campaign
 	DigitalCampaign,
-	/// Bağış toplama
+	/// Fundraising event
 	FundraisingEvent,
 }
 
-/// Aday olma kuralları
+/// Candidacy rules
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 pub struct CandidacyRules {
-	/// Minimum yaş gereksinimi
+	/// Minimum age requirement
 	pub minimum_age: Option<u32>,
-	/// Eğitim gereksinimleri
+	/// Education requirements
 	pub education_requirements: Option<EducationLevel>,
-	/// Geçmiş deneyim gereksinimleri
+	/// Prior experience requirements
 	pub experience_requirements: Option<BoundedVec<u8, ConstU32<500>>>,
-	/// Yasaklı geçmiş koşulları
+	/// Disqualifying background conditions
 	pub disqualifying_conditions: BoundedVec<DisqualifyingCondition, ConstU32<10>>,
 }
 
-/// Eğitim seviyesi
+/// Education level
 #[derive(
 	Encode,
 	Decode,
@@ -971,21 +971,21 @@ pub struct CandidacyRules {
 )]
 #[codec(mel_bound())]
 pub enum EducationLevel {
-	/// İlkokul
+	/// Elementary school
 	Elementary,
-	/// Ortaokul
+	/// Middle school
 	MiddleSchool,
-	/// Lise
+	/// High school
 	HighSchool,
-	/// Üniversite
+	/// University
 	University,
-	/// Yüksek lisans
+	/// Master's degree
 	MastersDegree,
-	/// Doktora
+	/// Doctorate
 	Doctorate,
 }
 
-/// Diskalifiye edici koşullar
+/// Disqualifying conditions
 #[derive(
 	Encode,
 	Decode,
@@ -1000,19 +1000,19 @@ pub enum EducationLevel {
 )]
 #[codec(mel_bound())]
 pub enum DisqualifyingCondition {
-	/// Suç kaydı
+	/// Criminal record
 	CriminalRecord,
-	/// Mali suistimal
+	/// Financial misconduct
 	FinancialMisconduct,
-	/// Etik ihlal
+	/// Ethics violation
 	EthicsViolation,
-	/// Çifte vatandaşlık
+	/// Dual citizenship
 	DualCitizenship,
-	/// Zihinsel yetersizlik
+	/// Mental incapacity
 	MentalIncapacity,
 }
 
-/// Parlamento komite üyeliği detayları
+/// Parliamentary committee membership details
 #[derive(
 	Encode,
 	Decode,
@@ -1034,7 +1034,7 @@ pub struct CommitteeMembership<T: pezframe_system::Config> {
 	pub term_ends_at: Option<BlockNumberFor<T>>,
 }
 
-/// Komitedeki rol
+/// Role within the committee
 #[derive(
 	Encode,
 	Decode,
@@ -1049,17 +1049,17 @@ pub struct CommitteeMembership<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum CommitteeRole {
-	/// Başkan
+	/// Chairman
 	Chairman,
-	/// Başkan yardımcısı
+	/// Vice chairman
 	ViceChairman,
-	/// Üye
+	/// Member
 	Member,
-	/// Raportör
+	/// Rapporteur
 	Rapporteur,
 }
 
-/// Yasama süreci aşamaları
+/// Legislative process stages
 #[derive(
 	Encode,
 	Decode,
@@ -1074,29 +1074,29 @@ pub enum CommitteeRole {
 )]
 #[codec(mel_bound())]
 pub enum LegislativeStage {
-	/// Taslak aşaması
+	/// Draft stage
 	Draft,
-	/// Komite incelemesi
+	/// Committee review
 	CommitteeReview,
-	/// Genel kurul ilk görüşme
+	/// First reading in the general assembly
 	FirstReading,
-	/// Komiteye iade
+	/// Returned to committee
 	CommitteeRevision,
-	/// Genel kurul ikinci görüşme
+	/// Second reading in the general assembly
 	SecondReading,
-	/// Üçüncü görüşme
+	/// Third reading
 	ThirdReading,
-	/// Cumhurbaşkanına gönderildi
+	/// Sent to the President
 	SentToPresident,
-	/// Onaylandı
+	/// Approved
 	Approved,
-	/// Veto edildi
+	/// Vetoed
 	Vetoed,
-	/// Kanunlaştı
+	/// Enacted into law
 	Enacted,
 }
 
-/// Yasa türleri
+/// Law types
 #[derive(
 	Encode,
 	Decode,
@@ -1111,19 +1111,19 @@ pub enum LegislativeStage {
 )]
 #[codec(mel_bound())]
 pub enum LawType {
-	/// Anayasa değişikliği
+	/// Constitutional amendment
 	ConstitutionalAmendment,
-	/// Organik kanun
+	/// Organic law
 	OrganicLaw,
-	/// Olağan kanun
+	/// Ordinary law
 	OrdinaryLaw,
-	/// Bütçe kanunu
+	/// Budget law
 	BudgetLaw,
-	/// Uluslararası anlaşma onayı
+	/// Ratification of an international agreement
 	InternationalAgreement,
 }
 
-/// Anayasal denetim türleri
+/// Constitutional review types
 #[derive(
 	Encode,
 	Decode,
@@ -1138,17 +1138,17 @@ pub enum LawType {
 )]
 #[codec(mel_bound())]
 pub enum ConstitutionalReviewType {
-	/// Ön denetim (kanun çıkmadan önce)
+	/// Preliminary review (before a law is enacted)
 	PreliminaryReview,
-	/// Sonraki denetim (kanun çıktıktan sonra)
+	/// Subsequent review (after a law is enacted)
 	SubsequentReview,
-	/// Bireysel başvuru
+	/// Individual application
 	IndividualApplication,
-	/// Soyut norm denetimi
+	/// Abstract norm control
 	AbstractNormControl,
 }
 
-/// Veto türleri
+/// Veto types
 #[derive(
 	Encode,
 	Decode,
@@ -1163,15 +1163,15 @@ pub enum ConstitutionalReviewType {
 )]
 #[codec(mel_bound())]
 pub enum VetoType {
-	/// Tam veto
+	/// Absolute veto
 	AbsoluteVeto,
-	/// Kısmi veto
+	/// Line-item veto
 	LineItemVeto,
-	/// Geciktirici veto
+	/// Suspensive veto
 	SuspensiveVeto,
 }
 
-/// Meclis oturum türleri
+/// Parliament session types
 #[derive(
 	Encode,
 	Decode,
@@ -1186,17 +1186,17 @@ pub enum VetoType {
 )]
 #[codec(mel_bound())]
 pub enum SessionType {
-	/// Olağan oturum
+	/// Regular session
 	RegularSession,
-	/// Olağanüstü oturum
+	/// Extraordinary session
 	ExtraordinarySession,
-	/// Gizli oturum
+	/// Closed session
 	ClosedSession,
-	/// Acil oturum
+	/// Emergency session
 	EmergencySession,
 }
 
-/// Oturum durumu
+/// Session status
 #[derive(
 	Encode,
 	Decode,
@@ -1211,19 +1211,19 @@ pub enum SessionType {
 )]
 #[codec(mel_bound())]
 pub enum SessionStatus {
-	/// Planlandı
+	/// Scheduled
 	Scheduled,
-	/// Aktif
+	/// Active
 	Active,
-	/// Ertelendi
+	/// Postponed
 	Postponed,
-	/// Tamamlandı
+	/// Completed
 	Completed,
-	/// İptal edildi
+	/// Cancelled
 	Cancelled,
 }
 
-/// Meclis oturumu bilgileri
+/// Parliament session information
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
@@ -1234,12 +1234,12 @@ pub struct ParliamentSession<T: pezframe_system::Config> {
 	pub actual_start: Option<BlockNumberFor<T>>,
 	pub end_time: Option<BlockNumberFor<T>>,
 	pub status: SessionStatus,
-	pub agenda: BoundedVec<u32, ConstU32<50>>, // Proposal ID'leri
+	pub agenda: BoundedVec<u32, ConstU32<50>>, // Proposal IDs
 	pub attendees: BoundedVec<T::AccountId, ConstU32<201>>,
-	pub decisions_made: BoundedVec<u32, ConstU32<20>>, // Alınan karar ID'leri
+	pub decisions_made: BoundedVec<u32, ConstU32<20>>, // IDs of decisions made
 }
 
-/// Devlet bütçesi kategorileri
+/// State budget categories
 #[derive(
 	Encode,
 	Decode,
@@ -1254,21 +1254,21 @@ pub struct ParliamentSession<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 pub enum BudgetCategory {
-	/// Personel giderleri
+	/// Personnel expenses
 	Personnel,
-	/// Mal ve hizmet alımları
+	/// Goods and services procurement
 	GoodsAndServices,
-	/// Yatırım harcamaları
+	/// Capital expenditures
 	CapitalExpenditures,
-	/// Transfer ödemeleri
+	/// Transfer payments
 	TransferPayments,
-	/// Borç ödemeleri
+	/// Debt service payments
 	DebtService,
-	/// Yedek ödenekler
+	/// Contingency appropriations
 	Contingency,
 }
 
-/// Bütçe onay durumu
+/// Budget approval status
 #[derive(
 	Encode,
 	Decode,
@@ -1283,19 +1283,19 @@ pub enum BudgetCategory {
 )]
 #[codec(mel_bound())]
 pub enum BudgetStatus {
-	/// Taslak
+	/// Draft
 	Draft,
-	/// Meclis'te
+	/// In Parliament
 	InParliament,
-	/// Onaylandı
+	/// Approved
 	Approved,
-	/// Uygulanıyor
+	/// In execution
 	InExecution,
-	/// Tamamlandı
+	/// Completed
 	Completed,
 }
 
-/// Helper trait'ler için yardımcı yapılar
+/// Helper structures for the helper traits
 pub trait GovernmentPositionInfo {
 	fn required_trust_score(&self) -> u128;
 	fn required_tiki(&self) -> Option<Tiki>;
@@ -1323,10 +1323,10 @@ impl GovernmentPositionInfo for GovernmentPosition {
 
 	fn term_length_blocks(&self) -> u32 {
 		match self {
-			GovernmentPosition::Serok => 4 * 365 * 24 * 60 * 10, // 4 yıl
-			GovernmentPosition::Parlementer => 4 * 365 * 24 * 60 * 10, // 4 yıl
-			GovernmentPosition::MeclisBaskanı => 2 * 365 * 24 * 60 * 10, // 2 yıl
-			GovernmentPosition::EndameDiwane => 9 * 365 * 24 * 60 * 10, // 9 yıl
+			GovernmentPosition::Serok => 4 * 365 * 24 * 60 * 10, // 4 years
+			GovernmentPosition::Parlementer => 4 * 365 * 24 * 60 * 10, // 4 years
+			GovernmentPosition::MeclisBaskanı => 2 * 365 * 24 * 60 * 10, // 2 years
+			GovernmentPosition::EndameDiwane => 9 * 365 * 24 * 60 * 10, // 9 years
 		}
 	}
 }
@@ -1339,7 +1339,7 @@ pub trait OfficialRoleInfo {
 
 impl OfficialRoleInfo for OfficialRole {
 	fn required_trust_score(&self) -> u128 {
-		75 // Anayasada belirtilen genel şart
+		75 // General requirement specified in the constitution
 	}
 
 	fn nominating_minister(&self) -> MinisterRole {
@@ -1372,20 +1372,20 @@ impl OfficialRoleInfo for OfficialRole {
 			| OfficialRole::Rewsenbir
 			| OfficialRole::Mamoste => MinisterRole::PerwerdeDiyanetWeziri,
 
-			// Mela özel durum - doğrudan Serok atar
+			// Mela is a special case - appointed directly by Serok
 			OfficialRole::Mela => MinisterRole::AdvaletWeziri, // Placeholder
 		}
 	}
 
 	fn requires_parliament_approval(&self) -> bool {
 		match self {
-			// Yüksek düzey pozisyonlar Parlamento onayı gerektirir
+			// High-level positions require parliamentary approval
 			OfficialRole::Dadger
 			| OfficialRole::Xezinedar
 			| OfficialRole::PisporeEwlehiyaSiber
 			| OfficialRole::Mufetis
 			| OfficialRole::Balyoz => true,
-			// Diğerleri sadece Serok onayı
+			// The others only require Serok approval
 			_ => false,
 		}
 	}

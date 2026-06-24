@@ -17,10 +17,10 @@ fn create_bounded_vec<L: Get<u32>>(s: &[u8]) -> BoundedVec<u8, L> {
 #[test]
 fn create_course_works() {
 	new_test_ext().execute_with(|| {
-		// Admin olarak mock.rs'te TestAdminProvider içinde tanımladığımız hesabı kullanıyoruz.
+		// As admin, we use the account defined in TestAdminProvider in mock.rs.
 		let admin_account_id = 0;
 
-		// Eylem: Yetkili admin ile kurs oluştur.
+		// Action: create a course with the authorized admin.
 		assert_ok!(PerwerdePallet::create_course(
 			RuntimeOrigin::signed(admin_account_id),
 			create_bounded_vec(b"Blockchain 101"),
@@ -28,7 +28,7 @@ fn create_course_works() {
 			create_bounded_vec(b"http://example.com")
 		));
 
-		// Doğrulama
+		// Verification
 		assert!(crate::Courses::<Test>::contains_key(0));
 		let course = crate::Courses::<Test>::get(0).unwrap();
 		assert_eq!(course.owner, admin_account_id);
@@ -41,7 +41,7 @@ fn create_course_works() {
 #[test]
 fn create_course_fails_for_non_admin() {
 	new_test_ext().execute_with(|| {
-		// Admin (0) dışındaki bir hesap (2) kurs oluşturamaz.
+		// An account (2) other than the admin (0) cannot create a course.
 		let non_admin = 2;
 		assert_noop!(
 			PerwerdePallet::create_course(

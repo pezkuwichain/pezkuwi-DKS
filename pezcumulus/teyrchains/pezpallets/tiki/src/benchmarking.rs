@@ -10,13 +10,13 @@ use super::*;
 use crate::Pezpallet as Tiki;
 use pezframe_benchmarking::v2::*;
 use pezframe_system::RawOrigin;
-// Gerekli trait'leri import ediyoruz
+// Import the required traits
 use pezframe_support::traits::{Currency, Get};
 use pezpallet_balances::Pezpallet as Balances;
 use pezsp_runtime::traits::StaticLookup;
 extern crate alloc;
 
-// Gerekli trait kısıtlamalarını ana benchmarks bloğuna ekliyoruz.
+// Add the required trait bounds to the main benchmarks block.
 #[benchmarks(
 	where
 		T::CollectionId: Copy + Default + PartialOrd,
@@ -25,13 +25,13 @@ extern crate alloc;
 mod benchmarks {
 	use super::*;
 
-	// Bu yardımcı fonksiyon, runtime'da tanımlanan Tiki koleksiyonunu oluşturur.
+	// This helper function creates the Tiki collection defined in the runtime.
 	fn ensure_collection_exists<T: Config + pezpallet_balances::Config>()
 	where
 		T::CollectionId: Default + PartialOrd,
 	{
 		let collection_id = T::TikiCollectionId::get();
-		// Koleksiyon sahibi olarak fonlanmış `whitelisted_caller`'ı kullanıyoruz.
+		// Use the funded `whitelisted_caller` as the collection owner.
 		let caller: T::AccountId = whitelisted_caller();
 
 		// Fund the caller account with sufficient balance for NFT deposits
@@ -39,7 +39,7 @@ mod benchmarks {
 		let funding = Balances::<T>::minimum_balance() * 1_000_000_000u32.into();
 		Balances::<T>::make_free_balance_be(&caller, funding);
 
-		// `while` döngüsü, 'Step' trait'ine olan ihtiyacı ortadan kaldırır.
+		// The `while` loop removes the need for the 'Step' trait.
 		while pezpallet_nfts::NextCollectionId::<T>::get().unwrap_or_default() <= collection_id {
 			let _ = pezpallet_nfts::Pezpallet::<T>::force_create(
 				RawOrigin::Root.into(),
@@ -75,9 +75,9 @@ mod benchmarks {
 
 	#[benchmark]
 	fn grant_tiki() -> Result<(), BenchmarkError> {
-		// NFT'yi alacak 'dest' hesabı olarak fonlanmış `whitelisted_caller`'ı kullanıyoruz.
+		// Use the funded `whitelisted_caller` as the 'dest' account that will receive the NFT.
 		let dest: T::AccountId = whitelisted_caller();
-		// Appointed role kullan (Serok yerine Wezir)
+		// Use an appointed role (Wezir instead of Serok)
 		let tiki = crate::Tiki::Wezir;
 
 		// Ensure the dest account has a citizen NFT before granting a tiki
@@ -93,7 +93,7 @@ mod benchmarks {
 
 	#[benchmark]
 	fn revoke_tiki() -> Result<(), BenchmarkError> {
-		// NFT'yi alacak 'dest' hesabı olarak fonlanmış `whitelisted_caller`'ı kullanıyoruz.
+		// Use the funded `whitelisted_caller` as the 'dest' account that will receive the NFT.
 		let dest: T::AccountId = whitelisted_caller();
 		let tiki = crate::Tiki::Wezir; // Use appointed role
 
@@ -119,13 +119,13 @@ mod benchmarks {
 		// Ensure collection exists first
 		ensure_collection_exists::<T>();
 
-		// Henüz vatandaş olmamalı
+		// Should not be a citizen yet
 		assert!(Tiki::<T>::citizen_nft(&dest).is_none());
 
 		#[extrinsic_call]
 		_(RawOrigin::Root, T::Lookup::unlookup(dest.clone()));
 
-		// Vatandaş olduğundan emin ol
+		// Ensure they are now a citizen
 		assert!(Tiki::<T>::citizen_nft(&dest).is_some());
 		assert!(Tiki::<T>::is_citizen(&dest));
 
@@ -135,15 +135,15 @@ mod benchmarks {
 	#[benchmark]
 	fn grant_earned_role() -> Result<(), BenchmarkError> {
 		let dest: T::AccountId = whitelisted_caller();
-		let tiki = crate::Tiki::Axa; // Earned bir rol
+		let tiki = crate::Tiki::Axa; // An earned role
 
-		// Ön koşul: Vatandaş olmalı
+		// Precondition: must be a citizen
 		ensure_citizen_nft::<T>(dest.clone())?;
 
 		#[extrinsic_call]
 		_(RawOrigin::Root, T::Lookup::unlookup(dest.clone()), tiki);
 
-		// Rolün verildiğini doğrula
+		// Verify the role was granted
 		assert!(Tiki::<T>::has_tiki(&dest, &tiki));
 
 		Ok(())
@@ -152,15 +152,15 @@ mod benchmarks {
 	#[benchmark]
 	fn grant_elected_role() -> Result<(), BenchmarkError> {
 		let dest: T::AccountId = whitelisted_caller();
-		let tiki = crate::Tiki::Parlementer; // Elected bir rol
+		let tiki = crate::Tiki::Parlementer; // An elected role
 
-		// Ön koşul: Vatandaş olmalı
+		// Precondition: must be a citizen
 		ensure_citizen_nft::<T>(dest.clone())?;
 
 		#[extrinsic_call]
 		_(RawOrigin::Root, T::Lookup::unlookup(dest.clone()), tiki);
 
-		// Rolün verildiğini doğrula
+		// Verify the role was granted
 		assert!(Tiki::<T>::has_tiki(&dest, &tiki));
 
 		Ok(())

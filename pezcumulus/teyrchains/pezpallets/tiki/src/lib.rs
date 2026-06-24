@@ -437,7 +437,7 @@ pub mod pezpallet {
 
 	#[pezpallet::call]
 	impl<T: Config> Pezpallet<T> {
-		/// Admin tarafından belirli bir kullanıcıya Tiki (rol) verme
+		/// Grant a Tiki (role) to a specific user by an admin
 		#[pezpallet::call_index(0)]
 		#[pezpallet::weight(<T as crate::pezpallet::Config>::WeightInfo::grant_tiki())]
 		pub fn grant_tiki(
@@ -458,7 +458,7 @@ pub mod pezpallet {
 			Ok(())
 		}
 
-		/// Admin tarafından belirli bir kullanıcıdan Tiki (rol) alma
+		/// Remove a Tiki (role) from a specific user by an admin
 		#[pezpallet::call_index(1)]
 		#[pezpallet::weight(<T as crate::pezpallet::Config>::WeightInfo::revoke_tiki())]
 		pub fn revoke_tiki(
@@ -558,7 +558,7 @@ pub mod pezpallet {
 			from: T::AccountId,
 			to: T::AccountId,
 		) -> DispatchResult {
-			// Tiki NFT koleksiyonu ise transfer'e izin verme
+			// If it is the Tiki NFT collection, do not allow the transfer
 			if collection_id == T::TikiCollectionId::get() {
 				Self::deposit_event(Event::TransferBlocked { collection_id, item_id, from, to });
 				return Err(DispatchError::Other("Citizen NFTs are non-transferable"));
@@ -759,12 +759,12 @@ pub mod pezpallet {
 			}
 		}
 
-		/// KYC sonrası otomatik Welati rolü verme
+		/// Automatically grant the Welati role after KYC
 		pub fn auto_grant_citizenship(account: &T::AccountId) -> DispatchResult {
-			// KYC kontrolü
+			// KYC check
 			let kyc_status = pezpallet_identity_kyc::Pezpallet::<T>::kyc_status_of(account);
 			if kyc_status == pezpallet_identity_kyc::types::KycLevel::Approved {
-				// Vatandaşlık NFT'si yoksa bas
+				// Mint the citizenship NFT if it does not exist
 				if Self::citizen_nft(account).is_none() {
 					Self::mint_citizen_nft_for_user(account)?;
 				}
@@ -772,31 +772,31 @@ pub mod pezpallet {
 			Ok(())
 		}
 
-		/// Kullanıcının belirli bir Tiki'ye sahip olup olmadığını kontrol eder
+		/// Checks whether the user holds a specific Tiki
 		pub fn has_tiki(who: &T::AccountId, tiki: &Tiki) -> bool {
 			Self::user_tikis(who).contains(tiki)
 		}
 
-		/// Kullanıcının vatandaş olup olmadığını kontrol eder
+		/// Checks whether the user is a citizen
 		pub fn is_citizen(who: &T::AccountId) -> bool {
 			Self::citizen_nft(who).is_some()
 		}
 	}
 }
 
-/// Diğer paletlerin, bu paletten Tiki puanlarını sorgulaması için kullanılacak trait
+/// Trait used by other pallets to query Tiki scores from this pallet
 pub trait TikiScoreProvider<AccountId> {
 	fn get_tiki_score(who: &AccountId) -> u32;
 }
 
-/// Diğer paletlerin, Tiki sahipliğini sorgulaması için kullanılacak trait
+/// Trait used by other pallets to query Tiki ownership
 pub trait TikiProvider<AccountId> {
 	fn has_tiki(who: &AccountId, tiki: &Tiki) -> bool;
 	fn get_user_tikis(who: &AccountId) -> Vec<Tiki>;
 	fn is_citizen(who: &AccountId) -> bool;
 }
 
-/// Trait implementasyonları
+/// Trait implementations
 impl<T: Config> TikiScoreProvider<T::AccountId> for Pezpallet<T> {
 	fn get_tiki_score(who: &T::AccountId) -> u32 {
 		let tikis = Self::user_tikis(who);
@@ -821,12 +821,12 @@ impl<T: Config> TikiProvider<T::AccountId> for Pezpallet<T> {
 	}
 }
 
-// Puanlama mantığını ayrı bir impl bloğunda tutarak kodu daha düzenli hale getiriyoruz.
+// Keeping the scoring logic in a separate impl block to keep the code more organized.
 impl<T: Config> Pezpallet<T> {
-	/// Belirli bir Tiki'nin Trust Puanı'na olan katkısını döndürür.
+	/// Returns the contribution of a specific Tiki to the Trust Score.
 	pub fn get_bonus_for_tiki(tiki: &Tiki) -> u32 {
 		match tiki {
-			// Anayasa v5.0'da Belirlenen Özel Puanlar
+			// Special scores defined in Anayasa v5.0
 			Tiki::Axa => 250,
 			Tiki::RêveberêProjeyê => 250,
 			Tiki::ModeratorêCivakê => 200,
@@ -834,13 +834,13 @@ impl<T: Config> Pezpallet<T> {
 			Tiki::Mela => 50,
 			Tiki::Feqî => 50,
 
-			// Hiyerarşik Devlet Puanları
-			// Yargı
+			// Hierarchical State Scores
+			// Judiciary
 			Tiki::EndameDiwane => 175,
 			Tiki::Dadger => 150,
 			Tiki::Dozger => 120,
 			Tiki::Hiquqnas => 75,
-			// Yürütme
+			// Executive
 			Tiki::Serok => 200,
 			Tiki::Wezir => 100,
 			Tiki::SerokWeziran => 125,
@@ -852,18 +852,18 @@ impl<T: Config> Pezpallet<T> {
 			Tiki::WezireAva => 100,
 			Tiki::WezireCand => 100,
 
-			// Yasama
+			// Legislature
 			Tiki::SerokiMeclise => 150,
 			Tiki::Parlementer => 100,
 
-			// Atanmış Üst Düzey Memurlar
+			// Appointed Senior Officials
 			Tiki::Xezinedar => 100,
 			Tiki::PisporêEwlehiyaSîber => 100,
 			Tiki::Mufetîs => 90,
 			Tiki::Balyoz => 80,
 			Tiki::Berdevk => 70,
 
-			// Diğer Memurlar ve Uzmanlar
+			// Other Officials and Experts
 			Tiki::Mamoste => 70,
 			Tiki::OperatorêTorê => 60,
 			Tiki::Noter => 50,
@@ -895,7 +895,7 @@ impl<T: Config> Pezpallet<T> {
 			Tiki::PisporêBazarkirinê => 40,
 			Tiki::Karguzar => 40,
 
-			// Temel Vatandaşlık
+			// Basic Citizenship
 			Tiki::Welati => 10,
 		}
 	}

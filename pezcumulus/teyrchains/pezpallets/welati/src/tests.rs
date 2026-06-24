@@ -14,7 +14,7 @@ use crate::{
 use pezframe_support::{assert_noop, assert_ok, BoundedVec};
 use pezsp_runtime::traits::BadOrigin;
 
-// ===== SEÇİM SİSTEMİ TESTLERİ =====
+// ===== ELECTION SYSTEM TESTS =====
 
 #[test]
 fn initiate_election_works() {
@@ -155,7 +155,7 @@ fn register_candidate_fails_already_candidate() {
 #[test]
 fn cast_vote_works() {
 	ExtBuilder::default().build().execute_with(|| {
-		// 1. Seçimi başlat
+		// 1. Start the election
 		assert_ok!(Welati::initiate_election(
 			RuntimeOrigin::root(),
 			ElectionType::Parliamentary,
@@ -163,28 +163,28 @@ fn cast_vote_works() {
 			None,
 		));
 
-		// 2. Bir aday kaydet (hesap 1)
-		let endorsers: Vec<u64> = (3..=52).collect(); // 50 destekçi
+		// 2. Register a candidate (account 1)
+		let endorsers: Vec<u64> = (3..=52).collect(); // 50 endorsers
 		assert_ok!(Welati::register_candidate(
-			RuntimeOrigin::signed(1), // Aday
-			0,                        // Seçim ID'si
-			None,                     // Bölge ID'si
+			RuntimeOrigin::signed(1), // Candidate
+			0,                        // Election ID
+			None,                     // District ID
 			endorsers,
 		));
 
-		// 3. Oy verme periyoduna ilerle
+		// 3. Advance to the voting period
 		run_to_block(86_400 + 259_200 + 1);
 
-		// 4. Oy kullan (hesap 2, aday 1'e oy veriyor)
+		// 4. Cast a vote (account 2 votes for candidate 1)
 		let candidates_to_vote_for = vec![1];
 		assert_ok!(Welati::cast_vote(
-			RuntimeOrigin::signed(2),       // Seçmen
-			0,                              // Seçim ID'si
-			candidates_to_vote_for.clone(), // Oy verilen aday(lar)
-			None,                           // Bölge ID'si
+			RuntimeOrigin::signed(2),       // Voter
+			0,                              // Election ID
+			candidates_to_vote_for.clone(), // Candidate(s) voted for
+			None,                           // District ID
 		));
 
-		// 5. Event'i ve depolama durumunu doğrula
+		// 5. Verify the event and storage state
 		assert_eq!(
 			last_event(),
 			RuntimeEvent::Welati(WelatiEvent::VoteCast {
@@ -253,9 +253,9 @@ fn finalize_election_works() {
 			None,
 		));
 
-		// Seçimin bitiş tarihinden sonrasına geç
+		// Move past the election end date
 		// candidacy (86_400) + campaign (259_200) + voting (432_000) + 1
-		run_to_block(86_400 + 259_200 + 432_000 + 10); // Ekstra güvenlik için +10
+		run_to_block(86_400 + 259_200 + 432_000 + 10); // +10 for extra safety
 
 		assert_ok!(Welati::finalize_election(RuntimeOrigin::root(), 0,));
 
@@ -265,7 +265,7 @@ fn finalize_election_works() {
 	});
 }
 
-// ===== ATAMA SİSTEMİ TESTLERİ =====
+// ===== APPOINTMENT SYSTEM TESTS =====
 
 #[test]
 fn nominate_official_works() {
@@ -305,7 +305,7 @@ fn approve_appointment_works() {
 	});
 }
 
-// ===== KOLLEKTİF KARAR TESTLERİ =====
+// ===== COLLECTIVE DECISION TESTS =====
 
 #[test]
 fn submit_proposal_works() {
@@ -313,7 +313,7 @@ fn submit_proposal_works() {
 		let title = b"Test Proposal".to_vec().try_into().unwrap();
 		let description = b"Test proposal description".to_vec().try_into().unwrap();
 
-		// CRITICAL FIX: Helper fonksiyonu kullan
+		// CRITICAL FIX: Use the helper function
 		add_parliament_member(1);
 
 		assert_ok!(Welati::submit_proposal(
@@ -336,7 +336,7 @@ fn vote_on_proposal_works() {
 		let title = b"Test Proposal".to_vec().try_into().unwrap();
 		let description = b"Test proposal description".to_vec().try_into().unwrap();
 
-		// CRITICAL FIX: Helper fonksiyonları kullan
+		// CRITICAL FIX: Use the helper functions
 		add_parliament_member(1);
 		add_parliament_member(2);
 
@@ -365,7 +365,7 @@ fn vote_on_proposal_works() {
 	});
 }
 
-// ===== HELPER FUNCTION TESTLERİ =====
+// ===== HELPER FUNCTION TESTS =====
 
 #[test]
 fn get_required_trust_score_works() {
@@ -412,7 +412,7 @@ fn calculate_vote_weight_works() {
 	});
 }
 
-// ===== ERROR CASE TESTLERİ =====
+// ===== ERROR CASE TESTS =====
 
 #[test]
 fn election_not_found_error_works() {
@@ -434,12 +434,12 @@ fn proposal_not_found_error_works() {
 	});
 }
 
-// ===== INTEGRATION TESTLERİ =====
+// ===== INTEGRATION TESTS =====
 
 #[test]
 fn complete_election_cycle_works() {
 	ExtBuilder::default().build().execute_with(|| {
-		// 1. Seçim başlat
+		// 1. Start the election
 		assert_ok!(Welati::initiate_election(
 			RuntimeOrigin::root(),
 			ElectionType::Parliamentary,
@@ -447,7 +447,7 @@ fn complete_election_cycle_works() {
 			None,
 		));
 
-		// 2. Adaylar kaydolsun
+		// 2. Register candidates
 		let endorsers1: Vec<u64> = (10..=59).collect();
 		let endorsers2: Vec<u64> = (60..=109).collect();
 
@@ -455,15 +455,15 @@ fn complete_election_cycle_works() {
 
 		assert_ok!(Welati::register_candidate(RuntimeOrigin::signed(2), 0, None, endorsers2,));
 
-		// 3. Voting period'a geç
+		// 3. Move to the voting period
 		run_to_block(86_400 + 259_200 + 1);
 
-		// 4. Oylar kullanılsın
+		// 4. Cast votes
 		assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(3), 0, vec![1], None,));
 
 		assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(4), 0, vec![2], None,));
 
-		// 5. Seçimi sonlandır
+		// 5. Finalize the election
 		run_to_block(86_400 + 259_200 + 432_000 + 2);
 
 		assert_ok!(Welati::finalize_election(RuntimeOrigin::root(), 0,));
@@ -501,7 +501,7 @@ fn complete_proposal_cycle_works() {
 		let title = b"Budget Amendment".to_vec().try_into().unwrap();
 		let description = b"Increase education budget by 10%".to_vec().try_into().unwrap();
 
-		// CRITICAL FIX: Helper fonksiyonları kullan
+		// CRITICAL FIX: Use the helper functions
 		add_parliament_member(1);
 		add_parliament_member(2);
 		add_parliament_member(3);
@@ -528,7 +528,7 @@ fn complete_proposal_cycle_works() {
 	});
 }
 
-// ===== RUNOFF ELECTION TESTLERİ =====
+// ===== RUNOFF ELECTION TESTS =====
 
 #[test]
 fn initiate_runoff_election_works() {

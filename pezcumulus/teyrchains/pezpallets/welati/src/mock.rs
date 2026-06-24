@@ -103,7 +103,7 @@ impl pezpallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
-// Mock Randomness - SADECE BİR KEZ TANIMLA
+// Mock Randomness - DEFINE ONLY ONCE
 pub struct MockRandomness;
 impl Randomness<H256, u64> for MockRandomness {
 	fn random(_subject: &[u8]) -> (H256, u64) {
@@ -323,56 +323,56 @@ impl pezpallet_tiki::Config for Test {
 	type TrustScoreUpdater = ();
 }
 
-// Mock implementations for required traits - YÜKSEK SKORLAR VER
+// Mock implementations for required traits - PROVIDE HIGH SCORES
 pub struct MockStakingScoreProvider;
 impl pezpallet_staking_score::StakingScoreProvider<AccountId, u64> for MockStakingScoreProvider {
 	fn get_staking_score(_account: &AccountId) -> (u32, u64) {
-		(1000, 0) // Yüksek skor
+		(1000, 0) // High score
 	}
 }
 
 pub struct MockReferralScoreProvider;
 impl pezpallet_trust::ReferralScoreProvider<AccountId> for MockReferralScoreProvider {
 	fn get_referral_score(_account: &AccountId) -> u32 {
-		500 // Yüksek skor
+		500 // High score
 	}
 }
 
 pub struct MockPerwerdeScoreProvider;
 impl pezpallet_trust::PerwerdeScoreProvider<AccountId> for MockPerwerdeScoreProvider {
 	fn get_perwerde_score(_account: &AccountId) -> u32 {
-		750 // Yüksek skor
+		750 // High score
 	}
 }
 
 pub struct MockTikiScoreProvider;
 
-// `pezpallet_trust` için implementasyon
+// Implementation for `pezpallet_trust`
 impl pezpallet_trust::TikiScoreProvider<AccountId> for MockTikiScoreProvider {
 	fn get_tiki_score(_account: &AccountId) -> u32 {
 		100
 	}
 }
 
-// `pezpallet_welati`'nin ihtiyaç duyduğu `pezpallet_tiki` için implementasyon
+// Implementation for `pezpallet_tiki`, which `pezpallet_welati` requires
 impl pezpallet_tiki::TikiScoreProvider<AccountId> for MockTikiScoreProvider {
 	fn get_tiki_score(_account: &AccountId) -> u32 {
-		1000 // Yüksek Tiki score - tüm kontrolleri geçer
+		1000 // High Tiki score - passes all checks
 	}
 }
 
 pub struct MockCitizenshipStatusProvider;
 impl pezpallet_trust::CitizenshipStatusProvider<AccountId> for MockCitizenshipStatusProvider {
 	fn is_citizen(_account: &AccountId) -> bool {
-		true // Herkes vatandaş
+		true // Everyone is a citizen
 	}
 }
 
-// MOCK TRUST PROVIDER - HERKES İÇİN YÜKSEK SKOR
+// MOCK TRUST PROVIDER - HIGH SCORE FOR EVERYONE
 pub struct MockTrustProvider;
 impl pezpallet_trust::TrustScoreProvider<AccountId> for MockTrustProvider {
 	fn trust_score_of(_account: &AccountId) -> u128 {
-		1000u128 // Herkes için yüksek trust score
+		1000u128 // High trust score for everyone
 	}
 }
 
@@ -403,7 +403,7 @@ impl pezpallet_trust::Config for Test {
 	type CitizenshipSource = MockCitizenshipStatusProvider;
 }
 
-// Welati Configuration - SADECE BİR KEZ TANIMLA
+// Welati Configuration - DEFINE ONLY ONCE
 parameter_types! {
 	pub const ParliamentSize: u32 = 201;
 	pub const DiwanSize: u32 = 11;
@@ -421,9 +421,9 @@ impl pezpallet_welati::Config for Test {
 	type WeightInfo = ();
 	type Randomness = MockRandomness;
 	type RuntimeCall = RuntimeCall;
-	type TrustScoreSource = MockTrustProvider; // Mock provider kullan
-	type TikiSource = MockTikiScoreProvider; // Mock Tiki provider kullan
-	type CitizenSource = MockTrustProvider; // Mock provider kullan
+	type TrustScoreSource = MockTrustProvider; // Use the mock provider
+	type TikiSource = MockTikiScoreProvider; // Use the mock Tiki provider
+	type CitizenSource = MockTrustProvider; // Use the mock provider
 	type KycSource = IdentityKyc;
 	type ParliamentSize = ParliamentSize;
 	type DiwanSize = DiwanSize;
@@ -438,7 +438,7 @@ impl pezpallet_welati::Config for Test {
 	type MaxEndorsers = MaxEndorsers;
 }
 
-// CRITICAL: CitizenInfo trait implementation - SADECE BİR KEZ TANIMLA
+// CRITICAL: CitizenInfo trait implementation - DEFINE ONLY ONCE
 impl CitizenInfo for Trust {
 	fn citizen_count() -> u32 {
 		110
@@ -476,14 +476,14 @@ impl ExtBuilder {
 	}
 }
 
-// SIMPLIFIED TEST USER SETUP - BOŞ BIRAK, MOCK PROVIDERS YETERLI
+// SIMPLIFIED TEST USER SETUP - LEAVE EMPTY, MOCK PROVIDERS ARE SUFFICIENT
 pub fn setup_test_users() {
-	// Mock provider'lar zaten herkesin yüksek trust score'u olmasını sağlıyor
-	// ve TikiScoreProvider da herkesin Tiki'ye sahip olduğunu söylüyor
-	// Bu sayede pezpallet-tiki ile uğraşmak zorunda kalmıyoruz
+	// The mock providers already ensure everyone has a high trust score,
+	// and the TikiScoreProvider also reports that everyone owns a Tiki.
+	// This way we do not have to deal with pezpallet-tiki.
 
-	// Sadece NFTs collection'ı oluşturuldu, bu yeterli
-	// Testlerde KYC kontrolü zaten bypass ediliyor
+	// Only the NFTs collection was created, and that is sufficient.
+	// The KYC check is already bypassed in tests.
 }
 
 // CRITICAL HELPER FUNCTION FOR TESTS

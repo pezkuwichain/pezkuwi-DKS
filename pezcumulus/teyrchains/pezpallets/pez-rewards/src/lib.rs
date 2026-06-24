@@ -164,7 +164,7 @@ pub mod pezpallet {
 		/// Authority check for root origin
 		type ForceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
-		/// NFT Collection ID ve Item ID types - must match pezpallet_nfts::Config
+		/// NFT Collection ID and Item ID types - must match pezpallet_nfts::Config
 		type CollectionId: Member + Parameter + MaxEncodedLen + Copy + From<u32> + Into<u32>;
 		type ItemId: Member + Parameter + MaxEncodedLen + Copy + From<u32> + Into<u32>;
 	}
@@ -481,7 +481,7 @@ pub mod pezpallet {
 
 			ensure!(total_reward_pool > Zero::zero(), Error::<T>::InsufficientIncentivePot);
 
-			// Parliamentary rewards distribute et (10%)
+			// Distribute parliamentary rewards (10%)
 			Self::distribute_parliamentary_rewards(current_epoch, total_reward_pool)?;
 
 			// Remaining 90% for trust score rewards
@@ -507,7 +507,7 @@ pub mod pezpallet {
 				Zero::zero()
 			};
 
-			// Talep son tarihini belirle (1 hafta sonra)
+			// Set the claim deadline (1 week later)
 			let claim_deadline = current_block.saturating_add(CLAIM_PERIOD_BLOCKS.into());
 
 			// Save reward pool information

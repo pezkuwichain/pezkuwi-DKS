@@ -142,21 +142,21 @@ where
 			)
 	}
 }
-// --- Dış Dünya İçin Arayüzler (Traits) ---
+// --- Interfaces for the Outside World (Traits) ---
 
-/// Bir hesabın KYC durumunu sorgulamak için arayüz.
+/// Interface for querying the KYC status of an account.
 pub trait KycStatus<AccountId> {
 	fn get_kyc_status(who: &AccountId) -> KycLevel;
 }
 
-/// Bir hesabın kimlik bilgilerini sorgulamak için arayüz.
+/// Interface for querying the identity information of an account.
 pub trait IdentityInfoProvider<AccountId, MaxStringLength: Get<u32>> {
 	fn get_identity_info(who: &AccountId) -> Option<IdentityInfo<MaxStringLength>>;
 }
 
-/// KYC onaylandığında tetiklenecek eylemleri tanımlayan arayüz.
-/// Bu trait identity-kyc palletinde tanımlanır ve diğer palletler (örn. referral)
-/// tarafından implement edilir, böylece circular dependency oluşmaz.
+/// Interface defining the actions to be triggered when KYC is approved.
+/// This trait is defined in the identity-kyc pallet and is implemented by other
+/// pallets (e.g. referral), so that no circular dependency is created.
 ///
 /// UPDATED (Gemini suggestion): Now includes referrer parameter to avoid
 /// data loss when identity-kyc and referral have separate storage.
@@ -172,9 +172,9 @@ impl<AccountId> OnKycApproved<AccountId> for () {
 	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId) {}
 }
 
-/// Vatandaşlık NFT'si mintlemek için arayüz.
-/// Bu trait identity-kyc palletinde tanımlanır ve tiki pezpallet tarafından
-/// implement edilir, böylece circular dependency oluşmaz.
+/// Interface for minting a citizenship NFT.
+/// This trait is defined in the identity-kyc pallet and is implemented by the tiki
+/// pezpallet, so that no circular dependency is created.
 pub trait CitizenNftProvider<AccountId> {
 	fn mint_citizen_nft(who: &AccountId) -> pezsp_runtime::DispatchResult;
 

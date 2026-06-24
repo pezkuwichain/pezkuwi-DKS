@@ -376,7 +376,7 @@ pub mod pezpallet {
 		fn get_referral_score(who: &T::AccountId) -> RawScore {
 			let stats = ReferrerStatsStorage::<T>::get(who);
 
-			// Step 1: "Haksız olanı geri alma" - Remove revoked referrals from count
+			// Step 1: "Reverse the unfair ones" - Remove revoked referrals from count
 			// This is NOT a penalty, it's correcting the record to reflect reality
 			let good_referrals = stats.total_referrals.saturating_sub(stats.revoked_referrals);
 
@@ -395,7 +395,7 @@ pub mod pezpallet {
 				_ => 500,
 			};
 
-			// Step 3: "Cezalandırma" - Apply stored penalty from PenaltyPerRevocation
+			// Step 3: "Punishment" - Apply stored penalty from PenaltyPerRevocation
 			// Uses the pre-calculated penalty_score accumulated in on_citizenship_revoked()
 			// This is the actual punishment: "you should have been more careful"
 			base_score.saturating_sub(stats.penalty_score)

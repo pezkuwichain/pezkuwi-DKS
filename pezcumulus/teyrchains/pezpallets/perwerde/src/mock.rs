@@ -15,13 +15,13 @@ use pezsp_runtime::{
 	BuildStorage,
 };
 
-// Temel tipleri tanımlıyoruz.
+// Define the basic types.
 pub type AccountId = u64;
 pub type Balance = u128;
 pub type BlockNumber = u64;
 pub type Block = pezframe_system::mocking::MockBlock<Test>;
 
-// Test runtime'ımızı kuruyoruz.
+// Set up our test runtime.
 construct_runtime!(
 	pub enum Test
 	{
@@ -32,7 +32,7 @@ construct_runtime!(
 	}
 );
 
-// pezframe_system için implementasyon.
+// Implementation for pezframe_system.
 impl pezframe_system::Config for Test {
 	type BaseCallFilter = Everything;
 	type BlockWeights = ();
@@ -66,7 +66,7 @@ impl pezframe_system::Config for Test {
 	type PostTransactions = ();
 }
 
-// pezpallet_balances için implementasyon.
+// Implementation for pezpallet_balances.
 impl pezpallet_balances::Config for Test {
 	type Balance = Balance;
 	type DustRemoval = ();
@@ -93,23 +93,23 @@ parameter_types! {
 	pub const MaxPointsPerCourse: u32 = 1000;  // Max points per course completion
 }
 
-// --- KESİN ÇÖZÜM BURADA BAŞLIYOR ---
+// --- THE DEFINITIVE SOLUTION STARTS HERE ---
 
-// AdminOrigin'i test etmek için kendi özel yetki sağlayıcımızı oluşturuyoruz.
+// We create our own custom authority provider to test AdminOrigin.
 use pezframe_system::EnsureSignedBy;
 
-// Bu struct, derleyicinin talep ettiği `SortedMembers` trait'ini manuel olarak uygular.
-// Bu, harici ve versiyona bağımlı araçlara olan ihtiyacı ortadan kaldırır.
+// This struct manually implements the `SortedMembers` trait that the compiler requires.
+// This eliminates the need for external, version-dependent tools.
 pub struct TestAdminProvider;
 impl SortedMembers<AccountId> for TestAdminProvider {
 	fn sorted_members() -> Vec<AccountId> {
-		// Test için admin olarak sadece 0 ID'li hesabı yetkili kılıyoruz.
+		// For tests, we authorize only the account with ID 0 as admin.
 		vec![0]
 	}
 }
 
 impl pezpallet_perwerde::Config for Test {
-	// AdminOrigin'i, kendi yazdığımız ve sadece 0'ı admin kabul eden sağlayıcıya bağlıyoruz.
+	// We bind AdminOrigin to our own provider, which accepts only 0 as admin.
 	type AdminOrigin = EnsureSignedBy<TestAdminProvider, AccountId>;
 	type WeightInfo = ();
 	type MaxCourseNameLength = MaxCourseNameLength;
@@ -121,7 +121,7 @@ impl pezpallet_perwerde::Config for Test {
 	type TrustScoreUpdater = ();
 }
 
-// Council Paletinin Mock Kurulumu (construct_runtime'da gerekli olduğu için kalıyor)
+// Mock setup for the Council pallet (kept because it is required in construct_runtime)
 use pezpallet_collective::Instance1;
 parameter_types! {
 	pub const CouncilMotionDuration: BlockNumber = 5 * 60; // 5 minutes
@@ -147,8 +147,8 @@ impl pezpallet_collective::Config<Instance1> for Test {
 
 pub fn new_test_ext() -> pezsp_io::TestExternalities {
 	let t = pezframe_system::GenesisConfig::<Test>::default().build_storage().unwrap();
-	// `pezpallet-collective`'in genesis'ini de kurmamıza gerek kalmadı çünkü artık testimiz ona
-	// bağlı değil.
+	// We no longer need to set up the genesis of `pezpallet-collective` because our test is no
+	// longer dependent on it.
 	let mut ext = pezsp_io::TestExternalities::new(t);
 	ext.execute_with(|| System::set_block_number(1));
 	ext

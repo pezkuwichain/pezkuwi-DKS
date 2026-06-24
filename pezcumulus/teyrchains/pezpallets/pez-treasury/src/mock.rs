@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // pezkuwi/pallets/pez-treasury/src/mock.rs
-// VERSION 3: AccountId tipi H256 yapıldı (u64 yerine)
+// VERSION 3: AccountId type changed to H256 (instead of u64)
 
 use crate::{self as pezpallet_pez_treasury, weights};
 use pezframe_support::{
@@ -44,7 +44,7 @@ impl pezframe_system::Config for Test {
 	type Nonce = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = H256; // V3: u64 -> H256 değişti
+	type AccountId = H256; // V3: changed u64 -> H256
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Block = Block;
 	type RuntimeEvent = RuntimeEvent;
@@ -123,7 +123,7 @@ impl pezpallet_assets::Config for Test {
 	type BenchmarkHelper = ();
 }
 
-// CRITICAL: Bu üç PalletId FARKLI olmak ZORUNDA
+// CRITICAL: These three PalletIds MUST be DIFFERENT
 parameter_types! {
 	pub const PezTreasuryPalletId: PalletId = PalletId(*b"py/pztrs");
 	pub const PezIncentivePotId: PalletId = PalletId(*b"py/pzinc");
@@ -131,7 +131,7 @@ parameter_types! {
 	pub const PezAssetId: u32 = 1;
 }
 
-// V3: Test accounts - H256 formatında
+// V3: Test accounts - in H256 format
 use pezsp_runtime::traits::AccountIdConversion;
 
 pub fn alice() -> H256 {
@@ -227,7 +227,7 @@ pub fn assert_pez_balance(account: H256, expected: u128) {
 	);
 }
 
-// V3: Helper fonksiyonlar - H256 dönüyor
+// V3: Helper functions - return H256
 #[allow(dead_code)]
 pub fn treasury_account() -> H256 {
 	PezTreasuryPalletId::get().into_account_truncating()

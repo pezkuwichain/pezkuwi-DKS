@@ -239,7 +239,7 @@ fn release_monthly_funds_splits_correctly() {
 
 		// 75% to incentive, 25% to government
 		assert_eq!(incentive_balance, monthly_amount * 75 / 100);
-		// lib.rs'deki mantıkla aynı olmalı (saturating_sub)
+		// Must match the logic in lib.rs (saturating_sub)
 		let incentive_amount_calculated = monthly_amount * 75 / 100;
 		assert_eq!(government_balance, monthly_amount - incentive_amount_calculated);
 
@@ -410,8 +410,8 @@ fn release_exactly_at_boundary_block_fails() {
 		assert_ok!(PezTreasury::do_genesis_distribution());
 		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
 
-		// Tam 432_000. blok (start_block=1 olduğu için) 431_999 blok geçti demektir.
-		// Bu, 1 tam ay (432_000 blok) değildir.
+		// Exactly block 432_000 (since start_block=1) means 431_999 blocks have passed.
+		// This is not a full month (432_000 blocks).
 		run_to_block(432_000);
 		assert_noop!(
 			PezTreasury::release_monthly_funds(RuntimeOrigin::root()),
@@ -555,7 +555,7 @@ fn pot_accounts_are_different() {
 		println!("Government: {government:?}");
 		println!("================================\n");
 
-		// Tüm üçü farklı olmalı
+		// All three must be different
 		assert_ne!(treasury, incentive, "Treasury and Incentive must be different");
 		assert_ne!(treasury, government, "Treasury and Government must be different");
 		assert_ne!(incentive, government, "Incentive and Government must be different");
@@ -674,7 +674,7 @@ fn full_halving_cycle_test() {
 			if month < 47 {
 				cumulative_released += initial_monthly;
 			} else {
-				// 48. sürümde (index 47) halving tetiklenir ve yarı tutar kullanılır
+				// On the 48th release (index 47) halving is triggered and the halved amount is used
 				cumulative_released += initial_monthly / 2;
 			}
 		}
@@ -690,7 +690,7 @@ fn full_halving_cycle_test() {
 			if month < 95 {
 				cumulative_released += initial_monthly / 2;
 			} else {
-				// 96. sürümde (index 95) ikinci halving tetiklenir
+				// On the 96th release (index 95) the second halving is triggered
 				cumulative_released += initial_monthly / 4;
 			}
 		}
@@ -944,7 +944,7 @@ fn first_period_total_is_half_of_treasury() {
 		let expected_first_period = treasury_allocation / 2;
 
 		let diff = expected_first_period.saturating_sub(first_period_total);
-		// Kalanların toplamı 48'den az olmalı (her ay en fazla 1 birim kalan)
+		// The sum of the remainders must be less than 48 (at most 1 unit of remainder per month)
 		assert!(diff < 48, "Rounding error too large: {diff}");
 	});
 }
@@ -966,7 +966,7 @@ fn geometric_series_sum_validates() {
 		// After infinite halvings, total distributed = treasury_allocation
 		// first_period_total * 2 = treasury_allocation
 		let diff = treasury_allocation.saturating_sub(first_period_total * 2);
-		// Kalanların toplamı (2 ile çarpılmış) 96'dan az olmalı
+		// The sum of the remainders (multiplied by 2) must be less than 96
 		assert!(diff < 96, "Rounding error too large: {diff}");
 	});
 }

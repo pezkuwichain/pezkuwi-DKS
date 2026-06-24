@@ -107,13 +107,13 @@ fn force_recalculate_trust_score_requires_root() {
 #[test]
 fn update_all_trust_scores_works() {
 	new_test_ext().execute_with(|| {
-		// Event'leri yakalamak için block number set et
+		// Set block number to capture events
 		System::set_block_number(1);
 
 		assert_ok!(TrustPallet::update_all_trust_scores(RuntimeOrigin::root()));
 
-		// Mock implementation boş account listesi kullandığı için
-		// AllTrustScoresUpdated event'i yayınlanır (count: 0 ile)
+		// Because the mock implementation uses an empty account list,
+		// the AllTrustScoresUpdated event is emitted (with count: 0)
 		let events = System::events();
 		assert!(events.iter().any(|event| {
 			matches!(
@@ -134,18 +134,18 @@ fn update_all_trust_scores_requires_root() {
 #[test]
 fn periodic_trust_score_update_works() {
 	new_test_ext().execute_with(|| {
-		// Event'leri yakalamak için block number set et
+		// Set block number to capture events
 		System::set_block_number(1);
 
 		assert_ok!(TrustPallet::periodic_trust_score_update(RuntimeOrigin::root()));
 
-		// Periyodik güncelleme event'inin yayınlandığını kontrol et
+		// Verify the periodic update event was emitted
 		let events = System::events();
 		assert!(events.iter().any(|event| {
 			matches!(event.event, RuntimeEvent::TrustPallet(Event::PeriodicUpdateScheduled { .. }))
 		}));
 
-		// Ayrıca AllTrustScoresUpdated event'i de yayınlanmalı
+		// The AllTrustScoresUpdated event should also be emitted
 		assert!(events.iter().any(|event| {
 			matches!(event.event, RuntimeEvent::TrustPallet(Event::AllTrustScoresUpdated { .. }))
 		}));
@@ -155,10 +155,10 @@ fn periodic_trust_score_update_works() {
 #[test]
 fn periodic_update_fails_when_batch_in_progress() {
 	new_test_ext().execute_with(|| {
-		// Batch update'i başlat
+		// Start the batch update
 		crate::BatchUpdateInProgress::<Test>::put(true);
 
-		// Periyodik update'in başarısız olmasını bekle
+		// Expect the periodic update to fail
 		assert_noop!(
 			TrustPallet::periodic_trust_score_update(RuntimeOrigin::root()),
 			Error::<Test>::UpdateInProgress
@@ -211,18 +211,18 @@ fn trust_score_updater_trait_works() {
 #[test]
 fn batch_update_storage_works() {
 	new_test_ext().execute_with(|| {
-		// Başlangıçta batch update aktif değil
+		// Initially the batch update is not active
 		assert!(!crate::BatchUpdateInProgress::<Test>::get());
 		assert!(crate::LastProcessedAccount::<Test>::get().is_none());
 
-		// Batch update'i simüle et
+		// Simulate the batch update
 		crate::BatchUpdateInProgress::<Test>::put(true);
 		crate::LastProcessedAccount::<Test>::put(42u64);
 
 		assert!(crate::BatchUpdateInProgress::<Test>::get());
 		assert_eq!(crate::LastProcessedAccount::<Test>::get(), Some(42u64));
 
-		// Temizle
+		// Clean up
 		crate::BatchUpdateInProgress::<Test>::put(false);
 		crate::LastProcessedAccount::<Test>::kill();
 
@@ -238,7 +238,7 @@ fn periodic_update_scheduling_works() {
 
 		assert_ok!(TrustPallet::periodic_trust_score_update(RuntimeOrigin::root()));
 
-		// Event'te next_block'un doğru hesaplandığını kontrol et
+		// Verify that next_block is calculated correctly in the event
 		let events = System::events();
 		let scheduled_event = events.iter().find(|event| {
 			matches!(event.event, RuntimeEvent::TrustPallet(Event::PeriodicUpdateScheduled { .. }))

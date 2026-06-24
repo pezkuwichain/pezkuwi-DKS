@@ -10,7 +10,7 @@ use crate::Pezpallet as PezTreasury;
 use pezframe_benchmarking::v2::*;
 use pezframe_support::traits::{
 	fungibles::{Inspect, Mutate},
-	Get, // HATA GİDERİLDİ: .get() fonksiyonu için bu trait eklendi
+	Get, // BUG FIXED: this trait was added for the .get() function
 };
 use pezframe_system::RawOrigin;
 use pezsp_runtime::traits::{Saturating, Zero};
@@ -60,7 +60,7 @@ mod benchmarks {
 		crate::HalvingInfo::<T>::kill();
 		crate::NextReleaseMonth::<T>::kill();
 		crate::GenesisDistributionDone::<T>::kill();
-		// Deprecated `remove_all` yerine `clear` kullanılıyor.
+		// Using `clear` instead of the deprecated `remove_all`.
 		let _ = crate::MonthlyReleases::<T>::clear(u32::MAX, None);
 
 		// First do genesis distribution to properly fund the treasury
