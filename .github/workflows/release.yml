@@ -1,0 +1,131 @@
+name: release
+
+# Builds the deployable runtime WASM blobs, publishes their authorize_upgrade
+# hashes, and signs the artifacts. A runtime upgrade on a fund-holding chain must be
+# verifiable: anyone can rebuild from this tag with the pinned toolchain (1.96.0,
+# rust-toolchain.toml) + the committed Cargo.lock and compare the blake2-256 hash to
+# what governance authorizes.
+#
+# NOTE: this is pinned-toolchain reproducibility (deterministic given the same
+# toolchain + lockfile + flags), not yet fully hermetic. srtool has no Rust 1.96
+# image yet (latest is 1.93); a hermetic srtool/custom-container step will be added
+# when available. Tracked in the release-process issue.
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "runtime-*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build (defaults to the triggering ref)"
+        required: false
+
+permissions:
+  contents: write # create the GitHub release
+  id-token: write # build-provenance attestation
+  attestations: write # build-provenance attestation
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  build-runtime:
+    runs-on: [self-hosted, substrate-build]
+    strategy:
+      fail-fast: false
+      matrix:
+        # Mainnet relay + system teyrchains. The deployable on-chain artifacts.
+        runtime:
+          - pezkuwichain-runtime
+          - asset-hub-pezkuwichain-runtime
+          - people-pezkuwichain-runtime
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+
+      - name: Build deployable runtime WASM (release, locked)
+        run: cargo build --release --locked -p ${{ matrix.runtime }}
+
+      - name: Locate WASM and compute upgrade hashes
+        id: wasm
+        run: |
+          set -euo pipefail
+          # The compact+compressed blob is the artifact that goes on-chain.
+          wasm=$(find target/release/wbuild -name '*.compact.compressed.wasm' \
+                 -path "*${{ matrix.runtime }}*" | head -1)
+          if [ -z "$wasm" ]; then
+            echo "::error::no compressed WASM found for ${{ matrix.runtime }}"; exit 1
+          fi
+          out="artifacts"; mkdir -p "$out"
+          base="${{ matrix.runtime }}"
+          cp "$wasm" "$out/${base}.compact.compressed.wasm"
+          # blake2-256 is the hash governance authorizes (authorize_upgrade / proposal hash).
+          b2=$(b2sum -l 256 "$wasm" | cut -d' ' -f1)
+          sha=$(sha256sum "$wasm" | cut -d' ' -f1)
+          size=$(stat -c%s "$wasm")
+          {
+            echo "### ${base}"
+            echo ""
+            echo "| field | value |"
+            echo "|---|---|"
+            echo "| commit | \`${GITHUB_SHA}\` |"
+            echo "| toolchain | \`$(rustc --version)\` |"
+            echo "| size (bytes) | ${size} |"
+            echo "| blake2-256 (authorize_upgrade) | \`0x${b2}\` |"
+            echo "| sha256 | \`${sha}\` |"
+            echo ""
+          } > "$out/${base}.digest.md"
+          echo "wasm=$out/${base}.compact.compressed.wasm" >> "$GITHUB_OUTPUT"
+          echo "blake2_256=0x${b2}" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance (SLSA)
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ steps.wasm.outputs.wasm }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.runtime }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  publish:
+    needs: build-runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dl
+      - name: Assemble release notes
+        run: |
+          set -e
+          mkdir -p release
+          find dl -name '*.compact.compressed.wasm' -exec cp {} release/ \;
+          echo "# PezkuwiChain runtimes — ${GITHUB_REF_NAME}" > NOTES.md
+          echo "" >> NOTES.md
+          echo "Verify: rebuild this tag with the pinned toolchain (rust-toolchain.toml)" >> NOTES.md
+          echo "and committed Cargo.lock, then compare the blake2-256 below to the hash" >> NOTES.md
+          echo "authorized on-chain (\`system.authorizeUpgrade\`)." >> NOTES.md
+          echo "" >> NOTES.md
+          cat $(find dl -name '*.digest.md' | sort) >> NOTES.md
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: NOTES.md
+          files: release/*
+          draft: true # human review before publishing a fund-critical artifact
+          fail_on_unmatched_files: true
