@@ -265,6 +265,21 @@ pub mod pezpallet {
 		WezireTend,
 		WezireAva,
 		WezireCand,
+		// Newly added functional / professional roles. Appended at the end to preserve
+		// the SCALE encoding (discriminant order) of existing on-chain values. The trust
+		// bonuses assigned below are provisional and should be ratified by governance.
+		Bernamenivîs,       // Software developer / engineer (builds the chain itself)
+		Wergêr,             // Translator (a six-language nation needs this)
+		Aborînas,           // Economist
+		Hesabdar,           // Accountant
+		Rojnamevan,         // Journalist
+		PisporêBazarkirinê, // Marketing specialist
+		Statîstîknas,       // Statistician
+		Piştrastkar,        // KYC verifier
+		Hilbijartinkar,     // Election officer
+		Îcrakar,            // Executor / enforcement officer
+		Karguzar,           // Human-resources officer
+		Plansaz,            // Budget planner
 	}
 
 	impl From<Tiki> for u32 {
@@ -865,6 +880,20 @@ impl<T: Config> Pezpallet<T> {
 			Tiki::Sêwirmend => 20,
 			Tiki::Bazargan => 60,
 			Tiki::Pêseng => 80,
+
+			// Newly added functional / professional roles (provisional bonuses — ratify via governance)
+			Tiki::Bernamenivîs => 80,
+			Tiki::Aborînas => 75,
+			Tiki::Plansaz => 70,
+			Tiki::Piştrastkar => 60,
+			Tiki::Hilbijartinkar => 60,
+			Tiki::Îcrakar => 60,
+			Tiki::Wergêr => 50,
+			Tiki::Hesabdar => 50,
+			Tiki::Rojnamevan => 50,
+			Tiki::Statîstîknas => 50,
+			Tiki::PisporêBazarkirinê => 40,
+			Tiki::Karguzar => 40,
 
 			// Temel Vatandaşlık
 			Tiki::Welati => 10,
