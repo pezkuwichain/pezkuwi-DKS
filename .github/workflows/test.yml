@@ -40,7 +40,7 @@ jobs:
       matrix:
         partition: [1, 2]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Run tests (nextest, partition ${{ matrix.partition }}/2)
         run: |
           # The excluded tests below are NOT on-chain fund logic — every runtime and
@@ -78,7 +78,7 @@ jobs:
   doc-test:
     runs-on: [self-hosted, substrate-build]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: cargo test --doc --workspace --locked
 
   # Lint. The lint policy lives in the root Cargo.toml [workspace.lints.clippy]:
@@ -89,7 +89,7 @@ jobs:
   clippy:
     runs-on: [self-hosted, substrate-build]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: cargo clippy --workspace --locked --no-deps
 
   # Benchmarks must compile (weights are fund-critical: wrong weights enable DoS /
@@ -98,5 +98,5 @@ jobs:
   check-benches:
     runs-on: [self-hosted, substrate-build]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: cargo check --workspace --locked --benches --features runtime-benchmarks
