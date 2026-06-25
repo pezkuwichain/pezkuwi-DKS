@@ -57,7 +57,6 @@ xcm = { workspace = true, default-features = true }
 # Pezcumulus
 pezcumulus-client-consensus-aura = { workspace = true }
 pezcumulus-primitives-core = { workspace = true, default-features = true }
-yet-another-teyrchain-runtime = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = { workspace = true }
@@ -90,7 +89,6 @@ runtime-benchmarks = [
 	"pezsp-keyring/runtime-benchmarks",
 	"teyrchains-common/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
-	"yet-another-teyrchain-runtime/runtime-benchmarks",
 ]
 try-runtime = [
 	"asset-hub-pezkuwichain-runtime/try-runtime",
@@ -115,7 +113,6 @@ try-runtime = [
 	"pezsp-keyring/try-runtime",
 	"teyrchains-common/try-runtime",
 	"xcm/try-runtime",
-	"yet-another-teyrchain-runtime/try-runtime",
 ]
 fast-runtime = [
 	"coretime-pezkuwichain-runtime/fast-runtime",
