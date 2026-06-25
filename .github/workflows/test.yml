@@ -41,6 +41,13 @@ jobs:
         partition: [1, 2]
     steps:
       - uses: actions/checkout@v5
+      - name: Free disk if low
+        # Heaviest job — compiles the whole workspace's test binaries. The persistent
+        # target dir accumulates and can fill smaller runners; clean it when low.
+        run: |
+          avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
+          echo "free: ${avail}G"
+          if [ "${avail:-999}" -lt 80 ]; then echo "cleaning target"; rm -rf target; fi
       - name: Run tests (nextest, partition ${{ matrix.partition }}/2)
         run: |
           # The excluded tests below are NOT on-chain fund logic — every runtime and
@@ -86,6 +93,14 @@ jobs:
     runs-on: [self-hosted, substrate-build]
     steps:
       - uses: actions/checkout@v5
+      - name: Free disk if low
+        # The persistent target dir accumulates artifacts across heavy builds and can
+        # fill smaller runners. Clean it when free space is low; sccache keeps the
+        # rebuild warm. Prevents the "No space left on device" failures.
+        run: |
+          avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
+          echo "free: ${avail}G"
+          if [ "${avail:-999}" -lt 80 ]; then echo "cleaning target"; rm -rf target; fi
       - run: cargo test --doc --workspace --locked
 
   # Lint. The lint policy lives in the root Cargo.toml [workspace.lints.clippy]:
@@ -97,6 +112,14 @@ jobs:
     runs-on: [self-hosted, substrate-build]
     steps:
       - uses: actions/checkout@v5
+      - name: Free disk if low
+        # The persistent target dir accumulates artifacts across heavy builds and can
+        # fill smaller runners. Clean it when free space is low; sccache keeps the
+        # rebuild warm. Prevents the "No space left on device" failures.
+        run: |
+          avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
+          echo "free: ${avail}G"
+          if [ "${avail:-999}" -lt 80 ]; then echo "cleaning target"; rm -rf target; fi
       - run: cargo clippy --workspace --locked --no-deps
 
   # Benchmarks must compile (weights are fund-critical: wrong weights enable DoS /
@@ -106,4 +129,12 @@ jobs:
     runs-on: [self-hosted, substrate-build]
     steps:
       - uses: actions/checkout@v5
+      - name: Free disk if low
+        # The persistent target dir accumulates artifacts across heavy builds and can
+        # fill smaller runners. Clean it when free space is low; sccache keeps the
+        # rebuild warm. Prevents the "No space left on device" failures.
+        run: |
+          avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
+          echo "free: ${avail}G"
+          if [ "${avail:-999}" -lt 80 ]; then echo "cleaning target"; rm -rf target; fi
       - run: cargo check --workspace --locked --benches --features runtime-benchmarks
