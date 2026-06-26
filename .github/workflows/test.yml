@@ -59,6 +59,7 @@ jobs:
           FILTER='not (
             package(pezkuwi-subxt-metadata) | package(pezkuwi-subxt-codegen) |
             package(pezkuwi-zombienet-sdk) | package(pezstaging-chain-spec-builder) |
+            package(pez-chain-spec-guide-runtime) | package(pezkuwi-sdk-docs) |
             package(pezframe-omni-bencher) | package(pezframe-metadata) |
             package(bizinikiwi-txtesttool) | package(pezpallet-contracts) |
             package(pezpallet-revive-eth-rpc) | package(pezpallet-revive-fixtures) |
