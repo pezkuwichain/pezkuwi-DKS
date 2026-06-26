@@ -670,8 +670,14 @@ fn live_babe_vrf_context_matches_chain() {
 	let threshold = authorship::calculate_primary_threshold((1, 4), &authorities, 9);
 
 	println!("threshold             = {threshold}");
-	println!("score bizinikiwi-vrf  = {score_sovereign} (< threshold: {})", score_sovereign < threshold);
-	println!("score substrate-vrf   = {score_upstream} (< threshold: {})", score_upstream < threshold);
+	println!(
+		"score bizinikiwi-vrf  = {score_sovereign} (< threshold: {})",
+		score_sovereign < threshold
+	);
+	println!(
+		"score substrate-vrf   = {score_upstream} (< threshold: {})",
+		score_upstream < threshold
+	);
 
 	assert!(
 		score_sovereign < threshold,
