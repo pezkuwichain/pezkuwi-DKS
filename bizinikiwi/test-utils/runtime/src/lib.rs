@@ -1254,16 +1254,22 @@ mod tests {
 
 	#[test]
 	fn validate_storage_keys() {
-		assert_eq!(
-			genesismap::GenesisStorageBuilder::default()
-				.build()
-				.top
-				.keys()
-				.cloned()
-				.map(storage_key_generator::hex)
-				.collect::<Vec<_>>(),
-			storage_key_generator::get_expected_storage_hashed_keys(false)
-		);
+		// Compare the SET of genesis storage keys, not their listed order. The keys come
+		// from a BTreeMap (sorted by raw bytes); the expected list is hand-maintained, and
+		// renaming the test pallet (SubstrateTest -> BizinikiwiTest) changed that pallet's
+		// twox128 prefix and hence its sorted position. The set of keys is what matters, so
+		// both sides are sorted before comparison — keeping the check robust to such renames.
+		let mut actual = genesismap::GenesisStorageBuilder::default()
+			.build()
+			.top
+			.keys()
+			.cloned()
+			.map(storage_key_generator::hex)
+			.collect::<Vec<_>>();
+		actual.sort();
+		let mut expected = storage_key_generator::get_expected_storage_hashed_keys(false);
+		expected.sort();
+		assert_eq!(actual, expected);
 	}
 
 	#[test]
