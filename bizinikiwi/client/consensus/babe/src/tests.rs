@@ -618,6 +618,68 @@ fn claim_vrf_check() {
 	}
 }
 
+#[test]
+fn live_babe_vrf_context_matches_chain() {
+	// Empirical proof that our node's BABE VRF authoring-score context matches the live
+	// PezkuwiChain mainnet (consensus safety, not just an internal assumption).
+	//
+	// Relay block #1679722 is a BABE *Primary* block (authority #9, slot 297073892). A
+	// block is Primary iff its authoring score — `make_bytes` over the
+	// `AUTHORING_SCORE_VRF_CONTEXT` applied to the on-chain VRF pre-output — is below the
+	// primary threshold. We recompute that score for the on-chain pre-output under both our
+	// sovereign `b"bizinikiwi-babe-vrf"` and upstream's `b"substrate-babe-vrf"`. Since the
+	// live network already accepted the block as Primary, the context the live node uses
+	// MUST yield a score below the threshold — so this asserts our context is the match.
+	// All inputs are captured from chain state at that block (no network access here).
+	use codec::Decode;
+	use pezsp_core::sr25519::{vrf::VrfPreOutput, Public};
+
+	let pubkey: [u8; 32] = [
+		0x24, 0x1f, 0xa3, 0xbe, 0x1b, 0x57, 0xd3, 0xbe, 0x4f, 0xf6, 0xfc, 0x78, 0x08, 0xfa, 0xb4,
+		0x4d, 0x8d, 0xf9, 0x38, 0x56, 0x69, 0x9b, 0xcf, 0xe9, 0xd5, 0x76, 0x8c, 0x21, 0x90, 0x03,
+		0xc7, 0x0a,
+	];
+	let pre_output_bytes: [u8; 32] = [
+		0x44, 0xd5, 0x20, 0xc4, 0x00, 0x9f, 0x59, 0x1e, 0x47, 0x9f, 0x99, 0xab, 0x47, 0xe8, 0xf4,
+		0x15, 0xd9, 0x5e, 0x4b, 0xb6, 0x4d, 0x3e, 0x79, 0x63, 0x07, 0xf9, 0x50, 0xe2, 0x53, 0x9a,
+		0xee, 0x30,
+	];
+	let randomness: pezsp_consensus_babe::Randomness = [
+		0xd7, 0x75, 0x52, 0x68, 0x65, 0x64, 0xe0, 0xa0, 0xfa, 0x24, 0x90, 0xf7, 0x52, 0x1b, 0x68,
+		0xd5, 0x1a, 0x78, 0x17, 0x74, 0xc9, 0x26, 0xd1, 0xc4, 0xc9, 0x7b, 0xf7, 0x63, 0xa8, 0x11,
+		0xa9, 0x5b,
+	];
+	let slot = Slot::from(297073892u64);
+	let epoch_index = 3147u64;
+
+	let public = Public::from_raw(pubkey);
+	let pre_output = VrfPreOutput::decode(&mut &pre_output_bytes[..]).expect("valid pre-output");
+	let data = make_vrf_sign_data(&randomness, slot, epoch_index);
+
+	let score = |ctx: &[u8]| -> u128 {
+		u128::from_le_bytes(
+			public.make_bytes::<16>(ctx, data.as_ref(), &pre_output).expect("make_bytes"),
+		)
+	};
+	let score_sovereign = score(b"bizinikiwi-babe-vrf");
+	let score_upstream = score(b"substrate-babe-vrf");
+
+	// Threshold for this block: c = (1, 4); authority #9 has weight 1 of 21 total.
+	let dummy: AuthorityId = Sr25519Keyring::Alice.public().into();
+	let authorities: Vec<_> = (0..21).map(|_| (dummy.clone(), 1u64)).collect();
+	let threshold = authorship::calculate_primary_threshold((1, 4), &authorities, 9);
+
+	println!("threshold             = {threshold}");
+	println!("score bizinikiwi-vrf  = {score_sovereign} (< threshold: {})", score_sovereign < threshold);
+	println!("score substrate-vrf   = {score_upstream} (< threshold: {})", score_upstream < threshold);
+
+	assert!(
+		score_sovereign < threshold,
+		"bizinikiwi-babe-vrf score is NOT below the threshold for a known-Primary live block \
+		 — our node's BABE VRF context diverges from the live network!"
+	);
+}
+
 // Propose and import a new BABE block on top of the given parent.
 async fn propose_and_import_block(
 	parent: &TestHeader,
