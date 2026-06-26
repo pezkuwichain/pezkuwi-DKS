@@ -567,50 +567,55 @@ fn claim_vrf_check() {
 	}
 	.into();
 
-	// We leverage the predictability of claim types given a constant randomness.
+	// PezkuwiChain's authoring-score VRF context (`AUTHORING_SCORE_VRF_CONTEXT`) is the
+	// sovereign `b"bizinikiwi-babe-vrf"`, not upstream's `b"substrate-babe-vrf"`. The score
+	// derived from that context decides Primary vs SecondaryVRF, so *which* slots resolve
+	// to each kind is specific to our context and is not upstream's hardcoded slots.
+	// Rather than pin brittle slot numbers, scan for one of each kind under the active
+	// context and assert the real invariant: the claim's VRF pre-output is deterministic,
+	// i.e. equal to a fresh keystore VRF sign over the same data (using the epoch index
+	// claim_slot signs against, which `clone_for_slot` reproduces for skipped epochs).
+	// This keeps the test correct regardless of the context value.
+	let mut saw_primary = false;
+	let mut saw_secondary_vrf = false;
+	for s in 0u64..256 {
+		let slot = Slot::from(s);
+		let Some((pre_digest, _)) = claim_slot(slot, &epoch, &keystore) else { continue };
+		let epoch_index = epoch.clone_for_slot(slot).epoch_index;
+		let data = make_vrf_sign_data(&epoch.randomness, slot, epoch_index);
+		let sign = keystore.sr25519_vrf_sign(AuthorityId::ID, &public, &data).unwrap().unwrap();
+		match &pre_digest {
+			PreDigest::Primary(d) => {
+				assert_eq!(d.vrf_signature.pre_output, sign.pre_output);
+				saw_primary = true;
+			},
+			PreDigest::SecondaryVRF(d) => {
+				assert_eq!(d.vrf_signature.pre_output, sign.pre_output);
+				saw_secondary_vrf = true;
+			},
+			PreDigest::SecondaryPlain(_) => {},
+		}
+		if saw_primary && saw_secondary_vrf {
+			break;
+		}
+	}
+	assert!(saw_primary, "expected at least one Primary claim within slots 0..256");
+	assert!(saw_secondary_vrf, "expected at least one SecondaryVRF claim within slots 0..256");
 
-	// We expect a Primary claim for slot 0
-
-	let pre_digest = match claim_slot(0.into(), &epoch, &keystore).unwrap().0 {
-		PreDigest::Primary(d) => d,
-		v => panic!("Unexpected pre-digest variant {:?}", v),
-	};
-	let data = make_vrf_sign_data(&epoch.randomness.clone(), 0.into(), epoch.epoch_index);
-	let sign = keystore.sr25519_vrf_sign(AuthorityId::ID, &public, &data).unwrap().unwrap();
-	assert_eq!(pre_digest.vrf_signature.pre_output, sign.pre_output);
-
-	// We expect a SecondaryVRF claim for slot 1
-	let pre_digest = match claim_slot(1.into(), &epoch, &keystore).unwrap().0 {
-		PreDigest::SecondaryVRF(d) => d,
-		v => panic!("Unexpected pre-digest variant {:?}", v),
-	};
-	let data = make_vrf_sign_data(&epoch.randomness.clone(), 1.into(), epoch.epoch_index);
-	let sign = keystore.sr25519_vrf_sign(AuthorityId::ID, &public, &data).unwrap().unwrap();
-	assert_eq!(pre_digest.vrf_signature.pre_output, sign.pre_output);
-
-	// Check that correct epoch index has been used if epochs are skipped (primary VRF)
+	// Epoch-index recomputation when epochs are skipped: a far-future slot must author
+	// against the recomputed epoch index (11), independent of the claim kind, and the VRF
+	// pre-output must still be deterministic against a sign using that fixed epoch index.
 	let slot = Slot::from(103);
-	let claim = match claim_slot(slot, &epoch, &keystore).unwrap().0 {
-		PreDigest::Primary(d) => d,
-		v => panic!("Unexpected claim variant {:?}", v),
-	};
+	let (pre_digest, _) = claim_slot(slot, &epoch, &keystore).expect("slot must be claimable");
 	let fixed_epoch = epoch.clone_for_slot(slot);
-	let data = make_vrf_sign_data(&epoch.randomness.clone(), slot, fixed_epoch.epoch_index);
-	let sign = keystore.sr25519_vrf_sign(AuthorityId::ID, &public, &data).unwrap().unwrap();
 	assert_eq!(fixed_epoch.epoch_index, 11);
-	assert_eq!(claim.vrf_signature.pre_output, sign.pre_output);
-
-	// Check that correct epoch index has been used if epochs are skipped (secondary VRF)
-	let slot = Slot::from(100);
-	let pre_digest = match claim_slot(slot, &epoch, &keystore).unwrap().0 {
-		PreDigest::SecondaryVRF(d) => d,
-		v => panic!("Unexpected claim variant {:?}", v),
-	};
-	let fixed_epoch = epoch.clone_for_slot(slot);
-	let data = make_vrf_sign_data(&epoch.randomness.clone(), slot, fixed_epoch.epoch_index);
+	let data = make_vrf_sign_data(&epoch.randomness, slot, fixed_epoch.epoch_index);
 	let sign = keystore.sr25519_vrf_sign(AuthorityId::ID, &public, &data).unwrap().unwrap();
-	assert_eq!(fixed_epoch.epoch_index, 11);
-	assert_eq!(pre_digest.vrf_signature.pre_output, sign.pre_output);
+	match &pre_digest {
+		PreDigest::Primary(d) => assert_eq!(d.vrf_signature.pre_output, sign.pre_output),
+		PreDigest::SecondaryVRF(d) => assert_eq!(d.vrf_signature.pre_output, sign.pre_output),
+		PreDigest::SecondaryPlain(_) => panic!("expected a VRF-based claim for slot 103"),
+	}
 }
 
 // Propose and import a new BABE block on top of the given parent.

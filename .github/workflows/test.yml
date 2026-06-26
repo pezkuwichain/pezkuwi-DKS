@@ -53,9 +53,7 @@ jobs:
           # The excluded tests below are NOT on-chain fund logic — every runtime and
           # FRAME/pezpallet test runs. They are vendor/SDK & chain-spec/metadata tooling
           # snapshots, docs-guide node runs, dep-version match tests, the testnet-only
-          # contracts/revive pallets, a BABE VRF test whose hardcoded slot-claim vectors
-          # depend on exact crypto-dep VRF output (not a consensus bug — the live chain
-          # produces blocks), the dev test-runtime storage-key snapshot, and an
+          # contracts/revive pallets, the dev test-runtime storage-key snapshot, and an
           # xcm-emulator harness test. Tracked in issue #11
           # to re-enable as fixtures/tooling are updated.
           FILTER='not (
@@ -71,7 +69,6 @@ jobs:
             (package(pezsc-rpc) & test(should_return_runtime_version)) |
             (package(pezsc-executor-wasmtime) & test(test_rustix_version_matches_with_wasmtime)) |
             (package(pezsp-core) & test(verify_from_old_wasm_works)) |
-            (package(pezsc-consensus-babe) & test(claim_vrf_check)) |
             (package(bizinikiwi-test-runtime) & test(validate_storage_keys)) |
             (package(asset-hub-zagros-runtime) & test(smart_contract_not_erc20_will_error)) |
             (package(asset-hub-pezkuwichain-integration-tests) & test(limited_teleport_native_assets_from_system_para_to_relay_fails)) |
