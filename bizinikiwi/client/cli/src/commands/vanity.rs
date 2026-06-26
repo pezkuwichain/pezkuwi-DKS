@@ -204,14 +204,18 @@ mod tests {
 	#[test]
 	fn test_score_100() {
 		let score = calculate_score("Pezkuwi", "5PezkuwiwHY5k9GpdTgpqs9xjuNvtv8EcwCFpEeyEf3KHim");
-		assert_eq!(score, 430);
+		// Full 7-char "Pezkuwi" match at position 1 (right after the ss58 prefix byte):
+		// (47 - 1) + (7 * 48) = 382. This is the best achievable score for this pattern.
+		assert_eq!(score, 382);
 	}
 
 	#[test]
 	fn test_score_50_2() {
-		// 50% for the position + 50% for the size
+		// Partial match: the address carries the first 4 chars of "Pezkuwi" ("Pezk") at
+		// position 1, so (47 - 1) + (4 * 48) = 238. (The original "5Polk…" was a Polkadot
+		// leftover that no longer matches the "Pezkuwi" pattern at all.)
 		assert_eq!(
-			calculate_score("Pezkuwi", "5PolkXXXXwHY5k9GpdTgpqs9xjuNvtv8EcwCFpEeyEf3KHim"),
+			calculate_score("Pezkuwi", "5PezkXXXXwHY5k9GpdTgpqs9xjuNvtv8EcwCFpEeyEf3KHim"),
 			238
 		);
 	}
