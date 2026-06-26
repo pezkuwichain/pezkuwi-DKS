@@ -1,0 +1,21 @@
+[relaychain]
+default_command = "pezkuwi"
+chain = "pezkuwichain-local"
+
+[[relaychain.nodes]]
+name = "alice"
+validator = true
+ws_port = 9944
+
+[[relaychain.nodes]]
+name = "bob"
+validator = true
+ws_port = 9955
+
+[[teyrchains]]
+id = 1000
+
+[teyrchains.collator]
+name = "charlie"
+ws_port = 9988
+command = "teyrchain-template-node"

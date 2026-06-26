@@ -1,0 +1,53 @@
+[package]
+name = "bizinikiwi-cli-test-utils"
+description = "CLI testing utilities"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+publish = false
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+assert_cmd = { workspace = true }
+bizinikiwi-rpc-client = { workspace = true, default-features = true }
+futures = { workspace = true }
+nix = { features = ["signal"], workspace = true }
+node-cli = { workspace = true }
+pez-node-primitives = { workspace = true, default-features = true }
+pezsc-cli = { workspace = true, default-features = false }
+pezsc-service = { workspace = true, default-features = false }
+pezsp-rpc = { workspace = true, default-features = true }
+regex = { workspace = true }
+tokio = { features = ["full"], workspace = true, default-features = true }
+
+[features]
+try-runtime = [
+	"bizinikiwi-rpc-client/try-runtime",
+	"node-cli/try-runtime",
+	"pez-node-primitives/try-runtime",
+	"pezsc-cli/try-runtime",
+	"pezsc-service/try-runtime",
+]
+runtime-benchmarks = [
+	"bizinikiwi-rpc-client/runtime-benchmarks",
+	"node-cli/runtime-benchmarks",
+	"pez-node-primitives/runtime-benchmarks",
+	"pezsc-cli/runtime-benchmarks",
+	"pezsc-service/runtime-benchmarks",
+]
+std = [
+	"bizinikiwi-rpc-client/std",
+	"node-cli/std",
+	"pezsc-cli/std",
+	"pezsc-service/std",
+	"pezsp-rpc/std",
+]

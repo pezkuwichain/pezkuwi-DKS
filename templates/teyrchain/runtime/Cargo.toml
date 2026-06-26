@@ -1,0 +1,143 @@
+[package]
+name = "teyrchain-template-runtime"
+description = "A teyrchain runtime template built with Bizinikiwi and Pezcumulus, part of Pezkuwi Sdk."
+version = "0.0.0"
+license = "Unlicense"
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+publish = false
+documentation.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { features = ["derive"], workspace = true }
+docify = { workspace = true }
+hex-literal = { optional = true, workspace = true, default-features = true }
+log = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+serde_json = { workspace = true, default-features = false, features = [
+	"alloc",
+] }
+smallvec = { workspace = true, default-features = true }
+
+# Local
+pezpallet-teyrchain-template = { workspace = true }
+
+# Direct dependency needed for runtime (not through umbrella due to macro visibility issues)
+pezsp-runtime = { workspace = true }
+
+pezkuwi-sdk = { workspace = true, default-features = false, features = [
+	# Primitives needed for runtime
+	"pezframe-executive",
+	"pezframe-support",
+	"pezframe-system",
+	"pezsp-api",
+	"pezsp-block-builder",
+	"pezsp-consensus-aura",
+	"pezsp-core",
+	"pezsp-genesis-builder",
+	"pezsp-inherents",
+	"pezsp-keyring",
+	"pezsp-offchain",
+	"pezsp-session",
+	"pezsp-transaction-pool",
+	"pezsp-version",
+
+	"pezpallet-aura",
+	"pezpallet-authorship",
+	"pezpallet-balances",
+	"pezpallet-message-queue",
+	"pezpallet-session",
+	"pezpallet-sudo",
+	"pezpallet-timestamp",
+	"pezpallet-transaction-payment",
+	"pezpallet-transaction-payment-rpc-runtime-api",
+
+	"pezkuwi-runtime-common",
+	"pezkuwi-teyrchain-primitives",
+	"pezpallet-xcm",
+	"pezstaging-xcm",
+	"pezstaging-xcm-builder",
+	"pezstaging-xcm-executor",
+
+	"pezcumulus-pezpallet-aura-ext",
+	"pezcumulus-pezpallet-session-benchmarking",
+	"pezcumulus-pezpallet-weight-reclaim",
+	"pezcumulus-pezpallet-xcm",
+	"pezcumulus-pezpallet-xcmp-queue",
+	"pezcumulus-primitives-aura",
+	"pezcumulus-primitives-core",
+	"pezcumulus-primitives-utility",
+	"pezpallet-collator-selection",
+	"pezstaging-teyrchain-info",
+	"teyrchains-common",
+
+	"runtime",
+] }
+
+# Pezcumulus
+pezcumulus-pezpallet-teyrchain-system = { workspace = true }
+
+# Try runtime
+pezframe-try-runtime = { optional = true, workspace = true }
+
+[build-dependencies]
+bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features = true }
+docify = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"bizinikiwi-wasm-builder",
+	"bizinikiwi-wasm-builder?/std",
+	"codec/std",
+	"log/std",
+	"pezcumulus-pezpallet-teyrchain-system/std",
+	"pezframe-try-runtime?/std",
+	"pezkuwi-sdk/std",
+	"pezpallet-teyrchain-template/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+	"serde_json/std",
+]
+runtime-benchmarks = [
+	"bizinikiwi-wasm-builder?/runtime-benchmarks",
+	"hex-literal",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezframe-try-runtime?/runtime-benchmarks",
+	"pezkuwi-sdk/runtime-benchmarks",
+	"pezpallet-teyrchain-template/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
+	"pezframe-try-runtime",
+	"pezframe-try-runtime/try-runtime",
+	"pezkuwi-sdk/try-runtime",
+	"pezpallet-teyrchain-template/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
+
+# Enable the metadata hash generation.
+#
+# This is hidden behind a feature because it increases the compile time.
+# The wasm binary needs to be compiled twice, once to fetch the metadata,
+# generate the metadata hash and then a second time with the
+# `RUNTIME_METADATA_HASH` environment variable set for the `CheckMetadataHash`
+# extension.
+metadata-hash = ["bizinikiwi-wasm-builder/metadata-hash"]
+
+# A convenience feature for enabling things when doing a build
+# for an on-chain release.
+on-chain-release-build = ["metadata-hash"]
+serde = []
+experimental = []
+with-tracing = []
+tuples-96 = []

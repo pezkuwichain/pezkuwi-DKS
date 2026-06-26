@@ -57,17 +57,21 @@ tokio = { workspace = true, features = ["full"] }
 
 [dev-dependencies]
 env_logger = { workspace = true }
+pez-revive-dev-node = { workspace = true }
 pezpallet-revive-fixtures = { workspace = true, default-features = true }
 pezsp-io = { workspace = true, default-features = true }
 pretty_assertions = { workspace = true }
 
 [build-dependencies]
 git2 = { workspace = true }
+pez-revive-dev-runtime = { workspace = true, default-features = true }
 pezsp-io = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 
 [features]
 runtime-benchmarks = [
+	"pez-revive-dev-node/runtime-benchmarks",
+	"pez-revive-dev-runtime/runtime-benchmarks",
 	"pezkuwi-subxt-signer/runtime-benchmarks",
 	"pezkuwi-subxt/runtime-benchmarks",
 	"pezpallet-revive-fixtures/runtime-benchmarks",
@@ -98,6 +102,8 @@ std = [
 	"serde_json/std",
 ]
 try-runtime = [
+	"pez-revive-dev-node/try-runtime",
+	"pez-revive-dev-runtime/try-runtime",
 	"pezkuwi-subxt/try-runtime",
 	"pezpallet-revive/try-runtime",
 	"pezsc-cli/try-runtime",

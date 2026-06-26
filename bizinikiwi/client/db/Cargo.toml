@@ -51,6 +51,7 @@ array-bytes = { workspace = true, default-features = true }
 bizinikiwi-test-runtime-client = { workspace = true }
 criterion = { workspace = true, default-features = true }
 kvdb-rocksdb = { workspace = true }
+pez-kitchensink-runtime = { workspace = true }
 pezsp-tracing = { workspace = true, default-features = true }
 rand = { workspace = true, default-features = true }
 tempfile = { workspace = true }
@@ -60,6 +61,7 @@ default = []
 test-helpers = []
 runtime-benchmarks = [
 	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"pez-kitchensink-runtime/runtime-benchmarks",
 	"pezsc-client-api/runtime-benchmarks",
 	"pezsp-blockchain/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
@@ -77,6 +79,7 @@ std = [
 ]
 try-runtime = [
 	"bizinikiwi-test-runtime-client/try-runtime",
+	"pez-kitchensink-runtime/try-runtime",
 	"pezsc-client-api/try-runtime",
 	"pezsp-blockchain/try-runtime",
 	"pezsp-runtime/try-runtime",

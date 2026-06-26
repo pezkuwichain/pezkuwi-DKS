@@ -37,6 +37,7 @@ static_assertions = { workspace = true, default-features = true }
 
 [dev-dependencies]
 array-bytes = { workspace = true, default-features = true }
+pezpallet-example-basic = { workspace = true, default-features = true }
 pezsc-client-db = { workspace = true, default-features = true }
 pezsp-externalities = { workspace = true }
 pezsp-keystore = { workspace = true, default-features = true }
@@ -70,6 +71,7 @@ runtime-benchmarks = [
 	"pezframe-support-procedural/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
+	"pezpallet-example-basic/runtime-benchmarks",
 	"pezsc-client-db/runtime-benchmarks",
 	"pezsp-api/runtime-benchmarks",
 	"pezsp-application-crypto/runtime-benchmarks",
@@ -81,6 +83,7 @@ runtime-benchmarks = [
 try-runtime = [
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
+	"pezpallet-example-basic/try-runtime",
 	"pezsc-client-db/try-runtime",
 	"pezsp-api/try-runtime",
 	"pezsp-runtime/try-runtime",
