@@ -53,9 +53,11 @@ jobs:
           # The excluded tests below are NOT on-chain fund logic — every runtime and
           # FRAME/pezpallet test runs. They are vendor/SDK & chain-spec/metadata tooling
           # snapshots, docs-guide node runs, dep-version match tests, the testnet-only
-          # contracts/revive pallets, the dev test-runtime storage-key snapshot, and an
-          # xcm-emulator harness test. Tracked in issue #11
-          # to re-enable as fixtures/tooling are updated.
+          # contracts/revive pallets, and an xcm-emulator harness test. The sr25519/subkey
+          # "verify" tests check hardcoded SUBSTRATE-context signature vectors; PezkuwiChain
+          # signs with the sovereign b"bizinikiwi" context (see the wallet's sr25519-bizinikiwi
+          # binding), so those upstream vectors do not apply — the verify code path itself is
+          # sound. Tracked in issue #11 to re-enable as fixtures/tooling are updated.
           FILTER='not (
             package(pezkuwi-subxt-metadata) | package(pezkuwi-subxt-codegen) |
             package(pezkuwi-zombienet-sdk) | package(pezstaging-chain-spec-builder) |
@@ -65,7 +67,8 @@ jobs:
             package(pezpallet-revive-eth-rpc) | package(pezpallet-revive-fixtures) |
             (package(pezframe-support-test) & test(metadata_v15)) |
             (package(pezsc-chain-spec) & test(generate_chain_spec)) |
-            package(pezsc-cli) |
+            (package(pezsc-cli) & test(verify_immediate)) |
+            (package(pezsc-cli) & test(verify_stdin)) |
             (package(pezsc-rpc) & test(should_return_runtime_version)) |
             (package(pezsp-core) & test(verify_from_old_wasm_works)) |
             (package(asset-hub-zagros-runtime) & test(smart_contract_not_erc20_will_error)) |
