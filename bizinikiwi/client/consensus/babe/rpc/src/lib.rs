@@ -262,7 +262,10 @@ mod tests {
 
 		let request = r#"{"jsonrpc":"2.0","id":1,"method":"babe_epochAuthorship","params":[]}"#;
 		let (response, _) = api.raw_json_request(request, 1).await.unwrap();
-		let expected = r#"{"jsonrpc":"2.0","id":1,"result":{"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY":{"primary":[0],"secondary":[],"secondary_vrf":[1,2,4]}}}"#;
+		// Which slots are Primary vs SecondaryVRF for the authority depends on the sovereign
+		// b"bizinikiwi-babe-vrf" authoring-score context, so these slot lists are PezkuwiChain's,
+		// not upstream's ([0] / [1,2,4]).
+		let expected = r#"{"jsonrpc":"2.0","id":1,"result":{"5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY":{"primary":[1,2],"secondary":[],"secondary_vrf":[4]}}}"#;
 
 		assert_eq!(response, expected);
 	}

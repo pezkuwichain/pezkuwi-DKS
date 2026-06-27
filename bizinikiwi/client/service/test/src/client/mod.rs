@@ -2004,8 +2004,11 @@ fn storage_keys_prefix_and_start_key_works() {
 fn storage_keys_works() {
 	pezsp_tracing::try_init_simple();
 
-	let expected_keys =
+	// The hardcoded expected list is in a now-stale order after the pallet rename; the client
+	// returns keys in sorted (BTreeMap) order, so sort the expected list to match.
+	let mut expected_keys =
 		bizinikiwi_test_runtime::storage_key_generator::get_expected_storage_hashed_keys(false);
+	expected_keys.sort();
 
 	let client = bizinikiwi_test_runtime_client::new();
 	let block_hash = client.info().best_hash;

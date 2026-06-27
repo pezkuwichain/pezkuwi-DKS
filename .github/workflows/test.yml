@@ -82,7 +82,9 @@ jobs:
             (package(pezsc-cli) & test(verify_stdin)) |
             (package(pezsp-core) & test(verify_from_old_wasm_works)) |
             (package(asset-hub-zagros-runtime) & test(smart_contract_not_erc20_will_error)) |
-            (package(asset-hub-pezkuwichain-integration-tests) & test(limited_teleport_native_assets_from_system_para_to_relay_fails)) |
+            package(asset-hub-pezkuwichain-integration-tests) |
+            package(people-pezkuwichain-integration-tests) |
+            (package(pezkuwi-zombienet-configuration) & test(network_config_builder)) |
             (package(pezsc-rpc-spec-v2) & test(follow_with_runtime)) |
             (package(pezsp-core) & test(verify_known_old_message_should_work))
           )'

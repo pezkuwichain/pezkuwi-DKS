@@ -523,28 +523,38 @@ fn claim_epoch_slots() {
 		Some((PreDigest::SecondaryVRF(_), _)) => 3,
 	};
 
-	// With secondary mechanism we should be able to claim all slots.
-	let claims: Vec<_> = (0..EPOCH_DURATION)
-		.into_iter()
-		.map(|slot| claim_slot_wrap(slot, epoch.clone()))
-		.collect();
-	assert_eq!(claims, [1, 2, 2, 1, 2, 2, 2, 2, 2, 1]);
-
-	// With secondary with VRF mechanism we should be able to claim all the slots.
-	epoch.config.allowed_slots = AllowedSlots::PrimaryAndSecondaryVRFSlots;
-	let claims: Vec<_> = (0..EPOCH_DURATION)
-		.into_iter()
-		.map(|slot| claim_slot_wrap(slot, epoch.clone()))
-		.collect();
-	assert_eq!(claims, [1, 3, 3, 1, 3, 3, 3, 3, 3, 1]);
-
-	// Otherwise with only vrf-based primary slots we are able to claim a subset of the slots.
+	// Which slots resolve to a Primary claim depends on the VRF authoring-score context
+	// (PezkuwiChain's sovereign b"bizinikiwi-babe-vrf"), so the exact positions are not the
+	// upstream ones. Derive the primary set from PrimarySlots-only mode (only primaries are
+	// claimable there) and assert the secondary modes are consistent with it — this verifies
+	// the real invariant without pinning context-specific slot numbers.
 	epoch.config.allowed_slots = AllowedSlots::PrimarySlots;
-	let claims: Vec<_> = (0..EPOCH_DURATION)
-		.into_iter()
-		.map(|slot| claim_slot_wrap(slot, epoch.clone()))
-		.collect();
-	assert_eq!(claims, [1, 0, 0, 1, 0, 0, 0, 0, 0, 1]);
+	let primary_only: Vec<_> =
+		(0..EPOCH_DURATION).map(|slot| claim_slot_wrap(slot, epoch.clone())).collect();
+	assert!(
+		primary_only.iter().all(|&c| c == 0 || c == 1),
+		"primary-only mode: each slot is either Primary or unclaimable"
+	);
+	assert!(primary_only.contains(&1), "expected at least one primary slot");
+	let is_primary: Vec<bool> = primary_only.iter().map(|&c| c == 1).collect();
+
+	// Secondary-plain mechanism: every slot is claimable — primaries stay Primary (1), the
+	// rest are SecondaryPlain (2).
+	epoch.config.allowed_slots = AllowedSlots::PrimaryAndSecondaryPlainSlots;
+	let plain: Vec<_> =
+		(0..EPOCH_DURATION).map(|slot| claim_slot_wrap(slot, epoch.clone())).collect();
+	for (i, &c) in plain.iter().enumerate() {
+		assert_eq!(c, if is_primary[i] { 1 } else { 2 });
+	}
+
+	// Secondary-VRF mechanism: every slot is claimable — primaries stay Primary (1), the rest
+	// are SecondaryVRF (3).
+	epoch.config.allowed_slots = AllowedSlots::PrimaryAndSecondaryVRFSlots;
+	let vrf: Vec<_> =
+		(0..EPOCH_DURATION).map(|slot| claim_slot_wrap(slot, epoch.clone())).collect();
+	for (i, &c) in vrf.iter().enumerate() {
+		assert_eq!(c, if is_primary[i] { 1 } else { 3 });
+	}
 }
 
 #[test]
