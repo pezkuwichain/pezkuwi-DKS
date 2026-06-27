@@ -1550,7 +1550,7 @@ test-teyrchain-adder = { version = "1.0.0", path = "pezkuwi/teyrchain/test-teyrc
 test-teyrchain-halt = { version = "1.0.0", path = "pezkuwi/teyrchain/test-teyrchains/halt" }
 test-teyrchain-undying = { version = "1.0.0", path = "pezkuwi/teyrchain/test-teyrchains/undying" }
 testnet-teyrchains-constants = { path = "pezcumulus/teyrchains/runtimes/constants", version = "1.0.0", default-features = false }
-thiserror = { version = "1.0.64" }
+thiserror = { version = "2.0.18" }
 thousands = { version = "0.2.0" }
 threadpool = { version = "1.7" }
 tikv-jemalloc-ctl = { version = "0.6.0", features = ["stats"] }
