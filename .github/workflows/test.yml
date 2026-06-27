@@ -36,6 +36,11 @@ env:
   # the target dir dramatically and keeps the heavy jobs within disk on every runner.
   CARGO_PROFILE_DEV_DEBUG: "0"
   CARGO_PROFILE_TEST_DEBUG: "0"
+  # The snowbridge ethereum-client tests are stack-heavy (SSZ merkleization + BLS over a
+  # 512-key sync committee). They pass in isolation but aborted under the full-suite
+  # concurrency on the runners; give every test thread a generous stack (upstream Substrate
+  # does the same for its CI).
+  RUST_MIN_STACK: "33554432"
 
 jobs:
   # Unit/integration tests, split into partitions that spread across the runner pool.

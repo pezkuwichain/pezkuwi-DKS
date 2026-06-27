@@ -123,3 +123,11 @@ serial-integration = { max-threads = 1 }
 [[profile.default.overrides]]
 filter = 'test(/(^ui$|_ui|ui_)/)'
 test-group = 'serial-integration'
+
+# The snowbridge ethereum-client tests load large beacon-chain fixtures and run BLS over a
+# 512-key sync committee. They pass in isolation but aborted under full-suite concurrency on
+# the capped self-hosted runners (memory pressure). Reserve all threads so each runs alone,
+# without concurrent contention.
+[[profile.default.overrides]]
+filter = 'package(pezsnowbridge-pezpallet-ethereum-client)'
+threads-required = 'num-cpus'
