@@ -30,6 +30,12 @@ env:
   # env switch). The runtime WASM build is unaffected (it cross-compiles and already
   # skips fixtures). Tracked separately for a proper polkavm/Rust-1.96 fix.
   SKIP_PALLET_REVIVE_FIXTURES: "1"
+  # The full-workspace test/clippy/bench compile produced a target dir large enough to
+  # overflow the smaller self-hosted runners ("No space left on device"). Debug info is the
+  # bulk of compiled test binaries and is not needed to run tests, so drop it — this shrinks
+  # the target dir dramatically and keeps the heavy jobs within disk on every runner.
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
 
 jobs:
   # Unit/integration tests, split into partitions that spread across the runner pool.
