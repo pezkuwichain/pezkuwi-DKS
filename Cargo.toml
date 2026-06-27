@@ -1533,7 +1533,7 @@ pezkuwi-subxt-utils-fetchmetadata = { path = "vendor/pezkuwi-subxt/utils/fetch-m
 pezkuwi-subxt-utils-stripmetadata = { path = "vendor/pezkuwi-subxt/utils/strip-metadata", version = "0.44.0" }
 support = { package = "pezkuwi-zombienet-support", path = "vendor/pezkuwi-zombienet-sdk/crates/support", version = "0.44.0" }
 syn = { version = "2.0.87" }
-sysinfo = { version = "0.30" }
+sysinfo = { version = "0.39" }
 tar = { version = "0.4" }
 tempfile = { version = "3.8.1" }
 teyrchain-info = { path = "pezcumulus/teyrchains/pezpallets/teyrchain-info", version = "0.7.0", default-features = false, package = "pezstaging-teyrchain-info" }
