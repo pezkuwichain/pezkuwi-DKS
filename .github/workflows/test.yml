@@ -41,6 +41,11 @@ env:
   # concurrency on the runners; give every test thread a generous stack (upstream Substrate
   # does the same for its CI).
   RUST_MIN_STACK: "33554432"
+  # Cap build parallelism. The runners are 6-core VPSs shared with validators / the bridge /
+  # web / subquery; letting cargo use every core spikes memory and CPU, which both starves the
+  # co-located service and occasionally fails a heavy job (clippy/check) on a fresh runner.
+  # 4 jobs keeps a reliable memory/CPU envelope within the per-runner caps.
+  CARGO_BUILD_JOBS: "4"
 
 jobs:
   # Unit/integration tests, split into partitions that spread across the runner pool.
@@ -123,7 +128,15 @@ jobs:
             echo "critically low (${avail}G): clearing sccache"
             rm -rf "${SCCACHE_DIR:-$HOME/.cache/sccache}"/* 2>/dev/null || true
           fi
-      - run: cargo test --doc --workspace --locked
+      # Retry only transient infra failures (crate fetch, sccache first-use, runner glitch on a
+      # capped/shared VPS). A real failure still returns non-zero on every attempt and fails.
+      - name: Doc tests
+        run: |
+          n=0
+          until cargo test --doc --workspace --locked; do
+            n=$((n+1)); [ "$n" -ge 3 ] && { echo "doc tests failed after $n attempts"; exit 1; }
+            echo "doc-test attempt $n failed — retrying (transient infra)"; sleep 15
+          done
 
   # Lint. The lint policy lives in the root Cargo.toml [workspace.lints.clippy]:
   # `correctness` is denied (a hard, fund-critical gate — real-bug lints fail CI),
@@ -150,7 +163,15 @@ jobs:
             echo "critically low (${avail}G): clearing sccache"
             rm -rf "${SCCACHE_DIR:-$HOME/.cache/sccache}"/* 2>/dev/null || true
           fi
-      - run: cargo clippy --workspace --locked --no-deps
+      # Retry only transient infra failures (crate fetch, sccache first-use, runner glitch on a
+      # capped/shared VPS). A real lint still returns non-zero on every attempt and fails.
+      - name: Clippy
+        run: |
+          n=0
+          until cargo clippy --workspace --locked --no-deps; do
+            n=$((n+1)); [ "$n" -ge 3 ] && { echo "clippy failed after $n attempts"; exit 1; }
+            echo "clippy attempt $n failed — retrying (transient infra)"; sleep 15
+          done
 
   # Benchmarks must compile (weights are fund-critical: wrong weights enable DoS /
   # fee miscalculation). We check compilation here; actual weight generation is a
@@ -175,4 +196,12 @@ jobs:
             echo "critically low (${avail}G): clearing sccache"
             rm -rf "${SCCACHE_DIR:-$HOME/.cache/sccache}"/* 2>/dev/null || true
           fi
-      - run: cargo check --workspace --locked --benches --features runtime-benchmarks
+      # Retry only transient infra failures (crate fetch, sccache first-use, runner glitch on a
+      # capped/shared VPS). A real failure still returns non-zero on every attempt and fails.
+      - name: Check benches
+        run: |
+          n=0
+          until cargo check --workspace --locked --benches --features runtime-benchmarks; do
+            n=$((n+1)); [ "$n" -ge 3 ] && { echo "check-benches failed after $n attempts"; exit 1; }
+            echo "check-benches attempt $n failed — retrying (transient infra)"; sleep 15
+          done
