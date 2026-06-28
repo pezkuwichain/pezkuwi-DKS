@@ -59,6 +59,14 @@ jobs:
           avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
           echo "free: ${avail}G"
           if [ "${avail:-999}" -lt 80 ]; then echo "cleaning target"; rm -rf target; fi
+          # Backstop on small-disk runners: if still critically low, drop the sccache cache too
+          # so a build can never fill the host disk (these runners share VPSs with validators,
+          # the bridge and web services — a full disk would take those down).
+          avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
+          if [ "${avail:-999}" -lt 40 ]; then
+            echo "critically low (${avail}G): clearing sccache"
+            rm -rf "${SCCACHE_DIR:-$HOME/.cache/sccache}"/* 2>/dev/null || true
+          fi
       - name: Run tests (nextest, partition ${{ matrix.partition }}/2)
         run: |
           # The excluded tests below are NOT on-chain fund logic — every runtime and
@@ -107,6 +115,14 @@ jobs:
           avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
           echo "free: ${avail}G"
           if [ "${avail:-999}" -lt 80 ]; then echo "cleaning target"; rm -rf target; fi
+          # Backstop on small-disk runners: if still critically low, drop the sccache cache too
+          # so a build can never fill the host disk (these runners share VPSs with validators,
+          # the bridge and web services — a full disk would take those down).
+          avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
+          if [ "${avail:-999}" -lt 40 ]; then
+            echo "critically low (${avail}G): clearing sccache"
+            rm -rf "${SCCACHE_DIR:-$HOME/.cache/sccache}"/* 2>/dev/null || true
+          fi
       - run: cargo test --doc --workspace --locked
 
   # Lint. The lint policy lives in the root Cargo.toml [workspace.lints.clippy]:
@@ -126,6 +142,14 @@ jobs:
           avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
           echo "free: ${avail}G"
           if [ "${avail:-999}" -lt 80 ]; then echo "cleaning target"; rm -rf target; fi
+          # Backstop on small-disk runners: if still critically low, drop the sccache cache too
+          # so a build can never fill the host disk (these runners share VPSs with validators,
+          # the bridge and web services — a full disk would take those down).
+          avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
+          if [ "${avail:-999}" -lt 40 ]; then
+            echo "critically low (${avail}G): clearing sccache"
+            rm -rf "${SCCACHE_DIR:-$HOME/.cache/sccache}"/* 2>/dev/null || true
+          fi
       - run: cargo clippy --workspace --locked --no-deps
 
   # Benchmarks must compile (weights are fund-critical: wrong weights enable DoS /
@@ -143,4 +167,12 @@ jobs:
           avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
           echo "free: ${avail}G"
           if [ "${avail:-999}" -lt 80 ]; then echo "cleaning target"; rm -rf target; fi
+          # Backstop on small-disk runners: if still critically low, drop the sccache cache too
+          # so a build can never fill the host disk (these runners share VPSs with validators,
+          # the bridge and web services — a full disk would take those down).
+          avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
+          if [ "${avail:-999}" -lt 40 ]; then
+            echo "critically low (${avail}G): clearing sccache"
+            rm -rf "${SCCACHE_DIR:-$HOME/.cache/sccache}"/* 2>/dev/null || true
+          fi
       - run: cargo check --workspace --locked --benches --features runtime-benchmarks
