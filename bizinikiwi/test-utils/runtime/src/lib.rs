@@ -1168,10 +1168,11 @@ mod tests {
 		// Compare the SET of keys, not the listed order. The hand-maintained list and the
 		// generator emit the same storage keys; renaming the pallets changed their twox128
 		// sort positions, so the two lists differ only in order (see validate_storage_keys).
-		let mut expected: Vec<String> = storage_key_generator::get_expected_storage_hashed_keys(false)
-			.into_iter()
-			.map(|s| s.to_string())
-			.collect();
+		let mut expected: Vec<String> =
+			storage_key_generator::get_expected_storage_hashed_keys(false)
+				.into_iter()
+				.map(|s| s.to_string())
+				.collect();
 		let mut generated = storage_key_generator::generate_expected_storage_hashed_keys(false);
 		expected.sort();
 		generated.sort();
