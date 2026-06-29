@@ -53,7 +53,7 @@ jobs:
     runs-on: [self-hosted, substrate-build]
     # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
-    timeout-minutes: 600
+    timeout-minutes: 720
     strategy:
       fail-fast: false
       matrix:
@@ -115,7 +115,7 @@ jobs:
     runs-on: [self-hosted, substrate-build]
     # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
-    timeout-minutes: 600
+    timeout-minutes: 720
     steps:
       - uses: actions/checkout@v5
       - name: Free disk if low
@@ -153,7 +153,7 @@ jobs:
     runs-on: [self-hosted, substrate-build]
     # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
-    timeout-minutes: 600
+    timeout-minutes: 720
     steps:
       - uses: actions/checkout@v5
       - name: Free disk if low
@@ -189,7 +189,7 @@ jobs:
     runs-on: [self-hosted, substrate-build]
     # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
-    timeout-minutes: 600
+    timeout-minutes: 720
     steps:
       - uses: actions/checkout@v5
       - name: Free disk if low
