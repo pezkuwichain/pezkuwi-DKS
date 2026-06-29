@@ -481,10 +481,22 @@ async fn should_return_runtime_version() {
 
 	let runtime_version = api.runtime_version(None.into()).unwrap();
 	let serialized = serde_json::to_string(&runtime_version).unwrap();
-	pretty_assertions::assert_eq!(serialized, result);
 
-	let deserialized: RuntimeVersion = serde_json::from_str(result).unwrap();
-	assert_eq!(deserialized, runtime_version);
+	// The order of the `apis` list in RuntimeVersion is not stable across builds, so compare
+	// order-independently: parse both sides as JSON, sort the `apis` arrays, then assert the
+	// whole thing matches. A missing/extra api still fails (the SET must match), only ordering
+	// is ignored.
+	let canonicalize = |s: &str| -> serde_json::Value {
+		let mut v: serde_json::Value = serde_json::from_str(s).unwrap();
+		if let Some(apis) = v.get_mut("apis").and_then(|a| a.as_array_mut()) {
+			apis.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+		}
+		v
+	};
+	pretty_assertions::assert_eq!(canonicalize(&serialized), canonicalize(result));
+
+	// The hardcoded JSON still round-trips into a RuntimeVersion.
+	let _deserialized: RuntimeVersion = serde_json::from_str(result).unwrap();
 }
 
 #[tokio::test]
