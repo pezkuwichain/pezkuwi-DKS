@@ -59,7 +59,7 @@ jobs:
       matrix:
         partition: [1, 2]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Free disk if low
         # Heaviest job — compiles the whole workspace's test binaries. The persistent
         # target dir accumulates and can fill smaller runners; clean it when low.
@@ -117,7 +117,7 @@ jobs:
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
         # fill smaller runners. Clean it when free space is low; sccache keeps the
@@ -155,7 +155,7 @@ jobs:
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
         # fill smaller runners. Clean it when free space is low; sccache keeps the
@@ -191,7 +191,7 @@ jobs:
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
         # fill smaller runners. Clean it when free space is low; sccache keeps the
