@@ -51,6 +51,9 @@ jobs:
   # Unit/integration tests, split into partitions that spread across the runner pool.
   test:
     runs-on: [self-hosted, substrate-build]
+    # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
+    # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
@@ -110,6 +113,9 @@ jobs:
   # Doctests (nextest does not run these).
   doc-test:
     runs-on: [self-hosted, substrate-build]
+    # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
+    # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
+    timeout-minutes: 600
     steps:
       - uses: actions/checkout@v5
       - name: Free disk if low
@@ -145,6 +151,9 @@ jobs:
   # turn every newer-toolchain style lint into a failure.
   clippy:
     runs-on: [self-hosted, substrate-build]
+    # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
+    # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
+    timeout-minutes: 600
     steps:
       - uses: actions/checkout@v5
       - name: Free disk if low
@@ -178,6 +187,9 @@ jobs:
   # separate release-time step.
   check-benches:
     runs-on: [self-hosted, substrate-build]
+    # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
+    # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
+    timeout-minutes: 600
     steps:
       - uses: actions/checkout@v5
       - name: Free disk if low
