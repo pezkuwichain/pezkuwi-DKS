@@ -41,11 +41,9 @@ env:
   # concurrency on the runners; give every test thread a generous stack (upstream Substrate
   # does the same for its CI).
   RUST_MIN_STACK: "33554432"
-  # Cap build parallelism. The runners are 6-core VPSs shared with validators / the bridge /
-  # web / subquery; letting cargo use every core spikes memory and CPU, which both starves the
-  # co-located service and occasionally fails a heavy job (clippy/check) on a fresh runner.
-  # 4 jobs keeps a reliable memory/CPU envelope within the per-runner caps.
-  CARGO_BUILD_JOBS: "4"
+  # NOTE: CARGO_BUILD_JOBS is intentionally NOT set here. Build parallelism is configured
+  # per-runner via each runner's systemd Environment, so the big VPS3 runners (94GB/18-core)
+  # build with high parallelism while the small 11GB runners stay RAM-safe at a lower count.
 
 jobs:
   # Unit/integration tests, split into partitions that spread across the runner pool.
