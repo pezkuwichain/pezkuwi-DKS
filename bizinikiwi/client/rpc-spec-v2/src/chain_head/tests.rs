@@ -338,7 +338,7 @@ async fn follow_with_runtime() {
 	let event: FollowEvent<String> = get_next_event(&mut sub).await;
 
 	// it is basically json-encoded bizinikiwi_test_runtime_client::runtime::VERSION
-	let runtime_str = "{\"specName\":\"test\",\"implName\":\"parity-test\",\"authoringVersion\":1,\
+	let runtime_str = "{\"specName\":\"test\",\"implName\":\"pezkuwi-test\",\"authoringVersion\":1,\
 		\"specVersion\":2,\"implVersion\":2,\"apis\":[[\"0xdf6acb689907609b\",5],\
 		[\"0x37e397fc7c91f5e4\",2],[\"0xd2bc9897eed08f15\",3],[\"0x40fe3ad401f8959a\",6],\
 		[\"0xbc9d89904f5b923f\",1],[\"0xc6e9a76309f39b09\",2],[\"0xdd718d5cc53262d4\",1],\

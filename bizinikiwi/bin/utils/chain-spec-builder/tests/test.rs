@@ -34,8 +34,8 @@ const OUTPUT_FILE: &str = "/tmp/chain_spec_builder.test_output_file.json";
 
 // Get the chain-spec-builder binary path from environment
 fn get_chain_spec_builder_bin() -> String {
-	std::env::var("CARGO_BIN_EXE_chain-spec-builder")
-		.expect("CARGO_BIN_EXE_chain-spec-builder must be set - run with `cargo test`")
+	std::env::var("CARGO_BIN_EXE_pezstaging-chain-spec-builder")
+		.expect("CARGO_BIN_EXE_pezstaging-chain-spec-builder must be set - run with `cargo test`")
 }
 
 // Used for running commands visually pleasing in doc tests.

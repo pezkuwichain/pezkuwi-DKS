@@ -9,7 +9,7 @@ edition.workspace = true
 homepage.workspace = true
 repository.workspace = true
 # Disable auto-discovery of benches as they require nightly
-bench = false
+autobenches = false
 
 [features]
 default = ["std"]

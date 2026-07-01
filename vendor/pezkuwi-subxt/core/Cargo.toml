@@ -47,7 +47,7 @@ runtime-benchmarks = [
 ]
 
 [dependencies]
-codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
+codec = { workspace = true, default-features = false, features = [
 	"derive",
 ] }
 derive-where = { workspace = true }

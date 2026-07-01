@@ -101,8 +101,11 @@ mod test {
 	use super::*;
 
 	const ALICE: &str = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
-	const SIG1: &str = "0x4eb25a2285a82374888880af0024eb30c3a21ce086eae3862888d345af607f0ad6fb081312f11730932564f24a9f8ebcee2d46861413ae61307eca58db2c3e81";
-	const SIG2: &str = "0x026342225155056ea797118c1c8c8b3cc002aa2020c36f4217fa3c302783a572ad3dcd38c231cbaf86cadb93984d329c963ceac0685cc1ee4c1ed50fa443a68f";
+	// sr25519 signatures by Alice (//Alice) over the test messages under the sovereign
+	// `bizinikiwi` signing context. Regenerated from @pezkuwi crypto so they verify against
+	// our own Pair::verify (the upstream vectors were signed under the substrate context).
+	const SIG1: &str = "0xd212d24c63e78503cb2c76502686bfb3f0b1b5e6bf1f9a673ba881d83fec100f1fe15bd144834a408e98ff20d5e98f962a935ce9484a9783490f23051b8da98d";
+	const SIG2: &str = "0xac9a038bf4c0d71037a7e4b3b45423a67132b9bcce4cdb903c20b07135ce7d7d417d4acbe50d462e20facb62019bcaf1578e79890e561cb9efecbd56daf0758f";
 
 	// Verify work with `--message` argument.
 	#[test]

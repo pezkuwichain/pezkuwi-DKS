@@ -305,7 +305,8 @@ mod tests {
 
 		let expected_alias = quote!(
 			pub mod test {
-				use super::{root_mod, runtime_types};
+				use super::root_mod;
+				use super::runtime_types;
 				pub type Foo = ::core::primitive::bool;
 				pub type Bar = ::core::primitive::bool;
 				pub mod output {
@@ -340,7 +341,8 @@ mod tests {
 
 		let expected_alias = quote!(
 			pub mod test {
-				use super::{root_mod, runtime_types};
+				use super::root_mod;
+				use super::runtime_types;
 				pub type A = ::core::primitive::bool;
 				pub type AParam1 = ::core::primitive::bool;
 				pub type AParam2 = ::core::primitive::bool;
@@ -381,7 +383,8 @@ mod tests {
 
 		let expected_alias = quote!(
 			pub mod test {
-				use super::{root_mod, runtime_types};
+				use super::root_mod;
+				use super::runtime_types;
 				pub type Param0 = ::core::primitive::bool;
 				pub type A = ::core::primitive::bool;
 				pub type Param0Param2 = ::core::primitive::bool;
