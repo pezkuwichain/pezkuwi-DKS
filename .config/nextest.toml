@@ -131,3 +131,13 @@ test-group = 'serial-integration'
 [[profile.default.overrides]]
 filter = 'package(pezsnowbridge-pezpallet-ethereum-client)'
 threads-required = 'num-cpus'
+
+# benchmark_extrinsic_works spins up a full dev node (BABE + block-import workers) for every
+# runtime/extrinsic pair to smoke-test the `benchmark extrinsic` command. Under full-suite
+# concurrency on the capped self-hosted runners its node's essential consensus tasks get
+# starved and the service shuts down ("Essential task failed"). Give it the whole runner so
+# the node has the resources to run — it is a heavy end-to-end node test, not a unit test.
+[[profile.default.overrides]]
+filter = 'test(benchmark_extrinsic_works)'
+threads-required = 'num-cpus'
+slow-timeout = { period = "120s", terminate-after = 10 }
