@@ -89,7 +89,7 @@ runtime-benchmarks = [
 bip32 = { workspace = true, features = ["alloc", "secp256k1"], optional = true }
 bip39 = { workspace = true }
 cfg-if = { workspace = true }
-codec = { workspace = true, features = [
+codec = { package = "parity-scale-codec", workspace = true, features = [
 	"derive",
 ] }
 hex = { workspace = true }

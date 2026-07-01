@@ -105,7 +105,7 @@ runtime-benchmarks = [
 
 [dependencies]
 async-trait = { workspace = true }
-codec = { workspace = true, features = [
+codec = { package = "parity-scale-codec", workspace = true, features = [
 	"derive",
 ] }
 derive-where = { workspace = true }
@@ -159,7 +159,7 @@ wasm-bindgen-futures = { workspace = true, optional = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 bitvec = { workspace = true }
-codec = { workspace = true, features = ["bit-vec", "derive"] }
+codec = { package = "parity-scale-codec", workspace = true, features = ["bit-vec", "derive"] }
 pezkuwi-subxt-rpcs = { workspace = true, features = [
 	"mock-rpc-client",
 	"subxt",

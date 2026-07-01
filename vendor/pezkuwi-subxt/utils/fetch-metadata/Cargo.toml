@@ -19,7 +19,7 @@ std = ["codec/std", "frame-metadata?/std", "hex/std"]
 serde = []
 
 [dependencies]
-codec = { workspace = true, features = [
+codec = { package = "parity-scale-codec", workspace = true, features = [
 	"derive",
 	"std",
 ] }

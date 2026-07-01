@@ -47,7 +47,7 @@ runtime-benchmarks = [
 ]
 
 [dependencies]
-codec = { workspace = true, default-features = false, features = [
+codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
 	"derive",
 ] }
 derive-where = { workspace = true }
@@ -97,7 +97,7 @@ keccak-hash = { workspace = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 bitvec = { workspace = true }
-codec = { workspace = true, features = ["bit-vec", "derive"] }
+codec = { package = "parity-scale-codec", workspace = true, features = ["bit-vec", "derive"] }
 pezkuwi-subxt-macro = { workspace = true }
 pezkuwi-subxt-signer = { workspace = true, features = ["sr25519", "subxt"] }
 pezsp-core = { workspace = true }

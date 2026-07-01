@@ -45,7 +45,7 @@ runtime-benchmarks = [
 proc-macro = true
 
 [dependencies]
-codec = { workspace = true }
+codec = { package = "parity-scale-codec", workspace = true }
 darling = { workspace = true }
 pezkuwi-subxt-codegen = { workspace = true }
 pezkuwi-subxt-metadata = { workspace = true }

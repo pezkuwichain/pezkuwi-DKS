@@ -463,7 +463,11 @@ pub fn run() -> Result<()> {
 				// 	cmd.run(config, client.clone(), db, storage, shared_trie_cache).map_err(Error::BizinikiwiCli)
 				// }),
 				BenchmarkCmd::Block(cmd) => runner.sync_run(|mut config| {
-					let (client, _, _, _) = pezkuwi_service::new_chain_ops(&mut config)?;
+					// Keep `_task_manager` bound (not `_`) so it — and the babe-worker essential
+					// task it anchors via `keep_alive` in `new_partial` — stays alive for the
+					// whole closure, not just until this statement ends. See the comment on
+					// `task_manager.keep_alive(...)` in node/service/src/builder/partial.rs.
+					let (client, _, _, _task_manager) = pezkuwi_service::new_chain_ops(&mut config)?;
 
 					cmd.run(client.clone()).map_err(Error::BizinikiwiCli)
 				}),
@@ -482,7 +486,15 @@ pub fn run() -> Result<()> {
 					.map_err(Error::BizinikiwiCli)
 				}),
 				BenchmarkCmd::Extrinsic(cmd) => runner.sync_run(|mut config| {
-					let (client, _, _, _) = pezkuwi_service::new_chain_ops(&mut config)?;
+					// Keep `_task_manager` bound (not `_`) so it — and the babe-worker essential
+					// task it anchors via `keep_alive` in `new_partial` — stays alive for the
+					// whole closure, not just until this statement ends. Without this, the
+					// babe-worker task completes (its last live handle drops right here) and
+					// gets logged+treated as an essential-task failure, which fails the whole
+					// `benchmark extrinsic` command even though the benchmark itself succeeds.
+					// See the comment on `task_manager.keep_alive(...)` in
+					// node/service/src/builder/partial.rs.
+					let (client, _, _, _task_manager) = pezkuwi_service::new_chain_ops(&mut config)?;
 					let header = client.header(client.info().genesis_hash).unwrap().unwrap();
 					let inherent_data = benchmark_inherent_data(header)
 						.map_err(|e| format!("generating inherent data: {:?}", e))?;

@@ -38,7 +38,7 @@ legacy = [
 serde = []
 
 [dependencies]
-codec = { workspace = true, default-features = false, features = [
+codec = { package = "parity-scale-codec", workspace = true, default-features = false, features = [
 	"derive",
 ] }
 frame-decode = { workspace = true }

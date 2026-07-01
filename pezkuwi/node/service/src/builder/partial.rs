@@ -146,7 +146,7 @@ pub(crate) fn new_partial_basics(
 
 pub(crate) fn new_partial<ChainSelection>(
 	config: &mut Configuration,
-	Basics { task_manager, backend, client, keystore_container, telemetry }: Basics,
+	Basics { mut task_manager, backend, client, keystore_container, telemetry }: Basics,
 	select_chain: ChainSelection,
 ) -> Result<PezkuwiPartialComponents<ChainSelection>, Error>
 where
@@ -214,6 +214,17 @@ where
 			registry: config.prometheus_registry(),
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
 		})?;
+
+	// `import_queue`'s babe-worker essential task lives only as long as some clone of
+	// `babe_worker_handle` (its channel sender) is alive. For `new_full` an RPC-bound clone
+	// keeps it alive naturally, but chain_ops-only callers (e.g. `new_chain_ops`, used by CLI
+	// utility/benchmark commands) discard `PartialComponents::other` — which held the only
+	// other surviving clone — dropping the last sender almost immediately. That closes the
+	// worker's channel, the essential task completes, and it gets logged as "failed" (any
+	// completion is logged as failure by `spawn_essential`), even though nothing is actually
+	// broken. Anchor a clone to `task_manager` itself so it survives for as long as the caller
+	// keeps `task_manager` alive, regardless of which components they keep.
+	task_manager.keep_alive(babe_worker_handle.clone());
 
 	let justification_stream = grandpa_link.justification_stream();
 	let shared_authority_set = grandpa_link.shared_authority_set().clone();
