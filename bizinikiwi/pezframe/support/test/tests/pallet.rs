@@ -1965,12 +1965,15 @@ fn metadata_v15() {
 					"({})",
 					x.fields.iter().map(|f| resolve_ty(reg, f.id, d)).collect::<Vec<_>>().join(",")
 				),
-				scale_info::TypeDef::Array(a) =>
-					format!("[{};{}]", resolve_ty(reg, a.type_param.id, d), a.len),
-				scale_info::TypeDef::Sequence(s) =>
-					format!("[{}]", resolve_ty(reg, s.type_param.id, d)),
-				scale_info::TypeDef::Compact(c) =>
-					format!("compact<{}>", resolve_ty(reg, c.type_param.id, d)),
+				scale_info::TypeDef::Array(a) => {
+					format!("[{};{}]", resolve_ty(reg, a.type_param.id, d), a.len)
+				},
+				scale_info::TypeDef::Sequence(s) => {
+					format!("[{}]", resolve_ty(reg, s.type_param.id, d))
+				},
+				scale_info::TypeDef::Compact(c) => {
+					format!("compact<{}>", resolve_ty(reg, c.type_param.id, d))
+				},
 				scale_info::TypeDef::Composite(c) => format!(
 					"{{{}}}",
 					c.fields
@@ -2023,7 +2026,10 @@ fn metadata_v15() {
 										tref(value.id)
 									),
 								};
-								format!("{}|{:?}|{}|{:?}|{:?}", e.name, e.modifier, ty, e.default, e.docs)
+								format!(
+									"{}|{:?}|{}|{:?}|{:?}",
+									e.name, e.modifier, ty, e.default, e.docs
+								)
 							})
 							.collect::<Vec<_>>()
 					})
