@@ -29,7 +29,12 @@ fn benchmark_extrinsic_works() {
 	for runtime in RUNTIMES {
 		for (pezpallet, extrinsic) in EXTRINSICS {
 			let runtime = format!("{}-dev", runtime);
-			assert!(benchmark_extrinsic(&runtime, pezpallet, extrinsic).is_ok());
+			// `assert!(x.is_ok())` alone discards the `Err` payload — surface it explicitly
+			// so the signal-vs-exit-code diagnosis in `benchmark_extrinsic` is actually visible
+			// in the test failure output instead of a bare "assertion failed: ...is_ok()".
+			if let Err(e) = benchmark_extrinsic(&runtime, pezpallet, extrinsic) {
+				panic!("benchmark_extrinsic({runtime}, {pezpallet}, {extrinsic}) failed: {e}");
+			}
 		}
 	}
 }
