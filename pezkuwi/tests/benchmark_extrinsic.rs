@@ -21,14 +21,19 @@ use std::{process::Command, result::Result};
 
 static RUNTIMES: &[&str] = &["zagros", "pezkuwichain"];
 
-// Only "zagros-dev" is exercised by `benchmark_extrinsic_works` below. "pezkuwichain-dev" is
-// provably rejected by the node today: `IdentifyVariant::is_pezkuwi` matches any chain id
-// starting with "pezkuwi" — which includes "pezkuwichain-dev" *and* our real production spec
-// "pezkuwichain_mainnet" — so `identify_chain()` resolves both to `Chain::Pezkuwi`, and
-// `pezkuwi/node/service/src/benchmarking.rs`'s `identify_chain!` macro hard-rejects that variant
-// ("Pezkuwi runtimes are currently not supported"). See `benchmark_extrinsic_rejects_pezkuwichain_dev`
-// below, which pins this down as a known, asserted-on-purpose limitation rather than silently
-// skipping it.
+static EXTRINSICS: [(&str, &str); 2] = [("system", "remark"), ("balances", "transfer_keep_alive")];
+
+// "pezkuwichain-dev" + "balances"/"transfer_keep_alive" is provably rejected by the node today:
+// `TransferKeepAliveBuilder` signs its call via `identify_chain()`, and
+// `IdentifyVariant::is_pezkuwi()` matches any chain id starting with "pezkuwi" — which includes
+// "pezkuwichain-dev" *and* our real production mainnet spec ("pezkuwichain_mainnet"). Since
+// `identify_chain()` checks `is_pezkuwi()` before `is_pezkuwichain()`, both resolve to
+// `Chain::Pezkuwi`, which `pezkuwi/node/service/src/benchmarking.rs`'s `identify_chain!` macro
+// hard-rejects ("Pezkuwi runtimes are currently not supported"). "system"/"remark" doesn't go
+// through `identify_chain()` at all (`BizinikiwiRemarkBuilder` needs no chain-specific signing),
+// so it works fine against "pezkuwichain-dev" — only the balances-transfer combination is
+// affected. See `benchmark_extrinsic_rejects_pezkuwichain_dev_transfer` below, which pins this
+// down as a known, asserted-on-purpose limitation rather than silently skipping it.
 //
 // This is *not* something to "fix" by reordering `identify_chain()`'s checks: that would also
 // reclassify the real mainnet spec (which currently — and correctly, for a live production
@@ -38,15 +43,16 @@ static RUNTIMES: &[&str] = &["zagros", "pezkuwichain"];
 // testnet "in flux". Untangling the "pezkuwi"/"pezkuwichain" prefix collision from the
 // production-vs-testnet distinction it's currently (accidentally) encoding needs its own
 // deliberate task, not a side effect of unblocking this CI test.
-static WORKING_RUNTIMES: &[&str] = &["zagros"];
-
-static EXTRINSICS: [(&str, &str); 2] = [("system", "remark"), ("balances", "transfer_keep_alive")];
+const KNOWN_UNSUPPORTED: (&str, &str, &str) = ("pezkuwichain", "balances", "transfer_keep_alive");
 
 /// `benchmark extrinsic` works for all dev runtimes and some extrinsics.
 #[test]
 fn benchmark_extrinsic_works() {
-	for runtime in WORKING_RUNTIMES {
+	for runtime in RUNTIMES {
 		for (pezpallet, extrinsic) in EXTRINSICS {
+			if (*runtime, pezpallet, extrinsic) == KNOWN_UNSUPPORTED {
+				continue;
+			}
 			let runtime = format!("{}-dev", runtime);
 			// `assert!(x.is_ok())` alone discards the `Err` payload — surface it explicitly
 			// so the signal-vs-exit-code diagnosis in `benchmark_extrinsic` is actually visible
@@ -66,13 +72,14 @@ fn benchmark_extrinsic_rejects_non_dev_runtimes() {
 	}
 }
 
-/// Pins down that "pezkuwichain-dev" is currently rejected too (see the comment on
-/// `WORKING_RUNTIMES` above for why). If this ever starts passing, `WORKING_RUNTIMES` should
-/// grow to include "pezkuwichain" again as a deliberate change, not silently.
+/// Pins down the one combination excluded from `benchmark_extrinsic_works` above (see the
+/// comment on `KNOWN_UNSUPPORTED`). If this ever starts passing, remove the skip instead of
+/// letting it silently go untested.
 #[test]
-fn benchmark_extrinsic_rejects_pezkuwichain_dev() {
-	let err = benchmark_extrinsic("pezkuwichain-dev", "system", "remark")
-		.expect_err("pezkuwichain-dev is expected to be rejected by identify_chain(); if this now succeeds, identify_chain()'s pezkuwi/pezkuwichain collision has been resolved — update WORKING_RUNTIMES instead of this test");
+fn benchmark_extrinsic_rejects_pezkuwichain_dev_transfer() {
+	let (runtime, pezpallet, extrinsic) = KNOWN_UNSUPPORTED;
+	let err = benchmark_extrinsic(&format!("{runtime}-dev"), pezpallet, extrinsic)
+		.expect_err("pezkuwichain-dev + balances/transfer_keep_alive is expected to be rejected by identify_chain(); if this now succeeds, identify_chain()'s pezkuwi/pezkuwichain collision has been resolved — remove it from KNOWN_UNSUPPORTED instead of this test");
 	assert!(
 		!err.contains("Command terminated by signal"),
 		"expected a clean rejection (Chain::Pezkuwi is unsupported), not a crash: {err}"
