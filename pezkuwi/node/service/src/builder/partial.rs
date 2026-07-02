@@ -224,7 +224,14 @@ where
 	// completion is logged as failure by `spawn_essential`), even though nothing is actually
 	// broken. Anchor a clone to `task_manager` itself so it survives for as long as the caller
 	// keeps `task_manager` alive, regardless of which components they keep.
-	task_manager.keep_alive(babe_worker_handle.clone());
+	//
+	// `transaction_pool`'s own essential tasks (`txpool-background`, `transaction-pool-task-0`/
+	// `-1`) have the identical problem: `new_chain_ops` doesn't even include `transaction_pool`
+	// in its return tuple, so it's dropped as soon as `new_partial` returns unless something
+	// else anchors it. Chain_ops-only callers don't need a live pool (they talk to `client`
+	// directly), but a dead pool still trips the same "essential task failed" false alarm.
+	// Anchor it here too, for the same reason and by the same mechanism.
+	task_manager.keep_alive((babe_worker_handle.clone(), transaction_pool.clone()));
 
 	let justification_stream = grandpa_link.justification_stream();
 	let shared_authority_set = grandpa_link.shared_authority_set().clone();
