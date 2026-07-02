@@ -53,7 +53,22 @@ fn benchmark_extrinsic(runtime: &str, pezpallet: &str, extrinsic: &str) -> Resul
 		.map_err(|e| format!("command failed: {:?}", e))?;
 
 	if !status.success() {
-		return Err("Command failed".into());
+		// `status.success() == false` covers both a clean non-zero exit (real Err/panic
+		// bubbling up through `main()`) and process termination by signal (e.g. SIGABRT
+		// from an aborting allocator/native library during teardown) — those need very
+		// different fixes, so surface which one this is instead of the previous opaque
+		// "Command failed".
+		#[cfg(unix)]
+		{
+			use std::os::unix::process::ExitStatusExt;
+			if let Some(signal) = status.signal() {
+				return Err(format!(
+					"Command terminated by signal {signal} (code={:?})",
+					status.code()
+				));
+			}
+		}
+		return Err(format!("Command failed with exit status {:?}", status.code()));
 	}
 
 	Ok(())
