@@ -1185,9 +1185,9 @@ fn register_as_noter_reserves_bond() {
 		assert_eq!(Balances::free_balance(NOTER), free_before - NoterBondAmount::get());
 
 		let events = System::events();
-		assert!(events
-			.iter()
-			.any(|event| { matches!(event.event, RuntimeEvent::StakingScore(Event::NoterRegistered { .. })) }));
+		assert!(events.iter().any(|event| {
+			matches!(event.event, RuntimeEvent::StakingScore(Event::NoterRegistered { .. }))
+		}));
 	});
 }
 
@@ -1507,9 +1507,9 @@ fn slash_noter_burns_bond_to_treasury() {
 		assert_eq!(Balances::free_balance(TREASURY), treasury_before + bond);
 
 		let events = System::events();
-		assert!(events
-			.iter()
-			.any(|event| { matches!(event.event, RuntimeEvent::StakingScore(Event::NoterSlashed { .. })) }));
+		assert!(events.iter().any(|event| {
+			matches!(event.event, RuntimeEvent::StakingScore(Event::NoterSlashed { .. }))
+		}));
 	});
 }
 

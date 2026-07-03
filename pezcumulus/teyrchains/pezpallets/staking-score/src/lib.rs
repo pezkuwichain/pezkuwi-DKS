@@ -191,9 +191,8 @@ pub mod pezpallet {
 
 	/// Balance type of `T::Currency` (the noter bond currency) — distinct from
 	/// `T::Balance` above, which represents staking amounts, not reservable funds.
-	pub type BalanceOf<T> = <<T as Config>::Currency as Currency<
-		<T as pezframe_system::Config>::AccountId,
-	>>::Balance;
+	pub type BalanceOf<T> =
+		<<T as Config>::Currency as Currency<<T as pezframe_system::Config>::AccountId>>::Balance;
 
 	// --- Storage ---
 
@@ -271,7 +270,11 @@ pub mod pezpallet {
 			matures_at: BlockNumberFor<T>,
 		},
 		/// A pending noter submission was frozen before it could take effect.
-		StakingDetailsDisputed { who: T::AccountId, source: StakingSource, disputed_by: T::AccountId },
+		StakingDetailsDisputed {
+			who: T::AccountId,
+			source: StakingSource,
+			disputed_by: T::AccountId,
+		},
 		/// An account registered as an active (bonded) noter.
 		NoterRegistered { who: T::AccountId, bond: BalanceOf<T> },
 		/// An account unregistered as noter and reclaimed its bond.
@@ -476,8 +479,8 @@ pub mod pezpallet {
 		) -> DispatchResult {
 			ensure_signed(origin)?;
 
-			let pending =
-				PendingStakingDetails::<T>::get(&who, source).ok_or(Error::<T>::NoPendingSubmission)?;
+			let pending = PendingStakingDetails::<T>::get(&who, source)
+				.ok_or(Error::<T>::NoPendingSubmission)?;
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
 			ensure!(
 				current_block >= pending.submitted_at.saturating_add(T::DisputeWindow::get()),
@@ -547,15 +550,7 @@ pub mod pezpallet {
 
 	/// A noter-submitted staking update awaiting its dispute window.
 	#[derive(
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		Clone,
-		PartialEq,
-		Eq,
-		TypeInfo,
-		Debug,
-		MaxEncodedLen,
+		Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, TypeInfo, Debug, MaxEncodedLen,
 	)]
 	pub struct PendingSubmission<Balance, AccountId, BlockNumber> {
 		pub details: StakingDetails<Balance>,
@@ -621,9 +616,9 @@ pub mod pezpallet {
 				CachedStakingDetails::<T>::insert(who, source, details);
 
 				let new_total = Self::total_cached_stake(who);
-				if !previous_total.is_zero() &&
-					new_total > previous_total &&
-					StakingStartBlock::<T>::contains_key(who)
+				if !previous_total.is_zero()
+					&& new_total > previous_total
+					&& StakingStartBlock::<T>::contains_key(who)
 				{
 					let current_block = pezframe_system::Pezpallet::<T>::block_number();
 					StakingStartBlock::<T>::insert(who, current_block);
@@ -631,7 +626,11 @@ pub mod pezpallet {
 			}
 
 			T::OnStakingUpdate::on_staking_data_changed(who);
-			Self::deposit_event(Event::StakingDetailsReceived { who: who.clone(), source, staked_amount });
+			Self::deposit_event(Event::StakingDetailsReceived {
+				who: who.clone(),
+				source,
+				staked_amount,
+			});
 		}
 
 		/// If a pending noter submission for `(who, source)` exists and has

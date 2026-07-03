@@ -131,8 +131,8 @@ impl ExtBuilder {
 				(2, 1_000_000 * UNITS),
 				(10, 1_000_000 * UNITS),
 				(20, 100_000 * UNITS),
-				(30, 100_000 * UNITS),  // Charlie
-				(99, 100_000 * UNITS),  // NOTER — enough to post NoterBondAmount (1,000 UNITS)
+				(30, 100_000 * UNITS), // Charlie
+				(99, 100_000 * UNITS), // NOTER — enough to post NoterBondAmount (1,000 UNITS)
 				(NOTER_2, 100_000 * UNITS),
 			],
 			..Default::default()

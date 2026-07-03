@@ -6,9 +6,8 @@
 //! Benchmarking setup for pezpallet-staking-score
 
 use crate::{
-	BalanceOf, CachedStakingDetails, Call, Config, NoterBonds, NoterCheck, Pezpallet,
-	PendingStakingDetails, PendingSubmission, StakingDetails, StakingSource, StakingStartBlock,
-	UNITS,
+	BalanceOf, CachedStakingDetails, Call, Config, NoterBonds, NoterCheck, PendingStakingDetails,
+	PendingSubmission, Pezpallet, StakingDetails, StakingSource, StakingStartBlock, UNITS,
 };
 use pezframe_benchmarking::v2::*;
 use pezframe_support::traits::{Currency, EnsureOrigin, Get};
@@ -132,8 +131,8 @@ mod benchmarks {
 			},
 		);
 
-		let dispute_origin =
-			T::DisputeOrigin::try_successful_origin().expect("DisputeOrigin must have a benchmark origin");
+		let dispute_origin = T::DisputeOrigin::try_successful_origin()
+			.expect("DisputeOrigin must have a benchmark origin");
 
 		#[extrinsic_call]
 		_(dispute_origin, target.clone(), StakingSource::RelayChain);
@@ -193,8 +192,8 @@ mod benchmarks {
 		let noter: T::AccountId = whitelisted_caller();
 		fund_and_register_noter::<T>(&noter);
 
-		let slash_origin =
-			T::SlashOrigin::try_successful_origin().expect("SlashOrigin must have a benchmark origin");
+		let slash_origin = T::SlashOrigin::try_successful_origin()
+			.expect("SlashOrigin must have a benchmark origin");
 
 		#[extrinsic_call]
 		_(slash_origin, noter.clone());
