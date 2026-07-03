@@ -295,8 +295,7 @@ impl pezpallet_xcm::Config for Runtime {
 	// teyrchain. Local execution for signed accounts is still permitted via `ExecuteXcmOrigin`
 	// below, which is scoped to the caller's own derived-sovereign origin and does not grant
 	// send-to-any-destination capability.
-	type SendXcmOrigin =
-		xcm_builder::EnsureXcmOrigin<RuntimeOrigin, LocalPalletOriginToLocation>;
+	type SendXcmOrigin = xcm_builder::EnsureXcmOrigin<RuntimeOrigin, LocalPalletOriginToLocation>;
 	type XcmRouter = XcmRouter;
 	// Anyone can execute XCM messages locally.
 	type ExecuteXcmOrigin = xcm_builder::EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;

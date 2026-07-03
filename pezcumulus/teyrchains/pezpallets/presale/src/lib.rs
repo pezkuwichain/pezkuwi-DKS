@@ -439,7 +439,8 @@ pub mod pezpallet {
 	/// Successful/Finalized presale. Guards against double-withdrawal.
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn funds_withdrawn)]
-	pub type FundsWithdrawn<T: Config> = StorageMap<_, Blake2_128Concat, PresaleId, bool, ValueQuery>;
+	pub type FundsWithdrawn<T: Config> =
+		StorageMap<_, Blake2_128Concat, PresaleId, bool, ValueQuery>;
 
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
@@ -568,9 +569,8 @@ pub mod pezpallet {
 			// overflow BlockNumberFor<T>. Without this, a permissionless caller (any signed
 			// account, since CreatePresaleOrigin = EnsureSigned) could craft a presale that
 			// traps every later contribute()/refund()/finalize_presale()/claim_vested() call.
-			let end_block = start_block
-				.checked_add(&params.duration)
-				.ok_or(Error::<T>::InvalidDuration)?;
+			let end_block =
+				start_block.checked_add(&params.duration).ok_or(Error::<T>::InvalidDuration)?;
 			if let Some(ref vesting) = params.vesting {
 				let vesting_start = end_block
 					.checked_add(&vesting.cliff_blocks)
@@ -905,8 +905,9 @@ pub mod pezpallet {
 				.start_block
 				.checked_add(&presale.duration)
 				.ok_or(Error::<T>::ArithmeticOverflow)?;
-			let vesting_start =
-				end_block.checked_add(&vesting.cliff_blocks).ok_or(Error::<T>::ArithmeticOverflow)?;
+			let vesting_start = end_block
+				.checked_add(&vesting.cliff_blocks)
+				.ok_or(Error::<T>::ArithmeticOverflow)?;
 
 			ensure!(current_block >= vesting_start, Error::<T>::NothingToClaim);
 

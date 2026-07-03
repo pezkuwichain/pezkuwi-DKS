@@ -289,10 +289,7 @@ pub mod pezpallet {
 
 			// Enforce the per-course enrollment cap.
 			let enrolled_count = CourseEnrollmentCount::<T>::get(course_id);
-			ensure!(
-				enrolled_count < T::MaxStudentsPerCourse::get(),
-				Error::<T>::TooManyStudents
-			);
+			ensure!(enrolled_count < T::MaxStudentsPerCourse::get(), Error::<T>::TooManyStudents);
 
 			let enrollment = Enrollment {
 				student: student.clone(),
