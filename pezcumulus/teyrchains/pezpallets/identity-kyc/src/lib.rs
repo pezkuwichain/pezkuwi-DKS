@@ -187,7 +187,14 @@ pub mod pezpallet {
 	pub type IdentityHashes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, H256>;
 
 	/// Reverse mapping: identity hash -> account ID (uniqueness enforcement)
-	/// Ensures no two accounts can register with the same identity hash
+	/// Ensures no two accounts can register with the same identity hash.
+	///
+	/// IMPORTANT: This map is populated at `apply_for_citizenship` time (not just
+	/// at `confirm_citizenship` time) so that the hash is *reserved* for the whole
+	/// lifetime of an in-flight application. This prevents two different accounts
+	/// from concurrently applying with the same identity_hash (Sybil resistance) -
+	/// without this early reservation, two pending applications could both later
+	/// confirm and silently overwrite each other's reverse mapping.
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn identity_hash_owner)]
 	pub type IdentityHashToAccount<T: Config> = StorageMap<_, Blake2_128Concat, H256, T::AccountId>;
@@ -353,6 +360,12 @@ pub mod pezpallet {
 			let deposit = T::KycApplicationDeposit::get();
 			T::Currency::reserve(&applicant, deposit)?;
 
+			// Reserve the identity hash immediately (not just at confirm time).
+			// This closes the Sybil window where two different accounts could
+			// both apply with the same identity_hash before either confirms -
+			// see the doc comment on IdentityHashToAccount for details.
+			IdentityHashToAccount::<T>::insert(identity_hash, &applicant);
+
 			// Store application (only hash, no personal data)
 			let application =
 				CitizenshipApplication { identity_hash, referrer: actual_referrer.clone() };
@@ -398,6 +411,16 @@ pub mod pezpallet {
 			// Only the referrer can approve
 			ensure!(application.referrer == caller, Error::<T>::NotTheReferrer);
 
+			// Re-check the referrer's *current* KYC status. The referrer may have
+			// been an Approved citizen when the application was created, but could
+			// have been revoked by governance since then (e.g. for running a
+			// referral-selling scheme). A revoked citizen must not retain the
+			// ability to vouch new citizens into the system.
+			ensure!(
+				KycStatuses::<T>::get(&caller) == KycLevel::Approved,
+				Error::<T>::ReferrerNotCitizen
+			);
+
 			// Update status to ReferrerApproved
 			KycStatuses::<T>::insert(&applicant, KycLevel::ReferrerApproved);
 
@@ -438,7 +461,10 @@ pub mod pezpallet {
 			// Store identity hash permanently (for proof of citizenship)
 			IdentityHashes::<T>::insert(&applicant, application.identity_hash);
 
-			// Store reverse mapping for uniqueness enforcement
+			// Reverse mapping was already reserved for this applicant at apply time
+			// (see apply_for_citizenship); re-affirm it here for good measure. This
+			// is a no-op in the normal path since no other account can hold the
+			// same identity_hash (the apply-time reservation guarantees that).
 			IdentityHashToAccount::<T>::insert(application.identity_hash, &applicant);
 
 			// Store referrer permanently (for direct responsibility tracking)
@@ -532,8 +558,11 @@ pub mod pezpallet {
 				Error::<T>::CannotCancelInCurrentState
 			);
 
-			// Remove application
-			Applications::<T>::remove(&applicant);
+			// Remove application and release the reserved identity hash so it can
+			// be used again (by this account or another) in a future application.
+			let application =
+				Applications::<T>::take(&applicant).ok_or(Error::<T>::ApplicationNotFound)?;
+			IdentityHashToAccount::<T>::remove(application.identity_hash);
 
 			// Reset status
 			KycStatuses::<T>::insert(&applicant, KycLevel::NotStarted);

@@ -64,6 +64,7 @@ pub trait WeightInfo {
 	fn refund_cancelled_presale() -> Weight;
 	fn finalize_presale(n: u32, ) -> Weight;
 	fn batch_refund_failed_presale(n: u32, ) -> Weight;
+	fn withdraw_funds() -> Weight;
 }
 
 /// Weights for `pezpallet_presale` using the Bizinikiwi node and recommended hardware.
@@ -264,6 +265,23 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(n.into())))
 			.saturating_add(Weight::from_parts(0, 2609).saturating_mul(n.into()))
 	}
+	/// Storage: `Presale::Presales` (r:1 w:0)
+	/// Proof: `Presale::Presales` (`max_values`: None, `max_size`: Some(252), added: 2727, mode: `MaxEncodedLen`)
+	/// Storage: `Presale::FundsWithdrawn` (r:1 w:1)
+	/// Proof: `Presale::FundsWithdrawn` (`max_values`: None, `max_size`: Some(5), added: 2480, mode: `MaxEncodedLen`)
+	/// Storage: `Assets::Asset` (r:1 w:1)
+	/// Proof: `Assets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
+	/// Storage: `Assets::Account` (r:2 w:2)
+	/// Proof: `Assets::Account` (`max_values`: None, `max_size`: Some(134), added: 2609, mode: `MaxEncodedLen`)
+	/// Storage: `AssetsFreezer::FrozenBalances` (r:1 w:0)
+	/// Proof: `AssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// NOTE: manually estimated (not yet re-benchmarked), modeled on the single-transfer
+	/// `claim_vested` weight since both do one Presales read plus one asset transfer.
+	fn withdraw_funds() -> Weight {
+		Weight::from_parts(74_529_000, 6208)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -462,5 +480,22 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 			.saturating_add(RocksDbWeight::get().writes((2_u64).saturating_mul(n.into())))
 			.saturating_add(Weight::from_parts(0, 2609).saturating_mul(n.into()))
+	}
+	/// Storage: `Presale::Presales` (r:1 w:0)
+	/// Proof: `Presale::Presales` (`max_values`: None, `max_size`: Some(252), added: 2727, mode: `MaxEncodedLen`)
+	/// Storage: `Presale::FundsWithdrawn` (r:1 w:1)
+	/// Proof: `Presale::FundsWithdrawn` (`max_values`: None, `max_size`: Some(5), added: 2480, mode: `MaxEncodedLen`)
+	/// Storage: `Assets::Asset` (r:1 w:1)
+	/// Proof: `Assets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
+	/// Storage: `Assets::Account` (r:2 w:2)
+	/// Proof: `Assets::Account` (`max_values`: None, `max_size`: Some(134), added: 2609, mode: `MaxEncodedLen`)
+	/// Storage: `AssetsFreezer::FrozenBalances` (r:1 w:0)
+	/// Proof: `AssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
+	/// NOTE: manually estimated (not yet re-benchmarked), modeled on the single-transfer
+	/// `claim_vested` weight since both do one Presales read plus one asset transfer.
+	fn withdraw_funds() -> Weight {
+		Weight::from_parts(74_529_000, 6208)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(4_u64))
 	}
 }

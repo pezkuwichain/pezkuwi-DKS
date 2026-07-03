@@ -192,6 +192,13 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn next_course_id)]
 	pub type NextCourseId<T: Config> = StorageValue<_, u32, ValueQuery>;
 
+	/// Number of students currently enrolled in a given course.
+	/// Enforces the `MaxStudentsPerCourse` bound in `enroll()`.
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn course_enrollment_count)]
+	pub type CourseEnrollmentCount<T: Config> =
+		StorageMap<_, Blake2_128Concat, u32, u32, ValueQuery>;
+
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn enrollments)]
 	pub type Enrollments<T: Config> =
@@ -232,6 +239,8 @@ pub mod pezpallet {
 		CourseIdOverflow,
 		/// Points exceed the maximum allowed per course
 		PointsExceedMax,
+		/// Course has reached its maximum number of enrolled students
+		TooManyStudents,
 	}
 
 	#[pezpallet::call]
@@ -278,6 +287,13 @@ pub mod pezpallet {
 				Error::<T>::AlreadyEnrolled
 			);
 
+			// Enforce the per-course enrollment cap.
+			let enrolled_count = CourseEnrollmentCount::<T>::get(course_id);
+			ensure!(
+				enrolled_count < T::MaxStudentsPerCourse::get(),
+				Error::<T>::TooManyStudents
+			);
+
 			let enrollment = Enrollment {
 				student: student.clone(),
 				course_id,
@@ -290,6 +306,7 @@ pub mod pezpallet {
 			StudentCourses::<T>::try_mutate(&student, |courses| {
 				courses.try_push(course_id).map_err(|_| Error::<T>::TooManyCourses)
 			})?;
+			CourseEnrollmentCount::<T>::insert(course_id, enrolled_count.saturating_add(1));
 
 			Self::deposit_event(Event::StudentEnrolled { student, course_id });
 			Ok(())

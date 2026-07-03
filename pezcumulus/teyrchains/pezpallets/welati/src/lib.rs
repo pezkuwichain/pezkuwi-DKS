@@ -910,9 +910,14 @@ pub mod pezpallet {
 		#[pezpallet::call_index(10)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
 		#[pezpallet::feeless_if(|origin: &OriginFor<T>, _nominee: &T::AccountId, _role: &OfficialRole, _justification: &BoundedVec<u8, ConstU32<1000>>| -> bool {
-            // Governance members are exempt from fees when performing official duties
+            // Fee exemption must mirror the in-body authorization check exactly
+            // (Serok or a Minister) -- NOT the broader is_governance_member set,
+            // otherwise unauthorized governance-adjacent accounts (Parliament/Diwan
+            // members) could spam this call for free and always fail authorization.
             match ensure_signed(origin.clone()) {
-                Ok(who) => Pezpallet::<T>::is_governance_member(&who),
+                Ok(who) => {
+                    Pezpallet::<T>::is_serok(&who) || Pezpallet::<T>::is_minister(&who)
+                },
                 Err(_) => false,
             }
         })]
@@ -1012,6 +1017,15 @@ pub mod pezpallet {
 				Error::<T>::AppointmentAlreadyProcessed
 			);
 
+			// Re-validate that the role is still unfilled. Two competing
+			// AppointmentProcess entries (different nominees, same role) can both
+			// reach WaitingPresidentialApproval; without this check, approving a
+			// second stale process would silently overwrite an already-appointed
+			// official with no removal event and no error.
+			if let Some(current_holder) = AppointedOfficials::<T>::get(process.position) {
+				ensure!(current_holder == process.nominee, Error::<T>::RoleAlreadyFilled);
+			}
+
 			// Get nomination
 			let mut nomination = PendingNominations::<T>::get(process.position, &process.nominee)
 				.ok_or(Error::<T>::NominationNotFound)?;
@@ -1045,10 +1059,13 @@ pub mod pezpallet {
 
 		#[pezpallet::call_index(20)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::submit_proposal())]
-		#[pezpallet::feeless_if(|origin: &OriginFor<T>, _title: &BoundedVec<u8, ConstU32<100>>, _description: &BoundedVec<u8, ConstU32<1000>>, _decision_type: &CollectiveDecisionType, _priority: &ProposalPriority, _call: &Option<Box<<T as pezframe_system::Config>::RuntimeCall>>| -> bool {
-            // Governance members are exempt from fees when submitting proposals
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, _title: &BoundedVec<u8, ConstU32<100>>, _description: &BoundedVec<u8, ConstU32<1000>>, decision_type: &CollectiveDecisionType, _priority: &ProposalPriority, _call: &Option<Box<<T as pezframe_system::Config>::RuntimeCall>>| -> bool {
+            // Fee exemption must mirror can_propose() exactly (Serok, or Parliament
+            // member/Serok for everything else) -- NOT the broader is_governance_member
+            // set, otherwise Diwan members/Ministers could spam this call for free and
+            // always fail authorization.
             match ensure_signed(origin.clone()) {
-                Ok(who) => Pezpallet::<T>::is_governance_member(&who),
+                Ok(who) => Pezpallet::<T>::can_propose(&who, decision_type).unwrap_or(false),
                 Err(_) => false,
             }
         })]
@@ -1106,10 +1123,16 @@ pub mod pezpallet {
 
 		#[pezpallet::call_index(21)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
-		#[pezpallet::feeless_if(|origin: &OriginFor<T>, _proposal_id: &u32, _vote: &VoteChoice, _rationale: &Option<BoundedVec<u8, ConstU32<500>>>| -> bool {
-            // Governance members are exempt from fees when voting
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, proposal_id: &u32, _vote: &VoteChoice, _rationale: &Option<BoundedVec<u8, ConstU32<500>>>| -> bool {
+            // Fee exemption must mirror the in-body per-decision-type authorization
+            // check exactly -- NOT the broader is_governance_member set, otherwise
+            // accounts unauthorized for this specific proposal's decision type
+            // (e.g. Ministers, who are never authorized to vote) could spam this
+            // call for free and always fail authorization.
             match ensure_signed(origin.clone()) {
-                Ok(who) => Pezpallet::<T>::is_governance_member(&who),
+                Ok(who) => ActiveProposals::<T>::get(proposal_id)
+                    .map(|proposal| Pezpallet::<T>::is_authorized_to_vote(&proposal.decision_type, &who))
+                    .unwrap_or(false),
                 Err(_) => false,
             }
         })]
@@ -1132,36 +1155,12 @@ pub mod pezpallet {
 			let proposal =
 				ActiveProposals::<T>::get(proposal_id).ok_or(Error::<T>::ProposalNotFound)?;
 
-			// Enforce access control based on decision type
-			match proposal.decision_type {
-				CollectiveDecisionType::ParliamentSimpleMajority
-				| CollectiveDecisionType::ParliamentSuperMajority
-				| CollectiveDecisionType::ParliamentAbsoluteMajority
-				| CollectiveDecisionType::VetoOverride => {
-					// Parliament members only
-					let members = ParliamentMembers::<T>::get();
-					let is_member = members.iter().any(|m| m.account == voter);
-					ensure!(is_member, Error::<T>::NotAuthorizedToVote);
-				},
-				CollectiveDecisionType::ConstitutionalReview
-				| CollectiveDecisionType::ConstitutionalUnanimous => {
-					// Diwan members only
-					ensure!(Self::is_diwan_member(&voter), Error::<T>::NotAuthorizedToVote,);
-				},
-				CollectiveDecisionType::ExecutiveDecision => {
-					// Serok (President) only
-					let serok = CurrentOfficials::<T>::get(GovernmentPosition::Serok);
-					ensure!(serok.as_ref() == Some(&voter), Error::<T>::NotAuthorizedToVote,);
-				},
-				CollectiveDecisionType::HybridDecision => {
-					// Parliament members OR Serok
-					let members = ParliamentMembers::<T>::get();
-					let is_parliament = members.iter().any(|m| m.account == voter);
-					let serok = CurrentOfficials::<T>::get(GovernmentPosition::Serok);
-					let is_serok = serok.as_ref() == Some(&voter);
-					ensure!(is_parliament || is_serok, Error::<T>::NotAuthorizedToVote,);
-				},
-			}
+			// Enforce access control based on decision type (shared with feeless_if
+			// via is_authorized_to_vote so the two checks cannot drift apart)
+			ensure!(
+				Self::is_authorized_to_vote(&proposal.decision_type, &voter),
+				Error::<T>::NotAuthorizedToVote
+			);
 
 			// Record the vote
 			let vote_info = CollectiveVote {
@@ -1328,6 +1327,16 @@ pub mod pezpallet {
 			election_id: u32,
 			election: &ElectionInfo<T>,
 		) -> Result<ElectionOutcome<T::AccountId>, Error<T>> {
+			// Enforce the minimum turnout quorum recorded on the election at initiation
+			// time. Without this check, elections could be finalized (and officeholders
+			// seated) with arbitrarily low citizen participation.
+			let total_citizen_count = Self::get_total_citizen_count();
+			if total_citizen_count > 0 {
+				let turnout_percentage = ((election.total_votes as u64).saturating_mul(100)
+					/ total_citizen_count as u64) as u8;
+				ensure!(turnout_percentage >= election.minimum_turnout, Error::<T>::QuorumNotMet);
+			}
+
 			let mut candidates_with_votes: Vec<(T::AccountId, u32)> = election
 				.candidates
 				.iter()
@@ -1348,7 +1357,9 @@ pub mod pezpallet {
 						candidates_with_votes.iter().map(|(_, v)| *v).sum::<u32>().max(1);
 					let (top_winner, top_vote_count) = candidates_with_votes[0].clone();
 
-					if (top_vote_count * 100) / total_valid_votes >= 50 {
+					if ((top_vote_count as u64).saturating_mul(100)) / (total_valid_votes as u64)
+						>= 50
+					{
 						let winners_vec: BoundedVec<_, _> = vec![top_winner]
 							.try_into()
 							.map_err(|_| Error::<T>::CalculationOverflow)?;
@@ -1410,39 +1421,76 @@ pub mod pezpallet {
 					}
 				},
 				ElectionType::Parliamentary => {
-					let current_block = pezframe_system::Pezpallet::<T>::block_number();
-					let term_end = current_block
-						+ BlockNumberFor::<T>::from(4u32 * 365u32 * 24u32 * 60u32 * 10u32);
+					// Guard against wiping the sitting Parliament when an election produces
+					// no winners (e.g. zero candidates registered). Leave the previous
+					// Parliament untouched in that case, mirroring the Presidential and
+					// SpeakerElection arms below.
+					if !winners.is_empty() {
+						let current_block = pezframe_system::Pezpallet::<T>::block_number();
+						let term_end = current_block
+							+ BlockNumberFor::<T>::from(4u32 * 365u32 * 24u32 * 60u32 * 10u32);
 
-					let parliament_members: Result<BoundedVec<_, _>, _> = winners
-						.iter()
-						.map(|winner| ParliamentMember {
-							account: winner.clone(),
-							elected_at: current_block,
-							term_ends_at: term_end,
-							votes_participated: 0,
-							total_votes_eligible: 0,
-							participation_rate: 100,
-							committees: Default::default(),
-						})
-						.collect::<Vec<_>>()
-						.try_into();
+						let parliament_members: Result<BoundedVec<_, _>, _> = winners
+							.iter()
+							.map(|winner| ParliamentMember {
+								account: winner.clone(),
+								elected_at: current_block,
+								term_ends_at: term_end,
+								votes_participated: 0,
+								total_votes_eligible: 0,
+								participation_rate: 100,
+								committees: Default::default(),
+							})
+							.collect::<Vec<_>>()
+							.try_into();
 
-					ParliamentMembers::<T>::put(
-						parliament_members.map_err(|_| Error::<T>::ParliamentFull)?,
-					);
+						ParliamentMembers::<T>::put(
+							parliament_members.map_err(|_| Error::<T>::ParliamentFull)?,
+						);
 
-					Self::deposit_event(Event::ParliamentUpdated {
-						new_members: winners.to_vec(),
-						term_start: current_block,
-					});
+						Self::deposit_event(Event::ParliamentUpdated {
+							new_members: winners.to_vec(),
+							term_start: current_block,
+						});
+					}
 				},
 				ElectionType::SpeakerElection => {
 					if let Some(winner) = winners.first() {
 						CurrentOfficials::<T>::insert(GovernmentPosition::MeclisBaskanı, winner);
 					}
 				},
-				_ => {},
+				ElectionType::ConstitutionalCourt => {
+					// Same non-destructive guard as Parliamentary: an empty winners list
+					// leaves the sitting Diwan untouched instead of wiping it.
+					if !winners.is_empty() {
+						let current_block = pezframe_system::Pezpallet::<T>::block_number();
+						let term_end = current_block
+							+ BlockNumberFor::<T>::from(9u32 * 365u32 * 24u32 * 60u32 * 10u32);
+
+						let diwan_members: Result<BoundedVec<_, _>, _> = winners
+							.iter()
+							.map(|winner| DiwanMember {
+								account: winner.clone(),
+								appointed_at: current_block,
+								term_ends_at: term_end,
+								appointed_by: AppointmentAuthority::Parliament,
+								specialization: ConstitutionalSpecialization::FundamentalRights,
+								decisions_made: 0,
+							})
+							.collect::<Vec<_>>()
+							.try_into();
+
+						DiwanMembers::<T>::put(diwan_members.map_err(|_| Error::<T>::DiwanFull)?);
+
+						for winner in winners {
+							Self::deposit_event(Event::DiwanMemberAppointed {
+								member: winner.clone(),
+								appointed_by: AppointmentAuthority::Parliament,
+								specialization: ConstitutionalSpecialization::FundamentalRights,
+							});
+						}
+					}
+				},
 			}
 			Ok(())
 		}
@@ -1465,6 +1513,27 @@ pub mod pezpallet {
 						== Some(proposer.clone());
 
 					Ok(is_parliamentarian || is_president)
+				},
+			}
+		}
+
+		/// Check voting authority for a given decision type. Shared by
+		/// `vote_on_proposal`'s in-body enforcement and its `feeless_if` fee
+		/// exemption gate so the two checks can never drift apart.
+		pub fn is_authorized_to_vote(
+			decision_type: &CollectiveDecisionType,
+			voter: &T::AccountId,
+		) -> bool {
+			match decision_type {
+				CollectiveDecisionType::ParliamentSimpleMajority
+				| CollectiveDecisionType::ParliamentSuperMajority
+				| CollectiveDecisionType::ParliamentAbsoluteMajority
+				| CollectiveDecisionType::VetoOverride => Self::is_parliament_member(voter),
+				CollectiveDecisionType::ConstitutionalReview
+				| CollectiveDecisionType::ConstitutionalUnanimous => Self::is_diwan_member(voter),
+				CollectiveDecisionType::ExecutiveDecision => Self::is_serok(voter),
+				CollectiveDecisionType::HybridDecision => {
+					Self::is_parliament_member(voter) || Self::is_serok(voter)
 				},
 			}
 		}

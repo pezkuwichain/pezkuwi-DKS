@@ -179,6 +179,36 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type CleanupCursor<T: Config> = StorageValue<_, (u32, BoundedVec<u8, ConstU32<256>>)>;
 
+	/// FIFO queue of era indices awaiting cleanup, oldest first.
+	///
+	/// `on_initialize` enqueues the newly-expired era on every rotation instead of
+	/// clobbering `CleanupCursor` directly. `on_idle` only pulls the next era off this
+	/// queue once the current `CleanupCursor` entry (if any) has fully finished, so a
+	/// slow/congested era's cleanup is never silently dropped by a later rotation.
+	///
+	/// Bounded to `MaxPendingCleanupEras` eras of backlog. If cleanup falls behind by
+	/// more than that many eras (i.e. `on_idle` gets essentially no weight for that many
+	/// consecutive era lengths), the oldest still-pending era is dropped to make room for
+	/// the newest one -- an explicit, generous, and documented bound rather than the
+	/// previous single-slot behaviour where any one stalled era was silently orphaned.
+	#[pezpallet::storage]
+	pub type PendingCleanupEras<T: Config> =
+		StorageValue<_, BoundedVec<u32, ConstU32<64>>, ValueQuery>;
+
+	/// Per-account encryption-key registration counter for the current era.
+	/// Reset (via era-prefix cleanup) when the era rotates. Used for rate limiting
+	/// `register_encryption_key`, mirroring `SendCount` for `send_message`.
+	#[pezpallet::storage]
+	pub type KeyRegistrationCount<T: Config> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		u32, // era_index
+		Blake2_128Concat,
+		T::AccountId, // who
+		u32,          // count
+		ValueQuery,
+	>;
+
 	// ============= EVENTS =============
 
 	#[pezpallet::event]
@@ -227,7 +257,8 @@ pub mod pezpallet {
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
 		/// Check for era rotation at the start of each block.
-		/// Cost: 2 reads (CurrentEra + EraStartBlock), 0-2 writes on rotation.
+		/// Cost: 2 reads (CurrentEra + EraStartBlock), plus on rotation an extra
+		/// read+write of PendingCleanupEras to enqueue the newly-expired era.
 		fn on_initialize(n: BlockNumberFor<T>) -> Weight {
 			let era_length = T::EraLength::get();
 			let era_start = EraStartBlock::<T>::get();
@@ -241,14 +272,24 @@ pub mod pezpallet {
 
 				Self::deposit_event(Event::EraRotated { old_era, new_era });
 
-				// Schedule cleanup: store the expired era index for on_idle
+				// Schedule cleanup: enqueue the expired era index for on_idle instead of
+				// overwriting CleanupCursor directly, so an in-progress cleanup (or a
+				// backlog of not-yet-started ones) is never dropped by this rotation.
 				if old_era > 0 {
 					// Clean era before the one that just ended (2 eras of grace)
 					let cleanup_era = old_era.saturating_sub(1);
-					CleanupCursor::<T>::put((cleanup_era, BoundedVec::default()));
+					let mut pending = PendingCleanupEras::<T>::get();
+					if pending.try_push(cleanup_era).is_err() {
+						// Backlog is at capacity (MaxPendingCleanupEras eras of unresolved
+						// cleanup). Drop the oldest pending era to make room for the one
+						// that just expired, rather than silently dropping the newest.
+						pending.remove(0);
+						let _ = pending.try_push(cleanup_era);
+					}
+					PendingCleanupEras::<T>::put(pending);
 				}
 
-				T::DbWeight::get().reads_writes(2, 3)
+				T::DbWeight::get().reads_writes(3, 4)
 			} else {
 				T::DbWeight::get().reads(2)
 			}
@@ -265,6 +306,20 @@ pub mod pezpallet {
 				return meter.consumed();
 			}
 
+			// If no cleanup is currently in progress, pull the next oldest era off the
+			// pending queue so a backlog left behind by stalled/congested blocks is
+			// eventually worked through instead of being silently forgotten.
+			if CleanupCursor::<T>::get().is_none() {
+				let _ = meter.try_consume(T::DbWeight::get().reads(1));
+				let mut pending = PendingCleanupEras::<T>::get();
+				if !pending.is_empty() {
+					let next_era = pending.remove(0);
+					PendingCleanupEras::<T>::put(pending);
+					CleanupCursor::<T>::put((next_era, BoundedVec::default()));
+					let _ = meter.try_consume(T::DbWeight::get().writes(2));
+				}
+			}
+
 			if let Some((cleanup_era, cursor)) = CleanupCursor::<T>::get() {
 				// Consume weight for reading the cursor
 				let _ = meter.try_consume(T::DbWeight::get().reads(1));
@@ -278,10 +333,14 @@ pub mod pezpallet {
 				let writes_weight = T::DbWeight::get().writes(result.unique as u64);
 				let _ = meter.try_consume(writes_weight);
 
-				// Also clean SendCount for this era
+				// Also clean SendCount and KeyRegistrationCount for this era
 				let send_result = SendCount::<T>::clear_prefix(cleanup_era, 50, None);
 				let send_writes = T::DbWeight::get().writes(send_result.unique as u64);
 				let _ = meter.try_consume(send_writes);
+
+				let key_reg_result = KeyRegistrationCount::<T>::clear_prefix(cleanup_era, 50, None);
+				let key_reg_writes = T::DbWeight::get().writes(key_reg_result.unique as u64);
+				let _ = meter.try_consume(key_reg_writes);
 
 				match result.maybe_cursor {
 					Some(new_cursor) => {
@@ -340,8 +399,16 @@ pub mod pezpallet {
 				Error::<T>::InsufficientTrustScore
 			);
 
+			// Rate limit: this call is fee-free for citizens, so it needs the same
+			// per-era counter protection as `send_message` to stay consistent with the
+			// pallet's spam-resistance design. Reuses `MaxMessagesPerEra` as the cap.
+			let current_era = CurrentEra::<T>::get();
+			let reg_count = KeyRegistrationCount::<T>::get(current_era, &who);
+			ensure!(reg_count < T::MaxMessagesPerEra::get(), Error::<T>::RateLimitExceeded);
+
 			// Store the encryption key
 			EncryptionKeys::<T>::insert(&who, public_key);
+			KeyRegistrationCount::<T>::insert(current_era, &who, reg_count.saturating_add(1));
 
 			Self::deposit_event(Event::EncryptionKeyRegistered { who });
 			Ok(())

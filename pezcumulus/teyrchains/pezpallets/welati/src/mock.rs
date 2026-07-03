@@ -316,6 +316,8 @@ parameter_types! {
 
 impl pezpallet_tiki::Config for Test {
 	type AdminOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type ElectedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type WeightInfo = ();
 	type MaxTikisPerUser = MaxTikisPerUser;
 	type Tiki = pezpallet_tiki::Tiki;

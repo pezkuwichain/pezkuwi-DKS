@@ -270,6 +270,8 @@ parameter_types! {
 
 impl crate::Config for Test {
 	type AdminOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type ElectedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type WeightInfo = ();
 	type TikiCollectionId = TikiCollectionId;
 	type MaxTikisPerUser = MaxTikisPerUser;

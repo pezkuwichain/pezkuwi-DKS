@@ -312,6 +312,12 @@ parameter_types! {
 	pub const MaxStudentsPerCourse: u32 = 1000;
 	pub const MaxCoursesPerStudent: u32 = 50;
 	pub const MaxPointsPerCourse: u32 = 1000;
+	/// Pezpallet ID used to derive a keyless sovereign "admin" account for courses created
+	/// via Root or Council (i.e. no natural signer/AccountId exists for those origins).
+	/// This is NOT an sr25519 keyring account: nobody holds (or can hold) a private key for
+	/// a `PalletId`-derived account, so it can never be used to forge `complete_course` /
+	/// `archive_course` calls the way a well-known dev seed (e.g. `//Alice`) could.
+	pub const PerwerdeAdminPotId: pezframe_support::PalletId = pezframe_support::PalletId(*b"pez/prwd");
 }
 
 /// Admin origin for Perwerde pezpallet that supports progressive decentralization
@@ -321,15 +327,27 @@ parameter_types! {
 /// 2. Council (1/2 çoğunluk) - Seçimler sonrası
 /// 3. Serok atayabilir - Cumhurbaşkanlığı yetkisi
 ///
-/// Bu origin AccountId döndürür (kurs sahibi olarak kullanılır)
+/// Bu origin AccountId döndürür (kurs sahibi olarak kullanılır).
+///
+/// SECURITY: Root and Council origins carry no real signer/AccountId of their own. This
+/// origin previously stood in with the well-known dev keypair `//Alice`, whose private key
+/// is public knowledge — anyone could derive it and then sign `complete_course` as the
+/// "owner" of any Root/Council-created course, forging arbitrary trust-affecting course
+/// completions. It now resolves to a `PalletId`-derived sovereign account instead, which has
+/// no private key at all, so it can authenticate privileged *creation/archival* (which also
+/// goes through `AdminOrigin`) but can never be used to sign a `complete_course` extrinsic.
+/// Only Serok-originated courses (which have a genuine on-chain account) can currently be
+/// completed via the owner-signature path; enabling completions for Root/Council-created
+/// courses requires a follow-up that lets the privileged caller nominate a real owner
+/// account explicitly (e.g. an added `owner` parameter on `create_course`).
 pub struct PerwerdeAdminOrigin;
 impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for PerwerdeAdminOrigin {
 	type Success = AccountId;
 	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
 		// 1. Root origin kontrolü
 		if let Ok(_) = pezframe_system::ensure_root(o.clone()) {
-			// Root için varsayılan admin hesabı
-			return Ok(pezsp_keyring::Sr25519Keyring::Alice.to_account_id());
+			// Root için keyless (private key'i olmayan) sovereign hesap
+			return Ok(PerwerdeAdminPotId::get().into_account_truncating());
 		}
 
 		// 2. Council kontrolü (1/2'den fazla oy)
@@ -340,8 +358,8 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for PerwerdeAdminOrig
 			2,
 		>::try_origin(o.clone())
 		{
-			// Komisyon için varsayılan admin hesabı
-			return Ok(pezsp_keyring::Sr25519Keyring::Alice.to_account_id());
+			// Komisyon için keyless (private key'i olmayan) sovereign hesap
+			return Ok(PerwerdeAdminPotId::get().into_account_truncating());
 		}
 
 		// 3. Serok (Cumhurbaşkanı) kontrolü
@@ -455,6 +473,13 @@ impl pezpallet_tiki::Config for Runtime {
 	// Kademeli yetki devri: Root → Teknik Komisyon
 	// NFT/Rol yönetimi için Teknik Komisyon yetkili
 	type AdminOrigin = crate::RootOrTechnicalCommittee;
+	// Elected/Earned roles (Serok, SerokiMeclise, Parlementer, Axa, ...) are meant to
+	// carry evidence of a real election/exam, not just committee say-so. Until a
+	// dedicated voting/exam pezpallet exists to escalate to Root on their behalf, require
+	// full Root here — deliberately stricter than the Technical Committee threshold used
+	// for ordinary admin appointment via `AdminOrigin`.
+	type ElectedRoleOrigin = EnsureRoot<AccountId>;
+	type EarnedRoleOrigin = EnsureRoot<AccountId>;
 	type WeightInfo = pezpallet_tiki::weights::BizinikiwiWeight<Runtime>;
 	type TikiCollectionId = TikiCollectionId;
 	type MaxTikisPerUser = MaxTikisPerUser;
@@ -779,7 +804,12 @@ impl pezpallet_democracy::Config for Runtime {
 	type CancellationOrigin = EnsureRoot<AccountId>;
 	type BlacklistOrigin = EnsureRoot<AccountId>;
 	type CancelProposalOrigin = EnsureRoot<AccountId>;
-	type VetoOrigin = pezframe_system::EnsureSigned<AccountId>;
+	// VetoOrigin must be a small privileged body, not any signed account (upstream contract:
+	// see bizinikiwi/bin/node/runtime's `EnsureMember<AccountId, TechnicalCollective>`). This
+	// runtime has no separate technical collective, so require membership in the Council
+	// instead — any single Council member may veto/blacklist an external proposal, but an
+	// arbitrary unprivileged account can no longer do so.
+	type VetoOrigin = pezpallet_collective::EnsureMember<AccountId, CouncilCollective>;
 	type Slash = ();
 	type Scheduler = Scheduler;
 	type PalletsOrigin = OriginCaller;
@@ -918,8 +948,6 @@ parameter_types! {
 	pub const PezAssetId: u32 = 1;
 	/// Incentive Pot Pezpallet ID
 	pub const IncentivePotId: pezframe_support::PalletId = pezframe_support::PalletId(*b"pez/incv");
-	/// Clawback recipient (QaziMuhammed account - placeholder)
-	pub ClawbackRecipient: AccountId = pezsp_keyring::Sr25519Keyring::Bob.to_account_id();
 }
 
 /// Trust score source for PEZ Rewards
@@ -936,7 +964,11 @@ impl pezpallet_pez_rewards::Config for Runtime {
 	type WeightInfo = pezpallet_pez_rewards::weights::BizinikiwiWeight<Runtime>;
 	type TrustScoreSource = PezRewardsTrustScoreSource;
 	type IncentivePotId = IncentivePotId;
-	type ClawbackRecipient = ClawbackRecipient;
+	// Clawback recipient: relay chain Treasury pallet sovereign account (governance-controlled,
+	// no private key), reusing the same `RelayTreasuryAccount` already used above for slashed
+	// identity deposits. This is NOT a placeholder dev key: an sr25519 keyring account (e.g.
+	// Bob) must never be used here since its private key is publicly known.
+	type ClawbackRecipient = RelayTreasuryAccount;
 	// Kademeli yetki devri: Root → Hazine Komisyonu
 	// PEZ ödül dağıtımı için Hazine Komisyonu yetkili
 	type ForceOrigin = crate::RootOrTreasuryCommittee;

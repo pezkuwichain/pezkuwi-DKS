@@ -56,7 +56,7 @@ pub mod pezpallet {
 		BoundedVec, PalletId,
 	};
 	use pezframe_system::pezpallet_prelude::*;
-	use pezsp_runtime::traits::{AtLeast32BitUnsigned, Saturating};
+	use pezsp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, Saturating};
 
 	pub type PresaleId = u32;
 
@@ -435,6 +435,12 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn successful_presales)]
 	pub type SuccessfulPresales<T: Config> = StorageValue<_, u32, ValueQuery>;
 
+	/// Whether the raised payment-asset funds have been withdrawn by the owner for a
+	/// Successful/Finalized presale. Guards against double-withdrawal.
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn funds_withdrawn)]
+	pub type FundsWithdrawn<T: Config> = StorageMap<_, Blake2_128Concat, PresaleId, bool, ValueQuery>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -479,6 +485,8 @@ pub mod pezpallet {
 			distributed_count: u32,
 			total_distributed: u128,
 		},
+		/// Raised funds withdrawn by presale owner [presale_id, owner, amount]
+		FundsWithdrawn { presale_id: PresaleId, owner: T::AccountId, amount: u128 },
 	}
 
 	#[pezpallet::error]
@@ -510,6 +518,14 @@ pub mod pezpallet {
 		PresaleNotSuccessful,
 		SoftCapNotReached,
 		InvalidSoftCap,
+		/// `duration`, `grace_period_blocks`, `cliff_blocks`, or `vesting_duration_blocks`
+		/// is large enough that computing the presale's end/vesting block numbers would
+		/// overflow the runtime's BlockNumber type.
+		InvalidDuration,
+		/// Withdrawal is only allowed once, on a Successful or Finalized presale.
+		WithdrawalNotAllowed,
+		/// The raised funds for this presale have already been withdrawn.
+		FundsAlreadyWithdrawn,
 	}
 
 	#[pezpallet::call]
@@ -546,6 +562,23 @@ pub mod pezpallet {
 
 			let presale_id = NextPresaleId::<T>::get();
 			let start_block = <pezframe_system::Pezpallet<T>>::block_number();
+
+			// Reject durations/vesting parameters that would make downstream block-number
+			// arithmetic (start_block + duration [+ cliff_blocks [+ vesting_duration_blocks]])
+			// overflow BlockNumberFor<T>. Without this, a permissionless caller (any signed
+			// account, since CreatePresaleOrigin = EnsureSigned) could craft a presale that
+			// traps every later contribute()/refund()/finalize_presale()/claim_vested() call.
+			let end_block = start_block
+				.checked_add(&params.duration)
+				.ok_or(Error::<T>::InvalidDuration)?;
+			if let Some(ref vesting) = params.vesting {
+				let vesting_start = end_block
+					.checked_add(&vesting.cliff_blocks)
+					.ok_or(Error::<T>::InvalidDuration)?;
+				vesting_start
+					.checked_add(&vesting.vesting_duration_blocks)
+					.ok_or(Error::<T>::InvalidDuration)?;
+			}
 
 			// Start with empty bonus tiers - can be added later
 			let bounded_bonus_tiers = BoundedVec::<BonusTier, T::MaxBonusTiers>::default();
@@ -600,7 +633,10 @@ pub mod pezpallet {
 			ensure!(amount > 0, Error::<T>::ZeroContribution);
 
 			let current_block = <pezframe_system::Pezpallet<T>>::block_number();
-			let end_block = presale.start_block + presale.duration;
+			let end_block = presale
+				.start_block
+				.checked_add(&presale.duration)
+				.ok_or(Error::<T>::ArithmeticOverflow)?;
 			ensure!(current_block < end_block, Error::<T>::PresaleEnded);
 
 			// Check whitelist
@@ -651,33 +687,42 @@ pub mod pezpallet {
 			// Distribute platform fee
 			Self::distribute_platform_fee(presale.payment_asset, &who, platform_fee)?;
 
-			// Track contribution with timestamp preservation
-			let contribution = if let Some(existing) = existing_contribution {
-				// Update existing contribution - preserve original timestamp
-				ContributionInfo {
+			// Ensure `who` occupies a slot in the Contributors list. A fully-refunded
+			// contributor is removed from this list by `refund()` (to free the slot for
+			// `MaxContributors`), so we must re-add them here rather than assuming presence
+			// is implied by having a (possibly stale/refunded) ContributionInfo entry.
+			Contributors::<T>::try_mutate(presale_id, |contributors| -> DispatchResult {
+				if !contributors.contains(&who) {
+					contributors
+						.try_push(who.clone())
+						.map_err(|_| Error::<T>::TooManyContributors)?;
+				}
+				Ok(())
+			})?;
+
+			// Track contribution with timestamp preservation.
+			// Only accumulate onto an existing record if it still has a non-zero amount
+			// (i.e. it was never refunded, or a prior partial state). A fully-refunded
+			// contribution (amount == 0, refunded == true, set by `refund()`) starts fresh:
+			// this is what prevents a refund-then-recontribute cycle from inflating the
+			// recorded `amount` far beyond what is actually held in the treasury.
+			let contribution = match existing_contribution {
+				Some(existing) if existing.amount > 0 => ContributionInfo {
+					// Update existing contribution - preserve original timestamp
 					amount: existing.amount.saturating_add(amount),
 					contributed_at: existing.contributed_at, // ✅ Keep original timestamp
 					refunded: false,
 					refunded_at: None,
 					refund_fee_paid: 0,
-				}
-			} else {
-				// New contribution - add to contributors list
-				Contributors::<T>::try_mutate(presale_id, |contributors| -> DispatchResult {
-					contributors
-						.try_push(who.clone())
-						.map_err(|_| Error::<T>::TooManyContributors)?;
-					Ok(())
-				})?;
-
-				// Create new contribution with current timestamp
-				ContributionInfo {
+				},
+				_ => ContributionInfo {
+					// New contribution, or re-contribution after a full refund
 					amount,
-					contributed_at: current_block, // ✅ Set timestamp for first contribution only
+					contributed_at: current_block, // ✅ Fresh timestamp for grace-period purposes
 					refunded: false,
 					refunded_at: None,
 					refund_fee_paid: 0,
-				}
+				},
 			};
 
 			Contributions::<T>::insert(presale_id, &who, contribution);
@@ -705,7 +750,10 @@ pub mod pezpallet {
 			ensure!(presale.status == PresaleStatus::Active, Error::<T>::PresaleNotActive);
 
 			let current_block = <pezframe_system::Pezpallet<T>>::block_number();
-			let end_block = presale.start_block + presale.duration;
+			let end_block = presale
+				.start_block
+				.checked_add(&presale.duration)
+				.ok_or(Error::<T>::ArithmeticOverflow)?;
 			ensure!(current_block >= end_block, Error::<T>::PresaleNotEnded);
 
 			let total_raised = TotalRaised::<T>::get(presale_id);
@@ -754,7 +802,10 @@ pub mod pezpallet {
 			ensure!(presale.status == PresaleStatus::Active, Error::<T>::RefundNotAllowed);
 
 			let current_block = <pezframe_system::Pezpallet<T>>::block_number();
-			let end_block = presale.start_block + presale.duration;
+			let end_block = presale
+				.start_block
+				.checked_add(&presale.duration)
+				.ok_or(Error::<T>::ArithmeticOverflow)?;
 			ensure!(current_block < end_block, Error::<T>::RefundNotAllowed);
 
 			let mut contribution_info =
@@ -801,14 +852,30 @@ pub mod pezpallet {
 				Self::distribute_platform_fee(presale.payment_asset, &treasury, fee)?;
 			}
 
-			// Update contribution info (mark as refunded instead of removing)
+			// Decrement TotalRaised using the amount that was actually on record before we
+			// clear it below.
+			let refunded_amount = contribution_info.amount;
+			TotalRaised::<T>::mutate(presale_id, |r| *r = r.saturating_sub(refunded_amount));
+
+			// Update contribution info: mark as refunded AND zero the recorded amount.
+			// Zeroing `amount` is essential — otherwise a refund-then-recontribute cycle
+			// would let `contribute()`'s `existing.amount.saturating_add(amount)` keep
+			// accumulating a stale amount that is no longer backed by real treasury funds,
+			// inflating this wallet's share of reward-token distribution at other
+			// contributors' expense.
 			contribution_info.refunded = true;
 			contribution_info.refunded_at = Some(current_block);
 			contribution_info.refund_fee_paid = fee;
+			contribution_info.amount = 0;
 			Contributions::<T>::insert(presale_id, &who, contribution_info);
 
-			TotalRaised::<T>::mutate(presale_id, |r| {
-				*r = r.saturating_sub(contribution_info.amount)
+			// Free up this wallet's slot in the bounded Contributors list now that it has
+			// no active contribution. Without this, a Sybil attacker could contribute the
+			// minimum amount from many accounts and immediately refund, permanently
+			// consuming MaxContributors capacity at near-zero cost (only the refund fee is
+			// lost) and locking legitimate contributors out with `TooManyContributors`.
+			Contributors::<T>::mutate(presale_id, |contributors| {
+				contributors.retain(|acc| acc != &who);
 			});
 
 			Self::deposit_event(Event::Refunded { presale_id, who, amount: refund_amount, fee });
@@ -834,8 +901,12 @@ pub mod pezpallet {
 			ensure!(!contribution_info.refunded, Error::<T>::NoContribution);
 
 			let current_block = <pezframe_system::Pezpallet<T>>::block_number();
-			let end_block = presale.start_block + presale.duration;
-			let vesting_start = end_block + vesting.cliff_blocks;
+			let end_block = presale
+				.start_block
+				.checked_add(&presale.duration)
+				.ok_or(Error::<T>::ArithmeticOverflow)?;
+			let vesting_start =
+				end_block.checked_add(&vesting.cliff_blocks).ok_or(Error::<T>::ArithmeticOverflow)?;
 
 			ensure!(current_block >= vesting_start, Error::<T>::NothingToClaim);
 
@@ -853,7 +924,9 @@ pub mod pezpallet {
 
 			// Calculate vested amount
 			let already_claimed = VestingClaimed::<T>::get(presale_id, &who);
-			let vesting_end = vesting_start + vesting.vesting_duration_blocks;
+			let vesting_end = vesting_start
+				.checked_add(&vesting.vesting_duration_blocks)
+				.ok_or(Error::<T>::ArithmeticOverflow)?;
 
 			let claimable = if current_block >= vesting_end {
 				// All vested
@@ -983,6 +1056,15 @@ pub mod pezpallet {
 				let contributor = &contributors[i as usize];
 
 				if let Some(contribution_info) = Contributions::<T>::get(presale_id, contributor) {
+					// Skip contributors who already received their reward-token payout via
+					// batch_distribute() before this presale was cancelled (a Successful
+					// presale can sit in that status across many batch_distribute() calls).
+					// Without this check they would double-dip: keep the distributed reward
+					// tokens AND receive their payment-asset contribution back.
+					if VestingClaimed::<T>::contains_key(presale_id, contributor) {
+						continue;
+					}
+
 					if !contribution_info.refunded && contribution_info.amount > 0 {
 						// Calculate net amount in treasury (original - platform fee already deducted at contribution)
 						let platform_fee_at_contribution = contribution_info
@@ -1235,6 +1317,59 @@ pub mod pezpallet {
 				presale_id,
 				distributed_count,
 				total_distributed,
+			});
+
+			Ok(())
+		}
+
+		/// Withdraw the raised payment-asset funds from a Finalized presale's treasury
+		/// sub-account to the presale owner. Callable once per presale by the owner only.
+		#[pezpallet::call_index(10)]
+		#[pezpallet::weight(T::PresaleWeightInfo::withdraw_funds())]
+		pub fn withdraw_funds(origin: OriginFor<T>, presale_id: PresaleId) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			let presale = Presales::<T>::get(presale_id).ok_or(Error::<T>::PresaleNotFound)?;
+
+			ensure!(who == presale.owner, Error::<T>::NotPresaleOwner);
+
+			// Only allow withdrawal once the presale is Finalized (i.e. batch_distribute has
+			// paid out every contributor's reward tokens). Deliberately NOT allowed while
+			// still Successful: cancel_presale() can cancel a Successful presale, in which
+			// case refund_cancelled_presale() must be able to refund contributors out of the
+			// same treasury sub-account. Once Finalized, cancel_presale() can no longer
+			// target this presale (it only matches Active/Pending/Paused/Successful), so
+			// withdrawing here can never race with a contributor refund claim.
+			ensure!(presale.status == PresaleStatus::Finalized, Error::<T>::WithdrawalNotAllowed);
+
+			ensure!(!FundsWithdrawn::<T>::get(presale_id), Error::<T>::FundsAlreadyWithdrawn);
+
+			let treasury = Self::presale_account_id(presale_id);
+			let balance = T::Assets::reducible_balance(
+				presale.payment_asset,
+				&treasury,
+				Preservation::Expendable,
+				Fortitude::Polite,
+			);
+			let balance_u128: u128 = balance.into();
+			ensure!(balance_u128 > 0, Error::<T>::InsufficientBalance);
+
+			T::Assets::transfer(
+				presale.payment_asset,
+				&treasury,
+				&who,
+				balance,
+				Preservation::Expendable,
+			)?;
+
+			// Guard against double-withdrawal regardless of whether more funds later land
+			// in the treasury sub-account (e.g. dust from later batch operations).
+			FundsWithdrawn::<T>::insert(presale_id, true);
+
+			Self::deposit_event(Event::FundsWithdrawn {
+				presale_id,
+				owner: who,
+				amount: balance_u128,
 			});
 
 			Ok(())

@@ -97,6 +97,10 @@
 //! impl pezpallet_tiki::Config for Runtime {
 //!     type RuntimeEvent = RuntimeEvent;
 //!     type AdminOrigin = EnsureRoot<AccountId>;
+//!     // Elected/Earned roles use their own origin, kept distinct from ordinary
+//!     // admin appointment so a real election/exam pipeline can gate them later.
+//!     type ElectedRoleOrigin = EnsureRoot<AccountId>;
+//!     type EarnedRoleOrigin = EnsureRoot<AccountId>;
 //!     type WeightInfo = pezpallet_tiki::weights::BizinikiwiWeight<Runtime>;
 //!     type TikiCollectionId = ConstU32<1>; // Tiki collection ID
 //!     type MaxTikisPerUser = ConstU32<20>; // Max 20 roles per user
@@ -154,6 +158,20 @@ pub mod pezpallet {
 		+ pezpallet_identity_kyc::Config
 	{
 		type AdminOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Origin required to grant a role through the election system
+		/// (`grant_elected_role`). Deliberately kept distinct from `AdminOrigin`: an
+		/// Elected office (Serok, SerokiMeclise, Parlementer, ...) is meant to carry
+		/// evidence of a genuine election, not merely ordinary admin/committee say-so.
+		/// Runtimes should wire this to whatever origin their election pipeline
+		/// escalates to (e.g. `EnsureRoot`), rather than reusing `AdminOrigin`.
+		type ElectedRoleOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Origin required to grant a role through the exam/earned system
+		/// (`grant_earned_role`). Deliberately kept distinct from `AdminOrigin` for the
+		/// same reason as `ElectedRoleOrigin`.
+		type EarnedRoleOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
 		type WeightInfo: weights::WeightInfo;
 
 		/// Collection ID holding Tiki (Role) NFTs.
@@ -316,6 +334,23 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn next_item_id)]
 	pub type NextItemId<T: Config> = StorageValue<_, u32, ValueQuery>;
 
+	/// Records, per (account, tiki), which `RoleAssignmentType` path was used the last
+	/// time that role was granted to that account (Automatic/Appointed/Elected/Earned).
+	/// This gives an on-chain, queryable audit trail distinguishing a role that came
+	/// through `grant_elected_role`/`grant_earned_role` from one granted directly via
+	/// `grant_tiki`, even though today all of these entry points share similar origins.
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn role_assignment_type_of)]
+	pub type RoleAssignmentTypeOf<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
+		Tiki,
+		RoleAssignmentType,
+		OptionQuery,
+	>;
+
 	#[pezpallet::error]
 	pub enum Error<T> {
 		/// Role already belongs to someone else
@@ -455,6 +490,7 @@ pub mod pezpallet {
 			);
 
 			Self::internal_grant_role(&dest_account, tiki)?;
+			RoleAssignmentTypeOf::<T>::insert(&dest_account, tiki, RoleAssignmentType::Appointed);
 			Ok(())
 		}
 
@@ -495,7 +531,9 @@ pub mod pezpallet {
 			dest: <T::Lookup as StaticLookup>::Source,
 			tiki: Tiki,
 		) -> DispatchResult {
-			T::AdminOrigin::ensure_origin(origin)?; // pezpallet-voting will call with Root origin
+			// Distinct from AdminOrigin: an Elected role must come through the
+			// election-specific origin (see `ElectedRoleOrigin` doc comment).
+			T::ElectedRoleOrigin::ensure_origin(origin)?;
 			let dest_account = T::Lookup::lookup(dest)?;
 
 			// Check if the role can be granted through election
@@ -505,6 +543,7 @@ pub mod pezpallet {
 			);
 
 			Self::internal_grant_role(&dest_account, tiki)?;
+			RoleAssignmentTypeOf::<T>::insert(&dest_account, tiki, RoleAssignmentType::Elected);
 			Ok(())
 		}
 
@@ -516,7 +555,9 @@ pub mod pezpallet {
 			dest: <T::Lookup as StaticLookup>::Source,
 			tiki: Tiki,
 		) -> DispatchResult {
-			T::AdminOrigin::ensure_origin(origin)?; // For now admin, later exam pezpallet
+			// Distinct from AdminOrigin: an Earned role must come through the
+			// exam-specific origin (see `EarnedRoleOrigin` doc comment).
+			T::EarnedRoleOrigin::ensure_origin(origin)?;
 			let dest_account = T::Lookup::lookup(dest)?;
 
 			// Check if the role can be earned
@@ -526,6 +567,7 @@ pub mod pezpallet {
 			);
 
 			Self::internal_grant_role(&dest_account, tiki)?;
+			RoleAssignmentTypeOf::<T>::insert(&dest_account, tiki, RoleAssignmentType::Earned);
 			Ok(())
 		}
 
@@ -597,6 +639,7 @@ pub mod pezpallet {
 			UserTikis::<T>::mutate(user, |tikis| {
 				let _ = tikis.try_push(Tiki::Welati);
 			});
+			RoleAssignmentTypeOf::<T>::insert(user, Tiki::Welati, RoleAssignmentType::Automatic);
 
 			// Set NFT metadata
 			Self::update_nft_metadata(user)?;
@@ -662,6 +705,9 @@ pub mod pezpallet {
 				TikiHolder::<T>::remove(tiki);
 			}
 
+			// Clear the recorded assignment-type provenance for this (account, tiki) pair
+			RoleAssignmentTypeOf::<T>::remove(target_account, tiki);
+
 			// Update NFT metadata
 			Self::update_nft_metadata(target_account)?;
 
@@ -717,7 +763,24 @@ pub mod pezpallet {
 
 		/// Checks if a specific role is unique (can belong to only one person)
 		pub fn is_unique_role(tiki: &Tiki) -> bool {
-			matches!(tiki, Tiki::Serok | Tiki::SerokiMeclise | Tiki::Xezinedar | Tiki::Balyoz)
+			matches!(
+				tiki,
+				Tiki::Serok
+					| Tiki::SerokiMeclise
+					| Tiki::Xezinedar
+					| Tiki::Balyoz
+					// Government roles: single-portfolio cabinet offices, each of which
+					// must have at most one holder at a time (see get_bonus_for_tiki,
+					// which grants each of these a fixed per-office trust bonus).
+					| Tiki::SerokWeziran
+					| Tiki::WezireDarayiye
+					| Tiki::WezireParez
+					| Tiki::WezireDad
+					| Tiki::WezireBelaw
+					| Tiki::WezireTend
+					| Tiki::WezireAva
+					| Tiki::WezireCand
+			)
 		}
 
 		/// Returns the assignment type of a specific role
@@ -924,12 +987,13 @@ impl<T: Config> pezpallet_identity_kyc::types::CitizenNftProvider<T::AccountId> 
 			item_id,
 		)?;
 
-		// Clear unique role mappings before removing roles
+		// Clear unique role mappings and assignment-type provenance before removing roles
 		let user_tikis = UserTikis::<T>::get(who);
 		for tiki in user_tikis.iter() {
 			if Self::is_unique_role(tiki) {
 				TikiHolder::<T>::remove(tiki);
 			}
+			RoleAssignmentTypeOf::<T>::remove(who, tiki);
 		}
 
 		// Remove all roles and citizen NFT mapping
