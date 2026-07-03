@@ -8,8 +8,8 @@
 //! mirroring the real People Chain architecture.
 
 use crate::{
-	mock::*, CachedStakingDetails, Error, Event, StakingScoreProvider, StakingSource,
-	StakingStartBlock, MONTH_IN_BLOCKS, UNITS,
+	mock::*, CachedStakingDetails, Error, Event, NoterBonds, PendingStakingDetails,
+	StakingScoreProvider, StakingSource, StakingStartBlock, MONTH_IN_BLOCKS, UNITS,
 };
 use pezframe_support::{assert_noop, assert_ok};
 
@@ -565,6 +565,17 @@ const NOTER: AccountId = 99; // MockNoterChecker recognizes 99 as noter
 #[test]
 fn noter_can_submit_staking_details() {
 	ExtBuilder.build_and_execute(|| {
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 200 * UNITS, 0, 0);
+
+		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 30);
+	});
+}
+
+#[test]
+fn noter_signed_submission_is_pending_not_immediate() {
+	ExtBuilder.build_and_execute(|| {
+		System::set_block_number(1);
+		ensure_registered(NOTER);
 		assert_ok!(StakingScore::receive_staking_details(
 			RuntimeOrigin::signed(NOTER),
 			USER_STASH,
@@ -574,7 +585,15 @@ fn noter_can_submit_staking_details() {
 			0
 		));
 
-		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 30);
+		// Not yet effective: sits in PendingStakingDetails, not CachedStakingDetails.
+		assert!(CachedStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).is_none());
+		assert!(PendingStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).is_some());
+		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 0);
+
+		let events = System::events();
+		assert!(events.iter().any(|event| {
+			matches!(event.event, RuntimeEvent::StakingScore(Event::StakingDetailsPending { .. }))
+		}));
 	});
 }
 
@@ -602,25 +621,11 @@ fn root_can_still_submit_staking_details() {
 fn zero_stake_removes_cached_entry() {
 	ExtBuilder.build_and_execute(|| {
 		// Setup: noter submits 200 HEZ for relay chain
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			200 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 200 * UNITS, 0, 0);
 		assert!(CachedStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).is_some());
 
 		// Zero stake removes the entry
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			0u128,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 0u128, 0, 0);
 		assert!(CachedStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).is_none());
 		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 0);
 	});
@@ -634,24 +639,10 @@ fn zero_stake_cleans_up_tracking_when_no_stake_remains() {
 		assert!(StakingStartBlock::<Test>::get(USER_STASH).is_some());
 
 		// Noter submits stake
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			200 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 200 * UNITS, 0, 0);
 
 		// Zero out the only source → StakingStartBlock should be cleaned up
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			0u128,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 0u128, 0, 0);
 		assert!(StakingStartBlock::<Test>::get(USER_STASH).is_none());
 		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 0);
 	});
@@ -664,34 +655,13 @@ fn zero_stake_one_source_keeps_tracking_if_other_source_has_stake() {
 		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
 
 		// Noter submits stake for both sources
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			100 * UNITS,
-			0,
-			0
-		));
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::AssetHub,
-			150 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 100 * UNITS, 0, 0);
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::AssetHub, 150 * UNITS, 0, 0);
 		// Total 250 HEZ → tier 30
 		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 30);
 
 		// Zero out relay chain only
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			0u128,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 0u128, 0, 0);
 
 		// Tracking preserved (AssetHub still has stake)
 		assert!(StakingStartBlock::<Test>::get(USER_STASH).is_some());
@@ -715,19 +685,12 @@ fn full_workflow_ali_scenario() {
 		assert_eq!(StakingScore::get_staking_score(&ali).0, 0); // No data yet
 
 		// 2. Bot + noter submit Ali's 200 HEZ relay stake
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			ali,
-			StakingSource::RelayChain,
-			200 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, ali, StakingSource::RelayChain, 200 * UNITS, 0, 0);
 		// 200 HEZ → tier 30, duration < 1 month → x1.0 → 30
 		assert_eq!(StakingScore::get_staking_score(&ali).0, 30);
 
 		// 3. After 28 days → still < 1 month → x1.0 → 30
-		System::set_block_number(1000 + 28 * 24 * 60 * 10);
+		System::set_block_number(1000 + 28 * 24 * 60 * 5);
 		assert_eq!(StakingScore::get_staking_score(&ali).0, 30);
 	});
 }
@@ -739,25 +702,11 @@ fn full_workflow_bob_unbond_scenario() {
 
 		// Bob opts in and has stake
 		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(bob)));
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			bob,
-			StakingSource::RelayChain,
-			200 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, bob, StakingSource::RelayChain, 200 * UNITS, 0, 0);
 		assert_eq!(StakingScore::get_staking_score(&bob).0, 30);
 
 		// Bob unbonds → noter reports zero
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			bob,
-			StakingSource::RelayChain,
-			0u128,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, bob, StakingSource::RelayChain, 0u128, 0, 0);
 
 		// Score = 0, tracking cleaned up
 		assert_eq!(StakingScore::get_staking_score(&bob).0, 0);
@@ -775,56 +724,32 @@ fn full_workflow_charlie_dual_chain_partial_unbond() {
 		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(charlie)));
 
 		// Noter submits both sources: 100 relay + 150 asset hub = 250 HEZ
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			charlie,
-			StakingSource::RelayChain,
-			100 * UNITS,
-			0,
-			0
-		));
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			charlie,
-			StakingSource::AssetHub,
-			150 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, charlie, StakingSource::RelayChain, 100 * UNITS, 0, 0);
+		// The anti flash-stake guard restarts StakingStartBlock on this second,
+		// stake-increasing submission — read it back instead of assuming 500.
+		submit_and_finalize(NOTER, charlie, StakingSource::AssetHub, 150 * UNITS, 0, 0);
 		// 250 HEZ → tier 30
 		assert_eq!(StakingScore::get_staking_score(&charlie).0, 30);
+		let effective_start = StakingStartBlock::<Test>::get(charlie).unwrap();
 
 		// Charlie unbonds from Relay Chain
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			charlie,
-			StakingSource::RelayChain,
-			0u128,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, charlie, StakingSource::RelayChain, 0u128, 0, 0);
 
 		// Relay entry removed, Asset Hub remains
 		assert!(CachedStakingDetails::<Test>::get(charlie, StakingSource::RelayChain).is_none());
 		assert!(CachedStakingDetails::<Test>::get(charlie, StakingSource::AssetHub).is_some());
-		// Tracking preserved
-		assert!(StakingStartBlock::<Test>::get(charlie).is_some());
+		// Tracking preserved, unaffected by the zero-stake unbond above
+		// (the guard only fires on stake *increases*, not removals).
+		assert_eq!(StakingStartBlock::<Test>::get(charlie), Some(effective_start));
 		// 150 HEZ → tier 30 (still in 101-250 range)
 		assert_eq!(StakingScore::get_staking_score(&charlie).0, 30);
 
-		// After 3 months: 30 * 1.4 = 42
-		System::set_block_number(500 + (3 * MONTH_IN_BLOCKS) as u64);
+		// After 3 months from the effective start: 30 * 1.4 = 42
+		System::set_block_number(effective_start + (3 * MONTH_IN_BLOCKS) as u64);
 		assert_eq!(StakingScore::get_staking_score(&charlie).0, 42);
 
 		// Charlie unbonds from Asset Hub too → fully zeroed
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			charlie,
-			StakingSource::AssetHub,
-			0u128,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, charlie, StakingSource::AssetHub, 0u128, 0, 0);
 		assert!(StakingStartBlock::<Test>::get(charlie).is_none());
 		assert_eq!(StakingScore::get_staking_score(&charlie).0, 0);
 	});
@@ -842,22 +767,16 @@ fn duration_counts_from_optin_not_from_data_arrival() {
 		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
 		assert_eq!(StakingScore::get_staking_score(&USER_STASH), (0, 0u64));
 
-		// Block 50_000: Bot + noter submit data (much later)
+		// Block 50_000: Bot + noter submit data (much later). It finalizes
+		// DISPUTE_WINDOW blocks after submission (block 50_010), not at 50_000.
 		System::set_block_number(50_000);
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			200 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 200 * UNITS, 0, 0);
 
-		// Duration is from block 100, NOT from block 50_000.
-		// 50_000 - 100 = 49_900 blocks. MONTH_IN_BLOCKS = 432_000
-		// 49_900 < 432_000 → x1.0 → 30
+		// Duration is from block 100, NOT from block 50_000 (or 50_010).
+		// 50_010 - 100 = 49_910 blocks. MONTH_IN_BLOCKS = 432_000
+		// 49_910 < 432_000 → x1.0 → 30
 		let (score, duration) = StakingScore::get_staking_score(&USER_STASH);
-		assert_eq!(duration, 49_900);
+		assert_eq!(duration, 49_910);
 		assert_eq!(score, 30);
 
 		// After reaching 1 month from opt-in: 100 + 432_000 = 432_100
@@ -878,25 +797,11 @@ fn re_optin_after_full_unbond() {
 		// Phase 1: opt-in + stake + score
 		System::set_block_number(100);
 		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			200 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 200 * UNITS, 0, 0);
 		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 30);
 
 		// Phase 2: full unbond → cleanup
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			0u128,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 0u128, 0, 0);
 		assert!(StakingStartBlock::<Test>::get(USER_STASH).is_none());
 
 		// Phase 3: re-opt-in at block 1000 (fresh start)
@@ -905,14 +810,7 @@ fn re_optin_after_full_unbond() {
 		assert_eq!(StakingStartBlock::<Test>::get(USER_STASH), Some(1000));
 
 		// Phase 4: new stake data
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			500 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 500 * UNITS, 0, 0);
 		// 500 HEZ → tier 40, duration from block 1000
 		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 40);
 
@@ -939,30 +837,9 @@ fn noter_batch_multiple_users() {
 		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(user3)));
 
 		// Noter submits batch: different amounts for each user
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			user1,
-			StakingSource::RelayChain,
-			50 * UNITS, // tier 20
-			0,
-			0
-		));
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			user2,
-			StakingSource::RelayChain,
-			200 * UNITS, // tier 30
-			0,
-			0
-		));
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			user3,
-			StakingSource::AssetHub,
-			800 * UNITS, // tier 50
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, user1, StakingSource::RelayChain, 50 * UNITS, 0, 0); // tier 20
+		submit_and_finalize(NOTER, user2, StakingSource::RelayChain, 200 * UNITS, 0, 0); // tier 30
+		submit_and_finalize(NOTER, user3, StakingSource::AssetHub, 800 * UNITS, 0, 0); // tier 50
 
 		assert_eq!(StakingScore::get_staking_score(&user1).0, 20);
 		assert_eq!(StakingScore::get_staking_score(&user2).0, 30);
@@ -980,14 +857,7 @@ fn data_without_optin_still_cached_but_no_duration() {
 		System::set_block_number(100);
 
 		// Noter submits data for user who hasn't opted in
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			300 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 300 * UNITS, 0, 0);
 
 		// Data is cached → score is base tier only (no duration)
 		assert!(CachedStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).is_some());
@@ -1138,24 +1008,10 @@ fn zero_stake_emits_event_with_zero_amount() {
 		System::set_block_number(1);
 
 		// Setup
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			200 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 200 * UNITS, 0, 0);
 
 		// Zero-stake
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			0u128,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 0u128, 0, 0);
 
 		let events = System::events();
 		// Last event should be StakingDetailsReceived with amount 0
@@ -1184,14 +1040,7 @@ fn zero_stake_emits_event_with_zero_amount() {
 fn noter_overwrites_previous_submission() {
 	ExtBuilder.build_and_execute(|| {
 		// First submission: 100 HEZ
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			100 * UNITS,
-			5,
-			2
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 100 * UNITS, 5, 2);
 		let details =
 			CachedStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).unwrap();
 		assert_eq!(details.staked_amount, 100 * UNITS);
@@ -1199,14 +1048,7 @@ fn noter_overwrites_previous_submission() {
 		assert_eq!(details.unlocking_chunks_count, 2);
 
 		// Second submission: updated values
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			300 * UNITS,
-			10,
-			1
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 300 * UNITS, 10, 1);
 		let details =
 			CachedStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).unwrap();
 		assert_eq!(details.staked_amount, 300 * UNITS);
@@ -1223,14 +1065,7 @@ fn noter_overwrites_previous_submission() {
 fn zero_stake_for_nonexistent_source_is_noop() {
 	ExtBuilder.build_and_execute(|| {
 		// Zero-stake for a source that was never set — should be a no-op
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			0u128,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 0u128, 0, 0);
 
 		// No ghost entries
 		assert!(CachedStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).is_none());
@@ -1251,30 +1086,21 @@ fn max_score_scenario() {
 		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
 
 		// Dual-chain max: 500 relay + 500 asset hub = 1000 HEZ → tier 50
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::RelayChain,
-			500 * UNITS,
-			0,
-			0
-		));
-		assert_ok!(StakingScore::receive_staking_details(
-			RuntimeOrigin::signed(NOTER),
-			USER_STASH,
-			StakingSource::AssetHub,
-			500 * UNITS,
-			0,
-			0
-		));
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 500 * UNITS, 0, 0);
+		// The anti flash-stake guard (pre-existing, see receive_staking_details'
+		// docs) restarts StakingStartBlock on this second, stake-increasing
+		// submission — so "start" for duration purposes is wherever this
+		// finalizes, not block 1. Read it back instead of assuming block 1.
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::AssetHub, 500 * UNITS, 0, 0);
 		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 50);
+		let effective_start = StakingStartBlock::<Test>::get(USER_STASH).unwrap();
 
 		// 12+ months → 50 * 2.0 = 100 (capped)
-		System::set_block_number(1 + (12 * MONTH_IN_BLOCKS) as u64);
+		System::set_block_number(effective_start + (12 * MONTH_IN_BLOCKS) as u64);
 		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 100);
 
 		// 24 months → still 100 (cap)
-		System::set_block_number(1 + (24 * MONTH_IN_BLOCKS) as u64);
+		System::set_block_number(effective_start + (24 * MONTH_IN_BLOCKS) as u64);
 		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 100);
 	});
 }
@@ -1320,5 +1146,409 @@ fn duration_exact_month_boundaries() {
 		// Exactly 12 months: x2.0 → 20 * 2.0 = 40
 		System::set_block_number((12 * MONTH_IN_BLOCKS) as u64);
 		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 40);
+	});
+}
+
+// ============================================================================
+// Bonded Noter Registration
+// ============================================================================
+
+#[test]
+fn unregistered_noter_cannot_submit() {
+	ExtBuilder.build_and_execute(|| {
+		// NOTER holds the tiki (MockNoterChecker recognizes 99) but has not
+		// called register_as_noter — submissions must be rejected.
+		assert_noop!(
+			StakingScore::receive_staking_details(
+				RuntimeOrigin::signed(NOTER),
+				USER_STASH,
+				StakingSource::RelayChain,
+				100 * UNITS,
+				0,
+				0
+			),
+			Error::<Test>::NotRegisteredNoter
+		);
+	});
+}
+
+#[test]
+fn register_as_noter_reserves_bond() {
+	ExtBuilder.build_and_execute(|| {
+		System::set_block_number(1);
+		let free_before = Balances::free_balance(NOTER);
+
+		assert_ok!(StakingScore::register_as_noter(RuntimeOrigin::signed(NOTER)));
+
+		assert_eq!(NoterBonds::<Test>::get(NOTER), Some(NoterBondAmount::get()));
+		assert_eq!(Balances::reserved_balance(NOTER), NoterBondAmount::get());
+		assert_eq!(Balances::free_balance(NOTER), free_before - NoterBondAmount::get());
+
+		let events = System::events();
+		assert!(events
+			.iter()
+			.any(|event| { matches!(event.event, RuntimeEvent::StakingScore(Event::NoterRegistered { .. })) }));
+	});
+}
+
+#[test]
+fn register_as_noter_rejects_non_tiki_holder() {
+	ExtBuilder.build_and_execute(|| {
+		// USER_STASH does not hold the Noter tiki per MockNoterChecker.
+		assert_noop!(
+			StakingScore::register_as_noter(RuntimeOrigin::signed(USER_STASH)),
+			Error::<Test>::NotAuthorized
+		);
+	});
+}
+
+#[test]
+fn register_as_noter_rejects_double_registration() {
+	ExtBuilder.build_and_execute(|| {
+		assert_ok!(StakingScore::register_as_noter(RuntimeOrigin::signed(NOTER)));
+		assert_noop!(
+			StakingScore::register_as_noter(RuntimeOrigin::signed(NOTER)),
+			Error::<Test>::AlreadyRegisteredNoter
+		);
+	});
+}
+
+#[test]
+fn unregister_as_noter_returns_bond_when_no_pending_activity() {
+	ExtBuilder.build_and_execute(|| {
+		let free_before = Balances::free_balance(NOTER);
+		assert_ok!(StakingScore::register_as_noter(RuntimeOrigin::signed(NOTER)));
+
+		assert_ok!(StakingScore::unregister_as_noter(RuntimeOrigin::signed(NOTER)));
+
+		assert!(NoterBonds::<Test>::get(NOTER).is_none());
+		assert_eq!(Balances::reserved_balance(NOTER), 0);
+		assert_eq!(Balances::free_balance(NOTER), free_before);
+	});
+}
+
+#[test]
+fn unregister_as_noter_blocked_within_dispute_window() {
+	ExtBuilder.build_and_execute(|| {
+		System::set_block_number(100);
+		ensure_registered(NOTER);
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::signed(NOTER),
+			USER_STASH,
+			StakingSource::RelayChain,
+			100 * UNITS,
+			0,
+			0
+		));
+
+		// Still inside the window: blocked.
+		assert_noop!(
+			StakingScore::unregister_as_noter(RuntimeOrigin::signed(NOTER)),
+			Error::<Test>::PendingSubmissionExists
+		);
+
+		// After the window elapses: allowed.
+		System::set_block_number(100 + DISPUTE_WINDOW);
+		assert_ok!(StakingScore::unregister_as_noter(RuntimeOrigin::signed(NOTER)));
+	});
+}
+
+#[test]
+fn unregister_as_noter_rejects_never_registered() {
+	ExtBuilder.build_and_execute(|| {
+		assert_noop!(
+			StakingScore::unregister_as_noter(RuntimeOrigin::signed(USER_STASH)),
+			Error::<Test>::NotRegisteredNoter
+		);
+	});
+}
+
+// ============================================================================
+// Dispute Window
+// ============================================================================
+
+#[test]
+fn finalize_before_window_elapses_fails() {
+	ExtBuilder.build_and_execute(|| {
+		System::set_block_number(100);
+		ensure_registered(NOTER);
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::signed(NOTER),
+			USER_STASH,
+			StakingSource::RelayChain,
+			100 * UNITS,
+			0,
+			0
+		));
+
+		// One block before maturity.
+		System::set_block_number(100 + DISPUTE_WINDOW - 1);
+		assert_noop!(
+			StakingScore::finalize_staking_details(
+				RuntimeOrigin::signed(USER_STASH),
+				USER_STASH,
+				StakingSource::RelayChain
+			),
+			Error::<Test>::NotYetMatured
+		);
+		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 0);
+	});
+}
+
+#[test]
+fn finalize_is_permissionless() {
+	ExtBuilder.build_and_execute(|| {
+		System::set_block_number(100);
+		ensure_registered(NOTER);
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::signed(NOTER),
+			USER_STASH,
+			StakingSource::RelayChain,
+			100 * UNITS,
+			0,
+			0
+		));
+
+		System::set_block_number(100 + DISPUTE_WINDOW);
+		// Finalized by an unrelated bystander account, not the noter or the
+		// affected user — anyone may trigger it once matured.
+		let bystander = 77;
+		assert_ok!(StakingScore::finalize_staking_details(
+			RuntimeOrigin::signed(bystander),
+			USER_STASH,
+			StakingSource::RelayChain
+		));
+		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 20);
+	});
+}
+
+#[test]
+fn finalize_with_nothing_pending_fails() {
+	ExtBuilder.build_and_execute(|| {
+		assert_noop!(
+			StakingScore::finalize_staking_details(
+				RuntimeOrigin::signed(USER_STASH),
+				USER_STASH,
+				StakingSource::RelayChain
+			),
+			Error::<Test>::NoPendingSubmission
+		);
+	});
+}
+
+#[test]
+fn dispute_discards_pending_submission_before_it_takes_effect() {
+	ExtBuilder.build_and_execute(|| {
+		System::set_block_number(100);
+		ensure_registered(NOTER);
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::signed(NOTER),
+			USER_STASH,
+			StakingSource::RelayChain,
+			500 * UNITS,
+			0,
+			0
+		));
+
+		assert_ok!(StakingScore::dispute_staking_details(
+			RuntimeOrigin::signed(DISPUTE_MEMBER),
+			USER_STASH,
+			StakingSource::RelayChain
+		));
+
+		// Even well past the window, a disputed submission never takes effect.
+		System::set_block_number(100 + DISPUTE_WINDOW * 10);
+		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 0);
+		assert_noop!(
+			StakingScore::finalize_staking_details(
+				RuntimeOrigin::signed(USER_STASH),
+				USER_STASH,
+				StakingSource::RelayChain
+			),
+			Error::<Test>::NoPendingSubmission
+		);
+
+		let events = System::events();
+		assert!(events.iter().any(|event| {
+			matches!(event.event, RuntimeEvent::StakingScore(Event::StakingDetailsDisputed { .. }))
+		}));
+	});
+}
+
+#[test]
+fn dispute_rejects_non_dispute_origin() {
+	ExtBuilder.build_and_execute(|| {
+		ensure_registered(NOTER);
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::signed(NOTER),
+			USER_STASH,
+			StakingSource::RelayChain,
+			500 * UNITS,
+			0,
+			0
+		));
+
+		// A random signed account (not DISPUTE_MEMBER, not Root) cannot dispute.
+		assert_noop!(
+			StakingScore::dispute_staking_details(
+				RuntimeOrigin::signed(USER_STASH),
+				USER_STASH,
+				StakingSource::RelayChain
+			),
+			pezsp_runtime::DispatchError::BadOrigin
+		);
+	});
+}
+
+#[test]
+fn dispute_with_nothing_pending_fails() {
+	ExtBuilder.build_and_execute(|| {
+		assert_noop!(
+			StakingScore::dispute_staking_details(
+				RuntimeOrigin::signed(DISPUTE_MEMBER),
+				USER_STASH,
+				StakingSource::RelayChain
+			),
+			Error::<Test>::NoPendingSubmission
+		);
+	});
+}
+
+#[test]
+fn repeated_legitimate_submissions_do_not_regress_score_during_window() {
+	// A noter sending a second update before anyone finalized the first
+	// shouldn't drop the account's effective score back to 0 for the second
+	// update's own window — `receive_staking_details` opportunistically
+	// finalizes an already-matured prior pending entry before recording the
+	// new one, so the first update's result is never lost.
+	ExtBuilder.build_and_execute(|| {
+		System::set_block_number(100);
+		ensure_registered(NOTER);
+
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::signed(NOTER),
+			USER_STASH,
+			StakingSource::RelayChain,
+			100 * UNITS, // tier 20
+			0,
+			0
+		));
+
+		// First submission's window has matured, but nobody called
+		// finalize_staking_details yet.
+		System::set_block_number(100 + DISPUTE_WINDOW);
+
+		// A second submission arrives before anyone finalized the first.
+		// Its own `receive_staking_details` call must opportunistically
+		// commit the first (matured) value before recording this candidate.
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::signed(NOTER),
+			USER_STASH,
+			StakingSource::RelayChain,
+			300 * UNITS, // tier 40
+			0,
+			0
+		));
+		// The first submission's value is now visible via CachedStakingDetails
+		// — not 0, even though the second submission's own window hasn't
+		// elapsed yet.
+		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 20);
+
+		// Second submission's window elapses; finalize it explicitly.
+		System::set_block_number(100 + DISPUTE_WINDOW + DISPUTE_WINDOW);
+		assert_ok!(StakingScore::finalize_staking_details(
+			RuntimeOrigin::signed(USER_STASH),
+			USER_STASH,
+			StakingSource::RelayChain
+		));
+		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 40);
+	});
+}
+
+// ============================================================================
+// Root Path Unaffected (immediate, no bond, no window)
+// ============================================================================
+
+#[test]
+fn root_submission_is_immediate_and_needs_no_bond() {
+	ExtBuilder.build_and_execute(|| {
+		// USER_STASH is not a registered noter at all — Root doesn't care.
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::root(),
+			USER_STASH,
+			StakingSource::RelayChain,
+			200 * UNITS,
+			0,
+			0
+		));
+
+		assert!(PendingStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).is_none());
+		assert!(CachedStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).is_some());
+		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 30);
+	});
+}
+
+// ============================================================================
+// Slashing
+// ============================================================================
+
+#[test]
+fn slash_noter_burns_bond_to_treasury() {
+	ExtBuilder.build_and_execute(|| {
+		System::set_block_number(1);
+		assert_ok!(StakingScore::register_as_noter(RuntimeOrigin::signed(NOTER)));
+		let treasury_before = Balances::free_balance(TREASURY);
+		let bond = NoterBondAmount::get();
+
+		assert_ok!(StakingScore::slash_noter(RuntimeOrigin::signed(SLASH_MEMBER), NOTER));
+
+		assert!(NoterBonds::<Test>::get(NOTER).is_none());
+		assert_eq!(Balances::reserved_balance(NOTER), 0);
+		assert_eq!(Balances::free_balance(TREASURY), treasury_before + bond);
+
+		let events = System::events();
+		assert!(events
+			.iter()
+			.any(|event| { matches!(event.event, RuntimeEvent::StakingScore(Event::NoterSlashed { .. })) }));
+	});
+}
+
+#[test]
+fn slash_noter_rejects_non_slash_origin() {
+	ExtBuilder.build_and_execute(|| {
+		assert_ok!(StakingScore::register_as_noter(RuntimeOrigin::signed(NOTER)));
+
+		// DISPUTE_MEMBER can freeze a submission but cannot slash — that's a
+		// deliberately stronger bar (SlashOrigin), not the lightweight
+		// DisputeOrigin.
+		assert_noop!(
+			StakingScore::slash_noter(RuntimeOrigin::signed(DISPUTE_MEMBER), NOTER),
+			pezsp_runtime::DispatchError::BadOrigin
+		);
+	});
+}
+
+#[test]
+fn slash_noter_rejects_unregistered_account() {
+	ExtBuilder.build_and_execute(|| {
+		assert_noop!(
+			StakingScore::slash_noter(RuntimeOrigin::signed(SLASH_MEMBER), USER_STASH),
+			Error::<Test>::NotRegisteredNoter
+		);
+	});
+}
+
+#[test]
+fn a_second_independent_noter_can_register_and_submit() {
+	// The system is designed to support any number of independently
+	// registered noters, not a single hardcoded account.
+	ExtBuilder.build_and_execute(|| {
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 100 * UNITS, 0, 0);
+		submit_and_finalize(NOTER_2, 20, StakingSource::RelayChain, 200 * UNITS, 0, 0);
+
+		assert_eq!(StakingScore::get_staking_score(&USER_STASH).0, 20);
+		assert_eq!(StakingScore::get_staking_score(&20).0, 30);
+		assert!(NoterBonds::<Test>::get(NOTER).is_some());
+		assert!(NoterBonds::<Test>::get(NOTER_2).is_some());
 	});
 }

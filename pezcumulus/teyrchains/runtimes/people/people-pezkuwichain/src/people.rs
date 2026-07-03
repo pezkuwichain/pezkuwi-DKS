@@ -503,6 +503,32 @@ impl pezpallet_staking_score::NoterCheck<AccountId> for TikiNoterChecker {
 	fn is_noter(who: &AccountId) -> bool {
 		pezpallet_tiki::Pezpallet::<Runtime>::has_tiki(who, &pezpallet_tiki::Tiki::Noter)
 	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn make_noter(who: &AccountId) {
+		pezpallet_tiki::UserTikis::<Runtime>::mutate(who, |tikis| {
+			let _ = tikis.try_push(pezpallet_tiki::Tiki::Noter);
+		});
+	}
+}
+
+parameter_types! {
+	// Real-world analogy: a notary's bond/insurance. An account must hold the
+	// Noter tiki *and* post this bond via `register_as_noter` before its
+	// submissions are accepted. Slashable by `RootOrDiwanOrTechnical` if a
+	// disputed submission is confirmed fraudulent. The tiki role itself
+	// supports any number of independently registered accounts — this is not
+	// a single hardcoded noter, the same way a state can authorize any number
+	// of notaries.
+	pub const NoterBondAmount: Balance = 50_000 * UNITS;
+	// Real-world analogy: a notarized document's recording/contestability
+	// period — a noter-signed submission only takes effect after this many
+	// blocks unchallenged. Root/XCM-Transact submissions (chain-authenticated,
+	// not a personal key) are exempt. One hour under this runtime's actual
+	// block time (`teyrchains_common::HOURS`, 12s blocks) — deliberately NOT
+	// the staking-score pallet's own internal `HOUR_IN_BLOCKS`, which assumes
+	// a different (6s) block time than this runtime actually uses.
+	pub const StakingNoterDisputeWindow: BlockNumber = HOURS;
 }
 
 impl pezpallet_staking_score::Config for Runtime {
@@ -510,6 +536,16 @@ impl pezpallet_staking_score::Config for Runtime {
 	type Balance = Balance;
 	type OnStakingUpdate = Trust;
 	type NoterChecker = TikiNoterChecker;
+	type Currency = Balances;
+	type NoterBondAmount = NoterBondAmount;
+	type DisputeWindow = StakingNoterDisputeWindow;
+	// Lightweight: any single Council member can freeze a suspicious pending
+	// submission for review — mirrors the existing VetoOrigin pattern below.
+	type DisputeOrigin = pezpallet_collective::EnsureMember<AccountId, CouncilCollective>;
+	// Deliberately stronger: slashing a noter's bond needs an actual
+	// governance decision, not one member's word.
+	type SlashOrigin = crate::RootOrDiwanOrTechnical;
+	type SlashDestination = RelayTreasuryAccount;
 }
 
 // =============================================================================
