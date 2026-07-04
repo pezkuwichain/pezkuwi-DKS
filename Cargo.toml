@@ -855,7 +855,7 @@ is-terminal = { version = "0.4.9" }
 is_executable = { version = "1.0.1" }
 ruint = { version = "=1.17.2", default-features = false }
 # isahc removed - replaced with reqwest (rustls-tls) to eliminate OpenSSL dependency
-itertools = { version = "0.11" }
+itertools = { version = "0.14" }
 jobserver = { version = "0.1.26" }
 js-sys = { version = "0.3.70" }
 jsonpath_lib = { version = "0.3" }
