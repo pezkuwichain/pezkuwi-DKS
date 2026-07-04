@@ -430,5 +430,49 @@ mod benchmarks {
 		}
 	}
 
+	/// Benchmark worst case: owner withdraws raised payment-asset funds from a
+	/// Finalized presale (reached only after `finalize_presale` + a
+	/// `batch_distribute` covering every contributor).
+	#[benchmark]
+	fn withdraw_funds() {
+		let caller: T::AccountId = whitelisted_caller();
+		// Get next presale ID before creating
+		let presale_id = NextPresaleId::<T>::get();
+		let presale_treasury = Presale::<T>::presale_account_id(presale_id);
+
+		// Setup assets
+		let (payment_asset, reward_asset) = setup_benchmark_assets::<T>(&caller, &presale_treasury);
+
+		// Create presale (will get the presale_id we calculated)
+		let _ = create_test_presale::<T>(&caller, payment_asset, reward_asset, false, false);
+
+		// Contribute enough to clear the soft cap.
+		let amount: u128 = 1_000_000u128;
+		let _ =
+			Presale::<T>::contribute(RawOrigin::Signed(caller.clone()).into(), presale_id, amount);
+
+		// Advance blocks past presale end, then finalize (-> Successful).
+		pezframe_system::Pezpallet::<T>::set_block_number(2000u32.into());
+		let _ = Presale::<T>::finalize_presale(RawOrigin::Root.into(), presale_id);
+
+		// Distribute to every contributor in one batch (-> Finalized), leaving
+		// the raised payment-asset balance sitting in the treasury sub-account
+		// for withdraw_funds to move out.
+		let _ = Presale::<T>::batch_distribute(
+			RawOrigin::Signed(caller.clone()).into(),
+			presale_id,
+			0,
+			1,
+		);
+		let presale = crate::Presales::<T>::get(presale_id).unwrap();
+		assert_eq!(presale.status, PresaleStatus::Finalized);
+
+		#[extrinsic_call]
+		withdraw_funds(RawOrigin::Signed(caller), presale_id);
+
+		// Verify the withdrawal was recorded (guards double-withdrawal).
+		assert!(crate::FundsWithdrawn::<T>::get(presale_id));
+	}
+
 	impl_benchmark_test_suite!(Presale, crate::mock::new_test_ext(), crate::mock::Test);
 }
