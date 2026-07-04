@@ -288,11 +288,23 @@ impl pezpallet_identity_kyc::Config for Test {
 }
 
 // Staking Score Configuration
+parameter_types! {
+	pub const StakingScoreNoterBondAmount: Balance = 1_000;
+	pub const StakingScoreDisputeWindow: u64 = 10;
+	pub const StakingScoreSlashDestination: AccountId = 999;
+}
+
 impl pezpallet_staking_score::Config for Test {
 	type Balance = Balance;
 	type OnStakingUpdate = ();
 	type WeightInfo = ();
 	type NoterChecker = ();
+	type Currency = Balances;
+	type NoterBondAmount = StakingScoreNoterBondAmount;
+	type DisputeWindow = StakingScoreDisputeWindow;
+	type DisputeOrigin = pezframe_system::EnsureSigned<AccountId>;
+	type SlashOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type SlashDestination = StakingScoreSlashDestination;
 }
 
 // Referral Configuration

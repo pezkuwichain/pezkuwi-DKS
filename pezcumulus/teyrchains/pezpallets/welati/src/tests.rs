@@ -253,6 +253,16 @@ fn finalize_election_works() {
 			None,
 		));
 
+		// A candidate and enough voters to clear the 40% Parliamentary quorum
+		// (MockTrustProvider's fixed citizen_count() is 110, so 44+ votes).
+		let endorsers: Vec<u64> = (200..=249).collect();
+		assert_ok!(Welati::register_candidate(RuntimeOrigin::signed(1), 0, None, endorsers,));
+
+		run_to_block(86_400 + 259_200 + 1);
+		for voter in 300..=343u64 {
+			assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(voter), 0, vec![1], None,));
+		}
+
 		// Move past the election end date
 		// candidacy (86_400) + campaign (259_200) + voting (432_000) + 1
 		run_to_block(86_400 + 259_200 + 432_000 + 10); // +10 for extra safety
@@ -458,10 +468,15 @@ fn complete_election_cycle_works() {
 		// 3. Move to the voting period
 		run_to_block(86_400 + 259_200 + 1);
 
-		// 4. Cast votes
+		// 4. Cast votes — enough to clear the 40% Parliamentary quorum
+		// (MockTrustProvider's fixed citizen_count() is 110, so 44+ votes).
 		assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(3), 0, vec![1], None,));
 
 		assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(4), 0, vec![2], None,));
+
+		for voter in 500..=541u64 {
+			assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(voter), 0, vec![1], None,));
+		}
 
 		// 5. Finalize the election
 		run_to_block(86_400 + 259_200 + 432_000 + 2);
@@ -787,7 +802,12 @@ fn finalize_election_updates_election_status() {
 
 		run_to_block(86_400 + 259_200 + 100);
 
+		// Enough votes to clear the 40% Parliamentary quorum (MockTrustProvider's
+		// fixed citizen_count() is 110, so 44+ votes).
 		assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(100), 0, vec![1], None,));
+		for voter in 600..=642u64 {
+			assert_ok!(Welati::cast_vote(RuntimeOrigin::signed(voter), 0, vec![1], None,));
+		}
 
 		run_to_block(86_400 + 259_200 + 432_000 + 100);
 
