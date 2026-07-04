@@ -261,8 +261,17 @@ mod benchmarks {
 		// Advance blocks past presale end
 		pezframe_system::Pezpallet::<T>::set_block_number(2000u32.into());
 
-		// Finalize presale (requires root)
+		// Finalize presale (requires root) -> Successful (not yet Finalized).
 		let _ = Presale::<T>::finalize_presale(RawOrigin::Root.into(), presale_id);
+
+		// Distribute to the sole contributor -> Finalized, and records the
+		// immediate-release portion in VestingClaimed that claim_vested builds on.
+		let _ = Presale::<T>::batch_distribute(
+			RawOrigin::Signed(caller.clone()).into(),
+			presale_id,
+			0,
+			1,
+		);
 
 		// Advance past cliff period
 		pezframe_system::Pezpallet::<T>::set_block_number(3000u32.into());
@@ -345,10 +354,11 @@ mod benchmarks {
 		#[extrinsic_call]
 		finalize_presale(RawOrigin::Root, presale_id);
 
-		// Verify presale was finalized
+		// finalize_presale only ever transitions to Successful (soft cap reached;
+		// Finalized is reached later via batch_distribute) or Failed (soft cap missed).
 		let presale = crate::Presales::<T>::get(presale_id).unwrap();
 		assert!(
-			presale.status == PresaleStatus::Finalized || presale.status == PresaleStatus::Failed
+			presale.status == PresaleStatus::Successful || presale.status == PresaleStatus::Failed
 		);
 	}
 
