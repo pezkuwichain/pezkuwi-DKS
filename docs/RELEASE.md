@@ -64,6 +64,28 @@ one coordinated upgrade after the heavy suite is fully green and reviewed:
   [statement/README.md](statement/README.md)).
 - `tiki` pallet: 12 new functional/professional roles.
 - RuntimeVersion identity cleanup (dropped `parity-*` / `westmint`).
+- **Security-audit fix set** (AI-assisted internal review; commits `14cbf1a`, `9afd99a`
+  on `main`) — 11 findings closed across `identity-kyc`, `messaging`, `perwerde`,
+  `presale`, `tiki`, `welati`, plus the relay `SendXcmOrigin` narrowing in
+  `xcm_config.rs`. No storage migration required (all changes are new storage items or
+  Config/logic-only).
+  - `staking-score`: noter submissions now require a posted bond
+    (`register_as_noter`/`unregister_as_noter`) and sit in a 1-hour dispute window
+    (`DisputeWindow`) before taking effect, disputable by any Council member and
+    slashable by `RootOrDiwanOrTechnical` on confirmed fraud. Root/XCM-Transact
+    submissions are unaffected (chain-authenticated, not a personal key).
+  - Fixed `MONTH_IN_BLOCKS`/`HOUR_IN_BLOCKS` in `staking-score`: was silently assuming
+    6s blocks (10/min) against this chain's actual 12s (5/min), doubling every
+    duration-tier threshold in production.
+  - `staking-score`'s weights are now real benchmark output (previously manual
+    estimates); `presale::withdraw_funds` had no benchmark case at all until
+    commit `dc6d29e` — real weight pending a benchmark run.
+- Dependency-security cleanup: `rand`/`tar`/`rpassword` patched (commit `2cbf2b3`);
+  `wasmtime` (2 critical, aarch64-specific sandbox-escape CVEs; our fleet is x86_64)
+  and a handful of other client-networking deps (`hickory-proto`, `rustls-webpki`,
+  `yamux`) remain — each pinned by a deeper Substrate/Polkadot-SDK dependency and
+  needing a coordinated major-version bump plus real node testing. Tracked as a
+  separate task, not part of this bundle.
 
 ## Changing a claim statement
 
