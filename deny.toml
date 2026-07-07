@@ -43,11 +43,6 @@ ignore = [
 	"RUSTSEC-2026-0095", # wasmtime: Winch sandbox-escaping memory access
 	"RUSTSEC-2026-0096", # wasmtime: miscompiled guest heap aarch64 Cranelift
 
-	# ── rand 0.9.2 ────────────────────────────────────────────────────────────
-	# Unsound only when a custom Rust logger calls rand::rng() during init.
-	# No custom logger in our stack. No fixed version available yet.
-	"RUSTSEC-2026-0097", # rand: unsound with custom logger using rand::rng()
-
 	# ── memmap2 ───────────────────────────────────────────────────────────────
 	# Unsound unchecked pointer-offset in memory-mapping. Host-side only — memmap2
 	# is not reachable from the WASM runtime (no mmap in WASM), so it cannot affect
