@@ -19,7 +19,8 @@ const PLANCKS_PER_HEZ: u128 = 1_000_000_000_000;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let url = std::env::var("RPC_URL").unwrap_or_else(|_| "ws://217.77.6.126:9948".to_string());
 	let dest_ss58 = std::env::var("DEST_SS58").expect("DEST_SS58 required");
-	let amount_hez: u128 = std::env::var("AMOUNT_HEZ").unwrap_or_else(|_| "1000".to_string()).parse()?;
+	let amount_hez: u128 =
+		std::env::var("AMOUNT_HEZ").unwrap_or_else(|_| "1000".to_string()).parse()?;
 	let amount_planck = amount_hez * PLANCKS_PER_HEZ;
 
 	let api = OnlineClient::<PezkuwiConfig>::from_insecure_url(&url).await?;
@@ -36,7 +37,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let transfer_tx = pezkuwi_subxt::dynamic::tx(
 		"Balances",
 		"transfer_keep_alive",
-		vec![Value::unnamed_variant("Id", vec![Value::from_bytes(&dest.0)]), Value::u128(amount_planck)],
+		vec![
+			Value::unnamed_variant("Id", vec![Value::from_bytes(&dest.0)]),
+			Value::u128(amount_planck),
+		],
 	);
 
 	use pezkuwi_subxt::tx::TxStatus;

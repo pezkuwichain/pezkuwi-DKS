@@ -26,7 +26,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let old_keypair = Keypair::from_phrase(&mnemonic, None)?;
 	println!("Current sudo: {}", old_keypair.public_key().to_account_id());
 
-	let new_pubkey_hex = std::env::var("NEW_PUBKEY").expect("NEW_PUBKEY environment variable required");
+	let new_pubkey_hex =
+		std::env::var("NEW_PUBKEY").expect("NEW_PUBKEY environment variable required");
 	let new_pubkey = hex::decode(new_pubkey_hex.trim_start_matches("0x"))?;
 	println!("New sudo pubkey: 0x{}", hex::encode(&new_pubkey));
 
