@@ -87,6 +87,14 @@ one coordinated upgrade after the heavy suite is fully green and reviewed:
   needing a coordinated major-version bump plus real node testing. Tracked as a
   separate task, not part of this bundle.
 
+**Note on Zagros testnet validation:** the live "Zagros Testnet" chain (217.77.6.126)
+runs the `pezkuwichain`/`asset-hub-pezkuwichain`/`people-pezkuwichain` runtime family
+(spec_name confirmed via live RPC), not the `zagros`/`asset-hub-zagros`/`people-zagros`
+family. The latter is a CI-checked-only reference implementation (never released — see
+`release.yml`), left over from before this repo's clean-room rewrite. Bump
+`spec_version` and build WASM from the `*-pezkuwichain` crates when validating a bundle
+on Zagros before it ships to mainnet; the `*-zagros` crates are not deployed anywhere.
+
 ## Changing a claim statement
 
 A statement edit changes its hash → changes the runtime → is a runtime upgrade and
