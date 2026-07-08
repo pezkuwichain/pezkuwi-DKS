@@ -32,13 +32,18 @@
 //! ## Score Calculation
 //!
 //! ```text
-//! trust_score = (staking_score + referral_score + perwerde_score + tiki_score) * multiplier
+//! weighted_sum = 100 * staking_score
+//!              + 300 * (referral_score + perwerde_score + tiki_score)
+//! trust_score  = staking_score * weighted_sum / base
 //! ```
 //!
 //! Where:
-//! - Each component score is normalized and weighted
-//! - The multiplier is configurable via `ScoreMultiplierBase`
-//! - Citizenship status is required (KYC approved)
+//! - `base` is configurable via `ScoreMultiplierBase`.
+//! - Staking is both a gate and a multiplier: a citizen with zero staking_score
+//!   has a trust_score of zero, and staking scales the entire weighted sum.
+//! - Within weighted_sum, referral/perwerde/tiki each carry weight 300 versus
+//!   staking's 100 (3x per unit), rewarding contribution over capital alone.
+//! - Citizenship status is required (KYC approved).
 //!
 //! ## Update Mechanisms
 //!
