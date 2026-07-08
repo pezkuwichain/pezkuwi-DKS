@@ -9,7 +9,8 @@
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let url = std::env::var("RPC_URL").unwrap_or_else(|_| "ws://217.77.6.126:9944".to_string());
-	let api = pezkuwi_subxt::OnlineClient::<pezkuwi_subxt::PezkuwiConfig>::from_insecure_url(&url).await?;
+	let api = pezkuwi_subxt::OnlineClient::<pezkuwi_subxt::PezkuwiConfig>::from_insecure_url(&url)
+		.await?;
 	let metadata = api.metadata();
 	let types = metadata.types();
 

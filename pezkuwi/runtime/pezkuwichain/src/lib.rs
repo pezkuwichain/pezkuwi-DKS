@@ -1859,7 +1859,8 @@ pub mod migrations {
 				reads_writes = reads_writes.saturating_add(3);
 			}
 
-			<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(reads_writes, reads_writes)
+			<Runtime as pezframe_system::Config>::DbWeight::get()
+				.reads_writes(reads_writes, reads_writes)
 		}
 	}
 
