@@ -74,16 +74,20 @@ pub mod pezpallet {
 
 	// --- Constants ---
 	//
-	// Block-time assumption: 5 blocks/minute (12s blocks), matching this
-	// chain's actual configured block time (`teyrchains_common::MILLISECS_PER_BLOCK
-	// = 12_000`, the same source `people-pezkuwichain`'s own `HOURS`/`DAYS`
-	// constants are derived from). Previously hardcoded at 10 blocks/minute
-	// (6s blocks) here, which silently doubled every duration-tier threshold
-	// in production — the "1 month" tier actually took ~2 real months to
-	// reach. If this chain's block time ever changes, these two constants
-	// need updating to match — they are not derived automatically.
-	pub const MONTH_IN_BLOCKS: u32 = 30 * 24 * 60 * 5;
-	pub const HOUR_IN_BLOCKS: u32 = 60 * 5;
+	// Block-time assumption: 10 blocks/minute (6s blocks), matching this
+	// chain's actual configured slot duration (`testnet_teyrchains_constants::
+	// pezkuwichain::consensus::MILLISECS_PER_BLOCK = 6_000` — the module
+	// `people-pezkuwichain` actually imports its `HOURS`/`DAYS`/`SlotDuration`
+	// from; `teyrchains_common::MILLISECS_PER_BLOCK = 12_000` is a
+	// same-named but unrelated, unused-for-timing constant in a different
+	// crate and does not govern this runtime's real block cadence). An
+	// earlier revision of this file assumed the 12s figure and halved every
+	// duration-tier threshold below (confirmed against live mainnet state via
+	// try-runtime and empirical block-time measurement before it shipped). If
+	// this chain's block time ever changes, these two constants need
+	// updating to match — they are not derived automatically.
+	pub const MONTH_IN_BLOCKS: u32 = 30 * 24 * 60 * 10;
+	pub const HOUR_IN_BLOCKS: u32 = 60 * 10;
 	pub const UNITS: u128 = 1_000_000_000_000;
 
 	/// The chain from which staking data originates.

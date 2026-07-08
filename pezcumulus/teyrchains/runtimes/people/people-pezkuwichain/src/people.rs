@@ -524,10 +524,10 @@ parameter_types! {
 	// Real-world analogy: a notarized document's recording/contestability
 	// period — a noter-signed submission only takes effect after this many
 	// blocks unchallenged. Root/XCM-Transact submissions (chain-authenticated,
-	// not a personal key) are exempt. One hour under this runtime's actual
-	// block time (`teyrchains_common::HOURS`, 12s blocks) — deliberately NOT
-	// the staking-score pallet's own internal `HOUR_IN_BLOCKS`, which assumes
-	// a different (6s) block time than this runtime actually uses.
+	// not a personal key) are exempt. One real hour, using this runtime's
+	// actual `HOURS` constant (`testnet_teyrchains_constants::pezkuwichain`,
+	// derived from the real 6s slot duration this runtime is configured
+	// with) — matches staking-score's own internal `HOUR_IN_BLOCKS`.
 	pub const StakingNoterDisputeWindow: BlockNumber = HOURS;
 }
 
