@@ -174,7 +174,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("pezkuwichain"),
 	impl_name: alloc::borrow::Cow::Borrowed("pezkuwichain"),
 	authoring_version: 0,
-	spec_version: 1_020_008,
+	spec_version: 1_020_009,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 26,
@@ -1685,7 +1685,6 @@ pub mod migrations {
 
 	parameter_types! {
 		pub const DemocracyPalletName: &'static str = "Democracy";
-		pub const CouncilPalletName: &'static str = "Council";
 		pub const TechnicalCommitteePalletName: &'static str = "TechnicalCommittee";
 		pub const PhragmenElectionPalletName: &'static str = "PhragmenElection";
 		pub const TechnicalMembershipPalletName: &'static str = "TechnicalMembership";
@@ -1705,6 +1704,30 @@ pub mod migrations {
 	// NOTE: Gov1 migration configs removed - pezpallet-democracy, pezpallet-elections-phragmen,
 	// and pezpallet-tips are no longer part of this runtime (using pezpallet-welati for governance)
 
+	/// `Council` (`pezpallet_collective::<Instance1>`) is a live, actively-configured pallet in
+	/// this runtime — unrelated to the retired Gov1 `Democracy`/`TechnicalCommittee`/
+	/// `PhragmenElection`/`TechnicalMembership`/`Tips` pallets removed below. It has never
+	/// actually been used on mainnet (confirmed via live storage query: zero keys under its
+	/// prefix), so its on-chain storage version was never stamped and defaults to 0, while
+	/// `pezpallet_collective`'s in-code version is 4. There is no data to migrate — this only
+	/// needs its version bumped so `Executive`'s storage-version check stops flagging a real
+	/// runtime upgrade as missing. `pezpallet_collective::migrations::v4` doesn't apply: it's a
+	/// pallet-rename migration (old prefix -> new prefix) that no-ops whenever the name hasn't
+	/// changed, which is the case here.
+	pub struct NoopCouncilMigration;
+	impl pezframe_support::traits::UncheckedOnRuntimeUpgrade for NoopCouncilMigration {
+		fn on_runtime_upgrade() -> Weight {
+			Weight::zero()
+		}
+	}
+	pub type InitializeCouncilStorageVersion = pezframe_support::migrations::VersionedMigration<
+		0,
+		4,
+		NoopCouncilMigration,
+		Council,
+		<Runtime as pezframe_system::Config>::DbWeight,
+	>;
+
 	/// Unreleased migrations. Add new ones here:
 	pub type Unreleased = (
 		teyrchains_configuration::migration::v7::MigrateToV7<Runtime>,
@@ -1721,14 +1744,13 @@ pub mod migrations {
 			(),
 			BalanceUnreserveWeight,
 		>,
+		// Bumps Council's on-chain storage version to match in-code (see doc comment above) —
+		// deliberately NOT a RemovePallet: Council is a live pallet here, not a retired Gov1 one.
+		InitializeCouncilStorageVersion,
 		// Delete all Gov v1 pezpallet storage key/values (still needed to clean up any leftover
 		// storage)
 		pezframe_support::migrations::RemovePallet<
 			DemocracyPalletName,
-			<Runtime as pezframe_system::Config>::DbWeight,
-		>,
-		pezframe_support::migrations::RemovePallet<
-			CouncilPalletName,
 			<Runtime as pezframe_system::Config>::DbWeight,
 		>,
 		pezframe_support::migrations::RemovePallet<
