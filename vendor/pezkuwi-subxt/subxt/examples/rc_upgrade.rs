@@ -110,8 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 		vec![Value::from_bytes(&wasm_data)],
 	);
 
-	let progress =
-		api.tx().sign_and_submit_then_watch_default(&enact_call, &sudo_keypair).await?;
+	let progress = api.tx().sign_and_submit_then_watch_default(&enact_call, &sudo_keypair).await?;
 	let events = progress.wait_for_finalized_success().await?;
 
 	let mut code_updated = false;
