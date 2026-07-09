@@ -65,11 +65,22 @@ jobs:
         run: |
           set -euo pipefail
           # The compact+compressed blob is the artifact that goes on-chain.
-          wasm=$(find target/release/wbuild -name '*.compact.compressed.wasm' \
-                 -path "*${{ matrix.runtime }}*" | head -1)
-          if [ -z "$wasm" ]; then
+          # Some runtimes (the relay's build.rs, in particular) also emit a
+          # `fast-runtime`-feature devnet variant (fast_runtime_binary.rs.*) in
+          # the same wbuild dir for local/zombienet testing — never pick that
+          # one up here. Fail loudly on anything else ambiguous rather than
+          # silently taking whichever file a bare `find | head -1` returns
+          # first (directory order is not guaranteed).
+          wbuild_dir="target/release/wbuild/${{ matrix.runtime }}"
+          mapfile -t candidates < <(find "$wbuild_dir" -maxdepth 1 \
+                 -name '*.compact.compressed.wasm' ! -name 'fast_runtime_binary*')
+          if [ "${#candidates[@]}" -eq 0 ]; then
             echo "::error::no compressed WASM found for ${{ matrix.runtime }}"; exit 1
           fi
+          if [ "${#candidates[@]}" -gt 1 ]; then
+            echo "::error::ambiguous compressed WASM candidates for ${{ matrix.runtime }}: ${candidates[*]}"; exit 1
+          fi
+          wasm="${candidates[0]}"
           out="artifacts"; mkdir -p "$out"
           base="${{ matrix.runtime }}"
           cp "$wasm" "$out/${base}.compact.compressed.wasm"
