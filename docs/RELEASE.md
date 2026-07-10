@@ -54,10 +54,14 @@ trigger it with `workflow_dispatch` and wait for it; do not rely only on the fas
    one in the release.
 8. **Watch**: confirm blocks are still produced and finalized after the upgrade.
 
-## Pending bundle (next mainnet spec_version)
+## Shipped: 2026-07-10 mainnet upgrade (spec_version 1_020_010 / 1_020_011)
 
-These repo changes are ready and green but **not yet deployed**; they ship together in
-one coordinated upgrade after the heavy suite is fully green and reviewed:
+Deployed to all three teyrchains (relay, Asset Hub, People chain), each verified against
+its own `System::LastRuntimeUpgrade` post-upgrade. Full account of what was found and
+fixed along the way, including two release-pipeline bugs caught by independent
+verification before anything reached mainnet: [docs/audits/2026-07-mainnet-upgrade.md](audits/2026-07-mainnet-upgrade.md).
+
+The bundle:
 
 - Token symbol standardized to **HEZ** (metadata-hash, claims `Prefix`, chain-spec).
 - Claims statements repointed to **statement.pex.network** (hash-pinned; see
@@ -74,9 +78,14 @@ one coordinated upgrade after the heavy suite is fully green and reviewed:
     (`DisputeWindow`) before taking effect, disputable by any Council member and
     slashable by `RootOrDiwanOrTechnical` on confirmed fraud. Root/XCM-Transact
     submissions are unaffected (chain-authenticated, not a personal key).
-  - Fixed `MONTH_IN_BLOCKS`/`HOUR_IN_BLOCKS` in `staking-score`: was silently assuming
-    6s blocks (10/min) against this chain's actual 12s (5/min), doubling every
-    duration-tier threshold in production.
+  - Fixed `MONTH_IN_BLOCKS`/`HOUR_IN_BLOCKS` in `staking-score`: an earlier revision
+    had switched these to assume 12s blocks (5/min), citing an unused same-named
+    constant from a different crate. `people-pezkuwichain` actually wires its
+    `HOURS`/`DAYS`/`SlotDuration` from a 6s-block source — confirmed via live mainnet
+    empirical block time, the real import path, and a try-runtime dry-run that
+    panicked with an exact 2x slot mismatch under the wrong assumption. Every
+    duration-tier threshold was filling twice as fast as intended; restored to 10
+    blocks/min (6s), matching reality.
   - `staking-score`'s weights are now real benchmark output (previously manual
     estimates); `presale::withdraw_funds` had no benchmark case at all until
     commit `dc6d29e` — real weight pending a benchmark run.
