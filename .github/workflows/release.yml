@@ -37,7 +37,13 @@ env:
 
 jobs:
   build-runtime:
-    runs-on: [self-hosted, substrate-build]
+    # Pinned to one specific runner (not the whole substrate-build pool): these
+    # builds aren't hermetic yet (pending srtool), and the self-hosted fleet
+    # doesn't share a common absolute install path, so which runner picks up
+    # the job changes the resulting WASM hash even for identical source. Fixing
+    # the runner fixes the path, so the published hash is reproducible by
+    # rebuilding at the same path on the same box until srtool lands.
+    runs-on: [self-hosted, dks-runner-1]
     strategy:
       fail-fast: false
       matrix:
