@@ -175,7 +175,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("zagros"),
 	authoring_version: 2,
-	spec_version: 1_020_001,
+	spec_version: 1_020_002,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 27,
@@ -752,8 +752,11 @@ impl pezpallet_staking::Config for Runtime {
 	type CurrencyBalance = Balance;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type UnixTime = Timestamp;
-	// Zagros's total issuance is already more than `u64::MAX`, this will work better.
-	type CurrencyToVote = pezsp_staking::currency_to_vote::SaturatingCurrencyToVote;
+	// Total issuance already exceeds u64::MAX, so Saturating clips any large stake to u64::MAX
+	// (tied voters -> reduce_4 panic in the election miner, see asset-hub-pezkuwichain). U128
+	// scales by (issuance / u64::MAX) instead, so nothing saturates. Use U128 exactly *because*
+	// issuance > u64::MAX.
+	type CurrencyToVote = pezsp_staking::currency_to_vote::U128CurrencyToVote;
 	type RewardRemainder = ();
 	type RuntimeEvent = RuntimeEvent;
 	type Slash = ();

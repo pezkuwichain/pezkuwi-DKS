@@ -277,7 +277,9 @@ impl pezpallet_staking_async::Config for Runtime {
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type CurrencyToVote = pezsp_staking::currency_to_vote::SaturatingCurrencyToVote;
+	// U128, not Saturating — see asset-hub-pezkuwichain: Saturating clips any stake above
+	// ~u64::MAX planck to u64::MAX, producing tied voters that panic the election miner's reduce_4.
+	type CurrencyToVote = pezsp_staking::currency_to_vote::U128CurrencyToVote;
 	type RewardRemainder = ();
 	type Slash = ();
 	type Reward = ();
