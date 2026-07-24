@@ -1,0 +1,19 @@
+{
+  "polkadot_rpc": "wss://<polkadot-asset-hub-rpc-endpoint>",
+  "pezkuwi_rpc": "wss://<pezkuwi-asset-hub-rpc-endpoint>",
+  "polkadot_usdt_asset_id": 1984,
+  "pezkuwi_wusdt_asset_id": 1000,
+  "min_deposit": 1000000,
+  "min_withdraw": 1000000,
+  "fee_basis_points": 10,
+  "seed_path": "<PATH_TO_BRIDGE_SEED_JSON>  // prefer the BRIDGE_SEED_MNEMONIC env var; the seed file is stale for custody ops (multisig owns wUSDT)",
+  "db_path": "bridge_db.json",
+  "custody_multisig_polkadot": "<POLKADOT_3OF5_MULTISIG_SS58>",
+  "custody_multisig_pezkuwi": "<PEZKUWI_3OF5_MULTISIG_SS58>",
+  "serok_chat_id": "<TELEGRAM_ADMIN_CHAT_ID>",
+  "ops_chat_id": "<TELEGRAM_OPS_CHAT_ID>",
+  "max_single_tx": 0,
+  "auto_pay_daily_cap": 0,
+  "circuit_breaker_window_minutes": 30,
+  "circuit_breaker_fraction": 0.5
+}

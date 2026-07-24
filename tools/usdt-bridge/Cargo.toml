@@ -12,17 +12,28 @@ license = "Apache-2.0"
 name = "usdt-bridge"
 path = "src/main.rs"
 
+[[bin]]
+name = "pezbridge-bot"
+path = "src/bin/pezbridge_bot.rs"
+
 [dependencies]
 # Async runtime
 tokio = { version = "1.36", features = ["full"] }
 
 # Subxt for blockchain interaction
-subxt = { version = "0.38", features = ["substrate-compat"] }
+subxt = { version = "0.38" }
 subxt-signer = { version = "0.38", features = ["sr25519", "subxt"] }
+
+# Pezkuwi's own subxt fork - required for signing/submitting real transactions against
+# Pezkuwi chains (vanilla subxt's default extrinsic params don't match this chain's actual
+# signed-extension/hasher setup and produce "bad signature" errors on submission).
+pezkuwi-subxt = "0.44.0"
+pezkuwi-subxt-signer = { version = "0.44.0", features = ["sr25519"] }
 
 # Crypto
 sp-core = { version = "34.0.0", default-features = false }
 sp-keyring = { version = "39.0.0" }
+sp-runtime = { version = "39.0.5", default-features = false }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -46,6 +57,10 @@ chrono = { version = "0.4", features = ["serde"] }
 
 # Async streams
 futures = "0.3"
+
+# Telegram Bot API HTTP client (pezbridge-bot only). rustls instead of native-tls/OpenSSL so
+# this cross-compiles cleanly to a static musl binary (no OpenSSL sysroot needed for the target).
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
 # Error handling
 anyhow = "1.0"
