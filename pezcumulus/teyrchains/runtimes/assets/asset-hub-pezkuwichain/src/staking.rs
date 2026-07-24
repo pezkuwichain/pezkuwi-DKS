@@ -278,7 +278,14 @@ impl pezpallet_staking_async::Config for Runtime {
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type CurrencyToVote = pezsp_staking::currency_to_vote::SaturatingCurrencyToVote;
+	// U128, not Saturating: HEZ has 12 decimals and total issuance (~204M HEZ = ~2.04e20 planck)
+	// far exceeds u64::MAX (~1.8446e19). SaturatingCurrencyToVote casts balance->u64 saturating, so
+	// any stash bonding more than ~18.45M HEZ collapses to u64::MAX. Two large nominators (~41M and
+	// ~40M HEZ) both saturated to u64::MAX, becoming tied voters; the resulting tied edge weights hit
+	// the `reduce_4` "duplicate/corrupt input" panic in the offchain election miner, so no solution
+	// was ever produced and no era exposures were written. U128CurrencyToVote scales by
+	// (total_issuance / u64::MAX) instead, keeping every stake distinct and inside u64 range.
+	type CurrencyToVote = pezsp_staking::currency_to_vote::U128CurrencyToVote;
 	type RewardRemainder = ResolveTo<xcm_config::TreasuryAccount, Balances>;
 	type Slash = ResolveTo<xcm_config::TreasuryAccount, Balances>;
 	type Reward = ();
