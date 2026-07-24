@@ -1,0 +1,9 @@
+{
+  "pezkuwi_rpc": "wss://<pezkuwi-asset-hub-rpc-endpoint>",
+  "serok_chat_id": "<TELEGRAM_ADMIN_CHAT_ID>",
+  "ops_chat_id": "<TELEGRAM_OPS_CHAT_ID>",
+  "poll_interval_secs": 600,
+  "renewal_threshold": 0,
+  "topup_amount": 0,
+  "state_path": "<PATH_TO_BOT_STATE_JSON>"
+}

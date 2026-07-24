@@ -1,0 +1,50 @@
+# usdt-bridge listener — example systemd unit.
+# Detects USDT/wUSDT deposit/withdrawal events; auto-pays only sub-cap swaps via a bounded,
+# multisig-delegated automation-key allowance, and queues everything else for 3-of-5 approval.
+# It can never mint/burn/set_team/transfer_ownership — those stay exclusively with the multisig.
+# Copy to /etc/systemd/system/, fill in <PLACEHOLDERS>, and provide secrets ONLY via the
+# EnvironmentFile(s) below (never in the repo): BRIDGE_SEED_MNEMONIC / AUTOMATION_KEY_MNEMONIC.
+[Unit]
+Description=usdt-bridge listener
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<service-user>
+Group=<service-group>
+WorkingDirectory=<WORKDIR>
+ExecStart=<BIN_DIR>/usdt-bridge --config <CONFIG_PATH>/bridge_config.json listen-all
+Environment=RUST_LOG=info
+EnvironmentFile=<SECRETS_DIR>/telegram_token.env
+EnvironmentFile=-<SECRETS_DIR>/automation_key.env
+Restart=on-failure
+RestartSec=10
+
+# Hardening (recommended baseline)
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RemoveIPC=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@system-service
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadWritePaths=<WORKDIR>
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

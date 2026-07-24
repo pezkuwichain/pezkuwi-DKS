@@ -1,1 +1,12 @@
-secrets/
+# Real operational config & deploy units — NEVER commit. They expose chat IDs, auto-pay
+# thresholds, server paths/IPs and secret-file locations. Use the *.example templates and
+# provide real values only on the deployment host (env vars / EnvironmentFile / res dir).
+bridge_config.json
+pezbridge_bot_config.json
+deploy/*.service
+!deploy/*.service.example
+# Runtime data & any secret material that must never reach a repo
+bridge_db.json
+bridge_seed.json
+*_seed.json
+*.env

@@ -1,0 +1,49 @@
+# PezbridgeBot — example systemd unit.
+# Read-only allowance-renewal notifier: reads chain state and sends Telegram alerts when the
+# automation-key allowance needs a 3-of-5-signed renewal. Holds NO signing key and cannot submit
+# anything. Copy to /etc/systemd/system/, fill in <PLACEHOLDERS>, provide the Telegram token
+# ONLY via the EnvironmentFile below (never in the repo).
+[Unit]
+Description=PezbridgeBot - allowance renewal notifier (holds no key)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<service-user>
+Group=<service-group>
+WorkingDirectory=<WORKDIR>
+ExecStart=<BIN_DIR>/pezbridge-bot
+Environment=PEZBRIDGE_CONFIG=<CONFIG_PATH>/pezbridge_bot_config.json
+Environment=RUST_LOG=info
+EnvironmentFile=<SECRETS_DIR>/telegram_token.env
+Restart=on-failure
+RestartSec=10
+
+# Hardening (recommended baseline)
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RemoveIPC=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+MemoryDenyWriteExecute=yes
+SystemCallFilter=@system-service
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadWritePaths=<WORKDIR>
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
