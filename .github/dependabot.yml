@@ -1,31 +1,43 @@
 version: 2
 updates:
-  # Update github actions:
+  # GitHub Actions — one grouped PR/week for all workflow action bumps.
   - package-ecosystem: github-actions
     directory: '/'
     labels: ["A1-insubstantial", "R0-no-crate-publish-required"]
     schedule:
       interval: weekly
+    open-pull-requests-limit: 3
     groups:
       ci_dependencies:
         patterns:
         - "*"
-  # Update Rust dependencies:
+
+  # Rust workspace (root). Collapse the routine churn into TWO grouped PRs a week
+  # (minor/patch together, major together) instead of one PR per crate — otherwise
+  # every unrelated bump opens its own branch and floods the repo (the reason we had
+  # to batch-close a pile of them). Majors stay in their own group so they still get
+  # a deliberate review before merge.
   - package-ecosystem: "cargo"
     directory: "/"
     labels: ["A1-insubstantial", "R0-no-crate-publish-required"]
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     groups:
-      # We assume these crates to be semver abiding and can therefore group them together.
-      known_good_semver:
+      cargo-minor-patch:
+        update-types: ["minor", "patch"]
+      cargo-major:
+        update-types: ["major"]
+
+  # usdt-bridge is a separate crate/workspace with its own Cargo.lock; group its bumps
+  # so the bridge never spawns per-crate PRs of its own (e.g. the stray rand/rustls ones).
+  - package-ecosystem: "cargo"
+    directory: "/tools/usdt-bridge"
+    labels: ["A1-insubstantial"]
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      bridge-deps:
         patterns:
-        - "syn"
-        - "quote"
-        - "log"
-        - "paste"
-        - "*serde*"
-        - "clap"
-        update-types:
-        - "minor"
-        - "patch"
+        - "*"
