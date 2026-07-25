@@ -1,0 +1,943 @@
+# ============================================================================
+# Pezkuwi SDK — GitLab CI/CD Pipeline
+# Mirrors: checks-quick, checks, security-audit, tests, docs, release
+#
+# Same unified image as GitHub Actions — no apt-get overhead, sccache ready.
+# ============================================================================
+
+image: ghcr.io/pezkuwichain/ci-unified:bullseye-1.88.0-2025-06-27-v202511141243
+
+stages:
+  - quick-checks
+  - checks
+  - security
+  - test
+  - docs
+  - build
+  - release
+
+# ── Variables ─────────────────────────────────────────────────────────────────
+variables:
+  CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
+  CARGO_INCREMENTAL: "0"
+  CARGO_TERM_COLOR: "always"
+  RUST_BACKTRACE: "short"
+  RUSTFLAGS: "-D warnings"
+  # Disable forklift (GitHub-only sccache proxy not available on GitLab)
+  RUSTC_WRAPPER: ""
+  # Faster artifact transfer
+  FF_USE_FASTZIP: "true"
+  ARTIFACT_COMPRESSION_LEVEL: "fast"
+  CACHE_COMPRESSION_LEVEL: "fast"
+
+# ── Workflow: avoid duplicate pipelines ───────────────────────────────────────
+workflow:
+  rules:
+    # OPT-IN. This repo is a mirror of github.com/pezkuwichain/pezkuwi-DKS, where the
+    # authoritative full CI already runs on the identical code (github public runners +
+    # self-hosted substrate-build / dks-runner-1). Reproducing that heavy pipeline here
+    # needs self-hosted GitLab runners tagged `pezkuwi-runner` (none are registered on
+    # this namespace) plus CI minutes for the light jobs (the shared-runner quota is
+    # exhausted). Rather than auto-run a pipeline that can never pass, it is gated:
+    # set the CI/CD variable RUN_GITLAB_CI=true (Settings > CI/CD > Variables) once a
+    # `pezkuwi-runner` is registered and minutes are available, then it runs as below.
+    - if: '$RUN_GITLAB_CI != "true"'
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+    - if: $CI_COMMIT_TAG =~ /^runtime-/
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+# ── Default ───────────────────────────────────────────────────────────────────
+default:
+  before_script:
+    - rustup show
+    - rustc --version && cargo --version
+    - rustup target add wasm32v1-none
+  cache:
+    key:
+      files:
+        - Cargo.lock
+        - rust-toolchain.toml
+    paths:
+      - .cargo/registry/
+      - .cargo/git/
+    policy: pull-push
+  interruptible: true
+
+# ╔══════════════════════════════════════════════════════════════════════════════
+# QUICK CHECKS — fast feedback on every push/MR (mirrors checks-quick.yml)
+# ╚══════════════════════════════════════════════════════════════════════════════
+
+fmt:
+  stage: quick-checks
+  # Use pre-baked /root/.cargo from the Docker image so there is no GitLab CI
+  # cache download before the script. Cache downloads happen before any log
+  # output and can silently hang on flaky runners, producing server_timeout_running.
+  # cargo fmt --check does not compile — it only needs rustfmt, not the registry.
+  variables:
+    CARGO_HOME: /root/.cargo
+  before_script: []
+  cache: []
+  timeout: 10m
+  # server_timeout_running is not matched by any GitLab retry keyword; use
+  # `always` so infrastructure failures retry on a different runner. A real
+  # format violation is deterministic and fails all retries — max: 2 limits waste.
+  retry:
+    max: 2
+    when: always
+  script:
+    - cargo fmt --all -- --check
+
+check-toml-format:
+  stage: quick-checks
+  variables:
+    CARGO_HOME: /root/.cargo
+  timeout: 5m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - taplo format --check --config .config/taplo.toml
+    - echo "Run 'taplo format --config .config/taplo.toml' to fix TOML issues"
+
+check-dependency-rules:
+  stage: quick-checks
+  timeout: 5m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - cd bizinikiwi/ && ../.gitlab/ensure-deps.sh
+
+check-fail-ci:
+  stage: quick-checks
+  timeout: 5m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - |
+      if rg --line-number --hidden --type rust --glob '!{.git,target}' "FAIL-CI" .; then
+        echo "FAIL-CI marker found — remove before merging"
+        exit 1
+      fi
+      echo "✅ No FAIL-CI markers found"
+
+check-workspace-integrity:
+  stage: quick-checks
+  variables:
+    CARGO_HOME: /root/.cargo
+  timeout: 15m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - pip3 install toml "cargo-workspace>=1.2.6" --quiet
+    - |
+      python3 .github/scripts/check-workspace.py . \
+        --exclude "bizinikiwi/pezframe/contracts/fixtures/build" "bizinikiwi/pezframe/contracts/fixtures/contracts/common"
+    - python3 .github/scripts/deny-git-deps.py .
+
+check-zepter:
+  stage: quick-checks
+  timeout: 20m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - cargo metadata --format-version=1 --locked > /dev/null
+    - cargo install zepter@1.82.1 --force
+    - export PATH="$CARGO_HOME/bin:$PATH"
+    - zepter --version
+    - zepter run check
+
+test-rust-features:
+  stage: quick-checks
+  timeout: 10m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - bash .gitlab/rust-features.sh .
+
+check-umbrella:
+  stage: quick-checks
+  timeout: 30m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - pip3 install "cargo-workspace>=1.2.4" toml --quiet
+    - cargo install zepter@1.82.1 --force --quiet
+    - export PATH="$CARGO_HOME/bin:$PATH"
+    - git config --global --add safe.directory '*'
+    - |
+      UMBRELLA_VERSION=$(cargo metadata --format-version=1 | \
+        python3 -c "import json,sys; pkgs=json.load(sys.stdin)['packages']; \
+        print(next(p['version'] for p in pkgs if p['manifest_path'].endswith('umbrella/Cargo.toml')))")
+      echo "Umbrella version: $UMBRELLA_VERSION"
+      python3 scripts/generate-umbrella.py --sdk . --version "$UMBRELLA_VERSION"
+      # 'default' workflow runs propagate-feature --fix for workspace + umbrella.
+      # check-zepter already validates workspace is clean, so this is a no-op
+      # for workspace crates — only umbrella feature lists get populated.
+      zepter run default
+      cargo +nightly fmt -p pezkuwi-sdk
+    - |
+      if ! git diff --quiet; then
+        echo "❌ Umbrella crate is out of sync. Run: python3 scripts/generate-umbrella.py --sdk . --version <VERSION> && zepter run default"
+        git diff
+        exit 1
+      fi
+      echo "✅ Umbrella crate is up to date"
+
+check-licenses-headers:
+  stage: quick-checks
+  timeout: 10m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - |
+      FAIL=0
+      for dir in pezkuwi pezcumulus bizinikiwi; do
+        echo "Checking license headers in ./$dir..."
+        MISSING=""
+        while IFS= read -r f; do
+          head -20 "$f" | grep -qiE "(apache|gpl|mit|unlicense|copyright)" || MISSING="$MISSING\n$f"
+        done < <(find "./$dir" -name "*.rs" -type f | head -200)
+        if [ -n "$MISSING" ]; then
+          echo "⚠️  Files potentially missing license headers in $dir:"
+          printf "$MISSING\n" | head -20
+          FAIL=1
+        else
+          echo "✅ $dir: license headers OK (sampled)"
+        fi
+      done
+      exit $FAIL
+
+# ╔══════════════════════════════════════════════════════════════════════════════
+# CHECKS — deeper linting and feature checks (mirrors checks.yml)
+# ╚══════════════════════════════════════════════════════════════════════════════
+
+clippy:
+  stage: checks
+  needs: [fmt]
+  variables:
+    SKIP_WASM_BUILD: "1"
+    # Use pre-baked registry in the CI image instead of re-downloading all
+    # crates on every run (global CARGO_HOME=$CI_PROJECT_DIR/.cargo is wiped).
+    # NOTE: We intentionally do NOT persist CARGO_TARGET_DIR to /cache here —
+    # librocksdb-sys debug build produces a multi-GB librocksdb.a that fills
+    # the /cache volume. Docker container's ephemeral target dir is safer.
+    CARGO_HOME: /root/.cargo
+  timeout: 3h
+  script:
+    - git config --global --add safe.directory '*'
+    - |
+      cargo clippy --all-targets --all-features --locked --workspace --quiet \
+        --exclude pezpallet-revive-eth-rpc \
+        --exclude pezkuwi-zombienet-sdk-tests \
+        -- -D warnings
+
+check-try-runtime:
+  stage: checks
+  needs: [clippy]
+  variables:
+    SKIP_WASM_BUILD: "1"
+    CARGO_HOME: /root/.cargo
+  before_script:
+    - export CACHE_KEY="$(cat Cargo.lock rust-toolchain.toml | md5sum | cut -c1-12)"
+    - export CARGO_TARGET_DIR="/cache/cargo-target/${CACHE_KEY}/test-release"
+    - mkdir -p "$CARGO_TARGET_DIR"
+    - echo "CARGO_TARGET_DIR=$CARGO_TARGET_DIR"
+  timeout: 180m
+  script:
+    - git config --global --add safe.directory '*'
+    # try-runtime,experimental is a superset — covers the separate try-runtime and
+    # teyrchain-template-node checks (template node is in the workspace under
+    # templates/teyrchain/node, so --all already includes it)
+    - cargo check --locked --all --features try-runtime,experimental --quiet
+
+check-core-crypto-features:
+  stage: checks
+  needs: [fmt]
+  # Use /root/.cargo to skip GitLab cache download which silently hangs on vps3
+  variables:
+    CARGO_HOME: /root/.cargo
+  before_script: []
+  timeout: 15m
+  # server_timeout_running is not matched by named retry keywords — use always.
+  retry:
+    max: 2
+    when: always
+  script:
+    - rustup target add wasm32v1-none
+    - |
+      for pkg in core application-crypto keyring; do
+        echo "--- Checking bizinikiwi/primitives/$pkg ---"
+        (cd bizinikiwi/primitives/$pkg && ./check-features-variants.sh)
+      done
+
+# ╔══════════════════════════════════════════════════════════════════════════════
+# SECURITY — mirrors security-audit.yml (runs on push + schedule weekly Mon 06:00)
+# ╚══════════════════════════════════════════════════════════════════════════════
+
+cargo-deny-advisories:
+  stage: security
+  needs: []
+  before_script: []
+  # advisory-db clone from GitHub can fail transiently (network, rate limit).
+  # Retry up to 2 times before marking the job as failed.
+  retry:
+    max: 2
+    when: script_failure
+  script:
+    - cargo install cargo-deny --locked -q
+    - cargo deny check advisories --config deny.toml
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+cargo-deny-licenses:
+  stage: security
+  needs: []
+  before_script: []
+  timeout: 20m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - cargo install cargo-deny --locked -q
+    - cargo deny check licenses --config deny.toml
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+cargo-deny-sources:
+  stage: security
+  needs: []
+  before_script: []
+  timeout: 20m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - cargo install cargo-deny --locked -q
+    - cargo deny check sources --config deny.toml
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+cargo-audit:
+  stage: security
+  needs: []
+  before_script: []
+  timeout: 20m
+  retry:
+    max: 2
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+      - job_execution_timeout
+  script:
+    - cargo install cargo-audit --locked -q
+    - cargo audit --json 2>/dev/null > /tmp/audit.json || true
+    - python3 .gitlab/check-audit.py < /tmp/audit.json
+  allow_failure: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+# ╔══════════════════════════════════════════════════════════════════════════════
+# TEST — mirrors tests-linux-stable.yml (manual-only on GitHub, schedule here)
+# ╚══════════════════════════════════════════════════════════════════════════════
+
+# Tests split into 3 partitions via cargo-nextest — mirrors GitHub matrix strategy
+.test-base:
+  stage: test
+  tags: [pezkuwi-runner]
+  needs: [clippy, check-try-runtime]
+  variables:
+    CARGO_HOME: /root/.cargo
+    # -Cdebuginfo=1: line tables only — ~60% smaller than full debug (50G→~20G).
+    # -Clink-arg=-fuse-ld=lld: LLD linker uses far less RAM than ld when linking
+    # large crates (pezkuwi-availability-distribution, pezsc-service). On a
+    # memory-constrained runner (8G container limit) ld can Bus-error during link.
+    RUSTFLAGS: "-Cdebug-assertions=y -Dwarnings -Cdebuginfo=1 -Clink-arg=-fuse-ld=lld"
+    WASM_BUILD_NO_COLOR: "1"
+    CARGO_INCREMENTAL: "0"
+    # Skip WASM runtime builds — unit/integration tests use mock environments
+    # and don't need actual WASM blobs. This significantly reduces compile time.
+    SKIP_WASM_BUILD: "1"
+    # When CARGO_TARGET_DIR is outside the project dir, wasm-builder's build
+    # script can't find Cargo.lock and resolves deps fresh (without --locked),
+    # picking up versions that require newer Rust. Point it to the workspace root.
+    WASM_BUILD_WORKSPACE_HINT: "$CI_PROJECT_DIR"
+  before_script:
+    - rustup show
+    - rustc --version && cargo --version
+    - rustup target add wasm32v1-none
+    - export CACHE_KEY="$(cat Cargo.lock rust-toolchain.toml | md5sum | cut -c1-12)"
+    # All test-partition and test-no-try-runtime jobs share one target dir so
+    # C deps (jemalloc, rocksdb) are compiled once per runner per cache key.
+    # cargo fingerprinting handles different feature sets within the same dir.
+    - export CARGO_TARGET_DIR="/cache/cargo-target/${CACHE_KEY}/test-release"
+    - mkdir -p "$CARGO_TARGET_DIR"
+    # Remove dirs with outdated cache keys (e.g. old Cargo.lock)
+    - find /cache/cargo-target -mindepth 1 -maxdepth 1 -type d ! -name "${CACHE_KEY}" -exec rm -rf {} + 2>/dev/null || true
+    # Remove other job dirs within the SAME cache key — keeps only test-release.
+    # Previous per-job dirs (test-partition-1, test-no-try-runtime-2, …) accumulate
+    # and fill the /cache volume. One shared dir is all we need.
+    - find /cache/cargo-target/"${CACHE_KEY}" -mindepth 1 -maxdepth 1 -type d ! -name "test-release" -exec rm -rf {} + 2>/dev/null || true
+    - echo "CARGO_TARGET_DIR=$CARGO_TARGET_DIR (disk $(df -h /cache/cargo-target | tail -1 | awk '{print $3 "/" $2 " used, " $4 " free"}'))"
+  cache: []
+  # 420m: cold debug build + full partition test run observed at 300m+. Warm cache
+  # (subsequent runs) completes in ~45-90m. The extra headroom avoids false timeout
+  # failures on the first pipeline after a Cargo.lock change (new CACHE_KEY).
+  timeout: 420m
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - unknown_failure
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+
+test-partition-1:
+  extends: .test-base
+  script:
+    - git config --global --add safe.directory '*'
+    - |
+      cargo nextest run \
+        --workspace --locked --no-fail-fast --cargo-quiet \
+        --features try-runtime,experimental,ci-only-tests \
+        --partition count:1/3 \
+        --exclude asset-hub-pezkuwichain-integration-tests \
+        --exclude asset-hub-zagros-integration-tests \
+        --exclude collectives-zagros-integration-tests \
+        --exclude coretime-pezkuwichain-integration-tests \
+        --exclude coretime-zagros-integration-tests \
+        --exclude governance-zagros-integration-tests \
+        --exclude people-pezkuwichain-integration-tests \
+        --exclude people-zagros-integration-tests \
+        --exclude pezbridge-hub-pezkuwichain-integration-tests \
+        --exclude pezbridge-hub-zagros-integration-tests \
+        --exclude pez-chain-spec-guide-runtime
+  artifacts:
+    when: always
+    paths: [test-results-1.xml]
+    reports:
+      junit: test-results-1.xml
+    expire_in: 7 days
+
+test-partition-2:
+  extends: .test-base
+  script:
+    - git config --global --add safe.directory '*'
+    - |
+      cargo nextest run \
+        --workspace --locked --no-fail-fast --cargo-quiet \
+        --features try-runtime,experimental,ci-only-tests \
+        --partition count:2/3 \
+        --exclude asset-hub-pezkuwichain-integration-tests \
+        --exclude asset-hub-zagros-integration-tests \
+        --exclude collectives-zagros-integration-tests \
+        --exclude coretime-pezkuwichain-integration-tests \
+        --exclude coretime-zagros-integration-tests \
+        --exclude governance-zagros-integration-tests \
+        --exclude people-pezkuwichain-integration-tests \
+        --exclude people-zagros-integration-tests \
+        --exclude pezbridge-hub-pezkuwichain-integration-tests \
+        --exclude pezbridge-hub-zagros-integration-tests \
+        --exclude pez-chain-spec-guide-runtime
+  artifacts:
+    when: always
+    paths: [test-results-2.xml]
+    reports:
+      junit: test-results-2.xml
+    expire_in: 7 days
+
+test-partition-3:
+  extends: .test-base
+  script:
+    - git config --global --add safe.directory '*'
+    - |
+      cargo nextest run \
+        --workspace --locked --no-fail-fast --cargo-quiet \
+        --features try-runtime,experimental,ci-only-tests \
+        --partition count:3/3 \
+        --exclude asset-hub-pezkuwichain-integration-tests \
+        --exclude asset-hub-zagros-integration-tests \
+        --exclude collectives-zagros-integration-tests \
+        --exclude coretime-pezkuwichain-integration-tests \
+        --exclude coretime-zagros-integration-tests \
+        --exclude governance-zagros-integration-tests \
+        --exclude people-pezkuwichain-integration-tests \
+        --exclude people-zagros-integration-tests \
+        --exclude pezbridge-hub-pezkuwichain-integration-tests \
+        --exclude pezbridge-hub-zagros-integration-tests \
+        --exclude pez-chain-spec-guide-runtime
+    # Also runs runtime-api tests
+    - cargo nextest run -p pezsp-api-test --features enable-pez-staging-api --cargo-quiet
+  artifacts:
+    when: always
+    paths: [test-results-3.xml]
+    reports:
+      junit: test-results-3.xml
+    expire_in: 7 days
+
+test-no-try-runtime-1:
+  extends: .test-base
+  script:
+    - git config --global --add safe.directory '*'
+    - |
+      cargo nextest run \
+        --workspace --locked --no-fail-fast --cargo-quiet \
+        --features experimental,ci-only-tests \
+        --partition count:1/2 \
+        --exclude asset-hub-pezkuwichain-integration-tests \
+        --exclude asset-hub-zagros-integration-tests \
+        --exclude collectives-zagros-integration-tests \
+        --exclude coretime-pezkuwichain-integration-tests \
+        --exclude coretime-zagros-integration-tests \
+        --exclude governance-zagros-integration-tests \
+        --exclude people-pezkuwichain-integration-tests \
+        --exclude people-zagros-integration-tests \
+        --exclude pezbridge-hub-pezkuwichain-integration-tests \
+        --exclude pezbridge-hub-zagros-integration-tests \
+        --exclude pez-chain-spec-guide-runtime
+
+test-no-try-runtime-2:
+  extends: .test-base
+  script:
+    - git config --global --add safe.directory '*'
+    - |
+      cargo nextest run \
+        --workspace --locked --no-fail-fast --cargo-quiet \
+        --features experimental,ci-only-tests \
+        --partition count:2/2 \
+        --exclude asset-hub-pezkuwichain-integration-tests \
+        --exclude asset-hub-zagros-integration-tests \
+        --exclude collectives-zagros-integration-tests \
+        --exclude coretime-pezkuwichain-integration-tests \
+        --exclude coretime-zagros-integration-tests \
+        --exclude governance-zagros-integration-tests \
+        --exclude people-pezkuwichain-integration-tests \
+        --exclude people-zagros-integration-tests \
+        --exclude pezbridge-hub-pezkuwichain-integration-tests \
+        --exclude pezbridge-hub-zagros-integration-tests \
+        --exclude pez-chain-spec-guide-runtime
+
+# Emulated XCM integration tests — require WASM blobs, run separately with
+# SKIP_WASM_BUILD=0. Uses the same CARGO_TARGET_DIR as test-partition jobs so
+# Rust artifacts (deps/, jemalloc, rocksdb) are already warm from those jobs.
+# WASM blobs land in debug/build/<wasm-builder-hash>/out/ — separate subtree.
+test-emulated:
+  stage: test
+  tags: [pezkuwi-runner]
+  needs: [check-try-runtime]
+  variables:
+    CARGO_HOME: /root/.cargo
+    SKIP_WASM_BUILD: "0"
+    WASM_BUILD_NO_COLOR: "1"
+    WASM_BUILD_WORKSPACE_HINT: "$CI_PROJECT_DIR"
+    CARGO_INCREMENTAL: "0"
+    RUSTFLAGS: "-Cdebug-assertions=y -Dwarnings -Cdebuginfo=1 -Clink-arg=-fuse-ld=lld"
+  before_script:
+    - rustup show
+    - rustc --version && cargo --version
+    - rustup target add wasm32v1-none
+    - export CACHE_KEY="$(cat Cargo.lock rust-toolchain.toml | md5sum | cut -c1-12)"
+    - export CARGO_TARGET_DIR="/cache/cargo-target/${CACHE_KEY}/test-release"
+    - mkdir -p "$CARGO_TARGET_DIR"
+    - find /cache/cargo-target -mindepth 1 -maxdepth 1 -type d ! -name "${CACHE_KEY}" -exec rm -rf {} + 2>/dev/null || true
+    - echo "CARGO_TARGET_DIR=$CARGO_TARGET_DIR (disk $(df -h /cache/cargo-target | tail -1 | awk '{print $3 "/" $2 " used, " $4 " free"}'))"
+  cache: []
+  timeout: 420m
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - unknown_failure
+  script:
+    - git config --global --add safe.directory '*'
+    - |
+      cargo nextest run --locked --no-fail-fast --cargo-quiet \
+        -p asset-hub-pezkuwichain-integration-tests \
+        -p asset-hub-zagros-integration-tests \
+        -p collectives-zagros-integration-tests \
+        -p coretime-pezkuwichain-integration-tests \
+        -p coretime-zagros-integration-tests \
+        -p governance-zagros-integration-tests \
+        -p people-pezkuwichain-integration-tests \
+        -p people-zagros-integration-tests \
+        -p pezbridge-hub-pezkuwichain-integration-tests \
+        -p pezbridge-hub-zagros-integration-tests
+  artifacts:
+    when: always
+    paths: [test-results-emulated.xml]
+    reports:
+      junit: test-results-emulated.xml
+    expire_in: 7 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+
+wasm-check:
+  stage: test
+  tags: [pezkuwi-runner]
+  needs: [check-try-runtime]
+  variables:
+    CARGO_HOME: /root/.cargo
+  before_script:
+    - rustup show
+    - rustc --version && cargo --version
+    - rustup target add wasm32v1-none
+    - export CACHE_KEY="$(cat Cargo.lock rust-toolchain.toml | md5sum | cut -c1-12)"
+    # Share test-release with all test-partition and test-no-try-runtime jobs.
+    # wasm32v1-none artifacts land in test-release/wasm32v1-none/ — separate from
+    # test-release/debug/ — so there is no conflict. Sharing avoids deleting the
+    # test-release dir mid-pipeline when later test jobs still need it.
+    - export CARGO_TARGET_DIR="/cache/cargo-target/${CACHE_KEY}/test-release"
+    - mkdir -p "$CARGO_TARGET_DIR"
+    # Only remove dirs with OUTDATED cache keys (old Cargo.lock/toolchain).
+    # Never remove the current key's test-release — other jobs may still be queued.
+    - find /cache/cargo-target -mindepth 1 -maxdepth 1 -type d ! -name "${CACHE_KEY}" -exec rm -rf {} + 2>/dev/null || true
+    - echo "CARGO_TARGET_DIR=$CARGO_TARGET_DIR (disk $(df -h /cache/cargo-target | tail -1 | awk '{print $3 "/" $2 " used, " $4 " free"}'))"
+  cache: []
+  timeout: 2h
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+  script:
+    - cargo check -p pezkuwichain-runtime --locked --target wasm32v1-none
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+
+# Runtime migration — disabled until try-runtime Zagros endpoints are live
+# Enable by removing the `when: manual` rule and setting proper URIs
+runtime-migration:
+  stage: test
+  needs: []
+  variables:
+    RUSTFLAGS: ""
+  script:
+    - |
+      echo "Runtime migration check — currently manual/disabled"
+      echo "Targets: zagros, asset-hub-zagros, collectives-zagros, coretime-zagros"
+      echo "Re-enable when wss://try-runtime-zagros.pezkuwichain.io is live"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: manual
+  allow_failure: true
+
+# ╔══════════════════════════════════════════════════════════════════════════════
+# DOCS — mirrors docs.yml
+# ╚══════════════════════════════════════════════════════════════════════════════
+
+test-doc:
+  stage: docs
+  tags: [pezkuwi-runner]
+  needs: [clippy]
+  variables:
+    CARGO_HOME: /root/.cargo
+    RUSTFLAGS: "-Cdebug-assertions=y -Dwarnings"
+    # SKIP_WASM_BUILD=0: doc tests need actual runtime types. With WASM build
+    # enabled, artifacts can reach 27G+ — intentionally NOT persisted to /cache
+    # (allow_failure job; no warm-cache benefit justifies the disk cost).
+    SKIP_WASM_BUILD: "0"
+  before_script:
+    - rustup show
+    - rustc --version && cargo --version
+    - rustup target add wasm32v1-none
+  cache: []
+  timeout: 5h
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - unknown_failure
+  script:
+    - git config --global --add safe.directory '*'
+    - |
+      cargo test --doc --workspace --locked --all-features \
+        --exclude pezkuwi-zombienet-sdk-tests \
+        --exclude pezpallet-revive-eth-rpc
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  allow_failure: true
+
+build-rustdoc:
+  stage: docs
+  needs: [test-doc]
+  variables:
+    SKIP_WASM_BUILD: "1"
+    RUSTDOCFLAGS: >-
+      -Dwarnings
+      --default-theme=ayu
+      --html-in-header ./docs/sdk/assets/header.html
+      --extend-css ./docs/sdk/assets/theme.css
+      --html-after-content ./docs/sdk/assets/after-content.html
+  timeout: 4h
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - unknown_failure
+  script:
+    - git config --global --add safe.directory '*'
+    - |
+      cargo doc --all-features --workspace --no-deps --locked \
+        --exclude pezkuwi-zombienet-sdk-tests \
+        --exclude pezpallet-revive-eth-rpc
+    - rm -f target/doc/.lock
+    - mv target/doc ./crate-docs
+    - echo '<meta http-equiv=refresh content=0;url=pezkuwi_sdk_docs/index.html>' > ./crate-docs/index.html
+    - tar czf crate-docs.tar.gz crate-docs/
+  artifacts:
+    paths: [crate-docs.tar.gz]
+    expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  allow_failure: true
+
+build-implementers-guide:
+  stage: docs
+  needs: []
+  before_script: []
+  timeout: 15m
+  retry:
+    max: 1
+    when:
+      - stuck_or_timeout_failure
+      - runner_system_failure
+      - unknown_failure
+  script:
+    - mdbook build ./pezkuwi/roadmap/implementers-guide
+  artifacts:
+    paths: [pezkuwi/roadmap/implementers-guide/book/]
+    expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_MERGE_REQUEST_IID
+  allow_failure: true
+
+# GitLab Pages — publish rustdocs to pages.gitlab.io
+pages:
+  stage: docs
+  needs: [build-rustdoc, build-implementers-guide]
+  before_script: []
+  script:
+    - mkdir -p public
+    - tar xzf crate-docs.tar.gz -C public/ --strip-components=1 || true
+    - cp -r pezkuwi/roadmap/implementers-guide/book public/guide || true
+  artifacts:
+    paths: [public/]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  allow_failure: true
+
+# ╔══════════════════════════════════════════════════════════════════════════════
+# BUILD — release binary (main branch + tags)
+# ╚══════════════════════════════════════════════════════════════════════════════
+
+build-release:
+  stage: build
+  needs: [clippy, wasm-check]
+  variables:
+    RUSTFLAGS: "-D warnings"
+  timeout: 4h
+  script:
+    - git config --global --add safe.directory '*'
+    - cargo build --release -p pezkuwi --locked
+    - |
+      echo "=== Build artifacts ==="
+      ls -lh target/release/pezkuwi \
+             target/release/pezkuwi-execute-worker \
+             target/release/pezkuwi-prepare-worker
+      echo ""
+      echo "=== SHA256 checksums ==="
+      sha256sum \
+        target/release/pezkuwi \
+        target/release/pezkuwi-execute-worker \
+        target/release/pezkuwi-prepare-worker | tee SHA256SUMS
+  artifacts:
+    name: "pezkuwi-$CI_COMMIT_REF_NAME"
+    paths:
+      - target/release/pezkuwi
+      - target/release/pezkuwi-execute-worker
+      - target/release/pezkuwi-prepare-worker
+      - SHA256SUMS
+    expire_in: 7 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+
+# ╔══════════════════════════════════════════════════════════════════════════════
+# RUNTIME WASM RELEASE — deployable runtime blobs + verifiable blake2-256
+# authorize_upgrade hashes (mirrors github .github/workflows/release.yml
+# build-runtime). This is the fund-critical release artifact: governance
+# authorizes the blake2-256 hash on-chain, and anyone can rebuild this tag with the
+# pinned toolchain (rust-toolchain.toml) + committed Cargo.lock and compare.
+# ╚══════════════════════════════════════════════════════════════════════════════
+
+build-runtime-wasm:
+  stage: build
+  # Pin to ONE runner for a reproducible install path/hash (until a hermetic srtool
+  # build lands). Register a dedicated GitLab runner tagged `dks-runner-1` to match
+  # the github pinned box; without it, tag the reproducible-release runner here.
+  tags: [dks-runner-1]
+  needs: []
+  variables:
+    RUSTFLAGS: "-D warnings"
+  timeout: 4h
+  parallel:
+    matrix:
+      - RUNTIME:
+          - pezkuwichain-runtime
+          - asset-hub-pezkuwichain-runtime
+          - people-pezkuwichain-runtime
+  script:
+    - git config --global --add safe.directory '*'
+    - rustup show
+    - rustup component add rust-src
+    - rustup target add wasm32v1-none wasm32-unknown-unknown
+    - cargo build --release --locked -p "$RUNTIME"
+    - |
+      set -euo pipefail
+      wbuild_dir="target/release/wbuild/${RUNTIME}"
+      mapfile -t candidates < <(find "$wbuild_dir" -maxdepth 1 \
+             -name '*.compact.compressed.wasm' ! -name 'fast_runtime_binary*')
+      [ "${#candidates[@]}" -eq 1 ] || { echo "ambiguous/missing WASM for ${RUNTIME}: ${candidates[*]:-none}"; exit 1; }
+      wasm="${candidates[0]}"; mkdir -p artifacts
+      cp "$wasm" "artifacts/${RUNTIME}.compact.compressed.wasm"
+      b2=$(b2sum -l 256 "$wasm" | cut -d' ' -f1)
+      sha=$(sha256sum "$wasm" | cut -d' ' -f1)
+      size=$(stat -c%s "$wasm")
+      {
+        echo "### ${RUNTIME}"; echo ""
+        echo "| field | value |"; echo "|---|---|"
+        echo "| commit | \`${CI_COMMIT_SHA}\` |"
+        echo "| toolchain | \`$(rustc --version)\` |"
+        echo "| size (bytes) | ${size} |"
+        echo "| blake2-256 (authorize_upgrade) | \`0x${b2}\` |"
+        echo "| sha256 | \`${sha}\` |"; echo ""
+      } | tee "artifacts/${RUNTIME}.digest.md"
+      echo "0x${b2}  ${RUNTIME}"
+  artifacts:
+    name: "$RUNTIME"
+    paths:
+      - artifacts/*
+    expire_in: never
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+    - if: $CI_COMMIT_TAG =~ /^runtime-/
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+
+# ╔══════════════════════════════════════════════════════════════════════════════
+# RELEASE — GitLab Release with assets (tags only)
+# ╚══════════════════════════════════════════════════════════════════════════════
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  before_script: []
+  needs: [build-release]
+  script:
+    - echo "Creating GitLab Release for $CI_COMMIT_TAG"
+  release:
+    tag_name: "$CI_COMMIT_TAG"
+    name: "Pezkuwi SDK $CI_COMMIT_TAG"
+    description: |
+      ## Pezkuwi SDK $CI_COMMIT_TAG
+
+      ### Binaries (Linux x86_64)
+
+      | Binary | Description |
+      |--------|-------------|
+      | `pezkuwi` | Node binary |
+      | `pezkuwi-execute-worker` | WASM execution worker |
+      | `pezkuwi-prepare-worker` | WASM preparation worker |
+
+      SHA256 checksums in `SHA256SUMS`.
+
+      ### Verify
+      ```bash
+      sha256sum -c SHA256SUMS
+      ```
+    assets:
+      links:
+        - name: "pezkuwi (node binary)"
+          url: "$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/target/release/pezkuwi?job=build-release"
+          link_type: package
+        - name: "pezkuwi-execute-worker"
+          url: "$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/target/release/pezkuwi-execute-worker?job=build-release"
+          link_type: package
+        - name: "pezkuwi-prepare-worker"
+          url: "$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/target/release/pezkuwi-prepare-worker?job=build-release"
+          link_type: package
+        - name: "SHA256SUMS"
+          url: "$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/SHA256SUMS?job=build-release"
+          link_type: other
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
