@@ -942,12 +942,32 @@ impl<T: Config> Rotator<T> {
 pub(crate) struct EraElectionPlanner<T: Config>(PhantomData<T>);
 impl<T: Config> EraElectionPlanner<T> {
 	/// Cleanup all associated storage items.
+	///
+	/// [`crate::VoterSnapshotStatus`] is only reset while the election provider is idle. It is the
+	/// cursor of the *multi-block* voter snapshot, which the election provider builds over many
+	/// blocks by calling [`ElectionDataProvider::electing_voters`] once per page. `start_era` calls
+	/// this function while the election of the *next* era may already be in progress (elections
+	/// start `PlanningEraOffset` sessions before the era ends), and resetting the cursor mid-way
+	/// makes the next `electing_voters` call restart the iteration from the beginning. The very
+	/// same voters are then written into a second snapshot page, and no miner can solve the
+	/// resulting snapshot: flattening the pages yields duplicate voters, which `reduce` rejects.
+	/// The round can never be finalized, so the election stalls permanently and no era is ever
+	/// elected again. Observed on mainnet AH in round 673: page 31 and page 1 held byte-identical
+	/// copies of the same 53 voters.
 	pub(crate) fn cleanup() {
-		VoterSnapshotStatus::<T>::kill();
+		if T::ElectionProvider::status().is_err() {
+			VoterSnapshotStatus::<T>::kill();
+		} else {
+			log!(
+				warn,
+				"cleanup() called while an election is ongoing; \
+				 preserving the paged voter snapshot cursor."
+			);
+		}
 		NextElectionPage::<T>::kill();
 		ElectableStashes::<T>::kill();
 		StallDetectionCount::<T>::kill();
-		Pezpallet::<T>::register_weight(T::DbWeight::get().writes(4));
+		Pezpallet::<T>::register_weight(T::DbWeight::get().reads_writes(1, 4));
 	}
 
 	/// Fetches the number of pages configured by the election provider.
