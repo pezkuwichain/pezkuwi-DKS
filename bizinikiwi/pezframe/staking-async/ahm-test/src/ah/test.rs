@@ -1066,9 +1066,10 @@ fn era_activation_mid_snapshot_must_not_duplicate_voters() {
 		}
 
 		let round = pezpallet_election_provider_multi_block::Round::<T>::get();
-		let written_so_far = pezpallet_election_provider_multi_block::PagedVoterSnapshot::<T>::iter_prefix(round)
-			.filter(|(_, page)| !page.is_empty())
-			.count();
+		let written_so_far =
+			pezpallet_election_provider_multi_block::PagedVoterSnapshot::<T>::iter_prefix(round)
+				.filter(|(_, page)| !page.is_empty())
+				.count();
 		assert!(written_so_far > 0, "no voter page written yet");
 
 		// the relay chain now activates the pending era, right in the middle of the snapshot.
@@ -1095,8 +1096,11 @@ fn era_activation_mid_snapshot_must_not_duplicate_voters() {
 				*seen.entry(who).or_default() += 1;
 			}
 		}
-		let duplicates =
-			seen.iter().filter(|(_, count)| **count > 1).map(|(who, c)| (*who, *c)).collect::<Vec<_>>();
+		let duplicates = seen
+			.iter()
+			.filter(|(_, count)| **count > 1)
+			.map(|(who, c)| (*who, *c))
+			.collect::<Vec<_>>();
 		assert!(duplicates.is_empty(), "duplicate voters in snapshot: {:?}", duplicates);
 	});
 }
