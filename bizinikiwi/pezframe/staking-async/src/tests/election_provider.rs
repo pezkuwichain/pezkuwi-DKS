@@ -1347,3 +1347,26 @@ mod paged_on_initialize_era_election_planner {
 	// 	})
 	// }
 }
+
+#[test]
+fn cleanup_preserves_voter_snapshot_cursor_while_election_is_ongoing() {
+	use crate::SnapshotStatus;
+	use pezframe_election_provider_support::ElectionProvider;
+
+	ExtBuilder::default().build_and_execute(|| {
+		// While the election provider is idle, the paged voter cursor is reset, as before.
+		crate::VoterSnapshotStatus::<Test>::put(SnapshotStatus::Ongoing(11));
+		assert!(<Test as crate::Config>::ElectionProvider::status().is_err());
+		EraElectionPlanner::<Test>::cleanup();
+		assert_eq!(crate::VoterSnapshotStatus::<Test>::get(), SnapshotStatus::Waiting);
+
+		// Once an election is ongoing, its snapshot is being built one page per block. `start_era`
+		// can fire in the middle of that, and resetting the cursor here would make the data
+		// provider restart its iteration and hand the very same voters out again for a later page.
+		// The resulting duplicate-voter snapshot is unsolvable and stalls the round forever.
+		assert_ok!(<Test as crate::Config>::ElectionProvider::start());
+		crate::VoterSnapshotStatus::<Test>::put(SnapshotStatus::Ongoing(11));
+		EraElectionPlanner::<Test>::cleanup();
+		assert_eq!(crate::VoterSnapshotStatus::<Test>::get(), SnapshotStatus::Ongoing(11));
+	})
+}

@@ -1014,3 +1014,93 @@ fn on_offence_previous_era_instant_apply() {
 			assert_eq!(staking_events_since_last_call(), vec![]);
 		});
 }
+
+#[test]
+fn era_activation_mid_snapshot_must_not_duplicate_voters() {
+	// Reproduces the mainnet AH stall: the relay chain activates the previous era while the
+	// election for the next one is already halfway through building its paged voter snapshot.
+	// `start_era` cleans up the election planner state, and if that resets the paged voter cursor,
+	// the data provider hands the very same voters out again for a later page. The flattened
+	// snapshot then contains duplicate voters, which no miner can solve, and the round stalls
+	// forever.
+	ExtBuilder::default().local_queue().build().execute_with(|| {
+		let mut session_counter: u32 = 0;
+		let mut report = |activate: bool, session_counter: &mut u32| {
+			let activation_timestamp = if activate {
+				let current_era = CurrentEra::<T>::get().unwrap();
+				Some((current_era as u64 * 1000, current_era as u32))
+			} else {
+				None
+			};
+			assert_ok!(rc_client::Pezpallet::<T>::relay_session_report(
+				RuntimeOrigin::root(),
+				rc_client::SessionReport {
+					end_index: *session_counter,
+					validator_points: vec![(1, 10)],
+					activation_timestamp,
+					leftover: false,
+				}
+			));
+			*session_counter += 1;
+		};
+
+		// idle sessions.
+		for _ in 0..3 {
+			report(false, &mut session_counter);
+			roll_many(60);
+		}
+
+		// planning session: an election is started during these blocks.
+		report(false, &mut session_counter);
+
+		// roll one block at a time until the most significant voter page has been written, ie. we
+		// are in the middle of the snapshot phase.
+		let mut guard = 0;
+		while !matches!(
+			pezpallet_election_provider_multi_block::CurrentPhase::<T>::get(),
+			Phase::Snapshot(x) if x + 1 < Pages::get()
+		) {
+			roll_next();
+			guard += 1;
+			assert!(guard < 500, "election never reached the middle of the snapshot phase");
+		}
+
+		let round = pezpallet_election_provider_multi_block::Round::<T>::get();
+		let written_so_far =
+			pezpallet_election_provider_multi_block::PagedVoterSnapshot::<T>::iter_prefix(round)
+				.filter(|(_, page)| !page.is_empty())
+				.count();
+		assert!(written_so_far > 0, "no voter page written yet");
+
+		// the relay chain now activates the pending era, right in the middle of the snapshot.
+		report(true, &mut session_counter);
+
+		// let the remaining snapshot pages be built.
+		let mut guard = 0;
+		while !matches!(
+			pezpallet_election_provider_multi_block::CurrentPhase::<T>::get(),
+			Phase::Signed(_) | Phase::SignedValidation(_) | Phase::Unsigned(_) | Phase::Off
+		) {
+			roll_next();
+			guard += 1;
+			assert!(guard < 500, "snapshot phase never finished");
+		}
+
+		// collect every voter of every page of this round: no voter may appear twice.
+		let round = pezpallet_election_provider_multi_block::Round::<T>::get();
+		let mut seen = std::collections::BTreeMap::<AccountId, u32>::new();
+		for (_page, voters) in
+			pezpallet_election_provider_multi_block::PagedVoterSnapshot::<T>::iter_prefix(round)
+		{
+			for (who, _stake, _targets) in voters.into_iter() {
+				*seen.entry(who).or_default() += 1;
+			}
+		}
+		let duplicates = seen
+			.iter()
+			.filter(|(_, count)| **count > 1)
+			.map(|(who, c)| (*who, *c))
+			.collect::<Vec<_>>();
+		assert!(duplicates.is_empty(), "duplicate voters in snapshot: {:?}", duplicates);
+	});
+}
