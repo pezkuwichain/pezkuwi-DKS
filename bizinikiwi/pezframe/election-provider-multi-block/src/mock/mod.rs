@@ -170,6 +170,8 @@ parameter_types! {
 	#[derive(Encode, Decode, PartialEq, Eq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
 	pub static MaxWinnersPerPage: u32 = (staking::Targets::get().len() as u32).min(staking::DesiredTargets::get());
 	pub static AreWeDone: AreWeDoneModes = AreWeDoneModes::Proceed;
+	/// Zero disables the stalled-round watchdog, which is what most tests want.
+	pub static StalledRoundTimeout: BlockNumber = 0;
 }
 
 ord_parameter_types! {
@@ -232,6 +234,7 @@ impl crate::Config for Runtime {
 	type ManagerOrigin = pezframe_system::EnsureSignedBy<Manager, AccountId>;
 	type Pages = Pages;
 	type AreWeDone = AreWeDone;
+	type StalledRoundTimeout = StalledRoundTimeout;
 	type OnRoundRotation = CleanRound<Self>;
 }
 
