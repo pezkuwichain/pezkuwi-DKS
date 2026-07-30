@@ -1,4 +1,4 @@
-//! Asset Hub Runtime Upgrade (Mainnet)
+//! Asset Hub Runtime Upgrade (mainnet or Zagros)
 //!
 //! Two-step process:
 //! 1. RC → XCM → AH: System.authorize_upgrade(blake2_256(wasm))
@@ -17,37 +17,48 @@ use pezkuwi_subxt_signer::bip39::Mnemonic;
 use pezkuwi_subxt_signer::sr25519::Keypair;
 use std::str::FromStr;
 
-const AH_PARA_ID: u128 = 1000;
+// Para id of the Asset Hub being upgraded; both mainnet and Zagros use 1000.
+fn ah_para_id() -> u128 {
+	std::env::var("AH_PARA_ID").ok().and_then(|v| v.parse().ok()).unwrap_or(1000)
+}
 
+/// Read the chain sudo mnemonic from a file under `res/`, never from an env var or
+/// argument, so the seed never lands in the process list or in shell history.
+///
+/// `SUDO_KEY_FILE` selects the chain: mainnet keeps its key in `res/sudo.json`
+/// (JSON, `mnemonic` field), Zagros has a separate key documented in
+/// `res/zagros.md` (markdown, `**Mnemonic:** ` + backticks). Mainnet and Zagros
+/// deliberately do NOT share a sudo key — Zagros was rotated away from the
+/// mainnet founder key on 2026-07-07 — so pointing this at the wrong file simply
+/// produces a keypair the target chain rejects, rather than acting on the wrong
+/// chain.
 fn load_sudo_keypair() -> Keypair {
-	// 1. Try SUDO_MNEMONIC env var
-	if let Ok(mnemonic_str) = std::env::var("SUDO_MNEMONIC") {
-		if !mnemonic_str.is_empty() {
-			if let Ok(mnemonic) = Mnemonic::from_str(&mnemonic_str) {
-				if let Ok(kp) = Keypair::from_phrase(&mnemonic, None) {
-					println!("  [sudo] Loaded from SUDO_MNEMONIC env var");
-					return kp;
-				}
-			}
-		}
-	}
+	let path =
+		std::env::var("SUDO_KEY_FILE").unwrap_or_else(|_| "/home/myhez/res/sudo.json".to_string());
+	let content =
+		std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("cannot read {}: {}", path, e));
 
-	// 2. Fallback to seeds file
-	let seeds_path = "/home/mamostehp/res/test_seeds.json";
-	if let Ok(content) = std::fs::read_to_string(seeds_path) {
-		if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-			if let Some(mnemonic_str) = json["sudo_mnemonic"].as_str() {
-				if let Ok(mnemonic) = Mnemonic::from_str(mnemonic_str) {
-					if let Ok(kp) = Keypair::from_phrase(&mnemonic, None) {
-						println!("  [sudo] Loaded from {}", seeds_path);
-						return kp;
-					}
-				}
-			}
-		}
-	}
+	let mnemonic_str = if path.ends_with(".json") {
+		let json: serde_json::Value =
+			serde_json::from_str(&content).expect("sudo key file is not valid JSON");
+		json["mnemonic"]
+			.as_str()
+			.unwrap_or_else(|| panic!("{} has no `mnemonic` field", path))
+			.to_string()
+	} else {
+		// Markdown: the line reads ``- **Mnemonic:** `word word ...` ``
+		content
+			.lines()
+			.find(|l| l.contains("Mnemonic:"))
+			.and_then(|l| l.split('`').nth(1))
+			.unwrap_or_else(|| panic!("{} has no `**Mnemonic:** \\`...\\`` line", path))
+			.trim()
+			.to_string()
+	};
 
-	panic!("SUDO_MNEMONIC required! Set env var or create /home/mamostehp/res/test_seeds.json");
+	let mnemonic = Mnemonic::from_str(&mnemonic_str).expect("invalid mnemonic in sudo key file");
+	println!("  [sudo] Loaded from {}", path);
+	Keypair::from_phrase(&mnemonic, None).expect("cannot derive keypair from mnemonic")
 }
 
 #[tokio::main]
@@ -101,7 +112,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 				"interior",
 				Value::unnamed_variant(
 					"X1",
-					vec![Value::unnamed_variant("Teyrchain", vec![Value::u128(AH_PARA_ID)])],
+					vec![Value::unnamed_variant("Teyrchain", vec![Value::u128(ah_para_id())])],
 				),
 			),
 		])],
@@ -255,7 +266,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 					"interior",
 					Value::unnamed_variant(
 						"X1",
-						vec![Value::unnamed_variant("Teyrchain", vec![Value::u128(AH_PARA_ID)])],
+						vec![Value::unnamed_variant("Teyrchain", vec![Value::u128(ah_para_id())])],
 					),
 				),
 			])],
