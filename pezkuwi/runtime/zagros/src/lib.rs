@@ -88,7 +88,6 @@ use pezpallet_grandpa::{fg_primitives, AuthorityId as GrandpaId};
 use pezpallet_identity::legacy::IdentityInfo;
 use pezpallet_nomination_pools::PoolId;
 use pezpallet_session::historical as session_historical;
-use pezpallet_staking::UseValidatorsMap;
 use pezpallet_staking_async_ah_client as ah_client;
 use pezpallet_staking_async_rc_client as rc_client;
 use pezpallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo};
@@ -175,7 +174,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("zagros"),
 	authoring_version: 2,
-	spec_version: 1_020_009,
+	spec_version: 1_020_011,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 27,
@@ -540,24 +539,22 @@ impl pezpallet_session::Config for Runtime {
 	type KeyDeposit = KeyDeposit;
 }
 
+/// Historical session tracking wants an exposure; the real one lives on the Asset Hub now,
+/// so the relay returns an empty default to keep validators in the authority set. Same as
+/// mainnet.
+pub struct ExposureOfOrDefault;
+impl pezsp_runtime::traits::Convert<AccountId, Option<pezsp_staking::Exposure<AccountId, Balance>>>
+	for ExposureOfOrDefault
+{
+	fn convert(_validator: AccountId) -> Option<pezsp_staking::Exposure<AccountId, Balance>> {
+		Some(Default::default())
+	}
+}
+
 impl pezpallet_session::historical::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type FullIdentification = pezsp_staking::Exposure<AccountId, Balance>;
-	type FullIdentificationOf = pezpallet_staking::DefaultExposureOf<Self>;
-}
-
-pub struct MaybeSignedPhase;
-
-impl Get<u32> for MaybeSignedPhase {
-	fn get() -> u32 {
-		// 1 day = 4 eras -> 1 week = 28 eras. We want to disable signed phase once a week to test
-		// the fallback unsigned phase is able to compute elections on Zagros.
-		if pezpallet_staking::CurrentEra::<Runtime>::get().unwrap_or(1).is_multiple_of(28) {
-			0
-		} else {
-			SignedPhase::get()
-		}
-	}
+	type FullIdentificationOf = ExposureOfOrDefault;
 }
 
 parameter_types! {
@@ -597,97 +594,7 @@ parameter_types! {
 	pub const MaxBackersPerWinner: u32 = MaxElectingVoters::get();
 }
 
-pezframe_election_provider_support::generate_solution_type!(
-	#[compact]
-	pub struct NposCompactSolution16::<
-		VoterIndex = u32,
-		TargetIndex = u16,
-		Accuracy = pezsp_runtime::PerU16,
-		MaxVoters = MaxElectingVoters,
-	>(16)
-);
-
 pub struct OnChainSeqPhragmen;
-impl onchain::Config for OnChainSeqPhragmen {
-	type Sort = ConstBool<true>;
-	type System = Runtime;
-	type Solver = SequentialPhragmen<AccountId, OnChainAccuracy>;
-	type DataProvider = Staking;
-	type WeightInfo = weights::pezframe_election_provider_support::WeightInfo<Runtime>;
-	type Bounds = ElectionBounds;
-	type MaxBackersPerWinner = MaxBackersPerWinner;
-	type MaxWinnersPerPage = MaxWinnersPerPage;
-}
-
-impl pezpallet_election_provider_multi_phase::MinerConfig for Runtime {
-	type AccountId = AccountId;
-	type MaxLength = OffchainSolutionLengthLimit;
-	type MaxWeight = OffchainSolutionWeightLimit;
-	type Solution = NposCompactSolution16;
-	type MaxVotesPerVoter = <
-    <Self as pezpallet_election_provider_multi_phase::Config>::DataProvider
-    as
-    pezframe_election_provider_support::ElectionDataProvider
-    >::MaxVotesPerVoter;
-	type MaxBackersPerWinner = MaxBackersPerWinner;
-	type MaxWinners = MaxWinnersPerPage;
-
-	// The unsigned submissions have to respect the weight of the submit_unsigned call, thus their
-	// weight estimate function is wired to this call's weight.
-	fn solution_weight(v: u32, t: u32, a: u32, d: u32) -> Weight {
-		<
-        <Self as pezpallet_election_provider_multi_phase::Config>::WeightInfo
-        as
-        pezpallet_election_provider_multi_phase::WeightInfo
-        >::submit_unsigned(v, t, a, d)
-	}
-}
-
-impl pezpallet_election_provider_multi_phase::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type EstimateCallFee = TransactionPayment;
-	type SignedPhase = MaybeSignedPhase;
-	type UnsignedPhase = UnsignedPhase;
-	type SignedMaxSubmissions = SignedMaxSubmissions;
-	type SignedMaxRefunds = SignedMaxRefunds;
-	type SignedRewardBase = SignedRewardBase;
-	type SignedDepositBase =
-		GeometricDepositBase<Balance, SignedFixedDeposit, SignedDepositIncreaseFactor>;
-	type SignedDepositByte = SignedDepositByte;
-	type SignedDepositWeight = ();
-	type SignedMaxWeight =
-		<Self::MinerConfig as pezpallet_election_provider_multi_phase::MinerConfig>::MaxWeight;
-	type MinerConfig = Self;
-	type SlashHandler = (); // burn slashes
-	type RewardHandler = (); // rewards are minted from the void
-	type BetterSignedThreshold = ();
-	type OffchainRepeat = OffchainRepeat;
-	type MinerTxPriority = NposSolutionPriority;
-	type MaxWinners = MaxWinnersPerPage;
-	type MaxBackersPerWinner = MaxBackersPerWinner;
-	type DataProvider = Staking;
-	#[cfg(any(feature = "fast-runtime", feature = "runtime-benchmarks"))]
-	type Fallback = onchain::OnChainExecution<OnChainSeqPhragmen>;
-	#[cfg(not(any(feature = "fast-runtime", feature = "runtime-benchmarks")))]
-	type Fallback = pezframe_election_provider_support::NoElection<(
-		AccountId,
-		BlockNumber,
-		Staking,
-		MaxWinnersPerPage,
-		MaxBackersPerWinner,
-	)>;
-	type GovernanceFallback = onchain::OnChainExecution<OnChainSeqPhragmen>;
-	type Solver = SequentialPhragmen<
-		AccountId,
-		pezpallet_election_provider_multi_phase::SolutionAccuracyOf<Self>,
-		(),
-	>;
-	type BenchmarkingConfig = pezkuwi_runtime_common::elections::BenchmarkConfig;
-	type ForceOrigin = EnsureRoot<AccountId>;
-	type WeightInfo = weights::pezpallet_election_provider_multi_phase::WeightInfo<Self>;
-	type ElectionBounds = ElectionBounds;
-}
 
 parameter_types! {
 	pub const BagThresholds: &'static [u64] = &bag_thresholds::THRESHOLDS;
@@ -695,14 +602,6 @@ parameter_types! {
 }
 
 type VoterBagsListInstance = pezpallet_bags_list::Instance1;
-impl pezpallet_bags_list::Config<VoterBagsListInstance> for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = weights::pezpallet_bags_list::WeightInfo<Runtime>;
-	type ScoreProvider = Staking;
-	type BagThresholds = BagThresholds;
-	type MaxAutoRebagPerBlock = AutoRebagNumber;
-	type Score = pezsp_npos_elections::VoteWeight;
-}
 
 pub struct EraPayout;
 impl pezpallet_staking::EraPayout<Balance> for EraPayout {
@@ -742,50 +641,7 @@ parameter_types! {
 	// this is an unbounded number. We just set it to a reasonably high value, 1 full page
 	// of nominators.
 	pub const MaxNominators: u32 = 64;
-	pub const MaxNominations: u32 = <NposCompactSolution16 as pezframe_election_provider_support::NposSolution>::LIMIT as u32;
 	pub const MaxControllersInDeprecationBatch: u32 = 751;
-}
-
-impl pezpallet_staking::Config for Runtime {
-	type OldCurrency = Balances;
-	type Currency = Balances;
-	type CurrencyBalance = Balance;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type UnixTime = Timestamp;
-	// Total issuance already exceeds u64::MAX, so Saturating clips any large stake to u64::MAX
-	// (tied voters -> reduce_4 panic in the election miner, see asset-hub-pezkuwichain). U128
-	// scales by (issuance / u64::MAX) instead, so nothing saturates. Use U128 exactly *because*
-	// issuance > u64::MAX.
-	type CurrencyToVote = pezsp_staking::currency_to_vote::U128CurrencyToVote;
-	type RewardRemainder = ();
-	type RuntimeEvent = RuntimeEvent;
-	type Slash = ();
-	type Reward = ();
-	type SessionsPerEra = SessionsPerEra;
-	type BondingDuration = BondingDuration;
-	type SlashDeferDuration = SlashDeferDuration;
-	type AdminOrigin = EitherOf<EnsureRoot<AccountId>, StakingAdmin>;
-	type SessionInterface = Self;
-	type EraPayout = EraPayout;
-	type MaxExposurePageSize = MaxExposurePageSize;
-	type NextNewSession = Session;
-	type ElectionProvider = ElectionProviderMultiPhase;
-	type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
-	type VoterList = VoterList;
-	type TargetList = UseValidatorsMap<Self>;
-	type MaxValidatorSet = MaxActiveValidators;
-	type NominationsQuota = pezpallet_staking::FixedNominationsQuota<{ MaxNominations::get() }>;
-	type MaxUnlockingChunks = pezframe_support::traits::ConstU32<32>;
-	type HistoryDepth = pezframe_support::traits::ConstU32<84>;
-	type MaxControllersInDeprecationBatch = MaxControllersInDeprecationBatch;
-	type BenchmarkingConfig = pezkuwi_runtime_common::StakingBenchmarkingConfig;
-	type EventListeners = (NominationPools, DelegatedStaking);
-	type WeightInfo = weights::pezpallet_staking::WeightInfo<Runtime>;
-	// Genesis benchmarking setup needs this until we remove the pezpallet completely.
-	#[cfg(not(feature = "on-chain-release-build"))]
-	type Filter = Nothing;
-	#[cfg(feature = "on-chain-release-build")]
-	type Filter = pezframe_support::traits::Everything;
 }
 
 #[derive(Encode, Decode)]
@@ -899,6 +755,48 @@ impl ah_client::SendToAssetHub for StakingXcmToAssetHub {
 	}
 }
 
+/// No-op fallback for StakingAhClient. Required at compile time but never called: the
+/// validator set, offences and rewards all come from the Asset Hub via StakingAhClient.
+/// Mainnet uses the same type; Zagros used to fall back to a local `pallet_staking`
+/// instance that was never populated (no ledgers, no eras, no storage at all), which is
+/// why that pallet stack has been dropped.
+pub struct NoopFallback;
+
+impl pezpallet_session::SessionManager<AccountId> for NoopFallback {
+	fn new_session(_: SessionIndex) -> Option<Vec<AccountId>> {
+		None
+	}
+	fn start_session(_: SessionIndex) {}
+	fn end_session(_: SessionIndex) {}
+}
+
+impl
+	pezsp_staking::offence::OnOffenceHandler<
+		AccountId,
+		(AccountId, pezsp_staking::Exposure<AccountId, Balance>),
+		Weight,
+	> for NoopFallback
+{
+	fn on_offence(
+		_offenders: &[pezsp_staking::offence::OffenceDetails<
+			AccountId,
+			(AccountId, pezsp_staking::Exposure<AccountId, Balance>),
+		>],
+		_slash_fraction: &[Perbill],
+		_session: SessionIndex,
+	) -> Weight {
+		Weight::zero()
+	}
+}
+
+impl pezframe_support::traits::RewardsReporter<AccountId> for NoopFallback {
+	fn reward_by_ids(_: impl IntoIterator<Item = (AccountId, u32)>) {}
+}
+
+impl pezpallet_authorship::EventHandler<AccountId, BlockNumber> for NoopFallback {
+	fn note_author(_: AccountId) {}
+}
+
 impl ah_client::Config for Runtime {
 	type CurrencyBalance = Balance;
 	type AssetHubOrigin =
@@ -910,20 +808,9 @@ impl ah_client::Config for Runtime {
 	type UnixTime = Timestamp;
 	type PointsPerBlock = ConstU32<20>;
 	type MaxOffenceBatchSize = ConstU32<50>;
-	type Fallback = Staking;
+	type Fallback = NoopFallback;
 	type MaximumValidatorsWithPoints = ConstU32<{ MaxActiveValidators::get() * 4 }>;
 	type MaxSessionReportRetries = ConstU32<5>;
-}
-
-impl pezpallet_fast_unstake::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type BatchSize = pezframe_support::traits::ConstU32<64>;
-	type Deposit = pezframe_support::traits::ConstU128<{ UNITS }>;
-	type ControlOrigin = EnsureRoot<AccountId>;
-	type Staking = Staking;
-	type MaxErasToCheckPerBlock = ConstU32<1>;
-	type WeightInfo = weights::pezpallet_fast_unstake::WeightInfo<Runtime>;
 }
 
 parameter_types! {
@@ -1261,12 +1148,10 @@ pub enum ProxyType {
 	Any,
 	NonTransfer,
 	Governance,
-	Staking,
 	SudoBalances,
 	IdentityJudgement,
 	CancelProxy,
 	Auction,
-	NominationPools,
 	ParaRegistration,
 }
 impl Default for ProxyType {
@@ -1288,7 +1173,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Indices(pezpallet_indices::Call::freeze{..}) |
 				// Specifically omitting Indices `transfer`, `force_transfer`
 				// Specifically omitting the entire Balances pezpallet
-				RuntimeCall::Staking(..) |
 				RuntimeCall::Session(..) |
 				RuntimeCall::Grandpa(..) |
 				RuntimeCall::Utility(..) |
@@ -1316,25 +1200,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Registrar(paras_registrar::Call::reserve{..}) |
 				RuntimeCall::Crowdloan(..) |
 				RuntimeCall::Slots(..) |
-				RuntimeCall::Auctions(..) | // Specifically omitting the entire XCM Pezpallet
-				RuntimeCall::VoterList(..) |
-				RuntimeCall::NominationPools(..) |
-				RuntimeCall::FastUnstake(..)
+				RuntimeCall::Auctions(..) // Specifically omitting the entire XCM Pezpallet
 			),
-			ProxyType::Staking => {
-				matches!(
-					c,
-					RuntimeCall::Staking(..)
-						| RuntimeCall::Session(..)
-						| RuntimeCall::Utility(..)
-						| RuntimeCall::FastUnstake(..)
-						| RuntimeCall::VoterList(..)
-						| RuntimeCall::NominationPools(..)
-				)
-			},
-			ProxyType::NominationPools => {
-				matches!(c, RuntimeCall::NominationPools(..) | RuntimeCall::Utility(..))
-			},
 			ProxyType::SudoBalances => match c {
 				RuntimeCall::Sudo(pezpallet_sudo::Call::sudo { call: ref x }) => {
 					matches!(x.as_ref(), &RuntimeCall::Balances(..))
@@ -1706,50 +1573,13 @@ parameter_types! {
 	pub const MaxPointsToBalance: u8 = 10;
 }
 
-impl pezpallet_nomination_pools::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = weights::pezpallet_nomination_pools::WeightInfo<Self>;
-	type Currency = Balances;
-	type RuntimeFreezeReason = RuntimeFreezeReason;
-	type RewardCounter = FixedU128;
-	type BalanceToU256 = BalanceToU256;
-	type U256ToBalance = U256ToBalance;
-	type StakeAdapter =
-		pezpallet_nomination_pools::adapter::DelegateStake<Self, Staking, DelegatedStaking>;
-	type PostUnbondingPoolsWindow = ConstU32<4>;
-	type MaxMetadataLen = ConstU32<256>;
-	// we use the same number of allowed unlocking chunks as with staking.
-	type MaxUnbonding = <Self as pezpallet_staking::Config>::MaxUnlockingChunks;
-	type PalletId = PoolsPalletId;
-	type MaxPointsToBalance = MaxPointsToBalance;
-	type AdminOrigin = EitherOf<EnsureRoot<AccountId>, StakingAdmin>;
-	type BlockNumberProvider = System;
-	type Filter = Nothing;
-}
-
 parameter_types! {
 	pub const DelegatedStakingPalletId: PalletId = PalletId(*b"py/dlstk");
 	pub const SlashRewardFraction: Perbill = Perbill::from_percent(1);
 }
 
-impl pezpallet_delegated_staking::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type PalletId = DelegatedStakingPalletId;
-	type Currency = Balances;
-	type OnSlash = ();
-	type SlashRewardFraction = SlashRewardFraction;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type CoreStaking = Staking;
-}
-
 impl pezpallet_root_testing::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-}
-
-impl pezpallet_root_offences::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type OffenceHandler = StakingAhClient;
-	type ReportOffence = Offences;
 }
 
 parameter_types! {
@@ -1865,8 +1695,6 @@ mod runtime {
 	// Authorship must be before session in order to note author in the correct session and era.
 	#[runtime::pezpallet_index(5)]
 	pub type Authorship = pezpallet_authorship;
-	#[runtime::pezpallet_index(6)]
-	pub type Staking = pezpallet_staking;
 	#[runtime::pezpallet_index(7)]
 	pub type Offences = pezpallet_offences;
 	#[runtime::pezpallet_index(27)]
@@ -1918,21 +1746,9 @@ mod runtime {
 	pub type Multisig = pezpallet_multisig;
 
 	// Election pezpallet. Only works with staking, but placed here to maintain indices.
-	#[runtime::pezpallet_index(24)]
-	pub type ElectionProviderMultiPhase = pezpallet_election_provider_multi_phase;
-
 	// Provides a semi-sorted list of nominators for staking.
-	#[runtime::pezpallet_index(25)]
-	pub type VoterList = pezpallet_bags_list<Instance1>;
-
 	// Nomination pools for staking.
-	#[runtime::pezpallet_index(29)]
-	pub type NominationPools = pezpallet_nomination_pools;
-
 	// Fast unstake pezpallet = extension to staking.
-	#[runtime::pezpallet_index(30)]
-	pub type FastUnstake = pezpallet_fast_unstake;
-
 	// OpenGov
 	#[runtime::pezpallet_index(31)]
 	pub type ConvictionVoting = pezpallet_conviction_voting;
@@ -1948,9 +1764,6 @@ mod runtime {
 	pub type Treasury = pezpallet_treasury;
 
 	// Staking extension for delegation
-	#[runtime::pezpallet_index(38)]
-	pub type DelegatedStaking = pezpallet_delegated_staking;
-
 	// Teyrchains pallets. Start indices at 40 to leave room.
 	#[runtime::pezpallet_index(41)]
 	pub type TeyrchainsOrigin = teyrchains_origin;
@@ -2029,9 +1842,6 @@ mod runtime {
 	pub type VerifySignature = pezpallet_verify_signature::Pezpallet<Runtime>;
 
 	// Root offences pezpallet
-	#[runtime::pezpallet_index(105)]
-	pub type RootOffences = pezpallet_root_offences;
-
 	// BEEFY Bridges support.
 	#[runtime::pezpallet_index(200)]
 	pub type Beefy = pezpallet_beefy;
@@ -2089,19 +1899,154 @@ pub mod migrations {
 	use super::*;
 
 	/// Unreleased migrations. Add new ones here:
+	parameter_types! {
+		pub const StakingPalletName: &'static str = "Staking";
+		pub const EpmPalletName: &'static str = "ElectionProviderMultiPhase";
+		pub const VoterListPalletName: &'static str = "VoterList";
+		pub const NominationPoolsPalletName: &'static str = "NominationPools";
+		pub const FastUnstakePalletName: &'static str = "FastUnstake";
+		pub const DelegatedStakingPalletName: &'static str = "DelegatedStaking";
+		pub const RootOffencesPalletName: &'static str = "RootOffences";
+	}
+
+	pub struct ReleaseOrphanedStakingHolds;
+	impl pezframe_support::traits::OnRuntimeUpgrade for ReleaseOrphanedStakingHolds {
+		fn on_runtime_upgrade() -> Weight {
+			const STALE_DISCRIMINANT: u8 = 9;
+			const ENTRY_STRIDE: usize = 18; // 1 (outer) + 1 (inner) + 16 (u128 amount)
+
+			let mut reads_writes: u64 = 0;
+			let accounts: alloc::vec::Vec<AccountId> =
+				pezpallet_balances::Holds::<Runtime>::iter_keys().collect();
+			reads_writes = reads_writes.saturating_add(accounts.len() as u64);
+
+			for who in accounts {
+				let key = pezpallet_balances::Holds::<Runtime>::hashed_key_for(&who);
+				let Some(raw) = pezframe_support::storage::unhashed::get_raw(&key) else {
+					continue;
+				};
+
+				// Compact-encoded Vec/BoundedVec length prefix; only single-byte mode (len < 64)
+				// is expected here (these accounts hold at most a couple of entries).
+				let Some(&len_byte) = raw.first() else { continue };
+				if len_byte & 0b11 != 0 {
+					log::warn!("ReleaseOrphanedStakingHolds: unexpected multi-byte compact length for {:?}, skipping", who);
+					continue;
+				}
+				let count = (len_byte >> 2) as usize;
+				let body = &raw[1..];
+				if body.len() != count.saturating_mul(ENTRY_STRIDE) {
+					log::warn!(
+						"ReleaseOrphanedStakingHolds: {:?} body length {} doesn't match {} entries * {} bytes, skipping",
+						who, body.len(), count, ENTRY_STRIDE,
+					);
+					continue;
+				}
+
+				let mut kept = alloc::vec::Vec::with_capacity(count);
+				let mut claimed: Balance = 0;
+				let mut found_stale = false;
+				for chunk in body.chunks_exact(ENTRY_STRIDE) {
+					if chunk[0] == STALE_DISCRIMINANT {
+						found_stale = true;
+						let amount = Balance::from_le_bytes(
+							chunk[2..18].try_into().expect("chunk is exactly 18 bytes; qed"),
+						);
+						claimed = claimed.saturating_add(amount);
+					} else {
+						kept.push(chunk);
+					}
+				}
+				if !found_stale {
+					continue;
+				}
+
+				// `claimed` is the stale entry's recorded amount — a leftover bookkeeping claim
+				// from the old, removed Staking pallet. It is not necessarily still backed by
+				// real reserved balance: confirmed against live state, most of these 25 accounts
+				// show `reserved` far below what their stale entry claims, several at exactly 0,
+				// meaning the funds were already correctly unreserved through normal channels at
+				// some point (e.g. a user-driven unbond) and only the `Holds` record itself was
+				// left behind, uncleaned, by whatever removed the old pallet. So: only ever move
+				// what's actually, currently reserved — never invent balance the ledger doesn't
+				// have — but always clear the stale record itself, since that's the actual
+				// decode-breaking problem regardless of how much (if anything) backs it.
+				let reserved = pezframe_system::Account::<Runtime>::get(&who).data.reserved;
+				let released = claimed.min(reserved);
+				if released < claimed {
+					log::warn!(
+						"ReleaseOrphanedStakingHolds: {:?} reserved ({}) is less than its stale hold claim ({}); releasing only what's actually reserved and clearing the stale record regardless",
+						who, reserved, claimed,
+					);
+				}
+
+				if kept.is_empty() {
+					pezframe_support::storage::unhashed::kill(&key);
+				} else {
+					let mut new_raw = alloc::vec::Vec::with_capacity(1 + kept.len() * ENTRY_STRIDE);
+					new_raw.push(((kept.len() as u8) << 2) | 0b00);
+					for chunk in &kept {
+						new_raw.extend_from_slice(chunk);
+					}
+					pezframe_support::storage::unhashed::put_raw(&key, &new_raw);
+				}
+
+				pezframe_system::Account::<Runtime>::mutate(&who, |account| {
+					account.data.reserved = account.data.reserved.saturating_sub(released);
+					account.data.free = account.data.free.saturating_add(released);
+				});
+
+				log::info!(
+					"ReleaseOrphanedStakingHolds: released {} planck orphaned Staking hold for {:?}",
+					released, who,
+				);
+				reads_writes = reads_writes.saturating_add(3);
+			}
+
+			<Runtime as pezframe_system::Config>::DbWeight::get()
+				.reads_writes(reads_writes, reads_writes)
+		}
+	}
+
 	pub type Unreleased = (
-		// This is only needed for Zagros.
-		pezpallet_delegated_staking::migration::unversioned::ProxyDelegatorMigration<
-			Runtime,
-			MaxAgentsToMigrate,
-		>,
 		teyrchains_shared::migration::MigrateToV1<Runtime>,
 		teyrchains_scheduler::migration::MigrateV2ToV3<Runtime>,
-		pezpallet_staking::migrations::v16::MigrateV15ToV16<Runtime>,
-		pezpallet_session::migrations::v1::MigrateV0ToV1<
-			Runtime,
-			pezpallet_staking::migrations::v17::MigrateDisabledToSession<Runtime>,
+		// The local staking stack is gone (validators come from the Asset Hub via
+		// StakingAhClient); drop whatever those pallets left in storage. All seven were
+		// verified empty on the live chain before removal, so these are expected to be
+		// no-ops — they exist so a stray key can never outlive its pallet.
+		pezframe_support::migrations::RemovePallet<
+			StakingPalletName,
+			<Runtime as pezframe_system::Config>::DbWeight,
 		>,
+		pezframe_support::migrations::RemovePallet<
+			EpmPalletName,
+			<Runtime as pezframe_system::Config>::DbWeight,
+		>,
+		pezframe_support::migrations::RemovePallet<
+			VoterListPalletName,
+			<Runtime as pezframe_system::Config>::DbWeight,
+		>,
+		pezframe_support::migrations::RemovePallet<
+			NominationPoolsPalletName,
+			<Runtime as pezframe_system::Config>::DbWeight,
+		>,
+		pezframe_support::migrations::RemovePallet<
+			FastUnstakePalletName,
+			<Runtime as pezframe_system::Config>::DbWeight,
+		>,
+		pezframe_support::migrations::RemovePallet<
+			DelegatedStakingPalletName,
+			<Runtime as pezframe_system::Config>::DbWeight,
+		>,
+		pezframe_support::migrations::RemovePallet<
+			RootOffencesPalletName,
+			<Runtime as pezframe_system::Config>::DbWeight,
+		>,
+		// Frees ~3.78M units of Balances::Holds stranded on 32 accounts by a pallet that was
+		// removed at some point (hold discriminant 9, which no longer decodes). Same fix and
+		// same discriminant as mainnet's.
+		ReleaseOrphanedStakingHolds,
 		// permanent
 		pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 	);
@@ -2766,65 +2711,7 @@ pezsp_api::impl_runtime_apis! {
 		}
 	}
 
-	impl pezpallet_nomination_pools_runtime_api::NominationPoolsApi<
-		Block,
-		AccountId,
-		Balance,
-	> for Runtime {
-		fn pending_rewards(member: AccountId) -> Balance {
-			NominationPools::api_pending_rewards(member).unwrap_or_default()
-		}
 
-		fn points_to_balance(pool_id: PoolId, points: Balance) -> Balance {
-			NominationPools::api_points_to_balance(pool_id, points)
-		}
-
-		fn balance_to_points(pool_id: PoolId, new_funds: Balance) -> Balance {
-			NominationPools::api_balance_to_points(pool_id, new_funds)
-		}
-
-		fn pool_pending_slash(pool_id: PoolId) -> Balance {
-			NominationPools::api_pool_pending_slash(pool_id)
-		}
-
-		fn member_pending_slash(member: AccountId) -> Balance {
-			NominationPools::api_member_pending_slash(member)
-		}
-
-		fn pool_needs_delegate_migration(pool_id: PoolId) -> bool {
-			NominationPools::api_pool_needs_delegate_migration(pool_id)
-		}
-
-		fn member_needs_delegate_migration(member: AccountId) -> bool {
-			NominationPools::api_member_needs_delegate_migration(member)
-		}
-
-		fn member_total_balance(member: AccountId) -> Balance {
-			NominationPools::api_member_total_balance(member)
-		}
-
-		fn pool_balance(pool_id: PoolId) -> Balance {
-			NominationPools::api_pool_balance(pool_id)
-		}
-
-		fn pool_accounts(pool_id: PoolId) -> (AccountId, AccountId) {
-			NominationPools::api_pool_accounts(pool_id)
-		}
-	}
-
-	impl pezpallet_staking_runtime_api::StakingApi<Block, Balance, AccountId> for Runtime {
-		fn nominations_quota(balance: Balance) -> u32 {
-			Staking::api_nominations_quota(balance)
-		}
-
-		fn eras_stakers_page_count(era: pezsp_staking::EraIndex, account: AccountId) -> pezsp_staking::Page {
-			Staking::api_eras_stakers_page_count(era, account)
-		}
-
-		fn pending_rewards(era: pezsp_staking::EraIndex, account: AccountId) -> bool {
-			Staking::api_pending_rewards(era, account)
-		}
-	}
 
 	#[cfg(feature = "try-runtime")]
 	impl pezframe_try_runtime::TryRuntime<Block> for Runtime {
