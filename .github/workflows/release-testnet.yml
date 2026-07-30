@@ -1,0 +1,112 @@
+name: release-testnet
+
+# Builds the deployable Zagros (testnet) runtime WASM blobs, records the hashes a
+# runtime upgrade has to authorize, and attests build provenance — the same
+# discipline as `release.yml`, which only covers mainnet.
+#
+# Testnet is where a runtime change is proven before it reaches a fund-holding
+# chain, so its blobs must be produced by CI from a known commit rather than from
+# somebody's laptop. No GitHub release is cut here: these artifacts are consumed
+# directly by the upgrade tooling, not published to users.
+
+on:
+  push:
+    tags:
+      - "zagros-*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build (defaults to the triggering ref)"
+        required: false
+
+permissions:
+  contents: read
+  id-token: write # build-provenance attestation
+  attestations: write # build-provenance attestation
+
+concurrency:
+  group: release-testnet-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  build-runtime:
+    # Pinned to the same runner as `release.yml`: these builds are not hermetic
+    # yet (pending srtool) and the absolute build path leaks into the WASM, so a
+    # fixed runner is what makes the published hash reproducible.
+    runs-on: [self-hosted, dks-runner-1]
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime:
+          - zagros-runtime
+          - asset-hub-zagros-runtime
+          - people-zagros-runtime
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+
+      - name: Build deployable runtime WASM (release, locked)
+        run: cargo build --release --locked -p ${{ matrix.runtime }}
+
+      - name: Locate WASM and compute upgrade hashes
+        id: wasm
+        run: |
+          set -euo pipefail
+          # The compact+compressed blob is the artifact that goes on-chain. The
+          # relay's build.rs also emits a `fast-runtime` devnet variant into the
+          # same dir for zombienet; never pick that up, and fail loudly on
+          # anything else ambiguous rather than taking whichever file `find`
+          # happens to return first.
+          wbuild_dir="target/release/wbuild/${{ matrix.runtime }}"
+          mapfile -t candidates < <(find "$wbuild_dir" -maxdepth 1 \
+                 -name '*.compact.compressed.wasm' ! -name 'fast_runtime_binary*')
+          if [ "${#candidates[@]}" -eq 0 ]; then
+            echo "::error::no compressed WASM found for ${{ matrix.runtime }}"; exit 1
+          fi
+          if [ "${#candidates[@]}" -gt 1 ]; then
+            echo "::error::ambiguous compressed WASM candidates for ${{ matrix.runtime }}: ${candidates[*]}"; exit 1
+          fi
+          wasm="${candidates[0]}"
+          out="artifacts"; mkdir -p "$out"
+          base="${{ matrix.runtime }}"
+          cp "$wasm" "$out/${base}.compact.compressed.wasm"
+          # blake2-256 is the hash an upgrade authorizes (authorize_upgrade).
+          b2=$(b2sum -l 256 "$wasm" | cut -d' ' -f1)
+          sha=$(sha256sum "$wasm" | cut -d' ' -f1)
+          size=$(stat -c%s "$wasm")
+          {
+            echo "### ${base}"
+            echo ""
+            echo "| field | value |"
+            echo "|---|---|"
+            echo "| commit | \`${GITHUB_SHA}\` |"
+            echo "| toolchain | \`$(rustc --version)\` |"
+            echo "| size (bytes) | ${size} |"
+            echo "| blake2-256 (authorize_upgrade) | \`0x${b2}\` |"
+            echo "| sha256 | \`${sha}\` |"
+            echo ""
+          } > "$out/${base}.digest.md"
+          echo "wasm=$out/${base}.compact.compressed.wasm" >> "$GITHUB_OUTPUT"
+          echo "blake2_256=0x${b2}" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance (SLSA)
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: ${{ steps.wasm.outputs.wasm }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.runtime }}
+          path: artifacts/*
+          if-no-files-found: error
