@@ -18,14 +18,13 @@
 
 use crate::{
 	BabeConfig, BalancesConfig, ConfigurationConfig, RegistrarConfig, RuntimeGenesisConfig,
-	SessionConfig, SessionKeys, StakingConfig, SudoConfig, BABE_GENESIS_EPOCH_CONFIG,
+	SessionConfig, SessionKeys, SudoConfig, BABE_GENESIS_EPOCH_CONFIG,
 };
 #[cfg(not(feature = "std"))]
 use alloc::format;
 use alloc::{vec, vec::Vec};
 use pezframe_support::build_struct_json_patch;
 use pezkuwi_primitives::{AccountId, AssignmentId, SchedulerParams, ValidatorId};
-use pezpallet_staking::{Forcing, StakerStatus};
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_babe::AuthorityId as BabeId;
 use pezsp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId;
@@ -194,17 +193,6 @@ fn zagros_testnet_genesis(
 				})
 				.collect::<Vec<_>>(),
 		},
-		staking: StakingConfig {
-			minimum_validator_count: 1,
-			validator_count: initial_authorities.len() as u32,
-			stakers: initial_authorities
-				.iter()
-				.map(|x| (x.0.clone(), x.0.clone(), STASH, StakerStatus::<AccountId>::Validator))
-				.collect::<Vec<_>>(),
-			invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
-			force_era: Forcing::NotForcing,
-			slash_reward_fraction: Perbill::from_percent(10),
-		},
 		babe: BabeConfig { epoch_config: BABE_GENESIS_EPOCH_CONFIG },
 		sudo: SudoConfig { key: Some(root_key) },
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },
@@ -364,17 +352,6 @@ fn zagros_staging_testnet_config_genesis() -> serde_json::Value {
 					)
 				})
 				.collect::<Vec<_>>(),
-		},
-		staking: StakingConfig {
-			validator_count: 50,
-			minimum_validator_count: 4,
-			stakers: initial_authorities
-				.iter()
-				.map(|x| (x.0.clone(), x.0.clone(), STASH, StakerStatus::<AccountId>::Validator))
-				.collect::<Vec<_>>(),
-			invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect::<Vec<_>>(),
-			force_era: Forcing::ForceNone,
-			slash_reward_fraction: Perbill::from_percent(10),
 		},
 		babe: BabeConfig { epoch_config: BABE_GENESIS_EPOCH_CONFIG },
 		sudo: SudoConfig { key: Some(endowed_accounts[0].clone()) },
