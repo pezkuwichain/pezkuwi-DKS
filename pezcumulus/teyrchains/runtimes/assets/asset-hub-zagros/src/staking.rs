@@ -56,6 +56,11 @@ parameter_types! {
 	/// validate up to 4 signed solution. Each solution.
 	pub storage SignedValidationPhase: u32 = prod_or_fast!(Pages::get() * 4, Pages::get());
 
+	/// Abandon an election that has produced nothing usable for this long, and start over. See the
+	/// mainnet Asset Hub counterpart for the reasoning; testnet uses a shorter window so a stall
+	/// and its recovery can be observed within one hour instead of three.
+	pub storage StalledRoundTimeout: BlockNumber = prod_or_fast!(1 * HOURS, 10 * MINUTES);
+
 	/// In each page, we may observe up to all of the validators.
 	pub MaxWinnersPerPage: u32 = MaxValidatorSet::get();
 
@@ -131,6 +136,7 @@ impl multi_block::Config for Runtime {
 	type Fallback = pezframe_election_provider_support::onchain::OnChainExecution<OnChainConfig>;
 	// Revert back to signed phase if nothing is submitted and queued, so we prolong the election.
 	type AreWeDone = multi_block::RevertToSignedIfNotQueuedOf<Self>;
+	type StalledRoundTimeout = StalledRoundTimeout;
 	type OnRoundRotation = multi_block::CleanRound<Self>;
 	type WeightInfo = weights::pezpallet_election_provider_multi_block::WeightInfo<Runtime>;
 }
