@@ -1463,7 +1463,25 @@ impl<T: Config> Pezpallet<T> {
 			return None;
 		}
 
-		let started = ElectionStartedAt::<T>::get()?;
+		let started = match ElectionStartedAt::<T>::get() {
+			Some(started) => started,
+			None => {
+				// An election is in one of the solving phases, yet nothing recorded when it
+				// started. That happens when the round was not opened through `start()`: the
+				// runtime was upgraded while an election was already running, or the phase was
+				// forced with `ManagerOperation::ForceSetPhase`. Leaving it at `None` would mean
+				// the watchdog never watches this round at all — exactly the situation it exists
+				// to prevent — so adopt the round and start counting from here.
+				log!(
+					warn,
+					"election in {:?} has no recorded start block; adopting it at {:?}",
+					phase,
+					now
+				);
+				ElectionStartedAt::<T>::put(now);
+				return Some(T::DbWeight::get().reads_writes(1, 1));
+			},
+		};
 		let elapsed = now.saturating_sub(started);
 		if elapsed <= timeout {
 			return None;
@@ -3273,6 +3291,58 @@ mod stalled_round_watchdog {
 			roll_to(ElectionStart::get() + 500);
 			assert_eq!(MultiBlock::round(), 0);
 			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
+		})
+	}
+}
+
+#[cfg(test)]
+mod stalled_round_watchdog_adoption {
+	use super::*;
+	use crate::{mock::*, Phase};
+
+	/// A round that was not opened through `start()` — because the runtime was upgraded
+	/// mid-election — must still end up watched, otherwise it can stall forever with the watchdog
+	/// looking straight past it.
+	#[test]
+	fn round_without_a_recorded_start_is_adopted_and_then_rotated() {
+		ExtBuilder::full().build_and_execute(|| {
+			AreWeDone::set(AreWeDoneModes::BackToSigned);
+			StalledRoundTimeout::set(20);
+
+			// A real election is running...
+			roll_to(ElectionStart::get() + 1);
+			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
+			let round_before = MultiBlock::round();
+
+			// ...and then the runtime is upgraded, so the new storage item starts out empty.
+			ElectionStartedAt::<Runtime>::kill();
+
+			// The next block adopts the round instead of ignoring it.
+			roll_next();
+			let adopted = ElectionStartedAt::<Runtime>::get();
+			assert_eq!(adopted, Some(System::block_number()));
+			assert_eq!(MultiBlock::round(), round_before, "must not rotate on the adopting block");
+
+			// From there the normal timeout applies.
+			roll_to(adopted.unwrap() + 20);
+			assert_eq!(MultiBlock::round(), round_before);
+			roll_next();
+			assert_eq!(MultiBlock::round(), round_before + 1);
+			assert_eq!(MultiBlock::current_phase(), Phase::Off);
+			assert_eq!(ElectionStartedAt::<Runtime>::get(), None);
+		})
+	}
+
+	/// Adoption must not resurrect the watchdog where it is switched off.
+	#[test]
+	fn adoption_does_not_happen_when_disabled() {
+		ExtBuilder::full().build_and_execute(|| {
+			StalledRoundTimeout::set(0);
+			roll_to(ElectionStart::get() + 1);
+			ElectionStartedAt::<Runtime>::kill();
+
+			roll_next();
+			assert_eq!(ElectionStartedAt::<Runtime>::get(), None);
 		})
 	}
 }
