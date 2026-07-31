@@ -28,10 +28,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
 // --pezpallet=pezkuwi_runtime_teyrchains::configuration
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --output=./pezkuwi/runtime/pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -61,8 +61,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::configuration::Weig
 		// Proof Size summary in bytes:
 		//  Measured:  `151`
 		//  Estimated: `1636`
-		// Minimum execution time: 10_838_000 picoseconds.
-		Weight::from_parts(11_218_000, 0)
+		// Minimum execution time: 10_901_000 picoseconds.
+		Weight::from_parts(11_468_000, 0)
 			.saturating_add(Weight::from_parts(0, 1636))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -77,8 +77,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::configuration::Weig
 		// Proof Size summary in bytes:
 		//  Measured:  `151`
 		//  Estimated: `1636`
-		// Minimum execution time: 10_949_000 picoseconds.
-		Weight::from_parts(11_200_000, 0)
+		// Minimum execution time: 10_847_000 picoseconds.
+		Weight::from_parts(11_499_000, 0)
 			.saturating_add(Weight::from_parts(0, 1636))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -93,8 +93,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::configuration::Weig
 		// Proof Size summary in bytes:
 		//  Measured:  `151`
 		//  Estimated: `1636`
-		// Minimum execution time: 10_975_000 picoseconds.
-		Weight::from_parts(11_519_000, 0)
+		// Minimum execution time: 11_143_000 picoseconds.
+		Weight::from_parts(11_488_000, 0)
 			.saturating_add(Weight::from_parts(0, 1636))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -119,8 +119,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::configuration::Weig
 		// Proof Size summary in bytes:
 		//  Measured:  `151`
 		//  Estimated: `1636`
-		// Minimum execution time: 10_729_000 picoseconds.
-		Weight::from_parts(11_195_000, 0)
+		// Minimum execution time: 11_126_000 picoseconds.
+		Weight::from_parts(11_416_000, 0)
 			.saturating_add(Weight::from_parts(0, 1636))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -135,8 +135,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::configuration::Weig
 		// Proof Size summary in bytes:
 		//  Measured:  `151`
 		//  Estimated: `1636`
-		// Minimum execution time: 12_949_000 picoseconds.
-		Weight::from_parts(13_251_000, 0)
+		// Minimum execution time: 13_119_000 picoseconds.
+		Weight::from_parts(13_612_000, 0)
 			.saturating_add(Weight::from_parts(0, 1636))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -151,8 +151,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::configuration::Weig
 		// Proof Size summary in bytes:
 		//  Measured:  `151`
 		//  Estimated: `1636`
-		// Minimum execution time: 10_683_000 picoseconds.
-		Weight::from_parts(11_196_000, 0)
+		// Minimum execution time: 11_072_000 picoseconds.
+		Weight::from_parts(11_412_000, 0)
 			.saturating_add(Weight::from_parts(0, 1636))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -167,8 +167,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::configuration::Weig
 		// Proof Size summary in bytes:
 		//  Measured:  `151`
 		//  Estimated: `1636`
-		// Minimum execution time: 12_855_000 picoseconds.
-		Weight::from_parts(13_484_000, 0)
+		// Minimum execution time: 13_268_000 picoseconds.
+		Weight::from_parts(13_664_000, 0)
 			.saturating_add(Weight::from_parts(0, 1636))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -183,8 +183,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::configuration::Weig
 		// Proof Size summary in bytes:
 		//  Measured:  `151`
 		//  Estimated: `1636`
-		// Minimum execution time: 10_933_000 picoseconds.
-		Weight::from_parts(11_367_000, 0)
+		// Minimum execution time: 11_047_000 picoseconds.
+		Weight::from_parts(11_298_000, 0)
 			.saturating_add(Weight::from_parts(0, 1636))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))

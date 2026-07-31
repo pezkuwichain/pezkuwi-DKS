@@ -19,7 +19,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `3a2e9ae8a8f5`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `d3a9aad6f7a3`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -28,10 +28,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_parameters
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --output=./pezkuwi/runtime/pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -52,14 +52,14 @@ use core::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: pezframe_system::Config> pezpallet_parameters::WeightInfo for WeightInfo<T> {
 	/// Storage: `Parameters::Parameters` (r:1 w:1)
-	/// Proof: `Parameters::Parameters` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
+	/// Proof: `Parameters::Parameters` (`max_values`: None, `max_size`: Some(36), added: 2511, mode: `MaxEncodedLen`)
 	fn set_parameter() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `4`
-		//  Estimated: `3493`
-		// Minimum execution time: 8_918_000 picoseconds.
-		Weight::from_parts(9_567_000, 0)
-			.saturating_add(Weight::from_parts(0, 3493))
+		//  Estimated: `3501`
+		// Minimum execution time: 8_947_000 picoseconds.
+		Weight::from_parts(9_434_000, 0)
+			.saturating_add(Weight::from_parts(0, 3501))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}

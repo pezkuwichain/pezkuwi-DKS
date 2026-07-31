@@ -19,7 +19,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `3a2e9ae8a8f5`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `d3a9aad6f7a3`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -28,10 +28,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_timestamp
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --output=./pezkuwi/runtime/pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -57,20 +57,20 @@ impl<T: pezframe_system::Config> pezpallet_timestamp::WeightInfo for WeightInfo<
 	/// Proof: `Babe::CurrentSlot` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	fn set() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `173`
+		//  Measured:  `137`
 		//  Estimated: `1493`
-		// Minimum execution time: 12_078_000 picoseconds.
-		Weight::from_parts(12_823_000, 0)
+		// Minimum execution time: 8_077_000 picoseconds.
+		Weight::from_parts(8_671_000, 0)
 			.saturating_add(Weight::from_parts(0, 1493))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	fn on_finalize() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `94`
+		//  Measured:  `57`
 		//  Estimated: `0`
-		// Minimum execution time: 4_639_000 picoseconds.
-		Weight::from_parts(4_786_000, 0)
+		// Minimum execution time: 3_954_000 picoseconds.
+		Weight::from_parts(4_164_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 }

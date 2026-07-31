@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `b9a9df1fcddf`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `afc679a858d4`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/people-zagros-runtime/people_zagros_runtime.wasm
+// --runtime=target/production/wbuild/people-pezkuwichain-runtime/people_pezkuwichain_runtime.wasm
 // --pezpallet=pezkuwi_runtime_common::identity_migrator
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/people/people-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/people/people-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -64,13 +64,13 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::identity_migrator::Weig
 		// Proof Size summary in bytes:
 		//  Measured:  `673 + r * (5 ±0) + s * (32 ±0)`
 		//  Estimated: `6723`
-		// Minimum execution time: 35_796_000 picoseconds.
-		Weight::from_parts(34_778_147, 0)
+		// Minimum execution time: 35_063_000 picoseconds.
+		Weight::from_parts(34_643_325, 0)
 			.saturating_add(Weight::from_parts(0, 6723))
-			// Standard Error: 17_206
-			.saturating_add(Weight::from_parts(261_851, 0).saturating_mul(r.into()))
-			// Standard Error: 3_524
-			.saturating_add(Weight::from_parts(1_494_892, 0).saturating_mul(s.into()))
+			// Standard Error: 15_530
+			.saturating_add(Weight::from_parts(259_757, 0).saturating_mul(r.into()))
+			// Standard Error: 3_181
+			.saturating_add(Weight::from_parts(1_506_816, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(3))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(s.into())))
@@ -85,8 +85,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::identity_migrator::Weig
 		// Proof Size summary in bytes:
 		//  Measured:  `634`
 		//  Estimated: `6723`
-		// Minimum execution time: 48_688_000 picoseconds.
-		Weight::from_parts(49_781_000, 0)
+		// Minimum execution time: 47_179_000 picoseconds.
+		Weight::from_parts(48_906_000, 0)
 			.saturating_add(Weight::from_parts(0, 6723))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(3))

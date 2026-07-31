@@ -19,7 +19,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-22, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `3a2e9ae8a8f5`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `d3a9aad6f7a3`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -28,10 +28,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
 // --pezpallet=pezkuwi_runtime_teyrchains::hrmp
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --output=./pezkuwi/runtime/pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -73,11 +73,11 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// Proof: `Dmp::DownwardMessageQueueHeads` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn hrmp_init_open_channel() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `477`
-		//  Estimated: `3942`
-		// Minimum execution time: 56_211_000 picoseconds.
-		Weight::from_parts(57_621_000, 0)
-			.saturating_add(Weight::from_parts(0, 3942))
+		//  Measured:  `510`
+		//  Estimated: `3975`
+		// Minimum execution time: 52_537_000 picoseconds.
+		Weight::from_parts(54_902_000, 0)
+			.saturating_add(Weight::from_parts(0, 3975))
 			.saturating_add(T::DbWeight::get().reads(10))
 			.saturating_add(T::DbWeight::get().writes(5))
 	}
@@ -97,11 +97,11 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// Proof: `Dmp::DownwardMessageQueueHeads` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn hrmp_accept_open_channel() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `689`
-		//  Estimated: `4154`
-		// Minimum execution time: 53_758_000 picoseconds.
-		Weight::from_parts(56_592_000, 0)
-			.saturating_add(Weight::from_parts(0, 4154))
+		//  Measured:  `722`
+		//  Estimated: `4187`
+		// Minimum execution time: 51_535_000 picoseconds.
+		Weight::from_parts(54_023_000, 0)
+			.saturating_add(Weight::from_parts(0, 4187))
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -121,11 +121,11 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// Proof: `Dmp::DownwardMessageQueueHeads` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn hrmp_close_channel() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `802`
-		//  Estimated: `4267`
-		// Minimum execution time: 55_327_000 picoseconds.
-		Weight::from_parts(57_050_000, 0)
-			.saturating_add(Weight::from_parts(0, 4267))
+		//  Measured:  `835`
+		//  Estimated: `4300`
+		// Minimum execution time: 53_232_000 picoseconds.
+		Weight::from_parts(55_429_000, 0)
+			.saturating_add(Weight::from_parts(0, 4300))
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -145,15 +145,15 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// The range of component `e` is `[0, 127]`.
 	fn force_clean_hrmp(i: u32, e: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `264 + e * (100 ±0) + i * (100 ±0)`
-		//  Estimated: `3726 + e * (2575 ±0) + i * (2575 ±0)`
-		// Minimum execution time: 1_559_120_000 picoseconds.
-		Weight::from_parts(1_571_304_000, 0)
-			.saturating_add(Weight::from_parts(0, 3726))
-			// Standard Error: 144_726
-			.saturating_add(Weight::from_parts(4_485_208, 0).saturating_mul(i.into()))
-			// Standard Error: 144_726
-			.saturating_add(Weight::from_parts(4_575_293, 0).saturating_mul(e.into()))
+		//  Measured:  `297 + e * (100 ±0) + i * (100 ±0)`
+		//  Estimated: `3759 + e * (2575 ±0) + i * (2575 ±0)`
+		// Minimum execution time: 1_442_401_000 picoseconds.
+		Weight::from_parts(1_459_213_000, 0)
+			.saturating_add(Weight::from_parts(0, 3759))
+			// Standard Error: 133_411
+			.saturating_add(Weight::from_parts(4_222_698, 0).saturating_mul(i.into()))
+			// Standard Error: 133_411
+			.saturating_add(Weight::from_parts(4_358_958, 0).saturating_mul(e.into()))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
 			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(e.into())))
@@ -182,13 +182,13 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// The range of component `c` is `[0, 128]`.
 	fn force_process_hrmp_open(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `492 + c * (136 ±0)`
-		//  Estimated: `1947 + c * (5086 ±0)`
-		// Minimum execution time: 11_281_000 picoseconds.
-		Weight::from_parts(11_631_000, 0)
-			.saturating_add(Weight::from_parts(0, 1947))
-			// Standard Error: 20_254
-			.saturating_add(Weight::from_parts(27_481_196, 0).saturating_mul(c.into()))
+		//  Measured:  `525 + c * (136 ±0)`
+		//  Estimated: `1980 + c * (5086 ±0)`
+		// Minimum execution time: 8_418_000 picoseconds.
+		Weight::from_parts(3_865_971, 0)
+			.saturating_add(Weight::from_parts(0, 1980))
+			// Standard Error: 21_427
+			.saturating_add(Weight::from_parts(25_857_386, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().reads((7_u64).saturating_mul(c.into())))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -210,13 +210,13 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// The range of component `c` is `[0, 128]`.
 	fn force_process_hrmp_close(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `335 + c * (124 ±0)`
-		//  Estimated: `1795 + c * (2600 ±0)`
-		// Minimum execution time: 10_044_000 picoseconds.
-		Weight::from_parts(10_289_000, 0)
-			.saturating_add(Weight::from_parts(0, 1795))
-			// Standard Error: 14_359
-			.saturating_add(Weight::from_parts(16_831_230, 0).saturating_mul(c.into()))
+		//  Measured:  `368 + c * (124 ±0)`
+		//  Estimated: `1828 + c * (2600 ±0)`
+		// Minimum execution time: 7_036_000 picoseconds.
+		Weight::from_parts(2_042_224, 0)
+			.saturating_add(Weight::from_parts(0, 1828))
+			// Standard Error: 19_415
+			.saturating_add(Weight::from_parts(15_766_725, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(c.into())))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -232,13 +232,13 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// The range of component `c` is `[0, 128]`.
 	fn hrmp_cancel_open_request(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1026 + c * (13 ±0)`
-		//  Estimated: `4295 + c * (15 ±0)`
-		// Minimum execution time: 25_372_000 picoseconds.
-		Weight::from_parts(31_619_390, 0)
-			.saturating_add(Weight::from_parts(0, 4295))
-			// Standard Error: 3_058
-			.saturating_add(Weight::from_parts(234_494, 0).saturating_mul(c.into()))
+		//  Measured:  `1059 + c * (13 ±0)`
+		//  Estimated: `4328 + c * (15 ±0)`
+		// Minimum execution time: 22_232_000 picoseconds.
+		Weight::from_parts(31_115_368, 0)
+			.saturating_add(Weight::from_parts(0, 4328))
+			// Standard Error: 2_350
+			.saturating_add(Weight::from_parts(140_575, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(3))
 			.saturating_add(Weight::from_parts(0, 15).saturating_mul(c.into()))
@@ -250,13 +250,13 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// The range of component `c` is `[0, 128]`.
 	fn clean_open_channel_requests(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `243 + c * (63 ±0)`
-		//  Estimated: `1722 + c * (2538 ±0)`
-		// Minimum execution time: 8_088_000 picoseconds.
-		Weight::from_parts(2_136_112, 0)
-			.saturating_add(Weight::from_parts(0, 1722))
-			// Standard Error: 7_192
-			.saturating_add(Weight::from_parts(4_626_808, 0).saturating_mul(c.into()))
+		//  Measured:  `276 + c * (63 ±0)`
+		//  Estimated: `1755 + c * (2538 ±0)`
+		// Minimum execution time: 5_195_000 picoseconds.
+		Weight::from_parts(7_840_420, 0)
+			.saturating_add(Weight::from_parts(0, 1755))
+			// Standard Error: 5_423
+			.saturating_add(Weight::from_parts(4_251_353, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c.into())))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -290,13 +290,13 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// The range of component `c` is `[0, 1]`.
 	fn force_open_hrmp_channel(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `477 + c * (235 ±0)`
-		//  Estimated: `6417 + c * (235 ±0)`
-		// Minimum execution time: 79_061_000 picoseconds.
-		Weight::from_parts(83_104_559, 0)
-			.saturating_add(Weight::from_parts(0, 6417))
-			// Standard Error: 325_060
-			.saturating_add(Weight::from_parts(16_143_240, 0).saturating_mul(c.into()))
+		//  Measured:  `510 + c * (235 ±0)`
+		//  Estimated: `6450 + c * (235 ±0)`
+		// Minimum execution time: 75_316_000 picoseconds.
+		Weight::from_parts(78_457_616, 0)
+			.saturating_add(Weight::from_parts(0, 6450))
+			// Standard Error: 261_131
+			.saturating_add(Weight::from_parts(14_565_983, 0).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(16))
 			.saturating_add(T::DbWeight::get().writes(8))
 			.saturating_add(Weight::from_parts(0, 235).saturating_mul(c.into()))
@@ -327,11 +327,11 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// Proof: `Hrmp::HrmpAcceptedChannelRequestCount` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn establish_system_channel() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `477`
-		//  Estimated: `6417`
-		// Minimum execution time: 80_071_000 picoseconds.
-		Weight::from_parts(83_317_000, 0)
-			.saturating_add(Weight::from_parts(0, 6417))
+		//  Measured:  `510`
+		//  Estimated: `6450`
+		// Minimum execution time: 75_246_000 picoseconds.
+		Weight::from_parts(78_578_000, 0)
+			.saturating_add(Weight::from_parts(0, 6450))
 			.saturating_add(T::DbWeight::get().reads(16))
 			.saturating_add(T::DbWeight::get().writes(8))
 	}
@@ -339,11 +339,11 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// Proof: `Hrmp::HrmpChannels` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn poke_channel_deposits() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `263`
-		//  Estimated: `3728`
-		// Minimum execution time: 18_706_000 picoseconds.
-		Weight::from_parts(19_748_000, 0)
-			.saturating_add(Weight::from_parts(0, 3728))
+		//  Measured:  `296`
+		//  Estimated: `3761`
+		// Minimum execution time: 15_499_000 picoseconds.
+		Weight::from_parts(16_347_000, 0)
+			.saturating_add(Weight::from_parts(0, 3761))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -373,11 +373,11 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::hrmp::WeightInfo fo
 	/// Proof: `Hrmp::HrmpAcceptedChannelRequestCount` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn establish_channel_with_system() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `477`
-		//  Estimated: `6417`
-		// Minimum execution time: 129_253_000 picoseconds.
-		Weight::from_parts(134_005_000, 0)
-			.saturating_add(Weight::from_parts(0, 6417))
+		//  Measured:  `510`
+		//  Estimated: `6450`
+		// Minimum execution time: 124_212_000 picoseconds.
+		Weight::from_parts(127_879_000, 0)
+			.saturating_add(Weight::from_parts(0, 6450))
 			.saturating_add(T::DbWeight::get().reads(23))
 			.saturating_add(T::DbWeight::get().writes(11))
 	}

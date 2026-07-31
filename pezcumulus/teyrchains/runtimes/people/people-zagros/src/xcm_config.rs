@@ -14,67 +14,60 @@
 // limitations under the License.
 
 use super::{
-	AccountId, AllPalletsWithSystem, Balance, Balances, PezkuwiXcm, Runtime, RuntimeCall,
-	RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, TeyrchainInfo, TeyrchainSystem, WeightToFee,
-	XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balances, PezkuwiXcm, Runtime, RuntimeCall, RuntimeEvent,
+	RuntimeOrigin, TeyrchainInfo, TeyrchainSystem, WeightToFee, XcmpQueue,
 };
 use crate::{TransactionByteFee, CENTS};
 use pezframe_support::{
 	parameter_types,
 	traits::{
-		fungible::HoldConsideration, tokens::imbalance::ResolveTo, ConstU32, Contains, Equals,
-		Everything, LinearStoragePrice, Nothing,
+		tokens::imbalance::ResolveTo, ConstU32, Contains, Disabled, Equals, Everything, Nothing,
 	},
 };
 use pezframe_system::EnsureRoot;
 use pezkuwi_teyrchain_primitives::primitives::Sibling;
 use pezpallet_collator_selection::StakingPotAccountId;
-use pezpallet_xcm::{AuthorizedAliasers, XcmPassthrough};
+use pezpallet_xcm::XcmPassthrough;
 use pezsp_runtime::traits::AccountIdConversion;
-use testnet_teyrchains_constants::zagros::locations::AssetHubLocation;
 use teyrchains_common::{
 	xcm_config::{
-		AliasAccountId32FromSiblingSystemChain, AllSiblingSystemTeyrchains,
-		ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains, RelayOrOtherSystemTeyrchains,
+		AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
+		RelayOrOtherSystemTeyrchains,
 	},
 	TREASURY_PALLET_ID,
 };
-use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
+use xcm::latest::{prelude::*, PEZKUWICHAIN_GENESIS_HASH};
 use xcm_builder::{
-	AccountId32Aliases, AliasChildLocation, AliasOriginRootUsingFilter,
-	AllowExplicitUnpaidExecutionFrom, AllowHrmpNotificationsFromRelayChain,
+	AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowHrmpNotificationsFromRelayChain,
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
 	DenyRecursively, DenyReserveTransferToRelayChain, DenyThenTry, DescribeAllTerminal,
 	DescribeFamily, DescribeTerminus, EnsureXcmOrigin, FrameTransactionalProcessor,
-	FungibleAdapter, HashedDescription, IsConcrete, LocationAsSuperuser, ParentAsSuperuser,
-	ParentIsPreset, RelayChainAsNative, SendXcmFeeToAccount, SiblingTeyrchainAsNative,
-	SiblingTeyrchainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
-	SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
-	WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
+	FungibleAdapter, HashedDescription, IsConcrete, ParentAsSuperuser, ParentIsPreset,
+	RelayChainAsNative, SendXcmFeeToAccount, SiblingTeyrchainAsNative, SiblingTeyrchainConvertsVia,
+	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
+	TrailingSetTopicAsId, UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
+	XcmFeeManagerFromComponents,
 };
 use xcm_executor::XcmExecutor;
-use zagros_runtime_constants::system_teyrchain::COLLECTIVES_ID;
-
-// Re-export
-pub use testnet_teyrchains_constants::zagros::locations::GovernanceLocation;
 
 parameter_types! {
 	pub const RootLocation: Location = Location::here();
 	pub const RelayLocation: Location = Location::parent();
-	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::ByGenesis(ZAGROS_GENESIS_HASH));
+	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH));
 	pub RelayChainOrigin: RuntimeOrigin = pezcumulus_pezpallet_xcm::Origin::Relay.into();
 	pub UniversalLocation: InteriorLocation =
 		[GlobalConsensus(RelayNetwork::get().unwrap()), Teyrchain(TeyrchainInfo::teyrchain_id().into())].into();
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
-	pub FellowshipLocation: Location = Location::new(1, Teyrchain(COLLECTIVES_ID));
-	/// The asset ID for the asset that we use to pay for message delivery fees. Just ZGR.
+	pub const GovernanceLocation: Location = Location::parent();
+	pub const FellowshipLocation: Location = Location::parent();
+	/// The asset ID for the asset that we use to pay for message delivery fees. Just HEZ.
 	pub FeeAssetId: AssetId = AssetId(RelayLocation::get());
 	/// The base fee for the message delivery fees.
 	pub const BaseDeliveryFee: u128 = CENTS.saturating_mul(3);
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
 	pub RelayTreasuryLocation: Location =
-		(Parent, PalletInstance(zagros_runtime_constants::TREASURY_PALLET_ID)).into();
+		(Parent, PalletInstance(pezkuwichain_runtime_constants::TREASURY_PALLET_ID)).into();
 }
 
 pub type PriceForParentDelivery = pezkuwi_runtime_common::xcm_sender::ExponentialPrice<
@@ -116,18 +109,43 @@ pub type FungibleTransactor = FungibleAdapter<
 	// Do a simple punn to convert an `AccountId32` `Location` into a native chain
 	// `AccountId`:
 	LocationToAccountId,
-	// Our chain's account ID type (we can't get away without mentioning it explicitly):
+	// Our chain's `AccountId` type (we can't get away without mentioning it explicitly):
 	AccountId,
 	// We don't track any teleports of `Balances`.
 	(),
 >;
 
+/// Converts relay chain Welati governance Plurality origins to Root.
+///
+/// When an RC OpenGov referendum passes on a Welati track (40/41/42), the enacted call sends
+/// an XCM Transact to this People Chain. The Welati origins are encoded as Plurality
+/// (BodyId::Index(40/41/42)) from the relay parent. This converter maps them to Root so that
+/// the welati pallet's `ensure_root` calls succeed.
+///
+/// Recognized Welati body IDs:
+/// - Index(40): WelatiElection — initiate/finalize elections
+/// - Index(41): WelatiAdmin — tiki grants, official appointments
+/// - Index(42): CitizenshipAdmin — citizenship revocation, trust score updates
+pub struct RelayWelatiPluralityAsRoot;
+impl xcm_executor::traits::ConvertOrigin<RuntimeOrigin> for RelayWelatiPluralityAsRoot {
+	fn convert_origin(
+		origin: impl Into<Location>,
+		kind: OriginKind,
+	) -> Result<RuntimeOrigin, Location> {
+		let origin = origin.into();
+		match (kind, origin.unpack()) {
+			(OriginKind::Superuser, (1, [Plurality { id: BodyId::Index(40..=42), .. }])) => {
+				Ok(RuntimeOrigin::root())
+			},
+			_ => Err(origin),
+		}
+	}
+}
+
 /// This is the type we use to convert an (incoming) XCM origin into a local `Origin` instance,
 /// ready for dispatching a transaction with XCM's `Transact`. There is an `OriginKind` that can
 /// bias the kind of local `Origin` it will become.
 pub type XcmOriginToTransactDispatchOrigin = (
-	// Governance location can gain root.
-	LocationAsSuperuser<Equals<GovernanceLocation>, RuntimeOrigin>,
 	// Sovereign account converter; this attempts to derive an `AccountId` from the origin location
 	// using `LocationToAccountId` and then turn that into the usual `Signed` origin. Useful for
 	// foreign chains who want to have a local sovereign account on this chain that they control.
@@ -141,6 +159,8 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	// Superuser converter for the Relay-chain (Parent) location. This will allow it to issue a
 	// transaction from the Root origin.
 	ParentAsSuperuser<RuntimeOrigin>,
+	// Welati governance origins from relay chain — converts Plurality(Index(40/41/42)) to Root.
+	RelayWelatiPluralityAsRoot,
 	// Native signed account converter; this just converts an `AccountId32` origin into a normal
 	// `RuntimeOrigin::Signed` origin of the same 32-byte value.
 	SignedAccountId32AsNative<RelayNetwork, RuntimeOrigin>,
@@ -162,16 +182,6 @@ impl Contains<Location> for ParentOrParentsPlurality {
 	}
 }
 
-pub struct FellowsPlurality;
-impl Contains<Location> for FellowsPlurality {
-	fn contains(location: &Location) -> bool {
-		matches!(
-			location.unpack(),
-			(1, [Teyrchain(COLLECTIVES_ID), Plurality { id: BodyId::Technical, .. }])
-		)
-	}
-}
-
 pub type Barrier = TrailingSetTopicAsId<
 	DenyThenTry<
 		DenyRecursively<DenyReserveTransferToRelayChain>,
@@ -185,13 +195,8 @@ pub type Barrier = TrailingSetTopicAsId<
 					// If the message is one that immediately attempts to pay for execution, then
 					// allow it.
 					AllowTopLevelPaidExecutionFrom<Everything>,
-					// Parent, its pluralities (i.e. governance bodies), and the Fellows plurality
-					// get free execution.
-					AllowExplicitUnpaidExecutionFrom<(
-						ParentOrParentsPlurality,
-						FellowsPlurality,
-						Equals<GovernanceLocation>,
-					)>,
+					// Parent and its pluralities (i.e. governance bodies) get free execution.
+					AllowExplicitUnpaidExecutionFrom<ParentOrParentsPlurality>,
 					// Subscriptions for version tracking are OK.
 					AllowSubscriptionsFrom<ParentRelayOrSiblingTeyrchains>,
 					// HRMP notifications from the relay chain are OK.
@@ -213,23 +218,6 @@ pub type WaivedLocations = (
 	LocalPlurality,
 );
 
-/// Cases where a remote origin is accepted as trusted Teleporter for a given asset:
-/// - ZGR with the parent Relay Chain and sibling teyrchains.
-pub type TrustedTeleporters = ConcreteAssetFromSystem<RelayLocation>;
-
-/// Defines origin aliasing rules for this chain.
-///
-/// - Allow any origin to alias into a child sub-location (equivalent to DescendOrigin),
-/// - Allow same accounts to alias into each other across system chains,
-/// - Allow AssetHub root to alias into anything,
-/// - Allow origins explicitly authorized to alias into target location.
-pub type TrustedAliasers = (
-	AliasChildLocation,
-	AliasAccountId32FromSiblingSystemChain,
-	AliasOriginRootUsingFilter<AssetHubLocation, Everything>,
-	AuthorizedAliasers<Runtime>,
-);
-
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
@@ -237,15 +225,15 @@ impl xcm_executor::Config for XcmConfig {
 	type XcmEventEmitter = PezkuwiXcm;
 	type AssetTransactor = FungibleTransactor;
 	type OriginConverter = XcmOriginToTransactDispatchOrigin;
-	// People does not recognize a reserve location for any asset. Users must teleport ZGR
+	// People chain does not recognize a reserve location for any asset. Users must teleport HEZ
 	// where allowed (e.g. with the Relay Chain).
 	type IsReserve = ();
-
-	type IsTeleporter = TrustedTeleporters;
+	/// Only allow teleportation of HEZ.
+	type IsTeleporter = ConcreteAssetFromSystem<RelayLocation>;
 	type UniversalLocation = UniversalLocation;
 	type Barrier = Barrier;
 	type Weigher = WeightInfoBounds<
-		crate::weights::xcm::PeopleZagrosXcmWeight<RuntimeCall>,
+		crate::weights::xcm::PeoplePezkuwichainXcmWeight<RuntimeCall>,
 		RuntimeCall,
 		MaxInstructions,
 	>;
@@ -272,7 +260,7 @@ impl xcm_executor::Config for XcmConfig {
 	type UniversalAliases = Nothing;
 	type CallDispatcher = RuntimeCall;
 	type SafeCallFilter = Everything;
-	type Aliasers = TrustedAliasers;
+	type Aliasers = Nothing;
 	type TransactionalProcessor = FrameTransactionalProcessor;
 	type HrmpNewChannelOpenRequestHandler = ();
 	type HrmpChannelAcceptedHandler = ();
@@ -293,15 +281,9 @@ pub type XcmRouter = WithUniqueTopic<(
 	XcmpQueue,
 )>;
 
-parameter_types! {
-	pub const DepositPerItem: Balance = crate::deposit(1, 0);
-	pub const DepositPerByte: Balance = crate::deposit(0, 1);
-	pub const AuthorizeAliasHoldReason: RuntimeHoldReason = RuntimeHoldReason::PezkuwiXcm(pezpallet_xcm::HoldReason::AuthorizeAlias);
-}
-
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	// We want to disallow users sending (arbitrary) XCMs from this chain.
+	// We want to disallow users sending (arbitrary) XCM programs from this chain.
 	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, ()>;
 	type XcmRouter = XcmRouter;
 	// We support local origins dispatching XCM executions.
@@ -311,7 +293,7 @@ impl pezpallet_xcm::Config for Runtime {
 	type XcmTeleportFilter = Everything;
 	type XcmReserveTransferFilter = Nothing; // This teyrchain is not meant as a reserve location.
 	type Weigher = WeightInfoBounds<
-		crate::weights::xcm::PeopleZagrosXcmWeight<RuntimeCall>,
+		crate::weights::xcm::PeoplePezkuwichainXcmWeight<RuntimeCall>,
 		RuntimeCall,
 		MaxInstructions,
 	>;
@@ -329,13 +311,8 @@ impl pezpallet_xcm::Config for Runtime {
 	type AdminOrigin = EnsureRoot<AccountId>;
 	type MaxRemoteLockConsumers = ConstU32<0>;
 	type RemoteLockConsumerIdentifier = ();
-	// xcm_executor::Config::Aliasers also uses pezpallet_xcm::AuthorizedAliasers.
-	type AuthorizedAliasConsideration = HoldConsideration<
-		AccountId,
-		Balances,
-		AuthorizeAliasHoldReason,
-		LinearStoragePrice<DepositPerItem, DepositPerByte, Balance>,
-	>;
+	// Aliasing is disabled: xcm_executor::Config::Aliasers is set to `Nothing`.
+	type AuthorizedAliasConsideration = Disabled;
 }
 
 impl pezcumulus_pezpallet_xcm::Config for Runtime {

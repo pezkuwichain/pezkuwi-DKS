@@ -19,7 +19,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `3a2e9ae8a8f5`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `d3a9aad6f7a3`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -28,10 +28,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
 // --pezpallet=pezkuwi_runtime_common::paras_registrar
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --output=./pezkuwi/runtime/pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -61,8 +61,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::paras_registrar::Weight
 		// Proof Size summary in bytes:
 		//  Measured:  `59`
 		//  Estimated: `3524`
-		// Minimum execution time: 33_477_000 picoseconds.
-		Weight::from_parts(34_970_000, 0)
+		// Minimum execution time: 29_694_000 picoseconds.
+		Weight::from_parts(30_576_000, 0)
 			.saturating_add(Weight::from_parts(0, 3524))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -89,8 +89,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::paras_registrar::Weight
 		// Proof Size summary in bytes:
 		//  Measured:  `315`
 		//  Estimated: `3780`
-		// Minimum execution time: 53_331_984_000 picoseconds.
-		Weight::from_parts(53_731_706_000, 0)
+		// Minimum execution time: 42_435_823_000 picoseconds.
+		Weight::from_parts(42_629_021_000, 0)
 			.saturating_add(Weight::from_parts(0, 3780))
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(8))
@@ -117,8 +117,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::paras_registrar::Weight
 		// Proof Size summary in bytes:
 		//  Measured:  `232`
 		//  Estimated: `3697`
-		// Minimum execution time: 53_277_823_000 picoseconds.
-		Weight::from_parts(53_476_481_000, 0)
+		// Minimum execution time: 42_304_137_000 picoseconds.
+		Weight::from_parts(42_578_673_000, 0)
 			.saturating_add(Weight::from_parts(0, 3697))
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(8))
@@ -141,8 +141,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::paras_registrar::Weight
 		// Proof Size summary in bytes:
 		//  Measured:  `462`
 		//  Estimated: `3927`
-		// Minimum execution time: 64_109_000 picoseconds.
-		Weight::from_parts(70_181_000, 0)
+		// Minimum execution time: 57_713_000 picoseconds.
+		Weight::from_parts(60_916_000, 0)
 			.saturating_add(Weight::from_parts(0, 3927))
 			.saturating_add(T::DbWeight::get().reads(6))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -171,11 +171,11 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::paras_registrar::Weight
 	/// Proof: `Paras::Heads` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn swap() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `863`
-		//  Estimated: `6803`
-		// Minimum execution time: 113_721_000 picoseconds.
-		Weight::from_parts(119_828_000, 0)
-			.saturating_add(Weight::from_parts(0, 6803))
+		//  Measured:  `897`
+		//  Estimated: `6837`
+		// Minimum execution time: 106_644_000 picoseconds.
+		Weight::from_parts(112_061_000, 0)
+			.saturating_add(Weight::from_parts(0, 6837))
 			.saturating_add(T::DbWeight::get().reads(14))
 			.saturating_add(T::DbWeight::get().writes(8))
 	}
@@ -202,11 +202,11 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::paras_registrar::Weight
 		// Proof Size summary in bytes:
 		//  Measured:  `201`
 		//  Estimated: `3666`
-		// Minimum execution time: 44_578_000 picoseconds.
-		Weight::from_parts(45_244_000, 0)
+		// Minimum execution time: 41_874_000 picoseconds.
+		Weight::from_parts(42_554_000, 0)
 			.saturating_add(Weight::from_parts(0, 3666))
-			// Standard Error: 130
-			.saturating_add(Weight::from_parts(13_412, 0).saturating_mul(b.into()))
+			// Standard Error: 103
+			.saturating_add(Weight::from_parts(10_806, 0).saturating_mul(b.into()))
 			.saturating_add(T::DbWeight::get().reads(9))
 			.saturating_add(T::DbWeight::get().writes(7))
 	}
@@ -217,11 +217,11 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::paras_registrar::Weight
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 7_410_000 picoseconds.
-		Weight::from_parts(7_551_000, 0)
+		// Minimum execution time: 7_265_000 picoseconds.
+		Weight::from_parts(7_411_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
-			// Standard Error: 42
-			.saturating_add(Weight::from_parts(4_560, 0).saturating_mul(b.into()))
+			// Standard Error: 31
+			.saturating_add(Weight::from_parts(3_656, 0).saturating_mul(b.into()))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 }
