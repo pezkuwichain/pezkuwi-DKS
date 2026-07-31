@@ -1416,9 +1416,9 @@ pezsp-version-proc-macro = { path = "bizinikiwi/primitives/version/proc-macro", 
 pezsp-wasm-interface = { path = "bizinikiwi/primitives/wasm-interface", version = "20.0.0", default-features = false }
 pezsp-weights = { path = "bizinikiwi/primitives/weights", version = "27.0.0", default-features = false }
 pin-project = { version = "1.1.3" }
-polkavm = { version = "0.26.0", default-features = false }
-polkavm-derive = "0.26.0"
-polkavm-linker = "0.26.0"
+polkavm = { version = "0.36.0", default-features = false }
+polkavm-derive = "0.36.0"
+polkavm-linker = "0.36.0"
 portpicker = { version = "0.1.1" }
 pretty_assertions = { version = "1.3.0" }
 primitive-types = { version = "0.13.1", default-features = false, features = [

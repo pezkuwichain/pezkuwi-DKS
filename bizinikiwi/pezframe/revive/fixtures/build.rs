@@ -178,7 +178,11 @@ fn create_cargo_toml<'a>(
 fn invoke_build(current_dir: &Path) -> Result<()> {
 	// Use -Zbuild-std-features=panic_immediate_abort for immediate abort panic strategy
 	// This works with stable rust when RUSTC_BOOTSTRAP=1 is set
-	let encoded_rustflags = ["-Dwarnings"].join("\x1f");
+	// Since Rust 1.96 immediate-abort is a real panic strategy rather than a build-std
+	// feature, and it is a rustc flag — so it travels in RUSTFLAGS, not on cargo's line.
+	// core is still rebuilt for it via `-Zbuild-std=core` below.
+	let encoded_rustflags =
+		["-Dwarnings", "-Zunstable-options", "-Cpanic=immediate-abort"].join("\x1f");
 
 	let mut build_command = Command::new("cargo");
 	build_command
@@ -193,13 +197,24 @@ fn invoke_build(current_dir: &Path) -> Result<()> {
 			"build",
 			"--release",
 			"-Zbuild-std=core",
-			"-Zbuild-std-features=panic_immediate_abort",
 			// Rust 1.96+ gates custom `.json` target specs behind this flag.
 			// RUSTC_BOOTSTRAP=1 (above) permits the -Z flag on stable.
 			"-Zjson-target-spec",
 		])
 		.arg("--target")
-		.arg(polkavm_linker::target_json_64_path().unwrap());
+		.arg(
+			// polkavm-linker emits two target-spec shapes: the pre-1.91 one, where
+			// `target-pointer-width` is a string, and the current one, where rustc
+			// requires a number. Autodetect picks by the toolchain in use.
+			{
+				// `TargetJsonArgs` is #[non_exhaustive], so it can only be built from
+				// its Default and then adjusted.
+				let mut args = polkavm_linker::TargetJsonArgs::default();
+				args.rustc_version = polkavm_linker::RustcVersion::Autodetect;
+				args.is_64_bit = true;
+				polkavm_linker::target_json_path(args).unwrap()
+			},
+		);
 
 	if let Ok(toolchain) = env::var(OVERRIDE_RUSTUP_TOOLCHAIN_ENV_VAR) {
 		build_command.env("RUSTUP_TOOLCHAIN", &toolchain);
@@ -226,7 +241,12 @@ fn post_process(input_path: &Path, output_path: &Path) -> Result<()> {
 	config.set_strip(strip);
 	config.set_optimize(optimize);
 	let orig = fs::read(input_path).with_context(|| format!("Failed to read {input_path:?}"))?;
-	let linked = polkavm_linker::program_from_elf(config, orig.as_ref())
+	let linked = polkavm_linker::program_from_elf(
+		config,
+		// The contract pallet runs the ReviveV1 instruction set.
+		polkavm_linker::TargetInstructionSet::ReviveV1,
+		orig.as_ref(),
+	)
 		.map_err(|err| anyhow::format_err!("Failed to link polkavm program: {}", err))?;
 	fs::write(output_path, linked).with_context(|| format!("Failed to write {output_path:?}"))?;
 	Ok(())
