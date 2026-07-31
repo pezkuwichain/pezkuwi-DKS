@@ -33,9 +33,12 @@ variables:
 # ── Workflow: avoid duplicate pipelines ───────────────────────────────────────
 workflow:
   rules:
-    # OPT-IN. This repo is a mirror of github.com/pezkuwichain/pezkuwi-DKS, where the
-    # authoritative full CI already runs on the identical code (github public runners +
-    # self-hosted substrate-build / dks-runner-1). Reproducing that heavy pipeline here
+    # OPT-IN. This repo is a mirror of github.com/pezkuwichain/pezkuwi-DKS, which is where
+    # CI runs. Note what that does and does not mean: GitHub runs a fast gate on every
+    # push/PR, and the full suite (test.yml) nightly or on demand — not per-PR. A green
+    # PR there is therefore not a green full suite. Deployable runtime builds enforce the
+    # difference: release.yml and release-testnet.yml refuse to build a commit that has no
+    # successful test.yml run. Reproducing that heavy pipeline here
     # needs self-hosted GitLab runners tagged `pezkuwi-runner` (none are registered on
     # this namespace) plus CI minutes for the light jobs (the shared-runner quota is
     # exhausted). Rather than auto-run a pipeline that can never pass, it is gated:

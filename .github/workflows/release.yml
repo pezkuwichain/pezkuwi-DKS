@@ -36,7 +36,38 @@ env:
   CARGO_INCREMENTAL: "0"
 
 jobs:
+  # A runtime WASM must never be built from a commit whose full test suite has not
+  # passed. The fast PR gate is deliberately narrow (see 84cd571b) — it is the heavy
+  # suite in test.yml that actually exercises the code, and it runs nightly rather
+  # than per-PR. So before producing a deployable blob, require a *successful test.yml
+  # run for this exact commit*. If there is none, trigger it and stop: the operator
+  # re-runs the release once it is green.
+  full-ci-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Require a green full test suite for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.inputs.ref || github.sha }}
+        run: |
+          set -euo pipefail
+          SHA=$(gh api "repos/${{ github.repository }}/commits/$SHA" --jq .sha)
+          echo "commit under release: $SHA"
+          CONCLUSION=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/test.yml/runs?head_sha=$SHA&status=completed" \
+            --jq '[.workflow_runs[] | select(.conclusion=="success")] | length')
+          if [ "$CONCLUSION" -gt 0 ]; then
+            echo "full test suite is green for this commit"
+            exit 0
+          fi
+          echo "::error::No successful test.yml run for $SHA."
+          echo "Dispatching the full suite now; re-run this release once it is green."
+          gh workflow run test.yml --ref "$SHA" || true
+          exit 1
+
   build-runtime:
+    needs: full-ci-gate
     # Pinned to one specific runner (not the whole substrate-build pool): these
     # builds aren't hermetic yet (pending srtool), and the self-hosted fleet
     # doesn't share a common absolute install path, so which runner picks up

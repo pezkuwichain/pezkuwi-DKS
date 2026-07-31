@@ -207,3 +207,144 @@ jobs:
             n=$((n+1)); [ "$n" -ge 3 ] && { echo "check-benches failed after $n attempts"; exit 1; }
             echo "check-benches attempt $n failed — retrying (transient infra)"; sleep 15
           done
+
+  # ── Coverage that existed only in .gitlab-ci.yml ────────────────────────────
+  # These ran nowhere: the GitLab pipeline is gated off behind RUN_GITLAB_CI and
+  # its own comment assumed "the authoritative full CI runs on GitHub". They are
+  # part of the suite that must be green before anything is deployed to a chain.
+
+  workspace-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.x' }
+      - name: Install tooling
+        run: pip3 install toml "cargo-workspace>=1.2.6" --quiet
+      - name: Check workspace membership and manifests
+        # Catches a crate that is in the tree but absent from the workspace, which is
+        # how pezpallet-staking-async-teyrchain-runtime stayed broken on main unnoticed.
+        run: |
+          python3 .github/scripts/check-workspace.py . \
+            --exclude "bizinikiwi/pezframe/contracts/fixtures/build" \
+                      "bizinikiwi/pezframe/contracts/fixtures/contracts/common"
+      - name: Deny git dependencies
+        run: python3 .github/scripts/deny-git-deps.py .
+
+  rust-features:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check feature combinations
+        run: bash .gitlab/rust-features.sh .
+
+  licenses-headers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Every source file carries a licence header
+        run: |
+          FAIL=0
+          for dir in pezkuwi pezcumulus bizinikiwi; do
+            echo "Checking license headers in ./$dir..."
+            MISSING=""
+            while IFS= read -r f; do
+              head -20 "$f" | grep -qiE "(apache|gpl|mit|unlicense|copyright)" || MISSING="$MISSING\n$f"
+            done < <(find "./$dir" -name "*.rs" -not -path "*/target/*")
+            if [ -n "$MISSING" ]; then
+              echo "Missing licence header:"; printf "%b\n" "$MISSING"; FAIL=1
+            fi
+          done
+          exit $FAIL
+
+  umbrella:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.x' }
+      - name: Install tooling
+        run: |
+          pip3 install "cargo-workspace>=1.2.4" toml --quiet
+          cargo install zepter@1.82.1 --force --quiet
+      - name: Umbrella crate is consistent with the workspace
+        run: |
+          git config --global --add safe.directory '*'
+          UMBRELLA_VERSION=$(cargo metadata --format-version=1 --locked | \
+            python3 -c "import json,sys; pkgs=json.load(sys.stdin)['packages']; \
+              print(next(p['version'] for p in pkgs if p['manifest_path'].endswith('umbrella/Cargo.toml')))")
+          echo "umbrella version: $UMBRELLA_VERSION"
+          python3 scripts/generate-umbrella.py --sdk . --version "$UMBRELLA_VERSION"
+          cargo +nightly fmt --all
+          git diff --exit-code || {
+            echo "The umbrella crate is out of date; re-run generate-umbrella.py and commit."
+            exit 1
+          }
+
+  core-crypto-features:
+    runs-on: [self-hosted, substrate-build]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - name: Feature variants of the core crypto primitives
+        run: |
+          rustup target add wasm32v1-none
+          for pkg in core application-crypto keyring; do
+            echo "--- bizinikiwi/primitives/$pkg ---"
+            (cd "bizinikiwi/primitives/$pkg" && ./check-features-variants.sh)
+          done
+
+  wasm-check:
+    runs-on: [self-hosted, substrate-build]
+    timeout-minutes: 720
+    steps:
+      - uses: actions/checkout@v7
+      - name: Runtime compiles for the WASM target
+        run: |
+          rustup target add wasm32v1-none
+          cargo check -p pezkuwichain-runtime --locked --target wasm32v1-none
+
+  test-no-try-runtime:
+    runs-on: [self-hosted, substrate-build]
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+      matrix:
+        partition: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Tests without the try-runtime feature
+        # try-runtime changes which code paths compile; the suite has to pass without it too.
+        run: |
+          git config --global --add safe.directory '*'
+          cargo nextest run --workspace --locked --no-fail-fast \
+            --features experimental,ci-only-tests \
+            --partition count:${{ matrix.partition }}/2 \
+            --config-file .config/nextest.toml
+
+  rustdoc:
+    runs-on: [self-hosted, substrate-build]
+    timeout-minutes: 720
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build rustdoc
+        run: |
+          git config --global --add safe.directory '*'
+          cargo doc --all-features --workspace --no-deps --locked \
+            --exclude pezkuwi-zombienet-sdk-tests \
+            --exclude pezpallet-revive-eth-rpc
+          rm -f target/doc/.lock
+
+  implementers-guide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install mdbook
+        run: cargo install mdbook mdbook-linkcheck mdbook-graphviz mdbook-mermaid --quiet
+      - name: Build the implementers guide
+        run: mdbook build ./pezkuwi/roadmap/implementers-guide
