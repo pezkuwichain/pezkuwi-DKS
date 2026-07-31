@@ -20,7 +20,7 @@
 //! DATE: 2023-12-21, STEPS: `2`, REPEAT: `2`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
 //! HOSTNAME: `gleipnir`, CPU: `AMD Ryzen 9 7900X 12-Core Processor`
-//! WASM-EXECUTION: `Compiled`, CHAIN: `Some("people-zagros-dev")`, DB CACHE: 1024
+//! WASM-EXECUTION: `Compiled`, CHAIN: `Some("people-pezkuwichain-dev")`, DB CACHE: 1024
 
 // Executed Command:
 // ./target/release/pezkuwi-teyrchain
@@ -36,8 +36,8 @@
 // --repeat=2
 // --json
 // --header=./pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/people/people-zagros/src/weights/
-// --chain=people-zagros-dev
+// --output=./pezcumulus/teyrchains/runtimes/people/people-pezkuwichain/src/weights/
+// --chain=people-pezkuwichain-dev
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]

@@ -70,6 +70,12 @@ pub mod pezpallet_custom_origins {
 		BigSpender,
 		/// Origin able to dispatch a whitelisted call.
 		WhitelistedCaller,
+		/// Origin for Welati election management (initiate/finalize elections on People Chain).
+		WelatiElection,
+		/// Origin for Welati administrative actions (tiki grants, appointments on People Chain).
+		WelatiAdmin,
+		/// Origin for citizenship management (revocation, trust score updates on People Chain).
+		CitizenshipAdmin,
 		/// Origin commanded by any members of the Pezkuwi Fellowship (no Dan grade needed).
 		FellowshipInitiates,
 		/// Origin commanded by Pezkuwi Fellows (3rd Dan fellows or greater).
@@ -141,6 +147,9 @@ pub mod pezpallet_custom_origins {
 		ReferendumCanceller,
 		ReferendumKiller,
 		WhitelistedCaller,
+		WelatiElection,
+		WelatiAdmin,
+		CitizenshipAdmin,
 		FellowshipInitiates: u16 = 0,
 		Fellows: u16 = 3,
 		FellowshipExperts: u16 = 5,

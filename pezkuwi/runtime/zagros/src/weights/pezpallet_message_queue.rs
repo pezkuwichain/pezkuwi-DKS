@@ -19,7 +19,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `3a2e9ae8a8f5`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `d3a9aad6f7a3`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -28,10 +28,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_message_queue
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --output=./pezkuwi/runtime/pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -59,8 +59,8 @@ impl<T: pezframe_system::Config> pezpallet_message_queue::WeightInfo for WeightI
 		// Proof Size summary in bytes:
 		//  Measured:  `281`
 		//  Estimated: `6050`
-		// Minimum execution time: 16_991_000 picoseconds.
-		Weight::from_parts(17_813_000, 0)
+		// Minimum execution time: 13_997_000 picoseconds.
+		Weight::from_parts(14_511_000, 0)
 			.saturating_add(Weight::from_parts(0, 6050))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -73,8 +73,8 @@ impl<T: pezframe_system::Config> pezpallet_message_queue::WeightInfo for WeightI
 		// Proof Size summary in bytes:
 		//  Measured:  `281`
 		//  Estimated: `6050`
-		// Minimum execution time: 16_268_000 picoseconds.
-		Weight::from_parts(16_659_000, 0)
+		// Minimum execution time: 12_624_000 picoseconds.
+		Weight::from_parts(13_092_000, 0)
 			.saturating_add(Weight::from_parts(0, 6050))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(3))
@@ -85,46 +85,46 @@ impl<T: pezframe_system::Config> pezpallet_message_queue::WeightInfo for WeightI
 		// Proof Size summary in bytes:
 		//  Measured:  `42`
 		//  Estimated: `3520`
-		// Minimum execution time: 4_901_000 picoseconds.
-		Weight::from_parts(5_262_000, 0)
+		// Minimum execution time: 5_156_000 picoseconds.
+		Weight::from_parts(5_347_000, 0)
 			.saturating_add(Weight::from_parts(0, 3520))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `MessageQueue::Pages` (r:1 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(131122), added: 133597, mode: `MaxEncodedLen`)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32818), added: 35293, mode: `MaxEncodedLen`)
 	fn service_page_base_completion() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `115`
-		//  Estimated: `134587`
-		// Minimum execution time: 10_587_000 picoseconds.
-		Weight::from_parts(11_040_000, 0)
-			.saturating_add(Weight::from_parts(0, 134587))
+		//  Estimated: `36283`
+		// Minimum execution time: 7_373_000 picoseconds.
+		Weight::from_parts(7_708_000, 0)
+			.saturating_add(Weight::from_parts(0, 36283))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `MessageQueue::Pages` (r:1 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(131122), added: 133597, mode: `MaxEncodedLen`)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32818), added: 35293, mode: `MaxEncodedLen`)
 	fn service_page_base_no_completion() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `115`
-		//  Estimated: `134587`
-		// Minimum execution time: 10_729_000 picoseconds.
-		Weight::from_parts(11_263_000, 0)
-			.saturating_add(Weight::from_parts(0, 134587))
+		//  Estimated: `36283`
+		// Minimum execution time: 7_616_000 picoseconds.
+		Weight::from_parts(7_844_000, 0)
+			.saturating_add(Weight::from_parts(0, 36283))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `MessageQueue::BookStateFor` (r:0 w:1)
 	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(55), added: 2530, mode: `MaxEncodedLen`)
 	/// Storage: `MessageQueue::Pages` (r:0 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(131122), added: 133597, mode: `MaxEncodedLen`)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32818), added: 35293, mode: `MaxEncodedLen`)
 	fn service_page_item() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 381_300_000 picoseconds.
-		Weight::from_parts(390_220_000, 0)
+		// Minimum execution time: 81_916_000 picoseconds.
+		Weight::from_parts(84_364_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -136,8 +136,8 @@ impl<T: pezframe_system::Config> pezpallet_message_queue::WeightInfo for WeightI
 		// Proof Size summary in bytes:
 		//  Measured:  `220`
 		//  Estimated: `3520`
-		// Minimum execution time: 12_503_000 picoseconds.
-		Weight::from_parts(12_909_000, 0)
+		// Minimum execution time: 8_966_000 picoseconds.
+		Weight::from_parts(9_192_000, 0)
 			.saturating_add(Weight::from_parts(0, 3520))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -150,8 +150,8 @@ impl<T: pezframe_system::Config> pezpallet_message_queue::WeightInfo for WeightI
 		// Proof Size summary in bytes:
 		//  Measured:  `220`
 		//  Estimated: `3520`
-		// Minimum execution time: 11_071_000 picoseconds.
-		Weight::from_parts(11_553_000, 0)
+		// Minimum execution time: 7_678_000 picoseconds.
+		Weight::from_parts(8_082_000, 0)
 			.saturating_add(Weight::from_parts(0, 3520))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -159,54 +159,54 @@ impl<T: pezframe_system::Config> pezpallet_message_queue::WeightInfo for WeightI
 	/// Storage: `MessageQueue::BookStateFor` (r:1 w:1)
 	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(55), added: 2530, mode: `MaxEncodedLen`)
 	/// Storage: `MessageQueue::Pages` (r:1 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(131122), added: 133597, mode: `MaxEncodedLen`)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32818), added: 35293, mode: `MaxEncodedLen`)
 	/// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
 	/// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
 	fn reap_page() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `131252`
-		//  Estimated: `134587`
-		// Minimum execution time: 162_710_000 picoseconds.
-		Weight::from_parts(166_261_000, 0)
-			.saturating_add(Weight::from_parts(0, 134587))
+		//  Measured:  `32945`
+		//  Estimated: `36283`
+		// Minimum execution time: 42_796_000 picoseconds.
+		Weight::from_parts(43_804_000, 0)
+			.saturating_add(Weight::from_parts(0, 36283))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
 	/// Storage: `MessageQueue::BookStateFor` (r:1 w:1)
 	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(55), added: 2530, mode: `MaxEncodedLen`)
 	/// Storage: `MessageQueue::Pages` (r:1 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(131122), added: 133597, mode: `MaxEncodedLen`)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32818), added: 35293, mode: `MaxEncodedLen`)
 	/// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
 	/// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
 	fn execute_overweight_page_removed() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `131252`
-		//  Estimated: `134587`
-		// Minimum execution time: 200_138_000 picoseconds.
-		Weight::from_parts(210_177_000, 0)
-			.saturating_add(Weight::from_parts(0, 134587))
+		//  Measured:  `32945`
+		//  Estimated: `36283`
+		// Minimum execution time: 53_889_000 picoseconds.
+		Weight::from_parts(54_749_000, 0)
+			.saturating_add(Weight::from_parts(0, 36283))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
 	/// Storage: `MessageQueue::BookStateFor` (r:1 w:1)
 	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(55), added: 2530, mode: `MaxEncodedLen`)
 	/// Storage: `MessageQueue::Pages` (r:1 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(131122), added: 133597, mode: `MaxEncodedLen`)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32818), added: 35293, mode: `MaxEncodedLen`)
 	/// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
 	/// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
 	/// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
 	fn execute_overweight_page_updated() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `131252`
-		//  Estimated: `134587`
-		// Minimum execution time: 275_951_000 picoseconds.
-		Weight::from_parts(284_857_000, 0)
-			.saturating_add(Weight::from_parts(0, 134587))
+		//  Measured:  `32945`
+		//  Estimated: `36283`
+		// Minimum execution time: 76_298_000 picoseconds.
+		Weight::from_parts(77_776_000, 0)
+			.saturating_add(Weight::from_parts(0, 36283))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}

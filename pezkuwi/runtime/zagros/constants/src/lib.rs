@@ -26,28 +26,33 @@ pub mod currency {
 	pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
 	pub const UNITS: Balance = 1_000_000_000_000;
-	pub const CENTS: Balance = UNITS / 100;
-	pub const MILLICENTS: Balance = CENTS / 1_000;
+	pub const CENTS: Balance = UNITS / 30_000;
 	pub const GRAND: Balance = CENTS * 100_000;
+	pub const MILLICENTS: Balance = CENTS / 1_000;
 
 	pub const fn deposit(items: u32, bytes: u32) -> Balance {
-		items as Balance * 100 * CENTS + (bytes as Balance) * 5 * MILLICENTS
+		items as Balance * 2_000 * CENTS + (bytes as Balance) * 100 * MILLICENTS
 	}
 }
 
 /// Time and blocks.
 pub mod time {
-	use pezkuwi_primitives::{BlockNumber, Moment};
 	use pezkuwi_runtime_common::prod_or_fast;
 
+	use pezkuwi_primitives::{BlockNumber, Moment};
 	pub const MILLISECS_PER_BLOCK: Moment = 6000;
 	pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
-	pub const EPOCH_DURATION_IN_SLOTS: BlockNumber = prod_or_fast!(1 * HOURS, 1 * MINUTES);
+
+	pezframe_support::parameter_types! {
+		pub EpochDurationInBlocks: BlockNumber =
+			prod_or_fast!(1 * HOURS, 1 * MINUTES, "PEZKUWICHAIN_EPOCH_DURATION");
+	}
 
 	// These time units are defined in number of blocks.
 	pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 	pub const HOURS: BlockNumber = MINUTES * 60;
 	pub const DAYS: BlockNumber = HOURS * 24;
+	pub const WEEKS: BlockNumber = DAYS * 7;
 
 	// 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
 	// The choice of is done in accordance to the slot duration and expected target
@@ -73,7 +78,7 @@ pub mod fee {
 	/// node's balance type.
 	///
 	/// This should typically create a mapping between the following ranges:
-	///   - [0,` MAXIMUM_BLOCK_WEIGHT`]
+	///   - [0, `pezframe_system::MaximumBlockWeight`]
 	///   - [Balance::min, Balance::max]
 	///
 	/// Yet, it can be used for any other sort of change to weight-fee. Some examples being:
@@ -83,7 +88,8 @@ pub mod fee {
 	impl WeightToFeePolynomial for WeightToFee {
 		type Balance = Balance;
 		fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-			// in Zagros, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
+			// in Pezkuwichain, extrinsic base weight (smallest non-zero weight) is mapped to 1/10
+			// CENT:
 			let p = super::currency::CENTS;
 			let q = 10 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
 			smallvec![WeightToFeeCoefficient {
@@ -109,20 +115,18 @@ pub mod system_teyrchain {
 
 	/// Network's Asset Hub teyrchain ID.
 	pub const ASSET_HUB_ID: u32 = 1000;
-	/// Collectives teyrchain ID.
-	pub const COLLECTIVES_ID: u32 = 1001;
-	/// BridgeHub teyrchain ID.
-	pub const BRIDGE_HUB_ID: u32 = 1002;
+	/// Contracts teyrchain ID.
+	pub const CONTRACTS_ID: u32 = 1002;
 	/// Encointer teyrchain ID.
 	pub const ENCOINTER_ID: u32 = 1003;
-	/// People Chain teyrchain ID.
+	/// People teyrchain ID.
 	pub const PEOPLE_ID: u32 = 1004;
+	/// BridgeHub teyrchain ID.
+	pub const BRIDGE_HUB_ID: u32 = 1002;
 	/// Brokerage teyrchain ID.
 	pub const BROKER_ID: u32 = 1005;
-	/// AH-next - temporary AH clone.
-	pub const ASSET_HUB_NEXT_ID: u32 = 1100;
 
-	/// All system teyrchains of Zagros.
+	/// All system teyrchains of Pezkuwichain.
 	pub type SystemTeyrchains = IsChildSystemTeyrchain<ParaId>;
 
 	/// Coretime constants
@@ -137,28 +141,13 @@ pub mod system_teyrchain {
 	}
 }
 
-/// Zagros Treasury pezpallet instance.
-pub const TREASURY_PALLET_ID: u8 = 37;
-
-/// XCM protocol related constants.
-pub mod xcm {
-	/// Pluralistic bodies existing within the consensus.
-	pub mod body {
-		// Preallocated for the Root body.
-		#[allow(dead_code)]
-		const ROOT_INDEX: u32 = 0;
-		// The bodies corresponding to the Pezkuwi OpenGov Origins.
-		pub const FELLOWSHIP_ADMIN_INDEX: u32 = 1;
-		#[deprecated = "Will be removed after August 2024; Use `xcm::latest::BodyId::Treasury` \
-			instead"]
-		pub const TREASURER_INDEX: u32 = 2;
-	}
-}
+/// Pezkuwichain Treasury pezpallet instance.
+pub const TREASURY_PALLET_ID: u8 = 18;
 
 #[cfg(test)]
 mod tests {
 	use super::{
-		currency::{CENTS, MILLICENTS, UNITS},
+		currency::{CENTS, MILLICENTS},
 		fee::WeightToFee,
 	};
 	use crate::weights::ExtrinsicBaseWeight;
@@ -168,10 +157,10 @@ mod tests {
 	#[test]
 	// Test that the fee for `MAXIMUM_BLOCK_WEIGHT` of weight has sane bounds.
 	fn full_block_fee_is_correct() {
-		// A full block should cost between 10 and 100 UNITS.
+		// A full block should cost between 1,000 and 10,000 CENTS.
 		let full_block = WeightToFee::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);
-		assert!(full_block >= 10 * UNITS);
-		assert!(full_block <= 100 * UNITS);
+		assert!(full_block >= 1_000 * CENTS);
+		assert!(full_block <= 10_000 * CENTS);
 	}
 
 	#[test]

@@ -19,7 +19,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-22, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `3a2e9ae8a8f5`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `d3a9aad6f7a3`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -28,10 +28,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
 // --pezpallet=pezkuwi_runtime_common::auctions
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --output=./pezkuwi/runtime/pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -59,8 +59,8 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::auctions::WeightInfo fo
 		// Proof Size summary in bytes:
 		//  Measured:  `4`
 		//  Estimated: `1493`
-		// Minimum execution time: 9_527_000 picoseconds.
-		Weight::from_parts(9_961_000, 0)
+		// Minimum execution time: 9_499_000 picoseconds.
+		Weight::from_parts(9_872_000, 0)
 			.saturating_add(Weight::from_parts(0, 1493))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -81,10 +81,10 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::auctions::WeightInfo fo
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn bid() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `767`
+		//  Measured:  `762`
 		//  Estimated: `6060`
-		// Minimum execution time: 85_758_000 picoseconds.
-		Weight::from_parts(91_279_000, 0)
+		// Minimum execution time: 87_828_000 picoseconds.
+		Weight::from_parts(91_541_000, 0)
 			.saturating_add(Weight::from_parts(0, 6060))
 			.saturating_add(T::DbWeight::get().reads(8))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -103,7 +103,7 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::auctions::WeightInfo fo
 	/// Proof: `Auctions::ReservedAmounts` (`max_values`: None, `max_size`: Some(60), added: 2535, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:36 w:36)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `Slots::Leases` (r:7 w:7)
+	/// Storage: `Slots::Leases` (r:2 w:2)
 	/// Proof: `Slots::Leases` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `Paras::ParaLifecycles` (r:1 w:1)
 	/// Proof: `Paras::ParaLifecycles` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -113,13 +113,13 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::auctions::WeightInfo fo
 	/// Proof: `Paras::ActionsQueue` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn on_initialize() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `6947156`
+		//  Measured:  `6947018`
 		//  Estimated: `15822990`
-		// Minimum execution time: 8_791_793_000 picoseconds.
-		Weight::from_parts(8_956_541_000, 0)
+		// Minimum execution time: 8_633_205_000 picoseconds.
+		Weight::from_parts(8_845_826_000, 0)
 			.saturating_add(Weight::from_parts(0, 15822990))
-			.saturating_add(T::DbWeight::get().reads(3687))
-			.saturating_add(T::DbWeight::get().writes(3682))
+			.saturating_add(T::DbWeight::get().reads(3682))
+			.saturating_add(T::DbWeight::get().writes(3677))
 	}
 	/// Storage: `Auctions::ReservedAmounts` (r:37 w:36)
 	/// Proof: `Auctions::ReservedAmounts` (`max_values`: None, `max_size`: Some(60), added: 2535, mode: `MaxEncodedLen`)
@@ -131,10 +131,10 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_common::auctions::WeightInfo fo
 	/// Proof: `Auctions::AuctionInfo` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	fn cancel_auction() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `177903`
+		//  Measured:  `177732`
 		//  Estimated: `15822990`
-		// Minimum execution time: 6_680_245_000 picoseconds.
-		Weight::from_parts(6_821_440_000, 0)
+		// Minimum execution time: 6_693_150_000 picoseconds.
+		Weight::from_parts(6_883_632_000, 0)
 			.saturating_add(Weight::from_parts(0, 15822990))
 			.saturating_add(T::DbWeight::get().reads(3673))
 			.saturating_add(T::DbWeight::get().writes(3673))

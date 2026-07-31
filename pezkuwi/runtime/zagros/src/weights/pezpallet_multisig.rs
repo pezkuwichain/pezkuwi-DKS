@@ -28,10 +28,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_multisig
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --output=./pezkuwi/runtime/pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -56,11 +56,11 @@ impl<T: pezframe_system::Config> pezpallet_multisig::WeightInfo for WeightInfo<T
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 16_297_000 picoseconds.
-		Weight::from_parts(17_470_545, 0)
+		// Minimum execution time: 16_031_000 picoseconds.
+		Weight::from_parts(16_334_237, 0)
 			.saturating_add(Weight::from_parts(0, 0))
-			// Standard Error: 23
-			.saturating_add(Weight::from_parts(906, 0).saturating_mul(z.into()))
+			// Standard Error: 27
+			.saturating_add(Weight::from_parts(655, 0).saturating_mul(z.into()))
 	}
 	/// Storage: `Multisig::Multisigs` (r:1 w:1)
 	/// Proof: `Multisig::Multisigs` (`max_values`: None, `max_size`: Some(3346), added: 5821, mode: `MaxEncodedLen`)
@@ -68,15 +68,15 @@ impl<T: pezframe_system::Config> pezpallet_multisig::WeightInfo for WeightInfo<T
 	/// The range of component `z` is `[0, 10000]`.
 	fn as_multi_create(s: u32, z: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `267 + s * (2 ±0)`
+		//  Measured:  `229 + s * (2 ±0)`
 		//  Estimated: `6811`
-		// Minimum execution time: 53_876_000 picoseconds.
-		Weight::from_parts(51_061_263, 0)
+		// Minimum execution time: 47_422_000 picoseconds.
+		Weight::from_parts(34_453_063, 0)
 			.saturating_add(Weight::from_parts(0, 6811))
-			// Standard Error: 6_290
-			.saturating_add(Weight::from_parts(76_185, 0).saturating_mul(s.into()))
-			// Standard Error: 61
-			.saturating_add(Weight::from_parts(1_799, 0).saturating_mul(z.into()))
+			// Standard Error: 3_967
+			.saturating_add(Weight::from_parts(149_468, 0).saturating_mul(s.into()))
+			// Standard Error: 38
+			.saturating_add(Weight::from_parts(2_115, 0).saturating_mul(z.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -86,15 +86,15 @@ impl<T: pezframe_system::Config> pezpallet_multisig::WeightInfo for WeightInfo<T
 	/// The range of component `z` is `[0, 10000]`.
 	fn as_multi_approve(s: u32, z: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `286`
+		//  Measured:  `248`
 		//  Estimated: `6811`
-		// Minimum execution time: 37_211_000 picoseconds.
-		Weight::from_parts(22_933_454, 0)
+		// Minimum execution time: 32_443_000 picoseconds.
+		Weight::from_parts(20_948_248, 0)
 			.saturating_add(Weight::from_parts(0, 6811))
-			// Standard Error: 1_435
-			.saturating_add(Weight::from_parts(163_808, 0).saturating_mul(s.into()))
-			// Standard Error: 14
-			.saturating_add(Weight::from_parts(1_998, 0).saturating_mul(z.into()))
+			// Standard Error: 2_516
+			.saturating_add(Weight::from_parts(134_093, 0).saturating_mul(s.into()))
+			// Standard Error: 24
+			.saturating_add(Weight::from_parts(1_905, 0).saturating_mul(z.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -106,15 +106,15 @@ impl<T: pezframe_system::Config> pezpallet_multisig::WeightInfo for WeightInfo<T
 	/// The range of component `z` is `[0, 10000]`.
 	fn as_multi_complete(s: u32, z: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `392 + s * (33 ±0)`
+		//  Measured:  `354 + s * (33 ±0)`
 		//  Estimated: `6811`
-		// Minimum execution time: 59_254_000 picoseconds.
-		Weight::from_parts(44_463_212, 0)
+		// Minimum execution time: 53_028_000 picoseconds.
+		Weight::from_parts(23_678_558, 0)
 			.saturating_add(Weight::from_parts(0, 6811))
-			// Standard Error: 5_523
-			.saturating_add(Weight::from_parts(224_317, 0).saturating_mul(s.into()))
-			// Standard Error: 54
-			.saturating_add(Weight::from_parts(1_895, 0).saturating_mul(z.into()))
+			// Standard Error: 6_864
+			.saturating_add(Weight::from_parts(300_804, 0).saturating_mul(s.into()))
+			// Standard Error: 67
+			.saturating_add(Weight::from_parts(3_380, 0).saturating_mul(z.into()))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -123,13 +123,13 @@ impl<T: pezframe_system::Config> pezpallet_multisig::WeightInfo for WeightInfo<T
 	/// The range of component `s` is `[2, 100]`.
 	fn approve_as_multi_create(s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `267 + s * (2 ±0)`
+		//  Measured:  `229 + s * (2 ±0)`
 		//  Estimated: `6811`
-		// Minimum execution time: 35_716_000 picoseconds.
-		Weight::from_parts(37_158_321, 0)
+		// Minimum execution time: 31_551_000 picoseconds.
+		Weight::from_parts(33_991_440, 0)
 			.saturating_add(Weight::from_parts(0, 6811))
-			// Standard Error: 1_359
-			.saturating_add(Weight::from_parts(167_574, 0).saturating_mul(s.into()))
+			// Standard Error: 2_114
+			.saturating_add(Weight::from_parts(123_260, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -138,13 +138,13 @@ impl<T: pezframe_system::Config> pezpallet_multisig::WeightInfo for WeightInfo<T
 	/// The range of component `s` is `[2, 100]`.
 	fn approve_as_multi_approve(s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `286`
+		//  Measured:  `248`
 		//  Estimated: `6811`
-		// Minimum execution time: 21_897_000 picoseconds.
-		Weight::from_parts(23_002_371, 0)
+		// Minimum execution time: 17_063_000 picoseconds.
+		Weight::from_parts(17_667_306, 0)
 			.saturating_add(Weight::from_parts(0, 6811))
-			// Standard Error: 2_438
-			.saturating_add(Weight::from_parts(163_255, 0).saturating_mul(s.into()))
+			// Standard Error: 1_384
+			.saturating_add(Weight::from_parts(146_228, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -153,13 +153,13 @@ impl<T: pezframe_system::Config> pezpallet_multisig::WeightInfo for WeightInfo<T
 	/// The range of component `s` is `[2, 100]`.
 	fn cancel_as_multi(s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `458 + s * (1 ±0)`
+		//  Measured:  `420 + s * (1 ±0)`
 		//  Estimated: `6811`
-		// Minimum execution time: 36_287_000 picoseconds.
-		Weight::from_parts(38_396_611, 0)
+		// Minimum execution time: 31_979_000 picoseconds.
+		Weight::from_parts(35_042_991, 0)
 			.saturating_add(Weight::from_parts(0, 6811))
-			// Standard Error: 3_536
-			.saturating_add(Weight::from_parts(178_827, 0).saturating_mul(s.into()))
+			// Standard Error: 3_858
+			.saturating_add(Weight::from_parts(163_176, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -168,13 +168,13 @@ impl<T: pezframe_system::Config> pezpallet_multisig::WeightInfo for WeightInfo<T
 	/// The range of component `s` is `[2, 100]`.
 	fn poke_deposit(s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `458 + s * (1 ±0)`
+		//  Measured:  `420 + s * (1 ±0)`
 		//  Estimated: `6811`
-		// Minimum execution time: 34_917_000 picoseconds.
-		Weight::from_parts(36_141_350, 0)
+		// Minimum execution time: 30_328_000 picoseconds.
+		Weight::from_parts(34_135_440, 0)
 			.saturating_add(Weight::from_parts(0, 6811))
-			// Standard Error: 1_247
-			.saturating_add(Weight::from_parts(166_544, 0).saturating_mul(s.into()))
+			// Standard Error: 4_398
+			.saturating_add(Weight::from_parts(161_074, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}

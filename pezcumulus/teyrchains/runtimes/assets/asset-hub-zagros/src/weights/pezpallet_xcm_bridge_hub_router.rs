@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `73b9817d6032`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `ef4134d66388`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_xcm_bridge_hub_router
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -54,14 +54,14 @@ impl<T: pezframe_system::Config> pezpallet_xcm_bridge_hub_router::WeightInfo for
 	/// Proof: `XcmpQueue::InboundXcmpSuspended` (`max_values`: Some(1), `max_size`: Some(4002), added: 4497, mode: `MaxEncodedLen`)
 	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:0)
 	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(1282), added: 1777, mode: `MaxEncodedLen`)
-	/// Storage: `ToPezkuwichainXcmRouter::Bridge` (r:1 w:1)
-	/// Proof: `ToPezkuwichainXcmRouter::Bridge` (`max_values`: Some(1), `max_size`: Some(17), added: 512, mode: `MaxEncodedLen`)
+	/// Storage: `ToZagrosXcmRouter::Bridge` (r:1 w:1)
+	/// Proof: `ToZagrosXcmRouter::Bridge` (`max_values`: Some(1), `max_size`: Some(17), added: 512, mode: `MaxEncodedLen`)
 	fn on_initialize_when_non_congested() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `259`
+		//  Measured:  `154`
 		//  Estimated: `5487`
-		// Minimum execution time: 11_878_000 picoseconds.
-		Weight::from_parts(12_382_000, 0)
+		// Minimum execution time: 10_896_000 picoseconds.
+		Weight::from_parts(11_372_000, 0)
 			.saturating_add(Weight::from_parts(0, 5487))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -74,19 +74,19 @@ impl<T: pezframe_system::Config> pezpallet_xcm_bridge_hub_router::WeightInfo for
 		// Proof Size summary in bytes:
 		//  Measured:  `144`
 		//  Estimated: `5487`
-		// Minimum execution time: 5_094_000 picoseconds.
-		Weight::from_parts(5_316_000, 0)
+		// Minimum execution time: 5_121_000 picoseconds.
+		Weight::from_parts(5_348_000, 0)
 			.saturating_add(Weight::from_parts(0, 5487))
 			.saturating_add(T::DbWeight::get().reads(2))
 	}
-	/// Storage: `ToPezkuwichainXcmRouter::Bridge` (r:1 w:1)
-	/// Proof: `ToPezkuwichainXcmRouter::Bridge` (`max_values`: Some(1), `max_size`: Some(17), added: 512, mode: `MaxEncodedLen`)
+	/// Storage: `ToZagrosXcmRouter::Bridge` (r:1 w:1)
+	/// Proof: `ToZagrosXcmRouter::Bridge` (`max_values`: Some(1), `max_size`: Some(17), added: 512, mode: `MaxEncodedLen`)
 	fn report_bridge_status() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `150`
 		//  Estimated: `1502`
-		// Minimum execution time: 9_591_000 picoseconds.
-		Weight::from_parts(10_157_000, 0)
+		// Minimum execution time: 9_451_000 picoseconds.
+		Weight::from_parts(9_808_000, 0)
 			.saturating_add(Weight::from_parts(0, 1502))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))

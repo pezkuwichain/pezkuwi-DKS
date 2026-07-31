@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! # Asset Hub Zagros Runtime
+//! # Asset Hub Pezkuwichain Runtime
 //!
-//! Testnet for Asset Hub Pezkuwi.
+//! Asset Hub Pezkuwichain, formerly known as "Rockmine", is the test network for its Dicle cousin.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "512"]
@@ -24,48 +24,55 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-mod bridge_to_ethereum_config;
+mod bag_thresholds;
 mod genesis_config_presets;
+mod staking;
 mod weights;
 pub mod xcm_config;
 
-// Configurations for next functionality.
-mod bag_thresholds;
-pub mod governance;
-#[cfg(not(feature = "runtime-benchmarks"))]
-mod migrations;
-mod staking;
-
-use governance::{
-	pezpallet_custom_origins, FellowshipAdmin, GeneralAdmin, StakingAdmin, Treasurer,
-};
+// Re-export staking configurations
+pub use staking::*;
 
 extern crate alloc;
 
 use alloc::{vec, vec::Vec};
-use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
-pub use pez_assets_common::local_and_foreign_assets::ForeignAssetReserveData;
 use pez_assets_common::{
+	foreign_creators::ForeignCreators,
 	local_and_foreign_assets::{LocalFromLeft, TargetFromLeft},
+	matching::{FromNetwork, FromSiblingTeyrchain},
 	AssetIdForPoolAssets, AssetIdForPoolAssetsConvert, AssetIdForTrustBackedAssetsConvert,
 };
-use pezbp_asset_hub_zagros::CreateForeignAssetDeposit;
+use pezbp_asset_hub_pezkuwichain::CreateForeignAssetDeposit;
 use pezcumulus_pezpallet_teyrchain_system::{
 	RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
 };
-use pezcumulus_primitives_core::{relay_chain::AccountIndex, AggregateMessageOrigin, ParaId};
+use pezcumulus_primitives_core::AggregateMessageOrigin;
+use pezsp_api::impl_runtime_apis;
+use pezsp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use pezsp_runtime::{
+	generic, impl_opaque_keys,
+	traits::{AccountIdConversion, BlakeTwo256, Block as BlockT, Saturating, Verify},
+	transaction_validity::{TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult, FixedU128, Permill, Perquintill,
+};
+use testnet_teyrchains_constants::pezkuwichain::snowbridge::EthereumNetwork;
+
+#[cfg(feature = "std")]
+use pezsp_version::NativeVersion;
+use pezsp_version::RuntimeVersion;
+
+use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
+pub use pez_assets_common::local_and_foreign_assets::ForeignAssetReserveData;
+use pezcumulus_primitives_core::ParaId;
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
 	genesis_builder_helper::{build_state, get_preset},
 	ord_parameter_types, parameter_types,
 	traits::{
-		fungible::{self, HoldConsideration},
-		fungibles,
-		tokens::{imbalance::ResolveAssetTo, nonfungibles_v2::Inspect},
+		fungible, fungible::HoldConsideration, fungibles, tokens::imbalance::ResolveAssetTo,
 		AsEnsureOriginWithArg, ConstBool, ConstU128, ConstU32, ConstU64, ConstU8,
-		ConstantStoragePrice, EitherOfDiverse, Equals, InstanceFilter, LinearStoragePrice, Nothing,
-		TransformOrigin, WithdrawReasons,
+		ConstantStoragePrice, EitherOfDiverse, Equals, InstanceFilter, Nothing, TransformOrigin,
 	},
 	weights::{ConstantMultiplier, Weight},
 	BoundedVec, PalletId,
@@ -76,52 +83,41 @@ use pezframe_system::{
 };
 use pezpallet_asset_conversion_tx_payment::SwapAssetAdapter;
 use pezpallet_assets_precompiles::{InlineIdConfig, ERC20};
-use pezpallet_nfts::{DestroyWitness, PalletFeatures};
-use pezpallet_nomination_pools::PoolId;
+use pezpallet_nfts::PalletFeatures;
 use pezpallet_revive::evm::runtime::EthExtra;
-use pezpallet_xcm::EnsureXcm;
 use pezpallet_xcm_precompiles::XcmPrecompile;
-use pezsp_api::impl_runtime_apis;
-use pezsp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use pezsp_runtime::{
-	generic, impl_opaque_keys,
-	traits::{AccountIdConversion, BlakeTwo256, Block as BlockT, ConvertInto, Saturating, Verify},
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, FixedU128, Perbill, Permill, RuntimeDebug,
-};
-#[cfg(feature = "std")]
-use pezsp_version::NativeVersion;
-use pezsp_version::RuntimeVersion;
-use testnet_teyrchains_constants::zagros::{
-	consensus::*, currency::*, snowbridge::EthereumNetwork, time::*,
-};
+use pezsp_runtime::{Perbill, RuntimeDebug};
+use testnet_teyrchains_constants::pezkuwichain::{consensus::*, currency::*, time::*};
 use teyrchains_common::{
-	impls::DealWithFees, message_queue::*, AccountId, AssetIdForTrustBackedAssets, AuraId, Balance,
-	BlockNumber, CollectionId, Hash, Header, ItemId, Nonce, Signature, AVERAGE_ON_INITIALIZE_RATIO,
-	NORMAL_DISPATCH_RATIO,
+	impls::DealWithFees,
+	message_queue::{NarrowOriginToSibling, ParaIdToSibling},
+	AccountId, AssetIdForTrustBackedAssets, AuraId, Balance, BlockNumber, CollectionId, Hash,
+	Header, ItemId, Nonce, Signature, AVERAGE_ON_INITIALIZE_RATIO, NORMAL_DISPATCH_RATIO,
 };
 use xcm_config::{
-	ForeignAssetsConvertedConcreteId, LocationToAccountId, PoolAssetsConvertedConcreteId,
-	PoolAssetsPalletLocation, TrustBackedAssetsConvertedConcreteId,
-	TrustBackedAssetsPalletLocation, XcmConfig, XcmOriginToTransactDispatchOrigin, ZagrosLocation,
+	ForeignAssetsConvertedConcreteId, GovernanceLocation, LocationToAccountId,
+	PoolAssetsConvertedConcreteId, PoolAssetsPalletLocation, TokenLocation,
+	TrustBackedAssetsConvertedConcreteId, TrustBackedAssetsPalletLocation, XcmConfig,
 };
-use zagros_runtime_constants::time::DAYS as RC_DAYS;
+
+#[cfg(test)]
+mod tests;
 
 #[cfg(any(feature = "std", test))]
 pub use pezsp_runtime::BuildStorage;
 
-use pez_assets_common::{
-	foreign_creators::ForeignCreators,
-	matching::{FromNetwork, FromSiblingTeyrchain},
+// Pezkuwi imports
+use pezkuwi_runtime_common::{prod_or_fast, BlockHashCount, SlowAdjustingFeeUpdate};
+use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
+#[cfg(feature = "runtime-benchmarks")]
+use xcm::latest::prelude::{
+	Asset, Assets as XcmAssets, Fungible, Here, InteriorLocation, Junction, Junction::*, Location,
+	NetworkId, NonFungible, ParentThen, Response, WeightLimit, XCM_VERSION,
 };
-use pezkuwi_runtime_common::{BlockHashCount, SlowAdjustingFeeUpdate};
-use weights::{BlockExecutionWeight, ExtrinsicBaseWeight, InMemoryDbWeight};
 use xcm::{
-	latest::prelude::AssetId,
-	prelude::{
-		VersionedAsset, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
-		XcmVersion,
-	},
+	latest::prelude::{AssetId, BodyId},
+	Version as XcmVersion, VersionedAsset, VersionedAssetId, VersionedAssets, VersionedLocation,
+	VersionedXcm,
 };
 use xcm_runtime_pezapis::{
 	dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
@@ -130,12 +126,7 @@ use xcm_runtime_pezapis::{
 
 #[cfg(feature = "runtime-benchmarks")]
 use pezframe_support::traits::PalletInfoAccess;
-
-#[cfg(feature = "runtime-benchmarks")]
-use xcm::latest::prelude::{
-	Asset, Assets as XcmAssets, Fungible, Here, InteriorLocation, Junction, Junction::*, Location,
-	NetworkId, NonFungible, ParentThen, Response, WeightLimit, XCM_VERSION,
-};
+use weights::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 
 impl_opaque_keys! {
 	pub struct SessionKeys {
@@ -145,15 +136,10 @@ impl_opaque_keys! {
 
 #[pezsp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	// spec_name is "asset-hub-zagros", consistent with the already-rebranded mainnet
-	// Asset Hub ("asset-hub-pezkuwichain"). The upstream legacy name was "westmint";
-	// it is dropped here for full independence. This is a testnet identity change that
-	// takes effect via a runtime upgrade — tooling keyed on the old "westmint" name
-	// for the Zagros Asset Hub must update.
 	spec_name: alloc::borrow::Cow::Borrowed("asset-hub-zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("asset-hub-zagros"),
 	authoring_version: 1,
-	spec_version: 1_020_010,
+	spec_version: 1_020_014,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 16,
@@ -201,7 +187,7 @@ impl pezframe_system::Config for Runtime {
 	type Hash = Hash;
 	type Block = Block;
 	type BlockHashCount = BlockHashCount;
-	type DbWeight = InMemoryDbWeight;
+	type DbWeight = RocksDbWeight;
 	type Version = Version;
 	type AccountData = pezpallet_balances::AccountData<Balance>;
 	type SystemWeightInfo = weights::pezframe_system::WeightInfo<Runtime>;
@@ -209,7 +195,6 @@ impl pezframe_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = pezcumulus_pezpallet_teyrchain_system::TeyrchainSetCode<Self>;
 	type MaxConsumers = pezframe_support::traits::ConstU32<16>;
-	type MultiBlockMigrator = MultiBlockMigrations;
 	type SingleBlockMigrations = Migrations;
 }
 
@@ -249,7 +234,7 @@ impl pezpallet_balances::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type FreezeIdentifier = RuntimeFreezeReason;
-	type MaxFreezes = pezframe_support::traits::VariantCountOf<RuntimeFreezeReason>;
+	type MaxFreezes = ConstU32<50>;
 	type DoneSlashHandler = ();
 }
 
@@ -258,10 +243,10 @@ parameter_types! {
 	pub const TransactionByteFee: Balance = MILLICENTS;
 }
 
-/// `pezpallet_revive` requires this specific `WeightToFee` implementation.
-///
-/// This is needed because we make certain assumptions about how weight
-/// is mapped to fees. Enforced at compile time.
+/// `pezpallet_revive` requires this specific `WeightToFee` implementation: the contract
+/// pallet assumes a fixed relationship between weight and fee, and enforces it at compile
+/// time. Keeping it here is what allows Ethereum transactions to be priced consistently with
+/// native ones.
 pub type WeightToFee = pezpallet_revive::evm::fees::BlockRatioFee<
 	// p
 	CENTS,
@@ -282,7 +267,7 @@ impl pezpallet_transaction_payment::Config for Runtime {
 }
 
 parameter_types! {
-	pub const AssetDeposit: Balance = UNITS / 10; // 1 / 10 ZGR deposit to create asset
+	pub const AssetDeposit: Balance = UNITS / 10; // 1 / 10 UNITS deposit to create asset
 	pub const AssetAccountDeposit: Balance = deposit(1, 16);
 	pub const ApprovalDeposit: Balance = EXISTENTIAL_DEPOSIT;
 	pub const AssetsStringLimit: u32 = 50;
@@ -292,6 +277,7 @@ parameter_types! {
 	pub const MetadataDepositPerByte: Balance = deposit(0, 1);
 }
 
+/// We allow root to execute privileged asset operations.
 pub type AssetsForceOrigin = EnsureRoot<AccountId>;
 
 // Called "Trust Backed" assets because these are generally registered by some account, and users of
@@ -319,7 +305,7 @@ impl pezpallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
 	type WeightInfo = weights::pezpallet_assets_local::WeightInfo<Runtime>;
 	type CallbackHandle = pezpallet_assets::AutoIncAssetId<Runtime, TrustBackedAssetsInstance>;
 	type AssetAccountDeposit = AssetAccountDeposit;
-	type RemoveItemsLimit = ConstU32<1000>;
+	type RemoveItemsLimit = pezframe_support::traits::ConstU32<1000>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = ();
 }
@@ -346,18 +332,19 @@ impl pezpallet_assets::Config<PoolAssetsInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
 	type RemoveItemsLimit = ConstU32<1000>;
-	type AssetId = u32;
+	type AssetId = AssetIdForPoolAssets;
 	type AssetIdParameter = u32;
 	type ReserveData = ();
 	type Currency = Balances;
 	type CreateOrigin =
 		AsEnsureOriginWithArg<EnsureSignedBy<AssetConversionOrigin, pezsp_runtime::AccountId32>>;
 	type ForceOrigin = AssetsForceOrigin;
+	// Deposits are zero because creation/admin is limited to Asset Conversion pezpallet.
 	type AssetDeposit = ConstU128<0>;
 	type AssetAccountDeposit = ConstU128<0>;
 	type MetadataDepositBase = ConstU128<0>;
 	type MetadataDepositPerByte = ConstU128<0>;
-	type ApprovalDeposit = ConstU128<0>;
+	type ApprovalDeposit = ApprovalDeposit;
 	type StringLimit = ConstU32<50>;
 	type Holder = ();
 	type Freezer = PoolAssetsFreezer;
@@ -401,11 +388,11 @@ pub type LocalAndForeignAssetsFreezer = fungibles::UnionOf<
 	AccountId,
 >;
 
-/// Union fungibles implementation for [`LocalAndForeignAssets`] and `Balances`.
+/// Union fungibles implementation for [`LocalAndForeignAssets`] and [`Balances`].
 pub type NativeAndNonPoolAssets = fungible::UnionOf<
 	Balances,
 	LocalAndForeignAssets,
-	TargetFromLeft<ZagrosLocation, xcm::v5::Location>,
+	TargetFromLeft<TokenLocation, xcm::v5::Location>,
 	xcm::v5::Location,
 	AccountId,
 >;
@@ -414,7 +401,7 @@ pub type NativeAndNonPoolAssets = fungible::UnionOf<
 pub type NativeAndNonPoolAssetsFreezer = fungible::UnionOf<
 	Balances,
 	LocalAndForeignAssetsFreezer,
-	TargetFromLeft<ZagrosLocation, xcm::v5::Location>,
+	TargetFromLeft<TokenLocation, xcm::v5::Location>,
 	xcm::v5::Location,
 	AccountId,
 >;
@@ -462,7 +449,7 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type Assets = NativeAndNonPoolAssets;
 	type PoolId = (Self::AssetKind, Self::AssetKind);
 	type PoolLocator = pezpallet_asset_conversion::WithFirstAsset<
-		ZagrosLocation,
+		TokenLocation,
 		AccountId,
 		Self::AssetKind,
 		PoolIdToAccountId,
@@ -470,7 +457,7 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type PoolAssetId = u32;
 	type PoolAssets = PoolAssets;
 	type PoolSetupFee = ConstU128<0>; // Asset class deposit fees are sufficient to prevent spam
-	type PoolSetupFeeAsset = ZagrosLocation;
+	type PoolSetupFeeAsset = TokenLocation;
 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
 	type LPFee = ConstU32<3>;
@@ -480,78 +467,11 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type WeightInfo = weights::pezpallet_asset_conversion::WeightInfo<Runtime>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = pez_assets_common::benchmarks::AssetPairFactory<
-		ZagrosLocation,
+		TokenLocation,
 		teyrchain_info::Pezpallet<Runtime>,
 		xcm_config::TrustBackedAssetsPalletIndex,
 		xcm::v5::Location,
 	>;
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-pub struct PalletAssetRewardsBenchmarkHelper;
-
-#[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_asset_rewards::benchmarking::BenchmarkHelper<xcm::v5::Location>
-	for PalletAssetRewardsBenchmarkHelper
-{
-	fn staked_asset() -> Location {
-		Location::new(
-			0,
-			[PalletInstance(<Assets as PalletInfoAccess>::index() as u8), GeneralIndex(100)],
-		)
-	}
-	fn reward_asset() -> Location {
-		Location::new(
-			0,
-			[PalletInstance(<Assets as PalletInfoAccess>::index() as u8), GeneralIndex(101)],
-		)
-	}
-}
-
-parameter_types! {
-	pub const MinVestedTransfer: Balance = 100 * CENTS;
-	pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
-		WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
-}
-
-impl pezpallet_vesting::Config for Runtime {
-	const MAX_VESTING_SCHEDULES: u32 = 100;
-	type BlockNumberProvider = RelaychainDataProvider<Runtime>;
-	type BlockNumberToBalance = ConvertInto;
-	type Currency = Balances;
-	type MinVestedTransfer = MinVestedTransfer;
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = weights::pezpallet_vesting::WeightInfo<Runtime>;
-	type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
-}
-
-parameter_types! {
-	pub const AssetRewardsPalletId: PalletId = PalletId(*b"py/astrd");
-	pub const RewardsPoolCreationHoldReason: RuntimeHoldReason =
-		RuntimeHoldReason::AssetRewards(pezpallet_asset_rewards::HoldReason::PoolCreation);
-	// 1 item, 135 bytes into the storage on pool creation.
-	pub const StakePoolCreationDeposit: Balance = deposit(1, 135);
-}
-
-impl pezpallet_asset_rewards::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type PalletId = AssetRewardsPalletId;
-	type Balance = Balance;
-	type Assets = NativeAndAllAssets;
-	type AssetsFreezer = NativeAndAllAssetsFreezer;
-	type AssetId = xcm::v5::Location;
-	type CreatePoolOrigin = EnsureSigned<AccountId>;
-	type RuntimeFreezeReason = RuntimeFreezeReason;
-	type Consideration = HoldConsideration<
-		AccountId,
-		Balances,
-		RewardsPoolCreationHoldReason,
-		ConstantStoragePrice<StakePoolCreationDeposit, Balance>,
-	>;
-	type WeightInfo = weights::pezpallet_asset_rewards::WeightInfo<Runtime>;
-	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = PalletAssetRewardsBenchmarkHelper;
 }
 
 impl pezpallet_asset_conversion_ops::Config for Runtime {
@@ -591,7 +511,7 @@ impl pezpallet_assets::Config<ForeignAssetsInstance> for Runtime {
 		(
 			FromSiblingTeyrchain<teyrchain_info::Pezpallet<Runtime>, xcm::v5::Location>,
 			FromNetwork<xcm_config::UniversalLocation, EthereumNetwork, xcm::v5::Location>,
-			xcm_config::bridging::to_pezkuwichain::PezkuwichainAssetFromAssetHubPezkuwichain,
+			xcm_config::bridging::to_zagros::ZagrosOrEthereumAssetFromAssetHubZagros,
 		),
 		LocationToAccountId,
 		AccountId,
@@ -637,7 +557,7 @@ impl pezpallet_multisig::Config for Runtime {
 	type DepositFactor = DepositFactor;
 	type MaxSignatories = MaxSignatories;
 	type WeightInfo = weights::pezpallet_multisig::WeightInfo<Runtime>;
-	type BlockNumberProvider = System;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
 }
 
 impl pezpallet_utility::Config for Runtime {
@@ -689,30 +609,6 @@ pub enum ProxyType {
 	AssetManager,
 	/// Collator selection proxy. Can execute calls related to collator selection mechanism.
 	Collator,
-	// New variants introduced by the Asset Hub Migration from the Relay Chain.
-	/// Allow to do governance.
-	///
-	/// Contains pallets `Treasury`, `Bounties`, `Utility`, `ChildBounties`, `ConvictionVoting`,
-	/// `Referenda` and `Whitelist`.
-	Governance,
-	/// Allows access to staking related calls.
-	///
-	/// Contains the `Staking`, `Session`, `Utility`, `FastUnstake`, `VoterList`, `NominationPools`
-	/// pallets.
-	Staking,
-	/// Allows access to nomination pools related calls.
-	///
-	/// Contains the `NominationPools` and `Utility` pallets.
-	NominationPools,
-
-	/// Placeholder variant to track the state before the Asset Hub Migration.
-	OldSudoBalances,
-	/// Placeholder variant to track the state before the Asset Hub Migration.
-	OldIdentityJudgement,
-	/// Placeholder variant to track the state before the Asset Hub Migration.
-	OldAuction,
-	/// Placeholder variant to track the state before the Asset Hub Migration.
-	OldParaRegistration,
 }
 impl Default for ProxyType {
 	fn default() -> Self {
@@ -724,25 +620,13 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 	fn filter(&self, c: &RuntimeCall) -> bool {
 		match self {
 			ProxyType::Any => true,
-			ProxyType::OldSudoBalances
-			| ProxyType::OldIdentityJudgement
-			| ProxyType::OldAuction
-			| ProxyType::OldParaRegistration => false,
 			ProxyType::NonTransfer => !matches!(
 				c,
-				RuntimeCall::Balances { .. } |
-					RuntimeCall::Assets { .. } |
-					RuntimeCall::NftFractionalization { .. } |
-					RuntimeCall::Nfts { .. } |
-					RuntimeCall::Uniques { .. } |
-					RuntimeCall::Scheduler(..) |
-					RuntimeCall::Treasury(..) |
-					// We allow calling `vest` and merging vesting schedules, but obviously not
-					// vested transfers.
-					RuntimeCall::Vesting(pezpallet_vesting::Call::vested_transfer { .. }) |
-					RuntimeCall::ConvictionVoting(..) |
-					RuntimeCall::Referenda(..) |
-					RuntimeCall::Whitelist(..)
+				RuntimeCall::Balances { .. }
+					| RuntimeCall::Assets { .. }
+					| RuntimeCall::NftFractionalization { .. }
+					| RuntimeCall::Nfts { .. }
+					| RuntimeCall::Uniques { .. }
 			),
 			ProxyType::CancelProxy => matches!(
 				c,
@@ -832,28 +716,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					| RuntimeCall::Utility { .. }
 					| RuntimeCall::Multisig { .. }
 			),
-			// New variants introduced by the Asset Hub Migration from the Relay Chain.
-			ProxyType::Governance => matches!(
-				c,
-				RuntimeCall::Treasury(..)
-					| RuntimeCall::Utility(..)
-					| RuntimeCall::ConvictionVoting(..)
-					| RuntimeCall::Referenda(..)
-					| RuntimeCall::Whitelist(..)
-			),
-			ProxyType::Staking => {
-				matches!(
-					c,
-					RuntimeCall::Staking(..)
-						| RuntimeCall::Session(..)
-						| RuntimeCall::Utility(..)
-						| RuntimeCall::NominationPools(..)
-						| RuntimeCall::VoterList(..)
-				)
-			},
-			ProxyType::NominationPools => {
-				matches!(c, RuntimeCall::NominationPools(..) | RuntimeCall::Utility(..))
-			},
 		}
 	}
 
@@ -864,13 +726,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 			(_, ProxyType::Any) => false,
 			(ProxyType::Assets, ProxyType::AssetOwner) => true,
 			(ProxyType::Assets, ProxyType::AssetManager) => true,
-			(
-				ProxyType::NonTransfer,
-				ProxyType::Collator
-				| ProxyType::Governance
-				| ProxyType::Staking
-				| ProxyType::NominationPools,
-			) => true,
+			(ProxyType::NonTransfer, ProxyType::Collator) => true,
 			_ => false,
 		}
 	}
@@ -889,7 +745,7 @@ impl pezpallet_proxy::Config for Runtime {
 	type CallHasher = BlakeTwo256;
 	type AnnouncementDepositBase = AnnouncementDepositBase;
 	type AnnouncementDepositFactor = AnnouncementDepositFactor;
-	type BlockNumberProvider = RelaychainDataProvider<Runtime>;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
 }
 
 parameter_types! {
@@ -919,8 +775,6 @@ type ConsensusHook = pezcumulus_pezpallet_aura_ext::FixedVelocityConsensusHook<
 	UNINCLUDED_SEGMENT_CAPACITY,
 >;
 
-impl teyrchain_info::Config for Runtime {}
-
 parameter_types! {
 	pub MessageQueueServiceWeight: Weight = Perbill::from_percent(35) * RuntimeBlockWeights::get().max_block;
 }
@@ -948,11 +802,13 @@ impl pezpallet_message_queue::Config for Runtime {
 	type IdleMaxServiceWeight = MessageQueueServiceWeight;
 }
 
+impl teyrchain_info::Config for Runtime {}
+
 impl pezcumulus_pezpallet_aura_ext::Config for Runtime {}
 
 parameter_types! {
 	/// The asset ID for the asset that we use to pay for message delivery fees.
-	pub FeeAssetId: AssetId = AssetId(xcm_config::ZagrosLocation::get());
+	pub FeeAssetId: AssetId = AssetId(xcm_config::TokenLocation::get());
 	/// The base fee for the message delivery fees.
 	pub const BaseDeliveryFee: u128 = CENTS.saturating_mul(3);
 }
@@ -965,10 +821,10 @@ pub type PriceForSiblingTeyrchainDelivery = pezkuwi_runtime_common::xcm_sender::
 >;
 
 impl pezcumulus_pezpallet_xcmp_queue::Config for Runtime {
+	type WeightInfo = weights::pezcumulus_pezpallet_xcmp_queue::WeightInfo<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
 	type ChannelInfo = TeyrchainSystem;
 	type VersionWrapper = PezkuwiXcm;
-	// Enqueue XCMP messages from siblings for later processing.
 	type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
 	type MaxInboundSuspended = ConstU32<1_000>;
 	type MaxActiveOutboundChannels = ConstU32<128>;
@@ -976,8 +832,7 @@ impl pezcumulus_pezpallet_xcmp_queue::Config for Runtime {
 	// need to set the page size larger than that until we reduce the channel size on-chain.
 	type MaxPageSize = ConstU32<{ 103 * 1024 }>;
 	type ControllerOrigin = EnsureRoot<AccountId>;
-	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
-	type WeightInfo = weights::pezcumulus_pezpallet_xcmp_queue::WeightInfo<Runtime>;
+	type ControllerOriginConverter = xcm_config::XcmOriginToTransactDispatchOrigin;
 	type PriceForSiblingDelivery = PriceForSiblingTeyrchainDelivery;
 }
 
@@ -991,7 +846,7 @@ parameter_types! {
 }
 
 parameter_types! {
-	pub const Period: u32 = 6 * HOURS;
+	pub const Period: u32 = prod_or_fast!(6 * HOURS, 20);
 	pub const Offset: u32 = 0;
 }
 
@@ -1002,7 +857,7 @@ impl pezpallet_session::Config for Runtime {
 	type ValidatorIdOf = pezpallet_collator_selection::IdentityCollator;
 	type ShouldEndSession = pezpallet_session::PeriodicSessions<Period, Offset>;
 	type NextSessionRotation = pezpallet_session::PeriodicSessions<Period, Offset>;
-	type SessionManager = CollatorSelection;
+	type SessionManager = StakingSessionManager;
 	// Essentially just Aura, but let's be pedantic.
 	type SessionHandler = <SessionKeys as pezsp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
@@ -1022,10 +877,16 @@ impl pezpallet_aura::Config for Runtime {
 
 parameter_types! {
 	pub const PotId: PalletId = PalletId(*b"PotStake");
-	pub const SessionLength: BlockNumber = 6 * HOURS;
+	pub const SessionLength: BlockNumber = prod_or_fast!(6 * HOURS, 20);
+	// StakingAdmin pluralistic body.
+	pub const StakingAdminBodyId: BodyId = BodyId::Defense;
 }
 
-pub type CollatorSelectionUpdateOrigin = EnsureRoot<AccountId>;
+/// We allow root and the `StakingAdmin` to execute privileged collator selection operations.
+pub type CollatorSelectionUpdateOrigin = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	EnsureXcm<IsVoiceOfBody<GovernanceLocation, StakingAdminBodyId>>,
+>;
 
 impl pezpallet_collator_selection::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
@@ -1051,7 +912,7 @@ impl pezpallet_asset_conversion_tx_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type AssetId = xcm::v5::Location;
 	type OnChargeAssetTransaction = SwapAssetAdapter<
-		ZagrosLocation,
+		TokenLocation,
 		NativeAndNonPoolAssets,
 		AssetConversion,
 		ResolveAssetTo<StakingPot, NativeAndNonPoolAssets>,
@@ -1154,19 +1015,19 @@ impl pezpallet_nfts::Config for Runtime {
 	type WeightInfo = weights::pezpallet_nfts::WeightInfo<Runtime>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type Helper = ();
-	type BlockNumberProvider = RelaychainDataProvider<Runtime>;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
 }
 
-/// XCM router instance to BridgeHub with bridging capabilities for `Pezkuwichain` global
+/// XCM router instance to BridgeHub with bridging capabilities for `Zagros` global
 /// consensus with dynamic fees and back-pressure.
-pub type ToPezkuwichainXcmRouterInstance = pezpallet_xcm_bridge_hub_router::Instance1;
-impl pezpallet_xcm_bridge_hub_router::Config<ToPezkuwichainXcmRouterInstance> for Runtime {
+pub type ToZagrosXcmRouterInstance = pezpallet_xcm_bridge_hub_router::Instance3;
+impl pezpallet_xcm_bridge_hub_router::Config<ToZagrosXcmRouterInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pezpallet_xcm_bridge_hub_router::WeightInfo<Runtime>;
 
 	type UniversalLocation = xcm_config::UniversalLocation;
 	type SiblingBridgeHubLocation = xcm_config::bridging::SiblingBridgeHub;
-	type BridgedNetworkId = xcm_config::bridging::to_pezkuwichain::PezkuwichainNetwork;
+	type BridgedNetworkId = xcm_config::bridging::to_zagros::ZagrosNetwork;
 	type Bridges = xcm_config::bridging::NetworkExportTable;
 	type DestinationVersion = PezkuwiXcm;
 
@@ -1182,12 +1043,329 @@ impl pezpallet_xcm_bridge_hub_router::Config<ToPezkuwichainXcmRouterInstance> fo
 	type FeeAsset = xcm_config::bridging::XcmBridgeHubRouterFeeAssetId;
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+pub struct PalletAssetRewardsBenchmarkHelper;
+
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_asset_rewards::benchmarking::BenchmarkHelper<xcm::v5::Location>
+	for PalletAssetRewardsBenchmarkHelper
+{
+	fn staked_asset() -> Location {
+		Location::new(
+			0,
+			[PalletInstance(<Assets as PalletInfoAccess>::index() as u8), GeneralIndex(100)],
+		)
+	}
+	fn reward_asset() -> Location {
+		Location::new(
+			0,
+			[PalletInstance(<Assets as PalletInfoAccess>::index() as u8), GeneralIndex(101)],
+		)
+	}
+}
+
 parameter_types! {
+	pub const AssetRewardsPalletId: PalletId = PalletId(*b"py/astrd");
+	pub const RewardsPoolCreationHoldReason: RuntimeHoldReason =
+		RuntimeHoldReason::AssetRewards(pezpallet_asset_rewards::HoldReason::PoolCreation);
+	// 1 item, 135 bytes into the storage on pool creation.
+	pub const StakePoolCreationDeposit: Balance = deposit(1, 135);
+}
+
+impl pezpallet_asset_rewards::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type PalletId = AssetRewardsPalletId;
+	type Balance = Balance;
+	type Assets = NativeAndAllAssets;
+	type AssetsFreezer = NativeAndAllAssetsFreezer;
+	type AssetId = xcm::v5::Location;
+	type CreatePoolOrigin = EnsureSigned<AccountId>;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
+	type Consideration = HoldConsideration<
+		AccountId,
+		Balances,
+		RewardsPoolCreationHoldReason,
+		ConstantStoragePrice<StakePoolCreationDeposit, Balance>,
+	>;
+	type WeightInfo = weights::pezpallet_asset_rewards::WeightInfo<Runtime>;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = PalletAssetRewardsBenchmarkHelper;
+}
+
+// -----------------------------------------------------------------------------
+// NIS Pezpallet
+// -----------------------------------------------------------------------------
+parameter_types! {
+	pub const QueueCount: u32 = 10;
+	pub const MaxQueueLen: u32 = 100;
+	pub const FifoQueueLen: u32 = 50;
+	pub const NisBasePeriod: BlockNumber = 30 * DAYS;
+	pub const MinBid: Balance = 10 * UNITS;
+	pub const MinReceipt: Perquintill = Perquintill::from_percent(1);
+	pub const IntakePeriod: BlockNumber = 10;
+	pub MaxIntakeWeight: Weight = RuntimeBlockWeights::get().max_block / 10;
+	pub const ThawThrottle: (Perquintill, BlockNumber) = (Perquintill::from_percent(25), 5);
+	pub Target: Perquintill = Perquintill::zero();
+	pub const NisPalletId: PalletId = PalletId(*b"py/nis  ");
+}
+
+use pezframe_support::traits::fungible::ItemOf;
+use pezpallet_nis::WithMaximumOf;
+
+impl pezpallet_nis::Config for Runtime {
+	type WeightInfo = pezpallet_nis::weights::BizinikiwiWeight<Runtime>;
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type CurrencyBalance = Balance;
+	type FundOrigin = pezframe_system::EnsureSigned<AccountId>;
+	type Counterpart = ItemOf<Assets, PezAssetId, AccountId>;
+	type CounterpartAmount = WithMaximumOf<ConstU128<{ u128::MAX }>>;
+	type Deficit = ();
+	type IgnoredIssuance = ();
+	type Target = Target;
+	type PalletId = NisPalletId;
+	type QueueCount = QueueCount;
+	type MaxQueueLen = MaxQueueLen;
+	type FifoQueueLen = FifoQueueLen;
+	type BasePeriod = NisBasePeriod;
+	type MinBid = MinBid;
+	type MinReceipt = MinReceipt;
+	type IntakePeriod = IntakePeriod;
+	type MaxIntakeWeight = MaxIntakeWeight;
+	type ThawThrottle = ThawThrottle;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkSetup = ();
+}
+
+// -----------------------------------------------------------------------------
+// Treasury Pezpallet
+// -----------------------------------------------------------------------------
+parameter_types! {
+	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
+	pub const SpendPeriod: BlockNumber = 6 * DAYS;
+	pub const Burn: Permill = Permill::from_perthousand(2);
+	pub const MaxApprovals: u32 = 100;
+	pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
+	pub TreasuryAccount: AccountId = Treasury::account_id();
+}
+
+impl pezpallet_treasury::Config for Runtime {
+	type PalletId = TreasuryPalletId;
+	type Currency = Balances;
+	type RejectOrigin = EnsureRoot<AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type SpendPeriod = SpendPeriod;
+	type Burn = Burn;
+	type BurnDestination = ();
+	type MaxApprovals = MaxApprovals;
+	type WeightInfo = ();
+	type SpendFunds = ();
+	type SpendOrigin =
+		pezframe_system::EnsureRootWithSuccess<AccountId, ConstU128<{ Balance::max_value() }>>;
+	type AssetKind = ();
+	type Beneficiary = AccountId;
+	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
+	type Paymaster =
+		pezframe_support::traits::tokens::pay::PayFromAccount<Balances, TreasuryAccount>;
+	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
+	type PayoutPeriod = PayoutSpendPeriod;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+}
+
+// -----------------------------------------------------------------------------
+// AssetRate Pezpallet
+// -----------------------------------------------------------------------------
+impl pezpallet_asset_rate::Config for Runtime {
+	type WeightInfo = ();
+	type RuntimeEvent = RuntimeEvent;
+	type CreateOrigin = EnsureRoot<AccountId>;
+	type RemoveOrigin = EnsureRoot<AccountId>;
+	type UpdateOrigin = EnsureRoot<AccountId>;
+	type Currency = Balances;
+	type AssetKind = ();
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+}
+
+// -----------------------------------------------------------------------------
+// Bounties Pezpallet
+// -----------------------------------------------------------------------------
+parameter_types! {
+	pub const BountiesDepositBase: Balance = 100 * CENTS;
+	pub const BountyDepositPayoutDelay: BlockNumber = 1 * DAYS;
+	pub const BountyUpdatePeriod: BlockNumber = 14 * DAYS;
+	pub const MaximumReasonLength: u32 = 16384;
+	pub const BountyCuratorDeposit: Permill = Permill::from_percent(50);
+	pub const BountyValueMinimum: Balance = 5 * UNITS;
+	pub const DataDepositPerByte: Balance = 1 * CENTS;
+}
+
+impl pezpallet_bounties::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type BountyDepositBase = BountiesDepositBase;
+	type BountyDepositPayoutDelay = BountyDepositPayoutDelay;
+	type BountyUpdatePeriod = BountyUpdatePeriod;
+	type CuratorDepositMultiplier = BountyCuratorDeposit;
+	type CuratorDepositMin = ConstU128<{ 1 * UNITS }>;
+	type CuratorDepositMax = ConstU128<{ 100 * UNITS }>;
+	type BountyValueMinimum = BountyValueMinimum;
+	type DataDepositPerByte = DataDepositPerByte;
+	type MaximumReasonLength = MaximumReasonLength;
+	type WeightInfo = ();
+	type ChildBountyManager = ChildBounties;
+	type OnSlash = Treasury;
+}
+
+// -----------------------------------------------------------------------------
+// ChildBounties Pezpallet
+// -----------------------------------------------------------------------------
+parameter_types! {
+	pub const MaxActiveChildBountyCount: u32 = 100;
+	pub const ChildBountyValueMinimum: Balance = 1 * UNITS;
+}
+
+impl pezpallet_child_bounties::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type MaxActiveChildBountyCount = MaxActiveChildBountyCount;
+	type ChildBountyValueMinimum = ChildBountyValueMinimum;
+	type WeightInfo = ();
+}
+
+// =============================================================================
+// PezkuwiChain Custom Asset Hub Pallets Configuration
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// PEZ Treasury Pezpallet
+// -----------------------------------------------------------------------------
+
+parameter_types! {
+	pub const PezTreasuryPalletId: PalletId = PalletId(*b"pez/trea");
+	pub const PezIncentivePotId: PalletId = PalletId(*b"pez/incv");
+	pub const PezGovernmentPotId: PalletId = PalletId(*b"pez/govr");
+	pub const PezAssetId: u32 = 1; // PEZ token asset ID
+	pub PezPresaleAccount: AccountId = PalletId(*b"pez/pres").into_account_truncating();
+	pub PezFounderAccount: AccountId = PalletId(*b"pez/foun").into_account_truncating();
+}
+
+impl pezpallet_pez_treasury::Config for Runtime {
+	type Assets = Assets;
+	type WeightInfo = pezpallet_pez_treasury::weights::BizinikiwiWeight<Runtime>;
+	type PezAssetId = PezAssetId;
+	type TreasuryPalletId = PezTreasuryPalletId;
+	type IncentivePotId = PezIncentivePotId;
+	type GovernmentPotId = PezGovernmentPotId;
+	type PresaleAccount = PezPresaleAccount;
+	type FounderAccount = PezFounderAccount;
+	type ForceOrigin = EnsureRoot<AccountId>;
+}
+
+// -----------------------------------------------------------------------------
+// Presale Pezpallet
+// -----------------------------------------------------------------------------
+
+parameter_types! {
+	pub const PresalePalletId: PalletId = PalletId(*b"pez/sale");
+	pub PresalePlatformTreasury: AccountId = PalletId(*b"pez/plat").into_account_truncating();
+	pub PresaleStakingRewardPool: AccountId = PalletId(*b"pez/stak").into_account_truncating();
+	pub const PresalePlatformFeePercent: u8 = 2; // 2% platform fee
+	pub const PresaleMaxContributors: u32 = 10_000;
+	pub const PresaleMaxBonusTiers: u32 = 5;
+	pub const PresaleMaxWhitelistedAccounts: u32 = 1_000;
+}
+
+impl pezpallet_presale::Config for Runtime {
+	type AssetId = AssetIdForTrustBackedAssets;
+	type Balance = Balance;
+	type Assets = Assets;
+	type PalletId = PresalePalletId;
+	type PlatformTreasury = PresalePlatformTreasury;
+	type StakingRewardPool = PresaleStakingRewardPool;
+	type PlatformFeePercent = PresalePlatformFeePercent;
+	type MaxContributors = PresaleMaxContributors;
+	type MaxBonusTiers = PresaleMaxBonusTiers;
+	type MaxWhitelistedAccounts = PresaleMaxWhitelistedAccounts;
+	type CreatePresaleOrigin = EnsureSigned<AccountId>;
+	type EmergencyOrigin = EnsureRoot<AccountId>;
+	type PresaleWeightInfo = pezpallet_presale::BizinikiwiWeight<Runtime>;
+}
+
+// -----------------------------------------------------------------------------
+// Token Wrapper Pezpallet
+// -----------------------------------------------------------------------------
+
+parameter_types! {
+	pub const TokenWrapperPalletId: PalletId = PalletId(*b"pez/wrap");
+	pub const WrappedAssetId: AssetIdForTrustBackedAssets = 2; // wHEZ asset ID
+}
+
+impl pezpallet_token_wrapper::Config for Runtime {
+	type WeightInfo = pezpallet_token_wrapper::weights::BizinikiwiWeight<Runtime>;
+	type Currency = Balances;
+	type AssetId = AssetIdForTrustBackedAssets;
+	type Assets = Assets;
+	type PalletId = TokenWrapperPalletId;
+	type WrapperAssetId = WrappedAssetId;
+}
+
+parameter_types! {
+	/// Deposits for the contract pallet's storage, and the share of a code hash's deposit that
+	/// is locked up while the code is in use.
 	pub const DepositPerItem: Balance = deposit(1, 0);
 	pub const DepositPerChildTrieItem: Balance = deposit(1, 0) / 100;
 	pub const DepositPerByte: Balance = deposit(0, 1);
-	pub CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(30);
+	pub const CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(30);
+	/// An Ethereum transaction may not claim more than this share of a block.
 	pub const MaxEthExtrinsicWeight: FixedU128 = FixedU128::from_rational(9, 10);
+	/// Multi-block migrations may use up to 80% of the block for their own work.
+	pub MbmServiceWeight: Weight = Perbill::from_percent(80) * RuntimeBlockWeights::get().max_block;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+type MultiBlockMigrationsType = pezpallet_migrations::mock_helpers::MockedMigrations;
+#[cfg(not(feature = "runtime-benchmarks"))]
+type MultiBlockMigrationsType = ();
+
+impl pezpallet_migrations::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Migrations = MultiBlockMigrationsType;
+	type CursorMaxLen = ConstU32<65_536>;
+	type IdentifierMaxLen = ConstU32<256>;
+	type MigrationStatusHandler = ();
+	type FailedMigrationHandler = pezframe_support::migrations::FreezeChainOnFailedMigration;
+	type MaxServiceWeight = MbmServiceWeight;
+	type WeightInfo = weights::pezpallet_migrations::WeightInfo<Runtime>;
+}
+
+/// The Ethereum-transaction extension used by `pezpallet_revive`. The derives are required
+/// because it appears as a type parameter of the runtime's `UncheckedExtrinsic`.
+#[derive(Clone, PartialEq, Eq, Debug, scale_info::TypeInfo)]
+pub struct EthExtraImpl;
+
+impl EthExtra for EthExtraImpl {
+	type Config = Runtime;
+	type Extension = TxExtension;
+
+	fn get_eth_extension(nonce: u32, tip: Balance) -> Self::Extension {
+		(
+			pezframe_system::AuthorizeCall::<Runtime>::new(),
+			pezframe_system::CheckNonZeroSender::<Runtime>::new(),
+			pezframe_system::CheckSpecVersion::<Runtime>::new(),
+			pezframe_system::CheckTxVersion::<Runtime>::new(),
+			pezframe_system::CheckGenesis::<Runtime>::new(),
+			pezframe_system::CheckMortality::from(generic::Era::Immortal),
+			pezframe_system::CheckNonce::<Runtime>::from(nonce),
+			pezframe_system::CheckWeight::<Runtime>::new(),
+			pezpallet_asset_conversion_tx_payment::ChargeAssetTxPayment::<Runtime>::from(tip, None),
+			pezframe_metadata_hash_extension::CheckMetadataHash::<Runtime>::new(false),
+			pezpallet_revive::evm::tx_extension::SetOrigin::<Runtime>::new_from_eth_transaction(),
+		)
+			.into()
+	}
 }
 
 impl pezpallet_revive::Config for Runtime {
@@ -1223,91 +1401,6 @@ impl pezpallet_revive::Config for Runtime {
 	type DebugEnabled = ConstBool<false>;
 }
 
-parameter_types! {
-	pub MbmServiceWeight: Weight = Perbill::from_percent(80) * RuntimeBlockWeights::get().max_block;
-	pub FastUnstakeName: &'static str = "FastUnstake";
-}
-
-/// Multi-block migrations for runtime upgrades.
-#[cfg(feature = "runtime-benchmarks")]
-type MultiBlockMigrationsType = pezpallet_migrations::mock_helpers::MockedMigrations;
-#[cfg(not(feature = "runtime-benchmarks"))]
-type MultiBlockMigrationsType = (
-	pez_assets_common::migrations::foreign_assets_reserves::ForeignAssetsReservesMigration<
-		Runtime,
-		ForeignAssetsInstance,
-		migrations::AssetHubZagrosForeignAssetsReservesProvider,
-	>,
-);
-
-impl pezpallet_migrations::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Migrations = MultiBlockMigrationsType;
-	type CursorMaxLen = ConstU32<65_536>;
-	type IdentifierMaxLen = ConstU32<256>;
-	type MigrationStatusHandler = ();
-	type FailedMigrationHandler = pezframe_support::migrations::FreezeChainOnFailedMigration;
-	type MaxServiceWeight = MbmServiceWeight;
-	type WeightInfo = weights::pezpallet_migrations::WeightInfo<Runtime>;
-}
-
-parameter_types! {
-	pub MaximumSchedulerWeight: pezframe_support::weights::Weight = Perbill::from_percent(80) *
-		RuntimeBlockWeights::get().max_block;
-}
-
-impl pezpallet_scheduler::Config for Runtime {
-	type RuntimeOrigin = RuntimeOrigin;
-	type RuntimeEvent = RuntimeEvent;
-	type PalletsOrigin = OriginCaller;
-	type RuntimeCall = RuntimeCall;
-	type MaximumWeight = MaximumSchedulerWeight;
-	type ScheduleOrigin = EnsureRoot<AccountId>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type MaxScheduledPerBlock = ConstU32<{ 512 * 15 }>; // MaxVotes * TRACKS_DATA length
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type MaxScheduledPerBlock = ConstU32<50>;
-	type WeightInfo = weights::pezpallet_scheduler::WeightInfo<Runtime>;
-	type OriginPrivilegeCmp = pezframe_support::traits::EqualPrivilegeOnly;
-	type Preimages = Preimage;
-	type BlockNumberProvider = RelaychainDataProvider<Runtime>;
-}
-
-parameter_types! {
-	pub const PreimageBaseDeposit: Balance = deposit(2, 64);
-	pub const PreimageByteDeposit: Balance = deposit(0, 1);
-	pub const PreimageHoldReason: RuntimeHoldReason = RuntimeHoldReason::Preimage(pezpallet_preimage::HoldReason::Preimage);
-}
-
-impl pezpallet_preimage::Config for Runtime {
-	type WeightInfo = weights::pezpallet_preimage::WeightInfo<Runtime>;
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type ManagerOrigin = EnsureRoot<AccountId>;
-	type Consideration = HoldConsideration<
-		AccountId,
-		Balances,
-		PreimageHoldReason,
-		LinearStoragePrice<PreimageBaseDeposit, PreimageByteDeposit, Balance>,
-	>;
-}
-
-parameter_types! {
-	/// Deposit for an index in the indices pezpallet.
-	///
-	/// 32 bytes for the account ID and 16 for the deposit. We cannot use `max_encoded_len` since it
-	/// is not const.
-	pub const IndexDeposit: Balance = deposit(1, 32 + 16);
-}
-
-impl pezpallet_indices::Config for Runtime {
-	type AccountIndex = AccountIndex;
-	type Currency = Balances;
-	type Deposit = IndexDeposit;
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = weights::pezpallet_indices::WeightInfo<Runtime>;
-}
-
 impl pezpallet_ah_ops::Config for Runtime {
 	type Currency = Balances;
 	type RcBlockNumberProvider = RelaychainDataProvider<Runtime>;
@@ -1327,21 +1420,16 @@ construct_runtime!(
 		// System support stuff.
 		System: pezframe_system = 0,
 		TeyrchainSystem: pezcumulus_pezpallet_teyrchain_system = 1,
-		// RandomnessCollectiveFlip = 2 removed
 		Timestamp: pezpallet_timestamp = 3,
 		TeyrchainInfo: teyrchain_info = 4,
 		WeightReclaim: pezcumulus_pezpallet_weight_reclaim = 5,
 		MultiBlockMigrations: pezpallet_migrations = 6,
-		Preimage: pezpallet_preimage = 7,
-		Scheduler: pezpallet_scheduler = 8,
 		Sudo: pezpallet_sudo = 9,
 
 		// Monetary stuff.
 		Balances: pezpallet_balances = 10,
 		TransactionPayment: pezpallet_transaction_payment = 11,
-		// AssetTxPayment: pezpallet_asset_tx_payment = 12,
 		AssetTxPayment: pezpallet_asset_conversion_tx_payment = 13,
-		Vesting: pezpallet_vesting = 14,
 
 		// Collator support. the order of these 5 are important and shall not change.
 		Authorship: pezpallet_authorship = 20,
@@ -1354,17 +1442,15 @@ construct_runtime!(
 		XcmpQueue: pezcumulus_pezpallet_xcmp_queue = 30,
 		PezkuwiXcm: pezpallet_xcm = 31,
 		CumulusXcm: pezcumulus_pezpallet_xcm = 32,
-		// Bridge utilities.
-		ToPezkuwichainXcmRouter: pezpallet_xcm_bridge_hub_router::<Instance1> = 34,
-		MessageQueue: pezpallet_message_queue = 35,
-		// Snowbridge
-		SnowbridgeSystemFrontend: pezsnowbridge_pezpallet_system_frontend = 36,
+		MessageQueue: pezpallet_message_queue = 34,
 
 		// Handy utilities.
 		Utility: pezpallet_utility = 40,
 		Multisig: pezpallet_multisig = 41,
 		Proxy: pezpallet_proxy = 42,
-		Indices: pezpallet_indices = 43,
+
+		// Bridge utilities.
+		ToZagrosXcmRouter: pezpallet_xcm_bridge_hub_router::<Instance3> = 45,
 
 		// The main stage.
 		Assets: pezpallet_assets::<Instance1> = 50,
@@ -1378,17 +1464,24 @@ construct_runtime!(
 		AssetsFreezer: pezpallet_assets_freezer::<Instance1> = 57,
 		ForeignAssetsFreezer: pezpallet_assets_freezer::<Instance2> = 58,
 		PoolAssetsFreezer: pezpallet_assets_freezer::<Instance3> = 59,
-		Revive: pezpallet_revive = 60,
 
-		AssetRewards: pezpallet_asset_rewards = 61,
+		AssetRewards: pezpallet_asset_rewards = 60,
 
-		StateTrieMigration: pezpallet_state_trie_migration = 70,
+		Nis: pezpallet_nis = 61,
+		AssetRate: pezpallet_asset_rate = 62,
+		Bounties: pezpallet_bounties = 63,
+		ChildBounties: pezpallet_child_bounties = 64,
+		Treasury: pezpallet_treasury = 65,
+		Revive: pezpallet_revive = 66,
 
-		// Staking.
+		// PezkuwiChain Custom Pallets
+		PezTreasury: pezpallet_pez_treasury = 70,
+		Presale: pezpallet_presale = 71,
+		TokenWrapper: pezpallet_token_wrapper = 73,
+
+		// Staking
 		Staking: pezpallet_staking_async = 80,
 		NominationPools: pezpallet_nomination_pools = 81,
-		// decommissioned in AHs.
-		// FastUnstake: pezpallet_fast_unstake = 82,
 		VoterList: pezpallet_bags_list::<Instance1> = 83,
 		DelegatedStaking: pezpallet_delegated_staking = 84,
 		StakingRcClient: pezpallet_staking_async_rc_client = 89,
@@ -1399,18 +1492,9 @@ construct_runtime!(
 		MultiBlockElectionUnsigned: pezpallet_election_provider_multi_block::unsigned = 87,
 		MultiBlockElectionSigned: pezpallet_election_provider_multi_block::signed = 88,
 
-		// Governance.
-		ConvictionVoting: pezpallet_conviction_voting = 90,
-		Referenda: pezpallet_referenda = 91,
-		Origins: pezpallet_custom_origins = 92,
-		Whitelist: pezpallet_whitelist = 93,
-		Treasury: pezpallet_treasury = 94,
-		AssetRate: pezpallet_asset_rate = 95,
-
 		// TODO: the pezpallet instance should be removed once all pools have migrated
 		// to the new account IDs.
 		AssetConversionMigration: pezpallet_asset_conversion_ops = 200,
-
 		AhOps: pezpallet_ah_ops = 254,
 	}
 );
@@ -1437,55 +1521,46 @@ pub type TxExtension = pezcumulus_pezpallet_weight_reclaim::StorageWeightReclaim
 		pezframe_system::CheckWeight<Runtime>,
 		pezpallet_asset_conversion_tx_payment::ChargeAssetTxPayment<Runtime>,
 		pezframe_metadata_hash_extension::CheckMetadataHash<Runtime>,
+		// Required by `pezpallet_revive`: carries the Ethereum sender through to the call.
 		pezpallet_revive::evm::tx_extension::SetOrigin<Runtime>,
 	),
 >;
-
-/// Default extensions applied to Ethereum transactions.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct EthExtraImpl;
-
-impl EthExtra for EthExtraImpl {
-	type Config = Runtime;
-	type Extension = TxExtension;
-
-	fn get_eth_extension(nonce: u32, tip: Balance) -> Self::Extension {
-		(
-			pezframe_system::AuthorizeCall::<Runtime>::new(),
-			pezframe_system::CheckNonZeroSender::<Runtime>::new(),
-			pezframe_system::CheckSpecVersion::<Runtime>::new(),
-			pezframe_system::CheckTxVersion::<Runtime>::new(),
-			pezframe_system::CheckGenesis::<Runtime>::new(),
-			pezframe_system::CheckMortality::from(generic::Era::Immortal),
-			pezframe_system::CheckNonce::<Runtime>::from(nonce),
-			pezframe_system::CheckWeight::<Runtime>::new(),
-			pezpallet_asset_conversion_tx_payment::ChargeAssetTxPayment::<Runtime>::from(tip, None),
-			pezframe_metadata_hash_extension::CheckMetadataHash::<Runtime>::new(false),
-			pezpallet_revive::evm::tx_extension::SetOrigin::<Runtime>::new_from_eth_transaction(),
-		)
-			.into()
-	}
-}
-
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
 	pezpallet_revive::evm::runtime::UncheckedExtrinsic<Address, Signature, EthExtraImpl>;
+/// One-time migration to fix ActiveEra.start which was set to 0 at genesis.
+/// Without this, the first era's duration would be calculated as (now - 0) = ~56 years,
+/// though MaxEraDuration caps it to 6 hours. This migration sets it to the current timestamp
+/// so the first era duration is calculated correctly from the upgrade moment.
+pub struct FixActiveEraStart;
+impl pezframe_support::traits::OnRuntimeUpgrade for FixActiveEraStart {
+	fn on_runtime_upgrade() -> Weight {
+		let now_ms = pezpallet_timestamp::Now::<Runtime>::get();
+		if now_ms > 0 {
+			pezpallet_staking_async::ActiveEra::<Runtime>::mutate(|era| {
+				if let Some(ref mut info) = era {
+					info.start = Some(now_ms);
+					log::info!(
+						target: "runtime::staking",
+						"FixActiveEraStart: Set ActiveEra.start to {}",
+						now_ms,
+					);
+				}
+			});
+		}
+		<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(2, 1)
+	}
+}
 
 /// Migrations to apply on runtime upgrade.
 pub type Migrations = (
-	// v9420
-	pezpallet_nfts::migration::v1::MigrateToV1<Runtime>,
-	// unreleased
-	pezpallet_collator_selection::migration::v2::MigrationToV2<Runtime>,
-	// unreleased
-	pezpallet_multisig::migrations::v1::MigrateToV1<Runtime>,
-	// unreleased
+	FixActiveEraStart,
 	InitStorageVersions,
-	// unreleased
-	DeleteUndecodableStorage,
 	// unreleased
 	pezcumulus_pezpallet_xcmp_queue::migration::v4::MigrationToV4<Runtime>,
 	pezcumulus_pezpallet_xcmp_queue::migration::v5::MigrateV4ToV5<Runtime>,
+	pezpallet_collator_selection::migration::v2::MigrationToV2<Runtime>,
+	pezframe_support::migrations::RemovePallet<StateTrieMigrationName, RocksDbWeight>,
 	// unreleased
 	pezpallet_assets::migration::next_asset_id::SetNextAssetId<
 		ConstU32<50_000_000>,
@@ -1496,92 +1571,20 @@ pub type Migrations = (
 		Runtime,
 		pezpallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
 	>,
-	pezframe_support::migrations::RemovePallet<
-		FastUnstakeName,
-		<Runtime as pezframe_system::Config>::DbWeight,
-	>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 	pezcumulus_pezpallet_aura_ext::migration::MigrateV0ToV1<Runtime>,
 );
 
-/// Asset Hub Zagros has some undecodable storage, delete it.
-/// See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/265> for more info.
-///
-/// First we remove the bad Hold, then the bad NFT collection.
-pub struct DeleteUndecodableStorage;
-
-impl pezframe_support::traits::OnRuntimeUpgrade for DeleteUndecodableStorage {
-	fn on_runtime_upgrade() -> Weight {
-		use pezsp_core::crypto::Ss58Codec;
-
-		let mut writes = 0;
-
-		// Remove Holds for account with undecodable hold
-		// Zagros doesn't have any HoldReasons implemented yet, so it's safe to just blanket remove
-		// any for this account.
-		match AccountId::from_ss58check("5GCCJthVSwNXRpbeg44gysJUx9vzjdGdfWhioeM7gCg6VyXf") {
-			Ok(a) => {
-				tracing::info!(target: "bridges::on_runtime_upgrade", "Removing holds for account with bad hold");
-				pezpallet_balances::Holds::<Runtime, ()>::remove(a);
-				writes.saturating_inc();
-			},
-			Err(_) => {
-				tracing::error!(target: "bridges::on_runtime_upgrade", "CleanupUndecodableStorage: Somehow failed to convert valid SS58 address into an AccountId!");
-			},
-		};
-
-		// Destroy undecodable NFT item 1
-		writes.saturating_inc();
-		match pezpallet_nfts::Pezpallet::<Runtime, ()>::do_burn(3, 1, |_| Ok(())) {
-			Ok(_) => {
-				tracing::info!(target: "bridges::on_runtime_upgrade", "Destroyed undecodable NFT item 1");
-			},
-			Err(e) => {
-				tracing::error!(target: "bridges::on_runtime_upgrade", error=?e, "Failed to destroy undecodable NFT item");
-				return <Runtime as pezframe_system::Config>::DbWeight::get()
-					.reads_writes(0, writes);
-			},
-		}
-
-		// Destroy undecodable NFT item 2
-		writes.saturating_inc();
-		match pezpallet_nfts::Pezpallet::<Runtime, ()>::do_burn(3, 2, |_| Ok(())) {
-			Ok(_) => {
-				tracing::info!(target: "bridges::on_runtime_upgrade", "Destroyed undecodable NFT item 2");
-			},
-			Err(e) => {
-				tracing::error!(target: "bridges::on_runtime_upgrade", error=?e, "Failed to destroy undecodable NFT item");
-				return <Runtime as pezframe_system::Config>::DbWeight::get()
-					.reads_writes(0, writes);
-			},
-		}
-
-		// Finally, we can destroy the collection
-		writes.saturating_inc();
-		match pezpallet_nfts::Pezpallet::<Runtime, ()>::do_destroy_collection(
-			3,
-			DestroyWitness { attributes: 0, item_metadatas: 1, item_configs: 0 },
-			None,
-		) {
-			Ok(_) => {
-				tracing::info!(target: "bridges::on_runtime_upgrade", "Destroyed undecodable NFT collection");
-			},
-			Err(e) => {
-				tracing::error!(target: "bridges::on_runtime_upgrade", error=?e, "Failed to destroy undecodable NFT collection");
-			},
-		};
-
-		<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(0, writes)
-	}
+parameter_types! {
+	pub const StateTrieMigrationName: &'static str = "StateTrieMigration";
 }
 
 /// Migration to initialize storage versions for pallets added after genesis.
 ///
-/// Ideally this would be done automatically (see
-/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/248>), but it probably won't be ready for some
-/// time and it's beneficial to get try-runtime-cli on-runtime-upgrade checks into the CI, so we're
-/// doing it manually.
+/// This is now done automatically (see <https://github.com/pezkuwichain/pezkuwi-sdk/issues/248>),
+/// but some pallets had made it in and had storage set in them for this teyrchain before it was
+/// merged.
 pub struct InitStorageVersions;
 
 impl pezframe_support::traits::OnRuntimeUpgrade for InitStorageVersions {
@@ -1595,6 +1598,26 @@ impl pezframe_support::traits::OnRuntimeUpgrade for InitStorageVersions {
 			writes.saturating_inc();
 		}
 
+		if Multisig::on_chain_storage_version() == StorageVersion::new(0) {
+			Multisig::in_code_storage_version().put::<Multisig>();
+			writes.saturating_inc();
+		}
+
+		if Assets::on_chain_storage_version() == StorageVersion::new(0) {
+			Assets::in_code_storage_version().put::<Assets>();
+			writes.saturating_inc();
+		}
+
+		if Uniques::on_chain_storage_version() == StorageVersion::new(0) {
+			Uniques::in_code_storage_version().put::<Uniques>();
+			writes.saturating_inc();
+		}
+
+		if Nfts::on_chain_storage_version() == StorageVersion::new(0) {
+			Nfts::in_code_storage_version().put::<Nfts>();
+			writes.saturating_inc();
+		}
+
 		if ForeignAssets::on_chain_storage_version() == StorageVersion::new(0) {
 			ForeignAssets::in_code_storage_version().put::<ForeignAssets>();
 			writes.saturating_inc();
@@ -1605,7 +1628,7 @@ impl pezframe_support::traits::OnRuntimeUpgrade for InitStorageVersions {
 			writes.saturating_inc();
 		}
 
-		<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(3, writes)
+		<Runtime as pezframe_system::Config>::DbWeight::get().reads_writes(7, writes)
 	}
 }
 
@@ -1629,11 +1652,9 @@ impl
 		pezcumulus_primitives_core::Location,
 	> for AssetConversionTxHelper
 {
-	fn create_asset_id_parameter(
-		seed: u32,
-	) -> (pezcumulus_primitives_core::Location, pezcumulus_primitives_core::Location) {
-		// Use a different teyrchain foreign assets pezpallet so that the asset is indeed foreign.
-		let asset_id = pezcumulus_primitives_core::Location::new(
+	fn create_asset_id_parameter(seed: u32) -> (Location, Location) {
+		// Use a different teyrchain' foreign assets pezpallet so that the asset is indeed foreign.
+		let asset_id = Location::new(
 			1,
 			[
 				pezcumulus_primitives_core::Junction::Teyrchain(3000),
@@ -1663,10 +1684,7 @@ impl
 			u64::MAX.into()
 		));
 
-		let token_native = alloc::boxed::Box::new(pezcumulus_primitives_core::Location::new(
-			1,
-			pezcumulus_primitives_core::Junctions::Here,
-		));
+		let token_native = alloc::boxed::Box::new(TokenLocation::get());
 		let token_second = alloc::boxed::Box::new(asset_id);
 
 		assert_ok!(AssetConversion::create_pool(
@@ -1679,7 +1697,7 @@ impl
 			RuntimeOrigin::signed(lp_provider.clone()),
 			token_native,
 			token_second,
-			(u32::MAX / 2).into(), // 1 desired
+			(u32::MAX / 8).into(), // 1 desired
 			u32::MAX.into(),       // 2 desired
 			1,                     // 1 min
 			1,                     // 2 min
@@ -1693,29 +1711,19 @@ mod benches {
 	pezframe_benchmarking::define_benchmarks!(
 		[pezframe_system, SystemBench::<Runtime>]
 		[pezframe_system_extensions, SystemExtensionsBench::<Runtime>]
-		[pezpallet_asset_conversion_ops, AssetConversionMigration]
-		[pezpallet_asset_rate, AssetRate]
 		[pezpallet_assets, Local]
 		[pezpallet_assets, Foreign]
 		[pezpallet_assets, Pool]
 		[pezpallet_asset_conversion, AssetConversion]
 		[pezpallet_asset_rewards, AssetRewards]
 		[pezpallet_asset_conversion_tx_payment, AssetTxPayment]
-		[pezpallet_bags_list, VoterList]
 		[pezpallet_balances, Balances]
-		[pezpallet_conviction_voting, ConvictionVoting]
-		[pezpallet_election_provider_multi_block, MultiBlockElection]
-		[pezpallet_election_provider_multi_block::verifier, MultiBlockElectionVerifier]
-		[pezpallet_election_provider_multi_block::unsigned, MultiBlockElectionUnsigned]
-		[pezpallet_election_provider_multi_block::signed, MultiBlockElectionSigned]
 		[pezpallet_message_queue, MessageQueue]
-		[pezpallet_migrations, MultiBlockMigrations]
 		[pezpallet_multisig, Multisig]
 		[pezpallet_nft_fractionalization, NftFractionalization]
 		[pezpallet_nfts, Nfts]
 		[pezpallet_proxy, Proxy]
 		[pezpallet_session, SessionBench::<Runtime>]
-		[pezpallet_staking_async, Staking]
 		[pezpallet_uniques, Uniques]
 		[pezpallet_utility, Utility]
 		[pezpallet_timestamp, Timestamp]
@@ -1723,19 +1731,18 @@ mod benches {
 		[pezpallet_collator_selection, CollatorSelection]
 		[pezcumulus_pezpallet_teyrchain_system, TeyrchainSystem]
 		[pezcumulus_pezpallet_xcmp_queue, XcmpQueue]
-		[pezpallet_treasury, Treasury]
-		[pezpallet_vesting, Vesting]
-		[pezpallet_whitelist, Whitelist]
-		[pezpallet_xcm_bridge_hub_router, ToPezkuwichain]
+		[pezpallet_xcm_bridge_hub_router, ToZagros]
 		[pezpallet_asset_conversion_ops, AssetConversionMigration]
-		[pezpallet_revive, Revive]
 		// XCM
 		[pezpallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		// NOTE: Make sure you point to the individual modules below.
 		[pezpallet_xcm_benchmarks::fungible, XcmBalances]
 		[pezpallet_xcm_benchmarks::generic, XcmGeneric]
 		[pezcumulus_pezpallet_weight_reclaim, WeightReclaim]
-		[pezsnowbridge_pezpallet_system_frontend, SnowbridgeSystemFrontend]
+		// PezkuwiChain Custom Pallets
+		[pezpallet_pez_treasury, PezTreasury]
+		[pezpallet_presale, Presale]
+		[pezpallet_token_wrapper, TokenWrapper]
 	);
 }
 
@@ -1758,18 +1765,6 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 	impl pezcumulus_primitives_core::RelayParentOffsetApi<Block> for Runtime {
 		fn relay_parent_offset() -> u32 {
 			0
-		}
-	}
-
-	impl pezcumulus_primitives_core::GetTeyrchainInfo<Block> for Runtime {
-		fn teyrchain_id() -> ParaId {
-			TeyrchainInfo::teyrchain_id()
-		}
-	}
-
-	impl pezcumulus_primitives_core::TargetBlockRate<Block> for Runtime {
-		fn target_block_rate() -> u32 {
-			1
 		}
 	}
 
@@ -1865,50 +1860,6 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 		}
 	}
 
-	impl pezpallet_nfts_runtime_api::NftsApi<Block, AccountId, u32, u32> for Runtime {
-		fn owner(collection: u32, item: u32) -> Option<AccountId> {
-			<Nfts as Inspect<AccountId>>::owner(&collection, &item)
-		}
-
-		fn collection_owner(collection: u32) -> Option<AccountId> {
-			<Nfts as Inspect<AccountId>>::collection_owner(&collection)
-		}
-
-		fn attribute(
-			collection: u32,
-			item: u32,
-			key: Vec<u8>,
-		) -> Option<Vec<u8>> {
-			<Nfts as Inspect<AccountId>>::attribute(&collection, &item, &key)
-		}
-
-		fn custom_attribute(
-			account: AccountId,
-			collection: u32,
-			item: u32,
-			key: Vec<u8>,
-		) -> Option<Vec<u8>> {
-			<Nfts as Inspect<AccountId>>::custom_attribute(
-				&account,
-				&collection,
-				&item,
-				&key,
-			)
-		}
-
-		fn system_attribute(
-			collection: u32,
-			item: Option<u32>,
-			key: Vec<u8>,
-		) -> Option<Vec<u8>> {
-			<Nfts as Inspect<AccountId>>::system_attribute(&collection, item.as_ref(), &key)
-		}
-
-		fn collection_attribute(collection: u32, key: Vec<u8>) -> Option<Vec<u8>> {
-			<Nfts as Inspect<AccountId>>::collection_attribute(&collection, &key)
-		}
-	}
-
 	impl pezpallet_asset_conversion::AssetConversionApi<
 		Block,
 		Balance,
@@ -1918,11 +1869,9 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 		fn quote_price_exact_tokens_for_tokens(asset1: xcm::v5::Location, asset2: xcm::v5::Location, amount: Balance, include_fee: bool) -> Option<Balance> {
 			AssetConversion::quote_price_exact_tokens_for_tokens(asset1, asset2, amount, include_fee)
 		}
-
 		fn quote_price_tokens_for_exact_tokens(asset1: xcm::v5::Location, asset2: xcm::v5::Location, amount: Balance, include_fee: bool) -> Option<Balance> {
 			AssetConversion::quote_price_tokens_for_exact_tokens(asset1, asset2, amount, include_fee)
 		}
-
 		fn get_reserves(asset1: xcm::v5::Location, asset2: xcm::v5::Location) -> Option<(Balance, Balance)> {
 			AssetConversion::get_reserves(asset1, asset2).ok()
 		}
@@ -1949,9 +1898,72 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 		}
 	}
 
+	impl pezpallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
+		for Runtime
+	{
+		fn query_call_info(
+			call: RuntimeCall,
+			len: u32,
+		) -> pezpallet_transaction_payment::RuntimeDispatchInfo<Balance> {
+			TransactionPayment::query_call_info(call, len)
+		}
+		fn query_call_fee_details(
+			call: RuntimeCall,
+			len: u32,
+		) -> pezpallet_transaction_payment::FeeDetails<Balance> {
+			TransactionPayment::query_call_fee_details(call, len)
+		}
+		fn query_weight_to_fee(weight: Weight) -> Balance {
+			TransactionPayment::weight_to_fee(weight)
+		}
+		fn query_length_to_fee(length: u32) -> Balance {
+			TransactionPayment::length_to_fee(length)
+		}
+	}
+
+	impl pez_assets_common::runtime_api::FungiblesApi<
+		Block,
+		AccountId,
+	> for Runtime
+	{
+		fn query_account_balances(account: AccountId) -> Result<xcm::VersionedAssets, pez_assets_common::runtime_api::FungiblesAccessError> {
+			use pez_assets_common::fungible_conversion::{convert, convert_balance};
+			Ok([
+				// collect pezpallet_balance
+				{
+					let balance = Balances::free_balance(account.clone());
+					if balance > 0 {
+						vec![convert_balance::<TokenLocation, Balance>(balance)?]
+					} else {
+						vec![]
+					}
+				},
+				// collect pezpallet_assets (TrustBackedAssets)
+				convert::<_, _, _, _, TrustBackedAssetsConvertedConcreteId>(
+					Assets::account_balances(account.clone())
+						.iter()
+						.filter(|(_, balance)| balance > &0)
+				)?,
+				// collect pezpallet_assets (ForeignAssets)
+				convert::<_, _, _, _, ForeignAssetsConvertedConcreteId>(
+					ForeignAssets::account_balances(account.clone())
+						.iter()
+						.filter(|(_, balance)| balance > &0)
+				)?,
+				// collect pezpallet_assets (PoolAssets)
+				convert::<_, _, _, _, PoolAssetsConvertedConcreteId>(
+					PoolAssets::account_balances(account)
+						.iter()
+						.filter(|(_, balance)| balance > &0)
+				)?,
+				// collect ... e.g. other tokens
+			].concat().into())
+		}
+	}
+
 	impl xcm_runtime_pezapis::fees::XcmPaymentApi<Block> for Runtime {
 		fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
-			let native_token = xcm_config::ZagrosLocation::get();
+			let native_token = xcm_config::TokenLocation::get();
 			// We accept the native token to pay fees.
 			let mut acceptable_assets = vec![AssetId(native_token.clone())];
 			// We also accept all assets in a pool with the native token.
@@ -1999,93 +2011,6 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 		}
 	}
 
-	impl xcm_runtime_pezapis::trusted_query::TrustedQueryApi<Block> for Runtime {
-		fn is_trusted_reserve(asset: VersionedAsset, location: VersionedLocation) -> xcm_runtime_pezapis::trusted_query::XcmTrustedQueryResult {
-			PezkuwiXcm::is_trusted_reserve(asset, location)
-		}
-		fn is_trusted_teleporter(asset: VersionedAsset, location: VersionedLocation) -> xcm_runtime_pezapis::trusted_query::XcmTrustedQueryResult {
-			PezkuwiXcm::is_trusted_teleporter(asset, location)
-		}
-	}
-
-	impl xcm_runtime_pezapis::authorized_aliases::AuthorizedAliasersApi<Block> for Runtime {
-		fn authorized_aliasers(target: VersionedLocation) -> Result<
-			Vec<xcm_runtime_pezapis::authorized_aliases::OriginAliaser>,
-			xcm_runtime_pezapis::authorized_aliases::Error
-		> {
-			PezkuwiXcm::authorized_aliasers(target)
-		}
-		fn is_authorized_alias(origin: VersionedLocation, target: VersionedLocation) -> Result<
-			bool,
-			xcm_runtime_pezapis::authorized_aliases::Error
-		> {
-			PezkuwiXcm::is_authorized_alias(origin, target)
-		}
-	}
-
-	impl pezpallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
-		for Runtime
-	{
-		fn query_call_info(
-			call: RuntimeCall,
-			len: u32,
-		) -> pezpallet_transaction_payment::RuntimeDispatchInfo<Balance> {
-			TransactionPayment::query_call_info(call, len)
-		}
-		fn query_call_fee_details(
-			call: RuntimeCall,
-			len: u32,
-		) -> pezpallet_transaction_payment::FeeDetails<Balance> {
-			TransactionPayment::query_call_fee_details(call, len)
-		}
-		fn query_weight_to_fee(weight: Weight) -> Balance {
-			TransactionPayment::weight_to_fee(weight)
-		}
-		fn query_length_to_fee(length: u32) -> Balance {
-			TransactionPayment::length_to_fee(length)
-		}
-	}
-
-	impl pez_assets_common::runtime_api::FungiblesApi<
-		Block,
-		AccountId,
-	> for Runtime
-	{
-		fn query_account_balances(account: AccountId) -> Result<xcm::VersionedAssets, pez_assets_common::runtime_api::FungiblesAccessError> {
-			use pez_assets_common::fungible_conversion::{convert, convert_balance};
-			Ok([
-				// collect pezpallet_balance
-				{
-					let balance = Balances::free_balance(account.clone());
-					if balance > 0 {
-						vec![convert_balance::<ZagrosLocation, Balance>(balance)?]
-					} else {
-						vec![]
-					}
-				},
-				// collect pezpallet_assets (TrustBackedAssets)
-				convert::<_, _, _, _, TrustBackedAssetsConvertedConcreteId>(
-					Assets::account_balances(account.clone())
-						.iter()
-						.filter(|(_, balance)| balance > &0)
-				)?,
-				// collect pezpallet_assets (ForeignAssets)
-				convert::<_, _, _, _, ForeignAssetsConvertedConcreteId>(
-					ForeignAssets::account_balances(account.clone())
-						.iter()
-						.filter(|(_, balance)| balance > &0)
-				)?,
-				// collect pezpallet_assets (PoolAssets)
-				convert::<_, _, _, _, PoolAssetsConvertedConcreteId>(
-					PoolAssets::account_balances(account)
-						.iter()
-						.filter(|(_, balance)| balance > &0)
-				)?,
-				// collect ... e.g. other tokens
-			].concat().into())
-		}
-	}
-
 	impl pezcumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
 		fn collect_collation_info(header: &<Block as BlockT>::Header) -> pezcumulus_primitives_core::CollationInfo {
 			TeyrchainSystem::collect_collation_info(header)
@@ -2095,6 +2020,66 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 	impl pezpallet_asset_rewards::AssetRewards<Block, Balance> for Runtime {
 		fn pool_creation_cost() -> Balance {
 			StakePoolCreationDeposit::get()
+		}
+	}
+
+	impl pezpallet_nomination_pools_runtime_api::NominationPoolsApi<
+		Block,
+		AccountId,
+		Balance,
+	> for Runtime {
+		fn pending_rewards(member: AccountId) -> Balance {
+			NominationPools::api_pending_rewards(member).unwrap_or_default()
+		}
+
+		fn points_to_balance(pool_id: pezpallet_nomination_pools::PoolId, points: Balance) -> Balance {
+			NominationPools::api_points_to_balance(pool_id, points)
+		}
+
+		fn balance_to_points(pool_id: pezpallet_nomination_pools::PoolId, new_funds: Balance) -> Balance {
+			NominationPools::api_balance_to_points(pool_id, new_funds)
+		}
+
+		fn pool_pending_slash(pool_id: pezpallet_nomination_pools::PoolId) -> Balance {
+			NominationPools::api_pool_pending_slash(pool_id)
+		}
+
+		fn member_pending_slash(member: AccountId) -> Balance {
+			NominationPools::api_member_pending_slash(member)
+		}
+
+		fn pool_needs_delegate_migration(pool_id: pezpallet_nomination_pools::PoolId) -> bool {
+			NominationPools::api_pool_needs_delegate_migration(pool_id)
+		}
+
+		fn member_needs_delegate_migration(member: AccountId) -> bool {
+			NominationPools::api_member_needs_delegate_migration(member)
+		}
+
+		fn member_total_balance(member: AccountId) -> Balance {
+			NominationPools::api_member_total_balance(member)
+		}
+
+		fn pool_balance(pool_id: pezpallet_nomination_pools::PoolId) -> Balance {
+			NominationPools::api_pool_balance(pool_id)
+		}
+
+		fn pool_accounts(pool_id: pezpallet_nomination_pools::PoolId) -> (AccountId, AccountId) {
+			NominationPools::api_pool_accounts(pool_id)
+		}
+	}
+
+	impl pezpallet_staking_runtime_api::StakingApi<Block, Balance, AccountId> for Runtime {
+		fn nominations_quota(balance: Balance) -> u32 {
+			Staking::api_nominations_quota(balance)
+		}
+
+		fn eras_stakers_page_count(era: pezsp_staking::EraIndex, account: AccountId) -> pezsp_staking::Page {
+			Staking::api_eras_stakers_page_count(era, account)
+		}
+
+		fn pending_rewards(era: pezsp_staking::EraIndex, account: AccountId) -> bool {
+			Staking::api_pending_rewards(era, account)
 		}
 	}
 
@@ -2114,67 +2099,6 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			// NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
 			// have a backtrace here.
 			Executive::try_execute_block(block, state_root_check, signature_check, select).unwrap()
-		}
-	}
-
-
-	impl pezpallet_nomination_pools_runtime_api::NominationPoolsApi<
-		Block,
-		AccountId,
-		Balance,
-	> for Runtime {
-		fn pending_rewards(member: AccountId) -> Balance {
-			NominationPools::api_pending_rewards(member).unwrap_or_default()
-		}
-
-		fn points_to_balance(pool_id: PoolId, points: Balance) -> Balance {
-			NominationPools::api_points_to_balance(pool_id, points)
-		}
-
-		fn balance_to_points(pool_id: PoolId, new_funds: Balance) -> Balance {
-			NominationPools::api_balance_to_points(pool_id, new_funds)
-		}
-
-		fn pool_pending_slash(pool_id: PoolId) -> Balance {
-			NominationPools::api_pool_pending_slash(pool_id)
-		}
-
-		fn member_pending_slash(member: AccountId) -> Balance {
-			NominationPools::api_member_pending_slash(member)
-		}
-
-		fn pool_needs_delegate_migration(pool_id: PoolId) -> bool {
-			NominationPools::api_pool_needs_delegate_migration(pool_id)
-		}
-
-		fn member_needs_delegate_migration(member: AccountId) -> bool {
-			NominationPools::api_member_needs_delegate_migration(member)
-		}
-
-		fn member_total_balance(member: AccountId) -> Balance {
-			NominationPools::api_member_total_balance(member)
-		}
-
-		fn pool_balance(pool_id: PoolId) -> Balance {
-			NominationPools::api_pool_balance(pool_id)
-		}
-
-		fn pool_accounts(pool_id: PoolId) -> (AccountId, AccountId) {
-			NominationPools::api_pool_accounts(pool_id)
-		}
-	}
-
-	impl pezpallet_staking_runtime_api::StakingApi<Block, Balance, AccountId> for Runtime {
-		fn nominations_quota(balance: Balance) -> u32 {
-			Staking::api_nominations_quota(balance)
-		}
-
-		fn eras_stakers_page_count(era: pezsp_staking::EraIndex, account: AccountId) -> pezsp_staking::Page {
-			Staking::api_eras_stakers_page_count(era, account)
-		}
-
-		fn pending_rewards(era: pezsp_staking::EraIndex, account: AccountId) -> bool {
-			Staking::api_pending_rewards(era, account)
 		}
 	}
 
@@ -2206,7 +2130,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			type Foreign = pezpallet_assets::Pezpallet::<Runtime, ForeignAssetsInstance>;
 			type Pool = pezpallet_assets::Pezpallet::<Runtime, PoolAssetsInstance>;
 
-			type ToPezkuwichain = XcmBridgeHubRouterBench<Runtime, ToPezkuwichainXcmRouterInstance>;
+			type ToZagros = XcmBridgeHubRouterBench<Runtime, ToZagrosXcmRouterInstance>;
 
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
@@ -2222,6 +2146,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			use pezframe_benchmarking::{BenchmarkBatch, BenchmarkError};
 			use pezframe_support::assert_ok;
 			use pezsp_storage::TrackedStorageKey;
+
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			impl pezframe_system_benchmarking::Config for Runtime {
@@ -2236,17 +2161,21 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
-			use xcm_config::{MaxAssetsIntoHolding, ZagrosLocation};
-
 			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
-			use testnet_teyrchains_constants::zagros::locations::{PeopleParaId, PeopleLocation};
+
+			use pezpallet_xcm_bridge_hub_router::benchmarking::{
+				Pezpallet as XcmBridgeHubRouterBench,
+				Config as XcmBridgeHubRouterConfig,
+			};
+
+			use testnet_teyrchains_constants::pezkuwichain::locations::{PeopleParaId, PeopleLocation};
 			parameter_types! {
 				pub ExistentialDepositAsset: Option<Asset> = Some((
-					ZagrosLocation::get(),
+					TokenLocation::get(),
 					ExistentialDeposit::get()
 				).into());
 
-				pub RandomParaId: ParaId = ParaId::new(43211234);
+				pub const RandomParaId: ParaId = ParaId::new(43211234);
 			}
 
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
@@ -2276,7 +2205,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 					Some((
 						Asset {
 							fun: Fungible(ExistentialDeposit::get()),
-							id: AssetId(ZagrosLocation::get())
+							id: AssetId(TokenLocation::get())
 						},
 						PeopleLocation::get(),
 					))
@@ -2310,13 +2239,10 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 
 				fn set_up_complex_asset_transfer(
 				) -> Option<(XcmAssets, AssetId, Location, alloc::boxed::Box<dyn FnOnce()>)> {
-					// Transfer to Relay some local AH asset (local-reserve-transfer) while paying
-					// fees using teleported native token.
-					// (We don't care that Relay doesn't accept incoming unknown AH local asset)
-					let dest: Location = PeopleLocation::get();
+					let dest = PeopleLocation::get();
 
 					let fee_amount = EXISTENTIAL_DEPOSIT;
-					let fee_asset: Asset = (ZagrosLocation::get(), fee_amount).into();
+					let fee_asset: Asset = (TokenLocation::get(), fee_amount).into();
 
 					let who = pezframe_benchmarking::whitelisted_caller();
 					// Give some multiple of the existential deposit
@@ -2383,12 +2309,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 				}
 			}
 
-			use pezpallet_xcm_bridge_hub_router::benchmarking::{
-				Pezpallet as XcmBridgeHubRouterBench,
-				Config as XcmBridgeHubRouterConfig,
-			};
-
-			impl XcmBridgeHubRouterConfig<ToPezkuwichainXcmRouterInstance> for Runtime {
+			impl XcmBridgeHubRouterConfig<ToZagrosXcmRouterInstance> for Runtime {
 				fn make_congested() {
 					pezcumulus_pezpallet_xcmp_queue::bridging::suspend_channel_for_benchmarks::<Runtime>(
 						xcm_config::bridging::SiblingBridgeHubParaId::get().into()
@@ -2398,7 +2319,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 					TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
 						xcm_config::bridging::SiblingBridgeHubParaId::get().into()
 					);
-					let bridged_asset_hub = xcm_config::bridging::to_pezkuwichain::AssetHubPezkuwichain::get();
+					let bridged_asset_hub = xcm_config::bridging::to_zagros::AssetHubZagros::get();
 					let _ = PezkuwiXcm::force_xcm_version(
 						RuntimeOrigin::root(),
 						alloc::boxed::Box::new(bridged_asset_hub.clone()),
@@ -2418,37 +2339,38 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 				}
 			}
 
+			use xcm_config::{TokenLocation, MaxAssetsIntoHolding};
 			use pezpallet_xcm_benchmarks::asset_instance_from;
 
 			impl pezpallet_xcm_benchmarks::Config for Runtime {
 				type XcmConfig = xcm_config::XcmConfig;
 				type AccountIdConverter = xcm_config::LocationToAccountId;
 				type DeliveryHelper = pezkuwi_runtime_common::xcm_sender::ToTeyrchainDeliveryHelper<
-										xcm_config::XcmConfig,
-										ExistentialDepositAsset,
-										PriceForSiblingTeyrchainDelivery,
-										PeopleParaId,
-										TeyrchainSystem
-				>;
+						xcm_config::XcmConfig,
+						ExistentialDepositAsset,
+						PriceForSiblingTeyrchainDelivery,
+						PeopleParaId,
+						TeyrchainSystem
+					>;
 				fn valid_destination() -> Result<Location, BenchmarkError> {
 					Ok(PeopleLocation::get())
 				}
 				fn worst_case_holding(depositable_count: u32) -> XcmAssets {
 					// A mix of fungible, non-fungible, and concrete assets.
 					let holding_non_fungibles = MaxAssetsIntoHolding::get() / 2 - depositable_count;
-					let holding_fungibles = holding_non_fungibles - 2; // -2 for two `iter::once` bellow
+					let holding_fungibles = holding_non_fungibles.saturating_sub(2);  // -2 for two `iter::once` bellow
 					let fungibles_amount: u128 = 100;
 					(0..holding_fungibles)
 						.map(|i| {
 							Asset {
-								id: AssetId(GeneralIndex(i as u128).into()),
+								id: GeneralIndex(i as u128).into(),
 								fun: Fungible(fungibles_amount * (i + 1) as u128), // non-zero amount
 							}
 						})
-						.chain(core::iter::once(Asset { id: AssetId(Here.into()), fun: Fungible(u128::MAX) }))
-						.chain(core::iter::once(Asset { id: AssetId(ZagrosLocation::get()), fun: Fungible(1_000_000 * UNITS) }))
+						.chain(core::iter::once(Asset { id: Here.into(), fun: Fungible(u128::MAX) }))
+						.chain(core::iter::once(Asset { id: AssetId(TokenLocation::get()), fun: Fungible(1_000_000 * UNITS) }))
 						.chain((0..holding_non_fungibles).map(|i| Asset {
-							id: AssetId(GeneralIndex(i as u128).into()),
+							id: GeneralIndex(i as u128).into(),
 							fun: NonFungible(asset_instance_from(i)),
 						}))
 						.collect::<Vec<_>>()
@@ -2459,41 +2381,22 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			parameter_types! {
 				pub TrustedTeleporter: Option<(Location, Asset)> = Some((
 					PeopleLocation::get(),
-					Asset { fun: Fungible(UNITS), id: AssetId(ZagrosLocation::get()) },
+					Asset { fun: Fungible(UNITS), id: AssetId(TokenLocation::get()) },
 				));
-				pub TrustedReserve: Option<(Location, Asset)> = Some({
-					use pezframe_support::traits::tokens::fungible::{Inspect, Mutate};
-					let roc_id = xcm_config::bridging::to_pezkuwichain::RocLocation::get();
-					let roc = Asset::from((roc_id.clone(), 1000000000000 as u128));
-					let reserve = xcm_config::bridging::to_pezkuwichain::AssetHubPezkuwichain::get();
-					let (account, _) = pezpallet_xcm_benchmarks::account_and_location::<Runtime>(1);
-					assert_ok!(<Balances as Mutate<_>>::mint_into(
-						&account,
-						<Balances as Inspect<_>>::minimum_balance(),
-					));
-					// register foreign HEZ
-					assert_ok!(ForeignAssets::force_create(
-						RuntimeOrigin::root(),
-						roc_id.clone().into(),
-						account.clone().into(),
-						true,
-						1u128,
-					));
-					let reserves = ForeignAssetReserveData { reserve, teleportable: false };
-					// set trusted reserve
-					assert_ok!(ForeignAssets::set_reserves(
-						RuntimeOrigin::signed(account),
-						roc_id.clone().into(),
-						vec![reserves.clone()],
-					));
-					(reserves.reserve, roc)
-				});
+				pub const CheckedAccount: Option<(AccountId, xcm_builder::MintLocation)> = None;
+				// AssetHubPezkuwichain trusts AssetHubZagros as reserve for WNDs
+				pub TrustedReserve: Option<(Location, Asset)> = Some(
+					(
+						xcm_config::bridging::to_zagros::AssetHubZagros::get(),
+						Asset::from((xcm_config::bridging::to_zagros::WndLocation::get(), 1000000000000 as u128))
+					)
+				);
 			}
 
 			impl pezpallet_xcm_benchmarks::fungible::Config for Runtime {
 				type TransactAsset = Balances;
 
-				type CheckedAccount = xcm_config::TeleportTracking;
+				type CheckedAccount = CheckedAccount;
 				type TrustedTeleporter = TrustedTeleporter;
 				type TrustedReserve = TrustedReserve;
 
@@ -2531,54 +2434,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 				}
 
 				fn worst_case_asset_exchange() -> Result<(XcmAssets, XcmAssets), BenchmarkError> {
-					let native_asset_location = ZagrosLocation::get();
-					let native_asset_id = AssetId(native_asset_location.clone());
-					let (account, _) = pezpallet_xcm_benchmarks::account_and_location::<Runtime>(1);
-					let origin = RuntimeOrigin::signed(account.clone());
-					let asset_location = Location::new(1, [Teyrchain(2001)]);
-					let asset_id = AssetId(asset_location.clone());
-
-					assert_ok!(<Balances as fungible::Mutate<_>>::mint_into(
-						&account,
-						ExistentialDeposit::get() + (1_000 * UNITS)
-					));
-
-					assert_ok!(ForeignAssets::force_create(
-						RuntimeOrigin::root(),
-						asset_location.clone().into(),
-						account.clone().into(),
-						true,
-						1,
-					));
-
-					assert_ok!(ForeignAssets::mint(
-						origin.clone(),
-						asset_location.clone().into(),
-						account.clone().into(),
-						3_000 * UNITS,
-					));
-
-					assert_ok!(AssetConversion::create_pool(
-						origin.clone(),
-						native_asset_location.clone().into(),
-						asset_location.clone().into(),
-					));
-
-					assert_ok!(AssetConversion::add_liquidity(
-						origin,
-						native_asset_location.into(),
-						asset_location.into(),
-						1_000 * UNITS,
-						2_000 * UNITS,
-						1,
-						1,
-						account.into(),
-					));
-
-					let give_assets: XcmAssets = (native_asset_id, 500 * UNITS).into();
-					let receive_assets: XcmAssets = (asset_id, 660 * UNITS).into();
-
-					Ok((give_assets, receive_assets))
+					Err(BenchmarkError::Skip)
 				}
 
 				fn universal_alias() -> Result<(Location, Junction), BenchmarkError> {
@@ -2589,7 +2445,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 				fn transact_origin_and_runtime_call() -> Result<(Location, RuntimeCall), BenchmarkError> {
 					Ok((
 						PeopleLocation::get(),
-						pezframe_system::Call::remark_with_event { remark: vec![] }.into()
+						pezframe_system::Call::remark_with_event {remark: vec![]}.into()
 					))
 				}
 
@@ -2599,15 +2455,15 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 
 				fn claimable_asset() -> Result<(Location, Location, XcmAssets), BenchmarkError> {
 					let origin = PeopleLocation::get();
-					let assets: XcmAssets = (AssetId(ZagrosLocation::get()), 1_000 * UNITS).into();
+					let assets: XcmAssets = (TokenLocation::get(), 1_000 * UNITS).into();
 					let ticket = Location { parents: 0, interior: Here };
 					Ok((origin, ticket, assets))
 				}
 
 				fn worst_case_for_trader() -> Result<(Asset, WeightLimit), BenchmarkError> {
 					Ok((Asset {
-						id: AssetId(ZagrosLocation::get()),
-						fun: Fungible(1_000 * UNITS),
+						id: AssetId(TokenLocation::get()),
+						fun: Fungible(1_000_000 * UNITS),
 					}, WeightLimit::Limited(Weight::from_parts(5000, 5000))))
 				}
 
@@ -2637,7 +2493,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			type Foreign = pezpallet_assets::Pezpallet::<Runtime, ForeignAssetsInstance>;
 			type Pool = pezpallet_assets::Pezpallet::<Runtime, PoolAssetsInstance>;
 
-			type ToPezkuwichain = XcmBridgeHubRouterBench<Runtime, ToPezkuwichainXcmRouterInstance>;
+			type ToZagros = XcmBridgeHubRouterBench<Runtime, ToZagrosXcmRouterInstance>;
 
 			use pezframe_support::traits::WhitelistedStorageKeys;
 			let whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
@@ -2663,50 +2519,45 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			genesis_config_presets::preset_names()
 		}
 	}
+
+	impl xcm_runtime_pezapis::trusted_query::TrustedQueryApi<Block> for Runtime {
+		fn is_trusted_reserve(asset: VersionedAsset, location: VersionedLocation) -> xcm_runtime_pezapis::trusted_query::XcmTrustedQueryResult {
+			PezkuwiXcm::is_trusted_reserve(asset, location)
+		}
+		fn is_trusted_teleporter(asset: VersionedAsset, location: VersionedLocation) -> xcm_runtime_pezapis::trusted_query::XcmTrustedQueryResult {
+			PezkuwiXcm::is_trusted_teleporter(asset, location)
+		}
+	}
+
+	impl pezcumulus_primitives_core::GetTeyrchainInfo<Block> for Runtime {
+		fn teyrchain_id() -> ParaId {
+			TeyrchainInfo::teyrchain_id()
+		}
+	}
+
+	impl pezcumulus_primitives_core::TargetBlockRate<Block> for Runtime {
+		fn target_block_rate() -> u32 {
+			1
+		}
+	}
+
+	impl xcm_runtime_pezapis::authorized_aliases::AuthorizedAliasersApi<Block> for Runtime {
+		fn authorized_aliasers(target: VersionedLocation) -> Result<
+			Vec<xcm_runtime_pezapis::authorized_aliases::OriginAliaser>,
+			xcm_runtime_pezapis::authorized_aliases::Error
+		> {
+			PezkuwiXcm::authorized_aliasers(target)
+		}
+		fn is_authorized_alias(origin: VersionedLocation, target: VersionedLocation) -> Result<
+			bool,
+			xcm_runtime_pezapis::authorized_aliases::Error
+		> {
+			PezkuwiXcm::is_authorized_alias(origin, target)
+		}
+	}
 );
 
 pezcumulus_pezpallet_teyrchain_system::register_validate_block! {
 	Runtime = Runtime,
 	BlockExecutor = pezcumulus_pezpallet_aura_ext::BlockExecutor::<Runtime, Executive>,
-}
-
-parameter_types! {
-	// The deposit configuration for the singed migration. Specially if you want to allow any signed account to do the migration (see `SignedFilter`, these deposits should be high)
-	pub const MigrationSignedDepositPerItem: Balance = CENTS;
-	pub const MigrationSignedDepositBase: Balance = 2_000 * CENTS;
-	pub const MigrationMaxKeyLen: u32 = 512;
-}
-
-impl pezpallet_state_trie_migration::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type SignedDepositPerItem = MigrationSignedDepositPerItem;
-	type SignedDepositBase = MigrationSignedDepositBase;
-	// An origin that can control the whole pezpallet: should be Root, or a part of your council.
-	type ControlOrigin = pezframe_system::EnsureSignedBy<RootMigController, AccountId>;
-	// specific account for the migration, can trigger the signed migrations.
-	type SignedFilter = pezframe_system::EnsureSignedBy<MigController, AccountId>;
-
-	// Replace this with weight based on your runtime.
-	type WeightInfo = pezpallet_state_trie_migration::weights::BizinikiwiWeight<Runtime>;
-
-	type MaxKeyLen = MigrationMaxKeyLen;
-}
-
-pezframe_support::ord_parameter_types! {
-	pub const MigController: AccountId = AccountId::from(hex_literal::hex!("8458ed39dc4b6f6c7255f7bc42be50c2967db126357c999d44e12ca7ac80dc52"));
-	pub const RootMigController: AccountId = AccountId::from(hex_literal::hex!("8458ed39dc4b6f6c7255f7bc42be50c2967db126357c999d44e12ca7ac80dc52"));
-}
-
-#[test]
-fn ensure_key_ss58() {
-	use pezframe_support::traits::SortedMembers;
-	use pezsp_core::crypto::Ss58Codec;
-	let acc =
-		AccountId::from_ss58check("5F4EbSkZz18X36xhbsjvDNs6NuZ82HyYtq5UiJ1h9SBHJXZD").unwrap();
-	assert_eq!(acc, MigController::sorted_members()[0]);
-	let acc =
-		AccountId::from_ss58check("5F4EbSkZz18X36xhbsjvDNs6NuZ82HyYtq5UiJ1h9SBHJXZD").unwrap();
-	assert_eq!(acc, RootMigController::sorted_members()[0]);
 }

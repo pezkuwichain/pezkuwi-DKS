@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `73b9817d6032`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `ef4134d66388`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_asset_rewards
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -57,17 +57,17 @@ impl<T: pezframe_system::Config> pezpallet_asset_rewards::WeightInfo for WeightI
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Holds` (r:1 w:1)
-	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(157), added: 2632, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(85), added: 2560, mode: `MaxEncodedLen`)
 	/// Storage: `AssetRewards::PoolCost` (r:0 w:1)
 	/// Proof: `AssetRewards::PoolCost` (`max_values`: None, `max_size`: Some(68), added: 2543, mode: `MaxEncodedLen`)
 	/// Storage: `AssetRewards::Pools` (r:0 w:1)
 	/// Proof: `AssetRewards::Pools` (`max_values`: None, `max_size`: Some(1344), added: 3819, mode: `MaxEncodedLen`)
 	fn create_pool() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `392`
+		//  Measured:  `358`
 		//  Estimated: `6360`
-		// Minimum execution time: 61_036_000 picoseconds.
-		Weight::from_parts(62_593_000, 0)
+		// Minimum execution time: 65_186_000 picoseconds.
+		Weight::from_parts(66_754_000, 0)
 			.saturating_add(Weight::from_parts(0, 6360))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(5))
@@ -84,10 +84,10 @@ impl<T: pezframe_system::Config> pezpallet_asset_rewards::WeightInfo for WeightI
 	/// Proof: `AssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
 	fn stake() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `906`
+		//  Measured:  `872`
 		//  Estimated: `4809`
-		// Minimum execution time: 56_336_000 picoseconds.
-		Weight::from_parts(57_248_000, 0)
+		// Minimum execution time: 55_450_000 picoseconds.
+		Weight::from_parts(57_270_000, 0)
 			.saturating_add(Weight::from_parts(0, 4809))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -104,10 +104,10 @@ impl<T: pezframe_system::Config> pezpallet_asset_rewards::WeightInfo for WeightI
 	/// Proof: `AssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
 	fn unstake() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `906`
+		//  Measured:  `872`
 		//  Estimated: `4809`
-		// Minimum execution time: 58_008_000 picoseconds.
-		Weight::from_parts(59_221_000, 0)
+		// Minimum execution time: 58_435_000 picoseconds.
+		Weight::from_parts(59_960_000, 0)
 			.saturating_add(Weight::from_parts(0, 4809))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -124,10 +124,10 @@ impl<T: pezframe_system::Config> pezpallet_asset_rewards::WeightInfo for WeightI
 	/// Proof: `AssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
 	fn harvest_rewards() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1106`
+		//  Measured:  `1072`
 		//  Estimated: `6208`
-		// Minimum execution time: 79_944_000 picoseconds.
-		Weight::from_parts(81_289_000, 0)
+		// Minimum execution time: 81_304_000 picoseconds.
+		Weight::from_parts(83_068_000, 0)
 			.saturating_add(Weight::from_parts(0, 6208))
 			.saturating_add(T::DbWeight::get().reads(6))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -138,8 +138,8 @@ impl<T: pezframe_system::Config> pezpallet_asset_rewards::WeightInfo for WeightI
 		// Proof Size summary in bytes:
 		//  Measured:  `318`
 		//  Estimated: `4809`
-		// Minimum execution time: 17_191_000 picoseconds.
-		Weight::from_parts(17_489_000, 0)
+		// Minimum execution time: 17_196_000 picoseconds.
+		Weight::from_parts(18_227_000, 0)
 			.saturating_add(Weight::from_parts(0, 4809))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -150,8 +150,8 @@ impl<T: pezframe_system::Config> pezpallet_asset_rewards::WeightInfo for WeightI
 		// Proof Size summary in bytes:
 		//  Measured:  `318`
 		//  Estimated: `4809`
-		// Minimum execution time: 15_385_000 picoseconds.
-		Weight::from_parts(15_887_000, 0)
+		// Minimum execution time: 15_398_000 picoseconds.
+		Weight::from_parts(16_271_000, 0)
 			.saturating_add(Weight::from_parts(0, 4809))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -162,8 +162,8 @@ impl<T: pezframe_system::Config> pezpallet_asset_rewards::WeightInfo for WeightI
 		// Proof Size summary in bytes:
 		//  Measured:  `318`
 		//  Estimated: `4809`
-		// Minimum execution time: 17_928_000 picoseconds.
-		Weight::from_parts(18_717_000, 0)
+		// Minimum execution time: 18_002_000 picoseconds.
+		Weight::from_parts(18_782_000, 0)
 			.saturating_add(Weight::from_parts(0, 4809))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -180,10 +180,10 @@ impl<T: pezframe_system::Config> pezpallet_asset_rewards::WeightInfo for WeightI
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn deposit_reward_tokens() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `781`
+		//  Measured:  `747`
 		//  Estimated: `6208`
-		// Minimum execution time: 66_890_000 picoseconds.
-		Weight::from_parts(68_676_000, 0)
+		// Minimum execution time: 67_097_000 picoseconds.
+		Weight::from_parts(69_088_000, 0)
 			.saturating_add(Weight::from_parts(0, 6208))
 			.saturating_add(T::DbWeight::get().reads(6))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -205,13 +205,13 @@ impl<T: pezframe_system::Config> pezpallet_asset_rewards::WeightInfo for WeightI
 	/// Storage: `AssetRewards::PoolCost` (r:1 w:1)
 	/// Proof: `AssetRewards::PoolCost` (`max_values`: None, `max_size`: Some(68), added: 2543, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Holds` (r:1 w:1)
-	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(157), added: 2632, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(85), added: 2560, mode: `MaxEncodedLen`)
 	fn cleanup_pool() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1139`
+		//  Measured:  `1105`
 		//  Estimated: `6208`
-		// Minimum execution time: 129_877_000 picoseconds.
-		Weight::from_parts(133_247_000, 0)
+		// Minimum execution time: 130_109_000 picoseconds.
+		Weight::from_parts(134_276_000, 0)
 			.saturating_add(Weight::from_parts(0, 6208))
 			.saturating_add(T::DbWeight::get().reads(11))
 			.saturating_add(T::DbWeight::get().writes(10))

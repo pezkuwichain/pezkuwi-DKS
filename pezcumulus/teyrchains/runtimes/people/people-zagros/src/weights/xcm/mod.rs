@@ -60,8 +60,8 @@ impl WeighAssets for Assets {
 	}
 }
 
-pub struct PeopleZagrosXcmWeight<Call>(core::marker::PhantomData<Call>);
-impl<Call> XcmWeightInfo<Call> for PeopleZagrosXcmWeight<Call> {
+pub struct PeoplePezkuwichainXcmWeight<Call>(core::marker::PhantomData<Call>);
+impl<Call> XcmWeightInfo<Call> for PeoplePezkuwichainXcmWeight<Call> {
 	fn withdraw_asset(assets: &Assets) -> Weight {
 		assets.weigh_assets(XcmFungibleWeight::<Runtime>::withdraw_asset())
 	}
@@ -250,7 +250,8 @@ impl<Call> XcmWeightInfo<Call> for PeopleZagrosXcmWeight<Call> {
 		XcmGeneric::<Runtime>::clear_topic()
 	}
 	fn alias_origin(_: &Location) -> Weight {
-		XcmGeneric::<Runtime>::alias_origin()
+		// XCM Executor does not currently support alias origin operations
+		Weight::MAX
 	}
 	fn unpaid_execution(_: &WeightLimit, _: &Option<Location>) -> Weight {
 		XcmGeneric::<Runtime>::unpaid_execution()

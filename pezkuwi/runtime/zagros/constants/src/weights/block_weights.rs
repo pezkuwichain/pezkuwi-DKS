@@ -14,26 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
-//! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2023-06-14 (Y/M/D)
-//! HOSTNAME: `runner--ss9ysm1-project-163-concurrent-0`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
+//! DATE: 2024-02-29 (Y/M/D)
+//! HOSTNAME: `runner-bn-ce5rx-project-674-concurrent-0`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //!
 //! SHORT-NAME: `block`, LONG-NAME: `BlockExecution`, RUNTIME: `Development`
 //! WARMUPS: `10`, REPEAT: `100`
-//! WEIGHT-PATH: `runtime/zagros/constants/src/weights/`
+//! WEIGHT-PATH: `./pezkuwi/runtime/pezkuwichain/constants/src/weights/`
 //! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
 //   ./target/production/pezkuwi
 //   benchmark
 //   overhead
-//   --chain=zagros-dev
-//   --execution=wasm
+//   --chain=pezkuwichain-dev
 //   --wasm-execution=compiled
-//   --weight-path=runtime/zagros/constants/src/weights/
+//   --weight-path=./pezkuwi/runtime/pezkuwichain/constants/src/weights/
 //   --warmup=10
 //   --repeat=100
-//   --header=./file_header.txt
+//   --header=./pezkuwi/file_header.txt
 
 use pezsp_core::parameter_types;
 use pezsp_weights::{constants::WEIGHT_REF_TIME_PER_NANOS, Weight};
@@ -43,17 +42,17 @@ parameter_types! {
 	/// Calculated by multiplying the *Average* with `1.0` and adding `0`.
 	///
 	/// Stats nanoseconds:
-	///   Min, Max: 449_093, 498_211
-	///   Average:  461_988
-	///   Median:   459_070
-	///   Std-Dev:  10124.58
+	///   Min, Max: 440_142, 476_907
+	///   Average:  450_240
+	///   Median:   448_633
+	///   Std-Dev:  7301.18
 	///
 	/// Percentiles nanoseconds:
-	///   99th: 493_580
-	///   95th: 482_929
-	///   75th: 464_502
+	///   99th: 470_733
+	///   95th: 465_082
+	///   75th: 452_536
 	pub const BlockExecutionWeight: Weight =
-		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(461_988), 0);
+		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(450_240), 0);
 }
 
 #[cfg(test)]

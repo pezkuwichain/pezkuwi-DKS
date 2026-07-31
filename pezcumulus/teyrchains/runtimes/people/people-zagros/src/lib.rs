@@ -23,6 +23,9 @@ pub mod people;
 mod weights;
 pub mod xcm_config;
 
+// Re-export komisyon tipleri (lib.rs'de kullanım için)
+pub use people::CouncilCollective;
+
 extern crate alloc;
 
 use alloc::{vec, vec::Vec};
@@ -59,10 +62,6 @@ use pezsp_runtime::{
 	ApplyExtrinsicResult,
 };
 pub use pezsp_runtime::{MultiAddress, Perbill, Permill, RuntimeDebug};
-use pezsp_statement_store::{
-	runtime_api::{InvalidStatement, StatementSource, ValidStatement},
-	SignatureVerificationResult, Statement,
-};
 #[cfg(feature = "std")]
 use pezsp_version::NativeVersion;
 use pezsp_version::RuntimeVersion;
@@ -96,7 +95,9 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 
-/// The transactionExtension to the basic transaction logic.
+/// The TransactionExtension to the basic transaction logic.
+/// Includes SkipCheckIfFeeless to exempt governance members from fees
+/// when using `#[pezpallet::feeless_if]` marked extrinsics.
 pub type TxExtension = pezcumulus_pezpallet_weight_reclaim::StorageWeightReclaim<
 	Runtime,
 	(
@@ -108,7 +109,10 @@ pub type TxExtension = pezcumulus_pezpallet_weight_reclaim::StorageWeightReclaim
 		pezframe_system::CheckEra<Runtime>,
 		pezframe_system::CheckNonce<Runtime>,
 		pezframe_system::CheckWeight<Runtime>,
-		pezpallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+		pezpallet_skip_feeless_payment::SkipCheckIfFeeless<
+			Runtime,
+			pezpallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+		>,
 	),
 >;
 
@@ -119,10 +123,13 @@ pub type UncheckedExtrinsic =
 /// Migrations to apply on runtime upgrade.
 pub type Migrations = (
 	pezpallet_collator_selection::migration::v2::MigrationToV2<Runtime>,
+	pezcumulus_pezpallet_xcmp_queue::migration::v5::MigrateV4ToV5<Runtime>,
 	pezpallet_session::migrations::v1::MigrateV0ToV1<
 		Runtime,
 		pezpallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
 	>,
+	// Populate TikiHolder from UserTikis for unique roles (Serok, etc.)
+	pezpallet_tiki::migrations::v2::MigrateToV2<Runtime>,
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 	pezcumulus_pezpallet_aura_ext::migration::MigrateV0ToV1<Runtime>,
@@ -148,10 +155,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("people-zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("people-zagros"),
 	authoring_version: 1,
-	spec_version: 1_020_001,
+	spec_version: 1_020_011,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 2,
+	transaction_version: 1,
 	system_version: 1,
 };
 
@@ -262,6 +269,10 @@ impl pezpallet_transaction_payment::Config for Runtime {
 	type WeightInfo = weights::pezpallet_transaction_payment::WeightInfo<Runtime>;
 }
 
+impl pezpallet_skip_feeless_payment::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+}
+
 parameter_types! {
 	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 	pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
@@ -327,10 +338,84 @@ parameter_types! {
 	pub const FellowsBodyId: BodyId = BodyId::Technical;
 }
 
-/// Privileged origin that represents Root or Fellows.
+/// Privileged origin that represents Root or Fellows pluralistic body.
 pub type RootOrFellows = EitherOfDiverse<
 	EnsureRoot<AccountId>,
 	EnsureXcm<IsVoiceOfBody<FellowshipLocation, FellowsBodyId>>,
+>;
+
+// =============================================================================
+// Kademeli Yetki Devri Origin Tanımları (Progressive Decentralization)
+// =============================================================================
+//
+// Bu origin'ler başlangıçta Root (Sudo) ile çalışır, ancak Welati pezpallet'i
+// aracılığıyla seçimler yapıldığında yetki demokratik organlara devredilir.
+//
+// Kullanım:
+// - Başlangıç: Root (Sudo) tüm yetkilere sahip
+// - Seçim sonrası: Root VEYA ilgili demokratik organ
+// - Sudo kaldırıldığında: Sadece demokratik organlar
+// =============================================================================
+
+/// Root VEYA Serok (Cumhurbaşkanı) yetkisi
+/// Kullanım: Yüksek düzey yönetim kararları, atamalar
+pub type RootOrSerok =
+	EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_welati::EnsureSerok<Runtime>>;
+
+/// Root VEYA Parlamento üyesi yetkisi
+/// Kullanım: Yasama işlemleri, bütçe onayları
+pub type RootOrParliament =
+	EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_welati::EnsureParlementer<Runtime>>;
+
+/// Root VEYA Divan (Anayasa Mahkemesi) yetkisi
+/// Kullanım: Anayasal kararlar, vatandaşlık işlemleri
+pub type RootOrDiwan =
+	EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_welati::EnsureDiwan<Runtime>>;
+
+/// Root VEYA Council (Genel Konsey) yetkisi
+/// Kullanım: Genel yönetişim kararları
+pub type RootOrCouncil = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+>;
+
+/// Root VEYA Serok VEYA Council yetkisi
+/// Kullanım: Çoğu yönetim işlemi için esnek yetki
+pub type RootOrSerokOrCouncil = EitherOfDiverse<
+	RootOrSerok,
+	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+>;
+
+// =============================================================================
+// Welati-Based Origin Combinations (Welati Tabanlı Origin Kombinasyonları)
+// =============================================================================
+//
+// Bu origin'ler şu an için sadece Welati pezpallet origin'lerini kullanıyor.
+// İleride pezpallet_collective instance'ları eklendiğinde genişletilebilir.
+//
+// Fee Muafiyeti Notu: Komisyon üyeleri (Serok, Parlementer, Diwan) resmi
+// görevlerini yaparken fee'den muaf olmalı. Bu SignedExtension ile sağlanabilir.
+// =============================================================================
+
+/// Root VEYA Serok VEYA Council için esnek yetki
+/// Kullanım: Teknik kararlar, NFT/Tiki yönetimi
+pub type RootOrTechnicalCommittee = EitherOfDiverse<
+	RootOrSerok,
+	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+>;
+
+/// Root VEYA Serok VEYA Council için hazine yetkisi
+/// Kullanım: PEZ dağıtım yönetimi, ekonomik kararlar
+pub type RootOrTreasuryCommittee = EitherOfDiverse<
+	RootOrSerok,
+	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 2, 3>,
+>;
+
+/// Root VEYA Diwan VEYA Council
+/// Kullanım: Vatandaşlık ve kimlik işlemleri için kademeli yetki devri
+pub type RootOrDiwanOrTechnical = EitherOfDiverse<
+	RootOrDiwan,
+	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
 >;
 
 impl pezcumulus_pezpallet_xcmp_queue::Config for Runtime {
@@ -345,8 +430,8 @@ impl pezcumulus_pezpallet_xcmp_queue::Config for Runtime {
 	type MaxPageSize = ConstU32<{ 103 * 1024 }>;
 	type ControllerOrigin = RootOrFellows;
 	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
-	type WeightInfo = weights::pezcumulus_pezpallet_xcmp_queue::WeightInfo<Runtime>;
 	type PriceForSiblingDelivery = PriceForSiblingTeyrchainDelivery;
+	type WeightInfo = weights::pezcumulus_pezpallet_xcmp_queue::WeightInfo<Runtime>;
 }
 
 impl pezcumulus_pezpallet_xcmp_queue::migration::v5::V5Config for Runtime {
@@ -566,6 +651,10 @@ parameter_types! {
 
 impl pezpallet_migrations::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type Migrations = pezpallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>;
+	// Benchmarks need mocked migrations to guarantee that they succeed.
+	#[cfg(feature = "runtime-benchmarks")]
 	type Migrations = pezpallet_migrations::mock_helpers::MockedMigrations;
 	type CursorMaxLen = ConstU32<65_536>;
 	type IdentifierMaxLen = ConstU32<256>;
@@ -589,6 +678,7 @@ construct_runtime!(
 		// Monetary stuff.
 		Balances: pezpallet_balances = 10,
 		TransactionPayment: pezpallet_transaction_payment = 11,
+		SkipFeelessPayment: pezpallet_skip_feeless_payment = 12,
 
 		// Collator support. The order of these 5 are important and shall not change.
 		Authorship: pezpallet_authorship = 20,
@@ -597,7 +687,7 @@ construct_runtime!(
 		Aura: pezpallet_aura = 23,
 		AuraExt: pezcumulus_pezpallet_aura_ext = 24,
 
-		// XCM helpers.
+		// XCM & related
 		XcmpQueue: pezcumulus_pezpallet_xcmp_queue = 30,
 		PezkuwiXcm: pezpallet_xcm = 31,
 		CumulusXcm: pezcumulus_pezpallet_xcm = 32,
@@ -607,9 +697,42 @@ construct_runtime!(
 		Utility: pezpallet_utility = 40,
 		Multisig: pezpallet_multisig = 41,
 		Proxy: pezpallet_proxy = 42,
+		Recovery: pezpallet_recovery = 43,
+		Vesting: pezpallet_vesting = 44,
 
-		// The main stage.
+		// The main stage - Identity & People
 		Identity: pezpallet_identity = 50,
+		IdentityKyc: pezpallet_identity_kyc = 51,
+		Referral: pezpallet_referral = 52,
+		Perwerde: pezpallet_perwerde = 53,
+		Messaging: pezpallet_messaging = 55,
+
+		// NFTs and Roles
+		Nfts: pezpallet_nfts = 60,
+		Tiki: pezpallet_tiki = 61,
+
+		// Governance - Core Council
+		Council: pezpallet_collective::<Instance1> = 70,
+		Scheduler: pezpallet_scheduler = 71,
+		Democracy: pezpallet_democracy = 72,
+		Elections: pezpallet_elections_phragmen = 73,
+
+		// PezkuwiChain Governance (Welati handles committees internally)
+		Welati: pezpallet_welati = 75,
+
+		// Reserved slots for future committee instances:
+		// EducationCommittee: pezpallet_collective::<Instance2> = 74,
+		// TechnicalCommittee: pezpallet_collective::<Instance3> = 76,
+		// TreasuryCommittee: pezpallet_collective::<Instance4> = 77,
+
+		// Trust & Staking
+		StakingScore: pezpallet_staking_score = 80,
+		Trust: pezpallet_trust = 81,
+		Society: pezpallet_society = 82,
+
+		// Assets & Rewards
+		Assets: pezpallet_assets = 90,
+		PezRewards: pezpallet_pez_rewards = 91,
 
 		// Migrations pezpallet
 		MultiBlockMigrations: pezpallet_migrations = 98,
@@ -625,15 +748,35 @@ mod benches {
 		// Bizinikiwi
 		[pezframe_system, SystemBench::<Runtime>]
 		[pezpallet_balances, Balances]
+		[pezpallet_collective, Council]
 		[pezpallet_identity, Identity]
 		[pezpallet_message_queue, MessageQueue]
 		[pezpallet_multisig, Multisig]
+		[pezpallet_nfts, Nfts]
 		[pezpallet_proxy, Proxy]
+		[pezpallet_recovery, Recovery]
 		[pezpallet_session, SessionBench::<Runtime>]
+		[pezpallet_society, Society]
 		[pezpallet_utility, Utility]
+		[pezpallet_vesting, Vesting]
 		[pezpallet_timestamp, Timestamp]
 		[pezpallet_migrations, MultiBlockMigrations]
-		// Pezkuwi
+		[pezpallet_transaction_payment, TransactionPayment]
+		// Governance pallets
+		[pezpallet_scheduler, Scheduler]
+		[pezpallet_democracy, Democracy]
+		[pezpallet_elections_phragmen, Elections]
+		[pezpallet_assets, PeopleAssets]
+		// Pezkuwi - Custom People Pallets
+		[pezpallet_identity_kyc, IdentityKyc]
+		[pezpallet_messaging, Messaging]
+		[pezpallet_perwerde, Perwerde]
+		[pezpallet_referral, Referral]
+		[pezpallet_tiki, Tiki]
+		[pezpallet_staking_score, StakingScore]
+		[pezpallet_trust, Trust]
+		[pezpallet_welati, Welati]
+		[pezpallet_pez_rewards, PezRewards]
 		[pezkuwi_runtime_common::identity_migrator, IdentityMigrator]
 		// Pezcumulus
 		[pezcumulus_pezpallet_teyrchain_system, TeyrchainSystem]
@@ -843,30 +986,6 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl xcm_runtime_pezapis::trusted_query::TrustedQueryApi<Block> for Runtime {
-		fn is_trusted_reserve(asset: VersionedAsset, location: VersionedLocation) -> xcm_runtime_pezapis::trusted_query::XcmTrustedQueryResult {
-			PezkuwiXcm::is_trusted_reserve(asset, location)
-		}
-		fn is_trusted_teleporter(asset: VersionedAsset, location: VersionedLocation) -> xcm_runtime_pezapis::trusted_query::XcmTrustedQueryResult {
-			PezkuwiXcm::is_trusted_teleporter(asset, location)
-		}
-	}
-
-	impl xcm_runtime_pezapis::authorized_aliases::AuthorizedAliasersApi<Block> for Runtime {
-		fn authorized_aliasers(target: VersionedLocation) -> Result<
-			Vec<xcm_runtime_pezapis::authorized_aliases::OriginAliaser>,
-			xcm_runtime_pezapis::authorized_aliases::Error
-		> {
-			PezkuwiXcm::authorized_aliasers(target)
-		}
-		fn is_authorized_alias(origin: VersionedLocation, target: VersionedLocation) -> Result<
-			bool,
-			xcm_runtime_pezapis::authorized_aliases::Error
-		> {
-			PezkuwiXcm::is_authorized_alias(origin, target)
-		}
-	}
-
 	impl pezcumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
 		fn collect_collation_info(header: &<Block as BlockT>::Header) -> pezcumulus_primitives_core::CollationInfo {
 			TeyrchainSystem::collect_collation_info(header)
@@ -909,6 +1028,7 @@ impl_runtime_apis! {
 			// are referenced in that call.
 			type XcmBalances = pezpallet_xcm_benchmarks::fungible::Pezpallet::<Runtime>;
 			type XcmGeneric = pezpallet_xcm_benchmarks::generic::Pezpallet::<Runtime>;
+			type PeopleAssets = pezpallet_assets::Pezpallet::<Runtime>;
 
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
@@ -938,18 +1058,17 @@ impl_runtime_apis! {
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
 			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
-			use xcm_config::RelayLocation;
 			use testnet_teyrchains_constants::zagros::locations::{AssetHubParaId, AssetHubLocation};
 
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
 			impl pezpallet_xcm::benchmarking::Config for Runtime {
 				type DeliveryHelper = pezkuwi_runtime_common::xcm_sender::ToTeyrchainDeliveryHelper<
-						xcm_config::XcmConfig,
-						ExistentialDepositAsset,
-						PriceForSiblingTeyrchainDelivery,
-						AssetHubParaId,
-						TeyrchainSystem,
-					>;
+					xcm_config::XcmConfig,
+					ExistentialDepositAsset,
+					PriceForSiblingTeyrchainDelivery,
+					AssetHubParaId,
+					TeyrchainSystem
+				>;
 
 				fn reachable_dest() -> Option<Location> {
 					Some(AssetHubLocation::get())
@@ -989,6 +1108,8 @@ impl_runtime_apis! {
 			}
 
 			use xcm::latest::prelude::*;
+			use xcm_config::RelayLocation;
+
 			parameter_types! {
 				pub ExistentialDepositAsset: Option<Asset> = Some((
 					RelayLocation::get(),
@@ -1072,7 +1193,7 @@ impl_runtime_apis! {
 				fn claimable_asset() -> Result<(Location, Location, Assets), BenchmarkError> {
 					let origin = AssetHubLocation::get();
 					let assets: Assets = (AssetId(RelayLocation::get()), 1_000 * UNITS).into();
-					let ticket = Location { parents: 0, interior: Here };
+					let ticket = Location::new(0, []);
 					Ok((origin, ticket, assets))
 				}
 
@@ -1093,14 +1214,13 @@ impl_runtime_apis! {
 				}
 
 				fn alias_origin() -> Result<(Location, Location), BenchmarkError> {
-					let origin = Location::new(1, [Teyrchain(1000)]);
-					let target = Location::new(1, [Teyrchain(1000), AccountId32 { id: [128u8; 32], network: None }]);
-					Ok((origin, target))
+					Err(BenchmarkError::Skip)
 				}
 			}
 
 			type XcmBalances = pezpallet_xcm_benchmarks::fungible::Pezpallet::<Runtime>;
 			type XcmGeneric = pezpallet_xcm_benchmarks::generic::Pezpallet::<Runtime>;
+			type PeopleAssets = pezpallet_assets::Pezpallet::<Runtime>;
 
 			use pezframe_support::traits::WhitelistedStorageKeys;
 			let whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
@@ -1127,6 +1247,15 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl xcm_runtime_pezapis::trusted_query::TrustedQueryApi<Block> for Runtime {
+		fn is_trusted_reserve(asset: VersionedAsset, location: VersionedLocation) -> xcm_runtime_pezapis::trusted_query::XcmTrustedQueryResult {
+			PezkuwiXcm::is_trusted_reserve(asset, location)
+		}
+		fn is_trusted_teleporter(asset: VersionedAsset, location: VersionedLocation) -> xcm_runtime_pezapis::trusted_query::XcmTrustedQueryResult {
+			PezkuwiXcm::is_trusted_teleporter(asset, location)
+		}
+	}
+
 	impl pezcumulus_primitives_core::GetTeyrchainInfo<Block> for Runtime {
 		fn teyrchain_id() -> ParaId {
 			TeyrchainInfo::teyrchain_id()
@@ -1136,39 +1265,6 @@ impl_runtime_apis! {
 	impl pezcumulus_primitives_core::TargetBlockRate<Block> for Runtime {
 		fn target_block_rate() -> u32 {
 			1
-		}
-	}
-
-	impl pezsp_statement_store::runtime_api::ValidateStatement<Block> for Runtime {
-		fn validate_statement(
-			_source: StatementSource,
-			statement: Statement,
-		) -> Result<ValidStatement, InvalidStatement> {
-			let account = match statement.verify_signature() {
-				SignatureVerificationResult::Valid(account) => account.into(),
-				SignatureVerificationResult::Invalid => {
-					tracing::debug!(target: "runtime", "Bad statement signature.");
-					return Err(InvalidStatement::BadProof)
-				},
-				SignatureVerificationResult::NoSignature => {
-					tracing::debug!(target: "runtime", "Missing statement signature.");
-					return Err(InvalidStatement::NoProof)
-				},
-			};
-
-			// For now just allow validators to store some statements.
-			// In the future we will allow people.
-			if pezpallet_session::Validators::<Runtime>::get().contains(&account) {
-				Ok(ValidStatement {
-					max_count: 2,
-					max_size: 1024,
-				})
-			} else {
-				Ok(ValidStatement {
-					max_count: 0,
-					max_size: 0,
-				})
-			}
 		}
 	}
 }

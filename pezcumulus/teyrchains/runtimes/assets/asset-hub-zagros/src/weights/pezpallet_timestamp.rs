@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `73b9817d6032`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `ef4134d66388`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_timestamp
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -56,10 +56,10 @@ impl<T: pezframe_system::Config> pezpallet_timestamp::WeightInfo for WeightInfo<
 	/// Proof: `Aura::CurrentSlot` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
 	fn set() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `189`
+		//  Measured:  `156`
 		//  Estimated: `1493`
-		// Minimum execution time: 8_800_000 picoseconds.
-		Weight::from_parts(9_287_000, 0)
+		// Minimum execution time: 8_914_000 picoseconds.
+		Weight::from_parts(9_291_000, 0)
 			.saturating_add(Weight::from_parts(0, 1493))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -68,8 +68,8 @@ impl<T: pezframe_system::Config> pezpallet_timestamp::WeightInfo for WeightInfo<
 		// Proof Size summary in bytes:
 		//  Measured:  `94`
 		//  Estimated: `0`
-		// Minimum execution time: 4_492_000 picoseconds.
-		Weight::from_parts(4_663_000, 0)
+		// Minimum execution time: 4_607_000 picoseconds.
+		Weight::from_parts(4_802_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 }

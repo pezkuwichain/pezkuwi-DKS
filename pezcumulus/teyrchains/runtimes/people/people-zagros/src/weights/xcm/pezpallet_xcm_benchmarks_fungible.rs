@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/people-zagros-runtime/people_zagros_runtime.wasm
+// --runtime=target/production/wbuild/people-pezkuwichain-runtime/people_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_xcm_benchmarks::fungible
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/people/people-zagros/src/weights/xcm
+// --output=./pezcumulus/teyrchains/runtimes/people/people-pezkuwichain/src/weights/xcm
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -56,8 +56,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `101`
 		//  Estimated: `3593`
-		// Minimum execution time: 31_297_000 picoseconds.
-		Weight::from_parts(32_008_000, 3593)
+		// Minimum execution time: 30_722_000 picoseconds.
+		Weight::from_parts(31_547_000, 3593)
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -67,8 +67,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `101`
 		//  Estimated: `6196`
-		// Minimum execution time: 42_973_000 picoseconds.
-		Weight::from_parts(44_200_000, 6196)
+		// Minimum execution time: 41_885_000 picoseconds.
+		Weight::from_parts(42_845_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -90,8 +90,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `345`
 		//  Estimated: `8799`
-		// Minimum execution time: 113_095_000 picoseconds.
-		Weight::from_parts(115_975_000, 8799)
+		// Minimum execution time: 110_100_000 picoseconds.
+		Weight::from_parts(112_319_000, 8799)
 			.saturating_add(T::DbWeight::get().reads(8))
 			.saturating_add(T::DbWeight::get().writes(5))
 	}
@@ -122,8 +122,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `345`
 		//  Estimated: `6196`
-		// Minimum execution time: 81_184_000 picoseconds.
-		Weight::from_parts(83_289_000, 6196)
+		// Minimum execution time: 79_690_000 picoseconds.
+		Weight::from_parts(82_281_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -131,8 +131,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_668_000 picoseconds.
-		Weight::from_parts(2_827_000, 0)
+		// Minimum execution time: 2_748_000 picoseconds.
+		Weight::from_parts(2_919_000, 0)
 	}
 	// Storage: `System::Account` (r:1 w:1)
 	// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
@@ -140,8 +140,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `3593`
-		// Minimum execution time: 24_538_000 picoseconds.
-		Weight::from_parts(25_115_000, 3593)
+		// Minimum execution time: 24_264_000 picoseconds.
+		Weight::from_parts(24_701_000, 3593)
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -163,8 +163,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `244`
 		//  Estimated: `3709`
-		// Minimum execution time: 69_619_000 picoseconds.
-		Weight::from_parts(71_689_000, 3709)
+		// Minimum execution time: 68_727_000 picoseconds.
+		Weight::from_parts(70_944_000, 3709)
 			.saturating_add(T::DbWeight::get().reads(6))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
@@ -184,8 +184,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `244`
 		//  Estimated: `3709`
-		// Minimum execution time: 48_416_000 picoseconds.
-		Weight::from_parts(49_727_000, 3709)
+		// Minimum execution time: 48_495_000 picoseconds.
+		Weight::from_parts(49_936_000, 3709)
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -207,8 +207,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `244`
 		//  Estimated: `6196`
-		// Minimum execution time: 94_130_000 picoseconds.
-		Weight::from_parts(97_600_000, 6196)
+		// Minimum execution time: 94_270_000 picoseconds.
+		Weight::from_parts(96_465_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}

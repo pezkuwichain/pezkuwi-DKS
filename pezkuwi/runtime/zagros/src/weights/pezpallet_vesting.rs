@@ -19,7 +19,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `3a2e9ae8a8f5`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `d3a9aad6f7a3`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -28,10 +28,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_vesting
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --output=./pezkuwi/runtime/pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -56,20 +56,20 @@ impl<T: pezframe_system::Config> pezpallet_vesting::WeightInfo for WeightInfo<T>
 	/// Storage: `Balances::Locks` (r:1 w:1)
 	/// Proof: `Balances::Locks` (`max_values`: None, `max_size`: Some(1299), added: 3774, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Freezes` (r:1 w:0)
-	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(67), added: 2542, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(65), added: 2540, mode: `MaxEncodedLen`)
 	/// The range of component `l` is `[0, 49]`.
 	/// The range of component `s` is `[1, 28]`.
 	fn vest_locked(l: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `345 + l * (25 ±0) + s * (36 ±0)`
+		//  Measured:  `277 + l * (25 ±0) + s * (36 ±0)`
 		//  Estimated: `4764`
-		// Minimum execution time: 38_225_000 picoseconds.
-		Weight::from_parts(37_860_470, 0)
+		// Minimum execution time: 34_644_000 picoseconds.
+		Weight::from_parts(34_294_075, 0)
 			.saturating_add(Weight::from_parts(0, 4764))
-			// Standard Error: 1_479
-			.saturating_add(Weight::from_parts(41_149, 0).saturating_mul(l.into()))
-			// Standard Error: 2_631
-			.saturating_add(Weight::from_parts(76_064, 0).saturating_mul(s.into()))
+			// Standard Error: 2_502
+			.saturating_add(Weight::from_parts(33_997, 0).saturating_mul(l.into()))
+			// Standard Error: 4_451
+			.saturating_add(Weight::from_parts(82_158, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -78,20 +78,20 @@ impl<T: pezframe_system::Config> pezpallet_vesting::WeightInfo for WeightInfo<T>
 	/// Storage: `Balances::Locks` (r:1 w:1)
 	/// Proof: `Balances::Locks` (`max_values`: None, `max_size`: Some(1299), added: 3774, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Freezes` (r:1 w:0)
-	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(67), added: 2542, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(65), added: 2540, mode: `MaxEncodedLen`)
 	/// The range of component `l` is `[0, 49]`.
 	/// The range of component `s` is `[1, 28]`.
 	fn vest_unlocked(l: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `345 + l * (25 ±0) + s * (36 ±0)`
+		//  Measured:  `277 + l * (25 ±0) + s * (36 ±0)`
 		//  Estimated: `4764`
-		// Minimum execution time: 40_682_000 picoseconds.
-		Weight::from_parts(40_558_815, 0)
+		// Minimum execution time: 37_051_000 picoseconds.
+		Weight::from_parts(37_406_778, 0)
 			.saturating_add(Weight::from_parts(0, 4764))
-			// Standard Error: 1_473
-			.saturating_add(Weight::from_parts(35_138, 0).saturating_mul(l.into()))
-			// Standard Error: 2_620
-			.saturating_add(Weight::from_parts(72_425, 0).saturating_mul(s.into()))
+			// Standard Error: 2_143
+			.saturating_add(Weight::from_parts(25_479, 0).saturating_mul(l.into()))
+			// Standard Error: 3_813
+			.saturating_add(Weight::from_parts(59_478, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -100,22 +100,22 @@ impl<T: pezframe_system::Config> pezpallet_vesting::WeightInfo for WeightInfo<T>
 	/// Storage: `Balances::Locks` (r:1 w:1)
 	/// Proof: `Balances::Locks` (`max_values`: None, `max_size`: Some(1299), added: 3774, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Freezes` (r:1 w:0)
-	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(67), added: 2542, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(65), added: 2540, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// The range of component `l` is `[0, 49]`.
 	/// The range of component `s` is `[1, 28]`.
 	fn vest_other_locked(l: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `448 + l * (25 ±0) + s * (36 ±0)`
+		//  Measured:  `380 + l * (25 ±0) + s * (36 ±0)`
 		//  Estimated: `4764`
-		// Minimum execution time: 40_813_000 picoseconds.
-		Weight::from_parts(40_248_990, 0)
+		// Minimum execution time: 36_942_000 picoseconds.
+		Weight::from_parts(36_397_510, 0)
 			.saturating_add(Weight::from_parts(0, 4764))
-			// Standard Error: 1_925
-			.saturating_add(Weight::from_parts(47_778, 0).saturating_mul(l.into()))
-			// Standard Error: 3_425
-			.saturating_add(Weight::from_parts(88_421, 0).saturating_mul(s.into()))
+			// Standard Error: 2_194
+			.saturating_add(Weight::from_parts(43_154, 0).saturating_mul(l.into()))
+			// Standard Error: 3_904
+			.saturating_add(Weight::from_parts(78_209, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
@@ -124,22 +124,22 @@ impl<T: pezframe_system::Config> pezpallet_vesting::WeightInfo for WeightInfo<T>
 	/// Storage: `Balances::Locks` (r:1 w:1)
 	/// Proof: `Balances::Locks` (`max_values`: None, `max_size`: Some(1299), added: 3774, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Freezes` (r:1 w:0)
-	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(67), added: 2542, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(65), added: 2540, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// The range of component `l` is `[0, 49]`.
 	/// The range of component `s` is `[1, 28]`.
 	fn vest_other_unlocked(l: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `448 + l * (25 ±0) + s * (36 ±0)`
+		//  Measured:  `380 + l * (25 ±0) + s * (36 ±0)`
 		//  Estimated: `4764`
-		// Minimum execution time: 43_330_000 picoseconds.
-		Weight::from_parts(43_588_745, 0)
+		// Minimum execution time: 39_129_000 picoseconds.
+		Weight::from_parts(39_172_044, 0)
 			.saturating_add(Weight::from_parts(0, 4764))
-			// Standard Error: 2_075
-			.saturating_add(Weight::from_parts(35_838, 0).saturating_mul(l.into()))
-			// Standard Error: 3_693
-			.saturating_add(Weight::from_parts(73_951, 0).saturating_mul(s.into()))
+			// Standard Error: 2_803
+			.saturating_add(Weight::from_parts(33_251, 0).saturating_mul(l.into()))
+			// Standard Error: 4_988
+			.saturating_add(Weight::from_parts(83_808, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
@@ -150,20 +150,20 @@ impl<T: pezframe_system::Config> pezpallet_vesting::WeightInfo for WeightInfo<T>
 	/// Storage: `Balances::Locks` (r:1 w:1)
 	/// Proof: `Balances::Locks` (`max_values`: None, `max_size`: Some(1299), added: 3774, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Freezes` (r:1 w:0)
-	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(67), added: 2542, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(65), added: 2540, mode: `MaxEncodedLen`)
 	/// The range of component `l` is `[0, 49]`.
 	/// The range of component `s` is `[0, 27]`.
 	fn vested_transfer(l: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `519 + l * (25 ±0) + s * (36 ±0)`
+		//  Measured:  `451 + l * (25 ±0) + s * (36 ±0)`
 		//  Estimated: `4764`
-		// Minimum execution time: 80_026_000 picoseconds.
-		Weight::from_parts(82_148_674, 0)
+		// Minimum execution time: 75_395_000 picoseconds.
+		Weight::from_parts(77_352_873, 0)
 			.saturating_add(Weight::from_parts(0, 4764))
-			// Standard Error: 3_243
-			.saturating_add(Weight::from_parts(30_866, 0).saturating_mul(l.into()))
-			// Standard Error: 5_770
-			.saturating_add(Weight::from_parts(99_755, 0).saturating_mul(s.into()))
+			// Standard Error: 4_000
+			.saturating_add(Weight::from_parts(33_084, 0).saturating_mul(l.into()))
+			// Standard Error: 7_117
+			.saturating_add(Weight::from_parts(78_022, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
@@ -174,20 +174,20 @@ impl<T: pezframe_system::Config> pezpallet_vesting::WeightInfo for WeightInfo<T>
 	/// Storage: `Balances::Locks` (r:1 w:1)
 	/// Proof: `Balances::Locks` (`max_values`: None, `max_size`: Some(1299), added: 3774, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Freezes` (r:1 w:0)
-	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(67), added: 2542, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(65), added: 2540, mode: `MaxEncodedLen`)
 	/// The range of component `l` is `[0, 49]`.
 	/// The range of component `s` is `[0, 27]`.
 	fn force_vested_transfer(l: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `622 + l * (25 ±0) + s * (36 ±0)`
+		//  Measured:  `554 + l * (25 ±0) + s * (36 ±0)`
 		//  Estimated: `6196`
-		// Minimum execution time: 81_979_000 picoseconds.
-		Weight::from_parts(83_373_383, 0)
+		// Minimum execution time: 76_648_000 picoseconds.
+		Weight::from_parts(77_970_331, 0)
 			.saturating_add(Weight::from_parts(0, 6196))
-			// Standard Error: 3_069
-			.saturating_add(Weight::from_parts(49_002, 0).saturating_mul(l.into()))
-			// Standard Error: 5_460
-			.saturating_add(Weight::from_parts(105_265, 0).saturating_mul(s.into()))
+			// Standard Error: 3_437
+			.saturating_add(Weight::from_parts(45_910, 0).saturating_mul(l.into()))
+			// Standard Error: 6_116
+			.saturating_add(Weight::from_parts(105_157, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -196,20 +196,20 @@ impl<T: pezframe_system::Config> pezpallet_vesting::WeightInfo for WeightInfo<T>
 	/// Storage: `Balances::Locks` (r:1 w:1)
 	/// Proof: `Balances::Locks` (`max_values`: None, `max_size`: Some(1299), added: 3774, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Freezes` (r:1 w:0)
-	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(67), added: 2542, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(65), added: 2540, mode: `MaxEncodedLen`)
 	/// The range of component `l` is `[0, 49]`.
 	/// The range of component `s` is `[2, 28]`.
 	fn not_unlocking_merge_schedules(l: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `345 + l * (25 ±0) + s * (36 ±0)`
+		//  Measured:  `277 + l * (25 ±0) + s * (36 ±0)`
 		//  Estimated: `4764`
-		// Minimum execution time: 39_190_000 picoseconds.
-		Weight::from_parts(38_673_517, 0)
+		// Minimum execution time: 34_725_000 picoseconds.
+		Weight::from_parts(35_867_784, 0)
 			.saturating_add(Weight::from_parts(0, 4764))
-			// Standard Error: 1_789
-			.saturating_add(Weight::from_parts(38_146, 0).saturating_mul(l.into()))
-			// Standard Error: 3_305
-			.saturating_add(Weight::from_parts(97_870, 0).saturating_mul(s.into()))
+			// Standard Error: 2_233
+			.saturating_add(Weight::from_parts(30_025, 0).saturating_mul(l.into()))
+			// Standard Error: 4_125
+			.saturating_add(Weight::from_parts(56_964, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -218,20 +218,20 @@ impl<T: pezframe_system::Config> pezpallet_vesting::WeightInfo for WeightInfo<T>
 	/// Storage: `Balances::Locks` (r:1 w:1)
 	/// Proof: `Balances::Locks` (`max_values`: None, `max_size`: Some(1299), added: 3774, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Freezes` (r:1 w:0)
-	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(67), added: 2542, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(65), added: 2540, mode: `MaxEncodedLen`)
 	/// The range of component `l` is `[0, 49]`.
 	/// The range of component `s` is `[2, 28]`.
 	fn unlocking_merge_schedules(l: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `345 + l * (25 ±0) + s * (36 ±0)`
+		//  Measured:  `277 + l * (25 ±0) + s * (36 ±0)`
 		//  Estimated: `4764`
-		// Minimum execution time: 42_229_000 picoseconds.
-		Weight::from_parts(42_040_081, 0)
+		// Minimum execution time: 37_897_000 picoseconds.
+		Weight::from_parts(37_679_187, 0)
 			.saturating_add(Weight::from_parts(0, 4764))
-			// Standard Error: 1_659
-			.saturating_add(Weight::from_parts(38_531, 0).saturating_mul(l.into()))
-			// Standard Error: 3_065
-			.saturating_add(Weight::from_parts(76_527, 0).saturating_mul(s.into()))
+			// Standard Error: 2_178
+			.saturating_add(Weight::from_parts(37_935, 0).saturating_mul(l.into()))
+			// Standard Error: 4_022
+			.saturating_add(Weight::from_parts(89_640, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -240,22 +240,22 @@ impl<T: pezframe_system::Config> pezpallet_vesting::WeightInfo for WeightInfo<T>
 	/// Storage: `Balances::Locks` (r:1 w:1)
 	/// Proof: `Balances::Locks` (`max_values`: None, `max_size`: Some(1299), added: 3774, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Freezes` (r:1 w:0)
-	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(67), added: 2542, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Freezes` (`max_values`: None, `max_size`: Some(65), added: 2540, mode: `MaxEncodedLen`)
 	/// Storage: `System::Account` (r:1 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// The range of component `l` is `[0, 49]`.
 	/// The range of component `s` is `[2, 28]`.
 	fn force_remove_vesting_schedule(l: u32, s: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `519 + l * (25 ±0) + s * (36 ±0)`
+		//  Measured:  `451 + l * (25 ±0) + s * (36 ±0)`
 		//  Estimated: `4764`
-		// Minimum execution time: 46_474_000 picoseconds.
-		Weight::from_parts(46_105_020, 0)
+		// Minimum execution time: 42_163_000 picoseconds.
+		Weight::from_parts(42_827_949, 0)
 			.saturating_add(Weight::from_parts(0, 4764))
-			// Standard Error: 1_706
-			.saturating_add(Weight::from_parts(39_879, 0).saturating_mul(l.into()))
-			// Standard Error: 3_151
-			.saturating_add(Weight::from_parts(87_824, 0).saturating_mul(s.into()))
+			// Standard Error: 2_205
+			.saturating_add(Weight::from_parts(28_809, 0).saturating_mul(l.into()))
+			// Standard Error: 4_073
+			.saturating_add(Weight::from_parts(67_463, 0).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}

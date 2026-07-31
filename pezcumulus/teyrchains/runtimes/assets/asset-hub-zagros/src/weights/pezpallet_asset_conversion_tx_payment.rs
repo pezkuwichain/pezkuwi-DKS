@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `73b9817d6032`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `ef4134d66388`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_asset_conversion_tx_payment
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -54,8 +54,8 @@ impl<T: pezframe_system::Config> pezpallet_asset_conversion_tx_payment::WeightIn
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 840_000 picoseconds.
-		Weight::from_parts(883_000, 0)
+		// Minimum execution time: 746_000 picoseconds.
+		Weight::from_parts(813_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	/// Storage: `System::Account` (r:2 w:1)
@@ -64,8 +64,8 @@ impl<T: pezframe_system::Config> pezpallet_asset_conversion_tx_payment::WeightIn
 		// Proof Size summary in bytes:
 		//  Measured:  `101`
 		//  Estimated: `6196`
-		// Minimum execution time: 43_941_000 picoseconds.
-		Weight::from_parts(45_260_000, 0)
+		// Minimum execution time: 32_909_000 picoseconds.
+		Weight::from_parts(33_621_000, 0)
 			.saturating_add(Weight::from_parts(0, 6196))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -82,8 +82,8 @@ impl<T: pezframe_system::Config> pezpallet_asset_conversion_tx_payment::WeightIn
 		// Proof Size summary in bytes:
 		//  Measured:  `547`
 		//  Estimated: `7404`
-		// Minimum execution time: 188_292_000 picoseconds.
-		Weight::from_parts(192_405_000, 0)
+		// Minimum execution time: 120_598_000 picoseconds.
+		Weight::from_parts(123_955_000, 0)
 			.saturating_add(Weight::from_parts(0, 7404))
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(4))

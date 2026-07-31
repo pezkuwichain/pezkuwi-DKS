@@ -19,7 +19,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-22, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `3a2e9ae8a8f5`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `d3a9aad6f7a3`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -28,10 +28,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_whitelist
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --output=./pezkuwi/runtime/pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -59,10 +59,10 @@ impl<T: pezframe_system::Config> pezpallet_whitelist::WeightInfo for WeightInfo<
 	/// Proof: `Preimage::RequestStatusFor` (`max_values`: None, `max_size`: Some(91), added: 2566, mode: `MaxEncodedLen`)
 	fn whitelist_call() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `118`
+		//  Measured:  `150`
 		//  Estimated: `3556`
-		// Minimum execution time: 23_699_000 picoseconds.
-		Weight::from_parts(24_759_000, 0)
+		// Minimum execution time: 20_475_000 picoseconds.
+		Weight::from_parts(20_986_000, 0)
 			.saturating_add(Weight::from_parts(0, 3556))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -75,10 +75,10 @@ impl<T: pezframe_system::Config> pezpallet_whitelist::WeightInfo for WeightInfo<
 	/// Proof: `Preimage::RequestStatusFor` (`max_values`: None, `max_size`: Some(91), added: 2566, mode: `MaxEncodedLen`)
 	fn remove_whitelisted_call() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `247`
+		//  Measured:  `279`
 		//  Estimated: `3556`
-		// Minimum execution time: 24_245_000 picoseconds.
-		Weight::from_parts(25_258_000, 0)
+		// Minimum execution time: 20_529_000 picoseconds.
+		Weight::from_parts(21_448_000, 0)
 			.saturating_add(Weight::from_parts(0, 3556))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -94,13 +94,13 @@ impl<T: pezframe_system::Config> pezpallet_whitelist::WeightInfo for WeightInfo<
 	/// The range of component `n` is `[1, 4194294]`.
 	fn dispatch_whitelisted_call(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `323 + n * (1 ±0)`
-		//  Estimated: `3787 + n * (1 ±0)`
-		// Minimum execution time: 35_734_000 picoseconds.
-		Weight::from_parts(36_868_000, 0)
-			.saturating_add(Weight::from_parts(0, 3787))
-			// Standard Error: 344
-			.saturating_add(Weight::from_parts(31_003, 0).saturating_mul(n.into()))
+		//  Measured:  `355 + n * (1 ±0)`
+		//  Estimated: `3819 + n * (1 ±0)`
+		// Minimum execution time: 32_770_000 picoseconds.
+		Weight::from_parts(33_390_000, 0)
+			.saturating_add(Weight::from_parts(0, 3819))
+			// Standard Error: 260
+			.saturating_add(Weight::from_parts(23_701, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 			.saturating_add(Weight::from_parts(0, 1).saturating_mul(n.into()))
@@ -114,13 +114,13 @@ impl<T: pezframe_system::Config> pezpallet_whitelist::WeightInfo for WeightInfo<
 	/// The range of component `n` is `[1, 10000]`.
 	fn dispatch_whitelisted_call_with_preimage(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `247`
+		//  Measured:  `279`
 		//  Estimated: `3556`
-		// Minimum execution time: 27_147_000 picoseconds.
-		Weight::from_parts(28_547_069, 0)
+		// Minimum execution time: 24_811_000 picoseconds.
+		Weight::from_parts(25_795_703, 0)
 			.saturating_add(Weight::from_parts(0, 3556))
-			// Standard Error: 7
-			.saturating_add(Weight::from_parts(1_405, 0).saturating_mul(n.into()))
+			// Standard Error: 5
+			.saturating_add(Weight::from_parts(1_287, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}

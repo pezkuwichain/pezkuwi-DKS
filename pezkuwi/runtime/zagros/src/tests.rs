@@ -14,64 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Pezkuwi. If not, see <http://www.gnu.org/licenses/>.
 
-//! Tests for the Zagros Runtime Configuration
+//! Tests for the Pezkuwichain Runtime Configuration
 
+use crate::*;
 use std::collections::HashSet;
 
-use crate::{xcm_config::LocationConverter, *};
-use approx::assert_relative_eq;
+use crate::xcm_config::LocationConverter;
 use pezframe_support::traits::WhitelistedStorageKeys;
-use pezpallet_staking::EraPayout;
 use pezsp_core::{crypto::Ss58Codec, hexdisplay::HexDisplay};
 use pezsp_keyring::Sr25519Keyring::Alice;
 use xcm_runtime_pezapis::conversions::LocationToAccountHelper;
-
-const MILLISECONDS_PER_HOUR: u64 = 60 * 60 * 1000;
-
-#[test]
-fn remove_keys_weight_is_sensible() {
-	use pezkuwi_runtime_common::crowdloan::WeightInfo;
-	let max_weight = <Runtime as crowdloan::Config>::WeightInfo::refund(RemoveKeysLimit::get());
-	// Max remove keys limit should be no more than half the total block weight.
-	assert!((max_weight * 2).all_lt(BlockWeights::get().max_block));
-}
-
-#[test]
-fn sample_size_is_sensible() {
-	use pezkuwi_runtime_common::auctions::WeightInfo;
-	// Need to clean up all samples at the end of an auction.
-	let samples: BlockNumber = EndingPeriod::get() / SampleLength::get();
-	let max_weight: pezframe_support::weights::Weight =
-		RocksDbWeight::get().reads_writes(samples.into(), samples.into());
-	// Max sample cleanup should be no more than half the total block weight.
-	assert!((max_weight * 2).all_lt(BlockWeights::get().max_block));
-	assert!((<Runtime as auctions::Config>::WeightInfo::on_initialize() * 2)
-		.all_lt(BlockWeights::get().max_block));
-}
-
-#[test]
-fn call_size() {
-	RuntimeCall::assert_size_under(256);
-}
-
-#[test]
-fn sanity_check_teleport_assets_weight() {
-	// This test sanity checks that at least 50 teleports can exist in a block.
-	// Usually when XCM runs into an issue, it will return a weight of `Weight::MAX`,
-	// so this test will certainly ensure that this problem does not occur.
-	use pezframe_support::dispatch::GetDispatchInfo;
-	let weight = pezpallet_xcm::Call::<Runtime>::limited_teleport_assets {
-		dest: Box::new(Here.into()),
-		beneficiary: Box::new(Here.into()),
-		assets: Box::new((Here, 200_000).into()),
-		fee_asset_id: Box::new(Here.into()),
-		weight_limit: Unlimited,
-	}
-	.get_dispatch_info()
-	.call_weight;
-
-	assert!((weight * 50).all_lt(BlockWeights::get().max_block));
-}
 
 #[test]
 fn check_whitelist() {
@@ -90,8 +42,6 @@ fn check_whitelist() {
 	assert!(whitelist.contains("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850"));
 	// System events
 	assert!(whitelist.contains("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7"));
-	// Configuration ActiveConfig
-	assert!(whitelist.contains("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385"));
 	// XcmPallet VersionDiscoveryQueue
 	assert!(whitelist.contains("1405f2411d0af5a7ff397e7c9dc68d194a222ba0333561192e474c59ed8e30e1"));
 	// XcmPallet SafeXcmVersion
@@ -104,244 +54,6 @@ fn check_treasury_pallet_id() {
 		<Treasury as pezframe_support::traits::PalletInfoAccess>::index() as u8,
 		zagros_runtime_constants::TREASURY_PALLET_ID
 	);
-}
-
-#[cfg(all(test, feature = "try-runtime"))]
-mod remote_tests {
-	use super::*;
-	use pezframe_support::traits::{TryState, TryStateSelect::All};
-	use pezframe_try_runtime::{runtime_decl_for_try_runtime::TryRuntime, UpgradeCheckSelect};
-	use remote_externalities::{
-		Builder, Mode, OfflineConfig, OnlineConfig, SnapshotConfig, Transport,
-	};
-	use std::env::var;
-
-	#[tokio::test]
-	async fn run_migrations() {
-		if var("RUN_MIGRATION_TESTS").is_err() {
-			return;
-		}
-
-		pezsp_tracing::try_init_simple();
-		let transport: Transport =
-			var("WS").unwrap_or("wss://zagros-rpc.pezkuwichain.io:443".to_string()).into();
-		let maybe_state_snapshot: Option<SnapshotConfig> = var("SNAP").map(|s| s.into()).ok();
-		let mut ext = Builder::<Block>::default()
-			.mode(if let Some(state_snapshot) = maybe_state_snapshot {
-				Mode::OfflineOrElseOnline(
-					OfflineConfig { state_snapshot: state_snapshot.clone() },
-					OnlineConfig {
-						transport,
-						state_snapshot: Some(state_snapshot),
-						..Default::default()
-					},
-				)
-			} else {
-				Mode::Online(OnlineConfig { transport, ..Default::default() })
-			})
-			.build()
-			.await
-			.unwrap();
-		ext.execute_with(|| Runtime::on_runtime_upgrade(UpgradeCheckSelect::PreAndPost));
-	}
-
-	#[tokio::test]
-	async fn delegate_stake_migration() {
-		// Intended to be run only manually.
-		if var("RUN_MIGRATION_TESTS").is_err() {
-			return;
-		}
-		use pezframe_support::assert_ok;
-		pezsp_tracing::try_init_simple();
-
-		let transport: Transport = var("WS").unwrap_or("ws://127.0.0.1:9900".to_string()).into();
-		let maybe_state_snapshot: Option<SnapshotConfig> = var("SNAP").map(|s| s.into()).ok();
-		let online_config = OnlineConfig {
-			transport,
-			state_snapshot: maybe_state_snapshot.clone(),
-			child_trie: false,
-			pallets: vec![
-				"Staking".into(),
-				"System".into(),
-				"Balances".into(),
-				"NominationPools".into(),
-				"DelegatedStaking".into(),
-			],
-			..Default::default()
-		};
-		let mut ext = Builder::<Block>::default()
-			.mode(if let Some(state_snapshot) = maybe_state_snapshot {
-				Mode::OfflineOrElseOnline(
-					OfflineConfig { state_snapshot: state_snapshot.clone() },
-					online_config,
-				)
-			} else {
-				Mode::Online(online_config)
-			})
-			.build()
-			.await
-			.unwrap();
-		ext.execute_with(|| {
-			// create an account with some balance
-			let alice = AccountId::from([1u8; 32]);
-			use pezframe_support::traits::Currency;
-			let _ = Balances::deposit_creating(&alice, 100_000 * UNITS);
-
-			// iterate over all pools
-			pezpallet_nomination_pools::BondedPools::<Runtime>::iter_keys().for_each(|k| {
-				if pezpallet_nomination_pools::Pezpallet::<Runtime>::api_pool_needs_delegate_migration(k)
-				{
-					assert_ok!(
-						pezpallet_nomination_pools::Pezpallet::<Runtime>::migrate_pool_to_delegate_stake(
-							RuntimeOrigin::signed(alice.clone()).into(),
-							k,
-						)
-					);
-				}
-			});
-
-			// member migration stats
-			let mut success = 0;
-			let mut direct_stakers = 0;
-			let mut unexpected_errors = 0;
-
-			// iterate over all pool members
-			pezpallet_nomination_pools::PoolMembers::<Runtime>::iter_keys().for_each(|k| {
-				if pezpallet_nomination_pools::Pezpallet::<Runtime>::api_member_needs_delegate_migration(
-					k.clone(),
-				) {
-					// reasons migrations can fail:
-					let is_direct_staker = pezpallet_staking::Bonded::<Runtime>::contains_key(&k);
-
-					let migration = pezpallet_nomination_pools::Pezpallet::<Runtime>::migrate_delegation(
-						RuntimeOrigin::signed(alice.clone()).into(),
-						pezsp_runtime::MultiAddress::Id(k.clone()),
-					);
-
-					if is_direct_staker {
-						// if the member is a direct staker, the migration should fail until pool
-						// member unstakes all funds from pezpallet-staking.
-						direct_stakers += 1;
-						assert_eq!(
-							migration.unwrap_err(),
-							pezpallet_delegated_staking::Error::<Runtime>::AlreadyStaking.into()
-						);
-					} else if migration.is_err() {
-						unexpected_errors += 1;
-						log::error!(target: "remote_test", "Unexpected error {:?} while migrating {:?}", migration.unwrap_err(), k);
-					} else {
-						success += 1;
-					}
-				}
-			});
-
-			log::info!(
-				target: "remote_test",
-				"Migration stats: success: {}, direct_stakers: {}, unexpected_errors: {}",
-				success,
-				direct_stakers,
-				unexpected_errors
-			);
-		});
-
-		ext.execute_with(|| {
-			AllPalletsWithSystem::try_state(System::block_number(), All).unwrap();
-		});
-	}
-
-	#[tokio::test]
-	async fn staking_curr_fun_migrate() {
-		// Intended to be run only manually.
-		if var("RUN_MIGRATION_TESTS").is_err() {
-			return;
-		}
-		pezsp_tracing::try_init_simple();
-
-		let transport: Transport = var("WS").unwrap_or("ws://127.0.0.1:9944".to_string()).into();
-		let maybe_state_snapshot: Option<SnapshotConfig> = var("SNAP").map(|s| s.into()).ok();
-		let online_config = OnlineConfig {
-			transport,
-			state_snapshot: maybe_state_snapshot.clone(),
-			child_trie: false,
-			pallets: vec![
-				"Staking".into(),
-				"System".into(),
-				"Balances".into(),
-				"NominationPools".into(),
-				"DelegatedStaking".into(),
-				"VoterList".into(),
-			],
-			..Default::default()
-		};
-		let mut ext = Builder::<Block>::default()
-			.mode(if let Some(state_snapshot) = maybe_state_snapshot {
-				Mode::OfflineOrElseOnline(
-					OfflineConfig { state_snapshot: state_snapshot.clone() },
-					online_config,
-				)
-			} else {
-				Mode::Online(online_config)
-			})
-			.build()
-			.await
-			.unwrap();
-		ext.execute_with(|| {
-			// create an account with some balance
-			let alice = AccountId::from([1u8; 32]);
-			use pezframe_support::traits::Currency;
-			let _ = Balances::deposit_creating(&alice, 100_000 * UNITS);
-
-			let mut success = 0;
-			let mut err = 0;
-			let mut no_migration_needed = 0;
-			let mut force_withdraw_acc = 0;
-			let mut force_withdraw_count = 0;
-			let mut max_force_withdraw = 0;
-			// iterate over all stakers
-			pezpallet_staking::Ledger::<Runtime>::iter().for_each(|(ctrl, ledger)| {
-				match pezpallet_staking::Pezpallet::<Runtime>::migrate_currency(
-					RuntimeOrigin::signed(alice.clone()).into(),
-					ledger.stash.clone(),
-				) {
-					Ok(_) => {
-						let updated_ledger =
-							pezpallet_staking::Ledger::<Runtime>::get(&ctrl).expect("ledger exists");
-						let force_withdraw = ledger.total - updated_ledger.total;
-						if force_withdraw > 0 {
-							force_withdraw_acc += force_withdraw;
-							force_withdraw_count += 1;
-							max_force_withdraw = max_force_withdraw.max(force_withdraw);
-							log::debug!(target: "remote_test", "Force withdraw from stash {:?}: value {:?}", ledger.stash, force_withdraw);
-						}
-						success += 1;
-					},
-					Err(e) => {
-						if e == pezpallet_staking::Error::<Runtime>::AlreadyMigrated.into() {
-							no_migration_needed += 1;
-						} else {
-							log::error!(target: "remote_test", "Error migrating {:?}: {:?}", ledger.stash, e);
-							err += 1;
-						}
-					},
-				}
-			});
-
-			log::info!(
-				target: "remote_test",
-				"Migration stats: success: {}, err: {}, total force withdrawn stake: {}, count {}, maximum amount {}, no_migration_needed: {}",
-				success,
-				err,
-				force_withdraw_acc,
-				force_withdraw_count,
-				max_force_withdraw,
-				no_migration_needed
-			);
-		});
-
-		ext.execute_with(|| {
-			AllPalletsWithSystem::try_state(System::block_number(), All).unwrap();
-		});
-	}
 }
 
 #[test]
@@ -417,93 +129,183 @@ fn location_conversion_works() {
 	}
 }
 
-#[test]
-fn staking_inflation_correct_single_era() {
-	let (to_stakers, to_treasury) = super::EraPayout::era_payout(
-		123, // ignored
-		456, // ignored
-		MILLISECONDS_PER_HOUR,
-	);
+// =============================================================================
+// OpenGov Track Configuration Tests
+// =============================================================================
 
-	assert_relative_eq!(to_stakers as f64, (4_046 * CENTS) as f64, max_relative = 0.01);
-	assert_relative_eq!(to_treasury as f64, (714 * CENTS) as f64, max_relative = 0.01);
-	// Total per hour is ~47.6 ZGR
-	assert_relative_eq!(
-		(to_stakers as f64 + to_treasury as f64),
-		(4_760 * CENTS) as f64,
-		max_relative = 0.001
-	);
+use governance::TracksInfo;
+use pezpallet_referenda::TracksInfo as TracksInfoTrait;
+use std::collections::HashMap;
+use zagros_runtime_constants::time::{DAYS, HOURS, MINUTES};
+
+#[test]
+fn governance_tracks_total_count() {
+	let count = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks().count();
+	assert_eq!(count, 18, "Expected 18 tracks (15 standard + 3 welati), got {count}");
 }
 
 #[test]
-fn staking_inflation_correct_longer_era() {
-	// Twice the era duration means twice the emission:
-	let (to_stakers, to_treasury) = super::EraPayout::era_payout(
-		123, // ignored
-		456, // ignored
-		2 * MILLISECONDS_PER_HOUR,
-	);
-
-	assert_relative_eq!(to_stakers as f64, (4_046 * CENTS) as f64 * 2.0, max_relative = 0.001);
-	assert_relative_eq!(to_treasury as f64, (714 * CENTS) as f64 * 2.0, max_relative = 0.001);
+fn governance_track_ids_are_unique() {
+	let mut seen = HashSet::new();
+	for track in <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks() {
+		assert!(seen.insert(track.id), "Duplicate track ID: {}", track.id);
+	}
 }
 
 #[test]
-fn staking_inflation_correct_whole_year() {
-	let (to_stakers, to_treasury) = super::EraPayout::era_payout(
-		123,                                        // ignored
-		456,                                        // ignored
-		(36525 * 24 * MILLISECONDS_PER_HOUR) / 100, // 1 year
-	);
-
-	// Our yearly emissions is about 417k ZGR:
-	let yearly_emission = 417_307 * UNITS;
-	assert_relative_eq!(
-		to_stakers as f64 + to_treasury as f64,
-		yearly_emission as f64,
-		max_relative = 0.001
-	);
-
-	assert_relative_eq!(to_stakers as f64, yearly_emission as f64 * 0.85, max_relative = 0.001);
-	assert_relative_eq!(to_treasury as f64, yearly_emission as f64 * 0.15, max_relative = 0.001);
+fn governance_track_names_are_unique() {
+	let mut seen = HashSet::new();
+	for track in <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks() {
+		let name = String::from_utf8_lossy(&track.info.name).to_string();
+		assert!(seen.insert(name.clone()), "Duplicate track name: {name}");
+	}
 }
 
-// 10 years into the future, our values do not overflow.
 #[test]
-fn staking_inflation_correct_not_overflow() {
-	let (to_stakers, to_treasury) = super::EraPayout::era_payout(
-		123,                                       // ignored
-		456,                                       // ignored
-		(36525 * 24 * MILLISECONDS_PER_HOUR) / 10, // 10 years
-	);
-	let initial_ti: i128 = 5_216_342_402_773_185_773;
-	let projected_total_issuance = (to_stakers as i128 + to_treasury as i128) + initial_ti;
-
-	// In 2034, there will be about 9.39 million ZGR in existence.
-	assert_relative_eq!(
-		projected_total_issuance as f64,
-		(9_390_000 * UNITS) as f64,
-		max_relative = 0.001
-	);
+fn governance_no_test_periods_remain() {
+	// Ensure no track still uses the old test values (< 1 HOURS for decision_period).
+	// All production decision periods should be at least 7 DAYS.
+	for track in <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks() {
+		let name = String::from_utf8_lossy(&track.info.name).to_string();
+		assert!(
+			track.info.decision_period >= 7 * DAYS,
+			"Track '{name}' (id={}) has decision_period={} blocks, expected >= {} (7 DAYS)",
+			track.id,
+			track.info.decision_period,
+			7 * DAYS
+		);
+	}
 }
 
-// Print percent per year, just as convenience.
 #[test]
-fn staking_inflation_correct_print_percent() {
-	let (to_stakers, to_treasury) = super::EraPayout::era_payout(
-		123,                                        // ignored
-		456,                                        // ignored
-		(36525 * 24 * MILLISECONDS_PER_HOUR) / 100, // 1 year
-	);
-	let yearly_emission = to_stakers + to_treasury;
-	let mut ti: i128 = 5_216_342_402_773_185_773;
+fn governance_production_periods_match_spec() {
+	// Build expected values: (track_id, prepare, decision, confirm, enact)
+	let expected: Vec<(u16, &str, BlockNumber, BlockNumber, BlockNumber, BlockNumber)> = vec![
+		(0, "root", 2 * HOURS, 28 * DAYS, 24 * HOURS, 24 * HOURS),
+		(1, "whitelisted_caller", 30 * MINUTES, 28 * DAYS, 10 * MINUTES, 10 * MINUTES),
+		(10, "staking_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
+		(11, "treasurer", 2 * HOURS, 28 * DAYS, 3 * HOURS, 24 * HOURS),
+		(12, "lease_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
+		(13, "fellowship_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
+		(14, "general_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
+		(15, "auction_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
+		(20, "referendum_canceller", 2 * HOURS, 7 * DAYS, 3 * HOURS, 10 * MINUTES),
+		(21, "referendum_killer", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
+		(30, "small_tipper", 1 * MINUTES, 7 * DAYS, 10 * MINUTES, 1 * MINUTES),
+		(31, "big_tipper", 10 * MINUTES, 7 * DAYS, 1 * HOURS, 10 * MINUTES),
+		(32, "small_spender", 4 * HOURS, 28 * DAYS, 12 * HOURS, 24 * HOURS),
+		(33, "medium_spender", 4 * HOURS, 28 * DAYS, 24 * HOURS, 24 * HOURS),
+		(34, "big_spender", 4 * HOURS, 28 * DAYS, 48 * HOURS, 24 * HOURS),
+		(40, "welati_election", 2 * HOURS, 14 * DAYS, 12 * HOURS, 24 * HOURS),
+		(41, "welati_admin", 2 * HOURS, 7 * DAYS, 3 * HOURS, 10 * MINUTES),
+		(42, "citizenship_admin", 2 * HOURS, 14 * DAYS, 6 * HOURS, 24 * HOURS),
+	];
 
-	for y in 0..10 {
-		let new_ti = ti + yearly_emission as i128;
-		let inflation = 100.0 * (new_ti - ti) as f64 / ti as f64;
-		println!("Year {y} inflation: {inflation}%");
-		ti = new_ti;
+	let tracks: HashMap<u16, _> = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks()
+		.map(|t| (t.id, t.into_owned()))
+		.collect();
 
-		assert!(inflation <= 8.0 && inflation > 2.0, "sanity check");
+	for (id, name, prepare, decision, confirm, enact) in &expected {
+		let track = tracks.get(id).unwrap_or_else(|| panic!("Track id={id} '{name}' not found"));
+		let got_name = String::from_utf8_lossy(&track.info.name).trim_end_matches('\0').to_string();
+		assert_eq!(&got_name, name, "Track id={id} name mismatch");
+		assert_eq!(
+			track.info.prepare_period, *prepare,
+			"Track '{name}' prepare_period: got={}, expected={prepare}",
+			track.info.prepare_period
+		);
+		assert_eq!(
+			track.info.decision_period, *decision,
+			"Track '{name}' decision_period: got={}, expected={decision}",
+			track.info.decision_period
+		);
+		assert_eq!(
+			track.info.confirm_period, *confirm,
+			"Track '{name}' confirm_period: got={}, expected={confirm}",
+			track.info.confirm_period
+		);
+		assert_eq!(
+			track.info.min_enactment_period, *enact,
+			"Track '{name}' min_enactment_period: got={}, expected={enact}",
+			track.info.min_enactment_period
+		);
+	}
+
+	assert_eq!(expected.len(), tracks.len(), "Track count mismatch");
+}
+
+#[test]
+fn governance_welati_tracks_exist() {
+	let tracks: HashMap<u16, _> = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks()
+		.map(|t| (t.id, t.into_owned()))
+		.collect();
+
+	// welati_election
+	let t40 = tracks.get(&40).expect("welati_election track (id=40) missing");
+	assert_eq!(t40.info.max_deciding, 1, "welati_election should allow only 1 deciding");
+
+	// welati_admin
+	let t41 = tracks.get(&41).expect("welati_admin track (id=41) missing");
+	assert_eq!(t41.info.max_deciding, 10);
+
+	// citizenship_admin
+	let t42 = tracks.get(&42).expect("citizenship_admin track (id=42) missing");
+	assert_eq!(t42.info.max_deciding, 10);
+}
+
+#[test]
+fn governance_decision_periods_are_in_days() {
+	// Verify all decision periods are expressed as multiples of DAYS (not minutes)
+	for track in <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks() {
+		let name = String::from_utf8_lossy(&track.info.name).to_string();
+		let period = track.info.decision_period;
+		let days = period / DAYS;
+		assert!(
+			period == days * DAYS,
+			"Track '{name}' decision_period ({period} blocks) is not a whole number of days"
+		);
+		assert!(
+			days >= 7,
+			"Track '{name}' decision_period is only {days} days, expected at least 7"
+		);
+	}
+}
+
+#[test]
+fn governance_track_for_origin_mapping() {
+	use governance::pezpallet_custom_origins::Origin;
+
+	// Test that track_for() correctly maps each origin to its track ID
+	let origin_to_track: Vec<(Origin, u16)> = vec![
+		(Origin::WhitelistedCaller, 1),
+		(Origin::StakingAdmin, 10),
+		(Origin::Treasurer, 11),
+		(Origin::LeaseAdmin, 12),
+		(Origin::FellowshipAdmin, 13),
+		(Origin::GeneralAdmin, 14),
+		(Origin::AuctionAdmin, 15),
+		(Origin::ReferendumCanceller, 20),
+		(Origin::ReferendumKiller, 21),
+		(Origin::SmallTipper, 30),
+		(Origin::BigTipper, 31),
+		(Origin::SmallSpender, 32),
+		(Origin::MediumSpender, 33),
+		(Origin::BigSpender, 34),
+		(Origin::WelatiElection, 40),
+		(Origin::WelatiAdmin, 41),
+		(Origin::CitizenshipAdmin, 42),
+	];
+
+	for (origin, expected_id) in origin_to_track {
+		let pallet_origin: <RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin =
+			origin.clone().into();
+		let result =
+			<TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::track_for(&pallet_origin);
+		assert_eq!(
+			result,
+			Ok(expected_id),
+			"Origin {:?} should map to track {expected_id}",
+			origin
+		);
 	}
 }

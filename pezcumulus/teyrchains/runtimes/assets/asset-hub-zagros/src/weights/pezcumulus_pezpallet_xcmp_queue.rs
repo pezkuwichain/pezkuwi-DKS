@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezcumulus_pezpallet_xcmp_queue
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -54,10 +54,10 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 	/// Proof: `XcmpQueue::QueueConfig` (`max_values`: Some(1), `max_size`: Some(12), added: 507, mode: `MaxEncodedLen`)
 	fn set_config_with_u32() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `175`
+		//  Measured:  `109`
 		//  Estimated: `1497`
-		// Minimum execution time: 5_443_000 picoseconds.
-		Weight::from_parts(5_890_000, 0)
+		// Minimum execution time: 5_063_000 picoseconds.
+		Weight::from_parts(5_451_000, 0)
 			.saturating_add(Weight::from_parts(0, 1497))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -75,13 +75,13 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 	/// The range of component `n` is `[0, 105467]`.
 	fn enqueue_n_bytes_xcmp_message(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `251`
+		//  Measured:  `151`
 		//  Estimated: `5487`
-		// Minimum execution time: 15_632_000 picoseconds.
-		Weight::from_parts(11_486_353, 0)
+		// Minimum execution time: 14_672_000 picoseconds.
+		Weight::from_parts(10_338_894, 0)
 			.saturating_add(Weight::from_parts(0, 5487))
 			// Standard Error: 7
-			.saturating_add(Weight::from_parts(985, 0).saturating_mul(n.into()))
+			.saturating_add(Weight::from_parts(963, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
@@ -98,13 +98,13 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 	/// The range of component `n` is `[0, 1000]`.
 	fn enqueue_n_empty_xcmp_messages(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `251`
+		//  Measured:  `151`
 		//  Estimated: `5487`
-		// Minimum execution time: 13_083_000 picoseconds.
-		Weight::from_parts(18_078_550, 0)
+		// Minimum execution time: 12_866_000 picoseconds.
+		Weight::from_parts(17_702_570, 0)
 			.saturating_add(Weight::from_parts(0, 5487))
-			// Standard Error: 227
-			.saturating_add(Weight::from_parts(140_883, 0).saturating_mul(n.into()))
+			// Standard Error: 233
+			.saturating_add(Weight::from_parts(140_639, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
@@ -119,13 +119,13 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 	/// The range of component `n` is `[0, 105457]`.
 	fn enqueue_empty_xcmp_message_at(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `434 + n * (1 ±0)`
-		//  Estimated: `3897 + n * (1 ±0)`
-		// Minimum execution time: 25_170_000 picoseconds.
-		Weight::from_parts(16_306_058, 0)
-			.saturating_add(Weight::from_parts(0, 3897))
+		//  Measured:  `334 + n * (1 ±0)`
+		//  Estimated: `3797 + n * (1 ±0)`
+		// Minimum execution time: 21_629_000 picoseconds.
+		Weight::from_parts(14_155_444, 0)
+			.saturating_add(Weight::from_parts(0, 3797))
 			// Standard Error: 12
-			.saturating_add(Weight::from_parts(2_120, 0).saturating_mul(n.into()))
+			.saturating_add(Weight::from_parts(2_047, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(2))
 			.saturating_add(Weight::from_parts(0, 1).saturating_mul(n.into()))
@@ -143,13 +143,13 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 	/// The range of component `n` is `[0, 100]`.
 	fn enqueue_n_full_pages(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `286`
+		//  Measured:  `186`
 		//  Estimated: `5487`
-		// Minimum execution time: 14_367_000 picoseconds.
-		Weight::from_parts(15_166_000, 0)
+		// Minimum execution time: 13_907_000 picoseconds.
+		Weight::from_parts(14_110_000, 0)
 			.saturating_add(Weight::from_parts(0, 5487))
-			// Standard Error: 85_014
-			.saturating_add(Weight::from_parts(92_000_808, 0).saturating_mul(n.into()))
+			// Standard Error: 78_378
+			.saturating_add(Weight::from_parts(91_417_975, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(2))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(n.into())))
@@ -164,11 +164,11 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 	/// Proof: `XcmpQueue::InboundXcmpSuspended` (`max_values`: Some(1), `max_size`: Some(4002), added: 4497, mode: `Measured`)
 	fn enqueue_1000_small_xcmp_messages() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `53167`
-		//  Estimated: `56632`
-		// Minimum execution time: 274_068_000 picoseconds.
-		Weight::from_parts(278_196_000, 0)
-			.saturating_add(Weight::from_parts(0, 56632))
+		//  Measured:  `53067`
+		//  Estimated: `56532`
+		// Minimum execution time: 266_394_000 picoseconds.
+		Weight::from_parts(270_684_000, 0)
+			.saturating_add(Weight::from_parts(0, 56532))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -176,10 +176,10 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(1282), added: 1777, mode: `MaxEncodedLen`)
 	fn suspend_channel() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `175`
+		//  Measured:  `109`
 		//  Estimated: `2767`
-		// Minimum execution time: 3_675_000 picoseconds.
-		Weight::from_parts(4_005_000, 0)
+		// Minimum execution time: 3_299_000 picoseconds.
+		Weight::from_parts(3_593_000, 0)
 			.saturating_add(Weight::from_parts(0, 2767))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -188,10 +188,10 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(1282), added: 1777, mode: `MaxEncodedLen`)
 	fn resume_channel() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `210`
+		//  Measured:  `144`
 		//  Estimated: `2767`
-		// Minimum execution time: 4_971_000 picoseconds.
-		Weight::from_parts(5_263_000, 0)
+		// Minimum execution time: 4_643_000 picoseconds.
+		Weight::from_parts(4_934_000, 0)
 			.saturating_add(Weight::from_parts(0, 2767))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -201,11 +201,11 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_043_000 picoseconds.
-		Weight::from_parts(2_422_918, 0)
+		// Minimum execution time: 2_059_000 picoseconds.
+		Weight::from_parts(2_414_071, 0)
 			.saturating_add(Weight::from_parts(0, 0))
-			// Standard Error: 141
-			.saturating_add(Weight::from_parts(18_201, 0).saturating_mul(n.into()))
+			// Standard Error: 126
+			.saturating_add(Weight::from_parts(17_448, 0).saturating_mul(n.into()))
 	}
 	/// Storage: UNKNOWN KEY `0x7b3237373ffdfeb1cab4222e3b520d6b345d8e88afa015075c945637c07e8f20` (r:1 w:1)
 	/// Proof: UNKNOWN KEY `0x7b3237373ffdfeb1cab4222e3b520d6b345d8e88afa015075c945637c07e8f20` (r:1 w:1)
@@ -223,11 +223,11 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(105521), added: 107996, mode: `MaxEncodedLen`)
 	fn on_idle_good_msg() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `105816`
-		//  Estimated: `109281`
-		// Minimum execution time: 182_688_000 picoseconds.
-		Weight::from_parts(191_611_000, 0)
-			.saturating_add(Weight::from_parts(0, 109281))
+		//  Measured:  `105716`
+		//  Estimated: `109181`
+		// Minimum execution time: 178_629_000 picoseconds.
+		Weight::from_parts(181_750_000, 0)
+			.saturating_add(Weight::from_parts(0, 109181))
 			.saturating_add(T::DbWeight::get().reads(6))
 			.saturating_add(T::DbWeight::get().writes(5))
 	}
@@ -247,11 +247,11 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_xcmp_queue::WeightInfo for
 	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(105521), added: 107996, mode: `MaxEncodedLen`)
 	fn on_idle_large_msg() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `65885`
-		//  Estimated: `69350`
-		// Minimum execution time: 123_485_000 picoseconds.
-		Weight::from_parts(132_029_000, 0)
-			.saturating_add(Weight::from_parts(0, 69350))
+		//  Measured:  `65785`
+		//  Estimated: `69250`
+		// Minimum execution time: 119_180_000 picoseconds.
+		Weight::from_parts(121_856_000, 0)
+			.saturating_add(Weight::from_parts(0, 69250))
 			.saturating_add(T::DbWeight::get().reads(6))
 			.saturating_add(T::DbWeight::get().writes(5))
 	}

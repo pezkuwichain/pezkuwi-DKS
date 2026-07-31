@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-07-30, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `601cc0634d73`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `a49f76527979`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: Compiled, CHAIN: None, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_xcm_benchmarks::fungible
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights/xcm
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights/xcm
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -59,13 +59,13 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Storage: `System::Account` (r:1 w:1)
 	// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	// Storage: `AssetsFreezer::Freezes` (r:1 w:1)
-	// Proof: `AssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(105), added: 2580, mode: `MaxEncodedLen`)
+	// Proof: `AssetsFreezer::Freezes` (`max_values`: None, `max_size`: Some(87), added: 2562, mode: `MaxEncodedLen`)
 	pub fn withdraw_asset() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1270`
+		//  Measured:  `493`
 		//  Estimated: `3675`
-		// Minimum execution time: 63_006_000 picoseconds.
-		Weight::from_parts(64_684_000, 3675)
+		// Minimum execution time: 54_678_000 picoseconds.
+		Weight::from_parts(56_251_000, 3675)
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(5))
 	}
@@ -79,10 +79,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	pub fn transfer_asset() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1533`
+		//  Measured:  `392`
 		//  Estimated: `6208`
-		// Minimum execution time: 61_134_000 picoseconds.
-		Weight::from_parts(62_630_000, 6208)
+		// Minimum execution time: 51_938_000 picoseconds.
+		Weight::from_parts(52_634_000, 6208)
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -108,10 +108,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	pub fn transfer_reserve_asset() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `4165`
+		//  Measured:  `770`
 		//  Estimated: `8799`
-		// Minimum execution time: 160_634_000 picoseconds.
-		Weight::from_parts(164_735_000, 8799)
+		// Minimum execution time: 137_278_000 picoseconds.
+		Weight::from_parts(142_344_000, 8799)
 			.saturating_add(T::DbWeight::get().reads(12))
 			.saturating_add(T::DbWeight::get().writes(8))
 	}
@@ -119,8 +119,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 1_550_000 picoseconds.
-		Weight::from_parts(1_655_000, 0)
+		// Minimum execution time: 1_491_000 picoseconds.
+		Weight::from_parts(1_611_000, 0)
 	}
 	// Storage: `TeyrchainInfo::TeyrchainId` (r:1 w:0)
 	// Proof: `TeyrchainInfo::TeyrchainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
@@ -138,23 +138,19 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	pub fn initiate_reserve_withdraw() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `2632`
+		//  Measured:  `378`
 		//  Estimated: `6196`
-		// Minimum execution time: 137_823_000 picoseconds.
-		Weight::from_parts(141_470_000, 6196)
+		// Minimum execution time: 121_122_000 picoseconds.
+		Weight::from_parts(123_821_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
-	// Storage: `System::Account` (r:1 w:1)
-	// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	pub fn receive_teleported_asset() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1274`
-		//  Estimated: `3593`
-		// Minimum execution time: 36_159_000 picoseconds.
-		Weight::from_parts(37_617_000, 3593)
-			.saturating_add(T::DbWeight::get().reads(1))
-			.saturating_add(T::DbWeight::get().writes(1))
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 2_843_000 picoseconds.
+		Weight::from_parts(3_108_000, 0)
 	}
 	// Storage: `Assets::Asset` (r:1 w:1)
 	// Proof: `Assets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
@@ -164,10 +160,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	pub fn deposit_asset() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1421`
+		//  Measured:  `280`
 		//  Estimated: `3675`
-		// Minimum execution time: 44_280_000 picoseconds.
-		Weight::from_parts(46_439_000, 3675)
+		// Minimum execution time: 33_119_000 picoseconds.
+		Weight::from_parts(34_511_000, 3675)
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
@@ -191,10 +187,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	pub fn deposit_reserve_asset() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1935`
-		//  Estimated: `5400`
-		// Minimum execution time: 100_045_000 picoseconds.
-		Weight::from_parts(104_239_000, 5400)
+		//  Measured:  `557`
+		//  Estimated: `4022`
+		// Minimum execution time: 84_913_000 picoseconds.
+		Weight::from_parts(87_883_000, 4022)
 			.saturating_add(T::DbWeight::get().reads(8))
 			.saturating_add(T::DbWeight::get().writes(5))
 	}
@@ -214,10 +210,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	pub fn initiate_teleport() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `828`
-		//  Estimated: `4293`
-		// Minimum execution time: 74_309_000 picoseconds.
-		Weight::from_parts(77_487_000, 4293)
+		//  Measured:  `557`
+		//  Estimated: `4022`
+		// Minimum execution time: 65_709_000 picoseconds.
+		Weight::from_parts(67_783_000, 4022)
 			.saturating_add(T::DbWeight::get().reads(6))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -241,10 +237,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	pub fn initiate_transfer() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `3209`
-		//  Estimated: `6674`
-		// Minimum execution time: 121_698_000 picoseconds.
-		Weight::from_parts(125_795_000, 6674)
+		//  Measured:  `557`
+		//  Estimated: `6196`
+		// Minimum execution time: 103_077_000 picoseconds.
+		Weight::from_parts(105_234_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(9))
 			.saturating_add(T::DbWeight::get().writes(6))
 	}

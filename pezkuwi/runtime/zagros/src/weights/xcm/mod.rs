@@ -20,17 +20,14 @@ mod pezpallet_xcm_benchmarks_generic;
 use crate::Runtime;
 use alloc::vec::Vec;
 use pezframe_support::weights::Weight;
-use xcm::{
-	latest::{prelude::*, QueryResponseInfo},
-	DoubleEncoded,
-};
+use xcm::{latest::prelude::*, DoubleEncoded};
 
 use pezpallet_xcm_benchmarks_fungible::WeightInfo as XcmBalancesWeight;
 use pezpallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric;
 use pezsp_runtime::BoundedVec;
 use xcm::latest::AssetTransferFilter;
 
-/// Types of asset supported by the zagros runtime.
+/// Types of asset supported by the Pezkuwichain runtime.
 pub enum AssetTypes {
 	/// An asset backed by `pezpallet-balances`.
 	Balances,
@@ -53,7 +50,7 @@ trait WeighAssets {
 	fn weigh_assets(&self, balances_weight: Weight) -> Weight;
 }
 
-// Zagros only knows about one asset, the balances pezpallet.
+// Pezkuwichain only knows about one asset, the balances pezpallet.
 const MAX_ASSETS: u64 = 1;
 
 impl WeighAssets for AssetFilter {
@@ -68,7 +65,7 @@ impl WeighAssets for AssetFilter {
 					AssetTypes::Unknown => Weight::MAX,
 				})
 				.fold(Weight::zero(), |acc, x| acc.saturating_add(x)),
-			// We don't support any NFTs on Zagros, so these two variants will always match
+			// We don't support any NFTs on Pezkuwichain, so these two variants will always match
 			// only 1 kind of fungible asset.
 			Self::Wild(AllOf { .. } | AllOfCounted { .. }) => balances_weight,
 			Self::Wild(AllCounted(count)) => {
@@ -92,8 +89,8 @@ impl WeighAssets for Assets {
 	}
 }
 
-pub struct ZagrosXcmWeight<RuntimeCall>(core::marker::PhantomData<RuntimeCall>);
-impl<RuntimeCall> XcmWeightInfo<RuntimeCall> for ZagrosXcmWeight<RuntimeCall> {
+pub struct PezkuwichainXcmWeight<RuntimeCall>(core::marker::PhantomData<RuntimeCall>);
+impl<RuntimeCall> XcmWeightInfo<RuntimeCall> for PezkuwichainXcmWeight<RuntimeCall> {
 	fn withdraw_asset(assets: &Assets) -> Weight {
 		assets.weigh_assets(XcmBalancesWeight::<Runtime>::withdraw_asset())
 	}
@@ -157,7 +154,7 @@ impl<RuntimeCall> XcmWeightInfo<RuntimeCall> for ZagrosXcmWeight<RuntimeCall> {
 		assets.weigh_assets(XcmBalancesWeight::<Runtime>::deposit_reserve_asset())
 	}
 	fn exchange_asset(_give: &AssetFilter, _receive: &Assets, _maximal: &bool) -> Weight {
-		// Zagros does not currently support exchange asset operations
+		// Pezkuwichain does not currently support exchange asset operations
 		Weight::MAX
 	}
 	fn initiate_reserve_withdraw(
@@ -211,17 +208,6 @@ impl<RuntimeCall> XcmWeightInfo<RuntimeCall> for ZagrosXcmWeight<RuntimeCall> {
 	fn clear_error() -> Weight {
 		XcmGeneric::<Runtime>::clear_error()
 	}
-	fn set_hints(hints: &BoundedVec<Hint, HintNumVariants>) -> Weight {
-		let mut weight = Weight::zero();
-		for hint in hints {
-			match hint {
-				AssetClaimer { .. } => {
-					weight = weight.saturating_add(XcmGeneric::<Runtime>::asset_claimer());
-				},
-			}
-		}
-		weight
-	}
 	fn claim_asset(_assets: &Assets, _ticket: &Location) -> Weight {
 		XcmGeneric::<Runtime>::claim_asset()
 	}
@@ -268,27 +254,27 @@ impl<RuntimeCall> XcmWeightInfo<RuntimeCall> for ZagrosXcmWeight<RuntimeCall> {
 		XcmGeneric::<Runtime>::clear_transact_status()
 	}
 	fn universal_origin(_: &Junction) -> Weight {
-		// Zagros does not currently support universal origin operations
+		// Pezkuwichain does not currently support universal origin operations
 		Weight::MAX
 	}
 	fn export_message(_: &NetworkId, _: &Junctions, _: &Xcm<()>) -> Weight {
-		// Zagros relay should not support export message operations
+		// Pezkuwichain relay should not support export message operations
 		Weight::MAX
 	}
 	fn lock_asset(_: &Asset, _: &Location) -> Weight {
-		// Zagros does not currently support asset locking operations
+		// Pezkuwichain does not currently support asset locking operations
 		Weight::MAX
 	}
 	fn unlock_asset(_: &Asset, _: &Location) -> Weight {
-		// Zagros does not currently support asset locking operations
+		// Pezkuwichain does not currently support asset locking operations
 		Weight::MAX
 	}
 	fn note_unlockable(_: &Asset, _: &Location) -> Weight {
-		// Zagros does not currently support asset locking operations
+		// Pezkuwichain does not currently support asset locking operations
 		Weight::MAX
 	}
 	fn request_unlock(_: &Asset, _: &Location) -> Weight {
-		// Zagros does not currently support asset locking operations
+		// Pezkuwichain does not currently support asset locking operations
 		Weight::MAX
 	}
 	fn set_fees_mode(_: &bool) -> Weight {
@@ -301,10 +287,22 @@ impl<RuntimeCall> XcmWeightInfo<RuntimeCall> for ZagrosXcmWeight<RuntimeCall> {
 		XcmGeneric::<Runtime>::clear_topic()
 	}
 	fn alias_origin(_: &Location) -> Weight {
-		XcmGeneric::<Runtime>::alias_origin()
+		// XCM Executor does not currently support alias origin operations
+		Weight::MAX
 	}
 	fn unpaid_execution(_: &WeightLimit, _: &Option<Location>) -> Weight {
 		XcmGeneric::<Runtime>::unpaid_execution()
+	}
+	fn set_hints(hints: &BoundedVec<Hint, HintNumVariants>) -> Weight {
+		let mut weight = Weight::zero();
+		for hint in hints {
+			match hint {
+				AssetClaimer { .. } => {
+					weight = weight.saturating_add(XcmGeneric::<Runtime>::asset_claimer());
+				},
+			}
+		}
+		weight
 	}
 	fn execute_with_origin(_: &Option<InteriorLocation>, _: &Xcm<RuntimeCall>) -> Weight {
 		XcmGeneric::<Runtime>::execute_with_origin()

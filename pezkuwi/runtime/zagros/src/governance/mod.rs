@@ -14,19 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with Pezkuwi. If not, see <http://www.gnu.org/licenses/>.
 
-//! New governance configurations for the Dicle runtime.
+//! New governance configurations for the Pezkuwichain runtime.
 
 use super::*;
-use crate::xcm_config::Collectives;
-use pezframe_support::{parameter_types, traits::EitherOf};
+use pezframe_support::{
+	parameter_types,
+	traits::{ConstU16, EitherOf},
+};
 use pezframe_system::EnsureRootWithSuccess;
-use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
-use xcm::latest::BodyId;
 
 mod origins;
 pub use origins::{
-	pezpallet_custom_origins, AuctionAdmin, FellowshipAdmin, GeneralAdmin, LeaseAdmin,
-	ReferendumCanceller, ReferendumKiller, Spender, StakingAdmin, Treasurer, WhitelistedCaller,
+	pezpallet_custom_origins, AuctionAdmin, CitizenshipAdmin, Fellows, FellowshipAdmin,
+	FellowshipExperts, FellowshipInitiates, FellowshipMasters, GeneralAdmin, LeaseAdmin,
+	ReferendumCanceller, ReferendumKiller, Spender, StakingAdmin, Treasurer, WelatiAdmin,
+	WelatiElection, WhitelistedCaller,
 };
 mod tracks;
 pub use tracks::TracksInfo;
@@ -61,19 +63,12 @@ pub type TreasurySpender = EitherOf<EnsureRootWithSuccess<AccountId, MaxBalance>
 
 impl origins::pezpallet_custom_origins::Config for Runtime {}
 
-parameter_types! {
-	// Fellows pluralistic body.
-	pub const FellowsBodyId: BodyId = BodyId::Technical;
-}
-
 impl pezpallet_whitelist::Config for Runtime {
 	type WeightInfo = weights::pezpallet_whitelist::WeightInfo<Self>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
-	type WhitelistOrigin = EitherOfDiverse<
-		EnsureRoot<Self::AccountId>,
-		EnsureXcm<IsVoiceOfBody<Collectives, FellowsBodyId>>,
-	>;
+	type WhitelistOrigin =
+		EitherOf<EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>, Fellows>;
 	type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
 	type Preimages = Preimage;
 }

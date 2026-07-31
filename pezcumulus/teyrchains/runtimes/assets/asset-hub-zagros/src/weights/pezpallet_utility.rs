@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `73b9817d6032`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `ef4134d66388`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_utility
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -55,18 +55,18 @@ impl<T: pezframe_system::Config> pezpallet_utility::WeightInfo for WeightInfo<T>
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 4_984_000 picoseconds.
-		Weight::from_parts(5_153_000, 0)
+		// Minimum execution time: 4_896_000 picoseconds.
+		Weight::from_parts(5_135_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
-			// Standard Error: 1_526
-			.saturating_add(Weight::from_parts(3_130_286, 0).saturating_mul(c.into()))
+			// Standard Error: 1_481
+			.saturating_add(Weight::from_parts(3_295_589, 0).saturating_mul(c.into()))
 	}
 	fn as_derivative() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 4_468_000 picoseconds.
-		Weight::from_parts(4_821_000, 0)
+		// Minimum execution time: 4_550_000 picoseconds.
+		Weight::from_parts(4_792_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	/// The range of component `c` is `[0, 1000]`.
@@ -74,18 +74,18 @@ impl<T: pezframe_system::Config> pezpallet_utility::WeightInfo for WeightInfo<T>
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 5_090_000 picoseconds.
-		Weight::from_parts(5_188_000, 0)
+		// Minimum execution time: 5_116_000 picoseconds.
+		Weight::from_parts(5_230_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
-			// Standard Error: 1_435
-			.saturating_add(Weight::from_parts(3_355_671, 0).saturating_mul(c.into()))
+			// Standard Error: 1_381
+			.saturating_add(Weight::from_parts(3_499_263, 0).saturating_mul(c.into()))
 	}
 	fn dispatch_as() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 6_960_000 picoseconds.
-		Weight::from_parts(7_203_000, 0)
+		// Minimum execution time: 6_934_000 picoseconds.
+		Weight::from_parts(7_156_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	/// The range of component `c` is `[0, 1000]`.
@@ -93,26 +93,26 @@ impl<T: pezframe_system::Config> pezpallet_utility::WeightInfo for WeightInfo<T>
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 5_022_000 picoseconds.
-		Weight::from_parts(5_104_000, 0)
+		// Minimum execution time: 5_114_000 picoseconds.
+		Weight::from_parts(5_255_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
-			// Standard Error: 1_549
-			.saturating_add(Weight::from_parts(3_125_716, 0).saturating_mul(c.into()))
+			// Standard Error: 1_527
+			.saturating_add(Weight::from_parts(3_303_207, 0).saturating_mul(c.into()))
 	}
 	fn dispatch_as_fallible() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 6_848_000 picoseconds.
-		Weight::from_parts(7_202_000, 0)
+		// Minimum execution time: 6_989_000 picoseconds.
+		Weight::from_parts(7_243_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	fn if_else() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 8_510_000 picoseconds.
-		Weight::from_parts(8_903_000, 0)
+		// Minimum execution time: 8_347_000 picoseconds.
+		Weight::from_parts(8_725_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 }

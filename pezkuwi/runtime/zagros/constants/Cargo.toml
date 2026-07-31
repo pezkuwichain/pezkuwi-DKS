@@ -1,7 +1,7 @@
 [package]
 name = "zagros-runtime-constants"
 version = "7.0.0"
-description = "Constants used throughout the Zagros network."
+description = "Constants used throughout the Pezkuwichain network."
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -40,6 +40,9 @@ std = [
 	"xcm-builder/std",
 	"xcm/std",
 ]
+
+# Set timing constants (e.g. session period) to faster versions to speed up testing.
+fast-runtime = []
 runtime-benchmarks = [
 	"pezframe-support/runtime-benchmarks",
 	"pezkuwi-primitives/runtime-benchmarks",
@@ -48,8 +51,6 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
 ]
-# Set timing constants (e.g. session period) to faster versions to speed up testing.
-fast-runtime = []
 try-runtime = [
 	"pezframe-support/try-runtime",
 	"pezkuwi-primitives/try-runtime",

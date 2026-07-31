@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `73b9817d6032`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `ef4134d66388`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_nft_fractionalization
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -53,7 +53,7 @@ impl<T: pezframe_system::Config> pezpallet_nft_fractionalization::WeightInfo for
 	/// Storage: `Nfts::Item` (r:1 w:0)
 	/// Proof: `Nfts::Item` (`max_values`: None, `max_size`: Some(861), added: 3336, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Holds` (r:1 w:1)
-	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(157), added: 2632, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(85), added: 2560, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::Attribute` (r:1 w:1)
 	/// Proof: `Nfts::Attribute` (`max_values`: None, `max_size`: Some(479), added: 2954, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::Collection` (r:1 w:1)
@@ -72,10 +72,10 @@ impl<T: pezframe_system::Config> pezpallet_nft_fractionalization::WeightInfo for
 	/// Proof: `NftFractionalization::NftToAsset` (`max_values`: None, `max_size`: Some(92), added: 2567, mode: `MaxEncodedLen`)
 	fn fractionalize() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `459`
+		//  Measured:  `425`
 		//  Estimated: `4326`
-		// Minimum execution time: 183_512_000 picoseconds.
-		Weight::from_parts(187_719_000, 0)
+		// Minimum execution time: 188_695_000 picoseconds.
+		Weight::from_parts(194_196_000, 0)
 			.saturating_add(Weight::from_parts(0, 4326))
 			.saturating_add(T::DbWeight::get().reads(9))
 			.saturating_add(T::DbWeight::get().writes(8))
@@ -101,7 +101,7 @@ impl<T: pezframe_system::Config> pezpallet_nft_fractionalization::WeightInfo for
 	/// Storage: `Nfts::Item` (r:1 w:1)
 	/// Proof: `Nfts::Item` (`max_values`: None, `max_size`: Some(861), added: 3336, mode: `MaxEncodedLen`)
 	/// Storage: `Balances::Holds` (r:1 w:1)
-	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(157), added: 2632, mode: `MaxEncodedLen`)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(85), added: 2560, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::Account` (r:0 w:1)
 	/// Proof: `Nfts::Account` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::ItemPriceOf` (r:0 w:1)
@@ -110,10 +110,10 @@ impl<T: pezframe_system::Config> pezpallet_nft_fractionalization::WeightInfo for
 	/// Proof: `Nfts::PendingSwapOf` (`max_values`: None, `max_size`: Some(71), added: 2546, mode: `MaxEncodedLen`)
 	fn unify() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1284`
+		//  Measured:  `1250`
 		//  Estimated: `6114`
-		// Minimum execution time: 162_307_000 picoseconds.
-		Weight::from_parts(164_950_000, 0)
+		// Minimum execution time: 163_261_000 picoseconds.
+		Weight::from_parts(167_839_000, 0)
 			.saturating_add(Weight::from_parts(0, 6114))
 			.saturating_add(T::DbWeight::get().reads(12))
 			.saturating_add(T::DbWeight::get().writes(12))
