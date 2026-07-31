@@ -31,6 +31,7 @@ pezframe-system = { workspace = true }
 pezframe-system-benchmarking = { optional = true, workspace = true }
 pezframe-system-rpc-runtime-api = { workspace = true }
 pezframe-try-runtime = { optional = true, workspace = true }
+pezpallet-ah-ops = { workspace = true }
 pezpallet-asset-conversion = { workspace = true }
 pezpallet-asset-conversion-ops = { workspace = true }
 pezpallet-asset-conversion-tx-payment = { workspace = true }
@@ -38,6 +39,7 @@ pezpallet-asset-rate = { workspace = true }
 pezpallet-asset-rewards = { workspace = true }
 pezpallet-assets = { workspace = true }
 pezpallet-assets-freezer = { workspace = true }
+pezpallet-assets-precompiles = { workspace = true }
 pezpallet-aura = { workspace = true }
 pezpallet-authorship = { workspace = true }
 pezpallet-bags-list = { workspace = true }
@@ -47,12 +49,7 @@ pezpallet-child-bounties = { workspace = true }
 pezpallet-delegated-staking = { workspace = true }
 pezpallet-election-provider-multi-block = { workspace = true }
 pezpallet-message-queue = { workspace = true }
-pezpallet-xcm-precompiles = { workspace = true }
-pezpallet-assets-precompiles = { workspace = true }
 pezpallet-migrations = { workspace = true }
-pezpallet-ah-ops = { workspace = true }
-pezpallet-sudo = { workspace = true }
-pezpallet-revive = { workspace = true }
 pezpallet-multisig = { workspace = true }
 pezpallet-nft-fractionalization = { workspace = true }
 pezpallet-nfts = { workspace = true }
@@ -62,11 +59,13 @@ pezpallet-nomination-pools-runtime-api = { workspace = true }
 pezpallet-pez-treasury = { workspace = true }
 pezpallet-presale = { workspace = true }
 pezpallet-proxy = { workspace = true }
+pezpallet-revive = { workspace = true }
 pezpallet-session = { workspace = true }
 pezpallet-staking = { workspace = true }
 pezpallet-staking-async = { workspace = true }
 pezpallet-staking-async-rc-client = { workspace = true }
 pezpallet-staking-runtime-api = { workspace = true }
+pezpallet-sudo = { workspace = true }
 pezpallet-timestamp = { workspace = true }
 pezpallet-token-wrapper = { workspace = true }
 pezpallet-transaction-payment = { workspace = true }
@@ -74,6 +73,7 @@ pezpallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pezpallet-treasury = { workspace = true }
 pezpallet-uniques = { workspace = true }
 pezpallet-utility = { workspace = true }
+pezpallet-xcm-precompiles = { workspace = true }
 pezsp-api = { workspace = true }
 pezsp-block-builder = { workspace = true }
 pezsp-consensus-aura = { workspace = true }
@@ -171,12 +171,14 @@ runtime-benchmarks = [
 	"pezkuwi-runtime-common/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezkuwichain-runtime-constants/runtime-benchmarks",
+	"pezpallet-ah-ops/runtime-benchmarks",
 	"pezpallet-asset-conversion-ops/runtime-benchmarks",
 	"pezpallet-asset-conversion-tx-payment/runtime-benchmarks",
 	"pezpallet-asset-conversion/runtime-benchmarks",
 	"pezpallet-asset-rate/runtime-benchmarks",
 	"pezpallet-asset-rewards/runtime-benchmarks",
 	"pezpallet-assets-freezer/runtime-benchmarks",
+	"pezpallet-assets-precompiles/runtime-benchmarks",
 	"pezpallet-assets/runtime-benchmarks",
 	"pezpallet-aura/runtime-benchmarks",
 	"pezpallet-authorship/runtime-benchmarks",
@@ -188,12 +190,7 @@ runtime-benchmarks = [
 	"pezpallet-delegated-staking/runtime-benchmarks",
 	"pezpallet-election-provider-multi-block/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
-	"pezpallet-xcm-precompiles/runtime-benchmarks",
-	"pezpallet-assets-precompiles/runtime-benchmarks",
 	"pezpallet-migrations/runtime-benchmarks",
-	"pezpallet-ah-ops/runtime-benchmarks",
-	"pezpallet-sudo/runtime-benchmarks",
-	"pezpallet-revive/runtime-benchmarks",
 	"pezpallet-multisig/runtime-benchmarks",
 	"pezpallet-nft-fractionalization/runtime-benchmarks",
 	"pezpallet-nfts/runtime-benchmarks",
@@ -203,11 +200,13 @@ runtime-benchmarks = [
 	"pezpallet-pez-treasury/runtime-benchmarks",
 	"pezpallet-presale/runtime-benchmarks",
 	"pezpallet-proxy/runtime-benchmarks",
+	"pezpallet-revive/runtime-benchmarks",
 	"pezpallet-session/runtime-benchmarks",
 	"pezpallet-staking-async-rc-client/runtime-benchmarks",
 	"pezpallet-staking-async/runtime-benchmarks",
 	"pezpallet-staking-runtime-api/runtime-benchmarks",
 	"pezpallet-staking/runtime-benchmarks",
+	"pezpallet-sudo/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
 	"pezpallet-token-wrapper/runtime-benchmarks",
 	"pezpallet-transaction-payment-rpc-runtime-api/runtime-benchmarks",
@@ -217,6 +216,7 @@ runtime-benchmarks = [
 	"pezpallet-utility/runtime-benchmarks",
 	"pezpallet-xcm-benchmarks/runtime-benchmarks",
 	"pezpallet-xcm-bridge-hub-router/runtime-benchmarks",
+	"pezpallet-xcm-precompiles/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",
 	"pezsp-api/runtime-benchmarks",
 	"pezsp-block-builder/runtime-benchmarks",
@@ -266,12 +266,14 @@ try-runtime = [
 	"pezkuwi-runtime-common/try-runtime",
 	"pezkuwi-teyrchain-primitives/try-runtime",
 	"pezkuwichain-runtime-constants/try-runtime",
+	"pezpallet-ah-ops/try-runtime",
 	"pezpallet-asset-conversion-ops/try-runtime",
 	"pezpallet-asset-conversion-tx-payment/try-runtime",
 	"pezpallet-asset-conversion/try-runtime",
 	"pezpallet-asset-rate/try-runtime",
 	"pezpallet-asset-rewards/try-runtime",
 	"pezpallet-assets-freezer/try-runtime",
+	"pezpallet-assets-precompiles/try-runtime",
 	"pezpallet-assets/try-runtime",
 	"pezpallet-aura/try-runtime",
 	"pezpallet-authorship/try-runtime",
@@ -283,12 +285,7 @@ try-runtime = [
 	"pezpallet-delegated-staking/try-runtime",
 	"pezpallet-election-provider-multi-block/try-runtime",
 	"pezpallet-message-queue/try-runtime",
-	"pezpallet-xcm-precompiles/try-runtime",
-	"pezpallet-assets-precompiles/try-runtime",
 	"pezpallet-migrations/try-runtime",
-	"pezpallet-ah-ops/try-runtime",
-	"pezpallet-sudo/try-runtime",
-	"pezpallet-revive/try-runtime",
 	"pezpallet-multisig/try-runtime",
 	"pezpallet-nft-fractionalization/try-runtime",
 	"pezpallet-nfts/try-runtime",
@@ -298,10 +295,12 @@ try-runtime = [
 	"pezpallet-pez-treasury/try-runtime",
 	"pezpallet-presale/try-runtime",
 	"pezpallet-proxy/try-runtime",
+	"pezpallet-revive/try-runtime",
 	"pezpallet-session/try-runtime",
 	"pezpallet-staking-async-rc-client/try-runtime",
 	"pezpallet-staking-async/try-runtime",
 	"pezpallet-staking/try-runtime",
+	"pezpallet-sudo/try-runtime",
 	"pezpallet-timestamp/try-runtime",
 	"pezpallet-token-wrapper/try-runtime",
 	"pezpallet-transaction-payment-rpc-runtime-api/try-runtime",
@@ -311,6 +310,7 @@ try-runtime = [
 	"pezpallet-utility/try-runtime",
 	"pezpallet-xcm-benchmarks?/try-runtime",
 	"pezpallet-xcm-bridge-hub-router/try-runtime",
+	"pezpallet-xcm-precompiles/try-runtime",
 	"pezpallet-xcm/try-runtime",
 	"pezsp-api/try-runtime",
 	"pezsp-block-builder/try-runtime",
@@ -365,12 +365,14 @@ std = [
 	"pezkuwi-runtime-common/std",
 	"pezkuwi-teyrchain-primitives/std",
 	"pezkuwichain-runtime-constants/std",
+	"pezpallet-ah-ops/std",
 	"pezpallet-asset-conversion-ops/std",
 	"pezpallet-asset-conversion-tx-payment/std",
 	"pezpallet-asset-conversion/std",
 	"pezpallet-asset-rate/std",
 	"pezpallet-asset-rewards/std",
 	"pezpallet-assets-freezer/std",
+	"pezpallet-assets-precompiles/std",
 	"pezpallet-assets/std",
 	"pezpallet-aura/std",
 	"pezpallet-authorship/std",
@@ -382,12 +384,7 @@ std = [
 	"pezpallet-delegated-staking/std",
 	"pezpallet-election-provider-multi-block/std",
 	"pezpallet-message-queue/std",
-	"pezpallet-xcm-precompiles/std",
-	"pezpallet-assets-precompiles/std",
 	"pezpallet-migrations/std",
-	"pezpallet-ah-ops/std",
-	"pezpallet-sudo/std",
-	"pezpallet-revive/std",
 	"pezpallet-multisig/std",
 	"pezpallet-nft-fractionalization/std",
 	"pezpallet-nfts/std",
@@ -397,11 +394,13 @@ std = [
 	"pezpallet-pez-treasury/std",
 	"pezpallet-presale/std",
 	"pezpallet-proxy/std",
+	"pezpallet-revive/std",
 	"pezpallet-session/std",
 	"pezpallet-staking-async-rc-client/std",
 	"pezpallet-staking-async/std",
 	"pezpallet-staking-runtime-api/std",
 	"pezpallet-staking/std",
+	"pezpallet-sudo/std",
 	"pezpallet-timestamp/std",
 	"pezpallet-token-wrapper/std",
 	"pezpallet-transaction-payment-rpc-runtime-api/std",
@@ -411,6 +410,7 @@ std = [
 	"pezpallet-utility/std",
 	"pezpallet-xcm-benchmarks?/std",
 	"pezpallet-xcm-bridge-hub-router/std",
+	"pezpallet-xcm-precompiles/std",
 	"pezpallet-xcm/std",
 	"pezsp-api/std",
 	"pezsp-block-builder/std",

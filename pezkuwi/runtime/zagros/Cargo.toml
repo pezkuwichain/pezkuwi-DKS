@@ -23,7 +23,6 @@ serde_derive = { optional = true, workspace = true }
 serde_json = { features = ["alloc"], workspace = true }
 
 pez-binary-merkle-tree = { workspace = true }
-zagros-runtime-constants = { workspace = true }
 pezsp-api = { workspace = true }
 pezsp-arithmetic = { workspace = true }
 pezsp-authority-discovery = { workspace = true }
@@ -45,6 +44,7 @@ pezsp-staking = { workspace = true }
 pezsp-storage = { workspace = true }
 pezsp-transaction-pool = { workspace = true }
 pezsp-version = { workspace = true }
+zagros-runtime-constants = { workspace = true }
 
 pezframe-election-provider-support = { workspace = true }
 pezframe-executive = { workspace = true }
@@ -150,7 +150,6 @@ std = [
 	"pezkuwi-runtime-common/std",
 	"pezkuwi-runtime-teyrchains/std",
 	"pezkuwi-teyrchain-primitives/std",
-	"zagros-runtime-constants/std",
 	"pezpallet-authority-discovery/std",
 	"pezpallet-authorship/std",
 	"pezpallet-babe/std",
@@ -224,6 +223,7 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-pezapis/std",
 	"xcm/std",
+	"zagros-runtime-constants/std",
 ]
 runtime-benchmarks = [
 	"bizinikiwi-wasm-builder?/runtime-benchmarks",
@@ -241,7 +241,6 @@ runtime-benchmarks = [
 	"pezkuwi-runtime-common/runtime-benchmarks",
 	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
-	"zagros-runtime-constants/runtime-benchmarks",
 	"pezpallet-authority-discovery/runtime-benchmarks",
 	"pezpallet-authorship/runtime-benchmarks",
 	"pezpallet-babe/runtime-benchmarks",
@@ -308,6 +307,7 @@ runtime-benchmarks = [
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-pezapis/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
+	"zagros-runtime-constants/runtime-benchmarks",
 ]
 try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
@@ -323,7 +323,6 @@ try-runtime = [
 	"pezkuwi-runtime-common/try-runtime",
 	"pezkuwi-runtime-teyrchains/try-runtime",
 	"pezkuwi-teyrchain-primitives/try-runtime",
-	"zagros-runtime-constants/try-runtime",
 	"pezpallet-authority-discovery/try-runtime",
 	"pezpallet-authorship/try-runtime",
 	"pezpallet-babe/try-runtime",
@@ -388,6 +387,7 @@ try-runtime = [
 	"xcm-executor/try-runtime",
 	"xcm-runtime-pezapis/try-runtime",
 	"xcm/try-runtime",
+	"zagros-runtime-constants/try-runtime",
 ]
 
 # Enable the metadata hash generation in the wasm builder.
