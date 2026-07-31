@@ -37,6 +37,7 @@ pub mod pezpallet_election_provider_multi_block_signed;
 pub mod pezpallet_election_provider_multi_block_unsigned;
 pub mod pezpallet_election_provider_multi_block_verifier;
 pub mod pezpallet_message_queue;
+pub mod pezpallet_migrations;
 pub mod pezpallet_multisig;
 pub mod pezpallet_nft_fractionalization;
 pub mod pezpallet_nfts;
