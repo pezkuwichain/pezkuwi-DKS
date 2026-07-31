@@ -1327,6 +1327,7 @@ dependencies = [
  "pezpallet-delegated-staking",
  "pezpallet-election-provider-multi-block",
  "pezpallet-message-queue",
+ "pezpallet-migrations",
  "pezpallet-multisig",
  "pezpallet-nft-fractionalization",
  "pezpallet-nfts",

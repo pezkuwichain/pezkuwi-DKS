@@ -138,7 +138,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("asset-hub-pezkuwichain"),
 	impl_name: alloc::borrow::Cow::Borrowed("asset-hub-pezkuwichain"),
 	authoring_version: 1,
-	spec_version: 1_020_014,
+	spec_version: 1_020_015,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 16,
@@ -1299,6 +1299,29 @@ impl pezpallet_token_wrapper::Config for Runtime {
 	type WrapperAssetId = WrappedAssetId;
 }
 
+parameter_types! {
+	/// Multi-block migrations may use up to 80% of the block for their own work.
+	pub MbmServiceWeight: Weight = Perbill::from_percent(80) * RuntimeBlockWeights::get().max_block;
+}
+
+/// Multi-block migrations for runtime upgrades. Empty until a migration needs more than one
+/// block; the pallet is present so that one can be scheduled without a prior runtime upgrade.
+#[cfg(feature = "runtime-benchmarks")]
+type MultiBlockMigrationsType = pezpallet_migrations::mock_helpers::MockedMigrations;
+#[cfg(not(feature = "runtime-benchmarks"))]
+type MultiBlockMigrationsType = ();
+
+impl pezpallet_migrations::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Migrations = MultiBlockMigrationsType;
+	type CursorMaxLen = ConstU32<65_536>;
+	type IdentifierMaxLen = ConstU32<256>;
+	type MigrationStatusHandler = ();
+	type FailedMigrationHandler = pezframe_support::migrations::FreezeChainOnFailedMigration;
+	type MaxServiceWeight = MbmServiceWeight;
+	type WeightInfo = weights::pezpallet_migrations::WeightInfo<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime
@@ -1309,6 +1332,7 @@ construct_runtime!(
 		Timestamp: pezpallet_timestamp = 3,
 		TeyrchainInfo: teyrchain_info = 4,
 		WeightReclaim: pezcumulus_pezpallet_weight_reclaim = 5,
+		MultiBlockMigrations: pezpallet_migrations = 6,
 
 		// Monetary stuff.
 		Balances: pezpallet_balances = 10,
@@ -1599,6 +1623,7 @@ mod benches {
 		[pezpallet_asset_conversion_tx_payment, AssetTxPayment]
 		[pezpallet_balances, Balances]
 		[pezpallet_message_queue, MessageQueue]
+		[pezpallet_migrations, MultiBlockMigrations]
 		[pezpallet_multisig, Multisig]
 		[pezpallet_nft_fractionalization, NftFractionalization]
 		[pezpallet_nfts, Nfts]

@@ -47,6 +47,7 @@ pezpallet-child-bounties = { workspace = true }
 pezpallet-delegated-staking = { workspace = true }
 pezpallet-election-provider-multi-block = { workspace = true }
 pezpallet-message-queue = { workspace = true }
+pezpallet-migrations = { workspace = true }
 pezpallet-multisig = { workspace = true }
 pezpallet-nft-fractionalization = { workspace = true }
 pezpallet-nfts = { workspace = true }
@@ -182,6 +183,7 @@ runtime-benchmarks = [
 	"pezpallet-delegated-staking/runtime-benchmarks",
 	"pezpallet-election-provider-multi-block/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-migrations/runtime-benchmarks",
 	"pezpallet-multisig/runtime-benchmarks",
 	"pezpallet-nft-fractionalization/runtime-benchmarks",
 	"pezpallet-nfts/runtime-benchmarks",
@@ -271,6 +273,7 @@ try-runtime = [
 	"pezpallet-delegated-staking/try-runtime",
 	"pezpallet-election-provider-multi-block/try-runtime",
 	"pezpallet-message-queue/try-runtime",
+	"pezpallet-migrations/try-runtime",
 	"pezpallet-multisig/try-runtime",
 	"pezpallet-nft-fractionalization/try-runtime",
 	"pezpallet-nfts/try-runtime",
@@ -364,6 +367,7 @@ std = [
 	"pezpallet-delegated-staking/std",
 	"pezpallet-election-provider-multi-block/std",
 	"pezpallet-message-queue/std",
+	"pezpallet-migrations/std",
 	"pezpallet-multisig/std",
 	"pezpallet-nft-fractionalization/std",
 	"pezpallet-nfts/std",
