@@ -17,7 +17,7 @@
 use super::*;
 use pezcumulus_primitives_core::relay_chain::SessionIndex;
 use pezframe_election_provider_support::{ElectionDataProvider, SequentialPhragmen};
-use pezframe_support::traits::EitherOf;
+use pezframe_support::traits::tokens::imbalance::ResolveTo;
 use pezkuwi_runtime_common::{prod_or_fast, BalanceToU256, U256ToBalance};
 use pezpallet_election_provider_multi_block::{self as multi_block, SolutionAccuracyOf};
 use pezpallet_staking_async::UseValidatorsMap;
@@ -56,10 +56,15 @@ parameter_types! {
 	/// validate up to 4 signed solution. Each solution.
 	pub storage SignedValidationPhase: u32 = prod_or_fast!(Pages::get() * 4, Pages::get());
 
-	/// Abandon an election that has produced nothing usable for this long, and start over. See the
-	/// mainnet Asset Hub counterpart for the reasoning; testnet uses a shorter window so a stall
-	/// and its recovery can be observed within one hour instead of three.
-	pub storage StalledRoundTimeout: BlockNumber = prod_or_fast!(1 * HOURS, 10 * MINUTES);
+	/// Abandon an election that has produced nothing usable for this long, and start over.
+	///
+	/// A full election takes snapshot (`Pages` + 1) + signed + signed-validation + unsigned +
+	/// export, roughly 400 blocks here. With `AreWeDone = RevertToSignedIfNotQueuedOf` a failing
+	/// election loops back to the signed phase instead of ever returning to `Phase::Off`, which is
+	/// what let round 673 stay frozen for four days in July 2026 — staking's own stall detection
+	/// waits for an *idle* election, so it could never count. Two hours leaves room for about three
+	/// honest attempts before the round is given up on.
+	pub storage StalledRoundTimeout: BlockNumber = prod_or_fast!(2 * HOURS, 10 * MINUTES);
 
 	/// In each page, we may observe up to all of the validators.
 	pub MaxWinnersPerPage: u32 = MaxValidatorSet::get();
@@ -71,7 +76,7 @@ parameter_types! {
 	pub MaxBackersPerWinnerFinal: u32 = MaxElectingVoters::get();
 
 	/// Size of the exposures. This should be small enough to make the reward payouts feasible.
-	pub MaxExposurePageSize: u32 = 64;
+	pub MaxExposurePageSize: u32 = 512;
 }
 
 pezframe_election_provider_support::generate_solution_type!(
@@ -177,7 +182,7 @@ parameter_types! {
 	pub MinerTxPriority: TransactionPriority = TransactionPriority::max_value() / 2;
 	/// Try and run the OCW miner 4 times during the unsigned phase.
 	pub OffchainRepeat: BlockNumber = UnsignedPhase::get() / 4;
-	pub storage MinerPages: u32 = 2;
+	pub storage MinerPages: u32 = 32;
 }
 
 impl multi_block::unsigned::Config for Runtime {
@@ -248,7 +253,8 @@ impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
 			FixedU128::from_rational(era_duration_millis.into(), MILLISECONDS_PER_YEAR.into());
 
 		// Fixed total TI that we use as baseline for the issuance.
-		let fixed_total_issuance: i128 = 5_216_342_402_773_185_773;
+		// 200M HEZ (12 decimals) = 200_000_000 * 10^12
+		let fixed_total_issuance: i128 = 200_000_000_000_000_000_000;
 		let fixed_inflation_rate = FixedU128::from_rational(8, 100);
 		let yearly_emission = fixed_inflation_rate.saturating_mul_int(fixed_total_issuance);
 
@@ -283,16 +289,21 @@ impl pezpallet_staking_async::Config for Runtime {
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	// U128, not Saturating — see asset-hub-pezkuwichain: Saturating clips any stake above
-	// ~u64::MAX planck to u64::MAX, producing tied voters that panic the election miner's reduce_4.
+	// U128, not Saturating: HEZ has 12 decimals and total issuance (~204M HEZ = ~2.04e20 planck)
+	// far exceeds u64::MAX (~1.8446e19). SaturatingCurrencyToVote casts balance->u64 saturating, so
+	// any stash bonding more than ~18.45M HEZ collapses to u64::MAX. Two large nominators (~41M and
+	// ~40M HEZ) both saturated to u64::MAX, becoming tied voters; the resulting tied edge weights hit
+	// the `reduce_4` "duplicate/corrupt input" panic in the offchain election miner, so no solution
+	// was ever produced and no era exposures were written. U128CurrencyToVote scales by
+	// (total_issuance / u64::MAX) instead, keeping every stake distinct and inside u64 range.
 	type CurrencyToVote = pezsp_staking::currency_to_vote::U128CurrencyToVote;
-	type RewardRemainder = ();
-	type Slash = ();
+	type RewardRemainder = ResolveTo<xcm_config::TreasuryAccount, Balances>;
+	type Slash = ResolveTo<xcm_config::TreasuryAccount, Balances>;
 	type Reward = ();
 	type SessionsPerEra = SessionsPerEra;
 	type BondingDuration = BondingDuration;
 	type SlashDeferDuration = SlashDeferDuration;
-	type AdminOrigin = EitherOf<EnsureRoot<AccountId>, StakingAdmin>;
+	type AdminOrigin = EnsureRoot<AccountId>;
 	type EraPayout = EraPayout;
 	type MaxExposurePageSize = MaxExposurePageSize;
 	type ElectionProvider = MultiBlockElection;
@@ -319,6 +330,59 @@ impl pezpallet_staking_async_rc_client::Config for Runtime {
 	type AHStakingInterface = Staking;
 	type SendToRelayChain = StakingXcmToRelayChain;
 	type MaxValidatorSetRetries = ConstU32<64>;
+}
+
+/// Forwards session events to both CollatorSelection (collator management) and
+/// Staking pallet (era management) via local SessionReport generation.
+///
+/// This is needed because `pallet_staking_async` expects `SessionReport` messages from
+/// the relay chain's `ah_client` pallet, which is not yet active. This wrapper generates
+/// local session reports from AH's own session rotation events.
+pub struct StakingSessionManager;
+
+impl pezpallet_session::SessionManager<AccountId> for StakingSessionManager {
+	fn new_session(new_index: u32) -> Option<Vec<AccountId>> {
+		<CollatorSelection as pezpallet_session::SessionManager<AccountId>>::new_session(new_index)
+	}
+
+	fn end_session(end_index: u32) {
+		// Forward to CollatorSelection first
+		<CollatorSelection as pezpallet_session::SessionManager<AccountId>>::end_session(end_index);
+
+		// Build local SessionReport for staking era progression
+		let current_era = pezpallet_staking_async::CurrentEra::<Runtime>::get().unwrap_or(0);
+		let active_era_idx = pezpallet_staking_async::ActiveEra::<Runtime>::get()
+			.map(|e| e.index)
+			.unwrap_or(0);
+
+		// Provide activation_timestamp when a planned era exists (CurrentEra > ActiveEra)
+		let activation_timestamp = if current_era > active_era_idx {
+			let now_ms = pezpallet_timestamp::Now::<Runtime>::get();
+			Some((now_ms, current_era))
+		} else {
+			None
+		};
+
+		// Equal reward points for all validators
+		let validator_points: Vec<(AccountId, u32)> =
+			pezpallet_staking_async::Validators::<Runtime>::iter_keys()
+				.map(|v| (v, 20u32))
+				.collect();
+
+		let report = rc_client::SessionReport::new_terminal(
+			end_index,
+			validator_points,
+			activation_timestamp,
+		);
+
+		let _ = <Staking as rc_client::AHStakingInterface>::on_relay_session_report(report);
+	}
+
+	fn start_session(start_index: u32) {
+		<CollatorSelection as pezpallet_session::SessionManager<AccountId>>::start_session(
+			start_index,
+		);
+	}
 }
 
 #[derive(Encode, Decode)]
@@ -395,7 +459,7 @@ impl pezpallet_nomination_pools::Config for Runtime {
 	type MaxUnbonding = <Self as pezpallet_staking_async::Config>::MaxUnlockingChunks;
 	type PalletId = PoolsPalletId;
 	type MaxPointsToBalance = MaxPointsToBalance;
-	type AdminOrigin = EitherOf<EnsureRoot<AccountId>, StakingAdmin>;
+	type AdminOrigin = EnsureRoot<AccountId>;
 	type BlockNumberProvider = RelaychainDataProvider<Runtime>;
 	type Filter = Nothing;
 	type WeightInfo = weights::pezpallet_nomination_pools::WeightInfo<Self>;
@@ -410,7 +474,7 @@ impl pezpallet_delegated_staking::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type PalletId = DelegatedStakingPalletId;
 	type Currency = Balances;
-	type OnSlash = ();
+	type OnSlash = ResolveTo<xcm_config::TreasuryAccount, Balances>;
 	type SlashRewardFraction = SlashRewardFraction;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type CoreStaking = Staking;
@@ -482,6 +546,8 @@ where
 			pezframe_system::CheckWeight::<Runtime>::new(),
 			pezpallet_asset_conversion_tx_payment::ChargeAssetTxPayment::<Runtime>::from(tip, None),
 			pezframe_metadata_hash_extension::CheckMetadataHash::<Runtime>::new(true),
+			// `TxExtension` carries `SetOrigin` for `pezpallet_revive`; a signed offchain
+			// payload has no Ethereum origin to carry, so it goes in empty.
 			pezpallet_revive::evm::tx_extension::SetOrigin::<Runtime>::default(),
 		));
 		let raw_payload = SignedPayload::new(call, tx_ext)

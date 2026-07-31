@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `73b9817d6032`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `ef4134d66388`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezframe_system_extensions
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -54,32 +54,32 @@ impl<T: pezframe_system::Config> pezframe_system::ExtensionsWeightInfo for Weigh
 		// Proof Size summary in bytes:
 		//  Measured:  `30`
 		//  Estimated: `0`
-		// Minimum execution time: 3_264_000 picoseconds.
-		Weight::from_parts(3_487_000, 0)
+		// Minimum execution time: 3_240_000 picoseconds.
+		Weight::from_parts(3_380_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	fn check_mortality_mortal_transaction() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `68`
 		//  Estimated: `0`
-		// Minimum execution time: 6_152_000 picoseconds.
-		Weight::from_parts(6_489_000, 0)
+		// Minimum execution time: 6_329_000 picoseconds.
+		Weight::from_parts(6_661_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	fn check_mortality_immortal_transaction() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `68`
 		//  Estimated: `0`
-		// Minimum execution time: 6_282_000 picoseconds.
-		Weight::from_parts(6_443_000, 0)
+		// Minimum execution time: 6_451_000 picoseconds.
+		Weight::from_parts(6_605_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	fn check_non_zero_sender() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 495_000 picoseconds.
-		Weight::from_parts(572_000, 0)
+		// Minimum execution time: 487_000 picoseconds.
+		Weight::from_parts(543_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	/// Storage: `System::Account` (r:1 w:1)
@@ -88,8 +88,8 @@ impl<T: pezframe_system::Config> pezframe_system::ExtensionsWeightInfo for Weigh
 		// Proof Size summary in bytes:
 		//  Measured:  `101`
 		//  Estimated: `3593`
-		// Minimum execution time: 6_856_000 picoseconds.
-		Weight::from_parts(7_212_000, 0)
+		// Minimum execution time: 6_719_000 picoseconds.
+		Weight::from_parts(7_138_000, 0)
 			.saturating_add(Weight::from_parts(0, 3593))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -98,32 +98,32 @@ impl<T: pezframe_system::Config> pezframe_system::ExtensionsWeightInfo for Weigh
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 395_000 picoseconds.
-		Weight::from_parts(483_000, 0)
+		// Minimum execution time: 398_000 picoseconds.
+		Weight::from_parts(443_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	fn check_tx_version() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 395_000 picoseconds.
-		Weight::from_parts(443_000, 0)
+		// Minimum execution time: 397_000 picoseconds.
+		Weight::from_parts(439_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	fn check_weight() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_938_000 picoseconds.
-		Weight::from_parts(4_088_000, 0)
+		// Minimum execution time: 3_868_000 picoseconds.
+		Weight::from_parts(4_109_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 	fn weight_reclaim() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_189_000 picoseconds.
-		Weight::from_parts(2_372_000, 0)
+		// Minimum execution time: 2_261_000 picoseconds.
+		Weight::from_parts(2_456_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 	}
 }

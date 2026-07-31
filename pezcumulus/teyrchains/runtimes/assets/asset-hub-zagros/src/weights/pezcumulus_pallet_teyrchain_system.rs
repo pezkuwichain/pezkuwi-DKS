@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `73b9817d6032`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `ef4134d66388`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezcumulus_pezpallet_teyrchain_system
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -65,11 +65,11 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_teyrchain_system::WeightIn
 		// Proof Size summary in bytes:
 		//  Measured:  `84`
 		//  Estimated: `3517`
-		// Minimum execution time: 2_951_000 picoseconds.
-		Weight::from_parts(3_065_000, 0)
+		// Minimum execution time: 2_893_000 picoseconds.
+		Weight::from_parts(3_044_000, 0)
 			.saturating_add(Weight::from_parts(0, 3517))
-			// Standard Error: 63_236
-			.saturating_add(Weight::from_parts(354_635_005, 0).saturating_mul(n.into()))
+			// Standard Error: 61_265
+			.saturating_add(Weight::from_parts(354_603_590, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(4))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(n.into())))

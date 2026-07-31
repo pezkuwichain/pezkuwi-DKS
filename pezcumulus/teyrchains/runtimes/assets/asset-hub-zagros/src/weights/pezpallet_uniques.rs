@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `73b9817d6032`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `ef4134d66388`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_uniques
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -56,10 +56,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::ClassAccount` (`max_values`: None, `max_size`: Some(68), added: 2543, mode: `MaxEncodedLen`)
 	fn create() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `212`
+		//  Measured:  `179`
 		//  Estimated: `3643`
-		// Minimum execution time: 28_192_000 picoseconds.
-		Weight::from_parts(29_250_000, 0)
+		// Minimum execution time: 28_132_000 picoseconds.
+		Weight::from_parts(29_481_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -70,10 +70,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::ClassAccount` (`max_values`: None, `max_size`: Some(68), added: 2543, mode: `MaxEncodedLen`)
 	fn force_create() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `109`
+		//  Measured:  `76`
 		//  Estimated: `3643`
-		// Minimum execution time: 12_923_000 picoseconds.
-		Weight::from_parts(13_617_000, 0)
+		// Minimum execution time: 12_936_000 picoseconds.
+		Weight::from_parts(13_196_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -99,17 +99,17 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// The range of component `a` is `[0, 1000]`.
 	fn destroy(n: u32, m: u32, a: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `394 + a * (107 ±0) + m * (56 ±0) + n * (76 ±0)`
+		//  Measured:  `327 + a * (107 ±0) + m * (56 ±0) + n * (76 ±0)`
 		//  Estimated: `3643 + a * (2647 ±0) + m * (2662 ±0) + n * (2597 ±0)`
-		// Minimum execution time: 3_420_053_000 picoseconds.
-		Weight::from_parts(3_447_034_000, 0)
+		// Minimum execution time: 3_239_649_000 picoseconds.
+		Weight::from_parts(3_259_200_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
-			// Standard Error: 43_940
-			.saturating_add(Weight::from_parts(8_425_741, 0).saturating_mul(n.into()))
-			// Standard Error: 43_940
-			.saturating_add(Weight::from_parts(477_846, 0).saturating_mul(m.into()))
-			// Standard Error: 43_940
-			.saturating_add(Weight::from_parts(512_498, 0).saturating_mul(a.into()))
+			// Standard Error: 34_583
+			.saturating_add(Weight::from_parts(8_028_127, 0).saturating_mul(n.into()))
+			// Standard Error: 34_583
+			.saturating_add(Weight::from_parts(392_832, 0).saturating_mul(m.into()))
+			// Standard Error: 34_583
+			.saturating_add(Weight::from_parts(431_923, 0).saturating_mul(a.into()))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(n.into())))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(m.into())))
@@ -132,10 +132,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Account` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
 	fn mint() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `349`
+		//  Measured:  `316`
 		//  Estimated: `3643`
-		// Minimum execution time: 35_706_000 picoseconds.
-		Weight::from_parts(37_038_000, 0)
+		// Minimum execution time: 35_527_000 picoseconds.
+		Weight::from_parts(37_062_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(3))
@@ -150,10 +150,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::ItemPriceOf` (`max_values`: None, `max_size`: Some(89), added: 2564, mode: `MaxEncodedLen`)
 	fn burn() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `495`
+		//  Measured:  `462`
 		//  Estimated: `3643`
-		// Minimum execution time: 36_660_000 picoseconds.
-		Weight::from_parts(38_049_000, 0)
+		// Minimum execution time: 37_597_000 picoseconds.
+		Weight::from_parts(38_900_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -168,10 +168,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::ItemPriceOf` (`max_values`: None, `max_size`: Some(89), added: 2564, mode: `MaxEncodedLen`)
 	fn transfer() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `495`
+		//  Measured:  `462`
 		//  Estimated: `3643`
-		// Minimum execution time: 26_796_000 picoseconds.
-		Weight::from_parts(27_777_000, 0)
+		// Minimum execution time: 27_377_000 picoseconds.
+		Weight::from_parts(27_821_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -183,13 +183,13 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// The range of component `i` is `[0, 5000]`.
 	fn redeposit(i: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `805 + i * (76 ±0)`
+		//  Measured:  `772 + i * (76 ±0)`
 		//  Estimated: `3643 + i * (2597 ±0)`
-		// Minimum execution time: 13_440_000 picoseconds.
-		Weight::from_parts(13_641_000, 0)
+		// Minimum execution time: 13_459_000 picoseconds.
+		Weight::from_parts(13_559_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
-			// Standard Error: 27_594
-			.saturating_add(Weight::from_parts(18_683_114, 0).saturating_mul(i.into()))
+			// Standard Error: 19_557
+			.saturating_add(Weight::from_parts(18_124_780, 0).saturating_mul(i.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -202,10 +202,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Class` (`max_values`: None, `max_size`: Some(178), added: 2653, mode: `MaxEncodedLen`)
 	fn freeze() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `495`
+		//  Measured:  `462`
 		//  Estimated: `3643`
-		// Minimum execution time: 18_200_000 picoseconds.
-		Weight::from_parts(19_185_000, 0)
+		// Minimum execution time: 18_279_000 picoseconds.
+		Weight::from_parts(19_095_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -216,10 +216,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Class` (`max_values`: None, `max_size`: Some(178), added: 2653, mode: `MaxEncodedLen`)
 	fn thaw() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `495`
+		//  Measured:  `462`
 		//  Estimated: `3643`
-		// Minimum execution time: 18_356_000 picoseconds.
-		Weight::from_parts(19_099_000, 0)
+		// Minimum execution time: 17_975_000 picoseconds.
+		Weight::from_parts(18_832_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -228,10 +228,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Class` (`max_values`: None, `max_size`: Some(178), added: 2653, mode: `MaxEncodedLen`)
 	fn freeze_collection() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `349`
+		//  Measured:  `316`
 		//  Estimated: `3643`
-		// Minimum execution time: 12_044_000 picoseconds.
-		Weight::from_parts(12_739_000, 0)
+		// Minimum execution time: 12_107_000 picoseconds.
+		Weight::from_parts(12_728_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -240,10 +240,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Class` (`max_values`: None, `max_size`: Some(178), added: 2653, mode: `MaxEncodedLen`)
 	fn thaw_collection() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `349`
+		//  Measured:  `316`
 		//  Estimated: `3643`
-		// Minimum execution time: 12_003_000 picoseconds.
-		Weight::from_parts(12_737_000, 0)
+		// Minimum execution time: 12_172_000 picoseconds.
+		Weight::from_parts(12_801_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -258,10 +258,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::ClassAccount` (`max_values`: None, `max_size`: Some(68), added: 2543, mode: `MaxEncodedLen`)
 	fn transfer_ownership() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `526`
+		//  Measured:  `493`
 		//  Estimated: `3643`
-		// Minimum execution time: 26_190_000 picoseconds.
-		Weight::from_parts(27_183_000, 0)
+		// Minimum execution time: 29_907_000 picoseconds.
+		Weight::from_parts(31_211_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(5))
@@ -270,10 +270,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Class` (`max_values`: None, `max_size`: Some(178), added: 2653, mode: `MaxEncodedLen`)
 	fn set_team() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `349`
+		//  Measured:  `316`
 		//  Estimated: `3643`
-		// Minimum execution time: 12_323_000 picoseconds.
-		Weight::from_parts(12_995_000, 0)
+		// Minimum execution time: 12_389_000 picoseconds.
+		Weight::from_parts(12_856_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -284,10 +284,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::ClassAccount` (`max_values`: None, `max_size`: Some(68), added: 2543, mode: `MaxEncodedLen`)
 	fn force_item_status() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `349`
+		//  Measured:  `316`
 		//  Estimated: `3643`
-		// Minimum execution time: 15_616_000 picoseconds.
-		Weight::from_parts(16_257_000, 0)
+		// Minimum execution time: 15_562_000 picoseconds.
+		Weight::from_parts(16_745_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -300,10 +300,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Attribute` (`max_values`: None, `max_size`: Some(172), added: 2647, mode: `MaxEncodedLen`)
 	fn set_attribute() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `626`
+		//  Measured:  `593`
 		//  Estimated: `3652`
-		// Minimum execution time: 39_608_000 picoseconds.
-		Weight::from_parts(41_080_000, 0)
+		// Minimum execution time: 40_141_000 picoseconds.
+		Weight::from_parts(41_052_000, 0)
 			.saturating_add(Weight::from_parts(0, 3652))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -316,10 +316,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Attribute` (`max_values`: None, `max_size`: Some(172), added: 2647, mode: `MaxEncodedLen`)
 	fn clear_attribute() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `823`
+		//  Measured:  `790`
 		//  Estimated: `3652`
-		// Minimum execution time: 42_449_000 picoseconds.
-		Weight::from_parts(43_456_000, 0)
+		// Minimum execution time: 42_358_000 picoseconds.
+		Weight::from_parts(43_191_000, 0)
 			.saturating_add(Weight::from_parts(0, 3652))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -330,10 +330,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::InstanceMetadataOf` (`max_values`: None, `max_size`: Some(187), added: 2662, mode: `MaxEncodedLen`)
 	fn set_metadata() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `415`
+		//  Measured:  `382`
 		//  Estimated: `3652`
-		// Minimum execution time: 29_653_000 picoseconds.
-		Weight::from_parts(30_570_000, 0)
+		// Minimum execution time: 29_203_000 picoseconds.
+		Weight::from_parts(30_707_000, 0)
 			.saturating_add(Weight::from_parts(0, 3652))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -344,10 +344,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::InstanceMetadataOf` (`max_values`: None, `max_size`: Some(187), added: 2662, mode: `MaxEncodedLen`)
 	fn clear_metadata() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `626`
+		//  Measured:  `593`
 		//  Estimated: `3652`
-		// Minimum execution time: 30_909_000 picoseconds.
-		Weight::from_parts(32_047_000, 0)
+		// Minimum execution time: 30_496_000 picoseconds.
+		Weight::from_parts(31_739_000, 0)
 			.saturating_add(Weight::from_parts(0, 3652))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -358,10 +358,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::ClassMetadataOf` (`max_values`: None, `max_size`: Some(167), added: 2642, mode: `MaxEncodedLen`)
 	fn set_collection_metadata() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `349`
+		//  Measured:  `316`
 		//  Estimated: `3643`
-		// Minimum execution time: 30_218_000 picoseconds.
-		Weight::from_parts(30_912_000, 0)
+		// Minimum execution time: 30_000_000 picoseconds.
+		Weight::from_parts(30_605_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -372,10 +372,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::ClassMetadataOf` (`max_values`: None, `max_size`: Some(167), added: 2642, mode: `MaxEncodedLen`)
 	fn clear_collection_metadata() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `540`
+		//  Measured:  `507`
 		//  Estimated: `3643`
-		// Minimum execution time: 29_496_000 picoseconds.
-		Weight::from_parts(30_458_000, 0)
+		// Minimum execution time: 29_492_000 picoseconds.
+		Weight::from_parts(30_199_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -386,10 +386,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Asset` (`max_values`: None, `max_size`: Some(122), added: 2597, mode: `MaxEncodedLen`)
 	fn approve_transfer() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `495`
+		//  Measured:  `462`
 		//  Estimated: `3643`
-		// Minimum execution time: 18_421_000 picoseconds.
-		Weight::from_parts(19_417_000, 0)
+		// Minimum execution time: 18_378_000 picoseconds.
+		Weight::from_parts(19_202_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -400,10 +400,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Asset` (`max_values`: None, `max_size`: Some(122), added: 2597, mode: `MaxEncodedLen`)
 	fn cancel_approval() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `528`
+		//  Measured:  `495`
 		//  Estimated: `3643`
-		// Minimum execution time: 18_286_000 picoseconds.
-		Weight::from_parts(19_165_000, 0)
+		// Minimum execution time: 18_495_000 picoseconds.
+		Weight::from_parts(19_299_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -412,10 +412,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::OwnershipAcceptance` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
 	fn set_accept_ownership() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `109`
+		//  Measured:  `76`
 		//  Estimated: `3517`
-		// Minimum execution time: 13_612_000 picoseconds.
-		Weight::from_parts(14_197_000, 0)
+		// Minimum execution time: 13_340_000 picoseconds.
+		Weight::from_parts(14_023_000, 0)
 			.saturating_add(Weight::from_parts(0, 3517))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -426,10 +426,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Class` (`max_values`: None, `max_size`: Some(178), added: 2653, mode: `MaxEncodedLen`)
 	fn set_collection_max_supply() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `349`
+		//  Measured:  `316`
 		//  Estimated: `3643`
-		// Minimum execution time: 15_121_000 picoseconds.
-		Weight::from_parts(15_561_000, 0)
+		// Minimum execution time: 15_303_000 picoseconds.
+		Weight::from_parts(15_720_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -440,10 +440,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::ItemPriceOf` (`max_values`: None, `max_size`: Some(89), added: 2564, mode: `MaxEncodedLen`)
 	fn set_price() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `326`
+		//  Measured:  `293`
 		//  Estimated: `3587`
-		// Minimum execution time: 14_797_000 picoseconds.
-		Weight::from_parts(15_533_000, 0)
+		// Minimum execution time: 14_700_000 picoseconds.
+		Weight::from_parts(15_360_000, 0)
 			.saturating_add(Weight::from_parts(0, 3587))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -458,10 +458,10 @@ impl<T: pezframe_system::Config> pezpallet_uniques::WeightInfo for WeightInfo<T>
 	/// Proof: `Uniques::Account` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
 	fn buy_item() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `607`
+		//  Measured:  `574`
 		//  Estimated: `3643`
-		// Minimum execution time: 38_688_000 picoseconds.
-		Weight::from_parts(40_370_000, 0)
+		// Minimum execution time: 38_504_000 picoseconds.
+		Weight::from_parts(40_375_000, 0)
 			.saturating_add(Weight::from_parts(0, 3643))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(4))

@@ -1,4 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// This file is part of Pezcumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +17,9 @@
 mod pezpallet_xcm_benchmarks_fungible;
 mod pezpallet_xcm_benchmarks_generic;
 
-use crate::{
-	xcm_config::{ERC20TransferGasLimit, MaxAssetsIntoHolding},
-	Runtime,
-};
+use crate::{xcm_config::MaxAssetsIntoHolding, Runtime};
 use alloc::vec::Vec;
-use pez_assets_common::IsLocalAccountKey20;
-use pezframe_support::{traits::Contains, weights::Weight};
+use pezframe_support::weights::Weight;
 use pezpallet_xcm_benchmarks_fungible::WeightInfo as XcmFungibleWeight;
 use pezpallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric;
 use pezsp_runtime::BoundedVec;
@@ -60,38 +57,14 @@ impl WeighAssets for AssetFilter {
 	}
 }
 
-trait WeighAsset {
-	/// Return one worst-case estimate: `weight`, or another.
-	fn weigh_asset(&self, weight: Weight) -> Weight;
-}
-
-impl WeighAsset for Asset {
-	fn weigh_asset(&self, weight: Weight) -> Weight {
-		// If the asset is a smart contract ERC20, then we know the gas limit,
-		// else we return the weight that was passed in, that's already
-		// the worst case for non-ERC20 assets.
-		if IsLocalAccountKey20::contains(&self.id.0) {
-			ERC20TransferGasLimit::get()
-		} else {
-			weight
-		}
-	}
-}
-
 impl WeighAssets for Assets {
 	fn weigh_assets(&self, weight: Weight) -> Weight {
-		// We start with zero.
-		let mut final_weight = Weight::zero();
-		// For each asset, we add weight depending on the type of asset.
-		for asset in self.inner().iter() {
-			final_weight = final_weight.saturating_add(asset.weigh_asset(weight));
-		}
-		final_weight
+		weight.saturating_mul(self.inner().iter().count() as u64)
 	}
 }
 
-pub struct AssetHubZagrosXcmWeight<Call>(core::marker::PhantomData<Call>);
-impl<Call> XcmWeightInfo<Call> for AssetHubZagrosXcmWeight<Call> {
+pub struct AssetHubPezkuwichainXcmWeight<Call>(core::marker::PhantomData<Call>);
+impl<Call> XcmWeightInfo<Call> for AssetHubPezkuwichainXcmWeight<Call> {
 	fn withdraw_asset(assets: &Assets) -> Weight {
 		assets.weigh_assets(XcmFungibleWeight::<Runtime>::withdraw_asset())
 	}
@@ -147,18 +120,14 @@ impl<Call> XcmWeightInfo<Call> for AssetHubZagrosXcmWeight<Call> {
 	fn report_error(_query_response_info: &QueryResponseInfo) -> Weight {
 		XcmGeneric::<Runtime>::report_error()
 	}
-
 	fn deposit_asset(assets: &AssetFilter, _dest: &Location) -> Weight {
 		assets.weigh_assets(XcmFungibleWeight::<Runtime>::deposit_asset())
 	}
 	fn deposit_reserve_asset(assets: &AssetFilter, _dest: &Location, _xcm: &Xcm<()>) -> Weight {
 		assets.weigh_assets(XcmFungibleWeight::<Runtime>::deposit_reserve_asset())
 	}
-	fn exchange_asset(give: &AssetFilter, receive: &Assets, _maximal: &bool) -> Weight {
-		let base_weight = XcmGeneric::<Runtime>::exchange_asset();
-		let give_weight = give.weigh_assets(base_weight);
-		let receive_weight = receive.weigh_assets(base_weight);
-		give_weight.max(receive_weight)
+	fn exchange_asset(_give: &AssetFilter, _receive: &Assets, _maximal: &bool) -> Weight {
+		Weight::MAX
 	}
 	fn initiate_reserve_withdraw(
 		assets: &AssetFilter,

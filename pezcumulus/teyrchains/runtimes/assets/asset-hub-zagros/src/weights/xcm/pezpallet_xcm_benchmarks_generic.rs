@@ -18,7 +18,7 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-07-30, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `601cc0634d73`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `a49f76527979`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: Compiled, CHAIN: None, DB CACHE: 1024
 
 // Executed Command:
@@ -27,10 +27,10 @@
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-zagros-runtime/asset_hub_zagros_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_xcm_benchmarks::generic
 // --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights/xcm
+// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights/xcm
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -66,10 +66,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	pub fn report_holding() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `2632`
+		//  Measured:  `378`
 		//  Estimated: `6196`
-		// Minimum execution time: 128_179_000 picoseconds.
-		Weight::from_parts(132_827_000, 6196)
+		// Minimum execution time: 113_423_000 picoseconds.
+		Weight::from_parts(118_011_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -79,8 +79,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `3593`
-		// Minimum execution time: 6_735_000 picoseconds.
-		Weight::from_parts(7_064_000, 3593)
+		// Minimum execution time: 6_436_000 picoseconds.
+		Weight::from_parts(6_716_000, 3593)
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -90,8 +90,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `3593`
-		// Minimum execution time: 6_580_000 picoseconds.
-		Weight::from_parts(7_050_000, 3593)
+		// Minimum execution time: 6_397_000 picoseconds.
+		Weight::from_parts(6_862_000, 3593)
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -99,8 +99,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 773_000 picoseconds.
-		Weight::from_parts(829_000, 0)
+		// Minimum execution time: 793_000 picoseconds.
+		Weight::from_parts(874_000, 0)
 	}
 	// Storage: `PezkuwiXcm::Queries` (r:1 w:0)
 	// Proof: `PezkuwiXcm::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -108,51 +108,51 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `3465`
-		// Minimum execution time: 6_112_000 picoseconds.
-		Weight::from_parts(6_358_000, 3465)
+		// Minimum execution time: 5_817_000 picoseconds.
+		Weight::from_parts(6_093_000, 3465)
 			.saturating_add(T::DbWeight::get().reads(1))
 	}
 	pub fn transact() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 8_002_000 picoseconds.
-		Weight::from_parts(8_377_000, 0)
+		// Minimum execution time: 7_553_000 picoseconds.
+		Weight::from_parts(7_755_000, 0)
 	}
 	pub fn refund_surplus() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 1_344_000 picoseconds.
-		Weight::from_parts(1_497_000, 0)
+		// Minimum execution time: 1_359_000 picoseconds.
+		Weight::from_parts(1_453_000, 0)
 	}
 	pub fn set_error_handler() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
 		// Minimum execution time: 786_000 picoseconds.
-		Weight::from_parts(840_000, 0)
+		Weight::from_parts(850_000, 0)
 	}
 	pub fn set_appendix() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 737_000 picoseconds.
-		Weight::from_parts(805_000, 0)
+		// Minimum execution time: 794_000 picoseconds.
+		Weight::from_parts(850_000, 0)
 	}
 	pub fn clear_error() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 745_000 picoseconds.
-		Weight::from_parts(810_000, 0)
+		// Minimum execution time: 787_000 picoseconds.
+		Weight::from_parts(870_000, 0)
 	}
 	pub fn descend_origin() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 774_000 picoseconds.
-		Weight::from_parts(828_000, 0)
+		// Minimum execution time: 802_000 picoseconds.
+		Weight::from_parts(856_000, 0)
 	}
 	// Storage: `Benchmark::Override` (r:0 w:0)
 	// Proof: `Benchmark::Override` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -167,8 +167,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 739_000 picoseconds.
-		Weight::from_parts(822_000, 0)
+		// Minimum execution time: 788_000 picoseconds.
+		Weight::from_parts(864_000, 0)
 	}
 	// Storage: `TeyrchainInfo::TeyrchainId` (r:1 w:0)
 	// Proof: `TeyrchainInfo::TeyrchainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
@@ -186,10 +186,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	pub fn report_error() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `2632`
+		//  Measured:  `378`
 		//  Estimated: `6196`
-		// Minimum execution time: 91_221_000 picoseconds.
-		Weight::from_parts(93_944_000, 6196)
+		// Minimum execution time: 77_436_000 picoseconds.
+		Weight::from_parts(80_386_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -199,8 +199,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `23`
 		//  Estimated: `3488`
-		// Minimum execution time: 9_795_000 picoseconds.
-		Weight::from_parts(10_091_000, 3488)
+		// Minimum execution time: 9_386_000 picoseconds.
+		Weight::from_parts(9_645_000, 3488)
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -208,8 +208,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_599_000 picoseconds.
-		Weight::from_parts(3_920_000, 0)
+		// Minimum execution time: 3_433_000 picoseconds.
+		Weight::from_parts(3_661_000, 0)
 	}
 	// Storage: `PezkuwiXcm::VersionNotifyTargets` (r:1 w:1)
 	// Proof: `PezkuwiXcm::VersionNotifyTargets` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -225,10 +225,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	pub fn subscribe_version() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `378`
-		//  Estimated: `3843`
-		// Minimum execution time: 36_969_000 picoseconds.
-		Weight::from_parts(37_920_000, 3843)
+		//  Measured:  `245`
+		//  Estimated: `3710`
+		// Minimum execution time: 32_643_000 picoseconds.
+		Weight::from_parts(33_979_000, 3710)
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
@@ -238,44 +238,44 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_401_000 picoseconds.
-		Weight::from_parts(3_642_000, 0)
+		// Minimum execution time: 3_453_000 picoseconds.
+		Weight::from_parts(3_585_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	pub fn burn_asset() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 23_275_000 picoseconds.
-		Weight::from_parts(23_612_000, 0)
+		// Minimum execution time: 22_253_000 picoseconds.
+		Weight::from_parts(22_627_000, 0)
 	}
 	pub fn expect_asset() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 5_950_000 picoseconds.
-		Weight::from_parts(6_129_000, 0)
+		// Minimum execution time: 5_892_000 picoseconds.
+		Weight::from_parts(6_118_000, 0)
 	}
 	pub fn expect_origin() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_589_000 picoseconds.
-		Weight::from_parts(3_806_000, 0)
+		// Minimum execution time: 3_423_000 picoseconds.
+		Weight::from_parts(3_650_000, 0)
 	}
 	pub fn expect_error() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_648_000 picoseconds.
-		Weight::from_parts(3_844_000, 0)
+		// Minimum execution time: 3_552_000 picoseconds.
+		Weight::from_parts(3_715_000, 0)
 	}
 	pub fn expect_transact_status() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 917_000 picoseconds.
-		Weight::from_parts(975_000, 0)
+		// Minimum execution time: 905_000 picoseconds.
+		Weight::from_parts(957_000, 0)
 	}
 	// Storage: `TeyrchainInfo::TeyrchainId` (r:1 w:0)
 	// Proof: `TeyrchainInfo::TeyrchainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
@@ -293,10 +293,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	pub fn query_pallet() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `2632`
+		//  Measured:  `378`
 		//  Estimated: `6196`
-		// Minimum execution time: 100_417_000 picoseconds.
-		Weight::from_parts(102_884_000, 6196)
+		// Minimum execution time: 84_232_000 picoseconds.
+		Weight::from_parts(86_965_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -304,8 +304,8 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 8_030_000 picoseconds.
-		Weight::from_parts(8_265_000, 0)
+		// Minimum execution time: 5_116_000 picoseconds.
+		Weight::from_parts(5_309_000, 0)
 	}
 	// Storage: `TeyrchainInfo::TeyrchainId` (r:1 w:0)
 	// Proof: `TeyrchainInfo::TeyrchainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
@@ -323,10 +323,10 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Proof: `XcmpQueue::OutboundXcmpMessages` (`max_values`: None, `max_size`: Some(105506), added: 107981, mode: `MaxEncodedLen`)
 	pub fn report_transact_status() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `2632`
+		//  Measured:  `378`
 		//  Estimated: `6196`
-		// Minimum execution time: 91_164_000 picoseconds.
-		Weight::from_parts(93_992_000, 6196)
+		// Minimum execution time: 79_148_000 picoseconds.
+		Weight::from_parts(81_056_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(7))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
@@ -334,69 +334,52 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 780_000 picoseconds.
-		Weight::from_parts(842_000, 0)
+		// Minimum execution time: 812_000 picoseconds.
+		Weight::from_parts(883_000, 0)
 	}
 	pub fn set_topic() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 707_000 picoseconds.
-		Weight::from_parts(768_000, 0)
+		// Minimum execution time: 783_000 picoseconds.
+		Weight::from_parts(823_000, 0)
 	}
 	pub fn clear_topic() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 711_000 picoseconds.
-		Weight::from_parts(775_000, 0)
-	}
-	// Storage: `System::Account` (r:1 w:1)
-	// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(808), added: 3283, mode: `MaxEncodedLen`)
-	// Storage: `ForeignAssets::Account` (r:1 w:1)
-	// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(732), added: 3207, mode: `MaxEncodedLen`)
-	// Storage: `ForeignAssetsFreezer::FrozenBalances` (r:1 w:0)
-	// Proof: `ForeignAssetsFreezer::FrozenBalances` (`max_values`: None, `max_size`: Some(682), added: 3157, mode: `MaxEncodedLen`)
-	pub fn exchange_asset() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `1244`
-		//  Estimated: `4273`
-		// Minimum execution time: 93_724_000 picoseconds.
-		Weight::from_parts(96_332_000, 4273)
-			.saturating_add(T::DbWeight::get().reads(4))
-			.saturating_add(T::DbWeight::get().writes(3))
+		// Minimum execution time: 785_000 picoseconds.
+		Weight::from_parts(844_000, 0)
 	}
 	// Storage: `TeyrchainInfo::TeyrchainId` (r:1 w:0)
 	// Proof: `TeyrchainInfo::TeyrchainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
 	pub fn universal_origin() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `136`
+		//  Measured:  `32`
 		//  Estimated: `1489`
-		// Minimum execution time: 5_567_000 picoseconds.
-		Weight::from_parts(5_841_000, 1489)
+		// Minimum execution time: 4_812_000 picoseconds.
+		Weight::from_parts(4_956_000, 1489)
 			.saturating_add(T::DbWeight::get().reads(1))
 	}
 	pub fn set_fees_mode() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 713_000 picoseconds.
-		Weight::from_parts(779_000, 0)
+		// Minimum execution time: 748_000 picoseconds.
+		Weight::from_parts(813_000, 0)
 	}
 	pub fn unpaid_execution() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 728_000 picoseconds.
-		Weight::from_parts(783_000, 0)
+		// Minimum execution time: 779_000 picoseconds.
+		Weight::from_parts(817_000, 0)
 	}
 	pub fn alias_origin() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 777_000 picoseconds.
-		Weight::from_parts(859_000, 0)
+		// Minimum execution time: 796_000 picoseconds.
+		Weight::from_parts(855_000, 0)
 	}
 }
