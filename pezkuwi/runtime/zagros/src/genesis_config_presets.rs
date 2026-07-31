@@ -36,7 +36,6 @@ use alloc::format;
 use alloc::{vec, vec::Vec};
 use pezframe_support::build_struct_json_patch;
 use pezkuwi_primitives::{AccountId, AssignmentId, SchedulerParams, ValidatorId};
-use zagros_runtime_constants::currency::UNITS as HEZ;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_babe::AuthorityId as BabeId;
 use pezsp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId;
@@ -44,6 +43,7 @@ use pezsp_consensus_grandpa::AuthorityId as GrandpaId;
 use pezsp_core::{crypto::get_public_from_string_or_panic, sr25519};
 use pezsp_genesis_builder::PresetId;
 use pezsp_keyring::Sr25519Keyring;
+use zagros_runtime_constants::currency::UNITS as HEZ;
 
 // ============================================================================
 // HEZ TOKEN GENESIS CONSTANTS (Total Supply: 200 Million HEZ)

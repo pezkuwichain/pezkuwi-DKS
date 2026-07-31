@@ -75,9 +75,6 @@ use pezkuwi_runtime_teyrchains::{
 	scheduler as teyrchains_scheduler, session_info as teyrchains_session_info,
 	shared as teyrchains_shared,
 };
-use zagros_runtime_constants::system_teyrchain::{
-	coretime::TIMESLICE_PERIOD, ASSET_HUB_ID, BROKER_ID,
-};
 use pezpallet_balances::WeightInfo;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_beefy::{
@@ -86,6 +83,9 @@ use pezsp_consensus_beefy::{
 };
 use pezsp_genesis_builder::PresetId;
 use scale_info::TypeInfo;
+use zagros_runtime_constants::system_teyrchain::{
+	coretime::TIMESLICE_PERIOD, ASSET_HUB_ID, BROKER_ID,
+};
 
 use pezframe_support::{
 	construct_runtime, derive_impl,
@@ -2875,9 +2875,8 @@ mod remote_tests {
 		}
 
 		pezsp_tracing::try_init_simple();
-		let transport: Transport = var("WS")
-			.unwrap_or("wss://zagros-rpc.pezkuwichain.io:443".to_string())
-			.into();
+		let transport: Transport =
+			var("WS").unwrap_or("wss://zagros-rpc.pezkuwichain.io:443".to_string()).into();
 		let maybe_state_snapshot: Option<SnapshotConfig> = var("SNAP").map(|s| s.into()).ok();
 		let mut ext = Builder::<Block>::default()
 			.mode(if let Some(state_snapshot) = maybe_state_snapshot {

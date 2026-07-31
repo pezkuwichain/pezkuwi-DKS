@@ -34,7 +34,6 @@ use pezkuwi_runtime_common::{
 	xcm_sender::{ChildTeyrchainRouter, ExponentialPrice},
 	ToAuthor,
 };
-use zagros_runtime_constants::{currency::CENTS, system_teyrchain::*};
 use pezsp_core::ConstU32;
 use xcm::latest::{prelude::*, PEZKUWICHAIN_GENESIS_HASH};
 use xcm_builder::{
@@ -48,6 +47,7 @@ use xcm_builder::{
 	XcmFeeManagerFromComponents,
 };
 use xcm_executor::XcmExecutor;
+use zagros_runtime_constants::{currency::CENTS, system_teyrchain::*};
 
 parameter_types! {
 	pub TokenLocation: Location = Here.into_location();

@@ -134,9 +134,9 @@ fn location_conversion_works() {
 // =============================================================================
 
 use governance::TracksInfo;
-use zagros_runtime_constants::time::{DAYS, HOURS, MINUTES};
 use pezpallet_referenda::TracksInfo as TracksInfoTrait;
 use std::collections::HashMap;
+use zagros_runtime_constants::time::{DAYS, HOURS, MINUTES};
 
 #[test]
 fn governance_tracks_total_count() {

@@ -28,9 +28,7 @@ use pezframe_support::build_struct_json_patch;
 use pezsp_core::{crypto::UncheckedInto, H256};
 use pezsp_genesis_builder::PresetId;
 use pezsp_keyring::Sr25519Keyring;
-use testnet_teyrchains_constants::zagros::{
-	currency::UNITS as HEZ, xcm_version::SAFE_XCM_VERSION,
-};
+use testnet_teyrchains_constants::zagros::{currency::UNITS as HEZ, xcm_version::SAFE_XCM_VERSION};
 use teyrchains_common::{AccountId, AuraId};
 
 const PEOPLE_PEZKUWICHAIN_ED: Balance = ExistentialDeposit::get();

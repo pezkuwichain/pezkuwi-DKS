@@ -64,9 +64,6 @@ use pezsp_version::RuntimeVersion;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 pub use pez_assets_common::local_and_foreign_assets::ForeignAssetReserveData;
 use pezcumulus_primitives_core::ParaId;
-use pezpallet_assets_precompiles::{InlineIdConfig, ERC20};
-use pezpallet_revive::evm::runtime::EthExtra;
-use pezpallet_xcm_precompiles::XcmPrecompile;
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
@@ -85,11 +82,12 @@ use pezframe_system::{
 	EnsureRoot, EnsureSigned, EnsureSignedBy,
 };
 use pezpallet_asset_conversion_tx_payment::SwapAssetAdapter;
+use pezpallet_assets_precompiles::{InlineIdConfig, ERC20};
 use pezpallet_nfts::PalletFeatures;
+use pezpallet_revive::evm::runtime::EthExtra;
+use pezpallet_xcm_precompiles::XcmPrecompile;
 use pezsp_runtime::{Perbill, RuntimeDebug};
-use testnet_teyrchains_constants::pezkuwichain::{
-	consensus::*, currency::*, time::*,
-};
+use testnet_teyrchains_constants::pezkuwichain::{consensus::*, currency::*, time::*};
 use teyrchains_common::{
 	impls::DealWithFees,
 	message_queue::{NarrowOriginToSibling, ParaIdToSibling},
