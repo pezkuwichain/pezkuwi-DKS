@@ -226,9 +226,14 @@ jobs:
         # Catches a crate that is in the tree but absent from the workspace, which is
         # how pezpallet-staking-async-teyrchain-runtime stayed broken on main unnoticed.
         run: |
+          # vendor/arrayvec and vendor/core2 are [patch.crates-io] replacements, not
+          # workspace members: both upstreams fail to build for wasm32v1-none and are
+          # vendored in-tree so the build stays self-contained. See the comments on the
+          # patch entries in the root Cargo.toml.
           python3 .github/scripts/check-workspace.py . \
             --exclude "bizinikiwi/pezframe/contracts/fixtures/build" \
-                      "bizinikiwi/pezframe/contracts/fixtures/contracts/common"
+                      "bizinikiwi/pezframe/contracts/fixtures/contracts/common" \
+                      "vendor/arrayvec" "vendor/core2"
       - name: Deny git dependencies
         run: python3 .github/scripts/deny-git-deps.py .
 
