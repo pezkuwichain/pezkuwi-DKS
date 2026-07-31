@@ -11897,7 +11897,6 @@ dependencies = [
  "pezkuwi-subxt",
  "pezkuwi-subxt-signer",
  "pezkuwi-teyrchain-primitives",
- "pezkuwichain-runtime",
  "pezsc-block-builder",
  "pezsc-chain-spec",
  "pezsc-cli",
@@ -11934,6 +11933,7 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "thousands",
+ "zagros-runtime",
 ]
 
 [[package]]
