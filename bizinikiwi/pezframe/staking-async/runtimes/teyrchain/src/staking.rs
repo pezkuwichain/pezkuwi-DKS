@@ -275,8 +275,16 @@ impl pezframe_election_provider_support::onchain::Config for OnChainConfig {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	/// Abandon an election that has produced nothing usable for this long, and start over.
+	/// This runtime is only used by the staking-async test fixtures, where rounds are short,
+	/// so the window is correspondingly small.
+	pub storage StalledRoundTimeout: BlockNumber = 100;
+}
+
 impl multi_block::Config for Runtime {
 	type AreWeDone = multi_block::RevertToSignedIfNotQueuedOf<Self>;
+	type StalledRoundTimeout = StalledRoundTimeout;
 	type Pages = Pages;
 	type UnsignedPhase = UnsignedPhase;
 	type SignedPhase = SignedPhase;
