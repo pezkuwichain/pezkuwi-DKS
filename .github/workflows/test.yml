@@ -276,6 +276,9 @@ jobs:
         run: |
           pip3 install "cargo-workspace>=1.2.4" toml --quiet
           cargo install zepter@1.82.1 --force --quiet
+          # generate-umbrella.py formats the manifest it writes with taplo; without it the
+          # generated file differs from the committed one on formatting alone.
+          cargo install taplo-cli --locked --quiet
           # The umbrella check re-formats after generating, and that runs on nightly.
           rustup toolchain install nightly --profile minimal --component rustfmt
       - name: Umbrella crate is consistent with the workspace
