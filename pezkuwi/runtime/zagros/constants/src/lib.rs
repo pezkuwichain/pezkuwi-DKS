@@ -115,6 +115,11 @@ pub mod system_teyrchain {
 
 	/// Network's Asset Hub teyrchain ID.
 	pub const ASSET_HUB_ID: u32 = 1000;
+	/// Collectives teyrchain ID. Zagros keeps a collectives chain, so the ID stays here
+	/// even though mainnet has none.
+	pub const COLLECTIVES_ID: u32 = 1001;
+	/// Reserved ID for a second Asset Hub used in migration rehearsals.
+	pub const ASSET_HUB_NEXT_ID: u32 = 1005;
 	/// Contracts teyrchain ID.
 	pub const CONTRACTS_ID: u32 = 1002;
 	/// Encointer teyrchain ID.
@@ -171,5 +176,20 @@ mod tests {
 		let x = WeightToFee::weight_to_fee(&ExtrinsicBaseWeight::get());
 		let y = CENTS / 10;
 		assert!(x.max(y) - x.min(y) < MILLICENTS);
+	}
+}
+
+/// XCM protocol related constants.
+pub mod xcm {
+	/// Pluralistic bodies existing within the consensus.
+	pub mod body {
+		// Preallocated for the Root body.
+		#[allow(dead_code)]
+		const ROOT_INDEX: u32 = 0;
+		// The bodies corresponding to the Pezkuwi OpenGov Origins.
+		pub const FELLOWSHIP_ADMIN_INDEX: u32 = 1;
+		#[deprecated = "Will be removed after August 2024; Use `xcm::latest::BodyId::Treasury` \
+			instead"]
+		pub const TREASURER_INDEX: u32 = 2;
 	}
 }

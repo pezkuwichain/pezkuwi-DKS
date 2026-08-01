@@ -54,7 +54,6 @@ decl_test_teyrchains! {
 			ForeignAssets: asset_hub_zagros_runtime::ForeignAssets,
 			PoolAssets: asset_hub_zagros_runtime::PoolAssets,
 			AssetConversion: asset_hub_zagros_runtime::AssetConversion,
-			SnowbridgeSystemFrontend: asset_hub_zagros_runtime::SnowbridgeSystemFrontend,
 			Revive: asset_hub_zagros_runtime::Revive,
 		}
 	},
