@@ -38,10 +38,7 @@ decl_test_relay_chains! {
 			Sudo: zagros_runtime::Sudo,
 			Balances: zagros_runtime::Balances,
 			Treasury: zagros_runtime::Treasury,
-			AssetRate: zagros_runtime::AssetRate,
 			Hrmp: zagros_runtime::Hrmp,
-			Identity: zagros_runtime::Identity,
-			IdentityMigrator: zagros_runtime::IdentityMigrator,
 		}
 	},
 }
