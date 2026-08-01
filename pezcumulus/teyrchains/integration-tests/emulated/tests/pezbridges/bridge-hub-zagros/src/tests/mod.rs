@@ -23,12 +23,15 @@ mod register_bridged_assets;
 mod send_xcm;
 mod snowbridge;
 mod snowbridge_common;
-// mod snowbridge_v2_inbound;
+// Disabled with the Ethereum bridge: the three modules commented out here drive the Asset
+// Hub side through SnowbridgeSystemFrontend, which no longer exists on asset-hub-zagros.
+// The bridge is deferred and will be rebuilt from scratch — there is no bridge hub chain
+// running to talk to — so these return with it rather than being patched now.
 mod snowbridge_edge_case;
-mod snowbridge_v2_inbound;
+// mod snowbridge_v2_inbound;
 mod snowbridge_v2_inbound_to_pezkuwichain;
-mod snowbridge_v2_outbound;
-mod snowbridge_v2_outbound_edge_case;
+// mod snowbridge_v2_outbound;
+// mod snowbridge_v2_outbound_edge_case;
 mod snowbridge_v2_outbound_from_pezkuwichain;
 mod snowbridge_v2_rewards;
 mod teleport;

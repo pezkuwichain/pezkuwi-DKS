@@ -4,7 +4,6 @@ authors = [
 	"Parity Technologies <admin@parity.io>",
 ]
 language = "en"
-multilingual = false
 src = "src"
 title = "The Pezkuwi Teyrchain Host Implementers' Guide"
 
