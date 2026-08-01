@@ -276,6 +276,8 @@ jobs:
         run: |
           pip3 install "cargo-workspace>=1.2.4" toml --quiet
           cargo install zepter@1.82.1 --force --quiet
+          # The umbrella check re-formats after generating, and that runs on nightly.
+          rustup toolchain install nightly --profile minimal --component rustfmt
       - name: Umbrella crate is consistent with the workspace
         run: |
           git config --global --add safe.directory '*'
@@ -311,7 +313,11 @@ jobs:
       - name: Runtime compiles for the WASM target
         run: |
           rustup target add wasm32v1-none
-          cargo check -p pezkuwichain-runtime --locked --target wasm32v1-none
+          # The runtime is a no_std crate: its `std` feature is on by default for the host
+          # build, and leaving it on here makes std-only dependencies (e.g. the vendored
+          # arrayvec) reach for `std::path` on a target that has no such module.
+          cargo check -p pezkuwichain-runtime --locked --target wasm32v1-none \
+            --no-default-features
 
   test-no-try-runtime:
     runs-on: [self-hosted, substrate-build]
@@ -350,6 +356,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install mdbook
-        run: cargo install mdbook mdbook-linkcheck mdbook-graphviz mdbook-mermaid --quiet
+        # book.toml also declares a last-changed preprocessor; without it mdbook rejects
+        # the config outright rather than skipping the optional step.
+        run: cargo install mdbook mdbook-linkcheck mdbook-graphviz mdbook-mermaid mdbook-last-changed --quiet
       - name: Build the implementers guide
         run: mdbook build ./pezkuwi/roadmap/implementers-guide

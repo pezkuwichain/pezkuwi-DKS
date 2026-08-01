@@ -28,7 +28,12 @@ mod swap;
 mod teleport;
 mod transact;
 mod transfer_assets_validation;
-mod treasury;
+// Disabled: this exercised a relay-chain Treasury spend priced through `AssetRate`, and
+// neither pallet exists on the relay any more — Zagros now mirrors mainnet, where Treasury
+// and AssetRate both live on the Asset Hub. The test also still assumed
+// `PalletInstance(37)` for Treasury, which was wrong even before that (it is 18). It needs
+// rewriting against the Asset Hub rather than patching.
+// mod treasury;
 mod xcm_fee_estimation;
 
 #[macro_export]
