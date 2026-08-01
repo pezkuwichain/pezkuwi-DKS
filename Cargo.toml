@@ -1702,10 +1702,14 @@ zeroize = { opt-level = 3 }
 [patch.crates-io]
 serde = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
 serde_core = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-wasm32v1-none" }
-# arrayvec 0.7.6 fails on wasm32v1-none: E0223 Self::Target/Self::IntoIter ambiguity
-# (Rust 1.87+ Receiver trait) + missing prelude in char.rs on target_os=none.
-# Vendored in-tree for a fully self-contained, reproducible build.
-arrayvec = { path = "vendor/arrayvec" }
-# core2 0.4.0 was yanked from crates.io; wasm sub-builds resolve deps without --locked.
-# Vendored in-tree for a fully self-contained, reproducible build.
+# arrayvec was vendored because 0.7.6 failed on wasm32v1-none (E0223 ambiguity from the
+# Rust 1.87+ Receiver trait, plus a missing prelude in char.rs under target_os=none).
+# Upstream fixed both: 0.7.8 builds clean for that target, verified 2026-07-31, so the
+# patch is gone and we take arrayvec from crates.io again.
+# core2 is yanked on crates.io in its entirety — every version, with 0.0.0 as the only
+# thing left — and wasm sub-builds resolve dependencies without --locked, so it cannot be
+# fetched at all. It is still reached through litep2p 0.12.3 -> multihash 0.17.0, neither
+# of which we control; the newer cid dropped core2, but that is not the path that pulls it
+# in. Vendored in-tree so the build stays self-contained. Re-check when litep2p moves off
+# multihash 0.17. Verified still required 2026-07-31.
 core2 = { path = "vendor/core2" }
