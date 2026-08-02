@@ -21,9 +21,11 @@
 //! quantity of bags, or if the existential deposit changes, etc.
 
 use clap::{Parser, ValueEnum};
-use pez_generate_bags::generate_thresholds;
+use pez_generate_bags::generate_thresholds_async;
 use std::path::{Path, PathBuf};
-use zagros_runtime::Runtime as ZagrosRuntime;
+// Staking (and with it bags-list) lives on the Asset Hub since staking-async; the
+// relay runtime no longer has either.
+use asset_hub_zagros_runtime::Runtime as ZagrosRuntime;
 
 #[derive(Clone, Debug, ValueEnum)]
 #[value(rename_all = "PascalCase")]
@@ -36,7 +38,7 @@ impl Runtime {
 		&self,
 	) -> Box<dyn FnOnce(usize, &Path, u128, u128) -> Result<(), std::io::Error>> {
 		match self {
-			Runtime::Zagros => Box::new(generate_thresholds::<ZagrosRuntime>),
+			Runtime::Zagros => Box::new(generate_thresholds_async::<ZagrosRuntime>),
 		}
 	}
 }

@@ -289,9 +289,14 @@ jobs:
               print(next(p['version'] for p in pkgs if p['manifest_path'].endswith('umbrella/Cargo.toml')))")
           echo "umbrella version: $UMBRELLA_VERSION"
           python3 scripts/generate-umbrella.py --sdk . --version "$UMBRELLA_VERSION"
-          cargo +nightly fmt --all
+          # The generator writes the crate list; the feature lists are filled in by zepter.
+          # Without this step every regeneration wipes them and the diff is enormous.
+          zepter run default
+          cargo +nightly fmt -p pezkuwi-sdk
           git diff --exit-code || {
-            echo "The umbrella crate is out of date; re-run generate-umbrella.py and commit."
+            echo "The umbrella crate is out of sync. Reproduce with:"
+            echo "  python3 scripts/generate-umbrella.py --sdk . --version $UMBRELLA_VERSION"
+            echo "  zepter run default && cargo +nightly fmt -p pezkuwi-sdk"
             exit 1
           }
 
@@ -360,7 +365,10 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install mdbook
         # book.toml also declares a last-changed preprocessor; without it mdbook rejects
-        # the config outright rather than skipping the optional step.
-        run: cargo install mdbook mdbook-linkcheck mdbook-graphviz mdbook-mermaid mdbook-last-changed --quiet
+        # the config outright rather than skipping the optional step. mdbook-graphviz shells
+        # out to `dot`, which is not on the runner by default.
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq graphviz
+          cargo install mdbook mdbook-linkcheck mdbook-graphviz mdbook-mermaid mdbook-last-changed --quiet
       - name: Build the implementers guide
         run: mdbook build ./pezkuwi/roadmap/implementers-guide
