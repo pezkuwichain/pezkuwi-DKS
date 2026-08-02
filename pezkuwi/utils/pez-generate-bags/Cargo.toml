@@ -21,8 +21,11 @@ asset-hub-zagros-runtime = { workspace = true, default-features = true }
 
 [features]
 runtime-benchmarks = [
-	"pez-generate-bags/runtime-benchmarks",
 	"asset-hub-zagros-runtime/runtime-benchmarks",
+	"pez-generate-bags/runtime-benchmarks",
 ]
 std = ["pez-generate-bags/std"]
-try-runtime = ["pez-generate-bags/try-runtime", "asset-hub-zagros-runtime/try-runtime"]
+try-runtime = [
+	"asset-hub-zagros-runtime/try-runtime",
+	"pez-generate-bags/try-runtime",
+]
