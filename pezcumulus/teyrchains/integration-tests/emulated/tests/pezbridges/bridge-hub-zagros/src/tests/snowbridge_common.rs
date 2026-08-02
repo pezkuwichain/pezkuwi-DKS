@@ -542,3 +542,20 @@ pub(crate) fn bridge_hub_zagros_location() -> Location {
 		],
 	)
 }
+
+/// The Asset Hub side of the Ethereum bridge, encoded by index so a test can build the call
+/// without the pallet being present in the runtime. These live here rather than in
+/// snowbridge_v2_outbound because tests that are still enabled need them while that module
+/// is disabled with the deferred bridge.
+#[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo)]
+pub enum EthereumSystemFrontendCall {
+	#[codec(index = 1)]
+	RegisterToken { asset_id: Box<VersionedLocation>, metadata: AssetMetadata, fee_asset: Asset },
+}
+
+#[allow(clippy::large_enum_variant)]
+#[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo)]
+pub enum EthereumSystemFrontend {
+	#[codec(index = 36)]
+	EthereumSystemFrontend(EthereumSystemFrontendCall),
+}

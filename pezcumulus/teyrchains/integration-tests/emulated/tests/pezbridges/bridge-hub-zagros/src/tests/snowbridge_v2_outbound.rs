@@ -30,19 +30,6 @@ use pezsnowbridge_pezpallet_system_v2::LostTips;
 use pezsp_core::H256;
 use xcm::v5::AssetTransferFilter;
 
-#[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo)]
-pub enum EthereumSystemFrontendCall {
-	#[codec(index = 1)]
-	RegisterToken { asset_id: Box<VersionedLocation>, metadata: AssetMetadata, fee_asset: Asset },
-}
-
-#[allow(clippy::large_enum_variant)]
-#[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo)]
-pub enum EthereumSystemFrontend {
-	#[codec(index = 36)]
-	EthereumSystemFrontend(EthereumSystemFrontendCall),
-}
-
 #[test]
 fn send_weth_from_asset_hub_to_ethereum() {
 	fund_on_bh();
