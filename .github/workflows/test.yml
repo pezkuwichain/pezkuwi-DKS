@@ -369,6 +369,11 @@ jobs:
         # out to `dot`, which is not on the runner by default.
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq graphviz
-          cargo install mdbook mdbook-linkcheck mdbook-graphviz mdbook-mermaid mdbook-last-changed --quiet
+          # mdbook is pinned to the 0.4 line: mdbook-linkcheck is a *renderer*, so it is tied
+          # to mdbook's RenderContext format and declares `mdbook ^0.4`. Against 0.5 it fails
+          # with "Unable to parse RenderContext" and takes the whole render down. The three
+          # preprocessors talk over the JSON protocol and are version-independent.
+          cargo install mdbook --version ^0.4 --quiet
+          cargo install mdbook-linkcheck mdbook-graphviz mdbook-mermaid mdbook-last-changed --quiet
       - name: Build the implementers guide
         run: mdbook build ./pezkuwi/roadmap/implementers-guide
