@@ -364,16 +364,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install mdbook
-        # book.toml also declares a last-changed preprocessor; without it mdbook rejects
-        # the config outright rather than skipping the optional step. mdbook-graphviz shells
-        # out to `dot`, which is not on the runner by default.
+        # The whole toolchain is pinned to the 0.4 line, not just mdbook. Every preprocessor
+        # and renderer here speaks a protocol tied to mdbook's version, and book.toml declares
+        # all four — an unknown key or a mismatched protocol aborts the render rather than
+        # being skipped. The versions below are the last of each that declare `mdbook ^0.4`.
+        # graphviz is the `dot` binary mdbook-graphviz shells out to.
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq graphviz
-          # mdbook is pinned to the 0.4 line: mdbook-linkcheck is a *renderer*, so it is tied
-          # to mdbook's RenderContext format and declares `mdbook ^0.4`. Against 0.5 it fails
-          # with "Unable to parse RenderContext" and takes the whole render down. The three
-          # preprocessors talk over the JSON protocol and are version-independent.
           cargo install mdbook --version ^0.4 --quiet
-          cargo install mdbook-linkcheck mdbook-graphviz mdbook-mermaid mdbook-last-changed --quiet
+          cargo install mdbook-linkcheck --version ^0.7 --quiet
+          cargo install mdbook-graphviz --version ^0.2 --quiet
+          cargo install mdbook-mermaid --version ^0.16 --quiet
+          cargo install mdbook-last-changed --version ^0.2 --quiet
       - name: Build the implementers guide
         run: mdbook build ./pezkuwi/roadmap/implementers-guide
