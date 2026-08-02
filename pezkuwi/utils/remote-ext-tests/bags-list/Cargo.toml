@@ -14,7 +14,7 @@ homepage = { workspace = true }
 workspace = true
 
 [dependencies]
-zagros-runtime = { workspace = true, default-features = true }
+asset-hub-zagros-runtime = { workspace = true, default-features = true }
 zagros-runtime-constants = { workspace = true, default-features = true }
 
 pezframe-system = { workspace = true, default-features = true }
@@ -28,17 +28,17 @@ tokio = { features = ["macros"], workspace = true, default-features = true }
 
 [features]
 runtime-benchmarks = [
+	"asset-hub-zagros-runtime/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
 	"pezpallet-bags-list-remote-tests/runtime-benchmarks",
 	"zagros-runtime-constants/runtime-benchmarks",
-	"zagros-runtime/runtime-benchmarks",
 ]
 std = ["log/std", "pezpallet-bags-list-remote-tests/std"]
 try-runtime = [
+	"asset-hub-zagros-runtime/try-runtime",
 	"pezframe-system/try-runtime",
 	"pezpallet-bags-list-remote-tests/try-runtime",
 	"zagros-runtime-constants/try-runtime",
-	"zagros-runtime/try-runtime",
 ]
 serde = []
 experimental = []

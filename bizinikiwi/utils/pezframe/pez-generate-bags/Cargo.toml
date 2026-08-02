@@ -18,6 +18,7 @@ pezframe-election-provider-support = { workspace = true, default-features = true
 pezframe-support = { workspace = true, default-features = true }
 pezframe-system = { workspace = true, default-features = true }
 pezpallet-staking = { workspace = true, default-features = true }
+pezpallet-staking-async = { workspace = true, default-features = true }
 pezsp-staking = { workspace = true, default-features = true }
 
 # third party
@@ -29,6 +30,7 @@ runtime-benchmarks = [
 	"pezframe-election-provider-support/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
+	"pezpallet-staking-async/runtime-benchmarks",
 	"pezpallet-staking/runtime-benchmarks",
 	"pezsp-staking/runtime-benchmarks",
 ]
@@ -37,6 +39,7 @@ try-runtime = [
 	"pezframe-election-provider-support/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
+	"pezpallet-staking-async/try-runtime",
 	"pezpallet-staking/try-runtime",
 	"pezsp-staking/try-runtime",
 ]

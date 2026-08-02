@@ -59,7 +59,7 @@ async fn main() {
 	use pezpallet_bags_list_remote_tests::*;
 	match options.runtime {
 		Runtime::Zagros => pezsp_core::crypto::set_default_ss58_version(
-			<zagros_runtime::Runtime as pezframe_system::Config>::SS58Prefix::get()
+			<asset_hub_zagros_runtime::Runtime as pezframe_system::Config>::SS58Prefix::get()
 				.try_into()
 				.unwrap(),
 		),
@@ -67,17 +67,17 @@ async fn main() {
 
 	match (options.runtime, options.command) {
 		(Runtime::Zagros, Command::CheckMigration) => {
-			use zagros_runtime::{Block, Runtime};
+			use asset_hub_zagros_runtime::{Block, Runtime};
 			use zagros_runtime_constants::currency::UNITS;
 			migration::execute::<Runtime, Block>(UNITS as u64, "ZGR", options.uri.clone()).await;
 		},
 		(Runtime::Zagros, Command::SanityCheck) => {
-			use zagros_runtime::{Block, Runtime};
+			use asset_hub_zagros_runtime::{Block, Runtime};
 			use zagros_runtime_constants::currency::UNITS;
 			try_state::execute::<Runtime, Block>(UNITS as u64, "ZGR", options.uri.clone()).await;
 		},
 		(Runtime::Zagros, Command::Snapshot) => {
-			use zagros_runtime::{Block, Runtime};
+			use asset_hub_zagros_runtime::{Block, Runtime};
 			use zagros_runtime_constants::currency::UNITS;
 			snapshot::execute::<Runtime, Block>(
 				options.snapshot_limit,

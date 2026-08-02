@@ -9674,6 +9674,7 @@ dependencies = [
  "pezframe-support",
  "pezframe-system",
  "pezpallet-staking",
+ "pezpallet-staking-async",
  "pezsp-staking",
 ]
 
@@ -9960,6 +9961,7 @@ dependencies = [
 name = "pez-remote-ext-tests-bags-list"
 version = "1.0.0"
 dependencies = [
+ "asset-hub-zagros-runtime",
  "clap",
  "log",
  "pezframe-system",
@@ -9967,7 +9969,6 @@ dependencies = [
  "pezsp-core",
  "pezsp-tracing",
  "tokio",
- "zagros-runtime",
  "zagros-runtime-constants",
 ]
 
@@ -14798,9 +14799,9 @@ dependencies = [
 name = "pezkuwi-voter-bags"
 version = "7.0.0"
 dependencies = [
+ "asset-hub-zagros-runtime",
  "clap",
  "pez-generate-bags",
- "zagros-runtime",
 ]
 
 [[package]]
@@ -15604,7 +15605,7 @@ dependencies = [
  "pezframe-support",
  "pezframe-system",
  "pezpallet-bags-list",
- "pezpallet-staking",
+ "pezpallet-staking-async",
  "pezsp-core",
  "pezsp-runtime",
 ]

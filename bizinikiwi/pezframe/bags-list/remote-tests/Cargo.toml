@@ -24,7 +24,7 @@ pezframe-system = { workspace = true, default-features = true }
 pezpallet-bags-list = { features = [
 	"fuzz",
 ], workspace = true, default-features = true }
-pezpallet-staking = { workspace = true, default-features = true }
+pezpallet-staking-async = { workspace = true, default-features = true }
 
 # core
 pezsp-core = { workspace = true, default-features = true }
@@ -42,7 +42,7 @@ runtime-benchmarks = [
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
 	"pezpallet-bags-list/runtime-benchmarks",
-	"pezpallet-staking/runtime-benchmarks",
+	"pezpallet-staking-async/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 	"remote-externalities/runtime-benchmarks",
 ]
@@ -52,7 +52,7 @@ try-runtime = [
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
 	"pezpallet-bags-list/try-runtime",
-	"pezpallet-staking/try-runtime",
+	"pezpallet-staking-async/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"remote-externalities/try-runtime",
 ]
