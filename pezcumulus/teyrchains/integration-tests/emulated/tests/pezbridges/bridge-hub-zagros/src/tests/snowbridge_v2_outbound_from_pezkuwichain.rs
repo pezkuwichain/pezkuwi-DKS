@@ -18,7 +18,6 @@ use crate::{
 	tests::{
 		asset_hub_pezkuwichain_location, bridged_roc_at_ah_zagros, create_foreign_on_ah_zagros,
 		snowbridge_common::*,
-		snowbridge_v2_outbound::{EthereumSystemFrontend, EthereumSystemFrontendCall},
 	},
 };
 use pezframe_support::traits::fungibles::Mutate;

@@ -17,7 +17,6 @@ use crate::{
 	imports::*,
 	tests::{
 		snowbridge_common::*,
-		snowbridge_v2_outbound::{EthereumSystemFrontend, EthereumSystemFrontendCall},
 		usdt_at_ah_zagros,
 	},
 };
