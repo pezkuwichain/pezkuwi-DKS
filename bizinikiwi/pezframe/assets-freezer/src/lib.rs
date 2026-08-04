@@ -39,7 +39,7 @@
 //!
 //! This pezpallet provides the following functionality:
 //!
-//! - Pezpallet hooks allowing [`pezpallet-assets`] to know the frozen balance for an account on a
+//! - Pezpallet hooks allowing [`pezpallet_assets`] to know the frozen balance for an account on a
 //!   given asset (see [`pezpallet_assets::FrozenBalance`]).
 //! - An implementation of [`fungibles::freeze::Inspect`](InspectFreeze) and
 //!   [`fungibles::freeze::Mutate`](MutateFreeze), allowing other pallets to manage freezes for the
