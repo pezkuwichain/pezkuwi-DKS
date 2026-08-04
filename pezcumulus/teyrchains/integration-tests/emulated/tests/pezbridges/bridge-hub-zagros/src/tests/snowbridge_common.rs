@@ -20,7 +20,8 @@ use emulated_integration_tests_common::{
 	PenpalBTeleportableAssetLocation,
 };
 use hex_literal::hex;
-use pezframe_support::traits::fungibles::Mutate;
+use emulated_integration_tests_common::impls::Decode;
+use pezframe_support::{pezpallet_prelude::TypeInfo, traits::fungibles::Mutate};
 use pezkuwichain_zagros_system_emulated_network::pez_penpal_emulated_chain::{
 	pez_penpal_runtime::xcm_config::{CheckingAccount, TELEPORTABLE_ASSET_ID},
 	PenpalAssetOwner,

@@ -34,7 +34,7 @@
 //!
 //! This pezpallet provides the following functionality:
 //!
-//! - Pezpallet hooks allowing [`pezpallet-assets`] to know the balance on hold for an account on a
+//! - Pezpallet hooks allowing [`pezpallet_assets`] to know the balance on hold for an account on a
 //!   given asset (see [`pezpallet_assets::BalanceOnHold`]).
 //! - An implementation of
 //!   [`fungibles::hold::Inspect`](pezframe_support::traits::fungibles::hold::Inspect),

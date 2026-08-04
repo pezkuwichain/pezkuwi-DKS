@@ -376,7 +376,7 @@ pub trait ElectionDataProvider {
 	/// appropriate weight at the end of execution with the system pezpallet directly.
 	///
 	/// A sensible implementation should use the minimum between this value and
-	/// [`Self::targets().len()`], since desiring a winner set larger than candidates is not
+	/// `Self::targets().len()`, since desiring a winner set larger than candidates is not
 	/// feasible.
 	///
 	/// This is documented further in issue: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/204>

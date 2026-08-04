@@ -672,7 +672,7 @@ pub mod pezpallet {
 
 		/// The migrator that is used to run Multi-Block-Migrations.
 		///
-		/// Can be set to [`pezpallet-migrations`] or an alternative implementation of the
+		/// Can be set to `pezpallet_migrations` or an alternative implementation of the
 		/// interface. The diagram in `pezframe_executive::block_flowchart` explains when it runs.
 		type MultiBlockMigrator: MultiStepMigrator;
 
