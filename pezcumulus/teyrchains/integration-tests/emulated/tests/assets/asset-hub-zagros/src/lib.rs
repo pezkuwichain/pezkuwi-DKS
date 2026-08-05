@@ -56,10 +56,9 @@ mod imports {
 		asset_hub_zagros_emulated_chain::{
 			asset_hub_zagros_runtime::{
 				self,
-				governance::TreasuryAccount,
 				xcm_config::{
-					self as ahw_xcm_config, XcmConfig as AssetHubZagrosXcmConfig,
-					ZagrosLocation as RelayLocation,
+					self as ahw_xcm_config, TokenLocation as RelayLocation, TreasuryAccount,
+					XcmConfig as AssetHubZagrosXcmConfig,
 				},
 				AssetConversionOrigin as AssetHubZagrosAssetConversionOrigin,
 				ExistentialDeposit as AssetHubZagrosExistentialDeposit, ForeignAssetReserveData,

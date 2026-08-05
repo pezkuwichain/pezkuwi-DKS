@@ -29,12 +29,6 @@ mod imports {
 	pub(crate) use pezsp_runtime::{traits::Dispatchable, DispatchError};
 	pub(crate) use xcm::{latest::prelude::*, VersionedLocation, VersionedXcm};
 	pub(crate) use zagros_system_emulated_network::CollectivesZagrosPara as CollectivesZagros;
-
-	pub(crate) use zagros_system_emulated_network::{
-		AssetHubZagrosPara as AssetHubZagros, BridgeHubZagrosPara as BridgeHubZagros,
-		CoretimeZagrosPara as CoretimeZagros, PeopleZagrosPara as PeopleZagros,
-		ZagrosRelay as Zagros,
-	};
 }
 
 #[cfg(test)]
@@ -42,6 +36,3 @@ mod common;
 
 #[cfg(test)]
 mod open_gov_on_relay;
-
-#[cfg(test)]
-mod open_gov_on_asset_hub;
