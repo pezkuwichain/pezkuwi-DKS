@@ -21,7 +21,7 @@ use crate::{
 	},
 };
 use asset_hub_zagros_runtime::{
-	xcm_config::ZagrosLocation, Balances, ForeignAssets, PezkuwiXcm, RuntimeOrigin,
+	xcm_config::TokenLocation, Balances, ForeignAssets, PezkuwiXcm, RuntimeOrigin,
 };
 use emulated_integration_tests_common::{accounts::ALICE, xcm_pez_emulator::TestExt};
 use pezframe_support::{
@@ -83,7 +83,7 @@ fn test_exchange_asset(
 	expected_error: Option<InstructionError>,
 ) {
 	let alice: AccountId = Zagros::account_id_of(ALICE);
-	let native_asset_location = ZagrosLocation::get();
+	let native_asset_location = TokenLocation::get();
 	let native_asset_id = AssetId(native_asset_location.clone());
 	let origin = RuntimeOrigin::signed(alice.clone());
 	let asset_location = Location::new(1, [Teyrchain(2001)]);

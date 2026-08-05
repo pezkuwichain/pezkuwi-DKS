@@ -142,3 +142,186 @@ jobs:
           name: ${{ matrix.runtime }}
           path: artifacts/*
           if-no-files-found: error
+
+  # A runtime upgrade only needs the WASM, but starting a chain from a fresh
+  # genesis needs the processes that run it. The PVF workers are built here too
+  # and deliberately shipped as a set: the node refuses to start against workers
+  # whose version does not match its own, so they are only ever valid together.
+  build-node:
+    needs: full-ci-gate
+    runs-on: [self-hosted, dks-runner-1]
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - pezkuwi
+          - pezkuwi-teyrchain
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+
+      - name: Build node (release, locked)
+        run: cargo build --release --locked -p ${{ matrix.package }}
+
+      - name: Collect binaries and digests
+        run: |
+          set -euo pipefail
+          # `pezkuwi` carries three [[bin]] targets; the two PVF workers are not
+          # optional extras but part of the node's execution path.
+          case "${{ matrix.package }}" in
+            pezkuwi) bins="pezkuwi pezkuwi-execute-worker pezkuwi-prepare-worker" ;;
+            pezkuwi-teyrchain) bins="pezkuwi-teyrchain" ;;
+            *) echo "::error::unknown package"; exit 1 ;;
+          esac
+          out=artifacts; mkdir -p "$out"
+          {
+            echo "### ${{ matrix.package }}"
+            echo ""
+            echo "| binary | version | sha256 |"
+            echo "|---|---|---|"
+          } > "$out/${{ matrix.package }}.digest.md"
+          for b in $bins; do
+            src="target/release/$b"
+            [ -x "$src" ] || { echo "::error::missing binary $b"; exit 1; }
+            cp "$src" "$out/$b"
+            ver=$("$src" --version 2>/dev/null | head -1 || echo "n/a")
+            sha=$(sha256sum "$src" | cut -d' ' -f1)
+            echo "| \`$b\` | \`$ver\` | \`$sha\` |" >> "$out/${{ matrix.package }}.digest.md"
+          done
+
+      - name: Attest build provenance (SLSA)
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: artifacts/*
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: node-${{ matrix.package }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  # The chain-spec is the genesis contract: once a chain starts, its identity and
+  # initial state cannot be edited. Building it in CI from the same commit as the
+  # runtime is what keeps "what we tested" and "what we launched" the same thing.
+  #
+  # Identity matters beyond cosmetics — the node derives the chain it thinks it is
+  # from the spec `id` prefix, so the testnet must not carry the mainnet's id.
+  chain-specs:
+    needs: build-runtime
+    runs-on: [self-hosted, dks-runner-1]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: "*-runtime"
+          path: wasm
+          merge-multiple: true
+
+      - name: Build the chain-spec builder
+        run: cargo build --release --locked -p pezstaging-chain-spec-builder
+
+      - name: Generate plain and raw chain-specs
+        run: |
+          set -euo pipefail
+          csb=target/release/pezstaging-chain-spec-builder
+          out=chain-specs; mkdir -p "$out"
+
+          # Properties mirror the mainnet chains exactly; only identity differs.
+          # Address format, decimals and symbols are what wallets read, and a
+          # testnet that renders balances differently stops being a rehearsal.
+          gen() {
+            local wasm=$1 name=$2 id=$3 props=$4; shift 4
+            "$csb" -c "$out/$id.plain.json" create \
+              -n "$name" -i "$id" -t live \
+              -r "wasm/$wasm" \
+              --properties "$props" \
+              "$@" named-preset genesis
+            "$csb" -c "$out/$id.json" convert-to-raw "$out/$id.plain.json"
+            "$csb" verify "$out/$id.json"
+            echo "  $id  $(stat -c%s "$out/$id.json") bytes"
+          }
+
+          gen zagros-runtime.compact.compressed.wasm \
+              "Zagros" zagros "ss58Format=42,tokenDecimals=12,tokenSymbol=HEZ"
+
+          gen asset-hub-zagros-runtime.compact.compressed.wasm \
+              "Zagros Asset Hub" asset-hub-zagros \
+              "ss58Format=42,tokenDecimals=12,tokenSymbol=TYR" \
+              -p 1000 -c zagros
+
+          gen people-zagros-runtime.compact.compressed.wasm \
+              "Zagros People" people-zagros \
+              "ss58Format=42,tokenDecimals=12,tokenSymbol=TYR" \
+              -p 1004 -c zagros
+
+      - name: Assert the specs do not inherit the mainnet identity
+        run: |
+          set -euo pipefail
+          # The live testnet ran for months under the mainnet's chain id, which
+          # made the node classify it as the mainnet. Fail the release rather
+          # than ship that again.
+          python3 - <<'PY'
+          import json, sys, pathlib
+          expected = {
+              "zagros":           ("Zagros",            None,   None),
+              "asset-hub-zagros": ("Zagros Asset Hub",  1000,   "zagros"),
+              "people-zagros":    ("Zagros People",     1004,   "zagros"),
+          }
+          bad = []
+          for cid, (name, para, relay) in expected.items():
+              d = json.load(open(f"chain-specs/{cid}.json"))
+              if d.get("id") != cid:
+                  bad.append(f"{cid}: id is {d.get('id')!r}")
+              if not str(d.get("id", "")).startswith("zagros") and cid == "zagros":
+                  bad.append(f"{cid}: id must start with 'zagros' for the node to identify it")
+              if d.get("name") != name:
+                  bad.append(f"{cid}: name is {d.get('name')!r}")
+              if para is not None and d.get("para_id") != para:
+                  bad.append(f"{cid}: para_id is {d.get('para_id')!r}")
+              if relay is not None and d.get("relay_chain") != relay:
+                  bad.append(f"{cid}: relay_chain is {d.get('relay_chain')!r}")
+              if "pezkuwichain" in json.dumps({k: d.get(k) for k in ("id", "relay_chain")}):
+                  bad.append(f"{cid}: carries a mainnet identity")
+              if not d.get("genesis", {}).get("raw"):
+                  bad.append(f"{cid}: not a raw spec")
+          if bad:
+              print("\n".join("::error::" + b for b in bad)); sys.exit(1)
+          print("chain-spec identities are correct")
+          PY
+
+      - name: Record genesis hashes
+        run: |
+          set -euo pipefail
+          {
+            echo "### Zagros chain-specs"
+            echo ""
+            echo "| chain | id | sha256 |"
+            echo "|---|---|---|"
+            for f in chain-specs/*.json; do
+              case "$f" in *.plain.json) continue ;; esac
+              id=$(python3 -c "import json,sys;print(json.load(open('$f'))['id'])")
+              echo "| \`$(basename "$f")\` | \`$id\` | \`$(sha256sum "$f" | cut -d' ' -f1)\` |"
+            done
+          } > chain-specs/digest.md
+          cat chain-specs/digest.md
+
+      - name: Attest build provenance (SLSA)
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: chain-specs/*.json
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: chain-specs
+          path: chain-specs/*
+          if-no-files-found: error
