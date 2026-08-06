@@ -133,8 +133,17 @@ pezbp-bridge-hub-zagros = { workspace = true }
 pezpallet-xcm-bridge-hub-router = { workspace = true }
 
 [dev-dependencies]
+# Needed by the ERC20 tests, which exercise the Revive pallet this chain carries
+# ahead of the mainnet Asset Hub. Mirroring the manifest onto the mainnet one
+# dropped them along with the pallet's XCM plumbing.
+alloy-core = { workspace = true, features = ["sol-types"] }
 asset-test-pezutils = { workspace = true, default-features = true }
+pezpallet-revive-fixtures = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
 teyrchains-runtimes-test-utils = { workspace = true, default-features = true }
+# The runtime takes its constants from the mainnet set; the governance test still
+# has to name the Collectives chain, which exists only on Zagros.
+zagros-runtime-constants = { workspace = true, default-features = true }
 
 [build-dependencies]
 bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features = true }

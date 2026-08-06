@@ -46,7 +46,11 @@ use xcm::latest::prelude::*;
 #[derive(Encode, Decode, Debug, PartialEq, Eq, Clone, TypeInfo)]
 pub enum Call {
 	/// `ToPezkuwichainXcmRouter` bridge pezpallet.
-	#[codec(index = 34)]
+	///
+	/// Must match the router's index in the Asset Hub Zagros runtime. It moved to 45 when
+	/// the runtime was aligned with the mainnet Asset Hub's pallet layout; 34 is now
+	/// `MessageQueue`, so the old value silently addressed the wrong pallet on-chain.
+	#[codec(index = 45)]
 	ToPezkuwichainXcmRouter(XcmBridgeHubRouterCall),
 }
 
