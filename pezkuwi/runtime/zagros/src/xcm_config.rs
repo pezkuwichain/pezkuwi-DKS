@@ -35,7 +35,7 @@ use pezkuwi_runtime_common::{
 	ToAuthor,
 };
 use pezsp_core::ConstU32;
-use xcm::latest::{prelude::*, PEZKUWICHAIN_GENESIS_HASH};
+use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
 use xcm_builder::{
 	AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
 	AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildTeyrchainAsNative,
@@ -52,7 +52,11 @@ use zagros_runtime_constants::{currency::CENTS, system_teyrchain::*};
 parameter_types! {
 	pub TokenLocation: Location = Here.into_location();
 	pub RootLocation: Location = Location::here();
-	pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH);
+	// This chain is Zagros, not the mainnet it mirrors. Mirroring the runtimes copied
+	// the mainnet's XCM identity along with its structure, which made three of the five
+	// Zagros chains announce themselves as the Pezkuwichain network — the same
+	// impersonation the chain-spec reset exists to end, one layer lower.
+	pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(ZAGROS_GENESIS_HASH);
 	pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
 	pub CheckAccount: AccountId = XcmPallet::check_account();
 	/// Pezkuwi relay does not have mint authority anymore after the Asset Hub migration.

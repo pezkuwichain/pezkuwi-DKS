@@ -16,7 +16,7 @@
 use super::{
 	AccountId, AllPalletsWithSystem, Assets, Balance, Balances, BaseDeliveryFee, CollatorSelection,
 	FeeAssetId, ForeignAssets, PezkuwiXcm, PoolAssets, Runtime, RuntimeCall, RuntimeEvent,
-	RuntimeHoldReason, RuntimeOrigin, TeyrchainInfo, TeyrchainSystem, ToZagrosXcmRouter,
+	RuntimeHoldReason, RuntimeOrigin, TeyrchainInfo, TeyrchainSystem, ToPezkuwichainXcmRouter,
 	TransactionByteFee, Uniques, WeightToFee, XcmpQueue,
 };
 use pez_assets_common::{
@@ -33,6 +33,7 @@ use pezframe_support::{
 		tokens::imbalance::{ResolveAssetTo, ResolveTo},
 		ConstU32, Contains, Equals, Everything, LinearStoragePrice, PalletInfoAccess,
 	},
+	PalletId,
 };
 use pezframe_system::EnsureRoot;
 use pezkuwi_runtime_common::xcm_sender::ExponentialPrice;
@@ -72,7 +73,8 @@ use xcm_executor::XcmExecutor;
 parameter_types! {
 	pub const RootLocation: Location = Location::here();
 	pub const TokenLocation: Location = Location::parent();
-	pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH);
+	// The relay above this chain is Zagros. See the note in the Zagros relay's xcm_config.
+	pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(ZAGROS_GENESIS_HASH);
 	pub const AssetHubParaId: crate::ParaId = crate::ParaId::new(ASSET_HUB_ID);
 	pub RelayChainOrigin: RuntimeOrigin = pezcumulus_pezpallet_xcm::Origin::Relay.into();
 	pub UniversalLocation: InteriorLocation =
@@ -220,6 +222,36 @@ pub type PoolFungiblesTransactor = FungiblesAdapter<
 	CheckingAccount,
 >;
 
+// Zagros carries `pezpallet-revive` (index 66); the mainnet Asset Hub does not yet.
+// Mirroring this chain onto the mainnet Asset Hub took the pallet's XCM plumbing with
+// it and left the pallet itself in place — a contract pallet whose assets could not be
+// moved by XCM. Since promoting Revive to the mainnet Asset Hub is the plan, the
+// testnet has to exercise the whole path, not just the pallet.
+parameter_types! {
+	/// Taken from the real gas and deposits of a standard ERC20 transfer call.
+	pub const ERC20TransferGasLimit: Weight = Weight::from_parts(500_000_000_000, 10 * 1024 * 1024);
+	pub const ERC20TransferStorageDepositLimit: Balance = 10_200_000_000;
+	pub ERC20TransfersCheckingAccount: AccountId = PalletId(*b"py/revch").into_account_truncating();
+}
+
+/// Transactor for ERC20 tokens.
+pub type ERC20Transactor = pez_assets_common::ERC20Transactor<
+	// We need this for accessing pezpallet-revive.
+	Runtime,
+	// The matcher for smart contracts.
+	pez_assets_common::ERC20Matcher,
+	// How to convert from a location to an account id.
+	LocationToAccountId,
+	// The maximum gas that can be used by a standard ERC20 transfer.
+	ERC20TransferGasLimit,
+	// The maximum storage deposit that can be used by a standard ERC20 transfer.
+	ERC20TransferStorageDepositLimit,
+	// We're generic over this so we can't escape specifying it.
+	AccountId,
+	// Checking account for ERC20 transfers.
+	ERC20TransfersCheckingAccount,
+>;
+
 /// Means for transacting assets on this chain.
 pub type AssetTransactors = (
 	FungibleTransactor,
@@ -227,6 +259,7 @@ pub type AssetTransactors = (
 	ForeignFungiblesTransactor,
 	PoolFungiblesTransactor,
 	UniquesTransactor,
+	ERC20Transactor,
 );
 
 /// This is the type we use to convert an (incoming) XCM origin into a local `Origin` instance,
@@ -312,7 +345,7 @@ pub type WaivedLocations = (
 // native to the Zagros ecosystem. We also allow Ethereum contracts to act as reserves for the
 // foreign assets identified by the same respective contracts locations.
 pub type TrustedReserves = (
-	bridging::to_zagros::ZagrosOrEthereumAssetFromAssetHubZagros,
+	bridging::to_pezkuwichain::PezkuwichainOrEthereumAssetFromAssetHubPezkuwichain,
 	bridging::to_ethereum::EthereumAssetFromEthereum,
 	IsForeignConcreteAsset<
 		NonTeleportableAssetFromTrustedReserve<AssetHubParaId, crate::ForeignAssets>,
@@ -413,7 +446,7 @@ impl xcm_executor::Config for XcmConfig {
 	>;
 	type MessageExporter = ();
 	type UniversalAliases =
-		(bridging::to_zagros::UniversalAliases, bridging::to_ethereum::UniversalAliases);
+		(bridging::to_pezkuwichain::UniversalAliases, bridging::to_ethereum::UniversalAliases);
 	type CallDispatcher = RuntimeCall;
 	type SafeCallFilter = Everything;
 	// We allow any origin to alias into a child sub-location (equivalent to DescendOrigin).
@@ -446,7 +479,7 @@ pub type XcmRouter = WithUniqueTopic<(
 	LocalXcmRouter,
 	// Router which wraps and sends xcm to BridgeHub to be delivered to the Zagros
 	// GlobalConsensus
-	ToZagrosXcmRouter,
+	ToPezkuwichainXcmRouter,
 	// Router which wraps and sends xcm to BridgeHub to be delivered to the Ethereum
 	// GlobalConsensus
 	SovereignPaidRemoteExporter<bridging::EthereumNetworkExportTable, XcmpQueue, UniversalLocation>,
@@ -537,7 +570,7 @@ pub mod bridging {
 
 		pub BridgeTable: alloc::vec::Vec<NetworkExportTableItem> =
 			alloc::vec::Vec::new().into_iter()
-			.chain(to_zagros::BridgeTable::get())
+			.chain(to_pezkuwichain::BridgeTable::get())
 			.collect();
 
 		pub EthereumBridgeTable: alloc::vec::Vec<NetworkExportTableItem> =
@@ -550,35 +583,35 @@ pub mod bridging {
 
 	pub type EthereumNetworkExportTable = xcm_builder::NetworkExportTable<EthereumBridgeTable>;
 
-	pub mod to_zagros {
+	pub mod to_pezkuwichain {
 		use super::*;
 
 		parameter_types! {
-			pub SiblingBridgeHubWithBridgeHubZagrosInstance: Location = Location::new(
+			pub SiblingBridgeHubWithBridgeHubPezkuwichainInstance: Location = Location::new(
 				1,
 				[
 					Teyrchain(SiblingBridgeHubParaId::get()),
-					PalletInstance(pezbp_bridge_hub_pezkuwichain::WITH_BRIDGE_PEZKUWICHAIN_TO_ZAGROS_MESSAGES_PALLET_INDEX)
+					PalletInstance(pezbp_bridge_hub_zagros::WITH_BRIDGE_ZAGROS_TO_PEZKUWICHAIN_MESSAGES_PALLET_INDEX)
 				]
 			);
 
-			pub const ZagrosNetwork: NetworkId = NetworkId::ByGenesis(ZAGROS_GENESIS_HASH);
+			pub const PezkuwichainNetwork: NetworkId = NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH);
 			pub const EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
-			pub ZagrosEcosystem: Location = Location::new(2, [GlobalConsensus(ZagrosNetwork::get())]);
+			pub PezkuwichainEcosystem: Location = Location::new(2, [GlobalConsensus(PezkuwichainNetwork::get())]);
 			pub EthereumEcosystem: Location = Location::new(2, [GlobalConsensus(EthereumNetwork::get())]);
-			pub WndLocation: Location = Location::new(2, [GlobalConsensus(ZagrosNetwork::get())]);
-			pub AssetHubZagros: Location = Location::new(2, [
-				GlobalConsensus(ZagrosNetwork::get()),
-				Teyrchain(pezbp_asset_hub_zagros::ASSET_HUB_ZAGROS_TEYRCHAIN_ID)
+			pub PezkuwichainLocation: Location = Location::new(2, [GlobalConsensus(PezkuwichainNetwork::get())]);
+			pub AssetHubPezkuwichain: Location = Location::new(2, [
+				GlobalConsensus(PezkuwichainNetwork::get()),
+				Teyrchain(pezbp_asset_hub_pezkuwichain::ASSET_HUB_PEZKUWICHAIN_TEYRCHAIN_ID)
 			]);
 
 			/// Set up exporters configuration.
 			/// `Option<Asset>` represents static "base fee" which is used for total delivery fee calculation.
 			pub BridgeTable: alloc::vec::Vec<NetworkExportTableItem> = alloc::vec![
 				NetworkExportTableItem::new(
-					ZagrosNetwork::get(),
+					PezkuwichainNetwork::get(),
 					Some(alloc::vec![
-						AssetHubZagros::get().interior.split_global().expect("invalid configuration for AssetHubZagros").1,
+						AssetHubPezkuwichain::get().interior.split_global().expect("invalid configuration for AssetHubPezkuwichain").1,
 					]),
 					SiblingBridgeHub::get(),
 					// base delivery fee to local `BridgeHub`
@@ -592,7 +625,7 @@ pub mod bridging {
 			/// Universal aliases
 			pub UniversalAliases: BTreeSet<(Location, Junction)> = BTreeSet::from_iter(
 				alloc::vec![
-					(SiblingBridgeHubWithBridgeHubZagrosInstance::get(), GlobalConsensus(ZagrosNetwork::get()))
+					(SiblingBridgeHubWithBridgeHubPezkuwichainInstance::get(), GlobalConsensus(PezkuwichainNetwork::get()))
 				]
 			);
 		}
@@ -603,12 +636,13 @@ pub mod bridging {
 			}
 		}
 
-		/// Allow any asset native to the Zagros or Ethereum ecosystems if it comes from Zagros
-		/// Asset Hub.
-		pub type ZagrosOrEthereumAssetFromAssetHubZagros = matching::RemoteAssetFromLocation<
-			(StartsWith<ZagrosEcosystem>, StartsWith<EthereumEcosystem>),
-			AssetHubZagros,
-		>;
+		/// Allow any asset native to the Pezkuwichain or Ethereum ecosystems if it comes from
+		/// the Pezkuwichain Asset Hub.
+		pub type PezkuwichainOrEthereumAssetFromAssetHubPezkuwichain =
+			matching::RemoteAssetFromLocation<
+				(StartsWith<PezkuwichainEcosystem>, StartsWith<EthereumEcosystem>),
+				AssetHubPezkuwichain,
+			>;
 	}
 
 	pub mod to_ethereum {
@@ -668,15 +702,16 @@ pub mod bridging {
 	#[cfg(feature = "runtime-benchmarks")]
 	impl BridgingBenchmarksHelper {
 		pub fn prepare_universal_alias() -> Option<(Location, Junction)> {
-			let alias =
-				to_zagros::UniversalAliases::get().into_iter().find_map(|(location, junction)| {
-					match to_zagros::SiblingBridgeHubWithBridgeHubZagrosInstance::get()
+			let alias = to_pezkuwichain::UniversalAliases::get().into_iter().find_map(
+				|(location, junction)| {
+					match to_pezkuwichain::SiblingBridgeHubWithBridgeHubPezkuwichainInstance::get()
 						.eq(&location)
 					{
 						true => Some((location, junction)),
 						false => None,
 					}
-				});
+				},
+			);
 			Some(alias.expect("we expect here BridgeHubPezkuwichain to Zagros mapping at least"))
 		}
 	}

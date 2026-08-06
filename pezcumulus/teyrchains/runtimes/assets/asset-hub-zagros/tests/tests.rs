@@ -22,11 +22,11 @@ use alloy_core::{
 	sol_types::{sol_data, SolType},
 };
 use asset_hub_zagros_runtime::{
-	governance, xcm_config,
+	xcm_config,
 	xcm_config::{
-		bridging, CheckingAccount, LocationToAccountId, StakingPot,
+		bridging, CheckingAccount, LocationToAccountId, StakingPot, TokenLocation,
 		TrustBackedAssetsPalletLocation, UniquesConvertedConcreteId, UniquesPalletLocation,
-		XcmConfig, ZagrosLocation,
+		XcmConfig,
 	},
 	AllPalletsWithoutSystem, Assets, Balances, Block, ExistentialDeposit, ForeignAssets,
 	ForeignAssetsInstance, MetadataDepositBase, MetadataDepositPerByte, PezkuwiXcm, Revive,
@@ -145,7 +145,7 @@ fn test_buy_and_refund_weight_in_native() {
 		.execute_with(|| {
 			let bob: AccountId = SOME_ASSET_ADMIN.into();
 			let staking_pot = CollatorSelection::account_id();
-			let native_location = ZagrosLocation::get();
+			let native_location = TokenLocation::get();
 			let initial_balance = 200 * UNITS;
 
 			assert_ok!(Balances::mint_into(&bob, initial_balance));
@@ -205,7 +205,7 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 			let bob: AccountId = SOME_ASSET_ADMIN.into();
 			let staking_pot = CollatorSelection::account_id();
 			let asset_1: u32 = 1;
-			let native_location = ZagrosLocation::get();
+			let native_location = TokenLocation::get();
 			let asset_1_location =
 				AssetIdForTrustBackedAssetsConvert::convert_back(&asset_1).unwrap();
 			// bob's initial balance for native and `asset1` assets.
@@ -315,7 +315,7 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 			let bob: AccountId = SOME_ASSET_ADMIN.into();
 			let staking_pot = CollatorSelection::account_id();
 			let native_location =
-				xcm::v5::Location::try_from(ZagrosLocation::get()).expect("conversion works");
+				xcm::v5::Location::try_from(TokenLocation::get()).expect("conversion works");
 			let foreign_location = xcm::v5::Location {
 				parents: 1,
 				interior: (
@@ -782,7 +782,7 @@ fn test_assets_balances_api_works() {
 			// check currency
 			assert!(result.inner().iter().any(|asset| {
 				asset.eq(&pez_assets_common::fungible_conversion::convert_balance::<
-					ZagrosLocation,
+					TokenLocation,
 					Balance,
 				>(some_currency)
 				.unwrap())
@@ -1064,7 +1064,7 @@ fn limited_reserve_transfer_assets_for_native_asset_to_asset_hub_pezkuwichain_wo
 		bridging_to_asset_hub_pezkuwichain,
 		WeightLimit::Unlimited,
 		Some(xcm_config::bridging::XcmBridgeHubRouterFeeAssetId::get()),
-		Some(governance::TreasuryAccount::get()),
+		Some(xcm_config::TreasuryAccount::get()),
 	)
 }
 

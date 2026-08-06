@@ -36,7 +36,7 @@ use teyrchains_common::{
 	},
 	TREASURY_PALLET_ID,
 };
-use xcm::latest::{prelude::*, PEZKUWICHAIN_GENESIS_HASH};
+use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
 use xcm_builder::{
 	AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowHrmpNotificationsFromRelayChain,
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
@@ -53,7 +53,8 @@ use xcm_executor::XcmExecutor;
 parameter_types! {
 	pub const RootLocation: Location = Location::here();
 	pub const RelayLocation: Location = Location::parent();
-	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH));
+	// The relay above this chain is Zagros. See the note in the Zagros relay's xcm_config.
+	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::ByGenesis(ZAGROS_GENESIS_HASH));
 	pub RelayChainOrigin: RuntimeOrigin = pezcumulus_pezpallet_xcm::Origin::Relay.into();
 	pub UniversalLocation: InteriorLocation =
 		[GlobalConsensus(RelayNetwork::get().unwrap()), Teyrchain(TeyrchainInfo::teyrchain_id().into())].into();

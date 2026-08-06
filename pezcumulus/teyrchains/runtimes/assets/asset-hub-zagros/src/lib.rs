@@ -511,7 +511,7 @@ impl pezpallet_assets::Config<ForeignAssetsInstance> for Runtime {
 		(
 			FromSiblingTeyrchain<teyrchain_info::Pezpallet<Runtime>, xcm::v5::Location>,
 			FromNetwork<xcm_config::UniversalLocation, EthereumNetwork, xcm::v5::Location>,
-			xcm_config::bridging::to_zagros::ZagrosOrEthereumAssetFromAssetHubZagros,
+			xcm_config::bridging::to_pezkuwichain::PezkuwichainOrEthereumAssetFromAssetHubPezkuwichain,
 		),
 		LocationToAccountId,
 		AccountId,
@@ -1020,14 +1020,14 @@ impl pezpallet_nfts::Config for Runtime {
 
 /// XCM router instance to BridgeHub with bridging capabilities for `Zagros` global
 /// consensus with dynamic fees and back-pressure.
-pub type ToZagrosXcmRouterInstance = pezpallet_xcm_bridge_hub_router::Instance3;
-impl pezpallet_xcm_bridge_hub_router::Config<ToZagrosXcmRouterInstance> for Runtime {
+pub type ToPezkuwichainXcmRouterInstance = pezpallet_xcm_bridge_hub_router::Instance3;
+impl pezpallet_xcm_bridge_hub_router::Config<ToPezkuwichainXcmRouterInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pezpallet_xcm_bridge_hub_router::WeightInfo<Runtime>;
 
 	type UniversalLocation = xcm_config::UniversalLocation;
 	type SiblingBridgeHubLocation = xcm_config::bridging::SiblingBridgeHub;
-	type BridgedNetworkId = xcm_config::bridging::to_zagros::ZagrosNetwork;
+	type BridgedNetworkId = xcm_config::bridging::to_pezkuwichain::PezkuwichainNetwork;
 	type Bridges = xcm_config::bridging::NetworkExportTable;
 	type DestinationVersion = PezkuwiXcm;
 
@@ -1450,7 +1450,7 @@ construct_runtime!(
 		Proxy: pezpallet_proxy = 42,
 
 		// Bridge utilities.
-		ToZagrosXcmRouter: pezpallet_xcm_bridge_hub_router::<Instance3> = 45,
+		ToPezkuwichainXcmRouter: pezpallet_xcm_bridge_hub_router::<Instance3> = 45,
 
 		// The main stage.
 		Assets: pezpallet_assets::<Instance1> = 50,
@@ -2130,7 +2130,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			type Foreign = pezpallet_assets::Pezpallet::<Runtime, ForeignAssetsInstance>;
 			type Pool = pezpallet_assets::Pezpallet::<Runtime, PoolAssetsInstance>;
 
-			type ToZagros = XcmBridgeHubRouterBench<Runtime, ToZagrosXcmRouterInstance>;
+			type ToPezkuwichain = XcmBridgeHubRouterBench<Runtime, ToPezkuwichainXcmRouterInstance>;
 
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
@@ -2309,7 +2309,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 				}
 			}
 
-			impl XcmBridgeHubRouterConfig<ToZagrosXcmRouterInstance> for Runtime {
+			impl XcmBridgeHubRouterConfig<ToPezkuwichainXcmRouterInstance> for Runtime {
 				fn make_congested() {
 					pezcumulus_pezpallet_xcmp_queue::bridging::suspend_channel_for_benchmarks::<Runtime>(
 						xcm_config::bridging::SiblingBridgeHubParaId::get().into()
@@ -2319,7 +2319,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 					TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
 						xcm_config::bridging::SiblingBridgeHubParaId::get().into()
 					);
-					let bridged_asset_hub = xcm_config::bridging::to_zagros::AssetHubZagros::get();
+					let bridged_asset_hub = xcm_config::bridging::to_pezkuwichain::AssetHubPezkuwichain::get();
 					let _ = PezkuwiXcm::force_xcm_version(
 						RuntimeOrigin::root(),
 						alloc::boxed::Box::new(bridged_asset_hub.clone()),
@@ -2387,8 +2387,8 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 				// AssetHubPezkuwichain trusts AssetHubZagros as reserve for WNDs
 				pub TrustedReserve: Option<(Location, Asset)> = Some(
 					(
-						xcm_config::bridging::to_zagros::AssetHubZagros::get(),
-						Asset::from((xcm_config::bridging::to_zagros::WndLocation::get(), 1000000000000 as u128))
+						xcm_config::bridging::to_pezkuwichain::AssetHubPezkuwichain::get(),
+						Asset::from((xcm_config::bridging::to_pezkuwichain::PezkuwichainLocation::get(), 1000000000000 as u128))
 					)
 				);
 			}
@@ -2493,7 +2493,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			type Foreign = pezpallet_assets::Pezpallet::<Runtime, ForeignAssetsInstance>;
 			type Pool = pezpallet_assets::Pezpallet::<Runtime, PoolAssetsInstance>;
 
-			type ToZagros = XcmBridgeHubRouterBench<Runtime, ToZagrosXcmRouterInstance>;
+			type ToPezkuwichain = XcmBridgeHubRouterBench<Runtime, ToPezkuwichainXcmRouterInstance>;
 
 			use pezframe_support::traits::WhitelistedStorageKeys;
 			let whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();

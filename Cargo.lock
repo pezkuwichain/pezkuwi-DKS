@@ -1437,6 +1437,7 @@ dependencies = [
 name = "asset-hub-zagros-runtime"
 version = "0.15.0"
 dependencies = [
+ "alloy-core",
  "asset-test-pezutils",
  "bizinikiwi-wasm-builder",
  "hex-literal",
@@ -1498,6 +1499,7 @@ dependencies = [
  "pezpallet-presale",
  "pezpallet-proxy",
  "pezpallet-revive",
+ "pezpallet-revive-fixtures",
  "pezpallet-session",
  "pezpallet-staking",
  "pezpallet-staking-async",
@@ -1528,6 +1530,7 @@ dependencies = [
  "pezsp-session",
  "pezsp-staking",
  "pezsp-storage",
+ "pezsp-tracing",
  "pezsp-transaction-pool",
  "pezsp-version",
  "pezsp-weights",
@@ -1543,6 +1546,7 @@ dependencies = [
  "teyrchains-runtimes-test-utils",
  "tracing",
  "xcm-runtime-pezapis",
+ "zagros-runtime-constants",
 ]
 
 [[package]]
@@ -9468,6 +9472,7 @@ dependencies = [
  "teyrchains-runtimes-test-utils",
  "tracing",
  "xcm-runtime-pezapis",
+ "zagros-runtime-constants",
 ]
 
 [[package]]

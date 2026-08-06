@@ -108,6 +108,12 @@ teyrchains-common = { workspace = true }
 
 [dev-dependencies]
 teyrchains-runtimes-test-utils = { workspace = true, default-features = true }
+# The runtime itself mirrors the mainnet People chain and so takes its constants
+# from `pezkuwichain-runtime-constants`. The governance test still has to name the
+# Collectives chain, which exists on Zagros but not on the mainnet, so its para id
+# comes from the Zagros constants — as a dev-dependency, where a testnet-only
+# identifier belongs.
+zagros-runtime-constants = { workspace = true, default-features = true }
 
 [build-dependencies]
 bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features = true }
@@ -277,6 +283,7 @@ runtime-benchmarks = [
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-pezapis/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
+	"zagros-runtime-constants/runtime-benchmarks",
 ]
 try-runtime = [
 	"pezcumulus-pezpallet-aura-ext/try-runtime",
@@ -352,6 +359,7 @@ try-runtime = [
 	"xcm-executor/try-runtime",
 	"xcm-runtime-pezapis/try-runtime",
 	"xcm/try-runtime",
+	"zagros-runtime-constants/try-runtime",
 ]
 
 # A feature that should be enabled when the runtime should be built for on-chain

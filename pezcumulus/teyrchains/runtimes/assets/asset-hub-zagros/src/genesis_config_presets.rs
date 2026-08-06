@@ -21,7 +21,7 @@
 //! - Initial token distributions
 
 use crate::{
-	xcm_config::{bridging::to_zagros::ZagrosNetwork, UniversalLocation},
+	xcm_config::{bridging::to_pezkuwichain::PezkuwichainNetwork, UniversalLocation},
 	*,
 };
 use alloc::{vec, vec::Vec};
@@ -280,9 +280,9 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				vec![
 					// bridged ZGR
 					(
-						Location::new(2, [GlobalConsensus(ZagrosNetwork::get())]),
+						Location::new(2, [GlobalConsensus(PezkuwichainNetwork::get())]),
 						GlobalConsensusConvertsFor::<UniversalLocation, AccountId>::convert_location(
-							&Location { parents: 2, interior: [GlobalConsensus(ZagrosNetwork::get())].into() },
+							&Location { parents: 2, interior: [GlobalConsensus(PezkuwichainNetwork::get())].into() },
 						)
 						.unwrap(),
 						10_000_000,
@@ -291,7 +291,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				vec![
 					// bridged ZGR to Bob
 					(
-						Location::new(2, [GlobalConsensus(ZagrosNetwork::get())]),
+						Location::new(2, [GlobalConsensus(PezkuwichainNetwork::get())]),
 						Sr25519Keyring::Bob.to_account_id(),
 						10_000_000 * 4096 * 4096,
 					),
