@@ -283,6 +283,7 @@ runtime-benchmarks = [
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-pezapis/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
+	"zagros-runtime-constants/runtime-benchmarks",
 ]
 try-runtime = [
 	"pezcumulus-pezpallet-aura-ext/try-runtime",
@@ -358,6 +359,7 @@ try-runtime = [
 	"xcm-executor/try-runtime",
 	"xcm-runtime-pezapis/try-runtime",
 	"xcm/try-runtime",
+	"zagros-runtime-constants/try-runtime",
 ]
 
 # A feature that should be enabled when the runtime should be built for on-chain

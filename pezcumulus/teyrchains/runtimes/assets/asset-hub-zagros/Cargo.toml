@@ -209,6 +209,7 @@ runtime-benchmarks = [
 	"pezpallet-pez-treasury/runtime-benchmarks",
 	"pezpallet-presale/runtime-benchmarks",
 	"pezpallet-proxy/runtime-benchmarks",
+	"pezpallet-revive-fixtures/runtime-benchmarks",
 	"pezpallet-revive/runtime-benchmarks",
 	"pezpallet-session/runtime-benchmarks",
 	"pezpallet-staking-async-rc-client/runtime-benchmarks",
@@ -248,6 +249,7 @@ runtime-benchmarks = [
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-pezapis/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
+	"zagros-runtime-constants/runtime-benchmarks",
 ]
 try-runtime = [
 	"asset-test-pezutils/try-runtime",
@@ -342,8 +344,10 @@ try-runtime = [
 	"xcm-executor/try-runtime",
 	"xcm-runtime-pezapis/try-runtime",
 	"xcm/try-runtime",
+	"zagros-runtime-constants/try-runtime",
 ]
 std = [
+	"alloy-core/std",
 	"bizinikiwi-wasm-builder",
 	"bizinikiwi-wasm-builder?/std",
 	"codec/std",
