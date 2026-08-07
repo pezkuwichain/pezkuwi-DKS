@@ -126,8 +126,15 @@ impl<Call> XcmWeightInfo<Call> for AssetHubPezkuwichainXcmWeight<Call> {
 	fn deposit_reserve_asset(assets: &AssetFilter, _dest: &Location, _xcm: &Xcm<()>) -> Weight {
 		assets.weigh_assets(XcmFungibleWeight::<Runtime>::deposit_reserve_asset())
 	}
-	fn exchange_asset(_give: &AssetFilter, _receive: &Assets, _maximal: &bool) -> Weight {
-		Weight::MAX
+	/// The mainnet Asset Hub does not support `ExchangeAsset` and weighs it as
+	/// `Weight::MAX`, which makes the weigher reject any message containing the
+	/// instruction before it is executed. Zagros does support it, and mirroring the
+	/// runtimes took this weight — and with it the capability — away.
+	fn exchange_asset(give: &AssetFilter, receive: &Assets, _maximal: &bool) -> Weight {
+		let base_weight = XcmGeneric::<Runtime>::exchange_asset();
+		let give_weight = give.weigh_assets(base_weight);
+		let receive_weight = receive.weigh_assets(base_weight);
+		give_weight.max(receive_weight)
 	}
 	fn initiate_reserve_withdraw(
 		assets: &AssetFilter,
