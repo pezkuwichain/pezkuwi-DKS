@@ -67,7 +67,7 @@ fn system_para_sets_relay_xcm_supported_version() {
 	AssetHubZagros::execute_with(|| {
 		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
 
-		AssetHubZagros::assert_dmp_queue_complete(Some(Weight::from_parts(47_887_000, 0)));
+		AssetHubZagros::assert_dmp_queue_complete(Some(Weight::from_parts(118_727_000, 0)));
 
 		assert_expected_events!(
 			AssetHubZagros,

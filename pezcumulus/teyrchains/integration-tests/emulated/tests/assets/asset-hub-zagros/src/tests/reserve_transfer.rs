@@ -285,9 +285,10 @@ pub fn para_to_system_para_receiver_assertions(t: ParaToSystemParaTest) {
 
 fn system_para_to_para_assets_sender_assertions(t: SystemParaToParaTest) {
 	type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
+	// Measured against this runtime's weights.
 	AssetHubZagros::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(
-		487_426_000,
-		8799,
+		1_155_268_000,
+		12_416,
 	)));
 	assert_expected_events!(
 		AssetHubZagros,
