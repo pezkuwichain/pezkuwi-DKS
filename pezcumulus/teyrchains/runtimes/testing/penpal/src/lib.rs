@@ -292,6 +292,11 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = 1_000_000_000;
 pub const MICROUNIT: Balance = 1_000_000;
+/// A hundredth of a unit in this ecosystem's terms. Upstream assumed a unit was a
+/// hundred cents; here a cent is a thirty-thousandth, so the two must not be mixed —
+/// see `BaseDeliveryFee` below, which is paid in the relay token and has to agree
+/// with what the Asset Hub charges for the same delivery.
+pub const CENTS: Balance = UNIT / 30_000;
 
 /// The existential deposit. Set to 1/10 of the Connected Relay Chain.
 pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
@@ -695,7 +700,13 @@ parameter_types! {
 	/// The asset ID for the asset that we use to pay for message delivery fees.
 	pub FeeAssetId: AssetLocationId = AssetLocationId(xcm_config::RelayLocation::get());
 	/// The base fee for the message delivery fees (3 CENTS).
-	pub const BaseDeliveryFee: u128 = (1_000_000_000_000u128 / 100).saturating_mul(3);
+	/// The base fee for message delivery, charged in the relay token (see `FeeAssetId`).
+	///
+	/// This read `(UNIT / 100) * 3` and called itself three cents. In this ecosystem a
+	/// cent is `UNIT / 30_000`, so it charged three hundred times what it claimed — and
+	/// three hundred times what the Asset Hub charges to deliver the same message. Any
+	/// transfer sized in existential-deposit terms could not cover it.
+	pub const BaseDeliveryFee: u128 = CENTS.saturating_mul(3);
 }
 
 pub type PriceForSiblingTeyrchainDelivery = pezkuwi_runtime_common::xcm_sender::ExponentialPrice<

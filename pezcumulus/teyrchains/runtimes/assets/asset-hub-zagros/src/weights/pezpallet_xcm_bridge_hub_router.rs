@@ -54,8 +54,8 @@ impl<T: pezframe_system::Config> pezpallet_xcm_bridge_hub_router::WeightInfo for
 	/// Proof: `XcmpQueue::InboundXcmpSuspended` (`max_values`: Some(1), `max_size`: Some(4002), added: 4497, mode: `MaxEncodedLen`)
 	/// Storage: `XcmpQueue::OutboundXcmpStatus` (r:1 w:0)
 	/// Proof: `XcmpQueue::OutboundXcmpStatus` (`max_values`: Some(1), `max_size`: Some(1282), added: 1777, mode: `MaxEncodedLen`)
-	/// Storage: `ToZagrosXcmRouter::Bridge` (r:1 w:1)
-	/// Proof: `ToZagrosXcmRouter::Bridge` (`max_values`: Some(1), `max_size`: Some(17), added: 512, mode: `MaxEncodedLen`)
+	/// Storage: `ToPezkuwichainXcmRouter::Bridge` (r:1 w:1)
+	/// Proof: `ToPezkuwichainXcmRouter::Bridge` (`max_values`: Some(1), `max_size`: Some(17), added: 512, mode: `MaxEncodedLen`)
 	fn on_initialize_when_non_congested() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `154`
@@ -79,8 +79,8 @@ impl<T: pezframe_system::Config> pezpallet_xcm_bridge_hub_router::WeightInfo for
 			.saturating_add(Weight::from_parts(0, 5487))
 			.saturating_add(T::DbWeight::get().reads(2))
 	}
-	/// Storage: `ToZagrosXcmRouter::Bridge` (r:1 w:1)
-	/// Proof: `ToZagrosXcmRouter::Bridge` (`max_values`: Some(1), `max_size`: Some(17), added: 512, mode: `MaxEncodedLen`)
+	/// Storage: `ToPezkuwichainXcmRouter::Bridge` (r:1 w:1)
+	/// Proof: `ToPezkuwichainXcmRouter::Bridge` (`max_values`: Some(1), `max_size`: Some(17), added: 512, mode: `MaxEncodedLen`)
 	fn report_bridge_status() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `150`

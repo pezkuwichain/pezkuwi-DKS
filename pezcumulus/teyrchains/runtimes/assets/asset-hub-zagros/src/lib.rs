@@ -1731,7 +1731,7 @@ mod benches {
 		[pezpallet_collator_selection, CollatorSelection]
 		[pezcumulus_pezpallet_teyrchain_system, TeyrchainSystem]
 		[pezcumulus_pezpallet_xcmp_queue, XcmpQueue]
-		[pezpallet_xcm_bridge_hub_router, ToZagros]
+		[pezpallet_xcm_bridge_hub_router, ToPezkuwichain]
 		[pezpallet_asset_conversion_ops, AssetConversionMigration]
 		// XCM
 		[pezpallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
