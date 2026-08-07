@@ -54,7 +54,12 @@ pub fn genesis() -> Storage {
 			balances: accounts::init_balances()
 				.iter()
 				.cloned()
-				.map(|k| (k, ED * 4096))
+				// `AssetDeposit` is a tenth of a unit, which is roughly 30_000 existential
+				// deposits on this chain; `ED * 4096` leaves every account short of it, so
+				// `Assets::create` — the first line of most asset tests — fails with
+				// `InsufficientBalance`. The mainnet Asset Hub's emulated chain already
+				// funds accounts at this level.
+				.map(|k| (k, ED * 4096 * 4096))
 				// pre-fund checking account to avoid pre-funding for every test scenario
 				// teleporting funds to asset hub
 				.chain(std::iter::once((
