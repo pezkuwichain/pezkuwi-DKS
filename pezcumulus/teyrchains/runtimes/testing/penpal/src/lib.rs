@@ -313,6 +313,7 @@ pub const MICROUNIT: Balance = 1_000_000;
 /// see `BaseDeliveryFee` below, which is paid in the relay token and has to agree
 /// with what the Asset Hub charges for the same delivery.
 pub const CENTS: Balance = UNIT / 30_000;
+pub const MILLICENTS: Balance = CENTS / 1_000;
 
 /// The existential deposit. Set to 1/10 of the Connected Relay Chain.
 pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
@@ -456,8 +457,12 @@ impl pezpallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-	/// Relay Chain `TransactionByteFee` / 10
-	pub const TransactionByteFee: Balance = 10 * MICROUNIT;
+	/// Relay Chain `TransactionByteFee` / 10, expressed in this ecosystem's cent scale.
+	/// The literal this replaced (`10 * MICROUNIT`) was `MILLICENTS` under the upstream
+	/// assumption that a unit is a hundred cents; here a cent is a thirty-thousandth, so
+	/// it charged 300x. Delivery fees are paid in the relay token and must agree with what
+	/// the Asset Hub charges for the same message — see `BaseDeliveryFee` below.
+	pub const TransactionByteFee: Balance = MILLICENTS;
 }
 
 impl pezpallet_transaction_payment::Config for Runtime {
