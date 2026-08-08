@@ -241,9 +241,25 @@ pub struct ProofSizeToFee;
 impl WeightToFeePolynomial for ProofSizeToFee {
 	type Balance = Balance;
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		// Map 10kb proof to 1 CENT.
+		// Derived from this chain's own ref-time price, scaled by how much scarcer proof
+		// size is than ref time in a block — the same relation the Asset Hub uses.
+		//
+		// This was a bare `10_000` under a comment claiming it mapped 10kb of proof to a
+		// cent. It does not: a cent here is `UNIT / 30_000`, so the constant charged three
+		// times what it claimed, roughly seven times what the Asset Hub charges for the
+		// same proof size, and over twice what this chain's own ref-time calibration
+		// implies. Messages priced by the sender at Asset Hub rates were rejected here as
+		// `TooExpensive`, taking several cross-chain flows down with them.
 		let p = MILLIUNIT / 10;
-		let q = 10_000;
+		let ratio = MAXIMUM_BLOCK_WEIGHT
+			.ref_time()
+			.checked_div(MAXIMUM_BLOCK_WEIGHT.proof_size())
+			.unwrap_or(1)
+			.max(1);
+		let q = (100 * Balance::from(ExtrinsicBaseWeight::get().ref_time()))
+			.checked_div(Balance::from(ratio))
+			.unwrap_or(1)
+			.max(1);
 
 		smallvec![WeightToFeeCoefficient {
 			degree: 1,
@@ -292,6 +308,12 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = 1_000_000_000;
 pub const MICROUNIT: Balance = 1_000_000;
+/// A hundredth of a unit in this ecosystem's terms. Upstream assumed a unit was a
+/// hundred cents; here a cent is a thirty-thousandth, so the two must not be mixed —
+/// see `BaseDeliveryFee` below, which is paid in the relay token and has to agree
+/// with what the Asset Hub charges for the same delivery.
+pub const CENTS: Balance = UNIT / 30_000;
+pub const MILLICENTS: Balance = CENTS / 1_000;
 
 /// The existential deposit. Set to 1/10 of the Connected Relay Chain.
 pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
@@ -435,8 +457,12 @@ impl pezpallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-	/// Relay Chain `TransactionByteFee` / 10
-	pub const TransactionByteFee: Balance = 10 * MICROUNIT;
+	/// Relay Chain `TransactionByteFee` / 10, expressed in this ecosystem's cent scale.
+	/// The literal this replaced (`10 * MICROUNIT`) was `MILLICENTS` under the upstream
+	/// assumption that a unit is a hundred cents; here a cent is a thirty-thousandth, so
+	/// it charged 300x. Delivery fees are paid in the relay token and must agree with what
+	/// the Asset Hub charges for the same message — see `BaseDeliveryFee` below.
+	pub const TransactionByteFee: Balance = MILLICENTS;
 }
 
 impl pezpallet_transaction_payment::Config for Runtime {
@@ -695,7 +721,13 @@ parameter_types! {
 	/// The asset ID for the asset that we use to pay for message delivery fees.
 	pub FeeAssetId: AssetLocationId = AssetLocationId(xcm_config::RelayLocation::get());
 	/// The base fee for the message delivery fees (3 CENTS).
-	pub const BaseDeliveryFee: u128 = (1_000_000_000_000u128 / 100).saturating_mul(3);
+	/// The base fee for message delivery, charged in the relay token (see `FeeAssetId`).
+	///
+	/// This read `(UNIT / 100) * 3` and called itself three cents. In this ecosystem a
+	/// cent is `UNIT / 30_000`, so it charged three hundred times what it claimed — and
+	/// three hundred times what the Asset Hub charges to deliver the same message. Any
+	/// transfer sized in existential-deposit terms could not cover it.
+	pub const BaseDeliveryFee: u128 = CENTS.saturating_mul(3);
 }
 
 pub type PriceForSiblingTeyrchainDelivery = pezkuwi_runtime_common::xcm_sender::ExponentialPrice<

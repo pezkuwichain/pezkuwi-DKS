@@ -285,9 +285,10 @@ pub fn para_to_system_para_receiver_assertions(t: ParaToSystemParaTest) {
 
 fn system_para_to_para_assets_sender_assertions(t: SystemParaToParaTest) {
 	type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
+	// Measured against this runtime's weights.
 	AssetHubZagros::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(
-		487_426_000,
-		8799,
+		1_155_268_000,
+		12_416,
 	)));
 	assert_expected_events!(
 		AssetHubZagros,
@@ -960,8 +961,8 @@ fn reserve_transfer_multiple_assets_from_asset_hub_to_para() {
 	let destination = AssetHubZagros::sibling_location_of(PenpalA::para_id());
 	let sov_penpal_on_ahr = AssetHubZagros::sovereign_account_id_of(destination.clone());
 	let sender = AssetHubZagrosSender::get();
-	let fee_amount_to_send = ASSET_HUB_ZAGROS_ED * 100;
-	let asset_amount_to_send = ASSET_HUB_ZAGROS_ED * 100;
+	let fee_amount_to_send = ASSET_HUB_ZAGROS_ED * 10000;
+	let asset_amount_to_send = PENPAL_ED * 10000;
 	let asset_owner = AssetHubZagrosAssetOwner::get();
 	let asset_owner_signer = <AssetHubZagros as Chain>::RuntimeOrigin::signed(asset_owner.clone());
 	let assets: Assets = vec![
@@ -1061,8 +1062,8 @@ fn reserve_transfer_multiple_assets_from_para_to_asset_hub() {
 	// Init values for Teyrchain
 	let destination = PenpalA::sibling_location_of(AssetHubZagros::para_id());
 	let sender = PenpalASender::get();
-	let fee_amount_to_send = ASSET_HUB_ZAGROS_ED * 100;
-	let asset_amount_to_send = ASSET_HUB_ZAGROS_ED * 100;
+	let fee_amount_to_send = ASSET_HUB_ZAGROS_ED * 10000;
+	let asset_amount_to_send = ASSET_HUB_ZAGROS_ED * 10000;
 	let penpal_asset_owner = PenpalAssetOwner::get();
 	let penpal_asset_owner_signer = <PenpalA as Chain>::RuntimeOrigin::signed(penpal_asset_owner);
 	let asset_location_on_penpal = PenpalLocalReservableFromAssetHub::get();
@@ -1100,7 +1101,7 @@ fn reserve_transfer_multiple_assets_from_para_to_asset_hub() {
 	// Fund SA-of-Penpal-on-AHR to be able to pay for the fees.
 	AssetHubZagros::fund_accounts(vec![(
 		sov_penpal_on_ahr.clone().into(),
-		ASSET_HUB_ZAGROS_ED * 1000,
+		ASSET_HUB_ZAGROS_ED * 10000000,
 	)]);
 	// Fund SA-of-Penpal-on-AHR to be able to pay for the sent amount.
 	AssetHubZagros::mint_asset(

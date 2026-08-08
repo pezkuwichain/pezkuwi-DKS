@@ -81,7 +81,7 @@ mod imports {
 				UsdtFromAssetHub as PenpalUsdtFromAssetHub,
 			},
 			PenpalAParaPezpallet, PenpalAParaPezpallet as PenpalAPallet, PenpalAssetOwner,
-			PenpalBParaPezpallet, PenpalBParaPezpallet as PenpalBPallet,
+			PenpalBParaPezpallet, PenpalBParaPezpallet as PenpalBPallet, ED as PENPAL_ED,
 		},
 		pezbridge_hub_zagros_emulated_chain::{
 			pezbridge_hub_zagros_runtime::xcm_config::{self as bhw_xcm_config},

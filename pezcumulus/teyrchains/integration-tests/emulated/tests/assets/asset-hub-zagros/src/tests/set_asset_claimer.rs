@@ -91,16 +91,24 @@ fn account_and_location(account: &str) -> (AccountId32, Location) {
 
 // The test:
 // 1. Funds Bob account on BridgeHub, withdraws the funds, sets asset claimer to
-// sibling-account-of(AssetHub/Alice) and traps the funds.
-// 2. Alice on AssetHub sends an XCM to BridgeHub to claim assets, pay fees and deposit
+// sibling-account-of(Penpal/Alice) and traps the funds.
+// 2. Alice on Penpal sends an XCM to BridgeHub to claim assets, pay fees and deposit
 // remaining to her sibling account on BridgeHub.
+//
+// The claim is driven from Penpal B (the Penpal that carries this network's identity;
+// Penpal A identifies with the other ecosystem) rather than the Asset Hub because this ecosystem's system
+// teyrchains deliberately refuse `pallet_xcm::send` from signed origins — see the
+// `SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, ()>` on every one of them, and the comment
+// above it. Only the testing runtimes permit it, so Penpal is where a user-initiated
+// cross-chain claim can originate from. The behaviour under test — that a remote account set
+// as asset claimer can claim assets trapped on another chain — is unchanged.
 #[test]
 fn test_set_asset_claimer_between_the_chains() {
-	let alice = AssetHubZagros::account_id_of(ALICE);
+	let alice = PenpalB::account_id_of(ALICE);
 	let alice_bh_sibling = Location::new(
 		1,
 		[
-			Teyrchain(AssetHubZagros::para_id().into()),
+			Teyrchain(PenpalB::para_id().into()),
 			Junction::AccountId32 {
 				network: Some(ByGenesis(ZAGROS_GENESIS_HASH)),
 				id: alice.clone().into(),
@@ -138,11 +146,21 @@ fn test_set_asset_claimer_between_the_chains() {
 		.pay_fees((Parent, pay_fees))
 		.deposit_asset(All, alice_bh_sibling.clone())
 		.build();
-	let bh_on_ah = AssetHubZagros::sibling_location_of(BridgeHubZagros::para_id()).into();
-	AssetHubZagros::execute_with(|| {
-		assert_ok!(<AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::send(
-			AssetHubRuntimeOrigin::signed(alice.clone()),
-			bx!(bh_on_ah),
+	let bh_on_penpal = PenpalB::sibling_location_of(BridgeHubZagros::para_id()).into();
+	// Alice needs to exist on the sending chain and to hold the relay token there: Penpal
+	// prices delivery in the relay token, which is a foreign asset on that chain, so a native
+	// balance alone leaves the send failing with `FeesNotMet`.
+	PenpalB::fund_accounts(vec![(alice.clone(), trap_amount)]);
+	PenpalB::mint_foreign_asset(
+		<PenpalB as Chain>::RuntimeOrigin::signed(PenpalAssetOwner::get()),
+		Location::parent(),
+		alice.clone(),
+		trap_amount,
+	);
+	PenpalB::execute_with(|| {
+		assert_ok!(<PenpalB as PenpalBPallet>::PezkuwiXcm::send(
+			<PenpalB as Chain>::RuntimeOrigin::signed(alice.clone()),
+			bx!(bh_on_penpal),
 			bx!(VersionedXcm::from(xcm_on_bh)),
 		));
 	});

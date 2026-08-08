@@ -54,12 +54,29 @@ pub fn genesis() -> Storage {
 			balances: accounts::init_balances()
 				.iter()
 				.cloned()
-				.map(|k| (k, ED * 4096))
-				// pre-fund checking account to avoid pre-funding for every test scenario
-				// teleporting funds to asset hub
+				// `AssetDeposit` is a tenth of a unit, which is roughly 30_000 existential
+				// deposits on this chain; `ED * 4096` leaves every account short of it, so
+				// `Assets::create` — the first line of most asset tests — fails with
+				// `InsufficientBalance`. The mainnet Asset Hub's emulated chain already
+				// funds accounts at this level.
+				.map(|k| (k, ED * 4096 * 4096))
+				// Pre-fund the checking account so tests teleporting funds in don't each have
+				// to. With `MintLocation::Local`, assets teleported away are minted into this
+				// account and assets arriving are burned from it, so it has to hold at least
+				// as much as any inbound teleport or the transfer fails with
+				// `NotWithdrawable`.
+				//
+				// `ED * 1000` was not enough: teleport amounts are denominated in the relay's
+				// existential deposit, which is ten times this chain's, so the largest single
+				// teleport in these tests (`ZAGROS_ED * 100`) came to 3_333_333_300 against a
+				// balance of 3_333_333_000 — three hundred plancks short, with nothing left
+				// over for the account's own existential deposit or for a second teleport.
+				//
+				// Two orders of magnitude of headroom over that largest teleport, since
+				// several tests teleport in more than once.
 				.chain(std::iter::once((
 					asset_hub_zagros_runtime::xcm_config::CheckingAccount::get(),
-					ED * 1000,
+					ED * 100_000,
 				)))
 				.collect(),
 			..Default::default()

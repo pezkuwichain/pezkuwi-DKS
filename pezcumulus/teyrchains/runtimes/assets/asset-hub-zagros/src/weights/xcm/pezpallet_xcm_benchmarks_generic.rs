@@ -353,6 +353,15 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	}
 	// Storage: `TeyrchainInfo::TeyrchainId` (r:1 w:0)
 	// Proof: `TeyrchainInfo::TeyrchainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	pub fn exchange_asset() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1244`
+		//  Estimated: `4273`
+		// Minimum execution time: 93_724_000 picoseconds.
+		Weight::from_parts(96_332_000, 4273)
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(3))
+	}
 	pub fn universal_origin() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `32`

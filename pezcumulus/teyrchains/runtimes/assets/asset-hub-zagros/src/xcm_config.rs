@@ -94,14 +94,38 @@ parameter_types! {
 	pub UniquesPalletLocation: Location =
 		PalletInstance(<Uniques as PalletInfoAccess>::index() as u8).into();
 	pub CheckingAccount: AccountId = PezkuwiXcm::check_account();
-	/// Teleport tracking disabled — both RC and AH use None so teleports work without
-	/// a pre-seeded CheckingAccount. RC burns on send, AH mints on receive directly.
-	pub TeleportTracking: Option<(AccountId, MintLocation)> = None;
+	/// Asset Hub has mint authority since the Asset Hub migration, so teleported
+	/// funds are burned from and minted into the checking account and stay
+	/// accounted for.
+	///
+	/// The mainnet Asset Hub currently sets this to `None`, which lets teleports
+	/// work without a pre-seeded checking account at the cost of that accounting.
+	/// Mirroring the runtimes carried that choice here and took the accounting with
+	/// it. Zagros keeps it on: this is the behaviour we want on the mainnet too, and
+	/// enabling it there needs the checking account seeded first — which is exactly
+	/// the kind of step a testnet exists to rehearse.
+	pub TeleportTracking: Option<(AccountId, MintLocation)> = Some((CheckingAccount::get(), MintLocation::Local));
 	pub const GovernanceLocation: Location = Location::parent();
 	pub StakingPot: AccountId = CollatorSelection::account_id();
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
 	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(pezkuwichain_runtime_constants::TREASURY_PALLET_ID)).into();
+	/// The Fellowship's salary and treasury pallets on the Collectives chain. Both dispatch
+	/// unpaid XCM to this chain to settle their spends, so both need free execution here.
+	///
+	/// This entry is local to this runtime rather than mirrored from the mainnet Asset Hub:
+	/// that ecosystem runs no Collectives chain, so it has nothing to admit. Without it the
+	/// barrier rejects every Fellowship payout with `Barrier` before the message is read.
+	pub FellowshipSalaryLocation: Location =
+		(Parent, Teyrchain(COLLECTIVES_PARA_ID), PalletInstance(FELLOWSHIP_SALARY_PALLET_INDEX)).into();
+	pub FellowshipTreasuryLocation: Location =
+		(Parent, Teyrchain(COLLECTIVES_PARA_ID), PalletInstance(FELLOWSHIP_TREASURY_PALLET_INDEX)).into();
 }
+
+/// Para id of the Collectives chain in this ecosystem, and the indices its Fellowship salary
+/// and treasury pallets are mounted at.
+const COLLECTIVES_PARA_ID: u32 = 1001;
+const FELLOWSHIP_SALARY_PALLET_INDEX: u8 = 64;
+const FELLOWSHIP_TREASURY_PALLET_INDEX: u8 = 65;
 
 /// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
 /// when determining ownership of accounts for asset transacting and when attempting to use XCM
@@ -316,6 +340,8 @@ pub type Barrier = TrailingSetTopicAsId<
 					AllowExplicitUnpaidExecutionFrom<(
 						ParentOrParentsPlurality,
 						Equals<RelayTreasuryLocation>,
+						Equals<FellowshipSalaryLocation>,
+						Equals<FellowshipTreasuryLocation>,
 						Equals<bridging::SiblingBridgeHub>,
 					)>,
 					// Subscriptions for version tracking are OK.
@@ -337,6 +363,14 @@ pub type WaivedLocations = (
 	Equals<RootLocation>,
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
 	Equals<RelayTreasuryLocation>,
+	// The Fellowship's salary and treasury pallets. `RelayOrOtherSystemTeyrchains` admits the
+	// Collectives chain itself but not a pallet within it, and treasury payouts carry an
+	// appendix that reports the outcome home under `SetFeesMode { jit_withdraw }` — so without
+	// this the delivery fee is charged to the Fellowship's sovereign account here, which holds
+	// no native balance, and the payout fails with `FundsUnavailable`. Making the Fellowship
+	// keep a balance on this chain just to acknowledge its own spends would be the wrong fix.
+	Equals<FellowshipSalaryLocation>,
+	Equals<FellowshipTreasuryLocation>,
 );
 
 // Asset Hub trusts only particular, pre-configured bridged locations from a different consensus

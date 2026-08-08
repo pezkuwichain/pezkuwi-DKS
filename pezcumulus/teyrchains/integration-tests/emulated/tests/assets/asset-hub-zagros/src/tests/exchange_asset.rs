@@ -55,10 +55,14 @@ fn exchange_asset_insufficient_liquidity() {
 
 #[test]
 fn exchange_asset_insufficient_balance() {
+	// Has to exceed what the sender actually holds, which is the emulated genesis balance
+	// (`ED * 4096 * 4096`, roughly 55_924 units, raised so accounts can afford `AssetDeposit`)
+	// plus the 1_000 units this test mints. `5_000` used to be more than the sender had; it no
+	// longer is, and the withdraw it was meant to fail on now succeeds.
 	let log_capture = capture_test_logs!({
 		test_exchange_asset(
 			true,
-			5_000 * UNITS,
+			1_000_000 * UNITS,
 			1_665 * UNITS,
 			Some(InstructionError { index: 0, error: XcmError::FailedToTransactAsset("") }),
 		);

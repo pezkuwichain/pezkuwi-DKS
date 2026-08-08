@@ -516,7 +516,7 @@ pub fn do_bidirectional_teleport_foreign_assets_between_para_and_asset_hub_using
 	ah_to_para_dispatchable: fn(SystemParaToParaTest) -> DispatchResult,
 ) {
 	// Init values for Teyrchain
-	let fee_amount_to_send: Balance = ASSET_HUB_ZAGROS_ED * 1000;
+	let fee_amount_to_send: Balance = ASSET_HUB_ZAGROS_ED * 10000;
 	let asset_location_on_penpal =
 		PenpalA::execute_with(|| PenpalLocalTeleportableToAssetHub::get());
 	let asset_id_on_penpal = match asset_location_on_penpal.last() {
