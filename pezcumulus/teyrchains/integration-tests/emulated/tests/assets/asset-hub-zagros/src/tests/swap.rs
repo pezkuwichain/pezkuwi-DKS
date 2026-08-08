@@ -175,8 +175,8 @@ fn swap_locally_on_chain_using_foreign_assets() {
 			<AssetHubZagros as Chain>::RuntimeOrigin::signed(sov_penpal_on_ahr.clone()),
 			asset_native.clone(),
 			Box::new(foreign_asset_at_asset_hub_zagros.clone()),
-			1_000_000_000_000_000,
-			2_000_000_000_000_000,
+			1_000_000_000_000,
+			2_000_000_000_000,
 			0,
 			0,
 			sov_penpal_on_ahr.clone().into()
@@ -186,7 +186,7 @@ fn swap_locally_on_chain_using_foreign_assets() {
 			AssetHubZagros,
 			vec![
 				RuntimeEvent::AssetConversion(pezpallet_asset_conversion::Event::LiquidityAdded {lp_token_minted, .. }) => {
-					lp_token_minted: *lp_token_minted == 1414213562372995,
+					lp_token_minted: *lp_token_minted == 1414213562273,
 				},
 			]
 		);
@@ -209,8 +209,8 @@ fn swap_locally_on_chain_using_foreign_assets() {
 			AssetHubZagros,
 			vec![
 				RuntimeEvent::AssetConversion(pezpallet_asset_conversion::Event::SwapExecuted { amount_in, amount_out, .. },) => {
-					amount_in: *amount_in == 100000000000000,
-					amount_out: *amount_out == 181322178776029,
+					amount_in: *amount_in == 333333300000,
+					amount_out: *amount_out == 498874118173,
 				},
 			]
 		);
@@ -220,7 +220,7 @@ fn swap_locally_on_chain_using_foreign_assets() {
 			<AssetHubZagros as Chain>::RuntimeOrigin::signed(sov_penpal_on_ahr.clone()),
 			asset_native.clone(),
 			Box::new(foreign_asset_at_asset_hub_zagros),
-			1414213562372995 - ASSET_HUB_ZAGROS_ED * 2, // all but the 2 EDs can't be retrieved.
+			1414213562273 - ASSET_HUB_ZAGROS_ED * 2, // all but the 2 EDs can't be retrieved.
 			0,
 			0,
 			sov_penpal_on_ahr.clone().into(),
