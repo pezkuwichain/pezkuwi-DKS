@@ -241,9 +241,25 @@ pub struct ProofSizeToFee;
 impl WeightToFeePolynomial for ProofSizeToFee {
 	type Balance = Balance;
 	fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-		// Map 10kb proof to 1 CENT.
+		// Derived from this chain's own ref-time price, scaled by how much scarcer proof
+		// size is than ref time in a block — the same relation the Asset Hub uses.
+		//
+		// This was a bare `10_000` under a comment claiming it mapped 10kb of proof to a
+		// cent. It does not: a cent here is `UNIT / 30_000`, so the constant charged three
+		// times what it claimed, roughly seven times what the Asset Hub charges for the
+		// same proof size, and over twice what this chain's own ref-time calibration
+		// implies. Messages priced by the sender at Asset Hub rates were rejected here as
+		// `TooExpensive`, taking several cross-chain flows down with them.
 		let p = MILLIUNIT / 10;
-		let q = 10_000;
+		let ratio = MAXIMUM_BLOCK_WEIGHT
+			.ref_time()
+			.checked_div(MAXIMUM_BLOCK_WEIGHT.proof_size())
+			.unwrap_or(1)
+			.max(1);
+		let q = (100 * Balance::from(ExtrinsicBaseWeight::get().ref_time()))
+			.checked_div(Balance::from(ratio))
+			.unwrap_or(1)
+			.max(1);
 
 		smallvec![WeightToFeeCoefficient {
 			degree: 1,
