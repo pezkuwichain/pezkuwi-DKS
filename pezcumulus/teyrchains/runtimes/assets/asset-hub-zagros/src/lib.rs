@@ -196,6 +196,11 @@ impl pezframe_system::Config for Runtime {
 	type OnSetCode = pezcumulus_pezpallet_teyrchain_system::TeyrchainSetCode<Self>;
 	type MaxConsumers = pezframe_support::traits::ConstU32<16>;
 	type SingleBlockMigrations = Migrations;
+	// The pallet sits in this runtime at index 6, but leaving this at the default `()`
+	// leaves it unreachable: `frame_system` never hands it a block, so a multi-block
+	// migration would silently never run. Both People chains already wire it this way,
+	// and the migrations pallet's own integrity test asserts it.
+	type MultiBlockMigrator = MultiBlockMigrations;
 }
 
 impl pezcumulus_pezpallet_weight_reclaim::Config for Runtime {
