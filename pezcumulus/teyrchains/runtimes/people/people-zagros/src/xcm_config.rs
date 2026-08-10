@@ -14,31 +14,35 @@
 // limitations under the License.
 
 use super::{
-	AccountId, AllPalletsWithSystem, Balances, PezkuwiXcm, Runtime, RuntimeCall, RuntimeEvent,
-	RuntimeOrigin, TeyrchainInfo, TeyrchainSystem, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balance, Balances, PezkuwiXcm, Runtime, RuntimeCall,
+	RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, TeyrchainInfo, TeyrchainSystem, WeightToFee,
+	XcmpQueue,
 };
 use crate::{TransactionByteFee, CENTS};
 use pezframe_support::{
 	parameter_types,
 	traits::{
-		tokens::imbalance::ResolveTo, ConstU32, Contains, Disabled, Equals, Everything, Nothing,
+		fungible::HoldConsideration, tokens::imbalance::ResolveTo, ConstU32, Contains, Equals,
+		Everything, LinearStoragePrice, Nothing,
 	},
 };
 use pezframe_system::EnsureRoot;
 use pezkuwi_teyrchain_primitives::primitives::Sibling;
 use pezpallet_collator_selection::StakingPotAccountId;
-use pezpallet_xcm::XcmPassthrough;
+use pezpallet_xcm::{AuthorizedAliasers, XcmPassthrough};
 use pezsp_runtime::traits::AccountIdConversion;
+use testnet_teyrchains_constants::zagros::locations::AssetHubLocation;
 use teyrchains_common::{
 	xcm_config::{
-		AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
-		RelayOrOtherSystemTeyrchains,
+		AliasAccountId32FromSiblingSystemChain, AllSiblingSystemTeyrchains,
+		ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains, RelayOrOtherSystemTeyrchains,
 	},
 	TREASURY_PALLET_ID,
 };
 use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
 use xcm_builder::{
-	AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowHrmpNotificationsFromRelayChain,
+	AccountId32Aliases, AliasChildLocation, AliasOriginRootUsingFilter,
+	AllowExplicitUnpaidExecutionFrom, AllowHrmpNotificationsFromRelayChain,
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
 	DenyRecursively, DenyReserveTransferToRelayChain, DenyThenTry, DescribeAllTerminal,
 	DescribeFamily, DescribeTerminus, EnsureXcmOrigin, FrameTransactionalProcessor,
@@ -219,6 +223,19 @@ pub type WaivedLocations = (
 	LocalPlurality,
 );
 
+/// Defines origin aliasing rules for this chain.
+///
+/// - Allow any origin to alias into a child sub-location (equivalent to DescendOrigin),
+/// - Allow same accounts to alias into each other across system chains,
+/// - Allow AssetHub root to alias into anything,
+/// - Allow origins explicitly authorized to alias into target location.
+pub type TrustedAliasers = (
+	AliasChildLocation,
+	AliasAccountId32FromSiblingSystemChain,
+	AliasOriginRootUsingFilter<AssetHubLocation, Everything>,
+	AuthorizedAliasers<Runtime>,
+);
+
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
@@ -261,7 +278,7 @@ impl xcm_executor::Config for XcmConfig {
 	type UniversalAliases = Nothing;
 	type CallDispatcher = RuntimeCall;
 	type SafeCallFilter = Everything;
-	type Aliasers = Nothing;
+	type Aliasers = TrustedAliasers;
 	type TransactionalProcessor = FrameTransactionalProcessor;
 	type HrmpNewChannelOpenRequestHandler = ();
 	type HrmpChannelAcceptedHandler = ();
@@ -281,6 +298,12 @@ pub type XcmRouter = WithUniqueTopic<(
 	// ..and XCMP to communicate with the sibling chains.
 	XcmpQueue,
 )>;
+
+parameter_types! {
+	pub const DepositPerItem: Balance = crate::deposit(1, 0);
+	pub const DepositPerByte: Balance = crate::deposit(0, 1);
+	pub const AuthorizeAliasHoldReason: RuntimeHoldReason = RuntimeHoldReason::PezkuwiXcm(pezpallet_xcm::HoldReason::AuthorizeAlias);
+}
 
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
@@ -312,8 +335,13 @@ impl pezpallet_xcm::Config for Runtime {
 	type AdminOrigin = EnsureRoot<AccountId>;
 	type MaxRemoteLockConsumers = ConstU32<0>;
 	type RemoteLockConsumerIdentifier = ();
-	// Aliasing is disabled: xcm_executor::Config::Aliasers is set to `Nothing`.
-	type AuthorizedAliasConsideration = Disabled;
+	// xcm_executor::Config::Aliasers also uses pezpallet_xcm::AuthorizedAliasers.
+	type AuthorizedAliasConsideration = HoldConsideration<
+		AccountId,
+		Balances,
+		AuthorizeAliasHoldReason,
+		LinearStoragePrice<DepositPerItem, DepositPerByte, Balance>,
+	>;
 }
 
 impl pezcumulus_pezpallet_xcm::Config for Runtime {
