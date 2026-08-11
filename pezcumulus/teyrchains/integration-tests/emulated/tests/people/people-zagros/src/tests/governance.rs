@@ -17,7 +17,7 @@ use crate::imports::*;
 
 use codec::Encode;
 use people_zagros_runtime::people::IdentityInfo;
-use pezframe_support::pezsp_runtime::traits::Dispatchable;
+use pezframe_support::{assert_err, pezsp_runtime::traits::Dispatchable, pezsp_runtime::DispatchError};
 use teyrchains_common::AccountId;
 use zagros_runtime::{
 	governance::pezpallet_custom_origins::Origin::{
@@ -98,6 +98,10 @@ fn relay_commands_add_registrar_wrong_origin() {
 		(OriginKind::Superuser, WelatiAdminOrigin.into()),
 	];
 
+	// The relay only lets governance pallet origins originate `pallet_xcm::send`; an ordinary
+	// signed account is refused there, before any message leaves. The Welati origin is accepted
+	// and its message is then refused by the People chain, which only raises a relay
+	// `Plurality(Index(40..=42))` carried as `Superuser` to Root — and `add_registrar` needs Root.
 	let mut signed_origin = true;
 
 	for (origin_kind, origin) in origins {
@@ -128,25 +132,25 @@ fn relay_commands_add_registrar_wrong_origin() {
 				]))),
 			});
 
-			assert_ok!(xcm_message.dispatch(origin));
-			assert_expected_events!(
-				Zagros,
-				vec![
-					RuntimeEvent::XcmPallet(pezpallet_xcm::Event::Sent { .. }) => {},
-				]
-			);
+			if signed_origin {
+				// Refused by the relay's `SendXcmOrigin`: signed accounts may not send raw XCM.
+				assert_err!(xcm_message.dispatch(origin), DispatchError::BadOrigin);
+			} else {
+				assert_ok!(xcm_message.dispatch(origin));
+				assert_expected_events!(
+					Zagros,
+					vec![
+						RuntimeEvent::XcmPallet(pezpallet_xcm::Event::Sent { .. }) => {},
+					]
+				);
+			}
 		});
 
 		PeopleZagros::execute_with(|| {
 			type RuntimeEvent = <PeopleZagros as Chain>::RuntimeEvent;
 
 			if signed_origin {
-				assert_expected_events!(
-					PeopleZagros,
-					vec![
-						RuntimeEvent::MessageQueue(pezpallet_message_queue::Event::Processed { success: false, .. }) => {},
-					]
-				);
+				// Nothing was sent, so there is nothing to observe here.
 			} else {
 				assert_expected_events!(
 					PeopleZagros,
@@ -256,6 +260,10 @@ fn relay_commands_kill_identity_wrong_origin() {
 		(OriginKind::Superuser, CitizenshipAdminOrigin.into()),
 	];
 
+	// The relay refuses `pallet_xcm::send` from a signed account; only governance pallet origins
+	// may originate raw XCM. The Welati origin is accepted and refused on arrival instead.
+	let mut signed_origin = true;
+
 	for (origin_kind, origin) in origins {
 		Zagros::execute_with(|| {
 			type Runtime = <Zagros as Chain>::Runtime;
@@ -284,18 +292,25 @@ fn relay_commands_kill_identity_wrong_origin() {
 				]))),
 			});
 
-			assert_ok!(xcm_message.dispatch(origin));
-			assert_expected_events!(
-				Zagros,
-				vec![
-					RuntimeEvent::XcmPallet(pezpallet_xcm::Event::Sent { .. }) => {},
-				]
-			);
+			if signed_origin {
+				// Refused by the relay's `SendXcmOrigin`: signed accounts may not send raw XCM.
+				assert_err!(xcm_message.dispatch(origin), DispatchError::BadOrigin);
+			} else {
+				assert_ok!(xcm_message.dispatch(origin));
+				assert_expected_events!(
+					Zagros,
+					vec![
+						RuntimeEvent::XcmPallet(pezpallet_xcm::Event::Sent { .. }) => {},
+					]
+				);
+			}
 		});
 
 		PeopleZagros::execute_with(|| {
 			assert_expected_events!(PeopleZagros, vec![]);
 		});
+
+		signed_origin = false;
 	}
 }
 
@@ -466,6 +481,10 @@ fn relay_commands_add_remove_username_authority_wrong_origin() {
 		(OriginKind::Superuser, WelatiAdminOrigin.into()),
 	];
 
+	// The relay refuses `pallet_xcm::send` from a signed account; only governance pallet origins
+	// may originate raw XCM. The Welati origin is accepted and refused on arrival instead.
+	let mut signed_origin = true;
+
 	for (origin_kind, origin) in origins {
 		Zagros::execute_with(|| {
 			type Runtime = <Zagros as Chain>::Runtime;
@@ -497,6 +516,10 @@ fn relay_commands_add_remove_username_authority_wrong_origin() {
 					]))),
 				});
 
+			if signed_origin {
+				assert_err!(add_authority_xcm_msg.dispatch(origin.clone()), DispatchError::BadOrigin);
+				return;
+			}
 			assert_ok!(add_authority_xcm_msg.dispatch(origin.clone()));
 			assert_expected_events!(
 				Zagros,
@@ -540,6 +563,10 @@ fn relay_commands_add_remove_username_authority_wrong_origin() {
 					]))),
 				});
 
+			if signed_origin {
+				assert_err!(remove_authority_xcm_msg.dispatch(origin), DispatchError::BadOrigin);
+				return;
+			}
 			assert_ok!(remove_authority_xcm_msg.dispatch(origin));
 			assert_expected_events!(
 				Zagros,
@@ -552,5 +579,7 @@ fn relay_commands_add_remove_username_authority_wrong_origin() {
 		PeopleZagros::execute_with(|| {
 			assert_expected_events!(PeopleZagros, vec![]);
 		});
+
+		signed_origin = false;
 	}
 }
