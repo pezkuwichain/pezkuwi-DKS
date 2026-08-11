@@ -20,7 +20,10 @@ use people_zagros_runtime::people::IdentityInfo;
 use pezframe_support::pezsp_runtime::traits::Dispatchable;
 use teyrchains_common::AccountId;
 use zagros_runtime::{
-	governance::pezpallet_custom_origins::Origin::GeneralAdmin as GeneralAdminOrigin, Dmp,
+	governance::pezpallet_custom_origins::Origin::{
+		CitizenshipAdmin as CitizenshipAdminOrigin, WelatiAdmin as WelatiAdminOrigin,
+	},
+	Dmp,
 };
 use zagros_system_emulated_network::people_zagros_emulated_chain::people_zagros_runtime;
 
@@ -91,7 +94,8 @@ fn relay_commands_add_registrar_wrong_origin() {
 			OriginKind::SovereignAccount,
 			<Zagros as Chain>::RuntimeOrigin::signed(people_zagros_alice),
 		),
-		(OriginKind::Xcm, GeneralAdminOrigin.into()),
+		// Index(41) WelatiAdmin covers official appointments, which is what a registrar is.
+		(OriginKind::Superuser, WelatiAdminOrigin.into()),
 	];
 
 	let mut signed_origin = true;
@@ -247,7 +251,9 @@ fn relay_commands_kill_identity_wrong_origin() {
 			OriginKind::SovereignAccount,
 			<Zagros as Chain>::RuntimeOrigin::signed(people_zagros_alice),
 		),
-		(OriginKind::Xcm, GeneralAdminOrigin.into()),
+		// Index(42) CitizenshipAdmin covers citizenship revocation, which is what killing an
+		// identity amounts to.
+		(OriginKind::Superuser, CitizenshipAdminOrigin.into()),
 	];
 
 	for (origin_kind, origin) in origins {
@@ -456,7 +462,8 @@ fn relay_commands_add_remove_username_authority_wrong_origin() {
 			OriginKind::SovereignAccount,
 			<Zagros as Chain>::RuntimeOrigin::signed(people_zagros_alice.clone()),
 		),
-		(OriginKind::Xcm, GeneralAdminOrigin.into()),
+		// Index(41) WelatiAdmin covers official appointments; a username authority is one.
+		(OriginKind::Superuser, WelatiAdminOrigin.into()),
 	];
 
 	for (origin_kind, origin) in origins {
