@@ -27,7 +27,15 @@ pub mod currency {
 
 	pub const UNITS: Balance = 1_000_000_000_000;
 	pub const CENTS: Balance = UNITS / 30_000;
-	pub const GRAND: Balance = CENTS * 100_000;
+	/// A grand is a thousand of the base unit, which is what the name has always meant.
+	/// Upstream spells it `CENTS * 100_000` — a hundred thousand cents — which only comes to a
+	/// thousand where a cent is a hundredth. Here a cent is a thirty-thousandth, so that
+	/// spelling yielded roughly 3.33 units, and every governance figure derived from it came out
+	/// three hundred times too small: referendum submission and decision deposits of a few units
+	/// against a supply in the hundreds of millions, and a Fellowship spend cap of about 33.
+	/// Derive it from what it means rather than from the other ecosystem's cent scale, which
+	/// this crate's own comments warn against mixing.
+	pub const GRAND: Balance = UNITS * 1_000;
 	pub const MILLICENTS: Balance = CENTS / 1_000;
 
 	pub const fn deposit(items: u32, bytes: u32) -> Balance {
