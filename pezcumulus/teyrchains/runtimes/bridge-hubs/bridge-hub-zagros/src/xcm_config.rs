@@ -198,6 +198,11 @@ pub type TrustedTeleporters = ConcreteAssetFromSystem<ZagrosLocation>;
 ///
 /// - Allow any origin to alias into a child sub-location (equivalent to DescendOrigin),
 /// - Allow origins explicitly authorized by the alias target location.
+///
+/// Deliberately narrower than the other system chains: `AliasAccountId32FromSiblingSystemChain`
+/// is absent here on purpose. Only low-level operators such as relayers talk to this chain
+/// directly, and they can act locally, so admitting cross-chain aliasing would widen the surface
+/// for no demand. The tests assert the denial.
 pub type TrustedAliasers = (AliasChildLocation, AuthorizedAliasers<Runtime>);
 
 pub struct XcmConfig;
