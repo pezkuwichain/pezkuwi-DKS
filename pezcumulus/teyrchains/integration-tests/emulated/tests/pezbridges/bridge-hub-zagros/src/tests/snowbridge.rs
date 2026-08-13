@@ -542,8 +542,15 @@ fn send_weth_from_ethereum_to_non_existent_account_on_asset_hub_with_insufficien
 #[test]
 fn send_weth_from_ethereum_to_non_existent_account_on_asset_hub_with_sufficient_fee_but_do_not_satisfy_ed(
 ) {
-	// On AH the xcm fee is 26_789_690 and the ED is 3_300_000
-	send_weth_from_ethereum_to_asset_hub_with_fee([1; 32], 30_000_000);
+	// Measured on this runtime: the Asset Hub leg charges 6_323_242 and the existential deposit
+	// is 3_333_333 (a thirtieth of the relay's). The figure has to sit between them — above the
+	// fee so the message is not refused for being underfunded, and less than one ED above it so
+	// what reaches the beneficiary cannot open an account. It was 30_000_000 against a stated
+	// fee of 26_789_690; both numbers were inherited and neither holds here, so 23_676_758
+	// arrived, seven times the deposit, the account opened and this test quietly stopped
+	// testing what its name says. 8_000_000 leaves 1_676_758, and holds if the fee drifts by a
+	// fair margin either way.
+	send_weth_from_ethereum_to_asset_hub_with_fee([1; 32], 8_000_000);
 
 	AssetHubZagros::execute_with(|| {
 		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
