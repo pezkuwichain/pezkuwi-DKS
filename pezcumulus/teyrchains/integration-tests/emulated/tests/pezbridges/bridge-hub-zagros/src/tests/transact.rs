@@ -25,6 +25,12 @@ const ETHEREUM_BOB: [u8; 20] = hex_literal::hex!("11b0b11000011b0b11000011b0b110
 /// This particular test is not testing snowbridge, but only Bridge Hub, so the tested XCM flow from
 /// Ethereum starts from Bridge Hub.
 // TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/292): Once Snowbridge supports Transact, start the flow from Ethereum and test completely e2e.
+/// What the Asset Hub leg charges, paid out of the WETH the message carries.
+///
+/// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/290): dry-run to get local fees, for
+/// now use a hardcoded value. Current exact value 79_948_099_299.
+const AH_FEES_AMOUNT: u128 = 90_000_000_000;
+
 fn transfer_and_transact_in_same_xcm(
 	sender: Location,
 	weth: Asset,
@@ -40,9 +46,7 @@ fn transfer_and_transact_in_same_xcm(
 	.into();
 	let asset_hub_location = BridgeHubZagros::sibling_location_of(AssetHubZagros::para_id());
 
-	// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/290): dry-run to get local fees, for now use hardcoded value.
-	let ah_fees_amount = 90_000_000_000u128; // current exact value 79_948_099_299
-	let fees_for_ah: Asset = (weth.id.clone(), ah_fees_amount).into();
+	let fees_for_ah: Asset = (weth.id.clone(), AH_FEES_AMOUNT).into();
 
 	// xcm to be executed at dest
 	let xcm_on_dest = Xcm(vec![
@@ -118,7 +122,11 @@ fn transact_from_ethereum_to_penpalb_through_asset_hub() {
 		));
 	});
 
-	let fee_amount_to_send: teyrchains_common::Balance = ASSET_HUB_ZAGROS_ED * 10000;
+	// The Asset Hub leg pays `AH_FEES_AMOUNT` out of what arrives, so what arrives has to cover
+	// it. This was `ASSET_HUB_ZAGROS_ED * 10000`, which is roomy where an existential deposit is
+	// a hundredth of a unit; here it is a thirty-thousandth, so the figure came to ~33e9 against
+	// a fee of 90e9 and the message ran out at `PayFees`. Size it from the fee it must cover.
+	let fee_amount_to_send: teyrchains_common::Balance = AH_FEES_AMOUNT * 2;
 	let sender_chain_as_seen_by_asset_hub =
 		Location::new(2, [GlobalConsensus(Ethereum { chain_id: SEPOLIA_ID })]);
 
