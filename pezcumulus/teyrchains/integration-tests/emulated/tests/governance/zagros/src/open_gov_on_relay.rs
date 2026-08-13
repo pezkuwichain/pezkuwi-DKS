@@ -18,6 +18,7 @@ use emulated_integration_tests_common::{
 	impls::RelayChain,
 	xcm_pez_emulator::{Chain, TestExt, Teyrchain},
 };
+use pezframe_support::traits::PalletInfoAccess;
 use zagros_runtime::governance::pezpallet_custom_origins::Origin;
 use zagros_system_emulated_network::{
 	AssetHubZagrosPara as AssetHubZagros, BridgeHubZagrosPara as BridgeHubZagros,
@@ -55,7 +56,11 @@ fn relaychain_can_authorize_upgrade_for_itself() {
 			ok_origin.clone()
 		),
 		DispatchError::Module(pezsp_runtime::ModuleError {
-			index: 36,
+			// Read the index off the runtime rather than restating it. The literal this replaced
+			// said 36, which is where upstream mounts this pezpallet; here it sits at 44, and
+			// nothing at all is mounted at 36 — so the assertion could never match and the test
+			// failed on the index while the behaviour it checks was already correct.
+			index: <zagros_runtime::Whitelist as PalletInfoAccess>::index() as u8,
 			error: [3, 0, 0, 0],
 			message: Some("CallIsNotWhitelisted")
 		})
@@ -155,7 +160,11 @@ fn relaychain_can_authorize_upgrade_for_system_chains() {
 			ok_origin.clone()
 		),
 		DispatchError::Module(pezsp_runtime::ModuleError {
-			index: 36,
+			// Read the index off the runtime rather than restating it. The literal this replaced
+			// said 36, which is where upstream mounts this pezpallet; here it sits at 44, and
+			// nothing at all is mounted at 36 — so the assertion could never match and the test
+			// failed on the index while the behaviour it checks was already correct.
+			index: <zagros_runtime::Whitelist as PalletInfoAccess>::index() as u8,
 			error: [3, 0, 0, 0],
 			message: Some("CallIsNotWhitelisted")
 		})

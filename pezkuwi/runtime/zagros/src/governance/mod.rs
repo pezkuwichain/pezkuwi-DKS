@@ -17,11 +17,13 @@
 //! New governance configurations for the Pezkuwichain runtime.
 
 use super::*;
+use crate::xcm_config::{Collectives, FellowsBodyId};
 use pezframe_support::{
 	parameter_types,
-	traits::{ConstU16, EitherOf},
+	traits::{ConstU16, EitherOf, EitherOfDiverse},
 };
 use pezframe_system::EnsureRootWithSuccess;
+use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
 
 mod origins;
 pub use origins::{
@@ -67,8 +69,15 @@ impl pezpallet_whitelist::Config for Runtime {
 	type WeightInfo = weights::pezpallet_whitelist::WeightInfo<Self>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
-	type WhitelistOrigin =
-		EitherOf<EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>, Fellows>;
+	/// The Fellowship is a body on the Collectives chain, so its authority reaches this pallet
+	/// over XCM. The second arm used to be the local `Fellows` custom origin, which no track in
+	/// `tracks.rs` maps to and no collective on this chain can raise — leaving root as the only
+	/// caller able to whitelist anything, and the whole `whitelisted_caller` fast path unusable
+	/// by the body it was built for.
+	type WhitelistOrigin = EitherOfDiverse<
+		EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
+		EnsureXcm<IsVoiceOfBody<Collectives, FellowsBodyId>>,
+	>;
 	type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
 	type Preimages = Preimage;
 }
