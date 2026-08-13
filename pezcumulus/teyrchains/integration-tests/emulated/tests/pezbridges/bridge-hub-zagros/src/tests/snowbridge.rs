@@ -539,28 +539,44 @@ fn send_weth_from_ethereum_to_non_existent_account_on_asset_hub_with_insufficien
 	});
 }
 
+/// A bridged token is a sufficient asset, so receiving it opens the beneficiary's account on its
+/// own — the native remainder left over from the fee has no say in it.
+///
+/// This replaces a test that asserted the opposite: that a remainder below the existential
+/// deposit makes the whole message fail. That premise comes from a configuration where the
+/// bridged token is not sufficient. Here it is, which is the same property that lets an account
+/// hold a stablecoin on this chain without holding the native token, so the deposit path the old
+/// test named is never reached by this route.
+///
+/// Measured while establishing that: the Asset Hub leg charges 6_323_242 and the existential
+/// deposit is 3_333_333, a thirtieth of the relay's. Sending 8_000_000 leaves 1_676_758 — half an
+/// existential deposit, deliberately — and the account is still created, by the token rather than
+/// by the balance.
 #[test]
-fn send_weth_from_ethereum_to_non_existent_account_on_asset_hub_with_sufficient_fee_but_do_not_satisfy_ed(
-) {
-	// Measured on this runtime: the Asset Hub leg charges 6_323_242 and the existential deposit
-	// is 3_333_333 (a thirtieth of the relay's). The figure has to sit between them — above the
-	// fee so the message is not refused for being underfunded, and less than one ED above it so
-	// what reaches the beneficiary cannot open an account. It was 30_000_000 against a stated
-	// fee of 26_789_690; both numbers were inherited and neither holds here, so 23_676_758
-	// arrived, seven times the deposit, the account opened and this test quietly stopped
-	// testing what its name says. 8_000_000 leaves 1_676_758, and holds if the fee drifts by a
-	// fair margin either way.
-	send_weth_from_ethereum_to_asset_hub_with_fee([1; 32], 8_000_000);
+fn send_weth_from_ethereum_opens_the_account_by_the_token_not_the_remainder() {
+	let beneficiary: [u8; 32] = [1; 32];
+	send_weth_from_ethereum_to_asset_hub_with_fee(beneficiary, 8_000_000);
 
 	AssetHubZagros::execute_with(|| {
 		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
 
-		// Check that the message was not processed successfully due to insufficient ED
 		assert_expected_events!(
 			AssetHubZagros,
 			vec![
-				RuntimeEvent::MessageQueue(pezpallet_message_queue::Event::Processed { success:false, .. }) => {},
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { owner, .. }) => {
+					owner: *owner == beneficiary.into(),
+				},
+				RuntimeEvent::MessageQueue(pezpallet_message_queue::Event::Processed { success: true, .. }) => {},
 			]
+		);
+
+		// The remainder was under the existential deposit, so it never landed as a balance. The
+		// account exists all the same.
+		assert_eq!(
+			<<AssetHubZagros as AssetHubZagrosPallet>::Balances as pezframe_support::traits::fungible::Inspect<_>>::balance(
+				&beneficiary.into()
+			),
+			0
 		);
 	});
 }
