@@ -17,7 +17,9 @@ use crate::imports::*;
 
 use codec::Encode;
 use people_zagros_runtime::people::IdentityInfo;
-use pezframe_support::{assert_err, pezsp_runtime::traits::Dispatchable, pezsp_runtime::DispatchError};
+use pezframe_support::{
+	assert_err, pezsp_runtime::traits::Dispatchable, pezsp_runtime::DispatchError,
+};
 use teyrchains_common::AccountId;
 use zagros_runtime::{
 	governance::pezpallet_custom_origins::Origin::{
@@ -517,7 +519,10 @@ fn relay_commands_add_remove_username_authority_wrong_origin() {
 				});
 
 			if signed_origin {
-				assert_err!(add_authority_xcm_msg.dispatch(origin.clone()), DispatchError::BadOrigin);
+				assert_err!(
+					add_authority_xcm_msg.dispatch(origin.clone()),
+					DispatchError::BadOrigin
+				);
 				return;
 			}
 			assert_ok!(add_authority_xcm_msg.dispatch(origin.clone()));
