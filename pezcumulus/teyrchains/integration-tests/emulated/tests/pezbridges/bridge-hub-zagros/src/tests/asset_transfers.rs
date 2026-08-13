@@ -572,9 +572,15 @@ fn send_wnds_from_zagros_relay_through_asset_hub_zagros_to_asset_hub_pezkuwichai
 	// bridge leg alone charges on the order of 9e10 for delivery, and every hop buys execution
 	// out of what it carries. `ZAGROS_ED * 100` came to ~3.3e9 — the figure is generous where an
 	// existential deposit is a hundredth of a unit, but here it is a thirty-thousandth, so the
-	// message ran out at the `DepositReserveAsset` that crosses the bridge. Sized to clear the
-	// bridge fee with room for the three execution buys.
-	let amount = ZAGROS_ED * 10_000;
+	// message ran out at the `DepositReserveAsset` that crosses the bridge.
+	//
+	// The figure is pinned between two bounds. Each hop buys execution with `amount / 2`, a fixed
+	// share of the original, so raising the amount raises the demand with it: what survives the
+	// bridge fee (~9e10) still has to cover `amount / 2`, which puts the floor at roughly twice
+	// that fee. The ceiling is the Asset Hub's checking account, which the teleport checks in
+	// against — `ZAGROS_ED * 10_000` matched that balance exactly and the first instruction
+	// failed with `NotWithdrawable`. This sits between the two.
+	let amount = ZAGROS_ED * 7_000;
 	let sender = ZagrosSender::get();
 	let receiver = PenpalAReceiver::get();
 	let local_asset_hub = Zagros::child_location_of(AssetHubZagros::para_id());
