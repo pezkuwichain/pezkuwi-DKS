@@ -55,8 +55,19 @@ parameter_types! {
 	pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH);
 	pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
 	pub CheckAccount: AccountId = XcmPallet::check_account();
-	/// Pezkuwi relay does not have mint authority anymore after the Asset Hub migration.
-	pub TeleportTracking: Option<(AccountId, MintLocation)> = None;
+	/// Track what teleports away and what comes back.
+	///
+	/// The comment this replaces said the relay has no mint authority since the Asset Hub
+	/// migration, but `None` does not remove mint authority — it removes the accounting. The
+	/// chain still accepts a teleport from any trusted teyrchain and mints on receipt; it simply
+	/// keeps no record that the supply ever left. Measured on the running chain: the checking
+	/// account has never existed and no teyrchain sovereign account exists either, so nothing has
+	/// ever backed a teleport in this direction.
+	///
+	/// With `MintLocation::Local` an arriving teleport is checked in against this account, so the
+	/// chain can only mint back what previously left. Rehearsed on Zagros first, where turning it
+	/// on cost nothing: all six suites stayed green.
+	pub TeleportTracking: Option<(AccountId, MintLocation)> = Some((CheckAccount::get(), MintLocation::Local));
 	pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
