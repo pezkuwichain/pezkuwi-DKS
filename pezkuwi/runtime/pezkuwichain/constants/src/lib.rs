@@ -25,6 +25,11 @@ pub mod currency {
 	/// The existential deposit.
 	pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
+	/// One HEZ, which is what `tokenSymbol` reports on the relay chain, the Asset Hub and
+	/// People alike. Balances are carried in the smallest indivisible amount, the TYR, and
+	/// one HEZ is 10^12 of them -- the same relationship a DOT has to a planck. Chain specs
+	/// pair this with `tokenDecimals: 12`; the two have to agree or every displayed balance
+	/// is wrong by a power of ten.
 	pub const UNITS: Balance = 1_000_000_000_000;
 	pub const CENTS: Balance = UNITS / 30_000;
 	/// One unit, named for what a deposit or a spend is reckoned in.
