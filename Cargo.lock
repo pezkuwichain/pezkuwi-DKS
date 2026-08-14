@@ -17989,7 +17989,7 @@ dependencies = [
  "pezsp-tracing",
  "pezsp-version",
  "polkavm",
- "polkavm-common 0.29.0",
+ "polkavm-common",
  "pretty_assertions",
  "proptest",
  "rand 0.8.6",
@@ -22633,7 +22633,7 @@ dependencies = [
  "log",
  "picosimd",
  "polkavm-assembler",
- "polkavm-common 0.33.0",
+ "polkavm-common",
  "polkavm-linux-raw",
 ]
 
@@ -22648,19 +22648,11 @@ dependencies = [
 
 [[package]]
 name = "polkavm-common"
-version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f634b46a6a47a5de381f56d1d8cced9f8640d063b2b1a44b0da6dbef91bbd400"
-dependencies = [
- "blake3",
-]
-
-[[package]]
-name = "polkavm-common"
 version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e44a9487003cf5b9fc4462bbcf105cc37d5d9b18b40edf5ed50dd20ed1fdb27"
 dependencies = [
+ "blake3",
  "log",
  "picosimd",
  "polkavm-assembler",
@@ -22681,7 +22673,7 @@ version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0c2166ad71dd7f51dcdd0d91b70d408a8b3610fa6e94d8202dd4b7185607181"
 dependencies = [
- "polkavm-common 0.33.0",
+ "polkavm-common",
  "proc-macro2 1.0.106",
  "quote 1.0.46",
  "syn 2.0.118",
@@ -22708,7 +22700,7 @@ dependencies = [
  "hashbrown 0.14.5",
  "log",
  "object 0.36.7",
- "polkavm-common 0.33.0",
+ "polkavm-common",
  "regalloc2 0.9.3",
  "rustc-demangle",
 ]
