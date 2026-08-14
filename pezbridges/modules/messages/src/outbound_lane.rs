@@ -24,7 +24,6 @@ use pezbp_messages::{
 	UnrewardedRelayer,
 };
 use pezframe_support::{traits::Get, BoundedVec, PalletError};
-use pezsp_runtime::RuntimeDebug;
 use pezsp_std::{collections::vec_deque::VecDeque, marker::PhantomData, ops::RangeInclusive};
 use scale_info::TypeInfo;
 
@@ -65,9 +64,7 @@ impl<T: Config<I>, I: 'static> Get<u32> for StoredMessagePayloadLimit<T, I> {
 pub type StoredMessagePayload<T, I> = BoundedVec<u8, StoredMessagePayloadLimit<T, I>>;
 
 /// Result of messages receival confirmation.
-#[derive(
-	Encode, Decode, DecodeWithMemTracking, RuntimeDebug, PartialEq, Eq, PalletError, TypeInfo,
-)]
+#[derive(Encode, Decode, DecodeWithMemTracking, Debug, PartialEq, Eq, PalletError, TypeInfo)]
 pub enum ReceptionConfirmationError {
 	/// Bridged chain is trying to confirm more messages than we have generated. May be a result
 	/// of invalid bridged chain storage.

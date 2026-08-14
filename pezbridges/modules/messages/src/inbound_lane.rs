@@ -25,7 +25,6 @@ use pezbp_messages::{
 	OutboundLaneData, ReceptionResult, UnrewardedRelayer,
 };
 use pezbp_runtime::AccountIdOf;
-use pezsp_runtime::RuntimeDebug;
 use pezsp_std::prelude::PartialEq;
 use scale_info::{Type, TypeInfo};
 
@@ -58,7 +57,7 @@ pub trait InboundLaneStorage {
 /// these generic bounds all over the code.
 ///
 /// The encoding of this type matches encoding of the corresponding `MessageData`.
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, Debug, PartialEq, Eq)]
 pub struct StoredInboundLaneData<T: Config<I>, I: 'static>(
 	pub InboundLaneData<AccountIdOf<BridgedChainOf<T, I>>>,
 );

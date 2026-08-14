@@ -20,7 +20,7 @@
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezsp_core::H256;
-use pezsp_runtime::{FixedU128, RuntimeDebug};
+use pezsp_runtime::FixedU128;
 use scale_info::TypeInfo;
 use xcm::latest::prelude::Location;
 
@@ -43,7 +43,7 @@ impl XcmChannelStatusProvider for () {
 }
 
 /// Current status of the bridge.
-#[derive(Clone, Decode, Encode, Eq, PartialEq, TypeInfo, MaxEncodedLen, RuntimeDebug)]
+#[derive(Clone, Decode, Encode, Eq, PartialEq, TypeInfo, MaxEncodedLen, Debug)]
 pub struct BridgeState {
 	/// Current delivery fee factor.
 	pub delivery_fee_factor: FixedU128,

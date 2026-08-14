@@ -18,7 +18,6 @@
 use crate::{Config, DebugSettingsOf};
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezsp_core::Get;
-use pezsp_runtime::RuntimeDebug;
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 
@@ -29,7 +28,7 @@ use serde::{Deserialize, Serialize};
 	Default,
 	Clone,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Serialize,

@@ -18,11 +18,10 @@
 
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezframe_support::weights::Weight;
-use pezsp_runtime::RuntimeDebug;
 use scale_info::TypeInfo;
 
 /// Message dispatch result.
-#[derive(Encode, Decode, DecodeWithMemTracking, RuntimeDebug, Clone, PartialEq, Eq, TypeInfo)]
+#[derive(Encode, Decode, DecodeWithMemTracking, Debug, Clone, PartialEq, Eq, TypeInfo)]
 pub struct MessageDispatchResult<DispatchLevelResult> {
 	/// Unspent dispatch weight. This weight that will be deducted from total delivery transaction
 	/// weight, thus reducing the transaction cost. This shall not be zero in (at least) two cases:

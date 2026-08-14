@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
-use pezframe_support::{CloneNoBound, PartialEqNoBound, RuntimeDebugNoBound};
+use pezframe_support::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use pezsp_core::{H160, H256, U256};
-use pezsp_runtime::RuntimeDebug;
 use pezsp_std::{boxed::Box, iter::repeat, prelude::*};
 use scale_info::TypeInfo;
 
@@ -29,7 +28,7 @@ use milagro_bls::PublicKey as PublicKeyPrepared;
 pub type ValidatorIndex = u64;
 pub type ForkVersion = [u8; 4];
 
-#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, PartialEq, Debug, TypeInfo)]
 pub struct ForkVersions {
 	pub genesis: Fork,
 	pub altair: Fork,
@@ -40,13 +39,13 @@ pub struct ForkVersions {
 	pub fulu: Fork,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, PartialEq, Debug, TypeInfo)]
 pub struct Fork {
 	pub version: [u8; 4],
 	pub epoch: u64,
 }
 
-#[derive(Copy, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Copy, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Debug, TypeInfo)]
 pub struct PublicKey(pub [u8; PUBKEY_SIZE]);
 
 impl Default for PublicKey {
@@ -87,7 +86,7 @@ impl Serialize for PublicKey {
 	}
 }
 
-#[derive(Copy, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Copy, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Debug, TypeInfo)]
 pub struct Signature(pub [u8; SIGNATURE_SIZE]);
 
 impl Default for Signature {
@@ -118,7 +117,7 @@ pub struct FinalizedHeaderState {
 	pub beacon_slot: u64,
 }
 
-#[derive(Clone, Default, Encode, Decode, PartialEq, RuntimeDebug)]
+#[derive(Clone, Default, Encode, Decode, PartialEq, Debug)]
 pub struct ForkData {
 	// 1 or 0 bit, indicates whether a sync committee participated in a vote
 	pub current_version: [u8; 4],
@@ -131,7 +130,7 @@ impl ForkData {
 	}
 }
 
-#[derive(Clone, Default, Encode, Decode, PartialEq, RuntimeDebug)]
+#[derive(Clone, Default, Encode, Decode, PartialEq, Debug)]
 pub struct SigningData {
 	pub object_root: H256,
 	pub domain: H256,
@@ -150,7 +149,7 @@ impl SigningData {
 	DecodeWithMemTracking,
 	PartialEqNoBound,
 	CloneNoBound,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	TypeInfo,
 	MaxEncodedLen,
 )]
@@ -231,7 +230,7 @@ impl<const COMMITTEE_SIZE: usize> TryFrom<&SyncCommittee<COMMITTEE_SIZE>>
 	Decode,
 	DecodeWithMemTracking,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 )]
@@ -257,13 +256,7 @@ impl BeaconHeader {
 }
 
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	CloneNoBound,
-	PartialEqNoBound,
-	RuntimeDebugNoBound,
-	TypeInfo,
+	Encode, Decode, DecodeWithMemTracking, CloneNoBound, PartialEqNoBound, DebugNoBound, TypeInfo,
 )]
 #[cfg_attr(
 	feature = "std",
@@ -335,7 +328,7 @@ impl<const COMMITTEE_SIZE: usize, const COMMITTEE_BITS_SIZE: usize>
 	DecodeWithMemTracking,
 	CloneNoBound,
 	PartialEqNoBound,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	TypeInfo,
 )]
 #[cfg_attr(
@@ -372,15 +365,7 @@ impl ExecutionPayloadHeader {
 }
 
 #[derive(
-	Default,
-	Encode,
-	Decode,
-	Copy,
-	Clone,
-	PartialEqNoBound,
-	RuntimeDebugNoBound,
-	TypeInfo,
-	MaxEncodedLen,
+	Default, Encode, Decode, Copy, Clone, PartialEqNoBound, DebugNoBound, TypeInfo, MaxEncodedLen,
 )]
 pub struct CompactBeaconState {
 	#[codec(compact)]
@@ -390,13 +375,7 @@ pub struct CompactBeaconState {
 
 /// VersionedExecutionPayloadHeader
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	CloneNoBound,
-	PartialEqNoBound,
-	RuntimeDebugNoBound,
-	TypeInfo,
+	Encode, Decode, DecodeWithMemTracking, CloneNoBound, PartialEqNoBound, DebugNoBound, TypeInfo,
 )]
 #[cfg_attr(
 	feature = "std",
@@ -460,13 +439,7 @@ impl VersionedExecutionPayloadHeader {
 }
 
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	CloneNoBound,
-	PartialEqNoBound,
-	RuntimeDebugNoBound,
-	TypeInfo,
+	Encode, Decode, DecodeWithMemTracking, CloneNoBound, PartialEqNoBound, DebugNoBound, TypeInfo,
 )]
 #[cfg_attr(
 	feature = "std",
@@ -485,13 +458,7 @@ pub struct ExecutionProof {
 }
 
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	CloneNoBound,
-	PartialEqNoBound,
-	RuntimeDebugNoBound,
-	TypeInfo,
+	Encode, Decode, DecodeWithMemTracking, CloneNoBound, PartialEqNoBound, DebugNoBound, TypeInfo,
 )]
 #[cfg_attr(
 	feature = "std",
@@ -624,7 +591,7 @@ mod tests {
 }
 
 /// Operating modes for beacon client
-#[derive(Encode, Decode, Copy, Clone, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, Copy, Clone, PartialEq, Debug, TypeInfo)]
 pub enum Mode {
 	Active,
 	Blocked,
@@ -632,7 +599,7 @@ pub enum Mode {
 
 pub mod deneb {
 	use codec::{Decode, DecodeWithMemTracking, Encode};
-	use pezframe_support::{CloneNoBound, PartialEqNoBound, RuntimeDebugNoBound};
+	use pezframe_support::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 	use pezsp_core::{H160, H256, U256};
 	use pezsp_std::prelude::*;
 	use scale_info::TypeInfo;
@@ -648,7 +615,7 @@ pub mod deneb {
 		DecodeWithMemTracking,
 		CloneNoBound,
 		PartialEqNoBound,
-		RuntimeDebugNoBound,
+		DebugNoBound,
 		TypeInfo,
 	)]
 	#[cfg_attr(

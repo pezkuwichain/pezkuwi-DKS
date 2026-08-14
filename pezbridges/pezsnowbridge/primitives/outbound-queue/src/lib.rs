@@ -10,15 +10,12 @@ pub mod v2;
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezframe_support::PalletError;
 use pezsp_arithmetic::traits::{BaseArithmetic, Unsigned};
-use pezsp_core::RuntimeDebug;
 use scale_info::TypeInfo;
 
 pub use pezsnowbridge_verification_primitives::*;
 
 /// The operating mode of Channels and Gateway contract on Ethereum.
-#[derive(
-	Copy, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, RuntimeDebug, TypeInfo,
-)]
+#[derive(Copy, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, Debug, TypeInfo)]
 pub enum OperatingMode {
 	/// Normal operations. Allow sending and receiving messages.
 	Normal,
@@ -38,16 +35,7 @@ pub trait SendMessageFeeProvider {
 
 /// Reasons why sending to Ethereum could not be initiated
 #[derive(
-	Copy,
-	Clone,
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	PartialEq,
-	Eq,
-	RuntimeDebug,
-	PalletError,
-	TypeInfo,
+	Copy, Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, Debug, PalletError, TypeInfo,
 )]
 pub enum SendError {
 	/// Message is too large to be safely executed on Ethereum

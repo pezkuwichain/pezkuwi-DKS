@@ -8,21 +8,11 @@ pub use milagro_bls::{
 };
 use pezframe_support::{ensure, PalletError};
 use pezsp_core::H256;
-use pezsp_runtime::RuntimeDebug;
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
 
 #[derive(
-	Copy,
-	Clone,
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Eq,
-	PartialEq,
-	TypeInfo,
-	RuntimeDebug,
-	PalletError,
+	Copy, Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, TypeInfo, Debug, PalletError,
 )]
 pub enum BlsError {
 	InvalidSignature,

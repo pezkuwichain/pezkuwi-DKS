@@ -36,7 +36,7 @@ use pezframe_support::{
 	dispatch::{DispatchInfo, PostDispatchInfo},
 	pezpallet_prelude::TransactionSource,
 	weights::Weight,
-	CloneNoBound, DefaultNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound,
+	CloneNoBound, DebugNoBound, DefaultNoBound, EqNoBound, PartialEqNoBound,
 };
 use pezframe_system::Config as SystemConfig;
 use pezpallet_bridge_messages::{
@@ -51,7 +51,7 @@ use pezsp_runtime::{
 		TransactionExtension, ValidateResult, Zero,
 	},
 	transaction_validity::{InvalidTransaction, TransactionValidityError, ValidTransactionBuilder},
-	DispatchResult, RuntimeDebug,
+	DispatchResult,
 };
 use scale_info::TypeInfo;
 
@@ -97,7 +97,7 @@ impl<AccountId, RemoteGrandpaChainBlockNumber: Debug, LaneId: Clone + Copy + Deb
 }
 
 /// The actions on relayer account that need to be performed because of his actions.
-#[derive(RuntimeDebug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum RelayerAccountAction<AccountId, RewardBalance, LaneId> {
 	/// Do nothing with relayer account.
 	None,
@@ -122,7 +122,7 @@ pub enum RelayerAccountAction<AccountId, RewardBalance, LaneId> {
 	Encode,
 	EqNoBound,
 	PartialEqNoBound,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	TypeInfo,
 )]
 #[scale_info(skip_type_params(Runtime, Config, LaneId))]

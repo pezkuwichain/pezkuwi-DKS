@@ -26,11 +26,10 @@ use pezpallet_bridge_grandpa::SubmitFinalityProofHelper;
 use pezsp_runtime::{
 	traits::Zero,
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
-	RuntimeDebug,
 };
 
 /// Verified `SubmitTeyrchainHeadsInfo`.
-#[derive(PartialEq, RuntimeDebug)]
+#[derive(PartialEq, Debug)]
 pub struct VerifiedSubmitTeyrchainHeadsInfo {
 	/// Base call information.
 	pub base: SubmitTeyrchainHeadsInfo,

@@ -20,7 +20,6 @@ use crate::{MessageNonce, UnrewardedRelayer};
 
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezbp_runtime::{raw_storage_proof_size, RawStorageProof, Size};
-use pezsp_core::RuntimeDebug;
 use pezsp_std::{
 	collections::{btree_map::BTreeMap, vec_deque::VecDeque},
 	fmt::Debug,
@@ -38,7 +37,7 @@ use scale_info::TypeInfo;
 /// - storage proof of the inbound lane state;
 ///
 /// - lane id.
-#[derive(Clone, Decode, DecodeWithMemTracking, Encode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Decode, DecodeWithMemTracking, Encode, Eq, PartialEq, Debug, TypeInfo)]
 pub struct FromBridgedChainMessagesDeliveryProof<BridgedHeaderHash, LaneId> {
 	/// Hash of the bridge header the proof is for.
 	pub bridged_header_hash: BridgedHeaderHash,
@@ -108,7 +107,7 @@ impl<LaneId> OnMessagesDelivered<LaneId> for () {
 }
 
 /// Send message artifacts.
-#[derive(Eq, RuntimeDebug, PartialEq)]
+#[derive(Eq, Debug, PartialEq)]
 pub struct SendMessageArtifacts {
 	/// Nonce of the message.
 	pub nonce: MessageNonce,

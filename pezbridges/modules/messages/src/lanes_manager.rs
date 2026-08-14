@@ -26,14 +26,12 @@ use pezbp_messages::{
 	MessageNonce, OutboundLaneData,
 };
 use pezbp_runtime::AccountIdOf;
-use pezframe_support::{ensure, pezsp_runtime::RuntimeDebug, PalletError};
+use pezframe_support::{ensure, pezsp_runtime::PalletError};
 use pezsp_std::marker::PhantomData;
 use scale_info::TypeInfo;
 
 /// Lanes manager errors.
-#[derive(
-	Encode, Decode, DecodeWithMemTracking, RuntimeDebug, PartialEq, Eq, PalletError, TypeInfo,
-)]
+#[derive(Encode, Decode, DecodeWithMemTracking, Debug, PartialEq, Eq, PalletError, TypeInfo)]
 pub enum LanesManagerError {
 	/// Inbound lane already exists.
 	InboundLaneAlreadyExists,

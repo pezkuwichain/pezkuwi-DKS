@@ -1,5 +1,4 @@
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
-use pezsp_runtime::RuntimeDebug;
 use scale_info::TypeInfo;
 
 /// Basic operating modes for a bridges module (Normal/Halted).
@@ -11,7 +10,7 @@ use scale_info::TypeInfo;
 	Copy,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 )]

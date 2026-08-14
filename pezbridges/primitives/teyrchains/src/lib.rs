@@ -30,7 +30,7 @@ use pezbp_runtime::{
 };
 use pezframe_support::{weights::Weight, Blake2_128Concat, Twox64Concat};
 use pezsp_core::storage::StorageKey;
-use pezsp_runtime::{traits::Header as HeaderT, RuntimeDebug};
+use pezsp_runtime::traits::Header as HeaderT;
 use pezsp_std::{marker::PhantomData, prelude::*};
 use scale_info::TypeInfo;
 
@@ -44,7 +44,7 @@ pub type RelayBlockHasher = pezbp_pezkuwi_core::Hasher;
 mod call_info;
 
 /// Best known teyrchain head hash.
-#[derive(Clone, Decode, Encode, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Decode, Encode, MaxEncodedLen, PartialEq, Debug, TypeInfo)]
 pub struct BestParaHeadHash {
 	/// Number of relay block where this head has been read.
 	///
@@ -60,7 +60,7 @@ pub struct BestParaHeadHash {
 }
 
 /// Best known teyrchain head as it is stored in the runtime storage.
-#[derive(Decode, Encode, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Decode, Encode, MaxEncodedLen, PartialEq, Debug, TypeInfo)]
 pub struct ParaInfo {
 	/// Best known teyrchain head hash.
 	pub best_head_hash: BestParaHeadHash,
@@ -115,7 +115,7 @@ impl StorageDoubleMapKeyProvider for ImportedParaHeadsKeyProvider {
 /// We do not know exact structure of the teyrchain head, so we always store encoded version
 /// of the `pezbp_runtime::StoredHeaderData`. It is only decoded when we talk about specific
 /// teyrchain.
-#[derive(Clone, Decode, Encode, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Decode, Encode, PartialEq, Debug, TypeInfo)]
 pub struct ParaStoredHeaderData(pub Vec<u8>);
 
 impl ParaStoredHeaderData {

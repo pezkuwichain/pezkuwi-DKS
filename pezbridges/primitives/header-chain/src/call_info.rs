@@ -20,7 +20,7 @@ use crate::{justification, InitializationData};
 
 use codec::{Decode, Encode};
 use pezbp_runtime::HeaderOf;
-use pezframe_support::{weights::Weight, RuntimeDebugNoBound};
+use pezframe_support::{weights::Weight, DebugNoBound};
 use pezsp_consensus_grandpa::SetId;
 use pezsp_runtime::traits::{Header as HeaderT, Zero};
 use pezsp_std::{boxed::Box, fmt::Debug};
@@ -60,7 +60,7 @@ pub enum BridgeGrandpaCall<Header: HeaderT> {
 pub type BridgeGrandpaCallOf<C> = BridgeGrandpaCall<HeaderOf<C>>;
 
 /// A digest information on the `BridgeGrandpaCall::submit_finality_proof` call.
-#[derive(Copy, Clone, PartialEq, RuntimeDebugNoBound)]
+#[derive(Copy, Clone, PartialEq, DebugNoBound)]
 pub struct SubmitFinalityProofInfo<N: Debug> {
 	/// Number of the finality target.
 	pub block_number: N,

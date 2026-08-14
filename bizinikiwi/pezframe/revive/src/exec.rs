@@ -26,7 +26,7 @@ use crate::{
 	limits,
 	precompiles::{All as AllPrecompiles, Instance as PrecompileInstance, Precompiles},
 	primitives::{ExecConfig, ExecReturnValue, StorageDeposit},
-	runtime_decl_for_revive_api::{Decode, Encode, RuntimeDebugNoBound, TypeInfo},
+	runtime_decl_for_revive_api::{DebugNoBound, Decode, Encode, TypeInfo},
 	storage::{self, meter::Diff, AccountIdOrAddress, WriteOutcome},
 	tracing::if_tracing,
 	transient_storage::TransientStorage,
@@ -154,7 +154,7 @@ impl<T: Into<DispatchError>> From<T> for ExecError {
 }
 
 /// The type of origins supported by the revive pezpallet.
-#[derive(Clone, Encode, Decode, PartialEq, TypeInfo, RuntimeDebugNoBound)]
+#[derive(Clone, Encode, Decode, PartialEq, TypeInfo, DebugNoBound)]
 pub enum Origin<T: Config> {
 	Root,
 	Signed(T::AccountId),
@@ -481,7 +481,7 @@ pub trait PrecompileExt: sealing::Sealed {
 	Clone,
 	PartialEq,
 	Eq,
-	pezsp_core::RuntimeDebug,
+	Debug,
 	codec::Decode,
 	codec::Encode,
 	codec::MaxEncodedLen,

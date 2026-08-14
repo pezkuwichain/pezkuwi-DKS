@@ -50,7 +50,7 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use pezframe_support::traits::{Defensive, DefensiveSaturating, Get, Imbalance, OnUnbalanced};
 use pezsp_runtime::{
 	traits::{Saturating, Zero},
-	RuntimeDebug, WeakBoundedVec, Weight,
+	WeakBoundedVec, Weight,
 };
 use pezsp_staking::{EraIndex, StakingInterface};
 use scale_info::TypeInfo;
@@ -77,7 +77,7 @@ pub(crate) struct SlashParams<'a, T: 'a + Config> {
 
 /// Represents an offence record within the staking system, capturing details about a slashing
 /// event.
-#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, TypeInfo, MaxEncodedLen, PartialEq, Debug)]
 pub struct OffenceRecord<AccountId> {
 	/// The account ID of the entity that reported the offence.
 	pub reporter: Option<AccountId>,

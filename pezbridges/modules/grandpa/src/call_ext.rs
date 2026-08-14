@@ -32,12 +32,12 @@ use pezsp_consensus_grandpa::SetId;
 use pezsp_runtime::{
 	traits::{CheckedSub, Header, Zero},
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
-	RuntimeDebug, SaturatedConversion,
+	SaturatedConversion,
 };
 use pezsp_std::fmt::Debug;
 
 /// Verified `SubmitFinalityProofInfo<N>`.
-#[derive(Copy, Clone, PartialEq, RuntimeDebug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct VerifiedSubmitFinalityProofInfo<N: Debug> {
 	/// Base call information.
 	pub base: SubmitFinalityProofInfo<N>,

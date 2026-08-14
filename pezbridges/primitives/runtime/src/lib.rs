@@ -25,10 +25,7 @@ use pezframe_support::{
 };
 use pezframe_system::RawOrigin;
 use pezsp_core::storage::StorageKey;
-use pezsp_runtime::{
-	traits::{BadOrigin, Header as HeaderT, UniqueSaturatedInto},
-	RuntimeDebug,
-};
+use pezsp_runtime::traits::{BadOrigin, Header as HeaderT, UniqueSaturatedInto};
 use pezsp_std::{fmt::Debug, ops::RangeInclusive, vec, vec::Vec};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
@@ -76,7 +73,7 @@ pub const NO_INSTANCE_ID: ChainId = [0, 0, 0, 0];
 
 /// Generic header Id.
 #[derive(
-	RuntimeDebug,
+	Debug,
 	Default,
 	Clone,
 	Encode,
@@ -165,7 +162,7 @@ impl Size for PreComputedSize {
 }
 
 /// Era of specific transaction.
-#[derive(RuntimeDebug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TransactionEra<BlockNumber, BlockHash> {
 	/// Transaction is immortal.
 	Immortal,
@@ -348,7 +345,7 @@ pub trait OperatingMode: Send + Copy + Debug + FullCodec {
 	Copy,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Serialize,

@@ -142,7 +142,7 @@ impl<T: Config + pezpallet_session::Config + pezpallet_session::historical::Conf
 	Clone,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	serde::Serialize,
 	serde::Deserialize,
 )]
@@ -494,7 +494,7 @@ pub mod pezpallet {
 	/// These variants are emitted as [`Event::Unexpected`] and indicate a defensive check has
 	/// failed. While these should never occur under normal operation, they are useful for
 	/// diagnosing issues in production or test environments.
-	#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, TypeInfo, RuntimeDebug)]
+	#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, TypeInfo, Debug)]
 	pub enum UnexpectedKind {
 		/// A validator set was received while the pezpallet is in [`OperatingMode::Passive`].
 		ReceivedValidatorSetWhilePassive,

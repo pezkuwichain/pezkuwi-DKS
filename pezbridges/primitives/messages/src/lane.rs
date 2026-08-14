@@ -17,7 +17,7 @@
 //! Primitives of messages module, that represents lane id.
 
 use codec::{Codec, Decode, DecodeWithMemTracking, Encode, EncodeLike, MaxEncodedLen};
-use pezsp_core::{RuntimeDebug, TypeId, H256};
+use pezsp_core::{TypeId, H256};
 use pezsp_io::hashing::blake2_256;
 use pezsp_std::fmt::Debug;
 use scale_info::TypeInfo;
@@ -199,7 +199,7 @@ impl TryFrom<Vec<u8>> for HashedLaneId {
 }
 
 /// Lane state.
-#[derive(Clone, Copy, Decode, Encode, Eq, PartialEq, TypeInfo, MaxEncodedLen, RuntimeDebug)]
+#[derive(Clone, Copy, Decode, Encode, Eq, PartialEq, TypeInfo, MaxEncodedLen, Debug)]
 pub enum LaneState {
 	/// Lane is opened and messages may be sent/received over it.
 	Opened,

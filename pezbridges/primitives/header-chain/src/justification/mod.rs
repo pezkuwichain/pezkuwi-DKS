@@ -33,7 +33,7 @@ pub use verification::{
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezbp_runtime::{BlockNumberOf, Chain, HashOf, HeaderId};
 use pezsp_consensus_grandpa::{AuthorityId, AuthoritySignature};
-use pezsp_runtime::{traits::Header as HeaderT, RuntimeDebug, SaturatedConversion};
+use pezsp_runtime::{traits::Header as HeaderT, SaturatedConversion};
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
 
@@ -119,7 +119,7 @@ impl<H: HeaderT> crate::FinalityProof<H::Hash, H::Number> for GrandpaJustificati
 }
 
 /// Justification verification error.
-#[derive(Eq, RuntimeDebug, PartialEq)]
+#[derive(Eq, Debug, PartialEq)]
 pub enum Error {
 	/// Failed to decode justification.
 	JustificationDecode,

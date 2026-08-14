@@ -170,15 +170,7 @@ pub mod pezpallet_foo {
 
 	#[pezpallet::origin]
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		RuntimeDebug,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		TypeInfo,
-		MaxEncodedLen,
+		PartialEq, Eq, Clone, Debug, Encode, Decode, DecodeWithMemTracking, TypeInfo, MaxEncodedLen,
 	)]
 	pub enum Origin {
 		A,

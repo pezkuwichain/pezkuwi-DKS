@@ -20,7 +20,7 @@ use crate::{Config, Error};
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezbp_header_pez_chain::{AuthoritySet, ChainWithGrandpa};
-use pezframe_support::{traits::Get, BoundedVec, CloneNoBound, RuntimeDebugNoBound};
+use pezframe_support::{traits::Get, BoundedVec, CloneNoBound, DebugNoBound};
 use pezsp_consensus_grandpa::{AuthorityId, AuthorityList, AuthorityWeight, SetId};
 use pezsp_std::marker::PhantomData;
 use scale_info::TypeInfo;
@@ -39,7 +39,7 @@ impl<T: Config<I>, I: 'static> Get<u32> for StoredAuthorityListLimit<T, I> {
 }
 
 /// A bounded GRANDPA Authority List and ID.
-#[derive(CloneNoBound, Decode, Encode, Eq, TypeInfo, MaxEncodedLen, RuntimeDebugNoBound)]
+#[derive(CloneNoBound, Decode, Encode, Eq, TypeInfo, MaxEncodedLen, DebugNoBound)]
 #[scale_info(skip_type_params(T, I))]
 pub struct StoredAuthoritySet<T: Config<I>, I: 'static> {
 	/// List of GRANDPA authorities for the current round.

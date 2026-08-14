@@ -41,7 +41,7 @@ use pezsp_runtime::{
 		TransactionExtension,
 	},
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
-	OpaqueExtrinsic, RuntimeDebug, Weight,
+	OpaqueExtrinsic, Weight,
 };
 use scale_info::{StaticTypeInfo, TypeInfo};
 
@@ -55,7 +55,7 @@ pub trait SetWeightLimit {
 
 /// Wraps [`generic::UncheckedExtrinsic`] to support checking unsigned
 /// [`crate::Call::eth_transact`] extrinsic.
-#[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, RuntimeDebug)]
+#[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, Debug)]
 pub struct UncheckedExtrinsic<Address, Signature, E: EthExtra>(
 	pub generic::UncheckedExtrinsic<Address, CallOf<E::Config>, Signature, E::Extension>,
 );

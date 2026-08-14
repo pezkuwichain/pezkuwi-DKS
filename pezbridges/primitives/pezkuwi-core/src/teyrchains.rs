@@ -25,7 +25,6 @@
 use codec::{CompactAs, Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezbp_runtime::{raw_storage_proof_size, RawStorageProof, Size};
 use pezsp_core::Hasher;
-use pezsp_runtime::RuntimeDebug;
 use pezsp_std::vec::Vec;
 use scale_info::TypeInfo;
 
@@ -50,7 +49,7 @@ use serde::{Deserialize, Serialize};
 	Ord,
 	PartialEq,
 	PartialOrd,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 )]
 pub struct ParaId(pub u32);
@@ -75,7 +74,7 @@ impl From<u32> for ParaId {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	Default,
 )]
@@ -96,7 +95,7 @@ pub type ParaHash = crate::Hash;
 pub type ParaHasher = crate::Hasher;
 
 /// Raw storage proof of teyrchain heads, stored in pezkuwi-like chain runtime.
-#[derive(Clone, Decode, DecodeWithMemTracking, Encode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Decode, DecodeWithMemTracking, Encode, Eq, PartialEq, Debug, TypeInfo)]
 pub struct ParaHeadsProof {
 	/// Unverified storage proof of finalized teyrchain heads.
 	pub storage_proof: RawStorageProof,

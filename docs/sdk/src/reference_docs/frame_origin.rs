@@ -169,15 +169,7 @@ pub mod pezpallet_with_custom_origin {
 	/// A dummy custom origin.
 	#[pezpallet::origin]
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		RuntimeDebug,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		TypeInfo,
-		MaxEncodedLen,
+		PartialEq, Eq, Clone, Debug, Encode, Decode, DecodeWithMemTracking, TypeInfo, MaxEncodedLen,
 	)]
 	pub enum Origin {
 		/// If all holders of a particular NFT have agreed upon this.

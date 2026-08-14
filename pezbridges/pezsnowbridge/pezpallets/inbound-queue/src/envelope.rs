@@ -3,7 +3,7 @@
 use pezsnowbridge_core::ChannelId;
 use pezsnowbridge_inbound_queue_primitives::Log;
 
-use pezsp_core::{RuntimeDebug, H160, H256};
+use pezsp_core::{H160, H256};
 use pezsp_std::prelude::*;
 
 use alloy_core::{primitives::B256, sol, sol_types::SolEvent};
@@ -13,7 +13,7 @@ sol! {
 }
 
 /// An inbound message that has had its outer envelope decoded.
-#[derive(Clone, RuntimeDebug)]
+#[derive(Clone, Debug)]
 pub struct Envelope {
 	/// The address of the outbound queue on Ethereum that emitted this message as an event log
 	pub gateway: H160,
@@ -27,7 +27,7 @@ pub struct Envelope {
 	pub payload: Vec<u8>,
 }
 
-#[derive(Copy, Clone, RuntimeDebug)]
+#[derive(Copy, Clone, Debug)]
 pub struct EnvelopeDecodeError;
 
 impl TryFrom<&Log> for Envelope {

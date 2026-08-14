@@ -28,7 +28,6 @@ use pezbp_runtime::{
 use pezframe_support::PalletError;
 // Weight is reexported to avoid additional pezframe-support dependencies in related crates.
 pub use pezframe_support::weights::Weight;
-use pezsp_core::RuntimeDebug;
 use pezsp_std::{collections::vec_deque::VecDeque, ops::RangeInclusive, prelude::*};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
@@ -140,7 +139,7 @@ where
 	Copy,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Serialize,
@@ -181,7 +180,7 @@ pub type MessageNonce = u64;
 pub type MessagePayload = Vec<u8>;
 
 /// Message key (unique message identifier) as it is stored in the storage.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct MessageKey<LaneId: Encode> {
 	/// ID of the message lane.
 	pub lane_id: LaneId,
@@ -190,7 +189,7 @@ pub struct MessageKey<LaneId: Encode> {
 }
 
 /// Message as it is stored in the storage.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Message<LaneId: Encode> {
 	/// Message key.
 	pub key: MessageKey<LaneId>,
@@ -199,7 +198,7 @@ pub struct Message<LaneId: Encode> {
 }
 
 /// Inbound lane data.
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo)]
+#[derive(Encode, Decode, Clone, Debug, PartialEq, Eq, TypeInfo)]
 pub struct InboundLaneData<RelayerId> {
 	/// Identifiers of relayers and messages that they have delivered to this lane (ordered by
 	/// message nonce).
@@ -300,7 +299,7 @@ impl<RelayerId> InboundLaneData<RelayerId> {
 }
 
 /// Outbound message details, returned by runtime APIs.
-#[derive(Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Encode, Decode, Debug, PartialEq, Eq, TypeInfo)]
 pub struct OutboundMessageDetails {
 	/// Nonce assigned to the message.
 	pub nonce: MessageNonce,
@@ -314,7 +313,7 @@ pub struct OutboundMessageDetails {
 }
 
 /// Inbound message details, returned by runtime APIs.
-#[derive(Clone, Encode, Decode, RuntimeDebug, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Encode, Decode, Debug, PartialEq, Eq, TypeInfo)]
 pub struct InboundMessageDetails {
 	/// Computed message dispatch weight.
 	///
@@ -329,7 +328,7 @@ pub struct InboundMessageDetails {
 ///
 /// This struct represents a continuous range of messages that have been delivered by the same
 /// relayer and whose confirmations are still pending.
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct UnrewardedRelayer<RelayerId> {
 	/// Identifier of the relayer.
 	pub relayer: RelayerId,
@@ -338,7 +337,7 @@ pub struct UnrewardedRelayer<RelayerId> {
 }
 
 /// Received messages with their dispatch result.
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, PartialEq, Eq, TypeInfo)]
+#[derive(Clone, Encode, Decode, DecodeWithMemTracking, Debug, PartialEq, Eq, TypeInfo)]
 pub struct ReceivedMessages<DispatchLevelResult, LaneId> {
 	/// Id of the lane which is receiving messages.
 	pub lane: LaneId,
@@ -362,7 +361,7 @@ impl<DispatchLevelResult, LaneId> ReceivedMessages<DispatchLevelResult, LaneId> 
 }
 
 /// Result of single message receival.
-#[derive(RuntimeDebug, Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, Clone, TypeInfo)]
+#[derive(Debug, Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, Clone, TypeInfo)]
 pub enum ReceptionResult<DispatchLevelResult> {
 	/// Message has been received and dispatched. Note that we don't care whether dispatch has
 	/// been successful or not - in both case message falls into this category.
@@ -384,7 +383,7 @@ pub enum ReceptionResult<DispatchLevelResult> {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	PartialEq,
 	Eq,
 	TypeInfo,
@@ -421,9 +420,7 @@ impl DeliveredMessages {
 }
 
 /// Gist of `InboundLaneData::relayers` field used by runtime APIs.
-#[derive(
-	Clone, Default, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, PartialEq, Eq, TypeInfo,
-)]
+#[derive(Clone, Default, Encode, Decode, DecodeWithMemTracking, Debug, PartialEq, Eq, TypeInfo)]
 pub struct UnrewardedRelayersState {
 	/// Number of entries in the `InboundLaneData::relayers` set.
 	pub unrewarded_relayer_entries: MessageNonce,
@@ -462,7 +459,7 @@ impl<RelayerId> From<&InboundLaneData<RelayerId>> for UnrewardedRelayersState {
 }
 
 /// Outbound lane data.
-#[derive(Encode, Decode, Clone, RuntimeDebug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, Debug, PartialEq, Eq, TypeInfo, MaxEncodedLen)]
 pub struct OutboundLaneData {
 	/// Nonce of the oldest message that we haven't yet pruned. May point to not-yet-generated
 	/// message if all sent messages are already pruned.
@@ -527,9 +524,7 @@ where
 }
 
 /// Error that happens during message verification.
-#[derive(
-	Encode, Decode, DecodeWithMemTracking, RuntimeDebug, PartialEq, Eq, PalletError, TypeInfo,
-)]
+#[derive(Encode, Decode, DecodeWithMemTracking, Debug, PartialEq, Eq, PalletError, TypeInfo)]
 pub enum VerificationError {
 	/// The message proof is empty.
 	EmptyMessageProof,
