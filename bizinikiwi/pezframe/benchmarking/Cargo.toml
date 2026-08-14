@@ -17,6 +17,7 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+anyhow = { optional = true, workspace = true }
 codec = { workspace = true }
 linregress = { optional = true, workspace = true }
 log = { workspace = true }
@@ -38,7 +39,7 @@ static_assertions = { workspace = true, default-features = true }
 [dev-dependencies]
 array-bytes = { workspace = true, default-features = true }
 pezpallet-example-basic = { workspace = true, default-features = true }
-pezsc-client-db = { workspace = true, default-features = true }
+pezsc-client-db = { workspace = true }
 pezsp-externalities = { workspace = true }
 pezsp-keystore = { workspace = true, default-features = true }
 pezsp-state-machine = { workspace = true }
@@ -47,6 +48,7 @@ rusty-fork = { workspace = true }
 [features]
 default = ["std"]
 std = [
+	"anyhow/std",
 	"codec/std",
 	"linregress",
 	"log/std",

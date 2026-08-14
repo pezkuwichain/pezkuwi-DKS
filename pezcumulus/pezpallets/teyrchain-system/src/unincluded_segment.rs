@@ -25,11 +25,10 @@ use alloc::collections::btree_map::BTreeMap;
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use pezcumulus_primitives_core::{relay_chain, ParaId};
-use pezsp_runtime::RuntimeDebug;
 use scale_info::TypeInfo;
 
 /// Constraints on outbound HRMP channel.
-#[derive(Clone, RuntimeDebug)]
+#[derive(Clone, Debug)]
 pub struct HrmpOutboundLimits {
 	/// The maximum bytes that can be written to the channel.
 	pub bytes_remaining: u32,
@@ -38,7 +37,7 @@ pub struct HrmpOutboundLimits {
 }
 
 /// Limits on outbound message bandwidth.
-#[derive(Clone, RuntimeDebug)]
+#[derive(Clone, Debug)]
 pub struct OutboundBandwidthLimits {
 	/// The amount of UMP messages remaining.
 	pub ump_messages_remaining: u32,
@@ -80,7 +79,7 @@ impl OutboundBandwidthLimits {
 }
 
 /// The error type for updating bandwidth used by a segment.
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum BandwidthUpdateError {
 	/// Too many messages submitted to HRMP channel.
@@ -128,7 +127,7 @@ pub enum BandwidthUpdateError {
 }
 
 /// The number of messages and size in bytes submitted to HRMP channel.
-#[derive(RuntimeDebug, Default, Copy, Clone, Encode, Decode, TypeInfo)]
+#[derive(Debug, Default, Copy, Clone, Encode, Decode, TypeInfo)]
 pub struct HrmpChannelUpdate {
 	/// The amount of messages submitted to the channel.
 	pub msg_count: u32,
@@ -187,7 +186,7 @@ impl HrmpChannelUpdate {
 ///
 /// This struct can be created with pub items, however, it should
 /// never hit the storage directly to avoid bypassing limitations checks.
-#[derive(Default, Clone, Encode, Decode, TypeInfo, RuntimeDebug)]
+#[derive(Default, Clone, Encode, Decode, TypeInfo, Debug)]
 pub struct UsedBandwidth {
 	/// The amount of UMP messages sent.
 	pub ump_msg_count: u32,
@@ -248,7 +247,7 @@ impl UsedBandwidth {
 
 /// Ancestor of the block being currently executed, not yet included
 /// into the relay chain.
-#[derive(Encode, Decode, TypeInfo, RuntimeDebug)]
+#[derive(Encode, Decode, TypeInfo, Debug)]
 pub struct Ancestor<H> {
 	/// Bandwidth used by this block.
 	used_bandwidth: UsedBandwidth,
@@ -314,7 +313,7 @@ impl HrmpWatermarkUpdate {
 
 /// Struct that keeps track of bandwidth used by the unincluded part of the chain
 /// along with the latest HRMP watermark.
-#[derive(Default, Encode, Decode, TypeInfo, RuntimeDebug)]
+#[derive(Default, Encode, Decode, TypeInfo, Debug)]
 pub struct SegmentTracker<H> {
 	/// Bandwidth used by the segment.
 	used_bandwidth: UsedBandwidth,

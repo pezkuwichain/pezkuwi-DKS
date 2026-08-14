@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *DotSama*.
 //!
-//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi/pezframe/fast-unstake) -
+//! [![github]](https://github.com/paritytech/bizinikiwi/pezframe/fast-unstake) -
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]: https://img.shields.io/badge/polkadot-E6007A?style=for-the-badge&logo=polkadot&logoColor=white
@@ -25,8 +25,8 @@
 //!
 //! # Paged List Pezpallet
 //!
-//! A thin wrapper pezpallet around a [`paged_list::StoragePagedList`]. It provides an API for a
-//! single paginated list. It can be instantiated multiple times to provide multiple lists.
+//! A thin wrapper pezpallet around a [`paged_list::StoragePagedList`]. It provides an API for a single
+//! paginated list. It can be instantiated multiple times to provide multiple lists.
 //!
 //! ## Overview
 //!
@@ -51,7 +51,6 @@
 //! 5. **Draining** elements happens through the [`Pezpallet::drain`] iterator. Note that even
 //! *peeking* a value will already remove it.
 #![doc = docify::embed!("src/tests.rs", drain_works)]
-//!
 //! ## Pezpallet API
 //!
 //! None. Only things to consider is the [`Config`] traits.
@@ -104,7 +103,7 @@ pub mod pezpallet {
 	>;
 }
 
-// This exposes the list functionality to other pallets.
+// This exposes the list functionality to other pezpallets.
 impl<T: Config<I>, I: 'static> StorageList<T::Value> for Pezpallet<T, I> {
 	type Iterator = <List<T, I> as StorageList<T::Value>>::Iterator;
 	type Appender = <List<T, I> as StorageList<T::Value>>::Appender;

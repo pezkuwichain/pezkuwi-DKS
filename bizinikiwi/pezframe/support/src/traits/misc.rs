@@ -37,7 +37,7 @@ use pezsp_runtime::{
 };
 
 #[doc(hidden)]
-pub const DEFENSIVE_OP_PUBLIC_ERROR: &str = "a defensive failure has been triggered; please report the block number at https://github.com/paritytech/polkadot-sdk/issues";
+pub const DEFENSIVE_OP_PUBLIC_ERROR: &str = "a defensive failure has been triggered; please report the block number at https://github.com/paritytech/pezkuwi-sdk/issues";
 #[doc(hidden)]
 pub const DEFENSIVE_OP_INTERNAL_ERROR: &str = "Defensive failure has been triggered!";
 

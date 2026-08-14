@@ -21,8 +21,8 @@ use crate::{
 	balancing, helpers::*, mock::*, seq_phragmen, seq_phragmen_core, setup_inputs, to_support_map,
 	Assignment, BalancingConfig, ElectionResult, ExtendedBalance, StakedAssignment, Support, Voter,
 };
-use pezsp_arithmetic::{PerU16, Perbill, Percent, Permill};
 use bizinikiwi_test_utils::assert_eq_uvec;
+use pezsp_arithmetic::{PerU16, Perbill, Percent, Permill};
 
 #[test]
 fn float_phragmen_poc_works() {

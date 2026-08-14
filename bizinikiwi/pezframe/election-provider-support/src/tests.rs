@@ -28,8 +28,8 @@ use rand::SeedableRng;
 mod solution_type {
 	use super::*;
 	use codec::{Decode, Encode, MaxEncodedLen};
-	// these need to come from the same dev-dependency `pezframe-election-provider-support`, not
-	// from the crate.
+	// these need to come from the same dev-dependency `pezframe-election-provider-support`, not from
+	// the crate.
 	use crate::{generate_solution_type, Assignment, Error as NposError, NposSolution};
 	use core::fmt::Debug;
 

@@ -37,7 +37,7 @@
 // --chain=dev
 // --header=./bizinikiwi/HEADER-APACHE2
 // --output=./bizinikiwi/pezframe/nomination-pools/src/weights.rs
-// --template=./bizinikiwi/.maintain/frame-weight-template.hbs
+// --template=./bizinikiwi/.maintain/pezframe-weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]

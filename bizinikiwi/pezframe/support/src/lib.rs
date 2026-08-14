@@ -984,7 +984,7 @@ pub mod pezpallet_macros {
 	/// Allows bypassing the `pezframe_system::Config` supertrait check.
 	///
 	/// To bypass the syntactic `pezframe_system::Config` supertrait check, use the attribute
-	/// `pezpallet::disable_frame_system_supertrait_check`.
+	/// `pezpallet::disable_pezframe_system_supertrait_check`.
 	///
 	/// Note this bypass is purely syntactic, and does not actually remove the requirement that your
 	/// pezpallet implements `pezframe_system::Config`. When using this check, your config is still required to implement
@@ -1005,7 +1005,7 @@ pub mod pezpallet_macros {
 	/// 	pub struct Pezpallet<T>(_);
 	///
 	/// 	#[pezpallet::config]
-	/// 	#[pezpallet::disable_frame_system_supertrait_check]
+	/// 	#[pezpallet::disable_pezframe_system_supertrait_check]
 	/// 	pub trait Config: OtherTrait {}
 	/// }
 	/// ```
@@ -1013,7 +1013,7 @@ pub mod pezpallet_macros {
 	/// To learn more about supertraits, see the
 	/// [trait_based_programming](../../pezkuwi_sdk_docs/reference_docs/trait_based_programming/index.html)
 	/// reference doc.
-	pub use pezframe_support_procedural::disable_frame_system_supertrait_check;
+	pub use pezframe_support_procedural::disable_pezframe_system_supertrait_check;
 
 	/// The mandatory attribute allowing definition of configurable types for the pezpallet.
 	///
@@ -2069,7 +2069,7 @@ pub mod pezpallet_macros {
 	/// To use a type as the value of a storage type, be it `StorageValue`, `StorageMap` or
 	/// anything else, you need to meet a number of trait bound constraints.
 	///
-	/// See: <https://paritytech.github.io/polkadot-sdk/master/pezkuwi_sdk_docs/reference_docs/pezframe_storage_derives/index.html>.
+	/// See: <https://paritytech.github.io/pezkuwi-sdk/master/pezkuwi_sdk_docs/reference_docs/pezframe_storage_derives/index.html>.
 	///
 	/// Notably, all value types need to implement `Encode`, `Decode`, `MaxEncodedLen` and
 	/// `TypeInfo`, and possibly `Default`, if

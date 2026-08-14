@@ -21,9 +21,9 @@ use super::*;
 
 /// A mutator type allowing inspection and possible modification of the extra "sidecar" data.
 ///
-/// This may be used as a `Deref` for the pezpallet's extra data. If mutated (using `DerefMut`),
-/// then any uncommitted changes (see `commit` function) will be automatically committed to storage
-/// when dropped. Changes, even after committed, may be reverted to their original values with the
+/// This may be used as a `Deref` for the pezpallet's extra data. If mutated (using `DerefMut`), then
+/// any uncommitted changes (see `commit` function) will be automatically committed to storage when
+/// dropped. Changes, even after committed, may be reverted to their original values with the
 /// `revert` function.
 pub struct ExtraMutator<T: Config<I>, I: 'static = ()> {
 	id: T::AssetId,

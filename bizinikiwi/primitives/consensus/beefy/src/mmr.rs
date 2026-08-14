@@ -48,8 +48,7 @@ impl BeefyDataProvider<Vec<u8>> for () {
 	}
 }
 
-/// A standard leaf that gets added every block to the MMR constructed by Bizinikiwi's
-/// `pezpallet_mmr`.
+/// A standard leaf that gets added every block to the MMR constructed by Bizinikiwi's `pezpallet_mmr`.
 #[derive(Debug, PartialEq, Eq, Clone, Encode, Decode, TypeInfo)]
 pub struct MmrLeaf<BlockNumber, Hash, MerkleRoot, ExtraData> {
 	/// Version of the leaf format.
@@ -61,7 +60,7 @@ pub struct MmrLeaf<BlockNumber, Hash, MerkleRoot, ExtraData> {
 	pub parent_number_and_hash: (BlockNumber, Hash),
 	/// A merkle root of the next BEEFY authority set.
 	pub beefy_next_authority_set: BeefyNextAuthoritySet<MerkleRoot>,
-	/// Arbitrary extra leaf data to be used by downstream pallets to include custom data in the
+	/// Arbitrary extra leaf data to be used by downstream pezpallets to include custom data in the
 	/// [`MmrLeaf`]
 	pub leaf_extra: ExtraData,
 }

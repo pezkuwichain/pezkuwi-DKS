@@ -166,8 +166,8 @@ where
 	/// 4. Prints summary statistics about the state to be migrated.
 	/// 5. Encodes and returns pre-migration data to be used in post_upgrade.
 	///
-	/// Fails with a `TryRuntimeError` if somehow the amount reserved by this pezpallet is greater
-	/// than the actual total reserved amount for any accounts.
+	/// Fails with a `TryRuntimeError` if somehow the amount reserved by this pezpallet is greater than
+	/// the actual total reserved amount for any accounts.
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<Vec<u8>, pezsp_runtime::TryRuntimeError> {
 		use alloc::collections::btree_set::BTreeSet;
@@ -187,8 +187,7 @@ where
 			.collect();
 
 		// Total deposited for each account *should* be less than or equal to the total reserved,
-		// however this does not hold for all cases due to bugs in the reserve logic of this
-		// pezpallet.
+		// however this does not hold for all cases due to bugs in the reserve logic of this pezpallet.
 		let bugged_deposits = all_accounts
 			.iter()
 			.filter(|account| {

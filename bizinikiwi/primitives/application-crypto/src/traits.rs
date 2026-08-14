@@ -20,7 +20,9 @@ use scale_info::TypeInfo;
 
 use alloc::vec::Vec;
 use core::fmt::Debug;
-use pezsp_core::crypto::{CryptoType, CryptoTypeId, IsWrappedBy, KeyTypeId, Pair, Public, Signature};
+use pezsp_core::crypto::{
+	CryptoType, CryptoTypeId, IsWrappedBy, KeyTypeId, Pair, Public, Signature,
+};
 
 /// Application-specific cryptographic object.
 ///

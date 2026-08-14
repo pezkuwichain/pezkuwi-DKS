@@ -206,8 +206,7 @@ where
 			.collect();
 
 		// Total deposited for each account *should* be less than or equal to the total reserved,
-		// however this does not hold for all cases due to bugs in the reserve logic of this
-		// pezpallet.
+		// however this does not hold for all cases due to bugs in the reserve logic of this pezpallet.
 		let bugged_deposits = all_accounts
 			.iter()
 			.filter(|account| {

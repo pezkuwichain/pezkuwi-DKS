@@ -1,13 +1,11 @@
 use codec::{Decode, Encode, MaxEncodedLen};
-use pezframe_support::pezpallet_prelude::{BoundedVec, Get, RuntimeDebug};
+use pezframe_support::pezpallet_prelude::{BoundedVec, Get};
 use pezsp_core::H256;
 use scale_info::TypeInfo;
 
 /// Citizenship status levels
 /// PRIVACY: No personal data stored on-chain, only status and hash
-#[derive(
-	Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Copy, Default,
-)]
+#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen, Copy, Default)]
 pub enum KycLevel {
 	/// No citizenship application
 	#[default]
@@ -26,7 +24,7 @@ pub enum KycLevel {
 
 /// Privacy-preserving citizenship application
 /// SECURITY: No personal data on-chain, only hash
-#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct CitizenshipApplication<AccountId> {
 	/// Hash of identity documents (actual documents stored off-chain/IPFS)
 	/// Frontend calculates: H256(name + email + document_cids)

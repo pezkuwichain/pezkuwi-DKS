@@ -35,9 +35,9 @@
 //! curator or once the bounty is active or payout is pending, resulting in the slash of the
 //! curator's deposit.
 //!
-//! This pezpallet may opt into using a [`ChildBountyManager`] that enables bounties to be split
-//! into sub-bounties, as children of an established bounty (called the parent in the context of
-//! it's children).
+//! This pezpallet may opt into using a [`ChildBountyManager`] that enables bounties to be split into
+//! sub-bounties, as children of an established bounty (called the parent in the context of it's
+//! children).
 //!
 //! > NOTE: The parent bounty cannot be closed if it has a non-zero number of it has active child
 //! > bounties associated with it.
@@ -82,6 +82,7 @@
 //! - `unassign_curator` - Unassign an accepted curator from a specific earmark.
 //! - `close_bounty` - Cancel the earmark for a specific treasury amount and close the bounty.
 
+#![recursion_limit = "512"]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -95,17 +96,21 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use pezframe_support::traits::{
-	Currency, ExistenceRequirement::AllowDeath, Get, Imbalance, OnUnbalanced, ReservableCurrency,
+	fungibles::{Inspect as FungiblesInspect, Mutate as FungiblesMutate},
+	tokens::{Fortitude, Preservation},
+	Currency,
+	ExistenceRequirement::AllowDeath,
+	Get, Imbalance, OnUnbalanced, ReservableCurrency,
 };
 
 use pezsp_runtime::{
 	traits::{AccountIdConversion, BadOrigin, BlockNumberProvider, Saturating, StaticLookup, Zero},
-	DispatchResult, Permill, RuntimeDebug,
+	Debug, DispatchResult, Permill,
 };
 
-use pezframe_support::{dispatch::DispatchResultWithPostInfo, traits::EnsureOrigin};
-
-use pezframe_support::pezpallet_prelude::*;
+use pezframe_support::{
+	dispatch::DispatchResultWithPostInfo, pezpallet_prelude::*, traits::EnsureOrigin,
+};
 use pezframe_system::pezpallet_prelude::{
 	ensure_signed, BlockNumberFor as SystemBlockNumberFor, OriginFor,
 };
@@ -128,15 +133,7 @@ type BlockNumberFor<T, I = ()> =
 
 /// A bounty proposal.
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	PartialEq,
-	Eq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen,
 )]
 pub struct Bounty<AccountId, Balance, BlockNumber> {
 	/// The account proposing it.
@@ -164,15 +161,7 @@ impl<AccountId: PartialEq + Clone + Ord, Balance, BlockNumber: Clone>
 
 /// The status of a bounty proposal.
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	PartialEq,
-	Eq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen,
 )]
 pub enum BountyStatus<AccountId, BlockNumber> {
 	/// The bounty is proposed and waiting for approval.
@@ -219,6 +208,58 @@ pub trait ChildBountyManager<Balance> {
 
 	/// Hook called when a parent bounty is removed.
 	fn bounty_removed(bounty_id: BountyIndex);
+}
+
+/// Transfer all assets that an account holds.
+pub trait TransferAllAssets<AccountId> {
+	/// Transfer all assets from one account to another.
+	///
+	/// This will possibly dust and reap the origin account and endow the receiver.
+	fn force_transfer_all_assets(from: &AccountId, to: &AccountId) -> DispatchResult;
+}
+
+impl<AccountId> TransferAllAssets<AccountId> for () {
+	fn force_transfer_all_assets(_: &AccountId, _: &AccountId) -> DispatchResult {
+		Ok(())
+	}
+}
+
+/// Transfer all `RelevantAssets` of the `Fungibles` from one account to another.
+///
+/// The native asset should be the first in the list of `RelevantAssets`, otherwise the transfers
+/// of the other maybe fails.
+pub struct TransferAllFungibles<AccountId, Fungibles, RelevantAssets>(
+	core::marker::PhantomData<(AccountId, Fungibles, RelevantAssets)>,
+);
+impl<AccountId, Fungibles, RelevantAssets> TransferAllAssets<AccountId>
+	for TransferAllFungibles<AccountId, Fungibles, RelevantAssets>
+where
+	Fungibles: FungiblesMutate<AccountId>,
+	RelevantAssets: Get<Vec<<Fungibles as FungiblesInspect<AccountId>>::AssetId>>,
+	AccountId: Eq,
+{
+	fn force_transfer_all_assets(from: &AccountId, to: &AccountId) -> DispatchResult {
+		// We iterate through all assets twice in case that the Native asset was not last in the
+		// list and ED remained because of an insufficient asset at the end of the list.
+		let assets_twice =
+			RelevantAssets::get().into_iter().chain(RelevantAssets::get().into_iter());
+
+		for id in assets_twice {
+			let balance = Fungibles::reducible_balance(
+				id.clone(),
+				from,
+				Preservation::Expendable,
+				Fortitude::Force,
+			);
+			if balance.is_zero() {
+				continue;
+			}
+
+			// Ignore errors since this can only fail if the receiver does not exist.
+			let _ = Fungibles::transfer(id, from, to, balance, Preservation::Expendable);
+		}
+		Ok(())
+	}
 }
 
 #[pezframe_support::pezpallet]
@@ -294,6 +335,12 @@ pub mod pezpallet {
 
 		/// Handler for the unbalanced decrease when slashing for a rejected bounty.
 		type OnSlash: OnUnbalanced<pezpallet_treasury::NegativeImbalanceOf<Self, I>>;
+
+		/// Means to transfer all assets from one account to another.
+		///
+		/// This is only used for bounty closure to ensure that all assets are returned to the
+		/// treasury.
+		type TransferAllAssets: TransferAllAssets<Self::AccountId>;
 	}
 
 	#[pezpallet::error]
@@ -815,14 +862,10 @@ pub mod pezpallet {
 
 					BountyDescriptions::<T, I>::remove(bounty_id);
 
-					let balance = T::Currency::free_balance(&bounty_account);
-					let res = T::Currency::transfer(
+					T::TransferAllAssets::force_transfer_all_assets(
 						&bounty_account,
 						&Self::account_id(),
-						balance,
-						AllowDeath,
-					); // should not fail
-					debug_assert!(res.is_ok());
+					)?;
 
 					*maybe_bounty = None;
 					T::ChildBountyManager::bounty_removed(bounty_id);

@@ -170,7 +170,7 @@ pub fn generate_decl_runtime_metadata<'a>(
 	let (impl_generics, _, where_clause) = generics.split_for_impl();
 
 	quote!(
-		#crate_::frame_metadata_enabled! {
+		#crate_::pezframe_metadata_enabled! {
 			#( #attrs )*
 			#[inline(always)]
 			pub fn runtime_metadata #impl_generics (impl_version: u32) -> #crate_::metadata_ir::RuntimeApiMetadataIR
@@ -300,7 +300,7 @@ pub fn generate_impl_runtime_metadata(impls: &[ItemImpl]) -> Result<TokenStream2
 	// when both macros are called; and will resolve an empty `runtime_metadata` when only the
 	// `construct_runtime!` is called.
 	Ok(quote!(
-		#crate_::frame_metadata_enabled! {
+		#crate_::pezframe_metadata_enabled! {
 			#[doc(hidden)]
 			impl #crate_::metadata_ir::InternalImplRuntimeApis for #runtime_name {
 				fn runtime_metadata(&self) -> #crate_::vec::Vec<#crate_::metadata_ir::RuntimeApiMetadataIR> {

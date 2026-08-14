@@ -14,6 +14,7 @@ documentation.workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+pezsp-crypto-hashing = { workspace = true }
 codec = { workspace = true, features = ["derive"] }
 log = { workspace = true }
 pezframe-benchmarking = { workspace = true, optional = true }
@@ -37,6 +38,7 @@ std = [
 	"pezframe-system/std",
 	"pezsp-arithmetic/std",
 	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
 	"scale-info/std",

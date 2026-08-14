@@ -23,14 +23,15 @@ use pezframe_support::{
 	traits::{GetStorageVersion, PalletInfoAccess},
 	weights::WeightMeter,
 };
-use pezsp_core::{twox_128, Get};
+use pezsp_core::Get;
+use pezsp_crypto_hashing::twox_128;
 use pezsp_io::{storage::clear_prefix, KillStorageResult};
 use pezsp_runtime::SaturatedConversion;
 
 /// Remove all of a pezpallet's state and re-initializes it to the current in-code storage version.
 ///
 /// It uses the multi block migration frame. Hence it is safe to use even on
-/// pallets that contain a lot of storage.
+/// pezpallets that contain a lot of storage.
 ///
 /// # Parameters
 ///

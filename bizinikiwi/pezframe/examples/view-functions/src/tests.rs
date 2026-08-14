@@ -115,7 +115,7 @@ fn metadata_ir_definitions() {
 	new_test_ext().execute_with(|| {
 		let metadata_ir = Runtime::metadata_ir();
 		let pallet1 = metadata_ir
-			.pallets
+			.pezpallets
 			.iter()
 			.find(|pezpallet| pezpallet.name == "ViewFunctionsExample")
 			.unwrap();

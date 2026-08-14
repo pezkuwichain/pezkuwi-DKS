@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Benchmarks for the nomination pools coupled with the staking and bags list pallets.
+//! Benchmarks for the nomination pools coupled with the staking and bags list pezpallets.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]

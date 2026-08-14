@@ -54,7 +54,7 @@ use pezsp_runtime::{
 		AccountIdConversion, BadOrigin, BlakeTwo256, BlockNumberProvider, Dispatchable, Hash,
 		Saturating, Zero,
 	},
-	Either, RuntimeDebug, SaturatedConversion,
+	Either, SaturatedConversion,
 };
 use scale_info::TypeInfo;
 use storage::{with_transaction, TransactionOutcome};
@@ -637,15 +637,7 @@ pub mod pezpallet {
 
 	#[pezpallet::origin]
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		RuntimeDebug,
-		TypeInfo,
-		MaxEncodedLen,
+		PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Debug, TypeInfo, MaxEncodedLen,
 	)]
 	pub enum Origin {
 		/// It comes from somewhere in the XCM space wanting to transact.
@@ -758,7 +750,7 @@ pub mod pezpallet {
 	}
 
 	/// The status of a query.
-	#[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Clone, Eq, PartialEq, Encode, Decode, Debug, TypeInfo, MaxEncodedLen)]
 	pub enum QueryStatus<BlockNumber> {
 		/// The query was sent but no response has yet been received.
 		Pending {
@@ -1049,7 +1041,7 @@ pub mod pezpallet {
 		use super::*;
 		use pezframe_support::traits::{PalletInfoAccess, StorageVersion};
 
-		#[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
+		#[derive(Clone, Eq, PartialEq, Encode, Decode, Debug, TypeInfo)]
 		enum QueryStatusV0<BlockNumber> {
 			Pending {
 				responder: VersionedLocation,

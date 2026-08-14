@@ -207,7 +207,7 @@ pub mod pezpallet {
 	#[pezpallet::origin]
 	#[derive(
 		EqNoBound,
-		RuntimeDebugNoBound,
+		DebugNoBound,
 		CloneNoBound,
 		PartialEqNoBound,
 		PartialOrdNoBound,
@@ -248,7 +248,7 @@ pub mod pezpallet {
 		}
 	}
 
-	#[derive(codec::Encode, pezsp_runtime::RuntimeDebug)]
+	#[derive(codec::Encode, Debug)]
 	#[cfg_attr(feature = "std", derive(codec::Decode))]
 	pub enum InherentError {}
 

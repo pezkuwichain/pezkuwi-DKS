@@ -48,8 +48,8 @@ pub(crate) fn syn_err(message: &'static str) -> syn::Error {
 /// - The identifier of the target. This can be any type that supports `parity-scale-codec`'s
 ///   compact encoding.
 /// - The accuracy of the ratios. This must be one of the `PerThing` types defined in
-///   `sp-arithmetic`.
-/// - The maximum number of voters. This must be of type `Get<u32>`. Check <https://github.com/pezkuwichain/pezkuwi-sdk/issues/320>
+///   `pezsp-arithmetic`.
+/// - The maximum number of voters. This must be of type `Get<u32>`. Check <https://github.com/paritytech/bizinikiwi/issues/10866>
 ///   for more details. This is used to bound the struct, by leveraging the fact that `votes1.len()
 ///   < votes2.len() < ... < votesn.len()` (the details of the struct is explained further below).
 ///   We know that `sum_i votes_i.len() <= MaxVoters`, and we know that the maximum size of the
@@ -62,11 +62,7 @@ pub(crate) fn syn_err(message: &'static str) -> syn::Error {
 /// For example, the following generates a public struct with name `TestSolution` with `u16` voter
 /// type, `u8` target type and `Perbill` accuracy with maximum of 4 edges per voter.
 ///
-/// <!-- Note: This doc test is marked `ignore` due to circular dependency constraint.
-///      This crate cannot depend on pezframe-support as a dev-dependency because
-///      pezframe-election-provider-support already depends on this proc-macro crate.
-///      The macro is fully tested in pezframe-election-provider-support/src/tests.rs -->
-/// ```ignore
+/// ```
 /// # use pezframe_election_provider_solution_type::generate_solution_type;
 /// # use pezsp_arithmetic::per_things::Perbill;
 /// # use pezframe_support::traits::ConstU32;
@@ -111,11 +107,7 @@ pub(crate) fn syn_err(message: &'static str) -> syn::Error {
 /// lead to many `0`s in the solution. If prefixed with `#[compact]`, then a custom compact encoding
 /// for numbers will be used, similar to how `parity-scale-codec`'s `Compact` works.
 ///
-/// <!-- Note: This doc test is marked `ignore` due to circular dependency constraint.
-///      pezframe-election-provider-support cannot be added as dev-dependency here because
-///      it already depends on this proc-macro crate, which would create a circular dependency.
-///      The macro is fully tested in pezframe-election-provider-support/src/tests.rs -->
-/// ```ignore
+/// ```
 /// # use pezframe_election_provider_solution_type::generate_solution_type;
 /// # use pezframe_election_provider_support::NposSolution;
 /// # use pezsp_arithmetic::per_things::Perbill;

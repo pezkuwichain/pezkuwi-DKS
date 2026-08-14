@@ -52,7 +52,7 @@ use pezkuwi_runtime_teyrchains::{FeeTracker, GetMinFeeFactor};
 use pezkuwi_teyrchain_primitives::primitives::RelayChainBlockNumber;
 use pezsp_runtime::{
 	traits::{BlockNumberProvider, Hash},
-	FixedU128, RuntimeDebug, SaturatedConversion,
+	FixedU128, SaturatedConversion,
 };
 use scale_info::TypeInfo;
 use teyrchain_inherent::{
@@ -1779,7 +1779,7 @@ pub trait OnSystemEvent {
 }
 
 /// Holds the most recent relay-parent state root and block number of the current teyrchain block.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo, Default, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, TypeInfo, Default, Debug)]
 pub struct RelayChainState {
 	/// Current relay chain height.
 	pub number: relay_chain::BlockNumber,

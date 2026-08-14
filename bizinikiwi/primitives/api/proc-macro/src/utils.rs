@@ -345,7 +345,7 @@ pub fn get_deprecation(crate_: &TokenStream, attrs: &[syn::Attribute]) -> Result
 pub struct ApiVersion {
 	/// Corresponds to `#[api_version(X)]` attribute.
 	pub custom: Option<u32>,
-	/// Corresponds to `#[cfg_attr(feature = "enable-pezstaging-api", api_version(99))]`
+	/// Corresponds to `#[cfg_attr(feature = "enable-staging-api", api_version(99))]`
 	/// attribute. `String` is the feature name, `u32` the staging api version.
 	pub feature_gated: Option<(String, u32)>,
 }
@@ -381,7 +381,7 @@ pub fn extract_api_version(attrs: &[Attribute], span: Span) -> Result<ApiVersion
 }
 
 /// Parse feature flagged api_version.
-/// E.g. `#[cfg_attr(feature = "enable-pezstaging-api", api_version(99))]`
+/// E.g. `#[cfg_attr(feature = "enable-staging-api", api_version(99))]`
 fn extract_cfg_api_version(attrs: &[Attribute], span: Span) -> Result<Option<(String, u32)>> {
 	let cfg_attrs = attrs.iter().filter(|a| a.path().is_ident("cfg_attr")).collect::<Vec<_>>();
 

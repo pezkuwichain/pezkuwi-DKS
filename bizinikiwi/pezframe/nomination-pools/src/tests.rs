@@ -17,7 +17,7 @@
 
 use super::*;
 use crate::{mock::*, Event};
-use pezframe_support::{assert_err, assert_noop, assert_ok};
+use pezframe_support::{assert_err, assert_noop, assert_ok, hypothetically};
 use pezpallet_balances::Event as BEvent;
 use pezsp_runtime::{
 	bounded_btree_map,
@@ -420,7 +420,7 @@ mod reward_pool {
 			// clear events
 			pool_events_since_last_call();
 
-			// Then: Anyone can permissionlessly can adjust ED deposit.
+			// Then: Anyone can permissionlessly adjust ED deposit upwards.
 
 			// make sure caller has enough funds..
 			assert_ok!(Currency::mint_into(&99, 100));
@@ -445,17 +445,120 @@ mod reward_pool {
 			// When: ED is decreased and reward account has excess ED frozen
 			ExistentialDeposit::set(5);
 
-			// And:: adjust ED deposit is called
-			let pre_balance = Currency::free_balance(&100);
-			assert_ok!(Pools::adjust_pool_deposit(RuntimeOrigin::signed(100), 1));
+			let bonded_pool = BondedPool::<Runtime>::get(1).unwrap();
+			let owner = bonded_pool.roles.depositor;
 
-			// Then: excess ED is claimed by the caller
-			assert_eq!(Currency::free_balance(&100), pre_balance + 45);
+			assert_eq!(owner, 10);
+
+			// And:: adjust ED deposit is called
+			let pre_balance = Currency::free_balance(&owner);
+			assert_ok!(Pools::adjust_pool_deposit(RuntimeOrigin::signed(owner), 1));
+
+			// Then: excess ED is claimed by the pool depositor
+			assert_eq!(Currency::free_balance(&owner), pre_balance + 45);
 
 			assert_eq!(
 				pool_events_since_last_call(),
 				vec![Event::MinBalanceExcessAdjusted { pool_id: 1, amount: 45 },]
 			);
+		});
+	}
+
+	#[test]
+	fn pool_owner_can_adjust_deposit_downards() {
+		ExtBuilder::default().max_members_per_pool(Some(5)).build_and_execute(|| {
+			// Given: a nomination pool with no reward deficit
+
+			// Set an initial ED and adjust to there as a baseline.
+			let ed_baseline = 50;
+			let ed_delta = 20;
+
+			ExistentialDeposit::set(ed_baseline);
+
+			// Pool some rewards and check the imbalance.
+			deposit_rewards(50);
+			assert_eq!(reward_imbalance(1), Surplus(0));
+
+			let bonded_pool = BondedPool::<Runtime>::get(1).unwrap();
+			let owner = bonded_pool.roles.depositor;
+			let root = bonded_pool.roles.root.unwrap();
+
+			assert_eq!(owner, 10);
+			assert_eq!(root, 900);
+
+			Currency::set_balance(&owner, 100);
+			assert_ok!(Pools::adjust_pool_deposit(RuntimeOrigin::signed(owner), 1));
+
+			hypothetically!({
+				// When the ED is adjusted downards (decreased)
+				Currency::set_balance(&owner, 100);
+				ExistentialDeposit::set(ed_baseline - ed_delta);
+
+				// Then a standard account cannot adjust the pool deposit downards
+				Currency::set_balance(&70, 100);
+				assert_err!(
+					Pools::adjust_pool_deposit(RuntimeOrigin::signed(70), 1),
+					Error::<T>::DoesNotHavePermission
+				);
+
+				// And the pool owner can adjust deposit downards
+				let pre_balance = Currency::free_balance(&owner);
+				assert_ok!(Pools::adjust_pool_deposit(RuntimeOrigin::signed(owner), 1));
+				assert_eq!(reward_imbalance(1), Surplus(0));
+
+				// And the pool owner's balance increases by the ED difference.
+				assert_eq!(Currency::free_balance(&owner), pre_balance + ed_delta);
+			});
+
+			// When the ED is adjusted downards (decreased)
+			Currency::set_balance(&root, 100);
+			ExistentialDeposit::set(ed_baseline - ed_delta * 2);
+
+			// Then a standard account cannot adjust the pool deposit downards
+			Currency::set_balance(&7, 100);
+			assert_err!(
+				Pools::adjust_pool_deposit(RuntimeOrigin::signed(7), 1),
+				Error::<T>::DoesNotHavePermission
+			);
+
+			// And the root can also adjust the deposit downwards
+			let pre_balance = Currency::free_balance(&root);
+			assert_ok!(Pools::adjust_pool_deposit(RuntimeOrigin::signed(root), 1));
+			assert_eq!(reward_imbalance(1), Surplus(0));
+
+			// And the root's balance increases by the ED difference.
+			assert_eq!(Currency::free_balance(&root), pre_balance + ed_delta * 2);
+		});
+	}
+
+	#[test]
+	fn anyone_can_adjust_deposit_upwards() {
+		ExtBuilder::default().max_members_per_pool(Some(5)).build_and_execute(|| {
+			// Given: a nomination pool with no reward deficit
+
+			// Set an initial ED and adjust to there as a baseline.
+			let ed_baseline = 20;
+			let ed_delta = 40;
+			ExistentialDeposit::set(ed_baseline);
+
+			// Pool some rewards and check the imbalance.
+			deposit_rewards(50);
+			assert_eq!(reward_imbalance(1), Surplus(0));
+
+			Currency::set_balance(&10, 100);
+			assert_ok!(Pools::adjust_pool_deposit(RuntimeOrigin::signed(10), 1));
+
+			// When the ED increases
+			ExistentialDeposit::set(ed_baseline + ed_delta);
+
+			// Then anyone can adjust the pool deposit upwards if they have enough funds.
+			Currency::set_balance(&70, 100);
+			let pre_balance = Currency::free_balance(&70);
+			assert_ok!(Pools::adjust_pool_deposit(RuntimeOrigin::signed(70), 1));
+
+			// And the caller's balance decreases by the ED difference.
+			assert_eq!(Currency::free_balance(&70), pre_balance - ed_delta);
+			assert_eq!(reward_imbalance(1), Surplus(0));
 		});
 	}
 
@@ -2374,7 +2477,7 @@ mod claim_payout {
 
 	#[test]
 	fn claim_payout_large_numbers() {
-		let unit = 10u128.pow(12); // akin to DCL
+		let unit = 10u128.pow(12); // akin to KSM
 		ExistentialDeposit::set(unit);
 		StakingMinBond::set(unit * 1000);
 
@@ -2682,37 +2785,61 @@ mod unbond {
 
 	#[test]
 	fn depositor_unbond_destroying_permissionless() {
-		// depositor can never be permissionlessly unbonded.
-		ExtBuilder::default().min_join_bond(10).build_and_execute(|| {
-			// give the depositor some extra funds.
-			assert_ok!(Pools::bond_extra(RuntimeOrigin::signed(10), BondExtra::FreeBalance(10)));
-			assert_eq!(PoolMembers::<T>::get(10).unwrap().points, 20);
+		// depositor can be permissionlessly fully unbonded in destroying state when sole member.
+		ExtBuilder::default()
+			.min_join_bond(10)
+			.add_members(vec![(20, 20)])
+			.build_and_execute(|| {
+				// give the depositor some extra funds.
+				assert_ok!(Pools::bond_extra(
+					RuntimeOrigin::signed(10),
+					BondExtra::FreeBalance(10)
+				));
+				assert_eq!(PoolMembers::<T>::get(10).unwrap().points, 20);
 
-			// set the stage
-			unsafe_set_state(1, PoolState::Destroying);
-			let random = 123;
+				// set the stage
+				unsafe_set_state(1, PoolState::Destroying);
+				let random = 123;
 
-			// cannot be kicked to above limit.
-			assert_noop!(
-				Pools::unbond(RuntimeOrigin::signed(random), 10, 5),
-				Error::<T>::PartialUnbondNotAllowedPermissionlessly
-			);
+				// partial permissionless unbonds are always rejected.
+				assert_noop!(
+					Pools::unbond(RuntimeOrigin::signed(random), 10, 5),
+					Error::<T>::PartialUnbondNotAllowedPermissionlessly
+				);
+				assert_noop!(
+					Pools::unbond(RuntimeOrigin::signed(random), 10, 15),
+					Error::<T>::PartialUnbondNotAllowedPermissionlessly
+				);
 
-			// or below the limit
-			assert_noop!(
-				Pools::unbond(RuntimeOrigin::signed(random), 10, 15),
-				Error::<T>::PartialUnbondNotAllowedPermissionlessly
-			);
+				// full permissionless unbond is rejected while member 20 is still in the pool
+				// (depositor is not the sole member).
+				assert_noop!(
+					Pools::unbond(RuntimeOrigin::signed(random), 10, 20),
+					Error::<T>::DoesNotHavePermission
+				);
 
-			// or 0.
-			assert_noop!(
-				Pools::unbond(RuntimeOrigin::signed(random), 10, 20),
-				Error::<T>::DoesNotHavePermission
-			);
+				// remove member 20 so the depositor becomes the sole remaining member.
+				assert_ok!(Pools::fully_unbond(RuntimeOrigin::signed(random), 20));
+				CurrentEra::set(3);
+				assert_ok!(Pools::withdraw_unbonded(RuntimeOrigin::signed(random), 20, 0));
 
-			// they themselves can do it in this case though.
-			assert_ok!(Pools::unbond(RuntimeOrigin::signed(10), 10, 20));
-		})
+				// even as sole member, partial permissionless unbond of the depositor is still
+				// rejected.
+				assert_noop!(
+					Pools::unbond(RuntimeOrigin::signed(random), 10, 5),
+					Error::<T>::PartialUnbondNotAllowedPermissionlessly
+				);
+
+				// now the depositor is the sole member: full permissionless unbond is allowed.
+				assert_ok!(Pools::unbond(RuntimeOrigin::signed(random), 10, 20));
+
+				// repeated full unbond attempts now fail because balance_after_unbond <
+				// depositor_min_bond.
+				assert_noop!(
+					Pools::unbond(RuntimeOrigin::signed(10), 10, 20),
+					Error::<T>::MinimumBondNotMet
+				);
+			})
 	}
 
 	#[test]
@@ -3165,13 +3292,8 @@ mod unbond {
 				Error::<Runtime>::PartialUnbondNotAllowedPermissionlessly,
 			);
 
-			// depositor can never be unbonded permissionlessly .
-			assert_noop!(
-				Pools::fully_unbond(RuntimeOrigin::signed(420), 10),
-				Error::<T>::DoesNotHavePermission
-			);
-			// but depositor itself can do it.
-			assert_ok!(Pools::fully_unbond(RuntimeOrigin::signed(10), 10));
+			// when destroying and sole member, depositor can be unbonded permissionlessly.
+			assert_ok!(Pools::fully_unbond(RuntimeOrigin::signed(420), 10));
 
 			assert_eq!(BondedPools::<Runtime>::get(1).unwrap().points, 0);
 			assert_eq!(
@@ -5555,12 +5677,12 @@ mod update_roles {
 mod reward_counter_precision {
 	use super::*;
 
-	const HEZ: Balance = 10u128.pow(10u32);
-	const PEZKUWI_TOTAL_ISSUANCE_GENESIS: Balance = HEZ * 10u128.pow(9u32);
+	const DOT: Balance = 10u128.pow(10u32);
+	const POLKADOT_TOTAL_ISSUANCE_GENESIS: Balance = DOT * 10u128.pow(9u32);
 
 	const fn inflation(years: u128) -> u128 {
 		let mut i = 0;
-		let mut start = PEZKUWI_TOTAL_ISSUANCE_GENESIS;
+		let mut start = POLKADOT_TOTAL_ISSUANCE_GENESIS;
 		while i < years {
 			start = start + start / 10;
 			i += 1
@@ -5586,9 +5708,9 @@ mod reward_counter_precision {
 
 	#[test]
 	fn smallest_claimable_reward() {
-		// create a pool that has all of the pezkuwi issuance in 50 years.
+		// create a pool that has all of the polkadot issuance in 50 years.
 		let pool_bond = inflation(50);
-		ExtBuilder::default().ed(HEZ).min_bond(pool_bond).build_and_execute(|| {
+		ExtBuilder::default().ed(DOT).min_bond(pool_bond).build_and_execute(|| {
 			assert_eq!(
 				pool_events_since_last_call(),
 				vec![
@@ -5626,8 +5748,8 @@ mod reward_counter_precision {
 
 	#[test]
 	fn massive_reward_in_small_pool() {
-		let tiny_bond = 1000 * HEZ;
-		ExtBuilder::default().ed(HEZ).min_bond(tiny_bond).build_and_execute(|| {
+		let tiny_bond = 1000 * DOT;
+		ExtBuilder::default().ed(DOT).min_bond(tiny_bond).build_and_execute(|| {
 			assert_eq!(
 				pool_events_since_last_call(),
 				vec![
@@ -5659,10 +5781,10 @@ mod reward_counter_precision {
 	}
 
 	#[test]
-	fn reward_counter_calc_wont_fail_in_normal_pezkuwi_future() {
-		// create a pool that has roughly half of the pezkuwi issuance in 10 years.
+	fn reward_counter_calc_wont_fail_in_normal_polkadot_future() {
+		// create a pool that has roughly half of the polkadot issuance in 10 years.
 		let pool_bond = inflation(10) / 2;
-		ExtBuilder::default().ed(HEZ).min_bond(pool_bond).build_and_execute(|| {
+		ExtBuilder::default().ed(DOT).min_bond(pool_bond).build_and_execute(|| {
 			assert_eq!(
 				pool_events_since_last_call(),
 				vec![
@@ -5680,7 +5802,7 @@ mod reward_counter_precision {
 			// in 10 years, the total claimed rewards are large values as well. assuming that a pool
 			// is earning all of the inflation per year (which is really unrealistic, but worse
 			// case), that will be:
-			let pool_total_earnings_10_years = inflation(10) - PEZKUWI_TOTAL_ISSUANCE_GENESIS;
+			let pool_total_earnings_10_years = inflation(10) - POLKADOT_TOTAL_ISSUANCE_GENESIS;
 			deposit_rewards(pool_total_earnings_10_years);
 
 			// some whale now joins with the other half ot the total issuance. This will bloat all
@@ -5707,11 +5829,11 @@ mod reward_counter_precision {
 			);
 
 			// now let a small member join with 10 DOTs.
-			Currency::set_balance(&30, 20 * HEZ);
-			assert_ok!(Pools::join(RuntimeOrigin::signed(30), 10 * HEZ, 1));
+			Currency::set_balance(&30, 20 * DOT);
+			assert_ok!(Pools::join(RuntimeOrigin::signed(30), 10 * DOT, 1));
 
 			// and give a reasonably small reward to the pool.
-			deposit_rewards(HEZ);
+			deposit_rewards(DOT);
 
 			assert_ok!(Pools::claim_payout(RuntimeOrigin::signed(30)));
 			assert_eq!(
@@ -5727,9 +5849,9 @@ mod reward_counter_precision {
 
 	#[test]
 	fn reward_counter_update_can_fail_if_pool_is_highly_slashed() {
-		// create a pool that has roughly half of the pezkuwi issuance in 10 years.
+		// create a pool that has roughly half of the polkadot issuance in 10 years.
 		let pool_bond = inflation(10) / 2;
-		ExtBuilder::default().ed(HEZ).min_bond(pool_bond).build_and_execute(|| {
+		ExtBuilder::default().ed(DOT).min_bond(pool_bond).build_and_execute(|| {
 			assert_eq!(
 				pool_events_since_last_call(),
 				vec![
@@ -5761,10 +5883,10 @@ mod reward_counter_precision {
 
 	#[test]
 	fn if_small_member_waits_long_enough_they_will_earn_rewards() {
-		// create a pool that has a quarter of the current pezkuwi issuance
+		// create a pool that has a quarter of the current polkadot issuance
 		ExtBuilder::default()
-			.ed(HEZ)
-			.min_bond(PEZKUWI_TOTAL_ISSUANCE_GENESIS / 4)
+			.ed(DOT)
+			.min_bond(POLKADOT_TOTAL_ISSUANCE_GENESIS / 4)
 			.build_and_execute(|| {
 				assert_eq!(
 					pool_events_since_last_call(),
@@ -5781,11 +5903,11 @@ mod reward_counter_precision {
 				);
 
 				// and have a tiny fish join the pool as well..
-				Currency::set_balance(&20, 20 * HEZ);
-				assert_ok!(Pools::join(RuntimeOrigin::signed(20), 10 * HEZ, 1));
+				Currency::set_balance(&20, 20 * DOT);
+				assert_ok!(Pools::join(RuntimeOrigin::signed(20), 10 * DOT, 1));
 
 				// earn some small rewards
-				deposit_rewards(HEZ / 1000);
+				deposit_rewards(DOT / 1000);
 
 				// no point in claiming for 20 (nonetheless, it should be harmless)
 				assert!(pending_rewards(20).unwrap().is_zero());
@@ -5805,7 +5927,7 @@ mod reward_counter_precision {
 
 				// earn some small more, still nothing can be claimed for 20, but 10 claims their
 				// share.
-				deposit_rewards(HEZ / 1000);
+				deposit_rewards(DOT / 1000);
 				assert!(pending_rewards(20).unwrap().is_zero());
 				assert_ok!(Pools::claim_payout(RuntimeOrigin::signed(10)));
 				assert_eq!(
@@ -5814,7 +5936,7 @@ mod reward_counter_precision {
 				);
 
 				// earn some more rewards, this time 20 can also claim.
-				deposit_rewards(HEZ / 1000);
+				deposit_rewards(DOT / 1000);
 				assert_eq!(pending_rewards(20).unwrap(), 1);
 				assert_ok!(Pools::claim_payout(RuntimeOrigin::signed(10)));
 				assert_ok!(Pools::claim_payout(RuntimeOrigin::signed(20)));
@@ -5830,10 +5952,10 @@ mod reward_counter_precision {
 
 	#[test]
 	fn zero_reward_claim_does_not_update_reward_counter() {
-		// create a pool that has a quarter of the current pezkuwi issuance
+		// create a pool that has a quarter of the current polkadot issuance
 		ExtBuilder::default()
-			.ed(HEZ)
-			.min_bond(PEZKUWI_TOTAL_ISSUANCE_GENESIS / 4)
+			.ed(DOT)
+			.min_bond(POLKADOT_TOTAL_ISSUANCE_GENESIS / 4)
 			.build_and_execute(|| {
 				assert_eq!(
 					pool_events_since_last_call(),
@@ -5850,11 +5972,11 @@ mod reward_counter_precision {
 				);
 
 				// and have a tiny fish join the pool as well..
-				Currency::set_balance(&20, 20 * HEZ);
-				assert_ok!(Pools::join(RuntimeOrigin::signed(20), 10 * HEZ, 1));
+				Currency::set_balance(&20, 20 * DOT);
+				assert_ok!(Pools::join(RuntimeOrigin::signed(20), 10 * DOT, 1));
 
 				// earn some small rewards
-				deposit_rewards(HEZ / 1000);
+				deposit_rewards(DOT / 1000);
 
 				// if 20 claims now, their reward counter should stay the same, so that they have a
 				// chance of claiming this if they let it accumulate. Also see
@@ -7637,6 +7759,63 @@ mod filter {
 			// THEN she can bond extra funds to the pool
 			assert_ok!(Pools::bond_extra(RuntimeOrigin::signed(alice), BondExtra::FreeBalance(10)));
 			assert_ok!(Pools::bond_extra(RuntimeOrigin::signed(alice), BondExtra::Rewards));
+		});
+	}
+}
+
+mod claim_trapped_balance_migration {
+	use super::*;
+	use pezsp_staking::Delegator;
+
+	/// Test that do_claim_trapped_balance successfully recovers trapped funds.
+	#[test]
+	fn migration_recovers_trapped_funds() {
+		ExtBuilder::default().build_and_execute(|| {
+			let member = 20;
+
+			// Member joins with 100
+			assert_ok!(Pools::join(RuntimeOrigin::signed(member), 100, 1));
+
+			let member_data = PoolMembers::<Runtime>::get(member).unwrap();
+			assert_eq!(member_data.total_balance(), 100);
+			assert_eq!(DelegateMock::delegator_balance(Delegator::from(member)), Some(100));
+
+			// Simulate trapped funds: delegator_balance > points
+			let pool_account = BondedPool::<Runtime>::get(1).unwrap().bonded_account();
+			DelegateMock::set_delegator_balance(member, 150);
+			DelegateMock::set_agent_balance_full(pool_account, 100, 50, 0);
+
+			let member_data = PoolMembers::<Runtime>::get(member).unwrap();
+			assert_eq!(member_data.total_balance(), 100);
+			assert_eq!(DelegateMock::delegator_balance(Delegator::from(member)), Some(150));
+
+			// Call the helper directly
+			assert_ok!(Pools::do_claim_trapped_balance(&member));
+
+			// Verify balance corrected: delegator_balance should now match points (100)
+			assert_eq!(DelegateMock::delegator_balance(Delegator::from(member)), Some(100));
+
+			// Calling again is a no-op (no state change)
+			assert_ok!(Pools::do_claim_trapped_balance(&member));
+			assert_eq!(DelegateMock::delegator_balance(Delegator::from(member)), Some(100));
+		});
+	}
+
+	/// Test that do_claim_trapped_balance is a no-op when no trapped balance.
+	#[test]
+	fn migration_no_op_when_no_trapped_balance() {
+		ExtBuilder::default().build_and_execute(|| {
+			let member = 20;
+			assert_ok!(Pools::join(RuntimeOrigin::signed(member), 100, 1));
+
+			let balance_before = DelegateMock::delegator_balance(Delegator::from(member));
+			let member_before = PoolMembers::<Runtime>::get(member).unwrap();
+
+			assert_ok!(Pools::do_claim_trapped_balance(&member));
+
+			// Verify no state changed
+			assert_eq!(DelegateMock::delegator_balance(Delegator::from(member)), balance_before);
+			assert_eq!(PoolMembers::<Runtime>::get(member).unwrap(), member_before);
 		});
 	}
 }

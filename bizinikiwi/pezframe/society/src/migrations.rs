@@ -94,9 +94,8 @@ impl<
 	}
 }
 
-/// [`VersionUncheckedMigrateToV2`] wrapped in a
-/// [`pezframe_support::migrations::VersionedMigration`], ensuring the migration is only performed
-/// when on-chain version is 0.
+/// [`VersionUncheckedMigrateToV2`] wrapped in a [`pezframe_support::migrations::VersionedMigration`],
+/// ensuring the migration is only performed when on-chain version is 0.
 pub type MigrateToV2<T, I, PastPayouts> = pezframe_support::migrations::VersionedMigration<
 	0,
 	2,
@@ -110,7 +109,7 @@ pub(crate) mod v0 {
 	use pezframe_support::storage_alias;
 
 	/// A vote by a member on a candidate application.
-	#[derive(Encode, Decode, Copy, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+	#[derive(Encode, Decode, Copy, Clone, PartialEq, Eq, Debug, TypeInfo)]
 	pub enum Vote {
 		/// The member has been chosen to be skeptic and has not yet taken any action.
 		Skeptic,

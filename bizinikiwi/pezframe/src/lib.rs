@@ -37,23 +37,21 @@
 //! 1. preludes: `prelude`, `testing_prelude`, `runtime::prelude`, `benchmarking::prelude`, and
 //!    `weights_prelude`.
 //! 2. domain-specific modules, like `traits`, `hashing`, `arithmetic` and `derive`.
-//! 3. Accessing frame/bizinikiwi dependencies directly: `deps`.
+//! 3. Accessing frame/substrate dependencies directly: `deps`.
 //!
 //! The main intended use of this crate is through preludes, which re-export most of the components
-//! needed for pezpallet development. Domain-specific modules serve as a backup for organization,
-//! and `deps` provides direct access to all dependencies if needed.
+//! needed for pezpallet development. Domain-specific modules serve as a backup for organization, and
+//! `deps` provides direct access to all dependencies if needed.
 //!
 //!
 //! ### Example Usage
 //!
-//! <!-- Note: This example is marked `ignore` because doc tests run in isolation and cannot
-//!      properly resolve the pezpallet macro attributes without a full pallet context.
-//!      The functionality is tested in the pezframe-support integration tests. -->
-//! ```ignore
-//! use pezframe as frame;
+//! ```
+//! use pezkuwi_sdk_frame as frame;
 //!
 //! #[pezframe::pezpallet]
 //! pub mod pezpallet {
+//! 	# use pezkuwi_sdk_frame as frame;
 //! 	use pezframe::prelude::*;
 //! 	// ^^ using the prelude!
 //!
@@ -66,15 +64,18 @@
 //!
 //! #[cfg(test)]
 //! pub mod tests {
+//! 	# use pezkuwi_sdk_frame as frame;
 //! 	use pezframe::testing_prelude::*;
 //! }
 //!
 //! #[cfg(feature = "runtime-benchmarks")]
 //! pub mod benchmarking {
+//! 	# use pezkuwi_sdk_frame as frame;
 //! 	use pezframe::benchmarking::prelude::*;
 //! }
 //!
 //! pub mod runtime {
+//! 	# use pezkuwi_sdk_frame as frame;
 //! 	use pezframe::runtime::prelude::*;
 //! }
 //! ```
@@ -85,13 +86,13 @@
 //! runtimes. For runtime development, import it as:
 //!
 //! ```text
-//! pezkuwi-sdk-frame = { version = "foo", features = ["runtime"] }
+//! pezkuwi-sdk-pezframe = { version = "foo", features = ["runtime"] }
 //! ```
 //!
 //! If you just want to build a pezpallet instead, import it as
 //!
 //! ```text
-//! pezkuwi-sdk-frame = { version = "foo" }
+//! pezkuwi-sdk-pezframe = { version = "foo" }
 //! ```
 //!
 //! ### Prelude Relationships
@@ -112,26 +113,26 @@
 //! [dependencies]
 //! codec = { features = ["max-encoded-len"], workspace = true }
 //! scale-info = { features = ["derive"], workspace = true }
-//! frame = { workspace = true, features = ["runtime"] }
+//! pezframe = { workspace = true, features = ["runtime"] }
 //!
 //! [features]
 //! default = ["std"]
 //! std = [
 //! 	"codec/std",
 //! 	"scale-info/std",
-//! 	"frame/std",
+//! 	"pezframe/std",
 //! ]
 //! runtime-benchmarks = [
-//! 	"frame/runtime-benchmarks",
+//! 	"pezframe/runtime-benchmarks",
 //! ]
 //! try-runtime = [
-//! 	"frame/try-runtime",
+//! 	"pezframe/try-runtime",
 //! ]
 //! ```
 //!
 //! ## Documentation
 //!
-//! For more detailed documentation and examples, see [`pezkuwi_sdk_frame`](https://docs.pezkuwichain.io/sdk/master/polkadot_sdk_frame/index.html).
+//! For more detailed documentation and examples, see [`pezkuwi_sdk_frame`](https://paritytech.github.io/pezkuwi-sdk/master/pezkuwi_sdk_frame/index.html).
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -149,8 +150,8 @@ pub use pezframe_support::storage_alias;
 
 /// Macros used within the main [`pezpallet`] macro.
 ///
-/// Note: All of these macros are "stubs" and not really usable outside `#[pezpallet] mod pezpallet
-/// { .. }`. They are mainly provided for documentation and IDE support.
+/// Note: All of these macros are "stubs" and not really usable outside `#[pezpallet] mod pezpallet { ..
+/// }`. They are mainly provided for documentation and IDE support.
 ///
 /// To view a list of all the macros and their documentation, follow the links in the 'Re-exports'
 /// section below:
@@ -164,17 +165,16 @@ pub mod pezpallet_macros {
 /// This prelude should almost always be the first line of code in any pezpallet or runtime.
 ///
 /// ```
-/// use pezframe::prelude::*;
+/// use pezkuwi_sdk_frame::prelude::*;
 ///
 /// // rest of your pezpallet..
 /// mod pezpallet {}
 /// ```
 pub mod prelude {
-	/// `pezframe_system`'s parent crate, which is mandatory in all pallets build with this
-	/// crate.
+	/// `pezframe_system`'s parent crate, which is mandatory in all pezpallets build with this crate.
 	///
 	/// Conveniently, the keyword `pezframe_system` is in scope as one uses `use
-	/// pezframe::prelude::*`.
+	/// pezkuwi_sdk_frame::prelude::*`.
 	#[doc(inline)]
 	pub use pezframe_system;
 
@@ -253,11 +253,11 @@ pub mod try_runtime {
 /// It supports both the `benchmarking::v1::benchmarks` and `benchmarking::v2::benchmark` syntax.
 ///
 /// ```
-/// use pezframe::benchmarking::prelude::*;
+/// use pezkuwi_sdk_frame::benchmarking::prelude::*;
 /// // rest of your code.
 /// ```
 ///
-/// It already includes `pezframe::prelude::*` and `pezframe::testing_prelude`.
+/// It already includes `pezkuwi_sdk_frame::prelude::*` and `pezkuwi_sdk_frame::testing_prelude`.
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking {
 	mod shared {
@@ -272,7 +272,7 @@ pub mod benchmarking {
 	}
 
 	#[deprecated(
-		note = "'The V1 benchmarking syntax is deprecated. Please use the V2 syntax. This warning may become a hard error any time after April 2025. For more info, see: https://github.com/pezkuwichain/pezkuwi-sdk/issues/268"
+		note = "'The V1 benchmarking syntax is deprecated. Please use the V2 syntax. This warning may become a hard error any time after April 2025. For more info, see: https://github.com/paritytech/pezkuwi-sdk/pull/5995"
 	)]
 	pub mod v1 {
 		pub use super::shared::*;
@@ -293,7 +293,7 @@ pub mod benchmarking {
 /// Prelude to be included in the `weight.rs` of each pezpallet.
 ///
 /// ```
-/// pub use pezframe::weights_prelude::*;
+/// pub use pezkuwi_sdk_frame::weights_prelude::*;
 /// ```
 pub mod weights_prelude {
 	pub use core::marker::PhantomData;
@@ -312,12 +312,12 @@ pub mod weights_prelude {
 /// A test setup typically starts with:
 ///
 /// ```
-/// use pezframe::testing_prelude::*;
+/// use pezkuwi_sdk_frame::testing_prelude::*;
 /// // rest of your test setup.
 /// ```
 ///
-/// This automatically brings in `pezframe::prelude::*` and
-/// `pezframe::runtime::prelude::*`.
+/// This automatically brings in `pezkuwi_sdk_frame::prelude::*` and
+/// `pezkuwi_sdk_frame::runtime::prelude::*`.
 #[cfg(feature = "std")]
 pub mod testing_prelude {
 	pub use crate::{prelude::*, runtime::prelude::*};
@@ -353,10 +353,10 @@ pub mod runtime {
 	/// A runtime typically starts with:
 	///
 	/// ```
-	/// use pezframe::runtime::prelude::*;
+	/// use pezkuwi_sdk_frame::runtime::prelude::*;
 	/// ```
 	///
-	/// This automatically brings in `pezframe::prelude::*`.
+	/// This automatically brings in `pezkuwi_sdk_frame::prelude::*`.
 	pub mod prelude {
 		pub use crate::prelude::*;
 
@@ -365,13 +365,13 @@ pub mod runtime {
 
 		/// Macro to amalgamate the runtime into `struct Runtime`.
 		///
-		/// Consider using the new version of this [`frame_construct_runtime`].
+		/// Consider using the new version of this [`pezframe_construct_runtime`].
 		pub use pezframe_support::construct_runtime;
 
 		/// Macro to amalgamate the runtime into `struct Runtime`.
 		///
 		/// This is the newer version of [`construct_runtime`].
-		pub use pezframe_support::runtime as frame_construct_runtime;
+		pub use pezframe_support::runtime as pezframe_construct_runtime;
 
 		/// Macro to easily derive the `Config` trait of various pezpallet for `Runtime`.
 		pub use pezframe_support::derive_impl;
@@ -428,12 +428,12 @@ pub mod runtime {
 	/// A non-testing runtime should have this enabled, as such:
 	///
 	/// ```
-	/// use pezframe::runtime::{prelude::*, apis::{*,}};
+	/// use pezkuwi_sdk_frame::runtime::{prelude::*, apis::{*,}};
 	/// ```
 	// TODO: This is because of wildcard imports, and it should be not needed once we can avoid
 	// that. Imports like that are needed because we seem to need some unknown types in the macro
-	// expansion. See `pezsp_session::runtime_api::*;` as one example. All runtime api decls should
-	// be moved to file similarly.
+	// expansion. See `pezsp_session::runtime_api::*;` as one example. All runtime api decls should be
+	// moved to file similarly.
 	#[allow(ambiguous_glob_reexports)]
 	pub mod apis {
 		pub use pezframe_system_rpc_runtime_api::*;
@@ -455,10 +455,10 @@ pub mod runtime {
 	/// Some note-worthy opinions in this prelude:
 	///
 	/// - `u32` block number.
-	/// - [`pezsp_runtime::MultiAddress`] and [`pezsp_runtime::MultiSignature`] are used as the
-	///   account id and signature types. This implies that this prelude can possibly used with an
-	///   "account-index" system (eg `pezpallet-indices`). And, in any case, it should be paired
-	///   with `AccountIdLookup` in [`pezframe_system::Config::Lookup`].
+	/// - [`pezsp_runtime::MultiAddress`] and [`pezsp_runtime::MultiSignature`] are used as the account id
+	///   and signature types. This implies that this prelude can possibly used with an
+	///   "account-index" system (eg `pezpallet-indices`). And, in any case, it should be paired with
+	///   `AccountIdLookup` in [`pezframe_system::Config::Lookup`].
 	pub mod types_common {
 		use pezframe_system::Config as SysConfig;
 		use pezsp_runtime::{generic, traits, OpaqueExtrinsic};
@@ -525,7 +525,7 @@ pub mod runtime {
 	}
 }
 
-/// All traits often used in FRAME pallets.
+/// All traits often used in FRAME pezpallets.
 ///
 /// Note that types implementing these traits can also be found in this module.
 // TODO: `Hash` and `Bounded` are defined multiple times; should be fixed once these two crates are
@@ -565,9 +565,8 @@ pub mod derive {
 	pub use core::fmt::Debug;
 	pub use pezframe_support::{
 		CloneNoBound, DebugNoBound, DefaultNoBound, EqNoBound, OrdNoBound, PartialEqNoBound,
-		PartialOrdNoBound, RuntimeDebugNoBound,
+		PartialOrdNoBound,
 	};
-	pub use pezsp_runtime::RuntimeDebug;
 	pub use scale_info::TypeInfo;
 	pub use serde;
 	/// The `serde` `Serialize`/`Deserialize` derive macros and traits.
@@ -582,12 +581,12 @@ pub mod derive {
 ///
 /// This is already part of the main [`prelude`].
 pub mod hashing {
-	pub use pezsp_core::{hashing::*, H160, H256, H512, U256, U512};
+	pub use pezsp_core::{H160, H256, H512, U256, U512};
+	pub use pezsp_crypto_hashing::*;
 	pub use pezsp_runtime::traits::{BlakeTwo256, Hash, Keccak256};
 }
 
 // Systems involved in transaction execution in the runtime.
-///
 /// This is already part of the [`prelude`].
 pub mod transaction {
 	pub use pezframe_support::traits::{CallMetadata, GetCallMetadata};

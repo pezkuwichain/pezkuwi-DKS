@@ -34,7 +34,7 @@
 //! - [`logging`]
 //!
 //! All of the default host functions provided by this crate, and by default contained in all
-//! substrate-based clients are amalgamated in [`BizinikiwiHostFunctions`].
+//! bizinikiwi-based clients are amalgamated in [`BizinikiwiHostFunctions`].
 //!
 //! ## Externalities
 //!
@@ -860,7 +860,7 @@ pezsp_externalities::decl_extension! {
 	/// client.execution_extensions().set_extensions_factory(
 	/// 	// Let the `UseDalekExt` extension being registered for each runtime invocation
 	/// 	// until the execution happens in the context of block `1000`.
-	/// 	sc_client_api::execution_extensions::ExtensionBeforeBlock::<Block, UseDalekExt>::new(1000)
+	/// 	pezsc_client_api::execution_extensions::ExtensionBeforeBlock::<Block, UseDalekExt>::new(1000)
 	/// );
 	/// ```
 	pub struct UseDalekExt;

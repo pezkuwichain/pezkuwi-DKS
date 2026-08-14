@@ -405,7 +405,7 @@ pub trait Ext: sealing::Sealed {
 	Clone,
 	PartialEq,
 	Eq,
-	pezsp_core::RuntimeDebug,
+	Debug,
 	codec::Decode,
 	codec::Encode,
 	codec::MaxEncodedLen,
@@ -836,7 +836,7 @@ where
 	/// This does not take `self` because when constructing the first frame `self` is
 	/// not initialized, yet.
 	fn new_frame<S: storage::meter::State + Default + Debug>(
-		frame_args: FrameArgs<T, E>,
+		pezframe_args: FrameArgs<T, E>,
 		value_transferred: BalanceOf<T>,
 		gas_meter: &mut GasMeter<T>,
 		gas_limit: Weight,
@@ -846,7 +846,7 @@ where
 		read_only: bool,
 	) -> Result<(Frame<T>, E, Option<u64>), ExecError> {
 		let (account_id, contract_info, executable, delegate_caller, entry_point, nonce) =
-			match frame_args {
+			match pezframe_args {
 				FrameArgs::Call { dest, cached_info, delegated_call } => {
 					let contract = if let Some(contract) = cached_info {
 						contract
@@ -909,7 +909,7 @@ where
 	/// Create a subsequent nested frame.
 	fn push_frame(
 		&mut self,
-		frame_args: FrameArgs<T, E>,
+		pezframe_args: FrameArgs<T, E>,
 		value_transferred: BalanceOf<T>,
 		gas_limit: Weight,
 		deposit_limit: BalanceOf<T>,
@@ -934,7 +934,7 @@ where
 		let nested_gas = &mut frame.nested_gas;
 		let nested_storage = &mut frame.nested_storage;
 		let (frame, executable, _) = Self::new_frame(
-			frame_args,
+			pezframe_args,
 			value_transferred,
 			nested_gas,
 			gas_limit,

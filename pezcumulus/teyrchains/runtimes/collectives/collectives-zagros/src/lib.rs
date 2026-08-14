@@ -87,7 +87,6 @@ use pezframe_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureRoot,
 };
-use pezsp_runtime::RuntimeDebug;
 use testnet_teyrchains_constants::zagros::{
 	account::*, consensus::*, currency::*, fee::WeightToFee, time::*,
 };
@@ -298,7 +297,7 @@ parameter_types! {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]

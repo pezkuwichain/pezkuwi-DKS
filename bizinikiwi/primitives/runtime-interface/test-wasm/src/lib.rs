@@ -234,8 +234,8 @@ impl TryFrom<u32> for Opaque {
 	}
 }
 
-/// This function is not used, but we require it for the compiler to include `sp-io`.
-/// `sp-io` is required for its panic and oom handler.
+/// This function is not used, but we require it for the compiler to include `pezsp-io`.
+/// `pezsp-io` is required for its panic and oom handler.
 #[no_mangle]
 pub fn import_sp_io() {
 	pezsp_io::misc::print_utf8(&[]);
@@ -353,7 +353,7 @@ wasm_export_functions! {
 
 	fn test_versioning_works() {
 		// we fix new api to accept only 42 as a proper input
-		// as opposed to sp-runtime-interface-test-wasm-deprecated::test_api::verify_input
+		// as opposed to pezsp-runtime-interface-test-wasm-deprecated::test_api::verify_input
 		// which accepted 42 and 50.
 		assert!(test_api::test_versioning(42));
 

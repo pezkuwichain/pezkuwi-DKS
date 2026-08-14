@@ -110,7 +110,7 @@ use pezsp_runtime::{
 	},
 	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, FixedU128, MultiSignature, MultiSigner, Perbill,
-	Percent, Permill, Perquintill, RuntimeDebug,
+	Percent, Permill, Perquintill,
 };
 use pezsp_std::{borrow::Cow, prelude::*};
 #[cfg(any(feature = "std", test))]
@@ -421,7 +421,7 @@ parameter_types! {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]

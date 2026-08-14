@@ -156,13 +156,13 @@ pub mod pezpallet {
 		type TrustScoreUpdater: TrustScoreUpdater<Self::AccountId>;
 	}
 
-	#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 	pub enum CourseStatus {
 		Active,
 		Archived,
 	}
 
-	#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 	#[scale_info(skip_type_params(T))]
 	pub struct Course<T: Config> {
 		pub id: u32,
@@ -174,7 +174,7 @@ pub mod pezpallet {
 		pub created_at: BlockNumberFor<T>,
 	}
 
-	#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 	#[scale_info(skip_type_params(T))]
 	pub struct Enrollment<T: Config> {
 		pub student: T::AccountId,

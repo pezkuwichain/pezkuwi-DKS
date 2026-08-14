@@ -33,7 +33,7 @@ use scale_info::{
 /// of the runtime metadata an appropriate default value is used (ie, empty vector).
 pub struct MetadataIR<T: Form = MetaForm> {
 	/// Pezpallet metadata.
-	pub pallets: Vec<PalletMetadataIR<T>>,
+	pub pezpallets: Vec<PalletMetadataIR<T>>,
 	/// Metadata of the extrinsic.
 	pub extrinsic: ExtrinsicMetadataIR<T>,
 	/// The type of the `Runtime`.

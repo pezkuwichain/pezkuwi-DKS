@@ -39,10 +39,7 @@ use crate::traits::{OnSwap, Registrar};
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezkuwi_runtime_teyrchains::paras::{OnNewHead, ParaKind};
 pub use pezpallet::*;
-use pezsp_runtime::{
-	traits::{CheckedSub, Saturating},
-	RuntimeDebug,
-};
+use pezsp_runtime::traits::{CheckedSub, Saturating};
 use scale_info::TypeInfo;
 
 #[derive(
@@ -52,7 +49,7 @@ use scale_info::TypeInfo;
 	PartialEq,
 	Eq,
 	Default,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	DecodeWithMemTracking,

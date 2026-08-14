@@ -84,7 +84,7 @@ pub struct TicketClaim {
 /// For details about the formula and implications refer to
 /// [*probabilities an parameters*](https://research.web3.foundation/Polkadot/protocols/block-production/SASSAFRAS#probabilities-and-parameters)
 /// paragraph of the w3f introduction to the protocol.
-// TODO: replace with [RFC-26](https://github.com/polkadot-fellows/RFCs/pull/26)
+// TODO: replace with [RFC-26](https://github.com/pezkuwi-fellows/RFCs/pull/26)
 // "Tickets Threshold" paragraph once is merged
 pub fn ticket_id_threshold(
 	redundancy: u32,

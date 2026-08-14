@@ -70,8 +70,7 @@ pub mod pezpallet {
 		/// Authority identifier type
 		type BeefyId: Member
 			+ Parameter
-			// todo: use custom signature hashing type instead of hardcoded `Keccak256`
-			+ BeefyAuthorityId<pezsp_runtime::traits::Keccak256>
+			+ BeefyAuthorityId
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen;
 
@@ -423,6 +422,7 @@ pub mod pezpallet {
 		}
 	}
 
+	#[allow(deprecated)]
 	#[pezpallet::validate_unsigned]
 	impl<T: Config> ValidateUnsigned for Pezpallet<T> {
 		type Call = Call<T>;
@@ -451,6 +451,13 @@ pub mod pezpallet {
 						key_owner_proof.clone(),
 					))
 				},
+				Call::report_future_block_voting_unsigned {
+					equivocation_proof,
+					key_owner_proof,
+				} => Some(EquivocationEvidenceFor::<T>::FutureBlockVotingProof(
+					*equivocation_proof.clone(),
+					key_owner_proof.clone(),
+				)),
 				_ => None,
 			}
 		}

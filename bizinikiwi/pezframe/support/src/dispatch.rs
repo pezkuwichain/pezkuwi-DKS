@@ -743,7 +743,7 @@ mod weight_tests {
 		pub struct Pezpallet<T>(_);
 
 		#[pezpallet::config]
-		#[pezpallet::disable_frame_system_supertrait_check]
+		#[pezpallet::disable_pezframe_system_supertrait_check]
 		pub trait Config: 'static {
 			type Block: Parameter + pezsp_runtime::traits::Block;
 			type AccountId;

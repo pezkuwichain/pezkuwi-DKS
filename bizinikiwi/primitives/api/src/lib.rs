@@ -95,7 +95,6 @@ pub mod __private {
 	pub use alloc::vec;
 	pub use codec::{self, Decode, DecodeLimit, Encode};
 	pub use core::{mem, slice};
-	pub use scale_info;
 	pub use pezsp_core::offchain;
 	#[cfg(not(feature = "std"))]
 	pub use pezsp_core::to_substrate_wasm_fn_return_value;
@@ -108,6 +107,7 @@ pub mod __private {
 		ExtrinsicInclusionMode, TransactionOutcome,
 	};
 	pub use pezsp_version::{create_apis_vec, ApiId, ApisVec, RuntimeVersion};
+	pub use scale_info;
 
 	#[cfg(all(any(target_arch = "riscv32", target_arch = "riscv64"), substrate_runtime))]
 	pub use pezsp_runtime_interface::polkavm::{polkavm_abi, polkavm_export};
@@ -862,4 +862,4 @@ decl_runtime_apis! {
 
 pezsp_core::generate_feature_enabled_macro!(std_enabled, feature = "std", $);
 pezsp_core::generate_feature_enabled_macro!(std_disabled, not(feature = "std"), $);
-pezsp_core::generate_feature_enabled_macro!(frame_metadata_enabled, feature = "frame-metadata", $);
+pezsp_core::generate_feature_enabled_macro!(pezframe_metadata_enabled, feature = "frame-metadata", $);

@@ -36,8 +36,8 @@
 //!   accounts are, for the purposes of proxy filtering considered exactly the same as the origin
 //!   and are thus hampered with the origin's filters.
 //!
-//! Since proxy filters are respected in all dispatches of this pezpallet, it should never need to
-//! be filtered by any proxy.
+//! Since proxy filters are respected in all dispatches of this pezpallet, it should never need to be
+//! filtered by any proxy.
 //!
 //! ## Interface
 //!
@@ -100,7 +100,7 @@ pub mod pezpallet {
 			+ IsSubType<Call<Self>>
 			+ IsType<<Self as pezframe_system::Config>::RuntimeCall>;
 
-		/// The caller origin, overarching type of all pallets origins.
+		/// The caller origin, overarching type of all pezpallets origins.
 		type PalletsOrigin: Parameter +
 			Into<<Self as pezframe_system::Config>::RuntimeOrigin> +
 			IsType<<<Self as pezframe_system::Config>::RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin>;
@@ -590,6 +590,10 @@ pub mod pezpallet {
 		fn weight_and_dispatch_class(
 			calls: &[<T as Config>::RuntimeCall],
 		) -> (Weight, DispatchClass) {
+			if calls.is_empty() {
+				return (Weight::zero(), DispatchClass::Normal);
+			}
+
 			let dispatch_infos = calls.iter().map(|call| call.get_dispatch_info());
 			let (dispatch_weight, dispatch_class) = dispatch_infos.fold(
 				(Weight::zero(), DispatchClass::Operational),

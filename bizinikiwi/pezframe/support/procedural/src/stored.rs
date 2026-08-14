@@ -87,14 +87,14 @@ fn stored_impl(attr: TokenStream2, item: TokenStream2) -> Result<TokenStream2> {
 		Ok(path) => path,
 		Err(_) => match generate_access_from_frame_or_crate("frame") {
 			Ok(path) => path,
-			Err(_) => match generate_access_from_frame_or_crate("polkadot-sdk-frame") {
+			Err(_) => match generate_access_from_frame_or_crate("pezkuwi-sdk-frame") {
 				Ok(path) => path,
 
 				Err(e) => {
 					return Err(Error::new(
 						proc_macro2::Span::call_site(),
 						format!(
-							"Failed to find `pezframe-support`, `frame` or `polkadot-sdk-frame` in dependencies: {}",
+							"Failed to find `pezframe-support`, `frame` or `pezkuwi-sdk-frame` in dependencies: {}",
 							e
 						),
 					))

@@ -35,7 +35,7 @@ mod keyword {
 	syn::custom_keyword!(RuntimeEvent);
 	syn::custom_keyword!(Event);
 	syn::custom_keyword!(pezframe_system);
-	syn::custom_keyword!(disable_frame_system_supertrait_check);
+	syn::custom_keyword!(disable_pezframe_system_supertrait_check);
 	syn::custom_keyword!(no_default);
 	syn::custom_keyword!(no_default_bounds);
 	syn::custom_keyword!(constant);
@@ -144,7 +144,7 @@ impl TryFrom<&syn::TraitItemType> for ConstMetadataDef {
 	}
 }
 
-/// Parse for `#[pezpallet::disable_frame_system_supertrait_check]`
+/// Parse for `#[pezpallet::disable_pezframe_system_supertrait_check]`
 pub struct DisableFrameSystemSupertraitCheck;
 
 impl syn::parse::Parse for DisableFrameSystemSupertraitCheck {
@@ -155,7 +155,7 @@ impl syn::parse::Parse for DisableFrameSystemSupertraitCheck {
 		content.parse::<syn::Ident>()?;
 		content.parse::<syn::Token![::]>()?;
 
-		content.parse::<keyword::disable_frame_system_supertrait_check>()?;
+		content.parse::<keyword::disable_pezframe_system_supertrait_check>()?;
 		Ok(Self)
 	}
 }
@@ -382,7 +382,7 @@ impl ConfigDef {
 		item: &mut syn::Item,
 		enable_default: bool,
 		disable_associated_metadata: bool,
-		is_frame_system: bool,
+		is_pezframe_system: bool,
 	) -> syn::Result<Self> {
 		let syn::Item::Trait(item) = item else {
 			let msg = "Invalid pezpallet::config, expected trait definition";
@@ -420,7 +420,7 @@ impl ConfigDef {
 		let mut associated_types_metadata = vec![];
 		let mut warnings = vec![];
 		let mut default_sub_trait = if enable_default {
-			Some(DefaultTrait { items: Default::default(), has_system: !is_frame_system })
+			Some(DefaultTrait { items: Default::default(), has_system: !is_pezframe_system })
 		} else {
 			None
 		};
@@ -433,7 +433,7 @@ impl ConfigDef {
 			let mut already_collected_associated_type = None;
 
 			// add deprecation notice for `RuntimeEvent`, iff pezpallet is not `pezframe_system`
-			if is_event && !is_frame_system {
+			if is_event && !is_pezframe_system {
 				if let syn::TraitItem::Type(type_event) = trait_item {
 					let allow_dep: syn::Attribute = parse_quote!(#[allow(deprecated)]);
 
@@ -443,7 +443,7 @@ impl ConfigDef {
 						.old("have `RuntimeEvent` associated type in the pezpallet config")
 						.new("remove it as it is redundant since associated bound gets appended automatically: \n
 							pub trait Config: pezframe_system::Config<RuntimeEvent: From<Event<Self>>> { }")
-						.help_link("https://github.com/paritytech/polkadot-sdk/pull/7229")
+						.help_link("https://github.com/paritytech/pezkuwi-sdk/pull/7229")
 						.span(type_event.ident.span())
 						.build_or_panic();
 
@@ -579,12 +579,12 @@ impl ConfigDef {
 			helper::take_first_item_pallet_attr(&mut item.attrs)?;
 		let disable_system_supertrait_check = attr.is_some();
 
-		let has_frame_system_supertrait = item.supertraits.iter().any(|s| {
+		let has_pezframe_system_supertrait = item.supertraits.iter().any(|s| {
 			syn::parse2::<syn::Path>(s.to_token_stream())
 				.map_or(false, |b| has_expected_system_config(b, pezframe_system))
 		});
 
-		if !has_frame_system_supertrait && !disable_system_supertrait_check {
+		if !has_pezframe_system_supertrait && !disable_system_supertrait_check {
 			let found = if item.supertraits.is_empty() {
 				"none".to_string()
 			} else {
@@ -602,7 +602,7 @@ impl ConfigDef {
 				found {}. \
 				(try `pub trait Config: pezframe_system::Config {{ ...` or \
 				`pub trait Config<I: 'static>: pezframe_system::Config {{ ...`). \
-				To disable this check, use `#[pezpallet::disable_frame_system_supertrait_check]`",
+				To disable this check, use `#[pezpallet::disable_pezframe_system_supertrait_check]`",
 				pezframe_system.to_token_stream(),
 				found,
 			);
@@ -725,7 +725,7 @@ mod tests {
 	}
 
 	#[test]
-	fn has_expected_system_config_unexpected_frame_system() {
+	fn has_expected_system_config_unexpected_pezframe_system() {
 		let pezframe_system =
 			syn::parse2::<syn::Path>(quote::quote!(framez::deps::pezframe_system)).unwrap();
 		let path = syn::parse2::<syn::Path>(quote::quote!(pezframe_system::Config)).unwrap();
@@ -740,7 +740,7 @@ mod tests {
 	}
 
 	#[test]
-	fn has_expected_system_config_not_frame_system() {
+	fn has_expected_system_config_not_pezframe_system() {
 		let pezframe_system = syn::parse2::<syn::Path>(quote::quote!(something)).unwrap();
 		let path = syn::parse2::<syn::Path>(quote::quote!(something::Config)).unwrap();
 		assert!(!has_expected_system_config(path, &pezframe_system));

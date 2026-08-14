@@ -62,7 +62,7 @@ use pezframe_support::{
 };
 use pezsp_runtime::{
 	traits::{Saturating, Zero},
-	DispatchResult, RuntimeDebug,
+	Debug, DispatchResult,
 };
 use pezsp_staking::{EraIndex, StakingInterface};
 use scale_info::TypeInfo;
@@ -75,7 +75,7 @@ const REWARD_F1: Perbill = Perbill::from_percent(50);
 pub type SpanIndex = u32;
 
 // A range of start..end eras for a slashing span.
-#[derive(Encode, Decode, Clone, TypeInfo, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, TypeInfo, Debug, PartialEq, Eq)]
 pub struct SlashingSpan {
 	pub index: SpanIndex,
 	pub start: EraIndex,
@@ -89,7 +89,7 @@ impl SlashingSpan {
 }
 
 /// An encoding of all of a nominator's slashing spans.
-#[derive(Encode, Decode, Clone, TypeInfo, RuntimeDebug, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, TypeInfo, Debug, PartialEq, Eq)]
 pub struct SlashingSpans {
 	// the index of the current slashing span of the nominator. different for
 	// every stash, resets when the account hits free balance 0.
@@ -197,7 +197,7 @@ impl SlashingSpans {
 	MaxEncodedLen,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 )]
 pub struct SpanRecord<Balance> {
 	pub slashed: Balance,
@@ -289,7 +289,7 @@ pub(crate) fn compute_slash<T: Config>(
 
 		if target_span == Some(spans.span_index()) {
 			// misbehavior occurred within the current slashing span - end current span.
-			// Check <https://github.com/pezkuwichain/pezkuwi-sdk/issues/269> for details.
+			// Check <https://github.com/pezkuwichain/pezkuwi-sdk/issues/2650> for details.
 			spans.end_span(params.now);
 		}
 	}
@@ -321,7 +321,7 @@ fn kick_out_if_recent<T: Config>(params: SlashParams<T>) {
 	);
 
 	if spans.era_span(params.slash_era).map(|s| s.index) == Some(spans.span_index()) {
-		// Check https://github.com/pezkuwichain/pezkuwi-sdk/issues/269 for details
+		// Check https://github.com/pezkuwichain/pezkuwi-sdk/issues/2650 for details
 		spans.end_span(params.now);
 	}
 }
@@ -572,7 +572,7 @@ pub fn do_slash<T: Config>(
 		return;
 	}
 
-	// Skip slashing for virtual stakers. The pallets managing them should handle the slashing.
+	// Skip slashing for virtual stakers. The pezpallets managing them should handle the slashing.
 	if !Pezpallet::<T>::is_virtual_staker(stash) {
 		let (imbalance, missing) = asset::slash::<T>(stash, value);
 		slashed_imbalance.subsume(imbalance);

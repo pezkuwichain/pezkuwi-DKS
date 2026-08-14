@@ -22,7 +22,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// target/release/bizinikiwi
+// target/release/substrate
 // benchmark
 // pezpallet
 // --chain=dev
@@ -34,7 +34,7 @@
 // --wasm-execution=compiled
 // --heap-pages=4096
 // --output=frame/election-provider-support/src/weights.rs
-// --template=./.maintain/frame-weight-template.hbs
+// --template=./.maintain/pezframe-weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]

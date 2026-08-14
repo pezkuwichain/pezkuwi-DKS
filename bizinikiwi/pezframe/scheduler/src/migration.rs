@@ -192,7 +192,7 @@ pub mod v4 {
 	/// This migration cleans up empty agendas of the V4 scheduler.
 	///
 	/// This should be run on a scheduler that does not have
-	/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/210> since it piles up `None`-only agendas. This does not modify the pezpallet version.
+	/// <https://github.com/paritytech/bizinikiwi/pull/12989> since it piles up `None`-only agendas. This does not modify the pezpallet version.
 	pub struct CleanupAgendas<T>(core::marker::PhantomData<T>);
 
 	impl<T: Config> OnRuntimeUpgrade for CleanupAgendas<T> {

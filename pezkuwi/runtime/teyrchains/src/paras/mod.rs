@@ -127,7 +127,6 @@ use pezkuwi_primitives::{
 	ConsensusLog, HeadData, Id as ParaId, PvfCheckStatement, SessionIndex, UpgradeGoAhead,
 	UpgradeRestriction, ValidationCode, ValidationCodeHash, ValidatorSignature, MIN_CODE_SIZE,
 };
-use pezsp_core::RuntimeDebug;
 use pezsp_runtime::{
 	traits::{AppVerify, One, Saturating},
 	DispatchResult, SaturatedConversion,
@@ -183,7 +182,7 @@ pub struct ParaPastCodeMeta<N> {
 /// If the para is in a "transition state", it is expected that the teyrchain is
 /// queued in the `ActionsQueue` to transition it into a stable state. Its lifecycle
 /// state will be used to determine the state transition to apply to the para.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Debug, TypeInfo)]
 pub enum ParaLifecycle {
 	/// Para is new and is onboarding as an on-demand or lease holding Teyrchain.
 	Onboarding,
@@ -301,7 +300,7 @@ impl<N: Ord + Copy + PartialEq> ParaPastCodeMeta<N> {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	Serialize,
 	Deserialize,
@@ -317,7 +316,7 @@ pub struct ParaGenesisArgs {
 }
 
 /// Distinguishes between lease holding Teyrchain and Parathread (on-demand teyrchain)
-#[derive(DecodeWithMemTracking, PartialEq, Eq, Clone, RuntimeDebug)]
+#[derive(DecodeWithMemTracking, PartialEq, Eq, Clone, Debug)]
 pub enum ParaKind {
 	Parathread,
 	Teyrchain,
@@ -439,7 +438,7 @@ impl<BlockNumber> PvfCheckCause<BlockNumber> {
 }
 
 /// Specifies what was the outcome of a PVF pre-checking vote.
-#[derive(Copy, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(Copy, Clone, Encode, Decode, Debug, TypeInfo)]
 enum PvfCheckOutcome {
 	Accepted,
 	Rejected,

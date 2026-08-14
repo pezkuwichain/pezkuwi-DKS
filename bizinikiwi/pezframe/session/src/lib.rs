@@ -88,8 +88,8 @@
 //!
 //! ### Example from the FRAME
 //!
-//! The [Staking pezpallet](../pezpallet_staking/index.html) uses the Session pezpallet to get the
-//! validator set.
+//! The [Staking pezpallet](../pezpallet_staking/index.html) uses the Session pezpallet to get the validator
+//! set.
 //!
 //! ```
 //! use pezpallet_session as session;
@@ -270,8 +270,8 @@ pub trait SessionManager<ValidatorId> {
 	}
 	/// End the session.
 	///
-	/// Because the session pezpallet can queue validator set the ending session can be lower than
-	/// the last new session index.
+	/// Because the session pezpallet can queue validator set the ending session can be lower than the
+	/// last new session index.
 	fn end_session(end_index: SessionIndex);
 	/// Start an already planned session.
 	///
@@ -385,6 +385,57 @@ impl<AId> SessionHandler<AId> for TestSessionHandler {
 	fn on_new_session<Ks: OpaqueKeys>(_: bool, _: &[(AId, Ks)], _: &[(AId, Ks)]) {}
 	fn on_before_session_ending() {}
 	fn on_disabled(_: u32) {}
+}
+
+/// Interface to the session pezpallet for session management.
+///
+/// This trait provides a complete interface for managing sessions from external contexts,
+/// such as other pezpallets or runtime components. It combines session key management with
+/// validator operations and historical session data pruning.
+///
+/// Implemented by `Pezpallet<T>` when `T: Config + historical::Config`.
+pub trait SessionInterface {
+	/// The validator id type of the session pezpallet.
+	type ValidatorId: Clone;
+
+	/// The account id type.
+	type AccountId;
+
+	/// The session keys type.
+	type Keys: OpaqueKeys + codec::Decode;
+
+	/// Get the current set of validators.
+	fn validators() -> Vec<Self::ValidatorId>;
+
+	/// Prune historical session data up to the given session index.
+	fn prune_up_to(index: SessionIndex);
+
+	/// Report an offence for a validator.
+	///
+	/// This is used to disable validators directly on the RC until the next validator set.
+	fn report_offence(offender: Self::ValidatorId, severity: OffenceSeverity);
+
+	/// Set session keys for an account.
+	///
+	/// This method is intended for privileged callers (e.g., other pezpallets receiving validated
+	/// requests via XCM). It bypasses deposit holds and consumer reference tracking, so the
+	/// account does not need to be "live" or have balance on this chain.
+	///
+	/// This method does not validate ownership proof. Callers must verify that the keys belong to
+	/// the account before calling this method.
+	fn set_keys(account: &Self::AccountId, keys: Self::Keys) -> DispatchResult;
+
+	/// Purge session keys for an account.
+	///
+	/// This method is intended for privileged callers (e.g., other pezpallets receiving validated
+	/// requests via XCM). It bypasses deposit release and consumer reference decrement.
+	fn purge_keys(account: &Self::AccountId) -> DispatchResult;
+
+	/// Weight for setting session keys.
+	fn set_keys_weight() -> Weight;
+
+	/// Weight for purging session keys.
+	fn purge_keys_weight() -> Weight;
 }
 
 #[pezframe_support::pezpallet]
@@ -576,6 +627,14 @@ pub mod pezpallet {
 	pub type KeyOwner<T: Config> =
 		StorageMap<_, Twox64Concat, (KeyTypeId, Vec<u8>), T::ValidatorId, OptionQuery>;
 
+	/// Accounts whose keys were set via `SessionInterface` (external path) without
+	/// incrementing the consumer reference or placing a key deposit. `do_purge_keys`
+	/// only decrements consumers for accounts that were registered through the local
+	/// session pezpallet.
+	#[pezpallet::storage]
+	pub type ExternallySetKeys<T: Config> =
+		StorageMap<_, Twox64Concat, T::AccountId, (), OptionQuery>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -631,19 +690,24 @@ pub mod pezpallet {
 	#[pezpallet::call]
 	impl<T: Config> Pezpallet<T> {
 		/// Sets the session key(s) of the function caller to `keys`.
+		///
 		/// Allows an account to set its session key prior to becoming a validator.
 		/// This doesn't take effect until the next session.
 		///
-		/// The dispatch origin of this function must be signed.
-		///
-		/// ## Complexity
-		/// - `O(1)`. Actual cost depends on the number of length of `T::Keys::key_ids()` which is
-		///   fixed.
+		/// - `origin`: The dispatch origin of this function must be signed.
+		/// - `keys`: The new session keys to set. These are the public keys of all sessions keys
+		///   setup in the runtime.
+		/// - `proof`: The proof that `origin` has access to the private keys of `keys`. See
+		///   [`impl_opaque_keys`](pezsp_runtime::impl_opaque_keys) for more information about the
+		///   proof format.
 		#[pezpallet::call_index(0)]
 		#[pezpallet::weight(T::WeightInfo::set_keys())]
 		pub fn set_keys(origin: OriginFor<T>, keys: T::Keys, proof: Vec<u8>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			ensure!(keys.ownership_proof_is_valid(&proof), Error::<T>::InvalidProof);
+			ensure!(
+				who.using_encoded(|who| keys.ownership_proof_is_valid(who, &proof)),
+				Error::<T>::InvalidProof,
+			);
 
 			Self::do_set_keys(&who, keys)?;
 			Ok(())
@@ -657,10 +721,6 @@ pub mod pezpallet {
 		/// convertible to a validator ID using the chain's typical addressing system (this usually
 		/// means being a controller account) or directly convertible into a validator ID (which
 		/// usually means being a stash account).
-		///
-		/// ## Complexity
-		/// - `O(1)` in number of key types. Actual cost depends on the number of length of
-		///   `T::Keys::key_ids()` which is fixed.
 		#[pezpallet::call_index(1)]
 		#[pezpallet::weight(T::WeightInfo::purge_keys())]
 		pub fn purge_keys(origin: OriginFor<T>) -> DispatchResult {
@@ -674,8 +734,8 @@ pub mod pezpallet {
 	impl<T: Config> Pezpallet<T> {
 		/// Mint enough funds into `who`, such that they can pay the session key setting deposit.
 		///
-		/// Meant to be used if any pezpallet's benchmarking code wishes to set session keys, and
-		/// wants to make sure it will succeed.
+		/// Meant to be used if any pezpallet's benchmarking code wishes to set session keys, and wants
+		/// to make sure it will succeed.
 		pub fn ensure_can_pay_key_deposit(who: &T::AccountId) -> Result<(), DispatchError> {
 			use pezframe_support::traits::tokens::{Fortitude, Preservation};
 			let deposit = T::KeyDeposit::get();
@@ -865,13 +925,26 @@ impl<T: Config> Pezpallet<T> {
 		let who = T::ValidatorIdOf::convert(account.clone())
 			.ok_or(Error::<T>::NoAssociatedValidatorId)?;
 
-		ensure!(pezframe_system::Pezpallet::<T>::can_inc_consumer(account), Error::<T>::NoAccount);
+		// Only check consumer capacity when we will actually increment the consumer
+		// count: first-time local registration or external-to-local transition.
+		// Key rotation for an existing locally-managed validator does not need this.
+		let needs_new_consumer =
+			!NextKeys::<T>::contains_key(&who) || ExternallySetKeys::<T>::contains_key(account);
+		if needs_new_consumer {
+			ensure!(
+				pezframe_system::Pezpallet::<T>::can_inc_consumer(account),
+				Error::<T>::NoAccount
+			);
+		}
 
 		let old_keys = Self::inner_set_keys(&who, keys)?;
 
-		// Place deposit on hold if this is a new registration (i.e. old_keys is None).
-		// The hold call itself will return an error if funds are insufficient.
-		if old_keys.is_none() {
+		// Place deposit and increment consumer if this is a new local registration,
+		// or if transitioning from external to local management.
+		// We also clear `ExternallySetKeys` if set.
+		let needs_local_setup =
+			old_keys.is_none() || ExternallySetKeys::<T>::take(account).is_some();
+		if needs_local_setup {
 			let deposit = T::KeyDeposit::get();
 			if !deposit.is_zero() {
 				T::Currency::hold(&HoldReason::Keys.into(), account, deposit)?;
@@ -945,7 +1018,10 @@ impl<T: Config> Pezpallet<T> {
 			pezframe_support::traits::tokens::Precision::BestEffort,
 		);
 
-		pezframe_system::Pezpallet::<T>::dec_consumers(account);
+		if ExternallySetKeys::<T>::take(account).is_none() {
+			// Consumer was incremented locally via `do_set_keys`, so decrement it.
+			pezframe_system::Pezpallet::<T>::dec_consumers(account);
+		}
 
 		Ok(())
 	}
@@ -1121,6 +1197,70 @@ impl<T: Config> pezframe_support::traits::DisabledValidators for Pezpallet<T> {
 
 	fn disabled_validators() -> Vec<u32> {
 		Self::disabled_validators()
+	}
+}
+
+#[cfg(feature = "historical")]
+impl<T: Config + historical::Config> SessionInterface for Pezpallet<T> {
+	type ValidatorId = T::ValidatorId;
+	type AccountId = T::AccountId;
+	type Keys = T::Keys;
+
+	fn validators() -> Vec<Self::ValidatorId> {
+		Self::validators()
+	}
+
+	fn prune_up_to(index: SessionIndex) {
+		historical::Pezpallet::<T>::prune_up_to(index)
+	}
+
+	fn report_offence(offender: Self::ValidatorId, severity: OffenceSeverity) {
+		Self::report_offence(offender, severity)
+	}
+
+	fn set_keys(account: &Self::AccountId, keys: Self::Keys) -> DispatchResult {
+		let who = T::ValidatorIdOf::convert(account.clone())
+			.ok_or(Error::<T>::NoAssociatedValidatorId)?;
+		let old_keys = Self::inner_set_keys(&who, keys)?;
+		// Transitioning from local to external: clean up deposit and consumer ref.
+		if old_keys.is_some() && !ExternallySetKeys::<T>::contains_key(account) {
+			let _ = T::Currency::release_all(
+				&HoldReason::Keys.into(),
+				account,
+				pezframe_support::traits::tokens::Precision::BestEffort,
+			);
+			pezframe_system::Pezpallet::<T>::dec_consumers(account);
+		}
+		ExternallySetKeys::<T>::insert(account, ());
+		Ok(())
+	}
+
+	fn purge_keys(account: &Self::AccountId) -> DispatchResult {
+		let who = T::ValidatorIdOf::convert(account.clone())
+			.ok_or(Error::<T>::NoAssociatedValidatorId)?;
+
+		let old_keys = Self::take_keys(&who).ok_or(Error::<T>::NoKeys)?;
+		for id in T::Keys::key_ids() {
+			let key_data = old_keys.get_raw(*id);
+			Self::clear_key_owner(*id, key_data);
+		}
+		let _ = T::Currency::release_all(
+			&HoldReason::Keys.into(),
+			account,
+			pezframe_support::traits::tokens::Precision::BestEffort,
+		);
+		if ExternallySetKeys::<T>::take(account).is_none() {
+			pezframe_system::Pezpallet::<T>::dec_consumers(account);
+		}
+		Ok(())
+	}
+
+	fn set_keys_weight() -> Weight {
+		T::WeightInfo::set_keys()
+	}
+
+	fn purge_keys_weight() -> Weight {
+		T::WeightInfo::purge_keys()
 	}
 }
 

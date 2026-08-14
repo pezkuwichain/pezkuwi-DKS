@@ -31,7 +31,7 @@ use frame_metadata::v15::{
 impl From<MetadataIR> for RuntimeMetadataV15 {
 	fn from(ir: MetadataIR) -> Self {
 		RuntimeMetadataV15::new(
-			ir.pallets.into_iter().map(Into::into).collect(),
+			ir.pezpallets.into_iter().map(Into::into).collect(),
 			ir.extrinsic.into(),
 			ir.ty,
 			ir.apis.into_iter().map(Into::into).collect(),

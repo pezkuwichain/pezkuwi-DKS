@@ -61,7 +61,7 @@ use pezsp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
-pub use pezsp_runtime::{MultiAddress, Perbill, Permill, RuntimeDebug};
+pub use pezsp_runtime::{MultiAddress, Perbill, Permill};
 #[cfg(feature = "std")]
 use pezsp_version::NativeVersion;
 use pezsp_version::RuntimeVersion;
@@ -528,7 +528,7 @@ impl pezpallet_multisig::Config for Runtime {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]

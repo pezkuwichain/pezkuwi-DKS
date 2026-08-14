@@ -21,14 +21,11 @@ use pezframe_support::{
 	parameter_types,
 	traits::{ConstU32, WithdrawReasons},
 	weights::Weight,
-	CloneNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound,
+	CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound,
 };
 use pezframe_system::EnsureRoot;
 use pezpallet_identity::{Data, IdentityInformationProvider};
-use pezsp_runtime::{
-	traits::{AccountIdConversion, ConvertInto, Verify},
-	RuntimeDebug,
-};
+use pezsp_runtime::traits::{AccountIdConversion, ConvertInto, Verify};
 use scale_info::TypeInfo;
 use testnet_teyrchains_constants::pezkuwichain::currency::UNITS;
 use teyrchains_common::{impls::ToParentTreasury, DAYS, HOURS};
@@ -75,7 +72,7 @@ impl pezpallet_identity::Config for Runtime {
 /// in the `IdentityInfo` struct.
 #[bitflags]
 #[repr(u64)]
-#[derive(Clone, Copy, PartialEq, Eq, RuntimeDebug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum IdentityField {
 	Display,
 	Legal,
@@ -98,7 +95,7 @@ pub enum IdentityField {
 	EqNoBound,
 	MaxEncodedLen,
 	PartialEqNoBound,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	TypeInfo,
 )]
 #[codec(mel_bound())]

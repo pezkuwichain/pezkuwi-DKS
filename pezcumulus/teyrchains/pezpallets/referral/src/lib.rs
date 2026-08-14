@@ -187,7 +187,7 @@ pub mod pezpallet {
 	pub type ReferrerStatsStorage<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, ReferrerStats, ValueQuery>;
 
-	#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct ReferralInfo<T: Config> {
 		pub referrer: T::AccountId,
 		pub created_at: BlockNumberFor<T>,

@@ -17,6 +17,7 @@
 
 //! Mock file for offences benchmarking.
 
+use codec::Encode;
 use pezframe_election_provider_support::{
 	bounds::{ElectionBounds, ElectionBoundsBuilder},
 	onchain, SequentialPhragmen,
@@ -99,6 +100,14 @@ impl pezpallet_session::Config for Test {
 	type WeightInfo = ();
 	type Currency = Balances;
 	type KeyDeposit = ();
+}
+
+impl pezpallet_session_benchmarking::Config for Test {
+	fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+		let keys = SessionKeys::generate(&owner.encode(), None);
+
+		(keys.keys, keys.proof.encode())
+	}
 }
 
 pezpallet_staking_reward_curve::build! {

@@ -31,7 +31,7 @@ use pezsp_runtime::TryRuntimeError;
 /// Used for release versioning up to v12.
 ///
 /// Obsolete from v13. Keeping around to make encoding/decoding of old migration code easier.
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 enum ObsoleteReleases {
 	V5_0_0,  // blockable validators.
 	V6_0_0,  // removal of all storage associated with offchain phragmen.
@@ -204,7 +204,7 @@ pub mod v15 {
 }
 
 /// Migration of era exposure storage items to paged exposures.
-/// Changelog: [v14.](https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/bizinikiwi/pezframe/staking/CHANGELOG.md#14)
+/// Changelog: [v14.](https://github.com/paritytech/bizinikiwi/blob/ankan/paged-rewards-rebased2/frame/staking/CHANGELOG.md#14)
 pub mod v14 {
 	use super::*;
 

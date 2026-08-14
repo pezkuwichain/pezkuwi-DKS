@@ -231,7 +231,7 @@ impl<'a, 'b, E: Ext, S: State> Environment<'a, 'b, E, S> {
 	///
 	/// # Note
 	///
-	/// Weight is synonymous with gas in bizinikiwi.
+	/// Weight is synonymous with gas in substrate.
 	pub fn charge_weight(&mut self, amount: Weight) -> Result<ChargedAmount> {
 		self.inner.runtime.charge_gas(RuntimeCosts::ChainExtension(amount))
 	}

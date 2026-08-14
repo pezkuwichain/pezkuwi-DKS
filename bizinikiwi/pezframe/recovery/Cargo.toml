@@ -17,6 +17,7 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+log = { workspace = true }
 codec = { features = ["derive"], workspace = true }
 pezframe = { workspace = true, features = ["runtime"] }
 pezframe-support = { workspace = true }
@@ -24,6 +25,9 @@ pezframe-system = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 
 [dev-dependencies]
+pezpallet-utility = { workspace = true, default-features = true }
+pezsp-io = { workspace = true }
+pezsp-runtime = { workspace = true }
 pezpallet-balances = { workspace = true, default-features = true }
 
 [features]
@@ -33,13 +37,18 @@ runtime-benchmarks = [
 	"pezframe-system/runtime-benchmarks",
 	"pezframe/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
 ]
 std = [
 	"codec/std",
+	"log/std",
 	"pezframe-support/std",
 	"pezframe-system/std",
 	"pezframe/std",
 	"pezpallet-balances/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
 	"scale-info/std",
 ]
 try-runtime = [
@@ -47,6 +56,8 @@ try-runtime = [
 	"pezframe-system/try-runtime",
 	"pezframe/try-runtime",
 	"pezpallet-balances/try-runtime",
+	"pezpallet-utility/try-runtime",
+	"pezsp-runtime/try-runtime",
 ]
 serde = []
 experimental = []

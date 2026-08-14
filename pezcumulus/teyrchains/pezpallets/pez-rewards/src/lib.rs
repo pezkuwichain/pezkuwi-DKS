@@ -233,14 +233,14 @@ pub mod pezpallet {
 		OptionQuery,
 	>;
 
-	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct EpochData<T: Config> {
 		pub current_epoch: u32,
 		pub epoch_start_block: BlockNumberFor<T>,
 		pub total_epochs_completed: u32,
 	}
 
-	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct EpochRewardPool<T: Config> {
 		pub epoch_index: u32,
 		pub total_reward_pool: BalanceOf<T>, // Total reward for this epoch
@@ -251,7 +251,7 @@ pub mod pezpallet {
 	}
 
 	#[derive(
-		Encode, Decode, Clone, Copy, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default,
+		Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen, Default,
 	)]
 	pub enum EpochState {
 		#[default]

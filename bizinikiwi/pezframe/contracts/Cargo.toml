@@ -31,9 +31,9 @@ smallvec = { features = ["const_generics"], workspace = true }
 wasmi = { workspace = true }
 
 # Only used in benchmarking to generate contract code
-rand = { workspace = true }
-rand_pcg = { workspace = true }
-wasm-instrument = { workspace = true }
+rand = { optional = true, workspace = true }
+rand_pcg = { optional = true, workspace = true }
+wasm-instrument = { optional = true, workspace = true }
 
 # Bizinikiwi Dependencies
 environmental = { workspace = true }
@@ -92,9 +92,11 @@ std = [
 	"pezsp-keystore/std",
 	"pezsp-runtime/std",
 	"rand/std",
+	"rand?/std",
 	"scale-info/std",
 	"serde",
 	"wasm-instrument/std",
+	"wasm-instrument?/std",
 	"wasmi/std",
 	"xcm-builder/std",
 	"xcm/std",
@@ -112,6 +114,9 @@ runtime-benchmarks = [
 	"pezsp-api/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
+	"rand",
+	"rand_pcg",
+	"wasm-instrument",
 	"xcm-builder/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
 ]

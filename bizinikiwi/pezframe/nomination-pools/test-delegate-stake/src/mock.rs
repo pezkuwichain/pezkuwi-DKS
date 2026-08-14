@@ -22,7 +22,7 @@ use pezframe_election_provider_support::VoteWeight;
 use pezframe_support::{
 	assert_ok, derive_impl, parameter_types,
 	pezpallet_prelude::*,
-	traits::{ConstU64, ConstU8, Nothing, VariantCountOf},
+	traits::{ConstBool, ConstU64, ConstU8, Nothing, VariantCountOf},
 	PalletId,
 };
 use pezframe_system::EnsureRoot;
@@ -90,23 +90,50 @@ pezpallet_staking_reward_curve::build! {
 parameter_types! {
 	pub const RewardCurve: &'static pezsp_runtime::curve::PiecewiseLinear<'static> = &I_NPOS;
 	pub static BondingDuration: u32 = 3;
+	pub static EraPayout: (Balance, Balance) = (1000, 100);
 }
 
-#[derive_impl(pezpallet_staking::config_preludes::TestDefaultConfig)]
-impl pezpallet_staking::Config for Runtime {
+/// A simple EraPayout implementation for testing that returns fixed values.
+pub struct TestEraPayout;
+impl pezpallet_staking_async::EraPayout<Balance> for TestEraPayout {
+	fn era_payout(
+		_total_staked: Balance,
+		_total_issuance: Balance,
+		_era_duration_millis: u64,
+	) -> (Balance, Balance) {
+		EraPayout::get()
+	}
+}
+
+/// A mock RcClientInterface for tests that don't need actual session/validator set management.
+pub struct MockRcClient;
+impl pezpallet_staking_async_rc_client::RcClientInterface for MockRcClient {
+	type AccountId = AccountId;
+
+	fn validator_set(
+		_new_validator_set: Vec<Self::AccountId>,
+		_id: u32,
+		_prune_up_to: Option<u32>,
+	) {
+		// No-op for tests
+	}
+}
+
+#[derive_impl(pezpallet_staking_async::config_preludes::TestDefaultConfig)]
+impl pezpallet_staking_async::Config for Runtime {
 	type OldCurrency = Balances;
 	type Currency = Balances;
-	type UnixTime = pezpallet_timestamp::Pezpallet<Self>;
 	type AdminOrigin = pezframe_system::EnsureRoot<Self::AccountId>;
+	type EraPayout = TestEraPayout;
+	type DisableMinting = ConstBool<false>;
 	type BondingDuration = BondingDuration;
-	type EraPayout = pezpallet_staking::ConvertCurve<RewardCurve>;
+	type RewardPots = pezpallet_staking_async::SequentialTest;
 	type ElectionProvider =
 		pezframe_election_provider_support::NoElection<(AccountId, BlockNumber, Staking, (), ())>;
-	type GenesisElectionProvider = Self::ElectionProvider;
 	type VoterList = VoterList;
-	type TargetList = pezpallet_staking::UseValidatorsMap<Self>;
+	type TargetList = pezpallet_staking_async::UseValidatorsMap<Self>;
 	type EventListeners = (Pools, DelegatedStaking);
-	type BenchmarkingConfig = pezpallet_staking::TestBenchmarkingConfig;
+	type RcClientInterface = MockRcClient;
 }
 
 parameter_types! {
@@ -299,12 +326,15 @@ pezframe_support::construct_runtime!(
 		System: pezframe_system,
 		Timestamp: pezpallet_timestamp,
 		Balances: pezpallet_balances,
-		Staking: pezpallet_staking,
+		Staking: pezpallet_staking_async,
 		VoterList: pezpallet_bags_list::<Instance1>,
 		Pools: pezpallet_nomination_pools,
 		DelegatedStaking: pezpallet_delegated_staking,
 	}
 );
+
+// Test validators that pools can nominate
+pub(crate) const TEST_VALIDATORS: [AccountId; 3] = [1, 2, 3];
 
 pub fn new_test_ext() -> pezsp_io::TestExternalities {
 	pezsp_tracing::try_init_simple();
@@ -321,7 +351,10 @@ pub fn new_test_ext() -> pezsp_io::TestExternalities {
 	.unwrap();
 
 	let _ = pezpallet_balances::GenesisConfig::<Runtime> {
-		balances: vec![(10, 100), (20, 100), (21, 100), (22, 100)],
+		balances: vec![(10, 100), (20, 100), (21, 100), (22, 100)]
+			.into_iter()
+			.chain(TEST_VALIDATORS.iter().map(|&v| (v, 1000)))
+			.collect::<Vec<_>>(),
 		..Default::default()
 	}
 	.assimilate_storage(&mut storage)
@@ -333,17 +366,40 @@ pub fn new_test_ext() -> pezsp_io::TestExternalities {
 		// for events to be deposited.
 		pezframe_system::Pezpallet::<Runtime>::set_block_number(1);
 
+		// Initialize era state for pezpallet-staking-async
+		pezpallet_staking_async::CurrentEra::<Runtime>::put(0);
+		pezpallet_staking_async::ActiveEra::<Runtime>::put(
+			pezpallet_staking_async::ActiveEraInfo { index: 0, start: None },
+		);
+
 		// set some limit for nominations.
 		assert_ok!(Staking::set_staking_configs(
 			RuntimeOrigin::root(),
-			pezpallet_staking::ConfigOp::Set(10), // minimum nominator bond
-			pezpallet_staking::ConfigOp::Noop,
-			pezpallet_staking::ConfigOp::Noop,
-			pezpallet_staking::ConfigOp::Noop,
-			pezpallet_staking::ConfigOp::Noop,
-			pezpallet_staking::ConfigOp::Noop,
-			pezpallet_staking::ConfigOp::Noop,
+			pezpallet_staking_async::ConfigOp::Set(10), // minimum nominator bond
+			pezpallet_staking_async::ConfigOp::Noop,
+			pezpallet_staking_async::ConfigOp::Noop,
+			pezpallet_staking_async::ConfigOp::Noop,
+			pezpallet_staking_async::ConfigOp::Noop,
+			pezpallet_staking_async::ConfigOp::Noop,
+			pezpallet_staking_async::ConfigOp::Noop,
+			pezpallet_staking_async::ConfigOp::Noop, // are_nominators_slashable
 		));
+
+		// Set up validators that tests can nominate
+		for &validator in TEST_VALIDATORS.iter() {
+			assert_ok!(Staking::bond(
+				RuntimeOrigin::signed(validator),
+				500,
+				pezpallet_staking_async::RewardDestination::Staked
+			));
+			assert_ok!(Staking::validate(
+				RuntimeOrigin::signed(validator),
+				pezpallet_staking_async::ValidatorPrefs::default()
+			));
+		}
+
+		// Clear events from setup to avoid test interference
+		pezframe_system::Pezpallet::<Runtime>::reset_events();
 	});
 
 	ext
@@ -367,7 +423,7 @@ pub(crate) fn pool_events_since_last_call() -> Vec<pezpallet_nomination_pools::E
 	events.into_iter().skip(already_seen).collect()
 }
 
-pub(crate) fn staking_events_since_last_call() -> Vec<pezpallet_staking::Event<Runtime>> {
+pub(crate) fn staking_events_since_last_call() -> Vec<pezpallet_staking_async::Event<Runtime>> {
 	let events = System::events()
 		.into_iter()
 		.map(|r| r.event)

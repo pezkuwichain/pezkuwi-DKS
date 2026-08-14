@@ -688,9 +688,9 @@ pub fn stored(attr: TokenStream, item: TokenStream) -> TokenStream {
         "{}::macro_magic",
         match generate_access_from_frame_or_crate("pezframe-support") {
             Ok(path) => Ok(path),
-            Err(_) => generate_access_from_frame_or_crate("polkadot-sdk-frame"),
+            Err(_) => generate_access_from_frame_or_crate("pezkuwi-sdk-frame"),
         }
-        .expect("Failed to find either `pezframe-support` or `polkadot-sdk-frame` in `Cargo.toml` dependencies.")
+        .expect("Failed to find either `pezframe-support` or `pezkuwi-sdk-frame` in `Cargo.toml` dependencies.")
         .to_token_stream()
         .to_string()
     )
@@ -873,9 +873,9 @@ pub fn constant_name(_: TokenStream, _: TokenStream) -> TokenStream {
 /// ---
 ///
 /// Documentation for this macro can be found at
-/// `pezframe_support::pezpallet_macros::disable_frame_system_supertrait_check`.
+/// `pezframe_support::pezpallet_macros::disable_pezframe_system_supertrait_check`.
 #[proc_macro_attribute]
-pub fn disable_frame_system_supertrait_check(_: TokenStream, _: TokenStream) -> TokenStream {
+pub fn disable_pezframe_system_supertrait_check(_: TokenStream, _: TokenStream) -> TokenStream {
 	pezpallet_macro_stub()
 }
 
@@ -1201,9 +1201,9 @@ pub fn pezpallet_section(attr: TokenStream, tokens: TokenStream) -> TokenStream 
         "{}::macro_magic",
         match generate_access_from_frame_or_crate("pezframe-support") {
             Ok(path) => Ok(path),
-            Err(_) => generate_access_from_frame_or_crate("polkadot-sdk-frame"),
+            Err(_) => generate_access_from_frame_or_crate("pezkuwi-sdk-frame"),
         }
-        .expect("Failed to find either `pezframe-support` or `polkadot-sdk-frame` in `Cargo.toml` dependencies.")
+        .expect("Failed to find either `pezframe-support` or `pezkuwi-sdk-frame` in `Cargo.toml` dependencies.")
         .to_token_stream()
         .to_string()
     )

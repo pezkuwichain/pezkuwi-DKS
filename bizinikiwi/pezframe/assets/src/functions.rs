@@ -20,6 +20,7 @@
 use super::*;
 use alloc::vec;
 use pezframe_support::{defensive, traits::Get, BoundedVec};
+use pezsp_runtime::traits::ConstU32;
 
 #[must_use]
 pub(super) enum DeadConsequence {
@@ -225,7 +226,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 					let held = maybe_held.unwrap_or_default();
 
 					// The `untouchable` balance of the asset account of `who`. This is described
-					// here: https://docs.pezkuwichain.io/sdk/master/pezframe_support/traits/tokens/fungible/index.html#visualising-balance-components-together-
+					// here: https://paritytech.github.io/pezkuwi-sdk/master/pezframe_support/traits/tokens/fungible/index.html#visualising-balance-components-together-
 					let untouchable = frozen.saturating_sub(held).max(details.min_balance);
 					if rest < untouchable {
 						if !frozen.is_zero() {
@@ -385,12 +386,24 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		}
 
 		if let Remove = Self::dead_account(&who, &mut details, &account.reason, false) {
+			if !account.balance.is_zero() {
+				debug_assert!(details.supply >= account.balance, "supply < balance; qed");
+				details.supply = details.supply.saturating_sub(account.balance);
+			}
 			Account::<T, I>::remove(&id, &who);
 		} else {
 			debug_assert!(false, "refund did not result in dead account?!");
 			// deposit may have been refunded, need to update `Account`
 			Account::<T, I>::insert(id, &who, account);
 			return Ok(());
+		}
+
+		if !account.balance.is_zero() {
+			Self::deposit_event(Event::Burned {
+				asset_id: id.clone(),
+				owner: who.clone(),
+				balance: account.balance,
+			});
 		}
 
 		Asset::<T, I>::insert(&id, details);
@@ -906,6 +919,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 				&details.owner,
 				details.deposit.saturating_add(metadata.deposit),
 			);
+			Reserves::<T, I>::remove(&id);
 			Self::deposit_event(Event::Destroyed { asset_id: id });
 
 			Ok(())
@@ -954,6 +968,32 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 			amount,
 		});
 
+		Ok(())
+	}
+
+	/// Cancels an existing approval from `owner` to `delegate` for asset `id`.
+	///
+	/// Removes the approval entry and unreserves the deposit. Emits `ApprovalCancelled`.
+	pub fn do_cancel_approval(
+		id: &T::AssetId,
+		owner: &T::AccountId,
+		delegate: &T::AccountId,
+	) -> DispatchResult {
+		let mut asset_details = Asset::<T, I>::get(id).ok_or(Error::<T, I>::Unknown)?;
+		ensure!(asset_details.status == AssetStatus::Live, Error::<T, I>::AssetNotLive);
+
+		let approval =
+			Approvals::<T, I>::take((id.clone(), owner, delegate)).ok_or(Error::<T, I>::Unknown)?;
+		T::Currency::unreserve(owner, approval.deposit);
+
+		asset_details.approvals.saturating_dec();
+		Asset::<T, I>::insert(id, asset_details);
+
+		Self::deposit_event(Event::ApprovalCancelled {
+			asset_id: id.clone(),
+			owner: owner.clone(),
+			delegate: delegate.clone(),
+		});
 		Ok(())
 	}
 
@@ -1102,16 +1142,15 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 	/// Does not check validity of asset id, caller should check it.
 	pub fn unchecked_update_reserves(
 		id: T::AssetId,
-		reserves: Vec<T::ReserveData>,
+		reserves: BoundedVec<T::ReserveData, ConstU32<MAX_RESERVES>>,
 	) -> Result<(), Error<T, I>> {
 		if reserves.is_empty() {
 			Reserves::<T, I>::remove(&id);
 			Self::deposit_event(Event::ReservesRemoved { asset_id: id });
 		} else {
-			let bounded_reserves =
-				reserves.clone().try_into().map_err(|_| Error::<T, I>::TooManyReserves)?;
-			Reserves::<T, I>::set(&id, bounded_reserves);
-			Self::deposit_event(Event::ReservesUpdated { asset_id: id, reserves });
+			let reserves_vec = reserves.clone().into_inner();
+			Reserves::<T, I>::set(&id, reserves);
+			Self::deposit_event(Event::ReservesUpdated { asset_id: id, reserves: reserves_vec });
 		}
 		Ok(())
 	}

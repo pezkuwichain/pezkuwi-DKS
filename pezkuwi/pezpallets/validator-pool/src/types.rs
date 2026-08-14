@@ -8,7 +8,6 @@ extern crate alloc;
 use alloc::vec::Vec;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezframe_support::{traits::ConstU32, BoundedVec};
-use pezsp_runtime::RuntimeDebug;
 use scale_info::TypeInfo;
 
 /// Types of validators in the pool
@@ -19,7 +18,7 @@ use scale_info::TypeInfo;
 	Clone,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	serde::Serialize,
@@ -46,7 +45,7 @@ pub enum ValidatorPoolCategory {
 	Clone,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Default,
@@ -67,15 +66,7 @@ pub struct ValidatorPerformance {
 
 /// Current validator set for an era
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	PartialEq,
-	Eq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen,
 )]
 #[codec(mel_bound())]
 pub struct ValidatorSet<AccountId>
@@ -151,7 +142,7 @@ impl<AccountId> PerwerdeProvider<AccountId> for () {
 	Copy,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Default,
@@ -176,7 +167,7 @@ pub enum OperationMode {
 	Clone,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Default,
@@ -210,7 +201,7 @@ where
 	Clone,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Default,
@@ -249,7 +240,7 @@ pub struct ShadowStatistics {
 	Clone,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Default,
@@ -288,7 +279,7 @@ pub struct EraAnalysis {
 	Clone,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Default,

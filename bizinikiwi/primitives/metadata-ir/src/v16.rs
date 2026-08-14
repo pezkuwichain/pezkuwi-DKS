@@ -42,7 +42,7 @@ use scale_info::form::MetaForm;
 impl From<MetadataIR> for RuntimeMetadataV16 {
 	fn from(ir: MetadataIR) -> Self {
 		RuntimeMetadataV16::new(
-			ir.pallets.into_iter().map(Into::into).collect(),
+			ir.pezpallets.into_iter().map(Into::into).collect(),
 			ir.extrinsic.into_v16_with_call_ty(ir.outer_enums.call_enum_ty),
 			ir.apis.into_iter().map(Into::into).collect(),
 			ir.outer_enums.into(),

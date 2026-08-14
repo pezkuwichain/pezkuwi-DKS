@@ -26,11 +26,11 @@ use crate::currency_to_vote::CurrencyToVote;
 use alloc::{collections::btree_map::BTreeMap, vec, vec::Vec};
 use codec::{Decode, DecodeWithMemTracking, Encode, FullCodec, HasCompact, MaxEncodedLen};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
-use scale_info::TypeInfo;
 use pezsp_runtime::{
 	traits::{AtLeast32BitUnsigned, Zero},
 	Debug, DispatchError, DispatchResult, Perbill, Saturating,
 };
+use scale_info::TypeInfo;
 
 pub mod budget;
 pub mod offence;

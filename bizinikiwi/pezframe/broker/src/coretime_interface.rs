@@ -22,7 +22,6 @@ use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::fmt::Debug;
 use pezframe_support::Parameter;
 use pezsp_arithmetic::traits::AtLeast32BitUnsigned;
-use pezsp_core::RuntimeDebug;
 use pezsp_runtime::traits::BlockNumberProvider;
 use scale_info::TypeInfo;
 
@@ -47,7 +46,7 @@ pub type PartsOf57600 = u16;
 	PartialEq,
 	Ord,
 	PartialOrd,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 )]
@@ -69,7 +68,7 @@ pub type RCBlockNumberProviderOf<T> = <T as CoretimeInterface>::RelayChainBlockN
 /// Type able to accept Coretime scheduling instructions and provide certain usage information.
 /// Generally implemented by the Relay-chain or some means of communicating with it.
 ///
-/// The trait representation of RFC#5 `<https://github.com/polkadot-fellows/RFCs/pull/5>`.
+/// The trait representation of RFC#5 `<https://github.com/pezkuwi-fellows/RFCs/pull/5>`.
 pub trait CoretimeInterface {
 	/// A (Relay-chain-side) account ID.
 	type AccountId: Parameter;
@@ -94,7 +93,7 @@ pub trait CoretimeInterface {
 	/// still be returned, but its `revenue` field may be `None`.
 	fn request_revenue_info_at(when: RCBlockNumberOf<Self>);
 
-	/// Instructs the Relay-chain to add the `amount` of HEZ to the Instantaneous Coretime Market
+	/// Instructs the Relay-chain to add the `amount` of DOT to the Instantaneous Coretime Market
 	/// Credit account of `who`.
 	///
 	/// It is expected that Instantaneous Coretime Market Credit on the Relay-chain is NOT

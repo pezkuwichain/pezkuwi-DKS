@@ -35,8 +35,8 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 	)
 }
 
-/// This function is not used, but we require it for the compiler to include `sp-io`.
-/// `sp-io` is required for its panic and oom handler.
+/// This function is not used, but we require it for the compiler to include `pezsp-io`.
+/// `pezsp-io` is required for its panic and oom handler.
 #[cfg(not(feature = "std"))]
 #[no_mangle]
 pub fn import_sp_io() {

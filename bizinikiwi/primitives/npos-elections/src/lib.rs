@@ -79,10 +79,10 @@ extern crate alloc;
 use alloc::{collections::btree_map::BTreeMap, rc::Rc, vec, vec::Vec};
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::{cell::RefCell, cmp::Ordering};
+use pezsp_arithmetic::{traits::Zero, Normalizable, PerThing, Rational128, ThresholdOrd};
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use pezsp_arithmetic::{traits::Zero, Normalizable, PerThing, Rational128, ThresholdOrd};
 use Debug;
 
 #[cfg(test)]
@@ -109,7 +109,7 @@ pub use pjr::*;
 pub use reduce::reduce;
 pub use traits::{IdentifierT, PerThing128};
 
-/// The errors that might occur in this crate and `frame-election-provider-solution-type`.
+/// The errors that might occur in this crate and `pezframe-election-provider-solution-type`.
 #[derive(
 	Eq,
 	PartialEq,

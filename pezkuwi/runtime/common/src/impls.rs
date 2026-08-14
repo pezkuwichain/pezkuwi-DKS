@@ -24,7 +24,7 @@ use pezframe_support::traits::{
 };
 use pezkuwi_primitives::Balance;
 use pezpallet_treasury::TreasuryAccountId;
-use pezsp_runtime::{traits::TryConvert, Perquintill, RuntimeDebug};
+use pezsp_runtime::{traits::TryConvert, Perquintill};
 use xcm::VersionedLocation;
 
 /// Logic for the author to get a portion of fees.
@@ -139,7 +139,7 @@ pub fn relay_era_payout(params: EraPayoutParams) -> (Balance, Balance) {
 	Eq,
 	PartialEq,
 	Clone,
-	RuntimeDebug,
+	Debug,
 	scale_info::TypeInfo,
 	MaxEncodedLen,
 )]

@@ -25,10 +25,10 @@ use pezbp_runtime::{
 	decl_bridge_finality_runtime_apis, decl_bridge_messages_runtime_apis, Chain, ChainId, Teyrchain,
 };
 use pezframe_support::dispatch::DispatchClass;
-use pezsp_runtime::{RuntimeDebug, StateVersion};
+use pezsp_runtime::StateVersion;
 
 /// BridgeHubZagros teyrchain.
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 pub struct BridgeHubZagros;
 
 impl Chain for BridgeHubZagros {

@@ -101,19 +101,20 @@ pub mod pezpallet {
 		/// Whether to allow block authors to create multiple blocks per slot.
 		///
 		/// If this is `true`, the pezpallet will allow slots to stay the same across sequential
-		/// blocks. If this is `false`, the pezpallet will require that subsequent blocks always
-		/// have higher slots than previous ones.
+		/// blocks. If this is `false`, the pezpallet will require that subsequent blocks always have
+		/// higher slots than previous ones.
 		///
 		/// Regardless of the setting of this storage value, the pezpallet will always enforce the
 		/// invariant that slots don't move backwards as the chain progresses.
 		///
 		/// The typical value for this should be 'false' unless this pezpallet is being augmented by
-		/// another pezpallet which enforces some limitation on the number of blocks authors can
-		/// create using the same slot.
+		/// another pezpallet which enforces some limitation on the number of blocks authors can create
+		/// using the same slot.
 		type AllowMultipleBlocksPerSlot: Get<bool>;
 
 		/// The slot duration Aura should run with, expressed in milliseconds.
-		/// The effective value of this type should not change while the chain is running.
+		///
+		/// The effective value of this type can be changed with a runtime upgrade.
 		///
 		/// For backwards compatibility either use [`MinimumPeriodTimesTwo`] or a const.
 		#[pezpallet::constant]
@@ -125,6 +126,43 @@ pub mod pezpallet {
 
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
+		fn on_runtime_upgrade() -> Weight {
+			use pezpallet_timestamp::Pezpallet as Timestamp;
+
+			let new_slot_duration = T::SlotDuration::get();
+
+			let current_timestamp = Timestamp::<T>::get();
+			let old_slot = CurrentSlot::<T>::get();
+
+			let new_slot = current_timestamp / new_slot_duration;
+			let new_slot = Slot::from(new_slot.saturated_into::<u64>());
+
+			if old_slot != new_slot {
+				CurrentSlot::<T>::put(new_slot);
+				log::info!(
+					target: LOG_TARGET,
+					"Migrated CurrentSlot from {} to {} (timestamp: {:?}, new_slot_duration: {:?})",
+					u64::from(old_slot),
+					u64::from(new_slot),
+					current_timestamp,
+					new_slot_duration
+				);
+				T::DbWeight::get().reads_writes(2, 1)
+			} else {
+				log::debug!(
+					target: LOG_TARGET,
+					"CurrentSlot is already correct ({}), no migration needed",
+					u64::from(old_slot)
+				);
+				T::DbWeight::get().reads(2)
+			}
+		}
+
+		fn integrity_test() {
+			let slot_duration = T::SlotDuration::get();
+			assert!(!slot_duration.is_zero(), "Aura slot duration cannot be zero.");
+		}
+
 		fn on_initialize(_: BlockNumberFor<T>) -> Weight {
 			if let Some(new_slot) = Self::current_slot_from_digests() {
 				let current_slot = CurrentSlot::<T>::get();
@@ -264,6 +302,10 @@ impl<T: Config> Pezpallet<T> {
 	/// * The current authority cannot be disabled.
 	/// * The number of authorities must be less than or equal to `T::MaxAuthorities`. This however,
 	///   is guarded by the type system.
+	///
+	/// ## Timestamp Consistency
+	///
+	/// The timestamp divided by the slot duration must equal the current slot (after genesis).
 	#[cfg(any(test, feature = "try-runtime"))]
 	pub fn do_try_state() -> Result<(), pezsp_runtime::TryRuntimeError> {
 		// We don't have any guarantee that we are already after `on_initialize` and thus we have to
@@ -292,6 +334,19 @@ impl<T: Config> Pezpallet<T> {
 			!T::DisabledValidators::is_disabled(authority_index as u32),
 			"Current validator is disabled and should not be attempting to author blocks.",
 		);
+
+		// Check that the timestamp is consistent with the current slot.
+		let timestamp = pezpallet_timestamp::Pezpallet::<T>::get();
+
+		if !timestamp.is_zero() {
+			let slot_duration = Self::slot_duration();
+
+			let timestamp_slot = Slot::from((timestamp / slot_duration).saturated_into::<u64>());
+			pezframe_support::ensure!(
+				current_slot == timestamp_slot,
+				"Timestamp slot must match CurrentSlot.",
+			);
+		}
 
 		Ok(())
 	}

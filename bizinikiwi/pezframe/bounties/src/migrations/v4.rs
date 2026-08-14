@@ -29,8 +29,7 @@ use pezsp_io::{hashing::twox_128, storage};
 
 use crate as pezpallet_bounties;
 
-/// Migrate the storage of the bounties pezpallet to a new prefix, leaving all other storage
-/// untouched
+/// Migrate the storage of the bounties pezpallet to a new prefix, leaving all other storage untouched
 ///
 /// This new prefix must be the same as the one set in construct_runtime. For safety, use
 /// `PalletInfo` to get it, as:

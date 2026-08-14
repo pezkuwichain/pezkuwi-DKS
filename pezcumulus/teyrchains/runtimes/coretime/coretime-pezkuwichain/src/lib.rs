@@ -65,7 +65,7 @@ use pezsp_runtime::{
 	generic, impl_opaque_keys,
 	traits::{BlakeTwo256, Block as BlockT, BlockNumberProvider},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, DispatchError, MultiAddress, Perbill, RuntimeDebug,
+	ApplyExtrinsicResult, DispatchError, MultiAddress, Perbill,
 };
 #[cfg(feature = "std")]
 use pezsp_version::NativeVersion;
@@ -479,7 +479,7 @@ impl pezpallet_multisig::Config for Runtime {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]

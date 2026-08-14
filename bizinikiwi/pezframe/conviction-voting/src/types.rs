@@ -20,12 +20,9 @@
 use codec::{Codec, Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::{fmt::Debug, marker::PhantomData};
 use pezframe_support::{
-	traits::VoteTally, CloneNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound,
+	traits::VoteTally, CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound,
 };
-use pezsp_runtime::{
-	traits::{Saturating, Zero},
-	RuntimeDebug,
-};
+use pezsp_runtime::traits::{Saturating, Zero};
 use scale_info::TypeInfo;
 
 use super::*;
@@ -36,7 +33,7 @@ use crate::{AccountVote, Conviction, Vote};
 	CloneNoBound,
 	PartialEqNoBound,
 	EqNoBound,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	TypeInfo,
 	Encode,
 	Decode,
@@ -75,7 +72,12 @@ impl<
 	}
 
 	fn approval(&self, _: Class) -> Perbill {
-		Perbill::from_rational(self.ayes, self.ayes.saturating_add(self.nays))
+		let total = self.ayes.saturating_add(self.nays);
+		if total.is_zero() {
+			Perbill::zero()
+		} else {
+			Perbill::from_rational(self.ayes, total)
+		}
 	}
 
 	#[cfg(feature = "runtime-benchmarks")]
@@ -222,7 +224,7 @@ impl<
 	Clone,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 )]

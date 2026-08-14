@@ -59,7 +59,7 @@ pub mod pezframe_system {
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::config(with_default, pezframe_system_config)]
-	#[pezpallet::disable_frame_system_supertrait_check]
+	#[pezpallet::disable_pezframe_system_supertrait_check]
 	pub trait Config: 'static {
 		#[pezpallet::no_default]
 		type Block: Parameter + pezsp_runtime::traits::Block;

@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Remote mining tests for Dicle and Pezkuwi.
+//! Remote mining tests for Kusama and Pezkuwi.
 //!
 //! Run like this:
 //!
@@ -36,9 +36,9 @@ use pezframe_support::{
 use pezsp_core::{ConstU32, H256};
 use pezsp_npos_elections::BalancingConfig;
 use pezsp_runtime::{Perbill, Weight};
-use remote_externalities::{Builder, Mode, OnlineConfig, Transport};
+use remote_externalities::{Builder, Mode, OnlineConfig};
 
-pub mod pezkuwi {
+pub mod polkadot {
 	use super::*;
 
 	pub struct MinerConfig;
@@ -55,7 +55,7 @@ pub mod pezkuwi {
 
 	generate_solution_type!(
 		#[compact]
-		pub struct PezkuwiSolution::<
+		pub struct PolkadotSolution::<
 			VoterIndex = u32,
 			TargetIndex = u16,
 			Accuracy = pezsp_runtime::PerU16,
@@ -71,7 +71,7 @@ pub mod pezkuwi {
 		type MaxVotesPerVoter = ConstU32<16>;
 		type MaxWeight = MaxWeight;
 		type MaxWinners = ConstU32<1000>;
-		type Solution = PezkuwiSolution;
+		type Solution = PolkadotSolution;
 
 		fn solution_weight(
 			_voters: u32,
@@ -84,7 +84,7 @@ pub mod pezkuwi {
 	}
 }
 
-pub mod dicle {
+pub mod kusama {
 	use super::*;
 	pub struct MinerConfig;
 
@@ -100,7 +100,7 @@ pub mod dicle {
 
 	generate_solution_type!(
 		#[compact]
-		pub struct PezkuwiSolution::<
+		pub struct PolkadotSolution::<
 			VoterIndex = u32,
 			TargetIndex = u16,
 			Accuracy = pezsp_runtime::PerU16,
@@ -116,7 +116,7 @@ pub mod dicle {
 		type MaxVotesPerVoter = ConstU32<24>;
 		type MaxWeight = MaxWeight;
 		type MaxWinners = ConstU32<1000>;
-		type Solution = PezkuwiSolution;
+		type Solution = PolkadotSolution;
 
 		fn solution_weight(
 			_voters: u32,
@@ -145,8 +145,8 @@ impl<T: MinerConfig> HackyGetSnapshot<T> {
 		UntypedSnapshotOf<T>: Decode,
 	{
 		let key = [
-			pezsp_core::hashing::twox_128(b"ElectionProviderMultiPhase"),
-			pezsp_core::hashing::twox_128(b"Snapshot"),
+			pezsp_crypto_hashing::twox_128(b"ElectionProviderMultiPhase"),
+			pezsp_crypto_hashing::twox_128(b"Snapshot"),
 		]
 		.concat();
 		pezframe_support::storage::unhashed::get::<UntypedSnapshotOf<T>>(&key).unwrap()
@@ -154,8 +154,8 @@ impl<T: MinerConfig> HackyGetSnapshot<T> {
 
 	fn desired_targets() -> u32 {
 		let key = [
-			pezsp_core::hashing::twox_128(b"ElectionProviderMultiPhase"),
-			pezsp_core::hashing::twox_128(b"DesiredTargets"),
+			pezsp_crypto_hashing::twox_128(b"ElectionProviderMultiPhase"),
+			pezsp_crypto_hashing::twox_128(b"DesiredTargets"),
 		]
 		.concat();
 		pezframe_support::storage::unhashed::get::<u32>(&key).unwrap()
@@ -205,22 +205,22 @@ where
 }
 
 #[tokio::test]
-async fn mine_for_pezkuwi() {
+async fn mine_for_polkadot() {
 	pezsp_tracing::try_init_simple();
 
 	// good way to find good block hashes: https://polkadot.subscan.io/event?page=1&time_dimension=date&module=electionprovidermultiphase&event_id=solutionstored
 	// we are just looking for blocks with snapshot present, that's all.
 	let block_hash_str = std::option_env!("BLOCK_HASH")
-		// known good pezkuwi hash
+		// known good polkadot hash
 		.unwrap_or("047f1f5b1081fdaa72c9224d0ea302553738556758dc53269b1bfe6a069986bb")
 		.to_string();
 	let block_hash = H256::from_slice(hex::decode(block_hash_str).unwrap().as_ref());
 	let online = OnlineConfig {
 		at: Some(block_hash),
-		pallets: vec!["ElectionProviderMultiPhase".to_string()],
-		transport: Transport::from(
-			std::option_env!("WS").unwrap_or("wss://rpc.pezkuwichain.io").to_string(),
-		),
+		pezpallets: vec!["ElectionProviderMultiPhase".to_string()],
+		transport_uris: vec![std::option_env!("WS")
+			.unwrap_or("wss://rpc.ibp.network/polkadot")
+			.to_string()],
 		..Default::default()
 	};
 
@@ -230,27 +230,27 @@ async fn mine_for_pezkuwi() {
 		.await
 		.unwrap()
 		.execute_with(|| {
-			test_for_network::<pezkuwi::MinerConfig>();
+			test_for_network::<polkadot::MinerConfig>();
 		});
 }
 
 #[tokio::test]
-async fn mine_for_dicle() {
+async fn mine_for_kusama() {
 	pezsp_tracing::try_init_simple();
 
-	// good way to find good block hashes: https://explorer.pezkuwichain.io/event?module=electionprovidermultiphase&event_id=solutionstored
+	// good way to find good block hashes: https://kusama.subscan.io/event?page=1&time_dimension=date&module=electionprovidermultiphase&event_id=solutionstored
 	// we are just looking for blocks with snapshot present, that's all.
 	let block_hash_str = std::option_env!("BLOCK_HASH")
-		// known good dicle hash
+		// known good kusama hash
 		.unwrap_or("d5d9f5e098fcb41915c85e6695eddc18c0bc4aa4976ad0d9bf5f4713039bca26")
 		.to_string();
 	let block_hash = H256::from_slice(hex::decode(block_hash_str).unwrap().as_ref());
 	let online = OnlineConfig {
 		at: Some(block_hash),
-		pallets: vec!["ElectionProviderMultiPhase".to_string()],
-		transport: Transport::from(
-			std::option_env!("WS").unwrap_or("wss://rpc.zagros.pezkuwichain.io").to_string(),
-		),
+		pezpallets: vec!["ElectionProviderMultiPhase".to_string()],
+		transport_uris: vec![std::option_env!("WS")
+			.unwrap_or("wss://rpc.ibp.network/kusama")
+			.to_string()],
 		..Default::default()
 	};
 
@@ -260,6 +260,6 @@ async fn mine_for_dicle() {
 		.await
 		.unwrap()
 		.execute_with(|| {
-			test_for_network::<dicle::MinerConfig>();
+			test_for_network::<kusama::MinerConfig>();
 		});
 }

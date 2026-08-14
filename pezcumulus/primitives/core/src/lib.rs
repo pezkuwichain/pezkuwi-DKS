@@ -23,7 +23,6 @@ extern crate alloc;
 use alloc::vec::Vec;
 use codec::{Compact, Decode, DecodeAll, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezkuwi_teyrchain_primitives::primitives::HeadData;
-use pezsp_runtime::RuntimeDebug;
 use scale_info::TypeInfo;
 
 /// The ref time per core in seconds.
@@ -63,7 +62,7 @@ pub type InboundHrmpMessage = pezkuwi_primitives::InboundHrmpMessage<relay_chain
 pub type OutboundHrmpMessage = pezkuwi_primitives::OutboundHrmpMessage<ParaId>;
 
 /// Error description of a message send failure.
-#[derive(Eq, PartialEq, Copy, Clone, RuntimeDebug, Encode, Decode)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Encode, Decode)]
 pub enum MessageSendError {
 	/// The dispatch queue is full.
 	QueueFull,
@@ -205,7 +204,7 @@ impl XcmpMessageSource for () {
 }
 
 /// The "quality of service" considerations for message sending.
-#[derive(Eq, PartialEq, Clone, Copy, Encode, Decode, RuntimeDebug)]
+#[derive(Eq, PartialEq, Clone, Copy, Encode, Decode, Debug)]
 pub enum ServiceQuality {
 	/// Ensure that this message is dispatched in the same relative order as any other messages
 	/// that were also sent with `Ordered`. This only guarantees message ordering on the dispatch

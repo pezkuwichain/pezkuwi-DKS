@@ -32,15 +32,7 @@ pub mod pezpallet_origins {
 	pub struct Pezpallet<T>(_);
 
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		MaxEncodedLen,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		TypeInfo,
-		RuntimeDebug,
+		PartialEq, Eq, Clone, MaxEncodedLen, Encode, Decode, DecodeWithMemTracking, TypeInfo, Debug,
 	)]
 	#[pezpallet::origin]
 	pub enum Origin {

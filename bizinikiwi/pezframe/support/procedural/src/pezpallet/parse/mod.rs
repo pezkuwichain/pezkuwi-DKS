@@ -72,7 +72,7 @@ pub struct Def {
 	pub pezframe_support: syn::Path,
 	pub dev_mode: bool,
 	pub view_functions: Option<view_functions::ViewFunctionsImplDef>,
-	pub is_frame_system: bool,
+	pub is_pezframe_system: bool,
 }
 
 impl Def {
@@ -107,21 +107,21 @@ impl Def {
 		let mut type_values = vec![];
 		let mut composites: Vec<CompositeDef> = vec![];
 		let mut view_functions = None;
-		let mut is_frame_system = false;
+		let mut is_pezframe_system = false;
 
 		for (index, item) in items.iter_mut().enumerate() {
 			let pezpallet_attr: Option<PalletAttr> = helper::take_first_item_pallet_attr(item)?;
 
 			match pezpallet_attr {
-				Some(PalletAttr::Config{ with_default, pezframe_system_config: is_frame_system_val, without_automatic_metadata, ..}) if config.is_none() => {
-					is_frame_system = is_frame_system_val;
+				Some(PalletAttr::Config{ with_default, pezframe_system_config: is_pezframe_system_val, without_automatic_metadata, ..}) if config.is_none() => {
+					is_pezframe_system = is_pezframe_system_val;
 					config = Some(config::ConfigDef::try_from(
 						&pezframe_system,
 						index,
 						item,
 						with_default,
 						without_automatic_metadata,
-						is_frame_system,
+						is_pezframe_system,
 					)?);
 				},
 				Some(PalletAttr::Pezpallet(span)) if pezpallet_struct.is_none() => {
@@ -262,7 +262,7 @@ impl Def {
 			pezframe_support,
 			dev_mode,
 			view_functions,
-			is_frame_system,
+			is_pezframe_system,
 		};
 
 		def.check_instance_usage()?;

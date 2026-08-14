@@ -40,7 +40,7 @@
 // --output
 // weights.rs
 // --template
-// bizinikiwi/.maintain/frame-weight-template.hbs
+// bizinikiwi/.maintain/pezframe-weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]

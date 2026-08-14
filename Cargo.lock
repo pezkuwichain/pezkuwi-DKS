@@ -578,6 +578,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-bls12-381"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be2ede2c0c96fa37d5d3484e8a59fec566c4a52b8c84bf993eaa6c67d7225a4c"
+dependencies = [
+ "ark-ec 0.6.0",
+ "ark-ff 0.6.0",
+ "ark-serialize 0.6.0",
+ "ark-std 0.6.0",
+]
+
+[[package]]
 name = "ark-bls12-381-ext"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -668,6 +680,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-ec"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8352a2b2aedf6ba2cc38f7520fc51191d518dde96175c729af19f2d059f191c4"
+dependencies = [
+ "ahash 0.8.12",
+ "ark-ff 0.6.0",
+ "ark-poly 0.6.0",
+ "ark-serialize 0.6.0",
+ "ark-std 0.6.0",
+ "educe",
+ "fnv",
+ "hashbrown 0.17.1",
+ "itertools 0.14.0",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "zeroize",
+]
+
+[[package]]
 name = "ark-ed-on-bls12-377"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -705,13 +738,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-ed-on-bls12-381-bandersnatch"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "997428e73129c7b7a7431b4f67855db94947421f008b97b4c256101cea1686cc"
+dependencies = [
+ "ark-bls12-381 0.6.0",
+ "ark-ec 0.6.0",
+ "ark-ff 0.6.0",
+ "ark-std 0.6.0",
+]
+
+[[package]]
 name = "ark-ed-on-bls12-381-bandersnatch-ext"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e6dce0c47def6f25cf01022acded4f32732f577187dfcd1268510093ef16ea6"
 dependencies = [
  "ark-ec 0.5.0",
- "ark-ed-on-bls12-381-bandersnatch",
+ "ark-ed-on-bls12-381-bandersnatch 0.5.0",
  "ark-ff 0.5.0",
  "ark-models-ext",
  "ark-std 0.5.0",
@@ -927,6 +972,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-poly"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75f55af10b672002b8d953e230282c51206842e20e5791a94432219b4201de5c"
+dependencies = [
+ "ahash 0.8.12",
+ "ark-ff 0.6.0",
+ "ark-serialize 0.6.0",
+ "ark-std 0.6.0",
+ "educe",
+ "fnv",
+ "hashbrown 0.17.1",
+]
+
+[[package]]
 name = "ark-r1cs-std"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1107,6 +1167,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-transcript"
+version = "0.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a9a23188a6bb8d8d2394a2a904e6944999e2cfceb446b086ff3a581ee05cebd"
+dependencies = [
+ "ark-ff 0.6.0",
+ "ark-serialize 0.6.0",
+ "ark-std 0.6.0",
+ "digest 0.10.7",
+ "sha3",
+]
+
+[[package]]
 name = "ark-vrf"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1114,7 +1187,7 @@ checksum = "0d63e9780640021b74d02b32895d8cec1b4abe8e5547b560a6bda6b14b78c6da"
 dependencies = [
  "ark-bls12-381 0.5.0",
  "ark-ec 0.5.0",
- "ark-ed-on-bls12-381-bandersnatch",
+ "ark-ed-on-bls12-381-bandersnatch 0.5.0",
  "ark-ff 0.5.0",
  "ark-serialize 0.5.0",
  "ark-std 0.5.0",
@@ -1122,7 +1195,26 @@ dependencies = [
  "rand_chacha 0.3.1",
  "rayon",
  "sha2 0.10.9",
- "w3f-ring-proof",
+ "w3f-ring-proof 0.0.2",
+ "zeroize",
+]
+
+[[package]]
+name = "ark-vrf"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fbad6a37226194a42588cdcf3c2f461c4463d1b82a1256a6ca837a7502b22dd"
+dependencies = [
+ "ark-bls12-381 0.6.0",
+ "ark-ec 0.6.0",
+ "ark-ed-on-bls12-381-bandersnatch 0.6.0",
+ "ark-ff 0.6.0",
+ "ark-serialize 0.6.0",
+ "ark-std 0.6.0",
+ "digest 0.10.7",
+ "generic-array 0.14.7",
+ "sha2 0.10.9",
+ "w3f-ring-proof 0.0.9",
  "zeroize",
 ]
 
@@ -5956,6 +6048,9 @@ name = "hashbrown"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a"
+dependencies = [
+ "allocator-api2",
+]
 
 [[package]]
 name = "hashlink"
@@ -11847,6 +11942,7 @@ dependencies = [
  "pezsp-consensus-aura",
  "pezsp-consensus-grandpa",
  "pezsp-core",
+ "pezsp-crypto-hashing",
  "pezsp-genesis-builder",
  "pezsp-inherents",
  "pezsp-io",
@@ -11865,6 +11961,7 @@ dependencies = [
 name = "pezframe-benchmarking"
 version = "28.0.0"
 dependencies = [
+ "anyhow",
  "array-bytes 6.2.3",
  "linregress",
  "log",
@@ -11976,6 +12073,8 @@ name = "pezframe-election-provider-solution-type"
 version = "13.0.0"
 dependencies = [
  "parity-scale-codec",
+ "pezframe-election-provider-support",
+ "pezframe-support",
  "pezsp-arithmetic",
  "proc-macro-crate 3.4.0",
  "proc-macro2 1.0.106",
@@ -12117,6 +12216,7 @@ dependencies = [
  "aquamarine",
  "array-bytes 6.2.3",
  "bitflags 1.3.2",
+ "derive-where",
  "docify",
  "environmental",
  "frame-metadata",
@@ -12161,17 +12261,26 @@ dependencies = [
  "Inflector",
  "cfg-expr",
  "derive-syn-parse",
+ "derive-where",
  "docify",
  "expander",
  "itertools 0.11.0",
  "macro_magic",
+ "parity-scale-codec",
+ "pezframe-benchmarking",
+ "pezframe-support",
  "pezframe-support-procedural-tools",
+ "pezframe-system",
  "pezsp-crypto-hashing",
+ "pezsp-io",
+ "pezsp-metadata-ir",
+ "pezsp-runtime",
  "pretty_assertions",
  "proc-macro-warning",
  "proc-macro2 1.0.106",
  "quote 1.0.46",
  "regex",
+ "scale-info",
  "syn 2.0.118",
 ]
 
@@ -15469,17 +15578,24 @@ dependencies = [
 name = "pezpallet-assets-precompiles"
 version = "0.1.0"
 dependencies = [
+ "log",
  "parity-scale-codec",
  "pez-ethereum-standards",
+ "pezframe-benchmarking",
  "pezframe-support",
  "pezframe-system",
  "pezpallet-assets",
  "pezpallet-balances",
  "pezpallet-revive",
+ "pezpallet-revive-fixtures",
+ "pezpallet-timestamp",
  "pezsp-core",
  "pezsp-io",
+ "pezsp-keystore",
  "pezsp-runtime",
+ "pezstaging-xcm",
  "scale-info",
+ "test-case",
 ]
 
 [[package]]
@@ -15696,6 +15812,7 @@ dependencies = [
  "pezframe-benchmarking",
  "pezframe-support",
  "pezframe-system",
+ "pezpallet-assets",
  "pezpallet-balances",
  "pezpallet-treasury",
  "pezsp-core",
@@ -16120,6 +16237,7 @@ dependencies = [
  "pezsp-io",
  "pezsp-runtime",
  "pezsp-std",
+ "pezsp-tracing",
  "pezstaging-xcm",
  "pezstaging-xcm-builder",
  "pezstaging-xcm-executor",
@@ -16226,6 +16344,7 @@ dependencies = [
  "pezpallet-balances",
  "pezsp-arithmetic",
  "pezsp-core",
+ "pezsp-crypto-hashing",
  "pezsp-io",
  "pezsp-npos-elections",
  "pezsp-runtime",
@@ -16700,6 +16819,7 @@ dependencies = [
  "pezframe-support",
  "pezframe-system",
  "pezsp-core",
+ "pezsp-crypto-hashing",
  "pezsp-io",
  "pezsp-runtime",
  "pezsp-tracing",
@@ -16877,6 +16997,8 @@ dependencies = [
  "pezpallet-delegated-staking",
  "pezpallet-nomination-pools",
  "pezpallet-staking",
+ "pezpallet-staking-async",
+ "pezpallet-staking-async-rc-client",
  "pezpallet-staking-reward-curve",
  "pezpallet-timestamp",
  "pezsp-core",
@@ -16925,6 +17047,8 @@ dependencies = [
  "pezpallet-delegated-staking",
  "pezpallet-nomination-pools",
  "pezpallet-staking",
+ "pezpallet-staking-async",
+ "pezpallet-staking-async-rc-client",
  "pezpallet-staking-reward-curve",
  "pezpallet-timestamp",
  "pezsp-core",
@@ -16967,6 +17091,7 @@ dependencies = [
  "pezpallet-im-online",
  "pezpallet-offences",
  "pezpallet-session",
+ "pezpallet-session-benchmarking",
  "pezpallet-staking",
  "pezpallet-staking-reward-curve",
  "pezpallet-timestamp",
@@ -17077,6 +17202,7 @@ dependencies = [
  "pezframe-system",
  "pezsp-arithmetic",
  "pezsp-core",
+ "pezsp-crypto-hashing",
  "pezsp-io",
  "pezsp-runtime",
  "scale-info",
@@ -17219,11 +17345,15 @@ dependencies = [
 name = "pezpallet-recovery"
 version = "28.0.0"
 dependencies = [
+ "log",
  "parity-scale-codec",
  "pezframe",
  "pezframe-support",
  "pezframe-system",
  "pezpallet-balances",
+ "pezpallet-utility",
+ "pezsp-io",
+ "pezsp-runtime",
  "scale-info",
 ]
 
@@ -18230,6 +18360,7 @@ dependencies = [
  "pezsp-transaction-storage-proof",
  "scale-info",
  "serde",
+ "tracing",
 ]
 
 [[package]]
@@ -20660,6 +20791,7 @@ dependencies = [
 name = "pezsp-block-builder"
 version = "26.0.0"
 dependencies = [
+ "parity-scale-codec",
  "pezsp-api",
  "pezsp-inherents",
  "pezsp-runtime",
@@ -20690,9 +20822,12 @@ dependencies = [
  "async-trait",
  "futures",
  "log",
+ "pezsp-api",
+ "pezsp-externalities",
  "pezsp-inherents",
  "pezsp-runtime",
  "pezsp-state-machine",
+ "pezsp-trie",
  "thiserror 1.0.69",
 ]
 
@@ -20803,7 +20938,7 @@ dependencies = [
 name = "pezsp-core"
 version = "28.0.0"
 dependencies = [
- "ark-vrf",
+ "ark-vrf 0.5.2",
  "array-bytes 6.2.3",
  "bip39",
  "bitflags 1.3.2",
@@ -20884,7 +21019,7 @@ dependencies = [
  "ark-ec 0.5.0",
  "ark-ed-on-bls12-377",
  "ark-ed-on-bls12-377-ext",
- "ark-ed-on-bls12-381-bandersnatch",
+ "ark-ed-on-bls12-381-bandersnatch 0.5.0",
  "ark-ed-on-bls12-381-bandersnatch-ext",
  "ark-scale",
  "pezsp-runtime-interface",
@@ -20898,6 +21033,7 @@ dependencies = [
  "byteorder",
  "criterion",
  "digest 0.10.7",
+ "pezsp-crypto-hashing-proc-macro",
  "sha2 0.10.9",
  "sha3",
  "twox-hash 1.6.3",
@@ -20917,6 +21053,7 @@ name = "pezsp-database"
 version = "10.0.0"
 dependencies = [
  "kvdb",
+ "kvdb-rocksdb",
  "parking_lot 0.12.5",
 ]
 
@@ -20924,6 +21061,7 @@ dependencies = [
 name = "pezsp-debug-derive"
 version = "14.0.0"
 dependencies = [
+ "proc-macro-warning",
  "proc-macro2 1.0.106",
  "quote 1.0.46",
  "syn 2.0.118",
@@ -21018,8 +21156,10 @@ dependencies = [
 name = "pezsp-metadata-ir"
 version = "0.6.0"
 dependencies = [
+ "derive-where",
  "frame-metadata",
  "parity-scale-codec",
+ "pezframe-metadata",
  "scale-info",
 ]
 
@@ -21105,6 +21245,7 @@ dependencies = [
 name = "pezsp-runtime"
 version = "31.0.1"
 dependencies = [
+ "bizinikiwi-test-runtime-client",
  "bytes",
  "docify",
  "either",
@@ -21115,10 +21256,12 @@ dependencies = [
  "parity-scale-codec",
  "paste",
  "pez-binary-merkle-tree",
+ "pezsp-api",
  "pezsp-application-crypto",
  "pezsp-arithmetic",
  "pezsp-core",
  "pezsp-io",
+ "pezsp-keystore",
  "pezsp-state-machine",
  "pezsp-std",
  "pezsp-tracing",
@@ -21129,6 +21272,7 @@ dependencies = [
  "serde",
  "serde_json",
  "simple-mermaid",
+ "strum 0.26.3",
  "tracing",
  "tuplex",
  "zstd 0.12.4",
@@ -21142,7 +21286,10 @@ dependencies = [
  "impl-trait-for-tuples",
  "parity-scale-codec",
  "pezsp-externalities",
+ "pezsp-io",
  "pezsp-runtime-interface-proc-macro",
+ "pezsp-runtime-interface-test-wasm",
+ "pezsp-state-machine",
  "pezsp-std",
  "pezsp-storage",
  "pezsp-tracing",
@@ -21269,6 +21416,7 @@ dependencies = [
  "pezsp-core",
  "pezsp-externalities",
  "pezsp-panic-handler",
+ "pezsp-runtime",
  "pezsp-trie",
  "pretty_assertions",
  "rand 0.8.6",
@@ -21287,6 +21435,7 @@ dependencies = [
  "ed25519-dalek",
  "hkdf",
  "parity-scale-codec",
+ "pezframe-support",
  "pezsp-api",
  "pezsp-application-crypto",
  "pezsp-core",
@@ -21296,6 +21445,7 @@ dependencies = [
  "pezsp-runtime-interface",
  "rand 0.8.6",
  "scale-info",
+ "serde",
  "sha2 0.10.9",
  "thiserror 1.0.69",
  "x25519-dalek",
@@ -21364,6 +21514,7 @@ version = "26.0.0"
 dependencies = [
  "async-trait",
  "parity-scale-codec",
+ "pezsp-api",
  "pezsp-core",
  "pezsp-inherents",
  "pezsp-runtime",
@@ -21377,6 +21528,7 @@ version = "29.0.0"
 dependencies = [
  "ahash 0.8.12",
  "array-bytes 6.2.3",
+ "bizinikiwi-prometheus-endpoint",
  "criterion",
  "foldhash 0.1.5",
  "hash-db",
@@ -21387,6 +21539,7 @@ dependencies = [
  "parking_lot 0.12.5",
  "pezsp-core",
  "pezsp-externalities",
+ "pezsp-runtime",
  "rand 0.8.6",
  "scale-info",
  "schnellru",
@@ -21405,6 +21558,7 @@ dependencies = [
  "impl-serde",
  "parity-scale-codec",
  "parity-wasm",
+ "pezsp-core",
  "pezsp-crypto-hashing-proc-macro",
  "pezsp-runtime",
  "pezsp-std",
@@ -26897,7 +27051,7 @@ checksum = "225eaa083192400abfe78838e3089c539a361e0dd9b6884f61b5c6237676ec01"
 dependencies = [
  "ark-scale",
  "ark-serialize 0.5.0",
- "ark-vrf",
+ "ark-vrf 0.1.1",
  "bounded-collections 0.1.9",
  "derive-where",
  "parity-scale-codec",
@@ -26956,6 +27110,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "w3f-pcs"
+version = "0.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1304615e0b129091634dcebd1acf9edee4d6aabd03e7d679a0c49a1a1a45fe98"
+dependencies = [
+ "ark-ec 0.6.0",
+ "ark-ff 0.6.0",
+ "ark-poly 0.6.0",
+ "ark-serialize 0.6.0",
+ "ark-std 0.6.0",
+ "merlin",
+]
+
+[[package]]
 name = "w3f-plonk-common"
 version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -26969,7 +27137,23 @@ dependencies = [
  "getrandom_or_panic",
  "rand_core 0.6.4",
  "rayon",
- "w3f-pcs",
+ "w3f-pcs 0.0.2",
+]
+
+[[package]]
+name = "w3f-plonk-common"
+version = "0.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b981cddf68489fa16b0a3b86f9e6a42af76fc1fcdc7f5b34670ec7ec78b7cd23"
+dependencies = [
+ "ark-ec 0.6.0",
+ "ark-ff 0.6.0",
+ "ark-poly 0.6.0",
+ "ark-serialize 0.6.0",
+ "ark-std 0.6.0",
+ "getrandom_or_panic",
+ "rand_core 0.6.4",
+ "w3f-pcs 0.0.7",
 ]
 
 [[package]]
@@ -26983,10 +27167,26 @@ dependencies = [
  "ark-poly 0.5.0",
  "ark-serialize 0.5.0",
  "ark-std 0.5.0",
- "ark-transcript",
+ "ark-transcript 0.0.3",
  "rayon",
- "w3f-pcs",
- "w3f-plonk-common",
+ "w3f-pcs 0.0.2",
+ "w3f-plonk-common 0.0.2",
+]
+
+[[package]]
+name = "w3f-ring-proof"
+version = "0.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9639c62bf37da078063e0abf7bc8ee27ed12d6655c0bf4899e2d80d726029b0e"
+dependencies = [
+ "ark-ec 0.6.0",
+ "ark-ff 0.6.0",
+ "ark-poly 0.6.0",
+ "ark-serialize 0.6.0",
+ "ark-std 0.6.0",
+ "ark-transcript 0.0.6",
+ "w3f-pcs 0.0.7",
+ "w3f-plonk-common 0.0.9",
 ]
 
 [[package]]

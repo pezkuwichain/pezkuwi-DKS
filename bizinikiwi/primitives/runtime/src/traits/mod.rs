@@ -1852,7 +1852,7 @@ pub trait SignedExtension:
 /// transaction extension pipeline authorized the transaction with an origin, either a system signed
 /// origin or a custom origin, then the transaction must be rejected, as the extensions provided in
 /// substrate which protect the chain, such as `CheckNonce`, `ChargeTransactionPayment` etc., rely
-/// on the assumption that the system handles system signed transactions, and the pallets handle the
+/// on the assumption that the system handles system signed transactions, and the pezpallets handle the
 /// custom origin that they authorized.
 pub trait Applyable: Sized + Send + Sync {
 	/// Type by which we can dispatch. Restricts the `UnsignedValidator` type.
@@ -1910,7 +1910,7 @@ pub trait GetNodeBlockType {
 ///
 /// For more information, see: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/2415>
 #[deprecated(
-	note = "`ValidateUnsigned` will be removed after April 2027. Use `#[pezpallet::authorize]` with `pezframe_system::AuthorizeCall` instead. See https://github.com/paritytech/polkadot-sdk/issues/2415"
+	note = "`ValidateUnsigned` will be removed after April 2027. Use `#[pezpallet::authorize]` with `pezframe_system::AuthorizeCall` instead. See https://github.com/paritytech/pezkuwi-sdk/issues/2415"
 )]
 pub trait ValidateUnsigned {
 	/// The call to validate

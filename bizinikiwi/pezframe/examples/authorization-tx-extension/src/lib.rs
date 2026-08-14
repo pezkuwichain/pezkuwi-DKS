@@ -30,22 +30,20 @@
 //!
 //! The [TransactionExtension](pezsp_runtime::traits::TransactionExtension) used in this example is
 //! [AuthorizeCoownership](extensions::AuthorizeCoownership). If activated, the extension will
-//! authorize 2 signers as coowners, with a [coowner origin](pezpallet_coownership::Origin) specific
-//! to the [coownership example pezpallet](pezpallet_coownership), by validating a signature of the
-//! rest of the transaction from each party. This means any extensions after ours in the pipeline,
-//! their implicits and the actual call. The extension pipeline used in our example checks the
-//! genesis hash, transaction version and mortality of the transaction after the
-//! `AuthorizeCoownership` runs as we want these transactions to run regardless of what origin
-//! passes through them and/or we want their implicit data in any signature authorization happening
-//! earlier in the pipeline.
+//! authorize 2 signers as coowners, with a [coowner origin](pezpallet_coownership::Origin) specific to
+//! the [coownership example pezpallet](pezpallet_coownership), by validating a signature of the rest of
+//! the transaction from each party. This means any extensions after ours in the pipeline, their
+//! implicits and the actual call. The extension pipeline used in our example checks the genesis
+//! hash, transaction version and mortality of the transaction after the `AuthorizeCoownership` runs
+//! as we want these transactions to run regardless of what origin passes through them and/or we
+//! want their implicit data in any signature authorization happening earlier in the pipeline.
 //!
 //! In this example, aside from the [AuthorizeCoownership](extensions::AuthorizeCoownership)
-//! extension, we use the following pallets:
+//! extension, we use the following pezpallets:
 //! - [pezpallet_coownership] - provides a coowner origin and the functionality to authorize it.
 //! - [pezpallet_assets] - a dummy asset pezpallet that tracks assets, identified by an
 //!   [AssetId](pezpallet_assets::AssetId), and their respective owners, which can be either an
-//!   [account](pezpallet_assets::Owner::Single) or a [pair of
-//!   owners](pezpallet_assets::Owner::Double).
+//!   [account](pezpallet_assets::Owner::Single) or a [pair of owners](pezpallet_assets::Owner::Double).
 //!
 //! Assets are created in [pezpallet_assets] using the
 //! [create_asset](pezpallet_assets::Call::create_asset) call, which accepts traditionally signed
@@ -54,13 +52,11 @@
 //!
 //! ### Example runtime setup
 #![doc = docify::embed!("src/mock.rs", example_runtime)]
-//!
 //! ### Example usage
 #![doc = docify::embed!("src/tests.rs", create_coowned_asset_works)]
-//!
-//! This example does not focus on any pezpallet logic or syntax, but rather on
-//! `TransactionExtension` functionality. The pallets used are just skeletons to provide storage
-//! state and custom origin choices and requirements, as shown in the examples. Any weight and/or
+//! This example does not focus on any pezpallet logic or syntax, but rather on `TransactionExtension`
+//! functionality. The pezpallets used are just skeletons to provide storage state and custom origin
+//! choices and requirements, as shown in the examples. Any weight and/or
 //! transaction fee is out of scope for this example.
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -89,7 +85,7 @@ pub mod pezpallet_coownership {
 			+ From<Self::PalletsOrigin>
 			+ IsType<<Self as pezframe_system::Config>::RuntimeOrigin>;
 
-		/// The caller origin, overarching type of all pallets origins.
+		/// The caller origin, overarching type of all pezpallets origins.
 		type PalletsOrigin: From<Origin<Self>> + TryInto<Origin<Self>, Error = Self::PalletsOrigin>;
 	}
 
@@ -100,15 +96,7 @@ pub mod pezpallet_coownership {
 	/// accounts that own something together.
 	#[pezpallet::origin]
 	#[derive(
-		Clone,
-		PartialEq,
-		Eq,
-		RuntimeDebug,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		MaxEncodedLen,
-		TypeInfo,
+		Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeWithMemTracking, MaxEncodedLen, TypeInfo,
 	)]
 	pub enum Origin<T: Config> {
 		Coowners(T::AccountId, T::AccountId),
@@ -122,7 +110,7 @@ pub mod pezpallet_assets {
 	pub type AssetId = u32;
 
 	/// Type that describes possible owners of a particular asset.
-	#[derive(Clone, PartialEq, Eq, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
+	#[derive(Clone, PartialEq, Eq, Debug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 	pub enum Owner<AccountId> {
 		Single(AccountId),
 		Double(AccountId, AccountId),

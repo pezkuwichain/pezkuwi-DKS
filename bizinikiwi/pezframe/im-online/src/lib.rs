@@ -103,7 +103,7 @@ use pezsp_application_crypto::RuntimeAppPublic;
 use pezsp_runtime::{
 	offchain::storage::{MutateStorageError, StorageRetrievalError, StorageValueRef},
 	traits::{AtLeast32BitUnsigned, Convert, Saturating, TrailingZeroInput},
-	PerThing, Perbill, Permill, RuntimeDebug, SaturatedConversion,
+	Debug, PerThing, Perbill, Permill, SaturatedConversion,
 };
 use pezsp_staking::{
 	offence::{Kind, Offence, ReportOffence},
@@ -158,7 +158,7 @@ const INCLUDE_THRESHOLD: u32 = 3;
 /// This stores the block number at which heartbeat was requested and when the worker
 /// has actually managed to produce it.
 /// Note we store such status for every `authority_index` separately.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 struct HeartbeatStatus<BlockNumber> {
 	/// An index of the session that we are supposed to send heartbeat for.
 	pub session_index: SessionIndex,
@@ -218,7 +218,7 @@ impl<BlockNumber: core::fmt::Debug> core::fmt::Debug for OffchainErr<BlockNumber
 pub type AuthIndex = u32;
 
 /// Heartbeat which is sent/received.
-#[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Heartbeat<BlockNumber>
 where
 	BlockNumber: PartialEq + Eq + Decode + Encode,
@@ -303,7 +303,7 @@ pub mod pezpallet {
 		/// A configuration for base priority of unsigned transactions.
 		///
 		/// This is exposed so that it can be tuned for particular runtime, when
-		/// multiple pallets send unsigned transactions.
+		/// multiple pezpallets send unsigned transactions.
 		#[pezpallet::constant]
 		type UnsignedPriority: Get<TransactionPriority>;
 
@@ -448,6 +448,7 @@ pub mod pezpallet {
 	/// incorrect.
 	pub(crate) const INVALID_VALIDATORS_LEN: u8 = 10;
 
+	#[allow(deprecated)]
 	#[pezpallet::validate_unsigned]
 	impl<T: Config> ValidateUnsigned for Pezpallet<T> {
 		type Call = Call<T>;
@@ -819,7 +820,7 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pezpallet<T> {
 }
 
 /// An offence that is filed if a validator didn't send a heartbeat message.
-#[derive(RuntimeDebug, TypeInfo)]
+#[derive(Debug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Clone, PartialEq, Eq))]
 pub struct UnresponsivenessOffence<Offender> {
 	/// The current session index in which we report the unresponsive validators.

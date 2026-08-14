@@ -26,6 +26,8 @@ syn = { features = ["full", "visit"], workspace = true }
 
 # Dev-dependencies with pezframe-election-provider-support moved to integration tests to break circular dependency
 [dev-dependencies]
+pezframe-election-provider-support = { workspace = true, default-features = true, features = ["std"] }
+pezframe-support = { workspace = true, default-features = true }
 codec = { workspace = true, default-features = true }
 pezsp-arithmetic = { workspace = true, default-features = true }
 scale-info = { workspace = true, default-features = true }

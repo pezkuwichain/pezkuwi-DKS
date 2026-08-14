@@ -132,7 +132,7 @@ fn offchainify_works() {
 }
 
 #[test]
-/// Inspired by the Dicle incident of 8th Dec 2022 and its resolution through the governance
+/// Inspired by the Kusama incident of 8th Dec 2022 and its resolution through the governance
 /// fallback.
 ///
 /// Mass slash of validators shouldn't disable more than 1/3 of them (the byzantine threshold). Also
@@ -250,7 +250,7 @@ fn continuous_slashes_below_offending_threshold() {
 /// be below ED. In that case, only the stash (or root) can kill the ledger entry by calling
 /// `withdraw_unbonded` after the bonding period has passed.
 ///
-/// Related to <https://github.com/pezkuwichain/pezkuwi-sdk/issues/329>.
+/// Related to <https://github.com/paritytech/bizinikiwi/issues/14246>.
 fn ledger_consistency_active_balance_below_ed() {
 	use pezpallet_staking::{Error, Event};
 

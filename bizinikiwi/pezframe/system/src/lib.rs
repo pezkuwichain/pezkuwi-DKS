@@ -487,7 +487,7 @@ pub mod pezpallet {
 
 	/// System configuration trait. Implemented by runtime.
 	#[pezpallet::config(with_default, pezframe_system_config)]
-	#[pezpallet::disable_frame_system_supertrait_check]
+	#[pezpallet::disable_pezframe_system_supertrait_check]
 	pub trait Config: 'static + Eq + Clone {
 		/// The aggregated event type of the runtime.
 		#[pezpallet::no_default_bounds]

@@ -25,7 +25,6 @@ use pezframe_support::{
 use pezsp_consensus_beefy::mmr::MmrLeafVersion;
 use pezsp_io::TestExternalities;
 use pezsp_runtime::{
-	app_crypto::ecdsa::Public,
 	impl_opaque_keys,
 	traits::{ConvertInto, Keccak256, OpaqueKeys},
 	BuildStorage,
@@ -35,9 +34,14 @@ use pezsp_state_machine::BasicExternalities;
 use crate as pezpallet_beefy_mmr;
 
 pub use pezsp_consensus_beefy::{
-	ecdsa_crypto::AuthorityId as BeefyId, mmr::BeefyDataProvider, ConsensusLog, BEEFY_ENGINE_ID,
+	ecdsa_crypto::{AuthorityId as BeefyId, Pair as BeefyPair},
+	mmr::BeefyDataProvider,
+	ConsensusLog, BEEFY_ENGINE_ID,
 };
-use pezsp_core::offchain::{testing::TestOffchainExt, OffchainDbExt, OffchainWorkerExt};
+use pezsp_core::{
+	offchain::{testing::TestOffchainExt, OffchainDbExt, OffchainWorkerExt},
+	Pair,
+};
 
 impl_opaque_keys! {
 	pub struct MockSessionKeys {
@@ -167,12 +171,15 @@ impl pezpallet_session::SessionManager<u64> for MockSessionManager {
 // of `to_public_key()` assumes, that a public key is 32 bytes long. This is true for
 // ed25519 and sr25519 but *not* for ecdsa. A compressed ecdsa public key is 33 bytes,
 // with the first one containing information to reconstruct the uncompressed key.
+//
+// We derive deterministic *valid* ECDSA keys from a per-id seed so that
+// `BeefyEcdsaToEthereum` exercises its happy path (it errors on malformed keys and
+// falls back to the all-zeros sentinel; using fabricated bytes would silently hide
+// that behavior in tests).
 pub fn mock_beefy_id(id: u8) -> BeefyId {
-	let mut buf: [u8; 33] = [id; 33];
-	// Set to something valid.
-	buf[0] = 0x02;
-	let pk = Public::from_raw(buf);
-	BeefyId::from(pk)
+	let mut seed = [0u8; 32];
+	seed[0] = id;
+	BeefyPair::from_seed(&seed).public()
 }
 
 pub fn mock_authorities(vec: Vec<u8>) -> Vec<(u64, BeefyId)> {
@@ -208,4 +215,11 @@ pub fn new_test_ext_raw_authorities(authorities: Vec<(u64, BeefyId)>) -> TestExt
 	ext.register_extension(OffchainWorkerExt::new(offchain));
 
 	ext
+}
+
+pub fn build_and_execute(ids: Vec<u8>, test: impl FnOnce()) {
+	new_test_ext(ids).execute_with(|| {
+		test();
+		crate::Pezpallet::<Test>::do_try_state().expect("All invariants must hold after a test");
+	})
 }

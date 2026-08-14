@@ -26,7 +26,7 @@ pub type Balance = u64;
 type Block = pezframe_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pezpallet.
-#[frame_construct_runtime]
+#[pezframe_construct_runtime]
 mod runtime {
 	#[runtime::runtime]
 	#[runtime::derive(

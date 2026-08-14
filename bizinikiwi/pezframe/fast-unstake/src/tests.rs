@@ -1112,7 +1112,7 @@ mod batched {
 }
 
 #[test]
-fn dicle_estimate() {
+fn kusama_estimate() {
 	use crate::WeightInfo;
 	let block_time = pezframe_support::weights::Weight::from_parts(
 		pezframe_support::weights::constants::WEIGHT_REF_TIME_PER_SECOND * 2,

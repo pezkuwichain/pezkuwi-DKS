@@ -35,7 +35,7 @@ use serde::{Deserialize, Serialize};
 	DecodeWithMemTracking,
 	MaxEncodedLen,
 	Decode,
-	pezsp_runtime::RuntimeDebug,
+	Debug,
 	TypeInfo,
 )]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

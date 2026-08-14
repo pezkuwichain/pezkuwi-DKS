@@ -27,9 +27,8 @@
 //!
 //! This module extends accounts based on the [`pezframe_support::traits::fungible`] traits to have
 //! smart-contract functionality. It can be used with other modules that implement accounts based on
-//! the [`pezframe_support::traits::fungible`] traits. These "smart-contract accounts" have the
-//! ability to instantiate smart-contracts and make calls to other contract and non-contract
-//! accounts.
+//! the [`pezframe_support::traits::fungible`] traits. These "smart-contract accounts" have the ability
+//! to instantiate smart-contracts and make calls to other contract and non-contract accounts.
 //!
 //! The smart-contract code is stored once, and later retrievable via its hash.
 //! This means that multiple smart-contracts can be instantiated from the same hash, without
@@ -72,8 +71,8 @@
 //! code an existing `code_hash` is supplied.
 //! * [`Pezpallet::call`] - Makes a call to an account, optionally transferring some balance.
 //! * [`Pezpallet::upload_code`] - Uploads new code without instantiating a contract from it.
-//! * [`Pezpallet::remove_code`] - Removes the stored code and refunds the deposit to its owner.
-//!   Only allowed to code owner.
+//! * [`Pezpallet::remove_code`] - Removes the stored code and refunds the deposit to its owner. Only
+//!   allowed to code owner.
 //! * [`Pezpallet::set_code`] - Changes the code of an existing contract. Only allowed to `Root`
 //!   origin.
 //! * [`Pezpallet::migrate`] - Runs migration steps of current multi-block migration in priority,
@@ -128,7 +127,7 @@ use pezframe_support::{
 		ConstU32, Contains, Get, Randomness, Time,
 	},
 	weights::{Weight, WeightMeter},
-	BoundedVec, DefaultNoBound, RuntimeDebugNoBound,
+	BoundedVec, DebugNoBound, DefaultNoBound,
 };
 use pezframe_system::{
 	ensure_signed,
@@ -137,7 +136,7 @@ use pezframe_system::{
 };
 use pezsp_runtime::{
 	traits::{BadOrigin, Convert, Dispatchable, Saturating, StaticLookup, Zero},
-	DispatchError, RuntimeDebug,
+	DispatchError,
 };
 use scale_info::TypeInfo;
 use smallvec::Array;
@@ -168,8 +167,8 @@ type EventRecordOf<T> =
 
 /// The old weight type.
 ///
-/// This is a copy of the [`pezframe_support::weights::OldWeight`] type since the contracts
-/// pezpallet needs to support it indefinitely.
+/// This is a copy of the [`pezframe_support::weights::OldWeight`] type since the contracts pezpallet
+/// needs to support it indefinitely.
 type OldWeight = u64;
 
 /// Used as a sentinel value when reading and writing contract memory.
@@ -669,7 +668,7 @@ pub mod pezpallet {
 			// Debug buffer should at least be large enough to accommodate a simple error message
 			const MIN_DEBUG_BUF_SIZE: u32 = 256;
 			assert!(
-				T::MaxDebugBufferLen::get() > MIN_DEBUG_BUF_SIZE,
+				T::MaxDebugBufferLen::get() >= MIN_DEBUG_BUF_SIZE,
 				"Debug buffer should have minimum size of {} (current setting is {})",
 				MIN_DEBUG_BUF_SIZE,
 				T::MaxDebugBufferLen::get(),
@@ -708,7 +707,7 @@ pub mod pezpallet {
 			let storage_size_limit = max_validator_runtime_mem.saturating_sub(max_runtime_mem) / 2;
 
 			assert!(
-				max_storage_size < storage_size_limit,
+				max_storage_size <= storage_size_limit,
 				"Maximal storage size {} exceeds the storage limit {}",
 				max_storage_size,
 				storage_size_limit
@@ -728,7 +727,7 @@ pub mod pezpallet {
 			.expect("Events size too big");
 
 			assert!(
-				max_events_size < storage_size_limit,
+				max_events_size <= storage_size_limit,
 				"Maximal events size {} exceeds the events limit {}",
 				max_events_size,
 				storage_size_limit
@@ -1272,8 +1271,8 @@ pub mod pezpallet {
 		TerminatedInConstructor,
 		/// A call tried to invoke a contract that is flagged as non-reentrant.
 		/// The only other cause is that a call from a contract into the runtime tried to call back
-		/// into `pezpallet-contracts`. This would make the whole pezpallet reentrant with regard
-		/// to contract code execution which is not supported.
+		/// into `pezpallet-contracts`. This would make the whole pezpallet reentrant with regard to
+		/// contract code execution which is not supported.
 		ReentranceDenied,
 		/// A contract attempted to invoke a state modifying API while being in read-only mode.
 		StateChangeDenied,
@@ -1385,9 +1384,7 @@ pub mod pezpallet {
 }
 
 /// The type of origins supported by the contracts pezpallet.
-#[derive(
-	Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, TypeInfo, RuntimeDebugNoBound,
-)]
+#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, TypeInfo, DebugNoBound)]
 pub enum Origin<T: Config> {
 	Root,
 	Signed(T::AccountId),
@@ -1445,7 +1442,7 @@ struct InstantiateInput<T: Config> {
 
 /// Determines whether events should be collected during execution.
 #[derive(
-	Copy, Clone, PartialEq, Eq, RuntimeDebug, Decode, Encode, MaxEncodedLen, scale_info::TypeInfo,
+	Copy, Clone, PartialEq, Eq, Debug, Decode, Encode, MaxEncodedLen, scale_info::TypeInfo,
 )]
 pub enum CollectEvents {
 	/// Collect events.
@@ -1463,7 +1460,7 @@ pub enum CollectEvents {
 
 /// Determines whether debug messages will be collected.
 #[derive(
-	Copy, Clone, PartialEq, Eq, RuntimeDebug, Decode, Encode, MaxEncodedLen, scale_info::TypeInfo,
+	Copy, Clone, PartialEq, Eq, Debug, Decode, Encode, MaxEncodedLen, scale_info::TypeInfo,
 )]
 pub enum DebugInfo {
 	/// Collect debug messages.

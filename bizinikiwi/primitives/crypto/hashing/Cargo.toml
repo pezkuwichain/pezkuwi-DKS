@@ -31,6 +31,7 @@ sha3 = { workspace = true }
 twox-hash = { features = ["digest_0_10"], workspace = true }
 
 [dev-dependencies]
+pezsp-crypto-hashing-proc-macro = { workspace = true, default-features = true }
 criterion = { workspace = true, default-features = true }
 # Note: pezsp-crypto-hashing-proc-macro removed to break circular dependency
 # The proc-macro tests are in its own crate

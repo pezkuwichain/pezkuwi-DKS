@@ -23,10 +23,10 @@
 //! ## Phases
 //!
 //! The timeline of pezpallet is as follows. At each block,
-//! [`pezframe_election_provider_support::ElectionDataProvider::next_election_prediction`] is used
-//! to estimate the time remaining to the next call to
-//! [`pezframe_election_provider_support::ElectionProvider::elect`]. Based on this, a phase is
-//! chosen. The timeline is as follows.
+//! [`pezframe_election_provider_support::ElectionDataProvider::next_election_prediction`] is used to
+//! estimate the time remaining to the next call to
+//! [`pezframe_election_provider_support::ElectionProvider::elect`]. Based on this, a phase is chosen.
+//! The timeline is as follows.
 //!
 //! ```ignore
 //!                                                                    elect()
@@ -39,8 +39,7 @@
 //! `next_election_prediction`, but only ends when a call to [`ElectionProvider::elect`] happens. If
 //! no `elect` happens, the signed phase is extended.
 //!
-//! > Given this, it is rather important for the user of this pezpallet to ensure it always
-//! > terminates
+//! > Given this, it is rather important for the user of this pezpallet to ensure it always terminates
 //! election via `elect` before requesting a new one.
 //!
 //! Each of the phases can be disabled by essentially setting their length to zero. If both phases
@@ -68,11 +67,11 @@
 //! origin can not bail out in any way, if their solution is queued.
 //!
 //! Upon the end of the signed phase, the solutions are examined from best to worse (i.e. `pop()`ed
-//! until drained). Each solution undergoes an expensive `Pezpallet::feasibility_check`, which
-//! ensures the score claimed by this score was correct, and it is valid based on the election data
-//! (i.e. votes and targets). At each step, if the current best solution passes the feasibility
-//! check, it is considered to be the best one. The sender of the origin is rewarded, and the rest
-//! of the queued solutions get their deposit back and are discarded, without being checked.
+//! until drained). Each solution undergoes an expensive `Pezpallet::feasibility_check`, which ensures
+//! the score claimed by this score was correct, and it is valid based on the election data (i.e.
+//! votes and targets). At each step, if the current best solution passes the feasibility check,
+//! it is considered to be the best one. The sender of the origin is rewarded, and the rest of the
+//! queued solutions get their deposit back and are discarded, without being checked.
 //!
 //! The following example covers all of the cases at the end of the signed phase:
 //!
@@ -125,13 +124,13 @@
 //!    provided
 //! 2. Any other unforeseen internal error
 //!
-//! A call to `T::ElectionProvider::elect` is made, and `Ok(_)` cannot be returned, then the
-//! pezpallet proceeds to the [`Phase::Emergency`]. During this phase, any solution can be submitted
-//! from [`Config::ForceOrigin`], without any checking, via
-//! [`Pezpallet::set_emergency_election_result`] transaction. Hence, `[`Config::ForceOrigin`]`
-//! should only be set to a trusted origin, such as the council or root. Once submitted, the forced
-//! solution is kept in [`QueuedSolution`] until the next call to `T::ElectionProvider::elect`,
-//! where it is returned and [`Phase`] goes back to `Off`.
+//! A call to `T::ElectionProvider::elect` is made, and `Ok(_)` cannot be returned, then the pezpallet
+//! proceeds to the [`Phase::Emergency`]. During this phase, any solution can be submitted from
+//! [`Config::ForceOrigin`], without any checking, via [`Pezpallet::set_emergency_election_result`]
+//! transaction. Hence, `[`Config::ForceOrigin`]` should only be set to a trusted origin, such as
+//! the council or root. Once submitted, the forced solution is kept in [`QueuedSolution`] until the
+//! next call to `T::ElectionProvider::elect`, where it is returned and [`Phase`] goes back to
+//! `Off`.
 //!
 //! This implies that the user of this pezpallet (i.e. a staking pezpallet) should re-try calling
 //! `T::ElectionProvider::elect` in case of error, until `OK(_)` is returned.
@@ -173,8 +172,8 @@
 //!
 //! ## Error types
 //!
-//! This pezpallet provides a verbose error system to ease future debugging and debugging. The
-//! overall hierarchy of errors is as follows:
+//! This pezpallet provides a verbose error system to ease future debugging and debugging. The overall
+//! hierarchy of errors is as follows:
 //!
 //! 1. [`pezpallet::Error`]: These are the errors that can be returned in the dispatchables of the
 //!    pezpallet, either signed or unsigned. Since decomposition with nested enums is not possible
@@ -190,11 +189,11 @@
 //! Note that there could be an overlap between these sub-errors. For example, A
 //! `SnapshotUnavailable` can happen in both miner and feasibility check phase.
 //!
-//!	## Multi-page election support
+//! ## Multi-page election support
 //!
 //! The [`pezframe_election_provider_support::ElectionDataProvider`] and
-//! [`pezframe_election_provider_support::ElectionProvider`] traits used by this pezpallet can
-//! support a multi-page election.
+//! [`pezframe_election_provider_support::ElectionProvider`] traits used by this pezpallet can support a
+//! multi-page election.
 //!
 //! However, this pezpallet only supports single-page election and data
 //! provider and all the relevant trait implementation and configurations reflect that assumption.
@@ -205,13 +204,13 @@
 //! ## Future Plans
 //!
 //! **Emergency-phase recovery script**: This script should be taken out of staking-miner in
-//! pezkuwi and ideally live in `bizinikiwi/utils/pezframe/elections`.
+//! polkadot and ideally live in `bizinikiwi/utils/frame/elections`.
 //!
-//! **Challenge Phase**. We plan on adding a third phase to the pezpallet, called the challenge
-//! phase. This is a phase in which no further solutions are processed, and the current best
-//! solution might be challenged by anyone (signed or unsigned). The main plan here is to enforce
-//! the solution to be PJR. Checking PJR on-chain is quite expensive, yet proving that a solution is
-//! **not** PJR is rather cheap. If a queued solution is successfully proven bad:
+//! **Challenge Phase**. We plan on adding a third phase to the pezpallet, called the challenge phase.
+//! This is a phase in which no further solutions are processed, and the current best solution might
+//! be challenged by anyone (signed or unsigned). The main plan here is to enforce the solution to
+//! be PJR. Checking PJR on-chain is quite expensive, yet proving that a solution is **not** PJR is
+//! rather cheap. If a queued solution is successfully proven bad:
 //!
 //! 1. We must surely slash whoever submitted that solution (might be a challenge for unsigned
 //!    solutions).
@@ -223,7 +222,7 @@
 //! portion of the bond).
 //!
 //! **Conditionally open unsigned phase**: Currently, the unsigned phase is always opened. This is
-//! useful because an honest validator will run bizinikiwi OCW code, which should be good enough to
+//! useful because an honest validator will run substrate OCW code, which should be good enough to
 //! trump a mediocre or malicious signed submission (assuming in the absence of honest signed bots).
 //! If there are signed submissions, they can be checked against an absolute measure (e.g. PJR),
 //! then we can only open the unsigned phase in extreme conditions (i.e. "no good signed solution
@@ -269,7 +268,7 @@ use pezsp_runtime::{
 		InvalidTransaction, TransactionPriority, TransactionSource, TransactionValidity,
 		TransactionValidityError, ValidTransaction,
 	},
-	DispatchError, ModuleError, PerThing, Perbill, RuntimeDebug, SaturatedConversion,
+	Debug, DispatchError, ModuleError, PerThing, Perbill, SaturatedConversion,
 };
 use scale_info::TypeInfo;
 
@@ -428,16 +427,7 @@ impl Default for ElectionCompute {
 /// Such a solution should never become effective in anyway before being checked by the
 /// `Pezpallet::feasibility_check`.
 #[derive(
-	PartialEq,
-	Eq,
-	Clone,
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	RuntimeDebug,
-	PartialOrd,
-	Ord,
-	TypeInfo,
+	PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Debug, PartialOrd, Ord, TypeInfo,
 )]
 pub struct RawSolution<S> {
 	/// the solution itself.
@@ -457,14 +447,7 @@ impl<C: Default> Default for RawSolution<C> {
 
 /// A checked solution, ready to be enacted.
 #[derive(
-	PartialEqNoBound,
-	EqNoBound,
-	Clone,
-	Encode,
-	Decode,
-	RuntimeDebug,
-	DefaultNoBound,
-	scale_info::TypeInfo,
+	PartialEqNoBound, EqNoBound, Clone, Encode, Decode, Debug, DefaultNoBound, scale_info::TypeInfo,
 )]
 #[scale_info(skip_type_params(AccountId, MaxWinners, MaxBackersPerWinner))]
 pub struct ReadySolution<AccountId, MaxWinners, MaxBackersPerWinner>
@@ -490,7 +473,7 @@ where
 /// [`ElectionDataProvider`] and are kept around until the round is finished.
 ///
 /// These are stored together because they are often accessed together.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, Default, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Debug, Default, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 pub struct RoundSnapshot<AccountId, VoterType> {
 	/// All of the voters.
@@ -577,8 +560,8 @@ pub enum FeasibilityError {
 	WrongWinnerCount,
 	/// The snapshot is not available.
 	///
-	/// Kinda defensive: The pezpallet should technically never attempt to do a feasibility check
-	/// when no snapshot is present.
+	/// Kinda defensive: The pezpallet should technically never attempt to do a feasibility check when
+	/// no snapshot is present.
 	SnapshotUnavailable,
 	/// Internal error from the election crate.
 	NposElection(pezsp_npos_elections::Error),
@@ -1009,8 +992,8 @@ pub mod pezpallet {
 			Ok(())
 		}
 
-		/// Set a solution in the queue, to be handed out to the client of this pezpallet in the
-		/// next call to `ElectionProvider::elect`.
+		/// Set a solution in the queue, to be handed out to the client of this pezpallet in the next
+		/// call to `ElectionProvider::elect`.
 		///
 		/// This can only be set by `T::ForceOrigin`, and only when the phase is `Emergency`.
 		///
@@ -1231,6 +1214,7 @@ pub mod pezpallet {
 		PreDispatchDifferentRound,
 	}
 
+	#[allow(deprecated)]
 	#[pezpallet::validate_unsigned]
 	impl<T: Config> ValidateUnsigned for Pezpallet<T> {
 		type Call = Call<T>;
@@ -1371,7 +1355,7 @@ pub mod pezpallet {
 
 	/// The in-code storage version.
 	///
-	/// v1: https://github.com/pezkuwichain/pezkuwi-sdk/issues/207/
+	/// v1: https://github.com/paritytech/bizinikiwi/pull/12237/
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	#[pezpallet::pezpallet]
@@ -1844,13 +1828,14 @@ impl<T: Config> ElectionProvider for Pezpallet<T> {
 		Ok(())
 	}
 
-	fn status() -> Result<bool, ()> {
+	fn status() -> Result<Option<Weight>, ()> {
 		let has_queued = QueuedSolution::<T>::exists();
 		let phase = CurrentPhase::<T>::get();
 		match (phase, has_queued) {
-			(Phase::Unsigned(_), true) => Ok(true),
+			// This pezpallet is not advanced enough to report any weight, ergo `Default::default()`.
+			(Phase::Unsigned(_), true) => Ok(Some(Default::default())),
 			(Phase::Off, _) => Err(()),
-			_ => Ok(false),
+			_ => Ok(None),
 		}
 	}
 
@@ -2734,7 +2719,7 @@ mod tests {
 
 	#[test]
 	fn number_of_voters_allowed_2sec_block() {
-		// Just a rough estimate with the bizinikiwi weights.
+		// Just a rough estimate with the substrate weights.
 		assert_eq!(MockWeightInfo::get(), MockedWeightInfo::Real);
 
 		let all_voters: u32 = 10_000;

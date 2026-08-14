@@ -90,7 +90,7 @@ fn function_for_method(
 	})
 }
 
-/// Generates the bare function implementation for `cfg(bizinikiwi_runtime)`.
+/// Generates the bare function implementation for `cfg(substrate_runtime)`.
 fn function_no_std_impl(
 	method: &RuntimeInterfaceFunction,
 	is_wasm_only: bool,
@@ -117,7 +117,7 @@ fn function_no_std_impl(
 			#[cfg(target_family = "wasm")]
 			{ core::arch::wasm32::unreachable(); }
 
-			#[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+			#[cfg(target_arch = "riscv64")]
 			unsafe { core::arch::asm!("unimp", options(noreturn)); }
 		}
 	} else {
@@ -127,14 +127,14 @@ fn function_no_std_impl(
 	let attrs = method.attrs.iter().filter(|a| !a.path().is_ident("version"));
 
 	let cfg_wasm_only = if is_wasm_only {
-		quote! { #[cfg(bizinikiwi_runtime)] }
+		quote! { #[cfg(substrate_runtime)] }
 	} else {
 		quote! {}
 	};
 
 	Ok(quote! {
 		#cfg_wasm_only
-		#[cfg(bizinikiwi_runtime)]
+		#[cfg(substrate_runtime)]
 		#( #attrs )*
 		pub fn #function_name( #( #args, )* ) #return_value {
 			// Call the host function
@@ -144,7 +144,7 @@ fn function_no_std_impl(
 	})
 }
 
-/// Generate call to latest function version for `cfg(not(bizinikiwi_runtime))`
+/// Generate call to latest function version for `cfg(not(substrate_runtime))`
 ///
 /// This should generate simple `fn func(..) { func_version_<latest_version>(..) }`.
 fn function_std_latest_impl(method: &TraitItemFn, latest_version: u32) -> Result<TokenStream> {
@@ -157,7 +157,7 @@ fn function_std_latest_impl(method: &TraitItemFn, latest_version: u32) -> Result
 		create_function_ident_with_version(&method.sig.ident, latest_version);
 
 	Ok(quote_spanned! { method.span() =>
-		#[cfg(not(bizinikiwi_runtime))]
+		#[cfg(not(substrate_runtime))]
 		#( #attrs )*
 		pub fn #function_name( #( #args, )* ) #return_value {
 			#latest_function_name(
@@ -167,7 +167,7 @@ fn function_std_latest_impl(method: &TraitItemFn, latest_version: u32) -> Result
 	})
 }
 
-/// Generates the bare function implementation for `cfg(not(bizinikiwi_runtime))`.
+/// Generates the bare function implementation for `cfg(not(substrate_runtime))`.
 fn function_std_impl(
 	trait_name: &Ident,
 	method: &TraitItemFn,
@@ -210,7 +210,7 @@ fn function_std_impl(
 	};
 
 	Ok(quote_spanned! { method.span() =>
-		#[cfg(not(bizinikiwi_runtime))]
+		#[cfg(not(substrate_runtime))]
 		#( #attrs )*
 		fn #function_name( #( #args, )* ) #return_value {
 			#call_to_trait

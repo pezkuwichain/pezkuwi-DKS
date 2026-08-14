@@ -16,16 +16,13 @@
 
 //! Common traits and types used by the scheduler and assignment providers.
 
-use pezsp_runtime::{
-	codec::{Decode, Encode},
-	RuntimeDebug,
-};
+use pezsp_runtime::codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
 use pezkuwi_primitives::{CoreIndex, Id as ParaId};
 
 /// Assignment (ParaId -> CoreIndex).
-#[derive(Encode, Decode, TypeInfo, RuntimeDebug, Clone, PartialEq)]
+#[derive(Encode, Decode, TypeInfo, Debug, Clone, PartialEq)]
 pub enum Assignment {
 	/// A pool assignment.
 	Pool {

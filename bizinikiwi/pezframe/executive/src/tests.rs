@@ -122,6 +122,12 @@ mod custom {
 			pezsp_io::storage::set("storage_root".as_bytes(), &root);
 			Ok(())
 		}
+
+		pub fn schedule_code_upgrade(origin: OriginFor<T>) -> DispatchResult {
+			pezframe_system::ensure_signed(origin)?;
+			pezframe_system::Pezpallet::<T>::update_code_in_storage(b"new_code");
+			Ok(())
+		}
 	}
 
 	#[pezpallet::inherent]
@@ -141,6 +147,7 @@ mod custom {
 		}
 	}
 
+	#[allow(deprecated)]
 	#[pezpallet::validate_unsigned]
 	impl<T: Config> ValidateUnsigned for Pezpallet<T> {
 		type Call = Call<T>;
@@ -263,6 +270,7 @@ mod custom2 {
 		}
 	}
 
+	#[allow(deprecated)]
 	#[pezpallet::validate_unsigned]
 	impl<T: Config> ValidateUnsigned for Pezpallet<T> {
 		type Call = Call<T>;
@@ -370,7 +378,7 @@ impl pezframe_system::Config for Runtime {
 	PartialEq,
 	MaxEncodedLen,
 	TypeInfo,
-	RuntimeDebug,
+	Debug,
 )]
 pub enum FreezeReasonId {
 	Foo,
@@ -489,7 +497,7 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
 		pezsp_io::storage::set(TEST_KEY, "custom_upgrade".as_bytes());
 		pezsp_io::storage::set(TEST_KEY_2, "try_runtime_upgrade_works".as_bytes());
 		pezsp_io::storage::set(CUSTOM_ON_RUNTIME_KEY, &true.encode());
-		System::deposit_event(pezframe_system::Event::CodeUpdated);
+		System::deposit_event(pezframe_system::Event::CodeUpdated { hash: H256::repeat_byte(123) });
 
 		assert_eq!(0, System::last_runtime_upgrade_spec_version());
 
@@ -837,7 +845,9 @@ fn block_weight_and_size_is_stored_per_tx() {
 			<pezframe_system::Pezpallet<Runtime>>::block_weight().total(),
 			base_block_weight
 		);
-		assert_eq!(<pezframe_system::Pezpallet<Runtime>>::all_extrinsics_len(), 0);
+		// After initialize_block, block_size includes the header overhead (digest + empty
+		// header size).
+		let header_overhead = <pezframe_system::Pezpallet<Runtime>>::block_size();
 
 		assert!(Executive::apply_extrinsic(xt.clone()).unwrap().is_ok());
 		assert!(Executive::apply_extrinsic(x1.clone()).unwrap().is_ok());
@@ -853,11 +863,11 @@ fn block_weight_and_size_is_stored_per_tx() {
 			<pezframe_system::Pezpallet<Runtime>>::block_weight().total(),
 			base_block_weight + 3u64 * extrinsic_weight + 3u64 * Weight::from_parts(0, len as u64),
 		);
-		assert_eq!(<pezframe_system::Pezpallet<Runtime>>::all_extrinsics_len(), 3 * len);
+		assert_eq!(<pezframe_system::Pezpallet<Runtime>>::block_size(), 3 * len + header_overhead);
 
 		let _ = <pezframe_system::Pezpallet<Runtime>>::finalize();
-		// All extrinsics length cleaned on `System::finalize`
-		assert_eq!(<pezframe_system::Pezpallet<Runtime>>::all_extrinsics_len(), 0);
+		// Block size cleaned on `System::finalize`
+		assert_eq!(<pezframe_system::Pezpallet<Runtime>>::block_size(), 0);
 
 		// Reset to a new block.
 		SystemCallbacksCalled::take();
@@ -1037,7 +1047,9 @@ fn event_from_runtime_upgrade_is_included() {
 		System::set_block_number(1);
 
 		Executive::initialize_block(&Header::new_from_number(2));
-		System::assert_last_event(pezframe_system::Event::<Runtime>::CodeUpdated.into());
+		System::assert_last_event(
+			pezframe_system::Event::<Runtime>::CodeUpdated { hash: H256::repeat_byte(123) }.into(),
+		);
 	});
 }
 
@@ -1355,7 +1367,7 @@ fn try_runtime_upgrade_works() {
 	>;
 
 	new_test_ext(1).execute_with(|| {
-		// Call `on_genesis` to reset the storage version of all pallets.
+		// Call `on_genesis` to reset the storage version of all pezpallets.
 		AllPalletsWithSystem::on_genesis();
 
 		// Make sure the test storages are un-set
@@ -1688,4 +1700,56 @@ fn max_transaction_depth_is_respected() {
 
 	// Import works
 	block_on(client.import(BlockOrigin::Own, block)).unwrap();
+}
+
+#[test]
+fn pending_code_upgrade_build_execute_consistency() {
+	// Ensure that building a block and executing the same block
+	// produce the same storage root when a pending code upgrade is
+	// in progress.
+	let xt = UncheckedXt::new_signed(
+		RuntimeCall::Custom(custom::Call::schedule_code_upgrade {}),
+		1,
+		1.into(),
+		tx_ext(0, 0),
+	);
+
+	let (header, build_pending_code, build_code) = new_test_ext(1).execute_with(|| {
+		RuntimeVersionTestValues::mutate(|v| {
+			v.system_version = 3;
+		});
+
+		Executive::initialize_block(&Header::new_from_number(1));
+		Executive::apply_extrinsic(xt.clone()).unwrap().unwrap();
+		let header = Executive::finalize_block();
+
+		let pending_code =
+			pezsp_io::storage::get(pezsp_core::storage::well_known_keys::PENDING_CODE);
+		let code = pezsp_io::storage::get(pezsp_core::storage::well_known_keys::CODE);
+
+		(header, pending_code, code)
+	});
+
+	// Verify that finalize_block path scheduled the upgrade via :pending_code,
+	// not directly into :code.
+	assert!(build_pending_code.is_some(), "finalize_block must write :pending_code");
+
+	new_test_ext(1).execute_with(|| {
+		RuntimeVersionTestValues::mutate(|v| {
+			v.system_version = 3;
+		});
+
+		// execute_block internally calls final_checks which asserts that the storage
+		// root matches the one in the header produced by finalize_block.
+		Executive::execute_block(Block::new(header, vec![xt]).into());
+
+		// Explicitly verify that execute_block produced the same :pending_code and :code
+		// state as finalize_block.
+		let exec_pending_code =
+			pezsp_io::storage::get(pezsp_core::storage::well_known_keys::PENDING_CODE);
+		let exec_code = pezsp_io::storage::get(pezsp_core::storage::well_known_keys::CODE);
+
+		assert_eq!(exec_pending_code, build_pending_code, ":pending_code must match");
+		assert_eq!(exec_code, build_code, ":code must match");
+	});
 }

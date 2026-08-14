@@ -20,31 +20,25 @@
 // Need to enable this one since we document feature-gated stuff.
 #![allow(rustdoc::broken_intra_doc_links)]
 
-//! # **⚠️ WARNING ⚠️**
-//!  
-//! <br>  
-//! <b>THIS CRATE IS NOT AUDITED AND SHOULD NOT BE USED IN PRODUCTION.</b>  
-//! <br>  
-//!
 //! # Parameters
 //!
 //! Allows to update configuration parameters at runtime.
 //!
 //! ## Pezpallet API
 //!
-//! This pezpallet exposes two APIs; one *inbound* side to update parameters, and one *outbound*
-//! side to access said parameters. Parameters themselves are defined in the runtime config and will
-//! be aggregated into an enum. Each parameter is addressed by a `key` and can have a default value.
-//! This is not done by the pezpallet but through the
-//! [`pezframe_support::dynamic_params::dynamic_params`] macro or alternatives.
+//! This pezpallet exposes two APIs; one *inbound* side to update parameters, and one *outbound* side
+//! to access said parameters. Parameters themselves are defined in the runtime config and will be
+//! aggregated into an enum. Each parameter is addressed by a `key` and can have a default value.
+//! This is not done by the pezpallet but through the [`pezframe_support::dynamic_params::dynamic_params`]
+//! macro or alternatives.
 //!
 //! Note that this is incurring one storage read per access. This should not be a problem in most
 //! cases but must be considered in weight-restrained code.
 //!
 //! ### Inbound
 //!
-//! The inbound side solely consists of the [`Pezpallet::set_parameter`] extrinsic to update the
-//! value of a parameter. Each parameter can have their own admin origin as given by the
+//! The inbound side solely consists of the [`Pezpallet::set_parameter`] extrinsic to update the value
+//! of a parameter. Each parameter can have their own admin origin as given by the
 //! [`Config::AdminOrigin`].
 //!
 //! ### Outbound
@@ -60,48 +54,42 @@
 //!
 //! ## Overview
 //!
-//! This pezpallet is a good fit for updating parameters without a runtime upgrade. It is very handy
-//! to not require a runtime upgrade for a simple parameter change since runtime upgrades require a
-//! lot of diligence and always bear risks. It seems overkill to update the whole runtime for a
-//! simple parameter change. This pezpallet allows for fine-grained control over who can update
-//! what. The only down-side is that it trades off performance with convenience and should therefore
-//! only be used in places where that is proven to be uncritical. Values that are rarely accessed
-//! but change often would be a perfect fit.
+//! This pezpallet is a good fit for updating parameters without a runtime upgrade. It is very handy to
+//! not require a runtime upgrade for a simple parameter change since runtime upgrades require a lot
+//! of diligence and always bear risks. It seems overkill to update the whole runtime for a simple
+//! parameter change. This pezpallet allows for fine-grained control over who can update what.
+//! The only down-side is that it trades off performance with convenience and should therefore only
+//! be used in places where that is proven to be uncritical. Values that are rarely accessed but
+//! change often would be a perfect fit.
 //!
 //! ### Example Configuration
 //!
 //! Here is an example of how to define some parameters, including their default values:
 #![doc = docify::embed!("src/tests/mock.rs", dynamic_params)]
-//!
 //! A permissioned origin can be define on a per-key basis like this:
 #![doc = docify::embed!("src/tests/mock.rs", custom_origin)]
-//!
-//! The pezpallet will also require a default value for benchmarking. Ideally this is the variant
-//! with the longest encoded length. Although in either case the PoV benchmarking will take the
-//! worst case over the whole enum.
+//! The pezpallet will also require a default value for benchmarking. Ideally this is the variant with
+//! the longest encoded length. Although in either case the PoV benchmarking will take the worst
+//! case over the whole enum.
 #![doc = docify::embed!("src/tests/mock.rs", benchmarking_default)]
-//!
 //! Now the aggregated parameter needs to be injected into the pezpallet config:
 #![doc = docify::embed!("src/tests/mock.rs", impl_config)]
-//!
-//! As last step, the parameters can now be used in other pallets 🙌
+//! As last step, the parameters can now be used in other pezpallets 🙌
 #![doc = docify::embed!("src/tests/mock.rs", usage)]
-//!
 //! ### Examples Usage
 //!
 //! Now to demonstrate how the values can be updated:
 #![doc = docify::embed!("src/tests/unit.rs", set_parameters_example)]
-//!
 //! ## Low Level / Implementation Details
 //!
-//! The pezpallet stores the parameters in a storage map and implements the matching `Get<Value>`
-//! for each `Key` type. The `Get` then accesses the `Parameters` map to retrieve the value. An
-//! event is emitted every time that a value was updated. It is even emitted when the value is
-//! changed to the same.
+//! The pezpallet stores the parameters in a storage map and implements the matching `Get<Value>` for
+//! each `Key` type. The `Get` then accesses the `Parameters` map to retrieve the value. An event is
+//! emitted every time that a value was updated. It is even emitted when the value is changed to the
+//! same.
 //!
 //! The key and value types themselves are defined by macros and aggregated into a runtime wide
-//! enum. This enum is then injected into the pezpallet. This allows it to be used without any
-//! changes to the pezpallet that the parameter will be utilized by.
+//! enum. This enum is then injected into the pezpallet. This allows it to be used without any changes
+//! to the pezpallet that the parameter will be utilized by.
 //!
 //! ### Design Goals
 //!

@@ -19,7 +19,7 @@
 
 use crate::{CoreIndex, SaleInfoRecord};
 use pezsp_arithmetic::{traits::One, FixedU64};
-use pezsp_core::{Get, RuntimeDebug};
+use pezsp_core::Get;
 use pezsp_runtime::{FixedPointNumber, FixedPointOperand, Saturating};
 
 /// Performance of a past sale.
@@ -44,7 +44,7 @@ pub struct SalePerformance<Balance> {
 }
 
 /// Result of `AdaptPrice::adapt_price`.
-#[derive(Copy, Clone, RuntimeDebug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct AdaptedPrices<Balance> {
 	/// New minimum price to use.
 	pub end_price: Balance,

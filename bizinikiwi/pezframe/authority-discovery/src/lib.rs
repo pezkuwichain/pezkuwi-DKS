@@ -17,7 +17,7 @@
 
 //! # Authority discovery pezpallet.
 //!
-//! This pezpallet is used by the `client/authority-discovery` and by pezkuwi's teyrchain logic
+//! This pezpallet is used by the `client/authority-discovery` and by polkadot's teyrchain logic
 //! to retrieve the current and the next set of authorities.
 
 // Ensure we're `no_std` when compiling for Wasm.
@@ -38,6 +38,7 @@ pub use pezpallet::*;
 pub mod pezpallet {
 	use super::*;
 	use pezframe_support::pezpallet_prelude::*;
+	use pezframe_system::pezpallet_prelude::BlockNumberFor;
 
 	#[pezpallet::pezpallet]
 	pub struct Pezpallet<T>(_);
@@ -71,6 +72,14 @@ pub mod pezpallet {
 	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
 			Pezpallet::<T>::initialize_keys(&self.keys)
+		}
+	}
+
+	#[pezpallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
+			Self::do_try_state()
 		}
 	}
 }
@@ -166,6 +175,40 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pezpallet<T> {
 	}
 }
 
+#[cfg(any(feature = "try-runtime", test))]
+impl<T: Config> Pezpallet<T> {
+	/// Ensure the correctness of the state of this pezpallet.
+	///
+	/// # Invariants
+	///
+	/// * `Keys` must not exceed `MaxAuthorities`.
+	/// * `NextKeys` must not exceed `MaxAuthorities`.
+	/// * `Keys` should not contain duplicates.
+	/// * `NextKeys` should not contain duplicates.
+	pub fn do_try_state() -> Result<(), pezsp_runtime::TryRuntimeError> {
+		use pezframe_support::ensure;
+		let keys = Keys::<T>::get();
+		ensure!(keys.len() as u32 <= T::MaxAuthorities::get(), "Keys exceeds MaxAuthorities");
+		let mut sorted_keys = keys.to_vec();
+		sorted_keys.sort();
+		ensure!(sorted_keys.windows(2).all(|w| w[0] != w[1]), "Duplicate keys found in Keys");
+
+		let next_keys = NextKeys::<T>::get();
+		ensure!(
+			next_keys.len() as u32 <= T::MaxAuthorities::get(),
+			"NextKeys exceeds MaxAuthorities"
+		);
+		let mut sorted_next_keys = next_keys.to_vec();
+		sorted_next_keys.sort();
+		ensure!(
+			sorted_next_keys.windows(2).all(|w| w[0] != w[1]),
+			"Duplicate keys found in NextKeys"
+		);
+
+		Ok(())
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -256,8 +299,8 @@ mod tests {
 	#[test]
 	fn authorities_returns_current_and_next_authority_set() {
 		// The whole authority discovery pezpallet ignores account ids, but we still need them for
-		// `pezpallet_session::OneSessionHandler::on_new_session`, thus its safe to use the same
-		// value everywhere.
+		// `pezpallet_session::OneSessionHandler::on_new_session`, thus its safe to use the same value
+		// everywhere.
 		let account_id = AuthorityPair::from_seed_slice(vec![10; 32].as_ref()).unwrap().public();
 
 		let mut first_authorities: Vec<AuthorityId> = vec![0, 1]
@@ -323,6 +366,9 @@ mod tests {
 			authorities_returned.sort();
 			assert_eq!(first_authorities, authorities_returned);
 
+			// Verify state
+			AuthorityDiscovery::do_try_state().unwrap();
+
 			// When `changed` set to false, the authority set should not be updated.
 			AuthorityDiscovery::on_new_session(
 				false,
@@ -341,6 +387,9 @@ mod tests {
 				first_and_third_authorities, authorities_returned,
 				"Expected authority set not to change as `changed` was set to false.",
 			);
+
+			// Verify state
+			AuthorityDiscovery::do_try_state().unwrap();
 
 			// When `changed` set to true, the authority set should be updated.
 			AuthorityDiscovery::on_new_session(
@@ -362,6 +411,9 @@ mod tests {
 				 next session."
 			);
 
+			// Verify state
+			AuthorityDiscovery::do_try_state().unwrap();
+
 			// With overlapping authority sets, `authorities()` should return a deduplicated set.
 			AuthorityDiscovery::on_new_session(
 				true,
@@ -374,6 +426,9 @@ mod tests {
 				AuthorityDiscovery::authorities(),
 				"Expected authority set to be deduplicated."
 			);
+
+			// Verify state
+			AuthorityDiscovery::do_try_state().unwrap();
 		});
 	}
 }

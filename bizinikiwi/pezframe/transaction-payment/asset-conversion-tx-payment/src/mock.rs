@@ -237,6 +237,7 @@ impl pezpallet_assets::Config<Instance2> for Runtime {
 
 parameter_types! {
 	pub const AssetConversionPalletId: PalletId = PalletId(*b"py/ascon");
+	pub LpFee: Permill = Permill::from_rational(3u32, 1_000u32); // 0.3%
 	pub storage LiquidityWithdrawalFee: Permill = Permill::from_percent(0);
 	pub const MaxSwapPathLength: u32 = 4;
 	pub const Native: NativeOrWithId<u32> = NativeOrWithId::Native;
@@ -270,7 +271,7 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type PoolSetupFeeAsset = Native;
 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
 	type PalletId = AssetConversionPalletId;
-	type LPFee = ConstU32<3>; // means 0.3%
+	type LPFee = LpFee;
 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
 	type MaxSwapPathLength = MaxSwapPathLength;
 	type MintMinLiquidity = ConstU64<100>; // 100 is good enough when the main currency has 12 decimals.
@@ -333,8 +334,8 @@ impl BenchmarkHelperTrait<u64, NativeOrWithId<u32>, NativeOrWithId<u32>> for Hel
 		assert_ok!(Assets::force_create(
 			RuntimeOrigin::root(),
 			asset_idx.into(),
-			42,   /* owner */
-			true, /* is_sufficient */
+			42,   // owner
+			true, // is_sufficient
 			1,
 		));
 

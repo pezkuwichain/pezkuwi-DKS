@@ -102,7 +102,7 @@ use pezframe_support::pezpallet_prelude::*;
 use pezframe_system::pezpallet_prelude::*;
 use pezsp_runtime::{
 	traits::{Dispatchable, Saturating, StaticLookup, Zero},
-	DispatchError, RuntimeDebug,
+	Debug, DispatchError,
 };
 
 use pezframe_support::{
@@ -163,8 +163,7 @@ impl<AccountId> IdentityVerifier<AccountId> for () {
 	}
 }
 
-/// The provider of a collective action interface, for example an instance of
-/// `pezpallet-collective`.
+/// The provider of a collective action interface, for example an instance of `pezpallet-collective`.
 pub trait ProposalProvider<AccountId, Hash, Proposal> {
 	/// Add a new proposal.
 	/// Returns a proposal length and active proposals count if successful.
@@ -197,7 +196,7 @@ pub trait ProposalProvider<AccountId, Hash, Proposal> {
 }
 
 /// The various roles that a member can hold.
-#[derive(Copy, Clone, PartialEq, Eq, RuntimeDebug, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub enum MemberRole {
 	Fellow,
 	Ally,
@@ -206,15 +205,7 @@ pub enum MemberRole {
 
 /// The type of item that may be deemed unscrupulous.
 #[derive(
-	Clone,
-	PartialEq,
-	Eq,
-	RuntimeDebug,
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	TypeInfo,
-	MaxEncodedLen,
+	Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeWithMemTracking, TypeInfo, MaxEncodedLen,
 )]
 pub enum UnscrupulousItem<AccountId, Url> {
 	AccountId(AccountId),

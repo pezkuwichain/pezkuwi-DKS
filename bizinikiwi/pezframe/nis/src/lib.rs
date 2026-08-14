@@ -44,8 +44,8 @@
 //! funds are unreserved.
 //!
 //! There's a target proportion of effective total issuance (i.e. accounting for existing receipts)
-//! which the pezpallet attempts to have frozen at any one time. It will likely be gradually
-//! increased over time by governance.
+//! which the pezpallet attempts to have frozen at any one time. It will likely be gradually increased
+//! over time by governance.
 //!
 //! As the proportion of effective total issuance represented by outstanding receipts drops below
 //! `FrozenFraction`, then bids are taken from queues and consolidated into receipts, with the queue
@@ -303,9 +303,7 @@ pub mod pezpallet {
 	pub struct Pezpallet<T>(_);
 
 	/// A single bid, an item of a *queue* in `Queues`.
-	#[derive(
-		Clone, Eq, PartialEq, Default, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen,
-	)]
+	#[derive(Clone, Eq, PartialEq, Default, Encode, Decode, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct Bid<Balance, AccountId> {
 		/// The amount bid.
 		pub amount: Balance,
@@ -314,9 +312,7 @@ pub mod pezpallet {
 	}
 
 	/// Information representing a receipt.
-	#[derive(
-		Clone, Eq, PartialEq, Default, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen,
-	)]
+	#[derive(Clone, Eq, PartialEq, Default, Encode, Decode, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct ReceiptRecord<AccountId, BlockNumber, Balance> {
 		/// The proportion of the effective total issuance.
 		pub proportion: Perquintill,
@@ -339,9 +335,7 @@ pub mod pezpallet {
 	/// `issuance - frozen + proportion * issuance`
 	///
 	/// where `issuance = active_issuance - IgnoredIssuance`
-	#[derive(
-		Clone, Eq, PartialEq, Default, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen,
-	)]
+	#[derive(Clone, Eq, PartialEq, Default, Encode, Decode, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct SummaryRecord<BlockNumber, Balance> {
 		/// The total proportion over all outstanding receipts.
 		pub proportion_owed: Perquintill,
@@ -703,7 +697,7 @@ pub mod pezpallet {
 			// Multiply the proportion it is by the total issued.
 			let our_account = Self::account_id();
 			let effective_issuance = Self::issuance_with(&our_account, &summary).effective;
-			//			let amount = proportion.mul_ceil(effective_issuance);
+			// 			let amount = proportion.mul_ceil(effective_issuance);
 			let amount = proportion * effective_issuance;
 
 			receipt.proportion.saturating_reduce(proportion);
@@ -918,9 +912,8 @@ pub mod pezpallet {
 		/// The effective total issuance, hypothetically if all outstanding receipts were thawed at
 		/// present.
 		pub effective: Balance,
-		/// The amount needed to be accessible to this pezpallet in case all outstanding receipts
-		/// were thawed at present. If it is more than `holdings`, then the pezpallet will need
-		/// funding.
+		/// The amount needed to be accessible to this pezpallet in case all outstanding receipts were
+		/// thawed at present. If it is more than `holdings`, then the pezpallet will need funding.
 		pub required: Balance,
 	}
 

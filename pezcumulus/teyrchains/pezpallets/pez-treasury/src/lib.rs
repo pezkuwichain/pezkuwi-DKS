@@ -171,7 +171,7 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn genesis_distribution_done)]
 	pub type GenesisDistributionDone<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	#[scale_info(skip_type_params(T))]
 	pub struct HalvingData<T: Config> {
 		pub current_period: u32,
@@ -180,7 +180,7 @@ pub mod pezpallet {
 		pub total_released: BalanceOf<T>,
 	}
 
-	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	#[scale_info(skip_type_params(T))]
 	pub struct MonthlyRelease<T: Config> {
 		pub month_index: u32,

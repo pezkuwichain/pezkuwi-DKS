@@ -23,7 +23,7 @@ harness = false
 [dependencies]
 prometheus-endpoint = { optional = true, workspace = true, default-features = true }
 ahash = { optional = true, workspace = true }
-codec = { workspace = true }
+codec = { features = ["derive"], workspace = true }
 foldhash = { workspace = true }
 hash-db = { workspace = true }
 hashbrown = { workspace = true }

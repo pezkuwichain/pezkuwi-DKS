@@ -20,7 +20,7 @@ use pezframe_support::traits::{
 	tokens::{PaymentStatus, Preservation},
 };
 use pezkuwi_runtime_common::impls::VersionedLocatableAsset;
-use pezsp_runtime::{traits::TypedGet, DispatchError, RuntimeDebug};
+use pezsp_runtime::{traits::TypedGet, DispatchError};
 use xcm::latest::prelude::*;
 use xcm_executor::traits::ConvertLocation;
 
@@ -32,7 +32,7 @@ use xcm_executor::traits::ConvertLocation;
 	Eq,
 	PartialEq,
 	Clone,
-	RuntimeDebug,
+	Debug,
 	scale_info::TypeInfo,
 	MaxEncodedLen,
 	DecodeWithMemTracking,

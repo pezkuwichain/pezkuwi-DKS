@@ -28,7 +28,7 @@ use pezbp_runtime::{
 pub use pezbp_xcm_bridge_hub_router::XcmBridgeHubRouterCall;
 use pezframe_support::{
 	dispatch::DispatchClass,
-	pezsp_runtime::{MultiAddress, MultiSigner, RuntimeDebug, StateVersion},
+	pezsp_runtime::{MultiAddress, MultiSigner, StateVersion},
 };
 use scale_info::TypeInfo;
 use testnet_teyrchains_constants::zagros::currency::UNITS;
@@ -88,7 +88,7 @@ pub fn build_congestion_message<RuntimeCall>(
 pub const ASSET_HUB_ZAGROS_TEYRCHAIN_ID: u32 = 1000;
 
 /// AssetHubZagros teyrchain.
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 pub struct AssetHubZagros;
 
 impl Chain for AssetHubZagros {

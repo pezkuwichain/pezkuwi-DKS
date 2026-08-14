@@ -24,7 +24,7 @@
 //! WASM-EXECUTION: `Compiled`, CHAIN: `Some("dev")`, DB CACHE: `1024`
 
 // Executed Command:
-// ./target/production/substrate-node
+// ./target/production/bizinikiwi-node
 // benchmark
 // pezpallet
 // --chain=dev

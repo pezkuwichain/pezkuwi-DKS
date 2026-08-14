@@ -22,11 +22,11 @@
 //!
 //! # Randomness Pezpallet
 //!
-//! The Randomness Collective Flip pezpallet provides a
-//! [`random`](./struct.Module.html#method.random) function that generates low-influence random
-//! values based on the block hashes from the previous `81` blocks. Low-influence randomness can be
-//! useful when defending against relatively weak adversaries. Using this pezpallet as a randomness
-//! source is advisable primarily in low-security situations like testing.
+//! The Randomness Collective Flip pezpallet provides a [`random`](./struct.Module.html#method.random)
+//! function that generates low-influence random values based on the block hashes from the previous
+//! `81` blocks. Low-influence randomness can be useful when defending against relatively weak
+//! adversaries. Using this pezpallet as a randomness source is advisable primarily in low-security
+//! situations like testing.
 //!
 //! ## Public Functions
 //!
@@ -36,8 +36,8 @@
 //!
 //! ### Prerequisites
 //!
-//! Import the Randomness Collective Flip pezpallet and derive your pezpallet's configuration trait
-//! from the system trait.
+//! Import the Randomness Collective Flip pezpallet and derive your pezpallet's configuration trait from
+//! the system trait.
 //!
 //! ### Example - Get random seed for the current block
 //!
@@ -178,8 +178,9 @@ mod tests {
 	);
 
 	parameter_types! {
-		pub BlockLength: limits::BlockLength = limits::BlockLength
-			::max(2 * 1024);
+		pub BlockLength: limits::BlockLength = limits::BlockLength::builder()
+			.max_length(2 * 1024)
+			.build();
 	}
 
 	#[derive_impl(pezframe_system::config_preludes::TestDefaultConfig)]

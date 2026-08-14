@@ -38,13 +38,13 @@
 //!
 //! ## Goals
 //!
-//! Direct nomination on the Staking pezpallet does not scale well. Nominations pools were created
-//! to address this by pooling delegator funds into one account and then staking it. This though had
+//! Direct nomination on the Staking pezpallet does not scale well. Nominations pools were created to
+//! address this by pooling delegator funds into one account and then staking it. This though had
 //! a very critical limitation that the funds were moved from delegator account to pool account
 //! and hence the delegator lost control over their funds for using it for other purposes such as
-//! governance. This pezpallet aims to solve this by extending the staking pezpallet to support a
-//! new primitive function: delegation of funds to an `agent` with the intent of staking. The agent
-//! can then stake the delegated funds to [`Config::CoreStaking`] on behalf of the delegators.
+//! governance. This pezpallet aims to solve this by extending the staking pezpallet to support a new
+//! primitive function: delegation of funds to an `agent` with the intent of staking. The agent can
+//! then stake the delegated funds to [`Config::CoreStaking`] on behalf of the delegators.
 //!
 //! ### Withdrawal Management
 //! Agent unbonding does not regulate ordering of consequent withdrawal for delegators. This is upto
@@ -55,11 +55,11 @@
 //! This pezpallet does not enforce any specific strategy for how rewards or slashes are applied. It
 //! is upto the `agent` account to decide how to apply the rewards and slashes.
 //!
-//! This importantly allows clients of this pezpallet to build their own strategies for
-//! reward/slashes. For example, an `agent` account can choose to first slash the reward pot before
-//! slashing the delegators. Or part of the reward can go to an insurance fund that can be used to
-//! cover any potential future slashes. The goal is to eventually allow foreign MultiLocations
-//! (smart contracts or pallets on another chain) to build their own pooled staking solutions
+//! This importantly allows clients of this pezpallet to build their own strategies for reward/slashes.
+//! For example, an `agent` account can choose to first slash the reward pot before slashing the
+//! delegators. Or part of the reward can go to an insurance fund that can be used to cover any
+//! potential future slashes. The goal is to eventually allow foreign MultiLocations
+//! (smart contracts or pezpallets on another chain) to build their own pooled staking solutions
 //! similar to `NominationPools`.
 
 //! ## Core functions
@@ -78,8 +78,8 @@
 //! One of the reasons why direct nominators on staking pezpallet cannot scale well is because all
 //! nominators are slashed at the same time. This is expensive and needs to be bounded operation.
 //!
-//! This pezpallet implements a lazy slashing mechanism. Any slashes to the `agent` are posted in
-//! its `AgentLedger` as a pending slash. Since the actual amount is held in the multiple
+//! This pezpallet implements a lazy slashing mechanism. Any slashes to the `agent` are posted in its
+//! `AgentLedger` as a pending slash. Since the actual amount is held in the multiple
 //! `delegator` accounts, this pezpallet has no way to know how to apply slash. It is the `agent`'s
 //! responsibility to apply slashes for each delegator, one at a time. Staking pezpallet ensures the
 //! pending slash never exceeds staked amount and would freeze further withdraws until all pending
@@ -93,11 +93,11 @@
 //!
 //! ## Nomination Pool vs Delegation Staking
 //! This pezpallet is not a replacement for Nomination Pool but adds a new primitive in addition to
-//! staking pezpallet that can be used by Nomination Pool to support delegation based staking. It
-//! can be thought of as an extension to the Staking Pezpallet in relation to Nomination Pools.
-//! Technically, these changes could be made in one of those pallets as well but that would have
+//! staking pezpallet that can be used by Nomination Pool to support delegation based staking. It can
+//! be thought of as an extension to the Staking Pezpallet in relation to Nomination Pools.
+//! Technically, these changes could be made in one of those pezpallets as well but that would have
 //! meant significant refactoring and high chances of introducing a regression. With this approach,
-//! we can keep the existing pallets with minimal changes and introduce a new pezpallet that can be
+//! we can keep the existing pezpallets with minimal changes and introduce a new pezpallet that can be
 //! optionally used by Nomination Pool. The vision is to build this in a configurable way such that
 //! runtime can choose whether to use this pezpallet or not.
 //!
@@ -156,7 +156,7 @@ use pezframe_support::{
 use pezsp_io::hashing::blake2_256;
 use pezsp_runtime::{
 	traits::{CheckedAdd, CheckedSub, TrailingZeroInput, Zero},
-	ArithmeticError, DispatchResult, Perbill, RuntimeDebug, Saturating,
+	ArithmeticError, Debug, DispatchResult, Perbill, Saturating,
 };
 use pezsp_staking::{Agent, Delegator, EraIndex, StakingInterface, StakingUnchecked};
 
@@ -297,7 +297,7 @@ pub mod pezpallet {
 		///
 		/// Implementation note: This function allows any account to become an agent. It is
 		/// important though that accounts that call [`StakingUnchecked::virtual_bond`] are keyless
-		/// accounts. This is not a problem for now since this is only used by other pallets in the
+		/// accounts. This is not a problem for now since this is only used by other pezpallets in the
 		/// runtime which use keyless account as agents. If we later want to expose this as a
 		/// dispatchable call, we should derive a sub-account from the caller and use that as the
 		/// agent account.

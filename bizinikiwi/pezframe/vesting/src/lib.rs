@@ -22,10 +22,10 @@
 //!
 //! ## Overview
 //!
-//! A simple pezpallet providing a means of placing a linear curve on an account's locked balance.
-//! This pezpallet ensures that there is a lock in place preventing the balance to drop below the
-//! *unvested* amount for any reason other than the ones specified in
-//! `UnvestedFundsAllowedWithdrawReasons` configuration value.
+//! A simple pezpallet providing a means of placing a linear curve on an account's locked balance. This
+//! pezpallet ensures that there is a lock in place preventing the balance to drop below the *unvested*
+//! amount for any reason other than the ones specified in `UnvestedFundsAllowedWithdrawReasons`
+//! configuration value.
 //!
 //! As the amount vested increases over time, the amount unvested reduces. However, locks remain in
 //! place and explicit action is needed on behalf of the user to ensure that the amount locked is
@@ -77,7 +77,7 @@ use pezsp_runtime::{
 		AtLeast32BitUnsigned, BlockNumberProvider, Bounded, Convert, MaybeSerializeDeserialize,
 		One, Saturating, StaticLookup, Zero,
 	},
-	DispatchError, RuntimeDebug,
+	DispatchError,
 };
 use scale_info::TypeInfo;
 
@@ -96,7 +96,7 @@ const VESTING_ID: LockIdentifier = *b"vesting ";
 
 // A value placed in storage that represents the current version of the Vesting storage.
 // This value is used by `on_runtime_upgrade` to determine whether we run storage migration logic.
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, MaxEncodedLen, TypeInfo)]
 pub enum Releases {
 	V0,
 	V1,
@@ -201,8 +201,8 @@ pub mod pezpallet {
 		///   - are freshly deploying this pezpallet: `RelaychainDataProvider`
 		/// - Teyrchains with a reliably block production rate (PLO or bulk-coretime):
 		///   - already have the pezpallet deployed: `pezframe_system::Pezpallet`
-		///   - are freshly deploying this pezpallet: no strong recommendation. Both local and
-		///     remote providers can be used. Relay provider can be a bit better in cases where the
+		///   - are freshly deploying this pezpallet: no strong recommendation. Both local and remote
+		///     providers can be used. Relay provider can be a bit better in cases where the
 		///     teyrchain is lagging its block production to avoid clock skew.
 		type BlockNumberProvider: BlockNumberProvider<BlockNumber = BlockNumberFor<Self>>;
 
@@ -708,6 +708,42 @@ impl<T: Config> Pezpallet<T> {
 		);
 
 		Ok((schedules, locked_now))
+	}
+}
+
+impl<T: Config> pezframe_support::traits::tokens::VestedPayout<T::AccountId, BalanceOf<T>>
+	for Pezpallet<T>
+where
+	BalanceOf<T>: MaybeSerializeDeserialize + Debug,
+{
+	type BlockNumber = BlockNumberFor<T>;
+
+	fn vested_transfer(
+		source: &T::AccountId,
+		dest: &T::AccountId,
+		amount: BalanceOf<T>,
+		duration: BlockNumberFor<T>,
+		start_at: Option<BlockNumberFor<T>>,
+	) -> DispatchResult {
+		if amount.is_zero() {
+			return Ok(());
+		}
+
+		if duration.is_zero() {
+			// Zero duration means liquid transfer with no vesting schedule.
+			T::Currency::transfer(source, dest, amount, ExistenceRequirement::AllowDeath)
+		} else {
+			let starting_block =
+				start_at.unwrap_or_else(|| T::BlockNumberProvider::current_block_number());
+			let duration_as_balance = T::BlockNumberToBalance::convert(duration);
+			// Round up so that vesting completes within `duration` blocks, not longer.
+			let per_block =
+				((amount.saturating_add(duration_as_balance).saturating_sub(One::one()))
+					/ duration_as_balance)
+					.max(One::one());
+			let schedule = VestingInfo::new(amount, per_block, starting_block);
+			Self::do_vested_transfer(source, dest, schedule)
+		}
 	}
 }
 

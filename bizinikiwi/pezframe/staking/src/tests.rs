@@ -454,7 +454,10 @@ fn staking_should_work() {
 		assert_ok!(Session::set_keys(
 			RuntimeOrigin::signed(3),
 			SessionKeys { other: 4.into() },
-			vec![]
+			SessionKeys { other: 4.into() }
+				.create_ownership_proof(&AccountId::from(3u32).encode())
+				.unwrap()
+				.encode(),
 		));
 
 		// No effects will be seen so far.
@@ -1335,7 +1338,6 @@ fn bond_extra_controller_bad_state_works() {
 
 #[test]
 fn bond_extra_and_withdraw_unbonded_works() {
-	//
 	// * Should test
 	// * Given an account being bonded [and chosen as a validator](not mandatory)
 	// * It can add extra funds to the bonded account.
@@ -1547,7 +1549,6 @@ fn auto_withdraw_may_not_unlock_all_chunks() {
 
 #[test]
 fn rebond_works() {
-	//
 	// * Should test
 	// * Given an account being bonded [and chosen as a validator](not mandatory)
 	// * it can unbond a portion of its funds from the stash account.
@@ -2060,7 +2061,10 @@ fn switching_roles() {
 		assert_ok!(Session::set_keys(
 			RuntimeOrigin::signed(5),
 			SessionKeys { other: 6.into() },
-			vec![]
+			SessionKeys { other: 6.into() }
+				.create_ownership_proof(&AccountId::from(5u32).encode())
+				.unwrap()
+				.encode(),
 		));
 
 		mock::start_active_era(1);
@@ -2073,7 +2077,10 @@ fn switching_roles() {
 		assert_ok!(Session::set_keys(
 			RuntimeOrigin::signed(1),
 			SessionKeys { other: 2.into() },
-			vec![]
+			SessionKeys { other: 2.into() }
+				.create_ownership_proof(&AccountId::from(1u32).encode())
+				.unwrap()
+				.encode(),
 		));
 		// new stakes:
 		// 11: 1000 self vote
@@ -2182,7 +2189,10 @@ fn bond_with_little_staked_value_bounded() {
 			assert_ok!(Session::set_keys(
 				RuntimeOrigin::signed(1),
 				SessionKeys { other: 1.into() },
-				vec![]
+				SessionKeys { other: 1.into() }
+					.create_ownership_proof(&AccountId::from(1u32).encode())
+					.unwrap()
+					.encode(),
 			));
 
 			// 1 era worth of reward. BUT, we set the timestamp after on_initialize, so outdated by
@@ -6427,7 +6437,7 @@ fn test_legacy_claimed_rewards_is_checked_at_reward_payout() {
 		Pezpallet::<Test>::reward_by_ids(vec![(11, 1)]);
 		mock::start_active_era(3);
 
-		//verify rewards are not claimed
+		// verify rewards are not claimed
 		assert_eq!(
 			EraInfo::<Test>::is_rewards_claimed_with_legacy_fallback(
 				1,
@@ -7975,7 +7985,7 @@ mod ledger_recovery {
 
 			// however if 333 bonds extra, the wrong lock is updated.
 			bond_extra_no_checks(&333, 30);
-			assert_eq!(asset::staked::<Test>(&333), lock_444_before + 40 + 30); //not OK
+			assert_eq!(asset::staked::<Test>(&333), lock_444_before + 40 + 30); // not OK
 			assert_eq!(asset::staked::<Test>(&444), lock_444_before + 40); // OK
 
 			// recover the ledger bonded by 333 stash. Note that the total/lock needs to be
@@ -7996,7 +8006,7 @@ mod ledger_recovery {
 				Error::<Test>::CannotRestoreLedger
 			);
 
-			//and enforcing a new ledger lock/total on this non-corrupted ledger will work.
+			// and enforcing a new ledger lock/total on this non-corrupted ledger will work.
 			assert_ok!(Staking::restore_ledger(
 				RuntimeOrigin::root(),
 				444,

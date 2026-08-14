@@ -22,7 +22,8 @@ use super::*;
 use core::array;
 use pezframe_benchmarking::{v2::*, BenchmarkError};
 use pezframe_system::{Pezpallet as System, RawOrigin};
-use pezsp_core::{twox_128, Get};
+use pezsp_core::Get;
+use pezsp_crypto_hashing::twox_128;
 use pezsp_io::{storage, KillStorageResult};
 use pezsp_runtime::traits::One;
 

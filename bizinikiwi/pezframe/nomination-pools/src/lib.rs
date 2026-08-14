@@ -17,8 +17,8 @@
 
 //! # Nomination Pools for Staking Delegation
 //!
-//! A pezpallet that allows members to delegate their stake to nominating pools. A nomination pool
-//! acts as nominator and nominates validators on the members' behalf.
+//! A pezpallet that allows members to delegate their stake to nominating pools. A nomination pool acts
+//! as nominator and nominates validators on the members' behalf.
 //!
 //! # Index
 //!
@@ -81,8 +81,8 @@
 //!
 //! > A member can have up to [`Config::MaxUnbonding`] distinct active unbonding requests.
 //!
-//! Second, once [`pezsp_staking::StakingInterface::bonding_duration`] eras have passed, the member
-//! can call [`Call::withdraw_unbonded`] to withdraw any funds that are free.
+//! Second, once [`pezsp_staking::StakingInterface::bonding_duration`] eras have passed, the member can
+//! call [`Call::withdraw_unbonded`] to withdraw any funds that are free.
 //!
 //! For design docs see the [bonded pool](#bonded-pool) and [unbonding sub
 //! pools](#unbonding-sub-pools) sections.
@@ -188,10 +188,10 @@
 //!   wallet that you are using) that you no longer see the funds that are moved to the pool in your
 //!   “free balance” section. Make sure the user is aware of this, and not surprised by seeing this.
 //!   Also, the transfer that happens here is configured to to never accidentally destroy the sender
-//!   account. So to join a Pool, your sender account must remain alive with 1 HEZ left in it. This
-//!   means, with 1 HEZ as existential deposit, and 1 HEZ as minimum to join a pool, you need at
-//!   least 2 HEZ to join a pool. Consequently, if you are suggesting members to join a pool with
-//!   “Maximum possible value”, you must subtract 1 HEZ to remain in the sender account to not
+//!   account. So to join a Pool, your sender account must remain alive with 1 DOT left in it. This
+//!   means, with 1 DOT as existential deposit, and 1 DOT as minimum to join a pool, you need at
+//!   least 2 DOT to join a pool. Consequently, if you are suggesting members to join a pool with
+//!   “Maximum possible value”, you must subtract 1 DOT to remain in the sender account to not
 //!   accidentally kill it.
 //! * Points and balance are not the same! Any pool member, at any point in time, can have points in
 //!   either the bonded pool or any of the unbonding pools. The crucial fact is that in any of these
@@ -214,8 +214,8 @@
 //! ## Design
 //!
 //! _Notes_: this section uses pseudo code to explain general design and does not necessarily
-//! reflect the exact implementation. Additionally, a working knowledge of `pezpallet-staking`'s api
-//! is assumed.
+//! reflect the exact implementation. Additionally, a working knowledge of `pezpallet-staking`'s api is
+//! assumed.
 //!
 //! ### Goals
 //!
@@ -339,7 +339,7 @@
 //!
 //! To be fair to joiners, this implementation also need joining pools, which are actively staking,
 //! in addition to the unbonding pools. For maintenance simplicity these are not implemented.
-//! Related: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/319>
+//! Related: <https://github.com/paritytech/bizinikiwi/issues/10860>
 //!
 //! ### Limitations
 //!
@@ -423,14 +423,7 @@ pub const POINTS_TO_BALANCE_INIT_RATIO: u32 = 1;
 
 /// Possible operations on the configuration values of this pezpallet.
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	MaxEncodedLen,
-	TypeInfo,
-	RuntimeDebugNoBound,
-	PartialEq,
-	Clone,
+	Encode, Decode, DecodeWithMemTracking, MaxEncodedLen, TypeInfo, DebugNoBound, PartialEq, Clone,
 )]
 pub enum ConfigOp<T: Codec + Debug> {
 	/// Don't change.
@@ -516,7 +509,7 @@ impl ClaimPermission {
 	DecodeWithMemTracking,
 	MaxEncodedLen,
 	TypeInfo,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	CloneNoBound,
 	PartialEqNoBound,
 	EqNoBound,
@@ -546,7 +539,7 @@ impl<T: Config> PoolMember<T> {
 		// multiplied by a point. The worse case of a point is 10x the granularity of the balance
 		// (10x is the common configuration of `MaxPointsToBalance`).
 		//
-		// Assuming roughly the current issuance of pezkuwi (12,047,781,394,999,601,455, which is
+		// Assuming roughly the current issuance of polkadot (12,047,781,394,999,601,455, which is
 		// 1.2 * 10^9 * 10^10 = 1.2 * 10^19), the worse case point value is around 10^20.
 		//
 		// The final multiplication is:
@@ -700,7 +693,7 @@ impl<T: Config> PoolMember<T> {
 	MaxEncodedLen,
 	TypeInfo,
 	PartialEq,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	Clone,
 	Copy,
 )]
@@ -746,7 +739,7 @@ pub struct PoolRoles<AccountId> {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 )]
@@ -1005,7 +998,7 @@ pub struct BondedPoolInner<T: Config> {
 ///
 /// The main purpose of this is to wrap a [`BondedPoolInner`], with the account
 /// + id of the pool, for easier access.
-#[derive(RuntimeDebugNoBound)]
+#[derive(DebugNoBound)]
 #[cfg_attr(feature = "std", derive(Clone, PartialEq))]
 pub struct BondedPool<T: Config> {
 	/// The identifier of the pool.
@@ -1280,8 +1273,14 @@ impl<T: Config> BondedPool<T> {
 				)
 			},
 			(false, true) => {
-				// the depositor can simply not be unbonded permissionlessly, period.
-				return Err(Error::<T>::DoesNotHavePermission.into());
+				// Permissionless depositor unbond is only allowed for a full unbond, and only when
+				// destroying with the depositor as sole remaining member. `is_full_unbond` is
+				// already guaranteed by the outer `ensure!` above.
+				debug_assert!(is_full_unbond);
+				ensure!(
+					self.is_destroying_and_only_depositor(target_member.active_points()),
+					Error::<T>::DoesNotHavePermission
+				);
 			},
 		};
 
@@ -1363,7 +1362,7 @@ impl<T: Config> BondedPool<T> {
 	CloneNoBound,
 	PartialEqNoBound,
 	EqNoBound,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 )]
 #[cfg_attr(feature = "std", derive(DefaultNoBound))]
 #[codec(mel_bound(T: Config))]
@@ -1531,7 +1530,7 @@ impl<T: Config> RewardPool<T> {
 	DecodeWithMemTracking,
 	TypeInfo,
 	DefaultNoBound,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	CloneNoBound,
 	PartialEqNoBound,
 	EqNoBound,
@@ -1584,7 +1583,7 @@ impl<T: Config> UnbondPool<T> {
 	DecodeWithMemTracking,
 	TypeInfo,
 	DefaultNoBound,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	CloneNoBound,
 	PartialEqNoBound,
 	EqNoBound,
@@ -1695,9 +1694,9 @@ pub mod pezpallet {
 		/// a PITA to do).
 		///
 		/// See the inline code docs of `Member::pending_rewards` and `RewardPool::update_recorded`
-		/// for example analysis. A [`pezsp_runtime::FixedU128`] should be fine for chains with
-		/// balance types similar to that of Pezkuwi and Dicle, in the absence of severe slashing
-		/// (or prevented via a reasonable `MaxPointsToBalance`), for many many years to come.
+		/// for example analysis. A [`pezsp_runtime::FixedU128`] should be fine for chains with balance
+		/// types similar to that of Pezkuwi and Kusama, in the absence of severe slashing (or
+		/// prevented via a reasonable `MaxPointsToBalance`), for many many years to come.
 		type RewardCounter: FixedPointNumber + MaxEncodedLen + TypeInfo + Default + codec::FullCodec;
 
 		/// The nomination pool's pezpallet id.
@@ -2010,9 +2009,9 @@ pub mod pezpallet {
 		CannotWithdrawAny,
 		/// The amount does not meet the minimum bond to either join or create a pool.
 		///
-		/// The depositor can never unbond to a value less than `Pezpallet::depositor_min_bond`.
-		/// The caller does not have nominating permissions for the pool. Members can never
-		/// unbond to a value below `MinJoinBond`.
+		/// The depositor can never unbond to a value less than `Pezpallet::depositor_min_bond`. The
+		/// caller does not have nominating permissions for the pool. Members can never unbond to a
+		/// value below `MinJoinBond`.
 		MinimumBondNotMet,
 		/// The transaction could not be executed due to overflow risk for the pool.
 		OverflowRisk,
@@ -2077,9 +2076,7 @@ pub mod pezpallet {
 		Restricted,
 	}
 
-	#[derive(
-		Encode, Decode, DecodeWithMemTracking, PartialEq, TypeInfo, PalletError, RuntimeDebug,
-	)]
+	#[derive(Encode, Decode, DecodeWithMemTracking, PartialEq, TypeInfo, PalletError, Debug)]
 	pub enum DefensiveError {
 		/// There isn't enough space in the unbond pool.
 		NotEnoughSpaceInUnbondPool,
@@ -2302,8 +2299,8 @@ pub mod pezpallet {
 				&mut reward_pool,
 			)?;
 
-			let current_era = T::StakeAdapter::current_era();
-			let unbond_era = T::StakeAdapter::bonding_duration().saturating_add(current_era);
+			let active_era = T::StakeAdapter::current_era();
+			let unbond_era = T::StakeAdapter::bonding_duration().saturating_add(active_era);
 
 			// Unbond in the actual underlying nominator.
 			let unbonding_balance = bonded_pool.dissolve(unbonding_points);
@@ -2312,7 +2309,7 @@ pub mod pezpallet {
 			// Note that we lazily create the unbonding pools here if they don't already exist
 			let mut sub_pools = SubPoolsStorage::<T>::get(member.pool_id)
 				.unwrap_or_default()
-				.maybe_merge_pools(current_era);
+				.maybe_merge_pools(active_era);
 
 			// Update the unbond pool associated with the current era with the unbonded funds. Note
 			// that we lazily create the unbond pool if it does not yet exist.
@@ -2422,7 +2419,7 @@ pub mod pezpallet {
 
 			let mut member =
 				PoolMembers::<T>::get(&member_account).ok_or(Error::<T>::PoolMemberNotFound)?;
-			let current_era = T::StakeAdapter::current_era();
+			let active_era = T::StakeAdapter::current_era();
 
 			let bonded_pool = BondedPool::<T>::get(member.pool_id)
 				.defensive_ok_or::<Error<T>>(DefensiveError::PoolNotFound.into())?;
@@ -2450,7 +2447,7 @@ pub mod pezpallet {
 			let pool_account = bonded_pool.bonded_account();
 
 			// NOTE: must do this after we have done the `ok_to_withdraw_unbonded_other_with` check.
-			let withdrawn_points = member.withdraw_unlocked(current_era);
+			let withdrawn_points = member.withdraw_unlocked(active_era);
 			ensure!(!withdrawn_points.is_empty(), Error::<T>::CannotWithdrawAny);
 
 			// Before calculating the `balance_to_unbond`, we call withdraw unbonded to ensure the
@@ -2477,8 +2474,8 @@ pub mod pezpallet {
 				// accounts might have had an extra consumer increment. We know at this point no
 				// other pezpallet should depend on pool account so safe to do this.
 				// Refer to following issues:
-				// - https://github.com/pezkuwichain/pezkuwi-sdk/issues/135
-				// - https://github.com/pezkuwichain/pezkuwi-sdk/issues/116
+				// - https://github.com/pezkuwichain/pezkuwi-sdk/issues/4440
+				// - https://github.com/pezkuwichain/pezkuwi-sdk/issues/2037
 			}
 
 			let mut sum_unlocked_points: BalanceOf<T> = Zero::zero();
@@ -3293,6 +3290,70 @@ impl<T: Config> Pezpallet<T> {
 			.max(MinJoinBond::<T>::get())
 			.max(T::Currency::minimum_balance())
 	}
+
+	/// Claim trapped balance for a pool member.
+	///
+	/// In rare scenarios, pool members may have excess held balance that is not accounted
+	/// for in their pool points. This can occur when points are incorrectly dissolved
+	/// without releasing the corresponding held funds.
+	///
+	/// If the pool has any pending slash, it will be applied to the member first before
+	/// claiming the trapped balance.
+	///
+	/// Safe to call multiple times or for non-existent members — returns `Ok(())` as a
+	/// no-op when there is nothing to do.
+	pub fn do_claim_trapped_balance(member_account: &T::AccountId) -> DispatchResult {
+		ensure!(
+			T::StakeAdapter::strategy_type() == adapter::StakeStrategyType::Delegate,
+			Error::<T>::NotSupported
+		);
+
+		// Apply any pending slash first. Ignore NothingToSlash and PoolMemberNotFound
+		// (member existence is validated below).
+		match Self::do_apply_slash(member_account, None, false) {
+			Ok(_) => {},
+			Err(e)
+				if e == Error::<T>::NothingToSlash.into()
+					|| e == Error::<T>::PoolMemberNotFound.into() => {},
+			Err(_) => {
+				return Err(Error::<T>::Defensive(DefensiveError::SlashNotApplied).into());
+			},
+		};
+
+		let member = match PoolMembers::<T>::get(member_account) {
+			Some(m) => m,
+			None => return Ok(()),
+		};
+
+		let expected_balance = member.total_balance();
+		let actual_balance =
+			T::StakeAdapter::member_delegation_balance(Member::from(member_account.clone()))
+				.unwrap_or_default();
+
+		let trapped_amount = actual_balance.saturating_sub(expected_balance);
+
+		if trapped_amount.is_zero() {
+			return Ok(());
+		}
+
+		T::StakeAdapter::member_withdraw(
+			Member::from(member_account.clone()),
+			Pool::from(Self::generate_bonded_account(member.pool_id)),
+			trapped_amount,
+			0,
+		)?;
+
+		log!(
+			info,
+			"Claimed trapped balance for member {:?}, pool {:?}, amount {:?}",
+			member_account,
+			member.pool_id,
+			trapped_amount
+		);
+
+		Ok(())
+	}
+
 	/// Remove everything related to the given bonded pool.
 	///
 	/// Metadata and all of the sub-pools are also deleted. All accounts are dusted and the leftover
@@ -3723,8 +3784,16 @@ impl<T: Config> Pezpallet<T> {
 		Self::freeze_pool_deposit(reward_acc)?;
 
 		if pre_frozen_balance > min_balance {
+			// Ensure the caller is the depositor or the root.
+			ensure!(
+				who == bonded_pool.roles.depositor
+					|| bonded_pool.roles.root.as_ref().map_or(false, |root| &who == root),
+				Error::<T>::DoesNotHavePermission
+			);
+
 			// Transfer excess back to depositor.
 			let excess = pre_frozen_balance.saturating_sub(min_balance);
+
 			T::Currency::transfer(reward_acc, &who, excess, Preservation::Preserve)?;
 			Self::deposit_event(Event::<T>::MinBalanceExcessAdjusted {
 				pool_id: pool,
@@ -3946,7 +4015,13 @@ impl<T: Config> Pezpallet<T> {
 		})?;
 
 		let mut expected_tvl: BalanceOf<T> = Default::default();
+		let mut depositor_undermin: Vec<(PoolId, T::AccountId)> = Vec::new();
+		let mut depositor_undermin_total: u32 = 0;
+		let mut total_pools: u32 = 0;
+		const MAX_EXAMPLES: usize = 10;
+
 		BondedPools::<T>::iter().try_for_each(|(id, inner)| -> Result<(), TryRuntimeError> {
+			total_pools += 1;
 			let bonded_pool = BondedPool { id, inner };
 			ensure!(
 				pools_members.get(&id).copied().unwrap_or_default() ==
@@ -3964,8 +4039,12 @@ impl<T: Config> Pezpallet<T> {
 				.is_destroying_and_only_depositor(depositor.active_points())
 				|| depositor.active_points() >= MinCreateBond::<T>::get();
 			if !depositor_has_enough_stake {
+				depositor_undermin_total += 1;
+				if depositor_undermin.len() < MAX_EXAMPLES {
+					depositor_undermin.push((id, bonded_pool.roles.depositor.clone()));
+				}
 				log!(
-					warn,
+					trace,
 					"pool {:?} has depositor {:?} with insufficient stake {:?}, minimum required is {:?}",
 					id,
 					bonded_pool.roles.depositor,
@@ -3983,6 +4062,17 @@ impl<T: Config> Pezpallet<T> {
 
 			Ok(())
 		})?;
+
+		if depositor_undermin_total > 0 {
+			log!(
+				warn,
+				"{}/{} pools have depositor with insufficient stake, minimum required is {:?}. Examples: {:?}",
+				depositor_undermin_total,
+				total_pools,
+				MinCreateBond::<T>::get(),
+				depositor_undermin,
+			);
+		}
 
 		ensure!(
 			MaxPoolMembers::<T>::get().map_or(true, |max| all_members <= max),
@@ -4046,8 +4136,13 @@ impl<T: Config> Pezpallet<T> {
 		debug_assertions
 	))]
 	pub fn check_ed_imbalance() -> Result<u32, DispatchError> {
-		let mut needs_adjust = 0;
+		let mut needs_adjust: u32 = 0;
+		let mut total_pools: u32 = 0;
+		let mut ed_examples: Vec<PoolId> = Vec::new();
+		const MAX_EXAMPLES: usize = 10;
+
 		BondedPools::<T>::iter_keys().for_each(|id| {
+			total_pools += 1;
 			let reward_acc = Self::generate_reward_account(id);
 			let frozen_balance =
 				T::Currency::balance_frozen(&FreezeReason::PoolMinBalance.into(), &reward_acc);
@@ -4055,8 +4150,11 @@ impl<T: Config> Pezpallet<T> {
 			let expected_frozen_balance = T::Currency::minimum_balance();
 			if frozen_balance != expected_frozen_balance {
 				needs_adjust += 1;
+				if ed_examples.len() < MAX_EXAMPLES {
+					ed_examples.push(id);
+				}
 				log!(
-					warn,
+					trace,
 					"pool {:?} has incorrect ED frozen that can result from change in ED. Expected  = {:?},  Actual = {:?}. Use `adjust_pool_deposit` to fix it",
 					id,
 					expected_frozen_balance,
@@ -4064,6 +4162,17 @@ impl<T: Config> Pezpallet<T> {
 				);
 			}
 		});
+
+		if needs_adjust > 0 {
+			log!(
+				warn,
+				"{}/{} pools have incorrect ED frozen (expected {:?}). Use `adjust_pool_deposit` to fix. Examples: {:?}",
+				needs_adjust,
+				total_pools,
+				T::Currency::minimum_balance(),
+				ed_examples,
+			);
+		}
 
 		Ok(needs_adjust)
 	}

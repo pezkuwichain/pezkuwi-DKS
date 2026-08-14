@@ -41,7 +41,7 @@
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: `1024`
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
@@ -54,12 +54,12 @@
 // --steps=50
 // --repeat=20
 // --heap-pages=4096
-// --template=bizinikiwi/.maintain/frame-weight-template.hbs
+// --template=bizinikiwi/.maintain/pezframe-weight-template.hbs
 // --no-storage-info
 // --no-min-squares
 // --no-median-slopes
 // --genesis-builder-policy=none
-// --exclude-pallets=pezpallet_xcm,pezpallet_xcm_benchmarks::fungible,pezpallet_xcm_benchmarks::generic,pezpallet_nomination_pools,pezpallet_remark,pezpallet_transaction_storage,pezpallet_election_provider_multi_block,pezpallet_election_provider_multi_block::signed,pezpallet_election_provider_multi_block::unsigned,pezpallet_election_provider_multi_block::verifier
+// --exclude-pezpallets=pezpallet_xcm,pezpallet_xcm_benchmarks::fungible,pezpallet_xcm_benchmarks::generic,pezpallet_nomination_pools,pezpallet_remark,pezpallet_transaction_storage,pezpallet_election_provider_multi_block,pezpallet_election_provider_multi_block::signed,pezpallet_election_provider_multi_block::unsigned,pezpallet_election_provider_multi_block::verifier
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -107,6 +107,8 @@ pub trait WeightInfo {
 	fn disable_auto_renew() -> Weight;
 	fn on_new_timeslice() -> Weight;
 	fn remove_assignment() -> Weight;
+	fn remove_potential_renewal() -> Weight;
+	fn force_transfer() -> Weight;
 }
 
 /// Weights for `pezpallet_broker` using the Bizinikiwi node and recommended hardware.
@@ -606,6 +608,28 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Storage: `Broker::PotentialRenewals` (r:1 w:1)
+	/// Proof: `Broker::PotentialRenewals` (`max_values`: None, `max_size`: Some(1233), added: 3708, mode: `MaxEncodedLen`)
+	fn remove_potential_renewal() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `450`
+		//  Estimated: `4698`
+		// Minimum execution time: 21_575_000 picoseconds.
+		Weight::from_parts(22_584_000, 4698)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	/// Storage: `Broker::Regions` (r:1 w:1)
+	/// Proof: `Broker::Regions` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
+	fn force_transfer() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `496`
+		//  Estimated: `3551`
+		// Minimum execution time: 22_866_000 picoseconds.
+		Weight::from_parts(23_961_000, 3551)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -1101,6 +1125,28 @@ impl WeightInfo for () {
 		//  Estimated: `4681`
 		// Minimum execution time: 14_911_000 picoseconds.
 		Weight::from_parts(15_782_000, 4681)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `Broker::PotentialRenewals` (r:1 w:1)
+	/// Proof: `Broker::PotentialRenewals` (`max_values`: None, `max_size`: Some(1233), added: 3708, mode: `MaxEncodedLen`)
+	fn remove_potential_renewal() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `450`
+		//  Estimated: `4698`
+		// Minimum execution time: 21_575_000 picoseconds.
+		Weight::from_parts(22_584_000, 4698)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `Broker::Regions` (r:1 w:1)
+	/// Proof: `Broker::Regions` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
+	fn force_transfer() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `496`
+		//  Estimated: `3551`
+		// Minimum execution time: 22_866_000 picoseconds.
+		Weight::from_parts(23_961_000, 3551)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}

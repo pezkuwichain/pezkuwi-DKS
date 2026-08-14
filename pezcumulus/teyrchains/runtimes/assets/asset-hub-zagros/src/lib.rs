@@ -86,7 +86,7 @@ use pezpallet_assets_precompiles::{InlineIdConfig, ERC20};
 use pezpallet_nfts::PalletFeatures;
 use pezpallet_revive::evm::runtime::EthExtra;
 use pezpallet_xcm_precompiles::XcmPrecompile;
-use pezsp_runtime::{Perbill, RuntimeDebug};
+use pezsp_runtime::Perbill;
 use testnet_teyrchains_constants::pezkuwichain::{consensus::*, currency::*, time::*};
 use teyrchains_common::{
 	impls::DealWithFees,
@@ -595,7 +595,7 @@ parameter_types! {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]

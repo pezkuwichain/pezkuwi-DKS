@@ -97,7 +97,7 @@ pub mod pezpallet {
 	#[pezpallet::origin]
 	#[derive(
 		EqNoBound,
-		RuntimeDebugNoBound,
+		DebugNoBound,
 		CloneNoBound,
 		PartialEqNoBound,
 		PartialOrdNoBound,

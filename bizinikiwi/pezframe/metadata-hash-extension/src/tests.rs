@@ -172,12 +172,9 @@ mod docs {
 		type PalletInfo = add_metadata_hash_extension::PalletInfo;
 	}
 
-	/// This function demonstrates how to enable metadata hash in WasmBuilder.
-	/// It is only available when the `metadata-hash` feature is enabled on `bizinikiwi-wasm-builder`.
-	#[cfg(feature = "metadata-hash")]
 	#[docify::export]
 	fn enable_metadata_hash_in_wasm_builder() {
-		bizinikiwi_wasm_builder::WasmBuilder::init_with_defaults()
+		substrate_wasm_builder::WasmBuilder::init_with_defaults()
 			// Requires the `metadata-hash` feature to be activated.
 			// You need to pass the main token symbol and its number of decimals.
 			.enable_metadata_hash("TOKEN", 12)

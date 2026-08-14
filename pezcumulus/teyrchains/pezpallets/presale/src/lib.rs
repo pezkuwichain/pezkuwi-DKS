@@ -68,7 +68,7 @@ pub mod pezpallet {
 		DecodeWithMemTracking,
 		Eq,
 		PartialEq,
-		RuntimeDebug,
+		Debug,
 		MaxEncodedLen,
 		TypeInfo,
 	)]
@@ -91,7 +91,7 @@ pub mod pezpallet {
 		DecodeWithMemTracking,
 		Eq,
 		PartialEq,
-		RuntimeDebug,
+		Debug,
 		MaxEncodedLen,
 		TypeInfo,
 	)]
@@ -110,7 +110,7 @@ pub mod pezpallet {
 		DecodeWithMemTracking,
 		Eq,
 		PartialEq,
-		RuntimeDebug,
+		Debug,
 		MaxEncodedLen,
 		TypeInfo,
 	)]
@@ -131,7 +131,7 @@ pub mod pezpallet {
 		DecodeWithMemTracking,
 		Eq,
 		PartialEq,
-		RuntimeDebug,
+		Debug,
 		MaxEncodedLen,
 		TypeInfo,
 	)]
@@ -154,7 +154,7 @@ pub mod pezpallet {
 		DecodeWithMemTracking,
 		Eq,
 		PartialEq,
-		RuntimeDebug,
+		Debug,
 		MaxEncodedLen,
 		TypeInfo,
 	)]
@@ -179,7 +179,7 @@ pub mod pezpallet {
 		DecodeWithMemTracking,
 		Eq,
 		PartialEq,
-		RuntimeDebug,
+		Debug,
 		MaxEncodedLen,
 		TypeInfo,
 	)]
@@ -202,7 +202,7 @@ pub mod pezpallet {
 		DecodeWithMemTracking,
 		Eq,
 		PartialEq,
-		RuntimeDebug,
+		Debug,
 		MaxEncodedLen,
 		TypeInfo,
 	)]
@@ -231,7 +231,7 @@ pub mod pezpallet {
 		DecodeWithMemTracking,
 		Eq,
 		PartialEq,
-		RuntimeDebug,
+		Debug,
 		MaxEncodedLen,
 		TypeInfo,
 	)]
@@ -251,15 +251,7 @@ pub mod pezpallet {
 	}
 
 	#[derive(
-		Clone,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		Eq,
-		PartialEq,
-		RuntimeDebug,
-		TypeInfo,
-		MaxEncodedLen,
+		Clone, Encode, Decode, DecodeWithMemTracking, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
 	)]
 	#[scale_info(skip_type_params(T, MaxBonusTiers))]
 	#[codec(mel_bound(T: Config, MaxBonusTiers: Get<u32>))]

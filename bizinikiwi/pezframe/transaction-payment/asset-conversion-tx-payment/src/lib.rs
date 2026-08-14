@@ -22,15 +22,15 @@
 //!
 //! This pezpallet provides a `TransactionExtension` with an optional `AssetId` that specifies the
 //! asset to be used for payment (defaulting to the native token on `None`). It expects an
-//! [`OnChargeAssetTransaction`] implementation analogous to [`pezpallet_transaction_payment`]. The
+//! [`OnChargeAssetTransaction`] implementation analogous to `pezpallet-transaction-payment`. The
 //! included [`SwapAssetAdapter`] (implementing [`OnChargeAssetTransaction`]) determines the
-//! fee amount by converting the fee calculated by [`pezpallet_transaction_payment`] in the native
+//! fee amount by converting the fee calculated by `pezpallet-transaction-payment` in the native
 //! asset into the amount required of the specified asset.
 //!
 //! ## Pezpallet API
 //!
 //! This pezpallet does not have any dispatchable calls or storage. It wraps FRAME's Transaction
-//! Payment pezpallet and functions as a replacement. This means you should include both pallets in
+//! Payment pezpallet and functions as a replacement. This means you should include both pezpallets in
 //! your `construct_runtime` macro, but only include this pezpallet's [`TransactionExtension`]
 //! ([`ChargeAssetTxPayment`]).
 //!

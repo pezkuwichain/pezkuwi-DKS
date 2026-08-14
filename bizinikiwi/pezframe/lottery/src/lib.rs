@@ -69,7 +69,7 @@ use pezframe_support::{
 pub use pezpallet::*;
 use pezsp_runtime::{
 	traits::{AccountIdConversion, Dispatchable, Saturating, Zero},
-	ArithmeticError, DispatchError, RuntimeDebug,
+	ArithmeticError, Debug, DispatchError,
 };
 pub use weights::WeightInfo;
 
@@ -80,9 +80,7 @@ type BalanceOf<T> =
 // We use this to uniquely match someone's incoming call with the calls configured for the lottery.
 type CallIndex = (u8, u8);
 
-#[derive(
-	Encode, Decode, Default, Eq, PartialEq, RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
-)]
+#[derive(Encode, Decode, Default, Eq, PartialEq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
 pub struct LotteryConfig<BlockNumber, Balance> {
 	/// Price per entry.
 	price: Balance,
@@ -516,7 +514,7 @@ impl<T: Config> Pezpallet<T> {
 	/// You should call this function with different seed values until the random
 	/// number lies within `u32::MAX - u32::MAX % n`.
 	/// TODO: deal with randomness freshness
-	/// https://github.com/pezkuwichain/pezkuwi-sdk/issues/33
+	/// https://github.com/paritytech/bizinikiwi/issues/8311
 	fn generate_random_number(seed: u32) -> u32 {
 		let (random_seed, _) = T::Randomness::random(&(T::PalletId::get(), seed).encode());
 		let random_number = <u32>::decode(&mut random_seed.as_ref())

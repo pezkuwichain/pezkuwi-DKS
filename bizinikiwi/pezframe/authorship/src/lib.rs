@@ -64,6 +64,11 @@ pub mod pezpallet {
 			// ensure we never go to trie with these values.
 			<Author<T>>::kill();
 		}
+
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
+			Self::do_try_state()
+		}
 	}
 
 	#[pezpallet::storage]
@@ -88,6 +93,32 @@ impl<T: Config> Pezpallet<T> {
 		T::FindAuthor::find_author(pre_runtime_digests).inspect(|a| {
 			<Author<T>>::put(&a);
 		})
+	}
+}
+
+#[cfg(any(feature = "try-runtime", test))]
+impl<T: Config> Pezpallet<T> {
+	/// Ensure the correctness of the state of this pezpallet.
+	///
+	/// # Invariants
+	///
+	/// * If `Author` storage contains a value, it must match the author derived from the current
+	///   block's digest via `FindAuthor`.
+	pub fn do_try_state() -> Result<(), pezsp_runtime::TryRuntimeError> {
+		use pezframe_support::ensure;
+
+		if let Some(stored_author) = <Author<T>>::get() {
+			let digest = <pezframe_system::Pezpallet<T>>::digest();
+			let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
+			if let Some(expected_author) = T::FindAuthor::find_author(pre_runtime_digests) {
+				ensure!(
+					stored_author == expected_author,
+					"Stored author does not match the author derived from digest"
+				);
+			}
+		}
+
+		Ok(())
 	}
 }
 
@@ -172,6 +203,7 @@ mod tests {
 			System::initialize(&1, &Default::default(), header.digest());
 
 			assert_eq!(Authorship::author(), Some(author));
+			Authorship::do_try_state().unwrap();
 		});
 	}
 }

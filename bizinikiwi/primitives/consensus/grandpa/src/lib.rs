@@ -30,7 +30,7 @@ use codec::{Codec, Decode, DecodeWithMemTracking, Encode};
 use pezsp_keystore::KeystorePtr;
 use pezsp_runtime::{
 	traits::{Header as HeaderT, NumberFor},
-	ConsensusEngineId, OpaqueValue, RuntimeDebug,
+	ConsensusEngineId, Debug, OpaqueValue,
 };
 use scale_info::TypeInfo;
 
@@ -76,7 +76,7 @@ pub type RoundNumber = u64;
 /// A list of Grandpa authorities with associated weights.
 pub type AuthorityList = Vec<(AuthorityId, AuthorityWeight)>;
 
-/// A GRANDPA message for a bizinikiwi chain.
+/// A GRANDPA message for a substrate chain.
 pub type Message<Header> =
 	finality_grandpa::Message<<Header as HeaderT>::Hash, <Header as HeaderT>::Number>;
 
@@ -137,7 +137,7 @@ pub struct GrandpaJustification<Header: HeaderT> {
 }
 
 /// A scheduled change of authority set.
-#[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Eq, PartialEq, Encode, Decode, Debug, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct ScheduledChange<N> {
 	/// The new authorities after the change, along with their respective weights.
@@ -147,7 +147,7 @@ pub struct ScheduledChange<N> {
 }
 
 /// An consensus log item for GRANDPA.
-#[derive(Decode, Encode, PartialEq, Eq, Clone, RuntimeDebug)]
+#[derive(Decode, Encode, PartialEq, Eq, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum ConsensusLog<N: Codec> {
 	/// Schedule an authority set change.

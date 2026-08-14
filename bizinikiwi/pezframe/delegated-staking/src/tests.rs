@@ -650,8 +650,8 @@ mod staking_integration {
 				DelegatedStaking::generate_proxy_delegator(Agent::from(agent)).get();
 
 			assert_ok!(DelegatedStaking::migrate_to_agent(RawOrigin::Signed(agent).into(), 201));
-			// after migration, no provider left since free balance is 0 and staking pezpallet
-			// released all funds.
+			// after migration, no provider left since free balance is 0 and staking pezpallet released
+			// all funds.
 			assert_eq!(System::providers(&agent), 0);
 			assert_eq!(Balances::free_balance(agent), 0);
 			// proxy delegator has one provider as well with no free balance.

@@ -56,8 +56,7 @@ pub mod pezpallet {
 		#[pezpallet::task_condition(|i| Numbers::<T>::contains_key(i))]
 		#[pezpallet::task_weight(T::WeightInfo::add_number_into_total())]
 		#[pezpallet::task_index(0)]
-		pub fn add_number_into_total(_i: u32) -> DispatchResult {
-			let i = _i;
+		pub fn add_number_into_total(i: u32) -> DispatchResult {
 			let v = Numbers::<T>::take(i).ok_or(Error::<T>::NotFound)?;
 			Total::<T>::mutate(|(total_keys, total_values)| {
 				*total_keys += i;
@@ -73,7 +72,7 @@ pub mod pezpallet {
 		fn offchain_worker(_block_number: BlockNumberFor<T>) {
 			if let Some(key) = Numbers::<T>::iter_keys().next() {
 				// Create a valid task
-				let task = Task::<T>::AddNumberIntoTotal { _i: key };
+				let task = Task::<T>::AddNumberIntoTotal { i: key };
 				let runtime_task = <T as Config>::RuntimeTask::from(task);
 				let call = pezframe_system::Call::<T>::do_task { task: runtime_task.into() };
 

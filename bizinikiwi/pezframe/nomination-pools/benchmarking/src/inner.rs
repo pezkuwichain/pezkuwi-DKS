@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Benchmarks for the nomination pools coupled with the staking and bags list pallets.
+//! Benchmarks for the nomination pools coupled with the staking and bags list pezpallets.
 
 use alloc::{vec, vec::Vec};
 use pezframe_benchmarking::v2::*;
@@ -36,12 +36,12 @@ use pezpallet_nomination_pools::{
 	MaxPoolMembers, MaxPoolMembersPerPool, MaxPools, Metadata, MinCreateBond, MinJoinBond,
 	Pezpallet as Pools, PoolId, PoolMembers, PoolRoles, PoolState, RewardPools, SubPoolsStorage,
 };
-use pezpallet_staking::MaxNominationsOf;
+use pezpallet_staking_async::MaxNominationsOf;
 use pezsp_runtime::{
 	traits::{Bounded, StaticLookup, Zero},
 	Perbill,
 };
-use pezsp_staking::{EraIndex, StakingUnchecked};
+use pezsp_staking::{EraIndex, StakingInterface, StakingUnchecked};
 // `pezframe_benchmarking::benchmarks!` macro needs this
 use pezpallet_nomination_pools::Call;
 
@@ -53,7 +53,7 @@ const MAX_SPANS: u32 = 100;
 pub(crate) type VoterBagsListInstance = pezpallet_bags_list::Instance1;
 pub trait Config:
 	pezpallet_nomination_pools::Config
-	+ pezpallet_staking::Config
+	+ pezpallet_staking_async::Config
 	+ pezpallet_bags_list::Config<VoterBagsListInstance>
 {
 }
@@ -68,6 +68,28 @@ fn create_funded_user_with_balance<T: pezpallet_nomination_pools::Config>(
 	let user = account(string, n, USER_SEED);
 	T::Currency::set_balance(&user, balance);
 	user
+}
+
+// Create a funded validator and register it as such, so that pools can nominate it.
+fn create_validator<T: Config>(n: u32, balance: BalanceOf<T>) -> T::AccountId
+where
+	pezpallet_staking_async::BalanceOf<T>: From<u128>,
+	BalanceOf<T>: Into<u128>,
+{
+	let validator = create_funded_user_with_balance::<T>("validator", n, balance);
+	let stake: pezpallet_staking_async::BalanceOf<T> = (balance.into() / 2).into();
+	pezpallet_staking_async::Pezpallet::<T>::bond(
+		RuntimeOrigin::Signed(validator.clone()).into(),
+		stake,
+		pezpallet_staking_async::RewardDestination::Staked,
+	)
+	.expect("validator can bond; qed");
+	pezpallet_staking_async::Pezpallet::<T>::validate(
+		RuntimeOrigin::Signed(validator.clone()).into(),
+		Default::default(),
+	)
+	.expect("validator can validate; qed");
+	validator
 }
 
 // Create a bonded pool account, bonding `balance` and giving the account `balance * 2` free
@@ -136,7 +158,7 @@ fn migrate_to_transfer_stake<T: Config>(pool_id: PoolId) {
 	// Note: we didn't require ED until pezpallet-staking migrated from locks to holds.
 	let _ = CurrencyOf::<T>::mint_into(&pool_acc, CurrencyOf::<T>::minimum_balance());
 
-	pezpallet_staking::Pezpallet::<T>::migrate_to_direct_staker(&pool_acc);
+	pezpallet_staking_async::Pezpallet::<T>::migrate_to_direct_staker(&pool_acc);
 }
 
 fn vote_to_balance<T: pezpallet_nomination_pools::Config>(
@@ -165,10 +187,11 @@ impl<T: Config> ListScenario<T> {
 	///   of storage reads and writes.
 	///
 	/// - the destination bag has at least one node, which will need its next pointer updated.
-	pub(crate) fn new(
-		origin_weight: BalanceOf<T>,
-		is_increase: bool,
-	) -> Result<Self, &'static str> {
+	pub(crate) fn new(origin_weight: BalanceOf<T>, is_increase: bool) -> Result<Self, &'static str>
+	where
+		pezpallet_staking_async::BalanceOf<T>: From<u128>,
+		BalanceOf<T>: Into<u128>,
+	{
 		ensure!(!origin_weight.is_zero(), "origin weight must be greater than 0");
 
 		ensure!(
@@ -179,27 +202,24 @@ impl<T: Config> ListScenario<T> {
 		// Burn the entire issuance.
 		CurrencyOf::<T>::set_total_issuance(Zero::zero());
 
+		// Create a real validator the pools can nominate.
+		let validator =
+			create_validator::<T>(0, CurrencyOf::<T>::minimum_balance() * 1000u32.into());
+
 		// Create accounts with the origin weight
 		let (pool_creator1, pool_origin1) =
 			create_pool_account::<T>(USER_SEED + 1, origin_weight, Some(Perbill::from_percent(50)));
 
-		T::StakeAdapter::nominate(
-			Pool::from(pool_origin1.clone()),
-			// NOTE: these don't really need to be validators.
-			vec![account("random_validator", 0, USER_SEED)],
-		)?;
+		T::StakeAdapter::nominate(Pool::from(pool_origin1.clone()), vec![validator.clone()])?;
 
 		let (_, pool_origin2) =
 			create_pool_account::<T>(USER_SEED + 2, origin_weight, Some(Perbill::from_percent(50)));
 
-		T::StakeAdapter::nominate(
-			Pool::from(pool_origin2.clone()),
-			vec![account("random_validator", 0, USER_SEED)].clone(),
-		)?;
+		T::StakeAdapter::nominate(Pool::from(pool_origin2.clone()), vec![validator.clone()])?;
 
 		// Find a destination weight that will trigger the worst case scenario
 		let dest_weight_as_vote =
-			<T as pezpallet_staking::Config>::VoterList::score_update_worst_case(
+			<T as pezpallet_staking_async::Config>::VoterList::score_update_worst_case(
 				&pool_origin1,
 				is_increase,
 			);
@@ -211,12 +231,9 @@ impl<T: Config> ListScenario<T> {
 		let (_, pool_dest1) =
 			create_pool_account::<T>(USER_SEED + 3, dest_weight, Some(Perbill::from_percent(50)));
 
-		T::StakeAdapter::nominate(
-			Pool::from(pool_dest1.clone()),
-			vec![account("random_validator", 0, USER_SEED)],
-		)?;
+		T::StakeAdapter::nominate(Pool::from(pool_dest1.clone()), vec![validator.clone()])?;
 
-		let weight_of = pezpallet_staking::Pezpallet::<T>::weight_of_fn();
+		let weight_of = pezpallet_staking_async::Pezpallet::<T>::weight_of_fn();
 		assert_eq!(vote_to_balance::<T>(weight_of(&pool_origin1)).unwrap(), origin_weight);
 		assert_eq!(vote_to_balance::<T>(weight_of(&pool_origin2)).unwrap(), origin_weight);
 		assert_eq!(vote_to_balance::<T>(weight_of(&pool_dest1)).unwrap(), dest_weight);
@@ -255,7 +272,7 @@ impl<T: Config> ListScenario<T> {
 		Pools::<T>::join(RuntimeOrigin::Signed(joiner.clone()).into(), amount, 1).unwrap();
 
 		// check that the vote weight is still the same as the original bonded
-		let weight_of = pezpallet_staking::Pezpallet::<T>::weight_of_fn();
+		let weight_of = pezpallet_staking_async::Pezpallet::<T>::weight_of_fn();
 		assert_eq!(vote_to_balance::<T>(weight_of(&self.origin1)).unwrap(), original_bonded);
 
 		// check the member was added correctly
@@ -269,8 +286,8 @@ impl<T: Config> ListScenario<T> {
 
 #[benchmarks(
 	where
-		T: pezpallet_staking::Config,
-		pezpallet_staking::BalanceOf<T>: From<u128>,
+		T: pezpallet_staking_async::Config,
+		pezpallet_staking_async::BalanceOf<T>: From<u128>,
 		BalanceOf<T>: Into<u128>,
 )]
 mod benchmarks {
@@ -309,6 +326,12 @@ mod benchmarks {
 		let origin_weight = Pools::<T>::depositor_min_bond() * 2u32.into();
 		let scenario = ListScenario::<T>::new(origin_weight, true).unwrap();
 		let extra = scenario.dest_weight - origin_weight;
+
+		// The creator bonds `extra` from free balance. Let's top it up first.
+		let _ = CurrencyOf::<T>::mint_into(
+			&scenario.creator1,
+			extra + CurrencyOf::<T>::minimum_balance(),
+		);
 
 		// creator of the src pool will bond-extra, bumping itself to dest bag.
 
@@ -391,6 +414,8 @@ mod benchmarks {
 
 	#[benchmark]
 	fn unbond() {
+		<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(0);
+
 		// The weight the nominator will start at. The value used here is expected to be
 		// significantly higher than the first position in a list (e.g. the first bag threshold).
 		let origin_weight = Pools::<T>::depositor_min_bond() * 200u32.into();
@@ -419,6 +444,8 @@ mod benchmarks {
 
 	#[benchmark]
 	fn pool_withdraw_unbonded(s: Linear<0, MAX_SPANS>) {
+		<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(0);
+
 		let min_create_bond = Pools::<T>::depositor_min_bond();
 		let (_depositor, pool_account) = create_pool_account::<T>(0, min_create_bond, None);
 
@@ -443,12 +470,16 @@ mod benchmarks {
 			T::StakeAdapter::active_stake(Pool::from(pool_account.clone())),
 			min_create_bond
 		);
-		assert_eq!(pezpallet_staking::Ledger::<T>::get(&pool_account).unwrap().unlocking.len(), 1);
+		assert_eq!(
+			pezpallet_staking_async::Ledger::<T>::get(&pool_account)
+				.unwrap()
+				.unlocking
+				.len(),
+			1
+		);
 		// Set the current era
-		pezpallet_staking::CurrentEra::<T>::put(EraIndex::max_value());
+		<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(EraIndex::max_value());
 
-		// Add `s` count of slashing spans to storage.
-		pezpallet_staking::benchmarking::add_slashing_spans::<T>(&pool_account, s);
 		whitelist_account!(pool_account);
 
 		#[extrinsic_call]
@@ -457,7 +488,10 @@ mod benchmarks {
 		// The joiners funds didn't change
 		assert_eq!(CurrencyOf::<T>::balance(&joiner), min_join_bond);
 		// The unlocking chunk was removed
-		assert_eq!(pezpallet_staking::Ledger::<T>::get(pool_account).unwrap().unlocking.len(), 0);
+		assert_eq!(
+			pezpallet_staking_async::Ledger::<T>::get(pool_account).unwrap().unlocking.len(),
+			0
+		);
 	}
 
 	#[benchmark]
@@ -479,7 +513,7 @@ mod benchmarks {
 		assert_eq!(CurrencyOf::<T>::balance(&joiner), min_join_bond);
 
 		// Unbond the new member
-		pezpallet_staking::CurrentEra::<T>::put(0);
+		<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(0);
 		Pools::<T>::fully_unbond(RuntimeOrigin::Signed(joiner.clone()).into(), joiner.clone())
 			.unwrap();
 
@@ -488,12 +522,17 @@ mod benchmarks {
 			T::StakeAdapter::active_stake(Pool::from(pool_account.clone())),
 			min_create_bond
 		);
-		assert_eq!(pezpallet_staking::Ledger::<T>::get(&pool_account).unwrap().unlocking.len(), 1);
+		assert_eq!(
+			pezpallet_staking_async::Ledger::<T>::get(&pool_account)
+				.unwrap()
+				.unlocking
+				.len(),
+			1
+		);
 
 		// Set the current era to ensure we can withdraw unbonded funds
-		pezpallet_staking::CurrentEra::<T>::put(EraIndex::max_value());
+		<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(EraIndex::max_value());
 
-		pezpallet_staking::benchmarking::add_slashing_spans::<T>(&pool_account, s);
 		whitelist_account!(joiner);
 
 		#[extrinsic_call]
@@ -501,7 +540,13 @@ mod benchmarks {
 
 		assert_eq!(CurrencyOf::<T>::balance(&joiner), min_join_bond * 2u32.into());
 		// The unlocking chunk was removed
-		assert_eq!(pezpallet_staking::Ledger::<T>::get(&pool_account).unwrap().unlocking.len(), 0);
+		assert_eq!(
+			pezpallet_staking_async::Ledger::<T>::get(&pool_account)
+				.unwrap()
+				.unlocking
+				.len(),
+			0
+		);
 	}
 
 	#[benchmark]
@@ -519,7 +564,7 @@ mod benchmarks {
 		.unwrap();
 
 		// Unbond the creator
-		pezpallet_staking::CurrentEra::<T>::put(0);
+		<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(0);
 		// Simulate some rewards so we can check if the rewards storage is cleaned up. We check this
 		// here to ensure the complete flow for destroying a pool works - the reward pool account
 		// should never exist by time the depositor withdraws so we test that it gets cleaned
@@ -538,13 +583,19 @@ mod benchmarks {
 			T::StakeAdapter::total_balance(Pool::from(pool_account.clone())),
 			Some(min_create_bond)
 		);
-		assert_eq!(pezpallet_staking::Ledger::<T>::get(&pool_account).unwrap().unlocking.len(), 1);
+		assert_eq!(
+			pezpallet_staking_async::Ledger::<T>::get(&pool_account)
+				.unwrap()
+				.unlocking
+				.len(),
+			1
+		);
 
 		// Set the current era to ensure we can withdraw unbonded funds
-		pezpallet_staking::CurrentEra::<T>::put(EraIndex::max_value());
+		<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(EraIndex::max_value());
 
 		// Some last checks that storage items we expect to get cleaned up are present
-		assert!(pezpallet_staking::Ledger::<T>::contains_key(&pool_account));
+		assert!(pezpallet_staking_async::Ledger::<T>::contains_key(&pool_account));
 		assert!(BondedPools::<T>::contains_key(&1));
 		assert!(SubPoolsStorage::<T>::contains_key(&1));
 		assert!(RewardPools::<T>::contains_key(&1));
@@ -557,7 +608,7 @@ mod benchmarks {
 		withdraw_unbonded(RuntimeOrigin::Signed(depositor.clone()), depositor_lookup, s);
 
 		// Pool removal worked
-		assert!(!pezpallet_staking::Ledger::<T>::contains_key(&pool_account));
+		assert!(!pezpallet_staking_async::Ledger::<T>::contains_key(&pool_account));
 		assert!(!BondedPools::<T>::contains_key(&1));
 		assert!(!SubPoolsStorage::<T>::contains_key(&1));
 		assert!(!RewardPools::<T>::contains_key(&1));
@@ -631,9 +682,10 @@ mod benchmarks {
 		let min_create_bond = Pools::<T>::depositor_min_bond() * 2u32.into();
 		let (depositor, _pool_account) = create_pool_account::<T>(0, min_create_bond, None);
 
-		// Create some accounts to nominate. For the sake of benchmarking they don't need to be
-		// actual validators
-		let validators: Vec<_> = (0..n).map(|i| account("stash", USER_SEED, i)).collect();
+		// Create real validators to nominate.
+		let validator_balance = CurrencyOf::<T>::minimum_balance() * 1000u32.into();
+		let validators: Vec<_> =
+			(0..n).map(|i| create_validator::<T>(i, validator_balance)).collect();
 
 		whitelist_account!(depositor);
 
@@ -757,8 +809,9 @@ mod benchmarks {
 			create_pool_account::<T>(0, Pools::<T>::depositor_min_bond() * 2u32.into(), None);
 
 		// Nominate with the pool.
+		let validator_balance = CurrencyOf::<T>::minimum_balance() * 1000u32.into();
 		let validators: Vec<_> = (0..MaxNominationsOf::<T>::get())
-			.map(|i| account("stash", USER_SEED, i))
+			.map(|i| create_validator::<T>(i, validator_balance))
 			.collect();
 
 		assert_ok!(T::StakeAdapter::nominate(Pool::from(pool_account.clone()), validators));
@@ -818,7 +871,7 @@ mod benchmarks {
 					max_increase: Perbill::from_percent(20),
 					min_delay: 0u32.into()
 				}),
-				throttle_from: Some(1u32.into()),
+				throttle_from: Some(0u32.into()),
 				claim_permission: Some(CommissionClaimPermission::Account(depositor)),
 			}
 		);
@@ -873,7 +926,7 @@ mod benchmarks {
 					max_increase: Perbill::from_percent(50),
 					min_delay: 1000u32.into(),
 				}),
-				throttle_from: Some(1_u32.into()),
+				throttle_from: Some(0_u32.into()),
 				claim_permission: None,
 			}
 		);
@@ -993,16 +1046,16 @@ mod benchmarks {
 				== Some(deposit_amount),
 		);
 
-		// ugly type conversion between balances of pezpallet staking and pools (which really are
-		// same type). Maybe there is a better way?
+		// ugly type conversion between balances of pezpallet staking and pools (which really are same
+		// type). Maybe there is a better way?
 		let slash_amount: u128 = deposit_amount.into() / 2;
 
 		// slash pool by half
-		pezpallet_staking::slashing::do_slash::<T>(
+		pezpallet_staking_async::slashing::do_slash::<T>(
 			&pool_account,
 			slash_amount.into(),
-			&mut pezpallet_staking::BalanceOf::<T>::zero(),
-			&mut pezpallet_staking::NegativeImbalanceOf::<T>::zero(),
+			&mut pezpallet_staking_async::BalanceOf::<T>::zero(),
+			&mut pezpallet_staking_async::NegativeImbalanceOf::<T>::zero(),
 			EraIndex::zero(),
 		);
 
@@ -1019,7 +1072,7 @@ mod benchmarks {
 
 		// Fill member's sub pools for the worst case.
 		for i in 1..(T::MaxUnbonding::get() + 1) {
-			pezpallet_staking::CurrentEra::<T>::put(i);
+			<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(i);
 			assert!(Pools::<T>::unbond(
 				RuntimeOrigin::Signed(depositor.clone()).into(),
 				depositor_lookup.clone(),
@@ -1028,7 +1081,7 @@ mod benchmarks {
 			.is_ok());
 		}
 
-		pezpallet_staking::CurrentEra::<T>::put(T::MaxUnbonding::get() + 2);
+		<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(T::MaxUnbonding::get() + 2);
 
 		let slash_reporter =
 			create_funded_user_with_balance::<T>("slasher", 0, CurrencyOf::<T>::minimum_balance());
@@ -1064,15 +1117,15 @@ mod benchmarks {
 
 		// slash pool by half
 		let slash_amount: u128 = deposit_amount.into() / 2;
-		pezpallet_staking::slashing::do_slash::<T>(
+		pezpallet_staking_async::slashing::do_slash::<T>(
 			&pool_account,
 			slash_amount.into(),
-			&mut pezpallet_staking::BalanceOf::<T>::zero(),
-			&mut pezpallet_staking::NegativeImbalanceOf::<T>::zero(),
+			&mut pezpallet_staking_async::BalanceOf::<T>::zero(),
+			&mut pezpallet_staking_async::NegativeImbalanceOf::<T>::zero(),
 			EraIndex::zero(),
 		);
 
-		pezpallet_staking::CurrentEra::<T>::put(1);
+		<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(1);
 
 		// new member joins the pool who should not be affected by slash.
 		let min_join_bond = MinJoinBond::<T>::get().max(CurrencyOf::<T>::minimum_balance());
@@ -1085,7 +1138,7 @@ mod benchmarks {
 
 		// Fill member's sub pools for the worst case.
 		for i in 0..T::MaxUnbonding::get() {
-			pezpallet_staking::CurrentEra::<T>::put(i + 2); // +2 because we already set the current era to 1.
+			<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(i + 2); // +2 because we already set the era to 1.
 			assert!(Pools::<T>::unbond(
 				RuntimeOrigin::Signed(joiner.clone()).into(),
 				joiner_lookup.clone(),
@@ -1094,7 +1147,7 @@ mod benchmarks {
 			.is_ok());
 		}
 
-		pezpallet_staking::CurrentEra::<T>::put(T::MaxUnbonding::get() + 3);
+		<T::StakeAdapter as StakeStrategy>::CoreStaking::set_era(T::MaxUnbonding::get() + 3);
 		whitelist_account!(joiner);
 
 		// Since the StakeAdapter can be different based on the runtime config, the errors could be

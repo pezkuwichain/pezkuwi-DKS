@@ -58,7 +58,7 @@ use pezframe_support::{
 	pezpallet_prelude::{Pays, Zero},
 	traits::{ContainsPair, OriginTrait},
 	weights::WeightToFee,
-	Parameter, RuntimeDebugNoBound,
+	DebugNoBound, Parameter,
 };
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
 use pezpallet_transaction_payment::OnChargeTransaction;
@@ -70,8 +70,9 @@ use pezsp_runtime::{
 	transaction_validity::{
 		InvalidTransaction, TransactionSource, TransactionValidityError, ValidTransaction,
 	},
+	Debug,
 	DispatchError::BadOrigin,
-	DispatchResult, RuntimeDebug, SaturatedConversion, Saturating, Weight,
+	DispatchResult, SaturatedConversion, Saturating, Weight,
 };
 use scale_info::TypeInfo;
 
@@ -103,7 +104,7 @@ pub mod pezpallet {
 	use pezframe_system::pezpallet_prelude::*;
 
 	/// The usage of an entity.
-	#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct Usage<Balance, BlockNumber> {
 		/// The amount of usage consumed at block `at_block`.
 		pub used: Balance,
@@ -229,9 +230,7 @@ fn extrinsic_fee<T: Config>(weight: Weight, length: usize) -> BalanceOf<T> {
 /// The extension can be enabled or disabled with the inner boolean. When enabled, the restriction
 /// process executes. When disabled, only the `RestrictedOrigins` check is executed.
 /// You can always enable it, the only advantage of disabling it is have better pre-dispatch weight.
-#[derive(
-	Encode, Decode, Clone, Eq, PartialEq, TypeInfo, RuntimeDebugNoBound, DecodeWithMemTracking,
-)]
+#[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo, DebugNoBound, DecodeWithMemTracking)]
 #[scale_info(skip_type_params(T))]
 pub struct RestrictOrigin<T>(bool, core::marker::PhantomData<T>);
 
@@ -243,7 +242,7 @@ impl<T> RestrictOrigin<T> {
 }
 
 /// The info passed between the validate and prepare steps for the `RestrictOrigins` extension.
-#[derive(RuntimeDebugNoBound)]
+#[derive(DebugNoBound)]
 pub enum Val<T: Config> {
 	Charge { fee: BalanceOf<T>, entity: T::RestrictedEntity },
 	NoCharge,

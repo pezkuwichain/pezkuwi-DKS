@@ -29,15 +29,7 @@ pub mod pezpallet_origins {
 	pub trait Config: pezframe_system::Config {}
 
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		MaxEncodedLen,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		TypeInfo,
-		RuntimeDebug,
+		PartialEq, Eq, Clone, MaxEncodedLen, Encode, Decode, DecodeWithMemTracking, TypeInfo, Debug,
 	)]
 	#[pezpallet::origin]
 	pub enum Origin {

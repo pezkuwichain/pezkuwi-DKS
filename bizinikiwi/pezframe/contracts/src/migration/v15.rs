@@ -17,7 +17,7 @@
 
 //! Move contracts' _reserved_ balance from the `deposit_account` to be _held_ in the contract's
 //! account instead. Since [`Currency`](pezframe_support::traits::Currency) has been
-//! [deprecated](https://github.com/pezkuwichain/pezkuwi-sdk/issues/209), we need the deposits to be
+//! [deprecated](https://github.com/paritytech/bizinikiwi/pull/12951), we need the deposits to be
 //! handled by the [`pezframe_support::traits::fungible`] traits instead. For this transfer the
 //! balance from the deposit account to the contract's account and hold it in there.
 //! Then the deposit account is not needed anymore and we can get rid of it.
@@ -50,9 +50,7 @@ use pezsp_runtime::{traits::Zero, Saturating};
 mod v14 {
 	use super::*;
 
-	#[derive(
-		Encode, Decode, CloneNoBound, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen,
-	)]
+	#[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	#[scale_info(skip_type_params(T))]
 	pub struct ContractInfo<T: Config> {
 		pub trie_id: TrieId,
@@ -96,7 +94,7 @@ pub fn store_old_contract_info<T: Config>(account: T::AccountId, info: crate::Co
 	v14::ContractInfoOf::<T>::insert(account, info);
 }
 
-#[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 struct ContractInfo<T: Config> {
 	pub trie_id: TrieId,

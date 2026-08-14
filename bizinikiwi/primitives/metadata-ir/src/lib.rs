@@ -111,7 +111,7 @@ mod test {
 
 	fn ir_metadata() -> MetadataIR {
 		MetadataIR {
-			pallets: vec![],
+			pezpallets: vec![],
 			extrinsic: ExtrinsicMetadataIR {
 				ty: meta_type::<()>(),
 				versions: vec![0],

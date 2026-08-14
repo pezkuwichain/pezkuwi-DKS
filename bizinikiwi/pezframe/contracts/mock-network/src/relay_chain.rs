@@ -26,13 +26,13 @@ use pezframe_system::EnsureRoot;
 use pezsp_core::{ConstU32, H256};
 use pezsp_runtime::traits::IdentityLookup;
 
-use pezkuwi_runtime_teyrchains::{configuration, origin, shared};
-use pezkuwi_teyrchain_primitives::primitives::Id as ParaId;
+use pezkuwi_parachain_primitives::primitives::Id as ParaId;
+use pezkuwi_runtime_parachains::{configuration, origin, shared};
 use xcm::latest::prelude::*;
 use xcm_builder::{
 	AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowSubscriptionsFrom,
-	AllowTopLevelPaidExecutionFrom, ChildSystemTeyrchainAsSuperuser, ChildTeyrchainAsNative,
-	ChildTeyrchainConvertsVia, DescribeAllTerminal, DescribeFamily, FixedRateOfFungible,
+	AllowTopLevelPaidExecutionFrom, ChildParachainAsNative, ChildParachainConvertsVia,
+	ChildSystemParachainAsSuperuser, DescribeAllTerminal, DescribeFamily, FixedRateOfFungible,
 	FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsConcrete,
 	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, WithComputedOrigin,
 };
@@ -110,7 +110,7 @@ parameter_types! {
 pub type SovereignAccountOf = (
 	HashedDescription<AccountId, DescribeFamily<DescribeAllTerminal>>,
 	AccountId32Aliases<RelayNetwork, AccountId>,
-	ChildTeyrchainConvertsVia<ParaId, AccountId>,
+	ChildParachainConvertsVia<ParaId, AccountId>,
 );
 
 pub type LocalBalancesTransactor =
@@ -120,9 +120,9 @@ pub type AssetTransactors = LocalBalancesTransactor;
 
 type LocalOriginConverter = (
 	SovereignSignedViaLocation<SovereignAccountOf, RuntimeOrigin>,
-	ChildTeyrchainAsNative<origin::Origin, RuntimeOrigin>,
+	ChildParachainAsNative<origin::Origin, RuntimeOrigin>,
 	SignedAccountId32AsNative<RelayNetwork, RuntimeOrigin>,
-	ChildSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>,
+	ChildSystemParachainAsSuperuser<ParaId, RuntimeOrigin>,
 );
 
 parameter_types! {
@@ -133,8 +133,8 @@ parameter_types! {
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }
 
-pub struct ChildrenTeyrchains;
-impl Contains<Location> for ChildrenTeyrchains {
+pub struct ChildrenParachains;
+impl Contains<Location> for ChildrenParachains {
 	fn contains(location: &Location) -> bool {
 		matches!(location.unpack(), (0, [Teyrchain(_)]))
 	}
@@ -143,7 +143,7 @@ impl Contains<Location> for ChildrenTeyrchains {
 pub type XcmRouter = crate::RelayChainXcmRouter;
 pub type Barrier = WithComputedOrigin<
 	(
-		AllowExplicitUnpaidExecutionFrom<ChildrenTeyrchains>,
+		AllowExplicitUnpaidExecutionFrom<ChildrenParachains>,
 		AllowTopLevelPaidExecutionFrom<Everything>,
 		AllowSubscriptionsFrom<Everything>,
 	),
@@ -168,7 +168,6 @@ impl Config for XcmConfig {
 	type AssetTrap = XcmPallet;
 	type AssetLocker = XcmPallet;
 	type AssetExchanger = ();
-	type AssetClaims = XcmPallet;
 	type SubscriptionService = XcmPallet;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type FeeManager = ();

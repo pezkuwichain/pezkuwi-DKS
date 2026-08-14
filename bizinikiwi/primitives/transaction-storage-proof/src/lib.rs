@@ -28,9 +28,9 @@ use core::result::Result;
 
 use alloc::vec::Vec;
 use codec::{Decode, DecodeWithMemTracking, Encode};
-use scale_info::TypeInfo;
 use pezsp_inherents::{InherentData, InherentIdentifier, IsFatalError};
 use pezsp_runtime::traits::{Block as BlockT, NumberFor};
+use scale_info::TypeInfo;
 
 pub use pezsp_inherents::Error;
 

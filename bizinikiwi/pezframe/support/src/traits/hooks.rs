@@ -550,7 +550,7 @@ pub trait Hooks<BlockNumber> {
 	/// that are not really possible in the rest of the runtime code.
 	///
 	/// The execution of this hook is entirely optional and is left at the discretion of the
-	/// node-side software and its configuration. In a normal substrate-cli, look for the CLI
+	/// node-side software and its configuration. In a normal bizinikiwi-cli, look for the CLI
 	/// flags related to offchain-workers to learn more.
 	fn offchain_worker(_n: BlockNumber) {}
 

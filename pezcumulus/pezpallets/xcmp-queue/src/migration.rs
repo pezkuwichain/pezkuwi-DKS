@@ -71,7 +71,7 @@ pub mod v2 {
 	pub(crate) type QueueConfig<T: Config> =
 		StorageValue<Pezpallet<T>, QueueConfigData, ValueQuery>;
 
-	#[derive(Copy, Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
+	#[derive(Copy, Clone, Eq, PartialEq, Encode, Decode, Debug, TypeInfo)]
 	pub struct QueueConfigData {
 		pub suspend_threshold: u32,
 		pub drop_threshold: u32,
@@ -181,9 +181,7 @@ pub mod v3 {
 		pub message_metadata: Vec<(RelayBlockNumber, XcmpMessageFormat)>,
 	}
 
-	#[derive(
-		Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, RuntimeDebug, TypeInfo,
-	)]
+	#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, TypeInfo)]
 	pub enum InboundState {
 		Ok,
 		Suspended,

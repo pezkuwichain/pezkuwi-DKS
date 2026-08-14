@@ -113,7 +113,7 @@ extern crate alloc;
 pub use pezpallet::*;
 
 use alloc::{format, vec::Vec};
-use pezframe_support::pezpallet_prelude::{MaybeSerializeDeserialize, Parameter, RuntimeDebug};
+use pezframe_support::pezpallet_prelude::{MaybeSerializeDeserialize, Parameter};
 use pezsp_runtime::DispatchError;
 
 /// Trait for notifying trust score system when tiki score changes.
@@ -205,7 +205,7 @@ pub mod pezpallet {
 		Clone,
 		Eq,
 		PartialEq,
-		RuntimeDebug,
+		Debug,
 		TypeInfo,
 		MaxEncodedLen,
 		Copy,
@@ -230,7 +230,7 @@ pub mod pezpallet {
 		Clone,
 		Eq,
 		PartialEq,
-		RuntimeDebug,
+		Debug,
 		TypeInfo,
 		MaxEncodedLen,
 		Copy,

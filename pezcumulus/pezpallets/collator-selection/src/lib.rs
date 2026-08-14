@@ -116,10 +116,7 @@ pub mod pezpallet {
 	};
 	use pezframe_system::{pezpallet_prelude::*, Config as SystemConfig};
 	use pezpallet_session::SessionManager;
-	use pezsp_runtime::{
-		traits::{AccountIdConversion, CheckedSub, Convert, Saturating, Zero},
-		RuntimeDebug,
-	};
+	use pezsp_runtime::traits::{AccountIdConversion, CheckedSub, Convert, Saturating, Zero};
 	use pezsp_staking::SessionIndex;
 
 	/// The in-code storage version.
@@ -199,9 +196,7 @@ pub mod pezpallet {
 	}
 
 	/// Basic information about a collation candidate.
-	#[derive(
-		PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
-	)]
+	#[derive(PartialEq, Eq, Clone, Encode, Decode, Debug, scale_info::TypeInfo, MaxEncodedLen)]
 	pub struct CandidateInfo<AccountId, Balance> {
 		/// Account identifier.
 		pub who: AccountId,

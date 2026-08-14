@@ -824,9 +824,15 @@ fn generating_and_verifying_ancestry_proofs_works_correctly() {
 				Pezpallet::<Test>::generate_ancestry_proof(prev_block_number as u64, None).unwrap();
 			assert!(Pezpallet::<Test>::is_ancestry_proof_optimal(&proof));
 			assert_eq!(
-				Pezpallet::<Test>::verify_ancestry_proof(root, proof),
+				Pezpallet::<Test>::verify_ancestry_proof(root, proof.clone()),
 				Ok(prev_roots[prev_block_number - 1])
 			);
+
+			let mut invalid_proof = proof;
+			for peak in invalid_proof.prev_peaks.iter_mut() {
+				*peak = H256::default();
+			}
+			assert!(Pezpallet::<Test>::verify_ancestry_proof(root, invalid_proof).is_err());
 		}
 
 		// Check that we can't generate ancestry proofs for a future block.

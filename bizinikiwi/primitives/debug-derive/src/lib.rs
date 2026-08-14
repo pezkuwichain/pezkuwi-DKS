@@ -34,7 +34,7 @@ use quote::quote;
 /// Derive macro for `Debug` that emits a deprecation warning.
 ///
 /// This macro is deprecated. Use `#[derive(Debug)]` directly instead.
-#[proc_macro_derive(RuntimeDebug)]
+#[proc_macro_derive(Debug)]
 pub fn runtime_debug_derive(input: TokenStream) -> TokenStream {
 	let input: syn::DeriveInput = syn::parse_macro_input!(input);
 	let name = &input.ident;

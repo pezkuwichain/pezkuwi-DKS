@@ -75,7 +75,7 @@ use pezkuwi_runtime_common::xcm_sender::PriceForMessageDelivery;
 use pezkuwi_runtime_teyrchains::{FeeTracker, GetMinFeeFactor};
 use pezpallet_message_queue::OnQueueChanged;
 use pezsp_core::MAX_POSSIBLE_ALLOCATION;
-use pezsp_runtime::{FixedU128, RuntimeDebug, SaturatedConversion, WeakBoundedVec};
+use pezsp_runtime::{FixedU128, SaturatedConversion, WeakBoundedVec};
 use scale_info::TypeInfo;
 use xcm::{latest::prelude::*, VersionedLocation, VersionedXcm, WrapVersion, MAX_XCM_DECODE_DEPTH};
 use xcm_builder::InspectMessageQueues;
@@ -368,14 +368,14 @@ pub mod pezpallet {
 		StorageMap<_, Twox64Concat, ParaId, FixedU128, ValueQuery, GetMinFeeFactor<Pezpallet<T>>>;
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Copy, Clone, Eq, PartialEq, Encode, Decode, Debug, TypeInfo, MaxEncodedLen)]
 pub enum OutboundState {
 	Ok,
 	Suspended,
 }
 
 /// Struct containing detailed information about the outbound channel.
-#[derive(Clone, Eq, PartialEq, Encode, Decode, TypeInfo, RuntimeDebug, MaxEncodedLen)]
+#[derive(Clone, Eq, PartialEq, Encode, Decode, TypeInfo, Debug, MaxEncodedLen)]
 pub struct OutboundChannelDetails {
 	/// The `ParaId` of the teyrchain that this channel is connected with.
 	recipient: ParaId,
@@ -411,7 +411,7 @@ impl OutboundChannelDetails {
 	}
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Copy, Clone, Eq, PartialEq, Encode, Decode, Debug, TypeInfo, MaxEncodedLen)]
 pub struct QueueConfigData {
 	/// The number of pages which must be in the queue for the other side to be told to suspend
 	/// their sending.

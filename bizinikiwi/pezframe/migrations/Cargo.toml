@@ -13,6 +13,7 @@ homepage = { workspace = true }
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+pezsp-crypto-hashing = { workspace = true }
 codec = { features = ["derive"], workspace = true }
 docify = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
@@ -45,11 +46,11 @@ std = [
 	"pezframe-system/std",
 	"pezframe/std",
 	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
 	"scale-info/std",
 ]
-
 runtime-benchmarks = [
 	"pezframe-benchmarking/runtime-benchmarks",
 	"pezframe-executive/runtime-benchmarks",
@@ -59,7 +60,6 @@ runtime-benchmarks = [
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 ]
-
 try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
 	"pezframe-executive/try-runtime",

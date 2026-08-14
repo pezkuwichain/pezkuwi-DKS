@@ -83,7 +83,7 @@ use pezframe_system::{
 };
 use pezpallet_asset_conversion_tx_payment::SwapAssetAdapter;
 use pezpallet_nfts::PalletFeatures;
-use pezsp_runtime::{Perbill, RuntimeDebug};
+use pezsp_runtime::Perbill;
 use testnet_teyrchains_constants::pezkuwichain::{
 	consensus::*, currency::*, fee::WeightToFee, time::*,
 };
@@ -582,7 +582,7 @@ parameter_types! {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]

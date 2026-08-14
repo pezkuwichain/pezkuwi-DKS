@@ -19,10 +19,9 @@ use super::*;
 use alloc::vec::Vec;
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use pezsp_core::RuntimeDebug;
 
 /// A candidate pending availability.
-#[derive(RuntimeDebug, Clone, PartialEq, Encode, Decode, TypeInfo)]
+#[derive(Debug, Clone, PartialEq, Encode, Decode, TypeInfo)]
 pub struct CandidatePendingAvailability<H = Hash, N = BlockNumber> {
 	/// The hash of the candidate.
 	pub candidate_hash: CandidateHash,
@@ -53,7 +52,7 @@ impl<H: Copy> From<CandidatePendingAvailability<H>>
 /// Constraints on the actions that can be taken by a new parachain
 /// block. These limitations are implicitly associated with some particular
 /// parachain, which should be apparent from usage.
-#[derive(RuntimeDebug, Clone, PartialEq, Encode, Decode, TypeInfo)]
+#[derive(Debug, Clone, PartialEq, Encode, Decode, TypeInfo)]
 pub struct Constraints<N = BlockNumber> {
 	/// The minimum relay-parent number accepted under these constraints.
 	pub min_relay_parent_number: N,
@@ -90,7 +89,7 @@ pub struct Constraints<N = BlockNumber> {
 
 /// The per-parachain state of the backing system, including
 /// state-machine constraints and candidates pending availability.
-#[derive(RuntimeDebug, Clone, PartialEq, Encode, Decode, TypeInfo)]
+#[derive(Debug, Clone, PartialEq, Encode, Decode, TypeInfo)]
 pub struct BackingState<H = Hash, N = BlockNumber> {
 	/// The state-machine constraints of the parachain.
 	pub constraints: crate::async_backing::Constraints<N>,

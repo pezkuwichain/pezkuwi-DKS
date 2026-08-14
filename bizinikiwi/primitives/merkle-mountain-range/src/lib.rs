@@ -28,8 +28,8 @@ pub use mmr_lib;
 use alloc::vec::Vec;
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use core::fmt;
-use scale_info::TypeInfo;
 use pezsp_runtime::traits;
+use scale_info::TypeInfo;
 
 pub mod utils;
 
@@ -402,7 +402,7 @@ pub enum Error {
 	#[cfg_attr(feature = "std", error("Leaf was not found"))]
 	LeafNotFound,
 	/// Mmr Pezpallet not included in runtime
-	#[cfg_attr(feature = "std", error("MMR pallet not included in runtime"))]
+	#[cfg_attr(feature = "std", error("MMR pezpallet not included in runtime"))]
 	PalletNotIncluded,
 	/// Cannot find the requested leaf index
 	#[cfg_attr(feature = "std", error("Requested leaf index invalid"))]

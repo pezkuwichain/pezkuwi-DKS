@@ -68,7 +68,7 @@ pub fn new_test_ext() -> pezsp_io::TestExternalities {
 			..Default::default()
 		},
 		transaction_storage: pezpallet_transaction_storage::GenesisConfig::<Test> {
-			storage_period: 10,
+			retention_period: 10,
 			byte_fee: 2,
 			entry_fee: 200,
 		},
