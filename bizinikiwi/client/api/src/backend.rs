@@ -18,13 +18,13 @@
 
 //! Bizinikiwi Client data backend
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use parking_lot::RwLock;
 
 use pezsp_api::CallContext;
 use pezsp_consensus::BlockOrigin;
-use pezsp_core::offchain::OffchainStorage;
+use pezsp_core::{offchain::OffchainStorage, H256};
 use pezsp_runtime::{
 	traits::{Block as BlockT, HashingFor, NumberFor},
 	Justification, Justifications, StateVersion, Storage,
@@ -162,6 +162,16 @@ impl NewBlockState {
 	}
 }
 
+/// Out-of-band indexed-transaction data attached by upstream block-import wrappers.
+#[derive(Default, Debug, Clone)]
+pub struct PrefetchedIndexedTransactions {
+	/// Ops applied when the runtime produced none.
+	pub ops: Vec<IndexOperation>,
+
+	/// Payload bytes for `IndexOperation::Renew` hashes not yet in `TRANSACTION`.
+	pub renew_payloads: HashMap<H256, Vec<u8>>,
+}
+
 /// Block insertion operation.
 ///
 /// Keeps hold if the inserted block state and data.
@@ -175,6 +185,16 @@ pub trait BlockImportOperation<Block: BlockT> {
 	fn state(&self) -> pezsp_blockchain::Result<Option<&Self::State>>;
 
 	/// Append block data to the transaction.
+	///
+	/// - `header`: The block header.
+	/// - `body`: The block body (extrinsics), if available.
+	/// - `indexed_body`: Raw extrinsic data to be stored in the transaction index, keyed by their
+	///   hash.
+	/// - `justifications`: Block justifications, e.g. finality proofs.
+	/// - `state`: Whether this is a normal block, the new best block, or a newly finalized block.
+	/// - `register_as_leaf`: Whether to add the block to the leaf set. Blocks imported during warp
+	///   sync are stored in the database but should not be registered as leaves, since they are
+	///   historical blocks and not candidates for chain progression.
 	fn set_block_data(
 		&mut self,
 		header: Block::Header,
@@ -182,6 +202,7 @@ pub trait BlockImportOperation<Block: BlockT> {
 		indexed_body: Option<Vec<Vec<u8>>>,
 		justifications: Option<Justifications>,
 		state: NewBlockState,
+		register_as_leaf: bool,
 	) -> pezsp_blockchain::Result<()>;
 
 	/// Inject storage data into the database.
@@ -244,6 +265,13 @@ pub trait BlockImportOperation<Block: BlockT> {
 	fn update_transaction_index(
 		&mut self,
 		index: Vec<IndexOperation>,
+	) -> pezsp_blockchain::Result<()>;
+
+	/// Provide payload bytes for `IndexOperation::Renew` hashes that are not yet present in the
+	/// `TRANSACTION` column.
+	fn set_renew_payloads(
+		&mut self,
+		payloads: HashMap<H256, Vec<u8>>,
 	) -> pezsp_blockchain::Result<()>;
 
 	/// Configure whether to create a block gap if newly imported block is missing parent
@@ -527,7 +555,7 @@ pub enum TrieCacheContext {
 impl From<CallContext> for TrieCacheContext {
 	fn from(call_context: CallContext) -> Self {
 		match call_context {
-			CallContext::Onchain => TrieCacheContext::Trusted,
+			CallContext::Onchain { .. } => TrieCacheContext::Trusted,
 			CallContext::Offchain => TrieCacheContext::Untrusted,
 		}
 	}

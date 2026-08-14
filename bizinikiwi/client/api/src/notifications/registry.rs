@@ -83,7 +83,7 @@ impl Registry {
 		let metrics = prometheus_registry.and_then(|r| {
 			CounterVec::new(
 				Opts::new(
-					"bizinikiwi_storage_notification_subscribers",
+					"substrate_storage_notification_subscribers",
 					"Number of subscribers in storage notification sytem",
 				),
 				&["action"], // added | removed
@@ -142,7 +142,7 @@ impl<'a> Subscribe<SubscribeOp<'a>> for Registry {
 			.insert(subs_id, SubscriberSink::new(subs_id, keys, child_keys))
 			.is_some()
 		{
-			log::warn!("The `subscribe`-method has been passed a non-unique subs_id (in `sc-client-api::notifications`)");
+			log::warn!("The `subscribe`-method has been passed a non-unique subs_id (in `pezsc-client-api::notifications`)");
 		}
 	}
 }

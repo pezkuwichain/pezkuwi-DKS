@@ -28,7 +28,7 @@ use pezsp_runtime::BuildStorage;
 use xcm::latest::prelude::*;
 use xcm_executor::traits::ConvertLocation;
 pub use xcm_simulator::TestExt;
-use xcm_simulator::{decl_test_network, decl_test_parachain, decl_test_relay_chain};
+use xcm_simulator::{decl_test_network, decl_test_relay_chain, decl_test_teyrchain};
 
 // Accounts
 pub const ADMIN: pezsp_runtime::AccountId32 = pezsp_runtime::AccountId32::new([0u8; 32]);
@@ -36,7 +36,7 @@ pub const ADMIN: pezsp_runtime::AccountId32 = pezsp_runtime::AccountId32::new([0
 // Balances
 pub const INITIAL_BALANCE: u128 = 1_000_000_000 * UNITS;
 
-decl_test_parachain! {
+decl_test_teyrchain! {
 	pub struct ParaA {
 		Runtime = teyrchain::Runtime,
 		XcmpMessageHandler = teyrchain::MsgQueue,

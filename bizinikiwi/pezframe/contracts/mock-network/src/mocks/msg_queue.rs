@@ -19,10 +19,10 @@
 use codec::{Decode, Encode};
 
 use pezframe_support::weights::Weight;
-use pezkuwi_parachain_primitives::primitives::{
+use pezkuwi_primitives::BlockNumber as RelayBlockNumber;
+use pezkuwi_teyrchain_primitives::primitives::{
 	DmpMessageHandler, Id as ParaId, XcmpMessageFormat, XcmpMessageHandler,
 };
-use pezkuwi_primitives::BlockNumber as RelayBlockNumber;
 use pezsp_runtime::traits::{Get, Hash};
 
 use xcm::{latest::prelude::*, VersionedXcm};

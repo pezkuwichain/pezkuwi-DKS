@@ -26,8 +26,8 @@ use pezframe_system::EnsureRoot;
 use pezsp_core::{ConstU32, H256};
 use pezsp_runtime::traits::IdentityLookup;
 
-use pezkuwi_parachain_primitives::primitives::Id as ParaId;
-use pezkuwi_runtime_parachains::{configuration, origin, shared};
+use pezkuwi_runtime_teyrchains::{configuration, origin, shared};
+use pezkuwi_teyrchain_primitives::primitives::Id as ParaId;
 use xcm::latest::prelude::*;
 use xcm_builder::{
 	AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowSubscriptionsFrom,

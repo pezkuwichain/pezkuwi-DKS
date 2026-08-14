@@ -159,7 +159,7 @@ parameter_types! {
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
 	pub ForeignPrefix: Location = (Parent,).into();
-	pub CheckingAccount: AccountId = PezkuwiXcm::check_account();
+	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 	pub TrustedLockPairs: (Location, AssetFilter) =
 	(Parent.into(), Wild(AllOf { id: AssetId(Parent.into()), fun: WildFungible }));
 }
@@ -224,8 +224,8 @@ impl Contains<Location> for ParentRelay {
 		location.contains_parents_only(1)
 	}
 }
-pub struct ThisTeyrchain;
-impl Contains<Location> for ThisTeyrchain {
+pub struct ThisParachain;
+impl Contains<Location> for ThisParachain {
 	fn contains(location: &Location) -> bool {
 		matches!(location.unpack(), (0, [Junction::AccountId32 { .. }]))
 	}
@@ -234,7 +234,7 @@ impl Contains<Location> for ThisTeyrchain {
 pub type XcmRouter = crate::TeyrchainXcmRouter<MsgQueue>;
 
 pub type Barrier = (
-	xcm_builder::AllowUnpaidExecutionFrom<ThisTeyrchain>,
+	xcm_builder::AllowUnpaidExecutionFrom<ThisParachain>,
 	WithComputedOrigin<
 		(AllowExplicitUnpaidExecutionFrom<ParentRelay>, AllowTopLevelPaidExecutionFrom<Everything>),
 		UniversalLocation,
@@ -258,7 +258,7 @@ pub struct XcmConfig;
 impl Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
 	type XcmSender = XcmRouter;
-	type XcmEventEmitter = PezkuwiXcm;
+	type XcmEventEmitter = PolkadotXcm;
 	type AssetTransactor = AssetTransactors;
 	type OriginConverter = XcmOriginToCallOrigin;
 	type IsReserve = (NativeAsset, TrustedReserves);
@@ -267,12 +267,11 @@ impl Config for XcmConfig {
 	type Barrier = Barrier;
 	type Weigher = FixedWeightBounds<XcmInstructionWeight, RuntimeCall, MaxInstructions>;
 	type Trader = FixedRateOfFungible<TokensPerSecondPerMegabyte, ()>;
-	type ResponseHandler = PezkuwiXcm;
-	type AssetTrap = PezkuwiXcm;
-	type AssetLocker = PezkuwiXcm;
+	type ResponseHandler = PolkadotXcm;
+	type AssetTrap = PolkadotXcm;
+	type AssetLocker = PolkadotXcm;
 	type AssetExchanger = ();
-	type AssetClaims = PezkuwiXcm;
-	type SubscriptionService = PezkuwiXcm;
+	type SubscriptionService = PolkadotXcm;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type FeeManager = ();
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
@@ -285,7 +284,7 @@ impl Config for XcmConfig {
 	type HrmpNewChannelOpenRequestHandler = ();
 	type HrmpChannelAcceptedHandler = ();
 	type HrmpChannelClosingHandler = ();
-	type XcmRecorder = PezkuwiXcm;
+	type XcmRecorder = PolkadotXcm;
 }
 
 impl mock_msg_queue::Config for Runtime {
@@ -347,7 +346,7 @@ construct_runtime!(
 		Balances: pezpallet_balances,
 		Timestamp: pezpallet_timestamp,
 		MsgQueue: mock_msg_queue,
-		PezkuwiXcm: pezpallet_xcm,
+		PolkadotXcm: pezpallet_xcm,
 		Contracts: pezpallet_contracts,
 		Assets: pezpallet_assets,
 	}
