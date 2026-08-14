@@ -75,7 +75,7 @@ impl<'a> HostContext<'a> {
 
 impl<'a> pezsp_wasm_interface::FunctionContext for HostContext<'a> {
 	fn read_memory_into(
-		&self,
+		&mut self,
 		address: Pointer<u8>,
 		dest: &mut [u8],
 	) -> pezsp_wasm_interface::Result<()> {

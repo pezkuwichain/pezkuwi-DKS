@@ -133,7 +133,7 @@ struct Context<'r, 'a>(&'r mut polkavm::Caller<'a, ()>);
 
 impl<'r, 'a> FunctionContext for Context<'r, 'a> {
 	fn read_memory_into(
-		&self,
+		&mut self,
 		address: Pointer<u8>,
 		dest: &mut [u8],
 	) -> pezsp_wasm_interface::Result<()> {
