@@ -50,7 +50,7 @@ fn task_enumerate_works() {
 }
 
 #[test]
-fn runtime_task_enumerate_works_via_frame_system_config() {
+fn runtime_task_enumerate_works_via_pezframe_system_config() {
 	new_test_ext().execute_with(|| {
 		Numbers::<Runtime>::insert(0, 1);
 		Numbers::<Runtime>::insert(1, 4);

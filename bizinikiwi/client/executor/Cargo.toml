@@ -48,11 +48,14 @@ num_cpus = { workspace = true }
 paste = { workspace = true, default-features = true }
 pezsc-runtime-test = { workspace = true }
 pezsc-tracing = { workspace = true, default-features = true }
+pezsc-virtualization = { workspace = true, default-features = true }
 pezsp-crypto-hashing = { workspace = true, default-features = true }
 pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-state-machine = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
+pezsp-virtualization = { workspace = true, default-features = true }
+pezsp-virtualization-test-fixture = { workspace = true }
 tempfile = { workspace = true }
 tracing-subscriber = { workspace = true }
 wat = { workspace = true }

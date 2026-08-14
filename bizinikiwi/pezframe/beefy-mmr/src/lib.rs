@@ -123,7 +123,7 @@ pub mod pezpallet {
 
 	/// The module's configuration trait.
 	#[pezpallet::config]
-	#[pezpallet::disable_frame_system_supertrait_check]
+	#[pezpallet::disable_pezframe_system_supertrait_check]
 	pub trait Config: pezpallet_mmr::Config + pezpallet_beefy::Config {
 		/// Current leaf version.
 		///

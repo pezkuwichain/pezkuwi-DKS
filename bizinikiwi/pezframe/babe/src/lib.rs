@@ -120,7 +120,7 @@ pub mod pezpallet {
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::config]
-	#[pezpallet::disable_frame_system_supertrait_check]
+	#[pezpallet::disable_pezframe_system_supertrait_check]
 	pub trait Config: pezpallet_timestamp::Config {
 		/// The amount of time, in slots, that each epoch should last.
 		/// NOTE: Currently it is not possible to change the epoch duration after

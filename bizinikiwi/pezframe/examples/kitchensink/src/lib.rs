@@ -71,7 +71,7 @@ pub mod pezpallet {
 	/// * `type RuntimeEvent`, which is mandatory if your pezpallet has events. See [`Event`].
 	/// * Needless to say, because [`Config`] is bounded by [`pezframe_system::Config`], you can use
 	///   all the items from [`pezframe_system::Config`] as well, such as `AccountId`.
-	/// * `#[pezpallet::disable_frame_system_supertrait_check]` would remove the need for
+	/// * `#[pezpallet::disable_pezframe_system_supertrait_check]` would remove the need for
 	///   `pezframe_system::Config` to exist, which you should almost never need.
 	#[pezpallet::config]
 	pub trait Config: pezframe_system::Config {
