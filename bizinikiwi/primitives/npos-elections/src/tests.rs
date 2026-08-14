@@ -21,8 +21,8 @@ use crate::{
 	balancing, helpers::*, mock::*, seq_phragmen, seq_phragmen_core, setup_inputs, to_support_map,
 	Assignment, BalancingConfig, ElectionResult, ExtendedBalance, StakedAssignment, Support, Voter,
 };
-use bizinikiwi_test_utils::assert_eq_uvec;
 use pezsp_arithmetic::{PerU16, Perbill, Percent, Permill};
+use bizinikiwi_test_utils::assert_eq_uvec;
 
 #[test]
 fn float_phragmen_poc_works() {
@@ -864,7 +864,7 @@ mod score {
 
 	#[test]
 	fn score_comparison_large_value() {
-		// some random value taken from eras in dicle.
+		// some random value taken from eras in kusama.
 		let initial =
 			[12488167277027543u128, 5559266368032409496, 118749283262079244270992278287436446];
 		// this claim is 0.04090% better in the third component. It should be accepted as better if

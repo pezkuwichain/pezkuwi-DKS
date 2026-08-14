@@ -43,16 +43,8 @@ pub use serde;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-pub use pezsp_debug_derive::RuntimeDebug;
-
 #[cfg(feature = "serde")]
 pub use impl_serde::serialize as bytes;
-
-#[deprecated(
-	since = "27.0.0",
-	note = "`sp-crypto-hashing` re-exports will be removed after June 2024. Use `sp-crypto-hashing` instead."
-)]
-pub use pezsp_crypto_hashing::{self as hashing, *};
 
 pub mod const_hex2array;
 pub mod crypto;
@@ -61,12 +53,12 @@ pub use paste;
 mod address_uri;
 pub mod defer;
 pub mod hash;
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 mod hasher;
 pub mod offchain;
 pub mod proof_of_possession;
 pub mod testing;
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 pub mod traits;
 pub mod uint;
 
@@ -91,9 +83,9 @@ pub use self::{
 };
 pub use crypto::{ByteArray, DeriveJunction, Pair, Public};
 
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 pub use self::hasher::blake2::Blake2Hasher;
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 pub use self::hasher::keccak::KeccakHasher;
 pub use hash_db::Hasher;
 
@@ -111,7 +103,7 @@ pub use pezsp_storage as storage;
 pub use pezsp_std;
 
 /// Hex-serialized shim for `Vec<u8>`.
-#[derive(PartialEq, Eq, Clone, RuntimeDebug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize, Hash, PartialOrd, Ord))]
 pub struct Bytes(#[cfg_attr(feature = "serde", serde(with = "bytes"))] pub Vec<u8>);
 
@@ -179,7 +171,7 @@ impl Deref for OpaqueMetadata {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 )]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -348,7 +340,7 @@ impl From<log::LevelFilter> for LogLevelFilter {
 /// This `u64` stores the pointer to the encoded return value and the length of this encoded value.
 /// The low `32bits` are reserved for the pointer, followed by `32bit` for the length.
 #[cfg(not(feature = "std"))]
-pub fn to_bizinikiwi_wasm_fn_return_value(value: &impl Encode) -> u64 {
+pub fn to_substrate_wasm_fn_return_value(value: &impl Encode) -> u64 {
 	let encoded = value.encode();
 
 	let ptr = encoded.as_ptr() as u64;
@@ -366,15 +358,7 @@ pub fn to_bizinikiwi_wasm_fn_return_value(value: &impl Encode) -> u64 {
 /// The void type - it cannot exist.
 // Oh rust, you crack me up...
 #[derive(
-	Clone,
-	Decode,
-	DecodeWithMemTracking,
-	Encode,
-	Eq,
-	PartialEq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	Clone, Decode, DecodeWithMemTracking, Encode, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
 )]
 pub enum Void {}
 

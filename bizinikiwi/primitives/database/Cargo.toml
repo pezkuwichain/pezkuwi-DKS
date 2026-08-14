@@ -14,8 +14,13 @@ readme = "README.md"
 workspace = true
 
 [dependencies]
+kvdb-rocksdb = { optional = true, workspace = true }
 kvdb = { workspace = true }
 parking_lot = { workspace = true, default-features = true }
 
 [features]
 serde = []
+default = []
+rocksdb = [
+	"kvdb-rocksdb",
+]

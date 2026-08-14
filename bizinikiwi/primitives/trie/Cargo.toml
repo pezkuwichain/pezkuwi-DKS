@@ -21,6 +21,7 @@ name = "bench"
 harness = false
 
 [dependencies]
+prometheus-endpoint = { optional = true, workspace = true, default-features = true }
 ahash = { optional = true, workspace = true }
 codec = { workspace = true }
 foldhash = { workspace = true }
@@ -40,6 +41,7 @@ trie-db = { workspace = true }
 trie-root = { workspace = true }
 
 [dev-dependencies]
+pezsp-runtime = { workspace = true, default-features = true }
 array-bytes = { workspace = true, default-features = true }
 criterion = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
@@ -58,6 +60,8 @@ std = [
 	"parking_lot",
 	"pezsp-core/std",
 	"pezsp-externalities/std",
+	"pezsp-runtime/std",
+	"prometheus-endpoint",
 	"rand",
 	"scale-info/std",
 	"schnellru",

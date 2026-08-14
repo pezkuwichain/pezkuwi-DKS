@@ -20,9 +20,7 @@ use scale_info::TypeInfo;
 
 use alloc::vec::Vec;
 use core::fmt::Debug;
-use pezsp_core::crypto::{
-	CryptoType, CryptoTypeId, IsWrappedBy, KeyTypeId, Pair, Public, Signature,
-};
+use pezsp_core::crypto::{CryptoType, CryptoTypeId, IsWrappedBy, KeyTypeId, Pair, Public, Signature};
 
 /// Application-specific cryptographic object.
 ///
@@ -175,6 +173,7 @@ pub trait RuntimeAppPublic: Sized {
 	fn sign<M: AsRef<[u8]>>(&self, msg: &M) -> Option<Self::Signature>;
 
 	/// Verify that the given signature matches the given message using this public key.
+	#[must_use]
 	fn verify<M: AsRef<[u8]>>(&self, msg: &M, signature: &Self::Signature) -> bool;
 
 	/// Generate proof of legitimacy for the corresponding public key

@@ -19,12 +19,12 @@
 //! to compute routes efficiently over the tree of headers.
 
 use parking_lot::Mutex;
+use schnellru::{ByLength, LruMap};
 use pezsp_core::U256;
 use pezsp_runtime::{
 	traits::{Block as BlockT, Header, NumberFor, One},
 	Saturating,
 };
-use schnellru::{ByLength, LruMap};
 
 /// Set to the expected max difference between `best` and `finalized` blocks at sync.
 pub(crate) const LRU_CACHE_SIZE: u32 = 5_000;

@@ -115,8 +115,8 @@ pub use pezsp_core::{
 #[cfg(feature = "std")]
 pub use pezsp_core::{bounded_btree_map, bounded_vec};
 
-/// Re-export `RuntimeDebug`, to avoid dependency clutter.
-pub use pezsp_core::RuntimeDebug;
+/// Re-export `Debug`, to avoid dependency clutter.
+pub use core::fmt::Debug;
 
 /// Re-export big_uint stuff.
 pub use pezsp_arithmetic::biguint;
@@ -278,15 +278,7 @@ pub type ConsensusEngineId = [u8; 4];
 /// Signature verify that can work with any known signature types.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(
-	Eq,
-	PartialEq,
-	Clone,
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	MaxEncodedLen,
-	RuntimeDebug,
-	TypeInfo,
+	Eq, PartialEq, Clone, Encode, Decode, DecodeWithMemTracking, MaxEncodedLen, Debug, TypeInfo,
 )]
 pub enum MultiSignature {
 	/// An Ed25519 signature.
@@ -352,16 +344,7 @@ impl TryFrom<MultiSignature> for ecdsa::Signature {
 
 /// Public key for any known crypto algorithm.
 #[derive(
-	Eq,
-	PartialEq,
-	Ord,
-	PartialOrd,
-	Clone,
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	RuntimeDebug,
-	TypeInfo,
+	Eq, PartialEq, Ord, PartialOrd, Clone, Encode, Decode, DecodeWithMemTracking, Debug, TypeInfo,
 )]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum MultiSigner {
@@ -519,7 +502,7 @@ impl Verify for MultiSignature {
 }
 
 /// Signature verify that can work with any known signature types..
-#[derive(Eq, PartialEq, Clone, Default, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(Eq, PartialEq, Clone, Default, Encode, Decode, Debug, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct AnySignature(H512);
 
@@ -1147,7 +1130,7 @@ pub enum ExtrinsicInclusionMode {
 }
 
 /// Simple blob that hold a value in an encoded form without committing to its type.
-#[derive(Decode, Encode, PartialEq, Eq, Clone, RuntimeDebug, TypeInfo)]
+#[derive(Decode, Encode, PartialEq, Eq, Clone, Debug, TypeInfo)]
 pub struct OpaqueValue(Vec<u8>);
 impl OpaqueValue {
 	/// Create a new `OpaqueValue` using the given encoded representation.
@@ -1161,7 +1144,7 @@ impl OpaqueValue {
 	}
 }
 
-// TODO: Remove in future versions and clean up `parse_str_literal` in `sp-version-proc-macro`
+// TODO: Remove in future versions and clean up `parse_str_literal` in `pezsp-version-proc-macro`
 /// Deprecated `Cow::Borrowed()` wrapper.
 #[macro_export]
 #[deprecated = "Use Cow::Borrowed() instead of create_runtime_str!()"]
@@ -1344,8 +1327,6 @@ mod tests {
 // can access the pezsp_core crate.
 #[cfg(test)]
 mod pezsp_core_tests {
-	use super::*;
-
 	pezsp_core::generate_feature_enabled_macro!(if_test, test, $);
 	pezsp_core::generate_feature_enabled_macro!(if_not_test, not(test), $);
 

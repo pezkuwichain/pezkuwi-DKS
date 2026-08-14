@@ -32,6 +32,9 @@ static_assertions = { workspace = true, default-features = true }
 polkavm-derive = { workspace = true }
 
 [dev-dependencies]
+pezsp-io = { workspace = true, default-features = true }
+pezsp-runtime-interface-test-wasm = { workspace = true }
+pezsp-state-machine = { workspace = true, default-features = true }
 rustversion = { workspace = true }
 trybuild = { workspace = true }
 
@@ -41,19 +44,18 @@ std = [
 	"bytes/std",
 	"codec/std",
 	"pezsp-externalities/std",
+	"pezsp-io/std",
+	"pezsp-runtime-interface-test-wasm/std",
+	"pezsp-state-machine/std",
 	"pezsp-std/std",
 	"pezsp-storage/std",
 	"pezsp-tracing/std",
 	"pezsp-wasm-interface/std",
 ]
-
-# ATTENTION
-#
-# Only use when you know what you are doing.
-#
-# Disables static assertions in `impls.rs` that checks the word size. To prevent any footgun, the
-# check is changed into a runtime check.
 disable_target_static_assertions = []
 runtime-benchmarks = []
 serde = []
 with-tracing = []
+
+[target.'cfg(all(target_arch = "riscv64", substrate_runtime))'.dependencies]
+polkavm-derive = { workspace = true }

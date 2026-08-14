@@ -24,6 +24,7 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+strum = { workspace = true, features = ["derive"] }
 bytes = { workspace = true }
 codec = { features = ["derive", "max-encoded-len"], workspace = true }
 docify = { workspace = true }
@@ -50,6 +51,9 @@ simple-mermaid = { workspace = true, optional = true }
 tuplex = { workspace = true, default-features = false }
 
 [dev-dependencies]
+pezsp-api = { workspace = true, default-features = true }
+pezsp-keystore = { workspace = true, default-features = true }
+bizinikiwi-test-runtime-client = { workspace = true }
 pezsp-state-machine = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
 rand = { workspace = true, default-features = true }
@@ -75,6 +79,7 @@ std = [
 	"log/std",
 	"num-traits/std",
 	"pez-binary-merkle-tree/std",
+	"pezsp-api/std",
 	"pezsp-application-crypto/std",
 	"pezsp-arithmetic/std",
 	"pezsp-core/std",
@@ -88,11 +93,10 @@ std = [
 	"scale-info/std",
 	"serde/std",
 	"simple-mermaid",
+	"strum/std",
 	"tracing/std",
 	"tuplex/std",
 ]
-
-# Serde support without relying on std features.
 serde = [
 	"bytes/serde",
 	"codec/serde",
@@ -108,3 +112,9 @@ serde = [
 ]
 experimental = []
 with-tracing = []
+bls-experimental = [
+	"bizinikiwi-test-runtime-client/bls-experimental",
+	"pezsp-application-crypto/bls-experimental",
+	"pezsp-core/bls-experimental",
+	"pezsp-io/bls-experimental",
+]

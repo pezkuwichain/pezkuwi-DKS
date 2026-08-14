@@ -52,6 +52,8 @@ pub use pezsp_std;
 use scale_info::TypeInfo;
 
 #[cfg(feature = "std")]
+use pezsp_core::traits::CallContext;
+#[cfg(feature = "std")]
 use pezsp_runtime::traits::Block as BlockT;
 
 #[cfg(feature = "std")]
@@ -162,16 +164,16 @@ macro_rules! create_apis_vec {
 /// In particular: bug fixes should result in an increment of `spec_version` and possibly
 /// `authoring_version`, absolutely not `impl_version` since they change the semantics of the
 /// runtime.
-#[derive(Clone, PartialEq, Eq, Encode, Default, pezsp_runtime::RuntimeDebug, TypeInfo)]
+#[derive(Clone, PartialEq, Eq, Encode, Default, Debug, TypeInfo)]
 pub struct RuntimeVersion {
-	/// Identifies the different Bizinikiwi runtimes. There'll be at least pezkuwi and node.
+	/// Identifies the different Bizinikiwi runtimes. There'll be at least polkadot and node.
 	/// A different on-chain spec_name to that of the native runtime would normally result
 	/// in node not attempting to sync or author blocks.
 	pub spec_name: Cow<'static, str>,
 
 	/// Name of the implementation of the spec. This is of little consequence for the node
 	/// and serves only to differentiate code of different implementation teams. For this
-	/// codebase, it will be parity-pezkuwi. If there were a non-Rust implementation of the
+	/// codebase, it will be parity-polkadot. If there were a non-Rust implementation of the
 	/// Pezkuwi runtime (e.g. C++), then it would identify itself with an accordingly different
 	/// `impl_name`.
 	pub impl_name: Cow<'static, str>,
@@ -208,18 +210,18 @@ pub struct RuntimeVersion {
 	///
 	/// This number must change when an existing call (pezpallet index, call index) is changed,
 	/// either through an alteration in its user-level semantics, a parameter
-	/// added/removed, a parameter type changed, or a call/pezpallet changing its index. An
-	/// alteration of the user level semantics is for example when the call was before `transfer`
-	/// and now is `transfer_all`, the semantics of the call changed completely.
+	/// added/removed, a parameter type changed, or a call/pezpallet changing its index. An alteration
+	/// of the user level semantics is for example when the call was before `transfer` and now is
+	/// `transfer_all`, the semantics of the call changed completely.
 	///
-	/// Removing a pezpallet or a call doesn't require a *bump* as long as no pezpallet or call is
-	/// put at the same index. Removing doesn't require a bump as the chain will reject a
-	/// transaction referencing this removed call/pezpallet while decoding and thus, the user
-	/// isn't at risk to execute any unknown call. FRAME runtime devs have control over the index
-	/// of a call/pezpallet to prevent that an index gets reused.
+	/// Removing a pezpallet or a call doesn't require a *bump* as long as no pezpallet or call is put at
+	/// the same index. Removing doesn't require a bump as the chain will reject a transaction
+	/// referencing this removed call/pezpallet while decoding and thus, the user isn't at risk to
+	/// execute any unknown call. FRAME runtime devs have control over the index of a call/pezpallet
+	/// to prevent that an index gets reused.
 	///
-	/// Adding a new pezpallet or call also doesn't require a *bump* as long as they also don't
-	/// reuse any previously used index.
+	/// Adding a new pezpallet or call also doesn't require a *bump* as long as they also don't reuse
+	/// any previously used index.
 	///
 	/// This number should never decrease.
 	pub transaction_version: u32,
@@ -803,15 +805,23 @@ pub trait GetNativeVersion {
 #[cfg(feature = "std")]
 pub trait GetRuntimeVersionAt<Block: BlockT> {
 	/// Returns the version of runtime at the given block.
-	fn runtime_version(&self, at: <Block as BlockT>::Hash) -> Result<RuntimeVersion, String>;
+	fn runtime_version(
+		&self,
+		at: <Block as BlockT>::Hash,
+		call_context: CallContext,
+	) -> Result<RuntimeVersion, String>;
 }
 
 #[cfg(feature = "std")]
 impl<T: GetRuntimeVersionAt<Block>, Block: BlockT> GetRuntimeVersionAt<Block>
 	for std::sync::Arc<T>
 {
-	fn runtime_version(&self, at: <Block as BlockT>::Hash) -> Result<RuntimeVersion, String> {
-		(&**self).runtime_version(at)
+	fn runtime_version(
+		&self,
+		at: <Block as BlockT>::Hash,
+		call_context: CallContext,
+	) -> Result<RuntimeVersion, String> {
+		(&**self).runtime_version(at, call_context)
 	}
 }
 

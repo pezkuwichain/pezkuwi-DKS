@@ -17,6 +17,7 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+pezsp-api = { workspace = true }
 async-trait = { optional = true, workspace = true }
 codec = { features = ["derive"], workspace = true }
 pezsp-core = { optional = true, workspace = true }
@@ -30,6 +31,7 @@ default = ["std"]
 std = [
 	"async-trait",
 	"codec/std",
+	"pezsp-api/std",
 	"pezsp-core/std",
 	"pezsp-inherents/std",
 	"pezsp-runtime/std",
@@ -41,5 +43,8 @@ runtime-benchmarks = [
 	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-trie?/runtime-benchmarks",
 ]
-try-runtime = ["pezsp-inherents/try-runtime", "pezsp-runtime/try-runtime"]
+try-runtime = [
+	"pezsp-inherents/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
 serde = []

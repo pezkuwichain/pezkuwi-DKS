@@ -17,6 +17,8 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+pezframe-support = { workspace = true }
+serde = { optional = true, features = ["alloc", "derive"], workspace = true }
 codec = { features = ["derive"], workspace = true }
 pezsp-api = { workspace = true }
 pezsp-application-crypto = { workspace = true }
@@ -51,6 +53,7 @@ std = [
 	"ed25519-dalek",
 	"hkdf",
 	"hkdf?/std",
+	"pezframe-support/std",
 	"pezsp-api/std",
 	"pezsp-application-crypto/std",
 	"pezsp-core/std",
@@ -60,6 +63,7 @@ std = [
 	"pezsp-runtime/std",
 	"rand",
 	"scale-info/std",
+	"serde?/std",
 	"sha2",
 	"thiserror",
 	"x25519-dalek",
@@ -67,6 +71,7 @@ std = [
 serde = [
 	"codec/serde",
 	"curve25519-dalek?/serde",
+	"dep:serde",
 	"ed25519-dalek?/serde",
 	"pezsp-application-crypto/serde",
 	"pezsp-core/serde",
@@ -81,4 +86,7 @@ runtime-benchmarks = [
 	"pezsp-runtime-interface/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 ]
-try-runtime = ["pezsp-api/try-runtime", "pezsp-runtime/try-runtime"]
+try-runtime = [
+	"pezsp-api/try-runtime",
+	"pezsp-runtime/try-runtime",
+]

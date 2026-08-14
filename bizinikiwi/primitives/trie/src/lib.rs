@@ -77,10 +77,10 @@ pub use trie_stream::TrieStream;
 /// Raw storage proof type (just raw trie nodes).
 pub type RawStorageProof = Vec<Vec<u8>>;
 
-/// bizinikiwi trie layout
+/// substrate trie layout
 pub struct LayoutV0<H>(PhantomData<H>);
 
-/// bizinikiwi trie layout, with external value nodes.
+/// substrate trie layout, with external value nodes.
 pub struct LayoutV1<H>(PhantomData<H>);
 
 impl<H> TrieLayout for LayoutV0<H>

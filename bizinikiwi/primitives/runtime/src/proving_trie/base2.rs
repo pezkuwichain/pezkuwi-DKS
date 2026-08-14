@@ -16,7 +16,7 @@
 // limitations under the License.
 
 //! Types for a base-2 merkle tree used for checking and generating proofs within the
-//! runtime. The `binary-merkle-tree` crate exposes all of these same functionality (and more), but
+//! runtime. The `pez-binary-merkle-tree` crate exposes all of these same functionality (and more), but
 //! this library is designed to work more easily with runtime native types, which simply need to
 //! implement `Encode`/`Decode`.
 

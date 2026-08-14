@@ -21,11 +21,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(
 	feature = "std",
-	doc = "Bizinikiwi runtime standard library as compiled when linked with Rust's standard library."
+	doc = "Substrate runtime standard library as compiled when linked with Rust's standard library."
 )]
 #![cfg_attr(
 	not(feature = "std"),
-	doc = "Bizinikiwi's runtime standard library as compiled without Rust's standard library."
+	doc = "Substrate's runtime standard library as compiled without Rust's standard library."
 )]
 
 /// Initialize a key-value collection from array.

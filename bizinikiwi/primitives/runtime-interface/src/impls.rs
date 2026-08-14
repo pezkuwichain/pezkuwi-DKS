@@ -18,17 +18,21 @@
 //! Provides implementations for the runtime interface types which can be
 //! passed directly without any serialization strategy wrappers.
 
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 use crate::host::*;
-#[cfg(bizinikiwi_runtime)]
+#[cfg(substrate_runtime)]
 use crate::wasm::*;
 use crate::{Pointer, RIType};
 
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 use pezsp_wasm_interface::{FunctionContext, Result};
 
-// Make sure that our assumptions for storing a pointer + its size in `u64` is valid.
-#[cfg(all(bizinikiwi_runtime, not(feature = "disable_target_static_assertions")))]
+// On riscv64, usize is 8 bytes, so these assertions only hold for 32-bit targets.
+#[cfg(all(
+	substrate_runtime,
+	not(feature = "disable_target_static_assertions"),
+	not(target_arch = "riscv64")
+))]
 const _: () = {
 	assert!(core::mem::size_of::<usize>() == core::mem::size_of::<u32>());
 	assert!(core::mem::size_of::<*const u8>() == core::mem::size_of::<u32>());
@@ -48,7 +52,7 @@ macro_rules! impl_traits_for_primitives {
 				type Inner = Self;
 			}
 
-			#[cfg(bizinikiwi_runtime)]
+			#[cfg(substrate_runtime)]
 			impl IntoFFIValue for $rty {
 				type Destructor = ();
 
@@ -57,14 +61,14 @@ macro_rules! impl_traits_for_primitives {
 				}
 			}
 
-			#[cfg(bizinikiwi_runtime)]
+			#[cfg(substrate_runtime)]
 			impl FromFFIValue for $rty {
 				fn from_ffi_value(arg: $fty) -> $rty {
 					arg as $rty
 				}
 			}
 
-			#[cfg(not(bizinikiwi_runtime))]
+			#[cfg(not(substrate_runtime))]
 			impl<'a> FromFFIValue<'a> for $rty {
 				type Owned = Self;
 
@@ -77,7 +81,7 @@ macro_rules! impl_traits_for_primitives {
 				}
 			}
 
-			#[cfg(not(bizinikiwi_runtime))]
+			#[cfg(not(substrate_runtime))]
 			impl IntoFFIValue for $rty {
 				fn into_ffi_value(value: Self::Inner, _: &mut dyn FunctionContext) -> Result<$fty> {
 					Ok(value as $fty)
@@ -107,7 +111,7 @@ impl RIType for bool {
 	type Inner = Self;
 }
 
-#[cfg(bizinikiwi_runtime)]
+#[cfg(substrate_runtime)]
 impl IntoFFIValue for bool {
 	type Destructor = ();
 
@@ -116,14 +120,14 @@ impl IntoFFIValue for bool {
 	}
 }
 
-#[cfg(bizinikiwi_runtime)]
+#[cfg(substrate_runtime)]
 impl FromFFIValue for bool {
 	fn from_ffi_value(arg: u32) -> bool {
 		arg == 1
 	}
 }
 
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 impl<'a> FromFFIValue<'a> for bool {
 	type Owned = Self;
 
@@ -136,27 +140,27 @@ impl<'a> FromFFIValue<'a> for bool {
 	}
 }
 
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 impl IntoFFIValue for bool {
 	fn into_ffi_value(value: Self, _: &mut dyn FunctionContext) -> Result<u32> {
 		Ok(if value { 1 } else { 0 })
 	}
 }
 
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 impl<T: pezsp_wasm_interface::PointerType> RIType for Pointer<T> {
 	type FFIType = u32;
 	type Inner = Self;
 }
 
 /// The type is passed as `u32`.
-#[cfg(bizinikiwi_runtime)]
+#[cfg(substrate_runtime)]
 impl<T> RIType for Pointer<T> {
 	type FFIType = u32;
 	type Inner = Self;
 }
 
-#[cfg(bizinikiwi_runtime)]
+#[cfg(substrate_runtime)]
 impl<T> IntoFFIValue for Pointer<T> {
 	type Destructor = ();
 
@@ -165,14 +169,14 @@ impl<T> IntoFFIValue for Pointer<T> {
 	}
 }
 
-#[cfg(bizinikiwi_runtime)]
+#[cfg(substrate_runtime)]
 impl<T> FromFFIValue for Pointer<T> {
 	fn from_ffi_value(arg: u32) -> Self {
 		arg as _
 	}
 }
 
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 impl<'a, T: pezsp_wasm_interface::PointerType> FromFFIValue<'a> for Pointer<T> {
 	type Owned = Self;
 
@@ -185,7 +189,7 @@ impl<'a, T: pezsp_wasm_interface::PointerType> FromFFIValue<'a> for Pointer<T> {
 	}
 }
 
-#[cfg(not(bizinikiwi_runtime))]
+#[cfg(not(substrate_runtime))]
 impl<T: pezsp_wasm_interface::PointerType> IntoFFIValue for Pointer<T> {
 	fn into_ffi_value(value: Self, _: &mut dyn FunctionContext) -> Result<u32> {
 		Ok(value.into())

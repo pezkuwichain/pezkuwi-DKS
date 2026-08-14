@@ -251,7 +251,7 @@ impl core::fmt::Debug for PublicError {
 
 /// Key that can be encoded to/from SS58.
 ///
-/// See <https://docs.pezkuwichain.io/v3/advanced/ss58/>
+/// See <https://docs.substrate.io/v3/advanced/ss58/>
 /// for information on the codec.
 pub trait Ss58Codec: Sized + AsMut<[u8]> + AsRef<[u8]> + ByteArray {
 	/// A format filterer, can be used to ensure that `from_ss58check` family only decode for
@@ -737,7 +737,7 @@ mod dummy {
 /// The `SURI` can be parsed from a string. The string is interpreted in the following way:
 ///
 /// - If `string` is a possibly `0x` prefixed 64-digit hex string, then it will be interpreted
-/// directly as a `MiniSecretKey` (aka "seed" in `pez_subkey`).
+/// directly as a `MiniSecretKey` (aka "seed" in `subkey`).
 /// - If `string` is a valid BIP-39 key phrase of 12, 15, 18, 21 or 24 words, then the key will
 /// be derived from it. In this case:
 ///   - the phrase may be followed by one or more items delimited by `/` characters.
@@ -928,7 +928,7 @@ pub trait Pair: CryptoType + Sized {
 	/// junction iterator.
 	///
 	/// - If `s` is a possibly `0x` prefixed 64-digit hex string, then it will be interpreted
-	/// directly as a `MiniSecretKey` (aka "seed" in `pez_subkey`).
+	/// directly as a `MiniSecretKey` (aka "seed" in `subkey`).
 	/// - If `s` is a valid BIP-39 key phrase of 12, 15, 18, 21 or 24 words, then the key will
 	/// be derived from it. In this case:
 	///   - the phrase may be followed by one or more items delimited by `/` characters.
@@ -1047,18 +1047,7 @@ pub trait CryptoType {
 /// Values whose first character is `_` are reserved for private use and won't conflict with any
 /// public modules.
 #[derive(
-	Copy,
-	Clone,
-	Default,
-	PartialEq,
-	Eq,
-	PartialOrd,
-	Ord,
-	Hash,
-	Encode,
-	Decode,
-	crate::RuntimeDebug,
-	TypeInfo,
+	Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Encode, Decode, Debug, TypeInfo,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(transparent)]
@@ -1374,11 +1363,11 @@ mod tests {
 			})
 		);
 		assert_eq!(
-			TestPair::from_string("hello world/HEZ", None),
+			TestPair::from_string("hello world/DOT", None),
 			Ok(TestPair::Standard {
 				phrase: "hello world".to_owned(),
 				password: None,
-				path: vec![DeriveJunction::soft("HEZ")]
+				path: vec![DeriveJunction::soft("DOT")]
 			})
 		);
 		assert_eq!(
@@ -1398,11 +1387,11 @@ mod tests {
 			})
 		);
 		assert_eq!(
-			TestPair::from_string("hello world//HEZ", None),
+			TestPair::from_string("hello world//DOT", None),
 			Ok(TestPair::Standard {
 				phrase: "hello world".to_owned(),
 				password: None,
-				path: vec![DeriveJunction::hard("HEZ")]
+				path: vec![DeriveJunction::hard("DOT")]
 			})
 		);
 		assert_eq!(
@@ -1414,19 +1403,19 @@ mod tests {
 			})
 		);
 		assert_eq!(
-			TestPair::from_string("hello world//1/HEZ", None),
+			TestPair::from_string("hello world//1/DOT", None),
 			Ok(TestPair::Standard {
 				phrase: "hello world".to_owned(),
 				password: None,
-				path: vec![DeriveJunction::hard(1), DeriveJunction::soft("HEZ")]
+				path: vec![DeriveJunction::hard(1), DeriveJunction::soft("DOT")]
 			})
 		);
 		assert_eq!(
-			TestPair::from_string("hello world//HEZ/1", None),
+			TestPair::from_string("hello world//DOT/1", None),
 			Ok(TestPair::Standard {
 				phrase: "hello world".to_owned(),
 				password: None,
-				path: vec![DeriveJunction::hard("HEZ"), DeriveJunction::soft(1)]
+				path: vec![DeriveJunction::hard("DOT"), DeriveJunction::soft(1)]
 			})
 		);
 		assert_eq!(
@@ -1438,19 +1427,19 @@ mod tests {
 			})
 		);
 		assert_eq!(
-			TestPair::from_string("hello world//1/HEZ///password", None),
+			TestPair::from_string("hello world//1/DOT///password", None),
 			Ok(TestPair::Standard {
 				phrase: "hello world".to_owned(),
 				password: Some("password".to_owned()),
-				path: vec![DeriveJunction::hard(1), DeriveJunction::soft("HEZ")]
+				path: vec![DeriveJunction::hard(1), DeriveJunction::soft("DOT")]
 			})
 		);
 		assert_eq!(
-			TestPair::from_string("hello world/1//HEZ///password", None),
+			TestPair::from_string("hello world/1//DOT///password", None),
 			Ok(TestPair::Standard {
 				phrase: "hello world".to_owned(),
 				password: Some("password".to_owned()),
-				path: vec![DeriveJunction::soft(1), DeriveJunction::hard("HEZ")]
+				path: vec![DeriveJunction::soft(1), DeriveJunction::hard("DOT")]
 			})
 		);
 	}

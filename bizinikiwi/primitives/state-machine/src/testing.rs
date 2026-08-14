@@ -415,8 +415,8 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use pezsp_core::Blake2Hasher as BlakeTwo256;
 	use pezsp_core::{storage::ChildInfo, traits::Externalities, H256};
+	use pezsp_runtime::traits::BlakeTwo256;
 
 	#[test]
 	fn commit_should_work() {
