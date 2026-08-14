@@ -32,15 +32,9 @@ scale-info = { workspace = true }
 xcm = { workspace = true }
 
 [dev-dependencies]
-codec = { workspace = true }
-pezframe-system = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-revive-fixtures = { workspace = true }
-pezsp-core = { workspace = true }
-pezsp-io = { workspace = true }
 pezsp-keystore = { workspace = true }
-pezsp-runtime = { workspace = true }
-scale-info = { workspace = true }
 test-case = { workspace = true }
 
 [features]

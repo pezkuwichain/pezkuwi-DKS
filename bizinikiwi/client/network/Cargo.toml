@@ -96,7 +96,6 @@ multihash-codetable = { workspace = true }
 multistream-select = { workspace = true }
 pezsc-block-builder = { workspace = true, default-features = true }
 pezsp-consensus = { workspace = true, default-features = true }
-pezsp-crypto-hashing = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
 tempfile = { workspace = true }
 tokio = { features = [
