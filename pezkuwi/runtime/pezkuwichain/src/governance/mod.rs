@@ -19,7 +19,7 @@
 use super::*;
 use pezframe_support::{
 	parameter_types,
-	traits::{ConstU16, EitherOf},
+	traits::{ConstU16, EitherOf, Get},
 };
 use pezframe_system::EnsureRootWithSuccess;
 
@@ -37,14 +37,33 @@ parameter_types! {
 	pub const VoteLockingPeriod: BlockNumber = 7 * DAYS;
 }
 
+/// Turnout is measured against what can actually vote here.
+///
+/// The XCM checking account holds the supply that lives on the other chains: an arriving teleport
+/// is checked in against it, so its balance is the counterpart of what left. It cannot vote, yet
+/// `ActiveIssuanceOf` counts it, and every support threshold is a fraction of that figure. The
+/// fast track's support floor never decays below five percent, so a checking account seeded to
+/// cover real cross-chain flow would have put that path permanently out of reach — the emergency
+/// route failing arithmetically, and only discovered in an emergency.
+///
+/// `MaxTurnout`'s own documentation asks for exactly this: reduce it to account for funds which
+/// are unable to vote. Excluding the checking account also frees the genesis allocation, which
+/// otherwise had to keep the seed below the circulating supply to leave the floor reachable.
+pub struct VotableIssuance;
+impl Get<Balance> for VotableIssuance {
+	fn get() -> Balance {
+		use pezframe_support::traits::fungible::Inspect;
+		Balances::active_issuance().saturating_sub(Balances::balance(&XcmPallet::check_account()))
+	}
+}
+
 impl pezpallet_conviction_voting::Config for Runtime {
 	type WeightInfo = weights::pezpallet_conviction_voting::WeightInfo<Self>;
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type VoteLockingPeriod = VoteLockingPeriod;
 	type MaxVotes = ConstU32<512>;
-	type MaxTurnout =
-		pezframe_support::traits::tokens::currency::ActiveIssuanceOf<Balances, Self::AccountId>;
+	type MaxTurnout = VotableIssuance;
 	type Polls = Referenda;
 	type BlockNumberProvider = System;
 	type VotingHooks = ();
@@ -52,7 +71,9 @@ impl pezpallet_conviction_voting::Config for Runtime {
 
 parameter_types! {
 	pub const AlarmInterval: BlockNumber = 1;
-	pub const SubmissionDeposit: Balance = 1 * 3 * CENTS;
+	/// What it costs to put a referendum on the table. Was `1 * 3 * CENTS`, a ten-thousandth of
+	/// a unit, so submitting was free and nothing stood between the queue and a flood.
+	pub const SubmissionDeposit: Balance = 1 * DOLLARS;
 	pub const UndecidingTimeout: BlockNumber = 14 * DAYS;
 }
 
