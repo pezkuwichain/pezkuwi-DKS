@@ -144,12 +144,14 @@ impl Metrics {
 	fn register(r: &Registry) -> Result<Self, PrometheusError> {
 		Ok(Self {
 			queued_blocks: {
-				let g =
-					Gauge::new("substrate_sync_queued_blocks", "Number of blocks in import queue")?;
+				let g = Gauge::new(
+					"bizinikiwi_sync_queued_blocks",
+					"Number of blocks in import queue",
+				)?;
 				register(g, r)?
 			},
 			fork_targets: {
-				let g = Gauge::new("substrate_sync_fork_targets", "Number of fork sync targets")?;
+				let g = Gauge::new("bizinikiwi_sync_fork_targets", "Number of fork sync targets")?;
 				register(g, r)?
 			},
 		})

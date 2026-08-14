@@ -122,7 +122,7 @@ impl EventsHistograms {
 		Ok(Self {
 			future: register(
 				Histogram::with_opts(histogram_opts!(
-					"substrate_sub_txpool_timing_event_future",
+					"bizinikiwi_sub_txpool_timing_event_future",
 					"Histogram of timings for reporting Future event",
 					exponential_buckets(0.01, 2.0, 16).unwrap()
 				))?,
@@ -130,7 +130,7 @@ impl EventsHistograms {
 			)?,
 			ready: register(
 				Histogram::with_opts(histogram_opts!(
-					"substrate_sub_txpool_timing_event_ready",
+					"bizinikiwi_sub_txpool_timing_event_ready",
 					"Histogram of timings for reporting Ready event",
 					exponential_buckets(0.01, 2.0, 16).unwrap()
 				))?,
@@ -138,7 +138,7 @@ impl EventsHistograms {
 			)?,
 			broadcast: register(
 				Histogram::with_opts(histogram_opts!(
-					"substrate_sub_txpool_timing_event_broadcast",
+					"bizinikiwi_sub_txpool_timing_event_broadcast",
 					"Histogram of timings for reporting Broadcast event",
 					linear_buckets(0.01, 0.25, 16).unwrap()
 				))?,
@@ -147,7 +147,7 @@ impl EventsHistograms {
 			in_block: register(
 				Histogram::with_opts(
 					histogram_opts!(
-						"substrate_sub_txpool_timing_event_in_block",
+						"bizinikiwi_sub_txpool_timing_event_in_block",
 						"Histogram of timings for reporting InBlock event"
 					)
 					.buckets(
@@ -164,7 +164,7 @@ impl EventsHistograms {
 			in_block_forks: register(
 				Histogram::with_opts(
 					histogram_opts!(
-						"substrate_sub_txpool_timing_event_in_block_forks",
+						"bizinikiwi_sub_txpool_timing_event_in_block_forks",
 						"Histogram of timings for reporting unfiltered InBlock event (experimental feature for reliability dashboard)",
 					)
 					.buckets(
@@ -180,7 +180,7 @@ impl EventsHistograms {
 			)?,
 			retracted: register(
 				Histogram::with_opts(histogram_opts!(
-					"substrate_sub_txpool_timing_event_retracted",
+					"bizinikiwi_sub_txpool_timing_event_retracted",
 					"Histogram of timings for reporting Retracted event",
 					linear_buckets(0.0, 3.0, 20).unwrap()
 				))?,
@@ -188,7 +188,7 @@ impl EventsHistograms {
 			)?,
 			finality_timeout: register(
 				Histogram::with_opts(histogram_opts!(
-					"substrate_sub_txpool_timing_event_finality_timeout",
+					"bizinikiwi_sub_txpool_timing_event_finality_timeout",
 					"Histogram of timings for reporting FinalityTimeout event",
 					linear_buckets(0.0, 40.0, 20).unwrap()
 				))?,
@@ -197,7 +197,7 @@ impl EventsHistograms {
 			finalized: register(
 				Histogram::with_opts(
 					histogram_opts!(
-						"substrate_sub_txpool_timing_event_finalized",
+						"bizinikiwi_sub_txpool_timing_event_finalized",
 						"Histogram of timings for reporting Finalized event"
 					)
 					.buckets(
@@ -214,7 +214,7 @@ impl EventsHistograms {
 			usurped: register(
 				Histogram::with_opts(
 					histogram_opts!(
-						"substrate_sub_txpool_timing_event_usurped",
+						"bizinikiwi_sub_txpool_timing_event_usurped",
 						"Histogram of timings for reporting Usurped event"
 					)
 					.buckets(
@@ -231,7 +231,7 @@ impl EventsHistograms {
 			dropped: register(
 				Histogram::with_opts(
 					histogram_opts!(
-						"substrate_sub_txpool_timing_event_dropped",
+						"bizinikiwi_sub_txpool_timing_event_dropped",
 						"Histogram of timings for reporting Dropped event"
 					)
 					.buckets(
@@ -248,7 +248,7 @@ impl EventsHistograms {
 			invalid: register(
 				Histogram::with_opts(
 					histogram_opts!(
-						"substrate_sub_txpool_timing_event_invalid",
+						"bizinikiwi_sub_txpool_timing_event_invalid",
 						"Histogram of timings for reporting Invalid event"
 					)
 					.buckets(
@@ -303,7 +303,7 @@ impl MempoolInvalidTxReasonCounter {
 			inner: register(
 				CounterVec::new(
 					Opts::new(
-						"substrate_sub_txpool_mempool_revalidation_invalid_txs_total",
+						"bizinikiwi_sub_txpool_mempool_revalidation_invalid_txs_total",
 						r#"Total number of transactions found as invalid during mempool revalidation.
 						They are broken down into `category` and `reason` labels.
 						- `category` can be `invalid`, `unknown`, `subtree` or `validation_failed`.
@@ -330,70 +330,70 @@ impl MetricsRegistrant for Metrics {
 		Ok(Box::from(Self {
 			submitted_transactions: register(
 				Counter::new(
-					"substrate_sub_txpool_submitted_txs_total",
+					"bizinikiwi_sub_txpool_submitted_txs_total",
 					"Total number of transactions submitted",
 				)?,
 				registry,
 			)?,
 			active_views: register(
 				Gauge::new(
-					"substrate_sub_txpool_active_views",
+					"bizinikiwi_sub_txpool_active_views",
 					"Total number of currently maintained views.",
 				)?,
 				registry,
 			)?,
 			inactive_views: register(
 				Gauge::new(
-					"substrate_sub_txpool_inactive_views",
+					"bizinikiwi_sub_txpool_inactive_views",
 					"Total number of current inactive views.",
 				)?,
 				registry,
 			)?,
 			watched_txs: register(
 				Gauge::new(
-					"substrate_sub_txpool_watched_txs",
+					"bizinikiwi_sub_txpool_watched_txs",
 					"Total number of watched transactions in txpool.",
 				)?,
 				registry,
 			)?,
 			unwatched_txs: register(
 				Gauge::new(
-					"substrate_sub_txpool_unwatched_txs",
+					"bizinikiwi_sub_txpool_unwatched_txs",
 					"Total number of unwatched transactions in txpool.",
 				)?,
 				registry,
 			)?,
 			reported_invalid_txs: register(
 				Counter::new(
-					"substrate_sub_txpool_reported_invalid_txs_total",
+					"bizinikiwi_sub_txpool_reported_invalid_txs_total",
 					"Total number of transactions reported as invalid by external entities using TxPool API.",
 				)?,
 				registry,
 			)?,
 			removed_invalid_txs: register(
 				Counter::new(
-					"substrate_sub_txpool_removed_invalid_txs_total",
+					"bizinikiwi_sub_txpool_removed_invalid_txs_total",
 					"Total number of transactions removed as invalid.",
 				)?,
 				registry,
 			)?,
 			unknown_from_block_import_txs: register(
 				Counter::new(
-					"substrate_sub_txpool_unknown_from_block_import_txs_total",
+					"bizinikiwi_sub_txpool_unknown_from_block_import_txs_total",
 					"Total number of transactions from imported blocks that are unknown to the pool.",
 				)?,
 				registry,
 			)?,
 			finalized_txs: register(
 				Counter::new(
-					"substrate_sub_txpool_finalized_txs_total",
+					"bizinikiwi_sub_txpool_finalized_txs_total",
 					"Total number of finalized transactions.",
 				)?,
 				registry,
 			)?,
 			maintain_duration: register(
 				Histogram::with_opts(histogram_opts!(
-					"substrate_sub_txpool_maintain_duration_seconds",
+					"bizinikiwi_sub_txpool_maintain_duration_seconds",
 					"Histogram of maintain durations.",
 					linear_buckets(0.0, 0.25, 13).unwrap()
 				))?,
@@ -401,14 +401,14 @@ impl MetricsRegistrant for Metrics {
 			)?,
 			resubmitted_retracted_txs: register(
 				Counter::new(
-					"substrate_sub_txpool_resubmitted_retracted_txs_total",
+					"bizinikiwi_sub_txpool_resubmitted_retracted_txs_total",
 					"Total number of transactions resubmitted from retracted forks.",
 				)?,
 				registry,
 			)?,
 			submitted_from_mempool_txs: register(
 				Counter::new(
-					"substrate_sub_txpool_submitted_from_mempool_txs_total",
+					"bizinikiwi_sub_txpool_submitted_from_mempool_txs_total",
 					"Total number of transactions submitted from mempool to views.",
 				)?,
 				registry,
@@ -416,21 +416,21 @@ impl MetricsRegistrant for Metrics {
 			mempool_revalidation_invalid_txs: MempoolInvalidTxReasonCounter::register(registry)?,
 			view_revalidation_invalid_txs: register(
 				Counter::new(
-					"substrate_sub_txpool_view_revalidation_invalid_txs_total",
+					"bizinikiwi_sub_txpool_view_revalidation_invalid_txs_total",
 					"Total number of transactions found as invalid during view revalidation.",
 				)?,
 				registry,
 			)?,
 			view_revalidation_resubmitted_txs: register(
 				Counter::new(
-					"substrate_sub_txpool_view_revalidation_resubmitted_txs_total",
+					"bizinikiwi_sub_txpool_view_revalidation_resubmitted_txs_total",
 					"Total number of valid transactions processed during view revalidation.",
 				)?,
 				registry,
 			)?,
 			view_revalidation_duration: register(
 				Histogram::with_opts(histogram_opts!(
-					"substrate_sub_txpool_view_revalidation_duration_seconds",
+					"bizinikiwi_sub_txpool_view_revalidation_duration_seconds",
 					"Histogram of view revalidation durations.",
 					linear_buckets(0.0, 0.25, 13).unwrap()
 				))?,
@@ -438,7 +438,7 @@ impl MetricsRegistrant for Metrics {
 			)?,
 			non_cloned_views: register(
 				Counter::new(
-					"substrate_sub_txpool_non_cloned_views_total",
+					"bizinikiwi_sub_txpool_non_cloned_views_total",
 					"Total number of the views created w/o cloning existing view.",
 				)?,
 				registry,

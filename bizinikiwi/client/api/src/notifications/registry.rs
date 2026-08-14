@@ -83,7 +83,7 @@ impl Registry {
 		let metrics = prometheus_registry.and_then(|r| {
 			CounterVec::new(
 				Opts::new(
-					"substrate_storage_notification_subscribers",
+					"bizinikiwi_storage_notification_subscribers",
 					"Number of subscribers in storage notification sytem",
 				),
 				&["action"], // added | removed

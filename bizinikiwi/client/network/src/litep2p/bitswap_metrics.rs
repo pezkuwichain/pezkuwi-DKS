@@ -52,7 +52,7 @@ impl Inner {
 			entries_total: register(
 				CounterVec::new(
 					Opts::new(
-						"substrate_sub_libp2p_bitswap_entries_total",
+						"bizinikiwi_sub_libp2p_bitswap_entries_total",
 						"Total number of bitswap wantlist entries processed, by outcome",
 					),
 					&["outcome"],
@@ -62,7 +62,7 @@ impl Inner {
 			request_errors_total: register(
 				CounterVec::new(
 					Opts::new(
-						"substrate_sub_libp2p_bitswap_request_errors_total",
+						"bizinikiwi_sub_libp2p_bitswap_request_errors_total",
 						"Total number of bitswap inbound requests rejected, by reason",
 					),
 					&["reason"],
@@ -72,7 +72,7 @@ impl Inner {
 			inbound_request_duration_seconds: register(
 				Histogram::with_opts(HistogramOpts {
 					common_opts: Opts::new(
-						"substrate_sub_libp2p_bitswap_inbound_request_duration_seconds",
+						"bizinikiwi_sub_libp2p_bitswap_inbound_request_duration_seconds",
 						"Duration of handling an inbound bitswap wantlist, in seconds",
 					),
 					buckets: exponential_buckets(0.001, 2.0, 16)
@@ -82,7 +82,7 @@ impl Inner {
 			)?,
 			response_bytes_total: register(
 				Counter::new(
-					"substrate_sub_libp2p_bitswap_response_bytes_total",
+					"bizinikiwi_sub_libp2p_bitswap_response_bytes_total",
 					"Total bytes sent in bitswap responses to inbound wantlists",
 				)?,
 				registry,

@@ -185,7 +185,7 @@ impl Metrics {
 		let peers_connected = register(
 			GaugeVec::new(
 				Opts::new(
-					"substrate_sync_statement_peers_connected",
+					"bizinikiwi_sync_statement_peers_connected",
 					"Number of peers connected using the statement protocol by kind",
 				),
 				&["kind"],
@@ -198,21 +198,21 @@ impl Metrics {
 		Ok(Self {
 			propagated_statements: register(
 				Counter::new(
-					"substrate_sync_propagated_statements",
+					"bizinikiwi_sync_propagated_statements",
 					"Total statements propagated to peers, counted once per recipient (a statement sent to N peers increments by N)",
 				)?,
 				r,
 			)?,
 			known_statements_received: register(
 				Counter::new(
-					"substrate_sync_known_statement_received",
+					"bizinikiwi_sync_known_statement_received",
 					"Number of statements received via gossiping that were already in the statement store",
 				)?,
 				r,
 			)?,
 			skipped_oversized_statements: register(
 				Counter::new(
-					"substrate_sync_skipped_oversized_statements",
+					"bizinikiwi_sync_skipped_oversized_statements",
 					"Number of oversized statements that were skipped to be gossiped",
 				)?,
 				r,
@@ -220,7 +220,7 @@ impl Metrics {
 			propagated_statements_chunks: register(
 				Histogram::with_opts(
 					HistogramOpts::new(
-						"substrate_sync_propagated_statements_chunks",
+						"bizinikiwi_sync_propagated_statements_chunks",
 						"Distribution of chunk sizes when propagating statements",
 					)
 					.buckets(exponential_buckets(1.0, 2.0, 14)?),
@@ -229,14 +229,14 @@ impl Metrics {
 			)?,
 			pending_statements: register(
 				Gauge::new(
-					"substrate_sync_pending_statement_validations",
+					"bizinikiwi_sync_pending_statement_validations",
 					"Number of pending statement validations, sampled once per propagation tick",
 				)?,
 				r,
 			)?,
 			ignored_statements: register(
 				Counter::new(
-					"substrate_sync_ignored_statements",
+					"bizinikiwi_sync_ignored_statements",
 					"Number of statements ignored due to exceeding MAX_PENDING_STATEMENTS limit",
 				)?,
 				r,
@@ -244,21 +244,21 @@ impl Metrics {
 			peers_connected,
 			statements_received: register(
 				Counter::new(
-					"substrate_sync_statements_received",
+					"bizinikiwi_sync_statements_received",
 					"Total number of statements received from peers",
 				)?,
 				r,
 			)?,
 			bytes_sent_total: register(
 				Counter::new(
-					"substrate_sync_statement_bytes_sent_total",
+					"bizinikiwi_sync_statement_bytes_sent_total",
 					"Total bytes sent for statement protocol messages",
 				)?,
 				r,
 			)?,
 			bytes_received_total: register(
 				Counter::new(
-					"substrate_sync_statement_bytes_received_total",
+					"bizinikiwi_sync_statement_bytes_received_total",
 					"Total bytes received for statement protocol messages (includes bytes from notifications that are later discarded — e.g. while major-syncing)",
 				)?,
 				r,
@@ -266,7 +266,7 @@ impl Metrics {
 			sent_latency_seconds: register(
 				Histogram::with_opts(
 					HistogramOpts::new(
-						"substrate_sync_statement_sent_latency_seconds",
+						"bizinikiwi_sync_statement_sent_latency_seconds",
 						"Time to send statement messages to peers",
 					)
 					// Buckets from 1μs to ~1s covering microsecond to millisecond range.
@@ -276,21 +276,21 @@ impl Metrics {
 			)?,
 			initial_sync_statements_sent: register(
 				Counter::new(
-					"substrate_sync_initial_sync_statements_sent",
+					"bizinikiwi_sync_initial_sync_statements_sent",
 					"Total statements sent during initial sync bursts to newly connected peers",
 				)?,
 				r,
 			)?,
 			initial_sync_bursts_total: register(
 				Counter::new(
-					"substrate_sync_initial_sync_bursts_total",
+					"bizinikiwi_sync_initial_sync_bursts_total",
 					"Total initial-sync burst rounds attempted (includes rounds that return early with no hashes left)",
 				)?,
 				r,
 			)?,
 			initial_sync_peers_active: register(
 				Gauge::new(
-					"substrate_sync_initial_sync_peers_active",
+					"bizinikiwi_sync_initial_sync_peers_active",
 					"Number of peers currently being synced via initial sync",
 				)?,
 				r,
@@ -298,7 +298,7 @@ impl Metrics {
 			initial_sync_duration_seconds: register(
 				Histogram::with_opts(
 					HistogramOpts::new(
-						"substrate_sync_initial_sync_duration_seconds",
+						"bizinikiwi_sync_initial_sync_duration_seconds",
 						"Per-peer duration of initial sync from start until completion or peer disconnect (whichever comes first)",
 					)
 					.buckets(vec![0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0]),
@@ -307,7 +307,7 @@ impl Metrics {
 			)?,
 			statement_flooding_detected: register(
 				Counter::new(
-					"substrate_sync_statement_flooding_detected",
+					"bizinikiwi_sync_statement_flooding_detected",
 					"Number of peers disconnected for exceeding statement rate limits",
 				)?,
 				r,

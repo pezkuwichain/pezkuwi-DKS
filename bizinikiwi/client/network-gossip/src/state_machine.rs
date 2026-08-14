@@ -524,14 +524,14 @@ impl Metrics {
 		Ok(Self {
 			registered_messages: register(
 				Counter::new(
-					"substrate_network_gossip_registered_messages_total",
+					"bizinikiwi_network_gossip_registered_messages_total",
 					"Number of registered messages by the gossip service.",
 				)?,
 				registry,
 			)?,
 			expired_messages: register(
 				Counter::new(
-					"substrate_network_gossip_expired_messages_total",
+					"bizinikiwi_network_gossip_expired_messages_total",
 					"Number of expired messages by the gossip service.",
 				)?,
 				registry,

@@ -29,13 +29,13 @@ use prometheus_endpoint::{
 
 /// Total number of RPC threads created.
 pub(crate) static RPC_THREADS_TOTAL: LazyLock<GenericCounter<U64>> = LazyLock::new(|| {
-	GenericCounter::new("substrate_rpc_threads_total", "Total number of RPC threads created")
+	GenericCounter::new("bizinikiwi_rpc_threads_total", "Total number of RPC threads created")
 		.expect("Creating of statics doesn't fail. qed")
 });
 
 /// Number of RPC threads currently alive.
 pub(crate) static RPC_THREADS_ALIVE: LazyLock<GenericGauge<U64>> = LazyLock::new(|| {
-	GenericGauge::new("substrate_rpc_threads_alive", "Number of RPC threads currently alive")
+	GenericGauge::new("bizinikiwi_rpc_threads_alive", "Number of RPC threads currently alive")
 		.expect("Creating of statics doesn't fail. qed")
 });
 
@@ -88,7 +88,7 @@ impl RpcMetrics {
 				calls_time: register(
 					HistogramVec::new(
 						HistogramOpts::new(
-							"substrate_rpc_calls_time",
+							"bizinikiwi_rpc_calls_time",
 							"Total time [μs] of processed RPC calls",
 						)
 						.buckets(HISTOGRAM_BUCKETS.to_vec()),
@@ -99,7 +99,7 @@ impl RpcMetrics {
 				calls_started: register(
 					CounterVec::new(
 						Opts::new(
-							"substrate_rpc_calls_started",
+							"bizinikiwi_rpc_calls_started",
 							"Number of received RPC calls (unique un-batched requests)",
 						),
 						&["protocol", "method"],
@@ -109,7 +109,7 @@ impl RpcMetrics {
 				calls_finished: register(
 					CounterVec::new(
 						Opts::new(
-							"substrate_rpc_calls_finished",
+							"bizinikiwi_rpc_calls_finished",
 							"Number of processed RPC calls (unique un-batched requests)",
 						),
 						&["protocol", "method", "is_error", "is_rate_limited"],
@@ -119,7 +119,7 @@ impl RpcMetrics {
 				calls_rejected: register(
 					CounterVec::new(
 						Opts::new(
-							"substrate_rpc_calls_rejected",
+							"bizinikiwi_rpc_calls_rejected",
 							"Number of RPC calls rejected due to rate limiting",
 						),
 						&["protocol", "method"],
@@ -129,7 +129,7 @@ impl RpcMetrics {
 				calls_retried: register(
 					CounterVec::new(
 						Opts::new(
-							"substrate_rpc_calls_retried",
+							"bizinikiwi_rpc_calls_retried",
 							"Number of rate limit retries for RPC calls",
 						),
 						&["protocol", "method"],
@@ -138,7 +138,7 @@ impl RpcMetrics {
 				)?,
 				ws_sessions_opened: register(
 					Counter::new(
-						"substrate_rpc_sessions_opened",
+						"bizinikiwi_rpc_sessions_opened",
 						"Number of persistent RPC sessions opened",
 					)?,
 					metrics_registry,
@@ -146,7 +146,7 @@ impl RpcMetrics {
 				.into(),
 				ws_sessions_closed: register(
 					Counter::new(
-						"substrate_rpc_sessions_closed",
+						"bizinikiwi_rpc_sessions_closed",
 						"Number of persistent RPC sessions closed",
 					)?,
 					metrics_registry,
@@ -155,7 +155,7 @@ impl RpcMetrics {
 				ws_sessions_time: register(
 					HistogramVec::new(
 						HistogramOpts::new(
-							"substrate_rpc_sessions_time",
+							"bizinikiwi_rpc_sessions_time",
 							"Total time [s] for each websocket session",
 						)
 						.buckets(HISTOGRAM_BUCKETS.to_vec()),

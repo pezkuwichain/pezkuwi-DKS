@@ -94,42 +94,42 @@ impl Metrics {
 			// This list is ordered alphabetically
 			connections_closed_total: prometheus::register(CounterVec::new(
 				Opts::new(
-					"substrate_sub_libp2p_connections_closed_total",
+					"bizinikiwi_sub_libp2p_connections_closed_total",
 					"Total number of connections closed, by direction and reason"
 				),
 				&["direction", "reason"]
 			)?, registry)?,
 			connections_opened_total: prometheus::register(CounterVec::new(
 				Opts::new(
-					"substrate_sub_libp2p_connections_opened_total",
+					"bizinikiwi_sub_libp2p_connections_opened_total",
 					"Total number of connections opened by direction"
 				),
 				&["direction"]
 			)?, registry)?,
 			distinct_peers_connections_closed_total: prometheus::register(Counter::new(
-					"substrate_sub_libp2p_distinct_peers_connections_closed_total",
+					"bizinikiwi_sub_libp2p_distinct_peers_connections_closed_total",
 					"Total number of connections closed with distinct peers"
 			)?, registry)?,
 			distinct_peers_connections_opened_total: prometheus::register(Counter::new(
-					"substrate_sub_libp2p_distinct_peers_connections_opened_total",
+					"bizinikiwi_sub_libp2p_distinct_peers_connections_opened_total",
 					"Total number of connections opened with distinct peers"
 			)?, registry)?,
 			incoming_connections_errors_total: prometheus::register(CounterVec::new(
 				Opts::new(
-					"substrate_sub_libp2p_incoming_connections_handshake_errors_total",
+					"bizinikiwi_sub_libp2p_incoming_connections_handshake_errors_total",
 					"Total number of incoming connections that have failed during the \
 					initial handshake"
 				),
 				&["reason"]
 			)?, registry)?,
 			incoming_connections_total: prometheus::register(Counter::new(
-				"substrate_sub_libp2p_incoming_connections_total",
+				"bizinikiwi_sub_libp2p_incoming_connections_total",
 				"Total number of incoming connections on the listening sockets"
 			)?, registry)?,
 			kademlia_query_duration: prometheus::register(HistogramVec::new(
 				HistogramOpts {
 					common_opts: Opts::new(
-						"substrate_sub_libp2p_kademlia_query_duration",
+						"bizinikiwi_sub_libp2p_kademlia_query_duration",
 						"Duration of Kademlia queries per query type"
 					),
 					buckets: prometheus::exponential_buckets(0.5, 2.0, 10)
@@ -138,46 +138,46 @@ impl Metrics {
 				&["type"]
 			)?, registry)?,
 			kademlia_random_queries_total: prometheus::register(Counter::new(
-				"substrate_sub_libp2p_kademlia_random_queries_total",
+				"bizinikiwi_sub_libp2p_kademlia_random_queries_total",
 				"Number of random Kademlia queries started",
 			)?, registry)?,
 			kademlia_records_count: prometheus::register(Gauge::new(
-				"substrate_sub_libp2p_kademlia_records_count",
+				"bizinikiwi_sub_libp2p_kademlia_records_count",
 				"Number of records in the Kademlia records store",
 			)?, registry)?,
 			kademlia_records_sizes_total: prometheus::register(Gauge::new(
-				"substrate_sub_libp2p_kademlia_records_sizes_total",
+				"bizinikiwi_sub_libp2p_kademlia_records_sizes_total",
 				"Total size of all the records in the Kademlia records store",
 			)?, registry)?,
 			kbuckets_num_nodes: prometheus::register(GaugeVec::new(
 				Opts::new(
-					"substrate_sub_libp2p_kbuckets_num_nodes",
+					"bizinikiwi_sub_libp2p_kbuckets_num_nodes",
 					"Number of nodes per kbucket per Kademlia instance"
 				),
 				&["lower_ilog2_bucket_bound"]
 			)?, registry)?,
 			listeners_local_addresses: prometheus::register(Gauge::new(
-				"substrate_sub_libp2p_listeners_local_addresses",
+				"bizinikiwi_sub_libp2p_listeners_local_addresses",
 				"Number of local addresses we're listening on"
 			)?, registry)?,
 			listeners_errors_total: prometheus::register(Counter::new(
-				"substrate_sub_libp2p_listeners_errors_total",
+				"bizinikiwi_sub_libp2p_listeners_errors_total",
 				"Total number of non-fatal errors reported by a listener"
 			)?, registry)?,
 			pending_connections: prometheus::register(Gauge::new(
-				"substrate_sub_libp2p_pending_connections",
+				"bizinikiwi_sub_libp2p_pending_connections",
 				"Number of connections in the process of being established",
 			)?, registry)?,
 			pending_connections_errors_total: prometheus::register(CounterVec::new(
 				Opts::new(
-					"substrate_sub_libp2p_pending_connections_errors_total",
+					"bizinikiwi_sub_libp2p_pending_connections_errors_total",
 					"Total number of pending connection errors"
 				),
 				&["reason"]
 			)?, registry)?,
 			requests_in_failure_total: prometheus::register(CounterVec::new(
 				Opts::new(
-					"substrate_sub_libp2p_requests_in_failure_total",
+					"bizinikiwi_sub_libp2p_requests_in_failure_total",
 					"Total number of incoming requests that the node has failed to answer"
 				),
 				&["protocol", "reason"]
@@ -185,7 +185,7 @@ impl Metrics {
 			requests_in_success_total: prometheus::register(HistogramVec::new(
 				HistogramOpts {
 					common_opts: Opts::new(
-						"substrate_sub_libp2p_requests_in_success_total",
+						"bizinikiwi_sub_libp2p_requests_in_success_total",
 						"For successful incoming requests, time between receiving the request and \
 						 starting to send the response"
 					),
@@ -196,7 +196,7 @@ impl Metrics {
 			)?, registry)?,
 			requests_out_failure_total: prometheus::register(CounterVec::new(
 				Opts::new(
-					"substrate_sub_libp2p_requests_out_failure_total",
+					"bizinikiwi_sub_libp2p_requests_out_failure_total",
 					"Total number of requests that have failed"
 				),
 				&["protocol", "reason"]
@@ -204,7 +204,7 @@ impl Metrics {
 			requests_out_success_total: prometheus::register(HistogramVec::new(
 				HistogramOpts {
 					common_opts: Opts::new(
-						"substrate_sub_libp2p_requests_out_success_total",
+						"bizinikiwi_sub_libp2p_requests_out_success_total",
 						"For successful outgoing requests, time between a request's start and finish"
 					),
 					buckets: prometheus::exponential_buckets(0.001, 2.0, 16)
@@ -214,7 +214,7 @@ impl Metrics {
 			)?, registry)?,
 			requests_response_bytes_total: prometheus::register(CounterVec::new(
 				Opts::new(
-					"substrate_sub_libp2p_requests_response_bytes_total",
+					"bizinikiwi_sub_libp2p_requests_response_bytes_total",
 					"Total bytes sent and received by request-response protocols"
 				),
 				&["direction", "protocol"]
@@ -235,14 +235,14 @@ impl PeerStoreMetrics {
 		Ok(Self {
 			num_banned_peers: prometheus::register(
 				Gauge::new(
-					"substrate_sub_libp2p_peerset_num_banned_peers",
+					"bizinikiwi_sub_libp2p_peerset_num_banned_peers",
 					"Number of banned peers stored in the peerset manager",
 				)?,
 				registry,
 			)?,
 			num_discovered: prometheus::register(
 				Gauge::new(
-					"substrate_sub_libp2p_peerset_num_discovered",
+					"bizinikiwi_sub_libp2p_peerset_num_discovered",
 					"Number of nodes stored in the peerset manager",
 				)?,
 				registry,
@@ -261,7 +261,7 @@ impl BandwidthCounters {
 	fn register(registry: &Registry, sinks: Arc<dyn BandwidthSink>) -> Result<(), PrometheusError> {
 		prometheus::register(
 			SourcedCounter::new(
-				&Opts::new("substrate_sub_libp2p_network_bytes_total", "Total bandwidth usage")
+				&Opts::new("bizinikiwi_sub_libp2p_network_bytes_total", "Total bandwidth usage")
 					.variable_label("direction"),
 				BandwidthCounters(sinks),
 			)?,
@@ -291,7 +291,7 @@ impl NumConnectedGauge {
 	fn register(registry: &Registry, value: Arc<AtomicUsize>) -> Result<(), PrometheusError> {
 		prometheus::register(
 			SourcedGauge::new(
-				&Opts::new("substrate_sub_libp2p_peers_count", "Number of connected peers"),
+				&Opts::new("bizinikiwi_sub_libp2p_peers_count", "Number of connected peers"),
 				NumConnectedGauge(value),
 			)?,
 			registry,
@@ -433,7 +433,7 @@ impl InnerNotificationMetrics {
 				HistogramVec::new(
 					HistogramOpts {
 						common_opts: Opts::new(
-							"substrate_sub_libp2p_notifications_sizes",
+							"bizinikiwi_sub_libp2p_notifications_sizes",
 							"Sizes of the notifications send to and received from all nodes",
 						),
 						buckets: prometheus::exponential_buckets(64.0, 4.0, 8)
@@ -446,7 +446,7 @@ impl InnerNotificationMetrics {
 			notifications_streams_closed_total: prometheus::register(
 				CounterVec::new(
 					Opts::new(
-						"substrate_sub_libp2p_notifications_streams_closed_total",
+						"bizinikiwi_sub_libp2p_notifications_streams_closed_total",
 						"Total number of notification substreams that have been closed",
 					),
 					&["protocol"],
@@ -456,7 +456,7 @@ impl InnerNotificationMetrics {
 			notifications_streams_opened_total: prometheus::register(
 				CounterVec::new(
 					Opts::new(
-						"substrate_sub_libp2p_notifications_streams_opened_total",
+						"bizinikiwi_sub_libp2p_notifications_streams_opened_total",
 						"Total number of notification substreams that have been opened",
 					),
 					&["protocol"],
@@ -466,7 +466,7 @@ impl InnerNotificationMetrics {
 			peerset_num_connected: prometheus::register(
 				GaugeVec::new(
 					Opts::new(
-						"substrate_sub_libp2p_peerset_num_connected",
+						"bizinikiwi_sub_libp2p_peerset_num_connected",
 						"Number of connected peers per direction, reservation status and protocol",
 					),
 					&["direction", "kind", "protocol"],
@@ -476,7 +476,7 @@ impl InnerNotificationMetrics {
 			peerset_num_state: prometheus::register(
 				GaugeVec::new(
 					Opts::new(
-						"substrate_sub_libp2p_peerset_num_state",
+						"bizinikiwi_sub_libp2p_peerset_num_state",
 						"Number of peers per state in the peerset manager",
 					),
 					&["state", "protocol"],

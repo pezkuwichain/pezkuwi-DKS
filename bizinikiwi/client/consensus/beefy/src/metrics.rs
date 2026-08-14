@@ -69,90 +69,90 @@ impl PrometheusRegister for VoterMetrics {
 		Ok(Self {
 			beefy_validator_set_id: register(
 				Gauge::new(
-					"substrate_beefy_validator_set_id",
+					"bizinikiwi_beefy_validator_set_id",
 					"Current BEEFY active validator set id.",
 				)?,
 				registry,
 			)?,
 			beefy_votes_sent: register(
-				Counter::new("substrate_beefy_votes_sent", "Number of votes sent by this node")?,
+				Counter::new("bizinikiwi_beefy_votes_sent", "Number of votes sent by this node")?,
 				registry,
 			)?,
 			beefy_best_block: register(
-				Gauge::new("substrate_beefy_best_block", "Best block finalized by BEEFY")?,
+				Gauge::new("bizinikiwi_beefy_best_block", "Best block finalized by BEEFY")?,
 				registry,
 			)?,
 			beefy_best_voted: register(
-				Gauge::new("substrate_beefy_best_voted", "Best block voted on by BEEFY")?,
+				Gauge::new("bizinikiwi_beefy_best_voted", "Best block voted on by BEEFY")?,
 				registry,
 			)?,
 			beefy_should_vote_on: register(
-				Gauge::new("substrate_beefy_should_vote_on", "Next block, BEEFY should vote on")?,
+				Gauge::new("bizinikiwi_beefy_should_vote_on", "Next block, BEEFY should vote on")?,
 				registry,
 			)?,
 			beefy_lagging_sessions: register(
 				Counter::new(
-					"substrate_beefy_lagging_sessions",
+					"bizinikiwi_beefy_lagging_sessions",
 					"Number of sessions with lagging signed commitment on mandatory block",
 				)?,
 				registry,
 			)?,
 			beefy_no_authority_found_in_store: register(
 				Counter::new(
-					"substrate_beefy_no_authority_found_in_store",
+					"bizinikiwi_beefy_no_authority_found_in_store",
 					"Number of times no Authority public key found in store",
 				)?,
 				registry,
 			)?,
 			beefy_good_votes_processed: register(
 				Counter::new(
-					"substrate_beefy_successful_handled_votes",
+					"bizinikiwi_beefy_successful_handled_votes",
 					"Number of good votes successfully handled",
 				)?,
 				registry,
 			)?,
 			beefy_equivocation_votes: register(
 				Counter::new(
-					"substrate_beefy_equivocation_votes",
+					"bizinikiwi_beefy_equivocation_votes",
 					"Number of equivocation votes received",
 				)?,
 				registry,
 			)?,
 			beefy_invalid_votes: register(
-				Counter::new("substrate_beefy_invalid_votes", "Number of invalid votes received")?,
+				Counter::new("bizinikiwi_beefy_invalid_votes", "Number of invalid votes received")?,
 				registry,
 			)?,
 			beefy_stale_votes: register(
 				Counter::new(
-					"substrate_beefy_stale_votes",
+					"bizinikiwi_beefy_stale_votes",
 					"Number of valid but stale votes received",
 				)?,
 				registry,
 			)?,
 			beefy_buffered_justifications: register(
 				Gauge::new(
-					"substrate_beefy_buffered_justifications",
+					"bizinikiwi_beefy_buffered_justifications",
 					"Number of currently buffered justifications",
 				)?,
 				registry,
 			)?,
 			beefy_stale_justifications: register(
 				Counter::new(
-					"substrate_beefy_stale_justifications",
+					"bizinikiwi_beefy_stale_justifications",
 					"Number of valid but stale justifications received",
 				)?,
 				registry,
 			)?,
 			beefy_imported_justifications: register(
 				Counter::new(
-					"substrate_beefy_imported_justifications",
+					"bizinikiwi_beefy_imported_justifications",
 					"Number of valid justifications successfully imported",
 				)?,
 				registry,
 			)?,
 			beefy_buffered_justifications_dropped: register(
 				Counter::new(
-					"substrate_beefy_buffered_justifications_dropped",
+					"bizinikiwi_beefy_buffered_justifications_dropped",
 					"Number of justifications dropped due to full buffers",
 				)?,
 				registry,
@@ -176,14 +176,14 @@ impl PrometheusRegister for BlockImportMetrics {
 		Ok(Self {
 			beefy_good_justification_imports: register(
 				Counter::new(
-					"substrate_beefy_good_justification_imports",
+					"bizinikiwi_beefy_good_justification_imports",
 					"Number of good justifications on block-import",
 				)?,
 				registry,
 			)?,
 			beefy_bad_justification_imports: register(
 				Counter::new(
-					"substrate_beefy_bad_justification_imports",
+					"bizinikiwi_beefy_bad_justification_imports",
 					"Number of bad justifications on block-import",
 				)?,
 				registry,
@@ -207,14 +207,14 @@ impl PrometheusRegister for OnDemandIncomingRequestsMetrics {
 		Ok(Self {
 			beefy_successful_justification_responses: register(
 				Counter::new(
-					"substrate_beefy_successful_justification_responses",
+					"bizinikiwi_beefy_successful_justification_responses",
 					"Number of Successful Justification responses",
 				)?,
 				registry,
 			)?,
 			beefy_failed_justification_responses: register(
 				Counter::new(
-					"substrate_beefy_failed_justification_responses",
+					"bizinikiwi_beefy_failed_justification_responses",
 					"Number of Failed Justification responses",
 				)?,
 				registry,
@@ -246,7 +246,7 @@ impl PrometheusRegister for OnDemandOutgoingRequestsMetrics {
 		Ok(Self {
 			beefy_on_demand_justification_no_peer_to_request_from: register(
 				Counter::new(
-					"substrate_beefy_on_demand_justification_no_peer_to_request_from",
+					"bizinikiwi_beefy_on_demand_justification_no_peer_to_request_from",
 					"Number of times there was no good peer to request justification from",
 				)?,
 				registry,
@@ -260,28 +260,28 @@ impl PrometheusRegister for OnDemandOutgoingRequestsMetrics {
 			)?,
 			beefy_on_demand_justification_peer_error: register(
 				Counter::new(
-					"substrate_beefy_on_demand_justification_peer_error",
+					"bizinikiwi_beefy_on_demand_justification_peer_error",
 					"Number of on-demand justification peer error",
 				)?,
 				registry,
 			)?,
 			beefy_on_demand_justification_invalid_proof: register(
 				Counter::new(
-					"substrate_beefy_on_demand_justification_invalid_proof",
+					"bizinikiwi_beefy_on_demand_justification_invalid_proof",
 					"Number of on-demand justification invalid proof",
 				)?,
 				registry,
 			)?,
 			beefy_on_demand_justification_good_proof: register(
 				Counter::new(
-					"substrate_beefy_on_demand_justification_good_proof",
+					"bizinikiwi_beefy_on_demand_justification_good_proof",
 					"Number of on-demand justification good proof",
 				)?,
 				registry,
 			)?,
 			beefy_on_demand_live_peers: register(
 				Gauge::new(
-					"substrate_beefy_on_demand_live_peers",
+					"bizinikiwi_beefy_on_demand_live_peers",
 					"Number of live beefy peers available for requests.",
 				)?,
 				registry,

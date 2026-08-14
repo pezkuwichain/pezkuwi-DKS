@@ -1214,14 +1214,14 @@ impl Metrics {
 		Ok(Self {
 			publish: register(
 				Counter::new(
-					"substrate_authority_discovery_times_published_total",
+					"bizinikiwi_authority_discovery_times_published_total",
 					"Number of times authority discovery has published external addresses.",
 				)?,
 				registry,
 			)?,
 			amount_addresses_last_published: register(
 				Gauge::new(
-					"substrate_authority_discovery_amount_external_addresses_last_published",
+					"bizinikiwi_authority_discovery_amount_external_addresses_last_published",
 					"Number of external addresses published when authority discovery last \
 					 published addresses.",
 				)?,
@@ -1229,7 +1229,7 @@ impl Metrics {
 			)?,
 			requests: register(
 				Counter::new(
-					"substrate_authority_discovery_authority_addresses_requested_total",
+					"bizinikiwi_authority_discovery_authority_addresses_requested_total",
 					"Number of times authority discovery has requested external addresses of a \
 					 single authority.",
 				)?,
@@ -1237,7 +1237,7 @@ impl Metrics {
 			)?,
 			requests_pending: register(
 				Gauge::new(
-					"substrate_authority_discovery_authority_address_requests_pending",
+					"bizinikiwi_authority_discovery_authority_address_requests_pending",
 					"Number of pending authority address requests.",
 				)?,
 				registry,
@@ -1245,7 +1245,7 @@ impl Metrics {
 			dht_event_received: register(
 				CounterVec::new(
 					Opts::new(
-						"substrate_authority_discovery_dht_event_received",
+						"bizinikiwi_authority_discovery_dht_event_received",
 						"Number of dht events received by authority discovery.",
 					),
 					&["name"],
@@ -1254,14 +1254,14 @@ impl Metrics {
 			)?,
 			handle_value_found_event_failure: register(
 				Counter::new(
-					"substrate_authority_discovery_handle_value_found_event_failure",
+					"bizinikiwi_authority_discovery_handle_value_found_event_failure",
 					"Number of times handling a dht value found event failed.",
 				)?,
 				registry,
 			)?,
 			known_authorities_count: register(
 				Gauge::new(
-					"substrate_authority_discovery_known_authorities_count",
+					"bizinikiwi_authority_discovery_known_authorities_count",
 					"Number of authorities known by authority discovery.",
 				)?,
 				registry,

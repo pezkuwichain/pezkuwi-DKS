@@ -42,7 +42,7 @@ impl Metrics {
 			import_queue_processed: register(
 				CounterVec::new(
 					Opts::new(
-						"substrate_import_queue_processed_total",
+						"bizinikiwi_import_queue_processed_total",
 						"Blocks processed by import queue",
 					),
 					&["result"], // 'success or failure
@@ -52,7 +52,7 @@ impl Metrics {
 			block_verification_time: register(
 				HistogramVec::new(
 					HistogramOpts::new(
-						"substrate_block_verification_time",
+						"bizinikiwi_block_verification_time",
 						"Time taken to verify blocks",
 					),
 					&["result"],
@@ -61,14 +61,14 @@ impl Metrics {
 			)?,
 			block_verification_and_import_time: register(
 				Histogram::with_opts(HistogramOpts::new(
-					"substrate_block_verification_and_import_time",
+					"bizinikiwi_block_verification_and_import_time",
 					"Time taken to verify and import blocks",
 				))?,
 				registry,
 			)?,
 			justification_import_time: register(
 				Histogram::with_opts(HistogramOpts::new(
-					"substrate_justification_import_time",
+					"bizinikiwi_justification_import_time",
 					"Time taken to import justifications",
 				))?,
 				registry,

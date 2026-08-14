@@ -36,28 +36,28 @@ impl MetricsRegistrant for Metrics {
 		Ok(Box::from(Self {
 			submitted_transactions: register(
 				Counter::new(
-					"substrate_sub_txpool_submitted_transactions",
+					"bizinikiwi_sub_txpool_submitted_transactions",
 					"Total number of transactions submitted",
 				)?,
 				registry,
 			)?,
 			validations_invalid: register(
 				Counter::new(
-					"substrate_sub_txpool_validations_invalid",
+					"bizinikiwi_sub_txpool_validations_invalid",
 					"Total number of transactions that were removed from the pool as invalid",
 				)?,
 				registry,
 			)?,
 			block_transactions_pruned: register(
 				Counter::new(
-					"substrate_sub_txpool_block_transactions_pruned",
+					"bizinikiwi_sub_txpool_block_transactions_pruned",
 					"Total number of transactions that was requested to be pruned by block events",
 				)?,
 				registry,
 			)?,
 			block_transactions_resubmitted: register(
 				Counter::new(
-					"substrate_sub_txpool_block_transactions_resubmitted",
+					"bizinikiwi_sub_txpool_block_transactions_resubmitted",
 					"Total number of transactions that was requested to be resubmitted by block events",
 				)?,
 				registry,

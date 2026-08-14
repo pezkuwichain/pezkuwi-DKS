@@ -92,7 +92,7 @@ impl Metrics {
 		Ok(Self {
 			propagated_transactions: register(
 				Counter::new(
-					"substrate_sync_propagated_transactions",
+					"bizinikiwi_sync_propagated_transactions",
 					"Number of transactions propagated to at least one peer",
 				)?,
 				r,

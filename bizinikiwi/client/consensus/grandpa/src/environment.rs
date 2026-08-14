@@ -400,19 +400,22 @@ impl Metrics {
 	) -> Result<Self, PrometheusError> {
 		Ok(Self {
 			finality_grandpa_round: register(
-				Gauge::new("substrate_finality_grandpa_round", "Highest completed GRANDPA round.")?,
+				Gauge::new(
+					"bizinikiwi_finality_grandpa_round",
+					"Highest completed GRANDPA round.",
+				)?,
 				registry,
 			)?,
 			finality_grandpa_prevotes: register(
 				Counter::new(
-					"substrate_finality_grandpa_prevotes_total",
+					"bizinikiwi_finality_grandpa_prevotes_total",
 					"Total number of GRANDPA prevotes cast locally.",
 				)?,
 				registry,
 			)?,
 			finality_grandpa_precommits: register(
 				Counter::new(
-					"substrate_finality_grandpa_precommits_total",
+					"bizinikiwi_finality_grandpa_precommits_total",
 					"Total number of GRANDPA precommits cast locally.",
 				)?,
 				registry,

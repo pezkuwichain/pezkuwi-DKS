@@ -115,19 +115,19 @@ impl Metrics {
 		MajorSyncingGauge::register(r, major_syncing)?;
 		Ok(Self {
 			peers: {
-				let g = Gauge::new("substrate_sync_peers", "Number of peers we sync with")?;
+				let g = Gauge::new("bizinikiwi_sync_peers", "Number of peers we sync with")?;
 				register(g, r)?
 			},
 			import_queue_blocks_submitted: {
 				let c = Counter::new(
-					"substrate_sync_import_queue_blocks_submitted",
+					"bizinikiwi_sync_import_queue_blocks_submitted",
 					"Number of blocks submitted to the import queue.",
 				)?;
 				register(c, r)?
 			},
 			import_queue_justifications_submitted: {
 				let c = Counter::new(
-					"substrate_sync_import_queue_justifications_submitted",
+					"bizinikiwi_sync_import_queue_justifications_submitted",
 					"Number of justifications submitted to the import queue.",
 				)?;
 				register(c, r)?
@@ -147,7 +147,7 @@ impl MajorSyncingGauge {
 		prometheus_endpoint::register(
 			SourcedGauge::new(
 				&Opts::new(
-					"substrate_sub_libp2p_is_major_syncing",
+					"bizinikiwi_sub_libp2p_is_major_syncing",
 					"Whether the node is performing a major sync or not.",
 				),
 				MajorSyncingGauge(value),
