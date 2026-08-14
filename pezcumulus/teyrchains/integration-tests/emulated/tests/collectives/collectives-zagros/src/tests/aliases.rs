@@ -26,12 +26,23 @@ const DENIED: bool = false;
 const TELEPORT_FEES: bool = true;
 const RESERVE_TRANSFER_FEES: bool = false;
 
+/// Fee budget for one cross-chain alias attempt. The macro splits it in half: one half pays for
+/// local execution and delivery on the sending chain, the other is carried to the remote leg.
+///
+/// Sized for the most expensive sender in the lists below, Penpal, which weighs messages with
+/// `FixedWeightBounds` instead of benchmarked weights and so bills a five-instruction message
+/// for 320kb of proof size — nineteen times what a system teyrchain measures for the same
+/// message. `ZAGROS_ED * 10` left that half short and the transfer failed before the alias these
+/// tests exist to check was ever attempted. Same figure as the Asset Hub and People copies of
+/// these tests, derived on the Asset Hub from measurement.
+const ALIAS_FEES: u128 = ZAGROS_ED * 20;
+
 #[test]
 fn account_on_sibling_syschain_aliases_into_same_local_account() {
 	// origin and target are the same account on different chains
 	let origin: AccountId = [1; 32].into();
 	let target = origin.clone();
-	let fees = ZAGROS_ED * 10;
+	let fees = ALIAS_FEES;
 
 	PenpalB::mint_foreign_asset(
 		<PenpalB as Chain>::RuntimeOrigin::signed(PenpalAssetOwner::get()),
@@ -65,7 +76,7 @@ fn account_on_sibling_syschain_cannot_alias_into_different_local_account() {
 	// origin and target are different accounts on different chains
 	let origin: AccountId = [1; 32].into();
 	let target: AccountId = [2; 32].into();
-	let fees = ZAGROS_ED * 10;
+	let fees = ALIAS_FEES;
 
 	PenpalB::mint_foreign_asset(
 		<PenpalB as Chain>::RuntimeOrigin::signed(PenpalAssetOwner::get()),
@@ -194,7 +205,7 @@ fn authorized_cross_chain_aliases() {
 	let origin: AccountId = [100; 32].into();
 	let bad_origin: AccountId = [150; 32].into();
 	let target: AccountId = [200; 32].into();
-	let fees = ZAGROS_ED * 10;
+	let fees = ALIAS_FEES;
 
 	let pal_admin = <PenpalB as Chain>::RuntimeOrigin::signed(PenpalAssetOwner::get());
 	PenpalB::mint_foreign_asset(pal_admin.clone(), Location::parent(), origin.clone(), fees * 10);

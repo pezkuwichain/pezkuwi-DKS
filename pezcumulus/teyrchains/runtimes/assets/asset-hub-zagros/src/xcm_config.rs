@@ -41,8 +41,12 @@ use pezkuwi_teyrchain_primitives::primitives::Sibling;
 use pezkuwichain_runtime_constants::system_teyrchain::ASSET_HUB_ID;
 use pezpallet_xcm::{AuthorizedAliasers, XcmPassthrough};
 use pezsp_runtime::traits::{AccountIdConversion, TryConvertInto};
-use testnet_teyrchains_constants::pezkuwichain::snowbridge::{
-	EthereumNetwork, INBOUND_QUEUE_PALLET_INDEX,
+// Read from this chain's own ecosystem module. These were taken from `pezkuwichain::` — the two
+// modules carry the same figures today, so nothing was misbehaving, but the whole reason the
+// modules are separate is that either ecosystem may point at a different Ethereum, and this chain
+// would have silently followed the mainnet's choice.
+use testnet_teyrchains_constants::zagros::snowbridge::{
+	EthereumNetwork, INBOUND_QUEUE_PALLET_INDEX_V1, INBOUND_QUEUE_PALLET_INDEX_V2,
 };
 use teyrchains_common::{
 	xcm_config::{
@@ -119,13 +123,20 @@ parameter_types! {
 		(Parent, Teyrchain(COLLECTIVES_PARA_ID), PalletInstance(FELLOWSHIP_SALARY_PALLET_INDEX)).into();
 	pub FellowshipTreasuryLocation: Location =
 		(Parent, Teyrchain(COLLECTIVES_PARA_ID), PalletInstance(FELLOWSHIP_TREASURY_PALLET_INDEX)).into();
+	/// The Secretary's salary pallet on the Collectives chain, which pays in USDT held here and
+	/// so dispatches the same unpaid XCM the Fellowship salary does. It was left out when the
+	/// Fellowship entries were added, which left the Secretary collective fully configured —
+	/// ranks, budget, paymaster — yet unable to pay anyone: the barrier rejected every payout.
+	pub SecretarySalaryLocation: Location =
+		(Parent, Teyrchain(COLLECTIVES_PARA_ID), PalletInstance(SECRETARY_SALARY_PALLET_INDEX)).into();
 }
 
-/// Para id of the Collectives chain in this ecosystem, and the indices its Fellowship salary
-/// and treasury pallets are mounted at.
+/// Para id of the Collectives chain in this ecosystem, and the indices of the pallets there that
+/// settle their spends on this chain.
 const COLLECTIVES_PARA_ID: u32 = 1001;
 const FELLOWSHIP_SALARY_PALLET_INDEX: u8 = 64;
 const FELLOWSHIP_TREASURY_PALLET_INDEX: u8 = 65;
+const SECRETARY_SALARY_PALLET_INDEX: u8 = 91;
 
 /// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
 /// when determining ownership of accounts for asset transacting and when attempting to use XCM
@@ -342,6 +353,7 @@ pub type Barrier = TrailingSetTopicAsId<
 						Equals<RelayTreasuryLocation>,
 						Equals<FellowshipSalaryLocation>,
 						Equals<FellowshipTreasuryLocation>,
+						Equals<SecretarySalaryLocation>,
 						Equals<bridging::SiblingBridgeHub>,
 					)>,
 					// Subscriptions for version tracking are OK.
@@ -363,14 +375,15 @@ pub type WaivedLocations = (
 	Equals<RootLocation>,
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
 	Equals<RelayTreasuryLocation>,
-	// The Fellowship's salary and treasury pallets. `RelayOrOtherSystemTeyrchains` admits the
-	// Collectives chain itself but not a pallet within it, and treasury payouts carry an
+	// The Collectives chain's spending pallets. `RelayOrOtherSystemTeyrchains` admits the
+	// Collectives chain itself but not a pallet within it, and these payouts carry an
 	// appendix that reports the outcome home under `SetFeesMode { jit_withdraw }` — so without
-	// this the delivery fee is charged to the Fellowship's sovereign account here, which holds
-	// no native balance, and the payout fails with `FundsUnavailable`. Making the Fellowship
+	// this the delivery fee is charged to the paying pallet's sovereign account here, which holds
+	// no native balance, and the payout fails with `FundsUnavailable`. Making each collective
 	// keep a balance on this chain just to acknowledge its own spends would be the wrong fix.
 	Equals<FellowshipSalaryLocation>,
 	Equals<FellowshipTreasuryLocation>,
+	Equals<SecretarySalaryLocation>,
 );
 
 // Asset Hub trusts only particular, pre-configured bridged locations from a different consensus
@@ -693,7 +706,18 @@ pub mod bridging {
 				1,
 				[
 					Teyrchain(SiblingBridgeHubParaId::get()),
-					PalletInstance(INBOUND_QUEUE_PALLET_INDEX)
+					PalletInstance(INBOUND_QUEUE_PALLET_INDEX_V1)
+				]
+			);
+			/// The second inbound queue on the Bridge Hub. That chain runs both, but only the
+			/// first was admitted here, so every message arriving over the newer queue was
+			/// refused at `UniversalOrigin` with `InvalidLocation` — the Bridge Hub could
+			/// receive from Ethereum and this chain would not hear it.
+			pub SiblingBridgeHubWithEthereumInboundQueueV2Instance: Location = Location::new(
+				1,
+				[
+					Teyrchain(SiblingBridgeHubParaId::get()),
+					PalletInstance(INBOUND_QUEUE_PALLET_INDEX_V2)
 				]
 			);
 
@@ -715,6 +739,7 @@ pub mod bridging {
 			pub UniversalAliases: BTreeSet<(Location, Junction)> = BTreeSet::from_iter(
 				alloc::vec![
 					(SiblingBridgeHubWithEthereumInboundQueueInstance::get(), GlobalConsensus(EthereumNetwork::get().into())),
+					(SiblingBridgeHubWithEthereumInboundQueueV2Instance::get(), GlobalConsensus(EthereumNetwork::get().into())),
 				]
 			);
 		}

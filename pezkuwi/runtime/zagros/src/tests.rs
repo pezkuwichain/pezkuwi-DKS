@@ -309,3 +309,67 @@ fn governance_track_for_origin_mapping() {
 		);
 	}
 }
+
+#[test]
+fn votable_issuance_excludes_the_checking_account() {
+	use governance::VotableIssuance;
+	use pezframe_support::traits::{
+		fungible::{Inspect, Mutate},
+		Get,
+	};
+
+	pezsp_io::TestExternalities::new_empty().execute_with(|| {
+		let check_account = XcmPallet::check_account();
+		let voter = Alice.to_account_id();
+
+		// Five million in circulation, five million standing behind the supply that lives on the
+		// other chains — the allocation the genesis is built around.
+		Balances::mint_into(&voter, 5_000_000 * UNITS).unwrap();
+		Balances::mint_into(&check_account, 5_000_000 * UNITS).unwrap();
+
+		assert_eq!(Balances::active_issuance(), 10_000_000 * UNITS);
+		assert_eq!(
+			VotableIssuance::get(),
+			5_000_000 * UNITS,
+			"the checking account cannot vote and must not count toward turnout"
+		);
+	});
+}
+
+#[test]
+fn fast_track_support_floor_is_measured_against_what_can_vote() {
+	use governance::VotableIssuance;
+	use pezframe_support::traits::{
+		fungible::{Inspect, Mutate},
+		Get,
+	};
+	use pezsp_runtime::Perbill;
+
+	// `SUP_WHITELISTED_CALLER` floors at five percent and never decays below it, so the fast path
+	// is only ever usable if that fraction of the turnout denominator can actually be voted. With
+	// the checking account counted, the floor is a fraction of supply that includes tokens no one
+	// holds; the larger the seed, the further out of reach the emergency route drifts — and it
+	// would only be discovered in an emergency.
+	pezsp_io::TestExternalities::new_empty().execute_with(|| {
+		let check_account = XcmPallet::check_account();
+		let voter = Alice.to_account_id();
+
+		Balances::mint_into(&voter, 5_000_000 * UNITS).unwrap();
+		Balances::mint_into(&check_account, 5_000_000 * UNITS).unwrap();
+
+		let floor = Perbill::from_percent(5);
+		let required = floor * VotableIssuance::get();
+		let circulating = Balances::active_issuance() - Balances::balance(&check_account);
+
+		assert_eq!(required, 250_000 * UNITS);
+		assert_eq!(
+			floor * Balances::active_issuance(),
+			500_000 * UNITS,
+			"counting the checking account would double what the floor demands"
+		);
+		assert!(
+			required * 2 <= circulating,
+			"the floor has to sit well inside what is actually held: {required} of {circulating}"
+		);
+	});
+}

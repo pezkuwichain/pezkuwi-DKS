@@ -87,7 +87,12 @@ fn burn_at_relay(stash: &AccountId, value: Balance) -> Result<(), XcmError> {
 /// `construct_runtime` of the Relay chain.
 #[derive(Encode, Decode)]
 enum RelayRuntimePallets {
-	#[codec(index = 66)]
+	// The Zagros relay mounts `Coretime` at 74, the same index the mainnet relay uses. The 66
+	// this replaced is where `OnDemandAssignmentProvider` sits, so every call this chain makes
+	// across the coretime interface — the core count request, the revenue report, the core
+	// assignment — was addressed to the wrong pezpallet and refused. Nothing in the sales cycle
+	// could reach the relay. The mainnet copy of this file already carried the right figure.
+	#[codec(index = 74)]
 	Coretime(CoretimeProviderCalls),
 }
 

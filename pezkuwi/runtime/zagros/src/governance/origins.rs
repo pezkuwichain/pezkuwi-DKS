@@ -20,7 +20,7 @@ pub use pezpallet_custom_origins::*;
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet_custom_origins {
-	use crate::{Balance, CENTS, GRAND};
+	use crate::{Balance, DOLLARS, GRAND};
 	use pezframe_support::pezpallet_prelude::*;
 
 	#[pezpallet::config]
@@ -194,7 +194,7 @@ pub mod pezpallet_custom_origins {
 
 	decl_ensure! {
 		pub type Spender: EnsureOrigin<Success = Balance> {
-			SmallTipper = 250 * 3 * CENTS,
+			SmallTipper = 250 * DOLLARS,
 			BigTipper = 1 * GRAND,
 			SmallSpender = 10 * GRAND,
 			MediumSpender = 100 * GRAND,

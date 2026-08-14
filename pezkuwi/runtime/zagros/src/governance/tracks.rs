@@ -222,7 +222,7 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 18] =
 		info: pezpallet_referenda::TrackInfo {
 			name: s("small_tipper"),
 			max_deciding: 200,
-			decision_deposit: 1 * 3 * CENTS,
+			decision_deposit: 1 * DOLLARS,
 			prepare_period: 1 * MINUTES,
 			decision_period: 7 * DAYS,
 			confirm_period: 10 * MINUTES,
@@ -236,7 +236,7 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 18] =
 		info: pezpallet_referenda::TrackInfo {
 			name: s("big_tipper"),
 			max_deciding: 100,
-			decision_deposit: 10 * 3 * CENTS,
+			decision_deposit: 10 * DOLLARS,
 			prepare_period: 10 * MINUTES,
 			decision_period: 7 * DAYS,
 			confirm_period: 1 * HOURS,
@@ -250,7 +250,7 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 18] =
 		info: pezpallet_referenda::TrackInfo {
 			name: s("small_spender"),
 			max_deciding: 50,
-			decision_deposit: 100 * 3 * CENTS,
+			decision_deposit: 100 * DOLLARS,
 			prepare_period: 4 * HOURS,
 			decision_period: 28 * DAYS,
 			confirm_period: 12 * HOURS,
@@ -264,7 +264,7 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 18] =
 		info: pezpallet_referenda::TrackInfo {
 			name: s("medium_spender"),
 			max_deciding: 50,
-			decision_deposit: 200 * 3 * CENTS,
+			decision_deposit: 200 * DOLLARS,
 			prepare_period: 4 * HOURS,
 			decision_period: 28 * DAYS,
 			confirm_period: 24 * HOURS,
@@ -278,7 +278,7 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 18] =
 		info: pezpallet_referenda::TrackInfo {
 			name: s("big_spender"),
 			max_deciding: 50,
-			decision_deposit: 400 * 3 * CENTS,
+			decision_deposit: 400 * DOLLARS,
 			prepare_period: 4 * HOURS,
 			decision_period: 28 * DAYS,
 			confirm_period: 48 * HOURS,

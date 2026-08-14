@@ -45,7 +45,6 @@ fn user_send_message_directly_bypass_exporter_from_ah_will_fail() {
 	BridgeHubZagros::fund_accounts(vec![(sov_account_for_sender, INITIAL_FUND)]);
 
 	AssetHubZagros::execute_with(|| {
-		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
 		type RuntimeOrigin = <AssetHubZagros as Chain>::RuntimeOrigin;
 
 		let local_fee_asset =
@@ -59,35 +58,33 @@ fn user_send_message_directly_bypass_exporter_from_ah_will_fail() {
 			fun: Fungible(TOKEN_AMOUNT * 1_000_000_000),
 		};
 
-		assert_ok!(<AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::send(
-			RuntimeOrigin::signed(AssetHubZagrosSender::get()),
-			bx!(VersionedLocation::from(bridge_hub())),
-			bx!(VersionedXcm::from(Xcm(vec![
-				WithdrawAsset(local_fee_asset.clone().into()),
-				BuyExecution { fees: local_fee_asset.clone(), weight_limit: Unlimited },
-				ExportMessage {
-					network: Ethereum { chain_id: SEPOLIA_ID },
-					destination: Here,
-					xcm: Xcm(vec![
-						WithdrawAsset(weth_asset.clone().into()),
-						DepositAsset { assets: Wild(All), beneficiary: beneficiary() },
-						SetTopic([0; 32]),
-					]),
-				},
-			]))),
-		));
-
-		assert_expected_events!(
-			AssetHubZagros,
-			vec![RuntimeEvent::PezkuwiXcm(pezpallet_xcm::Event::Sent{ .. }) => {},]
-		);
-	});
-
-	BridgeHubZagros::execute_with(|| {
-		type RuntimeEvent = <BridgeHubZagros as Chain>::RuntimeEvent;
-		assert_expected_events!(
-			BridgeHubZagros,
-			vec![RuntimeEvent::MessageQueue(pezpallet_message_queue::Event::Processed{ success:false, .. }) => {},]
+		// This chain refuses the raw `send` at the origin: `SendXcmOrigin` converts with `()`, so
+		// no signed origin resolves to a location and the extrinsic never reaches the router.
+		// Root still passes, through the fallback inside `EnsureXcmOrigin` — the root-origin case
+		// further down this file still sends. The test was written against the upstream setting,
+		// where a user may send and the exporter on the Bridge Hub then rejects the message. What
+		// it exists to prove — that a user cannot bypass the exporter — holds here more strongly:
+		// the attempt dies a layer earlier and no message is produced at all. So it is asserted
+		// at the layer that enforces it, and there is no Bridge Hub leg left to check.
+		assert_err!(
+			<AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::send(
+				RuntimeOrigin::signed(AssetHubZagrosSender::get()),
+				bx!(VersionedLocation::from(bridge_hub())),
+				bx!(VersionedXcm::from(Xcm(vec![
+					WithdrawAsset(local_fee_asset.clone().into()),
+					BuyExecution { fees: local_fee_asset.clone(), weight_limit: Unlimited },
+					ExportMessage {
+						network: Ethereum { chain_id: SEPOLIA_ID },
+						destination: Here,
+						xcm: Xcm(vec![
+							WithdrawAsset(weth_asset.clone().into()),
+							DepositAsset { assets: Wild(All), beneficiary: beneficiary() },
+							SetTopic([0; 32]),
+						]),
+					},
+				]))),
+			),
+			DispatchError::BadOrigin
 		);
 	});
 }

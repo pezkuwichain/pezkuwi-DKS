@@ -45,6 +45,15 @@ fn fellowship_treasury_spend() {
 	// prefund Asset Hub checking account so we accept teleport from relay
 	AssetHubZagros::fund_accounts(vec![(check_account, treasury_balance)]);
 
+	// The relay treasury pays out over XCM: the message descends into `PalletInstance(18)` and
+	// transfers from that origin's sovereign account here. Nothing funds it, so the transfer
+	// failed with `FundsUnavailable` and the beneficiary was left at zero.
+	let relay_treasury_on_ah = AssetHubZagros::execute_with(|| {
+		AssetHubLocationToAccountId::convert_location(&Location::new(1, [PalletInstance(18)]))
+			.unwrap()
+	});
+	AssetHubZagros::fund_accounts(vec![(relay_treasury_on_ah, treasury_balance)]);
+
 	Zagros::execute_with(|| {
 		type RuntimeEvent = <Zagros as Chain>::RuntimeEvent;
 		type RuntimeCall = <Zagros as Chain>::RuntimeCall;

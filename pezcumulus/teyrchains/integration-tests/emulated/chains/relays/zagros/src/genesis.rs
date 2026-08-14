@@ -33,6 +33,9 @@ use zagros_runtime_constants::currency::UNITS as ZGR;
 pub const ED: Balance = zagros_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
 const ENDOWMENT: u128 = 1_000_000 * ZGR;
 
+/// `XcmPallet::check_account()` — the `py/xcmch` pezpallet id truncated into an account.
+const CHECK_ACCOUNT: [u8; 32] = *b"modlpy/xcmch\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+
 fn session_keys(
 	babe: BabeId,
 	grandpa: GrandpaId,
@@ -55,7 +58,25 @@ pub fn genesis() -> Storage {
 	let genesis_config = zagros_runtime::RuntimeGenesisConfig {
 		system: zagros_runtime::SystemConfig::default(),
 		balances: zagros_runtime::BalancesConfig {
-			balances: accounts::init_balances().iter().cloned().map(|k| (k, ENDOWMENT)).collect(),
+			balances: accounts::init_balances()
+				.iter()
+				.cloned()
+				.map(|k| (k, ENDOWMENT))
+				// Seed the checking account by the rule the real genesis will use, rather than by
+				// a comfortable number: with `MintLocation::Local` an arriving teleport is
+				// checked in against this account, so it has to cover everything that can arrive
+				// — which at genesis is whatever the other chains hold in circulation.
+				//
+				// Here that is the same account set endowed on the sibling chains, so the seed
+				// follows from the endowment and the account count and moves with them. On the
+				// live chain the same rule applies to the split of supply between this chain and
+				// the Asset Hub; only the allocation differs, and a testnet that seeded some
+				// roomy figure instead would rehearse nothing and fail first in production.
+				.chain(core::iter::once((
+					CHECK_ACCOUNT.into(),
+					ENDOWMENT * accounts::init_balances().len() as u128,
+				)))
+				.collect(),
 			..Default::default()
 		},
 		session: zagros_runtime::SessionConfig {

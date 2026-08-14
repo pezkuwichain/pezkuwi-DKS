@@ -34,6 +34,7 @@ use pezkuwi_runtime_common::{
 	xcm_sender::{ChildTeyrchainRouter, ExponentialPrice},
 	ToAuthor,
 };
+use pezpallet_xcm::XcmPassthrough;
 use pezsp_core::ConstU32;
 use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
 use xcm_builder::{
@@ -59,8 +60,20 @@ parameter_types! {
 	pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(ZAGROS_GENESIS_HASH);
 	pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
 	pub CheckAccount: AccountId = XcmPallet::check_account();
-	/// Pezkuwi relay does not have mint authority anymore after the Asset Hub migration.
-	pub TeleportTracking: Option<(AccountId, MintLocation)> = None;
+	/// Track what teleports away and what comes back.
+	///
+	/// The comment this replaces said the relay has no mint authority since the Asset Hub
+	/// migration, but `None` does not remove mint authority — it removes the accounting. The
+	/// chain still accepts a teleport from any trusted teyrchain and mints on receipt; it simply
+	/// keeps no record that the supply ever left. Measured on the mainnet, which carries the same
+	/// setting: the checking account has never existed and no teyrchain sovereign account exists
+	/// either, so nothing has ever backed a teleport in this direction.
+	///
+	/// With `MintLocation::Local` the chain can only mint back what previously left, because an
+	/// arriving teleport is checked in against this account. That is the property worth having,
+	/// and it is what the relay-side teleport test describes. It requires the account to be
+	/// seeded, which is a genesis matter rather than a runtime one.
+	pub TeleportTracking: Option<(AccountId, MintLocation)> = Some((CheckAccount::get(), MintLocation::Local));
 	pub TreasuryAccount: AccountId = Treasury::account_id();
 }
 
@@ -97,6 +110,11 @@ type LocalOriginConverter = (
 	ChildTeyrchainAsNative<teyrchains_origin::Origin, RuntimeOrigin>,
 	// The AccountId32 location type can be expressed natively as a `Signed` origin.
 	SignedAccountId32AsNative<ThisNetwork, RuntimeOrigin>,
+	// Xcm origins can be represented natively under the Xcm pezpallet's Xcm origin. Without this
+	// there is no converter for `OriginKind::Xcm` at all, so a `Transact` sent that way is
+	// rejected with `BadOrigin` no matter who sent it — which is how the Fellowship's whitelist
+	// call was refused even before its origin could be judged.
+	XcmPassthrough<RuntimeOrigin>,
 );
 
 parameter_types! {
@@ -121,42 +139,54 @@ pub type XcmRouter = WithUniqueTopic<
 parameter_types! {
 	pub Tyr: AssetFilter = Wild(AllOf { fun: WildFungible, id: AssetId(TokenLocation::get()) });
 	pub AssetHub: Location = Teyrchain(ASSET_HUB_ID).into_location();
-	pub Contracts: Location = Teyrchain(CONTRACTS_ID).into_location();
-	pub Encointer: Location = Teyrchain(ENCOINTER_ID).into_location();
+	pub Collectives: Location = Teyrchain(COLLECTIVES_ID).into_location();
 	pub BridgeHub: Location = Teyrchain(BRIDGE_HUB_ID).into_location();
 	pub People: Location = Teyrchain(PEOPLE_ID).into_location();
 	pub Broker: Location = Teyrchain(BROKER_ID).into_location();
-	pub Tick: Location = Teyrchain(100).into_location();
-	pub Trick: Location = Teyrchain(110).into_location();
-	pub Track: Location = Teyrchain(120).into_location();
-	pub RocForTick: (AssetFilter, Location) = (Tyr::get(), Tick::get());
-	pub RocForTrick: (AssetFilter, Location) = (Tyr::get(), Trick::get());
-	pub RocForTrack: (AssetFilter, Location) = (Tyr::get(), Track::get());
-	pub RocForAssetHub: (AssetFilter, Location) = (Tyr::get(), AssetHub::get());
-	pub RocForContracts: (AssetFilter, Location) = (Tyr::get(), Contracts::get());
-	pub RocForEncointer: (AssetFilter, Location) = (Tyr::get(), Encointer::get());
-	pub RocForBridgeHub: (AssetFilter, Location) = (Tyr::get(), BridgeHub::get());
-	pub RocForPeople: (AssetFilter, Location) = (Tyr::get(), People::get());
-	pub RocForBroker: (AssetFilter, Location) = (Tyr::get(), Broker::get());
+	pub TyrForAssetHub: (AssetFilter, Location) = (Tyr::get(), AssetHub::get());
+	pub TyrForCollectives: (AssetFilter, Location) = (Tyr::get(), Collectives::get());
+	pub TyrForBridgeHub: (AssetFilter, Location) = (Tyr::get(), BridgeHub::get());
+	pub TyrForPeople: (AssetFilter, Location) = (Tyr::get(), People::get());
+	pub TyrForBroker: (AssetFilter, Location) = (Tyr::get(), Broker::get());
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }
+/// The system teyrchains this relay will teleport its native token to and from.
+///
+/// One entry per chain that actually exists in this ecosystem. The list the mirror brought over
+/// named chains from another network — `Tick` (100), `Trick` (110), `Track` (120) and
+/// `Encointer` (1003) have no runtime here, and `Contracts` resolved to 1002, which is the
+/// Bridge Hub, so it trusted the same chain twice. Collectives, which does exist and whose own
+/// teleport tests exercise this, had been dropped.
 pub type TrustedTeleporters = (
-	xcm_builder::Case<RocForTick>,
-	xcm_builder::Case<RocForTrick>,
-	xcm_builder::Case<RocForTrack>,
-	xcm_builder::Case<RocForAssetHub>,
-	xcm_builder::Case<RocForContracts>,
-	xcm_builder::Case<RocForEncointer>,
-	xcm_builder::Case<RocForBridgeHub>,
-	xcm_builder::Case<RocForPeople>,
-	xcm_builder::Case<RocForBroker>,
+	xcm_builder::Case<TyrForAssetHub>,
+	xcm_builder::Case<TyrForCollectives>,
+	xcm_builder::Case<TyrForBridgeHub>,
+	xcm_builder::Case<TyrForPeople>,
+	xcm_builder::Case<TyrForBroker>,
 );
 
 pub struct OnlyTeyrchains;
 impl Contains<Location> for OnlyTeyrchains {
 	fn contains(loc: &Location) -> bool {
 		matches!(loc.unpack(), (0, [Teyrchain(_)]))
+	}
+}
+
+/// The Fellowship's voice on the Collectives chain, as this chain sees it.
+///
+/// The Fellowship is a body on Collectives, not here, so a message it sends arrives as that
+/// chain's id followed by its plurality. `IsChildSystemTeyrchain` matches a bare teyrchain and
+/// stops there, which is why the trailing `Plurality` made every Fellowship message fail the
+/// barrier before it could be read — including the one that whitelists a call for the
+/// `whitelisted_caller` track, leaving that track reachable by root alone.
+pub struct FellowsPlurality;
+impl Contains<Location> for FellowsPlurality {
+	fn contains(loc: &Location) -> bool {
+		matches!(
+			loc.unpack(),
+			(0, [Teyrchain(COLLECTIVES_ID), Plurality { id: BodyId::Technical, .. }])
+		)
 	}
 }
 
@@ -177,8 +207,8 @@ pub type Barrier = TrailingSetTopicAsId<(
 		(
 			// If the message is one that immediately attempts to pay for execution, then allow it.
 			AllowTopLevelPaidExecutionFrom<Everything>,
-			// Messages coming from system teyrchains need not pay for execution.
-			AllowExplicitUnpaidExecutionFrom<IsChildSystemTeyrchain<ParaId>>,
+			// Messages from system teyrchains or the Fellows plurality need not pay for execution.
+			AllowExplicitUnpaidExecutionFrom<(IsChildSystemTeyrchain<ParaId>, FellowsPlurality)>,
 			// Subscriptions for version tracking are OK.
 			AllowSubscriptionsFrom<OnlyTeyrchains>,
 		),
