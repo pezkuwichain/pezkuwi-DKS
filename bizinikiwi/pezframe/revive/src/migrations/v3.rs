@@ -62,9 +62,9 @@ impl<T: Config> SteppedMigration for Migration<T> {
 			}
 
 			let mut iter = if let Some(ref last_key) = cursor {
-				pezframe_system::Account::<T>::iter_from(pezframe_system::Account::<T>::hashed_key_for(
-					last_key,
-				))
+				pezframe_system::Account::<T>::iter_from(
+					pezframe_system::Account::<T>::hashed_key_for(last_key),
+				)
 			} else {
 				pezframe_system::Account::<T>::iter()
 			};

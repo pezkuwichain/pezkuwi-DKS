@@ -17,18 +17,17 @@
 
 use super::utility::as_usize_saturated;
 use crate::{
+	Config, Error, U256,
 	address::AddressMapper,
 	vm::{
-		evm::{interpreter::Halt, util::as_usize_or_halt, EVMGas, Interpreter},
 		Ext, RuntimeCosts,
+		evm::{EVMGas, Interpreter, interpreter::Halt, util::as_usize_or_halt},
 	},
-	Config, Error, U256,
 };
 use core::ops::ControlFlow;
 use pezsp_core::H256;
 use pezsp_io::hashing::keccak_256;
 use revm::interpreter::gas::{BASE, VERYLOW};
-// TODO: Fix the gas handling for the memory operations
 
 /// The Keccak-256 hash of the empty string `""`.
 pub const KECCAK_EMPTY: [u8; 32] =
@@ -42,7 +41,7 @@ pub fn keccak256<E: Ext>(interpreter: &mut Interpreter<E>) -> ControlFlow<Halt> 
 	let len = as_usize_or_halt::<E::T>(*top)?;
 	interpreter
 		.ext
-		.gas_meter_mut()
+		.pezframe_meter_mut()
 		.charge_or_halt(RuntimeCosts::HashKeccak256(len as u32))?;
 
 	let hash = if len == 0 {

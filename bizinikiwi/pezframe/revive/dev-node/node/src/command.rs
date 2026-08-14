@@ -24,11 +24,11 @@ use pezkuwi_sdk::{pezsc_cli::BizinikiwiCli, pezsc_service::PartialComponents, *}
 
 impl BizinikiwiCli for Cli {
 	fn impl_name() -> String {
-		"Bizinikiwi Node".into()
+		"Substrate Node".into()
 	}
 
 	fn impl_version() -> String {
-		env!("BIZINIKIWI_CLI_IMPL_VERSION").into()
+		env!("SUBSTRATE_CLI_IMPL_VERSION").into()
 	}
 
 	fn description() -> String {
@@ -120,11 +120,15 @@ pub fn run_with_args(args: Vec<String>) -> pezsc_cli::Result<()> {
 		},
 		Some(Subcommand::ChainInfo(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
-			runner.sync_run(|config| cmd.run::<pez_revive_dev_runtime::OpaqueBlock>(&config))
+			runner.sync_run(|config| cmd.run::<revive_dev_runtime::OpaqueBlock>(&config))
 		},
 		None => {
 			// Enforce dev
 			cli.run.shared_params.dev = true;
+
+			// Increase max_response_size for large trace responses
+			cli.run.rpc_params.rpc_max_response_size =
+				cli.run.rpc_params.rpc_max_response_size.max(50);
 
 			// Pass Default logging settings if none are specified
 			if std::env::var("RUST_LOG").is_err() && cli.run.shared_params.log.is_empty() {

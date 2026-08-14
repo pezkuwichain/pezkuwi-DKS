@@ -19,7 +19,8 @@
 
 use alloc::vec::Vec;
 use alloy_core::rlp;
-use pezsp_core::{keccak_256, H160, H256};
+use pezsp_core::{H160, H256};
+use pezsp_crypto_hashing::keccak_256;
 
 /// Number of bytes that a bloom stores.
 pub const BLOOM_SIZE_BYTES: usize = 256;
@@ -135,7 +136,7 @@ impl AccumulateReceipt {
 
 /// Bloom log filter compatible with Ethereum implementation.
 ///
-/// This structure avoids conversions between bizinikiwi to alloy types
+/// This structure avoids conversions between substrate to alloy types
 /// to optimally compute the bloom.
 #[derive(Clone, Copy)]
 pub struct LogsBloom {

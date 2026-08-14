@@ -22,30 +22,42 @@ alloy-core = { workspace = true, default-features = true, features = [
 	"sol-types",
 ], optional = true }
 anyhow = { workspace = true, default-features = true, optional = true }
+cargo_metadata = { workspace = true, optional = true }
+hex = { workspace = true, features = ["alloc"], optional = true }
+pezpallet-revive-uapi = { workspace = true }
 pezsp-core = { workspace = true, default-features = true, optional = true }
 pezsp-io = { workspace = true, default-features = true, optional = true }
+polkavm-linker = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+toml = { workspace = true, optional = true }
 
 [build-dependencies]
 anyhow = { workspace = true, default-features = true }
 cargo_metadata = { workspace = true }
 hex = { workspace = true, features = ["alloc"] }
 pezpallet-revive-uapi = { workspace = true }
-polkavm-linker = { version = "0.29.0" }
+polkavm-linker = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }
 
 [features]
 default = ["std"]
-# only when std is enabled all fixtures are available
 std = [
 	"alloy-core",
 	"anyhow",
+	"cargo_metadata",
+	"hex",
 	"hex/std",
 	"pezpallet-revive-uapi/std",
 	"pezsp-core",
 	"pezsp-io",
+	"polkavm-linker",
+	"serde_json",
 	"serde_json/std",
+	"toml",
 ]
 serde = []
 with-tracing = []
-runtime-benchmarks = ["pezsp-io?/runtime-benchmarks"]
+runtime-benchmarks = [
+	"pezsp-io?/runtime-benchmarks",
+]

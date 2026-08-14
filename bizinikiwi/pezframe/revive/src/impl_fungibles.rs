@@ -24,30 +24,30 @@
 
 #![cfg(any(feature = "std", feature = "runtime-benchmarks", test))]
 
-use crate::OriginFor;
+use crate::{OriginFor, metering::TransactionLimits};
 use alloy_core::{
 	primitives::{Address, U256 as EU256},
 	sol_types::*,
 };
 use pezframe_support::{
-	traits::{
-		tokens::{
-			fungible, fungibles, DepositConsequence, Fortitude, Precision, Preservation,
-			Provenance, WithdrawConsequence,
-		},
-		OriginTrait,
-	},
 	PalletId,
+	traits::{
+		OriginTrait,
+		tokens::{
+			DepositConsequence, Fortitude, Precision, Preservation, Provenance,
+			WithdrawConsequence, fungible, fungibles,
+		},
+	},
 };
 use pezsp_core::{H160, U256};
-use pezsp_runtime::{traits::AccountIdConversion, DispatchError};
+use pezsp_runtime::{DispatchError, traits::AccountIdConversion};
 
 use super::{
-	address::AddressMapper, pezpallet, Config, ContractResult, ExecConfig, Pezpallet, Weight,
+	Config, ContractResult, ExecConfig, Pezpallet, Weight, address::AddressMapper, pezpallet,
 };
 use pez_ethereum_standards::IERC20;
 
-const GAS_LIMIT: Weight = Weight::from_parts(500_000_000_000, 10 * 1024 * 1024);
+const WEIGHT_LIMIT: Weight = Weight::from_parts(10_000_000_000, 1000_000);
 
 impl<T: Config> Pezpallet<T> {
 	// Test checking account for the `fungibles::*` implementation.
@@ -71,17 +71,18 @@ impl<T: Config> fungibles::Inspect<<T as pezframe_system::Config>::AccountId> fo
 			OriginFor::<T>::signed(Self::checking_account()),
 			asset_id,
 			U256::zero(),
-			GAS_LIMIT,
-			<<T as pezpallet::Config>::Currency as fungible::Inspect<_>>::total_issuance(),
+			TransactionLimits::WeightAndDeposit {
+				weight_limit: WEIGHT_LIMIT,
+				deposit_limit:
+					<<T as pezpallet::Config>::Currency as fungible::Inspect<_>>::total_issuance(),
+			},
 			data,
-			ExecConfig::new_bizinikiwi_tx(),
+			&ExecConfig::new_substrate_tx(),
 		);
-		if let Ok(return_value) = result {
-			if let Ok(eu256) = EU256::abi_decode_validate(&return_value.data) {
-				eu256.to::<u128>()
-			} else {
-				0
-			}
+		if let Ok(return_value) = result
+			&& let Ok(eu256) = EU256::abi_decode_validate(&return_value.data)
+		{
+			eu256.to::<u128>()
 		} else {
 			0
 		}
@@ -106,17 +107,18 @@ impl<T: Config> fungibles::Inspect<<T as pezframe_system::Config>::AccountId> fo
 			OriginFor::<T>::signed(account_id.clone()),
 			asset_id,
 			U256::zero(),
-			GAS_LIMIT,
-			<<T as pezpallet::Config>::Currency as fungible::Inspect<_>>::total_issuance(),
+			TransactionLimits::WeightAndDeposit {
+				weight_limit: WEIGHT_LIMIT,
+				deposit_limit:
+					<<T as pezpallet::Config>::Currency as fungible::Inspect<_>>::total_issuance(),
+			},
 			data,
-			ExecConfig::new_bizinikiwi_tx(),
+			&ExecConfig::new_substrate_tx(),
 		);
-		if let Ok(return_value) = result {
-			if let Ok(eu256) = EU256::abi_decode_validate(&return_value.data) {
-				eu256.to::<u128>()
-			} else {
-				0
-			}
+		if let Ok(return_value) = result
+			&& let Ok(eu256) = EU256::abi_decode_validate(&return_value.data)
+		{
+			eu256.to::<u128>()
 		} else {
 			0
 		}
@@ -171,16 +173,19 @@ impl<T: Config> fungibles::Mutate<<T as pezframe_system::Config>::AccountId> for
 		let checking_address = Address::from(Into::<[u8; 20]>::into(checking_account_eth));
 		let data =
 			IERC20::transferCall { to: checking_address, value: EU256::from(amount) }.abi_encode();
-		let ContractResult { result, gas_consumed, .. } = Self::bare_call(
+		let ContractResult { result, weight_consumed, .. } = Self::bare_call(
 			OriginFor::<T>::signed(who.clone()),
 			asset_id,
 			U256::zero(),
-			GAS_LIMIT,
-			<<T as pezpallet::Config>::Currency as fungible::Inspect<_>>::total_issuance(),
+			TransactionLimits::WeightAndDeposit {
+				weight_limit: WEIGHT_LIMIT,
+				deposit_limit:
+					<<T as pezpallet::Config>::Currency as fungible::Inspect<_>>::total_issuance(),
+			},
 			data,
-			ExecConfig::new_bizinikiwi_tx(),
+			&ExecConfig::new_substrate_tx(),
 		);
-		log::trace!(target: "whatiwant", "{gas_consumed}");
+		log::trace!(target: "whatiwant", "{weight_consumed}");
 		if let Ok(return_value) = result {
 			if return_value.did_revert() {
 				Err("Contract reverted".into())
@@ -211,10 +216,13 @@ impl<T: Config> fungibles::Mutate<<T as pezframe_system::Config>::AccountId> for
 			OriginFor::<T>::signed(Self::checking_account()),
 			asset_id,
 			U256::zero(),
-			GAS_LIMIT,
-			<<T as pezpallet::Config>::Currency as fungible::Inspect<_>>::total_issuance(),
+			TransactionLimits::WeightAndDeposit {
+				weight_limit: WEIGHT_LIMIT,
+				deposit_limit:
+					<<T as pezpallet::Config>::Currency as fungible::Inspect<_>>::total_issuance(),
+			},
 			data,
-			ExecConfig::new_bizinikiwi_tx(),
+			&ExecConfig::new_substrate_tx(),
 		);
 		if let Ok(return_value) = result {
 			if return_value.did_revert() {
@@ -278,19 +286,19 @@ impl<T: Config> fungibles::Unbalanced<<T as pezframe_system::Config>::AccountId>
 mod tests {
 	use super::*;
 	use crate::{
-		test_utils::{builder::*, ALICE},
-		tests::{Contracts, ExtBuilder, RuntimeOrigin, Test},
 		AccountInfoOf, Code,
+		test_utils::{ALICE, builder::*},
+		tests::{Contracts, ExtBuilder, RuntimeOrigin, Test},
 	};
 	use pezframe_support::assert_ok;
-	const ERC20_PVM_CODE: &[u8] = include_bytes!("../fixtures/erc20/erc20.polkavm");
+	use pezpallet_revive_fixtures::{FixtureType, compile_module_with_type};
 
 	#[test]
 	fn call_erc20_contract() {
 		ExtBuilder::default().existential_deposit(1).build().execute_with(|| {
 			let _ =
 				<<Test as Config>::Currency as fungible::Mutate<_>>::set_balance(&ALICE, 1_000_000);
-			let code = ERC20_PVM_CODE.to_vec();
+			let code = compile_module_with_type("MyToken", FixtureType::Resolc).unwrap().0.to_vec();
 			let amount = EU256::from(1000);
 			let constructor_data = sol_data::Uint::<256>::abi_encode(&amount);
 			let Contract { addr, .. } = BareInstantiateBuilder::<Test>::bare_instantiate(
@@ -315,7 +323,7 @@ mod tests {
 		ExtBuilder::default().existential_deposit(1).build().execute_with(|| {
 			let _ =
 				<<Test as Config>::Currency as fungible::Mutate<_>>::set_balance(&ALICE, 1_000_000);
-			let code = ERC20_PVM_CODE.to_vec();
+			let code = compile_module_with_type("MyToken", FixtureType::Resolc).unwrap().0.to_vec();
 			let amount = 1000;
 			let constructor_data = sol_data::Uint::<256>::abi_encode(&EU256::from(amount));
 			let Contract { addr, .. } = BareInstantiateBuilder::<Test>::bare_instantiate(
@@ -335,7 +343,7 @@ mod tests {
 		ExtBuilder::default().existential_deposit(1).build().execute_with(|| {
 			let _ =
 				<<Test as Config>::Currency as fungible::Mutate<_>>::set_balance(&ALICE, 1_000_000);
-			let code = ERC20_PVM_CODE.to_vec();
+			let code = compile_module_with_type("MyToken", FixtureType::Resolc).unwrap().0.to_vec();
 			let amount = 1000;
 			let constructor_data = sol_data::Uint::<256>::abi_encode(&EU256::from(amount));
 			let Contract { addr, .. } = BareInstantiateBuilder::<Test>::bare_instantiate(
@@ -353,7 +361,7 @@ mod tests {
 		ExtBuilder::default().existential_deposit(1).build().execute_with(|| {
 			let _ =
 				<<Test as Config>::Currency as fungible::Mutate<_>>::set_balance(&ALICE, 1_000_000);
-			let code = ERC20_PVM_CODE.to_vec();
+			let code = compile_module_with_type("MyToken", FixtureType::Resolc).unwrap().0.to_vec();
 			let amount = 1000;
 			let constructor_data = sol_data::Uint::<256>::abi_encode(&(EU256::from(amount * 2)));
 			let Contract { addr, .. } = BareInstantiateBuilder::<Test>::bare_instantiate(
@@ -389,7 +397,7 @@ mod tests {
 				&checking_account,
 				1_000_000,
 			);
-			let code = ERC20_PVM_CODE.to_vec();
+			let code = compile_module_with_type("MyToken", FixtureType::Resolc).unwrap().0.clone();
 			let amount = 1000;
 			let constructor_data = sol_data::Uint::<256>::abi_encode(&EU256::from(amount));
 			// We're instantiating the contract with the `CheckingAccount` so it has `amount` in it.
@@ -397,7 +405,10 @@ mod tests {
 				RuntimeOrigin::signed(checking_account.clone()),
 				Code::Upload(code),
 			)
-			.storage_deposit_limit(1_000_000_000_000)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: WEIGHT_LIMIT,
+				deposit_limit: 1_000_000_000_000,
+			})
 			.data(constructor_data)
 			.build_and_unwrap_contract();
 			assert_eq!(

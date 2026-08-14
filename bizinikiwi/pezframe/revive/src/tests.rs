@@ -16,15 +16,20 @@
 // limitations under the License.
 
 mod block_hash;
+mod deposit_payment;
 mod pezpallet_dummy;
 mod precompiles;
 mod pvm;
 mod sol;
+mod stipends;
 
 use std::collections::HashMap;
 
 use crate::{
-	self as pezpallet_revive,
+	self as pezpallet_revive, AccountId32Mapper, AddressMapper, BalanceOf, BalanceWithDust, Call,
+	CodeInfoOf, Config, DelegateInfo, ExecOrigin as Origin, ExecReturnValue, GenesisConfig,
+	OriginFor, Pezpallet, PristineCode,
+	deposit_payment::PGasDeposit,
 	evm::{
 		fees::{BlockRatioFee, Info as FeeInfo},
 		runtime::{EthExtra, SetWeightLimit},
@@ -32,24 +37,24 @@ use crate::{
 	genesis::{Account, ContractData},
 	mock::MockHandler,
 	test_utils::*,
-	AccountId32Mapper, AddressMapper, BalanceOf, BalanceWithDust, Call, CodeInfoOf, Config,
-	DelegateInfo, ExecOrigin as Origin, ExecReturnValue, GenesisConfig, OriginFor, Pezpallet,
-	PristineCode,
 };
 use pezframe_support::{
-	assert_ok, derive_impl, parameter_types,
+	DefaultNoBound, assert_ok, derive_impl, parameter_types,
 	pezpallet_prelude::EnsureOrigin,
-	traits::{ConstU32, ConstU64, FindAuthor, OriginTrait, StorageVersion},
-	weights::{constants::WEIGHT_REF_TIME_PER_SECOND, FixedFee, Weight},
+	traits::{
+		AsEnsureOriginWithArg, ConstU32, ConstU128, FindAuthor, OriginTrait, StorageVersion,
+		tokens::imbalance::ResolveTo,
+	},
+	weights::{FixedFee, Weight, constants::WEIGHT_REF_TIME_PER_SECOND},
 };
 use pezpallet_revive_fixtures::compile_module;
 use pezpallet_transaction_payment::{ChargeTransactionPayment, ConstFeeMultiplier, Multiplier};
 use pezsp_core::{H160, U256};
-use pezsp_keystore::{testing::MemoryKeystore, KeystoreExt};
+use pezsp_keystore::{KeystoreExt, testing::MemoryKeystore};
 use pezsp_runtime::{
+	AccountId32, BuildStorage, FixedU128, MultiAddress, MultiSignature, Perbill, Storage,
 	generic::Header,
 	traits::{BlakeTwo256, Convert, IdentityLookup, One},
-	AccountId32, BuildStorage, MultiAddress, MultiSignature, Perbill, Storage,
 };
 
 pub type Address = MultiAddress<AccountId32, u32>;
@@ -68,9 +73,10 @@ pub struct EthExtraImpl;
 
 impl EthExtra for EthExtraImpl {
 	type Config = Test;
-	type Extension = SignedExtra;
+	type ExtensionV0 = SignedExtra;
+	type ExtensionOtherVersions = pezsp_runtime::traits::InvalidVersion;
 
-	fn get_eth_extension(nonce: u32, tip: BalanceOf<Test>) -> Self::Extension {
+	fn get_eth_extension(nonce: u32, tip: BalanceOf<Test>) -> Self::ExtensionV0 {
 		(
 			pezframe_system::CheckNonce::from(nonce),
 			ChargeTransactionPayment::from(tip),
@@ -89,6 +95,9 @@ pezframe_support::construct_runtime!(
 		Contracts: pezpallet_revive,
 		Proxy: pezpallet_proxy,
 		TransactionPayment: pezpallet_transaction_payment,
+		Assets: pezpallet_assets,
+		AssetsHolder: pezpallet_assets_holder,
+		AssetsFreezer: pezpallet_assets_freezer,
 		Dummy: pezpallet_dummy
 	}
 );
@@ -114,8 +123,8 @@ pub mod test_utils {
 		Test,
 	};
 	use crate::{
-		address::AddressMapper, exec::AccountIdOf, AccountInfo, AccountInfoOf, BalanceOf, CodeInfo,
-		CodeInfoOf, Config, ContractInfo, PristineCode,
+		AccountInfo, AccountInfoOf, BalanceOf, CodeInfo, CodeInfoOf, Config, ContractInfo,
+		PristineCode, address::AddressMapper, exec::AccountIdOf,
 	};
 	use codec::{Encode, MaxEncodedLen};
 	use pezframe_support::traits::fungible::{InspectHold, Mutate};
@@ -129,16 +138,16 @@ pub mod test_utils {
 		let contract = <ContractInfo<Test>>::new(&address, 0, code_hash).unwrap();
 		AccountInfo::<Test>::insert_contract(&address, contract);
 	}
-	pub fn set_balance(who: &AccountIdOf<Test>, amount: u64) {
+	pub fn set_balance(who: &AccountIdOf<Test>, amount: u128) {
 		let _ = <Test as Config>::Currency::set_balance(who, amount);
 	}
-	pub fn get_balance(who: &AccountIdOf<Test>) -> u64 {
+	pub fn get_balance(who: &AccountIdOf<Test>) -> u128 {
 		<Test as Config>::Currency::free_balance(who)
 	}
 	pub fn get_balance_on_hold(
 		reason: &<Test as Config>::RuntimeHoldReason,
 		who: &AccountIdOf<Test>,
-	) -> u64 {
+	) -> u128 {
 		<Test as Config>::Currency::balance_on_hold(reason.into(), who)
 	}
 	pub fn get_contract(addr: &H160) -> ContractInfo<Test> {
@@ -155,14 +164,14 @@ pub mod test_utils {
 	}
 	pub fn contract_base_deposit(addr: &H160) -> BalanceOf<Test> {
 		let contract_info = self::get_contract(&addr);
-		let info_size = contract_info.encoded_size() as u64;
+		let info_size = contract_info.encoded_size() as u128;
 		let code_deposit = CodeHashLockupDepositPercent::get()
 			.mul_ceil(get_code_deposit(&contract_info.code_hash));
 		let deposit = DepositPerByte::get()
 			.saturating_mul(info_size)
 			.saturating_add(DepositPerItem::get())
 			.saturating_add(code_deposit);
-		let immutable_size = contract_info.immutable_data_len() as u64;
+		let immutable_size = contract_info.immutable_data_len() as u128;
 		if immutable_size > 0 {
 			let immutable_deposit = DepositPerByte::get()
 				.saturating_mul(immutable_size)
@@ -172,12 +181,12 @@ pub mod test_utils {
 			deposit
 		}
 	}
-	pub fn expected_deposit(code_len: usize) -> u64 {
+	pub fn expected_deposit(code_len: usize) -> u128 {
 		// For code_info, the deposit for max_encoded_len is taken.
-		let code_info_len = CodeInfo::<Test>::max_encoded_len() as u64;
+		let code_info_len = CodeInfo::<Test>::max_encoded_len() as u128;
 		// Calculate deposit to be reserved.
 		// We add 2 storage items: one for code, other for code_info
-		DepositPerByte::get().saturating_mul(code_len as u64 + code_info_len)
+		DepositPerByte::get().saturating_mul(code_len as u128 + code_info_len)
 			+ DepositPerItem::get().saturating_mul(2)
 	}
 	pub fn ensure_stored(code_hash: pezsp_core::H256) -> usize {
@@ -214,9 +223,9 @@ pub mod test_utils {
 pub(crate) mod builder {
 	use super::Test;
 	use crate::{
-		test_utils::{builder::*, ALICE},
-		tests::RuntimeOrigin,
 		Code,
+		test_utils::{ALICE, builder::*},
+		tests::RuntimeOrigin,
 	};
 	use pezsp_core::{H160, H256};
 
@@ -256,10 +265,6 @@ pub(crate) mod builder {
 }
 
 impl Test {
-	pub fn set_unstable_interface(unstable_interface: bool) {
-		UNSTABLE_INTERFACE.with(|v| *v.borrow_mut() = unstable_interface);
-	}
-
 	pub fn set_allow_evm_bytecode(allow_evm_bytecode: bool) {
 		ALLOW_EVM_BYTECODE.with(|v| *v.borrow_mut() = allow_evm_bytecode);
 	}
@@ -270,7 +275,7 @@ parameter_types! {
 		pezframe_system::limits::BlockWeights::simple_max(
 			Weight::from_parts(2 * WEIGHT_REF_TIME_PER_SECOND, 10 * 1024 * 1024),
 		);
-	pub static ExistentialDeposit: u64 = 1;
+	pub static ExistentialDeposit: u128 = 1;
 }
 
 #[derive_impl(pezframe_system::config_preludes::TestDefaultConfig)]
@@ -279,14 +284,21 @@ impl pezframe_system::Config for Test {
 	type BlockWeights = BlockWeights;
 	type AccountId = AccountId32;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type AccountData = pezpallet_balances::AccountData<u64>;
+	type AccountData = pezpallet_balances::AccountData<u128>;
+	type OnNewAccount = crate::AutoMapper<Test>;
+	type OnKilledAccount = crate::AutoMapper<Test>;
 }
 
 #[derive_impl(pezpallet_balances::config_preludes::TestDefaultConfig)]
 impl pezpallet_balances::Config for Test {
+	type Balance = u128;
 	type ExistentialDeposit = ExistentialDeposit;
 	type ReserveIdentifier = [u8; 8];
 	type AccountStore = System;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type MaxFreezes = pezframe_support::traits::VariantCountOf<RuntimeFreezeReason>;
 }
 
 #[derive_impl(pezpallet_timestamp::config_preludes::TestDefaultConfig)]
@@ -304,14 +316,14 @@ impl pezpallet_proxy::Config for Test {
 	type RuntimeCall = RuntimeCall;
 	type Currency = Balances;
 	type ProxyType = ();
-	type ProxyDepositBase = ConstU64<1>;
-	type ProxyDepositFactor = ConstU64<1>;
+	type ProxyDepositBase = ConstU128<1>;
+	type ProxyDepositFactor = ConstU128<1>;
 	type MaxProxies = ConstU32<32>;
 	type WeightInfo = ();
 	type MaxPending = ConstU32<32>;
 	type CallHasher = BlakeTwo256;
-	type AnnouncementDepositBase = ConstU64<1>;
-	type AnnouncementDepositFactor = ConstU64<1>;
+	type AnnouncementDepositBase = ConstU128<1>;
+	type AnnouncementDepositFactor = ConstU128<1>;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Test>;
 }
 
@@ -322,9 +334,39 @@ parameter_types! {
 #[derive_impl(pezpallet_transaction_payment::config_preludes::TestDefaultConfig)]
 impl pezpallet_transaction_payment::Config for Test {
 	type OnChargeTransaction = pezpallet_transaction_payment::FungibleAdapter<Balances, ()>;
-	type WeightToFee = BlockRatioFee<1, 1, Self>;
+	type WeightToFee = BlockRatioFee<2, 1, Self, u128>;
 	type LengthToFee = FixedFee<100, <Self as pezpallet_balances::Config>::Balance>;
 	type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+}
+
+#[derive_impl(pezpallet_assets::config_preludes::TestDefaultConfig)]
+impl pezpallet_assets::Config for Test {
+	type Balance = u128;
+	type Currency = Balances;
+	type CreateOrigin = AsEnsureOriginWithArg<pezframe_system::EnsureSigned<AccountId32>>;
+	type ForceOrigin = pezframe_system::EnsureRoot<AccountId32>;
+	type Holder = AssetsHolder;
+	type Freezer = AssetsFreezer;
+}
+
+impl pezpallet_assets_holder::Config for Test {
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type RuntimeEvent = RuntimeEvent;
+}
+
+impl pezpallet_assets_freezer::Config for Test {
+	type RuntimeFreezeReason = RuntimeFreezeReason;
+	type RuntimeEvent = RuntimeEvent;
+}
+
+/// The PGAS asset id used by the test runtime.
+pub const PGAS_ASSET_ID: u32 = 42;
+
+parameter_types! {
+	pub const PGasAssetId: u32 = PGAS_ASSET_ID;
+	/// 10% of PGAS storage deposits are refunded, the rest is burned so users can't harvest
+	/// free PGAS allowance from storage churn.
+	pub const PGasRefundPercent: Perbill = Perbill::from_percent(10);
 }
 
 impl pezpallet_dummy::Config for Test {}
@@ -338,7 +380,7 @@ parameter_types! {
 
 impl Convert<Weight, BalanceOf<Self>> for Test {
 	fn convert(w: Weight) -> BalanceOf<Self> {
-		w.ref_time()
+		w.ref_time().into()
 	}
 }
 
@@ -370,10 +412,11 @@ where
 	}
 }
 parameter_types! {
-	pub static UnstableInterface: bool = true;
 	pub static AllowEvmBytecode: bool = true;
 	pub CheckingAccount: AccountId32 = BOB.clone();
+	pub BurnDestination: AccountId32 = AccountId32::new([42u8; 32]);
 	pub static DebugFlag: bool = false;
+	pub static AutoMapFlag: bool = false;
 }
 
 impl FindAuthor<<Test as pezframe_system::Config>::AccountId> for Test {
@@ -389,12 +432,11 @@ impl FindAuthor<<Test as pezframe_system::Config>::AccountId> for Test {
 impl Config for Test {
 	type Time = Timestamp;
 	type AddressMapper = AccountId32Mapper<Self>;
-	type Balance = u64;
+	type Balance = u128;
 	type Currency = Balances;
 	type DepositPerByte = DepositPerByte;
 	type DepositPerItem = DepositPerItem;
 	type DepositPerChildTrieItem = DepositPerItem;
-	type UnsafeUnstableInterface = UnstableInterface;
 	type AllowEVMBytecode = AllowEvmBytecode;
 	type UploadOrigin = EnsureAccount<Self, UploadAccount>;
 	type InstantiateOrigin = EnsureAccount<Self, InstantiateAccount>;
@@ -403,7 +445,11 @@ impl Config for Test {
 	type FindAuthor = Test;
 	type Precompiles = (precompiles::WithInfo<Self>, precompiles::NoInfo<Self>);
 	type FeeInfo = FeeInfo<Address, Signature, EthExtraImpl>;
+	type Deposit =
+		PGasDeposit<Test, Assets, AssetsHolder, AssetsFreezer, PGasAssetId, PGasRefundPercent>;
 	type DebugEnabled = DebugFlag;
+	type AutoMap = AutoMapFlag;
+	type OnBurn = ResolveTo<BurnDestination, Balances>;
 }
 
 impl TryFrom<RuntimeCall> for Call<Test> {
@@ -418,14 +464,14 @@ impl TryFrom<RuntimeCall> for Call<Test> {
 }
 
 impl SetWeightLimit for RuntimeCall {
-	fn set_weight_limit(&mut self, weight_limit: Weight) -> Weight {
+	fn set_weight_limit(&mut self, new_weight_limit: Weight) -> Weight {
 		match self {
 			Self::Contracts(
-				Call::eth_call { gas_limit, .. }
-				| Call::eth_instantiate_with_code { gas_limit, .. },
+				Call::eth_call { weight_limit, .. }
+				| Call::eth_instantiate_with_code { weight_limit, .. },
 			) => {
-				let old = *gas_limit;
-				*gas_limit = weight_limit;
+				let old = *weight_limit;
+				*weight_limit = new_weight_limit;
 				old
 			},
 			_ => Default::default(),
@@ -434,11 +480,14 @@ impl SetWeightLimit for RuntimeCall {
 }
 
 pub struct ExtBuilder {
-	existential_deposit: u64,
+	existential_deposit: u128,
 	storage_version: Option<StorageVersion>,
 	code_hashes: Vec<pezsp_core::H256>,
 	genesis_config: Option<crate::GenesisConfig<Test>>,
 	genesis_state_overrides: Option<Storage>,
+	next_fee_multiplier: Option<FixedU128>,
+	pgas_balances: Vec<(AccountId32, u128)>,
+	pgas_min_balance: u128,
 }
 
 impl Default for ExtBuilder {
@@ -449,6 +498,9 @@ impl Default for ExtBuilder {
 			code_hashes: vec![],
 			genesis_config: Some(crate::GenesisConfig::<Test>::default()),
 			genesis_state_overrides: None,
+			next_fee_multiplier: None,
+			pgas_balances: vec![],
+			pgas_min_balance: 1,
 		}
 	}
 }
@@ -459,12 +511,27 @@ impl ExtBuilder {
 		self.genesis_config = config;
 		self
 	}
-	pub fn existential_deposit(mut self, existential_deposit: u64) -> Self {
+	pub fn existential_deposit(mut self, existential_deposit: u128) -> Self {
 		self.existential_deposit = existential_deposit;
 		self
 	}
 	pub fn with_code_hashes(mut self, code_hashes: Vec<pezsp_core::H256>) -> Self {
 		self.code_hashes = code_hashes;
+		self
+	}
+	pub fn with_next_fee_multiplier(mut self, next_fee_multiplier: FixedU128) -> Self {
+		self.next_fee_multiplier = Some(next_fee_multiplier);
+		self
+	}
+	/// Endow the given accounts with PGAS at genesis. The PGAS asset is always
+	/// created; this just seeds initial balances.
+	pub fn with_pgas_balances(mut self, balances: Vec<(AccountId32, u128)>) -> Self {
+		self.pgas_balances = balances;
+		self
+	}
+	/// Override the PGAS asset's `min_balance` (existential deposit).
+	pub fn with_pgas_min_balance(mut self, min_balance: u128) -> Self {
+		self.pgas_min_balance = min_balance;
 		self
 	}
 	pub fn set_associated_consts(&self) {
@@ -491,6 +558,27 @@ impl ExtBuilder {
 		}
 		.assimilate_storage(&mut t)
 		.unwrap();
+
+		pezpallet_assets::GenesisConfig::<Test> {
+			assets: vec![(PGAS_ASSET_ID, ALICE, true, self.pgas_min_balance)],
+			accounts: self
+				.pgas_balances
+				.iter()
+				.map(|(who, bal)| (PGAS_ASSET_ID, who.clone(), *bal))
+				.collect(),
+			..Default::default()
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
+
+		if let Some(multiplier) = self.next_fee_multiplier {
+			pezpallet_transaction_payment::GenesisConfig::<Test> {
+				multiplier,
+				..Default::default()
+			}
+			.assimilate_storage(&mut t)
+			.unwrap();
+		}
 
 		if let Some(genesis_config) = self.genesis_config {
 			genesis_config.assimilate_storage(&mut t).unwrap();
@@ -529,7 +617,12 @@ impl Default for Origin<Test> {
 	}
 }
 
+/// Dummy EVM bytecode for mocked addresses.
+/// This is minimal EVM bytecode (STOP) that terminates successfully.
+pub const MOCK_CODE: [u8; 1] = [0x00];
+
 /// A mock handler implementation for testing purposes.
+#[derive(DefaultNoBound)]
 pub struct MockHandlerImpl<T: crate::pezpallet::Config> {
 	// Always return this caller if set.
 	mock_caller: Option<H160>,
@@ -558,6 +651,10 @@ impl<T: crate::pezpallet::Config> MockHandler<T> for MockHandlerImpl<T> {
 	fn mock_delegated_caller(&self, _dest: H160, input_data: &[u8]) -> Option<DelegateInfo<T>> {
 		self.mock_delegate_caller.get(&input_data.to_vec()).cloned()
 	}
+
+	fn mocked_code(&self, address: H160) -> Option<&[u8]> {
+		if self.mock_call.contains_key(&address) { Some(&MOCK_CODE) } else { None }
+	}
 }
 
 #[test]
@@ -567,7 +664,7 @@ fn ext_builder_with_genesis_config_works() {
 		balance: U256::from(100_000_100),
 		nonce: 42,
 		contract_data: Some(ContractData {
-			code: compile_module("dummy").unwrap().0,
+			code: compile_module("dummy").unwrap().0.into(),
 			storage: [([1u8; 32].into(), [2u8; 32].into())].into_iter().collect(),
 		}),
 	};
@@ -583,7 +680,8 @@ fn ext_builder_with_genesis_config_works() {
 				revm::bytecode::opcode::PUSH1,
 				0x00,
 				revm::bytecode::opcode::RETURN,
-			],
+			]
+			.into(),
 			storage: [([3u8; 32].into(), [4u8; 32].into())].into_iter().collect(),
 		}),
 	};
@@ -619,7 +717,7 @@ fn ext_builder_with_genesis_config_works() {
 
 			assert_eq!(
 				PristineCode::<Test>::get(&contract_info.code_hash).unwrap(),
-				contract_data.code
+				contract_data.code.0
 			);
 			assert_eq!(Pezpallet::<Test>::evm_nonce(&contract.address), contract.nonce);
 			assert_eq!(Pezpallet::<Test>::evm_balance(&contract.address), contract.balance);

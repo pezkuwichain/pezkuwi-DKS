@@ -53,9 +53,9 @@ use pezframe_support::{
 	storage_alias,
 	weights::WeightMeter,
 };
-use scale_info::TypeInfo;
 use pezsp_core::{H160, H256};
 use pezsp_runtime::traits::{Saturating, TrailingZeroInput};
+use scale_info::TypeInfo;
 
 extern crate alloc;
 

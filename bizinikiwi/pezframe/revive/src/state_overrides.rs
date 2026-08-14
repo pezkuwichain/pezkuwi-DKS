@@ -220,8 +220,11 @@ fn apply_storage_override<T: Config>(
 	})?;
 
 	if let StorageOverride::State(_) = &storage {
-		let _ =
-			pezframe_support::storage::child::clear_storage(&contract.child_trie_info(), None, None);
+		let _ = pezframe_support::storage::child::clear_storage(
+			&contract.child_trie_info(),
+			None,
+			None,
+		);
 	}
 
 	let slots = match storage {

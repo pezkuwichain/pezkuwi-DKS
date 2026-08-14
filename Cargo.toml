@@ -682,13 +682,20 @@ pezpallet-oracle-runtime-api = { path = "bizinikiwi/pezframe/honzon/oracle/runti
 Inflector = { version = "0.11.4" }
 aes-gcm = { version = "0.10" }
 ahash = { version = "0.8.2" }
-alloy-consensus = { version = "=1.5.2", default-features = false }
-alloy-core = { version = "=1.5.2", default-features = false }
-alloy-eips = { version = "=1.5.2", default-features = false }
-alloy-primitives = { version = "=1.5.2", default-features = false }
-alloy-rlp = { version = "=0.3.12", default-features = false }
-alloy-trie = { version = "=0.9.3", default-features = false }
-alloy-tx-macros = { version = "=1.5.2", default-features = false }
+alloy-consensus = { version = "1.0.41", default-features = false }
+alloy-core = { version = "1.2.1", default-features = false }
+alloy-eips = { version = "1.2.1", default-features = false }
+alloy-network = { version = "1.8.3", default-features = false }
+alloy-primitives = { version = "1.2.1", default-features = false }
+alloy-provider = { version = "1.8.3", default-features = false }
+alloy-rlp = { version = "0.3", default-features = false }
+alloy-rpc-types = { version = "1.8.3", default-features = false }
+alloy-rpc-types-trace = { version = "1.8.3", default-features = false }
+alloy-signer = { version = "1.8.3", default-features = false }
+alloy-signer-local = { version = "1.8.3", default-features = false }
+alloy-sol-types = { version = "1.5.7", default-features = false }
+alloy-trie = { version = "0.9.1", default-features = false }
+alloy-tx-macros = { version = "1.2.1", default-features = false }
 always-assert = { version = "0.1" }
 anyhow = { version = "1.0.81", default-features = false }
 approx = { version = "0.5.1" }
@@ -856,6 +863,7 @@ integer-sqrt = { version = "0.1.2" }
 ip_network = { version = "0.4.1" }
 is-terminal = { version = "0.4.9" }
 is_executable = { version = "1.0.1" }
+libsqlite3-sys = { version = "0.30", default-features = false }
 ruint = { version = "=1.17.2", default-features = false }
 # isahc removed - replaced with reqwest (rustls-tls) to eliminate OpenSSL dependency
 fastbloom = { version = "0.17", default-features = false }

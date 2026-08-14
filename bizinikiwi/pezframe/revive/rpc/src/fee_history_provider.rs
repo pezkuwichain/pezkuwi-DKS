@@ -14,7 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::{client::BizinikiwiBlockNumber, ClientError};
+use crate::{ClientError, client::BizinikiwiBlockNumber};
 use pezpallet_revive::evm::{Block, FeeHistoryResult, ReceiptInfo};
 use pezsp_core::U256;
 use std::{collections::BTreeMap, sync::Arc};

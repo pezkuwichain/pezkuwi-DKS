@@ -16,7 +16,7 @@
 // limitations under the License.
 use pezkuwi_subxt::OnlineClient;
 use pezkuwi_subxt_signer::sr25519::dev;
-use pezpallet_revive_eth_rpc::subxt_client::{self, system::calls::types::Remark, SrcChainConfig};
+use pezpallet_revive_eth_rpc::subxt_client::{self, SrcChainConfig, system::calls::types::Remark};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -17,15 +17,15 @@
 
 /// Tests for bitwise operations.
 use crate::{
-	evm::decode_revert_reason,
-	test_utils::{builder::Contract, ALICE},
-	tests::{builder, ExtBuilder, Test},
 	Code, Config,
+	evm::decode_revert_reason,
+	test_utils::{ALICE, builder::Contract},
+	tests::{ExtBuilder, Test, builder},
 };
 
 use alloy_core::sol_types::SolInterface;
 use pezframe_support::traits::fungible::Mutate;
-use pezpallet_revive_fixtures::{compile_module_with_type, Bitwise, FixtureType};
+use pezpallet_revive_fixtures::{Bitwise, FixtureType, compile_module_with_type};
 use test_case::test_case;
 
 #[test_case(FixtureType::Solc)]

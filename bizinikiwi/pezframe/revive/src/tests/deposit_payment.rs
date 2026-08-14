@@ -48,8 +48,8 @@ use pezframe_support::{
 use pezpallet_revive_fixtures::{
 	FixtureType, MultiContributorStorage, compile_module, compile_module_with_type,
 };
-use pretty_assertions::assert_eq;
 use pezsp_runtime::{AccountId32, DispatchResult};
+use pretty_assertions::assert_eq;
 use test_case::test_case;
 
 /// Full observable state snapshot for a (payer, contract) pair.

@@ -20,9 +20,9 @@
 use alloc::vec::Vec;
 use alloy_core::rlp;
 use alloy_trie::{
+	HashBuilder, Nibbles, TrieMask,
 	hash_builder::{HashBuilderValue, HashBuilderValueRef},
 	nodes::RlpNode,
-	HashBuilder, Nibbles, TrieMask,
 };
 use codec::{Decode, Encode};
 use pezsp_core::H256;
@@ -367,7 +367,7 @@ pub enum BuilderPhase {
 }
 
 /// The intermediate representation of the [`IncrementalHashBuilder`] that can be placed into the
-/// pallets storage. This contains the minimum amount of data that is needed to serialize
+/// pezpallets storage. This contains the minimum amount of data that is needed to serialize
 /// and deserialize the incremental hash builder.
 #[derive(Encode, Decode, scale_info::TypeInfo, Clone, PartialEq, Eq, Debug)]
 pub struct IncrementalHashBuilderIR {

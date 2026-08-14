@@ -18,13 +18,13 @@
 //! The pezpallet-revive shared VM integration test suite.
 
 use crate::{
-	test_utils::{builder::Contract, ALICE, ALICE_ADDR},
-	tests::{builder, ExtBuilder, Test},
 	Code, Config, Pezpallet,
+	test_utils::{ALICE, ALICE_ADDR, builder::Contract},
+	tests::{ExtBuilder, Test, builder},
 };
 use alloy_core::sol_types::{SolCall, SolInterface};
 use pezframe_support::traits::fungible::Mutate;
-use pezpallet_revive_fixtures::{compile_module_with_type, FixtureType, TransactionInfo};
+use pezpallet_revive_fixtures::{FixtureType, TransactionInfo, compile_module_with_type};
 use pezsp_core::H160;
 use pretty_assertions::assert_eq;
 use test_case::test_case;

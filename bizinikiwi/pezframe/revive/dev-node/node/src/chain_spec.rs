@@ -15,11 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use pez_revive_dev_runtime::WASM_BINARY;
 use pezkuwi_sdk::{
 	pezsc_service::{ChainType, Properties},
 	*,
 };
+use revive_dev_runtime::WASM_BINARY;
 
 /// This is a specialization of the general Bizinikiwi ChainSpec type.
 pub type ChainSpec = pezsc_service::GenericChainSpec;
@@ -36,7 +36,7 @@ pub fn development_chain_spec() -> Result<ChainSpec, String> {
 		.with_name("Development")
 		.with_id("dev")
 		.with_chain_type(ChainType::Development)
-		.with_genesis_config_preset_name(pezkuwi_sdk::pezsp_genesis_builder::DEV_RUNTIME_PRESET)
+		.with_genesis_config_preset_name(pezsp_genesis_builder::DEV_RUNTIME_PRESET)
 		.with_properties(props())
 		.build())
 }

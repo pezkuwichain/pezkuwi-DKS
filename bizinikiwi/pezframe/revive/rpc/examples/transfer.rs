@@ -16,7 +16,7 @@
 // limitations under the License.
 use jsonrpsee::http_client::HttpClientBuilder;
 use pezpallet_revive::evm::{Account, BlockTag, ReceiptInfo};
-use pezpallet_revive_eth_rpc::{example::TransactionBuilder, EthRpcClient};
+use pezpallet_revive_eth_rpc::{EthRpcClient, example::TransactionBuilder};
 use std::sync::Arc;
 
 #[tokio::main]

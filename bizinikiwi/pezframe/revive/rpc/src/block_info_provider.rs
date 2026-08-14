@@ -16,12 +16,12 @@
 // limitations under the License.
 
 use crate::{
+	ClientError, LOG_TARGET,
 	client::{BizinikiwiBlock, BizinikiwiBlockNumber, SubscriptionType},
-	subxt_client::SrcChainConfig,
-	ClientError,
+	pezkuwi_subxt_client::SrcChainConfig,
 };
 use jsonrpsee::core::async_trait;
-use pezkuwi_subxt::{backend::legacy::LegacyRpcMethods, OnlineClient};
+use pezkuwi_subxt::{OnlineClient, backend::legacy::LegacyRpcMethods};
 use pezsp_core::H256;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -51,7 +51,7 @@ pub trait BlockInfoProvider: Send + Sync {
 
 	/// Get block by block hash.
 	async fn block_by_hash(&self, hash: &H256)
-		-> Result<Option<Arc<BizinikiwiBlock>>, ClientError>;
+	-> Result<Option<Arc<BizinikiwiBlock>>, ClientError>;
 }
 
 /// Provides information about blocks.
@@ -75,7 +75,7 @@ impl SubxtBlockInfoProvider {
 		api: OnlineClient<SrcChainConfig>,
 		rpc: LegacyRpcMethods<SrcChainConfig>,
 	) -> Result<Self, ClientError> {
-		let latest = Arc::new(api.blocks().at_latest().await.map_err(pezkuwi_subxt::Error::from)?);
+		let latest = Arc::new(api.blocks().at_latest().await?);
 		Ok(Self {
 			api,
 			rpc,
@@ -127,8 +127,10 @@ impl BlockInfoProvider for SubxtBlockInfoProvider {
 
 		match self.api.blocks().at(hash).await {
 			Ok(block) => Ok(Some(Arc::new(block))),
-			Err(pezkuwi_subxt::error::BlockError::BlockNotFound { .. }) => Ok(None),
-			Err(err) => Err(pezkuwi_subxt::Error::from(err).into()),
+			Err(pezkuwi_subxt::Error::Block(pezkuwi_subxt::error::BlockError::NotFound(_))) => {
+				Ok(None)
+			},
+			Err(err) => Err(err.into()),
 		}
 	}
 
@@ -148,8 +150,14 @@ impl BlockInfoProvider for SubxtBlockInfoProvider {
 
 		match self.api.blocks().at(*hash).await {
 			Ok(block) => Ok(Some(Arc::new(block))),
-			Err(pezkuwi_subxt::error::BlockError::BlockNotFound { .. }) => Ok(None),
-			Err(err) => Err(pezkuwi_subxt::Error::from(err).into()),
+			Err(pezkuwi_subxt::Error::Block(pezkuwi_subxt::error::BlockError::NotFound(_))) => {
+				log::trace!(target: LOG_TARGET, "block_by_hash: block {hash:?} not found");
+				Ok(None)
+			},
+			Err(err) => {
+				log::trace!(target: LOG_TARGET, "block_by_hash: failed to fetch block {hash:?}: {err:?}");
+				Err(err.into())
+			},
 		}
 	}
 }

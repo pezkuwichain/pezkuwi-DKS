@@ -849,11 +849,10 @@ fn catch_constructor_test() {
 			CallTracer::new(CallTracerConfig { with_logs: true, only_top_call: false });
 
 		trace(&mut tracer, || {
-			let results = make_call(
-				results
-					.gas_consumed
-					.saturating_add(<Test as pezpallet_balances::Config>::ExistentialDeposit::get()),
-			);
+			let results =
+				make_call(results.gas_consumed.saturating_add(
+					<Test as pezpallet_balances::Config>::ExistentialDeposit::get(),
+				));
 			assert_ok!(results.result);
 		});
 		let gas_trace = tracer.collect_trace().unwrap();

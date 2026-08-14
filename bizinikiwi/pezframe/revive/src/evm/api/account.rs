@@ -16,8 +16,8 @@
 // limitations under the License.
 //! Utilities for working with Ethereum accounts.
 use crate::{
-	evm::{TransactionSigned, TransactionUnsigned},
 	H160,
+	evm::{TransactionSigned, TransactionUnsigned},
 };
 use pezsp_runtime::AccountId32;
 
@@ -48,8 +48,8 @@ impl Account {
 		H160::from_slice(&self.0.public_key().to_account_id().as_ref())
 	}
 
-	/// Get the bizinikiwi [`AccountId32`] of the account.
-	pub fn bizinikiwi_account(&self) -> AccountId32 {
+	/// Get the substrate [`AccountId32`] of the account.
+	pub fn substrate_account(&self) -> AccountId32 {
 		let mut account_id = AccountId32::new([0xEE; 32]);
 		<AccountId32 as AsMut<[u8; 32]>>::as_mut(&mut account_id)[..20]
 			.copy_from_slice(self.address().as_ref());

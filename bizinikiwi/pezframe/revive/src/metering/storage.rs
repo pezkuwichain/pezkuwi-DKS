@@ -407,8 +407,8 @@ where
 							) => {
 								*last_amount = last_amount.saturating_add(&ch_amount);
 							},
-							(ContractState::Alive { amount }, ContractState::Terminated) |
-							(ContractState::Terminated, ContractState::Alive { amount }) => {
+							(ContractState::Alive { amount }, ContractState::Terminated)
+							| (ContractState::Terminated, ContractState::Alive { amount }) => {
 								// undo all deposits made by a terminated contract
 								self.total_deposit = self.total_deposit.saturating_sub(&amount);
 								last.state = ContractState::Terminated;

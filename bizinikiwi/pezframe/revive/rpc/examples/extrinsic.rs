@@ -17,7 +17,7 @@
 use pezkuwi_subxt::OnlineClient;
 use pezkuwi_subxt_signer::sr25519::dev;
 use pezpallet_revive_eth_rpc::subxt_client::{
-	self, revive::calls::types::InstantiateWithCode, SrcChainConfig,
+	self, SrcChainConfig, revive::calls::types::InstantiateWithCode,
 };
 use pezsp_weights::Weight;
 
