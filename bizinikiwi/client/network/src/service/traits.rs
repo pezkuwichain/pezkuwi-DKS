@@ -18,7 +18,7 @@
 //
 // If you read this, you are very thorough, congratulations.
 
-//! Traits defined by `sc-network`.
+//! Traits defined by `pezsc-network`.
 
 use crate::{
 	config::{IncomingRequest, MultiaddrWithPeerId, NotificationHandshake, Params, SetConfig},
@@ -119,7 +119,7 @@ pub trait NetworkBackend<B: BlockT + 'static, H: ExHashT>: Send + 'static {
 
 	/// Type implementing `NetworkService` for the networking backend.
 	///
-	/// `NetworkService` allows other subsystems of the blockchain to interact with `sc-network`
+	/// `NetworkService` allows other subsystems of the blockchain to interact with `pezsc-network`
 	/// using `NetworkService`.
 	type NetworkService<Block, Hash>: NetworkService + Clone;
 
@@ -146,6 +146,7 @@ pub trait NetworkBackend<B: BlockT + 'static, H: ExHashT>: Send + 'static {
 	/// Create Bitswap server.
 	fn bitswap_server(
 		client: Arc<dyn BlockBackend<B> + Send + Sync>,
+		metrics_registry: Option<Registry>,
 	) -> (Pin<Box<dyn Future<Output = ()> + Send>>, Self::BitswapConfig);
 
 	/// Create notification protocol configuration and an associated `NotificationService`
@@ -900,7 +901,6 @@ pub trait NotificationService: Debug + Send {
 	async fn open_substream(&mut self, peer: PeerId) -> Result<(), ()>;
 
 	/// Instruct `Notifications` to close substream for `peer`.
-	//
 	// NOTE: not offered by the current implementation
 	async fn close_substream(&mut self, peer: PeerId) -> Result<(), ()>;
 

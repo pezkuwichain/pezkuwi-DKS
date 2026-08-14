@@ -85,8 +85,8 @@ const FINALITY_TIMEOUT_THRESHOLD: usize = 128;
 
 /// The number of transactions that will be sent from the mempool to the newly created view during
 /// the maintain process.
-//todo [#8835]: better approach is needed - maybe time-budget approach?
-//note: yap teyrchain block size.
+// todo [#8835]: better approach is needed - maybe time-budget approach?
+// note: yap teyrchain block size.
 const MEMPOOL_TO_VIEW_BATCH_SIZE: usize = 7_000;
 
 /// Fork aware transaction pool task, that needs to be polled.
@@ -1378,7 +1378,7 @@ where
 		);
 
 		// 1. Capture all import notification from the very beginning, so first register all
-		//the listeners.
+		// the listeners.
 		self.import_notification_sink.add_view(
 			view.at.hash,
 			view.pool.validated_pool().import_notification_stream().boxed(),
@@ -1556,7 +1556,7 @@ where
 			.with_transactions(|iter| {
 				iter.filter(|(hash, _)| !view.is_imported(&hash) && !included_xts.contains(&hash))
 					.map(|(k, v)| (*k, v.clone()))
-					//todo [#8835]: better approach is needed - maybe time-budget approach?
+					// todo [#8835]: better approach is needed - maybe time-budget approach?
 					.take(MEMPOOL_TO_VIEW_BATCH_SIZE)
 					.collect::<HashMap<_, _>>()
 			})
@@ -1723,7 +1723,7 @@ where
 		self.metrics
 			.report(|metrics| metrics.unknown_from_block_import_txs.inc_by(unknown_count as _));
 
-		//resubmit
+		// resubmit
 		{
 			let mut resubmit_transactions = Vec::new();
 
@@ -1767,7 +1767,7 @@ where
 				let mut result = vec![];
 				for (tx_hash, tx) in txs {
 					result.push(
-						//find arc if tx is known
+						// find arc if tx is known
 						self.mempool
 							.get_by_hash(tx_hash)
 							.await
@@ -2157,7 +2157,7 @@ mod reduce_multiview_result_tests {
 		let input = HashMap::from_iter(v.clone());
 		let r = reduce_multiview_result(input);
 
-		//order in HashMap is random, the result shall be one of:
+		// order in HashMap is random, the result shall be one of:
 		assert!(r == v[0].1 || r == v[1].1 || r == v[2].1);
 	}
 

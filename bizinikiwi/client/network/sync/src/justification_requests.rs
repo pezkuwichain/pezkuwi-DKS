@@ -55,7 +55,7 @@ impl Metrics {
 	fn register(registry: &Registry) -> Result<Self, PrometheusError> {
 		let justifications = GaugeVec::<U64>::new(
 			Opts::new(
-				"bizinikiwi_sync_extra_justifications",
+				"substrate_sync_extra_justifications",
 				"Number of extra justifications requests",
 			),
 			&["status"],

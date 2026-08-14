@@ -1,0 +1,26 @@
+[package]
+name = "pezsc-virtualization"
+version = "0.3.0"
+authors.workspace = true
+edition.workspace = true
+license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "Host-side PolkaVM backend driving the pezsp-virtualization host functions"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+log = { workspace = true }
+polkavm = { workspace = true }
+pezsp-virtualization = { workspace = true, default-features = true }
+
+[dev-dependencies]
+pezsp-io = { workspace = true, default-features = true }
+pezsp-storage = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
+pezsp-virtualization-test-fixture = { workspace = true }

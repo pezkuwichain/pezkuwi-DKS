@@ -19,23 +19,26 @@
 //! Block sealing utilities
 
 use crate::{rpc, ConsensusDataProvider, CreatedBlock, Error};
+use codec::Encode;
 use futures::prelude::*;
 use pezsc_consensus::{
 	BlockImport, BlockImportParams, ForkChoiceStrategy, ImportResult, StateAction,
 };
 use pezsc_transaction_pool_api::TransactionPool;
-use pezsp_api::ProvideRuntimeApi;
+use pezsp_api::{ProofRecorder, ProvideRuntimeApi};
 use pezsp_blockchain::HeaderBackend;
-use pezsp_consensus::{self, BlockOrigin, Environment, Proposer, SelectChain};
+use pezsp_consensus::{self, BlockOrigin, Environment, ProposeArgs, Proposer, SelectChain};
+use pezsp_externalities::Extensions;
 use pezsp_inherents::{CreateInherentDataProviders, InherentDataProvider};
 use pezsp_runtime::traits::{Block as BlockT, Header as HeaderT};
+use pezsp_trie::proof_size_extension::ProofSizeExt;
 use std::{sync::Arc, time::Duration};
 
 /// max duration for creating a proposal in secs
 pub const MAX_PROPOSAL_DURATION: u64 = 10;
 
 /// params for sealing a new block
-pub struct SealBlockParams<'a, B: BlockT, BI, SC, C: ProvideRuntimeApi<B>, E, TP, CIDP, P> {
+pub struct SealBlockParams<'a, B: BlockT, BI, SC, C: ProvideRuntimeApi<B>, E, TP, CIDP> {
 	/// if true, empty blocks(without extrinsics) will be created.
 	/// otherwise, will return Error::EmptyTransactionPool.
 	pub create_empty: bool,
@@ -54,7 +57,7 @@ pub struct SealBlockParams<'a, B: BlockT, BI, SC, C: ProvideRuntimeApi<B>, E, TP
 	/// SelectChain object
 	pub select_chain: &'a SC,
 	/// Digest provider for inclusion in blocks.
-	pub consensus_data_provider: Option<&'a dyn ConsensusDataProvider<B, Proof = P>>,
+	pub consensus_data_provider: Option<&'a dyn ConsensusDataProvider<B>>,
 	/// block import object
 	pub block_import: &'a mut BI,
 	/// Something that can create the inherent data providers.
@@ -62,7 +65,7 @@ pub struct SealBlockParams<'a, B: BlockT, BI, SC, C: ProvideRuntimeApi<B>, E, TP
 }
 
 /// seals a new block with the given params
-pub async fn seal_block<B, BI, SC, C, E, TP, CIDP, P>(
+pub async fn seal_block<B, BI, SC, C, E, TP, CIDP>(
 	SealBlockParams {
 		create_empty,
 		finalize,
@@ -75,17 +78,16 @@ pub async fn seal_block<B, BI, SC, C, E, TP, CIDP, P>(
 		create_inherent_data_providers,
 		consensus_data_provider: digest_provider,
 		mut sender,
-	}: SealBlockParams<'_, B, BI, SC, C, E, TP, CIDP, P>,
+	}: SealBlockParams<'_, B, BI, SC, C, E, TP, CIDP>,
 ) where
 	B: BlockT,
 	BI: BlockImport<B, Error = pezsp_consensus::Error> + Send + Sync + 'static,
 	C: HeaderBackend<B> + ProvideRuntimeApi<B>,
 	E: Environment<B>,
-	E::Proposer: Proposer<B, Proof = P>,
+	E::Proposer: Proposer<B>,
 	TP: TransactionPool<Block = B>,
 	SC: SelectChain<B>,
 	CIDP: CreateInherentDataProviders<B, ()>,
-	P: codec::Encode + Send + Sync + 'static,
 {
 	let future = async {
 		if pool.status().ready == 0 && !create_empty {
@@ -112,19 +114,29 @@ pub async fn seal_block<B, BI, SC, C, E, TP, CIDP, P>(
 		let proposer = env.init(&parent).map_err(|err| Error::StringError(err.to_string())).await?;
 		let inherents_len = inherent_data.len();
 
-		let digest = if let Some(digest_provider) = digest_provider {
+		let inherent_digests = if let Some(digest_provider) = digest_provider {
 			digest_provider.create_digest(&parent, &inherent_data)?
 		} else {
 			Default::default()
 		};
 
+		let storage_proof_recorder = ProofRecorder::<B>::default();
+
+		let mut extra_extensions = Extensions::default();
+		// Required by teyrchains
+		extra_extensions.register(ProofSizeExt::new(storage_proof_recorder.clone()));
+
+		let propose_args = ProposeArgs {
+			inherent_data: inherent_data.clone(),
+			inherent_digests,
+			max_duration: Duration::from_secs(MAX_PROPOSAL_DURATION),
+			storage_proof_recorder: Some(storage_proof_recorder.clone()),
+			extra_extensions,
+			..Default::default()
+		};
+
 		let proposal = proposer
-			.propose(
-				inherent_data.clone(),
-				digest,
-				Duration::from_secs(MAX_PROPOSAL_DURATION),
-				None,
-			)
+			.propose(propose_args)
 			.map_err(|err| Error::StringError(err.to_string()))
 			.await?;
 
@@ -132,8 +144,9 @@ pub async fn seal_block<B, BI, SC, C, E, TP, CIDP, P>(
 			return Err(Error::EmptyTransactionPool);
 		}
 
+		let proof = storage_proof_recorder.drain_storage_proof();
+
 		let (header, body) = proposal.block.deconstruct();
-		let proof = proposal.proof;
 		let proof_size = proof.encoded_size();
 		let mut params = BlockImportParams::new(BlockOrigin::Own, header.clone());
 		params.body = Some(body);
@@ -148,7 +161,7 @@ pub async fn seal_block<B, BI, SC, C, E, TP, CIDP, P>(
 		}
 
 		// Make sure we return the same post-hash that will be calculated when importing the block
-		// This is important in case the digest_provider added any signature, seal, ect.
+		// This is important in case the digest_provider added any signature, seal, etc.
 		let mut post_header = header.clone();
 		post_header.digest_mut().logs.extend(params.post_digests.iter().cloned());
 

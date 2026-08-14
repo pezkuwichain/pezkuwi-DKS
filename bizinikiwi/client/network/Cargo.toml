@@ -25,6 +25,7 @@ name = "request_response_protocol"
 harness = false
 
 [dependencies]
+pezsp-crypto-hashing = { workspace = true, default-features = true }
 array-bytes = { workspace = true, default-features = true }
 async-channel = { workspace = true }
 async-trait = { workspace = true }
@@ -88,6 +89,7 @@ wasm-timer = { workspace = true }
 zeroize = { workspace = true, default-features = true }
 
 [dev-dependencies]
+multihash-codetable = { workspace = true }
 assert_matches = { workspace = true }
 bizinikiwi-test-runtime = { workspace = true }
 bizinikiwi-test-runtime-client = { workspace = true }

@@ -18,7 +18,7 @@
 
 //! Bizinikiwi RPC interfaces.
 //!
-//! A collection of RPC methods and subscriptions supported by all bizinikiwi clients.
+//! A collection of RPC methods and subscriptions supported by all substrate clients.
 
 #![warn(missing_docs)]
 

@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! Utility for building bizinikiwi transaction pool trait object.
+//! Utility for building substrate transaction pool trait object.
 
 use crate::{
 	common::api::FullChainApi,

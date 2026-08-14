@@ -556,7 +556,7 @@ where
 		view: Arc<View<ChainApi>>,
 		tree_route: &TreeRoute<Block>,
 	) {
-		//note: most_recent_view must be synced with changes in in/active_views.
+		// note: most_recent_view must be synced with changes in in/active_views.
 		{
 			let mut most_recent_view_lock = self.most_recent_view.write();
 			let mut active_views = self.active_views.write();
@@ -618,7 +618,7 @@ where
 		let finalized_number = self.api.block_id_to_number(&BlockId::Hash(finalized_hash));
 
 		let mut dropped_views = vec![];
-		//clean up older then finalized
+		// clean up older then finalized
 		{
 			let mut active_views = self.active_views.write();
 			let mut inactive_views = self.inactive_views.write();
@@ -656,7 +656,6 @@ where
 		self.listener.remove_stale_controllers();
 		self.dropped_stream_controller.remove_transactions(finalized_xts.clone());
 
-		self.listener.remove_view(finalized_hash);
 		for view in dropped_views {
 			self.listener.remove_view(view);
 			self.dropped_stream_controller.remove_view(view);

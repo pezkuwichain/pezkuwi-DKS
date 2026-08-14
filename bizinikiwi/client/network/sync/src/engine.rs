@@ -115,19 +115,19 @@ impl Metrics {
 		MajorSyncingGauge::register(r, major_syncing)?;
 		Ok(Self {
 			peers: {
-				let g = Gauge::new("bizinikiwi_sync_peers", "Number of peers we sync with")?;
+				let g = Gauge::new("substrate_sync_peers", "Number of peers we sync with")?;
 				register(g, r)?
 			},
 			import_queue_blocks_submitted: {
 				let c = Counter::new(
-					"bizinikiwi_sync_import_queue_blocks_submitted",
+					"substrate_sync_import_queue_blocks_submitted",
 					"Number of blocks submitted to the import queue.",
 				)?;
 				register(c, r)?
 			},
 			import_queue_justifications_submitted: {
 				let c = Counter::new(
-					"bizinikiwi_sync_import_queue_justifications_submitted",
+					"substrate_sync_import_queue_justifications_submitted",
 					"Number of justifications submitted to the import queue.",
 				)?;
 				register(c, r)?
@@ -147,7 +147,7 @@ impl MajorSyncingGauge {
 		prometheus_endpoint::register(
 			SourcedGauge::new(
 				&Opts::new(
-					"bizinikiwi_sub_libp2p_is_major_syncing",
+					"substrate_sub_libp2p_is_major_syncing",
 					"Whether the node is performing a major sync or not.",
 				),
 				MajorSyncingGauge(value),
@@ -643,7 +643,7 @@ where
 						number,
 					)
 				},
-				// Nothing to do, this is handled internally by `PezkuwiSyncingStrategy`.
+				// Nothing to do, this is handled internally by `PolkadotSyncingStrategy`.
 				SyncingAction::Finished => {},
 			}
 		}
@@ -1044,6 +1044,9 @@ where
 					},
 					RequestFailure::UnknownProtocol => {
 						debug_assert!(false, "Block request protocol should always be known.");
+					},
+					RequestFailure::InvalidRequest => {
+						debug_assert!(false, "Block request payload should always be valid.");
 					},
 					RequestFailure::Obsolete => {
 						debug_assert!(

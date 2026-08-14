@@ -78,14 +78,14 @@ impl ApiMetrics {
 		Ok(Self {
 			validations_scheduled: register(
 				Counter::new(
-					"bizinikiwi_sub_txpool_validations_scheduled",
+					"substrate_sub_txpool_validations_scheduled",
 					"Total number of transactions scheduled for validation",
 				)?,
 				registry,
 			)?,
 			validations_finished: register(
 				Counter::new(
-					"bizinikiwi_sub_txpool_validations_finished",
+					"substrate_sub_txpool_validations_finished",
 					"Total number of transactions that finished validation",
 				)?,
 				registry,

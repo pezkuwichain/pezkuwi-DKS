@@ -181,11 +181,11 @@ pub async fn run<B, C, S, P>(
 	let mut packet_dispatcher = PacketDispatcher::new(&local_peer_id);
 	let mut request_manager = RequestManager::new(config.request_manager);
 	let mut reply_manager = ReplyManager::new(config.reply_manager);
-	let mut extrinsic_queue = ExtrinsicQueue::new(config.bizinikiwi.extrinsic_queue_capacity);
+	let mut extrinsic_queue = ExtrinsicQueue::new(config.substrate.extrinsic_queue_capacity);
 
 	let mut finality_notifications = client.finality_notification_stream();
 	// Import notifications only used for triggering registration attempts
-	let mut import_notifications = if config.bizinikiwi.register && keystore.is_some() {
+	let mut import_notifications = if config.substrate.register && keystore.is_some() {
 		Some(client.import_notification_stream())
 	} else {
 		None
@@ -211,7 +211,7 @@ pub async fn run<B, C, S, P>(
 
 		futures::select! {
 			request = next_request =>
-				request_manager.insert(request, &mut mixnet, &packet_dispatcher, &config.bizinikiwi),
+				request_manager.insert(request, &mut mixnet, &packet_dispatcher, &config.substrate),
 
 			notification = finality_notifications.select_next_some() => {
 				// To avoid trying to connect to old mixnodes, ignore finality notifications while
@@ -220,7 +220,7 @@ pub async fn run<B, C, S, P>(
 					let api = client.runtime_api();
 					sync_with_runtime(&mut mixnet, api, notification.hash);
 					request_manager.update_session_status(
-						&mut mixnet, &packet_dispatcher, &config.bizinikiwi);
+						&mut mixnet, &packet_dispatcher, &config.substrate);
 				}
 			}
 
@@ -265,7 +265,7 @@ pub async fn run<B, C, S, P>(
 					match notification.as_ref().try_into() {
 						Ok(packet) => handle_packet(packet,
 							&mut mixnet, &mut request_manager, &mut reply_manager,
-							&mut extrinsic_queue, &config.bizinikiwi),
+							&mut extrinsic_queue, &config.substrate),
 						Err(_) => debug!(target: LOG_TARGET,
 							"Dropped incorrectly sized packet ({} bytes) from {peer}",
 							notification.len(),
@@ -307,7 +307,7 @@ pub async fn run<B, C, S, P>(
 			}
 
 			_ = next_retry_delay => {
-				if !request_manager.pop_next_retry(&mut mixnet, &packet_dispatcher, &config.bizinikiwi) {
+				if !request_manager.pop_next_retry(&mut mixnet, &packet_dispatcher, &config.substrate) {
 					warn!(target: LOG_TARGET,
 						"Next retry deadline reached, but no request in retry queue; \
 						this is a bug");
@@ -316,7 +316,7 @@ pub async fn run<B, C, S, P>(
 
 			_ = next_extrinsic_delay => {
 				if let Some((extrinsic, reply_context)) = extrinsic_queue.pop() {
-					if submit_extrinsic_results.len() < config.bizinikiwi.max_pending_extrinsics {
+					if submit_extrinsic_results.len() < config.substrate.max_pending_extrinsics {
 						let fut = transaction_pool.submit_one(
 							client.info().best_hash,
 							TransactionSource::External,
@@ -375,7 +375,7 @@ pub async fn run<B, C, S, P>(
 				request_manager.process_post_queues(
 					&mut mixnet,
 					&packet_dispatcher,
-					&config.bizinikiwi,
+					&config.substrate,
 				);
 			}
 		}

@@ -1,0 +1,17 @@
+[package]
+name = "pezsp-virtualization-test-fixture"
+version = "0.3.0"
+license = "Apache-2.0"
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+description = "A PolkaVM program that is used by the `pezsp-virtualization` tests"
+
+[lints]
+workspace = true
+
+[target.'cfg(not(substrate_runtime))'.build-dependencies]
+bizinikiwi-wasm-builder = { workspace = true }
+
+[target.'cfg(substrate_runtime)'.dependencies]
+polkavm-derive = { workspace = true }

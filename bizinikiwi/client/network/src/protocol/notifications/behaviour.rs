@@ -164,7 +164,6 @@ pub struct Notifications {
 	events: VecDeque<ToSwarm<NotificationsOut, NotifsHandlerIn>>,
 
 	/// Pending inbound substream validations.
-	//
 	// NOTE: it's possible to read a stale response from `pending_inbound_validations`
 	// as the substream may get closed by the remote peer before the protocol has had
 	// a chance to validate it. [`Notifications`] must compare the `crate::peerset::IncomingIndex`

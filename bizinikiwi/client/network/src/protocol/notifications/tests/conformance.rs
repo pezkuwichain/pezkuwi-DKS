@@ -106,12 +106,12 @@ fn setup_libp2p(
 			.with_substream_upgrade_protocol_override(upgrade::Version::V1)
 			.with_notify_handler_buffer_size(NonZeroUsize::new(32).expect("32 != 0; qed"))
 			// NOTE: 24 is somewhat arbitrary and should be tuned in the future if
-			// necessary. See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/221>
+			// necessary. See <https://github.com/paritytech/bizinikiwi/pull/6080>
 			.with_per_connection_event_buffer_size(24)
 			.with_max_negotiating_inbound_streams(2048)
 			.with_idle_connection_timeout(Duration::from_secs(5));
 
-		Swarm::new(transport, behaviour, local_peer_id, config)
+		Swarm::new(transport.0, behaviour, local_peer_id, config)
 	};
 
 	swarm.listen_on("/ip6/::1/tcp/0".parse().unwrap()).unwrap();
@@ -278,7 +278,7 @@ async fn libp2p_to_litep2p_substream() {
 }
 
 /// Litep2p rejects the libp2p substream. The connection finishes due to the keep-alive mechanism
-/// detecting the connection as idle. In this case, bizinikiwi does not force reopen the substreams.
+/// detecting the connection as idle. In this case, substrate does not force reopen the substreams.
 #[tokio::test]
 async fn litep2p_rejects_libp2p_substream() {
 	let (mut litep2p, mut handle) = setup_litep2p().await;
@@ -371,8 +371,8 @@ async fn libp2p_disconnects_libp2p_substream() {
 
 	libp2p_rhs.dial(libp2p_lhs_address).unwrap();
 
-	// Disarm first timer interval that fires immediately.
-	let mut timer = tokio::time::interval(std::time::Duration::from_secs(5));
+	// Timeout as a safety guard in case the test hangs.
+	let mut timer = tokio::time::interval(std::time::Duration::from_secs(60));
 	timer.tick().await;
 
 	let mut sink = None;
@@ -388,7 +388,7 @@ async fn libp2p_disconnects_libp2p_substream() {
 	loop {
 		tokio::select! {
 			_ = timer.tick() => {
-				break;
+				panic!("Test timed out waiting for expected events");
 			}
 
 			event = libp2p_lhs.select_next_some() => {
@@ -487,6 +487,17 @@ async fn libp2p_disconnects_libp2p_substream() {
 				}
 
 			},
+		}
+
+		// Check if all expected events have occurred
+		if open_times == 2
+			&& notification_count == 4
+			&& recv_1111 == 2
+			&& recv_2222 == 2
+			&& recv_3333 == 2
+			&& recv_4444 == 2
+		{
+			break;
 		}
 	}
 
@@ -756,7 +767,7 @@ async fn litep2p_disconnects_libp2p_substream() {
 }
 
 /// Raw litep2p closes the substream with a raw litep2p.
-/// In this case, there's no protocol controller from bizinikiwi that will reopen the substream.
+/// In this case, there's no protocol controller from substrate that will reopen the substream.
 /// Therefore, since the substream is closed, the connection will be closed by the keep-alive.
 #[tokio::test]
 async fn litep2p_disconnects_litep2p_substream() {

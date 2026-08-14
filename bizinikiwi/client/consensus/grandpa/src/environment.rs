@@ -400,22 +400,19 @@ impl Metrics {
 	) -> Result<Self, PrometheusError> {
 		Ok(Self {
 			finality_grandpa_round: register(
-				Gauge::new(
-					"bizinikiwi_finality_grandpa_round",
-					"Highest completed GRANDPA round.",
-				)?,
+				Gauge::new("substrate_finality_grandpa_round", "Highest completed GRANDPA round.")?,
 				registry,
 			)?,
 			finality_grandpa_prevotes: register(
 				Counter::new(
-					"bizinikiwi_finality_grandpa_prevotes_total",
+					"substrate_finality_grandpa_prevotes_total",
 					"Total number of GRANDPA prevotes cast locally.",
 				)?,
 				registry,
 			)?,
 			finality_grandpa_precommits: register(
 				Counter::new(
-					"bizinikiwi_finality_grandpa_precommits_total",
+					"substrate_finality_grandpa_precommits_total",
 					"Total number of GRANDPA precommits cast locally.",
 				)?,
 				registry,
@@ -1101,17 +1098,26 @@ where
 		round: RoundNumber,
 		commit: Commit<Block::Header>,
 	) -> Result<(), Self::Error> {
-		finalize_block(
+		let result = finalize_block(
 			self.client.clone(),
 			&self.authority_set,
 			Some(self.config.justification_generation_period),
 			hash,
 			number,
-			(round, commit).into(),
+			(round, commit.clone()).into(),
 			false,
 			self.justification_sender.as_ref(),
 			self.telemetry.clone(),
-		)
+		);
+
+		// If the finalized block enacts an authority set change, the voter will be
+		// torn down before the commit can be flushed through global_out.
+		if matches!(&result, Err(CommandOrError::VoterCommand(VoterCommand::ChangeAuthorities(_))))
+		{
+			self.network.gossip_commit(round, self.set_id, commit);
+		}
+
+		result
 	}
 
 	fn round_commit_timer(&self) -> Self::Timer {

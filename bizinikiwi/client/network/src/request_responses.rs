@@ -151,6 +151,8 @@ pub enum RequestFailure {
 	NotConnected,
 	#[error("Given protocol hasn't been registered.")]
 	UnknownProtocol,
+	#[error("The outbound request payload or parameters are invalid for the selected protocol.")]
+	InvalidRequest,
 	#[error("Remote has closed the substream before answering, thereby signaling that it considers the request as valid, but refused to answer it.")]
 	Refused,
 	#[error("The remote replied, but the local node is no longer interested in the response.")]
@@ -390,7 +392,7 @@ pub struct RequestResponsesBehaviour {
 	/// We had issues in the past where libp2p did not produce a timeout event in due time.
 	///
 	/// For more details, see:
-	/// - <https://github.com/pezkuwichain/pezkuwi-sdk/issues/294#issuecomment-2596085096>
+	/// - <https://github.com/pezkuwichain/pezkuwi-sdk/issues/7076#issuecomment-2596085096>
 	periodic_request_check: tokio::time::Interval,
 }
 
@@ -762,7 +764,6 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
 						request_response::Event::Message {
 							peer,
 							message: Message::Request { request_id, request, channel, .. },
-							..
 						} => {
 							self.pending_responses_arrival_time
 								.insert((protocol.clone(), request_id).into(), Instant::now());
@@ -963,7 +964,7 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
 						},
 
 						// A response to an inbound request has been sent.
-						request_response::Event::ResponseSent { request_id, peer, .. } => {
+						request_response::Event::ResponseSent { request_id, peer } => {
 							let arrival_time = self
 								.pending_responses_arrival_time
 								.remove(&(protocol.clone(), request_id).into())
@@ -1772,7 +1773,7 @@ mod tests {
 	/// This is achieved by:
 	/// - Two swarms are connected, the first one is slow to respond and has the timeout set to 10
 	///   seconds. The second swarm is configured with a timeout of 10 seconds in libp2p, however in
-	///   bizinikiwi this is set to 1 second.
+	///   substrate this is set to 1 second.
 	///
 	/// - The first swarm introduces a delay of 2 seconds before responding to the request.
 	///

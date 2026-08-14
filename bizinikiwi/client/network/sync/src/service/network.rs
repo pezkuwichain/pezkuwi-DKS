@@ -28,7 +28,7 @@ use pezsc_utils::mpsc::{tracing_unbounded, TracingUnboundedReceiver, TracingUnbo
 
 use std::sync::Arc;
 
-/// Network-related services required by `sc-network-sync`
+/// Network-related services required by `pezsc-network-sync`
 pub trait Network: NetworkPeers + NetworkRequest {}
 
 impl<T> Network for T where T: NetworkPeers + NetworkRequest {}

@@ -297,7 +297,7 @@ impl Discovery {
 		let user_agent = format!("{} ({}) (litep2p)", config.client_version, config.node_name);
 
 		let (identify_config, identify_event_stream) =
-			IdentifyConfig::new("/bizinikiwi/1.0".to_string(), Some(user_agent));
+			IdentifyConfig::new("/substrate/1.0".to_string(), Some(user_agent));
 
 		let (mdns_config, mdns_event_stream) = match config.transport {
 			crate::config::TransportConfig::Normal { enable_mdns, .. } => match enable_mdns {
@@ -735,7 +735,7 @@ impl Stream for Discovery {
 			})) => {
 				let observed_address =
 					if let Some(Protocol::P2p(peer_id)) = observed_address.iter().last() {
-						if peer_id != *this.local_peer_id.as_ref() {
+						if peer_id != this.local_peer_id.into() {
 							log::warn!(
 								target: LOG_TARGET,
 								"Discovered external address for a peer that is not us: {observed_address}",
@@ -830,7 +830,7 @@ mod tests {
 		let mut known_peers = HashMap::new();
 		let genesis_hash = H256::from_low_u64_be(1);
 		let fork_id = Some("test-fork-id");
-		let protocol_id = ProtocolId::from("hez");
+		let protocol_id = ProtocolId::from("dot");
 
 		// Build backends such that the first peer is known to all other peers.
 		let backends = (0..10)

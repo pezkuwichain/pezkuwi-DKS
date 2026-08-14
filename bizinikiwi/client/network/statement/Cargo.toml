@@ -16,6 +16,9 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+fastbloom = { workspace = true }
+governor = { workspace = true }
+rand = { workspace = true, default-features = true }
 array-bytes = { workspace = true, default-features = true }
 async-channel = { workspace = true }
 codec = { features = ["derive"], workspace = true, default-features = true }
@@ -32,6 +35,16 @@ prometheus-endpoint = { workspace = true, default-features = true }
 tokio = { workspace = true }
 
 [dev-dependencies]
+criterion = { workspace = true, default-features = true }
+pezsc-keystore = { workspace = true, default-features = true }
+pezsc-statement-store = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+bizinikiwi-test-runtime-client = { workspace = true }
+tempfile = { workspace = true }
 async-trait = { workspace = true }
 
 [features]
@@ -61,3 +74,4 @@ try-runtime = [
 	"pezsp-statement-store/try-runtime",
 ]
 serde = []
+test-helpers = []

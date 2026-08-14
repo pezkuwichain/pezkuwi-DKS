@@ -122,7 +122,7 @@ pub struct RpcEndpoint {
 	/// RPC methods to expose.
 	pub rpc_methods: RpcMethods,
 	/// Whether it's an optional listening address i.e, it's ignored if it fails to bind.
-	/// For example bizinikiwi tries to bind both ipv4 and ipv6 addresses but some platforms
+	/// For example substrate tries to bind both ipv4 and ipv6 addresses but some platforms
 	/// may not support ipv6.
 	pub is_optional: bool,
 	/// Whether to retry with a random port if the provided port is already in use.

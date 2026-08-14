@@ -38,7 +38,7 @@ use pezsc_network_sync::{
 	engine::SyncingEngine,
 	service::network::NetworkServiceProvider,
 	state_request_handler::StateRequestHandler,
-	strategy::pezkuwi::{PezkuwiSyncingStrategy, PezkuwiSyncingStrategyConfig},
+	strategy::polkadot::{PolkadotSyncingStrategy, PolkadotSyncingStrategyConfig},
 };
 use pezsp_blockchain::HeaderBackend;
 use pezsp_runtime::traits::{Block as BlockT, Zero};
@@ -61,7 +61,7 @@ impl TestNetwork {
 
 	pub fn start_network(
 		self,
-	) -> (Arc<TestNetworkService>, (impl Stream<Item = Event> + std::marker::Unpin)) {
+	) -> (Arc<TestNetworkService>, impl Stream<Item = Event> + std::marker::Unpin) {
 		let worker = self.network;
 		let service = worker.service().clone();
 		let event_stream = service.event_stream("test");
@@ -204,7 +204,7 @@ impl TestNetworkBuilder {
 		let peer_store_handle: Arc<dyn PeerStoreProvider> = Arc::new(peer_store.handle());
 		tokio::spawn(peer_store.run().boxed());
 
-		let syncing_config = PezkuwiSyncingStrategyConfig {
+		let syncing_config = PolkadotSyncingStrategyConfig {
 			mode: network_config.sync_mode,
 			max_parallel_downloads: network_config.max_parallel_downloads,
 			max_blocks_per_request: network_config.max_blocks_per_request,
@@ -212,10 +212,11 @@ impl TestNetworkBuilder {
 			state_request_protocol_name: state_request_protocol_config.name.clone(),
 			block_downloader: block_relay_params.downloader,
 			min_peers_to_start_warp_sync: None,
+			archive_blocks: false,
 		};
 		// Initialize syncing strategy.
 		let syncing_strategy = Box::new(
-			PezkuwiSyncingStrategy::new(syncing_config, client.clone(), None, None).unwrap(),
+			PolkadotSyncingStrategy::new(syncing_config, client.clone(), None, None).unwrap(),
 		);
 
 		let (engine, chain_sync_service, block_announce_config) = SyncingEngine::new(
@@ -280,7 +281,7 @@ impl TestNetworkBuilder {
 			protocol_id,
 			fork_id,
 			metrics_registry: None,
-			bitswap_config: None,
+			ipfs_config: None,
 			notification_metrics: NotificationMetrics::new(None),
 		})
 		.unwrap();
@@ -377,10 +378,10 @@ async fn notifications_state_consistent() {
 		}
 
 		// Also randomly disconnect the two nodes from time to time.
-		if rand::random::<u8>() % 20 == 0 {
+		if rand::random::<u8>().is_multiple_of(20) {
 			node1.disconnect_peer(node2.local_peer_id(), PROTOCOL_NAME.into());
 		}
-		if rand::random::<u8>() % 20 == 0 {
+		if rand::random::<u8>().is_multiple_of(20) {
 			node2.disconnect_peer(node1.local_peer_id(), PROTOCOL_NAME.into());
 		}
 

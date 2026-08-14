@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! `sc-network` utilities
+//! `pezsc-network` utilities
 
 use futures::{stream::unfold, FutureExt, Stream, StreamExt};
 use futures_timer::Delay;
@@ -42,6 +42,16 @@ impl<T: Hash + Eq> LruHashSet<T> {
 	/// Create a new `LruHashSet` with the given (exclusive) limit.
 	pub fn new(limit: NonZeroUsize) -> Self {
 		Self { set: LinkedHashSet::new(), limit }
+	}
+
+	/// Check if the set contains the given element without modifying the set.
+	pub fn contains(&self, e: &T) -> bool {
+		self.set.contains(e)
+	}
+
+	/// Remove all elements from the set.
+	pub fn clear(&mut self) {
+		self.set.clear();
 	}
 
 	/// Insert element into the set.

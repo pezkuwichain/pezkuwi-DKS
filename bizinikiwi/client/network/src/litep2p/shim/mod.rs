@@ -16,8 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! Shims for fitting `litep2p` APIs to `sc-network` APIs.
+//! Shims for fitting `litep2p` APIs to `pezsc-network` APIs.
 
-pub(crate) mod bitswap;
 pub(crate) mod notification;
 pub(crate) mod request_response;

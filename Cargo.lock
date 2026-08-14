@@ -20163,6 +20163,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezsc-virtualization"
+version = "0.3.0"
+dependencies = [
+ "log",
+ "pezsp-io",
+ "pezsp-storage",
+ "pezsp-tracing",
+ "pezsp-virtualization",
+ "pezsp-virtualization-test-fixture",
+ "polkavm 0.33.1",
+]
+
+[[package]]
 name = "pezsnowbridge-beacon-primitives"
 version = "0.2.0"
 dependencies = [
@@ -21580,6 +21593,27 @@ dependencies = [
  "proc-macro2 1.0.106",
  "quote 1.0.46",
  "syn 2.0.118",
+]
+
+[[package]]
+name = "pezsp-virtualization"
+version = "0.4.0"
+dependencies = [
+ "log",
+ "num_enum",
+ "parity-scale-codec",
+ "pezsp-externalities",
+ "pezsp-runtime-interface",
+ "pezsp-storage",
+ "strum 0.26.3",
+]
+
+[[package]]
+name = "pezsp-virtualization-test-fixture"
+version = "0.3.0"
+dependencies = [
+ "bizinikiwi-wasm-builder",
+ "polkavm-derive 0.33.0",
 ]
 
 [[package]]

@@ -788,7 +788,6 @@ mod tests {
 
 	#[test]
 	fn genesis_epoch_is_created_but_not_imported() {
-		//
 		// A - B
 		//  \
 		//   — C
@@ -830,7 +829,6 @@ mod tests {
 
 	#[test]
 	fn epoch_changes_between_blocks() {
-		//
 		// A - B
 		//  \
 		//   — C
@@ -1083,7 +1081,7 @@ mod tests {
 
 		let is_descendent_of = |base: &Hash, block: &Hash| -> Result<bool, TestError> {
 			match (block, base) {
-				| (b"A", b"0")
+				(b"A", b"0")
 				| (b"B", b"0" | b"A")
 				| (b"C", b"0" | b"A" | b"B")
 				| (b"D", b"0" | b"A" | b"B" | b"C")

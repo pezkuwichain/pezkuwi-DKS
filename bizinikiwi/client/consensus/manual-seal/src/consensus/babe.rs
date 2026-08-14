@@ -30,10 +30,10 @@ use pezsc_consensus_epochs::{
 	descendent_query, EpochHeader, SharedEpochChanges, ViableEpochDescriptor,
 };
 use pezsp_keystore::KeystorePtr;
-use std::{marker::PhantomData, sync::Arc};
+use std::sync::Arc;
 
 use pezsc_consensus::{BlockImportParams, ForkChoiceStrategy, Verifier};
-use pezsp_api::ProvideRuntimeApi;
+use pezsp_api::{ProvideRuntimeApi, StorageProof};
 use pezsp_blockchain::{HeaderBackend, HeaderMetadata};
 use pezsp_consensus_babe::{
 	digests::{NextEpochDescriptor, PreDigest, SecondaryPlainPreDigest},
@@ -51,7 +51,7 @@ use pezsp_timestamp::TimestampInherentData;
 
 /// Provides BABE-compatible predigests and BlockImportParams.
 /// Intended for use with BABE runtimes.
-pub struct BabeConsensusDataProvider<B: BlockT, C, P> {
+pub struct BabeConsensusDataProvider<B: BlockT, C> {
 	/// shared reference to keystore
 	keystore: KeystorePtr,
 
@@ -69,7 +69,6 @@ pub struct BabeConsensusDataProvider<B: BlockT, C, P> {
 
 	/// Authorities to be used for this babe chain.
 	authorities: Vec<(AuthorityId, BabeAuthorityWeight)>,
-	_phantom: PhantomData<P>,
 }
 
 /// Verifier to be used for babe chains
@@ -131,7 +130,7 @@ where
 	}
 }
 
-impl<B, C, P> BabeConsensusDataProvider<B, C, P>
+impl<B, C> BabeConsensusDataProvider<B, C>
 where
 	B: BlockT,
 	C: AuxStore
@@ -153,14 +152,7 @@ where
 
 		let config = pezsc_consensus_babe::configuration(&*client)?;
 
-		Ok(Self {
-			config,
-			client,
-			keystore,
-			epoch_changes,
-			authorities,
-			_phantom: Default::default(),
-		})
+		Ok(Self { config, client, keystore, epoch_changes, authorities })
 	}
 
 	fn epoch(&self, parent: &B::Header, slot: Slot) -> Result<Epoch, Error> {
@@ -186,7 +178,7 @@ where
 	}
 }
 
-impl<B, C, P> ConsensusDataProvider<B> for BabeConsensusDataProvider<B, C, P>
+impl<B, C> ConsensusDataProvider<B> for BabeConsensusDataProvider<B, C>
 where
 	B: BlockT,
 	C: AuxStore
@@ -195,10 +187,7 @@ where
 		+ UsageProvider<B>
 		+ ProvideRuntimeApi<B>,
 	C::Api: BabeApi<B>,
-	P: Send + Sync,
 {
-	type Proof = P;
-
 	fn create_digest(&self, parent: &B::Header, inherents: &InherentData) -> Result<Digest, Error> {
 		let slot = inherents
 			.babe_inherent_data()?
@@ -265,7 +254,7 @@ where
 		parent: &B::Header,
 		params: &mut BlockImportParams<B>,
 		inherents: &InherentData,
-		_proof: Self::Proof,
+		_proof: StorageProof,
 	) -> Result<(), Error> {
 		let slot = inherents
 			.babe_inherent_data()?

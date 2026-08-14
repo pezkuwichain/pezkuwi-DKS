@@ -141,7 +141,7 @@ impl PeerInfoBehaviour {
 		public_addresses: Vec<Multiaddr>,
 	) -> Self {
 		let identify = {
-			let cfg = IdentifyConfig::new("/bizinikiwi/1.0".to_string(), local_public_key.clone())
+			let cfg = IdentifyConfig::new("/substrate/1.0".to_string(), local_public_key.clone())
 				.with_agent_version(user_agent)
 				// We don't need any peer information cached.
 				.with_cache_size(0);

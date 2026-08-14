@@ -446,6 +446,18 @@ where
 			})
 		};
 
+		// Addresses without a port cannot be dialed.
+		let address_has_port = |address: &Multiaddr| {
+			address.iter().any(|protocol| {
+				matches!(
+					protocol,
+					multiaddr::Protocol::Tcp(_)
+						| multiaddr::Protocol::Udp(_)
+						| multiaddr::Protocol::Memory(_)
+				)
+			})
+		};
+
 		// These are the addresses the node is listening for incoming connections,
 		// as reported by installed protocols (tcp / websocket etc).
 		//
@@ -458,7 +470,7 @@ where
 			.listen_addresses()
 			.into_iter()
 			.filter_map(|address| {
-				address_is_global(&address)
+				(address_is_global(&address) && address_has_port(&address))
 					.then(|| AddressType::GlobalListenAddress(address).without_p2p(local_peer_id))
 			})
 			.take(MAX_GLOBAL_LISTEN_ADDRESSES)
@@ -470,8 +482,10 @@ where
 			.external_addresses()
 			.into_iter()
 			.filter_map(|address| {
-				(publish_non_global_ips || address_is_global(&address))
-					.then(|| AddressType::ExternalAddress(address).without_p2p(local_peer_id))
+				// Only publish addresses that have a port and are global.
+				(address_has_port(&address)
+					&& (publish_non_global_ips || address_is_global(&address)))
+				.then(|| AddressType::ExternalAddress(address).without_p2p(local_peer_id))
 			})
 			.peekable();
 
@@ -490,6 +504,7 @@ where
 			.public_addresses
 			.clone()
 			.into_iter()
+			.filter(address_has_port)
 			.chain(global_listen_addresses)
 			.chain(external_addresses)
 			// Deduplicate addresses.
@@ -1199,14 +1214,14 @@ impl Metrics {
 		Ok(Self {
 			publish: register(
 				Counter::new(
-					"bizinikiwi_authority_discovery_times_published_total",
+					"substrate_authority_discovery_times_published_total",
 					"Number of times authority discovery has published external addresses.",
 				)?,
 				registry,
 			)?,
 			amount_addresses_last_published: register(
 				Gauge::new(
-					"bizinikiwi_authority_discovery_amount_external_addresses_last_published",
+					"substrate_authority_discovery_amount_external_addresses_last_published",
 					"Number of external addresses published when authority discovery last \
 					 published addresses.",
 				)?,
@@ -1214,7 +1229,7 @@ impl Metrics {
 			)?,
 			requests: register(
 				Counter::new(
-					"bizinikiwi_authority_discovery_authority_addresses_requested_total",
+					"substrate_authority_discovery_authority_addresses_requested_total",
 					"Number of times authority discovery has requested external addresses of a \
 					 single authority.",
 				)?,
@@ -1222,7 +1237,7 @@ impl Metrics {
 			)?,
 			requests_pending: register(
 				Gauge::new(
-					"bizinikiwi_authority_discovery_authority_address_requests_pending",
+					"substrate_authority_discovery_authority_address_requests_pending",
 					"Number of pending authority address requests.",
 				)?,
 				registry,
@@ -1230,7 +1245,7 @@ impl Metrics {
 			dht_event_received: register(
 				CounterVec::new(
 					Opts::new(
-						"bizinikiwi_authority_discovery_dht_event_received",
+						"substrate_authority_discovery_dht_event_received",
 						"Number of dht events received by authority discovery.",
 					),
 					&["name"],
@@ -1239,14 +1254,14 @@ impl Metrics {
 			)?,
 			handle_value_found_event_failure: register(
 				Counter::new(
-					"bizinikiwi_authority_discovery_handle_value_found_event_failure",
+					"substrate_authority_discovery_handle_value_found_event_failure",
 					"Number of times handling a dht value found event failed.",
 				)?,
 				registry,
 			)?,
 			known_authorities_count: register(
 				Gauge::new(
-					"bizinikiwi_authority_discovery_known_authorities_count",
+					"substrate_authority_discovery_known_authorities_count",
 					"Number of authorities known by authority discovery.",
 				)?,
 				registry,

@@ -21,6 +21,7 @@ name = "basics"
 harness = false
 
 [dependencies]
+strum = { workspace = true, features = ["derive"] }
 async-trait = { workspace = true }
 codec = { workspace = true, default-features = true }
 futures = { workspace = true }

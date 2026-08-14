@@ -92,7 +92,7 @@ impl Metrics {
 		Ok(Self {
 			propagated_transactions: register(
 				Counter::new(
-					"bizinikiwi_sync_propagated_transactions",
+					"substrate_sync_propagated_transactions",
 					"Number of transactions propagated to at least one peer",
 				)?,
 				r,
@@ -502,7 +502,7 @@ where
 				// intentionally done in a backwards-compatible way.
 				// In other words, the `Vec` that is sent below **must** always have only a single
 				// element in it.
-				// See <https://github.com/polkadot-fellows/RFCs/blob/main/text/0056-one-transaction-per-notification.md>
+				// See <https://github.com/pezkuwi-fellows/RFCs/blob/main/text/0056-one-transaction-per-notification.md>
 				for to_send in to_send {
 					let _ = self
 						.notification_service

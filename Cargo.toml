@@ -84,6 +84,7 @@ members = [
 	"bizinikiwi/client/transaction-pool",
 	"bizinikiwi/client/transaction-pool/api",
 	"bizinikiwi/client/utils",
+	"bizinikiwi/client/virtualization",
 	"bizinikiwi/deprecated/hashing",
 	"bizinikiwi/deprecated/hashing/proc-macro",
 	"bizinikiwi/pezframe",
@@ -311,6 +312,8 @@ members = [
 	"bizinikiwi/primitives/transaction-storage-proof",
 	"bizinikiwi/primitives/trie",
 	"bizinikiwi/primitives/version",
+	"bizinikiwi/primitives/virtualization",
+	"bizinikiwi/primitives/virtualization/test-fixture",
 	"bizinikiwi/primitives/version/proc-macro",
 	"bizinikiwi/primitives/wasm-interface",
 	"bizinikiwi/primitives/weights",
@@ -907,6 +910,9 @@ num-bigint = { version = "0.4.6", default-features = false }
 num-format = { version = "0.4.3" }
 num-integer = { version = "0.1.46", default-features = false }
 num-rational = { version = "0.4.1" }
+multihash-codetable = { version = "0.2.1", default-features = false, features = ["blake2b"] }
+fastbloom = { version = "0.17", default-features = false }
+num_enum = { version = "0.7.5", default-features = false }
 num-traits = { version = "0.2.17", default-features = false }
 num_cpus = { version = "1.13.1" }
 once_cell = { version = "1.21.3" }
@@ -1411,6 +1417,9 @@ pezsp-tracing = { path = "bizinikiwi/primitives/tracing", version = "16.0.0", de
 pezsp-transaction-pool = { path = "bizinikiwi/primitives/transaction-pool", version = "26.0.0", default-features = false }
 pezsp-transaction-storage-proof = { path = "bizinikiwi/primitives/transaction-storage-proof", version = "26.0.0", default-features = false }
 pezsp-trie = { path = "bizinikiwi/primitives/trie", version = "29.0.0", default-features = false }
+pezsp-virtualization = { path = "bizinikiwi/primitives/virtualization", version = "0.4.0", default-features = false }
+pezsp-virtualization-test-fixture = { path = "bizinikiwi/primitives/virtualization/test-fixture", version = "0.3.0" }
+pezsc-virtualization = { path = "bizinikiwi/client/virtualization", version = "0.3.0", default-features = false }
 pezsp-version = { path = "bizinikiwi/primitives/version", version = "29.0.0", default-features = false }
 pezsp-version-proc-macro = { path = "bizinikiwi/primitives/version/proc-macro", version = "13.0.0", default-features = false }
 pezsp-wasm-interface = { path = "bizinikiwi/primitives/wasm-interface", version = "20.0.0", default-features = false }

@@ -24,7 +24,7 @@
 
 pub mod chain_sync;
 mod disconnected_peers;
-pub mod pezkuwi;
+pub mod polkadot;
 pub mod state;
 pub mod state_sync;
 pub mod warp;
@@ -172,7 +172,7 @@ pub enum SyncingAction<B: BlockT> {
 		number: NumberFor<B>,
 		justifications: Justifications,
 	},
-	/// Strategy finished. Nothing to do, this is handled by `PezkuwiSyncingStrategy`.
+	/// Strategy finished. Nothing to do, this is handled by `PolkadotSyncingStrategy`.
 	Finished,
 }
 

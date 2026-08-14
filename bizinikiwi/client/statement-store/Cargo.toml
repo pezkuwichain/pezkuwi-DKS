@@ -17,6 +17,15 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+anyhow = { workspace = true, optional = true }
+async-channel = { workspace = true }
+futures = { workspace = true }
+itertools = { workspace = true }
+pezsc-utils = { workspace = true }
+scale-info = { workspace = true, default-features = true, optional = true }
+pezsp-storage = { workspace = true, default-features = true }
+pezkuwi-subxt = { workspace = true, features = ["jsonrpsee", "native"], optional = true }
+pezkuwi-subxt-signer = { workspace = true, features = ["sr25519"], optional = true }
 log = { workspace = true, default-features = true }
 parity-db = { workspace = true }
 parking_lot = { workspace = true, default-features = true }

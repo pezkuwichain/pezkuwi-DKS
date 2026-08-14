@@ -278,6 +278,17 @@ where
 		hash: Block::Hash,
 		initial_sync: bool,
 	) -> Result<PendingSetChanges<Block>, ConsensusError> {
+		// For warp synced block we can skip authority set change tracking for warp synced blocks,
+		// because authority sets will be reconstructed after sync completes from the finalized
+		// state.
+		if block.origin == BlockOrigin::WarpSync {
+			return Ok(PendingSetChanges {
+				just_in_case: None,
+				applied_changes: AppliedChanges::None,
+				do_pause: false,
+			});
+		}
+
 		// when we update the authorities, we need to hold the lock
 		// until the block is written to prevent a race if we need to restore
 		// the old authority set on error or panic.
@@ -551,6 +562,8 @@ where
 
 		if number <= self.inner.info().finalized_number {
 			// Importing an old block. Just save justifications and authority set changes
+			let mut pending_changes = None;
+
 			if self.check_new_change(&block.header, hash).is_some() {
 				if block.justifications.is_none() {
 					return Err(ConsensusError::ClientImport(
@@ -560,7 +573,12 @@ where
 					));
 				}
 				let mut authority_set = self.authority_set.inner_locked();
-				authority_set.authority_set_changes.insert(number);
+				let old_set = authority_set.clone();
+				authority_set
+					.authority_set_changes
+					.insert(number)
+					.map_err(|e| ConsensusError::ClientImport(e.to_string()))?;
+
 				crate::aux_schema::update_authority_set::<Block, _, _>(
 					&authority_set,
 					None,
@@ -570,8 +588,34 @@ where
 							.extend(insert.iter().map(|(k, v)| (k.to_vec(), Some(v.to_vec()))))
 					},
 				);
+
+				// The authority set remains locked until the block is imported.
+				// This ensures the in memory authority set cannot diverge from the DB one.
+				// If the block import fails, the authority set is not committed on the DB.
+				pending_changes = Some(PendingSetChanges::<Block> {
+					just_in_case: Some((old_set, authority_set.release_mutex())),
+					applied_changes: AppliedChanges::None,
+					do_pause: false,
+				});
 			}
-			return (&*self.inner).import_block(block).await;
+
+			let import_result = self.inner.import_block(block).await;
+			if let Some(pending_changes) = pending_changes {
+				match &import_result {
+					Ok(ImportResult::Imported(_)) => {
+						pending_changes.defuse();
+					},
+					other => {
+						debug!(
+							target: LOG_TARGET,
+							"Restoring old authority set after unsuccessful block import: {other:?}"
+						);
+						pending_changes.revert();
+					},
+				}
+			}
+
+			return import_result;
 		}
 
 		// on initial sync we will restrict logging under info to avoid spam.
