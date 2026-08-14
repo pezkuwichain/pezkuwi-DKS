@@ -35,7 +35,7 @@ use pezframe_support::{
 	PalletId,
 };
 use pezsp_runtime::{
-	traits::{BlakeTwo256, Convert, Hash, Identity, IdentityLookup},
+	traits::{BlakeTwo256, Convert, Hash, IdentityLookup},
 	BuildStorage, Perbill,
 };
 
@@ -182,11 +182,9 @@ impl Config for Test {
 	type ChildBountyValueMinimum = ConstU64<1>;
 	type MaxActiveChildBountyCount = MaxActiveChildBountyCount;
 	type WeightInfo = ();
-	type FundingSource = PalletIdAsFundingSource<BountyPalletId, Test, Identity, ()>;
-	type BountySource =
-		BountySourceFromPalletId<BountyPalletId, BountyAccountPrefix, Test, Identity, ()>;
-	type ChildBountySource =
-		ChildBountySourceFromPalletId<BountyPalletId, ChildBountyAccountPrefix, Test, Identity, ()>;
+	type FundingSource = PalletIdAsFundingSource<BountyPalletId, Test, ()>;
+	type BountySource = BountySourceAccount<BountyPalletId, Test, ()>;
+	type ChildBountySource = ChildBountySourceAccount<BountyPalletId, Test, ()>;
 	type Paymaster = TestBountiesPay;
 	type BalanceConverter = UnityAssetBalanceConversion;
 	type Preimages = Preimage;
@@ -218,16 +216,9 @@ impl Config<Instance1> for Test {
 	type ChildBountyValueMinimum = ConstU64<1>;
 	type MaxActiveChildBountyCount = MaxActiveChildBountyCount;
 	type WeightInfo = ();
-	type FundingSource = PalletIdAsFundingSource<BountyPalletId2, Test, Identity, Instance1>;
-	type BountySource =
-		BountySourceFromPalletId<BountyPalletId2, BountyAccountPrefix, Test, Identity, Instance1>;
-	type ChildBountySource = ChildBountySourceFromPalletId<
-		BountyPalletId2,
-		ChildBountyAccountPrefix,
-		Test,
-		Identity,
-		Instance1,
-	>;
+	type FundingSource = PalletIdAsFundingSource<BountyPalletId2, Test, Instance1>;
+	type BountySource = BountySourceAccount<BountyPalletId2, Test, Instance1>;
+	type ChildBountySource = ChildBountySourceAccount<BountyPalletId2, Test, Instance1>;
 	type Paymaster = TestBountiesPay;
 	type BalanceConverter = UnityAssetBalanceConversion;
 	type Preimages = Preimage;
@@ -504,8 +495,8 @@ pub fn create_child_bounty_with_curator() -> TestBounty {
 		RuntimeOrigin::signed(s.curator),
 		s.parent_bounty_id,
 		s.child_value,
-		s.metadata,
 		Some(s.child_curator),
+		s.metadata
 	));
 	s.child_bounty_id =
 		pezpallet_bounties::TotalChildBountiesPerParent::<Test>::get(s.parent_bounty_id) - 1;

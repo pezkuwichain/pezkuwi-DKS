@@ -732,7 +732,7 @@ pub fn grandpa_peers_set_config<B: BlockT, N: NetworkBackend<B, <B as BlockT>::H
 	N::notification_config(
 		protocol_name,
 		grandpa_protocol_name::LEGACY_NAMES.iter().map(|&n| n.into()).collect(),
-		// Notifications reach ~256kiB in size at the time of writing on Kusama and Pezkuwi.
+		// Notifications reach ~256kiB in size at the time of writing on Dicle and Pezkuwi.
 		1024 * 1024,
 		None,
 		pezsc_network::config::SetConfig {

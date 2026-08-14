@@ -148,7 +148,7 @@ pub trait StateApi<Hash> {
 	/// interpretation of the traces requires an understanding of the Bizinikiwi chain's block
 	/// execution.
 	///
-	/// [Link to conceptual map of trace structure for Pezkuwi and Kusama block execution.][2]
+	/// [Link to conceptual map of trace structure for Pezkuwi and Dicle block execution.][2]
 	///
 	/// [1]: https://crates.io/crates/tracing
 	/// [2]: https://docs.google.com/drawings/d/1vZoJo9jaXlz0LmrdTOgHck9_1LsfuQPRmTr-5g1tOis/edit?usp=sharing
@@ -263,7 +263,7 @@ pub trait StateApi<Hash> {
 	/// will be filtered by storage key (so non-storage events will **not** show up).
 	/// You can specify any length of a storage key prefix (i.e. if a specified storage
 	/// key is in the beginning of an events storage key it is considered a match).
-	/// Example: for balance tracking on Pezkuwi & Kusama you would likely want
+	/// Example: for balance tracking on Pezkuwi & Dicle you would likely want
 	/// to track changes to account balances with the pezframe_system::Account storage item,
 	/// which is a map from `AccountId` to `AccountInfo`. The key filter for this would be
 	/// the storage prefix for the map:

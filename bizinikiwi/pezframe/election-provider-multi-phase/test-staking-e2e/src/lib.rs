@@ -132,7 +132,7 @@ fn offchainify_works() {
 }
 
 #[test]
-/// Inspired by the Kusama incident of 8th Dec 2022 and its resolution through the governance
+/// Inspired by the Dicle incident of 8th Dec 2022 and its resolution through the governance
 /// fallback.
 ///
 /// Mass slash of validators shouldn't disable more than 1/3 of them (the byzantine threshold). Also

@@ -654,7 +654,7 @@ enum PalletsConversion {
 	///
 	/// `System: pezframe_system::{Pezpallet, Call}`
 	///
-	/// However, for backwards compatibility with Pezkuwi/Kusama
+	/// However, for backwards compatibility with Pezkuwi/Dicle
 	/// we must propagate some other parts to the pezpallet by default.
 	Explicit(Vec<Pezpallet>),
 	/// Pallets explicitly declare parts that are fully expanded.

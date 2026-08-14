@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *Pezkuwi*.
 //!
-//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/tree/master/bizinikiwi/pezframe/multi-asset-bounties) -
+//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi/pezframe/multi-asset-bounties) -
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]: https://img.shields.io/badge/polkadot-E6007A?style=for-the-badge&logo=polkadot&logoColor=white
@@ -54,17 +54,14 @@
 //!   Beneficiary if the bounty is rewarded.
 //! - **Beneficiary:** The account/location to which the total or part of the bounty is assigned to.
 //!
-//! ### Account derivation
-//!
-//! Bounty and child-bounty accounts are derived from the funding source [`PalletId`] using the
-//! raw-byte prefixes `b"mbt"` (multi-asset bounty) and `b"mcb"` (multi-asset child bounty).
-//!
 //! ### Example
 //!
 //! 1. Fund a bounty approved by spend origin of some asset kind with a proposed curator.
 #![doc = docify::embed!("src/tests.rs", fund_bounty_works)]
+//!
 //! 2. Award a bounty to a beneficiary.
 #![doc = docify::embed!("src/tests.rs", award_bounty_works)]
+//!
 //! ## Pezpallet API
 //!
 //! See the [`pezpallet`] module for more information about the interfaces this pezpallet exposes,
@@ -100,26 +97,21 @@ use pezframe_system::pezpallet_prelude::{
 	ensure_signed, BlockNumberFor as SystemBlockNumberFor, OriginFor,
 };
 use pezsp_runtime::{
-	traits::{
-		AccountIdConversion, BadOrigin, CheckedAdd, Convert, Saturating, StaticLookup, TryConvert,
-		Zero,
-	},
-	Debug, Permill,
+	traits::{AccountIdConversion, BadOrigin, Convert, Saturating, StaticLookup, TryConvert, Zero},
+	Permill, RuntimeDebug,
 };
 use scale_info::TypeInfo;
 
-/// Lookup type for beneficiary addresses.
+pub type BalanceOf<T, I = ()> = <<T as Config<I>>::Paymaster as PayWithSource>::Balance;
 pub type BeneficiaryLookupOf<T, I> = <<T as Config<I>>::BeneficiaryLookup as StaticLookup>::Source;
 /// An index of a bounty. Just a `u32`.
 pub type BountyIndex = u32;
-/// Lookup type for account addresses.
 pub type AccountIdLookupOf<T> = <<T as pezframe_system::Config>::Lookup as StaticLookup>::Source;
-/// The payment identifier type used by the [`Config::Paymaster`].
 pub type PaymentIdOf<T, I = ()> = <<T as crate::Config<I>>::Paymaster as PayWithSource>::Id;
 /// Convenience alias for `Bounty`.
 pub type BountyOf<T, I> = Bounty<
 	<T as pezframe_system::Config>::AccountId,
-	<T as Config<I>>::Balance,
+	BalanceOf<T, I>,
 	<T as Config<I>>::AssetKind,
 	<T as pezframe_system::Config>::Hash,
 	PaymentIdOf<T, I>,
@@ -128,14 +120,14 @@ pub type BountyOf<T, I> = Bounty<
 /// Convenience alias for `ChildBounty`.
 pub type ChildBountyOf<T, I> = ChildBounty<
 	<T as pezframe_system::Config>::AccountId,
-	<T as Config<I>>::Balance,
+	BalanceOf<T, I>,
 	<T as pezframe_system::Config>::Hash,
 	PaymentIdOf<T, I>,
 	<T as Config<I>>::Beneficiary,
 >;
 
 /// A funded bounty.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct Bounty<AccountId, Balance, AssetKind, Hash, PaymentId, Beneficiary> {
 	/// The kind of asset this bounty is rewarded in.
 	pub asset_kind: AssetKind,
@@ -154,7 +146,7 @@ pub struct Bounty<AccountId, Balance, AssetKind, Hash, PaymentId, Beneficiary> {
 }
 
 /// A funded child-bounty.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub struct ChildBounty<AccountId, Balance, Hash, PaymentId, Beneficiary> {
 	/// The parent bounty index of this child-bounty.
 	pub parent_bounty: BountyIndex,
@@ -172,7 +164,7 @@ pub struct ChildBounty<AccountId, Balance, Hash, PaymentId, Beneficiary> {
 }
 
 /// The status of a child-/bounty proposal.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 pub enum BountyStatus<AccountId, PaymentId, Beneficiary> {
 	/// The child-/bounty funding has been attempted and is waiting to confirm the funds
 	/// allocation.
@@ -237,7 +229,7 @@ pub enum BountyStatus<AccountId, PaymentId, Beneficiary> {
 /// When a payment is initiated via `Paymaster::pay`, it begins in the `Pending` state. The
 /// `check_status` call updates the payment state and advances the child-/bounty status. The
 /// `retry_payment` call can be used to reattempt payments in either `Pending` or `Failed` states.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, MaxEncodedLen, Debug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, MaxEncodedLen, RuntimeDebug, TypeInfo)]
 pub enum PaymentState<Id> {
 	/// Pending claim.
 	Pending,
@@ -279,12 +271,12 @@ pub mod pezpallet {
 		/// The type in which the assets are measured.
 		type Balance: Balance;
 
-		/// Origin from which bounties rejections must come.
+		/// Origin from which rejections must come.
 		type RejectOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
 		/// The origin required for funding the bounty. The `Success` value is the maximum amount in
 		/// a native asset that this origin is allowed to spend at a time.
-		type SpendOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::Balance>;
+		type SpendOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = BalanceOf<Self, I>>;
 
 		/// Type parameter representing the asset kinds used to fund, refund and spend from
 		/// bounties.
@@ -298,11 +290,11 @@ pub mod pezpallet {
 
 		/// Minimum value for a bounty.
 		#[pezpallet::constant]
-		type BountyValueMinimum: Get<Self::Balance>;
+		type BountyValueMinimum: Get<BalanceOf<Self, I>>;
 
 		/// Minimum value for a child-bounty.
 		#[pezpallet::constant]
-		type ChildBountyValueMinimum: Get<Self::Balance>;
+		type ChildBountyValueMinimum: Get<BalanceOf<Self, I>>;
 
 		/// Maximum number of child bounties that can be added to a parent bounty.
 		#[pezpallet::constant]
@@ -319,7 +311,7 @@ pub mod pezpallet {
 			<<Self as pezpallet::Config<I>>::Paymaster as PayWithSource>::Source,
 		>;
 
-		/// Converts a bounty index and `AssetKind` into its funding source account/location.
+		/// Converts a bounty index and `AssetKind` into its account/location.
 		///
 		/// Used when initiating the funding, refund, and payout payments to and from a bounty.
 		type BountySource: TryConvert<
@@ -352,8 +344,8 @@ pub mod pezpallet {
 		///
 		/// The conversion from the native asset balance to the balance of an [`Self::AssetKind`] is
 		/// used in benchmarks to convert [`Self::BountyValueMinimum`] to the asset kind amount.
-		type BalanceConverter: ConversionFromAssetBalance<Self::Balance, Self::AssetKind, Self::Balance>
-			+ ConversionToAssetBalance<Self::Balance, Self::AssetKind, Self::Balance>;
+		type BalanceConverter: ConversionFromAssetBalance<Self::Balance, Self::AssetKind, BalanceOf<Self, I>>
+			+ ConversionToAssetBalance<BalanceOf<Self, I>, Self::AssetKind, Self::Balance>;
 
 		/// The preimage provider used for child-/bounty metadata.
 		type Preimages: QueryPreimage<H = Self::Hashing> + StorePreimage;
@@ -361,12 +353,9 @@ pub mod pezpallet {
 		/// Means of associating a cost with committing to the curator role, which is incurred by
 		/// the child-/bounty curator.
 		///
-		/// The footprint accounts for the child-/bounty value converted to the native balance
-		/// type (using [`Self::BalanceConverter`]). The native balance type corresponds to the
-		/// `Success` type returned by [`Self::SpendOrigin`], which represents the maximum
-		/// spendable amount. The bounty amount must be converted with [`Self::BalanceConverter`]
-		/// before comparison against this maximum. The cost taken from the curator `AccountId`
-		/// may vary based on this converted balance.
+		/// The footprint accounts for the child-/bounty value in the native asset (returned in the
+		/// `Success` type of [`Self::SpendOrigin`]). The cost taken from the curator `AccountId`
+		/// may vary based on this balance.
 		type Consideration: Consideration<Self::AccountId, Self::Balance>;
 
 		/// Helper type for benchmarks.
@@ -374,7 +363,7 @@ pub mod pezpallet {
 		type BenchmarkHelper: benchmarking::ArgumentsFactory<
 			Self::AssetKind,
 			Self::Beneficiary,
-			Self::Balance,
+			BalanceOf<Self, I>,
 		>;
 	}
 
@@ -445,7 +434,7 @@ pub mod pezpallet {
 			index: BountyIndex,
 			child_index: Option<BountyIndex>,
 			asset_kind: T::AssetKind,
-			value: T::Balance,
+			value: BalanceOf<T, I>,
 			beneficiary: T::Beneficiary,
 		},
 		/// Funding payment has concluded successfully.
@@ -470,8 +459,6 @@ pub mod pezpallet {
 		},
 		/// A payment happened and can be checked.
 		Paid { index: BountyIndex, child_index: Option<BountyIndex>, payment_id: PaymentIdOf<T, I> },
-		/// A bounty's value was increased by its curator.
-		BountyValueIncreased { index: BountyIndex, old_value: T::Balance, new_value: T::Balance },
 	}
 
 	/// A reason for this pezpallet placing a hold on funds.
@@ -484,7 +471,7 @@ pub mod pezpallet {
 
 	/// Number of bounty proposals that have been made.
 	#[pezpallet::storage]
-	pub type BountyCount<T: Config<I>, I: 'static = ()> = StorageValue<_, u32, ValueQuery>;
+	pub type BountyCount<T: Config<I>, I: 'static = ()> = StorageValue<_, BountyIndex, ValueQuery>;
 
 	/// Bounties that have been made.
 	#[pezpallet::storage]
@@ -524,12 +511,12 @@ pub mod pezpallet {
 	/// Indexed by `parent_bounty_id`.
 	#[pezpallet::storage]
 	pub type ChildBountiesValuePerParent<T: Config<I>, I: 'static = ()> =
-		StorageMap<_, Twox64Concat, BountyIndex, T::Balance, ValueQuery>;
+		StorageMap<_, Twox64Concat, BountyIndex, BalanceOf<T, I>, ValueQuery>;
 
 	/// The consideration cost incurred by the child-/bounty curator for committing to the role.
 	///
-	/// Determined by [`pezpallet::Config::Consideration`]. It is created when the curator accepts the
-	/// role, and is either burned if the curator misbehaves or consumed upon successful
+	/// Determined by [`pezpallet::Config::Consideration`]. It is created when the curator accepts
+	/// the role, and is either burned if the curator misbehaves or consumed upon successful
 	/// completion of the child-/bounty.
 	///
 	/// Note: If the parent curator is also assigned to the child-bounty,  
@@ -561,14 +548,12 @@ pub mod pezpallet {
 		/// ## Dispatch Origin
 		///
 		/// Must be [`Config::SpendOrigin`] with the `Success` value being at least
-		/// the bounty value converted to native balance using [`Config::BalanceConverter`].
-		/// The converted native amount is validated against the maximum spendable amount
-		/// returned by [`Config::SpendOrigin`].
+		/// the converted native amount of the bounty. The bounty value is validated
+		/// against the maximum spendable amount of the [`Config::SpendOrigin`].
 		///
 		/// ## Details
 		///
 		/// - The `SpendOrigin` must have sufficient permissions to fund the bounty.
-		/// - The bounty `value` (in asset balance) is converted to native balance for validation.
 		/// - In case of a funding failure, the bounty status must be updated with the
 		///   `check_status` call before retrying with `retry_payment` call.
 		///
@@ -586,7 +571,7 @@ pub mod pezpallet {
 		pub fn fund_bounty(
 			origin: OriginFor<T>,
 			asset_kind: Box<T::AssetKind>,
-			#[pezpallet::compact] value: T::Balance,
+			#[pezpallet::compact] value: BalanceOf<T, I>,
 			curator: AccountIdLookupOf<T>,
 			metadata: T::Hash,
 		) -> DispatchResult {
@@ -599,7 +584,7 @@ pub mod pezpallet {
 			ensure!(native_amount >= T::BountyValueMinimum::get(), Error::<T, I>::InvalidValue);
 			ensure!(native_amount <= max_amount, Error::<T, I>::InsufficientPermission);
 
-			with_context::<SpendContext<T::Balance>, _>(|v| {
+			with_context::<SpendContext<BalanceOf<T, I>>, _>(|v| {
 				let context = v.or_default();
 				let funding = context.spend_in_context.entry(max_amount).or_default();
 
@@ -649,8 +634,8 @@ pub mod pezpallet {
 		/// ### Parameters
 		/// - `parent_bounty_id`: Index of parent bounty for which child-bounty is being added.
 		/// - `value`: The payment amount of this child-bounty.
-		/// - `metadata`: The hash of an on-chain stored preimage with child-bounty metadata.
 		/// - `curator`: Address of child-bounty curator.
+		/// - `metadata`: The hash of an on-chain stored preimage with child-bounty metadata.
 		///
 		/// ## Events
 		///
@@ -660,9 +645,9 @@ pub mod pezpallet {
 		pub fn fund_child_bounty(
 			origin: OriginFor<T>,
 			#[pezpallet::compact] parent_bounty_id: BountyIndex,
-			#[pezpallet::compact] value: T::Balance,
-			metadata: T::Hash,
+			#[pezpallet::compact] value: BalanceOf<T, I>,
 			curator: Option<AccountIdLookupOf<T>>,
+			metadata: T::Hash,
 		) -> DispatchResult {
 			let signer = ensure_signed(origin)?;
 			ensure!(T::Preimages::len(&metadata).is_some(), Error::<T, I>::PreimageNotExist);
@@ -679,7 +664,7 @@ pub mod pezpallet {
 			);
 			ensure!(
 				ChildBountiesPerParent::<T, I>::get(parent_bounty_id)
-					< T::MaxActiveChildBountyCount::get(),
+					< T::MaxActiveChildBountyCount::get() as u32,
 				Error::<T, I>::TooManyChildBounties,
 			);
 
@@ -921,40 +906,36 @@ pub mod pezpallet {
 					);
 				},
 				BountyStatus::Active { ref curator, .. } => {
+					let maybe_curator_deposit =
+						CuratorDeposit::<T, I>::take(parent_bounty_id, child_bounty_id);
 					// The child-/bounty is active.
 					match maybe_sender {
 						// If the `RejectOrigin` is calling this function, burn the curator deposit.
 						None => {
-							if let Some(curator_deposit) =
-								CuratorDeposit::<T, I>::take(parent_bounty_id, child_bounty_id)
-							{
+							if let Some(curator_deposit) = maybe_curator_deposit {
 								T::Consideration::burn(curator_deposit, curator);
 							}
 							// Continue to change bounty status below...
 						},
 						Some(sender) if sender == *curator => {
-							if let Some(curator_deposit) =
-								CuratorDeposit::<T, I>::get(parent_bounty_id, child_bounty_id)
-							{
+							if let Some(curator_deposit) = maybe_curator_deposit {
 								// This is the curator, willingly giving up their role. Free their
 								// deposit.
 								T::Consideration::drop(curator_deposit, curator)?;
-								CuratorDeposit::<T, I>::remove(parent_bounty_id, child_bounty_id);
 							}
 							// Continue to change bounty status below...
 						},
 						Some(sender) => {
-							let parent_curator = parent_curator.ok_or(BadOrigin)?;
-							ensure!(
-								sender == parent_curator && *curator != parent_curator,
-								BadOrigin
-							);
-							// Parent curator is unassigning the child curator. Burn the curator
-							// deposit.
-							if let Some(curator_deposit) =
-								CuratorDeposit::<T, I>::take(parent_bounty_id, child_bounty_id)
-							{
-								T::Consideration::burn(curator_deposit, curator);
+							if let Some(parent_curator) = parent_curator {
+								// If the parent curator is unassigning a child curator, that is not
+								// itself, burn the child curator deposit.
+								if sender == parent_curator && *curator != parent_curator {
+									if let Some(curator_deposit) = maybe_curator_deposit {
+										T::Consideration::burn(curator_deposit, curator);
+									}
+								} else {
+									return Err(BadOrigin.into());
+								}
 							}
 						},
 					}
@@ -1394,92 +1375,6 @@ pub mod pezpallet {
 
 			Ok(Some(weight).into())
 		}
-
-		/// Increase the value of an active bounty by `amount`.
-		///
-		/// ## Dispatch Origin
-		///
-		/// Must be signed by the bounty curator.
-		///
-		/// ## Details
-		///
-		/// - The bounty must be in the `Active` state.
-		/// - Raises the recorded `value` by `amount`. This is used to register funds that were
-		///   transferred into the bounty account out-of-band (e.g. recurring external top-ups), so
-		///   they become available to award or to allocate to child bounties. It must be greater
-		///   than 0.
-		/// - The curator deposit is re-evaluated for the new value and any additional deposit is
-		///   collected from the curator.
-		/// - The value can only be increased, never decreased, so the invariant that the sum of
-		///   child-bounty values never exceeds the parent value is preserved.
-		/// - This call does **not** check that the bounty account holds `new_value`; it only
-		///   updates the recorded value. Payouts stay bounded by the account's real balance at
-		///   settlement, so increasing the value beyond the available funds simply makes a later
-		///   payout fail — no funds are moved by this call.
-		/// - Only a parent bounty's value can be increased via this call.
-		///
-		/// ### Parameters
-		/// - `parent_bounty_id`: Index of the bounty whose value is increased.
-		/// - `amount`: The amount to add to the bounty value.
-		///
-		/// ## Events
-		///
-		/// Emits [`Event::BountyValueIncreased`] if successful.
-		#[pezpallet::call_index(9)]
-		#[pezpallet::weight(<T as Config<I>>::WeightInfo::increase_value())]
-		pub fn increase_value(
-			origin: OriginFor<T>,
-			#[pezpallet::compact] parent_bounty_id: BountyIndex,
-			#[pezpallet::compact] amount: T::Balance,
-		) -> DispatchResult {
-			let signer = ensure_signed(origin)?;
-			ensure!(!amount.is_zero(), Error::<T, I>::InvalidValue);
-
-			let (old_value, new_value) = Bounties::<T, I>::try_mutate(
-				parent_bounty_id,
-				|maybe_bounty| -> Result<(T::Balance, T::Balance), DispatchError> {
-					let bounty = maybe_bounty.as_mut().ok_or(Error::<T, I>::InvalidIndex)?;
-
-					// Only an `Active` bounty has a committed curator who can authorize and
-					// collateralize the increase.
-					let curator = match &bounty.status {
-						BountyStatus::Active { curator } => curator.clone(),
-						_ => return Err(Error::<T, I>::UnexpectedStatus.into()),
-					};
-					ensure!(signer == curator, Error::<T, I>::RequireCurator);
-
-					// Reject an overflowing increase rather than silently saturating to a
-					// nonsensical value.
-					let old_value = bounty.value;
-					let new_value =
-						old_value.checked_add(&amount).ok_or(Error::<T, I>::InvalidValue)?;
-
-					// Re-evaluate the curator deposit for the new value, collecting any additional
-					// hold from the curator. The deposit always exists for an `Active` bounty.
-					let native_amount = T::BalanceConverter::from_asset_balance(
-						new_value,
-						bounty.asset_kind.clone(),
-					)
-					.map_err(|_| Error::<T, I>::FailedToConvertBalance)?;
-					let deposit =
-						CuratorDeposit::<T, I>::take(parent_bounty_id, None::<BountyIndex>)
-							.ok_or(Error::<T, I>::UnexpectedStatus)?;
-					let deposit = deposit.update(&curator, native_amount)?;
-					CuratorDeposit::<T, I>::insert(parent_bounty_id, None::<BountyIndex>, deposit);
-
-					bounty.value = new_value;
-					Ok((old_value, new_value))
-				},
-			)?;
-
-			Self::deposit_event(Event::<T, I>::BountyValueIncreased {
-				index: parent_bounty_id,
-				old_value,
-				new_value,
-			});
-
-			Ok(())
-		}
 	}
 
 	#[pezpallet::hooks]
@@ -1578,7 +1473,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 	) -> Result<
 		(
 			T::AssetKind,
-			T::Balance,
+			BalanceOf<T, I>,
 			T::Hash,
 			BountyStatus<T::AccountId, PaymentIdOf<T, I>, T::Beneficiary>,
 			Option<T::AccountId>,
@@ -1645,13 +1540,13 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 	fn calculate_payout(
 		parent_bounty_id: BountyIndex,
 		child_bounty_id: Option<BountyIndex>,
-		value: T::Balance,
-	) -> T::Balance {
+		value: BalanceOf<T, I>,
+	) -> BalanceOf<T, I> {
 		match child_bounty_id {
 			None => {
 				// Get total child bounties value, and subtract it from the parent
 				// value.
-				let children_value = ChildBountiesValuePerParent::<T, I>::get(parent_bounty_id);
+				let children_value = ChildBountiesValuePerParent::<T, I>::take(parent_bounty_id);
 				debug_assert!(children_value <= value);
 				let payout = value.saturating_sub(children_value);
 				payout
@@ -1671,7 +1566,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 				Bounties::<T, I>::remove(parent_bounty_id);
 				ChildBountiesPerParent::<T, I>::remove(parent_bounty_id);
 				TotalChildBountiesPerParent::<T, I>::remove(parent_bounty_id);
-				ChildBountiesValuePerParent::<T, I>::remove(parent_bounty_id);
+				debug_assert!(ChildBountiesValuePerParent::<T, I>::get(parent_bounty_id).is_zero());
 			},
 			Some(child_bounty_id) => {
 				ChildBounties::<T, I>::remove(parent_bounty_id, child_bounty_id);
@@ -1689,7 +1584,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		parent_bounty_id: BountyIndex,
 		child_bounty_id: Option<BountyIndex>,
 		asset_kind: T::AssetKind,
-		value: T::Balance,
+		value: BalanceOf<T, I>,
 		maybe_payment_status: Option<PaymentState<PaymentIdOf<T, I>>>,
 	) -> Result<PaymentState<PaymentIdOf<T, I>>, DispatchError> {
 		if let Some(payment_status) = maybe_payment_status {
@@ -1756,7 +1651,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		parent_bounty_id: BountyIndex,
 		child_bounty_id: Option<BountyIndex>,
 		asset_kind: T::AssetKind,
-		value: T::Balance,
+		value: BalanceOf<T, I>,
 		payment_status: Option<PaymentState<PaymentIdOf<T, I>>>,
 	) -> Result<PaymentState<PaymentIdOf<T, I>>, DispatchError> {
 		if let Some(payment_status) = payment_status {
@@ -1825,7 +1720,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		parent_bounty_id: BountyIndex,
 		child_bounty_id: Option<BountyIndex>,
 		asset_kind: T::AssetKind,
-		value: T::Balance,
+		value: BalanceOf<T, I>,
 		beneficiary: T::Beneficiary,
 		payment_status: Option<PaymentState<PaymentIdOf<T, I>>>,
 	) -> Result<PaymentState<PaymentIdOf<T, I>>, DispatchError> {
@@ -1843,7 +1738,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		};
 
 		let id = <T as Config<I>>::Paymaster::pay(&source, &beneficiary, asset_kind, payout)
-			.map_err(|_| Error::<T, I>::PayoutError)?;
+			.map_err(|_| Error::<T, I>::RefundError)?;
 
 		Self::deposit_event(Event::<T, I>::Paid {
 			index: parent_bounty_id,
@@ -1860,7 +1755,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		parent_bounty_id: BountyIndex,
 		child_bounty_id: Option<BountyIndex>,
 		asset_kind: T::AssetKind,
-		value: T::Balance,
+		value: BalanceOf<T, I>,
 		beneficiary: T::Beneficiary,
 		payment_status: PaymentState<PaymentIdOf<T, I>>,
 	) -> Result<PaymentState<PaymentIdOf<T, I>>, DispatchError> {
@@ -1930,127 +1825,59 @@ where
 	}
 }
 
-/// Derives the funding `AccountId` from the `PalletId` and converts it into the
-/// bounty `Beneficiary`, used as the source of bounty funds.
+/// Derives the funding account used as the source of funds for bounties.
 ///
 /// Used when the [`PalletId`] itself owns the funds (i.e. pezpallet-treasury id).
-/// # Type Parameters
-/// - `Id`: The pezpallet ID getter
-/// - `T`: The pezpallet configuration
-/// - `C`: Converter from `T::AccountId` to `T::Beneficiary`. Use `Identity` when types are the
-///   same.
-/// - `I`: Instance parameter (default: `()`)
-pub struct PalletIdAsFundingSource<Id, T, C, I = ()>(PhantomData<(Id, T, C, I)>);
-impl<Id, T, C, I> TryConvert<T::AssetKind, T::Beneficiary> for PalletIdAsFundingSource<Id, T, C, I>
+pub struct PalletIdAsFundingSource<Id, T, I = ()>(PhantomData<(Id, T, I)>);
+impl<Id, T, I> TryConvert<T::AssetKind, T::Beneficiary> for PalletIdAsFundingSource<Id, T, I>
 where
 	Id: Get<PalletId>,
 	T: crate::Config<I>,
-	C: Convert<T::AccountId, T::Beneficiary>,
+	T::Beneficiary: From<T::AccountId>,
 {
 	fn try_convert(_asset_kind: T::AssetKind) -> Result<T::Beneficiary, T::AssetKind> {
-		let account: T::AccountId = Id::get().into_account_truncating();
-		Ok(C::convert(account))
+		let account = Id::get().into_account_truncating();
+		Ok(account)
 	}
 }
 
-/// Standard 3-byte prefix for bounty account derivation.
-///
-/// Returns `b"mbt"` (multi-asset bounty). Use this type when configuring
-/// [`BountySourceFromPalletId`] unless your runtime requires a custom prefix.
-pub struct BountyAccountPrefix;
-impl Get<[u8; 3]> for BountyAccountPrefix {
-	fn get() -> [u8; 3] {
-		*b"mbt"
-	}
-}
-
-/// Standard 3-byte prefix for child-bounty account derivation.
-///
-/// Returns `b"mcb"` (multi-asset child bounty). Use this type when configuring
-/// [`ChildBountySourceFromPalletId`] unless your runtime requires a custom prefix.
-pub struct ChildBountyAccountPrefix;
-impl Get<[u8; 3]> for ChildBountyAccountPrefix {
-	fn get() -> [u8; 3] {
-		*b"mcb"
-	}
-}
-
-/// Derives a bounty `AccountId` from the `PalletId` and the `BountyIndex`,
-/// then converts it into the corresponding bounty `Beneficiary`.
-///
-/// The account is derived using a fixed-size 3-byte prefix (e.g. `b"mbt"` for multi-asset bounty).
-/// The prefix is supplied via the `Prefix` type parameter, which must implement `Get<[u8; 3]>`.
-/// This ensures the encoded sub-account seed has a predictable size and avoids truncation issues.
+/// Derives the bounty account from its index.
 ///
 /// Used when the [`PalletId`] itself owns the funds (i.e. pezpallet-treasury id).
-///
-/// # Type Parameters
-/// - `Id`: The pezpallet ID getter
-/// - `Prefix`: Getter for the 3-byte account prefix (e.g. [`BountyAccountPrefix`]). Must implement
-///   `Get<[u8; 3]>`. Fixed at 3 bytes to guarantee predictable seed size and avoid truncation of
-///   the bounty index.
-/// - `T`: The pezpallet configuration
-/// - `C`: Converter from `T::AccountId` to `T::Beneficiary`. Use `Identity` when types are the
-///   same.
-/// - `I`: Instance parameter (default: `()`)
-pub struct BountySourceFromPalletId<Id, Prefix, T, C, I = ()>(PhantomData<(Id, Prefix, T, C, I)>);
-impl<Id, Prefix, T, C, I> TryConvert<(BountyIndex, T::AssetKind), T::Beneficiary>
-	for BountySourceFromPalletId<Id, Prefix, T, C, I>
+pub struct BountySourceAccount<Id, T, I = ()>(PhantomData<(Id, T, I)>);
+impl<Id, T, I> TryConvert<(BountyIndex, T::AssetKind), T::Beneficiary>
+	for BountySourceAccount<Id, T, I>
 where
 	Id: Get<PalletId>,
-	Prefix: Get<[u8; 3]>,
 	T: crate::Config<I>,
-	C: Convert<T::AccountId, T::Beneficiary>,
+	T::Beneficiary: From<T::AccountId>,
 {
 	fn try_convert(
 		(parent_bounty_id, _asset_kind): (BountyIndex, T::AssetKind),
 	) -> Result<T::Beneficiary, (BountyIndex, T::AssetKind)> {
-		let account: T::AccountId =
-			Id::get().into_sub_account_truncating((Prefix::get(), parent_bounty_id));
-		Ok(C::convert(account))
+		let account = Id::get().into_sub_account_truncating(("bt", parent_bounty_id));
+		Ok(account)
 	}
 }
 
-/// Derives a child-bounty `AccountId` from the `PalletId`, the parent index,
-/// and the child index, then converts it into the child-bounty `Beneficiary`.
-///
-/// The account is derived using a fixed-size 3-byte prefix (e.g. `b"mcb"` for multi-asset child
-/// bounty). The prefix is supplied via the `Prefix` type parameter, which must implement
-/// `Get<[u8; 3]>`. Using a different prefix from the parent bounty ensures distinct account IDs
-/// when parent and child indices coincide.
+/// Derives the child-bounty account from its index and the parent bounty index.
 ///
 /// Used when the [`PalletId`] itself owns the funds (i.e. pezpallet-treasury id).
-///
-/// # Type Parameters
-/// - `Id`: The pezpallet ID getter
-/// - `Prefix`: Getter for the 3-byte account prefix (e.g. [`ChildBountyAccountPrefix`]). Must
-///   implement `Get<[u8; 3]>`. Fixed at 3 bytes to guarantee predictable seed size and avoid
-///   truncation of the bounty indices.
-/// - `T`: The pezpallet configuration
-/// - `C`: Converter from `T::AccountId` to `T::Beneficiary`. Use `Identity` when types are the
-///   same.
-/// - `I`: Instance parameter (default: `()`)
-pub struct ChildBountySourceFromPalletId<Id, Prefix, T, C, I = ()>(
-	PhantomData<(Id, Prefix, T, C, I)>,
-);
-impl<Id, Prefix, T, C, I> TryConvert<(BountyIndex, BountyIndex, T::AssetKind), T::Beneficiary>
-	for ChildBountySourceFromPalletId<Id, Prefix, T, C, I>
+pub struct ChildBountySourceAccount<Id, T, I = ()>(PhantomData<(Id, T, I)>);
+impl<Id, T, I> TryConvert<(BountyIndex, BountyIndex, T::AssetKind), T::Beneficiary>
+	for ChildBountySourceAccount<Id, T, I>
 where
 	Id: Get<PalletId>,
-	Prefix: Get<[u8; 3]>,
 	T: crate::Config<I>,
-	C: Convert<T::AccountId, T::Beneficiary>,
+	T::Beneficiary: From<T::AccountId>,
 {
 	fn try_convert(
 		(parent_bounty_id, child_bounty_id, _asset_kind): (BountyIndex, BountyIndex, T::AssetKind),
 	) -> Result<T::Beneficiary, (BountyIndex, BountyIndex, T::AssetKind)> {
-		// The prefix is distinct from the bounty prefix so AccountIds differ when parent and
-		// child index are the same.
-		let account: T::AccountId = Id::get().into_sub_account_truncating((
-			Prefix::get(),
-			parent_bounty_id,
-			child_bounty_id,
-		));
-		Ok(C::convert(account))
+		// The prefix is changed to have different AccountId when the index of
+		// parent and child is same.
+		let account =
+			Id::get().into_sub_account_truncating(("cb", parent_bounty_id, child_bounty_id));
+		Ok(account)
 	}
 }

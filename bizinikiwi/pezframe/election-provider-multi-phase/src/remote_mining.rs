@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Remote mining tests for Kusama and Pezkuwi.
+//! Remote mining tests for Dicle and Pezkuwi.
 //!
 //! Run like this:
 //!
@@ -238,10 +238,10 @@ async fn mine_for_polkadot() {
 async fn mine_for_kusama() {
 	pezsp_tracing::try_init_simple();
 
-	// good way to find good block hashes: https://kusama.subscan.io/event?page=1&time_dimension=date&module=electionprovidermultiphase&event_id=solutionstored
+	// good way to find good block hashes: https://dicle.subscan.io/event?page=1&time_dimension=date&module=electionprovidermultiphase&event_id=solutionstored
 	// we are just looking for blocks with snapshot present, that's all.
 	let block_hash_str = std::option_env!("BLOCK_HASH")
-		// known good kusama hash
+		// known good dicle hash
 		.unwrap_or("d5d9f5e098fcb41915c85e6695eddc18c0bc4aa4976ad0d9bf5f4713039bca26")
 		.to_string();
 	let block_hash = H256::from_slice(hex::decode(block_hash_str).unwrap().as_ref());

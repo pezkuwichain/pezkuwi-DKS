@@ -334,7 +334,7 @@ impl<T: v0::MigrationConfig> SteppedMigration for MigrateV0ToV1<T> {
 			inheritor_count,
 		);
 
-		// These can fail for Kusama AH because of buggy accounts...
+		// These can fail for Dicle AH because of buggy accounts...
 		if friend_groups_count != recoverable_count {
 			log::error!(
 				"MigrateV0ToV1: FriendGroups count mismatch: {} != {}",

@@ -66,9 +66,9 @@ struct BenchmarkBounty<T: Config<I>, I: 'static> {
 	/// The kind of asset the child-/bounty is rewarded in.
 	asset_kind: T::AssetKind,
 	/// The amount that should be paid if the bounty is rewarded.
-	value: T::Balance,
+	value: BalanceOf<T, I>,
 	/// The amount that should be paid if the child-bounty is rewarded.
-	child_value: T::Balance,
+	child_value: BalanceOf<T, I>,
 	/// The child-/bounty beneficiary account.
 	beneficiary: T::Beneficiary,
 	/// Bounty metadata hash.
@@ -203,8 +203,8 @@ fn create_child_bounty<T: Config<I>, I: 'static>() -> Result<BenchmarkBounty<T, 
 		RawOrigin::Signed(s.curator.clone()).into(),
 		s.parent_bounty_id,
 		s.child_value,
-		s.metadata,
 		Some(child_curator_lookup),
+		s.metadata,
 	)?;
 	s.child_bounty_id =
 		pezpallet_bounties::TotalChildBountiesPerParent::<T, I>::get(s.parent_bounty_id) - 1;
@@ -350,8 +350,8 @@ mod benchmarks {
 			RawOrigin::Signed(s.curator),
 			s.parent_bounty_id,
 			s.child_value,
-			s.metadata,
 			Some(child_curator_lookup),
+			s.metadata,
 		);
 
 		let child_bounty_id =
@@ -845,30 +845,6 @@ mod benchmarks {
 			Some(s.child_bounty_id),
 		)
 		.is_err());
-
-		Ok(())
-	}
-
-	#[benchmark]
-	fn increase_value() -> Result<(), BenchmarkError> {
-		let s = create_active_parent_bounty::<T, I>()?;
-		let caller = s.curator.clone();
-		let new_value = s.value + s.value;
-
-		// Ensure the curator can fund the (possibly larger) deposit for the new value.
-		<T as pezpallet_bounties::Config<I>>::Consideration::ensure_successful(&caller, new_value);
-
-		#[extrinsic_call]
-		_(RawOrigin::Signed(caller), s.parent_bounty_id, s.value);
-
-		assert_last_event::<T, I>(
-			Event::BountyValueIncreased {
-				index: s.parent_bounty_id,
-				old_value: s.value,
-				new_value,
-			}
-			.into(),
-		);
 
 		Ok(())
 	}
