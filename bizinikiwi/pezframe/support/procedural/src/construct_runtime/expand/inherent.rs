@@ -45,7 +45,7 @@ pub fn expand_outer_inherent(
 		pezpallet_names.push(name);
 		pezpallet_attrs.push(attr);
 		query_inherent_part_macros.push(quote! {
-			#path::__bizinikiwi_inherent_check::is_inherent_part_defined!(#name);
+			#path::__substrate_inherent_check::is_inherent_part_defined!(#name);
 		});
 	}
 	let pezpallet_count = pezpallet_positions.len();

@@ -24,7 +24,7 @@
 //! WASM-EXECUTION: `Compiled`, CHAIN: `Some("dev")`, DB CACHE: `1024`
 
 // Executed Command:
-// ./target/production/bizinikiwi-node
+// ./target/production/substrate-node
 // benchmark
 // pezpallet
 // --chain=dev
@@ -39,7 +39,7 @@
 // --heap-pages=4096
 // --output=./bizinikiwi/pezframe/system/src/extensions/weights.rs
 // --header=./bizinikiwi/HEADER-APACHE2
-// --template=./bizinikiwi/.maintain/frame-weight-template.hbs
+// --template=./bizinikiwi/.maintain/pezframe-weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]

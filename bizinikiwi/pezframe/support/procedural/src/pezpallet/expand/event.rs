@@ -23,7 +23,6 @@ use crate::{
 use pezframe_support_procedural_tools::get_doc_literals;
 use syn::{spanned::Spanned, Ident};
 
-///
 /// * Add __Ignore variant on Event
 /// * Impl various trait on Event including metadata
 /// * if deposit_event is defined, implement deposit_event on module.
@@ -39,7 +38,7 @@ pub fn expand_event(def: &mut Def) -> proc_macro2::TokenStream {
 
 		return quote::quote! {
 			#[doc(hidden)]
-			pub mod __bizinikiwi_event_check {
+			pub mod __substrate_event_check {
 				#[macro_export]
 				#[doc(hidden)]
 				macro_rules! #macro_ident {
@@ -171,7 +170,7 @@ pub fn expand_event(def: &mut Def) -> proc_macro2::TokenStream {
 
 	quote::quote_spanned!(event.attr_span =>
 		#[doc(hidden)]
-		pub mod __bizinikiwi_event_check {
+		pub mod __substrate_event_check {
 			#[macro_export]
 			#[doc(hidden)]
 			macro_rules! #macro_ident {

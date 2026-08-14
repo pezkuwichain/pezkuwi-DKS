@@ -57,7 +57,7 @@ mod tests {
 		pub struct Pezpallet<T>(_);
 
 		#[pezpallet::config]
-		#[pezpallet::disable_pezframe_system_supertrait_check]
+		#[pezpallet::disable_frame_system_supertrait_check]
 		pub trait Config: 'static {
 			type Block: pezsp_runtime::traits::Block;
 			type AccountId;

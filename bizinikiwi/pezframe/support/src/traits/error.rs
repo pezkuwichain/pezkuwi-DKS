@@ -25,16 +25,16 @@ use core::marker::PhantomData;
 /// ## Notes
 ///
 /// The pezpallet error enum has a maximum encoded size as defined by
-/// [`pezframe_support::MAX_MODULE_ERROR_ENCODED_SIZE`]. If the pezpallet error type exceeds this
-/// size limit, a static assertion during compilation will fail. The compilation error will be in
-/// the format of `error[E0080]: evaluation of constant value failed` due to the usage of
+/// [`pezframe_support::MAX_MODULE_ERROR_ENCODED_SIZE`]. If the pezpallet error type exceeds this size
+/// limit, a static assertion during compilation will fail. The compilation error will be in the
+/// format of `error[E0080]: evaluation of constant value failed` due to the usage of
 /// const assertions.
 pub trait PalletError: Encode + Decode {
 	/// The maximum encoded size for the implementing type.
 	///
 	/// This will be used to check whether the pezpallet error type is less than or equal to
-	/// [`pezframe_support::MAX_MODULE_ERROR_ENCODED_SIZE`], and if it is, a compilation error will
-	/// be thrown.
+	/// [`pezframe_support::MAX_MODULE_ERROR_ENCODED_SIZE`], and if it is, a compilation error will be
+	/// thrown.
 	const MAX_ENCODED_SIZE: usize;
 }
 

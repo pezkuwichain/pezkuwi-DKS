@@ -25,7 +25,7 @@
 //! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./target/production/bizinikiwi-node
+//   ./target/production/substrate-node
 //   benchmark
 //   overhead
 //   --chain=dev

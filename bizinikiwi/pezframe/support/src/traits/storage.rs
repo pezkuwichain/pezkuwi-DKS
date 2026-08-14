@@ -26,14 +26,14 @@ pub use pezsp_core::storage::TrackedStorageKey;
 use pezsp_core::Get;
 use pezsp_runtime::{
 	traits::{Convert, Member},
-	DispatchError, RuntimeDebug,
+	Debug, DispatchError,
 };
 use scale_info::TypeInfo;
 
 /// An instance of a pezpallet in the storage.
 ///
-/// It is required that these instances are unique, to support multiple instances per pezpallet in
-/// the same runtime!
+/// It is required that these instances are unique, to support multiple instances per pezpallet in the
+/// same runtime!
 ///
 /// E.g. for module MyModule default instance will have prefix "MyModule" and other instances
 /// "InstanceNMyModule".
@@ -53,13 +53,13 @@ impl Instance for () {
 /// An instance of a storage in a pezpallet.
 ///
 /// Define an instance for an individual storage inside a pezpallet.
-/// The pezpallet prefix is used to isolate the storage between pallets, and the storage prefix is
+/// The pezpallet prefix is used to isolate the storage between pezpallets, and the storage prefix is
 /// used to isolate storages inside a pezpallet.
 ///
 /// NOTE: These information can be used to define storages in pezpallet such as a `StorageMap` which
 /// can use keys after `twox_128(pezpallet_prefix())++twox_128(STORAGE_PREFIX)`
 pub trait StorageInstance {
-	/// Prefix of a pezpallet to isolate it from other pallets.
+	/// Prefix of a pezpallet to isolate it from other pezpallets.
 	fn pezpallet_prefix() -> &'static str;
 
 	/// Return the prefix hash of pezpallet instance.
@@ -162,7 +162,19 @@ impl WhitelistedStorageKeys for Tuple {
 
 /// The resource footprint of a bunch of blobs. We assume only the number of blobs and their total
 /// size in bytes matter.
-#[derive(Default, Copy, Clone, Eq, PartialEq, RuntimeDebug)]
+#[derive(
+	Default,
+	Copy,
+	Clone,
+	Eq,
+	PartialEq,
+	Debug,
+	TypeInfo,
+	MaxEncodedLen,
+	Decode,
+	Encode,
+	DecodeWithMemTracking,
+)]
 pub struct Footprint {
 	/// The number of blobs.
 	pub count: u64,
@@ -237,7 +249,11 @@ impl<A, F> Consideration<A, F> for Disabled {
 ///
 /// A single ticket corresponding to some particular datum held in storage. This is an opaque
 /// type, but must itself be stored and generally it should be placed alongside whatever data
-/// the ticket was created for.
+/// the ticket was created for and the attributable account.
+///
+/// Tickets are generally attributable to a single account for their whole lifetime. Calling
+/// `update`, `burn` or `drop` with a different account than `new` was called with may result in
+/// wrong accounting since the ticket type is not required to store the attributable account.
 ///
 /// While not technically a linear type owing to the need for `FullCodec`, *this should be
 /// treated as one*. Don't type to duplicate it, and remember to drop it when you're done with
@@ -250,10 +266,10 @@ pub trait Consideration<AccountId, Footprint>:
 	/// be consumed through `update` or `drop` once the footprint changes or is removed.
 	fn new(who: &AccountId, new: Footprint) -> Result<Self, DispatchError>;
 
-	/// Optionally consume an old ticket and alter the footprint, enforcing the new cost to `who`
-	/// and returning the new ticket (or an error if there was an issue).
+	/// Consume an old ticket to modify its footprint without altering the attributable account.
 	///
 	/// For creating tickets and dropping them, you can use the simpler `new` and `drop` instead.
+	/// Note that this must be called with the same account as `new` was.
 	fn update(self, who: &AccountId, new: Footprint) -> Result<Self, DispatchError>;
 
 	/// Consume a ticket for some `old` footprint attributable to `who` which should now been freed.

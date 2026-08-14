@@ -43,13 +43,13 @@ const SYSTEM_PALLET_NAME: &str = "System";
 pub fn expand(def: Def, legacy_ordering: bool) -> TokenStream2 {
 	let input = def.input;
 
-	let (check_pallet_number_res, res) = match def.pallets {
+	let (check_pallet_number_res, res) = match def.pezpallets {
 		AllPalletsDeclaration::Implicit(ref decl) => (
 			check_pallet_number(input.clone(), decl.pezpallet_count),
 			construct_runtime_implicit_to_explicit(input.into(), decl.clone(), legacy_ordering),
 		),
 		AllPalletsDeclaration::Explicit(ref decl) => (
-			check_pallet_number(input, decl.pallets.len()),
+			check_pallet_number(input, decl.pezpallets.len()),
 			construct_runtime_final_expansion(
 				def.runtime_struct.ident.clone(),
 				decl.clone(),
@@ -130,15 +130,15 @@ fn construct_runtime_final_expansion(
 	runtime_types: Vec<RuntimeType>,
 	legacy_ordering: bool,
 ) -> Result<TokenStream2> {
-	let ExplicitAllPalletsDeclaration { mut pallets, name: pallets_name } = definition;
+	let ExplicitAllPalletsDeclaration { mut pezpallets, name: pallets_name } = definition;
 
 	if !legacy_ordering {
 		// Ensure that order of hooks is based on the pezpallet index
-		pallets.sort_by_key(|p| p.index);
+		pezpallets.sort_by_key(|p| p.index);
 	}
 
 	let system_pallet =
-		pallets.iter().find(|decl| decl.name == SYSTEM_PALLET_NAME).ok_or_else(|| {
+		pezpallets.iter().find(|decl| decl.name == SYSTEM_PALLET_NAME).ok_or_else(|| {
 			syn::Error::new(
 				pallets_name.span(),
 				"`System` pezpallet declaration is missing. \
@@ -152,7 +152,7 @@ fn construct_runtime_final_expansion(
 		));
 	}
 
-	let features = pallets
+	let features = pezpallets
 		.iter()
 		.filter_map(|decl| {
 			(!decl.cfg_pattern.is_empty()).then(|| {
@@ -191,12 +191,12 @@ fn construct_runtime_final_expansion(
 		match runtime_type {
 			RuntimeType::RuntimeCall(_) => {
 				dispatch =
-					Some(expand::expand_outer_dispatch(&name, system_pallet, &pallets, &scrate));
+					Some(expand::expand_outer_dispatch(&name, system_pallet, &pezpallets, &scrate));
 			},
 			RuntimeType::RuntimeEvent(_) => {
 				outer_event = Some(expand::expand_outer_enum(
 					&name,
-					&pallets,
+					&pezpallets,
 					&scrate,
 					expand::OuterEnumType::Event,
 				)?);
@@ -204,52 +204,52 @@ fn construct_runtime_final_expansion(
 			RuntimeType::RuntimeError(_) => {
 				outer_error = Some(expand::expand_outer_enum(
 					&name,
-					&pallets,
+					&pezpallets,
 					&scrate,
 					expand::OuterEnumType::Error,
 				)?);
 			},
 			RuntimeType::RuntimeOrigin(_) => {
 				outer_origin =
-					Some(expand::expand_outer_origin(&name, system_pallet, &pallets, &scrate)?);
+					Some(expand::expand_outer_origin(&name, system_pallet, &pezpallets, &scrate)?);
 			},
 			RuntimeType::RuntimeFreezeReason(_) => {
-				freeze_reason = Some(expand::expand_outer_freeze_reason(&pallets, &scrate));
+				freeze_reason = Some(expand::expand_outer_freeze_reason(&pezpallets, &scrate));
 			},
 			RuntimeType::RuntimeHoldReason(_) => {
-				hold_reason = Some(expand::expand_outer_hold_reason(&pallets, &scrate));
+				hold_reason = Some(expand::expand_outer_hold_reason(&pezpallets, &scrate));
 			},
 			RuntimeType::RuntimeSlashReason(_) => {
-				slash_reason = Some(expand::expand_outer_slash_reason(&pallets, &scrate));
+				slash_reason = Some(expand::expand_outer_slash_reason(&pezpallets, &scrate));
 			},
 			RuntimeType::RuntimeLockId(_) => {
-				lock_id = Some(expand::expand_outer_lock_id(&pallets, &scrate));
+				lock_id = Some(expand::expand_outer_lock_id(&pezpallets, &scrate));
 			},
 			RuntimeType::RuntimeTask(_) => {
-				task = Some(expand::expand_outer_task(&name, &pallets, &scrate));
+				task = Some(expand::expand_outer_task(&name, &pezpallets, &scrate));
 			},
 			RuntimeType::RuntimeViewFunction(_) => {
-				query = Some(expand::expand_outer_query(&name, &pallets, &scrate));
+				query = Some(expand::expand_outer_query(&name, &pezpallets, &scrate));
 			},
 		}
 	}
 
-	let all_pallets = decl_all_pallets(&name, pallets.iter(), &features);
-	let pezpallet_to_index = decl_pallet_runtime_setup(&name, &pallets, &scrate);
+	let all_pallets = decl_all_pallets(&name, pezpallets.iter(), &features);
+	let pezpallet_to_index = decl_pallet_runtime_setup(&name, &pezpallets, &scrate);
 
 	let metadata = expand::expand_runtime_metadata(
 		&name,
-		&pallets,
+		&pezpallets,
 		&scrate,
 		&unchecked_extrinsic,
 		&system_pallet.path,
 	);
-	let outer_config: TokenStream2 = expand::expand_outer_config(&name, &pallets, &scrate);
+	let outer_config: TokenStream2 = expand::expand_outer_config(&name, &pezpallets, &scrate);
 	let inherent =
-		expand::expand_outer_inherent(&name, &block, &unchecked_extrinsic, &pallets, &scrate);
-	let validate_unsigned = expand::expand_outer_validate_unsigned(&name, &pallets, &scrate);
+		expand::expand_outer_inherent(&name, &block, &unchecked_extrinsic, &pezpallets, &scrate);
+	let validate_unsigned = expand::expand_outer_validate_unsigned(&name, &pezpallets, &scrate);
 	let integrity_test = decl_integrity_test(&scrate);
-	let static_assertions = decl_static_assertions(&name, &pallets, &scrate);
+	let static_assertions = decl_static_assertions(&name, &pezpallets, &scrate);
 
 	let res = quote!(
 		#scrate_decl
@@ -261,7 +261,7 @@ fn construct_runtime_final_expansion(
 		};
 
 		#[derive(
-			Clone, Copy, PartialEq, Eq, #scrate::pezsp_runtime::RuntimeDebug,
+			Clone, Copy, PartialEq, Eq, core::fmt::Debug,
 			#scrate::__private::scale_info::TypeInfo
 		)]
 		pub struct #name;

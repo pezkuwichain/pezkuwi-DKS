@@ -20,7 +20,6 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{parse_quote, Item};
 
-///
 /// * Generate default rust doc
 pub fn expand_config(def: &mut Def) -> TokenStream {
 	let config = &def.config;
@@ -52,7 +51,7 @@ Consequently, a runtime that wants to include this pezpallet must implement this
 	// insert `pezframe_system::Config` supertrait with `RuntimeEvent: From<Event<Self>>` if neither
 	// associated type nor type bound is defined.
 	if let Some(event) = &def.event {
-		if !def.is_pezframe_system {
+		if !def.is_frame_system {
 			let pezframe_system = &def.pezframe_system;
 
 			// can't use `type_use_gen()` since it returns `T`, not `Self`

@@ -41,16 +41,32 @@ syn = { features = ["full", "parsing", "visit-mut"], workspace = true }
 # Dev-dependencies moved to pezframe-support-test to break circular dependency for crates.io publish
 # Tests that need pezframe-benchmarking, pezframe-support, pezframe-system should use integration tests
 [dev-dependencies]
+codec = { features = ["derive", "max-encoded-len"], workspace = true, default-features = true }
+derive-where = { workspace = true }
+pezframe-benchmarking = { workspace = true, default-features = true }
+pezframe-support = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
+scale-info = { features = ["derive"], workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+pezsp-metadata-ir = { workspace = true, default-features = true }
+pezsp-runtime = { features = ["serde"], workspace = true, default-features = true }
 pretty_assertions = { workspace = true }
 regex = { workspace = true }
 
 [features]
 default = ["std"]
-std = ["pezsp-crypto-hashing/std"]
+std = [
+	"codec/std",
+	"pezframe-benchmarking/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"pezsp-crypto-hashing/std",
+	"pezsp-metadata-ir/std",
+	"pezsp-runtime/std",
+	"scale-info/std",
+]
 no-metadata-docs = []
 experimental = []
-# Generate impl-trait for tuples with the given number of tuples. Will be needed as the number of
-# pallets in a runtime grows. Does increase the compile time!
 tuples-96 = []
 tuples-128 = []
 runtime-benchmarks = []

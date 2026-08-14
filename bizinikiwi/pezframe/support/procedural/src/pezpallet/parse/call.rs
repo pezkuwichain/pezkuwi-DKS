@@ -60,7 +60,7 @@ pub enum CallWeightDef {
 	/// `#[pezpallet::weight_of_authorize(…)]`. This value is used.
 	Immediate(syn::Expr),
 
-	/// The default value that should be set for dev-mode pallets. Usually zero.
+	/// The default value that should be set for dev-mode pezpallets. Usually zero.
 	DevModeDefault,
 
 	/// Inherits whatever value is configured on the pezpallet level.
@@ -368,11 +368,10 @@ impl CallDef {
 					}
 				}
 
-				if let Some(ref weight_expr) = weight_of_authorize {
-					if authorize.is_none() {
-						let msg = "Invalid pezpallet::call, weight_of_authorize attribute must be used with authorize attribute";
-						return Err(syn::Error::new(weight_expr.span(), msg));
-					}
+				if let (Some(weight_of_authorize_expr), None) = (&weight_of_authorize, &authorize) {
+					let msg = "Invalid pezpallet::call, weight_of_authorize attribute must be used with authorize attribute";
+
+					return Err(syn::Error::new(weight_of_authorize_expr.span(), msg));
 				}
 
 				let authorize = if let Some(expr) = authorize {

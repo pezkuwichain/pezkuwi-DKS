@@ -72,14 +72,8 @@ pub trait EnsureOrigin<OuterOrigin> {
 	/// is impossible.
 	///
 	/// ** Should be used for benchmarking only!!! **
-	///
-	/// Default implementation returns `Err(())` to handle feature unification issues where
-	/// pezframe-support/runtime-benchmarks is enabled but the implementing crate's
-	/// runtime-benchmarks feature is not. Implementations should override this when
-	/// runtime-benchmarks feature is enabled.
-	fn try_successful_origin() -> Result<OuterOrigin, ()> {
-		Err(())
-	}
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<OuterOrigin, ()>;
 }
 
 /// [`EnsureOrigin`] implementation that checks that an origin has equal or higher privilege
@@ -183,14 +177,8 @@ pub trait EnsureOriginWithArg<OuterOrigin, Argument> {
 	/// is impossible.
 	///
 	/// ** Should be used for benchmarking only!!! **
-	///
-	/// Default implementation returns `Err(())` to handle feature unification issues where
-	/// pezframe-support/runtime-benchmarks is enabled but the implementing crate's
-	/// runtime-benchmarks feature is not. Implementations should override this when
-	/// runtime-benchmarks feature is enabled.
-	fn try_successful_origin(_a: &Argument) -> Result<OuterOrigin, ()> {
-		Err(())
-	}
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin(a: &Argument) -> Result<OuterOrigin, ()>;
 }
 
 /// Simple macro to explicitly implement [EnsureOriginWithArg] to be used on any type which
@@ -406,10 +394,6 @@ impl<
 ///
 /// Origin check will pass if `L` or `R` origin check passes. `L` is tested first.
 ///
-/// Successful origin is derived from the left side.
-#[deprecated = "Use `EitherOfDiverse` instead"]
-pub type EnsureOneOf<L, R> = EitherOfDiverse<L, R>;
-
 /// "OR gate" implementation of `EnsureOrigin`, `Success` type for both `L` and `R` must
 /// be equal.
 ///
@@ -463,7 +447,7 @@ pub trait UnfilteredDispatchable {
 	fn dispatch_bypass_filter(self, origin: Self::RuntimeOrigin) -> DispatchResultWithPostInfo;
 }
 
-/// The trait implemented by the overarching enumeration of the different pallets' origins.
+/// The trait implemented by the overarching enumeration of the different pezpallets' origins.
 /// Unlike `OriginTrait` impls, this does not include any kind of dispatch/call filter. Also, this
 /// trait is more flexible in terms of how it can be used: it is a `Parameter` and `Member`, so it
 /// can be used as dispatchable parameters as well as in storage items.
@@ -495,7 +479,7 @@ pub trait OriginTrait: Sized {
 	/// Runtime call type, as in `pezframe_system::Config::Call`
 	type Call;
 
-	/// The caller origin, overarching type of all pallets origins.
+	/// The caller origin, overarching type of all pezpallets origins.
 	type PalletsOrigin: Send + Sync + Into<Self> + CallerTrait<Self::AccountId> + MaxEncodedLen;
 
 	/// The AccountId used across the system.

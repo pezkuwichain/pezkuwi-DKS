@@ -22,7 +22,7 @@ use super::PreimageProvider;
 use alloc::vec::Vec;
 use codec::{Codec, Decode, DecodeWithMemTracking, Encode, EncodeLike, MaxEncodedLen};
 use core::{fmt::Debug, result::Result};
-use pezsp_runtime::{traits::Saturating, DispatchError, RuntimeDebug};
+use pezsp_runtime::{traits::Saturating, DispatchError};
 use scale_info::TypeInfo;
 
 /// Information relating to the period of a scheduled task. First item is the length of the
@@ -43,7 +43,7 @@ pub type Priority = u8;
 	Clone,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 )]
@@ -73,7 +73,7 @@ pub const HARD_DEADLINE: Priority = 63;
 pub const LOWEST_PRIORITY: Priority = 255;
 
 /// Type representing an encodable value or the hash of the encoding of such a value.
-#[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Eq, PartialEq, Encode, Decode, Debug, TypeInfo, MaxEncodedLen)]
 pub enum MaybeHashed<T, Hash> {
 	/// The value itself.
 	Value(T),
@@ -88,7 +88,7 @@ impl<T, H> From<T> for MaybeHashed<T, H> {
 }
 
 /// Error type for `MaybeHashed::lookup`.
-#[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Eq, PartialEq, Encode, Decode, Debug, TypeInfo, MaxEncodedLen)]
 pub enum LookupError {
 	/// A call of this hash was not known.
 	Unknown,

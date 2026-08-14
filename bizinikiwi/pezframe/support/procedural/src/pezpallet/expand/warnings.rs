@@ -38,7 +38,7 @@ pub(crate) fn weight_witness_warning(
 	let partial_warning = Warning::new_deprecated("UncheckedWeightWitness")
 		.old("not check weight witness data")
 		.new("ensure that all witness data for weight calculation is checked before usage")
-		.help_link("https://github.com/pezkuwichain/pezkuwi-sdk/issues/254");
+		.help_link("https://github.com/paritytech/polkadot-sdk/pull/1818");
 
 	for (_, arg_ident, _) in method.args.iter() {
 		if !arg_ident.to_string().starts_with('_') || !contains_ident(w.clone(), &arg_ident) {
@@ -70,7 +70,7 @@ pub(crate) fn weight_constant_warning(
 		.index(warnings.len())
 		.old("use hard-coded constant as call weight")
 		.new("benchmark all calls or put the pezpallet into `dev` mode")
-		.help_link("https://github.com/pezkuwichain/pezkuwi-sdk/issues/215")
+		.help_link("https://github.com/paritytech/substrate/pull/13798")
 		.span(lit.span())
 		.build_or_panic();
 

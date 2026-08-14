@@ -27,7 +27,7 @@ pub fn expand_runtime_metadata(
 	extrinsic: &TokenStream,
 	system_path: &PalletPath,
 ) -> TokenStream {
-	let pallets = pezpallet_declarations
+	let pezpallets = pezpallet_declarations
 		.iter()
 		.filter_map(|pezpallet_declaration| {
 			pezpallet_declaration.find_part("Pezpallet").map(|_| {
@@ -110,8 +110,22 @@ pub fn expand_runtime_metadata(
 
 				use #scrate::__private::metadata_ir::InternalImplRuntimeApis;
 
+
+				let mut versioned_extensions_metadata =
+					#scrate::pezsp_runtime::traits::PipelineMetadataBuilder::new();
+
+				<
+					<
+						#extrinsic as #scrate::pezsp_runtime::traits::ExtrinsicMetadata
+					>::TransactionExtensionPipelines
+					as
+					#scrate::pezsp_runtime::traits::Pipeline::<
+						<#runtime as #system_path::Config>::RuntimeCall
+					>
+				>::build_metadata(&mut versioned_extensions_metadata);
+
 				#scrate::__private::metadata_ir::MetadataIR {
-					pallets: #scrate::__private::vec![ #(#pallets),* ],
+					pezpallets: #scrate::__private::vec![ #(#pezpallets),* ],
 					extrinsic: #scrate::__private::metadata_ir::ExtrinsicMetadataIR {
 						ty,
 						versions: <#extrinsic as #scrate::pezsp_runtime::traits::ExtrinsicMetadata>::VERSIONS.into_iter().map(|ref_version| *ref_version).collect(),
@@ -119,15 +133,8 @@ pub fn expand_runtime_metadata(
 						call_ty,
 						signature_ty,
 						extra_ty,
-						extensions: <
-								<
-									#extrinsic as #scrate::pezsp_runtime::traits::ExtrinsicMetadata
-								>::TransactionExtensions
-								as
-								#scrate::pezsp_runtime::traits::TransactionExtension::<
-									<#runtime as #system_path::Config>::RuntimeCall
-								>
-							>::metadata()
+						extensions_by_version: versioned_extensions_metadata.by_version,
+						extensions_in_versions: versioned_extensions_metadata.in_versions
 								.into_iter()
 								.map(|meta| #scrate::__private::metadata_ir::TransactionExtensionMetadataIR {
 									identifier: meta.identifier,

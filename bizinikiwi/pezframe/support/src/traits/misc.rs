@@ -37,7 +37,7 @@ use pezsp_runtime::{
 };
 
 #[doc(hidden)]
-pub const DEFENSIVE_OP_PUBLIC_ERROR: &str = "a defensive failure has been triggered; please report the block number at https://github.com/pezkuwichain/pezkuwi-sdk/issues";
+pub const DEFENSIVE_OP_PUBLIC_ERROR: &str = "a defensive failure has been triggered; please report the block number at https://github.com/paritytech/polkadot-sdk/issues";
 #[doc(hidden)]
 pub const DEFENSIVE_OP_INTERNAL_ERROR: &str = "Defensive failure has been triggered!";
 
@@ -137,7 +137,7 @@ pub mod defensive_prelude {
 ///    in production as well. Note that the log message, as of now, are not super expressive. Your
 ///    best shot of fully diagnosing the error would be to infer the block number of which the log
 ///    message was emitted, then re-execute that block using `check-block` or `try-runtime`
-///    subcommands in bizinikiwi client.
+///    subcommands in substrate client.
 pub trait Defensive<T> {
 	/// Exactly the same as `unwrap_or`, but it does the defensive warnings explained in the trait
 	/// docs.
@@ -948,13 +948,14 @@ pub trait InherentBuilder: ExtrinsicCall {
 	fn new_inherent(call: Self::Call) -> Self;
 }
 
-impl<Address, Call, Signature, Extra> InherentBuilder
-	for pezsp_runtime::generic::UncheckedExtrinsic<Address, Call, Signature, Extra>
-where
-	Address: TypeInfo,
-	Call: TypeInfo,
-	Signature: TypeInfo,
-	Extra: TypeInfo,
+impl<Address, Call, Signature, ExtensionV0, ExtensionOtherVersions> InherentBuilder
+	for pezsp_runtime::generic::UncheckedExtrinsic<
+		Address,
+		Call,
+		Signature,
+		ExtensionV0,
+		ExtensionOtherVersions,
+	>
 {
 	fn new_inherent(call: Self::Call) -> Self {
 		Self::new_bare(call)
@@ -977,29 +978,30 @@ pub trait SignedTransactionBuilder: ExtrinsicCall {
 	) -> Self;
 }
 
-impl<Address, Call, Signature, Extension> SignedTransactionBuilder
-	for pezsp_runtime::generic::UncheckedExtrinsic<Address, Call, Signature, Extension>
-where
-	Address: TypeInfo,
-	Call: TypeInfo,
-	Signature: TypeInfo,
-	Extension: TypeInfo,
+impl<Address, Call, Signature, ExtensionV0, ExtensionOtherVersions> SignedTransactionBuilder
+	for pezsp_runtime::generic::UncheckedExtrinsic<
+		Address,
+		Call,
+		Signature,
+		ExtensionV0,
+		ExtensionOtherVersions,
+	>
 {
 	type Address = Address;
 	type Signature = Signature;
-	type Extension = Extension;
+	type Extension = ExtensionV0;
 
 	fn new_signed_transaction(
 		call: Self::Call,
 		signed: Address,
 		signature: Signature,
-		tx_ext: Extension,
+		tx_ext: ExtensionV0,
 	) -> Self {
 		Self::new_signed(call, signed, signature, tx_ext)
 	}
 }
 
-/// Something that can estimate the fee of a (frame-based) call.
+/// Something that can estimate the fee of a (pezframe-based) call.
 ///
 /// Typically, the same pezpallet that will charge transaction fees will implement this.
 pub trait EstimateCallFee<Call, Balance> {
@@ -1077,7 +1079,7 @@ impl<T: MaxEncodedLen> MaxEncodedLen for WrapperOpaque<T> {
 	fn max_encoded_len() -> usize {
 		let t_max_len = T::max_encoded_len();
 
-		// See scale encoding: https://docs.pezkuwichain.io/reference/scale-codec/
+		// See scale encoding: https://docs.substrate.io/reference/scale-codec/
 		if t_max_len < 64 {
 			t_max_len + 1
 		} else if t_max_len < 2usize.pow(14) {

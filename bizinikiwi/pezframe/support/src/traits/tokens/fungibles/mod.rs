@@ -21,10 +21,10 @@
 //! Individual tokens in the `fungibles` set may be used when a `fungible` trait is expected using
 //! [`crate::traits::tokens::fungible::ItemOf`].
 //!
-//! Also see the [`frame_tokens`] reference docs for more information about the place of
+//! Also see the [`pezframe_tokens`] reference docs for more information about the place of
 //! `fungible` traits in Bizinikiwi.
 //!
-//! [`frame_tokens`]: ../../../../pezkuwi_sdk_docs/reference_docs/frame_tokens/index.html
+//! [`pezframe_tokens`]: ../../../../pezkuwi_sdk_docs/reference_docs/pezframe_tokens/index.html
 
 pub mod approvals;
 mod enumerable;

@@ -83,8 +83,8 @@ impl AggregatedKeyValue for () {
 
 /// Allows to create a `ParameterStore` from a `RuntimeParameterStore`.
 ///
-/// This concretization is useful when configuring pallets, since a pezpallet will require a
-/// parameter store for its own KV type and not the aggregated runtime-wide KV type.
+/// This concretization is useful when configuring pezpallets, since a pezpallet will require a parameter
+/// store for its own KV type and not the aggregated runtime-wide KV type.
 pub struct ParameterStoreAdapter<PS, KV>(core::marker::PhantomData<(PS, KV)>);
 
 impl<PS, KV> ParameterStore<KV> for ParameterStoreAdapter<PS, KV>

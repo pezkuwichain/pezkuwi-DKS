@@ -59,7 +59,6 @@ fn expand_weight(
 	}
 }
 
-///
 /// * Generate enum call and implement various trait on it.
 /// * Implement Callable and call_function on `Pezpallet`
 pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
@@ -106,8 +105,8 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 			.old("use implicit call indices")
 			.new("ensure that all calls have a `pezpallet::call_index` attribute or put the pezpallet into `dev` mode")
 			.help_links(&[
-				"https://github.com/pezkuwichain/pezkuwi-sdk/issues/208",
-				"https://github.com/pezkuwichain/pezkuwi-sdk/issues/205"
+				"https://github.com/paritytech/substrate/pull/12891",
+				"https://github.com/paritytech/substrate/pull/11381"
 			])
 			.span(method.name.span())
 			.build_or_panic();
@@ -374,7 +373,7 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 
 		#[allow(unused_imports)]
 		#[doc(hidden)]
-		pub mod __bizinikiwi_call_check {
+		pub mod __substrate_call_check {
 			#[macro_export]
 			#[doc(hidden)]
 			macro_rules! #macro_ident {
@@ -389,7 +388,7 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 
 		#( #[doc = #docs] )*
 		#[derive(
-			#pezframe_support::RuntimeDebugNoBound,
+			#pezframe_support::DebugNoBound,
 			#pezframe_support::CloneNoBound,
 			#pezframe_support::EqNoBound,
 			#pezframe_support::PartialEqNoBound,

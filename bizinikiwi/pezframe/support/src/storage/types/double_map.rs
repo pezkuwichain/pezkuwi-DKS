@@ -91,7 +91,6 @@ use pezsp_metadata_ir::{StorageEntryMetadataIR, StorageEntryTypeIR};
 /// When `Hasher1` and `Hasher2` implement the
 /// [`ReversibleStorageHasher`](pezframe_support::ReversibleStorageHasher) trait, the first key `k1`
 /// can be used to partially iterate over keys and values of the double map, and to delete items.
-#[doc = docify::embed!("src/storage/types/double_map.rs", example_double_map_partial_operations)]
 pub struct StorageDoubleMap<
 	Prefix,
 	Hasher1,
@@ -330,9 +329,8 @@ where
 
 	/// Attempt to remove items from the map matching a `first_key` prefix.
 	///
-	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result.
-	/// Once the resultant `maybe_cursor` field is `None`, then no further items remain to be
-	/// deleted.
+	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result. Once
+	/// the resultant `maybe_cursor` field is `None`, then no further items remain to be deleted.
 	///
 	/// NOTE: After the initial call for any given map, it is important that no further items
 	/// are inserted into the map which match the `first_key`. If so, then the map may not be
@@ -524,9 +522,8 @@ where
 
 	/// Attempt to remove all items from the map.
 	///
-	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result.
-	/// Once the resultant `maybe_cursor` field is `None`, then no further items remain to be
-	/// deleted.
+	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result. Once
+	/// the resultant `maybe_cursor` field is `None`, then no further items remain to be deleted.
 	///
 	/// NOTE: After the initial call for any given map, it is important that no further items
 	/// are inserted into the map. If so, then the map may not be empty when the resultant

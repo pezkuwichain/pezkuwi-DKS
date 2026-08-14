@@ -17,8 +17,8 @@
 
 //! Some instance placeholder to be used in [`pezframe_support::pezpallet`] attribute macro.
 //!
-//! [`pezframe_support::pezpallet`] attribute macro does only requires the instance generic `I` to
-//! be static (contrary to `decl_*` macro which requires instance generic to implement
+//! [`pezframe_support::pezpallet`] attribute macro does only requires the instance generic `I` to be
+//! static (contrary to `decl_*` macro which requires instance generic to implement
 //! [`pezframe_support::traits::Instance`]).
 //!
 //! Thus support provides some instance types to be used, This allow some instantiable pezpallet to
@@ -28,86 +28,86 @@
 //! pub trait Config<I: 'static = ()>: another_pallet::Config<I> {}
 //! ```
 //!
-//! NOTE: [`pezframe_support::pezpallet`] will reexport them inside the module, in order to make
-//! them accessible to [`pezframe_support::construct_runtime`].
+//! NOTE: [`pezframe_support::pezpallet`] will reexport them inside the module, in order to make them
+//! accessible to [`pezframe_support::construct_runtime`].
 
-/// `Instance1` to be used for instantiable pallets defined with the
-/// [`#[pezpallet]`](`pezframe_support::pezpallet`) macro. Instances 2-16 are also available but are
-/// hidden from docs.
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+/// `Instance1` to be used for instantiable pezpallets defined with the
+/// [`#[pezpallet]`](`pezframe_support::pezpallet`) macro. Instances 2-16 are also available but are hidden
+/// from docs.
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance1;
 
-/// `Instance2` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance2` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance2;
 
-/// `Instance3` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance3` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance3;
 
-/// `Instance4` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance4` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance4;
 
-/// `Instance5` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance5` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance5;
 
-/// `Instance6` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance6` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance6;
 
-/// `Instance7` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance7` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance7;
 
-/// `Instance8` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance8` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance8;
 
-/// `Instance9` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance9` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance9;
 
-/// `Instance10` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance10` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance10;
 
-/// `Instance11` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance11` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance11;
 
-/// `Instance12` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance12` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance12;
 
-/// `Instance13` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance13` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance13;
 
-/// `Instance14` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance14` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance14;
 
-/// `Instance15` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance15` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance15;
 
-/// `Instance16` to be used for instantiable pallets defined with the `#[pezpallet]` macro.
+/// `Instance16` to be used for instantiable pezpallets defined with the `#[pezpallet]` macro.
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq, crate::RuntimeDebugNoBound)]
+#[derive(Clone, Copy, PartialEq, Eq, crate::DebugNoBound)]
 pub struct Instance16;

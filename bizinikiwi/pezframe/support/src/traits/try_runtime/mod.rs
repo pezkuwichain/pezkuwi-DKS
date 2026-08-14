@@ -36,11 +36,11 @@ pub enum Select {
 	All,
 	/// Run a fixed number of them in a round robin manner.
 	RoundRobin(u32),
-	/// Run only pallets who's name matches the given list.
+	/// Run only pezpallets who's name matches the given list.
 	///
 	/// Pezpallet names are obtained from [`super::PalletInfoAccess`].
 	Only(Vec<Vec<u8>>),
-	/// Run all pallets except those whose names match the given list.
+	/// Run all pezpallets except those whose names match the given list.
 	///
 	/// Pezpallet names are obtained from [`super::PalletInfoAccess`].
 	AllExcept(Vec<Vec<u8>>),
@@ -98,16 +98,17 @@ impl std::str::FromStr for Select {
 						.ok_or("failed to parse count")?;
 					Ok(Select::RoundRobin(count))
 				} else if s.starts_with("all-except-") {
-					let pallets = s
+					let pezpallets = s
 						.strip_prefix("all-except-")
 						.ok_or("failed to parse all-except prefix")?
 						.split(',')
 						.map(|x| x.as_bytes().to_vec())
 						.collect::<Vec<_>>();
-					Ok(Select::AllExcept(pallets))
+					Ok(Select::AllExcept(pezpallets))
 				} else {
-					let pallets = s.split(',').map(|x| x.as_bytes().to_vec()).collect::<Vec<_>>();
-					Ok(Select::Only(pallets))
+					let pezpallets =
+						s.split(',').map(|x| x.as_bytes().to_vec()).collect::<Vec<_>>();
+					Ok(Select::Only(pezpallets))
 				}
 			},
 		}

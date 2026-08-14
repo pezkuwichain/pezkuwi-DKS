@@ -64,7 +64,7 @@ pub trait Task: Sized + FullCodec + TypeInfo + Clone + Debug + PartialEq + Eq {
 	/// `call_index`, but for tasks.'
 	///
 	/// This value should be unique within the current pezpallet and can overlap with task indices
-	/// in other pallets.
+	/// in other pezpallets.
 	fn task_index(&self) -> u32;
 }
 

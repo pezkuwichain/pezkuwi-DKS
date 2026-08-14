@@ -52,7 +52,7 @@ pub fn expand_outer_dispatch(
 		pezpallet_names.push(name);
 		pezpallet_attrs.push(attr);
 		query_call_part_macros.push(quote! {
-			#path::__bizinikiwi_call_check::is_call_part_defined!(#name);
+			#path::__substrate_call_check::is_call_part_defined!(#name);
 		});
 	}
 
@@ -66,7 +66,7 @@ pub fn expand_outer_dispatch(
 			#scrate::__private::codec::Decode,
 			#scrate::__private::codec::DecodeWithMemTracking,
 			#scrate::__private::scale_info::TypeInfo,
-			#scrate::__private::RuntimeDebug,
+			#scrate::__private::Debug,
 		)]
 		pub enum RuntimeCall {
 			#variant_defs

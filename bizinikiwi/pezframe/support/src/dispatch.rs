@@ -60,9 +60,8 @@ pub type CallableCallFor<A, R> = <A as Callable<R>>::RuntimeCall;
 /// Means to checks if the dispatchable is feeless.
 ///
 /// This is automatically implemented for all dispatchables during pezpallet expansion.
-/// If a call is marked by
-/// [`#[pezpallet::feeless_if]`](`macro@pezframe_support_procedural::feeless_if`) attribute, the
-/// corresponding closure is checked.
+/// If a call is marked by [`#[pezpallet::feeless_if]`](`macro@pezframe_support_procedural::feeless_if`)
+/// attribute, the corresponding closure is checked.
 pub trait CheckIfFeeless {
 	/// The Origin type of the runtime.
 	type Origin;
@@ -87,7 +86,7 @@ pub enum RawOrigin<AccountId> {
 	None,
 	/// It is signed by nobody, the extrinsic is authorized by the runtime.
 	///
-	/// Authorization logic is defined by pallets.
+	/// Authorization logic is defined by pezpallets.
 	/// See trait [`Authorize`](crate::traits::Authorize) and attribute macro
 	/// [`authorize`](crate::pezpallet_macros::authorize) for more details.
 	Authorized,
@@ -408,10 +407,13 @@ where
 }
 
 /// Implementation for unchecked extrinsic.
-impl<Address, Call: Dispatchable, Signature, Extension: TransactionExtension<Call>> GetDispatchInfo
-	for UncheckedExtrinsic<Address, Call, Signature, Extension>
+impl<Address, Call, Signature, ExtensionV0, ExtensionOtherVersions> GetDispatchInfo
+	for UncheckedExtrinsic<Address, Call, Signature, ExtensionV0, ExtensionOtherVersions>
 where
-	Call: GetDispatchInfo + Dispatchable,
+	Call: GetDispatchInfo + Dispatchable + Encode,
+	ExtensionV0: TransactionExtension<Call>,
+	ExtensionOtherVersions: pezsp_runtime::traits::Pipeline<Call>,
+	<Call as Dispatchable>::RuntimeOrigin: pezsp_runtime::traits::AsTransactionAuthorizedOrigin,
 {
 	fn get_dispatch_info(&self) -> DispatchInfo {
 		let mut info = self.function.get_dispatch_info();
@@ -421,10 +423,13 @@ where
 }
 
 /// Implementation for checked extrinsic.
-impl<AccountId, Call: Dispatchable, Extension: TransactionExtension<Call>> GetDispatchInfo
-	for CheckedExtrinsic<AccountId, Call, Extension>
+impl<AccountId, Call, ExtensionV0, ExtensionOtherVersions> GetDispatchInfo
+	for CheckedExtrinsic<AccountId, Call, ExtensionV0, ExtensionOtherVersions>
 where
-	Call: GetDispatchInfo,
+	Call: GetDispatchInfo + Dispatchable + Encode,
+	ExtensionV0: TransactionExtension<Call>,
+	ExtensionOtherVersions: pezsp_runtime::traits::Pipeline<Call>,
+	<Call as Dispatchable>::RuntimeOrigin: pezsp_runtime::traits::AsTransactionAuthorizedOrigin,
 {
 	fn get_dispatch_info(&self) -> DispatchInfo {
 		let mut info = self.function.get_dispatch_info();
@@ -738,7 +743,7 @@ mod weight_tests {
 		pub struct Pezpallet<T>(_);
 
 		#[pezpallet::config]
-		#[pezpallet::disable_pezframe_system_supertrait_check]
+		#[pezpallet::disable_frame_system_supertrait_check]
 		pub trait Config: 'static {
 			type Block: Parameter + pezsp_runtime::traits::Block;
 			type AccountId;
@@ -1564,7 +1569,7 @@ mod extension_weight_tests {
 			// First testcase
 			let ext: TxExtension = (HalfCostIf(false), FreeIfUnder(2000), ActualWeightIs(0));
 			let xt = CheckedExtrinsic {
-				format: ExtrinsicFormat::Signed(0, ext.clone()),
+				format: ExtrinsicFormat::<_, _>::Signed(0, ext.clone()),
 				function: call.clone(),
 			};
 			assert_eq!(xt.extension_weight(), Weight::from_parts(600, 0));
@@ -1579,7 +1584,7 @@ mod extension_weight_tests {
 			// Second testcase
 			let ext: TxExtension = (HalfCostIf(false), FreeIfUnder(1100), ActualWeightIs(200));
 			let xt = CheckedExtrinsic {
-				format: ExtrinsicFormat::Signed(0, ext),
+				format: ExtrinsicFormat::<_, _>::Signed(0, ext),
 				function: call.clone(),
 			};
 			let post_info = xt.apply::<ExtRuntime>(&info, 0).unwrap().unwrap();
@@ -1589,7 +1594,7 @@ mod extension_weight_tests {
 			// Third testcase
 			let ext: TxExtension = (HalfCostIf(true), FreeIfUnder(1060), ActualWeightIs(200));
 			let xt = CheckedExtrinsic {
-				format: ExtrinsicFormat::Signed(0, ext),
+				format: ExtrinsicFormat::<_, _>::Signed(0, ext),
 				function: call.clone(),
 			};
 			let post_info = xt.apply::<ExtRuntime>(&info, 0).unwrap().unwrap();
@@ -1599,7 +1604,7 @@ mod extension_weight_tests {
 			// Fourth testcase
 			let ext: TxExtension = (HalfCostIf(false), FreeIfUnder(100), ActualWeightIs(300));
 			let xt = CheckedExtrinsic {
-				format: ExtrinsicFormat::Signed(0, ext),
+				format: ExtrinsicFormat::<_, _>::Signed(0, ext),
 				function: call.clone(),
 			};
 			let post_info = xt.apply::<ExtRuntime>(&info, 0).unwrap().unwrap();

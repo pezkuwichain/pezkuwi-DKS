@@ -128,8 +128,8 @@ fn pezpallet_name_attribute() {
 		Value::<Runtime>::put(1);
 		assert_eq!(1, Value::<Runtime>::get().unwrap());
 
-		// The prefix is the pezpallet name. In this case the pezpallet name is `System` as declared
-		// in `construct_runtime!`.
+		// The prefix is the pezpallet name. In this case the pezpallet name is `System` as declared in
+		// `construct_runtime!`.
 		assert_eq!(&b"System"[..], Value::<Runtime>::pezpallet_prefix());
 	});
 }

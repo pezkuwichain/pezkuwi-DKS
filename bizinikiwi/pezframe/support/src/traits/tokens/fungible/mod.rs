@@ -17,7 +17,7 @@
 
 //! The traits for dealing with a single fungible token class and any associated types.
 //!
-//! Also see the [`frame_tokens`] reference docs for more information about the place of
+//! Also see the [`pezframe_tokens`] reference docs for more information about the place of
 //! `fungible` traits in Bizinikiwi.
 //!
 //! # Available Traits
@@ -40,6 +40,9 @@
 //!   which guarantee eventual book-keeping. May be useful for some sophisticated operations where
 //!   funds must be removed from an account before it is known precisely what should be done with
 //!   them.
+//! - [`metadata::Inspect`]: Inspector functions for token metadata (name, symbol, decimals).
+//! - [`metadata::Mutate`]: Mutator functions for token metadata.
+//! - [`lifetime::Create`]: Trait for creating a new fungible asset.
 //!
 //! ## Terminology
 //!
@@ -52,8 +55,8 @@
 //!   transfer.
 //!
 //! - **Held Balance**: Held balance still belongs to the account holder, but is suspended — it
-//!   cannot be transferred or used for most operations. It may be slashed by the pezpallet that
-//!   placed the hold.
+//!   cannot be transferred or used for most operations. It may be slashed by the pezpallet that placed
+//!   the hold.
 //!
 //!   Multiple holds stack rather than overlay. This means that if an account has
 //!   3 holds for 100 units, the account can spend its funds for any reason down to 300 units, at
@@ -151,19 +154,21 @@
 //! For managing sets of tokens, see the [`fungibles`](`pezframe_support::traits::fungibles`) trait
 //! which is a wrapper around this trait but supporting multiple asset instances.
 //!
-//! [`frame_tokens`]: ../../../../pezkuwi_sdk_docs/reference_docs/frame_tokens/index.html
+//! [`pezframe_tokens`]: ../../../../pezkuwi_sdk_docs/reference_docs/pezframe_tokens/index.html
 
 pub mod conformance_tests;
 pub mod freeze;
 pub mod hold;
 pub(crate) mod imbalance;
 mod item_of;
+mod lifetime;
+pub mod metadata;
 mod regular;
 mod union_of;
 
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::marker::PhantomData;
-use pezframe_support_procedural::{CloneNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound};
+use pezframe_support_procedural::{CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound};
 #[cfg(feature = "runtime-benchmarks")]
 use pezsp_runtime::Saturating;
 use scale_info::TypeInfo;
@@ -179,6 +184,7 @@ pub use hold::{
 };
 pub use imbalance::{Credit, Debt, HandleImbalanceDrop, Imbalance};
 pub use item_of::ItemOf;
+pub use lifetime::Create;
 use pezsp_arithmetic::traits::Zero;
 use pezsp_core::Get;
 use pezsp_runtime::{traits::Convert, DispatchError};
@@ -199,14 +205,7 @@ use crate::{
 /// The aggregate amount frozen under `R::get()` for any account which has multiple tickets,
 /// is the *cumulative* amounts of each ticket's footprint (each individually determined by `D`).
 #[derive(
-	CloneNoBound,
-	EqNoBound,
-	PartialEqNoBound,
-	Encode,
-	Decode,
-	TypeInfo,
-	MaxEncodedLen,
-	RuntimeDebugNoBound,
+	CloneNoBound, EqNoBound, PartialEqNoBound, Encode, Decode, TypeInfo, MaxEncodedLen, DebugNoBound,
 )]
 #[scale_info(skip_type_params(A, F, R, D, Fp))]
 #[codec(mel_bound())]
@@ -269,7 +268,7 @@ impl<
 	DecodeWithMemTracking,
 	TypeInfo,
 	MaxEncodedLen,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 )]
 #[scale_info(skip_type_params(A, F, R, D, Fp))]
 #[codec(mel_bound())]
@@ -336,14 +335,7 @@ impl<
 /// track the specific balance which is frozen. If you are uncertain then use `FreezeConsideration`
 /// instead, since this works in all circumstances.
 #[derive(
-	CloneNoBound,
-	EqNoBound,
-	PartialEqNoBound,
-	Encode,
-	Decode,
-	TypeInfo,
-	MaxEncodedLen,
-	RuntimeDebugNoBound,
+	CloneNoBound, EqNoBound, PartialEqNoBound, Encode, Decode, TypeInfo, MaxEncodedLen, DebugNoBound,
 )]
 #[scale_info(skip_type_params(A, Fx, Rx, D, Fp))]
 #[codec(mel_bound())]
@@ -381,14 +373,7 @@ impl<
 /// track the specific balance which is frozen. If you are uncertain then use `FreezeConsideration`
 /// instead, since this works in all circumstances.
 #[derive(
-	CloneNoBound,
-	EqNoBound,
-	PartialEqNoBound,
-	Encode,
-	Decode,
-	TypeInfo,
-	MaxEncodedLen,
-	RuntimeDebugNoBound,
+	CloneNoBound, EqNoBound, PartialEqNoBound, Encode, Decode, TypeInfo, MaxEncodedLen, DebugNoBound,
 )]
 #[scale_info(skip_type_params(A, Fx, Rx, D, Fp))]
 #[codec(mel_bound())]

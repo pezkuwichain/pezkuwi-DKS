@@ -459,8 +459,8 @@ impl Parse for Input {
 enum PrefixType {
 	/// An appropriate prefix will be determined automatically.
 	///
-	/// If generics are passed, this is assumed to be a pezpallet and the pezpallet name should be
-	/// used. Otherwise use the verbatim passed name as prefix.
+	/// If generics are passed, this is assumed to be a pezpallet and the pezpallet name should be used.
+	/// Otherwise use the verbatim passed name as prefix.
 	Compatibility,
 	/// The provided ident/name will be used as the prefix.
 	Verbatim,

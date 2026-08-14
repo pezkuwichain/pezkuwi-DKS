@@ -24,8 +24,7 @@ pub struct PalletDeclaration {
 	pub name: Ident,
 	/// The path of the pezpallet, e.g. `pezframe_system` in `pub type System = pezframe_system`.
 	pub path: syn::Path,
-	/// The segment of the pezpallet, e.g. `Pezpallet` in `pub type System =
-	/// pezframe_system::Pezpallet`.
+	/// The segment of the pezpallet, e.g. `Pezpallet` in `pub type System = pezframe_system::Pezpallet`.
 	pub pezpallet_segment: Option<syn::PathSegment>,
 	/// The runtime parameter of the pezpallet, e.g. `Runtime` in
 	/// `pub type System = pezframe_system::Pezpallet<Runtime>`.

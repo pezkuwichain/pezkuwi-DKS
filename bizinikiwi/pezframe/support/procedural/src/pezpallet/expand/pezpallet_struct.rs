@@ -18,7 +18,6 @@
 use crate::pezpallet::{expand::merge_where_clauses, Def};
 use pezframe_support_procedural_tools::get_doc_literals;
 
-///
 /// * Add derive trait on Pezpallet
 /// * Implement GetStorageVersion on Pezpallet
 /// * Implement OnGenesis on Pezpallet
@@ -80,7 +79,7 @@ pub fn expand_pallet_struct(def: &mut Def) -> proc_macro2::TokenStream {
 			#pezframe_support::CloneNoBound,
 			#pezframe_support::EqNoBound,
 			#pezframe_support::PartialEqNoBound,
-			#pezframe_support::RuntimeDebugNoBound,
+			#pezframe_support::DebugNoBound,
 		)]
 	));
 

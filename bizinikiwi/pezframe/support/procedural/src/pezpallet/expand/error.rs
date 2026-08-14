@@ -27,7 +27,6 @@ use pezframe_support_procedural_tools::get_doc_literals;
 use quote::ToTokens;
 use syn::spanned::Spanned;
 
-///
 /// * impl various trait on Error
 pub fn expand_error(def: &mut Def) -> proc_macro2::TokenStream {
 	let count = COUNTER.with(|counter| counter.borrow_mut().inc());

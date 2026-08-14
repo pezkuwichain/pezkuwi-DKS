@@ -58,7 +58,7 @@ impl_for_tuples_attr! {
 	}
 }
 
-/// Provides a callback to execute logic before the all transactions.
+/// Provides a callback to execute logic after the all transactions.
 pub trait PostTransactions {
 	/// Called after all transactions were applied but before `on_finalize`.
 	fn post_transactions() {}
@@ -128,8 +128,14 @@ impl_for_tuples_attr! {
 		fn on_idle(n: BlockNumber, remaining_weight: Weight) -> Weight {
 			let on_idle_functions: &[fn(BlockNumber, Weight) -> Weight] =
 				&[for_tuples!( #( Tuple::on_idle ),* )];
+
 			let mut weight = Weight::zero();
 			let len = on_idle_functions.len();
+
+			if len == 0 {
+				return Weight::zero()
+			}
+
 			let start_index = n % (len as u32).into();
 			let start_index = start_index.try_into().ok().expect(
 				"`start_index % len` always fits into `usize`, because `len` can be in maximum `usize::MAX`; qed"
@@ -148,14 +154,14 @@ impl_for_tuples_attr! {
 	///
 	/// Implementing this trait for a pezpallet let's you express operations that should
 	/// happen at genesis. It will be called in an externalities provided environment and
-	/// will set the genesis state after all pallets have written their genesis state.
+	/// will set the genesis state after all pezpallets have written their genesis state.
 	pub trait OnGenesis {
 		/// Something that should happen at genesis.
 		fn on_genesis() {}
 	}
 }
 
-/// Implemented by pallets, allows defining logic to run prior to any [`OnRuntimeUpgrade`] logic.
+/// Implemented by pezpallets, allows defining logic to run prior to any [`OnRuntimeUpgrade`] logic.
 ///
 /// This hook is intended to be used internally in FRAME and not be exposed to FRAME developers.
 ///
@@ -344,7 +350,7 @@ impl_for_tuples_attr! {
 ///
 /// ## Ordering
 ///
-/// For all hooks, except [`OnIdle`] the order of execution is derived from how the pallets are
+/// For all hooks, except [`OnIdle`] the order of execution is derived from how the pezpallets are
 /// ordered in [`crate::construct_runtime`].
 ///
 /// ## Summary
@@ -397,8 +403,8 @@ impl_for_tuples_attr! {
 /// > because they are not part of the consensus/main block building logic. See
 /// > [`OffchainWorker`](crate::traits::misc::OffchainWorker) for more information.
 ///
-/// To learn more about the execution of hooks see the FRAME `Executive` pezpallet which is in
-/// charge of dispatching extrinsics and calling hooks in the correct order.
+/// To learn more about the execution of hooks see the FRAME `Executive` pezpallet which is in charge
+/// of dispatching extrinsics and calling hooks in the correct order.
 pub trait Hooks<BlockNumber> {
 	/// Block initialization hook. This is called at the very beginning of block execution.
 	///
@@ -414,8 +420,8 @@ pub trait Hooks<BlockNumber> {
 	/// complexity. For example, do not execute any unbounded iterations.
 	///
 	/// NOTE: This function is called BEFORE ANY extrinsic in a block is applied, including inherent
-	/// extrinsics. Hence for instance, if you runtime includes `pezpallet-timestamp`, the
-	/// `timestamp` is not yet up to date at this point.
+	/// extrinsics. Hence for instance, if you runtime includes `pezpallet-timestamp`, the `timestamp`
+	/// is not yet up to date at this point.
 	fn on_initialize(_n: BlockNumber) -> Weight {
 		Weight::zero()
 	}
@@ -461,9 +467,9 @@ pub trait Hooks<BlockNumber> {
 	/// Hook executed when a code change (aka. a "runtime upgrade") is detected by the FRAME
 	/// `Executive` pezpallet.
 	///
-	/// Be aware that this is called before [`Hooks::on_initialize`] of any pezpallet; therefore, a
-	/// lot of the critical storage items such as `block_number` in system pezpallet might have not
-	/// been set yet.
+	/// Be aware that this is called before [`Hooks::on_initialize`] of any pezpallet; therefore, a lot
+	/// of the critical storage items such as `block_number` in system pezpallet might have not been
+	/// set yet.
 	///
 	/// Similar to [`Hooks::on_initialize`], any code in this block is mandatory and MUST execute.
 	/// It is strongly recommended to dry-run the execution of these hooks using
@@ -544,7 +550,7 @@ pub trait Hooks<BlockNumber> {
 	/// that are not really possible in the rest of the runtime code.
 	///
 	/// The execution of this hook is entirely optional and is left at the discretion of the
-	/// node-side software and its configuration. In a normal bizinikiwi-cli, look for the CLI
+	/// node-side software and its configuration. In a normal substrate-cli, look for the CLI
 	/// flags related to offchain-workers to learn more.
 	fn offchain_worker(_n: BlockNumber) {}
 
@@ -564,7 +570,7 @@ pub trait Hooks<BlockNumber> {
 	fn integrity_test() {}
 }
 
-/// A trait to define the build function of a genesis config for both runtime and pallets.
+/// A trait to define the build function of a genesis config for both runtime and pezpallets.
 ///
 /// Replaces deprecated [`GenesisBuild<T,I>`].
 pub trait BuildGenesisConfig: pezsp_runtime::traits::MaybeSerializeDeserialize {
@@ -672,7 +678,7 @@ mod tests {
 			assert_eq!(Pre::take(), vec!["Foo", "Bar", "Baz"]);
 			assert_eq!(Post::take(), vec!["Foo", "Bar", "Baz"]);
 
-			// calling pre_upgrade and post_upgrade directly on tuple of pallets fails
+			// calling pre_upgrade and post_upgrade directly on tuple of pezpallets fails
 			assert!(<(Foo, (Bar, Baz))>::pre_upgrade().is_err());
 			assert!(<(Foo, (Bar, Baz))>::post_upgrade(vec![]).is_err());
 		});

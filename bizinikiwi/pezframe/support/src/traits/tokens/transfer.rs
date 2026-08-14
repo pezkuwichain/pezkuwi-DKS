@@ -20,7 +20,6 @@
 use crate::pezpallet_prelude::{Decode, Encode};
 use core::fmt::Debug;
 use pezframe_support::traits::tokens::PaymentStatus;
-use pezsp_debug_derive::RuntimeDebug;
 use pezsp_runtime::codec::{FullCodec, MaxEncodedLen};
 use scale_info::TypeInfo;
 
@@ -82,7 +81,7 @@ pub trait Transfer {
 }
 
 /// Status for making a payment via the `Pay::pay` trait function.
-#[derive(Encode, Decode, Eq, PartialEq, Clone, TypeInfo, MaxEncodedLen, RuntimeDebug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, TypeInfo, MaxEncodedLen, Debug)]
 pub enum TransferStatus {
 	/// Payment is in progress. Nothing to report yet.
 	InProgress,

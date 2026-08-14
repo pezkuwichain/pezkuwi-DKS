@@ -18,7 +18,7 @@
 //! Traits for dealing with a single non-fungible item.
 //!
 //! This assumes a single-level namespace identified by `Inspect::ItemId`, and could
-//! reasonably be implemented by pallets that want to expose a single collection of NFT-like
+//! reasonably be implemented by pezpallets that want to expose a single collection of NFT-like
 //! objects.
 //!
 //! For an NFT API that has dual-level namespacing, the traits in `nonfungibles` are better to

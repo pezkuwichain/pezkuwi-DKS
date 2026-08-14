@@ -117,13 +117,13 @@ pub struct ImplicitAllPalletsDeclaration {
 #[derive(Debug, Clone)]
 pub struct ExplicitAllPalletsDeclaration {
 	pub name: Ident,
-	pub pallets: Vec<Pezpallet>,
+	pub pezpallets: Vec<Pezpallet>,
 }
 
 pub struct Def {
 	pub input: TokenStream2,
 	pub runtime_struct: runtime_struct::RuntimeStructDef,
-	pub pallets: AllPalletsDeclaration,
+	pub pezpallets: AllPalletsDeclaration,
 	pub runtime_types: Vec<RuntimeType>,
 }
 
@@ -147,7 +147,7 @@ impl Def {
 		let mut names = HashMap::new();
 
 		let mut pezpallet_decls = vec![];
-		let mut pallets = vec![];
+		let mut pezpallets = vec![];
 
 		for item in items.iter_mut() {
 			let mut pezpallet_index_and_item = None;
@@ -192,7 +192,7 @@ impl Def {
 						if let Some(used_pallet) =
 							names.insert(pezpallet_decl.name.clone(), pezpallet_decl.name.span())
 						{
-							let msg = "Two pallets with the same name!";
+							let msg = "Two pezpallets with the same name!";
 
 							let mut err = syn::Error::new(used_pallet, &msg);
 							err.combine(syn::Error::new(pezpallet_decl.name.span(), &msg));
@@ -215,7 +215,7 @@ impl Def {
 							indices.insert(pezpallet.index, pezpallet.name.clone())
 						{
 							let msg = format!(
-								"Pezpallet indices are conflicting: Both pallets {} and {} are at index {}",
+								"Pezpallet indices are conflicting: Both pezpallets {} and {} are at index {}",
 								used_pallet, pezpallet.name, pezpallet.index,
 							);
 							let mut err = syn::Error::new(used_pallet.span(), &msg);
@@ -223,7 +223,7 @@ impl Def {
 							return Err(err);
 						}
 
-						pallets.push(pezpallet);
+						pezpallets.push(pezpallet);
 					},
 					_ => continue,
 				}
@@ -237,13 +237,13 @@ impl Def {
 
 		let name = item.ident.clone();
 		let decl_count = pezpallet_decls.len();
-		let pallets = if decl_count > 0 {
+		let pezpallets = if decl_count > 0 {
 			AllPalletsDeclaration::Implicit(ImplicitAllPalletsDeclaration {
 				pezpallet_decls,
-				pezpallet_count: decl_count.saturating_add(pallets.len()),
+				pezpallet_count: decl_count.saturating_add(pezpallets.len()),
 			})
 		} else {
-			AllPalletsDeclaration::Explicit(ExplicitAllPalletsDeclaration { name, pallets })
+			AllPalletsDeclaration::Explicit(ExplicitAllPalletsDeclaration { name, pezpallets })
 		};
 
 		let def = Def {
@@ -253,7 +253,7 @@ impl Def {
 					"Missing Runtime. Please add a struct inside the module and annotate it with `#[runtime::runtime]`"
 				)
 			})?,
-			pallets,
+			pezpallets,
 			runtime_types: runtime_types.ok_or_else(|| {
 				syn::Error::new(item_span,
 					"Missing Runtime Types. Please annotate the runtime struct with `#[runtime::derive]`"

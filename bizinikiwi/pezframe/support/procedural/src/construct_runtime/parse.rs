@@ -66,7 +66,7 @@ pub enum RuntimeDeclaration {
 /// Declaration of a runtime with some pezpallet with implicit declaration of parts.
 #[derive(Debug)]
 pub struct ImplicitRuntimeDeclaration {
-	pub pallets: Vec<PalletDeclaration>,
+	pub pezpallets: Vec<PalletDeclaration>,
 }
 
 /// Declaration of a runtime with all pezpallet having explicit declaration of parts.
@@ -74,7 +74,7 @@ pub struct ImplicitRuntimeDeclaration {
 pub struct ExplicitRuntimeDeclaration {
 	pub name: Ident,
 	pub where_section: Option<WhereSection>,
-	pub pallets: Vec<Pezpallet>,
+	pub pezpallets: Vec<Pezpallet>,
 	pub pallets_token: token::Brace,
 }
 
@@ -91,27 +91,27 @@ impl Parse for RuntimeDeclaration {
 
 		let name = input.parse::<syn::Ident>()?;
 		let where_section = if input.peek(token::Where) { Some(input.parse()?) } else { None };
-		let pallets =
+		let pezpallets =
 			input.parse::<ext::Braces<ext::Punctuated<PalletDeclaration, Token![,]>>>()?;
-		let pallets_token = pallets.token;
+		let pallets_token = pezpallets.token;
 
-		match convert_pallets(pallets.content.inner.into_iter().collect())? {
-			PalletsConversion::Implicit(pallets) => {
-				Ok(RuntimeDeclaration::Implicit(ImplicitRuntimeDeclaration { pallets }))
+		match convert_pallets(pezpallets.content.inner.into_iter().collect())? {
+			PalletsConversion::Implicit(pezpallets) => {
+				Ok(RuntimeDeclaration::Implicit(ImplicitRuntimeDeclaration { pezpallets }))
 			},
-			PalletsConversion::Explicit(pallets) => {
+			PalletsConversion::Explicit(pezpallets) => {
 				Ok(RuntimeDeclaration::Explicit(ExplicitRuntimeDeclaration {
 					name,
 					where_section,
-					pallets,
+					pezpallets,
 					pallets_token,
 				}))
 			},
-			PalletsConversion::ExplicitExpanded(pallets) => {
+			PalletsConversion::ExplicitExpanded(pezpallets) => {
 				Ok(RuntimeDeclaration::ExplicitExpanded(ExplicitRuntimeDeclaration {
 					name,
 					where_section,
-					pallets,
+					pezpallets,
 					pallets_token,
 				}))
 			},
@@ -200,8 +200,7 @@ pub struct PalletDeclaration {
 	pub index: Option<u8>,
 	/// The path of the pezpallet, e.g. `pezframe_system` in `System: pezframe_system`.
 	pub path: PalletPath,
-	/// The instance of the pezpallet, e.g. `Instance1` in `Council:
-	/// pezpallet_collective::<Instance1>`.
+	/// The instance of the pezpallet, e.g. `Instance1` in `Council: pezpallet_collective::<Instance1>`.
 	pub instance: Option<Ident>,
 	/// The declared pezpallet parts,
 	/// e.g. `Some([Pezpallet, Call])` for `System: system::{Pezpallet, Call}`
@@ -515,7 +514,7 @@ impl Parse for PalletPart {
 			let valid_generics = PalletPart::format_names(PalletPartKeyword::all_generic_arg());
 			let msg = format!(
 				"`{}` is not allowed to have generics. \
-				 Only the following pallets are allowed to have generics: {}.",
+				 Only the following pezpallets are allowed to have generics: {}.",
 				keyword.name(),
 				valid_generics,
 			);
@@ -598,8 +597,7 @@ pub struct Pezpallet {
 	pub index: u8,
 	/// The path of the pezpallet, e.g. `pezframe_system` in `System: pezframe_system`.
 	pub path: PalletPath,
-	/// The instance of the pezpallet, e.g. `Instance1` in `Council:
-	/// pezpallet_collective::<Instance1>`.
+	/// The instance of the pezpallet, e.g. `Instance1` in `Council: pezpallet_collective::<Instance1>`.
 	pub instance: Option<Ident>,
 	/// The pezpallet parts to use for the pezpallet.
 	pub pezpallet_parts: Vec<PalletPart>,
@@ -638,7 +636,7 @@ impl Pezpallet {
 	}
 }
 
-/// Result of a conversion of a declaration of pallets.
+/// Result of a conversion of a declaration of pezpallets.
 ///
 /// # State Transitions
 ///
@@ -656,7 +654,7 @@ enum PalletsConversion {
 	///
 	/// `System: pezframe_system::{Pezpallet, Call}`
 	///
-	/// However, for backwards compatibility with Pezkuwi/Dicle
+	/// However, for backwards compatibility with Pezkuwi/Kusama
 	/// we must propagate some other parts to the pezpallet by default.
 	Explicit(Vec<Pezpallet>),
 	/// Pallets explicitly declare parts that are fully expanded.
@@ -675,9 +673,9 @@ enum PalletsConversion {
 /// Check if all pezpallet have explicit declaration of their parts, if so then assign index to each
 /// pezpallet using same rules as rust for fieldless enum. I.e. implicit are assigned number
 /// incrementally from last explicit or 0.
-fn convert_pallets(pallets: Vec<PalletDeclaration>) -> syn::Result<PalletsConversion> {
-	if pallets.iter().any(|pezpallet| pezpallet.pezpallet_parts.is_none()) {
-		return Ok(PalletsConversion::Implicit(pallets));
+fn convert_pallets(pezpallets: Vec<PalletDeclaration>) -> syn::Result<PalletsConversion> {
+	if pezpallets.iter().any(|pezpallet| pezpallet.pezpallet_parts.is_none()) {
+		return Ok(PalletsConversion::Implicit(pezpallets));
 	}
 
 	let mut indices = HashMap::new();
@@ -685,7 +683,7 @@ fn convert_pallets(pallets: Vec<PalletDeclaration>) -> syn::Result<PalletsConver
 	let mut names = HashMap::new();
 	let mut is_expanded = true;
 
-	let pallets = pallets
+	let pezpallets = pezpallets
 		.into_iter()
 		.map(|pezpallet| {
 			let final_index = match pezpallet.index {
@@ -700,7 +698,7 @@ fn convert_pallets(pallets: Vec<PalletDeclaration>) -> syn::Result<PalletsConver
 
 			if let Some(used_pallet) = indices.insert(final_index, pezpallet.name.clone()) {
 				let msg = format!(
-					"Pezpallet indices are conflicting: Both pallets {} and {} are at index {}",
+					"Pezpallet indices are conflicting: Both pezpallets {} and {} are at index {}",
 					used_pallet, pezpallet.name, final_index,
 				);
 				let mut err = syn::Error::new(used_pallet.span(), &msg);
@@ -709,7 +707,7 @@ fn convert_pallets(pallets: Vec<PalletDeclaration>) -> syn::Result<PalletsConver
 			}
 
 			if let Some(used_pallet) = names.insert(pezpallet.name.clone(), pezpallet.name.span()) {
-				let msg = "Two pallets with the same name!";
+				let msg = "Two pezpallets with the same name!";
 
 				let mut err = syn::Error::new(used_pallet, &msg);
 				err.combine(syn::Error::new(pezpallet.name.span(), &msg));
@@ -795,8 +793,8 @@ fn convert_pallets(pallets: Vec<PalletDeclaration>) -> syn::Result<PalletsConver
 		.collect::<Result<Vec<_>>>()?;
 
 	if is_expanded {
-		Ok(PalletsConversion::ExplicitExpanded(pallets))
+		Ok(PalletsConversion::ExplicitExpanded(pezpallets))
 	} else {
-		Ok(PalletsConversion::Explicit(pallets))
+		Ok(PalletsConversion::Explicit(pezpallets))
 	}
 }

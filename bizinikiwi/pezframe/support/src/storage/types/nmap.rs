@@ -37,8 +37,8 @@ use pezsp_runtime::SaturatedConversion;
 /// A type representing an *NMap* in storage. This structure associates an arbitrary number of keys
 /// with a value of a specified type stored on-chain.
 ///
-/// For example, [`StorageDoubleMap`](pezframe_support::storage::types::StorageDoubleMap) is a
-/// special case of an *NMap* with N = 2.
+/// For example, [`StorageDoubleMap`](pezframe_support::storage::types::StorageDoubleMap) is a special
+/// case of an *NMap* with N = 2.
 ///
 /// For general information regarding the `#[pezpallet::storage]` attribute, refer to
 /// [`crate::pezpallet_macros::storage`].
@@ -238,9 +238,8 @@ where
 
 	/// Attempt to remove items from the map matching a `partial_key` prefix.
 	///
-	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result.
-	/// Once the resultant `maybe_cursor` field is `None`, then no further items remain to be
-	/// deleted.
+	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result. Once
+	/// the resultant `maybe_cursor` field is `None`, then no further items remain to be deleted.
 	///
 	/// NOTE: After the initial call for any given map, it is important that no further items
 	/// are inserted into the map which match the `partial key`. If so, then the map may not be
@@ -403,9 +402,8 @@ where
 
 	/// Attempt to remove all items from the map.
 	///
-	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result.
-	/// Once the resultant `maybe_cursor` field is `None`, then no further items remain to be
-	/// deleted.
+	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result. Once
+	/// the resultant `maybe_cursor` field is `None`, then no further items remain to be deleted.
 	///
 	/// NOTE: After the initial call for any given map, it is important that no further items
 	/// are inserted into the map. If so, then the map may not be empty when the resultant

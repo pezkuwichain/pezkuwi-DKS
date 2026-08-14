@@ -23,14 +23,15 @@ use syn::{Generics, Ident};
 pub fn expand_outer_origin(
 	runtime: &Ident,
 	system_pallet: &Pezpallet,
-	pallets: &[Pezpallet],
+	pezpallets: &[Pezpallet],
 	scrate: &TokenStream,
 ) -> syn::Result<TokenStream> {
 	let mut caller_variants = TokenStream::new();
 	let mut pezpallet_conversions = TokenStream::new();
 	let mut query_origin_part_macros = Vec::new();
 
-	for pezpallet_decl in pallets.iter().filter(|pezpallet| pezpallet.name != SYSTEM_PALLET_NAME) {
+	for pezpallet_decl in pezpallets.iter().filter(|pezpallet| pezpallet.name != SYSTEM_PALLET_NAME)
+	{
 		if let Some(pezpallet_entry) = pezpallet_decl.find_part("Origin") {
 			let instance = pezpallet_decl.instance.as_ref();
 			let index = pezpallet_decl.index;
@@ -62,7 +63,7 @@ pub fn expand_outer_origin(
 				generics,
 			));
 			query_origin_part_macros.push(quote! {
-				#path::__bizinikiwi_origin_check::is_origin_part_defined!(#name);
+				#path::__substrate_origin_check::is_origin_part_defined!(#name);
 			});
 		}
 	}

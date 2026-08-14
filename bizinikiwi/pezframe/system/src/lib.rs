@@ -17,15 +17,15 @@
 
 //! # System Pezpallet
 //!
-//! The System pezpallet provides low-level access to core types and cross-cutting utilities. It
-//! acts as the base layer for other pallets to interact with the Bizinikiwi framework components.
+//! The System pezpallet provides low-level access to core types and cross-cutting utilities. It acts
+//! as the base layer for other pezpallets to interact with the Bizinikiwi framework components.
 //!
 //! - [`Config`]
 //!
 //! ## Overview
 //!
 //! The System pezpallet defines the core data types used in a Bizinikiwi runtime. It also provides
-//! several utility functions (see [`Pezpallet`]) for other FRAME pallets.
+//! several utility functions (see [`Pezpallet`]) for other FRAME pezpallets.
 //!
 //! In addition, it manages the storage items for extrinsic data, indices, event records, and digest
 //! items, among other things that support the execution of the current block.
@@ -37,8 +37,8 @@
 //!
 //! ### Dispatchable Functions
 //!
-//! The System pezpallet provides dispatchable functions that, with the exception of `remark`,
-//! manage low-level or privileged functionality of a Bizinikiwi-based runtime.
+//! The System pezpallet provides dispatchable functions that, with the exception of `remark`, manage
+//! low-level or privileged functionality of a Bizinikiwi-based runtime.
 //!
 //! - `remark`: Make some on-chain remark.
 //! - `set_heap_pages`: Set the number of pages in the WebAssembly environment's heap.
@@ -116,7 +116,7 @@ use pezsp_runtime::{
 		InvalidTransaction, TransactionLongevity, TransactionSource, TransactionValidity,
 		ValidTransaction,
 	},
-	DispatchError, RuntimeDebug,
+	DispatchError,
 };
 use pezsp_version::RuntimeVersion;
 #[cfg(feature = "std")]
@@ -126,6 +126,7 @@ use codec::{Decode, DecodeWithMemTracking, Encode, EncodeLike, FullCodec, MaxEnc
 #[cfg(feature = "std")]
 use pezframe_support::traits::BuildGenesisConfig;
 use pezframe_support::{
+	defensive,
 	dispatch::{
 		extract_actual_pays_fee, extract_actual_weight, DispatchClass, DispatchInfo,
 		DispatchResult, DispatchResultWithPostInfo, GetDispatchInfo, PerDispatchClass,
@@ -176,7 +177,7 @@ pub use extensions::{
 	check_nonce::{CheckNonce, ValidNonceInfo},
 	check_spec_version::CheckSpecVersion,
 	check_tx_version::CheckTxVersion,
-	check_weight::CheckWeight,
+	check_weight::{calculate_consumed_extrinsic_weight, CheckWeight},
 	weight_reclaim::WeightReclaim,
 	weights::BizinikiwiWeight as BizinikiwiExtensionsWeight,
 	WeightInfo as ExtensionsWeightInfo,
@@ -285,16 +286,7 @@ where
 /// [`ExtrinsicSuccess`](Event::ExtrinsicSuccess) and [`ExtrinsicFailed`](Event::ExtrinsicFailed)
 /// events.
 #[derive(
-	Clone,
-	Copy,
-	Eq,
-	PartialEq,
-	Default,
-	RuntimeDebug,
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	TypeInfo,
+	Clone, Copy, Eq, PartialEq, Default, Debug, Encode, Decode, DecodeWithMemTracking, TypeInfo,
 )]
 pub struct DispatchEventInfo {
 	/// Weight of this transaction.
@@ -485,17 +477,17 @@ pub mod pezpallet {
 		impl DefaultConfig for RelayChainDefaultConfig {}
 
 		/// Default configurations of this pezpallet in a teyrchain environment.
-		pub struct TeyrchainDefaultConfig;
+		pub struct ParaChainDefaultConfig;
 
 		/// It currently uses the same configuration as `SolochainDefaultConfig`.
 		#[derive_impl(SolochainDefaultConfig as DefaultConfig, no_aggregated_types)]
-		#[pezframe_support::register_default_impl(TeyrchainDefaultConfig)]
-		impl DefaultConfig for TeyrchainDefaultConfig {}
+		#[pezframe_support::register_default_impl(ParaChainDefaultConfig)]
+		impl DefaultConfig for ParaChainDefaultConfig {}
 	}
 
 	/// System configuration trait. Implemented by runtime.
 	#[pezpallet::config(with_default, pezframe_system_config)]
-	#[pezpallet::disable_pezframe_system_supertrait_check]
+	#[pezpallet::disable_frame_system_supertrait_check]
 	pub trait Config: 'static + Eq + Clone {
 		/// The aggregated event type of the runtime.
 		#[pezpallet::no_default_bounds]
@@ -592,8 +584,8 @@ pub mod pezpallet {
 		///
 		/// Used to define the type and conversion mechanism for referencing accounts in
 		/// transactions. It's perfectly reasonable for this to be an identity conversion (with the
-		/// source type being `AccountId`), but other pallets (e.g. Indices pezpallet) may provide
-		/// more functional/efficient alternatives.
+		/// source type being `AccountId`), but other pezpallets (e.g. Indices pezpallet) may provide more
+		/// functional/efficient alternatives.
 		type Lookup: StaticLookup<Target = Self::AccountId>;
 
 		/// The Block type used by the runtime. This is used by `construct_runtime` to retrieve the
@@ -655,7 +647,7 @@ pub mod pezpallet {
 		/// entry and emitting corresponding event and log item. (see
 		/// [`Pezpallet::update_code_in_storage`]).
 		/// It's unlikely that this needs to be customized, unless you are writing a teyrchain using
-		/// `Pezcumulus`, where the actual code change is deferred.
+		/// `Cumulus`, where the actual code change is deferred.
 		#[pezpallet::no_default_bounds]
 		type OnSetCode: SetCode<Self>;
 
@@ -672,8 +664,8 @@ pub mod pezpallet {
 
 		/// The migrator that is used to run Multi-Block-Migrations.
 		///
-		/// Can be set to `pezpallet_migrations` or an alternative implementation of the
-		/// interface. The diagram in `pezframe_executive::block_flowchart` explains when it runs.
+		/// Can be set to `pezpallet_migrations` or an alternative implementation of the interface.
+		/// The diagram in `pezframe_executive::block_flowchart` explains when it runs.
 		type MultiBlockMigrator: MultiStepMigrator;
 
 		/// A callback that executes in *every block* directly before all inherents were applied.
@@ -785,20 +777,20 @@ pub mod pezpallet {
 
 		/// Kill all storage items with a key that starts with the given prefix.
 		///
-		/// **NOTE:** We rely on the Root origin to provide us the number of pez_subkeys under
+		/// **NOTE:** We rely on the Root origin to provide us the number of subkeys under
 		/// the prefix we are removing to accurately calculate the weight of this function.
 		#[pezpallet::call_index(6)]
 		#[pezpallet::weight((
-			T::SystemWeightInfo::kill_prefix(pez_subkeys.saturating_add(1)),
+			T::SystemWeightInfo::kill_prefix(subkeys.saturating_add(1)),
 			DispatchClass::Operational,
 		))]
 		pub fn kill_prefix(
 			origin: OriginFor<T>,
 			prefix: Key,
-			pez_subkeys: u32,
+			subkeys: u32,
 		) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
-			let _ = storage::unhashed::clear_prefix(&prefix, Some(pez_subkeys), None);
+			let _ = storage::unhashed::clear_prefix(&prefix, Some(subkeys), None);
 			Ok(().into())
 		}
 
@@ -919,8 +911,8 @@ pub mod pezpallet {
 		ExtrinsicSuccess { dispatch_info: DispatchEventInfo },
 		/// An extrinsic failed.
 		ExtrinsicFailed { dispatch_error: DispatchError, dispatch_info: DispatchEventInfo },
-		/// `:code` was updated.
-		CodeUpdated,
+		/// `:code` was updated to the code with the given hash.
+		CodeUpdated { hash: T::Hash },
 		/// A new account was created.
 		NewAccount { account: T::AccountId },
 		/// An account was reaped.
@@ -1006,10 +998,12 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn block_weight)]
 	pub type BlockWeight<T: Config> = StorageValue<_, ConsumedWeight, ValueQuery>;
 
-	/// Total length (in bytes) for all extrinsics put together, for the current block.
+	/// Total size (in bytes) of the current block.
+	///
+	/// Tracks the size of the header and all extrinsics.
 	#[pezpallet::storage]
 	#[pezpallet::whitelist_storage]
-	pub type AllExtrinsicsLen<T: Config> = StorageValue<_, u32>;
+	pub type BlockSize<T: Config> = StorageValue<_, u32>;
 
 	/// Map of block numbers to block hashes.
 	#[pezpallet::storage]
@@ -1083,6 +1077,10 @@ pub mod pezpallet {
 	#[pezpallet::unbounded]
 	pub type LastRuntimeUpgrade<T: Config> = StorageValue<_, LastRuntimeUpgradeInfo>;
 
+	/// Number of blocks till the pending code upgrade is applied.
+	#[pezpallet::storage]
+	pub(super) type BlocksTillUpgrade<T: Config> = StorageValue<_, u8>;
+
 	/// True if we have upgraded so that `type RefCount` is `u32`. False (default) if not.
 	#[pezpallet::storage]
 	pub(super) type UpgradedToU32RefCount<T: Config> = StorageValue<_, bool, ValueQuery>;
@@ -1134,8 +1132,9 @@ pub mod pezpallet {
 		}
 	}
 
+	#[allow(deprecated)]
 	#[pezpallet::validate_unsigned]
-	impl<T: Config> pezsp_runtime::traits::ValidateUnsigned for Pezpallet<T> {
+	impl<T: Config> ValidateUnsigned for Pezpallet<T> {
 		type Call = Call<T>;
 		fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
 			if let Call::apply_authorized_upgrade { ref code } = call {
@@ -1186,7 +1185,7 @@ pub type Key = Vec<u8>;
 pub type KeyValue = (Vec<u8>, Vec<u8>);
 
 /// A phase of a block's execution.
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Debug, TypeInfo, MaxEncodedLen)]
 #[cfg_attr(feature = "std", derive(Serialize, PartialEq, Eq, Clone))]
 pub enum Phase {
 	/// Applying an extrinsic.
@@ -1204,7 +1203,7 @@ impl Default for Phase {
 }
 
 /// Record of an event happening.
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, Debug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, PartialEq, Eq, Clone))]
 pub struct EventRecord<E: Parameter + Member, T> {
 	/// The phase of the block it happened in.
@@ -1233,7 +1232,7 @@ type EventIndex = u32;
 pub type RefCount = u32;
 
 /// Information of an account.
-#[derive(Clone, Eq, PartialEq, Default, RuntimeDebug, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(Clone, Eq, PartialEq, Default, Debug, Encode, Decode, TypeInfo, MaxEncodedLen)]
 pub struct AccountInfo<Nonce, AccountData> {
 	/// The number of transactions this account has sent.
 	pub nonce: Nonce,
@@ -1253,7 +1252,7 @@ pub struct AccountInfo<Nonce, AccountData> {
 
 /// Stores the `spec_version` and `spec_name` of when the last runtime upgrade
 /// happened.
-#[derive(RuntimeDebug, Encode, Decode, TypeInfo)]
+#[derive(Debug, Encode, Decode, TypeInfo)]
 #[cfg_attr(feature = "std", derive(PartialEq))]
 pub struct LastRuntimeUpgradeInfo {
 	pub spec_version: codec::Compact<u32>,
@@ -1511,14 +1510,14 @@ where
 }
 
 /// Reference status; can be either referenced or unreferenced.
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 pub enum RefStatus {
 	Referenced,
 	Unreferenced,
 }
 
 /// Some resultant status relevant to incrementing a provider/self-sufficient reference.
-#[derive(Eq, PartialEq, RuntimeDebug)]
+#[derive(Eq, PartialEq, Debug)]
 pub enum IncRefStatus {
 	/// Account was created.
 	Created,
@@ -1527,7 +1526,7 @@ pub enum IncRefStatus {
 }
 
 /// Some resultant status relevant to decrementing a provider/self-sufficient reference.
-#[derive(Eq, PartialEq, RuntimeDebug)]
+#[derive(Eq, PartialEq, Debug)]
 pub enum DecRefStatus {
 	/// Account was destroyed.
 	Reaped,
@@ -1568,7 +1567,7 @@ impl<T: Config> Pezpallet<T> {
 	///
 	/// This function is useful for writing guarded runtime migrations in the runtime. A runtime
 	/// migration can use the `spec_version` to ensure that it isn't applied twice. This works
-	/// similar as the storage version for pallets.
+	/// similar as the storage version for pezpallets.
 	///
 	/// This functions returns the `spec_version` of the last runtime upgrade while executing the
 	/// runtime migrations
@@ -1577,7 +1576,6 @@ impl<T: Config> Pezpallet<T> {
 	/// current runtime until there is another runtime upgrade.
 	///
 	/// Example:
-	#[doc = docify::embed!("src/tests.rs", last_runtime_upgrade_spec_version_usage)]
 	pub fn last_runtime_upgrade_spec_version() -> u32 {
 		LastRuntimeUpgrade::<T>::get().map_or(0, |l| l.spec_version.0)
 	}
@@ -1587,15 +1585,52 @@ impl<T: Config> Pezpallet<T> {
 		Account::<T>::contains_key(who)
 	}
 
-	/// Write code to the storage and emit related events and digest items.
+	/// Write code to the storage and emit related events and digest items. Writes either directly
+	/// to the `:code` storage or to the `:pending_code` storage depending on the system version.
 	///
 	/// Note this function almost never should be used directly. It is exposed
 	/// for `OnSetCode` implementations that defer actual code being written to
 	/// the storage (for instance in case of teyrchains).
 	pub fn update_code_in_storage(code: &[u8]) {
-		storage::unhashed::put_raw(well_known_keys::CODE, code);
+		match T::Version::get().system_version {
+			0..=2 => {
+				storage::unhashed::put_raw(well_known_keys::CODE, code);
+			},
+			_ => {
+				BlocksTillUpgrade::<T>::put(2u8);
+				storage::unhashed::put_raw(well_known_keys::PENDING_CODE, code);
+			},
+		}
+		let hash = T::Hashing::hash(code);
+
 		Self::deposit_log(generic::DigestItem::RuntimeEnvironmentUpdated);
-		Self::deposit_event(Event::CodeUpdated);
+		Self::deposit_event(Event::CodeUpdated { hash });
+	}
+
+	/// Replace code with pending code if scheduled to enact in this block and in that case emit
+	/// related events and digest items.
+	///
+	/// This method is expected to be called in `on_finalize`.
+	pub fn maybe_apply_pending_code_upgrade() {
+		let Some(remaining) = BlocksTillUpgrade::<T>::get() else { return };
+
+		let remaining = remaining.saturating_sub(1);
+
+		if remaining > 0 {
+			BlocksTillUpgrade::<T>::put(remaining);
+			return;
+		}
+
+		BlocksTillUpgrade::<T>::kill();
+
+		let Some(new_code) = storage::unhashed::get_raw(well_known_keys::PENDING_CODE) else {
+			// should never happen
+			defensive!("BlocksTillUpgrade is set but no pending code found");
+			return;
+		};
+
+		storage::unhashed::put_raw(well_known_keys::CODE, &new_code);
+		storage::unhashed::kill(well_known_keys::PENDING_CODE);
 	}
 
 	/// Whether all inherents have been applied.
@@ -1894,14 +1929,20 @@ impl<T: Config> Pezpallet<T> {
 		ExtrinsicCount::<T>::get().unwrap_or_default()
 	}
 
-	pub fn all_extrinsics_len() -> u32 {
-		AllExtrinsicsLen::<T>::get().unwrap_or_default()
+	/// Gets the total size (in bytes) of the current block.
+	pub fn block_size() -> u32 {
+		BlockSize::<T>::get().unwrap_or_default()
+	}
+
+	/// Returns the current active execution phase.
+	pub fn execution_phase() -> Option<Phase> {
+		ExecutionPhase::<T>::get()
 	}
 
 	/// Inform the system pezpallet of some additional weight that should be accounted for, in the
 	/// current block.
 	///
-	/// NOTE: use with extra care; this function is made public only be used for certain pallets
+	/// NOTE: use with extra care; this function is made public only be used for certain pezpallets
 	/// that need it. A runtime that does not have dynamic calls should never need this and should
 	/// stick to static weights. A typical use case for this is inner calls or smart contract calls.
 	/// Furthermore, it only makes sense to use this when it is presumably  _cheap_ to provide the
@@ -1940,6 +1981,27 @@ impl<T: Config> Pezpallet<T> {
 
 		// Remove previous block data from storage
 		BlockWeight::<T>::kill();
+
+		// Account for digest size and empty header overhead in block length.
+		// This ensures block limits consider the full block size, not just extrinsics.
+		let digest_size = digest.encoded_size();
+		let empty_header = <<T as Config>::Block as traits::Block>::Header::new(
+			*number,
+			Default::default(),
+			Default::default(),
+			*parent_hash,
+			Default::default(),
+		);
+		let empty_header_size = empty_header.encoded_size();
+		let overhead = digest_size.saturating_add(empty_header_size) as u32;
+		BlockSize::<T>::put(overhead);
+
+		// Ensure inherent digests don't exceed the configured max header size
+		let max_total_header = T::BlockLength::get().max_header_size();
+		assert!(
+			overhead <= max_total_header as u32,
+			"Header size ({overhead}) exceeds max header size limit ({max_total_header})"
+		);
 	}
 
 	/// Initialize [`INTRABLOCK_ENTROPY`](well_known_keys::INTRABLOCK_ENTROPY).
@@ -1956,22 +2018,22 @@ impl<T: Config> Pezpallet<T> {
 	pub fn resource_usage_report() {
 		log::debug!(
 			target: LOG_TARGET,
-			"[{:?}] {} extrinsics, length: {} (normal {}%, op: {}%, mandatory {}%) / normal weight:\
+			"[{:?}] {} extrinsics, block size: {} (normal {}%, op: {}%, mandatory {}%) / normal weight:\
 			 {} (ref_time: {}%, proof_size: {}%) op weight {} (ref_time {}%, proof_size {}%) / \
 			  mandatory weight {} (ref_time: {}%, proof_size: {}%)",
 			Self::block_number(),
 			Self::extrinsic_count(),
-			Self::all_extrinsics_len(),
+			Self::block_size(),
 			pezsp_runtime::Percent::from_rational(
-				Self::all_extrinsics_len(),
+				Self::block_size(),
 				*T::BlockLength::get().max.get(DispatchClass::Normal)
 			).deconstruct(),
 			pezsp_runtime::Percent::from_rational(
-				Self::all_extrinsics_len(),
+				Self::block_size(),
 				*T::BlockLength::get().max.get(DispatchClass::Operational)
 			).deconstruct(),
 			pezsp_runtime::Percent::from_rational(
-				Self::all_extrinsics_len(),
+				Self::block_size(),
 				*T::BlockLength::get().max.get(DispatchClass::Mandatory)
 			).deconstruct(),
 			Self::block_weight().get(DispatchClass::Normal),
@@ -2009,7 +2071,7 @@ impl<T: Config> Pezpallet<T> {
 	pub fn finalize() -> HeaderFor<T> {
 		Self::resource_usage_report();
 		ExecutionPhase::<T>::kill();
-		AllExtrinsicsLen::<T>::kill();
+		BlockSize::<T>::kill();
 		storage::unhashed::kill(well_known_keys::INTRABLOCK_ENTROPY);
 		InherentsApplied::<T>::kill();
 
@@ -2050,8 +2112,14 @@ impl<T: Config> Pezpallet<T> {
 		HeaderFor::<T>::new(number, extrinsics_root, storage_root, parent_hash, digest)
 	}
 
-	/// Deposits a log and ensures it matches the block's log data.
+	/// Deposits a log (digest) in the block's header.
+	///
+	/// Digests should not be directly controllable by external users as they increase the size of
+	/// the header.
 	pub fn deposit_log(item: generic::DigestItem) {
+		BlockSize::<T>::mutate(|len| {
+			*len = Some(len.unwrap_or(0).saturating_add(item.encoded_size() as u32));
+		});
 		<Digest<T>>::append(item);
 	}
 
@@ -2168,7 +2236,7 @@ impl<T: Config> Pezpallet<T> {
 	}
 
 	/// Sets the index of extrinsic that is currently executing.
-	#[cfg(any(feature = "std", test))]
+	#[cfg(any(feature = "std", feature = "runtime-benchmarks", test))]
 	pub fn set_extrinsic_index(extrinsic_index: u32) {
 		storage::unhashed::put(well_known_keys::EXTRINSIC_INDEX, &extrinsic_index)
 	}
@@ -2186,7 +2254,7 @@ impl<T: Config> Pezpallet<T> {
 		BlockWeight::<T>::mutate(|current_weight| {
 			current_weight.set(weight, DispatchClass::Normal)
 		});
-		AllExtrinsicsLen::<T>::put(len as u32);
+		BlockSize::<T>::put(len as u32);
 	}
 
 	/// Reset events.
@@ -2301,7 +2369,7 @@ impl<T: Config> Pezpallet<T> {
 		log::trace!(
 			target: LOG_TARGET,
 			"Used block length: {:?}",
-			Pezpallet::<T>::all_extrinsics_len(),
+			Pezpallet::<T>::block_size(),
 		);
 
 		let next_extrinsic_index = Self::extrinsic_index().unwrap_or_default() + 1u32;
@@ -2321,7 +2389,7 @@ impl<T: Config> Pezpallet<T> {
 	}
 
 	/// To be called immediately after finishing the initialization of the block
-	/// (e.g., called `on_initialize` for all pallets).
+	/// (e.g., called `on_initialize` for all pezpallets).
 	pub fn note_finished_initialize() {
 		ExecutionPhase::<T>::put(Phase::ApplyExtrinsic(0))
 	}

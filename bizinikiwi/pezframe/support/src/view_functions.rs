@@ -19,17 +19,16 @@
 
 use alloc::vec::Vec;
 use codec::{Decode, DecodeAll, Encode, Output};
-use pezsp_runtime::RuntimeDebug;
 use scale_info::TypeInfo;
+use Debug;
 
 /// The unique identifier for a view function.
-#[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Debug, TypeInfo)]
 pub struct ViewFunctionId {
 	/// The part of the id for dispatching view functions from the top level of the runtime.
 	///
 	/// Specifies which view function grouping this view function belongs to. This could be a group
-	/// of view functions associated with a pezpallet, or a pezpallet agnostic group of view
-	/// functions.
+	/// of view functions associated with a pezpallet, or a pezpallet agnostic group of view functions.
 	pub prefix: [u8; 16],
 	/// The part of the id for dispatching to a view function within a group.
 	pub suffix: [u8; 16],
@@ -45,7 +44,7 @@ impl From<ViewFunctionId> for [u8; 32] {
 }
 
 /// Error type for view function dispatching.
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, Debug, TypeInfo)]
 pub enum ViewFunctionDispatchError {
 	/// View functions are not implemented for this runtime.
 	NotImplemented,
@@ -61,14 +60,14 @@ impl From<codec::Error> for ViewFunctionDispatchError {
 	}
 }
 
-/// Implemented by both pallets and the runtime. The runtime is dispatching by prefix using the
-/// pezpallet implementation of `ViewFunctionIdPrefix` then the pezpallet is dispatching by suffix
-/// using the methods implementation of `ViewFunctionIdSuffix`.
+/// Implemented by both pezpallets and the runtime. The runtime is dispatching by prefix using the
+/// pezpallet implementation of `ViewFunctionIdPrefix` then the pezpallet is dispatching by suffix using
+/// the methods implementation of `ViewFunctionIdSuffix`.
 ///
 /// In more details, `ViewFunctionId` = `ViewFunctionIdPrefix` ++ `ViewFunctionIdSuffix`, where
 /// `ViewFunctionIdPrefix=twox_128(pezpallet_name)` and
 /// `ViewFunctionIdSuffix=twox_128("fn_name(fnarg_types) -> return_ty")`. The prefix is the same as
-/// the storage prefix for pallets. The suffix is generated from the view function method type
+/// the storage prefix for pezpallets. The suffix is generated from the view function method type
 /// signature, so is guaranteed to be unique for that pezpallet implementation.
 pub trait DispatchViewFunction {
 	fn dispatch_view_function<O: Output>(

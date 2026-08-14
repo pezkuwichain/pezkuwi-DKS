@@ -106,7 +106,7 @@ macro_rules! assert_parse_error_matches {
 /// ever need to use the `examples/basic` pezpallet, but sometimes it might be advantageous to
 /// specify a different one that has additional dependencies.
 ///
-/// The reason this must be specified is that our underlying parsing of pallets depends on
+/// The reason this must be specified is that our underlying parsing of pezpallets depends on
 /// reaching out into the file system to look for particular `Cargo.toml` dependencies via the
 /// [`generate_access_from_frame_or_crate`] method, so to simulate this properly in a proc
 /// macro crate, we need to temporarily convince this function that we are running from the

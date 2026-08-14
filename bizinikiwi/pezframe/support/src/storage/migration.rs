@@ -311,8 +311,8 @@ pub fn take_storage_item<K: Encode + Sized, T: Decode + Sized, H: StorageHasher>
 ///
 /// # Example
 ///
-/// If a pezpallet named "my_example" has 2 storages named "Foo" and "Bar" and the pezpallet is
-/// renamed "my_new_example_name", a migration can be:
+/// If a pezpallet named "my_example" has 2 storages named "Foo" and "Bar" and the pezpallet is renamed
+/// "my_new_example_name", a migration can be:
 /// ```
 /// # use pezframe_support::storage::migration::move_storage_from_pallet;
 /// # pezsp_io::TestExternalities::new_empty().execute_with(|| {
