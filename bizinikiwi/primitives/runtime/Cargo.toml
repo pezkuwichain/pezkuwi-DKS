@@ -24,7 +24,6 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-strum = { workspace = true, features = ["derive"] }
 bytes = { workspace = true }
 codec = { features = ["derive", "max-encoded-len"], workspace = true }
 docify = { workspace = true }
@@ -45,15 +44,16 @@ pezsp-weights = { workspace = true }
 rand = { optional = true, workspace = true, default-features = true }
 scale-info = { features = ["derive"], workspace = true }
 serde = { features = ["alloc", "derive"], optional = true, workspace = true }
+strum = { workspace = true, features = ["derive"] }
 tracing = { workspace = true, features = ["log"], default-features = false }
 
 simple-mermaid = { workspace = true, optional = true }
 tuplex = { workspace = true, default-features = false }
 
 [dev-dependencies]
+bizinikiwi-test-runtime-client = { workspace = true }
 pezsp-api = { workspace = true, default-features = true }
 pezsp-keystore = { workspace = true, default-features = true }
-bizinikiwi-test-runtime-client = { workspace = true }
 pezsp-state-machine = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
 rand = { workspace = true, default-features = true }
@@ -62,15 +62,21 @@ zstd = { workspace = true }
 
 [features]
 runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
 	"pez-binary-merkle-tree/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
 	"pezsp-application-crypto/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-state-machine/runtime-benchmarks",
 	"pezsp-trie/runtime-benchmarks",
 ]
-try-runtime = []
+try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
+	"pezsp-api/try-runtime",
+]
 default = ["std"]
 std = [
+	"bizinikiwi-test-runtime-client/std",
 	"bytes/std",
 	"codec/std",
 	"either/std",

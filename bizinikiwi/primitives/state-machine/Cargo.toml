@@ -33,10 +33,10 @@ tracing = { optional = true, workspace = true, default-features = true }
 trie-db = { workspace = true }
 
 [dev-dependencies]
-pezsp-runtime = { workspace = true, default-features = true }
 arbitrary = { features = ["derive"], workspace = true }
 array-bytes = { workspace = true, default-features = true }
 assert_matches = { workspace = true }
+pezsp-runtime = { workspace = true, default-features = true }
 pretty_assertions = { workspace = true }
 rand = { workspace = true, default-features = true }
 
@@ -62,6 +62,7 @@ std = [
 	"trie-db/std",
 ]
 runtime-benchmarks = [
+	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-trie/runtime-benchmarks",
 ]
 serde = []

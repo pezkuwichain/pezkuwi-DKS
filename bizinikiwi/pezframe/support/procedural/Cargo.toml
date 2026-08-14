@@ -46,12 +46,12 @@ derive-where = { workspace = true }
 pezframe-benchmarking = { workspace = true, default-features = true }
 pezframe-support = { workspace = true, default-features = true }
 pezframe-system = { workspace = true, default-features = true }
-scale-info = { features = ["derive"], workspace = true, default-features = true }
 pezsp-io = { workspace = true, default-features = true }
 pezsp-metadata-ir = { workspace = true, default-features = true }
 pezsp-runtime = { features = ["serde"], workspace = true, default-features = true }
 pretty_assertions = { workspace = true }
 regex = { workspace = true }
+scale-info = { features = ["derive"], workspace = true, default-features = true }
 
 [features]
 default = ["std"]
@@ -69,4 +69,10 @@ no-metadata-docs = []
 experimental = []
 tuples-96 = []
 tuples-128 = []
-runtime-benchmarks = []
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+]

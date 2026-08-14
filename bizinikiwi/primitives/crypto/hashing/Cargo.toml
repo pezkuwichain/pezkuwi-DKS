@@ -31,8 +31,8 @@ sha3 = { workspace = true }
 twox-hash = { features = ["digest_0_10"], workspace = true }
 
 [dev-dependencies]
-pezsp-crypto-hashing-proc-macro = { workspace = true, default-features = true }
 criterion = { workspace = true, default-features = true }
+pezsp-crypto-hashing-proc-macro = { workspace = true, default-features = true }
 # Note: pezsp-crypto-hashing-proc-macro removed to break circular dependency
 # The proc-macro tests are in its own crate
 
@@ -42,6 +42,7 @@ std = [
 	"blake2b_simd/std",
 	"byteorder/std",
 	"digest/std",
+	"pezsp-crypto-hashing-proc-macro/std",
 	"sha2/std",
 	"sha3/std",
 	"twox-hash/std",

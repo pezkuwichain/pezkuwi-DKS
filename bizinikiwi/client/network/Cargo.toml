@@ -25,7 +25,6 @@ name = "request_response_protocol"
 harness = false
 
 [dependencies]
-pezsp-crypto-hashing = { workspace = true, default-features = true }
 array-bytes = { workspace = true, default-features = true }
 async-channel = { workspace = true }
 async-trait = { workspace = true }
@@ -65,6 +64,7 @@ pezsc-utils = { workspace = true, default-features = true }
 pezsp-arithmetic = { workspace = true, default-features = true }
 pezsp-blockchain = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pin-project = { workspace = true }
 prometheus-endpoint = { workspace = true, default-features = true }
@@ -89,10 +89,10 @@ wasm-timer = { workspace = true }
 zeroize = { workspace = true, default-features = true }
 
 [dev-dependencies]
-multihash-codetable = { workspace = true }
 assert_matches = { workspace = true }
 bizinikiwi-test-runtime = { workspace = true }
 bizinikiwi-test-runtime-client = { workspace = true }
+multihash-codetable = { workspace = true }
 multistream-select = { workspace = true }
 pezsc-block-builder = { workspace = true, default-features = true }
 pezsp-consensus = { workspace = true, default-features = true }
@@ -127,6 +127,7 @@ runtime-benchmarks = [
 std = [
 	"bizinikiwi-test-runtime-client/std",
 	"log/std",
+	"multihash-codetable/std",
 	"pezsc-block-builder/std",
 	"pezsc-client-api/std",
 	"pezsc-network-common/std",

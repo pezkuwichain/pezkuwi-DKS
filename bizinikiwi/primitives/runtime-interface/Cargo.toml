@@ -53,7 +53,11 @@ std = [
 	"pezsp-wasm-interface/std",
 ]
 disable_target_static_assertions = []
-runtime-benchmarks = []
+runtime-benchmarks = [
+	"pezsp-io/runtime-benchmarks",
+	"pezsp-runtime-interface-test-wasm/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
+]
 serde = []
 with-tracing = []
 

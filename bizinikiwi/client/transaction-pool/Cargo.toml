@@ -21,7 +21,6 @@ name = "basics"
 harness = false
 
 [dependencies]
-strum = { workspace = true, features = ["derive"] }
 async-trait = { workspace = true }
 codec = { workspace = true, default-features = true }
 futures = { workspace = true }
@@ -42,6 +41,7 @@ pezsp-tracing = { workspace = true, default-features = true }
 pezsp-transaction-pool = { workspace = true, default-features = true }
 prometheus-endpoint = { workspace = true, default-features = true }
 serde = { features = ["derive"], workspace = true, default-features = true }
+strum = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, default-features = true, features = [
 	"macros",
@@ -103,6 +103,7 @@ std = [
 	"pezsp-consensus/std",
 	"prometheus-endpoint/std",
 	"serde_json/std",
+	"strum/std",
 	"txtesttool/std",
 ]
 try-runtime = [

@@ -38,8 +38,8 @@ pezsp-runtime-interface = { workspace = true }
 pezsp-staking = { workspace = true }
 
 [dev-dependencies]
-pezpallet-staking-async-rc-client = { workspace = true, default-features = true }
 pezpallet-balances = { workspace = true }
+pezpallet-staking-async-rc-client = { workspace = true, default-features = true }
 pezpallet-staking-reward-curve = { workspace = true, default-features = true }
 pezpallet-timestamp = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
@@ -96,6 +96,8 @@ try-runtime = [
 	"pezpallet-balances/try-runtime",
 	"pezpallet-delegated-staking/try-runtime",
 	"pezpallet-nomination-pools/try-runtime",
+	"pezpallet-staking-async-rc-client/try-runtime",
+	"pezpallet-staking-async/try-runtime",
 	"pezpallet-staking-reward-curve/try-runtime",
 	"pezpallet-staking/try-runtime",
 	"pezpallet-timestamp/try-runtime",

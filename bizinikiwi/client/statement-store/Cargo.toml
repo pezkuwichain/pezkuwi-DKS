@@ -21,23 +21,23 @@ anyhow = { workspace = true, optional = true }
 async-channel = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true }
-pezsc-utils = { workspace = true }
-scale-info = { workspace = true, default-features = true, optional = true }
-pezsp-storage = { workspace = true, default-features = true }
-pezkuwi-subxt = { workspace = true, features = ["jsonrpsee", "native"], optional = true }
-pezkuwi-subxt-signer = { workspace = true, features = ["sr25519"], optional = true }
 log = { workspace = true, default-features = true }
 parity-db = { workspace = true }
 parking_lot = { workspace = true, default-features = true }
+pezkuwi-subxt = { workspace = true, features = ["jsonrpsee", "native"], optional = true }
+pezkuwi-subxt-signer = { workspace = true, features = ["sr25519"], optional = true }
 pezsc-client-api = { workspace = true, default-features = true }
 pezsc-keystore = { workspace = true, default-features = true }
 pezsc-network-statement = { workspace = true, default-features = true }
+pezsc-utils = { workspace = true }
 pezsp-api = { workspace = true, default-features = true }
 pezsp-blockchain = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-statement-store = { workspace = true, default-features = true }
+pezsp-storage = { workspace = true, default-features = true }
 prometheus-endpoint = { workspace = true, default-features = true }
+scale-info = { workspace = true, default-features = true, optional = true }
 tokio = { features = ["time"], workspace = true, default-features = true }
 
 [dev-dependencies]
@@ -52,6 +52,8 @@ required-features = []
 
 [features]
 runtime-benchmarks = [
+	"pezkuwi-subxt-signer?/runtime-benchmarks",
+	"pezkuwi-subxt?/runtime-benchmarks",
 	"pezsc-client-api/runtime-benchmarks",
 	"pezsc-keystore/runtime-benchmarks",
 	"pezsc-network-statement/runtime-benchmarks",
@@ -61,15 +63,19 @@ runtime-benchmarks = [
 	"pezsp-statement-store/runtime-benchmarks",
 ]
 std = [
+	"anyhow?/std",
 	"log/std",
+	"pezkuwi-subxt?/std",
 	"pezsc-client-api/std",
 	"pezsc-keystore/std",
 	"pezsc-network-statement/std",
+	"pezsc-utils/std",
 	"pezsp-blockchain/std",
 	"pezsp-tracing/std",
 	"prometheus-endpoint/std",
 ]
 try-runtime = [
+	"pezkuwi-subxt?/try-runtime",
 	"pezsc-client-api/try-runtime",
 	"pezsc-network-statement/try-runtime",
 	"pezsp-api/try-runtime",

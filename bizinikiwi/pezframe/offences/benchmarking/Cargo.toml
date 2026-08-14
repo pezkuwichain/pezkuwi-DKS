@@ -17,7 +17,6 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-pezpallet-session-benchmarking = { workspace = true }
 codec = { workspace = true }
 log = { workspace = true }
 pezframe-benchmarking = { workspace = true }
@@ -30,6 +29,7 @@ pezpallet-grandpa = { workspace = true }
 pezpallet-im-online = { workspace = true }
 pezpallet-offences = { workspace = true }
 pezpallet-session = { workspace = true }
+pezpallet-session-benchmarking = { workspace = true }
 pezpallet-staking = { workspace = true }
 pezsp-runtime = { workspace = true }
 pezsp-staking = { workspace = true }
@@ -96,6 +96,7 @@ try-runtime = [
 	"pezpallet-grandpa/try-runtime",
 	"pezpallet-im-online/try-runtime",
 	"pezpallet-offences/try-runtime",
+	"pezpallet-session-benchmarking/try-runtime",
 	"pezpallet-session/try-runtime",
 	"pezpallet-staking-reward-curve/try-runtime",
 	"pezpallet-staking/try-runtime",

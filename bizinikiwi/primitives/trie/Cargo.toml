@@ -21,7 +21,6 @@ name = "bench"
 harness = false
 
 [dependencies]
-prometheus-endpoint = { optional = true, workspace = true, default-features = true }
 ahash = { optional = true, workspace = true }
 codec = { features = ["derive"], workspace = true }
 foldhash = { workspace = true }
@@ -32,6 +31,7 @@ nohash-hasher = { optional = true, workspace = true }
 parking_lot = { optional = true, workspace = true, default-features = true }
 pezsp-core = { workspace = true }
 pezsp-externalities = { workspace = true }
+prometheus-endpoint = { optional = true, workspace = true, default-features = true }
 rand = { optional = true, workspace = true, default-features = true }
 scale-info = { features = ["derive"], workspace = true }
 schnellru = { optional = true, workspace = true }
@@ -41,10 +41,10 @@ trie-db = { workspace = true }
 trie-root = { workspace = true }
 
 [dev-dependencies]
-pezsp-runtime = { workspace = true, default-features = true }
 array-bytes = { workspace = true, default-features = true }
 criterion = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
 trie-bench = { workspace = true }
 trie-standardmap = { workspace = true }
 
@@ -62,6 +62,7 @@ std = [
 	"pezsp-externalities/std",
 	"pezsp-runtime/std",
 	"prometheus-endpoint",
+	"prometheus-endpoint?/std",
 	"rand",
 	"scale-info/std",
 	"schnellru",
@@ -70,5 +71,7 @@ std = [
 	"trie-db/std",
 	"trie-root/std",
 ]
-runtime-benchmarks = []
+runtime-benchmarks = [
+	"pezsp-runtime/runtime-benchmarks",
+]
 serde = []

@@ -17,7 +17,6 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-pezsp-statement-store = { features = ["serde"], workspace = true, default-features = true }
 codec = { workspace = true, default-features = true }
 jsonrpsee = { features = [
 	"client-core",
@@ -30,6 +29,7 @@ pezsc-transaction-pool-api = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
 pezsp-rpc = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
+pezsp-statement-store = { features = ["serde"], workspace = true, default-features = true }
 pezsp-version = { workspace = true, default-features = true }
 scale-info = { features = ["derive"], workspace = true }
 serde = { features = ["derive"], workspace = true, default-features = true }
@@ -42,6 +42,7 @@ runtime-benchmarks = [
 	"pezsc-mixnet/runtime-benchmarks",
 	"pezsc-transaction-pool-api/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-statement-store/runtime-benchmarks",
 	"pezsp-version/runtime-benchmarks",
 ]
 std = [
@@ -56,6 +57,7 @@ try-runtime = [
 	"pezsc-mixnet/try-runtime",
 	"pezsc-transaction-pool-api/try-runtime",
 	"pezsp-runtime/try-runtime",
+	"pezsp-statement-store/try-runtime",
 	"pezsp-version/try-runtime",
 ]
 serde = []
