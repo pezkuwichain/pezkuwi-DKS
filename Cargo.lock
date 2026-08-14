@@ -39,7 +39,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d122413f284cf2d62fb1b7db97e02edb8cda96d769b16e443a4f6195e35662b0"
 dependencies = [
- "crypto-common",
+ "crypto-common 0.1.7",
  "generic-array 0.14.7",
 ]
 
@@ -2997,7 +2997,7 @@ version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773f3b9af64447d2ce9850330c473515014aa235e6a783b02db81ff39e4a3dad"
 dependencies = [
- "crypto-common",
+ "crypto-common 0.1.7",
  "inout",
  "zeroize",
 ]
@@ -3984,6 +3984,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crypto-common"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce6e4c961d6cd6c9a86db418387425e8bdeaf05b3c8bc1411e6dca4c252f1453"
+dependencies = [
+ "hybrid-array",
+]
+
+[[package]]
 name = "crypto-mac"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4467,8 +4476,17 @@ checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer 0.10.4",
  "const-oid",
- "crypto-common",
+ "crypto-common 0.1.7",
  "subtle 2.6.1",
+]
+
+[[package]]
+name = "digest"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
+dependencies = [
+ "crypto-common 0.2.2",
 ]
 
 [[package]]
@@ -5126,6 +5144,18 @@ dependencies = [
  "bit-set",
  "regex-automata",
  "regex-syntax",
+]
+
+[[package]]
+name = "fastbloom"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef975e30683b2d965054bb0a836f8973857c4ebf6acf274fe46617cd285060d8"
+dependencies = [
+ "foldhash 0.2.0",
+ "libm",
+ "portable-atomic",
+ "siphasher 1.0.1",
 ]
 
 [[package]]
@@ -6307,6 +6337,15 @@ checksum = "57a3db5ea5923d99402c94e9feb261dc5ee9b4efa158b0315f788cf549cc200c"
 dependencies = [
  "humantime",
  "serde",
+]
+
+[[package]]
+name = "hybrid-array"
+version = "0.4.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3944cf8cf766b40e2a1a333ee5e9b563f854d5fa49d6a8ca2764e97c6eddb214"
+dependencies = [
+ "typenum",
 ]
 
 [[package]]
@@ -8536,7 +8575,7 @@ dependencies = [
  "blake3",
  "core2",
  "digest 0.10.7",
- "multihash-derive",
+ "multihash-derive 0.8.1",
  "sha2 0.10.9",
  "sha3",
  "unsigned-varint 0.7.2",
@@ -8552,6 +8591,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "multihash-codetable"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60384411b100398c5b2fdca476eed82e9898d09f2c60d1b1b66c5080ebe06118"
+dependencies = [
+ "blake2b_simd",
+ "digest 0.11.3",
+ "multihash-derive 0.9.3",
+]
+
+[[package]]
 name = "multihash-derive"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8563,6 +8613,29 @@ dependencies = [
  "quote 1.0.46",
  "syn 1.0.109",
  "synstructure 0.12.6",
+]
+
+[[package]]
+name = "multihash-derive"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4723acdce756db211a53f01b3419dbdf63cb48cef5df86260f55309364735fbf"
+dependencies = [
+ "multihash 0.19.5",
+ "multihash-derive-impl",
+]
+
+[[package]]
+name = "multihash-derive-impl"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f932556f78452e5604cef711349d337ec081a9aa3c96e67b3127c8f5df05d550"
+dependencies = [
+ "proc-macro-crate 3.4.0",
+ "proc-macro2 1.0.106",
+ "quote 1.0.46",
+ "syn 2.0.118",
+ "synstructure 0.13.2",
 ]
 
 [[package]]
@@ -18732,6 +18805,7 @@ dependencies = [
  "pezsp-core",
  "pezsp-inherents",
  "pezsp-runtime",
+ "pezsp-state-machine",
  "pezsp-trie",
 ]
 
@@ -19121,6 +19195,7 @@ dependencies = [
  "pezsc-block-builder",
  "pezsc-chain-spec",
  "pezsc-client-api",
+ "pezsc-client-db",
  "pezsc-consensus",
  "pezsc-network",
  "pezsc-network-common",
@@ -19202,10 +19277,12 @@ dependencies = [
  "pezsp-consensus-babe",
  "pezsp-consensus-slots",
  "pezsp-core",
+ "pezsp-externalities",
  "pezsp-inherents",
  "pezsp-keystore",
  "pezsp-runtime",
  "pezsp-timestamp",
+ "pezsp-trie",
  "serde",
  "thiserror 1.0.69",
  "tokio",
@@ -19256,6 +19333,7 @@ dependencies = [
  "pezsp-inherents",
  "pezsp-runtime",
  "pezsp-state-machine",
+ "pezsp-trie",
 ]
 
 [[package]]
@@ -19422,6 +19500,7 @@ dependencies = [
  "litep2p",
  "log",
  "mockall",
+ "multihash-codetable",
  "multistream-select",
  "parity-scale-codec",
  "parking_lot 0.12.5",
@@ -19517,16 +19596,29 @@ dependencies = [
  "async-channel 1.9.0",
  "async-trait",
  "bizinikiwi-prometheus-endpoint",
+ "bizinikiwi-test-runtime-client",
+ "criterion",
+ "fastbloom",
  "futures",
+ "governor",
  "log",
  "parity-scale-codec",
+ "pezsc-keystore",
  "pezsc-network",
  "pezsc-network-common",
  "pezsc-network-sync",
  "pezsc-network-types",
+ "pezsc-statement-store",
+ "pezsp-api",
+ "pezsp-blockchain",
  "pezsp-consensus",
+ "pezsp-core",
+ "pezsp-crypto-hashing",
+ "pezsp-keyring",
  "pezsp-runtime",
  "pezsp-statement-store",
+ "rand 0.8.6",
+ "tempfile",
  "tokio",
 ]
 
@@ -19739,6 +19831,7 @@ dependencies = [
  "pezsp-core",
  "pezsp-rpc",
  "pezsp-runtime",
+ "pezsp-statement-store",
  "pezsp-version",
  "scale-info",
  "serde",
@@ -19762,6 +19855,9 @@ dependencies = [
  "jsonrpsee",
  "log",
  "pezsc-rpc-api",
+ "pezsc-utils",
+ "pezsp-core",
+ "prometheus",
  "serde",
  "serde_json",
  "tokio",
@@ -19824,6 +19920,7 @@ dependencies = [
  "pezsp-io",
  "pezsp-runtime",
  "pezsp-runtime-interface",
+ "pezsp-virtualization",
 ]
 
 [[package]]
@@ -19959,20 +20056,29 @@ dependencies = [
 name = "pezsc-statement-store"
 version = "10.0.0"
 dependencies = [
+ "anyhow",
+ "async-channel 1.9.0",
  "bizinikiwi-prometheus-endpoint",
  "criterion",
+ "futures",
+ "itertools 0.11.0",
  "log",
  "parity-db",
  "parking_lot 0.12.5",
+ "pezkuwi-subxt",
+ "pezkuwi-subxt-signer",
  "pezsc-client-api",
  "pezsc-keystore",
  "pezsc-network-statement",
+ "pezsc-utils",
  "pezsp-api",
  "pezsp-blockchain",
  "pezsp-core",
  "pezsp-runtime",
  "pezsp-statement-store",
+ "pezsp-storage",
  "pezsp-tracing",
+ "scale-info",
  "tempfile",
  "tokio",
 ]
@@ -20124,6 +20230,7 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
+ "strum 0.26.3",
  "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
@@ -20145,6 +20252,7 @@ dependencies = [
  "pezsp-runtime",
  "serde",
  "serde_json",
+ "strum 0.26.3",
  "thiserror 1.0.69",
 ]
 
@@ -22260,9 +22368,9 @@ dependencies = [
 
 [[package]]
 name = "portable-atomic"
-version = "1.13.0"
+version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f89776e4d69bb58bc6993e99ffa1d11f228b839984854c7daeb5d37f87cbe950"
+checksum = "05c8b63e8d9609db387f0324918f81d68fe27748f084ef092fb35954d0539a85"
 
 [[package]]
 name = "portable-atomic-util"
@@ -26959,7 +27067,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc1de2c688dc15305988b563c3854064043356019f97a4b46276fe734c4f07ea"
 dependencies = [
- "crypto-common",
+ "crypto-common 0.1.7",
  "subtle 2.6.1",
 ]
 
