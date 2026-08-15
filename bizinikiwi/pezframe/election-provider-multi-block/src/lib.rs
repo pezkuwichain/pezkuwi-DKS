@@ -17,8 +17,7 @@
 
 //! # Multi-phase, multi-block, election provider pezpallet.
 //!
-//! > This pezpallet is sometimes abbreviated as `EPMB`, and
-//! > `pezpallet_election_provider_multi_phase` as
+//! > This pezpallet is sometimes abbreviated as `EPMB`, and `pezpallet_election_provider_multi_phase` as
 //! > `EPM`.
 //!
 //! ## Overall idea
@@ -36,13 +35,13 @@
 //! with large enough blocks (in a dedicated teyrchain), the number of voters included in the NPoS
 //! system can grow significantly (yet, obviously not indefinitely).
 //!
-//! Note that this pezpallet does not consider how the recipient is processing the results. To
-//! ensure scalability, the recipient of this pezpallet's data (i.e. `pezpallet-staking`) must also
-//! be capable of pagination and multi-block processing.
+//! Note that this pezpallet does not consider how the recipient is processing the results. To ensure
+//! scalability, the recipient of this pezpallet's data (i.e. `pezpallet-staking`) must also be capable of
+//! pagination and multi-block processing.
 //!
-//! ## Companion pallets
+//! ## Companion pezpallets
 //!
-//! This pezpallet will only function in a sensible way if it is peered with its companion pallets.
+//! This pezpallet will only function in a sensible way if it is peered with its companion pezpallets.
 //!
 //! - The [`verifier`] pezpallet provides a standard implementation of the [`verifier::Verifier`].
 //! - The [`unsigned`] module provides the implementation of unsigned submission by validators. If
@@ -51,8 +50,8 @@
 //!   this pezpallet is included, the combined [`Config::SignedPhase`] and
 //!   [`Config::SignedValidationPhase`] will determine its duration
 //!
-//! These pallets are in fact hierarchical. This particular one is the top level one. It contains
-//! the shared information that all child pallets use. All child pallets depend on the top level
+//! These pezpallets are in fact hierarchical. This particular one is the top level one. It contains
+//! the shared information that all child pezpallets use. All child pezpallets depend on the top level
 //! pezpallet ONLY, but not the other way around. For those cases, traits are used.
 //!
 //! For reverse linking, or child-linking, only explicit traits with clear interfaces are used. For
@@ -64,11 +63,11 @@
 
 //! ## Pagination
 //!
-//! Most of the external APIs of this pezpallet are paginated. All pagination follow a pattern where
-//! if `N` pages exist, the first paginated call is `function(N-1)` and the last one is
-//! `function(0)`. For example, with 3 pages, the `elect` of [`ElectionProvider`] is expected to be
-//! called as `elect(2) -> elect(1) -> elect(0)`. In essence, calling a paginated function with
-//! index 0 is always a signal of termination, meaning that no further calls will follow.
+//! Most of the external APIs of this pezpallet are paginated. All pagination follow a pattern where if
+//! `N` pages exist, the first paginated call is `function(N-1)` and the last one is `function(0)`.
+//! For example, with 3 pages, the `elect` of [`ElectionProvider`] is expected to be called as
+//! `elect(2) -> elect(1) -> elect(0)`. In essence, calling a paginated function with index 0 is
+//! always a signal of termination, meaning that no further calls will follow.
 //!
 //! The snapshot creation for voters (Nominators in staking), submission of signed pages, validation
 //! of signed solutions and exporting of pages are all paginated. Note that this pezpallet is yet to
@@ -112,8 +111,7 @@
 //! * [`Config::Pages`] calls to elect are expected, but all in all the pezpallet will close a round
 //!   once `elect(0)` is called.
 //!
-//! > Given this, it is rather important for the user of this pezpallet to ensure it always
-//! > terminates
+//! > Given this, it is rather important for the user of this pezpallet to ensure it always terminates
 //! > election via `elect` before requesting a new one.
 //!
 //! ### Phase Transition
@@ -152,8 +150,8 @@
 //!
 //! 1. Do nothing: [`Continue`]
 //! 2. Force us into the emergency phase: [`crate::InitiateEmergencyPhase`]. This initiates
-//!    [`Phase::Emergency`], which will halt almost all operations of this pezpallet, and it can
-//!    only be recovered by [`AdminOperation`], dispatched via [`Call::manage`].
+//!    [`Phase::Emergency`], which will halt almost all operations of this pezpallet, and it can only
+//!    be recovered by [`AdminOperation`], dispatched via [`Call::manage`].
 //! 3. compute an onchain from the give page of snapshot.
 //!
 //! Note that configuring the fallback to be onchain computation is not recommended, unless for
@@ -185,16 +183,16 @@
 // - Naming convention is: `${singular}_page` for singular, e.g. `voter_page` for `Vec<Voter>`.
 //   `paged_${plural}` for plural, e.g. `paged_voters` for `Vec<Vec<Voter>>`.
 //
-// - Since this crate has multiple `Pezpallet` and `Configs`, in each sub-pezpallet, we only
-//   reference the local `Pezpallet` without a prefix and allow it to be imported via `use`. Avoid
-//   `super::Pezpallet` except for the case of a modules that want to reference their local
-//   `Pezpallet` . The `crate::Pezpallet` is always reserved for the parent pezpallet. Other sibling
-//   pallets must be referenced with full path, e.g. `crate::Verifier::Pezpallet`. Do NOT write
-//   something like `use unsigned::Pezpallet as UnsignedPallet`.
+// - Since this crate has multiple `Pezpallet` and `Configs`, in each sub-pezpallet, we only reference the
+//   local `Pezpallet` without a prefix and allow it to be imported via `use`. Avoid `super::Pezpallet`
+//   except for the case of a modules that want to reference their local `Pezpallet` . The
+//   `crate::Pezpallet` is always reserved for the parent pezpallet. Other sibling pezpallets must be
+//   referenced with full path, e.g. `crate::Verifier::Pezpallet`. Do NOT write something like `use
+//   unsigned::Pezpallet as UnsignedPallet`.
 //
 // - Respecting private storage items with wrapper We move all implementations out of the `mod
-//   pezpallet` as much as possible to ensure we NEVER access the internal storage items directly.
-//   All operations should happen with the wrapper types.
+//   pezpallet` as much as possible to ensure we NEVER access the internal storage items directly. All
+//   operations should happen with the wrapper types.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -214,6 +212,7 @@ use pezframe_support::{
 	DebugNoBound, Twox64Concat,
 };
 use pezframe_system::pezpallet_prelude::*;
+use scale_info::TypeInfo;
 use pezsp_arithmetic::{
 	traits::{CheckedAdd, Zero},
 	PerThing, UpperOf,
@@ -224,7 +223,6 @@ use pezsp_runtime::{
 	SaturatedConversion,
 };
 use pezsp_std::{borrow::ToOwned, boxed::Box, prelude::*};
-use scale_info::TypeInfo;
 
 #[cfg(test)]
 mod mock;
@@ -233,7 +231,7 @@ pub mod helpers;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
-/// The common logging prefix of all pallets in this crate.
+/// The common logging prefix of all pezpallets in this crate.
 pub const LOG_PREFIX: &'static str = "runtime::multiblock-election";
 
 macro_rules! clear_round_based_map {
@@ -517,7 +515,7 @@ impl OnRoundRotation for () {
 }
 
 /// An implementation of [`OnRoundRotation`] that immediately deletes all the data in all the
-/// pallets, once the round is over.
+/// pezpallets, once the round is over.
 ///
 /// This is intended to be phased out once we move to fully lazy deletion system to spare more PoV.
 /// In that case, simply use `()` on [`pezpallet::Config::OnRoundRotation`].
@@ -638,7 +636,6 @@ pub mod pezpallet {
 		/// unsigned + export), otherwise healthy elections get cut short. Set to zero to disable.
 		#[pezpallet::constant]
 		type StalledRoundTimeout: Get<BlockNumberFor<Self>>;
-
 		/// The weight of the pezpallet.
 		type WeightInfo: WeightInfo;
 
@@ -744,9 +741,8 @@ pub mod pezpallet {
 			weight_meter.consume(T::DbWeight::get().reads(1));
 
 			// An election that cannot produce a result must not hold its round forever.
-			// Upstream has no equivalent; this is checked after the phase is read and
-			// before the transition, so a rotation costs the block its transition rather
-			// than racing it.
+			// Checked after the phase is read and before the transition, so a rotation
+			// costs the block its transition rather than racing it.
 			if let Some(weight) = Self::maybe_rotate_stalled_round(_now, &current_phase) {
 				weight_meter.consume(weight);
 				return;
@@ -823,8 +819,8 @@ pub mod pezpallet {
 			let max_vote: usize = <SolutionOf<T::MinerConfig> as NposSolution>::LIMIT;
 
 			// 2. Maximum sum of [SolutionAccuracy; 16] must fit into `UpperOf<OffchainAccuracy>`.
-			let maximum_chain_accuracy: Vec<UpperOf<SolutionAccuracyOf<T::MinerConfig>>> = (0
-				..max_vote)
+			let maximum_chain_accuracy: Vec<UpperOf<SolutionAccuracyOf<T::MinerConfig>>> = (0..
+				max_vote)
 				.map(|_| {
 					<UpperOf<SolutionAccuracyOf<T::MinerConfig>>>::from(
 						<SolutionAccuracyOf<T::MinerConfig>>::one().deconstruct(),
@@ -855,8 +851,8 @@ pub mod pezpallet {
 				"Signed phase not set correct -- both should be set or unset"
 			);
 			assert!(
-				signed_validation.is_zero()
-					|| signed_validation % T::Pages::get().into() == Zero::zero(),
+				signed_validation.is_zero() ||
+					signed_validation % T::Pages::get().into() == Zero::zero(),
 				"signed validation phase should be a multiple of the number of pages."
 			);
 
@@ -914,7 +910,7 @@ pub mod pezpallet {
 		Snapshot,
 	}
 
-	/// Common errors in all sub-pallets and miner.
+	/// Common errors in all sub-pezpallets and miner.
 	#[derive(PartialEq, Eq, Clone, Encode, Decode, Debug)]
 	pub enum CommonError {
 		/// Submission is too early (or too late, depending on your point of reference).
@@ -949,7 +945,6 @@ pub mod pezpallet {
 	/// detect a round that stalls past [`Config::StalledRoundTimeout`].
 	#[pezpallet::storage]
 	pub type ElectionStartedAt<T: Config> = StorageValue<_, BlockNumberFor<T>, OptionQuery>;
-
 	/// Current phase.
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn current_phase)]
@@ -1111,8 +1106,8 @@ pub mod pezpallet {
 				.take(up_to_page as usize)
 			{
 				ensure!(
-					(exists ^ Self::voters(p).is_none())
-						&& (exists ^ Self::voters_hash(p).is_none()),
+					(exists ^ Self::voters(p).is_none()) &&
+						(exists ^ Self::voters_hash(p).is_none()),
 					"voter page existence mismatch"
 				);
 
@@ -1128,8 +1123,8 @@ pub mod pezpallet {
 				.take((T::Pages::get() - up_to_page) as usize)
 			{
 				ensure!(
-					(exists ^ Self::voters(p).is_some())
-						&& (exists ^ Self::voters_hash(p).is_some()),
+					(exists ^ Self::voters(p).is_some()) &&
+						(exists ^ Self::voters_hash(p).is_some()),
 					"voter page non-existence mismatch"
 				);
 			}
@@ -1149,17 +1144,17 @@ pub mod pezpallet {
 			ensure!(Self::desired_targets().is_some(), "desired target mismatch");
 			ensure!(Self::targets_hash().is_some(), "targets hash mismatch");
 			ensure!(
-				Self::targets_decode_len().unwrap_or_default() as u32
-					== T::TargetSnapshotPerBlock::get(),
+				Self::targets_decode_len().unwrap_or_default() as u32 ==
+					T::TargetSnapshotPerBlock::get(),
 				"targets decode length mismatch"
 			);
 
 			// ensure that voter pages that should exist, indeed to exist..
 			for p in crate::Pezpallet::<T>::lsp()..=crate::Pezpallet::<T>::msp() {
 				ensure!(
-					Self::voters_hash(p).is_some()
-						&& Self::voters_decode_len(p).unwrap_or_default() as u32
-							== T::VoterSnapshotPerBlock::get(),
+					Self::voters_hash(p).is_some() &&
+						Self::voters_decode_len(p).unwrap_or_default() as u32 ==
+							T::VoterSnapshotPerBlock::get(),
 					"voter page existence mismatch"
 				);
 			}
@@ -1199,12 +1194,12 @@ pub mod pezpallet {
 				Phase::Snapshot(_) => Ok(()),
 
 				// full snapshot must exist in these phases.
-				Phase::Emergency
-				| Phase::Signed(_)
-				| Phase::SignedValidation(_)
-				| Phase::Export(_)
-				| Phase::Done
-				| Phase::Unsigned(_) => Self::ensure_snapshot(true, T::Pages::get()),
+				Phase::Emergency |
+				Phase::Signed(_) |
+				Phase::SignedValidation(_) |
+				Phase::Export(_) |
+				Phase::Done |
+				Phase::Unsigned(_) => Self::ensure_snapshot(true, T::Pages::get()),
 			}?;
 
 			Ok(())
@@ -1437,12 +1432,12 @@ impl<T: Config> Pezpallet<T> {
 					just_next_phase
 				}
 			},
-			Phase::SignedValidation(_)
-			| Phase::Unsigned(_)
-			| Phase::Off
-			| Phase::Emergency
-			| Phase::Done
-			| Phase::Export(_) => just_next_phase,
+			Phase::SignedValidation(_) |
+			Phase::Unsigned(_) |
+			Phase::Off |
+			Phase::Emergency |
+			Phase::Done |
+			Phase::Export(_) => just_next_phase,
 		}
 	}
 
@@ -1516,8 +1511,8 @@ impl<T: Config> Pezpallet<T> {
 		// check the snapshot fingerprint, if asked for.
 		ensure!(
 			maybe_snapshot_fingerprint
-				.map_or(true, |snapshot_fingerprint| Snapshot::<T>::fingerprint()
-					== snapshot_fingerprint),
+				.map_or(true, |snapshot_fingerprint| Snapshot::<T>::fingerprint() ==
+					snapshot_fingerprint),
 			CommonError::WrongFingerprint
 		);
 
@@ -1596,13 +1591,13 @@ impl<T: Config> Pezpallet<T> {
 			*r += 1
 		});
 
-		// No election is running anymore, so there is nothing for the stall watchdog to time.
-		ElectionStartedAt::<T>::kill();
-
 		// Phase is off now.
+		ElectionStartedAt::<T>::kill();
 		Self::phase_transition(Phase::Off);
 	}
 
+	/// Call fallback for the given page.
+	///
 	/// Abandon the current round if it has been running for longer than
 	/// [`Config::StalledRoundTimeout`], so that a new election can start from a fresh snapshot.
 	///
@@ -1660,9 +1655,6 @@ impl<T: Config> Pezpallet<T> {
 
 		Some(T::WeightInfo::export_terminal().saturating_add(T::DbWeight::get().reads_writes(3, 3)))
 	}
-
-	/// Call fallback for the given page.
-	///
 	/// This uses the [`ElectionProvider::bother`] to check if the fallback is actually going to do
 	/// anything. If so, it will re-collect the associated snapshot page and do the fallback. Else,
 	/// it will early return without touching the snapshot.
@@ -1717,10 +1709,8 @@ impl<T: Config> Pezpallet<T> {
 		let ref_time_ratio =
 			pezsp_runtime::Percent::from_rational(op_weight.ref_time(), limit_weight.ref_time());
 		let proof_size_kb = op_weight.proof_size() / WEIGHT_PROOF_SIZE_PER_KB;
-		let proof_size_ratio = pezsp_runtime::Percent::from_rational(
-			op_weight.proof_size(),
-			limit_weight.proof_size(),
-		);
+		let proof_size_ratio =
+			pezsp_runtime::Percent::from_rational(op_weight.proof_size(), limit_weight.proof_size());
 		let limit_ms = limit_weight.ref_time() / WEIGHT_REF_TIME_PER_MILLIS;
 		let limit_kb = limit_weight.proof_size() / WEIGHT_PROOF_SIZE_PER_KB;
 		log::info!(
@@ -2060,8 +2050,8 @@ impl<T: Config> ElectionProvider for Pezpallet<T> {
 			.map_err(|err| {
 				// if any pages returns an error, we go into the emergency phase and don't do
 				// anything else anymore. This will prevent any new submissions to signed and
-				// unsigned pezpallet, and thus the verifier will also be almost stuck, except for
-				// the submission of emergency solutions.
+				// unsigned pezpallet, and thus the verifier will also be almost stuck, except for the
+				// submission of emergency solutions.
 				log!(debug, "fallback also ({:?}) failed for page {:?}", err, remaining);
 				err
 			})
@@ -2090,6 +2080,8 @@ impl<T: Config> ElectionProvider for Pezpallet<T> {
 			Ok(_) => return Err(ElectionError::Ongoing),
 		}
 
+		// Record when this round began, so a round that never produces a result can be
+		// recognised as stalled rather than held forever.
 		ElectionStartedAt::<T>::put(pezframe_system::Pezpallet::<T>::block_number());
 		Self::phase_transition(Phase::<T>::start_phase());
 		Ok(())
@@ -2105,11 +2097,11 @@ impl<T: Config> ElectionProvider for Pezpallet<T> {
 			Phase::Off => Err(()),
 
 			// we're doing something but not ready.
-			Phase::Signed(_)
-			| Phase::SignedValidation(_)
-			| Phase::Unsigned(_)
-			| Phase::Snapshot(_)
-			| Phase::Emergency => Ok(None),
+			Phase::Signed(_) |
+			Phase::SignedValidation(_) |
+			Phase::Unsigned(_) |
+			Phase::Snapshot(_) |
+			Phase::Emergency => Ok(None),
 
 			// we're ready
 			Phase::Done => Ok(Some(T::WeightInfo::export_non_terminal())),
@@ -3375,9 +3367,9 @@ mod manage_ops {
 	// This scenario have multiple outcomes:
 	// 1. rotate in off => almost a noop
 	// 2. rotate mid signed, validation, unsigned, done, but NOT export => clear all data, move to
-	//    next round and be off. Note: all of the data in this pezpallet is indexed by the round
-	//    index, so moving to the next round will implicitly make the old data unavaioable, even if
-	//    not cleared out. This secnario needs further testing.
+	//    next round and be off. Note: all of the data in this pezpallet is indexed by the round index,
+	//    so moving to the next round will implicitly make the old data unavaioable, even if not
+	//    cleared out. This secnario needs further testing.
 	// 3. rotate mid export: same as above, except staking will be out of sync and will also need
 	//    governance intervention.
 	//
@@ -3569,148 +3561,5 @@ mod admin_ops {
 				ElectionScore { minimal_stake: 100, ..Default::default() }
 			);
 		});
-	}
-}
-
-#[cfg(test)]
-mod stalled_round_watchdog {
-	use super::*;
-	use crate::{mock::*, Phase};
-	use pezframe_election_provider_support::ElectionProvider;
-
-	/// An election that keeps looping back to the signed phase without ever producing a solution
-	/// holds its round forever. The watchdog must abandon it and rotate, so a new election can be
-	/// started from a fresh snapshot.
-	#[test]
-	fn stalled_round_is_rotated_after_timeout() {
-		ExtBuilder::full().build_and_execute(|| {
-			AreWeDone::set(AreWeDoneModes::BackToSigned);
-			StalledRoundTimeout::set(50);
-
-			// election starts, and no solution is ever submitted (no OCW in `roll_next`).
-			roll_to(ElectionStart::get() + 1);
-			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
-			assert_eq!(MultiBlock::round(), 0);
-			assert_eq!(ElectionStartedAt::<Runtime>::get(), Some(ElectionStart::get()));
-
-			// well past a full election, but still short of the timeout: untouched.
-			roll_to(ElectionStart::get() + 50);
-			assert_eq!(MultiBlock::round(), 0);
-			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
-
-			// one block past the timeout: the round is abandoned.
-			roll_next();
-			assert_eq!(MultiBlock::round(), 1);
-			assert_eq!(MultiBlock::current_phase(), Phase::Off);
-			assert_eq!(ElectionStartedAt::<Runtime>::get(), None);
-			// and the snapshot of the abandoned round is gone, so the next one starts clean.
-			assert_ok!(Snapshot::<Runtime>::ensure_snapshot(false, Pages::get()));
-			assert!(multi_block_events()
-				.iter()
-				.any(|e| matches!(e, Event::StalledRoundRotated { round: 0, .. })));
-		})
-	}
-
-	/// A healthy election must never be cut short by the watchdog.
-	#[test]
-	fn healthy_election_is_not_interrupted() {
-		ExtBuilder::full().build_and_execute(|| {
-			StalledRoundTimeout::set(500);
-
-			roll_to_done();
-			assert!(MultiBlock::current_phase().is_done());
-			assert_eq!(MultiBlock::round(), 0);
-			assert!(!multi_block_events()
-				.iter()
-				.any(|e| matches!(e, Event::StalledRoundRotated { .. })));
-		})
-	}
-
-	/// Once a solution exists the data provider may already be fetching it page by page, so the
-	/// watchdog must keep its hands off `Done`/`Export` no matter how long they take.
-	#[test]
-	fn done_phase_is_never_interrupted() {
-		ExtBuilder::full().build_and_execute(|| {
-			StalledRoundTimeout::set(500);
-			roll_to_done();
-			assert!(MultiBlock::current_phase().is_done());
-
-			// make the timeout trivially exceeded.
-			StalledRoundTimeout::set(1);
-			roll_next();
-			roll_next();
-
-			assert!(MultiBlock::current_phase().is_done(), "done phase was interrupted");
-			assert_eq!(MultiBlock::round(), 0);
-			assert!(!multi_block_events()
-				.iter()
-				.any(|e| matches!(e, Event::StalledRoundRotated { .. })));
-		})
-	}
-
-	/// Zero means the watchdog is off, and a stalled round then stays stalled — this is the
-	/// pre-watchdog behaviour, kept as an explicit escape hatch.
-	#[test]
-	fn zero_timeout_disables_the_watchdog() {
-		ExtBuilder::full().build_and_execute(|| {
-			AreWeDone::set(AreWeDoneModes::BackToSigned);
-			StalledRoundTimeout::set(0);
-
-			roll_to(ElectionStart::get() + 500);
-			assert_eq!(MultiBlock::round(), 0);
-			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
-		})
-	}
-}
-
-#[cfg(test)]
-mod stalled_round_watchdog_adoption {
-	use super::*;
-	use crate::{mock::*, Phase};
-
-	/// A round that was not opened through `start()` — because the runtime was upgraded
-	/// mid-election — must still end up watched, otherwise it can stall forever with the watchdog
-	/// looking straight past it.
-	#[test]
-	fn round_without_a_recorded_start_is_adopted_and_then_rotated() {
-		ExtBuilder::full().build_and_execute(|| {
-			AreWeDone::set(AreWeDoneModes::BackToSigned);
-			StalledRoundTimeout::set(20);
-
-			// A real election is running...
-			roll_to(ElectionStart::get() + 1);
-			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
-			let round_before = MultiBlock::round();
-
-			// ...and then the runtime is upgraded, so the new storage item starts out empty.
-			ElectionStartedAt::<Runtime>::kill();
-
-			// The next block adopts the round instead of ignoring it.
-			roll_next();
-			let adopted = ElectionStartedAt::<Runtime>::get();
-			assert_eq!(adopted, Some(System::block_number()));
-			assert_eq!(MultiBlock::round(), round_before, "must not rotate on the adopting block");
-
-			// From there the normal timeout applies.
-			roll_to(adopted.unwrap() + 20);
-			assert_eq!(MultiBlock::round(), round_before);
-			roll_next();
-			assert_eq!(MultiBlock::round(), round_before + 1);
-			assert_eq!(MultiBlock::current_phase(), Phase::Off);
-			assert_eq!(ElectionStartedAt::<Runtime>::get(), None);
-		})
-	}
-
-	/// Adoption must not resurrect the watchdog where it is switched off.
-	#[test]
-	fn adoption_does_not_happen_when_disabled() {
-		ExtBuilder::full().build_and_execute(|| {
-			StalledRoundTimeout::set(0);
-			roll_to(ElectionStart::get() + 1);
-			ElectionStartedAt::<Runtime>::kill();
-
-			roll_next();
-			assert_eq!(ElectionStartedAt::<Runtime>::get(), None);
-		})
 	}
 }

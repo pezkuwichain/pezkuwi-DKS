@@ -23,15 +23,15 @@
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/westend-runtime/westend_runtime.wasm
 // --pezpallet=pezpallet_proxy
-// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/polkadot/file_header.txt
+// --output=./polkadot/runtime/westend/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20

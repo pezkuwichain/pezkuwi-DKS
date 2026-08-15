@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Bizinikiwi. If not, see <http://www.gnu.org/licenses/>.
 
-//! Tests for the Zagros Runtime Configuration
+//! Tests for the Westend Runtime Configuration
 
 use std::collections::HashSet;
 
@@ -22,7 +22,7 @@ use crate::{xcm_config::LocationConverter, *};
 use pezframe_support::traits::WhitelistedStorageKeys;
 use pezsp_core::{crypto::Ss58Codec, hexdisplay::HexDisplay};
 use pezsp_keyring::Sr25519Keyring::Alice;
-use xcm_runtime_pezapis::conversions::LocationToAccountHelper;
+use xcm_runtime_apis::conversions::LocationToAccountHelper;
 
 #[test]
 fn remove_keys_weight_is_sensible() {
@@ -60,7 +60,7 @@ fn sanity_check_teleport_assets_weight() {
 		dest: Box::new(Here.into()),
 		beneficiary: Box::new(Here.into()),
 		assets: Box::new((Here, 200_000).into()),
-		fee_asset_id: Box::new(Here.into()),
+		fee_asset_item: 0,
 		weight_limit: Unlimited,
 	}
 	.get_dispatch_info()
@@ -106,9 +106,7 @@ fn check_treasury_pallet_id() {
 mod remote_tests {
 	use super::*;
 	use pezframe_try_runtime::{runtime_decl_for_try_runtime::TryRuntime, UpgradeCheckSelect};
-	use remote_externalities::{
-		Builder, Mode, OfflineConfig, OnlineConfig, SnapshotConfig, Transport,
-	};
+	use remote_externalities::{Builder, Mode, OfflineConfig, OnlineConfig, SnapshotConfig};
 	use std::env::var;
 
 	#[tokio::test]
@@ -118,21 +116,23 @@ mod remote_tests {
 		}
 
 		pezsp_tracing::try_init_simple();
-		let transport: Transport =
-			var("WS").unwrap_or("wss://zagros-rpc.pezkuwichain.io:443".to_string()).into();
+		let transport_uri = var("WS").unwrap_or("wss://westend-rpc.polkadot.io:443".to_string());
 		let maybe_state_snapshot: Option<SnapshotConfig> = var("SNAP").map(|s| s.into()).ok();
 		let mut ext = Builder::<Block>::default()
 			.mode(if let Some(state_snapshot) = maybe_state_snapshot {
 				Mode::OfflineOrElseOnline(
 					OfflineConfig { state_snapshot: state_snapshot.clone() },
 					OnlineConfig {
-						transport,
+						transport_uris: vec![transport_uri.clone()],
 						state_snapshot: Some(state_snapshot),
 						..Default::default()
 					},
 				)
 			} else {
-				Mode::Online(OnlineConfig { transport, ..Default::default() })
+				Mode::Online(OnlineConfig {
+					transport_uris: vec![transport_uri],
+					..Default::default()
+				})
 			})
 			.build()
 			.await

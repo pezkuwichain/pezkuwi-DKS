@@ -16248,6 +16248,7 @@ dependencies = [
  "pezframe-support",
  "pezframe-system",
  "pezpallet-bags-list",
+ "pezpallet-staking",
  "pezpallet-staking-async",
  "pezsp-core",
  "pezsp-runtime",
@@ -18377,12 +18378,15 @@ dependencies = [
  "impl-trait-for-tuples",
  "log",
  "parity-scale-codec",
+ "pezframe-benchmarking",
  "pezframe-support",
  "pezframe-system",
  "pezsp-core",
  "pezsp-runtime",
  "pezsp-staking",
  "pezstaging-xcm",
+ "pezstaging-xcm-builder",
+ "pezstaging-xcm-executor",
  "scale-info",
 ]
 

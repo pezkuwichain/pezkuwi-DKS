@@ -23,7 +23,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dicle-dev"), DB CACHE: 1024
 
 // Executed Command:
-// ./target/production/pezkuwi
+// ./target/production/polkadot
 // benchmark
 // pezpallet
 // --chain=dicle-dev

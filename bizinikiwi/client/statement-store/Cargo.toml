@@ -85,3 +85,9 @@ try-runtime = [
 ]
 serde = []
 with-tracing = []
+test-helpers = [
+	"anyhow",
+	"pezkuwi-subxt",
+	"pezkuwi-subxt-signer",
+	"scale-info",
+]

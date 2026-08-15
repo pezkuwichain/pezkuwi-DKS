@@ -27,20 +27,20 @@
 //! WASM-EXECUTION: Compiled, CHAIN: None, DB CACHE: 1024
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/westend-runtime/westend_runtime.wasm
 // --pezpallet=pezpallet_xcm_benchmarks::fungible
-// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights/xcm
+// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/polkadot/file_header.txt
+// --output=./polkadot/runtime/westend/src/weights/xcm
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
 // --heap-pages=4096
-// --template=pezkuwi/xcm/pezpallet-xcm-benchmarks/template.hbs
+// --template=polkadot/xcm/pezpallet-xcm-benchmarks/template.hbs
 // --no-storage-info
 // --no-min-squares
 // --no-median-slopes

@@ -23,15 +23,15 @@
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/zagros-runtime/zagros_runtime.wasm
+// --runtime=target/production/wbuild/westend-runtime/westend_runtime.wasm
 // --pezpallet=pezkuwi_runtime_teyrchains::disputes::slashing
-// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
-// --output=./pezkuwi/runtime/zagros/src/weights
+// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/polkadot/file_header.txt
+// --output=./polkadot/runtime/westend/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -65,8 +65,6 @@ impl<T: pezframe_system::Config> pezkuwi_runtime_teyrchains::disputes::slashing:
 	/// Proof: `Staking::ActiveEra` (`max_values`: Some(1), `max_size`: Some(13), added: 508, mode: `MaxEncodedLen`)
 	/// Storage: `Staking::ErasStartSessionIndex` (r:1 w:0)
 	/// Proof: `Staking::ErasStartSessionIndex` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
-	/// Storage: `Staking::Invulnerables` (r:1 w:0)
-	/// Proof: `Staking::Invulnerables` (`max_values`: Some(1), `max_size`: Some(641), added: 1136, mode: `MaxEncodedLen`)
 	/// Storage: `Staking::ErasStakersOverview` (r:1 w:0)
 	/// Proof: `Staking::ErasStakersOverview` (`max_values`: None, `max_size`: Some(92), added: 2567, mode: `MaxEncodedLen`)
 	/// Storage: `Session::DisabledValidators` (r:1 w:1)

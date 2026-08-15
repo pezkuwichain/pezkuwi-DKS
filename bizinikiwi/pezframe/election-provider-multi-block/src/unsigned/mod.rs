@@ -17,8 +17,8 @@
 
 //! ## The unsigned phase, and its miner.
 //!
-//! This pezpallet deals with unsigned submissions. These are backup, "possibly" multi-page
-//! submissions from validators.
+//! This pezpallet deals with unsigned submissions. These are backup, "possibly" multi-page submissions
+//! from validators.
 //!
 //! This pezpallet has two miners, described in [`unsigned::miner`].
 //!
@@ -241,8 +241,8 @@ mod pezpallet {
 				"weight of `submit_unsigned` is too high"
 			);
 			assert!(
-				<T as Config>::MinerPages::get() as usize
-					<= <T as crate::Config>::Pages::get() as usize,
+				<T as Config>::MinerPages::get() as usize <=
+					<T as crate::Config>::Pages::get() as usize,
 				"number of pages in the unsigned phase is too high"
 			);
 		}

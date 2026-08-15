@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *Pezkuwi*.
 //!
-//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi/pezframe/bags-list) -
+//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/tree/master/bizinikiwi/pezframe/bags-list) -
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]:
@@ -36,22 +36,22 @@
 //! including its configuration trait, dispatchables, storage items, events and errors.
 //!
 //! This pezpallet provides an implementation of
-//! [`pezframe_election_provider_support::SortedListProvider`] and it can typically be used by
-//! another pezpallet via this API.
+//! [`pezframe_election_provider_support::SortedListProvider`] and it can typically be used by another
+//! pezpallet via this API.
 //!
 //! ## Overview
 //!
-//! This pezpallet splits `AccountId`s into different bags. Within a bag, these `AccountId`s are
-//! stored as nodes in a linked-list manner. This pezpallet then provides iteration over all bags,
-//! which basically allows an infinitely large list of items to be kept in a sorted manner.
+//! This pezpallet splits `AccountId`s into different bags. Within a bag, these `AccountId`s are stored
+//! as nodes in a linked-list manner. This pezpallet then provides iteration over all bags, which
+//! basically allows an infinitely large list of items to be kept in a sorted manner.
 //!
 //! Each bags has a upper and lower range of scores, denoted by [`Config::BagThresholds`]. All nodes
-//! within a bag must be within the range of the bag. If not, the permissionless
-//! [`Pezpallet::rebag`] can be used to move any node to the right bag.
+//! within a bag must be within the range of the bag. If not, the permissionless [`Pezpallet::rebag`]
+//! can be used to move any node to the right bag.
 //!
 //! Once a `rebag` happens, the order within a node is still not enforced. To move a node to the
-//! optimal position in a bag, the [`Pezpallet::put_in_front_of`] or
-//! [`Pezpallet::put_in_front_of_other`] can be used.
+//! optimal position in a bag, the [`Pezpallet::put_in_front_of`] or [`Pezpallet::put_in_front_of_other`]
+//! can be used.
 //!
 //! ## Examples
 //!
@@ -97,17 +97,17 @@ extern crate alloc;
 /// graph LR
 /// 	Bag0 --> Bag1 --> Bag2
 ///
-/// 	subgraph Bag0[Bag 0: 21-30 HEZ]
+/// 	subgraph Bag0[Bag 0: 21-30 DOT]
 /// 		direction LR
 /// 		25 --> 21 --> 22X[22]
 /// 	end
 ///
-/// 	subgraph Bag1[Bag 1: 11-20 HEZ]
+/// 	subgraph Bag1[Bag 1: 11-20 DOT]
 /// 		direction LR
 /// 		12 --> 22
 /// 	end
 ///
-/// 	subgraph Bag2[Bag 2: 0-10 HEZ]
+/// 	subgraph Bag2[Bag 2: 0-10 DOT]
 /// 		direction LR
 /// 		5 --> 7 --> 3
 /// 	end
@@ -116,7 +116,6 @@ extern crate alloc;
 /// ```
 ///
 /// The equivalent of this in code would be:
-#[doc = docify::embed!("src/tests.rs", examples_work)]
 pub mod example {}
 
 use alloc::{boxed::Box, vec::Vec};
@@ -213,8 +212,7 @@ pub mod pezpallet {
 		/// there exists some constant ratio such that `threshold[k + 1] == (threshold[k] *
 		/// constant_ratio).max(threshold[k] + 1)` for all `k`.
 		///
-		/// The helpers in the `/utils/pezframe/pez-generate-bags` module can simplify this
-		/// calculation.
+		/// The helpers in the `/utils/frame/generate-bags` module can simplify this calculation.
 		///
 		/// # Examples
 		///
@@ -329,9 +327,9 @@ pub mod pezpallet {
 	impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		/// Get the current `score` of a given account.
 		///
-		/// Returns `(current, real_score)`, the former being the current score that this pezpallet
-		/// is aware of, which may or may not be up to date, and the latter being the real score,
-		/// as provided by
+		/// Returns `(current, real_score)`, the former being the current score that this pezpallet is
+		/// aware of, which may or may not be up to date, and the latter being the real score, as
+		/// provided by
 		// [`Config::ScoreProvider`].
 		/// If the two differ, it means this node is eligible for [`Call::rebag`].
 		pub fn scores(who: T::AccountId) -> (Option<T::Score>, Option<T::Score>) {
@@ -714,13 +712,16 @@ impl<T: Config<I>, I: 'static> SortedListProvider<T::AccountId> for Pezpallet<T,
 	}
 
 	fn on_insert(id: T::AccountId, score: T::Score) -> Result<(), ListError> {
-		Pezpallet::<T, I>::ensure_unlocked().inspect_err(|_| {
+		if Pezpallet::<T, I>::ensure_unlocked().is_err() {
 			// Pezpallet is locked - store in PendingRebag for later processing
 			// Only queue if auto-rebagging is enabled
 			if T::MaxAutoRebagPerBlock::get() > 0u32 {
 				PendingRebag::<T, I>::insert(&id, ());
+				return Ok(());
 			}
-		})?;
+
+			return Err(ListError::Locked);
+		};
 		List::<T, I>::insert(id, score)
 	}
 

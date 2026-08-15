@@ -191,8 +191,8 @@ pub(crate) mod pezpallet {
 	/// - The number of existing keys in `QueuedSolutionBackings` must always match that of the
 	///   INVALID variant.
 	///
-	/// Moreover, the following conditions must be met when this pezpallet is in
-	/// [`Status::Nothing`], meaning that no ongoing asynchronous verification is ongoing.
+	/// Moreover, the following conditions must be met when this pezpallet is in [`Status::Nothing`],
+	/// meaning that no ongoing asynchronous verification is ongoing.
 	///
 	/// - No keys should exist in the INVALID variant.
 	/// 	- This implies that no data should exist in `QueuedSolutionBackings`.
@@ -202,8 +202,8 @@ pub(crate) mod pezpallet {
 	/// > the number of keys in the VALID variant. In fact, an empty solution with score of [0, 0,
 	/// > 0] can also be correct.
 	///
-	/// No additional conditions must be met when the pezpallet is in [`Status::Ongoing`]. The
-	/// number of pages in
+	/// No additional conditions must be met when the pezpallet is in [`Status::Ongoing`]. The number
+	/// of pages in
 	pub struct QueuedSolution<T: Config>(pezsp_std::marker::PhantomData<T>);
 	impl<T: Config> QueuedSolution<T> {
 		/// Private helper for mutating the storage group.
@@ -275,10 +275,7 @@ pub(crate) mod pezpallet {
 		/// known to be valid. At this stage, we write to the invalid variant. Once all pages are
 		/// verified, a call to [`finalize_correct`] will seal the correct pages and flip the
 		/// invalid/valid variants.
-		pub(crate) fn set_invalid_page(
-			page: PageIndex,
-			supports: SupportsOfVerifier<Pezpallet<T>>,
-		) {
+		pub(crate) fn set_invalid_page(page: PageIndex, supports: SupportsOfVerifier<Pezpallet<T>>) {
 			use pezframe_support::traits::TryCollect;
 			Self::mutate_checked(|| {
 				let backings: BoundedVec<_, _> = supports
@@ -492,8 +489,8 @@ pub(crate) mod pezpallet {
 			// The number of existing keys in `QueuedSolutionBackings` must always match that of
 			// the INVALID variant.
 			ensure!(
-				QueuedSolutionBackings::<T>::iter_prefix(Self::round()).count()
-					== Self::invalid_iter().count(),
+				QueuedSolutionBackings::<T>::iter_prefix(Self::round()).count() ==
+					Self::invalid_iter().count(),
 				"incorrect number of backings pages",
 			);
 
@@ -867,9 +864,7 @@ impl<T: Config> Pezpallet<T> {
 	}
 
 	#[cfg(any(test, feature = "runtime-benchmarks", feature = "try-runtime"))]
-	pub(crate) fn do_try_state(
-		_now: BlockNumberFor<T>,
-	) -> Result<(), pezsp_runtime::TryRuntimeError> {
+	pub(crate) fn do_try_state(_now: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
 		QueuedSolution::<T>::sanity_check()
 	}
 }

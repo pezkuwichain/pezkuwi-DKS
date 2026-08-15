@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! The overarching mock crate for all EPMB pallets.
+//! The overarching mock crate for all EPMB pezpallets.
 
 mod signed;
 mod staking;
@@ -31,7 +31,6 @@ use crate::{
 	verifier::{self as verifier_pallet, AsynchronousVerifier, Status, StatusStorage},
 };
 use codec::{Decode, Encode, MaxEncodedLen};
-use parking_lot::RwLock;
 use pezframe_election_provider_support::{
 	bounds::{ElectionBounds, ElectionBoundsBuilder},
 	InstantElectionProvider, NposSolution, SequentialPhragmen,
@@ -43,6 +42,8 @@ use pezframe_support::{
 	weights::{constants, RuntimeDbWeight, Weight},
 };
 use pezframe_system::EnsureRoot;
+use parking_lot::RwLock;
+pub use signed::*;
 use pezsp_core::{
 	offchain::{
 		testing::{PoolState, TestOffchainExt, TestTransactionPoolExt},
@@ -56,7 +57,6 @@ use pezsp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage, PerU16, Perbill,
 };
-pub use signed::*;
 pub use staking::*;
 use std::{sync::Arc, vec};
 
@@ -175,8 +175,6 @@ parameter_types! {
 	#[derive(Encode, Decode, PartialEq, Eq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
 	pub static MaxWinnersPerPage: u32 = (staking::Targets::get().len() as u32).min(staking::DesiredTargets::get());
 	pub static AreWeDone: AreWeDoneModes = AreWeDoneModes::Proceed;
-	/// Zero disables the stalled-round watchdog, which is what most tests want.
-	pub static StalledRoundTimeout: BlockNumber = 0;
 }
 
 ord_parameter_types! {
@@ -238,7 +236,6 @@ impl crate::Config for Runtime {
 	type ManagerOrigin = pezframe_system::EnsureSignedBy<Manager, AccountId>;
 	type Pages = Pages;
 	type AreWeDone = AreWeDone;
-	type StalledRoundTimeout = StalledRoundTimeout;
 	type Signed = SignedPallet;
 	type OnRoundRotation = CleanRound<Self>;
 	type WeightInfo = ();
@@ -491,7 +488,7 @@ impl ExecuteWithSanityChecks for pezsp_io::TestExternalities {
 }
 
 fn all_pallets_integrity_test() {
-	// ensure that all pallets are sane.
+	// ensure that all pezpallets are sane.
 	VerifierPallet::integrity_test();
 	UnsignedPallet::integrity_test();
 	MultiBlock::integrity_test();

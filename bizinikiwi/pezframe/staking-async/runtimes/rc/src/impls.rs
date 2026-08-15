@@ -26,7 +26,7 @@ use pezpallet_staking_async_rc_runtime_constants::currency::*;
 use xcm::{latest::prelude::*, VersionedLocation, VersionedXcm};
 use xcm_executor::traits::TransactAsset;
 
-/// A type containing the encoding of the People Chain pallets in its runtime. Used to construct any
+/// A type containing the encoding of the People Chain pezpallets in its runtime. Used to construct any
 /// remote calls. The codec index must correspond to the index of `IdentityMigrator` in the
 /// `construct_runtime` of the remote chain.
 #[derive(Encode, Decode)]
@@ -44,8 +44,8 @@ enum IdentityMigratorCalls<AccountId: Encode> {
 
 /// Type that implements `OnReapIdentity` that will send the deposit needed to store the same
 /// information on a teyrchain, sends the deposit there, and then updates it.
-pub struct ToTeyrchainIdentityReaper<Runtime, AccountId>(PhantomData<(Runtime, AccountId)>);
-impl<Runtime, AccountId> ToTeyrchainIdentityReaper<Runtime, AccountId> {
+pub struct ToParachainIdentityReaper<Runtime, AccountId>(PhantomData<(Runtime, AccountId)>);
+impl<Runtime, AccountId> ToParachainIdentityReaper<Runtime, AccountId> {
 	/// Calculate the balance needed on the remote chain based on the `IdentityInfo` and `Subs` on
 	/// this chain. The total includes:
 	///
@@ -56,7 +56,7 @@ impl<Runtime, AccountId> ToTeyrchainIdentityReaper<Runtime, AccountId> {
 	fn calculate_remote_deposit(bytes: u32, subs: u32) -> Balance {
 		// Remote deposit constants. Teyrchain uses `deposit / 100`
 		// Source:
-		// https://github.com/pezkuwichain/pezkuwi-sdk/blob/a146918/pezcumulus/parachains/common/src/westend.rs#L28
+		// https://github.com/pezkuwichain/pezkuwi-sdk/blob/a146918/cumulus/teyrchains/common/src/westend.rs#L28
 		//
 		// Teyrchain Deposit Configuration:
 		//
@@ -82,7 +82,7 @@ impl<Runtime, AccountId> ToTeyrchainIdentityReaper<Runtime, AccountId> {
 
 // Note / Warning: This implementation should only be used in a transactional context. If not, then
 // an error could result in assets being burned.
-impl<Runtime, AccountId> OnReapIdentity<AccountId> for ToTeyrchainIdentityReaper<Runtime, AccountId>
+impl<Runtime, AccountId> OnReapIdentity<AccountId> for ToParachainIdentityReaper<Runtime, AccountId>
 where
 	Runtime: pezframe_system::Config + pezpallet_xcm::Config,
 	AccountId: Into<[u8; 32]> + Clone + Encode,

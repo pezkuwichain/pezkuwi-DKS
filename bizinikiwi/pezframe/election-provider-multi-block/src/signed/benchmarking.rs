@@ -64,11 +64,7 @@ mod benchmarks {
 			if i == 0 {
 				for p in 0..T::Pages::get() {
 					let page = Some(Default::default());
-					Pezpallet::<T>::submit_page(
-						RawOrigin::Signed(submitter.clone()).into(),
-						p,
-						page,
-					)?;
+					Pezpallet::<T>::submit_page(RawOrigin::Signed(submitter.clone()).into(), p, page)?;
 				}
 			}
 		}

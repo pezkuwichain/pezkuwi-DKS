@@ -182,8 +182,8 @@ mod benchmarks {
 		crate::mock::ElectionStart::set(pezsp_runtime::traits::Bounded::max_value());
 		crate::Pezpallet::<T>::start().unwrap();
 
-		// roll to signed validation, with a solution stored in the signed pezpallet, but this
-		// solution is corrupt in its msp.
+		// roll to signed validation, with a solution stored in the signed pezpallet, but this solution
+		// is corrupt in its msp.
 		let mut paged_solution = crate::Pezpallet::<T>::roll_to_signed_and_mine_full_solution();
 		let page_to_corrupt = crate::Pezpallet::<T>::msp() - v;
 		crate::log!(

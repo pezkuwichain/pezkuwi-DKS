@@ -140,6 +140,7 @@ std = [
 	"polkavm-common/std",
 	"polkavm/std",
 	"rand/std",
+	"rand?/std",
 	"revm/std",
 	"ripemd/std",
 	"rlp/std",
@@ -175,6 +176,8 @@ runtime-benchmarks = [
 	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-state-machine/runtime-benchmarks",
 	"pezsp-version/runtime-benchmarks",
+	"rand",
+	"rand_pcg",
 ]
 try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
@@ -198,3 +201,4 @@ serde = []
 experimental = []
 with-tracing = []
 tuples-96 = []
+trybuild = []

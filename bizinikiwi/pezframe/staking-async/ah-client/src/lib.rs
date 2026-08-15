@@ -23,7 +23,7 @@
 //!
 //! 1. Incoming messages: the messages that we receive from the relay chian.
 //! 2. Outgoing messages: the messaged that we sent to the relay chain.
-//! 3. Local interfaces: the interfaces that we expose to other pallets in the runtime.
+//! 3. Local interfaces: the interfaces that we expose to other pezpallets in the runtime.
 //!
 //! ## Incoming Messages
 //!
@@ -68,10 +68,7 @@ use pezframe_support::{
 pub use pezpallet_staking_async_rc_client::SendToAssetHub;
 use pezpallet_staking_async_rc_client::{self as rc_client};
 use pezsp_runtime::SaturatedConversion;
-use pezsp_staking::{
-	offence::{OffenceDetails, OffenceSeverity},
-	SessionIndex,
-};
+use pezsp_staking::offence::OffenceDetails;
 
 /// The balance type seen from this pezpallet's PoV.
 pub type BalanceOf<T> = <T as Config>::CurrencyBalance;
@@ -98,38 +95,11 @@ macro_rules! log {
 	};
 }
 
-/// Interface to talk to the local session pezpallet.
-pub trait SessionInterface {
-	/// The validator id type of the session pezpallet
-	type ValidatorId: Clone;
-
-	fn validators() -> Vec<Self::ValidatorId>;
-
-	/// prune up to the given session index.
-	fn prune_up_to(index: SessionIndex);
-
-	/// Report an offence.
-	///
-	/// This is used to disable validators directly on the RC, until the next validator set.
-	fn report_offence(offender: Self::ValidatorId, severity: OffenceSeverity);
-}
-
-impl<T: Config + pezpallet_session::Config + pezpallet_session::historical::Config> SessionInterface
-	for T
-{
-	type ValidatorId = <T as pezpallet_session::Config>::ValidatorId;
-
-	fn validators() -> Vec<Self::ValidatorId> {
-		pezpallet_session::Pezpallet::<T>::validators()
-	}
-
-	fn prune_up_to(index: SessionIndex) {
-		pezpallet_session::historical::Pezpallet::<T>::prune_up_to(index)
-	}
-	fn report_offence(offender: Self::ValidatorId, severity: OffenceSeverity) {
-		pezpallet_session::Pezpallet::<T>::report_offence(offender, severity)
-	}
-}
+/// Re-export `SessionInterface` from `pezpallet_session`.
+///
+/// This trait provides the interface to talk to the local session pezpallet for cross-chain
+/// session management.
+pub use pezpallet_session::SessionInterface;
 
 /// Represents the operating mode of the pezpallet.
 #[derive(
@@ -181,8 +151,8 @@ impl OperatingMode {
 	}
 }
 
-/// See `pezpallet_staking::DefaultExposureOf`. This type is the same, except it is duplicated here
-/// so that an rc-runtime can use it after `pezpallet-staking` is fully removed as a dependency.
+/// See `pezpallet_staking::DefaultExposureOf`. This type is the same, except it is duplicated here so
+/// that an rc-runtime can use it after `pezpallet-staking` is fully removed as a dependency.
 pub struct DefaultExposureOf<T>(core::marker::PhantomData<T>);
 
 impl<T: Config>
@@ -255,9 +225,9 @@ pub mod pezpallet {
 		///
 		/// Note that in case a single session report is larger than a single DMP message, it might
 		/// still be sent over if we use
-		/// [`pezpallet_staking_async_rc_client::XCMSender::split_then_send`]. This will make the
-		/// size of each individual message smaller, yet, it will still try and push them all to
-		/// the queue at the same time.
+		/// [`pezpallet_staking_async_rc_client::XCMSender::split_then_send`]. This will make the size
+		/// of each individual message smaller, yet, it will still try and push them all to the
+		/// queue at the same time.
 		type MaximumValidatorsWithPoints: Get<u32>;
 
 		/// A type that gives us a reliable unix timestamp.
@@ -275,7 +245,10 @@ pub mod pezpallet {
 		type MaxOffenceBatchSize: Get<u32>;
 
 		/// Interface to talk to the local Session pezpallet.
-		type SessionInterface: SessionInterface<ValidatorId = Self::AccountId>;
+		type SessionInterface: SessionInterface<
+			ValidatorId = Self::AccountId,
+			AccountId = Self::AccountId,
+		>;
 
 		/// A fallback implementation to delegate logic to when the pezpallet is in
 		/// [`OperatingMode::Passive`].
@@ -323,9 +296,8 @@ pub mod pezpallet {
 
 	/// Indicates the current operating mode of the pezpallet.
 	///
-	/// This value determines how the pezpallet behaves in response to incoming and outgoing
-	/// messages, particularly whether it should execute logic directly, defer it, or delegate it
-	/// entirely.
+	/// This value determines how the pezpallet behaves in response to incoming and outgoing messages,
+	/// particularly whether it should execute logic directly, defer it, or delegate it entirely.
 	#[pezpallet::storage]
 	pub type Mode<T: Config> = StorageValue<_, OperatingMode, ValueQuery>;
 
@@ -487,6 +459,24 @@ pub mod pezpallet {
 		/// Something occurred that should never happen under normal operation. Logged as an event
 		/// for fail-safe observability.
 		Unexpected(UnexpectedKind),
+		/// Session keys updated for a validator.
+		SessionKeysUpdated { stash: T::AccountId, update: SessionKeysUpdate },
+		/// Session key update from AssetHub failed on the relay chain.
+		/// Logged as an event for fail-safe observability.
+		SessionKeysUpdateFailed {
+			stash: T::AccountId,
+			update: SessionKeysUpdate,
+			error: DispatchError,
+		},
+	}
+
+	/// The type of session keys update received from AssetHub.
+	#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, TypeInfo, Debug)]
+	pub enum SessionKeysUpdate {
+		/// Session keys have been set.
+		Set,
+		/// Session keys have been purged.
+		Purged,
 	}
 
 	/// Represents unexpected or invariant-breaking conditions encountered during execution.
@@ -527,6 +517,12 @@ pub mod pezpallet {
 		/// * Those who are calling into our `RewardsReporter` likely have a bad view of the
 		///   validator set, and are spamming us.
 		ValidatorPointDropped,
+
+		/// Session keys received from AssetHub failed to decode.
+		///
+		/// This should never happen since AssetHub validates keys before forwarding them.
+		/// If this occurs, it indicates a mismatch between AH and RC key types or a bug.
+		InvalidKeysFromAssetHub,
 	}
 
 	#[pezpallet::call]
@@ -632,6 +628,99 @@ pub mod pezpallet {
 		pub fn force_on_migration_end(origin: OriginFor<T>) -> DispatchResult {
 			T::AdminOrigin::ensure_origin(origin)?;
 			Self::on_migration_end();
+			Ok(())
+		}
+
+		/// Set session keys for a validator, forwarded from AssetHub.
+		///
+		/// This is called when a validator sets their session keys on AssetHub, which forwards
+		/// the request to the RelayChain via XCM.
+		///
+		/// AssetHub validates both keys and ownership proof before sending.
+		/// RC trusts AH's validation and does not re-validate.
+		#[pezpallet::call_index(3)]
+		#[pezpallet::weight(T::SessionInterface::set_keys_weight())]
+		pub fn set_keys_from_ah(
+			origin: OriginFor<T>,
+			stash: T::AccountId,
+			keys: Vec<u8>,
+		) -> DispatchResult {
+			T::AssetHubOrigin::ensure_origin_or_root(origin)?;
+			log::info!(target: LOG_TARGET, "Received set_keys request from AssetHub for {stash:?}");
+
+			// Decode the keys from bytes (AH already validated, this is just for type conversion)
+			let session_keys =
+				match <<T as Config>::SessionInterface as SessionInterface>::Keys::decode(
+					&mut &keys[..],
+				) {
+					Ok(keys) => keys,
+					Err(e) => {
+						// This should never happen since AH validates keys before forwarding.
+						// Returning Ok() allows the event to be observed for monitoring.
+						log!(
+							warn,
+							"InvalidKeysFromAssetHub: failed to decode keys for {:?}: {:?}",
+							stash,
+							e
+						);
+						Self::deposit_event(Event::Unexpected(
+							UnexpectedKind::InvalidKeysFromAssetHub,
+						));
+						return Ok(());
+					},
+				};
+
+			match T::SessionInterface::set_keys(&stash, session_keys) {
+				Ok(()) => Self::deposit_event(Event::SessionKeysUpdated {
+					stash,
+					update: SessionKeysUpdate::Set,
+				}),
+				Err(error) => {
+					log!(
+						warn,
+						"SessionKeysUpdateFailed: set_keys failed for {:?}: {:?}",
+						stash,
+						error
+					);
+					Self::deposit_event(Event::SessionKeysUpdateFailed {
+						stash,
+						update: SessionKeysUpdate::Set,
+						error,
+					});
+				},
+			}
+			Ok(())
+		}
+
+		/// Purge session keys for a validator, forwarded from AssetHub.
+		///
+		/// This is called when a validator purges their session keys on AssetHub, which forwards
+		/// the request to the RelayChain via XCM.
+		#[pezpallet::call_index(4)]
+		#[pezpallet::weight(T::SessionInterface::purge_keys_weight())]
+		pub fn purge_keys_from_ah(origin: OriginFor<T>, stash: T::AccountId) -> DispatchResult {
+			T::AssetHubOrigin::ensure_origin_or_root(origin)?;
+			log::info!(target: LOG_TARGET, "Received purge_keys request from AssetHub for {stash:?}");
+
+			match T::SessionInterface::purge_keys(&stash) {
+				Ok(()) => Self::deposit_event(Event::SessionKeysUpdated {
+					stash,
+					update: SessionKeysUpdate::Purged,
+				}),
+				Err(error) => {
+					log!(
+						warn,
+						"SessionKeysUpdateFailed: purge_keys failed for {:?}: {:?}",
+						stash,
+						error
+					);
+					Self::deposit_event(Event::SessionKeysUpdateFailed {
+						stash,
+						update: SessionKeysUpdate::Purged,
+						error,
+					});
+				},
+			}
 			Ok(())
 		}
 	}
@@ -827,9 +916,9 @@ pub mod pezpallet {
 	impl<T: Config> Pezpallet<T> {
 		/// Hook to be called when the AssetHub migration begins.
 		///
-		/// This transitions the pezpallet into [`OperatingMode::Buffered`], meaning it will act as
-		/// the primary staking module on the relay chain but will buffer outgoing messages
-		/// instead of sending them to AssetHub.
+		/// This transitions the pezpallet into [`OperatingMode::Buffered`], meaning it will act as the
+		/// primary staking module on the relay chain but will buffer outgoing messages instead of
+		/// sending them to AssetHub.
 		///
 		/// While in this mode, the pezpallet stops delegating to the fallback implementation and
 		/// temporarily accumulates events for later processing.
@@ -844,11 +933,11 @@ pub mod pezpallet {
 		/// Hook to be called when the AssetHub migration is complete.
 		///
 		/// This transitions the pezpallet into [`OperatingMode::Active`], meaning the counterpart
-		/// pezpallet on AssetHub is ready to accept incoming messages, and this pezpallet can
-		/// resume sending them.
+		/// pezpallet on AssetHub is ready to accept incoming messages, and this pezpallet can resume
+		/// sending them.
 		///
-		/// In this mode, the pezpallet becomes fully active and processes all staking-related
-		/// events directly.
+		/// In this mode, the pezpallet becomes fully active and processes all staking-related events
+		/// directly.
 		pub fn on_migration_end() {
 			debug_assert!(
 				Mode::<T>::get() == OperatingMode::Buffered,
@@ -1005,6 +1094,136 @@ pub mod pezpallet {
 
 			T::DbWeight::get().reads_writes(2, 2)
 		}
+	}
+}
+
+#[cfg(test)]
+mod keys_from_ah_tests {
+	use super::*;
+	use crate::mock::*;
+	use codec::Encode;
+	use pezframe_support::{assert_noop, assert_ok, hypothetically};
+	use pezsp_runtime::DispatchError;
+
+	#[test]
+	fn set_keys_from_ah() {
+		new_test_ext().execute_with(|| {
+			System::set_block_number(1);
+			let stash = 42u64;
+			let keys = MockSessionKeys { dummy: [1u8; 32] };
+
+			// success with root origin
+			hypothetically!({
+				SetKeysCalls::take();
+				assert_ok!(StakingAsyncAhClient::set_keys_from_ah(
+					RuntimeOrigin::root(),
+					stash,
+					keys.encode(),
+				));
+				assert_eq!(SetKeysCalls::get(), vec![(stash, keys.clone())]);
+				System::assert_has_event(
+					Event::<Test>::SessionKeysUpdated { stash, update: SessionKeysUpdate::Set }
+						.into(),
+				);
+			});
+
+			// rejects bad origin
+			hypothetically!({
+				SetKeysCalls::take();
+				assert_noop!(
+					StakingAsyncAhClient::set_keys_from_ah(
+						RuntimeOrigin::signed(1),
+						stash,
+						keys.encode(),
+					),
+					DispatchError::BadOrigin
+				);
+				assert!(SetKeysCalls::get().is_empty());
+			});
+
+			// emits SessionKeysUpdateFailed when SessionInterface::set_keys fails
+			hypothetically!({
+				SetKeysCalls::take();
+				let error = DispatchError::Corruption;
+				SetKeysError::set(Some(error));
+				assert_ok!(StakingAsyncAhClient::set_keys_from_ah(
+					RuntimeOrigin::root(),
+					stash,
+					keys.encode(),
+				));
+				assert!(SetKeysCalls::get().is_empty());
+				System::assert_has_event(
+					Event::<Test>::SessionKeysUpdateFailed {
+						stash,
+						update: SessionKeysUpdate::Set,
+						error,
+					}
+					.into(),
+				);
+				SetKeysError::take();
+			});
+
+			// handles invalid keys gracefully
+			hypothetically!({
+				SetKeysCalls::take();
+				assert_ok!(StakingAsyncAhClient::set_keys_from_ah(
+					RuntimeOrigin::root(),
+					stash,
+					vec![1u8, 2, 3], // invalid encoding
+				));
+				assert!(SetKeysCalls::get().is_empty());
+				System::assert_has_event(
+					Event::<Test>::Unexpected(UnexpectedKind::InvalidKeysFromAssetHub).into(),
+				);
+			});
+		});
+	}
+
+	#[test]
+	fn purge_keys_from_ah() {
+		new_test_ext().execute_with(|| {
+			System::set_block_number(1);
+			let stash = 42u64;
+
+			// success with root origin
+			hypothetically!({
+				PurgeKeysCalls::take();
+				assert_ok!(StakingAsyncAhClient::purge_keys_from_ah(RuntimeOrigin::root(), stash));
+				assert_eq!(PurgeKeysCalls::get(), vec![stash]);
+				System::assert_has_event(
+					Event::<Test>::SessionKeysUpdated { stash, update: SessionKeysUpdate::Purged }
+						.into(),
+				);
+			});
+
+			// rejects bad origin
+			hypothetically!({
+				PurgeKeysCalls::take();
+				assert_noop!(
+					StakingAsyncAhClient::purge_keys_from_ah(RuntimeOrigin::signed(1), stash),
+					DispatchError::BadOrigin
+				);
+				assert!(PurgeKeysCalls::get().is_empty());
+			});
+
+			// emits SessionKeysUpdateFailed when SessionInterface::purge_keys fails
+			hypothetically!({
+				PurgeKeysCalls::take();
+				let error = DispatchError::Corruption;
+				PurgeKeysError::set(Some(error));
+				assert_ok!(StakingAsyncAhClient::purge_keys_from_ah(RuntimeOrigin::root(), stash));
+				assert!(PurgeKeysCalls::get().is_empty());
+				System::assert_has_event(
+					Event::<Test>::SessionKeysUpdateFailed {
+						stash,
+						update: SessionKeysUpdate::Purged,
+						error,
+					}
+					.into(),
+				);
+				PurgeKeysError::take();
+			});
+		});
 	}
 }
 

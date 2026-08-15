@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Bizinikiwi.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Genesis configs presets for the Zagros runtime
+//! Genesis configs presets for the Westend runtime
 
 use crate::{
 	BabeConfig, BalancesConfig, ConfigurationConfig, RegistrarConfig, RuntimeGenesisConfig,
@@ -25,8 +25,8 @@ use alloc::format;
 use alloc::{string::ToString, vec, vec::Vec};
 use core::panic;
 use pezframe_support::build_struct_json_patch;
-use pezkuwi_primitives::{AccountId, AssignmentId, SchedulerParams, ValidatorId};
-use pezpallet_staking_async_rc_runtime_constants::currency::UNITS as ZGR;
+use pezkuwi_primitives::{vstaging::SchedulerParams, AccountId, AssignmentId, ValidatorId};
+use pezpallet_staking_async_rc_runtime_constants::currency::UNITS as WND;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_babe::AuthorityId as BabeId;
 use pezsp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId;
@@ -76,7 +76,7 @@ fn get_authority_keys_from_seed_no_beefy(
 	)
 }
 
-fn zagros_session_keys(
+fn westend_session_keys(
 	babe: BabeId,
 	grandpa: GrandpaId,
 	para_validator: ValidatorId,
@@ -139,6 +139,7 @@ fn default_teyrchains_host_configuration(
 			paras_availability_period: 4,
 			..Default::default()
 		},
+		max_relay_parent_session_age: 0,
 		approval_voting_params: ApprovalVotingParams { max_approval_coalesce_count: 5 },
 		..Default::default()
 	}
@@ -149,8 +150,8 @@ fn default_teyrchains_host_configuration_is_consistent() {
 	default_teyrchains_host_configuration().panic_if_not_consistent();
 }
 
-/// Helper function to create zagros runtime `GenesisConfig` patch for testing
-fn zagros_testnet_genesis(
+/// Helper function to create westend runtime `GenesisConfig` patch for testing
+fn westend_testnet_genesis(
 	initial_authorities: Vec<(
 		AccountId,
 		AccountId,
@@ -167,7 +168,7 @@ fn zagros_testnet_genesis(
 	let endowed_accounts =
 		Sr25519Keyring::well_known().map(|k| k.to_account_id()).collect::<Vec<_>>();
 
-	const ENDOWMENT: u128 = 1_000_000 * ZGR;
+	const ENDOWMENT: u128 = 1_000_000 * WND;
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
@@ -180,7 +181,7 @@ fn zagros_testnet_genesis(
 					(
 						x.0.clone(),
 						x.0.clone(),
-						zagros_session_keys(
+						westend_session_keys(
 							x.2.clone(),
 							x.3.clone(),
 							x.4.clone(),
@@ -207,7 +208,7 @@ fn zagros_testnet_genesis(
 /// Provides the JSON representation of predefined genesis config for given `id`.
 pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 	let patch = match id.as_ref() {
-		"real-m" => zagros_testnet_genesis(
+		"real-m" => westend_testnet_genesis(
 			vec![
 				get_authority_keys_from_seed("Alice"),
 				get_authority_keys_from_seed("Bob"),
@@ -217,12 +218,12 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			Sr25519Keyring::Alice.to_account_id(),
 			id.to_string(),
 		),
-		"real-s" => zagros_testnet_genesis(
+		"real-s" => westend_testnet_genesis(
 			vec![get_authority_keys_from_seed("Alice"), get_authority_keys_from_seed("Bob")],
 			Sr25519Keyring::Alice.to_account_id(),
 			id.to_string(),
 		),
-		"fake-s" => zagros_testnet_genesis(
+		"fake-s" => westend_testnet_genesis(
 			vec![get_authority_keys_from_seed("Alice"), get_authority_keys_from_seed("Bob")],
 			Sr25519Keyring::Alice.to_account_id(),
 			id.to_string(),
