@@ -17,8 +17,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Keyed on the pull request for PRs and on the commit everywhere else, never on the ref.
+  # A release cannot proceed until this suite has completed successfully for its exact
+  # commit (see full-ci-gate in release-testnet.yml), and a ref-keyed group let the next
+  # push to the same branch cancel the run the release was waiting on -- leaving the gate
+  # with no successful run to find and no failure to explain it. Superseding still happens
+  # where it is wanted: a new push to a PR cancels that PR's earlier run.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always

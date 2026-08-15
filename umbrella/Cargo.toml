@@ -143,12 +143,6 @@ std = [
 	"pezkuwi-subxt-utils-stripmetadata?/std",
 	"pezkuwi-subxt?/std",
 	"pezkuwi-teyrchain-primitives?/std",
-	"pezkuwi-zombienet-configuration?/std",
-	"pezkuwi-zombienet-orchestrator?/std",
-	"pezkuwi-zombienet-prom-metrics-parser?/std",
-	"pezkuwi-zombienet-provider?/std",
-	"pezkuwi-zombienet-sdk?/std",
-	"pezkuwi-zombienet-support?/std",
 	"pezmmr-gadget?/std",
 	"pezmmr-rpc?/std",
 	"pezpallet-alliance?/std",
@@ -520,8 +514,6 @@ runtime-benchmarks = [
 	"pezkuwi-subxt-signer?/runtime-benchmarks",
 	"pezkuwi-subxt?/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives?/runtime-benchmarks",
-	"pezkuwi-zombienet-orchestrator?/runtime-benchmarks",
-	"pezkuwi-zombienet-sdk?/runtime-benchmarks",
 	"pezmmr-gadget?/runtime-benchmarks",
 	"pezmmr-rpc?/runtime-benchmarks",
 	"pezpallet-alliance?/runtime-benchmarks",
@@ -1133,11 +1125,6 @@ serde = [
 	"pezkuwi-subxt-utils-stripmetadata?/serde",
 	"pezkuwi-subxt?/serde",
 	"pezkuwi-teyrchain-primitives?/serde",
-	"pezkuwi-zombienet-configuration?/serde",
-	"pezkuwi-zombienet-orchestrator?/serde",
-	"pezkuwi-zombienet-provider?/serde",
-	"pezkuwi-zombienet-sdk?/serde",
-	"pezkuwi-zombienet-support?/serde",
 	"pezmmr-gadget?/serde",
 	"pezmmr-rpc?/serde",
 	"pezpallet-alliance?/serde",
@@ -2065,12 +2052,6 @@ node = [
 	"pezkuwi-subxt-rpcs",
 	"pezkuwi-subxt-utils-fetchmetadata",
 	"pezkuwi-subxt-utils-stripmetadata",
-	"pezkuwi-zombienet-configuration",
-	"pezkuwi-zombienet-orchestrator",
-	"pezkuwi-zombienet-prom-metrics-parser",
-	"pezkuwi-zombienet-provider",
-	"pezkuwi-zombienet-sdk",
-	"pezkuwi-zombienet-support",
 	"pezmmr-gadget",
 	"pezmmr-rpc",
 	"pezpallet-contracts-fixtures",
@@ -3920,36 +3901,6 @@ path = "../vendor/pezkuwi-subxt/utils/fetch-metadata"
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/utils/strip-metadata"
-
-[dependencies.pezkuwi-zombienet-configuration]
-default-features = false
-optional = true
-path = "../vendor/pezkuwi-zombienet-sdk/crates/configuration"
-
-[dependencies.pezkuwi-zombienet-orchestrator]
-default-features = false
-optional = true
-path = "../vendor/pezkuwi-zombienet-sdk/crates/orchestrator"
-
-[dependencies.pezkuwi-zombienet-prom-metrics-parser]
-default-features = false
-optional = true
-path = "../vendor/pezkuwi-zombienet-sdk/crates/prom-metrics-parser"
-
-[dependencies.pezkuwi-zombienet-provider]
-default-features = false
-optional = true
-path = "../vendor/pezkuwi-zombienet-sdk/crates/provider"
-
-[dependencies.pezkuwi-zombienet-sdk]
-default-features = false
-optional = true
-path = "../vendor/pezkuwi-zombienet-sdk/crates/sdk"
-
-[dependencies.pezkuwi-zombienet-support]
-default-features = false
-optional = true
-path = "../vendor/pezkuwi-zombienet-sdk/crates/support"
 
 [dependencies.pezmmr-gadget]
 default-features = false

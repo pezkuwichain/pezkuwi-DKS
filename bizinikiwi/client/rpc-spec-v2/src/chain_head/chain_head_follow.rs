@@ -36,6 +36,7 @@ use pezsc_client_api::{
 	StaleBlock,
 };
 use pezsc_rpc::utils::Subscription;
+use schnellru::{ByLength, LruMap};
 use pezsp_api::CallApiAt;
 use pezsp_blockchain::{
 	Backend as BlockChainBackend, Error as BlockChainError, HeaderBackend, HeaderMetadata, Info,
@@ -44,7 +45,6 @@ use pezsp_runtime::{
 	traits::{Block as BlockT, Header as HeaderT, NumberFor},
 	SaturatedConversion, Saturating,
 };
-use schnellru::{ByLength, LruMap};
 use std::{
 	collections::{HashSet, VecDeque},
 	sync::Arc,
@@ -249,7 +249,7 @@ where
 			return None;
 		}
 
-		let block_rt = match self.client.runtime_version_at(block) {
+		let block_rt = match self.client.runtime_version_at(block, pezsp_api::CallContext::Offchain) {
 			Ok(rt) => rt,
 			Err(err) => return Some(err.into()),
 		};
@@ -262,7 +262,8 @@ where
 			},
 		};
 
-		let parent_rt = match self.client.runtime_version_at(parent) {
+		let parent_rt = match self.client.runtime_version_at(parent, pezsp_api::CallContext::Offchain)
+		{
 			Ok(rt) => rt,
 			Err(err) => return Some(err.into()),
 		};
@@ -431,6 +432,9 @@ where
 
 		// Generate a new best block event.
 		let best_block_hash = startup_point.best_hash;
+		// Only announce a best-block change when the best block is not the finalized one:
+		// the subscriber already received that hash in the Initialized event, so announcing
+		// it again is a duplicate event for the same block.
 		if best_block_hash != finalized_block_hash {
 			if !self.announced_blocks.was_announced(&best_block_hash) {
 				return Err(SubscriptionManagementError::BlockHeaderAbsent);
@@ -583,11 +587,8 @@ where
 			}
 
 			if let Some(best_block_hash) = self.current_best_block {
-				let ancestor = pezsp_blockchain::lowest_common_ancestor(
-					&*self.client,
-					*hash,
-					best_block_hash,
-				)?;
+				let ancestor =
+					pezsp_blockchain::lowest_common_ancestor(&*self.client, *hash, best_block_hash)?;
 
 				// If we end up here and the `best_block` is a descendent of the finalized block
 				// (last block in the list), it means that there were skipped notifications.

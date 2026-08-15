@@ -66,6 +66,27 @@ jobs:
             -p people-pezkuwichain-runtime \
             -p people-zagros-runtime
 
+  # The runtimes are the on-chain deliverable; these are the off-chain one. Nothing on the
+  # every-push path compiled them until now, so the node could stop building and every gating
+  # job would still report green: a framework sync moved several client crates and left their
+  # consumers behind, and `cargo check -p pezsc-network` failed for weeks without a red run.
+  # The runtime jobs cannot catch this — they never reach the client layer.
+  node:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, substrate-build]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+      - name: Build node binaries (check)
+        run: |
+          cargo check --locked -p pezkuwi -p pezkuwi-teyrchain-bin
+
   # The runtimes must also build with the try-runtime feature — this is what makes
   # safe storage migrations possible, a fund-critical gate before any upgrade. It is
   # light (-p runtimes only), so it stays on the every-push fast path. The heavy

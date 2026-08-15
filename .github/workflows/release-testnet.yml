@@ -155,7 +155,9 @@ jobs:
       matrix:
         package:
           - pezkuwi
-          - pezkuwi-teyrchain
+          # The package is -bin; `pezkuwi-teyrchain` is the binary it produces, and
+          # `cargo build -p pezkuwi-teyrchain` matches no package at all.
+          - pezkuwi-teyrchain-bin
     steps:
       - uses: actions/checkout@v7
         with:
@@ -177,7 +179,7 @@ jobs:
           # optional extras but part of the node's execution path.
           case "${{ matrix.package }}" in
             pezkuwi) bins="pezkuwi pezkuwi-execute-worker pezkuwi-prepare-worker" ;;
-            pezkuwi-teyrchain) bins="pezkuwi-teyrchain" ;;
+            pezkuwi-teyrchain-bin) bins="pezkuwi-teyrchain" ;;
             *) echo "::error::unknown package"; exit 1 ;;
           esac
           out=artifacts; mkdir -p "$out"
