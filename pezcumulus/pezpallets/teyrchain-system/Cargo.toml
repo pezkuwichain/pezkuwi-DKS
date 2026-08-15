@@ -119,6 +119,7 @@ runtime-benchmarks = [
 	"pezframe-benchmarking/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
 	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
