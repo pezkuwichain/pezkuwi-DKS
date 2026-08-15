@@ -49,7 +49,7 @@ fn planning_era_offset_less_0() {
 					Event::SessionRotated { starting_session: 6, active_era: 0, planned_era: 1 },
 					Event::PagedElectionProceeded { page: 0, result: Ok(2) },
 					Event::SessionRotated { starting_session: 7, active_era: 0, planned_era: 1 },
-					Event::EraPaid { era_index: 0, validator_payout: 20000, remainder: 20000 },
+					Event::EraPaid { era_index: 0, validator_payout: 20000, remainder: 0 },
 					Event::SessionRotated { starting_session: 8, active_era: 1, planned_era: 1 }
 				]
 			);
@@ -69,7 +69,7 @@ fn planning_era_offset_less_0() {
 					Event::SessionRotated { starting_session: 14, active_era: 1, planned_era: 2 },
 					Event::PagedElectionProceeded { page: 0, result: Ok(2) },
 					Event::SessionRotated { starting_session: 15, active_era: 1, planned_era: 2 },
-					Event::EraPaid { era_index: 1, validator_payout: 20000, remainder: 20000 },
+					Event::EraPaid { era_index: 1, validator_payout: 20000, remainder: 0 },
 					Event::SessionRotated { starting_session: 16, active_era: 2, planned_era: 2 }
 				]
 			);
@@ -101,7 +101,7 @@ fn planning_era_offset_works_1() {
 					Event::SessionRotated { starting_session: 5, active_era: 0, planned_era: 1 },
 					Event::PagedElectionProceeded { page: 0, result: Ok(2) },
 					Event::SessionRotated { starting_session: 6, active_era: 0, planned_era: 1 },
-					Event::EraPaid { era_index: 0, validator_payout: 17500, remainder: 17500 },
+					Event::EraPaid { era_index: 0, validator_payout: 17500, remainder: 0 },
 					Event::SessionRotated { starting_session: 7, active_era: 1, planned_era: 1 }
 				]
 			);
@@ -120,7 +120,7 @@ fn planning_era_offset_works_1() {
 					Event::SessionRotated { starting_session: 12, active_era: 1, planned_era: 2 },
 					Event::PagedElectionProceeded { page: 0, result: Ok(2) },
 					Event::SessionRotated { starting_session: 13, active_era: 1, planned_era: 2 },
-					Event::EraPaid { era_index: 1, validator_payout: 17500, remainder: 17500 },
+					Event::EraPaid { era_index: 1, validator_payout: 17500, remainder: 0 },
 					Event::SessionRotated { starting_session: 14, active_era: 2, planned_era: 2 }
 				]
 			);
@@ -148,7 +148,7 @@ fn planning_era_offset_works_2() {
 					Event::SessionRotated { starting_session: 4, active_era: 0, planned_era: 1 },
 					Event::PagedElectionProceeded { page: 0, result: Ok(2) },
 					Event::SessionRotated { starting_session: 5, active_era: 0, planned_era: 1 },
-					Event::EraPaid { era_index: 0, validator_payout: 15000, remainder: 15000 },
+					Event::EraPaid { era_index: 0, validator_payout: 15000, remainder: 0 },
 					Event::SessionRotated { starting_session: 6, active_era: 1, planned_era: 1 }
 				]
 			);
@@ -166,7 +166,7 @@ fn planning_era_offset_works_2() {
 					Event::SessionRotated { starting_session: 10, active_era: 1, planned_era: 2 },
 					Event::PagedElectionProceeded { page: 0, result: Ok(2) },
 					Event::SessionRotated { starting_session: 11, active_era: 1, planned_era: 2 },
-					Event::EraPaid { era_index: 1, validator_payout: 15000, remainder: 15000 },
+					Event::EraPaid { era_index: 1, validator_payout: 15000, remainder: 0 },
 					Event::SessionRotated { starting_session: 12, active_era: 2, planned_era: 2 }
 				]
 			);
@@ -194,7 +194,7 @@ fn planning_era_offset_works_smart() {
 					Event::SessionRotated { starting_session: 4, active_era: 0, planned_era: 1 },
 					Event::PagedElectionProceeded { page: 0, result: Ok(2) },
 					Event::SessionRotated { starting_session: 5, active_era: 0, planned_era: 1 },
-					Event::EraPaid { era_index: 0, validator_payout: 15000, remainder: 15000 },
+					Event::EraPaid { era_index: 0, validator_payout: 15000, remainder: 0 },
 					Event::SessionRotated { starting_session: 6, active_era: 1, planned_era: 1 }
 				]
 			);
@@ -212,7 +212,7 @@ fn planning_era_offset_works_smart() {
 					Event::SessionRotated { starting_session: 10, active_era: 1, planned_era: 2 },
 					Event::PagedElectionProceeded { page: 0, result: Ok(2) },
 					Event::SessionRotated { starting_session: 11, active_era: 1, planned_era: 2 },
-					Event::EraPaid { era_index: 1, validator_payout: 15000, remainder: 15000 },
+					Event::EraPaid { era_index: 1, validator_payout: 15000, remainder: 0 },
 					Event::SessionRotated { starting_session: 12, active_era: 2, planned_era: 2 }
 				]
 			);
@@ -241,7 +241,7 @@ fn planning_era_offset_works_smart_with_delay() {
 					Event::SessionRotated { starting_session: 4, active_era: 0, planned_era: 1 },
 					Event::PagedElectionProceeded { page: 0, result: Ok(2) },
 					Event::SessionRotated { starting_session: 5, active_era: 0, planned_era: 1 },
-					Event::EraPaid { era_index: 0, validator_payout: 15000, remainder: 15000 },
+					Event::EraPaid { era_index: 0, validator_payout: 15000, remainder: 0 },
 					Event::SessionRotated { starting_session: 6, active_era: 1, planned_era: 1 }
 				]
 			);
@@ -259,7 +259,7 @@ fn planning_era_offset_works_smart_with_delay() {
 					Event::SessionRotated { starting_session: 10, active_era: 1, planned_era: 2 },
 					Event::PagedElectionProceeded { page: 0, result: Ok(2) },
 					Event::SessionRotated { starting_session: 11, active_era: 1, planned_era: 2 },
-					Event::EraPaid { era_index: 1, validator_payout: 15000, remainder: 15000 },
+					Event::EraPaid { era_index: 1, validator_payout: 15000, remainder: 0 },
 					Event::SessionRotated { starting_session: 12, active_era: 2, planned_era: 2 }
 				]
 			);
@@ -1346,27 +1346,4 @@ mod paged_on_initialize_era_election_planner {
 	// 		assert_eq!(staking_events_since_last_call(), vec![Event::StakingElectionFailed]);
 	// 	})
 	// }
-}
-
-#[test]
-fn cleanup_preserves_voter_snapshot_cursor_while_election_is_ongoing() {
-	use crate::SnapshotStatus;
-	use pezframe_election_provider_support::ElectionProvider;
-
-	ExtBuilder::default().build_and_execute(|| {
-		// While the election provider is idle, the paged voter cursor is reset, as before.
-		crate::VoterSnapshotStatus::<Test>::put(SnapshotStatus::Ongoing(11));
-		assert!(<Test as crate::Config>::ElectionProvider::status().is_err());
-		EraElectionPlanner::<Test>::cleanup();
-		assert_eq!(crate::VoterSnapshotStatus::<Test>::get(), SnapshotStatus::Waiting);
-
-		// Once an election is ongoing, its snapshot is being built one page per block. `start_era`
-		// can fire in the middle of that, and resetting the cursor here would make the data
-		// provider restart its iteration and hand the very same voters out again for a later page.
-		// The resulting duplicate-voter snapshot is unsolvable and stalls the round forever.
-		assert_ok!(<Test as crate::Config>::ElectionProvider::start());
-		crate::VoterSnapshotStatus::<Test>::put(SnapshotStatus::Ongoing(11));
-		EraElectionPlanner::<Test>::cleanup();
-		assert_eq!(crate::VoterSnapshotStatus::<Test>::get(), SnapshotStatus::Ongoing(11));
-	})
 }

@@ -23,7 +23,9 @@ pezframe-support = { workspace = true }
 pezframe-system = { workspace = true }
 pezpallet-staking-async-rc-client = { workspace = true }
 pezsp-application-crypto = { features = ["serde"], workspace = true }
+pezsp-arithmetic = { workspace = true }
 pezsp-core = { workspace = true }
+pezsp-crypto-hashing = { workspace = true }
 pezsp-io = { workspace = true }
 pezsp-npos-elections = { workspace = true }
 pezsp-runtime = { features = ["serde"], workspace = true }
@@ -46,6 +48,7 @@ pezframe-support = { features = [
 ], workspace = true, default-features = true }
 pezpallet-bags-list = { workspace = true, default-features = true }
 pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-timestamp = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
 rand_chacha = { workspace = true, default-features = true }
 
@@ -62,8 +65,11 @@ std = [
 	"pezpallet-bags-list/std",
 	"pezpallet-balances/std",
 	"pezpallet-staking-async-rc-client/std",
+	"pezpallet-timestamp/std",
 	"pezsp-application-crypto/std",
+	"pezsp-arithmetic/std",
 	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
 	"pezsp-io/std",
 	"pezsp-npos-elections/std",
 	"pezsp-runtime/std",
@@ -82,6 +88,7 @@ runtime-benchmarks = [
 	"pezpallet-bags-list/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-staking-async-rc-client/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
 	"pezsp-application-crypto/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-npos-elections/runtime-benchmarks",
@@ -96,6 +103,7 @@ try-runtime = [
 	"pezpallet-bags-list/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-staking-async-rc-client/try-runtime",
+	"pezpallet-timestamp/try-runtime",
 	"pezsp-npos-elections/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"pezsp-staking/try-runtime",
