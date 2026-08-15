@@ -44,7 +44,6 @@ use pezframe_support::{
 	PartialEqNoBound,
 };
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
-use scale_info::TypeInfo;
 use pezsp_core::Get;
 pub use pezsp_npos_elections::{ElectionResult, ElectionScore};
 use pezsp_runtime::{
@@ -52,6 +51,7 @@ use pezsp_runtime::{
 	SaturatedConversion, Saturating,
 };
 use pezsp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*};
+use scale_info::TypeInfo;
 
 /// The solution type used by this crate.
 pub type SolutionOf<T> = <T as MinerConfig>::Solution;

@@ -55,10 +55,13 @@ runtime-benchmarks = [
 	"xcm/runtime-benchmarks",
 ]
 try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"pezsp-staking/try-runtime",
+	"xcm-builder?/try-runtime",
+	"xcm-executor?/try-runtime",
 	"xcm/try-runtime",
 ]
 serde = []

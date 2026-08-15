@@ -76,10 +76,10 @@ mod tests;
 // internal imports
 pub use crate::weights::traits::pezpallet_election_provider_multi_block_verifier::*;
 
-use pezframe_election_provider_support::PageIndex;
-use pezframe_support::weights::WeightMeter;
 use impls::SupportsOfVerifier;
 pub use impls::{feasibility_check_page_inner_with_snapshot, pezpallet::*, Status};
+use pezframe_election_provider_support::PageIndex;
+use pezframe_support::weights::WeightMeter;
 use pezsp_core::Get;
 use pezsp_npos_elections::ElectionScore;
 use pezsp_runtime::Weight;

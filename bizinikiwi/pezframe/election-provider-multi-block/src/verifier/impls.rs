@@ -275,7 +275,10 @@ pub(crate) mod pezpallet {
 		/// known to be valid. At this stage, we write to the invalid variant. Once all pages are
 		/// verified, a call to [`finalize_correct`] will seal the correct pages and flip the
 		/// invalid/valid variants.
-		pub(crate) fn set_invalid_page(page: PageIndex, supports: SupportsOfVerifier<Pezpallet<T>>) {
+		pub(crate) fn set_invalid_page(
+			page: PageIndex,
+			supports: SupportsOfVerifier<Pezpallet<T>>,
+		) {
 			use pezframe_support::traits::TryCollect;
 			Self::mutate_checked(|| {
 				let backings: BoundedVec<_, _> = supports
@@ -489,8 +492,8 @@ pub(crate) mod pezpallet {
 			// The number of existing keys in `QueuedSolutionBackings` must always match that of
 			// the INVALID variant.
 			ensure!(
-				QueuedSolutionBackings::<T>::iter_prefix(Self::round()).count() ==
-					Self::invalid_iter().count(),
+				QueuedSolutionBackings::<T>::iter_prefix(Self::round()).count()
+					== Self::invalid_iter().count(),
 				"incorrect number of backings pages",
 			);
 
@@ -864,7 +867,9 @@ impl<T: Config> Pezpallet<T> {
 	}
 
 	#[cfg(any(test, feature = "runtime-benchmarks", feature = "try-runtime"))]
-	pub(crate) fn do_try_state(_now: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
+	pub(crate) fn do_try_state(
+		_now: BlockNumberFor<T>,
+	) -> Result<(), pezsp_runtime::TryRuntimeError> {
 		QueuedSolution::<T>::sanity_check()
 	}
 }

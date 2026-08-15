@@ -71,11 +71,11 @@ use pezframe_support::{
 	BoundedVec, Twox64Concat,
 };
 use pezframe_system::{ensure_signed, pezpallet_prelude::*};
-use scale_info::TypeInfo;
 use pezsp_io::MultiRemovalResults;
 use pezsp_npos_elections::ElectionScore;
 use pezsp_runtime::{traits::Saturating, Perbill};
 use pezsp_std::prelude::*;
+use scale_info::TypeInfo;
 
 /// Explore all weights
 pub use crate::weights::traits::pezpallet_election_provider_multi_block_signed::*;
@@ -965,7 +965,9 @@ pub mod pezpallet {
 
 impl<T: Config> Pezpallet<T> {
 	#[cfg(any(feature = "try-runtime", test, feature = "runtime-benchmarks"))]
-	pub(crate) fn do_try_state(_n: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
+	pub(crate) fn do_try_state(
+		_n: BlockNumberFor<T>,
+	) -> Result<(), pezsp_runtime::TryRuntimeError> {
 		Submissions::<T>::sanity_check_round(Self::current_round())
 	}
 

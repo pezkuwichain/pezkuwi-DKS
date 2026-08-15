@@ -212,7 +212,6 @@ use pezframe_support::{
 	DebugNoBound, Twox64Concat,
 };
 use pezframe_system::pezpallet_prelude::*;
-use scale_info::TypeInfo;
 use pezsp_arithmetic::{
 	traits::{CheckedAdd, Zero},
 	PerThing, UpperOf,
@@ -223,6 +222,7 @@ use pezsp_runtime::{
 	SaturatedConversion,
 };
 use pezsp_std::{borrow::ToOwned, boxed::Box, prelude::*};
+use scale_info::TypeInfo;
 
 #[cfg(test)]
 mod mock;
@@ -622,20 +622,6 @@ pub mod pezpallet {
 		/// Common implementation is [`ProceedRegardlessOf`] or [`RevertToSignedIfNotQueuedOf`].
 		type AreWeDone: Get<Phase<Self>>;
 
-		/// After how many blocks an election that has not produced a usable result is abandoned,
-		/// rotating the round to start over.
-		///
-		/// Without this, an election that cannot be solved holds its round forever: with
-		/// [`RevertToSignedIfNotQueuedOf`] the phase keeps looping back to
-		/// [`crate::types::Phase::Signed`] and never returns to [`crate::types::Phase::Off`], so
-		/// nothing — not even the staking pezpallet's own stall detection, which waits for the
-		/// election to be idle — can recover it, and no new era is ever elected. Rotating drops the
-		/// snapshot and the verifier, so the next round starts from freshly collected data.
-		///
-		/// Must be comfortably larger than a full election (snapshot + signed + validation +
-		/// unsigned + export), otherwise healthy elections get cut short. Set to zero to disable.
-		#[pezpallet::constant]
-		type StalledRoundTimeout: Get<BlockNumberFor<Self>>;
 		/// The weight of the pezpallet.
 		type WeightInfo: WeightInfo;
 
@@ -740,14 +726,6 @@ pub mod pezpallet {
 			let current_phase = Self::current_phase();
 			weight_meter.consume(T::DbWeight::get().reads(1));
 
-			// An election that cannot produce a result must not hold its round forever.
-			// Checked after the phase is read and before the transition, so a rotation
-			// costs the block its transition rather than racing it.
-			if let Some(weight) = Self::maybe_rotate_stalled_round(_now, &current_phase) {
-				weight_meter.consume(weight);
-				return;
-			}
-
 			let (self_weight, self_exec) = Self::per_block_exec(current_phase);
 			let (verifier_weight, verifier_exc) = T::Verifier::per_block_exec();
 
@@ -819,8 +797,8 @@ pub mod pezpallet {
 			let max_vote: usize = <SolutionOf<T::MinerConfig> as NposSolution>::LIMIT;
 
 			// 2. Maximum sum of [SolutionAccuracy; 16] must fit into `UpperOf<OffchainAccuracy>`.
-			let maximum_chain_accuracy: Vec<UpperOf<SolutionAccuracyOf<T::MinerConfig>>> = (0..
-				max_vote)
+			let maximum_chain_accuracy: Vec<UpperOf<SolutionAccuracyOf<T::MinerConfig>>> = (0
+				..max_vote)
 				.map(|_| {
 					<UpperOf<SolutionAccuracyOf<T::MinerConfig>>>::from(
 						<SolutionAccuracyOf<T::MinerConfig>>::one().deconstruct(),
@@ -851,8 +829,8 @@ pub mod pezpallet {
 				"Signed phase not set correct -- both should be set or unset"
 			);
 			assert!(
-				signed_validation.is_zero() ||
-					signed_validation % T::Pages::get().into() == Zero::zero(),
+				signed_validation.is_zero()
+					|| signed_validation % T::Pages::get().into() == Zero::zero(),
 				"signed validation phase should be a multiple of the number of pages."
 			);
 
@@ -880,14 +858,6 @@ pub mod pezpallet {
 		UnexpectedTargetSnapshotFailed,
 		/// Voter snapshot creation failed.
 		UnexpectedVoterSnapshotFailed,
-		/// An election was abandoned because it did not produce a result in time, and the round was
-		/// rotated so that a new one can start from a fresh snapshot.
-		StalledRoundRotated {
-			/// The round that was abandoned.
-			round: u32,
-			/// For how many blocks it had been running.
-			blocks: BlockNumberFor<T>,
-		},
 		/// Phase transition could not proceed due to being out of weight.
 		UnexpectedPhaseTransitionOutOfWeight {
 			from: Phase<T>,
@@ -939,12 +909,6 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn round)]
 	pub type Round<T: Config> = StorageValue<_, u32, ValueQuery>;
 
-	/// Block at which the current election started, if one is ongoing.
-	///
-	/// Set when the election provider is started, cleared when the round rotates. Only used to
-	/// detect a round that stalls past [`Config::StalledRoundTimeout`].
-	#[pezpallet::storage]
-	pub type ElectionStartedAt<T: Config> = StorageValue<_, BlockNumberFor<T>, OptionQuery>;
 	/// Current phase.
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn current_phase)]
@@ -1106,8 +1070,8 @@ pub mod pezpallet {
 				.take(up_to_page as usize)
 			{
 				ensure!(
-					(exists ^ Self::voters(p).is_none()) &&
-						(exists ^ Self::voters_hash(p).is_none()),
+					(exists ^ Self::voters(p).is_none())
+						&& (exists ^ Self::voters_hash(p).is_none()),
 					"voter page existence mismatch"
 				);
 
@@ -1123,8 +1087,8 @@ pub mod pezpallet {
 				.take((T::Pages::get() - up_to_page) as usize)
 			{
 				ensure!(
-					(exists ^ Self::voters(p).is_some()) &&
-						(exists ^ Self::voters_hash(p).is_some()),
+					(exists ^ Self::voters(p).is_some())
+						&& (exists ^ Self::voters_hash(p).is_some()),
 					"voter page non-existence mismatch"
 				);
 			}
@@ -1144,17 +1108,17 @@ pub mod pezpallet {
 			ensure!(Self::desired_targets().is_some(), "desired target mismatch");
 			ensure!(Self::targets_hash().is_some(), "targets hash mismatch");
 			ensure!(
-				Self::targets_decode_len().unwrap_or_default() as u32 ==
-					T::TargetSnapshotPerBlock::get(),
+				Self::targets_decode_len().unwrap_or_default() as u32
+					== T::TargetSnapshotPerBlock::get(),
 				"targets decode length mismatch"
 			);
 
 			// ensure that voter pages that should exist, indeed to exist..
 			for p in crate::Pezpallet::<T>::lsp()..=crate::Pezpallet::<T>::msp() {
 				ensure!(
-					Self::voters_hash(p).is_some() &&
-						Self::voters_decode_len(p).unwrap_or_default() as u32 ==
-							T::VoterSnapshotPerBlock::get(),
+					Self::voters_hash(p).is_some()
+						&& Self::voters_decode_len(p).unwrap_or_default() as u32
+							== T::VoterSnapshotPerBlock::get(),
 					"voter page existence mismatch"
 				);
 			}
@@ -1194,12 +1158,12 @@ pub mod pezpallet {
 				Phase::Snapshot(_) => Ok(()),
 
 				// full snapshot must exist in these phases.
-				Phase::Emergency |
-				Phase::Signed(_) |
-				Phase::SignedValidation(_) |
-				Phase::Export(_) |
-				Phase::Done |
-				Phase::Unsigned(_) => Self::ensure_snapshot(true, T::Pages::get()),
+				Phase::Emergency
+				| Phase::Signed(_)
+				| Phase::SignedValidation(_)
+				| Phase::Export(_)
+				| Phase::Done
+				| Phase::Unsigned(_) => Self::ensure_snapshot(true, T::Pages::get()),
 			}?;
 
 			Ok(())
@@ -1432,12 +1396,12 @@ impl<T: Config> Pezpallet<T> {
 					just_next_phase
 				}
 			},
-			Phase::SignedValidation(_) |
-			Phase::Unsigned(_) |
-			Phase::Off |
-			Phase::Emergency |
-			Phase::Done |
-			Phase::Export(_) => just_next_phase,
+			Phase::SignedValidation(_)
+			| Phase::Unsigned(_)
+			| Phase::Off
+			| Phase::Emergency
+			| Phase::Done
+			| Phase::Export(_) => just_next_phase,
 		}
 	}
 
@@ -1511,8 +1475,8 @@ impl<T: Config> Pezpallet<T> {
 		// check the snapshot fingerprint, if asked for.
 		ensure!(
 			maybe_snapshot_fingerprint
-				.map_or(true, |snapshot_fingerprint| Snapshot::<T>::fingerprint() ==
-					snapshot_fingerprint),
+				.map_or(true, |snapshot_fingerprint| Snapshot::<T>::fingerprint()
+					== snapshot_fingerprint),
 			CommonError::WrongFingerprint
 		);
 
@@ -1592,69 +1556,11 @@ impl<T: Config> Pezpallet<T> {
 		});
 
 		// Phase is off now.
-		ElectionStartedAt::<T>::kill();
 		Self::phase_transition(Phase::Off);
 	}
 
 	/// Call fallback for the given page.
 	///
-	/// Abandon the current round if it has been running for longer than
-	/// [`Config::StalledRoundTimeout`], so that a new election can start from a fresh snapshot.
-	///
-	/// Returns the consumed weight if it rotated, `None` if it did nothing.
-	fn maybe_rotate_stalled_round(now: BlockNumberFor<T>, phase: &Phase<T>) -> Option<Weight> {
-		let timeout = T::StalledRoundTimeout::get();
-		if timeout.is_zero() {
-			return None;
-		}
-
-		// Only phases that are still trying to produce a solution may be abandoned. `Done` and
-		// `Export` mean a solution exists and the data provider may already be fetching it, so
-		// cutting in would corrupt that hand-off. `Emergency` is a deliberate halt waiting for
-		// governance, and `Off` is not an election at all.
-		if !matches!(
-			phase,
-			Phase::Snapshot(_) | Phase::Signed(_) | Phase::SignedValidation(_) | Phase::Unsigned(_)
-		) {
-			return None;
-		}
-
-		let started = match ElectionStartedAt::<T>::get() {
-			Some(started) => started,
-			None => {
-				// An election is in one of the solving phases, yet nothing recorded when it
-				// started. That happens when the round was not opened through `start()`: the
-				// runtime was upgraded while an election was already running, or the phase was
-				// forced with `ManagerOperation::ForceSetPhase`. Leaving it at `None` would mean
-				// the watchdog never watches this round at all — exactly the situation it exists
-				// to prevent — so adopt the round and start counting from here.
-				log!(
-					warn,
-					"election in {:?} has no recorded start block; adopting it at {:?}",
-					phase,
-					now
-				);
-				ElectionStartedAt::<T>::put(now);
-				return Some(T::DbWeight::get().reads_writes(1, 1));
-			},
-		};
-		let elapsed = now.saturating_sub(started);
-		if elapsed <= timeout {
-			return None;
-		}
-
-		let round = Self::round();
-		log!(
-			error,
-			"round {} has been running for {:?} blocks without a result, rotating to recover",
-			round,
-			elapsed
-		);
-		Self::deposit_event(Event::StalledRoundRotated { round, blocks: elapsed });
-		Self::rotate_round();
-
-		Some(T::WeightInfo::export_terminal().saturating_add(T::DbWeight::get().reads_writes(3, 3)))
-	}
 	/// This uses the [`ElectionProvider::bother`] to check if the fallback is actually going to do
 	/// anything. If so, it will re-collect the associated snapshot page and do the fallback. Else,
 	/// it will early return without touching the snapshot.
@@ -1709,8 +1615,10 @@ impl<T: Config> Pezpallet<T> {
 		let ref_time_ratio =
 			pezsp_runtime::Percent::from_rational(op_weight.ref_time(), limit_weight.ref_time());
 		let proof_size_kb = op_weight.proof_size() / WEIGHT_PROOF_SIZE_PER_KB;
-		let proof_size_ratio =
-			pezsp_runtime::Percent::from_rational(op_weight.proof_size(), limit_weight.proof_size());
+		let proof_size_ratio = pezsp_runtime::Percent::from_rational(
+			op_weight.proof_size(),
+			limit_weight.proof_size(),
+		);
 		let limit_ms = limit_weight.ref_time() / WEIGHT_REF_TIME_PER_MILLIS;
 		let limit_kb = limit_weight.proof_size() / WEIGHT_PROOF_SIZE_PER_KB;
 		log::info!(
@@ -2080,9 +1988,6 @@ impl<T: Config> ElectionProvider for Pezpallet<T> {
 			Ok(_) => return Err(ElectionError::Ongoing),
 		}
 
-		// Record when this round began, so a round that never produces a result can be
-		// recognised as stalled rather than held forever.
-		ElectionStartedAt::<T>::put(pezframe_system::Pezpallet::<T>::block_number());
 		Self::phase_transition(Phase::<T>::start_phase());
 		Ok(())
 	}
@@ -2097,11 +2002,11 @@ impl<T: Config> ElectionProvider for Pezpallet<T> {
 			Phase::Off => Err(()),
 
 			// we're doing something but not ready.
-			Phase::Signed(_) |
-			Phase::SignedValidation(_) |
-			Phase::Unsigned(_) |
-			Phase::Snapshot(_) |
-			Phase::Emergency => Ok(None),
+			Phase::Signed(_)
+			| Phase::SignedValidation(_)
+			| Phase::Unsigned(_)
+			| Phase::Snapshot(_)
+			| Phase::Emergency => Ok(None),
 
 			// we're ready
 			Phase::Done => Ok(Some(T::WeightInfo::export_non_terminal())),

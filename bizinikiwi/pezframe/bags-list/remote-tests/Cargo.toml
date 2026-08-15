@@ -44,6 +44,7 @@ runtime-benchmarks = [
 	"pezframe-system/runtime-benchmarks",
 	"pezpallet-bags-list/runtime-benchmarks",
 	"pezpallet-staking-async/runtime-benchmarks",
+	"pezpallet-staking/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 	"remote-externalities/runtime-benchmarks",
 ]
@@ -54,6 +55,7 @@ try-runtime = [
 	"pezframe-system/try-runtime",
 	"pezpallet-bags-list/try-runtime",
 	"pezpallet-staking-async/try-runtime",
+	"pezpallet-staking/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"remote-externalities/try-runtime",
 ]

@@ -31,6 +31,7 @@ use crate::{
 	verifier::{self as verifier_pallet, AsynchronousVerifier, Status, StatusStorage},
 };
 use codec::{Decode, Encode, MaxEncodedLen};
+use parking_lot::RwLock;
 use pezframe_election_provider_support::{
 	bounds::{ElectionBounds, ElectionBoundsBuilder},
 	InstantElectionProvider, NposSolution, SequentialPhragmen,
@@ -42,8 +43,6 @@ use pezframe_support::{
 	weights::{constants, RuntimeDbWeight, Weight},
 };
 use pezframe_system::EnsureRoot;
-use parking_lot::RwLock;
-pub use signed::*;
 use pezsp_core::{
 	offchain::{
 		testing::{PoolState, TestOffchainExt, TestTransactionPoolExt},
@@ -57,6 +56,7 @@ use pezsp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage, PerU16, Perbill,
 };
+pub use signed::*;
 pub use staking::*;
 use std::{sync::Arc, vec};
 

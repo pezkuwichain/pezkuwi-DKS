@@ -36,13 +36,13 @@ use codec::Encode;
 use pezframe_election_provider_support::{ExtendedBalance, NposSolver, Support, VoteWeight};
 use pezframe_support::{traits::Get, BoundedVec};
 use pezframe_system::pezpallet_prelude::*;
-use scale_info::TypeInfo;
 use pezsp_npos_elections::EvaluateSupport;
 use pezsp_runtime::{
 	offchain::storage::{MutateStorageError, StorageValueRef},
 	traits::{SaturatedConversion, Saturating, Zero},
 };
 use pezsp_std::{collections::btree_map::BTreeMap, prelude::*};
+use scale_info::TypeInfo;
 
 // TODO: we should have a fuzzer for miner that ensures no matter the parameters, it generates a
 // valid solution. Esp. for the trimming.

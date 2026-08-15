@@ -232,7 +232,8 @@ mod benchmarks {
 		#[block]
 		{
 			// fallback might decide to fail, that's okay..
-			let maybe_err = Pezpallet::<T>::manage(origin, crate::ManagerOperation::EmergencyFallback);
+			let maybe_err =
+				Pezpallet::<T>::manage(origin, crate::ManagerOperation::EmergencyFallback);
 			//.. but it cannot be bad origin.
 			assert!(maybe_err.is_ok() || maybe_err.unwrap_err() != DispatchError::BadOrigin.into());
 		}

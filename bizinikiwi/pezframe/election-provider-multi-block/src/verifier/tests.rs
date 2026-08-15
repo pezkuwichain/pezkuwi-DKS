@@ -153,7 +153,9 @@ mod feasibility_check {
 						paged.solution_pages[0].clone(),
 						0
 					),
-					FeasibilityError::NposElection(pezsp_npos_elections::Error::SolutionInvalidIndex),
+					FeasibilityError::NposElection(
+						pezsp_npos_elections::Error::SolutionInvalidIndex
+					),
 				);
 			})
 	}
@@ -577,7 +579,9 @@ mod async_verification {
 				verifier_events_since_last_call(),
 				vec![Event::<Runtime>::VerificationFailed(
 					0,
-					FeasibilityError::NposElection(pezsp_npos_elections::Error::SolutionInvalidIndex)
+					FeasibilityError::NposElection(
+						pezsp_npos_elections::Error::SolutionInvalidIndex
+					)
 				),]
 			);
 

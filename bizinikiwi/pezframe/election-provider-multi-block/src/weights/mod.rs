@@ -17,15 +17,15 @@
 
 //! WeightInfo for the election provider multi-block pezpallet group.
 
-mod pezpallet_election_provider_multi_block_dot_size;
-mod pezpallet_election_provider_multi_block_signed_dot_size;
-mod pezpallet_election_provider_multi_block_unsigned_dot_size;
-mod pezpallet_election_provider_multi_block_verifier_dot_size;
+mod pezpallet_election_provider_multi_block_hez_size;
+mod pezpallet_election_provider_multi_block_signed_hez_size;
+mod pezpallet_election_provider_multi_block_unsigned_hez_size;
+mod pezpallet_election_provider_multi_block_verifier_hez_size;
 
-mod pezpallet_election_provider_multi_block_ksm_size;
-mod pezpallet_election_provider_multi_block_signed_ksm_size;
-mod pezpallet_election_provider_multi_block_unsigned_ksm_size;
-mod pezpallet_election_provider_multi_block_verifier_ksm_size;
+mod pezpallet_election_provider_multi_block_dcl_size;
+mod pezpallet_election_provider_multi_block_signed_dcl_size;
+mod pezpallet_election_provider_multi_block_unsigned_dcl_size;
+mod pezpallet_election_provider_multi_block_verifier_dcl_size;
 
 use pezframe_support::pezpallet_prelude::Weight;
 
@@ -165,21 +165,21 @@ pub mod traits {
 }
 
 /// Dicle-esque weights only be used in testing runtimes.
-pub mod kusama {
+pub mod dicle {
 	pub use super::{
-		pezpallet_election_provider_multi_block_ksm_size::WeightInfo as MultiBlockWeightInfo,
-		pezpallet_election_provider_multi_block_signed_ksm_size::WeightInfo as MultiBlockSignedWeightInfo,
-		pezpallet_election_provider_multi_block_unsigned_ksm_size::WeightInfo as MultiBlockUnsignedWeightInfo,
-		pezpallet_election_provider_multi_block_verifier_ksm_size::WeightInfo as MultiBlockVerifierWeightInfo,
+		pezpallet_election_provider_multi_block_dcl_size::WeightInfo as MultiBlockWeightInfo,
+		pezpallet_election_provider_multi_block_signed_dcl_size::WeightInfo as MultiBlockSignedWeightInfo,
+		pezpallet_election_provider_multi_block_unsigned_dcl_size::WeightInfo as MultiBlockUnsignedWeightInfo,
+		pezpallet_election_provider_multi_block_verifier_dcl_size::WeightInfo as MultiBlockVerifierWeightInfo,
 	};
 }
 
 /// Pezkuwi-esque weights only be used in testing runtimes.
 pub mod polkadot {
 	pub use super::{
-		pezpallet_election_provider_multi_block_dot_size::WeightInfo as MultiBlockWeightInfo,
-		pezpallet_election_provider_multi_block_signed_dot_size::WeightInfo as MultiBlockSignedWeightInfo,
-		pezpallet_election_provider_multi_block_unsigned_dot_size::WeightInfo as MultiBlockUnsignedWeightInfo,
-		pezpallet_election_provider_multi_block_verifier_dot_size::WeightInfo as MultiBlockVerifierWeightInfo,
+		pezpallet_election_provider_multi_block_hez_size::WeightInfo as MultiBlockWeightInfo,
+		pezpallet_election_provider_multi_block_signed_hez_size::WeightInfo as MultiBlockSignedWeightInfo,
+		pezpallet_election_provider_multi_block_unsigned_hez_size::WeightInfo as MultiBlockUnsignedWeightInfo,
+		pezpallet_election_provider_multi_block_verifier_hez_size::WeightInfo as MultiBlockVerifierWeightInfo,
 	};
 }
