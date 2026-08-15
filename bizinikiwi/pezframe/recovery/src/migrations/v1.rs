@@ -62,7 +62,7 @@ pub struct MigrateV0ToV1<T: v0::MigrationConfig>(PhantomData<T>);
 
 impl<T: v0::MigrationConfig> SteppedMigration for MigrateV0ToV1<T> {
 	type Cursor = MigrationCursor<T::AccountId>;
-	type Identifier = MigrationId<18>;
+	type Identifier = MigrationId<21>;
 
 	fn id() -> Self::Identifier {
 		MigrationId { pezpallet_id: *PALLET_MIGRATIONS_ID, version_from: 0, version_to: 1 }
