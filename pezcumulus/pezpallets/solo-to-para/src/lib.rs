@@ -19,7 +19,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use pezcumulus_pallet_teyrchain_system as teyrchain_system;
+use pezcumulus_pezpallet_teyrchain_system as teyrchain_system;
 use pezframe_support::pezpallet_prelude::*;
 use pezframe_system::pezpallet_prelude::*;
 use pezkuwi_primitives::PersistedValidationData;

@@ -18,7 +18,7 @@
 //! block velocity.
 use super::{pezpallet, Aura};
 use core::{marker::PhantomData, num::NonZeroU32};
-use pezcumulus_pallet_teyrchain_system::{
+use pezcumulus_pezpallet_teyrchain_system::{
 	self as teyrchain_system,
 	consensus_hook::{ConsensusHook, UnincludedSegmentCapacity},
 	relay_state_snapshot::RelayChainStateProof,

@@ -932,7 +932,7 @@ pub fn construct_extrinsic(
 		.unwrap_or(2) as u64;
 	let tip = 0;
 	let tx_ext: runtime::TxExtension =
-		pezcumulus_pallet_weight_reclaim::StorageWeightReclaim::from((
+		pezcumulus_pezpallet_weight_reclaim::StorageWeightReclaim::from((
 			pezframe_system::AuthorizeCall::<runtime::Runtime>::new(),
 			pezframe_system::CheckNonZeroSender::<runtime::Runtime>::new(),
 			pezframe_system::CheckSpecVersion::<runtime::Runtime>::new(),

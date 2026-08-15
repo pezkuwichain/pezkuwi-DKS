@@ -95,14 +95,14 @@ pub use consensus_hook::{ConsensusHook, ExpectParentIncluded};
 ///     struct BlockExecutor;
 ///     struct Runtime;
 ///
-///     pezcumulus_pallet_teyrchain_system::register_validate_block! {
+///     pezcumulus_pezpallet_teyrchain_system::register_validate_block! {
 ///         Runtime = Runtime,
 ///         BlockExecutor = Executive,
 ///     }
 ///
 /// # fn main() {}
 /// ```
-pub use pezcumulus_pallet_teyrchain_system_proc_macro::register_validate_block;
+pub use pezcumulus_pezpallet_teyrchain_system_proc_macro::register_validate_block;
 pub use relay_state_snapshot::{MessagingStateSnapshot, RelayChainStateProof};
 pub use unincluded_segment::{Ancestor, UsedBandwidth};
 pub use weights::WeightInfo;

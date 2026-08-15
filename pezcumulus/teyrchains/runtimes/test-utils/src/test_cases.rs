@@ -53,7 +53,7 @@ pub fn change_storage_constant_by_governance_works<Runtime, StorageConstant, Sto
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
 		+ pezpallet_timestamp::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
 	StorageConstant: Get<StorageConstantType>,
@@ -118,7 +118,7 @@ pub fn set_storage_keys_by_governance_works<Runtime>(
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
 		+ pezpallet_timestamp::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
 {
@@ -164,8 +164,8 @@ where
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
-		+ pezcumulus_pallet_xcmp_queue::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
 	RuntimeOrigin: OriginTrait<AccountId = <Runtime as pezframe_system::Config>::AccountId>,

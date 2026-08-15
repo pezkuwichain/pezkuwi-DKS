@@ -44,7 +44,7 @@ use xcm::latest::prelude::*;
 pub trait WithRemoteGrandpaChainHelper {
 	/// This chain runtime.
 	type Runtime: BasicTeyrchainRuntime
-		+ pezcumulus_pallet_xcmp_queue::Config
+		+ pezcumulus_pezpallet_xcmp_queue::Config
 		+ BridgeGrandpaConfig<Self::GPI, BridgedChain = BridgedChainOf<Self::Runtime, Self::MPI>>
 		+ BridgeMessagesConfig<
 			Self::MPI,
@@ -74,7 +74,7 @@ impl<Runtime, AllPalletsWithoutSystem, GPI, MPI, RPI> WithRemoteGrandpaChainHelp
 	for WithRemoteGrandpaChainHelperAdapter<Runtime, AllPalletsWithoutSystem, GPI, MPI, RPI>
 where
 	Runtime: BasicTeyrchainRuntime
-		+ pezcumulus_pallet_xcmp_queue::Config
+		+ pezcumulus_pezpallet_xcmp_queue::Config
 		+ BridgeGrandpaConfig<GPI, BridgedChain = BridgedChainOf<Runtime, MPI>>
 		+ BridgeMessagesConfig<
 			MPI,

@@ -69,7 +69,7 @@ pub fn teleports_for_native_asset_works<
 	slot_durations: SlotDurations,
 	existential_deposit: BalanceOf<Runtime>,
 	target_account: AccountIdOf<Runtime>,
-	unwrap_pallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
+	unwrap_pezpallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
 	runtime_para_id: u32,
 ) where
 	Runtime: pezframe_system::Config
@@ -78,8 +78,8 @@ pub fn teleports_for_native_asset_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
-		+ pezcumulus_pallet_xcmp_queue::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config,
 	AllPalletsWithoutSystem:
 		OnInitialize<BlockNumberFor<Runtime>> + OnFinalize<BlockNumberFor<Runtime>>,
@@ -96,7 +96,7 @@ pub fn teleports_for_native_asset_works<
 	XcmConfig: xcm_executor::Config,
 	CheckingAccount: Get<Option<AccountIdOf<Runtime>>>,
 	HrmpChannelOpener: pezframe_support::inherent::ProvideInherent<
-		Call = pezcumulus_pallet_teyrchain_system::Call<Runtime>,
+		Call = pezcumulus_pezpallet_teyrchain_system::Call<Runtime>,
 	>,
 {
 	let buy_execution_fee_amount_eta =
@@ -195,7 +195,7 @@ pub fn teleports_for_native_asset_works<
 			let native_asset_to_teleport_away = native_asset_amount_unit * 3.into();
 			// 2. try to teleport asset back to the relaychain
 			{
-				<pezcumulus_pallet_teyrchain_system::Pezpallet<Runtime> as UpwardMessageSender>::ensure_successful_delivery();
+				<pezcumulus_pezpallet_teyrchain_system::Pezpallet<Runtime> as UpwardMessageSender>::ensure_successful_delivery();
 
 				let dest = Location::parent();
 				let mut dest_beneficiary = Location::parent()
@@ -252,8 +252,8 @@ pub fn teleports_for_native_asset_works<
 				}
 
 				// check events
-				RuntimeHelper::<Runtime>::assert_pallet_xcm_event_outcome(
-					&unwrap_pallet_xcm_event,
+				RuntimeHelper::<Runtime>::assert_pezpallet_xcm_event_outcome(
+					&unwrap_pezpallet_xcm_event,
 					|outcome| {
 						assert_ok!(outcome.ensure_complete());
 					},
@@ -327,7 +327,7 @@ macro_rules! include_teleports_for_native_asset_works(
 		$collator_session_key:expr,
 		$slot_durations:expr,
 		$existential_deposit:expr,
-		$unwrap_pallet_xcm_event:expr,
+		$unwrap_pezpallet_xcm_event:expr,
 		$runtime_para_id:expr
 	) => {
 		#[test]
@@ -347,7 +347,7 @@ macro_rules! include_teleports_for_native_asset_works(
 				$slot_durations,
 				$existential_deposit,
 				target_account,
-				$unwrap_pallet_xcm_event,
+				$unwrap_pezpallet_xcm_event,
 				$runtime_para_id
 			)
 		}
@@ -371,9 +371,9 @@ pub fn teleports_for_foreign_assets_works<
 	target_account: AccountIdOf<Runtime>,
 	existential_deposit: BalanceOf<Runtime>,
 	asset_owner: AccountIdOf<Runtime>,
-	unwrap_pallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
+	unwrap_pezpallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
 	unwrap_xcmp_queue_event: Box<
-		dyn Fn(Vec<u8>) -> Option<pezcumulus_pallet_xcmp_queue::Event<Runtime>>,
+		dyn Fn(Vec<u8>) -> Option<pezcumulus_pezpallet_xcmp_queue::Event<Runtime>>,
 	>,
 ) where
 	Runtime: pezframe_system::Config
@@ -382,8 +382,8 @@ pub fn teleports_for_foreign_assets_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
-		+ pezcumulus_pallet_xcmp_queue::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_xcmp_queue::Config
 		+ pezpallet_assets::Config<ForeignAssetsPalletInstance, ReserveData = ForeignAssetReserveData>
 		+ pezpallet_timestamp::Config,
 	AllPalletsWithoutSystem:
@@ -394,7 +394,7 @@ pub fn teleports_for_foreign_assets_works<
 	XcmConfig: xcm_executor::Config,
 	CheckingAccount: Get<AccountIdOf<Runtime>>,
 	HrmpChannelOpener: pezframe_support::inherent::ProvideInherent<
-		Call = pezcumulus_pallet_teyrchain_system::Call<Runtime>,
+		Call = pezcumulus_pezpallet_teyrchain_system::Call<Runtime>,
 	>,
 	WeightToFee: pezframe_support::weights::WeightToFee<Balance = Balance>,
 	<WeightToFee as pezframe_support::weights::WeightToFee>::Balance: From<u128> + Into<u128>,
@@ -674,8 +674,8 @@ pub fn teleports_for_foreign_assets_works<
 				);
 
 				// check events
-				RuntimeHelper::<Runtime>::assert_pallet_xcm_event_outcome(
-					&unwrap_pallet_xcm_event,
+				RuntimeHelper::<Runtime>::assert_pezpallet_xcm_event_outcome(
+					&unwrap_pezpallet_xcm_event,
 					|outcome| {
 						assert_ok!(outcome.ensure_complete());
 					},
@@ -696,11 +696,11 @@ macro_rules! include_teleports_for_foreign_assets_works(
 		$weight_to_fee:path,
 		$hrmp_channel_opener:path,
 		$sovereign_account_of:path,
-		$assets_pallet_instance:path,
+		$assets_pezpallet_instance:path,
 		$collator_session_key:expr,
 		$slot_durations:expr,
 		$existential_deposit:expr,
-		$unwrap_pallet_xcm_event:expr,
+		$unwrap_pezpallet_xcm_event:expr,
 		$unwrap_xcmp_queue_event:expr
 	) => {
 		#[test]
@@ -718,14 +718,14 @@ macro_rules! include_teleports_for_foreign_assets_works(
 				$weight_to_fee,
 				$hrmp_channel_opener,
 				$sovereign_account_of,
-				$assets_pallet_instance
+				$assets_pezpallet_instance
 			>(
 				$collator_session_key,
 				$slot_durations,
 				target_account,
 				$existential_deposit,
 				asset_owner,
-				$unwrap_pallet_xcm_event,
+				$unwrap_pezpallet_xcm_event,
 				$unwrap_xcmp_queue_event
 			)
 		}
@@ -748,7 +748,7 @@ pub fn asset_transactor_transfer_with_local_consensus_currency_works<Runtime, Xc
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
 		+ pezpallet_timestamp::Config,
 	AccountIdOf<Runtime>: Into<[u8; 32]>,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
@@ -850,7 +850,7 @@ macro_rules! include_asset_transactor_transfer_with_local_consensus_currency_wor
 
 /// Test-case makes sure that `Runtime`'s `xcm::AssetTransactor` can handle native relay chain
 /// currency
-pub fn asset_transactor_transfer_with_pallet_assets_instance_works<
+pub fn asset_transactor_transfer_with_pezpallet_assets_instance_works<
 	Runtime,
 	XcmConfig,
 	AssetsPalletInstance,
@@ -873,7 +873,7 @@ pub fn asset_transactor_transfer_with_pallet_assets_instance_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
 		+ pezpallet_assets::Config<AssetsPalletInstance>
 		+ pezpallet_timestamp::Config,
 	AccountIdOf<Runtime>: Into<[u8; 32]>,
@@ -1064,12 +1064,12 @@ pub fn asset_transactor_transfer_with_pallet_assets_instance_works<
 }
 
 #[macro_export]
-macro_rules! include_asset_transactor_transfer_with_pallet_assets_instance_works(
+macro_rules! include_asset_transactor_transfer_with_pezpallet_assets_instance_works(
 	(
 		$test_name:tt,
 		$runtime:path,
 		$xcm_config:path,
-		$assets_pallet_instance:path,
+		$assets_pezpallet_instance:path,
 		$asset_id:path,
 		$asset_id_converter:path,
 		$collator_session_key:expr,
@@ -1089,10 +1089,10 @@ macro_rules! include_asset_transactor_transfer_with_pallet_assets_instance_works
 			const CHARLIE: [u8; 32] = [3u8; 32];
 			let charlie_account = teyrchains_common::AccountId::from(CHARLIE);
 
-			$crate::test_cases::asset_transactor_transfer_with_pallet_assets_instance_works::<
+			$crate::test_cases::asset_transactor_transfer_with_pezpallet_assets_instance_works::<
 				$runtime,
 				$xcm_config,
-				$assets_pallet_instance,
+				$assets_pezpallet_instance,
 				$asset_id,
 				$asset_id_converter
 			>(
@@ -1130,7 +1130,7 @@ pub fn create_and_manage_foreign_assets_for_local_consensus_teyrchain_assets_wor
 	runtime_call_encode: Box<
 		dyn Fn(pezpallet_assets::Call<Runtime, ForeignAssetsPalletInstance>) -> Vec<u8>,
 	>,
-	unwrap_pallet_assets_event: Box<
+	unwrap_pezpallet_assets_event: Box<
 		dyn Fn(Vec<u8>) -> Option<pezpallet_assets::Event<Runtime, ForeignAssetsPalletInstance>>,
 	>,
 	additional_checks_before: Box<dyn Fn()>,
@@ -1142,7 +1142,7 @@ pub fn create_and_manage_foreign_assets_for_local_consensus_teyrchain_assets_wor
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
 		+ pezpallet_assets::Config<ForeignAssetsPalletInstance>
 		+ pezpallet_timestamp::Config,
 	AccountIdOf<Runtime>: Into<[u8; 32]>,
@@ -1289,7 +1289,7 @@ pub fn create_and_manage_foreign_assets_for_local_consensus_teyrchain_assets_wor
 			// check events
 			let mut events = <pezframe_system::Pezpallet<Runtime>>::events()
 				.into_iter()
-				.filter_map(|e| unwrap_pallet_assets_event(e.event.encode()));
+				.filter_map(|e| unwrap_pezpallet_assets_event(e.event.encode()));
 			assert!(events.any(|e| matches!(e, pezpallet_assets::Event::Created { .. })));
 			assert!(events.any(|e| matches!(e, pezpallet_assets::Event::MetadataSet { .. })));
 			assert!(events.any(|e| matches!(e, pezpallet_assets::Event::TeamChanged { .. })));
@@ -1411,7 +1411,7 @@ macro_rules! include_create_and_manage_foreign_assets_for_local_consensus_teyrch
 		$xcm_config:path,
 		$weight_to_fee:path,
 		$sovereign_account_of:path,
-		$assets_pallet_instance:path,
+		$assets_pezpallet_instance:path,
 		$asset_id:path,
 		$asset_id_converter:path,
 		$collator_session_key:expr,
@@ -1420,7 +1420,7 @@ macro_rules! include_create_and_manage_foreign_assets_for_local_consensus_teyrch
 		$metadata_deposit_base:expr,
 		$metadata_deposit_per_byte:expr,
 		$runtime_call_encode:expr,
-		$unwrap_pallet_assets_event:expr,
+		$unwrap_pezpallet_assets_event:expr,
 		$additional_checks_before:expr,
 		$additional_checks_after:expr
 	) => {
@@ -1436,7 +1436,7 @@ macro_rules! include_create_and_manage_foreign_assets_for_local_consensus_teyrch
 				$xcm_config,
 				$weight_to_fee,
 				$sovereign_account_of,
-				$assets_pallet_instance,
+				$assets_pezpallet_instance,
 				$asset_id,
 				$asset_id_converter
 			>(
@@ -1448,7 +1448,7 @@ macro_rules! include_create_and_manage_foreign_assets_for_local_consensus_teyrch
 				alice_account,
 				bob_account,
 				$runtime_call_encode,
-				$unwrap_pallet_assets_event,
+				$unwrap_pezpallet_assets_event,
 				$additional_checks_before,
 				$additional_checks_after
 			)
@@ -1470,9 +1470,9 @@ pub fn reserve_transfer_native_asset_to_non_teleport_para_works<
 	slot_durations: SlotDurations,
 	existential_deposit: BalanceOf<Runtime>,
 	alice_account: AccountIdOf<Runtime>,
-	unwrap_pallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
+	unwrap_pezpallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
 	unwrap_xcmp_queue_event: Box<
-		dyn Fn(Vec<u8>) -> Option<pezcumulus_pallet_xcmp_queue::Event<Runtime>>,
+		dyn Fn(Vec<u8>) -> Option<pezcumulus_pezpallet_xcmp_queue::Event<Runtime>>,
 	>,
 	weight_limit: WeightLimit,
 ) where
@@ -1482,8 +1482,8 @@ pub fn reserve_transfer_native_asset_to_non_teleport_para_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
-		+ pezcumulus_pallet_xcmp_queue::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config,
 	AllPalletsWithoutSystem:
 		OnInitialize<BlockNumberFor<Runtime>> + OnFinalize<BlockNumberFor<Runtime>>,
@@ -1499,7 +1499,7 @@ pub fn reserve_transfer_native_asset_to_non_teleport_para_works<
 		From<<Runtime as pezframe_system::Config>::AccountId>,
 	<Runtime as pezframe_system::Config>::AccountId: From<AccountId>,
 	HrmpChannelOpener: pezframe_support::inherent::ProvideInherent<
-		Call = pezcumulus_pallet_teyrchain_system::Call<Runtime>,
+		Call = pezcumulus_pezpallet_teyrchain_system::Call<Runtime>,
 	>,
 	HrmpChannelSource: XcmpMessageSource,
 {
@@ -1598,8 +1598,8 @@ pub fn reserve_transfer_native_asset_to_non_teleport_para_works<
 
 			// check events
 			// check pezpallet_xcm attempted
-			RuntimeHelper::<Runtime, AllPalletsWithoutSystem>::assert_pallet_xcm_event_outcome(
-				&unwrap_pallet_xcm_event,
+			RuntimeHelper::<Runtime, AllPalletsWithoutSystem>::assert_pezpallet_xcm_event_outcome(
+				&unwrap_pezpallet_xcm_event,
 				|outcome| {
 					assert_ok!(outcome.ensure_complete());
 				},
@@ -1610,7 +1610,7 @@ pub fn reserve_transfer_native_asset_to_non_teleport_para_works<
 				.into_iter()
 				.filter_map(|e| unwrap_xcmp_queue_event(e.event.encode()))
 				.find_map(|e| match e {
-					pezcumulus_pallet_xcmp_queue::Event::XcmpMessageSent { message_hash } => {
+					pezcumulus_pezpallet_xcmp_queue::Event::XcmpMessageSent { message_hash } => {
 						Some(message_hash)
 					},
 					_ => None,
@@ -1669,8 +1669,8 @@ where
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
-		+ pezcumulus_pallet_xcmp_queue::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config
 		+ pezpallet_assets::Config<
 			pezpallet_assets::Instance1,
@@ -1857,8 +1857,8 @@ pub fn xcm_payment_api_foreign_asset_pool_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config
-		+ pezcumulus_pallet_xcmp_queue::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config
 		+ pezpallet_assets::Config<
 			pezpallet_assets::Instance2,
@@ -1972,7 +1972,7 @@ pub fn exchange_asset_on_asset_hub_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pallet_teyrchain_system::Config,
+		+ pezcumulus_pezpallet_teyrchain_system::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
 	RuntimeOrigin: OriginTrait<AccountId = <Runtime as pezframe_system::Config>::AccountId>,
 	<<Runtime as pezframe_system::Config>::Lookup as StaticLookup>::Source:

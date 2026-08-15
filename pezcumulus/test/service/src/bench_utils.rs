@@ -19,7 +19,7 @@ use codec::Encode;
 use pezsc_block_builder::BlockBuilderBuilder;
 
 use crate::{construct_extrinsic, Client as TestClient};
-use pezcumulus_pallet_teyrchain_system::teyrchain_inherent::{
+use pezcumulus_pezpallet_teyrchain_system::teyrchain_inherent::{
 	BasicTeyrchainInherentData, InboundMessagesData,
 };
 use pezcumulus_primitives_core::{relay_chain::AccountId, PersistedValidationData};
@@ -110,7 +110,7 @@ pub fn extrinsic_set_validation_data(
 
 	pezcumulus_test_runtime::UncheckedExtrinsic::new_bare(
 		pezcumulus_test_runtime::RuntimeCall::TeyrchainSystem(
-			pezcumulus_pallet_teyrchain_system::Call::set_validation_data {
+			pezcumulus_pezpallet_teyrchain_system::Call::set_validation_data {
 				data,
 				inbound_messages_data,
 			},

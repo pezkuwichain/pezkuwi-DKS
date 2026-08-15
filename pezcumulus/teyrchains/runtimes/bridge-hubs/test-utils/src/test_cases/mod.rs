@@ -65,7 +65,7 @@ pub(crate) mod bridges_prelude {
 }
 
 // Re-export test-case
-pub use for_pallet_xcm_bridge_hub::open_and_close_bridge_works;
+pub use for_pezpallet_xcm_bridge_hub::open_and_close_bridge_works;
 
 // Re-export test_case from assets
 pub use asset_test_utils::include_teleports_for_native_asset_works;
@@ -142,7 +142,7 @@ pub fn initialize_bridge_by_governance_works<Runtime, GrandpaPalletInstance>(
 
 /// Test-case makes sure that `Runtime` can change bridge GRANDPA pezpallet operating mode via
 /// governance-like call.
-pub fn change_bridge_grandpa_pallet_mode_by_governance_works<Runtime, GrandpaPalletInstance>(
+pub fn change_bridge_grandpa_pezpallet_mode_by_governance_works<Runtime, GrandpaPalletInstance>(
 	collator_session_key: CollatorSessionKeys<Runtime>,
 	runtime_para_id: u32,
 	governance_origin: GovernanceOrigin<RuntimeOriginOf<Runtime>>,
@@ -193,7 +193,10 @@ pub fn change_bridge_grandpa_pallet_mode_by_governance_works<Runtime, GrandpaPal
 
 /// Test-case makes sure that `Runtime` can change bridge teyrchains pezpallet operating mode via
 /// governance-like call.
-pub fn change_bridge_teyrchains_pallet_mode_by_governance_works<Runtime, TeyrchainsPalletInstance>(
+pub fn change_bridge_teyrchains_pezpallet_mode_by_governance_works<
+	Runtime,
+	TeyrchainsPalletInstance,
+>(
 	collator_session_key: CollatorSessionKeys<Runtime>,
 	runtime_para_id: u32,
 	governance_origin: GovernanceOrigin<RuntimeOriginOf<Runtime>>,
@@ -246,7 +249,7 @@ pub fn change_bridge_teyrchains_pallet_mode_by_governance_works<Runtime, Teyrcha
 
 /// Test-case makes sure that `Runtime` can change bridge messaging pezpallet operating mode via
 /// governance-like call.
-pub fn change_bridge_messages_pallet_mode_by_governance_works<Runtime, MessagesPalletInstance>(
+pub fn change_bridge_messages_pezpallet_mode_by_governance_works<Runtime, MessagesPalletInstance>(
 	collator_session_key: CollatorSessionKeys<Runtime>,
 	runtime_para_id: u32,
 	governance_origin: GovernanceOrigin<RuntimeOriginOf<Runtime>>,
@@ -320,7 +323,7 @@ pub fn handle_export_message_from_system_teyrchain_to_outbound_queue_works<
 	collator_session_key: CollatorSessionKeys<Runtime>,
 	runtime_para_id: u32,
 	sibling_teyrchain_id: u32,
-	unwrap_pallet_bridge_messages_event: Box<
+	unwrap_pezpallet_bridge_messages_event: Box<
 		dyn Fn(
 			Vec<u8>,
 		) -> Option<pezpallet_bridge_messages::Event<Runtime, MessagesPalletInstance>>,
@@ -415,7 +418,7 @@ pub fn handle_export_message_from_system_teyrchain_to_outbound_queue_works<
 		// check events
 		let mut events = <pezframe_system::Pezpallet<Runtime>>::events()
 			.into_iter()
-			.filter_map(|e| unwrap_pallet_bridge_messages_event(e.event.encode()));
+			.filter_map(|e| unwrap_pezpallet_bridge_messages_event(e.event.encode()));
 		assert!(
 			events.any(|e| matches!(e, pezpallet_bridge_messages::Event::MessageAccepted { .. }))
 		);
@@ -441,16 +444,16 @@ pub fn message_dispatch_routing_works<
 	slot_durations: SlotDurations,
 	runtime_para_id: u32,
 	sibling_teyrchain_id: u32,
-	unwrap_cumulus_pallet_teyrchain_system_event: Box<
-		dyn Fn(Vec<u8>) -> Option<pezcumulus_pallet_teyrchain_system::Event<Runtime>>,
+	unwrap_cumulus_pezpallet_teyrchain_system_event: Box<
+		dyn Fn(Vec<u8>) -> Option<pezcumulus_pezpallet_teyrchain_system::Event<Runtime>>,
 	>,
-	unwrap_cumulus_pallet_xcmp_queue_event: Box<
-		dyn Fn(Vec<u8>) -> Option<pezcumulus_pallet_xcmp_queue::Event<Runtime>>,
+	unwrap_cumulus_pezpallet_xcmp_queue_event: Box<
+		dyn Fn(Vec<u8>) -> Option<pezcumulus_pezpallet_xcmp_queue::Event<Runtime>>,
 	>,
 	prepare_configuration: impl Fn(),
 ) where
 	Runtime: BasicTeyrchainRuntime
-		+ pezcumulus_pallet_xcmp_queue::Config
+		+ pezcumulus_pezpallet_xcmp_queue::Config
 		+ BridgeMessagesConfig<MessagesPalletInstance, InboundPayload = test_data::XcmAsPlainPayload>,
 	AllPalletsWithoutSystem:
 		OnInitialize<BlockNumberFor<Runtime>> + OnFinalize<BlockNumberFor<Runtime>>,
@@ -459,7 +462,7 @@ pub fn message_dispatch_routing_works<
 	XcmConfig: xcm_executor::Config,
 	MessagesPalletInstance: 'static,
 	HrmpChannelOpener: pezframe_support::inherent::ProvideInherent<
-		Call = pezcumulus_pallet_teyrchain_system::Call<Runtime>,
+		Call = pezcumulus_pezpallet_teyrchain_system::Call<Runtime>,
 	>,
 	RuntimeNetwork: Get<NetworkId>,
 	BridgedNetwork: Get<NetworkId>,
@@ -510,10 +513,10 @@ pub fn message_dispatch_routing_works<
 		// check events - UpwardMessageSent
 		let mut events = <pezframe_system::Pezpallet<Runtime>>::events()
 			.into_iter()
-			.filter_map(|e| unwrap_cumulus_pallet_teyrchain_system_event(e.event.encode()));
+			.filter_map(|e| unwrap_cumulus_pezpallet_teyrchain_system_event(e.event.encode()));
 		assert!(events.any(|e| matches!(
 			e,
-			pezcumulus_pallet_teyrchain_system::Event::UpwardMessageSent { .. }
+			pezcumulus_pezpallet_teyrchain_system::Event::UpwardMessageSent { .. }
 		)));
 
 		// 2. this message is sent from other global consensus with destination of this Runtime
@@ -545,7 +548,7 @@ pub fn message_dispatch_routing_works<
 		assert_eq!(
 			<pezframe_system::Pezpallet<Runtime>>::events()
 				.into_iter()
-				.filter_map(|e| unwrap_cumulus_pallet_xcmp_queue_event(e.event.encode()))
+				.filter_map(|e| unwrap_cumulus_pezpallet_xcmp_queue_event(e.event.encode()))
 				.count(),
 			0
 		);
@@ -573,9 +576,9 @@ pub fn message_dispatch_routing_works<
 		// check events - XcmpMessageSent
 		let mut events = <pezframe_system::Pezpallet<Runtime>>::events()
 			.into_iter()
-			.filter_map(|e| unwrap_cumulus_pallet_xcmp_queue_event(e.event.encode()));
+			.filter_map(|e| unwrap_cumulus_pezpallet_xcmp_queue_event(e.event.encode()));
 		assert!(events
-			.any(|e| matches!(e, pezcumulus_pallet_xcmp_queue::Event::XcmpMessageSent { .. })));
+			.any(|e| matches!(e, pezcumulus_pezpallet_xcmp_queue::Event::XcmpMessageSent { .. })));
 	})
 }
 
@@ -667,9 +670,9 @@ where
 	estimated_fee.into()
 }
 
-pub(crate) mod for_pallet_xcm_bridge_hub {
+pub(crate) mod for_pezpallet_xcm_bridge_hub {
 	use super::*;
-	use crate::test_cases::helpers::for_pallet_xcm_bridge_hub::{
+	use crate::test_cases::helpers::for_pezpallet_xcm_bridge_hub::{
 		close_bridge, ensure_opened_bridge, open_bridge_with_extrinsic,
 	};
 	pub(crate) use pezpallet_xcm_bridge_hub::{

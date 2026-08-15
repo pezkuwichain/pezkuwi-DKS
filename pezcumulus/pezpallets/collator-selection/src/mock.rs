@@ -175,7 +175,7 @@ impl Config for Test {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl pezcumulus_pallet_session_benchmarking::Config for Test {
+impl pezcumulus_pezpallet_session_benchmarking::Config for Test {
 	fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
 		use codec::Encode;
 

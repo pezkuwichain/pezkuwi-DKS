@@ -267,10 +267,11 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
-type MaximumBlockWeight = pezcumulus_pallet_teyrchain_system::block_weight::MaxTeyrchainBlockWeight<
-	Runtime,
-	ConstU32<BLOCK_PROCESSING_VELOCITY>,
->;
+type MaximumBlockWeight =
+	pezcumulus_pezpallet_teyrchain_system::block_weight::MaxTeyrchainBlockWeight<
+		Runtime,
+		ConstU32<BLOCK_PROCESSING_VELOCITY>,
+	>;
 
 parameter_types! {
 	/// Target number of blocks per relay chain slot.
@@ -319,17 +320,17 @@ impl pezframe_system::Config for Runtime {
 	type BlockWeights = RuntimeBlockWeights;
 	type BlockLength = RuntimeBlockLength;
 	type SS58Prefix = SS58Prefix;
-	type OnSetCode = pezcumulus_pallet_teyrchain_system::TeyrchainSetCode<Self>;
+	type OnSetCode = pezcumulus_pezpallet_teyrchain_system::TeyrchainSetCode<Self>;
 	type MaxConsumers = pezframe_support::traits::ConstU32<16>;
 	type PreInherents =
-		pezcumulus_pallet_teyrchain_system::block_weight::DynamicMaxBlockWeightHooks<
+		pezcumulus_pezpallet_teyrchain_system::block_weight::DynamicMaxBlockWeightHooks<
 			Runtime,
 			ConstU32<BLOCK_PROCESSING_VELOCITY>,
 		>;
 	type SingleBlockMigrations = SingleBlockMigrations;
 }
 
-impl pezcumulus_pallet_weight_reclaim::Config for Runtime {
+impl pezcumulus_pezpallet_weight_reclaim::Config for Runtime {
 	type WeightInfo = ();
 }
 
@@ -343,7 +344,7 @@ parameter_types! {
 	pub const Offset: u32 = 0;
 }
 
-impl pezcumulus_pallet_aura_ext::Config for Runtime {}
+impl pezcumulus_pezpallet_aura_ext::Config for Runtime {}
 
 impl pezpallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
@@ -435,13 +436,13 @@ impl VerifySchedulingSignature for NoVerification {
 	}
 }
 
-type ConsensusHook = pezcumulus_pallet_aura_ext::FixedVelocityConsensusHook<
+type ConsensusHook = pezcumulus_pezpallet_aura_ext::FixedVelocityConsensusHook<
 	Runtime,
 	RELAY_CHAIN_SLOT_DURATION_MILLIS,
 	BLOCK_PROCESSING_VELOCITY,
 	UNINCLUDED_SEGMENT_CAPACITY,
 >;
-impl pezcumulus_pallet_teyrchain_system::Config for Runtime {
+impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
 	type WeightInfo = ();
 	type SelfParaId = teyrchain_info::Pezpallet<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
@@ -453,7 +454,7 @@ impl pezcumulus_pallet_teyrchain_system::Config for Runtime {
 	type XcmpMessageHandler = ();
 	type ReservedXcmpWeight = ();
 	type CheckAssociatedRelayNumber =
-		pezcumulus_pallet_teyrchain_system::RelayNumberMonotonicallyIncreases;
+		pezcumulus_pezpallet_teyrchain_system::RelayNumberMonotonicallyIncreases;
 	type ConsensusHook = ConsensusHook;
 	type RelayParentOffset = ConstU32<RELAY_PARENT_OFFSET>;
 	type SchedulingSignatureVerifier = NoVerification;
@@ -478,7 +479,7 @@ construct_runtime! {
 	pub enum Runtime
 	{
 		System: pezframe_system,
-		TeyrchainSystem: pezcumulus_pallet_teyrchain_system,
+		TeyrchainSystem: pezcumulus_pezpallet_teyrchain_system,
 		Timestamp: pezpallet_timestamp,
 		TeyrchainInfo: teyrchain_info,
 		Balances: pezpallet_balances,
@@ -488,8 +489,8 @@ construct_runtime! {
 		TestPallet: test_pallet,
 		Glutton: pezpallet_glutton,
 		Aura: pezpallet_aura,
-		AuraExt: pezcumulus_pallet_aura_ext,
-		WeightReclaim: pezcumulus_pallet_weight_reclaim,
+		AuraExt: pezcumulus_pezpallet_aura_ext,
+		WeightReclaim: pezcumulus_pezpallet_weight_reclaim,
 	}
 }
 
@@ -520,9 +521,9 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 /// The extension to the basic transaction logic.
-pub type TxExtension = pezcumulus_pallet_teyrchain_system::block_weight::DynamicMaxBlockWeight<
+pub type TxExtension = pezcumulus_pezpallet_teyrchain_system::block_weight::DynamicMaxBlockWeight<
 	Runtime,
-	pezcumulus_pallet_weight_reclaim::StorageWeightReclaim<
+	pezcumulus_pezpallet_weight_reclaim::StorageWeightReclaim<
 		Runtime,
 		(
 			pezframe_system::AuthorizeCall<Runtime>,
@@ -616,13 +617,13 @@ impl_runtime_apis! {
 		}
 
 		fn max_claim_queue_offset() -> u8 {
-			pezcumulus_pallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
 		}
 	}
 
 	impl pezcumulus_primitives_core::SchedulingV3EnabledApi<Block> for Runtime {
 		fn scheduling_v3_enabled() -> bool {
-			<Runtime as pezcumulus_pallet_teyrchain_system::Config>::SchedulingSignatureVerifier::V3_SCHEDULING_ENABLED
+			<Runtime as pezcumulus_pezpallet_teyrchain_system::Config>::SchedulingSignatureVerifier::V3_SCHEDULING_ENABLED
 		}
 	}
 
@@ -758,7 +759,7 @@ impl_runtime_apis! {
 	}
 }
 
-pezcumulus_pallet_teyrchain_system::register_validate_block! {
+pezcumulus_pezpallet_teyrchain_system::register_validate_block! {
 	Runtime = Runtime,
-	BlockExecutor = pezcumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+	BlockExecutor = pezcumulus_pezpallet_aura_ext::BlockExecutor::<Runtime, Executive>,
 }

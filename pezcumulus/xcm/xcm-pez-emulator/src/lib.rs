@@ -66,7 +66,7 @@ pub use pezsp_runtime::BoundedSlice;
 pub use pezsp_tracing;
 
 // Cumulus
-pub use pezcumulus_pallet_teyrchain_system::{
+pub use pezcumulus_pezpallet_teyrchain_system::{
 	teyrchain_inherent::{deconstruct_teyrchain_inherent_data, InboundMessagesData},
 	Call as TeyrchainSystemCall, Config as TeyrchainSystemConfig,
 	Pezpallet as TeyrchainSystemPallet,
@@ -788,7 +788,7 @@ macro_rules! decl_test_teyrchains {
 					// Get RelayParentOffset from the runtime
 					let relay_parent_offset = <<<Self as $crate::Chain>::Runtime as $crate::TeyrchainSystemConfig>::RelayParentOffset as $crate::Get<u32>>::get();
 
-					// 2. inherent: pezcumulus_pallet_teyrchain_system::Call::set_validation_data
+					// 2. inherent: pezcumulus_pezpallet_teyrchain_system::Call::set_validation_data
 						let data = N::hrmp_channel_teyrchain_inherent_data(para_id, relay_block_number, parent_head_data, relay_parent_offset as u64);
 						let (data, mut downward_messages, mut horizontal_messages) =
 							$crate::deconstruct_teyrchain_inherent_data(data);

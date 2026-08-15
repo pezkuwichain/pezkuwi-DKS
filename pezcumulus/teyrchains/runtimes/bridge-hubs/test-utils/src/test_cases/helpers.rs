@@ -236,7 +236,7 @@ pub(crate) fn initialize_bridge_grandpa_pallet<Runtime, GPI>(
 	init_data: pezbp_header_pez_chain::InitializationData<BridgedHeader<Runtime, GPI>>,
 ) where
 	Runtime: BridgeGrandpaConfig<GPI>
-		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pezpallet_teyrchain_system::Config
 		+ pezpallet_timestamp::Config,
 {
 	pezpallet_bridge_grandpa::Pezpallet::<Runtime, GPI>::initialize(
@@ -280,7 +280,7 @@ pub fn relayed_incoming_message_works<Runtime, AllPalletsWithoutSystem, MPI>(
 	) -> CallsAndVerifiers<Runtime>,
 ) where
 	Runtime:
-		BasicTeyrchainRuntime + pezcumulus_pallet_xcmp_queue::Config + BridgeMessagesConfig<MPI>,
+		BasicTeyrchainRuntime + pezcumulus_pezpallet_xcmp_queue::Config + BridgeMessagesConfig<MPI>,
 	AllPalletsWithoutSystem:
 		OnInitialize<BlockNumberFor<Runtime>> + OnFinalize<BlockNumberFor<Runtime>>,
 	MPI: 'static,
@@ -313,7 +313,10 @@ pub fn relayed_incoming_message_works<Runtime, AllPalletsWithoutSystem, MPI>(
 				2,
 				AccountId::from(alice).into(),
 			);
-			mock_open_hrmp_channel::<Runtime, pezcumulus_pallet_teyrchain_system::Pezpallet<Runtime>>(
+			mock_open_hrmp_channel::<
+				Runtime,
+				pezcumulus_pezpallet_teyrchain_system::Pezpallet<Runtime>,
+			>(
 				runtime_para_id.into(),
 				sibling_teyrchain_id.into(),
 				included_head,
@@ -357,7 +360,7 @@ pub fn relayed_incoming_message_works<Runtime, AllPalletsWithoutSystem, MPI>(
 
 			// verify that imported XCM contains original message
 			let imported_xcm =
-				RuntimeHelper::<pezcumulus_pallet_xcmp_queue::Pezpallet<Runtime>>::take_xcm(
+				RuntimeHelper::<pezcumulus_pezpallet_xcmp_queue::Pezpallet<Runtime>>::take_xcm(
 					sibling_teyrchain_id.into(),
 				)
 				.unwrap();
@@ -392,8 +395,8 @@ fn execute_and_verify_calls<Runtime: pezframe_system::Config>(
 	}
 }
 
-pub(crate) mod for_pallet_xcm_bridge_hub {
-	use super::{super::for_pallet_xcm_bridge_hub::*, *};
+pub(crate) mod for_pezpallet_xcm_bridge_hub {
+	use super::{super::for_pezpallet_xcm_bridge_hub::*, *};
 
 	/// Helper function to open the bridge/lane for `source` and `destination` while ensuring all
 	/// required balances are placed into the SA of the source.
@@ -482,7 +485,7 @@ pub(crate) mod for_pallet_xcm_bridge_hub {
 	) where
 		Runtime: pezframe_system::Config
 			+ pezpallet_xcm_bridge_hub::Config<XcmOverBridgePalletInstance>
-			+ pezcumulus_pallet_teyrchain_system::Config
+			+ pezcumulus_pezpallet_teyrchain_system::Config
 			+ pezpallet_xcm::Config,
 		XcmOverBridgePalletInstance: 'static,
 		<Runtime as pezframe_system::Config>::RuntimeCall:

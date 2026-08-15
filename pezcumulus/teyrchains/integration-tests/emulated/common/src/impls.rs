@@ -46,8 +46,8 @@ pub use xcm::{
 };
 
 // Cumulus
-pub use pezcumulus_pallet_teyrchain_system;
-pub use pezcumulus_pallet_xcmp_queue;
+pub use pezcumulus_pezpallet_teyrchain_system;
+pub use pezcumulus_pezpallet_xcmp_queue;
 pub use pezcumulus_primitives_core::{
 	relay_chain::HrmpChannelId, DmpMessageHandler, Junction, Junctions, NetworkId, ParaId,
 	XcmpMessageHandler,
@@ -210,7 +210,7 @@ macro_rules! impl_assert_events_helpers_for_relay_chain {
 
 			impl<N: $crate::impls::Network> $chain<N> {
 				/// Asserts a dispatchable is completely executed and XCM sent
-				pub fn assert_xcm_pallet_attempted_complete(expected_weight: Option<$crate::impls::Weight>) {
+				pub fn assert_xcm_pezpallet_attempted_complete(expected_weight: Option<$crate::impls::Weight>) {
 					$crate::impls::assert_expected_events!(
 						Self,
 						vec![
@@ -228,7 +228,7 @@ macro_rules! impl_assert_events_helpers_for_relay_chain {
 				}
 
 				/// Asserts a dispatchable is incompletely executed and XCM sent
-				pub fn assert_xcm_pallet_attempted_incomplete(
+				pub fn assert_xcm_pezpallet_attempted_incomplete(
 					expected_weight: Option<$crate::impls::Weight>,
 					expected_error: Option<$crate::impls::XcmError>,
 				) {
@@ -251,7 +251,7 @@ macro_rules! impl_assert_events_helpers_for_relay_chain {
 				}
 
 				/// Asserts an XCM program is sent.
-				pub fn assert_xcm_pallet_sent() {
+				pub fn assert_xcm_pezpallet_sent() {
 					$crate::impls::assert_expected_events!(
 						Self,
 						vec![
@@ -382,7 +382,7 @@ macro_rules! impl_send_transact_helpers_for_relay_chain {
 							bx!(destination.into()),
 							bx!(xcm),
 						));
-						Self::assert_xcm_pallet_sent();
+						Self::assert_xcm_pezpallet_sent();
 					});
 				}
 			}
@@ -448,7 +448,7 @@ macro_rules! impl_assert_events_helpers_for_teyrchain {
 
 			impl<N: $crate::impls::Network> $chain<N> {
 				/// Asserts a dispatchable is completely executed and XCM sent
-				pub fn assert_xcm_pallet_attempted_complete(expected_weight: Option<$crate::impls::Weight>) {
+				pub fn assert_xcm_pezpallet_attempted_complete(expected_weight: Option<$crate::impls::Weight>) {
 					$crate::impls::assert_expected_events!(
 						Self,
 						vec![
@@ -466,7 +466,7 @@ macro_rules! impl_assert_events_helpers_for_teyrchain {
 				}
 
 				/// Asserts a dispatchable is incompletely executed and XCM sent
-				pub fn assert_xcm_pallet_attempted_incomplete(
+				pub fn assert_xcm_pezpallet_attempted_incomplete(
 					expected_weight: Option<$crate::impls::Weight>,
 					expected_error: Option<$crate::impls::XcmError>,
 				) {
@@ -489,7 +489,7 @@ macro_rules! impl_assert_events_helpers_for_teyrchain {
 				}
 
 				/// Asserts a dispatchable throws and error when trying to be sent
-				pub fn assert_xcm_pallet_attempted_error(expected_error: Option<$crate::impls::XcmError>) {
+				pub fn assert_xcm_pezpallet_attempted_error(expected_error: Option<$crate::impls::XcmError>) {
 					$crate::impls::assert_expected_events!(
 						Self,
 						vec![
@@ -504,7 +504,7 @@ macro_rules! impl_assert_events_helpers_for_teyrchain {
 				}
 
 				/// Asserts a XCM message is sent
-				pub fn assert_xcm_pallet_sent() {
+				pub fn assert_xcm_pezpallet_sent() {
 					$crate::impls::assert_expected_events!(
 						Self,
 						vec![
@@ -519,7 +519,7 @@ macro_rules! impl_assert_events_helpers_for_teyrchain {
 						Self,
 						vec![
 							[<$chain RuntimeEvent>]::<N>::TeyrchainSystem(
-								$crate::impls::pezcumulus_pallet_teyrchain_system::Event::UpwardMessageSent { .. }
+								$crate::impls::pezcumulus_pezpallet_teyrchain_system::Event::UpwardMessageSent { .. }
 							) => {},
 						]
 					);
@@ -1016,7 +1016,7 @@ macro_rules! impl_bridge_helpers_for_chain {
 							bx!(bridge_location.into()),
 							bx!(xcm),
 						));
-						Self::assert_xcm_pallet_sent();
+						Self::assert_xcm_pezpallet_sent();
 					});
 				}
 			}

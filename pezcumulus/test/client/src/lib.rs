@@ -20,7 +20,7 @@ mod block_builder;
 pub use bizinikiwi_test_client::*;
 pub use block_builder::*;
 use codec::{Decode, Encode};
-use pezcumulus_pallet_teyrchain_system::block_weight::DynamicMaxBlockWeight;
+use pezcumulus_pezpallet_teyrchain_system::block_weight::DynamicMaxBlockWeight;
 pub use pezcumulus_test_runtime as runtime;
 use pezcumulus_test_runtime::AuraId;
 pub use pezkuwi_teyrchain_primitives::primitives::{

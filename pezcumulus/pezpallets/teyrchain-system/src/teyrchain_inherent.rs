@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Pezcumulus teyrchain inherent related structures.
+//! Cumulus teyrchain inherent related structures.
 
 use alloc::{collections::btree_map::BTreeMap, vec, vec::Vec};
 use core::fmt::Debug;
@@ -142,6 +142,14 @@ impl<Message: InboundMessage> InboundMessagesCollection<Message> {
 	}
 }
 
+/// A struct containing some info about the expected size of the abridged inbound messages.
+pub struct AbridgedInboundMessagesSizeInfo {
+	/// The max size of the full messages collection
+	pub max_full_messages_size: usize,
+	/// The max size of the first hashed message
+	pub first_hashed_msg_max_size: usize,
+}
+
 /// A compressed collection of inbound messages.
 ///
 /// The first messages in the collection (up to a limit) contain the full message data.
@@ -161,29 +169,51 @@ impl<Message: InboundMessage> AbridgedInboundMessagesCollection<Message> {
 		(&self.full_messages, &self.hashed_messages)
 	}
 
-	/// Check that the current collection contains as many full messages as possible.
-	///
-	/// The `AbridgedInboundMessagesCollection` is provided to the runtime by a collator.
-	/// A malicious collator can provide a collection that contains no full messages or fewer
-	/// full messages than possible, leading to censorship.
-	pub fn check_enough_messages_included(&self, collection_name: &str) {
+	/// Check that the current collection contains at least 1 full message if needed.
+	pub fn check_enough_messages_included_basic(&self, collection_name: &str) {
 		if self.hashed_messages.is_empty() {
 			return;
 		}
 
-		// Ideally, we should check that the collection contains as many full messages as possible
-		// without exceeding the max expected size. The worst case scenario is that were the first
-		// message that had to be hashed is a max size message. So in this case, the min expected
-		// size would be `max_expected_size - max_msg_size`. However, there are multiple issues:
-		// 1. The max message size config can change while we still have to process messages with
-		//    the old max message size.
-		// 2. We can't access the max downward message size from the teyrchain runtime.
-		//
-		// So the safest approach is to check that there is at least 1 full message.
+		// Here we just check that there is at least 1 full message.
 		assert!(
 			self.full_messages.len() >= 1,
-			"[{}] Advancement rule violation: mandatory messages missing",
+			"[{}] Advancement rule violation: full messages missing",
 			collection_name,
+		);
+	}
+
+	/// Check that the current collection contains as many full messages as possible, taking into
+	/// consideration the collection constraints.
+	///
+	/// The `AbridgedInboundMessagesCollection` is provided to the runtime by a collator.
+	/// A malicious collator can provide a collection that contains no full messages or fewer
+	/// full messages than possible, leading to censorship.
+	pub fn check_enough_messages_included_advanced(
+		&self,
+		collection_name: &str,
+		size_info: AbridgedInboundMessagesSizeInfo,
+	) {
+		// We should check that the collection contains as many full messages as possible
+		// without exceeding the max expected size.
+		let AbridgedInboundMessagesSizeInfo { max_full_messages_size, first_hashed_msg_max_size } =
+			size_info;
+
+		let mut full_messages_size = 0usize;
+		for msg in &self.full_messages {
+			full_messages_size = full_messages_size.saturating_add(msg.data().len());
+		}
+
+		// The worst case scenario is that were the first message that had to be hashed
+		// is a max size message.
+		assert!(
+			full_messages_size.saturating_add(first_hashed_msg_max_size) > max_full_messages_size,
+			"[{}] Advancement rule violation: full messages size smaller than expected. \
+			full msgs size: {}, first hashed msg max size: {}, max full msgs size: {}",
+			collection_name,
+			full_messages_size,
+			first_hashed_msg_max_size,
+			max_full_messages_size
 		);
 	}
 }
@@ -294,7 +324,7 @@ impl AbridgedInboundHrmpMessages {
 #[derive(
 	codec::Encode, codec::Decode, codec::DecodeWithMemTracking, Debug, Clone, PartialEq, TypeInfo,
 )]
-pub struct BasicTeyrchainInherentData {
+pub struct BasicParachainInherentData {
 	pub validation_data: PersistedValidationData,
 	pub relay_chain_state: pezsp_trie::StorageProof,
 	pub relay_parent_descendants: Vec<RelayHeader>,
@@ -324,9 +354,9 @@ impl InboundMessagesData {
 /// Deconstructs a `TeyrchainInherentData` instance.
 pub fn deconstruct_teyrchain_inherent_data(
 	data: TeyrchainInherentData,
-) -> (BasicTeyrchainInherentData, InboundDownwardMessages, InboundHrmpMessages) {
+) -> (BasicParachainInherentData, InboundDownwardMessages, InboundHrmpMessages) {
 	(
-		BasicTeyrchainInherentData {
+		BasicParachainInherentData {
 			validation_data: data.validation_data,
 			relay_chain_state: data.relay_chain_state,
 			relay_parent_descendants: data.relay_parent_descendants,
@@ -481,7 +511,7 @@ mod tests {
 	}
 
 	#[test]
-	fn check_enough_messages_included_works() {
+	fn check_enough_messages_included_basic_works() {
 		let mut messages = AbridgedInboundHrmpMessages {
 			full_messages: vec![(
 				1000.into(),
@@ -493,13 +523,45 @@ mod tests {
 			)],
 		};
 
-		messages.check_enough_messages_included("Test");
+		messages.check_enough_messages_included_basic("Test");
 
 		messages.full_messages = vec![];
-		let result = std::panic::catch_unwind(|| messages.check_enough_messages_included("Test"));
+		let result =
+			std::panic::catch_unwind(|| messages.check_enough_messages_included_basic("Test"));
 		assert!(result.is_err());
 
 		messages.hashed_messages = vec![];
-		messages.check_enough_messages_included("Test");
+		messages.check_enough_messages_included_basic("Test");
+	}
+
+	#[test]
+	fn check_enough_messages_included_advanced_works() {
+		let mixed_messages = AbridgedInboundHrmpMessages {
+			full_messages: vec![(
+				1000.into(),
+				InboundHrmpMessage { sent_at: 0, data: vec![1; 50] },
+			)],
+			hashed_messages: vec![(
+				2000.into(),
+				HashedMessage { sent_at: 1, msg_hash: Default::default() },
+			)],
+		};
+		let result = std::panic::catch_unwind(|| {
+			mixed_messages.check_enough_messages_included_advanced(
+				"Test",
+				AbridgedInboundMessagesSizeInfo {
+					max_full_messages_size: 100,
+					first_hashed_msg_max_size: 50,
+				},
+			)
+		});
+		assert!(result.is_err());
+		mixed_messages.check_enough_messages_included_advanced(
+			"Test",
+			AbridgedInboundMessagesSizeInfo {
+				max_full_messages_size: 100,
+				first_hashed_msg_max_size: 51,
+			},
+		);
 	}
 }

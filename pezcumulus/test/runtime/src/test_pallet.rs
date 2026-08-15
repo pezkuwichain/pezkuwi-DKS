@@ -61,7 +61,10 @@ pub mod pezpallet {
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::config]
-	pub trait Config: pezframe_system::Config + pezcumulus_pallet_teyrchain_system::Config {}
+	pub trait Config:
+		pezframe_system::Config + pezcumulus_pezpallet_teyrchain_system::Config
+	{
+	}
 
 	/// A simple storage map for testing purposes.
 	#[pezpallet::storage]
@@ -178,7 +181,7 @@ pub mod pezpallet {
 			_: OriginFor<T>,
 			custom_header: alloc::vec::Vec<u8>,
 		) -> DispatchResult {
-			pezcumulus_pallet_teyrchain_system::Pezpallet::<T>::set_custom_validation_head_data(
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<T>::set_custom_validation_head_data(
 				custom_header,
 			);
 			Ok(())
@@ -239,7 +242,7 @@ pub mod pezpallet {
 		#[pezpallet::weight(0)]
 		pub fn send_n_upward_messages(_: OriginFor<T>, n: u32) -> DispatchResult {
 			let messages: alloc::vec::Vec<_> = (0..n).map(|i| vec![(i % 256) as u8]).collect();
-			pezcumulus_pallet_teyrchain_system::PendingUpwardMessages::<T>::put(messages);
+			pezcumulus_pezpallet_teyrchain_system::PendingUpwardMessages::<T>::put(messages);
 			Ok(())
 		}
 
@@ -247,7 +250,7 @@ pub mod pezpallet {
 		#[pezpallet::weight(0)]
 		pub fn send_upward_message_of_size(_: OriginFor<T>, size: u32) -> DispatchResult {
 			let message = alloc::vec![0u8; size as usize];
-			pezcumulus_pallet_teyrchain_system::Pezpallet::<T>::send_upward_message(message)
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<T>::send_upward_message(message)
 				.map_err(|_| "Failed to send upward message")?;
 			Ok(())
 		}
@@ -488,7 +491,7 @@ pub mod pezpallet {
 	}
 }
 
-impl<T: Config> pezcumulus_pallet_teyrchain_system::OnSystemEvent for Pezpallet<T> {
+impl<T: Config> pezcumulus_pezpallet_teyrchain_system::OnSystemEvent for Pezpallet<T> {
 	fn on_validation_data(_data: &pezcumulus_primitives_core::PersistedValidationData) {
 		// Nothing to do here for tests
 	}
@@ -498,7 +501,7 @@ impl<T: Config> pezcumulus_pallet_teyrchain_system::OnSystemEvent for Pezpallet<
 	}
 
 	fn on_relay_state_proof(
-		relay_state_proof: &pezcumulus_pallet_teyrchain_system::relay_state_snapshot::RelayChainStateProof,
+		relay_state_proof: &pezcumulus_pezpallet_teyrchain_system::relay_state_snapshot::RelayChainStateProof,
 	) -> pezframe_support::weights::Weight {
 		use crate::{Balance, Nonce};
 		use pezframe_system::AccountInfo;

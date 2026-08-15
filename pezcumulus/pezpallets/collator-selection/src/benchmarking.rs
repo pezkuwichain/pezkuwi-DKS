@@ -23,7 +23,7 @@ use super::*;
 use crate::Pezpallet as CollatorSelection;
 use alloc::vec::Vec;
 use core::cmp;
-use pezcumulus_pallet_session_benchmarking as session_benchmarking;
+use pezcumulus_pezpallet_session_benchmarking as session_benchmarking;
 use pezframe_benchmarking::{account, v2::*, whitelisted_caller, BenchmarkError};
 use pezframe_support::traits::{Currency, EnsureOrigin, Get, ReservableCurrency};
 use pezframe_system::{pezpallet_prelude::BlockNumberFor, EventRecord, RawOrigin};

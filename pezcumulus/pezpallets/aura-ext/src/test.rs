@@ -16,7 +16,7 @@
 
 use super::*;
 use core::num::NonZeroU32;
-use pezcumulus_pallet_teyrchain_system::{
+use pezcumulus_pezpallet_teyrchain_system::{
 	consensus_hook::ExpectParentIncluded, Ancestor, AnyRelayNumber, ConsensusHook,
 	RelayChainStateProof, TeyrchainSetCode, UsedBandwidth,
 };
@@ -72,7 +72,7 @@ type Block = pezframe_system::mocking::MockBlock<Test>;
 pezframe_support::construct_runtime!(
 	pub enum Test {
 		System: pezframe_system,
-		TeyrchainSystem: pezcumulus_pallet_teyrchain_system,
+		TeyrchainSystem: pezcumulus_pezpallet_teyrchain_system,
 		Aura: pezpallet_aura,
 		AuraExt: crate,
 		TestPallet: test_pallet,
@@ -136,7 +136,7 @@ impl pezpallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
-impl pezcumulus_pallet_teyrchain_system::Config for Test {
+impl pezcumulus_pezpallet_teyrchain_system::Config for Test {
 	type WeightInfo = ();
 	type RuntimeEvent = ();
 	type OnSystemEvent = ();
@@ -160,7 +160,7 @@ fn set_ancestors() {
 		ancestor.replace_para_head_hash(H256::repeat_byte(i + 1));
 		ancestors.push(ancestor);
 	}
-	pezcumulus_pallet_teyrchain_system::UnincludedSegment::<Test>::put(ancestors);
+	pezcumulus_pezpallet_teyrchain_system::UnincludedSegment::<Test>::put(ancestors);
 }
 
 fn new_test_ext(para_slot: u64) -> pezsp_io::TestExternalities {
