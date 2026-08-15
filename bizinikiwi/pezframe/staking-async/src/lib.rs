@@ -26,8 +26,8 @@
 //! * It is capable of working with a multi-page `ElectionProvider``, aka.
 //!   `pezpallet-election-provider-multi-block`.
 //!
-//! While `pezpallet-staking` was somewhat general-purpose, this pezpallet is absolutely NOT right
-//! from the get-go: It is designed to be used ONLY in Pezkuwi/Dicle AssetHub system teyrchains.
+//! While `pezpallet-staking` was somewhat general-purpose, this pezpallet is absolutely NOT right from
+//! the get-go: It is designed to be used ONLY in Pezkuwi/Dicle AssetHub system teyrchains.
 //!
 //! ## Reward and Inflation
 //!
@@ -268,8 +268,8 @@ pub type BoundedExposuresOf<T> = BoundedVec<
 	MaxWinnersPerPageOf<<T as Config>::ElectionProvider>,
 >;
 
-/// Alias for the maximum number of winners (aka. active validators), as defined in by this
-/// pezpallet's config.
+/// Alias for the maximum number of winners (aka. active validators), as defined in by this pezpallet's
+/// config.
 pub type MaxWinnersOf<T> = <T as Config>::MaxValidatorSet;
 
 /// Alias for the maximum number of winners per page, as expected by the election provider.
@@ -426,6 +426,22 @@ impl<AccountId, Balance: HasCompact + Copy + AtLeast32BitUnsigned + codec::MaxEn
 				page_count: 1,
 			},
 			exposure_page: ExposurePage { page_total: exposure.total, others: exposure.others },
+		}
+	}
+
+	/// Create a new instance of `PagedExposure` from just the exposure metadata (overview).
+	///
+	/// This creates a `PagedExposure` with an empty `others` list, useful when only the
+	/// validator's own stake needs to be considered (e.g., when nominators are not slashable).
+	pub fn from_overview(overview: PagedExposureMetadata<Balance>) -> Self {
+		Self {
+			exposure_metadata: PagedExposureMetadata {
+				total: overview.total,
+				own: overview.own,
+				nominator_count: overview.nominator_count,
+				page_count: 1,
+			},
+			exposure_page: ExposurePage { page_total: overview.total, others: vec![] },
 		}
 	}
 

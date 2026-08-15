@@ -306,7 +306,7 @@ fn upload_evm_runtime_code_works() {
 			runtime_code.clone(),
 			crate::vm::BytecodeType::Evm,
 			&mut TransactionMeter::new_from_limits(Weight::MAX, BalanceOf::<Test>::MAX).unwrap(),
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)
 		.unwrap();
 
@@ -589,7 +589,7 @@ fn prestate_diff_mode_tracing_works() {
 }
 
 #[test]
-fn eth_substrate_call_dispatches_successfully() {
+fn eth_bizinikiwi_call_dispatches_successfully() {
 	use pezframe_support::traits::fungible::Inspect;
 	ExtBuilder::default().build().execute_with(|| {
 		let _ = <Test as Config>::Currency::set_balance(&ALICE, 1000);
@@ -603,7 +603,7 @@ fn eth_substrate_call_dispatches_successfully() {
 
 		assert!(EthBlockBuilderFirstValues::<Test>::get().is_none());
 
-		assert_ok!(Pezpallet::<Test>::eth_substrate_call(
+		assert_ok!(Pezpallet::<Test>::eth_bizinikiwi_call(
 			Origin::EthTransaction(ALICE).into(),
 			Box::new(transfer_call),
 			vec![]
@@ -618,13 +618,13 @@ fn eth_substrate_call_dispatches_successfully() {
 }
 
 #[test]
-fn eth_substrate_call_requires_eth_origin() {
+fn eth_bizinikiwi_call_requires_eth_origin() {
 	ExtBuilder::default().build().execute_with(|| {
 		let inner_call = pezframe_system::Call::remark { remark: vec![] };
 
 		// Should fail with non-EthTransaction origin
 		assert_noop!(
-			Pezpallet::<Test>::eth_substrate_call(
+			Pezpallet::<Test>::eth_bizinikiwi_call(
 				RuntimeOrigin::signed(ALICE),
 				Box::new(inner_call.into()),
 				vec![]
@@ -635,7 +635,7 @@ fn eth_substrate_call_requires_eth_origin() {
 }
 
 #[test]
-fn eth_substrate_call_tracks_weight_correctly() {
+fn eth_bizinikiwi_call_tracks_weight_correctly() {
 	use crate::weights::WeightInfo;
 	ExtBuilder::default().build().execute_with(|| {
 		let _ = <Test as Config>::Currency::set_balance(&ALICE, 1000);
@@ -644,7 +644,7 @@ fn eth_substrate_call_tracks_weight_correctly() {
 		let transaction_encoded = vec![0u8; 200];
 		let transaction_encoded_len = transaction_encoded.len() as u32;
 
-		let result = Pezpallet::<Test>::eth_substrate_call(
+		let result = Pezpallet::<Test>::eth_bizinikiwi_call(
 			Origin::EthTransaction(ALICE).into(),
 			Box::new(inner_call.clone().into()),
 			transaction_encoded,
@@ -653,7 +653,7 @@ fn eth_substrate_call_tracks_weight_correctly() {
 		assert_ok!(result);
 		let post_info = result.unwrap();
 
-		let overhead = <Test as Config>::WeightInfo::eth_substrate_call(transaction_encoded_len)
+		let overhead = <Test as Config>::WeightInfo::eth_bizinikiwi_call(transaction_encoded_len)
 			.saturating_add(<Test as Config>::WeightInfo::on_finalize_block_per_tx(
 				transaction_encoded_len,
 			));

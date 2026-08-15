@@ -38,7 +38,7 @@ fn determine_call_stipend<T: Config>() -> Weight {
 	gas_weight.saturating_add(event_weight)
 }
 
-pub mod substrate_execution {
+pub mod bizinikiwi_execution {
 	use num_traits::One;
 
 	use super::*;

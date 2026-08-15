@@ -190,13 +190,13 @@ async fn prepare_evm_transactions<Client: EthRpcClient + Sync + Send>(
 }
 
 /// Prepare multiple Bizinikiwi transfer transactions with sequential nonces
-async fn prepare_substrate_transactions(
+async fn prepare_bizinikiwi_transactions(
 	node_client: &OnlineClient<SrcChainConfig>,
 	signer: &pezkuwi_subxt_signer::sr25519::Keypair,
 	count: usize,
 ) -> anyhow::Result<Vec<SubmittableTransaction<SrcChainConfig, OnlineClient<SrcChainConfig>>>> {
 	let mut nonce = node_client.tx().account_nonce(&signer.public_key().into()).await?;
-	let mut substrate_txs = Vec::new();
+	let mut bizinikiwi_txs = Vec::new();
 	for i in 0..count {
 		let remark_data = format!("Hello from test {}", i);
 		let call = pezkuwi_subxt::dynamic::tx(
@@ -210,11 +210,11 @@ async fn prepare_substrate_transactions(
 			.build();
 
 		let tx = node_client.tx().create_signed(&call, signer, params).await?;
-		substrate_txs.push(tx);
+		bizinikiwi_txs.push(tx);
 		log::trace!(target: LOG_TARGET, "Prepared substrate transaction {i}/{count} with nonce: {nonce}");
 		nonce += 1 as u64;
 	}
-	Ok(substrate_txs)
+	Ok(bizinikiwi_txs)
 }
 
 /// Submit multiple transactions and return them without waiting for receipts
@@ -240,12 +240,12 @@ async fn submit_evm_transactions<Client: EthRpcClient + Sync + Send>(
 }
 
 /// Submit substrate transactions and return futures for waiting
-async fn submit_substrate_transactions(
-	substrate_txs: Vec<SubmittableTransaction<SrcChainConfig, OnlineClient<SrcChainConfig>>>,
+async fn submit_bizinikiwi_transactions(
+	bizinikiwi_txs: Vec<SubmittableTransaction<SrcChainConfig, OnlineClient<SrcChainConfig>>>,
 ) -> Vec<impl std::future::Future<Output = Result<(), anyhow::Error>>> {
 	let mut futures = Vec::new();
 
-	for (i, tx) in substrate_txs.into_iter().enumerate() {
+	for (i, tx) in bizinikiwi_txs.into_iter().enumerate() {
 		let fut = async move {
 			match tx.submit_and_watch().await {
 				Ok(mut progress) => {
@@ -357,7 +357,7 @@ async fn run_all_eth_rpc_tests_inner() -> anyhow::Result<()> {
 		test_block_hash_for_tag_with_block_tags_works,
 		test_earliest_block_tag,
 		test_multiple_transactions_in_block,
-		test_mixed_evm_substrate_transactions,
+		test_mixed_evm_bizinikiwi_transactions,
 		test_runtime_pallets_address_upload_code,
 		test_subscribe_new_heads,
 		test_subscribe_new_heads_multiple_blocks,
@@ -654,7 +654,7 @@ async fn test_runtime_api_dry_run_addr_works() -> anyhow::Result<()> {
 	let client = Arc::new(SharedResources::client().await);
 	let node_client = SharedResources::node_client().await;
 	let account = Account::default();
-	let origin: [u8; 32] = account.substrate_account().into();
+	let origin: [u8; 32] = account.bizinikiwi_account().into();
 	let data = b"hello world".to_vec();
 	let value = 5_000_000_000_000u128;
 	let (bytes, _) = pezpallet_revive_fixtures::compile_module("dummy")?;
@@ -1022,11 +1022,11 @@ async fn test_multiple_transactions_in_block() -> anyhow::Result<()> {
 	Ok(())
 }
 
-async fn test_mixed_evm_substrate_transactions() -> anyhow::Result<()> {
+async fn test_mixed_evm_bizinikiwi_transactions() -> anyhow::Result<()> {
 	let client = Arc::new(SharedResources::client().await);
 	let node_client = SharedResources::node_client().await;
 	let num_evm_txs = 10;
-	let num_substrate_txs = 7;
+	let num_bizinikiwi_txs = 7;
 
 	let alith = Account::default();
 	let ethan = Account::from(pezkuwi_subxt_signer::eth::dev::ethan());
@@ -1039,25 +1039,25 @@ async fn test_mixed_evm_substrate_transactions() -> anyhow::Result<()> {
 			.await?;
 
 	// Prepare substrate transactions (simple remarks)
-	log::trace!(target: LOG_TARGET, "Creating {num_substrate_txs} substrate remark transactions");
+	log::trace!(target: LOG_TARGET, "Creating {num_bizinikiwi_txs} substrate remark transactions");
 	let alice_signer = pezkuwi_subxt_signer::sr25519::dev::alice();
 
-	let substrate_txs =
-		prepare_substrate_transactions(&node_client, &alice_signer, num_substrate_txs).await?;
+	let bizinikiwi_txs =
+		prepare_bizinikiwi_transactions(&node_client, &alice_signer, num_bizinikiwi_txs).await?;
 
-	log::trace!(target: LOG_TARGET, "Submitting {num_evm_txs} EVM and {num_substrate_txs} substrate transactions");
+	log::trace!(target: LOG_TARGET, "Submitting {num_evm_txs} EVM and {num_bizinikiwi_txs} substrate transactions");
 
 	// Submit EVM transactions
 	let evm_submitted = submit_evm_transactions(evm_transactions).await?;
 	let evm_tx_hashes: Vec<H256> = evm_submitted.iter().map(|(hash, _, _)| *hash).collect();
 
 	// Submit substrate transactions
-	let substrate_futures = submit_substrate_transactions(substrate_txs).await;
+	let bizinikiwi_futures = submit_bizinikiwi_transactions(bizinikiwi_txs).await;
 
 	// Wait for first EVM receipt and all substrate transactions in parallel
-	let (evm_first_receipt_result, _substrate_results) = tokio::join!(
+	let (evm_first_receipt_result, _bizinikiwi_results) = tokio::join!(
 		async { evm_submitted[0].2.wait_for_receipt().await },
-		futures::future::join_all(substrate_futures)
+		futures::future::join_all(bizinikiwi_futures)
 	);
 	// Handle the EVM receipt result
 	let evm_first_receipt = evm_first_receipt_result?;
@@ -1078,7 +1078,7 @@ async fn test_runtime_pallets_address_upload_code() -> anyhow::Result<()> {
 	let signer = Account::default();
 
 	// Helper function to get substrate block hash from EVM block number
-	let get_substrate_block_hash = |block_number: U256| {
+	let get_bizinikiwi_block_hash = |block_number: U256| {
 		let rpc_client = node_rpc_client.clone();
 		async move {
 			rpc_client
@@ -1119,7 +1119,7 @@ async fn test_runtime_pallets_address_upload_code() -> anyhow::Result<()> {
 	// Step 5: Verify the code was actually uploaded
 	let code_hash = H256(pezsp_io::hashing::keccak_256(&bytecode));
 	let query = pezkuwi_subxt_client::storage().revive().pristine_code(code_hash);
-	let block_hash: pezsp_core::H256 = get_substrate_block_hash(receipt.block_number).await?;
+	let block_hash: pezsp_core::H256 = get_bizinikiwi_block_hash(receipt.block_number).await?;
 	let stored_code = node_client.storage().at(block_hash).fetch(&query).await?;
 	assert!(stored_code.is_some(), "Code with hash {code_hash:?} should exist in storage");
 	assert_eq!(stored_code.unwrap(), bytecode, "Stored code should match the uploaded bytecode");
@@ -2018,16 +2018,16 @@ async fn test_block_sync_fresh() -> anyhow::Result<()> {
 
 	// Block hash mappings should be queryable after sync.
 	let finalized = client.latest_finalized_block().await;
-	let substrate_hash = finalized.hash();
-	let ethereum_hash = client.receipt_provider().get_ethereum_hash(&substrate_hash).await;
+	let bizinikiwi_hash = finalized.hash();
+	let ethereum_hash = client.receipt_provider().get_ethereum_hash(&bizinikiwi_hash).await;
 	assert!(
 		ethereum_hash.is_some(),
 		"Finalized block #{} should have an ethereum hash mapping after sync",
 		finalized.number(),
 	);
 	assert_eq!(
-		client.receipt_provider().get_substrate_hash(&ethereum_hash.unwrap()).await,
-		Some(substrate_hash),
+		client.receipt_provider().get_bizinikiwi_hash(&ethereum_hash.unwrap()).await,
+		Some(bizinikiwi_hash),
 		"Reverse mapping should resolve back to the substrate hash"
 	);
 

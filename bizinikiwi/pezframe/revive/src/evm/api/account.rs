@@ -49,7 +49,7 @@ impl Account {
 	}
 
 	/// Get the substrate [`AccountId32`] of the account.
-	pub fn substrate_account(&self) -> AccountId32 {
+	pub fn bizinikiwi_account(&self) -> AccountId32 {
 		let mut account_id = AccountId32::new([0xEE; 32]);
 		<AccountId32 as AsMut<[u8; 32]>>::as_mut(&mut account_id)[..20]
 			.copy_from_slice(self.address().as_ref());

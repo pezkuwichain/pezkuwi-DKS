@@ -217,7 +217,7 @@ fn max_storage_deposit_reported_for_unfunded_dry_run(
 					weight_limit: <Test as pezframe_system::Config>::BlockWeights::get().max_block,
 					deposit_limit: u128::MAX,
 				})
-				.exec_config(ExecConfig::new_substrate_tx().with_dry_run(Default::default()))
+				.exec_config(ExecConfig::new_bizinikiwi_tx().with_dry_run(Default::default()))
 				.build()
 		});
 
@@ -230,7 +230,7 @@ fn max_storage_deposit_reported_for_unfunded_dry_run(
 }
 
 #[test]
-fn substrate_metering_initialization_works() {
+fn bizinikiwi_metering_initialization_works() {
 	let gas_scale = <Test as Config>::GasScale::get().into();
 
 	let tests = vec![
@@ -312,7 +312,7 @@ fn substrate_metering_initialization_works() {
 }
 
 #[test]
-fn substrate_metering_charges_works() {
+fn bizinikiwi_metering_charges_works() {
 	use Charge::{D, W};
 
 	let gas_scale = <Test as Config>::GasScale::get().into();
@@ -442,7 +442,7 @@ fn substrate_metering_charges_works() {
 }
 
 #[test]
-fn substrate_nesting_works() {
+fn bizinikiwi_nesting_works() {
 	use CallResources::{Ethereum, NoLimits, WeightDeposit};
 
 	let gas_scale = <Test as Config>::GasScale::get().into();
@@ -668,7 +668,7 @@ fn substrate_nesting_works() {
 }
 
 #[test]
-fn substrate_nesting_charges_works() {
+fn bizinikiwi_nesting_charges_works() {
 	use Charge::{D, W};
 
 	let gas_scale = <Test as Config>::GasScale::get().into();
@@ -897,8 +897,8 @@ fn dry_run_bounded_execution_runs_out_of_gas() {
 /// causing ratio = gas_limit / remaining_gas ≈ 0. This resulted in nested calls receiving
 /// almost no weight. The fix caps remaining_gas to u64::MAX since Ethereum gas is u64.
 #[test]
-fn substrate_nesting_with_large_deposit_and_max_gas_request() {
-	use super::math::substrate_execution;
+fn bizinikiwi_nesting_with_large_deposit_and_max_gas_request() {
+	use super::math::bizinikiwi_execution;
 
 	ExtBuilder::default()
 		.with_next_fee_multiplier(FixedU128::from_rational(1, 5))
@@ -908,7 +908,7 @@ fn substrate_nesting_with_large_deposit_and_max_gas_request() {
 			let deposit_limit: u128 = u64::MAX as _;
 
 			let mut root_meter =
-				substrate_execution::new_root::<Test>(weight_limit, deposit_limit).unwrap();
+				bizinikiwi_execution::new_root::<Test>(weight_limit, deposit_limit).unwrap();
 
 			root_meter.charge_weight_token(TestToken(1000, 100)).unwrap();
 			root_meter.charge_deposit(&StorageDeposit::Charge(1000)).unwrap();

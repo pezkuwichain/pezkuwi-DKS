@@ -530,7 +530,7 @@ mod benchmarks {
 
 	// `c`: Size of the RLP encoded Ethereum transaction in bytes.
 	#[benchmark(pov_mode = Measured)]
-	fn eth_substrate_call(c: Linear<0, { 100 * 1024 }>) -> Result<(), BenchmarkError> {
+	fn eth_bizinikiwi_call(c: Linear<0, { 100 * 1024 }>) -> Result<(), BenchmarkError> {
 		let caller = whitelisted_caller();
 		T::Currency::set_balance(&caller, caller_funding::<T>());
 		let origin = Origin::EthTransaction(caller);
@@ -1353,7 +1353,7 @@ mod benchmarks {
 			deposit_limit: BalanceOf::<T>::max_value(),
 		})
 		.unwrap();
-		let exec_config = ExecConfig::new_substrate_tx();
+		let exec_config = ExecConfig::new_bizinikiwi_tx();
 		let contract_account = &instance.account_id;
 		let origin = &ExecOrigin::from_account_id(caller);
 		let beneficiary_clone = beneficiary.clone();

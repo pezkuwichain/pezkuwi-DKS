@@ -108,7 +108,7 @@ where
 			value: 0u32.into(),
 			data: vec![],
 			transient_storage_size: 0,
-			exec_config: ExecConfig::new_substrate_tx(),
+			exec_config: ExecConfig::new_bizinikiwi_tx(),
 			read_only: false,
 			delegate_call: false,
 		}
@@ -285,7 +285,7 @@ where
 			Code::Upload(module.code),
 			data,
 			salt,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		);
 
 		let address = outcome.result?.addr;

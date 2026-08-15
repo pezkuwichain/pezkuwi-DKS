@@ -97,7 +97,7 @@ pub mod __private {
 	pub use core::{mem, slice};
 	pub use pezsp_core::offchain;
 	#[cfg(not(feature = "std"))]
-	pub use pezsp_core::to_substrate_wasm_fn_return_value;
+	pub use pezsp_core::to_bizinikiwi_wasm_fn_return_value;
 	#[cfg(feature = "frame-metadata")]
 	pub use pezsp_metadata_ir::{self as metadata_ir, frame_metadata as metadata};
 	pub use pezsp_runtime::{

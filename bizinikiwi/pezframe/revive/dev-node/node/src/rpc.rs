@@ -86,10 +86,10 @@ where
 		+ HeaderMetadata<OpaqueBlock, Error = BlockChainError>
 		+ 'static,
 	C::Api: pezsp_block_builder::BlockBuilder<OpaqueBlock>,
-	C::Api: substrate_frame_rpc_system::AccountNonceApi<OpaqueBlock, AccountId, Nonce>,
+	C::Api: bizinikiwi_frame_rpc_system::AccountNonceApi<OpaqueBlock, AccountId, Nonce>,
 	P: TransactionPool + 'static,
 {
-	use pezkuwi_sdk::substrate_frame_rpc_system::{System, SystemApiServer};
+	use pezkuwi_sdk::bizinikiwi_frame_rpc_system::{System, SystemApiServer};
 	let mut module = RpcModule::new(());
 	let FullDeps { client, pool, consensus } = deps;
 

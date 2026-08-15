@@ -158,9 +158,9 @@ pub mod pezpallet {
 
 		/// Convert a balance into a number used for election calculation. This must fit into a
 		/// `u64` but is allowed to be sensibly lossy. The `u64` is used to communicate with the
-		/// [`pezframe_election_provider_support`] crate which accepts u64 numbers and does
-		/// operations in 128.
-		/// Consequently, the backward convert is used convert the u128s from sp-elections back to a
+		/// [`pezframe_election_provider_support`] crate which accepts u64 numbers and does operations
+		/// in 128.
+		/// Consequently, the backward convert is used convert the u128s from pezsp-elections back to a
 		/// [`BalanceOf`].
 		#[pezpallet::no_default_bounds]
 		type CurrencyToVote: pezsp_staking::currency_to_vote::CurrencyToVote<BalanceOf<Self>>;
@@ -234,8 +234,23 @@ pub mod pezpallet {
 		type PlanningEraOffset: Get<SessionIndex>;
 
 		/// Number of eras that staked funds must remain bonded for.
+		///
+		/// This is the bonding duration for validators. Nominators may have a shorter bonding
+		/// duration when [`AreNominatorsSlashable`] is set to `false` (see
+		/// [`StakingInterface::nominator_bonding_duration`]).
 		#[pezpallet::constant]
 		type BondingDuration: Get<EraIndex>;
+
+		/// Number of eras nominators must wait to unbond when they are not slashable.
+		///
+		/// This duration is used for nominators when [`AreNominatorsSlashable`] is `false`.
+		/// When nominators are slashable, they use the full [`Config::BondingDuration`] to ensure
+		/// slashes can be applied during the unbonding period.
+		///
+		/// Setting this to a lower value (e.g., 1 era) allows for faster withdrawals when
+		/// nominators are not subject to slashing risk.
+		#[pezpallet::constant]
+		type NominatorFastUnbondDuration: Get<EraIndex>;
 
 		/// Number of eras that slashes are deferred by, after computation.
 		///
@@ -431,6 +446,7 @@ pub mod pezpallet {
 		parameter_types! {
 			pub const SessionsPerEra: SessionIndex = 3;
 			pub const BondingDuration: EraIndex = 3;
+			pub const NominatorFastUnbondDuration: EraIndex = 2;
 			pub const MaxPruningItems: u32 = 100;
 		}
 
@@ -450,6 +466,7 @@ pub mod pezpallet {
 			type DisableMinting = ConstBool<false>;
 			type SessionsPerEra = SessionsPerEra;
 			type BondingDuration = BondingDuration;
+			type NominatorFastUnbondDuration = NominatorFastUnbondDuration;
 			type PlanningEraOffset = ConstU32<1>;
 			type SlashDeferDuration = ();
 			type MaxExposurePageSize = ConstU32<64>;
@@ -610,6 +627,21 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type MaxValidatorsCount<T> = StorageValue<_, u32, OptionQuery>;
 
+	/// Tracks the last era in which an account was active as a validator (included in the era's
+	/// exposure/snapshot).
+	///
+	/// This is used to enforce that accounts who were recently validators must wait the full
+	/// [`Config::BondingDuration`] before their funds can be withdrawn, even if they switch to
+	/// nominator role. This prevents validators from:
+	/// 1. Committing a slashable offence in era N
+	/// 2. Switching to nominator role
+	/// 3. Using the shorter nominator unbonding duration to withdraw funds before being slashed
+	///
+	/// Updated when era snapshots are created (in `ErasStakersPaged`/`ErasStakersOverview`).
+	/// Cleaned up when the stash is killed (fully withdrawn/reaped).
+	#[pezpallet::storage]
+	pub type LastValidatorEra<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, EraIndex>;
+
 	/// The map from nominator stash key to their nomination preferences, namely the validators that
 	/// they wish to support.
 	///
@@ -633,12 +665,12 @@ pub mod pezpallet {
 	pub type Nominators<T: Config> =
 		CountedStorageMap<_, Twox64Concat, T::AccountId, Nominations<T>>;
 
-	/// Stakers whose funds are managed by other pallets.
+	/// Stakers whose funds are managed by other pezpallets.
 	///
-	/// This pezpallet does not apply any locks on them, therefore they are only virtually bonded.
-	/// They are expected to be keyless accounts and hence should not be allowed to mutate their
-	/// ledger directly via this pezpallet. Instead, these accounts are managed by other pallets
-	/// and accessed via low level apis. We keep track of them to do minimal integrity checks.
+	/// This pezpallet does not apply any locks on them, therefore they are only virtually bonded. They
+	/// are expected to be keyless accounts and hence should not be allowed to mutate their ledger
+	/// directly via this pezpallet. Instead, these accounts are managed by other pezpallets and accessed
+	/// via low level apis. We keep track of them to do minimal integrity checks.
 	#[pezpallet::storage]
 	pub type VirtualStakers<T: Config> = CountedStorageMap<_, Twox64Concat, T::AccountId, ()>;
 
@@ -723,8 +755,8 @@ pub mod pezpallet {
 	/// A bounded wrapper for [`pezsp_staking::ExposurePage`].
 	///
 	/// It has `Deref` and `DerefMut` impls that map it back [`pezsp_staking::ExposurePage`] for all
-	/// purposes. This is done in such a way because we prefer to keep the types in
-	/// [`pezsp_staking`] pure, and not polluted by pezpallet-specific bounding logic.
+	/// purposes. This is done in such a way because we prefer to keep the types in [`pezsp_staking`]
+	/// pure, and not polluted by pezpallet-specific bounding logic.
 	///
 	/// It encoded and decodes exactly the same as [`pezsp_staking::ExposurePage`], and provides a
 	/// manual `MaxEncodedLen` implementation, to be used in benchmarking
@@ -1514,6 +1546,8 @@ pub mod pezpallet {
 					active_era,
 				);
 
+				let nominators_slashed = slash.others.len() as u32;
+
 				// Check if this slash has been cancelled
 				if Self::check_slash_cancelled(active_era, &key.0, key.1) {
 					crate::log!(
@@ -1535,7 +1569,7 @@ pub mod pezpallet {
 					CancelledSlashes::<T>::remove(&active_era);
 				}
 
-				T::WeightInfo::apply_slash()
+				T::WeightInfo::apply_slash(nominators_slashed)
 			} else {
 				// No slashes found for this era
 				T::DbWeight::get().reads(1)
@@ -1595,10 +1629,10 @@ pub mod pezpallet {
 				},
 				PruningStep::ErasRewardPoints => {
 					ErasRewardPoints::<T>::remove(era);
-					EraPruningState::<T>::insert(era, PruningStep::ErasTotalStake);
+					EraPruningState::<T>::insert(era, PruningStep::SingleEntryCleanups);
 					T::WeightInfo::prune_era_reward_points()
 				},
-				PruningStep::ErasTotalStake => {
+				PruningStep::SingleEntryCleanups => {
 					ErasTotalStake::<T>::remove(era);
 					ErasNominatorsSlashable::<T>::remove(era);
 					ErasValidatorIncentiveBudget::<T>::remove(era);
@@ -1666,8 +1700,8 @@ pub mod pezpallet {
 		}
 
 		fn on_initialize(_now: BlockNumberFor<T>) -> Weight {
-			// process our queue.
-			let mut consumed_weight = slashing::process_offence::<T>();
+			// Process our queue, using the era-specific nominators slashable setting.
+			let mut consumed_weight = slashing::process_offence_for_era::<T>();
 
 			// apply any pending slashes after `SlashDeferDuration`.
 			consumed_weight.saturating_accrue(T::DbWeight::get().reads(1));
@@ -1696,6 +1730,13 @@ pub mod pezpallet {
 				T::BondingDuration::get(),
 			);
 
+			// Ensure NominatorFastUnbondDuration is not greater than BondingDuration
+			assert!(
+				T::NominatorFastUnbondDuration::get() <= T::BondingDuration::get(),
+				"NominatorFastUnbondDuration ({}) must not exceed BondingDuration ({}).",
+				T::NominatorFastUnbondDuration::get(),
+				T::BondingDuration::get(),
+			);
 			// Ensure MaxPruningItems is reasonable (minimum 100 for efficiency)
 			assert!(
 				T::MaxPruningItems::get() >= 100,
@@ -1851,6 +1892,15 @@ pub mod pezpallet {
 			let mut value = value.min(ledger.active);
 			let stash = ledger.stash.clone();
 
+			// If unbonding all active stake, chill the stash first to avoid `InsufficientBond`
+			// errors. This matches the behavior of pezpallet-staking.
+			let chill_weight = if value >= ledger.active {
+				Self::chill_stash(&stash);
+				T::WeightInfo::chill()
+			} else {
+				Weight::zero()
+			};
+
 			ensure!(
 				ledger.unlocking.len() < T::MaxUnlockingChunks::get() as usize,
 				Error::<T>::NoMoreChunks,
@@ -1865,7 +1915,9 @@ pub mod pezpallet {
 					ledger.active = Zero::zero();
 				}
 
-				let min_active_bond = if Nominators::<T>::contains_key(&stash) {
+				let is_nominator = Nominators::<T>::contains_key(&stash);
+
+				let min_active_bond = if is_nominator {
 					Self::min_nominator_bond()
 				} else if Validators::<T>::contains_key(&stash) {
 					Self::min_validator_bond()
@@ -1878,11 +1930,26 @@ pub mod pezpallet {
 				// If a user runs into this error, they should chill first.
 				ensure!(ledger.active >= min_active_bond, Error::<T>::InsufficientBond);
 
-				// Note: we used current era before, but that is meant to be used for only election.
-				// The right value to use here is the active era.
+				// Determine unbonding duration based on validator history.
+				// If the account was a validator in recent eras (within BondingDuration), they must
+				// wait the full BondingDuration even if they've switched to nominator role.
+				// This prevents validators from avoiding slashing by switching roles and using the
+				// shorter nominator unbonding period.
+				let active_era = session_rotation::Rotator::<T>::active_era();
+				let was_recent_validator = LastValidatorEra::<T>::get(&stash)
+					.map(|last_era| active_era.saturating_sub(last_era) < T::BondingDuration::get())
+					.unwrap_or(false);
 
-				let era = session_rotation::Rotator::<T>::active_era()
-					.saturating_add(T::BondingDuration::get());
+				let unbond_duration = if was_recent_validator {
+					// Use full bonding duration for recent validators
+					T::BondingDuration::get()
+				} else {
+					// Use nominator bonding duration for pure nominators
+					<Self as pezsp_staking::StakingInterface>::nominator_bonding_duration()
+				};
+
+				let era =
+					session_rotation::Rotator::<T>::active_era().saturating_add(unbond_duration);
 				if let Some(chunk) = ledger.unlocking.last_mut().filter(|chunk| chunk.era == era) {
 					// To keep the chunk count down, we only keep one chunk per era. Since
 					// `unlocking` is a FiFo queue, if a chunk exists for `era` we know that it will
@@ -1906,9 +1973,13 @@ pub mod pezpallet {
 			}
 
 			let actual_weight = if let Some(withdraw_weight) = maybe_withdraw_weight {
-				Some(T::WeightInfo::unbond().saturating_add(withdraw_weight))
+				Some(
+					T::WeightInfo::unbond()
+						.saturating_add(withdraw_weight)
+						.saturating_add(chill_weight),
+				)
 			} else {
-				Some(T::WeightInfo::unbond())
+				Some(T::WeightInfo::unbond().saturating_add(chill_weight))
 			};
 
 			Ok(actual_weight.into())
@@ -2504,6 +2575,7 @@ pub mod pezpallet {
 			chill_threshold: ConfigOp<Percent>,
 			min_commission: ConfigOp<Perbill>,
 			max_staked_rewards: ConfigOp<Percent>,
+			are_nominators_slashable: ConfigOp<bool>,
 		) -> DispatchResult {
 			ensure_root(origin)?;
 
@@ -2524,6 +2596,7 @@ pub mod pezpallet {
 			config_op_exp!(ChillThreshold<T>, chill_threshold);
 			config_op_exp!(MinCommission<T>, min_commission);
 			config_op_exp!(MaxStakedRewards<T>, max_staked_rewards);
+			config_op_exp!(AreNominatorsSlashable<T>, are_nominators_slashable);
 			Ok(())
 		}
 		/// Declare a `controller` to stop participating as either a validator or nominator.
@@ -2889,8 +2962,8 @@ pub mod pezpallet {
 		/// Manually and permissionlessly applies a deferred slash for a given era.
 		///
 		/// Normally, slashes are automatically applied shortly after the start of the `slash_era`.
-		/// The automatic application of slashes is handled by the pezpallet's internal logic, and
-		/// it tries to apply one slash page per block of the era.
+		/// The automatic application of slashes is handled by the pezpallet's internal logic, and it
+		/// tries to apply one slash page per block of the era.
 		/// If for some reason, one era is not enough for applying all slash pages, the remaining
 		/// slashes need to be manually (permissionlessly) applied.
 		///
@@ -2921,7 +2994,7 @@ pub mod pezpallet {
 		/// - Implement an **off-chain worker (OCW) task** to automatically apply slashes when there
 		///   is unused block space, improving efficiency.
 		#[pezpallet::call_index(31)]
-		#[pezpallet::weight(T::WeightInfo::apply_slash())]
+		#[pezpallet::weight(T::WeightInfo::apply_slash(T::MaxExposurePageSize::get()))]
 		pub fn apply_slash(
 			origin: OriginFor<T>,
 			slash_era: EraIndex,

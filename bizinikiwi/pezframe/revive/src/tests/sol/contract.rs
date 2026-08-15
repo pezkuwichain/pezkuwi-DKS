@@ -888,12 +888,12 @@ fn root_call_can_create_and_destroy_in_same_tx(caller_type: FixtureType, callee_
 /// No resolc caller since the subcall limiting is not implemented on resolc, yet.
 #[test_case(FixtureType::Solc,   FixtureType::Solc;   "solc->solc")]
 #[test_case(FixtureType::Solc,   FixtureType::Resolc; "solc->resolc")]
-fn subcall_effectively_limited_substrate_tx(caller_type: FixtureType, callee_type: FixtureType) {
+fn subcall_effectively_limited_bizinikiwi_tx(caller_type: FixtureType, callee_type: FixtureType) {
 	let (caller_code, _) = compile_module_with_type("Caller", caller_type).unwrap();
 	let (callee_code, _) = compile_module_with_type("Callee", callee_type).unwrap();
 
-	let no_collection_config = ExecConfig::new_substrate_tx();
-	let mut collection_config = ExecConfig::new_substrate_tx();
+	let no_collection_config = ExecConfig::new_bizinikiwi_tx();
+	let mut collection_config = ExecConfig::new_bizinikiwi_tx();
 	collection_config.collect_deposit_from_hold = Some(Default::default());
 	let configs = [no_collection_config, collection_config];
 

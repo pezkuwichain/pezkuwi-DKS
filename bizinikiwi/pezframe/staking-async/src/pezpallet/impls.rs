@@ -240,8 +240,12 @@ impl<T: Config> Pezpallet<T> {
 			// above returns earliest era for which offences are NOT processed yet, so we subtract
 			// one from it which gives us the oldest era for which all offences are processed.
 			.saturating_sub(1)
-			// Unlock chunks are keyed by the era they were initiated plus Bonding Duration.
-			// We do the same to processed offence era so they can be compared.
+			// Unlock chunks are keyed by the era they were initiated plus their unbond duration.
+			// We use full BondingDuration (validator duration) here because:
+			// - For validators: this is their actual unbond duration
+			// - For nominators: when slashable, they use full duration; when not slashable, their
+			//   chunks already have shorter unlock eras (set during unbond), so this calculation
+			//   still correctly allows their withdrawals.
 			.saturating_add(T::BondingDuration::get());
 
 		// If there are unprocessed offences older than the active era, withdrawals are only
@@ -789,6 +793,9 @@ impl<T: Config> Pezpallet<T> {
 		Self::do_remove_validator(&stash);
 		Self::do_remove_nominator(&stash);
 
+		// Clean up validator history tracking.
+		LastValidatorEra::<T>::remove(&stash);
+
 		Ok(())
 	}
 
@@ -920,7 +927,7 @@ impl<T: Config> Pezpallet<T> {
 				validators_taken.saturating_inc();
 			} else {
 				// this can only happen if: 1. there a bug in the bags-list (or whatever is the
-				// sorted list) logic and the state of the two pallets is no longer compatible, or
+				// sorted list) logic and the state of the two pezpallets is no longer compatible, or
 				// because the nominators is not decodable since they have more nomination than
 				// `T::NominationsQuota::get_quota`. The latter can rarely happen, and is not
 				// really an emergency or bug if it does.
@@ -1587,6 +1594,14 @@ impl<T: Config> rc_client::AHStakingInterface for Pezpallet<T> {
 	fn weigh_on_new_offences(offence_count: u32) -> Weight {
 		T::WeightInfo::rc_on_offence(offence_count)
 	}
+
+	fn active_era_start_session_index() -> SessionIndex {
+		Rotator::<T>::active_era_start_session_index()
+	}
+
+	fn is_validator(who: &Self::AccountId) -> bool {
+		Validators::<T>::contains_key(who)
+	}
 }
 
 impl<T: Config> ScoreProvider<T::AccountId> for Pezpallet<T> {
@@ -1637,7 +1652,7 @@ impl<T: Config> ScoreProvider<T::AccountId> for Pezpallet<T> {
 	}
 }
 
-/// A simple sorted list implementation that does not require any additional pallets. Note, this
+/// A simple sorted list implementation that does not require any additional pezpallets. Note, this
 /// does not provide validators in sorted order. If you desire nominators in a sorted order take
 /// a look at `pezpallet-bags-list`.
 pub struct UseValidatorsMap<T>(core::marker::PhantomData<T>);
@@ -1705,7 +1720,7 @@ impl<T: Config> SortedListProvider<T::AccountId> for UseValidatorsMap<T> {
 	}
 }
 
-/// A simple voter list implementation that does not require any additional pallets. Note, this
+/// A simple voter list implementation that does not require any additional pezpallets. Note, this
 /// does not provided nominators in sorted ordered. If you desire nominators in a sorted order take
 /// a look at `pezpallet-bags-list`.
 pub struct UseNominatorsAndValidatorsMap<T>(core::marker::PhantomData<T>);
@@ -1807,12 +1822,39 @@ impl<T: Config> StakingInterface for Pezpallet<T> {
 			.map_err(|e| e.into())
 	}
 
+	/// Returns the bonding duration for validators.
+	///
+	/// Validators always need to wait the full [`Config::BondingDuration`] before withdrawing
+	/// unbonded funds, as they may be subject to slashing for offences reported during this period.
 	fn bonding_duration() -> EraIndex {
 		T::BondingDuration::get()
 	}
 
+	/// Returns the bonding duration for pure nominators.
+	///
+	/// This returns the *potential* fast unbonding duration that pure nominators can use:
+	/// - When [`AreNominatorsSlashable`] is `true`, returns full [`Config::BondingDuration`]
+	/// - When [`AreNominatorsSlashable`] is `false`, returns
+	///   [`Config::NominatorFastUnbondDuration`]
+	///
+	/// **Important**: The actual unbonding duration for a specific account is determined in
+	/// `unbond()` based on validator history (see [`LastValidatorEra`]):
+	/// - Validators always use full [`Config::BondingDuration`]
+	/// - Nominators who were validators in recent eras (within [`Config::BondingDuration`]) use
+	///   full [`Config::BondingDuration`] to ensure they can be slashed for past offences
+	/// - Pure nominators use the value returned by this function
+	fn nominator_bonding_duration() -> EraIndex {
+		if AreNominatorsSlashable::<T>::get() {
+			T::BondingDuration::get()
+		} else {
+			T::NominatorFastUnbondDuration::get()
+		}
+	}
+
 	fn current_era() -> EraIndex {
-		CurrentEra::<T>::get().unwrap_or(Zero::zero())
+		// Named current_era for legacy interface compatibility, but returns active_era.
+		// Active era should be used for all non-election staking logic.
+		Rotator::<T>::active_era()
 	}
 
 	fn stake(who: &Self::AccountId) -> Result<Stake<BalanceOf<T>>, DispatchError> {
@@ -1833,9 +1875,9 @@ impl<T: Config> StakingInterface for Pezpallet<T> {
 	}
 
 	fn set_payee(stash: &Self::AccountId, reward_acc: &Self::AccountId) -> DispatchResult {
-		// Since virtual stakers are not allowed to compound their rewards as this pezpallet does
-		// not manage their locks, we do not allow reward account to be set same as stash. For
-		// external pallets that manage the virtual bond, they can claim rewards and re-bond them.
+		// Since virtual stakers are not allowed to compound their rewards as this pezpallet does not
+		// manage their locks, we do not allow reward account to be set same as stash. For
+		// external pezpallets that manage the virtual bond, they can claim rewards and re-bond them.
 		ensure!(
 			!Self::is_virtual_staker(stash) || stash != reward_acc,
 			Error::<T>::RewardDestinationRestricted
@@ -1957,12 +1999,16 @@ impl<T: Config> StakingInterface for Pezpallet<T> {
 			Eras::<T>::upsert_exposure(*current_era, stash, exposure);
 		}
 
-		fn set_current_era(era: EraIndex) {
-			CurrentEra::<T>::put(era);
-		}
-
 		fn max_exposure_page_size() -> Page {
 			T::MaxExposurePageSize::get()
+		}
+	}
+
+	pezsp_staking::std_or_benchmarks_enabled! {
+		fn set_era(era: EraIndex) {
+			ActiveEra::<T>::put(crate::ActiveEraInfo { index: era, start: None });
+			// Simulate prod behaviour where current era is always ahead of active era by 1.
+			CurrentEra::<T>::put(era.saturating_add(1));
 		}
 	}
 }
@@ -2087,7 +2133,7 @@ impl<T: Config> Pezpallet<T> {
 	/// * A bonded (stash, controller) pair must have an associated ledger.
 	///
 	/// NOTE: these checks result in warnings only. Once
-	/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/273> is resolved, turn warns into check
+	/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/3245> is resolved, turn warns into check
 	/// failures.
 	fn check_bonded_consistency() -> Result<(), TryRuntimeError> {
 		use alloc::collections::btree_set::BTreeSet;
@@ -2159,16 +2205,20 @@ impl<T: Config> Pezpallet<T> {
 	}
 
 	/// Invariants:
-	/// * Number of voters in `VoterList` match that of the number of Nominators and Validators in
-	/// the system (validator is both voter and target).
 	/// * Number of targets in `TargetList` matches the number of validators in the system.
 	/// * Current validator count is bounded by the election provider's max winners.
 	fn check_count() -> Result<(), TryRuntimeError> {
-		ensure!(
-			<T as Config>::VoterList::count()
-				== Nominators::<T>::count() + Validators::<T>::count(),
-			"wrong external count"
+		// When the bags list is locked, nominators and validators may be temporarily
+		// missing from the voter set. If `PendingRebag` is enabled, it will later
+		// reconcile the mismatch.
+		crate::log!(
+			debug,
+			"VoterList count: {}, Nominators count: {}, Validators count: {}",
+			<T as Config>::VoterList::count(),
+			Nominators::<T>::count(),
+			Validators::<T>::count()
 		);
+
 		ensure!(
 			<T as Config>::TargetList::count() == Validators::<T>::count(),
 			"wrong external count"
@@ -2300,6 +2350,8 @@ impl<T: Config> Pezpallet<T> {
 	/// 	* nominator_count is correct
 	/// 	* total is own + sum of pages
 	/// `ErasTotalStake`` must be correct
+	/// For each validator in `ErasStakersOverview`, `LastValidatorEra` should be set to the active
+	/// era.
 	fn check_paged_exposures() -> Result<(), TryRuntimeError> {
 		let Some(era) = ActiveEra::<T>::get().map(|a| a.index) else { return Ok(()) };
 		let overview_and_pages = ErasStakersOverview::<T>::iter_prefix(era)

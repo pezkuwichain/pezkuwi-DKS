@@ -25,7 +25,7 @@ use prometheus_endpoint::{
 };
 use std::time::Duration;
 
-/// `outcome` label values for `substrate_sub_libp2p_bitswap_entries_total`.
+/// `outcome` label values for `bizinikiwi_sub_libp2p_bitswap_entries_total`.
 pub mod outcomes {
 	pub const BLOCK_SERVED: &str = "block_served";
 	pub const HAVE: &str = "have";
@@ -33,7 +33,7 @@ pub mod outcomes {
 	pub const UNSUPPORTED_CID: &str = "unsupported_cid";
 }
 
-/// `reason` label values for `substrate_sub_libp2p_bitswap_request_errors_total`.
+/// `reason` label values for `bizinikiwi_sub_libp2p_bitswap_request_errors_total`.
 pub mod errors {
 	pub const TOO_MANY_ENTRIES: &str = "too_many_entries";
 	pub const CLIENT: &str = "client";

@@ -328,7 +328,7 @@ mod tests {
 	use super::*;
 	use bizinikiwi_test_runtime_client::{
 		runtime::{
-			substrate_test_pallet::pezpallet::Call as PalletCall, ExtrinsicBuilder, RuntimeCall,
+			bizinikiwi_test_pallet::pezpallet::Call as PalletCall, ExtrinsicBuilder, RuntimeCall,
 		},
 		ClientBlockImportExt, DefaultTestClientBuilderExt, TestClientBuilderExt,
 	};

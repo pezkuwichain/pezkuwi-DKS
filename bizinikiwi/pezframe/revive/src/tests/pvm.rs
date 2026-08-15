@@ -1578,7 +1578,7 @@ fn gas_left_api_works() {
 		// Call the contract using the hold
 		let hold_initial = <Test as Config>::FeeInfo::weight_to_fee(&WEIGHT_LIMIT);
 		<Test as Config>::FeeInfo::deposit_txfee(<Test as Config>::Currency::issue(hold_initial));
-		let mut exec_config = ExecConfig::new_substrate_tx();
+		let mut exec_config = ExecConfig::new_bizinikiwi_tx();
 		exec_config.collect_deposit_from_hold = Some((0u32.into(), Default::default()));
 		let received = builder::bare_call(addr).exec_config(exec_config).build_and_unwrap_result();
 		assert_eq!(received.flags, ReturnFlags::empty());
@@ -4906,7 +4906,7 @@ fn bump_nonce_once_works() {
 		let _ = <Test as Config>::Currency::set_balance(&ALICE, 1_000_000);
 		pezframe_system::Account::<Test>::mutate(&ALICE, |account| account.nonce = 1);
 
-		let do_not_bump = ExecConfig::new_substrate_tx_without_bump();
+		let do_not_bump = ExecConfig::new_bizinikiwi_tx_without_bump();
 
 		let _ = <Test as Config>::Currency::set_balance(&BOB, 1_000_000);
 		pezframe_system::Account::<Test>::mutate(&BOB, |account| account.nonce = 1);
@@ -4927,7 +4927,7 @@ fn bump_nonce_once_works() {
 
 		builder::bare_instantiate(Code::Upload(code.clone()))
 			.origin(RuntimeOrigin::signed(BOB))
-			.exec_config(ExecConfig::new_substrate_tx_without_bump())
+			.exec_config(ExecConfig::new_bizinikiwi_tx_without_bump())
 			.salt(None)
 			.build_and_unwrap_result();
 		assert_eq!(System::account_nonce(&BOB), 1);
@@ -5118,7 +5118,7 @@ fn storage_deposit_from_hold_works() {
 		let hold_initial = 500_000;
 		<Test as Config>::Currency::set_balance(&ALICE, 1_000_000);
 		<Test as Config>::FeeInfo::deposit_txfee(<Test as Config>::Currency::issue(hold_initial));
-		let mut exec_config = ExecConfig::new_substrate_tx();
+		let mut exec_config = ExecConfig::new_bizinikiwi_tx();
 		exec_config.collect_deposit_from_hold = Some((0u32.into(), Default::default()));
 
 		// Instantiate the BOB contract.
@@ -5213,7 +5213,7 @@ fn eip3607_reject_tx_from_contract_or_precompile() {
 			);
 			assert_err!(result, DispatchError::BadOrigin);
 
-			let result = <Pezpallet<Test>>::eth_substrate_call(
+			let result = <Pezpallet<Test>>::eth_bizinikiwi_call(
 				Origin::EthTransaction(origin.clone()).into(),
 				call.clone(),
 				vec![],
@@ -5291,7 +5291,7 @@ fn eip3607_allow_tx_from_contract_or_precompile_if_debug_setting_configured() {
 				);
 				assert_ok!(result);
 
-				let result = <Pezpallet<Test>>::eth_substrate_call(
+				let result = <Pezpallet<Test>>::eth_bizinikiwi_call(
 					Origin::EthTransaction(origin.clone()).into(),
 					Box::new(RuntimeCall::System(pezframe_system::Call::remark { remark: vec![] })),
 					vec![],

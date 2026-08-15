@@ -84,7 +84,7 @@ pub trait WeightInfo {
 	fn instantiate(i: u32, ) -> Weight;
 	fn call() -> Weight;
 	fn eth_call(d: u32, ) -> Weight;
-	fn eth_substrate_call(c: u32, ) -> Weight;
+	fn eth_bizinikiwi_call(c: u32, ) -> Weight;
 	fn upload_code(c: u32, ) -> Weight;
 	fn remove_code() -> Weight;
 	fn set_code() -> Weight;
@@ -478,7 +478,7 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	/// Storage: `Revive::EthBlockBuilderFirstValues` (r:0 w:1)
 	/// Proof: `Revive::EthBlockBuilderFirstValues` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `c` is `[0, 102400]`.
-	fn eth_substrate_call(c: u32, ) -> Weight {
+	fn eth_bizinikiwi_call(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `381`
 		//  Estimated: `3846`
@@ -1902,7 +1902,7 @@ impl WeightInfo for () {
 	/// Storage: `Revive::EthBlockBuilderFirstValues` (r:0 w:1)
 	/// Proof: `Revive::EthBlockBuilderFirstValues` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `c` is `[0, 102400]`.
-	fn eth_substrate_call(c: u32, ) -> Weight {
+	fn eth_bizinikiwi_call(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `381`
 		//  Estimated: `3846`

@@ -1181,7 +1181,7 @@ pub mod pezpallet {
 					deposit_limit: storage_deposit_limit,
 				},
 				data,
-				&ExecConfig::new_substrate_tx(),
+				&ExecConfig::new_bizinikiwi_tx(),
 			);
 
 			if let Ok(return_value) = &output.result
@@ -1226,7 +1226,7 @@ pub mod pezpallet {
 				Code::Existing(code_hash),
 				data,
 				salt,
-				&ExecConfig::new_substrate_tx(),
+				&ExecConfig::new_bizinikiwi_tx(),
 			);
 			if let Ok(retval) = &output.result
 				&& retval.result.did_revert()
@@ -1294,7 +1294,7 @@ pub mod pezpallet {
 				Code::Upload(code),
 				data,
 				salt,
-				&ExecConfig::new_substrate_tx(),
+				&ExecConfig::new_bizinikiwi_tx(),
 			);
 			if let Ok(retval) = &output.result
 				&& retval.result.did_revert()
@@ -1481,21 +1481,21 @@ pub mod pezpallet {
 		/// * `transaction_encoded`: The RLP encoding of the Ethereum transaction,
 		#[pezpallet::call_index(12)]
 		#[pezpallet::weight(
-			T::WeightInfo::eth_substrate_call(transaction_encoded.len() as u32)
+			T::WeightInfo::eth_bizinikiwi_call(transaction_encoded.len() as u32)
 			.saturating_add(call.get_dispatch_info().call_weight)
 			.saturating_add(T::WeightInfo::on_finalize_block_per_tx(transaction_encoded.len() as u32))
 		)]
-		pub fn eth_substrate_call(
+		pub fn eth_bizinikiwi_call(
 			origin: OriginFor<T>,
 			call: Box<<T as Config>::RuntimeCall>,
 			transaction_encoded: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
 			// Note that the inner dispatch uses `RawOrigin::Signed`, which cannot
-			// re-enter `eth_substrate_call` (which requires `Origin::EthTransaction`).
+			// re-enter `eth_bizinikiwi_call` (which requires `Origin::EthTransaction`).
 			let signer = Self::ensure_eth_signed(origin)?;
 			Self::ensure_non_contract_if_signed(&OriginFor::<T>::signed(signer.clone()))?;
 			let tx_len = transaction_encoded.len() as u32;
-			let weight_overhead = T::WeightInfo::eth_substrate_call(tx_len)
+			let weight_overhead = T::WeightInfo::eth_bizinikiwi_call(tx_len)
 				.saturating_add(T::WeightInfo::on_finalize_block_per_tx(tx_len));
 
 			block_storage::with_ethereum_context::<T>(transaction_encoded, || {
@@ -2550,7 +2550,7 @@ impl<T: Config> Pezpallet<T> {
 			code,
 			bytecode_type,
 			&mut meter,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)?;
 		Ok(CodeUploadReturnValue {
 			code_hash: *module.code_hash(),
@@ -3188,7 +3188,7 @@ macro_rules! impl_runtime_apis_plus_revive_traits {
 							deposit_limit: storage_deposit_limit.unwrap_or(u128::MAX),
 						},
 						input_data,
-						&$crate::ExecConfig::new_substrate_tx().with_dry_run(Default::default()),
+						&$crate::ExecConfig::new_bizinikiwi_tx().with_dry_run(Default::default()),
 					)
 				}
 
@@ -3216,7 +3216,7 @@ macro_rules! impl_runtime_apis_plus_revive_traits {
 						code,
 						data,
 						salt,
-						&$crate::ExecConfig::new_substrate_tx().with_dry_run(Default::default()),
+						&$crate::ExecConfig::new_bizinikiwi_tx().with_dry_run(Default::default()),
 					)
 				}
 

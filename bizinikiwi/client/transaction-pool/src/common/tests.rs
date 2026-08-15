@@ -24,7 +24,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use bizinikiwi_test_runtime::{
-	substrate_test_pallet::pezpallet::Call as PalletCall, BalancesCall, Block, BlockNumber,
+	bizinikiwi_test_pallet::pezpallet::Call as PalletCall, BalancesCall, Block, BlockNumber,
 	Extrinsic, ExtrinsicBuilder, Hashing, RuntimeCall, Transfer, TransferData, H256,
 };
 use codec::Encode;

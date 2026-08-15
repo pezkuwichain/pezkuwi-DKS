@@ -629,7 +629,7 @@ fn memory_is_cleared_between_invocations(wasm_method: WasmExecutionMethod) {
 	//        COUNTER += 1;
 	//        COUNTER as u64
 	//     };
-	//     pezsp_core::to_substrate_wasm_fn_return_value(&output)
+	//     pezsp_core::to_bizinikiwi_wasm_fn_return_value(&output)
 	// }
 	// ```
 	//

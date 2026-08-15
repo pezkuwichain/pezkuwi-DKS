@@ -180,7 +180,7 @@ fn raw_permit(
 		0u32.into(),
 		TransactionLimits::WeightAndDeposit { weight_limit: Weight::MAX, deposit_limit: u128::MAX },
 		data,
-		&ExecConfig::new_substrate_tx(),
+		&ExecConfig::new_bizinikiwi_tx(),
 	)
 }
 
@@ -1104,7 +1104,7 @@ fn permit_staticcall_is_rejected() {
 			Code::Upload(init_code),
 			vec![],
 			None,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)
 		.result
 		.expect("Caller deployment must succeed")
@@ -1141,7 +1141,7 @@ fn permit_staticcall_is_rejected() {
 				deposit_limit: u128::MAX,
 			},
 			calldata,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)
 		.result
 		.expect("outer call must succeed");
@@ -1184,7 +1184,7 @@ fn nonces_via_precompile() {
 					deposit_limit: u128::MAX,
 				},
 				data,
-				&ExecConfig::new_substrate_tx(),
+				&ExecConfig::new_bizinikiwi_tx(),
 			)
 			.result
 			.expect("nonces() call must succeed")

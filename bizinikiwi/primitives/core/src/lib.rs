@@ -340,7 +340,7 @@ impl From<log::LevelFilter> for LogLevelFilter {
 /// This `u64` stores the pointer to the encoded return value and the length of this encoded value.
 /// The low `32bits` are reserved for the pointer, followed by `32bit` for the length.
 #[cfg(not(feature = "std"))]
-pub fn to_substrate_wasm_fn_return_value(value: &impl Encode) -> u64 {
+pub fn to_bizinikiwi_wasm_fn_return_value(value: &impl Encode) -> u64 {
 	let encoded = value.encode();
 
 	let ptr = encoded.as_ptr() as u64;

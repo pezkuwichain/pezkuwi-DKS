@@ -103,7 +103,7 @@ macro_rules! wasm_export_functions {
 				(|| { $( $fn_impl )* })()
 			}
 
-			$crate::to_substrate_wasm_fn_return_value(&())
+			$crate::to_bizinikiwi_wasm_fn_return_value(&())
 		}
 	};
 	(@IMPL
@@ -131,7 +131,7 @@ macro_rules! wasm_export_functions {
 				(|| { $( $fn_impl )* })()
 			};
 
-			$crate::to_substrate_wasm_fn_return_value(&output)
+			$crate::to_bizinikiwi_wasm_fn_return_value(&output)
 		}
 	};
 }

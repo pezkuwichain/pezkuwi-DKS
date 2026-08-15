@@ -246,7 +246,7 @@ fn generate_wasm_interface(impls: &[ItemImpl]) -> Result<TokenStream> {
                             #c::init_runtime_logger();
 
                             let output = (move || { #impl_ })();
-                            #c::to_substrate_wasm_fn_return_value(&output)
+                            #c::to_bizinikiwi_wasm_fn_return_value(&output)
                         }
                     }
                 )

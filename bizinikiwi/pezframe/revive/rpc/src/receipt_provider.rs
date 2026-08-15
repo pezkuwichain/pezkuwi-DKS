@@ -117,13 +117,13 @@ pub struct ReceiptProvider<B: BlockInfoProvider = SubxtBlockInfoProvider> {
 /// Bizinikiwi block to Ethereum block mapping
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct BlockHashMap {
-	substrate_hash: H256,
+	bizinikiwi_hash: H256,
 	ethereum_hash: H256,
 }
 
 impl BlockHashMap {
-	fn new(substrate_hash: H256, ethereum_hash: H256) -> Self {
-		Self { substrate_hash, ethereum_hash }
+	fn new(bizinikiwi_hash: H256, ethereum_hash: H256) -> Self {
+		Self { bizinikiwi_hash, ethereum_hash }
 	}
 }
 
@@ -178,14 +178,14 @@ async fn insert_block_mapping<'e, E: sqlx::Executor<'e, Database = Sqlite>>(
 	block_map: &BlockHashMap,
 ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
 	let ethereum_hash_ref = block_map.ethereum_hash.as_ref();
-	let substrate_hash_ref = block_map.substrate_hash.as_ref();
+	let bizinikiwi_hash_ref = block_map.bizinikiwi_hash.as_ref();
 	query!(
 		r#"
-			INSERT OR REPLACE INTO eth_to_substrate_blocks (ethereum_block_hash, substrate_block_hash)
+			INSERT OR REPLACE INTO eth_to_bizinikiwi_blocks (ethereum_block_hash, bizinikiwi_block_hash)
 			VALUES ($1, $2)
 			"#,
 		ethereum_hash_ref,
-		substrate_hash_ref,
+		bizinikiwi_hash_ref,
 	)
 	.execute(executor)
 	.await
@@ -313,12 +313,12 @@ impl<B: BlockInfoProvider> ReceiptProvider<B> {
 	}
 
 	/// Get the Bizinikiwi block hash for the given Ethereum block hash.
-	pub async fn get_substrate_hash(&self, ethereum_block_hash: &H256) -> Option<H256> {
+	pub async fn get_bizinikiwi_hash(&self, ethereum_block_hash: &H256) -> Option<H256> {
 		let ethereum_hash = ethereum_block_hash.as_ref();
 		let result = query!(
 			r#"
-			SELECT substrate_block_hash
-			FROM eth_to_substrate_blocks
+			SELECT bizinikiwi_block_hash
+			FROM eth_to_bizinikiwi_blocks
 			WHERE ethereum_block_hash = $1
 			"#,
 			ethereum_hash
@@ -334,34 +334,34 @@ impl<B: BlockInfoProvider> ReceiptProvider<B> {
 			None
 		})?;
 
-		log::trace!(target: LOG_TARGET, "Get block mapping ethereum block: {:?} -> substrate block: {ethereum_block_hash:?}", H256::from_slice(&result.substrate_block_hash[..]));
+		log::trace!(target: LOG_TARGET, "Get block mapping ethereum block: {:?} -> substrate block: {ethereum_block_hash:?}", H256::from_slice(&result.bizinikiwi_block_hash[..]));
 
-		Some(H256::from_slice(&result.substrate_block_hash[..]))
+		Some(H256::from_slice(&result.bizinikiwi_block_hash[..]))
 	}
 
 	/// Get the Ethereum block hash for the given Bizinikiwi block hash.
-	pub async fn get_ethereum_hash(&self, substrate_block_hash: &H256) -> Option<H256> {
-		let substrate_hash = substrate_block_hash.as_ref();
+	pub async fn get_ethereum_hash(&self, bizinikiwi_block_hash: &H256) -> Option<H256> {
+		let bizinikiwi_hash = bizinikiwi_block_hash.as_ref();
 		let result = query!(
 			r#"
 			SELECT ethereum_block_hash
-			FROM eth_to_substrate_blocks
-			WHERE substrate_block_hash = $1
+			FROM eth_to_bizinikiwi_blocks
+			WHERE bizinikiwi_block_hash = $1
 			"#,
-			substrate_hash
+			bizinikiwi_hash
 		)
 		.fetch_optional(&self.db_ctx.pool)
 		.await
 		.inspect_err(|e| {
-			log::error!(target: LOG_TARGET, "failed to get block mapping for substrate block {substrate_block_hash:?}, err: {e:?}");
+			log::error!(target: LOG_TARGET, "failed to get block mapping for substrate block {bizinikiwi_block_hash:?}, err: {e:?}");
 		})
 		.ok()?
 		.or_else(||{
-			log::trace!(target: LOG_TARGET, "No block mapping found for substrate block: {substrate_block_hash:?}");
+			log::trace!(target: LOG_TARGET, "No block mapping found for substrate block: {bizinikiwi_block_hash:?}");
 			None
 		})?;
 
-		log::trace!(target: LOG_TARGET, "Get block mapping substrate block: {substrate_block_hash:?} -> ethereum block: {:?}", H256::from_slice(&result.ethereum_block_hash[..]));
+		log::trace!(target: LOG_TARGET, "Get block mapping substrate block: {bizinikiwi_block_hash:?} -> ethereum block: {:?}", H256::from_slice(&result.ethereum_block_hash[..]));
 
 		Some(H256::from_slice(&result.ethereum_block_hash[..]))
 	}
@@ -381,7 +381,7 @@ impl<B: BlockInfoProvider> ReceiptProvider<B> {
 				format!("DELETE FROM transaction_hashes WHERE block_hash in ({placeholders})");
 			let sql_logs = format!("DELETE FROM logs WHERE block_hash in ({placeholders})");
 			let sql_mappings = format!(
-				"DELETE FROM eth_to_substrate_blocks WHERE substrate_block_hash in ({placeholders})"
+				"DELETE FROM eth_to_bizinikiwi_blocks WHERE bizinikiwi_block_hash in ({placeholders})"
 			);
 
 			let mut delete_tx_query = sqlx::query(&sql_tx);
@@ -389,10 +389,10 @@ impl<B: BlockInfoProvider> ReceiptProvider<B> {
 			let mut delete_mappings_query = sqlx::query(&sql_mappings);
 
 			for block_map in chunk {
-				delete_tx_query = delete_tx_query.bind(block_map.substrate_hash.as_ref());
+				delete_tx_query = delete_tx_query.bind(block_map.bizinikiwi_hash.as_ref());
 				delete_logs_query = delete_logs_query.bind(block_map.ethereum_hash.as_ref());
 				delete_mappings_query =
-					delete_mappings_query.bind(block_map.substrate_hash.as_ref());
+					delete_mappings_query.bind(block_map.bizinikiwi_hash.as_ref());
 			}
 
 			delete_tx_query.execute(&mut *db_tx).await?;
@@ -506,13 +506,13 @@ impl<B: BlockInfoProvider> ReceiptProvider<B> {
 	pub async fn get_processed_eth_block_hash(
 		&self,
 		block_number: BizinikiwiBlockNumber,
-		substrate_hash: H256,
+		bizinikiwi_hash: H256,
 	) -> Option<H256> {
 		self.block_number_to_hashes
 			.lock()
 			.await
 			.get(&block_number)
-			.filter(|entry| entry.substrate_hash == substrate_hash)
+			.filter(|entry| entry.bizinikiwi_hash == bizinikiwi_hash)
 			.map(|entry| entry.ethereum_hash)
 	}
 
@@ -629,16 +629,16 @@ impl<B: BlockInfoProvider> ReceiptProvider<B> {
 		ethereum_hash: &H256,
 	) -> Result<(), ClientError> {
 		let block_number = block.number() as i64;
-		let substrate_block_hash = block.hash();
-		let substrate_hash_ref = substrate_block_hash.as_ref();
+		let bizinikiwi_block_hash = block.hash();
+		let bizinikiwi_hash_ref = bizinikiwi_block_hash.as_ref();
 		let ethereum_hash_ref = ethereum_hash.as_ref();
 
-		log::trace!(target: LOG_TARGET, "Inserting receipts for block #{block_number} ethereum: {ethereum_hash:?} substrate: {substrate_block_hash:?}");
+		log::trace!(target: LOG_TARGET, "Inserting receipts for block #{block_number} ethereum: {ethereum_hash:?} substrate: {bizinikiwi_block_hash:?}");
 
 		// Check if mapping already exists (eg. added when processing best block and we are now
 		// processing finalized block)
 		let result = sqlx::query!(
-			r#"SELECT EXISTS(SELECT 1 FROM eth_to_substrate_blocks WHERE substrate_block_hash = $1) AS "exists!:bool""#, substrate_hash_ref
+			r#"SELECT EXISTS(SELECT 1 FROM eth_to_bizinikiwi_blocks WHERE bizinikiwi_block_hash = $1) AS "exists!:bool""#, bizinikiwi_hash_ref
 		)
 		.fetch_one(&self.db_ctx.pool)
 		.await?;
@@ -647,7 +647,7 @@ impl<B: BlockInfoProvider> ReceiptProvider<B> {
 		// logs exist
 		if result.exists {
 			log::trace!(target: LOG_TARGET,
-				"Skipping receipt insert for block #{block_number} ({substrate_block_hash:?}): \
+				"Skipping receipt insert for block #{block_number} ({bizinikiwi_block_hash:?}): \
 				 mapping already exists. ETH hash: {ethereum_hash:?}, receipts count: {count}",
 				count = receipts.len(),
 			);
@@ -662,7 +662,7 @@ impl<B: BlockInfoProvider> ReceiptProvider<B> {
 			);
 			query_builder.push_values(chunk, |mut row, (_, receipt)| {
 				row.push_bind(receipt.transaction_hash.as_ref() as &[u8])
-					.push_bind(substrate_hash_ref)
+					.push_bind(bizinikiwi_hash_ref)
 					.push_bind(receipt.transaction_index.as_u32() as i32);
 			});
 			query_builder.build().execute(&mut *db_tx).await?;
@@ -697,11 +697,11 @@ impl<B: BlockInfoProvider> ReceiptProvider<B> {
 			query_builder.build().execute(&mut *db_tx).await?;
 		}
 
-		let block_map = BlockHashMap::new(substrate_block_hash, *ethereum_hash);
+		let block_map = BlockHashMap::new(bizinikiwi_block_hash, *ethereum_hash);
 		insert_block_mapping(&mut *db_tx, &block_map).await?;
 
 		db_tx.commit().await?;
-		log::trace!(target: LOG_TARGET, "Inserted {} receipts for block #{block_number} ethereum: {ethereum_hash:?} substrate: {substrate_block_hash:?}", receipts.len());
+		log::trace!(target: LOG_TARGET, "Inserted {} receipts for block #{block_number} ethereum: {ethereum_hash:?} substrate: {bizinikiwi_block_hash:?}", receipts.len());
 
 		Ok(())
 	}
@@ -1072,7 +1072,7 @@ mod tests {
 		}
 		assert_eq!(count(&provider.db_ctx.pool, "transaction_hashes", None).await, n);
 		assert_eq!(count(&provider.db_ctx.pool, "logs", None).await, n);
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, n);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, n);
 		assert_eq!(provider.block_number_to_hashes.lock().await.len(), n);
 
 		return Ok(());
@@ -1114,7 +1114,7 @@ mod tests {
 
 		assert_eq!(count(&provider.db_ctx.pool, "transaction_hashes", None).await, 4);
 		assert_eq!(count(&provider.db_ctx.pool, "logs", None).await, 4);
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 4);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 4);
 		assert_eq!(
 			provider.block_number_to_hashes.lock().await.clone(),
 			[
@@ -1132,7 +1132,7 @@ mod tests {
 
 		assert_eq!(count(&provider.db_ctx.pool, "transaction_hashes", None).await, 2);
 		assert_eq!(count(&provider.db_ctx.pool, "logs", None).await, 2);
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 2);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 2);
 
 		assert_eq!(
 			provider.block_number_to_hashes.lock().await.clone(),
@@ -1409,18 +1409,18 @@ mod tests {
 	async fn test_block_mapping_insert_get(pool: SqlitePool) -> anyhow::Result<()> {
 		let provider = setup_sqlite_provider(pool).await;
 		let ethereum_hash = H256::from([1u8; 32]);
-		let substrate_hash = H256::from([2u8; 32]);
-		let block_map = BlockHashMap::new(substrate_hash, ethereum_hash);
+		let bizinikiwi_hash = H256::from([2u8; 32]);
+		let block_map = BlockHashMap::new(bizinikiwi_hash, ethereum_hash);
 
 		// Insert mapping
 		insert_block_mapping(&provider.db_ctx.pool, &block_map).await?;
 
 		// Test forward lookup
-		let resolved = provider.get_substrate_hash(&ethereum_hash).await;
-		assert_eq!(resolved, Some(substrate_hash));
+		let resolved = provider.get_bizinikiwi_hash(&ethereum_hash).await;
+		assert_eq!(resolved, Some(bizinikiwi_hash));
 
 		// Test reverse lookup
-		let resolved = provider.get_ethereum_hash(&substrate_hash).await;
+		let resolved = provider.get_ethereum_hash(&bizinikiwi_hash).await;
 		assert_eq!(resolved, Some(ethereum_hash));
 
 		Ok(())
@@ -1431,10 +1431,10 @@ mod tests {
 		let provider = setup_sqlite_provider(pool).await;
 		let ethereum_hash1 = H256::from([1u8; 32]);
 		let ethereum_hash2 = H256::from([2u8; 32]);
-		let substrate_hash1 = H256::from([3u8; 32]);
-		let substrate_hash2 = H256::from([4u8; 32]);
-		let block_map1 = BlockHashMap::new(substrate_hash1, ethereum_hash1);
-		let block_map2 = BlockHashMap::new(substrate_hash2, ethereum_hash2);
+		let bizinikiwi_hash1 = H256::from([3u8; 32]);
+		let bizinikiwi_hash2 = H256::from([4u8; 32]);
+		let block_map1 = BlockHashMap::new(bizinikiwi_hash1, ethereum_hash1);
+		let block_map2 = BlockHashMap::new(bizinikiwi_hash2, ethereum_hash2);
 
 		// Insert mappings
 		insert_block_mapping(&provider.db_ctx.pool, &block_map1).await?;
@@ -1442,20 +1442,20 @@ mod tests {
 
 		// Verify they exist
 		assert_eq!(
-			provider.get_substrate_hash(&block_map1.ethereum_hash).await,
-			Some(block_map1.substrate_hash)
+			provider.get_bizinikiwi_hash(&block_map1.ethereum_hash).await,
+			Some(block_map1.bizinikiwi_hash)
 		);
 		assert_eq!(
-			provider.get_substrate_hash(&block_map2.ethereum_hash).await,
-			Some(block_map2.substrate_hash)
+			provider.get_bizinikiwi_hash(&block_map2.ethereum_hash).await,
+			Some(block_map2.bizinikiwi_hash)
 		);
 
 		// Remove one mapping
 		provider.remove(&[block_map1]).await?;
 
 		// Verify removal
-		assert_eq!(provider.get_substrate_hash(&ethereum_hash1).await, None);
-		assert_eq!(provider.get_substrate_hash(&ethereum_hash2).await, Some(substrate_hash2));
+		assert_eq!(provider.get_bizinikiwi_hash(&ethereum_hash1).await, None);
+		assert_eq!(provider.get_bizinikiwi_hash(&ethereum_hash2).await, Some(bizinikiwi_hash2));
 
 		Ok(())
 	}
@@ -1464,21 +1464,21 @@ mod tests {
 	async fn test_block_mapping_pruning_integration(pool: SqlitePool) -> anyhow::Result<()> {
 		let provider = setup_sqlite_provider(pool).await;
 		let ethereum_hash = H256::from([1u8; 32]);
-		let substrate_hash = H256::from([2u8; 32]);
-		let block_map = BlockHashMap::new(substrate_hash, ethereum_hash);
+		let bizinikiwi_hash = H256::from([2u8; 32]);
+		let block_map = BlockHashMap::new(bizinikiwi_hash, ethereum_hash);
 
 		// Insert mapping
 		insert_block_mapping(&provider.db_ctx.pool, &block_map).await?;
 		assert_eq!(
-			provider.get_substrate_hash(&block_map.ethereum_hash).await,
-			Some(block_map.substrate_hash)
+			provider.get_bizinikiwi_hash(&block_map.ethereum_hash).await,
+			Some(block_map.bizinikiwi_hash)
 		);
 
 		// Remove substrate block (this should also remove the mapping)
 		provider.remove(&[block_map.clone()]).await?;
 
 		// Mapping should be gone
-		assert_eq!(provider.get_substrate_hash(&block_map.ethereum_hash).await, None);
+		assert_eq!(provider.get_bizinikiwi_hash(&block_map.ethereum_hash).await, None);
 
 		Ok(())
 	}
@@ -1487,7 +1487,7 @@ mod tests {
 	async fn test_logs_with_ethereum_block_hash_mapping(pool: SqlitePool) -> anyhow::Result<()> {
 		let provider = setup_sqlite_provider(pool).await;
 		let ethereum_hash = H256::from([1u8; 32]);
-		let substrate_hash = H256::from([2u8; 32]);
+		let bizinikiwi_hash = H256::from([2u8; 32]);
 		let block_number = 1u64;
 
 		// Create a log with ethereum hash
@@ -1504,7 +1504,7 @@ mod tests {
 		};
 
 		// Insert the log
-		let block = MockBlockInfo { hash: substrate_hash, number: block_number as u32 };
+		let block = MockBlockInfo { hash: bizinikiwi_hash, number: block_number as u32 };
 		let receipts = vec![(
 			TransactionSigned::default(),
 			ReceiptInfo {
@@ -1533,7 +1533,7 @@ mod tests {
 		let provider = setup_sqlite_provider(pool).await;
 
 		// Initially no mappings
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 0);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 0);
 
 		let block_map1 = BlockHashMap::new(H256::from([1u8; 32]), H256::from([2u8; 32]));
 		let block_map2 = BlockHashMap::new(H256::from([3u8; 32]), H256::from([4u8; 32]));
@@ -1542,11 +1542,11 @@ mod tests {
 		insert_block_mapping(&provider.db_ctx.pool, &block_map1).await?;
 		insert_block_mapping(&provider.db_ctx.pool, &block_map2).await?;
 
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 2);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 2);
 
 		// Remove one
 		provider.remove(&[block_map1]).await?;
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 1);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 1);
 
 		Ok(())
 	}
@@ -1704,7 +1704,7 @@ mod tests {
 		drop(map);
 
 		// All blocks are still in the DB.
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, n);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, n);
 
 		Ok(())
 	}
@@ -1796,13 +1796,13 @@ mod tests {
 		provider.insert_into_db(&block, &receipts, &ethereum_hash).await?;
 		assert_eq!(count(&provider.db_ctx.pool, "transaction_hashes", None).await, 5);
 		assert_eq!(count(&provider.db_ctx.pool, "logs", Some(ethereum_hash)).await, 15);
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 1);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 1);
 
 		// Delete only the block mapping so the EXISTS guard won't short-circuit.
-		sqlx::query("DELETE FROM eth_to_substrate_blocks")
+		sqlx::query("DELETE FROM eth_to_bizinikiwi_blocks")
 			.execute(&provider.db_ctx.pool)
 			.await?;
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 0);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 0);
 
 		// Second insert hits the actual INSERT OR REPLACE statements.
 		provider.insert_into_db(&block, &receipts, &ethereum_hash).await?;
@@ -1810,7 +1810,7 @@ mod tests {
 		// Row counts unchanged — no duplicates.
 		assert_eq!(count(&provider.db_ctx.pool, "transaction_hashes", None).await, 5);
 		assert_eq!(count(&provider.db_ctx.pool, "logs", Some(ethereum_hash)).await, 15);
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 1);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 1);
 
 		Ok(())
 	}
@@ -1824,14 +1824,14 @@ mod tests {
 		provider.insert(&block, &[], &ethereum_hash).await?;
 
 		// Block mapping is stored as a deduplication marker.
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 1);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 1);
 		assert_eq!(count(&provider.db_ctx.pool, "transaction_hashes", None).await, 0);
 		assert_eq!(count(&provider.db_ctx.pool, "logs", None).await, 0);
 
 		// Second insert for the same block is a no-op, even with receipts.
 		let receipts = make_receipts(0, 3, 2);
 		provider.insert(&block, &receipts, &ethereum_hash).await?;
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 1);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 1);
 		assert_eq!(count(&provider.db_ctx.pool, "transaction_hashes", None).await, 0);
 		assert_eq!(count(&provider.db_ctx.pool, "logs", None).await, 0);
 
@@ -1865,13 +1865,13 @@ mod tests {
 			count(&provider.db_ctx.pool, "logs", None).await,
 			n_blocks * n_tx_per_block * n_logs_per_receipt
 		);
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, n_blocks);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, n_blocks);
 
 		provider.remove(&block_mappings).await?;
 
 		assert_eq!(count(&provider.db_ctx.pool, "transaction_hashes", None).await, 0);
 		assert_eq!(count(&provider.db_ctx.pool, "logs", None).await, 0);
-		assert_eq!(count(&provider.db_ctx.pool, "eth_to_substrate_blocks", None).await, 0);
+		assert_eq!(count(&provider.db_ctx.pool, "eth_to_bizinikiwi_blocks", None).await, 0);
 
 		Ok(())
 	}
@@ -1910,9 +1910,9 @@ mod tests {
 	#[sqlx::test]
 	async fn test_logs_by_block_number(pool: SqlitePool) -> anyhow::Result<()> {
 		let provider = setup_sqlite_provider(pool).await;
-		let substrate_hash = H256::from([0xAA; 32]);
+		let bizinikiwi_hash = H256::from([0xAA; 32]);
 		let tx_hash = H256::from([0xBB; 32]);
-		let block = MockBlockInfo { hash: substrate_hash, number: 42 };
+		let block = MockBlockInfo { hash: bizinikiwi_hash, number: 42 };
 		let ethereum_hash = H256::from([0xCC; 32]);
 
 		let log0 = Log {

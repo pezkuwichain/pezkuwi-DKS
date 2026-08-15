@@ -86,10 +86,6 @@ use pezframe_support::{
 };
 use pezpallet_staking_async_rc_client::RcClientInterface;
 use pezsp_runtime::{Perbill, Percent, Saturating};
-use pezsp_staking::{
-	currency_to_vote::CurrencyToVote, Exposure, Page, PagedExposureMetadata, SessionIndex,
-	StakerRewardCalculator,
-};
 
 /// Number of consecutive sessions to wait before triggering stall recovery.
 ///
@@ -99,6 +95,10 @@ use pezsp_staking::{
 /// premature era reverts. 3 sessions is sufficient for both production (3 hours)
 /// and fast-runtime simulation (12 minutes).
 pub(crate) const STALL_GRACE_SESSIONS: u32 = 3;
+use pezsp_staking::{
+	currency_to_vote::CurrencyToVote, Exposure, Page, PagedExposureMetadata, SessionIndex,
+	StakerRewardCalculator,
+};
 
 /// A handler for all era-based storage items.
 ///
@@ -212,6 +212,15 @@ impl<T: Config> Eras<T> {
 		all_claimable_pages.into_iter().find(|p| !claimed_pages.contains(p))
 	}
 
+	/// Returns whether nominators are slashable for a specific era.
+	///
+	/// This checks the per-era storage [`ErasNominatorsSlashable`] which captures
+	/// the value of [`AreNominatorsSlashable`] at the start of that era.
+	/// If no entry exists for the era, nominators are assumed to be slashable (default).
+	pub(crate) fn are_nominators_slashable(era: EraIndex) -> bool {
+		ErasNominatorsSlashable::<T>::get(era).unwrap_or(true)
+	}
+
 	/// Creates an entry to track validator reward has been claimed for a given era and page.
 	/// Noop if already claimed.
 	pub(crate) fn set_rewards_as_claimed(era: EraIndex, validator: &T::AccountId, page: Page) {
@@ -247,7 +256,7 @@ impl<T: Config> Eras<T> {
 		let page_size = T::MaxExposurePageSize::get().defensive_max(1);
 		if cfg!(debug_assertions) && cfg!(not(feature = "runtime-benchmarks")) {
 			// sanitize the exposure in case some test data from this pezpallet is wrong.
-			// ignore benchmarks as other pallets might do weird things.
+			// ignore benchmarks as other pezpallets might do weird things.
 			let expected_total = exposure
 				.others
 				.iter()
@@ -351,6 +360,9 @@ impl<T: Config> Eras<T> {
 
 			// insert metadata.
 			ErasStakersOverview::<T>::insert(era, &validator, exposure_metadata);
+
+			// Track that this validator was active in this era for slash liability tracking.
+			LastValidatorEra::<T>::insert(validator, era);
 
 			// insert validator's overview.
 			exposure_pages.into_iter().enumerate().for_each(|(idx, paged_exposure)| {
@@ -597,12 +609,27 @@ impl<T: Config> Rotator<T> {
 
 				// If we have an active era, bonded eras must always be the range
 				// [active - bonding_duration .. active_era]
+				let bonded_eras: Vec<_> = bonded.iter().map(|(era, _sess)| *era).collect();
 				ensure!(
-					bonded.into_iter().map(|(era, _sess)| era).collect::<Vec<_>>()
+					bonded_eras
 						== (active.index.saturating_sub(T::BondingDuration::get())..=active.index)
 							.collect::<Vec<_>>(),
 					"BondedEras range incorrect"
 				);
+
+				// ErasNominatorsSlashable entries are cleaned up via lazy pruning at HistoryDepth +
+				// 1. Entries can exist from [active - HistoryDepth, active] inclusive.
+				// Entries older than HistoryDepth should have been pruned (or be in the process of
+				// pruning).
+				let oldest_allowed_era = active.index.saturating_sub(T::HistoryDepth::get()).max(1);
+				for (era, _) in ErasNominatorsSlashable::<T>::iter() {
+					// Allow entries being pruned (EraPruningState exists)
+					let being_pruned = EraPruningState::<T>::contains_key(era);
+					ensure!(
+						(era >= oldest_allowed_era && era <= active.index) || being_pruned,
+						"ErasNominatorsSlashable entry exists for era outside history depth range and not being pruned"
+					);
+				}
 			},
 			_ => {
 				ensure!(false, "ActiveEra and CurrentEra must both be None or both be Some");
@@ -801,6 +828,10 @@ impl<T: Config> Rotator<T> {
 		Self::start_era_inc_active_era(new_era_start_timestamp);
 		Self::start_era_update_bonded_eras(starting_era, starting_session);
 
+		// Snapshot the current nominators slashable setting for this era.
+		// Cleanup will happen via lazy pruning at HistoryDepth.
+		ErasNominatorsSlashable::<T>::insert(starting_era, AreNominatorsSlashable::<T>::get());
+
 		// cleanup election state
 		EraElectionPlanner::<T>::cleanup();
 
@@ -851,7 +882,6 @@ impl<T: Config> Rotator<T> {
 					era_removed <= (starting_era.saturating_sub(bonding_duration)),
 					"should not delete an era that is not older than bonding duration"
 				);
-				slashing::clear_era_metadata::<T>(era_removed);
 			}
 
 			// must work -- we were not full, or just removed the oldest era.
@@ -941,16 +971,13 @@ impl<T: Config> Rotator<T> {
 	/// Plans a new era by kicking off the election process.
 	///
 	/// The newly planned era is targeted to activate in the next session.
-	///
-	/// If the election provider is already running (e.g., `Err(Ongoing)`), we still
-	/// increment `CurrentEra` to mark the era as "planning". The ongoing election's
-	/// results will be attributed to this planned era when fetched by
-	/// [`EraElectionPlanner::maybe_fetch_election_results`].
 	fn plan_new_era() {
-		let current = CurrentEra::<T>::get().unwrap_or(0);
-		log!(info, "Planning new era: {:?}, sending election start signal", current);
-		let _ = EraElectionPlanner::<T>::plan_new_election();
-		CurrentEra::<T>::put(current + 1);
+		let _ = CurrentEra::<T>::try_mutate(|x| {
+			log!(info, "Planning new era: {:?}, sending election start signal", x.unwrap_or(0));
+			let could_start_election = EraElectionPlanner::<T>::plan_new_election();
+			*x = Some(x.unwrap_or(0) + 1);
+			could_start_election
+		});
 	}
 
 	/// Returns whether we are at the session where we should plan the new era.
@@ -1001,32 +1028,12 @@ impl<T: Config> Rotator<T> {
 pub(crate) struct EraElectionPlanner<T: Config>(PhantomData<T>);
 impl<T: Config> EraElectionPlanner<T> {
 	/// Cleanup all associated storage items.
-	///
-	/// [`crate::VoterSnapshotStatus`] is only reset while the election provider is idle. It is the
-	/// cursor of the *multi-block* voter snapshot, which the election provider builds over many
-	/// blocks by calling [`ElectionDataProvider::electing_voters`] once per page. `start_era` calls
-	/// this function while the election of the *next* era may already be in progress (elections
-	/// start `PlanningEraOffset` sessions before the era ends), and resetting the cursor mid-way
-	/// makes the next `electing_voters` call restart the iteration from the beginning. The very
-	/// same voters are then written into a second snapshot page, and no miner can solve the
-	/// resulting snapshot: flattening the pages yields duplicate voters, which `reduce` rejects.
-	/// The round can never be finalized, so the election stalls permanently and no era is ever
-	/// elected again. Observed on mainnet AH in round 673: page 31 and page 1 held byte-identical
-	/// copies of the same 53 voters.
 	pub(crate) fn cleanup() {
-		if T::ElectionProvider::status().is_err() {
-			VoterSnapshotStatus::<T>::kill();
-		} else {
-			log!(
-				warn,
-				"cleanup() called while an election is ongoing; \
-				 preserving the paged voter snapshot cursor."
-			);
-		}
+		VoterSnapshotStatus::<T>::kill();
 		NextElectionPage::<T>::kill();
 		ElectableStashes::<T>::kill();
 		StallDetectionCount::<T>::kill();
-		Pezpallet::<T>::register_weight(T::DbWeight::get().reads_writes(1, 4));
+		Pezpallet::<T>::register_weight(T::DbWeight::get().writes(3));
 	}
 
 	/// Fetches the number of pages configured by the election provider.

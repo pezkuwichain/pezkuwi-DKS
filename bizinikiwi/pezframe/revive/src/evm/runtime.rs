@@ -496,7 +496,7 @@ mod test {
 
 		fn fund_account(account: &Account) {
 			let _ = <Test as Config>::Currency::set_balance(
-				&account.substrate_account(),
+				&account.bizinikiwi_account(),
 				100_000_000_000_000,
 			);
 		}
@@ -686,7 +686,7 @@ mod test {
 
 		let builder =
 			UncheckedExtrinsicBuilder::call_with(H160::from([1u8; 20])).before_validate(|| {
-				<crate::System<Test>>::inc_account_nonce(Account::default().substrate_account());
+				<crate::System<Test>>::inc_account_nonce(Account::default().bizinikiwi_account());
 			});
 
 		assert_eq!(
@@ -795,7 +795,7 @@ mod test {
 		let (_, call, _, _, _, _) = builder.check().unwrap();
 
 		match call {
-			RuntimeCall::Contracts(crate::Call::eth_substrate_call {
+			RuntimeCall::Contracts(crate::Call::eth_bizinikiwi_call {
 				call: inner_call, ..
 			}) => {
 				assert_eq!(*inner_call, remark);

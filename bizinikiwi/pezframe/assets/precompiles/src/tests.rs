@@ -72,7 +72,7 @@ fn deposit_event_charges_data_byte_length() {
 				deposit_limit: u128::MAX,
 			},
 			data,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		);
 		assert!(result.result.is_ok(), "transfer call failed: {:?}", result.result);
 
@@ -136,7 +136,7 @@ fn precompile_transfer_works(asset_index: u16) {
 				deposit_limit: u128::MAX,
 			},
 			data,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		);
 
 		assert_contract_event(
@@ -178,7 +178,7 @@ fn total_supply_works(asset_index: u16) {
 				deposit_limit: u128::MAX,
 			},
 			data,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)
 		.result
 		.unwrap()
@@ -214,7 +214,7 @@ fn balance_of_works(asset_index: u16) {
 				deposit_limit: u128::MAX,
 			},
 			data,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)
 		.result
 		.unwrap()
@@ -262,7 +262,7 @@ fn approval_works(asset_index: u16) {
 				deposit_limit: u128::MAX,
 			},
 			data,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		);
 
 		assert_contract_event(
@@ -287,7 +287,7 @@ fn approval_works(asset_index: u16) {
 				deposit_limit: u128::MAX,
 			},
 			data,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)
 		.result
 		.unwrap()
@@ -312,7 +312,7 @@ fn approval_works(asset_index: u16) {
 				deposit_limit: u128::MAX,
 			},
 			data,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		);
 		assert_eq!(Assets::balance(asset_id, owner), 90);
 		assert_eq!(Assets::allowance(asset_id, &owner, &spender), 15);
@@ -343,7 +343,7 @@ fn raw_approve(
 		0u32.into(),
 		TransactionLimits::WeightAndDeposit { weight_limit: Weight::MAX, deposit_limit: u128::MAX },
 		data,
-		&ExecConfig::new_substrate_tx(),
+		&ExecConfig::new_bizinikiwi_tx(),
 	)
 }
 
@@ -612,7 +612,7 @@ fn domain_separator_is_staticcall_compatible(asset_index: u16) {
 			Code::Upload(init_code),
 			vec![],
 			None,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)
 		.result
 		.expect("Caller deployment must succeed")
@@ -636,7 +636,7 @@ fn domain_separator_is_staticcall_compatible(asset_index: u16) {
 				deposit_limit: u128::MAX,
 			},
 			calldata,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)
 		.result
 		.expect("call to Caller.staticCall must succeed")
@@ -682,7 +682,7 @@ fn delegatecall_is_rejected() {
 			Code::Upload(init_code),
 			vec![],
 			None,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)
 		.result
 		.expect("Caller deployment must succeed")
@@ -704,7 +704,7 @@ fn delegatecall_is_rejected() {
 				deposit_limit: u128::MAX,
 			},
 			calldata,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		)
 		.result
 		.expect("outer call must succeed");
@@ -817,7 +817,7 @@ fn transfer_and_transfer_from_revert_on_overflow() {
 					deposit_limit: u128::MAX,
 				},
 				data,
-				&ExecConfig::new_substrate_tx(),
+				&ExecConfig::new_bizinikiwi_tx(),
 			)
 			.result
 			.expect("must not trap");
@@ -897,7 +897,7 @@ fn transfer_from_decrements_normally_after_max_approve(asset_index: u16) {
 				deposit_limit: u128::MAX,
 			},
 			data,
-			&ExecConfig::new_substrate_tx(),
+			&ExecConfig::new_bizinikiwi_tx(),
 		);
 		assert!(!result.result.unwrap().did_revert(), "transferFrom must succeed");
 		assert_eq!(Assets::allowance(asset_id, &owner, &spender), u128::MAX - 10);

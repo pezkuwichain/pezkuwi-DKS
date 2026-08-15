@@ -104,7 +104,7 @@ fn decode_revive_event(
 /// Returns `(reverted_extrinsics, logs_by_extrinsic)` keyed by extrinsic index.
 fn extract_revive_events(
 	block_events: &pezkuwi_subxt::events::Events<SrcChainConfig>,
-	substrate_block_number: BizinikiwiBlockNumber,
+	bizinikiwi_block_number: BizinikiwiBlockNumber,
 	eth_block_number: U256,
 	eth_block_hash: H256,
 	eth_tx_hash_for: impl Fn(usize) -> Option<H256>,
@@ -118,7 +118,7 @@ fn extract_revive_events(
 			Err(err) => {
 				log::debug!(
 					target: LOG_TARGET,
-					"Failed to decode event {event_index} in block #{substrate_block_number}: {err:?}"
+					"Failed to decode event {event_index} in block #{bizinikiwi_block_number}: {err:?}"
 				);
 				continue;
 			},
@@ -274,17 +274,17 @@ impl ReceiptExtractor {
 	/// Resolve the Ethereum block hash for a substrate block, falling back to the substrate hash.
 	async fn resolve_eth_block_hash(
 		&self,
-		substrate_block_hash: H256,
-		substrate_block_number: u64,
+		bizinikiwi_block_hash: H256,
+		bizinikiwi_block_number: u64,
 	) -> H256 {
-		match (self.fetch_eth_block_hash)(substrate_block_hash, substrate_block_number).await {
+		match (self.fetch_eth_block_hash)(bizinikiwi_block_hash, bizinikiwi_block_number).await {
 			Some(hash) => hash,
 			None => {
 				log::trace!(target: LOG_TARGET,
 					"eth_block_hash returned None for substrate block \
-					 #{substrate_block_number} ({substrate_block_hash:?}), \
+					 #{bizinikiwi_block_number} ({bizinikiwi_block_hash:?}), \
 					 falling back to substrate hash as ETH hash");
-				substrate_block_hash
+				bizinikiwi_block_hash
 			},
 		}
 	}
@@ -379,14 +379,14 @@ impl ReceiptExtractor {
 			return Ok(vec![]);
 		}
 
-		let substrate_block_number = block.number();
-		let eth_block_number: U256 = substrate_block_number.into();
+		let bizinikiwi_block_number = block.number();
+		let eth_block_number: U256 = bizinikiwi_block_number.into();
 		let block_events = block.events().await.inspect_err(|err| {
-			log::debug!(target: LOG_TARGET, "Error fetching events for block #{substrate_block_number}: {err:?}");
+			log::debug!(target: LOG_TARGET, "Error fetching events for block #{bizinikiwi_block_number}: {err:?}");
 		})?;
 		let (reverted_extrinsics, mut logs_by_extrinsic) = extract_revive_events(
 			&block_events,
-			substrate_block_number,
+			bizinikiwi_block_number,
 			eth_block_number,
 			eth_block_hash,
 			|idx| eth_tx_by_index.get(&idx).map(|(_, hash, _)| *hash),
@@ -480,16 +480,16 @@ impl ReceiptExtractor {
 				ClientError::EthExtrinsicNotFound
 			})?;
 
-		let substrate_block_number = block.number();
-		let eth_block_number: U256 = substrate_block_number.into();
+		let bizinikiwi_block_number = block.number();
+		let eth_block_number: U256 = bizinikiwi_block_number.into();
 		let eth_block_hash =
-			self.resolve_eth_block_hash(block.hash(), substrate_block_number as u64).await;
+			self.resolve_eth_block_hash(block.hash(), bizinikiwi_block_number as u64).await;
 		let block_events = block.events().await.inspect_err(|err| {
-			log::debug!(target: LOG_TARGET, "Error fetching events for block #{substrate_block_number}: {err:?}");
+			log::debug!(target: LOG_TARGET, "Error fetching events for block #{bizinikiwi_block_number}: {err:?}");
 		})?;
 		let (reverted_extrinsics, mut logs_by_extrinsic) = extract_revive_events(
 			&block_events,
-			substrate_block_number,
+			bizinikiwi_block_number,
 			eth_block_number,
 			eth_block_hash,
 			|idx| (idx == transaction_index).then_some(transaction_hash),
@@ -752,12 +752,12 @@ mod tests {
 
 		let tx_hash = H256::from([0xAA; 32]);
 		let eth_block_hash = H256::from([0xBB; 32]);
-		let substrate_block_number = 42u32;
-		let eth_block_number = U256::from(substrate_block_number);
+		let bizinikiwi_block_number = 42u32;
+		let eth_block_number = U256::from(bizinikiwi_block_number);
 
 		let (reverts, logs) = extract_revive_events(
 			&events,
-			substrate_block_number,
+			bizinikiwi_block_number,
 			eth_block_number,
 			eth_block_hash,
 			|idx| (idx == 5).then_some(tx_hash),

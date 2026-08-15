@@ -347,6 +347,7 @@ mod tests {
 	use bizinikiwi_test_runtime_client::{
 		DefaultTestClientBuilderExt, Sr25519Keyring::*, TestClientBuilder, TestClientBuilderExt,
 	};
+	use bizinikiwi_test_runtime_transaction_pool::{uxt, TestApi};
 	use pezsc_basic_authorship::ProposerFactory;
 	use pezsc_consensus::ImportedAux;
 	use pezsc_transaction_pool::{BasicPool, FullChainApi, Options, RevalidationType};
@@ -356,7 +357,6 @@ mod tests {
 	use pezsp_api::StorageProof;
 	use pezsp_inherents::InherentData;
 	use pezsp_runtime::generic::{Digest, DigestItem};
-	use substrate_test_runtime_transaction_pool::{uxt, TestApi};
 
 	fn api() -> Arc<TestApi> {
 		Arc::new(TestApi::empty())

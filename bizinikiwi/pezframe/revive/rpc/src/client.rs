@@ -681,7 +681,7 @@ impl Client {
 	) -> Result<BizinikiwiBlockHash, ClientError> {
 		match at {
 			BlockNumberOrTagOrHash::BlockHash(hash) => self
-				.resolve_substrate_hash(&hash)
+				.resolve_bizinikiwi_hash(&hash)
 				.await
 				.ok_or(ClientError::EthereumBlockNotFound),
 			BlockNumberOrTagOrHash::BlockNumber(block_number) => {
@@ -801,7 +801,7 @@ impl Client {
 	pub async fn post_dispatch_weight(&self, tx_hash: &H256) -> Option<Weight> {
 		use crate::pezkuwi_subxt_client::system::events::ExtrinsicSuccess;
 		let ReceiptInfo { block_hash, transaction_index, .. } = self.receipt(tx_hash).await?;
-		let block_hash = self.resolve_substrate_hash(&block_hash).await?;
+		let block_hash = self.resolve_bizinikiwi_hash(&block_hash).await?;
 		let block = self.block_provider.block_by_hash(&block_hash).await.ok()??;
 		let ext = block.extrinsics().await.ok()?.iter().nth(transaction_index.as_u32() as _)?;
 		let event = ext.events().await.ok()?.find_first::<ExtrinsicSuccess>().ok()??;
@@ -866,14 +866,14 @@ impl Client {
 		transaction_index: usize,
 	) -> Option<ReceiptInfo> {
 		// Fallback: use hash as Bizinikiwi hash if Ethereum hash cannot be resolved
-		let substrate_hash =
-			self.resolve_substrate_hash(ethereum_hash).await.unwrap_or_else(|| {
+		let bizinikiwi_hash =
+			self.resolve_bizinikiwi_hash(ethereum_hash).await.unwrap_or_else(|| {
 				log::trace!(target: LOG_TARGET,
 					"receipt_by_ethereum_hash_and_index: no ETH-to-substrate mapping for \
 					 {ethereum_hash:?}, falling back to substrate hash lookup");
 				*ethereum_hash
 			});
-		self.receipt_by_hash_and_index(&substrate_hash, transaction_index).await
+		self.receipt_by_hash_and_index(&bizinikiwi_hash, transaction_index).await
 	}
 
 	/// Get the system health.
@@ -931,14 +931,14 @@ impl Client {
 
 	/// Resolve Ethereum block hash to Bizinikiwi block hash, then get the block.
 	/// This method provides the abstraction layer needed by the RPC APIs.
-	pub async fn resolve_substrate_hash(&self, ethereum_hash: &H256) -> Option<H256> {
-		self.receipt_provider.get_substrate_hash(ethereum_hash).await
+	pub async fn resolve_bizinikiwi_hash(&self, ethereum_hash: &H256) -> Option<H256> {
+		self.receipt_provider.get_bizinikiwi_hash(ethereum_hash).await
 	}
 
 	/// Resolve Bizinikiwi block hash to Ethereum block hash, then get the block.
 	/// This method provides the abstraction layer needed by the RPC APIs.
-	pub async fn resolve_ethereum_hash(&self, substrate_hash: &H256) -> Option<H256> {
-		self.receipt_provider.get_ethereum_hash(substrate_hash).await
+	pub async fn resolve_ethereum_hash(&self, bizinikiwi_hash: &H256) -> Option<H256> {
+		self.receipt_provider.get_ethereum_hash(bizinikiwi_hash).await
 	}
 
 	/// Get a block by Ethereum hash with automatic resolution to Bizinikiwi hash.
@@ -948,8 +948,8 @@ impl Client {
 		ethereum_hash: &H256,
 	) -> Result<Option<Arc<BizinikiwiBlock>>, ClientError> {
 		// First try to resolve the Ethereum hash to a Bizinikiwi hash
-		if let Some(substrate_hash) = self.resolve_substrate_hash(ethereum_hash).await {
-			return self.block_by_hash(&substrate_hash).await;
+		if let Some(bizinikiwi_hash) = self.resolve_bizinikiwi_hash(ethereum_hash).await {
+			return self.block_by_hash(&bizinikiwi_hash).await;
 		}
 
 		// Fallback: treat the provided hash as a Bizinikiwi hash (backward compatibility)

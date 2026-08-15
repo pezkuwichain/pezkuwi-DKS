@@ -216,7 +216,7 @@ builder!(
 			code,
 			data: vec![],
 			salt: Some([0; 32]),
-			exec_config: ExecConfig::new_substrate_tx(),
+			exec_config: ExecConfig::new_bizinikiwi_tx(),
 		}
 	}
 );
@@ -289,7 +289,7 @@ builder!(
 				deposit_limit: deposit_limit::<T>()
 			},
 			data: vec![],
-			exec_config: ExecConfig::new_substrate_tx(),
+			exec_config: ExecConfig::new_bizinikiwi_tx(),
 		}
 	}
 );

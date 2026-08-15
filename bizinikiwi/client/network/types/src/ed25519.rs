@@ -351,7 +351,7 @@ mod tests {
 	}
 
 	#[test]
-	fn substrate_kp_to_libs() {
+	fn bizinikiwi_kp_to_libs() {
 		let kp = Keypair::generate();
 		let kp_bytes = kp.to_bytes();
 		let kp1: libp2p_ed25519::Keypair = kp.clone().into();
@@ -386,7 +386,7 @@ mod tests {
 	}
 
 	#[test]
-	fn litep2p_kp_to_substrate_kp() {
+	fn litep2p_kp_to_bizinikiwi_kp() {
 		let kp = litep2p_ed25519::Keypair::generate();
 		let kp1: Keypair = kp.clone().into();
 		let kp2 = Keypair::try_from_bytes(&mut kp.to_bytes()).unwrap();
@@ -409,7 +409,7 @@ mod tests {
 	}
 
 	#[test]
-	fn libp2p_kp_to_substrate_kp() {
+	fn libp2p_kp_to_bizinikiwi_kp() {
 		let kp = libp2p_ed25519::Keypair::generate();
 		let kp1: Keypair = kp.clone().into();
 		let kp2 = Keypair::try_from_bytes(&mut kp.to_bytes()).unwrap();
@@ -432,7 +432,7 @@ mod tests {
 	}
 
 	#[test]
-	fn substrate_pk_to_libs() {
+	fn bizinikiwi_pk_to_libs() {
 		let kp = Keypair::generate();
 		let pk = kp.public();
 		let pk_bytes = pk.to_bytes();
@@ -455,7 +455,7 @@ mod tests {
 	}
 
 	#[test]
-	fn litep2p_pk_to_substrate_pk() {
+	fn litep2p_pk_to_bizinikiwi_pk() {
 		let kp = litep2p_ed25519::Keypair::generate();
 		let pk = kp.public();
 		let pk_bytes = pk.clone().to_bytes();
@@ -473,7 +473,7 @@ mod tests {
 	}
 
 	#[test]
-	fn libp2p_pk_to_substrate_pk() {
+	fn libp2p_pk_to_bizinikiwi_pk() {
 		let kp = libp2p_ed25519::Keypair::generate();
 		let pk = kp.public();
 		let pk_bytes = pk.clone().to_bytes();
@@ -491,7 +491,7 @@ mod tests {
 	}
 
 	#[test]
-	fn substrate_sk_to_libs() {
+	fn bizinikiwi_sk_to_libs() {
 		let sk = SecretKey::generate();
 		let sk_bytes = sk.to_bytes();
 		let sk1: libp2p_ed25519::SecretKey = sk.clone().into();
@@ -515,7 +515,7 @@ mod tests {
 	}
 
 	#[test]
-	fn litep2p_sk_to_substrate_sk() {
+	fn litep2p_sk_to_bizinikiwi_sk() {
 		let sk = litep2p_ed25519::SecretKey::generate();
 		let sk1: SecretKey = sk.clone().into();
 		let sk2 = SecretKey::try_from_bytes(&mut sk.to_bytes()).unwrap();
@@ -532,7 +532,7 @@ mod tests {
 	}
 
 	#[test]
-	fn libp2p_sk_to_substrate_sk() {
+	fn libp2p_sk_to_bizinikiwi_sk() {
 		let sk = libp2p_ed25519::SecretKey::generate();
 		let sk_bytes = sk.as_ref().to_owned();
 		let sk1: SecretKey = sk.clone().into();

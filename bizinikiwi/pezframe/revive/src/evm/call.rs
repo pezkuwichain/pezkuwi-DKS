@@ -154,7 +154,7 @@ impl GenericTransaction {
 					return Err(InvalidTransaction::Call);
 				}
 
-				crate::Call::eth_substrate_call::<T> { call: Box::new(call), transaction_encoded }
+				crate::Call::eth_bizinikiwi_call::<T> { call: Box::new(call), transaction_encoded }
 					.into()
 			} else {
 				let call = crate::Call::eth_call::<T> {

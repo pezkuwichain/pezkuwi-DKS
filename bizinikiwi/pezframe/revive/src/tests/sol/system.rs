@@ -231,7 +231,7 @@ fn gas_works(fixture_type: FixtureType) {
 			TransactionMeter::<Test>::new(limits.clone()).unwrap().eth_gas_left().unwrap();
 
 		<Test as Config>::FeeInfo::deposit_txfee(<Test as Config>::Currency::issue(hold_initial));
-		let mut exec_config = ExecConfig::new_substrate_tx();
+		let mut exec_config = ExecConfig::new_bizinikiwi_tx();
 		exec_config.collect_deposit_from_hold = Some((0u32.into(), Default::default()));
 
 		let result = builder::bare_call(addr)

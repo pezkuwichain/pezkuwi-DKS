@@ -168,7 +168,7 @@ impl<T: Config, S: State> ResourceMeter<T, S> {
 				math::ethereum_execution::new_nested_meter(self, limit, eth_tx_info)
 			},
 			TransactionLimits::WeightAndDeposit { .. } => {
-				math::substrate_execution::new_nested_meter(self, limit)
+				math::bizinikiwi_execution::new_nested_meter(self, limit)
 			},
 		}?;
 
@@ -366,7 +366,9 @@ impl<T: Config, S: State> ResourceMeter<T, S> {
 			TransactionLimits::EthereumGas { eth_tx_info, .. } => {
 				math::ethereum_execution::gas_left(self, eth_tx_info)
 			},
-			TransactionLimits::WeightAndDeposit { .. } => math::substrate_execution::gas_left(self),
+			TransactionLimits::WeightAndDeposit { .. } => {
+				math::bizinikiwi_execution::gas_left(self)
+			},
 		}?;
 
 		gas_left.to_ethereum_gas()
@@ -384,7 +386,7 @@ impl<T: Config, S: State> ResourceMeter<T, S> {
 				math::ethereum_execution::weight_left(self, eth_tx_info)
 			},
 			TransactionLimits::WeightAndDeposit { .. } => {
-				math::substrate_execution::weight_left(self)
+				math::bizinikiwi_execution::weight_left(self)
 			},
 		}
 	}
@@ -401,7 +403,7 @@ impl<T: Config, S: State> ResourceMeter<T, S> {
 				math::ethereum_execution::deposit_left(self, eth_tx_info)
 			},
 			TransactionLimits::WeightAndDeposit { .. } => {
-				math::substrate_execution::deposit_left(self)
+				math::bizinikiwi_execution::deposit_left(self)
 			},
 		}
 	}
@@ -418,7 +420,7 @@ impl<T: Config, S: State> ResourceMeter<T, S> {
 				math::ethereum_execution::total_consumed_gas(self, eth_tx_info)
 			},
 			TransactionLimits::WeightAndDeposit { .. } => {
-				math::substrate_execution::total_consumed_gas(self)
+				math::bizinikiwi_execution::total_consumed_gas(self)
 			},
 		};
 
@@ -468,7 +470,7 @@ impl<T: Config, S: State> ResourceMeter<T, S> {
 				math::ethereum_execution::eth_gas_consumed(self, eth_tx_info)
 			},
 			TransactionLimits::WeightAndDeposit { .. } => {
-				math::substrate_execution::eth_gas_consumed(self)
+				math::bizinikiwi_execution::eth_gas_consumed(self)
 			},
 		}
 	}
@@ -532,7 +534,7 @@ impl<T: Config> TransactionMeter<T> {
 				math::ethereum_execution::new_root(eth_gas_limit, weight_limit, eth_tx_info)
 			},
 			TransactionLimits::WeightAndDeposit { weight_limit, deposit_limit } => {
-				math::substrate_execution::new_root(weight_limit, deposit_limit)
+				math::bizinikiwi_execution::new_root(weight_limit, deposit_limit)
 			},
 		}?;
 

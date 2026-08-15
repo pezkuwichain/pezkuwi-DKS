@@ -388,18 +388,18 @@ impl EthRpcServer for EthRpcServerImpl {
 			self.client.latest_block().await.hash()
 		};
 
-		let Some(substrate_hash) = self.client.resolve_substrate_hash(&block_hash).await else {
+		let Some(bizinikiwi_hash) = self.client.resolve_bizinikiwi_hash(&block_hash).await else {
 			return Ok(None);
 		};
 
-		Ok(self.client.receipts_count_per_block(&substrate_hash).await.map(U256::from))
+		Ok(self.client.receipts_count_per_block(&bizinikiwi_hash).await.map(U256::from))
 	}
 
 	async fn get_block_transaction_count_by_number(
 		&self,
 		block: Option<BlockNumberOrTag>,
 	) -> RpcResult<Option<U256>> {
-		let substrate_hash = if let Some(block) = self
+		let bizinikiwi_hash = if let Some(block) = self
 			.client
 			.block_by_number_or_tag(&block.unwrap_or_else(|| BlockTag::Latest.into()))
 			.await?
@@ -409,7 +409,7 @@ impl EthRpcServer for EthRpcServerImpl {
 			return Ok(None);
 		};
 
-		Ok(self.client.receipts_count_per_block(&substrate_hash).await.map(U256::from))
+		Ok(self.client.receipts_count_per_block(&bizinikiwi_hash).await.map(U256::from))
 	}
 
 	async fn get_logs(&self, filter: Option<Filter>) -> RpcResult<FilterResults> {
@@ -442,12 +442,12 @@ impl EthRpcServer for EthRpcServerImpl {
 		block_hash: H256,
 		transaction_index: U256,
 	) -> RpcResult<Option<TransactionInfo>> {
-		let Some(substrate_block_hash) = self.client.resolve_substrate_hash(&block_hash).await
+		let Some(bizinikiwi_block_hash) = self.client.resolve_bizinikiwi_hash(&block_hash).await
 		else {
 			return Ok(None);
 		};
-		self.get_transaction_by_substrate_block_hash_and_index(
-			substrate_block_hash,
+		self.get_transaction_by_bizinikiwi_block_hash_and_index(
+			bizinikiwi_block_hash,
 			transaction_index,
 		)
 		.await
@@ -461,7 +461,7 @@ impl EthRpcServer for EthRpcServerImpl {
 		let Some(block) = self.client.block_by_number_or_tag(&block).await? else {
 			return Ok(None);
 		};
-		self.get_transaction_by_substrate_block_hash_and_index(block.hash(), transaction_index)
+		self.get_transaction_by_bizinikiwi_block_hash_and_index(block.hash(), transaction_index)
 			.await
 	}
 
@@ -544,15 +544,15 @@ impl EthRpcServer for EthRpcServerImpl {
 }
 
 impl EthRpcServerImpl {
-	async fn get_transaction_by_substrate_block_hash_and_index(
+	async fn get_transaction_by_bizinikiwi_block_hash_and_index(
 		&self,
-		substrate_block_hash: H256,
+		bizinikiwi_block_hash: H256,
 		transaction_index: U256,
 	) -> RpcResult<Option<TransactionInfo>> {
 		let Some(receipt) = self
 			.client
 			.receipt_by_hash_and_index(
-				&substrate_block_hash,
+				&bizinikiwi_block_hash,
 				transaction_index.try_into().map_err(|_| EthRpcError::ConversionError)?,
 			)
 			.await

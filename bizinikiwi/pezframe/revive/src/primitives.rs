@@ -400,7 +400,7 @@ pub struct ExecConfig<T: Config> {
 
 impl<T: Config> ExecConfig<T> {
 	/// Create a default config appropriate when the call originated from a substrate tx.
-	pub fn new_substrate_tx() -> Self {
+	pub fn new_bizinikiwi_tx() -> Self {
 		Self {
 			bump_nonce: true,
 			collect_deposit_from_hold: None,
@@ -411,7 +411,7 @@ impl<T: Config> ExecConfig<T> {
 		}
 	}
 
-	pub fn new_substrate_tx_without_bump() -> Self {
+	pub fn new_bizinikiwi_tx_without_bump() -> Self {
 		Self {
 			bump_nonce: false,
 			collect_deposit_from_hold: None,

@@ -161,7 +161,7 @@ fn empty_charge_works() {
 		meter
 			.execute_postponed_deposits(
 				&Origin::<Test>::from_account_id(ALICE),
-				&ExecConfig::new_substrate_tx(),
+				&ExecConfig::new_bizinikiwi_tx(),
 			)
 			.unwrap(),
 		Default::default()
@@ -264,7 +264,7 @@ fn charging_works() {
 
 		assert_eq!(
 			meter
-				.execute_postponed_deposits(&test_case.origin, &ExecConfig::new_substrate_tx())
+				.execute_postponed_deposits(&test_case.origin, &ExecConfig::new_bizinikiwi_tx())
 				.unwrap(),
 			test_case.deposit
 		);
@@ -340,7 +340,7 @@ fn termination_works() {
 		assert_eq!(meter.consumed(), Deposit::Refund(98));
 		assert_eq!(
 			meter
-				.execute_postponed_deposits(&test_case.origin, &ExecConfig::new_substrate_tx())
+				.execute_postponed_deposits(&test_case.origin, &ExecConfig::new_bizinikiwi_tx())
 				.unwrap(),
 			test_case.deposit
 		);
