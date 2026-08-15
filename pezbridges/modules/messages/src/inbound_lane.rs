@@ -18,13 +18,13 @@
 
 use crate::{BridgedChainOf, Config};
 
-use bp_messages::{
+use codec::{Decode, Encode, EncodeLike, MaxEncodedLen};
+use pezbp_messages::{
 	target_chain::{DispatchMessage, DispatchMessageData, MessageDispatch},
 	ChainWithMessages, DeliveredMessages, InboundLaneData, LaneState, MessageKey, MessageNonce,
 	OutboundLaneData, ReceptionResult, UnrewardedRelayer,
 };
-use bp_runtime::AccountIdOf;
-use codec::{Decode, Encode, EncodeLike, MaxEncodedLen};
+use pezbp_runtime::AccountIdOf;
 use pezsp_std::prelude::PartialEq;
 use scale_info::{Type, TypeInfo};
 use Debug;
@@ -238,7 +238,7 @@ impl<S: InboundLaneStorage> InboundLane<S> {
 mod tests {
 	use super::*;
 	use crate::{active_inbound_lane, lanes_manager::RuntimeInboundLaneStorage, tests::mock::*};
-	use bp_messages::UnrewardedRelayersState;
+	use pezbp_messages::UnrewardedRelayersState;
 
 	fn receive_regular_message(
 		lane: &mut InboundLane<RuntimeInboundLaneStorage<TestRuntime, ()>>,

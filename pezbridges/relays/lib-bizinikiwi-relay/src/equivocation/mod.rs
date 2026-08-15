@@ -27,9 +27,9 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use bp_runtime::{AccountIdOf, BlockNumberOf, HashOf};
 use equivocation_detector::EquivocationDetectionPipeline;
 use finality_relay::FinalityPipeline;
+use pezbp_runtime::{AccountIdOf, BlockNumberOf, HashOf};
 use pezpallet_grandpa::{Call as GrandpaCall, Config as GrandpaConfig};
 use pezsp_core::Pair;
 use pezsp_runtime::traits::{Block, Header};
@@ -186,7 +186,7 @@ macro_rules! generate_report_equivocation_call_builder {
 			) -> relay_bizinikiwi_client::CallOf<
 				<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::SourceChain
 			> {
-				bp_runtime::paste::item! {
+				pezbp_runtime::paste::item! {
 					$grandpa($report_equivocation {
 						equivocation_proof: Box::new(equivocation_proof),
 						key_owner_proof: key_owner_proof

@@ -18,9 +18,9 @@
 //! obsolete (duplicated) data or do not pass some additional pezpallet-specific
 //! checks.
 
-use bp_relayers::ExplicitOrAccountParams;
-use bp_runtime::Teyrchain;
-use bp_teyrchains::SubmitParachainHeadsInfo;
+use pezbp_relayers::ExplicitOrAccountParams;
+use pezbp_runtime::Teyrchain;
+use pezbp_teyrchains::SubmitParachainHeadsInfo;
 use pezpallet_bridge_grandpa::{
 	BridgedBlockNumber, CallSubType as GrandpaCallSubType, SubmitFinalityProofHelper,
 };
@@ -378,14 +378,14 @@ macro_rules! generate_bridge_reject_obsolete_headers_and_messages {
 mod tests {
 	use super::*;
 	use crate::mock::*;
-	use bp_header_chain::StoredHeaderDataBuilder;
-	use bp_messages::{InboundLaneData, MessageNonce, OutboundLaneData};
-	use bp_polkadot_core::teyrchains::{ParaHeadsProof, ParaId};
-	use bp_relayers::{RewardsAccountOwner, RewardsAccountParams};
-	use bp_runtime::HeaderId;
-	use bp_test_utils::{make_default_justification, test_keyring, TEST_GRANDPA_SET_ID};
-	use bp_teyrchains::{BestParaHeadHash, ParaInfo};
 	use codec::{Decode, Encode, MaxEncodedLen};
+	use pezbp_header_pez_chain::StoredHeaderDataBuilder;
+	use pezbp_messages::{InboundLaneData, MessageNonce, OutboundLaneData};
+	use pezbp_pezkuwi_core::teyrchains::{ParaHeadsProof, ParaId};
+	use pezbp_relayers::{RewardsAccountOwner, RewardsAccountParams};
+	use pezbp_runtime::HeaderId;
+	use pezbp_test_utils::{make_default_justification, test_keyring, TEST_GRANDPA_SET_ID};
+	use pezbp_teyrchains::{BestParaHeadHash, ParaInfo};
 	use pezframe_support::{assert_err, assert_ok, traits::fungible::Mutate};
 	use pezpallet_bridge_grandpa::{Call as GrandpaCall, StoredAuthoritySet};
 	use pezpallet_bridge_teyrchains::Call as TeyrchainsCall;
@@ -542,7 +542,7 @@ mod tests {
 		pezpallet_bridge_grandpa::BestFinalized::<TestRuntime>::put(best_relay_header);
 		pezpallet_bridge_grandpa::ImportedHeaders::<TestRuntime>::insert(
 			best_relay_header.hash(),
-			bp_test_utils::test_header::<BridgedChainHeader>(0).build(),
+			pezbp_test_utils::test_header::<BridgedChainHeader>(0).build(),
 		);
 
 		let para_id = ParaId(BridgedUnderlyingParachain::PARACHAIN_ID);

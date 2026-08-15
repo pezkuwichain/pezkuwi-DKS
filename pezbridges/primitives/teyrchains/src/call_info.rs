@@ -18,9 +18,9 @@
 
 use crate::{ParaHash, ParaId, RelayBlockHash, RelayBlockNumber};
 
-use bp_polkadot_core::teyrchains::ParaHeadsProof;
-use bp_runtime::HeaderId;
 use codec::{Decode, Encode};
+use pezbp_pezkuwi_core::teyrchains::ParaHeadsProof;
+use pezbp_runtime::HeaderId;
 use pezsp_std::vec::Vec;
 use scale_info::TypeInfo;
 use Debug;

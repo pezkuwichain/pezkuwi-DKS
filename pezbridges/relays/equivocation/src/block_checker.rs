@@ -19,10 +19,10 @@ use crate::{
 	EquivocationReportingContext, HeaderFinalityInfo, SourceClient, TargetClient,
 };
 
-use bp_header_chain::{FinalityProof, FindEquivocations as FindEquivocationsT};
 use finality_relay::FinalityProofsBuf;
 use futures::future::{BoxFuture, FutureExt};
 use num_traits::Saturating;
+use pezbp_header_pez_chain::{FinalityProof, FindEquivocations as FindEquivocationsT};
 use std::time::Duration;
 
 /// First step in the block checking state machine.

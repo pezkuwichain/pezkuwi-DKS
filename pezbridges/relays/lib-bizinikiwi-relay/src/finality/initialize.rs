@@ -24,7 +24,7 @@
 use crate::{error::Error, finality_base::engine::Engine};
 use pezsp_core::Pair;
 
-use bp_runtime::HeaderIdOf;
+use pezbp_runtime::HeaderIdOf;
 use pezsp_runtime::traits::Header as HeaderT;
 use relay_bizinikiwi_client::{
 	AccountKeyPairOf, Chain, ChainWithTransactions, Client, Error as BizinikiwiError,

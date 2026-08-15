@@ -36,7 +36,6 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use bp_runtime::HeaderIdProvider;
 use codec::Encode;
 use futures::TryFutureExt;
 use jsonrpsee::{
@@ -44,6 +43,7 @@ use jsonrpsee::{
 	ws_client::{WsClient, WsClientBuilder},
 };
 use num_traits::Zero;
+use pezbp_runtime::HeaderIdProvider;
 use pezframe_support::weights::Weight;
 use pezpallet_transaction_payment::RuntimeDispatchInfo;
 use pezsp_core::{

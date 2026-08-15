@@ -18,11 +18,11 @@
 
 use crate::{Config, LOG_TARGET};
 
-use bp_messages::{
+use codec::{Decode, DecodeWithMemTracking, Encode};
+use pezbp_messages::{
 	ChainWithMessages, DeliveredMessages, LaneState, MessageNonce, OutboundLaneData,
 	UnrewardedRelayer,
 };
-use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezframe_support::{traits::Get, BoundedVec, PalletError};
 use pezsp_std::{collections::vec_deque::VecDeque, marker::PhantomData, ops::RangeInclusive};
 use scale_info::TypeInfo;

@@ -21,9 +21,9 @@ use crate::{
 	proofs::to_raw_storage_proof,
 };
 use async_trait::async_trait;
-use bp_teyrchains::teyrchain_head_storage_key_at_source;
-use bp_polkadot_core::teyrchains::{ParaHash, ParaHead, ParaHeadsProof, ParaId};
-use bp_runtime::HeaderIdProvider;
+use pezbp_teyrchains::teyrchain_head_storage_key_at_source;
+use pezbp_pezkuwi_core::teyrchains::{ParaHash, ParaHead, ParaHeadsProof, ParaId};
+use pezbp_runtime::HeaderIdProvider;
 use codec::Decode;
 use teyrchains_relay::teyrchains_loop::{AvailableHeader, SourceClient};
 use relay_bizinikiwi_client::{

@@ -21,8 +21,8 @@ use crate::{
 	RelayBlockNumber,
 };
 
-use bp_polkadot_core::teyrchains::{ParaHash, ParaHeadsProof, ParaId};
-use bp_runtime::UnverifiedStorageProofParams;
+use pezbp_pezkuwi_core::teyrchains::{ParaHash, ParaHeadsProof, ParaId};
+use pezbp_runtime::UnverifiedStorageProofParams;
 use pezframe_benchmarking::{account, benchmarks_instance_pallet};
 use pezframe_system::RawOrigin;
 use pezsp_std::prelude::*;
@@ -46,7 +46,7 @@ benchmarks_instance_pallet! {
 	where_clause {
 		where
 			<T as pezpallet_bridge_grandpa::Config<T::BridgesGrandpaPalletInstance>>::BridgedChain:
-				bp_runtime::Chain<
+				pezbp_runtime::Chain<
 					BlockNumber = RelayBlockNumber,
 					Hash = RelayBlockHash,
 					Hasher = RelayBlockHasher,

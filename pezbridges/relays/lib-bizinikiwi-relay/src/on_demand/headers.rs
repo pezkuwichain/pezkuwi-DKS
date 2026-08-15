@@ -19,10 +19,10 @@
 use crate::finality::SubmitFinalityProofCallBuilder;
 
 use async_trait::async_trait;
-use bp_header_chain::ConsensusLogReader;
-use bp_runtime::HeaderIdProvider;
 use futures::{select, FutureExt};
 use num_traits::{One, Saturating, Zero};
+use pezbp_header_pez_chain::ConsensusLogReader;
+use pezbp_runtime::HeaderIdProvider;
 use pezsp_runtime::traits::Header;
 use std::sync::Arc;
 use tokio::sync::Mutex;

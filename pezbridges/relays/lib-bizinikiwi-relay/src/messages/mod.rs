@@ -25,12 +25,14 @@ use crate::{
 	BatchCallBuilder, BatchCallBuilderConstructor, TransactionParams,
 };
 
-use bp_messages::{
-	target_chain::FromBridgedChainMessagesProof, ChainWithMessages as _, MessageNonce,
-};
-use bp_runtime::{AccountIdOf, EncodedOrDecodedCall, HeaderIdOf, TransactionEra, WeightExtraOps};
 use codec::{Codec, Encode, EncodeLike};
 use messages_relay::{message_lane::MessageLane, message_lane_loop::BatchTransaction, Labeled};
+use pezbp_messages::{
+	target_chain::FromBridgedChainMessagesProof, ChainWithMessages as _, MessageNonce,
+};
+use pezbp_runtime::{
+	AccountIdOf, EncodedOrDecodedCall, HeaderIdOf, TransactionEra, WeightExtraOps,
+};
 use pezframe_support::{dispatch::GetDispatchInfo, weights::Weight};
 use pezpallet_bridge_messages::{Call as BridgeMessagesCall, Config as BridgeMessagesConfig};
 use pezsp_core::Pair;
@@ -396,8 +398,10 @@ where
 	P: BizinikiwiMessageLane,
 	R: BridgeMessagesConfig<I, LaneId = P::LaneId>,
 	I: 'static,
-	R::BridgedChain:
-		bp_runtime::Chain<AccountId = AccountIdOf<P::SourceChain>, Hash = HashOf<P::SourceChain>>,
+	R::BridgedChain: pezbp_runtime::Chain<
+		AccountId = AccountIdOf<P::SourceChain>,
+		Hash = HashOf<P::SourceChain>,
+	>,
 	CallOf<P::TargetChain>: From<BridgeMessagesCall<R, I>> + GetDispatchInfo,
 {
 	fn build_receive_messages_proof_call(
@@ -454,12 +458,12 @@ macro_rules! generate_receive_message_proof_call_builder {
 					<$pipeline as $crate::messages::BizinikiwiMessageLane>::LaneId
 				>,
 				messages_count: u32,
-				dispatch_weight: bp_messages::Weight,
+				dispatch_weight: pezbp_messages::Weight,
 				_trace_call: bool,
 			) -> relay_bizinikiwi_client::CallOf<
 				<$pipeline as $crate::messages::BizinikiwiMessageLane>::TargetChain
 			> {
-				bp_runtime::paste::item! {
+				pezbp_runtime::paste::item! {
 					$bridge_messages($receive_messages_proof {
 						relayer_id_at_bridged_chain: relayer_id_at_source,
 						proof: proof.1.into(),
@@ -494,7 +498,7 @@ where
 	P: BizinikiwiMessageLane,
 	R: BridgeMessagesConfig<I, LaneId = P::LaneId>,
 	I: 'static,
-	R::BridgedChain: bp_runtime::Chain<Hash = HashOf<P::TargetChain>>,
+	R::BridgedChain: pezbp_runtime::Chain<Hash = HashOf<P::TargetChain>>,
 	CallOf<P::SourceChain>: From<BridgeMessagesCall<R, I>> + GetDispatchInfo,
 {
 	fn build_receive_messages_delivery_proof_call(
@@ -547,7 +551,7 @@ macro_rules! generate_receive_message_delivery_proof_call_builder {
 			) -> relay_bizinikiwi_client::CallOf<
 				<$pipeline as $crate::messages::BizinikiwiMessageLane>::SourceChain
 			> {
-				bp_runtime::paste::item! {
+				pezbp_runtime::paste::item! {
 					$bridge_messages($receive_messages_delivery_proof {
 						proof: proof.1,
 						relayers_state: proof.0
@@ -681,7 +685,7 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use bp_messages::{
+	use pezbp_messages::{
 		source_chain::FromBridgedChainMessagesDeliveryProof, LaneIdType, UnrewardedRelayersState,
 	};
 	use relay_bizinikiwi_client::calls::{UtilityCall as MockUtilityCall, UtilityCall};
@@ -693,7 +697,7 @@ mod tests {
 		#[codec(index = 123)]
 		Utility(UtilityCall<RuntimeCall>),
 	}
-	pub type CodegenBridgeMessagesCall = bp_messages::BridgeMessagesCall<
+	pub type CodegenBridgeMessagesCall = pezbp_messages::BridgeMessagesCall<
 		u64,
 		Box<FromBridgedChainMessagesProof<mock::BridgedHeaderHash, mock::TestLaneIdType>>,
 		FromBridgedChainMessagesDeliveryProof<mock::BridgedHeaderHash, mock::TestLaneIdType>,
@@ -820,8 +824,8 @@ mod tests {
 	#[allow(unexpected_cfgs)]
 	mod mock {
 		use super::super::*;
-		use bp_messages::{target_chain::ForbidInboundMessages, HashedLaneId};
-		use bp_runtime::ChainId;
+		use pezbp_messages::{target_chain::ForbidInboundMessages, HashedLaneId};
+		use pezbp_runtime::ChainId;
 		use pezframe_support::derive_impl;
 		use pezsp_core::H256;
 		use pezsp_runtime::{
@@ -864,7 +868,7 @@ mod tests {
 
 		pub struct ThisUnderlyingChain;
 
-		impl bp_runtime::Chain for ThisUnderlyingChain {
+		impl pezbp_runtime::Chain for ThisUnderlyingChain {
 			const ID: ChainId = *b"tuch";
 			type BlockNumber = u64;
 			type Hash = H256;
@@ -883,7 +887,7 @@ mod tests {
 			}
 		}
 
-		impl bp_messages::ChainWithMessages for ThisUnderlyingChain {
+		impl pezbp_messages::ChainWithMessages for ThisUnderlyingChain {
 			const WITH_CHAIN_MESSAGES_PALLET_NAME: &'static str = "";
 			const MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX: MessageNonce = 16;
 			const MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX: MessageNonce = 1000;
@@ -894,7 +898,7 @@ mod tests {
 		pub type BridgedHeaderHash = H256;
 		pub type BridgedChainHeader = BizinikiwiHeader;
 
-		impl bp_runtime::Chain for BridgedUnderlyingChain {
+		impl pezbp_runtime::Chain for BridgedUnderlyingChain {
 			const ID: ChainId = *b"bgdc";
 			type BlockNumber = u64;
 			type Hash = BridgedHeaderHash;
@@ -913,7 +917,7 @@ mod tests {
 			}
 		}
 
-		impl bp_messages::ChainWithMessages for BridgedUnderlyingChain {
+		impl pezbp_messages::ChainWithMessages for BridgedUnderlyingChain {
 			const WITH_CHAIN_MESSAGES_PALLET_NAME: &'static str = "";
 			const MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX: MessageNonce = 16;
 			const MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX: MessageNonce = 1000;
@@ -921,7 +925,7 @@ mod tests {
 
 		pub struct BridgedHeaderChain;
 
-		impl bp_header_chain::HeaderChain<BridgedUnderlyingChain> for BridgedHeaderChain {
+		impl pezbp_header_pez_chain::HeaderChain<BridgedUnderlyingChain> for BridgedHeaderChain {
 			fn finalized_header_state_root(
 				_hash: HashOf<BridgedUnderlyingChain>,
 			) -> Option<HashOf<BridgedUnderlyingChain>> {
@@ -940,7 +944,7 @@ mod tests {
 			},
 			UtilityPalletBatchCallBuilder,
 		};
-		use bp_runtime::UnderlyingChainProvider;
+		use pezbp_runtime::UnderlyingChainProvider;
 		use relay_bizinikiwi_client::{MockedRuntimeUtilityPallet, SignParam, UnsignedTransaction};
 		use std::time::Duration;
 

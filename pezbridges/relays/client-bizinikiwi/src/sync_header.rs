@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
-use bp_header_chain::ConsensusLogReader;
 use finality_relay::SourceHeader as FinalitySourceHeader;
+use pezbp_header_pez_chain::ConsensusLogReader;
 use pezsp_runtime::traits::Header as HeaderT;
 
 /// Generic wrapper for `pezsp_runtime::traits::Header` based headers, that

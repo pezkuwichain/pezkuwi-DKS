@@ -18,8 +18,8 @@
 
 use crate::{Config, Error};
 
-use bp_header_chain::{AuthoritySet, ChainWithGrandpa};
 use codec::{Decode, Encode, MaxEncodedLen};
+use pezbp_header_pez_chain::{AuthoritySet, ChainWithGrandpa};
 use pezframe_support::{traits::Get, BoundedVec, CloneNoBound, DebugNoBound};
 use pezsp_consensus_grandpa::{AuthorityId, AuthorityList, AuthorityWeight, SetId};
 use pezsp_std::marker::PhantomData;
@@ -100,7 +100,7 @@ impl<T: Config<I>, I: 'static> From<StoredAuthoritySet<T, I>> for AuthoritySet {
 #[cfg(test)]
 mod tests {
 	use crate::mock::{TestRuntime, MAX_BRIDGED_AUTHORITIES};
-	use bp_test_utils::authority_list;
+	use pezbp_test_utils::authority_list;
 
 	type StoredAuthoritySet = super::StoredAuthoritySet<TestRuntime, ()>;
 

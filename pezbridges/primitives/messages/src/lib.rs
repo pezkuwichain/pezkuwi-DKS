@@ -19,12 +19,12 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use bp_header_chain::HeaderChainError;
-use bp_runtime::{
+use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
+use pezbp_header_pez_chain::HeaderChainError;
+use pezbp_runtime::{
 	messages::MessageDispatchResult, BasicOperatingMode, Chain, OperatingMode, RangeInclusiveExt,
 	StorageProofError, UnderlyingChainOf, UnderlyingChainProvider,
 };
-use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezframe_support::PalletError;
 // Weight is reexported to avoid additional pezframe-support dependencies in related crates.
 pub use pezframe_support::weights::Weight;

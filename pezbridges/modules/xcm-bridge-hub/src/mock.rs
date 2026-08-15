@@ -18,13 +18,13 @@
 
 use crate as pezpallet_xcm_bridge_hub;
 
-use bp_messages::{
+use codec::{Decode, Encode};
+use pezbp_messages::{
 	target_chain::{DispatchMessage, MessageDispatch},
 	ChainWithMessages, HashedLaneId, MessageNonce,
 };
-use bp_runtime::{messages::MessageDispatchResult, Chain, ChainId, HashOf};
-use bp_xcm_bridge_hub::{BridgeId, LocalXcmChannelManager};
-use codec::{Decode, Encode};
+use pezbp_runtime::{messages::MessageDispatchResult, Chain, ChainId, HashOf};
+use pezbp_xcm_bridge_hub::{BridgeId, LocalXcmChannelManager};
 use pezframe_support::{
 	assert_ok, derive_impl, parameter_types,
 	traits::{ConstBool, EnsureOrigin, Equals, Everything, Get, OriginTrait},
@@ -473,7 +473,7 @@ impl TestLocalXcmChannelManager {
 	}
 
 	fn build_congestion_message(bridge: &BridgeId, is_congested: bool) -> Vec<Instruction<()>> {
-		use bp_xcm_bridge_hub_router::XcmBridgeHubRouterCall;
+		use pezbp_xcm_bridge_hub_router::XcmBridgeHubRouterCall;
 		#[allow(clippy::large_enum_variant)]
 		#[derive(Encode, Decode, Debug, PartialEq, Eq, Clone, scale_info::TypeInfo)]
 		enum Call {
@@ -621,7 +621,7 @@ impl ChainWithMessages for BridgedUnderlyingChain {
 }
 
 pub struct BridgedHeaderChain;
-impl bp_header_chain::HeaderChain<BridgedUnderlyingChain> for BridgedHeaderChain {
+impl pezbp_header_pez_chain::HeaderChain<BridgedUnderlyingChain> for BridgedHeaderChain {
 	fn finalized_header_state_root(
 		_hash: HashOf<BridgedUnderlyingChain>,
 	) -> Option<HashOf<BridgedUnderlyingChain>> {

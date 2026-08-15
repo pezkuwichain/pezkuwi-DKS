@@ -18,8 +18,10 @@
 
 use crate::{Message, MessageKey, MessageNonce, MessagePayload, OutboundLaneData};
 
-use bp_runtime::{messages::MessageDispatchResult, raw_storage_proof_size, RawStorageProof, Size};
 use codec::{Decode, DecodeWithMemTracking, Encode, Error as CodecError};
+use pezbp_runtime::{
+	messages::MessageDispatchResult, raw_storage_proof_size, RawStorageProof, Size,
+};
 use pezframe_support::weights::Weight;
 use pezsp_std::{fmt::Debug, marker::PhantomData, prelude::*};
 use scale_info::TypeInfo;

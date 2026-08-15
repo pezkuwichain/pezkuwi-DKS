@@ -18,7 +18,7 @@ use std::{collections::VecDeque, marker::PhantomData, ops::RangeInclusive};
 use async_trait::async_trait;
 use futures::stream::FusedStream;
 
-use bp_messages::{MessageNonce, UnrewardedRelayersState, Weight};
+use pezbp_messages::{MessageNonce, UnrewardedRelayersState, Weight};
 use relay_utils::{FailedClient, TrackedTransactionStatus, TransactionTracker};
 
 use crate::{

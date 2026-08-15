@@ -39,7 +39,7 @@ pub enum RuntimeVersionType {
 #[macro_export]
 macro_rules! declare_chain_runtime_version_params_cli_schema {
 	($chain:ident, $chain_prefix:ident) => {
-		bp_runtime::paste::item! {
+		pezbp_runtime::paste::item! {
 			#[doc = $chain " runtime version params."]
 			#[derive(Debug, PartialEq, Eq, Clone, Copy, Parser)]
 			pub struct [<$chain RuntimeVersionParams>] {
@@ -91,7 +91,7 @@ macro_rules! declare_chain_runtime_version_params_cli_schema {
 #[macro_export]
 macro_rules! declare_chain_connection_params_cli_schema {
 	($chain:ident, $chain_prefix:ident) => {
-		bp_runtime::paste::item! {
+		pezbp_runtime::paste::item! {
 			// TODO: https://github.com/paritytech/parity-bridges-common/issues/2909
 			// remove all obsolete arguments (separate URI components)
 
@@ -131,7 +131,7 @@ macro_rules! declare_chain_connection_params_cli_schema {
 #[macro_export]
 macro_rules! declare_chain_signing_params_cli_schema {
 	($chain:ident, $chain_prefix:ident) => {
-		bp_runtime::paste::item! {
+		pezbp_runtime::paste::item! {
 			#[doc = $chain " signing params."]
 			#[derive(Debug, PartialEq, Eq, Clone, Parser)]
 			pub struct [<$chain SigningParams>] {

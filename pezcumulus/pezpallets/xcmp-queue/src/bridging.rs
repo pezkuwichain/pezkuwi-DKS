@@ -17,11 +17,11 @@ use crate::{pezpallet, OutboundState};
 use pezcumulus_primitives_core::ParaId;
 use xcm::latest::prelude::*;
 
-/// Adapter implementation for `bp_xcm_bridge_hub_router::XcmChannelStatusProvider` which checks
+/// Adapter implementation for `pezbp_xcm_bridge_hub_router::XcmChannelStatusProvider` which checks
 /// both `OutboundXcmpStatus` and `InboundXcmpStatus` for defined `Location` if any of those is
 /// suspended.
 pub struct InAndOutXcmpChannelStatusProvider<Runtime>(core::marker::PhantomData<Runtime>);
-impl<Runtime: crate::Config> bp_xcm_bridge_hub_router::XcmChannelStatusProvider
+impl<Runtime: crate::Config> pezbp_xcm_bridge_hub_router::XcmChannelStatusProvider
 	for InAndOutXcmpChannelStatusProvider<Runtime>
 {
 	fn is_congested(with: &Location) -> bool {
@@ -45,8 +45,8 @@ impl<Runtime: crate::Config> bp_xcm_bridge_hub_router::XcmChannelStatusProvider
 	}
 }
 
-/// Adapter implementation for `bp_xcm_bridge::ChannelStatusProvider` and/or
-/// `bp_xcm_bridge_hub_router::XcmChannelStatusProvider` which checks only `OutboundXcmpStatus`
+/// Adapter implementation for `pezbp_xcm_bridge::ChannelStatusProvider` and/or
+/// `pezbp_xcm_bridge_hub_router::XcmChannelStatusProvider` which checks only `OutboundXcmpStatus`
 /// for defined `Location` if is suspended.
 pub struct OutXcmpChannelStatusProvider<Runtime>(core::marker::PhantomData<Runtime>);
 impl<Runtime: crate::Config> OutXcmpChannelStatusProvider<Runtime> {
@@ -87,7 +87,7 @@ impl<Runtime: crate::Config> OutXcmpChannelStatusProvider<Runtime> {
 	}
 }
 
-impl<Runtime: crate::Config> bp_xcm_bridge_hub_router::XcmChannelStatusProvider
+impl<Runtime: crate::Config> pezbp_xcm_bridge_hub_router::XcmChannelStatusProvider
 	for OutXcmpChannelStatusProvider<Runtime>
 {
 	fn is_congested(with: &Location) -> bool {

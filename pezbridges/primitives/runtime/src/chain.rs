@@ -314,7 +314,7 @@ pub type TransactionEraOf<C> = crate::TransactionEra<BlockNumberOf<C>, HashOf<C>
 #[macro_export]
 macro_rules! decl_bridge_finality_runtime_apis {
 	($chain: ident $(, $consensus: ident => $justification_type: ty)?) => {
-		bp_runtime::paste::item! {
+		pezbp_runtime::paste::item! {
 			mod [<$chain _finality_api>] {
 				use super::*;
 
@@ -341,7 +341,7 @@ macro_rules! decl_bridge_finality_runtime_apis {
 					/// chain's runtime itself.
 					pub trait [<$chain:camel FinalityApi>] {
 						/// Returns number and hash of the best finalized header known to the bridge module.
-						fn best_finalized() -> Option<bp_runtime::HeaderId<Hash, BlockNumber>>;
+						fn best_finalized() -> Option<pezbp_runtime::HeaderId<Hash, BlockNumber>>;
 
 						/// Returns free headers interval, if it is configured in the runtime.
 						/// The caller expects that if his transaction improves best known header
@@ -363,7 +363,7 @@ macro_rules! decl_bridge_finality_runtime_apis {
 		}
 	};
 	($chain: ident, grandpa) => {
-		decl_bridge_finality_runtime_apis!($chain, grandpa => bp_header_chain::StoredHeaderGrandpaInfo<Header>);
+		decl_bridge_finality_runtime_apis!($chain, grandpa => pezbp_header_pez_chain::StoredHeaderGrandpaInfo<Header>);
 	};
 }
 
@@ -384,7 +384,7 @@ pub mod __private {
 #[macro_export]
 macro_rules! decl_bridge_messages_runtime_apis {
 	($chain: ident, $lane_id_type:ty) => {
-		bp_runtime::paste::item! {
+		pezbp_runtime::paste::item! {
 			mod [<$chain _messages_api>] {
 				use super::*;
 
@@ -409,9 +409,9 @@ macro_rules! decl_bridge_messages_runtime_apis {
 						/// be missing from the resulting vector. The vector is ordered by the nonce.
 						fn message_details(
 							lane: $lane_id_type,
-							begin: bp_messages::MessageNonce,
-							end: bp_messages::MessageNonce,
-						) -> $crate::private::Vec<bp_messages::OutboundMessageDetails>;
+							begin: pezbp_messages::MessageNonce,
+							end: pezbp_messages::MessageNonce,
+						) -> $crate::private::Vec<pezbp_messages::OutboundMessageDetails>;
 					}
 
 					/// Inbound message lane API for messages sent by this chain.
@@ -425,8 +425,8 @@ macro_rules! decl_bridge_messages_runtime_apis {
 						/// Return details of given inbound messages.
 						fn message_details(
 							lane: $lane_id_type,
-							messages: $crate::private::Vec<(bp_messages::MessagePayload, bp_messages::OutboundMessageDetails)>,
-						) -> $crate::private::Vec<bp_messages::InboundMessageDetails>;
+							messages: $crate::private::Vec<(pezbp_messages::MessagePayload, pezbp_messages::OutboundMessageDetails)>,
+						) -> $crate::private::Vec<pezbp_messages::InboundMessageDetails>;
 					}
 				}
 			}
@@ -442,7 +442,7 @@ macro_rules! decl_bridge_messages_runtime_apis {
 #[macro_export]
 macro_rules! decl_bridge_runtime_apis {
 	($chain: ident $(, $consensus: ident, $lane_id_type:ident)?) => {
-		bp_runtime::decl_bridge_finality_runtime_apis!($chain $(, $consensus)?);
-		bp_runtime::decl_bridge_messages_runtime_apis!($chain, $lane_id_type);
+		pezbp_runtime::decl_bridge_finality_runtime_apis!($chain $(, $consensus)?);
+		pezbp_runtime::decl_bridge_messages_runtime_apis!($chain, $lane_id_type);
 	};
 }

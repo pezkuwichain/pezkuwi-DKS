@@ -16,8 +16,8 @@
 
 use crate::{base::SourceClientBase, FinalityPipeline};
 
-use bp_header_chain::FinalityProof;
 use futures::{FutureExt, Stream, StreamExt};
+use pezbp_header_pez_chain::FinalityProof;
 use std::pin::Pin;
 
 /// Source finality proofs stream that may be restarted.

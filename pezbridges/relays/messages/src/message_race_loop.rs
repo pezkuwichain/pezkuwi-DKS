@@ -23,11 +23,11 @@
 use crate::message_lane_loop::{BatchTransaction, ClientState, NoncesSubmitArtifacts};
 
 use async_trait::async_trait;
-use bp_messages::MessageNonce;
 use futures::{
 	future::{FutureExt, TryFutureExt},
 	stream::{FusedStream, StreamExt},
 };
+use pezbp_messages::MessageNonce;
 use relay_utils::{
 	process_future_result, retry_backoff, FailedClient, MaybeConnectionError,
 	TrackedTransactionStatus, TransactionTracker,

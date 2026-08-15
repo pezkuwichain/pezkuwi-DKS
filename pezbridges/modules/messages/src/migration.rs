@@ -30,9 +30,9 @@ pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 pub mod v0 {
 	use super::Config;
 	use crate::BridgedChainOf;
-	use bp_messages::{MessageNonce, UnrewardedRelayer};
-	use bp_runtime::AccountIdOf;
 	use codec::{Decode, Encode};
+	use pezbp_messages::{MessageNonce, UnrewardedRelayer};
+	use pezbp_runtime::AccountIdOf;
 	use pezsp_std::collections::vec_deque::VecDeque;
 
 	#[derive(Encode, Decode, Clone, PartialEq, Eq)]
@@ -59,7 +59,7 @@ pub mod v1 {
 	use crate::{
 		InboundLaneData, InboundLanes, OutboundLaneData, OutboundLanes, StoredInboundLaneData,
 	};
-	use bp_messages::LaneState;
+	use pezbp_messages::LaneState;
 	use pezframe_support::traits::UncheckedOnRuntimeUpgrade;
 	use pezsp_std::marker::PhantomData;
 

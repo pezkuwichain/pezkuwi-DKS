@@ -28,9 +28,9 @@ use crate::{
 
 use async_channel::{unbounded, Receiver, Sender};
 use async_trait::async_trait;
-use bp_teyrchains::{RelayBlockHash, RelayBlockHasher, RelayBlockNumber};
-use bp_polkadot_core::teyrchains::{ParaHash, ParaId};
-use bp_runtime::HeaderIdProvider;
+use pezbp_teyrchains::{RelayBlockHash, RelayBlockHasher, RelayBlockNumber};
+use pezbp_pezkuwi_core::teyrchains::{ParaHash, ParaId};
+use pezbp_runtime::HeaderIdProvider;
 use futures::{select, FutureExt};
 use num_traits::Zero;
 use teyrchains_relay::teyrchains_loop::{AvailableHeader, SourceClient, TargetClient};

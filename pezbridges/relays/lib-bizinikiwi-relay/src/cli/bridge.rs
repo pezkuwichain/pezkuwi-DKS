@@ -22,7 +22,7 @@ use crate::{
 	messages::{BizinikiwiMessageLane, MessagesRelayLimits},
 	teyrchains::BizinikiwiParachainsPipeline,
 };
-use bp_teyrchains::{RelayBlockHash, RelayBlockHasher, RelayBlockNumber};
+use pezbp_teyrchains::{RelayBlockHash, RelayBlockHasher, RelayBlockNumber};
 use relay_bizinikiwi_client::{
 	Chain, ChainWithRuntimeVersion, ChainWithTransactions, RelayChain, Teyrchain,
 };

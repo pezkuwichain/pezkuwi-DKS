@@ -45,7 +45,7 @@ use crate::{
 	on_demand::OnDemandRelay,
 	HeadersToRelay, TaggedAccount, TransactionParams,
 };
-use bp_runtime::BalanceOf;
+use pezbp_runtime::BalanceOf;
 use pezsp_core::Pair;
 use pezsp_runtime::traits::TryConvert;
 use relay_bizinikiwi_client::{

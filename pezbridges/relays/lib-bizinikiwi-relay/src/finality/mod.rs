@@ -24,9 +24,11 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use bp_header_chain::justification::{GrandpaJustification, JustificationVerificationContext};
 use finality_relay::{
 	FinalityPipeline, FinalitySyncPipeline, HeadersToRelay, SourceClient, TargetClient,
+};
+use pezbp_header_pez_chain::justification::{
+	GrandpaJustification, JustificationVerificationContext,
 };
 use pezpallet_bridge_grandpa::{Call as BridgeGrandpaCall, Config as BridgeGrandpaConfig};
 use pezsp_core::Pair;
@@ -134,7 +136,7 @@ where
 	P: BizinikiwiFinalitySyncPipeline,
 	R: BridgeGrandpaConfig<I>,
 	I: 'static,
-	R::BridgedChain: bp_runtime::Chain<Header = HeaderOf<P::SourceChain>>,
+	R::BridgedChain: pezbp_runtime::Chain<Header = HeaderOf<P::SourceChain>>,
 	CallOf<P::TargetChain>: From<BridgeGrandpaCall<R, I>>,
 	P::FinalityEngine: Engine<
 		P::SourceChain,
@@ -175,17 +177,17 @@ macro_rules! generate_submit_finality_proof_call_builder {
 						<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::SourceChain
 					>
 				>,
-				proof: bp_header_chain::justification::GrandpaJustification<
+				proof: pezbp_header_pez_chain::justification::GrandpaJustification<
 					relay_bizinikiwi_client::HeaderOf<
 						<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::SourceChain
 					>
 				>,
 				_is_free_execution_expected: bool,
-				_context: bp_header_chain::justification::JustificationVerificationContext,
+				_context: pezbp_header_pez_chain::justification::JustificationVerificationContext,
 			) -> relay_bizinikiwi_client::CallOf<
 				<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::TargetChain
 			> {
-				bp_runtime::paste::item! {
+				pezbp_runtime::paste::item! {
 					$bridge_grandpa($submit_finality_proof {
 						finality_target: Box::new(header.into_inner()),
 						justification: proof
@@ -215,17 +217,17 @@ macro_rules! generate_submit_finality_proof_ex_call_builder {
 						<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::SourceChain
 					>
 				>,
-				proof: bp_header_chain::justification::GrandpaJustification<
+				proof: pezbp_header_pez_chain::justification::GrandpaJustification<
 					relay_bizinikiwi_client::HeaderOf<
 						<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::SourceChain
 					>
 				>,
 				is_free_execution_expected: bool,
-				context: bp_header_chain::justification::JustificationVerificationContext,
+				context: pezbp_header_pez_chain::justification::JustificationVerificationContext,
 			) -> relay_bizinikiwi_client::CallOf<
 				<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::TargetChain
 			> {
-				bp_runtime::paste::item! {
+				pezbp_runtime::paste::item! {
 					$bridge_grandpa($submit_finality_proof {
 						finality_target: Box::new(header.into_inner()),
 						justification: proof,

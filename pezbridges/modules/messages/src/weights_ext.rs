@@ -18,8 +18,8 @@
 
 use crate::weights::WeightInfo;
 
-use bp_messages::{MessageNonce, UnrewardedRelayersState};
-use bp_runtime::{PreComputedSize, Size};
+use pezbp_messages::{MessageNonce, UnrewardedRelayersState};
+use pezbp_runtime::{PreComputedSize, Size};
 use pezframe_support::weights::Weight;
 
 /// Size of the message being delivered in benchmarks.

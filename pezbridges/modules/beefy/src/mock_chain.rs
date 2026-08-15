@@ -26,8 +26,8 @@ use crate::{
 	utils::get_authorities_mmr_root,
 };
 
-use bp_beefy::{BeefyPayload, Commitment, ValidatorSetId, MMR_ROOT_PAYLOAD_ID};
 use codec::Encode;
+use pezbp_beefy::{BeefyPayload, Commitment, ValidatorSetId, MMR_ROOT_PAYLOAD_ID};
 use pezpallet_mmr::NodeIndex;
 use pezsp_consensus_beefy::mmr::{BeefyNextAuthoritySet, MmrLeafVersion};
 use pezsp_core::Pair;

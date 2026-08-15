@@ -25,9 +25,9 @@ use crate::{
 	Chain, ChainWithBalances, ChainWithMessages, ChainWithRewards, ChainWithTransactions,
 	Error as BizinikiwiError, SignParam, UnsignedTransaction,
 };
-use bp_messages::{ChainWithMessages as ChainWithMessagesBase, MessageNonce};
-use bp_runtime::ChainId;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
+use pezbp_messages::{ChainWithMessages as ChainWithMessagesBase, MessageNonce};
+use pezbp_runtime::ChainId;
 use pezframe_support::{pezsp_runtime::StateVersion, weights::Weight};
 use scale_info::TypeInfo;
 use std::time::Duration;
@@ -36,7 +36,7 @@ use std::time::Duration;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TestChain;
 
-impl bp_runtime::Chain for TestChain {
+impl pezbp_runtime::Chain for TestChain {
 	const ID: ChainId = *b"test";
 
 	type BlockNumber = u32;
@@ -122,11 +122,11 @@ impl ChainWithMessages for TestChain {
 
 impl ChainWithTransactions for TestChain {
 	type AccountKeyPair = pezsp_core::sr25519::Pair;
-	type SignedTransaction = bp_polkadot_core::UncheckedExtrinsic<
+	type SignedTransaction = pezbp_pezkuwi_core::UncheckedExtrinsic<
 		TestRuntimeCall,
-		bp_polkadot_core::SuffixedCommonTransactionExtension<(
-			bp_runtime::extensions::BridgeRejectObsoleteHeadersAndMessages,
-			bp_runtime::extensions::RefundBridgedParachainMessagesSchema,
+		pezbp_pezkuwi_core::SuffixedCommonTransactionExtension<(
+			pezbp_runtime::extensions::BridgeRejectObsoleteHeadersAndMessages,
+			pezbp_runtime::extensions::RefundBridgedParachainMessagesSchema,
 		)>,
 	>;
 
@@ -150,7 +150,7 @@ pub enum TestRuntimeCall {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TestParachainBase;
 
-impl bp_runtime::Chain for TestParachainBase {
+impl pezbp_runtime::Chain for TestParachainBase {
 	const ID: ChainId = *b"tstp";
 
 	type BlockNumber = u32;
@@ -174,7 +174,7 @@ impl bp_runtime::Chain for TestParachainBase {
 	}
 }
 
-impl bp_runtime::Teyrchain for TestParachainBase {
+impl pezbp_runtime::Teyrchain for TestParachainBase {
 	const PARACHAIN_ID: u32 = 1000;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
@@ -183,7 +183,7 @@ impl bp_runtime::Teyrchain for TestParachainBase {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TestParachain;
 
-impl bp_runtime::UnderlyingChainProvider for TestParachain {
+impl pezbp_runtime::UnderlyingChainProvider for TestParachain {
 	type Chain = TestParachainBase;
 }
 

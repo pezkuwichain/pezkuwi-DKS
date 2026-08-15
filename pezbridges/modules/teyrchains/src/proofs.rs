@@ -17,11 +17,11 @@
 //! Tools for teyrchain head proof verification.
 
 use crate::{Config, GrandpaPalletOf, RelayBlockHash, RelayBlockHasher};
-use bp_header_chain::{HeaderChain, HeaderChainError};
-use bp_polkadot_core::teyrchains::{ParaHead, ParaId};
-use bp_runtime::{RawStorageProof, StorageProofChecker, StorageProofError};
-use bp_teyrchains::teyrchain_head_storage_key_at_source;
 use codec::Decode;
+use pezbp_header_pez_chain::{HeaderChain, HeaderChainError};
+use pezbp_pezkuwi_core::teyrchains::{ParaHead, ParaId};
+use pezbp_runtime::{RawStorageProof, StorageProofChecker, StorageProofError};
+use pezbp_teyrchains::teyrchain_head_storage_key_at_source;
 use pezframe_support::traits::Get;
 
 /// Abstraction over storage proof manipulation, hiding implementation details of actual storage

@@ -21,9 +21,9 @@ use crate::{
 	extension::verify_messages_call_succeeded, Config as BridgeRelayersConfig, LOG_TARGET,
 };
 
-use bp_relayers::{BatchCallUnpacker, ExtensionCallData, ExtensionCallInfo, ExtensionConfig};
-use bp_runtime::{Chain, StaticStrProvider};
 use core::marker::PhantomData;
+use pezbp_relayers::{BatchCallUnpacker, ExtensionCallData, ExtensionCallInfo, ExtensionConfig};
+use pezbp_runtime::{Chain, StaticStrProvider};
 use pezframe_support::dispatch::{DispatchInfo, PostDispatchInfo};
 use pezframe_system::Config as SystemConfig;
 use pezpallet_bridge_grandpa::{

@@ -25,7 +25,7 @@ pub use extension::{
 };
 pub use registration::{ExplicitOrAccountParams, Registration, StakeAndSlash};
 
-use bp_runtime::{ChainId, StorageDoubleMapKeyProvider};
+use pezbp_runtime::{ChainId, StorageDoubleMapKeyProvider};
 use pezframe_support::{traits::tokens::Preservation, Blake2_128Concat, Identity};
 use pezsp_runtime::{
 	codec::{Codec, Decode, DecodeWithMemTracking, Encode, EncodeLike, MaxEncodedLen},
@@ -222,7 +222,7 @@ pub trait RewardLedger<Relayer, Reward, RewardBalance> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use bp_messages::{HashedLaneId, LaneIdType, LegacyLaneId};
+	use pezbp_messages::{HashedLaneId, LaneIdType, LegacyLaneId};
 	use pezsp_runtime::{app_crypto::Ss58Codec, testing::H256};
 
 	#[test]

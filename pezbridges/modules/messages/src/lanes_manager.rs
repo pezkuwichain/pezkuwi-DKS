@@ -20,12 +20,12 @@ use crate::{
 	StoredMessagePayload,
 };
 
-use bp_messages::{
+use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
+use pezbp_messages::{
 	target_chain::MessageDispatch, ChainWithMessages, InboundLaneData, LaneState, MessageKey,
 	MessageNonce, OutboundLaneData,
 };
-use bp_runtime::AccountIdOf;
-use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
+use pezbp_runtime::AccountIdOf;
 use pezframe_support::{ensure, PalletError};
 use pezsp_std::marker::PhantomData;
 use scale_info::TypeInfo;

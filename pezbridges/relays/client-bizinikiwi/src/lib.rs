@@ -48,7 +48,7 @@ pub use crate::{
 	sync_header::SyncHeader,
 	transaction_tracker::TransactionTracker,
 };
-pub use bp_runtime::{
+pub use pezbp_runtime::{
 	AccountIdOf, AccountPublicOf, BalanceOf, BlockNumberOf, Chain as ChainBase, HashOf, HeaderIdOf,
 	HeaderOf, NonceOf, SignatureOf, Teyrchain as TeyrchainBase, TransactionEra, TransactionEraOf,
 	UnderlyingChainProvider,

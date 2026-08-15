@@ -22,8 +22,8 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use bp_runtime::{StorageDoubleMapKeyProvider, StorageMapKeyProvider};
 use codec::{Decode, Encode};
+use pezbp_runtime::{StorageDoubleMapKeyProvider, StorageMapKeyProvider};
 use pezframe_support::weights::Weight;
 use pezsp_core::{
 	storage::{StorageData, StorageKey},

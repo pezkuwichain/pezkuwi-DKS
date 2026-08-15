@@ -25,8 +25,9 @@ use crate::{
 	Config, StoredMessagePayload,
 };
 
-use bp_header_chain::{ChainWithGrandpa, StoredHeaderData};
-use bp_messages::{
+use codec::{Decode, DecodeWithMemTracking, Encode};
+use pezbp_header_pez_chain::{ChainWithGrandpa, StoredHeaderData};
+use pezbp_messages::{
 	calc_relayers_rewards,
 	source_chain::{
 		DeliveryConfirmationPayments, FromBridgedChainMessagesDeliveryProof, OnMessagesDelivered,
@@ -39,10 +40,9 @@ use bp_messages::{
 	Message, MessageKey, MessageNonce, OutboundLaneData, UnrewardedRelayer,
 	UnrewardedRelayersState,
 };
-use bp_runtime::{
+use pezbp_runtime::{
 	messages::MessageDispatchResult, Chain, ChainId, Size, UnverifiedStorageProofParams,
 };
-use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezframe_support::{
 	derive_impl,
 	weights::{constants::RocksDbWeight, Weight},
@@ -215,7 +215,7 @@ impl crate::benchmarking::Config<()> for TestRuntime {
 	fn prepare_message_proof(
 		params: crate::benchmarking::MessageProofParams<Self::LaneId>,
 	) -> (FromBridgedChainMessagesProof<BridgedHeaderHash, Self::LaneId>, Weight) {
-		use bp_runtime::RangeInclusiveExt;
+		use pezbp_runtime::RangeInclusiveExt;
 
 		let dispatch_weight =
 			REGULAR_PAYLOAD.declared_weight * params.message_nonces.saturating_len();

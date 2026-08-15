@@ -24,9 +24,9 @@ use crate::{
 };
 
 use alloc::{boxed::Box, vec};
-use bp_header_chain::ChainWithGrandpa;
-use bp_messages::UnrewardedRelayersState;
-use bp_relayers::{RewardsAccountOwner, RewardsAccountParams};
+use pezbp_header_pez_chain::ChainWithGrandpa;
+use pezbp_messages::UnrewardedRelayersState;
+use pezbp_relayers::{RewardsAccountOwner, RewardsAccountParams};
 use pezframe_support::traits::{OnFinalize, OnInitialize};
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
 use pezpallet_bridge_messages::{BridgedChainOf, LaneIdOf, ThisChainOf};
@@ -515,7 +515,7 @@ where
 	RuntimeHelper::Runtime:
 		pezpallet_utility::Config<RuntimeCall = RuntimeCallOf<RuntimeHelper::Runtime>>,
 	ThisChainOf<RuntimeHelper::Runtime, RuntimeHelper::MPI>:
-		bp_runtime::Chain<AccountId = AccountIdOf<RuntimeHelper::Runtime>>,
+		pezbp_runtime::Chain<AccountId = AccountIdOf<RuntimeHelper::Runtime>>,
 	RuntimeCallOf<RuntimeHelper::Runtime>: From<BridgeGrandpaCall<RuntimeHelper::Runtime, RuntimeHelper::GPI>>
 		+ From<BridgeMessagesCall<RuntimeHelper::Runtime, RuntimeHelper::MPI>>,
 	BridgedChainOf<RuntimeHelper::Runtime, RuntimeHelper::MPI>: ChainWithGrandpa,
@@ -617,7 +617,7 @@ where
 	RuntimeHelper: WithRemoteGrandpaChainHelper,
 	AccountIdOf<RuntimeHelper::Runtime>: From<AccountId32>,
 	ThisChainOf<RuntimeHelper::Runtime, RuntimeHelper::MPI>:
-		bp_runtime::Chain<AccountId = AccountIdOf<RuntimeHelper::Runtime>>,
+		pezbp_runtime::Chain<AccountId = AccountIdOf<RuntimeHelper::Runtime>>,
 	RuntimeCallOf<RuntimeHelper::Runtime>:
 		From<BridgeMessagesCall<RuntimeHelper::Runtime, RuntimeHelper::MPI>>,
 	BridgedChainOf<RuntimeHelper::Runtime, RuntimeHelper::MPI>: ChainWithGrandpa,

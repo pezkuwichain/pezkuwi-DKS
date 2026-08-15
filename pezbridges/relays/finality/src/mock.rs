@@ -25,9 +25,9 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use bp_header_chain::{FinalityProof, GrandpaConsensusLogReader};
 use futures::{Stream, StreamExt};
 use parking_lot::Mutex;
+use pezbp_header_pez_chain::{FinalityProof, GrandpaConsensusLogReader};
 use relay_utils::{
 	relay_loop::Client as RelayClient, HeaderId, MaybeConnectionError, TrackedTransactionStatus,
 	TransactionTracker,

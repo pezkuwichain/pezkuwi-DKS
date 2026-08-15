@@ -141,7 +141,7 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use bp_messages::{HashedLaneId, LegacyLaneId};
+	use pezbp_messages::{HashedLaneId, LegacyLaneId};
 	use pezsp_core::H256;
 
 	#[test]

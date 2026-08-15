@@ -16,7 +16,7 @@
 
 //! Helpers for implementing various message-related runtime API methods.
 
-use bp_messages::{InboundMessageDetails, MessageNonce, MessagePayload, OutboundMessageDetails};
+use pezbp_messages::{InboundMessageDetails, MessageNonce, MessagePayload, OutboundMessageDetails};
 use pezsp_std::vec::Vec;
 
 /// Implementation of the `To*OutboundLaneApi::message_details`.

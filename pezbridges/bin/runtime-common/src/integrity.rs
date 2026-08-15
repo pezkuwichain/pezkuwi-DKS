@@ -19,10 +19,10 @@
 //! Most of the tests in this module assume that the bridge is using standard (see `crate::messages`
 //! module for details) configuration.
 
-use bp_header_chain::ChainWithGrandpa;
-use bp_messages::{ChainWithMessages, InboundLaneData, MessageNonce};
-use bp_runtime::{AccountIdOf, Chain};
 use codec::Encode;
+use pezbp_header_pez_chain::ChainWithGrandpa;
+use pezbp_messages::{ChainWithMessages, InboundLaneData, MessageNonce};
+use pezbp_runtime::{AccountIdOf, Chain};
 use pezframe_support::{storage::generator::StorageValue, traits::Get, weights::Weight};
 use pezframe_system::limits;
 use pezpallet_bridge_messages::{ThisChainOf, WeightInfoExt as _};
@@ -46,12 +46,12 @@ macro_rules! assert_chain_types(
 			// configuration is used), or something has broke existing configuration (meaning that all bridged chains
 			// and relays will stop functioning)
 
-			assert_type_eq_all!(<$r as SystemConfig>::Nonce, bp_runtime::NonceOf<$this>);
-			assert_type_eq_all!(BlockNumberFor<$r>, bp_runtime::BlockNumberOf<$this>);
-			assert_type_eq_all!(<$r as SystemConfig>::Hash, bp_runtime::HashOf<$this>);
-			assert_type_eq_all!(<$r as SystemConfig>::Hashing, bp_runtime::HasherOf<$this>);
-			assert_type_eq_all!(<$r as SystemConfig>::AccountId, bp_runtime::AccountIdOf<$this>);
-			assert_type_eq_all!(HeaderFor<$r>, bp_runtime::HeaderOf<$this>);
+			assert_type_eq_all!(<$r as SystemConfig>::Nonce, pezbp_runtime::NonceOf<$this>);
+			assert_type_eq_all!(BlockNumberFor<$r>, pezbp_runtime::BlockNumberOf<$this>);
+			assert_type_eq_all!(<$r as SystemConfig>::Hash, pezbp_runtime::HashOf<$this>);
+			assert_type_eq_all!(<$r as SystemConfig>::Hashing, pezbp_runtime::HasherOf<$this>);
+			assert_type_eq_all!(<$r as SystemConfig>::AccountId, pezbp_runtime::AccountIdOf<$this>);
+			assert_type_eq_all!(HeaderFor<$r>, pezbp_runtime::HeaderOf<$this>);
 		}
 	}
 );
@@ -69,8 +69,8 @@ macro_rules! assert_bridge_messages_pallet_types(
 	) => {
 		{
 			use $crate::integrity::__private::static_assertions::assert_type_eq_all;
-			use bp_messages::ChainWithMessages;
-			use bp_runtime::Chain;
+			use pezbp_messages::ChainWithMessages;
+			use pezbp_runtime::Chain;
 			use pezpallet_bridge_messages::Config as BridgeMessagesConfig;
 
 			// if one of asserts fail, then either bridge isn't configured properly (or alternatively - non-standard
@@ -202,16 +202,16 @@ where
 {
 	// check that the bridge GRANDPA pezpallet has required name
 	assert_eq!(
-			pezpallet_bridge_grandpa::PalletOwner::<R, GI>::storage_value_final_key().to_vec(),
-			bp_runtime::storage_value_key(
-				params.with_bridged_chain_grandpa_pallet_name,
-				"PalletOwner",
-			)
-			.0,
-		);
+		pezpallet_bridge_grandpa::PalletOwner::<R, GI>::storage_value_final_key().to_vec(),
+		pezbp_runtime::storage_value_key(
+			params.with_bridged_chain_grandpa_pallet_name,
+			"PalletOwner",
+		)
+		.0,
+	);
 	assert_eq!(
 		pezpallet_bridge_grandpa::PalletOperatingMode::<R, GI>::storage_value_final_key().to_vec(),
-		bp_runtime::storage_value_key(
+		pezbp_runtime::storage_value_key(
 			params.with_bridged_chain_grandpa_pallet_name,
 			"PalletOperatingMode",
 		)
@@ -237,7 +237,7 @@ where
 	// check that the bridge messages pezpallet has required name
 	assert_eq!(
 		pezpallet_bridge_messages::PalletOwner::<R, MI>::storage_value_final_key().to_vec(),
-		bp_runtime::storage_value_key(
+		pezbp_runtime::storage_value_key(
 			params.with_bridged_chain_messages_pallet_name,
 			"PalletOwner",
 		)
@@ -245,7 +245,7 @@ where
 	);
 	assert_eq!(
 		pezpallet_bridge_messages::PalletOperatingMode::<R, MI>::storage_value_final_key().to_vec(),
-		bp_runtime::storage_value_key(
+		pezbp_runtime::storage_value_key(
 			params.with_bridged_chain_messages_pallet_name,
 			"PalletOperatingMode",
 		)

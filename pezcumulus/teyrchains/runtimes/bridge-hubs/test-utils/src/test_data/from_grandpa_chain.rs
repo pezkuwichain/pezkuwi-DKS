@@ -18,22 +18,22 @@
 
 use crate::test_data::{prepare_inbound_xcm, XcmAsPlainPayload};
 
-use bp_messages::{
+use codec::Encode;
+use pezbp_messages::{
 	source_chain::FromBridgedChainMessagesDeliveryProof,
 	target_chain::FromBridgedChainMessagesProof, ChainWithMessages, LaneState, MessageNonce,
 	UnrewardedRelayersState,
 };
-use bp_runtime::{AccountIdOf, BlockNumberOf, Chain, HeaderOf, UnverifiedStorageProofParams};
-use bp_test_utils::make_default_justification;
-use codec::Encode;
+use pezbp_runtime::{AccountIdOf, BlockNumberOf, Chain, HeaderOf, UnverifiedStorageProofParams};
+use pezbp_test_utils::make_default_justification;
 use pezpallet_bridge_grandpa::{BridgedChain, BridgedHeader};
 use pezsp_runtime::traits::Header as HeaderT;
 use xcm::latest::prelude::*;
 
 use crate::test_cases::helpers::InboundRelayerId;
-use bp_header_chain::{justification::GrandpaJustification, ChainWithGrandpa};
-use bp_messages::{DeliveredMessages, InboundLaneData, UnrewardedRelayer};
-use bp_runtime::HashOf;
+use pezbp_header_pez_chain::{justification::GrandpaJustification, ChainWithGrandpa};
+use pezbp_messages::{DeliveredMessages, InboundLaneData, UnrewardedRelayer};
+use pezbp_runtime::HashOf;
 use pezpallet_bridge_messages::{
 	messages_generation::{
 		encode_all_messages, encode_lane_data, prepare_message_delivery_storage_proof,
@@ -270,7 +270,7 @@ pub fn make_complex_bridged_grandpa_header_proof<BridgedChain>(
 where
 	BridgedChain: ChainWithGrandpa,
 {
-	let mut header = bp_test_utils::test_header_with_root::<HeaderOf<BridgedChain>>(
+	let mut header = pezbp_test_utils::test_header_with_root::<HeaderOf<BridgedChain>>(
 		header_number.into(),
 		state_root.into(),
 	);
@@ -289,7 +289,7 @@ where
 
 /// Maximal expected `submit_finality_proof` call size.
 pub fn maximal_expected_submit_finality_proof_call_size<BridgedChain: ChainWithGrandpa>() -> usize {
-	bp_header_chain::max_expected_submit_finality_proof_arguments_size::<BridgedChain>(
+	pezbp_header_pez_chain::max_expected_submit_finality_proof_arguments_size::<BridgedChain>(
 		false,
 		BridgedChain::MAX_AUTHORITIES_COUNT * 2 / 3 + 1,
 	) as usize

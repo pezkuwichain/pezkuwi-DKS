@@ -19,13 +19,13 @@
 
 #![cfg(feature = "runtime-benchmarks")]
 
-use bp_messages::{
+use codec::Encode;
+use pezbp_messages::{
 	source_chain::FromBridgedChainMessagesDeliveryProof,
 	target_chain::FromBridgedChainMessagesProof, MessagePayload,
 };
-use bp_polkadot_core::teyrchains::ParaHash;
-use bp_runtime::{AccountIdOf, Chain, HashOf, Teyrchain};
-use codec::Encode;
+use pezbp_pezkuwi_core::teyrchains::ParaHash;
+use pezbp_runtime::{AccountIdOf, Chain, HashOf, Teyrchain};
 use pezframe_support::weights::Weight;
 use pezpallet_bridge_messages::{
 	benchmarking::{MessageDeliveryProofParams, MessageProofParams},
@@ -236,15 +236,15 @@ where
 
 /// Insert header to the bridge GRANDPA pezpallet.
 pub(crate) fn insert_header_to_grandpa_pallet<R, GI>(
-	state_root: bp_runtime::HashOf<R::BridgedChain>,
-) -> (bp_runtime::BlockNumberOf<R::BridgedChain>, bp_runtime::HashOf<R::BridgedChain>)
+	state_root: pezbp_runtime::HashOf<R::BridgedChain>,
+) -> (pezbp_runtime::BlockNumberOf<R::BridgedChain>, pezbp_runtime::HashOf<R::BridgedChain>)
 where
 	R: pezpallet_bridge_grandpa::Config<GI>,
 	GI: 'static,
-	R::BridgedChain: bp_runtime::Chain,
+	R::BridgedChain: pezbp_runtime::Chain,
 {
 	let bridged_block_number = Zero::zero();
-	let bridged_header = bp_runtime::HeaderOf::<R::BridgedChain>::new(
+	let bridged_header = pezbp_runtime::HeaderOf::<R::BridgedChain>::new(
 		bridged_block_number,
 		Default::default(),
 		state_root,
@@ -258,15 +258,15 @@ where
 
 /// Insert header to the bridge teyrchains pezpallet.
 pub(crate) fn insert_header_to_teyrchains_pallet<R, PI, PC>(
-	state_root: bp_runtime::HashOf<PC>,
-) -> (bp_runtime::BlockNumberOf<PC>, bp_runtime::HashOf<PC>)
+	state_root: pezbp_runtime::HashOf<PC>,
+) -> (pezbp_runtime::BlockNumberOf<PC>, pezbp_runtime::HashOf<PC>)
 where
 	R: pezpallet_bridge_teyrchains::Config<PI>,
 	PI: 'static,
 	PC: Chain<Hash = ParaHash> + Teyrchain,
 {
 	let bridged_block_number = Zero::zero();
-	let bridged_header = bp_runtime::HeaderOf::<PC>::new(
+	let bridged_header = pezbp_runtime::HeaderOf::<PC>::new(
 		bridged_block_number,
 		Default::default(),
 		state_root,

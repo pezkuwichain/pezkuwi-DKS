@@ -51,7 +51,7 @@ pub struct RelayToRelayBridge<
 /// Create set of configuration objects specific to relay-to-relay relayer.
 macro_rules! declare_relay_to_relay_bridge_schema {
 	($left_chain:ident, $right_chain:ident) => {
-		bp_runtime::paste::item! {
+		pezbp_runtime::paste::item! {
 			#[doc = $left_chain " and " $right_chain " headers+messages relay params."]
 			#[derive(Debug, PartialEq, Parser)]
 			pub struct [<$left_chain $right_chain HeadersAndMessages>] {

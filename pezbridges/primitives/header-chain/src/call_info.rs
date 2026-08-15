@@ -18,8 +18,8 @@
 
 use crate::{justification, InitializationData};
 
-use bp_runtime::HeaderOf;
 use codec::{Decode, Encode};
+use pezbp_runtime::HeaderOf;
 use pezframe_support::{weights::Weight, DebugNoBound};
 use pezsp_consensus_grandpa::SetId;
 use pezsp_runtime::traits::{Header as HeaderT, Zero};

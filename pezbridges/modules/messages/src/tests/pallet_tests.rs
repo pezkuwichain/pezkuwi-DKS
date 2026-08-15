@@ -26,7 +26,7 @@ use crate::{
 	Pezpallet, PalletOperatingMode, PalletOwner, StoredInboundLaneData,
 };
 
-use bp_messages::{
+use pezbp_messages::{
 	source_chain::{FromBridgedChainMessagesDeliveryProof, MessagesBridge},
 	target_chain::{FromBridgedChainMessagesProof, MessageDispatch},
 	BridgeMessagesCall, ChainWithMessages, DeliveredMessages, InboundLaneData,
@@ -34,8 +34,8 @@ use bp_messages::{
 	OutboundLaneData, OutboundMessageDetails, UnrewardedRelayer, UnrewardedRelayersState,
 	VerificationError,
 };
-use bp_runtime::{BasicOperatingMode, PreComputedSize, RangeInclusiveExt, Size};
-use bp_test_utils::generate_owned_bridge_module_tests;
+use pezbp_runtime::{BasicOperatingMode, PreComputedSize, RangeInclusiveExt, Size};
+use pezbp_test_utils::generate_owned_bridge_module_tests;
 use codec::Encode;
 use pezframe_support::{
 	assert_err, assert_noop, assert_ok,
@@ -140,7 +140,7 @@ fn pezpallet_rejects_transactions_if_halted() {
 				1,
 				REGULAR_PAYLOAD.declared_weight,
 			),
-			Error::<TestRuntime, ()>::BridgeModule(bp_runtime::OwnedBridgeModuleError::Halted),
+			Error::<TestRuntime, ()>::BridgeModule(pezbp_runtime::OwnedBridgeModuleError::Halted),
 		);
 
 		let delivery_proof = prepare_messages_delivery_proof(
@@ -162,7 +162,7 @@ fn pezpallet_rejects_transactions_if_halted() {
 					last_delivered_nonce: 1,
 				},
 			),
-			Error::<TestRuntime, ()>::BridgeModule(bp_runtime::OwnedBridgeModuleError::Halted),
+			Error::<TestRuntime, ()>::BridgeModule(pezbp_runtime::OwnedBridgeModuleError::Halted),
 		);
 		assert_ok!(Pezpallet::<TestRuntime>::do_try_state());
 	});
@@ -973,7 +973,7 @@ fn receive_messages_delivery_proof_rejects_proof_if_trying_to_confirm_more_messa
 fn storage_keys_computed_properly() {
 	assert_eq!(
 		PalletOperatingMode::<TestRuntime>::storage_value_final_key().to_vec(),
-		bp_messages::storage_keys::operating_mode_key("Messages").0,
+		pezbp_messages::storage_keys::operating_mode_key("Messages").0,
 	);
 
 	assert_eq!(
@@ -981,17 +981,17 @@ fn storage_keys_computed_properly() {
 			lane_id: test_lane_id(),
 			nonce: 42
 		}),
-		bp_messages::storage_keys::message_key("Messages", &test_lane_id(), 42).0,
+		pezbp_messages::storage_keys::message_key("Messages", &test_lane_id(), 42).0,
 	);
 
 	assert_eq!(
 		OutboundLanes::<TestRuntime>::storage_map_final_key(test_lane_id()),
-		bp_messages::storage_keys::outbound_lane_data_key("Messages", &test_lane_id()).0,
+		pezbp_messages::storage_keys::outbound_lane_data_key("Messages", &test_lane_id()).0,
 	);
 
 	assert_eq!(
 		InboundLanes::<TestRuntime>::storage_map_final_key(test_lane_id()),
-		bp_messages::storage_keys::inbound_lane_data_key("Messages", &test_lane_id()).0,
+		pezbp_messages::storage_keys::inbound_lane_data_key("Messages", &test_lane_id()).0,
 	);
 }
 

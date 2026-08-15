@@ -18,7 +18,7 @@
 
 use crate::weights::{BridgeWeight, WeightInfo};
 
-use bp_runtime::Size;
+use pezbp_runtime::Size;
 use pezframe_support::weights::{RuntimeDbWeight, Weight};
 
 /// Size of the regular teyrchain head.

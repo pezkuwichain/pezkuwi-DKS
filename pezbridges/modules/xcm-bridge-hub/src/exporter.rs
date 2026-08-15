@@ -24,11 +24,11 @@ use crate::{Config, Pezpallet, LOG_TARGET};
 
 use crate::{BridgeOf, Bridges};
 
-use bp_messages::{
+use pezbp_messages::{
 	source_chain::{MessagesBridge, OnMessagesDelivered},
 	MessageNonce,
 };
-use bp_xcm_bridge_hub::{BridgeId, BridgeState, LocalXcmChannelManager, XcmAsPlainPayload};
+use pezbp_xcm_bridge_hub::{BridgeId, BridgeState, LocalXcmChannelManager, XcmAsPlainPayload};
 use pezframe_support::{ensure, traits::Get};
 use pezpallet_bridge_messages::{
 	Config as BridgeMessagesConfig, Error, Pezpallet as BridgeMessagesPallet,
@@ -371,8 +371,8 @@ mod tests {
 	use super::*;
 	use crate::{mock::*, Bridges, LaneToBridge, LanesManagerOf};
 
-	use bp_runtime::RangeInclusiveExt;
-	use bp_xcm_bridge_hub::{Bridge, BridgeLocations, BridgeState};
+	use pezbp_runtime::RangeInclusiveExt;
+	use pezbp_xcm_bridge_hub::{Bridge, BridgeLocations, BridgeState};
 	use pezframe_support::{assert_ok, traits::EnsureOrigin};
 	use pezpallet_bridge_messages::InboundLaneStorage;
 	use xcm_builder::{NetworkExportTable, UnpaidRemoteExporter};

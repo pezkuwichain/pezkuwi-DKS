@@ -17,7 +17,7 @@
 use crate::{teyrchains_loop_metrics::TeyrchainsLoopMetrics, TeyrchainsPipeline};
 
 use async_trait::async_trait;
-use bp_polkadot_core::{
+use pezbp_pezkuwi_core::{
 	teyrchains::{ParaHash, ParaHeadsProof, ParaId},
 	BlockNumber as RelayBlockNumber,
 };

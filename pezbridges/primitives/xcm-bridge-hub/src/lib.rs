@@ -19,10 +19,10 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use bp_messages::LaneIdType;
-use bp_runtime::{AccountIdOf, BalanceOf, Chain};
 pub use call_info::XcmBridgeHubCall;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
+use pezbp_messages::LaneIdType;
+use pezbp_runtime::{AccountIdOf, BalanceOf, Chain};
 use pezframe_support::{ensure, CloneNoBound, DebugNoBound, PalletError, PartialEqNoBound};
 use pezsp_core::H256;
 use pezsp_io::hashing::blake2_256;
@@ -602,7 +602,7 @@ mod tests {
 
 	#[test]
 	fn calculate_lane_id_works() {
-		type TestLaneId = bp_messages::HashedLaneId;
+		type TestLaneId = pezbp_messages::HashedLaneId;
 
 		let from_local_to_remote = run_successful_test(SuccessfulTest {
 			here_universal_location: [GlobalConsensus(LOCAL_NETWORK), Teyrchain(LOCAL_BRIDGE_HUB)]

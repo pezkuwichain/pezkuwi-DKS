@@ -22,7 +22,7 @@ use crate::message_race_loop::{
 };
 
 use async_trait::async_trait;
-use bp_messages::MessageNonce;
+use pezbp_messages::MessageNonce;
 use relay_utils::HeaderId;
 use std::{collections::VecDeque, fmt::Debug, marker::PhantomData, ops::RangeInclusive};
 

@@ -3,8 +3,8 @@ use crate::{
 	BridgedBeefyMmrLeaf, BridgedBeefySignedCommitment, BridgedChain, BridgedMmrHash,
 	BridgedMmrHashing, BridgedMmrProof, Config, Error, LOG_TARGET,
 };
-use bp_beefy::{merkle_root, verify_mmr_leaves_proof, BeefyAuthorityId, MmrDataOrHash};
 use codec::Encode;
+use pezbp_beefy::{merkle_root, verify_mmr_leaves_proof, BeefyAuthorityId, MmrDataOrHash};
 use pezframe_support::ensure;
 use pezsp_runtime::traits::{Convert, Hash};
 use pezsp_std::{vec, vec::Vec};
@@ -12,7 +12,7 @@ use pezsp_std::{vec, vec::Vec};
 type BridgedMmrDataOrHash<T, I> = MmrDataOrHash<BridgedMmrHashing<T, I>, BridgedBeefyMmrLeaf<T, I>>;
 /// A way to encode validator id to the BEEFY merkle tree leaf.
 type BridgedBeefyAuthorityIdToMerkleLeaf<T, I> =
-	bp_beefy::BeefyAuthorityIdToMerkleLeafOf<BridgedChain<T, I>>;
+	pezbp_beefy::BeefyAuthorityIdToMerkleLeafOf<BridgedChain<T, I>>;
 
 /// Get the MMR root for a collection of validators.
 pub(crate) fn get_authorities_mmr_root<
@@ -100,7 +100,7 @@ fn extract_mmr_root<T: Config<I>, I: 'static>(
 	commitment
 		.commitment
 		.payload
-		.get_decoded(&bp_beefy::MMR_ROOT_PAYLOAD_ID)
+		.get_decoded(&pezbp_beefy::MMR_ROOT_PAYLOAD_ID)
 		.ok_or(Error::MmrRootMissingFromCommitment)
 }
 
@@ -160,7 +160,7 @@ pub(crate) fn verify_beefy_mmr_leaf<T: Config<I>, I: 'static>(
 mod tests {
 	use super::*;
 	use crate::{mock::*, mock_chain::*, *};
-	use bp_beefy::{BeefyPayload, MMR_ROOT_PAYLOAD_ID};
+	use pezbp_beefy::{BeefyPayload, MMR_ROOT_PAYLOAD_ID};
 	use pezframe_support::{assert_noop, assert_ok};
 	use pezsp_consensus_beefy::ValidatorSet;
 
@@ -350,7 +350,7 @@ mod tests {
 			assert_eq!(CurrentAuthoritySetInfo::<TestRuntime>::get().len, 30);
 			assert_eq!(
 				ImportedCommitments::<TestRuntime>::get(1).unwrap(),
-				bp_beefy::ImportedCommitment {
+				pezbp_beefy::ImportedCommitment {
 					parent_number_and_hash: (0, [0; 32].into()),
 					mmr_root: header.mmr_root,
 				},

@@ -143,10 +143,10 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use bp_messages::{LaneState, MessageNonce};
-use bp_runtime::{AccountIdOf, BalanceOf, RangeInclusiveExt};
-use bp_xcm_bridge_hub::BridgeLocationsError;
-pub use bp_xcm_bridge_hub::{
+use pezbp_messages::{LaneState, MessageNonce};
+use pezbp_runtime::{AccountIdOf, BalanceOf, RangeInclusiveExt};
+use pezbp_xcm_bridge_hub::BridgeLocationsError;
+pub use pezbp_xcm_bridge_hub::{
 	Bridge, BridgeId, BridgeLocations, BridgeState, LocalXcmChannelManager,
 };
 use pezframe_support::{traits::fungible::MutateHold, DefaultNoBound};
@@ -158,9 +158,9 @@ use xcm::prelude::*;
 use xcm_builder::DispatchBlob;
 use xcm_executor::traits::ConvertLocation;
 
-pub use bp_xcm_bridge_hub::XcmAsPlainPayload;
 pub use dispatcher::XcmBlobMessageDispatchResult;
 pub use exporter::PalletAsHaulBlobExporter;
+pub use pezbp_xcm_bridge_hub::XcmAsPlainPayload;
 pub use pezpallet::*;
 
 mod dispatcher;
@@ -845,8 +845,8 @@ pub mod pezpallet {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use bp_messages::LaneIdType;
 	use mock::*;
+	use pezbp_messages::LaneIdType;
 
 	use pezframe_support::{
 		assert_err, assert_noop, assert_ok, traits::fungible::Mutate, BoundedVec,
@@ -1714,7 +1714,7 @@ mod tests {
 		let may_prune_messages = 13;
 
 		assert_eq!(
-			bp_xcm_bridge_hub::XcmBridgeHubCall::open_bridge {
+			pezbp_xcm_bridge_hub::XcmBridgeHubCall::open_bridge {
 				bridge_destination_universal_location: Box::new(
 					bridge_destination_universal_location.clone().into()
 				)
@@ -1728,7 +1728,7 @@ mod tests {
 			.encode()
 		);
 		assert_eq!(
-			bp_xcm_bridge_hub::XcmBridgeHubCall::close_bridge {
+			pezbp_xcm_bridge_hub::XcmBridgeHubCall::close_bridge {
 				bridge_destination_universal_location: Box::new(
 					bridge_destination_universal_location.clone().into()
 				),

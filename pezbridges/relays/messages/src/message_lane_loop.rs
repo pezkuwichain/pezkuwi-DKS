@@ -29,7 +29,7 @@ use std::{collections::BTreeMap, fmt::Debug, future::Future, ops::RangeInclusive
 use async_trait::async_trait;
 use futures::{channel::mpsc::unbounded, future::FutureExt, stream::StreamExt};
 
-use bp_messages::{MessageNonce, UnrewardedRelayersState, Weight};
+use pezbp_messages::{MessageNonce, UnrewardedRelayersState, Weight};
 use relay_utils::{
 	interval, metrics::MetricsParams, process_future_result, relay_loop::Client as RelayClient,
 	retry_backoff, FailedClient, TransactionTracker,
@@ -471,9 +471,9 @@ async fn run_until_connection_lost<P: MessageLane, SC: SourceClient<P>, TC: Targ
 pub(crate) mod tests {
 	use std::sync::Arc;
 
-	use bp_messages::{HashedLaneId, LaneIdType, LegacyLaneId};
 	use futures::stream::StreamExt;
 	use parking_lot::Mutex;
+	use pezbp_messages::{HashedLaneId, LaneIdType, LegacyLaneId};
 	use relay_utils::{HeaderId, MaybeConnectionError, TrackedTransactionStatus};
 
 	use super::*;

@@ -42,9 +42,9 @@
 
 use crate::*;
 
-use bp_header_chain::justification::required_justification_precommits;
-use bp_runtime::BasicOperatingMode;
-use bp_test_utils::{
+use pezbp_header_pez_chain::justification::required_justification_precommits;
+use pezbp_runtime::BasicOperatingMode;
+use pezbp_test_utils::{
 	accounts, make_justification_for_header, JustificationGeneratorParams, TEST_GRANDPA_ROUND,
 	TEST_GRANDPA_SET_ID,
 };
@@ -92,7 +92,7 @@ fn prepare_benchmark_data<T: Config<I>, I: 'static>(
 		.map(|id| (AuthorityId::from(*id), 1))
 		.collect::<Vec<_>>();
 
-	let genesis_header: BridgedHeader<T, I> = bp_test_utils::test_header(Zero::zero());
+	let genesis_header: BridgedHeader<T, I> = pezbp_test_utils::test_header(Zero::zero());
 	let genesis_hash = genesis_header.hash();
 	let init_data = InitializationData {
 		header: Box::new(genesis_header),
@@ -104,7 +104,7 @@ fn prepare_benchmark_data<T: Config<I>, I: 'static>(
 	bootstrap_bridge::<T, I>(init_data);
 	assert!(<ImportedHeaders<T, I>>::contains_key(genesis_hash));
 
-	let header: BridgedHeader<T, I> = bp_test_utils::test_header(One::one());
+	let header: BridgedHeader<T, I> = pezbp_test_utils::test_header(One::one());
 	let params = JustificationGeneratorParams {
 		header: header.clone(),
 		round: TEST_GRANDPA_ROUND,
@@ -127,8 +127,8 @@ benchmarks_instance_pallet! {
 		let (header, justification) = prepare_benchmark_data::<T, I>(p, v);
 	}: submit_finality_proof(RawOrigin::Signed(caller), Box::new(header), justification)
 	verify {
-		let genesis_header: BridgedHeader<T, I> = bp_test_utils::test_header(Zero::zero());
-		let header: BridgedHeader<T, I> = bp_test_utils::test_header(One::one());
+		let genesis_header: BridgedHeader<T, I> = pezbp_test_utils::test_header(Zero::zero());
+		let header: BridgedHeader<T, I> = pezbp_test_utils::test_header(One::one());
 		let expected_hash = header.hash();
 
 		// check that the header#1 has been inserted

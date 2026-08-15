@@ -18,17 +18,17 @@
 
 use crate as pezpallet_bridge_relayers;
 
-use bp_header_chain::ChainWithGrandpa;
-use bp_messages::{
+use codec::Encode;
+use pezbp_header_pez_chain::ChainWithGrandpa;
+use pezbp_messages::{
 	target_chain::{DispatchMessage, MessageDispatch},
 	ChainWithMessages, HashedLaneId, LaneIdType, MessageNonce,
 };
-use bp_relayers::{
+use pezbp_relayers::{
 	PayRewardFromAccount, PaymentProcedure, RewardsAccountOwner, RewardsAccountParams,
 };
-use bp_runtime::{messages::MessageDispatchResult, Chain, ChainId, Teyrchain};
-use bp_teyrchains::SingleParaStoredHeaderDataBuilder;
-use codec::Encode;
+use pezbp_runtime::{messages::MessageDispatchResult, Chain, ChainId, Teyrchain};
+use pezbp_teyrchains::SingleParaStoredHeaderDataBuilder;
 use pezframe_support::{
 	derive_impl, parameter_types,
 	traits::fungible::Mutate,

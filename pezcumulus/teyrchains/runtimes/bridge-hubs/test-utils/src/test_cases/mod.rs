@@ -27,12 +27,12 @@ pub(crate) mod helpers;
 use crate::{test_cases::bridges_prelude::*, test_data};
 
 use asset_test_utils::BasicParachainRuntime;
-use bp_messages::{
+use codec::Encode;
+use pezbp_messages::{
 	target_chain::{DispatchMessage, DispatchMessageData, MessageDispatch},
 	LaneState, MessageKey, MessagesOperatingMode, OutboundLaneData,
 };
-use bp_runtime::BasicOperatingMode;
-use codec::Encode;
+use pezbp_runtime::BasicOperatingMode;
 use pezframe_support::{
 	assert_ok,
 	dispatch::GetDispatchInfo,
@@ -54,7 +54,7 @@ use xcm_executor::{
 
 /// Common bridges exports.
 pub(crate) mod bridges_prelude {
-	pub use bp_teyrchains::{RelayBlockHash, RelayBlockNumber};
+	pub use pezbp_teyrchains::{RelayBlockHash, RelayBlockNumber};
 	pub use pezpallet_bridge_grandpa::{Call as BridgeGrandpaCall, Config as BridgeGrandpaConfig};
 	pub use pezpallet_bridge_messages::{
 		Call as BridgeMessagesCall, Config as BridgeMessagesConfig, LanesManagerError,
@@ -689,9 +689,9 @@ pub(crate) mod for_pallet_xcm_bridge_hub {
 		Runtime: BasicParachainRuntime + BridgeXcmOverBridgeConfig<XcmOverBridgePalletInstance>,
 		XcmOverBridgePalletInstance: 'static,
 		<Runtime as pezframe_system::Config>::RuntimeCall: GetDispatchInfo + From<BridgeXcmOverBridgeCall<Runtime, XcmOverBridgePalletInstance>>,
-		<Runtime as pezpallet_balances::Config>::Balance: From<<<Runtime as pezpallet_bridge_messages::Config<<Runtime as pezpallet_xcm_bridge_hub::Config<XcmOverBridgePalletInstance>>::BridgeMessagesPalletInstance>>::ThisChain as bp_runtime::Chain>::Balance>,
+		<Runtime as pezpallet_balances::Config>::Balance: From<<<Runtime as pezpallet_bridge_messages::Config<<Runtime as pezpallet_xcm_bridge_hub::Config<XcmOverBridgePalletInstance>>::BridgeMessagesPalletInstance>>::ThisChain as pezbp_runtime::Chain>::Balance>,
 		<Runtime as pezpallet_balances::Config>::Balance: From<u128>,
-		<<Runtime as pezpallet_bridge_messages::Config<<Runtime as pezpallet_xcm_bridge_hub::Config<XcmOverBridgePalletInstance>>::BridgeMessagesPalletInstance>>::ThisChain as bp_runtime::Chain>::AccountId: From<<Runtime as pezframe_system::Config>::AccountId>,
+		<<Runtime as pezpallet_bridge_messages::Config<<Runtime as pezpallet_xcm_bridge_hub::Config<XcmOverBridgePalletInstance>>::BridgeMessagesPalletInstance>>::ThisChain as pezbp_runtime::Chain>::AccountId: From<<Runtime as pezframe_system::Config>::AccountId>,
 		LocationToAccountId: ConvertLocation<AccountIdOf<Runtime>>,
 		TokenLocation: Get<Location>,
 	{

@@ -17,8 +17,8 @@
 //! Primitives for exposing the teyrchains finality relaying functionality in the CLI.
 
 use async_trait::async_trait;
-use bp_polkadot_core::BlockNumber as RelayBlockNumber;
-use bp_runtime::HeaderIdProvider;
+use pezbp_pezkuwi_core::BlockNumber as RelayBlockNumber;
+use pezbp_runtime::HeaderIdProvider;
 use clap::Parser;
 use teyrchains_relay::teyrchains_loop::{AvailableHeader, SourceClient, TargetClient};
 use relay_bizinikiwi_client::{Client, Teyrchain};

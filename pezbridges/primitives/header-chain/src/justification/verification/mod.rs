@@ -22,8 +22,8 @@ pub mod strict;
 
 use crate::{justification::GrandpaJustification, AuthoritySet};
 
-use bp_runtime::HeaderId;
 use finality_grandpa::voter_set::VoterSet;
+use pezbp_runtime::HeaderId;
 use pezsp_consensus_grandpa::{AuthorityId, AuthoritySignature, SetId};
 use pezsp_runtime::traits::Header as HeaderT;
 use pezsp_std::{

@@ -18,8 +18,8 @@
 
 use crate::{MessageNonce, UnrewardedRelayer};
 
-use bp_runtime::{raw_storage_proof_size, RawStorageProof, Size};
 use codec::{Decode, DecodeWithMemTracking, Encode};
+use pezbp_runtime::{raw_storage_proof_size, RawStorageProof, Size};
 use pezsp_std::{
 	collections::{btree_map::BTreeMap, vec_deque::VecDeque},
 	fmt::Debug,

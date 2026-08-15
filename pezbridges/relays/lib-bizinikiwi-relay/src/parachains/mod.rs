@@ -18,8 +18,8 @@
 //! teyrchain finality proofs synchronization pipelines.
 
 use async_trait::async_trait;
-use bp_teyrchains::{RelayBlockHash, RelayBlockHasher, RelayBlockNumber};
-use bp_polkadot_core::teyrchains::{ParaHash, ParaHeadsProof, ParaId};
+use pezbp_teyrchains::{RelayBlockHash, RelayBlockHasher, RelayBlockNumber};
+use pezbp_pezkuwi_core::teyrchains::{ParaHash, ParaHeadsProof, ParaId};
 use pezpallet_bridge_teyrchains::{Call as BridgeParachainsCall, Config as BridgeParachainsConfig};
 use teyrchains_relay::TeyrchainsPipeline;
 use relay_bizinikiwi_client::{
@@ -85,7 +85,7 @@ where
 	P::SourceRelayChain: Chain<Hash = RelayBlockHash, BlockNumber = RelayBlockNumber>,
 	R: BridgeParachainsConfig<I> + Send + Sync,
 	I: 'static + Send + Sync,
-	R::BridgedChain: bp_runtime::Chain<
+	R::BridgedChain: pezbp_runtime::Chain<
 		BlockNumber = RelayBlockNumber,
 		Hash = RelayBlockHash,
 		Hasher = RelayBlockHasher,

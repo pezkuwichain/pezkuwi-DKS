@@ -60,11 +60,11 @@ pub use xcm_emulator::{
 };
 
 // Bridges
-use bp_messages::{
+use pezbp_messages::{
 	target_chain::{DispatchMessage, DispatchMessageData, MessageDispatch},
 	MessageKey, OutboundLaneData,
 };
-pub use bp_xcm_bridge_hub::XcmBridgeHubCall;
+pub use pezbp_xcm_bridge_hub::XcmBridgeHubCall;
 use pezpallet_bridge_messages::{
 	Config as BridgeMessagesConfig, LaneIdOf, OutboundLanes, Pezpallet,
 };

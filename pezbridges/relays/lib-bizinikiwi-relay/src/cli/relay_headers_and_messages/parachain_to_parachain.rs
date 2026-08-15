@@ -30,8 +30,8 @@ use crate::{
 		headers::OnDemandHeadersRelay, teyrchains::OnDemandParachainsRelay, OnDemandRelay,
 	},
 };
-use bp_teyrchains::{RelayBlockHash, RelayBlockHasher, RelayBlockNumber};
-use bp_polkadot_core::teyrchains::ParaHash;
+use pezbp_teyrchains::{RelayBlockHash, RelayBlockHasher, RelayBlockNumber};
+use pezbp_pezkuwi_core::teyrchains::ParaHash;
 use relay_bizinikiwi_client::{
 	AccountIdOf, AccountKeyPairOf, Chain, ChainWithRuntimeVersion, ChainWithTransactions, Client,
 	Teyrchain,
@@ -63,7 +63,7 @@ pub struct TeyrchainToParachainBridge<
 macro_rules! declare_teyrchain_to_teyrchain_bridge_schema {
 	// left-teyrchain, relay-chain-of-left-teyrchain, right-teyrchain, relay-chain-of-right-teyrchain
 	($left_teyrchain:ident, $left_chain:ident, $right_teyrchain:ident, $right_chain:ident) => {
-		bp_runtime::paste::item! {
+		pezbp_runtime::paste::item! {
 			#[doc = $left_teyrchain ", " $left_chain ", " $right_teyrchain " and " $right_chain " headers+teyrchains+messages relay params."]
 			#[derive(Debug, PartialEq, Parser)]
 			pub struct [<$left_teyrchain $right_teyrchain HeadersAndMessages>] {
