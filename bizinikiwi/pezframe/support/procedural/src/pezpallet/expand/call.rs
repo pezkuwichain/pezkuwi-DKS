@@ -373,7 +373,7 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 
 		#[allow(unused_imports)]
 		#[doc(hidden)]
-		pub mod __substrate_call_check {
+		pub mod __bizinikiwi_call_check {
 			#[macro_export]
 			#[doc(hidden)]
 			macro_rules! #macro_ident {

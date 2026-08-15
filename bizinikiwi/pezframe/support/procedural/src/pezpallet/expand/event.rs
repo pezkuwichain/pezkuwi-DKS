@@ -38,7 +38,7 @@ pub fn expand_event(def: &mut Def) -> proc_macro2::TokenStream {
 
 		return quote::quote! {
 			#[doc(hidden)]
-			pub mod __substrate_event_check {
+			pub mod __bizinikiwi_event_check {
 				#[macro_export]
 				#[doc(hidden)]
 				macro_rules! #macro_ident {
@@ -170,7 +170,7 @@ pub fn expand_event(def: &mut Def) -> proc_macro2::TokenStream {
 
 	quote::quote_spanned!(event.attr_span =>
 		#[doc(hidden)]
-		pub mod __substrate_event_check {
+		pub mod __bizinikiwi_event_check {
 			#[macro_export]
 			#[doc(hidden)]
 			macro_rules! #macro_ident {

@@ -52,7 +52,7 @@ pub fn expand_outer_dispatch(
 		pezpallet_names.push(name);
 		pezpallet_attrs.push(attr);
 		query_call_part_macros.push(quote! {
-			#path::__substrate_call_check::is_call_part_defined!(#name);
+			#path::__bizinikiwi_call_check::is_call_part_defined!(#name);
 		});
 	}
 

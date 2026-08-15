@@ -46,7 +46,7 @@ pub fn expand_genesis_config(def: &mut Def) -> proc_macro2::TokenStream {
 
 			return quote::quote! {
 				#[doc(hidden)]
-				pub mod __substrate_genesis_config_check {
+				pub mod __bizinikiwi_genesis_config_check {
 					#[macro_export]
 					#[doc(hidden)]
 					macro_rules! #def_macro_ident {
@@ -108,7 +108,7 @@ pub fn expand_genesis_config(def: &mut Def) -> proc_macro2::TokenStream {
 
 	quote::quote! {
 		#[doc(hidden)]
-		pub mod __substrate_genesis_config_check {
+		pub mod __bizinikiwi_genesis_config_check {
 			#[macro_export]
 			#[doc(hidden)]
 			macro_rules! #def_macro_ident {

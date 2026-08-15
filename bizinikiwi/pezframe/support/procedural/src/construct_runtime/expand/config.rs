@@ -47,9 +47,9 @@ pub fn expand_outer_config(
 			genesis_build_calls
 				.extend(expand_config_build_storage_call(scrate, &config, attr, field_name));
 			query_genesis_config_part_macros.push(quote! {
-				#path::__substrate_genesis_config_check::is_genesis_config_defined!(#pezpallet_name);
+				#path::__bizinikiwi_genesis_config_check::is_genesis_config_defined!(#pezpallet_name);
 				#[cfg(feature = "std")]
-				#path::__substrate_genesis_config_check::is_std_enabled_for_genesis!(#pezpallet_name, #path_str);
+				#path::__bizinikiwi_genesis_config_check::is_std_enabled_for_genesis!(#pezpallet_name, #path_str);
 			});
 		}
 	}

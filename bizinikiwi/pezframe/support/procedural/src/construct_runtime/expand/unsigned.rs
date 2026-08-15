@@ -38,7 +38,7 @@ pub fn expand_outer_validate_unsigned(
 			pezpallet_names.push(name);
 			pezpallet_attrs.push(attr);
 			query_validate_unsigned_part_macros.push(quote! {
-				#path::__substrate_validate_unsigned_check::is_validate_unsigned_part_defined!(#name);
+				#path::__bizinikiwi_validate_unsigned_check::is_validate_unsigned_part_defined!(#name);
 			});
 		}
 	}

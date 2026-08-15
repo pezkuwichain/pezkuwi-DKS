@@ -39,7 +39,7 @@ pub fn expand_inherents(def: &mut Def) -> TokenStream {
 
 	quote! {
 		#[doc(hidden)]
-		pub mod __substrate_inherent_check {
+		pub mod __bizinikiwi_inherent_check {
 			#[macro_export]
 			#[doc(hidden)]
 			macro_rules! #macro_ident {

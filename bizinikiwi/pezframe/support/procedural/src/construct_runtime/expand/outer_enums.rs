@@ -140,7 +140,7 @@ pub fn expand_outer_enum(
 
 		if enum_ty == OuterEnumType::Event {
 			query_enum_part_macros.push(quote! {
-				#path::__substrate_event_check::is_event_part_defined!(#pezpallet_name);
+				#path::__bizinikiwi_event_check::is_event_part_defined!(#pezpallet_name);
 			});
 		}
 	}
