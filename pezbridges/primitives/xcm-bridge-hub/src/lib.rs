@@ -23,9 +23,7 @@ pub use call_info::XcmBridgeHubCall;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezbp_messages::LaneIdType;
 use pezbp_runtime::{AccountIdOf, BalanceOf, Chain};
-use pezframe_support::{
-	ensure, pezsp_runtime::CloneNoBound, DebugNoBound, PalletError, PartialEqNoBound,
-};
+use pezframe_support::{ensure, CloneNoBound, DebugNoBound, PalletError, PartialEqNoBound};
 use pezsp_core::H256;
 use pezsp_io::hashing::blake2_256;
 use pezsp_std::boxed::Box;

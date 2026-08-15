@@ -26,7 +26,7 @@ use pezbp_messages::{
 	MessageNonce, OutboundLaneData,
 };
 use pezbp_runtime::AccountIdOf;
-use pezframe_support::{ensure, pezsp_runtime::PalletError};
+use pezframe_support::{ensure, PalletError};
 use pezsp_std::marker::PhantomData;
 use scale_info::TypeInfo;
 
