@@ -53,9 +53,6 @@
 //! optimal position in a bag, the [`Pezpallet::put_in_front_of`] or
 //! [`Pezpallet::put_in_front_of_other`] can be used.
 //!
-//! Additional reading, about how this pezpallet is used in the context of Pezkuwi's staking system:
-//! <https://pezkuwichain.io/blog/staking-update-september-2021/#bags-list-in-depth>
-//!
 //! ## Examples
 //!
 //! See [`example`] for a diagram of `rebag` and `put_in_front_of` operations.
@@ -87,7 +84,6 @@
 extern crate alloc;
 #[cfg(doc)]
 #[cfg_attr(doc, aquamarine::aquamarine)]
-///
 /// In this example, assuming each node has an equal id and score (eg. node 21 has a score of 21),
 /// the node 22 can be moved from bag 1 to bag 0 with the `rebag` operation.
 ///
@@ -337,7 +333,6 @@ pub mod pezpallet {
 		/// is aware of, which may or may not be up to date, and the latter being the real score,
 		/// as provided by
 		// [`Config::ScoreProvider`].
-		///
 		/// If the two differ, it means this node is eligible for [`Call::rebag`].
 		pub fn scores(who: T::AccountId) -> (Option<T::Score>, Option<T::Score>) {
 			(ListNodes::<T, I>::get(&who).map(|node| node.score), T::ScoreProvider::score(&who))
@@ -440,16 +435,21 @@ pub mod pezpallet {
 		/// It stores a persistent cursor to continue across blocks.
 		fn on_idle(_n: BlockNumberFor<T>, limit: Weight) -> Weight {
 			let mut meter = WeightMeter::with_limit(limit);
-			// This weight assumes worst-case usage of `MaxAutoRebagPerBlock`.
-			// Changing the runtime value requires re-running the benchmarks.
-			if meter.try_consume(T::WeightInfo::on_idle()).is_err() {
-				log!(debug, "Not enough Weight for on_idle. Skipping rebugging.");
-				return Weight::zero();
-			}
+			let per_item = T::WeightInfo::on_idle_rebag();
 
 			let rebag_budget = T::MaxAutoRebagPerBlock::get();
 			if rebag_budget == 0 {
 				log!(debug, "Auto-rebag skipped: rebag_budget=0");
+				return meter.consumed();
+			}
+
+			// Fixed overhead for storage ops outside the per-item loop:
+			// counter reads (ListNodes, PendingRebag), Lock read, cursor read
+			// (NextNodeAutoRebagged), cursor-update contains_key read, and cursor write.
+			let overhead = T::DbWeight::get().reads_writes(5, 1);
+
+			// Early exit: not enough weight for overhead + at least one rebag.
+			if meter.try_consume(overhead.saturating_add(per_item)).is_err() {
 				return meter.consumed();
 			}
 
@@ -510,11 +510,16 @@ pub mod pezpallet {
 			let mut failed_rebags = 0u32;
 			let mut pending_processed = 0u32;
 
-			for account in to_process {
-				let pending_value =
-					if PendingRebag::<T, I>::contains_key(&account) { 1 } else { 0 };
+			// First item's weight was already consumed above.
+			for (i, account) in to_process.iter().enumerate() {
+				// Consume weight for every item after the first.
+				if i > 0 && meter.try_consume(per_item).is_err() {
+					break;
+				}
 
-				match Self::rebag_internal(&account) {
+				let pending_value = if PendingRebag::<T, I>::contains_key(account) { 1 } else { 0 };
+
+				match Self::rebag_internal(account) {
 					Err(Error::<T, I>::Locked) => {
 						defensive!("Pezpallet became locked during auto-rebag, stopping");
 						break;

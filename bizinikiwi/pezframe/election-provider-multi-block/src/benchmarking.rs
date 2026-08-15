@@ -24,9 +24,10 @@ use pezframe_election_provider_support::{ElectionDataProvider, ElectionProvider}
 use pezframe_support::{assert_ok, pezpallet_prelude::*};
 
 const SNAPSHOT_NOT_BIG_ENOUGH: &'static str = "Snapshot page is not full, you should run this \
-benchmark with enough genesis stakers in staking (DataProvider) to fill a page of voters/targets \
+benchmark with enough genesis stakers in staking to fill a page of voters/targets \
 as per VoterSnapshotPerBlock and TargetSnapshotPerBlock. Generate at least \
-2 * VoterSnapshotPerBlock) nominators and TargetSnapshotPerBlock validators";
+2 * VoterSnapshotPerBlock nominators and TargetSnapshotPerBlock validators. Use `dev_stakers` in \
+genesis config.";
 
 // TODO: remove unwraps from all benchmarks of this pezpallet -- it makes debugging via wasm harder
 
@@ -35,12 +36,12 @@ mod benchmarks {
 	use super::*;
 
 	#[benchmark(pov_mode = Measured)]
-	fn on_initialize_nothing() -> Result<(), BenchmarkError> {
+	fn per_block_nothing() -> Result<(), BenchmarkError> {
 		assert_eq!(CurrentPhase::<T>::get(), Phase::Off);
 
 		#[block]
 		{
-			Pezpallet::<T>::roll_next(true, false);
+			Pezpallet::<T>::roll_next(false);
 		}
 
 		assert_eq!(CurrentPhase::<T>::get(), Phase::Off);
@@ -48,7 +49,7 @@ mod benchmarks {
 	}
 
 	#[benchmark(pov_mode = Measured)]
-	fn on_initialize_into_snapshot_msp() -> Result<(), BenchmarkError> {
+	fn per_block_snapshot_msp() -> Result<(), BenchmarkError> {
 		assert!(T::Pages::get() >= 2, "this benchmark only works in a runtime with 2 pages or more, set at least `type Pages = 2` for benchmark run");
 
 		#[cfg(test)]
@@ -59,7 +60,7 @@ mod benchmarks {
 
 		#[block]
 		{
-			Pezpallet::<T>::roll_next(true, false);
+			Pezpallet::<T>::roll_next(false);
 		}
 
 		// we have collected the target snapshot only
@@ -76,7 +77,7 @@ mod benchmarks {
 	}
 
 	#[benchmark(pov_mode = Measured)]
-	fn on_initialize_into_snapshot_rest() -> Result<(), BenchmarkError> {
+	fn per_block_snapshot_rest() -> Result<(), BenchmarkError> {
 		assert!(T::Pages::get() >= 2, "this benchmark only works in a runtime with 2 pages or more, set at least `type Pages = 2` for benchmark run");
 
 		#[cfg(test)]
@@ -99,7 +100,7 @@ mod benchmarks {
 		// take one more snapshot page.
 		#[block]
 		{
-			Pezpallet::<T>::roll_next(true, false);
+			Pezpallet::<T>::roll_next(false);
 		}
 
 		// we have now collected the first page of voters.
@@ -115,29 +116,7 @@ mod benchmarks {
 	}
 
 	#[benchmark(pov_mode = Measured)]
-	fn on_initialize_into_signed() -> Result<(), BenchmarkError> {
-		#[cfg(test)]
-		crate::mock::ElectionStart::set(pezsp_runtime::traits::Bounded::max_value());
-		crate::Pezpallet::<T>::start().unwrap();
-
-		Pezpallet::<T>::roll_until_before_matches(|| {
-			matches!(CurrentPhase::<T>::get(), Phase::Signed(_))
-		});
-
-		assert_eq!(CurrentPhase::<T>::get(), Phase::Snapshot(0));
-
-		#[block]
-		{
-			Pezpallet::<T>::roll_next(true, false);
-		}
-
-		assert!(CurrentPhase::<T>::get().is_signed());
-
-		Ok(())
-	}
-
-	#[benchmark(pov_mode = Measured)]
-	fn on_initialize_into_signed_validation() -> Result<(), BenchmarkError> {
+	fn per_block_start_signed_validation() -> Result<(), BenchmarkError> {
 		#[cfg(test)]
 		crate::mock::ElectionStart::set(pezsp_runtime::traits::Bounded::max_value());
 		crate::Pezpallet::<T>::start().unwrap();
@@ -150,29 +129,11 @@ mod benchmarks {
 
 		#[block]
 		{
-			Pezpallet::<T>::roll_next(true, false);
+			Pezpallet::<T>::roll_next(false);
 		}
 
-		Ok(())
-	}
+		assert!(CurrentPhase::<T>::get().is_signed_validation());
 
-	#[benchmark(pov_mode = Measured)]
-	fn on_initialize_into_unsigned() -> Result<(), BenchmarkError> {
-		#[cfg(test)]
-		crate::mock::ElectionStart::set(pezsp_runtime::traits::Bounded::max_value());
-		crate::Pezpallet::<T>::start().unwrap();
-
-		Pezpallet::<T>::roll_until_before_matches(|| {
-			matches!(CurrentPhase::<T>::get(), Phase::Unsigned(_))
-		});
-		assert!(matches!(CurrentPhase::<T>::get(), Phase::SignedValidation(_)));
-
-		#[block]
-		{
-			Pezpallet::<T>::roll_next(true, false);
-		}
-
-		assert!(matches!(CurrentPhase::<T>::get(), Phase::Unsigned(_)));
 		Ok(())
 	}
 

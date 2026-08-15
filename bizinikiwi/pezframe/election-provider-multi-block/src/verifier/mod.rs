@@ -79,8 +79,11 @@ pub use crate::weights::traits::pezpallet_election_provider_multi_block_verifier
 use impls::SupportsOfVerifier;
 pub use impls::{feasibility_check_page_inner_with_snapshot, pezpallet::*, Status};
 use pezframe_election_provider_support::PageIndex;
+use pezframe_election_provider_support::PageIndex;
+use pezframe_support::weights::WeightMeter;
 use pezsp_core::Get;
 use pezsp_npos_elections::ElectionScore;
+use pezsp_runtime::Weight;
 use pezsp_std::{fmt::Debug, prelude::*};
 
 /// Errors that can happen in the feasibility check.
@@ -213,6 +216,12 @@ pub trait Verifier {
 		page: PageIndex,
 		score: ElectionScore,
 	);
+
+	/// Return the execution schedule of this pezpallet's work to be done per-block (`on_poll`,
+	/// `on_init` independent).
+	///
+	/// Returns a `(Weight, ExecFn)` tuple in-line with `per_block_exec` of the parent block.
+	fn per_block_exec() -> (Weight, Box<dyn Fn(&mut WeightMeter)>);
 }
 
 /// Simple enum to encapsulate the result of the verification of a candidate solution.

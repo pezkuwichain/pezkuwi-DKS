@@ -93,7 +93,6 @@ pub fn notional_bag_for<T: Config<I>, I: 'static>(score: T::Score) -> T::Score {
 
 /// The **ONLY** entry point of this module. All operations to the bags-list should happen through
 /// this interface. It is forbidden to access other module members directly.
-//
 // Data structure providing efficient mostly-accurate selection of the top N id by `Score`.
 //
 // It's implemented as a set of linked lists. Each linked list comprises a bag of ids of
