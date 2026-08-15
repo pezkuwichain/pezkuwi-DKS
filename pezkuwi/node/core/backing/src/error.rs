@@ -72,7 +72,7 @@ pub enum Error {
 	NoValidationCode(ValidationCodeHash),
 
 	#[error("Candidate rejected by prospective teyrchains subsystem")]
-	RejectedByProspectiveParachains,
+	RejectedByProspectiveTeyrchains,
 
 	#[error("ValidateFromExhaustive channel closed before receipt")]
 	ValidateFromExhaustive(#[source] oneshot::Canceled),

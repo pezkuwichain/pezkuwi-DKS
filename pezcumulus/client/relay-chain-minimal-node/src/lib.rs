@@ -32,7 +32,7 @@ use pezkuwi_node_network_protocol::{
 use pezkuwi_core_primitives::{Block as RelayBlock, Hash as RelayHash};
 use pezkuwi_node_subsystem_util::metrics::prometheus::Registry;
 use pezkuwi_primitives::CollatorPair;
-use pezkuwi_service::{overseer::OverseerGenArgs, IsParachainNode};
+use pezkuwi_service::{overseer::OverseerGenArgs, IsTeyrchainNode};
 
 use pezsc_authority_discovery::Service as AuthorityDiscoveryService;
 use pezsc_network::{
@@ -252,7 +252,7 @@ async fn new_minimal_relay_chain<Block: BlockT, Network: NetworkBackend<RelayBlo
 		available_data_req_receiver,
 		registry: prometheus_registry,
 		spawner: task_manager.spawn_handle(),
-		is_teyrchain_node: IsParachainNode::Collator(collator_pair),
+		is_teyrchain_node: IsTeyrchainNode::Collator(collator_pair),
 		overseer_message_channel_capacity_override: None,
 		req_protocol_names: request_protocol_names,
 		peerset_protocol_names,

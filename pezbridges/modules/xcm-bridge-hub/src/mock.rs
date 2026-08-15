@@ -42,7 +42,7 @@ use xcm::{latest::ROCOCO_GENESIS_HASH, prelude::*};
 use xcm_builder::{
 	AllowUnpaidExecutionFrom, DispatchBlob, DispatchBlobError, FixedWeightBounds,
 	InspectMessageQueues, NetworkExportTable, NetworkExportTableItem, ParentIsPreset,
-	SiblingParachainConvertsVia,
+	SiblingTeyrchainConvertsVia,
 };
 use xcm_executor::{traits::ConvertOrigin, XcmExecutor};
 
@@ -371,7 +371,7 @@ pub type LocationToAccountId = (
 	// The parent (Relay-chain) origin converts to the parent `AccountId`.
 	ParentIsPreset<AccountId>,
 	// Sibling teyrchain origins convert to AccountId via the `ParaId::into`.
-	SiblingParachainConvertsVia<Sibling, AccountId>,
+	SiblingTeyrchainConvertsVia<Sibling, AccountId>,
 );
 
 parameter_types! {

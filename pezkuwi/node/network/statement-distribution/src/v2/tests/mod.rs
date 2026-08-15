@@ -27,7 +27,7 @@ use pezkuwi_node_network_protocol::{
 use pezkuwi_node_primitives::{Statement, StatementWithPVD};
 use pezkuwi_node_subsystem::messages::{
 	network_bridge_event::NewGossipTopology, AllMessages, ChainApiMessage, HypotheticalCandidate,
-	HypotheticalMembership, NetworkBridgeEvent, ProspectiveParachainsMessage, ReportPeerMessage,
+	HypotheticalMembership, NetworkBridgeEvent, ProspectiveTeyrchainsMessage, ReportPeerMessage,
 	RuntimeApiMessage, RuntimeApiRequest,
 };
 use pezkuwi_node_subsystem_test_helpers as test_helpers;
@@ -736,8 +736,8 @@ async fn handle_leaf_activation(
 			)) if parent == *hash => {
 				tx.send(Ok(claim_queue.0.clone())).unwrap();
 			},
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::GetHypotheticalMembership(req, tx),
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::GetHypotheticalMembership(req, tx),
 			) => {
 				assert_eq!(req.fragment_chain_relay_parent, Some(*hash));
 				for (i, (candidate, _)) in hypothetical_memberships.iter().enumerate() {
@@ -795,8 +795,8 @@ async fn answer_expected_hypothetical_membership_request(
 ) {
 	assert_matches!(
 		virtual_overseer.recv().await,
-		AllMessages::ProspectiveParachains(
-			ProspectiveParachainsMessage::GetHypotheticalMembership(req, tx)
+		AllMessages::ProspectiveTeyrchains(
+			ProspectiveTeyrchainsMessage::GetHypotheticalMembership(req, tx)
 		) => {
 			assert_eq!(req.fragment_chain_relay_parent, None);
 			for (i, (candidate, _)) in responses.iter().enumerate() {

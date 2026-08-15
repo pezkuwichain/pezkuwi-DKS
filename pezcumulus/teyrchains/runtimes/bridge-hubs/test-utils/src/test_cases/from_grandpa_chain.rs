@@ -34,7 +34,7 @@ use pezsp_core::Get;
 use pezsp_keyring::Sr25519Keyring::*;
 use pezsp_runtime::{traits::Header as HeaderT, AccountId32};
 use teyrchains_runtimes_test_utils::{
-	AccountIdOf, BasicParachainRuntime, CollatorSessionKeys, RuntimeCallOf, SlotDurations,
+	AccountIdOf, BasicTeyrchainRuntime, CollatorSessionKeys, RuntimeCallOf, SlotDurations,
 };
 use xcm::latest::prelude::*;
 
@@ -43,7 +43,7 @@ use xcm::latest::prelude::*;
 /// This is only used to decrease amount of lines, dedicated to bounds.
 pub trait WithRemoteGrandpaChainHelper {
 	/// This chain runtime.
-	type Runtime: BasicParachainRuntime
+	type Runtime: BasicTeyrchainRuntime
 		+ pezcumulus_pallet_xcmp_queue::Config
 		+ BridgeGrandpaConfig<Self::GPI, BridgedChain = BridgedChainOf<Self::Runtime, Self::MPI>>
 		+ BridgeMessagesConfig<
@@ -73,7 +73,7 @@ pub struct WithRemoteGrandpaChainHelperAdapter<Runtime, AllPalletsWithoutSystem,
 impl<Runtime, AllPalletsWithoutSystem, GPI, MPI, RPI> WithRemoteGrandpaChainHelper
 	for WithRemoteGrandpaChainHelperAdapter<Runtime, AllPalletsWithoutSystem, GPI, MPI, RPI>
 where
-	Runtime: BasicParachainRuntime
+	Runtime: BasicTeyrchainRuntime
 		+ pezcumulus_pallet_xcmp_queue::Config
 		+ BridgeGrandpaConfig<GPI, BridgedChain = BridgedChainOf<Runtime, MPI>>
 		+ BridgeMessagesConfig<

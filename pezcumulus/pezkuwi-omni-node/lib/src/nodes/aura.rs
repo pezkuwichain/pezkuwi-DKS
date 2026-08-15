@@ -18,7 +18,7 @@ use crate::{
 	cli::{AuthoringPolicy, DevSealMode},
 	common::{
 		aura::{AuraIdT, AuraRuntimeApi},
-		rpc::{BuildParachainRpcExtensions, BuildRpcExtensions},
+		rpc::{BuildRpcExtensions, BuildTeyrchainRpcExtensions},
 		spec::{
 			BaseNodeSpec, BuildImportQueue, ClientBlockImport, DynNodeSpec, InitBlockImport,
 			NodeSpec, StartConsensus,
@@ -50,7 +50,7 @@ use pezcumulus_client_consensus_relay_chain::Verifier as RelayChainVerifier;
 use pezcumulus_client_service::CollatorSybilResistance;
 use pezcumulus_client_teyrchain_inherent::MockValidationDataInherentDataProvider;
 use pezcumulus_primitives_core::{
-	relay_chain::ValidationCode, CollectCollationInfo, GetParachainInfo, ParaId,
+	relay_chain::ValidationCode, CollectCollationInfo, GetTeyrchainInfo, ParaId,
 	RelayParentOffsetApi, TargetBlockRate,
 };
 use pezcumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface};
@@ -210,7 +210,7 @@ where
 	InitBlockImport::BlockImport:
 		pezsc_consensus::BlockImport<Block, Error = pezsp_consensus::Error> + 'static,
 {
-	type BuildRpcExtensions = BuildParachainRpcExtensions<Block, RuntimeApi>;
+	type BuildRpcExtensions = BuildTeyrchainRpcExtensions<Block, RuntimeApi>;
 	type StartConsensus = StartConsensus;
 	const SYBIL_RESISTANCE: CollatorSybilResistance = CollatorSybilResistance::Resistant;
 
@@ -590,7 +590,7 @@ where
 		+ pezpallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ bizinikiwi_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
 		+ TargetBlockRate<Block>
-		+ GetParachainInfo<Block>,
+		+ GetTeyrchainInfo<Block>,
 	AuraId: AuraIdT + Sync + Send,
 	<AuraId as AppCrypto>::Pair: Send + Sync,
 {

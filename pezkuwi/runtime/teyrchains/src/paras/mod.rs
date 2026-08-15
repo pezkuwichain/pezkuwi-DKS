@@ -194,11 +194,11 @@ pub enum ParaLifecycle {
 	/// Para is a Parathread (on-demand teyrchain) which is upgrading to a lease holding Teyrchain.
 	UpgradingParathread,
 	/// Para is a lease holding Teyrchain which is downgrading to an on-demand teyrchain.
-	DowngradingParachain,
+	DowngradingTeyrchain,
 	/// Parathread (on-demand teyrchain) is queued to be offboarded.
 	OffboardingParathread,
 	/// Teyrchain is queued to be offboarded.
-	OffboardingParachain,
+	OffboardingTeyrchain,
 }
 
 impl ParaLifecycle {
@@ -222,8 +222,8 @@ impl ParaLifecycle {
 		matches!(
 			self,
 			ParaLifecycle::Teyrchain
-				| ParaLifecycle::DowngradingParachain
-				| ParaLifecycle::OffboardingParachain
+				| ParaLifecycle::DowngradingTeyrchain
+				| ParaLifecycle::OffboardingTeyrchain
 		)
 	}
 
@@ -241,7 +241,7 @@ impl ParaLifecycle {
 
 	/// Returns true if para is currently offboarding.
 	pub fn is_offboarding(&self) -> bool {
-		matches!(self, ParaLifecycle::OffboardingParathread | ParaLifecycle::OffboardingParachain)
+		matches!(self, ParaLifecycle::OffboardingParathread | ParaLifecycle::OffboardingTeyrchain)
 	}
 
 	/// Returns true if para is in any transitionary state.
@@ -1582,12 +1582,12 @@ impl<T: Config> Pezpallet<T> {
 					ParaLifecycles::<T>::insert(&para, ParaLifecycle::Teyrchain);
 				},
 				// Downgrade a lease holding teyrchain to an on-demand teyrchain
-				Some(ParaLifecycle::DowngradingParachain) => {
+				Some(ParaLifecycle::DowngradingTeyrchain) => {
 					teyrchains.remove(para);
 					ParaLifecycles::<T>::insert(&para, ParaLifecycle::Parathread);
 				},
 				// Offboard a lease holding or on-demand teyrchain from the system
-				Some(ParaLifecycle::OffboardingParachain)
+				Some(ParaLifecycle::OffboardingTeyrchain)
 				| Some(ParaLifecycle::OffboardingParathread) => {
 					teyrchains.remove(para);
 
@@ -2139,7 +2139,7 @@ impl<T: Config> Pezpallet<T> {
 				ParaLifecycles::<T>::insert(&id, ParaLifecycle::OffboardingParathread);
 			},
 			Some(ParaLifecycle::Teyrchain) => {
-				ParaLifecycles::<T>::insert(&id, ParaLifecycle::OffboardingParachain);
+				ParaLifecycles::<T>::insert(&id, ParaLifecycle::OffboardingTeyrchain);
 			},
 			_ => return Err(Error::<T>::CannotOffboard.into()),
 		}
@@ -2186,7 +2186,7 @@ impl<T: Config> Pezpallet<T> {
 
 		ensure!(lifecycle == ParaLifecycle::Teyrchain, Error::<T>::CannotDowngrade);
 
-		ParaLifecycles::<T>::insert(&id, ParaLifecycle::DowngradingParachain);
+		ParaLifecycles::<T>::insert(&id, ParaLifecycle::DowngradingTeyrchain);
 		ActionsQueue::<T>::mutate(scheduled_session, |v| {
 			if let Err(i) = v.binary_search(&id) {
 				v.insert(i, id);

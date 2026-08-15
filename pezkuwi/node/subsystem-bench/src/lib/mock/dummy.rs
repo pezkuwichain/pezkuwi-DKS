@@ -86,7 +86,7 @@ mock!(CollatorProtocol);
 mock!(GossipSupport);
 mock!(DisputeDistribution);
 mock!(DisputeCoordinator);
-mock!(ProspectiveParachains);
+mock!(ProspectiveTeyrchains);
 mock!(PvfChecker);
 mock!(CandidateBacking);
 mock!(AvailabilityDistribution);

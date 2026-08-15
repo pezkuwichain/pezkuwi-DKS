@@ -37,7 +37,7 @@ use pezkuwi_node_subsystem::{
 	messages::{
 		Ancestors, BackableCandidateRef, ChainApiMessage, HypotheticalCandidate,
 		HypotheticalMembership, HypotheticalMembershipRequest, IntroduceSecondedCandidateRequest,
-		ParentHeadData, ProspectiveParachainsMessage, ProspectiveValidationDataRequest,
+		ParentHeadData, ProspectiveTeyrchainsMessage, ProspectiveValidationDataRequest,
 		RuntimeApiMessage,
 	},
 	overseer, ActiveLeavesUpdate, FromOrchestra, OverseerSignal, SpawnedSubsystem, SubsystemError,
@@ -134,19 +134,19 @@ impl View {
 
 /// The prospective teyrchains subsystem.
 #[derive(Default)]
-pub struct ProspectiveParachainsSubsystem {
+pub struct ProspectiveTeyrchainsSubsystem {
 	metrics: Metrics,
 }
 
-impl ProspectiveParachainsSubsystem {
-	/// Create a new instance of the `ProspectiveParachainsSubsystem`.
+impl ProspectiveTeyrchainsSubsystem {
+	/// Create a new instance of the `ProspectiveTeyrchainsSubsystem`.
 	pub fn new(metrics: Metrics) -> Self {
 		Self { metrics }
 	}
 }
 
-#[overseer::subsystem(ProspectiveParachains, error = SubsystemError, prefix = self::overseer)]
-impl<Context> ProspectiveParachainsSubsystem
+#[overseer::subsystem(ProspectiveTeyrchains, error = SubsystemError, prefix = self::overseer)]
+impl<Context> ProspectiveTeyrchainsSubsystem
 where
 	Context: Send + Sync,
 {
@@ -160,7 +160,7 @@ where
 	}
 }
 
-#[overseer::contextbounds(ProspectiveParachains, prefix = self::overseer)]
+#[overseer::contextbounds(ProspectiveTeyrchains, prefix = self::overseer)]
 async fn run<Context>(mut ctx: Context, metrics: Metrics) -> FatalResult<()> {
 	let mut view = View::new();
 	loop {
@@ -171,7 +171,7 @@ async fn run<Context>(mut ctx: Context, metrics: Metrics) -> FatalResult<()> {
 	}
 }
 
-#[overseer::contextbounds(ProspectiveParachains, prefix = self::overseer)]
+#[overseer::contextbounds(ProspectiveTeyrchains, prefix = self::overseer)]
 async fn run_iteration<Context>(
 	ctx: &mut Context,
 	view: &mut View,
@@ -185,23 +185,23 @@ async fn run_iteration<Context>(
 			},
 			FromOrchestra::Signal(OverseerSignal::BlockFinalized(..)) => {},
 			FromOrchestra::Communication { msg } => match msg {
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(request, tx) => {
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(request, tx) => {
 					handle_introduce_seconded_candidate(ctx, view, request, tx, metrics).await
 				},
-				ProspectiveParachainsMessage::CandidateBacked(para, candidate_hash) => {
+				ProspectiveTeyrchainsMessage::CandidateBacked(para, candidate_hash) => {
 					handle_candidate_backed(view, para, candidate_hash, metrics).await
 				},
-				ProspectiveParachainsMessage::GetBackableCandidates {
+				ProspectiveTeyrchainsMessage::GetBackableCandidates {
 					leaf,
 					para_id,
 					count,
 					ancestors,
 					sender,
 				} => answer_get_backable_candidates(&view, leaf, para_id, count, ancestors, sender),
-				ProspectiveParachainsMessage::GetHypotheticalMembership(request, tx) => {
+				ProspectiveTeyrchainsMessage::GetHypotheticalMembership(request, tx) => {
 					answer_hypothetical_membership_request(ctx, view, request, tx, metrics).await
 				},
-				ProspectiveParachainsMessage::GetProspectiveValidationData(request, tx) => {
+				ProspectiveTeyrchainsMessage::GetProspectiveValidationData(request, tx) => {
 					answer_prospective_validation_data_request(ctx, view, request, tx).await
 				},
 			},
@@ -209,7 +209,7 @@ async fn run_iteration<Context>(
 	}
 }
 
-#[overseer::contextbounds(ProspectiveParachains, prefix = self::overseer)]
+#[overseer::contextbounds(ProspectiveTeyrchains, prefix = self::overseer)]
 async fn handle_active_leaves_update<Context>(
 	ctx: &mut Context,
 	view: &mut View,
@@ -472,7 +472,7 @@ struct ImportablePendingAvailability {
 	compact: fragment_chain::PendingAvailability,
 }
 
-#[overseer::contextbounds(ProspectiveParachains, prefix = self::overseer)]
+#[overseer::contextbounds(ProspectiveTeyrchains, prefix = self::overseer)]
 /// Preprocesses candidates pending availability into a format suitable for fragment chain storage.
 ///
 /// This function transforms candidates that are pending availability (already on-chain but not
@@ -605,7 +605,7 @@ where
 	}
 }
 
-#[overseer::contextbounds(ProspectiveParachains, prefix = self::overseer)]
+#[overseer::contextbounds(ProspectiveTeyrchains, prefix = self::overseer)]
 async fn handle_introduce_seconded_candidate<Context>(
 	ctx: &mut Context,
 	view: &mut View,
@@ -889,7 +889,7 @@ fn answer_get_backable_candidates(
 	let _ = tx.send(backable_candidates);
 }
 
-#[overseer::contextbounds(ProspectiveParachains, prefix = self::overseer)]
+#[overseer::contextbounds(ProspectiveTeyrchains, prefix = self::overseer)]
 async fn answer_hypothetical_membership_request<Context>(
 	ctx: &mut Context,
 	view: &mut View,
@@ -1007,7 +1007,7 @@ async fn answer_hypothetical_membership_request<Context>(
 	let _ = tx.send(response);
 }
 
-#[overseer::contextbounds(ProspectiveParachains, prefix = self::overseer)]
+#[overseer::contextbounds(ProspectiveTeyrchains, prefix = self::overseer)]
 async fn answer_prospective_validation_data_request<Context>(
 	ctx: &mut Context,
 	view: &mut View,
@@ -1084,7 +1084,7 @@ async fn answer_prospective_validation_data_request<Context>(
 	});
 }
 
-#[overseer::contextbounds(ProspectiveParachains, prefix = self::overseer)]
+#[overseer::contextbounds(ProspectiveTeyrchains, prefix = self::overseer)]
 async fn fetch_backing_constraints_and_candidates<Context>(
 	ctx: &mut Context,
 	relay_parent: Hash,
@@ -1116,7 +1116,7 @@ async fn fetch_backing_constraints_and_candidates<Context>(
 ///
 /// A vector of `BlockInfo` containing block hashes, numbers, and storage roots for all
 /// ancestors within `required_session`, in descending order by block number.
-#[overseer::contextbounds(ProspectiveParachains, prefix = self::overseer)]
+#[overseer::contextbounds(ProspectiveTeyrchains, prefix = self::overseer)]
 async fn fetch_scheduling_parent_ancestors<Context>(
 	ctx: &mut Context,
 	relay_hash: Hash,

@@ -20,7 +20,7 @@ use pezsc_block_builder::BlockBuilderBuilder;
 
 use crate::{construct_extrinsic, Client as TestClient};
 use pezcumulus_pallet_teyrchain_system::teyrchain_inherent::{
-	BasicParachainInherentData, InboundMessagesData,
+	BasicTeyrchainInherentData, InboundMessagesData,
 };
 use pezcumulus_primitives_core::{relay_chain::AccountId, PersistedValidationData};
 use pezcumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
@@ -91,7 +91,7 @@ pub fn extrinsic_set_validation_data(
 
 	let (relay_parent_storage_root, relay_chain_state, relay_parent_descendants) =
 		sproof_builder.into_state_root_proof_and_descendants(1);
-	let data = BasicParachainInherentData {
+	let data = BasicTeyrchainInherentData {
 		validation_data: PersistedValidationData {
 			parent_head,
 			relay_parent_number: 10,

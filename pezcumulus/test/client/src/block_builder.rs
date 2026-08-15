@@ -240,13 +240,13 @@ impl BuildBlockBuilder for Client {
 
 /// Extension trait for the [`BlockBuilder`](pezsc_block_builder::BlockBuilder) to build directly a
 /// [`TeyrchainBlockData`].
-pub trait BuildParachainBlockData {
+pub trait BuildTeyrchainBlockData {
 	/// Directly build the [`TeyrchainBlockData`] from the block that comes out of the block
 	/// builder.
 	fn build_teyrchain_block(self, parent_state_root: Hash) -> TeyrchainBlockData<Block>;
 }
 
-impl<'a> BuildParachainBlockData for pezsc_block_builder::BlockBuilder<'a, Block, Client> {
+impl<'a> BuildTeyrchainBlockData for pezsc_block_builder::BlockBuilder<'a, Block, Client> {
 	fn build_teyrchain_block(self, parent_state_root: Hash) -> TeyrchainBlockData<Block> {
 		let proof_recorder = self
 			.proof_recorder()

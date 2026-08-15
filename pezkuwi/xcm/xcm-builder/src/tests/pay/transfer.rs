@@ -33,7 +33,7 @@ parameter_types! {
 	pub SenderAccount: AccountId = AccountId::new([3u8; 32]);
 	pub SenderLocationOnTarget: Location = Location::new(
 		1,
-		X2([Teyrchain(MockRuntimeParachainId::get().into()), AccountId32 { network: None, id: SenderAccount::get().into() }].into()),
+		X2([Teyrchain(MockRuntimeTeyrchainId::get().into()), AccountId32 { network: None, id: SenderAccount::get().into() }].into()),
 	);
 	pub SenderAccountOnTarget: AccountId = SovereignAccountOf::convert_location(&SenderLocationOnTarget::get()).expect("can convert");
 	pub InteriorAccount: InteriorLocation = AccountId32 { id: SenderAccount::get().into(), network: None }.into();
@@ -144,7 +144,7 @@ fn assert_send_and_execute_msg(expected_message: Xcm<()>) {
 	let message = Xcm::<<XcmConfig as xcm_executor::Config>::RuntimeCall>::from(message.clone());
 
 	// Execute message in teyrchain 1000 with our teyrchains's origin
-	let origin = (Parent, Teyrchain(MockRuntimeParachainId::get().into()));
+	let origin = (Parent, Teyrchain(MockRuntimeTeyrchainId::get().into()));
 	let _result = XcmExecutor::<XcmConfig>::prepare_and_execute(
 		origin,
 		message,

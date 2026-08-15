@@ -22,14 +22,9 @@
 
 use crate::{Config, Error, Pezpallet};
 use alloc::vec::Vec;
-use hex_literal::hex;
 use pezsp_core::Get;
 use xcm::prelude::*;
 use xcm_executor::traits::TransferType;
-
-/// The genesis hash of the Paseo Relay Chain. Used to identify it.
-const PASEO_GENESIS_HASH: [u8; 32] =
-	hex!["77afd6190f1554ad45fd0d31aee62aacc33c6db0ea801129acb813f913e0764f"];
 
 impl<T: Config> Pezpallet<T> {
 	/// Check if network native asset reserve transfers should be blocked during Asset Hub
@@ -120,12 +115,12 @@ impl<T: Config> Pezpallet<T> {
 			1 => {
 				if let Some(Junction::GlobalConsensus(network)) = universal_location.first() {
 					let is_target_network = match network {
-						NetworkId::Polkadot | NetworkId::Kusama => true,
+						NetworkId::Pezkuwi | NetworkId::Dicle => true,
 						NetworkId::ByGenesis(genesis_hash) => {
-							// Check if this is Westend by genesis hash
-							*genesis_hash == xcm::v5::WESTEND_GENESIS_HASH
-								|| *genesis_hash == PASEO_GENESIS_HASH
-								|| *genesis_hash == xcm::v5::ROCOCO_GENESIS_HASH // Used in tests.
+							// Our networks identify themselves by genesis hash rather than by a
+							// NetworkId variant, so this is the arm that actually decides.
+							*genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH
+								|| *genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH
 						},
 						_ => false,
 					};
@@ -142,12 +137,12 @@ impl<T: Config> Pezpallet<T> {
 					(universal_location.first(), universal_location.last())
 				{
 					let is_target_network = match network {
-						NetworkId::Polkadot | NetworkId::Kusama => true,
+						NetworkId::Pezkuwi | NetworkId::Dicle => true,
 						NetworkId::ByGenesis(genesis_hash) => {
-							// Check if this is Westend by genesis hash
-							*genesis_hash == xcm::v5::WESTEND_GENESIS_HASH
-								|| *genesis_hash == PASEO_GENESIS_HASH
-								|| *genesis_hash == xcm::v5::ROCOCO_GENESIS_HASH // Used in tests.
+							// Our networks identify themselves by genesis hash rather than by a
+							// NetworkId variant, so this is the arm that actually decides.
+							*genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH
+								|| *genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH
 						},
 						_ => false,
 					};

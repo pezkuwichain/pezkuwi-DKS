@@ -375,8 +375,8 @@ async fn assert_candidate_is_shared_and_backed(
 
 	assert_matches!(
 		virtual_overseer.recv().await,
-		AllMessages::ProspectiveParachains(
-			ProspectiveParachainsMessage::CandidateBacked(
+		AllMessages::ProspectiveTeyrchains(
+			ProspectiveTeyrchainsMessage::CandidateBacked(
 				candidate_para_id, candidate_hash
 			),
 		) if *expected_candidate_hash == candidate_hash && candidate_para_id == *expected_para_id
@@ -691,8 +691,8 @@ pub(crate) async fn assert_hypothetical_membership_requests(
 	for _ in 0..requests_num {
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::GetHypotheticalMembership(request, tx),
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::GetHypotheticalMembership(request, tx),
 			) => {
 				let idx = match expected_requests.iter().position(|r| r.0 == request) {
 					Some(idx) => idx,
@@ -784,8 +784,8 @@ fn backing_second_works() {
 
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -882,8 +882,8 @@ fn backing_works() {
 
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -1098,8 +1098,8 @@ fn get_backed_candidate_preserves_order() {
 			// Prospective teyrchains are notified about candidate seconded first.
 			assert_matches!(
 				virtual_overseer.recv().await,
-				AllMessages::ProspectiveParachains(
-					ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+				AllMessages::ProspectiveTeyrchains(
+					ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 						req,
 						tx,
 					),
@@ -1113,8 +1113,8 @@ fn get_backed_candidate_preserves_order() {
 
 			assert_matches!(
 				virtual_overseer.recv().await,
-				AllMessages::ProspectiveParachains(
-					ProspectiveParachainsMessage::CandidateBacked(
+				AllMessages::ProspectiveTeyrchains(
+					ProspectiveTeyrchainsMessage::CandidateBacked(
 						candidate_para_id, candidate_hash
 					),
 				) if candidate.hash() == candidate_hash && candidate_para_id == candidate.descriptor.para_id()
@@ -1569,8 +1569,8 @@ fn backing_works_while_validation_ongoing() {
 
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -1636,8 +1636,8 @@ fn backing_works_while_validation_ongoing() {
 		// Candidate gets backed entirely by other votes.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::CandidateBacked(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::CandidateBacked(
 					candidate_para_id, candidate_hash
 				),
 			) if candidate_a_hash == candidate_hash && candidate_para_id == para_id
@@ -1762,8 +1762,8 @@ fn backing_misbehavior_works() {
 		// Prospective teyrchains are notified about candidate seconded first.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -1985,8 +1985,8 @@ fn backing_doesnt_second_invalid() {
 		// Prospective teyrchains are notified.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -2060,8 +2060,8 @@ fn backing_second_after_first_fails_works() {
 
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -2221,8 +2221,8 @@ fn backing_works_after_failed_validation() {
 
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -2452,8 +2452,8 @@ fn retry_works() {
 
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -2491,8 +2491,8 @@ fn retry_works() {
 		// Not deterministic which message comes first:
 		for _ in 0u32..3 {
 			match virtual_overseer.recv().await {
-				AllMessages::ProspectiveParachains(
-					ProspectiveParachainsMessage::CandidateBacked(
+				AllMessages::ProspectiveTeyrchains(
+					ProspectiveTeyrchainsMessage::CandidateBacked(
 						candidate_para_id,
 						candidate_hash,
 					),
@@ -2653,8 +2653,8 @@ fn observes_backing_even_if_not_validator() {
 		// Prospective teyrchains are notified about candidate seconded first.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -2675,8 +2675,8 @@ fn observes_backing_even_if_not_validator() {
 
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::CandidateBacked(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::CandidateBacked(
 					candidate_para_id, candidate_hash
 				),
 			) if candidate_a_hash == candidate_hash && candidate_para_id == para_id
@@ -2866,8 +2866,8 @@ fn disabled_validator_doesnt_distribute_statement_on_receiving_statement() {
 
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -2976,8 +2976,8 @@ fn validator_ignores_statements_from_disabled_validators() {
 		// Prospective teyrchains are notified about candidate seconded first.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -3115,8 +3115,8 @@ fn seconding_sanity_check_allowed_on_all() {
 		// Prospective teyrchains are notified.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -3221,8 +3221,8 @@ fn seconding_sanity_check_disallowed() {
 		// Prospective teyrchains are notified.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -3401,8 +3401,8 @@ fn seconding_sanity_check_allowed_on_at_least_one_leaf() {
 		// Prospective teyrchains are notified.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -3497,8 +3497,8 @@ fn prospective_teyrchains_reject_candidate() {
 		// Prospective teyrchains are notified.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -3549,8 +3549,8 @@ fn prospective_teyrchains_reject_candidate() {
 		// Prospective teyrchains are notified.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -3653,8 +3653,8 @@ fn second_multiple_candidates_per_relay_parent() {
 			// Prospective teyrchains are notified.
 			assert_matches!(
 				virtual_overseer.recv().await,
-				AllMessages::ProspectiveParachains(
-					ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+				AllMessages::ProspectiveTeyrchains(
+					ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 						req,
 						tx,
 					),
@@ -3813,8 +3813,8 @@ fn concurrent_dependent_candidates() {
 
 			// Order is not guaranteed since we have 2 statements being handled concurrently.
 			match msg {
-				AllMessages::ProspectiveParachains(
-					ProspectiveParachainsMessage::IntroduceSecondedCandidate(_, tx),
+				AllMessages::ProspectiveTeyrchains(
+					ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(_, tx),
 				) => {
 					tx.send(true).unwrap();
 				},
@@ -3871,8 +3871,8 @@ fn concurrent_dependent_candidates() {
 				}) => {
 					tx.send(Ok(())).unwrap();
 				},
-				AllMessages::ProspectiveParachains(
-					ProspectiveParachainsMessage::CandidateBacked(..),
+				AllMessages::ProspectiveTeyrchains(
+					ProspectiveTeyrchainsMessage::CandidateBacked(..),
 				) => {},
 				AllMessages::StatementDistribution(StatementDistributionMessage::Share(
 					_,
@@ -4033,8 +4033,8 @@ fn seconding_sanity_check_occupy_same_depth() {
 			// Prospective teyrchains are notified.
 			assert_matches!(
 				virtual_overseer.recv().await,
-				AllMessages::ProspectiveParachains(
-					ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+				AllMessages::ProspectiveTeyrchains(
+					ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 						req,
 						tx,
 					),
@@ -4161,8 +4161,8 @@ fn v3_capable_validator_backs_v1_descriptor() {
 
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(req, tx),
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(req, tx),
 			) if req.candidate_receipt == candidate
 				&& req.candidate_para == para_id
 				&& pvd == req.persisted_validation_data => {
@@ -4321,8 +4321,8 @@ fn occupied_core_assignment() {
 		// Prospective teyrchains are notified.
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 					req,
 					tx,
 				),
@@ -4755,8 +4755,8 @@ fn version_acceptance_before_and_after_v3_activation_on_statement() {
 		// (Before V3 activation, the same candidate produced a timeout above.)
 		assert_matches!(
 			virtual_overseer.recv().await,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::IntroduceSecondedCandidate(_, _),
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(_, _),
 			)
 		);
 

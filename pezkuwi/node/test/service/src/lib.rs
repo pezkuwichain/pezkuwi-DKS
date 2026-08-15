@@ -28,7 +28,7 @@ use pezkuwi_overseer::Handle;
 use pezkuwi_primitives::{Balance, CollatorPair, HeadData, Id as ParaId, ValidationCode};
 use pezkuwi_runtime_common::BlockHashCount;
 use pezkuwi_runtime_teyrchains::paras::{ParaGenesisArgs, ParaKind};
-use pezkuwi_service::{Error, FullClient, IsParachainNode, NewFull, OverseerGen, PrometheusConfig};
+use pezkuwi_service::{Error, FullClient, IsTeyrchainNode, NewFull, OverseerGen, PrometheusConfig};
 use pezkuwi_test_runtime::{
 	ParasCall, ParasSudoWrapperCall, Runtime, SignedPayload, SudoCall, TxExtension,
 	UncheckedExtrinsic, VERSION,
@@ -74,7 +74,7 @@ use pezsc_service::config::{ExecutorConfiguration, RpcConfiguration};
 #[pezsc_tracing::logging::prefix_logs_with(custom_log_prefix.unwrap_or(config.network.node_name.as_str()))]
 pub fn new_full<OverseerGenerator: OverseerGen>(
 	config: Configuration,
-	is_teyrchain_node: IsParachainNode,
+	is_teyrchain_node: IsTeyrchainNode,
 	workers_path: Option<PathBuf>,
 	overseer_gen: OverseerGenerator,
 	custom_log_prefix: Option<&'static str>,
@@ -263,7 +263,7 @@ pub async fn run_validator_node(
 ) -> PolkadotTestNode {
 	let NewFull { task_manager, client, network, rpc_handlers, overseer_handle, .. } = new_full(
 		config,
-		IsParachainNode::No,
+		IsTeyrchainNode::No,
 		worker_program_path,
 		pezkuwi_service::ValidatorOverseerGen,
 		None,
@@ -301,7 +301,7 @@ pub async fn run_collator_node(
 	let config = node_config(storage_update_func, tokio_handle, key, boot_nodes, false);
 	let NewFull { task_manager, client, network, rpc_handlers, overseer_handle, .. } = new_full(
 		config,
-		IsParachainNode::Collator(collator_pair),
+		IsTeyrchainNode::Collator(collator_pair),
 		None,
 		pezkuwi_service::CollatorOverseerGen,
 		None,

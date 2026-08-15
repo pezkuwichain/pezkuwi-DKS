@@ -28,7 +28,7 @@
 //! block using the full core weight, there will be no further block build on the same core. This is
 //! signaled to the node by setting the [`CumulusDigestItem::UseFullCore`] digest item.`
 //!
-//! The [`MaxParachainBlockWeight`] provides a [`Get`] implementation that will return the max block
+//! The [`MaxTeyrchainBlockWeight`] provides a [`Get`] implementation that will return the max block
 //! weight as determined by the [`DynamicMaxBlockWeight`] transaction extension.
 //!
 //! [`DynamicMaxBlockWeightHooks`] needs to be registered as a pre-inherent hook. It is used to
@@ -45,7 +45,7 @@
 #![doc = docify::embed!("src/block_weight/mock.rs", pre_inherents_setup)]
 //! # Weight per context
 //!
-//! Depending on the context, [`MaxParachainBlockWeight`] may return a different max weight. The
+//! Depending on the context, [`MaxTeyrchainBlockWeight`] may return a different max weight. The
 //! max weight is only allowed to change in the first block of a core. Otherwise, all blocks need to
 //! follow the target block weight determined based on the number of cores and the target block
 //! rate. In the case of a first block, the following contexts may allow to access the full core
@@ -98,13 +98,13 @@ pub(crate) const FULL_CORE_WEIGHT: Weight =
 
 // Is set to `true` when we are currently inside of `pre_validate_extrinsic`.
 //
-// Forces `MaxParachainBlockWeight::get()` to return fractional weight, enabling detection of
+// Forces `MaxTeyrchainBlockWeight::get()` to return fractional weight, enabling detection of
 // transactions that exceed the fractional target limit.
 environmental::environmental!(inside_pre_validate: bool);
 
 /// The current block weight mode.
 ///
-/// Based on this mode [`MaxParachainBlockWeight`] determines the current allowed block weight.
+/// Based on this mode [`MaxTeyrchainBlockWeight`] determines the current allowed block weight.
 #[derive(DebugNoBound, Encode, Decode, CloneNoBound, TypeInfo, PartialEq)]
 #[scale_info(skip_type_params(T))]
 pub enum BlockWeightMode<T: Config> {
@@ -191,10 +191,10 @@ impl<T: Config> BlockWeightMode<T> {
 /// The max block weight is partly dynamic and controlled via the [`DynamicMaxBlockWeight`]
 /// transaction extension. The transaction extension is communicating the desired max block weight
 /// using the [`BlockWeightMode`].
-pub struct MaxParachainBlockWeight<Config, TargetBlockRate>(PhantomData<(Config, TargetBlockRate)>);
+pub struct MaxTeyrchainBlockWeight<Config, TargetBlockRate>(PhantomData<(Config, TargetBlockRate)>);
 
 impl<Config: crate::Config, TargetBlockRate: Get<u32>>
-	MaxParachainBlockWeight<Config, TargetBlockRate>
+	MaxTeyrchainBlockWeight<Config, TargetBlockRate>
 {
 	/// Returns the target block weight for one block.
 	pub(crate) fn target_block_weight() -> Weight {
@@ -235,7 +235,7 @@ impl<Config: crate::Config, TargetBlockRate: Get<u32>>
 }
 
 impl<Config: crate::Config, TargetBlockRate: Get<u32>> Get<Weight>
-	for MaxParachainBlockWeight<Config, TargetBlockRate>
+	for MaxTeyrchainBlockWeight<Config, TargetBlockRate>
 {
 	fn get() -> Weight {
 		let digest = pezframe_system::Pezpallet::<Config>::digest();
@@ -308,7 +308,7 @@ fn is_first_block_in_core_with_digest(digest: &Digest) -> Option<bool> {
 ///
 /// Returns `None` if the [`CumulusDigestItem::BlockBundleInfo`] digest is not set.
 fn block_weight_over_target_block_weight<T: Config, TargetBlockRate: Get<u32>>() -> bool {
-	let target_block_weight = MaxParachainBlockWeight::<T, TargetBlockRate>::target_block_weight();
+	let target_block_weight = MaxTeyrchainBlockWeight::<T, TargetBlockRate>::target_block_weight();
 
 	pezframe_system::Pezpallet::<T>::remaining_block_weight()
 		.consumed()

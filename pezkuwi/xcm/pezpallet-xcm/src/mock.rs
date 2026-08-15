@@ -37,8 +37,8 @@ use pezsp_runtime::{
 use xcm::prelude::*;
 use xcm_builder::{
 	AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-	AllowTopLevelPaidExecutionFrom, Case, ChildParachainAsNative, ChildParachainConvertsVia,
-	ChildSystemParachainAsSuperuser, DescribeAllTerminal, EnsureDecodableXcm, FixedRateOfFungible,
+	AllowTopLevelPaidExecutionFrom, Case, ChildSystemTeyrchainAsSuperuser, ChildTeyrchainAsNative,
+	ChildTeyrchainConvertsVia, DescribeAllTerminal, EnsureDecodableXcm, FixedRateOfFungible,
 	FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
 	HashedDescription, IsConcrete, MatchedConvertedConcreteId, NoChecking, SendXcmFeeToAccount,
 	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
@@ -356,7 +356,7 @@ parameter_types! {
 		fun: Fungible(10),
 		id: AssetId(Here.into_location()),
 	};
-	pub SystemParachainLocation: Location = Location::new(
+	pub SystemTeyrchainLocation: Location = Location::new(
 		0,
 		[Teyrchain(SOME_SYSTEM_PARA)]
 	);
@@ -422,7 +422,7 @@ parameter_types! {
 }
 
 pub type SovereignAccountOf = (
-	ChildParachainConvertsVia<ParaId, AccountId>,
+	ChildTeyrchainConvertsVia<ParaId, AccountId>,
 	AccountId32Aliases<AnyNetwork, AccountId>,
 	HashedDescription<AccountId, DescribeAllTerminal>,
 );
@@ -450,16 +450,16 @@ pub type AssetTransactors = (
 
 type LocalOriginConverter = (
 	SovereignSignedViaLocation<SovereignAccountOf, RuntimeOrigin>,
-	ChildParachainAsNative<origin::Origin, RuntimeOrigin>,
+	ChildTeyrchainAsNative<origin::Origin, RuntimeOrigin>,
 	SignedAccountId32AsNative<AnyNetwork, RuntimeOrigin>,
-	ChildSystemParachainAsSuperuser<ParaId, RuntimeOrigin>,
+	ChildSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>,
 );
 
 parameter_types! {
 	pub const BaseXcmWeight: Weight = Weight::from_parts(1_000, 1_000);
 	pub CurrencyPerSecondPerByte: (AssetId, u128, u128) = (AssetId(RelayLocation::get()), WEIGHT_REF_TIME_PER_SECOND.into(), WEIGHT_PROOF_SIZE_PER_MB.into());
 	pub TrustedLocal: (AssetFilter, Location) = (All.into(), Here.into());
-	pub TrustedSystemPara: (AssetFilter, Location) = (NativeAsset::get().into(), SystemParachainLocation::get());
+	pub TrustedSystemPara: (AssetFilter, Location) = (NativeAsset::get().into(), SystemTeyrchainLocation::get());
 	pub TrustedUsdt: (AssetFilter, Location) = (Usdt::get().into(), UsdtTeleportLocation::get());
 	pub TrustedFilteredTeleport: (AssetFilter, Location) = (FilteredTeleportAsset::get().into(), FilteredTeleportLocation::get());
 	pub TeleportUsdtToForeign: (AssetFilter, Location) = (Usdt::get().into(), ForeignReserveLocation::get());
@@ -627,7 +627,7 @@ impl super::benchmarking::Config for Test {
 	}
 
 	fn teleportable_asset_and_dest() -> Option<(Asset, Location)> {
-		Some((NativeAsset::get(), SystemParachainLocation::get()))
+		Some((NativeAsset::get(), SystemTeyrchainLocation::get()))
 	}
 
 	fn reserve_transferable_asset_and_dest() -> Option<(Asset, Location)> {

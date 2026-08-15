@@ -48,14 +48,14 @@ use url::Url;
 
 use crate::runtime::Weight;
 use pezcumulus_client_cli::{CollatorOptions, RelayChainMode};
-use pezcumulus_client_consensus_common::TeyrchainBlockImport as TParachainBlockImport;
+use pezcumulus_client_consensus_common::TeyrchainBlockImport as TTeyrchainBlockImport;
 use pezcumulus_client_pov_recovery::{RecoveryDelayRange, RecoveryHandle};
 use pezcumulus_client_service::{
 	build_network, prepare_node_config, start_relay_chain_tasks, BuildNetworkParams,
 	CollatorSybilResistance, DARecoveryProfile, StartRelayChainTasksParams,
 	TeyrchainTracingExecuteBlock,
 };
-use pezcumulus_primitives_core::{relay_chain::ValidationCode, GetParachainInfo, ParaId};
+use pezcumulus_primitives_core::{relay_chain::ValidationCode, GetTeyrchainInfo, ParaId};
 use pezcumulus_relay_chain_inprocess_interface::RelayChainInProcessInterface;
 use pezcumulus_relay_chain_interface::{RelayChainError, RelayChainInterface, RelayChainResult};
 use pezcumulus_relay_chain_minimal_node::build_minimal_relay_chain_node_with_rpc;
@@ -115,7 +115,7 @@ pub type Backend = TFullBackend<Block>;
 
 /// The block-import type being used by the test service.
 pub type TeyrchainBlockImport =
-	TParachainBlockImport<Block, SlotBasedBlockImport<Block, Arc<Client>, Client>, Backend>;
+	TTeyrchainBlockImport<Block, SlotBasedBlockImport<Block, Arc<Client>, Client>, Backend>;
 
 /// Transaction pool type used by the test service
 pub type TransactionPool = Arc<pezsc_transaction_pool::TransactionPoolHandle<Block, Client>>;
@@ -265,9 +265,9 @@ async fn build_relay_chain_interface(
 		pezcumulus_client_cli::RelayChainMode::Embedded => pezkuwi_test_service::new_full(
 			relay_chain_config,
 			if let Some(ref key) = collator_key {
-				pezkuwi_service::IsParachainNode::Collator(key.clone())
+				pezkuwi_service::IsTeyrchainNode::Collator(key.clone())
 			} else {
-				pezkuwi_service::IsParachainNode::Collator(CollatorPair::generate().0)
+				pezkuwi_service::IsTeyrchainNode::Collator(CollatorPair::generate().0)
 			},
 			None,
 			pezkuwi_service::CollatorOverseerGen,

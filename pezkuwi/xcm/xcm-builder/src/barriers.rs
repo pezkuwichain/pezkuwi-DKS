@@ -402,8 +402,8 @@ impl<T: Contains<Location>, Aliasers: ContainsPair<Location, Location>> ShouldEx
 }
 
 /// Allows a message only if it is from a system-level child teyrchain.
-pub struct IsChildSystemParachain<ParaId>(PhantomData<ParaId>);
-impl<ParaId: IsSystem + From<u32>> Contains<Location> for IsChildSystemParachain<ParaId> {
+pub struct IsChildSystemTeyrchain<ParaId>(PhantomData<ParaId>);
+impl<ParaId: IsSystem + From<u32>> Contains<Location> for IsChildSystemTeyrchain<ParaId> {
 	fn contains(l: &Location) -> bool {
 		matches!(
 			l.interior().as_slice(),
@@ -414,9 +414,9 @@ impl<ParaId: IsSystem + From<u32>> Contains<Location> for IsChildSystemParachain
 }
 
 /// Matches if the given location is a system-level sibling teyrchain.
-pub struct IsSiblingSystemParachain<ParaId, SelfParaId>(PhantomData<(ParaId, SelfParaId)>);
+pub struct IsSiblingSystemTeyrchain<ParaId, SelfParaId>(PhantomData<(ParaId, SelfParaId)>);
 impl<ParaId: IsSystem + From<u32> + Eq, SelfParaId: Get<ParaId>> Contains<Location>
-	for IsSiblingSystemParachain<ParaId, SelfParaId>
+	for IsSiblingSystemTeyrchain<ParaId, SelfParaId>
 {
 	fn contains(l: &Location) -> bool {
 		matches!(

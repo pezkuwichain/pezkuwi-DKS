@@ -339,7 +339,7 @@ pub fn check_message_lane_weights<
 	bridged_chain_extra_storage_proof_size: u32,
 	this_chain_max_unrewarded_relayers: MessageNonce,
 	this_chain_max_unconfirmed_messages: MessageNonce,
-	// whether `RefundBridgedParachainMessages` extension is deployed at runtime and is used for
+	// whether `RefundBridgedTeyrchainMessages` extension is deployed at runtime and is used for
 	// refunding this bridge transactions?
 	//
 	// in other words: pass true for all known production chains
@@ -383,7 +383,7 @@ pub fn check_message_lane_weights<
 	);
 
 	// check that extra weights of delivery/confirmation transactions include the weight
-	// of `RefundBridgedParachainMessages` operations. This signed extension assumes the worst case
+	// of `RefundBridgedTeyrchainMessages` operations. This signed extension assumes the worst case
 	// (i.e. slashing if delivery transaction was invalid) and refunds some weight if
 	// assumption was wrong (i.e. if we did refund instead of slashing). This check
 	// ensures the extension will not refund weight when it doesn't need to (i.e. if pezpallet

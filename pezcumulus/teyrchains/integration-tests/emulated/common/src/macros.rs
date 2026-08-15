@@ -53,7 +53,7 @@ pub use pezframe_support::{
 	dispatch::{GetDispatchInfo, RawOrigin},
 	BoundedVec,
 };
-pub use xcm_runtime_apis::{
+pub use xcm_runtime_pezapis::{
 	dry_run::runtime_decl_for_dry_run_api::DryRunApiV2,
 	fees::{runtime_decl_for_xcm_payment_api::XcmPaymentApiV2, Error as XcmPaymentApiError},
 };

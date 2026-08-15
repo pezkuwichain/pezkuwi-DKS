@@ -118,9 +118,9 @@ impl ChainWithMessages for ThisUnderlyingChain {
 }
 
 /// Underlying chain of `BridgedChain`.
-pub struct BridgedUnderlyingParachain;
+pub struct BridgedUnderlyingTeyrchain;
 
-impl Chain for BridgedUnderlyingParachain {
+impl Chain for BridgedUnderlyingTeyrchain {
 	const ID: ChainId = TEST_BRIDGED_CHAIN_ID;
 
 	type BlockNumber = BridgedChainBlockNumber;
@@ -142,7 +142,7 @@ impl Chain for BridgedUnderlyingParachain {
 	}
 }
 
-impl ChainWithGrandpa for BridgedUnderlyingParachain {
+impl ChainWithGrandpa for BridgedUnderlyingTeyrchain {
 	const WITH_CHAIN_GRANDPA_PALLET_NAME: &'static str = "";
 	const MAX_AUTHORITIES_COUNT: u32 = 16;
 	const REASONABLE_HEADERS_IN_JUSTIFICATION_ANCESTRY: u32 = 8;
@@ -150,13 +150,13 @@ impl ChainWithGrandpa for BridgedUnderlyingParachain {
 	const AVERAGE_HEADER_SIZE: u32 = 64;
 }
 
-impl ChainWithMessages for BridgedUnderlyingParachain {
+impl ChainWithMessages for BridgedUnderlyingTeyrchain {
 	const WITH_CHAIN_MESSAGES_PALLET_NAME: &'static str = "";
 	const MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX: MessageNonce = 16;
 	const MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX: MessageNonce = 1000;
 }
 
-impl Teyrchain for BridgedUnderlyingParachain {
+impl Teyrchain for BridgedUnderlyingTeyrchain {
 	const PARACHAIN_ID: u32 = 42;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
@@ -179,7 +179,7 @@ pezframe_support::construct_runtime! {
 		TransactionPayment: pezpallet_transaction_payment,
 		BridgeRelayers: pezpallet_bridge_relayers,
 		BridgeGrandpa: pezpallet_bridge_grandpa,
-		BridgeParachains: pezpallet_bridge_teyrchains,
+		BridgeTeyrchains: pezpallet_bridge_teyrchains,
 		BridgeMessages: pezpallet_bridge_messages,
 	}
 }
@@ -239,7 +239,7 @@ impl pezpallet_transaction_payment::Config for TestRuntime {
 
 impl pezpallet_bridge_grandpa::Config for TestRuntime {
 	type RuntimeEvent = RuntimeEvent;
-	type BridgedChain = BridgedUnderlyingParachain;
+	type BridgedChain = BridgedUnderlyingTeyrchain;
 	type MaxFreeHeadersPerBlock = ConstU32<4>;
 	type FreeHeadersInterval = ConstU32<1_024>;
 	type HeadersToKeep = ConstU32<8>;
@@ -251,7 +251,7 @@ impl pezpallet_bridge_teyrchains::Config for TestRuntime {
 	type BridgesGrandpaPalletInstance = ();
 	type ParasPalletName = BridgedParasPalletName;
 	type ParaStoredHeaderDataBuilder =
-		SingleParaStoredHeaderDataBuilder<BridgedUnderlyingParachain>;
+		SingleParaStoredHeaderDataBuilder<BridgedUnderlyingTeyrchain>;
 	type HeadsToKeep = ConstU32<8>;
 	type MaxParaHeadDataSize = ConstU32<1024>;
 	type WeightInfo = pezpallet_bridge_teyrchains::weights::BridgeWeight<TestRuntime>;
@@ -278,7 +278,7 @@ impl pezpallet_bridge_messages::Config for TestRuntime {
 
 	type MessageDispatch = DummyMessageDispatch;
 	type ThisChain = ThisUnderlyingChain;
-	type BridgedChain = BridgedUnderlyingParachain;
+	type BridgedChain = BridgedUnderlyingTeyrchain;
 	type BridgedHeaderChain = BridgeGrandpa;
 }
 

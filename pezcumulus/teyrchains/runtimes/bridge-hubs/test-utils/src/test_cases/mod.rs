@@ -26,7 +26,7 @@ pub(crate) mod helpers;
 
 use crate::{test_cases::bridges_prelude::*, test_data};
 
-use asset_test_utils::BasicParachainRuntime;
+use asset_test_utils::BasicTeyrchainRuntime;
 use codec::Encode;
 use pezbp_messages::{
 	target_chain::{DispatchMessage, DispatchMessageData, MessageDispatch},
@@ -60,7 +60,7 @@ pub(crate) mod bridges_prelude {
 		Call as BridgeMessagesCall, Config as BridgeMessagesConfig, LanesManagerError,
 	};
 	pub use pezpallet_bridge_teyrchains::{
-		Call as BridgeParachainsCall, Config as BridgeParachainsConfig,
+		Call as BridgeTeyrchainsCall, Config as BridgeTeyrchainsConfig,
 	};
 }
 
@@ -87,7 +87,7 @@ pub fn run_test<Runtime, T>(
 	test: impl FnOnce() -> T,
 ) -> T
 where
-	Runtime: BasicParachainRuntime,
+	Runtime: BasicTeyrchainRuntime,
 {
 	ExtBuilder::<Runtime>::default()
 		.with_collators(collator_session_key.collators())
@@ -106,7 +106,7 @@ pub fn initialize_bridge_by_governance_works<Runtime, GrandpaPalletInstance>(
 	runtime_para_id: u32,
 	governance_origin: GovernanceOrigin<RuntimeOriginOf<Runtime>>,
 ) where
-	Runtime: BasicParachainRuntime + BridgeGrandpaConfig<GrandpaPalletInstance>,
+	Runtime: BasicTeyrchainRuntime + BridgeGrandpaConfig<GrandpaPalletInstance>,
 	GrandpaPalletInstance: 'static,
 	RuntimeCallOf<Runtime>:
 		GetDispatchInfo + From<BridgeGrandpaCall<Runtime, GrandpaPalletInstance>>,
@@ -147,7 +147,7 @@ pub fn change_bridge_grandpa_pallet_mode_by_governance_works<Runtime, GrandpaPal
 	runtime_para_id: u32,
 	governance_origin: GovernanceOrigin<RuntimeOriginOf<Runtime>>,
 ) where
-	Runtime: BasicParachainRuntime + BridgeGrandpaConfig<GrandpaPalletInstance>,
+	Runtime: BasicTeyrchainRuntime + BridgeGrandpaConfig<GrandpaPalletInstance>,
 	GrandpaPalletInstance: 'static,
 	RuntimeCallOf<Runtime>:
 		GetDispatchInfo + From<BridgeGrandpaCall<Runtime, GrandpaPalletInstance>>,
@@ -198,10 +198,10 @@ pub fn change_bridge_teyrchains_pallet_mode_by_governance_works<Runtime, Teyrcha
 	runtime_para_id: u32,
 	governance_origin: GovernanceOrigin<RuntimeOriginOf<Runtime>>,
 ) where
-	Runtime: BasicParachainRuntime + BridgeParachainsConfig<TeyrchainsPalletInstance>,
+	Runtime: BasicTeyrchainRuntime + BridgeTeyrchainsConfig<TeyrchainsPalletInstance>,
 	TeyrchainsPalletInstance: 'static,
 	RuntimeCallOf<Runtime>:
-		GetDispatchInfo + From<BridgeParachainsCall<Runtime, TeyrchainsPalletInstance>>,
+		GetDispatchInfo + From<BridgeTeyrchainsCall<Runtime, TeyrchainsPalletInstance>>,
 {
 	run_test::<Runtime, _>(collator_session_key, runtime_para_id, vec![], || {
 		let dispatch_set_operating_mode_call = |old_mode, new_mode| {
@@ -251,7 +251,7 @@ pub fn change_bridge_messages_pallet_mode_by_governance_works<Runtime, MessagesP
 	runtime_para_id: u32,
 	governance_origin: GovernanceOrigin<RuntimeOriginOf<Runtime>>,
 ) where
-	Runtime: BasicParachainRuntime + BridgeMessagesConfig<MessagesPalletInstance>,
+	Runtime: BasicTeyrchainRuntime + BridgeMessagesConfig<MessagesPalletInstance>,
 	MessagesPalletInstance: 'static,
 	RuntimeCallOf<Runtime>:
 		GetDispatchInfo + From<BridgeMessagesCall<Runtime, MessagesPalletInstance>>,
@@ -310,7 +310,7 @@ pub fn change_bridge_messages_pallet_mode_by_governance_works<Runtime, MessagesP
 
 /// Test-case makes sure that `Runtime` can handle xcm `ExportMessage`:
 /// Checks if received XCM messages is correctly added to the message outbound queue for delivery.
-/// For SystemParachains we expect unpaid execution.
+/// For SystemTeyrchains we expect unpaid execution.
 pub fn handle_export_message_from_system_teyrchain_to_outbound_queue_works<
 	Runtime,
 	XcmConfig,
@@ -330,7 +330,7 @@ pub fn handle_export_message_from_system_teyrchain_to_outbound_queue_works<
 	maybe_paid_export_message: Option<Asset>,
 	prepare_configuration: impl Fn() -> LaneIdOf<Runtime, MessagesPalletInstance>,
 ) where
-	Runtime: BasicParachainRuntime + BridgeMessagesConfig<MessagesPalletInstance>,
+	Runtime: BasicTeyrchainRuntime + BridgeMessagesConfig<MessagesPalletInstance>,
 	XcmConfig: xcm_executor::Config,
 	MessagesPalletInstance: 'static,
 	LocationToAccountId: ConvertLocation<AccountIdOf<Runtime>>,
@@ -449,7 +449,7 @@ pub fn message_dispatch_routing_works<
 	>,
 	prepare_configuration: impl Fn(),
 ) where
-	Runtime: BasicParachainRuntime
+	Runtime: BasicTeyrchainRuntime
 		+ pezcumulus_pallet_xcmp_queue::Config
 		+ BridgeMessagesConfig<MessagesPalletInstance, InboundPayload = test_data::XcmAsPlainPayload>,
 	AllPalletsWithoutSystem:
@@ -686,7 +686,7 @@ pub(crate) mod for_pallet_xcm_bridge_hub {
 		origin_with_origin_kind: (Location, OriginKind),
 		is_paid_xcm_execution: bool,
 	) where
-		Runtime: BasicParachainRuntime + BridgeXcmOverBridgeConfig<XcmOverBridgePalletInstance>,
+		Runtime: BasicTeyrchainRuntime + BridgeXcmOverBridgeConfig<XcmOverBridgePalletInstance>,
 		XcmOverBridgePalletInstance: 'static,
 		<Runtime as pezframe_system::Config>::RuntimeCall: GetDispatchInfo + From<BridgeXcmOverBridgeCall<Runtime, XcmOverBridgePalletInstance>>,
 		<Runtime as pezpallet_balances::Config>::Balance: From<<<Runtime as pezpallet_bridge_messages::Config<<Runtime as pezpallet_xcm_bridge_hub::Config<XcmOverBridgePalletInstance>>::BridgeMessagesPalletInstance>>::ThisChain as pezbp_runtime::Chain>::Balance>,

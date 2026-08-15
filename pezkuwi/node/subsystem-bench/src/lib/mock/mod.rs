@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
-use pezkuwi_node_subsystem::HeadSupportsParachains;
+use pezkuwi_node_subsystem::HeadSupportsTeyrchains;
 use pezkuwi_node_subsystem_types::Hash;
 use pezsp_consensus::SyncOracle;
 
@@ -29,10 +29,10 @@ pub mod network_bridge;
 pub mod prospective_teyrchains;
 pub mod runtime_api;
 
-pub struct AlwaysSupportsParachains {}
+pub struct AlwaysSupportsTeyrchains {}
 
 #[async_trait::async_trait]
-impl HeadSupportsParachains for AlwaysSupportsParachains {
+impl HeadSupportsTeyrchains for AlwaysSupportsTeyrchains {
 	async fn head_supports_teyrchains(&self, _head: &Hash) -> bool {
 		true
 	}
@@ -70,11 +70,11 @@ macro_rules! dummy_builder {
 			.collator_protocol(MockCollatorProtocol {})
 			.gossip_support(MockGossipSupport {})
 			.dispute_distribution(MockDisputeDistribution {})
-			.prospective_teyrchains(MockProspectiveParachains {})
+			.prospective_teyrchains(MockProspectiveTeyrchains {})
 			.activation_external_listeners(Default::default())
 			.active_leaves(Default::default())
 			.metrics($metrics)
-			.supports_teyrchains(AlwaysSupportsParachains {})
+			.supports_teyrchains(AlwaysSupportsTeyrchains {})
 			.spawner(SpawnGlue($spawn_task_handle))
 	}};
 }

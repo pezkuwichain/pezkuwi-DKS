@@ -38,7 +38,7 @@ use pezkuwi_node_subsystem::{
 	messages::{
 		network_bridge_event::NewGossipTopology, CandidateBackingMessage, HypotheticalCandidate,
 		HypotheticalMembershipRequest, NetworkBridgeEvent, NetworkBridgeTxMessage,
-		ProspectiveParachainsMessage,
+		ProspectiveTeyrchainsMessage,
 	},
 	overseer, ActivatedLeaf,
 };
@@ -2121,7 +2121,7 @@ async fn fragment_chain_update_inner<Context>(
 	);
 	let candidate_memberships = {
 		let (tx, rx) = oneshot::channel();
-		ctx.send_message(ProspectiveParachainsMessage::GetHypotheticalMembership(
+		ctx.send_message(ProspectiveTeyrchainsMessage::GetHypotheticalMembership(
 			HypotheticalMembershipRequest {
 				candidates: hypotheticals,
 				fragment_chain_relay_parent: active_leaf_hash,

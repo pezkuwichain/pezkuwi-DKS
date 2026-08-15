@@ -22,9 +22,9 @@ use crate::{
 		candidate_backing::MockCandidateBacking,
 		chain_api::{ChainApiState, MockChainApi},
 		network_bridge::{MockNetworkBridgeRx, MockNetworkBridgeTx},
-		prospective_teyrchains::MockProspectiveParachains,
+		prospective_teyrchains::MockProspectiveTeyrchains,
 		runtime_api::{MockRuntimeApi, MockRuntimeApiCoreState},
-		AlwaysSupportsParachains,
+		AlwaysSupportsTeyrchains,
 	},
 	network::{new_network, NetworkEmulatorHandle, NetworkInterface, NetworkInterfaceReceiver},
 	usage::BenchmarkUsage,
@@ -81,7 +81,7 @@ fn build_overseer(
 	network_interface: NetworkInterface,
 	network_receiver: NetworkInterfaceReceiver,
 	dependencies: &TestEnvironmentDependencies,
-) -> (Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsParachains>, OverseerHandle) {
+) -> (Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsTeyrchains>, OverseerHandle) {
 	let overseer_connector = OverseerConnector::with_event_capacity(64000);
 	let overseer_metrics = OverseerMetrics::try_register(&dependencies.registry).unwrap();
 	let spawn_task_handle = dependencies.task_manager.spawn_handle();
@@ -96,7 +96,7 @@ fn build_overseer(
 	);
 	let chain_api_state = ChainApiState { block_headers: state.block_headers.clone() };
 	let mock_chain_api = MockChainApi::new(chain_api_state);
-	let mock_prospective_teyrchains = MockProspectiveParachains::new();
+	let mock_prospective_teyrchains = MockProspectiveTeyrchains::new();
 	let mock_candidate_backing = MockCandidateBacking::new(
 		state.config.clone(),
 		state

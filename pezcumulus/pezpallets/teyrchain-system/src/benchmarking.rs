@@ -22,7 +22,7 @@
 use super::*;
 use crate::{
 	block_weight::{
-		BlockWeightMode, DynamicMaxBlockWeight, MaxParachainBlockWeight, FULL_CORE_WEIGHT,
+		BlockWeightMode, DynamicMaxBlockWeight, MaxTeyrchainBlockWeight, FULL_CORE_WEIGHT,
 	},
 	teyrchain_inherent::InboundDownwardMessages,
 };
@@ -108,7 +108,7 @@ mod benchmarks {
 			}
 			.to_digest_item(),
 		);
-		let target_weight = MaxParachainBlockWeight::<T, ConstU32<4>>::target_block_weight();
+		let target_weight = MaxTeyrchainBlockWeight::<T, ConstU32<4>>::target_block_weight();
 
 		let info = DispatchInfo {
 			// The weight needs to be more than the target weight.
@@ -142,7 +142,7 @@ mod benchmarks {
 
 		assert_eq!(crate::BlockWeightMode::<T>::get().unwrap(), BlockWeightMode::full_core());
 		assert!(has_use_full_core_digest::<T>());
-		assert_eq!(MaxParachainBlockWeight::<T, ConstU32<4>>::get(), FULL_CORE_WEIGHT);
+		assert_eq!(MaxTeyrchainBlockWeight::<T, ConstU32<4>>::get(), FULL_CORE_WEIGHT);
 
 		Ok(())
 	}
@@ -167,7 +167,7 @@ mod benchmarks {
 			}
 			.to_digest_item(),
 		);
-		let target_weight = MaxParachainBlockWeight::<T, ConstU32<4>>::target_block_weight();
+		let target_weight = MaxTeyrchainBlockWeight::<T, ConstU32<4>>::target_block_weight();
 
 		let info = DispatchInfo {
 			call_weight: Weight::from_parts(1024, 1024),
@@ -202,7 +202,7 @@ mod benchmarks {
 			BlockWeightMode::fraction_of_core(Some(1))
 		);
 		assert!(!has_use_full_core_digest::<T>());
-		assert_eq!(MaxParachainBlockWeight::<T, ConstU32<4>>::get(), target_weight);
+		assert_eq!(MaxTeyrchainBlockWeight::<T, ConstU32<4>>::get(), target_weight);
 
 		Ok(())
 	}

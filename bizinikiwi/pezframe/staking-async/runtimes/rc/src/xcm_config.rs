@@ -30,7 +30,7 @@ use pezframe_support::{
 };
 use pezframe_system::EnsureRoot;
 use pezkuwi_runtime_common::{
-	xcm_sender::{ChildParachainRouter, ExponentialPrice},
+	xcm_sender::{ChildTeyrchainRouter, ExponentialPrice},
 	ToAuthor,
 };
 use pezpallet_staking_async_rc_runtime_constants::{
@@ -42,8 +42,8 @@ use xcm::latest::{prelude::*, WESTEND_GENESIS_HASH};
 use xcm_builder::{
 	AccountId32Aliases, AliasChildLocation, AllowExplicitUnpaidExecutionFrom,
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
-	ChildParachainAsNative, ChildParachainConvertsVia, DescribeAllTerminal, DescribeFamily,
-	FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
+	ChildTeyrchainAsNative, ChildTeyrchainConvertsVia, DescribeAllTerminal, DescribeFamily,
+	FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemTeyrchain,
 	IsConcrete, MintLocation, OriginToPluralityVoice, SendXcmFeeToAccount,
 	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
 	TrailingSetTopicAsId, UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
@@ -69,7 +69,7 @@ parameter_types! {
 
 pub type LocationConverter = (
 	// We can convert a child teyrchain using the standard `AccountId` conversion.
-	ChildParachainConvertsVia<ParaId, AccountId>,
+	ChildTeyrchainConvertsVia<ParaId, AccountId>,
 	// We can directly alias an `AccountId32` into a local account.
 	AccountId32Aliases<ThisNetwork, AccountId>,
 	// Foreign locations alias into accounts according to a hash of their standard description.
@@ -95,7 +95,7 @@ type LocalOriginConverter = (
 	SovereignSignedViaLocation<LocationConverter, RuntimeOrigin>,
 	// If the origin kind is `Native` and the XCM origin is a child teyrchain, then we can express
 	// it with the special `teyrchains_origin::Origin` origin variant.
-	ChildParachainAsNative<teyrchains_origin::Origin, RuntimeOrigin>,
+	ChildTeyrchainAsNative<teyrchains_origin::Origin, RuntimeOrigin>,
 	// If the origin kind is `Native` and the XCM origin is the `AccountId32` location, then it can
 	// be expressed using the `Signed` origin variant.
 	SignedAccountId32AsNative<ThisNetwork, RuntimeOrigin>,
@@ -103,14 +103,14 @@ type LocalOriginConverter = (
 	XcmPassthrough<RuntimeOrigin>,
 );
 
-pub type PriceForChildParachainDelivery =
+pub type PriceForChildTeyrchainDelivery =
 	ExponentialPrice<FeeAssetId, BaseDeliveryFee, TransactionByteFee, Dmp>;
 
 /// The XCM router. When we want to send an XCM message, we use this type. It amalgamates all of our
 /// individual routers.
 pub type XcmRouter = WithUniqueTopic<
 	// Only one router so far - use DMP to communicate with child teyrchains.
-	ChildParachainRouter<Runtime, XcmPallet, PriceForChildParachainDelivery>,
+	ChildTeyrchainRouter<Runtime, XcmPallet, PriceForChildTeyrchainDelivery>,
 >;
 
 parameter_types! {
@@ -140,8 +140,8 @@ pub type TrustedTeleporters = (
 	xcm_builder::Case<WndForBroker>,
 );
 
-pub struct OnlyParachains;
-impl Contains<Location> for OnlyParachains {
+pub struct OnlyTeyrchains;
+impl Contains<Location> for OnlyTeyrchains {
 	fn contains(location: &Location) -> bool {
 		matches!(location.unpack(), (0, [Teyrchain(_)]))
 	}
@@ -175,9 +175,9 @@ pub type Barrier = TrailingSetTopicAsId<(
 			// If the message is one that immediately attempts to pay for execution, then allow it.
 			AllowTopLevelPaidExecutionFrom<Everything>,
 			// Subscriptions for version tracking are OK.
-			AllowSubscriptionsFrom<OnlyParachains>,
+			AllowSubscriptionsFrom<OnlyTeyrchains>,
 			// Messages from system teyrchains or the Fellows plurality need not pay for execution.
-			AllowExplicitUnpaidExecutionFrom<(IsChildSystemParachain<ParaId>, Fellows)>,
+			AllowExplicitUnpaidExecutionFrom<(IsChildSystemTeyrchain<ParaId>, Fellows)>,
 		),
 		UniversalLocation,
 		ConstU32<8>,
@@ -186,7 +186,7 @@ pub type Barrier = TrailingSetTopicAsId<(
 
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
-pub type WaivedLocations = (SystemParachains, Equals<RootLocation>, LocalPlurality);
+pub type WaivedLocations = (SystemTeyrchains, Equals<RootLocation>, LocalPlurality);
 
 /// We let locations alias into child locations of their own.
 /// This is a very simple aliasing rule, mimicking the behaviour of

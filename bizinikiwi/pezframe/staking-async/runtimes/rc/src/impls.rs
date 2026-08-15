@@ -44,8 +44,8 @@ enum IdentityMigratorCalls<AccountId: Encode> {
 
 /// Type that implements `OnReapIdentity` that will send the deposit needed to store the same
 /// information on a teyrchain, sends the deposit there, and then updates it.
-pub struct ToParachainIdentityReaper<Runtime, AccountId>(PhantomData<(Runtime, AccountId)>);
-impl<Runtime, AccountId> ToParachainIdentityReaper<Runtime, AccountId> {
+pub struct ToTeyrchainIdentityReaper<Runtime, AccountId>(PhantomData<(Runtime, AccountId)>);
+impl<Runtime, AccountId> ToTeyrchainIdentityReaper<Runtime, AccountId> {
 	/// Calculate the balance needed on the remote chain based on the `IdentityInfo` and `Subs` on
 	/// this chain. The total includes:
 	///
@@ -82,7 +82,7 @@ impl<Runtime, AccountId> ToParachainIdentityReaper<Runtime, AccountId> {
 
 // Note / Warning: This implementation should only be used in a transactional context. If not, then
 // an error could result in assets being burned.
-impl<Runtime, AccountId> OnReapIdentity<AccountId> for ToParachainIdentityReaper<Runtime, AccountId>
+impl<Runtime, AccountId> OnReapIdentity<AccountId> for ToTeyrchainIdentityReaper<Runtime, AccountId>
 where
 	Runtime: pezframe_system::Config + pezpallet_xcm::Config,
 	AccountId: Into<[u8; 32]> + Clone + Encode,

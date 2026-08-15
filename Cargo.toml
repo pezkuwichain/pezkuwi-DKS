@@ -88,8 +88,8 @@ members = [
 	"bizinikiwi/deprecated/hashing",
 	"bizinikiwi/deprecated/hashing/proc-macro",
 	"bizinikiwi/pezframe",
-	"bizinikiwi/pezframe/alliance",
 	"bizinikiwi/pezframe/accumulate-and-forward",
+	"bizinikiwi/pezframe/alliance",
 	"bizinikiwi/pezframe/asset-conversion",
 	"bizinikiwi/pezframe/asset-conversion/ops",
 	"bizinikiwi/pezframe/asset-rate",
@@ -1026,8 +1026,8 @@ pezframe-system-rpc-runtime-api = { path = "bizinikiwi/pezframe/system/rpc/runti
 pezframe-try-runtime = { path = "bizinikiwi/pezframe/try-runtime", version = "0.34.0", default-features = false }
 pezmmr-gadget = { path = "bizinikiwi/client/merkle-mountain-range", version = "29.0.0", default-features = false }
 pezmmr-rpc = { path = "bizinikiwi/client/merkle-mountain-range/rpc", version = "28.0.0", default-features = false }
-pezpallet-ah-ops = { path = "pezcumulus/pezpallets/ah-ops", version = "0.1.0", default-features = false }
 pezpallet-accumulate-and-forward = { path = "bizinikiwi/pezframe/accumulate-and-forward", version = "0.4.0", default-features = false }
+pezpallet-ah-ops = { path = "pezcumulus/pezpallets/ah-ops", version = "0.1.0", default-features = false }
 pezpallet-alliance = { path = "bizinikiwi/pezframe/alliance", version = "27.0.0", default-features = false }
 pezpallet-asset-conversion = { path = "bizinikiwi/pezframe/asset-conversion", version = "10.0.0", default-features = false }
 pezpallet-asset-conversion-ops = { path = "bizinikiwi/pezframe/asset-conversion/ops", version = "0.1.0", default-features = false }

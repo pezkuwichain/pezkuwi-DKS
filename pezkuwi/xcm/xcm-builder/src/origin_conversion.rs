@@ -69,18 +69,18 @@ impl<RuntimeOrigin: OriginTrait> ConvertOrigin<RuntimeOrigin> for ParentAsSuperu
 	}
 }
 
-pub struct ChildSystemParachainAsSuperuser<ParaId, RuntimeOrigin>(
+pub struct ChildSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>(
 	PhantomData<(ParaId, RuntimeOrigin)>,
 );
 impl<ParaId: IsSystem + From<u32>, RuntimeOrigin: OriginTrait> ConvertOrigin<RuntimeOrigin>
-	for ChildSystemParachainAsSuperuser<ParaId, RuntimeOrigin>
+	for ChildSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>
 {
 	fn convert_origin(
 		origin: impl Into<Location>,
 		kind: OriginKind,
 	) -> Result<RuntimeOrigin, Location> {
 		let origin = origin.into();
-		tracing::trace!(target: "xcm::origin_conversion", ?origin, ?kind, "ChildSystemParachainAsSuperuser",);
+		tracing::trace!(target: "xcm::origin_conversion", ?origin, ?kind, "ChildSystemTeyrchainAsSuperuser",);
 		match (kind, origin.unpack()) {
 			(OriginKind::Superuser, (0, [Junction::Teyrchain(id)]))
 				if ParaId::from(*id).is_system() =>
@@ -92,11 +92,11 @@ impl<ParaId: IsSystem + From<u32>, RuntimeOrigin: OriginTrait> ConvertOrigin<Run
 	}
 }
 
-pub struct SiblingSystemParachainAsSuperuser<ParaId, RuntimeOrigin>(
+pub struct SiblingSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>(
 	PhantomData<(ParaId, RuntimeOrigin)>,
 );
 impl<ParaId: IsSystem + From<u32>, RuntimeOrigin: OriginTrait> ConvertOrigin<RuntimeOrigin>
-	for SiblingSystemParachainAsSuperuser<ParaId, RuntimeOrigin>
+	for SiblingSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>
 {
 	fn convert_origin(
 		origin: impl Into<Location>,
@@ -106,7 +106,7 @@ impl<ParaId: IsSystem + From<u32>, RuntimeOrigin: OriginTrait> ConvertOrigin<Run
 		tracing::trace!(
 			target: "xcm::origin_conversion",
 			?origin, ?kind,
-			"SiblingSystemParachainAsSuperuser",
+			"SiblingSystemTeyrchainAsSuperuser",
 		);
 		match (kind, origin.unpack()) {
 			(OriginKind::Superuser, (1, [Junction::Teyrchain(id)]))
@@ -119,18 +119,18 @@ impl<ParaId: IsSystem + From<u32>, RuntimeOrigin: OriginTrait> ConvertOrigin<Run
 	}
 }
 
-pub struct ChildParachainAsNative<TeyrchainOrigin, RuntimeOrigin>(
+pub struct ChildTeyrchainAsNative<TeyrchainOrigin, RuntimeOrigin>(
 	PhantomData<(TeyrchainOrigin, RuntimeOrigin)>,
 );
 impl<TeyrchainOrigin: From<u32>, RuntimeOrigin: From<TeyrchainOrigin>> ConvertOrigin<RuntimeOrigin>
-	for ChildParachainAsNative<TeyrchainOrigin, RuntimeOrigin>
+	for ChildTeyrchainAsNative<TeyrchainOrigin, RuntimeOrigin>
 {
 	fn convert_origin(
 		origin: impl Into<Location>,
 		kind: OriginKind,
 	) -> Result<RuntimeOrigin, Location> {
 		let origin = origin.into();
-		tracing::trace!(target: "xcm::origin_conversion", ?origin, ?kind, "ChildParachainAsNative");
+		tracing::trace!(target: "xcm::origin_conversion", ?origin, ?kind, "ChildTeyrchainAsNative");
 		match (kind, origin.unpack()) {
 			(OriginKind::Native, (0, [Junction::Teyrchain(id)])) => {
 				Ok(RuntimeOrigin::from(TeyrchainOrigin::from(*id)))
@@ -140,11 +140,11 @@ impl<TeyrchainOrigin: From<u32>, RuntimeOrigin: From<TeyrchainOrigin>> ConvertOr
 	}
 }
 
-pub struct SiblingParachainAsNative<TeyrchainOrigin, RuntimeOrigin>(
+pub struct SiblingTeyrchainAsNative<TeyrchainOrigin, RuntimeOrigin>(
 	PhantomData<(TeyrchainOrigin, RuntimeOrigin)>,
 );
 impl<TeyrchainOrigin: From<u32>, RuntimeOrigin: From<TeyrchainOrigin>> ConvertOrigin<RuntimeOrigin>
-	for SiblingParachainAsNative<TeyrchainOrigin, RuntimeOrigin>
+	for SiblingTeyrchainAsNative<TeyrchainOrigin, RuntimeOrigin>
 {
 	fn convert_origin(
 		origin: impl Into<Location>,
@@ -154,7 +154,7 @@ impl<TeyrchainOrigin: From<u32>, RuntimeOrigin: From<TeyrchainOrigin>> ConvertOr
 		tracing::trace!(
 			target: "xcm::origin_conversion",
 			?origin, ?kind,
-			"SiblingParachainAsNative",
+			"SiblingTeyrchainAsNative",
 		);
 		match (kind, origin.unpack()) {
 			(OriginKind::Native, (1, [Junction::Teyrchain(id)])) => {

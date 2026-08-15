@@ -42,14 +42,14 @@ impl<IsForeign: ContainsPair<Location, Location>> ContainsPair<Asset, Location>
 
 /// Checks if `a` is from sibling location `b`. Checks that `Location-a` starts with
 /// `Location-b`, and that the `ParaId` of `b` is not equal to `a`.
-pub struct FromSiblingParachain<SelfParaId, L = Location>(
+pub struct FromSiblingTeyrchain<SelfParaId, L = Location>(
 	core::marker::PhantomData<(SelfParaId, L)>,
 );
 impl<SelfParaId: Get<ParaId>, L: TryFrom<Location> + TryInto<Location> + Clone + Debug>
-	ContainsPair<L, L> for FromSiblingParachain<SelfParaId, L>
+	ContainsPair<L, L> for FromSiblingTeyrchain<SelfParaId, L>
 {
 	fn contains(a: &L, b: &L) -> bool {
-		tracing::trace!(target: "xcm:contains", ?a, ?b, "FromSiblingParachain");
+		tracing::trace!(target: "xcm:contains", ?a, ?b, "FromSiblingTeyrchain");
 		// We convert locations to latest
 		let a = match ((*a).clone().try_into(), (*b).clone().try_into()) {
 			(Ok(a), Ok(b)) if a.starts_with(&b) => a, // `a` needs to be from `b` at least

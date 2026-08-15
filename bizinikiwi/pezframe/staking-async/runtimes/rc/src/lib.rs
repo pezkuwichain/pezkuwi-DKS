@@ -121,7 +121,7 @@ use xcm::{
 	VersionedXcm,
 };
 use xcm_builder::PayOverXcm;
-use xcm_runtime_apis::{
+use xcm_runtime_pezapis::{
 	dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
 	fees::Error as XcmPaymentApiError,
 };
@@ -189,7 +189,7 @@ pub mod xcm_config;
 
 // Implemented types.
 mod impls;
-use impls::ToParachainIdentityReaper;
+use impls::ToTeyrchainIdentityReaper;
 
 // Governance and configurations.
 pub mod governance;
@@ -1047,7 +1047,7 @@ impl pezpallet_treasury::Config for Runtime {
 	type BalanceConverter = UnityOrOuterConversion<
 		ContainsParts<
 			FromContains<
-				xcm_builder::IsChildSystemParachain<ParaId>,
+				xcm_builder::IsChildSystemTeyrchain<ParaId>,
 				xcm_builder::IsParentsOnly<ConstU8<1>>,
 			>,
 		>,
@@ -1727,7 +1727,7 @@ impl auctions::Config for Runtime {
 impl identity_migrator::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Reaper = EnsureSigned<AccountId>;
-	type ReapIdentityHandler = ToParachainIdentityReaper<Runtime, Self::AccountId>;
+	type ReapIdentityHandler = ToTeyrchainIdentityReaper<Runtime, Self::AccountId>;
 	type WeightInfo = weights::pezkuwi_runtime_common_identity_migrator::WeightInfo<Runtime>;
 }
 
@@ -2639,7 +2639,7 @@ pezsp_api::impl_runtime_apis! {
 		}
 	}
 
-	impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
+	impl xcm_runtime_pezapis::fees::XcmPaymentApi<Block> for Runtime {
 		fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
 			let acceptable_assets = vec![AssetId(xcm_config::TokenLocation::get())];
 			XcmPallet::query_acceptable_payment_assets(xcm_version, acceptable_assets)
@@ -2653,11 +2653,11 @@ pezsp_api::impl_runtime_apis! {
 					Ok(WeightToFee::weight_to_fee(&weight))
 				},
 				Ok(asset_id) => {
-					log::trace!(target: "xcm::xcm_runtime_apis", "query_weight_to_asset_fee - unhandled asset_id: {asset_id:?}!");
+					log::trace!(target: "xcm::xcm_runtime_pezapis", "query_weight_to_asset_fee - unhandled asset_id: {asset_id:?}!");
 					Err(XcmPaymentApiError::AssetNotFound)
 				},
 				Err(_) => {
-					log::trace!(target: "xcm::xcm_runtime_apis", "query_weight_to_asset_fee - failed to convert asset: {asset:?}!");
+					log::trace!(target: "xcm::xcm_runtime_pezapis", "query_weight_to_asset_fee - failed to convert asset: {asset:?}!");
 					Err(XcmPaymentApiError::VersionedConversionFailed)
 				}
 			}
@@ -2673,7 +2673,7 @@ pezsp_api::impl_runtime_apis! {
 		}
 	}
 
-	impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
+	impl xcm_runtime_pezapis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
 		fn dry_run_call(origin: OriginCaller, call: RuntimeCall, result_xcms_version: xcm::prelude::XcmVersion) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
 			XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call, result_xcms_version)
 		}
@@ -2683,12 +2683,12 @@ pezsp_api::impl_runtime_apis! {
 		}
 	}
 
-	impl xcm_runtime_apis::conversions::LocationToAccountApi<Block, AccountId> for Runtime {
+	impl xcm_runtime_pezapis::conversions::LocationToAccountApi<Block, AccountId> for Runtime {
 		fn convert_location(location: VersionedLocation) -> Result<
 			AccountId,
-			xcm_runtime_apis::conversions::Error
+			xcm_runtime_pezapis::conversions::Error
 		> {
-			xcm_runtime_apis::conversions::LocationToAccountHelper::<
+			xcm_runtime_pezapis::conversions::LocationToAccountHelper::<
 				AccountId,
 				xcm_config::LocationConverter,
 			>::convert_location(location)
@@ -2785,17 +2785,17 @@ pezsp_api::impl_runtime_apis! {
 
 			impl pezpallet_xcm::benchmarking::Config for Runtime {
 				type DeliveryHelper = (
-					pezkuwi_runtime_common::xcm_sender::ToParachainDeliveryHelper<
+					pezkuwi_runtime_common::xcm_sender::ToTeyrchainDeliveryHelper<
 						xcm_config::XcmConfig,
 						ExistentialDepositAsset,
-						xcm_config::PriceForChildParachainDelivery,
+						xcm_config::PriceForChildTeyrchainDelivery,
 						AssetHubParaId,
 						Dmp,
 					>,
-					pezkuwi_runtime_common::xcm_sender::ToParachainDeliveryHelper<
+					pezkuwi_runtime_common::xcm_sender::ToTeyrchainDeliveryHelper<
 						xcm_config::XcmConfig,
 						ExistentialDepositAsset,
-						xcm_config::PriceForChildParachainDelivery,
+						xcm_config::PriceForChildTeyrchainDelivery,
 						RandomParaId,
 						Dmp,
 					>
@@ -2858,10 +2858,10 @@ pezsp_api::impl_runtime_apis! {
 			impl pezpallet_xcm_benchmarks::Config for Runtime {
 				type XcmConfig = xcm_config::XcmConfig;
 				type AccountIdConverter = xcm_config::LocationConverter;
-				type DeliveryHelper = pezkuwi_runtime_common::xcm_sender::ToParachainDeliveryHelper<
+				type DeliveryHelper = pezkuwi_runtime_common::xcm_sender::ToTeyrchainDeliveryHelper<
 					xcm_config::XcmConfig,
 					ExistentialDepositAsset,
-					xcm_config::PriceForChildParachainDelivery,
+					xcm_config::PriceForChildTeyrchainDelivery,
 					AssetHubParaId,
 					Dmp,
 				>;
@@ -3020,11 +3020,11 @@ pezsp_api::impl_runtime_apis! {
 		}
 	}
 
-	impl xcm_runtime_apis::trusted_query::TrustedQueryApi<Block> for Runtime {
-		fn is_trusted_reserve(asset: VersionedAsset, location: VersionedLocation) -> Result<bool, xcm_runtime_apis::trusted_query::Error> {
+	impl xcm_runtime_pezapis::trusted_query::TrustedQueryApi<Block> for Runtime {
+		fn is_trusted_reserve(asset: VersionedAsset, location: VersionedLocation) -> Result<bool, xcm_runtime_pezapis::trusted_query::Error> {
 			XcmPallet::is_trusted_reserve(asset, location)
 		}
-		fn is_trusted_teleporter(asset: VersionedAsset, location: VersionedLocation) -> Result<bool, xcm_runtime_apis::trusted_query::Error> {
+		fn is_trusted_teleporter(asset: VersionedAsset, location: VersionedLocation) -> Result<bool, xcm_runtime_pezapis::trusted_query::Error> {
 			XcmPallet::is_trusted_teleporter(asset, location)
 		}
 	}

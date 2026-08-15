@@ -31,7 +31,7 @@ use futures_timer::Delay;
 use pezkuwi_node_subsystem::{
 	messages::{
 		Ancestors, BackableCandidateRef, CandidateBackingMessage, ChainApiMessage,
-		ProspectiveParachainsMessage, ProvisionableData, ProvisionerInherentData,
+		ProspectiveTeyrchainsMessage, ProvisionableData, ProvisionerInherentData,
 		ProvisionerMessage,
 	},
 	overseer, ActivatedLeaf, ActiveLeavesUpdate, FromOrchestra, OverseerSignal, SpawnedSubsystem,
@@ -745,7 +745,7 @@ async fn get_backable_candidates(
 ) -> Result<Vec<BackableCandidateRef>, Error> {
 	let (tx, rx) = oneshot::channel();
 	sender
-		.send_message(ProspectiveParachainsMessage::GetBackableCandidates {
+		.send_message(ProspectiveTeyrchainsMessage::GetBackableCandidates {
 			leaf,
 			para_id,
 			count,

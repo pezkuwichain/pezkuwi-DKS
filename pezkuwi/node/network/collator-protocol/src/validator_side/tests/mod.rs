@@ -316,8 +316,8 @@ async fn assert_candidate_backing_second(
 		),
 		CollationVersion::V2 | CollationVersion::V3 => assert_matches!(
 			msg,
-			AllMessages::ProspectiveParachains(
-				ProspectiveParachainsMessage::GetProspectiveValidationData(request, tx),
+			AllMessages::ProspectiveTeyrchains(
+				ProspectiveTeyrchainsMessage::GetProspectiveValidationData(request, tx),
 			) => {
 				assert_eq!(expected_relay_parent, request.candidate_relay_parent);
 				assert_eq!(expected_para_id, request.para_id);

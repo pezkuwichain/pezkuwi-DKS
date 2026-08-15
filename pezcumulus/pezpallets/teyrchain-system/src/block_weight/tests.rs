@@ -39,12 +39,12 @@ type TxExtension =
 	DynamicMaxBlockWeight<Runtime, CheckWeight<Runtime>, ConstU32<TARGET_BLOCK_RATE>>;
 type TxExtensionOnlyOperational =
 	DynamicMaxBlockWeight<Runtime, CheckWeight<Runtime>, ConstU32<TARGET_BLOCK_RATE>, 10, false>;
-type MaximumBlockWeight = MaxParachainBlockWeight<Runtime, ConstU32<TARGET_BLOCK_RATE>>;
+type MaximumBlockWeight = MaxTeyrchainBlockWeight<Runtime, ConstU32<TARGET_BLOCK_RATE>>;
 
 #[test]
 fn test_single_core_single_block() {
 	TestExtBuilder::new().number_of_cores(1).build().execute_with(|| {
-		let weight = MaxParachainBlockWeight::<Runtime, ConstU32<1>>::get();
+		let weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<1>>::get();
 
 		assert_eq!(weight.ref_time(), 2 * WEIGHT_REF_TIME_PER_SECOND);
 		assert_eq!(weight.proof_size(), MAX_POV_SIZE as u64);
@@ -54,7 +54,7 @@ fn test_single_core_single_block() {
 #[test]
 fn test_single_core_multiple_blocks() {
 	TestExtBuilder::new().number_of_cores(1).build().execute_with(|| {
-		let weight = MaxParachainBlockWeight::<Runtime, ConstU32<4>>::get();
+		let weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<4>>::get();
 
 		// With 1 core and 4 target blocks, should get 0.5s ref time and 1/4 PoV size per block
 		assert_eq!(weight.ref_time(), 2 * WEIGHT_REF_TIME_PER_SECOND / 4);
@@ -65,7 +65,7 @@ fn test_single_core_multiple_blocks() {
 #[test]
 fn test_multiple_cores_single_block() {
 	TestExtBuilder::new().number_of_cores(3).build().execute_with(|| {
-		let weight = MaxParachainBlockWeight::<Runtime, ConstU32<1>>::get();
+		let weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<1>>::get();
 
 		// With 3 cores and 1 target blocks, should get 2s ref time and 1 PoV size
 		assert_eq!(weight.ref_time(), 2 * WEIGHT_REF_TIME_PER_SECOND);
@@ -76,7 +76,7 @@ fn test_multiple_cores_single_block() {
 #[test]
 fn test_multiple_cores_multiple_blocks() {
 	TestExtBuilder::new().number_of_cores(2).build().execute_with(|| {
-		let weight = MaxParachainBlockWeight::<Runtime, ConstU32<4>>::get();
+		let weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<4>>::get();
 
 		// With 2 cores and 4 target blocks, should get 1s ref time and 2x PoV size / 4 per
 		// block
@@ -88,7 +88,7 @@ fn test_multiple_cores_multiple_blocks() {
 #[test]
 fn test_no_core_info() {
 	TestExtBuilder::new().build().execute_with(|| {
-		let weight = MaxParachainBlockWeight::<Runtime, ConstU32<4>>::get();
+		let weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<4>>::get();
 
 		// Without core info, it takes the `PreviousCoreCount` into account.
 		assert_eq!(weight.ref_time(), 2 * WEIGHT_REF_TIME_PER_SECOND / 4);
@@ -99,7 +99,7 @@ fn test_no_core_info() {
 #[test]
 fn test_zero_cores() {
 	TestExtBuilder::new().number_of_cores(0).build().execute_with(|| {
-		let weight = MaxParachainBlockWeight::<Runtime, ConstU32<4>>::get();
+		let weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<4>>::get();
 
 		// With 0 cores, should return conservative default
 		assert_eq!(weight.ref_time(), 2 * WEIGHT_REF_TIME_PER_SECOND);
@@ -110,7 +110,7 @@ fn test_zero_cores() {
 #[test]
 fn test_uneven_number_of_blocks_on_even_number_of_cores() {
 	TestExtBuilder::new().number_of_cores(2).build().execute_with(|| {
-		let weight = MaxParachainBlockWeight::<Runtime, ConstU32<3>>::get();
+		let weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<3>>::get();
 
 		// Each block should get half of a core.
 		assert_eq!(weight.ref_time(), WEIGHT_REF_TIME_PER_SECOND);
@@ -121,7 +121,7 @@ fn test_uneven_number_of_blocks_on_even_number_of_cores() {
 #[test]
 fn test_zero_target_blocks() {
 	TestExtBuilder::new().number_of_cores(2).build().execute_with(|| {
-		let weight = MaxParachainBlockWeight::<Runtime, ConstU32<0>>::get();
+		let weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<0>>::get();
 		assert_eq!(weight.ref_time(), 2 * WEIGHT_REF_TIME_PER_SECOND);
 		assert_eq!(weight.proof_size(), MAX_POV_SIZE as u64);
 	});
@@ -132,7 +132,7 @@ fn test_target_block_weight_calculation() {
 	TestExtBuilder::new().number_of_cores(4).build().execute_with(|| {
 		// Test target_block_weight function directly
 		// Both calls return the same since ConstU32<4> is fixed at compile time
-		let weight = MaxParachainBlockWeight::<Runtime, ConstU32<4>>::target_block_weight();
+		let weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<4>>::target_block_weight();
 
 		assert_eq!(weight.ref_time(), 3 * 2 * WEIGHT_REF_TIME_PER_SECOND / 4);
 		assert_eq!(weight.proof_size(), MAX_POV_SIZE as u64);
@@ -143,7 +143,7 @@ fn test_target_block_weight_calculation() {
 fn test_max_ref_time_per_core_cap() {
 	TestExtBuilder::new().number_of_cores(8).build().execute_with(|| {
 		// With 8 cores and 4 target blocks, ref time per block should be capped at 2s per core
-		let weight = MaxParachainBlockWeight::<Runtime, ConstU32<4>>::get();
+		let weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<4>>::get();
 
 		// 8 cores * 2s = 16s total, divided by 4 blocks = 4s, but capped at 6s for all blocks in
 		// total
@@ -158,7 +158,7 @@ fn test_target_block_weight_with_digest_edge_cases() {
 		// Test with empty digest
 		let empty_digest = Digest::default();
 		let weight =
-			MaxParachainBlockWeight::<Runtime, ConstU32<4>>::target_block_weight_with_digest(
+			MaxTeyrchainBlockWeight::<Runtime, ConstU32<4>>::target_block_weight_with_digest(
 				&empty_digest,
 			);
 		assert_eq!(weight, FULL_CORE_WEIGHT / 4);
@@ -174,7 +174,7 @@ fn test_target_block_weight_with_digest_edge_cases() {
 
 		// With 2 cores and 4 target blocks: (2 cores * 2s) / 4 blocks = 1s
 		let weight =
-			MaxParachainBlockWeight::<Runtime, ConstU32<4>>::target_block_weight_with_digest(
+			MaxTeyrchainBlockWeight::<Runtime, ConstU32<4>>::target_block_weight_with_digest(
 				&digest,
 			);
 		assert_eq!(weight.ref_time(), 2 * 2 * WEIGHT_REF_TIME_PER_SECOND / 4);
@@ -467,7 +467,7 @@ fn tx_extension_post_dispatch_to_full_core_because_of_manual_weight() {
 			initialize_block_finished();
 
 			let target_weight =
-				MaxParachainBlockWeight::<Runtime, ConstU32<4>>::target_block_weight();
+				MaxTeyrchainBlockWeight::<Runtime, ConstU32<4>>::target_block_weight();
 
 			// Transaction announces small weight
 			let small_weight = Weight::from_parts(WEIGHT_REF_TIME_PER_SECOND / 10, 1024);
@@ -707,13 +707,13 @@ fn ref_time_and_pov_size_cap() {
 	TestExtBuilder::new().number_of_cores(10).build().execute_with(|| {
 		pezframe_system::Pezpallet::<Runtime>::note_finished_initialize();
 
-		let max_weight = MaxParachainBlockWeight::<Runtime, ConstU32<1>>::get();
+		let max_weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<1>>::get();
 
 		// At most one core will always only be able to use the resources of one core.
 		assert_eq!(max_weight.ref_time(), 2 * WEIGHT_REF_TIME_PER_SECOND);
 		assert_eq!(max_weight.proof_size(), MAX_POV_SIZE as u64);
 
-		let max_weight = MaxParachainBlockWeight::<Runtime, ConstU32<4>>::get();
+		let max_weight = MaxTeyrchainBlockWeight::<Runtime, ConstU32<4>>::get();
 
 		// Each blocks get its own core (can use the max pov size), but ref time of all blocks
 		// together is in max `6s`

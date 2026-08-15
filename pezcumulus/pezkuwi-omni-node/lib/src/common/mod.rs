@@ -30,7 +30,7 @@ pub mod types;
 use crate::cli::AuthoringPolicy;
 
 use pezcumulus_primitives_core::{
-	CollectCollationInfo, GetParachainInfo, RelayParentOffsetApi, SchedulingV3EnabledApi,
+	CollectCollationInfo, GetTeyrchainInfo, RelayParentOffsetApi, SchedulingV3EnabledApi,
 };
 use pezsc_client_db::DbHash;
 use pezsc_offchain::OffchainWorkerApi;
@@ -74,7 +74,7 @@ pub trait NodeRuntimeApi<Block: BlockT>:
 	+ TaggedTransactionQueue<Block>
 	+ OffchainWorkerApi<Block>
 	+ CollectCollationInfo<Block>
-	+ GetParachainInfo<Block>
+	+ GetTeyrchainInfo<Block>
 	+ TransactionStorageApi<Block>
 	+ RelayParentOffsetApi<Block>
 	+ SchedulingV3EnabledApi<Block>
@@ -91,7 +91,7 @@ impl<T, Block: BlockT> NodeRuntimeApi<Block> for T where
 		+ OffchainWorkerApi<Block>
 		+ RelayParentOffsetApi<Block>
 		+ CollectCollationInfo<Block>
-		+ GetParachainInfo<Block>
+		+ GetTeyrchainInfo<Block>
 		+ TransactionStorageApi<Block>
 		+ SchedulingV3EnabledApi<Block>
 {

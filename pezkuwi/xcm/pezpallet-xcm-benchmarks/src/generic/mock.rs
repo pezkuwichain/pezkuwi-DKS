@@ -79,14 +79,14 @@ parameter_types! {
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }
 
-pub struct OnlyParachains;
-impl Contains<Location> for OnlyParachains {
+pub struct OnlyTeyrchains;
+impl Contains<Location> for OnlyTeyrchains {
 	fn contains(location: &Location) -> bool {
 		matches!(location.unpack(), (0, [Teyrchain(_)]))
 	}
 }
 
-type Aliasers = AliasForeignAccountId32<OnlyParachains>;
+type Aliasers = AliasForeignAccountId32<OnlyTeyrchains>;
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;

@@ -101,7 +101,7 @@ type NotDeadCode = TxExtension;
 mod max_block_weight_setup {
 	use super::*;
 
-	type MaximumBlockWeight = MaxParachainBlockWeight<Runtime, ConstU32<TARGET_BLOCK_RATE>>;
+	type MaximumBlockWeight = MaxTeyrchainBlockWeight<Runtime, ConstU32<TARGET_BLOCK_RATE>>;
 
 	parameter_types! {
 		pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()

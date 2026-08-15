@@ -87,14 +87,14 @@ pub type PrevalidateAttests = GenericTransactionExtensionSchema<(), ()>;
 /// The `TransactionExtensionSchema` for `BridgeRejectObsoleteHeadersAndMessages`.
 pub type BridgeRejectObsoleteHeadersAndMessages = GenericTransactionExtensionSchema<(), ()>;
 
-/// The `TransactionExtensionSchema` for `RefundBridgedParachainMessages`.
-/// This schema is dedicated for `RefundBridgedParachainMessages` signed extension as
+/// The `TransactionExtensionSchema` for `RefundBridgedTeyrchainMessages`.
+/// This schema is dedicated for `RefundBridgedTeyrchainMessages` signed extension as
 /// wildcard/placeholder, which relies on the scale encoding for `()` or `((), ())`, or `((), (),
 /// ())` is the same. So runtime can contains any kind of tuple:
 /// `(BridgeRefundBridgeHubRococoMessages)`
 /// `(BridgeRefundBridgeHubRococoMessages, BridgeRefundBridgeHubWestendMessages)`
-/// `(BridgeRefundParachainMessages1, ..., BridgeRefundParachainMessagesN)`
-pub type RefundBridgedParachainMessagesSchema = GenericTransactionExtensionSchema<(), ()>;
+/// `(BridgeRefundTeyrchainMessages1, ..., BridgeRefundTeyrchainMessagesN)`
+pub type RefundBridgedTeyrchainMessagesSchema = GenericTransactionExtensionSchema<(), ()>;
 
 #[impl_for_tuples(1, 12)]
 impl TransactionExtensionSchema for Tuple {

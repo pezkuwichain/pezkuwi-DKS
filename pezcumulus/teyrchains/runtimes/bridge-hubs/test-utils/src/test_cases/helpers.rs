@@ -18,7 +18,7 @@
 
 use crate::test_cases::{bridges_prelude::*, run_test, RuntimeHelper};
 
-use asset_test_utils::BasicParachainRuntime;
+use asset_test_utils::BasicTeyrchainRuntime;
 use codec::Decode;
 use core::marker::PhantomData;
 use pezbp_messages::MessageNonce;
@@ -94,15 +94,15 @@ where
 }
 
 /// Checks that the best teyrchain header hash in the bridge teyrchains pezpallet equals to given one.
-pub struct VerifySubmitParachainHeaderProofOutcome<Runtime, PPI> {
+pub struct VerifySubmitTeyrchainHeaderProofOutcome<Runtime, PPI> {
 	bridged_para_id: u32,
 	expected_best_hash: ParaHash,
 	_marker: PhantomData<(Runtime, PPI)>,
 }
 
-impl<Runtime, PPI> VerifySubmitParachainHeaderProofOutcome<Runtime, PPI>
+impl<Runtime, PPI> VerifySubmitTeyrchainHeaderProofOutcome<Runtime, PPI>
 where
-	Runtime: BridgeParachainsConfig<PPI>,
+	Runtime: BridgeTeyrchainsConfig<PPI>,
 	PPI: 'static,
 {
 	/// Expect given header hash to be the best after transaction.
@@ -115,9 +115,9 @@ where
 }
 
 impl<Runtime, PPI> VerifyTransactionOutcome
-	for VerifySubmitParachainHeaderProofOutcome<Runtime, PPI>
+	for VerifySubmitTeyrchainHeaderProofOutcome<Runtime, PPI>
 where
-	Runtime: BridgeParachainsConfig<PPI>,
+	Runtime: BridgeTeyrchainsConfig<PPI>,
 	PPI: 'static,
 {
 	fn verify_outcome(&self) {
@@ -280,7 +280,7 @@ pub fn relayed_incoming_message_works<Runtime, AllPalletsWithoutSystem, MPI>(
 	) -> CallsAndVerifiers<Runtime>,
 ) where
 	Runtime:
-		BasicParachainRuntime + pezcumulus_pallet_xcmp_queue::Config + BridgeMessagesConfig<MPI>,
+		BasicTeyrchainRuntime + pezcumulus_pallet_xcmp_queue::Config + BridgeMessagesConfig<MPI>,
 	AllPalletsWithoutSystem:
 		OnInitialize<BlockNumberFor<Runtime>> + OnFinalize<BlockNumberFor<Runtime>>,
 	MPI: 'static,
@@ -404,7 +404,7 @@ pub(crate) mod for_pallet_xcm_bridge_hub {
 		TokenLocation>
 	(source: Location, destination: InteriorLocation, is_paid_xcm_execution: bool, bridge_opener: impl Fn(pezpallet_xcm_bridge_hub::BridgeLocations, Option<Asset>)) -> (pezpallet_xcm_bridge_hub::BridgeLocations, pezpallet_xcm_bridge_hub::LaneIdOf<Runtime, XcmOverBridgePalletInstance>)
 	where
-		Runtime: BasicParachainRuntime + BridgeXcmOverBridgeConfig<XcmOverBridgePalletInstance>,
+		Runtime: BasicTeyrchainRuntime + BridgeXcmOverBridgeConfig<XcmOverBridgePalletInstance>,
 		XcmOverBridgePalletInstance: 'static,
 		<Runtime as pezframe_system::Config>::RuntimeCall: GetDispatchInfo + From<BridgeXcmOverBridgeCall<Runtime, XcmOverBridgePalletInstance>>,
 		<Runtime as pezpallet_balances::Config>::Balance: From<<<Runtime as pezpallet_bridge_messages::Config<<Runtime as pezpallet_xcm_bridge_hub::Config<XcmOverBridgePalletInstance>>::BridgeMessagesPalletInstance>>::ThisChain as pezbp_runtime::Chain>::Balance>,
@@ -533,7 +533,7 @@ pub(crate) mod for_pallet_xcm_bridge_hub {
 		(origin, origin_kind): (Location, OriginKind),
 		is_paid_xcm_execution: bool
 	) where
-		Runtime: BasicParachainRuntime + BridgeXcmOverBridgeConfig<XcmOverBridgePalletInstance>,
+		Runtime: BasicTeyrchainRuntime + BridgeXcmOverBridgeConfig<XcmOverBridgePalletInstance>,
 		XcmOverBridgePalletInstance: 'static,
 		<Runtime as pezframe_system::Config>::RuntimeCall: GetDispatchInfo + From<BridgeXcmOverBridgeCall<Runtime, XcmOverBridgePalletInstance>>,
 		<Runtime as pezpallet_balances::Config>::Balance: From<<<Runtime as pezpallet_bridge_messages::Config<<Runtime as pezpallet_xcm_bridge_hub::Config<XcmOverBridgePalletInstance>>::BridgeMessagesPalletInstance>>::ThisChain as pezbp_runtime::Chain>::Balance>,

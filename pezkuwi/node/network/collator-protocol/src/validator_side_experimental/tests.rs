@@ -40,7 +40,7 @@ use pezkuwi_node_primitives::{
 };
 use pezkuwi_node_subsystem::messages::{
 	AllMessages, CanSecondRequest, CandidateBackingMessage, ChainApiMessage, IfDisconnected,
-	NetworkBridgeTxMessage, ParentHeadData, ProspectiveParachainsMessage,
+	NetworkBridgeTxMessage, ParentHeadData, ProspectiveTeyrchainsMessage,
 	ProspectiveValidationDataRequest, RuntimeApiMessage, RuntimeApiRequest,
 };
 use pezkuwi_node_subsystem_test_helpers::{mock::new_leaf, sender_receiver, TestSubsystemSender};
@@ -775,8 +775,8 @@ impl TestState {
 		{
 			assert_matches!(
 				msg,
-				AllMessages::ProspectiveParachains(
-					ProspectiveParachainsMessage::GetProspectiveValidationData(ProspectiveValidationDataRequest {
+				AllMessages::ProspectiveTeyrchains(
+					ProspectiveTeyrchainsMessage::GetProspectiveValidationData(ProspectiveValidationDataRequest {
 						para_id,
 						candidate_relay_parent,
 						parent_head_data,

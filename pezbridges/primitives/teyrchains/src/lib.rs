@@ -19,7 +19,7 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use call_info::{BridgeParachainCall, SubmitParachainHeadsInfo};
+pub use call_info::{BridgeTeyrchainCall, SubmitTeyrchainHeadsInfo};
 pub use pezbp_header_pez_chain::StoredHeaderData;
 
 use codec::{Decode, Encode, MaxEncodedLen};

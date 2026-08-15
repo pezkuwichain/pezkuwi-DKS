@@ -28,7 +28,7 @@ use pezcumulus_test_client::{
 		self as test_runtime, Block, Hash, Header, SudoCall, SystemCall, TestPalletCall,
 		UncheckedExtrinsic, WASM_BINARY,
 	},
-	seal_block, transfer, BlockData, BlockOrigin, BuildBlockBuilder, BuildParachainBlockData,
+	seal_block, transfer, BlockData, BlockOrigin, BuildBlockBuilder, BuildTeyrchainBlockData,
 	Client, DefaultTestClientBuilderExt, HeadData,
 	Sr25519Keyring::{Alice, Bob, Charlie},
 	TestClientBuilder, TestClientBuilderExt, ValidationParams,

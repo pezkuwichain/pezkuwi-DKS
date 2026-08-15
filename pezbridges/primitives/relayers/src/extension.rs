@@ -22,7 +22,7 @@ use core::fmt::Debug;
 use pezbp_header_pez_chain::SubmitFinalityProofInfo;
 use pezbp_messages::MessagesCallInfo;
 use pezbp_runtime::StaticStrProvider;
-use pezbp_teyrchains::SubmitParachainHeadsInfo;
+use pezbp_teyrchains::SubmitTeyrchainHeadsInfo;
 use pezframe_support::{
 	dispatch::CallableCallFor, traits::IsSubType, weights::Weight, DebugNoBound,
 };
@@ -40,7 +40,7 @@ pub enum ExtensionCallInfo<RemoteGrandpaChainBlockNumber: Debug, LaneId: Clone +
 	/// Relay chain finality + teyrchain finality + message delivery/confirmation calls.
 	AllFinalityAndMsgs(
 		SubmitFinalityProofInfo<RemoteGrandpaChainBlockNumber>,
-		SubmitParachainHeadsInfo,
+		SubmitTeyrchainHeadsInfo,
 		MessagesCallInfo<LaneId>,
 	),
 	/// Relay chain finality + message delivery/confirmation calls.
@@ -51,7 +51,7 @@ pub enum ExtensionCallInfo<RemoteGrandpaChainBlockNumber: Debug, LaneId: Clone +
 	/// Teyrchain finality + message delivery/confirmation calls.
 	///
 	/// This variant is used only when bridging with teyrchain.
-	TeyrchainFinalityAndMsgs(SubmitParachainHeadsInfo, MessagesCallInfo<LaneId>),
+	TeyrchainFinalityAndMsgs(SubmitTeyrchainHeadsInfo, MessagesCallInfo<LaneId>),
 	/// Standalone message delivery/confirmation call.
 	Msgs(MessagesCallInfo<LaneId>),
 }
@@ -78,8 +78,8 @@ impl<RemoteGrandpaChainBlockNumber: Clone + Copy + Debug, LaneId: Clone + Copy +
 		}
 	}
 
-	/// Returns the pre-dispatch `SubmitParachainHeadsInfo`.
-	pub fn submit_teyrchain_heads_info(&self) -> Option<&SubmitParachainHeadsInfo> {
+	/// Returns the pre-dispatch `SubmitTeyrchainHeadsInfo`.
+	pub fn submit_teyrchain_heads_info(&self) -> Option<&SubmitTeyrchainHeadsInfo> {
 		match self {
 			Self::AllFinalityAndMsgs(_, info, _) => Some(info),
 			Self::TeyrchainFinalityAndMsgs(info, _) => Some(info),

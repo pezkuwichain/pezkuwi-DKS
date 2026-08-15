@@ -265,7 +265,7 @@ mod integrity_tests {
 			// value - it SHALL NOT affect any value, it just adds more tests for the value.
 			let maximal_improved_by = 4_096;
 			super::ensure_priority_boost_is_sane::<PriorityBoostPerHeader, BalanceOf<Runtime>>(
-				"PriorityBoostPerParachainHeader",
+				"PriorityBoostPerTeyrchainHeader",
 				maximal_improved_by,
 				tip_boost_per_header,
 				|_n_headers, tip| {

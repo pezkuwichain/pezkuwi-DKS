@@ -126,7 +126,7 @@ impl ChainWithTransactions for TestChain {
 		TestRuntimeCall,
 		pezbp_pezkuwi_core::SuffixedCommonTransactionExtension<(
 			pezbp_runtime::extensions::BridgeRejectObsoleteHeadersAndMessages,
-			pezbp_runtime::extensions::RefundBridgedParachainMessagesSchema,
+			pezbp_runtime::extensions::RefundBridgedTeyrchainMessagesSchema,
 		)>,
 	>;
 
@@ -148,9 +148,9 @@ pub enum TestRuntimeCall {
 
 /// Primitives-level teyrchain that may be used in tests.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TestParachainBase;
+pub struct TestTeyrchainBase;
 
-impl pezbp_runtime::Chain for TestParachainBase {
+impl pezbp_runtime::Chain for TestTeyrchainBase {
 	const ID: ChainId = *b"tstp";
 
 	type BlockNumber = u32;
@@ -174,23 +174,23 @@ impl pezbp_runtime::Chain for TestParachainBase {
 	}
 }
 
-impl pezbp_runtime::Teyrchain for TestParachainBase {
+impl pezbp_runtime::Teyrchain for TestTeyrchainBase {
 	const PARACHAIN_ID: u32 = 1000;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 
 /// Teyrchain that may be used in tests.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TestParachain;
+pub struct TestTeyrchain;
 
-impl pezbp_runtime::UnderlyingChainProvider for TestParachain {
-	type Chain = TestParachainBase;
+impl pezbp_runtime::UnderlyingChainProvider for TestTeyrchain {
+	type Chain = TestTeyrchainBase;
 }
 
-impl Chain for TestParachain {
-	const NAME: &'static str = "TestParachain";
-	const BEST_FINALIZED_HEADER_ID_METHOD: &'static str = "TestParachainMethod";
-	const FREE_HEADERS_INTERVAL_METHOD: &'static str = "TestParachainMethod";
+impl Chain for TestTeyrchain {
+	const NAME: &'static str = "TestTeyrchain";
+	const BEST_FINALIZED_HEADER_ID_METHOD: &'static str = "TestTeyrchainMethod";
+	const FREE_HEADERS_INTERVAL_METHOD: &'static str = "TestTeyrchainMethod";
 	const AVERAGE_BLOCK_INTERVAL: Duration = Duration::from_millis(0);
 
 	type SignedBlock = pezsp_runtime::generic::SignedBlock<

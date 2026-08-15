@@ -17,7 +17,7 @@
 //! Module contains predefined test-case scenarios for `Runtime` with common functionality.
 
 use crate::{
-	AccountIdOf, BasicParachainRuntime, CollatorSessionKeys, ExtBuilder, GovernanceOrigin,
+	AccountIdOf, BasicTeyrchainRuntime, CollatorSessionKeys, ExtBuilder, GovernanceOrigin,
 	RuntimeCallOf, RuntimeOriginOf, ValidatorIdOf,
 };
 use codec::Encode;
@@ -32,7 +32,7 @@ use pezsp_runtime::{
 };
 use teyrchains_common::AccountId;
 use xcm::prelude::InstructionError;
-use xcm_runtime_apis::fees::{
+use xcm_runtime_pezapis::fees::{
 	runtime_decl_for_xcm_payment_api::XcmPaymentApiV2, Error as XcmPaymentApiError,
 };
 
@@ -228,7 +228,7 @@ pub fn can_governance_authorize_upgrade<Runtime, RuntimeOrigin>(
 	governance_origin: GovernanceOrigin<RuntimeOrigin>,
 ) -> Result<(), Either<DispatchError, InstructionError>>
 where
-	Runtime: BasicParachainRuntime
+	Runtime: BasicTeyrchainRuntime
 		+ pezframe_system::Config<RuntimeOrigin = RuntimeOrigin, AccountId = AccountId>,
 {
 	ExtBuilder::<Runtime>::default().build().execute_with(|| {

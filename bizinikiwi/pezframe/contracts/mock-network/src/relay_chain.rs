@@ -31,8 +31,8 @@ use pezkuwi_teyrchain_primitives::primitives::Id as ParaId;
 use xcm::latest::prelude::*;
 use xcm_builder::{
 	AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowSubscriptionsFrom,
-	AllowTopLevelPaidExecutionFrom, ChildParachainAsNative, ChildParachainConvertsVia,
-	ChildSystemParachainAsSuperuser, DescribeAllTerminal, DescribeFamily, FixedRateOfFungible,
+	AllowTopLevelPaidExecutionFrom, ChildSystemTeyrchainAsSuperuser, ChildTeyrchainAsNative,
+	ChildTeyrchainConvertsVia, DescribeAllTerminal, DescribeFamily, FixedRateOfFungible,
 	FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsConcrete,
 	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, WithComputedOrigin,
 };
@@ -110,7 +110,7 @@ parameter_types! {
 pub type SovereignAccountOf = (
 	HashedDescription<AccountId, DescribeFamily<DescribeAllTerminal>>,
 	AccountId32Aliases<RelayNetwork, AccountId>,
-	ChildParachainConvertsVia<ParaId, AccountId>,
+	ChildTeyrchainConvertsVia<ParaId, AccountId>,
 );
 
 pub type LocalBalancesTransactor =
@@ -120,9 +120,9 @@ pub type AssetTransactors = LocalBalancesTransactor;
 
 type LocalOriginConverter = (
 	SovereignSignedViaLocation<SovereignAccountOf, RuntimeOrigin>,
-	ChildParachainAsNative<origin::Origin, RuntimeOrigin>,
+	ChildTeyrchainAsNative<origin::Origin, RuntimeOrigin>,
 	SignedAccountId32AsNative<RelayNetwork, RuntimeOrigin>,
-	ChildSystemParachainAsSuperuser<ParaId, RuntimeOrigin>,
+	ChildSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>,
 );
 
 parameter_types! {
@@ -133,8 +133,8 @@ parameter_types! {
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }
 
-pub struct ChildrenParachains;
-impl Contains<Location> for ChildrenParachains {
+pub struct ChildrenTeyrchains;
+impl Contains<Location> for ChildrenTeyrchains {
 	fn contains(location: &Location) -> bool {
 		matches!(location.unpack(), (0, [Teyrchain(_)]))
 	}
@@ -143,7 +143,7 @@ impl Contains<Location> for ChildrenParachains {
 pub type XcmRouter = crate::RelayChainXcmRouter;
 pub type Barrier = WithComputedOrigin<
 	(
-		AllowExplicitUnpaidExecutionFrom<ChildrenParachains>,
+		AllowExplicitUnpaidExecutionFrom<ChildrenTeyrchains>,
 		AllowTopLevelPaidExecutionFrom<Everything>,
 		AllowSubscriptionsFrom<Everything>,
 	),

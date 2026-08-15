@@ -613,8 +613,8 @@ mod select_candidates {
 
 					let _ = sender.send(response);
 				},
-				AllMessages::ProspectiveParachains(
-					ProspectiveParachainsMessage::GetBackableCandidates {
+				AllMessages::ProspectiveTeyrchains(
+					ProspectiveTeyrchainsMessage::GetBackableCandidates {
 						leaf: _,
 						para_id: _para_id,
 						count,

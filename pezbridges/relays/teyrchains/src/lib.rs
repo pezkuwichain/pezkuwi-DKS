@@ -26,7 +26,7 @@ pub trait TeyrchainsPipeline: 'static + Clone + Debug + Send + Sync {
 	/// Relay chain which is storing teyrchain heads in its `paras` module.
 	type SourceRelayChain: Chain;
 	/// Teyrchain which headers we are syncing here.
-	type SourceParachain: Teyrchain;
+	type SourceTeyrchain: Teyrchain;
 	/// Target chain (either relay or para) which wants to know about new teyrchain heads.
 	type TargetChain: Chain;
 }

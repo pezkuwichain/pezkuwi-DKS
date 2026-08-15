@@ -47,7 +47,7 @@ pub(crate) trait BuildRpcExtensions<Client, Backend, Pool, StatementStore> {
 	) -> pezsc_service::error::Result<RpcExtension>;
 }
 
-pub(crate) struct BuildParachainRpcExtensions<Block, RuntimeApi>(PhantomData<(Block, RuntimeApi)>);
+pub(crate) struct BuildTeyrchainRpcExtensions<Block, RuntimeApi>(PhantomData<(Block, RuntimeApi)>);
 
 impl<Block: BlockT, RuntimeApi>
 	BuildRpcExtensions<
@@ -55,7 +55,7 @@ impl<Block: BlockT, RuntimeApi>
 		TeyrchainBackend<Block>,
 		pezsc_transaction_pool::TransactionPoolHandle<Block, TeyrchainClient<Block, RuntimeApi>>,
 		pezsc_statement_store::Store,
-	> for BuildParachainRpcExtensions<Block, RuntimeApi>
+	> for BuildTeyrchainRpcExtensions<Block, RuntimeApi>
 where
 	RuntimeApi:
 		ConstructNodeRuntimeApi<Block, TeyrchainClient<Block, RuntimeApi>> + Send + Sync + 'static,

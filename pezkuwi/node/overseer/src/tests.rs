@@ -41,7 +41,7 @@ use crate::{
 	self as overseer,
 	dummy::{dummy_overseer_builder, one_for_all_overseer_builder},
 	gen::Delay,
-	HeadSupportsParachains,
+	HeadSupportsTeyrchains,
 };
 use metered;
 
@@ -151,10 +151,10 @@ where
 	}
 }
 
-struct MockSupportsParachains;
+struct MockSupportsTeyrchains;
 
 #[async_trait]
-impl HeadSupportsParachains for MockSupportsParachains {
+impl HeadSupportsTeyrchains for MockSupportsTeyrchains {
 	async fn head_supports_teyrchains(&self, _head: &Hash) -> bool {
 		true
 	}
@@ -171,7 +171,7 @@ fn overseer_works() {
 
 		let mut s1_rx = s1_rx.fuse();
 		let mut s2_rx = s2_rx.fuse();
-		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
+		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
 			.unwrap()
 			.replace_candidate_validation(move |_| TestSubsystem1(s1_tx))
 			.replace_candidate_backing(move |_| TestSubsystem2(s2_tx))
@@ -238,7 +238,7 @@ fn overseer_metrics_work() {
 
 		let registry = prometheus::Registry::new();
 		let (overseer, handle) =
-			dummy_overseer_builder(spawner, MockSupportsParachains, Some(&registry))
+			dummy_overseer_builder(spawner, MockSupportsTeyrchains, Some(&registry))
 				.unwrap()
 				.build()
 				.unwrap();
@@ -299,7 +299,7 @@ fn overseer_ends_on_subsystem_exit() {
 	let spawner = pezsp_core::testing::TaskExecutor::new();
 
 	executor::block_on(async move {
-		let (overseer, _handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
+		let (overseer, _handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
 			.unwrap()
 			.replace_candidate_backing(|_| ReturnOnStart)
 			.build()
@@ -400,7 +400,7 @@ fn overseer_start_stop_works() {
 		let (tx_5, mut rx_5) = metered::channel(64);
 		let (tx_6, mut rx_6) = metered::channel(64);
 
-		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
+		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
 			.unwrap()
 			.replace_candidate_validation(move |_| TestSubsystem5(tx_5))
 			.replace_candidate_backing(move |_| TestSubsystem6(tx_6))
@@ -495,7 +495,7 @@ fn overseer_finalize_works() {
 
 		// start with two forks of different height.
 
-		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
+		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
 			.unwrap()
 			.replace_candidate_validation(move |_| TestSubsystem5(tx_5))
 			.replace_candidate_backing(move |_| TestSubsystem6(tx_6))
@@ -599,7 +599,7 @@ fn overseer_finalize_leaf_preserves_it() {
 
 		// start with two forks at height 1.
 
-		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
+		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
 			.unwrap()
 			.replace_candidate_validation(move |_| TestSubsystem5(tx_5))
 			.replace_candidate_backing(move |_| TestSubsystem6(tx_6))
@@ -696,7 +696,7 @@ fn do_not_send_empty_leaves_update_on_block_finalization() {
 
 		let (tx_5, mut rx_5) = metered::channel(64);
 
-		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
+		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
 			.unwrap()
 			.replace_candidate_backing(move |_| TestSubsystem6(tx_5))
 			.build()
@@ -973,8 +973,8 @@ fn test_chain_selection_msg() -> ChainSelectionMessage {
 	ChainSelectionMessage::Approved(Default::default())
 }
 
-fn test_prospective_teyrchains_msg() -> ProspectiveParachainsMessage {
-	ProspectiveParachainsMessage::CandidateBacked(
+fn test_prospective_teyrchains_msg() -> ProspectiveTeyrchainsMessage {
+	ProspectiveTeyrchainsMessage::CandidateBacked(
 		ParaId::from(5),
 		CandidateHash(Hash::repeat_byte(0)),
 	)
@@ -1000,7 +1000,7 @@ fn overseer_all_subsystems_receive_signals_and_messages() {
 		);
 
 		let (overseer, handle) =
-			one_for_all_overseer_builder(spawner, MockSupportsParachains, subsystem, None)
+			one_for_all_overseer_builder(spawner, MockSupportsTeyrchains, subsystem, None)
 				.unwrap()
 				.build()
 				.unwrap();
@@ -1079,7 +1079,7 @@ fn overseer_all_subsystems_receive_signals_and_messages() {
 			.send_msg_anon(AllMessages::ChainSelection(test_chain_selection_msg()))
 			.await;
 		handle
-			.send_msg_anon(AllMessages::ProspectiveParachains(test_prospective_teyrchains_msg()))
+			.send_msg_anon(AllMessages::ProspectiveTeyrchains(test_prospective_teyrchains_msg()))
 			.await;
 		// handle.send_msg_anon(AllMessages::PvfChecker(test_pvf_checker_msg())).await;
 
@@ -1338,7 +1338,7 @@ impl IsPrioMessage for DisputeDistributionMessage {}
 impl IsPrioMessage for GossipSupportMessage {}
 impl IsPrioMessage for NetworkBridgeRxMessage {}
 impl IsPrioMessage for NetworkBridgeTxMessage {}
-impl IsPrioMessage for ProspectiveParachainsMessage {}
+impl IsPrioMessage for ProspectiveTeyrchainsMessage {}
 impl IsPrioMessage for ProvisionerMessage {}
 impl IsPrioMessage for RuntimeApiMessage {}
 impl IsPrioMessage for BitfieldSigningMessage {}
@@ -1446,7 +1446,7 @@ fn overseer_check_subsystem_can_receive_their_priority_messages(
 		let subsystem = SlowSubsystem::new(msgs_received.clone(), prio_msgs_received.clone());
 
 		let (overseer, handle) =
-			one_for_all_overseer_builder(spawner, MockSupportsParachains, subsystem, None)
+			one_for_all_overseer_builder(spawner, MockSupportsTeyrchains, subsystem, None)
 				.unwrap()
 				.build()
 				.unwrap();

@@ -128,7 +128,7 @@ pub struct SlotDurations {
 
 /// A set of traits for a minimal teyrchain runtime, that may be used in conjunction with the
 /// `ExtBuilder` and the `RuntimeHelper`.
-pub trait BasicParachainRuntime:
+pub trait BasicTeyrchainRuntime:
 	pezframe_system::Config
 	+ pezpallet_balances::Config
 	+ pezpallet_session::Config
@@ -140,7 +140,7 @@ pub trait BasicParachainRuntime:
 {
 }
 
-impl<T> BasicParachainRuntime for T
+impl<T> BasicTeyrchainRuntime for T
 where
 	T: pezframe_system::Config
 		+ pezpallet_balances::Config
@@ -155,7 +155,7 @@ where
 }
 
 /// Basic builder based on balances, collators and pezpallet_session.
-pub struct ExtBuilder<Runtime: BasicParachainRuntime> {
+pub struct ExtBuilder<Runtime: BasicTeyrchainRuntime> {
 	// endowed accounts with balances
 	balances: Vec<(AccountIdOf<Runtime>, BalanceOf<Runtime>)>,
 	// collators to test block prod
@@ -169,7 +169,7 @@ pub struct ExtBuilder<Runtime: BasicParachainRuntime> {
 	_runtime: PhantomData<Runtime>,
 }
 
-impl<Runtime: BasicParachainRuntime> Default for ExtBuilder<Runtime> {
+impl<Runtime: BasicTeyrchainRuntime> Default for ExtBuilder<Runtime> {
 	fn default() -> ExtBuilder<Runtime> {
 		ExtBuilder {
 			balances: vec![],
@@ -182,7 +182,7 @@ impl<Runtime: BasicParachainRuntime> Default for ExtBuilder<Runtime> {
 	}
 }
 
-impl<Runtime: BasicParachainRuntime> ExtBuilder<Runtime> {
+impl<Runtime: BasicTeyrchainRuntime> ExtBuilder<Runtime> {
 	pub fn with_balances(
 		mut self,
 		balances: Vec<(AccountIdOf<Runtime>, BalanceOf<Runtime>)>,

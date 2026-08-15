@@ -267,7 +267,7 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
-type MaximumBlockWeight = pezcumulus_pallet_teyrchain_system::block_weight::MaxParachainBlockWeight<
+type MaximumBlockWeight = pezcumulus_pallet_teyrchain_system::block_weight::MaxTeyrchainBlockWeight<
 	Runtime,
 	ConstU32<BLOCK_PROCESSING_VELOCITY>,
 >;
@@ -731,7 +731,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pezcumulus_primitives_core::GetParachainInfo<Block> for Runtime {
+	impl pezcumulus_primitives_core::GetTeyrchainInfo<Block> for Runtime {
 		fn teyrchain_id() -> ParaId {
 			TeyrchainInfo::teyrchain_id()
 		}

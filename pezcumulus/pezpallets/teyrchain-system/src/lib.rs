@@ -57,7 +57,7 @@ use pezsp_runtime::{
 use scale_info::TypeInfo;
 use teyrchain_inherent::{
 	deconstruct_teyrchain_inherent_data, AbridgedInboundDownwardMessages,
-	AbridgedInboundHrmpMessages, BasicParachainInherentData, InboundMessageId, InboundMessagesData,
+	AbridgedInboundHrmpMessages, BasicTeyrchainInherentData, InboundMessageId, InboundMessagesData,
 };
 use xcm::{latest::XcmHash, VersionedLocation, VersionedXcm, MAX_XCM_DECODE_DEPTH};
 use xcm_builder::InspectMessageQueues;
@@ -678,7 +678,7 @@ pub mod pezpallet {
 		// call with `register_extra_weight_unchecked`.
 		pub fn set_validation_data(
 			origin: OriginFor<T>,
-			data: BasicParachainInherentData,
+			data: BasicTeyrchainInherentData,
 			inbound_messages_data: InboundMessagesData,
 		) -> DispatchResult {
 			ensure_none(origin)?;
@@ -696,7 +696,7 @@ pub mod pezpallet {
 			// ancestors.
 			//
 			// This invariant should be upheld by the `ProvideInherent` implementation.
-			let BasicParachainInherentData {
+			let BasicTeyrchainInherentData {
 				validation_data: vfp,
 				relay_chain_state,
 				relay_parent_descendants,
@@ -1959,7 +1959,7 @@ impl<T: Config> InspectMessageQueues for Pezpallet<T> {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<T: Config> pezkuwi_runtime_teyrchains::EnsureForParachain for Pezpallet<T> {
+impl<T: Config> pezkuwi_runtime_teyrchains::EnsureForTeyrchain for Pezpallet<T> {
 	fn ensure(para_id: ParaId) {
 		if let ChannelStatus::Closed = Self::get_channel_status(para_id) {
 			Self::open_outbound_hrmp_channel_for_benchmarks_or_tests(para_id)

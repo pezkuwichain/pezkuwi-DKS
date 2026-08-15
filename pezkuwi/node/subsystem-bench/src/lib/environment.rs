@@ -18,7 +18,7 @@
 
 use crate::{
 	configuration::{TestAuthorities, TestConfiguration},
-	mock::AlwaysSupportsParachains,
+	mock::AlwaysSupportsTeyrchains,
 	network::NetworkEmulatorHandle,
 	usage::{BenchmarkUsage, ResourceUsage},
 };
@@ -199,7 +199,7 @@ impl TestEnvironment {
 		dependencies: TestEnvironmentDependencies,
 		config: TestConfiguration,
 		network: NetworkEmulatorHandle,
-		overseer: Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsParachains>,
+		overseer: Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsTeyrchains>,
 		overseer_handle: OverseerHandle,
 		authorities: TestAuthorities,
 		with_prometheus_endpoint: bool,

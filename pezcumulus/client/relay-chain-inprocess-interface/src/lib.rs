@@ -414,9 +414,9 @@ fn build_polkadot_full_node(
 > {
 	let (is_teyrchain_node, maybe_collator_key) = if teyrchain_config.role.is_authority() {
 		let collator_key = CollatorPair::generate().0;
-		(pezkuwi_service::IsParachainNode::Collator(collator_key.clone()), Some(collator_key))
+		(pezkuwi_service::IsTeyrchainNode::Collator(collator_key.clone()), Some(collator_key))
 	} else {
-		(pezkuwi_service::IsParachainNode::FullNode, None)
+		(pezkuwi_service::IsTeyrchainNode::FullNode, None)
 	};
 
 	let new_full_params = pezkuwi_service::NewFullParams {

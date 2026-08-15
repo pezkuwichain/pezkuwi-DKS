@@ -32,7 +32,7 @@ use pezsp_runtime::{
 use xcm::prelude::*;
 use xcm_builder::{
 	AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-	AllowTopLevelPaidExecutionFrom, ChildParachainConvertsVia, DescribeAllTerminal,
+	AllowTopLevelPaidExecutionFrom, ChildTeyrchainConvertsVia, DescribeAllTerminal,
 	EnsureDecodableXcm, FixedWeightBounds, FungibleAdapter, FungiblesAdapter, HashedDescription,
 	IsConcrete, MatchedConvertedConcreteId, NoChecking, TakeWeightCredit,
 };
@@ -188,7 +188,7 @@ parameter_types! {
 }
 
 pub type SovereignAccountOf = (
-	ChildParachainConvertsVia<ParaId, AccountId>,
+	ChildTeyrchainConvertsVia<ParaId, AccountId>,
 	AccountId32Aliases<AnyNetwork, AccountId>,
 	HashedDescription<AccountId, DescribeAllTerminal>,
 );

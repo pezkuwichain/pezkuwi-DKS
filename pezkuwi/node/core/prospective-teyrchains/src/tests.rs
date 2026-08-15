@@ -19,7 +19,7 @@ use assert_matches::assert_matches;
 use futures::FutureExt;
 use pezkuwi_node_subsystem::{
 	messages::{
-		AllMessages, HypotheticalMembershipRequest, ParentHeadData, ProspectiveParachainsMessage,
+		AllMessages, HypotheticalMembershipRequest, ParentHeadData, ProspectiveTeyrchainsMessage,
 		ProspectiveValidationDataRequest, RuntimeApiMessage, RuntimeApiRequest,
 	},
 	RuntimeApiError,
@@ -47,7 +47,7 @@ const RUNTIME_API_NOT_SUPPORTED: RuntimeApiError =
 const MAX_POV_SIZE: u32 = 1_000_000;
 
 type VirtualOverseer =
-	pezkuwi_node_subsystem_test_helpers::TestSubsystemContextHandle<ProspectiveParachainsMessage>;
+	pezkuwi_node_subsystem_test_helpers::TestSubsystemContextHandle<ProspectiveTeyrchainsMessage>;
 
 fn dummy_constraints(
 	min_relay_parent_number: BlockNumber,
@@ -531,7 +531,7 @@ async fn introduce_seconded_candidate(
 	let (tx, rx) = oneshot::channel();
 	virtual_overseer
 		.send(overseer::FromOrchestra::Communication {
-			msg: ProspectiveParachainsMessage::IntroduceSecondedCandidate(req, tx),
+			msg: ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(req, tx),
 		})
 		.await;
 	let response = handle_potential_relay_parent_info_calls(
@@ -561,7 +561,7 @@ async fn introduce_seconded_candidate_failed(
 	let (tx, rx) = oneshot::channel();
 	virtual_overseer
 		.send(overseer::FromOrchestra::Communication {
-			msg: ProspectiveParachainsMessage::IntroduceSecondedCandidate(req, tx),
+			msg: ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(req, tx),
 		})
 		.await;
 	let response = handle_potential_relay_parent_info_calls(
@@ -582,7 +582,7 @@ async fn back_candidate(
 ) {
 	virtual_overseer
 		.send(overseer::FromOrchestra::Communication {
-			msg: ProspectiveParachainsMessage::CandidateBacked(
+			msg: ProspectiveTeyrchainsMessage::CandidateBacked(
 				candidate.descriptor.para_id(),
 				candidate_hash,
 			),
@@ -601,7 +601,7 @@ async fn get_backable_candidates(
 	let (tx, rx) = oneshot::channel();
 	virtual_overseer
 		.send(overseer::FromOrchestra::Communication {
-			msg: ProspectiveParachainsMessage::GetBackableCandidates {
+			msg: ProspectiveTeyrchainsMessage::GetBackableCandidates {
 				leaf: leaf.hash,
 				para_id,
 				count,
@@ -636,7 +636,7 @@ async fn get_hypothetical_membership(
 	let (tx, rx) = oneshot::channel();
 	virtual_overseer
 		.send(overseer::FromOrchestra::Communication {
-			msg: ProspectiveParachainsMessage::GetHypotheticalMembership(request, tx),
+			msg: ProspectiveTeyrchainsMessage::GetHypotheticalMembership(request, tx),
 		})
 		.await;
 	let mut resp = handle_potential_relay_parent_info_calls(
@@ -673,7 +673,7 @@ async fn get_pvd(
 	let (tx, rx) = oneshot::channel();
 	virtual_overseer
 		.send(overseer::FromOrchestra::Communication {
-			msg: ProspectiveParachainsMessage::GetProspectiveValidationData(request, tx),
+			msg: ProspectiveTeyrchainsMessage::GetProspectiveValidationData(request, tx),
 		})
 		.await;
 

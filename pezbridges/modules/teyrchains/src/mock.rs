@@ -42,9 +42,9 @@ pub const MAXIMAL_PARACHAIN_HEAD_DATA_SIZE: u32 = 1 + 8 + 32;
 // total teyrchains that we use in tests
 pub const TOTAL_PARACHAINS: u32 = 4;
 
-pub type RegularParachainHeader = pezsp_runtime::testing::Header;
-pub type RegularParachainHasher = BlakeTwo256;
-pub type BigParachainHeader = pezsp_runtime::generic::Header<u128, BlakeTwo256>;
+pub type RegularTeyrchainHeader = pezsp_runtime::testing::Header;
+pub type RegularTeyrchainHasher = BlakeTwo256;
+pub type BigTeyrchainHeader = pezsp_runtime::generic::Header<u128, BlakeTwo256>;
 
 pub struct Teyrchain1;
 
@@ -53,8 +53,8 @@ impl Chain for Teyrchain1 {
 
 	type BlockNumber = u64;
 	type Hash = H256;
-	type Hasher = RegularParachainHasher;
-	type Header = RegularParachainHeader;
+	type Hasher = RegularTeyrchainHasher;
+	type Header = RegularTeyrchainHeader;
 	type AccountId = u64;
 	type Balance = u64;
 	type Nonce = u64;
@@ -82,8 +82,8 @@ impl Chain for Teyrchain2 {
 
 	type BlockNumber = u64;
 	type Hash = H256;
-	type Hasher = RegularParachainHasher;
-	type Header = RegularParachainHeader;
+	type Hasher = RegularTeyrchainHasher;
+	type Header = RegularTeyrchainHeader;
 	type AccountId = u64;
 	type Balance = u64;
 	type Nonce = u64;
@@ -111,8 +111,8 @@ impl Chain for Teyrchain3 {
 
 	type BlockNumber = u64;
 	type Hash = H256;
-	type Hasher = RegularParachainHasher;
-	type Header = RegularParachainHeader;
+	type Hasher = RegularTeyrchainHasher;
+	type Header = RegularTeyrchainHeader;
 	type AccountId = u64;
 	type Balance = u64;
 	type Nonce = u64;
@@ -134,15 +134,15 @@ impl Teyrchain for Teyrchain3 {
 }
 
 // this teyrchain is using u128 as block number and stored head data size exceeds limit
-pub struct BigParachain;
+pub struct BigTeyrchain;
 
-impl Chain for BigParachain {
+impl Chain for BigTeyrchain {
 	const ID: ChainId = *b"bpch";
 
 	type BlockNumber = u128;
 	type Hash = H256;
-	type Hasher = RegularParachainHasher;
-	type Header = BigParachainHeader;
+	type Hasher = RegularTeyrchainHasher;
+	type Header = BigTeyrchainHeader;
 	type AccountId = u64;
 	type Balance = u64;
 	type Nonce = u64;
@@ -158,7 +158,7 @@ impl Chain for BigParachain {
 	}
 }
 
-impl Teyrchain for BigParachain {
+impl Teyrchain for BigTeyrchain {
 	const PARACHAIN_ID: u32 = 4;
 	const MAX_HEADER_SIZE: u32 = 2_048;
 }
@@ -204,7 +204,7 @@ impl pezpallet_bridge_grandpa::Config<pezpallet_bridge_grandpa::Instance2> for T
 parameter_types! {
 	pub const HeadsToKeep: u32 = 4;
 	pub const ParasPalletName: &'static str = PARAS_PALLET_NAME;
-	pub GetTenFirstParachains: Vec<ParaId> = (0..10).map(ParaId).collect();
+	pub GetTenFirstTeyrchains: Vec<ParaId> = (0..10).map(ParaId).collect();
 }
 
 impl pezpallet_bridge_teyrchains::Config for TestRuntime {
@@ -212,7 +212,7 @@ impl pezpallet_bridge_teyrchains::Config for TestRuntime {
 	type WeightInfo = ();
 	type BridgesGrandpaPalletInstance = pezpallet_bridge_grandpa::Instance1;
 	type ParasPalletName = ParasPalletName;
-	type ParaStoredHeaderDataBuilder = (Teyrchain1, Teyrchain2, Teyrchain3, BigParachain);
+	type ParaStoredHeaderDataBuilder = (Teyrchain1, Teyrchain2, Teyrchain3, BigTeyrchain);
 	type HeadsToKeep = HeadsToKeep;
 	type MaxParaHeadDataSize = ConstU32<MAXIMAL_PARACHAIN_HEAD_DATA_SIZE>;
 	type OnNewHead = ();
@@ -241,7 +241,7 @@ impl pezpallet_bridge_teyrchains::benchmarking::Config<()> for TestRuntime {
 		// in mock run we only care about benchmarks correctness, not the benchmark results
 		// => ignore size related arguments
 		let (state_root, proof, teyrchains) =
-			pezbp_test_utils::prepare_teyrchain_heads_proof::<RegularParachainHeader>(
+			pezbp_test_utils::prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(
 				teyrchains.iter().map(|p| (p.0, crate::tests::head_data(p.0, 1))).collect(),
 			);
 		let relay_genesis_hash = crate::tests::initialize(state_root);

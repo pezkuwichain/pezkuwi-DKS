@@ -45,7 +45,7 @@ use xcm_executor::{
 	traits::{ConvertLocation, TransferType},
 	XcmExecutor,
 };
-use xcm_runtime_apis::fees::{
+use xcm_runtime_pezapis::fees::{
 	runtime_decl_for_xcm_payment_api::XcmPaymentApiV2, Error as XcmPaymentApiError,
 };
 

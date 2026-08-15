@@ -28,7 +28,7 @@ use Debug;
 /// A minimized version of `pezpallet-bridge-teyrchains::Call` that can be used without a runtime.
 #[derive(Encode, Decode, Debug, PartialEq, Eq, Clone, TypeInfo)]
 #[allow(non_camel_case_types)]
-pub enum BridgeParachainCall {
+pub enum BridgeTeyrchainCall {
 	/// `pezpallet-bridge-teyrchains::Call::submit_teyrchain_heads`
 	#[codec(index = 0)]
 	submit_teyrchain_heads {
@@ -41,11 +41,11 @@ pub enum BridgeParachainCall {
 	},
 }
 
-/// Info about a `SubmitParachainHeads` call which tries to update a single teyrchain.
+/// Info about a `SubmitTeyrchainHeads` call which tries to update a single teyrchain.
 ///
 /// The pezpallet supports updating multiple teyrchain heads at once,
 #[derive(PartialEq, Debug)]
-pub struct SubmitParachainHeadsInfo {
+pub struct SubmitTeyrchainHeadsInfo {
 	/// Number and hash of the finalized relay block that has been used to prove teyrchain
 	/// finality.
 	pub at_relay_block: HeaderId<RelayBlockHash, RelayBlockNumber>,

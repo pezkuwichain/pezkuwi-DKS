@@ -99,7 +99,7 @@ pub mod fee {
 /// System Teyrchains.
 pub mod system_teyrchain {
 	use pezkuwi_primitives::Id;
-	use xcm_builder::IsChildSystemParachain;
+	use xcm_builder::IsChildSystemTeyrchain;
 
 	/// Network's Asset Hub teyrchain ID.
 	pub const ASSET_HUB_ID: u32 = 1100;
@@ -115,7 +115,7 @@ pub mod system_teyrchain {
 	pub const BROKER_ID: u32 = 1005;
 
 	/// All system teyrchains of Westend.
-	pub type SystemParachains = IsChildSystemParachain<Id>;
+	pub type SystemTeyrchains = IsChildSystemTeyrchain<Id>;
 
 	/// Coretime constants
 	pub mod coretime {

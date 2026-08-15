@@ -200,7 +200,7 @@ mod tests {
 		// 1. Go to Pezkuwi.js -> Developer -> Chain state -> Storage: https://polkadot.js.org/apps/#/chainstate
 		// 2. Set these parameters:
 		//   2.1. selected state query: configuration; activeConfig():
-		//        PolkadotRuntimeParachainsConfigurationHostConfiguration
+		//        PolkadotRuntimeTeyrchainsConfigurationHostConfiguration
 		//   2.2. blockhash to query at:
 		//        0xf89d3ab5312c5f70d396dc59612f0aa65806c798346f9db4b35278baed2e0e53 (the hash of
 		//        the block)

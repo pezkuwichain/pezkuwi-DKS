@@ -316,15 +316,15 @@ mod tests {
 	#[test]
 	fn assets_from_filters_correctly() {
 		parameter_types! {
-			pub SomeSiblingParachain: Location = (Parent, Teyrchain(1234)).into();
+			pub SomeSiblingTeyrchain: Location = (Parent, Teyrchain(1234)).into();
 		}
 
-		let asset_location = SomeSiblingParachain::get()
+		let asset_location = SomeSiblingTeyrchain::get()
 			.pushed_with_interior(GeneralIndex(42))
 			.expect("location will only have 2 junctions; qed");
 		let asset = Asset { id: AssetId(asset_location), fun: 1_000_000u128.into() };
 		assert!(
-			AssetsFrom::<SomeSiblingParachain>::contains(&asset, &SomeSiblingParachain::get()),
+			AssetsFrom::<SomeSiblingTeyrchain>::contains(&asset, &SomeSiblingTeyrchain::get()),
 			"AssetsFrom should allow assets from any of its interior locations"
 		);
 	}

@@ -32,7 +32,7 @@ use pezbp_pezkuwi_core::teyrchains::{ParaHash, ParaHead, ParaHeadsProof, ParaId}
 use pezbp_runtime::{Chain, HashOf, HeaderId, HeaderIdOf, Teyrchain};
 use pezbp_teyrchains::{
 	ParaInfo, ParaStoredHeaderData, RelayBlockHash, RelayBlockHasher, RelayBlockNumber,
-	SubmitParachainHeadsInfo,
+	SubmitTeyrchainHeadsInfo,
 };
 use pezframe_support::{dispatch::PostDispatchInfo, DefaultNoBound};
 use pezpallet_bridge_grandpa::SubmitFinalityProofHelper;
@@ -65,7 +65,7 @@ mod proofs;
 pub const LOG_TARGET: &str = "runtime::bridge-teyrchains";
 
 /// Artifacts of the teyrchains head update.
-struct UpdateParachainHeadArtifacts {
+struct UpdateTeyrchainHeadArtifacts {
 	/// New best head of the teyrchain.
 	pub best_head: ParaInfo,
 	/// If `true`, some old teyrchain head has been pruned during update.
@@ -99,19 +99,19 @@ pub mod pezpallet {
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config<I>, I: 'static = ()> {
 		/// The caller has provided head of teyrchain that the pezpallet is not configured to track.
-		UntrackedParachainRejected {
+		UntrackedTeyrchainRejected {
 			/// Identifier of the teyrchain that is not tracked by the pezpallet.
 			teyrchain: ParaId,
 		},
 		/// The caller has declared that he has provided given teyrchain head, but it is missing
 		/// from the storage proof.
-		MissingParachainHead {
+		MissingTeyrchainHead {
 			/// Identifier of the teyrchain with missing head.
 			teyrchain: ParaId,
 		},
 		/// The caller has provided teyrchain head hash that is not matching the hash read from the
 		/// storage proof.
-		IncorrectParachainHeadHash {
+		IncorrectTeyrchainHeadHash {
 			/// Identifier of the teyrchain with incorrect head hast.
 			teyrchain: ParaId,
 			/// Specified teyrchain head hash.
@@ -120,14 +120,14 @@ pub mod pezpallet {
 			actual_teyrchain_head_hash: ParaHash,
 		},
 		/// The caller has provided obsolete teyrchain head, which is already known to the pezpallet.
-		RejectedObsoleteParachainHead {
+		RejectedObsoleteTeyrchainHead {
 			/// Identifier of the teyrchain with obsolete head.
 			teyrchain: ParaId,
 			/// Obsolete teyrchain head hash.
 			teyrchain_head_hash: ParaHash,
 		},
 		/// The caller has provided teyrchain head that exceeds the maximal configured head size.
-		RejectedLargeParachainHead {
+		RejectedLargeTeyrchainHead {
 			/// Identifier of the teyrchain with rejected head.
 			teyrchain: ParaId,
 			/// Teyrchain head hash.
@@ -136,7 +136,7 @@ pub mod pezpallet {
 			teyrchain_head_size: u32,
 		},
 		/// Teyrchain head has been updated.
-		UpdatedParachainHead {
+		UpdatedTeyrchainHead {
 			/// Identifier of the teyrchain that has been updated.
 			teyrchain: ParaId,
 			/// Teyrchain head hash.
@@ -286,7 +286,7 @@ pub mod pezpallet {
 		Value = <ParasInfoKeyProvider as StorageMapKeyProvider>::Value,
 		QueryKind = OptionQuery,
 		OnEmpty = GetDefault,
-		MaxValues = MaybeMaxParachains<T, I>,
+		MaxValues = MaybeMaxTeyrchains<T, I>,
 	>;
 
 	/// State roots of teyrchain heads which have been imported into the pezpallet.
@@ -299,7 +299,7 @@ pub mod pezpallet {
 		Value = StoredParaHeadDataOf<T, I>,
 		QueryKind = OptionQuery,
 		OnEmpty = GetDefault,
-		MaxValues = MaybeMaxTotalParachainHashes<T, I>,
+		MaxValues = MaybeMaxTotalTeyrchainHashes<T, I>,
 	>;
 
 	/// A ring buffer of imported teyrchain head hashes. Ordered by the insertion time.
@@ -312,7 +312,7 @@ pub mod pezpallet {
 		Value = ParaHash,
 		QueryKind = OptionQuery,
 		OnEmpty = GetDefault,
-		MaxValues = MaybeMaxTotalParachainHashes<T, I>,
+		MaxValues = MaybeMaxTotalTeyrchainHashes<T, I>,
 	>;
 
 	#[pezpallet::pezpallet]
@@ -471,7 +471,7 @@ pub mod pezpallet {
 								"Looks like it has been deregistered from the source relay chain"
 							},
 						);
-						Self::deposit_event(Event::MissingParachainHead { teyrchain });
+						Self::deposit_event(Event::MissingTeyrchainHead { teyrchain });
 						continue;
 					},
 					Err(e) => {
@@ -481,7 +481,7 @@ pub mod pezpallet {
 							?teyrchain,
 							"The read of head of teyrchain has failed"
 						);
-						Self::deposit_event(Event::MissingParachainHead { teyrchain });
+						Self::deposit_event(Event::MissingTeyrchainHead { teyrchain });
 						continue;
 					},
 				};
@@ -497,7 +497,7 @@ pub mod pezpallet {
 						?actual_teyrchain_head_hash,
 						"The submitter has specified invalid teyrchain head hash"
 					);
-					Self::deposit_event(Event::IncorrectParachainHeadHash {
+					Self::deposit_event(Event::IncorrectTeyrchainHeadHash {
 						teyrchain,
 						teyrchain_head_hash,
 						actual_teyrchain_head_hash,
@@ -516,7 +516,7 @@ pub mod pezpallet {
 								?teyrchain,
 								"The head of teyrchain has been provided, but it is not tracked by the pezpallet"
 							);
-							Self::deposit_event(Event::UntrackedParachainRejected { teyrchain });
+							Self::deposit_event(Event::UntrackedTeyrchainRejected { teyrchain });
 							continue;
 						},
 					};
@@ -646,18 +646,18 @@ pub mod pezpallet {
 			new_head_data: ParaStoredHeaderData,
 			new_head_hash: ParaHash,
 			new_head: ParaHead,
-		) -> Result<UpdateParachainHeadArtifacts, ()> {
+		) -> Result<UpdateTeyrchainHeadArtifacts, ()> {
 			// check if head has been already updated at better relay chain block. Without this
 			// check, we may import heads in random order
-			let update = SubmitParachainHeadsInfo {
+			let update = SubmitTeyrchainHeadsInfo {
 				at_relay_block: new_at_relay_block,
 				para_id: teyrchain,
 				para_head_hash: new_head_hash,
 				// doesn't actually matter here
 				is_free_execution_expected: false,
 			};
-			if SubmitParachainHeadsHelper::<T, I>::check_obsolete(&update).is_err() {
-				Self::deposit_event(Event::RejectedObsoleteParachainHead {
+			if SubmitTeyrchainHeadsHelper::<T, I>::check_obsolete(&update).is_err() {
+				Self::deposit_event(Event::RejectedObsoleteTeyrchainHead {
 					teyrchain,
 					teyrchain_head_hash: new_head_hash,
 				});
@@ -677,7 +677,7 @@ pub mod pezpallet {
 						"The teyrchain head can't be updated. The teyrchain head data size exceeds maximal configured size."
 					);
 
-					Self::deposit_event(Event::RejectedLargeParachainHead {
+					Self::deposit_event(Event::RejectedLargeTeyrchainHead {
 						teyrchain,
 						teyrchain_head_hash: new_head_hash,
 						teyrchain_head_size: e.value_size as _,
@@ -729,12 +729,12 @@ pub mod pezpallet {
 				);
 				ImportedParaHeads::<T, I>::remove(teyrchain, head_hash_to_prune);
 			}
-			Self::deposit_event(Event::UpdatedParachainHead {
+			Self::deposit_event(Event::UpdatedTeyrchainHead {
 				teyrchain,
 				teyrchain_head_hash: new_head_hash,
 			});
 
-			Ok(UpdateParachainHeadArtifacts { best_head: updated_best_para_head, prune_happened })
+			Ok(UpdateTeyrchainHeadArtifacts { best_head: updated_best_para_head, prune_happened })
 		}
 	}
 
@@ -761,18 +761,18 @@ pub mod pezpallet {
 	}
 
 	/// Returns maximal number of teyrchains, supported by the pezpallet.
-	pub struct MaybeMaxParachains<T, I>(PhantomData<(T, I)>);
+	pub struct MaybeMaxTeyrchains<T, I>(PhantomData<(T, I)>);
 
-	impl<T: Config<I>, I: 'static> Get<Option<u32>> for MaybeMaxParachains<T, I> {
+	impl<T: Config<I>, I: 'static> Get<Option<u32>> for MaybeMaxTeyrchains<T, I> {
 		fn get() -> Option<u32> {
 			Some(T::ParaStoredHeaderDataBuilder::supported_teyrchains())
 		}
 	}
 
 	/// Returns total number of all teyrchains hashes/heads, stored by the pezpallet.
-	pub struct MaybeMaxTotalParachainHashes<T, I>(PhantomData<(T, I)>);
+	pub struct MaybeMaxTotalTeyrchainHashes<T, I>(PhantomData<(T, I)>);
 
-	impl<T: Config<I>, I: 'static> Get<Option<u32>> for MaybeMaxTotalParachainHashes<T, I> {
+	impl<T: Config<I>, I: 'static> Get<Option<u32>> for MaybeMaxTotalTeyrchainHashes<T, I> {
 		fn get() -> Option<u32> {
 			Some(
 				T::ParaStoredHeaderDataBuilder::supported_teyrchains()
@@ -834,8 +834,8 @@ pub fn initialize_for_benchmarks<T: Config<I>, I: 'static, PC: Teyrchain<Hash = 
 pub(crate) mod tests {
 	use super::*;
 	use crate::mock::{
-		run_test, test_relay_header, BigParachain, BigParachainHeader, FreeHeadersInterval,
-		RegularParachainHasher, RegularParachainHeader, RelayBlockHeader,
+		run_test, test_relay_header, BigTeyrchain, BigTeyrchainHeader, FreeHeadersInterval,
+		RegularTeyrchainHasher, RegularTeyrchainHeader, RelayBlockHeader,
 		RuntimeEvent as TestEvent, RuntimeOrigin, TestRuntime, UNTRACKED_PARACHAIN_ID,
 	};
 	use codec::Encode;
@@ -852,7 +852,7 @@ pub(crate) mod tests {
 		TEST_GRANDPA_SET_ID,
 	};
 	use pezbp_teyrchains::{
-		BestParaHeadHash, BridgeParachainCall, ImportedParaHeadsKeyProvider, ParasInfoKeyProvider,
+		BestParaHeadHash, BridgeTeyrchainCall, ImportedParaHeadsKeyProvider, ParasInfoKeyProvider,
 	};
 	use pezframe_support::{
 		assert_noop, assert_ok,
@@ -921,10 +921,10 @@ pub(crate) mod tests {
 
 	pub(crate) fn head_data(teyrchain: u32, head_number: u32) -> ParaHead {
 		ParaHead(
-			RegularParachainHeader::new(
+			RegularTeyrchainHeader::new(
 				head_number as _,
 				Default::default(),
-				RegularParachainHasher::hash(&(teyrchain, head_number).encode()),
+				RegularTeyrchainHasher::hash(&(teyrchain, head_number).encode()),
 				Default::default(),
 				Default::default(),
 			)
@@ -934,17 +934,17 @@ pub(crate) mod tests {
 
 	fn stored_head_data(teyrchain: u32, head_number: u32) -> ParaStoredHeaderData {
 		ParaStoredHeaderData(
-			(head_number as u64, RegularParachainHasher::hash(&(teyrchain, head_number).encode()))
+			(head_number as u64, RegularTeyrchainHasher::hash(&(teyrchain, head_number).encode()))
 				.encode(),
 		)
 	}
 
 	fn big_head_data(teyrchain: u32, head_number: u32) -> ParaHead {
 		ParaHead(
-			BigParachainHeader::new(
+			BigTeyrchainHeader::new(
 				head_number as _,
 				Default::default(),
-				RegularParachainHasher::hash(&(teyrchain, head_number).encode()),
+				RegularTeyrchainHasher::hash(&(teyrchain, head_number).encode()),
 				Default::default(),
 				Default::default(),
 			)
@@ -954,7 +954,7 @@ pub(crate) mod tests {
 
 	fn big_stored_head_data(teyrchain: u32, head_number: u32) -> ParaStoredHeaderData {
 		ParaStoredHeaderData(
-			(head_number as u128, RegularParachainHasher::hash(&(teyrchain, head_number).encode()))
+			(head_number as u128, RegularTeyrchainHasher::hash(&(teyrchain, head_number).encode()))
 				.encode(),
 		)
 	}
@@ -990,7 +990,7 @@ pub(crate) mod tests {
 	#[test]
 	fn submit_teyrchain_heads_checks_operating_mode() {
 		let (state_root, proof, teyrchains) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 0))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 0))]);
 
 		run_test(|| {
 			initialize(state_root);
@@ -1021,7 +1021,7 @@ pub(crate) mod tests {
 	#[test]
 	fn imports_initial_teyrchain_heads() {
 		let (state_root, proof, teyrchains) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![
 				(1, head_data(1, 0)),
 				(3, head_data(3, 10)),
 			]);
@@ -1082,7 +1082,7 @@ pub(crate) mod tests {
 				vec![
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+						event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 							teyrchain: ParaId(1),
 							teyrchain_head_hash: initial_best_head(1).best_head_hash.head_hash,
 						}),
@@ -1090,7 +1090,7 @@ pub(crate) mod tests {
 					},
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+						event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 							teyrchain: ParaId(3),
 							teyrchain_head_hash: head_data(3, 10).hash(),
 						}),
@@ -1104,9 +1104,9 @@ pub(crate) mod tests {
 	#[test]
 	fn imports_teyrchain_heads_is_able_to_progress() {
 		let (state_root_5, proof_5, teyrchains_5) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 5))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 5))]);
 		let (state_root_10, proof_10, teyrchains_10) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 10))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 10))]);
 		run_test(|| {
 			// start with relay block #0 and import head#5 of teyrchain#1
 			initialize(state_root_5);
@@ -1137,7 +1137,7 @@ pub(crate) mod tests {
 				System::<TestRuntime>::events(),
 				vec![EventRecord {
 					phase: Phase::Initialization,
-					event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+					event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 						teyrchain: ParaId(1),
 						teyrchain_head_hash: head_data(1, 5).hash(),
 					}),
@@ -1175,7 +1175,7 @@ pub(crate) mod tests {
 				vec![
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+						event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 							teyrchain: ParaId(1),
 							teyrchain_head_hash: head_data(1, 5).hash(),
 						}),
@@ -1197,7 +1197,7 @@ pub(crate) mod tests {
 					},
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+						event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 							teyrchain: ParaId(1),
 							teyrchain_head_hash: head_data(1, 10).hash(),
 						}),
@@ -1211,7 +1211,7 @@ pub(crate) mod tests {
 	#[test]
 	fn ignores_untracked_teyrchain() {
 		let (state_root, proof, teyrchains) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![
 				(1, head_data(1, 5)),
 				(UNTRACKED_PARACHAIN_ID, head_data(1, 5)),
 				(2, head_data(1, 5)),
@@ -1259,7 +1259,7 @@ pub(crate) mod tests {
 				vec![
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+						event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 							teyrchain: ParaId(1),
 							teyrchain_head_hash: head_data(1, 5).hash(),
 						}),
@@ -1267,14 +1267,14 @@ pub(crate) mod tests {
 					},
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UntrackedParachainRejected {
+						event: TestEvent::Teyrchains(Event::UntrackedTeyrchainRejected {
 							teyrchain: ParaId(UNTRACKED_PARACHAIN_ID),
 						}),
 						topics: vec![],
 					},
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+						event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 							teyrchain: ParaId(2),
 							teyrchain_head_hash: head_data(1, 5).hash(),
 						}),
@@ -1288,7 +1288,7 @@ pub(crate) mod tests {
 	#[test]
 	fn does_nothing_when_already_imported_this_head_at_previous_relay_header() {
 		let (state_root, proof, teyrchains) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 0))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 0))]);
 		run_test(|| {
 			// import head#0 of teyrchain#1 at relay block#0
 			initialize(state_root);
@@ -1298,7 +1298,7 @@ pub(crate) mod tests {
 				System::<TestRuntime>::events(),
 				vec![EventRecord {
 					phase: Phase::Initialization,
-					event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+					event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 						teyrchain: ParaId(1),
 						teyrchain_head_hash: initial_best_head(1).best_head_hash.head_hash,
 					}),
@@ -1316,7 +1316,7 @@ pub(crate) mod tests {
 				vec![
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+						event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 							teyrchain: ParaId(1),
 							teyrchain_head_hash: initial_best_head(1).best_head_hash.head_hash,
 						}),
@@ -1338,7 +1338,7 @@ pub(crate) mod tests {
 					},
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::RejectedObsoleteParachainHead {
+						event: TestEvent::Teyrchains(Event::RejectedObsoleteTeyrchainHead {
 							teyrchain: ParaId(1),
 							teyrchain_head_hash: initial_best_head(1).best_head_hash.head_hash,
 						}),
@@ -1352,9 +1352,9 @@ pub(crate) mod tests {
 	#[test]
 	fn does_nothing_when_already_imported_head_at_better_relay_header() {
 		let (state_root_5, proof_5, teyrchains_5) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 5))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 5))]);
 		let (state_root_10, proof_10, teyrchains_10) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 10))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 10))]);
 		run_test(|| {
 			// start with relay block #0
 			initialize(state_root_5);
@@ -1391,7 +1391,7 @@ pub(crate) mod tests {
 					},
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+						event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 							teyrchain: ParaId(1),
 							teyrchain_head_hash: head_data(1, 10).hash(),
 						}),
@@ -1432,7 +1432,7 @@ pub(crate) mod tests {
 					},
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+						event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 							teyrchain: ParaId(1),
 							teyrchain_head_hash: head_data(1, 10).hash(),
 						}),
@@ -1440,7 +1440,7 @@ pub(crate) mod tests {
 					},
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::RejectedObsoleteParachainHead {
+						event: TestEvent::Teyrchains(Event::RejectedObsoleteTeyrchainHead {
 							teyrchain: ParaId(1),
 							teyrchain_head_hash: head_data(1, 5).hash(),
 						}),
@@ -1454,7 +1454,7 @@ pub(crate) mod tests {
 	#[test]
 	fn does_nothing_when_teyrchain_head_is_too_large() {
 		let (state_root, proof, teyrchains) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![
 				(1, head_data(1, 5)),
 				(4, big_head_data(1, 5)),
 			]);
@@ -1484,7 +1484,7 @@ pub(crate) mod tests {
 				vec![
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::UpdatedParachainHead {
+						event: TestEvent::Teyrchains(Event::UpdatedTeyrchainHead {
 							teyrchain: ParaId(1),
 							teyrchain_head_hash: head_data(1, 5).hash(),
 						}),
@@ -1492,7 +1492,7 @@ pub(crate) mod tests {
 					},
 					EventRecord {
 						phase: Phase::Initialization,
-						event: TestEvent::Teyrchains(Event::RejectedLargeParachainHead {
+						event: TestEvent::Teyrchains(Event::RejectedLargeTeyrchainHead {
 							teyrchain: ParaId(4),
 							teyrchain_head_hash: big_head_data(1, 5).hash(),
 							teyrchain_head_size: big_stored_head_data(1, 5).encoded_size() as u32,
@@ -1512,7 +1512,7 @@ pub(crate) mod tests {
 			// import exactly `HeadsToKeep` headers
 			for i in 0..heads_to_keep {
 				let (state_root, proof, teyrchains) = prepare_teyrchain_heads_proof::<
-					RegularParachainHeader,
+					RegularTeyrchainHeader,
 				>(vec![(1, head_data(1, i))]);
 				if i == 0 {
 					initialize(state_root);
@@ -1534,7 +1534,7 @@ pub(crate) mod tests {
 
 			// import next relay chain header and next teyrchain head
 			let (state_root, proof, teyrchains) = prepare_teyrchain_heads_proof::<
-				RegularParachainHeader,
+				RegularTeyrchainHeader,
 			>(vec![(1, head_data(1, heads_to_keep))]);
 			proceed(heads_to_keep, state_root);
 			let expected_weight = weight_of_import_teyrchain_1_head(&proof, true);
@@ -1556,7 +1556,7 @@ pub(crate) mod tests {
 	#[test]
 	fn fails_on_unknown_relay_chain_block() {
 		let (state_root, proof, teyrchains) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 5))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 5))]);
 		run_test(|| {
 			// start with relay block #0
 			initialize(state_root);
@@ -1572,7 +1572,7 @@ pub(crate) mod tests {
 	#[test]
 	fn fails_on_invalid_storage_proof() {
 		let (_state_root, proof, teyrchains) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 5))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 5))]);
 		run_test(|| {
 			// start with relay block #0
 			initialize(Default::default());
@@ -1590,11 +1590,11 @@ pub(crate) mod tests {
 	#[test]
 	fn is_not_rewriting_existing_head_if_failed_to_read_updated_head() {
 		let (state_root_5, proof_5, teyrchains_5) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 5))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 5))]);
 		let (state_root_10_at_20, proof_10_at_20, teyrchains_10_at_20) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(2, head_data(2, 10))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(2, head_data(2, 10))]);
 		let (state_root_10_at_30, proof_10_at_30, teyrchains_10_at_30) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 10))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 10))]);
 		run_test(|| {
 			// we've already imported head#5 of teyrchain#1 at relay block#10
 			initialize(state_root_5);
@@ -1663,7 +1663,7 @@ pub(crate) mod tests {
 	#[test]
 	fn ignores_teyrchain_head_if_it_is_missing_from_storage_proof() {
 		let (state_root, proof, _) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![]);
 		let teyrchains = vec![(ParaId(2), Default::default())];
 		run_test(|| {
 			initialize(state_root);
@@ -1677,7 +1677,7 @@ pub(crate) mod tests {
 				System::<TestRuntime>::events(),
 				vec![EventRecord {
 					phase: Phase::Initialization,
-					event: TestEvent::Teyrchains(Event::MissingParachainHead {
+					event: TestEvent::Teyrchains(Event::MissingTeyrchainHead {
 						teyrchain: ParaId(2),
 					}),
 					topics: vec![],
@@ -1689,7 +1689,7 @@ pub(crate) mod tests {
 	#[test]
 	fn ignores_teyrchain_head_if_teyrchain_head_hash_is_wrong() {
 		let (state_root, proof, _) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 0))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 0))]);
 		let teyrchains = vec![(ParaId(1), head_data(1, 10).hash())];
 		run_test(|| {
 			initialize(state_root);
@@ -1703,7 +1703,7 @@ pub(crate) mod tests {
 				System::<TestRuntime>::events(),
 				vec![EventRecord {
 					phase: Phase::Initialization,
-					event: TestEvent::Teyrchains(Event::IncorrectParachainHeadHash {
+					event: TestEvent::Teyrchains(Event::IncorrectTeyrchainHeadHash {
 						teyrchain: ParaId(1),
 						teyrchain_head_hash: head_data(1, 10).hash(),
 						actual_teyrchain_head_hash: head_data(1, 0).hash(),
@@ -1717,7 +1717,7 @@ pub(crate) mod tests {
 	#[test]
 	fn test_bridge_teyrchain_call_is_correctly_defined() {
 		let (state_root, proof, _) =
-			prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 0))]);
+			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 0))]);
 		let teyrchains = vec![(ParaId(2), Default::default())];
 		let relay_header_id = (0, test_relay_header(0, state_root).hash());
 
@@ -1726,7 +1726,7 @@ pub(crate) mod tests {
 			teyrchains: teyrchains.clone(),
 			teyrchain_heads_proof: proof.clone(),
 		};
-		let indirect_submit_teyrchain_heads_call = BridgeParachainCall::submit_teyrchain_heads {
+		let indirect_submit_teyrchain_heads_call = BridgeTeyrchainCall::submit_teyrchain_heads {
 			at_relay_block: relay_header_id,
 			teyrchains,
 			teyrchain_heads_proof: proof,
@@ -1741,13 +1741,13 @@ pub(crate) mod tests {
 
 	#[test]
 	fn maybe_max_teyrchains_returns_correct_value() {
-		assert_eq!(MaybeMaxParachains::<TestRuntime, ()>::get(), Some(mock::TOTAL_PARACHAINS));
+		assert_eq!(MaybeMaxTeyrchains::<TestRuntime, ()>::get(), Some(mock::TOTAL_PARACHAINS));
 	}
 
 	#[test]
 	fn maybe_max_total_teyrchain_hashes_returns_correct_value() {
 		assert_eq!(
-			MaybeMaxTotalParachainHashes::<TestRuntime, ()>::get(),
+			MaybeMaxTotalTeyrchainHashes::<TestRuntime, ()>::get(),
 			Some(mock::TOTAL_PARACHAINS * mock::HeadsToKeep::get()),
 		);
 	}
@@ -1756,7 +1756,7 @@ pub(crate) mod tests {
 	fn submit_finality_proof_requires_signed_origin() {
 		run_test(|| {
 			let (state_root, proof, teyrchains) =
-				prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(1, head_data(1, 0))]);
+				prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(1, head_data(1, 0))]);
 
 			initialize(state_root);
 
@@ -1777,7 +1777,7 @@ pub(crate) mod tests {
 	fn may_be_free_for_submitting_filtered_heads() {
 		run_test(|| {
 			let (state_root, proof, teyrchains) =
-				prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(2, head_data(2, 5))]);
+				prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(2, head_data(2, 5))]);
 			// start with relay block #0 and import head#5 of teyrchain#2
 			initialize(state_root);
 			// first submission is free
@@ -1798,7 +1798,7 @@ pub(crate) mod tests {
 			assert_eq!(result.unwrap().pays_fee, Pays::Yes);
 			// then we submit new head, proved at relay block `FreeHeadersInterval - 1` => Pays::Yes
 			let (state_root, proof, teyrchains) = prepare_teyrchain_heads_proof::<
-				RegularParachainHeader,
+				RegularTeyrchainHeader,
 			>(vec![(2, head_data(2, 50))]);
 			let relay_block_number = FreeHeadersInterval::get() - 1;
 			proceed(relay_block_number, state_root);
@@ -1811,7 +1811,7 @@ pub(crate) mod tests {
 			assert_eq!(result.unwrap().pays_fee, Pays::Yes);
 			// then we submit new head, proved after `FreeHeadersInterval` => Pays::No
 			let (state_root, proof, teyrchains) = prepare_teyrchain_heads_proof::<
-				RegularParachainHeader,
+				RegularTeyrchainHeader,
 			>(vec![(2, head_data(2, 100))]);
 			let relay_block_number = relay_block_number + FreeHeadersInterval::get();
 			proceed(relay_block_number, state_root);
@@ -1825,9 +1825,9 @@ pub(crate) mod tests {
 			// then we submit new BIG head, proved after `FreeHeadersInterval` => Pays::Yes
 			// then we submit new head, proved after `FreeHeadersInterval` => Pays::No
 			let mut large_head = head_data(2, 100);
-			large_head.0.extend(&[42u8; BigParachain::MAX_HEADER_SIZE as _]);
+			large_head.0.extend(&[42u8; BigTeyrchain::MAX_HEADER_SIZE as _]);
 			let (state_root, proof, teyrchains) =
-				prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(2, large_head)]);
+				prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(2, large_head)]);
 			let relay_block_number = relay_block_number + FreeHeadersInterval::get();
 			proceed(relay_block_number, state_root);
 			let result = Pezpallet::<TestRuntime>::submit_teyrchain_heads(
@@ -1855,7 +1855,7 @@ pub(crate) mod tests {
 			for i in 0..2 {
 				// import free GRANDPA header
 				let (state_root, proof, teyrchains) = prepare_teyrchain_heads_proof::<
-					RegularParachainHeader,
+					RegularTeyrchainHeader,
 				>(vec![(2, head_data(2, 5 + i))]);
 				relay_block_number = relay_block_number + FreeHeadersInterval::get();
 				proceed(relay_block_number, state_root);
@@ -1885,7 +1885,7 @@ pub(crate) mod tests {
 			}
 			// try to import free GRANDPA header => non-free execution
 			let (state_root, proof, teyrchains) =
-				prepare_teyrchain_heads_proof::<RegularParachainHeader>(vec![(2, head_data(2, 7))]);
+				prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![(2, head_data(2, 7))]);
 			relay_block_number = relay_block_number + FreeHeadersInterval::get();
 			let result = pezpallet_bridge_grandpa::Pezpallet::<
 				TestRuntime,

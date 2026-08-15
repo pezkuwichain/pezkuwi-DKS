@@ -161,7 +161,7 @@ use pezkuwi_node_primitives::{SignedFullStatement, Statement};
 use pezkuwi_node_subsystem::{
 	messages::{
 		CanSecondRequest, CandidateBackingMessage, CollatorProtocolMessage, IfDisconnected,
-		NetworkBridgeEvent, NetworkBridgeTxMessage, ParentHeadData, ProspectiveParachainsMessage,
+		NetworkBridgeEvent, NetworkBridgeTxMessage, ParentHeadData, ProspectiveTeyrchainsMessage,
 		ProspectiveValidationDataRequest,
 	},
 	overseer, CollatorProtocolSenderTrait, FromOrchestra, OverseerSignal, SubsystemError,
@@ -2739,7 +2739,7 @@ where
 	};
 
 	sender
-		.send_message(ProspectiveParachainsMessage::GetProspectiveValidationData(request, tx))
+		.send_message(ProspectiveTeyrchainsMessage::GetProspectiveValidationData(request, tx))
 		.await;
 
 	rx.await.map_err(SecondingError::CancelledProspectiveValidationData)

@@ -353,7 +353,7 @@ impl<T: Config> FeeTracker for Pezpallet<T> {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<T: Config> crate::EnsureForParachain for Pezpallet<T> {
+impl<T: Config> crate::EnsureForTeyrchain for Pezpallet<T> {
 	fn ensure(para: ParaId) {
 		Self::make_teyrchain_reachable(para);
 	}

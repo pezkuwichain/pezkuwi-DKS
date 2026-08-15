@@ -49,7 +49,7 @@ pub enum Error {
 	ChannelError(String),
 	/// Required teyrchain head is not present at the relay chain.
 	#[error("Teyrchain {0:?} head {1} is missing from the relay chain storage.")]
-	MissingRequiredParachainHead(ParaId, u64),
+	MissingRequiredTeyrchainHead(ParaId, u64),
 	/// Failed to find finality proof for the given header.
 	#[error("Failed to find finality proof for header {0}.")]
 	FinalityProofNotFound(u64),

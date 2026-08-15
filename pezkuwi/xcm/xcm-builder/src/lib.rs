@@ -45,7 +45,7 @@ pub use barriers::{
 	AllowExplicitUnpaidExecutionFrom, AllowHrmpNotificationsFromRelayChain,
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
 	AllowUnpaidExecutionFrom, DenyRecursively, DenyReserveTransferToRelayChain, DenyThenTry,
-	IsChildSystemParachain, IsParentsOnly, IsSiblingSystemParachain, RespectSuspension,
+	IsChildSystemTeyrchain, IsParentsOnly, IsSiblingSystemTeyrchain, RespectSuspension,
 	TakeWeightCredit, TrailingSetTopicAsId, WithComputedOrigin,
 };
 
@@ -84,12 +84,12 @@ mod location_conversion;
 pub use location_conversion::ForeignChainAliasAccount;
 pub use location_conversion::{
 	Account32Hash, AccountId32Aliases, AccountKey20Aliases, AliasesIntoAccountId32,
-	ChildParachainConvertsVia, DescribeAccountId32Terminal, DescribeAccountIdTerminal,
+	ChildTeyrchainConvertsVia, DescribeAccountId32Terminal, DescribeAccountIdTerminal,
 	DescribeAccountKey20Terminal, DescribeAllTerminal, DescribeBodyTerminal, DescribeFamily,
 	DescribeLocation, DescribePalletTerminal, DescribeTerminus, DescribeTreasuryVoiceTerminal,
 	ExternalConsensusLocationsConverterFor, GlobalConsensusConvertsFor,
-	GlobalConsensusParachainConvertsFor, HashedDescription, LocalTreasuryVoiceConvertsVia,
-	ParentIsPreset, SiblingParachainConvertsVia,
+	GlobalConsensusTeyrchainConvertsFor, HashedDescription, LocalTreasuryVoiceConvertsVia,
+	ParentIsPreset, SiblingTeyrchainConvertsVia,
 };
 
 mod matches_location;
@@ -120,9 +120,9 @@ pub use origin_aliases::*;
 
 mod origin_conversion;
 pub use origin_conversion::{
-	BackingToPlurality, ChildParachainAsNative, ChildSystemParachainAsSuperuser, EnsureXcmOrigin,
+	BackingToPlurality, ChildSystemTeyrchainAsSuperuser, ChildTeyrchainAsNative, EnsureXcmOrigin,
 	LocationAsSuperuser, OriginToPluralityVoice, ParentAsSuperuser, RelayChainAsNative,
-	SiblingParachainAsNative, SiblingSystemParachainAsSuperuser, SignedAccountId32AsNative,
+	SiblingSystemTeyrchainAsSuperuser, SiblingTeyrchainAsNative, SignedAccountId32AsNative,
 	SignedAccountKey20AsNative, SignedToAccountId32, SovereignSignedViaLocation,
 };
 

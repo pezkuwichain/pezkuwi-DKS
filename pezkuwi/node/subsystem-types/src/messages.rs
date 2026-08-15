@@ -1498,7 +1498,7 @@ pub type Ancestors = HashSet<CandidateHash>;
 
 /// Messages sent to the Prospective Teyrchains subsystem.
 #[derive(Debug)]
-pub enum ProspectiveParachainsMessage {
+pub enum ProspectiveTeyrchainsMessage {
 	/// Inform the Prospective Teyrchains Subsystem of a new seconded candidate.
 	///
 	/// The response sender returns false if the candidate was rejected by prospective teyrchains,

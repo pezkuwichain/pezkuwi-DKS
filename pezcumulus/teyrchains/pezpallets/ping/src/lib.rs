@@ -31,7 +31,7 @@ use xcm::latest::prelude::*;
 pub use pezpallet::*;
 
 parameter_types! {
-	const MaxParachains: u32 = 100;
+	const MaxTeyrchains: u32 = 100;
 	const MaxPayloadSize: u32 = 1024;
 }
 
@@ -65,7 +65,7 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub(super) type Targets<T: Config> = StorageValue<
 		_,
-		BoundedVec<(ParaId, BoundedVec<u8, MaxPayloadSize>), MaxParachains>,
+		BoundedVec<(ParaId, BoundedVec<u8, MaxPayloadSize>), MaxTeyrchains>,
 		ValueQuery,
 	>;
 

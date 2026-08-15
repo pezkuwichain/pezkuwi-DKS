@@ -89,7 +89,7 @@ use pezkuwi_node_subsystem::{
 		AvailabilityDistributionMessage, AvailabilityStoreMessage, BackableCandidateRef,
 		CanSecondRequest, CandidateBackingMessage, CandidateValidationMessage,
 		CollatorProtocolMessage, HypotheticalCandidate, HypotheticalMembershipRequest,
-		IntroduceSecondedCandidateRequest, ProspectiveParachainsMessage, ProvisionableData,
+		IntroduceSecondedCandidateRequest, ProspectiveTeyrchainsMessage, ProvisionableData,
 		ProvisionerMessage, PvfExecKind, RuntimeApiMessage, RuntimeApiRequest,
 		StatementDistributionMessage, StoreAvailableDataError,
 	},
@@ -1290,7 +1290,7 @@ async fn seconding_sanity_check<Context>(
 		}
 
 		let (tx, rx) = oneshot::channel();
-		ctx.send_message(ProspectiveParachainsMessage::GetHypotheticalMembership(
+		ctx.send_message(ProspectiveTeyrchainsMessage::GetHypotheticalMembership(
 			HypotheticalMembershipRequest {
 				candidates: vec![hypothetical_candidate.clone()],
 				fragment_chain_relay_parent: Some(*head),
@@ -1433,7 +1433,7 @@ async fn handle_validated_candidate_command<Context>(
 						let statement =
 							StatementWithPVD::Seconded(receipt, persisted_validation_data);
 
-						// If we get an Error::RejectedByProspectiveParachains,
+						// If we get an Error::RejectedByProspectiveTeyrchains,
 						// then the statement has not been distributed or imported into
 						// the table.
 						let res = sign_import_and_distribute_statement(
@@ -1446,7 +1446,7 @@ async fn handle_validated_candidate_command<Context>(
 						)
 						.await;
 
-						if let Err(Error::RejectedByProspectiveParachains) = res {
+						if let Err(Error::RejectedByProspectiveTeyrchains) = res {
 							let candidate_hash = candidate.hash();
 							gum::debug!(
 								target: LOG_TARGET,
@@ -1579,7 +1579,7 @@ fn sign_statement(
 
 /// Import a statement into the statement table and return the summary of the import.
 ///
-/// This will fail with `Error::RejectedByProspectiveParachains` if the message type is seconded,
+/// This will fail with `Error::RejectedByProspectiveTeyrchains` if the message type is seconded,
 /// the candidate is fresh, and any of the following are true:
 /// 1. There is no `PersistedValidationData` attached.
 /// 2. Prospective teyrchains subsystem returned an empty `HypotheticalMembership` i.e. did not
@@ -1605,8 +1605,8 @@ async fn import_statement<Context>(
 	// we need to create an entry in the `PerCandidateState` map.
 	//
 	// We also need to inform the prospective teyrchains subsystem of the seconded candidate.
-	// If `ProspectiveParachainsMessage::Second` fails, then we return
-	// Error::RejectedByProspectiveParachains.
+	// If `ProspectiveTeyrchainsMessage::Second` fails, then we return
+	// Error::RejectedByProspectiveTeyrchains.
 	//
 	// Persisted Validation Data should be available - it may already be available
 	// if this is a candidate we are seconding.
@@ -1616,7 +1616,7 @@ async fn import_statement<Context>(
 	if let StatementWithPVD::Seconded(candidate, pvd) = statement.payload() {
 		if !per_candidate.contains_key(&candidate_hash) {
 			let (tx, rx) = oneshot::channel();
-			ctx.send_message(ProspectiveParachainsMessage::IntroduceSecondedCandidate(
+			ctx.send_message(ProspectiveTeyrchainsMessage::IntroduceSecondedCandidate(
 				IntroduceSecondedCandidateRequest {
 					candidate_para: candidate.descriptor.para_id(),
 					candidate_receipt: candidate.clone(),
@@ -1633,9 +1633,9 @@ async fn import_statement<Context>(
 						"Could not reach the Prospective Teyrchains subsystem."
 					);
 
-					return Err(Error::RejectedByProspectiveParachains);
+					return Err(Error::RejectedByProspectiveTeyrchains);
 				},
-				Ok(false) => return Err(Error::RejectedByProspectiveParachains),
+				Ok(false) => return Err(Error::RejectedByProspectiveTeyrchains),
 				Ok(true) => {},
 			}
 
@@ -1692,7 +1692,7 @@ async fn post_import_statement_actions<Context>(
 
 				// Inform the prospective teyrchains subsystem
 				// that the candidate is now backed.
-				ctx.send_message(ProspectiveParachainsMessage::CandidateBacked(
+				ctx.send_message(ProspectiveTeyrchainsMessage::CandidateBacked(
 					para_id,
 					candidate_hash,
 				))
@@ -1908,9 +1908,9 @@ async fn maybe_validate_and_import<Context>(
 
 	let res = import_statement(ctx, pezsp_state, &mut state.per_candidate, &statement).await;
 
-	// if we get an Error::RejectedByProspectiveParachains,
+	// if we get an Error::RejectedByProspectiveTeyrchains,
 	// we will do nothing.
-	if let Err(Error::RejectedByProspectiveParachains) = res {
+	if let Err(Error::RejectedByProspectiveTeyrchains) = res {
 		gum::debug!(
 			target: LOG_TARGET,
 			?scheduling_parent,

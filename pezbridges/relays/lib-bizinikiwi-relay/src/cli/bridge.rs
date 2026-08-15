@@ -20,7 +20,7 @@ use crate::{
 	equivocation::BizinikiwiEquivocationDetectionPipeline,
 	finality::BizinikiwiFinalitySyncPipeline,
 	messages::{BizinikiwiMessageLane, MessagesRelayLimits},
-	teyrchains::BizinikiwiParachainsPipeline,
+	teyrchains::BizinikiwiTeyrchainsPipeline,
 };
 use pezbp_teyrchains::{RelayBlockHash, RelayBlockHasher, RelayBlockNumber};
 use relay_bizinikiwi_client::{
@@ -84,9 +84,9 @@ where
 		+ ChainWithRuntimeVersion
 		+ RelayChain;
 	/// Finality proofs synchronization pipeline (source teyrchain -> target).
-	type TeyrchainFinality: BizinikiwiParachainsPipeline<
+	type TeyrchainFinality: BizinikiwiTeyrchainsPipeline<
 		SourceRelayChain = Self::SourceRelay,
-		SourceParachain = Self::Source,
+		SourceTeyrchain = Self::Source,
 		TargetChain = Self::Target,
 	>;
 	/// Finality proofs synchronization pipeline (source relay chain -> target).

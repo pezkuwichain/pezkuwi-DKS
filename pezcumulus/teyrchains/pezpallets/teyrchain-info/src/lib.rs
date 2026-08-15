@@ -59,13 +59,13 @@ pub mod pezpallet {
 	}
 
 	#[pezpallet::type_value]
-	pub(super) fn DefaultForParachainId() -> ParaId {
+	pub(super) fn DefaultForTeyrchainId() -> ParaId {
 		100.into()
 	}
 
 	#[pezpallet::storage]
 	pub(super) type TeyrchainId<T: Config> =
-		StorageValue<_, ParaId, ValueQuery, DefaultForParachainId>;
+		StorageValue<_, ParaId, ValueQuery, DefaultForTeyrchainId>;
 
 	impl<T: Config> Get<ParaId> for Pezpallet<T> {
 		fn get() -> ParaId {

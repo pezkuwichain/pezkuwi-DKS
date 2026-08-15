@@ -301,9 +301,9 @@ impl<AccountId: Decode + Eq + Clone> ConvertLocation<AccountId> for ParentIsPres
 	}
 }
 
-pub struct ChildParachainConvertsVia<ParaId, AccountId>(PhantomData<(ParaId, AccountId)>);
+pub struct ChildTeyrchainConvertsVia<ParaId, AccountId>(PhantomData<(ParaId, AccountId)>);
 impl<ParaId: From<u32> + Into<u32> + AccountIdConversion<AccountId>, AccountId: Clone>
-	ConvertLocation<AccountId> for ChildParachainConvertsVia<ParaId, AccountId>
+	ConvertLocation<AccountId> for ChildTeyrchainConvertsVia<ParaId, AccountId>
 {
 	fn convert_location(location: &Location) -> Option<AccountId> {
 		match location.unpack() {
@@ -313,9 +313,9 @@ impl<ParaId: From<u32> + Into<u32> + AccountIdConversion<AccountId>, AccountId: 
 	}
 }
 
-pub struct SiblingParachainConvertsVia<ParaId, AccountId>(PhantomData<(ParaId, AccountId)>);
+pub struct SiblingTeyrchainConvertsVia<ParaId, AccountId>(PhantomData<(ParaId, AccountId)>);
 impl<ParaId: From<u32> + Into<u32> + AccountIdConversion<AccountId>, AccountId: Clone>
-	ConvertLocation<AccountId> for SiblingParachainConvertsVia<ParaId, AccountId>
+	ConvertLocation<AccountId> for SiblingTeyrchainConvertsVia<ParaId, AccountId>
 {
 	fn convert_location(location: &Location) -> Option<AccountId> {
 		match location.unpack() {
@@ -438,18 +438,18 @@ impl<UniversalLocation, AccountId> GlobalConsensusConvertsFor<UniversalLocation,
 /// possibly form part of a more sophisticated attack scenario.
 ///
 /// DEPRECATED in favor of [ExternalConsensusLocationsConverterFor]
-pub struct GlobalConsensusParachainConvertsFor<UniversalLocation, AccountId>(
+pub struct GlobalConsensusTeyrchainConvertsFor<UniversalLocation, AccountId>(
 	PhantomData<(UniversalLocation, AccountId)>,
 );
 impl<UniversalLocation: Get<InteriorLocation>, AccountId: From<[u8; 32]> + Clone>
-	ConvertLocation<AccountId> for GlobalConsensusParachainConvertsFor<UniversalLocation, AccountId>
+	ConvertLocation<AccountId> for GlobalConsensusTeyrchainConvertsFor<UniversalLocation, AccountId>
 {
 	fn convert_location(location: &Location) -> Option<AccountId> {
 		let universal_source = UniversalLocation::get();
 		tracing::trace!(
 			target: "xcm::location_conversion",
 			?universal_source, ?location,
-			"GlobalConsensusParachainConvertsFor",
+			"GlobalConsensusTeyrchainConvertsFor",
 		);
 		let devolved = ensure_is_remote(universal_source, location.clone()).ok()?;
 		let (remote_network, remote_location) = devolved;
@@ -463,7 +463,7 @@ impl<UniversalLocation: Get<InteriorLocation>, AccountId: From<[u8; 32]> + Clone
 	}
 }
 impl<UniversalLocation, AccountId>
-	GlobalConsensusParachainConvertsFor<UniversalLocation, AccountId>
+	GlobalConsensusTeyrchainConvertsFor<UniversalLocation, AccountId>
 {
 	fn from_params(network: &NetworkId, para_id: &u32) -> [u8; 32] {
 		(b"glblcnsnss/prchn_", network, para_id).using_encoded(blake2_256)
@@ -473,7 +473,7 @@ impl<UniversalLocation, AccountId>
 /// Converts locations from external global consensus systems (e.g., Ethereum, other teyrchains)
 /// into `AccountId`.
 ///
-/// Replaces `GlobalConsensusParachainConvertsFor` and `EthereumLocationsConverterFor` in a
+/// Replaces `GlobalConsensusTeyrchainConvertsFor` and `EthereumLocationsConverterFor` in a
 /// backwards-compatible way, and extends them for also handling child locations (e.g.,
 /// `AccountId(Alice)`).
 pub struct ExternalConsensusLocationsConverterFor<UniversalLocation, AccountId>(
@@ -495,7 +495,7 @@ impl<UniversalLocation: Get<InteriorLocation>, AccountId: From<[u8; 32]> + Clone
 			ensure_is_remote(universal_source, location.clone()).ok()?;
 
 		// replaces and extends `EthereumLocationsConverterFor` and
-		// `GlobalConsensusParachainConvertsFor`
+		// `GlobalConsensusTeyrchainConvertsFor`
 		let acc_id: AccountId = if let Ethereum { chain_id } = &remote_network {
 			match remote_location.as_slice() {
 				// equivalent to `EthereumLocationsConverterFor`
@@ -509,7 +509,7 @@ impl<UniversalLocation: Get<InteriorLocation>, AccountId: From<[u8; 32]> + Clone
 			}
 		} else {
 			match remote_location.as_slice() {
-				// equivalent to `GlobalConsensusParachainConvertsFor`
+				// equivalent to `GlobalConsensusTeyrchainConvertsFor`
 				[Teyrchain(para_id)] => {
 					(b"glblcnsnss/prchn_", remote_network, para_id).using_encoded(blake2_256).into()
 				},
@@ -738,7 +738,7 @@ mod tests {
 
 		for (location, expected_result) in test_data {
 			let result =
-				GlobalConsensusParachainConvertsFor::<UniversalLocation, [u8; 32]>::convert_location(
+				GlobalConsensusTeyrchainConvertsFor::<UniversalLocation, [u8; 32]>::convert_location(
 					&location,
 				);
 			let result2 =
@@ -756,7 +756,7 @@ mod tests {
 						(_, [GlobalConsensus(network), Teyrchain(para_id)]) =>
 							assert_eq!(
 								account,
-								GlobalConsensusParachainConvertsFor::<UniversalLocation, [u8; 32]>::from_params(network, para_id),
+								GlobalConsensusTeyrchainConvertsFor::<UniversalLocation, [u8; 32]>::from_params(network, para_id),
 								"expected_result: {}, but conversion passed: {:?}, location: {:?}", expected_result, account, location
 							),
 						_ => assert_eq!(
@@ -782,7 +782,7 @@ mod tests {
 		// all success
 		let location = Location::new(2, [GlobalConsensus(ByGenesis([3; 32])), Teyrchain(1000)]);
 		let res_gc_a_p1000 =
-			GlobalConsensusParachainConvertsFor::<UniversalLocation, [u8; 32]>::convert_location(
+			GlobalConsensusTeyrchainConvertsFor::<UniversalLocation, [u8; 32]>::convert_location(
 				&location,
 			)
 			.unwrap();
@@ -795,7 +795,7 @@ mod tests {
 
 		let location = Location::new(2, [GlobalConsensus(ByGenesis([3; 32])), Teyrchain(1001)]);
 		let res_gc_a_p1001 =
-			GlobalConsensusParachainConvertsFor::<UniversalLocation, [u8; 32]>::convert_location(
+			GlobalConsensusTeyrchainConvertsFor::<UniversalLocation, [u8; 32]>::convert_location(
 				&location,
 			)
 			.unwrap();
@@ -808,7 +808,7 @@ mod tests {
 
 		let location = Location::new(2, [GlobalConsensus(ByGenesis([4; 32])), Teyrchain(1000)]);
 		let res_gc_b_p1000 =
-			GlobalConsensusParachainConvertsFor::<UniversalLocation, [u8; 32]>::convert_location(
+			GlobalConsensusTeyrchainConvertsFor::<UniversalLocation, [u8; 32]>::convert_location(
 				&location,
 			)
 			.unwrap();
@@ -821,7 +821,7 @@ mod tests {
 
 		let location = Location::new(2, [GlobalConsensus(ByGenesis([4; 32])), Teyrchain(1001)]);
 		let res_gc_b_p1001 =
-			GlobalConsensusParachainConvertsFor::<UniversalLocation, [u8; 32]>::convert_location(
+			GlobalConsensusTeyrchainConvertsFor::<UniversalLocation, [u8; 32]>::convert_location(
 				&location,
 			)
 			.unwrap();

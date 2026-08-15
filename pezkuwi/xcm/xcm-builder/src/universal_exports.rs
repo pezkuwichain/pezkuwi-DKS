@@ -942,7 +942,7 @@ mod tests {
 			pub BridgeToALocation: Location = Location::new(1, [Teyrchain(1234)]);
 			pub BridgeToBLocation: Location = Location::new(1, [Teyrchain(4321)]);
 
-			pub PaymentForNetworkAAndParachain2000: Asset = (Location::parent(), 150).into();
+			pub PaymentForNetworkAAndTeyrchain2000: Asset = (Location::parent(), 150).into();
 
 			pub BridgeTable: alloc::vec::Vec<NetworkExportTableItem> = alloc::vec![
 				// NetworkA allows `Teyrchain(1000)` as remote location WITHOUT payment.
@@ -957,7 +957,7 @@ mod tests {
 					NetworkA::get(),
 					Some(vec![Teyrchain2000InNetworkA::get()]),
 					BridgeToALocation::get(),
-					Some(PaymentForNetworkAAndParachain2000::get())
+					Some(PaymentForNetworkAAndTeyrchain2000::get())
 				),
 				// NetworkB allows all remote location.
 				NetworkExportTableItem::new(
@@ -975,7 +975,7 @@ mod tests {
 			(
 				NetworkA::get(),
 				[Teyrchain(2000)].into(),
-				Some((BridgeToALocation::get(), Some(PaymentForNetworkAAndParachain2000::get()))),
+				Some((BridgeToALocation::get(), Some(PaymentForNetworkAAndTeyrchain2000::get()))),
 			),
 			(NetworkA::get(), [Teyrchain(2000), GeneralIndex(1)].into(), None),
 			(NetworkA::get(), [Teyrchain(3000)].into(), None),

@@ -117,9 +117,9 @@ parameter_types! {
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }
 
-pub struct SystemParachainAsSuperuser<RuntimeOrigin>(PhantomData<RuntimeOrigin>);
+pub struct SystemTeyrchainAsSuperuser<RuntimeOrigin>(PhantomData<RuntimeOrigin>);
 impl<RuntimeOrigin: OriginTrait> ConvertOrigin<RuntimeOrigin>
-	for SystemParachainAsSuperuser<RuntimeOrigin>
+	for SystemTeyrchainAsSuperuser<RuntimeOrigin>
 {
 	fn convert_origin(
 		origin: impl Into<Location>,
@@ -223,7 +223,7 @@ parameter_types! {
 	pub const ByteFee: Balance = 1_000_000;
 }
 
-pub type PriceForSiblingParachainDelivery = pezkuwi_runtime_common::xcm_sender::ExponentialPrice<
+pub type PriceForSiblingTeyrchainDelivery = pezkuwi_runtime_common::xcm_sender::ExponentialPrice<
 	FeeAssetId,
 	BaseDeliveryFee,
 	ByteFee,
@@ -241,9 +241,9 @@ impl Config for Test {
 	// need to set the page size larger than that until we reduce the channel size on-chain.
 	type MaxPageSize = ConstU32<{ 103 * 1024 }>;
 	type ControllerOrigin = EnsureRoot<AccountId>;
-	type ControllerOriginConverter = SystemParachainAsSuperuser<RuntimeOrigin>;
+	type ControllerOriginConverter = SystemTeyrchainAsSuperuser<RuntimeOrigin>;
 	type WeightInfo = ();
-	type PriceForSiblingDelivery = PriceForSiblingParachainDelivery;
+	type PriceForSiblingDelivery = PriceForSiblingTeyrchainDelivery;
 }
 
 pub fn new_test_ext() -> pezsp_io::TestExternalities {

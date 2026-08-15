@@ -125,8 +125,8 @@ impl pezpallet_assets::Config for Test {
 parameter_types! {
 	pub const RelayLocation: Location = Location::parent();
 	pub const AnyNetwork: Option<NetworkId> = None;
-	pub MockRuntimeParachainId: ParaId = 42u32.into();
-	pub UniversalLocation: InteriorLocation = (ByGenesis([0; 32]), Teyrchain(MockRuntimeParachainId::get().into())).into();
+	pub MockRuntimeTeyrchainId: ParaId = 42u32.into();
+	pub UniversalLocation: InteriorLocation = (ByGenesis([0; 32]), Teyrchain(MockRuntimeTeyrchainId::get().into())).into();
 	pub UnitWeightCost: u64 = 1_000;
 	pub const BaseXcmWeight: Weight = Weight::from_parts(1_000, 1_000);
 	pub CurrencyPerSecondPerByte: (AssetId, u128, u128) = (AssetId(RelayLocation::get()), 1, 1);

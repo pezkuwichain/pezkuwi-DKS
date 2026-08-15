@@ -15,7 +15,7 @@
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::{
-	prometheus::Registry, HeadSupportsParachains, InitializedOverseerBuilder, MetricsTrait,
+	prometheus::Registry, HeadSupportsTeyrchains, InitializedOverseerBuilder, MetricsTrait,
 	Overseer, OverseerMetrics, OverseerSignal, OverseerSubsystemContext, SpawnGlue,
 };
 use orchestra::{FromOrchestra, SpawnedSubsystem, Subsystem, SubsystemContext};
@@ -57,14 +57,14 @@ where
 /// Create an overseer with all subsystem being `Sub`.
 ///
 /// Preferred way of initializing a dummy overseer for subsystem tests.
-pub fn dummy_overseer_builder<Spawner, SupportsParachains>(
+pub fn dummy_overseer_builder<Spawner, SupportsTeyrchains>(
 	spawner: Spawner,
-	supports_teyrchains: SupportsParachains,
+	supports_teyrchains: SupportsTeyrchains,
 	registry: Option<&Registry>,
 ) -> Result<
 	InitializedOverseerBuilder<
 		SpawnGlue<Spawner>,
-		SupportsParachains,
+		SupportsTeyrchains,
 		DummySubsystem,
 		DummySubsystem,
 		DummySubsystem,
@@ -94,21 +94,21 @@ pub fn dummy_overseer_builder<Spawner, SupportsParachains>(
 >
 where
 	SpawnGlue<Spawner>: orchestra::Spawner + 'static,
-	SupportsParachains: HeadSupportsParachains,
+	SupportsTeyrchains: HeadSupportsTeyrchains,
 {
 	one_for_all_overseer_builder(spawner, supports_teyrchains, DummySubsystem, registry)
 }
 
 /// Create an overseer with all subsystem being `Sub`.
-pub fn one_for_all_overseer_builder<Spawner, SupportsParachains, Sub>(
+pub fn one_for_all_overseer_builder<Spawner, SupportsTeyrchains, Sub>(
 	spawner: Spawner,
-	supports_teyrchains: SupportsParachains,
+	supports_teyrchains: SupportsTeyrchains,
 	subsystem: Sub,
 	registry: Option<&Registry>,
 ) -> Result<
 	InitializedOverseerBuilder<
 		SpawnGlue<Spawner>,
-		SupportsParachains,
+		SupportsTeyrchains,
 		Sub,
 		Sub,
 		Sub,
@@ -138,7 +138,7 @@ pub fn one_for_all_overseer_builder<Spawner, SupportsParachains, Sub>(
 >
 where
 	SpawnGlue<Spawner>: orchestra::Spawner + 'static,
-	SupportsParachains: HeadSupportsParachains,
+	SupportsTeyrchains: HeadSupportsTeyrchains,
 	Sub: Clone
 		+ Subsystem<OverseerSubsystemContext<AvailabilityDistributionMessage>, SubsystemError>
 		+ Subsystem<OverseerSubsystemContext<AvailabilityRecoveryMessage>, SubsystemError>
@@ -163,7 +163,7 @@ where
 		+ Subsystem<OverseerSubsystemContext<DisputeDistributionMessage>, SubsystemError>
 		+ Subsystem<OverseerSubsystemContext<ChainSelectionMessage>, SubsystemError>
 		+ Subsystem<OverseerSubsystemContext<PvfCheckerMessage>, SubsystemError>
-		+ Subsystem<OverseerSubsystemContext<ProspectiveParachainsMessage>, SubsystemError>,
+		+ Subsystem<OverseerSubsystemContext<ProspectiveTeyrchainsMessage>, SubsystemError>,
 {
 	let metrics = <OverseerMetrics as MetricsTrait>::register(registry)?;
 

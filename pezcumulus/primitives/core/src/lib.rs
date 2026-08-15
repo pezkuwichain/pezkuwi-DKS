@@ -633,7 +633,7 @@ pezsp_api::decl_runtime_apis! {
 	}
 
 	/// Runtime api used to access general info about a teyrchain runtime.
-	pub trait GetParachainInfo {
+	pub trait GetTeyrchainInfo {
 		/// Retrieve the teyrchain id used for runtime.
 		fn teyrchain_id() -> ParaId;
   }

@@ -17,7 +17,7 @@
 use futures::channel::oneshot;
 use pezkuwi_node_subsystem::{
 	errors::ChainApiError,
-	messages::{ChainApiMessage, ProspectiveParachainsMessage, RuntimeApiMessage},
+	messages::{ChainApiMessage, ProspectiveTeyrchainsMessage, RuntimeApiMessage},
 	SubsystemSender,
 };
 use pezkuwi_primitives::{BlockNumber, Hash};
@@ -129,7 +129,7 @@ impl View {
 	) -> Result<(), FetchError>
 	where
 		Sender: SubsystemSender<ChainApiMessage>
-			+ SubsystemSender<ProspectiveParachainsMessage>
+			+ SubsystemSender<ProspectiveTeyrchainsMessage>
 			+ SubsystemSender<RuntimeApiMessage>,
 	{
 		if self.leaves.contains_key(&leaf_hash) {
@@ -270,7 +270,7 @@ impl View {
 	) -> Result<FetchSummary, FetchError>
 	where
 		Sender: SubsystemSender<ChainApiMessage>
-			+ SubsystemSender<ProspectiveParachainsMessage>
+			+ SubsystemSender<ProspectiveTeyrchainsMessage>
 			+ SubsystemSender<RuntimeApiMessage>,
 	{
 		let ancestors = fetch_ancestors(leaf_hash, sender).await?;
@@ -341,7 +341,7 @@ pub enum FetchError {
 
 	/// Request to the prospective teyrchains subsystem failed.
 	#[error("The prospective teyrchains subsystem was unavailable")]
-	ProspectiveParachainsUnavailable,
+	ProspectiveTeyrchainsUnavailable,
 
 	/// Failed to fetch the block header.
 	#[error("A block header was unavailable")]
@@ -390,7 +390,7 @@ async fn fetch_ancestors<Sender>(
 	sender: &mut Sender,
 ) -> Result<Vec<Hash>, FetchError>
 where
-	Sender: SubsystemSender<ProspectiveParachainsMessage>
+	Sender: SubsystemSender<ProspectiveTeyrchainsMessage>
 		+ SubsystemSender<RuntimeApiMessage>
 		+ SubsystemSender<ChainApiMessage>,
 {
@@ -614,7 +614,7 @@ mod tests {
 	) where
 		Ctx: SubsystemContext<Message = AllMessages>,
 		Ctx::Sender: SubsystemSender<ChainApiMessage>
-			+ SubsystemSender<ProspectiveParachainsMessage>
+			+ SubsystemSender<ProspectiveTeyrchainsMessage>
 			+ SubsystemSender<RuntimeApiMessage>,
 	{
 		let fut = view.activate_leaf(ctx.sender(), leaf).timeout(TIMEOUT).map(|res| {

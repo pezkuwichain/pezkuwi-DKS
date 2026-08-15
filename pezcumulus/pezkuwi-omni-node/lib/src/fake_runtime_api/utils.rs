@@ -180,7 +180,7 @@ macro_rules! impl_node_runtime_apis {
 				}
 			}
 
-			impl pezcumulus_primitives_core::GetParachainInfo<$block> for $runtime {
+			impl pezcumulus_primitives_core::GetTeyrchainInfo<$block> for $runtime {
 				fn teyrchain_id() -> ParaId {
 					unimplemented!()
 				}

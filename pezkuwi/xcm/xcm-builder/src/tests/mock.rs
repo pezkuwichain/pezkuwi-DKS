@@ -91,7 +91,7 @@ pub enum TestOrigin {
 )]
 pub enum TestCall {
 	OnlyRoot(Weight, Option<Weight>),
-	OnlyParachain(Weight, Option<Weight>, Option<u32>),
+	OnlyTeyrchain(Weight, Option<Weight>, Option<u32>),
 	OnlySigned(Weight, Option<Weight>, Option<u64>),
 	Any(Weight, Option<Weight>),
 }
@@ -105,15 +105,15 @@ impl Dispatchable for TestCall {
 		let maybe_actual = match self {
 			TestCall::OnlyRoot(_, maybe_actual)
 			| TestCall::OnlySigned(_, maybe_actual, _)
-			| TestCall::OnlyParachain(_, maybe_actual, _)
+			| TestCall::OnlyTeyrchain(_, maybe_actual, _)
 			| TestCall::Any(_, maybe_actual) => maybe_actual,
 		};
 		post_info.actual_weight = maybe_actual;
 		if match (&origin, &self) {
-			(TestOrigin::Teyrchain(i), TestCall::OnlyParachain(_, _, Some(j))) => i == j,
+			(TestOrigin::Teyrchain(i), TestCall::OnlyTeyrchain(_, _, Some(j))) => i == j,
 			(TestOrigin::Signed(i), TestCall::OnlySigned(_, _, Some(j))) => i == j,
 			(TestOrigin::Root, TestCall::OnlyRoot(..))
-			| (TestOrigin::Teyrchain(_), TestCall::OnlyParachain(_, _, None))
+			| (TestOrigin::Teyrchain(_), TestCall::OnlyTeyrchain(_, _, None))
 			| (TestOrigin::Signed(_), TestCall::OnlySigned(_, _, None))
 			| (_, TestCall::Any(..)) => true,
 			_ => false,
@@ -129,7 +129,7 @@ impl GetDispatchInfo for TestCall {
 	fn get_dispatch_info(&self) -> DispatchInfo {
 		let call_weight = *match self {
 			TestCall::OnlyRoot(estimate, ..)
-			| TestCall::OnlyParachain(estimate, ..)
+			| TestCall::OnlyTeyrchain(estimate, ..)
 			| TestCall::OnlySigned(estimate, ..)
 			| TestCall::Any(estimate, ..) => estimate,
 		};

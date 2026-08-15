@@ -58,7 +58,7 @@ use scale_info::TypeInfo;
 pub use grandpa_adapter::WithGrandpaChainExtensionConfig;
 pub use messages_adapter::WithMessagesExtensionConfig;
 pub use priority::*;
-pub use teyrchain_adapter::WithParachainExtensionConfig;
+pub use teyrchain_adapter::WithTeyrchainExtensionConfig;
 
 mod grandpa_adapter;
 mod messages_adapter;
@@ -468,7 +468,7 @@ mod tests {
 	use pezbp_relayers::RuntimeWithUtilityPallet;
 	use pezbp_runtime::{BasicOperatingMode, HeaderId, Teyrchain};
 	use pezbp_test_utils::{make_default_justification, test_keyring, TEST_GRANDPA_SET_ID};
-	use pezbp_teyrchains::{BestParaHeadHash, ParaInfo, SubmitParachainHeadsInfo};
+	use pezbp_teyrchains::{BestParaHeadHash, ParaInfo, SubmitTeyrchainHeadsInfo};
 	use pezframe_support::{
 		__private::pezsp_tracing,
 		assert_storage_noop, parameter_types,
@@ -490,7 +490,7 @@ mod tests {
 	};
 
 	parameter_types! {
-		TestParachain: u32 = BridgedUnderlyingParachain::PARACHAIN_ID;
+		TestTeyrchain: u32 = BridgedUnderlyingTeyrchain::PARACHAIN_ID;
 		pub MsgProofsRewardsAccount: RewardsAccountParams<TestLaneIdType> = RewardsAccountParams::new(
 			test_lane_id(),
 			TEST_BRIDGED_CHAIN_ID,
@@ -518,7 +518,7 @@ mod tests {
 	>;
 	type TestGrandpaExtension =
 		BridgeRelayersTransactionExtension<TestRuntime, TestGrandpaExtensionConfig>;
-	type TestExtensionConfig = teyrchain_adapter::WithParachainExtensionConfig<
+	type TestExtensionConfig = teyrchain_adapter::WithTeyrchainExtensionConfig<
 		StrTestExtension,
 		TestRuntime,
 		RuntimeWithUtilityPallet<TestRuntime>,
@@ -578,7 +578,7 @@ mod tests {
 			pezbp_test_utils::test_header::<BridgedChainHeader>(0).build(),
 		);
 
-		let para_id = ParaId(TestParachain::get());
+		let para_id = ParaId(TestTeyrchain::get());
 		let para_info = ParaInfo {
 			best_head_hash: BestParaHeadHash {
 				at_relay_block_number: teyrchain_head_at_relay_header_number,
@@ -643,10 +643,10 @@ mod tests {
 	fn submit_teyrchain_head_call(
 		teyrchain_head_at_relay_header_number: BridgedChainBlockNumber,
 	) -> RuntimeCall {
-		RuntimeCall::BridgeParachains(TeyrchainsCall::submit_teyrchain_heads {
+		RuntimeCall::BridgeTeyrchains(TeyrchainsCall::submit_teyrchain_heads {
 			at_relay_block: (teyrchain_head_at_relay_header_number, BridgedChainHash::default()),
 			teyrchains: vec![(
-				ParaId(TestParachain::get()),
+				ParaId(TestTeyrchain::get()),
 				[teyrchain_head_at_relay_header_number as u8; 32].into(),
 			)],
 			teyrchain_heads_proof: ParaHeadsProof { storage_proof: Default::default() },
@@ -656,10 +656,10 @@ mod tests {
 	pub fn submit_teyrchain_head_call_ex(
 		teyrchain_head_at_relay_header_number: BridgedChainBlockNumber,
 	) -> RuntimeCall {
-		RuntimeCall::BridgeParachains(TeyrchainsCall::submit_teyrchain_heads_ex {
+		RuntimeCall::BridgeTeyrchains(TeyrchainsCall::submit_teyrchain_heads_ex {
 			at_relay_block: (teyrchain_head_at_relay_header_number, BridgedChainHash::default()),
 			teyrchains: vec![(
-				ParaId(TestParachain::get()),
+				ParaId(TestTeyrchain::get()),
 				[teyrchain_head_at_relay_header_number as u8; 32].into(),
 			)],
 			teyrchain_heads_proof: ParaHeadsProof { storage_proof: Default::default() },
@@ -842,9 +842,9 @@ mod tests {
 					is_mandatory: false,
 					is_free_execution_expected: false,
 				},
-				SubmitParachainHeadsInfo {
+				SubmitTeyrchainHeadsInfo {
 					at_relay_block: HeaderId(200, [0u8; 32].into()),
-					para_id: ParaId(TestParachain::get()),
+					para_id: ParaId(TestTeyrchain::get()),
 					para_head_hash: [200u8; 32].into(),
 					is_free_execution_expected: false,
 				},
@@ -856,9 +856,9 @@ mod tests {
 					},
 					unrewarded_relayers: UnrewardedRelayerOccupation {
 						free_relayer_slots:
-							BridgedUnderlyingParachain::MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX,
+							BridgedUnderlyingTeyrchain::MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX,
 						free_message_slots:
-							BridgedUnderlyingParachain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX,
+							BridgedUnderlyingTeyrchain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX,
 					},
 				}),
 			),
@@ -886,9 +886,9 @@ mod tests {
 					is_mandatory: false,
 					is_free_execution_expected: false,
 				},
-				SubmitParachainHeadsInfo {
+				SubmitTeyrchainHeadsInfo {
 					at_relay_block: HeaderId(200, [0u8; 32].into()),
-					para_id: ParaId(TestParachain::get()),
+					para_id: ParaId(TestTeyrchain::get()),
 					para_head_hash: [200u8; 32].into(),
 					is_free_execution_expected: false,
 				},
@@ -931,9 +931,9 @@ mod tests {
 					},
 					unrewarded_relayers: UnrewardedRelayerOccupation {
 						free_relayer_slots:
-							BridgedUnderlyingParachain::MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX,
+							BridgedUnderlyingTeyrchain::MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX,
 						free_message_slots:
-							BridgedUnderlyingParachain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX,
+							BridgedUnderlyingTeyrchain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX,
 					},
 				}),
 			),
@@ -983,9 +983,9 @@ mod tests {
 		PreDispatchData {
 			relayer: relayer_account_at_this_chain(),
 			call_info: ExtensionCallInfo::TeyrchainFinalityAndMsgs(
-				SubmitParachainHeadsInfo {
+				SubmitTeyrchainHeadsInfo {
 					at_relay_block: HeaderId(200, [0u8; 32].into()),
-					para_id: ParaId(TestParachain::get()),
+					para_id: ParaId(TestTeyrchain::get()),
 					para_head_hash: [200u8; 32].into(),
 					is_free_execution_expected: false,
 				},
@@ -997,9 +997,9 @@ mod tests {
 					},
 					unrewarded_relayers: UnrewardedRelayerOccupation {
 						free_relayer_slots:
-							BridgedUnderlyingParachain::MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX,
+							BridgedUnderlyingTeyrchain::MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX,
 						free_message_slots:
-							BridgedUnderlyingParachain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX,
+							BridgedUnderlyingTeyrchain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX,
 					},
 				}),
 			),
@@ -1011,9 +1011,9 @@ mod tests {
 		PreDispatchData {
 			relayer: relayer_account_at_this_chain(),
 			call_info: ExtensionCallInfo::TeyrchainFinalityAndMsgs(
-				SubmitParachainHeadsInfo {
+				SubmitTeyrchainHeadsInfo {
 					at_relay_block: HeaderId(200, [0u8; 32].into()),
-					para_id: ParaId(TestParachain::get()),
+					para_id: ParaId(TestTeyrchain::get()),
 					para_head_hash: [200u8; 32].into(),
 					is_free_execution_expected: false,
 				},
@@ -1041,9 +1041,9 @@ mod tests {
 					},
 					unrewarded_relayers: UnrewardedRelayerOccupation {
 						free_relayer_slots:
-							BridgedUnderlyingParachain::MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX,
+							BridgedUnderlyingTeyrchain::MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX,
 						free_message_slots:
-							BridgedUnderlyingParachain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX,
+							BridgedUnderlyingTeyrchain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX,
 					},
 				},
 			)),
@@ -1319,12 +1319,12 @@ mod tests {
 				.unwrap();
 
 			let priority_of_max_messages_delivery = run_validate(message_delivery_call(
-				100 + BridgedUnderlyingParachain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX,
+				100 + BridgedUnderlyingTeyrchain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX,
 			))
 			.unwrap()
 			.priority;
 			let priority_of_more_than_max_messages_delivery = run_validate(message_delivery_call(
-				100 + BridgedUnderlyingParachain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX + 1,
+				100 + BridgedUnderlyingTeyrchain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX + 1,
 			))
 			.unwrap()
 			.priority;
@@ -1661,11 +1661,11 @@ mod tests {
 
 			let call = RuntimeCall::Utility(UtilityCall::batch_all {
 				calls: vec![
-					RuntimeCall::BridgeParachains(TeyrchainsCall::submit_teyrchain_heads {
+					RuntimeCall::BridgeTeyrchains(TeyrchainsCall::submit_teyrchain_heads {
 						at_relay_block: (100, BridgedChainHash::default()),
 						teyrchains: vec![
-							(ParaId(TestParachain::get()), [1u8; 32].into()),
-							(ParaId(TestParachain::get() + 1), [1u8; 32].into()),
+							(ParaId(TestTeyrchain::get()), [1u8; 32].into()),
+							(ParaId(TestTeyrchain::get() + 1), [1u8; 32].into()),
 						],
 						teyrchain_heads_proof: ParaHeadsProof { storage_proof: Default::default() },
 					}),
@@ -2410,7 +2410,7 @@ mod tests {
 	fn does_not_panic_on_boosting_priority_of_empty_message_delivery_transaction() {
 		run_test(|| {
 			let best_delivered_message =
-				BridgedUnderlyingParachain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX;
+				BridgedUnderlyingTeyrchain::MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX;
 			initialize_environment(100, 100, best_delivered_message);
 
 			// register relayer so it gets priority boost

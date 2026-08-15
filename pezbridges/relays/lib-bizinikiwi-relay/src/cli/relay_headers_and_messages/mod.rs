@@ -394,7 +394,7 @@ mod tests {
 			kusama_headers_to_bridge_hub_polkadot
 		);
 		declare_chain_cli_schema!(
-			KusamaParachainsToBridgeHubPolkadot,
+			KusamaTeyrchainsToBridgeHubPolkadot,
 			kusama_teyrchains_to_bridge_hub_polkadot
 		);
 		declare_chain_cli_schema!(
@@ -402,7 +402,7 @@ mod tests {
 			pezkuwi_headers_to_bridge_hub_kusama
 		);
 		declare_chain_cli_schema!(
-			PolkadotParachainsToBridgeHubKusama,
+			PolkadotTeyrchainsToBridgeHubKusama,
 			pezkuwi_teyrchains_to_bridge_hub_kusama
 		);
 		// Bridges.

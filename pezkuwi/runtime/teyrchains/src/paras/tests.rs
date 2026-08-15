@@ -2238,7 +2238,7 @@ fn authorize_force_set_current_code_hash_works() {
 			),
 			Error::<Test>::NotRegistered,
 		);
-		ParaLifecycles::<Test>::insert(&para_a, ParaLifecycle::OffboardingParachain);
+		ParaLifecycles::<Test>::insert(&para_a, ParaLifecycle::OffboardingTeyrchain);
 		assert!(!Paras::is_valid_para(para_a));
 		assert_err!(
 			Paras::authorize_force_set_current_code_hash(

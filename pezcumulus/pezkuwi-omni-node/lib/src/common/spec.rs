@@ -38,7 +38,7 @@ use pezcumulus_client_service::{
 	BuildNetworkParams, CollatorSybilResistance, DARecoveryProfile, StartRelayChainTasksParams,
 	TeyrchainTracingExecuteBlock,
 };
-use pezcumulus_primitives_core::{BlockT, GetParachainInfo, ParaId};
+use pezcumulus_primitives_core::{BlockT, GetTeyrchainInfo, ParaId};
 use pezcumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface};
 use pezkuwi_primitives::CollatorPair;
 use pezsc_client_api::Backend;
@@ -172,7 +172,7 @@ pub(crate) trait BaseNodeSpec {
 		let best_hash = client.chain_info().best_hash;
 		let para_id = if client
 			.runtime_api()
-			.has_api::<dyn GetParachainInfo<Self::Block>>(best_hash)
+			.has_api::<dyn GetTeyrchainInfo<Self::Block>>(best_hash)
 			.ok()
 			.filter(|has_api| *has_api)
 			.is_some()
@@ -182,7 +182,7 @@ pub(crate) trait BaseNodeSpec {
 				.teyrchain_id(best_hash)
 				.inspect_err(|err| {
 					log::error!(
-						"`pezcumulus_primitives_core::GetParachainInfo` runtime API call errored with {}",
+						"`pezcumulus_primitives_core::GetTeyrchainInfo` runtime API call errored with {}",
 						err
 					);
 				})

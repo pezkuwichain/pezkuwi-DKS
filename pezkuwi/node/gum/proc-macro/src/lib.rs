@@ -184,7 +184,7 @@ fn support_crate() -> TokenStream {
 		quote! {crate}
 	} else {
 		use proc_macro_crate::{crate_name, FoundCrate};
-		let crate_name = crate_name("tracing-gum")
+		let crate_name = crate_name("pez-tracing-gum")
 			.expect("Support crate `tracing-gum` is present in `Cargo.toml`. qed");
 		match crate_name {
 			FoundCrate::Itself => quote! {crate},

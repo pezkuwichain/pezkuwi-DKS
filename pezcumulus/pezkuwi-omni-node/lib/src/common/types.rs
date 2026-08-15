@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use pezcumulus_client_consensus_common::TeyrchainBlockImport as TParachainBlockImport;
+use pezcumulus_client_consensus_common::TeyrchainBlockImport as TTeyrchainBlockImport;
 use pezcumulus_primitives_core::relay_chain::UncheckedExtrinsic;
 use pezsc_consensus::DefaultImportQueue;
 use pezsc_executor::WasmExecutor;
@@ -46,7 +46,7 @@ pub type TeyrchainClient<Block, RuntimeApi> =
 pub type TeyrchainBackend<Block> = TFullBackend<Block>;
 
 pub type TeyrchainBlockImport<Block, BI> =
-	TParachainBlockImport<Block, BI, TeyrchainBackend<Block>>;
+	TTeyrchainBlockImport<Block, BI, TeyrchainBackend<Block>>;
 
 /// Assembly of PartialComponents (enough to run chain ops subcommands)
 pub type TeyrchainService<Block, RuntimeApi, BI, BIExtraReturnValue> = PartialComponents<

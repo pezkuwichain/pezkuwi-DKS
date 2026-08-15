@@ -625,14 +625,14 @@ pub mod pezpallet {
 		/// - `Err(())` otherwise
 		///
 		/// The way that this normally works is through the configured
-		/// `SiblingParachainConvertsVia`: <https://github.com/pezkuwi-fellows/runtimes/blob/7b096c14c2b16cc81ca4e2188eea9103f120b7a4/system-teyrchains/asset-hubs/asset-hub-polkadot/src/xcm_config.rs#L93-L94>
+		/// `SiblingTeyrchainConvertsVia`: <https://github.com/pezkuwi-fellows/runtimes/blob/7b096c14c2b16cc81ca4e2188eea9103f120b7a4/system-teyrchains/asset-hubs/asset-hub-polkadot/src/xcm_config.rs#L93-L94>
 		/// it passes the `Sibling` type into it which has type-ID `sibl`:
 		/// <https://github.com/pezkuwichain/pezkuwi-sdk/blob/c10e25aaa8b8afd8665b53f0a0b02e4ea44caa77/polkadot/teyrchain/src/primitives.rs#L272-L274>
 		/// This type-ID gets used by the converter here:
 		/// <https://github.com/pezkuwichain/pezkuwi-sdk/blob/7ecf3f757a5d6f622309cea7f788e8a547a5dce8/polkadot/xcm/xcm-builder/src/location_conversion.rs#L314>
 		/// and eventually ends up in the encoding here
 		/// <https://github.com/pezkuwichain/pezkuwi-sdk/blob/cdf107de700388a52a17b2fb852c98420c78278e/bizinikiwi/primitives/runtime/src/traits/mod.rs#L1997-L1999>
-		/// The `para` conversion is likewise with `ChildParachainConvertsVia` and the `para`
+		/// The `para` conversion is likewise with `ChildTeyrchainConvertsVia` and the `para`
 		/// type-ID <https://github.com/pezkuwichain/pezkuwi-sdk/blob/c10e25aaa8b8afd8665b53f0a0b02e4ea44caa77/polkadot/teyrchain/src/primitives.rs#L162-L164>
 		pub fn try_translate_rc_sovereign_to_ah(
 			from: &AccountId32,

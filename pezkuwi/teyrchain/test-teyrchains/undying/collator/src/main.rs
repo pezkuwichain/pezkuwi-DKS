@@ -90,7 +90,7 @@ fn main() -> Result<()> {
 				let full_node = pezkuwi_service::build_full(
 					config,
 					pezkuwi_service::NewFullParams {
-						is_teyrchain_node: pezkuwi_service::IsParachainNode::Collator(
+						is_teyrchain_node: pezkuwi_service::IsTeyrchainNode::Collator(
 							collator.collator_key(),
 						),
 						enable_beefy: false,

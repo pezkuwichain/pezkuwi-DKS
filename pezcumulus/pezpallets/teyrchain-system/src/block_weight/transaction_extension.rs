@@ -16,7 +16,7 @@
 
 use super::{
 	block_weight_over_target_block_weight, inside_pre_validate, is_first_block_in_core_with_digest,
-	BlockWeightMode, MaxParachainBlockWeight, FULL_CORE_WEIGHT, LOG_TARGET,
+	BlockWeightMode, MaxTeyrchainBlockWeight, FULL_CORE_WEIGHT, LOG_TARGET,
 };
 use crate::WeightInfo;
 use alloc::vec::Vec;
@@ -160,7 +160,7 @@ where
 					let block_weight_over_limit = extrinsic_index == 0
 						&& block_weight_over_target_block_weight::<Config, TargetBlockRate>();
 
-					// If `BlockWeights` is configured correctly, it will internally call `MaxParachainBlockWeight::get()`
+					// If `BlockWeights` is configured correctly, it will internally call `MaxTeyrchainBlockWeight::get()`
 					// and by setting this variable to `true`, we tell it the context. This is important as we want to get
 					// the fractional `target_block_weight` and not the full core weight. Otherwise, we will here get a too huge weight
 					// and do not set the `PotentialFullCore` weight, leading to `CheckWeight` rejecting the extrinsic.
@@ -169,7 +169,7 @@ where
 					let block_weights = inside_pre_validate::using(&mut true, || Config::BlockWeights::get());
 					let class_weights = block_weights.get(info.class);
 					let target_block_weight =
-						MaxParachainBlockWeight::<Config, TargetBlockRate>::target_block_weight_with_digest(&digest)
+						MaxTeyrchainBlockWeight::<Config, TargetBlockRate>::target_block_weight_with_digest(&digest)
 							.saturating_sub(block_weights.base_block);
 
 					// `max_extrinsic` determines the maximum weight allowed for one transaction.

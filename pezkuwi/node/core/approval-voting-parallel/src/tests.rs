@@ -68,7 +68,7 @@ fn fake_assignment_cert_v2(
 	core_bitfield: CoreBitfield,
 ) -> IndirectAssignmentCertV2 {
 	let ctx = schnorrkel::signing_context(RELAY_VRF_MODULO_CONTEXT);
-	let msg = b"WhenParachains?";
+	let msg = b"WhenTeyrchains?";
 	let mut prng = rand_core::OsRng;
 	let keypair = schnorrkel::Keypair::generate_with(&mut prng);
 	let (inout, proof, _) = keypair.vrf_sign(ctx.bytes(msg));

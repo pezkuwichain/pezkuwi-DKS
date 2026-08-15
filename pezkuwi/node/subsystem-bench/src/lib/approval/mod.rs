@@ -33,7 +33,7 @@ use crate::{
 		chain_api::{ChainApiState, MockChainApi},
 		network_bridge::{MockNetworkBridgeRx, MockNetworkBridgeTx},
 		runtime_api::{MockRuntimeApi, MockRuntimeApiCoreState},
-		AlwaysSupportsParachains, TestSyncOracle,
+		AlwaysSupportsTeyrchains, TestSyncOracle,
 	},
 	network::{
 		new_network, HandleNetworkMessage, NetworkEmulatorHandle, NetworkInterface,
@@ -806,7 +806,7 @@ fn build_overseer(
 	dependencies: &TestEnvironmentDependencies,
 	network_interface: &NetworkInterface,
 	network_receiver: NetworkInterfaceReceiver,
-) -> (Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsParachains>, OverseerHandleReal) {
+) -> (Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsTeyrchains>, OverseerHandleReal) {
 	let overseer_connector = OverseerConnector::with_event_capacity(6400000);
 
 	let spawn_task_handle = dependencies.task_manager.spawn_handle();

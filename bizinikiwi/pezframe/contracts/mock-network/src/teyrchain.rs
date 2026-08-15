@@ -224,8 +224,8 @@ impl Contains<Location> for ParentRelay {
 		location.contains_parents_only(1)
 	}
 }
-pub struct ThisParachain;
-impl Contains<Location> for ThisParachain {
+pub struct ThisTeyrchain;
+impl Contains<Location> for ThisTeyrchain {
 	fn contains(location: &Location) -> bool {
 		matches!(location.unpack(), (0, [Junction::AccountId32 { .. }]))
 	}
@@ -234,7 +234,7 @@ impl Contains<Location> for ThisParachain {
 pub type XcmRouter = crate::TeyrchainXcmRouter<MsgQueue>;
 
 pub type Barrier = (
-	xcm_builder::AllowUnpaidExecutionFrom<ThisParachain>,
+	xcm_builder::AllowUnpaidExecutionFrom<ThisTeyrchain>,
 	WithComputedOrigin<
 		(AllowExplicitUnpaidExecutionFrom<ParentRelay>, AllowTopLevelPaidExecutionFrom<Everything>),
 		UniversalLocation,
