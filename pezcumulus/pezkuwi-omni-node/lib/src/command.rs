@@ -34,7 +34,7 @@ use clap::{CommandFactory, FromArgMatches};
 use log::info;
 #[cfg(feature = "runtime-benchmarks")]
 use pezcumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions;
-use pezframe_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
+use pezframe_benchmarking_cli::{BenchmarkCmd, BIZINIKIWI_REFERENCE_HARDWARE};
 use pezsc_cli::{BizinikiwiCli, Result};
 #[cfg(feature = "runtime-benchmarks")]
 use pezsp_runtime::traits::HashingFor;
@@ -276,7 +276,8 @@ where
 					// TODO: change `machine` subcommand to take instead a disk path we want to
 					// benchmark?.
 					let runner = cli.create_runner(cmd)?;
-					runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
+					runner
+						.sync_run(|config| cmd.run(&config, BIZINIKIWI_REFERENCE_HARDWARE.clone()))
 				},
 				#[allow(unreachable_patterns)]
 				_ => Err("Benchmarking sub-command unsupported or compilation feature missing. \
@@ -356,7 +357,7 @@ where
 							let _ = std::fs::create_dir_all(database_path);
 							pezsc_sysinfo::gather_hwbench(
 								Some(database_path),
-								&SUBSTRATE_REFERENCE_HARDWARE,
+								&BIZINIKIWI_REFERENCE_HARDWARE,
 							)
 						})
 					})

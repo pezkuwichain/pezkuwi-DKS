@@ -28,7 +28,7 @@ impl BizinikiwiCli for Cli {
 	}
 
 	fn impl_version() -> String {
-		env!("SUBSTRATE_CLI_IMPL_VERSION").into()
+		env!("BIZINIKIWI_CLI_IMPL_VERSION").into()
 	}
 
 	fn description() -> String {

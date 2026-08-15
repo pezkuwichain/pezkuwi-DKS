@@ -113,7 +113,7 @@ fn warn_if_slow_hardware(hwbench: &pezsc_sysinfo::HwBench) {
 	// Pezkuwi para-chains should generally use these requirements to ensure that the relay-chain
 	// will not take longer than expected to import its blocks.
 	if let Err(err) =
-		pezframe_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE.check_hardware(hwbench, false)
+		pezframe_benchmarking_cli::BIZINIKIWI_REFERENCE_HARDWARE.check_hardware(hwbench, false)
 	{
 		log::warn!(
 			"⚠️  The hardware does not meet the minimal requirements {} for role 'Authority' find out more at:\n\

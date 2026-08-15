@@ -34,8 +34,6 @@ macro_rules! identify_chain {
 		$generic_code:expr $(,)*
 	) => {
 		match $chain {
-			Chain::Pezkuwi => Err("Pezkuwi runtimes are currently not supported"),
-			Chain::Dicle => Err("Dicle runtimes are currently not supported"),
 			Chain::Pezkuwichain => {
 				#[cfg(feature = "pezkuwichain-native")]
 				{

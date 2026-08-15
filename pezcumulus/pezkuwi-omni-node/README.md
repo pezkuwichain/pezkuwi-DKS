@@ -47,7 +47,7 @@ cargo install pezstaging-chain-spec-builder --locked
 ### 2. Generate a chain spec
 
 Omni Node requires the chain spec to include a JSON key named `relay_chain`. It is set to a chain id,
-representing the chain name, e.g. `zagros`, `paseo`, `pezkuwichain`, `pezkuwi`, or `dicle`, but
+representing the chain name, e.g. `zagros` or `pezkuwichain`, but
 there are also local variants that can be used for testing, like `pezkuwichain-local` or `zagros-local`. The
 local variants are available only for a build of `pezkuwi-omni-node` with
 `zagros-native` and `pezkuwichain-native` features respectively.

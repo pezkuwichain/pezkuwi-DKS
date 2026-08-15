@@ -47,7 +47,7 @@ use pezsp_runtime::{
 };
 use pezsp_std::prelude::Vec;
 
-// Re-export's to avoid extra bizinikiwi dependencies in chain-specific crates.
+// Re-export's to avoid extra substrate dependencies in chain-specific crates.
 pub use pezframe_support::{weights::constants::ExtrinsicBaseWeight, Parameter};
 pub use pezsp_runtime::{traits::Convert, Perbill};
 
@@ -132,10 +132,12 @@ parameter_types! {
 	/// All Pezkuwi-like chains have maximal block size set to 5MB.
 	///
 	/// This is a copy-paste from the Pezkuwi repo's `pezkuwi-runtime-common` crate.
-	pub BlockLength: limits::BlockLength = limits::BlockLength::max_with_normal_ratio(
-		5 * 1024 * 1024,
-		NORMAL_DISPATCH_RATIO,
-	);
+	pub BlockLength: limits::BlockLength = limits::BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 	/// All Pezkuwi-like chains have the same block weights.
 	///
 	/// This is a copy-paste from the Pezkuwi repo's `pezkuwi-runtime-common` crate.
@@ -159,7 +161,7 @@ parameter_types! {
 		.build_or_panic();
 }
 
-// TODO [#78] may need to be updated after https://github.com/pezkuwichain/pezkuwi-sdk/issues/88
+// TODO [#78] may need to be updated after https://github.com/paritytech/parity-bridges-common/issues/78
 /// Maximal number of messages in single delivery transaction.
 pub const MAX_MESSAGES_IN_DELIVERY_TRANSACTION: MessageNonce = 128;
 
@@ -331,14 +333,14 @@ where
 		GenericTransactionExtension::new(
 			(
 				(
-					(),              // non-zero sender
-					(),              // spec version
-					(),              // tx version
-					(),              // genesis
-					era.frame_era(), // era
-					nonce.into(),    // nonce (compact encoding)
-					(),              // Check weight
-					tip.into(),      // transaction payment / tip (compact encoding)
+					(),                 // non-zero sender
+					(),                 // spec version
+					(),                 // tx version
+					(),                 // genesis
+					era.pezframe_era(), // era
+					nonce.into(),       // nonce (compact encoding)
+					(),                 // Check weight
+					tip.into(),         // transaction payment / tip (compact encoding)
 				),
 				extra.0,
 			),

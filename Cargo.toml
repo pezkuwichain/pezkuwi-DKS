@@ -89,6 +89,7 @@ members = [
 	"bizinikiwi/deprecated/hashing/proc-macro",
 	"bizinikiwi/pezframe",
 	"bizinikiwi/pezframe/alliance",
+	"bizinikiwi/pezframe/accumulate-and-forward",
 	"bizinikiwi/pezframe/asset-conversion",
 	"bizinikiwi/pezframe/asset-conversion/ops",
 	"bizinikiwi/pezframe/asset-rate",
@@ -752,7 +753,7 @@ cfg-expr = { version = "0.15.5" }
 cfg-if = { version = "1.0" }
 chain-spec-builder = { path = "bizinikiwi/bin/utils/chain-spec-builder", version = "1.6.1", default-features = false, package = "pezstaging-chain-spec-builder" }
 chrono = { version = "0.4.31" }
-cid = { version = "0.9.0" }
+cid = { version = "0.11.1" }
 clap = { version = "4.5.13" }
 clap_complete = { version = "4.5.13" }
 cmd_lib = { version = "1.9.5" }
@@ -885,15 +886,15 @@ landlock = { version = "0.3.0" }
 lazy_static = { version = "1.5" }
 libc = { version = "0.2.155" }
 libfuzzer-sys = { version = "0.4" }
-libp2p = { version = "0.56.0" }
+libp2p = { version = "0.54.1" }
 libp2p-identity = { version = "0.2.9" }
-libp2p-kad = { version = "0.48.0", default-features = false }
+libp2p-kad = { version = "0.46.2", default-features = false }
 libsecp256k1 = { version = "0.7.0", default-features = false }
 linked-hash-map = { version = "0.5.4" }
 linked_hash_set = { version = "0.1.4" }
 linregress = { version = "0.5.1" }
 lite-json = { version = "0.2.0", default-features = false }
-litep2p = { version = "0.12.0", features = ["rsa", "websocket"] }
+litep2p = { version = "0.14.3", features = ["rsa", "websocket"] }
 log = { version = "0.4.22", default-features = false }
 macro_magic = { version = "0.5.1" }
 maplit = { version = "1.0.2" }
@@ -1026,6 +1027,7 @@ pezframe-try-runtime = { path = "bizinikiwi/pezframe/try-runtime", version = "0.
 pezmmr-gadget = { path = "bizinikiwi/client/merkle-mountain-range", version = "29.0.0", default-features = false }
 pezmmr-rpc = { path = "bizinikiwi/client/merkle-mountain-range/rpc", version = "28.0.0", default-features = false }
 pezpallet-ah-ops = { path = "pezcumulus/pezpallets/ah-ops", version = "0.1.0", default-features = false }
+pezpallet-accumulate-and-forward = { path = "bizinikiwi/pezframe/accumulate-and-forward", version = "0.4.0", default-features = false }
 pezpallet-alliance = { path = "bizinikiwi/pezframe/alliance", version = "27.0.0", default-features = false }
 pezpallet-asset-conversion = { path = "bizinikiwi/pezframe/asset-conversion", version = "10.0.0", default-features = false }
 pezpallet-asset-conversion-ops = { path = "bizinikiwi/pezframe/asset-conversion/ops", version = "0.1.0", default-features = false }

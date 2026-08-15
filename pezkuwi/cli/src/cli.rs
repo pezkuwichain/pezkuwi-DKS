@@ -73,10 +73,6 @@ pub struct RunCmd {
 	#[clap(flatten)]
 	pub base: pezsc_cli::RunCmd,
 
-	/// Force using Dicle native runtime.
-	#[arg(long = "force-dicle")]
-	pub force_dicle: bool,
-
 	/// Force using Zagros native runtime.
 	#[arg(long = "force-zagros")]
 	pub force_zagros: bool,

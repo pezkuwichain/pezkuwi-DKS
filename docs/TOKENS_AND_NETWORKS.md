@@ -28,10 +28,7 @@ named `HEZ_*`. Where an amount is just a base-unit multiple in a non-native cont
 
 | Network | Symbol | Notes |
 |---------|--------|-------|
-| Zagros | **ZGR** | Primary public testnet |
-| Dicle | **DCL** | Testnet |
-| Versi | **VRS** | Staging/dev network |
-| Paseo | **PAS** | Dev network |
+| Zagros | **ZGR** | The test network |
 
 Testnet symbols are intentionally distinct from `HEZ` so that testnet tokens can never
 be confused with mainnet value — this is a deliberate safety property, not an

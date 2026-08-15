@@ -64,9 +64,9 @@ use node::*;
 use transport::*;
 
 /// Bizinikiwi DEBUG log level.
-pub const SUBSTRATE_DEBUG: VerbosityLevel = 9;
+pub const BIZINIKIWI_DEBUG: VerbosityLevel = 9;
 /// Bizinikiwi INFO log level.
-pub const SUBSTRATE_INFO: VerbosityLevel = 0;
+pub const BIZINIKIWI_INFO: VerbosityLevel = 0;
 
 /// Consensus TRACE log level.
 pub const CONSENSUS_TRACE: VerbosityLevel = 9;

@@ -15,11 +15,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(not(substrate_runtime))]
-fn main() {
-	std::env::set_var("BIZINIKIWI_RUNTIME_TARGET", "riscv");
-	bizinikiwi_wasm_builder::WasmBuilder::new().with_current_project().build()
+//! Placeholder weights for `pezpallet_accumulate_and_forward`.
+//!
+//! These weights are not benchmarked. Replace with actual benchmarked weights
+//! via `pezframe-omni-bencher` before deploying to production.
+
+#![cfg_attr(rustfmt, rustfmt_skip)]
+#![allow(unused_parens)]
+#![allow(unused_imports)]
+#![allow(missing_docs)]
+
+use pezframe_support::weights::Weight;
+
+/// Weight functions needed for `pezpallet_accumulate_and_forward`.
+pub trait WeightInfo {
+	fn send_native() -> Weight;
 }
 
-#[cfg(substrate_runtime)]
-fn main() {}
+/// Default weights (not benchmarked).
+impl WeightInfo for () {
+	fn send_native() -> Weight {
+		Weight::zero()
+	}
+}

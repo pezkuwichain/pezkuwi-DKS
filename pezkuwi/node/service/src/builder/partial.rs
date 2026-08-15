@@ -163,8 +163,8 @@ where
 		.build(),
 	);
 
-	let grandpa_hard_forks =
-		if config.chain_spec.is_dicle() { grandpa_support::dicle_hard_forks() } else { Vec::new() };
+	// See the note in `builder/mod.rs`: hard forks are another network's incident history.
+	let grandpa_hard_forks = Vec::new();
 
 	let (grandpa_block_import, grandpa_link) =
 		pezsc_consensus_grandpa::block_import_with_authority_set_hard_forks(

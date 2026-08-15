@@ -245,36 +245,40 @@ pub enum Error {
 }
 
 /// Identifies the variant of the chain.
+///
+/// The two networks this node serves, and nothing else. The variant is what the node keys its
+/// production-versus-testnet behaviour on -- block authoring backoff, availability
+/// fetch-chunks threshold, finalized-block retention -- so it has to name the network's role,
+/// not merely its brand.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Chain {
-	/// Pezkuwi.
-	Pezkuwi,
-	/// Dicle.
-	Dicle,
-	/// Pezkuwichain or one of its derivations.
+	/// Pezkuwichain: the production network.
 	Pezkuwichain,
-	/// Zagros.
+	/// Zagros: the test network, and any development chain derived from it.
 	Zagros,
 	/// Unknown chain?
 	Unknown,
 }
 
+impl Chain {
+	/// Whether this chain carries real value, and so is configured conservatively.
+	///
+	/// Everything that trades safety for convenience on a chain in flux keys off this, so a
+	/// chain that is not positively identified is treated as production: an unknown spec is far
+	/// more likely to be a production node whose id we failed to recognise than a testnet that
+	/// needs the relaxed settings.
+	pub fn is_production(&self) -> bool {
+		!matches!(self, Chain::Zagros)
+	}
+}
+
 /// Can be called for a `Configuration` to identify which network the configuration targets.
 pub trait IdentifyVariant {
-	/// Returns if this is a configuration for the `Pezkuwi` network.
-	fn is_pezkuwi(&self) -> bool;
-
-	/// Returns if this is a configuration for the `Dicle` network.
-	fn is_dicle(&self) -> bool;
-
 	/// Returns if this is a configuration for the `Zagros` network.
 	fn is_zagros(&self) -> bool;
 
 	/// Returns if this is a configuration for the `Pezkuwichain` network.
 	fn is_pezkuwichain(&self) -> bool;
-
-	/// Returns if this is a configuration for the `Versi` test network.
-	fn is_versi(&self) -> bool;
 
 	/// Returns true if this configuration is for a development network.
 	fn is_dev(&self) -> bool;
@@ -284,32 +288,19 @@ pub trait IdentifyVariant {
 }
 
 impl IdentifyVariant for Box<dyn ChainSpec> {
-	fn is_pezkuwi(&self) -> bool {
-		self.id().starts_with("pezkuwi") || self.id().starts_with("hez")
-	}
-	fn is_dicle(&self) -> bool {
-		self.id().starts_with("dicle") || self.id().starts_with("dcl")
-	}
 	fn is_zagros(&self) -> bool {
-		self.id().starts_with("zagros") || self.id().starts_with("wnd")
+		self.id().starts_with("zagros")
 	}
 	fn is_pezkuwichain(&self) -> bool {
-		self.id().starts_with("pezkuwichain") || self.id().starts_with("rco")
-	}
-	fn is_versi(&self) -> bool {
-		self.id().starts_with("versi") || self.id().starts_with("vrs")
+		self.id().starts_with("pezkuwichain")
 	}
 	fn is_dev(&self) -> bool {
 		self.id().ends_with("dev")
 	}
 	fn identify_chain(&self) -> Chain {
-		if self.is_pezkuwi() {
-			Chain::Pezkuwi
-		} else if self.is_dicle() {
-			Chain::Dicle
-		} else if self.is_zagros() {
+		if self.is_zagros() {
 			Chain::Zagros
-		} else if self.is_pezkuwichain() || self.is_versi() {
+		} else if self.is_pezkuwichain() {
 			Chain::Pezkuwichain
 		} else {
 			Chain::Unknown
@@ -419,32 +410,28 @@ pub fn new_chain_ops(
 > {
 	config.keystore = pezsc_service::config::KeystoreConfig::InMemory;
 
-	if config.chain_spec.is_pezkuwichain() || config.chain_spec.is_versi() {
-		chain_ops!(config, None)
-	} else if config.chain_spec.is_dicle() {
-		chain_ops!(config, None)
-	} else if config.chain_spec.is_zagros() {
-		return chain_ops!(config, None);
-	} else {
-		chain_ops!(config, None)
-	}
+	// Chain operations are runtime-agnostic: they read and import blocks, and the client is
+	// built the same way whichever network the spec names.
+	chain_ops!(config, None)
 }
 
 /// Build a full node.
 ///
-/// The actual "flavor", aka if it will use `Pezkuwi`, `Pezkuwichain` or `Dicle` is determined
+/// The actual "flavor", aka whether it will run as `Pezkuwichain` or `Zagros`, is determined
 /// based on [`IdentifyVariant`] using the chain spec.
 #[cfg(feature = "full-node")]
 pub fn build_full<OverseerGenerator: OverseerGen>(
 	config: Configuration,
 	mut params: NewFullParams<OverseerGenerator>,
 ) -> Result<NewFull, Error> {
-	let is_pezkuwi = config.chain_spec.is_pezkuwi();
+	let is_production = config.chain_spec.identify_chain().is_production();
 
 	params.overseer_message_channel_capacity_override =
 		params.overseer_message_channel_capacity_override.map(move |capacity| {
-			if is_pezkuwi {
-				gum::warn!("Channel capacity should _never_ be tampered with on pezkuwi!");
+			if is_production {
+				gum::warn!(
+					"Channel capacity should _never_ be tampered with on a production network!"
+				);
 			}
 			capacity
 		});

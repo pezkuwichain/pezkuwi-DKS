@@ -15,11 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(not(substrate_runtime))]
-fn main() {
-	std::env::set_var("BIZINIKIWI_RUNTIME_TARGET", "riscv");
-	bizinikiwi_wasm_builder::WasmBuilder::new().with_current_project().build()
-}
+//! Tests for the accumulate-and-forward pezpallet.
 
-#[cfg(substrate_runtime)]
-fn main() {}
+mod deal_with_fees_split;
+mod genesis;
+mod on_unbalanced;
+mod xcm_transfer;

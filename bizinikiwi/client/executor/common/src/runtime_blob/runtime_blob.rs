@@ -48,7 +48,7 @@ impl RuntimeBlob {
 	///
 	/// Returns `Err` if the blob cannot be deserialized.
 	///
-	/// Will only accept a PolkaVM program if the `SUBSTRATE_ENABLE_POLKAVM` environment
+	/// Will only accept a PolkaVM program if the `BIZINIKIWI_ENABLE_POLKAVM` environment
 	/// variable is set to `1`.
 	pub fn new(raw_blob: &[u8]) -> Result<Self, WasmError> {
 		if raw_blob.starts_with(b"PVM\0") {
@@ -57,7 +57,7 @@ impl RuntimeBlob {
 				let blob = polkavm::ProgramBlob::parse(raw.clone())?;
 				return Ok(Self(BlobKind::PolkaVM((blob, raw))));
 			} else {
-				return Err(WasmError::Other("expected a WASM runtime blob, found a PolkaVM runtime blob; set the 'SUBSTRATE_ENABLE_POLKAVM' environment variable to enable the experimental PolkaVM-based executor".to_string()));
+				return Err(WasmError::Other("expected a WASM runtime blob, found a PolkaVM runtime blob; set the 'BIZINIKIWI_ENABLE_POLKAVM' environment variable to enable the experimental PolkaVM-based executor".to_string()));
 			}
 		}
 
