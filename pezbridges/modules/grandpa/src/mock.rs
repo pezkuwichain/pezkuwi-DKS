@@ -17,8 +17,8 @@
 // From construct_runtime macro
 #![allow(clippy::from_over_into)]
 
-use pezbp_header_pez_chain::ChainWithGrandpa;
-use pezbp_runtime::{Chain, ChainId};
+use bp_header_chain::ChainWithGrandpa;
+use bp_runtime::{Chain, ChainId};
 use pezframe_support::{
 	construct_runtime, derive_impl, parameter_types, pezsp_runtime::StateVersion, traits::Hooks,
 	weights::Weight,
@@ -113,5 +113,5 @@ pub fn run_test<T>(test: impl FnOnce() -> T) -> T {
 /// Return test header with given number.
 pub fn test_header(num: TestNumber) -> TestHeader {
 	// We wrap the call to avoid explicit type annotations in our tests
-	pezbp_test_utils::test_header(num)
+	bp_test_utils::test_header(num)
 }

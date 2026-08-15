@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,8 +37,8 @@ use pezkuwi_node_network_protocol::{
 		CollationVersion, PeerSet, PeerSetProtocolNames, PerPeerSet, ProtocolVersion,
 		ValidationVersion,
 	},
-	v1 as protocol_v1, v2 as protocol_v2, v3 as protocol_v3, ObservedRole, OurView, PeerId,
-	UnifiedReputationChange as Rep, View,
+	v1 as protocol_v1, v2 as protocol_v2, v3 as protocol_v3, v3_collation, ObservedRole, OurView,
+	PeerId, UnifiedReputationChange as Rep, View,
 };
 
 use pezkuwi_node_subsystem::{
@@ -65,7 +65,8 @@ use super::validator_discovery;
 ///
 /// Defines the `Network` trait with an implementation for an `Arc<NetworkService>`.
 use crate::network::{
-	send_collation_message_v1, send_collation_message_v2, send_validation_message_v3, Network,
+	send_collation_message_v1, send_collation_message_v2, send_collation_message_v3,
+	send_validation_message_v3, Network,
 };
 use crate::{network::get_peer_id_by_authority_id, WireMessage};
 
@@ -521,6 +522,12 @@ async fn handle_collation_message<AD>(
 					metrics,
 					notification_sinks,
 				),
+				CollationVersion::V3 => send_collation_message_v3(
+					vec![peer],
+					WireMessage::<v3_collation::CollationProtocol>::ViewUpdate(local_view),
+					metrics,
+					notification_sinks,
+				),
 			}
 		},
 		NotificationEvent::NotificationStreamClosed { peer } => {
@@ -570,37 +577,45 @@ async fn handle_collation_message<AD>(
 				?peer,
 			);
 
-			let (events, reports) =
-				if expected_versions[PeerSet::Collation] == Some(CollationVersion::V1.into()) {
-					handle_peer_messages::<protocol_v1::CollationProtocol, _>(
-						peer,
-						PeerSet::Collation,
-						&mut shared.0.lock().collation_peers,
-						vec![notification.into()],
-						metrics,
-					)
-				} else if expected_versions[PeerSet::Collation] == Some(CollationVersion::V2.into())
-				{
-					handle_peer_messages::<protocol_v2::CollationProtocol, _>(
-						peer,
-						PeerSet::Collation,
-						&mut shared.0.lock().collation_peers,
-						vec![notification.into()],
-						metrics,
-					)
-				} else {
-					gum::warn!(
-						target: LOG_TARGET,
-						version = ?expected_versions[PeerSet::Collation],
-						"Major logic bug. Peer somehow has unsupported collation protocol version."
-					);
+			let (events, reports) = if expected_versions[PeerSet::Collation]
+				== Some(CollationVersion::V1.into())
+			{
+				handle_peer_messages::<protocol_v1::CollationProtocol, _>(
+					peer,
+					PeerSet::Collation,
+					&mut shared.0.lock().collation_peers,
+					vec![notification.into()],
+					metrics,
+				)
+			} else if expected_versions[PeerSet::Collation] == Some(CollationVersion::V2.into()) {
+				handle_peer_messages::<protocol_v2::CollationProtocol, _>(
+					peer,
+					PeerSet::Collation,
+					&mut shared.0.lock().collation_peers,
+					vec![notification.into()],
+					metrics,
+				)
+			} else if expected_versions[PeerSet::Collation] == Some(CollationVersion::V3.into()) {
+				handle_peer_messages::<v3_collation::CollationProtocol, _>(
+					peer,
+					PeerSet::Collation,
+					&mut shared.0.lock().collation_peers,
+					vec![notification.into()],
+					metrics,
+				)
+			} else {
+				gum::warn!(
+					target: LOG_TARGET,
+					version = ?expected_versions[PeerSet::Collation],
+					"Major logic bug. Peer somehow has unsupported collation protocol version."
+				);
 
-					never!("Only versions 1 and 2 are supported; peer set connection checked above; qed");
+				never!("Only versions 1, 2 and 3 are supported; peer set connection checked above; qed");
 
-					// If a peer somehow triggers this, we'll disconnect them
-					// eventually.
-					(Vec::new(), vec![UNCONNECTED_PEERSET_COST])
-				};
+				// If a peer somehow triggers this, we'll disconnect them
+				// eventually.
+				(Vec::new(), vec![UNCONNECTED_PEERSET_COST])
+			};
 
 			for report in reports {
 				network_service.report_peer(peer, report.into());
@@ -670,12 +685,12 @@ where
 	for (discovery_id, validator_index) in neighbors {
 		let addr = get_peer_id_by_authority_id(ads, discovery_id.clone()).await;
 		if addr.is_none() {
-			// See on why is not good in https://github.com/pezkuwichain/pezkuwi-sdk/issues/263
+			// See on why is not good in https://github.com/pezkuwichain/pezkuwi-sdk/issues/2138
 			gum::debug!(
 				target: LOG_TARGET,
 				?validator_index,
 				"Could not determine peer_id for validator, let the team know in \n
-				https://github.com/pezkuwichain/pezkuwi-sdk/issues/263"
+				https://github.com/pezkuwichain/pezkuwi-sdk/issues/2138"
 			)
 		}
 		peers.push(TopologyPeerInfo {
@@ -970,6 +985,8 @@ fn update_our_view<Context>(
 
 	let v2_collation_peers = filter_by_peer_version(&collation_peers, CollationVersion::V2.into());
 
+	let v3_collation_peers = filter_by_peer_version(&collation_peers, CollationVersion::V3.into());
+
 	let v3_validation_peers =
 		filter_by_peer_version(&validation_peers, ValidationVersion::V3.into());
 
@@ -982,6 +999,13 @@ fn update_our_view<Context>(
 
 	send_collation_message_v2(
 		v2_collation_peers,
+		WireMessage::ViewUpdate(new_view.clone()),
+		metrics,
+		notification_sinks,
+	);
+
+	send_collation_message_v3(
+		v3_collation_peers,
 		WireMessage::ViewUpdate(new_view.clone()),
 		metrics,
 		notification_sinks,
@@ -1123,7 +1147,7 @@ async fn dispatch_validation_events_to_all<I>(
 					event,
 					// NetworkBridgeEvent::OurViewChange(..) must also be here,
 					// but it is sent via an unbounded channel.
-					// See https://github.com/pezkuwichain/pezkuwi-sdk/issues/108
+					// See https://github.com/pezkuwichain/pezkuwi-sdk/issues/824
 					NetworkBridgeEvent::PeerConnected(..)
 						| NetworkBridgeEvent::PeerDisconnected(..)
 						| NetworkBridgeEvent::PeerViewChange(..)

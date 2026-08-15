@@ -15,7 +15,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "pezkuwichain")]
-pub mod pezkuwichain;
-#[cfg(feature = "zagros")]
-pub mod zagros;
+#[cfg(feature = "rococo")]
+pub mod rococo;
+#[cfg(feature = "westend")]
+pub mod westend;

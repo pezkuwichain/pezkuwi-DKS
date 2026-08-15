@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,7 @@ use pezsc_network::{
 use pezsc_service::{Configuration, TaskManager};
 use pezsc_statement_store::Store;
 use std::sync::Arc;
-use teyrchains_common::Hash;
+use teyrchains_common_types::Hash;
 
 /// Helper function to setup the statement store in `NodeSpec::start_node`.
 ///
@@ -63,14 +63,15 @@ pub(crate) fn build_statement_store<
 	sync_service: Arc<pezsc_network_sync::service::syncing_service::SyncingService<Block>>,
 	local_keystore: Arc<pezsc_keystore::LocalKeystore>,
 	statement_handler_proto: pezsc_network_statement::StatementHandlerPrototype,
+	config: pezsc_statement_store::Config,
 ) -> pezsc_service::error::Result<Arc<Store>> {
 	let statement_store = pezsc_statement_store::Store::new_shared(
 		&teyrchain_config.data_path,
-		Default::default(),
+		config,
 		client,
 		local_keystore,
 		teyrchain_config.prometheus_registry(),
-		&task_manager.spawn_handle(),
+		Box::new(task_manager.spawn_handle()),
 	)
 	.map_err(|e| pezsc_service::Error::Application(Box::new(e) as Box<_>))?;
 	let statement_protocol_executor = {
@@ -85,6 +86,8 @@ pub(crate) fn build_statement_store<
 		statement_store.clone(),
 		teyrchain_config.prometheus_registry(),
 		statement_protocol_executor,
+		config.network_workers,
+		config.rate_limit,
 	)?;
 	task_manager.spawn_handle().spawn(
 		"network-statement-handler",

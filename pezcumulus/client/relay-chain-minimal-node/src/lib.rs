@@ -1,19 +1,19 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 use collator_overseer::NewMinimalNode;
 
@@ -32,7 +32,7 @@ use pezkuwi_node_network_protocol::{
 use pezkuwi_core_primitives::{Block as RelayBlock, Hash as RelayHash};
 use pezkuwi_node_subsystem_util::metrics::prometheus::Registry;
 use pezkuwi_primitives::CollatorPair;
-use pezkuwi_service::{overseer::OverseerGenArgs, IsTeyrchainNode};
+use pezkuwi_service::{overseer::OverseerGenArgs, IsParachainNode};
 
 use pezsc_authority_discovery::Service as AuthorityDiscoveryService;
 use pezsc_network::{
@@ -252,7 +252,7 @@ async fn new_minimal_relay_chain<Block: BlockT, Network: NetworkBackend<RelayBlo
 		available_data_req_receiver,
 		registry: prometheus_registry,
 		spawner: task_manager.spawn_handle(),
-		is_teyrchain_node: IsTeyrchainNode::Collator(collator_pair),
+		is_teyrchain_node: IsParachainNode::Collator(collator_pair),
 		overseer_message_channel_capacity_override: None,
 		req_protocol_names: request_protocol_names,
 		peerset_protocol_names,

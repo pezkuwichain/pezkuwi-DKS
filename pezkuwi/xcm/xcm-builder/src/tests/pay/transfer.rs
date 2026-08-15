@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ parameter_types! {
 	pub SenderAccount: AccountId = AccountId::new([3u8; 32]);
 	pub SenderLocationOnTarget: Location = Location::new(
 		1,
-		X2([Teyrchain(MockRuntimeTeyrchainId::get().into()), AccountId32 { network: None, id: SenderAccount::get().into() }].into()),
+		X2([Teyrchain(MockRuntimeParachainId::get().into()), AccountId32 { network: None, id: SenderAccount::get().into() }].into()),
 	);
 	pub SenderAccountOnTarget: AccountId = SovereignAccountOf::convert_location(&SenderLocationOnTarget::get()).expect("can convert");
 	pub InteriorAccount: InteriorLocation = AccountId32 { id: SenderAccount::get().into(), network: None }.into();
@@ -44,9 +44,8 @@ type TestTransferOverXcm =
 	TransferOverXcm<AliasesIntoAccountId32<AnyNetwork, AccountId>, TestTransferOverXcmHelper>;
 
 type TestTransferOverXcmHelper = TransferOverXcmHelper<
-	TestMessageSender,
+	XcmConfig,
 	TestQueryHandler<TestConfig, BlockNumber>,
-	TestFeeManager,
 	Timeout,
 	AccountId,
 	AssetKind,
@@ -145,7 +144,7 @@ fn assert_send_and_execute_msg(expected_message: Xcm<()>) {
 	let message = Xcm::<<XcmConfig as xcm_executor::Config>::RuntimeCall>::from(message.clone());
 
 	// Execute message in teyrchain 1000 with our teyrchains's origin
-	let origin = (Parent, Teyrchain(MockRuntimeTeyrchainId::get().into()));
+	let origin = (Parent, Teyrchain(MockRuntimeParachainId::get().into()));
 	let _result = XcmExecutor::<XcmConfig>::prepare_and_execute(
 		origin,
 		message,
@@ -166,11 +165,6 @@ fn remote_transfer_xcm<Call>(
 		WithdrawAsset(fee_asset.clone().into()),
 		PayFees { asset: fee_asset.clone() },
 		SetAppendix(Xcm(vec![
-			ReportError(QueryResponseInfo {
-				destination: (Parent, Teyrchain(MockRuntimeTeyrchainId::get().into())).into(),
-				query_id: 1,
-				max_weight: Weight::MAX,
-			}),
 			RefundSurplus,
 			DepositAsset {
 				assets: AssetFilter::Wild(WildAsset::All),

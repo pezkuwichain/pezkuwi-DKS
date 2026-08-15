@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 use crate::{
 	configuration::{TestAuthorities, TestConfiguration},
-	mock::AlwaysSupportsTeyrchains,
+	mock::AlwaysSupportsParachains,
 	network::NetworkEmulatorHandle,
 	usage::{BenchmarkUsage, ResourceUsage},
 };
@@ -199,7 +199,7 @@ impl TestEnvironment {
 		dependencies: TestEnvironmentDependencies,
 		config: TestConfiguration,
 		network: NetworkEmulatorHandle,
-		overseer: Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsTeyrchains>,
+		overseer: Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsParachains>,
 		overseer_handle: OverseerHandle,
 		authorities: TestAuthorities,
 		with_prometheus_endpoint: bool,

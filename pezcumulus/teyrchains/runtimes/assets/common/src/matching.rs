@@ -42,14 +42,14 @@ impl<IsForeign: ContainsPair<Location, Location>> ContainsPair<Asset, Location>
 
 /// Checks if `a` is from sibling location `b`. Checks that `Location-a` starts with
 /// `Location-b`, and that the `ParaId` of `b` is not equal to `a`.
-pub struct FromSiblingTeyrchain<SelfParaId, L = Location>(
+pub struct FromSiblingParachain<SelfParaId, L = Location>(
 	core::marker::PhantomData<(SelfParaId, L)>,
 );
 impl<SelfParaId: Get<ParaId>, L: TryFrom<Location> + TryInto<Location> + Clone + Debug>
-	ContainsPair<L, L> for FromSiblingTeyrchain<SelfParaId, L>
+	ContainsPair<L, L> for FromSiblingParachain<SelfParaId, L>
 {
 	fn contains(a: &L, b: &L) -> bool {
-		tracing::trace!(target: "xcm:contains", ?a, ?b, "FromSiblingTeyrchain");
+		tracing::trace!(target: "xcm:contains", ?a, ?b, "FromSiblingParachain");
 		// We convert locations to latest
 		let a = match ((*a).clone().try_into(), (*b).clone().try_into()) {
 			(Ok(a), Ok(b)) if a.starts_with(&b) => a, // `a` needs to be from `b` at least
@@ -206,11 +206,11 @@ impl<AssetsAllowedNetworks: Contains<Location>, OriginLocation: Get<Location>>
 mod tests {
 	use super::*;
 	use pezframe_support::parameter_types;
-	use xcm::latest::{PEZKUWICHAIN_GENESIS_HASH, ZAGROS_GENESIS_HASH};
+	use xcm::latest::{ROCOCO_GENESIS_HASH, WESTEND_GENESIS_HASH};
 
 	parameter_types! {
-		pub UniversalLocation: InteriorLocation = [GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH)), Teyrchain(1000)].into();
-		pub ExpectedNetworkId: NetworkId = ByGenesis(ZAGROS_GENESIS_HASH);
+		pub UniversalLocation: InteriorLocation = [GlobalConsensus(ByGenesis(ROCOCO_GENESIS_HASH)), Teyrchain(1000)].into();
+		pub ExpectedNetworkId: NetworkId = ByGenesis(WESTEND_GENESIS_HASH);
 	}
 
 	#[test]
@@ -219,14 +219,14 @@ mod tests {
 		let asset: Location = (
 			Parent,
 			Parent,
-			GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)),
+			GlobalConsensus(ByGenesis(WESTEND_GENESIS_HASH)),
 			Teyrchain(1000),
 			PalletInstance(1),
 			GeneralIndex(1),
 		)
 			.into();
 		let origin: Location =
-			(Parent, Parent, GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)), Teyrchain(1000))
+			(Parent, Parent, GlobalConsensus(ByGenesis(WESTEND_GENESIS_HASH)), Teyrchain(1000))
 				.into();
 		assert!(FromNetwork::<UniversalLocation, ExpectedNetworkId>::contains(&asset, &origin));
 
@@ -234,19 +234,15 @@ mod tests {
 		let asset: Location = (
 			Parent,
 			Parent,
-			GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH)),
+			GlobalConsensus(ByGenesis(ROCOCO_GENESIS_HASH)),
 			Teyrchain(1000),
 			PalletInstance(1),
 			GeneralIndex(1),
 		)
 			.into();
-		let origin: Location = (
-			Parent,
-			Parent,
-			GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH)),
-			Teyrchain(1000),
-		)
-			.into();
+		let origin: Location =
+			(Parent, Parent, GlobalConsensus(ByGenesis(ROCOCO_GENESIS_HASH)), Teyrchain(1000))
+				.into();
 		assert!(!FromNetwork::<UniversalLocation, ExpectedNetworkId>::contains(&asset, &origin));
 
 		// asset and origin from here fails
@@ -258,14 +254,14 @@ mod tests {
 		let asset: Location = (
 			Parent,
 			Parent,
-			GlobalConsensus(Pezkuwi),
+			GlobalConsensus(Polkadot),
 			Teyrchain(1000),
 			PalletInstance(1),
 			GeneralIndex(1),
 		)
 			.into();
 		let origin: Location =
-			(Parent, Parent, GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)), Teyrchain(1000))
+			(Parent, Parent, GlobalConsensus(ByGenesis(WESTEND_GENESIS_HASH)), Teyrchain(1000))
 				.into();
 		assert!(!FromNetwork::<UniversalLocation, ExpectedNetworkId>::contains(&asset, &origin));
 
@@ -273,26 +269,26 @@ mod tests {
 		let asset: Location = (
 			Parent,
 			Parent,
-			GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)),
+			GlobalConsensus(ByGenesis(WESTEND_GENESIS_HASH)),
 			Teyrchain(1000),
 			PalletInstance(1),
 			GeneralIndex(1),
 		)
 			.into();
-		let origin: Location = (Parent, Parent, GlobalConsensus(Pezkuwi), Teyrchain(1000)).into();
+		let origin: Location = (Parent, Parent, GlobalConsensus(Polkadot), Teyrchain(1000)).into();
 		assert!(!FromNetwork::<UniversalLocation, ExpectedNetworkId>::contains(&asset, &origin));
 
 		// asset and origin from unexpected consensus fails
 		let asset: Location = (
 			Parent,
 			Parent,
-			GlobalConsensus(Pezkuwi),
+			GlobalConsensus(Polkadot),
 			Teyrchain(1000),
 			PalletInstance(1),
 			GeneralIndex(1),
 		)
 			.into();
-		let origin: Location = (Parent, Parent, GlobalConsensus(Pezkuwi), Teyrchain(1000)).into();
+		let origin: Location = (Parent, Parent, GlobalConsensus(Polkadot), Teyrchain(1000)).into();
 		assert!(!FromNetwork::<UniversalLocation, ExpectedNetworkId>::contains(&asset, &origin));
 	}
 }

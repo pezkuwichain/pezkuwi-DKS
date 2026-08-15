@@ -20,8 +20,8 @@
 //! ## Overview
 //!
 //! The Collator Selection pezpallet manages the collators of a teyrchain. **Collation is _not_ a
-//! secure activity** and this pezpallet does not implement any game-theoretic mechanisms to meet
-//! BFT safety assumptions of the chosen set.
+//! secure activity** and this pezpallet does not implement any game-theoretic mechanisms to meet BFT
+//! safety assumptions of the chosen set.
 //!
 //! ## Terminology
 //!
@@ -77,7 +77,7 @@
 //! To initiate rewards, an ED needs to be transferred to the pot address.
 //!
 //! Note: Eventually the Pot distribution may be modified as discussed in [this
-//! issue](https://github.com/pezkuwichain/pezkuwi-sdk/issues/330#issuecomment-810481073).
+//! issue](https://github.com/paritytech/statemint/issues/21#issuecomment-810481073).
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -116,7 +116,10 @@ pub mod pezpallet {
 	};
 	use pezframe_system::{pezpallet_prelude::*, Config as SystemConfig};
 	use pezpallet_session::SessionManager;
-	use pezsp_runtime::traits::{AccountIdConversion, CheckedSub, Convert, Saturating, Zero};
+	use pezsp_runtime::{
+		traits::{AccountIdConversion, CheckedSub, Convert, Saturating, Zero},
+		Debug,
+	};
 	use pezsp_staking::SessionIndex;
 
 	/// The in-code storage version.
@@ -938,6 +941,8 @@ pub mod pezpallet {
 	impl<T: Config + pezpallet_authorship::Config>
 		pezpallet_authorship::EventHandler<T::AccountId, BlockNumberFor<T>> for Pezpallet<T>
 	{
+		// TODO: once DAP allocates collator budgets, draw rewards from DAP allocation
+		// instead of StakingPot. StakingPot becomes redundant at that point.
 		fn note_author(author: T::AccountId) {
 			let pot = Self::account_id();
 			// assumes an ED will be sent to pot.

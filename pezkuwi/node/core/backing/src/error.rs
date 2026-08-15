@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ pub enum Error {
 	NoValidationCode(ValidationCodeHash),
 
 	#[error("Candidate rejected by prospective teyrchains subsystem")]
-	RejectedByProspectiveTeyrchains,
+	RejectedByProspectiveParachains,
 
 	#[error("ValidateFromExhaustive channel closed before receipt")]
 	ValidateFromExhaustive(#[source] oneshot::Canceled),
@@ -105,9 +105,6 @@ pub enum Error {
 
 	#[error("Availability store error")]
 	StoreAvailableData(#[source] StoreAvailableDataError),
-
-	#[error("Runtime API returned None for executor params")]
-	MissingExecutorParams,
 }
 
 /// Utility for eating top level errors and log them.

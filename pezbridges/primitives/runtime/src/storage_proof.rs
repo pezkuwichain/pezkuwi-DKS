@@ -21,6 +21,7 @@ use pezsp_std::vec::Vec;
 use pezsp_trie::{
 	accessed_nodes_tracker::AccessedNodesTracker, read_trie_value, LayoutV1, MemoryDB, StorageProof,
 };
+use Debug;
 
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use hash_db::{HashDB, Hasher, EMPTY_PREFIX};

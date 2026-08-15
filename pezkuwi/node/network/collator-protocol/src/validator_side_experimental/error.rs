@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::LOG_TARGET;
+use crate::{validator_side_experimental::peer_manager::PersistenceError, LOG_TARGET};
 use fatality::Nested;
 use pezkuwi_node_subsystem::{ChainApiError, SubsystemError};
-use pezkuwi_node_subsystem_util::runtime;
+use pezkuwi_node_subsystem_util::{backing_implicit_view, runtime};
 use pezkuwi_primitives::Hash;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -44,6 +44,17 @@ pub enum Error {
 	#[fatal]
 	#[error("Receiving message from overseer failed: {0}")]
 	SubsystemReceive(#[source] SubsystemError),
+	#[fatal]
+	#[error("Failed to initialize reputation database: {0}")]
+	ReputationDbInit(PersistenceError),
+	#[fatal]
+	#[error("Failed to spawn background task: {0}")]
+	SpawnTask(String),
+	#[error("Unable to retrieve block number for {0:?} from implicit view")]
+	BlockNumberNotFoundInImplicitView(Hash),
+	#[fatal(forward)]
+	#[error("Failed to add leaf to implicit view: {0}")]
+	FailedToActivateLeafInImplicitView(#[from] backing_implicit_view::FetchError),
 }
 
 /// Utility for eating top level errors and log them.

@@ -17,15 +17,16 @@
 
 use super::xcm_helpers;
 use crate::{assert_matches_reserve_asset_deposited_instructions, get_fungible_delivery_fees};
+use assets_common::local_and_foreign_assets::ForeignAssetReserveData;
 use codec::Encode;
 use core::ops::Mul;
-use pez_assets_common::local_and_foreign_assets::ForeignAssetReserveData;
 use pezcumulus_primitives_core::{UpwardMessageSender, XcmpMessageSource};
 use pezframe_support::{
-	assert_noop, assert_ok,
+	assert_err_ignore_postinfo, assert_noop, assert_ok,
 	traits::{
-		fungible::Mutate, fungibles::InspectEnumerable, Currency, Get, OnFinalize, OnInitialize,
-		OriginTrait,
+		fungible::Mutate,
+		fungibles::{Inspect, InspectEnumerable, Mutate as FungiblesMutate},
+		Currency, Get, OnFinalize, OnInitialize, OriginTrait,
 	},
 	weights::Weight,
 };
@@ -44,7 +45,7 @@ use xcm_executor::{
 	traits::{ConvertLocation, TransferType},
 	XcmExecutor,
 };
-use xcm_runtime_pezapis::fees::{
+use xcm_runtime_apis::fees::{
 	runtime_decl_for_xcm_payment_api::XcmPaymentApiV2, Error as XcmPaymentApiError,
 };
 
@@ -77,8 +78,8 @@ pub fn teleports_for_native_asset_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config,
 	AllPalletsWithoutSystem:
 		OnInitialize<BlockNumberFor<Runtime>> + OnFinalize<BlockNumberFor<Runtime>>,
@@ -95,7 +96,7 @@ pub fn teleports_for_native_asset_works<
 	XcmConfig: xcm_executor::Config,
 	CheckingAccount: Get<Option<AccountIdOf<Runtime>>>,
 	HrmpChannelOpener: pezframe_support::inherent::ProvideInherent<
-		Call = pezcumulus_pezpallet_teyrchain_system::Call<Runtime>,
+		Call = pezcumulus_pallet_teyrchain_system::Call<Runtime>,
 	>,
 {
 	let buy_execution_fee_amount_eta =
@@ -194,7 +195,7 @@ pub fn teleports_for_native_asset_works<
 			let native_asset_to_teleport_away = native_asset_amount_unit * 3.into();
 			// 2. try to teleport asset back to the relaychain
 			{
-				<pezcumulus_pezpallet_teyrchain_system::Pezpallet<Runtime> as UpwardMessageSender>::ensure_successful_delivery();
+				<pezcumulus_pallet_teyrchain_system::Pezpallet<Runtime> as UpwardMessageSender>::ensure_successful_delivery();
 
 				let dest = Location::parent();
 				let mut dest_beneficiary = Location::parent()
@@ -216,7 +217,7 @@ pub fn teleports_for_native_asset_works<
 				let delivery_fees =
 					xcm_helpers::teleport_assets_delivery_fees::<XcmConfig::XcmSender>(
 						(native_asset_id.clone(), native_asset_to_teleport_away.into()).into(),
-						native_asset_id.clone().into(),
+						0,
 						Unlimited,
 						dest_beneficiary.clone(),
 						dest.clone(),
@@ -372,7 +373,7 @@ pub fn teleports_for_foreign_assets_works<
 	asset_owner: AccountIdOf<Runtime>,
 	unwrap_pallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
 	unwrap_xcmp_queue_event: Box<
-		dyn Fn(Vec<u8>) -> Option<pezcumulus_pezpallet_xcmp_queue::Event<Runtime>>,
+		dyn Fn(Vec<u8>) -> Option<pezcumulus_pallet_xcmp_queue::Event<Runtime>>,
 	>,
 ) where
 	Runtime: pezframe_system::Config
@@ -381,8 +382,8 @@ pub fn teleports_for_foreign_assets_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ pezpallet_assets::Config<ForeignAssetsPalletInstance, ReserveData = ForeignAssetReserveData>
 		+ pezpallet_timestamp::Config,
 	AllPalletsWithoutSystem:
@@ -393,7 +394,7 @@ pub fn teleports_for_foreign_assets_works<
 	XcmConfig: xcm_executor::Config,
 	CheckingAccount: Get<AccountIdOf<Runtime>>,
 	HrmpChannelOpener: pezframe_support::inherent::ProvideInherent<
-		Call = pezcumulus_pezpallet_teyrchain_system::Call<Runtime>,
+		Call = pezcumulus_pallet_teyrchain_system::Call<Runtime>,
 	>,
 	WeightToFee: pezframe_support::weights::WeightToFee<Balance = Balance>,
 	<WeightToFee as pezframe_support::weights::WeightToFee>::Balance: From<u128> + Into<u128>,
@@ -516,7 +517,7 @@ pub fn teleports_for_foreign_assets_works<
 				<pezpallet_assets::Pezpallet<Runtime, ForeignAssetsPalletInstance>>::set_reserves(
 					RuntimeHelper::<Runtime>::origin_of(asset_owner.into()),
 					foreign_asset_id_location.clone().into(),
-					vec![foreign_asset_reserve_data],
+					vec![foreign_asset_reserve_data].try_into().unwrap(),
 				)
 			);
 
@@ -625,7 +626,7 @@ pub fn teleports_for_foreign_assets_works<
 				let delivery_fees =
 					xcm_helpers::teleport_assets_delivery_fees::<XcmConfig::XcmSender>(
 						(foreign_asset_id_location.clone(), asset_to_teleport_away).into(),
-						foreign_asset_id_location.clone().into(),
+						0,
 						Unlimited,
 						dest_beneficiary.clone(),
 						dest.clone(),
@@ -747,7 +748,7 @@ pub fn asset_transactor_transfer_with_local_consensus_currency_works<Runtime, Xc
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
 		+ pezpallet_timestamp::Config,
 	AccountIdOf<Runtime>: Into<[u8; 32]>,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
@@ -793,7 +794,7 @@ pub fn asset_transactor_transfer_with_local_consensus_currency_works<Runtime, Xc
 					interior: [AccountId32 { network: None, id: target_account.clone().into() }]
 						.into(),
 				},
-				// local_consensus_currency_asset, e.g.: relaychain token (DCL, HEZ, ...)
+				// local_consensus_currency_asset, e.g.: relaychain token (KSM, DOT, ...)
 				(
 					Location { parents: 1, interior: Here },
 					(BalanceOf::<Runtime>::from(1_u128) * unit).into(),
@@ -872,7 +873,7 @@ pub fn asset_transactor_transfer_with_pallet_assets_instance_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
 		+ pezpallet_assets::Config<AssetsPalletInstance>
 		+ pezpallet_timestamp::Config,
 	AccountIdOf<Runtime>: Into<[u8; 32]>,
@@ -1141,7 +1142,7 @@ pub fn create_and_manage_foreign_assets_for_local_consensus_teyrchain_assets_wor
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
 		+ pezpallet_assets::Config<ForeignAssetsPalletInstance>
 		+ pezpallet_timestamp::Config,
 	AccountIdOf<Runtime>: Into<[u8; 32]>,
@@ -1471,7 +1472,7 @@ pub fn reserve_transfer_native_asset_to_non_teleport_para_works<
 	alice_account: AccountIdOf<Runtime>,
 	unwrap_pallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
 	unwrap_xcmp_queue_event: Box<
-		dyn Fn(Vec<u8>) -> Option<pezcumulus_pezpallet_xcmp_queue::Event<Runtime>>,
+		dyn Fn(Vec<u8>) -> Option<pezcumulus_pallet_xcmp_queue::Event<Runtime>>,
 	>,
 	weight_limit: WeightLimit,
 ) where
@@ -1481,8 +1482,8 @@ pub fn reserve_transfer_native_asset_to_non_teleport_para_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config,
 	AllPalletsWithoutSystem:
 		OnInitialize<BlockNumberFor<Runtime>> + OnFinalize<BlockNumberFor<Runtime>>,
@@ -1498,7 +1499,7 @@ pub fn reserve_transfer_native_asset_to_non_teleport_para_works<
 		From<<Runtime as pezframe_system::Config>::AccountId>,
 	<Runtime as pezframe_system::Config>::AccountId: From<AccountId>,
 	HrmpChannelOpener: pezframe_support::inherent::ProvideInherent<
-		Call = pezcumulus_pezpallet_teyrchain_system::Call<Runtime>,
+		Call = pezcumulus_pallet_teyrchain_system::Call<Runtime>,
 	>,
 	HrmpChannelSource: XcmpMessageSource,
 {
@@ -1609,7 +1610,7 @@ pub fn reserve_transfer_native_asset_to_non_teleport_para_works<
 				.into_iter()
 				.filter_map(|e| unwrap_xcmp_queue_event(e.event.encode()))
 				.find_map(|e| match e {
-					pezcumulus_pezpallet_xcmp_queue::Event::XcmpMessageSent { message_hash } => {
+					pezcumulus_pallet_xcmp_queue::Event::XcmpMessageSent { message_hash } => {
 						Some(message_hash)
 					},
 					_ => None,
@@ -1668,8 +1669,8 @@ where
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config
 		+ pezpallet_assets::Config<
 			pezpallet_assets::Instance1,
@@ -1856,8 +1857,8 @@ pub fn xcm_payment_api_foreign_asset_pool_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config
 		+ pezpallet_assets::Config<
 			pezpallet_assets::Instance2,
@@ -1938,4 +1939,188 @@ pub fn xcm_payment_api_foreign_asset_pool_works<
 
 		assert_eq!(execution_fees, expected_weight_foreign_asset_fee);
 	});
+}
+
+pub fn exchange_asset_on_asset_hub_works<
+	Runtime,
+	RuntimeCall,
+	RuntimeOrigin,
+	Block,
+	ForeignAssetsPalletInstance,
+>(
+	collator_session_key: CollatorSessionKeys<Runtime>,
+	runtime_para_id: u32,
+	account: AccountId,
+	native_asset_location: Location,
+	create_pool: bool,
+	give_amount: Balance,
+	want_amount: Balance,
+	expected_error: Option<xcm::v5::InstructionError>,
+) where
+	Runtime: XcmPaymentApiV2<Block>
+		+ pezframe_system::Config<RuntimeOrigin = RuntimeOrigin, AccountId = AccountId>
+		+ pezpallet_balances::Config<Balance = u128>
+		+ pezpallet_assets::Config<
+			ForeignAssetsPalletInstance,
+			AssetId = xcm::v5::Location,
+			Balance = <Runtime as pezpallet_balances::Config>::Balance,
+		> + pezpallet_asset_conversion::Config<
+			AssetKind = xcm::v5::Location,
+			Balance = <Runtime as pezpallet_balances::Config>::Balance,
+		> + pezpallet_session::Config
+		+ pezpallet_timestamp::Config
+		+ pezpallet_xcm::Config
+		+ teyrchain_info::Config
+		+ pezpallet_collator_selection::Config
+		+ pezcumulus_pallet_teyrchain_system::Config,
+	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
+	RuntimeOrigin: OriginTrait<AccountId = <Runtime as pezframe_system::Config>::AccountId>,
+	<<Runtime as pezframe_system::Config>::Lookup as StaticLookup>::Source:
+		From<<Runtime as pezframe_system::Config>::AccountId>,
+	Block: BlockT,
+	ForeignAssetsPalletInstance: 'static,
+{
+	const UNITS: Balance = 1_000_000_000_000;
+
+	ExtBuilder::<Runtime>::default()
+		.with_collators(collator_session_key.collators())
+		.with_session_keys(collator_session_key.session_keys())
+		.with_para_id(runtime_para_id.into())
+		.with_tracing()
+		.build()
+		.execute_with(|| {
+			let native_asset_id = xcm::v5::AssetId(native_asset_location.clone());
+			let origin = RuntimeOrigin::signed(account.clone());
+			let asset_location: Location = Location::new(1, [Teyrchain(2001)]);
+			let asset_id = xcm::v5::AssetId(asset_location.clone());
+
+			let mut total_balance_needed = Balance::from(1_000 * UNITS);
+			if expected_error.is_none() {
+				total_balance_needed = total_balance_needed.saturating_add(Balance::from(give_amount));
+			} else if give_amount > 1_000_000_000_000u128 * 3 {
+				total_balance_needed = total_balance_needed
+					.saturating_add(Balance::from(give_amount).saturating_sub(Balance::from(give_amount / 2)));
+			} else {
+				total_balance_needed = total_balance_needed.saturating_add(Balance::from(give_amount));
+			}
+			assert_ok!(<pezpallet_balances::Pezpallet<Runtime> as Mutate<_>>::mint_into(
+				&account,
+				total_balance_needed
+			));
+
+			assert_ok!(pezpallet_assets::Pezpallet::<Runtime, ForeignAssetsPalletInstance>::force_create(
+				RuntimeOrigin::root(),
+				asset_location.clone().into(),
+				<Runtime as pezframe_system::Config>::Lookup::unlookup(account.clone()),
+				true,
+				1
+			));
+
+			if create_pool {
+				assert_ok!(pezpallet_assets::Pezpallet::<Runtime, ForeignAssetsPalletInstance>::mint_into(
+					asset_location.clone(),
+					&account,
+					10_000_000_000_000
+				));
+
+				let native_v5 = xcm::v5::Location::try_from(native_asset_location.clone())
+					.expect("conversion works");
+				let asset_v5 = xcm::v5::Location::try_from(asset_location.clone())
+					.expect("conversion works");
+
+				assert_ok!(pezpallet_asset_conversion::Pezpallet::<Runtime>::create_pool(
+					RuntimeOrigin::signed(account.clone()),
+					Box::new(native_v5.clone()),
+					Box::new(asset_v5.clone()),
+				));
+				assert_ok!(pezpallet_asset_conversion::Pezpallet::<Runtime>::add_liquidity(
+					RuntimeOrigin::signed(account.clone()),
+					Box::new(native_v5.clone()),
+					Box::new(asset_v5.clone()),
+					1_000_000_000_000,
+					2_000_000_000_000,
+					0,
+					0,
+					account.clone(),
+				));
+			}
+
+			let foreign_balance_before = pezpallet_assets::Pezpallet::<Runtime, ForeignAssetsPalletInstance>::balance(asset_location.clone().into(), &account);
+			let native_balance_before = pezpallet_balances::Pezpallet::<Runtime>::total_balance(&account);
+			let foreign_issuance_before = pezpallet_assets::Pezpallet::<Runtime, ForeignAssetsPalletInstance>::total_issuance(asset_location.clone());
+			let native_issuance_before = pezpallet_balances::Pezpallet::<Runtime>::total_issuance();
+
+			let want_amount_min = if create_pool && expected_error.is_none() {
+				let native_v5 = xcm::v5::Location::try_from(native_asset_location.clone())
+					.expect("conversion works");
+				let asset_v5 = xcm::v5::Location::try_from(asset_location.clone())
+					.expect("conversion works");
+				pezpallet_asset_conversion::Pezpallet::<Runtime>::quote_price_exact_tokens_for_tokens(
+					native_v5,
+					asset_v5,
+					give_amount,
+					true,
+				)
+				.map(|quoted| (quoted * 90) / 100)
+				.unwrap_or(want_amount)
+			} else {
+				want_amount
+			};
+
+			let give: Assets = (native_asset_id, give_amount).into();
+			let want: Assets = (asset_id, want_amount_min).into();
+			let xcm = Xcm(vec![
+				WithdrawAsset(give.clone().into()),
+				ExchangeAsset { give: give.into(), want: want.into(), maximal: true },
+				DepositAsset { assets: Wild(All), beneficiary: account.clone().into() },
+			]);
+
+			let result = pezpallet_xcm::Pezpallet::<Runtime>::execute(
+				origin,
+				xcm::VersionedXcm::from(xcm).into(),
+				Weight::MAX
+			);
+
+			let foreign_balance_after = pezpallet_assets::Pezpallet::<Runtime, ForeignAssetsPalletInstance>::balance(asset_location.clone().into(), &account);
+			let native_balance_after = pezpallet_balances::Pezpallet::<Runtime>::total_balance(&account);
+
+			if let Some(xcm::v5::InstructionError { index, error }) = expected_error {
+				assert_err_ignore_postinfo!(
+					result,
+					pezpallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
+						index,
+						error: error.into()
+					}
+				);
+				assert_eq!(
+					foreign_balance_after, foreign_balance_before,
+					"Foreign balance changed unexpectedly: got {foreign_balance_after}, expected {foreign_balance_before}"
+				);
+				assert_eq!(
+					native_balance_after, native_balance_before,
+					"Native balance changed unexpectedly: got {native_balance_after}, expected {native_balance_before}"
+				);
+			} else {
+				assert_ok!(result);
+				assert!(
+					foreign_balance_after >= foreign_balance_before + want_amount_min,
+					"Expected foreign balance to increase by at least {want_amount_min} units, got {foreign_balance_after} from {foreign_balance_before}"
+				);
+				assert_eq!(
+					native_balance_after, native_balance_before - give_amount,
+					"Expected WND balance to decrease by {give_amount} units, got {native_balance_after} from {native_balance_before}"
+				);
+			}
+			let foreign_issuance_after = pezpallet_assets::Pezpallet::<Runtime, ForeignAssetsPalletInstance>::total_issuance(asset_location.into());
+			let native_issuance_after = pezpallet_balances::Pezpallet::<Runtime>::total_issuance();
+			assert_eq!(
+				foreign_issuance_before, foreign_issuance_after,
+				"Unexpected foreign total issuance change"
+			);
+			assert_eq!(
+				native_issuance_before, native_issuance_after,
+				"Unexpected native total issuance change"
+			);
+			assert!(native_issuance_after > 0);
+		});
 }

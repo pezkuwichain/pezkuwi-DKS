@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::{
-	prometheus::Registry, HeadSupportsTeyrchains, InitializedOverseerBuilder, MetricsTrait,
+	prometheus::Registry, HeadSupportsParachains, InitializedOverseerBuilder, MetricsTrait,
 	Overseer, OverseerMetrics, OverseerSignal, OverseerSubsystemContext, SpawnGlue,
 };
 use orchestra::{FromOrchestra, SpawnedSubsystem, Subsystem, SubsystemContext};
@@ -57,14 +57,14 @@ where
 /// Create an overseer with all subsystem being `Sub`.
 ///
 /// Preferred way of initializing a dummy overseer for subsystem tests.
-pub fn dummy_overseer_builder<Spawner, SupportsTeyrchains>(
+pub fn dummy_overseer_builder<Spawner, SupportsParachains>(
 	spawner: Spawner,
-	supports_teyrchains: SupportsTeyrchains,
+	supports_teyrchains: SupportsParachains,
 	registry: Option<&Registry>,
 ) -> Result<
 	InitializedOverseerBuilder<
 		SpawnGlue<Spawner>,
-		SupportsTeyrchains,
+		SupportsParachains,
 		DummySubsystem,
 		DummySubsystem,
 		DummySubsystem,
@@ -94,21 +94,21 @@ pub fn dummy_overseer_builder<Spawner, SupportsTeyrchains>(
 >
 where
 	SpawnGlue<Spawner>: orchestra::Spawner + 'static,
-	SupportsTeyrchains: HeadSupportsTeyrchains,
+	SupportsParachains: HeadSupportsParachains,
 {
 	one_for_all_overseer_builder(spawner, supports_teyrchains, DummySubsystem, registry)
 }
 
 /// Create an overseer with all subsystem being `Sub`.
-pub fn one_for_all_overseer_builder<Spawner, SupportsTeyrchains, Sub>(
+pub fn one_for_all_overseer_builder<Spawner, SupportsParachains, Sub>(
 	spawner: Spawner,
-	supports_teyrchains: SupportsTeyrchains,
+	supports_teyrchains: SupportsParachains,
 	subsystem: Sub,
 	registry: Option<&Registry>,
 ) -> Result<
 	InitializedOverseerBuilder<
 		SpawnGlue<Spawner>,
-		SupportsTeyrchains,
+		SupportsParachains,
 		Sub,
 		Sub,
 		Sub,
@@ -138,7 +138,7 @@ pub fn one_for_all_overseer_builder<Spawner, SupportsTeyrchains, Sub>(
 >
 where
 	SpawnGlue<Spawner>: orchestra::Spawner + 'static,
-	SupportsTeyrchains: HeadSupportsTeyrchains,
+	SupportsParachains: HeadSupportsParachains,
 	Sub: Clone
 		+ Subsystem<OverseerSubsystemContext<AvailabilityDistributionMessage>, SubsystemError>
 		+ Subsystem<OverseerSubsystemContext<AvailabilityRecoveryMessage>, SubsystemError>
@@ -163,7 +163,7 @@ where
 		+ Subsystem<OverseerSubsystemContext<DisputeDistributionMessage>, SubsystemError>
 		+ Subsystem<OverseerSubsystemContext<ChainSelectionMessage>, SubsystemError>
 		+ Subsystem<OverseerSubsystemContext<PvfCheckerMessage>, SubsystemError>
-		+ Subsystem<OverseerSubsystemContext<ProspectiveTeyrchainsMessage>, SubsystemError>,
+		+ Subsystem<OverseerSubsystemContext<ProspectiveParachainsMessage>, SubsystemError>,
 {
 	let metrics = <OverseerMetrics as MetricsTrait>::register(registry)?;
 

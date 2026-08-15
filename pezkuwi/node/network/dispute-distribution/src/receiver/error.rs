@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,6 +45,9 @@ pub enum Error {
 
 	#[error("Dispute request with invalid signatures, from peer {0}.")]
 	InvalidSignature(PeerId),
+
+	#[error("Dispute request from peer {0} coalesces more candidates than the runtime allows.")]
+	ExcessiveCoalescedVotes(PeerId),
 
 	#[error("Received votes from peer {0} have been completely redundant.")]
 	RedundantMessage(PeerId),

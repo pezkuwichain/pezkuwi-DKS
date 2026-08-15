@@ -17,9 +17,9 @@
 //! Bizinikiwi node RPC errors.
 
 use crate::{BlockNumberOf, Chain, HashOf, SimpleRuntimeVersion};
+use bp_header_chain::SubmitFinalityProofCallExtras;
+use bp_polkadot_core::teyrchains::ParaId;
 use jsonrpsee::core::ClientError as RpcError;
-use pezbp_header_pez_chain::SubmitFinalityProofCallExtras;
-use pezbp_pezkuwi_core::teyrchains::ParaId;
 use pezsc_rpc_api::system::Health;
 use pezsp_core::{storage::StorageKey, Bytes};
 use pezsp_runtime::transaction_validity::TransactionValidityError;
@@ -49,12 +49,12 @@ pub enum Error {
 	ChannelError(String),
 	/// Required teyrchain head is not present at the relay chain.
 	#[error("Teyrchain {0:?} head {1} is missing from the relay chain storage.")]
-	MissingRequiredTeyrchainHead(ParaId, u64),
+	MissingRequiredParachainHead(ParaId, u64),
 	/// Failed to find finality proof for the given header.
 	#[error("Failed to find finality proof for header {0}.")]
 	FinalityProofNotFound(u64),
 	/// The client we're connected to is not synced, so we can't rely on its state.
-	#[error("Bizinikiwi client is not synced {0}.")]
+	#[error("Substrate client is not synced {0}.")]
 	ClientNotSynced(Health),
 	/// Failed to get system health.
 	#[error("Failed to get system health of {chain} node: {error:?}.")]
@@ -214,7 +214,7 @@ pub enum Error {
 	#[error("Bridge pezpallet is not initialized.")]
 	BridgePalletIsNotInitialized,
 	/// The Bizinikiwi transaction is invalid.
-	#[error("Bizinikiwi transaction is invalid: {0:?}")]
+	#[error("Substrate transaction is invalid: {0:?}")]
 	TransactionInvalid(#[from] TransactionValidityError),
 	/// The client is configured to use newer runtime version than the connected chain uses.
 	/// The client will keep waiting until chain is upgraded to given version.
@@ -244,14 +244,14 @@ impl From<tokio::task::JoinError> for Error {
 	}
 }
 
-impl<T> From<async_std::channel::TrySendError<T>> for Error {
-	fn from(error: async_std::channel::TrySendError<T>) -> Self {
+impl<T> From<async_channel::TrySendError<T>> for Error {
+	fn from(error: async_channel::TrySendError<T>) -> Self {
 		Error::ChannelError(format!("`try_send` has failed: {error:?}"))
 	}
 }
 
-impl From<async_std::channel::RecvError> for Error {
-	fn from(error: async_std::channel::RecvError) -> Self {
+impl From<async_channel::RecvError> for Error {
+	fn from(error: async_channel::RecvError) -> Self {
 		Error::ChannelError(format!("`recv` has failed: {error:?}"))
 	}
 }

@@ -21,9 +21,9 @@ use pezframe_support::{
 	weights::WeightMeter,
 };
 use pezpallet_message_queue::OnQueueChanged;
-use pezsnowbridge_core::ChannelId;
 use pezsp_core::H256;
 use scale_info::TypeInfo;
+use snowbridge_core::ChannelId;
 use xcm::latest::prelude::{Junction, Location};
 
 /// The aggregate origin of an inbound message.

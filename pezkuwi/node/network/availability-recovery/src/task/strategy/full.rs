@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@ use crate::{
 use pezkuwi_node_network_protocol::request_response::{
 	self as req_res, outgoing::RequestError, OutgoingRequest, Recipient, Requests,
 };
+use pezkuwi_node_primitives::AvailableData;
 use pezkuwi_node_subsystem::{messages::NetworkBridgeTxMessage, overseer, RecoveryError};
-use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_primitives::ValidatorIndex;
 use pezsc_network::{IfDisconnected, OutboundFailure, RequestFailure};
 

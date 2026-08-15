@@ -14,10 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Pezpallet that may be used instead of `SovereignPaidRemoteExporter` in the XCM router
-//! configuration. The main thing that the pezpallet offers is the dynamic message fee,
-//! that is computed based on the bridge queues state. It starts exponentially increasing
-//! if the queue between this chain and the sibling/child bridge hub is congested.
+//! Pezpallet that may be used instead of `SovereignPaidRemoteExporter` or `UnpaidRemoteExporter`
+//! in the XCM router configuration. The main thing that the pezpallet offers is the dynamic
+//! message fee, that is computed based on the bridge queues state. It starts exponentially
+//! increasing if the queue between this chain and the sibling/child bridge hub is congested.
+//!
+//! The pezpallet is configurable to use either paid or unpaid execution on the bridge hub
+//! via the [`Config::UnpaidExport`] associated type. It will use `SovereignPaidRemoteExporter`
+//! for sovereign-paid bridging or `UnpaidRemoteExporter` for unpaid bridging (e.g. between
+//! system teyrchains where the bridge hub waives fees).
 //!
 //! All other bridge hub queues offer some backpressure mechanisms. So if at least one
 //! of all queues is congested, it will eventually lead to the growth of the queue at
@@ -30,16 +35,18 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use bp_xcm_bridge_hub_router::MINIMAL_DELIVERY_FEE_FACTOR;
+pub use bp_xcm_bridge_hub_router::{BridgeState, XcmChannelStatusProvider};
 use codec::Encode;
-use pezbp_xcm_bridge_hub_router::MINIMAL_DELIVERY_FEE_FACTOR;
-pub use pezbp_xcm_bridge_hub_router::{BridgeState, XcmChannelStatusProvider};
 use pezframe_support::traits::Get;
 use pezkuwi_runtime_teyrchains::FeeTracker;
 use pezsp_core::H256;
 use pezsp_runtime::{FixedPointNumber, FixedU128};
 use pezsp_std::vec::Vec;
 use xcm::prelude::*;
-use xcm_builder::{ExporterFor, InspectMessageQueues, SovereignPaidRemoteExporter};
+use xcm_builder::{
+	ExporterFor, InspectMessageQueues, SovereignPaidRemoteExporter, UnpaidRemoteExporter,
+};
 
 pub use pezpallet::*;
 pub use weights::WeightInfo;
@@ -57,9 +64,9 @@ pub const HARD_MESSAGE_SIZE_LIMIT: u32 = 32 * 1024;
 
 /// The target that will be used when publishing logs related to this pezpallet.
 ///
-/// This doesn't match the pattern used by other bridge pallets (`runtime::bridge-*`). But this
-/// pezpallet has significant differences with those pallets. The main one is that is intended to
-/// be deployed at sending chains. Other bridge pallets are likely to be deployed at the separate
+/// This doesn't match the pattern used by other bridge pezpallets (`runtime::bridge-*`). But this
+/// pezpallet has significant differences with those pezpallets. The main one is that is intended to
+/// be deployed at sending chains. Other bridge pezpallets are likely to be deployed at the separate
 /// bridge hub teyrchain.
 pub const LOG_TARGET: &str = "xcm::bridge-hub-router";
 
@@ -99,6 +106,11 @@ pub mod pezpallet {
 		type ToBridgeHubSender: SendXcm;
 		/// Local XCM channel manager.
 		type LocalXcmChannelManager: XcmChannelStatusProvider;
+
+		/// Whether to use unpaid execution when sending export messages to the bridge hub.
+		/// Set to `ConstBool<true>` for system teyrchains where the bridge hub waives fees,
+		/// `ConstBool<false>` for sovereign-paid bridging.
+		type UnpaidExport: Get<bool>;
 
 		/// Additional fee that is paid for every byte of the outbound message.
 		type ByteFee: Get<u128>;
@@ -243,15 +255,7 @@ pub mod pezpallet {
 	}
 }
 
-/// We'll be using `SovereignPaidRemoteExporter` to send remote messages over the sibling/child
-/// bridge hub.
-type ViaBridgeHubExporter<T, I> = SovereignPaidRemoteExporter<
-	Pezpallet<T, I>,
-	<T as Config<I>>::ToBridgeHubSender,
-	<T as Config<I>>::UniversalLocation,
->;
-
-// This pezpallet acts as the `ExporterFor` for the `SovereignPaidRemoteExporter` to compute
+// This pezpallet acts as the `ExporterFor` for the inner exporter to compute
 // message fee using fee factor.
 impl<T: Config<I>, I: 'static> ExporterFor for Pezpallet<T, I> {
 	fn exporter_for(
@@ -351,7 +355,7 @@ impl<T: Config<I>, I: 'static> SendXcm for Pezpallet<T, I> {
 	) -> SendResult<Self::Ticket> {
 		tracing::trace!(target: LOG_TARGET, msg=?xcm, destination=?dest, "validate");
 
-		// In case of success, the `ViaBridgeHubExporter` can modify XCM instructions and consume
+		// In case of success, the inner exporter can modify XCM instructions and consume
 		// `dest` / `xcm`, so we retain the clone of original message and the destination for later
 		// `DestinationVersion` validation.
 		let xcm_to_dest_clone = xcm.clone();
@@ -360,10 +364,22 @@ impl<T: Config<I>, I: 'static> SendXcm for Pezpallet<T, I> {
 		// First, use the inner exporter to validate the destination to determine if it is even
 		// routable. If it is not, return an error. If it is, then the XCM is extended with
 		// instructions to pay the message fee at the sibling/child bridge hub. The cost will
-		// include both the cost of (1) delivery to the sibling bridge hub (returned by
-		// `Config::ToBridgeHubSender`) and (2) delivery to the bridged bridge hub (returned by
-		// `Self::exporter_for`).
-		match ViaBridgeHubExporter::<T, I>::validate(dest, xcm) {
+		// include both the cost of (1) delivery to the sibling bridge hub and (2) delivery
+		// to the bridged bridge hub (returned by `Self::exporter_for`).
+		let exporter_result = if T::UnpaidExport::get() {
+			UnpaidRemoteExporter::<
+				Pezpallet<T, I>,
+				T::ToBridgeHubSender,
+				T::UniversalLocation,
+			>::validate(dest, xcm)
+		} else {
+			SovereignPaidRemoteExporter::<
+				Pezpallet<T, I>,
+				T::ToBridgeHubSender,
+				T::UniversalLocation,
+			>::validate(dest, xcm)
+		};
+		match exporter_result {
 			Ok((ticket, cost)) => {
 				// If the ticket is ok, it means we are routing with this router, so we need to
 				// apply more validations to the cloned `dest` and `xcm`, which are required here.
@@ -372,7 +388,7 @@ impl<T: Config<I>, I: 'static> SendXcm for Pezpallet<T, I> {
 
 				// We won't have access to `dest` and `xcm` in the `deliver` method, so we need to
 				// precompute everything required here. However, `dest` and `xcm` were consumed by
-				// `ViaBridgeHubExporter`, so we need to use their clones.
+				// the inner exporter, so we need to use their clones.
 				let message_size = xcm_to_dest_clone.encoded_size() as _;
 
 				// The bridge doesn't support oversized or overweight messages. Therefore, it's
@@ -384,7 +400,7 @@ impl<T: Config<I>, I: 'static> SendXcm for Pezpallet<T, I> {
 
 				// We need to ensure that the known `dest`'s XCM version can comprehend the current
 				// `xcm` program. This may seem like an additional, unnecessary check, but it is
-				// not. A similar check is probably performed by the `ViaBridgeHubExporter`, which
+				// not. A similar check is probably performed by the inner exporter, which
 				// attempts to send a versioned message to the sibling bridge hub. However, the
 				// local bridge hub may have a higher XCM version than the remote `dest`. Once
 				// again, it is better to discard such messages here than at the bridge hub (e.g.,
@@ -398,7 +414,7 @@ impl<T: Config<I>, I: 'static> SendXcm for Pezpallet<T, I> {
 				Ok(((message_size, ticket), cost))
 			},
 			Err(e) => {
-				tracing::trace!(target: LOG_TARGET, error=?e, "validate - ViaBridgeHubExporter");
+				tracing::trace!(target: LOG_TARGET, error=?e, "validate - inner exporter");
 				Err(e)
 			},
 		}
@@ -408,7 +424,7 @@ impl<T: Config<I>, I: 'static> SendXcm for Pezpallet<T, I> {
 		// use router to enqueue message to the sibling/child bridge hub. This also should handle
 		// payment for passing through this queue.
 		let (message_size, ticket) = ticket;
-		let xcm_hash = ViaBridgeHubExporter::<T, I>::deliver(ticket)?;
+		let xcm_hash = T::ToBridgeHubSender::deliver(ticket)?;
 
 		// increase delivery fee factor if required
 		Self::on_message_sent_to_bridge(message_size);
@@ -565,10 +581,11 @@ mod tests {
 			let xcm: Xcm<()> = vec![ClearOrigin; HARD_MESSAGE_SIZE_LIMIT as usize].into();
 
 			// dest is routable with the inner router
-			assert_ok!(ViaBridgeHubExporter::<TestRuntime, ()>::validate(
-				&mut Some(dest.clone()),
-				&mut Some(xcm.clone())
-			));
+			assert_ok!(SovereignPaidRemoteExporter::<
+				Pezpallet<TestRuntime, ()>,
+				TestToBridgeHubSender,
+				UniversalLocation,
+			>::validate(&mut Some(dest.clone()), &mut Some(xcm.clone())));
 
 			// check for oversized message
 			let mut xcm_wrapper = Some(xcm.clone());
@@ -595,10 +612,11 @@ mod tests {
 			let xcm: Xcm<()> = vec![ClearOrigin].into();
 
 			// dest is routable with the inner router
-			assert_ok!(ViaBridgeHubExporter::<TestRuntime, ()>::validate(
-				&mut Some(dest.clone()),
-				&mut Some(xcm.clone())
-			));
+			assert_ok!(SovereignPaidRemoteExporter::<
+				Pezpallet<TestRuntime, ()>,
+				TestToBridgeHubSender,
+				UniversalLocation,
+			>::validate(&mut Some(dest.clone()), &mut Some(xcm.clone())));
 
 			// check that it does not pass XCM version check
 			let mut xcm_wrapper = Some(xcm.clone());

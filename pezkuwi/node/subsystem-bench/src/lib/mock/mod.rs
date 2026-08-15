@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
-use pezkuwi_node_subsystem::HeadSupportsTeyrchains;
+use pezkuwi_node_subsystem::HeadSupportsParachains;
 use pezkuwi_node_subsystem_types::Hash;
 use pezsp_consensus::SyncOracle;
 
@@ -29,10 +29,10 @@ pub mod network_bridge;
 pub mod prospective_teyrchains;
 pub mod runtime_api;
 
-pub struct AlwaysSupportsTeyrchains {}
+pub struct AlwaysSupportsParachains {}
 
 #[async_trait::async_trait]
-impl HeadSupportsTeyrchains for AlwaysSupportsTeyrchains {
+impl HeadSupportsParachains for AlwaysSupportsParachains {
 	async fn head_supports_teyrchains(&self, _head: &Hash) -> bool {
 		true
 	}
@@ -70,11 +70,11 @@ macro_rules! dummy_builder {
 			.collator_protocol(MockCollatorProtocol {})
 			.gossip_support(MockGossipSupport {})
 			.dispute_distribution(MockDisputeDistribution {})
-			.prospective_teyrchains(MockProspectiveTeyrchains {})
+			.prospective_teyrchains(MockProspectiveParachains {})
 			.activation_external_listeners(Default::default())
 			.active_leaves(Default::default())
 			.metrics($metrics)
-			.supports_teyrchains(AlwaysSupportsTeyrchains {})
+			.supports_teyrchains(AlwaysSupportsParachains {})
 			.spawner(SpawnGlue($spawn_task_handle))
 	}};
 }

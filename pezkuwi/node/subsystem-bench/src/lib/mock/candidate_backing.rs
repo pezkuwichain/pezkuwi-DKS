@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,11 +18,11 @@
 
 use crate::{configuration::TestConfiguration, NODE_UNDER_TEST};
 use futures::FutureExt;
+use pezkuwi_node_primitives::{SignedFullStatementWithPVD, Statement, StatementWithPVD};
 use pezkuwi_node_subsystem::{
 	messages::CandidateBackingMessage, overseer, SpawnedSubsystem, SubsystemError,
 };
 use pezkuwi_node_subsystem_types::OverseerSignal;
-use pezkuwi_pez_node_primitives::{SignedFullStatementWithPVD, Statement, StatementWithPVD};
 use pezkuwi_primitives::{
 	CandidateHash, Hash, PersistedValidationData, SigningContext, ValidatorIndex, ValidatorPair,
 };
@@ -151,7 +151,10 @@ impl MockCandidateBacking {
 					gum::trace!(target: LOG_TARGET, msg=?msg, "recv message");
 
 					match msg {
-						CandidateBackingMessage::Statement(relay_parent, statement) => {
+						CandidateBackingMessage::Statement {
+							scheduling_parent: relay_parent,
+							statement,
+						} => {
 							let messages = self.handle_statement(
 								relay_parent,
 								statement,

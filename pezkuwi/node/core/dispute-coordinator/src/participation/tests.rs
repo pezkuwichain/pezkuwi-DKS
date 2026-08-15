@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ use pezsp_core::testing::TaskExecutor;
 
 use super::*;
 use codec::Encode;
+use pezkuwi_node_primitives::{AvailableData, BlockData, InvalidCandidate, PoV};
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, ChainApiMessage, DisputeCoordinatorMessage, PvfExecKind, RuntimeApiMessage,
@@ -33,7 +34,6 @@ use pezkuwi_node_subsystem::{
 use pezkuwi_node_subsystem_test_helpers::{
 	make_subsystem_context, mock::new_leaf, TestSubsystemContext, TestSubsystemContextHandle,
 };
-use pezkuwi_pez_node_primitives::{AvailableData, BlockData, InvalidCandidate, PoV};
 use pezkuwi_primitives::{
 	BlakeTwo256, CandidateCommitments, HashT, Header, PersistedValidationData, ValidationCode,
 };
@@ -73,11 +73,10 @@ async fn participate_with_commitments_hash<Context>(
 	let session = 1;
 
 	let request_timer = participation.metrics.time_participation_pipeline();
-	let req =
-		ParticipationRequest::new(candidate_receipt, session, Default::default(), request_timer);
+	let req = ParticipationRequest::new(candidate_receipt, session, request_timer);
 
 	participation
-		.queue_participation(ctx, ParticipationPriority::BestEffort, req)
+		.queue_participation(ctx, ParticipationPriority::BestEffort, req, false)
 		.await
 }
 

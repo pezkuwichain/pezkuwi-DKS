@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use pezcumulus_pezpallet_teyrchain_system as teyrchain_system;
+use pezcumulus_pallet_teyrchain_system as teyrchain_system;
 use pezframe_support::pezpallet_prelude::*;
 use pezframe_system::pezpallet_prelude::*;
 use pezkuwi_primitives::PersistedValidationData;
@@ -102,6 +102,11 @@ pub mod pezpallet {
 		fn on_validation_data(_data: &PersistedValidationData) {}
 		fn on_validation_code_applied() {
 			crate::Pezpallet::<T>::set_pending_custom_validation_head_data();
+		}
+		fn on_relay_state_proof(
+			_relay_state_proof: &teyrchain_system::relay_state_snapshot::RelayChainStateProof,
+		) -> pezframe_support::weights::Weight {
+			pezframe_support::weights::Weight::zero()
 		}
 	}
 }

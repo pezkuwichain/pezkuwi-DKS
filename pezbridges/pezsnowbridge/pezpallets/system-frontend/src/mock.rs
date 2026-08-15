@@ -7,14 +7,14 @@ use pezframe_support::{
 	derive_impl, parameter_types,
 	traits::{AsEnsureOriginWithArg, Everything},
 };
-use pezsnowbridge_core::ParaId;
-use pezsnowbridge_test_utils::mock_swap_executor::SwapExecutor;
-pub use pezsnowbridge_test_utils::{mock_origin::pezpallet_xcm_origin, mock_xcm::*};
 use pezsp_core::H256;
 use pezsp_runtime::{
 	traits::{AccountIdConversion, BlakeTwo256, IdentityLookup},
 	AccountId32, BuildStorage,
 };
+use snowbridge_core::ParaId;
+use snowbridge_test_utils::mock_swap_executor::SwapExecutor;
+pub use snowbridge_test_utils::{mock_origin::pezpallet_xcm_origin, mock_xcm::*};
 use xcm::prelude::*;
 
 type Block = pezframe_system::mocking::MockBlock<Test>;
@@ -72,7 +72,7 @@ parameter_types! {
 	pub storage DeliveryFee: Asset = (Location::parent(), 80_000_000_000u128).into();
 	pub BridgeHubLocation: Location = Location::new(1, [Teyrchain(1002)]);
 	pub UniversalLocation: InteriorLocation =
-		[GlobalConsensus(Pezkuwi), Teyrchain(1000)].into();
+		[GlobalConsensus(Polkadot), Teyrchain(1000)].into();
 	pub PalletLocation: InteriorLocation = [PalletInstance(36)].into();
 }
 

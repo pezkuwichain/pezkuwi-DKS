@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ use pezkuwi_node_network_protocol::{
 	grid_topology::{GridNeighbors, RandomRouting, RequiredRouting, SessionGridTopology},
 	v3 as protocol_v3,
 };
-use pezkuwi_pez_node_primitives::approval::{
+use pezkuwi_node_primitives::approval::{
 	self,
 	time::tranche_to_tick,
 	v2::{CoreBitfield, IndirectAssignmentCertV2, IndirectSignedApprovalVoteV2},

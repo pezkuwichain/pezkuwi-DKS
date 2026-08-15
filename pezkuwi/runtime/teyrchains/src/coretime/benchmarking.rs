@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ use pezpallet_broker::CoreIndex as BrokerCoreIndex;
 #[benchmarks]
 mod benchmarks {
 	use super::*;
-	use assigner_coretime::PartsOf57600;
+	use scheduler::PartsOf57600;
 
 	#[benchmark]
 	fn request_revenue_at() {
@@ -41,7 +41,7 @@ mod benchmarks {
 			T::MaxHistoricalRevenue,
 		> = BoundedVec::try_from((1..=mhr).map(|v| minimum_balance * v.into()).collect::<Vec<_>>())
 			.unwrap();
-		on_demand::Revenue::<T>::put(rev);
+		on_demand::Pezpallet::<T>::set_revenue(rev);
 
 		crate::paras::Heads::<T>::insert(ParaId::from(T::BrokerId::get()), vec![1, 2, 3]);
 

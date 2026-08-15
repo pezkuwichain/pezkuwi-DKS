@@ -8,18 +8,18 @@ use pezframe_support::{
 	weights::IdentityFee,
 };
 
-use pezsnowbridge_core::{
-	gwei, meth,
-	pricing::{PricingParameters, Rewards},
-	ParaId, PRIMARY_GOVERNANCE_CHANNEL,
-};
-use pezsnowbridge_outbound_queue_primitives::v1::*;
 use pezsp_core::{ConstU32, ConstU8, H160, H256};
 use pezsp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup, Keccak256},
 	AccountId32, BuildStorage, FixedU128,
 };
 use pezsp_std::marker::PhantomData;
+use snowbridge_core::{
+	gwei, meth,
+	pricing::{PricingParameters, Rewards},
+	ParaId, PRIMARY_GOVERNANCE_CHANNEL,
+};
+use snowbridge_outbound_queue_primitives::v1::*;
 
 type Block = pezframe_system::mocking::MockBlock<Test>;
 type AccountId = AccountId32;
@@ -73,12 +73,12 @@ parameter_types! {
 	pub Parameters: PricingParameters<u128> = PricingParameters {
 		exchange_rate: FixedU128::from_rational(1, 400),
 		fee_per_gas: gwei(20),
-		rewards: Rewards { local: HEZ, remote: meth(1) },
+		rewards: Rewards { local: DOT, remote: meth(1) },
 		multiplier: FixedU128::from_rational(4, 3),
 	};
 }
 
-pub const HEZ: u128 = 10_000_000_000;
+pub const DOT: u128 = 10_000_000_000;
 
 impl crate::Config for Test {
 	type RuntimeEvent = RuntimeEvent;

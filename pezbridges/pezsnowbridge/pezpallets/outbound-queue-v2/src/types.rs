@@ -3,10 +3,11 @@
 use super::Pezpallet;
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezframe_support::traits::ProcessMessage;
-pub use pezsnowbridge_merkle_tree::MerkleProof;
 use pezsp_core::H256;
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
+pub use snowbridge_merkle_tree::MerkleProof;
+use Debug;
 
 pub type ProcessMessageOriginOf<T> = <Pezpallet<T> as ProcessMessage>::Origin;
 

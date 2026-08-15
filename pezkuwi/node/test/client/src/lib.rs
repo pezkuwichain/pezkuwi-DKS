@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -107,7 +107,7 @@ mod tests {
 	fn ensure_test_client_can_build_and_import_block() {
 		let client = TestClientBuilder::new().build();
 
-		let block_builder = client.init_pezkuwi_block_builder();
+		let block_builder = client.init_polkadot_block_builder();
 		let block = block_builder.build().expect("Finalizes the block").block;
 
 		futures::executor::block_on(client.import(BlockOrigin::Own, block))
@@ -124,8 +124,8 @@ mod tests {
 			pezsp_keyring::Sr25519Keyring::Bob,
 			1000,
 		);
-		let mut block_builder = client.init_pezkuwi_block_builder();
-		block_builder.push_pezkuwi_extrinsic(transfer).expect("Pushes extrinsic");
+		let mut block_builder = client.init_polkadot_block_builder();
+		block_builder.push_polkadot_extrinsic(transfer).expect("Pushes extrinsic");
 
 		let block = block_builder.build().expect("Finalizes the block").block;
 

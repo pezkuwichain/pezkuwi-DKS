@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -69,18 +69,18 @@ impl<RuntimeOrigin: OriginTrait> ConvertOrigin<RuntimeOrigin> for ParentAsSuperu
 	}
 }
 
-pub struct ChildSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>(
+pub struct ChildSystemParachainAsSuperuser<ParaId, RuntimeOrigin>(
 	PhantomData<(ParaId, RuntimeOrigin)>,
 );
 impl<ParaId: IsSystem + From<u32>, RuntimeOrigin: OriginTrait> ConvertOrigin<RuntimeOrigin>
-	for ChildSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>
+	for ChildSystemParachainAsSuperuser<ParaId, RuntimeOrigin>
 {
 	fn convert_origin(
 		origin: impl Into<Location>,
 		kind: OriginKind,
 	) -> Result<RuntimeOrigin, Location> {
 		let origin = origin.into();
-		tracing::trace!(target: "xcm::origin_conversion", ?origin, ?kind, "ChildSystemTeyrchainAsSuperuser",);
+		tracing::trace!(target: "xcm::origin_conversion", ?origin, ?kind, "ChildSystemParachainAsSuperuser",);
 		match (kind, origin.unpack()) {
 			(OriginKind::Superuser, (0, [Junction::Teyrchain(id)]))
 				if ParaId::from(*id).is_system() =>
@@ -92,11 +92,11 @@ impl<ParaId: IsSystem + From<u32>, RuntimeOrigin: OriginTrait> ConvertOrigin<Run
 	}
 }
 
-pub struct SiblingSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>(
+pub struct SiblingSystemParachainAsSuperuser<ParaId, RuntimeOrigin>(
 	PhantomData<(ParaId, RuntimeOrigin)>,
 );
 impl<ParaId: IsSystem + From<u32>, RuntimeOrigin: OriginTrait> ConvertOrigin<RuntimeOrigin>
-	for SiblingSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>
+	for SiblingSystemParachainAsSuperuser<ParaId, RuntimeOrigin>
 {
 	fn convert_origin(
 		origin: impl Into<Location>,
@@ -106,7 +106,7 @@ impl<ParaId: IsSystem + From<u32>, RuntimeOrigin: OriginTrait> ConvertOrigin<Run
 		tracing::trace!(
 			target: "xcm::origin_conversion",
 			?origin, ?kind,
-			"SiblingSystemTeyrchainAsSuperuser",
+			"SiblingSystemParachainAsSuperuser",
 		);
 		match (kind, origin.unpack()) {
 			(OriginKind::Superuser, (1, [Junction::Teyrchain(id)]))
@@ -119,18 +119,18 @@ impl<ParaId: IsSystem + From<u32>, RuntimeOrigin: OriginTrait> ConvertOrigin<Run
 	}
 }
 
-pub struct ChildTeyrchainAsNative<TeyrchainOrigin, RuntimeOrigin>(
+pub struct ChildParachainAsNative<TeyrchainOrigin, RuntimeOrigin>(
 	PhantomData<(TeyrchainOrigin, RuntimeOrigin)>,
 );
 impl<TeyrchainOrigin: From<u32>, RuntimeOrigin: From<TeyrchainOrigin>> ConvertOrigin<RuntimeOrigin>
-	for ChildTeyrchainAsNative<TeyrchainOrigin, RuntimeOrigin>
+	for ChildParachainAsNative<TeyrchainOrigin, RuntimeOrigin>
 {
 	fn convert_origin(
 		origin: impl Into<Location>,
 		kind: OriginKind,
 	) -> Result<RuntimeOrigin, Location> {
 		let origin = origin.into();
-		tracing::trace!(target: "xcm::origin_conversion", ?origin, ?kind, "ChildTeyrchainAsNative");
+		tracing::trace!(target: "xcm::origin_conversion", ?origin, ?kind, "ChildParachainAsNative");
 		match (kind, origin.unpack()) {
 			(OriginKind::Native, (0, [Junction::Teyrchain(id)])) => {
 				Ok(RuntimeOrigin::from(TeyrchainOrigin::from(*id)))
@@ -140,11 +140,11 @@ impl<TeyrchainOrigin: From<u32>, RuntimeOrigin: From<TeyrchainOrigin>> ConvertOr
 	}
 }
 
-pub struct SiblingTeyrchainAsNative<TeyrchainOrigin, RuntimeOrigin>(
+pub struct SiblingParachainAsNative<TeyrchainOrigin, RuntimeOrigin>(
 	PhantomData<(TeyrchainOrigin, RuntimeOrigin)>,
 );
 impl<TeyrchainOrigin: From<u32>, RuntimeOrigin: From<TeyrchainOrigin>> ConvertOrigin<RuntimeOrigin>
-	for SiblingTeyrchainAsNative<TeyrchainOrigin, RuntimeOrigin>
+	for SiblingParachainAsNative<TeyrchainOrigin, RuntimeOrigin>
 {
 	fn convert_origin(
 		origin: impl Into<Location>,
@@ -154,7 +154,7 @@ impl<TeyrchainOrigin: From<u32>, RuntimeOrigin: From<TeyrchainOrigin>> ConvertOr
 		tracing::trace!(
 			target: "xcm::origin_conversion",
 			?origin, ?kind,
-			"SiblingTeyrchainAsNative",
+			"SiblingParachainAsNative",
 		);
 		match (kind, origin.unpack()) {
 			(OriginKind::Native, (1, [Junction::Teyrchain(id)])) => {
@@ -301,8 +301,8 @@ where
 /// `Convert` implementation to convert from some an origin which implements `Backing` into a
 /// corresponding `Plurality` `Location`.
 ///
-/// Typically used when configuring `pezpallet-xcm` for allowing a collective's Origin to dispatch
-/// an XCM from a `Plurality` origin.
+/// Typically used when configuring `pezpallet-xcm` for allowing a collective's Origin to dispatch an
+/// XCM from a `Plurality` origin.
 pub struct BackingToPlurality<RuntimeOrigin, COrigin, Body>(
 	PhantomData<(RuntimeOrigin, COrigin, Body)>,
 );

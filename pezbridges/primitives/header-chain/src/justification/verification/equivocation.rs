@@ -28,7 +28,7 @@ use crate::{
 	ChainWithGrandpa, FindEquivocations,
 };
 
-use pezbp_runtime::{BlockNumberOf, HashOf, HeaderOf};
+use bp_runtime::{BlockNumberOf, HashOf, HeaderOf};
 use pezsp_consensus_grandpa::{AuthorityId, AuthoritySignature, EquivocationProof, Precommit};
 use pezsp_runtime::traits::Header as HeaderT;
 use pezsp_std::{

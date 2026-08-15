@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,10 +17,10 @@
 //! Runtime declaration of the teyrchain metrics.
 
 use pezkuwi_primitives::metric_definitions::{
-	TEYRCHAIN_CREATE_INHERENT_BITFIELDS_SIGNATURE_CHECKS,
-	TEYRCHAIN_INHERENT_DATA_BITFIELDS_PROCESSED, TEYRCHAIN_INHERENT_DATA_CANDIDATES_PROCESSED,
-	TEYRCHAIN_INHERENT_DATA_DISPUTE_SETS_PROCESSED, TEYRCHAIN_INHERENT_DATA_WEIGHT,
-	TEYRCHAIN_VERIFY_DISPUTE_SIGNATURE,
+	PARACHAIN_CREATE_INHERENT_BITFIELDS_SIGNATURE_CHECKS,
+	PARACHAIN_INHERENT_DATA_BITFIELDS_PROCESSED, PARACHAIN_INHERENT_DATA_CANDIDATES_PROCESSED,
+	PARACHAIN_INHERENT_DATA_DISPUTE_SETS_PROCESSED, PARACHAIN_INHERENT_DATA_WEIGHT,
+	PARACHAIN_VERIFY_DISPUTE_SIGNATURE,
 };
 use pezkuwi_runtime_metrics::{Counter, CounterVec, Histogram};
 
@@ -103,12 +103,12 @@ impl Metrics {
 }
 
 pub const METRICS: Metrics = Metrics {
-	inherent_data_weight: CounterVec::new(TEYRCHAIN_INHERENT_DATA_WEIGHT),
-	bitfields_processed: Counter::new(TEYRCHAIN_INHERENT_DATA_BITFIELDS_PROCESSED),
-	candidates_processed: CounterVec::new(TEYRCHAIN_INHERENT_DATA_CANDIDATES_PROCESSED),
-	dispute_sets_processed: CounterVec::new(TEYRCHAIN_INHERENT_DATA_DISPUTE_SETS_PROCESSED),
+	inherent_data_weight: CounterVec::new(PARACHAIN_INHERENT_DATA_WEIGHT),
+	bitfields_processed: Counter::new(PARACHAIN_INHERENT_DATA_BITFIELDS_PROCESSED),
+	candidates_processed: CounterVec::new(PARACHAIN_INHERENT_DATA_CANDIDATES_PROCESSED),
+	dispute_sets_processed: CounterVec::new(PARACHAIN_INHERENT_DATA_DISPUTE_SETS_PROCESSED),
 	bitfields_signature_checks: CounterVec::new(
-		TEYRCHAIN_CREATE_INHERENT_BITFIELDS_SIGNATURE_CHECKS,
+		PARACHAIN_CREATE_INHERENT_BITFIELDS_SIGNATURE_CHECKS,
 	),
-	signature_timings: Histogram::new(TEYRCHAIN_VERIFY_DISPUTE_SIGNATURE),
+	signature_timings: Histogram::new(PARACHAIN_VERIFY_DISPUTE_SIGNATURE),
 };

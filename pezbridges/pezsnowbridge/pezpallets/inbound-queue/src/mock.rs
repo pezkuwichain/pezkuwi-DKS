@@ -4,29 +4,29 @@ use super::*;
 
 use hex_literal::hex;
 use pezframe_support::{derive_impl, parameter_types, traits::ConstU32, weights::IdentityFee};
-use pezsnowbridge_beacon_primitives::{
-	types::deneb, BeaconHeader, ExecutionProof, Fork, ForkVersions, VersionedExecutionPayloadHeader,
-};
-use pezsnowbridge_core::{
-	gwei, meth, Channel, ChannelId, PricingParameters, Rewards, StaticLookup, TokenId,
-};
-use pezsnowbridge_inbound_queue_primitives::{v1::MessageToXcm, Log, Proof, VerificationError};
 use pezsp_core::{H160, H256};
 use pezsp_runtime::{
 	traits::{IdentifyAccount, IdentityLookup, MaybeConvert, Verify},
 	BuildStorage, FixedU128, MultiSignature,
 };
 use pezsp_std::{convert::From, default::Default};
+use snowbridge_beacon_primitives::{
+	types::deneb, BeaconHeader, ExecutionProof, Fork, ForkVersions, VersionedExecutionPayloadHeader,
+};
+use snowbridge_core::{
+	gwei, meth, Channel, ChannelId, PricingParameters, Rewards, StaticLookup, TokenId,
+};
+use snowbridge_inbound_queue_primitives::{v1::MessageToXcm, Log, Proof, VerificationError};
 use xcm::{
-	latest::{SendXcm, ZAGROS_GENESIS_HASH},
+	latest::{SendXcm, WESTEND_GENESIS_HASH},
 	prelude::*,
 };
 use xcm_executor::AssetsInHolding;
 
 #[cfg(feature = "runtime-benchmarks")]
-use pezsnowbridge_inbound_queue_primitives::EventFixture;
+use snowbridge_inbound_queue_primitives::EventFixture;
 #[cfg(feature = "runtime-benchmarks")]
-use pezsnowbridge_pezpallet_inbound_queue_fixtures::register_token::make_register_token_message;
+use snowbridge_pallet_inbound_queue_fixtures::register_token::make_register_token_message;
 
 use crate::{self as inbound_queue};
 
@@ -37,7 +37,7 @@ pezframe_support::construct_runtime!(
 	{
 		System: pezframe_system::{Pezpallet, Call, Storage, Event<T>},
 		Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
-		EthereumBeaconClient: pezsnowbridge_pezpallet_ethereum_client::{Pezpallet, Call, Storage, Event<T>},
+		EthereumBeaconClient: snowbridge_pallet_ethereum_client::{Pezpallet, Call, Storage, Event<T>},
 		InboundQueue: inbound_queue::{Pezpallet, Call, Storage, Event<T>},
 	}
 );
@@ -99,7 +99,7 @@ parameter_types! {
 	};
 }
 
-impl pezsnowbridge_pezpallet_ethereum_client::Config for Test {
+impl snowbridge_pallet_ethereum_client::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type ForkVersions = ChainForkVersions;
 	type FreeHeadersInterval = ConstU32<32>;
@@ -127,12 +127,12 @@ parameter_types! {
 	pub const InitialFund: u128 = 1_000_000_000_000;
 	pub const InboundQueuePalletInstance: u8 = 80;
 	pub UniversalLocation: InteriorLocation =
-		[GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)), Teyrchain(1002)].into();
-	pub AssetHubFromEthereum: Location = Location::new(1,[GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)),Teyrchain(1000)]);
+		[GlobalConsensus(ByGenesis(WESTEND_GENESIS_HASH)), Teyrchain(1002)].into();
+	pub AssetHubFromEthereum: Location = Location::new(1,[GlobalConsensus(ByGenesis(WESTEND_GENESIS_HASH)),Teyrchain(1000)]);
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<T: pezsnowbridge_pezpallet_ethereum_client::Config> BenchmarkHelper<T> for Test {
+impl<T: snowbridge_pallet_ethereum_client::Config> BenchmarkHelper<T> for Test {
 	fn initialize_storage() -> EventFixture {
 		make_register_token_message()
 	}
@@ -169,12 +169,12 @@ parameter_types! {
 	pub Parameters: PricingParameters<u128> = PricingParameters {
 		exchange_rate: FixedU128::from_rational(1, 400),
 		fee_per_gas: gwei(20),
-		rewards: Rewards { local: HEZ, remote: meth(1) },
+		rewards: Rewards { local: DOT, remote: meth(1) },
 		multiplier: FixedU128::from_rational(1, 1),
 	};
 }
 
-pub const HEZ: u128 = 10_000_000_000;
+pub const DOT: u128 = 10_000_000_000;
 
 pub struct MockChannelLookup;
 impl StaticLookup for MockChannelLookup {
@@ -201,16 +201,24 @@ impl TransactAsset for SuccessfulTransactor {
 		Ok(())
 	}
 
-	fn deposit_asset(_what: &Asset, _who: &Location, _context: Option<&XcmContext>) -> XcmResult {
+	fn deposit_asset(
+		_what: AssetsInHolding,
+		_who: &Location,
+		_context: Option<&XcmContext>,
+	) -> Result<(), (AssetsInHolding, XcmError)> {
 		Ok(())
 	}
 
 	fn withdraw_asset(
-		_what: &Asset,
+		what: &Asset,
 		_who: &Location,
 		_context: Option<&XcmContext>,
 	) -> Result<AssetsInHolding, XcmError> {
-		Ok(AssetsInHolding::default())
+		Ok(xcm_executor::test_helpers::mock_asset_to_holding(what.clone()))
+	}
+
+	fn mint_asset(what: &Asset, _context: &XcmContext) -> Result<AssetsInHolding, XcmError> {
+		Ok(xcm_executor::test_helpers::mock_asset_to_holding(what.clone()))
 	}
 
 	fn internal_transfer_asset(
@@ -218,8 +226,8 @@ impl TransactAsset for SuccessfulTransactor {
 		_from: &Location,
 		_to: &Location,
 		_context: &XcmContext,
-	) -> Result<AssetsInHolding, XcmError> {
-		Ok(AssetsInHolding::default())
+	) -> Result<Asset, XcmError> {
+		Ok(_what.clone())
 	}
 }
 
@@ -295,6 +303,7 @@ pub fn mock_event_log() -> Log {
         ],
         // Nonce + Payload
         data: hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000002e000f000000000000000087d1f7fdfee7f651fabc8bfcb6e086c278b77a7d00e40b54020000000000000000000000000000000000000000000000000000000000").into(),
+        tx_index: 0,
     }
 }
 
@@ -308,6 +317,7 @@ pub fn mock_event_log_invalid_channel() -> Log {
             hex!("5f7060e971b0dc81e63f0aa41831091847d97c1a4693ac450cc128c7214e65e0").into(),
         ],
         data: hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001e000f000000000000000087d1f7fdfee7f651fabc8bfcb6e086c278b77a7d0000").into(),
+        tx_index: 0,
     }
 }
 
@@ -324,6 +334,7 @@ pub fn mock_event_log_invalid_gateway() -> Log {
         ],
         // Nonce + Payload
         data: hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000001e000f000000000000000087d1f7fdfee7f651fabc8bfcb6e086c278b77a7d0000").into(),
+        tx_index: 0,
     }
 }
 

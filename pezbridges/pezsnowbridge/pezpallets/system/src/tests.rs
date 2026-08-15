@@ -3,9 +3,9 @@
 use crate::{mock::*, *};
 use hex_literal::hex;
 use pezframe_support::{assert_noop, assert_ok};
-use pezsnowbridge_core::eth;
 use pezsp_core::H256;
 use pezsp_runtime::{AccountId32, DispatchError::BadOrigin};
+use snowbridge_core::eth;
 
 #[test]
 fn test_agent_for_here() {
@@ -214,17 +214,17 @@ pub struct RegisterTokenTestCase {
 #[test]
 fn register_all_tokens_succeeds() {
 	let test_cases = vec![
-		// HEZ
+		// DOT
 		RegisterTokenTestCase {
 			native: Location::parent(),
-			reanchored: Location::new(1, GlobalConsensus(Pezkuwi)),
+			reanchored: Location::new(1, GlobalConsensus(Polkadot)),
 			foreign: hex!("4e241583d94b5d48a27a22064cd49b2ed6f5231d2d950e432f9b7c2e0ade52b2")
 				.into(),
 		},
 		// GLMR (Some Pezkuwi teyrchain currency)
 		RegisterTokenTestCase {
 			native: Location::new(1, [Teyrchain(2004)]),
-			reanchored: Location::new(1, [GlobalConsensus(Pezkuwi), Teyrchain(2004)]),
+			reanchored: Location::new(1, [GlobalConsensus(Polkadot), Teyrchain(2004)]),
 			foreign: hex!("34c08fc90409b6924f0e8eabb7c2aaa0c749e23e31adad9f6d217b577737fafb")
 				.into(),
 		},
@@ -233,22 +233,27 @@ fn register_all_tokens_succeeds() {
 			native: Location::new(1, [Teyrchain(1000), PalletInstance(50), GeneralIndex(1984)]),
 			reanchored: Location::new(
 				1,
-				[GlobalConsensus(Pezkuwi), Teyrchain(1000), PalletInstance(50), GeneralIndex(1984)],
+				[
+					GlobalConsensus(Polkadot),
+					Teyrchain(1000),
+					PalletInstance(50),
+					GeneralIndex(1984),
+				],
 			),
 			foreign: hex!("14b0579be12d7d7f9971f1d4b41f0e88384b9b74799b0150d4aa6cd01afb4444")
 				.into(),
 		},
-		// DCL
+		// KSM
 		RegisterTokenTestCase {
-			native: Location::new(2, [GlobalConsensus(Dicle)]),
-			reanchored: Location::new(1, [GlobalConsensus(Dicle)]),
+			native: Location::new(2, [GlobalConsensus(Kusama)]),
+			reanchored: Location::new(1, [GlobalConsensus(Kusama)]),
 			foreign: hex!("03b6054d0c576dd8391e34e1609cf398f68050c23009d19ce93c000922bcd852")
 				.into(),
 		},
 		// KAR (Some Dicle teyrchain currency)
 		RegisterTokenTestCase {
-			native: Location::new(2, [GlobalConsensus(Dicle), Teyrchain(2000)]),
-			reanchored: Location::new(1, [GlobalConsensus(Dicle), Teyrchain(2000)]),
+			native: Location::new(2, [GlobalConsensus(Kusama), Teyrchain(2000)]),
+			reanchored: Location::new(1, [GlobalConsensus(Kusama), Teyrchain(2000)]),
 			foreign: hex!("d3e39ad6ea4cee68c9741181e94098823b2ea34a467577d0875c036f0fce5be0")
 				.into(),
 		},
@@ -299,17 +304,17 @@ fn register_ethereum_native_token_fails() {
 #[test]
 fn check_pna_token_id_compatibility() {
 	let test_cases = vec![
-		// HEZ
+		// DOT
 		RegisterTokenTestCase {
 			native: Location::parent(),
-			reanchored: Location::new(1, GlobalConsensus(Pezkuwi)),
+			reanchored: Location::new(1, GlobalConsensus(Polkadot)),
 			foreign: hex!("4e241583d94b5d48a27a22064cd49b2ed6f5231d2d950e432f9b7c2e0ade52b2")
 				.into(),
 		},
 		// GLMR (Some Pezkuwi teyrchain currency)
 		RegisterTokenTestCase {
 			native: Location::new(1, [Teyrchain(2004)]),
-			reanchored: Location::new(1, [GlobalConsensus(Pezkuwi), Teyrchain(2004)]),
+			reanchored: Location::new(1, [GlobalConsensus(Polkadot), Teyrchain(2004)]),
 			foreign: hex!("34c08fc90409b6924f0e8eabb7c2aaa0c749e23e31adad9f6d217b577737fafb")
 				.into(),
 		},
@@ -318,22 +323,27 @@ fn check_pna_token_id_compatibility() {
 			native: Location::new(1, [Teyrchain(1000), PalletInstance(50), GeneralIndex(1984)]),
 			reanchored: Location::new(
 				1,
-				[GlobalConsensus(Pezkuwi), Teyrchain(1000), PalletInstance(50), GeneralIndex(1984)],
+				[
+					GlobalConsensus(Polkadot),
+					Teyrchain(1000),
+					PalletInstance(50),
+					GeneralIndex(1984),
+				],
 			),
 			foreign: hex!("14b0579be12d7d7f9971f1d4b41f0e88384b9b74799b0150d4aa6cd01afb4444")
 				.into(),
 		},
-		// DCL
+		// KSM
 		RegisterTokenTestCase {
-			native: Location::new(2, [GlobalConsensus(Dicle)]),
-			reanchored: Location::new(1, [GlobalConsensus(Dicle)]),
+			native: Location::new(2, [GlobalConsensus(Kusama)]),
+			reanchored: Location::new(1, [GlobalConsensus(Kusama)]),
 			foreign: hex!("03b6054d0c576dd8391e34e1609cf398f68050c23009d19ce93c000922bcd852")
 				.into(),
 		},
 		// KAR (Some Dicle teyrchain currency)
 		RegisterTokenTestCase {
-			native: Location::new(2, [GlobalConsensus(Dicle), Teyrchain(2000)]),
-			reanchored: Location::new(1, [GlobalConsensus(Dicle), Teyrchain(2000)]),
+			native: Location::new(2, [GlobalConsensus(Kusama), Teyrchain(2000)]),
+			reanchored: Location::new(1, [GlobalConsensus(Kusama), Teyrchain(2000)]),
 			foreign: hex!("d3e39ad6ea4cee68c9741181e94098823b2ea34a467577d0875c036f0fce5be0")
 				.into(),
 		},

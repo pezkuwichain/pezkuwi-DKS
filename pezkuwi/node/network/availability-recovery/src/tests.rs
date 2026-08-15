@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ use pezkuwi_node_network_protocol::request_response::{
 	IncomingRequest, Protocol, Recipient, ReqProtocolNames, Requests,
 };
 
+use pezkuwi_node_primitives::{BlockData, ErasureChunk, PoV, Proof};
 use pezkuwi_node_subsystem::messages::{
 	AllMessages, NetworkBridgeTxMessage, RuntimeApiMessage, RuntimeApiRequest,
 };
@@ -39,9 +40,8 @@ use pezkuwi_node_subsystem_test_helpers::{
 	TestSubsystemContextHandle,
 };
 use pezkuwi_node_subsystem_util::TimeoutExt;
-use pezkuwi_pez_node_primitives::{BlockData, ErasureChunk, PoV, Proof};
 use pezkuwi_primitives::{
-	node_features, AuthorityDiscoveryId, Block, ExecutorParams, Hash, HeadData, IndexedVec,
+	node_features, ApprovalVotingParams, AuthorityDiscoveryId, Block, Hash, HeadData, IndexedVec,
 	MutateDescriptorV2, NodeFeatures, PersistedValidationData, SessionInfo, ValidatorId,
 };
 use pezkuwi_primitives_test_helpers::{dummy_candidate_receipt, dummy_hash};
@@ -403,21 +403,6 @@ impl TestState {
 				}))).unwrap();
 			}
 		);
-		assert_matches!(
-			overseer_recv(virtual_overseer).await,
-			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-				relay_parent,
-				RuntimeApiRequest::SessionExecutorParams(
-					session_index,
-					tx,
-				)
-			)) => {
-				assert_eq!(relay_parent, self.current);
-				assert_eq!(session_index, self.session_index);
-
-				tx.send(Ok(Some(ExecutorParams::new()))).unwrap();
-			}
-		);
 	}
 
 	async fn test_runtime_api_node_features(&self, virtual_overseer: &mut VirtualOverseer) {
@@ -433,6 +418,19 @@ impl TestState {
 				tx.send(Ok(
 					self.node_features.clone()
 				)).unwrap();
+			}
+		);
+
+		assert_matches!(
+			overseer_recv(virtual_overseer).await,
+			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+				_relay_parent,
+				RuntimeApiRequest::ApprovalVotingParams(
+					_,
+					tx,
+				)
+			)) => {
+				tx.send(Ok(ApprovalVotingParams::default())).unwrap();
 			}
 		);
 	}

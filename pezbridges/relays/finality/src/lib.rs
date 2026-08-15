@@ -28,7 +28,7 @@ pub use crate::{
 	sync_loop_metrics::SyncLoopMetrics,
 };
 
-use pezbp_header_pez_chain::ConsensusLogReader;
+use bp_header_chain::ConsensusLogReader;
 use relay_utils::{FailedClient, MaybeConnectionError};
 use std::fmt::Debug;
 

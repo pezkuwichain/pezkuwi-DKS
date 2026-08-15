@@ -14,15 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Integrity tests for chain constants and pallets configuration.
+//! Integrity tests for chain constants and pezpallets configuration.
 //!
 //! Most of the tests in this module assume that the bridge is using standard (see `crate::messages`
 //! module for details) configuration.
 
+use bp_header_chain::ChainWithGrandpa;
+use bp_messages::{ChainWithMessages, InboundLaneData, MessageNonce};
+use bp_runtime::{AccountIdOf, Chain};
 use codec::Encode;
-use pezbp_header_pez_chain::ChainWithGrandpa;
-use pezbp_messages::{ChainWithMessages, InboundLaneData, MessageNonce};
-use pezbp_runtime::{AccountIdOf, Chain};
 use pezframe_support::{storage::generator::StorageValue, traits::Get, weights::Weight};
 use pezframe_system::limits;
 use pezpallet_bridge_messages::{ThisChainOf, WeightInfoExt as _};
@@ -46,18 +46,18 @@ macro_rules! assert_chain_types(
 			// configuration is used), or something has broke existing configuration (meaning that all bridged chains
 			// and relays will stop functioning)
 
-			assert_type_eq_all!(<$r as SystemConfig>::Nonce, pezbp_runtime::NonceOf<$this>);
-			assert_type_eq_all!(BlockNumberFor<$r>, pezbp_runtime::BlockNumberOf<$this>);
-			assert_type_eq_all!(<$r as SystemConfig>::Hash, pezbp_runtime::HashOf<$this>);
-			assert_type_eq_all!(<$r as SystemConfig>::Hashing, pezbp_runtime::HasherOf<$this>);
-			assert_type_eq_all!(<$r as SystemConfig>::AccountId, pezbp_runtime::AccountIdOf<$this>);
-			assert_type_eq_all!(HeaderFor<$r>, pezbp_runtime::HeaderOf<$this>);
+			assert_type_eq_all!(<$r as SystemConfig>::Nonce, bp_runtime::NonceOf<$this>);
+			assert_type_eq_all!(BlockNumberFor<$r>, bp_runtime::BlockNumberOf<$this>);
+			assert_type_eq_all!(<$r as SystemConfig>::Hash, bp_runtime::HashOf<$this>);
+			assert_type_eq_all!(<$r as SystemConfig>::Hashing, bp_runtime::HasherOf<$this>);
+			assert_type_eq_all!(<$r as SystemConfig>::AccountId, bp_runtime::AccountIdOf<$this>);
+			assert_type_eq_all!(HeaderFor<$r>, bp_runtime::HeaderOf<$this>);
 		}
 	}
 );
 
-/// Macro that ensures that the bridge messages pezpallet is configured properly to bridge using
-/// given configuration.
+/// Macro that ensures that the bridge messages pezpallet is configured properly to bridge using given
+/// configuration.
 #[macro_export]
 macro_rules! assert_bridge_messages_pallet_types(
 	(
@@ -69,8 +69,8 @@ macro_rules! assert_bridge_messages_pallet_types(
 	) => {
 		{
 			use $crate::integrity::__private::static_assertions::assert_type_eq_all;
-			use pezbp_messages::ChainWithMessages;
-			use pezbp_runtime::Chain;
+			use bp_messages::ChainWithMessages;
+			use bp_runtime::Chain;
 			use pezpallet_bridge_messages::Config as BridgeMessagesConfig;
 
 			// if one of asserts fail, then either bridge isn't configured properly (or alternatively - non-standard
@@ -88,7 +88,7 @@ macro_rules! assert_bridge_messages_pallet_types(
 
 /// Macro that combines four other macro calls - `assert_chain_types`, `assert_bridge_types`,
 /// and `assert_bridge_messages_pallet_types`. It may be used
-/// at the chain that is implementing standard messages bridge with messages pallets deployed.
+/// at the chain that is implementing standard messages bridge with messages pezpallets deployed.
 #[macro_export]
 macro_rules! assert_complete_bridge_types(
 	(
@@ -193,8 +193,8 @@ struct AssertBridgeGrandpaPalletNames<'a> {
 	pub with_bridged_chain_grandpa_pallet_name: &'a str,
 }
 
-/// Tests that bridge pezpallet names used in `construct_runtime!()` macro call are matching
-/// constants from chain primitives crates.
+/// Tests that bridge pezpallet names used in `construct_runtime!()` macro call are matching constants
+/// from chain primitives crates.
 fn assert_bridge_grandpa_pallet_names<R, GI>(params: AssertBridgeGrandpaPalletNames)
 where
 	R: pezpallet_bridge_grandpa::Config<GI>,
@@ -202,16 +202,16 @@ where
 {
 	// check that the bridge GRANDPA pezpallet has required name
 	assert_eq!(
-		pezpallet_bridge_grandpa::PalletOwner::<R, GI>::storage_value_final_key().to_vec(),
-		pezbp_runtime::storage_value_key(
-			params.with_bridged_chain_grandpa_pallet_name,
-			"PalletOwner",
-		)
-		.0,
-	);
+			pezpallet_bridge_grandpa::PalletOwner::<R, GI>::storage_value_final_key().to_vec(),
+			bp_runtime::storage_value_key(
+				params.with_bridged_chain_grandpa_pallet_name,
+				"PalletOwner",
+			)
+			.0,
+		);
 	assert_eq!(
 		pezpallet_bridge_grandpa::PalletOperatingMode::<R, GI>::storage_value_final_key().to_vec(),
-		pezbp_runtime::storage_value_key(
+		bp_runtime::storage_value_key(
 			params.with_bridged_chain_grandpa_pallet_name,
 			"PalletOperatingMode",
 		)
@@ -227,8 +227,8 @@ struct AssertBridgeMessagesPalletNames<'a> {
 	pub with_bridged_chain_messages_pallet_name: &'a str,
 }
 
-/// Tests that bridge pezpallet names used in `construct_runtime!()` macro call are matching
-/// constants from chain primitives crates.
+/// Tests that bridge pezpallet names used in `construct_runtime!()` macro call are matching constants
+/// from chain primitives crates.
 fn assert_bridge_messages_pallet_names<R, MI>(params: AssertBridgeMessagesPalletNames)
 where
 	R: pezpallet_bridge_messages::Config<MI>,
@@ -237,7 +237,7 @@ where
 	// check that the bridge messages pezpallet has required name
 	assert_eq!(
 		pezpallet_bridge_messages::PalletOwner::<R, MI>::storage_value_final_key().to_vec(),
-		pezbp_runtime::storage_value_key(
+		bp_runtime::storage_value_key(
 			params.with_bridged_chain_messages_pallet_name,
 			"PalletOwner",
 		)
@@ -245,7 +245,7 @@ where
 	);
 	assert_eq!(
 		pezpallet_bridge_messages::PalletOperatingMode::<R, MI>::storage_value_final_key().to_vec(),
-		pezbp_runtime::storage_value_key(
+		bp_runtime::storage_value_key(
 			params.with_bridged_chain_messages_pallet_name,
 			"PalletOperatingMode",
 		)
@@ -261,7 +261,7 @@ pub struct AssertCompleteBridgeConstants {
 }
 
 /// All bridge-related constants tests for the complete standard relay-chain messages bridge
-/// (i.e. with bridge GRANDPA and messages pallets deployed).
+/// (i.e. with bridge GRANDPA and messages pezpallets deployed).
 pub fn assert_complete_with_relay_chain_bridge_constants<R, GI, MI>(
 	params: AssertCompleteBridgeConstants,
 ) where
@@ -285,7 +285,7 @@ pub fn assert_complete_with_relay_chain_bridge_constants<R, GI, MI>(
 }
 
 /// All bridge-related constants tests for the complete standard teyrchain messages bridge
-/// (i.e. with bridge GRANDPA, teyrchains and messages pallets deployed).
+/// (i.e. with bridge GRANDPA, teyrchains and messages pezpallets deployed).
 pub fn assert_complete_with_teyrchain_bridge_constants<R, PI, MI>(
 	params: AssertCompleteBridgeConstants,
 ) where
@@ -316,7 +316,7 @@ pub fn assert_complete_with_teyrchain_bridge_constants<R, PI, MI>(
 }
 
 /// All bridge-related constants tests for the standalone messages bridge deployment (only with
-/// messages pallets deployed).
+/// messages pezpallets deployed).
 pub fn assert_standalone_messages_bridge_constants<R, MI>(params: AssertCompleteBridgeConstants)
 where
 	R: pezframe_system::Config + pezpallet_bridge_messages::Config<MI>,
@@ -339,7 +339,7 @@ pub fn check_message_lane_weights<
 	bridged_chain_extra_storage_proof_size: u32,
 	this_chain_max_unrewarded_relayers: MessageNonce,
 	this_chain_max_unconfirmed_messages: MessageNonce,
-	// whether `RefundBridgedTeyrchainMessages` extension is deployed at runtime and is used for
+	// whether `RefundBridgedParachainMessages` extension is deployed at runtime and is used for
 	// refunding this bridge transactions?
 	//
 	// in other words: pass true for all known production chains
@@ -383,7 +383,7 @@ pub fn check_message_lane_weights<
 	);
 
 	// check that extra weights of delivery/confirmation transactions include the weight
-	// of `RefundBridgedTeyrchainMessages` operations. This signed extension assumes the worst case
+	// of `RefundBridgedParachainMessages` operations. This signed extension assumes the worst case
 	// (i.e. slashing if delivery transaction was invalid) and refunds some weight if
 	// assumption was wrong (i.e. if we did refund instead of slashing). This check
 	// ensures the extension will not refund weight when it doesn't need to (i.e. if pezpallet

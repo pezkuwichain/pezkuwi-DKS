@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! White labeled pezkuwi omni-node.
+//! White labeled polkadot omni-node.
 //!
 //! For documentation, see [`pezkuwi_omni_node_lib`].
 
 #![warn(missing_docs)]
 #![warn(unused_extern_crates)]
+
+// Force the linker to keep the pezkuwi_jemalloc_shim crate (and its #[global_allocator]).
+#[cfg(target_os = "linux")]
+extern crate pezkuwi_jemalloc_shim;
 
 use pezkuwi_omni_node_lib::{
 	chain_spec::DiskChainSpecLoader, extra_subcommand::NoExtraSubcommand, run_with_custom_cli,
@@ -30,7 +34,7 @@ struct CliConfig;
 
 impl CliConfigT for CliConfig {
 	fn impl_version() -> String {
-		let commit_hash = env!("BIZINIKIWI_CLI_COMMIT_HASH");
+		let commit_hash = env!("SUBSTRATE_CLI_COMMIT_HASH");
 		format!("{}-{commit_hash}", NODE_VERSION)
 	}
 
@@ -39,7 +43,7 @@ impl CliConfigT for CliConfig {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/pezkuwichain/pezkuwi-sdk/issues/new".into()
+		"https://github.com/paritytech/pezkuwi-sdk/issues/new".into()
 	}
 
 	fn copyright_start_year() -> u16 {

@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,10 @@ use pezkuwi_node_metrics::metered::{
 	UnboundedMeteredSender,
 };
 
+use pezkuwi_node_primitives::{
+	approval::time::{Clock, SystemClock},
+	DISPUTE_WINDOW,
+};
 use pezkuwi_node_subsystem::{
 	messages::{ApprovalDistributionMessage, ApprovalVotingMessage, ApprovalVotingParallelMessage},
 	overseer, FromOrchestra, SpawnedSubsystem, SubsystemError, SubsystemResult,
@@ -38,10 +42,6 @@ use pezkuwi_node_subsystem_util::{
 	runtime::{Config as RuntimeInfoConfig, RuntimeInfo},
 };
 use pezkuwi_overseer::{OverseerSignal, Priority, SubsystemSender, TimeoutExt};
-use pezkuwi_pez_node_primitives::{
-	approval::time::{Clock, SystemClock},
-	DISPUTE_WINDOW,
-};
 use pezkuwi_primitives::{CandidateIndex, Hash, ValidatorIndex, ValidatorSignature};
 use rand::SeedableRng;
 

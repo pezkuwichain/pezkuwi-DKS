@@ -20,8 +20,8 @@ mod mock;
 mod reporter;
 
 use async_trait::async_trait;
-use pez_finality_relay::{FinalityPipeline, SourceClientBase};
-use pezbp_header_pez_chain::{FinalityProof, FindEquivocations};
+use bp_header_chain::{FinalityProof, FindEquivocations};
+use finality_relay::{FinalityPipeline, SourceClientBase};
 use relay_utils::{relay_loop::Client as RelayClient, MaybeConnectionError, TransactionTracker};
 use std::{fmt::Debug, time::Duration};
 
@@ -47,7 +47,7 @@ pub trait EquivocationDetectionPipeline: FinalityPipeline {
 	>;
 }
 
-type HeaderFinalityInfo<P> = pezbp_header_pez_chain::HeaderFinalityInfo<
+type HeaderFinalityInfo<P> = bp_header_chain::HeaderFinalityInfo<
 	<P as FinalityPipeline>::FinalityProof,
 	<P as EquivocationDetectionPipeline>::FinalityVerificationContext,
 >;
@@ -132,6 +132,6 @@ async fn handle_client_error<C: RelayClient>(client: &mut C, e: C::Error) {
 	if e.is_connection_error() {
 		client.reconnect_until_success(RECONNECT_DELAY).await;
 	} else {
-		async_std::task::sleep(RECONNECT_DELAY).await;
+		tokio::time::sleep(RECONNECT_DELAY).await;
 	}
 }

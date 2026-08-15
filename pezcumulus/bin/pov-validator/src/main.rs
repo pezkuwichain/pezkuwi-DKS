@@ -1,4 +1,4 @@
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
@@ -18,7 +18,7 @@
 
 use clap::Parser;
 use codec::{Decode, Encode};
-use pezkuwi_pez_node_primitives::{BlockData, PoV, POV_BOMB_LIMIT};
+use pezkuwi_node_primitives::{BlockData, PoV, POV_BOMB_LIMIT};
 use pezkuwi_primitives::PersistedValidationData;
 use pezkuwi_teyrchain_primitives::primitives::ValidationParams;
 use pezsc_executor::WasmExecutor;

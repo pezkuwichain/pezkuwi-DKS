@@ -15,9 +15,9 @@
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::{Config, GrandpaPalletOf, Pezpallet, RelayBlockNumber};
-use pezbp_header_pez_chain::HeaderChain;
-use pezbp_runtime::{HeaderId, OwnedBridgeModule};
-use pezbp_teyrchains::{BestParaHeadHash, SubmitTeyrchainHeadsInfo};
+use bp_header_chain::HeaderChain;
+use bp_runtime::{HeaderId, OwnedBridgeModule};
+use bp_teyrchains::{BestParaHeadHash, SubmitParachainHeadsInfo};
 use pezframe_support::{
 	dispatch::CallableCallFor,
 	traits::{Get, IsSubType},
@@ -26,28 +26,29 @@ use pezpallet_bridge_grandpa::SubmitFinalityProofHelper;
 use pezsp_runtime::{
 	traits::Zero,
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
+	Debug,
 };
 
-/// Verified `SubmitTeyrchainHeadsInfo`.
+/// Verified `SubmitParachainHeadsInfo`.
 #[derive(PartialEq, Debug)]
-pub struct VerifiedSubmitTeyrchainHeadsInfo {
+pub struct VerifiedSubmitParachainHeadsInfo {
 	/// Base call information.
-	pub base: SubmitTeyrchainHeadsInfo,
+	pub base: SubmitParachainHeadsInfo,
 	/// A difference between bundled bridged relay chain header and relay chain header number
 	/// used to prove best bridged teyrchain header, known to us before the call.
 	pub improved_by: RelayBlockNumber,
 }
 
-/// Helper struct that provides methods for working with the `SubmitTeyrchainHeads` call.
-pub struct SubmitTeyrchainHeadsHelper<T: Config<I>, I: 'static> {
+/// Helper struct that provides methods for working with the `SubmitParachainHeads` call.
+pub struct SubmitParachainHeadsHelper<T: Config<I>, I: 'static> {
 	_phantom_data: pezsp_std::marker::PhantomData<(T, I)>,
 }
 
-impl<T: Config<I>, I: 'static> SubmitTeyrchainHeadsHelper<T, I> {
+impl<T: Config<I>, I: 'static> SubmitParachainHeadsHelper<T, I> {
 	/// Check that is called from signed extension and takes the `is_free_execution_expected`
 	/// into account.
 	pub fn check_obsolete_from_extension(
-		update: &SubmitTeyrchainHeadsInfo,
+		update: &SubmitParachainHeadsInfo,
 	) -> Result<RelayBlockNumber, TransactionValidityError> {
 		// first do all base checks
 		let improved_by = Self::check_obsolete(update)?;
@@ -92,10 +93,10 @@ impl<T: Config<I>, I: 'static> SubmitTeyrchainHeadsHelper<T, I> {
 		Ok(improved_by)
 	}
 
-	/// Check if the para head provided by the `SubmitTeyrchainHeads` is better than the best one
+	/// Check if the para head provided by the `SubmitParachainHeads` is better than the best one
 	/// we know.
 	pub fn check_obsolete(
-		update: &SubmitTeyrchainHeadsInfo,
+		update: &SubmitParachainHeadsInfo,
 	) -> Result<RelayBlockNumber, TransactionValidityError> {
 		// check if we know better teyrchain head already
 		let improved_by = match crate::ParasInfo::<T, I>::get(update.para_id) {
@@ -154,8 +155,8 @@ impl<T: Config<I>, I: 'static> SubmitTeyrchainHeadsHelper<T, I> {
 		Ok(improved_by)
 	}
 
-	/// Check if the `SubmitTeyrchainHeads` was successfully executed.
-	pub fn was_successful(update: &SubmitTeyrchainHeadsInfo) -> bool {
+	/// Check if the `SubmitParachainHeads` was successfully executed.
+	pub fn was_successful(update: &SubmitParachainHeadsInfo) -> bool {
 		match crate::ParasInfo::<T, I>::get(update.para_id) {
 			Some(stored_best_head) => {
 				stored_best_head.best_head_hash
@@ -173,16 +174,16 @@ impl<T: Config<I>, I: 'static> SubmitTeyrchainHeadsHelper<T, I> {
 pub trait CallSubType<T: Config<I, RuntimeCall = Self>, I: 'static>:
 	IsSubType<CallableCallFor<Pezpallet<T, I>, T>>
 {
-	/// Create a new instance of `SubmitTeyrchainHeadsInfo` from a `SubmitTeyrchainHeads` call with
+	/// Create a new instance of `SubmitParachainHeadsInfo` from a `SubmitParachainHeads` call with
 	/// one single teyrchain entry.
-	fn one_entry_submit_teyrchain_heads_info(&self) -> Option<SubmitTeyrchainHeadsInfo> {
+	fn one_entry_submit_teyrchain_heads_info(&self) -> Option<SubmitParachainHeadsInfo> {
 		match self.is_sub_type() {
 			Some(crate::Call::<T, I>::submit_teyrchain_heads {
 				ref at_relay_block,
 				ref teyrchains,
 				..
 			}) => match &teyrchains[..] {
-				&[(para_id, para_head_hash)] => Some(SubmitTeyrchainHeadsInfo {
+				&[(para_id, para_head_hash)] => Some(SubmitParachainHeadsInfo {
 					at_relay_block: HeaderId(at_relay_block.0, at_relay_block.1),
 					para_id,
 					para_head_hash,
@@ -196,7 +197,7 @@ pub trait CallSubType<T: Config<I, RuntimeCall = Self>, I: 'static>:
 				is_free_execution_expected,
 				..
 			}) => match &teyrchains[..] {
-				&[(para_id, para_head_hash)] => Some(SubmitTeyrchainHeadsInfo {
+				&[(para_id, para_head_hash)] => Some(SubmitParachainHeadsInfo {
 					at_relay_block: HeaderId(at_relay_block.0, at_relay_block.1),
 					para_id,
 					para_head_hash,
@@ -208,9 +209,9 @@ pub trait CallSubType<T: Config<I, RuntimeCall = Self>, I: 'static>:
 		}
 	}
 
-	/// Create a new instance of `SubmitTeyrchainHeadsInfo` from a `SubmitTeyrchainHeads` call with
+	/// Create a new instance of `SubmitParachainHeadsInfo` from a `SubmitParachainHeads` call with
 	/// one single teyrchain entry, if the entry is for the provided teyrchain id.
-	fn submit_teyrchain_heads_info_for(&self, para_id: u32) -> Option<SubmitTeyrchainHeadsInfo> {
+	fn submit_teyrchain_heads_info_for(&self, para_id: u32) -> Option<SubmitParachainHeadsInfo> {
 		self.one_entry_submit_teyrchain_heads_info()
 			.filter(|update| update.para_id.0 == para_id)
 	}
@@ -227,7 +228,7 @@ pub trait CallSubType<T: Config<I, RuntimeCall = Self>, I: 'static>:
 	/// pezpallet will be used in our environment.
 	fn check_obsolete_submit_teyrchain_heads(
 		&self,
-	) -> Result<Option<VerifiedSubmitTeyrchainHeadsInfo>, TransactionValidityError>
+	) -> Result<Option<VerifiedSubmitParachainHeadsInfo>, TransactionValidityError>
 	where
 		Self: Sized,
 	{
@@ -240,8 +241,8 @@ pub trait CallSubType<T: Config<I, RuntimeCall = Self>, I: 'static>:
 			return Err(InvalidTransaction::Call.into());
 		}
 
-		SubmitTeyrchainHeadsHelper::<T, I>::check_obsolete_from_extension(&update)
-			.map(|improved_by| Some(VerifiedSubmitTeyrchainHeadsInfo { base: update, improved_by }))
+		SubmitParachainHeadsHelper::<T, I>::check_obsolete_from_extension(&update)
+			.map(|improved_by| Some(VerifiedSubmitParachainHeadsInfo { base: update, improved_by }))
 	}
 }
 
@@ -258,10 +259,10 @@ mod tests {
 		mock::{run_test, FreeHeadersInterval, RuntimeCall, TestRuntime},
 		CallSubType, PalletOperatingMode, ParaInfo, ParasInfo, RelayBlockHash, RelayBlockNumber,
 	};
-	use pezbp_header_pez_chain::StoredHeaderData;
-	use pezbp_pezkuwi_core::teyrchains::{ParaHash, ParaHeadsProof, ParaId};
-	use pezbp_runtime::BasicOperatingMode;
-	use pezbp_teyrchains::BestParaHeadHash;
+	use bp_header_chain::StoredHeaderData;
+	use bp_polkadot_core::teyrchains::{ParaHash, ParaHeadsProof, ParaId};
+	use bp_runtime::BasicOperatingMode;
+	use bp_teyrchains::BestParaHeadHash;
 
 	fn validate_submit_teyrchain_heads(
 		num: RelayBlockNumber,

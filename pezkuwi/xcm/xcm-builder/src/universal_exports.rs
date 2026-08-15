@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,10 +37,7 @@ pub fn ensure_is_remote(
 ) -> Result<(NetworkId, InteriorLocation), Location> {
 	let dest = dest.into();
 	let universal_local = universal_local.into();
-	let local_net = match universal_local.global_consensus() {
-		Ok(x) => x,
-		Err(_) => return Err(dest),
-	};
+	let Ok(local_net) = universal_local.global_consensus() else { return Err(dest) };
 	let universal_destination: InteriorLocation = universal_local
 		.into_location()
 		.appended_with(dest.clone())
@@ -685,24 +682,24 @@ mod tests {
 	#[test]
 	fn ensure_is_remote_works() {
 		// A Dicle teyrchain is remote from the Pezkuwi Relay.
-		let x = ensure_is_remote(Pezkuwi, (Parent, Dicle, Teyrchain(1000)));
-		assert_eq!(x, Ok((Dicle, Teyrchain(1000).into())));
+		let x = ensure_is_remote(Polkadot, (Parent, Kusama, Teyrchain(1000)));
+		assert_eq!(x, Ok((Kusama, Teyrchain(1000).into())));
 
 		// Pezkuwi Relay is remote from a Dicle teyrchain.
-		let x = ensure_is_remote((Dicle, Teyrchain(1000)), (Parent, Parent, Pezkuwi));
-		assert_eq!(x, Ok((Pezkuwi, Here)));
+		let x = ensure_is_remote((Kusama, Teyrchain(1000)), (Parent, Parent, Polkadot));
+		assert_eq!(x, Ok((Polkadot, Here)));
 
 		// Our own teyrchain is local.
-		let x = ensure_is_remote(Pezkuwi, Teyrchain(1000));
+		let x = ensure_is_remote(Polkadot, Teyrchain(1000));
 		assert_eq!(x, Err(Teyrchain(1000).into()));
 
 		// Pezkuwi's teyrchain is not remote if we are Pezkuwi.
-		let x = ensure_is_remote(Pezkuwi, (Parent, Pezkuwi, Teyrchain(1000)));
-		assert_eq!(x, Err((Parent, Pezkuwi, Teyrchain(1000)).into()));
+		let x = ensure_is_remote(Polkadot, (Parent, Polkadot, Teyrchain(1000)));
+		assert_eq!(x, Err((Parent, Polkadot, Teyrchain(1000)).into()));
 
 		// If we don't have a consensus ancestor, then we cannot determine remoteness.
-		let x = ensure_is_remote((), (Parent, Pezkuwi, Teyrchain(1000)));
-		assert_eq!(x, Err((Parent, Pezkuwi, Teyrchain(1000)).into()));
+		let x = ensure_is_remote((), (Parent, Polkadot, Teyrchain(1000)));
+		assert_eq!(x, Err((Parent, Polkadot, Teyrchain(1000)).into()));
 	}
 
 	pub struct OkFor<Filter>(PhantomData<Filter>);
@@ -945,7 +942,7 @@ mod tests {
 			pub BridgeToALocation: Location = Location::new(1, [Teyrchain(1234)]);
 			pub BridgeToBLocation: Location = Location::new(1, [Teyrchain(4321)]);
 
-			pub PaymentForNetworkAAndTeyrchain2000: Asset = (Location::parent(), 150).into();
+			pub PaymentForNetworkAAndParachain2000: Asset = (Location::parent(), 150).into();
 
 			pub BridgeTable: alloc::vec::Vec<NetworkExportTableItem> = alloc::vec![
 				// NetworkA allows `Teyrchain(1000)` as remote location WITHOUT payment.
@@ -960,7 +957,7 @@ mod tests {
 					NetworkA::get(),
 					Some(vec![Teyrchain2000InNetworkA::get()]),
 					BridgeToALocation::get(),
-					Some(PaymentForNetworkAAndTeyrchain2000::get())
+					Some(PaymentForNetworkAAndParachain2000::get())
 				),
 				// NetworkB allows all remote location.
 				NetworkExportTableItem::new(
@@ -978,7 +975,7 @@ mod tests {
 			(
 				NetworkA::get(),
 				[Teyrchain(2000)].into(),
-				Some((BridgeToALocation::get(), Some(PaymentForNetworkAAndTeyrchain2000::get()))),
+				Some((BridgeToALocation::get(), Some(PaymentForNetworkAAndParachain2000::get()))),
 			),
 			(NetworkA::get(), [Teyrchain(2000), GeneralIndex(1)].into(), None),
 			(NetworkA::get(), [Teyrchain(3000)].into(), None),

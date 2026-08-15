@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ use std::sync::Arc;
 use pezsp_keyring::Sr25519Keyring;
 
 use pezkuwi_erasure_coding::{branches, obtain_chunks_v1 as obtain_chunks};
-use pezkuwi_pez_node_primitives::{AvailableData, BlockData, ErasureChunk, PoV, Proof};
+use pezkuwi_node_primitives::{AvailableData, BlockData, ErasureChunk, PoV, Proof};
 use pezkuwi_primitives::{
 	CandidateCommitments, CandidateHash, ChunkIndex, CommittedCandidateReceiptV2, GroupIndex, Hash,
 	HeadData, Id as ParaId, IndexedVec, OccupiedCore, PersistedValidationData, SessionInfo,

@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Pezcumulus teyrchain inherent
+//! Cumulus teyrchain inherent
 //!
 //! The [`TeyrchainInherentData`] is the data that is passed by the collator to the teyrchain
 //! runtime. The runtime will use this data to execute messages from other teyrchains/the relay
@@ -41,7 +41,7 @@ use pezsp_inherents::InherentIdentifier;
 use scale_info::TypeInfo;
 
 /// The identifier for the teyrchain inherent.
-pub const TEYRCHAIN_INHERENT_IDENTIFIER_V0: InherentIdentifier = *b"sysi1337";
+pub const PARACHAIN_INHERENT_IDENTIFIER_V0: InherentIdentifier = *b"sysi1337";
 pub const INHERENT_IDENTIFIER: InherentIdentifier = *b"sysi1338";
 
 /// Legacy TeyrchainInherentData that is kept around for backward compatibility.
@@ -151,7 +151,7 @@ impl pezsp_inherents::InherentDataProvider for TeyrchainInherentData {
 		&self,
 		inherent_data: &mut pezsp_inherents::InherentData,
 	) -> Result<(), pezsp_inherents::Error> {
-		inherent_data.put_data(TEYRCHAIN_INHERENT_IDENTIFIER_V0, &self.as_v0())?;
+		inherent_data.put_data(PARACHAIN_INHERENT_IDENTIFIER_V0, &self.as_v0())?;
 		inherent_data.put_data(INHERENT_IDENTIFIER, &self)
 	}
 

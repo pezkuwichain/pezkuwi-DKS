@@ -4,10 +4,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezframe_support::PalletError;
-use pezsnowbridge_beacon_primitives::{BeaconHeader, ExecutionProof};
 use pezsp_core::{H160, H256};
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
+use snowbridge_beacon_primitives::{BeaconHeader, ExecutionProof};
+
+pub mod receipt;
 
 /// A trait for verifying inbound messages from Ethereum.
 pub trait Verifier {
@@ -27,6 +29,9 @@ pub enum VerificationError {
 	InvalidProof,
 	/// Unable to verify the execution header with ancestry proof
 	InvalidExecutionProof(#[codec(skip)] &'static str),
+	/// The verifier is halted. Proofs cannot be verified while the bridge is in an emergency
+	/// halted state (e.g. a compromised beacon light client).
+	Halted,
 }
 
 /// A bridge message from the Gateway contract on Ethereum
@@ -44,13 +49,14 @@ pub struct Log {
 	pub address: H160,
 	pub topics: Vec<H256>,
 	pub data: Vec<u8>,
+	pub tx_index: u64,
 }
 
 /// Inclusion proof for a transaction receipt
 #[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Debug, TypeInfo)]
 pub struct Proof {
-	// Proof keys and values (receipts tree)
-	pub receipt_proof: (Vec<Vec<u8>>, Vec<Vec<u8>>),
+	// Proof values from receipts tree
+	pub receipt_proof: Vec<Vec<u8>>,
 	// Proof that an execution header was finalized by the beacon chain
 	pub execution_proof: ExecutionProof,
 }

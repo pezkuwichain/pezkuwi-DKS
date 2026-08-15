@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ use pezframe_support::{
 };
 use xcm_executor::{traits::prelude::*, Config, XcmExecutor};
 
-mod mock;
+pub mod mock;
 use mock::*;
 
 mod aliases;
@@ -32,6 +32,7 @@ mod barriers;
 mod basic;
 mod bridging;
 mod expecting;
+mod forwarder;
 mod locking;
 mod origins;
 mod pay;

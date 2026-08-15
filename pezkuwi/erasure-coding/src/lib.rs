@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 //! The data is coded so any f+1 chunks can be used to reconstruct the full data.
 
 use codec::{Decode, Encode};
-use pezkuwi_pez_node_primitives::{AvailableData, Proof};
+use pezkuwi_node_primitives::{AvailableData, Proof};
 use pezkuwi_primitives::{BlakeTwo256, Hash as H256, HashT};
 use pezsp_core::Blake2Hasher;
 use pezsp_trie::{
@@ -161,7 +161,7 @@ pub fn reconstruct_from_systematic<T: Decode>(
 	let k = code_params.k();
 
 	for chunk_data in chunks.iter().take(k) {
-		if !chunk_data.len().is_multiple_of(2) {
+		if chunk_data.len() % 2 != 0 {
 			return Err(Error::UnevenLength);
 		}
 	}
@@ -227,7 +227,7 @@ where
 	let params = code_params(n_validators)?;
 	let mut received_shards: Vec<Option<WrappedShard>> = vec![None; n_validators];
 	for (chunk_data, chunk_idx) in chunks.into_iter().take(n_validators) {
-		if !chunk_data.len().is_multiple_of(2) {
+		if chunk_data.len() % 2 != 0 {
 			return Err(Error::UnevenLength);
 		}
 
@@ -334,7 +334,7 @@ mod tests {
 	use std::sync::Arc;
 
 	use super::*;
-	use pezkuwi_pez_node_primitives::{AvailableData, BlockData, PoV};
+	use pezkuwi_node_primitives::{AvailableData, BlockData, PoV};
 	use pezkuwi_primitives::{HeadData, PersistedValidationData};
 	use quickcheck::{Arbitrary, Gen, QuickCheck};
 

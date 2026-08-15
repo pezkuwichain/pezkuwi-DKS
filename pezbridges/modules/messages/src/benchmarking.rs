@@ -23,14 +23,14 @@ use crate::{
 	InboundLanes, OutboundLanes,
 };
 
-use codec::Decode;
-use pezbp_messages::{
+use bp_messages::{
 	source_chain::FromBridgedChainMessagesDeliveryProof,
 	target_chain::FromBridgedChainMessagesProof, ChainWithMessages, DeliveredMessages,
 	InboundLaneData, LaneState, MessageNonce, OutboundLaneData, UnrewardedRelayer,
 	UnrewardedRelayersState,
 };
-use pezbp_runtime::{AccountIdOf, HashOf, UnverifiedStorageProofParams};
+use bp_runtime::{AccountIdOf, HashOf, UnverifiedStorageProofParams};
+use codec::Decode;
 use pezframe_benchmarking::{account, v2::*};
 use pezframe_support::weights::Weight;
 use pezframe_system::RawOrigin;
@@ -191,7 +191,6 @@ impl<T: Config<I>, I: 'static> ReceiveMessagesProofSetup<T, I> {
 mod benchmarks {
 	use super::*;
 
-	//
 	// Benchmarks that are used directly by the runtime calls weight formulae.
 	//
 
@@ -501,7 +500,6 @@ mod benchmarks {
 		assert!(T::is_relayer_rewarded(&relayer2_id));
 	}
 
-	//
 	// Benchmarks that the runtime developers may use for proper pezpallet configuration.
 	//
 

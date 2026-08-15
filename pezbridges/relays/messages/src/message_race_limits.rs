@@ -19,7 +19,7 @@
 use num_traits::Zero;
 use std::ops::RangeInclusive;
 
-use pezbp_messages::{MessageNonce, Weight};
+use bp_messages::{MessageNonce, Weight};
 
 use crate::{
 	message_lane::MessageLane,

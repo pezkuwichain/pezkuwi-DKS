@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub use pez_penpal_runtime::{
+pub use penpal_runtime::{
 	self, xcm_config::RelayNetworkId as PenpalRelayNetworkId, ForeignAssetReserveData,
 };
 
@@ -24,69 +24,63 @@ pub use genesis::{genesis, PenpalAssetOwner, PenpalSudoAccount, ED, PARA_ID_A, P
 use pezframe_support::traits::OnInitialize;
 use pezsp_core::Encode;
 
-// Pezcumulus
+// Cumulus
 use emulated_integration_tests_common::{
 	impl_accounts_helpers_for_teyrchain, impl_assert_events_helpers_for_teyrchain,
-	impl_assets_helpers_for_teyrchain, impl_foreign_assets_helpers_for_teyrchain,
-	impl_xcm_helpers_for_teyrchain,
+	impl_foreign_assets_helpers_for_teyrchain, impl_xcm_helpers_for_teyrchain,
 	impls::{NetworkId, Teyrchain},
-	xcm_pez_emulator::decl_test_teyrchains,
-	AuraDigestProvider,
+	xcm_emulator::decl_test_teyrchains,
 };
 
 // Pezkuwi
-use xcm::latest::{PEZKUWICHAIN_GENESIS_HASH, ZAGROS_GENESIS_HASH};
+use xcm::latest::{ROCOCO_GENESIS_HASH, WESTEND_GENESIS_HASH};
 
 // Penpal Teyrchain declaration
 decl_test_teyrchains! {
 	pub struct PenpalA {
 		genesis = genesis(PARA_ID_A),
 		on_init = {
-			pez_penpal_runtime::AuraExt::on_initialize(1);
-			pezframe_support::assert_ok!(pez_penpal_runtime::System::set_storage(
-				pez_penpal_runtime::RuntimeOrigin::root(),
-				vec![(PenpalRelayNetworkId::key().to_vec(), NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH).encode())],
+			penpal_runtime::AuraExt::on_initialize(1);
+			pezframe_support::assert_ok!(penpal_runtime::System::set_storage(
+				penpal_runtime::RuntimeOrigin::root(),
+				vec![(PenpalRelayNetworkId::key().to_vec(), NetworkId::ByGenesis(ROCOCO_GENESIS_HASH).encode())],
 			));
 		},
-		runtime = pez_penpal_runtime,
+		runtime = penpal_runtime,
 		core = {
-			XcmpMessageHandler: pez_penpal_runtime::XcmpQueue,
-			LocationToAccountId: pez_penpal_runtime::xcm_config::LocationToAccountId,
-			TeyrchainInfo: pez_penpal_runtime::TeyrchainInfo,
+			XcmpMessageHandler: penpal_runtime::XcmpQueue,
+			LocationToAccountId: penpal_runtime::xcm_config::LocationToAccountId,
+			TeyrchainInfo: penpal_runtime::TeyrchainInfo,
 			MessageOrigin: pezcumulus_primitives_core::AggregateMessageOrigin,
-			DigestProvider: AuraDigestProvider,
 		},
-		pallets = {
-			PezkuwiXcm: pez_penpal_runtime::PezkuwiXcm,
-			Assets: pez_penpal_runtime::Assets,
-			ForeignAssets: pez_penpal_runtime::ForeignAssets,
-			AssetConversion: pez_penpal_runtime::AssetConversion,
-			Balances: pez_penpal_runtime::Balances,
+		pezpallets = {
+			PolkadotXcm: penpal_runtime::PolkadotXcm,
+			Assets: penpal_runtime::Assets,
+			AssetConversion: penpal_runtime::AssetConversion,
+			Balances: penpal_runtime::Balances,
 		}
 	},
 	pub struct PenpalB {
 		genesis = genesis(PARA_ID_B),
 		on_init = {
-			pez_penpal_runtime::AuraExt::on_initialize(1);
-			pezframe_support::assert_ok!(pez_penpal_runtime::System::set_storage(
-				pez_penpal_runtime::RuntimeOrigin::root(),
-				vec![(PenpalRelayNetworkId::key().to_vec(), NetworkId::ByGenesis(ZAGROS_GENESIS_HASH).encode())],
+			penpal_runtime::AuraExt::on_initialize(1);
+			pezframe_support::assert_ok!(penpal_runtime::System::set_storage(
+				penpal_runtime::RuntimeOrigin::root(),
+				vec![(PenpalRelayNetworkId::key().to_vec(), NetworkId::ByGenesis(WESTEND_GENESIS_HASH).encode())],
 			));
 		},
-		runtime = pez_penpal_runtime,
+		runtime = penpal_runtime,
 		core = {
-			XcmpMessageHandler: pez_penpal_runtime::XcmpQueue,
-			LocationToAccountId: pez_penpal_runtime::xcm_config::LocationToAccountId,
-			TeyrchainInfo: pez_penpal_runtime::TeyrchainInfo,
+			XcmpMessageHandler: penpal_runtime::XcmpQueue,
+			LocationToAccountId: penpal_runtime::xcm_config::LocationToAccountId,
+			TeyrchainInfo: penpal_runtime::TeyrchainInfo,
 			MessageOrigin: pezcumulus_primitives_core::AggregateMessageOrigin,
-			DigestProvider: AuraDigestProvider,
 		},
-		pallets = {
-			PezkuwiXcm: pez_penpal_runtime::PezkuwiXcm,
-			Assets: pez_penpal_runtime::Assets,
-			ForeignAssets: pez_penpal_runtime::ForeignAssets,
-			AssetConversion: pez_penpal_runtime::AssetConversion,
-			Balances: pez_penpal_runtime::Balances,
+		pezpallets = {
+			PolkadotXcm: penpal_runtime::PolkadotXcm,
+			Assets: penpal_runtime::Assets,
+			AssetConversion: penpal_runtime::AssetConversion,
+			Balances: penpal_runtime::Balances,
 		}
 	},
 }
@@ -96,9 +90,17 @@ impl_accounts_helpers_for_teyrchain!(PenpalA);
 impl_accounts_helpers_for_teyrchain!(PenpalB);
 impl_assert_events_helpers_for_teyrchain!(PenpalA);
 impl_assert_events_helpers_for_teyrchain!(PenpalB);
-impl_assets_helpers_for_teyrchain!(PenpalA);
-impl_foreign_assets_helpers_for_teyrchain!(PenpalA, xcm::latest::Location, ForeignAssetReserveData);
-impl_assets_helpers_for_teyrchain!(PenpalB);
-impl_foreign_assets_helpers_for_teyrchain!(PenpalB, xcm::latest::Location, ForeignAssetReserveData);
+impl_foreign_assets_helpers_for_teyrchain!(
+	PenpalA,
+	xcm::latest::Location,
+	ForeignAssetReserveData,
+	Assets
+);
+impl_foreign_assets_helpers_for_teyrchain!(
+	PenpalB,
+	xcm::latest::Location,
+	ForeignAssetReserveData,
+	Assets
+);
 impl_xcm_helpers_for_teyrchain!(PenpalA);
 impl_xcm_helpers_for_teyrchain!(PenpalB);

@@ -16,8 +16,8 @@
 
 //! Utilities used by different relays.
 
+pub use bp_runtime::HeaderId;
 pub use error::Error;
-pub use pezbp_runtime::HeaderId;
 pub use pezsp_runtime::traits::{UniqueSaturatedFrom, UniqueSaturatedInto};
 pub use relay_loop::{relay_loop, relay_metrics};
 use std::fmt::Debug;
@@ -208,7 +208,7 @@ pub fn format_ids<Id: std::fmt::Debug>(mut ids: impl ExactSizeIterator<Item = Id
 /// Stream that emits item every `timeout_ms` milliseconds.
 pub fn interval(timeout: Duration) -> impl futures::Stream<Item = ()> {
 	futures::stream::unfold((), move |_| async move {
-		async_std::task::sleep(timeout).await;
+		tokio::time::sleep(timeout).await;
 		Some(((), ()))
 	})
 }

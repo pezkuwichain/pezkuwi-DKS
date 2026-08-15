@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ macro_rules! decl_worker_main {
 			println!("{} {}", expected_command, $worker_version);
 			println!("commit: {}", $worker_version_hash);
 			println!();
-			println!("PVF worker that is called by pezkuwi.");
+			println!("PVF worker that is called by polkadot.");
 		}
 
 		fn main() {
@@ -192,7 +192,7 @@ macro_rules! decl_worker_main {
 	};
 }
 
-//taken from the os_pipe crate. Copied here to reduce one dependency and
+// taken from the os_pipe crate. Copied here to reduce one dependency and
 // because its type-safe abstractions do not play well with nix's clone
 #[cfg(not(target_os = "macos"))]
 pub fn pipe2_cloexec() -> io::Result<(libc::c_int, libc::c_int)> {

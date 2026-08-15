@@ -40,7 +40,7 @@ use pezsp_runtime::{traits::Header, RuntimeAppPublic};
 /// - `relay_parent_state_root`: The state root hash of the relay parent. This
 ///   will be matched with the first relay parent header from the descendants.
 ///   **Note:** This parameter can be removed once the hash of the relay parent is available
-///   to the runtime. https://github.com/pezkuwichain/pezkuwi-sdk/issues/99
+///   to the runtime. https://github.com/pezkuwichain/pezkuwi-sdk/issues/83
 /// - `expected_rp_descendants_num`: The expected number of headers in the
 ///   `relay_parent_descendants`. A mismatch will cause the function to return an error.
 ///
@@ -485,7 +485,8 @@ mod tests {
 		next_authorities: Option<Vec<(AuthorityId, BabeAuthorityWeight)>>,
 	) -> RelayChainStateProof {
 		// Create a mock implementation or structure, adjust this to match the proof's definition
-		let mut proof_builder = RelayStateSproofBuilder::default();
+		let mut proof_builder =
+			RelayStateSproofBuilder { num_authorities: 0, ..Default::default() };
 		if let Some(authorities) = authorities {
 			proof_builder
 				.additional_key_values

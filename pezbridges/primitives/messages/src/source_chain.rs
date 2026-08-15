@@ -18,8 +18,8 @@
 
 use crate::{MessageNonce, UnrewardedRelayer};
 
+use bp_runtime::{raw_storage_proof_size, RawStorageProof, Size};
 use codec::{Decode, DecodeWithMemTracking, Encode};
-use pezbp_runtime::{raw_storage_proof_size, RawStorageProof, Size};
 use pezsp_std::{
 	collections::{btree_map::BTreeMap, vec_deque::VecDeque},
 	fmt::Debug,
@@ -73,7 +73,7 @@ pub trait DeliveryConfirmationPayments<AccountId, LaneId> {
 	/// Returns number of actually rewarded relayers.
 	fn pay_reward(
 		lane_id: LaneId,
-		pez_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
+		messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
 		confirmation_relayer: &AccountId,
 		received_range: &RangeInclusive<MessageNonce>,
 	) -> MessageNonce;
@@ -84,7 +84,7 @@ impl<AccountId, LaneId> DeliveryConfirmationPayments<AccountId, LaneId> for () {
 
 	fn pay_reward(
 		_lane_id: LaneId,
-		_pez_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
+		_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
 		_confirmation_relayer: &AccountId,
 		_received_range: &RangeInclusive<MessageNonce>,
 	) -> MessageNonce {
@@ -115,7 +115,7 @@ pub struct SendMessageArtifacts {
 	pub enqueued_messages: MessageNonce,
 }
 
-/// Messages bridge API to be used from other pallets.
+/// Messages bridge API to be used from other pezpallets.
 pub trait MessagesBridge<Payload, LaneId> {
 	/// Error type.
 	type Error: Debug;
@@ -147,7 +147,7 @@ impl<AccountId, LaneId> DeliveryConfirmationPayments<AccountId, LaneId> for Forb
 
 	fn pay_reward(
 		_lane_id: LaneId,
-		_pez_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
+		_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
 		_confirmation_relayer: &AccountId,
 		_received_range: &RangeInclusive<MessageNonce>,
 	) -> MessageNonce {

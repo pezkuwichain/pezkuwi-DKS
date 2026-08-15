@@ -17,7 +17,7 @@ use super::*;
 use crate as xcmp_queue;
 use alloc::collections::BTreeMap;
 use core::marker::PhantomData;
-use pezcumulus_pezpallet_teyrchain_system::AnyRelayNumber;
+use pezcumulus_pallet_teyrchain_system::AnyRelayNumber;
 use pezcumulus_primitives_core::{ChannelInfo, IsSystem, ParaId};
 use pezframe_support::{
 	derive_impl, parameter_types,
@@ -41,7 +41,7 @@ pezframe_support::construct_runtime!(
 	{
 		System: pezframe_system::{Pezpallet, Call, Config<T>, Storage, Event<T>},
 		Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
-		TeyrchainSystem: pezcumulus_pezpallet_teyrchain_system::{
+		TeyrchainSystem: pezcumulus_pallet_teyrchain_system::{
 			Pezpallet, Call, Config<T>, Storage, Inherent, Event<T>,
 		},
 		XcmpQueue: xcmp_queue::{Pezpallet, Call, Storage, Event<T>},
@@ -76,7 +76,7 @@ impl pezframe_system::Config for Test {
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
 	type SS58Prefix = SS58Prefix;
-	type OnSetCode = pezcumulus_pezpallet_teyrchain_system::TeyrchainSetCode<Test>;
+	type OnSetCode = pezcumulus_pallet_teyrchain_system::TeyrchainSetCode<Test>;
 	type MaxConsumers = pezframe_support::traits::ConstU32<16>;
 }
 
@@ -92,7 +92,7 @@ impl pezpallet_balances::Config for Test {
 	type AccountStore = System;
 }
 
-impl pezcumulus_pezpallet_teyrchain_system::Config for Test {
+impl pezcumulus_pallet_teyrchain_system::Config for Test {
 	type WeightInfo = ();
 	type RuntimeEvent = RuntimeEvent;
 	type OnSystemEvent = ();
@@ -104,9 +104,9 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Test {
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ();
 	type CheckAssociatedRelayNumber = AnyRelayNumber;
-	type ConsensusHook =
-		pezcumulus_pezpallet_teyrchain_system::consensus_hook::ExpectParentIncluded;
+	type ConsensusHook = pezcumulus_pallet_teyrchain_system::consensus_hook::ExpectParentIncluded;
 	type RelayParentOffset = ConstU32<0>;
+	type SchedulingSignatureVerifier = ();
 }
 
 parameter_types! {
@@ -117,9 +117,9 @@ parameter_types! {
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }
 
-pub struct SystemTeyrchainAsSuperuser<RuntimeOrigin>(PhantomData<RuntimeOrigin>);
+pub struct SystemParachainAsSuperuser<RuntimeOrigin>(PhantomData<RuntimeOrigin>);
 impl<RuntimeOrigin: OriginTrait> ConvertOrigin<RuntimeOrigin>
-	for SystemTeyrchainAsSuperuser<RuntimeOrigin>
+	for SystemParachainAsSuperuser<RuntimeOrigin>
 {
 	fn convert_origin(
 		origin: impl Into<Location>,
@@ -223,7 +223,7 @@ parameter_types! {
 	pub const ByteFee: Balance = 1_000_000;
 }
 
-pub type PriceForSiblingTeyrchainDelivery = pezkuwi_runtime_common::xcm_sender::ExponentialPrice<
+pub type PriceForSiblingParachainDelivery = pezkuwi_runtime_common::xcm_sender::ExponentialPrice<
 	FeeAssetId,
 	BaseDeliveryFee,
 	ByteFee,
@@ -241,9 +241,9 @@ impl Config for Test {
 	// need to set the page size larger than that until we reduce the channel size on-chain.
 	type MaxPageSize = ConstU32<{ 103 * 1024 }>;
 	type ControllerOrigin = EnsureRoot<AccountId>;
-	type ControllerOriginConverter = SystemTeyrchainAsSuperuser<RuntimeOrigin>;
+	type ControllerOriginConverter = SystemParachainAsSuperuser<RuntimeOrigin>;
 	type WeightInfo = ();
-	type PriceForSiblingDelivery = PriceForSiblingTeyrchainDelivery;
+	type PriceForSiblingDelivery = PriceForSiblingParachainDelivery;
 }
 
 pub fn new_test_ext() -> pezsp_io::TestExternalities {

@@ -1,19 +1,19 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 //! A collator for Aura that looks ahead of the most recently included teyrchain block
 //! when determining what to build upon.
@@ -35,14 +35,16 @@
 use codec::{Codec, Encode};
 use pezcumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
 use pezcumulus_client_consensus_common::{self as consensus_common, TeyrchainBlockImportMarker};
-use pezcumulus_client_consensus_proposer::ProposerInterface;
 use pezcumulus_primitives_aura::AuraUnincludedSegmentApi;
-use pezcumulus_primitives_core::{CollectCollationInfo, PersistedValidationData};
+use pezcumulus_primitives_core::{
+	CollectCollationInfo, KeyToIncludeInRelayProof, PersistedValidationData,
+};
 use pezcumulus_relay_chain_interface::RelayChainInterface;
+use pezsp_consensus::Environment;
 
+use pezkuwi_node_primitives::SubmitCollationParams;
 use pezkuwi_node_subsystem::messages::CollationGenerationMessage;
 use pezkuwi_overseer::Handle as OverseerHandle;
-use pezkuwi_pez_node_primitives::SubmitCollationParams;
 use pezkuwi_primitives::{CollatorPair, Id as ParaId, OccupiedCoreAssumption};
 
 use crate::{
@@ -54,19 +56,22 @@ use futures::prelude::*;
 use pezsc_client_api::{backend::AuxStore, BlockBackend, BlockOf};
 use pezsc_consensus::BlockImport;
 use pezsc_network_types::PeerId;
-use pezsp_api::ProvideRuntimeApi;
+use pezsp_api::{ApiExt, ProvideRuntimeApi};
 use pezsp_application_crypto::AppPublic;
 use pezsp_blockchain::HeaderBackend;
 use pezsp_consensus_aura::{AuraApi, Slot};
 use pezsp_core::crypto::Pair;
 use pezsp_inherents::CreateInherentDataProviders;
 use pezsp_keystore::KeystorePtr;
-use pezsp_runtime::traits::{Block as BlockT, Header as HeaderT, Member};
+use pezsp_runtime::{
+	traits::{Block as BlockT, Header as HeaderT, Member},
+	Saturating,
+};
 use pezsp_timestamp::Timestamp;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
 /// Parameters for [`run`].
-pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS> {
+pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, ProposerFactory, CS> {
 	/// Inherent data providers. Only non-consensus inherent data should be provided, i.e.
 	/// the timestamp, slot, and paras inherents should be omitted, as they are set by this
 	/// collator.
@@ -93,8 +98,8 @@ pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS> {
 	pub overseer_handle: OverseerHandle,
 	/// The length of slots in the relay chain.
 	pub relay_chain_slot_duration: Duration,
-	/// The underlying block proposer this should call into.
-	pub proposer: Proposer,
+	/// The proposer for building blocks.
+	pub proposer: ProposerFactory,
 	/// The generic collator service used to plug into this consensus engine.
 	pub collator_service: CS,
 	/// The amount of time to spend authoring each block.
@@ -102,7 +107,7 @@ pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS> {
 	/// Whether we should reinitialize the collator config (i.e. we are transitioning to aura).
 	pub reinitialize: bool,
 	/// The maximum percentage of the maximum PoV size that the collator can use.
-	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-sdk/issues/193> is fixed.
+	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-sdk/issues/6020> is fixed.
 	pub max_pov_percentage: Option<u32>,
 }
 
@@ -132,8 +137,10 @@ where
 
 	tracing::debug!(target: crate::LOG_TARGET, ?slot_duration, ?block_hash, "Teyrchain slot duration acquired");
 
-	let (relay_slot, timestamp) =
-		consensus_common::relay_slot_and_timestamp(relay_parent_header, relay_chain_slot_duration)?;
+	let (relay_slot, timestamp) = consensus_common::get_relay_slot_and_timestamp(
+		relay_parent_header,
+		relay_chain_slot_duration,
+	)?;
 
 	let slot_now = Slot::from_timestamp(timestamp, slot_duration);
 
@@ -164,14 +171,16 @@ where
 		+ Send
 		+ Sync
 		+ 'static,
-	Client::Api:
-		AuraApi<Block, P::Public> + CollectCollationInfo<Block> + AuraUnincludedSegmentApi<Block>,
+	Client::Api: AuraApi<Block, P::Public>
+		+ CollectCollationInfo<Block>
+		+ AuraUnincludedSegmentApi<Block>
+		+ KeyToIncludeInRelayProof<Block>,
 	Backend: pezsc_client_api::Backend<Block> + 'static,
 	RClient: RelayChainInterface + Clone + 'static,
 	CIDP: CreateInherentDataProviders<Block, ()> + 'static,
 	CIDP::InherentDataProviders: Send,
 	BI: BlockImport<Block> + TeyrchainBlockImportMarker + Send + Sync + 'static,
-	Proposer: ProposerInterface<Block> + Send + Sync + 'static,
+	Proposer: Environment<Block> + Clone + Send + Sync + 'static,
 	CS: CollatorServiceInterface<Block> + Send + Sync + 'static,
 	CHP: consensus_common::ValidationCodeHashProvider<Block::Hash> + Send + 'static,
 	P: Pair + Send + Sync + 'static,
@@ -216,14 +225,16 @@ where
 		+ Send
 		+ Sync
 		+ 'static,
-	Client::Api:
-		AuraApi<Block, P::Public> + CollectCollationInfo<Block> + AuraUnincludedSegmentApi<Block>,
+	Client::Api: AuraApi<Block, P::Public>
+		+ CollectCollationInfo<Block>
+		+ AuraUnincludedSegmentApi<Block>
+		+ KeyToIncludeInRelayProof<Block>,
 	Backend: pezsc_client_api::Backend<Block> + 'static,
 	RClient: RelayChainInterface + Clone + 'static,
 	CIDP: CreateInherentDataProviders<Block, ()> + 'static,
 	CIDP::InherentDataProviders: Send,
 	BI: BlockImport<Block> + TeyrchainBlockImportMarker + Send + Sync + 'static,
-	Proposer: ProposerInterface<Block> + Send + Sync + 'static,
+	Proposer: Environment<Block> + Clone + Send + Sync + 'static,
 	CS: CollatorServiceInterface<Block> + Send + Sync + 'static,
 	CHP: consensus_common::ValidationCodeHashProvider<Block::Hash> + Send + 'static,
 	P: Pair + Send + Sync + 'static,
@@ -308,43 +319,45 @@ where
 				},
 			};
 
-			let (included_block, initial_parent) = match crate::collators::find_parent(
+			let session_index =
+				match params.relay_client.session_index_for_child(relay_parent).await {
+					Ok(session_index) => session_index,
+					Err(err) => {
+						tracing::error!(
+							target: crate::LOG_TARGET,
+							?err,
+							?relay_parent,
+							"Failed to fetch session index."
+						);
+						continue;
+					},
+				};
+
+			let parent_search_result = match crate::collators::find_parent(
 				relay_parent,
 				params.para_id,
 				&*params.para_backend,
 				&params.relay_client,
+				|_| true,
 			)
 			.await
 			{
-				Some(value) => value,
+				Some(result) => result,
 				None => continue,
 			};
 
+			let included_header = &parent_search_result.included_header;
 			let para_client = &*params.para_client;
 			let keystore = &params.keystore;
-			let can_build_upon = |block_hash| {
-				let (slot_now, relay_slot, timestamp) = get_teyrchain_slot::<_, _, P::Public>(
-					para_client,
-					block_hash,
-					&relay_parent_header,
-					params.relay_chain_slot_duration,
-				)?;
-
-				Some(super::can_build_upon::<_, _, P>(
-					slot_now,
-					relay_slot,
-					timestamp,
-					block_hash,
-					included_block.hash(),
-					para_client,
-					&keystore,
-				))
-			};
+			let included_block_hash = included_header.hash();
 
 			// Build in a loop until not allowed. Note that the authorities can change
 			// at any block, so we need to re-claim our slot every time.
-			let mut parent_hash = initial_parent.hash;
-			let mut parent_header = initial_parent.header;
+			let mut parent_hash = parent_search_result.best_parent_header.hash();
+			let mut parent_header = parent_search_result.best_parent_header;
+			// Distance from included block to best parent.
+			let initial_parent_depth =
+				(*parent_header.number()).saturating_sub(*included_header.number());
 			let overseer_handle = &mut params.overseer_handle;
 
 			// Do not try to build upon an unknown, pruned or bad block
@@ -352,34 +365,61 @@ where
 				continue;
 			}
 
-			// Trigger pre-conect to backing groups if necessary.
-			if let (Some((slot_now, _relay_slot, _timestamp)), Ok(authorities)) = (
-				get_teyrchain_slot::<_, _, P::Public>(
-					para_client,
-					parent_hash,
-					&relay_parent_header,
-					params.relay_chain_slot_duration,
-				),
-				para_client.runtime_api().authorities(parent_hash),
+			// Trigger pre-connect to backing groups if necessary.
+			if let Some((slot_now, _relay_slot, _timestamp)) = get_teyrchain_slot::<_, _, P::Public>(
+				para_client,
+				parent_hash,
+				&relay_parent_header,
+				params.relay_chain_slot_duration,
 			) {
-				connection_helper.update::<P>(slot_now, &authorities).await;
+				let mut runtime_api = para_client.runtime_api();
+				runtime_api
+					.set_call_context(pezsp_core::traits::CallContext::Onchain { import: false });
+				if let Ok(authorities) = runtime_api.authorities(parent_hash) {
+					connection_helper.update::<P>(slot_now, &authorities).await;
+				}
 			}
 
 			// This needs to change to support elastic scaling, but for continuously
 			// scheduled chains this ensures that the backlog will grow steadily.
-			for n_built in 0..2 {
-				let slot_claim = match can_build_upon(parent_hash) {
-					Some(fut) => match fut.await {
-						None => break,
-						Some(c) => c,
-					},
-					None => break,
+			for n_built in 0..2u32 {
+				let Some((slot_now, relay_slot, timestamp)) = get_teyrchain_slot::<_, _, P::Public>(
+					para_client,
+					parent_hash,
+					&relay_parent_header,
+					params.relay_chain_slot_duration,
+				) else {
+					break;
 				};
+
+				let Some(slot_claim) = super::claim_slot::<_, _, P>(
+					slot_now,
+					timestamp,
+					parent_hash,
+					para_client,
+					&keystore,
+				)
+				.await
+				else {
+					break;
+				};
+
+				if !super::can_build_upon::<_, _>(
+					parent_hash,
+					included_block_hash,
+					relay_slot,
+					slot_now,
+					para_client,
+				)
+				.await
+				{
+					break;
+				}
 
 				tracing::debug!(
 					target: crate::LOG_TARGET,
 					?relay_parent,
-					unincluded_segment_len = initial_parent.depth + n_built,
+					unincluded_segment_len = ?initial_parent_depth.saturating_add(n_built.into()),
 					"Slot claimed. Building"
 				);
 
@@ -392,12 +432,16 @@ where
 
 				// Build and announce collations recursively until
 				// `can_build_upon` fails or building a collation fails.
+				let relay_proof_request =
+					super::get_relay_proof_request(&*params.para_client, parent_hash);
+
 				let (teyrchain_inherent_data, other_inherent_data) = match collator
 					.create_inherent_data(
 						relay_parent,
 						&validation_data,
 						parent_hash,
 						slot_claim.timestamp(),
+						relay_proof_request,
 						params.collator_peer_id,
 					)
 					.await
@@ -429,12 +473,12 @@ where
 				} else {
 					// Set the block limit to 85% of the maximum PoV size.
 					//
-					// Once https://github.com/pezkuwichain/pezkuwi-sdk/issues/193 issue is
+					// Once https://github.com/pezkuwichain/pezkuwi-sdk/issues/6020 issue is
 					// fixed, the reservation should be removed.
 					validation_data.max_pov_size * 85 / 100
 				} as usize;
 
-				match collator
+				let collation_result = collator
 					.collate(
 						&parent_header,
 						&slot_claim,
@@ -442,9 +486,11 @@ where
 						(teyrchain_inherent_data, other_inherent_data),
 						params.authoring_duration,
 						allowed_pov_size,
+						None,
 					)
-					.await
-				{
+					.await;
+
+				match collation_result {
 					Ok(Some((collation, block_data))) => {
 						let Some(new_block_header) =
 							block_data.blocks().first().map(|b| b.header().clone())
@@ -483,10 +529,12 @@ where
 									SubmitCollationParams {
 										relay_parent,
 										collation,
-										parent_head: parent_header.encode().into(),
 										validation_code_hash,
 										result_sender: None,
 										core_index,
+										scheduling_parent: None,
+										session_index,
+										validation_data,
 									},
 								),
 								"SubmitCollation",

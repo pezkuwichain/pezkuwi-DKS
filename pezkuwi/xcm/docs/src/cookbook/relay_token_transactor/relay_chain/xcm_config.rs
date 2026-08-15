@@ -1,6 +1,6 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ use super::{AccountId, Balances, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrig
 
 parameter_types! {
 	pub HereLocation: Location = Location::here();
-	pub ThisNetwork: NetworkId = NetworkId::Pezkuwi;
+	pub ThisNetwork: NetworkId = NetworkId::Polkadot;
 }
 
 /// Converter from XCM Locations to accounts.
@@ -81,7 +81,7 @@ mod weigher {
 }
 
 parameter_types! {
-	pub UniversalLocation: InteriorLocation = [GlobalConsensus(NetworkId::Pezkuwi)].into();
+	pub UniversalLocation: InteriorLocation = [GlobalConsensus(NetworkId::Polkadot)].into();
 }
 
 pub struct XcmConfig;
@@ -104,7 +104,6 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTrap = ();
 	type AssetLocker = ();
 	type AssetExchanger = ();
-	type AssetClaims = ();
 	type SubscriptionService = ();
 	type PalletInstancesInfo = ();
 	type FeeManager = ();
@@ -128,7 +127,7 @@ pub type LocalOriginToLocation = SignedToAccountId32<RuntimeOrigin, AccountId, T
 impl pezpallet_xcm::Config for Runtime {
 	// No one can call `send`
 	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, ()>;
-	type XcmRouter = super::super::network::RelayChainXcmRouter; // Provided by xcm-pez-simulator
+	type XcmRouter = super::super::network::RelayChainXcmRouter; // Provided by xcm-simulator
 															  // Anyone can execute XCM programs
 	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
 	// We execute any type of program

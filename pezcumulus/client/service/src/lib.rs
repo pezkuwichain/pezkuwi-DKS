@@ -1,21 +1,21 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
-//! Pezcumulus service
+//! Cumulus service
 //!
 //! Provides functions for starting a collator node or a normal full node.
 
@@ -23,6 +23,7 @@ use futures::{channel::mpsc, StreamExt};
 use pezcumulus_client_cli::CollatorOptions;
 use pezcumulus_client_network::{AssumeSybilResistance, RequireSecondedInBlockAnnounce};
 use pezcumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange, RecoveryHandle};
+use pezcumulus_client_proof_size_recording::load_proof_size_recording;
 use pezcumulus_primitives_core::{CollectCollationInfo, ParaId};
 pub use pezcumulus_primitives_proof_size_hostfunction::storage_proof_size;
 use pezcumulus_relay_chain_inprocess_interface::build_inprocess_relay_chain;
@@ -30,7 +31,8 @@ use pezcumulus_relay_chain_interface::{RelayChainInterface, RelayChainResult};
 use pezcumulus_relay_chain_minimal_node::build_minimal_relay_chain_node_with_rpc;
 use pezkuwi_primitives::{CandidateEvent, CollatorPair, OccupiedCoreAssumption};
 use pezsc_client_api::{
-	Backend as BackendT, BlockBackend, BlockchainEvents, Finalizer, ProofProvider, UsageProvider,
+	AuxStore, Backend as BackendT, BlockBackend, BlockchainEvents, Finalizer, ProofProvider,
+	UsageProvider,
 };
 use pezsc_consensus::{
 	import_queue::{ImportQueue, ImportQueueService},
@@ -42,7 +44,9 @@ use pezsc_network::{
 };
 use pezsc_network_sync::SyncingService;
 use pezsc_network_transactions::TransactionsHandlerController;
-use pezsc_service::{Configuration, SpawnTaskHandle, TaskManager, WarpSyncConfig};
+use pezsc_service::{
+	Configuration, SpawnEssentialTaskHandle, SpawnTaskHandle, TaskManager, WarpSyncConfig,
+};
 use pezsc_telemetry::{log, TelemetryWorkerHandle};
 use pezsc_tracing::block::TracingExecuteBlock;
 use pezsc_utils::mpsc::TracingUnboundedSender;
@@ -53,7 +57,7 @@ use pezsp_runtime::{
 	traits::{Block as BlockT, BlockIdTo, Header},
 	SaturatedConversion, Saturating,
 };
-use pezsp_trie::proof_size_extension::ProofSizeExt;
+use pezsp_trie::proof_size_extension::{ProofSizeExt, ReplayProofSizeProvider};
 use prometheus::{Histogram, HistogramOpts, Registry};
 use std::{
 	sync::Arc,
@@ -62,18 +66,19 @@ use std::{
 
 /// Host functions that should be used in teyrchain nodes.
 ///
-/// Contains the standard bizinikiwi host functions, as well as a
+/// Contains the standard substrate host functions, as well as a
 /// host function to enable PoV-reclaim on teyrchain nodes.
 pub type TeyrchainHostFunctions = (
 	pezcumulus_primitives_proof_size_hostfunction::storage_proof_size::HostFunctions,
 	pezsp_io::BizinikiwiHostFunctions,
+	pezsp_crypto_ec_utils::HostFunctionsRfc163,
 );
 
 // Given the sporadic nature of the explicit recovery operation and the
 // possibility to retry infinite times this value is more than enough.
 // In practice here we expect no more than one queued messages.
 const RECOVERY_CHAN_SIZE: usize = 8;
-const LOG_TARGET_SYNC: &str = "sync::pezcumulus";
+const LOG_TARGET_SYNC: &str = "sync::cumulus";
 
 /// A hint about how long the node should wait before attempting to recover missing block data
 /// from the data availability layer.
@@ -209,7 +214,7 @@ where
 ///
 /// This function will:
 /// * Disable the default announcement of Bizinikiwi for the teyrchain in favor of the one of
-///   Pezcumulus.
+///   Cumulus.
 /// * Set peers needed to start warp sync to 1.
 pub fn prepare_node_config(mut teyrchain_config: Configuration) -> Configuration {
 	teyrchain_config.announce_block = false;
@@ -294,6 +299,7 @@ pub struct BuildNetworkParams<
 	pub para_id: ParaId,
 	pub relay_chain_interface: RCInterface,
 	pub spawn_handle: SpawnTaskHandle,
+	pub spawn_essential_handle: SpawnEssentialTaskHandle,
 	pub import_queue: IQ,
 	pub sybil_resistance_level: CollatorSybilResistance,
 	pub metrics: pezsc_network::NotificationMetrics,
@@ -308,6 +314,7 @@ pub async fn build_network<'a, Block, Client, RCInterface, IQ, Network>(
 		transaction_pool,
 		para_id,
 		spawn_handle,
+		spawn_essential_handle,
 		relay_chain_interface,
 		import_queue,
 		sybil_resistance_level,
@@ -377,6 +384,7 @@ where
 		client,
 		transaction_pool,
 		spawn_handle,
+		spawn_essential_handle,
 		import_queue,
 		block_announce_validator_builder: Some(Box::new(move |_| block_announce_validator)),
 		warp_sync_config,
@@ -618,13 +626,19 @@ impl<Client> TeyrchainTracingExecuteBlock<Client> {
 impl<Block, Client> TracingExecuteBlock<Block> for TeyrchainTracingExecuteBlock<Client>
 where
 	Block: BlockT,
-	Client: ProvideRuntimeApi<Block> + Send + Sync,
+	Client: ProvideRuntimeApi<Block> + AuxStore + Send + Sync,
 	Client::Api: Core<Block>,
 {
-	fn execute_block(&self, _: Block::Hash, block: Block) -> pezsp_blockchain::Result<()> {
+	fn execute_block(&self, orig_hash: Block::Hash, block: Block) -> pezsp_blockchain::Result<()> {
 		let mut runtime_api = self.client.runtime_api();
 		let storage_proof_recorder = ProofRecorder::<Block>::default();
-		runtime_api.register_extension(ProofSizeExt::new(storage_proof_recorder.clone()));
+
+		let proof_size_ext = load_proof_size_recording(&*self.client, orig_hash)?.map_or_else(
+			|| ProofSizeExt::new(storage_proof_recorder.clone()),
+			|recordings| ProofSizeExt::new(ReplayProofSizeProvider::from(recordings)),
+		);
+		runtime_api.register_extension(proof_size_ext);
+
 		runtime_api.record_proof_with_recorder(storage_proof_recorder);
 
 		runtime_api

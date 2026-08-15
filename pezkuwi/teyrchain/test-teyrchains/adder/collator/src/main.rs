@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,8 +17,8 @@
 //! Collator for the adder test teyrchain.
 
 use pezkuwi_cli::{Error, Result};
+use pezkuwi_node_primitives::CollationGenerationConfig;
 use pezkuwi_node_subsystem::messages::{CollationGenerationMessage, CollatorProtocolMessage};
-use pezkuwi_pez_node_primitives::CollationGenerationConfig;
 use pezkuwi_primitives::Id as ParaId;
 use pezsc_cli::{BizinikiwiCli, Error as BizinikiwiCliError};
 use pezsp_core::hexdisplay::HexDisplay;
@@ -78,7 +78,7 @@ fn main() -> Result<()> {
 				let full_node = pezkuwi_service::build_full(
 					config,
 					pezkuwi_service::NewFullParams {
-						is_teyrchain_node: pezkuwi_service::IsTeyrchainNode::Collator(
+						is_teyrchain_node: pezkuwi_service::IsParachainNode::Collator(
 							collator.collator_key(),
 						),
 						enable_beefy: false,
@@ -101,6 +101,8 @@ fn main() -> Result<()> {
 						keep_finalized_for: None,
 						invulnerable_ah_collators: HashSet::new(),
 						collator_protocol_hold_off: None,
+						experimental_collator_protocol: false,
+						collator_reputation_persist_interval: None,
 					},
 				)
 				.map_err(|e| e.to_string())?;

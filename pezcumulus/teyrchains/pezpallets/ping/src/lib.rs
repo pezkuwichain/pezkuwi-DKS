@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,17 +20,8 @@
 
 extern crate alloc;
 
-#[cfg(test)]
-mod mock;
-#[cfg(test)]
-mod tests;
-
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
-pub mod weights;
-
 use alloc::{vec, vec::Vec};
-use pezcumulus_pezpallet_xcm::{ensure_sibling_para, Origin as CumulusOrigin};
+use pezcumulus_pallet_xcm::{ensure_sibling_para, Origin as CumulusOrigin};
 use pezcumulus_primitives_core::ParaId;
 use pezframe_support::{parameter_types, BoundedVec};
 use pezframe_system::Config as SystemConfig;
@@ -38,10 +29,9 @@ use pezsp_runtime::traits::Saturating;
 use xcm::latest::prelude::*;
 
 pub use pezpallet::*;
-pub use weights::WeightInfo;
 
 parameter_types! {
-	const MaxTeyrchains: u32 = 100;
+	const MaxParachains: u32 = 100;
 	const MaxPayloadSize: u32 = 1024;
 }
 
@@ -69,16 +59,13 @@ pub mod pezpallet {
 		type RuntimeCall: From<Call<Self>> + Encode;
 
 		type XcmSender: SendXcm;
-
-		/// Weight information for extrinsics in this pezpallet.
-		type WeightInfo: WeightInfo;
 	}
 
 	/// The target teyrchains to ping.
 	#[pezpallet::storage]
 	pub(super) type Targets<T: Config> = StorageValue<
 		_,
-		BoundedVec<(ParaId, BoundedVec<u8, MaxPayloadSize>), MaxTeyrchains>,
+		BoundedVec<(ParaId, BoundedVec<u8, MaxPayloadSize>), MaxParachains>,
 		ValueQuery,
 	>;
 
@@ -116,7 +103,7 @@ pub mod pezpallet {
 		fn on_finalize(n: BlockNumberFor<T>) {
 			for (para, payload) in Targets::<T>::get().into_iter() {
 				let seq = PingCount::<T>::mutate(|seq| {
-					*seq = seq.saturating_add(1);
+					*seq += 1;
 					*seq
 				});
 				match send_xcm::<T::XcmSender>(
@@ -158,7 +145,7 @@ pub mod pezpallet {
 	#[pezpallet::call]
 	impl<T: Config> Pezpallet<T> {
 		#[pezpallet::call_index(0)]
-		#[pezpallet::weight(T::WeightInfo::start(payload.len() as u32))]
+		#[pezpallet::weight({0})]
 		pub fn start(origin: OriginFor<T>, para: ParaId, payload: Vec<u8>) -> DispatchResult {
 			ensure_root(origin)?;
 			let payload = BoundedVec::<u8, MaxPayloadSize>::try_from(payload)
@@ -170,7 +157,7 @@ pub mod pezpallet {
 		}
 
 		#[pezpallet::call_index(1)]
-		#[pezpallet::weight(T::WeightInfo::start_many(*count))]
+		#[pezpallet::weight({0})]
 		pub fn start_many(
 			origin: OriginFor<T>,
 			para: ParaId,
@@ -190,7 +177,7 @@ pub mod pezpallet {
 		}
 
 		#[pezpallet::call_index(2)]
-		#[pezpallet::weight(T::WeightInfo::stop())]
+		#[pezpallet::weight({0})]
 		pub fn stop(origin: OriginFor<T>, para: ParaId) -> DispatchResult {
 			ensure_root(origin)?;
 			Targets::<T>::mutate(|t| {
@@ -202,7 +189,7 @@ pub mod pezpallet {
 		}
 
 		#[pezpallet::call_index(3)]
-		#[pezpallet::weight(T::WeightInfo::stop_all())]
+		#[pezpallet::weight({0})]
 		pub fn stop_all(origin: OriginFor<T>, maybe_para: Option<ParaId>) -> DispatchResult {
 			ensure_root(origin)?;
 			if let Some(para) = maybe_para {
@@ -214,7 +201,7 @@ pub mod pezpallet {
 		}
 
 		#[pezpallet::call_index(4)]
-		#[pezpallet::weight(T::WeightInfo::ping(payload.len() as u32))]
+		#[pezpallet::weight({0})]
 		pub fn ping(origin: OriginFor<T>, seq: u32, payload: Vec<u8>) -> DispatchResult {
 			// Only accept pings from other chains.
 			let para = ensure_sibling_para(<T as Config>::RuntimeOrigin::from(origin))?;
@@ -242,7 +229,7 @@ pub mod pezpallet {
 		}
 
 		#[pezpallet::call_index(5)]
-		#[pezpallet::weight(T::WeightInfo::pong(payload.len() as u32))]
+		#[pezpallet::weight({0})]
 		pub fn pong(origin: OriginFor<T>, seq: u32, payload: Vec<u8>) -> DispatchResult {
 			// Only accept pings from other chains.
 			let para = ensure_sibling_para(<T as Config>::RuntimeOrigin::from(origin))?;

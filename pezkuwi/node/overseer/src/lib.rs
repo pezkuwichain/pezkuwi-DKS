@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -54,18 +54,18 @@
 //!             ..................................................................
 //! ```
 //!
-//! [overseer-page]: https://docs.pezkuwichain.io/sdk/book/node/overseer.html
+//! [overseer-page]: https://paritytech.github.io/pezkuwi-sdk/book/node/overseer.html
 
 // #![deny(unused_results)]
 // unused dependencies can not work for test and examples at the same time
 // yielding false positives
 #![warn(missing_docs)]
-// TODO https://github.com/pezkuwichain/pezkuwi-sdk/issues/144
+// TODO https://github.com/pezkuwichain/pezkuwi-sdk/issues/5793
 #![allow(dead_code, irrefutable_let_patterns)]
 
 use std::{
 	collections::{hash_map, HashMap},
-	fmt::{self, Debug},
+	fmt::{self},
 	pin::Pin,
 	sync::Arc,
 	time::Duration,
@@ -83,7 +83,7 @@ use pezkuwi_node_subsystem_types::messages::{
 	BitfieldDistributionMessage, CandidateBackingMessage, CandidateValidationMessage,
 	ChainApiMessage, ChainSelectionMessage, CollationGenerationMessage, CollatorProtocolMessage,
 	DisputeCoordinatorMessage, DisputeDistributionMessage, GossipSupportMessage,
-	NetworkBridgeRxMessage, NetworkBridgeTxMessage, ProspectiveTeyrchainsMessage,
+	NetworkBridgeRxMessage, NetworkBridgeTxMessage, ProspectiveParachainsMessage,
 	ProvisionerMessage, RuntimeApiMessage, StatementDistributionMessage,
 };
 
@@ -121,7 +121,7 @@ mod tests;
 
 use pezsp_core::traits::SpawnNamed;
 
-/// Glue to connect `trait orchestra::Spawner` and `SpawnNamed` from `bizinikiwi`.
+/// Glue to connect `trait orchestra::Spawner` and `SpawnNamed` from `substrate`.
 pub struct SpawnGlue<S>(pub S);
 
 impl<S> AsRef<S> for SpawnGlue<S> {
@@ -157,13 +157,13 @@ impl<S: SpawnNamed + Clone + Send + Sync> crate::gen::Spawner for SpawnGlue<S> {
 
 /// Whether a header supports teyrchain consensus or not.
 #[async_trait::async_trait]
-pub trait HeadSupportsTeyrchains {
+pub trait HeadSupportsParachains {
 	/// Return true if the given header supports teyrchain consensus. Otherwise, false.
 	async fn head_supports_teyrchains(&self, head: &Hash) -> bool;
 }
 
 #[async_trait::async_trait]
-impl<Client> HeadSupportsTeyrchains for Arc<Client>
+impl<Client> HeadSupportsParachains for Arc<Client>
 where
 	Client: RuntimeApiSubsystemClient + Sync + Send,
 {
@@ -289,7 +289,7 @@ impl From<FinalityNotification<Block>> for BlockInfo {
 }
 
 /// An event from outside the overseer scope, such
-/// as the bizinikiwi framework or user interaction.
+/// as the substrate framework or user interaction.
 #[derive(Debug)]
 pub enum Event {
 	/// A new block was imported.
@@ -403,7 +403,7 @@ pub async fn forward_events<P: BlockchainEvents<Block>>(client: Arc<P>, mut hand
 /// #   OverseerSignal,
 /// # 	SubsystemSender as _,
 /// # 	AllMessages,
-/// # 	HeadSupportsTeyrchains,
+/// # 	HeadSupportsParachains,
 /// # 	Overseer,
 /// # 	SubsystemError,
 /// # 	gen::{
@@ -445,15 +445,15 @@ pub async fn forward_events<P: BlockchainEvents<Block>>(client: Arc<P>, mut hand
 ///
 /// # fn main() { executor::block_on(async move {
 ///
-/// struct AlwaysSupportsTeyrchains;
+/// struct AlwaysSupportsParachains;
 ///
 /// #[async_trait::async_trait]
-/// impl HeadSupportsTeyrchains for AlwaysSupportsTeyrchains {
+/// impl HeadSupportsParachains for AlwaysSupportsParachains {
 ///      async fn head_supports_teyrchains(&self, _head: &Hash) -> bool { true }
 /// }
 ///
 /// let spawner = pezsp_core::testing::TaskExecutor::new();
-/// let (overseer, _handle) = dummy_overseer_builder(spawner, AlwaysSupportsTeyrchains, None)
+/// let (overseer, _handle) = dummy_overseer_builder(spawner, AlwaysSupportsParachains, None)
 /// 		.unwrap()
 /// 		.replace_candidate_validation(|_| ValidationSubsystem)
 /// 		.build()
@@ -480,7 +480,7 @@ pub async fn forward_events<P: BlockchainEvents<Block>>(client: Arc<P>, mut hand
 	error=SubsystemError,
 	message_capacity=2048,
 )]
-pub struct Overseer<SupportsTeyrchains> {
+pub struct Overseer<SupportsParachains> {
 	#[subsystem(CandidateValidationMessage, sends: [
 		ChainApiMessage,
 		RuntimeApiMessage,
@@ -502,7 +502,7 @@ pub struct Overseer<SupportsTeyrchains> {
 		StatementDistributionMessage,
 		ProvisionerMessage,
 		RuntimeApiMessage,
-		ProspectiveTeyrchainsMessage,
+		ProspectiveParachainsMessage,
 	])]
 	candidate_backing: CandidateBacking,
 
@@ -510,7 +510,7 @@ pub struct Overseer<SupportsTeyrchains> {
 		NetworkBridgeTxMessage,
 		CandidateBackingMessage,
 		RuntimeApiMessage,
-		ProspectiveTeyrchainsMessage,
+		ProspectiveParachainsMessage,
 		ChainApiMessage,
 	], can_receive_priority_messages)]
 	statement_distribution: StatementDistribution,
@@ -548,7 +548,7 @@ pub struct Overseer<SupportsTeyrchains> {
 		RuntimeApiMessage,
 		CandidateBackingMessage,
 		DisputeCoordinatorMessage,
-		ProspectiveTeyrchainsMessage,
+		ProspectiveParachainsMessage,
 		ChainApiMessage,
 	])]
 	provisioner: Provisioner,
@@ -590,7 +590,7 @@ pub struct Overseer<SupportsTeyrchains> {
 		RuntimeApiMessage,
 		CandidateBackingMessage,
 		ChainApiMessage,
-		ProspectiveTeyrchainsMessage,
+		ProspectiveParachainsMessage,
 	])]
 	collator_protocol: CollatorProtocol,
 
@@ -624,7 +624,7 @@ pub struct Overseer<SupportsTeyrchains> {
 	approval_voting_parallel: ApprovalVotingParallel,
 	#[subsystem(GossipSupportMessage, sends: [
 		NetworkBridgeTxMessage,
-		NetworkBridgeRxMessage, // TODO <https://github.com/pezkuwichain/pezkuwi-sdk/issues/303>
+		NetworkBridgeRxMessage, // TODO <https://github.com/paritytech/polkadot/issues/5626>
 		RuntimeApiMessage,
 		ChainSelectionMessage,
 		ChainApiMessage,
@@ -653,11 +653,11 @@ pub struct Overseer<SupportsTeyrchains> {
 	#[subsystem(blocking, ChainSelectionMessage, sends: [ChainApiMessage])]
 	chain_selection: ChainSelection,
 
-	#[subsystem(ProspectiveTeyrchainsMessage, sends: [
+	#[subsystem(ProspectiveParachainsMessage, sends: [
 		RuntimeApiMessage,
 		ChainApiMessage,
 	])]
-	prospective_teyrchains: ProspectiveTeyrchains,
+	prospective_teyrchains: ProspectiveParachains,
 
 	/// External listeners waiting for a hash to be in the active-leave set.
 	pub activation_external_listeners: HashMap<Hash, Vec<oneshot::Sender<SubsystemResult<()>>>>,
@@ -666,20 +666,20 @@ pub struct Overseer<SupportsTeyrchains> {
 	pub active_leaves: HashMap<Hash, BlockNumber>,
 
 	/// An implementation for checking whether a header supports teyrchain consensus.
-	pub supports_teyrchains: SupportsTeyrchains,
+	pub supports_teyrchains: SupportsParachains,
 
 	/// Various Prometheus metrics.
 	pub metrics: OverseerMetrics,
 }
 
 /// Spawn the metrics metronome task.
-pub fn spawn_metronome_metrics<S, SupportsTeyrchains>(
-	overseer: &mut Overseer<S, SupportsTeyrchains>,
+pub fn spawn_metronome_metrics<S, SupportsParachains>(
+	overseer: &mut Overseer<S, SupportsParachains>,
 	metronome_metrics: OverseerMetrics,
 ) -> Result<(), SubsystemError>
 where
 	S: Spawner,
-	SupportsTeyrchains: HeadSupportsTeyrchains,
+	SupportsParachains: HeadSupportsParachains,
 {
 	struct ExtractNameAndMeters;
 
@@ -749,9 +749,9 @@ where
 	Ok(())
 }
 
-impl<S, SupportsTeyrchains> Overseer<S, SupportsTeyrchains>
+impl<S, SupportsParachains> Overseer<S, SupportsParachains>
 where
-	SupportsTeyrchains: HeadSupportsTeyrchains,
+	SupportsParachains: HeadSupportsParachains,
 	S: Spawner,
 {
 	/// Stop the `Overseer`.

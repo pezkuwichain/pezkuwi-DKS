@@ -25,7 +25,7 @@ pub use extension::{
 };
 pub use registration::{ExplicitOrAccountParams, Registration, StakeAndSlash};
 
-use pezbp_runtime::{ChainId, StorageDoubleMapKeyProvider};
+use bp_runtime::{ChainId, StorageDoubleMapKeyProvider};
 use pezframe_support::{traits::tokens::Preservation, Blake2_128Concat, Identity};
 use pezsp_runtime::{
 	codec::{Codec, Decode, DecodeWithMemTracking, Encode, EncodeLike, MaxEncodedLen},
@@ -222,7 +222,7 @@ pub trait RewardLedger<Relayer, Reward, RewardBalance> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use pezbp_messages::{HashedLaneId, LaneIdType, LegacyLaneId};
+	use bp_messages::{HashedLaneId, LaneIdType, LegacyLaneId};
 	use pezsp_runtime::{app_crypto::Ss58Codec, testing::H256};
 
 	#[test]
@@ -283,7 +283,7 @@ mod tests {
 	fn pay_reward_from_account_for_legacy_lane_id_works() {
 		let test_data = vec![
 			// Note: these accounts are used for integration tests within
-			// `bridges_pezkuwichain_zagros.sh`
+			// `bridges_rococo_westend.sh`
 			(
 				LegacyLaneId([0, 0, 0, 1]),
 				b"bhks",
@@ -309,7 +309,7 @@ mod tests {
 				(2_u16, "EoQBtnx69txxumxSJexVzxYD1Q4LWAuWmRq8LrBWb27nhYN"),
 			),
 			// Note: these accounts are used for integration tests within
-			// `bridges_pezkuwi_dicle.sh` from fellows.
+			// `bridges_polkadot_kusama.sh` from fellows.
 			(
 				LegacyLaneId([0, 0, 0, 2]),
 				b"bhwd",

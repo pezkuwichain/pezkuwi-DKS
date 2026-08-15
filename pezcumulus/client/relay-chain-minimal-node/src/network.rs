@@ -1,19 +1,19 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 use pezkuwi_core_primitives::{Block, Hash, Header};
 use pezsp_runtime::traits::NumberFor;
@@ -76,7 +76,7 @@ pub(crate) fn build_collator_network<Network: NetworkBackend<Block, Hash>>(
 		protocol_id,
 		metrics_registry: config.prometheus_config.as_ref().map(|config| config.registry.clone()),
 		block_announce_config,
-		bitswap_config: None,
+		ipfs_config: None,
 		notification_metrics,
 	};
 
@@ -95,7 +95,7 @@ pub(crate) fn build_collator_network<Network: NetworkBackend<Block, Hash>>(
 		// requests under the hood. It has been noted that without the notification
 		// service of the `/block-announces/1` protocol, collators are not advertised
 		// and their produced blocks do not propagate:
-		// https://github.com/pezkuwichain/pezkuwi-sdk/issues/154
+		// https://github.com/pezkuwichain/pezkuwi-sdk/issues/8474
 		//
 		// This is because the full nodes on the relay chain will attempt to establish
 		// a connection to the minimal relay chain. By dropping the notification service,

@@ -2,9 +2,9 @@
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
 use crate::{mock::*, DispatchError::BadOrigin, *};
 use pezframe_support::{assert_noop, assert_ok};
-use pezsnowbridge_test_utils::FAILING_NONCE;
 use pezsp_keyring::sr25519::Keyring;
-use xcm::{latest::ZAGROS_GENESIS_HASH, prelude::*};
+use snowbridge_test_utils::FAILING_NONCE;
+use xcm::{latest::WESTEND_GENESIS_HASH, prelude::*};
 
 #[test]
 fn register_tokens_succeeds() {
@@ -31,7 +31,7 @@ fn agent_id_from_location() {
 			[
 				Teyrchain(1000),
 				AccountId32 {
-					network: Some(NetworkId::ByGenesis(ZAGROS_GENESIS_HASH)),
+					network: Some(NetworkId::ByGenesis(WESTEND_GENESIS_HASH)),
 					id: bob.into(),
 				},
 			],
@@ -106,7 +106,7 @@ pub struct RegisterTokenTestCase {
 #[test]
 fn register_all_tokens_succeeds() {
 	let test_cases = vec![
-		// HEZ
+		// DOT
 		RegisterTokenTestCase { native: Location::parent() },
 		// GLMR (Some Pezkuwi teyrchain currency)
 		RegisterTokenTestCase { native: Location::new(1, [Teyrchain(2004)]) },
@@ -114,11 +114,11 @@ fn register_all_tokens_succeeds() {
 		RegisterTokenTestCase {
 			native: Location::new(1, [Teyrchain(1000), PalletInstance(50), GeneralIndex(1984)]),
 		},
-		// DCL
-		RegisterTokenTestCase { native: Location::new(2, [GlobalConsensus(Dicle)]) },
+		// KSM
+		RegisterTokenTestCase { native: Location::new(2, [GlobalConsensus(Kusama)]) },
 		// KAR (Some Dicle teyrchain currency)
 		RegisterTokenTestCase {
-			native: Location::new(2, [GlobalConsensus(Dicle), Teyrchain(2000)]),
+			native: Location::new(2, [GlobalConsensus(Kusama), Teyrchain(2000)]),
 		},
 	];
 	for tc in test_cases.iter() {

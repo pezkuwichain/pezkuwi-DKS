@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ use pezkuwi_node_network_protocol::{
 	},
 	UnifiedReputationChange as Rep,
 };
+use pezkuwi_node_primitives::AvailableData;
 use pezkuwi_node_subsystem::{
 	errors::RecoveryError,
 	messages::{AvailabilityRecoveryMessage, AvailabilityStoreMessage},
@@ -64,7 +65,6 @@ use pezkuwi_node_subsystem_util::{
 	availability_chunks::availability_chunk_indices,
 	runtime::{ExtendedSessionInfo, RuntimeInfo},
 };
-use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_primitives::{
 	node_features, BlockNumber, CandidateHash, CandidateReceiptV2 as CandidateReceipt, ChunkIndex,
 	CoreIndex, GroupIndex, Hash, SessionIndex, ValidatorIndex,

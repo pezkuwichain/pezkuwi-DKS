@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -110,6 +110,7 @@ pub type NativeAndAssets =
 parameter_types! {
 	pub const AssetConversionPalletId: PalletId = PalletId(*b"py/ascon");
 	pub const Native: NativeOrWithId<u32> = NativeOrWithId::Native;
+	pub LpFee: Permill = Permill::from_rational(3u32, 1_000u32); // 0.3%
 	pub const LiquidityWithdrawalFee: Permill = Permill::from_percent(0);
 }
 
@@ -142,7 +143,7 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type PoolSetupFeeAsset = Native;
 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
-	type LPFee = ConstU32<3>;
+	type LPFee = LpFee;
 	type PalletId = AssetConversionPalletId;
 	type MaxSwapPathLength = ConstU32<3>;
 	type MintMinLiquidity = ConstU128<100>;
@@ -158,7 +159,7 @@ parameter_types! {
 	pub HereLocation: Location = Here.into_location();
 	pub WeightPerInstruction: Weight = Weight::from_parts(1, 1);
 	pub MaxInstructions: u32 = 100;
-	pub UniversalLocation: InteriorLocation = [GlobalConsensus(Pezkuwi), Teyrchain(1000)].into();
+	pub UniversalLocation: InteriorLocation = [GlobalConsensus(Polkadot), Teyrchain(1000)].into();
 	pub TrustBackedAssetsPalletIndex: u8 = <AssetsPallet as PalletInfoAccess>::index() as u8;
 	pub TrustBackedAssetsPalletLocation: Location =	PalletInstance(TrustBackedAssetsPalletIndex::get()).into();
 }
@@ -239,7 +240,6 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTrap = ();
 	type AssetLocker = ();
 	type AssetExchanger = PoolAssetsExchanger;
-	type AssetClaims = ();
 	type SubscriptionService = ();
 	type PalletInstancesInfo = ();
 	type FeeManager = ();
@@ -272,8 +272,8 @@ impl ConvertLocation<AccountId> for AccountIndex64Aliases {
 /// `Convert` implementation to convert from some a `Signed` (system) `Origin` into an
 /// `AccountIndex64`.
 ///
-/// Typically used when configuring `pezpallet-xcm` in tests to allow `u64` accounts to dispatch an
-/// XCM from an `AccountIndex64` origin.
+/// Typically used when configuring `pezpallet-xcm` in tests to allow `u64` accounts to dispatch an XCM
+/// from an `AccountIndex64` origin.
 pub struct SignedToAccountIndex64<RuntimeOrigin, AccountId, Network>(
 	PhantomData<(RuntimeOrigin, AccountId, Network)>,
 );

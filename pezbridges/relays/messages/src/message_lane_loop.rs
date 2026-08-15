@@ -29,7 +29,7 @@ use std::{collections::BTreeMap, fmt::Debug, future::Future, ops::RangeInclusive
 use async_trait::async_trait;
 use futures::{channel::mpsc::unbounded, future::FutureExt, stream::StreamExt};
 
-use pezbp_messages::{MessageNonce, UnrewardedRelayersState, Weight};
+use bp_messages::{MessageNonce, UnrewardedRelayersState, Weight};
 use relay_utils::{
 	interval, metrics::MetricsParams, process_future_result, relay_loop::Client as RelayClient,
 	retry_backoff, FailedClient, TransactionTracker,
@@ -393,7 +393,7 @@ async fn run_until_connection_lost<P: MessageLane, SC: SourceClient<P>, TC: Targ
 						}
 					},
 					&mut source_go_offline_future,
-					async_std::task::sleep,
+					tokio::time::sleep,
 					|| format!("Error retrieving state from {} node", P::SOURCE_NAME),
 				).fail_if_connection_error(FailedClient::Source)?;
 			},
@@ -424,7 +424,7 @@ async fn run_until_connection_lost<P: MessageLane, SC: SourceClient<P>, TC: Targ
 						}
 					},
 					&mut target_go_offline_future,
-					async_std::task::sleep,
+					tokio::time::sleep,
 					|| format!("Error retrieving state from {} node", P::TARGET_NAME),
 				).fail_if_connection_error(FailedClient::Target)?;
 			},
@@ -471,9 +471,9 @@ async fn run_until_connection_lost<P: MessageLane, SC: SourceClient<P>, TC: Targ
 pub(crate) mod tests {
 	use std::sync::Arc;
 
+	use bp_messages::{HashedLaneId, LaneIdType, LegacyLaneId};
 	use futures::stream::StreamExt;
 	use parking_lot::Mutex;
-	use pezbp_messages::{HashedLaneId, LaneIdType, LegacyLaneId};
 	use relay_utils::{HeaderId, MaybeConnectionError, TrackedTransactionStatus};
 
 	use super::*;
@@ -949,7 +949,7 @@ pub(crate) mod tests {
 		target_post_tick: Arc<dyn Fn(&mut TestClientData) + Send + Sync>,
 		exit_signal: impl Future<Output = ()> + 'static + Send,
 	) -> TestClientData {
-		async_std::task::block_on(async {
+		tokio::runtime::Runtime::new().unwrap().block_on(async {
 			let source_client = TestSourceClient {
 				data: data.clone(),
 				tick: source_tick,

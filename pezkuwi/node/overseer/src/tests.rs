@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,13 +21,13 @@ use std::{collections::HashMap, sync::atomic, task::Poll};
 use pezkuwi_node_network_protocol::{
 	peer_set::ValidationVersion, ObservedRole, PeerId, UnifiedReputationChange,
 };
+use pezkuwi_node_primitives::{
+	BlockData, CollationGenerationConfig, CollationResult, DisputeMessage, InvalidDisputeVote, PoV,
+	UncheckedDisputeMessage, ValidDisputeVote,
+};
 use pezkuwi_node_subsystem_test_helpers::mock::{dummy_unpin_handle, new_leaf};
 use pezkuwi_node_subsystem_types::messages::{
 	NetworkBridgeEvent, PvfExecKind, ReportPeerMessage, RuntimeApiRequest,
-};
-use pezkuwi_pez_node_primitives::{
-	BlockData, CollationGenerationConfig, CollationResult, DisputeMessage, InvalidDisputeVote, PoV,
-	UncheckedDisputeMessage, ValidDisputeVote,
 };
 use pezkuwi_primitives::{
 	CandidateHash, CandidateReceiptV2, CollatorPair, Id as ParaId, InvalidDisputeStatementKind,
@@ -41,7 +41,7 @@ use crate::{
 	self as overseer,
 	dummy::{dummy_overseer_builder, one_for_all_overseer_builder},
 	gen::Delay,
-	HeadSupportsTeyrchains,
+	HeadSupportsParachains,
 };
 use metered;
 
@@ -111,7 +111,7 @@ where
 							validation_code: dummy_validation_code(),
 							candidate_receipt,
 							pov: PoV { block_data: BlockData(Vec::new()) }.into(),
-							executor_params: Default::default(),
+							scheduling_session_index: 1,
 							exec_kind: PvfExecKind::Backing(dummy_hash()),
 							response_sender: tx,
 						})
@@ -151,10 +151,10 @@ where
 	}
 }
 
-struct MockSupportsTeyrchains;
+struct MockSupportsParachains;
 
 #[async_trait]
-impl HeadSupportsTeyrchains for MockSupportsTeyrchains {
+impl HeadSupportsParachains for MockSupportsParachains {
 	async fn head_supports_teyrchains(&self, _head: &Hash) -> bool {
 		true
 	}
@@ -171,7 +171,7 @@ fn overseer_works() {
 
 		let mut s1_rx = s1_rx.fuse();
 		let mut s2_rx = s2_rx.fuse();
-		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
+		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
 			.unwrap()
 			.replace_candidate_validation(move |_| TestSubsystem1(s1_tx))
 			.replace_candidate_backing(move |_| TestSubsystem2(s2_tx))
@@ -238,7 +238,7 @@ fn overseer_metrics_work() {
 
 		let registry = prometheus::Registry::new();
 		let (overseer, handle) =
-			dummy_overseer_builder(spawner, MockSupportsTeyrchains, Some(&registry))
+			dummy_overseer_builder(spawner, MockSupportsParachains, Some(&registry))
 				.unwrap()
 				.build()
 				.unwrap();
@@ -283,7 +283,7 @@ fn extract_metrics(registry: &prometheus::Registry) -> HashMap<&'static str, u64
 
 	let activated = extract("pezkuwi_teyrchain_activated_heads_total");
 	let deactivated = extract("pezkuwi_teyrchain_deactivated_heads_total");
-	let relayed = extract("pezkuwi_teyrchain_pez_messages_relayed_total");
+	let relayed = extract("pezkuwi_teyrchain_messages_relayed_total");
 	let mut result = HashMap::new();
 	result.insert("activated", activated);
 	result.insert("deactivated", deactivated);
@@ -299,7 +299,7 @@ fn overseer_ends_on_subsystem_exit() {
 	let spawner = pezsp_core::testing::TaskExecutor::new();
 
 	executor::block_on(async move {
-		let (overseer, _handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
+		let (overseer, _handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
 			.unwrap()
 			.replace_candidate_backing(|_| ReturnOnStart)
 			.build()
@@ -400,7 +400,7 @@ fn overseer_start_stop_works() {
 		let (tx_5, mut rx_5) = metered::channel(64);
 		let (tx_6, mut rx_6) = metered::channel(64);
 
-		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
+		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
 			.unwrap()
 			.replace_candidate_validation(move |_| TestSubsystem5(tx_5))
 			.replace_candidate_backing(move |_| TestSubsystem6(tx_6))
@@ -495,7 +495,7 @@ fn overseer_finalize_works() {
 
 		// start with two forks of different height.
 
-		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
+		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
 			.unwrap()
 			.replace_candidate_validation(move |_| TestSubsystem5(tx_5))
 			.replace_candidate_backing(move |_| TestSubsystem6(tx_6))
@@ -599,7 +599,7 @@ fn overseer_finalize_leaf_preserves_it() {
 
 		// start with two forks at height 1.
 
-		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
+		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
 			.unwrap()
 			.replace_candidate_validation(move |_| TestSubsystem5(tx_5))
 			.replace_candidate_backing(move |_| TestSubsystem6(tx_6))
@@ -696,7 +696,7 @@ fn do_not_send_empty_leaves_update_on_block_finalization() {
 
 		let (tx_5, mut rx_5) = metered::channel(64);
 
-		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsTeyrchains, None)
+		let (overseer, handle) = dummy_overseer_builder(spawner, MockSupportsParachains, None)
 			.unwrap()
 			.replace_candidate_backing(move |_| TestSubsystem6(tx_5))
 			.build()
@@ -811,7 +811,7 @@ fn test_candidate_validation_msg() -> CandidateValidationMessage {
 		validation_code: dummy_validation_code(),
 		candidate_receipt,
 		pov,
-		executor_params: Default::default(),
+		scheduling_session_index: 1,
 		exec_kind: PvfExecKind::Backing(dummy_hash()),
 		response_sender,
 	}
@@ -819,7 +819,7 @@ fn test_candidate_validation_msg() -> CandidateValidationMessage {
 
 fn test_candidate_backing_msg() -> CandidateBackingMessage {
 	let (sender, _) = oneshot::channel();
-	CandidateBackingMessage::GetBackableCandidates(Default::default(), sender)
+	CandidateBackingMessage::GetBackableCandidates { candidates: Default::default(), sender }
 }
 
 fn test_chain_api_msg() -> ChainApiMessage {
@@ -973,8 +973,8 @@ fn test_chain_selection_msg() -> ChainSelectionMessage {
 	ChainSelectionMessage::Approved(Default::default())
 }
 
-fn test_prospective_teyrchains_msg() -> ProspectiveTeyrchainsMessage {
-	ProspectiveTeyrchainsMessage::CandidateBacked(
+fn test_prospective_teyrchains_msg() -> ProspectiveParachainsMessage {
+	ProspectiveParachainsMessage::CandidateBacked(
 		ParaId::from(5),
 		CandidateHash(Hash::repeat_byte(0)),
 	)
@@ -1000,7 +1000,7 @@ fn overseer_all_subsystems_receive_signals_and_messages() {
 		);
 
 		let (overseer, handle) =
-			one_for_all_overseer_builder(spawner, MockSupportsTeyrchains, subsystem, None)
+			one_for_all_overseer_builder(spawner, MockSupportsParachains, subsystem, None)
 				.unwrap()
 				.build()
 				.unwrap();
@@ -1079,7 +1079,7 @@ fn overseer_all_subsystems_receive_signals_and_messages() {
 			.send_msg_anon(AllMessages::ChainSelection(test_chain_selection_msg()))
 			.await;
 		handle
-			.send_msg_anon(AllMessages::ProspectiveTeyrchains(test_prospective_teyrchains_msg()))
+			.send_msg_anon(AllMessages::ProspectiveParachains(test_prospective_teyrchains_msg()))
 			.await;
 		// handle.send_msg_anon(AllMessages::PvfChecker(test_pvf_checker_msg())).await;
 
@@ -1338,7 +1338,7 @@ impl IsPrioMessage for DisputeDistributionMessage {}
 impl IsPrioMessage for GossipSupportMessage {}
 impl IsPrioMessage for NetworkBridgeRxMessage {}
 impl IsPrioMessage for NetworkBridgeTxMessage {}
-impl IsPrioMessage for ProspectiveTeyrchainsMessage {}
+impl IsPrioMessage for ProspectiveParachainsMessage {}
 impl IsPrioMessage for ProvisionerMessage {}
 impl IsPrioMessage for RuntimeApiMessage {}
 impl IsPrioMessage for BitfieldSigningMessage {}
@@ -1446,7 +1446,7 @@ fn overseer_check_subsystem_can_receive_their_priority_messages(
 		let subsystem = SlowSubsystem::new(msgs_received.clone(), prio_msgs_received.clone());
 
 		let (overseer, handle) =
-			one_for_all_overseer_builder(spawner, MockSupportsTeyrchains, subsystem, None)
+			one_for_all_overseer_builder(spawner, MockSupportsParachains, subsystem, None)
 				.unwrap()
 				.build()
 				.unwrap();

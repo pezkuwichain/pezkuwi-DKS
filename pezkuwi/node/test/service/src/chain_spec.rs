@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 //! Chain specifications for the test runtime.
 
 use pezkuwi_primitives::{
-	node_features, AccountId, AssignmentId, NodeFeatures, SchedulerParams, ValidatorId,
+	node_features, vstaging::SchedulerParams, AccountId, AssignmentId, NodeFeatures, ValidatorId,
 	MAX_CODE_SIZE, MAX_POV_SIZE,
 };
 use pezkuwi_service::chain_spec::Extensions;
@@ -30,14 +30,14 @@ use pezsp_consensus_babe::AuthorityId as BabeId;
 use pezsp_core::{crypto::get_public_from_string_or_panic, sr25519};
 use pezsp_keyring::Sr25519Keyring;
 use pezsp_runtime::Perbill;
-use peztest_runtime_constants::currency::DOTS;
+use test_runtime_constants::currency::DOTS;
 
-const DEFAULT_PROTOCOL_ID: &str = "hez";
+const DEFAULT_PROTOCOL_ID: &str = "dot";
 
-/// The `ChainSpec` parameterized for pezkuwi test runtime.
-pub type PezkuwiChainSpec = pezsc_service::GenericChainSpec<Extensions>;
+/// The `ChainSpec` parameterized for polkadot test runtime.
+pub type PolkadotChainSpec = pezsc_service::GenericChainSpec<Extensions>;
 
-/// Returns the properties for the [`PezkuwiChainSpec`].
+/// Returns the properties for the [`PolkadotChainSpec`].
 pub fn pezkuwi_chain_spec_properties() -> serde_json::map::Map<String, serde_json::Value> {
 	serde_json::json!({
 		"tokenDecimals": 10,
@@ -48,8 +48,8 @@ pub fn pezkuwi_chain_spec_properties() -> serde_json::map::Map<String, serde_jso
 }
 
 /// Local testnet config (multivalidator Alice + Bob)
-pub fn pezkuwi_local_testnet_config() -> PezkuwiChainSpec {
-	PezkuwiChainSpec::builder(
+pub fn pezkuwi_local_testnet_config() -> PolkadotChainSpec {
+	PolkadotChainSpec::builder(
 		pezkuwi_test_runtime::WASM_BINARY.expect("Wasm binary must be built for testing"),
 		Default::default(),
 	)
@@ -90,7 +90,7 @@ fn testnet_accounts() -> Vec<AccountId> {
 	Sr25519Keyring::well_known().map(|k| k.to_account_id()).collect()
 }
 
-/// Helper function to create pezkuwi `RuntimeGenesisConfig` for testing
+/// Helper function to create polkadot `RuntimeGenesisConfig` for testing
 fn pezkuwi_testnet_genesis(
 	initial_authorities: Vec<(
 		AccountId,

@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,30 +29,30 @@ use pezsp_runtime::{traits::Block as BlockT, Digest, DigestItem};
 use pezsp_state_machine::BasicExternalities;
 
 /// An extension for the test client to initialize a Pezkuwi specific block builder.
-pub trait InitPezkuwiBlockBuilder {
+pub trait InitPolkadotBlockBuilder {
 	/// Init a Pezkuwi specific block builder that works for the test runtime.
 	///
 	/// This will automatically create and push the inherents for you to make the block valid for
 	/// the test runtime.
-	fn init_pezkuwi_block_builder(&self) -> pezsc_block_builder::BlockBuilder<'_, Block, Client>;
+	fn init_polkadot_block_builder(&self) -> pezsc_block_builder::BlockBuilder<'_, Block, Client>;
 
 	/// Init a Pezkuwi specific block builder at a specific block that works for the test runtime.
 	///
-	/// Same as [`InitPezkuwiBlockBuilder::init_pezkuwi_block_builder`] besides that it takes a
+	/// Same as [`InitPolkadotBlockBuilder::init_polkadot_block_builder`] besides that it takes a
 	/// `Hash` to say which should be the parent block of the block that is being build.
-	fn init_pezkuwi_block_builder_at(
+	fn init_polkadot_block_builder_at(
 		&self,
 		hash: <Block as BlockT>::Hash,
 	) -> pezsc_block_builder::BlockBuilder<'_, Block, Client>;
 }
 
-impl InitPezkuwiBlockBuilder for Client {
-	fn init_pezkuwi_block_builder(&self) -> BlockBuilder<'_, Block, Client> {
+impl InitPolkadotBlockBuilder for Client {
+	fn init_polkadot_block_builder(&self) -> BlockBuilder<'_, Block, Client> {
 		let chain_info = self.chain_info();
-		self.init_pezkuwi_block_builder_at(chain_info.best_hash)
+		self.init_polkadot_block_builder_at(chain_info.best_hash)
 	}
 
-	fn init_pezkuwi_block_builder_at(
+	fn init_polkadot_block_builder_at(
 		&self,
 		hash: <Block as BlockT>::Hash,
 	) -> BlockBuilder<'_, Block, Client> {
@@ -115,7 +115,7 @@ impl InitPezkuwiBlockBuilder for Client {
 		};
 
 		inherent_data
-			.put_data(pezkuwi_primitives::TEYRCHAINS_INHERENT_IDENTIFIER, &teyrchains_inherent_data)
+			.put_data(pezkuwi_primitives::PARACHAINS_INHERENT_IDENTIFIER, &teyrchains_inherent_data)
 			.expect("Put teyrchains inherent data");
 
 		let inherents = block_builder.create_inherents(inherent_data).expect("Creates inherents");
@@ -137,14 +137,14 @@ pub trait BlockBuilderExt {
 	/// opaque extrinsic and pushes it to the block.
 	///
 	/// Returns the result of the application of the extrinsic.
-	fn push_pezkuwi_extrinsic(
+	fn push_polkadot_extrinsic(
 		&mut self,
 		ext: UncheckedExtrinsic,
 	) -> Result<(), pezsp_blockchain::Error>;
 }
 
 impl BlockBuilderExt for BlockBuilder<'_, Block, Client> {
-	fn push_pezkuwi_extrinsic(
+	fn push_polkadot_extrinsic(
 		&mut self,
 		ext: UncheckedExtrinsic,
 	) -> Result<(), pezsp_blockchain::Error> {

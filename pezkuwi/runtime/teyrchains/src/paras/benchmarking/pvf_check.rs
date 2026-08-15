@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -176,7 +176,8 @@ where
 			Pezpallet::<T>::schedule_code_upgrade(
 				id,
 				validation_code,
-				/* relay_parent_number */ 1u32.into(),
+				// relay_parent_number
+				1u32.into(),
 				&configuration::ActiveConfig::<T>::get(),
 				UpgradeStrategy::SetGoAheadSignal,
 			);

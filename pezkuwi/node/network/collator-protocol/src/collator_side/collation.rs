@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ use pezkuwi_node_network_protocol::{
 	request_response::{incoming::OutgoingResponse, v2 as protocol_v2, IncomingRequest},
 	PeerId,
 };
-use pezkuwi_pez_node_primitives::PoV;
+use pezkuwi_node_primitives::PoV;
 use pezkuwi_primitives::{
 	CandidateHash, CandidateReceiptV2 as CandidateReceipt, Hash, HeadData, Id as ParaId,
 };
@@ -122,9 +122,9 @@ impl VersionedCollationRequest {
 	}
 
 	/// Returns relay parent from the request payload.
-	pub fn relay_parent(&self) -> Hash {
+	pub fn scheduling_parent(&self) -> Hash {
 		match self {
-			VersionedCollationRequest::V2(req) => req.payload.relay_parent,
+			VersionedCollationRequest::V2(req) => req.payload.scheduling_parent,
 		}
 	}
 

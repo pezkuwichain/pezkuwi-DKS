@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,12 +21,12 @@ fn universal_origin_should_work() {
 	AllowUnpaidFrom::set(vec![[Teyrchain(1)].into(), [Teyrchain(2)].into()]);
 	clear_universal_aliases();
 	// Teyrchain 1 may represent Dicle to us
-	add_universal_alias(Teyrchain(1), Dicle);
+	add_universal_alias(Teyrchain(1), Kusama);
 	// Teyrchain 2 may represent Pezkuwi to us
-	add_universal_alias(Teyrchain(2), Pezkuwi);
+	add_universal_alias(Teyrchain(2), Polkadot);
 
 	let message = Xcm(vec![
-		UniversalOrigin(GlobalConsensus(Dicle)),
+		UniversalOrigin(GlobalConsensus(Kusama)),
 		TransferAsset { assets: (Parent, 100u128).into(), beneficiary: Here.into() },
 	]);
 	let mut hash = fake_message_hash(&message);
@@ -46,7 +46,7 @@ fn universal_origin_should_work() {
 	);
 
 	let message = Xcm(vec![
-		UniversalOrigin(GlobalConsensus(Dicle)),
+		UniversalOrigin(GlobalConsensus(Kusama)),
 		TransferAsset { assets: (Parent, 100u128).into(), beneficiary: Here.into() },
 	]);
 	let mut hash = fake_message_hash(&message);
@@ -65,9 +65,9 @@ fn universal_origin_should_work() {
 		}
 	);
 
-	add_asset((Ancestor(2), GlobalConsensus(Dicle)), (Parent, 100));
+	add_asset((Ancestor(2), GlobalConsensus(Kusama)), (Parent, 100));
 	let message = Xcm(vec![
-		UniversalOrigin(GlobalConsensus(Dicle)),
+		UniversalOrigin(GlobalConsensus(Kusama)),
 		TransferAsset { assets: (Parent, 100u128).into(), beneficiary: Here.into() },
 	]);
 	let mut hash = fake_message_hash(&message);
@@ -79,7 +79,7 @@ fn universal_origin_should_work() {
 		Weight::zero(),
 	);
 	assert_eq!(r, Outcome::Complete { used: Weight::from_parts(20, 20) });
-	assert_eq!(asset_list((Ancestor(2), GlobalConsensus(Dicle))), vec![]);
+	assert_eq!(asset_list((Ancestor(2), GlobalConsensus(Kusama))), vec![]);
 }
 
 #[test]
@@ -94,7 +94,7 @@ fn export_message_should_work() {
 	}]);
 	let expected_hash = fake_message_hash(&expected_message);
 	let message = Xcm(vec![ExportMessage {
-		network: Pezkuwi,
+		network: Polkadot,
 		destination: Here,
 		xcm: expected_message.clone(),
 	}]);
@@ -110,7 +110,7 @@ fn export_message_should_work() {
 	let uni_src = (ByGenesis([0; 32]), Teyrchain(42), Teyrchain(1)).into();
 	assert_eq!(
 		exported_xcm(),
-		vec![(Pezkuwi, 403611790, uni_src, Here, expected_message, expected_hash)]
+		vec![(Polkadot, 403611790, uni_src, Here, expected_message, expected_hash)]
 	);
 }
 

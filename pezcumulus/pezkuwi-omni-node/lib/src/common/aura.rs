@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Aura-related primitives for pezcumulus teyrchain collators.
+//! Aura-related primitives for cumulus teyrchain collators.
 
 use codec::Codec;
 use pezcumulus_primitives_aura::AuraUnincludedSegmentApi;
+use pezcumulus_primitives_core::KeyToIncludeInRelayProof;
 use pezsp_consensus_aura::AuraApi;
 use pezsp_runtime::{
 	app_crypto::{AppCrypto, AppPair, AppSignature, Pair},
@@ -53,7 +54,10 @@ pub trait AuraRuntimeApi<Block: BlockT, AuraId: AuraIdT>:
 	pezsp_api::ApiExt<Block>
 	+ AuraApi<Block, <AuraId::BoundedPair as Pair>::Public>
 	+ AuraUnincludedSegmentApi<Block>
+	+ KeyToIncludeInRelayProof<Block>
 	+ Sized
+where
+	<AuraId::BoundedPair as Pair>::Public: std::fmt::Debug,
 {
 	/// Check if the runtime has the Aura API.
 	fn has_aura_api(&self, at: Block::Hash) -> bool {
@@ -62,9 +66,12 @@ pub trait AuraRuntimeApi<Block: BlockT, AuraId: AuraIdT>:
 	}
 }
 
-impl<T, Block: BlockT, AuraId: AuraIdT> AuraRuntimeApi<Block, AuraId> for T where
+impl<T, Block: BlockT, AuraId: AuraIdT> AuraRuntimeApi<Block, AuraId> for T
+where
 	T: pezsp_api::ApiExt<Block>
 		+ AuraApi<Block, <AuraId::BoundedPair as Pair>::Public>
 		+ AuraUnincludedSegmentApi<Block>
+		+ KeyToIncludeInRelayProof<Block>,
+	<AuraId::BoundedPair as Pair>::Public: std::fmt::Debug,
 {
 }

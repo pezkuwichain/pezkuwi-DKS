@@ -1,6 +1,6 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ use pezframe::deps::{
 	pezsp_io::TestExternalities,
 	pezsp_runtime::{AccountId32, BuildStorage},
 };
-use xcm_pez_simulator::{decl_test_network, decl_test_relay_chain, decl_test_teyrchain, TestExt};
+use xcm_simulator::{decl_test_network, decl_test_relay_chain, decl_test_teyrchain, TestExt};
 
 use super::{relay_chain, teyrchain};
 

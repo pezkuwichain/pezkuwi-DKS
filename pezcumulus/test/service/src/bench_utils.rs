@@ -1,4 +1,4 @@
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: Apache-2.0
@@ -19,8 +19,8 @@ use codec::Encode;
 use pezsc_block_builder::BlockBuilderBuilder;
 
 use crate::{construct_extrinsic, Client as TestClient};
-use pezcumulus_pezpallet_teyrchain_system::teyrchain_inherent::{
-	BasicTeyrchainInherentData, InboundMessagesData,
+use pezcumulus_pallet_teyrchain_system::teyrchain_inherent::{
+	BasicParachainInherentData, InboundMessagesData,
 };
 use pezcumulus_primitives_core::{relay_chain::AccountId, PersistedValidationData};
 use pezcumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
@@ -84,13 +84,14 @@ pub fn extrinsic_set_validation_data(
 ) -> OpaqueExtrinsic {
 	let parent_head = HeadData(parent_header.encode());
 	let sproof_builder = RelayStateSproofBuilder {
-		para_id: pezcumulus_test_runtime::TEYRCHAIN_ID.into(),
+		para_id: pezcumulus_test_runtime::PARACHAIN_ID.into(),
 		included_para_head: parent_head.clone().into(),
 		..Default::default()
 	};
 
-	let (relay_parent_storage_root, relay_chain_state) = sproof_builder.into_state_root_and_proof();
-	let data = BasicTeyrchainInherentData {
+	let (relay_parent_storage_root, relay_chain_state, relay_parent_descendants) =
+		sproof_builder.into_state_root_proof_and_descendants(1);
+	let data = BasicParachainInherentData {
 		validation_data: PersistedValidationData {
 			parent_head,
 			relay_parent_number: 10,
@@ -98,7 +99,7 @@ pub fn extrinsic_set_validation_data(
 			max_pov_size: 10000,
 		},
 		relay_chain_state,
-		relay_parent_descendants: Default::default(),
+		relay_parent_descendants,
 		collator_peer_id: None,
 	};
 
@@ -109,7 +110,7 @@ pub fn extrinsic_set_validation_data(
 
 	pezcumulus_test_runtime::UncheckedExtrinsic::new_bare(
 		pezcumulus_test_runtime::RuntimeCall::TeyrchainSystem(
-			pezcumulus_pezpallet_teyrchain_system::Call::set_validation_data {
+			pezcumulus_pallet_teyrchain_system::Call::set_validation_data {
 				data,
 				inbound_messages_data,
 			},
@@ -188,7 +189,7 @@ pub fn create_benchmarking_transfer_extrinsics(
 	(max_transfer_count, extrinsics)
 }
 
-/// Prepare pezcumulus test runtime for execution
+/// Prepare cumulus test runtime for execution
 pub fn get_wasm_module() -> Box<dyn pezsc_executor_common::wasm_runtime::WasmModule> {
 	let blob = RuntimeBlob::uncompress_if_needed(
 		WASM_BINARY.expect("You need to build the WASM binaries to run the benchmark!"),

@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,12 +23,12 @@ use pezkuwi_node_network_protocol::request_response::{
 	v1::{PoVFetchingRequest, PoVFetchingResponse},
 	OutgoingRequest, Recipient,
 };
+use pezkuwi_node_primitives::PoV;
 use pezkuwi_node_subsystem::{
 	messages::{IfDisconnected, NetworkBridgeTxMessage},
 	overseer,
 };
 use pezkuwi_node_subsystem_util::runtime::RuntimeInfo;
-use pezkuwi_pez_node_primitives::PoV;
 use pezkuwi_primitives::{AuthorityDiscoveryId, CandidateHash, Hash, Id as ParaId, ValidatorIndex};
 
 use crate::{
@@ -128,12 +128,14 @@ mod tests {
 	use pezsc_network::ProtocolName;
 	use pezsp_core::testing::TaskExecutor;
 
+	use pezkuwi_node_primitives::BlockData;
 	use pezkuwi_node_subsystem::messages::{
 		AllMessages, AvailabilityDistributionMessage, RuntimeApiMessage, RuntimeApiRequest,
 	};
 	use pezkuwi_node_subsystem_test_helpers as test_helpers;
-	use pezkuwi_pez_node_primitives::BlockData;
-	use pezkuwi_primitives::{CandidateHash, ExecutorParams, Hash, NodeFeatures, ValidatorIndex};
+	use pezkuwi_primitives::{
+		ApprovalVotingParams, CandidateHash, Hash, NodeFeatures, ValidatorIndex,
+	};
 	use test_helpers::mock::make_ferdie_keystore;
 
 	use super::*;
@@ -197,15 +199,15 @@ mod tests {
 					},
 					AllMessages::RuntimeApi(RuntimeApiMessage::Request(
 						_,
-						RuntimeApiRequest::SessionExecutorParams(_, tx),
-					)) => {
-						tx.send(Ok(Some(ExecutorParams::default()))).unwrap();
-					},
-					AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-						_,
 						RuntimeApiRequest::NodeFeatures(_, si_tx),
 					)) => {
 						si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
+					},
+					AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+						_,
+						RuntimeApiRequest::ApprovalVotingParams(_, tx),
+					)) => {
+						tx.send(Ok(ApprovalVotingParams::default())).unwrap();
 					},
 					AllMessages::NetworkBridgeTx(NetworkBridgeTxMessage::SendRequests(
 						mut reqs,

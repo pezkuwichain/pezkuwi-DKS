@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ use pezkuwi_primitives::{
 use pezkuwi_runtime_metrics::get_current_time;
 use pezsp_runtime::{
 	traits::{AppVerify, One, Saturating, Zero},
-	DispatchError, SaturatedConversion,
+	Debug, DispatchError, SaturatedConversion,
 };
 use scale_info::TypeInfo;
 
@@ -195,7 +195,7 @@ pub trait DisputesHandler<BlockNumber: Ord> {
 	) -> Result<(), ()> {
 		// TODO: Consider trade-of to avoid `O(n * log(n))` average lookups of `included_state`
 		// TODO: instead make a single pass and store the values lazily.
-		// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/150
+		// TODO: https://github.com/paritytech/polkadot/issues/4527
 		let n = statement_sets.len();
 
 		statement_sets.sort_by(dispute_ordering_compare::<Self, BlockNumber>);
@@ -895,7 +895,7 @@ impl<T: Config> Pezpallet<T> {
 				BackersOnDisputes::<T>::remove_prefix(to_prune, None);
 
 				// This is larger, and will be extracted to the `shared` pezpallet for more proper
-				// pruning. TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/145
+				// pruning. TODO: https://github.com/paritytech/polkadot/issues/3469
 				#[allow(deprecated)]
 				Included::<T>::remove_prefix(to_prune, None);
 			}
@@ -1024,11 +1024,7 @@ impl<T: Config> Pezpallet<T> {
 					set.session,
 					statement,
 					signature,
-					// This is here to prevent malicious nodes of generating
-					// `ValidDisputeStatementKind::ApprovalCheckingMultipleCandidates` before that
-					// is enabled, via setting `max_approval_coalesce_count` in the teyrchain host
-					// config.
-					config.approval_voting_params.max_approval_coalesce_count > 1,
+					config.approval_voting_params.max_approval_coalesce_count,
 				) {
 					log::warn!("Failed to check dispute signature");
 
@@ -1276,7 +1272,7 @@ fn check_signature(
 	session: SessionIndex,
 	statement: &DisputeStatement,
 	validator_signature: &ValidatorSignature,
-	approval_multiple_candidates_enabled: bool,
+	max_approval_coalesce_count: u32,
 ) -> Result<(), ()> {
 	let payload = match statement {
 		DisputeStatement::Valid(ValidDisputeStatementKind::Explicit) => {
@@ -1300,7 +1296,10 @@ fn check_signature(
 		DisputeStatement::Valid(ValidDisputeStatementKind::ApprovalCheckingMultipleCandidates(
 			candidates,
 		)) => {
-			if approval_multiple_candidates_enabled && candidates.contains(&candidate_hash) {
+			if max_approval_coalesce_count > 1
+				&& candidates.len() <= max_approval_coalesce_count as usize
+				&& candidates.contains(&candidate_hash)
+			{
 				ApprovalVoteMultipleCandidates(candidates).signing_payload(session)
 			} else {
 				return Err(());

@@ -26,7 +26,7 @@
 /// For new assets, the reserve location(s) and teleport status need to be explicitly configured by
 /// the asset's `Owner`.
 ///
-/// See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/274> for more info.
+/// See <https://github.com/pezkuwichain/pezkuwi-sdk/pull/9948> for more info.
 pub mod foreign_assets_reserves {
 	use crate::*;
 	use codec::{Decode, Encode, MaxEncodedLen};
@@ -176,14 +176,25 @@ pub mod foreign_assets_reserves {
 					target: "runtime::ForeignAssetsReservesMigration::asset_step",
 					?asset_id, ?reserves, "updating reserves for"
 				);
-				if let Err(e) = pezpallet_assets::Pezpallet::<T, I>::unchecked_update_reserves(
-					asset_id.clone(),
-					reserves,
-				) {
-					tracing::error!(
-						target: "runtime::ForeignAssetsReservesMigration::asset_step",
-						?e, ?asset_id, "failed migrating reserves for asset"
-					);
+				match reserves.try_into() {
+					Ok(bounded_reserves) => {
+						if let Err(e) =
+							pezpallet_assets::Pezpallet::<T, I>::unchecked_update_reserves(
+								asset_id.clone(),
+								bounded_reserves,
+							) {
+							tracing::error!(
+								target: "runtime::ForeignAssetsReservesMigration::asset_step",
+								?e, ?asset_id, "failed migrating reserves for asset"
+							);
+						}
+					},
+					Err(_) => {
+						tracing::error!(
+							target: "runtime::ForeignAssetsReservesMigration::asset_step",
+							?asset_id, "too many reserves for asset"
+						);
+					},
 				}
 				MigrationState::Asset(asset_id)
 			} else {

@@ -1,19 +1,19 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 use async_trait::async_trait;
 use core::time::Duration;
@@ -27,7 +27,8 @@ use pezcumulus_primitives_core::{
 	InboundDownwardMessage, ParaId, PersistedValidationData,
 };
 use pezcumulus_relay_chain_interface::{
-	BlockNumber, CoreState, PHeader, RelayChainError, RelayChainInterface, RelayChainResult,
+	BlockNumber, ChildInfo, CoreIndex, CoreState, PHeader, RelayChainError, RelayChainInterface,
+	RelayChainResult,
 };
 use pezkuwi_overseer::Handle;
 
@@ -37,7 +38,7 @@ use pezsp_storage::StorageKey;
 use pezsp_version::RuntimeVersion;
 use std::{collections::btree_map::BTreeMap, pin::Pin};
 
-use pezcumulus_primitives_core::relay_chain::BlockId;
+use pezcumulus_primitives_core::relay_chain::{BlockId, NodeFeatures};
 pub use url::Url;
 
 mod metrics;
@@ -210,6 +211,24 @@ impl RelayChainInterface for RelayChainRpcInterface {
 			})
 	}
 
+	async fn prove_child_read(
+		&self,
+		relay_parent: RelayHash,
+		child_info: &ChildInfo,
+		child_keys: &[Vec<u8>],
+	) -> RelayChainResult<StorageProof> {
+		let child_storage_key = child_info.prefixed_storage_key();
+		let storage_keys: Vec<StorageKey> =
+			child_keys.iter().map(|key| StorageKey(key.clone())).collect();
+
+		self.rpc_client
+			.state_get_child_read_proof(child_storage_key, storage_keys, Some(relay_parent))
+			.await
+			.map(|read_proof| {
+				StorageProof::new(read_proof.proof.into_iter().map(|bytes| bytes.to_vec()))
+			})
+	}
+
 	/// Wait for a given relay chain block
 	///
 	/// The hash of the block to wait for is passed. We wait for the block to arrive or return after
@@ -273,9 +292,7 @@ impl RelayChainInterface for RelayChainRpcInterface {
 	async fn claim_queue(
 		&self,
 		relay_parent: RelayHash,
-	) -> RelayChainResult<
-		BTreeMap<pezcumulus_relay_chain_interface::CoreIndex, std::collections::VecDeque<ParaId>>,
-	> {
+	) -> RelayChainResult<BTreeMap<CoreIndex, std::collections::VecDeque<ParaId>>> {
 		self.rpc_client.teyrchain_host_claim_queue(relay_parent).await
 	}
 
@@ -288,5 +305,13 @@ impl RelayChainInterface for RelayChainRpcInterface {
 		relay_parent: RelayHash,
 	) -> RelayChainResult<Vec<CandidateEvent>> {
 		self.rpc_client.teyrchain_host_candidate_events(relay_parent).await
+	}
+
+	async fn max_relay_parent_session_age(&self, at: RelayHash) -> RelayChainResult<u32> {
+		self.rpc_client.teyrchain_host_max_relay_parent_session_age(at).await
+	}
+
+	async fn node_features(&self, at: RelayHash) -> RelayChainResult<NodeFeatures> {
+		self.rpc_client.teyrchain_host_node_features(at).await
 	}
 }

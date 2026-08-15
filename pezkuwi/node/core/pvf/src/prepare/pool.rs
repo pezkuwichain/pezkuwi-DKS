@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ use pezkuwi_node_core_pvf_common::{
 	pvf::PvfPrepData,
 	SecurityStatus,
 };
-use slotmap::SlotMap;
+use slotmap::HopSlotMap;
 use std::{
 	fmt,
 	path::{Path, PathBuf},
@@ -120,7 +120,7 @@ struct Pool {
 
 	to_pool: mpsc::Receiver<ToPool>,
 	from_pool: mpsc::UnboundedSender<FromPool>,
-	spawned: SlotMap<Worker, WorkerData>,
+	spawned: HopSlotMap<Worker, WorkerData>,
 	mux: Mux,
 
 	metrics: Metrics,
@@ -182,7 +182,7 @@ async fn run(
 async fn purge_dead(
 	metrics: &Metrics,
 	from_pool: &mut mpsc::UnboundedSender<FromPool>,
-	spawned: &mut SlotMap<Worker, WorkerData>,
+	spawned: &mut HopSlotMap<Worker, WorkerData>,
 ) -> Result<(), Fatal> {
 	let mut to_remove = vec![];
 	for (worker, data) in spawned.iter_mut() {
@@ -213,7 +213,7 @@ fn handle_to_pool(
 	spawn_timeout: Duration,
 	node_version: Option<String>,
 	security_status: SecurityStatus,
-	spawned: &mut SlotMap<Worker, WorkerData>,
+	spawned: &mut HopSlotMap<Worker, WorkerData>,
 	mux: &mut Mux,
 	to_pool: ToPool,
 ) {
@@ -313,7 +313,7 @@ async fn start_work_task<Timer>(
 fn handle_mux(
 	metrics: &Metrics,
 	from_pool: &mut mpsc::UnboundedSender<FromPool>,
-	spawned: &mut SlotMap<Worker, WorkerData>,
+	spawned: &mut HopSlotMap<Worker, WorkerData>,
 	event: PoolEvent,
 ) -> Result<(), Fatal> {
 	match event {
@@ -447,7 +447,7 @@ fn reply(from_pool: &mut mpsc::UnboundedSender<FromPool>, m: FromPool) -> Result
 /// This function takes care about counting the retired workers metric.
 fn attempt_retire(
 	metrics: &Metrics,
-	spawned: &mut SlotMap<Worker, WorkerData>,
+	spawned: &mut HopSlotMap<Worker, WorkerData>,
 	worker: Worker,
 ) -> bool {
 	if spawned.remove(worker).is_some() {
@@ -465,7 +465,7 @@ fn attempt_retire(
 /// `FromPool::Concluded` with `rip: false`.
 fn handle_concluded_no_rip(
 	from_pool: &mut mpsc::UnboundedSender<FromPool>,
-	spawned: &mut SlotMap<Worker, WorkerData>,
+	spawned: &mut HopSlotMap<Worker, WorkerData>,
 	worker: Worker,
 	idle: IdleWorker,
 	result: PrepareResult,
@@ -513,7 +513,7 @@ pub fn start(
 		security_status,
 		to_pool: to_pool_rx,
 		from_pool: from_pool_tx,
-		spawned: SlotMap::with_capacity_and_key(20),
+		spawned: HopSlotMap::with_capacity_and_key(20),
 		mux: Mux::new(),
 	});
 

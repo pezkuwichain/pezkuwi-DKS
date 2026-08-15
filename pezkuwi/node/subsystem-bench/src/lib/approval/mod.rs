@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ use crate::{
 		chain_api::{ChainApiState, MockChainApi},
 		network_bridge::{MockNetworkBridgeRx, MockNetworkBridgeTx},
 		runtime_api::{MockRuntimeApi, MockRuntimeApiCoreState},
-		AlwaysSupportsTeyrchains, TestSyncOracle,
+		AlwaysSupportsParachains, TestSyncOracle,
 	},
 	network::{
 		new_network, HandleNetworkMessage, NetworkEmulatorHandle, NetworkInterface,
@@ -50,7 +50,7 @@ use orchestra::TimeoutExt;
 use overseer::{metrics::Metrics as OverseerMetrics, MetricsTrait};
 use pezkuwi_approval_distribution::ApprovalDistribution;
 use pezkuwi_node_core_approval_voting_parallel::ApprovalVotingParallelSubsystem;
-use pezkuwi_pez_node_primitives::approval::time::{
+use pezkuwi_node_primitives::approval::time::{
 	slot_number_to_tick, tick_to_slot_number, Clock, ClockExt, SystemClock,
 };
 
@@ -58,13 +58,13 @@ use pezkuwi_node_core_approval_voting::{
 	ApprovalVotingSubsystem, Config as ApprovalVotingConfig, RealAssignmentCriteria,
 };
 use pezkuwi_node_network_protocol::v3 as protocol_v3;
+use pezkuwi_node_primitives::approval::{self, v1::RelayVRFStory};
 use pezkuwi_node_subsystem::{
 	messages::{ApprovalDistributionMessage, ApprovalVotingMessage, ApprovalVotingParallelMessage},
 	overseer, AllMessages, Overseer, OverseerConnector, SpawnGlue,
 };
 use pezkuwi_node_subsystem_test_helpers::mock::new_block_import_info;
 use pezkuwi_overseer::Handle as OverseerHandleReal;
-use pezkuwi_pez_node_primitives::approval::{self, v1::RelayVRFStory};
 use pezkuwi_primitives::{
 	BlockNumber, CandidateEvent, CandidateIndex, CandidateReceiptV2 as CandidateReceipt, Hash,
 	Header, Slot, ValidatorId, ValidatorIndex, ASSIGNMENT_KEY_TYPE_ID,
@@ -162,7 +162,7 @@ impl ApprovalsOptions {
 #[derive(Clone, Debug)]
 struct BlockTestData {
 	/// The slot this block occupies, see implementer's guide to understand what a slot
-	/// is in the context of pezkuwi.
+	/// is in the context of polkadot.
 	slot: Slot,
 	/// The hash of the block.
 	hash: Hash,
@@ -806,7 +806,7 @@ fn build_overseer(
 	dependencies: &TestEnvironmentDependencies,
 	network_interface: &NetworkInterface,
 	network_receiver: NetworkInterfaceReceiver,
-) -> (Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsTeyrchains>, OverseerHandleReal) {
+) -> (Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsParachains>, OverseerHandleReal) {
 	let overseer_connector = OverseerConnector::with_event_capacity(6400000);
 
 	let spawn_task_handle = dependencies.task_manager.spawn_handle();

@@ -3,10 +3,11 @@
 use codec::{Decode, Encode};
 use ethabi::Token;
 use pezframe_support::traits::ProcessMessage;
-use pezsnowbridge_core::ChannelId;
 use pezsp_core::H256;
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
+use snowbridge_core::ChannelId;
+use Debug;
 
 use super::Pezpallet;
 

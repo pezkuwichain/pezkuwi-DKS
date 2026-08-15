@@ -25,9 +25,9 @@ use crate::{
 	Chain, ChainWithBalances, ChainWithMessages, ChainWithRewards, ChainWithTransactions,
 	Error as BizinikiwiError, SignParam, UnsignedTransaction,
 };
+use bp_messages::{ChainWithMessages as ChainWithMessagesBase, MessageNonce};
+use bp_runtime::ChainId;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
-use pezbp_messages::{ChainWithMessages as ChainWithMessagesBase, MessageNonce};
-use pezbp_runtime::ChainId;
 use pezframe_support::{pezsp_runtime::StateVersion, weights::Weight};
 use scale_info::TypeInfo;
 use std::time::Duration;
@@ -36,7 +36,7 @@ use std::time::Duration;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TestChain;
 
-impl pezbp_runtime::Chain for TestChain {
+impl bp_runtime::Chain for TestChain {
 	const ID: ChainId = *b"test";
 
 	type BlockNumber = u32;
@@ -122,11 +122,11 @@ impl ChainWithMessages for TestChain {
 
 impl ChainWithTransactions for TestChain {
 	type AccountKeyPair = pezsp_core::sr25519::Pair;
-	type SignedTransaction = pezbp_pezkuwi_core::UncheckedExtrinsic<
+	type SignedTransaction = bp_polkadot_core::UncheckedExtrinsic<
 		TestRuntimeCall,
-		pezbp_pezkuwi_core::SuffixedCommonTransactionExtension<(
-			pezbp_runtime::extensions::BridgeRejectObsoleteHeadersAndMessages,
-			pezbp_runtime::extensions::RefundBridgedTeyrchainMessagesSchema,
+		bp_polkadot_core::SuffixedCommonTransactionExtension<(
+			bp_runtime::extensions::BridgeRejectObsoleteHeadersAndMessages,
+			bp_runtime::extensions::RefundBridgedParachainMessagesSchema,
 		)>,
 	>;
 
@@ -148,9 +148,9 @@ pub enum TestRuntimeCall {
 
 /// Primitives-level teyrchain that may be used in tests.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TestTeyrchainBase;
+pub struct TestParachainBase;
 
-impl pezbp_runtime::Chain for TestTeyrchainBase {
+impl bp_runtime::Chain for TestParachainBase {
 	const ID: ChainId = *b"tstp";
 
 	type BlockNumber = u32;
@@ -174,23 +174,23 @@ impl pezbp_runtime::Chain for TestTeyrchainBase {
 	}
 }
 
-impl pezbp_runtime::Teyrchain for TestTeyrchainBase {
-	const TEYRCHAIN_ID: u32 = 1000;
+impl bp_runtime::Teyrchain for TestParachainBase {
+	const PARACHAIN_ID: u32 = 1000;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 
 /// Teyrchain that may be used in tests.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TestTeyrchain;
+pub struct TestParachain;
 
-impl pezbp_runtime::UnderlyingChainProvider for TestTeyrchain {
-	type Chain = TestTeyrchainBase;
+impl bp_runtime::UnderlyingChainProvider for TestParachain {
+	type Chain = TestParachainBase;
 }
 
-impl Chain for TestTeyrchain {
-	const NAME: &'static str = "TestTeyrchain";
-	const BEST_FINALIZED_HEADER_ID_METHOD: &'static str = "TestTeyrchainMethod";
-	const FREE_HEADERS_INTERVAL_METHOD: &'static str = "TestTeyrchainMethod";
+impl Chain for TestParachain {
+	const NAME: &'static str = "TestParachain";
+	const BEST_FINALIZED_HEADER_ID_METHOD: &'static str = "TestParachainMethod";
+	const FREE_HEADERS_INTERVAL_METHOD: &'static str = "TestParachainMethod";
 	const AVERAGE_BLOCK_INTERVAL: Duration = Duration::from_millis(0);
 
 	type SignedBlock = pezsp_runtime::generic::SignedBlock<

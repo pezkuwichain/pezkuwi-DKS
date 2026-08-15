@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,11 +23,11 @@ use pezkuwi_node_network_protocol::request_response::{
 	v1::AvailableDataFetchingResponse, v2::ChunkFetchingResponse, Protocol, ReqProtocolNames,
 	Requests,
 };
+use pezkuwi_node_primitives::{AvailableData, ErasureChunk};
 use pezkuwi_node_subsystem::{
 	messages::AvailabilityStoreMessage, overseer, SpawnedSubsystem, SubsystemError,
 };
 use pezkuwi_node_subsystem_types::OverseerSignal;
-use pezkuwi_pez_node_primitives::{AvailableData, ErasureChunk};
 use pezkuwi_primitives::{CandidateHash, ChunkIndex, CoreIndex, ValidatorIndex};
 use std::collections::HashMap;
 

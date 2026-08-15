@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ pub async fn check_security_status(config: &Config) -> Result<SecurityStatus, St
 			target: LOG_TARGET,
 			"👮‍♀️ Running in Secure Validator Mode. \
 			 It is highly recommended that you operate according to our security guidelines. \
-			 \nMore information: https://wiki.network.pezkuwichain.io/docs/maintain-guides-secure-validator#secure-validator-mode"
+			 \nMore information: https://wiki.polkadot.network/docs/maintain-guides-secure-validator#secure-validator-mode"
 		);
 	}
 

@@ -28,7 +28,7 @@ use pezsp_core::storage::StorageKey;
 /// Storage key of the `PalletOperatingMode` variable in the runtime storage.
 pub fn pezpallet_operating_mode_key(pezpallet_prefix: &str) -> StorageKey {
 	StorageKey(
-		pezbp_runtime::storage_value_final_key(
+		bp_runtime::storage_value_final_key(
 			pezpallet_prefix.as_bytes(),
 			PALLET_OPERATING_MODE_VALUE_NAME.as_bytes(),
 		)
@@ -39,7 +39,7 @@ pub fn pezpallet_operating_mode_key(pezpallet_prefix: &str) -> StorageKey {
 /// Storage key of the `CurrentAuthoritySet` variable in the runtime storage.
 pub fn current_authority_set_key(pezpallet_prefix: &str) -> StorageKey {
 	StorageKey(
-		pezbp_runtime::storage_value_final_key(
+		bp_runtime::storage_value_final_key(
 			pezpallet_prefix.as_bytes(),
 			CURRENT_AUTHORITY_SET_VALUE_NAME.as_bytes(),
 		)
@@ -50,7 +50,7 @@ pub fn current_authority_set_key(pezpallet_prefix: &str) -> StorageKey {
 /// Storage key of the best finalized header number and hash value in the runtime storage.
 pub fn best_finalized_key(pezpallet_prefix: &str) -> StorageKey {
 	StorageKey(
-		pezbp_runtime::storage_value_final_key(
+		bp_runtime::storage_value_final_key(
 			pezpallet_prefix.as_bytes(),
 			BEST_FINALIZED_VALUE_NAME.as_bytes(),
 		)

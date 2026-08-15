@@ -1,19 +1,19 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 //! Stock, pure Aura collators.
 //!
@@ -25,36 +25,27 @@ use crate::collator::SlotClaim;
 use codec::Codec;
 use pezcumulus_client_consensus_common::{self as consensus_common, ParentSearchParams};
 use pezcumulus_primitives_aura::{AuraUnincludedSegmentApi, Slot};
-use pezcumulus_primitives_core::{relay_chain::Header as RelayHeader, BlockT};
+use pezcumulus_primitives_core::{
+	relay_chain::Header as RelayHeader, BlockT, KeyToIncludeInRelayProof, RelayProofRequest,
+};
 use pezcumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface};
-use pezkuwi_node_subsystem::messages::{CollatorProtocolMessage, RuntimeApiRequest};
+use pezkuwi_node_subsystem::messages::CollatorProtocolMessage;
 use pezkuwi_node_subsystem_util::runtime::ClaimQueueSnapshot;
 use pezkuwi_primitives::{
 	Hash as RelayHash, Id as ParaId, OccupiedCoreAssumption, ValidationCodeHash,
 	DEFAULT_SCHEDULING_LOOKAHEAD,
 };
+use pezsc_client_api::HeaderBackend;
 use pezsc_consensus_aura::{standalone as aura_internal, AuraApi};
-use pezsp_api::{ApiExt, ProvideRuntimeApi, RuntimeApiInfo};
+use pezsp_api::{ApiExt, ProvideRuntimeApi};
 use pezsp_core::Pair;
 use pezsp_keystore::KeystorePtr;
+use pezsp_runtime::traits::Header;
 use pezsp_timestamp::Timestamp;
 
 pub mod basic;
 pub mod lookahead;
 pub mod slot_based;
-
-// This is an arbitrary value which is guaranteed to exceed the required depth for 500ms blocks
-// built with a relay parent offset of 1. It must be larger than the unincluded segment capacity.
-//
-// The formula we use to compute the capacity of the unincluded segment in the teyrchain runtime
-// is:
-// UNINCLUDED_SEGMENT_CAPACITY = (2 + RELAY_PARENT_OFFSET) * BLOCK_PROCESSING_VELOCITY + 1.
-//
-// Since we only search for parent blocks which have already been imported,
-// we can guarantee that all imported blocks respect the unincluded segment
-// rules specified by the teyrchain's runtime and thus will never be too deep. This is just an extra
-// sanity check.
-const PARENT_SEARCH_DEPTH: usize = 40;
 
 // Helper to pre-connect to the backing group we got assigned to and keep the connection
 // open until backing group changes or own slot ends.
@@ -161,49 +152,6 @@ async fn check_validation_code_or_log(
 	}
 }
 
-/// Fetch scheduling lookahead at given relay parent.
-async fn scheduling_lookahead(
-	relay_parent: RelayHash,
-	relay_client: &impl RelayChainInterface,
-) -> Option<u32> {
-	let runtime_api_version = relay_client
-		.version(relay_parent)
-		.await
-		.map_err(|e| {
-			tracing::error!(
-				target: super::LOG_TARGET,
-				error = ?e,
-				"Failed to fetch relay chain runtime version.",
-			)
-		})
-		.ok()?;
-
-	let teyrchain_host_runtime_api_version = runtime_api_version
-		.api_version(
-			&<dyn pezkuwi_primitives::runtime_api::TeyrchainHost<pezkuwi_primitives::Block>>::ID,
-		)
-		.unwrap_or_default();
-
-	if teyrchain_host_runtime_api_version
-		< RuntimeApiRequest::SCHEDULING_LOOKAHEAD_RUNTIME_REQUIREMENT
-	{
-		return None;
-	}
-
-	match relay_client.scheduling_lookahead(relay_parent).await {
-		Ok(scheduling_lookahead) => Some(scheduling_lookahead),
-		Err(err) => {
-			tracing::error!(
-				target: crate::LOG_TARGET,
-				?err,
-				?relay_parent,
-				"Failed to fetch scheduling lookahead from relay chain",
-			);
-			None
-		},
-	}
-}
-
 // Returns the claim queue at the given relay parent.
 async fn claim_queue_at(
 	relay_parent: RelayHash,
@@ -224,105 +172,142 @@ async fn claim_queue_at(
 	}
 }
 
-// Checks if we own the slot at the given block and whether there
-// is space in the unincluded segment.
-async fn can_build_upon<Block: BlockT, Client, P>(
+// Checks if we own the slot at the given block.
+async fn claim_slot<Block: BlockT, Client, P>(
 	para_slot: Slot,
-	relay_slot: Slot,
 	timestamp: Timestamp,
 	parent_hash: Block::Hash,
-	included_block: Block::Hash,
 	client: &Client,
 	keystore: &KeystorePtr,
 ) -> Option<SlotClaim<P::Public>>
 where
 	Client: ProvideRuntimeApi<Block>,
-	Client::Api: AuraApi<Block, P::Public> + AuraUnincludedSegmentApi<Block> + ApiExt<Block>,
+	Client::Api: AuraApi<Block, P::Public> + ApiExt<Block>,
 	P: Pair,
 	P::Public: Codec,
 	P::Signature: Codec,
 {
-	let runtime_api = client.runtime_api();
+	let mut runtime_api = client.runtime_api();
+	runtime_api.set_call_context(pezsp_core::traits::CallContext::Onchain { import: false });
 	let authorities = runtime_api.authorities(parent_hash).ok()?;
 	let author_pub = aura_internal::claim_slot::<P>(para_slot, &authorities, keystore).await?;
+	Some(SlotClaim::unchecked::<P>(author_pub, para_slot, timestamp))
+}
 
+// Checks if there is space in the unincluded segment.
+async fn can_build_upon<Block: BlockT, Client>(
+	parent_hash: Block::Hash,
+	included_block: Block::Hash,
+	relay_slot: Slot,
+	para_slot: Slot,
+	client: &Client,
+) -> bool
+where
+	Client: ProvideRuntimeApi<Block>,
+	Client::Api: AuraUnincludedSegmentApi<Block> + ApiExt<Block>,
+{
 	// This function is typically called when we want to build block N. At that point, the
 	// unincluded segment in the runtime is unaware of the hash of block N-1. If the unincluded
 	// segment in the runtime is full, but block N-1 is the included block, the unincluded segment
 	// should have length 0 and we can build. Since the hash is not available to the runtime
 	// however, we need this extra check here.
 	if parent_hash == included_block {
-		return Some(SlotClaim::unchecked::<P>(author_pub, para_slot, timestamp));
+		return true;
 	}
 
-	let api_version = runtime_api
+	let runtime_api = client.runtime_api();
+	let Some(api_version) = runtime_api
 		.api_version::<dyn AuraUnincludedSegmentApi<Block>>(parent_hash)
 		.ok()
-		.flatten()?;
+		.flatten()
+	else {
+		return false;
+	};
 
 	let slot = if api_version > 1 { relay_slot } else { para_slot };
 
 	runtime_api
 		.can_build_upon(parent_hash, included_block, slot)
-		.ok()?
-		.then(|| SlotClaim::unchecked::<P>(author_pub, para_slot, timestamp))
+		.ok()
+		.unwrap_or(false)
 }
 
-/// Use [`pezcumulus_client_consensus_common::find_potential_parents`] to find teyrchain blocks that
-/// we can build on. Once a list of potential parents is retrieved, return the last one of the
-/// longest chain.
+/// Use [`pezcumulus_client_consensus_common::find_parent_for_building`] to find the best teyrchain
+/// block to build on.
+///
+/// If the best parent does not pass `filter_parent`, walks backwards through ancestors
+/// until finding one that does, or reaching the included block.
 async fn find_parent<Block>(
 	relay_parent: RelayHash,
 	para_id: ParaId,
 	para_backend: &impl pezsc_client_api::Backend<Block>,
 	relay_client: &impl RelayChainInterface,
-) -> Option<(<Block as BlockT>::Header, consensus_common::PotentialParent<Block>)>
+	filter_parent: impl Fn(&Block::Header) -> bool,
+) -> Option<consensus_common::ParentSearchResult<Block>>
 where
 	Block: BlockT,
 {
-	let parent_search_params = ParentSearchParams {
-		relay_parent,
-		para_id,
-		ancestry_lookback: scheduling_lookahead(relay_parent, relay_client)
-			.await
-			.unwrap_or(DEFAULT_SCHEDULING_LOOKAHEAD)
-			.saturating_sub(1) as usize,
-		max_depth: PARENT_SEARCH_DEPTH,
-		ignore_alternative_branches: true,
-	};
+	let ancestry_lookback = relay_client
+		.scheduling_lookahead(relay_parent)
+		.await
+		.unwrap_or(DEFAULT_SCHEDULING_LOOKAHEAD)
+		.saturating_sub(1) as usize;
+	let parent_search_params = ParentSearchParams { relay_parent, para_id, ancestry_lookback };
 
-	let potential_parents = pezcumulus_client_consensus_common::find_potential_parents::<Block>(
+	let mut result = match pezcumulus_client_consensus_common::find_parent_for_building::<Block>(
 		parent_search_params,
 		para_backend,
 		relay_client,
 	)
-	.await;
-
-	let potential_parents = match potential_parents {
+	.await
+	{
+		Ok(Some(result)) => result,
+		Ok(None) => {
+			tracing::warn!(
+				target: crate::LOG_TARGET,
+				?relay_parent,
+				"Could not find parent to build upon.",
+			);
+			return None;
+		},
 		Err(e) => {
 			tracing::error!(
 				target: crate::LOG_TARGET,
 				?relay_parent,
 				err = ?e,
-				"Could not fetch potential parents to build upon"
+				"Could not find parent to build upon"
 			);
-
 			return None;
 		},
-		Ok(x) => x,
 	};
 
-	let included_block = potential_parents.iter().find(|x| x.depth == 0)?.header.clone();
-	potential_parents
-		.into_iter()
-		.max_by_key(|a| a.depth)
-		.map(|parent| (included_block, parent))
+	// If the best parent doesn't pass the filter (e.g. it's a middle block in a bundle),
+	// walk backwards towards the included block until we find one that does.
+	// This avoids falling all the way back to the included block when there are valid
+	// last-in-core ancestors closer to the chain tip.
+	while !filter_parent(&result.best_parent_header) {
+		let parent_hash = *result.best_parent_header.parent_hash();
+		match para_backend.blockchain().header(parent_hash) {
+			Ok(Some(header)) => {
+				result.best_parent_header = header;
+				if parent_hash == result.included_header.hash() {
+					break;
+				}
+			},
+			_ => {
+				result.best_parent_header = result.included_header.clone();
+				break;
+			},
+		}
+	}
+
+	Some(result)
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::collators::{can_build_upon, BackingGroupConnectionHelper};
+	use crate::collators::BackingGroupConnectionHelper;
 	use codec::Encode;
 	use futures::StreamExt;
 	use pezcumulus_primitives_aura::Slot;
@@ -330,7 +315,7 @@ mod tests {
 	use pezcumulus_relay_chain_interface::PHash;
 	use pezcumulus_test_client::{
 		runtime::{Block, Hash},
-		Client, DefaultTestClientBuilderExt, InitBlockBuilder, TestClientBuilder,
+		BuildBlockBuilder, Client, DefaultTestClientBuilderExt, TestClientBuilder,
 		TestClientBuilderExt,
 	};
 	use pezcumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
@@ -339,7 +324,6 @@ mod tests {
 	use pezsc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy};
 	use pezsp_consensus::BlockOrigin;
 	use pezsp_keystore::{Keystore, KeystorePtr};
-	use pezsp_timestamp::Timestamp;
 	use std::sync::{Arc, Mutex};
 
 	async fn import_block<I: BlockImport<Block>>(
@@ -360,7 +344,7 @@ mod tests {
 		let header = client.header(hash).ok().flatten().expect("No header for parent block");
 		let included = HeadData(header.encode());
 		let mut builder = RelayStateSproofBuilder::default();
-		builder.para_id = pezcumulus_test_client::runtime::TEYRCHAIN_ID.into();
+		builder.para_id = pezcumulus_test_client::runtime::PARACHAIN_ID.into();
 		builder.included_para_head = Some(included);
 
 		builder
@@ -368,7 +352,11 @@ mod tests {
 	async fn build_and_import_block(client: &Client, included: Hash) -> Block {
 		let sproof = sproof_with_parent_by_hash(client, included);
 
-		let block_builder = client.init_block_builder(None, sproof).block_builder;
+		let block_builder = client
+			.init_block_builder_builder()
+			.with_relay_sproof_builder(sproof)
+			.build()
+			.block_builder;
 
 		let block = block_builder.build().unwrap().block;
 
@@ -397,23 +385,22 @@ mod tests {
 	/// we are ensuring on the node side that we are are always able to build on the included block.
 	#[tokio::test]
 	async fn test_can_build_upon() {
-		let (client, keystore) = set_up_components(6);
+		pezsp_tracing::try_init_simple();
+
+		let (client, _keystore) = set_up_components(6);
 
 		let genesis_hash = client.chain_info().genesis_hash;
 		let mut last_hash = genesis_hash;
 
 		// Fill up the unincluded segment tracker in the runtime.
-		while can_build_upon::<_, _, pezsp_consensus_aura::sr25519::AuthorityPair>(
-			Slot::from(u64::MAX),
-			Slot::from(u64::MAX),
-			Timestamp::default(),
+		while can_build_upon::<_, _>(
 			last_hash,
 			genesis_hash,
+			Slot::from(u64::MAX),
+			Slot::from(u64::MAX),
 			&*client,
-			&keystore,
 		)
 		.await
-		.is_some()
 		{
 			let block = build_and_import_block(&client, genesis_hash).await;
 			last_hash = block.header().hash();
@@ -421,17 +408,15 @@ mod tests {
 
 		// Blocks were built with the genesis hash set as included block.
 		// We call `can_build_upon` with the last built block as the included block.
-		let result = can_build_upon::<_, _, pezsp_consensus_aura::sr25519::AuthorityPair>(
-			Slot::from(u64::MAX),
-			Slot::from(u64::MAX),
-			Timestamp::default(),
+		let result = can_build_upon::<_, _>(
 			last_hash,
 			last_hash,
+			Slot::from(u64::MAX),
+			Slot::from(u64::MAX),
 			&*client,
-			&keystore,
 		)
 		.await;
-		assert!(result.is_some());
+		assert!(result);
 	}
 
 	/// Helper to create a mock overseer handle and message recorder
@@ -663,7 +648,33 @@ mod tests {
 	}
 }
 
+/// Fetches relay chain storage proof requests from the teyrchain runtime.
+///
+/// Queries the runtime API to determine which relay chain storage keys
+/// (both top-level and child trie keys) should be included in the relay chain state proof.
+///
+/// Falls back to an empty request if the runtime API call fails or is not implemented.
+pub(crate) fn get_relay_proof_request<Block, Client>(
+	client: &Client,
+	parent_hash: Block::Hash,
+) -> RelayProofRequest
+where
+	Block: BlockT,
+	Client: ProvideRuntimeApi<Block>,
+	Client::Api: KeyToIncludeInRelayProof<Block>,
+{
+	client.runtime_api().keys_to_prove(parent_hash).unwrap_or_else(|e| {
+		tracing::debug!(
+			target: crate::LOG_TARGET,
+			error = ?e,
+			"Failed to fetch relay proof requests from runtime, using empty request"
+		);
+		Default::default()
+	})
+}
+
 /// Holds a relay parent and its descendants.
+#[derive(Clone)]
 pub struct RelayParentData {
 	/// The relay parent block header
 	relay_parent: RelayHeader,
@@ -685,6 +696,13 @@ impl RelayParentData {
 	/// Returns a reference to the relay parent header.
 	pub fn relay_parent(&self) -> &RelayHeader {
 		&self.relay_parent
+	}
+
+	/// Takes the descendants list.
+	///
+	/// List is ordered from oldest to newest.
+	pub fn take_descendants(&mut self) -> Vec<RelayHeader> {
+		std::mem::take(&mut self.descendants)
 	}
 
 	/// Returns the number of descendants.

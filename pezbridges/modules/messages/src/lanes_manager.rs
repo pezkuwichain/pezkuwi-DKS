@@ -20,12 +20,12 @@ use crate::{
 	StoredMessagePayload,
 };
 
-use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
-use pezbp_messages::{
+use bp_messages::{
 	target_chain::MessageDispatch, ChainWithMessages, InboundLaneData, LaneState, MessageKey,
 	MessageNonce, OutboundLaneData,
 };
-use pezbp_runtime::AccountIdOf;
+use bp_runtime::AccountIdOf;
+use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezframe_support::{ensure, PalletError};
 use pezsp_std::marker::PhantomData;
 use scale_info::TypeInfo;
@@ -181,9 +181,9 @@ impl<T: Config<I>, I: 'static> RuntimeInboundLaneStorage<T, I> {
 	/// maximal configured.
 	///
 	/// Maximal inbound lane state set size is configured by the
-	/// `MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX` constant from the pezpallet configuration. The
-	/// PoV of the call includes the maximal size of inbound lane state. If the actual size is
-	/// smaller, we may subtract extra bytes from this component.
+	/// `MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX` constant from the pezpallet configuration. The PoV
+	/// of the call includes the maximal size of inbound lane state. If the actual size is smaller,
+	/// we may subtract extra bytes from this component.
 	pub fn extra_proof_size_bytes(&self) -> u64 {
 		let max_encoded_len = StoredInboundLaneData::<T, I>::max_encoded_len();
 		let relayers_count = self.data().relayers.len();

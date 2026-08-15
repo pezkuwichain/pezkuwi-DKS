@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 use codec::{Decode, Encode};
 
-use pezkuwi_pez_node_primitives::{
+use pezkuwi_node_primitives::{
 	AvailableData, DisputeMessage, ErasureChunk, PoV, Proof, UncheckedDisputeMessage,
 };
 use pezkuwi_primitives::{
@@ -103,7 +103,7 @@ impl IsRequest for ChunkFetchingRequest {
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CollationFetchingRequest {
 	/// Relay parent we want a collation for.
-	pub relay_parent: Hash,
+	pub scheduling_parent: Hash,
 	/// The `ParaId` of the collation.
 	pub para_id: ParaId,
 }

@@ -15,8 +15,8 @@
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
 use async_trait::async_trait;
+use bp_header_chain::FinalityProof;
 use futures::Stream;
-use pezbp_header_pez_chain::FinalityProof;
 use relay_utils::relay_loop::Client as RelayClient;
 use std::fmt::Debug;
 

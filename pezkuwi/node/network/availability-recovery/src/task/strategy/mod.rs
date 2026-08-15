@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,11 +37,11 @@ use pezkuwi_node_network_protocol::request_response::CHUNK_REQUEST_TIMEOUT;
 use pezkuwi_node_network_protocol::request_response::{
 	self as req_res, outgoing::RequestError, OutgoingRequest, Recipient, Requests,
 };
+use pezkuwi_node_primitives::{AvailableData, ErasureChunk};
 use pezkuwi_node_subsystem::{
 	messages::{AvailabilityStoreMessage, NetworkBridgeTxMessage},
 	overseer, RecoveryError,
 };
-use pezkuwi_pez_node_primitives::{AvailableData, ErasureChunk};
 use pezkuwi_primitives::{AuthorityDiscoveryId, BlakeTwo256, ChunkIndex, HashT, ValidatorIndex};
 use pezsc_network::{IfDisconnected, OutboundFailure, ProtocolName, RequestFailure};
 use std::{
@@ -650,11 +650,11 @@ mod tests {
 	};
 	use pezkuwi_erasure_coding::{recovery_threshold, systematic_recovery_threshold};
 	use pezkuwi_node_network_protocol::request_response::Protocol;
+	use pezkuwi_node_primitives::{BlockData, PoV};
 	use pezkuwi_node_subsystem::{AllMessages, TimeoutExt};
 	use pezkuwi_node_subsystem_test_helpers::{
 		derive_erasure_chunks_with_proofs_and_root, sender_receiver, TestSubsystemSender,
 	};
-	use pezkuwi_pez_node_primitives::{BlockData, PoV};
 	use pezkuwi_primitives::{CandidateHash, HeadData, PersistedValidationData};
 	use pezkuwi_primitives_test_helpers::dummy_hash;
 	use pezsp_keyring::Sr25519Keyring;

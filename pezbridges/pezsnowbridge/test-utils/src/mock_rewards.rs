@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
+use bp_relayers::{PaymentProcedure, RewardLedger, RewardsAccountOwner, RewardsAccountParams};
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
-use pezbp_relayers::{PaymentProcedure, RewardLedger, RewardsAccountOwner, RewardsAccountParams};
 use pezframe_support::{parameter_types, pezpallet_prelude::DispatchResult, pezsp_runtime};
 use scale_info::TypeInfo;
 use xcm::opaque::latest::Location;
@@ -34,7 +34,7 @@ impl PaymentProcedure<pezsp_runtime::AccountId32, RewardsAccountParams<u64>, u12
 	type Beneficiary = Location;
 	fn pay_reward(
 		_who: &pezsp_runtime::AccountId32,
-		_reward_params: pezbp_relayers::RewardsAccountParams<u64>,
+		_reward_params: bp_relayers::RewardsAccountParams<u64>,
 		_reward_balance: u128,
 		_beneficiary: Self::Beneficiary,
 	) -> Result<(), Self::Error> {

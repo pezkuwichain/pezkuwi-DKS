@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@ use pezkuwi_node_network_protocol::{
 	request_response::{v1::DisputeResponse, Recipient, Requests},
 	IfDisconnected,
 };
+use pezkuwi_node_primitives::DisputeStatus;
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, DisputeCoordinatorMessage, DisputeDistributionMessage, ImportStatementsResult,
@@ -55,10 +56,10 @@ use pezkuwi_node_subsystem_test_helpers::{
 	mock::{make_ferdie_keystore, new_leaf},
 	subsystem_test_harness, TestSubsystemContextHandle,
 };
-use pezkuwi_pez_node_primitives::DisputeStatus;
 use pezkuwi_primitives::{
-	AuthorityDiscoveryId, Block, CandidateHash, CandidateReceiptV2 as CandidateReceipt,
-	ExecutorParams, Hash, NodeFeatures, SessionIndex, SessionInfo,
+	ApprovalVotingParams, AuthorityDiscoveryId, Block, CandidateHash,
+	CandidateReceiptV2 as CandidateReceipt, Hash, NodeFeatures, SessionIndex, SessionInfo,
+	MAX_COALESCE_APPROVALS,
 };
 
 use self::mock::{
@@ -101,7 +102,7 @@ fn send_honors_rate_limit() {
 		// First send should not be rate limited:
 		gum::trace!("Passed time: {:#?}", Instant::now().saturating_duration_since(before_request));
 		// This test would likely be flaky on CI:
-		//assert!(Instant::now().saturating_duration_since(before_request) < SEND_RATE_LIMIT);
+		// assert!(Instant::now().saturating_duration_since(before_request) < SEND_RATE_LIMIT);
 
 		let relay_parent = Hash::random();
 		let candidate = make_candidate_receipt(relay_parent);
@@ -637,20 +638,21 @@ async fn nested_network_dispute_request<'a, F, O>(
 		match handle.recv().await {
 			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
 				_,
-				RuntimeApiRequest::SessionExecutorParams(_, tx),
-			)) => {
-				tx.send(Ok(Some(ExecutorParams::default())))
-					.expect("Receiver should stay alive.");
-			},
-			unexpected => panic!("Unexpected message {:?}", unexpected),
-		}
-
-		match handle.recv().await {
-			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-				_,
 				RuntimeApiRequest::NodeFeatures(_, si_tx),
 			)) => {
 				si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
+			},
+			unexpected => panic!("Unexpected message {:?}", unexpected),
+		}
+		match handle.recv().await {
+			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+				_,
+				RuntimeApiRequest::ApprovalVotingParams(_, tx),
+			)) => {
+				tx.send(Ok(ApprovalVotingParams {
+					max_approval_coalesce_count: MAX_COALESCE_APPROVALS,
+				}))
+				.expect("Receiver should stay alive.");
 			},
 			unexpected => panic!("Unexpected message {:?}", unexpected),
 		}
@@ -758,6 +760,18 @@ async fn activate_leaf(
 		}
 	);
 
+	// The V3 feature detection in handle_signals sends a NodeFeatures request
+	// right after SessionIndexForChild.
+	assert_matches!(
+		handle.recv().await,
+		AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+			_,
+			RuntimeApiRequest::NodeFeatures(_, tx)
+		)) => {
+			tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
+		}
+	);
+
 	if let Some(session_info) = new_session {
 		assert_matches!(
 			handle.recv().await,
@@ -772,21 +786,20 @@ async fn activate_leaf(
 		);
 		assert_matches!(
 			handle.recv().await,
-			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-				h,
-				RuntimeApiRequest::SessionExecutorParams(session_idx, tx)
-			)) => {
-				assert_eq!(h, activate);
-				assert_eq!(session_index, session_idx);
-				tx.send(Ok(Some(ExecutorParams::default()))).expect("Receiver should stay alive.");
-			}
-		);
-		assert_matches!(
-			handle.recv().await,
 			AllMessages::RuntimeApi(
 				RuntimeApiMessage::Request(_, RuntimeApiRequest::NodeFeatures(_, si_tx), )
 			) => {
 				si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
+			}
+		);
+		assert_matches!(
+			handle.recv().await,
+			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+				_,
+				RuntimeApiRequest::ApprovalVotingParams(_, tx),
+			)) => {
+				tx.send(Ok(ApprovalVotingParams { max_approval_coalesce_count: MAX_COALESCE_APPROVALS }))
+					.expect("Receiver should stay alive.");
 			}
 		);
 	}

@@ -18,12 +18,12 @@
 
 use crate::{BridgedChainOf, Config, InboundLanes, OutboundLanes, Pezpallet, LOG_TARGET};
 
-use pezbp_messages::{
+use bp_messages::{
 	target_chain::MessageDispatch, BaseMessagesProofInfo, ChainWithMessages, InboundLaneData,
 	MessageNonce, MessagesCallInfo, ReceiveMessagesDeliveryProofInfo, ReceiveMessagesProofInfo,
 	UnrewardedRelayerOccupation,
 };
-use pezbp_runtime::{AccountIdOf, OwnedBridgeModule};
+use bp_runtime::{AccountIdOf, OwnedBridgeModule};
 use pezframe_support::{dispatch::CallableCallFor, traits::IsSubType};
 use pezsp_runtime::transaction_validity::TransactionValidity;
 
@@ -248,7 +248,7 @@ fn unrewarded_relayers_occupation<T: Config<I>, I: 'static>(
 mod tests {
 	use super::*;
 	use crate::tests::mock::*;
-	use pezbp_messages::{
+	use bp_messages::{
 		source_chain::FromBridgedChainMessagesDeliveryProof,
 		target_chain::FromBridgedChainMessagesProof, DeliveredMessages, InboundLaneData, LaneState,
 		OutboundLaneData, UnrewardedRelayer, UnrewardedRelayersState,
@@ -281,7 +281,7 @@ mod tests {
 	fn deliver_message_10() {
 		InboundLanes::<TestRuntime>::insert(
 			test_lane_id(),
-			pezbp_messages::InboundLaneData {
+			bp_messages::InboundLaneData {
 				state: LaneState::Opened,
 				relayers: Default::default(),
 				last_confirmed_nonce: 10,
@@ -290,8 +290,8 @@ mod tests {
 	}
 
 	fn validate_message_delivery(
-		nonces_start: pezbp_messages::MessageNonce,
-		nonces_end: pezbp_messages::MessageNonce,
+		nonces_start: bp_messages::MessageNonce,
+		nonces_end: bp_messages::MessageNonce,
 	) -> bool {
 		RuntimeCall::Messages(crate::Call::<TestRuntime, ()>::receive_messages_proof {
 			relayer_id_at_bridged_chain: 42,
@@ -413,7 +413,7 @@ mod tests {
 	fn confirm_message_10() {
 		OutboundLanes::<TestRuntime>::insert(
 			test_lane_id(),
-			pezbp_messages::OutboundLaneData {
+			bp_messages::OutboundLaneData {
 				state: LaneState::Opened,
 				oldest_unpruned_nonce: 0,
 				latest_received_nonce: 10,
@@ -422,7 +422,7 @@ mod tests {
 		);
 	}
 
-	fn validate_message_confirmation(last_delivered_nonce: pezbp_messages::MessageNonce) -> bool {
+	fn validate_message_confirmation(last_delivered_nonce: bp_messages::MessageNonce) -> bool {
 		RuntimeCall::Messages(crate::Call::<TestRuntime>::receive_messages_delivery_proof {
 			proof: FromBridgedChainMessagesDeliveryProof {
 				bridged_header_hash: Default::default(),

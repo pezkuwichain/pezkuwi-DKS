@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,11 +23,7 @@ use pezkuwi_node_network_protocol::{
 	peer_set::ValidationVersion,
 	view, ObservedRole,
 };
-use pezkuwi_node_subsystem::messages::{
-	network_bridge_event, AllMessages, ReportPeerMessage, RuntimeApiRequest,
-};
-use pezkuwi_node_subsystem_util::{reputation::add_reputation, TimeoutExt as _};
-use pezkuwi_pez_node_primitives::approval::{
+use pezkuwi_node_primitives::approval::{
 	criteria,
 	v1::{VrfPreOutput, VrfProof, VrfSignature},
 	v2::{
@@ -35,9 +31,13 @@ use pezkuwi_pez_node_primitives::approval::{
 		RELAY_VRF_MODULO_CONTEXT,
 	},
 };
+use pezkuwi_node_subsystem::messages::{
+	network_bridge_event, AllMessages, ReportPeerMessage, RuntimeApiRequest,
+};
+use pezkuwi_node_subsystem_util::{reputation::add_reputation, TimeoutExt as _};
 use pezkuwi_primitives::{
-	ApprovalVoteMultipleCandidates, AuthorityDiscoveryId, BlakeTwo256, CoreIndex, ExecutorParams,
-	HashT, NodeFeatures, SessionInfo, ValidatorId,
+	ApprovalVoteMultipleCandidates, ApprovalVotingParams, AuthorityDiscoveryId, BlakeTwo256,
+	CoreIndex, HashT, NodeFeatures, SessionInfo, ValidatorId, MAX_COALESCE_APPROVALS,
 };
 use pezkuwi_primitives_test_helpers::dummy_signature;
 use pezsc_keystore::{Keystore, LocalKeystore};
@@ -143,6 +143,15 @@ async fn overseer_recv(overseer: &mut VirtualOverseer) -> AllMessages {
 }
 
 async fn provide_session(virtual_overseer: &mut VirtualOverseer, session_info: SessionInfo) {
+	provide_session_with_coalesce_count(virtual_overseer, session_info, MAX_COALESCE_APPROVALS)
+		.await;
+}
+
+async fn provide_session_with_coalesce_count(
+	virtual_overseer: &mut VirtualOverseer,
+	session_info: SessionInfo,
+	max_approval_coalesce_count: u32,
+) {
 	assert_matches!(
 		overseer_recv(virtual_overseer).await,
 		AllMessages::RuntimeApi(
@@ -157,22 +166,19 @@ async fn provide_session(virtual_overseer: &mut VirtualOverseer, session_info: S
 	assert_matches!(
 		overseer_recv(virtual_overseer).await,
 		AllMessages::RuntimeApi(
-			RuntimeApiMessage::Request(
-				_,
-				RuntimeApiRequest::SessionExecutorParams(_, si_tx),
-			)
-		) => {
-			// Make sure all SessionExecutorParams calls are not made for the leaf (but for its relay parent)
-			si_tx.send(Ok(Some(ExecutorParams::default()))).unwrap();
-		}
-	);
-
-	assert_matches!(
-		overseer_recv(virtual_overseer).await,
-		AllMessages::RuntimeApi(
 			RuntimeApiMessage::Request(_, RuntimeApiRequest::NodeFeatures(_, si_tx), )
 		) => {
 			si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
+		}
+	);
+	assert_matches!(
+		overseer_recv(virtual_overseer).await,
+		AllMessages::RuntimeApi(
+			RuntimeApiMessage::Request(_, RuntimeApiRequest::ApprovalVotingParams(_, si_tx))
+		) => {
+			si_tx
+				.send(Ok(ApprovalVotingParams { max_approval_coalesce_count }))
+				.unwrap();
 		}
 	);
 }
@@ -327,7 +333,7 @@ fn fake_assignment_cert_v2(
 	core_bitfield: CoreBitfield,
 ) -> IndirectAssignmentCertV2 {
 	let ctx = schnorrkel::signing_context(RELAY_VRF_MODULO_CONTEXT);
-	let msg = b"WhenTeyrchains?";
+	let msg = b"WhenParachains?";
 	let mut prng = rand_core::OsRng;
 	let keypair = schnorrkel::Keypair::generate_with(&mut prng);
 	let (inout, proof, _) = keypair.vrf_sign(ctx.bytes(msg));
@@ -349,7 +355,7 @@ fn fake_assignment_cert_delay(
 	core_bitfield: CoreBitfield,
 ) -> IndirectAssignmentCertV2 {
 	let ctx = schnorrkel::signing_context(RELAY_VRF_MODULO_CONTEXT);
-	let msg = b"WhenTeyrchains?";
+	let msg = b"WhenParachains?";
 	let mut prng = rand_core::OsRng;
 	let keypair = schnorrkel::Keypair::generate_with(&mut prng);
 	let (inout, proof, _) = keypair.vrf_sign(ctx.bytes(msg));
@@ -456,17 +462,15 @@ fn signature_for(
 }
 
 struct MockAssignmentCriteria {
-	tranche: Result<
-		pezkuwi_pez_node_primitives::approval::v1::DelayTranche,
-		criteria::InvalidAssignment,
-	>,
+	tranche:
+		Result<pezkuwi_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment>,
 }
 
 impl AssignmentCriteria for MockAssignmentCriteria {
 	fn compute_assignments(
 		&self,
 		_keystore: &LocalKeystore,
-		_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
+		_relay_vrf_story: pezkuwi_node_primitives::approval::v1::RelayVRFStory,
 		_config: &criteria::Config,
 		_leaving_cores: Vec<(
 			CandidateHash,
@@ -480,14 +484,13 @@ impl AssignmentCriteria for MockAssignmentCriteria {
 
 	fn check_assignment_cert(
 		&self,
-		_claimed_core_bitfield: pezkuwi_pez_node_primitives::approval::v2::CoreBitfield,
+		_claimed_core_bitfield: pezkuwi_node_primitives::approval::v2::CoreBitfield,
 		_validator_index: pezkuwi_primitives::ValidatorIndex,
 		_config: &criteria::Config,
-		_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
-		_assignment: &pezkuwi_pez_node_primitives::approval::v2::AssignmentCertV2,
+		_relay_vrf_story: pezkuwi_node_primitives::approval::v1::RelayVRFStory,
+		_assignment: &pezkuwi_node_primitives::approval::v2::AssignmentCertV2,
 		_backing_groups: Vec<pezkuwi_primitives::GroupIndex>,
-	) -> Result<pezkuwi_pez_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment>
-	{
+	) -> Result<pezkuwi_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment> {
 		self.tranche
 	}
 }
@@ -678,7 +681,7 @@ fn delay_reputation_change() {
 	);
 }
 
-/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/315#discussion_r547594835>
+/// <https://github.com/paritytech/polkadot/pull/2160#discussion_r547594835>
 ///
 /// 1. Send a view update that removes block B from their view.
 /// 2. Send a message from B that they incur `COST_UNEXPECTED_MESSAGE` for, but then they receive
@@ -782,7 +785,7 @@ fn spam_attack_results_in_negative_reputation_change() {
 /// Upon receiving them, they both will try to send the message each other.
 /// This test makes sure they will not punish each other for such duplicate messages.
 ///
-/// See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/280>.
+/// See <https://github.com/paritytech/polkadot/issues/2499>.
 #[test]
 fn peer_sending_us_the_same_we_just_sent_them_is_ok() {
 	let parent_hash = Hash::repeat_byte(0xFF);
@@ -1350,6 +1353,162 @@ fn multiple_assignments_covered_with_one_approval_vote() {
 					assert_eq!(signature.1, vec![0, 1]);
 				}
 			}
+			virtual_overseer
+		},
+	);
+}
+
+// Tests that an approval coalescing more candidates than the runtime's
+// `max_approval_coalesce_count` is rejected and costs the sending peer reputation.
+#[test]
+fn coalesced_approval_above_coalesce_limit_is_rejected_early() {
+	let peers = make_peers_and_authority_ids(15);
+
+	let peer_c = peers.get(2).unwrap().0;
+	let peer_d = peers.get(4).unwrap().0;
+	let parent_hash = Hash::repeat_byte(0xFF);
+	let hash = Hash::repeat_byte(0xAA);
+	let candidate_hash_first = pezkuwi_primitives::CandidateHash(Hash::repeat_byte(0xBB));
+	let candidate_hash_second = pezkuwi_primitives::CandidateHash(Hash::repeat_byte(0xCC));
+
+	let _ = test_harness(
+		Arc::new(MockAssignmentCriteria { tranche: Ok(0) }),
+		Arc::new(SystemClock {}),
+		state_without_reputation_delay(),
+		|mut virtual_overseer| async move {
+			let overseer = &mut virtual_overseer;
+			for (peer, _) in &peers {
+				setup_peer_with_view(overseer, peer, view![hash], ValidationVersion::V3).await;
+			}
+
+			let mut keystore = LocalKeystore::in_memory();
+			let session = dummy_session_info_valid(1, &mut keystore, 5);
+			let meta = BlockApprovalMeta {
+				hash,
+				parent_hash,
+				number: 1,
+				candidates: vec![
+					(candidate_hash_first, 0.into(), 0.into()),
+					(candidate_hash_second, 1.into(), 1.into()),
+				],
+				slot: 1.into(),
+				session: 1,
+				vrf_story: RelayVRFStory(Default::default()),
+			};
+			let msg = ApprovalDistributionMessage::NewBlocks(vec![meta]);
+			overseer_send(overseer, msg).await;
+
+			let peers_with_optional_peer_id = peers
+				.iter()
+				.map(|(peer_id, authority)| (Some(*peer_id), authority.clone()))
+				.collect_vec();
+			setup_gossip_topology(
+				overseer,
+				make_gossip_topology(1, &peers_with_optional_peer_id, &[0, 1], &[2, 4], 3),
+			)
+			.await;
+
+			let validator_index = ValidatorIndex(2);
+			let candidate_indices: CandidateBitfield =
+				vec![0 as CandidateIndex, 1 as CandidateIndex].try_into().unwrap();
+
+			// Import the assignment for candidate 0. The runtime advertises a coalescing limit of
+			// 1, i.e. coalescing is disabled.
+			let cert = fake_assignment_cert_v2(
+				hash,
+				validator_index,
+				vec![CoreIndex(0)].try_into().unwrap(),
+			);
+			let assignment = IndirectAssignmentCertV2 {
+				block_hash: hash,
+				validator: validator_index,
+				cert: cert.cert,
+			};
+			let msg = protocol_v3::ApprovalDistributionMessage::Assignments(vec![(
+				assignment,
+				(0 as CandidateIndex).into(),
+			)]);
+			send_message_from_peer_v3(overseer, &peer_d, msg).await;
+			provide_session_with_coalesce_count(overseer, session.clone(), 1).await;
+
+			assert_matches!(
+				overseer_recv(overseer).await,
+				AllMessages::ApprovalVoting(ApprovalVotingMessage::ImportAssignment(
+					assignment,
+					_,
+				)) => {
+					assert_eq!(assignment.tranche(), 0);
+				}
+			);
+			expect_reputation_change(overseer, &peer_d, BENEFIT_VALID_MESSAGE_FIRST).await;
+			assert_matches!(
+				overseer_recv(overseer).await,
+				AllMessages::NetworkBridgeTx(NetworkBridgeTxMessage::SendValidationMessage(
+					_,
+					ValidationProtocols::V3(protocol_v3::ValidationProtocol::ApprovalDistribution(
+						protocol_v3::ApprovalDistributionMessage::Assignments(assignments)
+					))
+				)) => {
+					assert_eq!(assignments.len(), 1);
+				}
+			);
+
+			// Import the assignment for candidate 1.
+			let cert = fake_assignment_cert_v2(
+				hash,
+				validator_index,
+				vec![CoreIndex(1)].try_into().unwrap(),
+			);
+			let assignment = IndirectAssignmentCertV2 {
+				block_hash: hash,
+				validator: validator_index,
+				cert: cert.cert,
+			};
+			let msg = protocol_v3::ApprovalDistributionMessage::Assignments(vec![(
+				assignment,
+				(1 as CandidateIndex).into(),
+			)]);
+			send_message_from_peer_v3(overseer, &peer_c, msg).await;
+
+			assert_matches!(
+				overseer_recv(overseer).await,
+				AllMessages::ApprovalVoting(ApprovalVotingMessage::ImportAssignment(
+					assignment,
+					_,
+				)) => {
+					assert_eq!(assignment.tranche(), 0);
+				}
+			);
+			expect_reputation_change(overseer, &peer_c, BENEFIT_VALID_MESSAGE_FIRST).await;
+			assert_matches!(
+				overseer_recv(overseer).await,
+				AllMessages::NetworkBridgeTx(NetworkBridgeTxMessage::SendValidationMessage(
+					_,
+					ValidationProtocols::V3(protocol_v3::ValidationProtocol::ApprovalDistribution(
+						protocol_v3::ApprovalDistributionMessage::Assignments(assignments)
+					))
+				)) => {
+					assert_eq!(assignments.len(), 1);
+				}
+			);
+
+			// Send an approval coalescing both candidates. With a coalescing limit of 1 this
+			// exceeds the allowed count and must be rejected without being imported or circulated.
+			let approval = IndirectSignedApprovalVoteV2 {
+				block_hash: hash,
+				candidate_indices,
+				validator: validator_index,
+				signature: signature_for(
+					&keystore,
+					&session,
+					vec![candidate_hash_first, candidate_hash_second],
+					validator_index,
+				),
+			};
+			let msg = protocol_v3::ApprovalDistributionMessage::Approvals(vec![approval]);
+			send_message_from_peer_v3(overseer, &peer_d, msg).await;
+
+			expect_reputation_change(overseer, &peer_d, COST_INVALID_MESSAGE).await;
 			virtual_overseer
 		},
 	);
@@ -2361,7 +2520,7 @@ fn sends_assignments_even_when_state_is_approved_v2() {
 	);
 }
 
-/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/319>
+/// <https://github.com/paritytech/polkadot/pull/5089>
 ///
 /// 1. Receive remote peer view update with an unknown head
 /// 2. Receive assignments for that unknown head
@@ -2433,7 +2592,7 @@ fn race_condition_in_local_vs_remote_view_update() {
 
 			for i in 0..candidates_count {
 				// Previously, this has caused out-of-view assignments/approvals
-				//expect_reputation_change(overseer, peer, COST_UNEXPECTED_MESSAGE).await;
+				// expect_reputation_change(overseer, peer, COST_UNEXPECTED_MESSAGE).await;
 
 				assert_matches!(
 					overseer_recv(overseer).await,
@@ -4034,13 +4193,13 @@ fn const_ensure_size_not_zero() {
 
 struct DummyClock;
 impl Clock for DummyClock {
-	fn tick_now(&self) -> pezkuwi_pez_node_primitives::approval::time::Tick {
+	fn tick_now(&self) -> pezkuwi_node_primitives::approval::time::Tick {
 		0
 	}
 
 	fn wait(
 		&self,
-		_tick: pezkuwi_pez_node_primitives::approval::time::Tick,
+		_tick: pezkuwi_node_primitives::approval::time::Tick,
 	) -> std::pin::Pin<Box<dyn Future<Output = ()> + Send + 'static>> {
 		todo!()
 	}
@@ -4253,7 +4412,7 @@ fn subsystem_rejects_wrong_claimed_assignments() {
 /// assignment and Delay tranche assignments land on the same candidate. The delay tranche0 can be
 /// safely ignored and we don't need to gossip it however, the compact tranche0 assignment should be
 /// gossiped, because other candidates are included in it, this test makes sure this invariant is
-/// upheld, see  https://github.com/pezkuwichain/pezkuwi-sdk/issues/315#discussion_r557628699, for
+/// upheld, see  https://github.com/paritytech/polkadot/pull/2160#discussion_r557628699, for
 /// this edge case.
 #[test]
 fn subsystem_accepts_tranche0_duplicate_assignments() {

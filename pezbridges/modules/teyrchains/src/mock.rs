@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
-use pezbp_header_pez_chain::ChainWithGrandpa;
-use pezbp_pezkuwi_core::teyrchains::ParaId;
-use pezbp_runtime::{Chain, ChainId, Teyrchain};
+use bp_header_chain::ChainWithGrandpa;
+use bp_polkadot_core::teyrchains::ParaId;
+use bp_runtime::{Chain, ChainId, Teyrchain};
 use pezframe_support::{
 	construct_runtime, derive_impl, parameter_types, traits::ConstU32, weights::Weight,
 };
@@ -36,15 +36,15 @@ pub type RelayBlockHeader =
 type Block = pezframe_system::mocking::MockBlock<TestRuntime>;
 
 pub const PARAS_PALLET_NAME: &str = "Paras";
-pub const UNTRACKED_TEYRCHAIN_ID: u32 = 10;
+pub const UNTRACKED_PARACHAIN_ID: u32 = 10;
 // use exact expected encoded size: `vec_len_size + header_number_size + state_root_hash_size`
-pub const MAXIMAL_TEYRCHAIN_HEAD_DATA_SIZE: u32 = 1 + 8 + 32;
+pub const MAXIMAL_PARACHAIN_HEAD_DATA_SIZE: u32 = 1 + 8 + 32;
 // total teyrchains that we use in tests
-pub const TOTAL_TEYRCHAINS: u32 = 4;
+pub const TOTAL_PARACHAINS: u32 = 4;
 
-pub type RegularTeyrchainHeader = pezsp_runtime::testing::Header;
-pub type RegularTeyrchainHasher = BlakeTwo256;
-pub type BigTeyrchainHeader = pezsp_runtime::generic::Header<u128, BlakeTwo256>;
+pub type RegularParachainHeader = pezsp_runtime::testing::Header;
+pub type RegularParachainHasher = BlakeTwo256;
+pub type BigParachainHeader = pezsp_runtime::generic::Header<u128, BlakeTwo256>;
 
 pub struct Teyrchain1;
 
@@ -53,8 +53,8 @@ impl Chain for Teyrchain1 {
 
 	type BlockNumber = u64;
 	type Hash = H256;
-	type Hasher = RegularTeyrchainHasher;
-	type Header = RegularTeyrchainHeader;
+	type Hasher = RegularParachainHasher;
+	type Header = RegularParachainHeader;
 	type AccountId = u64;
 	type Balance = u64;
 	type Nonce = u64;
@@ -71,7 +71,7 @@ impl Chain for Teyrchain1 {
 }
 
 impl Teyrchain for Teyrchain1 {
-	const TEYRCHAIN_ID: u32 = 1;
+	const PARACHAIN_ID: u32 = 1;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 
@@ -82,8 +82,8 @@ impl Chain for Teyrchain2 {
 
 	type BlockNumber = u64;
 	type Hash = H256;
-	type Hasher = RegularTeyrchainHasher;
-	type Header = RegularTeyrchainHeader;
+	type Hasher = RegularParachainHasher;
+	type Header = RegularParachainHeader;
 	type AccountId = u64;
 	type Balance = u64;
 	type Nonce = u64;
@@ -100,7 +100,7 @@ impl Chain for Teyrchain2 {
 }
 
 impl Teyrchain for Teyrchain2 {
-	const TEYRCHAIN_ID: u32 = 2;
+	const PARACHAIN_ID: u32 = 2;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 
@@ -111,8 +111,8 @@ impl Chain for Teyrchain3 {
 
 	type BlockNumber = u64;
 	type Hash = H256;
-	type Hasher = RegularTeyrchainHasher;
-	type Header = RegularTeyrchainHeader;
+	type Hasher = RegularParachainHasher;
+	type Header = RegularParachainHeader;
 	type AccountId = u64;
 	type Balance = u64;
 	type Nonce = u64;
@@ -129,20 +129,20 @@ impl Chain for Teyrchain3 {
 }
 
 impl Teyrchain for Teyrchain3 {
-	const TEYRCHAIN_ID: u32 = 3;
+	const PARACHAIN_ID: u32 = 3;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 
 // this teyrchain is using u128 as block number and stored head data size exceeds limit
-pub struct BigTeyrchain;
+pub struct BigParachain;
 
-impl Chain for BigTeyrchain {
+impl Chain for BigParachain {
 	const ID: ChainId = *b"bpch";
 
 	type BlockNumber = u128;
 	type Hash = H256;
-	type Hasher = RegularTeyrchainHasher;
-	type Header = BigTeyrchainHeader;
+	type Hasher = RegularParachainHasher;
+	type Header = BigParachainHeader;
 	type AccountId = u64;
 	type Balance = u64;
 	type Nonce = u64;
@@ -158,8 +158,8 @@ impl Chain for BigTeyrchain {
 	}
 }
 
-impl Teyrchain for BigTeyrchain {
-	const TEYRCHAIN_ID: u32 = 4;
+impl Teyrchain for BigParachain {
+	const PARACHAIN_ID: u32 = 4;
 	const MAX_HEADER_SIZE: u32 = 2_048;
 }
 
@@ -204,7 +204,7 @@ impl pezpallet_bridge_grandpa::Config<pezpallet_bridge_grandpa::Instance2> for T
 parameter_types! {
 	pub const HeadsToKeep: u32 = 4;
 	pub const ParasPalletName: &'static str = PARAS_PALLET_NAME;
-	pub GetTenFirstTeyrchains: Vec<ParaId> = (0..10).map(ParaId).collect();
+	pub GetTenFirstParachains: Vec<ParaId> = (0..10).map(ParaId).collect();
 }
 
 impl pezpallet_bridge_teyrchains::Config for TestRuntime {
@@ -212,9 +212,9 @@ impl pezpallet_bridge_teyrchains::Config for TestRuntime {
 	type WeightInfo = ();
 	type BridgesGrandpaPalletInstance = pezpallet_bridge_grandpa::Instance1;
 	type ParasPalletName = ParasPalletName;
-	type ParaStoredHeaderDataBuilder = (Teyrchain1, Teyrchain2, Teyrchain3, BigTeyrchain);
+	type ParaStoredHeaderDataBuilder = (Teyrchain1, Teyrchain2, Teyrchain3, BigParachain);
 	type HeadsToKeep = HeadsToKeep;
-	type MaxParaHeadDataSize = ConstU32<MAXIMAL_TEYRCHAIN_HEAD_DATA_SIZE>;
+	type MaxParaHeadDataSize = ConstU32<MAXIMAL_PARACHAIN_HEAD_DATA_SIZE>;
 	type OnNewHead = ();
 }
 
@@ -222,26 +222,26 @@ impl pezpallet_bridge_teyrchains::Config for TestRuntime {
 impl pezpallet_bridge_teyrchains::benchmarking::Config<()> for TestRuntime {
 	fn teyrchains() -> Vec<ParaId> {
 		vec![
-			ParaId(Teyrchain1::TEYRCHAIN_ID),
-			ParaId(Teyrchain2::TEYRCHAIN_ID),
-			ParaId(Teyrchain3::TEYRCHAIN_ID),
+			ParaId(Teyrchain1::PARACHAIN_ID),
+			ParaId(Teyrchain2::PARACHAIN_ID),
+			ParaId(Teyrchain3::PARACHAIN_ID),
 		]
 	}
 
 	fn prepare_teyrchain_heads_proof(
 		teyrchains: &[ParaId],
 		_teyrchain_head_size: u32,
-		_proof_params: pezbp_runtime::UnverifiedStorageProofParams,
+		_proof_params: bp_runtime::UnverifiedStorageProofParams,
 	) -> (
 		crate::RelayBlockNumber,
 		crate::RelayBlockHash,
-		pezbp_pezkuwi_core::teyrchains::ParaHeadsProof,
-		Vec<(ParaId, pezbp_pezkuwi_core::teyrchains::ParaHash)>,
+		bp_polkadot_core::teyrchains::ParaHeadsProof,
+		Vec<(ParaId, bp_polkadot_core::teyrchains::ParaHash)>,
 	) {
 		// in mock run we only care about benchmarks correctness, not the benchmark results
 		// => ignore size related arguments
 		let (state_root, proof, teyrchains) =
-			pezbp_test_utils::prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(
+			bp_test_utils::prepare_teyrchain_heads_proof::<RegularParachainHeader>(
 				teyrchains.iter().map(|p| (p.0, crate::tests::head_data(p.0, 1))).collect(),
 			);
 		let relay_genesis_hash = crate::tests::initialize(state_root);

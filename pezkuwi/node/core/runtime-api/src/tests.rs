@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,9 +16,9 @@
 
 use super::*;
 
+use pezkuwi_node_primitives::{BabeAllowedSlots, BabeEpoch, BabeEpochConfiguration};
 use pezkuwi_node_subsystem::SpawnGlue;
 use pezkuwi_node_subsystem_test_helpers::make_subsystem_context;
-use pezkuwi_pez_node_primitives::{BabeAllowedSlots, BabeEpoch, BabeEpochConfiguration};
 use pezkuwi_primitives::{
 	async_backing, async_backing::Constraints, slashing, ApprovalVotingParams,
 	AuthorityDiscoveryId, BlockNumber, CandidateCommitments, CandidateEvent, CandidateHash,
@@ -329,6 +329,20 @@ impl RuntimeApiSubsystemClient for MockSubsystemClient {
 	}
 
 	async fn para_ids(&self, _: Hash) -> Result<Vec<ParaId>, ApiError> {
+		todo!("Not required for tests")
+	}
+
+	async fn max_relay_parent_session_age(&self, _: Hash) -> Result<u32, ApiError> {
+		todo!("Not required for tests")
+	}
+
+	async fn ancestor_relay_parent_info(
+		&self,
+		_: Hash,
+		_: SessionIndex,
+		_: Hash,
+	) -> Result<Option<pezkuwi_primitives::vstaging::RelayParentInfo<Hash, BlockNumber>>, ApiError>
+	{
 		todo!("Not required for tests")
 	}
 }

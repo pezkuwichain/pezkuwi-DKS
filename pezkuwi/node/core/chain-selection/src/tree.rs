@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,8 +23,8 @@
 //! Each direct descendant of the finalized block acts as its own sub-tree,
 //! and as the finalized block advances, orphaned sub-trees are entirely pruned.
 
+use pezkuwi_node_primitives::BlockWeight;
 use pezkuwi_node_subsystem::ChainApiError;
-use pezkuwi_pez_node_primitives::BlockWeight;
 use pezkuwi_primitives::{BlockNumber, Hash};
 
 use std::collections::HashMap;

@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -54,10 +54,9 @@ use pezsp_runtime::{
 		AccountIdConversion, BadOrigin, BlakeTwo256, BlockNumberProvider, Dispatchable, Hash,
 		Saturating, Zero,
 	},
-	Either, SaturatedConversion,
+	Debug, Either, SaturatedConversion,
 };
 use scale_info::TypeInfo;
-use storage::{with_transaction, TransactionOutcome};
 use xcm::{latest::QueryResponseInfo, prelude::*};
 use xcm_builder::{
 	ExecuteController, ExecuteControllerWeightInfo, InspectMessageQueues, QueryController,
@@ -72,7 +71,7 @@ use xcm_executor::{
 	},
 	AssetsInHolding,
 };
-use xcm_runtime_pezapis::{
+use xcm_runtime_apis::{
 	authorized_aliases::{Error as AuthorizedAliasersApiError, OriginAliaser},
 	dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
 	fees::Error as XcmPaymentApiError,
@@ -1126,7 +1125,7 @@ pub mod pezpallet {
 		/// **This function is deprecated: Use `limited_teleport_assets` instead.**
 		///
 		/// Fee payment on the destination side is made from the asset in the `assets` vector of
-		/// id `fee_asset_id`. The weight limit for fees is not provided and thus is unlimited,
+		/// index `fee_asset_item`. The weight limit for fees is not provided and thus is unlimited,
 		/// with all fees taken as needed from the asset.
 		///
 		/// - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
@@ -1137,7 +1136,8 @@ pub mod pezpallet {
 		///   generally be an `AccountId32` value.
 		/// - `assets`: The assets to be withdrawn. This should include the assets used to pay the
 		///   fee on the `dest` chain.
-		/// - `fee_asset_id`: Id of the asset from `assets` which should be used to pay fees.
+		/// - `fee_asset_item`: The index into `assets` of the item which should be used to pay
+		///   fees.
 		#[pezpallet::call_index(1)]
 		#[allow(deprecated)]
 		#[deprecated(
@@ -1148,9 +1148,9 @@ pub mod pezpallet {
 			dest: Box<VersionedLocation>,
 			beneficiary: Box<VersionedLocation>,
 			assets: Box<VersionedAssets>,
-			fee_asset_id: Box<VersionedAssetId>,
+			fee_asset_item: u32,
 		) -> DispatchResult {
-			Self::do_teleport_assets(origin, dest, beneficiary, assets, fee_asset_id, Unlimited)
+			Self::do_teleport_assets(origin, dest, beneficiary, assets, fee_asset_item, Unlimited)
 		}
 
 		/// Transfer some assets from the local chain to the destination chain through their local,
@@ -1170,7 +1170,7 @@ pub mod pezpallet {
 		/// **This function is deprecated: Use `limited_reserve_transfer_assets` instead.**
 		///
 		/// Fee payment on the destination side is made from the asset in the `assets` vector of
-		/// id `fee_asset_id`. The weight limit for fees is not provided and thus is unlimited,
+		/// index `fee_asset_item`. The weight limit for fees is not provided and thus is unlimited,
 		/// with all fees taken as needed from the asset.
 		///
 		/// - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
@@ -1181,7 +1181,8 @@ pub mod pezpallet {
 		///   generally be an `AccountId32` value.
 		/// - `assets`: The assets to be withdrawn. This should include the assets used to pay the
 		///   fee on the `dest` (and possibly reserve) chains.
-		/// - `fee_asset_id`: Id of the asset from `assets` which should be used to pay fees.
+		/// - `fee_asset_item`: The index into `assets` of the item which should be used to pay
+		///   fees.
 		#[pezpallet::call_index(2)]
 		#[allow(deprecated)]
 		#[deprecated(
@@ -1192,14 +1193,14 @@ pub mod pezpallet {
 			dest: Box<VersionedLocation>,
 			beneficiary: Box<VersionedLocation>,
 			assets: Box<VersionedAssets>,
-			fee_asset_id: Box<VersionedAssetId>,
+			fee_asset_item: u32,
 		) -> DispatchResult {
 			Self::do_reserve_transfer_assets(
 				origin,
 				dest,
 				beneficiary,
 				assets,
-				fee_asset_id,
+				fee_asset_item,
 				Unlimited,
 			)
 		}
@@ -1335,7 +1336,7 @@ pub mod pezpallet {
 		///    to mint and deposit reserve-based assets to `beneficiary`.
 		///
 		/// Fee payment on the destination side is made from the asset in the `assets` vector of
-		/// id `fee_asset_id`, up to enough to pay for `weight_limit` of weight. If more weight
+		/// index `fee_asset_item`, up to enough to pay for `weight_limit` of weight. If more weight
 		/// is needed than `weight_limit`, then the operation will fail and the sent assets may be
 		/// at risk.
 		///
@@ -1347,7 +1348,8 @@ pub mod pezpallet {
 		///   generally be an `AccountId32` value.
 		/// - `assets`: The assets to be withdrawn. This should include the assets used to pay the
 		///   fee on the `dest` (and possibly reserve) chains.
-		/// - `fee_asset_id`: Id of the asset from `assets` which should be used to pay fees.
+		/// - `fee_asset_item`: The index into `assets` of the item which should be used to pay
+		///   fees.
 		/// - `weight_limit`: The remote-side weight limit, if any, for the XCM fee purchase.
 		#[pezpallet::call_index(8)]
 		#[pezpallet::weight(T::WeightInfo::reserve_transfer_assets())]
@@ -1356,7 +1358,7 @@ pub mod pezpallet {
 			dest: Box<VersionedLocation>,
 			beneficiary: Box<VersionedLocation>,
 			assets: Box<VersionedAssets>,
-			fee_asset_id: Box<VersionedAssetId>,
+			fee_asset_item: u32,
 			weight_limit: WeightLimit,
 		) -> DispatchResult {
 			Self::do_reserve_transfer_assets(
@@ -1364,7 +1366,7 @@ pub mod pezpallet {
 				dest,
 				beneficiary,
 				assets,
-				fee_asset_id,
+				fee_asset_item,
 				weight_limit,
 			)
 		}
@@ -1372,7 +1374,7 @@ pub mod pezpallet {
 		/// Teleport some assets from the local chain to some destination chain.
 		///
 		/// Fee payment on the destination side is made from the asset in the `assets` vector of
-		/// id `fee_asset_id`, up to enough to pay for `weight_limit` of weight. If more weight
+		/// index `fee_asset_item`, up to enough to pay for `weight_limit` of weight. If more weight
 		/// is needed than `weight_limit`, then the operation will fail and the sent assets may be
 		/// at risk.
 		///
@@ -1384,7 +1386,8 @@ pub mod pezpallet {
 		///   generally be an `AccountId32` value.
 		/// - `assets`: The assets to be withdrawn. This should include the assets used to pay the
 		///   fee on the `dest` chain.
-		/// - `fee_asset_id`: Id of the asset from `assets` which should be used to pay fees.
+		/// - `fee_asset_item`: The index into `assets` of the item which should be used to pay
+		///   fees.
 		/// - `weight_limit`: The remote-side weight limit, if any, for the XCM fee purchase.
 		#[pezpallet::call_index(9)]
 		#[pezpallet::weight(T::WeightInfo::teleport_assets())]
@@ -1393,10 +1396,17 @@ pub mod pezpallet {
 			dest: Box<VersionedLocation>,
 			beneficiary: Box<VersionedLocation>,
 			assets: Box<VersionedAssets>,
-			fee_asset_id: Box<VersionedAssetId>,
+			fee_asset_item: u32,
 			weight_limit: WeightLimit,
 		) -> DispatchResult {
-			Self::do_teleport_assets(origin, dest, beneficiary, assets, fee_asset_id, weight_limit)
+			Self::do_teleport_assets(
+				origin,
+				dest,
+				beneficiary,
+				assets,
+				fee_asset_item,
+				weight_limit,
+			)
 		}
 
 		/// Set or unset the global suspension state of the XCM executor.
@@ -1414,7 +1424,7 @@ pub mod pezpallet {
 		/// destination or remote reserve, or through teleports.
 		///
 		/// Fee payment on the destination side is made from the asset in the `assets` vector of
-		/// id `fee_asset_id` (hence referred to as `fees`), up to enough to pay for
+		/// index `fee_asset_item` (hence referred to as `fees`), up to enough to pay for
 		/// `weight_limit` of weight. If more weight is needed than `weight_limit`, then the
 		/// operation will fail and the sent assets may be at risk.
 		///
@@ -1440,7 +1450,8 @@ pub mod pezpallet {
 		///   generally be an `AccountId32` value.
 		/// - `assets`: The assets to be withdrawn. This should include the assets used to pay the
 		///   fee on the `dest` (and possibly reserve) chains.
-		/// - `fee_asset_id`: Id of the asset from `assets` which should be used to pay fees.
+		/// - `fee_asset_item`: The index into `assets` of the item which should be used to pay
+		///   fees.
 		/// - `weight_limit`: The remote-side weight limit, if any, for the XCM fee purchase.
 		#[pezpallet::call_index(11)]
 		pub fn transfer_assets(
@@ -1448,7 +1459,7 @@ pub mod pezpallet {
 			dest: Box<VersionedLocation>,
 			beneficiary: Box<VersionedLocation>,
 			assets: Box<VersionedAssets>,
-			fee_asset_id: Box<VersionedAssetId>,
+			fee_asset_item: u32,
 			weight_limit: WeightLimit,
 		) -> DispatchResult {
 			let origin = T::ExecuteXcmOrigin::ensure_origin(origin)?;
@@ -1473,30 +1484,24 @@ pub mod pezpallet {
 				);
 				Error::<T>::BadVersion
 			})?;
-			let fee_asset_id: AssetId = (*fee_asset_id).try_into().map_err(|()| {
-				tracing::debug!(
-					target: "xcm::pezpallet_xcm::transfer_assets",
-					"Failed to convert VersionedAssetId",
-				);
-				Error::<T>::BadVersion
-			})?;
 			tracing::debug!(
 				target: "xcm::pezpallet_xcm::transfer_assets",
-				?origin, ?dest, ?beneficiary, ?assets, ?fee_asset_id, ?weight_limit,
+				?origin, ?dest, ?beneficiary, ?assets, ?fee_asset_item, ?weight_limit,
 			);
 
 			ensure!(assets.len() <= MAX_ASSETS_FOR_TRANSFER, Error::<T>::TooManyAssets);
 			let assets = assets.into_inner();
+			let fee_asset_item = fee_asset_item as usize;
 			// Find transfer types for fee and non-fee assets.
 			let (fees_transfer_type, assets_transfer_type) =
-				Self::find_fee_and_assets_transfer_types(&assets, &fee_asset_id, &dest)?;
+				Self::find_fee_and_assets_transfer_types(&assets, fee_asset_item, &dest)?;
 
 			// We check for network native asset reserve transfers in preparation for the Asset Hub
 			// Migration. This check will be removed after the migration and the determined
-			// reserve location adjusted accordingly. For more information, see https://github.com/pezkuwichain/pezkuwi-sdk/issues/301.
+			// reserve location adjusted accordingly. For more information, see https://github.com/pezkuwichain/pezkuwi-sdk/issues/9054.
 			Self::ensure_network_asset_reserve_transfer_allowed(
 				&assets,
-				&fee_asset_id,
+				fee_asset_item,
 				&assets_transfer_type,
 				&fees_transfer_type,
 			)?;
@@ -1507,7 +1512,7 @@ pub mod pezpallet {
 				Either::Left(beneficiary),
 				assets,
 				assets_transfer_type,
-				fee_asset_id,
+				fee_asset_item,
 				fees_transfer_type,
 				weight_limit,
 			)
@@ -1666,13 +1671,15 @@ pub mod pezpallet {
 			let assets = assets.into_inner();
 			ensure!(assets.len() <= MAX_ASSETS_FOR_TRANSFER, Error::<T>::TooManyAssets);
 
+			let fee_asset_index =
+				assets.iter().position(|a| a.id == fees_id).ok_or(Error::<T>::FeesNotMet)?;
 			Self::do_transfer_assets(
 				origin_location,
 				dest,
 				Either::Right(remote_xcm),
 				assets,
 				*assets_transfer_type,
-				fees_id,
+				fee_asset_index,
 				*fees_transfer_type,
 				weight_limit,
 			)
@@ -1991,25 +1998,25 @@ impl<T: Config> Pezpallet<T> {
 		AssetTraps::<T>::get(trap_id)
 	}
 
-	/// Find `TransferType`s for `assets` and fee identified through `fee_asset_id`, when
+	/// Find `TransferType`s for `assets` and fee identified through `fee_asset_item`, when
 	/// transferring to `dest`.
 	///
 	/// Validate `assets` to all have same `TransferType`.
 	fn find_fee_and_assets_transfer_types(
 		assets: &[Asset],
-		fee_asset_id: &AssetId,
+		fee_asset_item: usize,
 		dest: &Location,
 	) -> Result<(TransferType, TransferType), Error<T>> {
 		let mut fees_transfer_type = None;
 		let mut assets_transfer_type = None;
-		for asset in assets.iter() {
+		for (idx, asset) in assets.iter().enumerate() {
 			if let Fungible(x) = asset.fun {
 				// If fungible asset, ensure non-zero amount.
 				ensure!(!x.is_zero(), Error::<T>::Empty);
 			}
 			let transfer_type =
 				T::XcmExecutor::determine_for(&asset, dest).map_err(Error::<T>::from)?;
-			if asset.id == *fee_asset_id {
+			if idx == fee_asset_item {
 				fees_transfer_type = Some(transfer_type);
 			} else {
 				if let Some(existing) = assets_transfer_type.as_ref() {
@@ -2037,7 +2044,7 @@ impl<T: Config> Pezpallet<T> {
 		dest: Box<VersionedLocation>,
 		beneficiary: Box<VersionedLocation>,
 		assets: Box<VersionedAssets>,
-		fee_asset_id: Box<VersionedAssetId>,
+		fee_asset_item: u32,
 		weight_limit: WeightLimit,
 	) -> DispatchResult {
 		let origin_location = T::ExecuteXcmOrigin::ensure_origin(origin)?;
@@ -2062,16 +2069,9 @@ impl<T: Config> Pezpallet<T> {
 			);
 			Error::<T>::BadVersion
 		})?;
-		let fee_asset_id: AssetId = (*fee_asset_id).try_into().map_err(|()| {
-			tracing::debug!(
-				target: "xcm::pezpallet_xcm::do_reserve_transfer_assets",
-				"Failed to convert VersionedAssetId",
-			);
-			Error::<T>::BadVersion
-		})?;
 		tracing::debug!(
 			target: "xcm::pezpallet_xcm::do_reserve_transfer_assets",
-			?origin_location, ?dest, ?beneficiary, ?assets, ?fee_asset_id,
+			?origin_location, ?dest, ?beneficiary, ?assets, ?fee_asset_item,
 		);
 
 		ensure!(assets.len() <= MAX_ASSETS_FOR_TRANSFER, Error::<T>::TooManyAssets);
@@ -2079,11 +2079,12 @@ impl<T: Config> Pezpallet<T> {
 		ensure!(T::XcmReserveTransferFilter::contains(&value), Error::<T>::Filtered);
 		let (origin, assets) = value;
 
-		let fees = assets.iter().find(|a| a.id == fee_asset_id).ok_or(Error::<T>::Empty)?.clone();
+		let fee_asset_item = fee_asset_item as usize;
+		let fees = assets.get(fee_asset_item as usize).ok_or(Error::<T>::Empty)?.clone();
 
 		// Find transfer types for fee and non-fee assets.
 		let (fees_transfer_type, assets_transfer_type) =
-			Self::find_fee_and_assets_transfer_types(&assets, &fee_asset_id, &dest)?;
+			Self::find_fee_and_assets_transfer_types(&assets, fee_asset_item, &dest)?;
 		// Ensure assets (and fees according to check below) are not teleportable to `dest`.
 		ensure!(assets_transfer_type != TransferType::Teleport, Error::<T>::Filtered);
 		// Ensure all assets (including fees) have same reserve location.
@@ -2091,10 +2092,10 @@ impl<T: Config> Pezpallet<T> {
 
 		// We check for network native asset reserve transfers in preparation for the Asset Hub
 		// Migration. This check will be removed after the migration and the determined
-		// reserve location adjusted accordingly. For more information, see https://github.com/pezkuwichain/pezkuwi-sdk/issues/301.
+		// reserve location adjusted accordingly. For more information, see https://github.com/pezkuwichain/pezkuwi-sdk/issues/9054.
 		Self::ensure_network_asset_reserve_transfer_allowed(
 			&assets,
-			&fee_asset_id,
+			fee_asset_item,
 			&assets_transfer_type,
 			&fees_transfer_type,
 		)?;
@@ -2116,7 +2117,7 @@ impl<T: Config> Pezpallet<T> {
 		dest: Box<VersionedLocation>,
 		beneficiary: Box<VersionedLocation>,
 		assets: Box<VersionedAssets>,
-		fee_asset_id: Box<VersionedAssetId>,
+		fee_asset_item: u32,
 		weight_limit: WeightLimit,
 	) -> DispatchResult {
 		let origin_location = T::ExecuteXcmOrigin::ensure_origin(origin)?;
@@ -2141,33 +2142,21 @@ impl<T: Config> Pezpallet<T> {
 			);
 			Error::<T>::BadVersion
 		})?;
-		let fee_asset_id: AssetId = (*fee_asset_id).try_into().map_err(|()| {
-			tracing::debug!(
-				target: "xcm::pezpallet_xcm::do_teleport_assets",
-				"Failed to convert VersionedAssetId",
-			);
-			Error::<T>::BadVersion
-		})?;
-
 		tracing::debug!(
 			target: "xcm::pezpallet_xcm::do_teleport_assets",
-			?origin_location, ?dest, ?beneficiary, ?assets, ?fee_asset_id, ?weight_limit,
+			?origin_location, ?dest, ?beneficiary, ?assets, ?fee_asset_item, ?weight_limit,
 		);
 
 		ensure!(assets.len() <= MAX_ASSETS_FOR_TRANSFER, Error::<T>::TooManyAssets);
 		let value = (origin_location, assets.into_inner());
 		ensure!(T::XcmTeleportFilter::contains(&value), Error::<T>::Filtered);
 		let (origin_location, assets) = value;
-		let mut maybe_fee_asset = None;
 		for asset in assets.iter() {
 			let transfer_type =
 				T::XcmExecutor::determine_for(asset, &dest).map_err(Error::<T>::from)?;
 			ensure!(transfer_type == TransferType::Teleport, Error::<T>::Filtered);
-			if asset.id == fee_asset_id {
-				maybe_fee_asset = Some(asset)
-			}
 		}
-		let fees = maybe_fee_asset.ok_or(Error::<T>::Empty)?.clone();
+		let fees = assets.get(fee_asset_item as usize).ok_or(Error::<T>::Empty)?.clone();
 
 		let (local_xcm, remote_xcm) = Self::build_xcm_transfer_type(
 			origin_location.clone(),
@@ -2187,14 +2176,13 @@ impl<T: Config> Pezpallet<T> {
 		beneficiary: Either<Location, Xcm<()>>,
 		mut assets: Vec<Asset>,
 		assets_transfer_type: TransferType,
-		fee_asset_id: AssetId,
+		fee_asset_index: usize,
 		fees_transfer_type: TransferType,
 		weight_limit: WeightLimit,
 	) -> DispatchResult {
 		// local and remote XCM programs to potentially handle fees separately
 		let fees = if fees_transfer_type == assets_transfer_type {
-			let fees =
-				assets.iter().find(|a| a.id == fee_asset_id).ok_or(Error::<T>::Empty)?.clone();
+			let fees = assets.get(fee_asset_index).ok_or(Error::<T>::Empty)?.clone();
 			// no need for custom fees instructions, fees are batched with assets
 			FeesHandling::Batched { fees }
 		} else {
@@ -2210,8 +2198,6 @@ impl<T: Config> Pezpallet<T> {
 			let weight_limit = weight_limit.clone();
 			// remove `fees` from `assets` and build separate fees transfer instructions to be
 			// added to assets transfers XCM programs
-			let fee_asset_index =
-				assets.iter().position(|a| a.id == fee_asset_id).ok_or(Error::<T>::FeesNotMet)?;
 			let fees = assets.remove(fee_asset_index);
 			let (local_xcm, remote_xcm) = match fees_transfer_type {
 				TransferType::LocalReserve => Self::local_reserve_fees_instructions(
@@ -3065,7 +3051,7 @@ impl<T: Config> Pezpallet<T> {
 	///
 	/// Returns not only the call result and events, but also the local XCM, if any,
 	/// and any XCMs forwarded to other locations.
-	/// Meant to be used in the `xcm_runtime_pezapis::dry_run::DryRunApi` runtime API.
+	/// Meant to be used in the `xcm_runtime_apis::dry_run::DryRunApi` runtime API.
 	pub fn dry_run_call<Runtime, Router, OriginCaller, RuntimeCall>(
 		origin: OriginCaller,
 		call: RuntimeCall,
@@ -3091,7 +3077,7 @@ impl<T: Config> Pezpallet<T> {
 			.map(|xcm| VersionedXcm::<()>::from(xcm).into_version(result_xcms_version))
 			.transpose()
 			.map_err(|()| {
-				tracing::error!(
+				tracing::debug!(
 					target: "xcm::DryRunApi::dry_run_call",
 					"Local xcm version conversion failed"
 				);
@@ -3103,7 +3089,7 @@ impl<T: Config> Pezpallet<T> {
 		let forwarded_xcms =
 			Self::convert_forwarded_xcms(result_xcms_version, Router::get_messages()).inspect_err(
 				|error| {
-					tracing::error!(
+					tracing::debug!(
 						target: "xcm::DryRunApi::dry_run_call",
 						?error, "Forwarded xcms version conversion failed with error"
 					);
@@ -3124,7 +3110,7 @@ impl<T: Config> Pezpallet<T> {
 	/// Dry-runs `xcm` with the given `origin_location`.
 	///
 	/// Returns execution result, events, and any forwarded XCMs to other locations.
-	/// Meant to be used in the `xcm_runtime_pezapis::dry_run::DryRunApi` runtime API.
+	/// Meant to be used in the `xcm_runtime_apis::dry_run::DryRunApi` runtime API.
 	pub fn dry_run_xcm<Router>(
 		origin_location: VersionedLocation,
 		xcm: VersionedXcm<<T as Config>::RuntimeCall>,
@@ -3133,7 +3119,7 @@ impl<T: Config> Pezpallet<T> {
 		Router: InspectMessageQueues,
 	{
 		let origin_location: Location = origin_location.try_into().map_err(|error| {
-			tracing::error!(
+			tracing::debug!(
 				target: "xcm::DryRunApi::dry_run_xcm",
 				?error, "Location version conversion failed with error"
 			);
@@ -3141,7 +3127,7 @@ impl<T: Config> Pezpallet<T> {
 		})?;
 		let xcm_version = xcm.identify_version();
 		let xcm: Xcm<<T as Config>::RuntimeCall> = xcm.try_into().map_err(|error| {
-			tracing::error!(
+			tracing::debug!(
 				target: "xcm::DryRunApi::dry_run_xcm",
 				?error, "Xcm version conversion failed with error"
 			);
@@ -3162,7 +3148,7 @@ impl<T: Config> Pezpallet<T> {
 		);
 		let forwarded_xcms = Self::convert_forwarded_xcms(xcm_version, Router::get_messages())
 			.inspect_err(|error| {
-				tracing::error!(
+				tracing::debug!(
 					target: "xcm::DryRunApi::dry_run_xcm",
 					?error, "Forwarded xcms version conversion failed with error"
 				);
@@ -3251,43 +3237,28 @@ impl<T: Config> Pezpallet<T> {
 	/// `u128` overflow.
 	pub fn query_weight_to_asset_fee<Trader: xcm_executor::traits::WeightTrader>(
 		weight: Weight,
-		asset: VersionedAssetId,
+		asset_id: VersionedAssetId,
 	) -> Result<u128, XcmPaymentApiError> {
-		let asset: AssetId = asset.clone().try_into()
+		let asset_id: AssetId = asset_id.clone().try_into()
 			.map_err(|e| {
-				tracing::debug!(target: "xcm::pezpallet::query_weight_to_asset_fee", ?e, ?asset, "Failed to convert versioned asset");
+				tracing::debug!(target: "xcm::pezpallet::query_weight_to_asset_fee", ?e, ?asset_id, "Failed to convert versioned asset");
 				XcmPaymentApiError::VersionedConversionFailed
 			})?;
 
-		let max_amount = u128::MAX / 2;
-		let max_payment: Asset = (asset.clone(), max_amount).into();
 		let context = XcmContext::with_message_id(XcmHash::default());
 
-		// We return the unspent amount without affecting the state
-		// as we used a big amount of the asset without any check.
-		let unspent = with_transaction(|| {
-			let mut trader = Trader::new();
-			let result = trader.buy_weight(weight, max_payment.into(), &context)
-				.map_err(|e| {
-					tracing::error!(target: "xcm::pezpallet::query_weight_to_asset_fee", ?e, ?asset, "Failed to buy weight");
-
-					// Return something convertible to `DispatchError` as required by the `with_transaction` fn.
-					DispatchError::Other("Failed to buy weight")
-				});
-
-			TransactionOutcome::Rollback(result)
-		}).map_err(|error| {
-			tracing::debug!(target: "xcm::pezpallet::query_weight_to_asset_fee", ?error, "Failed to execute transaction");
-			XcmPaymentApiError::AssetNotFound
-		})?;
-
-		let Some(unspent) = unspent.fungible.get(&asset) else {
-			tracing::error!(target: "xcm::pezpallet::query_weight_to_asset_fee", ?asset, "The trader didn't return the needed fungible asset");
-			return Err(XcmPaymentApiError::AssetNotFound);
-		};
-
-		let paid = max_amount - unspent;
-		Ok(paid)
+		let mut trader = Trader::new();
+		let required = trader.quote_weight(weight, asset_id.clone(), &context)
+			.map_err(|e| {
+				tracing::debug!(target: "xcm::pezpallet::query_weight_to_asset_fee", ?e, ?asset_id, "Failed to quote weight");
+				XcmPaymentApiError::AssetNotFound
+			})?;
+		match (required.id, required.fun) {
+			(required_id, Fungible(required_amount)) if required_id.eq(&asset_id) => {
+				Ok(required_amount)
+			},
+			_ => Err(XcmPaymentApiError::AssetNotFound),
+		}
 	}
 
 	/// Given a `destination` and XCM `message`, return assets to be charged as XCM delivery fees.
@@ -3307,18 +3278,18 @@ impl<T: Config> Pezpallet<T> {
 			.clone()
 			.try_into()
 			.map_err(|e| {
-				tracing::error!(target: "xcm::pezpallet_xcm::query_delivery_fees", ?e, ?destination, "Failed to convert versioned destination");
+				tracing::debug!(target: "xcm::pezpallet_xcm::query_delivery_fees", ?e, ?destination, "Failed to convert versioned destination");
 				XcmPaymentApiError::VersionedConversionFailed
 			})?;
 
 		let message: Xcm<()> =
 			message.clone().try_into().map_err(|e| {
-				tracing::error!(target: "xcm::pezpallet_xcm::query_delivery_fees", ?e, ?message, "Failed to convert versioned message");
+				tracing::debug!(target: "xcm::pezpallet_xcm::query_delivery_fees", ?e, ?message, "Failed to convert versioned message");
 				XcmPaymentApiError::VersionedConversionFailed
 			})?;
 
 		let (_, fees) = validate_send::<T::XcmRouter>(destination.clone(), message.clone()).map_err(|error| {
-			tracing::error!(target: "xcm::pezpallet_xcm::query_delivery_fees", ?error, ?destination, ?message, "Failed to validate send to destination");
+			tracing::debug!(target: "xcm::pezpallet_xcm::query_delivery_fees", ?error, ?destination, ?message, "Failed to validate send to destination");
 			XcmPaymentApiError::Unroutable
 		})?;
 
@@ -3331,7 +3302,7 @@ impl<T: Config> Pezpallet<T> {
 
 		let asset_id = versioned_asset_id.clone().try_into().map_err(|()| {
 			tracing::trace!(
-				target: "xcm::xcm_runtime_pezapis::query_delivery_fees",
+				target: "xcm::xcm_runtime_apis::query_delivery_fees",
 				"Failed to convert asset id: {versioned_asset_id:?}!"
 			);
 			XcmPaymentApiError::VersionedConversionFailed
@@ -3498,10 +3469,10 @@ impl<T: Config> Pezpallet<T> {
 	/// - `message`: The message whose outcome should be reported.
 	/// - `responder`: The origin from which a response should be expected.
 	/// - `notify`: A dispatchable function which will be called once the outcome of `message` is
-	///   known. It may be a dispatchable in any pezpallet of the local chain, but other than the
-	///   usual origin, it must accept exactly two arguments: `query_id: QueryId` and `outcome:
-	///   Response`, and in that order. It should expect that the origin is `Origin::Response` and
-	///   will contain the responder's location.
+	///   known. It may be a dispatchable in any pezpallet of the local chain, but other than the usual
+	///   origin, it must accept exactly two arguments: `query_id: QueryId` and `outcome: Response`,
+	///   and in that order. It should expect that the origin is `Origin::Response` and will contain
+	///   the responder's location.
 	/// - `timeout`: The block number after which it is permissible for `notify` not to be called
 	///   even if a response is received.
 	///
@@ -3937,10 +3908,18 @@ impl<T: Config> VersionChangeNotifier for Pezpallet<T> {
 }
 
 impl<T: Config> DropAssets for Pezpallet<T> {
-	fn drop_assets(origin: &Location, assets: AssetsInHolding, _context: &XcmContext) -> Weight {
-		if assets.is_empty() {
+	fn drop_assets(origin: &Location, holding: AssetsInHolding, _context: &XcmContext) -> Weight {
+		if holding.is_empty() {
 			return Weight::zero();
 		}
+		let assets: Vec<Asset> = holding.assets_iter().collect();
+		// SAFETY: "forget" about any fungible imbalances so that they are not dropped/resolved
+		// here. The mirrored asset claiming operation will "recover" the imbalances by minting
+		// back into holding, effectively duplicating the imbalance and only then dropping the
+		// duplicate. As a result, total issuance doesn't change.
+		holding.fungible.into_iter().for_each(|(_, mut accounting)| {
+			accounting.forget_imbalance();
+		});
 		let versioned = VersionedAssets::from(Assets::from(assets));
 		let hash = BlakeTwo256::hash_of(&(&origin, &versioned));
 		AssetTraps::<T>::mutate(hash, |n| *n += 1);
@@ -3959,31 +3938,58 @@ impl<T: Config> ClaimAssets for Pezpallet<T> {
 		origin: &Location,
 		ticket: &Location,
 		assets: &Assets,
-		_context: &XcmContext,
-	) -> bool {
+		context: &XcmContext,
+	) -> Option<AssetsInHolding> {
 		let mut versioned = VersionedAssets::from(assets.clone());
 		match ticket.unpack() {
 			(0, [GeneralIndex(i)]) => {
 				versioned = match versioned.into_version(*i as u32) {
 					Ok(v) => v,
-					Err(()) => return false,
+					Err(()) => return None,
 				}
 			},
 			(0, []) => (),
-			_ => return false,
+			_ => return None,
 		};
 		let hash = BlakeTwo256::hash_of(&(origin.clone(), versioned.clone()));
 		match AssetTraps::<T>::get(hash) {
-			0 => return false,
+			0 => return None,
 			1 => AssetTraps::<T>::remove(hash),
 			n => AssetTraps::<T>::insert(hash, n - 1),
+		}
+		let mut claimed = AssetsInHolding::new();
+		for asset in assets.inner() {
+			match <T::XcmExecutor as XcmAssetTransfers>::AssetTransactor::mint_asset(asset, context)
+			{
+				Ok(minted) => {
+					// SAFETY: Any fungible imbalances are now effectively duplicated because they
+					// were not resolved when the asset was trapped (so total issuance tracks
+					// trapped assets too), and now a duplicate asset was just minted.
+					// To balance the system and keep total issuance constant, we drop and resolve
+					// one of the duplicates. As a result, total issuance doesn't change.
+					//
+					// Note: This may emit Burned/Minted events even though the net issuance change
+					// is zero. The mint creates a +X imbalance, and dropping the clone resolves -X,
+					// resulting in no net change but potentially two events. This is an acceptable
+					// tradeoff for the asset trap/claim mechanism.
+					minted.fungible.iter().for_each(|(_, imbalance)| {
+						let to_resolve = imbalance.unsafe_clone();
+						core::mem::drop(to_resolve);
+					});
+					claimed.subsume_assets(minted)
+				},
+				Err(error) => tracing::debug!(
+					target: "xcm::pezpallet_xcm::claim_assets",
+					?asset, ?error, "Asset claimed from trap but unable to mint."
+				),
+			}
 		}
 		Self::deposit_event(Event::AssetsClaimed {
 			hash,
 			origin: origin.clone(),
 			assets: versioned,
 		});
-		return true;
+		Some(claimed)
 	}
 }
 

@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 //!
 //! A runtime metric provider implementation that builds on top of Bizinikiwi wasm
 //! tracing support. This requires that the custom profiler (`TraceHandler`) to be
-//! registered in bizinikiwi via a `logger_hook()`. Events emitted from runtime are
+//! registered in substrate via a `logger_hook()`. Events emitted from runtime are
 //! then captured/processed by the `TraceHandler` implementation.
 //!
 //! Don't add logs in this file because it gets executed before the logger is

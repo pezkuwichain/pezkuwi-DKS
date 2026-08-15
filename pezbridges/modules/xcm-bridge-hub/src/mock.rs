@@ -18,16 +18,16 @@
 
 use crate as pezpallet_xcm_bridge_hub;
 
-use codec::{Decode, Encode};
-use pezbp_messages::{
+use bp_messages::{
 	target_chain::{DispatchMessage, MessageDispatch},
 	ChainWithMessages, HashedLaneId, MessageNonce,
 };
-use pezbp_runtime::{messages::MessageDispatchResult, Chain, ChainId, HashOf};
-use pezbp_xcm_bridge_hub::{BridgeId, LocalXcmChannelManager};
+use bp_runtime::{messages::MessageDispatchResult, Chain, ChainId, HashOf};
+use bp_xcm_bridge_hub::{BridgeId, LocalXcmChannelManager};
+use codec::{Decode, Encode};
 use pezframe_support::{
 	assert_ok, derive_impl, parameter_types,
-	traits::{EnsureOrigin, Equals, Everything, Get, OriginTrait},
+	traits::{ConstBool, EnsureOrigin, Equals, Everything, Get, OriginTrait},
 	weights::RuntimeDbWeight,
 };
 use pezkuwi_teyrchain_primitives::primitives::Sibling;
@@ -38,11 +38,11 @@ use pezsp_runtime::{
 	AccountId32, BuildStorage, StateVersion,
 };
 use pezsp_std::cell::RefCell;
-use xcm::{latest::PEZKUWICHAIN_GENESIS_HASH, prelude::*};
+use xcm::{latest::ROCOCO_GENESIS_HASH, prelude::*};
 use xcm_builder::{
 	AllowUnpaidExecutionFrom, DispatchBlob, DispatchBlobError, FixedWeightBounds,
 	InspectMessageQueues, NetworkExportTable, NetworkExportTableItem, ParentIsPreset,
-	SiblingTeyrchainConvertsVia,
+	SiblingParachainConvertsVia,
 };
 use xcm_executor::{traits::ConvertOrigin, XcmExecutor};
 
@@ -148,7 +148,7 @@ impl pezpallet_bridge_messages::WeightInfoExt for TestMessagesWeights {
 }
 
 parameter_types! {
-	pub const RelayNetwork: NetworkId = NetworkId::Dicle;
+	pub const RelayNetwork: NetworkId = NetworkId::Kusama;
 	pub UniversalLocation: InteriorLocation = [
 		GlobalConsensus(RelayNetwork::get()),
 		Teyrchain(THIS_BRIDGE_HUB_ID),
@@ -160,7 +160,7 @@ parameter_types! {
 	pub BridgedRelayNetworkLocation: Location = (Parent, GlobalConsensus(BridgedRelayNetwork::get())).into();
 	pub BridgedRelativeDestination: InteriorLocation = [Teyrchain(BRIDGED_ASSET_HUB_ID)].into();
 	pub BridgedUniversalDestination: InteriorLocation = [GlobalConsensus(BridgedRelayNetwork::get()), Teyrchain(BRIDGED_ASSET_HUB_ID)].into();
-	pub const NonBridgedRelayNetwork: NetworkId = NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH);
+	pub const NonBridgedRelayNetwork: NetworkId = NetworkId::ByGenesis(ROCOCO_GENESIS_HASH);
 
 	pub const BridgeDeposit: Balance = 100_000;
 
@@ -231,6 +231,8 @@ impl pezpallet_xcm_bridge_hub_router::Config<XcmOverBridgeWrappedWithExportMessa
 	type ToBridgeHubSender = ExecuteXcmOverSendXcm;
 	type LocalXcmChannelManager = TestLocalXcmChannelManager;
 
+	type UnpaidExport = ConstBool<false>;
+
 	type ByteFee = ConstU128<0>;
 	type FeeAsset = BridgeFeeAsset;
 }
@@ -250,7 +252,6 @@ impl xcm_executor::Config for XcmConfig {
 	type Trader = ();
 	type ResponseHandler = ();
 	type AssetTrap = ();
-	type AssetClaims = ();
 	type SubscriptionService = ();
 	type PalletInstancesInfo = ();
 	type MaxAssetsIntoHolding = ();
@@ -276,8 +277,8 @@ thread_local! {
 
 /// The `SendXcm` implementation directly executes XCM using `XcmExecutor`.
 ///
-/// We ensure that the `ExportMessage` produced by `pezpallet_xcm_bridge_hub_router` is compatible
-/// with the `ExportXcm` implementation of `pezpallet_xcm_bridge_hub`.
+/// We ensure that the `ExportMessage` produced by `pezpallet_xcm_bridge_hub_router` is compatible with
+/// the `ExportXcm` implementation of `pezpallet_xcm_bridge_hub`.
 ///
 /// Note: The crucial part is that `ExportMessage` is processed by `XcmExecutor`, which calls the
 /// `ExportXcm` implementation of `pezpallet_xcm_bridge_hub` as `MessageExporter`.
@@ -370,7 +371,7 @@ pub type LocationToAccountId = (
 	// The parent (Relay-chain) origin converts to the parent `AccountId`.
 	ParentIsPreset<AccountId>,
 	// Sibling teyrchain origins convert to AccountId via the `ParaId::into`.
-	SiblingTeyrchainConvertsVia<Sibling, AccountId>,
+	SiblingParachainConvertsVia<Sibling, AccountId>,
 );
 
 parameter_types! {
@@ -472,7 +473,7 @@ impl TestLocalXcmChannelManager {
 	}
 
 	fn build_congestion_message(bridge: &BridgeId, is_congested: bool) -> Vec<Instruction<()>> {
-		use pezbp_xcm_bridge_hub_router::XcmBridgeHubRouterCall;
+		use bp_xcm_bridge_hub_router::XcmBridgeHubRouterCall;
 		#[allow(clippy::large_enum_variant)]
 		#[derive(Encode, Decode, Debug, PartialEq, Eq, Clone, scale_info::TypeInfo)]
 		enum Call {
@@ -620,7 +621,7 @@ impl ChainWithMessages for BridgedUnderlyingChain {
 }
 
 pub struct BridgedHeaderChain;
-impl pezbp_header_pez_chain::HeaderChain<BridgedUnderlyingChain> for BridgedHeaderChain {
+impl bp_header_chain::HeaderChain<BridgedUnderlyingChain> for BridgedHeaderChain {
 	fn finalized_header_state_root(
 		_hash: HashOf<BridgedUnderlyingChain>,
 	) -> Option<HashOf<BridgedUnderlyingChain>> {

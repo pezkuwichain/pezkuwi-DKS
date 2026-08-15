@@ -17,7 +17,7 @@
 //! BEEFY bridge pezpallet.
 //!
 //! This pezpallet is an on-chain BEEFY light client for Bizinikiwi-based chains that are using the
-//! following pallets bundle: `pezpallet-mmr`, `pezpallet-beefy` and `pezpallet-beefy-mmr`.
+//! following pezpallets bundle: `pezpallet-mmr`, `pezpallet-beefy` and `pezpallet-beefy-mmr`.
 //!
 //! The pezpallet is able to verify MMR leaf proofs and BEEFY commitments, so it has access
 //! to the following data of the bridged chain:
@@ -26,13 +26,13 @@
 //! - changes of BEEFY authorities
 //! - extra data of MMR leafs
 //!
-//! Given the header hash, other pallets are able to verify header-based proofs
+//! Given the header hash, other pezpallets are able to verify header-based proofs
 //! (e.g. storage proofs, transaction inclusion proofs, etc.).
 
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use pezbp_beefy::{ChainWithBeefy, InitializationData};
+use bp_beefy::{ChainWithBeefy, InitializationData};
 use pezsp_std::{boxed::Box, prelude::*};
 
 // Re-export in crate namespace for `construct_runtime!`
@@ -51,38 +51,33 @@ pub const LOG_TARGET: &str = "runtime::bridge-beefy";
 /// Configured bridged chain.
 pub type BridgedChain<T, I> = <T as Config<I>>::BridgedChain;
 /// Block number, used by configured bridged chain.
-pub type BridgedBlockNumber<T, I> = pezbp_runtime::BlockNumberOf<BridgedChain<T, I>>;
+pub type BridgedBlockNumber<T, I> = bp_runtime::BlockNumberOf<BridgedChain<T, I>>;
 /// Block hash, used by configured bridged chain.
-pub type BridgedBlockHash<T, I> = pezbp_runtime::HashOf<BridgedChain<T, I>>;
+pub type BridgedBlockHash<T, I> = bp_runtime::HashOf<BridgedChain<T, I>>;
 
 /// Pezpallet initialization data.
 pub type InitializationDataOf<T, I> =
-	InitializationData<BridgedBlockNumber<T, I>, pezbp_beefy::MmrHashOf<BridgedChain<T, I>>>;
-/// BEEFY commitment hasher, used by configured bridged chain.
-pub type BridgedBeefyCommitmentHasher<T, I> =
-	pezbp_beefy::BeefyCommitmentHasher<BridgedChain<T, I>>;
+	InitializationData<BridgedBlockNumber<T, I>, bp_beefy::MmrHashOf<BridgedChain<T, I>>>;
 /// BEEFY validator id, used by configured bridged chain.
-pub type BridgedBeefyAuthorityId<T, I> = pezbp_beefy::BeefyAuthorityIdOf<BridgedChain<T, I>>;
+pub type BridgedBeefyAuthorityId<T, I> = bp_beefy::BeefyAuthorityIdOf<BridgedChain<T, I>>;
 /// BEEFY validator set, used by configured bridged chain.
-pub type BridgedBeefyAuthoritySet<T, I> = pezbp_beefy::BeefyAuthoritySetOf<BridgedChain<T, I>>;
+pub type BridgedBeefyAuthoritySet<T, I> = bp_beefy::BeefyAuthoritySetOf<BridgedChain<T, I>>;
 /// BEEFY authority set, used by configured bridged chain.
-pub type BridgedBeefyAuthoritySetInfo<T, I> =
-	pezbp_beefy::BeefyAuthoritySetInfoOf<BridgedChain<T, I>>;
+pub type BridgedBeefyAuthoritySetInfo<T, I> = bp_beefy::BeefyAuthoritySetInfoOf<BridgedChain<T, I>>;
 /// BEEFY signed commitment, used by configured bridged chain.
-pub type BridgedBeefySignedCommitment<T, I> =
-	pezbp_beefy::BeefySignedCommitmentOf<BridgedChain<T, I>>;
+pub type BridgedBeefySignedCommitment<T, I> = bp_beefy::BeefySignedCommitmentOf<BridgedChain<T, I>>;
 /// MMR hashing algorithm, used by configured bridged chain.
-pub type BridgedMmrHashing<T, I> = pezbp_beefy::MmrHashingOf<BridgedChain<T, I>>;
+pub type BridgedMmrHashing<T, I> = bp_beefy::MmrHashingOf<BridgedChain<T, I>>;
 /// MMR hashing output type of `BridgedMmrHashing<T, I>`.
-pub type BridgedMmrHash<T, I> = pezbp_beefy::MmrHashOf<BridgedChain<T, I>>;
+pub type BridgedMmrHash<T, I> = bp_beefy::MmrHashOf<BridgedChain<T, I>>;
 /// The type of the MMR leaf extra data used by the configured bridged chain.
-pub type BridgedBeefyMmrLeafExtra<T, I> = pezbp_beefy::BeefyMmrLeafExtraOf<BridgedChain<T, I>>;
+pub type BridgedBeefyMmrLeafExtra<T, I> = bp_beefy::BeefyMmrLeafExtraOf<BridgedChain<T, I>>;
 /// BEEFY MMR proof type used by the pezpallet
-pub type BridgedMmrProof<T, I> = pezbp_beefy::MmrProofOf<BridgedChain<T, I>>;
+pub type BridgedMmrProof<T, I> = bp_beefy::MmrProofOf<BridgedChain<T, I>>;
 /// MMR leaf type, used by configured bridged chain.
-pub type BridgedBeefyMmrLeaf<T, I> = pezbp_beefy::BeefyMmrLeafOf<BridgedChain<T, I>>;
+pub type BridgedBeefyMmrLeaf<T, I> = bp_beefy::BeefyMmrLeafOf<BridgedChain<T, I>>;
 /// Imported commitment data, stored by the pezpallet.
-pub type ImportedCommitment<T, I> = pezbp_beefy::ImportedCommitment<
+pub type ImportedCommitment<T, I> = bp_beefy::ImportedCommitment<
 	BridgedBlockNumber<T, I>,
 	BridgedBlockHash<T, I>,
 	BridgedMmrHash<T, I>,
@@ -101,7 +96,7 @@ pub struct ImportedCommitmentsInfoData<BlockNumber> {
 #[pezframe_support::pezpallet(dev_mode)]
 pub mod pezpallet {
 	use super::*;
-	use pezbp_runtime::{BasicOperatingMode, OwnedBridgeModule};
+	use bp_runtime::{BasicOperatingMode, OwnedBridgeModule};
 	use pezframe_support::pezpallet_prelude::*;
 	use pezframe_system::pezpallet_prelude::*;
 
@@ -280,8 +275,8 @@ pub mod pezpallet {
 
 	/// The current number of requests which have written to storage.
 	///
-	/// If the `RequestCount` hits `MaxRequests`, no more calls will be allowed to the pezpallet
-	/// until the request capacity is increased.
+	/// If the `RequestCount` hits `MaxRequests`, no more calls will be allowed to the pezpallet until
+	/// the request capacity is increased.
 	///
 	/// The `RequestCount` is decreased by one at the beginning of every block. This is to ensure
 	/// that the pezpallet can always make progress.
@@ -386,7 +381,7 @@ pub mod pezpallet {
 		/// The validators are not matching the merkle tree root of the authority set.
 		InvalidValidatorSetRoot,
 		/// Error generated by the `OwnedBridgeModule` trait.
-		BridgeModule(pezbp_runtime::OwnedBridgeModuleError),
+		BridgeModule(bp_runtime::OwnedBridgeModuleError),
 	}
 
 	/// Initialize pezpallet with given parameters.
@@ -418,10 +413,10 @@ pub mod pezpallet {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use bp_runtime::{BasicOperatingMode, OwnedBridgeModuleError};
+	use bp_test_utils::generate_owned_bridge_module_tests;
 	use mock::*;
 	use mock_chain::*;
-	use pezbp_runtime::{BasicOperatingMode, OwnedBridgeModuleError};
-	use pezbp_test_utils::generate_owned_bridge_module_tests;
 	use pezframe_support::{assert_noop, assert_ok, traits::Get};
 	use pezsp_consensus_beefy::mmr::BeefyAuthoritySet;
 	use pezsp_runtime::DispatchError;
@@ -568,7 +563,7 @@ mod tests {
 			let imported_commitment = ImportedCommitments::<TestRuntime>::get(58).unwrap();
 			assert_eq!(
 				imported_commitment,
-				pezbp_beefy::ImportedCommitment {
+				bp_beefy::ImportedCommitment {
 					parent_number_and_hash: (57, chain.header(57).header.hash()),
 					mmr_root: chain.header(58).mmr_root,
 				},

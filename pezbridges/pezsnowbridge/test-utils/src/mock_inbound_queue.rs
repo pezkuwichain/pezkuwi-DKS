@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
 
 use crate::FAILING_NONCE;
-use pezsnowbridge_core::reward::{AddTip, AddTipError};
+use snowbridge_core::reward::{AddTip, AddTipError};
 
 pub struct MockOkInboundQueue;
 

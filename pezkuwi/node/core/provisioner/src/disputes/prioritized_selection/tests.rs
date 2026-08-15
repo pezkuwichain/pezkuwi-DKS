@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,17 +20,16 @@ use super::super::{
 };
 use bitvec::prelude::*;
 use futures::channel::mpsc;
+use pezkuwi_node_primitives::{CandidateVotes, DisputeStatus, ACTIVE_DURATION_SECS};
 use pezkuwi_node_subsystem::messages::{
 	AllMessages, DisputeCoordinatorMessage, RuntimeApiMessage, RuntimeApiRequest,
 };
 use pezkuwi_node_subsystem_test_helpers::{mock::new_leaf, TestSubsystemSender};
-use pezkuwi_pez_node_primitives::{CandidateVotes, DisputeStatus, ACTIVE_DURATION_SECS};
 use pezkuwi_primitives::{
 	CandidateHash, CandidateReceiptV2 as CandidateReceipt, DisputeState,
 	InvalidDisputeStatementKind, SessionIndex, ValidDisputeStatementKind, ValidatorSignature,
 };
 
-//
 // Unit tests for various functions
 //
 #[test]
@@ -81,7 +80,7 @@ fn should_keep_vote_behaves() {
 		true
 	);
 
-	//double voting - onchain knows
+	// double voting - onchain knows
 	let local_double_vote_onchain_knows =
 		(ValidatorIndex(4), InvalidDisputeStatementKind::Explicit);
 	assert_eq!(
@@ -93,7 +92,7 @@ fn should_keep_vote_behaves() {
 		false
 	);
 
-	//double voting - onchain doesn't know
+	// double voting - onchain doesn't know
 	let local_double_vote_onchain_doesnt_knows =
 		(ValidatorIndex(0), InvalidDisputeStatementKind::Explicit);
 	assert_eq!(
@@ -221,7 +220,7 @@ fn partitioning_happy_case() {
 // achieved with or without the 'help' of a double vote (a validator voting for and against at the
 // same time). This makes the test a bit pointless but anyway I'm leaving it here to make this
 // decision explicit and have the test code ready in case this behavior needs to be further tested
-// in the future. Link to the PR with the discussions: https://github.com/pezkuwichain/pezkuwi-sdk/issues/320
+// in the future. Link to the PR with the discussions: https://github.com/paritytech/polkadot/pull/5567
 #[test]
 fn partitioning_doubled_onchain_vote() {
 	let mut input = BTreeMap::<(SessionIndex, CandidateHash), DisputeStatus>::new();
@@ -285,7 +284,6 @@ fn partitioning_duplicated_dispute() {
 	assert_eq!(result.active_unconcluded_onchain.get(0).unwrap(), &some_dispute.0);
 }
 
-//
 // end-to-end tests for select_disputes()
 //
 
@@ -563,7 +561,7 @@ fn normal_flow() {
 	let (first_idx, first_votes) =
 		input.add_unconfirmed_disputes_unconcluded_onchain(DISPUTES_PER_BATCH);
 
-	//concluded disputes unknown onchain
+	// concluded disputes unknown onchain
 	let (fifth_idx, fifth_votes) = input.add_concluded_disputes_unknown_onchain(DISPUTES_PER_BATCH);
 
 	// concluded disputes known onchain - these should be ignored
@@ -644,7 +642,7 @@ fn many_batches() {
 	// active which can't conclude onchain
 	input.add_unconfirmed_disputes_unconcluded_onchain(DISPUTES_PER_PARTITION);
 
-	//concluded disputes unknown onchain
+	// concluded disputes unknown onchain
 	input.add_concluded_disputes_unknown_onchain(DISPUTES_PER_PARTITION);
 
 	// concluded disputes known onchain
@@ -698,7 +696,7 @@ fn votes_above_limit() {
 	let (_, first_votes) =
 		input.add_unconfirmed_disputes_unconcluded_onchain(DISPUTES_PER_PARTITION);
 
-	//concluded disputes unknown onchain
+	// concluded disputes unknown onchain
 	let (_, third_votes) = input.add_concluded_disputes_unknown_onchain(DISPUTES_PER_PARTITION);
 
 	assert!(

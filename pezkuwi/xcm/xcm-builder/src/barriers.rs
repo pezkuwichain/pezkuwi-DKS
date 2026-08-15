@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -402,8 +402,8 @@ impl<T: Contains<Location>, Aliasers: ContainsPair<Location, Location>> ShouldEx
 }
 
 /// Allows a message only if it is from a system-level child teyrchain.
-pub struct IsChildSystemTeyrchain<ParaId>(PhantomData<ParaId>);
-impl<ParaId: IsSystem + From<u32>> Contains<Location> for IsChildSystemTeyrchain<ParaId> {
+pub struct IsChildSystemParachain<ParaId>(PhantomData<ParaId>);
+impl<ParaId: IsSystem + From<u32>> Contains<Location> for IsChildSystemParachain<ParaId> {
 	fn contains(l: &Location) -> bool {
 		matches!(
 			l.interior().as_slice(),
@@ -414,9 +414,9 @@ impl<ParaId: IsSystem + From<u32>> Contains<Location> for IsChildSystemTeyrchain
 }
 
 /// Matches if the given location is a system-level sibling teyrchain.
-pub struct IsSiblingSystemTeyrchain<ParaId, SelfParaId>(PhantomData<(ParaId, SelfParaId)>);
+pub struct IsSiblingSystemParachain<ParaId, SelfParaId>(PhantomData<(ParaId, SelfParaId)>);
 impl<ParaId: IsSystem + From<u32> + Eq, SelfParaId: Get<ParaId>> Contains<Location>
-	for IsSiblingSystemTeyrchain<ParaId, SelfParaId>
+	for IsSiblingSystemParachain<ParaId, SelfParaId>
 {
 	fn contains(l: &Location) -> bool {
 		matches!(
@@ -550,7 +550,7 @@ where
 	}
 }
 
-// See issue <https://github.com/pezkuwichain/pezkuwi-sdk/issues/298>
+// See issue <https://github.com/paritytech/polkadot/issues/5233>
 pub struct DenyReserveTransferToRelayChain;
 impl DenyExecution for DenyReserveTransferToRelayChain {
 	fn deny_execution<RuntimeCall>(

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Defines traits which represent a common interface for Bizinikiwi pallets which want to
+//! Defines traits which represent a common interface for Bizinikiwi pezpallets which want to
 //! incorporate bridge functionality.
 
 #![warn(missing_docs)]
@@ -23,12 +23,12 @@
 use crate::justification::{
 	GrandpaJustification, JustificationVerificationContext, JustificationVerificationError,
 };
-use codec::{Codec, Decode, DecodeWithMemTracking, Encode, EncodeLike, MaxEncodedLen};
-use core::{clone::Clone, cmp::Eq, default::Default, fmt::Debug};
-use pezbp_runtime::{
+use bp_runtime::{
 	BasicOperatingMode, BlockNumberOf, Chain, HashOf, HasherOf, HeaderOf, RawStorageProof,
 	StorageProofChecker, StorageProofError, UnderlyingChainProvider,
 };
+use codec::{Codec, Decode, DecodeWithMemTracking, Encode, EncodeLike, MaxEncodedLen};
+use core::{clone::Clone, cmp::Eq, default::Default, fmt::Debug};
 use pezframe_support::PalletError;
 use pezsp_consensus_grandpa::{
 	AuthorityList, ConsensusLog, ScheduledChange, SetId, GRANDPA_ENGINE_ID,
@@ -249,8 +249,8 @@ pub trait FindEquivocations<FinalityProof, FinalityVerificationContext, Equivoca
 /// Keep in mind that teyrchains are relying on relay chain GRANDPA, so they should not implement
 /// this trait.
 pub trait ChainWithGrandpa: Chain {
-	/// Name of the bridge GRANDPA pezpallet (used in `construct_runtime` macro call) that is
-	/// deployed at some other chain to bridge with this `ChainWithGrandpa`.
+	/// Name of the bridge GRANDPA pezpallet (used in `construct_runtime` macro call) that is deployed
+	/// at some other chain to bridge with this `ChainWithGrandpa`.
 	///
 	/// We assume that all chains that are bridging with this `ChainWithGrandpa` are using
 	/// the same name.
@@ -391,7 +391,7 @@ pub fn max_expected_submit_finality_proof_arguments_size<C: ChainWithGrandpa>(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use pezbp_runtime::ChainId;
+	use bp_runtime::ChainId;
 	use pezframe_support::weights::Weight;
 	use pezsp_runtime::{
 		testing::H256, traits::BlakeTwo256, DigestItem, MultiSignature, StateVersion,

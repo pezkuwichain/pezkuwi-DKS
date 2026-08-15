@@ -18,11 +18,11 @@
 
 use crate as pezpallet_xcm_bridge_hub_router;
 
+use bp_xcm_bridge_hub_router::XcmChannelStatusProvider;
 use codec::Encode;
-use pezbp_xcm_bridge_hub_router::XcmChannelStatusProvider;
 use pezframe_support::{
 	construct_runtime, derive_impl, parameter_types,
-	traits::{Contains, Equals},
+	traits::{ConstBool, Contains, Equals},
 };
 use pezsp_runtime::{traits::ConstU128, BuildStorage};
 use pezsp_std::cell::RefCell;
@@ -47,8 +47,8 @@ construct_runtime! {
 }
 
 parameter_types! {
-	pub ThisNetworkId: NetworkId = Pezkuwi;
-	pub BridgedNetworkId: NetworkId = Dicle;
+	pub ThisNetworkId: NetworkId = Polkadot;
+	pub BridgedNetworkId: NetworkId = Kusama;
 	pub UniversalLocation: InteriorLocation = [GlobalConsensus(ThisNetworkId::get()), Teyrchain(1000)].into();
 	pub SiblingBridgeHubLocation: Location = ParentThen([Teyrchain(1002)].into()).into();
 	pub BridgeFeeAsset: AssetId = Location::parent().into();
@@ -83,6 +83,8 @@ impl pezpallet_xcm_bridge_hub_router::Config<()> for TestRuntime {
 	type BridgeHubOrigin = pezframe_system::EnsureRoot<u64>;
 	type ToBridgeHubSender = TestToBridgeHubSender;
 	type LocalXcmChannelManager = TestLocalXcmChannelManager;
+
+	type UnpaidExport = ConstBool<false>;
 
 	type ByteFee = ConstU128<BYTE_FEE>;
 	type FeeAsset = BridgeFeeAsset;

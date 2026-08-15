@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use pezcumulus_client_consensus_common::TeyrchainBlockImport as TTeyrchainBlockImport;
+use pezcumulus_client_consensus_common::TeyrchainBlockImport as TParachainBlockImport;
 use pezcumulus_primitives_core::relay_chain::UncheckedExtrinsic;
 use pezsc_consensus::DefaultImportQueue;
 use pezsc_executor::WasmExecutor;
@@ -23,7 +23,7 @@ use pezsc_telemetry::{Telemetry, TelemetryWorkerHandle};
 use pezsc_transaction_pool::TransactionPoolHandle;
 use pezsp_runtime::{generic, traits::BlakeTwo256};
 
-pub use teyrchains_common::{AccountId, Balance, Hash, Nonce};
+pub use teyrchains_common_types::{AccountId, Balance, Hash, Nonce};
 
 type Header<BlockNumber> = generic::Header<BlockNumber, BlakeTwo256>;
 pub type Block<BlockNumber> = generic::Block<Header<BlockNumber>, UncheckedExtrinsic>;
@@ -46,7 +46,7 @@ pub type TeyrchainClient<Block, RuntimeApi> =
 pub type TeyrchainBackend<Block> = TFullBackend<Block>;
 
 pub type TeyrchainBlockImport<Block, BI> =
-	TTeyrchainBlockImport<Block, BI, TeyrchainBackend<Block>>;
+	TParachainBlockImport<Block, BI, TeyrchainBackend<Block>>;
 
 /// Assembly of PartialComponents (enough to run chain ops subcommands)
 pub type TeyrchainService<Block, RuntimeApi, BI, BIExtraReturnValue> = PartialComponents<

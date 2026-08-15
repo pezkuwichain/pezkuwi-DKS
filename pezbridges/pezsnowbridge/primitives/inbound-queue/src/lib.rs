@@ -5,12 +5,12 @@
 pub mod v1;
 pub mod v2;
 use codec::Encode;
-use pezsp_core::blake2_256;
+use pezsp_crypto_hashing::blake2_256;
 use pezsp_std::marker::PhantomData;
 use xcm::prelude::{AccountKey20, Ethereum, GlobalConsensus, Location};
 use xcm_executor::traits::ConvertLocation;
 
-pub use pezsnowbridge_verification_primitives::*;
+pub use snowbridge_verification_primitives::*;
 
 /// DEPRECATED in favor of [xcm_builder::ExternalConsensusLocationsConverterFor]
 pub struct EthereumLocationsConverterFor<AccountId>(PhantomData<AccountId>);

@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Module that adds XCM support to bridge pallets. The pezpallet allows to dynamically
+//! Module that adds XCM support to bridge pezpallets. The pezpallet allows to dynamically
 //! open and close bridges between local (to this pezpallet location) and remote XCM
 //! destinations.
 //!
-//! The `pezpallet_xcm_bridge_hub` pezpallet is used to manage (open, close) bridges between chains
-//! from different consensuses. The new extrinsics `fn open_bridge` and `fn close_bridge` are
-//! introduced. Other chains can manage channels with different bridged global consensuses.
+//! The `pezpallet_xcm_bridge_hub` pezpallet is used to manage (open, close) bridges between chains from
+//! different consensuses. The new extrinsics `fn open_bridge` and `fn close_bridge` are introduced.
+//! Other chains can manage channels with different bridged global consensuses.
 //!
 //! # Concept of `lane` and `LaneId`
 //!
@@ -48,8 +48,8 @@
 //!
 //! # Concept of `bridge` and `BridgeId`
 //!
-//! The `pezpallet_xcm_bridge_hub` pezpallet needs to store some metadata about opened bridges. The
-//! bridge (or bridge metadata) is stored under the `BridgeId` key.
+//! The `pezpallet_xcm_bridge_hub` pezpallet needs to store some metadata about opened bridges. The bridge
+//! (or bridge metadata) is stored under the `BridgeId` key.
 //!
 //! `BridgeId` is generated from `bridge_origin_relative_location` and
 //! `bridge_origin_universal_location` using the `latest` XCM structs. `BridgeId` is not transferred
@@ -62,8 +62,8 @@
 //!
 //! # Migrations and State
 //!
-//! This pezpallet implements `try_state`, ensuring compatibility and checking everything so we know
-//! if any migration is needed. `do_try_state` checks for `BridgeId` compatibility, which is
+//! This pezpallet implements `try_state`, ensuring compatibility and checking everything so we know if
+//! any migration is needed. `do_try_state` checks for `BridgeId` compatibility, which is
 //! recalculated on runtime upgrade. Upgrading to a new XCM version should not break anything,
 //! except removing older XCM versions. In such cases, we need to add migration for `BridgeId` and
 //! stored `Versioned*` structs and update `LaneToBridge` mapping, but this won't affect `LaneId`
@@ -114,23 +114,23 @@
 //! Example of opening a bridge between some random teyrchains from Pezkuwi and Dicle:
 //!
 //! 0. Let's have:
-//! 	- BridgeHubPezkuwi with `UniversalLocation` = `[GlobalConsensus(Pezkuwi), Teyrchain(1002)]`
-//! 	- BridgeHubDicle with `UniversalLocation` = `[GlobalConsensus(Dicle), Teyrchain(1002)]`
+//! 	- BridgeHubPolkadot with `UniversalLocation` = `[GlobalConsensus(Pezkuwi), Teyrchain(1002)]`
+//! 	- BridgeHubKusama with `UniversalLocation` = `[GlobalConsensus(Dicle), Teyrchain(1002)]`
 //! 1. The Pezkuwi local sibling teyrchain `Location::new(1, Teyrchain(1234))` must send some DOTs
-//!    to its sovereign account on BridgeHubPezkuwi to cover `BridgeDeposit`, fees for `Transact`,
+//!    to its sovereign account on BridgeHubPolkadot to cover `BridgeDeposit`, fees for `Transact`,
 //!    and the existential deposit.
-//! 2. Send a call to the BridgeHubPezkuwi from the local sibling teyrchain: `Location::new(1,
+//! 2. Send a call to the BridgeHubPolkadot from the local sibling teyrchain: `Location::new(1,
 //!    Teyrchain(1234))` ``` xcm::Transact( origin_kind: OriginKind::Xcm,
-//!    XcmOverBridgeHubDicle::open_bridge( VersionedInteriorLocation::V4([GlobalConsensus(Dicle),
+//!    XcmOverBridgeHubKusama::open_bridge( VersionedInteriorLocation::V4([GlobalConsensus(Dicle),
 //!    Teyrchain(4567)].into()), ); ) ```
 //! 3. Check the stored bridge metadata and generated `LaneId`.
-//! 4. The Dicle local sibling teyrchain `Location::new(1, Teyrchain(4567))` must send some DCLs to
+//! 4. The Dicle local sibling teyrchain `Location::new(1, Teyrchain(4567))` must send some KSMs to
 //!    its sovereign account
-//! on BridgeHubDicle to cover `BridgeDeposit`, fees for `Transact`, and the existential deposit.
-//! 5. Send a call to the BridgeHubDicle from the local sibling teyrchain: `Location::new(1,
+//! on BridgeHubKusama to cover `BridgeDeposit`, fees for `Transact`, and the existential deposit.
+//! 5. Send a call to the BridgeHubKusama from the local sibling teyrchain: `Location::new(1,
 //!    Teyrchain(4567))` ``` xcm::Transact( origin_kind: OriginKind::Xcm,
-//!    XcmOverBridgeHubDicle::open_bridge( VersionedInteriorLocation::V4([GlobalConsensus(Pezkuwi),
-//!    Teyrchain(1234)].into()), ); ) ```
+//!    XcmOverBridgeHubKusama::open_bridge(
+//!    VersionedInteriorLocation::V4([GlobalConsensus(Pezkuwi), Teyrchain(1234)].into()), ); ) ```
 //! 6. Check the stored bridge metadata and generated `LaneId`.
 //! 7. Both `LaneId`s from steps 3 and 6 must be the same (see above _Concept of `lane` and
 //!    `LaneId`_).
@@ -143,10 +143,10 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use pezbp_messages::{LaneState, MessageNonce};
-use pezbp_runtime::{AccountIdOf, BalanceOf, RangeInclusiveExt};
-use pezbp_xcm_bridge_hub::BridgeLocationsError;
-pub use pezbp_xcm_bridge_hub::{
+use bp_messages::{LaneState, MessageNonce};
+use bp_runtime::{AccountIdOf, BalanceOf, RangeInclusiveExt};
+use bp_xcm_bridge_hub::BridgeLocationsError;
+pub use bp_xcm_bridge_hub::{
 	Bridge, BridgeId, BridgeLocations, BridgeState, LocalXcmChannelManager,
 };
 use pezframe_support::{traits::fungible::MutateHold, DefaultNoBound};
@@ -158,9 +158,9 @@ use xcm::prelude::*;
 use xcm_builder::DispatchBlob;
 use xcm_executor::traits::ConvertLocation;
 
+pub use bp_xcm_bridge_hub::XcmAsPlainPayload;
 pub use dispatcher::XcmBlobMessageDispatchResult;
 pub use exporter::PalletAsHaulBlobExporter;
-pub use pezbp_xcm_bridge_hub::XcmAsPlainPayload;
 pub use pezpallet::*;
 
 mod dispatcher;
@@ -200,7 +200,7 @@ pub mod pezpallet {
 
 		/// Runtime's universal location.
 		type UniversalLocation: Get<InteriorLocation>;
-		// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/228 remove `ChainId` and
+		// TODO: https://github.com/paritytech/parity-bridges-common/issues/1666 remove `ChainId` and
 		// replace it with the `NetworkId` - then we'll be able to use
 		// `T as pezpallet_bridge_messages::Config<T::BridgeMessagesPalletInstance>::BridgedChain::NetworkId`
 		/// Bridged network as relative location of bridged `GlobalConsensus`.
@@ -215,8 +215,8 @@ pub mod pezpallet {
 		/// Checks the XCM version for the destination.
 		type DestinationVersion: GetVersion;
 
-		/// The origin that is allowed to call privileged operations on the pezpallet, e.g.
-		/// open/close bridge for locations.
+		/// The origin that is allowed to call privileged operations on the pezpallet, e.g. open/close
+		/// bridge for locations.
 		type ForceOrigin: EnsureOrigin<<Self as SystemConfig>::RuntimeOrigin>;
 		/// A set of XCM locations within local consensus system that are allowed to open
 		/// bridges with remote destinations.
@@ -295,7 +295,7 @@ pub mod pezpallet {
 		/// The states after this call: bridge is `Opened`, outbound lane is `Opened`, inbound lane
 		/// is `Opened`.
 		#[pezpallet::call_index(0)]
-		#[pezpallet::weight(Weight::zero())] // TODO:(bridges-v2) - https://github.com/pezkuwichain/pezkuwi-sdk/issues/234 - add benchmarks impl
+		#[pezpallet::weight(Weight::zero())] // TODO:(bridges-v2) - https://github.com/paritytech/parity-bridges-common/issues/3046 - add benchmarks impl
 		pub fn open_bridge(
 			origin: OriginFor<T>,
 			bridge_destination_universal_location: Box<VersionedInteriorLocation>,
@@ -333,7 +333,7 @@ pub mod pezpallet {
 		/// The states after this call: everything is either `Closed`, or purged from the
 		/// runtime storage.
 		#[pezpallet::call_index(1)]
-		#[pezpallet::weight(Weight::zero())] // TODO:(bridges-v2) - https://github.com/pezkuwichain/pezkuwi-sdk/issues/234 - add benchmarks impl
+		#[pezpallet::weight(Weight::zero())] // TODO:(bridges-v2) - https://github.com/paritytech/parity-bridges-common/issues/3046 - add benchmarks impl
 		pub fn close_bridge(
 			origin: OriginFor<T>,
 			bridge_destination_universal_location: Box<VersionedInteriorLocation>,
@@ -343,7 +343,7 @@ pub mod pezpallet {
 			let locations =
 				Self::bridge_locations_from_origin(origin, bridge_destination_universal_location)?;
 
-			// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/229 - may do refund here, if
+			// TODO: https://github.com/paritytech/parity-bridges-common/issues/1760 - may do refund here, if
 			// bridge/lanes are already closed + for messages that are not pruned
 
 			// update bridge metadata - this also guarantees that the bridge is in the proper state
@@ -691,8 +691,7 @@ pub mod pezpallet {
 			Ok(bridge.lane_id)
 		}
 
-		/// Ensure the correctness of the state of the connected `pezpallet_bridge_messages`
-		/// instance.
+		/// Ensure the correctness of the state of the connected `pezpallet_bridge_messages` instance.
 		pub fn do_try_state_for_messages() -> Result<(), pezsp_runtime::TryRuntimeError> {
 			// check that all `InboundLanes` laneIds have mapping to some bridge.
 			for lane_id in pezpallet_bridge_messages::InboundLanes::<
@@ -740,7 +739,7 @@ pub mod pezpallet {
 		///
 		/// Keep in mind that we are **NOT** reserving any amount for the bridges opened at
 		/// genesis. We are **NOT** opening lanes, used by this bridge. It all must be done using
-		/// other pallets genesis configuration or some other means.
+		/// other pezpallets genesis configuration or some other means.
 		pub opened_bridges: Vec<(Location, InteriorLocation, Option<T::LaneId>)>,
 		/// Dummy marker.
 		#[serde(skip)]
@@ -846,8 +845,8 @@ pub mod pezpallet {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use bp_messages::LaneIdType;
 	use mock::*;
-	use pezbp_messages::LaneIdType;
 
 	use pezframe_support::{
 		assert_err, assert_noop, assert_ok, traits::fungible::Mutate, BoundedVec,
@@ -1715,7 +1714,7 @@ mod tests {
 		let may_prune_messages = 13;
 
 		assert_eq!(
-			pezbp_xcm_bridge_hub::XcmBridgeHubCall::open_bridge {
+			bp_xcm_bridge_hub::XcmBridgeHubCall::open_bridge {
 				bridge_destination_universal_location: Box::new(
 					bridge_destination_universal_location.clone().into()
 				)
@@ -1729,7 +1728,7 @@ mod tests {
 			.encode()
 		);
 		assert_eq!(
-			pezbp_xcm_bridge_hub::XcmBridgeHubCall::close_bridge {
+			bp_xcm_bridge_hub::XcmBridgeHubCall::close_bridge {
 				bridge_destination_universal_location: Box::new(
 					bridge_destination_universal_location.clone().into()
 				),

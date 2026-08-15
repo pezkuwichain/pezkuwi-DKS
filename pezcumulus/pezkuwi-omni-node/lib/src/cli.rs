@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@ use pezsc_cli::{
 use pezsc_service::{config::PrometheusConfig, BasePath};
 use pezsc_storage_monitor::StorageMonitorParams;
 use std::{
-	fmt::{Debug, Display, Formatter},
+	fmt::{Display, Formatter},
 	marker::PhantomData,
 	path::PathBuf,
 };
@@ -86,7 +86,7 @@ pub enum Subcommand {
 	/// that support  this command. Since `pezkuwi-omni-node` does not contain any embedded
 	/// runtime, and requires a `chain-spec` path to be passed to its `--chain` flag, the command
 	/// isn't bringing significant value as it does for other node binaries (e.g. the
-	///  `pezkuwi` binary).
+	///  `polkadot` binary).
 	///
 	/// For a more versatile `chain-spec` manipulation experience please check out the
 	/// `pezkuwi-omni-node chain-spec-builder` subcommand.
@@ -113,7 +113,7 @@ pub enum Subcommand {
 	/// Subcommand for generating and managing chain specifications.
 	///
 	/// A `chain-spec-builder` subcommand corresponds to the existing `chain-spec-builder` tool
-	/// (<https://crates.io/crates/pezstaging-chain-spec-builder>), which can be used already standalone.
+	/// (<https://crates.io/crates/staging-chain-spec-builder>), which can be used already standalone.
 	/// It provides the same functionality as the tool but bundled with `pezkuwi-omni-node` to
 	/// enable easier access to chain-spec generation, patching, converting to raw or validation,
 	/// from a single binary, which can be used as a teyrchain node tool
@@ -218,10 +218,53 @@ pub struct Cli<Config: CliConfig> {
 
 	/// Enable the statement store.
 	///
-	/// The statement store is a store for statements validated using the runtime API
-	/// `validate_statement`. It should be enabled for chains that provide this runtime API.
+	/// The statement store reads the storage of the chain to determine if users are allowed to
+	/// store statements or not.
 	#[arg(long)]
 	pub enable_statement_store: bool,
+
+	/// Number of concurrent workers for statement validation from the network.
+	///
+	/// Only relevant when `--enable-statement-store` is used.
+	#[arg(long, default_value_t = pezsc_statement_store::DEFAULT_NETWORK_WORKERS)]
+	pub statement_network_workers: usize,
+
+	/// Maximum statements per second per peer before rate limiting kicks in.
+	///
+	/// Uses a token bucket algorithm that allows short bursts up to this limit
+	/// while enforcing the average rate over time.
+	///
+	/// Only relevant when `--enable-statement-store` is used.
+	#[arg(long, default_value_t = pezsc_statement_store::DEFAULT_RATE_LIMIT)]
+	pub statement_rate_limit: u32,
+
+	/// Maximum number of statements the statement store can hold.
+	///
+	/// Once this limit is reached, lower-priority statements may be evicted.
+	///
+	/// Only relevant when `--enable-statement-store` is used.
+	#[arg(long, default_value_t = pezsc_statement_store::DEFAULT_MAX_TOTAL_STATEMENTS)]
+	pub statement_store_max_total_statements: usize,
+
+	/// Maximum total data size (in bytes) the statement store can hold.
+	///
+	/// Once this limit is reached, lower-priority statements may be evicted.
+	///
+	/// Only relevant when `--enable-statement-store` is used.
+	#[arg(long, default_value_t = pezsc_statement_store::DEFAULT_MAX_TOTAL_SIZE)]
+	pub statement_store_max_total_size: usize,
+
+	/// Number of seconds for which removed statements won't be allowed to be added back.
+	///
+	/// This prevents old statements from being re-propagated on the network.
+	///
+	/// Only relevant when `--enable-statement-store` is used.
+	#[arg(long, default_value_t = pezsc_statement_store::DEFAULT_PURGE_AFTER_SEC)]
+	pub statement_store_purge_after_sec: u64,
+
+	/// HOP (Hand-Off Protocol) configuration parameters.
+	#[command(flatten)]
+	pub hop: pezsc_hop::HopParams,
 
 	#[arg(skip)]
 	pub(crate) _phantom: PhantomData<Config>,
@@ -267,8 +310,17 @@ impl<Config: CliConfig> Cli<Config> {
 				.unwrap_or(self.authoring),
 			export_pov: self.export_pov_to_path.clone(),
 			max_pov_percentage: self.run.experimental_max_pov_percentage,
-			enable_statement_store: self.enable_statement_store,
+			statement_store_config: self.enable_statement_store.then_some(
+				pezsc_statement_store::Config {
+					max_total_statements: self.statement_store_max_total_statements,
+					max_total_size: self.statement_store_max_total_size,
+					purge_after_sec: self.statement_store_purge_after_sec,
+					network_workers: self.statement_network_workers,
+					rate_limit: self.statement_rate_limit,
+				},
+			),
 			storage_monitor: self.storage_monitor.clone(),
+			hop: self.hop.enabled.then(|| self.hop.clone()),
 		}
 	}
 
@@ -358,7 +410,7 @@ impl<Config: CliConfig> RelayChainCli<Config> {
 		let extension = Extensions::try_get(&*para_config.chain_spec);
 		let chain_id = extension.map(|e| e.relay_chain());
 
-		let base_path = para_config.base_path.path().join("pezkuwi");
+		let base_path = para_config.base_path.path().join("polkadot");
 		Self { base, chain_id, base_path: Some(base_path), _phantom: Default::default() }
 	}
 }
@@ -452,7 +504,7 @@ impl<Config: CliConfig> CliConfiguration<Self> for RelayChainCli<Config> {
 	where
 		F: FnOnce(&mut pezsc_cli::LoggerBuilder),
 	{
-		unreachable!("PezkuwiCli is never initialized; qed");
+		unreachable!("PolkadotCli is never initialized; qed");
 	}
 
 	fn chain_id(&self, is_dev: bool) -> pezsc_cli::Result<String> {

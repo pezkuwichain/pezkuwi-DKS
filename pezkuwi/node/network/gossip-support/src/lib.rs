@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ const TRY_RERESOLVE_AUTHORITIES: Duration = Duration::from_secs(2);
 /// populated). Authority discovery on Dicle takes around 8 minutes, so warning after 10 minutes
 /// should be fine:
 ///
-/// https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/bizinikiwi/client/authority-discovery/src/lib.rs#L88
+/// https://github.com/paritytech/bizinikiwi/blob/fc49802f263529160635471c8a17888846035f5d/client/authority-discovery/src/lib.rs#L88
 const LOW_CONNECTIVITY_WARN_DELAY: Duration = Duration::from_secs(600);
 
 /// If connectivity is lower than this in percent, issue warning in logs.
@@ -453,7 +453,7 @@ where
 
 				// First `maxValidators` entries are the teyrchain validators. We'll check
 				// if our index is in this set to avoid searching for the keys.
-				// https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs#L148
+				// https://github.com/paritytech/polkadot/blob/a52dca2be7840b23c19c153cf7e110b1e3e475f8/runtime/teyrchains/src/configuration.rs#L148
 				if *index < teyrchain_validators_this_session {
 					gum::trace!(target: LOG_TARGET, "We are now a teyrchain validator",);
 					self.metrics.on_is_teyrchain_validator();
@@ -797,7 +797,7 @@ async fn update_gossip_topology(
 	let random_seed = {
 		let (tx, rx) = oneshot::channel();
 
-		// TODO https://github.com/pezkuwichain/pezkuwi-sdk/issues/299:
+		// TODO https://github.com/paritytech/polkadot/issues/5316:
 		// get the random seed from the `SessionInfo` instead.
 		sender
 			.send_message(RuntimeApiMessage::Request(

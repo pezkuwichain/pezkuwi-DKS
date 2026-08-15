@@ -19,13 +19,11 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use bp_header_chain::justification::{required_justification_precommits, GrandpaJustification};
+use bp_polkadot_core::teyrchains::{ParaHash, ParaHead, ParaHeadsProof, ParaId};
+use bp_runtime::record_all_trie_keys;
+use bp_teyrchains::teyrchain_head_storage_key_at_source;
 use codec::Encode;
-use pezbp_header_pez_chain::justification::{
-	required_justification_precommits, GrandpaJustification,
-};
-use pezbp_pezkuwi_core::teyrchains::{ParaHash, ParaHead, ParaHeadsProof, ParaId};
-use pezbp_runtime::record_all_trie_keys;
-use pezbp_teyrchains::teyrchain_head_storage_key_at_source;
 use pezsp_consensus_grandpa::{AuthorityId, AuthoritySignature, AuthorityWeight, SetId};
 use pezsp_runtime::traits::{Header as HeaderT, One, Zero};
 use pezsp_std::prelude::*;
@@ -271,7 +269,7 @@ pub fn header_id<H: HeaderT>(index: u8) -> (H::Hash, H::Number) {
 /// - `Pezpallet::<TestRuntime>`
 /// - `PalletOwner::<TestRuntime>`
 /// - `PalletOperatingMode::<TestRuntime>`
-/// While this is not ideal, all the pallets use the same names, so it works for the moment.
+/// While this is not ideal, all the pezpallets use the same names, so it works for the moment.
 /// We can revisit this in the future if anything changes.
 macro_rules! generate_owned_bridge_module_tests {
 	($normal_operating_mode: expr, $halted_operating_mode: expr) => {

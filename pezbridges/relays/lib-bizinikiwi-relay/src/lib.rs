@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
-//! The library of bizinikiwi relay. contains some public codes to provide to bizinikiwi relay.
+//! The library of substrate relay. contains some public codes to provide to substrate relay.
 
 #![warn(missing_docs)]
 
@@ -22,8 +22,8 @@ use relay_bizinikiwi_client::{Chain, ChainWithUtilityPallet, UtilityPallet};
 
 use std::marker::PhantomData;
 
-// to avoid `pez_finality_relay` dependency in other crates
-pub use pez_finality_relay::HeadersToRelay;
+// to avoid `finality_relay` dependency in other crates
+pub use finality_relay::HeadersToRelay;
 
 pub mod cli;
 pub mod equivocation;
@@ -130,7 +130,7 @@ impl<Call> BatchCallBuilder<Call> for () {
 
 /// Module for handling storage proofs compatibility.
 pub mod proofs {
-	use pezbp_runtime::{HashOf, RawStorageProof};
+	use bp_runtime::{HashOf, RawStorageProof};
 	use pezsp_trie::StorageProof;
 	use relay_bizinikiwi_client::Chain;
 

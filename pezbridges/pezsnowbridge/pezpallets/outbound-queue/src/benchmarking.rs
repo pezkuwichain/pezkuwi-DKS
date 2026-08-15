@@ -2,12 +2,12 @@
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
 use super::*;
 
+use bridge_hub_common::AggregateMessageOrigin;
 use codec::Encode;
-use pezbridge_hub_common::AggregateMessageOrigin;
 use pezframe_benchmarking::v2::*;
-use pezsnowbridge_core::ChannelId;
-use pezsnowbridge_outbound_queue_primitives::v1::{Command, Initializer};
 use pezsp_core::{H160, H256};
+use snowbridge_core::ChannelId;
+use snowbridge_outbound_queue_primitives::v1::{Command, Initializer};
 
 #[allow(unused_imports)]
 use crate::Pezpallet as OutboundQueue;

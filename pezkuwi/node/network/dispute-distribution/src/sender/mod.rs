@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,11 +26,11 @@ use futures::{channel::oneshot, future::poll_fn, Future};
 use futures_timer::Delay;
 use indexmap::{map::Entry, IndexMap};
 use pezkuwi_node_network_protocol::request_response::v1::DisputeRequest;
+use pezkuwi_node_primitives::{DisputeMessage, DisputeStatus};
 use pezkuwi_node_subsystem::{
 	messages::DisputeCoordinatorMessage, overseer, ActiveLeavesUpdate, SubsystemSender,
 };
 use pezkuwi_node_subsystem_util::{nesting_sender::NestingSender, runtime::RuntimeInfo};
-use pezkuwi_pez_node_primitives::{DisputeMessage, DisputeStatus};
 use pezkuwi_primitives::{CandidateHash, Hash, SessionIndex};
 
 /// For each ongoing dispute we have a `SendTask` which takes care of it.
@@ -127,6 +127,7 @@ impl<M: 'static + Send + Sync> DisputeSender<M> {
 		ctx: &mut Context,
 		runtime: &mut RuntimeInfo,
 		msg: DisputeMessage,
+		v3_ever_seen: bool,
 	) -> Result<()> {
 		let req: DisputeRequest = msg.into();
 		let candidate_hash = req.0.candidate_receipt.hash();
@@ -145,6 +146,7 @@ impl<M: 'static + Send + Sync> DisputeSender<M> {
 					NestingSender::new(self.tx.clone(), DisputeSenderMessage::TaskFinish),
 					req,
 					&self.metrics,
+					v3_ever_seen,
 				)
 				.await?;
 				vacant.insert(send_task);

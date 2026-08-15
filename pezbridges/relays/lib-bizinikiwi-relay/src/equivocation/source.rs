@@ -26,9 +26,9 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use pez_equivocation_detector::SourceClient;
-use pez_finality_relay::SourceClientBase;
-use pezbp_runtime::{HashOf, TransactionEra};
+use bp_runtime::{HashOf, TransactionEra};
+use equivocation_detector::SourceClient;
+use finality_relay::SourceClientBase;
 use relay_bizinikiwi_client::{
 	AccountKeyPairOf, Client, Error, TransactionTracker, UnsignedTransaction,
 };

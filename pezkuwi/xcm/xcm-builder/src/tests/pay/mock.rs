@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ use pezframe_system::{EnsureRoot, EnsureSigned};
 use pezkuwi_primitives::{AccountIndex, BlakeTwo256, Signature};
 use pezsp_runtime::{generic, traits::MaybeEquivalence, AccountId32, BuildStorage};
 use xcm_executor::{traits::ConvertLocation, XcmExecutor};
-use xcm_pez_simulator::ParaId;
+use xcm_simulator::ParaId;
 
 pub type TxExtension = (
 	pezframe_system::AuthorizeCall<Test>,
@@ -125,8 +125,8 @@ impl pezpallet_assets::Config for Test {
 parameter_types! {
 	pub const RelayLocation: Location = Location::parent();
 	pub const AnyNetwork: Option<NetworkId> = None;
-	pub MockRuntimeTeyrchainId: ParaId = 42u32.into();
-	pub UniversalLocation: InteriorLocation = (ByGenesis([0; 32]), Teyrchain(MockRuntimeTeyrchainId::get().into())).into();
+	pub MockRuntimeParachainId: ParaId = 42u32.into();
+	pub UniversalLocation: InteriorLocation = (ByGenesis([0; 32]), Teyrchain(MockRuntimeParachainId::get().into())).into();
 	pub UnitWeightCost: u64 = 1_000;
 	pub const BaseXcmWeight: Weight = Weight::from_parts(1_000, 1_000);
 	pub CurrencyPerSecondPerByte: (AssetId, u128, u128) = (AssetId(RelayLocation::get()), 1, 1);
@@ -217,8 +217,9 @@ impl WeightTrader for DummyWeightTrader {
 		_weight: Weight,
 		_payment: xcm_executor::AssetsInHolding,
 		_context: &XcmContext,
-	) -> Result<xcm_executor::AssetsInHolding, XcmError> {
-		Ok(xcm_executor::AssetsInHolding::default())
+	) -> Result<xcm_executor::AssetsInHolding, (xcm_executor::AssetsInHolding, XcmError)> {
+		// Consume all payment, no refund
+		Ok(xcm_executor::AssetsInHolding::new())
 	}
 }
 
@@ -239,7 +240,6 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTrap = XcmPallet;
 	type AssetLocker = ();
 	type AssetExchanger = ();
-	type AssetClaims = XcmPallet;
 	type SubscriptionService = XcmPallet;
 	type PalletInstancesInfo = ();
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;

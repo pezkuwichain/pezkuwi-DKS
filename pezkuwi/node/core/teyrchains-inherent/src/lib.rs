@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -141,7 +141,7 @@ impl<C: pezsp_blockchain::HeaderBackend<Block>> pezsp_inherents::InherentDataPro
 		.map_err(|e| pezsp_inherents::Error::Application(Box::new(e)))?;
 
 		dst_inherent_data
-			.put_data(pezkuwi_primitives::TEYRCHAINS_INHERENT_IDENTIFIER, &inherent_data)
+			.put_data(pezkuwi_primitives::PARACHAINS_INHERENT_IDENTIFIER, &inherent_data)
 	}
 
 	async fn try_handle_error(

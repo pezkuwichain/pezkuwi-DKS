@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@
 //! Module contains predefined test-case scenarios for `Runtime` with common functionality.
 
 use crate::{
-	AccountIdOf, BasicTeyrchainRuntime, CollatorSessionKeys, ExtBuilder, GovernanceOrigin,
+	AccountIdOf, BasicParachainRuntime, CollatorSessionKeys, ExtBuilder, GovernanceOrigin,
 	RuntimeCallOf, RuntimeOriginOf, ValidatorIdOf,
 };
 use codec::Encode;
@@ -32,7 +32,7 @@ use pezsp_runtime::{
 };
 use teyrchains_common::AccountId;
 use xcm::prelude::InstructionError;
-use xcm_runtime_pezapis::fees::{
+use xcm_runtime_apis::fees::{
 	runtime_decl_for_xcm_payment_api::XcmPaymentApiV2, Error as XcmPaymentApiError,
 };
 
@@ -53,7 +53,7 @@ pub fn change_storage_constant_by_governance_works<Runtime, StorageConstant, Sto
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
 		+ pezpallet_timestamp::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
 	StorageConstant: Get<StorageConstantType>,
@@ -118,7 +118,7 @@ pub fn set_storage_keys_by_governance_works<Runtime>(
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
 		+ pezpallet_timestamp::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
 {
@@ -164,8 +164,8 @@ where
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
 	RuntimeOrigin: OriginTrait<AccountId = <Runtime as pezframe_system::Config>::AccountId>,
@@ -222,13 +222,13 @@ where
 	});
 }
 
-/// Generic test case for Pezcumulus-based teyrchain that verifies if runtime can process
+/// Generic test case for Cumulus-based teyrchain that verifies if runtime can process
 /// `pezframe_system::Call::authorize_upgrade` from governance system.
 pub fn can_governance_authorize_upgrade<Runtime, RuntimeOrigin>(
 	governance_origin: GovernanceOrigin<RuntimeOrigin>,
 ) -> Result<(), Either<DispatchError, InstructionError>>
 where
-	Runtime: BasicTeyrchainRuntime
+	Runtime: BasicParachainRuntime
 		+ pezframe_system::Config<RuntimeOrigin = RuntimeOrigin, AccountId = AccountId>,
 {
 	ExtBuilder::<Runtime>::default().build().execute_with(|| {

@@ -17,11 +17,12 @@
 //! All runtime calls, supported by `pezpallet-bridge-relayers` when it acts as a signed
 //! extension.
 
+use bp_header_chain::SubmitFinalityProofInfo;
+use bp_messages::MessagesCallInfo;
+use bp_runtime::StaticStrProvider;
+use bp_teyrchains::SubmitParachainHeadsInfo;
 use codec::{Decode, Encode};
-use pezbp_header_pez_chain::SubmitFinalityProofInfo;
-use pezbp_messages::MessagesCallInfo;
-use pezbp_runtime::StaticStrProvider;
-use pezbp_teyrchains::SubmitTeyrchainHeadsInfo;
+use core::fmt::Debug;
 use pezframe_support::{
 	dispatch::CallableCallFor, traits::IsSubType, weights::Weight, DebugNoBound,
 };
@@ -31,7 +32,7 @@ use pezsp_runtime::{
 	traits::Get,
 	transaction_validity::{TransactionPriority, TransactionValidityError},
 };
-use pezsp_std::{fmt::Debug, marker::PhantomData, vec, vec::Vec};
+use pezsp_std::{marker::PhantomData, vec, vec::Vec};
 
 /// Type of the call that the signed extension recognizes.
 #[derive(PartialEq, DebugNoBound)]
@@ -39,7 +40,7 @@ pub enum ExtensionCallInfo<RemoteGrandpaChainBlockNumber: Debug, LaneId: Clone +
 	/// Relay chain finality + teyrchain finality + message delivery/confirmation calls.
 	AllFinalityAndMsgs(
 		SubmitFinalityProofInfo<RemoteGrandpaChainBlockNumber>,
-		SubmitTeyrchainHeadsInfo,
+		SubmitParachainHeadsInfo,
 		MessagesCallInfo<LaneId>,
 	),
 	/// Relay chain finality + message delivery/confirmation calls.
@@ -50,7 +51,7 @@ pub enum ExtensionCallInfo<RemoteGrandpaChainBlockNumber: Debug, LaneId: Clone +
 	/// Teyrchain finality + message delivery/confirmation calls.
 	///
 	/// This variant is used only when bridging with teyrchain.
-	TeyrchainFinalityAndMsgs(SubmitTeyrchainHeadsInfo, MessagesCallInfo<LaneId>),
+	TeyrchainFinalityAndMsgs(SubmitParachainHeadsInfo, MessagesCallInfo<LaneId>),
 	/// Standalone message delivery/confirmation call.
 	Msgs(MessagesCallInfo<LaneId>),
 }
@@ -77,8 +78,8 @@ impl<RemoteGrandpaChainBlockNumber: Clone + Copy + Debug, LaneId: Clone + Copy +
 		}
 	}
 
-	/// Returns the pre-dispatch `SubmitTeyrchainHeadsInfo`.
-	pub fn submit_teyrchain_heads_info(&self) -> Option<&SubmitTeyrchainHeadsInfo> {
+	/// Returns the pre-dispatch `SubmitParachainHeadsInfo`.
+	pub fn submit_teyrchain_heads_info(&self) -> Option<&SubmitParachainHeadsInfo> {
 		match self {
 			Self::AllFinalityAndMsgs(_, info, _) => Some(info),
 			Self::TeyrchainFinalityAndMsgs(info, _) => Some(info),

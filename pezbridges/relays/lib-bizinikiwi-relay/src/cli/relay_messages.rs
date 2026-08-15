@@ -26,8 +26,8 @@ use async_trait::async_trait;
 use clap::Parser;
 use pezsp_core::Pair;
 
-use pezbp_messages::MessageNonce;
-use pezbp_runtime::HeaderIdProvider;
+use bp_messages::MessageNonce;
+use bp_runtime::HeaderIdProvider;
 use pezsp_runtime::traits::TryConvert;
 use relay_bizinikiwi_client::{
 	AccountIdOf, AccountKeyPairOf, BalanceOf, Chain, ChainWithRuntimeVersion,

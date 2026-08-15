@@ -11,9 +11,6 @@ use pezframe_support::{
 
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use hex_literal::hex;
-use pezsnowbridge_core::{AgentId, AgentIdOf, ChannelId, ParaId};
-use pezsnowbridge_outbound_queue_primitives::{v2::*, Log, Proof, VerificationError, Verifier};
-use pezsnowbridge_test_utils::mock_rewards::{BridgeReward, MockRewardLedger};
 use pezsp_core::{ConstU32, H160, H256};
 use pezsp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup, Keccak256},
@@ -21,6 +18,9 @@ use pezsp_runtime::{
 };
 use pezsp_std::marker::PhantomData;
 use scale_info::TypeInfo;
+use snowbridge_core::{AgentId, AgentIdOf, ChannelId, ParaId};
+use snowbridge_outbound_queue_primitives::{v2::*, Log, Proof, VerificationError, Verifier};
+use snowbridge_test_utils::mock_rewards::{BridgeReward, MockRewardLedger};
 use xcm::prelude::Here;
 use xcm_executor::traits::ConvertLocation;
 
@@ -74,8 +74,19 @@ impl pezpallet_message_queue::Config for Test {
 // Mock verifier
 pub struct MockVerifier;
 
+std::thread_local! {
+	static VERIFIER_HALTED: core::cell::Cell<bool> = const { core::cell::Cell::new(false) };
+}
+
+pub fn set_verifier_halted(halted: bool) {
+	VERIFIER_HALTED.with(|v| v.set(halted));
+}
+
 impl Verifier for MockVerifier {
 	fn verify(_: &Log, _: &Proof) -> Result<(), VerificationError> {
+		if VERIFIER_HALTED.with(|v| v.get()) {
+			return Err(VerificationError::Halted);
+		}
 		Ok(())
 	}
 }

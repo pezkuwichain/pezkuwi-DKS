@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ use std::{
 	collections::{BTreeSet, HashMap, HashSet},
 	io,
 	sync::Arc,
-	time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH},
+	time::Duration,
 };
 
 use codec::{Decode, Encode, Error as CodecError, Input};
@@ -35,17 +35,18 @@ use futures::{
 	future, select, FutureExt, SinkExt, StreamExt,
 };
 use futures_timer::Delay;
+use pezkuwi_node_clock::Clock;
 use pezkuwi_node_subsystem_util::database::{DBTransaction, Database};
 use pezsp_consensus::SyncOracle;
 
 use bitvec::{order::Lsb0 as BitOrderLsb0, vec::BitVec};
+use pezkuwi_node_primitives::{AvailableData, ErasureChunk};
 use pezkuwi_node_subsystem::{
 	errors::{ChainApiError, RuntimeApiError},
 	messages::{AvailabilityStoreMessage, ChainApiMessage, StoreAvailableDataError},
 	overseer, ActiveLeavesUpdate, FromOrchestra, OverseerSignal, SpawnedSubsystem, SubsystemError,
 };
 use pezkuwi_node_subsystem_util as util;
-use pezkuwi_pez_node_primitives::{AvailableData, ErasureChunk};
 use pezkuwi_primitives::{
 	BlockNumber, CandidateEvent, CandidateHash, CandidateReceiptV2 as CandidateReceipt, ChunkIndex,
 	CoreIndex, Hash, Header, NodeFeatures, ValidatorIndex,
@@ -365,9 +366,6 @@ pub enum Error {
 	ContextChannelClosed,
 
 	#[error(transparent)]
-	Time(#[from] SystemTimeError),
-
-	#[error(transparent)]
 	Codec(#[from] CodecError),
 
 	#[error("Custom databases are not supported")]
@@ -431,19 +429,6 @@ pub struct Config {
 	pub keep_finalized_for: u32,
 }
 
-trait Clock: Send + Sync {
-	// Returns time since unix epoch.
-	fn now(&self) -> Result<Duration, Error>;
-}
-
-struct SystemClock;
-
-impl Clock for SystemClock {
-	fn now(&self) -> Result<Duration, Error> {
-		SystemTime::now().duration_since(UNIX_EPOCH).map_err(Into::into)
-	}
-}
-
 /// An implementation of the Availability Store subsystem.
 pub struct AvailabilityStoreSubsystem {
 	pruning_config: PruningConfig,
@@ -452,7 +437,7 @@ pub struct AvailabilityStoreSubsystem {
 	known_blocks: KnownUnfinalizedBlocks,
 	finalized_number: Option<BlockNumber>,
 	metrics: Metrics,
-	clock: Box<dyn Clock>,
+	clock: Arc<dyn Clock>,
 	sync_oracle: Box<dyn SyncOracle + Send + Sync>,
 }
 
@@ -474,7 +459,7 @@ impl AvailabilityStoreSubsystem {
 			db,
 			config,
 			pruning_config,
-			Box::new(SystemClock),
+			pezkuwi_node_clock::system_clock(),
 			sync_oracle,
 			metrics,
 		)
@@ -485,7 +470,7 @@ impl AvailabilityStoreSubsystem {
 		db: Arc<dyn Database>,
 		config: Config,
 		pruning_config: PruningConfig,
-		clock: Box<dyn Clock>,
+		clock: Arc<dyn Clock>,
 		sync_oracle: Box<dyn SyncOracle + Send + Sync>,
 		metrics: Metrics,
 	) -> Self {
@@ -647,7 +632,7 @@ async fn run_iteration<Context>(
 
 // Start prune-all on a separate thread, so that in the case when the operation takes
 // longer than expected we don't keep the whole subsystem blocked.
-// See: https://github.com/pezkuwichain/pezkuwi-sdk/issues/313 for more details.
+// See: https://github.com/paritytech/polkadot/issues/7237 for more details.
 #[overseer::contextbounds(AvailabilityStore, prefix = self::overseer)]
 async fn start_prune_all<Context>(
 	ctx: &mut Context,
@@ -657,7 +642,7 @@ async fn start_prune_all<Context>(
 	let metrics = subsystem.metrics.clone();
 	let db = subsystem.db.clone();
 	let config = subsystem.config;
-	let time_now = subsystem.clock.now()?;
+	let time_now = subsystem.clock.duration_since_epoch();
 
 	ctx.spawn_blocking(
 		"av-store-prunning",
@@ -682,7 +667,7 @@ async fn process_block_activated<Context>(
 	subsystem: &mut AvailabilityStoreSubsystem,
 	activated: Hash,
 ) -> Result<(), Error> {
-	let now = subsystem.clock.now()?;
+	let now = subsystem.clock.duration_since_epoch();
 
 	let block_header = {
 		let (tx, rx) = oneshot::channel();
@@ -884,7 +869,7 @@ async fn process_block_finalized<Context>(
 	finalized_hash: Hash,
 	finalized_number: BlockNumber,
 ) -> Result<(), Error> {
-	let now = subsystem.clock.now()?;
+	let now = subsystem.clock.duration_since_epoch();
 
 	let mut next_possible_batch = 0;
 	loop {
@@ -1295,7 +1280,7 @@ fn store_available_data(
 			m
 		},
 		None => {
-			let now = subsystem.clock.now()?;
+			let now = subsystem.clock.duration_since_epoch();
 
 			// Write a pruning record.
 			let prune_at = now + subsystem.pruning_config.keep_unavailable_for;

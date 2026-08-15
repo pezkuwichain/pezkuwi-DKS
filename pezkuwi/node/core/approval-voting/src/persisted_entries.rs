@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 //! data and logic are intertwined.
 
 use itertools::Itertools;
-use pezkuwi_pez_node_primitives::approval::{
+use pezkuwi_node_primitives::approval::{
 	v1::{DelayTranche, RelayVRFStory},
 	v2::{AssignmentCertV2, CandidateBitfield},
 };
@@ -38,7 +38,7 @@ use crate::approval_db::v2::Bitfield;
 
 use super::criteria::OurAssignment;
 
-use pezkuwi_pez_node_primitives::approval::time::Tick;
+use pezkuwi_node_primitives::approval::time::Tick;
 
 /// Metadata regarding a specific tranche of assignments for a specific candidate.
 #[derive(Debug, Clone, PartialEq)]

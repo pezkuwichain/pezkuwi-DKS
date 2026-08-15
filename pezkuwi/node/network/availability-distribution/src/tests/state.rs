@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ use pezsp_keystore::KeystorePtr;
 use pezkuwi_node_network_protocol::request_response::{
 	v1, v2, IncomingRequest, OutgoingRequest, Protocol, ReqProtocolNames, Requests,
 };
+use pezkuwi_node_primitives::ErasureChunk;
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, AvailabilityDistributionMessage, AvailabilityStoreMessage, ChainApiMessage,
@@ -45,9 +46,8 @@ use pezkuwi_node_subsystem::{
 	ActiveLeavesUpdate, FromOrchestra, OverseerSignal,
 };
 use pezkuwi_node_subsystem_test_helpers as test_helpers;
-use pezkuwi_pez_node_primitives::ErasureChunk;
 use pezkuwi_primitives::{
-	CandidateHash, ChunkIndex, CoreIndex, CoreState, ExecutorParams, GroupIndex, Hash,
+	ApprovalVotingParams, CandidateHash, ChunkIndex, CoreIndex, CoreState, GroupIndex, Hash,
 	Id as ParaId, NodeFeatures, ScheduledCore, SessionInfo, ValidatorIndex,
 };
 use test_helpers::mock::{make_ferdie_keystore, new_leaf};
@@ -320,10 +320,6 @@ impl TestState {
 							tx.send(Ok(Some(self.session_info.clone())))
 								.expect("Receiver should be alive.");
 						},
-						RuntimeApiRequest::SessionExecutorParams(_, tx) => {
-							tx.send(Ok(Some(ExecutorParams::default())))
-								.expect("Receiver should be alive.");
-						},
 						RuntimeApiRequest::AvailabilityCores(tx) => {
 							gum::trace!(target: LOG_TARGET, cores= ?self.cores[&hash], hash = ?hash, "Sending out cores for hash");
 							tx.send(Ok(self.cores[&hash].clone()))
@@ -331,6 +327,10 @@ impl TestState {
 						},
 						RuntimeApiRequest::NodeFeatures(_, tx) => {
 							tx.send(Ok(self.node_features.clone()))
+								.expect("Receiver should still be alive");
+						},
+						RuntimeApiRequest::ApprovalVotingParams(_, tx) => {
+							tx.send(Ok(ApprovalVotingParams::default()))
 								.expect("Receiver should still be alive");
 						},
 						_ => {

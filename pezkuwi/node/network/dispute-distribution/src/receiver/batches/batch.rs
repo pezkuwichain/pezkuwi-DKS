@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ use pezkuwi_node_network_protocol::{
 	request_response::{incoming::OutgoingResponseSender, v1::DisputeRequest},
 	PeerId,
 };
-use pezkuwi_pez_node_primitives::SignedDisputeStatement;
+use pezkuwi_node_primitives::SignedDisputeStatement;
 use pezkuwi_primitives::{CandidateReceiptV2 as CandidateReceipt, ValidatorIndex};
 
 use crate::receiver::{BATCH_COLLECTING_INTERVAL, MIN_KEEP_BATCH_ALIVE_VOTES};

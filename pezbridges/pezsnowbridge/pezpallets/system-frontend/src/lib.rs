@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
-//!
 //! System frontend pezpallet that acts as the user-facing control-plane for Snowbridge.
 //!
 //! Some operations are delegated to a backend pezpallet installed on a remote teyrchain.
@@ -27,11 +26,11 @@ pub use backend_weights::*;
 use pezframe_support::{pezpallet_prelude::*, traits::EnsureOriginWithArg};
 use pezframe_system::pezpallet_prelude::*;
 use pezpallet_asset_conversion::Swap;
-use pezsnowbridge_core::{
+use pezsp_std::prelude::*;
+use snowbridge_core::{
 	burn_for_teleport, operating_mode::ExportPausedQuery, reward::MessageId, AssetMetadata,
 	BasicOperatingMode as OperatingMode,
 };
-use pezsp_std::prelude::*;
 use xcm::{
 	latest::{validate_send, XcmHash},
 	prelude::*,
@@ -46,8 +45,7 @@ pub type AccountIdOf<T> = <T as pezframe_system::Config>::AccountId;
 
 pub const LOG_TARGET: &str = "snowbridge-system-frontend";
 
-/// Call indices within BridgeHub runtime for dispatchables within
-/// `pezsnowbridge-pezpallet-system-v2`
+/// Call indices within BridgeHub runtime for dispatchables within `snowbridge-pezpallet-system-v2`
 #[allow(clippy::large_enum_variant)]
 #[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo)]
 pub enum BridgeHubRuntime<T: pezframe_system::Config> {
@@ -55,7 +53,7 @@ pub enum BridgeHubRuntime<T: pezframe_system::Config> {
 	EthereumSystem(EthereumSystemCall<T>),
 }
 
-/// Call indices for dispatchables within `pezsnowbridge-pezpallet-system-v2`
+/// Call indices for dispatchables within `snowbridge-pezpallet-system-v2`
 #[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo)]
 pub enum EthereumSystemCall<T: pezframe_system::Config> {
 	#[codec(index = 2)]

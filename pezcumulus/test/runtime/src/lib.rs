@@ -1,24 +1,24 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus.  If not, see <http://www.gnu.org/licenses/>.
+// along with Cumulus.  If not, see <http://www.gnu.org/licenses/>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
-// Make the WASM binary available.
+// Make the WASM binaries available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
@@ -46,9 +46,14 @@ pub mod elastic_scaling {
 	include!(concat!(env!("OUT_DIR"), "/wasm_binary_elastic_scaling.rs"));
 }
 
-pub mod elastic_scaling_multi_block_slot {
+pub mod elastic_scaling_12s_slot {
 	#[cfg(feature = "std")]
-	include!(concat!(env!("OUT_DIR"), "/wasm_binary_elastic_scaling_multi_block_slot.rs"));
+	include!(concat!(env!("OUT_DIR"), "/wasm_binary_elastic_scaling_12s_slot.rs"));
+}
+
+pub mod block_bundling {
+	#[cfg(feature = "std")]
+	include!(concat!(env!("OUT_DIR"), "/wasm_binary_block_bundling.rs"));
 }
 
 pub mod sync_backing {
@@ -61,8 +66,28 @@ pub mod async_backing {
 	include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 }
 
+pub mod async_backing_v3 {
+	#[cfg(feature = "std")]
+	include!(concat!(env!("OUT_DIR"), "/wasm_binary_async_backing_v3.rs"));
+}
+
+pub mod async_backing_v3_rpo {
+	#[cfg(feature = "std")]
+	include!(concat!(env!("OUT_DIR"), "/wasm_binary_async_backing_v3_rpo.rs"));
+}
+
+pub mod elastic_scaling_v3 {
+	#[cfg(feature = "std")]
+	include!(concat!(env!("OUT_DIR"), "/wasm_binary_elastic_scaling_v3.rs"));
+}
+
+pub mod slot_duration_18s {
+	#[cfg(feature = "std")]
+	include!(concat!(env!("OUT_DIR"), "/wasm_binary_slot_duration_18s.rs"));
+}
+
 mod genesis_config_presets;
-mod test_pallet;
+pub mod test_pallet;
 
 extern crate alloc;
 
@@ -70,7 +95,7 @@ use alloc::{vec, vec::Vec};
 use pezframe_support::{derive_impl, traits::OnRuntimeUpgrade, PalletId};
 use pezsp_api::{decl_runtime_apis, impl_runtime_apis};
 pub use pezsp_consensus_aura::sr25519::AuthorityId as AuraId;
-use pezsp_core::{ConstBool, ConstU32, ConstU64, OpaqueMetadata};
+use pezsp_core::{ConstBool, ConstU32, ConstU64, Get, OpaqueMetadata};
 
 use pezsp_runtime::{
 	generic, impl_opaque_keys,
@@ -82,7 +107,7 @@ use pezsp_runtime::{
 use pezsp_version::NativeVersion;
 use pezsp_version::RuntimeVersion;
 
-use pezcumulus_primitives_core::ParaId;
+use pezcumulus_primitives_core::{ParaId, RelayProofRequest, VerifySchedulingSignature};
 
 // A few exports that help ease life for downstream crates.
 pub use pezframe_support::{
@@ -111,7 +136,7 @@ pub use pezpallet_timestamp::{Call as TimestampCall, Now};
 #[cfg(any(feature = "std", test))]
 pub use pezsp_runtime::BuildStorage;
 pub use pezsp_runtime::{Perbill, Permill};
-pub use test_pallet::Call as TestPalletCall;
+pub use test_pallet::{Call as TestPalletCall, TestTransactionExtension};
 
 pub type SessionHandlers = ();
 
@@ -122,16 +147,16 @@ impl_opaque_keys! {
 }
 
 /// The para-id used in this runtime.
-pub const TEYRCHAIN_ID: u32 = 100;
+pub const PARACHAIN_ID: u32 = 100;
 
-#[cfg(feature = "elastic-scaling-500ms")]
+#[cfg(any(feature = "elastic-scaling-500ms", feature = "block-bundling"))]
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 12;
 
 #[cfg(all(feature = "elastic-scaling-multi-block-slot", not(feature = "elastic-scaling-500ms")))]
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 6;
 
 #[cfg(all(
-	any(feature = "elastic-scaling", feature = "relay-parent-offset"),
+	feature = "elastic-scaling",
 	not(feature = "elastic-scaling-500ms"),
 	not(feature = "elastic-scaling-multi-block-slot")
 ))]
@@ -141,7 +166,7 @@ pub const BLOCK_PROCESSING_VELOCITY: u32 = 3;
 	feature = "elastic-scaling",
 	feature = "elastic-scaling-500ms",
 	feature = "elastic-scaling-multi-block-slot",
-	feature = "relay-parent-offset",
+	feature = "block-bundling",
 )))]
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
@@ -151,13 +176,31 @@ const UNINCLUDED_SEGMENT_CAPACITY: u32 = 3;
 #[cfg(all(feature = "sync-backing", not(feature = "async-backing")))]
 const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
 
-// The `+2` shouldn't be needed, https://github.com/pezkuwichain/pezkuwi-sdk/issues/160
+/// We need `VELOCITY * 3`, because the block flow is the following:
+///
+/// - Collator produces the block(s) on relay chain block `X`
+/// - In the mean time the relay chain is building block `X + 1`
+/// - The collator sends the collation to the relay chain and it gets backed on chain in relay block
+///   `X + 2`
+/// - The collation then gets included on chain in relay block `X + 3`
+/// - As we are building on `RELAY_PARENT_OFFSET` old relay parents, the included block from the
+///   teyrchain is also `RELAY_PARENT_OFFSET` relay blocks older (one relay block may contains
+///   multiple teyrchain blocks).
 #[cfg(all(not(feature = "sync-backing"), not(feature = "async-backing")))]
-const UNINCLUDED_SEGMENT_CAPACITY: u32 = BLOCK_PROCESSING_VELOCITY * (2 + RELAY_PARENT_OFFSET) + 2;
+const UNINCLUDED_SEGMENT_CAPACITY: u32 = BLOCK_PROCESSING_VELOCITY * (3 + RELAY_PARENT_OFFSET);
 
-#[cfg(any(feature = "sync-backing", feature = "elastic-scaling-12s-slot"))]
+#[cfg(feature = "slot-duration-18s")]
+pub const SLOT_DURATION: u64 = 18000;
+#[cfg(all(
+	any(feature = "sync-backing", feature = "elastic-scaling-12s-slot"),
+	not(feature = "slot-duration-18s")
+))]
 pub const SLOT_DURATION: u64 = 12000;
-#[cfg(not(any(feature = "sync-backing", feature = "elastic-scaling-12s-slot")))]
+#[cfg(not(any(
+	feature = "sync-backing",
+	feature = "elastic-scaling-12s-slot",
+	feature = "slot-duration-18s"
+)))]
 pub const SLOT_DURATION: u64 = 6000;
 
 const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
@@ -184,7 +227,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
-	system_version: 1,
+	system_version: 3,
 };
 
 #[cfg(any(feature = "increment-spec-version", feature = "elastic-scaling"))]
@@ -198,7 +241,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
-	system_version: 1,
+	system_version: 3,
 };
 
 pub const EPOCH_DURATION_IN_BLOCKS: u32 = 10 * MINUTES;
@@ -223,33 +266,34 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
 /// by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-/// We allow for 1 second of compute with a 6 second average block time.
-const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
-	WEIGHT_REF_TIME_PER_SECOND,
-	pezcumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
-);
+
+type MaximumBlockWeight = pezcumulus_pallet_teyrchain_system::block_weight::MaxParachainBlockWeight<
+	Runtime,
+	ConstU32<BLOCK_PROCESSING_VELOCITY>,
+>;
 
 parameter_types! {
 	/// Target number of blocks per relay chain slot.
 	pub const NumberOfBlocksPerRelaySlot: u32 = 12;
 	pub const BlockHashCount: BlockNumber = 250;
 	pub const Version: RuntimeVersion = VERSION;
+	/// We allow for 1 second of compute with a 6 second average block time.
 	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		BlockLength::builder().max_length(10 * 1024 * 1024).max_header_size(5 * 1024 * 1024).build();
 	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
 		.for_class(DispatchClass::all(), |weights| {
 			weights.base_extrinsic = ExtrinsicBaseWeight::get();
 		})
 		.for_class(DispatchClass::Normal, |weights| {
-			weights.max_total = Some(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT);
+			weights.max_total = Some(NORMAL_DISPATCH_RATIO * MaximumBlockWeight::get());
 		})
 		.for_class(DispatchClass::Operational, |weights| {
-			weights.max_total = Some(MAXIMUM_BLOCK_WEIGHT);
+			weights.max_total = Some(MaximumBlockWeight::get());
 			// Operational transactions have some extra reserved space, so that they
-			// are included even if block reached `MAXIMUM_BLOCK_WEIGHT`.
+			// are included even if block reached `MaximumBlockWeight`.
 			weights.reserved = Some(
-				MAXIMUM_BLOCK_WEIGHT - NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT
+				MaximumBlockWeight::get() - NORMAL_DISPATCH_RATIO * MaximumBlockWeight::get()
 			);
 		})
 		.avg_block_initialization(AVERAGE_ON_INITIALIZE_RATIO)
@@ -257,7 +301,7 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 42;
 }
 
-#[derive_impl(pezframe_system::config_preludes::TeyrchainDefaultConfig)]
+#[derive_impl(pezframe_system::config_preludes::ParaChainDefaultConfig)]
 impl pezframe_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
@@ -275,12 +319,17 @@ impl pezframe_system::Config for Runtime {
 	type BlockWeights = RuntimeBlockWeights;
 	type BlockLength = RuntimeBlockLength;
 	type SS58Prefix = SS58Prefix;
-	type OnSetCode = pezcumulus_pezpallet_teyrchain_system::TeyrchainSetCode<Self>;
+	type OnSetCode = pezcumulus_pallet_teyrchain_system::TeyrchainSetCode<Self>;
 	type MaxConsumers = pezframe_support::traits::ConstU32<16>;
+	type PreInherents =
+		pezcumulus_pallet_teyrchain_system::block_weight::DynamicMaxBlockWeightHooks<
+			Runtime,
+			ConstU32<BLOCK_PROCESSING_VELOCITY>,
+		>;
 	type SingleBlockMigrations = SingleBlockMigrations;
 }
 
-impl pezcumulus_pezpallet_weight_reclaim::Config for Runtime {
+impl pezcumulus_pallet_weight_reclaim::Config for Runtime {
 	type WeightInfo = ();
 }
 
@@ -294,7 +343,7 @@ parameter_types! {
 	pub const Offset: u32 = 0;
 }
 
-impl pezcumulus_pezpallet_aura_ext::Config for Runtime {}
+impl pezcumulus_pallet_aura_ext::Config for Runtime {}
 
 impl pezpallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
@@ -347,6 +396,13 @@ impl pezpallet_sudo::Config for Runtime {
 	type WeightInfo = pezpallet_sudo::weights::BizinikiwiWeight<Runtime>;
 }
 
+impl pezpallet_utility::Config for Runtime {
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type PalletsOrigin = OriginCaller;
+	type WeightInfo = pezpallet_utility::weights::BizinikiwiWeight<Runtime>;
+}
+
 impl pezpallet_glutton::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type AdminOrigin = EnsureRoot<AccountId>;
@@ -359,27 +415,48 @@ const RELAY_PARENT_OFFSET: u32 = 2;
 #[cfg(not(feature = "relay-parent-offset"))]
 const RELAY_PARENT_OFFSET: u32 = 0;
 
-type ConsensusHook = pezcumulus_pezpallet_aura_ext::FixedVelocityConsensusHook<
+const SCHEDULING_V3_ENABLED: bool = cfg!(feature = "v3-descriptor");
+
+/// Scheduling-info verifier used by `pezcumulus-test-runtime`.
+///
+/// Accepts any signature; `V3_SCHEDULING_ENABLED` is gated on the `v3-descriptor` cargo
+/// feature so the test runtime can flip V3 scheduling on without needing a runtime upgrade
+/// per build.
+pub struct NoVerification;
+
+impl VerifySchedulingSignature for NoVerification {
+	const V3_SCHEDULING_ENABLED: bool = SCHEDULING_V3_ENABLED;
+
+	fn verify(
+		_signed_info: &pezcumulus_primitives_core::SignedSchedulingInfo,
+		_internal_scheduling_parent_header: &pezcumulus_primitives_core::relay_chain::Header,
+	) -> bool {
+		true
+	}
+}
+
+type ConsensusHook = pezcumulus_pallet_aura_ext::FixedVelocityConsensusHook<
 	Runtime,
 	RELAY_CHAIN_SLOT_DURATION_MILLIS,
 	BLOCK_PROCESSING_VELOCITY,
 	UNINCLUDED_SEGMENT_CAPACITY,
 >;
-impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
+impl pezcumulus_pallet_teyrchain_system::Config for Runtime {
 	type WeightInfo = ();
 	type SelfParaId = teyrchain_info::Pezpallet<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
-	type OnSystemEvent = ();
-	type OutboundXcmpMessageSource = ();
+	type OnSystemEvent = TestPallet;
+	type OutboundXcmpMessageSource = TestPallet;
 	// Ignore all DMP messages by enqueueing them into `()`:
 	type DmpQueue = pezframe_support::traits::EnqueueWithOrigin<(), pezsp_core::ConstU8<0>>;
 	type ReservedDmpWeight = ();
 	type XcmpMessageHandler = ();
 	type ReservedXcmpWeight = ();
 	type CheckAssociatedRelayNumber =
-		pezcumulus_pezpallet_teyrchain_system::RelayNumberMonotonicallyIncreases;
+		pezcumulus_pallet_teyrchain_system::RelayNumberMonotonicallyIncreases;
 	type ConsensusHook = ConsensusHook;
 	type RelayParentOffset = ConstU32<RELAY_PARENT_OFFSET>;
+	type SchedulingSignatureVerifier = NoVerification;
 }
 
 impl teyrchain_info::Config for Runtime {}
@@ -401,17 +478,18 @@ construct_runtime! {
 	pub enum Runtime
 	{
 		System: pezframe_system,
-		TeyrchainSystem: pezcumulus_pezpallet_teyrchain_system,
+		TeyrchainSystem: pezcumulus_pallet_teyrchain_system,
 		Timestamp: pezpallet_timestamp,
 		TeyrchainInfo: teyrchain_info,
 		Balances: pezpallet_balances,
 		Sudo: pezpallet_sudo,
+		Utility: pezpallet_utility,
 		TransactionPayment: pezpallet_transaction_payment,
 		TestPallet: test_pallet,
 		Glutton: pezpallet_glutton,
 		Aura: pezpallet_aura,
-		AuraExt: pezcumulus_pezpallet_aura_ext,
-		WeightReclaim: pezcumulus_pezpallet_weight_reclaim,
+		AuraExt: pezcumulus_pallet_aura_ext,
+		WeightReclaim: pezcumulus_pallet_weight_reclaim,
 	}
 }
 
@@ -442,19 +520,25 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 /// The extension to the basic transaction logic.
-pub type TxExtension = pezcumulus_pezpallet_weight_reclaim::StorageWeightReclaim<
+pub type TxExtension = pezcumulus_pallet_teyrchain_system::block_weight::DynamicMaxBlockWeight<
 	Runtime,
-	(
-		pezframe_system::AuthorizeCall<Runtime>,
-		pezframe_system::CheckNonZeroSender<Runtime>,
-		pezframe_system::CheckSpecVersion<Runtime>,
-		pezframe_system::CheckGenesis<Runtime>,
-		pezframe_system::CheckEra<Runtime>,
-		pezframe_system::CheckNonce<Runtime>,
-		pezframe_system::CheckWeight<Runtime>,
-		pezpallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-	),
+	pezcumulus_pallet_weight_reclaim::StorageWeightReclaim<
+		Runtime,
+		(
+			pezframe_system::AuthorizeCall<Runtime>,
+			pezframe_system::CheckNonZeroSender<Runtime>,
+			pezframe_system::CheckSpecVersion<Runtime>,
+			pezframe_system::CheckGenesis<Runtime>,
+			pezframe_system::CheckEra<Runtime>,
+			pezframe_system::CheckNonce<Runtime>,
+			pezframe_system::CheckWeight<Runtime>,
+			pezpallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+			test_pallet::TestTransactionExtension<Runtime>,
+		),
+	>,
+	ConstU32<BLOCK_PROCESSING_VELOCITY>,
 >;
+
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
 	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
@@ -470,10 +554,13 @@ pub type Executive = pezframe_executive::Executive<
 /// The payload being signed in transactions.
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, TxExtension>;
 
-pub struct SingleBlockMigrations;
+/// Migration to verify that runtime upgrade hooks are working correctly.
+///
+/// This checks that the test_pallet runtime upgrade key was set in genesis.
+pub struct VerifyRuntimeUpgrade;
 
-impl OnRuntimeUpgrade for SingleBlockMigrations {
-	fn on_runtime_upgrade() -> pezframe_support::weights::Weight {
+impl OnRuntimeUpgrade for VerifyRuntimeUpgrade {
+	fn on_runtime_upgrade() -> Weight {
 		assert_eq!(
 			pezsp_io::storage::get(test_pallet::TEST_RUNTIME_UPGRADE_KEY),
 			Some(vec![1, 2, 3, 4].into())
@@ -481,6 +568,15 @@ impl OnRuntimeUpgrade for SingleBlockMigrations {
 		Weight::from_parts(1, 0)
 	}
 }
+
+/// Single-block migrations for the test runtime.
+///
+/// These migrations execute immediately and entirely at the beginning of the block following
+/// a runtime upgrade. They must be lightweight enough to complete within a single block.
+pub type SingleBlockMigrations = (
+	// Verify that runtime upgrade hooks are working correctly.
+	VerifyRuntimeUpgrade,
+);
 
 decl_runtime_apis! {
 	pub trait GetLastTimestamp {
@@ -517,6 +613,16 @@ impl_runtime_apis! {
 	impl pezcumulus_primitives_core::RelayParentOffsetApi<Block> for Runtime {
 		fn relay_parent_offset() -> u32 {
 			RELAY_PARENT_OFFSET
+		}
+
+		fn max_claim_queue_offset() -> u8 {
+			pezcumulus_pallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
+		}
+	}
+
+	impl pezcumulus_primitives_core::SchedulingV3EnabledApi<Block> for Runtime {
+		fn scheduling_v3_enabled() -> bool {
+			<Runtime as pezcumulus_pallet_teyrchain_system::Config>::SchedulingSignatureVerifier::V3_SCHEDULING_ENABLED
 		}
 	}
 
@@ -568,6 +674,7 @@ impl_runtime_apis! {
 		fn check_inherents(block: <Block as BlockT>::LazyBlock, data: pezsp_inherents::InherentData) -> pezsp_inherents::CheckInherentsResult {
 			data.check_extrinsics(&block)
 		}
+
 	}
 
 	impl pezsp_transaction_pool::runtime_api::TaggedTransactionQueue<Block> for Runtime {
@@ -593,8 +700,8 @@ impl_runtime_apis! {
 			SessionKeys::decode_into_raw_public_keys(&encoded)
 		}
 
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+		fn generate_session_keys(owner: Vec<u8>, seed: Option<Vec<u8>>) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 	}
 
@@ -624,21 +731,34 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pezcumulus_primitives_core::GetTeyrchainInfo<Block> for Runtime {
+	impl pezcumulus_primitives_core::GetParachainInfo<Block> for Runtime {
 		fn teyrchain_id() -> ParaId {
 			TeyrchainInfo::teyrchain_id()
 		}
-
 	}
 
+	// "Elastic scaling" should run with the fallback method.
+	#[cfg(any(not(feature = "elastic-scaling"), feature = "std"))]
 	impl pezcumulus_primitives_core::TargetBlockRate<Block> for Runtime {
 		fn target_block_rate() -> u32 {
-			1
+			BLOCK_PROCESSING_VELOCITY
+		}
+	}
+
+	impl pezcumulus_primitives_core::KeyToIncludeInRelayProof<Block> for Runtime {
+		fn keys_to_prove() -> pezcumulus_primitives_core::RelayProofRequest {
+			use pezcumulus_primitives_core::RelayStorageKey;
+			RelayProofRequest {
+				keys: vec![
+					// Request a key to verify its inclusion in the proof.
+					RelayStorageKey::Top(test_pallet::relay_alice_account_key()),
+				],
+			}
 		}
 	}
 }
 
-pezcumulus_pezpallet_teyrchain_system::register_validate_block! {
+pezcumulus_pallet_teyrchain_system::register_validate_block! {
 	Runtime = Runtime,
-	BlockExecutor = pezcumulus_pezpallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+	BlockExecutor = pezcumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
 }

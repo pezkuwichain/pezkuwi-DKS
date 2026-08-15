@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 //! require a db migration (check `node/service/src/teyrchains_db/upgrade.rs`).
 
 use codec::{Decode, Encode};
-use pezkuwi_pez_node_primitives::approval::v1::{AssignmentCert, DelayTranche};
+use pezkuwi_node_primitives::approval::v1::{AssignmentCert, DelayTranche};
 use pezkuwi_primitives::{
 	BlockNumber, CandidateHash, CandidateReceiptV2 as CandidateReceipt, CoreIndex, GroupIndex,
 	Hash, SessionIndex, ValidatorIndex, ValidatorSignature,

@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,10 +18,10 @@
 
 use codec::Encode;
 use itertools::Itertools;
-pub use pezkuwi_pez_node_primitives::approval::criteria::{
+pub use pezkuwi_node_primitives::approval::criteria::{
 	AssignmentCriteria, Config, InvalidAssignment, InvalidAssignmentReason, OurAssignment,
 };
-use pezkuwi_pez_node_primitives::approval::{
+use pezkuwi_node_primitives::approval::{
 	self as approval_types,
 	v1::{AssignmentCert, AssignmentCertKind, DelayTranche, RelayVRFStory},
 	v2::{

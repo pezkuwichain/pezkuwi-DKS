@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ use pezkuwi_erasure_coding::systematic_recovery_threshold;
 use pezkuwi_primitives::{node_features, ChunkIndex, CoreIndex, NodeFeatures, ValidatorIndex};
 
 /// Compute the per-validator availability chunk index.
-/// WARNING: THIS FUNCTION IS CRITICAL TO TEYRCHAIN CONSENSUS.
+/// WARNING: THIS FUNCTION IS CRITICAL TO PARACHAIN CONSENSUS.
 /// Any modification to the output of the function needs to be coordinated via the runtime.
 /// It's best to use minimal/no external dependencies.
 pub fn availability_chunk_index(
@@ -27,11 +27,7 @@ pub fn availability_chunk_index(
 	core_index: CoreIndex,
 	validator_index: ValidatorIndex,
 ) -> Result<ChunkIndex, pezkuwi_erasure_coding::Error> {
-	if node_features
-		.get(usize::from(node_features::FeatureIndex::AvailabilityChunkMapping as u8))
-		.map(|bitref| *bitref)
-		.unwrap_or_default()
-	{
+	if node_features::FeatureIndex::AvailabilityChunkMapping.is_set(node_features) {
 		let systematic_threshold = systematic_recovery_threshold(n_validators)? as u32;
 		let core_start_pos = core_index.0 * systematic_threshold;
 
@@ -43,7 +39,7 @@ pub fn availability_chunk_index(
 
 /// Compute the per-core availability chunk indices. Returns a Vec which maps ValidatorIndex to
 /// ChunkIndex for a given availability core index
-/// WARNING: THIS FUNCTION IS CRITICAL TO TEYRCHAIN CONSENSUS.
+/// WARNING: THIS FUNCTION IS CRITICAL TO PARACHAIN CONSENSUS.
 /// Any modification to the output of the function needs to be coordinated via the
 /// runtime. It's best to use minimal/no external dependencies.
 pub fn availability_chunk_indices(

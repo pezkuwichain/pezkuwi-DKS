@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
 use pezkuwi_node_metrics::metrics::{prometheus, Metrics as MetricsTrait};
-use pezkuwi_pez_node_primitives::approval::v2::AssignmentCertKindV2;
+use pezkuwi_node_primitives::approval::v2::AssignmentCertKindV2;
 
 /// Approval Distribution metrics.
 #[derive(Default, Clone)]

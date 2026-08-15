@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -146,8 +146,8 @@ fn alias_child_location() {
 		&Location::new(0, PalletInstance(42)),
 	));
 	assert!(AliasChildLocation::contains(
-		&Location::new(2, GlobalConsensus(Dicle)),
-		&Location::new(2, [GlobalConsensus(Dicle), Teyrchain(42), GeneralIndex(12)]),
+		&Location::new(2, GlobalConsensus(Kusama)),
+		&Location::new(2, [GlobalConsensus(Kusama), Teyrchain(42), GeneralIndex(12)]),
 	));
 }
 

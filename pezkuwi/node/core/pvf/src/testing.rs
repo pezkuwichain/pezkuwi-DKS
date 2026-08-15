@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ pub use crate::{
 use crate::{artifacts::ArtifactId, get_worker_version};
 use is_executable::IsExecutable;
 use pezkuwi_node_core_pvf_common::pvf::PvfPrepData;
-use pezkuwi_pez_node_primitives::NODE_VERSION;
+use pezkuwi_node_primitives::NODE_VERSION;
 use pezkuwi_primitives::ExecutorParams;
 use std::{
 	path::PathBuf,
@@ -67,7 +67,7 @@ pub fn build_workers_and_get_paths() -> (PathBuf, PathBuf) {
 	fn build_workers() {
 		let mut build_args = vec![
 			"build",
-			"--package=pezkuwi",
+			"--package=polkadot",
 			"--bin=pezkuwi-prepare-worker",
 			"--bin=pezkuwi-execute-worker",
 		];

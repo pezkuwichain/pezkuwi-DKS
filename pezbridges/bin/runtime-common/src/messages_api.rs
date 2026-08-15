@@ -16,7 +16,7 @@
 
 //! Helpers for implementing various message-related runtime API methods.
 
-use pezbp_messages::{InboundMessageDetails, MessageNonce, MessagePayload, OutboundMessageDetails};
+use bp_messages::{InboundMessageDetails, MessageNonce, MessagePayload, OutboundMessageDetails};
 use pezsp_std::vec::Vec;
 
 /// Implementation of the `To*OutboundLaneApi::message_details`.
@@ -37,8 +37,8 @@ where
 			>::outbound_message_data(lane, nonce)?;
 			Some(OutboundMessageDetails {
 				nonce,
-				// dispatch message weight is always zero at the source chain, since we're paying
-				// for dispatch at the target chain
+				// dispatch message weight is always zero at the source chain, since we're paying for
+				// dispatch at the target chain
 				dispatch_weight: pezframe_support::weights::Weight::zero(),
 				size: message_data.len() as _,
 			})

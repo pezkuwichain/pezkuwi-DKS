@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ pub use disputes::{
 /// relatively rare.
 ///
 /// The associated worker binaries should use the same version as the node that spawns them.
-pub const NODE_VERSION: &'static str = "1.20.2";
+pub const NODE_VERSION: &'static str = "1.24.1";
 
 // For a 16-ary Merkle Prefix Trie, we can expect at most 16 32-byte hashes per node
 // plus some overhead:
@@ -352,8 +352,10 @@ pub enum InvalidCandidate {
 	CodeHashMismatch,
 	/// Validation has generated different candidate commitments.
 	CommitmentsHashMismatch,
-	/// The candidate receipt contains an invalid session index.
-	InvalidSessionIndex,
+	/// The descriptor's scheduling session does not match the runtime.
+	InvalidSchedulingSession,
+	/// The relay parent is not recognized in the descriptor's claimed session.
+	InvalidRelayParentSession,
 	/// The candidate receipt invalid UMP signals.
 	InvalidUMPSignals(CommittedCandidateReceiptError),
 }
@@ -421,7 +423,7 @@ impl MaybeCompressedPoV {
 ///
 /// This differs from `CandidateCommitments` in two ways:
 ///
-/// - does not contain the erasure root; that's computed at the Pezkuwi level, not at Pezcumulus
+/// - does not contain the erasure root; that's computed at the Pezkuwi level, not at Cumulus
 /// - contains a proof of validity.
 #[derive(Debug, Clone, Encode, Decode)]
 #[cfg(not(target_os = "unknown"))]
@@ -447,8 +449,10 @@ pub struct Collation<BlockNumber = pezkuwi_primitives::BlockNumber> {
 #[derive(Debug)]
 #[cfg(not(target_os = "unknown"))]
 pub struct CollationSecondedSignal {
-	/// The hash of the relay chain block that was used as context to sign [`Self::statement`].
-	pub relay_parent: Hash,
+	/// The hash of the relay chain block used as context for scheduling/validator assignment
+	/// to sign [`Self::statement`]. For V3 this is the scheduling parent (may differ from
+	/// the candidate's relay_parent). For V1/V2 this equals the relay_parent.
+	pub scheduling_parent: Hash,
 	/// The statement about seconding the collation.
 	///
 	/// Anything else than [`Statement::Seconded`] is forbidden here.
@@ -523,8 +527,6 @@ pub struct SubmitCollationParams {
 	pub relay_parent: Hash,
 	/// The collation itself (PoV and commitments)
 	pub collation: Collation,
-	/// The parent block's head-data.
-	pub parent_head: HeadData,
 	/// The hash of the validation code the collation was created against.
 	pub validation_code_hash: ValidationCodeHash,
 	/// An optional result sender that should be informed about a successfully seconded collation.
@@ -535,6 +537,18 @@ pub struct SubmitCollationParams {
 	pub result_sender: Option<futures::channel::oneshot::Sender<CollationSecondedSignal>>,
 	/// The core index on which the resulting candidate should be backed
 	pub core_index: CoreIndex,
+	/// The scheduling parent for V3 candidate descriptors.
+	/// If set, the candidate descriptor will use this as the scheduling parent
+	/// (creating a V3 descriptor). If None, relay_parent is used (V2 descriptor).
+	///
+	/// WARNING: Should only be set if the `CandidateReceiptV3` node feature is set.
+	pub scheduling_parent: Option<Hash>,
+	/// The session index of the relay parent. Goes into the candidate descriptor.
+	/// Must be provided by the caller because the relay parent's state may be pruned.
+	pub session_index: SessionIndex,
+	/// The persisted validation data for this collation. The `parent_head` field must be set
+	/// to the correct parent head-data for the parablock being submitted.
+	pub validation_data: PersistedValidationData,
 }
 
 /// This is the data we keep available for each candidate included in the relay chain.
@@ -567,12 +581,12 @@ impl Proof {
 /// Possible errors when converting from `Vec<Vec<u8>>` into [`Proof`].
 #[derive(thiserror::Error, Debug)]
 pub enum MerkleProofError {
+	#[error("Merkle max proof depth exceeded {0} > {} .", MERKLE_PROOF_MAX_DEPTH)]
 	/// This error signifies that the Proof length exceeds the trie's max depth
-	#[error("Merkle max proof depth exceeded {0} > {MERKLE_PROOF_MAX_DEPTH}.")]
 	MerkleProofDepthExceeded(usize),
 
+	#[error("Merkle node max size exceeded {0} > {} .", MERKLE_NODE_MAX_SIZE)]
 	/// This error signifies that a Proof node exceeds the 16-ary max node size
-	#[error("Merkle node max size exceeded {0} > {MERKLE_NODE_MAX_SIZE}.")]
 	MerkleProofNodeSizeExceeded(usize),
 }
 

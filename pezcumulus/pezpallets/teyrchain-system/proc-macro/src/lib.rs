@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -81,7 +81,7 @@ impl Parse for Input {
 fn crate_() -> Result<Ident, Error> {
 	match crate_name("pezcumulus-pezpallet-teyrchain-system") {
 		Ok(FoundCrate::Itself) => {
-			Ok(syn::Ident::new("pezcumulus_pezpallet_teyrchain_system", Span::call_site()))
+			Ok(syn::Ident::new("pezcumulus_pallet_teyrchain_system", Span::call_site()))
 		},
 		Ok(FoundCrate::Name(name)) => Ok(Ident::new(&name, Span::call_site())),
 		Err(e) => Err(Error::new(Span::call_site(), e)),
@@ -107,6 +107,10 @@ pub fn register_validate_block(input: proc_macro::TokenStream) -> proc_macro::To
 				use super::*;
 
 				#[no_mangle]
+				#[cfg_attr(
+					target_arch = "riscv64",
+					#crate_::validate_block::pezsp_api::__private::polkavm_export(abi = #crate_::validate_block::pezsp_api::__private::polkavm_abi)
+				)]
 				unsafe fn validate_block(arguments: *mut u8, arguments_len: usize) -> u64 {
 					// We convert the `arguments` into a boxed slice and then into `Bytes`.
 					let args = #crate_::validate_block::Box::from_raw(

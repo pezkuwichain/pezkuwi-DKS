@@ -7,11 +7,11 @@ use pezframe_support::{
 	traits::{fungible::Mutate, OnFinalize, OnInitialize},
 };
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
-use pezsnowbridge_core::{ChannelId, ParaId};
-use pezsnowbridge_pezpallet_ethereum_client_fixtures::*;
 use pezsp_core::{Get, H160, U256};
 use pezsp_keyring::Sr25519Keyring::*;
 use pezsp_runtime::{traits::Header, AccountId32, DigestItem, SaturatedConversion, Saturating};
+use snowbridge_core::{ChannelId, ParaId};
+use snowbridge_pallet_ethereum_client_fixtures::*;
 use teyrchains_runtimes_test_utils::{
 	AccountIdOf, BalanceOf, CollatorSessionKeys, ExtBuilder, ValidatorIdOf, XcmReceivedFrom,
 };
@@ -27,7 +27,7 @@ where
 {
 	// fund asset hub sovereign account enough so it can pay fees
 	let asset_hub_sovereign_account =
-		pezsnowbridge_core::sibling_sovereign_account::<Runtime>(assethub_teyrchain_id.into());
+		snowbridge_core::sibling_sovereign_account::<Runtime>(assethub_teyrchain_id.into());
 	<pezpallet_balances::Pezpallet<Runtime>>::mint_into(
 		&asset_hub_sovereign_account,
 		initial_amount.saturated_into::<BalanceOf<Runtime>>(),
@@ -49,8 +49,8 @@ where
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezsnowbridge_pezpallet_outbound_queue::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ snowbridge_pallet_outbound_queue::Config
 		+ pezpallet_timestamp::Config,
 	XcmConfig: xcm_executor::Config,
 {
@@ -111,8 +111,8 @@ pub fn send_transfer_token_message_success<Runtime, XcmConfig>(
 	weth_contract_address: H160,
 	destination_address: H160,
 	fee_amount: u128,
-	pezsnowbridge_pezpallet_outbound_queue: Box<
-		dyn Fn(Vec<u8>) -> Option<pezsnowbridge_pezpallet_outbound_queue::Event<Runtime>>,
+	snowbridge_pallet_outbound_queue: Box<
+		dyn Fn(Vec<u8>) -> Option<snowbridge_pallet_outbound_queue::Event<Runtime>>,
 	>,
 ) where
 	Runtime: pezframe_system::Config
@@ -122,9 +122,9 @@ pub fn send_transfer_token_message_success<Runtime, XcmConfig>(
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
 		+ pezpallet_message_queue::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezsnowbridge_pezpallet_outbound_queue::Config
-		+ pezsnowbridge_pezpallet_system::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ snowbridge_pallet_outbound_queue::Config
+		+ snowbridge_pallet_system::Config
 		+ pezpallet_timestamp::Config,
 	XcmConfig: xcm_executor::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
@@ -137,7 +137,7 @@ pub fn send_transfer_token_message_success<Runtime, XcmConfig>(
 		.with_tracing()
 		.build()
 		.execute_with(|| {
-			<pezsnowbridge_pezpallet_system::Pezpallet<Runtime>>::initialize(
+			<snowbridge_pallet_system::Pezpallet<Runtime>>::initialize(
 				runtime_para_id.into(),
 				assethub_teyrchain_id.into(),
 			)
@@ -159,10 +159,10 @@ pub fn send_transfer_token_message_success<Runtime, XcmConfig>(
 			// check events
 			let mut events = <pezframe_system::Pezpallet<Runtime>>::events()
 				.into_iter()
-				.filter_map(|e| pezsnowbridge_pezpallet_outbound_queue(e.event.encode()));
+				.filter_map(|e| snowbridge_pallet_outbound_queue(e.event.encode()));
 			assert!(events.any(|e| matches!(
 				e,
-				pezsnowbridge_pezpallet_outbound_queue::Event::MessageQueued { .. }
+				snowbridge_pallet_outbound_queue::Event::MessageQueued { .. }
 			)));
 
 			let block_number = <pezframe_system::Pezpallet<Runtime>>::block_number();
@@ -171,29 +171,26 @@ pub fn send_transfer_token_message_success<Runtime, XcmConfig>(
 
 			// finish current block
 			<pezpallet_message_queue::Pezpallet<Runtime>>::on_finalize(block_number);
-			<pezsnowbridge_pezpallet_outbound_queue::Pezpallet<Runtime>>::on_finalize(block_number);
+			<snowbridge_pallet_outbound_queue::Pezpallet<Runtime>>::on_finalize(block_number);
 			<pezframe_system::Pezpallet<Runtime>>::on_finalize(block_number);
 
 			// start next block
 			<pezframe_system::Pezpallet<Runtime>>::set_block_number(next_block_number);
 			<pezframe_system::Pezpallet<Runtime>>::on_initialize(next_block_number);
-			<pezsnowbridge_pezpallet_outbound_queue::Pezpallet<Runtime>>::on_initialize(
+			<snowbridge_pallet_outbound_queue::Pezpallet<Runtime>>::on_initialize(
 				next_block_number,
 			);
 			<pezpallet_message_queue::Pezpallet<Runtime>>::on_initialize(next_block_number);
 
 			// finish next block
 			<pezpallet_message_queue::Pezpallet<Runtime>>::on_finalize(next_block_number);
-			<pezsnowbridge_pezpallet_outbound_queue::Pezpallet<Runtime>>::on_finalize(
-				next_block_number,
-			);
+			<snowbridge_pallet_outbound_queue::Pezpallet<Runtime>>::on_finalize(next_block_number);
 			let included_head = <pezframe_system::Pezpallet<Runtime>>::finalize();
 
 			let origin: ParaId = assethub_teyrchain_id.into();
 			let channel_id: ChannelId = origin.into();
 
-			let nonce =
-				pezsnowbridge_pezpallet_outbound_queue::Nonce::<Runtime>::try_get(channel_id);
+			let nonce = snowbridge_pallet_outbound_queue::Nonce::<Runtime>::try_get(channel_id);
 			assert_ok!(nonce);
 			assert_eq!(nonce.unwrap(), 1);
 
@@ -216,8 +213,8 @@ pub fn ethereum_outbound_queue_processes_messages_before_message_queue_works<
 	weth_contract_address: H160,
 	destination_address: H160,
 	fee_amount: u128,
-	pezsnowbridge_pezpallet_outbound_queue: Box<
-		dyn Fn(Vec<u8>) -> Option<pezsnowbridge_pezpallet_outbound_queue::Event<Runtime>>,
+	snowbridge_pallet_outbound_queue: Box<
+		dyn Fn(Vec<u8>) -> Option<snowbridge_pallet_outbound_queue::Event<Runtime>>,
 	>,
 ) where
 	Runtime: pezframe_system::Config
@@ -227,9 +224,9 @@ pub fn ethereum_outbound_queue_processes_messages_before_message_queue_works<
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
 		+ pezpallet_message_queue::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezsnowbridge_pezpallet_outbound_queue::Config
-		+ pezsnowbridge_pezpallet_system::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ snowbridge_pallet_outbound_queue::Config
+		+ snowbridge_pallet_system::Config
 		+ pezpallet_timestamp::Config,
 	XcmConfig: xcm_executor::Config,
 	AllPalletsWithoutSystem:
@@ -244,7 +241,7 @@ pub fn ethereum_outbound_queue_processes_messages_before_message_queue_works<
 		.with_tracing()
 		.build()
 		.execute_with(|| {
-			<pezsnowbridge_pezpallet_system::Pezpallet<Runtime>>::initialize(
+			<snowbridge_pallet_system::Pezpallet<Runtime>>::initialize(
 				runtime_para_id.into(),
 				assethub_teyrchain_id.into(),
 			)
@@ -266,10 +263,10 @@ pub fn ethereum_outbound_queue_processes_messages_before_message_queue_works<
 			// check events
 			let mut events = <pezframe_system::Pezpallet<Runtime>>::events()
 				.into_iter()
-				.filter_map(|e| pezsnowbridge_pezpallet_outbound_queue(e.event.encode()));
+				.filter_map(|e| snowbridge_pallet_outbound_queue(e.event.encode()));
 			assert!(events.any(|e| matches!(
 				e,
-				pezsnowbridge_pezpallet_outbound_queue::Event::MessageQueued { .. }
+				snowbridge_pallet_outbound_queue::Event::MessageQueued { .. }
 			)));
 
 			let next_block_number: U256 = <pezframe_system::Pezpallet<Runtime>>::block_number()
@@ -309,9 +306,9 @@ pub fn send_unpaid_transfer_token_message<Runtime, XcmConfig>(
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezsnowbridge_pezpallet_outbound_queue::Config
-		+ pezsnowbridge_pezpallet_system::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ snowbridge_pallet_outbound_queue::Config
+		+ snowbridge_pallet_system::Config
 		+ pezpallet_timestamp::Config,
 	XcmConfig: xcm_executor::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
@@ -325,7 +322,7 @@ pub fn send_unpaid_transfer_token_message<Runtime, XcmConfig>(
 		.with_tracing()
 		.build()
 		.execute_with(|| {
-			<pezsnowbridge_pezpallet_system::Pezpallet<Runtime>>::initialize(
+			<snowbridge_pallet_system::Pezpallet<Runtime>>::initialize(
 				runtime_para_id.into(),
 				assethub_teyrchain_id.into(),
 			)
@@ -395,9 +392,9 @@ pub fn send_transfer_token_message_failure<Runtime, XcmConfig>(
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezsnowbridge_pezpallet_outbound_queue::Config
-		+ pezsnowbridge_pezpallet_system::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ snowbridge_pallet_outbound_queue::Config
+		+ snowbridge_pallet_system::Config
 		+ pezpallet_timestamp::Config,
 	XcmConfig: xcm_executor::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
@@ -409,7 +406,7 @@ pub fn send_transfer_token_message_failure<Runtime, XcmConfig>(
 		.with_tracing()
 		.build()
 		.execute_with(|| {
-			<pezsnowbridge_pezpallet_system::Pezpallet<Runtime>>::initialize(
+			<snowbridge_pallet_system::Pezpallet<Runtime>>::initialize(
 				runtime_para_id.into(),
 				assethub_teyrchain_id.into(),
 			)
@@ -447,14 +444,14 @@ pub fn ethereum_extrinsic<Runtime>(
 		+ pezpallet_utility::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezsnowbridge_pezpallet_outbound_queue::Config
-		+ pezsnowbridge_pezpallet_system::Config
-		+ pezsnowbridge_pezpallet_ethereum_client::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ snowbridge_pallet_outbound_queue::Config
+		+ snowbridge_pallet_system::Config
+		+ snowbridge_pallet_ethereum_client::Config
 		+ pezpallet_timestamp::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
 	<Runtime as pezpallet_utility::Config>::RuntimeCall:
-		From<pezsnowbridge_pezpallet_ethereum_client::Call<Runtime>>,
+		From<snowbridge_pallet_ethereum_client::Call<Runtime>>,
 	<Runtime as pezframe_system::Config>::RuntimeCall: From<pezpallet_utility::Call<Runtime>>,
 	AccountIdOf<Runtime>: From<AccountId32>,
 {
@@ -484,36 +481,34 @@ pub fn ethereum_extrinsic<Runtime>(
 				&alice_account.clone().into(),
 			);
 
-			assert_ok!(
-				<pezsnowbridge_pezpallet_ethereum_client::Pezpallet<Runtime>>::force_checkpoint(
-					RuntimeHelper::<Runtime>::root_origin(),
-					initial_checkpoint.clone(),
-				)
-			);
+			assert_ok!(<snowbridge_pallet_ethereum_client::Pezpallet<Runtime>>::force_checkpoint(
+				RuntimeHelper::<Runtime>::root_origin(),
+				initial_checkpoint.clone(),
+			));
 			let balance_after_checkpoint = <pezpallet_balances::Pezpallet<Runtime>>::free_balance(
 				&alice_account.clone().into(),
 			);
 
 			let update_call: <Runtime as pezpallet_utility::Config>::RuntimeCall =
-				pezsnowbridge_pezpallet_ethereum_client::Call::<Runtime>::submit {
+				snowbridge_pallet_ethereum_client::Call::<Runtime>::submit {
 					update: Box::new(*update.clone()),
 				}
 				.into();
 
 			let invalid_update_call: <Runtime as pezpallet_utility::Config>::RuntimeCall =
-				pezsnowbridge_pezpallet_ethereum_client::Call::<Runtime>::submit {
+				snowbridge_pallet_ethereum_client::Call::<Runtime>::submit {
 					update: Box::new(*invalid_update),
 				}
 				.into();
 
 			let update_sync_committee_call: <Runtime as pezpallet_utility::Config>::RuntimeCall =
-				pezsnowbridge_pezpallet_ethereum_client::Call::<Runtime>::submit {
+				snowbridge_pallet_ethereum_client::Call::<Runtime>::submit {
 					update: Box::new(*sync_committee_update),
 				}
 				.into();
 
 			let invalid_update_sync_committee_call: <Runtime as pezpallet_utility::Config>::RuntimeCall =
-				pezsnowbridge_pezpallet_ethereum_client::Call::<Runtime>::submit {
+				snowbridge_pallet_ethereum_client::Call::<Runtime>::submit {
 					update: Box::new(*invalid_sync_committee_update),
 				}
 					.into();
@@ -533,7 +528,7 @@ pub fn ethereum_extrinsic<Runtime>(
 				construct_and_apply_extrinsic(alice, invalid_update_call.into());
 			assert_err!(
 				invalid_update_outcome,
-				pezsnowbridge_pezpallet_ethereum_client::Error::<Runtime>::InvalidUpdateSlot
+				snowbridge_pallet_ethereum_client::Error::<Runtime>::InvalidUpdateSlot
 			);
 			let balance_after_invalid_update =
 				<pezpallet_balances::Pezpallet<Runtime>>::free_balance(
@@ -554,7 +549,7 @@ pub fn ethereum_extrinsic<Runtime>(
 				construct_and_apply_extrinsic(alice, invalid_update_sync_committee_call.into());
 			assert_err!(
 				invalid_sync_committee_outcome,
-				pezsnowbridge_pezpallet_ethereum_client::Error::<Runtime>::InvalidUpdateSlot
+				snowbridge_pallet_ethereum_client::Error::<Runtime>::InvalidUpdateSlot
 			);
 			let balance_after_invalid_sync_com_update =
 				<pezpallet_balances::Pezpallet<Runtime>>::free_balance(
@@ -565,7 +560,7 @@ pub fn ethereum_extrinsic<Runtime>(
 			// Checkpoint is a free operation
 			assert!(balance_before == balance_after_checkpoint);
 			let gap =
-				<Runtime as pezsnowbridge_pezpallet_ethereum_client::Config>::FreeHeadersInterval::get();
+				<Runtime as snowbridge_pallet_ethereum_client::Config>::FreeHeadersInterval::get();
 			// Large enough header gap is free
 			if update.finalized_header.slot >= initial_checkpoint.header.slot + gap as u64 {
 				assert!(balance_after_checkpoint == balance_after_update);
@@ -582,7 +577,7 @@ pub fn ethereum_extrinsic<Runtime>(
 		});
 }
 
-pub fn ethereum_to_pezkuwi_message_extrinsics_work<Runtime>(
+pub fn ethereum_to_polkadot_message_extrinsics_work<Runtime>(
 	collator_session_key: CollatorSessionKeys<Runtime>,
 	runtime_para_id: u32,
 	construct_and_apply_extrinsic: fn(
@@ -597,14 +592,14 @@ pub fn ethereum_to_pezkuwi_message_extrinsics_work<Runtime>(
 		+ pezpallet_utility::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezsnowbridge_pezpallet_outbound_queue::Config
-		+ pezsnowbridge_pezpallet_system::Config
-		+ pezsnowbridge_pezpallet_ethereum_client::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ snowbridge_pallet_outbound_queue::Config
+		+ snowbridge_pallet_system::Config
+		+ snowbridge_pallet_ethereum_client::Config
 		+ pezpallet_timestamp::Config,
 	ValidatorIdOf<Runtime>: From<AccountIdOf<Runtime>>,
 	<Runtime as pezpallet_utility::Config>::RuntimeCall:
-		From<pezsnowbridge_pezpallet_ethereum_client::Call<Runtime>>,
+		From<snowbridge_pallet_ethereum_client::Call<Runtime>>,
 	<Runtime as pezframe_system::Config>::RuntimeCall: From<pezpallet_utility::Call<Runtime>>,
 	AccountIdOf<Runtime>: From<AccountId32>,
 {
@@ -626,15 +621,13 @@ pub fn ethereum_to_pezkuwi_message_extrinsics_work<Runtime>(
 			)
 			.unwrap();
 
-			assert_ok!(
-				<pezsnowbridge_pezpallet_ethereum_client::Pezpallet<Runtime>>::force_checkpoint(
-					RuntimeHelper::<Runtime>::root_origin(),
-					initial_checkpoint,
-				)
-			);
+			assert_ok!(<snowbridge_pallet_ethereum_client::Pezpallet<Runtime>>::force_checkpoint(
+				RuntimeHelper::<Runtime>::root_origin(),
+				initial_checkpoint,
+			));
 
 			let update_sync_committee_call: <Runtime as pezpallet_utility::Config>::RuntimeCall =
-				pezsnowbridge_pezpallet_ethereum_client::Call::<Runtime>::submit {
+				snowbridge_pallet_ethereum_client::Call::<Runtime>::submit {
 					update: Box::new(*sync_committee_update),
 				}
 				.into();

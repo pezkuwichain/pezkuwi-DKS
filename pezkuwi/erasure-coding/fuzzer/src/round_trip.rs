@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 
 use honggfuzz::fuzz;
 use pezkuwi_erasure_coding::*;
-use pezkuwi_pez_node_primitives::{AvailableData, BlockData, PoV};
+use pezkuwi_node_primitives::{AvailableData, BlockData, PoV};
 use pezkuwi_primitives::PersistedValidationData;
 use std::sync::Arc;
 

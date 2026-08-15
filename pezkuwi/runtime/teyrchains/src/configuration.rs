@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,8 +25,8 @@ use pezframe_support::{pezpallet_prelude::*, DefaultNoBound};
 use pezframe_system::pezpallet_prelude::*;
 use pezkuwi_primitives::{
 	ApprovalVotingParams, AsyncBackingParams, Balance, ExecutorParamError, ExecutorParams,
-	NodeFeatures, SessionIndex, LEGACY_MIN_BACKING_VOTES, MAX_CODE_SIZE, MAX_HEAD_DATA_SIZE,
-	ON_DEMAND_MAX_QUEUE_MAX_SIZE,
+	NodeFeatures, SessionIndex, LEGACY_MIN_BACKING_VOTES, MAX_COALESCE_APPROVALS, MAX_CODE_SIZE,
+	MAX_HEAD_DATA_SIZE, ON_DEMAND_MAX_QUEUE_MAX_SIZE,
 };
 use pezkuwi_teyrchain_primitives::primitives::{
 	MAX_HORIZONTAL_MESSAGE_NUM, MAX_UPWARD_MESSAGE_NUM,
@@ -41,7 +41,7 @@ mod benchmarking;
 
 pub mod migration;
 
-use pezkuwi_primitives::SchedulerParams;
+use pezkuwi_primitives::vstaging::SchedulerParams;
 pub use pezpallet::*;
 
 const LOG_TARGET: &str = "runtime::configuration";
@@ -72,9 +72,7 @@ pub struct HostConfiguration<BlockNumber> {
 	// A teyrchain requested this struct can only depend on the subset of this struct.
 	// Specifically, only a first few fields can be depended upon. These fields cannot be changed
 	// without corresponding migration of the teyrchains.
-	/**
-	 * The parameters that are required for the teyrchains.
-	 */
+	/// The parameters that are required for the teyrchains.
 
 	/// The maximum validation code size, in bytes.
 	pub max_code_size: u32,
@@ -135,14 +133,12 @@ pub struct HostConfiguration<BlockNumber> {
 	/// revert [`validation_upgrade_delay`](Self::validation_upgrade_delay) many blocks back and
 	/// still find the new code in the storage by hash.
 	///
-	/// [#4601]: https://github.com/pezkuwichain/pezkuwi-sdk/issues/151
+	/// [#4601]: https://github.com/paritytech/polkadot/issues/4601
 	pub validation_upgrade_delay: BlockNumber,
 	/// Asynchronous backing parameters.
 	pub async_backing_params: AsyncBackingParams,
 
-	/**
-	 * The parameters that are not essential, but still may be of interest for teyrchains.
-	 */
+	/// The parameters that are not essential, but still may be of interest for teyrchains.
 
 	/// The maximum POV block size, in bytes.
 	pub max_pov_size: u32,
@@ -172,9 +168,7 @@ pub struct HostConfiguration<BlockNumber> {
 	/// The executor environment parameters
 	pub executor_params: ExecutorParams,
 
-	/**
-	 * Parameters that will unlikely be needed by teyrchains.
-	 */
+	/// Parameters that will unlikely be needed by teyrchains.
 
 	/// How long to keep code on-chain, in blocks. This should be sufficiently long that disputes
 	/// have concluded.
@@ -234,6 +228,8 @@ pub struct HostConfiguration<BlockNumber> {
 	pub approval_voting_params: ApprovalVotingParams,
 	/// Scheduler parameters
 	pub scheduler_params: SchedulerParams<BlockNumber>,
+	/// The maximum session age of a relay parent that a teyrchain block can build upon.
+	pub max_relay_parent_session_age: u32,
 }
 
 impl<BlockNumber: Default + From<u32>> Default for HostConfiguration<BlockNumber> {
@@ -277,6 +273,7 @@ impl<BlockNumber: Default + From<u32>> Default for HostConfiguration<BlockNumber
 			minimum_backing_votes: LEGACY_MIN_BACKING_VOTES,
 			node_features: NodeFeatures::EMPTY,
 			scheduler_params: Default::default(),
+			max_relay_parent_session_age: 0,
 		};
 
 		#[cfg(feature = "runtime-benchmarks")]
@@ -319,6 +316,9 @@ pub enum InconsistentError<BlockNumber> {
 	MaxHeadDataSizeExceedHardLimit { max_head_data_size: u32 },
 	/// `max_pov_size` exceeds the hard limit of `POV_SIZE_HARD_LIMIT`.
 	MaxPovSizeExceedHardLimit { max_pov_size: u32 },
+	/// `approval_voting_params.max_approval_coalesce_count` exceeds the hard limit of
+	/// `MAX_COALESCE_APPROVALS`.
+	MaxApprovalCoalesceCountExceedHardLimit { max_approval_coalesce_count: u32 },
 	/// `minimum_validation_upgrade_delay` is less than `paras_availability_period`.
 	MinimumValidationUpgradeDelayLessThanChainAvailabilityPeriod {
 		minimum_validation_upgrade_delay: BlockNumber,
@@ -386,6 +386,14 @@ where
 
 		if self.max_pov_size > POV_SIZE_HARD_LIMIT {
 			return Err(MaxPovSizeExceedHardLimit { max_pov_size: self.max_pov_size });
+		}
+
+		if self.approval_voting_params.max_approval_coalesce_count > MAX_COALESCE_APPROVALS {
+			return Err(MaxApprovalCoalesceCountExceedHardLimit {
+				max_approval_coalesce_count: self
+					.approval_voting_params
+					.max_approval_coalesce_count,
+			});
 		}
 
 		if self.minimum_validation_upgrade_delay <= self.scheduler_params.paras_availability_period
@@ -513,21 +521,22 @@ pub mod pezpallet {
 
 	/// The in-code storage version.
 	///
-	/// v0-v1:  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/317>
-	/// v1-v2:  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/318>
-	/// v2-v3:  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/321>
-	/// v3-v4:  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/323>
-	/// v4-v5:  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/325>
-	///       + <https://github.com/pezkuwichain/pezkuwi-sdk/issues/326>
-	///       + <https://github.com/pezkuwichain/pezkuwi-sdk/issues/324>
-	/// v5-v6:  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/322> (remove UMP dispatch queue)
-	/// v6-v7:  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/328>
-	/// v7-v8:  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/327>
-	/// v8-v9:  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/329>
-	/// v9-v10: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/256>
-	/// v10-11: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/246>
-	/// v11-12: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/258>
-	const STORAGE_VERSION: StorageVersion = StorageVersion::new(12);
+	/// v0-v1:  <https://github.com/paritytech/polkadot/pull/3575>
+	/// v1-v2:  <https://github.com/paritytech/polkadot/pull/4420>
+	/// v2-v3:  <https://github.com/paritytech/polkadot/pull/6091>
+	/// v3-v4:  <https://github.com/paritytech/polkadot/pull/6345>
+	/// v4-v5:  <https://github.com/paritytech/polkadot/pull/6937>
+	///       + <https://github.com/paritytech/polkadot/pull/6961>
+	///       + <https://github.com/paritytech/polkadot/pull/6934>
+	/// v5-v6:  <https://github.com/paritytech/polkadot/pull/6271> (remove UMP dispatch queue)
+	/// v6-v7:  <https://github.com/paritytech/polkadot/pull/7396>
+	/// v7-v8:  <https://github.com/paritytech/polkadot/pull/6969>
+	/// v8-v9:  <https://github.com/paritytech/polkadot/pull/7577>
+	/// v9-v10: <https://github.com/pezkuwichain/pezkuwi-sdk/pull/2177>
+	/// v10-11: <https://github.com/pezkuwichain/pezkuwi-sdk/pull/1191>
+	/// v11-12: <https://github.com/pezkuwichain/pezkuwi-sdk/pull/3181>
+	/// v12-13: added max_relay_parent_session_age to SchedulerParams
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(13);
 
 	#[pezpallet::pezpallet]
 	#[pezpallet::storage_version(STORAGE_VERSION)]
@@ -1245,6 +1254,19 @@ pub mod pezpallet {
 				config.scheduler_params = new;
 			})
 		}
+
+		/// Set the maximum relay parent session age.
+		#[pezpallet::call_index(56)]
+		#[pezpallet::weight((
+			T::WeightInfo::set_config_with_u32(),
+			DispatchClass::Operational,
+		))]
+		pub fn set_max_relay_parent_session_age(origin: OriginFor<T>, new: u32) -> DispatchResult {
+			ensure_root(origin)?;
+			Self::schedule_config_update(|config| {
+				config.max_relay_parent_session_age = new;
+			})
+		}
 	}
 
 	impl<T: Config> Pezpallet<T> {
@@ -1335,7 +1357,7 @@ impl<T: Config> Pezpallet<T> {
 	}
 
 	/// Forcibly set the active config. This should be used with extreme care, and typically
-	/// only when enabling teyrchains runtime pallets for the first time on a chain which has
+	/// only when enabling teyrchains runtime pezpallets for the first time on a chain which has
 	/// been running without them.
 	pub fn force_set_active_config(config: HostConfiguration<BlockNumberFor<T>>) {
 		ActiveConfig::<T>::set(config);

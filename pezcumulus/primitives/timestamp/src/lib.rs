@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Pezcumulus timestamp related primitives.
+//! Cumulus timestamp related primitives.
 //!
 //! Provides a [`InherentDataProvider`] that should be used in the validation phase of the
 //! teyrchain. It will be used to create the inherent data and that will be used to check the

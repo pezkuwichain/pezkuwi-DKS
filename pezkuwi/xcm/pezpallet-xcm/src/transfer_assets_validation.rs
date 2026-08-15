@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 //! This validation is a temporary patch in preparation for the Asset Hub Migration (AHM).
 //! This module will be removed after the migration and the determined
 //! reserve location will be adjusted accordingly to be Asset Hub.
-//! For more information, see <https://github.com/pezkuwichain/pezkuwi-sdk/issues/301>.
+//! For more information, see <https://github.com/pezkuwichain/pezkuwi-sdk/issues/9054>.
 
 use crate::{Config, Error, Pezpallet};
 use alloc::vec::Vec;
@@ -46,14 +46,15 @@ impl<T: Config> Pezpallet<T> {
 	/// `execute` instead, which allows explicit reserve specification.
 	pub(crate) fn ensure_network_asset_reserve_transfer_allowed(
 		assets: &Vec<Asset>,
-		fee_asset_id: &AssetId,
+		fee_asset_index: usize,
 		assets_transfer_type: &TransferType,
 		fees_transfer_type: &TransferType,
 	) -> Result<(), Error<T>> {
 		// Extract fee asset and check both assets and fees separately.
 		let mut remaining_assets = assets.clone();
-		let fee_asset_index =
-			assets.iter().position(|a| a.id == *fee_asset_id).ok_or(Error::<T>::Empty)?;
+		if fee_asset_index >= remaining_assets.len() {
+			return Err(Error::<T>::Empty);
+		}
 		let fee_asset = remaining_assets.remove(fee_asset_index);
 
 		// Check remaining assets with their transfer type.
@@ -106,7 +107,7 @@ impl<T: Config> Pezpallet<T> {
 	/// Check if the given asset ID represents a network native asset based on our
 	/// UniversalLocation.
 	///
-	/// Returns true if the asset is a native network asset (HEZ, DCL, ZGR, PAS) that should be
+	/// Returns true if the asset is a native network asset (DOT, KSM, WND, PAS) that should be
 	/// blocked during Asset Hub Migration.
 	fn is_network_native_asset(asset_id: &AssetId) -> bool {
 		let universal_location = T::UniversalLocation::get();
@@ -119,12 +120,12 @@ impl<T: Config> Pezpallet<T> {
 			1 => {
 				if let Some(Junction::GlobalConsensus(network)) = universal_location.first() {
 					let is_target_network = match network {
-						NetworkId::Pezkuwi | NetworkId::Dicle => true,
+						NetworkId::Polkadot | NetworkId::Kusama => true,
 						NetworkId::ByGenesis(genesis_hash) => {
-							// Check if this is Zagros by genesis hash
-							*genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH
+							// Check if this is Westend by genesis hash
+							*genesis_hash == xcm::v5::WESTEND_GENESIS_HASH
 								|| *genesis_hash == PASEO_GENESIS_HASH
-								|| *genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH // Used in tests.
+								|| *genesis_hash == xcm::v5::ROCOCO_GENESIS_HASH // Used in tests.
 						},
 						_ => false,
 					};
@@ -141,12 +142,12 @@ impl<T: Config> Pezpallet<T> {
 					(universal_location.first(), universal_location.last())
 				{
 					let is_target_network = match network {
-						NetworkId::Pezkuwi | NetworkId::Dicle => true,
+						NetworkId::Polkadot | NetworkId::Kusama => true,
 						NetworkId::ByGenesis(genesis_hash) => {
-							// Check if this is Zagros by genesis hash
-							*genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH
+							// Check if this is Westend by genesis hash
+							*genesis_hash == xcm::v5::WESTEND_GENESIS_HASH
 								|| *genesis_hash == PASEO_GENESIS_HASH
-								|| *genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH // Used in tests.
+								|| *genesis_hash == xcm::v5::ROCOCO_GENESIS_HASH // Used in tests.
 						},
 						_ => false,
 					};

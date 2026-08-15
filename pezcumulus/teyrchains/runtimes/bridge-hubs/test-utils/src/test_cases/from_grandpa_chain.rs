@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,9 +24,9 @@ use crate::{
 };
 
 use alloc::{boxed::Box, vec};
-use pezbp_header_pez_chain::ChainWithGrandpa;
-use pezbp_messages::UnrewardedRelayersState;
-use pezbp_relayers::{RewardsAccountOwner, RewardsAccountParams};
+use bp_header_chain::ChainWithGrandpa;
+use bp_messages::UnrewardedRelayersState;
+use bp_relayers::{RewardsAccountOwner, RewardsAccountParams};
 use pezframe_support::traits::{OnFinalize, OnInitialize};
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
 use pezpallet_bridge_messages::{BridgedChainOf, LaneIdOf, ThisChainOf};
@@ -34,7 +34,7 @@ use pezsp_core::Get;
 use pezsp_keyring::Sr25519Keyring::*;
 use pezsp_runtime::{traits::Header as HeaderT, AccountId32};
 use teyrchains_runtimes_test_utils::{
-	AccountIdOf, BasicTeyrchainRuntime, CollatorSessionKeys, RuntimeCallOf, SlotDurations,
+	AccountIdOf, BasicParachainRuntime, CollatorSessionKeys, RuntimeCallOf, SlotDurations,
 };
 use xcm::latest::prelude::*;
 
@@ -43,15 +43,15 @@ use xcm::latest::prelude::*;
 /// This is only used to decrease amount of lines, dedicated to bounds.
 pub trait WithRemoteGrandpaChainHelper {
 	/// This chain runtime.
-	type Runtime: BasicTeyrchainRuntime
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+	type Runtime: BasicParachainRuntime
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ BridgeGrandpaConfig<Self::GPI, BridgedChain = BridgedChainOf<Self::Runtime, Self::MPI>>
 		+ BridgeMessagesConfig<
 			Self::MPI,
 			InboundPayload = XcmAsPlainPayload,
 			OutboundPayload = XcmAsPlainPayload,
 		> + pezpallet_bridge_relayers::Config<Self::RPI, Reward = Self::RelayerReward>;
-	/// All pallets of this chain, excluding system pezpallet.
+	/// All pezpallets of this chain, excluding system pezpallet.
 	type AllPalletsWithoutSystem: OnInitialize<BlockNumberFor<Self::Runtime>>
 		+ OnFinalize<BlockNumberFor<Self::Runtime>>;
 	/// Instance of the `pezpallet-bridge-grandpa`, used to bridge with remote GRANDPA chain.
@@ -73,8 +73,8 @@ pub struct WithRemoteGrandpaChainHelperAdapter<Runtime, AllPalletsWithoutSystem,
 impl<Runtime, AllPalletsWithoutSystem, GPI, MPI, RPI> WithRemoteGrandpaChainHelper
 	for WithRemoteGrandpaChainHelperAdapter<Runtime, AllPalletsWithoutSystem, GPI, MPI, RPI>
 where
-	Runtime: BasicTeyrchainRuntime
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+	Runtime: BasicParachainRuntime
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ BridgeGrandpaConfig<GPI, BridgedChain = BridgedChainOf<Runtime, MPI>>
 		+ BridgeMessagesConfig<
 			MPI,
@@ -481,7 +481,7 @@ where
 				LaneIdOf::<RuntimeHelper::Runtime, RuntimeHelper::MPI>::default(),
 				vec![Instruction::<()>::ClearOrigin; 1_024].into(),
 				1,
-				[GlobalConsensus(Pezkuwi), Teyrchain(1_000)].into(),
+				[GlobalConsensus(Polkadot), Teyrchain(1_000)].into(),
 				1u32.into(),
 				false,
 			);
@@ -515,7 +515,7 @@ where
 	RuntimeHelper::Runtime:
 		pezpallet_utility::Config<RuntimeCall = RuntimeCallOf<RuntimeHelper::Runtime>>,
 	ThisChainOf<RuntimeHelper::Runtime, RuntimeHelper::MPI>:
-		pezbp_runtime::Chain<AccountId = AccountIdOf<RuntimeHelper::Runtime>>,
+		bp_runtime::Chain<AccountId = AccountIdOf<RuntimeHelper::Runtime>>,
 	RuntimeCallOf<RuntimeHelper::Runtime>: From<BridgeGrandpaCall<RuntimeHelper::Runtime, RuntimeHelper::GPI>>
 		+ From<BridgeMessagesCall<RuntimeHelper::Runtime, RuntimeHelper::MPI>>,
 	BridgedChainOf<RuntimeHelper::Runtime, RuntimeHelper::MPI>: ChainWithGrandpa,
@@ -587,7 +587,7 @@ where
 				LaneIdOf::<RuntimeHelper::Runtime, RuntimeHelper::MPI>::default(),
 				vec![Instruction::<()>::ClearOrigin; 1_024].into(),
 				1,
-				[GlobalConsensus(Pezkuwi), Teyrchain(1_000)].into(),
+				[GlobalConsensus(Polkadot), Teyrchain(1_000)].into(),
 				1u32.into(),
 				false,
 			);
@@ -617,7 +617,7 @@ where
 	RuntimeHelper: WithRemoteGrandpaChainHelper,
 	AccountIdOf<RuntimeHelper::Runtime>: From<AccountId32>,
 	ThisChainOf<RuntimeHelper::Runtime, RuntimeHelper::MPI>:
-		pezbp_runtime::Chain<AccountId = AccountIdOf<RuntimeHelper::Runtime>>,
+		bp_runtime::Chain<AccountId = AccountIdOf<RuntimeHelper::Runtime>>,
 	RuntimeCallOf<RuntimeHelper::Runtime>:
 		From<BridgeMessagesCall<RuntimeHelper::Runtime, RuntimeHelper::MPI>>,
 	BridgedChainOf<RuntimeHelper::Runtime, RuntimeHelper::MPI>: ChainWithGrandpa,

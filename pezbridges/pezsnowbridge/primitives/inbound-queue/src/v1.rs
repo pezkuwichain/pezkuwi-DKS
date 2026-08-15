@@ -6,11 +6,11 @@ use crate::{CallIndex, EthereumLocationsConverterFor};
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use core::marker::PhantomData;
 use pezframe_support::{traits::tokens::Balance as BalanceT, PalletError};
-use pezsnowbridge_core::TokenId;
 use pezsp_core::{Get, H160, H256};
 use pezsp_runtime::{traits::MaybeConvert, MultiAddress};
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
+use snowbridge_core::TokenId;
 use xcm::prelude::{Junction::AccountKey20, *};
 
 const MINIMUM_DEPOSIT: u128 = 1;
@@ -73,7 +73,7 @@ pub enum Destination {
 	AccountId32 { id: [u8; 32] },
 	/// The funds will deposited into the sovereign account of destination teyrchain `para_id` on
 	/// AssetHub, Account `id` on the destination teyrchain will receive the funds via a
-	/// reserve-backed transfer. See <https://github.com/polkadot-fellows/xcm-format#depositreserveasset>
+	/// reserve-backed transfer. See <https://github.com/paritytech/xcm-format#depositreserveasset>
 	ForeignAccountId32 {
 		para_id: u32,
 		id: [u8; 32],
@@ -82,7 +82,7 @@ pub enum Destination {
 	},
 	/// The funds will deposited into the sovereign account of destination teyrchain `para_id` on
 	/// AssetHub, Account `id` on the destination teyrchain will receive the funds via a
-	/// reserve-backed transfer. See <https://github.com/polkadot-fellows/xcm-format#depositreserveasset>
+	/// reserve-backed transfer. See <https://github.com/paritytech/xcm-format#depositreserveasset>
 	ForeignAccountId20 {
 		para_id: u32,
 		id: [u8; 20],
@@ -466,13 +466,13 @@ mod tests {
 	};
 	use hex_literal::hex;
 	use pezframe_support::{assert_ok, parameter_types};
-	use pezsnowbridge_test_utils::mock_converter::{
-		add_location_override, reanchor_to_ethereum, LocationIdConvert,
-	};
 	use pezsp_core::H160;
 	use pezsp_runtime::{
 		traits::{IdentifyAccount, Verify},
 		MultiSignature,
+	};
+	use snowbridge_test_utils::mock_converter::{
+		add_location_override, reanchor_to_ethereum, LocationIdConvert,
 	};
 	use xcm::prelude::*;
 	use xcm_executor::traits::ConvertLocation;
@@ -489,9 +489,9 @@ mod tests {
 		pub const InboundQueuePalletInstance: u8 = 80;
 		pub EthereumUniversalLocation: InteriorLocation =
 			[GlobalConsensus(NETWORK)].into();
-		pub AssetHubFromEthereum: Location = Location::new(1,[GlobalConsensus(Pezkuwi),Teyrchain(1000)]);
+		pub AssetHubFromEthereum: Location = Location::new(1,[GlobalConsensus(Polkadot),Teyrchain(1000)]);
 		pub EthereumLocation: Location = Location::new(2,EthereumUniversalLocation::get());
-		pub BridgeHubContext: InteriorLocation = [GlobalConsensus(Pezkuwi),Teyrchain(1002)].into();
+		pub BridgeHubContext: InteriorLocation = [GlobalConsensus(Polkadot),Teyrchain(1002)].into();
 	}
 
 	type AccountId = <<MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
@@ -522,7 +522,7 @@ mod tests {
 
 	#[test]
 	fn test_contract_location_with_incorrect_location_fails_convert() {
-		let contract_location = Location::new(2, [GlobalConsensus(Pezkuwi), Teyrchain(1000)]);
+		let contract_location = Location::new(2, [GlobalConsensus(Polkadot), Teyrchain(1000)]);
 
 		assert_eq!(
 			EthereumLocationsConverterFor::<[u8; 32]>::convert_location(&contract_location),
@@ -534,19 +534,19 @@ mod tests {
 	fn test_reanchor_all_assets() {
 		let ethereum_context: InteriorLocation = [GlobalConsensus(Ethereum { chain_id: 1 })].into();
 		let ethereum = Location::new(2, ethereum_context.clone());
-		let ah_context: InteriorLocation = [GlobalConsensus(Pezkuwi), Teyrchain(1000)].into();
+		let ah_context: InteriorLocation = [GlobalConsensus(Polkadot), Teyrchain(1000)].into();
 		let global_ah = Location::new(1, ah_context.clone());
 		let assets = vec![
-			// HEZ
+			// DOT
 			Location::new(1, []),
 			// GLMR (Some Pezkuwi teyrchain currency)
 			Location::new(1, [Teyrchain(2004)]),
 			// AH asset
 			Location::new(0, [PalletInstance(50), GeneralIndex(42)]),
-			// DCL
-			Location::new(2, [GlobalConsensus(Dicle)]),
+			// KSM
+			Location::new(2, [GlobalConsensus(Kusama)]),
 			// KAR (Some Dicle teyrchain currency)
-			Location::new(2, [GlobalConsensus(Dicle), Teyrchain(2000)]),
+			Location::new(2, [GlobalConsensus(Kusama), Teyrchain(2000)]),
 		];
 		for asset in assets.iter() {
 			// reanchor logic in pezpallet_xcm on AH

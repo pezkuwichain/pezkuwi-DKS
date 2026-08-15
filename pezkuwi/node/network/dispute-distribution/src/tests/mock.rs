@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ use pezsp_application_crypto::AppCrypto;
 use pezsp_keyring::Sr25519Keyring;
 use pezsp_keystore::{Keystore, KeystorePtr};
 
-use pezkuwi_pez_node_primitives::{DisputeMessage, SignedDisputeStatement};
+use pezkuwi_node_primitives::{DisputeMessage, SignedDisputeStatement};
 use pezkuwi_primitives::{
 	AuthorityDiscoveryId, CandidateHash, CandidateReceiptV2 as CandidateReceipt, Hash,
 	SessionIndex, SessionInfo, ValidatorId, ValidatorIndex,

@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 use codec::{Decode, Encode};
 
-use pezkuwi_pez_node_primitives::ErasureChunk;
+use pezkuwi_node_primitives::ErasureChunk;
 use pezkuwi_primitives::{
 	CandidateHash, CommittedCandidateReceiptV2 as CommittedCandidateReceipt, Hash, Id as ParaId,
 	PersistedValidationData, UncheckedSignedStatement, ValidatorIndex,
@@ -63,11 +63,11 @@ impl IsRequest for AttestedCandidateRequest {
 /// Responses as sent by collators.
 pub type CollationFetchingResponse = super::v1::CollationFetchingResponse;
 
-/// Request the advertised collation at that relay-parent.
+/// Request the advertised collation at that scheduling-parent.
 #[derive(Debug, Clone, Encode, Decode)]
 pub struct CollationFetchingRequest {
 	/// Relay parent collation is built on top of.
-	pub relay_parent: Hash,
+	pub scheduling_parent: Hash,
 	/// The `ParaId` of the collation.
 	pub para_id: ParaId,
 	/// Candidate hash.

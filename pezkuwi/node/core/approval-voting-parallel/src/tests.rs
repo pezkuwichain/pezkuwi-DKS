@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,13 +32,7 @@ use futures::{channel::oneshot, future, stream::PollNext, StreamExt};
 use itertools::Itertools;
 use pezkuwi_node_core_approval_voting::{ApprovalVotingWorkProvider, Config};
 use pezkuwi_node_network_protocol::{peer_set::ValidationVersion, ObservedRole, PeerId, View};
-use pezkuwi_node_subsystem::{
-	messages::{ApprovalDistributionMessage, ApprovalVotingMessage, ApprovalVotingParallelMessage},
-	FromOrchestra,
-};
-use pezkuwi_node_subsystem_test_helpers::{mock::new_leaf, TestSubsystemContext};
-use pezkuwi_overseer::{ActiveLeavesUpdate, OverseerSignal, SpawnGlue, TimeoutExt};
-use pezkuwi_pez_node_primitives::approval::{
+use pezkuwi_node_primitives::approval::{
 	time::SystemClock,
 	v1::RELAY_VRF_MODULO_CONTEXT,
 	v2::{
@@ -46,6 +40,12 @@ use pezkuwi_pez_node_primitives::approval::{
 		IndirectSignedApprovalVoteV2,
 	},
 };
+use pezkuwi_node_subsystem::{
+	messages::{ApprovalDistributionMessage, ApprovalVotingMessage, ApprovalVotingParallelMessage},
+	FromOrchestra,
+};
+use pezkuwi_node_subsystem_test_helpers::{mock::new_leaf, TestSubsystemContext};
+use pezkuwi_overseer::{ActiveLeavesUpdate, OverseerSignal, SpawnGlue, TimeoutExt};
 use pezkuwi_primitives::{CandidateHash, CoreIndex, Hash, ValidatorIndex};
 use pezsc_keystore::{Keystore, LocalKeystore};
 use pezsp_consensus::SyncOracle;
@@ -68,7 +68,7 @@ fn fake_assignment_cert_v2(
 	core_bitfield: CoreBitfield,
 ) -> IndirectAssignmentCertV2 {
 	let ctx = schnorrkel::signing_context(RELAY_VRF_MODULO_CONTEXT);
-	let msg = b"WhenTeyrchains?";
+	let msg = b"WhenParachains?";
 	let mut prng = rand_core::OsRng;
 	let keypair = schnorrkel::Keypair::generate_with(&mut prng);
 	let (inout, proof, _) = keypair.vrf_sign(ctx.bytes(msg));
@@ -106,7 +106,7 @@ fn build_subsystem(
 
 	let keystore = LocalKeystore::in_memory();
 	let _ = keystore.sr25519_generate_new(
-		pezkuwi_primitives::TEYRCHAIN_KEY_TYPE_ID,
+		pezkuwi_primitives::PARACHAIN_KEY_TYPE_ID,
 		Some(&Sr25519Keyring::Alice.to_seed()),
 	);
 

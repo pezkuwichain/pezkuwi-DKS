@@ -18,9 +18,9 @@
 
 use crate::TaggedAccount;
 
+use bp_relayers::{RewardsAccountOwner, RewardsAccountParams};
 use codec::{Decode, EncodeLike};
-use pez_messages_relay::Labeled;
-use pezbp_relayers::{RewardsAccountOwner, RewardsAccountParams};
+use messages_relay::Labeled;
 use pezframe_system::AccountInfo;
 use pezpallet_balances::AccountData;
 use pezsp_core::storage::StorageData;
@@ -54,7 +54,7 @@ where
 			tracing::info!(target: "bridge", node=%C::NAME, %token_decimals, "Read `tokenDecimals`");
 		})
 		.unwrap_or_else(|| {
-			// turns out it is normal not to have this property - e.g. when pezkuwi binary is
+			// turns out it is normal not to have this property - e.g. when polkadot binary is
 			// started using `pezkuwi-local` chain. Let's use minimal nominal here
 			tracing::info!(target: "bridge", node=%C::NAME, "Using default (zero) `tokenDecimals`");
 			0

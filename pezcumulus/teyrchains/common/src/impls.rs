@@ -14,15 +14,14 @@
 // limitations under the License.
 
 //! Auxiliary struct/enums for teyrchain runtimes.
-//! Taken from pezkuwi/runtime/common (at a21cd64) and adapted for teyrchains.
+//! Taken from polkadot/runtime/common (at a21cd64) and adapted for teyrchains.
 
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 use pezframe_support::traits::{
-	fungible, fungibles, tokens::imbalance::ResolveTo, Contains, ContainsPair, Currency, Defensive,
-	Get, Imbalance, OnUnbalanced, OriginTrait,
+	fungible, fungibles, tokens::imbalance::ResolveTo, Contains, ContainsPair, Currency, Get,
+	Imbalance, OnUnbalanced, OriginTrait, TypedGet,
 };
-use pezpallet_asset_tx_payment::HandleCredit;
 use pezpallet_collator_selection::StakingPotAccountId;
 use pezsp_runtime::traits::Zero;
 use xcm::latest::{
@@ -39,27 +38,8 @@ pub type NegativeImbalance<T> = <pezpallet_balances::Pezpallet<T> as Currency<
 	<T as pezframe_system::Config>::AccountId,
 >>::NegativeImbalance;
 
-/// Implementation of `OnUnbalanced` that deposits the fees into a staking pot for later payout.
-#[deprecated(
-	note = "ToStakingPot is deprecated and will be removed after March 2024. Please use pezframe_support::traits::tokens::imbalance::ResolveTo instead."
-)]
-pub struct ToStakingPot<R>(PhantomData<R>);
-#[allow(deprecated)]
-impl<R> OnUnbalanced<NegativeImbalance<R>> for ToStakingPot<R>
-where
-	R: pezpallet_balances::Config + pezpallet_collator_selection::Config,
-	AccountIdOf<R>: From<pezkuwi_primitives::AccountId> + Into<pezkuwi_primitives::AccountId>,
-	<R as pezframe_system::Config>::RuntimeEvent: From<pezpallet_balances::Event<R>>,
-{
-	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
-		let staking_pot = <pezpallet_collator_selection::Pezpallet<R>>::account_id();
-		// In case of error: Will drop the result triggering the `OnDrop` of the imbalance.
-		<pezpallet_balances::Pezpallet<R>>::resolve_creating(&staking_pot, amount);
-	}
-}
-
 /// Fungible implementation of `OnUnbalanced` that deals with the fees by combining tip and fee and
-/// passing the result on to `ToStakingPot`.
+/// passing the result on to the collator staking pot.
 pub struct DealWithFees<R>(PhantomData<R>);
 impl<R> OnUnbalanced<fungible::Credit<R::AccountId, pezpallet_balances::Pezpallet<R>>>
 	for DealWithFees<R>
@@ -84,22 +64,19 @@ where
 	}
 }
 
-/// A `HandleCredit` implementation that naively transfers the fees to the block author.
-/// Will drop and burn the assets in case the transfer fails.
-pub struct AssetsToBlockAuthor<R, I>(PhantomData<(R, I)>);
-impl<R, I> HandleCredit<AccountIdOf<R>, pezpallet_assets::Pezpallet<R, I>>
-	for AssetsToBlockAuthor<R, I>
+/// Implements `TypedGet` with an option return value to pass into
+/// pezframe_support::traits::tokens::imbalance::MaybeResolveTo<BlockAuthor, ...>.
+pub struct BlockAuthor<Runtime>(PhantomData<Runtime>);
+
+impl<R> TypedGet for BlockAuthor<R>
 where
-	I: 'static,
-	R: pezpallet_authorship::Config + pezpallet_assets::Config<I>,
+	R: pezpallet_authorship::Config,
 	AccountIdOf<R>: From<pezkuwi_primitives::AccountId> + Into<pezkuwi_primitives::AccountId>,
 {
-	fn handle_credit(credit: fungibles::Credit<AccountIdOf<R>, pezpallet_assets::Pezpallet<R, I>>) {
-		use pezframe_support::traits::fungibles::Balanced;
-		if let Some(author) = pezpallet_authorship::Pezpallet::<R>::author() {
-			// In case of error: Will drop the result triggering the `OnDrop` of the imbalance.
-			let _ = pezpallet_assets::Pezpallet::<R, I>::resolve(&author, credit).defensive();
-		}
+	type Type = Option<AccountIdOf<R>>;
+
+	fn get() -> Self::Type {
+		pezpallet_authorship::Pezpallet::<R>::author()
 	}
 }
 
@@ -187,7 +164,7 @@ where
 					.into(),
 			),
 			Box::new((Parent, imbalance).into()),
-			Box::new(Parent.into()),
+			0,
 			WeightLimit::Unlimited,
 		);
 
@@ -228,7 +205,9 @@ mod tests {
 	);
 
 	parameter_types! {
-		pub BlockLength: limits::BlockLength = limits::BlockLength::max(2 * 1024);
+		pub BlockLength: limits::BlockLength = limits::BlockLength::builder()
+			.max_length(2 * 1024)
+			.build();
 		pub const AvailableBlockRatio: Perbill = Perbill::one();
 	}
 
@@ -337,15 +316,15 @@ mod tests {
 	#[test]
 	fn assets_from_filters_correctly() {
 		parameter_types! {
-			pub SomeSiblingTeyrchain: Location = (Parent, Teyrchain(1234)).into();
+			pub SomeSiblingParachain: Location = (Parent, Teyrchain(1234)).into();
 		}
 
-		let asset_location = SomeSiblingTeyrchain::get()
+		let asset_location = SomeSiblingParachain::get()
 			.pushed_with_interior(GeneralIndex(42))
 			.expect("location will only have 2 junctions; qed");
 		let asset = Asset { id: AssetId(asset_location), fun: 1_000_000u128.into() };
 		assert!(
-			AssetsFrom::<SomeSiblingTeyrchain>::contains(&asset, &SomeSiblingTeyrchain::get()),
+			AssetsFrom::<SomeSiblingParachain>::contains(&asset, &SomeSiblingParachain::get()),
 			"AssetsFrom should allow assets from any of its interior locations"
 		);
 	}

@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Pezcumulus
+// Cumulus
 use teyrchains_common::AccountId;
 
 // Pezkuwi
 use pezsp_core::H256;
 use xcm::{prelude::*, DoubleEncoded};
-use xcm_pez_emulator::Chain;
+use xcm_emulator::Chain;
 
 use crate::impls::{bx, Encode};
 use pezframe_support::dispatch::{DispatchResultWithPostInfo, PostDispatchInfo};
@@ -67,18 +67,18 @@ pub fn xcm_transact_unpaid_execution(
 }
 
 /// Helper method to get the non-fee asset used in multiple assets transfer
-pub fn non_fee_asset(assets: &Assets, fee_asset_id: &AssetId) -> Option<(Location, u128)> {
-	let asset = assets.inner().into_iter().find(|a| a.id != *fee_asset_id)?;
+pub fn non_fee_asset(assets: &Assets, fee_idx: usize) -> Option<(Location, u128)> {
+	let asset = assets.inner().into_iter().enumerate().find(|a| a.0 != fee_idx)?.1.clone();
 	let asset_amount = match asset.fun {
 		Fungible(amount) => amount,
 		_ => return None,
 	};
-	Some((asset.id.0.clone(), asset_amount))
+	Some((asset.id.0, asset_amount))
 }
 
 /// Helper method to get the fee asset used in multiple assets transfer
-pub fn fee_asset(assets: &Assets, fee_asset_id: &AssetId) -> Option<(Location, u128)> {
-	let asset = assets.inner().iter().find(|a| a.id == *fee_asset_id)?;
+pub fn fee_asset(assets: &Assets, fee_idx: usize) -> Option<(Location, u128)> {
+	let asset = assets.get(fee_idx)?;
 	let asset_amount = match asset.fun {
 		Fungible(amount) => amount,
 		_ => return None,

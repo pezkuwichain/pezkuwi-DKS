@@ -1,19 +1,19 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 /// An import queue which provides some equivocation resistance with lenient trait bounds.
 ///
@@ -31,7 +31,7 @@ use pezsc_consensus::{
 };
 use pezsc_consensus_aura::{standalone as aura_internal, AuthoritiesTracker};
 use pezsc_telemetry::{telemetry, TelemetryHandle, CONSENSUS_DEBUG, CONSENSUS_TRACE};
-use pezsp_api::ProvideRuntimeApi;
+use pezsp_api::{ApiExt, ProvideRuntimeApi};
 use pezsp_block_builder::BlockBuilder as BlockBuilderApi;
 use pezsp_blockchain::{HeaderBackend, HeaderMetadata};
 use pezsp_consensus::{error::Error as ConsensusError, BlockOrigin};
@@ -150,11 +150,10 @@ where
 				format!("Could not fetch authorities at {:?}: {}", parent_hash, e)
 			})?;
 
-			let slot_duration = self
-				.client
-				.runtime_api()
-				.slot_duration(parent_hash)
-				.map_err(|e| e.to_string())?;
+			let mut runtime_api = self.client.runtime_api();
+			runtime_api.set_call_context(pezsp_core::traits::CallContext::Onchain { import: true });
+			let slot_duration =
+				runtime_api.slot_duration(parent_hash).map_err(|e| e.to_string())?;
 
 			let slot_now = slot_now(slot_duration);
 			let res = aura_internal::check_header_slot_and_seal::<Block, P>(
@@ -256,7 +255,7 @@ fn slot_now(slot_duration: SlotDuration) -> Slot {
 	Slot::from_timestamp(timestamp, slot_duration)
 }
 
-/// Start an import queue for a Pezcumulus node which checks blocks' seals and inherent data.
+/// Start an import queue for a Cumulus node which checks blocks' seals and inherent data.
 ///
 /// Pass in only inherent data providers which don't include aura or teyrchain consensus inherents,
 /// e.g. things like timestamp and custom inherents for the runtime.
@@ -264,7 +263,7 @@ fn slot_now(slot_duration: SlotDuration) -> Slot {
 /// The others are generated explicitly internally.
 ///
 /// This should only be used for runtimes where the runtime does not check all inherents and
-/// seals in `execute_block` (see <https://github.com/pezkuwichain/pezkuwi-sdk/issues/238>)
+/// seals in `execute_block` (see <https://github.com/paritytech/cumulus/issues/2436>)
 pub fn fully_verifying_import_queue<P, Client, Block: BlockT, I, CIDP>(
 	client: Arc<Client>,
 	block_import: I,
@@ -308,7 +307,7 @@ mod test {
 	use codec::Encode;
 	use futures::FutureExt;
 	use pezcumulus_test_client::{
-		runtime::Block, seal_block, Client, InitBlockBuilder, TestClientBuilder,
+		runtime::Block, seal_block, BuildBlockBuilder, Client, TestClientBuilder,
 		TestClientBuilderExt,
 	};
 	use pezcumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
@@ -337,7 +336,7 @@ mod test {
 		let genesis = client.info().best_hash;
 		let mut sproof = RelayStateSproofBuilder::default();
 		sproof.included_para_head = Some(HeadData(client.header(genesis).unwrap().encode()));
-		sproof.para_id = pezcumulus_test_client::runtime::TEYRCHAIN_ID.into();
+		sproof.para_id = pezcumulus_test_client::runtime::PARACHAIN_ID.into();
 
 		let validation_data = PersistedValidationData {
 			relay_parent_number: 1,
@@ -345,7 +344,11 @@ mod test {
 			..Default::default()
 		};
 
-		let block_builder = client.init_block_builder(Some(validation_data), sproof);
+		let block_builder = client
+			.init_block_builder_builder()
+			.with_validation_data(validation_data)
+			.with_relay_sproof_builder(sproof)
+			.build();
 		let block = block_builder.block_builder.build().unwrap();
 
 		let mut blocks = Vec::new();

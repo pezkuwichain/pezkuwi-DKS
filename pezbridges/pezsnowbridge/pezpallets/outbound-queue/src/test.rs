@@ -9,14 +9,14 @@ use pezframe_support::{
 };
 
 use codec::Encode;
-use pezsnowbridge_core::{digest_item::SnowbridgeDigestItem, ParaId, PricingParameters, Rewards};
-use pezsnowbridge_outbound_queue_primitives::{
-	v1::{Command, SendMessage},
-	SendError,
-};
 use pezsp_arithmetic::FixedU128;
 use pezsp_core::H256;
 use pezsp_runtime::FixedPointNumber;
+use snowbridge_core::{digest_item::SnowbridgeDigestItem, ParaId, PricingParameters, Rewards};
+use snowbridge_outbound_queue_primitives::{
+	v1::{Command, SendMessage},
+	SendError,
+};
 
 #[test]
 fn submit_messages_and_commit() {
@@ -169,7 +169,7 @@ fn submit_upgrade_message_success_when_queue_halted() {
 #[test]
 fn governance_message_does_not_get_the_chance_to_processed_in_same_block_when_congest_of_low_priority_sibling_messages(
 ) {
-	use pezsnowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+	use snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
 	use AggregateMessageOrigin::*;
 
 	let sibling_id: u32 = 1000;

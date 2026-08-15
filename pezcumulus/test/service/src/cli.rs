@@ -1,18 +1,18 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus.  If not, see <http://www.gnu.org/licenses/>.
+// along with Cumulus.  If not, see <http://www.gnu.org/licenses/>.
 
 use clap::ValueEnum;
 use pezcumulus_client_cli::{ExportGenesisHeadCommand, ExportGenesisWasmCommand};
@@ -115,7 +115,7 @@ impl RelayChainCli {
 		para_config: &pezsc_service::Configuration,
 		relay_chain_args: impl Iterator<Item = &'a String>,
 	) -> Self {
-		let base_path = para_config.base_path.path().join("pezkuwi");
+		let base_path = para_config.base_path.path().join("polkadot");
 		Self {
 			base_path: Some(base_path),
 			chain_id: None,
@@ -169,7 +169,7 @@ impl CliConfiguration<Self> for RelayChainCli {
 	where
 		F: FnOnce(&mut pezsc_cli::LoggerBuilder),
 	{
-		unreachable!("PezkuwiCli is never initialized; qed");
+		unreachable!("PolkadotCli is never initialized; qed");
 	}
 
 	fn chain_id(&self, is_dev: bool) -> CliResult<String> {
@@ -253,7 +253,7 @@ impl DefaultConfigurationValues for RelayChainCli {
 
 impl BizinikiwiCli for TestCollatorCli {
 	fn impl_name() -> String {
-		"Pezcumulus zombienet test teyrchain".into()
+		"Cumulus zombienet test teyrchain".into()
 	}
 
 	fn impl_version() -> String {
@@ -262,7 +262,7 @@ impl BizinikiwiCli for TestCollatorCli {
 
 	fn description() -> String {
 		format!(
-			"Pezcumulus zombienet test teyrchain\n\nThe command-line arguments provided first will be \
+			"Cumulus zombienet test teyrchain\n\nThe command-line arguments provided first will be \
 		passed to the teyrchain node, while the arguments provided after -- will be passed \
 		to the relaychain node.\n\n\
 		{} [teyrchain-args] -- [relaychain-args]",
@@ -275,7 +275,7 @@ impl BizinikiwiCli for TestCollatorCli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/pezkuwichain/pezkuwi-sdk/issues/new".into()
+		"https://github.com/paritytech/pezkuwi-sdk/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
@@ -310,11 +310,11 @@ impl BizinikiwiCli for TestCollatorCli {
 					ParaId::from(2300),
 				))) as Box<_>
 			},
-			"elastic-scaling-multi-block-slot" => {
-				tracing::info!("Using elastic-scaling multi-block-slot chain spec.");
-				Box::new(pezcumulus_test_service::get_elastic_scaling_multi_block_slot_chain_spec(
-					Some(ParaId::from(2400)),
-				)) as Box<_>
+			"block-bundling" => {
+				tracing::info!("Using block-bundling chain spec.");
+				Box::new(pezcumulus_test_service::get_block_bundling_chain_spec(Some(
+					ParaId::from(2400),
+				))) as Box<_>
 			},
 			"sync-backing" => {
 				tracing::info!("Using sync backing chain spec.");
@@ -333,6 +333,24 @@ impl BizinikiwiCli for TestCollatorCli {
 					ParaId::from(2600),
 				))) as Box<_>
 			},
+			"async-backing-v3" => {
+				tracing::info!("Using async backing V3 chain spec.");
+				Box::new(pezcumulus_test_service::get_async_backing_v3_chain_spec(Some(
+					ParaId::from(2700),
+				))) as Box<_>
+			},
+			"async-backing-v3-rpo" => {
+				tracing::info!("Using async backing V3 with relay parent offset chain spec.");
+				Box::new(pezcumulus_test_service::get_async_backing_v3_rpo_chain_spec(Some(
+					ParaId::from(2700),
+				))) as Box<_>
+			},
+			"elastic-scaling-v3" => {
+				tracing::info!("Using elastic scaling V3 chain spec.");
+				Box::new(pezcumulus_test_service::get_elastic_scaling_v3_chain_spec(Some(
+					ParaId::from(2900),
+				))) as Box<_>
+			},
 			path => {
 				let chain_spec: pezsc_chain_spec::GenericChainSpec =
 					pezsc_chain_spec::GenericChainSpec::from_json_file(path.into())?;
@@ -344,7 +362,7 @@ impl BizinikiwiCli for TestCollatorCli {
 
 impl BizinikiwiCli for RelayChainCli {
 	fn impl_name() -> String {
-		"Pezkuwi collator".into()
+		"Polkadot collator".into()
 	}
 
 	fn impl_version() -> String {
@@ -353,7 +371,7 @@ impl BizinikiwiCli for RelayChainCli {
 
 	fn description() -> String {
 		format!(
-			"Pezkuwi collator\n\nThe command-line arguments provided first will be \
+			"Polkadot collator\n\nThe command-line arguments provided first will be \
 		passed to the teyrchain node, while the arguments provided after -- will be passed \
 		to the relay chain node.\n\n\
 		{} [teyrchain-args] -- [relay_chain-args]",
@@ -366,7 +384,7 @@ impl BizinikiwiCli for RelayChainCli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/pezkuwichain/pezkuwi-sdk/issues/new".into()
+		"https://github.com/paritytech/pezkuwi-sdk/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {

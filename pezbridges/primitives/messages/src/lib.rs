@@ -19,12 +19,12 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
-use pezbp_header_pez_chain::HeaderChainError;
-use pezbp_runtime::{
+use bp_header_chain::HeaderChainError;
+use bp_runtime::{
 	messages::MessageDispatchResult, BasicOperatingMode, Chain, OperatingMode, RangeInclusiveExt,
 	StorageProofError, UnderlyingChainOf, UnderlyingChainProvider,
 };
+use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezframe_support::PalletError;
 // Weight is reexported to avoid additional pezframe-support dependencies in related crates.
 pub use pezframe_support::weights::Weight;
@@ -32,6 +32,7 @@ use pezsp_std::{collections::vec_deque::VecDeque, ops::RangeInclusive, prelude::
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use source_chain::RelayersRewards;
+use Debug;
 
 pub use call_info::{
 	BaseMessagesProofInfo, BridgeMessagesCall, MessagesCallInfo, ReceiveMessagesDeliveryProofInfo,
@@ -504,7 +505,7 @@ impl OutboundLaneData {
 
 /// Calculate the number of messages that the relayers have delivered.
 pub fn calc_relayers_rewards<AccountId>(
-	pez_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
+	messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
 	received_range: &RangeInclusive<MessageNonce>,
 ) -> RelayersRewards<AccountId>
 where
@@ -513,7 +514,7 @@ where
 	// remember to reward relayers that have delivered messages
 	// this loop is bounded by `T::MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX` on the bridged chain
 	let mut relayers_rewards = RelayersRewards::new();
-	for entry in pez_messages_relayers {
+	for entry in messages_relayers {
 		let nonce_begin = pezsp_std::cmp::max(entry.messages.begin, *received_range.start());
 		let nonce_end = pezsp_std::cmp::min(entry.messages.end, *received_range.end());
 		if nonce_end >= nonce_begin {

@@ -18,16 +18,16 @@
 //! obsolete (duplicated) data or do not pass some additional pezpallet-specific
 //! checks.
 
-use pezbp_relayers::ExplicitOrAccountParams;
-use pezbp_runtime::Teyrchain;
-use pezbp_teyrchains::SubmitTeyrchainHeadsInfo;
+use bp_relayers::ExplicitOrAccountParams;
+use bp_runtime::Teyrchain;
+use bp_teyrchains::SubmitParachainHeadsInfo;
 use pezpallet_bridge_grandpa::{
 	BridgedBlockNumber, CallSubType as GrandpaCallSubType, SubmitFinalityProofHelper,
 };
 use pezpallet_bridge_messages::CallSubType as MessagesCallSubType;
 use pezpallet_bridge_relayers::Pezpallet as RelayersPallet;
 use pezpallet_bridge_teyrchains::{
-	CallSubType as TeyrchainsCallSubtype, SubmitTeyrchainHeadsHelper,
+	CallSubType as TeyrchainsCallSubtype, SubmitParachainHeadsHelper,
 };
 use pezsp_runtime::{
 	traits::{Get, UniqueSaturatedInto},
@@ -124,7 +124,7 @@ where
 /// `(BundledHeaderNumber - 1 - BestKnownHeaderNumber) * Priority::get()`.
 /// The boost is only applied if submitter has active registration in the relayers
 /// pezpallet.
-pub struct CheckAndBoostBridgeTeyrchainsTransactions<
+pub struct CheckAndBoostBridgeParachainsTransactions<
 	T,
 	TeyrchainsInstance,
 	Para,
@@ -139,7 +139,7 @@ impl<
 		Priority: Get<TransactionPriority>,
 		SlashAccount: Get<T::AccountId>,
 	> BridgeRuntimeFilterCall<T::AccountId, T::RuntimeCall>
-	for CheckAndBoostBridgeTeyrchainsTransactions<T, TeyrchainsInstance, Para, Priority, SlashAccount>
+	for CheckAndBoostBridgeParachainsTransactions<T, TeyrchainsInstance, Para, Priority, SlashAccount>
 where
 	T: pezpallet_bridge_relayers::Config + pezpallet_bridge_teyrchains::Config<TeyrchainsInstance>,
 	TeyrchainsInstance: 'static,
@@ -147,7 +147,7 @@ where
 	T::RuntimeCall: TeyrchainsCallSubtype<T, TeyrchainsInstance>,
 {
 	// bridged header number, bundled in transaction
-	type ToPostDispatch = Option<SubmitTeyrchainHeadsInfo>;
+	type ToPostDispatch = Option<SubmitParachainHeadsInfo>;
 
 	fn validate(
 		who: &T::AccountId,
@@ -156,7 +156,7 @@ where
 		match TeyrchainsCallSubtype::<T, TeyrchainsInstance>::check_obsolete_submit_teyrchain_heads(
 			call,
 		) {
-			Ok(Some(our_tx)) if our_tx.base.para_id.0 == Para::TEYRCHAIN_ID => {
+			Ok(Some(our_tx)) if our_tx.base.para_id.0 == Para::PARACHAIN_ID => {
 				let to_post_dispatch = Some(our_tx.base);
 				let total_priority_boost =
 					compute_priority_boost::<T, _, Priority>(&who, our_tx.improved_by);
@@ -175,7 +175,7 @@ where
 		let Some(update) = maybe_update else { return };
 		// we are only interested in failed or unneeded transactions
 		let has_failed = has_failed
-			|| !SubmitTeyrchainHeadsHelper::<T, TeyrchainsInstance>::was_successful(&update);
+			|| !SubmitParachainHeadsHelper::<T, TeyrchainsInstance>::was_successful(&update);
 
 		if !has_failed {
 			return;
@@ -263,8 +263,8 @@ where
 /// ```nocompile
 /// generate_bridge_reject_obsolete_headers_and_messages!{
 ///     Call, AccountId
-///     BridgePezkuwichainGrandpa, BridgePezkuwichainMessages,
-///     BridgePezkuwichainTeyrchains
+///     BridgeRococoGrandpa, BridgeRococoMessages,
+///     BridgeRococoParachains
 /// }
 /// ```
 ///
@@ -274,6 +274,7 @@ where
 #[macro_export]
 macro_rules! generate_bridge_reject_obsolete_headers_and_messages {
 	($call:ty, $account_id:ty, $($filter_call:ty),*) => {
+		#[allow(dead_code)]
 		#[derive(Clone, codec::Decode, codec::DecodeWithMemTracking, Default, codec::Encode, Eq, PartialEq, Debug, scale_info::TypeInfo)]
 		pub struct BridgeRejectObsoleteHeadersAndMessages;
 		impl pezsp_runtime::traits::TransactionExtension<$call> for BridgeRejectObsoleteHeadersAndMessages {
@@ -377,14 +378,14 @@ macro_rules! generate_bridge_reject_obsolete_headers_and_messages {
 mod tests {
 	use super::*;
 	use crate::mock::*;
+	use bp_header_chain::StoredHeaderDataBuilder;
+	use bp_messages::{InboundLaneData, MessageNonce, OutboundLaneData};
+	use bp_polkadot_core::teyrchains::{ParaHeadsProof, ParaId};
+	use bp_relayers::{RewardsAccountOwner, RewardsAccountParams};
+	use bp_runtime::HeaderId;
+	use bp_test_utils::{make_default_justification, test_keyring, TEST_GRANDPA_SET_ID};
+	use bp_teyrchains::{BestParaHeadHash, ParaInfo};
 	use codec::{Decode, Encode, MaxEncodedLen};
-	use pezbp_header_pez_chain::StoredHeaderDataBuilder;
-	use pezbp_messages::{InboundLaneData, MessageNonce, OutboundLaneData};
-	use pezbp_pezkuwi_core::teyrchains::{ParaHeadsProof, ParaId};
-	use pezbp_relayers::{RewardsAccountOwner, RewardsAccountParams};
-	use pezbp_runtime::HeaderId;
-	use pezbp_test_utils::{make_default_justification, test_keyring, TEST_GRANDPA_SET_ID};
-	use pezbp_teyrchains::{BestParaHeadHash, ParaInfo};
 	use pezframe_support::{assert_err, assert_ok, traits::fungible::Mutate};
 	use pezpallet_bridge_grandpa::{Call as GrandpaCall, StoredAuthoritySet};
 	use pezpallet_bridge_teyrchains::Call as TeyrchainsCall;
@@ -541,10 +542,10 @@ mod tests {
 		pezpallet_bridge_grandpa::BestFinalized::<TestRuntime>::put(best_relay_header);
 		pezpallet_bridge_grandpa::ImportedHeaders::<TestRuntime>::insert(
 			best_relay_header.hash(),
-			pezbp_test_utils::test_header::<BridgedChainHeader>(0).build(),
+			bp_test_utils::test_header::<BridgedChainHeader>(0).build(),
 		);
 
-		let para_id = ParaId(BridgedUnderlyingTeyrchain::TEYRCHAIN_ID);
+		let para_id = ParaId(BridgedUnderlyingParachain::PARACHAIN_ID);
 		let para_info = ParaInfo {
 			best_head_hash: BestParaHeadHash {
 				at_relay_block_number: teyrchain_head_at_relay_header_number,
@@ -591,10 +592,10 @@ mod tests {
 	fn submit_teyrchain_head_call(
 		teyrchain_head_at_relay_header_number: BridgedChainBlockNumber,
 	) -> RuntimeCall {
-		RuntimeCall::BridgeTeyrchains(TeyrchainsCall::submit_teyrchain_heads {
+		RuntimeCall::BridgeParachains(TeyrchainsCall::submit_teyrchain_heads {
 			at_relay_block: (teyrchain_head_at_relay_header_number, BridgedChainHash::default()),
 			teyrchains: vec![(
-				ParaId(BridgedUnderlyingTeyrchain::TEYRCHAIN_ID),
+				ParaId(BridgedUnderlyingParachain::PARACHAIN_ID),
 				[teyrchain_head_at_relay_header_number as u8; 32].into(),
 			)],
 			teyrchain_heads_proof: ParaHeadsProof { storage_proof: Default::default() },
@@ -764,10 +765,10 @@ mod tests {
 		})
 	}
 
-	type BridgeTeyrchainsWrapper = CheckAndBoostBridgeTeyrchainsTransactions<
+	type BridgeParachainsWrapper = CheckAndBoostBridgeParachainsTransactions<
 		TestRuntime,
 		(),
-		BridgedUnderlyingTeyrchain,
+		BridgedUnderlyingParachain,
 		ConstU64<1_000>,
 		SlashDestination,
 	>;
@@ -777,7 +778,7 @@ mod tests {
 		run_test(|| {
 			initialize_environment(100, 100, 100);
 
-			let priority_boost = BridgeTeyrchainsWrapper::validate(
+			let priority_boost = BridgeParachainsWrapper::validate(
 				&relayer_account_at_this_chain(),
 				&submit_teyrchain_head_call(200),
 			)
@@ -795,7 +796,7 @@ mod tests {
 			BridgeRelayers::register(RuntimeOrigin::signed(relayer_account_at_this_chain()), 1000)
 				.unwrap();
 
-			let priority_boost = BridgeTeyrchainsWrapper::validate(
+			let priority_boost = BridgeParachainsWrapper::validate(
 				&relayer_account_at_this_chain(),
 				&submit_teyrchain_head_call(200),
 			)
@@ -814,12 +815,12 @@ mod tests {
 				.unwrap();
 
 			assert!(BridgeRelayers::is_registration_active(&relayer_account_at_this_chain()));
-			BridgeTeyrchainsWrapper::post_dispatch(
+			BridgeParachainsWrapper::post_dispatch(
 				&relayer_account_at_this_chain(),
 				true,
-				Some(SubmitTeyrchainHeadsInfo {
+				Some(SubmitParachainHeadsInfo {
 					at_relay_block: HeaderId(150, Default::default()),
-					para_id: ParaId(BridgedUnderlyingTeyrchain::TEYRCHAIN_ID),
+					para_id: ParaId(BridgedUnderlyingParachain::PARACHAIN_ID),
 					para_head_hash: [150u8; 32].into(),
 					is_free_execution_expected: false,
 				}),
@@ -836,12 +837,12 @@ mod tests {
 				.unwrap();
 
 			assert!(BridgeRelayers::is_registration_active(&relayer_account_at_this_chain()));
-			BridgeTeyrchainsWrapper::post_dispatch(
+			BridgeParachainsWrapper::post_dispatch(
 				&relayer_account_at_this_chain(),
 				false,
-				Some(SubmitTeyrchainHeadsInfo {
+				Some(SubmitParachainHeadsInfo {
 					at_relay_block: HeaderId(100, Default::default()),
-					para_id: ParaId(BridgedUnderlyingTeyrchain::TEYRCHAIN_ID),
+					para_id: ParaId(BridgedUnderlyingParachain::PARACHAIN_ID),
 					para_head_hash: [100u8; 32].into(),
 					is_free_execution_expected: false,
 				}),

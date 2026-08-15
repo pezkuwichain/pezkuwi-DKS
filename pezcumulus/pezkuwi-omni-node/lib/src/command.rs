@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,7 +34,7 @@ use clap::{CommandFactory, FromArgMatches};
 use log::info;
 #[cfg(feature = "runtime-benchmarks")]
 use pezcumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions;
-use pezframe_benchmarking_cli::{BenchmarkCmd, BIZINIKIWI_REFERENCE_HARDWARE};
+use pezframe_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use pezsc_cli::{BizinikiwiCli, Result};
 #[cfg(feature = "runtime-benchmarks")]
 use pezsp_runtime::traits::HashingFor;
@@ -252,7 +252,7 @@ where
 						node.run_benchmark_block_cmd(config, cmd)
 					})
 				},
-				#[cfg(feature = "storage-benchmark")]
+				#[cfg(feature = "runtime-benchmarks")]
 				BenchmarkCmd::Storage(cmd) => {
 					// The command needs the full node configuration because it uses the node
 					// client and the database API, storage and shared_trie_cache. It requires
@@ -276,8 +276,7 @@ where
 					// TODO: change `machine` subcommand to take instead a disk path we want to
 					// benchmark?.
 					let runner = cli.create_runner(cmd)?;
-					runner
-						.sync_run(|config| cmd.run(&config, BIZINIKIWI_REFERENCE_HARDWARE.clone()))
+					runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
 				},
 				#[allow(unreachable_patterns)]
 				_ => Err("Benchmarking sub-command unsupported or compilation feature missing. \
@@ -302,11 +301,14 @@ where
 			}
 
 			runner.run_node_until_exit(|config| async move {
+				let node_extra_args = cli.node_extra_args();
 				let node_spec =
-					new_node_spec(&config, &cmd_config.runtime_resolver, &cli.node_extra_args())?;
+					new_node_spec(&config, &cmd_config.runtime_resolver, &node_extra_args)?;
 
 				if let Some(dev_mode) = cli.dev_mode() {
-					return node_spec.start_dev_node(config, dev_mode).map_err(Into::into);
+					return node_spec
+						.start_dev_node(config, dev_mode, node_extra_args)
+						.map_err(Into::into);
 				}
 
 				// If Statemint (Statemine, Westmint, Rockmine) DB exists and we're using the
@@ -314,10 +316,10 @@ where
 				// that both file paths exist, the node will exit, as the user must decide (by
 				// deleting one path) the information that they want to use as their DB.
 				let old_name = match config.chain_spec.id() {
-					"asset-hub-pezkuwi" => Some("statemint"),
+					"asset-hub-polkadot" => Some("statemint"),
 					"asset-hub-dicle" => Some("statemine"),
-					"asset-hub-zagros" => Some("westmint"),
-					"asset-hub-pezkuwichain" => Some("rockmine"),
+					"asset-hub-westend" => Some("westmint"),
+					"asset-hub-rococo" => Some("rockmine"),
 					_ => None,
 				};
 
@@ -354,7 +356,7 @@ where
 							let _ = std::fs::create_dir_all(database_path);
 							pezsc_sysinfo::gather_hwbench(
 								Some(database_path),
-								&BIZINIKIWI_REFERENCE_HARDWARE,
+								&SUBSTRATE_REFERENCE_HARDWARE,
 							)
 						})
 					})

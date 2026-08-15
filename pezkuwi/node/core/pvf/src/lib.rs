@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,9 +19,9 @@
 //! The PVF validation host. Responsible for coordinating preparation and execution of PVFs.
 //!
 //! For more background, refer to the Implementer's Guide: [PVF
-//! Pre-checking](https://docs.pezkuwichain.io/sdk/book/pvf-prechecking.html), [Candidate
-//! Validation](https://docs.pezkuwichain.io/sdk/book/node/utility/candidate-validation.html)
-//! and [PVF Host and Workers](https://docs.pezkuwichain.io/sdk/book/node/utility/pvf-host-and-workers.html).
+//! Pre-checking](https://paritytech.github.io/pezkuwi-sdk/book/pvf-prechecking.html), [Candidate
+//! Validation](https://paritytech.github.io/pezkuwi-sdk/book/node/utility/candidate-validation.html)
+//! and [PVF Host and Workers](https://paritytech.github.io/pezkuwi-sdk/book/node/utility/pvf-host-and-workers.html).
 //!
 //!
 //! # Entrypoint
@@ -150,7 +150,7 @@ pub(crate) const IGNORE_SECURE_MODE_TIP: &'static str =
 "\nYou can ignore this error with the `--insecure-validator-i-know-what-i-do` \
 command line argument if you understand and accept the risks of running insecurely. \
 With this flag, security features are enabled on a best-effort basis, but not mandatory. \
-\nMore information: https://docs.pezkuwichain.io/infrastructure/running-a-validator/operational-tasks/general-management/#secure-your-validator";
+\nMore information: https://docs.polkadot.com/infrastructure/running-a-validator/operational-tasks/general-management/#secure-your-validator";
 // Only Linux supports security features
 #[cfg(not(target_os = "linux"))]
 pub(crate) const SECURE_LINUX_NOTE: &'static str = "\nSecure mode is enabled only for Linux \

@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,7 @@
 
 use super::*;
 use core::num::NonZeroU32;
-use pezcumulus_pezpallet_teyrchain_system::{
+use pezcumulus_pallet_teyrchain_system::{
 	consensus_hook::ExpectParentIncluded, Ancestor, AnyRelayNumber, ConsensusHook,
 	RelayChainStateProof, TeyrchainSetCode, UsedBandwidth,
 };
@@ -72,7 +72,7 @@ type Block = pezframe_system::mocking::MockBlock<Test>;
 pezframe_support::construct_runtime!(
 	pub enum Test {
 		System: pezframe_system,
-		TeyrchainSystem: pezcumulus_pezpallet_teyrchain_system,
+		TeyrchainSystem: pezcumulus_pallet_teyrchain_system,
 		Aura: pezpallet_aura,
 		AuraExt: crate,
 		TestPallet: test_pallet,
@@ -136,7 +136,7 @@ impl pezpallet_timestamp::Config for Test {
 	type WeightInfo = ();
 }
 
-impl pezcumulus_pezpallet_teyrchain_system::Config for Test {
+impl pezcumulus_pallet_teyrchain_system::Config for Test {
 	type WeightInfo = ();
 	type RuntimeEvent = ();
 	type OnSystemEvent = ();
@@ -150,6 +150,7 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Test {
 	type CheckAssociatedRelayNumber = AnyRelayNumber;
 	type ConsensusHook = ExpectParentIncluded;
 	type RelayParentOffset = ConstU32<0>;
+	type SchedulingSignatureVerifier = ();
 }
 
 fn set_ancestors() {
@@ -159,7 +160,7 @@ fn set_ancestors() {
 		ancestor.replace_para_head_hash(H256::repeat_byte(i + 1));
 		ancestors.push(ancestor);
 	}
-	pezcumulus_pezpallet_teyrchain_system::UnincludedSegment::<Test>::put(ancestors);
+	pezcumulus_pallet_teyrchain_system::UnincludedSegment::<Test>::put(ancestors);
 }
 
 fn new_test_ext(para_slot: u64) -> pezsp_io::TestExternalities {

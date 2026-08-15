@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,8 +30,8 @@ use pezkuwi_cli::{
 	},
 	validator_overseer_builder, Cli,
 };
+use pezkuwi_node_primitives::{AvailableData, BlockData, PoV};
 use pezkuwi_node_subsystem_types::{ChainApiBackend, RuntimeApiSubsystemClient};
-use pezkuwi_pez_node_primitives::{AvailableData, BlockData, PoV};
 use pezkuwi_primitives::{CandidateDescriptorV2, CandidateReceiptV2, CoreIndex};
 
 use pezkuwi_node_subsystem_util::request_validators;
@@ -78,12 +78,12 @@ where
 		match msg {
 			FromOrchestra::Communication {
 				msg:
-					CandidateBackingMessage::Second(
-						relay_parent,
+					CandidateBackingMessage::Second {
+						scheduling_parent: relay_parent,
 						ref candidate,
-						ref validation_data,
-						ref _pov,
-					),
+						pvd: ref validation_data,
+						pov: ref _pov,
+					},
 			} => {
 				gum::debug!(
 					target: MALUS,
@@ -228,12 +228,12 @@ where
 					let malicious_candidate_hash = malicious_candidate.hash();
 
 					let message = FromOrchestra::Communication {
-						msg: CandidateBackingMessage::Second(
-							relay_parent,
-							malicious_candidate,
-							validation_data,
+						msg: CandidateBackingMessage::Second {
+							scheduling_parent: relay_parent,
+							candidate: malicious_candidate,
+							pvd: validation_data,
 							pov,
-						),
+						},
 					};
 
 					gum::info!(

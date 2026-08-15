@@ -57,8 +57,7 @@ impl Default for BridgeState {
 	}
 }
 
-/// A minimized version of `pezpallet-xcm-bridge-hub-router::Call` that can be used without a
-/// runtime.
+/// A minimized version of `pezpallet-xcm-bridge-hub-router::Call` that can be used without a runtime.
 #[derive(Encode, Decode, Debug, PartialEq, Eq, Clone, TypeInfo)]
 #[allow(non_camel_case_types)]
 pub enum XcmBridgeHubRouterCall {

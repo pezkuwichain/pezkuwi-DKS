@@ -1,19 +1,19 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 use std::{
 	collections::{BTreeMap, HashSet, VecDeque},
@@ -34,10 +34,12 @@ use pezcumulus_primitives_core::{
 	},
 	InboundDownwardMessage, ParaId, PersistedValidationData,
 };
-use pezcumulus_relay_chain_interface::{RelayChainError, RelayChainInterface, RelayChainResult};
-use pezkuwi_primitives::CandidateEvent;
+use pezcumulus_relay_chain_interface::{
+	ChildInfo, RelayChainError, RelayChainInterface, RelayChainResult,
+};
+use pezkuwi_primitives::{CandidateEvent, NodeFeatures};
 use pezkuwi_service::{
-	builder::PezkuwiServiceBuilder, CollatorOverseerGen, CollatorPair, Configuration, FullBackend,
+	builder::PolkadotServiceBuilder, CollatorOverseerGen, CollatorPair, Configuration, FullBackend,
 	FullClient, Handle, NewFull, NewFullParams, TaskManager,
 };
 use pezsc_cli::{BizinikiwiCli, RuntimeVersion};
@@ -84,7 +86,7 @@ impl RelayChainInProcessInterface {
 #[async_trait]
 impl RelayChainInterface for RelayChainInProcessInterface {
 	async fn version(&self, relay_parent: PHash) -> RelayChainResult<RuntimeVersion> {
-		Ok(self.full_client.runtime_version_at(relay_parent)?)
+		Ok(self.full_client.runtime_version_at(relay_parent, CallContext::Offchain)?)
 	}
 
 	async fn retrieve_dmq_contents(
@@ -241,6 +243,18 @@ impl RelayChainInterface for RelayChainInProcessInterface {
 			.map_err(RelayChainError::StateMachineError)
 	}
 
+	async fn prove_child_read(
+		&self,
+		relay_parent: PHash,
+		child_info: &ChildInfo,
+		child_keys: &[Vec<u8>],
+	) -> RelayChainResult<StorageProof> {
+		let state_backend = self.backend.state_at(relay_parent, TrieCacheContext::Untrusted)?;
+
+		pezsp_state_machine::prove_child_read(state_backend, child_info, child_keys)
+			.map_err(RelayChainError::StateMachineError)
+	}
+
 	/// Wait for a given relay chain block in an async way.
 	///
 	/// The caller needs to pass the hash of a block it waits for and the function will return when
@@ -334,6 +348,14 @@ impl RelayChainInterface for RelayChainInProcessInterface {
 	async fn candidate_events(&self, hash: PHash) -> RelayChainResult<Vec<CandidateEvent>> {
 		Ok(self.full_client.runtime_api().candidate_events(hash)?)
 	}
+
+	async fn max_relay_parent_session_age(&self, at: PHash) -> RelayChainResult<u32> {
+		Ok(self.full_client.runtime_api().max_relay_parent_session_age(at)?)
+	}
+
+	async fn node_features(&self, at: PHash) -> RelayChainResult<NodeFeatures> {
+		Ok(self.full_client.runtime_api().node_features(at)?)
+	}
 }
 
 pub enum BlockCheckStatus {
@@ -361,7 +383,7 @@ pub fn check_block_in_chain(
 }
 
 /// Build Pezkuwi full node with teyrchain bootnode request-response protocol.
-fn build_pezkuwi_with_paranode_protocol<Network>(
+fn build_polkadot_with_paranode_protocol<Network>(
 	config: Configuration,
 	params: NewFullParams<CollatorOverseerGen>,
 ) -> Result<(NewFull, async_channel::Receiver<IncomingRequest>), pezkuwi_service::Error>
@@ -369,7 +391,7 @@ where
 	Network: NetworkBackend<PBlock, PHash>,
 {
 	let fork_id = config.chain_spec.fork_id().map(ToString::to_string);
-	let mut pezkuwi_builder = PezkuwiServiceBuilder::<_, Network>::new(config, params)?;
+	let mut pezkuwi_builder = PolkadotServiceBuilder::<_, Network>::new(config, params)?;
 	let (config, request_receiver) = bootnode_request_response_config::<_, _, Network>(
 		pezkuwi_builder.genesis_hash(),
 		fork_id.as_deref(),
@@ -381,7 +403,7 @@ where
 
 /// Build the Pezkuwi full node using the given `config`.
 #[pezsc_tracing::logging::prefix_logs_with("Relaychain")]
-fn build_pezkuwi_full_node(
+fn build_polkadot_full_node(
 	config: Configuration,
 	teyrchain_config: &Configuration,
 	telemetry_worker_handle: Option<TelemetryWorkerHandle>,
@@ -392,9 +414,9 @@ fn build_pezkuwi_full_node(
 > {
 	let (is_teyrchain_node, maybe_collator_key) = if teyrchain_config.role.is_authority() {
 		let collator_key = CollatorPair::generate().0;
-		(pezkuwi_service::IsTeyrchainNode::Collator(collator_key.clone()), Some(collator_key))
+		(pezkuwi_service::IsParachainNode::Collator(collator_key.clone()), Some(collator_key))
 	} else {
-		(pezkuwi_service::IsTeyrchainNode::FullNode, None)
+		(pezkuwi_service::IsParachainNode::FullNode, None)
 	};
 
 	let new_full_params = pezkuwi_service::NewFullParams {
@@ -404,7 +426,7 @@ fn build_pezkuwi_full_node(
 		force_authoring_backoff: false,
 		telemetry_worker_handle,
 
-		// Pezcumulus doesn't spawn PVF workers, so we can disable version checks.
+		// Cumulus doesn't spawn PVF workers, so we can disable version checks.
 		node_version: None,
 		secure_validator_mode: false,
 		workers_path: None,
@@ -420,13 +442,15 @@ fn build_pezkuwi_full_node(
 		keep_finalized_for: None,
 		invulnerable_ah_collators: HashSet::new(),
 		collator_protocol_hold_off: None,
+		experimental_collator_protocol: false,
+		collator_reputation_persist_interval: None,
 	};
 
 	let (relay_chain_full_node, paranode_req_receiver) = match config.network.network_backend {
-		NetworkBackendType::Libp2p => build_pezkuwi_with_paranode_protocol::<
+		NetworkBackendType::Libp2p => build_polkadot_with_paranode_protocol::<
 			pezsc_network::NetworkWorker<_, _>,
 		>(config, new_full_params)?,
-		NetworkBackendType::Litep2p => build_pezkuwi_with_paranode_protocol::<
+		NetworkBackendType::Litep2p => build_polkadot_with_paranode_protocol::<
 			pezsc_network::Litep2pNetworkBackend,
 		>(config, new_full_params)?,
 	};
@@ -452,9 +476,13 @@ pub fn build_inprocess_relay_chain(
 	pezkuwi_config.impl_version = pezkuwi_cli::Cli::impl_version();
 	pezkuwi_config.impl_name = pezkuwi_cli::Cli::impl_name();
 
-	let (full_node, collator_key, paranode_req_receiver) =
-		build_pezkuwi_full_node(pezkuwi_config, teyrchain_config, telemetry_worker_handle, hwbench)
-			.map_err(|e| RelayChainError::Application(Box::new(e) as Box<_>))?;
+	let (full_node, collator_key, paranode_req_receiver) = build_polkadot_full_node(
+		pezkuwi_config,
+		teyrchain_config,
+		telemetry_worker_handle,
+		hwbench,
+	)
+	.map_err(|e| RelayChainError::Application(Box::new(e) as Box<_>))?;
 
 	let relay_chain_interface = Arc::new(RelayChainInProcessInterface::new(
 		full_node.client,
@@ -477,7 +505,7 @@ mod tests {
 	use pezkuwi_primitives::Block as PBlock;
 	use pezkuwi_test_client::{
 		construct_transfer_extrinsic, BlockBuilderExt, Client, ClientBlockImportExt,
-		DefaultTestClientBuilderExt, InitPezkuwiBlockBuilder, TestClientBuilder,
+		DefaultTestClientBuilderExt, InitPolkadotBlockBuilder, TestClientBuilder,
 		TestClientBuilderExt,
 	};
 	use pezsp_consensus::{BlockOrigin, SyncOracle};
@@ -503,7 +531,7 @@ mod tests {
 		let backend = builder.backend();
 		let client = Arc::new(builder.build());
 
-		let block_builder = client.init_pezkuwi_block_builder();
+		let block_builder = client.init_polkadot_block_builder();
 		let block = block_builder.build().expect("Finalizes the block").block;
 		let dummy_network: Arc<dyn SyncOracle + Sync + Send> = Arc::new(DummyNetwork {});
 
@@ -572,9 +600,9 @@ mod tests {
 			pezsp_keyring::Sr25519Keyring::Bob,
 			1000,
 		);
-		let mut block_builder = client.init_pezkuwi_block_builder();
+		let mut block_builder = client.init_polkadot_block_builder();
 		// Push an extrinsic to get a different block hash.
-		block_builder.push_pezkuwi_extrinsic(ext).expect("Push extrinsic");
+		block_builder.push_polkadot_extrinsic(ext).expect("Push extrinsic");
 		let block2 = block_builder.build().expect("Build second block").block;
 		let hash2 = block2.hash();
 

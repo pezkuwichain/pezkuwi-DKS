@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,7 @@ pub mod test_data;
 
 extern crate alloc;
 
-pub use pezbp_test_utils::test_header;
+pub use bp_test_utils::test_header;
 use pezsp_runtime::Perbill;
 pub use test_cases::helpers::for_pallet_xcm_bridge_hub::{
 	ensure_opened_bridge, open_bridge_with_extrinsic, open_bridge_with_storage,

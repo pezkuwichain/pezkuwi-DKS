@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@
 use crate::common::spec::BaseNodeSpec;
 use pezcumulus_client_cli::ExportGenesisHeadCommand;
 use pezframe_benchmarking_cli::BlockCmd;
-#[cfg(feature = "storage-benchmark")]
+#[cfg(any(feature = "runtime-benchmarks"))]
 use pezframe_benchmarking_cli::StorageCmd;
 use pezsc_cli::{CheckBlockCmd, ExportBlocksCmd, ExportStateCmd, ImportBlocksCmd, RevertCmd};
 use pezsc_service::{Configuration, TaskManager};
@@ -71,7 +71,7 @@ pub trait NodeCommandRunner {
 		cmd: &BlockCmd,
 	) -> SyncCmdResult;
 
-	#[cfg(feature = "storage-benchmark")]
+	#[cfg(any(feature = "runtime-benchmarks"))]
 	fn run_benchmark_storage_cmd(
 		self: Box<Self>,
 		config: Configuration,
@@ -146,7 +146,7 @@ where
 		cmd.run(partial.client)
 	}
 
-	#[cfg(feature = "storage-benchmark")]
+	#[cfg(any(feature = "runtime-benchmarks"))]
 	fn run_benchmark_storage_cmd(
 		self: Box<Self>,
 		config: Configuration,

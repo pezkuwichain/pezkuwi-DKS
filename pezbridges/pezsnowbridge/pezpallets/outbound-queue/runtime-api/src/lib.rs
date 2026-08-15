@@ -3,9 +3,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use pezframe_support::traits::tokens::Balance as BalanceT;
-use pezsnowbridge_core::PricingParameters;
-use pezsnowbridge_merkle_tree::MerkleProof;
-use pezsnowbridge_outbound_queue_primitives::v1::{Command, Fee};
+use snowbridge_core::PricingParameters;
+use snowbridge_merkle_tree::MerkleProof;
+use snowbridge_outbound_queue_primitives::v1::{Command, Fee};
 
 pezsp_api::decl_runtime_apis! {
 	pub trait OutboundQueueApi<Balance> where Balance: BalanceT

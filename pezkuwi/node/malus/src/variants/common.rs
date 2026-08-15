@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ use crate::{
 	shared::{MALICIOUS_POV, MALUS},
 };
 
-use pezkuwi_pez_node_primitives::{InvalidCandidate, ValidationResult};
+use pezkuwi_node_primitives::{InvalidCandidate, ValidationResult};
 
 use pezkuwi_primitives::{
 	CandidateCommitments, CandidateDescriptorV2 as CandidateDescriptor,
@@ -238,7 +238,7 @@ where
 						validation_code,
 						candidate_receipt,
 						pov,
-						executor_params,
+						scheduling_session_index,
 						exec_kind,
 						response_sender,
 						..
@@ -254,7 +254,7 @@ where
 									validation_code,
 									candidate_receipt,
 									pov,
-									executor_params,
+									scheduling_session_index,
 									exec_kind,
 									response_sender,
 								},
@@ -292,7 +292,7 @@ where
 										validation_code,
 										candidate_receipt,
 										pov,
-										executor_params,
+										scheduling_session_index,
 										exec_kind,
 										response_sender,
 									},
@@ -332,7 +332,7 @@ where
 										validation_code,
 										candidate_receipt,
 										pov,
-										executor_params,
+										scheduling_session_index,
 										exec_kind,
 										response_sender,
 									},
@@ -347,7 +347,7 @@ where
 							validation_code,
 							candidate_receipt,
 							pov,
-							executor_params,
+							scheduling_session_index,
 							exec_kind,
 							response_sender,
 						},

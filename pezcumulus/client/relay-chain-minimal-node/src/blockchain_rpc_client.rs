@@ -1,19 +1,19 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 use std::{
 	collections::{BTreeMap, VecDeque},
@@ -442,10 +442,7 @@ impl RuntimeApiSubsystemClient for BlockChainRpcClient {
 		at: Hash,
 		session_index: pezkuwi_primitives::SessionIndex,
 	) -> Result<ApprovalVotingParams, ApiError> {
-		Ok(self
-			.rpc_client
-			.teyrchain_host_staging_approval_voting_params(at, session_index)
-			.await?)
+		Ok(self.rpc_client.teyrchain_host_approval_voting_params(at, session_index).await?)
 	}
 
 	async fn node_features(&self, at: Hash) -> Result<NodeFeatures, ApiError> {
@@ -488,6 +485,25 @@ impl RuntimeApiSubsystemClient for BlockChainRpcClient {
 
 	async fn para_ids(&self, at: Hash) -> Result<Vec<ParaId>, pezsp_api::ApiError> {
 		Ok(self.rpc_client.teyrchain_host_para_ids(at).await?)
+	}
+
+	async fn max_relay_parent_session_age(&self, at: Hash) -> Result<u32, pezsp_api::ApiError> {
+		Ok(self.rpc_client.teyrchain_host_max_relay_parent_session_age(at).await?)
+	}
+
+	async fn ancestor_relay_parent_info(
+		&self,
+		at: Hash,
+		session_index: pezkuwi_primitives::SessionIndex,
+		relay_parent: Hash,
+	) -> Result<
+		Option<pezkuwi_primitives::vstaging::RelayParentInfo<Hash, BlockNumber>>,
+		pezsp_api::ApiError,
+	> {
+		Ok(self
+			.rpc_client
+			.teyrchain_host_ancestor_relay_parent_info(at, session_index, relay_parent)
+			.await?)
 	}
 }
 

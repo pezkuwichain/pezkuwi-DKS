@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +26,7 @@ async fn running_the_node_works_and_can_be_interrupted() {
 
 	let base_dir = tempdir().expect("could not create a temp dir");
 
-	let args = &["--", "--chain=pezkuwichain-local"];
+	let args = &["--", "--chain=rococo-local"];
 
 	common::run_node_for_a_while(base_dir.path(), args, SIGINT).await;
 	common::run_node_for_a_while(base_dir.path(), args, SIGTERM).await;

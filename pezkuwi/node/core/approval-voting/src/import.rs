@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,13 @@
 //!
 //! We maintain a rolling window of session indices. This starts as empty
 
+use pezkuwi_node_primitives::{
+	approval::{
+		self as approval_types,
+		v1::{BlockApprovalMeta, RelayVRFStory},
+	},
+	MAX_FINALITY_LAG,
+};
 use pezkuwi_node_subsystem::{
 	messages::{
 		ApprovalDistributionMessage, ChainApiMessage, ChainSelectionMessage, RuntimeApiMessage,
@@ -37,13 +44,6 @@ use pezkuwi_node_subsystem::{
 };
 use pezkuwi_node_subsystem_util::{determine_new_blocks, runtime::RuntimeInfo};
 use pezkuwi_overseer::SubsystemSender;
-use pezkuwi_pez_node_primitives::{
-	approval::{
-		self as approval_types,
-		v1::{BlockApprovalMeta, RelayVRFStory},
-	},
-	MAX_FINALITY_LAG,
-};
 use pezkuwi_primitives::{
 	node_features, BlockNumber, CandidateEvent, CandidateHash,
 	CandidateReceiptV2 as CandidateReceipt, ConsensusLog, CoreIndex, GroupIndex, Hash, Header,
@@ -65,7 +65,7 @@ use crate::{
 	persisted_entries::CandidateEntry,
 };
 
-use pezkuwi_pez_node_primitives::approval::time::{slot_number_to_tick, Tick};
+use pezkuwi_node_primitives::approval::time::{slot_number_to_tick, Tick};
 
 use super::{State, LOG_TARGET};
 
@@ -136,7 +136,7 @@ async fn imported_block_info<Sender: SubsystemSender<RuntimeApiMessage>>(
 			Ok(Ok(events)) => events,
 			Ok(Err(error)) => return Err(ImportedBlockInfoError::RuntimeError(error)),
 			Err(error) => {
-				return Err(ImportedBlockInfoError::FutureCancelled("CandidateEvents", error))
+				return Err(ImportedBlockInfoError::FutureCancelled("CandidateEvents", error));
 			},
 		};
 
@@ -166,7 +166,7 @@ async fn imported_block_info<Sender: SubsystemSender<RuntimeApiMessage>>(
 			Ok(Ok(s)) => s,
 			Ok(Err(error)) => return Err(ImportedBlockInfoError::RuntimeError(error)),
 			Err(error) => {
-				return Err(ImportedBlockInfoError::FutureCancelled("SessionIndexForChild", error))
+				return Err(ImportedBlockInfoError::FutureCancelled("SessionIndexForChild", error));
 			},
 		};
 
@@ -218,7 +218,7 @@ async fn imported_block_info<Sender: SubsystemSender<RuntimeApiMessage>>(
 			Ok(Ok(s)) => s,
 			Ok(Err(error)) => return Err(ImportedBlockInfoError::RuntimeError(error)),
 			Err(error) => {
-				return Err(ImportedBlockInfoError::FutureCancelled("CurrentBabeEpoch", error))
+				return Err(ImportedBlockInfoError::FutureCancelled("CurrentBabeEpoch", error));
 			},
 		}
 	};
@@ -475,7 +475,7 @@ pub(crate) async fn handle_new_head<
 		let validator_group_lens: Vec<usize> =
 			session_info.validator_groups.iter().map(|v| v.len()).collect();
 		// insta-approve candidates on low-node testnets:
-		// cf. https://github.com/pezkuwichain/pezkuwi-sdk/issues/134
+		// cf. https://github.com/paritytech/polkadot/issues/2411
 		let num_candidates = included_candidates.len();
 		let approved_bitfield = {
 			if needed_approvals == 0 {
@@ -616,19 +616,19 @@ pub(crate) mod tests {
 	};
 	use approval_types::time::Clock;
 	use assert_matches::assert_matches;
+	use pezkuwi_node_primitives::{
+		approval::v1::{VrfSignature, VrfTranscript},
+		DISPUTE_WINDOW,
+	};
 	use pezkuwi_node_subsystem::{
 		messages::{AllMessages, ApprovalVotingMessage},
 		SubsystemContext,
 	};
 	use pezkuwi_node_subsystem_test_helpers::make_subsystem_context;
 	use pezkuwi_node_subsystem_util::database::Database;
-	use pezkuwi_pez_node_primitives::{
-		approval::v1::{VrfSignature, VrfTranscript},
-		DISPUTE_WINDOW,
-	};
 	use pezkuwi_primitives::{
-		node_features::FeatureIndex, ExecutorParams, Id as ParaId, IndexedVec, MutateDescriptorV2,
-		NodeFeatures, SessionInfo, ValidatorId, ValidatorIndex,
+		node_features::FeatureIndex, ApprovalVotingParams, Id as ParaId, IndexedVec,
+		MutateDescriptorV2, NodeFeatures, SessionInfo, ValidatorId, ValidatorIndex,
 	};
 	use pezkuwi_primitives_test_helpers::{dummy_candidate_receipt_v2, dummy_hash};
 	pub(crate) use pezsp_consensus_babe::{
@@ -693,7 +693,7 @@ pub(crate) mod tests {
 		fn compute_assignments(
 			&self,
 			_keystore: &LocalKeystore,
-			_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
+			_relay_vrf_story: pezkuwi_node_primitives::approval::v1::RelayVRFStory,
 			_config: &criteria::Config,
 			_leaving_cores: Vec<(
 				CandidateHash,
@@ -708,16 +708,14 @@ pub(crate) mod tests {
 
 		fn check_assignment_cert(
 			&self,
-			_claimed_core_bitfield: pezkuwi_pez_node_primitives::approval::v2::CoreBitfield,
+			_claimed_core_bitfield: pezkuwi_node_primitives::approval::v2::CoreBitfield,
 			_validator_index: pezkuwi_primitives::ValidatorIndex,
 			_config: &criteria::Config,
-			_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
-			_assignment: &pezkuwi_pez_node_primitives::approval::v2::AssignmentCertV2,
+			_relay_vrf_story: pezkuwi_node_primitives::approval::v1::RelayVRFStory,
+			_assignment: &pezkuwi_node_primitives::approval::v2::AssignmentCertV2,
 			_backing_groups: Vec<pezkuwi_primitives::GroupIndex>,
-		) -> Result<
-			pezkuwi_pez_node_primitives::approval::v1::DelayTranche,
-			criteria::InvalidAssignment,
-		> {
+		) -> Result<pezkuwi_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment>
+		{
 			Ok(0)
 		}
 	}
@@ -884,23 +882,18 @@ pub(crate) mod tests {
 				assert_matches!(
 					handle.recv().await,
 					AllMessages::RuntimeApi(
-						RuntimeApiMessage::Request(
-							req_block_hash,
-							RuntimeApiRequest::SessionExecutorParams(idx, si_tx),
-						)
+						RuntimeApiMessage::Request(_, RuntimeApiRequest::NodeFeatures(_, si_tx), )
 					) => {
-						assert_eq!(session, idx);
-						assert_eq!(req_block_hash, hash);
-						si_tx.send(Ok(Some(ExecutorParams::default()))).unwrap();
+						si_tx.send(Ok(NodeFeatures::repeat(enable_v2, FeatureIndex::EnableAssignmentsV2 as usize + 1))).unwrap();
 					}
 				);
 
 				assert_matches!(
 					handle.recv().await,
 					AllMessages::RuntimeApi(
-						RuntimeApiMessage::Request(_, RuntimeApiRequest::NodeFeatures(_, si_tx), )
+						RuntimeApiMessage::Request(_, RuntimeApiRequest::ApprovalVotingParams(_, si_tx), )
 					) => {
-						si_tx.send(Ok(NodeFeatures::repeat(enable_v2, FeatureIndex::EnableAssignmentsV2 as usize + 1))).unwrap();
+						si_tx.send(Ok(ApprovalVotingParams::default())).unwrap();
 					}
 				);
 			});
@@ -1025,23 +1018,18 @@ pub(crate) mod tests {
 			assert_matches!(
 				handle.recv().await,
 				AllMessages::RuntimeApi(
-					RuntimeApiMessage::Request(
-						req_block_hash,
-						RuntimeApiRequest::SessionExecutorParams(idx, si_tx),
-					)
+					RuntimeApiMessage::Request(_, RuntimeApiRequest::NodeFeatures(_, si_tx), )
 				) => {
-					assert_eq!(session, idx);
-					assert_eq!(req_block_hash, hash);
-					si_tx.send(Ok(Some(ExecutorParams::default()))).unwrap();
+					si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
 				}
 			);
 
 			assert_matches!(
 				handle.recv().await,
 				AllMessages::RuntimeApi(
-					RuntimeApiMessage::Request(_, RuntimeApiRequest::NodeFeatures(_, si_tx), )
+					RuntimeApiMessage::Request(_, RuntimeApiRequest::ApprovalVotingParams(_, si_tx), )
 				) => {
-					si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
+					si_tx.send(Ok(ApprovalVotingParams::default())).unwrap();
 				}
 			);
 		});
@@ -1269,23 +1257,18 @@ pub(crate) mod tests {
 			assert_matches!(
 				handle.recv().await,
 				AllMessages::RuntimeApi(
-					RuntimeApiMessage::Request(
-						req_block_hash,
-						RuntimeApiRequest::SessionExecutorParams(idx, si_tx),
-					)
+					RuntimeApiMessage::Request(_, RuntimeApiRequest::NodeFeatures(_, si_tx), )
 				) => {
-					assert_eq!(session, idx);
-					assert_eq!(req_block_hash, hash);
-					si_tx.send(Ok(Some(ExecutorParams::default()))).unwrap();
+					si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
 				}
 			);
 
 			assert_matches!(
 				handle.recv().await,
 				AllMessages::RuntimeApi(
-					RuntimeApiMessage::Request(_, RuntimeApiRequest::NodeFeatures(_, si_tx), )
+					RuntimeApiMessage::Request(_, RuntimeApiRequest::ApprovalVotingParams(_, si_tx), )
 				) => {
-					si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
+					si_tx.send(Ok(ApprovalVotingParams::default())).unwrap();
 				}
 			);
 		});
@@ -1497,23 +1480,18 @@ pub(crate) mod tests {
 			assert_matches!(
 				handle.recv().await,
 				AllMessages::RuntimeApi(
-					RuntimeApiMessage::Request(
-						req_block_hash,
-						RuntimeApiRequest::SessionExecutorParams(idx, si_tx),
-					)
+					RuntimeApiMessage::Request(_, RuntimeApiRequest::NodeFeatures(_, si_tx), )
 				) => {
-					assert_eq!(session, idx);
-					assert_eq!(req_block_hash, hash);
-					si_tx.send(Ok(Some(ExecutorParams::default()))).unwrap();
+					si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
 				}
 			);
 
 			assert_matches!(
 				handle.recv().await,
 				AllMessages::RuntimeApi(
-					RuntimeApiMessage::Request(_, RuntimeApiRequest::NodeFeatures(_, si_tx), )
+					RuntimeApiMessage::Request(_, RuntimeApiRequest::ApprovalVotingParams(_, si_tx), )
 				) => {
-					si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
+					si_tx.send(Ok(ApprovalVotingParams::default())).unwrap();
 				}
 			);
 

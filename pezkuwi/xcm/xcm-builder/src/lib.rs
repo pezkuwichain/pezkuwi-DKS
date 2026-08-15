@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ pub use barriers::{
 	AllowExplicitUnpaidExecutionFrom, AllowHrmpNotificationsFromRelayChain,
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
 	AllowUnpaidExecutionFrom, DenyRecursively, DenyReserveTransferToRelayChain, DenyThenTry,
-	IsChildSystemTeyrchain, IsParentsOnly, IsSiblingSystemTeyrchain, RespectSuspension,
+	IsChildSystemParachain, IsParentsOnly, IsSiblingSystemParachain, RespectSuspension,
 	TakeWeightCredit, TrailingSetTopicAsId, WithComputedOrigin,
 };
 
@@ -58,6 +58,9 @@ pub use controller::{
 mod currency_adapter;
 #[allow(deprecated)]
 pub use currency_adapter::CurrencyAdapter;
+
+mod forwarder;
+pub use forwarder::TeleportForwarderForAccountId32;
 
 mod fee_handling;
 pub use fee_handling::{
@@ -81,12 +84,12 @@ mod location_conversion;
 pub use location_conversion::ForeignChainAliasAccount;
 pub use location_conversion::{
 	Account32Hash, AccountId32Aliases, AccountKey20Aliases, AliasesIntoAccountId32,
-	ChildTeyrchainConvertsVia, DescribeAccountId32Terminal, DescribeAccountIdTerminal,
+	ChildParachainConvertsVia, DescribeAccountId32Terminal, DescribeAccountIdTerminal,
 	DescribeAccountKey20Terminal, DescribeAllTerminal, DescribeBodyTerminal, DescribeFamily,
 	DescribeLocation, DescribePalletTerminal, DescribeTerminus, DescribeTreasuryVoiceTerminal,
 	ExternalConsensusLocationsConverterFor, GlobalConsensusConvertsFor,
-	GlobalConsensusTeyrchainConvertsFor, HashedDescription, LocalTreasuryVoiceConvertsVia,
-	ParentIsPreset, SiblingTeyrchainConvertsVia,
+	GlobalConsensusParachainConvertsFor, HashedDescription, LocalTreasuryVoiceConvertsVia,
+	ParentIsPreset, SiblingParachainConvertsVia,
 };
 
 mod matches_location;
@@ -117,9 +120,9 @@ pub use origin_aliases::*;
 
 mod origin_conversion;
 pub use origin_conversion::{
-	BackingToPlurality, ChildSystemTeyrchainAsSuperuser, ChildTeyrchainAsNative, EnsureXcmOrigin,
+	BackingToPlurality, ChildParachainAsNative, ChildSystemParachainAsSuperuser, EnsureXcmOrigin,
 	LocationAsSuperuser, OriginToPluralityVoice, ParentAsSuperuser, RelayChainAsNative,
-	SiblingSystemTeyrchainAsSuperuser, SiblingTeyrchainAsNative, SignedAccountId32AsNative,
+	SiblingParachainAsNative, SiblingSystemParachainAsSuperuser, SignedAccountId32AsNative,
 	SignedAccountKey20AsNative, SignedToAccountId32, SovereignSignedViaLocation,
 };
 

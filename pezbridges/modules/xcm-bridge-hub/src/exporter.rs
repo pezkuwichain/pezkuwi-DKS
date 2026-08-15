@@ -24,11 +24,11 @@ use crate::{Config, Pezpallet, LOG_TARGET};
 
 use crate::{BridgeOf, Bridges};
 
-use pezbp_messages::{
+use bp_messages::{
 	source_chain::{MessagesBridge, OnMessagesDelivered},
 	MessageNonce,
 };
-use pezbp_xcm_bridge_hub::{BridgeId, BridgeState, LocalXcmChannelManager, XcmAsPlainPayload};
+use bp_xcm_bridge_hub::{BridgeId, BridgeState, LocalXcmChannelManager, XcmAsPlainPayload};
 use pezframe_support::{ensure, traits::Get};
 use pezpallet_bridge_messages::{
 	Config as BridgeMessagesConfig, Error, Pezpallet as BridgeMessagesPallet,
@@ -225,7 +225,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 			return;
 		}
 
-		// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/231 we either need fishermens
+		// TODO: https://github.com/paritytech/parity-bridges-common/issues/2006 we either need fishermens
 		// to watch this rule violation (suspended, but keep sending new messages), or we need a
 		// hard limit for that like other XCM queues have
 
@@ -355,9 +355,9 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 ///
 /// We are using `HaulBlobExporter`, which requires `HaulBlob` implementation. It assumes that
 /// there's a single channel between two bridge hubs - `HaulBlob` only accepts the blob and nothing
-/// else. But bridge messages pezpallet may have a dedicated channel (lane) for every pair of
-/// bridged chains. So we are using our own `ExportXcm` implementation, but to utilize
-/// `HaulBlobExporter` we still need this `DummyHaulBlob`.
+/// else. But bridge messages pezpallet may have a dedicated channel (lane) for every pair of bridged
+/// chains. So we are using our own `ExportXcm` implementation, but to utilize `HaulBlobExporter` we
+/// still need this `DummyHaulBlob`.
 pub struct DummyHaulBlob;
 
 impl HaulBlob for DummyHaulBlob {
@@ -371,8 +371,8 @@ mod tests {
 	use super::*;
 	use crate::{mock::*, Bridges, LaneToBridge, LanesManagerOf};
 
-	use pezbp_runtime::RangeInclusiveExt;
-	use pezbp_xcm_bridge_hub::{Bridge, BridgeLocations, BridgeState};
+	use bp_runtime::RangeInclusiveExt;
+	use bp_xcm_bridge_hub::{Bridge, BridgeLocations, BridgeState};
 	use pezframe_support::{assert_ok, traits::EnsureOrigin};
 	use pezpallet_bridge_messages::InboundLaneStorage;
 	use xcm_builder::{NetworkExportTable, UnpaidRemoteExporter};

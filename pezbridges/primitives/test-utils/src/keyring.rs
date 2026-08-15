@@ -16,12 +16,13 @@
 
 //! Utilities for working with test accounts.
 
+use bp_header_chain::{justification::JustificationVerificationContext, AuthoritySet};
 use codec::Encode;
 use ed25519_dalek::{Signature, SigningKey, VerifyingKey};
 use finality_grandpa::voter_set::VoterSet;
-use pezbp_header_pez_chain::{justification::JustificationVerificationContext, AuthoritySet};
 use pezsp_consensus_grandpa::{AuthorityId, AuthorityList, AuthorityWeight, SetId};
 use pezsp_std::prelude::*;
+use Debug;
 
 /// Set of test accounts with friendly names: Alice.
 pub const ALICE: Account = Account(0);

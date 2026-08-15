@@ -25,8 +25,8 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use pez_finality_relay::TargetClient;
-use pezbp_runtime::BlockNumberOf;
+use bp_runtime::BlockNumberOf;
+use finality_relay::TargetClient;
 use pezsp_core::Pair;
 use pezsp_runtime::traits::Header;
 use relay_bizinikiwi_client::{

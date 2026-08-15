@@ -1,29 +1,28 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
-use codec::Encode;
 use std::path::PathBuf;
 
 use pezcumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
 use pezcumulus_relay_chain_interface::RelayChainInterface;
 
+use pezkuwi_node_primitives::{MaybeCompressedPoV, SubmitCollationParams};
 use pezkuwi_node_subsystem::messages::CollationGenerationMessage;
 use pezkuwi_overseer::Handle as OverseerHandle;
-use pezkuwi_pez_node_primitives::{MaybeCompressedPoV, SubmitCollationParams};
 use pezkuwi_primitives::{CollatorPair, Id as ParaId};
 
 use futures::prelude::*;
@@ -35,7 +34,7 @@ use pezsp_runtime::traits::{Block as BlockT, Header};
 
 use super::CollatorMessage;
 
-const LOG_TARGET: &str = "aura::pezcumulus::collation_task";
+const LOG_TARGET: &str = "aura::cumulus::collation_task";
 
 /// Parameters for the collation task.
 pub struct Params<Block: BlockT, RClient, CS> {
@@ -103,7 +102,7 @@ pub async fn run_collation_task<Block, RClient, CS>(
 			},
 			block_import_msg = block_import_handle.next().fuse() => {
 				// TODO: Implement me.
-				// Issue: https://github.com/pezkuwichain/pezkuwi-sdk/issues/24
+				// Issue: https://github.com/pezkuwichain/pezkuwi-sdk/issues/6495
 				let _ = block_import_msg;
 			}
 		}
@@ -121,24 +120,31 @@ async fn handle_collation_message<Block: BlockT, RClient: RelayChainInterface + 
 	export_pov: Option<PathBuf>,
 ) {
 	let CollatorMessage {
+		scheduling_proof,
 		parent_header,
-		teyrchain_candidate,
+		blocks,
+		proof,
 		validation_code_hash,
 		relay_parent,
 		core_index,
-		max_pov_size,
+		validation_data,
 	} = message;
 
-	let hash = teyrchain_candidate.block.header().hash();
-	let number = *teyrchain_candidate.block.header().number();
-	let (collation, block_data) =
-		match collator_service.build_collation(&parent_header, hash, teyrchain_candidate) {
-			Some(collation) => collation,
-			None => {
-				tracing::warn!(target: LOG_TARGET, %hash, ?number, ?core_index, "Unable to build collation.");
-				return;
-			},
-		};
+	// Derive scheduling_parent from the proof (the ISP header's hash is used when the
+	// header chain is empty — that's the case with `relay_parent_offset = 0`).
+	let scheduling_parent = scheduling_proof.as_ref().map(|p| p.scheduling_parent());
+	let (collation, block_data) = match collator_service.build_multi_block_collation(
+		&parent_header,
+		blocks,
+		proof,
+		scheduling_proof,
+	) {
+		Some(collation) => collation,
+		None => {
+			tracing::warn!(target: LOG_TARGET, ?core_index, "Unable to build collation.");
+			return;
+		},
+	};
 
 	block_data.log_size_info();
 
@@ -156,7 +162,7 @@ async fn handle_collation_message<Block: BlockT, RClient: RelayChainInterface + 
 						parent_header.clone(),
 						relay_parent_header.state_root,
 						relay_parent_header.number,
-						max_pov_size,
+						validation_data.max_pov_size,
 					);
 				}
 			} else {
@@ -166,22 +172,43 @@ async fn handle_collation_message<Block: BlockT, RClient: RelayChainInterface + 
 
 		tracing::info!(
 			target: LOG_TARGET,
+			block_numbers = ?block_data.blocks().iter().map(|b| *b.header().number()).collect::<Vec<_>>(),
 			"Compressed PoV size: {}kb",
 			pov.block_data.0.len() as f64 / 1024f64,
 		);
 	}
 
-	tracing::debug!(target: LOG_TARGET, ?core_index, ?hash, %number, "Submitting collation for core.");
+	let session_index = match relay_client.session_index_for_child(relay_parent).await {
+		Ok(session_index) => session_index,
+		Err(err) => {
+			tracing::error!(
+				target: LOG_TARGET,
+				?err,
+				?relay_parent,
+				"Failed to fetch session index."
+			);
+			return;
+		},
+	};
+
+	tracing::debug!(
+		target: LOG_TARGET,
+		?core_index,
+		block_numbers = ?block_data.blocks().iter().map(|b| *b.header().number()).collect::<Vec<_>>(),
+		"Submitting collation for core.",
+	);
 
 	overseer_handle
 		.send_msg(
 			CollationGenerationMessage::SubmitCollation(SubmitCollationParams {
 				relay_parent,
 				collation,
-				parent_head: parent_header.encode().into(),
 				validation_code_hash,
 				core_index,
 				result_sender: None,
+				scheduling_parent,
+				session_index,
+				validation_data,
 			}),
 			"SubmitCollation",
 		)

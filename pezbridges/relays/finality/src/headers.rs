@@ -19,8 +19,8 @@ use crate::{
 	HeadersToRelay, SourceClient, SourceHeader, TargetClient,
 };
 
+use bp_header_chain::FinalityProof;
 use num_traits::Saturating;
-use pezbp_header_pez_chain::FinalityProof;
 use std::cmp::Ordering;
 
 /// Unjustified headers container. Ordered by header number.

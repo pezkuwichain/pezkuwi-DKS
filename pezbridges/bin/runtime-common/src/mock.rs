@@ -15,20 +15,18 @@
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
 //! A mock runtime for testing different stuff in the crate.
-//! Mock types are used by macros but clippy doesn't see the usage.
 
 #![cfg(test)]
-#![allow(dead_code)]
 
-use codec::Encode;
-use pezbp_header_pez_chain::ChainWithGrandpa;
-use pezbp_messages::{
+use bp_header_chain::ChainWithGrandpa;
+use bp_messages::{
 	target_chain::{DispatchMessage, MessageDispatch},
 	ChainWithMessages, HashedLaneId, LaneIdType, MessageNonce,
 };
-use pezbp_relayers::{PayRewardFromAccount, RewardsAccountParams};
-use pezbp_runtime::{messages::MessageDispatchResult, Chain, ChainId, Teyrchain};
-use pezbp_teyrchains::SingleParaStoredHeaderDataBuilder;
+use bp_relayers::{PayRewardFromAccount, RewardsAccountParams};
+use bp_runtime::{messages::MessageDispatchResult, Chain, ChainId, Teyrchain};
+use bp_teyrchains::SingleParaStoredHeaderDataBuilder;
+use codec::Encode;
 use pezframe_support::{
 	derive_impl, parameter_types,
 	weights::{ConstantMultiplier, IdentityFee, RuntimeDbWeight, Weight},
@@ -51,6 +49,7 @@ pub type ThisChainHash = H256;
 /// Hasher at `ThisChain`.
 pub type ThisChainHasher = BlakeTwo256;
 /// Runtime call at `ThisChain`.
+#[allow(dead_code)]
 pub type ThisChainRuntimeCall = RuntimeCall;
 /// Header of `ThisChain`.
 pub type ThisChainHeader = pezsp_runtime::generic::Header<ThisChainBlockNumber, ThisChainHasher>;
@@ -109,14 +108,14 @@ pezframe_support::construct_runtime! {
 		TransactionPayment: pezpallet_transaction_payment::{Pezpallet, Storage, Event<T>},
 		BridgeRelayers: pezpallet_bridge_relayers::{Pezpallet, Call, Storage, Event<T>},
 		BridgeGrandpa: pezpallet_bridge_grandpa::{Pezpallet, Call, Storage, Event<T>},
-		BridgeTeyrchains: pezpallet_bridge_teyrchains::{Pezpallet, Call, Storage, Event<T>},
+		BridgeParachains: pezpallet_bridge_teyrchains::{Pezpallet, Call, Storage, Event<T>},
 		BridgeMessages: pezpallet_bridge_messages::{Pezpallet, Call, Storage, Event<T>, Config<T>},
 	}
 }
 
 crate::generate_bridge_reject_obsolete_headers_and_messages! {
 	ThisChainRuntimeCall, ThisChainAccountId,
-	BridgeGrandpa, BridgeTeyrchains, BridgeMessages
+	BridgeGrandpa, BridgeParachains, BridgeMessages
 }
 
 parameter_types! {
@@ -183,7 +182,7 @@ impl pezpallet_bridge_teyrchains::Config for TestRuntime {
 	type BridgesGrandpaPalletInstance = ();
 	type ParasPalletName = BridgedParasPalletName;
 	type ParaStoredHeaderDataBuilder =
-		SingleParaStoredHeaderDataBuilder<BridgedUnderlyingTeyrchain>;
+		SingleParaStoredHeaderDataBuilder<BridgedUnderlyingParachain>;
 	type HeadsToKeep = ConstU32<8>;
 	type MaxParaHeadDataSize = ConstU32<1024>;
 	type WeightInfo = pezpallet_bridge_teyrchains::weights::BridgeWeight<TestRuntime>;
@@ -293,7 +292,7 @@ impl ChainWithMessages for ThisUnderlyingChain {
 /// Underlying chain of `BridgedChain`.
 pub struct BridgedUnderlyingChain;
 /// Some teyrchain under `BridgedChain` consensus.
-pub struct BridgedUnderlyingTeyrchain;
+pub struct BridgedUnderlyingParachain;
 
 impl Chain for BridgedUnderlyingChain {
 	const ID: ChainId = TEST_BRIDGED_CHAIN_ID;
@@ -331,7 +330,7 @@ impl ChainWithMessages for BridgedUnderlyingChain {
 	const MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX: MessageNonce = 1000;
 }
 
-impl Chain for BridgedUnderlyingTeyrchain {
+impl Chain for BridgedUnderlyingParachain {
 	const ID: ChainId = *b"bupc";
 
 	type BlockNumber = BridgedChainBlockNumber;
@@ -353,8 +352,8 @@ impl Chain for BridgedUnderlyingTeyrchain {
 	}
 }
 
-impl Teyrchain for BridgedUnderlyingTeyrchain {
-	const TEYRCHAIN_ID: u32 = 42;
+impl Teyrchain for BridgedUnderlyingParachain {
+	const PARACHAIN_ID: u32 = 42;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 

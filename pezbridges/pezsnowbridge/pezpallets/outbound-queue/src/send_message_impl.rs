@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
-//! Implementation for [`pezsnowbridge_outbound_queue_primitives::v1::SendMessage`]
+//! Implementation for [`snowbridge_outbound_queue_primitives::v1::SendMessage`]
 use super::*;
+use bridge_hub_common::AggregateMessageOrigin;
 use codec::Encode;
-use pezbridge_hub_common::AggregateMessageOrigin;
 use pezframe_support::{
 	ensure,
 	traits::{EnqueueMessage, Get},
 	CloneNoBound, DebugNoBound, PartialEqNoBound,
 };
 use pezframe_system::unique;
-use pezsnowbridge_core::{ChannelId, PRIMARY_GOVERNANCE_CHANNEL};
-use pezsnowbridge_outbound_queue_primitives::{
+use pezsp_core::H256;
+use pezsp_runtime::BoundedVec;
+use snowbridge_core::{ChannelId, PRIMARY_GOVERNANCE_CHANNEL};
+use snowbridge_outbound_queue_primitives::{
 	v1::{Fee, Message, QueuedMessage, SendMessage, VersionedQueuedMessage},
 	SendError, SendMessageFeeProvider,
 };
-use pezsp_core::H256;
-use pezsp_runtime::BoundedVec;
 
 /// The maximal length of an enqueued message, as determined by the MessageQueue pezpallet
 pub type MaxEnqueuedMessageSizeOf<T> =

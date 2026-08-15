@@ -17,15 +17,15 @@
 use crate::calls::UtilityCall;
 
 use crate::SimpleRuntimeVersion;
-use codec::{Codec, Decode, Encode, MaxEncodedLen};
-use jsonrpsee::core::{DeserializeOwned, Serialize};
-use num_traits::Zero;
-use pezbp_header_pez_chain::ChainWithGrandpa as ChainWithGrandpaBase;
-use pezbp_messages::ChainWithMessages as ChainWithMessagesBase;
-use pezbp_runtime::{
+use bp_header_chain::ChainWithGrandpa as ChainWithGrandpaBase;
+use bp_messages::ChainWithMessages as ChainWithMessagesBase;
+use bp_runtime::{
 	Chain as ChainBase, EncodedOrDecodedCall, HashOf, Teyrchain as TeyrchainBase, TransactionEra,
 	TransactionEraOf, UnderlyingChainProvider,
 };
+use codec::{Codec, Decode, Encode, MaxEncodedLen};
+use jsonrpsee::core::{DeserializeOwned, Serialize};
+use num_traits::Zero;
 use pezframe_support::Parameter;
 use pezsc_transaction_pool_api::TransactionStatus;
 use pezsp_core::{storage::StorageKey, Pair};
@@ -87,7 +87,7 @@ pub trait RelayChain: Chain {
 	const PARAS_PALLET_NAME: &'static str;
 	/// Name of the `pezpallet-bridge-teyrchains`, deployed at the **bridged** chain to sync
 	/// teyrchains of **this** chain.
-	const WITH_CHAIN_BRIDGE_TEYRCHAINS_PALLET_NAME: &'static str;
+	const WITH_CHAIN_BRIDGE_PARACHAINS_PALLET_NAME: &'static str;
 }
 
 /// Bizinikiwi-based chain that is using direct GRANDPA finality from minimal relay-client point of
@@ -128,8 +128,8 @@ pub type CallOf<C> = <C as Chain>::Call;
 /// Transaction status of the chain.
 pub type TransactionStatusOf<C> = TransactionStatus<HashOf<C>, HashOf<C>>;
 
-/// Bizinikiwi-based chain with `AccountData` generic argument of `pezframe_system::AccountInfo` set
-/// to the `pezpallet_balances::AccountData<Balance>`.
+/// Bizinikiwi-based chain with `AccountData` generic argument of `pezframe_system::AccountInfo` set to
+/// the `pezpallet_balances::AccountData<Balance>`.
 pub trait ChainWithBalances: Chain {
 	/// Return runtime storage key for getting `pezframe_system::AccountInfo` of given account.
 	fn account_info_storage_key(account_id: &Self::AccountId) -> StorageKey;

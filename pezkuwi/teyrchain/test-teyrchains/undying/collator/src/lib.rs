@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,11 +20,11 @@ use codec::{Decode, Encode};
 use futures::{channel::oneshot, StreamExt};
 use futures_timer::Delay;
 use pezkuwi_cli::ProvideRuntimeApi;
-use pezkuwi_node_subsystem::messages::CollatorProtocolMessage;
-use pezkuwi_pez_node_primitives::{
+use pezkuwi_node_primitives::{
 	maybe_compress_pov, AvailableData, Collation, CollationResult, CollationSecondedSignal,
 	CollatorFn, MaybeCompressedPoV, PoV, Statement, UpwardMessages,
 };
+use pezkuwi_node_subsystem::messages::CollatorProtocolMessage;
 use pezkuwi_primitives::{
 	CandidateCommitments, CandidateDescriptorV2, CandidateReceiptV2, ClaimQueueOffset, CollatorId,
 	CollatorPair, CoreIndex, Hash, Id as ParaId, OccupiedCoreAssumption,

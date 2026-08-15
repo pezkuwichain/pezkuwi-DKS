@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ macro_rules! mock {
 				fn start(self, ctx: Context) -> SpawnedSubsystem {
 					let future = self.run(ctx).map(|_| Ok(())).boxed();
 
-                    // The name will appear in bizinikiwi CPU task metrics as `task_group`.`
+                    // The name will appear in substrate CPU task metrics as `task_group`.`
 					SpawnedSubsystem { name: "test-environment", future }
 				}
 			}
@@ -86,7 +86,7 @@ mock!(CollatorProtocol);
 mock!(GossipSupport);
 mock!(DisputeDistribution);
 mock!(DisputeCoordinator);
-mock!(ProspectiveTeyrchains);
+mock!(ProspectiveParachains);
 mock!(PvfChecker);
 mock!(CandidateBacking);
 mock!(AvailabilityDistribution);

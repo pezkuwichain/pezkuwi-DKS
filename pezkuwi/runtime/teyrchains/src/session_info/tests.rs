@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ use crate::{
 	},
 	util::take_active_subset,
 };
-use pezkuwi_primitives::{BlockNumber, SchedulerParams, ValidatorId, ValidatorIndex};
+use pezkuwi_primitives::{vstaging::SchedulerParams, BlockNumber, ValidatorId, ValidatorIndex};
 use pezsp_keyring::Sr25519Keyring;
 
 fn run_to_block(

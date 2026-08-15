@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ pub struct Cli {
 
 impl BizinikiwiCli for Cli {
 	fn impl_name() -> String {
-		"Parity Pezkuwi".into()
+		"Parity Polkadot".into()
 	}
 
 	fn impl_version() -> String {
@@ -89,7 +89,7 @@ impl BizinikiwiCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/pezkuwichain/pezkuwi-sdk/issues/new".into()
+		"https://github.com/paritytech/pezkuwi-sdk/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
@@ -104,18 +104,16 @@ impl BizinikiwiCli for Cli {
 		&self,
 		id: &str,
 	) -> std::result::Result<Box<dyn pezsc_service::ChainSpec>, String> {
-		let id = if id.is_empty() { "pezkuwichain" } else { id };
+		let id = if id.is_empty() { "rococo" } else { id };
 		Ok(match id {
-			"pezkuwichain-staging" => {
-				Box::new(pezkuwi_service::chain_spec::pezkuwichain_staging_testnet_config()?)
+			"rococo-staging" => {
+				Box::new(pezkuwi_service::chain_spec::rococo_staging_testnet_config()?)
 			},
-			"pezkuwichain-local" => {
-				Box::new(pezkuwi_service::chain_spec::pezkuwichain_local_testnet_config()?)
-			},
-			"pezkuwichain" => Box::new(pezkuwi_service::chain_spec::pezkuwichain_config()?),
+			"rococo-local" => Box::new(pezkuwi_service::chain_spec::rococo_local_testnet_config()?),
+			"rococo" => Box::new(pezkuwi_service::chain_spec::rococo_config()?),
 			path => {
 				let path = std::path::PathBuf::from(path);
-				Box::new(pezkuwi_service::PezkuwichainChainSpec::from_json_file(path)?)
+				Box::new(pezkuwi_service::RococoChainSpec::from_json_file(path)?)
 			},
 		})
 	}

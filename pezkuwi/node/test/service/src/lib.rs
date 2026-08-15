@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,13 +22,13 @@ pub mod chain_spec;
 
 pub use chain_spec::*;
 use futures::{future::Future, stream::StreamExt};
+use pezkuwi_node_primitives::{CollationGenerationConfig, CollatorFn};
 use pezkuwi_node_subsystem::messages::{CollationGenerationMessage, CollatorProtocolMessage};
 use pezkuwi_overseer::Handle;
-use pezkuwi_pez_node_primitives::{CollationGenerationConfig, CollatorFn};
 use pezkuwi_primitives::{Balance, CollatorPair, HeadData, Id as ParaId, ValidationCode};
 use pezkuwi_runtime_common::BlockHashCount;
 use pezkuwi_runtime_teyrchains::paras::{ParaGenesisArgs, ParaKind};
-use pezkuwi_service::{Error, FullClient, IsTeyrchainNode, NewFull, OverseerGen, PrometheusConfig};
+use pezkuwi_service::{Error, FullClient, IsParachainNode, NewFull, OverseerGen, PrometheusConfig};
 use pezkuwi_test_runtime::{
 	ParasCall, ParasSudoWrapperCall, Runtime, SignedPayload, SudoCall, TxExtension,
 	UncheckedExtrinsic, VERSION,
@@ -74,7 +74,7 @@ use pezsc_service::config::{ExecutorConfiguration, RpcConfiguration};
 #[pezsc_tracing::logging::prefix_logs_with(custom_log_prefix.unwrap_or(config.network.node_name.as_str()))]
 pub fn new_full<OverseerGenerator: OverseerGen>(
 	config: Configuration,
-	is_teyrchain_node: IsTeyrchainNode,
+	is_teyrchain_node: IsParachainNode,
 	workers_path: Option<PathBuf>,
 	overseer_gen: OverseerGenerator,
 	custom_log_prefix: Option<&'static str>,
@@ -100,6 +100,8 @@ pub fn new_full<OverseerGenerator: OverseerGen>(
 		keep_finalized_for: None,
 		invulnerable_ah_collators: HashSet::new(),
 		collator_protocol_hold_off: None,
+		experimental_collator_protocol: false,
+		collator_reputation_persist_interval: None,
 	};
 
 	match config.network.network_backend {
@@ -258,15 +260,15 @@ pub async fn get_listen_address(network: Arc<dyn NetworkService>) -> pezsc_netwo
 pub async fn run_validator_node(
 	config: Configuration,
 	worker_program_path: Option<PathBuf>,
-) -> PezkuwiTestNode {
+) -> PolkadotTestNode {
 	let NewFull { task_manager, client, network, rpc_handlers, overseer_handle, .. } = new_full(
 		config,
-		IsTeyrchainNode::No,
+		IsParachainNode::No,
 		worker_program_path,
 		pezkuwi_service::ValidatorOverseerGen,
 		None,
 	)
-	.expect("could not create Pezkuwi test service");
+	.expect("could not create Polkadot test service");
 
 	let overseer_handle = overseer_handle.expect("test node must have an overseer handle");
 	let peer_id = network.local_peer_id();
@@ -274,7 +276,7 @@ pub async fn run_validator_node(
 
 	let addr = MultiaddrWithPeerId { multiaddr, peer_id };
 
-	PezkuwiTestNode { task_manager, client, overseer_handle, addr, rpc_handlers }
+	PolkadotTestNode { task_manager, client, overseer_handle, addr, rpc_handlers }
 }
 
 /// Run a test collator node that uses the test runtime.
@@ -288,23 +290,23 @@ pub async fn run_validator_node(
 /// # Note
 ///
 /// The collator functionality still needs to be registered at the node! This can be done using
-/// [`PezkuwiTestNode::register_collator`].
+/// [`PolkadotTestNode::register_collator`].
 pub async fn run_collator_node(
 	tokio_handle: tokio::runtime::Handle,
 	key: Sr25519Keyring,
 	storage_update_func: impl Fn(),
 	boot_nodes: Vec<MultiaddrWithPeerId>,
 	collator_pair: CollatorPair,
-) -> PezkuwiTestNode {
+) -> PolkadotTestNode {
 	let config = node_config(storage_update_func, tokio_handle, key, boot_nodes, false);
 	let NewFull { task_manager, client, network, rpc_handlers, overseer_handle, .. } = new_full(
 		config,
-		IsTeyrchainNode::Collator(collator_pair),
+		IsParachainNode::Collator(collator_pair),
 		None,
 		pezkuwi_service::CollatorOverseerGen,
 		None,
 	)
-	.expect("could not create Pezkuwi test service");
+	.expect("could not create Polkadot test service");
 
 	let overseer_handle = overseer_handle.expect("test node must have an overseer handle");
 	let peer_id = network.local_peer_id();
@@ -312,11 +314,11 @@ pub async fn run_collator_node(
 	let multiaddr = get_listen_address(network).await;
 	let addr = MultiaddrWithPeerId { multiaddr, peer_id };
 
-	PezkuwiTestNode { task_manager, client, overseer_handle, addr, rpc_handlers }
+	PolkadotTestNode { task_manager, client, overseer_handle, addr, rpc_handlers }
 }
 
 /// A Pezkuwi test node instance used for testing.
-pub struct PezkuwiTestNode {
+pub struct PolkadotTestNode {
 	/// `TaskManager`'s instance.
 	pub task_manager: TaskManager,
 	/// Client's instance.
@@ -330,7 +332,7 @@ pub struct PezkuwiTestNode {
 	pub rpc_handlers: RpcHandlers,
 }
 
-impl PezkuwiTestNode {
+impl PolkadotTestNode {
 	/// Send a sudo call to this node.
 	async fn send_sudo(
 		&self,

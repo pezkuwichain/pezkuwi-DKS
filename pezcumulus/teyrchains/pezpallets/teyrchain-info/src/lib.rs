@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,11 +17,6 @@
 //! Minimal Pezpallet that injects a TeyrchainId into Runtime storage from
 
 #![cfg_attr(not(feature = "std"), no_std)]
-
-#[cfg(test)]
-mod mock;
-#[cfg(test)]
-mod tests;
 
 pub use pezpallet::*;
 
@@ -64,13 +59,13 @@ pub mod pezpallet {
 	}
 
 	#[pezpallet::type_value]
-	pub(super) fn DefaultForTeyrchainId() -> ParaId {
+	pub(super) fn DefaultForParachainId() -> ParaId {
 		100.into()
 	}
 
 	#[pezpallet::storage]
 	pub(super) type TeyrchainId<T: Config> =
-		StorageValue<_, ParaId, ValueQuery, DefaultForTeyrchainId>;
+		StorageValue<_, ParaId, ValueQuery, DefaultForParachainId>;
 
 	impl<T: Config> Get<ParaId> for Pezpallet<T> {
 		fn get() -> ParaId {

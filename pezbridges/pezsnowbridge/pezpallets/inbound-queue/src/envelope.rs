@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
-use pezsnowbridge_core::ChannelId;
-use pezsnowbridge_inbound_queue_primitives::Log;
+use snowbridge_core::ChannelId;
+use snowbridge_inbound_queue_primitives::Log;
 
 use pezsp_core::{H160, H256};
 use pezsp_std::prelude::*;

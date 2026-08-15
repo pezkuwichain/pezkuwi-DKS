@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Pezcumulus teyrchain collator primitives.
+//! Cumulus teyrchain collator primitives.
 
 #![warn(missing_docs)]
 
@@ -29,7 +29,9 @@ pub mod types;
 
 use crate::cli::AuthoringPolicy;
 
-use pezcumulus_primitives_core::{CollectCollationInfo, GetTeyrchainInfo, RelayParentOffsetApi};
+use pezcumulus_primitives_core::{
+	CollectCollationInfo, GetParachainInfo, RelayParentOffsetApi, SchedulingV3EnabledApi,
+};
 use pezsc_client_db::DbHash;
 use pezsc_offchain::OffchainWorkerApi;
 use pezsp_api::{ApiExt, CallApiAt, ConstructRuntimeApi, Metadata};
@@ -39,8 +41,8 @@ use pezsp_runtime::{
 	OpaqueExtrinsic,
 };
 use pezsp_session::SessionKeys;
-use pezsp_statement_store::runtime_api::ValidateStatement;
 use pezsp_transaction_pool::runtime_api::TaggedTransactionQueue;
+use pezsp_transaction_storage_proof::runtime_api::TransactionStorageApi;
 use serde::de::DeserializeOwned;
 use std::{fmt::Debug, path::PathBuf, str::FromStr};
 
@@ -72,9 +74,10 @@ pub trait NodeRuntimeApi<Block: BlockT>:
 	+ TaggedTransactionQueue<Block>
 	+ OffchainWorkerApi<Block>
 	+ CollectCollationInfo<Block>
-	+ ValidateStatement<Block>
-	+ GetTeyrchainInfo<Block>
+	+ GetParachainInfo<Block>
+	+ TransactionStorageApi<Block>
 	+ RelayParentOffsetApi<Block>
+	+ SchedulingV3EnabledApi<Block>
 	+ Sized
 {
 }
@@ -88,8 +91,9 @@ impl<T, Block: BlockT> NodeRuntimeApi<Block> for T where
 		+ OffchainWorkerApi<Block>
 		+ RelayParentOffsetApi<Block>
 		+ CollectCollationInfo<Block>
-		+ ValidateStatement<Block>
-		+ GetTeyrchainInfo<Block>
+		+ GetParachainInfo<Block>
+		+ TransactionStorageApi<Block>
+		+ SchedulingV3EnabledApi<Block>
 {
 }
 
@@ -121,12 +125,17 @@ pub struct NodeExtraArgs {
 	pub export_pov: Option<PathBuf>,
 
 	/// The maximum percentage of the maximum PoV size that the collator can use.
-	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-sdk/issues/193> is fixed.
+	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-sdk/issues/6020> is fixed.
 	pub max_pov_percentage: Option<u32>,
 
-	/// If true then the statement store will be enabled.
-	pub enable_statement_store: bool,
+	/// Statement store and network handler configuration.
+	/// `None` disables the statement store.
+	pub statement_store_config: Option<pezsc_statement_store::Config>,
 
 	/// Parameters for storage monitoring.
 	pub storage_monitor: pezsc_storage_monitor::StorageMonitorParams,
+
+	/// HOP (Hand-Off Protocol) configuration parameters.
+	/// `None` disables HOP.
+	pub hop: Option<pezsc_hop::HopParams>,
 }

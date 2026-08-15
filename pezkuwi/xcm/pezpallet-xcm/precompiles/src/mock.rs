@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,7 @@ use pezsp_runtime::{
 use xcm::prelude::*;
 use xcm_builder::{
 	AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-	AllowTopLevelPaidExecutionFrom, ChildTeyrchainConvertsVia, DescribeAllTerminal,
+	AllowTopLevelPaidExecutionFrom, ChildParachainConvertsVia, DescribeAllTerminal,
 	EnsureDecodableXcm, FixedWeightBounds, FungibleAdapter, FungiblesAdapter, HashedDescription,
 	IsConcrete, MatchedConvertedConcreteId, NoChecking, TakeWeightCredit,
 };
@@ -40,7 +40,7 @@ use xcm_executor::{
 	traits::{Identity, JustTry},
 	XcmExecutor,
 };
-use xcm_pez_simulator::helpers::derive_topic_id;
+use xcm_simulator::helpers::derive_topic_id;
 
 use crate::XcmPrecompile;
 
@@ -146,6 +146,9 @@ impl pezpallet_balances::Config for Test {
 	type Balance = Balance;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type MaxFreezes = pezframe_support::traits::VariantCountOf<RuntimeFreezeReason>;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -185,7 +188,7 @@ parameter_types! {
 }
 
 pub type SovereignAccountOf = (
-	ChildTeyrchainConvertsVia<ParaId, AccountId>,
+	ChildParachainConvertsVia<ParaId, AccountId>,
 	AccountId32Aliases<AnyNetwork, AccountId>,
 	HashedDescription<AccountId, DescribeAllTerminal>,
 );
@@ -236,7 +239,6 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTrap = XcmPallet;
 	type AssetLocker = ();
 	type AssetExchanger = ();
-	type AssetClaims = XcmPallet;
 	type SubscriptionService = XcmPallet;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;

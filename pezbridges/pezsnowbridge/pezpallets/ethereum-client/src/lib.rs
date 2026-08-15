@@ -39,15 +39,15 @@ use pezframe_support::{
 	transactional,
 };
 use pezframe_system::ensure_signed;
-use pezsnowbridge_beacon_primitives::{
+use pezsp_core::H256;
+use pezsp_std::prelude::*;
+use snowbridge_beacon_primitives::{
 	fast_aggregate_verify,
 	merkle_proof::{generalized_index_length, subtree_index},
 	verify_merkle_branch, BeaconHeader, BlsError, CompactBeaconState, ForkData, ForkVersion,
 	ForkVersions, PublicKeyPrepared, SigningData,
 };
-use pezsnowbridge_core::{BasicOperatingMode, RingBufferMap};
-use pezsp_core::H256;
-use pezsp_std::prelude::*;
+use snowbridge_core::{BasicOperatingMode, RingBufferMap};
 pub use weights::WeightInfo;
 
 use functions::{
@@ -305,7 +305,7 @@ pub mod pezpallet {
 			Self::apply_update(update)
 		}
 
-		/// References and strictly follows <https://github.com/ethereum/consensus-specs/blob/master/specs/altair/light-client/sync-protocol.md#validate_light_client_update>
+		/// References and strictly follows <https://github.com/ethereum/consensus-specs/blob/ec42646/specs/altair/light-client/sync-protocol.md#validate_light_client_update>
 		/// Verifies that provided next sync committee is valid through a series of checks
 		/// (including checking that a sync committee period isn't skipped and that the header is
 		/// signed by the current sync committee.
@@ -461,7 +461,7 @@ pub mod pezpallet {
 			Ok(())
 		}
 
-		/// Reference and strictly follows <https://github.com/ethereum/consensus-specs/blob/master/specs/altair/light-client/sync-protocol.md#apply_light_client_update
+		/// Reference and strictly follows <https://github.com/ethereum/consensus-specs/blob/ec42646/specs/altair/light-client/sync-protocol.md#apply_light_client_update>
 		/// Applies a finalized beacon header update to the beacon client. If a next sync committee
 		/// is present in the update, verify the sync committee by converting it to a
 		/// SyncCommitteePrepared type. Stores the provided finalized header. Updates are free
@@ -676,8 +676,11 @@ pub mod pezpallet {
 			validators_root: H256,
 			signature_slot: u64,
 		) -> Result<H256, DispatchError> {
+			// Per Ethereum Altair light-client spec, fork version is derived from signature_slot -
+			// 1. See: https://github.com/ethereum/consensus-specs/blob/ec42646/specs/altair/light-client/sync-protocol.md#validate_light_client_update
+			// In validate_light_client_update: fork_version_slot = max(signature_slot, 1) - 1
 			let fork_version = Self::compute_fork_version(compute_epoch(
-				signature_slot,
+				signature_slot.saturating_sub(1),
 				config::SLOTS_PER_EPOCH as u64,
 			));
 			let domain_type = config::DOMAIN_SYNC_COMMITTEE.to_vec();

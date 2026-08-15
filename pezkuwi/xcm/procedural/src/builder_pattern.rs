@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -179,7 +179,7 @@ fn generate_builder_impl(name: &Ident, data_enum: &DataEnum) -> Result<TokenStre
 			});
 			let builder_attr = match maybe_builder_attr {
 				Some(builder) => builder.clone(),
-				None => return Ok(None), /* It's not going to be an instruction that pays fees */
+				None => return Ok(None), // It's not going to be an instruction that pays fees
 			};
 			let Meta::List(ref list) = builder_attr.meta else { unreachable!("We checked before") };
 			let inner_ident: Ident = syn::parse2(list.tokens.clone()).map_err(|_| {

@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,10 +38,10 @@ use pezkuwi_runtime_teyrchains::{
 use pezkuwi_teyrchain_primitives::primitives::Id as ParaId;
 use xcm::latest::prelude::*;
 use xcm_builder::{
-	AccountId32Aliases, AllowUnpaidExecutionFrom, ChildSystemTeyrchainAsSuperuser,
-	ChildTeyrchainAsNative, ChildTeyrchainConvertsVia, FixedRateOfFungible, FixedWeightBounds,
-	FrameTransactionalProcessor, FungibleAdapter, IsConcrete, SignedAccountId32AsNative,
-	SignedToAccountId32, SovereignSignedViaLocation,
+	AccountId32Aliases, AllowUnpaidExecutionFrom, ChildParachainAsNative,
+	ChildParachainConvertsVia, ChildSystemParachainAsSuperuser, FixedRateOfFungible,
+	FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, IsConcrete,
+	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
 };
 use xcm_executor::{Config, XcmExecutor};
 
@@ -97,16 +97,16 @@ parameter_types! {
 }
 
 pub type SovereignAccountOf =
-	(ChildTeyrchainConvertsVia<ParaId, AccountId>, AccountId32Aliases<ThisNetwork, AccountId>);
+	(ChildParachainConvertsVia<ParaId, AccountId>, AccountId32Aliases<ThisNetwork, AccountId>);
 
 pub type LocalAssetTransactor =
 	FungibleAdapter<Balances, IsConcrete<TokenLocation>, SovereignAccountOf, AccountId, ()>;
 
 type LocalOriginConverter = (
 	SovereignSignedViaLocation<SovereignAccountOf, RuntimeOrigin>,
-	ChildTeyrchainAsNative<origin::Origin, RuntimeOrigin>,
+	ChildParachainAsNative<origin::Origin, RuntimeOrigin>,
 	SignedAccountId32AsNative<ThisNetwork, RuntimeOrigin>,
-	ChildSystemTeyrchainAsSuperuser<ParaId, RuntimeOrigin>,
+	ChildSystemParachainAsSuperuser<ParaId, RuntimeOrigin>,
 );
 
 parameter_types! {
@@ -136,7 +136,6 @@ impl Config for XcmConfig {
 	type AssetTrap = ();
 	type AssetLocker = ();
 	type AssetExchanger = ();
-	type AssetClaims = ();
 	type SubscriptionService = ();
 	type PalletInstancesInfo = ();
 	type FeeManager = ();
@@ -193,6 +192,7 @@ parameter_types! {
 }
 
 /// Message processor to handle any messages that were enqueued into the `MessageQueue` pezpallet.
+#[allow(dead_code)]
 pub struct MessageProcessor;
 impl ProcessMessage for MessageProcessor {
 	type Origin = AggregateMessageOrigin;

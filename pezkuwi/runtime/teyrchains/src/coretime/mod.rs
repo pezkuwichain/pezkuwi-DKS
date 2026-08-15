@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,9 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Extrinsics implementing the relay chain side of the Coretime interface.
+//! This pezpallet exposes the relay chain coretime functionality to the broker/coretime chain.
 //!
-//! <https://github.com/polkadot-fellows/RFCs/blob/main/text/0005-coretime-interface.md>
+//! It depends on the scheduler pezpallet, which does the actual ground work of handling
+//! received core assignments.
+//!
+//! <https://github.com/pezkuwi-fellows/RFCs/blob/main/text/0005-coretime-interface.md>
 
 use alloc::{vec, vec::Vec};
 use core::result;
@@ -34,14 +37,13 @@ use xcm::prelude::*;
 use xcm_executor::traits::TransactAsset;
 
 use crate::{
-	assigner_coretime::{self, PartsOf57600},
 	initializer::{OnNewSession, SessionChangeNotification},
 	on_demand,
 	origin::{ensure_teyrchain, Origin},
+	scheduler::{self, PartsOf57600},
 };
 
 mod benchmarking;
-pub mod migration;
 
 const LOG_TARGET: &str = "runtime::teyrchains::coretime";
 
@@ -115,9 +117,7 @@ pub mod pezpallet {
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::config]
-	pub trait Config:
-		pezframe_system::Config + assigner_coretime::Config + on_demand::Config
-	{
+	pub trait Config: pezframe_system::Config + scheduler::Config + on_demand::Config {
 		type RuntimeOrigin: From<<Self as pezframe_system::Config>::RuntimeOrigin>
 			+ Into<result::Result<Origin, <Self as Config>::RuntimeOrigin>>;
 		#[allow(deprecated)]
@@ -167,7 +167,14 @@ pub mod pezpallet {
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {}
 
+	impl<T: Config> OnNewSession<BlockNumberFor<T>> for Pezpallet<T> {
+		fn on_new_session(notification: &SessionChangeNotification<BlockNumberFor<T>>) {
+			Self::initializer_on_new_session(notification);
+		}
+	}
+
 	#[pezpallet::call]
+	/// Extrinsics to be called by the Coretime chain.
 	impl<T: Config> Pezpallet<T> {
 		/// Request the configuration to be updated with the specified number of cores. Warning:
 		/// Since this only schedules a configuration update, it takes two sessions to come into
@@ -219,8 +226,8 @@ pub mod pezpallet {
 		/// -`begin`: The starting blockheight of the instruction.
 		/// -`assignment`: How the blockspace should be utilised.
 		/// -`end_hint`: An optional hint as to when this particular set of instructions will end.
-		// The broker pezpallet's `CoreIndex` definition is `u16` but on the relay chain it's
-		// `struct CoreIndex(u32)`
+		// The broker pezpallet's `CoreIndex` definition is `u16` but on the relay chain it's `struct
+		// CoreIndex(u32)`
 		#[pezpallet::call_index(4)]
 		#[pezpallet::weight(<T as Config>::WeightInfo::assign_core(assignment.len() as u32))]
 		pub fn assign_core(
@@ -235,13 +242,14 @@ pub mod pezpallet {
 
 			let core = u32::from(core).into();
 
-			<assigner_coretime::Pezpallet<T>>::assign_core(core, begin, assignment, end_hint)?;
+			<scheduler::Pezpallet<T>>::assign_core(core, begin, assignment, end_hint)?;
 			Self::deposit_event(Event::<T>::CoreAssigned { core });
 			Ok(())
 		}
 	}
 }
 
+/// Coretime chain communiation.
 impl<T: Config> Pezpallet<T> {
 	/// Ensure the origin is one of Root or the `para` itself.
 	fn ensure_root_or_para(
@@ -331,12 +339,6 @@ impl<T: Config> Pezpallet<T> {
 	}
 }
 
-impl<T: Config> OnNewSession<BlockNumberFor<T>> for Pezpallet<T> {
-	fn on_new_session(notification: &SessionChangeNotification<BlockNumberFor<T>>) {
-		Self::initializer_on_new_session(notification);
-	}
-}
-
 fn mk_coretime_call<T: Config>(call: crate::coretime::CoretimeCalls) -> Instruction<()> {
 	Instruction::Transact {
 		origin_kind: OriginKind::Superuser,
@@ -370,7 +372,9 @@ fn do_notify_revenue<T: Config>(when: BlockNumber, raw_revenue: Balance) -> Resu
 
 		T::AssetTransactor::can_check_out(&dest, &asset, &dummy_xcm_context)?;
 
-		let assets_reanchored = Into::<Assets>::into(withdrawn)
+		// dropping `withdrawn` effectively burns the inner imbalance
+		let assets: Vec<Asset> = withdrawn.into_assets_iter().collect();
+		let assets_reanchored = Into::<Assets>::into(assets)
 			.reanchored(&dest, &Here.into())
 			.defensive_map_err(|_| XcmError::ReanchorFailed)?;
 

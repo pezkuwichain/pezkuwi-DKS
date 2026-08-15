@@ -1,8 +1,7 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
-#![allow(deprecated)]
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,7 +24,7 @@ use std::{
 use tempfile::tempdir;
 
 /// The runtimes that this command supports.
-static RUNTIMES: [&str; 1] = ["asset-hub-zagros"];
+static RUNTIMES: [&str; 1] = ["asset-hub-westend"];
 
 /// The `benchmark storage` command works for the dev runtimes.
 #[test]

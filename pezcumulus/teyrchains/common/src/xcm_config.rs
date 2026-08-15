@@ -87,14 +87,14 @@ impl<LocationValue: Get<Location>> ContainsPair<Asset, Location>
 	}
 }
 
-pub struct RelayOrOtherSystemTeyrchains<
-	SystemTeyrchainMatcher: Contains<Location>,
+pub struct RelayOrOtherSystemParachains<
+	SystemParachainMatcher: Contains<Location>,
 	Runtime: teyrchain_info::Config,
 > {
-	_runtime: PhantomData<(SystemTeyrchainMatcher, Runtime)>,
+	_runtime: PhantomData<(SystemParachainMatcher, Runtime)>,
 }
-impl<SystemTeyrchainMatcher: Contains<Location>, Runtime: teyrchain_info::Config> Contains<Location>
-	for RelayOrOtherSystemTeyrchains<SystemTeyrchainMatcher, Runtime>
+impl<SystemParachainMatcher: Contains<Location>, Runtime: teyrchain_info::Config> Contains<Location>
+	for RelayOrOtherSystemParachains<SystemParachainMatcher, Runtime>
 {
 	fn contains(l: &Location) -> bool {
 		let self_para_id: u32 = teyrchain_info::Pezpallet::<Runtime>::get().into();
@@ -103,18 +103,18 @@ impl<SystemTeyrchainMatcher: Contains<Location>, Runtime: teyrchain_info::Config
 				return false;
 			}
 		}
-		matches!(l.unpack(), (1, [])) || SystemTeyrchainMatcher::contains(l)
+		matches!(l.unpack(), (1, [])) || SystemParachainMatcher::contains(l)
 	}
 }
 
 /// Contains all sibling system teyrchains, including the one where this matcher is used.
 ///
 /// This structure can only be used at a teyrchain level. In the Relay Chain, please use
-/// the `xcm_builder::IsChildSystemTeyrchain` matcher.
-pub struct AllSiblingSystemTeyrchains;
-impl Contains<Location> for AllSiblingSystemTeyrchains {
+/// the `xcm_builder::IsChildSystemParachain` matcher.
+pub struct AllSiblingSystemParachains;
+impl Contains<Location> for AllSiblingSystemParachains {
 	fn contains(l: &Location) -> bool {
-		tracing::trace!(target: "xcm::contains", location=?l, "AllSiblingSystemTeyrchains");
+		tracing::trace!(target: "xcm::contains", location=?l, "AllSiblingSystemParachains");
 		match l.unpack() {
 			// System teyrchain
 			(1, [Teyrchain(id)]) => ParaId::from(*id).is_system(),
@@ -147,8 +147,8 @@ impl<AssetLocation: Get<Location>> ContainsPair<Asset, Location>
 ///
 /// This type should only be used within the context of a teyrchain, since it does not verify that
 /// the parent is indeed a Relay Chain.
-pub struct ParentRelayOrSiblingTeyrchains;
-impl Contains<Location> for ParentRelayOrSiblingTeyrchains {
+pub struct ParentRelayOrSiblingParachains;
+impl Contains<Location> for ParentRelayOrSiblingParachains {
 	fn contains(location: &Location) -> bool {
 		matches!(location.unpack(), (1, []) | (1, [Teyrchain(_)]))
 	}
@@ -189,7 +189,7 @@ mod tests {
 	use pezframe_support::{parameter_types, traits::Contains};
 
 	use super::{
-		AliasAccountId32FromSiblingSystemChain, AllSiblingSystemTeyrchains, Asset,
+		AliasAccountId32FromSiblingSystemChain, AllSiblingSystemParachains, Asset,
 		ConcreteAssetFromSystem, ContainsPair, GeneralIndex, Here, Location, PalletInstance,
 		Parent, Teyrchain,
 	};
@@ -251,16 +251,16 @@ mod tests {
 	#[test]
 	fn all_sibling_system_teyrchains_works() {
 		// system teyrchain
-		assert!(AllSiblingSystemTeyrchains::contains(&Location::new(1, [Teyrchain(1)])));
+		assert!(AllSiblingSystemParachains::contains(&Location::new(1, [Teyrchain(1)])));
 		// non-system teyrchain
-		assert!(!AllSiblingSystemTeyrchains::contains(&Location::new(
+		assert!(!AllSiblingSystemParachains::contains(&Location::new(
 			1,
 			[Teyrchain(LOWEST_PUBLIC_ID.into())]
 		)));
 		// when used at relay chain
-		assert!(!AllSiblingSystemTeyrchains::contains(&Location::new(0, [Teyrchain(1)])));
+		assert!(!AllSiblingSystemParachains::contains(&Location::new(0, [Teyrchain(1)])));
 		// when used with non-teyrchain
-		assert!(!AllSiblingSystemTeyrchains::contains(&Location::new(1, [OnlyChild])));
+		assert!(!AllSiblingSystemParachains::contains(&Location::new(1, [OnlyChild])));
 	}
 
 	#[test]

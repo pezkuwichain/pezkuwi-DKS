@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@
 // limitations under the License.
 
 pub(crate) mod imports {
-	pub use pezcumulus_primitives_core::ParaId;
+	pub use pezcumulus_primitives_core::{ParaId, RelayProofRequest};
 	pub use pezsp_core::{crypto::KeyTypeId, OpaqueMetadata};
 	pub use pezsp_runtime::{
 		traits::Block as BlockT,
@@ -23,7 +23,7 @@ pub(crate) mod imports {
 		ApplyExtrinsicResult,
 	};
 	pub use pezsp_weights::Weight;
-	pub use teyrchains_common::{AccountId, Balance, Nonce};
+	pub use teyrchains_common_types::{AccountId, Balance, Nonce};
 }
 
 macro_rules! impl_node_runtime_apis {
@@ -61,6 +61,16 @@ macro_rules! impl_node_runtime_apis {
 
 			impl pezcumulus_primitives_core::RelayParentOffsetApi<$block> for $runtime {
 				fn relay_parent_offset() -> u32 {
+					unimplemented!()
+				}
+
+				fn max_claim_queue_offset() -> u8 {
+					unimplemented!()
+				}
+			}
+
+			impl pezcumulus_primitives_core::SchedulingV3EnabledApi<$block> for $runtime {
+				fn scheduling_v3_enabled() -> bool {
 					unimplemented!()
 				}
 			}
@@ -124,7 +134,7 @@ macro_rules! impl_node_runtime_apis {
 			}
 
 			impl pezsp_session::SessionKeys<$block> for $runtime {
-				fn generate_session_keys(_: Option<Vec<u8>>) -> Vec<u8> {
+				fn generate_session_keys(_owner: Vec<u8>, _seed: Option<Vec<u8>>) -> pezsp_session::OpaqueGeneratedSessionKeys {
 					unimplemented!()
 				}
 
@@ -133,6 +143,7 @@ macro_rules! impl_node_runtime_apis {
 				) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
 					unimplemented!()
 				}
+
 			}
 
 			impl
@@ -169,11 +180,18 @@ macro_rules! impl_node_runtime_apis {
 				}
 			}
 
-			impl pezcumulus_primitives_core::GetTeyrchainInfo<$block> for $runtime {
+			impl pezcumulus_primitives_core::GetParachainInfo<$block> for $runtime {
 				fn teyrchain_id() -> ParaId {
 					unimplemented!()
 				}
 			}
+
+			impl pezcumulus_primitives_core::KeyToIncludeInRelayProof<$block> for $runtime {
+				fn keys_to_prove() -> RelayProofRequest {
+					unimplemented!()
+				}
+			}
+
 			#[cfg(feature = "try-runtime")]
 			impl pezframe_try_runtime::TryRuntime<$block> for $runtime {
 				fn on_runtime_upgrade(
@@ -233,17 +251,20 @@ macro_rules! impl_node_runtime_apis {
 				}
 			}
 
-			impl pezsp_statement_store::runtime_api::ValidateStatement<$block> for $runtime {
-				fn validate_statement(
-					_source: pezsp_statement_store::runtime_api::StatementSource,
-					_statement: pezsp_statement_store::Statement,
-				) -> Result<pezsp_statement_store::runtime_api::ValidStatement, pezsp_statement_store::runtime_api::InvalidStatement> {
+			impl pezcumulus_primitives_core::TargetBlockRate<$block> for $runtime {
+				fn target_block_rate() -> u32 {
 					unimplemented!()
 				}
 			}
 
-			impl pezcumulus_primitives_core::TargetBlockRate<$block> for $runtime {
-				fn target_block_rate() -> u32 {
+			impl pezsp_transaction_storage_proof::runtime_api::TransactionStorageApi<$block> for $runtime {
+				fn retention_period() -> pezsp_runtime::traits::NumberFor<$block> {
+					unimplemented!()
+				}
+
+				fn indexed_transactions(
+					_block: pezsp_runtime::traits::NumberFor<$block>,
+				) -> Vec<pezsp_transaction_storage_proof::IndexedTransactionInfo> {
 					unimplemented!()
 				}
 			}

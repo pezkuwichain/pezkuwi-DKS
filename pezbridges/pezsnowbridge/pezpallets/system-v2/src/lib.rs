@@ -32,22 +32,22 @@ pub use weights::*;
 use pezframe_support::{pezpallet_prelude::*, traits::EnsureOrigin};
 use pezframe_system::pezpallet_prelude::*;
 pub use pezpallet::*;
-use pezsnowbridge_core::{
+use pezsp_core::{H160, H256};
+use pezsp_io::hashing::blake2_256;
+use pezsp_runtime::traits::MaybeConvert;
+use pezsp_std::prelude::*;
+use snowbridge_core::{
 	reward::{
 		AddTip, MessageId,
 		MessageId::{Inbound, Outbound},
 	},
 	AgentIdOf as LocationHashOf, AssetMetadata, TokenId, TokenIdOf,
 };
-use pezsnowbridge_outbound_queue_primitives::{
+use snowbridge_outbound_queue_primitives::{
 	v2::{Command, Initializer, Message, SendMessage},
 	OperatingMode, SendError,
 };
-use pezsnowbridge_pezpallet_system::ForeignToNativeId;
-use pezsp_core::{H160, H256};
-use pezsp_io::hashing::blake2_256;
-use pezsp_runtime::traits::MaybeConvert;
-use pezsp_std::prelude::*;
+use snowbridge_pallet_system::ForeignToNativeId;
 use xcm::prelude::*;
 use xcm_executor::traits::ConvertLocation;
 
@@ -73,7 +73,7 @@ pub mod pezpallet {
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::config]
-	pub trait Config: pezframe_system::Config + pezsnowbridge_pezpallet_system::Config {
+	pub trait Config: pezframe_system::Config + snowbridge_pallet_system::Config {
 		#[allow(deprecated)]
 		type RuntimeEvent: From<Event<Self>>
 			+ IsType<<Self as pezframe_system::Config>::RuntimeEvent>;
@@ -316,7 +316,7 @@ pub mod pezpallet {
 
 	impl<T: Config> MaybeConvert<TokenId, Location> for Pezpallet<T> {
 		fn maybe_convert(foreign_id: TokenId) -> Option<Location> {
-			pezsnowbridge_pezpallet_system::Pezpallet::<T>::maybe_convert(foreign_id)
+			snowbridge_pallet_system::Pezpallet::<T>::maybe_convert(foreign_id)
 		}
 	}
 }

@@ -28,8 +28,8 @@ use crate::{
 };
 
 use async_trait::async_trait;
+use bp_messages::MessageNonce;
 use futures::stream::FusedStream;
-use pezbp_messages::MessageNonce;
 use relay_utils::{FailedClient, TrackedTransactionStatus, TransactionTracker};
 use std::{marker::PhantomData, ops::RangeInclusive};
 

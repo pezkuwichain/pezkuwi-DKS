@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,8 +75,13 @@ where
 		input: &Self::Interface,
 		env: &mut impl Ext<T = Self::T>,
 	) -> Result<Vec<u8>, Error> {
+		pezframe_support::ensure!(
+			!env.is_delegate_call(),
+			pezpallet_revive::Error::<Self::T>::PrecompileDelegateDenied,
+		);
+
 		let origin = env.caller();
-		let frame_origin = match origin {
+		let pezframe_origin = match origin {
 			Origin::Root => RawOrigin::Root.into(),
 			Origin::Signed(account_id) => RawOrigin::Signed(account_id.clone()).into(),
 		};
@@ -104,7 +109,7 @@ where
 				ensure_xcm_version(&final_message)?;
 
 				pezpallet_xcm::Pezpallet::<Runtime>::send(
-					frame_origin,
+					pezframe_origin,
 					final_destination.into(),
 					final_message.into(),
 				)
@@ -131,7 +136,7 @@ where
 				ensure_xcm_version(&final_message)?;
 
 				let result = pezpallet_xcm::Pezpallet::<Runtime>::execute(
-					frame_origin,
+					pezframe_origin,
 					final_message.into(),
 					max_weight,
 				);

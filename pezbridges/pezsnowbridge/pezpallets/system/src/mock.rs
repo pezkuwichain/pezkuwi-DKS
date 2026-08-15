@@ -10,15 +10,15 @@ use pezframe_support::{
 use pezsp_core::H256;
 use xcm_executor::traits::ConvertLocation;
 
-use pezsnowbridge_core::{
-	gwei, meth, sibling_sovereign_account, AgentId, AllowSiblingsOnly, ParaId, PricingParameters,
-	Rewards,
-};
-use pezsnowbridge_outbound_queue_primitives::v1::ConstantGasMeter;
 use pezsp_runtime::{
 	traits::{AccountIdConversion, BlakeTwo256, IdentityLookup, Keccak256},
 	AccountId32, BuildStorage, FixedU128,
 };
+use snowbridge_core::{
+	gwei, meth, sibling_sovereign_account, AgentId, AllowSiblingsOnly, ParaId, PricingParameters,
+	Rewards,
+};
+use snowbridge_outbound_queue_primitives::v1::ConstantGasMeter;
 use xcm::prelude::*;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -78,6 +78,7 @@ mod pezpallet_xcm_origin {
 			Err(outer)
 		}
 
+		#[cfg(feature = "runtime-benchmarks")]
 		fn try_successful_origin() -> Result<O, ()> {
 			Ok(O::from(Origin(Location::new(1, [Teyrchain(2000)]))))
 		}
@@ -91,7 +92,7 @@ pezframe_support::construct_runtime!(
 		System: pezframe_system,
 		Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
 		XcmOrigin: pezpallet_xcm_origin::{Pezpallet, Origin},
-		OutboundQueue: pezsnowbridge_pezpallet_outbound_queue::{Pezpallet, Call, Storage, Event<T>},
+		OutboundQueue: snowbridge_pallet_outbound_queue::{Pezpallet, Call, Storage, Event<T>},
 		EthereumSystem: snowbridge_system,
 		MessageQueue: pezpallet_message_queue::{Pezpallet, Call, Storage, Event<T>}
 	}
@@ -150,7 +151,7 @@ parameter_types! {
 	pub const OwnParaId: ParaId = ParaId::new(1013);
 }
 
-impl pezsnowbridge_pezpallet_outbound_queue::Config for Test {
+impl snowbridge_pallet_outbound_queue::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Hashing = Keccak256;
 	type MessageQueue = MessageQueue;
@@ -168,7 +169,7 @@ impl pezsnowbridge_pezpallet_outbound_queue::Config for Test {
 parameter_types! {
 	pub const SS58Prefix: u8 = 42;
 	pub const AnyNetwork: Option<NetworkId> = None;
-	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::Pezkuwi);
+	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::Polkadot);
 	pub const RelayLocation: Location = Location::parent();
 	pub UniversalLocation: InteriorLocation =
 		[GlobalConsensus(RelayNetwork::get().unwrap()), Teyrchain(1013)].into();
@@ -176,7 +177,7 @@ parameter_types! {
 	pub EthereumDestination: Location = Location::new(2,[GlobalConsensus(EthereumNetwork::get())]);
 }
 
-pub const HEZ: u128 = 10_000_000_000;
+pub const DOT: u128 = 10_000_000_000;
 
 parameter_types! {
 	pub TreasuryAccount: AccountId = PalletId(*b"py/trsry").into_account_truncating();
@@ -188,7 +189,7 @@ parameter_types! {
 	pub Parameters: PricingParameters<u128> = PricingParameters {
 		exchange_rate: FixedU128::from_rational(1, 400),
 		fee_per_gas: gwei(20),
-		rewards: Rewards { local: HEZ, remote: meth(1) },
+		rewards: Rewards { local: DOT, remote: meth(1) },
 		multiplier: FixedU128::from_rational(4, 3)
 	};
 	pub const InboundDeliveryCost: u128 = 1_000_000_000;
@@ -205,7 +206,7 @@ impl crate::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type OutboundQueue = OutboundQueue;
 	type SiblingOrigin = pezpallet_xcm_origin::EnsureXcm<AllowSiblingsOnly>;
-	type AgentIdOf = pezsnowbridge_core::AgentIdOf;
+	type AgentIdOf = snowbridge_core::AgentIdOf;
 	type TreasuryAccount = TreasuryAccount;
 	type Token = Balances;
 	type DefaultPricingParameters = Parameters;

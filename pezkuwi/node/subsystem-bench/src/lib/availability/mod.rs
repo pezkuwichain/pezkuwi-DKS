@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ use crate::{
 		chain_api::{ChainApiState, MockChainApi},
 		network_bridge::{self, MockNetworkBridgeRx, MockNetworkBridgeTx},
 		runtime_api::{default_node_features, MockRuntimeApi, MockRuntimeApiCoreState},
-		AlwaysSupportsTeyrchains,
+		AlwaysSupportsParachains,
 	},
 	network::new_network,
 	usage::BenchmarkUsage,
@@ -97,7 +97,7 @@ fn build_overseer_for_availability_read(
 	(network_bridge_tx, network_bridge_rx): (MockNetworkBridgeTx, MockNetworkBridgeRx),
 	availability_recovery: AvailabilityRecoverySubsystem,
 	dependencies: &TestEnvironmentDependencies,
-) -> (Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsTeyrchains>, OverseerHandle) {
+) -> (Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsParachains>, OverseerHandle) {
 	let overseer_connector = OverseerConnector::with_event_capacity(64000);
 	let overseer_metrics = OverseerMetrics::try_register(&dependencies.registry).unwrap();
 
@@ -125,7 +125,7 @@ fn build_overseer_for_availability_write(
 	availability_store: AvailabilityStoreSubsystem,
 	bitfield_distribution: BitfieldDistribution,
 	dependencies: &TestEnvironmentDependencies,
-) -> (Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsTeyrchains>, OverseerHandle) {
+) -> (Overseer<SpawnGlue<SpawnTaskHandle>, AlwaysSupportsParachains>, OverseerHandle) {
 	let overseer_connector = OverseerConnector::with_event_capacity(64000);
 	let overseer_metrics = OverseerMetrics::try_register(&dependencies.registry).unwrap();
 

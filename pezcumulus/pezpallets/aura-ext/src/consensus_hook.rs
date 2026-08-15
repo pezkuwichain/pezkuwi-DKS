@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,7 @@
 //! block velocity.
 use super::{pezpallet, Aura};
 use core::{marker::PhantomData, num::NonZeroU32};
-use pezcumulus_pezpallet_teyrchain_system::{
+use pezcumulus_pallet_teyrchain_system::{
 	self as teyrchain_system,
 	consensus_hook::{ConsensusHook, UnincludedSegmentCapacity},
 	relay_state_snapshot::RelayChainStateProof,

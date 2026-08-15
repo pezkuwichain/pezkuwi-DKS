@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -247,7 +247,7 @@ impl<T: Config> Pezpallet<T> {
 		let random_seed = {
 			let mut buf = [0u8; 32];
 			// TODO: audit usage of randomness API
-			// https://github.com/pezkuwichain/pezkuwi-sdk/issues/139
+			// https://github.com/paritytech/polkadot/issues/2601
 			let (random_hash, _) = T::Randomness::random(&b"paras"[..]);
 			let len = core::cmp::min(32, random_hash.as_ref().len());
 			buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
@@ -312,8 +312,8 @@ impl<T: Config> Pezpallet<T> {
 		}
 	}
 
-	// Allow to trigger `on_new_session` in tests, this is needed as long as `pezpallet_session` is
-	// not implemented in mock.
+	// Allow to trigger `on_new_session` in tests, this is needed as long as `pezpallet_session` is not
+	// implemented in mock.
 	#[cfg(any(test, feature = "runtime-benchmarks"))]
 	pub(crate) fn test_trigger_on_new_session<'a, I: 'a>(
 		changed: bool,

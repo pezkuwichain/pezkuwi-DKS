@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,8 +24,8 @@ use crate::{
 	backend::Backend,
 };
 
+use pezkuwi_node_primitives::approval::v1::AssignmentCertKind;
 use pezkuwi_node_subsystem_util::database::Database;
-use pezkuwi_pez_node_primitives::approval::v1::AssignmentCertKind;
 use pezsp_application_crypto::pezsp_core::H256;
 use std::{collections::HashSet, sync::Arc};
 

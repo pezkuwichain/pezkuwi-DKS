@@ -5,16 +5,16 @@
 //! # Overview
 //!
 //! Messages come either from sibling teyrchains via XCM, or BridgeHub itself
-//! via the `pezsnowbridge-pezpallet-system-v2`:
+//! via the `snowbridge-pezpallet-system-v2`:
 //!
-//! 1. `pezsnowbridge_outbound_queue_primitives::v2::EthereumBlobExporter::deliver`
-//! 2. `pezsnowbridge_pezpallet_system_v2::Pezpallet::send`
+//! 1. `snowbridge_outbound_queue_primitives::v2::EthereumBlobExporter::deliver`
+//! 2. `snowbridge_pallet_system_v2::Pezpallet::send`
 //!
 //! The message submission pipeline works like this:
 //! 1. The message is first validated via the implementation for
-//!    [`pezsnowbridge_outbound_queue_primitives::v2::SendMessage::validate`]
+//!    [`snowbridge_outbound_queue_primitives::v2::SendMessage::validate`]
 //! 2. The message is then enqueued for later processing via the implementation for
-//!    [`pezsnowbridge_outbound_queue_primitives::v2::SendMessage::deliver`]
+//!    [`snowbridge_outbound_queue_primitives::v2::SendMessage::deliver`]
 //! 3. The underlying message queue is implemented by [`Config::MessageQueue`]
 //! 4. The message queue delivers messages to this pezpallet via the implementation for
 //!    [`pezframe_support::traits::ProcessMessage::process_message`]
@@ -71,25 +71,12 @@ use alloy_core::{
 	primitives::{Bytes, FixedBytes},
 	sol_types::SolValue,
 };
+use bp_relayers::RewardLedger;
 use codec::{Decode, FullCodec};
-use pezbp_relayers::RewardLedger;
 use pezframe_support::{
 	storage::StorageStreamIter,
 	traits::{tokens::Balance, EnqueueMessage, Get, ProcessMessageError},
 	weights::{Weight, WeightToFee},
-};
-use pezsnowbridge_core::{
-	digest_item::SnowbridgeDigestItem,
-	reward::{AddTip, AddTipError},
-	BasicOperatingMode,
-};
-use pezsnowbridge_merkle_tree::merkle_root;
-use pezsnowbridge_outbound_queue_primitives::{
-	v2::{
-		abi::{CommandWrapper, OutboundMessageWrapper},
-		DeliveryReceipt, GasMeter, Message, OutboundCommandWrapper, OutboundMessage,
-	},
-	EventProof, VerificationError, Verifier,
 };
 use pezsp_core::{H160, H256};
 use pezsp_runtime::{
@@ -97,12 +84,25 @@ use pezsp_runtime::{
 	DigestItem,
 };
 use pezsp_std::prelude::*;
+use snowbridge_core::{
+	digest_item::SnowbridgeDigestItem,
+	reward::{AddTip, AddTipError},
+	BasicOperatingMode,
+};
+use snowbridge_merkle_tree::merkle_root;
+use snowbridge_outbound_queue_primitives::{
+	v2::{
+		abi::{CommandWrapper, OutboundMessageWrapper},
+		DeliveryReceipt, GasMeter, Message, OutboundCommandWrapper, OutboundMessage,
+	},
+	EventProof, VerificationError, Verifier,
+};
 pub use types::{OnNewCommitment, PendingOrder, ProcessMessageOriginOf};
 pub use weights::WeightInfo;
 use xcm::prelude::NetworkId;
 
 #[cfg(feature = "runtime-benchmarks")]
-use pezsnowbridge_beacon_primitives::BeaconHeader;
+use snowbridge_beacon_primitives::BeaconHeader;
 
 pub use pezpallet::*;
 
@@ -164,8 +164,7 @@ pub mod pezpallet {
 		type GatewayAddress: Get<H160>;
 		/// Reward discriminator type.
 		type RewardKind: Parameter + MaxEncodedLen + Send + Sync + Copy + Clone;
-		/// The default RewardKind discriminator for rewards allocated to relayers from this
-		/// pezpallet.
+		/// The default RewardKind discriminator for rewards allocated to relayers from this pezpallet.
 		#[pezpallet::constant]
 		type DefaultRewardKind: Get<Self::RewardKind>;
 		/// Relayer reward payment.

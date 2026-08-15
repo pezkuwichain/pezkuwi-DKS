@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,7 +68,7 @@ pub mod pezpallet {
 		/// It comes from the (parent) relay chain.
 		Relay,
 		/// It comes from a (sibling) teyrchain.
-		SiblingTeyrchain(ParaId),
+		SiblingParachain(ParaId),
 	}
 
 	#[pezpallet::call]
@@ -76,12 +76,12 @@ pub mod pezpallet {
 
 	impl From<ParaId> for Origin {
 		fn from(id: ParaId) -> Origin {
-			Origin::SiblingTeyrchain(id)
+			Origin::SiblingParachain(id)
 		}
 	}
 	impl From<u32> for Origin {
 		fn from(id: u32) -> Origin {
-			Origin::SiblingTeyrchain(id.into())
+			Origin::SiblingParachain(id.into())
 		}
 	}
 }
@@ -93,7 +93,7 @@ where
 	OuterOrigin: Into<Result<Origin, OuterOrigin>>,
 {
 	match o.into() {
-		Ok(Origin::SiblingTeyrchain(id)) => Ok(id),
+		Ok(Origin::SiblingParachain(id)) => Ok(id),
 		_ => Err(BadOrigin),
 	}
 }

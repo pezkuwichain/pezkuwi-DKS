@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@ use alloc::vec::Vec;
 use log;
 use pezframe_support::traits::{OnRuntimeUpgrade, UncheckedOnRuntimeUpgrade};
 
-/// Migrate to v2. Should have been part of <https://github.com/pezkuwichain/pezkuwi-sdk/issues/250>.
+/// Migrate to v2. Should have been part of <https://github.com/pezkuwichain/pezkuwi-sdk/pull/1340>.
 pub mod v2 {
 	use super::*;
 	use pezframe_support::{

@@ -24,11 +24,9 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use pez_finality_relay::{
+use bp_header_chain::justification::{GrandpaJustification, JustificationVerificationContext};
+use finality_relay::{
 	FinalityPipeline, FinalitySyncPipeline, HeadersToRelay, SourceClient, TargetClient,
-};
-use pezbp_header_pez_chain::justification::{
-	GrandpaJustification, JustificationVerificationContext,
 };
 use pezpallet_bridge_grandpa::{Call as BridgeGrandpaCall, Config as BridgeGrandpaConfig};
 use pezsp_core::Pair;
@@ -50,7 +48,7 @@ pub mod target;
 pub(crate) const RECENT_FINALITY_PROOFS_LIMIT: usize = 4096;
 
 /// Convenience trait that adds bounds to `BizinikiwiFinalitySyncPipeline`.
-pub trait BaseBizinikiwiFinalitySyncPipeline:
+pub trait BaseSubstrateFinalitySyncPipeline:
 	BizinikiwiFinalityPipeline<TargetChain = Self::BoundedTargetChain>
 {
 	/// Bounded `BizinikiwiFinalityPipeline::TargetChain`.
@@ -61,7 +59,7 @@ pub trait BaseBizinikiwiFinalitySyncPipeline:
 		+ Send;
 }
 
-impl<T> BaseBizinikiwiFinalitySyncPipeline for T
+impl<T> BaseSubstrateFinalitySyncPipeline for T
 where
 	T: BizinikiwiFinalityPipeline,
 	T::TargetChain: ChainWithTransactions,
@@ -73,7 +71,7 @@ where
 
 /// Bizinikiwi -> Bizinikiwi finality proofs synchronization pipeline.
 #[async_trait]
-pub trait BizinikiwiFinalitySyncPipeline: BaseBizinikiwiFinalitySyncPipeline {
+pub trait BizinikiwiFinalitySyncPipeline: BaseSubstrateFinalitySyncPipeline {
 	/// How submit finality proof call is built?
 	type SubmitFinalityProofCallBuilder: SubmitFinalityProofCallBuilder<Self>;
 
@@ -136,7 +134,7 @@ where
 	P: BizinikiwiFinalitySyncPipeline,
 	R: BridgeGrandpaConfig<I>,
 	I: 'static,
-	R::BridgedChain: pezbp_runtime::Chain<Header = HeaderOf<P::SourceChain>>,
+	R::BridgedChain: bp_runtime::Chain<Header = HeaderOf<P::SourceChain>>,
 	CallOf<P::TargetChain>: From<BridgeGrandpaCall<R, I>>,
 	P::FinalityEngine: Engine<
 		P::SourceChain,
@@ -177,17 +175,17 @@ macro_rules! generate_submit_finality_proof_call_builder {
 						<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::SourceChain
 					>
 				>,
-				proof: pezbp_header_pez_chain::justification::GrandpaJustification<
+				proof: bp_header_chain::justification::GrandpaJustification<
 					relay_bizinikiwi_client::HeaderOf<
 						<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::SourceChain
 					>
 				>,
 				_is_free_execution_expected: bool,
-				_context: pezbp_header_pez_chain::justification::JustificationVerificationContext,
+				_context: bp_header_chain::justification::JustificationVerificationContext,
 			) -> relay_bizinikiwi_client::CallOf<
 				<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::TargetChain
 			> {
-				pezbp_runtime::paste::item! {
+				bp_runtime::paste::item! {
 					$bridge_grandpa($submit_finality_proof {
 						finality_target: Box::new(header.into_inner()),
 						justification: proof
@@ -217,17 +215,17 @@ macro_rules! generate_submit_finality_proof_ex_call_builder {
 						<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::SourceChain
 					>
 				>,
-				proof: pezbp_header_pez_chain::justification::GrandpaJustification<
+				proof: bp_header_chain::justification::GrandpaJustification<
 					relay_bizinikiwi_client::HeaderOf<
 						<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::SourceChain
 					>
 				>,
 				is_free_execution_expected: bool,
-				context: pezbp_header_pez_chain::justification::JustificationVerificationContext,
+				context: bp_header_chain::justification::JustificationVerificationContext,
 			) -> relay_bizinikiwi_client::CallOf<
 				<$pipeline as $crate::finality_base::BizinikiwiFinalityPipeline>::TargetChain
 			> {
-				pezbp_runtime::paste::item! {
+				bp_runtime::paste::item! {
 					$bridge_grandpa($submit_finality_proof {
 						finality_target: Box::new(header.into_inner()),
 						justification: proof,
@@ -256,10 +254,10 @@ pub async fn run<P: BizinikiwiFinalitySyncPipeline>(
 		"Starting source -> target finality proof relay"
 	);
 
-	pez_finality_relay::run(
+	finality_relay::run(
 		BizinikiwiFinalitySource::<P, _>::new(source_client, None),
 		BizinikiwiFinalityTarget::<P, _>::new(target_client, transaction_params.clone()),
-		pez_finality_relay::FinalitySyncParams {
+		finality_relay::FinalitySyncParams {
 			tick: std::cmp::max(
 				P::SourceChain::AVERAGE_BLOCK_INTERVAL,
 				P::TargetChain::AVERAGE_BLOCK_INTERVAL,

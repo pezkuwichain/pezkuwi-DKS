@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ use super::*;
 use pezframe_support::{
 	assert_err, assert_noop, assert_ok, assert_storage_noop, traits::UnfilteredDispatchable,
 };
-use pezkuwi_primitives::{BlockNumber, SchedulerParams, TEYRCHAIN_KEY_TYPE_ID};
+use pezkuwi_primitives::{vstaging::SchedulerParams, BlockNumber, PARACHAIN_KEY_TYPE_ID};
 use pezkuwi_primitives_test_helpers::{dummy_head_data, dummy_validation_code, validator_pubkeys};
 use pezsc_keystore::LocalKeystore;
 use pezsp_keyring::Sr25519Keyring;
@@ -85,7 +85,7 @@ fn run_to_block(to: BlockNumber, new_session: Option<Vec<BlockNumber>>) {
 	for validator in VALIDATORS.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			TEYRCHAIN_KEY_TYPE_ID,
+			PARACHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();
@@ -263,6 +263,52 @@ fn schedule_para_init_rejects_empty_code() {
 				genesis_head: dummy_head_data(),
 				validation_code: ValidationCode(vec![1]),
 			}
+		));
+	});
+}
+
+#[test]
+fn schedule_code_upgrade_external_rejects_oversized_new_validation_code() {
+	let max_code_size: u32 = 100;
+	let original_code = ValidationCode(vec![1u8; 32]);
+	let para_id = ParaId::from(1_u32);
+
+	let paras = vec![(
+		para_id,
+		ParaGenesisArgs {
+			para_kind: ParaKind::Teyrchain,
+			genesis_head: dummy_head_data(),
+			validation_code: original_code.clone(),
+		},
+	)];
+
+	let genesis_config = MockGenesisConfig {
+		paras: GenesisConfig { paras, ..Default::default() },
+		configuration: crate::configuration::GenesisConfig {
+			config: HostConfiguration { max_code_size, ..Default::default() },
+		},
+		..Default::default()
+	};
+
+	new_test_ext(genesis_config).execute_with(|| {
+		run_to_block(2, Some(vec![1]));
+
+		let oversized_code = ValidationCode(vec![0u8; max_code_size as usize + 1]);
+		assert_err!(
+			Paras::schedule_code_upgrade_external(
+				para_id,
+				oversized_code,
+				UpgradeStrategy::SetGoAheadSignal,
+			),
+			Error::<Test>::InvalidCode,
+		);
+
+		// A correctly-sized upgrade still passes the length check.
+		let ok_code = ValidationCode(vec![0u8; max_code_size as usize]);
+		assert_ok!(Paras::schedule_code_upgrade_external(
+			para_id,
+			ok_code,
+			UpgradeStrategy::SetGoAheadSignal,
 		));
 	});
 }
@@ -1457,6 +1503,7 @@ fn pvf_check_submit_vote() {
 
 		let call =
 			Call::include_pvf_check_statement { stmt: stmt.clone(), signature: signature.clone() };
+		#[allow(deprecated)]
 		let validate_unsigned =
 			<Paras as ValidateUnsigned>::validate_unsigned(TransactionSource::InBlock, &call)
 				.map(|_| ());
@@ -2191,7 +2238,7 @@ fn authorize_force_set_current_code_hash_works() {
 			),
 			Error::<Test>::NotRegistered,
 		);
-		ParaLifecycles::<Test>::insert(&para_a, ParaLifecycle::OffboardingTeyrchain);
+		ParaLifecycles::<Test>::insert(&para_a, ParaLifecycle::OffboardingParachain);
 		assert!(!Paras::is_valid_para(para_a));
 		assert_err!(
 			Paras::authorize_force_set_current_code_hash(
@@ -2263,6 +2310,7 @@ fn apply_authorized_force_set_current_code_works() {
 	                  code: ValidationCode|
 	 -> (Result<_, _>, DispatchResultWithPostInfo) {
 		let call = Call::apply_authorized_force_set_current_code { para, new_code: code.clone() };
+		#[allow(deprecated)]
 		let validate_unsigned =
 			<Paras as ValidateUnsigned>::validate_unsigned(TransactionSource::InBlock, &call)
 				.map(|_| ());

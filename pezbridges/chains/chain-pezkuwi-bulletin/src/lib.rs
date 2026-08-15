@@ -19,10 +19,9 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Decode, DecodeWithMemTracking, Encode};
-use pezbp_header_pez_chain::ChainWithGrandpa;
-use pezbp_messages::{ChainWithMessages, MessageNonce};
-use pezbp_runtime::{
+use bp_header_chain::ChainWithGrandpa;
+use bp_messages::{ChainWithMessages, MessageNonce};
+use bp_runtime::{
 	decl_bridge_finality_runtime_apis, decl_bridge_messages_runtime_apis,
 	extensions::{
 		CheckEra, CheckGenesis, CheckNonZeroSender, CheckNonce, CheckSpecVersion, CheckTxVersion,
@@ -30,6 +29,7 @@ use pezbp_runtime::{
 	},
 	Chain, ChainId, TransactionEra,
 };
+use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezframe_support::{
 	dispatch::DispatchClass,
 	parameter_types,
@@ -43,7 +43,7 @@ use pezsp_runtime::{
 use scale_info::TypeInfo;
 
 // This chain reuses most of Pezkuwi primitives.
-pub use pezbp_pezkuwi_core::{
+pub use bp_polkadot_core::{
 	AccountAddress, AccountId, Balance, Block, BlockNumber, Hash, Hasher, Header, Nonce, Signature,
 	SignedBlock, UncheckedExtrinsic, AVERAGE_HEADER_SIZE, EXTRA_STORAGE_PROOF_SIZE,
 	MAX_MANDATORY_HEADER_SIZE, REASONABLE_HEADERS_IN_JUSTIFICATION_ANCESTRY,
@@ -54,23 +54,23 @@ pub const MAX_AUTHORITIES_COUNT: u32 = 100;
 
 /// Name of the With-Pezkuwi Bulletin chain GRANDPA pezpallet instance that is deployed at bridged
 /// chains.
-pub const WITH_PEZKUWI_BULLETIN_GRANDPA_PALLET_NAME: &str = "BridgePezkuwiBulletinGrandpa";
+pub const WITH_POLKADOT_BULLETIN_GRANDPA_PALLET_NAME: &str = "BridgePolkadotBulletinGrandpa";
 /// Name of the With-Pezkuwi Bulletin chain messages pezpallet instance that is deployed at bridged
 /// chains.
-pub const WITH_PEZKUWI_BULLETIN_MESSAGES_PALLET_NAME: &str = "BridgePezkuwiBulletinMessages";
+pub const WITH_POLKADOT_BULLETIN_MESSAGES_PALLET_NAME: &str = "BridgePolkadotBulletinMessages";
 
 // There are fewer system operations on this chain (e.g. staking, governance, etc.). Use a higher
 // percentage of the block for data storage.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(90);
 
-// Re following constants - we are using the same values at Pezcumulus teyrchains. They are limited
+// Re following constants - we are using the same values at Cumulus teyrchains. They are limited
 // by the maximal transaction weight/size. Since block limits at Bulletin Chain are larger than
-// at the Pezcumulus Bridge Hubs, we could reuse the same values.
+// at the Cumulus Bridge Hubs, we could reuse the same values.
 
-/// Maximal number of unrewarded relayer entries at inbound lane for Pezcumulus-based teyrchains.
+/// Maximal number of unrewarded relayer entries at inbound lane for Cumulus-based teyrchains.
 pub const MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX: MessageNonce = 1024;
 
-/// Maximal number of unconfirmed messages at inbound lane for Pezcumulus-based teyrchains.
+/// Maximal number of unconfirmed messages at inbound lane for Cumulus-based teyrchains.
 pub const MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX: MessageNonce = 4096;
 
 /// This signed extension is used to ensure that the chain transactions are signed by proper
@@ -125,13 +125,13 @@ impl TransactionExtension {
 		Self(GenericTransactionExtension::new(
 			(
 				(
-					(),              // non-zero sender
-					(),              // spec version
-					(),              // tx version
-					(),              // genesis
-					era.frame_era(), // era
-					nonce.into(),    // nonce (compact encoding)
-					(),              // Check weight
+					(),                 // non-zero sender
+					(),                 // spec version
+					(),                 // tx version
+					(),                 // genesis
+					era.pezframe_era(), // era
+					nonce.into(),       // nonce (compact encoding)
+					(),                 // Check weight
 				),
 				(),
 			),
@@ -166,16 +166,18 @@ parameter_types! {
 	// Note: Max transaction size is 8 MB. Set max block size to 10 MB to facilitate data storage.
 	// This is double the "normal" Relay Chain block length limit.
 	/// Maximal block length at Pezkuwi Bulletin chain.
-	pub BlockLength: limits::BlockLength = limits::BlockLength::max_with_normal_ratio(
-		10 * 1024 * 1024,
-		NORMAL_DISPATCH_RATIO,
-	);
+	pub BlockLength: limits::BlockLength = limits::BlockLength::builder()
+		.max_length(10 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 }
 
 /// Pezkuwi Bulletin Chain declaration.
-pub struct PezkuwiBulletin;
+pub struct PolkadotBulletin;
 
-impl Chain for PezkuwiBulletin {
+impl Chain for PolkadotBulletin {
 	const ID: ChainId = *b"pdbc";
 
 	type BlockNumber = BlockNumber;
@@ -205,8 +207,8 @@ impl Chain for PezkuwiBulletin {
 	}
 }
 
-impl ChainWithGrandpa for PezkuwiBulletin {
-	const WITH_CHAIN_GRANDPA_PALLET_NAME: &'static str = WITH_PEZKUWI_BULLETIN_GRANDPA_PALLET_NAME;
+impl ChainWithGrandpa for PolkadotBulletin {
+	const WITH_CHAIN_GRANDPA_PALLET_NAME: &'static str = WITH_POLKADOT_BULLETIN_GRANDPA_PALLET_NAME;
 	const MAX_AUTHORITIES_COUNT: u32 = MAX_AUTHORITIES_COUNT;
 	const REASONABLE_HEADERS_IN_JUSTIFICATION_ANCESTRY: u32 =
 		REASONABLE_HEADERS_IN_JUSTIFICATION_ANCESTRY;
@@ -214,9 +216,9 @@ impl ChainWithGrandpa for PezkuwiBulletin {
 	const AVERAGE_HEADER_SIZE: u32 = AVERAGE_HEADER_SIZE;
 }
 
-impl ChainWithMessages for PezkuwiBulletin {
+impl ChainWithMessages for PolkadotBulletin {
 	const WITH_CHAIN_MESSAGES_PALLET_NAME: &'static str =
-		WITH_PEZKUWI_BULLETIN_MESSAGES_PALLET_NAME;
+		WITH_POLKADOT_BULLETIN_MESSAGES_PALLET_NAME;
 
 	const MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX: MessageNonce =
 		MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX;
@@ -225,4 +227,4 @@ impl ChainWithMessages for PezkuwiBulletin {
 }
 
 decl_bridge_finality_runtime_apis!(pezkuwi_bulletin, grandpa);
-decl_bridge_messages_runtime_apis!(pezkuwi_bulletin, pezbp_messages::LegacyLaneId);
+decl_bridge_messages_runtime_apis!(pezkuwi_bulletin, bp_messages::LegacyLaneId);

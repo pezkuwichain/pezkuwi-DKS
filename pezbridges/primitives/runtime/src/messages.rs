@@ -19,6 +19,7 @@
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezframe_support::weights::Weight;
 use scale_info::TypeInfo;
+use Debug;
 
 /// Message dispatch result.
 #[derive(Encode, Decode, DecodeWithMemTracking, Debug, Clone, PartialEq, Eq, TypeInfo)]

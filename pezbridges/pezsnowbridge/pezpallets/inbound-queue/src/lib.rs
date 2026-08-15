@@ -55,11 +55,11 @@ use xcm::prelude::{
 };
 use xcm_executor::traits::TransactAsset;
 
-use pezsnowbridge_core::{
+use snowbridge_core::{
 	sibling_sovereign_account, BasicOperatingMode, Channel, ChannelId, ParaId, PricingParameters,
 	StaticLookup,
 };
-use pezsnowbridge_inbound_queue_primitives::{
+use snowbridge_inbound_queue_primitives::{
 	v1::{ConvertMessage, ConvertMessageError, VersionedMessage},
 	EventProof, VerificationError, Verifier,
 };
@@ -85,7 +85,7 @@ pub mod pezpallet {
 	use pezsp_core::H256;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	use pezsnowbridge_inbound_queue_primitives::EventFixture;
+	use snowbridge_inbound_queue_primitives::EventFixture;
 
 	#[pezpallet::pezpallet]
 	pub struct Pezpallet<T>(_);

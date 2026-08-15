@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,11 +21,11 @@
 //!
 //! This pezpallet is responsible for controlling the initiation, progression, and completion of the
 //! migration process, including managing its various stages and transferring the necessary data.
-//! The pezpallet directly accesses the storage of other pallets for read/write operations while
+//! The pezpallet directly accesses the storage of other pezpallets for read/write operations while
 //! maintaining compatibility with their existing APIs.
 //!
-//! To simplify development and avoid the need to edit the original pallets, this pezpallet may
-//! duplicate private items such as storage entries from the original pallets. This ensures that the
+//! To simplify development and avoid the need to edit the original pezpallets, this pezpallet may
+//! duplicate private items such as storage entries from the original pezpallets. This ensures that the
 //! migration logic can be implemented without altering the original implementations.
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -141,7 +141,7 @@ pub mod pezpallet {
 
 	/// The reserve that was taken to create a crowdloan.
 	///
-	/// This is normally 500 HEZ and can be refunded as last step after all
+	/// This is normally 500 DOT and can be refunded as last step after all
 	/// `RcCrowdloanContribution`s of this loan have been withdrawn.
 	///
 	/// Keys:
@@ -447,7 +447,8 @@ pub mod pezpallet {
 			Ok(())
 		}
 
-		pub(crate) fn contributions_withdrawn(block: BlockNumberFor<T>, para_id: ParaId) -> bool {
+		// TODO Test this
+		fn contributions_withdrawn(block: BlockNumberFor<T>, para_id: ParaId) -> bool {
 			let mut contrib_iter = RcCrowdloanContribution::<T>::iter_prefix((block, para_id));
 			contrib_iter.next().is_none()
 		}
@@ -624,15 +625,15 @@ pub mod pezpallet {
 		/// - `Err(())` otherwise
 		///
 		/// The way that this normally works is through the configured
-		/// `SiblingTeyrchainConvertsVia`: <https://github.com/polkadot-fellows/runtimes/blob/7b096c14c2b16cc81ca4e2188eea9103f120b7a4/system-parachains/asset-hubs/asset-hub-polkadot/src/xcm_config.rs#L93-L94>
+		/// `SiblingParachainConvertsVia`: <https://github.com/pezkuwi-fellows/runtimes/blob/7b096c14c2b16cc81ca4e2188eea9103f120b7a4/system-teyrchains/asset-hubs/asset-hub-polkadot/src/xcm_config.rs#L93-L94>
 		/// it passes the `Sibling` type into it which has type-ID `sibl`:
-		/// <https://github.com/pezkuwichain/pezkuwi-sdk/blob/c10e25aaa8b8afd8665b53f0a0b02e4ea44caa77/polkadot/parachain/src/primitives.rs#L272-L274>
+		/// <https://github.com/pezkuwichain/pezkuwi-sdk/blob/c10e25aaa8b8afd8665b53f0a0b02e4ea44caa77/polkadot/teyrchain/src/primitives.rs#L272-L274>
 		/// This type-ID gets used by the converter here:
 		/// <https://github.com/pezkuwichain/pezkuwi-sdk/blob/7ecf3f757a5d6f622309cea7f788e8a547a5dce8/polkadot/xcm/xcm-builder/src/location_conversion.rs#L314>
 		/// and eventually ends up in the encoding here
 		/// <https://github.com/pezkuwichain/pezkuwi-sdk/blob/cdf107de700388a52a17b2fb852c98420c78278e/bizinikiwi/primitives/runtime/src/traits/mod.rs#L1997-L1999>
-		/// The `para` conversion is likewise with `ChildTeyrchainConvertsVia` and the `para`
-		/// type-ID <https://github.com/pezkuwichain/pezkuwi-sdk/blob/c10e25aaa8b8afd8665b53f0a0b02e4ea44caa77/polkadot/parachain/src/primitives.rs#L162-L164>
+		/// The `para` conversion is likewise with `ChildParachainConvertsVia` and the `para`
+		/// type-ID <https://github.com/pezkuwichain/pezkuwi-sdk/blob/c10e25aaa8b8afd8665b53f0a0b02e4ea44caa77/polkadot/teyrchain/src/primitives.rs#L162-L164>
 		pub fn try_translate_rc_sovereign_to_ah(
 			from: &AccountId32,
 		) -> Result<(AccountId32, ParaId), Error<T>> {
@@ -676,7 +677,7 @@ pub mod pezpallet {
 	}
 }
 
-/// Backward mapping from <https://github.com/paritytech/polkadot-sdk/blob/74a5e1a242274ddaadac1feb3990fc95c8612079/bizinikiwi/pezframe/balances/src/types.rs#L38>
+/// Backward mapping from <https://github.com/pezkuwichain/pezkuwi-sdk/blob/74a5e1a242274ddaadac1feb3990fc95c8612079/bizinikiwi/pezframe/balances/src/types.rs#L38>
 pub fn map_lock_reason(reasons: LockReasons) -> LockWithdrawReasons {
 	match reasons {
 		LockReasons::All => LockWithdrawReasons::TRANSACTION_PAYMENT | LockWithdrawReasons::RESERVE,

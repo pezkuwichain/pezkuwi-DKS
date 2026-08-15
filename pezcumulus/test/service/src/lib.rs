@@ -1,20 +1,20 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus.  If not, see <http://www.gnu.org/licenses/>.
+// along with Cumulus.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Crate used for testing with Pezcumulus.
+//! Crate used for testing with Cumulus.
 
 #![warn(missing_docs)]
 
@@ -48,14 +48,14 @@ use url::Url;
 
 use crate::runtime::Weight;
 use pezcumulus_client_cli::{CollatorOptions, RelayChainMode};
-use pezcumulus_client_consensus_common::TeyrchainBlockImport as TTeyrchainBlockImport;
+use pezcumulus_client_consensus_common::TeyrchainBlockImport as TParachainBlockImport;
 use pezcumulus_client_pov_recovery::{RecoveryDelayRange, RecoveryHandle};
 use pezcumulus_client_service::{
 	build_network, prepare_node_config, start_relay_chain_tasks, BuildNetworkParams,
 	CollatorSybilResistance, DARecoveryProfile, StartRelayChainTasksParams,
 	TeyrchainTracingExecuteBlock,
 };
-use pezcumulus_primitives_core::{relay_chain::ValidationCode, GetTeyrchainInfo, ParaId};
+use pezcumulus_primitives_core::{relay_chain::ValidationCode, GetParachainInfo, ParaId};
 use pezcumulus_relay_chain_inprocess_interface::RelayChainInProcessInterface;
 use pezcumulus_relay_chain_interface::{RelayChainError, RelayChainInterface, RelayChainResult};
 use pezcumulus_relay_chain_minimal_node::build_minimal_relay_chain_node_with_rpc;
@@ -75,7 +75,7 @@ use pezsc_network::{
 	config::{FullNetworkConfiguration, TransportConfig},
 	multiaddr,
 	service::traits::NetworkService,
-	NetworkBackend, NetworkBlock, NetworkStateInfo,
+	NetworkBackend, NetworkBlock, NetworkStateInfo, PeerId,
 };
 use pezsc_service::{
 	config::{
@@ -115,7 +115,7 @@ pub type Backend = TFullBackend<Block>;
 
 /// The block-import type being used by the test service.
 pub type TeyrchainBlockImport =
-	TTeyrchainBlockImport<Block, SlotBasedBlockImport<Block, Arc<Client>, Client>, Backend>;
+	TParachainBlockImport<Block, SlotBasedBlockImport<Block, Arc<Client>, Client>, Backend>;
 
 /// Transaction pool type used by the test service
 pub type TransactionPool = Arc<pezsc_transaction_pool::TransactionPoolHandle<Block, Client>>;
@@ -198,10 +198,11 @@ pub fn new_partial(
 			None,
 			executor,
 			enable_import_proof_record,
+			Default::default(),
 		)?;
 	let client = Arc::new(client);
 
-	let (block_import, slot_based_handle) =
+	let (block_import, block_import_handle) =
 		SlotBasedBlockImport::new(client.clone(), client.clone());
 	let block_import = TeyrchainBlockImport::new(block_import, backend.clone());
 
@@ -247,7 +248,7 @@ pub fn new_partial(
 		task_manager,
 		transaction_pool,
 		select_chain: (),
-		other: (block_import, slot_based_handle),
+		other: (block_import, block_import_handle),
 	};
 
 	Ok(params)
@@ -259,14 +260,14 @@ async fn build_relay_chain_interface(
 	collator_key: Option<CollatorPair>,
 	collator_options: CollatorOptions,
 	task_manager: &mut TaskManager,
-) -> RelayChainResult<Arc<dyn RelayChainInterface + 'static>> {
+) -> RelayChainResult<(Arc<dyn RelayChainInterface + 'static>, PeerId)> {
 	let relay_chain_node = match collator_options.relay_chain_mode {
 		pezcumulus_client_cli::RelayChainMode::Embedded => pezkuwi_test_service::new_full(
 			relay_chain_config,
 			if let Some(ref key) = collator_key {
-				pezkuwi_service::IsTeyrchainNode::Collator(key.clone())
+				pezkuwi_service::IsParachainNode::Collator(key.clone())
 			} else {
-				pezkuwi_service::IsTeyrchainNode::Collator(CollatorPair::generate().0)
+				pezkuwi_service::IsParachainNode::Collator(CollatorPair::generate().0)
 			},
 			None,
 			pezkuwi_service::CollatorOverseerGen,
@@ -281,20 +282,25 @@ async fn build_relay_chain_interface(
 				rpc_target_urls,
 			)
 			.await
-			.map(|r| r.0)
+			.map(|r| (r.0, r.2.local_peer_id()))
 		},
 	};
 
+	let relay_chain_peer_id = relay_chain_node.network.local_peer_id();
+
 	task_manager.add_child(relay_chain_node.task_manager);
 	tracing::info!("Using inprocess node.");
-	Ok(Arc::new(RelayChainInProcessInterface::new(
-		relay_chain_node.client.clone(),
-		relay_chain_node.backend.clone(),
-		relay_chain_node.sync_service.clone(),
-		relay_chain_node.overseer_handle.ok_or(RelayChainError::GenericError(
-			"Overseer should be running in full node.".to_string(),
-		))?,
-	)))
+	Ok((
+		Arc::new(RelayChainInProcessInterface::new(
+			relay_chain_node.client.clone(),
+			relay_chain_node.backend.clone(),
+			relay_chain_node.sync_service.clone(),
+			relay_chain_node.overseer_handle.ok_or(RelayChainError::GenericError(
+				"Overseer should be running in full node.".to_string(),
+			))?,
+		)),
+		relay_chain_peer_id,
+	))
 }
 
 /// Start a node with the given teyrchain `Configuration` and relay chain `Configuration`.
@@ -332,9 +338,8 @@ where
 	let client = params.client.clone();
 	let backend = params.backend.clone();
 
-	let block_import = params.other.0;
-	let slot_based_handle = params.other.1;
-	let relay_chain_interface = build_relay_chain_interface(
+	let (block_import, block_import_handle) = params.other;
+	let (relay_chain_interface, relay_chain_peer_id) = build_relay_chain_interface(
 		relay_chain_config,
 		teyrchain_config.prometheus_registry(),
 		collator_key.clone(),
@@ -366,6 +371,7 @@ where
 			transaction_pool: transaction_pool.clone(),
 			para_id,
 			spawn_handle: task_manager.spawn_handle(),
+			spawn_essential_handle: task_manager.spawn_essential_handle(),
 			relay_chain_interface: relay_chain_interface.clone(),
 			import_queue: params.import_queue,
 			metrics: Net::register_notification_metrics(
@@ -435,9 +441,9 @@ where
 		prometheus_registry: None,
 	})?;
 
-	let collator_peer_id = network.local_peer_id();
+	let collator_peer_id = relay_chain_peer_id;
 	if let Some(collator_key) = collator_key {
-		let proposer = pezsc_basic_authorship::ProposerFactory::with_proof_recording(
+		let proposer = pezsc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool.clone(),
@@ -471,10 +477,9 @@ where
 				para_id,
 				proposer,
 				collator_service,
-				authoring_duration: Duration::from_millis(2000),
 				reinitialize: false,
 				slot_offset: Duration::from_secs(1),
-				block_import_handle: slot_based_handle,
+				block_import_handle,
 				spawner: task_manager.spawn_essential_handle(),
 				export_pov: None,
 				max_pov_percentage: None,
@@ -514,7 +519,7 @@ where
 	Ok((task_manager, client, network, rpc_handlers, transaction_pool, backend))
 }
 
-/// A Pezcumulus test node instance used for testing.
+/// A Cumulus test node instance used for testing.
 pub struct TestNode {
 	/// TaskManager's instance.
 	pub task_manager: TaskManager,
@@ -618,7 +623,7 @@ impl TestNodeBuilder {
 	/// node.
 	pub fn connect_to_relay_chain_node(
 		mut self,
-		node: &pezkuwi_test_service::PezkuwiTestNode,
+		node: &pezkuwi_test_service::PolkadotTestNode,
 	) -> Self {
 		self.relay_chain_nodes.push(node.addr.clone());
 		self
@@ -630,7 +635,7 @@ impl TestNodeBuilder {
 	/// node.
 	pub fn connect_to_relay_chain_nodes<'a>(
 		mut self,
-		nodes: impl IntoIterator<Item = &'a pezkuwi_test_service::PezkuwiTestNode>,
+		nodes: impl IntoIterator<Item = &'a pezkuwi_test_service::PolkadotTestNode>,
 	) -> Self {
 		self.relay_chain_nodes.extend(nodes.into_iter().map(|n| n.addr.clone()));
 		self
@@ -730,7 +735,7 @@ impl TestNodeBuilder {
 						false,
 					)
 					.await
-					.expect("could not create Pezcumulus test service")
+					.expect("could not create Cumulus test service")
 				},
 				pezsc_network::config::NetworkBackendType::Litep2p => {
 					start_node_impl::<_, pezsc_network::Litep2pNetworkBackend>(
@@ -745,7 +750,7 @@ impl TestNodeBuilder {
 						false,
 					)
 					.await
-					.expect("could not create Pezcumulus test service")
+					.expect("could not create Cumulus test service")
 				},
 			};
 		let peer_id = network.local_peer_id();
@@ -756,7 +761,7 @@ impl TestNodeBuilder {
 	}
 }
 
-/// Create a Pezcumulus `Configuration`.
+/// Create a Cumulus `Configuration`.
 ///
 /// By default a TCP socket will be used, therefore you need to provide nodes if you want the
 /// node to be connected to other nodes.
@@ -926,24 +931,26 @@ pub fn construct_extrinsic(
 		.map(|c| c / 2)
 		.unwrap_or(2) as u64;
 	let tip = 0;
-	let tx_ext: runtime::TxExtension = (
-		pezframe_system::AuthorizeCall::<runtime::Runtime>::new(),
-		pezframe_system::CheckNonZeroSender::<runtime::Runtime>::new(),
-		pezframe_system::CheckSpecVersion::<runtime::Runtime>::new(),
-		pezframe_system::CheckGenesis::<runtime::Runtime>::new(),
-		pezframe_system::CheckEra::<runtime::Runtime>::from(generic::Era::mortal(
-			period,
-			current_block,
-		)),
-		pezframe_system::CheckNonce::<runtime::Runtime>::from(nonce),
-		pezframe_system::CheckWeight::<runtime::Runtime>::new(),
-		pezpallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(tip),
-	)
+	let tx_ext: runtime::TxExtension =
+		pezcumulus_pallet_weight_reclaim::StorageWeightReclaim::from((
+			pezframe_system::AuthorizeCall::<runtime::Runtime>::new(),
+			pezframe_system::CheckNonZeroSender::<runtime::Runtime>::new(),
+			pezframe_system::CheckSpecVersion::<runtime::Runtime>::new(),
+			pezframe_system::CheckGenesis::<runtime::Runtime>::new(),
+			pezframe_system::CheckEra::<runtime::Runtime>::from(generic::Era::mortal(
+				period,
+				current_block,
+			)),
+			pezframe_system::CheckNonce::<runtime::Runtime>::from(nonce),
+			pezframe_system::CheckWeight::<runtime::Runtime>::new(),
+			pezpallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(tip),
+			runtime::TestTransactionExtension::<runtime::Runtime>::default(),
+		))
 		.into();
 	let raw_payload = runtime::SignedPayload::from_raw(
 		function.clone(),
 		tx_ext.clone(),
-		((), (), runtime::VERSION.spec_version, genesis_block, current_block_hash, (), (), ()),
+		((), (), runtime::VERSION.spec_version, genesis_block, current_block_hash, (), (), (), ()),
 	);
 	let signature = raw_payload.using_encoded(|e| caller.sign(e));
 	runtime::UncheckedExtrinsic::new_signed(
@@ -964,7 +971,7 @@ pub fn run_relay_chain_validator_node(
 	storage_update_func: impl Fn(),
 	boot_nodes: Vec<MultiaddrWithPeerId>,
 	port: Option<u16>,
-) -> pezkuwi_test_service::PezkuwiTestNode {
+) -> pezkuwi_test_service::PolkadotTestNode {
 	let mut config = pezkuwi_test_service::node_config(
 		storage_update_func,
 		tokio_handle.clone(),

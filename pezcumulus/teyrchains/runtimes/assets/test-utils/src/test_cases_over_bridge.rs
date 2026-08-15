@@ -17,8 +17,8 @@
 //! over a bridge.
 
 use crate::{assert_matches_reserve_asset_deposited_instructions, get_fungible_delivery_fees};
+use assets_common::local_and_foreign_assets::ForeignAssetReserveData;
 use codec::Encode;
-use pez_assets_common::local_and_foreign_assets::ForeignAssetReserveData;
 use pezcumulus_primitives_core::XcmpMessageSource;
 use pezframe_support::{
 	assert_ok,
@@ -60,7 +60,7 @@ pub fn limited_reserve_transfer_assets_for_native_asset_works<
 	alice_account: AccountIdOf<Runtime>,
 	unwrap_pallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
 	unwrap_xcmp_queue_event: Box<
-		dyn Fn(Vec<u8>) -> Option<pezcumulus_pezpallet_xcmp_queue::Event<Runtime>>,
+		dyn Fn(Vec<u8>) -> Option<pezcumulus_pallet_xcmp_queue::Event<Runtime>>,
 	>,
 	prepare_configuration: fn() -> TestBridgingConfig,
 	weight_limit: WeightLimit,
@@ -73,8 +73,8 @@ pub fn limited_reserve_transfer_assets_for_native_asset_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ pezpallet_timestamp::Config,
 	AllPalletsWithoutSystem:
 		OnInitialize<BlockNumberFor<Runtime>> + OnFinalize<BlockNumberFor<Runtime>>,
@@ -90,7 +90,7 @@ pub fn limited_reserve_transfer_assets_for_native_asset_works<
 		From<<Runtime as pezframe_system::Config>::AccountId>,
 	<Runtime as pezframe_system::Config>::AccountId: From<AccountId>,
 	HrmpChannelOpener: pezframe_support::inherent::ProvideInherent<
-		Call = pezcumulus_pezpallet_teyrchain_system::Call<Runtime>,
+		Call = pezcumulus_pallet_teyrchain_system::Call<Runtime>,
 	>,
 	HrmpChannelSource: XcmpMessageSource,
 {
@@ -220,7 +220,7 @@ pub fn limited_reserve_transfer_assets_for_native_asset_works<
 				.into_iter()
 				.filter_map(|e| unwrap_xcmp_queue_event(e.event.encode()))
 				.find_map(|e| match e {
-					pezcumulus_pezpallet_xcmp_queue::Event::XcmpMessageSent { message_hash } => {
+					pezcumulus_pallet_xcmp_queue::Event::XcmpMessageSent { message_hash } => {
 						Some(message_hash)
 					},
 					_ => None,
@@ -360,8 +360,8 @@ pub fn receive_reserve_asset_deposited_from_different_consensus_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ pezpallet_assets::Config<ForeignAssetsPalletInstance, ReserveData = ForeignAssetReserveData>
 		+ pezpallet_timestamp::Config,
 	AllPalletsWithoutSystem:
@@ -417,7 +417,7 @@ pub fn receive_reserve_asset_deposited_from_different_consensus_works<
 						foreign_asset_owner
 					),
 					foreign_asset_id_location.clone().into(),
-					vec![foreign_asset_reserve_data],
+					vec![foreign_asset_reserve_data].try_into().unwrap(),
 				)
 			);
 
@@ -531,8 +531,8 @@ pub fn report_bridge_status_from_xcm_bridge_router_works<
 		+ pezpallet_xcm::Config
 		+ teyrchain_info::Config
 		+ pezpallet_collator_selection::Config
-		+ pezcumulus_pezpallet_teyrchain_system::Config
-		+ pezcumulus_pezpallet_xcmp_queue::Config
+		+ pezcumulus_pallet_teyrchain_system::Config
+		+ pezcumulus_pallet_xcmp_queue::Config
 		+ pezpallet_xcm_bridge_hub_router::Config<XcmBridgeHubRouterInstance>
 		+ pezpallet_timestamp::Config,
 	AllPalletsWithoutSystem:

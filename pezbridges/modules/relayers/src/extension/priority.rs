@@ -51,8 +51,8 @@ mod integrity_tests {}
 mod integrity_tests {
 	use super::{compute_priority_boost, ItemCount};
 
-	use pezbp_messages::MessageNonce;
-	use pezbp_runtime::PreComputedSize;
+	use bp_messages::MessageNonce;
+	use bp_runtime::PreComputedSize;
 	use pezframe_support::{
 		dispatch::{DispatchClass, DispatchInfo, Pays, PostDispatchInfo},
 		traits::Get,
@@ -142,7 +142,7 @@ mod integrity_tests {
 	pub mod per_relay_header {
 		use super::*;
 
-		use pezbp_header_pez_chain::{
+		use bp_header_chain::{
 			max_expected_submit_finality_proof_arguments_size, ChainWithGrandpa,
 		};
 		use pezpallet_bridge_grandpa::WeightInfoExt;
@@ -231,7 +231,7 @@ mod integrity_tests {
 	pub mod per_teyrchain_header {
 		use super::*;
 
-		use pezbp_runtime::Teyrchain;
+		use bp_runtime::Teyrchain;
 		use pezpallet_bridge_teyrchains::WeightInfoExt;
 
 		/// Ensures that the value of `PriorityBoostPerHeader` matches the value of
@@ -265,7 +265,7 @@ mod integrity_tests {
 			// value - it SHALL NOT affect any value, it just adds more tests for the value.
 			let maximal_improved_by = 4_096;
 			super::ensure_priority_boost_is_sane::<PriorityBoostPerHeader, BalanceOf<Runtime>>(
-				"PriorityBoostPerTeyrchainHeader",
+				"PriorityBoostPerParachainHeader",
 				maximal_improved_by,
 				tip_boost_per_header,
 				|_n_headers, tip| {
@@ -334,7 +334,7 @@ mod integrity_tests {
 	pub mod per_message {
 		use super::*;
 
-		use pezbp_messages::ChainWithMessages;
+		use bp_messages::ChainWithMessages;
 		use pezpallet_bridge_messages::WeightInfoExt;
 
 		/// Ensures that the value of `PriorityBoostPerMessage` matches the value of

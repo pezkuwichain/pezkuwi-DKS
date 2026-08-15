@@ -1,19 +1,19 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezcumulus.
+// This file is part of Cumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 use futures::channel::{
 	mpsc::{Receiver, Sender},
@@ -34,12 +34,14 @@ use codec::{Decode, Encode};
 use pezcumulus_primitives_core::{
 	relay_chain::{
 		async_backing::{AsyncBackingParams, BackingState, Constraints},
-		slashing, ApprovalVotingParams, BlockNumber, CandidateCommitments, CandidateEvent,
-		CandidateHash, CommittedCandidateReceiptV2 as CommittedCandidateReceipt, CoreIndex,
-		CoreState, DisputeState, ExecutorParams, GroupRotationInfo, Hash as RelayHash,
-		Header as RelayHeader, InboundHrmpMessage, NodeFeatures, OccupiedCoreAssumption,
-		PvfCheckStatement, ScrapedOnChainVotes, SessionIndex, SessionInfo, ValidationCode,
-		ValidationCodeHash, ValidatorId, ValidatorIndex, ValidatorSignature,
+		slashing,
+		vstaging::RelayParentInfo,
+		ApprovalVotingParams, BlockNumber, CandidateCommitments, CandidateEvent, CandidateHash,
+		CommittedCandidateReceiptV2 as CommittedCandidateReceipt, CoreIndex, CoreState,
+		DisputeState, ExecutorParams, GroupRotationInfo, Hash as RelayHash, Header as RelayHeader,
+		InboundHrmpMessage, NodeFeatures, OccupiedCoreAssumption, PvfCheckStatement,
+		ScrapedOnChainVotes, SessionIndex, SessionInfo, ValidationCode, ValidationCodeHash,
+		ValidatorId, ValidatorIndex, ValidatorSignature,
 	},
 	InboundDownwardMessage, ParaId, PersistedValidationData,
 };
@@ -274,6 +276,17 @@ impl RelayChainRpcClient {
 	) -> Result<ReadProof<RelayHash>, RelayChainError> {
 		let params = rpc_params![storage_keys, at];
 		self.request("state_getReadProof", params).await
+	}
+
+	/// Get child trie read proof for `child_keys`
+	pub async fn state_get_child_read_proof(
+		&self,
+		child_storage_key: pezsp_core::storage::PrefixedStorageKey,
+		child_keys: Vec<StorageKey>,
+		at: Option<RelayHash>,
+	) -> Result<ReadProof<RelayHash>, RelayChainError> {
+		let params = rpc_params![child_storage_key, child_keys, at];
+		self.request("state_getChildReadProof", params).await
 	}
 
 	/// Retrieve storage item at `storage_key`
@@ -644,17 +657,13 @@ impl RelayChainRpcClient {
 	}
 
 	#[allow(missing_docs)]
-	pub async fn teyrchain_host_staging_approval_voting_params(
+	pub async fn teyrchain_host_approval_voting_params(
 		&self,
 		at: RelayHash,
 		_session_index: SessionIndex,
 	) -> Result<ApprovalVotingParams, RelayChainError> {
-		self.call_remote_runtime_function(
-			"TeyrchainHost_staging_approval_voting_params",
-			at,
-			None::<()>,
-		)
-		.await
+		self.call_remote_runtime_function("TeyrchainHost_approval_voting_params", at, None::<()>)
+			.await
 	}
 
 	pub async fn teyrchain_host_para_backing_state(
@@ -766,12 +775,38 @@ impl RelayChainRpcClient {
 		Ok(rx)
 	}
 
+	pub async fn teyrchain_host_max_relay_parent_session_age(
+		&self,
+		at: RelayHash,
+	) -> Result<u32, RelayChainError> {
+		self.call_remote_runtime_function(
+			"TeyrchainHost_max_relay_parent_session_age",
+			at,
+			None::<()>,
+		)
+		.await
+	}
+
 	pub async fn teyrchain_host_para_ids(
 		&self,
 		at: RelayHash,
 	) -> Result<Vec<ParaId>, RelayChainError> {
 		self.call_remote_runtime_function("TeyrchainHost_para_ids", at, None::<()>)
 			.await
+	}
+
+	pub async fn teyrchain_host_ancestor_relay_parent_info(
+		&self,
+		at: RelayHash,
+		session_index: SessionIndex,
+		relay_parent: RelayHash,
+	) -> Result<Option<RelayParentInfo<RelayHash, BlockNumber>>, RelayChainError> {
+		self.call_remote_runtime_function(
+			"TeyrchainHost_ancestor_relay_parent_info",
+			at,
+			Some((session_index, relay_parent)),
+		)
+		.await
 	}
 }
 
@@ -784,7 +819,7 @@ pub fn distribute_header(header: RelayHeader, senders: &mut Vec<Sender<RelayHead
 					Err(error) if error.is_disconnected() => false,
 					// Channel is full. This should not happen.
 					// TODO: Improve error handling here
-					// https://github.com/pezkuwichain/pezkuwi-sdk/issues/90
+					// https://github.com/paritytech/cumulus/issues/1482
 					Err(error) => {
 						tracing::error!(target: LOG_TARGET, ?error, "Event distribution channel has reached its limit. This can lead to missed notifications.");
 						true

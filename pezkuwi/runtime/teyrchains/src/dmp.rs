@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -83,8 +83,8 @@ impl From<QueueDownwardMessageError> for SendError {
 	}
 }
 
-/// An error returned by [`Pezpallet::check_processed_downward_messages`] that indicates an
-/// acceptance check didn't pass.
+/// An error returned by [`Pezpallet::check_processed_downward_messages`] that indicates an acceptance
+/// check didn't pass.
 pub(crate) enum ProcessedDownwardMessagesAcceptanceErr {
 	/// If there are pending messages then `processed_downward_messages` should be at least 1,
 	AdvancementRule,
@@ -353,7 +353,7 @@ impl<T: Config> FeeTracker for Pezpallet<T> {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<T: Config> crate::EnsureForTeyrchain for Pezpallet<T> {
+impl<T: Config> crate::EnsureForParachain for Pezpallet<T> {
 	fn ensure(para: ParaId) {
 		Self::make_teyrchain_reachable(para);
 	}

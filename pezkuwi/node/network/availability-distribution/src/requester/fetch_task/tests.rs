@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Pezkuwi.
+// This file is part of Bizinikiwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,8 +33,8 @@ use pezkuwi_node_network_protocol::request_response::{
 	v1::{self, ChunkResponse},
 	Protocol, Recipient, ReqProtocolNames,
 };
+use pezkuwi_node_primitives::{BlockData, PoV, Proof};
 use pezkuwi_node_subsystem::messages::AllMessages;
-use pezkuwi_pez_node_primitives::{BlockData, PoV, Proof};
 use pezkuwi_primitives::{CandidateHash, ChunkIndex, ValidatorIndex};
 
 use super::*;
