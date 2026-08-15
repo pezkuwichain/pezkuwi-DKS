@@ -23,13 +23,6 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: "0"
-  # pallet-revive (PolkaVM smart contracts) is a TESTNET-only feature. Its contract
-  # fixtures are compiled by a build script that uses a polkavm `.json` target spec
-  # which the polkavm-linker tooling has not yet updated for Rust 1.96's target-spec
-  # format. Skip that contract compilation in native CI builds (upstream-provided
-  # env switch). The runtime WASM build is unaffected (it cross-compiles and already
-  # skips fixtures). Tracked separately for a proper polkavm/Rust-1.96 fix.
-  SKIP_PALLET_REVIVE_FIXTURES: "1"
   # The full-workspace test/clippy/bench compile produced a target dir large enough to
   # overflow the smaller self-hosted runners ("No space left on device"). Debug info is the
   # bulk of compiled test binaries and is not needed to run tests, so drop it — this shrinks
@@ -58,6 +51,7 @@ jobs:
         partition: [1, 2]
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # Heaviest job — compiles the whole workspace's test binaries. The persistent
         # target dir accumulates and can fill smaller runners; clean it when low.
@@ -95,7 +89,6 @@ jobs:
             (package(pezkuwi-zombienet-configuration) & test(network_config_builder))
           )'
           cargo nextest run --workspace --locked --no-fail-fast \
-            --exclude pezpallet-revive \
             -E "$FILTER" \
             --partition count:${{ matrix.partition }}/2 \
             --config-file .config/nextest.toml
@@ -108,6 +101,7 @@ jobs:
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
         # fill smaller runners. Clean it when free space is low; sccache keeps the
@@ -146,6 +140,7 @@ jobs:
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
         # fill smaller runners. Clean it when free space is low; sccache keeps the
@@ -182,6 +177,7 @@ jobs:
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
         # fill smaller runners. Clean it when free space is low; sccache keeps the
@@ -305,6 +301,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Feature variants of the core crypto primitives
         run: |
           rustup target add wasm32v1-none
@@ -318,6 +315,7 @@ jobs:
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Runtime compiles for the WASM target
         run: |
           rustup target add wasm32v1-none
@@ -336,6 +334,7 @@ jobs:
         partition: [1, 2]
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Tests without the try-runtime feature
         # try-runtime changes which code paths compile; the suite has to pass without it too.
         run: |
@@ -350,6 +349,7 @@ jobs:
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Build rustdoc
         run: |
           git config --global --add safe.directory '*'
