@@ -56,6 +56,15 @@ jobs:
           rustup show
           rustup component add rust-src
           rustup target add wasm32v1-none wasm32-unknown-unknown
+      # Every runtime that is, or is planned to be, part of the two networks. A runtime left off
+      # this list is a runtime nothing compiles, and a green run then says less than it looks
+      # like: the hubs, coretime and collectives sat outside this job while the framework moved
+      # underneath them. Not live yet is not the same as dead - they stay in.
+      #
+      # Deliberately absent: pez-penpal, glutton-zagros, yet-another-teyrchain and
+      # pezkuwichain-teyrchain (test fixtures), pez-kitchensink (upstream demo, on its way out),
+      # pez-revive-dev (development harness), the framework crates' own test runtimes, and the
+      # staking-async reference runtimes we derive from.
       - name: Build runtime WASM (check)
         run: |
           cargo check --locked \
@@ -64,7 +73,12 @@ jobs:
             -p asset-hub-pezkuwichain-runtime \
             -p asset-hub-zagros-runtime \
             -p people-pezkuwichain-runtime \
-            -p people-zagros-runtime
+            -p people-zagros-runtime \
+            -p pezbridge-hub-pezkuwichain-runtime \
+            -p pezbridge-hub-zagros-runtime \
+            -p coretime-pezkuwichain-runtime \
+            -p coretime-zagros-runtime \
+            -p collectives-zagros-runtime
 
   # The runtimes are the on-chain deliverable; these are the off-chain one. Nothing on the
   # every-push path compiled them until now, so the node could stop building and every gating
@@ -98,8 +112,12 @@ jobs:
     runs-on: [self-hosted, substrate-build]
     steps:
       - uses: actions/checkout@v7
+      # Same eleven as the WASM job above; every one of them declares the feature.
       - run: |
           cargo check --locked --features try-runtime \
             -p pezkuwichain-runtime -p zagros-runtime \
             -p asset-hub-pezkuwichain-runtime -p asset-hub-zagros-runtime \
-            -p people-pezkuwichain-runtime -p people-zagros-runtime
+            -p people-pezkuwichain-runtime -p people-zagros-runtime \
+            -p pezbridge-hub-pezkuwichain-runtime -p pezbridge-hub-zagros-runtime \
+            -p coretime-pezkuwichain-runtime -p coretime-zagros-runtime \
+            -p collectives-zagros-runtime
