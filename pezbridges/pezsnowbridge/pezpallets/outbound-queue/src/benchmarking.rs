@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
 use super::*;
 
-use bridge_hub_common::AggregateMessageOrigin;
+use pezbridge_hub_common::AggregateMessageOrigin;
 use codec::Encode;
 use pezframe_benchmarking::v2::*;
 use pezsnowbridge_core::ChannelId;

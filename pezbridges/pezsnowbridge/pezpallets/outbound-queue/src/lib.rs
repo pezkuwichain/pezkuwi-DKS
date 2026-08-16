@@ -103,7 +103,7 @@ mod mock;
 #[cfg(test)]
 mod test;
 
-use bridge_hub_common::AggregateMessageOrigin;
+use pezbridge_hub_common::AggregateMessageOrigin;
 use codec::Decode;
 use pezframe_support::{
 	storage::StorageStreamIter,

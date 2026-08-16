@@ -281,7 +281,7 @@ where
 		claimer: Location,
 	) -> Xcm<()> {
 		let bridge_owner_bytes: [u8; 32] = bridge_owner.into();
-		let reserve_data = assets_common::local_and_foreign_assets::ForeignAssetReserveData {
+		let reserve_data = pez_assets_common::local_and_foreign_assets::ForeignAssetReserveData {
 			reserve: Location::new(2, [GlobalConsensus(EthereumNetwork::get())]),
 			teleportable: false,
 		};

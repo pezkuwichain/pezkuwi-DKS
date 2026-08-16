@@ -21001,6 +21001,7 @@ version = "0.9.0"
 dependencies = [
  "alloy-core",
  "hex-literal",
+ "impl-trait-for-tuples",
  "parity-scale-codec",
  "pez-assets-common",
  "pezframe-support",
@@ -21010,6 +21011,7 @@ dependencies = [
  "pezsnowbridge-test-utils",
  "pezsnowbridge-verification-primitives",
  "pezsp-core",
+ "pezsp-crypto-hashing",
  "pezsp-io",
  "pezsp-runtime",
  "pezsp-std",
