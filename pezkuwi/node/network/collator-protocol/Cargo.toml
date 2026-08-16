@@ -73,6 +73,9 @@ runtime-benchmarks = [
 	"pezsc-network/runtime-benchmarks",
 	"pezsp-keyring/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus-slots/runtime-benchmarks",
+	"pezsp-timestamp/runtime-benchmarks"
 ]
 std = [
 	"bitvec/std",
@@ -94,6 +97,8 @@ try-runtime = [
 	"pezsc-network/try-runtime",
 	"pezsp-keyring/try-runtime",
 	"pezsp-runtime/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-timestamp/try-runtime"
 ]
 serde = []
 with-tracing = []

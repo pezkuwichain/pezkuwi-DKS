@@ -133,6 +133,7 @@ runtime-benchmarks = [
 	"pezsp-trie/runtime-benchmarks",
 	"pezsp-version/runtime-benchmarks",
 	"zagros-runtime/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks"
 ]
 rocksdb = ["pezsc-cli/rocksdb", "pezsc-client-db/rocksdb"]
 std = [
@@ -180,6 +181,7 @@ try-runtime = [
 	"pezsp-transaction-pool/try-runtime",
 	"pezsp-version/try-runtime",
 	"zagros-runtime/try-runtime",
+	"pezcumulus-primitives-core/try-runtime"
 ]
 serde = []
 experimental = []

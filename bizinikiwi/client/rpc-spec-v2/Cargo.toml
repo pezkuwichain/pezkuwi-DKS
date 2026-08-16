@@ -67,7 +67,6 @@ pezsc-rpc = { workspace = true, default-features = true, features = [
 pezsc-service = { workspace = true, default-features = true }
 pezsc-transaction-pool = { workspace = true, default-features = true }
 pezsc-utils = { workspace = true, default-features = true }
-pezsp-consensus = { workspace = true, default-features = true }
 pezsp-externalities = { workspace = true, default-features = true }
 pezsp-maybe-compressed-blob = { workspace = true, default-features = true }
 pretty_assertions = { workspace = true }
@@ -109,6 +108,7 @@ std = [
 	"pezsp-consensus/std",
 	"pezsp-rpc/std",
 	"prometheus-endpoint/std",
+	"multihash-codetable/std"
 ]
 try-runtime = [
 	"bizinikiwi-test-runtime-client/try-runtime",

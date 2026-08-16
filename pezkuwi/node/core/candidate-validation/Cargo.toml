@@ -61,6 +61,7 @@ runtime-benchmarks = [
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezsp-application-crypto/runtime-benchmarks",
 	"pezsp-keyring/runtime-benchmarks",
+	"pezkuwi-node-core-pvf-common/runtime-benchmarks"
 ]
 std = [
 	"codec/std",
@@ -75,5 +76,6 @@ std = [
 	"pezkuwi-primitives-test-helpers/std",
 	"pezsp-application-crypto/std",
 	"pezsp-keystore/std",
+	"pezkuwi-node-core-pvf-common/std"
 ]
 serde = []
