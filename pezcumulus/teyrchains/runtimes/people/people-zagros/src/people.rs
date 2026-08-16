@@ -19,7 +19,10 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use enumflags2::{bitflags, BitFlags};
 use pezframe_support::{
 	parameter_types,
-	traits::{ConstU32, WithdrawReasons},
+	traits::{
+		fungible::HoldConsideration, tokens::imbalance::ResolveTo, ConstU32, LinearStoragePrice,
+		WithdrawReasons,
+	},
 	weights::Weight,
 	CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound,
 };
@@ -1016,20 +1019,63 @@ impl pezpallet_pez_rewards::Config for Runtime {
 parameter_types! {
 	pub const ConfigDepositBase: Balance = 5 * UNITS;
 	pub const FriendDepositFactor: Balance = 50 * CENTS;
-	pub const MaxFriends: u16 = 9;
 	pub const RecoveryDeposit: Balance = 5 * UNITS;
+	pub const RecoveryDepositPerItem: Balance = deposit(1, 0);
+	pub const RecoveryDepositPerByte: Balance = deposit(0, 1);
+
+	pub const FriendGroupsHoldReason: RuntimeHoldReason =
+		RuntimeHoldReason::Recovery(pezpallet_recovery::HoldReason::FriendGroupsStorage);
+	pub const RecoveryAttemptHoldReason: RuntimeHoldReason =
+		RuntimeHoldReason::Recovery(pezpallet_recovery::HoldReason::AttemptStorage);
+	pub const InheritorHoldReason: RuntimeHoldReason =
+		RuntimeHoldReason::Recovery(pezpallet_recovery::HoldReason::InheritorStorage);
 }
 
+// Recovery moved from fixed reserved deposits to footprint-scaled holds. Holds are typed and
+// slashable where reserves were neither, and the deposit now tracks what is actually stored, so
+// the new shape is adopted rather than pinned to the old one.
+//
+// The three deposits that existed before carry over unchanged in meaning:
+//   ConfigDepositBase + FriendDepositFactor -> FriendGroupsConsideration, which is the same
+//     base-plus-per-friend curve the old pallet computed by hand.
+//   RecoveryDeposit -> SecurityDeposit, which is what that deposit already was: the stake an
+//     initiator puts at risk when opening a recovery. It is now explicitly slashable.
+//
+// AttemptConsideration and InheritorConsideration have no predecessor. They pay for storage, so
+// they are priced like every other byte this chain stores, with the same `deposit()` helper the
+// NFT and assets pallets use here. The inheritor feature itself is new and unexercised.
+//
+// A slashed security deposit goes to the relay treasury rather than being burnt, matching how
+// this runtime already routes identity slashes.
 impl pezpallet_recovery::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = ();
 	type RuntimeCall = RuntimeCall;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type BlockNumberProvider = System;
 	type Currency = Balances;
-	type ConfigDepositBase = ConfigDepositBase;
-	type FriendDepositFactor = FriendDepositFactor;
-	type MaxFriends = MaxFriends;
-	type RecoveryDeposit = RecoveryDeposit;
+	type FriendGroupsConsideration = HoldConsideration<
+		AccountId,
+		Balances,
+		FriendGroupsHoldReason,
+		LinearStoragePrice<ConfigDepositBase, FriendDepositFactor, Balance>,
+	>;
+	type AttemptConsideration = HoldConsideration<
+		AccountId,
+		Balances,
+		RecoveryAttemptHoldReason,
+		LinearStoragePrice<RecoveryDepositPerItem, RecoveryDepositPerByte, Balance>,
+	>;
+	type InheritorConsideration = HoldConsideration<
+		AccountId,
+		Balances,
+		InheritorHoldReason,
+		LinearStoragePrice<RecoveryDepositPerItem, RecoveryDepositPerByte, Balance>,
+	>;
+	type SecurityDeposit = RecoveryDeposit;
+	type Slash = ResolveTo<RelayTreasuryAccount, Balances>;
+	// Documented upstream as never safe to reduce: shrinking it makes stored bounded vectors
+	// undecodable. Held at the previous MaxFriends value.
+	type MaxFriendsPerConfig = ConstU32<9>;
 }
 
 // =============================================================================
