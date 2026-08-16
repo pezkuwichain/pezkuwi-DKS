@@ -22,14 +22,14 @@
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
 // --extrinsic=*
 // --runtime=target/production/wbuild/coretime-zagros-runtime/coretime_zagros_runtime.wasm
 // --pezpallet=pezpallet_broker
-// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
+// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
 // --output=./pezcumulus/teyrchains/runtimes/coretime/coretime-zagros/src/weights
 // --wasm-execution=compiled
 // --steps=50
@@ -637,6 +637,30 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Minimum execution time: 21_397_000 picoseconds.
 		Weight::from_parts(21_865_000, 0)
 			.saturating_add(Weight::from_parts(0, 4681))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	/// Storage: `Broker::PotentialRenewals` (r:1 w:1)
+	/// Proof: `Broker::PotentialRenewals` (`max_values`: None, `max_size`: Some(1233), added: 3708, mode: `MaxEncodedLen`)
+	fn remove_potential_renewal() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `312`
+		//  Estimated: `4698`
+		// Minimum execution time: 18_266_000 picoseconds.
+		Weight::from_parts(19_216_000, 0)
+			.saturating_add(Weight::from_parts(0, 4698))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	/// Storage: `Broker::Regions` (r:1 w:1)
+	/// Proof: `Broker::Regions` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
+	fn force_transfer() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `358`
+		//  Estimated: `3551`
+		// Minimum execution time: 22_968_000 picoseconds.
+		Weight::from_parts(23_878_000, 0)
+			.saturating_add(Weight::from_parts(0, 3551))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}

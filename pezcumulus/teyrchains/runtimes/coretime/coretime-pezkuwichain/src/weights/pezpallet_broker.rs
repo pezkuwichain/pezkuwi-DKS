@@ -18,18 +18,18 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `731f893ee36e`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `050e4dc4313a`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
 // --extrinsic=*
 // --runtime=target/production/wbuild/coretime-pezkuwichain-runtime/coretime_pezkuwichain_runtime.wasm
 // --pezpallet=pezpallet_broker
-// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
+// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
 // --output=./pezcumulus/teyrchains/runtimes/coretime/coretime-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
@@ -56,8 +56,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_559_000 picoseconds.
-		Weight::from_parts(2_723_000, 0)
+		// Minimum execution time: 2_566_000 picoseconds.
+		Weight::from_parts(2_786_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -67,8 +67,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `10888`
 		//  Estimated: `13506`
-		// Minimum execution time: 25_270_000 picoseconds.
-		Weight::from_parts(28_036_000, 0)
+		// Minimum execution time: 24_733_000 picoseconds.
+		Weight::from_parts(25_268_000, 0)
 			.saturating_add(Weight::from_parts(0, 13506))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -79,44 +79,44 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `12090`
 		//  Estimated: `13506`
-		// Minimum execution time: 25_774_000 picoseconds.
-		Weight::from_parts(26_297_000, 0)
+		// Minimum execution time: 23_819_000 picoseconds.
+		Weight::from_parts(24_701_000, 0)
 			.saturating_add(Weight::from_parts(0, 13506))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `Broker::Leases` (r:1 w:1)
-	/// Proof: `Broker::Leases` (`max_values`: Some(1), `max_size`: Some(401), added: 896, mode: `MaxEncodedLen`)
+	/// Proof: `Broker::Leases` (`max_values`: Some(1), `max_size`: Some(81), added: 576, mode: `MaxEncodedLen`)
 	/// Storage: `TeyrchainSystem::ValidationData` (r:1 w:0)
 	/// Proof: `TeyrchainSystem::ValidationData` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `TeyrchainSystem::LastRelayChainBlockNumber` (r:1 w:0)
 	/// Proof: `TeyrchainSystem::LastRelayChainBlockNumber` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn set_lease() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `466`
-		//  Estimated: `1951`
-		// Minimum execution time: 13_685_000 picoseconds.
-		Weight::from_parts(14_628_000, 0)
-			.saturating_add(Weight::from_parts(0, 1951))
+		//  Measured:  `146`
+		//  Estimated: `1631`
+		// Minimum execution time: 12_897_000 picoseconds.
+		Weight::from_parts(13_446_000, 0)
+			.saturating_add(Weight::from_parts(0, 1631))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `Broker::Leases` (r:1 w:1)
-	/// Proof: `Broker::Leases` (`max_values`: Some(1), `max_size`: Some(401), added: 896, mode: `MaxEncodedLen`)
+	/// Proof: `Broker::Leases` (`max_values`: Some(1), `max_size`: Some(81), added: 576, mode: `MaxEncodedLen`)
 	fn remove_lease() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `470`
-		//  Estimated: `1886`
-		// Minimum execution time: 10_681_000 picoseconds.
-		Weight::from_parts(11_120_000, 0)
-			.saturating_add(Weight::from_parts(0, 1886))
+		//  Measured:  `150`
+		//  Estimated: `1566`
+		// Minimum execution time: 10_319_000 picoseconds.
+		Weight::from_parts(10_718_000, 0)
+			.saturating_add(Weight::from_parts(0, 1566))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `Broker::Configuration` (r:1 w:0)
 	/// Proof: `Broker::Configuration` (`max_values`: Some(1), `max_size`: Some(31), added: 526, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::Leases` (r:1 w:1)
-	/// Proof: `Broker::Leases` (`max_values`: Some(1), `max_size`: Some(401), added: 896, mode: `MaxEncodedLen`)
+	/// Proof: `Broker::Leases` (`max_values`: Some(1), `max_size`: Some(81), added: 576, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::Reservations` (r:1 w:0)
 	/// Proof: `Broker::Reservations` (`max_values`: Some(1), `max_size`: Some(12021), added: 12516, mode: `MaxEncodedLen`)
 	/// Storage: `PezkuwiXcm::SupportedVersion` (r:1 w:0)
@@ -132,25 +132,25 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 	/// Storage: `Broker::InstaPoolIo` (r:3 w:3)
 	/// Proof: `Broker::InstaPoolIo` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::AutoRenewals` (r:1 w:1)
-	/// Proof: `Broker::AutoRenewals` (`max_values`: Some(1), `max_size`: Some(1002), added: 1497, mode: `MaxEncodedLen`)
+	/// Proof: `Broker::AutoRenewals` (`max_values`: Some(1), `max_size`: Some(201), added: 696, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::SaleInfo` (r:0 w:1)
 	/// Proof: `Broker::SaleInfo` (`max_values`: Some(1), `max_size`: Some(57), added: 552, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::Status` (r:0 w:1)
 	/// Proof: `Broker::Status` (`max_values`: Some(1), `max_size`: Some(18), added: 513, mode: `MaxEncodedLen`)
-	/// Storage: `Broker::Workplan` (r:0 w:60)
+	/// Storage: `Broker::Workplan` (r:0 w:20)
 	/// Proof: `Broker::Workplan` (`max_values`: None, `max_size`: Some(1216), added: 3691, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 1000]`.
 	fn start_sales(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `12567`
-		//  Estimated: `15033 + n * (1 ±0)`
-		// Minimum execution time: 51_814_000 picoseconds.
-		Weight::from_parts(150_721_297, 0)
-			.saturating_add(Weight::from_parts(0, 15033))
-			// Standard Error: 2_705
-			.saturating_add(Weight::from_parts(20_778, 0).saturating_mul(n.into()))
+		//  Measured:  `12247`
+		//  Estimated: `14773 + n * (1 ±0)`
+		// Minimum execution time: 50_462_000 picoseconds.
+		Weight::from_parts(95_701_761, 0)
+			.saturating_add(Weight::from_parts(0, 14773))
+			// Standard Error: 1_017
+			.saturating_add(Weight::from_parts(4_668, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(12))
-			.saturating_add(T::DbWeight::get().writes(59))
+			.saturating_add(T::DbWeight::get().writes(26))
 			.saturating_add(Weight::from_parts(0, 1).saturating_mul(n.into()))
 	}
 	/// Storage: `Broker::Status` (r:1 w:0)
@@ -167,8 +167,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `437`
 		//  Estimated: `3593`
-		// Minimum execution time: 64_403_000 picoseconds.
-		Weight::from_parts(69_856_000, 0)
+		// Minimum execution time: 55_310_000 picoseconds.
+		Weight::from_parts(56_779_000, 0)
 			.saturating_add(Weight::from_parts(0, 3593))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
@@ -181,7 +181,7 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 	/// Proof: `Broker::SaleInfo` (`max_values`: Some(1), `max_size`: Some(57), added: 552, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::PotentialRenewals` (r:1 w:2)
 	/// Proof: `Broker::PotentialRenewals` (`max_values`: None, `max_size`: Some(1233), added: 3708, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:1 w:1)
+	/// Storage: `System::Account` (r:1 w:0)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `TeyrchainSystem::ValidationData` (r:1 w:0)
 	/// Proof: `TeyrchainSystem::ValidationData` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -191,11 +191,11 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `658`
 		//  Estimated: `4698`
-		// Minimum execution time: 117_679_000 picoseconds.
-		Weight::from_parts(131_097_000, 0)
+		// Minimum execution time: 96_952_000 picoseconds.
+		Weight::from_parts(103_889_000, 0)
 			.saturating_add(Weight::from_parts(0, 4698))
 			.saturating_add(T::DbWeight::get().reads(6))
-			.saturating_add(T::DbWeight::get().writes(5))
+			.saturating_add(T::DbWeight::get().writes(4))
 	}
 	/// Storage: `Broker::Regions` (r:1 w:1)
 	/// Proof: `Broker::Regions` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
@@ -203,8 +203,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `358`
 		//  Estimated: `3551`
-		// Minimum execution time: 21_875_000 picoseconds.
-		Weight::from_parts(23_688_000, 0)
+		// Minimum execution time: 20_830_000 picoseconds.
+		Weight::from_parts(21_754_000, 0)
 			.saturating_add(Weight::from_parts(0, 3551))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -215,8 +215,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `358`
 		//  Estimated: `3551`
-		// Minimum execution time: 23_879_000 picoseconds.
-		Weight::from_parts(25_354_000, 0)
+		// Minimum execution time: 22_556_000 picoseconds.
+		Weight::from_parts(23_385_000, 0)
 			.saturating_add(Weight::from_parts(0, 3551))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -227,8 +227,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `358`
 		//  Estimated: `3551`
-		// Minimum execution time: 25_199_000 picoseconds.
-		Weight::from_parts(29_209_000, 0)
+		// Minimum execution time: 24_183_000 picoseconds.
+		Weight::from_parts(24_668_000, 0)
 			.saturating_add(Weight::from_parts(0, 3551))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(3))
@@ -243,10 +243,10 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 	/// Proof: `Broker::Workplan` (`max_values`: None, `max_size`: Some(1216), added: 3691, mode: `MaxEncodedLen`)
 	fn assign() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `937`
+		//  Measured:  `736`
 		//  Estimated: `4681`
-		// Minimum execution time: 38_377_000 picoseconds.
-		Weight::from_parts(41_124_000, 0)
+		// Minimum execution time: 35_180_000 picoseconds.
+		Weight::from_parts(36_474_000, 0)
 			.saturating_add(Weight::from_parts(0, 4681))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(2))
@@ -263,10 +263,10 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 	/// Proof: `Broker::InstaPoolContribution` (`max_values`: None, `max_size`: Some(68), added: 2543, mode: `MaxEncodedLen`)
 	fn pool() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1003`
+		//  Measured:  `802`
 		//  Estimated: `5996`
-		// Minimum execution time: 45_084_000 picoseconds.
-		Weight::from_parts(46_851_000, 0)
+		// Minimum execution time: 41_629_000 picoseconds.
+		Weight::from_parts(43_178_000, 0)
 			.saturating_add(Weight::from_parts(0, 5996))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(5))
@@ -282,11 +282,11 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `671`
 		//  Estimated: `6196 + m * (2520 ±0)`
-		// Minimum execution time: 72_975_000 picoseconds.
-		Weight::from_parts(76_716_241, 0)
+		// Minimum execution time: 71_315_000 picoseconds.
+		Weight::from_parts(72_531_865, 0)
 			.saturating_add(Weight::from_parts(0, 6196))
-			// Standard Error: 159_873
-			.saturating_add(Weight::from_parts(1_699_650, 0).saturating_mul(m.into()))
+			// Standard Error: 46_998
+			.saturating_add(Weight::from_parts(1_837_283, 0).saturating_mul(m.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(m.into())))
 			.saturating_add(T::DbWeight::get().writes(5))
@@ -302,11 +302,11 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 	/// Proof: `TeyrchainSystem::PendingUpwardMessages` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn purchase_credit() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `261`
-		//  Estimated: `3726`
-		// Minimum execution time: 73_412_000 picoseconds.
-		Weight::from_parts(77_554_000, 0)
-			.saturating_add(Weight::from_parts(0, 3726))
+		//  Measured:  `259`
+		//  Estimated: `3724`
+		// Minimum execution time: 69_827_000 picoseconds.
+		Weight::from_parts(71_536_000, 0)
+			.saturating_add(Weight::from_parts(0, 3724))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
@@ -318,8 +318,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `466`
 		//  Estimated: `3551`
-		// Minimum execution time: 62_820_000 picoseconds.
-		Weight::from_parts(85_149_000, 0)
+		// Minimum execution time: 48_292_000 picoseconds.
+		Weight::from_parts(68_226_000, 0)
 			.saturating_add(Weight::from_parts(0, 3551))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -334,8 +334,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `463`
 		//  Estimated: `3533`
-		// Minimum execution time: 104_501_000 picoseconds.
-		Weight::from_parts(146_124_000, 0)
+		// Minimum execution time: 92_377_000 picoseconds.
+		Weight::from_parts(136_256_000, 0)
 			.saturating_add(Weight::from_parts(0, 3533))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -352,8 +352,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `979`
 		//  Estimated: `3593`
-		// Minimum execution time: 132_420_000 picoseconds.
-		Weight::from_parts(176_072_000, 0)
+		// Minimum execution time: 111_597_000 picoseconds.
+		Weight::from_parts(128_005_000, 0)
 			.saturating_add(Weight::from_parts(0, 3593))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -364,10 +364,10 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 	/// Proof: `Broker::PotentialRenewals` (`max_values`: None, `max_size`: Some(1233), added: 3708, mode: `MaxEncodedLen`)
 	fn drop_renewal() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `957`
+		//  Measured:  `556`
 		//  Estimated: `4698`
-		// Minimum execution time: 67_350_000 picoseconds.
-		Weight::from_parts(84_436_000, 0)
+		// Minimum execution time: 47_734_000 picoseconds.
+		Weight::from_parts(55_112_000, 0)
 			.saturating_add(Weight::from_parts(0, 4698))
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -379,28 +379,28 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 	/// Storage: `TeyrchainSystem::PendingUpwardMessages` (r:1 w:1)
 	/// Proof: `TeyrchainSystem::PendingUpwardMessages` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `n` is `[0, 1000]`.
-	fn request_core_count(_n: u32, ) -> Weight {
+	fn request_core_count(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `42`
 		//  Estimated: `3507`
-		// Minimum execution time: 21_143_000 picoseconds.
-		Weight::from_parts(22_691_546, 0)
+		// Minimum execution time: 20_333_000 picoseconds.
+		Weight::from_parts(21_440_973, 0)
 			.saturating_add(Weight::from_parts(0, 3507))
+			// Standard Error: 54
+			.saturating_add(Weight::from_parts(49, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `Broker::CoreCountInbox` (r:1 w:1)
 	/// Proof: `Broker::CoreCountInbox` (`max_values`: Some(1), `max_size`: Some(2), added: 497, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 1000]`.
-	fn process_core_count(n: u32, ) -> Weight {
+	fn process_core_count(_n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `266`
 		//  Estimated: `1487`
-		// Minimum execution time: 7_972_000 picoseconds.
-		Weight::from_parts(8_929_699, 0)
+		// Minimum execution time: 7_821_000 picoseconds.
+		Weight::from_parts(8_450_013, 0)
 			.saturating_add(Weight::from_parts(0, 1487))
-			// Standard Error: 44
-			.saturating_add(Weight::from_parts(145, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -414,8 +414,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `461`
 		//  Estimated: `6196`
-		// Minimum execution time: 58_860_000 picoseconds.
-		Weight::from_parts(63_100_000, 0)
+		// Minimum execution time: 49_283_000 picoseconds.
+		Weight::from_parts(50_624_000, 0)
 			.saturating_add(Weight::from_parts(0, 6196))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(4))
@@ -427,16 +427,16 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 	/// Storage: `Broker::Reservations` (r:1 w:0)
 	/// Proof: `Broker::Reservations` (`max_values`: Some(1), `max_size`: Some(12021), added: 12516, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::Leases` (r:1 w:1)
-	/// Proof: `Broker::Leases` (`max_values`: Some(1), `max_size`: Some(401), added: 896, mode: `MaxEncodedLen`)
+	/// Proof: `Broker::Leases` (`max_values`: Some(1), `max_size`: Some(81), added: 576, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::AutoRenewals` (r:1 w:1)
-	/// Proof: `Broker::AutoRenewals` (`max_values`: Some(1), `max_size`: Some(1002), added: 1497, mode: `MaxEncodedLen`)
+	/// Proof: `Broker::AutoRenewals` (`max_values`: Some(1), `max_size`: Some(201), added: 696, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::Configuration` (r:1 w:0)
 	/// Proof: `Broker::Configuration` (`max_values`: Some(1), `max_size`: Some(31), added: 526, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::Status` (r:1 w:0)
 	/// Proof: `Broker::Status` (`max_values`: Some(1), `max_size`: Some(18), added: 513, mode: `MaxEncodedLen`)
-	/// Storage: `Broker::PotentialRenewals` (r:100 w:200)
+	/// Storage: `Broker::PotentialRenewals` (r:20 w:40)
 	/// Proof: `Broker::PotentialRenewals` (`max_values`: None, `max_size`: Some(1233), added: 3708, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:101 w:101)
+	/// Storage: `System::Account` (r:21 w:20)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::SaleInfo` (r:0 w:1)
 	/// Proof: `Broker::SaleInfo` (`max_values`: Some(1), `max_size`: Some(57), added: 552, mode: `MaxEncodedLen`)
@@ -445,17 +445,17 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 	/// The range of component `n` is `[0, 1000]`.
 	fn rotate_sale(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `32497`
-		//  Estimated: `233641 + n * (198 ±9)`
-		// Minimum execution time: 32_268_000 picoseconds.
-		Weight::from_parts(2_840_705_550, 0)
-			.saturating_add(Weight::from_parts(0, 233641))
-			// Standard Error: 173_120
-			.saturating_add(Weight::from_parts(4_374_189, 0).saturating_mul(n.into()))
-			.saturating_add(T::DbWeight::get().reads(126))
-			.saturating_add(T::DbWeight::get().writes(181))
+		//  Measured:  `16480`
+		//  Estimated: `69404 + n * (8 ±1)`
+		// Minimum execution time: 32_855_000 picoseconds.
+		Weight::from_parts(698_275_537, 0)
+			.saturating_add(Weight::from_parts(0, 69404))
+			// Standard Error: 20_874
+			.saturating_add(Weight::from_parts(1_398_903, 0).saturating_mul(n.into()))
+			.saturating_add(T::DbWeight::get().reads(44))
+			.saturating_add(T::DbWeight::get().writes(57))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(n.into())))
-			.saturating_add(Weight::from_parts(0, 198).saturating_mul(n.into()))
+			.saturating_add(Weight::from_parts(0, 8).saturating_mul(n.into()))
 	}
 	/// Storage: `Broker::InstaPoolIo` (r:1 w:0)
 	/// Proof: `Broker::InstaPoolIo` (`max_values`: None, `max_size`: Some(28), added: 2503, mode: `MaxEncodedLen`)
@@ -465,8 +465,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `42`
 		//  Estimated: `3493`
-		// Minimum execution time: 7_959_000 picoseconds.
-		Weight::from_parts(8_480_000, 0)
+		// Minimum execution time: 7_801_000 picoseconds.
+		Weight::from_parts(8_153_000, 0)
 			.saturating_add(Weight::from_parts(0, 3493))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -485,8 +485,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `1289`
 		//  Estimated: `4754`
-		// Minimum execution time: 32_507_000 picoseconds.
-		Weight::from_parts(33_752_000, 0)
+		// Minimum execution time: 31_074_000 picoseconds.
+		Weight::from_parts(32_112_000, 0)
 			.saturating_add(Weight::from_parts(0, 4754))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(3))
@@ -501,8 +501,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `42`
 		//  Estimated: `3507`
-		// Minimum execution time: 16_470_000 picoseconds.
-		Weight::from_parts(17_120_000, 0)
+		// Minimum execution time: 15_680_000 picoseconds.
+		Weight::from_parts(16_391_000, 0)
 			.saturating_add(Weight::from_parts(0, 3507))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -513,8 +513,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_503_000 picoseconds.
-		Weight::from_parts(2_674_000, 0)
+		// Minimum execution time: 2_309_000 picoseconds.
+		Weight::from_parts(2_572_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -524,8 +524,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 2_519_000 picoseconds.
-		Weight::from_parts(2_752_000, 0)
+		// Minimum execution time: 2_524_000 picoseconds.
+		Weight::from_parts(2_678_000, 0)
 			.saturating_add(Weight::from_parts(0, 0))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -543,8 +543,8 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `408`
 		//  Estimated: `1893`
-		// Minimum execution time: 14_229_000 picoseconds.
-		Weight::from_parts(15_177_000, 0)
+		// Minimum execution time: 14_125_000 picoseconds.
+		Weight::from_parts(14_511_000, 0)
 			.saturating_add(Weight::from_parts(0, 1893))
 			.saturating_add(T::DbWeight::get().reads(5))
 			.saturating_add(T::DbWeight::get().writes(1))
@@ -561,21 +561,21 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 		// Proof Size summary in bytes:
 		//  Measured:  `11141`
 		//  Estimated: `13506`
-		// Minimum execution time: 43_203_000 picoseconds.
-		Weight::from_parts(45_670_000, 0)
+		// Minimum execution time: 41_171_000 picoseconds.
+		Weight::from_parts(42_826_000, 0)
 			.saturating_add(Weight::from_parts(0, 13506))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
 	/// Storage: `Broker::Leases` (r:1 w:1)
-	/// Proof: `Broker::Leases` (`max_values`: Some(1), `max_size`: Some(401), added: 896, mode: `MaxEncodedLen`)
+	/// Proof: `Broker::Leases` (`max_values`: Some(1), `max_size`: Some(81), added: 576, mode: `MaxEncodedLen`)
 	fn swap_leases() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `470`
-		//  Estimated: `1886`
-		// Minimum execution time: 7_773_000 picoseconds.
-		Weight::from_parts(8_304_000, 0)
-			.saturating_add(Weight::from_parts(0, 1886))
+		//  Measured:  `150`
+		//  Estimated: `1566`
+		// Minimum execution time: 7_231_000 picoseconds.
+		Weight::from_parts(7_626_000, 0)
+			.saturating_add(Weight::from_parts(0, 1566))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -587,63 +587,80 @@ impl<T: pezframe_system::Config> pezpallet_broker::WeightInfo for WeightInfo<T> 
 	/// Proof: `Broker::Configuration` (`max_values`: Some(1), `max_size`: Some(31), added: 526, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::Status` (r:1 w:0)
 	/// Proof: `Broker::Status` (`max_values`: Some(1), `max_size`: Some(18), added: 513, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:2 w:2)
+	/// Storage: `System::Account` (r:2 w:1)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	/// Storage: `TeyrchainSystem::ValidationData` (r:1 w:0)
 	/// Proof: `TeyrchainSystem::ValidationData` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `Broker::AutoRenewals` (r:1 w:1)
-	/// Proof: `Broker::AutoRenewals` (`max_values`: Some(1), `max_size`: Some(1002), added: 1497, mode: `MaxEncodedLen`)
+	/// Proof: `Broker::AutoRenewals` (`max_values`: Some(1), `max_size`: Some(201), added: 696, mode: `MaxEncodedLen`)
 	/// Storage: `Broker::Workplan` (r:0 w:1)
 	/// Proof: `Broker::Workplan` (`max_values`: None, `max_size`: Some(1216), added: 3691, mode: `MaxEncodedLen`)
 	fn enable_auto_renew() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `2829`
+		//  Measured:  `1451`
 		//  Estimated: `6196`
-		// Minimum execution time: 159_458_000 picoseconds.
-		Weight::from_parts(174_911_000, 0)
+		// Minimum execution time: 105_363_000 picoseconds.
+		Weight::from_parts(111_333_000, 0)
 			.saturating_add(Weight::from_parts(0, 6196))
 			.saturating_add(T::DbWeight::get().reads(8))
-			.saturating_add(T::DbWeight::get().writes(7))
+			.saturating_add(T::DbWeight::get().writes(6))
 	}
 	/// Storage: `Broker::AutoRenewals` (r:1 w:1)
-	/// Proof: `Broker::AutoRenewals` (`max_values`: Some(1), `max_size`: Some(1002), added: 1497, mode: `MaxEncodedLen`)
+	/// Proof: `Broker::AutoRenewals` (`max_values`: Some(1), `max_size`: Some(201), added: 696, mode: `MaxEncodedLen`)
 	fn disable_auto_renew() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1307`
-		//  Estimated: `2487`
-		// Minimum execution time: 31_994_000 picoseconds.
-		Weight::from_parts(41_143_000, 0)
-			.saturating_add(Weight::from_parts(0, 2487))
+		//  Measured:  `506`
+		//  Estimated: `1686`
+		// Minimum execution time: 17_752_000 picoseconds.
+		Weight::from_parts(18_777_000, 0)
+			.saturating_add(Weight::from_parts(0, 1686))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `System::Account` (r:1 w:1)
+	/// Storage: `System::Account` (r:1 w:0)
 	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `PezkuwiXcm::SupportedVersion` (r:1 w:0)
-	/// Proof: `PezkuwiXcm::SupportedVersion` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `TeyrchainSystem::HostConfiguration` (r:1 w:0)
-	/// Proof: `TeyrchainSystem::HostConfiguration` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `TeyrchainSystem::PendingUpwardMessages` (r:1 w:1)
-	/// Proof: `TeyrchainSystem::PendingUpwardMessages` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	fn on_new_timeslice() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `261`
-		//  Estimated: `3726`
-		// Minimum execution time: 59_280_000 picoseconds.
-		Weight::from_parts(62_361_000, 0)
-			.saturating_add(Weight::from_parts(0, 3726))
-			.saturating_add(T::DbWeight::get().reads(4))
-			.saturating_add(T::DbWeight::get().writes(2))
+		//  Measured:  `103`
+		//  Estimated: `3593`
+		// Minimum execution time: 5_009_000 picoseconds.
+		Weight::from_parts(5_245_000, 0)
+			.saturating_add(Weight::from_parts(0, 3593))
+			.saturating_add(T::DbWeight::get().reads(1))
 	}
 	/// Storage: `Broker::Workplan` (r:1 w:1)
 	/// Proof: `Broker::Workplan` (`max_values`: None, `max_size`: Some(1216), added: 3691, mode: `MaxEncodedLen`)
 	fn remove_assignment() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `798`
+		//  Measured:  `602`
 		//  Estimated: `4681`
-		// Minimum execution time: 23_100_000 picoseconds.
-		Weight::from_parts(24_235_000, 0)
+		// Minimum execution time: 21_397_000 picoseconds.
+		Weight::from_parts(21_865_000, 0)
 			.saturating_add(Weight::from_parts(0, 4681))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	/// Storage: `Broker::PotentialRenewals` (r:1 w:1)
+	/// Proof: `Broker::PotentialRenewals` (`max_values`: None, `max_size`: Some(1233), added: 3708, mode: `MaxEncodedLen`)
+	fn remove_potential_renewal() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `312`
+		//  Estimated: `4698`
+		// Minimum execution time: 18_266_000 picoseconds.
+		Weight::from_parts(19_216_000, 0)
+			.saturating_add(Weight::from_parts(0, 4698))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	/// Storage: `Broker::Regions` (r:1 w:1)
+	/// Proof: `Broker::Regions` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
+	fn force_transfer() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `358`
+		//  Estimated: `3551`
+		// Minimum execution time: 22_968_000 picoseconds.
+		Weight::from_parts(23_878_000, 0)
+			.saturating_add(Weight::from_parts(0, 3551))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}

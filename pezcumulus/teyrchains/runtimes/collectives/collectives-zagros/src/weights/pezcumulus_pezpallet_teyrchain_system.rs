@@ -22,14 +22,14 @@
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
 // --extrinsic=*
 // --runtime=target/production/wbuild/collectives-zagros-runtime/collectives_zagros_runtime.wasm
 // --pezpallet=pezcumulus_pezpallet_teyrchain_system
-// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
+// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
 // --output=./pezcumulus/teyrchains/runtimes/collectives/collectives-zagros/src/weights
 // --wasm-execution=compiled
 // --steps=50
@@ -73,5 +73,16 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_teyrchain_system::WeightIn
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(4))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(n.into())))
+	}
+	fn block_weight_tx_extension_max_weight() -> Weight {
+		Weight::zero()
+	}
+
+	fn block_weight_tx_extension_stays_fraction_of_core() -> Weight {
+		Weight::zero()
+	}
+
+	fn block_weight_tx_extension_full_core() -> Weight {
+		Weight::zero()
 	}
 }

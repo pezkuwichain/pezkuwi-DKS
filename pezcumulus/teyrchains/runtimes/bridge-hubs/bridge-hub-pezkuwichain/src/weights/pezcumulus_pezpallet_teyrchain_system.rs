@@ -18,18 +18,18 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-02-21, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `814af52b0d43`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: `d3b41be4aae8`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/pezbridge-hub-pezkuwichain-runtime/pezbridge_hub_pezkuwichain_runtime.wasm
+// --runtime=target/production/wbuild/bridge-hub-pezkuwichain-runtime/bridge_hub_pezkuwichain_runtime.wasm
 // --pezpallet=pezcumulus_pezpallet_teyrchain_system
-// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
+// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezkuwi/file_header.txt
 // --output=./pezcumulus/teyrchains/runtimes/bridge-hubs/bridge-hub-pezkuwichain/src/weights
 // --wasm-execution=compiled
 // --steps=50
@@ -63,15 +63,26 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_teyrchain_system::WeightIn
 	/// The range of component `n` is `[0, 1000]`.
 	fn enqueue_inbound_downward_messages(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `82`
+		//  Measured:  `12`
 		//  Estimated: `3601`
-		// Minimum execution time: 2_312_000 picoseconds.
-		Weight::from_parts(282_321_153, 0)
+		// Minimum execution time: 2_335_000 picoseconds.
+		Weight::from_parts(2_390_000, 0)
 			.saturating_add(Weight::from_parts(0, 3601))
-			// Standard Error: 151_164
-			.saturating_add(Weight::from_parts(333_773_743, 0).saturating_mul(n.into()))
+			// Standard Error: 44_053
+			.saturating_add(Weight::from_parts(353_908_674, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(4))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(n.into())))
+	}
+	fn block_weight_tx_extension_max_weight() -> Weight {
+		Weight::zero()
+	}
+
+	fn block_weight_tx_extension_stays_fraction_of_core() -> Weight {
+		Weight::zero()
+	}
+
+	fn block_weight_tx_extension_full_core() -> Weight {
+		Weight::zero()
 	}
 }
