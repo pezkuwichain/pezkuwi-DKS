@@ -311,6 +311,8 @@ impl pezpallet_assets_freezer::Config<AssetsFreezerInstance> for Runtime {
 
 parameter_types! {
 	pub const AssetConversionPalletId: PalletId = PalletId(*b"py/ascon");
+	/// Liquidity provider fee, now expressed as a rate rather than a raw numerator.
+	pub LpFee: Permill = Permill::from_rational(3u32, 1_000u32); // 0.3%, unchanged
 	pub const LiquidityWithdrawalFee: Permill = Permill::from_percent(0);
 }
 
@@ -452,7 +454,7 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type PoolSetupFeeAsset = TokenLocation;
 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
-	type LPFee = ConstU32<3>;
+	type LPFee = LpFee;
 	type PalletId = AssetConversionPalletId;
 	type MaxSwapPathLength = ConstU32<3>;
 	type MintMinLiquidity = ConstU128<100>;
@@ -1015,6 +1017,7 @@ impl pezpallet_nfts::Config for Runtime {
 /// consensus with dynamic fees and back-pressure.
 pub type ToZagrosXcmRouterInstance = pezpallet_xcm_bridge_hub_router::Instance3;
 impl pezpallet_xcm_bridge_hub_router::Config<ToZagrosXcmRouterInstance> for Runtime {
+	type UnpaidExport = pezframe_support::traits::ConstBool<true>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pezpallet_xcm_bridge_hub_router::WeightInfo<Runtime>;
 
@@ -1197,7 +1200,21 @@ parameter_types! {
 	pub const DataDepositPerByte: Balance = 1 * CENTS;
 }
 
+parameter_types! {
+	/// Assets a bounty account can hold. Native first, as the mover requires.
+	pub BountyRelevantAssets: alloc::vec::Vec<xcm::v5::Location> =
+		alloc::vec![xcm_config::TokenLocation::get()];
+}
+
 impl pezpallet_bounties::Config for Runtime {
+	// On cancellation the bounty account is emptied into the treasury. Binding this to the
+	// unit type would compile and silently strand whatever the account holds, so it is
+	// wired to the real mover over the native token, which is what bounties here are funded in.
+	type TransferAllAssets = pezpallet_bounties::TransferAllFungibles<
+		AccountId,
+		NativeAndAllAssets,
+		BountyRelevantAssets,
+	>;
 	type RuntimeEvent = RuntimeEvent;
 	type BountyDepositBase = BountiesDepositBase;
 	type BountyDepositPayoutDelay = BountyDepositPayoutDelay;
