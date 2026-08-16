@@ -57,9 +57,9 @@ impl MixnetParams {
 			};
 			if !is_authority {
 				// Only authorities can be mixnodes; don't attempt to register
-				config.bizinikiwi.register = false;
+				config.substrate.register = false;
 				// Only mixnodes need to allow connections from non-mixnodes
-				config.bizinikiwi.num_gateway_slots = 0;
+				config.substrate.num_gateway_slots = 0;
 			}
 			config
 		})

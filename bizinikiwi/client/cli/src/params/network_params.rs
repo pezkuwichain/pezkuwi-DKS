@@ -153,6 +153,10 @@ pub struct NetworkParams {
 	#[arg(long)]
 	pub ipfs_server: bool,
 
+	/// Specify a list of IPFS bootstrap nodes.
+	#[arg(long, value_name = "ADDR", num_args = 1.., requires = "ipfs_server")]
+	pub ipfs_bootnodes: Vec<MultiaddrWithPeerId>,
+
 	/// Blockchain syncing mode.
 	#[arg(
 		long,
@@ -240,8 +244,8 @@ impl NetworkParams {
 		// Activate if the user explicitly requested local discovery, `--dev` is given or the
 		// chain type is `Local`/`Development`
 		let allow_non_globals_in_dht =
-			self.discover_local
-				|| is_dev || matches!(chain_type, ChainType::Local | ChainType::Development);
+			self.discover_local ||
+				is_dev || matches!(chain_type, ChainType::Local | ChainType::Development);
 
 		let allow_private_ip = match (self.allow_private_ip, self.no_private_ip) {
 			(true, true) => unreachable!("`*_private_ip` flags are mutually exclusive; qed"),
@@ -284,6 +288,7 @@ impl NetworkParams {
 			kademlia_disjoint_query_paths: self.kademlia_disjoint_query_paths,
 			kademlia_replication_factor: self.kademlia_replication_factor,
 			ipfs_server: self.ipfs_server,
+			ipfs_bootnodes: self.ipfs_bootnodes.clone(),
 			sync_mode: self.sync.into(),
 			network_backend: self.network_backend.into(),
 		}
