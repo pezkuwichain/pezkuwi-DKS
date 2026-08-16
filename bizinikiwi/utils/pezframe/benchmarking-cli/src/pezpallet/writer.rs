@@ -23,6 +23,7 @@ use std::{
 	path::PathBuf,
 };
 
+use anyhow::Context;
 use inflector::Inflector;
 use itertools::Itertools;
 use serde::Serialize;
@@ -142,10 +143,10 @@ fn map_results(
 	pov_analysis_choice: &AnalysisChoice,
 	worst_case_map_values: u32,
 	additional_trie_layers: u8,
-) -> Result<HashMap<(String, String), Vec<BenchmarkData>>, std::io::Error> {
+) -> Result<HashMap<(String, String), Vec<BenchmarkData>>, pezsc_cli::Error> {
 	// Skip if batches is empty.
 	if batches.is_empty() {
-		return Err(io_error("empty batches"));
+		return Err(io_error("empty batches").into());
 	}
 
 	let mut all_benchmarks = HashMap::<_, Vec<BenchmarkData>>::new();
@@ -168,9 +169,8 @@ fn map_results(
 			pov_analysis_choice,
 			worst_case_map_values,
 			additional_trie_layers,
-		);
-		let pezpallet_benchmarks =
-			all_benchmarks.entry((pezpallet_name, instance_name)).or_default();
+		)?;
+		let pezpallet_benchmarks = all_benchmarks.entry((pezpallet_name, instance_name)).or_default();
 		pezpallet_benchmarks.push(benchmark_data);
 	}
 	Ok(all_benchmarks)
@@ -199,7 +199,7 @@ fn get_benchmark_data(
 	pov_analysis_choice: &AnalysisChoice,
 	worst_case_map_values: u32,
 	additional_trie_layers: u8,
-) -> BenchmarkData {
+) -> Result<BenchmarkData, pezsc_cli::Error> {
 	// Analyze benchmarks to get the linear regression.
 	let analysis_function = match analysis_choice {
 		AnalysisChoice::MinSquares => Analysis::min_squares_iqr,
@@ -215,14 +215,18 @@ fn get_benchmark_data(
 	let benchmark = String::from_utf8(batch.benchmark.clone()).unwrap();
 
 	let extrinsic_time = analysis_function(&batch.time_results, BenchmarkSelector::ExtrinsicTime)
-		.expect("analysis function should return an extrinsic time for valid inputs");
+		.context(format!("benchmark '{pezpallet}::{benchmark}'"))
+		.map_err(|e| pezsc_cli::Error::Application(e.into()))?;
 	let reads = analysis_function(&batch.db_results, BenchmarkSelector::Reads)
-		.expect("analysis function should return the number of reads for valid inputs");
+		.context(format!("benchmark '{pezpallet}::{benchmark}'"))
+		.map_err(|e| pezsc_cli::Error::Application(e.into()))?;
 	let writes = analysis_function(&batch.db_results, BenchmarkSelector::Writes)
-		.expect("analysis function should return the number of writes for valid inputs");
+		.context(format!("benchmark '{pezpallet}::{benchmark}'"))
+		.map_err(|e| pezsc_cli::Error::Application(e.into()))?;
 	let recorded_proof_size =
 		pov_analysis_function(&batch.db_results, BenchmarkSelector::ProofSize)
-			.expect("analysis function should return proof sizes for valid inputs");
+			.context(format!("benchmark '{pezpallet}::{benchmark}'"))
+			.map_err(|e| pezsc_cli::Error::Application(e.into()))?;
 
 	// Analysis data may include components that are not used, this filters out anything whose value
 	// is zero.
@@ -288,10 +292,7 @@ fn get_benchmark_data(
 	// We add additional comments showing which storage items were touched.
 	// We find the worst case proof size, and use that as the final proof size result.
 	let mut storage_per_prefix = HashMap::<Vec<u8>, Vec<BenchmarkResult>>::new();
-	let pov_mode = pov_modes
-		.get(&(pezpallet.clone(), benchmark.clone()))
-		.cloned()
-		.unwrap_or_default();
+	let pov_mode = pov_modes.get(&(pezpallet.clone(), benchmark.clone())).cloned().unwrap_or_default();
 	let comments = process_storage_results(
 		&mut storage_per_prefix,
 		&batch.db_results,
@@ -302,11 +303,12 @@ fn get_benchmark_data(
 		additional_trie_layers,
 	);
 
-	let proof_size_per_components = storage_per_prefix
+	let proof_size_per_components: Vec<_> = storage_per_prefix
 		.iter()
 		.map(|(prefix, results)| {
 			let proof_size = analysis_function(results, BenchmarkSelector::ProofSize)
-				.expect("analysis function should return proof sizes for valid inputs");
+				.context(format!("benchmark '{pezpallet}::{benchmark}'"))
+				.map_err(|e| pezsc_cli::Error::Application(e.into()))?;
 			let slope = proof_size
 				.slopes
 				.into_iter()
@@ -314,9 +316,9 @@ fn get_benchmark_data(
 				.zip(extract_errors(&proof_size.errors))
 				.map(|((slope, name), error)| ComponentSlope { name: name.clone(), slope, error })
 				.collect::<Vec<_>>();
-			(prefix.clone(), slope, proof_size.base)
+			Ok((prefix.clone(), slope, proof_size.base))
 		})
-		.collect::<Vec<_>>();
+		.collect::<Result<_, pezsc_cli::Error>>()?;
 
 	let mut base_calculated_proof_size = 0;
 	// Sum up the proof sizes per component
@@ -361,7 +363,7 @@ fn get_benchmark_data(
 		.map(|c| c.clone())
 		.unwrap_or_default();
 
-	BenchmarkData {
+	Ok(BenchmarkData {
 		name: benchmark,
 		components,
 		base_weight: extrinsic_time.base,
@@ -377,7 +379,7 @@ fn get_benchmark_data(
 		component_ranges,
 		comments,
 		min_execution_time: extrinsic_time.minimum,
-	}
+	})
 }
 
 /// Create weight file from benchmark data and Handlebars template.
@@ -521,7 +523,7 @@ pub(crate) fn write_results(
 }
 
 /// This function looks at the keys touched during the benchmark, and the storage info we collected
-/// from the pallets, and creates comments with information about the storage keys touched during
+/// from the pezpallets, and creates comments with information about the storage keys touched during
 /// each benchmark.
 ///
 /// It returns informational comments for human consumption.
@@ -583,9 +585,7 @@ pub(crate) fn process_storage_results(
 			let mut prefix_result = result.clone();
 			let key_info = storage_info_map.get(&prefix);
 			let pezpallet_name = match key_info {
-				Some(k) => {
-					String::from_utf8(k.pezpallet_name.clone()).expect("encoded from string")
-				},
+				Some(k) => String::from_utf8(k.pezpallet_name.clone()).expect("encoded from string"),
 				None => "".to_string(),
 			};
 			let storage_name = match key_info {
@@ -607,8 +607,8 @@ pub(crate) fn process_storage_results(
 				},
 				None => None,
 			};
-			let is_all_ignored = pov_modes.get(&("ALL".to_string(), "ALL".to_string()))
-				== Some(&PovEstimationMode::Ignored);
+			let is_all_ignored = pov_modes.get(&("ALL".to_string(), "ALL".to_string())) ==
+				Some(&PovEstimationMode::Ignored);
 			if is_all_ignored && override_pov_mode != Some(&PovEstimationMode::Ignored) {
 				panic!("The syntax currently does not allow to exclude single keys from a top-level `Ignored` pov-mode.");
 			}

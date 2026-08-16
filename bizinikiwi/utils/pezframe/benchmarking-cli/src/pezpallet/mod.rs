@@ -32,8 +32,8 @@ use std::{fmt::Debug, path::PathBuf};
 /// Logging target
 const LOG_TARGET: &'static str = "pezframe::benchmark::pezpallet";
 
-// Add a more relaxed parsing for pezpallet names by allowing pezpallet directory names with `-` to
-// be used like crate names with `_`
+// Add a more relaxed parsing for pezpallet names by allowing pezpallet directory names with `-` to be
+// used like crate names with `_`
 fn parse_pezpallet_name(pezpallet: &str) -> std::result::Result<String, String> {
 	Ok(pezpallet.replace("-", "_"))
 }
@@ -41,19 +41,19 @@ fn parse_pezpallet_name(pezpallet: &str) -> std::result::Result<String, String> 
 /// List options for available benchmarks.
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum ListOutput {
-	/// List all available pallets and extrinsics.
+	/// List all available pezpallets and extrinsics.
 	All,
-	/// List all available pallets only.
+	/// List all available pezpallets only.
 	Pallets,
 }
 
 /// Benchmark the extrinsic weight of FRAME Pallets.
 #[derive(Debug, clap::Parser)]
 pub struct PalletCmd {
-	/// Select a FRAME Pezpallets to benchmark, or `*` for all (in which case `extrinsic` must be
+	/// Select a FRAME Pallets to benchmark, or `*` for all (in which case `extrinsic` must be
 	/// `*`).
-	#[arg(short, long, alias = "pallet", num_args = 1.., value_delimiter = ',', value_parser = parse_pezpallet_name, required_unless_present_any = ["list", "json_input", "all"], default_value_if("all", "true", Some("*".into())))]
-	pub pezpallet: Vec<String>,
+	#[arg(short, long, alias = "pezpallet", num_args = 1.., value_delimiter = ',', value_parser = parse_pezpallet_name, required_unless_present_any = ["list", "json_input", "all"], default_value_if("all", "true", Some("*".into())))]
+	pub pezpallets: Vec<String>,
 
 	/// Select an extrinsic inside the pezpallet to benchmark, or `*` or 'all' for all.
 	#[arg(short, long, required_unless_present_any = ["list", "json_input", "all"], default_value_if("all", "true", Some("*".into())))]
@@ -61,7 +61,7 @@ pub struct PalletCmd {
 
 	/// Comma separated list of pezpallets that should be excluded from the benchmark.
 	#[arg(long, value_parser, num_args = 1.., value_delimiter = ',')]
-	pub exclude_pezpallets: Vec<String>,
+	pub exclude_pallets: Vec<String>,
 
 	/// Comma separated list of `pezpallet::extrinsic` combinations that should not be run.
 	///
@@ -69,7 +69,7 @@ pub struct PalletCmd {
 	#[arg(long, value_parser, num_args = 1.., value_delimiter = ',')]
 	pub exclude_extrinsics: Vec<String>,
 
-	/// Run benchmarks for all pallets and extrinsics.
+	/// Run benchmarks for all pezpallets and extrinsics.
 	///
 	/// This is equivalent to running `--pezpallet * --extrinsic *`.
 	#[arg(long)]
@@ -87,15 +87,21 @@ pub struct PalletCmd {
 	#[arg(long = "high", value_delimiter = ',')]
 	pub highest_range_values: Vec<u32>,
 
-	/// Select how many repetitions of this benchmark should run from within the wasm.
+	/// Minimum number of repetitions of this benchmark should run from within the wasm.
+	///
+	/// It may run more often than this to reach its `min_duration`.
 	#[arg(short, long, default_value_t = 20)]
 	pub repeat: u32,
 
-	/// Select how many repetitions of this benchmark should run from the client.
+	/// DEPRECATED: Please remove usage.
+	#[arg(long)]
+	pub external_repeat: Option<u32>,
+
+	/// Minimum duration in seconds for each benchmark.
 	///
-	/// NOTE: Using this alone may give slower results, but will afford you maximum Wasm memory.
-	#[arg(long, default_value_t = 1)]
-	pub external_repeat: u32,
+	/// Can be set to 0 to disable the feature and solely rely on the `repeat` parameter.
+	#[arg(long, default_value_t = 10)]
+	pub min_duration: u64,
 
 	/// Print the raw results in JSON format.
 	#[arg(long = "json")]
@@ -144,7 +150,7 @@ pub struct PalletCmd {
 	#[arg(long, default_value("max-encoded-len"), value_enum)]
 	pub default_pov_mode: command::PovEstimationMode,
 
-	/// Ignore the error when PoV modes reference unknown storage items or pallets.
+	/// Ignore the error when PoV modes reference unknown storage items or pezpallets.
 	#[arg(long)]
 	pub ignore_unknown_pov_mode: bool,
 
@@ -255,7 +261,7 @@ pub struct PalletCmd {
 	/// runtime, eg. `StorageMap`s and `StorageValue`s. A value of 2 to 3 is usually sufficient.
 	/// Each layer will result in an additional 495 bytes PoV per distinct top-level access.
 	/// Therefore multiple `StorageMap` accesses only suffer from this increase once. The exact
-	/// number of storage items depends on the runtime and the deployed pallets.
+	/// number of storage items depends on the runtime and the deployed pezpallets.
 	#[clap(long, default_value = "2")]
 	pub additional_trie_layers: u8,
 
@@ -273,7 +279,7 @@ pub struct PalletCmd {
 
 	/// Do not print a summary at the end of the run.
 	///
-	/// These summaries can be very long when benchmarking multiple pallets at once. For CI
+	/// These summaries can be very long when benchmarking multiple pezpallets at once. For CI
 	/// use-cases, this option reduces the noise.
 	#[arg(long)]
 	quiet: bool,
@@ -286,6 +292,13 @@ pub struct PalletCmd {
 	/// solo-chains) can disable proof recording to get more accurate results.
 	#[arg(long)]
 	disable_proof_recording: bool,
+
+	/// Path to a JSON file containing a patch to apply to the genesis state.
+	///
+	/// This allows modifying the genesis state after it's built but before benchmarking.
+	/// Useful for creating specific testing scenarios like many accounts for benchmarking.
+	#[arg(long)]
+	pub genesis_patch: Option<PathBuf>,
 }
 
 /// How the genesis state for benchmarking should be built.

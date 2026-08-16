@@ -13,6 +13,7 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
+pezkuwi-node-clock = { workspace = true, default-features = true }
 async-trait = { workspace = true, optional = true }
 bitvec = { features = ["alloc"], workspace = true }
 futures = { workspace = true }

@@ -13,6 +13,7 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
+pezkuwi-node-clock = { workspace = true, default-features = true }
 bitvec = { workspace = true, default-features = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }

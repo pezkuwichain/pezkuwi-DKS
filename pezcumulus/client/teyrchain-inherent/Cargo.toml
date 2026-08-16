@@ -28,16 +28,16 @@ pezsp-storage = { workspace = true, default-features = true }
 pezcumulus-primitives-core = { workspace = true, default-features = true }
 pezcumulus-primitives-teyrchain-inherent = { workspace = true, default-features = true }
 pezcumulus-relay-chain-interface = { workspace = true, default-features = true }
-pezcumulus-test-relay-sproof-builder = { optional = true, workspace = true, default-features = true }
+pezcumulus-test-relay-sproof-builder = { workspace = true, default-features = true }
 
 [features]
 default = []
-mock = ["pezcumulus-test-relay-sproof-builder"]
+mock = []
 runtime-benchmarks = [
 	"pezcumulus-primitives-core/runtime-benchmarks",
 	"pezcumulus-primitives-teyrchain-inherent/runtime-benchmarks",
 	"pezcumulus-relay-chain-interface/runtime-benchmarks",
-	"pezcumulus-test-relay-sproof-builder?/runtime-benchmarks",
+	"pezcumulus-test-relay-sproof-builder/runtime-benchmarks",
 	"pezsc-client-api/runtime-benchmarks",
 	"pezsc-consensus-babe/runtime-benchmarks",
 	"pezsp-inherents/runtime-benchmarks",
@@ -52,7 +52,7 @@ std = [
 ]
 try-runtime = [
 	"pezcumulus-primitives-core/try-runtime",
-	"pezcumulus-test-relay-sproof-builder?/try-runtime",
+	"pezcumulus-test-relay-sproof-builder/try-runtime",
 	"pezsc-client-api/try-runtime",
 	"pezsc-consensus-babe/try-runtime",
 	"pezsp-inherents/try-runtime",

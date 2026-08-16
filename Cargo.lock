@@ -13268,6 +13268,7 @@ dependencies = [
  "itertools 0.11.0",
  "parity-scale-codec",
  "pez-tracing-gum",
+ "pezkuwi-node-clock",
  "pezkuwi-node-network-protocol",
  "pezkuwi-node-subsystem",
  "pezkuwi-node-subsystem-test-helpers",
@@ -13516,6 +13517,7 @@ dependencies = [
  "parking_lot 0.12.5",
  "pez-tracing-gum",
  "pezkuwi-erasure-coding",
+ "pezkuwi-node-clock",
  "pezkuwi-node-subsystem",
  "pezkuwi-node-subsystem-test-helpers",
  "pezkuwi-node-subsystem-util",
@@ -13690,6 +13692,7 @@ dependencies = [
  "pezsp-tracing",
  "rand 0.8.6",
  "rstest",
+ "schnellru",
  "thiserror 1.0.69",
 ]
 
