@@ -20,10 +20,10 @@
 //! and adds a new field `pending_signatures` for `BlockEntry`
 
 use codec::{Decode, Encode};
-use pezkuwi_pez_node_primitives::approval::v2::CandidateBitfield;
 use pezkuwi_node_subsystem::SubsystemResult;
 use pezkuwi_node_subsystem_util::database::{DBTransaction, Database};
 use pezkuwi_overseer::SubsystemError;
+use pezkuwi_pez_node_primitives::approval::v2::CandidateBitfield;
 use pezkuwi_primitives::{
 	BlockNumber, CandidateHash, CandidateIndex, CandidateReceiptV2 as CandidateReceipt, CoreIndex,
 	GroupIndex, Hash, SessionIndex, ValidatorIndex, ValidatorSignature,

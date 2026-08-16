@@ -95,11 +95,11 @@ pub type CollatorPair = collator_app::Pair;
 pub type CollatorSignature = collator_app::Signature;
 
 /// The key type ID for a parachain validator key.
-pub const PARACHAIN_KEY_TYPE_ID: KeyTypeId = KeyTypeId(*b"para");
+pub const TEYRCHAIN_KEY_TYPE_ID: KeyTypeId = KeyTypeId(*b"para");
 
 mod validator_app {
 	use pezsp_application_crypto::{app_crypto, sr25519};
-	app_crypto!(sr25519, super::PARACHAIN_KEY_TYPE_ID);
+	app_crypto!(sr25519, super::TEYRCHAIN_KEY_TYPE_ID);
 }
 
 /// Identity that parachain validators use when signing validation messages.
@@ -391,7 +391,7 @@ pub mod well_known_keys {
 }
 
 /// Unique identifier for the Teyrchains Inherent
-pub const PARACHAINS_INHERENT_IDENTIFIER: InherentIdentifier = *b"parachn0";
+pub const TEYRCHAINS_INHERENT_IDENTIFIER: InherentIdentifier = *b"parachn0";
 
 /// The key type ID for parachain assignment key.
 pub const ASSIGNMENT_KEY_TYPE_ID: KeyTypeId = KeyTypeId(*b"asgn");

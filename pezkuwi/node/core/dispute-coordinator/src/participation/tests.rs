@@ -23,7 +23,6 @@ use pezsp_core::testing::TaskExecutor;
 
 use super::*;
 use codec::Encode;
-use pezkuwi_pez_node_primitives::{AvailableData, BlockData, InvalidCandidate, PoV};
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, ChainApiMessage, DisputeCoordinatorMessage, PvfExecKind, RuntimeApiMessage,
@@ -34,6 +33,7 @@ use pezkuwi_node_subsystem::{
 use pezkuwi_node_subsystem_test_helpers::{
 	make_subsystem_context, mock::new_leaf, TestSubsystemContext, TestSubsystemContextHandle,
 };
+use pezkuwi_pez_node_primitives::{AvailableData, BlockData, InvalidCandidate, PoV};
 use pezkuwi_primitives::{
 	BlakeTwo256, CandidateCommitments, HashT, Header, PersistedValidationData, ValidationCode,
 };

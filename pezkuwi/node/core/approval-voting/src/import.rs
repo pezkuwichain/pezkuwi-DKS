@@ -28,13 +28,6 @@
 //!
 //! We maintain a rolling window of session indices. This starts as empty
 
-use pezkuwi_pez_node_primitives::{
-	approval::{
-		self as approval_types,
-		v1::{BlockApprovalMeta, RelayVRFStory},
-	},
-	MAX_FINALITY_LAG,
-};
 use pezkuwi_node_subsystem::{
 	messages::{
 		ApprovalDistributionMessage, ChainApiMessage, ChainSelectionMessage, RuntimeApiMessage,
@@ -44,6 +37,13 @@ use pezkuwi_node_subsystem::{
 };
 use pezkuwi_node_subsystem_util::{determine_new_blocks, runtime::RuntimeInfo};
 use pezkuwi_overseer::SubsystemSender;
+use pezkuwi_pez_node_primitives::{
+	approval::{
+		self as approval_types,
+		v1::{BlockApprovalMeta, RelayVRFStory},
+	},
+	MAX_FINALITY_LAG,
+};
 use pezkuwi_primitives::{
 	node_features, BlockNumber, CandidateEvent, CandidateHash,
 	CandidateReceiptV2 as CandidateReceipt, ConsensusLog, CoreIndex, GroupIndex, Hash, Header,
@@ -616,16 +616,16 @@ pub(crate) mod tests {
 	};
 	use approval_types::time::Clock;
 	use assert_matches::assert_matches;
-	use pezkuwi_pez_node_primitives::{
-		approval::v1::{VrfSignature, VrfTranscript},
-		DISPUTE_WINDOW,
-	};
 	use pezkuwi_node_subsystem::{
 		messages::{AllMessages, ApprovalVotingMessage},
 		SubsystemContext,
 	};
 	use pezkuwi_node_subsystem_test_helpers::make_subsystem_context;
 	use pezkuwi_node_subsystem_util::database::Database;
+	use pezkuwi_pez_node_primitives::{
+		approval::v1::{VrfSignature, VrfTranscript},
+		DISPUTE_WINDOW,
+	};
 	use pezkuwi_primitives::{
 		node_features::FeatureIndex, ApprovalVotingParams, Id as ParaId, IndexedVec,
 		MutateDescriptorV2, NodeFeatures, SessionInfo, ValidatorId, ValidatorIndex,
@@ -714,8 +714,10 @@ pub(crate) mod tests {
 			_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
 			_assignment: &pezkuwi_pez_node_primitives::approval::v2::AssignmentCertV2,
 			_backing_groups: Vec<pezkuwi_primitives::GroupIndex>,
-		) -> Result<pezkuwi_pez_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment>
-		{
+		) -> Result<
+			pezkuwi_pez_node_primitives::approval::v1::DelayTranche,
+			criteria::InvalidAssignment,
+		> {
 			Ok(0)
 		}
 	}

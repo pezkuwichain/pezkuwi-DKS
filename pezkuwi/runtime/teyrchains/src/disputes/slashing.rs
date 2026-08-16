@@ -490,7 +490,7 @@ pub mod pezpallet {
 			);
 
 			let key =
-				(pezkuwi_primitives::PARACHAIN_KEY_TYPE_ID, dispute_proof.validator_id.clone());
+				(pezkuwi_primitives::TEYRCHAIN_KEY_TYPE_ID, dispute_proof.validator_id.clone());
 			let offender = T::KeyOwnerProofSystem::check_proof(key, key_owner_proof)
 				.ok_or(Error::<T>::InvalidKeyOwnershipProof)?;
 
@@ -654,7 +654,7 @@ fn is_known_offence<T: Config>(
 		return Err(InvalidTransaction::BadProof.into());
 	}
 
-	let key = (pezkuwi_primitives::PARACHAIN_KEY_TYPE_ID, dispute_proof.validator_id.clone());
+	let key = (pezkuwi_primitives::TEYRCHAIN_KEY_TYPE_ID, dispute_proof.validator_id.clone());
 
 	let offender = T::KeyOwnerProofSystem::check_proof(key, key_owner_proof.clone())
 		.ok_or(InvalidTransaction::BadProof)?;

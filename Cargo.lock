@@ -21409,6 +21409,10 @@ dependencies = [
 name = "pezsnowbridge-verification-primitives"
 version = "0.2.0"
 dependencies = [
+ "alloy-consensus",
+ "alloy-primitives",
+ "alloy-rlp",
+ "alloy-trie",
  "parity-scale-codec",
  "pezframe-support",
  "pezsnowbridge-beacon-primitives",
@@ -21778,6 +21782,7 @@ dependencies = [
  "ark-pallas",
  "ark-pallas-ext",
  "ark-scale",
+ "ark-std 0.5.0",
  "ark-vesta",
  "ark-vesta-ext",
  "pezsp-runtime-interface",

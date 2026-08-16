@@ -326,7 +326,7 @@ fn sproof_with_parent_by_hash(client: &Client, hash: PHash) -> RelayStateSproofB
 
 fn sproof_with_parent(parent: HeadData) -> RelayStateSproofBuilder {
 	let mut x = RelayStateSproofBuilder::default();
-	x.para_id = pezcumulus_test_client::runtime::PARACHAIN_ID.into();
+	x.para_id = pezcumulus_test_client::runtime::TEYRCHAIN_ID.into();
 	x.included_para_head = Some(parent);
 
 	x

@@ -20,7 +20,7 @@ use crate::{disputes::SlashingHandler, initializer, shared};
 use pezframe_benchmarking::v2::*;
 use pezframe_support::traits::{OnFinalize, OnInitialize};
 use pezframe_system::{pezpallet_prelude::BlockNumberFor, RawOrigin};
-use pezkuwi_primitives::{Hash, PARACHAIN_KEY_TYPE_ID};
+use pezkuwi_primitives::{Hash, TEYRCHAIN_KEY_TYPE_ID};
 use pezpallet_staking::testing_utils::create_validators;
 use pezsp_runtime::traits::{One, StaticLookup};
 use pezsp_session::MembershipProof;
@@ -85,7 +85,7 @@ where
 	let session_info = crate::session_info::Sessions::<T>::get(session_index);
 	let session_info = session_info.unwrap();
 	let validator_id = session_info.validators.get(ValidatorIndex::from(0)).unwrap().clone();
-	let key = (PARACHAIN_KEY_TYPE_ID, validator_id.clone());
+	let key = (TEYRCHAIN_KEY_TYPE_ID, validator_id.clone());
 	let key_owner_proof = pezpallet_session::historical::Pezpallet::<T>::prove(key).unwrap();
 
 	// rotate a session to make sure `key_owner_proof` is historical

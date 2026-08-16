@@ -619,7 +619,7 @@ pub mod pezpallet {
 		/// Get best finalized head id of the given teyrchain.
 		pub fn best_teyrchain_head_id<C: Chain<Hash = ParaHash> + Teyrchain>(
 		) -> Result<Option<HeaderIdOf<C>>, codec::Error> {
-			let teyrchain = ParaId(C::PARACHAIN_ID);
+			let teyrchain = ParaId(C::TEYRCHAIN_ID);
 			let best_head_hash = match Self::best_teyrchain_head_hash(teyrchain) {
 				Some(best_head_hash) => best_head_hash,
 				None => return Ok(None),
@@ -789,7 +789,7 @@ impl<T: Config<I>, I: 'static, C: Teyrchain<Hash = ParaHash>> HeaderChain<C>
 	for TeyrchainHeaders<T, I, C>
 {
 	fn finalized_header_state_root(hash: HashOf<C>) -> Option<HashOf<C>> {
-		Pezpallet::<T, I>::teyrchain_head(ParaId(C::PARACHAIN_ID), hash)
+		Pezpallet::<T, I>::teyrchain_head(ParaId(C::TEYRCHAIN_ID), hash)
 			.and_then(|head| head.decode_teyrchain_head_data::<C>().ok())
 			.map(|h| h.state_root)
 	}
@@ -812,7 +812,7 @@ pub fn initialize_for_benchmarks<T: Config<I>, I: 'static, PC: Teyrchain<Hash = 
 			Default::default(),
 			Default::default(),
 		);
-	let teyrchain = ParaId(PC::PARACHAIN_ID);
+	let teyrchain = ParaId(PC::TEYRCHAIN_ID);
 	let teyrchain_head = ParaHead(header.encode());
 	let updated_head_data = T::ParaStoredHeaderDataBuilder::try_build(teyrchain, &teyrchain_head)
 		.expect("failed to build stored teyrchain head in benchmarks");
@@ -836,7 +836,7 @@ pub(crate) mod tests {
 	use crate::mock::{
 		run_test, test_relay_header, BigTeyrchain, BigTeyrchainHeader, FreeHeadersInterval,
 		RegularTeyrchainHasher, RegularTeyrchainHeader, RelayBlockHeader,
-		RuntimeEvent as TestEvent, RuntimeOrigin, TestRuntime, UNTRACKED_PARACHAIN_ID,
+		RuntimeEvent as TestEvent, RuntimeOrigin, TestRuntime, UNTRACKED_TEYRCHAIN_ID,
 	};
 	use codec::Encode;
 	use pezbp_test_utils::prepare_teyrchain_heads_proof;
@@ -1213,7 +1213,7 @@ pub(crate) mod tests {
 		let (state_root, proof, teyrchains) =
 			prepare_teyrchain_heads_proof::<RegularTeyrchainHeader>(vec![
 				(1, head_data(1, 5)),
-				(UNTRACKED_PARACHAIN_ID, head_data(1, 5)),
+				(UNTRACKED_TEYRCHAIN_ID, head_data(1, 5)),
 				(2, head_data(1, 5)),
 			]);
 		run_test(|| {
@@ -1243,7 +1243,7 @@ pub(crate) mod tests {
 					next_imported_hash_position: 1,
 				})
 			);
-			assert_eq!(ParasInfo::<TestRuntime>::get(ParaId(UNTRACKED_PARACHAIN_ID)), None,);
+			assert_eq!(ParasInfo::<TestRuntime>::get(ParaId(UNTRACKED_TEYRCHAIN_ID)), None,);
 			assert_eq!(
 				ParasInfo::<TestRuntime>::get(ParaId(2)),
 				Some(ParaInfo {
@@ -1268,7 +1268,7 @@ pub(crate) mod tests {
 					EventRecord {
 						phase: Phase::Initialization,
 						event: TestEvent::Teyrchains(Event::UntrackedTeyrchainRejected {
-							teyrchain: ParaId(UNTRACKED_PARACHAIN_ID),
+							teyrchain: ParaId(UNTRACKED_TEYRCHAIN_ID),
 						}),
 						topics: vec![],
 					},
@@ -1741,14 +1741,14 @@ pub(crate) mod tests {
 
 	#[test]
 	fn maybe_max_teyrchains_returns_correct_value() {
-		assert_eq!(MaybeMaxTeyrchains::<TestRuntime, ()>::get(), Some(mock::TOTAL_PARACHAINS));
+		assert_eq!(MaybeMaxTeyrchains::<TestRuntime, ()>::get(), Some(mock::TOTAL_TEYRCHAINS));
 	}
 
 	#[test]
 	fn maybe_max_total_teyrchain_hashes_returns_correct_value() {
 		assert_eq!(
 			MaybeMaxTotalTeyrchainHashes::<TestRuntime, ()>::get(),
-			Some(mock::TOTAL_PARACHAINS * mock::HeadsToKeep::get()),
+			Some(mock::TOTAL_TEYRCHAINS * mock::HeadsToKeep::get()),
 		);
 	}
 

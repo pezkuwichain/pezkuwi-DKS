@@ -29,11 +29,11 @@ use pezkuwi_node_network_protocol::request_response::{
 	v1::{self, ChunkResponse},
 	v2,
 };
-use pezkuwi_pez_node_primitives::ErasureChunk;
 use pezkuwi_node_subsystem::{
 	messages::{AvailabilityStoreMessage, IfDisconnected, NetworkBridgeTxMessage},
 	overseer,
 };
+use pezkuwi_pez_node_primitives::ErasureChunk;
 use pezkuwi_primitives::{
 	AuthorityDiscoveryId, BlakeTwo256, CandidateHash, ChunkIndex, GroupIndex, Hash, HashT,
 	OccupiedCore, SessionIndex,

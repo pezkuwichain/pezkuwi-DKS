@@ -19,11 +19,11 @@
 use std::sync::Arc;
 
 use futures::FutureExt;
-use pezkuwi_pez_node_primitives::{AvailableData, BlockData, PoV};
 use pezkuwi_node_subsystem::{
 	messages::AvailabilityRecoveryMessage, overseer, SpawnedSubsystem, SubsystemError,
 };
 use pezkuwi_node_subsystem_types::OverseerSignal;
+use pezkuwi_pez_node_primitives::{AvailableData, BlockData, PoV};
 use pezkuwi_primitives::{Hash, HeadData, PersistedValidationData};
 
 const LOG_TARGET: &str = "subsystem-bench::availability-recovery-mock";

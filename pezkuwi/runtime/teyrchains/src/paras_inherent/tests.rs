@@ -204,7 +204,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 0);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 			assert!(!Scheduler::claim_queue_is_empty());
 
@@ -291,7 +291,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 0);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			assert!(!Scheduler::claim_queue_is_empty());
@@ -399,7 +399,7 @@ mod enter {
 				.collect();
 
 			let mut inherent_data = InherentData::new();
-			inherent_data.put_data(PARACHAINS_INHERENT_IDENTIFIER, &scenario.data).unwrap();
+			inherent_data.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &scenario.data).unwrap();
 
 			assert!(!Scheduler::claim_queue_is_empty());
 
@@ -473,7 +473,7 @@ mod enter {
 				*bitfield = unchecked_signed;
 			});
 			let mut inherent_data = InherentData::new();
-			inherent_data.put_data(PARACHAINS_INHERENT_IDENTIFIER, &data).unwrap();
+			inherent_data.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &data).unwrap();
 
 			// Nothing has been filtered out.
 			assert_eq!(
@@ -572,7 +572,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 0);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 			assert!(!Scheduler::claim_queue_is_empty());
 
@@ -740,7 +740,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 3);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			assert!(!Scheduler::claim_queue_is_empty());
@@ -815,7 +815,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 3);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			assert!(!Scheduler::claim_queue_is_empty());
@@ -890,7 +890,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 3);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			assert!(!Scheduler::claim_queue_is_empty());
@@ -980,7 +980,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 3);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			assert!(!Scheduler::claim_queue_is_empty());
@@ -1069,7 +1069,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 3);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			let limit_inherent_data =
@@ -1127,7 +1127,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			let limit_inherent_data =
@@ -1219,7 +1219,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 3);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			let limit_inherent_data =
@@ -1315,7 +1315,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 3);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 			let limit_inherent_data =
 				Pezpallet::<Test>::create_inherent_inner(&inherent_data.clone()).unwrap();
@@ -1390,7 +1390,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 0);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			let limit_inherent_data =
@@ -1464,7 +1464,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 0);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			let limit_inherent_data =
@@ -1658,7 +1658,7 @@ mod enter {
 			assert_eq!(expected_para_inherent_data.disputes.len(), 3);
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 			let dispatch_error = Pezpallet::<Test>::enter(
 				pezframe_system::RawOrigin::None.into(),
@@ -1711,7 +1711,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &unfiltered_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &unfiltered_para_inherent_data)
 				.unwrap();
 
 			// We expect the unknown version candidate to be filtered out, but V2 candidates to
@@ -1813,7 +1813,7 @@ mod enter {
 			// Both candidates should pass through create_inherent_inner.
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
 				.unwrap();
 
 			let filtered = Pezpallet::<Test>::create_inherent_inner(&inherent_data).unwrap();
@@ -1901,7 +1901,7 @@ mod enter {
 			// create_inherent_inner should filter out the cross-session candidate.
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
 				.unwrap();
 
 			let filtered = Pezpallet::<Test>::create_inherent_inner(&inherent_data).unwrap();
@@ -1966,7 +1966,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
 				.unwrap();
 
 			// V3 candidates with UMP signals should be accepted (not filtered out)
@@ -2024,7 +2024,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
 				.unwrap();
 
 			// The candidate without UMP signals should be filtered out
@@ -2087,7 +2087,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
 				.unwrap();
 
 			// All candidates filtered: detected as V1 but have UMP signals
@@ -2181,7 +2181,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &para_inherent_data)
 				.unwrap();
 
 			// The V2 candidate with old relay parent should be filtered out because V2
@@ -2261,7 +2261,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &unfiltered_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &unfiltered_para_inherent_data)
 				.unwrap();
 
 			let dispatch_error = Pezpallet::<Test>::enter(
@@ -2320,7 +2320,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &unfiltered_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &unfiltered_para_inherent_data)
 				.unwrap();
 
 			let dispatch_error = Pezpallet::<Test>::enter(
@@ -2374,7 +2374,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &unfiltered_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &unfiltered_para_inherent_data)
 				.unwrap();
 
 			let dispatch_error = Pezpallet::<Test>::enter(
@@ -2539,7 +2539,7 @@ mod enter {
 
 			let mut create_inherent_data = InherentData::new();
 			create_inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &inherent_data)
 				.unwrap();
 
 			assert_eq!(
@@ -2618,7 +2618,7 @@ mod enter {
 
 			let mut create_inherent_data = InherentData::new();
 			create_inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &inherent_data)
 				.unwrap();
 
 			// 1 candidate with invalid session is filtered out
@@ -2686,7 +2686,7 @@ mod enter {
 
 			let mut create_inherent_data = InherentData::new();
 			create_inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &inherent_data)
 				.unwrap();
 
 			// First candidate is filtered out
@@ -2751,7 +2751,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			assert_eq!(
@@ -2830,7 +2830,7 @@ mod enter {
 
 			let mut inherent_data = InherentData::new();
 			inherent_data
-				.put_data(PARACHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
+				.put_data(TEYRCHAINS_INHERENT_IDENTIFIER, &expected_para_inherent_data)
 				.unwrap();
 
 			// Sanitization drops every candidate carrying oversized code.
@@ -2870,7 +2870,7 @@ mod sanitizers {
 	use rstest::rstest;
 
 	use crate::mock::Test;
-	use pezkuwi_primitives::PARACHAIN_KEY_TYPE_ID;
+	use pezkuwi_primitives::TEYRCHAIN_KEY_TYPE_ID;
 	use pezsc_keystore::LocalKeystore;
 	use pezsp_keystore::{Keystore, KeystorePtr};
 	use std::sync::Arc;
@@ -2900,7 +2900,7 @@ mod sanitizers {
 		for validator in validators.iter() {
 			Keystore::sr25519_generate_new(
 				&*crypto_store,
-				PARACHAIN_KEY_TYPE_ID,
+				TEYRCHAIN_KEY_TYPE_ID,
 				Some(&validator.to_seed()),
 			)
 			.unwrap();
@@ -3169,7 +3169,7 @@ mod sanitizers {
 			for validator in validators.iter() {
 				Keystore::sr25519_generate_new(
 					&*keystore,
-					PARACHAIN_KEY_TYPE_ID,
+					TEYRCHAIN_KEY_TYPE_ID,
 					Some(&validator.to_seed()),
 				)
 				.unwrap();
@@ -3359,7 +3359,7 @@ mod sanitizers {
 			for validator in validators.iter() {
 				Keystore::sr25519_generate_new(
 					&*keystore,
-					PARACHAIN_KEY_TYPE_ID,
+					TEYRCHAIN_KEY_TYPE_ID,
 					Some(&validator.to_seed()),
 				)
 				.unwrap();
@@ -3811,7 +3811,7 @@ mod sanitizers {
 			for validator in validators.iter() {
 				Keystore::sr25519_generate_new(
 					&*keystore,
-					PARACHAIN_KEY_TYPE_ID,
+					TEYRCHAIN_KEY_TYPE_ID,
 					Some(&validator.to_seed()),
 				)
 				.unwrap();
@@ -4255,7 +4255,7 @@ mod sanitizers {
 			for validator in validators.iter() {
 				Keystore::sr25519_generate_new(
 					&*keystore,
-					PARACHAIN_KEY_TYPE_ID,
+					TEYRCHAIN_KEY_TYPE_ID,
 					Some(&validator.to_seed()),
 				)
 				.unwrap();

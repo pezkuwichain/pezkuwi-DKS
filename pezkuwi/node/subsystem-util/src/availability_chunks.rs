@@ -18,7 +18,7 @@ use pezkuwi_erasure_coding::systematic_recovery_threshold;
 use pezkuwi_primitives::{node_features, ChunkIndex, CoreIndex, NodeFeatures, ValidatorIndex};
 
 /// Compute the per-validator availability chunk index.
-/// WARNING: THIS FUNCTION IS CRITICAL TO PARACHAIN CONSENSUS.
+/// WARNING: THIS FUNCTION IS CRITICAL TO TEYRCHAIN CONSENSUS.
 /// Any modification to the output of the function needs to be coordinated via the runtime.
 /// It's best to use minimal/no external dependencies.
 pub fn availability_chunk_index(
@@ -39,7 +39,7 @@ pub fn availability_chunk_index(
 
 /// Compute the per-core availability chunk indices. Returns a Vec which maps ValidatorIndex to
 /// ChunkIndex for a given availability core index
-/// WARNING: THIS FUNCTION IS CRITICAL TO PARACHAIN CONSENSUS.
+/// WARNING: THIS FUNCTION IS CRITICAL TO TEYRCHAIN CONSENSUS.
 /// Any modification to the output of the function needs to be coordinated via the
 /// runtime. It's best to use minimal/no external dependencies.
 pub fn availability_chunk_indices(

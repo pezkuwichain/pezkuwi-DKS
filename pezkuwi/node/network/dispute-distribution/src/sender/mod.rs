@@ -26,11 +26,11 @@ use futures::{channel::oneshot, future::poll_fn, Future};
 use futures_timer::Delay;
 use indexmap::{map::Entry, IndexMap};
 use pezkuwi_node_network_protocol::request_response::v1::DisputeRequest;
-use pezkuwi_pez_node_primitives::{DisputeMessage, DisputeStatus};
 use pezkuwi_node_subsystem::{
 	messages::DisputeCoordinatorMessage, overseer, ActiveLeavesUpdate, SubsystemSender,
 };
 use pezkuwi_node_subsystem_util::{nesting_sender::NestingSender, runtime::RuntimeInfo};
+use pezkuwi_pez_node_primitives::{DisputeMessage, DisputeStatus};
 use pezkuwi_primitives::{CandidateHash, Hash, SessionIndex};
 
 /// For each ongoing dispute we have a `SendTask` which takes care of it.

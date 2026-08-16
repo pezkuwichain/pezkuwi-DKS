@@ -33,10 +33,6 @@ use futures::FutureExt;
 use gum::CandidateHash;
 use pezsc_keystore::LocalKeystore;
 
-use pezkuwi_pez_node_primitives::{
-	CandidateVotes, DisputeMessage, DisputeMessageCheckError, SignedDisputeStatement,
-	DISPUTE_WINDOW,
-};
 use pezkuwi_node_subsystem::{
 	messages::DisputeDistributionMessage, overseer, ActivatedLeaf, FromOrchestra, OverseerSignal,
 	SpawnedSubsystem, SubsystemError,
@@ -45,6 +41,10 @@ use pezkuwi_node_subsystem_util::{
 	database::Database,
 	runtime::{Config as RuntimeInfoConfig, RuntimeInfo},
 	ControlledValidatorIndices,
+};
+use pezkuwi_pez_node_primitives::{
+	CandidateVotes, DisputeMessage, DisputeMessageCheckError, SignedDisputeStatement,
+	DISPUTE_WINDOW,
 };
 use pezkuwi_primitives::{
 	DisputeStatement, ScrapedOnChainVotes, SessionIndex, SessionInfo, ValidatorIndex,

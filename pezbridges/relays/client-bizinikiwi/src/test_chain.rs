@@ -175,7 +175,7 @@ impl pezbp_runtime::Chain for TestTeyrchainBase {
 }
 
 impl pezbp_runtime::Teyrchain for TestTeyrchainBase {
-	const PARACHAIN_ID: u32 = 1000;
+	const TEYRCHAIN_ID: u32 = 1000;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 

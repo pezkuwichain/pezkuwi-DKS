@@ -20,11 +20,11 @@ use codec::{Decode, Encode};
 use futures::{channel::oneshot, StreamExt};
 use futures_timer::Delay;
 use pezkuwi_cli::ProvideRuntimeApi;
+use pezkuwi_node_subsystem::messages::CollatorProtocolMessage;
 use pezkuwi_pez_node_primitives::{
 	maybe_compress_pov, AvailableData, Collation, CollationResult, CollationSecondedSignal,
 	CollatorFn, MaybeCompressedPoV, PoV, Statement, UpwardMessages,
 };
-use pezkuwi_node_subsystem::messages::CollatorProtocolMessage;
 use pezkuwi_primitives::{
 	CandidateCommitments, CandidateDescriptorV2, CandidateReceiptV2, ClaimQueueOffset, CollatorId,
 	CollatorPair, CoreIndex, Hash, Id as ParaId, OccupiedCoreAssumption,

@@ -31,7 +31,6 @@ use pezkuwi_node_network_protocol::request_response::{
 	IncomingRequest, Protocol, Recipient, ReqProtocolNames, Requests,
 };
 
-use pezkuwi_pez_node_primitives::{BlockData, ErasureChunk, PoV, Proof};
 use pezkuwi_node_subsystem::messages::{
 	AllMessages, NetworkBridgeTxMessage, RuntimeApiMessage, RuntimeApiRequest,
 };
@@ -40,6 +39,7 @@ use pezkuwi_node_subsystem_test_helpers::{
 	TestSubsystemContextHandle,
 };
 use pezkuwi_node_subsystem_util::TimeoutExt;
+use pezkuwi_pez_node_primitives::{BlockData, ErasureChunk, PoV, Proof};
 use pezkuwi_primitives::{
 	node_features, ApprovalVotingParams, AuthorityDiscoveryId, Block, Hash, HeadData, IndexedVec,
 	MutateDescriptorV2, NodeFeatures, PersistedValidationData, SessionInfo, ValidatorId,

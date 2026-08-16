@@ -36,11 +36,11 @@ pub type RelayBlockHeader =
 type Block = pezframe_system::mocking::MockBlock<TestRuntime>;
 
 pub const PARAS_PALLET_NAME: &str = "Paras";
-pub const UNTRACKED_PARACHAIN_ID: u32 = 10;
+pub const UNTRACKED_TEYRCHAIN_ID: u32 = 10;
 // use exact expected encoded size: `vec_len_size + header_number_size + state_root_hash_size`
-pub const MAXIMAL_PARACHAIN_HEAD_DATA_SIZE: u32 = 1 + 8 + 32;
+pub const MAXIMAL_TEYRCHAIN_HEAD_DATA_SIZE: u32 = 1 + 8 + 32;
 // total teyrchains that we use in tests
-pub const TOTAL_PARACHAINS: u32 = 4;
+pub const TOTAL_TEYRCHAINS: u32 = 4;
 
 pub type RegularTeyrchainHeader = pezsp_runtime::testing::Header;
 pub type RegularTeyrchainHasher = BlakeTwo256;
@@ -71,7 +71,7 @@ impl Chain for Teyrchain1 {
 }
 
 impl Teyrchain for Teyrchain1 {
-	const PARACHAIN_ID: u32 = 1;
+	const TEYRCHAIN_ID: u32 = 1;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 
@@ -100,7 +100,7 @@ impl Chain for Teyrchain2 {
 }
 
 impl Teyrchain for Teyrchain2 {
-	const PARACHAIN_ID: u32 = 2;
+	const TEYRCHAIN_ID: u32 = 2;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 
@@ -129,7 +129,7 @@ impl Chain for Teyrchain3 {
 }
 
 impl Teyrchain for Teyrchain3 {
-	const PARACHAIN_ID: u32 = 3;
+	const TEYRCHAIN_ID: u32 = 3;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 
@@ -159,7 +159,7 @@ impl Chain for BigTeyrchain {
 }
 
 impl Teyrchain for BigTeyrchain {
-	const PARACHAIN_ID: u32 = 4;
+	const TEYRCHAIN_ID: u32 = 4;
 	const MAX_HEADER_SIZE: u32 = 2_048;
 }
 
@@ -214,7 +214,7 @@ impl pezpallet_bridge_teyrchains::Config for TestRuntime {
 	type ParasPalletName = ParasPalletName;
 	type ParaStoredHeaderDataBuilder = (Teyrchain1, Teyrchain2, Teyrchain3, BigTeyrchain);
 	type HeadsToKeep = HeadsToKeep;
-	type MaxParaHeadDataSize = ConstU32<MAXIMAL_PARACHAIN_HEAD_DATA_SIZE>;
+	type MaxParaHeadDataSize = ConstU32<MAXIMAL_TEYRCHAIN_HEAD_DATA_SIZE>;
 	type OnNewHead = ();
 }
 
@@ -222,9 +222,9 @@ impl pezpallet_bridge_teyrchains::Config for TestRuntime {
 impl pezpallet_bridge_teyrchains::benchmarking::Config<()> for TestRuntime {
 	fn teyrchains() -> Vec<ParaId> {
 		vec![
-			ParaId(Teyrchain1::PARACHAIN_ID),
-			ParaId(Teyrchain2::PARACHAIN_ID),
-			ParaId(Teyrchain3::PARACHAIN_ID),
+			ParaId(Teyrchain1::TEYRCHAIN_ID),
+			ParaId(Teyrchain2::TEYRCHAIN_ID),
+			ParaId(Teyrchain3::TEYRCHAIN_ID),
 		]
 	}
 

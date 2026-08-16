@@ -22,8 +22,8 @@ use crate::{
 use pezkuwi_node_network_protocol::request_response::{
 	self as req_res, outgoing::RequestError, OutgoingRequest, Recipient, Requests,
 };
-use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_node_subsystem::{messages::NetworkBridgeTxMessage, overseer, RecoveryError};
+use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_primitives::ValidatorIndex;
 use pezsc_network::{IfDisconnected, OutboundFailure, RequestFailure};
 

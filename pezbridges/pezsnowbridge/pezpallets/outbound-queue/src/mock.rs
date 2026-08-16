@@ -8,18 +8,18 @@ use pezframe_support::{
 	weights::IdentityFee,
 };
 
-use pezsp_core::{ConstU32, ConstU8, H160, H256};
-use pezsp_runtime::{
-	traits::{BlakeTwo256, IdentityLookup, Keccak256},
-	AccountId32, BuildStorage, FixedU128,
-};
-use pezsp_std::marker::PhantomData;
 use pezsnowbridge_core::{
 	gwei, meth,
 	pricing::{PricingParameters, Rewards},
 	ParaId, PRIMARY_GOVERNANCE_CHANNEL,
 };
 use pezsnowbridge_outbound_queue_primitives::v1::*;
+use pezsp_core::{ConstU32, ConstU8, H160, H256};
+use pezsp_runtime::{
+	traits::{BlakeTwo256, IdentityLookup, Keccak256},
+	AccountId32, BuildStorage, FixedU128,
+};
+use pezsp_std::marker::PhantomData;
 
 type Block = pezframe_system::mocking::MockBlock<Test>;
 type AccountId = AccountId32;

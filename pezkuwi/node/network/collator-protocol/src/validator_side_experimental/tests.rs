@@ -35,9 +35,6 @@ use pezkuwi_node_network_protocol::{
 	},
 	OurView,
 };
-use pezkuwi_pez_node_primitives::{
-	BlockData, PoV, SignedFullStatement, Statement, UncheckedSignedFullStatement,
-};
 use pezkuwi_node_subsystem::messages::{
 	AllMessages, CanSecondRequest, CandidateBackingMessage, ChainApiMessage, IfDisconnected,
 	NetworkBridgeTxMessage, ParentHeadData, ProspectiveTeyrchainsMessage,
@@ -45,6 +42,9 @@ use pezkuwi_node_subsystem::messages::{
 };
 use pezkuwi_node_subsystem_test_helpers::{mock::new_leaf, sender_receiver, TestSubsystemSender};
 use pezkuwi_node_subsystem_util::TimeoutExt;
+use pezkuwi_pez_node_primitives::{
+	BlockData, PoV, SignedFullStatement, Statement, UncheckedSignedFullStatement,
+};
 use pezkuwi_primitives::{
 	node_features::{self, FeatureIndex},
 	ApprovedPeerId, BlockNumber, CandidateDescriptorVersion,
@@ -197,7 +197,7 @@ impl Default for TestState {
 		let keystore = Arc::new(pezsc_keystore::LocalKeystore::in_memory());
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			pezkuwi_primitives::PARACHAIN_KEY_TYPE_ID,
+			pezkuwi_primitives::TEYRCHAIN_KEY_TYPE_ID,
 			Some(&Sr25519Keyring::Alice.to_seed()),
 		)
 		.expect("Insert key into keystore");

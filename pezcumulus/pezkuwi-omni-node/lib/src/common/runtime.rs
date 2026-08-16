@@ -27,7 +27,7 @@ use scale_info::{form::PortableForm, Type, TypeDef, TypeDefPrimitive};
 use std::fmt::Display;
 
 /// Expected teyrchain system pezpallet runtime type name.
-pub const DEFAULT_PARACHAIN_SYSTEM_PALLET_NAME: &str = "TeyrchainSystem";
+pub const DEFAULT_TEYRCHAIN_SYSTEM_PALLET_NAME: &str = "TeyrchainSystem";
 /// Expected frame system pezpallet runtime type name.
 pub const DEFAULT_FRAME_SYSTEM_PALLET_NAME: &str = "System";
 /// Expected Aura pezpallet runtime type name.
@@ -154,7 +154,7 @@ impl RuntimeResolver for DefaultRuntimeResolver {
 			BlockNumber::U32
 		});
 
-		if !metadata_inspector.pezpallet_exists(DEFAULT_PARACHAIN_SYSTEM_PALLET_NAME) {
+		if !metadata_inspector.pezpallet_exists(DEFAULT_TEYRCHAIN_SYSTEM_PALLET_NAME) {
 			log::warn!(
 				r#"⚠️  The teyrchain system pezpallet (https://docs.rs/crate/pezcumulus-pezpallet-teyrchain-system/latest) is
 			   missing from the runtime's metadata. Please check Omni Node docs for runtime conventions:
@@ -303,7 +303,7 @@ impl MetadataInspector {
 mod tests {
 	use crate::runtime::{
 		AuraConsensusId, BlockNumber, MetadataInspector, DEFAULT_FRAME_SYSTEM_PALLET_NAME,
-		DEFAULT_PARACHAIN_SYSTEM_PALLET_NAME,
+		DEFAULT_TEYRCHAIN_SYSTEM_PALLET_NAME,
 	};
 	use pezcumulus_client_service::TeyrchainHostFunctions;
 	use pezsc_executor::WasmExecutor;
@@ -326,7 +326,7 @@ mod tests {
 	#[test]
 	fn test_pezpallet_exists() {
 		let inspector = pezcumulus_test_runtime_inspector();
-		assert!(inspector.pezpallet_exists(DEFAULT_PARACHAIN_SYSTEM_PALLET_NAME));
+		assert!(inspector.pezpallet_exists(DEFAULT_TEYRCHAIN_SYSTEM_PALLET_NAME));
 		assert!(inspector.pezpallet_exists(DEFAULT_FRAME_SYSTEM_PALLET_NAME));
 	}
 

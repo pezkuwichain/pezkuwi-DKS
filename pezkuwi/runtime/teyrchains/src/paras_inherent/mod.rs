@@ -54,7 +54,7 @@ use pezkuwi_primitives::{
 	HeadData, InherentData as TeyrchainsInherentData, MultiDisputeStatementSet,
 	ScrapedOnChainVotes, SessionIndex, SignedAvailabilityBitfields, SigningContext,
 	UncheckedSignedAvailabilityBitfield, UncheckedSignedAvailabilityBitfields, ValidatorId,
-	ValidatorIndex, ValidityAttestation, PARACHAINS_INHERENT_IDENTIFIER,
+	ValidatorIndex, ValidityAttestation, TEYRCHAINS_INHERENT_IDENTIFIER,
 };
 use pezpallet_babe::{self, ParentBlockRandomness};
 use pezsp_runtime::traits::{Header as HeaderT, One, Saturating};
@@ -205,7 +205,7 @@ pub mod pezpallet {
 	impl<T: Config> ProvideInherent for Pezpallet<T> {
 		type Call = Call<T>;
 		type Error = MakeFatalError<()>;
-		const INHERENT_IDENTIFIER: InherentIdentifier = PARACHAINS_INHERENT_IDENTIFIER;
+		const INHERENT_IDENTIFIER: InherentIdentifier = TEYRCHAINS_INHERENT_IDENTIFIER;
 
 		fn create_inherent(data: &InherentData) -> Option<Self::Call> {
 			let inherent_data = Self::create_inherent_inner(data)?;

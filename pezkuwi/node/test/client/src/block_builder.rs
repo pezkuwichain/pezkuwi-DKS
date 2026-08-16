@@ -115,7 +115,7 @@ impl InitPolkadotBlockBuilder for Client {
 		};
 
 		inherent_data
-			.put_data(pezkuwi_primitives::PARACHAINS_INHERENT_IDENTIFIER, &teyrchains_inherent_data)
+			.put_data(pezkuwi_primitives::TEYRCHAINS_INHERENT_IDENTIFIER, &teyrchains_inherent_data)
 			.expect("Put teyrchains inherent data");
 
 		let inherents = block_builder.create_inherents(inherent_data).expect("Creates inherents");

@@ -19,9 +19,9 @@ use crate::{
 		asset_hub_pezkuwichain_location, bridged_roc_at_ah_zagros, create_foreign_on_ah_zagros,
 		pezsnowbridge_common::{
 			asset_hub_zagros_global_location, erc20_token_location, eth_location,
-			register_foreign_asset, register_roc_on_bh, set_up_eth_and_hez_pool,
-			set_up_eth_and_hez_pool_on_pezkuwichain, set_up_pool_with_wnd_on_ah_zagros,
-			pezsnowbridge_sovereign, TOKEN_AMOUNT,
+			pezsnowbridge_sovereign, register_foreign_asset, register_roc_on_bh,
+			set_up_eth_and_hez_pool, set_up_eth_and_hez_pool_on_pezkuwichain,
+			set_up_pool_with_wnd_on_ah_zagros, TOKEN_AMOUNT,
 		},
 	},
 };

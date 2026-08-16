@@ -30,8 +30,8 @@ use pezkuwi_cli::{
 	},
 	validator_overseer_builder, Cli,
 };
-use pezkuwi_pez_node_primitives::{AvailableData, BlockData, PoV};
 use pezkuwi_node_subsystem_types::{ChainApiBackend, RuntimeApiSubsystemClient};
+use pezkuwi_pez_node_primitives::{AvailableData, BlockData, PoV};
 use pezkuwi_primitives::{CandidateDescriptorV2, CandidateReceiptV2, CoreIndex};
 
 use pezkuwi_node_subsystem_util::request_validators;

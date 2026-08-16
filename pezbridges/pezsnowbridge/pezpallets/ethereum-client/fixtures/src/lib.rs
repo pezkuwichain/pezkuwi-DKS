@@ -5,13 +5,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use hex_literal::hex;
-use pezsp_core::U256;
-use pezsp_std::{boxed::Box, vec};
 use pezsnowbridge_beacon_primitives::{
 	types::deneb, AncestryProof, BeaconHeader, ExecutionProof, NextSyncCommitteeUpdate,
 	SyncAggregate, SyncCommittee, VersionedExecutionPayloadHeader,
 };
 use pezsnowbridge_verification_primitives::{EventFixture, EventProof, Log, Proof};
+use pezsp_core::U256;
+use pezsp_std::{boxed::Box, vec};
 
 const SC_SIZE: usize = 512;
 const SC_BITS_SIZE: usize = 64;

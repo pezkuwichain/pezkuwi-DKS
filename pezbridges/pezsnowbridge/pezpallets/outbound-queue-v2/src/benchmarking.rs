@@ -7,8 +7,8 @@ use codec::Encode;
 use pezframe_benchmarking::v2::*;
 use pezframe_support::{traits::Hooks, BoundedVec};
 use pezframe_system::RawOrigin;
-use pezsp_core::{H160, H256};
 use pezsnowbridge_outbound_queue_primitives::v2::{Command, Initializer, Message};
+use pezsp_core::{H160, H256};
 
 #[allow(unused_imports)]
 use crate::Pezpallet as OutboundQueue;

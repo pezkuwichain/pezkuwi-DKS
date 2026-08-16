@@ -13,7 +13,8 @@ pub type SyncCommitteePrepared = pezsnowbridge_beacon_primitives::SyncCommitteeP
 pub type SyncAggregate = pezsnowbridge_beacon_primitives::SyncAggregate<SC_SIZE, SC_BITS_SIZE>;
 pub type CheckpointUpdate = pezsnowbridge_beacon_primitives::CheckpointUpdate<SC_SIZE>;
 pub type Update = pezsnowbridge_beacon_primitives::Update<SC_SIZE, SC_BITS_SIZE>;
-pub type NextSyncCommitteeUpdate = pezsnowbridge_beacon_primitives::NextSyncCommitteeUpdate<SC_SIZE>;
+pub type NextSyncCommitteeUpdate =
+	pezsnowbridge_beacon_primitives::NextSyncCommitteeUpdate<SC_SIZE>;
 
 pub use pezsnowbridge_beacon_primitives::{AncestryProof, ExecutionProof};
 

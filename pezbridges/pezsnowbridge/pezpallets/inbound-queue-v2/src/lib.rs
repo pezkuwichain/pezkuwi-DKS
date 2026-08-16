@@ -38,8 +38,6 @@ mod test;
 pub use crate::weights::WeightInfo;
 use pezbp_relayers::RewardLedger;
 use pezframe_system::ensure_signed;
-use pezsp_core::H160;
-use pezsp_std::prelude::*;
 use pezsnowbridge_core::{
 	reward::{AddTip, AddTipError},
 	sparse_bitmap::{SparseBitmap, SparseBitmapImpl},
@@ -49,6 +47,8 @@ use pezsnowbridge_inbound_queue_primitives::{
 	v2::{ConvertMessageError, Message, MessageProcessor, MessageProcessorError},
 	EventProof, VerificationError, Verifier,
 };
+use pezsp_core::H160;
+use pezsp_std::prelude::*;
 use xcm::latest::SendError;
 
 pub use pezpallet::*;

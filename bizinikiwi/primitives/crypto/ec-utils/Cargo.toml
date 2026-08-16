@@ -35,6 +35,9 @@ ark-vesta = { optional = true, workspace = true }
 ark-vesta-ext = { optional = true, workspace = true }
 pezsp-runtime-interface = { optional = true, workspace = true }
 
+[dev-dependencies]
+ark-std = { workspace = true }
+
 [features]
 default = ["std"]
 std = [
@@ -50,11 +53,18 @@ std = [
 	"ark-ed-on-bls12-377?/std",
 	"ark-ed-on-bls12-381-bandersnatch-ext?/std",
 	"ark-ed-on-bls12-381-bandersnatch?/std",
+	"ark-ff?/std",
+	"ark-pallas-ext?/std",
+	"ark-pallas?/std",
 	"ark-scale?/std",
+	"ark-std/std",
+	"ark-vesta-ext?/std",
+	"ark-vesta?/std",
 	"pezsp-runtime-interface?/std",
 ]
 common = [
 	"ark-ec",
+	"ark-ff",
 	"ark-scale",
 	"pezsp-runtime-interface",
 ]

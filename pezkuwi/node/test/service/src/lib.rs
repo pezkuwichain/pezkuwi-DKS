@@ -22,9 +22,9 @@ pub mod chain_spec;
 
 pub use chain_spec::*;
 use futures::{future::Future, stream::StreamExt};
-use pezkuwi_pez_node_primitives::{CollationGenerationConfig, CollatorFn};
 use pezkuwi_node_subsystem::messages::{CollationGenerationMessage, CollatorProtocolMessage};
 use pezkuwi_overseer::Handle;
+use pezkuwi_pez_node_primitives::{CollationGenerationConfig, CollatorFn};
 use pezkuwi_primitives::{Balance, CollatorPair, HeadData, Id as ParaId, ValidationCode};
 use pezkuwi_runtime_common::BlockHashCount;
 use pezkuwi_runtime_teyrchains::paras::{ParaGenesisArgs, ParaKind};

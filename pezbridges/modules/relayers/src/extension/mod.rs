@@ -490,7 +490,7 @@ mod tests {
 	};
 
 	parameter_types! {
-		TestTeyrchain: u32 = BridgedUnderlyingTeyrchain::PARACHAIN_ID;
+		TestTeyrchain: u32 = BridgedUnderlyingTeyrchain::TEYRCHAIN_ID;
 		pub MsgProofsRewardsAccount: RewardsAccountParams<TestLaneIdType> = RewardsAccountParams::new(
 			test_lane_id(),
 			TEST_BRIDGED_CHAIN_ID,

@@ -156,7 +156,7 @@ where
 		match TeyrchainsCallSubtype::<T, TeyrchainsInstance>::check_obsolete_submit_teyrchain_heads(
 			call,
 		) {
-			Ok(Some(our_tx)) if our_tx.base.para_id.0 == Para::PARACHAIN_ID => {
+			Ok(Some(our_tx)) if our_tx.base.para_id.0 == Para::TEYRCHAIN_ID => {
 				let to_post_dispatch = Some(our_tx.base);
 				let total_priority_boost =
 					compute_priority_boost::<T, _, Priority>(&who, our_tx.improved_by);
@@ -545,7 +545,7 @@ mod tests {
 			pezbp_test_utils::test_header::<BridgedChainHeader>(0).build(),
 		);
 
-		let para_id = ParaId(BridgedUnderlyingTeyrchain::PARACHAIN_ID);
+		let para_id = ParaId(BridgedUnderlyingTeyrchain::TEYRCHAIN_ID);
 		let para_info = ParaInfo {
 			best_head_hash: BestParaHeadHash {
 				at_relay_block_number: teyrchain_head_at_relay_header_number,
@@ -595,7 +595,7 @@ mod tests {
 		RuntimeCall::BridgeTeyrchains(TeyrchainsCall::submit_teyrchain_heads {
 			at_relay_block: (teyrchain_head_at_relay_header_number, BridgedChainHash::default()),
 			teyrchains: vec![(
-				ParaId(BridgedUnderlyingTeyrchain::PARACHAIN_ID),
+				ParaId(BridgedUnderlyingTeyrchain::TEYRCHAIN_ID),
 				[teyrchain_head_at_relay_header_number as u8; 32].into(),
 			)],
 			teyrchain_heads_proof: ParaHeadsProof { storage_proof: Default::default() },
@@ -820,7 +820,7 @@ mod tests {
 				true,
 				Some(SubmitTeyrchainHeadsInfo {
 					at_relay_block: HeaderId(150, Default::default()),
-					para_id: ParaId(BridgedUnderlyingTeyrchain::PARACHAIN_ID),
+					para_id: ParaId(BridgedUnderlyingTeyrchain::TEYRCHAIN_ID),
 					para_head_hash: [150u8; 32].into(),
 					is_free_execution_expected: false,
 				}),
@@ -842,7 +842,7 @@ mod tests {
 				false,
 				Some(SubmitTeyrchainHeadsInfo {
 					at_relay_block: HeaderId(100, Default::default()),
-					para_id: ParaId(BridgedUnderlyingTeyrchain::PARACHAIN_ID),
+					para_id: ParaId(BridgedUnderlyingTeyrchain::TEYRCHAIN_ID),
 					para_head_hash: [100u8; 32].into(),
 					is_free_execution_expected: false,
 				}),

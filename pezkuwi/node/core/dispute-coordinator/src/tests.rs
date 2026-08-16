@@ -28,10 +28,6 @@ use futures::{
 
 use pezkuwi_node_subsystem_util::database::Database;
 
-use pezkuwi_pez_node_primitives::{
-	DisputeMessage, DisputeStatus, SignedDisputeStatement, SignedFullStatement, Statement,
-	DISPUTE_WINDOW,
-};
 use pezkuwi_node_subsystem::{
 	messages::{
 		ApprovalVotingParallelMessage, ChainApiMessage, ChainSelectionMessage,
@@ -39,6 +35,10 @@ use pezkuwi_node_subsystem::{
 	},
 	overseer::FromOrchestra,
 	OverseerSignal,
+};
+use pezkuwi_pez_node_primitives::{
+	DisputeMessage, DisputeStatus, SignedDisputeStatement, SignedFullStatement, Statement,
+	DISPUTE_WINDOW,
 };
 
 use pezkuwi_node_subsystem_util::TimeoutExt;
@@ -48,7 +48,6 @@ use pezsp_core::{sr25519::Pair, testing::TaskExecutor, Pair as PairT};
 use pezsp_keyring::Sr25519Keyring;
 use pezsp_keystore::{Keystore, KeystorePtr};
 
-use pezkuwi_pez_node_primitives::ACTIVE_DURATION_SECS;
 use pezkuwi_node_subsystem::{
 	messages::{AllMessages, BlockDescription, RuntimeApiMessage, RuntimeApiRequest},
 	ActiveLeavesUpdate,
@@ -56,6 +55,7 @@ use pezkuwi_node_subsystem::{
 use pezkuwi_node_subsystem_test_helpers::{
 	make_buffered_subsystem_context, mock::new_leaf, TestSubsystemContextHandle,
 };
+use pezkuwi_pez_node_primitives::ACTIVE_DURATION_SECS;
 use pezkuwi_primitives::{
 	ApprovalVote, ApprovalVotingParams, BlockNumber, CandidateCommitments, CandidateEvent,
 	CandidateHash, CandidateReceiptV2 as CandidateReceipt, CoalescedApprovalCandidateHashes,
@@ -86,7 +86,7 @@ fn make_keystore(seeds: impl Iterator<Item = String>) -> LocalKeystore {
 
 	for s in seeds {
 		store
-			.sr25519_generate_new(pezkuwi_primitives::PARACHAIN_KEY_TYPE_ID, Some(&s))
+			.sr25519_generate_new(pezkuwi_primitives::TEYRCHAIN_KEY_TYPE_ID, Some(&s))
 			.unwrap();
 	}
 

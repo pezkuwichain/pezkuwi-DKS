@@ -54,7 +54,6 @@ use pezkuwi_node_network_protocol::{
 	},
 	UnifiedReputationChange as Rep,
 };
-use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_node_subsystem::{
 	errors::RecoveryError,
 	messages::{AvailabilityRecoveryMessage, AvailabilityStoreMessage},
@@ -65,6 +64,7 @@ use pezkuwi_node_subsystem_util::{
 	availability_chunks::availability_chunk_indices,
 	runtime::{ExtendedSessionInfo, RuntimeInfo},
 };
+use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_primitives::{
 	node_features, BlockNumber, CandidateHash, CandidateReceiptV2 as CandidateReceipt, ChunkIndex,
 	CoreIndex, GroupIndex, Hash, SessionIndex, ValidatorIndex,

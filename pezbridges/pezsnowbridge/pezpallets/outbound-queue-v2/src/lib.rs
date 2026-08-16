@@ -78,12 +78,6 @@ use pezframe_support::{
 	traits::{tokens::Balance, EnqueueMessage, Get, ProcessMessageError},
 	weights::{Weight, WeightToFee},
 };
-use pezsp_core::{H160, H256};
-use pezsp_runtime::{
-	traits::{BlockNumberProvider, Debug, Hash},
-	DigestItem,
-};
-use pezsp_std::prelude::*;
 use pezsnowbridge_core::{
 	digest_item::SnowbridgeDigestItem,
 	reward::{AddTip, AddTipError},
@@ -97,6 +91,12 @@ use pezsnowbridge_outbound_queue_primitives::{
 	},
 	EventProof, VerificationError, Verifier,
 };
+use pezsp_core::{H160, H256};
+use pezsp_runtime::{
+	traits::{BlockNumberProvider, Debug, Hash},
+	DigestItem,
+};
+use pezsp_std::prelude::*;
 pub use types::{OnNewCommitment, PendingOrder, ProcessMessageOriginOf};
 pub use weights::WeightInfo;
 use xcm::prelude::NetworkId;

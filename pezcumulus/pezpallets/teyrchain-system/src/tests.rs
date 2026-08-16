@@ -27,7 +27,7 @@ use pezcumulus_primitives_core::{
 	InboundDownwardMessage, InboundHrmpMessage, CUMULUS_CONSENSUS_ID,
 };
 use pezcumulus_primitives_teyrchain_inherent::{
-	v0, INHERENT_IDENTIFIER, PARACHAIN_INHERENT_IDENTIFIER_V0,
+	v0, INHERENT_IDENTIFIER, TEYRCHAIN_INHERENT_IDENTIFIER_V0,
 };
 use pezframe_support::{assert_ok, parameter_types, weights::Weight};
 use pezframe_system::RawOrigin;
@@ -67,7 +67,7 @@ fn test_inherent_compatibility() {
 	let mut valid_inherent_data_legacy = pezsp_inherents::InherentData::new();
 	valid_inherent_data_legacy
 		.put_data(
-			PARACHAIN_INHERENT_IDENTIFIER_V0,
+			TEYRCHAIN_INHERENT_IDENTIFIER_V0,
 			&v0::TeyrchainInherentData {
 				validation_data: Default::default(),
 				relay_chain_state: StorageProof::empty(),

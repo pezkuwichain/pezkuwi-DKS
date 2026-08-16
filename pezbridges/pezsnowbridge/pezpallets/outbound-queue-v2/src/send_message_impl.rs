@@ -7,12 +7,12 @@ use pezframe_support::{
 	ensure,
 	traits::{EnqueueMessage, Get},
 };
-use pezsp_core::H256;
-use pezsp_runtime::BoundedVec;
 use pezsnowbridge_outbound_queue_primitives::{
 	v2::{Message, SendMessage},
 	SendError,
 };
+use pezsp_core::H256;
+use pezsp_runtime::BoundedVec;
 
 impl<T> SendMessage for Pezpallet<T>
 where

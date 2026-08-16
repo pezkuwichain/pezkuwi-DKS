@@ -55,7 +55,7 @@ use pezkuwi_primitives::{
 	InboundHrmpMessage, Moment, NodeFeatures, Nonce, OccupiedCoreAssumption,
 	PersistedValidationData, PvfCheckStatement, ScrapedOnChainVotes, SessionInfo, Signature,
 	ValidationCode, ValidationCodeHash, ValidatorId, ValidatorIndex, ValidatorSignature,
-	PARACHAIN_KEY_TYPE_ID,
+	TEYRCHAIN_KEY_TYPE_ID,
 };
 use pezkuwi_runtime_common::{
 	assigned_slots, auctions, crowdloan, identity_migrator, impl_runtime_weights,
@@ -2296,7 +2296,7 @@ pezsp_api::impl_runtime_apis! {
 		) -> Option<slashing::OpaqueKeyOwnershipProof> {
 			use codec::Encode;
 
-			Historical::prove((PARACHAIN_KEY_TYPE_ID, validator_id))
+			Historical::prove((TEYRCHAIN_KEY_TYPE_ID, validator_id))
 				.map(|p| p.encode())
 				.map(slashing::OpaqueKeyOwnershipProof::new)
 		}

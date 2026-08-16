@@ -16,9 +16,11 @@
 
 use crate::approval::{ApprovalTestState, PastSystemClock, LOG_TARGET, SLOT_DURATION_MILLIS};
 use futures::FutureExt;
-use pezkuwi_pez_node_primitives::approval::time::{slot_number_to_tick, Clock, TICK_DURATION_MILLIS};
 use pezkuwi_node_subsystem::{overseer, SpawnedSubsystem, SubsystemError};
 use pezkuwi_node_subsystem_types::messages::ChainSelectionMessage;
+use pezkuwi_pez_node_primitives::approval::time::{
+	slot_number_to_tick, Clock, TICK_DURATION_MILLIS,
+};
 
 /// Mock ChainSelection subsystem used to answer request made by the approval-voting subsystem,
 /// during benchmark. All the necessary information to answer the requests is stored in the `state`

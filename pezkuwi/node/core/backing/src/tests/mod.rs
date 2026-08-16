@@ -17,7 +17,6 @@
 use super::*;
 use assert_matches::assert_matches;
 use futures::{future, Future};
-use pezkuwi_pez_node_primitives::{BlockData, InvalidCandidate, SignedFullStatement, Statement};
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, BackableCandidateRef, ChainApiMessage, CollatorProtocolMessage,
@@ -27,6 +26,7 @@ use pezkuwi_node_subsystem::{
 	ActivatedLeaf, ActiveLeavesUpdate, FromOrchestra, OverseerSignal, TimeoutExt,
 };
 use pezkuwi_node_subsystem_test_helpers::mock::new_leaf;
+use pezkuwi_pez_node_primitives::{BlockData, InvalidCandidate, SignedFullStatement, Statement};
 use pezkuwi_primitives::{
 	node_features, BlockNumber, CandidateDescriptorV2, CandidateDescriptorVersion, CollatorId,
 	CollatorSignature, CoreState, GroupRotationInfo, HeadData, Header, MutateDescriptorV2,

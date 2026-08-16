@@ -353,7 +353,7 @@ impl Chain for BridgedUnderlyingTeyrchain {
 }
 
 impl Teyrchain for BridgedUnderlyingTeyrchain {
-	const PARACHAIN_ID: u32 = 42;
+	const TEYRCHAIN_ID: u32 = 42;
 	const MAX_HEADER_SIZE: u32 = 1_024;
 }
 

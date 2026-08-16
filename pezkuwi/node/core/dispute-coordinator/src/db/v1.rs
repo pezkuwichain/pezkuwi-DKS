@@ -22,8 +22,8 @@
 //! the dispute data in the database. Any breaking changes here will still
 //! require a db migration (check `node/service/src/teyrchains_db/upgrade.rs`).
 
-use pezkuwi_pez_node_primitives::DisputeStatus;
 use pezkuwi_node_subsystem_util::database::{DBTransaction, Database};
+use pezkuwi_pez_node_primitives::DisputeStatus;
 use pezkuwi_primitives::{
 	CandidateHash, CandidateReceiptV2 as CandidateReceipt, Hash, InvalidDisputeStatementKind,
 	SessionIndex, ValidDisputeStatementKind, ValidatorIndex, ValidatorSignature,

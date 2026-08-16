@@ -17,7 +17,6 @@
 //! Implements the Chain Selection Subsystem.
 
 use pezkuwi_node_clock::Clock;
-use pezkuwi_pez_node_primitives::BlockWeight;
 use pezkuwi_node_subsystem::{
 	errors::ChainApiError,
 	messages::{ChainApiMessage, ChainSelectionMessage},
@@ -25,6 +24,7 @@ use pezkuwi_node_subsystem::{
 	FromOrchestra, OverseerSignal, SpawnedSubsystem, SubsystemError,
 };
 use pezkuwi_node_subsystem_util::database::Database;
+use pezkuwi_pez_node_primitives::BlockWeight;
 use pezkuwi_primitives::{BlockNumber, ConsensusLog, Hash, Header};
 
 use codec::Error as CodecError;

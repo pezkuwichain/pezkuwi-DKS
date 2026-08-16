@@ -22,16 +22,6 @@
 //! been sufficiently approved to finalize.
 
 use futures_timer::Delay;
-use pezkuwi_pez_node_primitives::{
-	approval::{
-		v1::{BlockApprovalMeta, DelayTranche},
-		v2::{
-			AssignmentCertKindV2, BitfieldError, CandidateBitfield, CoreBitfield,
-			IndirectAssignmentCertV2, IndirectSignedApprovalVoteV2,
-		},
-	},
-	ValidationResult, DISPUTE_WINDOW,
-};
 use pezkuwi_node_subsystem::{
 	errors::RecoveryError,
 	messages::{
@@ -51,6 +41,16 @@ use pezkuwi_node_subsystem_util::{
 	metrics::{self, prometheus},
 	runtime::{Config as RuntimeInfoConfig, ExtendedSessionInfo, RuntimeInfo},
 	TimeoutExt,
+};
+use pezkuwi_pez_node_primitives::{
+	approval::{
+		v1::{BlockApprovalMeta, DelayTranche},
+		v2::{
+			AssignmentCertKindV2, BitfieldError, CandidateBitfield, CoreBitfield,
+			IndirectAssignmentCertV2, IndirectSignedApprovalVoteV2,
+		},
+	},
+	ValidationResult, DISPUTE_WINDOW,
 };
 use pezkuwi_primitives::{
 	ApprovalVoteMultipleCandidates, BlockNumber, CandidateHash, CandidateIndex,

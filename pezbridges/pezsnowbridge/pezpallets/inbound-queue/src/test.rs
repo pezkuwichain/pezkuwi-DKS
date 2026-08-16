@@ -4,11 +4,11 @@ use super::*;
 
 use hex_literal::hex;
 use pezframe_support::{assert_noop, assert_ok};
+use pezsnowbridge_core::ChannelId;
+use pezsnowbridge_inbound_queue_primitives::Proof;
 use pezsp_keyring::Sr25519Keyring as Keyring;
 use pezsp_runtime::DispatchError;
 use pezsp_std::convert::From;
-use pezsnowbridge_core::ChannelId;
-use pezsnowbridge_inbound_queue_primitives::Proof;
 
 use crate::Error;
 

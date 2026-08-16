@@ -147,7 +147,7 @@ impl_opaque_keys! {
 }
 
 /// The para-id used in this runtime.
-pub const PARACHAIN_ID: u32 = 100;
+pub const TEYRCHAIN_ID: u32 = 100;
 
 #[cfg(any(feature = "elastic-scaling-500ms", feature = "block-bundling"))]
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 12;

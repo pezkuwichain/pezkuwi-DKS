@@ -22,7 +22,6 @@ use codec::Encode;
 use futures::future::join;
 use pezsp_core::testing::TaskExecutor;
 
-use pezkuwi_pez_node_primitives::DISPUTE_CANDIDATE_LIFETIME_AFTER_FINALIZATION;
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, ChainApiMessage, DisputeCoordinatorMessage, RuntimeApiMessage,
@@ -35,6 +34,7 @@ use pezkuwi_node_subsystem_test_helpers::{
 	TestSubsystemSender,
 };
 use pezkuwi_node_subsystem_util::{reexports::SubsystemContext, TimeoutExt};
+use pezkuwi_pez_node_primitives::DISPUTE_CANDIDATE_LIFETIME_AFTER_FINALIZATION;
 use pezkuwi_primitives::{
 	BlakeTwo256, BlockNumber, CandidateEvent, CandidateReceiptV2 as CandidateReceipt, CoreIndex,
 	GroupIndex, Hash, HashT, HeadData, Id as ParaId,

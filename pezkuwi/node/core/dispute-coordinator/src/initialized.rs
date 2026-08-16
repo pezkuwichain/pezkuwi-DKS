@@ -29,10 +29,6 @@ use futures::{
 use pezsc_keystore::LocalKeystore;
 
 use pezkuwi_node_clock::Clock;
-use pezkuwi_pez_node_primitives::{
-	disputes::ValidCandidateVotes, CandidateVotes, DisputeStatus, SignedDisputeStatement,
-	Timestamp, DISPUTE_WINDOW,
-};
 use pezkuwi_node_subsystem::{
 	messages::{
 		ApprovalVotingParallelMessage, BlockDescription, ChainSelectionMessage,
@@ -43,6 +39,10 @@ use pezkuwi_node_subsystem::{
 use pezkuwi_node_subsystem_util::{
 	runtime::{self, key_ownership_proof, submit_report_dispute_lost, RuntimeInfo},
 	ControlledValidatorIndices,
+};
+use pezkuwi_pez_node_primitives::{
+	disputes::ValidCandidateVotes, CandidateVotes, DisputeStatus, SignedDisputeStatement,
+	Timestamp, DISPUTE_WINDOW,
 };
 use pezkuwi_primitives::{
 	node_features::FeatureIndex, slashing, BlockNumber, CandidateHash,

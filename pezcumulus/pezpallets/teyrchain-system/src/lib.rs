@@ -1123,7 +1123,7 @@ pub mod pezpallet {
 					// version.
 					let data = data
 						.get_data::<v0::TeyrchainInherentData>(
-							&pezcumulus_primitives_teyrchain_inherent::PARACHAIN_INHERENT_IDENTIFIER_V0,
+							&pezcumulus_primitives_teyrchain_inherent::TEYRCHAIN_INHERENT_IDENTIFIER_V0,
 						)
 						.ok()
 						.flatten()?;

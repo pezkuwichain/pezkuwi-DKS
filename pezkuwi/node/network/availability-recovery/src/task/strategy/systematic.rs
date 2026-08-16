@@ -26,8 +26,8 @@ use crate::{
 	LOG_TARGET,
 };
 
-use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_node_subsystem::{overseer, RecoveryError};
+use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_primitives::{ChunkIndex, ValidatorIndex};
 
 use std::collections::VecDeque;

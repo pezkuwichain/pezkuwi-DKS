@@ -44,7 +44,6 @@ use pezkuwi_node_network_protocol::{
 	request_response::{v1::DisputeResponse, Recipient, Requests},
 	IfDisconnected,
 };
-use pezkuwi_pez_node_primitives::DisputeStatus;
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, DisputeCoordinatorMessage, DisputeDistributionMessage, ImportStatementsResult,
@@ -56,6 +55,7 @@ use pezkuwi_node_subsystem_test_helpers::{
 	mock::{make_ferdie_keystore, new_leaf},
 	subsystem_test_harness, TestSubsystemContextHandle,
 };
+use pezkuwi_pez_node_primitives::DisputeStatus;
 use pezkuwi_primitives::{
 	ApprovalVotingParams, AuthorityDiscoveryId, Block, CandidateHash,
 	CandidateReceiptV2 as CandidateReceipt, Hash, NodeFeatures, SessionIndex, SessionInfo,

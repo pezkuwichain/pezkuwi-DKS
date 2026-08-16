@@ -5,9 +5,9 @@ use super::*;
 use bridge_hub_common::AggregateMessageOrigin;
 use codec::Encode;
 use pezframe_benchmarking::v2::*;
-use pezsp_core::{H160, H256};
 use pezsnowbridge_core::ChannelId;
 use pezsnowbridge_outbound_queue_primitives::v1::{Command, Initializer};
+use pezsp_core::{H160, H256};
 
 #[allow(unused_imports)]
 use crate::Pezpallet as OutboundQueue;

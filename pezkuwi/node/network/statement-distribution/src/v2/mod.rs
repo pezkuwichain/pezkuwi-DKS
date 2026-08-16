@@ -31,9 +31,6 @@ use pezkuwi_node_network_protocol::{
 	v3::{self as protocol_v3, StatementFilter},
 	IfDisconnected, PeerId, UnifiedReputationChange as Rep, ValidationProtocols, View,
 };
-use pezkuwi_pez_node_primitives::{
-	SignedFullStatementWithPVD, StatementWithPVD as FullStatementWithPVD,
-};
 use pezkuwi_node_subsystem::{
 	messages::{
 		network_bridge_event::NewGossipTopology, CandidateBackingMessage, HypotheticalCandidate,
@@ -45,6 +42,9 @@ use pezkuwi_node_subsystem::{
 use pezkuwi_node_subsystem_util::{
 	backing_implicit_view::View as ImplicitView, reputation::ReputationAggregator,
 	request_min_backing_votes, runtime::ClaimQueueSnapshot,
+};
+use pezkuwi_pez_node_primitives::{
+	SignedFullStatementWithPVD, StatementWithPVD as FullStatementWithPVD,
 };
 use pezkuwi_primitives::{
 	transpose_claim_queue, AuthorityDiscoveryId, CandidateHash, CompactStatement, CoreIndex,

@@ -32,6 +32,12 @@ use futures::{channel::oneshot, future, stream::PollNext, StreamExt};
 use itertools::Itertools;
 use pezkuwi_node_core_approval_voting::{ApprovalVotingWorkProvider, Config};
 use pezkuwi_node_network_protocol::{peer_set::ValidationVersion, ObservedRole, PeerId, View};
+use pezkuwi_node_subsystem::{
+	messages::{ApprovalDistributionMessage, ApprovalVotingMessage, ApprovalVotingParallelMessage},
+	FromOrchestra,
+};
+use pezkuwi_node_subsystem_test_helpers::{mock::new_leaf, TestSubsystemContext};
+use pezkuwi_overseer::{ActiveLeavesUpdate, OverseerSignal, SpawnGlue, TimeoutExt};
 use pezkuwi_pez_node_primitives::approval::{
 	time::SystemClock,
 	v1::RELAY_VRF_MODULO_CONTEXT,
@@ -40,12 +46,6 @@ use pezkuwi_pez_node_primitives::approval::{
 		IndirectSignedApprovalVoteV2,
 	},
 };
-use pezkuwi_node_subsystem::{
-	messages::{ApprovalDistributionMessage, ApprovalVotingMessage, ApprovalVotingParallelMessage},
-	FromOrchestra,
-};
-use pezkuwi_node_subsystem_test_helpers::{mock::new_leaf, TestSubsystemContext};
-use pezkuwi_overseer::{ActiveLeavesUpdate, OverseerSignal, SpawnGlue, TimeoutExt};
 use pezkuwi_primitives::{CandidateHash, CoreIndex, Hash, ValidatorIndex};
 use pezsc_keystore::{Keystore, LocalKeystore};
 use pezsp_consensus::SyncOracle;
@@ -106,7 +106,7 @@ fn build_subsystem(
 
 	let keystore = LocalKeystore::in_memory();
 	let _ = keystore.sr25519_generate_new(
-		pezkuwi_primitives::PARACHAIN_KEY_TYPE_ID,
+		pezkuwi_primitives::TEYRCHAIN_KEY_TYPE_ID,
 		Some(&Sr25519Keyring::Alice.to_seed()),
 	);
 

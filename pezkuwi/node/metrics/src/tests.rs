@@ -19,7 +19,7 @@
 use http_body_util::BodyExt;
 use hyper::Uri;
 use hyper_util::{client::legacy::Client, rt::TokioExecutor};
-use pezkuwi_primitives::metric_definitions::PARACHAIN_INHERENT_DATA_BITFIELDS_PROCESSED;
+use pezkuwi_primitives::metric_definitions::TEYRCHAIN_INHERENT_DATA_BITFIELDS_PROCESSED;
 use pezkuwi_test_service::{node_config, run_validator_node, test_prometheus_config};
 use pezsp_keyring::Sr25519Keyring::*;
 use std::collections::HashMap;
@@ -62,7 +62,7 @@ async fn runtime_can_publish_metrics() {
 	// There should be at least 1 bitfield processed by now.
 	assert!(
 		*metrics
-			.get(&PARACHAIN_INHERENT_DATA_BITFIELDS_PROCESSED.name.to_owned())
+			.get(&TEYRCHAIN_INHERENT_DATA_BITFIELDS_PROCESSED.name.to_owned())
 			.unwrap() > 1
 	);
 }

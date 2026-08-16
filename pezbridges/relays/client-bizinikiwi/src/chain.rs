@@ -87,7 +87,7 @@ pub trait RelayChain: Chain {
 	const PARAS_PALLET_NAME: &'static str;
 	/// Name of the `pezpallet-bridge-teyrchains`, deployed at the **bridged** chain to sync
 	/// teyrchains of **this** chain.
-	const WITH_CHAIN_BRIDGE_PARACHAINS_PALLET_NAME: &'static str;
+	const WITH_CHAIN_BRIDGE_TEYRCHAINS_PALLET_NAME: &'static str;
 }
 
 /// Bizinikiwi-based chain that is using direct GRANDPA finality from minimal relay-client point of

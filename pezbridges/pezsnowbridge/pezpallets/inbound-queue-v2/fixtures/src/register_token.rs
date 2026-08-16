@@ -4,12 +4,12 @@
 // See ethereum client README.md for instructions to generate
 
 use hex_literal::hex;
-use pezsp_core::U256;
-use pezsp_std::vec;
 use pezsnowbridge_beacon_primitives::{
 	types::deneb, AncestryProof, BeaconHeader, ExecutionProof, VersionedExecutionPayloadHeader,
 };
 use pezsnowbridge_inbound_queue_primitives::{EventFixture, EventProof, Log, Proof};
+use pezsp_core::U256;
+use pezsp_std::vec;
 
 pub fn make_register_token_message() -> EventFixture {
 	EventFixture {

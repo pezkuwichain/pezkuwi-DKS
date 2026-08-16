@@ -18,7 +18,7 @@ use super::*;
 use pezframe_support::{
 	assert_err, assert_noop, assert_ok, assert_storage_noop, traits::UnfilteredDispatchable,
 };
-use pezkuwi_primitives::{vstaging::SchedulerParams, BlockNumber, PARACHAIN_KEY_TYPE_ID};
+use pezkuwi_primitives::{vstaging::SchedulerParams, BlockNumber, TEYRCHAIN_KEY_TYPE_ID};
 use pezkuwi_primitives_test_helpers::{dummy_head_data, dummy_validation_code, validator_pubkeys};
 use pezsc_keystore::LocalKeystore;
 use pezsp_keyring::Sr25519Keyring;
@@ -85,7 +85,7 @@ fn run_to_block(to: BlockNumber, new_session: Option<Vec<BlockNumber>>) {
 	for validator in VALIDATORS.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();

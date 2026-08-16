@@ -157,7 +157,6 @@ use pezkuwi_node_network_protocol::{
 	v1 as protocol_v1, v2 as protocol_v2, v3_collation as protocol_v3, CollationProtocols, OurView,
 	PeerId, UnifiedReputationChange as Rep, View,
 };
-use pezkuwi_pez_node_primitives::{SignedFullStatement, Statement};
 use pezkuwi_node_subsystem::{
 	messages::{
 		CanSecondRequest, CandidateBackingMessage, CollatorProtocolMessage, IfDisconnected,
@@ -171,6 +170,7 @@ use pezkuwi_node_subsystem_util::{
 	reputation::{ReputationAggregator, REPUTATION_CHANGE_INTERVAL},
 	request_claim_queue, request_session_index_for_child,
 };
+use pezkuwi_pez_node_primitives::{SignedFullStatement, Statement};
 use pezkuwi_primitives::{
 	CandidateDescriptorV2, CandidateDescriptorVersion, CandidateHash, CollatorId, CoreIndex, Hash,
 	HeadData, Id as ParaId, OccupiedCoreAssumption, PersistedValidationData, SessionIndex,

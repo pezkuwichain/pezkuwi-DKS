@@ -41,7 +41,7 @@ use pezsp_inherents::InherentIdentifier;
 use scale_info::TypeInfo;
 
 /// The identifier for the teyrchain inherent.
-pub const PARACHAIN_INHERENT_IDENTIFIER_V0: InherentIdentifier = *b"sysi1337";
+pub const TEYRCHAIN_INHERENT_IDENTIFIER_V0: InherentIdentifier = *b"sysi1337";
 pub const INHERENT_IDENTIFIER: InherentIdentifier = *b"sysi1338";
 
 /// Legacy TeyrchainInherentData that is kept around for backward compatibility.
@@ -151,7 +151,7 @@ impl pezsp_inherents::InherentDataProvider for TeyrchainInherentData {
 		&self,
 		inherent_data: &mut pezsp_inherents::InherentData,
 	) -> Result<(), pezsp_inherents::Error> {
-		inherent_data.put_data(PARACHAIN_INHERENT_IDENTIFIER_V0, &self.as_v0())?;
+		inherent_data.put_data(TEYRCHAIN_INHERENT_IDENTIFIER_V0, &self.as_v0())?;
 		inherent_data.put_data(INHERENT_IDENTIFIER, &self)
 	}
 

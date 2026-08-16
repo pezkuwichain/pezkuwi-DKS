@@ -15,14 +15,14 @@ use crate::{
 };
 use hex_literal::hex;
 use pezframe_support::{assert_err, assert_noop, assert_ok, pezpallet_prelude::Pays};
-use pezsp_core::H256;
-use pezsp_runtime::DispatchError;
 use pezsnowbridge_beacon_primitives::{
 	merkle_proof::{generalized_index_length, subtree_index},
 	types::deneb,
 	Fork, ForkVersions, NextSyncCommitteeUpdate, VersionedExecutionPayloadHeader,
 };
 use pezsnowbridge_verification_primitives::{VerificationError, Verifier};
+use pezsp_core::H256;
+use pezsp_runtime::DispatchError;
 
 /// Arbitrary hash used for tests and invalid hashes.
 const TEST_HASH: [u8; 32] =

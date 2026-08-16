@@ -2,13 +2,13 @@
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
 
 use crate::FAILING_NONCE;
-use pezsp_core::H256;
 use pezsnowbridge_core::reward::{AddTip, AddTipError};
 use pezsnowbridge_outbound_queue_primitives::{
 	v1::{Fee, Message as MessageV1, SendMessage as SendMessageV1},
 	v2::{Message, SendMessage},
 	SendMessageFeeProvider,
 };
+use pezsp_core::H256;
 
 pub struct MockOkOutboundQueue;
 impl SendMessage for MockOkOutboundQueue {
@@ -20,7 +20,9 @@ impl SendMessage for MockOkOutboundQueue {
 		Ok(())
 	}
 
-	fn deliver(_: Self::Ticket) -> Result<H256, pezsnowbridge_outbound_queue_primitives::SendError> {
+	fn deliver(
+		_: Self::Ticket,
+	) -> Result<H256, pezsnowbridge_outbound_queue_primitives::SendError> {
 		Ok(H256::zero())
 	}
 }
@@ -55,7 +57,9 @@ impl SendMessageV1 for MockOkOutboundQueueV1 {
 		Ok(((), Fee::from((0, 0))))
 	}
 
-	fn deliver(_: Self::Ticket) -> Result<H256, pezsnowbridge_outbound_queue_primitives::SendError> {
+	fn deliver(
+		_: Self::Ticket,
+	) -> Result<H256, pezsnowbridge_outbound_queue_primitives::SendError> {
 		Ok(H256::zero())
 	}
 }

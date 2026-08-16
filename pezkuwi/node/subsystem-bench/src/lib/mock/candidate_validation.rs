@@ -18,11 +18,11 @@
 //! is responding with candidate valid for every request.
 
 use futures::FutureExt;
-use pezkuwi_pez_node_primitives::ValidationResult;
 use pezkuwi_node_subsystem::{
 	messages::CandidateValidationMessage, overseer, SpawnedSubsystem, SubsystemError,
 };
 use pezkuwi_node_subsystem_types::OverseerSignal;
+use pezkuwi_pez_node_primitives::ValidationResult;
 use pezkuwi_primitives::{CandidateCommitments, Hash, HeadData, PersistedValidationData};
 
 const LOG_TARGET: &str = "subsystem-bench::candidate-validation-mock";

@@ -243,7 +243,7 @@ where
 /// Minimal teyrchain representation that may be used from no_std environment.
 pub trait Teyrchain: Chain {
 	/// Teyrchain identifier.
-	const PARACHAIN_ID: u32;
+	const TEYRCHAIN_ID: u32;
 	/// Maximal size of the teyrchain header.
 	///
 	/// This isn't a strict limit. The relayer may submit larger headers and the
@@ -257,16 +257,16 @@ where
 	T: Chain + UnderlyingChainProvider,
 	<T as UnderlyingChainProvider>::Chain: Teyrchain,
 {
-	const PARACHAIN_ID: u32 = <<T as UnderlyingChainProvider>::Chain as Teyrchain>::PARACHAIN_ID;
+	const TEYRCHAIN_ID: u32 = <<T as UnderlyingChainProvider>::Chain as Teyrchain>::TEYRCHAIN_ID;
 	const MAX_HEADER_SIZE: u32 =
 		<<T as UnderlyingChainProvider>::Chain as Teyrchain>::MAX_HEADER_SIZE;
 }
 
-/// Adapter for `Get<u32>` to access `PARACHAIN_ID` from `trait Teyrchain`
+/// Adapter for `Get<u32>` to access `TEYRCHAIN_ID` from `trait Teyrchain`
 pub struct TeyrchainIdOf<Para>(pezsp_std::marker::PhantomData<Para>);
 impl<Para: Teyrchain> pezframe_support::traits::Get<u32> for TeyrchainIdOf<Para> {
 	fn get() -> u32 {
-		Para::PARACHAIN_ID
+		Para::TEYRCHAIN_ID
 	}
 }
 

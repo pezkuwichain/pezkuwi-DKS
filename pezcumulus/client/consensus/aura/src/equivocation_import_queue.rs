@@ -336,7 +336,7 @@ mod test {
 		let genesis = client.info().best_hash;
 		let mut sproof = RelayStateSproofBuilder::default();
 		sproof.included_para_head = Some(HeadData(client.header(genesis).unwrap().encode()));
-		sproof.para_id = pezcumulus_test_client::runtime::PARACHAIN_ID.into();
+		sproof.para_id = pezcumulus_test_client::runtime::TEYRCHAIN_ID.into();
 
 		let validation_data = PersistedValidationData {
 			relay_parent_number: 1,

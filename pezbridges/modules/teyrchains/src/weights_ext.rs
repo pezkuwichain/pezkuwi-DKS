@@ -28,7 +28,7 @@ use pezframe_support::weights::{RuntimeDbWeight, Weight};
 /// Relayer would need to pay additional fee for extra bytes.
 ///
 /// 384 is a bit larger (1.3 times) than the size of the randomly chosen Pezkuwi block.
-pub const DEFAULT_PARACHAIN_HEAD_SIZE: u32 = 384;
+pub const DEFAULT_TEYRCHAIN_HEAD_SIZE: u32 = 384;
 
 /// Number of extra bytes (excluding size of storage value itself) of storage proof, built at
 /// some generic chain.
@@ -63,12 +63,12 @@ pub trait WeightInfoExt: WeightInfo {
 		teyrchains_count: u32,
 	) -> Weight {
 		// weight of the `submit_teyrchain_heads` with exactly `teyrchains_count` teyrchain
-		// heads of the default size (`DEFAULT_PARACHAIN_HEAD_SIZE`)
+		// heads of the default size (`DEFAULT_TEYRCHAIN_HEAD_SIZE`)
 		let base_weight = Self::submit_teyrchain_heads_with_n_teyrchains(teyrchains_count);
 
 		// overhead because of extra storage proof bytes
 		let expected_proof_size = teyrchains_count
-			.saturating_mul(DEFAULT_PARACHAIN_HEAD_SIZE)
+			.saturating_mul(DEFAULT_TEYRCHAIN_HEAD_SIZE)
 			.saturating_add(Self::expected_extra_storage_proof_size());
 		let actual_proof_size = proof.size();
 		let proof_size_overhead = Self::storage_proof_size_overhead(

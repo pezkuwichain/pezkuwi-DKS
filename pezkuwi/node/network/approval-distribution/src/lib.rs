@@ -33,18 +33,6 @@ use pezkuwi_node_network_protocol::{
 	peer_set::MAX_NOTIFICATION_SIZE,
 	v3 as protocol_v3, PeerId, UnifiedReputationChange as Rep, ValidationProtocols, View,
 };
-use pezkuwi_pez_node_primitives::{
-	approval::{
-		criteria::{AssignmentCriteria, InvalidAssignment},
-		time::{Clock, ClockExt, SystemClock, TICK_TOO_FAR_IN_FUTURE},
-		v1::{BlockApprovalMeta, DelayTranche, RelayVRFStory},
-		v2::{
-			AsBitIndex, AssignmentCertKindV2, CandidateBitfield, IndirectAssignmentCertV2,
-			IndirectSignedApprovalVoteV2,
-		},
-	},
-	DISPUTE_WINDOW,
-};
 use pezkuwi_node_subsystem::{
 	messages::{
 		ApprovalDistributionMessage, ApprovalVotingMessage, CheckedIndirectAssignment,
@@ -56,6 +44,18 @@ use pezkuwi_node_subsystem::{
 use pezkuwi_node_subsystem_util::{
 	reputation::{ReputationAggregator, REPUTATION_CHANGE_INTERVAL},
 	runtime::{Config as RuntimeInfoConfig, ExtendedSessionInfo, RuntimeInfo},
+};
+use pezkuwi_pez_node_primitives::{
+	approval::{
+		criteria::{AssignmentCriteria, InvalidAssignment},
+		time::{Clock, ClockExt, SystemClock, TICK_TOO_FAR_IN_FUTURE},
+		v1::{BlockApprovalMeta, DelayTranche, RelayVRFStory},
+		v2::{
+			AsBitIndex, AssignmentCertKindV2, CandidateBitfield, IndirectAssignmentCertV2,
+			IndirectSignedApprovalVoteV2,
+		},
+	},
+	DISPUTE_WINDOW,
 };
 use pezkuwi_primitives::{
 	BlockNumber, CandidateHash, CandidateIndex, CoreIndex, DisputeStatement, GroupIndex, Hash,

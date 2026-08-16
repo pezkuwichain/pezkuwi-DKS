@@ -47,8 +47,8 @@ use pezkuwi_node_network_protocol::{
 	request_response::{outgoing::RequestError, v1 as request_v1, OutgoingResult},
 	PeerId,
 };
-use pezkuwi_pez_node_primitives::PoV;
 use pezkuwi_node_subsystem_util::metrics::prometheus::prometheus::HistogramTimer;
+use pezkuwi_pez_node_primitives::PoV;
 use pezkuwi_primitives::{
 	CandidateDescriptorVersion, CandidateHash, CandidateReceiptV2 as CandidateReceipt, CollatorId,
 	Hash, HeadData, Id as ParaId, PersistedValidationData,

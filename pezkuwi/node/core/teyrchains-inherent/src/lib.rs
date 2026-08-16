@@ -141,7 +141,7 @@ impl<C: pezsp_blockchain::HeaderBackend<Block>> pezsp_inherents::InherentDataPro
 		.map_err(|e| pezsp_inherents::Error::Application(Box::new(e)))?;
 
 		dst_inherent_data
-			.put_data(pezkuwi_primitives::PARACHAINS_INHERENT_IDENTIFIER, &inherent_data)
+			.put_data(pezkuwi_primitives::TEYRCHAINS_INHERENT_IDENTIFIER, &inherent_data)
 	}
 
 	async fn try_handle_error(

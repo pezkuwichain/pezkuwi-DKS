@@ -34,12 +34,12 @@ use pezkuwi_node_network_protocol::{
 	request_response::{Requests, ResponseSender},
 	ObservedRole,
 };
-use pezkuwi_pez_node_primitives::{BlockData, PoV};
 use pezkuwi_node_subsystem::messages::{
 	AllMessages, ReportPeerMessage, RuntimeApiMessage, RuntimeApiRequest,
 };
 use pezkuwi_node_subsystem_test_helpers as test_helpers;
 use pezkuwi_node_subsystem_util::{reputation::add_reputation, TimeoutExt};
+use pezkuwi_pez_node_primitives::{BlockData, PoV};
 use pezkuwi_primitives::{
 	CandidateReceiptV2 as CandidateReceipt, CollatorPair, CoreIndex, GroupRotationInfo, HeadData,
 	PersistedValidationData, ValidatorId, ValidatorIndex,
@@ -211,7 +211,7 @@ fn test_harness<T: Future<Output = VirtualOverseer>>(
 	let keystore = Arc::new(pezsc_keystore::LocalKeystore::in_memory());
 	Keystore::sr25519_generate_new(
 		&*keystore,
-		pezkuwi_primitives::PARACHAIN_KEY_TYPE_ID,
+		pezkuwi_primitives::TEYRCHAIN_KEY_TYPE_ID,
 		Some(&Sr25519Keyring::Alice.to_seed()),
 	)
 	.expect("Insert key into keystore");

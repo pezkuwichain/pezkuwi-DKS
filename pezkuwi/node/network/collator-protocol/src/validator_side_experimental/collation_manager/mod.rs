@@ -38,7 +38,6 @@ use pezkuwi_node_network_protocol::{
 	request_response::{outgoing::RequestError, v2 as request_v2, Requests},
 	OurView, PeerId,
 };
-use pezkuwi_pez_node_primitives::PoV;
 use pezkuwi_node_subsystem::{
 	messages::{CanSecondRequest, CandidateBackingMessage},
 	ActivatedLeaf, CollatorProtocolSenderTrait,
@@ -48,6 +47,7 @@ use pezkuwi_node_subsystem_util::{
 	request_claim_queue, request_session_index_for_child, request_validator_groups,
 	request_validators, runtime::recv_runtime,
 };
+use pezkuwi_pez_node_primitives::PoV;
 use pezkuwi_primitives::{
 	CandidateDescriptorVersion, CandidateHash, CandidateReceiptV2 as CandidateReceipt, CoreIndex,
 	GroupIndex, GroupRotationInfo, Hash, HeadData, Id as ParaId, PersistedValidationData,

@@ -110,17 +110,17 @@ use pezframe_support::{
 	traits::{tokens::Balance, Contains, Defensive, EnqueueMessage, Get, ProcessMessageError},
 	weights::{Weight, WeightToFee},
 };
+use pezsnowbridge_core::{digest_item::SnowbridgeDigestItem, BasicOperatingMode, ChannelId};
+use pezsnowbridge_merkle_tree::merkle_root;
+use pezsnowbridge_outbound_queue_primitives::v1::{
+	Fee, GasMeter, QueuedMessage, VersionedQueuedMessage, ETHER_DECIMALS,
+};
 use pezsp_core::{H256, U256};
 use pezsp_runtime::{
 	traits::{CheckedDiv, Hash},
 	DigestItem, Saturating,
 };
 use pezsp_std::prelude::*;
-use pezsnowbridge_core::{digest_item::SnowbridgeDigestItem, BasicOperatingMode, ChannelId};
-use pezsnowbridge_merkle_tree::merkle_root;
-use pezsnowbridge_outbound_queue_primitives::v1::{
-	Fee, GasMeter, QueuedMessage, VersionedQueuedMessage, ETHER_DECIMALS,
-};
 pub use types::{CommittedMessage, ProcessMessageOriginOf};
 pub use weights::WeightInfo;
 
@@ -131,8 +131,8 @@ pub mod pezpallet {
 	use super::*;
 	use pezframe_support::pezpallet_prelude::*;
 	use pezframe_system::pezpallet_prelude::*;
-	use pezsp_arithmetic::FixedU128;
 	use pezsnowbridge_core::PricingParameters;
+	use pezsp_arithmetic::FixedU128;
 
 	#[pezpallet::pezpallet]
 	pub struct Pezpallet<T>(_);

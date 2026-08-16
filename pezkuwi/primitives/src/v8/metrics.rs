@@ -129,21 +129,21 @@ pub mod metric_definitions {
 
 	/// Counts parachain inherent data weights. Use `before` and `after` labels to differentiate
 	/// between the weight before and after filtering.
-	pub const PARACHAIN_INHERENT_DATA_WEIGHT: CounterVecDefinition = CounterVecDefinition {
+	pub const TEYRCHAIN_INHERENT_DATA_WEIGHT: CounterVecDefinition = CounterVecDefinition {
 		name: "pezkuwi_parachain_inherent_data_weight",
 		description: "Inherent data weight before and after filtering",
 		labels: &["when"],
 	};
 
 	/// Counts the number of bitfields processed in `process_inherent_data`.
-	pub const PARACHAIN_INHERENT_DATA_BITFIELDS_PROCESSED: CounterDefinition = CounterDefinition {
+	pub const TEYRCHAIN_INHERENT_DATA_BITFIELDS_PROCESSED: CounterDefinition = CounterDefinition {
 		name: "pezkuwi_parachain_inherent_data_bitfields_processed",
 		description: "Counts the number of bitfields processed in `process_inherent_data`.",
 	};
 
 	/// Counts the `total`, `sanitized` and `included` number of parachain block candidates
 	/// in `process_inherent_data`.
-	pub const PARACHAIN_INHERENT_DATA_CANDIDATES_PROCESSED: CounterVecDefinition =
+	pub const TEYRCHAIN_INHERENT_DATA_CANDIDATES_PROCESSED: CounterVecDefinition =
 		CounterVecDefinition {
 			name: "pezkuwi_parachain_inherent_data_candidates_processed",
 			description:
@@ -154,7 +154,7 @@ pub mod metric_definitions {
 	/// Counts the number of `imported`, `current` and `concluded_invalid` dispute statements sets
 	/// processed in `process_inherent_data`. The `current` label refers to the disputes statement
 	/// sets of the current session.
-	pub const PARACHAIN_INHERENT_DATA_DISPUTE_SETS_PROCESSED: CounterVecDefinition =
+	pub const TEYRCHAIN_INHERENT_DATA_DISPUTE_SETS_PROCESSED: CounterVecDefinition =
 		CounterVecDefinition {
 			name: "pezkuwi_parachain_inherent_data_dispute_sets_processed",
 			description:
@@ -164,7 +164,7 @@ pub mod metric_definitions {
 
 	/// Counts the number of `valid` and `invalid` bitfields signature checked in
 	/// `process_inherent_data`.
-	pub const PARACHAIN_CREATE_INHERENT_BITFIELDS_SIGNATURE_CHECKS: CounterVecDefinition =
+	pub const TEYRCHAIN_CREATE_INHERENT_BITFIELDS_SIGNATURE_CHECKS: CounterVecDefinition =
 		CounterVecDefinition {
 			name: "pezkuwi_parachain_create_inherent_bitfields_signature_checks",
 			description:
@@ -174,7 +174,7 @@ pub mod metric_definitions {
 
 	/// Measures how much time does it take to verify a single validator signature of a dispute
 	/// statement
-	pub const PARACHAIN_VERIFY_DISPUTE_SIGNATURE: HistogramDefinition =
+	pub const TEYRCHAIN_VERIFY_DISPUTE_SIGNATURE: HistogramDefinition =
 		HistogramDefinition {
 			name: "pezkuwi_parachain_verify_dispute_signature",
 			description: "How much time does it take to verify a single validator signature of a dispute statement, in seconds",

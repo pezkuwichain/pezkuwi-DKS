@@ -4,8 +4,8 @@ use crate::{
 	decompress_sync_committee_bits, Config, CurrentSyncCommittee,
 	Pezpallet as EthereumBeaconClient, Update, ValidatorsRoot, Vec,
 };
-use pezsp_core::H256;
 use pezsnowbridge_beacon_primitives::PublicKeyPrepared;
+use pezsp_core::H256;
 
 pub fn participant_pubkeys<T: Config>(
 	update: &Update,

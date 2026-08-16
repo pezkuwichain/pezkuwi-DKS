@@ -7,11 +7,11 @@ use crate::{v2::LOG_TARGET, CallIndex};
 use codec::{Decode, DecodeLimit, Encode};
 use core::marker::PhantomData;
 use pezframe_support::ensure;
+use pezsnowbridge_core::{ParaId, TokenId};
 use pezsp_core::{Get, H160};
 use pezsp_io::hashing::blake2_256;
 use pezsp_runtime::{traits::MaybeConvert, MultiAddress};
 use pezsp_std::prelude::*;
-use pezsnowbridge_core::{ParaId, TokenId};
 use xcm::{
 	prelude::{Junction::*, *},
 	MAX_XCM_DECODE_DEPTH,
@@ -433,11 +433,11 @@ mod tests {
 	use codec::Encode;
 	use hex_literal::hex;
 	use pezframe_support::{assert_err, assert_ok, parameter_types};
-	use pezsp_core::{H160, H256};
 	use pezsnowbridge_core::TokenId;
 	use pezsnowbridge_test_utils::mock_converter::{
 		add_location_override, reanchor_to_ethereum, LocationIdConvert,
 	};
+	use pezsp_core::{H160, H256};
 	const GATEWAY_ADDRESS: [u8; 20] = hex!["eda338e4dc46038493b885327842fd3e301cab39"];
 
 	parameter_types! {

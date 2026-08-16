@@ -344,7 +344,7 @@ mod tests {
 		let header = client.header(hash).ok().flatten().expect("No header for parent block");
 		let included = HeadData(header.encode());
 		let mut builder = RelayStateSproofBuilder::default();
-		builder.para_id = pezcumulus_test_client::runtime::PARACHAIN_ID.into();
+		builder.para_id = pezcumulus_test_client::runtime::TEYRCHAIN_ID.into();
 		builder.included_para_head = Some(included);
 
 		builder

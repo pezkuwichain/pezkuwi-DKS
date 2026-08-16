@@ -24,7 +24,6 @@ use pezkuwi_node_network_protocol::{
 	v3::{BackedCandidateAcknowledgement, BackedCandidateManifest},
 	view, ObservedRole,
 };
-use pezkuwi_pez_node_primitives::{Statement, StatementWithPVD};
 use pezkuwi_node_subsystem::messages::{
 	network_bridge_event::NewGossipTopology, AllMessages, ChainApiMessage, HypotheticalCandidate,
 	HypotheticalMembership, NetworkBridgeEvent, ProspectiveTeyrchainsMessage, ReportPeerMessage,
@@ -32,6 +31,7 @@ use pezkuwi_node_subsystem::messages::{
 };
 use pezkuwi_node_subsystem_test_helpers as test_helpers;
 use pezkuwi_node_subsystem_util::TimeoutExt;
+use pezkuwi_pez_node_primitives::{Statement, StatementWithPVD};
 use pezkuwi_primitives::{
 	AssignmentPair, Block, BlockNumber, CommittedCandidateReceiptV2 as CommittedCandidateReceipt,
 	GroupRotationInfo, HeadData, Header, IndexedVec, NodeFeatures, PersistedValidationData,

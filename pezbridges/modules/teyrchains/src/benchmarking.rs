@@ -17,7 +17,7 @@
 //! Teyrchains finality pezpallet benchmarking.
 
 use crate::{
-	weights_ext::DEFAULT_PARACHAIN_HEAD_SIZE, Call, RelayBlockHash, RelayBlockHasher,
+	weights_ext::DEFAULT_TEYRCHAIN_HEAD_SIZE, Call, RelayBlockHash, RelayBlockHasher,
 	RelayBlockNumber,
 };
 
@@ -67,7 +67,7 @@ benchmarks_instance_pallet! {
 		tracing::trace!(target: crate::LOG_TARGET, "=== {:?}", teyrchains.len());
 		let (relay_block_number, relay_block_hash, teyrchain_heads_proof, teyrchains_heads) = T::prepare_teyrchain_heads_proof(
 			&teyrchains,
-			DEFAULT_PARACHAIN_HEAD_SIZE,
+			DEFAULT_TEYRCHAIN_HEAD_SIZE,
 			UnverifiedStorageProofParams::default(),
 		);
 		let at_relay_block = (relay_block_number, relay_block_hash);
@@ -84,7 +84,7 @@ benchmarks_instance_pallet! {
 		let teyrchains = vec![T::teyrchains()[0]];
 		let (relay_block_number, relay_block_hash, teyrchain_heads_proof, teyrchains_heads) = T::prepare_teyrchain_heads_proof(
 			&teyrchains,
-			DEFAULT_PARACHAIN_HEAD_SIZE,
+			DEFAULT_TEYRCHAIN_HEAD_SIZE,
 			UnverifiedStorageProofParams::from_db_size(1024),
 		);
 		let at_relay_block = (relay_block_number, relay_block_hash);
@@ -101,7 +101,7 @@ benchmarks_instance_pallet! {
 		let teyrchains = vec![T::teyrchains()[0]];
 		let (relay_block_number, relay_block_hash, teyrchain_heads_proof, teyrchains_heads) = T::prepare_teyrchain_heads_proof(
 			&teyrchains,
-			DEFAULT_PARACHAIN_HEAD_SIZE,
+			DEFAULT_TEYRCHAIN_HEAD_SIZE,
 			UnverifiedStorageProofParams::from_db_size(16 * 1024),
 		);
 		let at_relay_block = (relay_block_number, relay_block_hash);

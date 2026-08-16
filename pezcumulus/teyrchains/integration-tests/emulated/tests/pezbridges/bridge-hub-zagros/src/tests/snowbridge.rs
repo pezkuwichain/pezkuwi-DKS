@@ -25,7 +25,7 @@ use crate::{
 		bridged_roc_at_ah_zagros, bridged_wnd_at_ah_pezkuwichain,
 		create_foreign_on_ah_pezkuwichain, create_foreign_on_ah_zagros,
 		pez_penpal_emulated_chain::pez_penpal_runtime,
-		pezsnowbridge_common::{bridge_hub, ethereum, register_roc_on_bh, pezsnowbridge_sovereign},
+		pezsnowbridge_common::{bridge_hub, ethereum, pezsnowbridge_sovereign, register_roc_on_bh},
 	},
 };
 use asset_hub_zagros_runtime::xcm_config::{

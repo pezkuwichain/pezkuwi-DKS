@@ -151,7 +151,7 @@ impl<C: Teyrchain> ParaStoredHeaderDataBuilder for SingleParaStoredHeaderDataBui
 	}
 
 	fn try_build(para_id: ParaId, para_head: &ParaHead) -> Option<ParaStoredHeaderData> {
-		if para_id == ParaId(C::PARACHAIN_ID) {
+		if para_id == ParaId(C::TEYRCHAIN_ID) {
 			let header = HeaderOf::<C>::decode(&mut &para_head.0[..]).ok()?;
 			return Some(ParaStoredHeaderData(
 				StoredHeaderData { number: *header.number(), state_root: *header.state_root() }

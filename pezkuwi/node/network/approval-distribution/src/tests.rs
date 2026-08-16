@@ -23,6 +23,10 @@ use pezkuwi_node_network_protocol::{
 	peer_set::ValidationVersion,
 	view, ObservedRole,
 };
+use pezkuwi_node_subsystem::messages::{
+	network_bridge_event, AllMessages, ReportPeerMessage, RuntimeApiRequest,
+};
+use pezkuwi_node_subsystem_util::{reputation::add_reputation, TimeoutExt as _};
 use pezkuwi_pez_node_primitives::approval::{
 	criteria,
 	v1::{VrfPreOutput, VrfProof, VrfSignature},
@@ -31,10 +35,6 @@ use pezkuwi_pez_node_primitives::approval::{
 		RELAY_VRF_MODULO_CONTEXT,
 	},
 };
-use pezkuwi_node_subsystem::messages::{
-	network_bridge_event, AllMessages, ReportPeerMessage, RuntimeApiRequest,
-};
-use pezkuwi_node_subsystem_util::{reputation::add_reputation, TimeoutExt as _};
 use pezkuwi_primitives::{
 	ApprovalVoteMultipleCandidates, ApprovalVotingParams, AuthorityDiscoveryId, BlakeTwo256,
 	CoreIndex, HashT, NodeFeatures, SessionInfo, ValidatorId, MAX_COALESCE_APPROVALS,
@@ -462,8 +462,10 @@ fn signature_for(
 }
 
 struct MockAssignmentCriteria {
-	tranche:
-		Result<pezkuwi_pez_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment>,
+	tranche: Result<
+		pezkuwi_pez_node_primitives::approval::v1::DelayTranche,
+		criteria::InvalidAssignment,
+	>,
 }
 
 impl AssignmentCriteria for MockAssignmentCriteria {
@@ -490,7 +492,8 @@ impl AssignmentCriteria for MockAssignmentCriteria {
 		_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
 		_assignment: &pezkuwi_pez_node_primitives::approval::v2::AssignmentCertV2,
 		_backing_groups: Vec<pezkuwi_primitives::GroupIndex>,
-	) -> Result<pezkuwi_pez_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment> {
+	) -> Result<pezkuwi_pez_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment>
+	{
 		self.tranche
 	}
 }

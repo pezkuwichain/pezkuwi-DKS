@@ -7,11 +7,11 @@ use pezframe_support::{
 	traits::{fungible::Mutate, OnFinalize, OnInitialize},
 };
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
+use pezsnowbridge_core::{ChannelId, ParaId};
+use pezsnowbridge_pezpallet_ethereum_client_fixtures::*;
 use pezsp_core::{Get, H160, U256};
 use pezsp_keyring::Sr25519Keyring::*;
 use pezsp_runtime::{traits::Header, AccountId32, DigestItem, SaturatedConversion, Saturating};
-use pezsnowbridge_core::{ChannelId, ParaId};
-use pezsnowbridge_pezpallet_ethereum_client_fixtures::*;
 use teyrchains_runtimes_test_utils::{
 	AccountIdOf, BalanceOf, CollatorSessionKeys, ExtBuilder, ValidatorIdOf, XcmReceivedFrom,
 };
@@ -192,7 +192,8 @@ pub fn send_transfer_token_message_success<Runtime, XcmConfig>(
 			let origin: ParaId = assethub_teyrchain_id.into();
 			let channel_id: ChannelId = origin.into();
 
-			let nonce = pezsnowbridge_pezpallet_outbound_queue::Nonce::<Runtime>::try_get(channel_id);
+			let nonce =
+				pezsnowbridge_pezpallet_outbound_queue::Nonce::<Runtime>::try_get(channel_id);
 			assert_ok!(nonce);
 			assert_eq!(nonce.unwrap(), 1);
 

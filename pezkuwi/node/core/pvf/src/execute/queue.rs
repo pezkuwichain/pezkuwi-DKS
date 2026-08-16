@@ -901,8 +901,8 @@ impl Unscheduled {
 #[cfg(test)]
 mod tests {
 	use pezkuwi_node_core_pvf_common::execute::ValidationContext;
-	use pezkuwi_pez_node_primitives::{BlockData, PoV};
 	use pezkuwi_node_subsystem_test_helpers::mock::new_leaf;
+	use pezkuwi_pez_node_primitives::{BlockData, PoV};
 	use pezkuwi_primitives::{
 		CandidateReceiptV2 as CandidateReceipt, ExecutorParams, PersistedValidationData,
 	};

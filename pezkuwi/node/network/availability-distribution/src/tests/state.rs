@@ -37,7 +37,6 @@ use pezsp_keystore::KeystorePtr;
 use pezkuwi_node_network_protocol::request_response::{
 	v1, v2, IncomingRequest, OutgoingRequest, Protocol, ReqProtocolNames, Requests,
 };
-use pezkuwi_pez_node_primitives::ErasureChunk;
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, AvailabilityDistributionMessage, AvailabilityStoreMessage, ChainApiMessage,
@@ -46,6 +45,7 @@ use pezkuwi_node_subsystem::{
 	ActiveLeavesUpdate, FromOrchestra, OverseerSignal,
 };
 use pezkuwi_node_subsystem_test_helpers as test_helpers;
+use pezkuwi_pez_node_primitives::ErasureChunk;
 use pezkuwi_primitives::{
 	ApprovalVotingParams, CandidateHash, ChunkIndex, CoreIndex, CoreState, GroupIndex, Hash,
 	Id as ParaId, NodeFeatures, ScheduledCore, SessionInfo, ValidatorIndex,

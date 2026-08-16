@@ -84,7 +84,7 @@ pub fn extrinsic_set_validation_data(
 ) -> OpaqueExtrinsic {
 	let parent_head = HeadData(parent_header.encode());
 	let sproof_builder = RelayStateSproofBuilder {
-		para_id: pezcumulus_test_runtime::PARACHAIN_ID.into(),
+		para_id: pezcumulus_test_runtime::TEYRCHAIN_ID.into(),
 		included_para_head: parent_head.clone().into(),
 		..Default::default()
 	};

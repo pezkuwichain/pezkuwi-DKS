@@ -10,13 +10,13 @@ use pezframe_support::{
 	CloneNoBound, DebugNoBound, PartialEqNoBound,
 };
 use pezframe_system::unique;
-use pezsp_core::H256;
-use pezsp_runtime::BoundedVec;
 use pezsnowbridge_core::{ChannelId, PRIMARY_GOVERNANCE_CHANNEL};
 use pezsnowbridge_outbound_queue_primitives::{
 	v1::{Fee, Message, QueuedMessage, SendMessage, VersionedQueuedMessage},
 	SendError, SendMessageFeeProvider,
 };
+use pezsp_core::H256;
+use pezsp_runtime::BoundedVec;
 
 /// The maximal length of an enqueued message, as determined by the MessageQueue pezpallet
 pub type MaxEnqueuedMessageSizeOf<T> =

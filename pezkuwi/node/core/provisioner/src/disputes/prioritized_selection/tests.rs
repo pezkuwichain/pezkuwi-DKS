@@ -20,11 +20,11 @@ use super::super::{
 };
 use bitvec::prelude::*;
 use futures::channel::mpsc;
-use pezkuwi_pez_node_primitives::{CandidateVotes, DisputeStatus, ACTIVE_DURATION_SECS};
 use pezkuwi_node_subsystem::messages::{
 	AllMessages, DisputeCoordinatorMessage, RuntimeApiMessage, RuntimeApiRequest,
 };
 use pezkuwi_node_subsystem_test_helpers::{mock::new_leaf, TestSubsystemSender};
+use pezkuwi_pez_node_primitives::{CandidateVotes, DisputeStatus, ACTIVE_DURATION_SECS};
 use pezkuwi_primitives::{
 	CandidateHash, CandidateReceiptV2 as CandidateReceipt, DisputeState,
 	InvalidDisputeStatementKind, SessionIndex, ValidDisputeStatementKind, ValidatorSignature,

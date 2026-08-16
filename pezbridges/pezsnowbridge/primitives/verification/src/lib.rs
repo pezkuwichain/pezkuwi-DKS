@@ -4,10 +4,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezframe_support::PalletError;
+use pezsnowbridge_beacon_primitives::{BeaconHeader, ExecutionProof};
 use pezsp_core::{H160, H256};
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
-use pezsnowbridge_beacon_primitives::{BeaconHeader, ExecutionProof};
 
 pub mod receipt;
 

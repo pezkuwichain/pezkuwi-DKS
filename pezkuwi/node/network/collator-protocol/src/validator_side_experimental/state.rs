@@ -31,12 +31,12 @@ use crate::{
 use fatality::Split;
 use futures::stream::FusedStream;
 use pezkuwi_node_network_protocol::{peer_set::CollationVersion, OurView, PeerId};
-use pezkuwi_pez_node_primitives::{SignedFullStatement, Statement};
 use pezkuwi_node_subsystem::{
 	messages::{CandidateBackingMessage, IfDisconnected, NetworkBridgeTxMessage},
 	CollatorProtocolSenderTrait,
 };
 use pezkuwi_node_subsystem_util::{request_session_index_for_child, runtime::recv_runtime};
+use pezkuwi_pez_node_primitives::{SignedFullStatement, Statement};
 use pezkuwi_primitives::{
 	BlockNumber, CandidateDescriptorVersion, CandidateReceiptV2 as CandidateReceipt, Hash,
 	Id as ParaId,

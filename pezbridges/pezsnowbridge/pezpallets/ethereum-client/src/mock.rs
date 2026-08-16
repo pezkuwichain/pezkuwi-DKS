@@ -4,9 +4,9 @@ use crate as ethereum_beacon_client;
 use crate::config;
 use pezframe_support::{derive_impl, dispatch::DispatchResult, parameter_types};
 use pezpallet_timestamp;
-use pezsp_std::default::Default;
 use pezsnowbridge_beacon_primitives::{Fork, ForkVersions};
 use pezsnowbridge_verification_primitives::{Log, Proof};
+use pezsp_std::default::Default;
 use std::{fs::File, path::PathBuf};
 
 type Block = pezframe_system::mocking::MockBlock<Test>;

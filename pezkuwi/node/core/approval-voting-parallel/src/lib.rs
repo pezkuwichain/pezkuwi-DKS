@@ -28,10 +28,6 @@ use pezkuwi_node_metrics::metered::{
 	UnboundedMeteredSender,
 };
 
-use pezkuwi_pez_node_primitives::{
-	approval::time::{Clock, SystemClock},
-	DISPUTE_WINDOW,
-};
 use pezkuwi_node_subsystem::{
 	messages::{ApprovalDistributionMessage, ApprovalVotingMessage, ApprovalVotingParallelMessage},
 	overseer, FromOrchestra, SpawnedSubsystem, SubsystemError, SubsystemResult,
@@ -42,6 +38,10 @@ use pezkuwi_node_subsystem_util::{
 	runtime::{Config as RuntimeInfoConfig, RuntimeInfo},
 };
 use pezkuwi_overseer::{OverseerSignal, Priority, SubsystemSender, TimeoutExt};
+use pezkuwi_pez_node_primitives::{
+	approval::time::{Clock, SystemClock},
+	DISPUTE_WINDOW,
+};
 use pezkuwi_primitives::{CandidateIndex, Hash, ValidatorIndex, ValidatorSignature};
 use rand::SeedableRng;
 

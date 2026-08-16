@@ -18,8 +18,8 @@ use futures::FutureExt;
 use std::future::Future;
 
 use pezkuwi_node_network_protocol::request_response::ReqProtocolNames;
-use pezkuwi_pez_node_primitives::{BlockData, ErasureChunk, PoV};
 use pezkuwi_node_subsystem_util::runtime::RuntimeInfo;
+use pezkuwi_pez_node_primitives::{BlockData, ErasureChunk, PoV};
 use pezkuwi_primitives::{
 	ApprovalVotingParams, BlockNumber, ChunkIndex, CoreState, GroupIndex, Hash, Id as ParaId,
 	ScheduledCore, SessionIndex, SessionInfo,

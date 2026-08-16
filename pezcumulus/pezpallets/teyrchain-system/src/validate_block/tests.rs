@@ -142,7 +142,7 @@ fn build_block_with_witness(
 	mut sproof_builder: RelayStateSproofBuilder,
 	pre_digests: Vec<DigestItem>,
 ) -> TestBlockData {
-	sproof_builder.para_id = test_runtime::PARACHAIN_ID.into();
+	sproof_builder.para_id = test_runtime::TEYRCHAIN_ID.into();
 	sproof_builder.included_para_head = Some(HeadData(parent_head.encode()));
 
 	let validation_data = PersistedValidationData {
@@ -180,7 +180,7 @@ fn build_multiple_blocks_with_witness(
 	pre_digests: impl Fn(u32) -> Vec<DigestItem>,
 ) -> TestBlockData {
 	let parent_head_root = *parent_head.state_root();
-	sproof_builder.para_id = test_runtime::PARACHAIN_ID.into();
+	sproof_builder.para_id = test_runtime::TEYRCHAIN_ID.into();
 	sproof_builder.included_para_head = Some(HeadData(parent_head.encode()));
 
 	let timestamp = if sproof_builder.current_slot == 0u64 {

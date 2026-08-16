@@ -39,8 +39,6 @@ use pezframe_support::{
 	transactional,
 };
 use pezframe_system::ensure_signed;
-use pezsp_core::H256;
-use pezsp_std::prelude::*;
 use pezsnowbridge_beacon_primitives::{
 	fast_aggregate_verify,
 	merkle_proof::{generalized_index_length, subtree_index},
@@ -48,6 +46,8 @@ use pezsnowbridge_beacon_primitives::{
 	ForkVersions, PublicKeyPrepared, SigningData,
 };
 use pezsnowbridge_core::{BasicOperatingMode, RingBufferMap};
+use pezsp_core::H256;
+use pezsp_std::prelude::*;
 pub use weights::WeightInfo;
 
 use functions::{

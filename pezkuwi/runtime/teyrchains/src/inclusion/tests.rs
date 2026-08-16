@@ -38,7 +38,7 @@ use pezframe_support::assert_noop;
 use pezkuwi_primitives::{
 	BlockNumber, CandidateCommitments, CollatorId, CollatorSignature,
 	CompactStatement as Statement, Hash, MutateDescriptorV2, SignedAvailabilityBitfield,
-	SignedStatement, ValidationCode, ValidatorId, ValidityAttestation, PARACHAIN_KEY_TYPE_ID,
+	SignedStatement, ValidationCode, ValidatorId, ValidityAttestation, TEYRCHAIN_KEY_TYPE_ID,
 };
 use pezkuwi_primitives_test_helpers::{dummy_validation_code, CandidateDescriptor};
 use pezsc_keystore::LocalKeystore;
@@ -740,7 +740,7 @@ fn bitfield_checks() {
 	for validator in validators.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();
@@ -928,7 +928,7 @@ fn supermajority_bitfields_trigger_availability() {
 	for validator in validators.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();
@@ -1258,7 +1258,7 @@ fn candidate_checks() {
 	for validator in validators.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();
@@ -1823,7 +1823,7 @@ fn backing_works() {
 	for validator in validators.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();
@@ -2106,7 +2106,7 @@ fn backing_works_with_elastic_scaling_mvp() {
 	for validator in validators.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();
@@ -2367,7 +2367,7 @@ fn can_include_candidate_with_ok_code_upgrade() {
 	for validator in validators.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();
@@ -2483,7 +2483,7 @@ fn check_allowed_scheduling_parents() {
 	for validator in validators.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();
@@ -2681,7 +2681,7 @@ fn session_change_wipes() {
 	for validator in validators.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();
@@ -2787,7 +2787,7 @@ fn para_upgrade_delay_scheduled_from_inclusion() {
 	for validator in validators.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();
@@ -3054,7 +3054,7 @@ fn cross_session_process_candidates_v3() {
 	for validator in validators.iter() {
 		Keystore::sr25519_generate_new(
 			&*keystore,
-			PARACHAIN_KEY_TYPE_ID,
+			TEYRCHAIN_KEY_TYPE_ID,
 			Some(&validator.to_seed()),
 		)
 		.unwrap();

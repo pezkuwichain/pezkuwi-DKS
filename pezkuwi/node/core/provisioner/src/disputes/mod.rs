@@ -19,8 +19,8 @@
 
 use crate::LOG_TARGET;
 use futures::channel::oneshot;
-use pezkuwi_pez_node_primitives::CandidateVotes;
 use pezkuwi_node_subsystem::{messages::DisputeCoordinatorMessage, overseer};
+use pezkuwi_pez_node_primitives::CandidateVotes;
 use pezkuwi_primitives::{CandidateHash, SessionIndex};
 
 /// Request the relevant dispute statements for a set of disputes identified by `CandidateHash` and

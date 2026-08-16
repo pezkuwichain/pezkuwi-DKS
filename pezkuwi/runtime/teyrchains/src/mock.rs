@@ -43,7 +43,7 @@ use pezframe_system::{limits, EnsureRoot};
 use pezkuwi_primitives::{
 	slashing::DisputesTimeSlot, AuthorityDiscoveryId, Balance, BlockNumber, CandidateHash,
 	DisputeOffenceKind, Moment, SessionIndex, UpwardMessage, ValidationCode, ValidatorId,
-	ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
+	ValidatorIndex, TEYRCHAIN_KEY_TYPE_ID,
 };
 use pezsp_core::{crypto::KeyTypeId, ConstU32, H256};
 use pezsp_io::TestExternalities;
@@ -447,7 +447,7 @@ pub fn register_mock_key_owner_proof(
 	account_id: AccountId,
 ) {
 	MOCK_KEY_OWNERSHIP_PROOFS.with(|m| {
-		m.borrow_mut().insert((PARACHAIN_KEY_TYPE_ID, validator_id, proof), account_id);
+		m.borrow_mut().insert((TEYRCHAIN_KEY_TYPE_ID, validator_id, proof), account_id);
 	});
 }
 

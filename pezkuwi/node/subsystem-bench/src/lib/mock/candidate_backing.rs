@@ -18,11 +18,11 @@
 
 use crate::{configuration::TestConfiguration, NODE_UNDER_TEST};
 use futures::FutureExt;
-use pezkuwi_pez_node_primitives::{SignedFullStatementWithPVD, Statement, StatementWithPVD};
 use pezkuwi_node_subsystem::{
 	messages::CandidateBackingMessage, overseer, SpawnedSubsystem, SubsystemError,
 };
 use pezkuwi_node_subsystem_types::OverseerSignal;
+use pezkuwi_pez_node_primitives::{SignedFullStatementWithPVD, Statement, StatementWithPVD};
 use pezkuwi_primitives::{
 	CandidateHash, Hash, PersistedValidationData, SigningContext, ValidatorIndex, ValidatorPair,
 };

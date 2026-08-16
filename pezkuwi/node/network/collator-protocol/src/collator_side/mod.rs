@@ -38,7 +38,6 @@ use pezkuwi_node_network_protocol::{
 	v1 as protocol_v1, v2 as protocol_v2, v3_collation as protocol_v3, CollationProtocols, OurView,
 	PeerId, UnifiedReputationChange as Rep, View,
 };
-use pezkuwi_pez_node_primitives::{CollationSecondedSignal, PoV, Statement};
 use pezkuwi_node_subsystem::{
 	messages::{
 		ChainApiMessage, CollatorProtocolMessage, NetworkBridgeEvent, NetworkBridgeTxMessage,
@@ -54,6 +53,7 @@ use pezkuwi_node_subsystem_util::{
 	},
 	TimeoutExt,
 };
+use pezkuwi_pez_node_primitives::{CollationSecondedSignal, PoV, Statement};
 use pezkuwi_primitives::{
 	AuthorityDiscoveryId, BlockNumber, CandidateEvent, CandidateHash,
 	CandidateReceiptV2 as CandidateReceipt, CollatorPair, CoreIndex, Hash, HeadData, Id as ParaId,

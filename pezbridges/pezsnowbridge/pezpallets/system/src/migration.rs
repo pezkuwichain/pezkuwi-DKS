@@ -116,7 +116,9 @@ pub mod v1 {
 
 		/// Calculate the fee required to pay for gas on Ethereum.
 		fn calculate_remote_fee_v2(params: &PricingParametersOf<T>) -> U256 {
-			use pezsnowbridge_outbound_queue_primitives::v2::{Command, ConstantGasMeter, GasMeter};
+			use pezsnowbridge_outbound_queue_primitives::v2::{
+				Command, ConstantGasMeter, GasMeter,
+			};
 			let command = Command::UnlockNativeToken {
 				token: H160::zero(),
 				recipient: H160::zero(),

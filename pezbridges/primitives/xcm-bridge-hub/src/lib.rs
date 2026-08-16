@@ -367,9 +367,9 @@ mod tests {
 	const LOCAL_NETWORK: NetworkId = Kusama;
 	const REMOTE_NETWORK: NetworkId = Polkadot;
 	const UNREACHABLE_NETWORK: NetworkId = NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH);
-	const SIBLING_PARACHAIN: u32 = 1000;
+	const SIBLING_TEYRCHAIN: u32 = 1000;
 	const LOCAL_BRIDGE_HUB: u32 = 1001;
-	const REMOTE_PARACHAIN: u32 = 2000;
+	const REMOTE_TEYRCHAIN: u32 = 2000;
 
 	struct SuccessfulTest {
 		here_universal_location: InteriorLocation,
@@ -425,11 +425,11 @@ mod tests {
 	fn at_relay_from_sibling_teyrchain_to_remote_relay_works() {
 		run_successful_test(SuccessfulTest {
 			here_universal_location: [GlobalConsensus(LOCAL_NETWORK)].into(),
-			bridge_origin_relative_location: [Teyrchain(SIBLING_PARACHAIN)].into(),
+			bridge_origin_relative_location: [Teyrchain(SIBLING_TEYRCHAIN)].into(),
 
 			bridge_origin_universal_location: [
 				GlobalConsensus(LOCAL_NETWORK),
-				Teyrchain(SIBLING_PARACHAIN),
+				Teyrchain(SIBLING_TEYRCHAIN),
 			]
 			.into(),
 			bridge_destination_universal_location: [GlobalConsensus(REMOTE_NETWORK)].into(),
@@ -447,7 +447,7 @@ mod tests {
 			bridge_origin_universal_location: [GlobalConsensus(LOCAL_NETWORK)].into(),
 			bridge_destination_universal_location: [
 				GlobalConsensus(REMOTE_NETWORK),
-				Teyrchain(REMOTE_PARACHAIN),
+				Teyrchain(REMOTE_TEYRCHAIN),
 			]
 			.into(),
 
@@ -459,16 +459,16 @@ mod tests {
 	fn at_relay_from_sibling_teyrchain_to_remote_teyrchain_works() {
 		run_successful_test(SuccessfulTest {
 			here_universal_location: [GlobalConsensus(LOCAL_NETWORK)].into(),
-			bridge_origin_relative_location: [Teyrchain(SIBLING_PARACHAIN)].into(),
+			bridge_origin_relative_location: [Teyrchain(SIBLING_TEYRCHAIN)].into(),
 
 			bridge_origin_universal_location: [
 				GlobalConsensus(LOCAL_NETWORK),
-				Teyrchain(SIBLING_PARACHAIN),
+				Teyrchain(SIBLING_TEYRCHAIN),
 			]
 			.into(),
 			bridge_destination_universal_location: [
 				GlobalConsensus(REMOTE_NETWORK),
-				Teyrchain(REMOTE_PARACHAIN),
+				Teyrchain(REMOTE_TEYRCHAIN),
 			]
 			.into(),
 
@@ -495,12 +495,12 @@ mod tests {
 		run_successful_test(SuccessfulTest {
 			here_universal_location: [GlobalConsensus(LOCAL_NETWORK), Teyrchain(LOCAL_BRIDGE_HUB)]
 				.into(),
-			bridge_origin_relative_location: ParentThen([Teyrchain(SIBLING_PARACHAIN)].into())
+			bridge_origin_relative_location: ParentThen([Teyrchain(SIBLING_TEYRCHAIN)].into())
 				.into(),
 
 			bridge_origin_universal_location: [
 				GlobalConsensus(LOCAL_NETWORK),
-				Teyrchain(SIBLING_PARACHAIN),
+				Teyrchain(SIBLING_TEYRCHAIN),
 			]
 			.into(),
 			bridge_destination_universal_location: [GlobalConsensus(REMOTE_NETWORK)].into(),
@@ -519,7 +519,7 @@ mod tests {
 			bridge_origin_universal_location: [GlobalConsensus(LOCAL_NETWORK)].into(),
 			bridge_destination_universal_location: [
 				GlobalConsensus(REMOTE_NETWORK),
-				Teyrchain(REMOTE_PARACHAIN),
+				Teyrchain(REMOTE_TEYRCHAIN),
 			]
 			.into(),
 
@@ -532,17 +532,17 @@ mod tests {
 		run_successful_test(SuccessfulTest {
 			here_universal_location: [GlobalConsensus(LOCAL_NETWORK), Teyrchain(LOCAL_BRIDGE_HUB)]
 				.into(),
-			bridge_origin_relative_location: ParentThen([Teyrchain(SIBLING_PARACHAIN)].into())
+			bridge_origin_relative_location: ParentThen([Teyrchain(SIBLING_TEYRCHAIN)].into())
 				.into(),
 
 			bridge_origin_universal_location: [
 				GlobalConsensus(LOCAL_NETWORK),
-				Teyrchain(SIBLING_PARACHAIN),
+				Teyrchain(SIBLING_TEYRCHAIN),
 			]
 			.into(),
 			bridge_destination_universal_location: [
 				GlobalConsensus(REMOTE_NETWORK),
-				Teyrchain(REMOTE_PARACHAIN),
+				Teyrchain(REMOTE_TEYRCHAIN),
 			]
 			.into(),
 
@@ -607,17 +607,17 @@ mod tests {
 		let from_local_to_remote = run_successful_test(SuccessfulTest {
 			here_universal_location: [GlobalConsensus(LOCAL_NETWORK), Teyrchain(LOCAL_BRIDGE_HUB)]
 				.into(),
-			bridge_origin_relative_location: ParentThen([Teyrchain(SIBLING_PARACHAIN)].into())
+			bridge_origin_relative_location: ParentThen([Teyrchain(SIBLING_TEYRCHAIN)].into())
 				.into(),
 
 			bridge_origin_universal_location: [
 				GlobalConsensus(LOCAL_NETWORK),
-				Teyrchain(SIBLING_PARACHAIN),
+				Teyrchain(SIBLING_TEYRCHAIN),
 			]
 			.into(),
 			bridge_destination_universal_location: [
 				GlobalConsensus(REMOTE_NETWORK),
-				Teyrchain(REMOTE_PARACHAIN),
+				Teyrchain(REMOTE_TEYRCHAIN),
 			]
 			.into(),
 
@@ -627,17 +627,17 @@ mod tests {
 		let from_remote_to_local = run_successful_test(SuccessfulTest {
 			here_universal_location: [GlobalConsensus(REMOTE_NETWORK), Teyrchain(LOCAL_BRIDGE_HUB)]
 				.into(),
-			bridge_origin_relative_location: ParentThen([Teyrchain(REMOTE_PARACHAIN)].into())
+			bridge_origin_relative_location: ParentThen([Teyrchain(REMOTE_TEYRCHAIN)].into())
 				.into(),
 
 			bridge_origin_universal_location: [
 				GlobalConsensus(REMOTE_NETWORK),
-				Teyrchain(REMOTE_PARACHAIN),
+				Teyrchain(REMOTE_TEYRCHAIN),
 			]
 			.into(),
 			bridge_destination_universal_location: [
 				GlobalConsensus(LOCAL_NETWORK),
-				Teyrchain(SIBLING_PARACHAIN),
+				Teyrchain(SIBLING_TEYRCHAIN),
 			]
 			.into(),
 
