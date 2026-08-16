@@ -259,6 +259,7 @@ pub type WeightToFee = pezpallet_revive::evm::fees::BlockRatioFee<
 	// q
 	{ 100 * ExtrinsicBaseWeight::get().ref_time() as u128 },
 	Runtime,
+	Balance,
 >;
 
 impl pezpallet_transaction_payment::Config for Runtime {
@@ -1214,7 +1215,29 @@ parameter_types! {
 	pub const DataDepositPerByte: Balance = 1 * CENTS;
 }
 
+parameter_types! {
+	/// Assets a bounty account can hold. Native first, as the mover requires.
+	pub BountyRelevantAssets: alloc::vec::Vec<xcm::v5::Location> =
+		alloc::vec![xcm_config::TokenLocation::get()];
+}
+
+// ERC20 precompiles now offer EIP-2612 permits, which need their own pallet for the nonce
+// and domain separator. Without it the precompile set does not satisfy its bounds.
+impl pezpallet_assets_precompiles::PermitConfig for Runtime {
+	type ChainId = <Runtime as pezpallet_revive::Config>::ChainId;
+	type WeightInfo = pezpallet_assets_precompiles::weights::BizinikiwiWeight<Runtime>;
+}
+
 impl pezpallet_bounties::Config for Runtime {
+	// On cancellation the bounty account is emptied into the treasury. Binding this to the
+	// unit type would compile and silently strand whatever the account holds, so it is
+	// wired to the real mover. Bounties here are funded in the native token (Treasury's
+	// Currency is Balances), which is what the relevant-asset list names.
+	type TransferAllAssets = pezpallet_bounties::TransferAllFungibles<
+		AccountId,
+		NativeAndAllAssets,
+		BountyRelevantAssets,
+	>;
 	type RuntimeEvent = RuntimeEvent;
 	type BountyDepositBase = BountiesDepositBase;
 	type BountyDepositPayoutDelay = BountyDepositPayoutDelay;
@@ -1490,6 +1513,7 @@ construct_runtime!(
 		Nis: pezpallet_nis = 61,
 		AssetRate: pezpallet_asset_rate = 62,
 		Bounties: pezpallet_bounties = 63,
+		AssetsPrecompilesPermit: pezpallet_assets_precompiles::permit::pezpallet = 67,
 		ChildBounties: pezpallet_child_bounties = 64,
 		Treasury: pezpallet_treasury = 65,
 		Revive: pezpallet_revive = 66,
