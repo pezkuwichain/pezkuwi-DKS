@@ -13,6 +13,8 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
+pezkuwi-node-core-pvf-common = { workspace = true, default-features = true }
+schnellru = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }

@@ -519,6 +519,7 @@ members = [
 	"pezkuwi/node/core/bitfield-signing",
 	"pezkuwi/node/core/candidate-validation",
 	"pezkuwi/node/core/chain-api",
+	"pezkuwi/node/clock",
 	"pezkuwi/node/core/chain-selection",
 	"pezkuwi/node/core/dispute-coordinator",
 	"pezkuwi/node/core/prospective-teyrchains",
@@ -1219,6 +1220,7 @@ pezkuwi-node-core-bitfield-signing = { path = "pezkuwi/node/core/bitfield-signin
 pezkuwi-node-core-candidate-validation = { path = "pezkuwi/node/core/candidate-validation", version = "7.0.0", default-features = false }
 pezkuwi-node-core-chain-api = { path = "pezkuwi/node/core/chain-api", version = "7.0.0", default-features = false }
 pezkuwi-node-core-chain-selection = { path = "pezkuwi/node/core/chain-selection", version = "7.0.0", default-features = false }
+pezkuwi-node-clock = { path = "pezkuwi/node/clock", version = "0.3.0", default-features = false }
 pezkuwi-node-core-dispute-coordinator = { path = "pezkuwi/node/core/dispute-coordinator", version = "7.0.0", default-features = false }
 pezkuwi-node-core-prospective-teyrchains = { path = "pezkuwi/node/core/prospective-teyrchains", version = "6.0.0", default-features = false }
 pezkuwi-node-core-provisioner = { path = "pezkuwi/node/core/provisioner", version = "7.0.0", default-features = false }

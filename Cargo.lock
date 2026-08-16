@@ -12685,6 +12685,7 @@ dependencies = [
  "pezsc-runtime-utilities",
  "pezsc-service",
  "pezsc-sysinfo",
+ "pezsc-virtualization",
  "pezsp-api",
  "pezsp-block-builder",
  "pezsp-blockchain",
@@ -12703,6 +12704,7 @@ dependencies = [
  "pezsp-transaction-pool",
  "pezsp-trie",
  "pezsp-version",
+ "pezsp-virtualization",
  "pezsp-wasm-interface",
  "rand 0.8.6",
  "rand_pcg",
@@ -13400,6 +13402,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezkuwi-node-clock"
+version = "0.3.0"
+dependencies = [
+ "futures-timer",
+]
+
+[[package]]
 name = "pezkuwi-node-collation-generation"
 version = "7.0.0"
 dependencies = [
@@ -13575,6 +13584,7 @@ dependencies = [
  "parity-scale-codec",
  "pez-tracing-gum",
  "pezkuwi-node-core-pvf",
+ "pezkuwi-node-core-pvf-common",
  "pezkuwi-node-metrics",
  "pezkuwi-node-subsystem",
  "pezkuwi-node-subsystem-test-helpers",
@@ -13590,6 +13600,7 @@ dependencies = [
  "pezsp-keystore",
  "pezsp-maybe-compressed-blob",
  "rstest",
+ "schnellru",
 ]
 
 [[package]]
@@ -13623,6 +13634,7 @@ dependencies = [
  "parity-scale-codec",
  "parking_lot 0.12.5",
  "pez-tracing-gum",
+ "pezkuwi-node-clock",
  "pezkuwi-node-subsystem",
  "pezkuwi-node-subsystem-test-helpers",
  "pezkuwi-node-subsystem-util",
@@ -13643,6 +13655,7 @@ dependencies = [
  "kvdb-memorydb",
  "parity-scale-codec",
  "pez-tracing-gum",
+ "pezkuwi-node-clock",
  "pezkuwi-node-subsystem",
  "pezkuwi-node-subsystem-test-helpers",
  "pezkuwi-node-subsystem-util",

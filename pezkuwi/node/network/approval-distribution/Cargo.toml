@@ -13,6 +13,7 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
+pezsp-core = { workspace = true, default-features = true }
 itertools = { workspace = true }
 pezkuwi-node-metrics = { workspace = true, default-features = true }
 pezkuwi-node-network-protocol = { workspace = true, default-features = true }
