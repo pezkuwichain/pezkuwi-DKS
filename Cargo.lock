@@ -21182,6 +21182,7 @@ dependencies = [
  "pezsnowbridge-inbound-queue-primitives",
  "pezsnowbridge-pezpallet-inbound-queue-v2-fixtures",
  "pezsnowbridge-test-utils",
+ "pezsp-api",
  "pezsp-core",
  "pezsp-io",
  "pezsp-keyring",

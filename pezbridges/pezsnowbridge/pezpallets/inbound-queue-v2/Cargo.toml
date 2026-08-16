@@ -31,6 +31,7 @@ pezframe-support = { workspace = true }
 pezframe-system = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezsp-core = { workspace = true }
+pezsp-api = { workspace = true }
 pezsp-io = { workspace = true }
 pezsp-runtime = { workspace = true }
 pezsp-std = { workspace = true }
@@ -55,6 +56,7 @@ pezsp-keyring = { workspace = true, default-features = true }
 [features]
 default = ["std"]
 std = [
+	"pezsp-api/std",
 	"alloy-core/std",
 	"codec/std",
 	"pezbp-relayers/std",
