@@ -81,7 +81,6 @@ pezcumulus-client-cli = { workspace = true, default-features = true }
 pezcumulus-client-collator = { workspace = true, default-features = true }
 pezcumulus-client-consensus-aura = { workspace = true, default-features = true }
 pezcumulus-client-consensus-common = { workspace = true, default-features = true }
-pezcumulus-client-consensus-proposer = { workspace = true, default-features = true }
 pezcumulus-client-pov-recovery = { workspace = true, default-features = true }
 pezcumulus-client-service = { workspace = true, default-features = true }
 pezcumulus-client-teyrchain-inherent = { workspace = true, default-features = true }
@@ -106,7 +105,6 @@ runtime-benchmarks = [
 	"pezcumulus-client-collator/runtime-benchmarks",
 	"pezcumulus-client-consensus-aura/runtime-benchmarks",
 	"pezcumulus-client-consensus-common/runtime-benchmarks",
-	"pezcumulus-client-consensus-proposer/runtime-benchmarks",
 	"pezcumulus-client-pov-recovery/runtime-benchmarks",
 	"pezcumulus-client-service/runtime-benchmarks",
 	"pezcumulus-client-teyrchain-inherent/runtime-benchmarks",
@@ -160,7 +158,6 @@ std = [
 	"pezcumulus-client-collator/std",
 	"pezcumulus-client-consensus-aura/std",
 	"pezcumulus-client-consensus-common/std",
-	"pezcumulus-client-consensus-proposer/std",
 	"pezcumulus-client-pov-recovery/std",
 	"pezcumulus-client-service/std",
 	"pezcumulus-client-teyrchain-inherent/std",
@@ -199,7 +196,6 @@ try-runtime = [
 	"pezcumulus-client-collator/try-runtime",
 	"pezcumulus-client-consensus-aura/try-runtime",
 	"pezcumulus-client-consensus-common/try-runtime",
-	"pezcumulus-client-consensus-proposer/try-runtime",
 	"pezcumulus-client-pov-recovery/try-runtime",
 	"pezcumulus-client-service/try-runtime",
 	"pezcumulus-client-teyrchain-inherent/try-runtime",

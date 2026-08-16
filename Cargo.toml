@@ -404,7 +404,6 @@ members = [
 	"pezcumulus/client/collator",
 	"pezcumulus/client/consensus/aura",
 	"pezcumulus/client/consensus/common",
-	"pezcumulus/client/consensus/proposer",
 	"pezcumulus/client/consensus/relay-chain",
 	"pezcumulus/client/network",
 	"pezcumulus/client/pov-recovery",
@@ -977,7 +976,6 @@ pezcumulus-client-cli = { path = "pezcumulus/client/cli", version = "0.7.0", def
 pezcumulus-client-collator = { path = "pezcumulus/client/collator", version = "0.7.0", default-features = false }
 pezcumulus-client-consensus-aura = { path = "pezcumulus/client/consensus/aura", version = "0.7.0", default-features = false }
 pezcumulus-client-consensus-common = { path = "pezcumulus/client/consensus/common", version = "0.7.0", default-features = false }
-pezcumulus-client-consensus-proposer = { path = "pezcumulus/client/consensus/proposer", version = "0.7.0", default-features = false }
 pezcumulus-client-consensus-relay-chain = { path = "pezcumulus/client/consensus/relay-chain", version = "0.7.0", default-features = false }
 pezcumulus-client-network = { path = "pezcumulus/client/network", version = "0.7.0", default-features = false }
 pezcumulus-client-pov-recovery = { path = "pezcumulus/client/pov-recovery", version = "0.7.0", default-features = false }

@@ -156,8 +156,6 @@ pub use pezcumulus_client_consensus_aura;
 pub use pezcumulus_client_consensus_common;
 
 /// A Bizinikiwi `Proposer` for building teyrchain blocks.
-#[cfg(feature = "pezcumulus-client-consensus-proposer")]
-pub use pezcumulus_client_consensus_proposer;
 
 /// The relay-chain provided consensus algorithm.
 #[cfg(feature = "pezcumulus-client-consensus-relay-chain")]

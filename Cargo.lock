@@ -11686,7 +11686,6 @@ dependencies = [
  "parking_lot 0.12.5",
  "pezcumulus-client-collator",
  "pezcumulus-client-consensus-common",
- "pezcumulus-client-consensus-proposer",
  "pezcumulus-client-teyrchain-inherent",
  "pezcumulus-primitives-aura",
  "pezcumulus-primitives-core",
@@ -11762,25 +11761,6 @@ dependencies = [
  "schnellru",
  "tokio",
  "tracing",
-]
-
-[[package]]
-name = "pezcumulus-client-consensus-proposer"
-version = "0.7.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "pezcumulus-primitives-teyrchain-inherent",
- "pezsc-basic-authorship",
- "pezsc-block-builder",
- "pezsc-transaction-pool-api",
- "pezsp-api",
- "pezsp-blockchain",
- "pezsp-consensus",
- "pezsp-inherents",
- "pezsp-runtime",
- "pezsp-state-machine",
- "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -12500,7 +12480,6 @@ dependencies = [
  "pezcumulus-client-collator",
  "pezcumulus-client-consensus-aura",
  "pezcumulus-client-consensus-common",
- "pezcumulus-client-consensus-proposer",
  "pezcumulus-client-pov-recovery",
  "pezcumulus-client-service",
  "pezcumulus-client-teyrchain-inherent",
@@ -14058,7 +14037,6 @@ dependencies = [
  "pezcumulus-client-collator",
  "pezcumulus-client-consensus-aura",
  "pezcumulus-client-consensus-common",
- "pezcumulus-client-consensus-proposer",
  "pezcumulus-client-consensus-relay-chain",
  "pezcumulus-client-service",
  "pezcumulus-client-teyrchain-inherent",
@@ -14413,7 +14391,6 @@ dependencies = [
  "pezcumulus-client-collator",
  "pezcumulus-client-consensus-aura",
  "pezcumulus-client-consensus-common",
- "pezcumulus-client-consensus-proposer",
  "pezcumulus-client-consensus-relay-chain",
  "pezcumulus-client-network",
  "pezcumulus-client-pov-recovery",

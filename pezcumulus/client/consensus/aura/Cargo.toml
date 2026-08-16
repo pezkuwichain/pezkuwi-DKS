@@ -48,7 +48,6 @@ prometheus-endpoint = { workspace = true, default-features = true }
 # Pezcumulus
 pezcumulus-client-collator = { workspace = true, default-features = true }
 pezcumulus-client-consensus-common = { workspace = true, default-features = true }
-pezcumulus-client-consensus-proposer = { workspace = true, default-features = true }
 pezcumulus-client-teyrchain-inherent = { workspace = true, default-features = true }
 pezcumulus-primitives-aura = { workspace = true, default-features = true }
 pezcumulus-primitives-core = { workspace = true, default-features = true }
@@ -73,7 +72,6 @@ rstest = { workspace = true }
 runtime-benchmarks = [
 	"pezcumulus-client-collator/runtime-benchmarks",
 	"pezcumulus-client-consensus-common/runtime-benchmarks",
-	"pezcumulus-client-consensus-proposer/runtime-benchmarks",
 	"pezcumulus-client-teyrchain-inherent/runtime-benchmarks",
 	"pezcumulus-primitives-aura/runtime-benchmarks",
 	"pezcumulus-primitives-core/runtime-benchmarks",
@@ -107,7 +105,6 @@ runtime-benchmarks = [
 std = [
 	"pezcumulus-client-collator/std",
 	"pezcumulus-client-consensus-common/std",
-	"pezcumulus-client-consensus-proposer/std",
 	"pezcumulus-client-teyrchain-inherent/std",
 	"pezcumulus-relay-chain-interface/std",
 	"pezcumulus-test-client/std",
@@ -134,7 +131,6 @@ std = [
 try-runtime = [
 	"pezcumulus-client-collator/try-runtime",
 	"pezcumulus-client-consensus-common/try-runtime",
-	"pezcumulus-client-consensus-proposer/try-runtime",
 	"pezcumulus-client-teyrchain-inherent/try-runtime",
 	"pezcumulus-primitives-core/try-runtime",
 	"pezcumulus-test-client/try-runtime",

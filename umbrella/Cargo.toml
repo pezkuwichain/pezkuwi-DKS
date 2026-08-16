@@ -41,7 +41,6 @@ std = [
 	"pezcumulus-client-collator?/std",
 	"pezcumulus-client-consensus-aura?/std",
 	"pezcumulus-client-consensus-common?/std",
-	"pezcumulus-client-consensus-proposer?/std",
 	"pezcumulus-client-consensus-relay-chain?/std",
 	"pezcumulus-client-network?/std",
 	"pezcumulus-client-pov-recovery?/std",
@@ -419,7 +418,6 @@ runtime-benchmarks = [
 	"pezcumulus-client-collator?/runtime-benchmarks",
 	"pezcumulus-client-consensus-aura?/runtime-benchmarks",
 	"pezcumulus-client-consensus-common?/runtime-benchmarks",
-	"pezcumulus-client-consensus-proposer?/runtime-benchmarks",
 	"pezcumulus-client-consensus-relay-chain?/runtime-benchmarks",
 	"pezcumulus-client-network?/runtime-benchmarks",
 	"pezcumulus-client-pov-recovery?/runtime-benchmarks",
@@ -753,7 +751,6 @@ try-runtime = [
 	"pezcumulus-client-collator?/try-runtime",
 	"pezcumulus-client-consensus-aura?/try-runtime",
 	"pezcumulus-client-consensus-common?/try-runtime",
-	"pezcumulus-client-consensus-proposer?/try-runtime",
 	"pezcumulus-client-consensus-relay-chain?/try-runtime",
 	"pezcumulus-client-network?/try-runtime",
 	"pezcumulus-client-pov-recovery?/try-runtime",
@@ -1030,7 +1027,6 @@ serde = [
 	"pezcumulus-client-collator?/serde",
 	"pezcumulus-client-consensus-aura?/serde",
 	"pezcumulus-client-consensus-common?/serde",
-	"pezcumulus-client-consensus-proposer?/serde",
 	"pezcumulus-client-consensus-relay-chain?/serde",
 	"pezcumulus-client-network?/serde",
 	"pezcumulus-client-pov-recovery?/serde",
@@ -1989,7 +1985,6 @@ node = [
 	"pezcumulus-client-collator",
 	"pezcumulus-client-consensus-aura",
 	"pezcumulus-client-consensus-common",
-	"pezcumulus-client-consensus-proposer",
 	"pezcumulus-client-consensus-relay-chain",
 	"pezcumulus-client-network",
 	"pezcumulus-client-pov-recovery",
@@ -3586,11 +3581,6 @@ path = "../pezcumulus/client/consensus/aura"
 default-features = false
 optional = true
 path = "../pezcumulus/client/consensus/common"
-
-[dependencies.pezcumulus-client-consensus-proposer]
-default-features = false
-optional = true
-path = "../pezcumulus/client/consensus/proposer"
 
 [dependencies.pezcumulus-client-consensus-relay-chain]
 default-features = false
