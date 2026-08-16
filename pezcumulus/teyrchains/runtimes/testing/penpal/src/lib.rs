@@ -92,7 +92,7 @@ pub use pezsp_runtime::{traits::ConvertInto, MultiAddress, Perbill, Permill};
 use smallvec::smallvec;
 use testnet_teyrchains_constants::zagros::{consensus::*, time::*};
 use teyrchains_common::{
-	impls::{AssetsToBlockAuthor, NonZeroIssuance},
+	impls::NonZeroIssuance,
 	message_queue::{NarrowOriginToSibling, ParaIdToSibling},
 	AccountId, Balance, BlockNumber, Hash, Header, Nonce, Signature,
 };
@@ -153,9 +153,11 @@ pub struct EthExtraImpl;
 
 impl EthExtra for EthExtraImpl {
 	type Config = Runtime;
-	type Extension = TxExtension;
+	type ExtensionV0 = TxExtension;
+	// No transaction extension version beyond 0 is accepted.
+	type ExtensionOtherVersions = pezsp_runtime::traits::InvalidVersion;
 
-	fn get_eth_extension(nonce: u32, tip: Balance) -> Self::Extension {
+	fn get_eth_extension(nonce: u32, tip: Balance) -> Self::ExtensionV0 {
 		(
 			pezframe_system::AuthorizeCall::<Runtime>::new(),
 			pezframe_system::CheckNonZeroSender::<Runtime>::new(),
@@ -468,7 +470,7 @@ parameter_types! {
 impl pezpallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type OnChargeTransaction = pezpallet_transaction_payment::FungibleAdapter<Balances, ()>;
-	type WeightToFee = pezpallet_revive::evm::fees::BlockRatioFee<1, 1, Self>;
+	type WeightToFee = pezpallet_revive::evm::fees::BlockRatioFee<1, 1, Self, Balance>;
 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 	type OperationalFeeMultiplier = ConstU8<5>;
@@ -624,6 +626,11 @@ pub type PoolIdToAccountId = pezpallet_asset_conversion::AccountIdConverter<
 	(xcm::latest::Location, xcm::latest::Location),
 >;
 
+pezframe_support::parameter_types! {
+	/// Liquidity provider fee, expressed as a rate rather than a raw numerator.
+	pub PenpalLpFee: Permill = Permill::from_rational(3u32, 1_000u32); // 0.3%, unchanged
+}
+
 impl pezpallet_asset_conversion::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
@@ -643,7 +650,7 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type PoolSetupFeeAsset = xcm_config::RelayLocation;
 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
-	type LPFee = ConstU32<3>;
+	type LPFee = PenpalLpFee;
 	type PalletId = AssetConversionPalletId;
 	type MaxSwapPathLength = ConstU32<3>;
 	type MintMinLiquidity = ConstU128<100>;
@@ -822,6 +829,23 @@ impl pezpallet_asset_tx_payment::BenchmarkHelperTrait<AccountId, u32, u32> for A
 	}
 }
 
+/// Pays asset-denominated transaction fees to the block author. This mirrors what the shared
+/// `AssetsToBlockAuthor` helper did before it was removed; it lives here because this fixture is
+/// its only consumer. If resolving fails - typically the fee is below the asset's minimum
+/// balance - the credit is dropped, which burns it.
+pub struct AssetFeesToBlockAuthor;
+impl pezpallet_asset_tx_payment::HandleCredit<AccountId, Assets> for AssetFeesToBlockAuthor {
+	fn handle_credit(
+		credit: pezframe_support::traits::fungibles::Credit<AccountId, Assets>,
+	) {
+		use pezframe_support::traits::fungibles::Balanced;
+		if let Some(author) = pezpallet_authorship::Pezpallet::<Runtime>::author() {
+			let _ = Assets::resolve(&author, credit);
+		}
+	}
+}
+
+
 impl pezpallet_asset_tx_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Fungibles = Assets;
@@ -832,7 +856,7 @@ impl pezpallet_asset_tx_payment::Config for Runtime {
 			ConvertInto,
 			TrustBackedAssetsInstance,
 		>,
-		AssetsToBlockAuthor<Runtime, TrustBackedAssetsInstance>,
+		AssetFeesToBlockAuthor,
 	>;
 	type WeightInfo = ();
 	#[cfg(feature = "runtime-benchmarks")]
@@ -848,6 +872,13 @@ parameter_types! {
 }
 
 impl pezpallet_revive::Config for Runtime {
+	type AutoMap = ConstBool<true>;
+	type GasScale = ConstU32<1000>;
+	// This is a test fixture with no treasury of its own; burned value is dropped,
+	// which is what the unit binding does.
+	type OnBurn = ();
+	// Storage deposits are charged in the native currency here.
+	type Deposit = ();
 	type Time = Timestamp;
 	type Balance = Balance;
 	type Currency = Balances;
@@ -862,7 +893,6 @@ impl pezpallet_revive::Config for Runtime {
 	type AddressMapper = pezpallet_revive::AccountId32Mapper<Self>;
 	type RuntimeMemory = ConstU32<{ 128 * 1024 * 1024 }>;
 	type PVFMemory = ConstU32<{ 512 * 1024 * 1024 }>;
-	type UnsafeUnstableInterface = ConstBool<true>;
 	type AllowEVMBytecode = ConstBool<true>;
 	type UploadOrigin = EnsureSigned<Self::AccountId>;
 	type InstantiateOrigin = EnsureSigned<Self::AccountId>;

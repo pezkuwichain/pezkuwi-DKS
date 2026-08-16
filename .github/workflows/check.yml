@@ -97,9 +97,16 @@ jobs:
           rustup show
           rustup component add rust-src
           rustup target add wasm32v1-none wasm32-unknown-unknown
+      # Everything the release workflows actually build and ship. The chain-spec builder was
+      # missing from this list while being built by release-testnet, which is the same shape of
+      # hole the runtime jobs had: a package nothing checks on the push path can break and only
+      # surface at release time, when it is most expensive.
       - name: Build node binaries (check)
         run: |
-          cargo check --locked -p pezkuwi -p pezkuwi-teyrchain-bin
+          cargo check --locked \
+            -p pezkuwi \
+            -p pezkuwi-teyrchain-bin \
+            -p pezstaging-chain-spec-builder
 
   # The runtimes must also build with the try-runtime feature — this is what makes
   # safe storage migrations possible, a fund-critical gate before any upgrade. It is
