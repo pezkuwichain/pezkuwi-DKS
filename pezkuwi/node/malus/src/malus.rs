@@ -28,7 +28,7 @@ use variants::*;
 
 /// Define the different variants of behavior.
 #[derive(Debug, Parser)]
-#[command(about = "Malus - the nemesis of polkadot.", version, rename_all = "kebab-case")]
+#[command(about = "Malus - the nemesis of pezkuwi.", version, rename_all = "kebab-case")]
 enum NemesisVariant {
 	/// Suggest a candidate with an invalid proof of validity.
 	SuggestGarbageCandidate(SuggestGarbageCandidateOptions),

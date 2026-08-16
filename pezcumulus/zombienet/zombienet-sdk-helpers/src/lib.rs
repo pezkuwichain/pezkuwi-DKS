@@ -17,7 +17,7 @@ use zombienet_sdk::{
 	pezkuwi_subxt::{
 		self,
 		blocks::Block,
-		config::{polkadot::PezkuwiExtrinsicParamsBuilder, substrate::DigestItem},
+		config::{pezkuwi::PezkuwiExtrinsicParamsBuilder, substrate::DigestItem},
 		dynamic::Value,
 		events::Events,
 		ext::scale_value::value,

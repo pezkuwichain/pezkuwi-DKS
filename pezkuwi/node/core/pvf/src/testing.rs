@@ -67,7 +67,7 @@ pub fn build_workers_and_get_paths() -> (PathBuf, PathBuf) {
 	fn build_workers() {
 		let mut build_args = vec![
 			"build",
-			"--package=polkadot",
+			"--package=pezkuwi",
 			"--bin=pezkuwi-prepare-worker",
 			"--bin=pezkuwi-execute-worker",
 		];

@@ -28,7 +28,7 @@ async fn purge_chain_works() {
 	// Check that both databases are deleted
 
 	let base_dir = tempdir().expect("could not create a temp dir");
-	let base_dir_path = format!("{}/polkadot", base_dir.path().display());
+	let base_dir_path = format!("{}/pezkuwi", base_dir.path().display());
 
 	let args = &["--", "-d", &base_dir_path, "--chain=rococo-local"];
 

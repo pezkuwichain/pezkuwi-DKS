@@ -205,7 +205,7 @@ async fn prepare_bizinikiwi_transactions(
 			vec![pezkuwi_subxt::dynamic::Value::from_bytes(remark_data.as_bytes())],
 		);
 
-		let params = pezkuwi_subxt::config::polkadot::PezkuwiExtrinsicParamsBuilder::new()
+		let params = pezkuwi_subxt::config::pezkuwi::PezkuwiExtrinsicParamsBuilder::new()
 			.nonce(nonce)
 			.build();
 

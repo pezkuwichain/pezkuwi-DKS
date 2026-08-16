@@ -90,6 +90,7 @@ std = [
 	"pezframe-benchmarking/std",
 	"pezframe-support/std",
 	"pezframe-system/std",
+	"pezkuwi-primitives/std",
 	"pezkuwi-runtime-teyrchains/std",
 	"pezkuwi-teyrchain-primitives/std",
 	"pezpallet-message-queue/std",
@@ -157,6 +158,7 @@ try-runtime = [
 	"pezsp-version/try-runtime",
 	"xcm-builder/try-runtime",
 	"xcm/try-runtime",
+	"pezkuwi-primitives/try-runtime"
 ]
 serde = []
 experimental = []

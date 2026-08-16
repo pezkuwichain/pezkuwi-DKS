@@ -38,7 +38,7 @@ use pezsc_network_sync::{
 	engine::SyncingEngine,
 	service::network::NetworkServiceProvider,
 	state_request_handler::StateRequestHandler,
-	strategy::polkadot::{PezkuwiSyncingStrategy, PezkuwiSyncingStrategyConfig},
+	strategy::pezkuwi::{PezkuwiSyncingStrategy, PezkuwiSyncingStrategyConfig},
 };
 use pezsp_blockchain::HeaderBackend;
 use pezsp_runtime::traits::{Block as BlockT, Zero};

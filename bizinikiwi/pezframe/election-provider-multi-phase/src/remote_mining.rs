@@ -38,7 +38,7 @@ use pezsp_npos_elections::BalancingConfig;
 use pezsp_runtime::{Perbill, Weight};
 use remote_externalities::{Builder, Mode, OnlineConfig};
 
-pub mod polkadot {
+pub mod pezkuwi {
 	use super::*;
 
 	pub struct MinerConfig;
@@ -84,7 +84,7 @@ pub mod polkadot {
 	}
 }
 
-pub mod kusama {
+pub mod dicle {
 	use super::*;
 	pub struct MinerConfig;
 
@@ -230,7 +230,7 @@ async fn mine_for_polkadot() {
 		.await
 		.unwrap()
 		.execute_with(|| {
-			test_for_network::<polkadot::MinerConfig>();
+			test_for_network::<pezkuwi::MinerConfig>();
 		});
 }
 
@@ -260,6 +260,6 @@ async fn mine_for_kusama() {
 		.await
 		.unwrap()
 		.execute_with(|| {
-			test_for_network::<kusama::MinerConfig>();
+			test_for_network::<dicle::MinerConfig>();
 		});
 }

@@ -410,7 +410,7 @@ impl<Config: CliConfig> RelayChainCli<Config> {
 		let extension = Extensions::try_get(&*para_config.chain_spec);
 		let chain_id = extension.map(|e| e.relay_chain());
 
-		let base_path = para_config.base_path.path().join("polkadot");
+		let base_path = para_config.base_path.path().join("pezkuwi");
 		Self { base, chain_id, base_path: Some(base_path), _phantom: Default::default() }
 	}
 }

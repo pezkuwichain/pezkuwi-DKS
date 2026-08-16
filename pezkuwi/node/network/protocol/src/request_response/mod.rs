@@ -301,11 +301,11 @@ impl Protocol {
 	/// protocol.
 	const fn get_legacy_name(self) -> Option<&'static str> {
 		match self {
-			Protocol::ChunkFetchingV1 => Some("/polkadot/req_chunk/1"),
-			Protocol::CollationFetchingV1 => Some("/polkadot/req_collation/1"),
-			Protocol::PoVFetchingV1 => Some("/polkadot/req_pov/1"),
-			Protocol::AvailableDataFetchingV1 => Some("/polkadot/req_available_data/1"),
-			Protocol::DisputeSendingV1 => Some("/polkadot/send_dispute/1"),
+			Protocol::ChunkFetchingV1 => Some("/pezkuwi/req_chunk/1"),
+			Protocol::CollationFetchingV1 => Some("/pezkuwi/req_collation/1"),
+			Protocol::PoVFetchingV1 => Some("/pezkuwi/req_pov/1"),
+			Protocol::AvailableDataFetchingV1 => Some("/pezkuwi/req_available_data/1"),
+			Protocol::DisputeSendingV1 => Some("/pezkuwi/send_dispute/1"),
 
 			// Introduced after legacy names became legacy.
 			Protocol::AttestedCandidateV2 => None,

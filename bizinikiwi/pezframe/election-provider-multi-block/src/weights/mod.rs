@@ -175,7 +175,7 @@ pub mod dicle {
 }
 
 /// Pezkuwi-esque weights only be used in testing runtimes.
-pub mod polkadot {
+pub mod pezkuwi {
 	pub use super::{
 		pezpallet_election_provider_multi_block_hez_size::WeightInfo as MultiBlockWeightInfo,
 		pezpallet_election_provider_multi_block_signed_hez_size::WeightInfo as MultiBlockSignedWeightInfo,

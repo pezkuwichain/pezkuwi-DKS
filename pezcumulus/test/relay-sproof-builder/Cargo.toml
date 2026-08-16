@@ -15,6 +15,10 @@ workspace = true
 
 [dependencies]
 codec = { features = ["derive"], workspace = true }
+pezsp-consensus-babe = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-io = { workspace = true }
+pezsp-keyring = { workspace = true }
 
 # Bizinikiwi
 pezsp-runtime = { workspace = true }

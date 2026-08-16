@@ -77,7 +77,7 @@ use pezsc_network_sync::{
 	service::{network::NetworkServiceProvider, syncing_service::SyncingService},
 	state_request_handler::StateRequestHandler,
 	strategy::{
-		polkadot::{PezkuwiSyncingStrategy, PezkuwiSyncingStrategyConfig},
+		pezkuwi::{PezkuwiSyncingStrategy, PezkuwiSyncingStrategyConfig},
 		warp::{
 			EncodedProof, VerificationResult, Verifier as WarpVerifier, WarpSyncConfig,
 			WarpSyncProvider,

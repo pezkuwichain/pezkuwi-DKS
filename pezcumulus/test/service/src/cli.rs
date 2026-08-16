@@ -115,7 +115,7 @@ impl RelayChainCli {
 		para_config: &pezsc_service::Configuration,
 		relay_chain_args: impl Iterator<Item = &'a String>,
 	) -> Self {
-		let base_path = para_config.base_path.path().join("polkadot");
+		let base_path = para_config.base_path.path().join("pezkuwi");
 		Self {
 			base_path: Some(base_path),
 			chain_id: None,

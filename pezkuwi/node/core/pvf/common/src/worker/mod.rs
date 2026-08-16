@@ -52,7 +52,7 @@ macro_rules! decl_worker_main {
 			println!("{} {}", expected_command, $worker_version);
 			println!("commit: {}", $worker_version_hash);
 			println!();
-			println!("PVF worker that is called by polkadot.");
+			println!("PVF worker that is called by pezkuwi.");
 		}
 
 		fn main() {

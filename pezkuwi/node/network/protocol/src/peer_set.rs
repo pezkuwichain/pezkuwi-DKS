@@ -31,7 +31,7 @@ use std::{
 use strum::{EnumIter, IntoEnumIterator};
 
 /// The legacy collation protocol name. Only supported on version = 1.
-const LEGACY_COLLATION_PROTOCOL_V1: &str = "/polkadot/collation/1";
+const LEGACY_COLLATION_PROTOCOL_V1: &str = "/pezkuwi/collation/1";
 
 /// The legacy protocol version. Is always 1 for collation.
 const LEGACY_COLLATION_PROTOCOL_VERSION_V1: u32 = 1;
@@ -553,7 +553,7 @@ mod tests {
 			Some((PeerSet::Validation, TestVersion(3).into())),
 		);
 
-		let validation_legacy = "/polkadot/validation/1";
+		let validation_legacy = "/pezkuwi/validation/1";
 		assert!(protocol_names.try_get_protocol(&validation_legacy.into()).is_none());
 
 		let collation_main =
@@ -563,7 +563,7 @@ mod tests {
 			Some((PeerSet::Collation, TestVersion(1).into())),
 		);
 
-		let collation_legacy = "/polkadot/collation/1";
+		let collation_legacy = "/pezkuwi/collation/1";
 		assert_eq!(
 			protocol_names.try_get_protocol(&collation_legacy.into()),
 			Some((PeerSet::Collation, TestVersion(1).into())),
