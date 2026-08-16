@@ -61,6 +61,7 @@ runtime-benchmarks = [
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezsc-executor-wasmtime/runtime-benchmarks",
 	"pezsc-executor/runtime-benchmarks",
+	"pezsp-crypto-ec-utils/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 ]
 std = [
