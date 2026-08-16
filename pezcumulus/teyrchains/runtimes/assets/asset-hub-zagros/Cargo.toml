@@ -76,6 +76,7 @@ pezpallet-utility = { workspace = true }
 pezpallet-xcm-precompiles = { workspace = true }
 pezsp-api = { workspace = true }
 pezsp-authority-discovery = { workspace = true }
+pezkuwi-primitives = { workspace = true }
 pezsp-consensus-babe = { workspace = true }
 pezsp-consensus-beefy = { workspace = true }
 pezsp-consensus-grandpa = { workspace = true }
@@ -431,6 +432,7 @@ std = [
 	"pezpallet-xcm/std",
 	"pezsp-api/std",
 	"pezsp-authority-discovery/std",
+	"pezkuwi-primitives/std",
 	"pezsp-consensus-babe/std",
 	"pezsp-consensus-beefy/std",
 	"pezsp-consensus-grandpa/std",

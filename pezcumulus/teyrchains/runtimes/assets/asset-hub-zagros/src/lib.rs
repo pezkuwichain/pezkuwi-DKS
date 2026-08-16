@@ -65,6 +65,7 @@ use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 pub use pez_assets_common::local_and_foreign_assets::ForeignAssetReserveData;
 use pezcumulus_primitives_core::ParaId;
 use pezframe_support::{
+	traits::tokens::imbalance::ResolveTo,
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
 	genesis_builder_helper::{build_state, get_preset},
@@ -324,6 +325,8 @@ impl pezpallet_assets_freezer::Config<AssetsFreezerInstance> for Runtime {
 
 parameter_types! {
 	pub const AssetConversionPalletId: PalletId = PalletId(*b"py/ascon");
+	/// Liquidity provider fee, now expressed as a rate rather than a raw numerator.
+	pub LpFee: Permill = Permill::from_rational(3u32, 1_000u32); // 0.3%, unchanged
 	pub const LiquidityWithdrawalFee: Permill = Permill::from_percent(0);
 }
 
@@ -465,7 +468,7 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type PoolSetupFeeAsset = TokenLocation;
 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
-	type LPFee = ConstU32<3>;
+	type LPFee = LpFee;
 	type PalletId = AssetConversionPalletId;
 	type MaxSwapPathLength = ConstU32<3>;
 	type MintMinLiquidity = ConstU128<100>;
@@ -1028,6 +1031,7 @@ impl pezpallet_nfts::Config for Runtime {
 /// consensus with dynamic fees and back-pressure.
 pub type ToPezkuwichainXcmRouterInstance = pezpallet_xcm_bridge_hub_router::Instance3;
 impl pezpallet_xcm_bridge_hub_router::Config<ToPezkuwichainXcmRouterInstance> for Runtime {
+	type UnpaidExport = pezframe_support::traits::ConstBool<true>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pezpallet_xcm_bridge_hub_router::WeightInfo<Runtime>;
 
@@ -1354,9 +1358,11 @@ pub struct EthExtraImpl;
 
 impl EthExtra for EthExtraImpl {
 	type Config = Runtime;
-	type Extension = TxExtension;
+	type ExtensionV0 = TxExtension;
+	// No transaction extension version beyond 0 is accepted.
+	type ExtensionOtherVersions = pezsp_runtime::traits::InvalidVersion;
 
-	fn get_eth_extension(nonce: u32, tip: Balance) -> Self::Extension {
+	fn get_eth_extension(nonce: u32, tip: Balance) -> Self::ExtensionV0 {
 		(
 			pezframe_system::AuthorizeCall::<Runtime>::new(),
 			pezframe_system::CheckNonZeroSender::<Runtime>::new(),
@@ -1375,6 +1381,15 @@ impl EthExtra for EthExtraImpl {
 }
 
 impl pezpallet_revive::Config for Runtime {
+	type AutoMap = ConstBool<true>;
+	type GasScale = ConstU32<1000>;
+	// Upstream sends burned value to its DAP pallet. This chain has no DAP; the value
+	// goes to the treasury, which is where this runtime already routes slashes and
+	// fee remainders. The pallet documents treasury as an intended target.
+	type OnBurn = ResolveTo<xcm_config::TreasuryAccount, Balances>;
+	// The unit binding charges storage deposits in the native currency, which is what
+	// this chain uses; upstream's PGasDeposit belongs to its PGas allowance scheme.
+	type Deposit = ();
 	type Time = Timestamp;
 	type Balance = Balance;
 	type Currency = Balances;
