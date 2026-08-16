@@ -30,6 +30,7 @@ pezframe-benchmarking = { optional = true, workspace = true }
 pezframe-support = { workspace = true }
 pezframe-system = { workspace = true }
 pezpallet-message-queue = { workspace = true }
+pezsp-api = { workspace = true }
 pezsp-consensus-babe = { workspace = true }
 pezsp-core = { workspace = true }
 pezsp-externalities = { workspace = true }
@@ -95,6 +96,7 @@ std = [
 	"pezkuwi-teyrchain-primitives/std",
 	"pezpallet-message-queue/std",
 	"pezsc-consensus/std",
+	"pezsp-api/std",
 	"pezsp-consensus-babe/std",
 	"pezsp-core/std",
 	"pezsp-externalities/std",
