@@ -60,7 +60,7 @@ use pezkuwi_runtime_common::{
 	BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
 };
 use pezkuwi_runtime_teyrchains::{
-	assigner_coretime as teyrchains_assigner_coretime, configuration as teyrchains_configuration,
+	configuration as teyrchains_configuration,
 	configuration::ActiveConfigHrmpChannelSizeAndCapacityRatio,
 	coretime, disputes as teyrchains_disputes,
 	disputes::slashing as teyrchains_slashing,
@@ -1136,7 +1136,7 @@ impl teyrchains_paras::Config for Runtime {
 	type QueueFootprinter = ParaInclusion;
 	type NextSessionRotation = Babe;
 	type OnNewHead = Registrar;
-	type AssignCoretime = CoretimeAssignmentProvider;
+	type AssignCoretime = ParaScheduler;
 	type Fungible = Balances;
 	// Per day the cooldown is removed earlier, it should cost 1000.
 	type CooldownRemovalMultiplier = ConstUint<{ 1000 * UNITS / DAYS as u128 }>;
@@ -1219,7 +1219,7 @@ impl teyrchains_paras_inherent::Config for Runtime {
 impl teyrchains_scheduler::Config for Runtime {
 	// If you change this, make sure the `Assignment` type of the new provider is binary compatible,
 	// otherwise provide a migration.
-	type AssignmentProvider = CoretimeAssignmentProvider;
+	type AssignmentProvider = ParaScheduler;
 }
 
 parameter_types! {
@@ -1266,8 +1266,6 @@ impl teyrchains_on_demand::Config for Runtime {
 	type MaxHistoricalRevenue = MaxHistoricalRevenue;
 	type PalletId = OnDemandPalletId;
 }
-
-impl teyrchains_assigner_coretime::Config for Runtime {}
 
 impl teyrchains_initializer::Config for Runtime {
 	type Randomness = pezpallet_babe::RandomnessFromOneEpochAgo<Runtime>;
@@ -1570,7 +1568,8 @@ construct_runtime! {
 		MessageQueue: pezpallet_message_queue = 64,
 		OnDemandAssignmentProvider: teyrchains_on_demand = 66,
 		StakingAhClient: pezpallet_staking_async_ah_client = 67,
-		CoretimeAssignmentProvider: teyrchains_assigner_coretime = 68,
+		// RIP CoretimeAssignmentProvider 68 - its storage moved into ParaScheduler,
+		// where the code that reads it lives. Index left unused on purpose.
 
 		// Teyrchain Onboarding Pallets. Start indices at 70 to leave room.
 		Registrar: paras_registrar = 70,
