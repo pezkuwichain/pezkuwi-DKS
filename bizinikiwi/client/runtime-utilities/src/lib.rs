@@ -143,7 +143,7 @@ mod tests {
 			.as_slice(),
 		)
 		.unwrap();
-		assert!(metadata.pezpallet_by_name("TeyrchainInfo").is_some());
+		assert!(metadata.pallet_by_name("TeyrchainInfo").is_some());
 	}
 
 	#[test]

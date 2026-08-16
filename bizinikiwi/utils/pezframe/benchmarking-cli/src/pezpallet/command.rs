@@ -28,15 +28,16 @@ use crate::{
 };
 use clap::{error::ErrorKind, CommandFactory};
 use codec::{Decode, DecodeWithMemTracking, Encode};
-use linked_hash_map::LinkedHashMap;
 use pezframe_benchmarking::{
 	Analysis, BenchmarkBatch, BenchmarkBatchSplitResults, BenchmarkList, BenchmarkParameter,
 	BenchmarkResult, BenchmarkSelector,
 };
 use pezframe_support::traits::StorageInfo;
+use linked_hash_map::LinkedHashMap;
 use pezsc_cli::{execution_method_from_cli, ChainSpec, CliConfiguration, Result, SharedParams};
 use pezsc_client_db::BenchmarkingState;
 use pezsc_executor::{HeapAllocStrategy, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY};
+use serde_json::Value;
 use pezsp_core::{
 	offchain::{
 		testing::{TestOffchainExt, TestTransactionPoolExt},
@@ -48,7 +49,7 @@ use pezsp_core::{
 use pezsp_externalities::Extensions;
 use pezsp_keystore::{testing::MemoryKeystore, KeystoreExt};
 use pezsp_runtime::traits::Hash;
-use pezsp_state_machine::StateMachine;
+use pezsp_state_machine::{backend::TryPendingCode, StateMachine};
 use pezsp_trie::{proof_size_extension::ProofSizeExt, recorder::Recorder};
 use pezsp_wasm_interface::{ExtendedHostFunctions, HostFunctions};
 use std::{
@@ -58,6 +59,7 @@ use std::{
 	fs,
 	str::FromStr,
 	time,
+	time::Duration,
 };
 
 type BizinikiwiAndExtraHF<T> = (
@@ -117,8 +119,9 @@ fn combine_batches(
 	let mut all_benchmarks =
 		LinkedHashMap::<_, (Vec<BenchmarkResult>, Vec<BenchmarkResult>)>::new();
 
-	db_batches.into_iter().for_each(
-		|BenchmarkBatch { pezpallet, instance, benchmark, results }| {
+	db_batches
+		.into_iter()
+		.for_each(|BenchmarkBatch { pezpallet, instance, benchmark, results }| {
 			// We use this key to uniquely identify a benchmark among batches.
 			let key = (pezpallet, instance, benchmark);
 
@@ -130,11 +133,11 @@ fn combine_batches(
 					all_benchmarks.insert(key, (Vec::new(), results));
 				},
 			}
-		},
-	);
+		});
 
-	time_batches.into_iter().for_each(
-		|BenchmarkBatch { pezpallet, instance, benchmark, results }| {
+	time_batches
+		.into_iter()
+		.for_each(|BenchmarkBatch { pezpallet, instance, benchmark, results }| {
 			// We use this key to uniquely identify a benchmark among batches.
 			let key = (pezpallet, instance, benchmark);
 
@@ -143,8 +146,7 @@ fn combine_batches(
 				Some(x) => x.0.extend(results),
 				None => panic!("all benchmark keys should have been populated by db batches"),
 			}
-		},
-	);
+		});
 
 	all_benchmarks
 		.into_iter()
@@ -261,8 +263,23 @@ impl PalletCmd {
 
 		let state_handler =
 			self.state_handler_from_cli::<BizinikiwiAndExtraHF<ExtraHostFunctions>>(chain_spec)?;
-		let genesis_storage =
-			state_handler.build_storage::<BizinikiwiAndExtraHF<ExtraHostFunctions>>(None)?;
+
+		let genesis_patcher = if let Some(ref patch_path) = self.genesis_patch {
+			let patch_content = fs::read_to_string(patch_path)
+				.map_err(|e| format!("Failed to read genesis patch file: {}", e))?;
+			let patch_value: serde_json::Value = serde_json::from_str(&patch_content)
+				.map_err(|e| format!("Failed to parse genesis patch JSON: {}", e))?;
+
+			Some(Box::new(move |mut value| {
+				pezsc_chain_spec::json_patch::merge(&mut value, patch_value);
+				value
+			}) as Box<dyn FnOnce(Value) -> Value + 'static>)
+		} else {
+			None
+		};
+
+		let genesis_storage = state_handler
+			.build_storage::<BizinikiwiAndExtraHF<ExtraHostFunctions>>(genesis_patcher)?;
 
 		let cache_size = Some(self.database_cache_size as usize);
 		let state_with_tracking = BenchmarkingState::<Hasher>::new(
@@ -353,7 +370,7 @@ impl PalletCmd {
 		// Run the benchmarks
 		let mut batches = Vec::new();
 		let mut batches_db = Vec::new();
-		let mut timer = time::SystemTime::now();
+		let mut progress_timer = time::Instant::now();
 		// Maps (pezpallet, extrinsic) to its component ranges.
 		let mut component_ranges = HashMap::<(String, String), Vec<ComponentRange>>::new();
 		let pov_modes =
@@ -415,101 +432,106 @@ impl PalletCmd {
 				all_components
 			};
 
-			for (s, selected_components) in all_components.iter().enumerate() {
-				let params = |verify: bool, repeats: u32| -> Vec<u8> {
-					if benchmark_api_version >= 2 {
-						(
-							pezpallet.as_bytes(),
-							instance.as_bytes(),
-							extrinsic.as_bytes(),
-							&selected_components.clone(),
-							verify,
-							repeats,
-						)
-							.encode()
-					} else {
-						(
-							pezpallet.as_bytes(),
-							extrinsic.as_bytes(),
-							&selected_components.clone(),
-							verify,
-							repeats,
-						)
-							.encode()
+			// Ensure each benchmark runs for at least its minimum duration.
+			let start = time::Instant::now();
+			let mut first = true;
+
+			loop {
+				for (s, selected_components) in all_components.iter().enumerate() {
+					let params = |verify: bool, repeats: u32| -> Vec<u8> {
+						if benchmark_api_version >= 2 {
+							(
+								pezpallet.as_bytes(),
+								instance.as_bytes(),
+								extrinsic.as_bytes(),
+								&selected_components.clone(),
+								verify,
+								repeats,
+							)
+								.encode()
+						} else {
+							(
+								pezpallet.as_bytes(),
+								extrinsic.as_bytes(),
+								&selected_components.clone(),
+								verify,
+								repeats,
+							)
+								.encode()
+						}
+					};
+
+					// Maybe run a verification if we are the first iteration.
+					if !self.no_verify && first {
+						let state = &state_without_tracking;
+						// Don't use these results since verification code will add overhead.
+						let _batch: Vec<BenchmarkBatch> = match Self::exec_state_machine::<
+							std::result::Result<Vec<BenchmarkBatch>, String>,
+							_,
+							_,
+						>(
+							StateMachine::new(
+								state,
+								&mut Default::default(),
+								&executor,
+								"Benchmark_dispatch_benchmark",
+								&params(true, 1),
+								&mut Self::build_extensions(executor.clone(), state.recorder()),
+								&runtime_code,
+								CallContext::Offchain,
+							),
+							"dispatch a benchmark",
+						) {
+							Err(e) => {
+								log::error!(target: LOG_TARGET, "Benchmark {pezpallet}::{extrinsic} failed: {e}");
+								failed.push((pezpallet.clone(), extrinsic.clone()));
+								continue 'outer;
+							},
+							Ok(Err(e)) => {
+								log::error!(target: LOG_TARGET, "Benchmark {pezpallet}::{extrinsic} failed: {e}");
+								failed.push((pezpallet.clone(), extrinsic.clone()));
+								continue 'outer;
+							},
+							Ok(Ok(b)) => b,
+						};
 					}
-				};
+					// Do one loop of DB tracking.
+					{
+						let state = &state_with_tracking;
+						let batch: Vec<BenchmarkBatch> = match Self::exec_state_machine::<
+							std::result::Result<Vec<BenchmarkBatch>, String>,
+							_,
+							_,
+						>(
+							StateMachine::new(
+								state,
+								&mut Default::default(),
+								&executor,
+								"Benchmark_dispatch_benchmark",
+								&params(false, 1),
+								&mut Self::build_extensions(executor.clone(), state.recorder()),
+								&runtime_code,
+								CallContext::Offchain,
+							),
+							"dispatch a benchmark",
+						) {
+							Err(e) => {
+								log::error!(target: LOG_TARGET, "Benchmark {pezpallet}::{extrinsic} failed: {e}");
+								failed.push((pezpallet.clone(), extrinsic.clone()));
+								continue 'outer;
+							},
+							Ok(Err(e)) => {
+								log::error!(target: LOG_TARGET, "Benchmark {pezpallet}::{extrinsic} failed: {e}");
+								failed.push((pezpallet.clone(), extrinsic.clone()));
+								continue 'outer;
+							},
+							Ok(Ok(b)) => b,
+						};
 
-				// First we run a verification
-				if !self.no_verify {
-					let state = &state_without_tracking;
-					// Don't use these results since verification code will add overhead.
-					let _batch: Vec<BenchmarkBatch> = match Self::exec_state_machine::<
-						std::result::Result<Vec<BenchmarkBatch>, String>,
-						_,
-						_,
-					>(
-						StateMachine::new(
-							state,
-							&mut Default::default(),
-							&executor,
-							"Benchmark_dispatch_benchmark",
-							&params(true, 1),
-							&mut Self::build_extensions(executor.clone(), state.recorder()),
-							&runtime_code,
-							CallContext::Offchain,
-						),
-						"dispatch a benchmark",
-					) {
-						Err(e) => {
-							log::error!(target: LOG_TARGET, "Benchmark {pezpallet}::{extrinsic} failed: {e}");
-							failed.push((pezpallet.clone(), extrinsic.clone()));
-							continue 'outer;
-						},
-						Ok(Err(e)) => {
-							log::error!(target: LOG_TARGET, "Benchmark {pezpallet}::{extrinsic} failed: {e}");
-							failed.push((pezpallet.clone(), extrinsic.clone()));
-							continue 'outer;
-						},
-						Ok(Ok(b)) => b,
-					};
-				}
-				// Do one loop of DB tracking.
-				{
-					let state = &state_with_tracking;
-					let batch: Vec<BenchmarkBatch> = match Self::exec_state_machine::<
-						std::result::Result<Vec<BenchmarkBatch>, String>,
-						_,
-						_,
-					>(
-						StateMachine::new(
-							state,
-							&mut Default::default(),
-							&executor,
-							"Benchmark_dispatch_benchmark",
-							&params(false, self.repeat),
-							&mut Self::build_extensions(executor.clone(), state.recorder()),
-							&runtime_code,
-							CallContext::Offchain,
-						),
-						"dispatch a benchmark",
-					) {
-						Err(e) => {
-							log::error!(target: LOG_TARGET, "Benchmark {pezpallet}::{extrinsic} failed: {e}");
-							failed.push((pezpallet.clone(), extrinsic.clone()));
-							continue 'outer;
-						},
-						Ok(Err(e)) => {
-							log::error!(target: LOG_TARGET, "Benchmark {pezpallet}::{extrinsic} failed: {e}");
-							failed.push((pezpallet.clone(), extrinsic.clone()));
-							continue 'outer;
-						},
-						Ok(Ok(b)) => b,
-					};
+						batches_db.extend(batch);
+					}
 
-					batches_db.extend(batch);
-				}
-				// Finally run a bunch of loops to get extrinsic timing information.
-				for r in 0..self.external_repeat {
+					// Finally run a bunch of loops to get extrinsic timing information.
 					let state = &state_without_tracking;
 					let batch = match Self::exec_state_machine::<
 						std::result::Result<Vec<BenchmarkBatch>, String>,
@@ -517,7 +539,7 @@ impl PalletCmd {
 						_,
 					>(
 						StateMachine::new(
-							state, // todo remove tracking
+							state,
 							&mut Default::default(),
 							&executor,
 							"Benchmark_dispatch_benchmark",
@@ -543,28 +565,34 @@ impl PalletCmd {
 
 					batches.extend(batch);
 
-					// Show progress information
-					if let Ok(elapsed) = timer.elapsed() {
-						if elapsed >= time::Duration::from_secs(5) {
-							timer = time::SystemTime::now();
+					// Show progress information at most every 5 seconds.
+					if progress_timer.elapsed() >= time::Duration::from_secs(5) {
+						progress_timer = time::Instant::now();
 
-							log::info!(
-								target: LOG_TARGET,
-								"[{: >3} % ] Running  benchmark: {pezpallet}::{extrinsic}({} args) {}/{} {}/{}",
-								(i * 100) / benchmarks_to_run.len(),
-								components.len(),
+						let msg = if first {
+							format!(
+								"{}/{}",
 								s + 1, // s starts at 0.
-								all_components.len(),
-								r + 1,
-								self.external_repeat,
-							);
-						}
+								all_components.len()
+							)
+						} else {
+							"(overtime)".to_string()
+						};
+
+						log::info!(
+							target: LOG_TARGET,
+							"[{: >3} % ] Running  benchmark: {pezpallet}::{extrinsic} {msg}",
+							(i * 100) / benchmarks_to_run.len()
+						);
 					}
+				}
+
+				first = false;
+				if start.elapsed() >= Duration::from_secs(self.min_duration) {
+					break;
 				}
 			}
 		}
-
-		assert!(batches_db.len() == batches.len() / self.external_repeat as usize);
 
 		if !failed.is_empty() {
 			failed.sort();
@@ -585,21 +613,19 @@ impl PalletCmd {
 	fn select_benchmarks_to_run(&self, list: Vec<BenchmarkList>) -> Result<Vec<SelectedBenchmark>> {
 		// Use the benchmark list and the user input to determine the set of benchmarks to run.
 		let mut benchmarks_to_run = Vec::new();
-		list.iter()
-			.filter(|item| self.pezpallet_selected(&item.pezpallet))
-			.for_each(|item| {
-				for benchmark in &item.benchmarks {
-					if self.extrinsic_selected(&item.pezpallet, &benchmark.name) {
-						benchmarks_to_run.push((
-							item.pezpallet.clone(),
-							item.instance.clone(),
-							benchmark.name.clone(),
-							benchmark.components.clone(),
-							benchmark.pov_modes.clone(),
-						))
-					}
+		list.iter().filter(|item| self.pezpallet_selected(&item.pezpallet)).for_each(|item| {
+			for benchmark in &item.benchmarks {
+				if self.extrinsic_selected(&item.pezpallet, &benchmark.name) {
+					benchmarks_to_run.push((
+						item.pezpallet.clone(),
+						item.instance.clone(),
+						benchmark.name.clone(),
+						benchmark.components.clone(),
+						benchmark.pov_modes.clone(),
+					))
 				}
-			});
+			}
+		});
 		// Convert `Vec<u8>` to `String` for better readability.
 		let benchmarks_to_run: Vec<_> = benchmarks_to_run
 			.into_iter()
@@ -633,13 +659,13 @@ impl PalletCmd {
 
 	/// Whether this pezpallet should be run.
 	fn pezpallet_selected(&self, pezpallet: &Vec<u8>) -> bool {
-		let include = self.pezpallet.clone();
+		let include = self.pezpallets.clone();
 
-		let included = include.is_empty()
-			|| include.iter().any(|p| p.as_bytes() == pezpallet)
-			|| include.iter().any(|p| p == "*")
-			|| include.iter().any(|p| p == "all");
-		let excluded = self.exclude_pezpallets.iter().any(|p| p.as_bytes() == pezpallet);
+		let included = include.is_empty() ||
+			include.iter().any(|p| p.as_bytes() == pezpallet) ||
+			include.iter().any(|p| p == "*") ||
+			include.iter().any(|p| p == "all");
+		let excluded = self.exclude_pallets.iter().any(|p| p.as_bytes() == pezpallet);
 
 		included && !excluded
 	}
@@ -654,10 +680,10 @@ impl PalletCmd {
 		let extrinsic_split: Vec<&str> = extrinsic_filter.split(',').collect();
 		let extrinsics: Vec<_> = extrinsic_split.iter().map(|x| x.trim().as_bytes()).collect();
 
-		let included = extrinsic_filter.is_empty()
-			|| extrinsic_filter == "*"
-			|| extrinsic_filter == "all"
-			|| extrinsics.contains(&&extrinsic[..]);
+		let included = extrinsic_filter.is_empty() ||
+			extrinsic_filter == "*" ||
+			extrinsic_filter == "all" ||
+			extrinsics.contains(&&extrinsic[..]);
 
 		let excluded = self
 			.excluded_extrinsics()
@@ -709,6 +735,9 @@ impl PalletCmd {
 		extensions.register(OffchainDbExt::new(offchain));
 		extensions.register(TransactionPoolExt::new(pool));
 		extensions.register(ReadRuntimeVersionExt::new(exe));
+		extensions.register(pezsp_virtualization::VirtManagerExt::new(
+			pezsc_virtualization::VirtManager::default(),
+		));
 		if let Some(recorder) = maybe_recorder {
 			extensions.register(ProofSizeExt::new(recorder));
 		}
@@ -732,13 +761,14 @@ impl PalletCmd {
 					e
 				)
 			})?;
-			let hash = pezsp_core::blake2_256(&code).to_vec();
+			let hash = pezsp_crypto_hashing::blake2_256(&code).to_vec();
 			let wrapped_code = WrappedRuntimeCode(Cow::Owned(code));
 
 			Ok(FetchedCode::FromFile { wrapped_code, heap_pages: self.heap_pages, hash })
 		} else {
 			log::info!(target: LOG_TARGET, "Loading WASM from state");
-			let state = pezsp_state_machine::backend::BackendRuntimeCode::new(state);
+			let state =
+				pezsp_state_machine::backend::BackendRuntimeCode::new(state, TryPendingCode::No);
 
 			Ok(FetchedCode::FromGenesis { state })
 		}
@@ -846,8 +876,7 @@ impl PalletCmd {
 	) {
 		for batch in batches.iter() {
 			// Print benchmark metadata
-			let pezpallet =
-				String::from_utf8(batch.pezpallet.clone()).expect("Encoded from String; qed");
+			let pezpallet = String::from_utf8(batch.pezpallet.clone()).expect("Encoded from String; qed");
 			let benchmark =
 				String::from_utf8(batch.benchmark.clone()).expect("Encoded from String; qed");
 			println!(
@@ -867,7 +896,8 @@ impl PalletCmd {
 
 			if !self.no_storage_info {
 				let mut storage_per_prefix = HashMap::<Vec<u8>, Vec<BenchmarkResult>>::new();
-				let pov_mode = pov_modes.get(&(pezpallet, benchmark)).cloned().unwrap_or_default();
+				let pov_mode =
+					pov_modes.get(&(pezpallet, benchmark.clone())).cloned().unwrap_or_default();
 
 				let comments = writer::process_storage_results(
 					&mut storage_per_prefix,
@@ -888,49 +918,45 @@ impl PalletCmd {
 			// Conduct analysis.
 			if !self.no_median_slopes {
 				println!("Median Slopes Analysis\n========");
-				if let Some(analysis) =
-					Analysis::median_slopes(&batch.time_results, BenchmarkSelector::ExtrinsicTime)
+				match Analysis::median_slopes(&batch.time_results, BenchmarkSelector::ExtrinsicTime)
 				{
-					println!("-- Extrinsic Time --\n{}", analysis);
+					Ok(analysis) => println!("-- Extrinsic Time --\n{}", analysis),
+					Err(err) => println!("-- Extrinsic Time --\nError: {:?}", err),
 				}
-				if let Some(analysis) =
-					Analysis::median_slopes(&batch.db_results, BenchmarkSelector::Reads)
-				{
-					println!("Reads = {:?}", analysis);
+				match Analysis::median_slopes(&batch.db_results, BenchmarkSelector::Reads) {
+					Ok(analysis) => println!("Reads = {:?}", analysis),
+					Err(err) => println!("Reads: Error: {:?}", err),
 				}
-				if let Some(analysis) =
-					Analysis::median_slopes(&batch.db_results, BenchmarkSelector::Writes)
-				{
-					println!("Writes = {:?}", analysis);
+				match Analysis::median_slopes(&batch.db_results, BenchmarkSelector::Writes) {
+					Ok(analysis) => println!("Writes = {:?}", analysis),
+					Err(err) => println!("Writes: Error: {:?}", err),
 				}
-				if let Some(analysis) =
-					Analysis::median_slopes(&batch.db_results, BenchmarkSelector::ProofSize)
-				{
-					println!("Recorded proof Size = {:?}", analysis);
+				match Analysis::median_slopes(&batch.db_results, BenchmarkSelector::ProofSize) {
+					Ok(analysis) => println!("Recorded proof Size = {:?}", analysis),
+					Err(err) => println!("Recorded proof Size: Error: {:?}", err),
 				}
 				println!();
 			}
 			if !self.no_min_squares {
 				println!("Min Squares Analysis\n========");
-				if let Some(analysis) =
-					Analysis::min_squares_iqr(&batch.time_results, BenchmarkSelector::ExtrinsicTime)
-				{
-					println!("-- Extrinsic Time --\n{}", analysis);
+				match Analysis::min_squares_iqr(
+					&batch.time_results,
+					BenchmarkSelector::ExtrinsicTime,
+				) {
+					Ok(analysis) => println!("-- Extrinsic Time --\n{}", analysis),
+					Err(err) => println!("-- Extrinsic Time --\nError: {:?}", err),
 				}
-				if let Some(analysis) =
-					Analysis::min_squares_iqr(&batch.db_results, BenchmarkSelector::Reads)
-				{
-					println!("Reads = {:?}", analysis);
+				match Analysis::min_squares_iqr(&batch.db_results, BenchmarkSelector::Reads) {
+					Ok(analysis) => println!("Reads = {:?}", analysis),
+					Err(err) => println!("Reads: Error: {:?}", err),
 				}
-				if let Some(analysis) =
-					Analysis::min_squares_iqr(&batch.db_results, BenchmarkSelector::Writes)
-				{
-					println!("Writes = {:?}", analysis);
+				match Analysis::min_squares_iqr(&batch.db_results, BenchmarkSelector::Writes) {
+					Ok(analysis) => println!("Writes = {:?}", analysis),
+					Err(err) => println!("Writes: Error: {:?}", err),
 				}
-				if let Some(analysis) =
-					Analysis::min_squares_iqr(&batch.db_results, BenchmarkSelector::ProofSize)
-				{
-					println!("Recorded proof Size = {:?}", analysis);
+				match Analysis::min_squares_iqr(&batch.db_results, BenchmarkSelector::ProofSize) {
+					Ok(analysis) => println!("Recorded proof Size = {:?}", analysis),
+					Err(err) => println!("Recorded proof Size: Error: {:?}", err),
 				}
 				println!();
 			}
@@ -1024,6 +1050,10 @@ impl PalletCmd {
 	) -> std::result::Result<(), (ErrorKind, String)> {
 		if self.runtime.is_some() && self.shared_params.chain.is_some() {
 			unreachable!("Clap should not allow both `--runtime` and `--chain` to be provided.")
+		}
+
+		if self.external_repeat.is_some() {
+			log::warn!(target: LOG_TARGET, "The `--external-repeat` argument is deprecated and will be removed in a future release.");
 		}
 
 		if chain_spec.is_none() && self.runtime.is_none() && self.shared_params.chain.is_none() {
@@ -1171,15 +1201,7 @@ mod tests {
 			"--genesis-builder",
 			"none",
 		])?;
-		cli_succeed(&[
-			"test",
-			"--extrinsic",
-			"",
-			"--pezpallet",
-			"",
-			"--runtime",
-			"path/to/runtime",
-		])?;
+		cli_succeed(&["test", "--extrinsic", "", "--pezpallet", "", "--runtime", "path/to/runtime"])?;
 		cli_succeed(&[
 			"test",
 			"--extrinsic",
@@ -1190,6 +1212,17 @@ mod tests {
 			"path/to/runtime",
 			"--genesis-builder-preset",
 			"preset",
+		])?;
+		cli_succeed(&[
+			"test",
+			"--extrinsic",
+			"",
+			"--pezpallet",
+			"",
+			"--runtime",
+			"path/to/runtime",
+			"--genesis-patch",
+			"path/to/patch.json",
 		])?;
 		cli_fail(&[
 			"test",
