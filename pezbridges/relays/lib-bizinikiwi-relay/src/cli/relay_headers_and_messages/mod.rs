@@ -475,19 +475,19 @@ mod tests {
 					},
 				},
 				right: BridgeHubPolkadotConnectionParams {
-					bridge_hub_polkadot_uri: "ws://bridge-hub-pezkuwi-collator1:9944".into(),
-					bridge_hub_polkadot_runtime_version: BridgeHubPolkadotRuntimeVersionParams {
-						bridge_hub_polkadot_version_mode: RuntimeVersionType::Bundle,
-						bridge_hub_polkadot_spec_version: None,
-						bridge_hub_polkadot_transaction_version: None,
+					bridge_hub_pezkuwi_uri: "ws://bridge-hub-pezkuwi-collator1:9944".into(),
+					bridge_hub_pezkuwi_runtime_version: BridgeHubPolkadotRuntimeVersionParams {
+						bridge_hub_pezkuwi_version_mode: RuntimeVersionType::Bundle,
+						bridge_hub_pezkuwi_spec_version: None,
+						bridge_hub_pezkuwi_transaction_version: None,
 					},
 				},
 				right_sign: BridgeHubPolkadotSigningParams {
-					bridge_hub_polkadot_signer: Some("//George".into()),
-					bridge_hub_polkadot_signer_password: None,
-					bridge_hub_polkadot_signer_file: None,
-					bridge_hub_polkadot_signer_password_file: None,
-					bridge_hub_polkadot_transactions_mortality: Some(64),
+					bridge_hub_pezkuwi_signer: Some("//George".into()),
+					bridge_hub_pezkuwi_signer_password: None,
+					bridge_hub_pezkuwi_signer_file: None,
+					bridge_hub_pezkuwi_signer_password_file: None,
+					bridge_hub_pezkuwi_transactions_mortality: Some(64),
 				},
 				right_relay: PezkuwiConnectionParams {
 					pezkuwi_uri: "ws://pezkuwi-alice:9944".into(),

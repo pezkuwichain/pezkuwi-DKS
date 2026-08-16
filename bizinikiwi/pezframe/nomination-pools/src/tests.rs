@@ -5781,7 +5781,7 @@ mod reward_counter_precision {
 	}
 
 	#[test]
-	fn reward_counter_calc_wont_fail_in_normal_polkadot_future() {
+	fn reward_counter_calc_wont_fail_in_normal_pezkuwi_future() {
 		// create a pool that has roughly half of the polkadot issuance in 10 years.
 		let pool_bond = inflation(10) / 2;
 		ExtBuilder::default().ed(DOT).min_bond(pool_bond).build_and_execute(|| {

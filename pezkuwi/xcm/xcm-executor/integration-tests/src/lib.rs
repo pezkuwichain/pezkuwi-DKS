@@ -40,7 +40,7 @@ fn basic_buy_fees_message_executes() {
 		DepositAsset { assets: Wild(AllCounted(1)), beneficiary: Parent.into() },
 	]);
 
-	let mut block_builder = client.init_polkadot_block_builder();
+	let mut block_builder = client.init_pezkuwi_block_builder();
 
 	let execute = construct_extrinsic(
 		&client,
@@ -52,7 +52,7 @@ fn basic_buy_fees_message_executes() {
 		0,
 	);
 
-	block_builder.push_polkadot_extrinsic(execute).expect("pushes extrinsic");
+	block_builder.push_pezkuwi_extrinsic(execute).expect("pushes extrinsic");
 
 	let block = block_builder.build().expect("Finalizes the block").block;
 	let block_hash = block.hash();
@@ -126,12 +126,12 @@ fn transact_recursion_limit_works() {
 		}));
 	}
 
-	let mut block_builder = client.init_polkadot_block_builder();
+	let mut block_builder = client.init_pezkuwi_block_builder();
 
 	let execute =
 		construct_extrinsic(&client, call.unwrap(), pezsp_keyring::Sr25519Keyring::Alice, 0);
 
-	block_builder.push_polkadot_extrinsic(execute).expect("pushes extrinsic");
+	block_builder.push_pezkuwi_extrinsic(execute).expect("pushes extrinsic");
 
 	let block = block_builder.build().expect("Finalizes the block").block;
 	let block_hash = block.hash();
@@ -176,7 +176,7 @@ fn query_response_fires() {
 	pezsp_tracing::try_init_simple();
 	let client = TestClientBuilder::new().build();
 
-	let mut block_builder = client.init_polkadot_block_builder();
+	let mut block_builder = client.init_pezkuwi_block_builder();
 
 	let execute = construct_extrinsic(
 		&client,
@@ -187,7 +187,7 @@ fn query_response_fires() {
 		0,
 	);
 
-	block_builder.push_polkadot_extrinsic(execute).expect("pushes extrinsic");
+	block_builder.push_pezkuwi_extrinsic(execute).expect("pushes extrinsic");
 
 	let block = block_builder.build().expect("Finalizes the block").block;
 	let block_hash = block.hash();
@@ -206,7 +206,7 @@ fn query_response_fires() {
 	});
 	let query_id = query_id.unwrap();
 
-	let mut block_builder = client.init_polkadot_block_builder();
+	let mut block_builder = client.init_pezkuwi_block_builder();
 
 	let response = Response::ExecutionResult(None);
 	let max_weight = Weight::from_parts(1_000_000, 1024 * 1024);
@@ -224,7 +224,7 @@ fn query_response_fires() {
 		1,
 	);
 
-	block_builder.push_polkadot_extrinsic(execute).expect("pushes extrinsic");
+	block_builder.push_pezkuwi_extrinsic(execute).expect("pushes extrinsic");
 
 	let block = block_builder.build().expect("Finalizes the block").block;
 	let block_hash = block.hash();
@@ -258,7 +258,7 @@ fn query_response_elicits_handler() {
 	pezsp_tracing::try_init_simple();
 	let client = TestClientBuilder::new().build();
 
-	let mut block_builder = client.init_polkadot_block_builder();
+	let mut block_builder = client.init_pezkuwi_block_builder();
 
 	let execute = construct_extrinsic(
 		&client,
@@ -269,7 +269,7 @@ fn query_response_elicits_handler() {
 		0,
 	);
 
-	block_builder.push_polkadot_extrinsic(execute).expect("pushes extrinsic");
+	block_builder.push_pezkuwi_extrinsic(execute).expect("pushes extrinsic");
 
 	let block = block_builder.build().expect("Finalizes the block").block;
 	let block_hash = block.hash();
@@ -288,7 +288,7 @@ fn query_response_elicits_handler() {
 	});
 	let query_id = query_id.unwrap();
 
-	let mut block_builder = client.init_polkadot_block_builder();
+	let mut block_builder = client.init_pezkuwi_block_builder();
 
 	let response = Response::ExecutionResult(None);
 	let max_weight = Weight::from_parts(1_000_000, 1024 * 1024);
@@ -305,7 +305,7 @@ fn query_response_elicits_handler() {
 		1,
 	);
 
-	block_builder.push_polkadot_extrinsic(execute).expect("pushes extrinsic");
+	block_builder.push_pezkuwi_extrinsic(execute).expect("pushes extrinsic");
 
 	let block = block_builder.build().expect("Finalizes the block").block;
 	let block_hash = block.hash();
@@ -375,7 +375,7 @@ fn deposit_reserve_asset_works_for_any_xcm_sender() {
 		DepositReserveAsset { assets: Wild(AllCounted(max_assets)), dest, xcm: xcm_on_dest },
 	]);
 
-	let mut block_builder = client.init_polkadot_block_builder();
+	let mut block_builder = client.init_pezkuwi_block_builder();
 
 	// Make the para available, so that `DMP` doesn't reject the XCM because the para is unknown.
 	let make_para_available = construct_extrinsic(
@@ -408,9 +408,9 @@ fn deposit_reserve_asset_works_for_any_xcm_sender() {
 	);
 
 	block_builder
-		.push_polkadot_extrinsic(make_para_available)
+		.push_pezkuwi_extrinsic(make_para_available)
 		.expect("pushes extrinsic");
-	block_builder.push_polkadot_extrinsic(execute).expect("pushes extrinsic");
+	block_builder.push_pezkuwi_extrinsic(execute).expect("pushes extrinsic");
 
 	let block = block_builder.build().expect("Finalizes the block").block;
 	let block_hash = block.hash();

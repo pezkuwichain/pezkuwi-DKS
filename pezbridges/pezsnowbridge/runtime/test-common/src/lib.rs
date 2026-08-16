@@ -583,7 +583,7 @@ pub fn ethereum_extrinsic<Runtime>(
 		});
 }
 
-pub fn ethereum_to_polkadot_message_extrinsics_work<Runtime>(
+pub fn ethereum_to_pezkuwi_message_extrinsics_work<Runtime>(
 	collator_session_key: CollatorSessionKeys<Runtime>,
 	runtime_para_id: u32,
 	construct_and_apply_extrinsic: fn(

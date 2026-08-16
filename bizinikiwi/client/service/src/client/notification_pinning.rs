@@ -21,8 +21,8 @@
 //! This file contains a worker that should be started when a new client instance is created.
 //! The goal is to avoid pruning of blocks that have active notifications in the node. Every
 //! recipient of notifications should receive the chance to act upon them. In addition, notification
-//! listeners can hold onto a [`pezsc_client_api::UnpinHandle`] to keep a block pinned. Once the
-//! handle is dropped, a message is sent and the worker unpins the respective block.
+//! listeners can hold onto a [`pezsc_client_api::UnpinHandle`] to keep a block pinned. Once the handle
+//! is dropped, a message is sent and the worker unpins the respective block.
 use std::{
 	marker::PhantomData,
 	sync::{Arc, Weak},

@@ -383,7 +383,7 @@ pub fn check_block_in_chain(
 }
 
 /// Build Pezkuwi full node with teyrchain bootnode request-response protocol.
-fn build_polkadot_with_paranode_protocol<Network>(
+fn build_pezkuwi_with_paranode_protocol<Network>(
 	config: Configuration,
 	params: NewFullParams<CollatorOverseerGen>,
 ) -> Result<(NewFull, async_channel::Receiver<IncomingRequest>), pezkuwi_service::Error>
@@ -403,7 +403,7 @@ where
 
 /// Build the Pezkuwi full node using the given `config`.
 #[pezsc_tracing::logging::prefix_logs_with("Relaychain")]
-fn build_polkadot_full_node(
+fn build_pezkuwi_full_node(
 	config: Configuration,
 	teyrchain_config: &Configuration,
 	telemetry_worker_handle: Option<TelemetryWorkerHandle>,
@@ -447,10 +447,10 @@ fn build_polkadot_full_node(
 	};
 
 	let (relay_chain_full_node, paranode_req_receiver) = match config.network.network_backend {
-		NetworkBackendType::Libp2p => build_polkadot_with_paranode_protocol::<
+		NetworkBackendType::Libp2p => build_pezkuwi_with_paranode_protocol::<
 			pezsc_network::NetworkWorker<_, _>,
 		>(config, new_full_params)?,
-		NetworkBackendType::Litep2p => build_polkadot_with_paranode_protocol::<
+		NetworkBackendType::Litep2p => build_pezkuwi_with_paranode_protocol::<
 			pezsc_network::Litep2pNetworkBackend,
 		>(config, new_full_params)?,
 	};
@@ -476,13 +476,9 @@ pub fn build_inprocess_relay_chain(
 	pezkuwi_config.impl_version = pezkuwi_cli::Cli::impl_version();
 	pezkuwi_config.impl_name = pezkuwi_cli::Cli::impl_name();
 
-	let (full_node, collator_key, paranode_req_receiver) = build_polkadot_full_node(
-		pezkuwi_config,
-		teyrchain_config,
-		telemetry_worker_handle,
-		hwbench,
-	)
-	.map_err(|e| RelayChainError::Application(Box::new(e) as Box<_>))?;
+	let (full_node, collator_key, paranode_req_receiver) =
+		build_pezkuwi_full_node(pezkuwi_config, teyrchain_config, telemetry_worker_handle, hwbench)
+			.map_err(|e| RelayChainError::Application(Box::new(e) as Box<_>))?;
 
 	let relay_chain_interface = Arc::new(RelayChainInProcessInterface::new(
 		full_node.client,
@@ -531,7 +527,7 @@ mod tests {
 		let backend = builder.backend();
 		let client = Arc::new(builder.build());
 
-		let block_builder = client.init_polkadot_block_builder();
+		let block_builder = client.init_pezkuwi_block_builder();
 		let block = block_builder.build().expect("Finalizes the block").block;
 		let dummy_network: Arc<dyn SyncOracle + Sync + Send> = Arc::new(DummyNetwork {});
 
@@ -600,9 +596,9 @@ mod tests {
 			pezsp_keyring::Sr25519Keyring::Bob,
 			1000,
 		);
-		let mut block_builder = client.init_polkadot_block_builder();
+		let mut block_builder = client.init_pezkuwi_block_builder();
 		// Push an extrinsic to get a different block hash.
-		block_builder.push_polkadot_extrinsic(ext).expect("Push extrinsic");
+		block_builder.push_pezkuwi_extrinsic(ext).expect("Push extrinsic");
 		let block2 = block_builder.build().expect("Build second block").block;
 		let hash2 = block2.hash();
 

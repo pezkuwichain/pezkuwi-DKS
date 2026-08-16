@@ -34,25 +34,25 @@ pub trait InitPolkadotBlockBuilder {
 	///
 	/// This will automatically create and push the inherents for you to make the block valid for
 	/// the test runtime.
-	fn init_polkadot_block_builder(&self) -> pezsc_block_builder::BlockBuilder<'_, Block, Client>;
+	fn init_pezkuwi_block_builder(&self) -> pezsc_block_builder::BlockBuilder<'_, Block, Client>;
 
 	/// Init a Pezkuwi specific block builder at a specific block that works for the test runtime.
 	///
-	/// Same as [`InitPolkadotBlockBuilder::init_polkadot_block_builder`] besides that it takes a
+	/// Same as [`InitPolkadotBlockBuilder::init_pezkuwi_block_builder`] besides that it takes a
 	/// `Hash` to say which should be the parent block of the block that is being build.
-	fn init_polkadot_block_builder_at(
+	fn init_pezkuwi_block_builder_at(
 		&self,
 		hash: <Block as BlockT>::Hash,
 	) -> pezsc_block_builder::BlockBuilder<'_, Block, Client>;
 }
 
 impl InitPolkadotBlockBuilder for Client {
-	fn init_polkadot_block_builder(&self) -> BlockBuilder<'_, Block, Client> {
+	fn init_pezkuwi_block_builder(&self) -> BlockBuilder<'_, Block, Client> {
 		let chain_info = self.chain_info();
-		self.init_polkadot_block_builder_at(chain_info.best_hash)
+		self.init_pezkuwi_block_builder_at(chain_info.best_hash)
 	}
 
-	fn init_polkadot_block_builder_at(
+	fn init_pezkuwi_block_builder_at(
 		&self,
 		hash: <Block as BlockT>::Hash,
 	) -> BlockBuilder<'_, Block, Client> {
@@ -137,14 +137,14 @@ pub trait BlockBuilderExt {
 	/// opaque extrinsic and pushes it to the block.
 	///
 	/// Returns the result of the application of the extrinsic.
-	fn push_polkadot_extrinsic(
+	fn push_pezkuwi_extrinsic(
 		&mut self,
 		ext: UncheckedExtrinsic,
 	) -> Result<(), pezsp_blockchain::Error>;
 }
 
 impl BlockBuilderExt for BlockBuilder<'_, Block, Client> {
-	fn push_polkadot_extrinsic(
+	fn push_pezkuwi_extrinsic(
 		&mut self,
 		ext: UncheckedExtrinsic,
 	) -> Result<(), pezsp_blockchain::Error> {

@@ -309,7 +309,7 @@ mod tests {
 				(2_u16, "EoQBtnx69txxumxSJexVzxYD1Q4LWAuWmRq8LrBWb27nhYN"),
 			),
 			// Note: these accounts are used for integration tests within
-			// `bridges_polkadot_kusama.sh` from fellows.
+			// `bridges_pezkuwi_kusama.sh` from fellows.
 			(
 				LegacyLaneId([0, 0, 0, 2]),
 				b"bhwd",
