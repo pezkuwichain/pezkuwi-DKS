@@ -21091,6 +21091,7 @@ dependencies = [
 name = "pezsnowbridge-pezpallet-ethereum-client"
 version = "0.2.0"
 dependencies = [
+ "alloy-primitives",
  "hex-literal",
  "parity-scale-codec",
  "pezframe-benchmarking",
