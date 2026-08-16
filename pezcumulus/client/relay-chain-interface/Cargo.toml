@@ -13,6 +13,7 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
+pezsp-storage = { workspace = true, default-features = true }
 pezkuwi-overseer = { workspace = true, default-features = true }
 
 pezcumulus-primitives-core = { workspace = true, default-features = true }
