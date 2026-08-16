@@ -1501,7 +1501,6 @@ rustls = { version = "0.23.18", default-features = false, features = [
 rustversion = { version = "1.0.17" }
 rusty-fork = { version = "0.3.0", default-features = false }
 safe-mix = { version = "1.0", default-features = false }
-sc-chain-spec = { version = "46.0.0", default-features = false }
 scale-bits = { version = "0.7.0", default-features = false }
 scale-decode = { version = "0.16.2", default-features = false }
 scale-encode = { version = "0.10.0", default-features = false }
@@ -1537,7 +1536,6 @@ smallvec = { version = "1.11.0", default-features = false }
 smoldot = { version = "0.20.0", default-features = false }
 smoldot-light = { version = "0.18.0", default-features = false }
 soketto = { version = "0.8.0" }
-sp-core = { version = "38.1.0" }
 spinners = { version = "4.1.1" }
 sqlx = { version = "0.8.2" }
 ss58-registry = { package = "pezsp-ss58-registry", version = "1.52.0", default-features = false }
