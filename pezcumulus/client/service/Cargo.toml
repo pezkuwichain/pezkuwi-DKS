@@ -35,6 +35,7 @@ pezsp-api = { workspace = true, default-features = true }
 pezsp-blockchain = { workspace = true, default-features = true }
 pezsp-consensus = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-ec-utils = { workspace = true, default-features = true, features = ["rfc163"] }
 pezsp-io = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-transaction-pool = { workspace = true, default-features = true }
@@ -50,6 +51,7 @@ pezcumulus-client-collator = { workspace = true, default-features = true }
 pezcumulus-client-consensus-common = { workspace = true, default-features = true }
 pezcumulus-client-network = { workspace = true, default-features = true }
 pezcumulus-client-pov-recovery = { workspace = true, default-features = true }
+pezcumulus-client-proof-size-recording = { workspace = true, default-features = true }
 pezcumulus-primitives-core = { workspace = true, default-features = true }
 pezcumulus-primitives-proof-size-hostfunction = { workspace = true, default-features = true }
 pezcumulus-relay-chain-inprocess-interface = { workspace = true, default-features = true }

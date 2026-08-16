@@ -51,6 +51,7 @@ members = [
 	"bizinikiwi/client/executor/runtime-test",
 	"bizinikiwi/client/executor/wasmtime",
 	"bizinikiwi/client/informant",
+	"bizinikiwi/client/hop",
 	"bizinikiwi/client/keystore",
 	"bizinikiwi/client/merkle-mountain-range",
 	"bizinikiwi/client/merkle-mountain-range/rpc",
@@ -282,6 +283,7 @@ members = [
 	"bizinikiwi/primitives/genesis-builder",
 	"bizinikiwi/primitives/inherents",
 	"bizinikiwi/primitives/io",
+	"bizinikiwi/primitives/hop",
 	"bizinikiwi/primitives/keyring",
 	"bizinikiwi/primitives/keystore",
 	"bizinikiwi/primitives/maybe-compressed-blob",
@@ -1322,6 +1324,7 @@ pezsc-executor-common = { path = "bizinikiwi/client/executor/common", version = 
 pezsc-executor-polkavm = { path = "bizinikiwi/client/executor/polkavm", version = "0.29.0", default-features = false }
 pezsc-executor-wasmtime = { path = "bizinikiwi/client/executor/wasmtime", version = "0.29.0", default-features = false }
 pezsc-informant = { path = "bizinikiwi/client/informant", version = "0.33.0", default-features = false }
+pezsc-hop = { path = "bizinikiwi/client/hop", version = "0.2.0", default-features = false }
 pezsc-keystore = { path = "bizinikiwi/client/keystore", version = "25.0.0", default-features = false }
 pezsc-mixnet = { path = "bizinikiwi/client/mixnet", version = "0.4.0", default-features = false }
 pezsc-network = { path = "bizinikiwi/client/network", version = "0.34.0", default-features = false }
@@ -1407,6 +1410,7 @@ pezsp-externalities = { path = "bizinikiwi/primitives/externalities", version = 
 pezsp-genesis-builder = { path = "bizinikiwi/primitives/genesis-builder", version = "0.8.0", default-features = false }
 pezsp-inherents = { path = "bizinikiwi/primitives/inherents", version = "26.0.0", default-features = false }
 pezsp-io = { path = "bizinikiwi/primitives/io", version = "30.0.0", default-features = false }
+pezsp-hop = { path = "bizinikiwi/primitives/hop", version = "0.3.0", default-features = false }
 pezsp-keyring = { path = "bizinikiwi/primitives/keyring", version = "31.0.0", default-features = false }
 pezsp-keystore = { path = "bizinikiwi/primitives/keystore", version = "0.34.0", default-features = false }
 pezsp-maybe-compressed-blob = { path = "bizinikiwi/primitives/maybe-compressed-blob", version = "11.0.0", default-features = false }

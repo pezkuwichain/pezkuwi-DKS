@@ -11878,6 +11878,7 @@ dependencies = [
  "pezcumulus-client-consensus-common",
  "pezcumulus-client-network",
  "pezcumulus-client-pov-recovery",
+ "pezcumulus-client-proof-size-recording",
  "pezcumulus-primitives-core",
  "pezcumulus-primitives-proof-size-hostfunction",
  "pezcumulus-relay-chain-inprocess-interface",
@@ -11902,6 +11903,7 @@ dependencies = [
  "pezsp-blockchain",
  "pezsp-consensus",
  "pezsp-core",
+ "pezsp-crypto-ec-utils",
  "pezsp-io",
  "pezsp-runtime",
  "pezsp-transaction-pool",
@@ -14062,6 +14064,7 @@ dependencies = [
  "clap",
  "color-print",
  "docify",
+ "frame-metadata",
  "futures",
  "futures-timer",
  "jsonrpsee",
@@ -14100,6 +14103,7 @@ dependencies = [
  "pezsc-consensus-aura",
  "pezsc-consensus-manual-seal",
  "pezsc-executor",
+ "pezsc-hop",
  "pezsc-keystore",
  "pezsc-network",
  "pezsc-network-statement",
@@ -14130,6 +14134,7 @@ dependencies = [
  "pezsp-storage",
  "pezsp-timestamp",
  "pezsp-transaction-pool",
+ "pezsp-transaction-storage-proof",
  "pezsp-version",
  "pezsp-weights",
  "pezstaging-chain-spec-builder",
@@ -14137,6 +14142,7 @@ dependencies = [
  "serde",
  "serde_json",
  "teyrchains-common",
+ "teyrchains-common-types",
  "tokio",
  "wait-timeout",
 ]
@@ -20022,6 +20028,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezsc-hop"
+version = "0.2.0"
+dependencies = [
+ "clap",
+ "futures-timer",
+ "hex",
+ "jsonrpsee",
+ "parity-scale-codec",
+ "parking_lot 0.12.5",
+ "pezkuwi-primitives",
+ "pezsc-transaction-pool-api",
+ "pezsp-api",
+ "pezsp-blockchain",
+ "pezsp-core",
+ "pezsp-crypto-hashing",
+ "pezsp-externalities",
+ "pezsp-hop",
+ "pezsp-runtime",
+ "pezsp-state-machine",
+ "pezsp-test-primitives",
+ "pezsp-version",
+ "serde",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "pezsc-informant"
 version = "0.33.0"
 dependencies = [
@@ -21828,6 +21863,15 @@ dependencies = [
  "pezsp-runtime",
  "scale-info",
  "serde_json",
+]
+
+[[package]]
+name = "pezsp-hop"
+version = "0.3.0"
+dependencies = [
+ "parity-scale-codec",
+ "pezsp-api",
+ "pezsp-runtime",
 ]
 
 [[package]]

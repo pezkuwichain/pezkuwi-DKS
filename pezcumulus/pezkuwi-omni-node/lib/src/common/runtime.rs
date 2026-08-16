@@ -19,7 +19,7 @@
 use codec::{Decode, Encode};
 use frame_metadata::RuntimeMetadataPrefixed;
 use pezcumulus_client_service::TeyrchainHostFunctions;
-use pezkuwi_subxt_metadata::{Metadata, StorageEntryType};
+use pezkuwi_subxt_metadata::Metadata;
 use pezsc_chain_spec::ChainSpec;
 use pezsc_executor::WasmExecutor;
 use pezsc_runtime_utilities::fetch_latest_metadata_from_code_blob;
@@ -202,18 +202,17 @@ impl MetadataInspector {
 		entry_name: &str,
 	) -> Option<&Type<PortableForm>> {
 		self.metadata
-			.pezpallet_by_name(pezpallet_name)?
+			.pallet_by_name(pezpallet_name)?
 			.storage()?
 			.entry_by_name(entry_name)
-			.and_then(|entry| match entry.entry_type() {
-				StorageEntryType::Plain(ty_id) => Some(*ty_id),
-				_ => None,
-			})
+			// Only plain entries carry a single value type; a map entry has one or more keys and
+			// there is no single type to resolve, so it is skipped the same way.
+			.and_then(|entry| (entry.keys().len() == 0).then(|| entry.value_ty()))
 			.and_then(|ty_id| self.metadata.types().resolve(ty_id))
 	}
 
 	fn pezpallet_exists(&self, name: &str) -> bool {
-		self.metadata.pezpallet_by_name(name).is_some()
+		self.metadata.pallet_by_name(name).is_some()
 	}
 
 	fn block_number(&self) -> Option<BlockNumber> {
@@ -222,7 +221,7 @@ impl MetadataInspector {
 	}
 
 	fn aura_consensus_id(&self) -> Option<AuraConsensusId> {
-		let pezpallet = self.metadata.pezpallet_by_name(DEFAULT_AURA_PALLET_NAME)?;
+		let pezpallet = self.metadata.pallet_by_name(DEFAULT_AURA_PALLET_NAME)?;
 
 		// 1. (Recommended) Try to find AuthorityId in the pezpallet's associated types.
 		if let Some(ty_id) = pezpallet.associated_type_id("AuthorityId") {

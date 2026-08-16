@@ -32,9 +32,11 @@ jsonrpsee = { features = ["server"], workspace = true }
 pezkuwi-subxt-metadata = { workspace = true, default-features = true }
 scale-info = { workspace = true }
 teyrchains-common = { workspace = true, default-features = true }
+teyrchains-common-types = { workspace = true, default-features = true }
 
 # Bizinikiwi
 bizinikiwi-frame-rpc-system = { workspace = true, default-features = true }
+frame-metadata = { workspace = true, default-features = true }
 bizinikiwi-state-trie-migration-rpc = { workspace = true, default-features = true }
 pezframe-benchmarking = { optional = true, workspace = true, default-features = true }
 pezframe-benchmarking-cli = { workspace = true, default-features = true }
@@ -52,6 +54,7 @@ pezsc-client-db = { workspace = true, default-features = true }
 pezsc-consensus = { workspace = true, default-features = true }
 pezsc-consensus-manual-seal = { workspace = true, default-features = true }
 pezsc-executor = { workspace = true, default-features = true }
+pezsc-hop = { workspace = true, default-features = true }
 pezsc-keystore = { workspace = true, default-features = true }
 pezsc-network = { workspace = true, default-features = true }
 pezsc-network-statement = { workspace = true, default-features = true }
@@ -73,6 +76,7 @@ pezsp-consensus = { workspace = true, default-features = true }
 pezsp-consensus-aura = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
 pezsp-genesis-builder = { workspace = true }
+pezsp-transaction-storage-proof = { workspace = true, default-features = true }
 pezsp-inherents = { workspace = true, default-features = true }
 pezsp-keystore = { workspace = true, default-features = true }
 pezsp-offchain = { workspace = true, default-features = true }
