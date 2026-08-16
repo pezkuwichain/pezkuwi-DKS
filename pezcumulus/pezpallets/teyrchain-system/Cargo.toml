@@ -146,6 +146,7 @@ try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
 	"pezkuwi-runtime-teyrchains/try-runtime",
 	"pezkuwi-teyrchain-primitives/try-runtime",
 	"pezpallet-message-queue/try-runtime",
@@ -158,7 +159,6 @@ try-runtime = [
 	"pezsp-version/try-runtime",
 	"xcm-builder/try-runtime",
 	"xcm/try-runtime",
-	"pezkuwi-primitives/try-runtime"
 ]
 serde = []
 experimental = []

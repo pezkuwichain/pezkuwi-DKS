@@ -109,7 +109,7 @@ pub mod __private {
 	pub use pezsp_version::{create_apis_vec, ApiId, ApisVec, RuntimeVersion};
 	pub use scale_info;
 
-	#[cfg(all(any(target_arch = "riscv32", target_arch = "riscv64"), substrate_runtime))]
+	#[cfg(all(any(target_arch = "riscv32", target_arch = "riscv64"), bizinikiwi_runtime))]
 	pub use pezsp_runtime_interface::polkavm::{polkavm_abi, polkavm_export};
 }
 

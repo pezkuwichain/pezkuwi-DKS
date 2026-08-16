@@ -210,7 +210,7 @@ impl<K, V> Default for OverlayedMap<K, V> {
 	}
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl From<pezsp_core::storage::StorageMap> for OverlayedMap<StorageKey, StorageEntry> {
 	fn from(storage: pezsp_core::storage::StorageMap) -> Self {
 		Self {

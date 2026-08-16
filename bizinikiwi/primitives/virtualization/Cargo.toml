@@ -17,7 +17,7 @@ num_enum = { workspace = true, default-features = false }
 pezsp-runtime-interface = { workspace = true, default-features = false }
 strum = { features = ["derive"], workspace = true }
 
-[target.'cfg(not(substrate_runtime))'.dependencies]
+[target.'cfg(not(bizinikiwi_runtime))'.dependencies]
 pezsp-externalities = { workspace = true, default-features = true }
 pezsp-storage = { workspace = true, default-features = true }
 

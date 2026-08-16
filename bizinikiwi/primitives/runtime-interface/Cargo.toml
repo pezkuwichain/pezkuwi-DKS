@@ -61,5 +61,5 @@ runtime-benchmarks = [
 serde = []
 with-tracing = []
 
-[target.'cfg(all(target_arch = "riscv64", substrate_runtime))'.dependencies]
+[target.'cfg(all(target_arch = "riscv64", bizinikiwi_runtime))'.dependencies]
 polkavm-derive = { workspace = true }

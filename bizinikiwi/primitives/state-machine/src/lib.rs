@@ -23,16 +23,16 @@
 extern crate alloc;
 
 pub mod backend;
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 mod basic;
 mod error;
 mod ext;
 #[cfg(feature = "fuzzing")]
 pub mod fuzzing;
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 mod in_memory_backend;
 pub(crate) mod overlayed_changes;
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 mod read_only;
 mod stats;
 #[cfg(feature = "std")]
@@ -142,7 +142,7 @@ pub use crate::{
 	trie_backend_essence::{Storage, TrieBackendStorage},
 };
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pub use crate::{
 	basic::BasicExternalities,
 	in_memory_backend::new_in_mem,

@@ -273,7 +273,7 @@ impl TraitPair for Pair {
 	}
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl Pair {
 	/// Verify a signature on a message. Returns `true` if the signature is good.
 	/// Supports old 0.1.1 deprecated signatures and should be used only for backward

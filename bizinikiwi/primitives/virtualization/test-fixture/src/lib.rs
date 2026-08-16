@@ -15,18 +15,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![cfg_attr(substrate_runtime, no_std, no_main)]
+#![cfg_attr(bizinikiwi_runtime, no_std, no_main)]
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 mod fixture;
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 #[allow(dead_code)]
 mod binary {
 	include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pub fn binary() -> &'static [u8] {
 	let _ = binary::WASM_BINARY_BLOATY;
 	binary::WASM_BINARY.unwrap()

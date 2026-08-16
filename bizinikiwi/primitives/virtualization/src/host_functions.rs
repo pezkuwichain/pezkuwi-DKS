@@ -550,7 +550,7 @@ pub trait Virtualization {
 ///
 /// The concrete implementation lives outside this crate (see `pezsc-virtualization`) so that
 /// `pezsp-virtualization` itself does not depend on a specific virtual machine backend.
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pub trait VirtManagerBackend: Send + 'static {
 	/// Compile `program` into a new module.
 	///
@@ -598,14 +598,14 @@ pub trait VirtManagerBackend: Send + 'static {
 	) -> Result<(), MemoryError>;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pezsp_externalities::decl_extension! {
 	/// Extension wrapping a [`VirtManagerBackend`] so it can be accessed through
 	/// the externalities by the virtualization host functions.
 	pub struct VirtManagerExt(Box<dyn VirtManagerBackend>);
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl VirtManagerExt {
 	/// Wrap the given backend so it can be registered as an externalities extension.
 	pub fn new<B: VirtManagerBackend>(backend: B) -> Self {

@@ -81,17 +81,17 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 use tracing;
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 use pezsp_core::{
 	crypto::Pair,
 	hexdisplay::HexDisplay,
 	offchain::{OffchainDbExt, OffchainWorkerExt, TransactionPoolExt},
 	storage::ChildInfo,
 };
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 use pezsp_keystore::KeystoreExt;
 
 #[cfg(feature = "bandersnatch-experimental")]
@@ -110,7 +110,7 @@ use pezsp_core::{
 #[cfg(feature = "bls-experimental")]
 use pezsp_core::{bls381, ecdsa_bls381};
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 use pezsp_trie::{LayoutV0, LayoutV1, TrieConfiguration};
 
 use pezsp_runtime_interface::{
@@ -124,21 +124,21 @@ use pezsp_runtime_interface::{
 
 use codec::{Decode, Encode};
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 use secp256k1::{
 	ecdsa::{RecoverableSignature, RecoveryId},
 	Message,
 };
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 use pezsp_externalities::{Externalities, ExternalitiesExt};
 
 pub use pezsp_externalities::MultiRemovalResults;
 
-#[cfg(all(not(feature = "disable_allocator"), substrate_runtime))]
+#[cfg(all(not(feature = "disable_allocator"), bizinikiwi_runtime))]
 mod global_alloc;
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 const LOG_TARGET: &str = "runtime::io";
 
 /// Error verifying ECDSA signature
@@ -845,7 +845,7 @@ pub trait Misc {
 	}
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pezsp_externalities::decl_extension! {
 	/// Extension to signal to [`crypt::ed25519_verify`] to use the dalek crate.
 	///
@@ -866,7 +866,7 @@ pezsp_externalities::decl_extension! {
 	pub struct UseDalekExt;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl Default for UseDalekExt {
 	fn default() -> Self {
 		Self
@@ -1510,7 +1510,7 @@ pub trait OffchainIndex {
 	}
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pezsp_externalities::decl_extension! {
 	/// Deprecated verification context.
 	///
@@ -1868,7 +1868,7 @@ pub trait WasmTracing {
 	}
 }
 
-#[cfg(all(substrate_runtime, feature = "with-tracing"))]
+#[cfg(all(bizinikiwi_runtime, feature = "with-tracing"))]
 mod tracing_setup {
 	use super::wasm_tracing;
 	use core::sync::atomic::{AtomicBool, Ordering};
@@ -1924,10 +1924,10 @@ mod tracing_setup {
 	}
 }
 
-#[cfg(not(all(substrate_runtime, feature = "with-tracing")))]
+#[cfg(not(all(bizinikiwi_runtime, feature = "with-tracing")))]
 mod tracing_setup {
 	/// Initialize tracing of pezsp_tracing not necessary – noop. To enable build
-	/// when not both `substrate_runtime` and `with-tracing`-feature.
+	/// when not both `bizinikiwi_runtime` and `with-tracing`-feature.
 	pub fn init_tracing() {}
 }
 
@@ -1953,7 +1953,7 @@ pub fn unreachable() -> ! {
 }
 
 /// A default panic handler for the runtime environment.
-#[cfg(all(not(feature = "disable_panic_handler"), substrate_runtime))]
+#[cfg(all(not(feature = "disable_panic_handler"), bizinikiwi_runtime))]
 #[panic_handler]
 pub fn panic(info: &core::panic::PanicInfo) -> ! {
 	let message = alloc::format!("{}", info);
@@ -1988,14 +1988,14 @@ pub fn oom(_: core::alloc::Layout) -> ! {
 }
 
 /// Type alias for Externalities implementation used in tests.
-#[cfg(feature = "std")] // NOTE: Deliberately isn't `not(substrate_runtime)`.
+#[cfg(feature = "std")] // NOTE: Deliberately isn't `not(bizinikiwi_runtime)`.
 pub type TestExternalities = pezsp_state_machine::TestExternalities<pezsp_core::Blake2Hasher>;
 
 /// The host functions Bizinikiwi provides for the Wasm runtime environment.
 ///
 /// All these host functions will be callable from inside the Wasm environment.
 #[docify::export]
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pub type BizinikiwiHostFunctions = (
 	storage::HostFunctions,
 	default_child_storage::HostFunctions,

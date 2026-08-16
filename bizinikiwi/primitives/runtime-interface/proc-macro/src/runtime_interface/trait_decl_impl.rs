@@ -168,7 +168,7 @@ fn impl_trait_for_externalities(trait_def: &ItemTrait, is_wasm_only: bool) -> Re
 	};
 
 	Ok(quote! {
-		#[cfg(not(substrate_runtime))]
+		#[cfg(not(bizinikiwi_runtime))]
 		impl #trait_ for #impl_type {
 			#( #methods )*
 		}

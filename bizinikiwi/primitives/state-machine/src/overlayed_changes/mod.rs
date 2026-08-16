@@ -779,7 +779,7 @@ impl<H: Hasher> OverlayedChanges<H> {
 	}
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<H: Hasher> From<pezsp_core::storage::Storage> for OverlayedChanges<H> {
 	fn from(storage: pezsp_core::storage::Storage) -> Self {
 		Self {

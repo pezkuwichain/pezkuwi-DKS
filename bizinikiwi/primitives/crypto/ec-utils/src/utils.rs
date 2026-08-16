@@ -104,7 +104,7 @@ impl RIType for HostcallResult {
 	type Inner = Result<(), Error>;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl pezsp_runtime_interface::host::IntoFFIValue for HostcallResult {
 	fn into_ffi_value(
 		value: Self::Inner,
@@ -117,7 +117,7 @@ impl pezsp_runtime_interface::host::IntoFFIValue for HostcallResult {
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl pezsp_runtime_interface::wasm::FromFFIValue for HostcallResult {
 	fn from_ffi_value(arg: Self::FFIType) -> Self::Inner {
 		match arg {

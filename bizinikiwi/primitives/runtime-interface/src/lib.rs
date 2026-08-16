@@ -63,7 +63,7 @@ pub extern crate alloc;
 extern crate self as pezsp_runtime_interface;
 
 #[doc(hidden)]
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pub use pezsp_wasm_interface;
 
 #[doc(hidden)]
@@ -344,7 +344,7 @@ pub use pezsp_std;
 pub use pezsp_runtime_interface_proc_macro::runtime_interface;
 
 #[doc(hidden)]
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pub use pezsp_externalities::{
 	set_and_run_with_externalities, with_externalities, ExtensionStore, Externalities,
 	ExternalitiesExt,
@@ -353,14 +353,14 @@ pub use pezsp_externalities::{
 #[doc(hidden)]
 pub use codec;
 
-#[cfg(all(target_arch = "riscv64", substrate_runtime))]
+#[cfg(all(target_arch = "riscv64", bizinikiwi_runtime))]
 pub mod polkavm;
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pub mod host;
 pub(crate) mod impls;
 pub mod pass_by;
-#[cfg(any(substrate_runtime, doc))]
+#[cfg(any(bizinikiwi_runtime, doc))]
 pub mod wasm;
 
 mod util;
@@ -374,12 +374,12 @@ pub use util::{pack_ptr_and_len, unpack_ptr_and_len};
 /// this trait.
 pub trait RIType: Sized {
 	/// The raw FFI type that is used to pass `Self` through the host <-> runtime boundary.
-	#[cfg(not(substrate_runtime))]
+	#[cfg(not(bizinikiwi_runtime))]
 	type FFIType: pezsp_wasm_interface::IntoValue
 		+ pezsp_wasm_interface::TryFromValue
 		+ pezsp_wasm_interface::WasmTy;
 
-	#[cfg(substrate_runtime)]
+	#[cfg(bizinikiwi_runtime)]
 	type FFIType;
 
 	/// The inner type without any serialization strategy wrapper.
@@ -387,9 +387,9 @@ pub trait RIType: Sized {
 }
 
 /// A raw pointer that can be used in a runtime interface function signature.
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 pub type Pointer<T> = *mut T;
 
 /// A raw pointer that can be used in a runtime interface function signature.
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pub type Pointer<T> = pezsp_wasm_interface::Pointer<T>;

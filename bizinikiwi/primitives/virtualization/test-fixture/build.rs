@@ -15,11 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 fn main() {
 	std::env::set_var("BIZINIKIWI_RUNTIME_TARGET", "riscv");
 	bizinikiwi_wasm_builder::WasmBuilder::new().with_current_project().build()
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 fn main() {}

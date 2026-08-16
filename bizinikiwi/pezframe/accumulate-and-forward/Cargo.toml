@@ -50,9 +50,9 @@ runtime-benchmarks = [
 	"pezsp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezsp-runtime/try-runtime",
-	"pezframe-benchmarking?/try-runtime"
 ]

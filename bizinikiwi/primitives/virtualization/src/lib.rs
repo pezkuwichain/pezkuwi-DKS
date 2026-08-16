@@ -44,7 +44,7 @@
 //! **Do not** ship runtimes that depend on this crate to any chain you care about. There is no
 //! stability guarantee and no deprecation period — the interface may change at any time.
 
-#![cfg_attr(substrate_runtime, no_std)]
+#![cfg_attr(bizinikiwi_runtime, no_std)]
 
 mod forwarder;
 mod host_functions;
@@ -52,7 +52,7 @@ pub mod tests;
 
 pub use crate::tests::run as run_tests;
 pub use forwarder::{Execution, Instance, Module};
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pub use host_functions::{ExecBuffer, ExecStatus, VirtManagerBackend, VirtManagerExt};
 
 /// Aggregate of all host functions exposed by this crate.
@@ -62,7 +62,7 @@ pub use host_functions::{ExecBuffer, ExecStatus, VirtManagerBackend, VirtManager
 /// wrapping your backend on the externalities before any of these host functions are
 /// invoked — without it, every call panics. All other interaction with the virtualization
 /// machinery should go through [`Module`], [`Instance`], and [`Execution`].
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 #[doc(inline)]
 pub use host_functions::virtualization::HostFunctions;
 

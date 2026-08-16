@@ -23,16 +23,16 @@ use crate::{
 	RIType,
 };
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 use crate::host::*;
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 use crate::wasm::*;
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 use pezsp_wasm_interface::{FunctionContext, Pointer, Result};
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 use alloc::{format, string::String};
 
 use alloc::vec::Vec;
@@ -55,7 +55,7 @@ impl<T, const N: usize> RIType for PassPointerAndReadCopy<T, N> {
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a, T, const N: usize> FromFFIValue<'a> for PassPointerAndReadCopy<T, N>
 where
 	T: From<[u8; N]> + Copy,
@@ -77,7 +77,7 @@ where
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<T, const N: usize> IntoFFIValue for PassPointerAndReadCopy<T, N>
 where
 	T: AsRef<[u8]>,
@@ -109,7 +109,7 @@ impl<'a, T, const N: usize> RIType for PassPointerAndRead<&'a T, N> {
 	type Inner = &'a T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a, T, const N: usize> FromFFIValue<'a> for PassPointerAndRead<&'a T, N>
 where
 	T: From<[u8; N]>,
@@ -131,7 +131,7 @@ where
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<'a, T, const N: usize> IntoFFIValue for PassPointerAndRead<&'a T, N>
 where
 	T: AsRef<[u8]>,
@@ -158,7 +158,7 @@ impl<T> RIType for PassFatPointerAndRead<T> {
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a> FromFFIValue<'a> for PassFatPointerAndRead<&'a [u8]> {
 	type Owned = Vec<u8>;
 
@@ -175,7 +175,7 @@ impl<'a> FromFFIValue<'a> for PassFatPointerAndRead<&'a [u8]> {
 	}
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a> FromFFIValue<'a> for PassFatPointerAndRead<&'a str> {
 	type Owned = String;
 
@@ -193,7 +193,7 @@ impl<'a> FromFFIValue<'a> for PassFatPointerAndRead<&'a str> {
 	}
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a> FromFFIValue<'a> for PassFatPointerAndRead<Vec<u8>> {
 	type Owned = Vec<u8>;
 
@@ -209,7 +209,7 @@ impl<'a> FromFFIValue<'a> for PassFatPointerAndRead<Vec<u8>> {
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<T> IntoFFIValue for PassFatPointerAndRead<T>
 where
 	T: AsRef<[u8]>,
@@ -237,7 +237,7 @@ impl<T> RIType for PassFatPointerAndReadOption<T> {
 	type Inner = Option<T>;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a> FromFFIValue<'a> for PassFatPointerAndReadOption<&'a [u8]> {
 	type Owned = Option<Vec<u8>>;
 
@@ -258,7 +258,7 @@ impl<'a> FromFFIValue<'a> for PassFatPointerAndReadOption<&'a [u8]> {
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<T> IntoFFIValue for PassFatPointerAndReadOption<T>
 where
 	T: AsRef<[u8]>,
@@ -291,7 +291,7 @@ impl<T> RIType for PassFatPointerAndReadWrite<T> {
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a> FromFFIValue<'a> for PassFatPointerAndReadWrite<&'a mut [u8]> {
 	type Owned = Vec<u8>;
 
@@ -318,7 +318,7 @@ impl<'a> FromFFIValue<'a> for PassFatPointerAndReadWrite<&'a mut [u8]> {
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<'a> IntoFFIValue for PassFatPointerAndReadWrite<&'a mut [u8]> {
 	type Destructor = ();
 
@@ -342,7 +342,7 @@ impl<T> RIType for PassFatPointerAndWrite<T> {
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a> FromFFIValue<'a> for PassFatPointerAndWrite<&'a mut [u8]> {
 	type Owned = Vec<u8>;
 
@@ -369,7 +369,7 @@ impl<'a> FromFFIValue<'a> for PassFatPointerAndWrite<&'a mut [u8]> {
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<'a> IntoFFIValue for PassFatPointerAndWrite<&'a mut [u8]> {
 	type Destructor = ();
 
@@ -394,7 +394,7 @@ impl<T, const N: usize> RIType for PassPointerAndWrite<T, N> {
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a, T, const N: usize> FromFFIValue<'a> for PassPointerAndWrite<&'a mut T, N>
 where
 	T: Default + AsRef<[u8]>,
@@ -423,7 +423,7 @@ where
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<'a, T, const N: usize> IntoFFIValue for PassPointerAndWrite<&'a mut T, N>
 where
 	T: AsMut<[u8]>,
@@ -451,7 +451,7 @@ impl<T> RIType for PassFatPointerAndDecode<T> {
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a, T: codec::Decode> FromFFIValue<'a> for PassFatPointerAndDecode<T> {
 	type Owned = Option<T>;
 
@@ -472,7 +472,7 @@ impl<'a, T: codec::Decode> FromFFIValue<'a> for PassFatPointerAndDecode<T> {
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<T: codec::Encode> IntoFFIValue for PassFatPointerAndDecode<T> {
 	type Destructor = Vec<u8>;
 
@@ -497,7 +497,7 @@ impl<T> RIType for PassFatPointerAndDecodeSlice<T> {
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a, T: codec::Decode> FromFFIValue<'a> for PassFatPointerAndDecodeSlice<&'a [T]> {
 	type Owned = Vec<T>;
 
@@ -518,7 +518,7 @@ impl<'a, T: codec::Decode> FromFFIValue<'a> for PassFatPointerAndDecodeSlice<&'a
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<'a, T: codec::Encode> IntoFFIValue for PassFatPointerAndDecodeSlice<&'a [T]> {
 	type Destructor = Vec<u8>;
 
@@ -555,7 +555,7 @@ where
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<'a, T, U> FromFFIValue<'a> for PassAs<T, U>
 where
 	U: RIType + FromFFIValue<'a> + Primitive,
@@ -581,7 +581,7 @@ where
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<T, U> IntoFFIValue for PassAs<T, U>
 where
 	U: RIType + IntoFFIValue + Primitive,
@@ -610,7 +610,7 @@ where
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<T, U> IntoFFIValue for ReturnAs<T, U>
 where
 	U: RIType + IntoFFIValue + Primitive,
@@ -625,7 +625,7 @@ where
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<T, U> FromFFIValue for ReturnAs<T, U>
 where
 	U: RIType + FromFFIValue + Primitive,
@@ -664,7 +664,7 @@ where
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<T, U, V> IntoFFIValue for ConvertAndReturnAs<T, U, V>
 where
 	V: RIType + IntoFFIValue + Primitive,
@@ -681,7 +681,7 @@ where
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<T, U, V> FromFFIValue for ConvertAndReturnAs<T, U, V>
 where
 	V: RIType + FromFFIValue + Primitive,
@@ -724,7 +724,7 @@ impl<T, const N: usize> RIType for AllocateAndReturnPointer<T, N> {
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<T, const N: usize> IntoFFIValue for AllocateAndReturnPointer<T, N>
 where
 	T: AsRef<[u8]>,
@@ -748,7 +748,7 @@ where
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<T: codec::Decode, const N: usize> FromFFIValue for AllocateAndReturnPointer<T, N>
 where
 	T: From<[u8; N]>,
@@ -783,7 +783,7 @@ impl<T> RIType for AllocateAndReturnFatPointer<T> {
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<T> IntoFFIValue for AllocateAndReturnFatPointer<T>
 where
 	T: AsRef<[u8]>,
@@ -799,7 +799,7 @@ where
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<T> FromFFIValue for AllocateAndReturnFatPointer<T>
 where
 	T: From<Vec<u8>>,
@@ -838,7 +838,7 @@ impl<T> RIType for AllocateAndReturnByCodec<T> {
 	type Inner = T;
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 impl<T: codec::Encode> IntoFFIValue for AllocateAndReturnByCodec<T> {
 	fn into_ffi_value(value: T, context: &mut dyn FunctionContext) -> Result<Self::FFIType> {
 		let vec = value.encode();
@@ -848,7 +848,7 @@ impl<T: codec::Encode> IntoFFIValue for AllocateAndReturnByCodec<T> {
 	}
 }
 
-#[cfg(substrate_runtime)]
+#[cfg(bizinikiwi_runtime)]
 impl<T: codec::Decode> FromFFIValue for AllocateAndReturnByCodec<T> {
 	fn from_ffi_value(arg: Self::FFIType) -> Self::Inner {
 		let (ptr, len) = unpack_ptr_and_len(arg);

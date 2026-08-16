@@ -437,7 +437,7 @@ impl core::default::Default for WasmEntryAttributes {
 	}
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 mod std_features {
 
 	use tracing_core::callsite;
@@ -665,5 +665,5 @@ mod std_features {
 	}
 }
 
-#[cfg(not(substrate_runtime))]
+#[cfg(not(bizinikiwi_runtime))]
 pub use std_features::*;

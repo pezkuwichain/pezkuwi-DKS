@@ -10,8 +10,8 @@ description = "A PolkaVM program that is used by the `pezsp-virtualization` test
 [lints]
 workspace = true
 
-[target.'cfg(not(substrate_runtime))'.build-dependencies]
+[target.'cfg(not(bizinikiwi_runtime))'.build-dependencies]
 bizinikiwi-wasm-builder = { workspace = true }
 
-[target.'cfg(substrate_runtime)'.dependencies]
+[target.'cfg(bizinikiwi_runtime)'.dependencies]
 polkavm-derive = { workspace = true }
