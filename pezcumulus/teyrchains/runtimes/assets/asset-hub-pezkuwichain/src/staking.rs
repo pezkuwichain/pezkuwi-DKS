@@ -347,7 +347,30 @@ impl pezpallet_staking_async::Config for Runtime {
 	type WeightInfo = weights::pezpallet_staking_async::WeightInfo<Runtime>;
 }
 
+
+// Must mirror the relay chain's `SessionKeys` exactly - same fields, same order - because the
+// validator set is decoded on this side using this definition. Verified against
+// pezkuwi/runtime/{zagros,pezkuwichain}/src/lib.rs, which declare these six in this order.
+pezsp_runtime::impl_opaque_keys! {
+	pub struct RelayChainSessionKeys {
+		pub grandpa: pezsp_consensus_grandpa::AuthorityId,
+		pub babe: pezsp_consensus_babe::AuthorityId,
+		pub para_validator: pezkuwi_primitives::ValidatorId,
+		pub para_assignment: pezkuwi_primitives::AssignmentId,
+		pub authority_discovery: pezsp_authority_discovery::AuthorityId,
+		pub beefy: pezsp_consensus_beefy::ecdsa_crypto::AuthorityId,
+	}
+}
+
 impl pezpallet_staking_async_rc_client::Config for Runtime {
+	// Export the validator set at the end of session 4 within an era, as upstream does.
+	type ValidatorSetExportSession = ConstU32<4>;
+	type RelayChainSessionKeys = RelayChainSessionKeys;
+	type Currency = Balances;
+	// Held while a validator's session keys are registered here. Six keys plus SCALE overhead;
+	// upstream charges 10 UNITS for the same payload and this chain's UNITS is the same size.
+	type KeyDeposit = ConstU128<{ 10 * UNITS }>;
+	type WeightInfo = ();
 	type RelayChainOrigin = EnsureRoot<AccountId>;
 	type AHStakingInterface = Staking;
 	type SendToRelayChain = StakingXcmToRelayChain;

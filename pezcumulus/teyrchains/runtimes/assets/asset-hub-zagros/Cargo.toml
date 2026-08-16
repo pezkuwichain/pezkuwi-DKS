@@ -75,6 +75,10 @@ pezpallet-uniques = { workspace = true }
 pezpallet-utility = { workspace = true }
 pezpallet-xcm-precompiles = { workspace = true }
 pezsp-api = { workspace = true }
+pezsp-authority-discovery = { workspace = true }
+pezsp-consensus-babe = { workspace = true }
+pezsp-consensus-beefy = { workspace = true }
+pezsp-consensus-grandpa = { workspace = true }
 pezsp-block-builder = { workspace = true }
 pezsp-consensus-aura = { workspace = true }
 pezsp-core = { workspace = true }
@@ -426,6 +430,10 @@ std = [
 	"pezpallet-xcm-precompiles/std",
 	"pezpallet-xcm/std",
 	"pezsp-api/std",
+	"pezsp-authority-discovery/std",
+	"pezsp-consensus-babe/std",
+	"pezsp-consensus-beefy/std",
+	"pezsp-consensus-grandpa/std",
 	"pezsp-block-builder/std",
 	"pezsp-consensus-aura/std",
 	"pezsp-core/std",
