@@ -131,20 +131,18 @@ impl pezsnowbridge_pezpallet_inbound_queue::Config for Runtime {
 	type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
 }
 
-impl pezsnowbridge_pezpallet_inbound_queue_v2::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Verifier = EthereumBeaconClient;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type XcmSender = crate::XcmRouter;
-	#[cfg(feature = "runtime-benchmarks")]
-	type XcmSender = benchmark_helpers::DoNothingRouter;
-	type GatewayAddress = EthereumGatewayAddress;
-	#[cfg(feature = "runtime-benchmarks")]
-	type Helper = Runtime;
-	type WeightInfo = crate::weights::pezsnowbridge_pezpallet_inbound_queue_v2::WeightInfo<Runtime>;
-	type AssetHubParaId = AssetHubParaId;
-	type XcmExecutor = XcmExecutor<XcmConfig>;
-	type MessageConverter = pezsnowbridge_inbound_queue_primitives::v2::MessageToXcm<
+
+/// Destination the inbound queue delivers to: the Asset Hub parachain.
+pezframe_support::parameter_types! {
+	pub InboundQueueTargetLocation: Location =
+		Location::new(1, [Teyrchain(AssetHubParaId::get().into())]);
+}
+
+pub type InboundQueueXcmMessageProcessor = pezsnowbridge_inbound_queue_primitives::v2::XcmMessageProcessor<
+	Runtime,
+	crate::XcmRouter,
+	XcmExecutor<XcmConfig>,
+	pezsnowbridge_inbound_queue_primitives::v2::MessageToXcm<
 		CreateAssetCall,
 		EthereumNetwork,
 		RelayNetwork,
@@ -153,11 +151,27 @@ impl pezsnowbridge_pezpallet_inbound_queue_v2::Config for Runtime {
 		AssetHubParaId,
 		EthereumSystem,
 		AccountId,
-	>;
-	type AccountToLocation = xcm_builder::AliasesIntoAccountId32<
+	>,
+	xcm_builder::AliasesIntoAccountId32<
 		xcm_config::RelayNetwork,
 		<Runtime as pezframe_system::Config>::AccountId,
-	>;
+	>,
+	InboundQueueTargetLocation,
+>;
+
+impl pezsnowbridge_pezpallet_inbound_queue_v2::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Verifier = EthereumBeaconClient;
+	type GatewayAddress = EthereumGatewayAddress;
+	// The sender, executor, converter, account mapping and destination that used to be five
+	// separate associations now sit behind one processor; the values are carried over unchanged.
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type MessageProcessor = InboundQueueXcmMessageProcessor;
+	#[cfg(feature = "runtime-benchmarks")]
+	type MessageProcessor = benchmark_helpers::DoNothingMessageProcessor;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = Runtime;
+	type WeightInfo = crate::weights::pezsnowbridge_pezpallet_inbound_queue_v2::WeightInfo<Runtime>;
 	type RewardKind = BridgeReward;
 	type DefaultRewardKind = SnowbridgeReward;
 	type RewardPayment = BridgeRelayers;
