@@ -11686,6 +11686,7 @@ dependencies = [
  "parking_lot 0.12.5",
  "pezcumulus-client-collator",
  "pezcumulus-client-consensus-common",
+ "pezcumulus-client-proof-size-recording",
  "pezcumulus-client-teyrchain-inherent",
  "pezcumulus-primitives-aura",
  "pezcumulus-primitives-core",
@@ -11712,6 +11713,7 @@ dependencies = [
  "pezsp-consensus",
  "pezsp-consensus-aura",
  "pezsp-core",
+ "pezsp-externalities",
  "pezsp-inherents",
  "pezsp-keyring",
  "pezsp-keystore",
@@ -11852,6 +11854,17 @@ dependencies = [
  "rstest",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "pezcumulus-client-proof-size-recording"
+version = "0.3.0"
+dependencies = [
+ "parity-scale-codec",
+ "pezsc-client-api",
+ "pezsp-blockchain",
+ "pezsp-runtime",
+ "pezsp-trie",
 ]
 
 [[package]]

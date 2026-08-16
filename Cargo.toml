@@ -406,6 +406,7 @@ members = [
 	"pezcumulus/client/consensus/common",
 	"pezcumulus/client/consensus/relay-chain",
 	"pezcumulus/client/network",
+	"pezcumulus/client/proof-size-recording",
 	"pezcumulus/client/pov-recovery",
 	"pezcumulus/client/relay-chain-inprocess-interface",
 	"pezcumulus/client/relay-chain-interface",
@@ -980,6 +981,7 @@ pezcumulus-client-consensus-common = { path = "pezcumulus/client/consensus/commo
 pezcumulus-client-consensus-relay-chain = { path = "pezcumulus/client/consensus/relay-chain", version = "0.7.0", default-features = false }
 pezcumulus-client-network = { path = "pezcumulus/client/network", version = "0.7.0", default-features = false }
 pezcumulus-client-pov-recovery = { path = "pezcumulus/client/pov-recovery", version = "0.7.0", default-features = false }
+pezcumulus-client-proof-size-recording = { path = "pezcumulus/client/proof-size-recording", version = "0.3.0", default-features = false }
 pezcumulus-client-service = { path = "pezcumulus/client/service", version = "0.7.0", default-features = false }
 pezcumulus-client-teyrchain-inherent = { path = "pezcumulus/client/teyrchain-inherent", version = "0.1.1", default-features = false }
 pezcumulus-pezpallet-aura-ext = { path = "pezcumulus/pezpallets/aura-ext", version = "0.7.0", default-features = false }

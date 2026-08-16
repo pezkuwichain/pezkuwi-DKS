@@ -13,6 +13,8 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
+pezcumulus-client-proof-size-recording = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true, default-features = true }
 async-trait = { workspace = true }
 codec = { features = ["derive"], workspace = true, default-features = true }
 futures = { workspace = true }
