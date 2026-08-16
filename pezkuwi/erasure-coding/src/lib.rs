@@ -25,7 +25,7 @@
 //! The data is coded so any f+1 chunks can be used to reconstruct the full data.
 
 use codec::{Decode, Encode};
-use pezkuwi_node_primitives::{AvailableData, Proof};
+use pezkuwi_pez_node_primitives::{AvailableData, Proof};
 use pezkuwi_primitives::{BlakeTwo256, Hash as H256, HashT};
 use pezsp_core::Blake2Hasher;
 use pezsp_trie::{
@@ -334,7 +334,7 @@ mod tests {
 	use std::sync::Arc;
 
 	use super::*;
-	use pezkuwi_node_primitives::{AvailableData, BlockData, PoV};
+	use pezkuwi_pez_node_primitives::{AvailableData, BlockData, PoV};
 	use pezkuwi_primitives::{HeadData, PersistedValidationData};
 	use quickcheck::{Arbitrary, Gen, QuickCheck};
 

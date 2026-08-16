@@ -18,7 +18,7 @@
 
 use crate::{configuration::TestConfiguration, NODE_UNDER_TEST};
 use futures::FutureExt;
-use pezkuwi_node_primitives::{SignedFullStatementWithPVD, Statement, StatementWithPVD};
+use pezkuwi_pez_node_primitives::{SignedFullStatementWithPVD, Statement, StatementWithPVD};
 use pezkuwi_node_subsystem::{
 	messages::CandidateBackingMessage, overseer, SpawnedSubsystem, SubsystemError,
 };

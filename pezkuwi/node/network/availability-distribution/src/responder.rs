@@ -26,7 +26,7 @@ use pezkuwi_node_network_protocol::{
 	request_response::{v1, v2, IncomingRequest, IncomingRequestReceiver, IsRequest},
 	UnifiedReputationChange as Rep,
 };
-use pezkuwi_node_primitives::{AvailableData, ErasureChunk};
+use pezkuwi_pez_node_primitives::{AvailableData, ErasureChunk};
 use pezkuwi_node_subsystem::{messages::AvailabilityStoreMessage, SubsystemSender};
 use pezkuwi_primitives::{CandidateHash, ValidatorIndex};
 

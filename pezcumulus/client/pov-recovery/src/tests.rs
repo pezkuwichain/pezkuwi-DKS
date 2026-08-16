@@ -27,7 +27,7 @@ use pezcumulus_relay_chain_interface::{
 	PersistedValidationData, RelayChainResult, StorageValue, ValidationCodeHash, ValidatorId,
 };
 use pezcumulus_test_client::runtime::{Block, Header};
-use pezkuwi_node_primitives::AvailableData;
+use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_node_subsystem::{
 	messages::{AvailabilityRecoveryMessage, RuntimeApiRequest},
 	RecoveryError, TimeoutExt,

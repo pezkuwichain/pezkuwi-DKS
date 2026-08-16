@@ -16,7 +16,7 @@
 
 use bitvec::{order::Lsb0 as BitOrderLsb0, vec::BitVec};
 
-use pezkuwi_node_primitives::approval::{
+use pezkuwi_pez_node_primitives::approval::{
 	v1::{AssignmentCert, AssignmentCertKind, VrfProof, VrfSignature, RELAY_VRF_MODULO_CONTEXT},
 	v2::VrfPreOutput,
 };

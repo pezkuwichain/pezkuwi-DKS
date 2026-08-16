@@ -18,10 +18,10 @@
 
 use codec::Encode;
 use itertools::Itertools;
-pub use pezkuwi_node_primitives::approval::criteria::{
+pub use pezkuwi_pez_node_primitives::approval::criteria::{
 	AssignmentCriteria, Config, InvalidAssignment, InvalidAssignmentReason, OurAssignment,
 };
-use pezkuwi_node_primitives::approval::{
+use pezkuwi_pez_node_primitives::approval::{
 	self as approval_types,
 	v1::{AssignmentCert, AssignmentCertKind, DelayTranche, RelayVRFStory},
 	v2::{

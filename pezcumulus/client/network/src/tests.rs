@@ -25,7 +25,7 @@ use pezcumulus_relay_chain_interface::{
 	ChildInfo, OverseerHandle, PHeader, ParaId, RelayChainError, RelayChainResult,
 };
 use pezcumulus_test_service::runtime::{Block, Header};
-use pezkuwi_node_primitives::{SignedFullStatement, Statement};
+use pezkuwi_pez_node_primitives::{SignedFullStatement, Statement};
 use pezkuwi_primitives::{
 	BlockNumber, CandidateCommitments, CandidateDescriptorV2, CandidateEvent, CollatorPair,
 	CommittedCandidateReceiptV2, CoreState, Hash as PHash, HeadData, InboundDownwardMessage,

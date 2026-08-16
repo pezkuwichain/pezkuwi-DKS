@@ -50,7 +50,7 @@ use orchestra::TimeoutExt;
 use overseer::{metrics::Metrics as OverseerMetrics, MetricsTrait};
 use pezkuwi_approval_distribution::ApprovalDistribution;
 use pezkuwi_node_core_approval_voting_parallel::ApprovalVotingParallelSubsystem;
-use pezkuwi_node_primitives::approval::time::{
+use pezkuwi_pez_node_primitives::approval::time::{
 	slot_number_to_tick, tick_to_slot_number, Clock, ClockExt, SystemClock,
 };
 
@@ -58,7 +58,7 @@ use pezkuwi_node_core_approval_voting::{
 	ApprovalVotingSubsystem, Config as ApprovalVotingConfig, RealAssignmentCriteria,
 };
 use pezkuwi_node_network_protocol::v3 as protocol_v3;
-use pezkuwi_node_primitives::approval::{self, v1::RelayVRFStory};
+use pezkuwi_pez_node_primitives::approval::{self, v1::RelayVRFStory};
 use pezkuwi_node_subsystem::{
 	messages::{ApprovalDistributionMessage, ApprovalVotingMessage, ApprovalVotingParallelMessage},
 	overseer, AllMessages, Overseer, OverseerConnector, SpawnGlue,

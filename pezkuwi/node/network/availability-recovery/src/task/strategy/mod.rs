@@ -37,7 +37,7 @@ use pezkuwi_node_network_protocol::request_response::CHUNK_REQUEST_TIMEOUT;
 use pezkuwi_node_network_protocol::request_response::{
 	self as req_res, outgoing::RequestError, OutgoingRequest, Recipient, Requests,
 };
-use pezkuwi_node_primitives::{AvailableData, ErasureChunk};
+use pezkuwi_pez_node_primitives::{AvailableData, ErasureChunk};
 use pezkuwi_node_subsystem::{
 	messages::{AvailabilityStoreMessage, NetworkBridgeTxMessage},
 	overseer, RecoveryError,
@@ -650,7 +650,7 @@ mod tests {
 	};
 	use pezkuwi_erasure_coding::{recovery_threshold, systematic_recovery_threshold};
 	use pezkuwi_node_network_protocol::request_response::Protocol;
-	use pezkuwi_node_primitives::{BlockData, PoV};
+	use pezkuwi_pez_node_primitives::{BlockData, PoV};
 	use pezkuwi_node_subsystem::{AllMessages, TimeoutExt};
 	use pezkuwi_node_subsystem_test_helpers::{
 		derive_erasure_chunks_with_proofs_and_root, sender_receiver, TestSubsystemSender,

@@ -17,7 +17,7 @@
 use super::*;
 use assert_matches::assert_matches;
 use futures::{self, Future, StreamExt};
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	BlockData, Collation, CollationResult, CollatorFn, MaybeCompressedPoV, PoV,
 };
 use pezkuwi_node_subsystem::{

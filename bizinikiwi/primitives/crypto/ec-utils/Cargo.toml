@@ -27,7 +27,12 @@ ark-ed-on-bls12-377 = { optional = true, workspace = true }
 ark-ed-on-bls12-377-ext = { optional = true, workspace = true }
 ark-ed-on-bls12-381-bandersnatch = { optional = true, workspace = true }
 ark-ed-on-bls12-381-bandersnatch-ext = { optional = true, workspace = true }
+ark-ff = { optional = true, workspace = true }
+ark-pallas = { optional = true, workspace = true }
+ark-pallas-ext = { optional = true, workspace = true }
 ark-scale = { features = ["hazmat"], optional = true, workspace = true }
+ark-vesta = { optional = true, workspace = true }
+ark-vesta-ext = { optional = true, workspace = true }
 pezsp-runtime-interface = { optional = true, workspace = true }
 
 [features]
@@ -90,12 +95,8 @@ all-curves = [
 runtime-benchmarks = [
 	"pezsp-runtime-interface?/runtime-benchmarks",
 ]
-pallas = [
-	"common",
-]
-vesta = [
-	"common",
-]
+pallas = ["ark-pallas", "ark-pallas-ext", "common"]
+vesta = ["ark-vesta", "ark-vesta-ext", "common"]
 rfc163 = [
 	"bls12-381",
 	"ed-on-bls12-381-bandersnatch",

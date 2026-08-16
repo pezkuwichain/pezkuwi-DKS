@@ -25,7 +25,7 @@ use futures::{
 #[cfg(test)]
 use futures_timer::Delay;
 
-use pezkuwi_node_primitives::ValidationResult;
+use pezkuwi_pez_node_primitives::ValidationResult;
 use pezkuwi_node_subsystem::{
 	messages::{AvailabilityRecoveryMessage, CandidateValidationMessage, PvfExecKind},
 	overseer, ActiveLeavesUpdate, RecoveryError,

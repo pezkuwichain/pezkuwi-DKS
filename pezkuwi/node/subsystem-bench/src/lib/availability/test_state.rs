@@ -27,7 +27,7 @@ use pezkuwi_node_network_protocol::{
 	request_response::{v2::ChunkFetchingRequest, ReqProtocolNames},
 	ValidationProtocols, VersionedValidationProtocol,
 };
-use pezkuwi_node_primitives::{AvailableData, BlockData, ErasureChunk, PoV};
+use pezkuwi_pez_node_primitives::{AvailableData, BlockData, ErasureChunk, PoV};
 use pezkuwi_node_subsystem_test_helpers::{
 	derive_erasure_chunks_with_proofs_and_root, mock::new_block_import_info,
 };

@@ -21,7 +21,7 @@ use std::sync::Arc;
 use pezsp_keyring::Sr25519Keyring;
 
 use pezkuwi_erasure_coding::{branches, obtain_chunks_v1 as obtain_chunks};
-use pezkuwi_node_primitives::{AvailableData, BlockData, ErasureChunk, PoV, Proof};
+use pezkuwi_pez_node_primitives::{AvailableData, BlockData, ErasureChunk, PoV, Proof};
 use pezkuwi_primitives::{
 	CandidateCommitments, CandidateHash, ChunkIndex, CommittedCandidateReceiptV2, GroupIndex, Hash,
 	HeadData, Id as ParaId, IndexedVec, OccupiedCore, PersistedValidationData, SessionInfo,

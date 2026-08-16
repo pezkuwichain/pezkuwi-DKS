@@ -79,8 +79,8 @@
 //! 3. Construct candidate receipt (V2 or V3 based on `scheduling_parent`)
 //! 4. Distribute via [`CollatorProtocolMessage::DistributeCollation`]
 //!
-//! [`CollatorFn`]: pezkuwi_node_primitives::CollatorFn
-//! [`SubmitCollationParams`]: pezkuwi_node_primitives::SubmitCollationParams
+//! [`CollatorFn`]: pezkuwi_pez_node_primitives::CollatorFn
+//! [`SubmitCollationParams`]: pezkuwi_pez_node_primitives::SubmitCollationParams
 //! [`CommittedCandidateReceiptV2`]: pezkuwi_primitives::CommittedCandidateReceiptV2
 
 #![deny(missing_docs)]
@@ -88,7 +88,7 @@
 use codec::Encode;
 use error::{Error, Result};
 use futures::{channel::oneshot, future::FutureExt, select};
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	AvailableData, Collation, CollationGenerationConfig, CollationSecondedSignal, PoV,
 	SubmitCollationParams,
 };

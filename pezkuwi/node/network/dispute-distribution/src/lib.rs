@@ -39,7 +39,7 @@ use pezkuwi_node_subsystem_util::{nesting_sender::NestingSender, request_node_fe
 use pezsp_keystore::KeystorePtr;
 
 use pezkuwi_node_network_protocol::request_response::{incoming::IncomingRequestReceiver, v1};
-use pezkuwi_node_primitives::DISPUTE_WINDOW;
+use pezkuwi_pez_node_primitives::DISPUTE_WINDOW;
 use pezkuwi_node_subsystem::{
 	messages::DisputeDistributionMessage, overseer, FromOrchestra, OverseerSignal,
 	SpawnedSubsystem, SubsystemError,

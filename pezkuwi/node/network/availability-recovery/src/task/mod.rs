@@ -31,7 +31,7 @@ pub use self::strategy::{REGULAR_CHUNKS_REQ_RETRY_LIMIT, SYSTEMATIC_CHUNKS_REQ_R
 use crate::{metrics::Metrics, ErasureTask, PostRecoveryCheck, LOG_TARGET};
 
 use codec::Encode;
-use pezkuwi_node_primitives::AvailableData;
+use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_node_subsystem::{messages::AvailabilityStoreMessage, overseer, RecoveryError};
 use pezkuwi_primitives::{AuthorityDiscoveryId, CandidateHash, Hash};
 use pezsc_network::ProtocolName;

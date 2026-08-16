@@ -33,7 +33,7 @@ use futures::FutureExt;
 use gum::CandidateHash;
 use pezsc_keystore::LocalKeystore;
 
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	CandidateVotes, DisputeMessage, DisputeMessageCheckError, SignedDisputeStatement,
 	DISPUTE_WINDOW,
 };

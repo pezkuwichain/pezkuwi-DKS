@@ -29,7 +29,7 @@ use futures::{
 use pezsc_keystore::LocalKeystore;
 
 use pezkuwi_node_clock::Clock;
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	disputes::ValidCandidateVotes, CandidateVotes, DisputeStatus, SignedDisputeStatement,
 	Timestamp, DISPUTE_WINDOW,
 };

@@ -22,7 +22,7 @@
 //! been sufficiently approved to finalize.
 
 use futures_timer::Delay;
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	approval::{
 		v1::{BlockApprovalMeta, DelayTranche},
 		v2::{
@@ -92,7 +92,7 @@ use approval_checking::RequiredTranches;
 use bitvec::{order::Lsb0, vec::BitVec};
 pub use criteria::{AssignmentCriteria, Config as AssignmentConfig, RealAssignmentCriteria};
 use persisted_entries::{ApprovalEntry, BlockEntry, CandidateEntry};
-use pezkuwi_node_primitives::approval::time::{
+use pezkuwi_pez_node_primitives::approval::time::{
 	slot_number_to_tick, Clock, ClockExt, DelayedApprovalTimer, SystemClock, Tick,
 };
 

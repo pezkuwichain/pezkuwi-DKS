@@ -52,7 +52,7 @@ use pezsc_consensus::import_queue::{ImportQueueService, IncomingBlock};
 use pezsp_consensus::{BlockOrigin, BlockStatus, SyncOracle};
 use pezsp_runtime::traits::{Block as BlockT, Header as HeaderT, NumberFor};
 
-use pezkuwi_node_primitives::{PoV, POV_BOMB_LIMIT};
+use pezkuwi_pez_node_primitives::{PoV, POV_BOMB_LIMIT};
 use pezkuwi_node_subsystem::messages::AvailabilityRecoveryMessage;
 use pezkuwi_overseer::Handle as OverseerHandle;
 use pezkuwi_primitives::{

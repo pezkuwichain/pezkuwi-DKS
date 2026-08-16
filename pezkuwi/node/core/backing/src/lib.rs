@@ -80,7 +80,7 @@ use futures::{
 use schnellru::{ByLength, LruMap};
 
 use error::{Error, FatalResult};
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	AvailableData, InvalidCandidate, PoV, SignedFullStatementWithPVD, StatementWithPVD,
 	ValidationResult, DISPUTE_WINDOW,
 };

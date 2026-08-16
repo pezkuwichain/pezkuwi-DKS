@@ -31,7 +31,7 @@ pub use pezsc_network::IfDisconnected;
 use pezkuwi_node_network_protocol::{
 	self as net_protocol, peer_set::PeerSet, request_response::Requests, PeerId,
 };
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	approval::{
 		v1::{BlockApprovalMeta, DelayTranche},
 		v2::{CandidateBitfield, IndirectAssignmentCertV2, IndirectSignedApprovalVoteV2},

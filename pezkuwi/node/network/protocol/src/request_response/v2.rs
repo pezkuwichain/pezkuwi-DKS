@@ -18,7 +18,7 @@
 
 use codec::{Decode, Encode};
 
-use pezkuwi_node_primitives::ErasureChunk;
+use pezkuwi_pez_node_primitives::ErasureChunk;
 use pezkuwi_primitives::{
 	CandidateHash, CommittedCandidateReceiptV2 as CommittedCandidateReceipt, Hash, Id as ParaId,
 	PersistedValidationData, UncheckedSignedStatement, ValidatorIndex,

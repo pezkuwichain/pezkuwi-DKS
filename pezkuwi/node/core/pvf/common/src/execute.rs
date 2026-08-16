@@ -16,7 +16,7 @@
 
 use crate::{error::InternalValidationError, ArtifactChecksum};
 use codec::{Decode, Encode};
-use pezkuwi_node_primitives::PoV;
+use pezkuwi_pez_node_primitives::PoV;
 use pezkuwi_primitives::{
 	CandidateDescriptorVersion, CandidateReceiptV2 as CandidateReceipt, ExecutorParams, Hash,
 	PersistedValidationData,

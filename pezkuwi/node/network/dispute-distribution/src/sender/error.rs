@@ -17,7 +17,7 @@
 
 //! Error handling related code and Error/Result definitions.
 
-use pezkuwi_node_primitives::disputes::DisputeMessageCheckError;
+use pezkuwi_pez_node_primitives::disputes::DisputeMessageCheckError;
 use pezkuwi_node_subsystem::SubsystemError;
 use pezkuwi_node_subsystem_util::runtime;
 

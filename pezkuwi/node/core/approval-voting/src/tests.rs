@@ -22,7 +22,7 @@ use overseer::prometheus::{
 	prometheus::{IntCounter, IntCounterVec},
 	Histogram, HistogramOpts, HistogramVec, Opts,
 };
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	approval::{
 		v1::{
 			AssignmentCert, AssignmentCertKind, DelayTranche, VrfPreOutput, VrfProof, VrfSignature,
@@ -239,7 +239,7 @@ where
 	fn compute_assignments(
 		&self,
 		_keystore: &LocalKeystore,
-		_relay_vrf_story: pezkuwi_node_primitives::approval::v1::RelayVRFStory,
+		_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
 		_config: &criteria::Config,
 		_leaving_cores: Vec<(
 			CandidateHash,
@@ -253,13 +253,13 @@ where
 
 	fn check_assignment_cert(
 		&self,
-		_claimed_core_bitfield: pezkuwi_node_primitives::approval::v2::CoreBitfield,
+		_claimed_core_bitfield: pezkuwi_pez_node_primitives::approval::v2::CoreBitfield,
 		validator_index: ValidatorIndex,
 		_config: &criteria::Config,
-		_relay_vrf_story: pezkuwi_node_primitives::approval::v1::RelayVRFStory,
-		_assignment: &pezkuwi_node_primitives::approval::v2::AssignmentCertV2,
+		_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
+		_assignment: &pezkuwi_pez_node_primitives::approval::v2::AssignmentCertV2,
 		_backing_groups: Vec<pezkuwi_primitives::GroupIndex>,
-	) -> Result<pezkuwi_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment> {
+	) -> Result<pezkuwi_pez_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment> {
 		self.1(validator_index)
 	}
 }

@@ -24,7 +24,7 @@ pub use crate::{
 use crate::{artifacts::ArtifactId, get_worker_version};
 use is_executable::IsExecutable;
 use pezkuwi_node_core_pvf_common::pvf::PvfPrepData;
-use pezkuwi_node_primitives::NODE_VERSION;
+use pezkuwi_pez_node_primitives::NODE_VERSION;
 use pezkuwi_primitives::ExecutorParams;
 use std::{
 	path::PathBuf,

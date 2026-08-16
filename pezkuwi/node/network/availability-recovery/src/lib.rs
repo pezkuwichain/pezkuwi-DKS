@@ -54,7 +54,7 @@ use pezkuwi_node_network_protocol::{
 	},
 	UnifiedReputationChange as Rep,
 };
-use pezkuwi_node_primitives::AvailableData;
+use pezkuwi_pez_node_primitives::AvailableData;
 use pezkuwi_node_subsystem::{
 	errors::RecoveryError,
 	messages::{AvailabilityRecoveryMessage, AvailabilityStoreMessage},

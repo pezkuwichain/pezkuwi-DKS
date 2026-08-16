@@ -492,7 +492,7 @@ pub mod v1 {
 
 	use pezkuwi_primitives::{CollatorId, CollatorSignature, Hash, Id as ParaId};
 
-	use pezkuwi_node_primitives::UncheckedSignedFullStatement;
+	use pezkuwi_pez_node_primitives::UncheckedSignedFullStatement;
 
 	/// Network messages used by the collator protocol subsystem
 	#[derive(Debug, Clone, Encode, Decode, PartialEq, Eq)]
@@ -536,7 +536,7 @@ pub mod v2 {
 
 	use pezkuwi_primitives::{CandidateHash, CollatorId, CollatorSignature, Hash, Id as ParaId};
 
-	use pezkuwi_node_primitives::UncheckedSignedFullStatement;
+	use pezkuwi_pez_node_primitives::UncheckedSignedFullStatement;
 
 	/// This parts of the protocol did not change from v1, so just alias them in v2.
 	pub use super::v1::declare_signature_payload;
@@ -583,7 +583,7 @@ pub mod v3_collation {
 		Id as ParaId,
 	};
 
-	use pezkuwi_node_primitives::UncheckedSignedFullStatement;
+	use pezkuwi_pez_node_primitives::UncheckedSignedFullStatement;
 
 	/// This part of the protocol did not change from v2, so just alias it in v3.
 	pub use super::v2::declare_signature_payload;
@@ -638,7 +638,7 @@ pub mod v3 {
 		UncheckedSignedStatement,
 	};
 
-	use pezkuwi_node_primitives::approval::v2::{
+	use pezkuwi_pez_node_primitives::approval::v2::{
 		CandidateBitfield, IndirectAssignmentCertV2, IndirectSignedApprovalVoteV2,
 	};
 

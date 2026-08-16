@@ -17,14 +17,14 @@
 //! Utilities for checking whether a candidate has been approved under a given block.
 
 use bitvec::{order::Lsb0 as BitOrderLsb0, slice::BitSlice};
-use pezkuwi_node_primitives::approval::v1::DelayTranche;
+use pezkuwi_pez_node_primitives::approval::v1::DelayTranche;
 use pezkuwi_primitives::ValidatorIndex;
 
 use crate::{
 	persisted_entries::{ApprovalEntry, CandidateEntry, TrancheEntry},
 	MAX_RECORDED_NO_SHOW_VALIDATORS_PER_CANDIDATE,
 };
-use pezkuwi_node_primitives::approval::time::Tick;
+use pezkuwi_pez_node_primitives::approval::time::Tick;
 
 /// Result of counting the necessary tranches needed for approving a block.
 #[derive(Debug, PartialEq, Clone)]

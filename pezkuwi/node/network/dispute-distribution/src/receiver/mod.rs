@@ -42,7 +42,7 @@ use pezkuwi_node_network_protocol::{
 	},
 	PeerId, UnifiedReputationChange as Rep,
 };
-use pezkuwi_node_primitives::DISPUTE_WINDOW;
+use pezkuwi_pez_node_primitives::DISPUTE_WINDOW;
 use pezkuwi_node_subsystem::{
 	messages::{DisputeCoordinatorMessage, ImportStatementsResult},
 	overseer,

@@ -28,7 +28,7 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	disputes::ValidCandidateVotes, CandidateVotes, DisputeStatus, SignedDisputeStatement, Timestamp,
 };
 use pezkuwi_node_subsystem::overseer;

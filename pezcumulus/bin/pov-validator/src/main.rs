@@ -18,7 +18,7 @@
 
 use clap::Parser;
 use codec::{Decode, Encode};
-use pezkuwi_node_primitives::{BlockData, PoV, POV_BOMB_LIMIT};
+use pezkuwi_pez_node_primitives::{BlockData, PoV, POV_BOMB_LIMIT};
 use pezkuwi_primitives::PersistedValidationData;
 use pezkuwi_teyrchain_primitives::primitives::ValidationParams;
 use pezsc_executor::WasmExecutor;

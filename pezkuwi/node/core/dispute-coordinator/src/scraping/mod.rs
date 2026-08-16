@@ -19,7 +19,7 @@ use std::collections::{btree_map::Entry, BTreeMap, HashSet};
 use futures::channel::oneshot;
 use schnellru::{ByLength, LruMap};
 
-use pezkuwi_node_primitives::{DISPUTE_CANDIDATE_LIFETIME_AFTER_FINALIZATION, MAX_FINALITY_LAG};
+use pezkuwi_pez_node_primitives::{DISPUTE_CANDIDATE_LIFETIME_AFTER_FINALIZATION, MAX_FINALITY_LAG};
 use pezkuwi_node_subsystem::{
 	messages::ChainApiMessage, overseer, ActivatedLeaf, ActiveLeavesUpdate, ChainApiError,
 	RuntimeApiError, SubsystemSender,

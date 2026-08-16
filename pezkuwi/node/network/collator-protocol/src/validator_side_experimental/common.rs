@@ -20,7 +20,7 @@ use pezkuwi_node_network_protocol::{
 	request_response::{outgoing::RequestError, v2 as request_v2},
 	PeerId,
 };
-use pezkuwi_node_primitives::PoV;
+use pezkuwi_pez_node_primitives::PoV;
 use pezkuwi_primitives::{
 	CandidateDescriptorVersion, CandidateHash, CandidateReceiptV2 as CandidateReceipt, Hash,
 	Id as ParaId, PersistedValidationData,

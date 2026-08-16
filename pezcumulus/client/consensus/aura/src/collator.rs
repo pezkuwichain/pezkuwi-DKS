@@ -38,7 +38,7 @@ use pezcumulus_primitives_core::{
 	TeyrchainBlockData,
 };
 use pezcumulus_relay_chain_interface::RelayChainInterface;
-use pezkuwi_node_primitives::{Collation, MaybeCompressedPoV};
+use pezkuwi_pez_node_primitives::{Collation, MaybeCompressedPoV};
 use pezkuwi_primitives::{Header as PHeader, Id as ParaId};
 use pezsc_client_api::BackendTransaction;
 use pezsc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction};

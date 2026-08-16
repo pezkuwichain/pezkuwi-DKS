@@ -17,7 +17,7 @@
 //! Collator for the adder test teyrchain.
 
 use pezkuwi_cli::{Error, Result};
-use pezkuwi_node_primitives::CollationGenerationConfig;
+use pezkuwi_pez_node_primitives::CollationGenerationConfig;
 use pezkuwi_node_subsystem::messages::{CollationGenerationMessage, CollatorProtocolMessage};
 use pezkuwi_primitives::Id as ParaId;
 use pezsc_cli::{BizinikiwiCli, Error as BizinikiwiCliError};

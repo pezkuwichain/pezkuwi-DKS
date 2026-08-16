@@ -23,7 +23,7 @@ use pezsp_core::testing::TaskExecutor;
 
 use super::*;
 use codec::Encode;
-use pezkuwi_node_primitives::{AvailableData, BlockData, InvalidCandidate, PoV};
+use pezkuwi_pez_node_primitives::{AvailableData, BlockData, InvalidCandidate, PoV};
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, ChainApiMessage, DisputeCoordinatorMessage, PvfExecKind, RuntimeApiMessage,

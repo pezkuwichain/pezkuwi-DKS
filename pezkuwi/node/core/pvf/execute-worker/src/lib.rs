@@ -52,7 +52,7 @@ use pezkuwi_node_core_pvf_common::{
 	},
 	worker_dir,
 };
-use pezkuwi_node_primitives::{BlockData, POV_BOMB_LIMIT};
+use pezkuwi_pez_node_primitives::{BlockData, POV_BOMB_LIMIT};
 use pezkuwi_primitives::{CandidateDescriptorVersion, ExecutorParams};
 use pezkuwi_teyrchain_primitives::primitives::{
 	TrailingOption, ValidationParamsExtension, ValidationResult,

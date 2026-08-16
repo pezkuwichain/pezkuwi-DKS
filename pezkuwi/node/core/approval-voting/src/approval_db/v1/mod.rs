@@ -23,7 +23,7 @@
 //! require a db migration (check `node/service/src/teyrchains_db/upgrade.rs`).
 
 use codec::{Decode, Encode};
-use pezkuwi_node_primitives::approval::v1::{AssignmentCert, DelayTranche};
+use pezkuwi_pez_node_primitives::approval::v1::{AssignmentCert, DelayTranche};
 use pezkuwi_primitives::{
 	BlockNumber, CandidateHash, CandidateReceiptV2 as CandidateReceipt, CoreIndex, GroupIndex,
 	Hash, SessionIndex, ValidatorIndex, ValidatorSignature,

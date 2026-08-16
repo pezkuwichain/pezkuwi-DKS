@@ -21,7 +21,7 @@ use std::{collections::HashMap, sync::atomic, task::Poll};
 use pezkuwi_node_network_protocol::{
 	peer_set::ValidationVersion, ObservedRole, PeerId, UnifiedReputationChange,
 };
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	BlockData, CollationGenerationConfig, CollationResult, DisputeMessage, InvalidDisputeVote, PoV,
 	UncheckedDisputeMessage, ValidDisputeVote,
 };

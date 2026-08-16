@@ -16,7 +16,7 @@
 
 //! Convenient interface to runtime information.
 
-use pezkuwi_node_primitives::MAX_FINALITY_LAG;
+use pezkuwi_pez_node_primitives::MAX_FINALITY_LAG;
 use schnellru::{ByLength, LruMap};
 
 use codec::Encode;
@@ -612,7 +612,7 @@ pub async fn fetch_validation_code_bomb_limit(
 
 		// TODO: Remove this once runtime API version 12 is released.
 		#[allow(deprecated)]
-		Ok(pezkuwi_node_primitives::VALIDATION_CODE_BOMB_LIMIT as u32)
+		Ok(pezkuwi_pez_node_primitives::VALIDATION_CODE_BOMB_LIMIT as u32)
 	} else {
 		res
 	}

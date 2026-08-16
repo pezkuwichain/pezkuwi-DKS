@@ -34,7 +34,7 @@ use pezkuwi_node_network_protocol::{
 	request_response::{Requests, ResponseSender},
 	ObservedRole,
 };
-use pezkuwi_node_primitives::{BlockData, PoV};
+use pezkuwi_pez_node_primitives::{BlockData, PoV};
 use pezkuwi_node_subsystem::messages::{
 	AllMessages, ReportPeerMessage, RuntimeApiMessage, RuntimeApiRequest,
 };

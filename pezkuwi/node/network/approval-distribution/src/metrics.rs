@@ -15,7 +15,7 @@
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
 use pezkuwi_node_metrics::metrics::{prometheus, Metrics as MetricsTrait};
-use pezkuwi_node_primitives::approval::v2::AssignmentCertKindV2;
+use pezkuwi_pez_node_primitives::approval::v2::AssignmentCertKindV2;
 
 /// Approval Distribution metrics.
 #[derive(Default, Clone)]

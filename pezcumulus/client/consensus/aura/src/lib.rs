@@ -24,7 +24,7 @@
 
 use codec::Encode;
 use pezcumulus_primitives_core::{relay_chain::HeadData, PersistedValidationData};
-use pezkuwi_node_primitives::PoV;
+use pezkuwi_pez_node_primitives::PoV;
 use pezkuwi_primitives::{BlockNumber as RBlockNumber, Hash as RHash};
 use pezsp_runtime::traits::{Block as BlockT, NumberFor};
 use std::{fs, fs::File, path::PathBuf};

@@ -32,7 +32,7 @@ use futures::{channel::oneshot, future, stream::PollNext, StreamExt};
 use itertools::Itertools;
 use pezkuwi_node_core_approval_voting::{ApprovalVotingWorkProvider, Config};
 use pezkuwi_node_network_protocol::{peer_set::ValidationVersion, ObservedRole, PeerId, View};
-use pezkuwi_node_primitives::approval::{
+use pezkuwi_pez_node_primitives::approval::{
 	time::SystemClock,
 	v1::RELAY_VRF_MODULO_CONTEXT,
 	v2::{

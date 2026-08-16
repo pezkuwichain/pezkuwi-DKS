@@ -35,7 +35,7 @@ use pezkuwi_node_network_protocol::{
 	},
 	OurView,
 };
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	BlockData, PoV, SignedFullStatement, Statement, UncheckedSignedFullStatement,
 };
 use pezkuwi_node_subsystem::messages::{

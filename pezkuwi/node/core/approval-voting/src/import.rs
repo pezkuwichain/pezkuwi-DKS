@@ -28,7 +28,7 @@
 //!
 //! We maintain a rolling window of session indices. This starts as empty
 
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	approval::{
 		self as approval_types,
 		v1::{BlockApprovalMeta, RelayVRFStory},
@@ -65,7 +65,7 @@ use crate::{
 	persisted_entries::CandidateEntry,
 };
 
-use pezkuwi_node_primitives::approval::time::{slot_number_to_tick, Tick};
+use pezkuwi_pez_node_primitives::approval::time::{slot_number_to_tick, Tick};
 
 use super::{State, LOG_TARGET};
 
@@ -616,7 +616,7 @@ pub(crate) mod tests {
 	};
 	use approval_types::time::Clock;
 	use assert_matches::assert_matches;
-	use pezkuwi_node_primitives::{
+	use pezkuwi_pez_node_primitives::{
 		approval::v1::{VrfSignature, VrfTranscript},
 		DISPUTE_WINDOW,
 	};
@@ -693,7 +693,7 @@ pub(crate) mod tests {
 		fn compute_assignments(
 			&self,
 			_keystore: &LocalKeystore,
-			_relay_vrf_story: pezkuwi_node_primitives::approval::v1::RelayVRFStory,
+			_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
 			_config: &criteria::Config,
 			_leaving_cores: Vec<(
 				CandidateHash,
@@ -708,13 +708,13 @@ pub(crate) mod tests {
 
 		fn check_assignment_cert(
 			&self,
-			_claimed_core_bitfield: pezkuwi_node_primitives::approval::v2::CoreBitfield,
+			_claimed_core_bitfield: pezkuwi_pez_node_primitives::approval::v2::CoreBitfield,
 			_validator_index: pezkuwi_primitives::ValidatorIndex,
 			_config: &criteria::Config,
-			_relay_vrf_story: pezkuwi_node_primitives::approval::v1::RelayVRFStory,
-			_assignment: &pezkuwi_node_primitives::approval::v2::AssignmentCertV2,
+			_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
+			_assignment: &pezkuwi_pez_node_primitives::approval::v2::AssignmentCertV2,
 			_backing_groups: Vec<pezkuwi_primitives::GroupIndex>,
-		) -> Result<pezkuwi_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment>
+		) -> Result<pezkuwi_pez_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment>
 		{
 			Ok(0)
 		}

@@ -21,7 +21,7 @@ use crate::{
 	shared::{MALICIOUS_POV, MALUS},
 };
 
-use pezkuwi_node_primitives::{InvalidCandidate, ValidationResult};
+use pezkuwi_pez_node_primitives::{InvalidCandidate, ValidationResult};
 
 use pezkuwi_primitives::{
 	CandidateCommitments, CandidateDescriptorV2 as CandidateDescriptor,

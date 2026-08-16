@@ -31,7 +31,7 @@ use pezkuwi_node_network_protocol::{
 	v3::{self as protocol_v3, StatementFilter},
 	IfDisconnected, PeerId, UnifiedReputationChange as Rep, ValidationProtocols, View,
 };
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	SignedFullStatementWithPVD, StatementWithPVD as FullStatementWithPVD,
 };
 use pezkuwi_node_subsystem::{

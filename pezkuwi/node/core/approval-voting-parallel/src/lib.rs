@@ -28,7 +28,7 @@ use pezkuwi_node_metrics::metered::{
 	UnboundedMeteredSender,
 };
 
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	approval::time::{Clock, SystemClock},
 	DISPUTE_WINDOW,
 };

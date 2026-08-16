@@ -23,7 +23,7 @@ use pezkuwi_node_network_protocol::request_response::{
 	v1::{PoVFetchingRequest, PoVFetchingResponse},
 	OutgoingRequest, Recipient,
 };
-use pezkuwi_node_primitives::PoV;
+use pezkuwi_pez_node_primitives::PoV;
 use pezkuwi_node_subsystem::{
 	messages::{IfDisconnected, NetworkBridgeTxMessage},
 	overseer,
@@ -128,7 +128,7 @@ mod tests {
 	use pezsc_network::ProtocolName;
 	use pezsp_core::testing::TaskExecutor;
 
-	use pezkuwi_node_primitives::BlockData;
+	use pezkuwi_pez_node_primitives::BlockData;
 	use pezkuwi_node_subsystem::messages::{
 		AllMessages, AvailabilityDistributionMessage, RuntimeApiMessage, RuntimeApiRequest,
 	};

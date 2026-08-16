@@ -23,7 +23,7 @@ use pezkuwi_node_network_protocol::request_response::{
 	v1::AvailableDataFetchingResponse, v2::ChunkFetchingResponse, Protocol, ReqProtocolNames,
 	Requests,
 };
-use pezkuwi_node_primitives::{AvailableData, ErasureChunk};
+use pezkuwi_pez_node_primitives::{AvailableData, ErasureChunk};
 use pezkuwi_node_subsystem::{
 	messages::AvailabilityStoreMessage, overseer, SpawnedSubsystem, SubsystemError,
 };

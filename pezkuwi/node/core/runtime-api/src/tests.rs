@@ -16,7 +16,7 @@
 
 use super::*;
 
-use pezkuwi_node_primitives::{BabeAllowedSlots, BabeEpoch, BabeEpochConfiguration};
+use pezkuwi_pez_node_primitives::{BabeAllowedSlots, BabeEpoch, BabeEpochConfiguration};
 use pezkuwi_node_subsystem::SpawnGlue;
 use pezkuwi_node_subsystem_test_helpers::make_subsystem_context;
 use pezkuwi_primitives::{

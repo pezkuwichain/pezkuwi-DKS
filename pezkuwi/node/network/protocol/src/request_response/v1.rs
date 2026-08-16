@@ -18,7 +18,7 @@
 
 use codec::{Decode, Encode};
 
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	AvailableData, DisputeMessage, ErasureChunk, PoV, Proof, UncheckedDisputeMessage,
 };
 use pezkuwi_primitives::{

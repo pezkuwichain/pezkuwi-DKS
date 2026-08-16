@@ -27,7 +27,7 @@ use crate::PvfExecKind;
 use assert_matches::assert_matches;
 use futures::executor;
 use pezkuwi_node_core_pvf::PrepareError;
-use pezkuwi_node_primitives::BlockData;
+use pezkuwi_pez_node_primitives::BlockData;
 use pezkuwi_node_subsystem::messages::AllMessages;
 use pezkuwi_node_subsystem_test_helpers::{make_subsystem_context, TestSubsystemContextHandle};
 use pezkuwi_node_subsystem_util::reexports::SubsystemContext;

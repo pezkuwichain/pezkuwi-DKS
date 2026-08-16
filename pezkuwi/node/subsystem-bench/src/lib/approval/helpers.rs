@@ -20,7 +20,7 @@ use pezkuwi_node_network_protocol::{
 	grid_topology::{SessionGridTopology, TopologyPeerInfo},
 	View,
 };
-use pezkuwi_node_primitives::approval::time::{Clock, SystemClock, Tick};
+use pezkuwi_pez_node_primitives::approval::time::{Clock, SystemClock, Tick};
 use pezkuwi_node_subsystem::messages::{
 	ApprovalDistributionMessage, ApprovalVotingParallelMessage,
 };

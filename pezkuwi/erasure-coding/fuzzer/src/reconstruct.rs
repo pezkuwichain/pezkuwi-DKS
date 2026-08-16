@@ -16,7 +16,7 @@
 
 use honggfuzz::fuzz;
 use pezkuwi_erasure_coding::*;
-use pezkuwi_node_primitives::AvailableData;
+use pezkuwi_pez_node_primitives::AvailableData;
 
 fn main() {
 	loop {

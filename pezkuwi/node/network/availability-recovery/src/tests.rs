@@ -31,7 +31,7 @@ use pezkuwi_node_network_protocol::request_response::{
 	IncomingRequest, Protocol, Recipient, ReqProtocolNames, Requests,
 };
 
-use pezkuwi_node_primitives::{BlockData, ErasureChunk, PoV, Proof};
+use pezkuwi_pez_node_primitives::{BlockData, ErasureChunk, PoV, Proof};
 use pezkuwi_node_subsystem::messages::{
 	AllMessages, NetworkBridgeTxMessage, RuntimeApiMessage, RuntimeApiRequest,
 };

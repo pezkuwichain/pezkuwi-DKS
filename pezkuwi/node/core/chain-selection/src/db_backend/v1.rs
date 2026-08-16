@@ -37,7 +37,7 @@ use crate::{
 	Error,
 };
 
-use pezkuwi_node_primitives::BlockWeight;
+use pezkuwi_pez_node_primitives::BlockWeight;
 use pezkuwi_primitives::{BlockNumber, Hash};
 
 use codec::{Decode, Encode};

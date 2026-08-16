@@ -22,7 +22,7 @@ use codec::Encode;
 use futures::future::join;
 use pezsp_core::testing::TaskExecutor;
 
-use pezkuwi_node_primitives::DISPUTE_CANDIDATE_LIFETIME_AFTER_FINALIZATION;
+use pezkuwi_pez_node_primitives::DISPUTE_CANDIDATE_LIFETIME_AFTER_FINALIZATION;
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, ChainApiMessage, DisputeCoordinatorMessage, RuntimeApiMessage,

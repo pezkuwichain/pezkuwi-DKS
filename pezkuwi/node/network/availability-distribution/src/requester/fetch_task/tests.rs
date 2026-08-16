@@ -33,7 +33,7 @@ use pezkuwi_node_network_protocol::request_response::{
 	v1::{self, ChunkResponse},
 	Protocol, Recipient, ReqProtocolNames,
 };
-use pezkuwi_node_primitives::{BlockData, PoV, Proof};
+use pezkuwi_pez_node_primitives::{BlockData, PoV, Proof};
 use pezkuwi_node_subsystem::messages::AllMessages;
 use pezkuwi_primitives::{CandidateHash, ChunkIndex, ValidatorIndex};
 

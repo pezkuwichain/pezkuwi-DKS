@@ -19,7 +19,7 @@
 
 use crate::LOG_TARGET;
 use futures::channel::oneshot;
-use pezkuwi_node_primitives::CandidateVotes;
+use pezkuwi_pez_node_primitives::CandidateVotes;
 use pezkuwi_node_subsystem::{messages::DisputeCoordinatorMessage, overseer};
 use pezkuwi_primitives::{CandidateHash, SessionIndex};
 

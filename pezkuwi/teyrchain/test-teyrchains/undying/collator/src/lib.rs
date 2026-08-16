@@ -20,7 +20,7 @@ use codec::{Decode, Encode};
 use futures::{channel::oneshot, StreamExt};
 use futures_timer::Delay;
 use pezkuwi_cli::ProvideRuntimeApi;
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	maybe_compress_pov, AvailableData, Collation, CollationResult, CollationSecondedSignal,
 	CollatorFn, MaybeCompressedPoV, PoV, Statement, UpwardMessages,
 };

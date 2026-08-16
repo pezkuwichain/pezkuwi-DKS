@@ -23,7 +23,7 @@ use pezkuwi_node_network_protocol::{
 	peer_set::ValidationVersion,
 	view, ObservedRole,
 };
-use pezkuwi_node_primitives::approval::{
+use pezkuwi_pez_node_primitives::approval::{
 	criteria,
 	v1::{VrfPreOutput, VrfProof, VrfSignature},
 	v2::{
@@ -463,14 +463,14 @@ fn signature_for(
 
 struct MockAssignmentCriteria {
 	tranche:
-		Result<pezkuwi_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment>,
+		Result<pezkuwi_pez_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment>,
 }
 
 impl AssignmentCriteria for MockAssignmentCriteria {
 	fn compute_assignments(
 		&self,
 		_keystore: &LocalKeystore,
-		_relay_vrf_story: pezkuwi_node_primitives::approval::v1::RelayVRFStory,
+		_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
 		_config: &criteria::Config,
 		_leaving_cores: Vec<(
 			CandidateHash,
@@ -484,13 +484,13 @@ impl AssignmentCriteria for MockAssignmentCriteria {
 
 	fn check_assignment_cert(
 		&self,
-		_claimed_core_bitfield: pezkuwi_node_primitives::approval::v2::CoreBitfield,
+		_claimed_core_bitfield: pezkuwi_pez_node_primitives::approval::v2::CoreBitfield,
 		_validator_index: pezkuwi_primitives::ValidatorIndex,
 		_config: &criteria::Config,
-		_relay_vrf_story: pezkuwi_node_primitives::approval::v1::RelayVRFStory,
-		_assignment: &pezkuwi_node_primitives::approval::v2::AssignmentCertV2,
+		_relay_vrf_story: pezkuwi_pez_node_primitives::approval::v1::RelayVRFStory,
+		_assignment: &pezkuwi_pez_node_primitives::approval::v2::AssignmentCertV2,
 		_backing_groups: Vec<pezkuwi_primitives::GroupIndex>,
-	) -> Result<pezkuwi_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment> {
+	) -> Result<pezkuwi_pez_node_primitives::approval::v1::DelayTranche, criteria::InvalidAssignment> {
 		self.tranche
 	}
 }
@@ -4193,13 +4193,13 @@ fn const_ensure_size_not_zero() {
 
 struct DummyClock;
 impl Clock for DummyClock {
-	fn tick_now(&self) -> pezkuwi_node_primitives::approval::time::Tick {
+	fn tick_now(&self) -> pezkuwi_pez_node_primitives::approval::time::Tick {
 		0
 	}
 
 	fn wait(
 		&self,
-		_tick: pezkuwi_node_primitives::approval::time::Tick,
+		_tick: pezkuwi_pez_node_primitives::approval::time::Tick,
 	) -> std::pin::Pin<Box<dyn Future<Output = ()> + Send + 'static>> {
 		todo!()
 	}

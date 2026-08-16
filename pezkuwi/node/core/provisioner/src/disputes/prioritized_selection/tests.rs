@@ -20,7 +20,7 @@ use super::super::{
 };
 use bitvec::prelude::*;
 use futures::channel::mpsc;
-use pezkuwi_node_primitives::{CandidateVotes, DisputeStatus, ACTIVE_DURATION_SECS};
+use pezkuwi_pez_node_primitives::{CandidateVotes, DisputeStatus, ACTIVE_DURATION_SECS};
 use pezkuwi_node_subsystem::messages::{
 	AllMessages, DisputeCoordinatorMessage, RuntimeApiMessage, RuntimeApiRequest,
 };

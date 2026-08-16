@@ -24,7 +24,7 @@ use pezkuwi_node_network_protocol::{
 	v3::{BackedCandidateAcknowledgement, BackedCandidateManifest},
 	view, ObservedRole,
 };
-use pezkuwi_node_primitives::{Statement, StatementWithPVD};
+use pezkuwi_pez_node_primitives::{Statement, StatementWithPVD};
 use pezkuwi_node_subsystem::messages::{
 	network_bridge_event::NewGossipTopology, AllMessages, ChainApiMessage, HypotheticalCandidate,
 	HypotheticalMembership, NetworkBridgeEvent, ProspectiveTeyrchainsMessage, ReportPeerMessage,

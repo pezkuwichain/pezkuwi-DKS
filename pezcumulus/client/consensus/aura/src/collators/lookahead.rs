@@ -42,7 +42,7 @@ use pezcumulus_primitives_core::{
 use pezcumulus_relay_chain_interface::RelayChainInterface;
 use pezsp_consensus::Environment;
 
-use pezkuwi_node_primitives::SubmitCollationParams;
+use pezkuwi_pez_node_primitives::SubmitCollationParams;
 use pezkuwi_node_subsystem::messages::CollationGenerationMessage;
 use pezkuwi_overseer::Handle as OverseerHandle;
 use pezkuwi_primitives::{CollatorPair, Id as ParaId, OccupiedCoreAssumption};

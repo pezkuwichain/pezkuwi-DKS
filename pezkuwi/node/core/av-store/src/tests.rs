@@ -21,7 +21,7 @@ use futures::{channel::oneshot, executor, future, Future};
 use util::availability_chunks::availability_chunk_index;
 
 use self::test_helpers::mock::new_leaf;
-use pezkuwi_node_primitives::{AvailableData, BlockData, PoV, Proof};
+use pezkuwi_pez_node_primitives::{AvailableData, BlockData, PoV, Proof};
 use pezkuwi_node_subsystem::{
 	errors::RuntimeApiError,
 	messages::{AllMessages, RuntimeApiMessage, RuntimeApiRequest},

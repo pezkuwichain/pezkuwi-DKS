@@ -21,7 +21,7 @@ use pezkuwi_node_network_protocol::{
 	request_response::{incoming::OutgoingResponseSender, v1::DisputeRequest},
 	PeerId,
 };
-use pezkuwi_node_primitives::SignedDisputeStatement;
+use pezkuwi_pez_node_primitives::SignedDisputeStatement;
 use pezkuwi_primitives::{CandidateReceiptV2 as CandidateReceipt, ValidatorIndex};
 
 use crate::receiver::{BATCH_COLLECTING_INTERVAL, MIN_KEEP_BATCH_ALIVE_VOTES};

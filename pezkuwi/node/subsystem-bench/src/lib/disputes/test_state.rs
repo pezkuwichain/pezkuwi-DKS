@@ -24,7 +24,7 @@ use pezkuwi_node_network_protocol::request_response::{
 	v1::{DisputeRequest, DisputeResponse},
 	ProtocolName, Requests,
 };
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	InvalidDisputeVote, SignedDisputeStatement, UncheckedDisputeMessage, ValidDisputeVote,
 };
 use pezkuwi_node_subsystem_test_helpers::mock::new_block_import_info;

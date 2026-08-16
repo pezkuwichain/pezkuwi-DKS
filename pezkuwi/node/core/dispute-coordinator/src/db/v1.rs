@@ -22,7 +22,7 @@
 //! the dispute data in the database. Any breaking changes here will still
 //! require a db migration (check `node/service/src/teyrchains_db/upgrade.rs`).
 
-use pezkuwi_node_primitives::DisputeStatus;
+use pezkuwi_pez_node_primitives::DisputeStatus;
 use pezkuwi_node_subsystem_util::database::{DBTransaction, Database};
 use pezkuwi_primitives::{
 	CandidateHash, CandidateReceiptV2 as CandidateReceipt, Hash, InvalidDisputeStatementKind,
@@ -225,9 +225,9 @@ pub struct CandidateVotes {
 	pub invalid: Vec<(InvalidDisputeStatementKind, ValidatorIndex, ValidatorSignature)>,
 }
 
-impl From<CandidateVotes> for pezkuwi_node_primitives::CandidateVotes {
-	fn from(db_votes: CandidateVotes) -> pezkuwi_node_primitives::CandidateVotes {
-		pezkuwi_node_primitives::CandidateVotes {
+impl From<CandidateVotes> for pezkuwi_pez_node_primitives::CandidateVotes {
+	fn from(db_votes: CandidateVotes) -> pezkuwi_pez_node_primitives::CandidateVotes {
+		pezkuwi_pez_node_primitives::CandidateVotes {
 			candidate_receipt: db_votes.candidate_receipt,
 			valid: db_votes.valid.into_iter().map(|(kind, i, sig)| (i, (kind, sig))).collect(),
 			invalid: db_votes.invalid.into_iter().map(|(kind, i, sig)| (i, (kind, sig))).collect(),
@@ -235,8 +235,8 @@ impl From<CandidateVotes> for pezkuwi_node_primitives::CandidateVotes {
 	}
 }
 
-impl From<pezkuwi_node_primitives::CandidateVotes> for CandidateVotes {
-	fn from(primitive_votes: pezkuwi_node_primitives::CandidateVotes) -> CandidateVotes {
+impl From<pezkuwi_pez_node_primitives::CandidateVotes> for CandidateVotes {
+	fn from(primitive_votes: pezkuwi_pez_node_primitives::CandidateVotes) -> CandidateVotes {
 		CandidateVotes {
 			candidate_receipt: primitive_votes.candidate_receipt,
 			valid: primitive_votes
@@ -375,7 +375,7 @@ fn load_cleaned_votes_watermark(
 mod tests {
 
 	use super::*;
-	use pezkuwi_node_primitives::DISPUTE_WINDOW;
+	use pezkuwi_pez_node_primitives::DISPUTE_WINDOW;
 	use pezkuwi_primitives::{Hash, Id as ParaId};
 	use pezkuwi_primitives_test_helpers::{
 		dummy_candidate_receipt, dummy_candidate_receipt_v2, dummy_hash,

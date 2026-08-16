@@ -41,7 +41,7 @@ use pezkuwi_node_network_protocol::{
 	},
 	view, ObservedRole,
 };
-use pezkuwi_node_primitives::BlockData;
+use pezkuwi_pez_node_primitives::BlockData;
 use pezkuwi_node_subsystem::{
 	messages::{AllMessages, ReportPeerMessage, RuntimeApiMessage, RuntimeApiRequest},
 	ActivatedLeaf, ActiveLeavesUpdate,

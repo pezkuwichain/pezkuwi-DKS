@@ -17,7 +17,7 @@
 use super::*;
 use assert_matches::assert_matches;
 use futures::{future, Future};
-use pezkuwi_node_primitives::{BlockData, InvalidCandidate, SignedFullStatement, Statement};
+use pezkuwi_pez_node_primitives::{BlockData, InvalidCandidate, SignedFullStatement, Statement};
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, BackableCandidateRef, ChainApiMessage, CollatorProtocolMessage,

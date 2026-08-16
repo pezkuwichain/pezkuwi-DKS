@@ -31,7 +31,7 @@ use crate::{
 use fatality::Split;
 use futures::stream::FusedStream;
 use pezkuwi_node_network_protocol::{peer_set::CollationVersion, OurView, PeerId};
-use pezkuwi_node_primitives::{SignedFullStatement, Statement};
+use pezkuwi_pez_node_primitives::{SignedFullStatement, Statement};
 use pezkuwi_node_subsystem::{
 	messages::{CandidateBackingMessage, IfDisconnected, NetworkBridgeTxMessage},
 	CollatorProtocolSenderTrait,

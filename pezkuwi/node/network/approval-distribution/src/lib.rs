@@ -33,7 +33,7 @@ use pezkuwi_node_network_protocol::{
 	peer_set::MAX_NOTIFICATION_SIZE,
 	v3 as protocol_v3, PeerId, UnifiedReputationChange as Rep, ValidationProtocols, View,
 };
-use pezkuwi_node_primitives::{
+use pezkuwi_pez_node_primitives::{
 	approval::{
 		criteria::{AssignmentCriteria, InvalidAssignment},
 		time::{Clock, ClockExt, SystemClock, TICK_TOO_FAR_IN_FUTURE},
@@ -1687,7 +1687,7 @@ impl State {
 			.check_assignment_cert(
 				claimed_cores,
 				assignment.validator,
-				&pezkuwi_node_primitives::approval::criteria::Config::from(session_info),
+				&pezkuwi_pez_node_primitives::approval::criteria::Config::from(session_info),
 				entry.vrf_story.clone(),
 				&assignment.cert,
 				backing_groups,

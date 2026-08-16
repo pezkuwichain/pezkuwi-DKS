@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
-use pezkuwi_node_primitives::{dispute_is_inactive, DisputeStatus, Timestamp};
+use pezkuwi_pez_node_primitives::{dispute_is_inactive, DisputeStatus, Timestamp};
 use pezkuwi_primitives::{CandidateHash, SessionIndex};
 
 /// Get active disputes as iterator, preserving its `DisputeStatus`.

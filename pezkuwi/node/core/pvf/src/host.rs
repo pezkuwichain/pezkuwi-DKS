@@ -1034,7 +1034,7 @@ pub(crate) mod tests {
 	use assert_matches::assert_matches;
 	use futures::future::BoxFuture;
 	use pezkuwi_node_core_pvf_common::execute::ValidationContext;
-	use pezkuwi_node_primitives::{BlockData, PoV};
+	use pezkuwi_pez_node_primitives::{BlockData, PoV};
 	use pezkuwi_primitives::{
 		CandidateReceiptV2 as CandidateReceipt, ExecutorParams, PersistedValidationData,
 	};

@@ -23,7 +23,7 @@
 //! Each direct descendant of the finalized block acts as its own sub-tree,
 //! and as the finalized block advances, orphaned sub-trees are entirely pruned.
 
-use pezkuwi_node_primitives::BlockWeight;
+use pezkuwi_pez_node_primitives::BlockWeight;
 use pezkuwi_node_subsystem::ChainApiError;
 use pezkuwi_primitives::{BlockNumber, Hash};
 

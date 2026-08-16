@@ -37,7 +37,7 @@ use pezsp_keystore::KeystorePtr;
 use pezkuwi_node_network_protocol::request_response::{
 	v1, v2, IncomingRequest, OutgoingRequest, Protocol, ReqProtocolNames, Requests,
 };
-use pezkuwi_node_primitives::ErasureChunk;
+use pezkuwi_pez_node_primitives::ErasureChunk;
 use pezkuwi_node_subsystem::{
 	messages::{
 		AllMessages, AvailabilityDistributionMessage, AvailabilityStoreMessage, ChainApiMessage,
