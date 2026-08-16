@@ -252,7 +252,7 @@ where
 		let owner = EthereumLocationsConverterFor::<[u8; 32]>::from_chain_id(&chain_id);
 		let asset_id = Self::convert_token_address(network, token);
 		let create_call_index: [u8; 2] = CreateAssetCall::get();
-		let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+		let inbound_queue_pezpallet_index = InboundQueuePalletInstance::get();
 
 		let xcm: Xcm<()> = vec![
 			// Teleport required fees.
@@ -269,7 +269,7 @@ where
 				DepositAsset { assets: AllCounted(1).into(), beneficiary: bridge_location },
 			])),
 			// Only our inbound-queue pezpallet is allowed to invoke `UniversalOrigin`.
-			DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+			DescendOrigin(PalletInstance(inbound_queue_pezpallet_index).into()),
 			// Change origin to the bridge.
 			UniversalOrigin(GlobalConsensus(network)),
 			// Call create_asset on foreign assets pezpallet.
@@ -330,12 +330,12 @@ where
 
 		let total_fees = asset_hub_fee.saturating_add(dest_para_fee);
 		let total_fee_asset: Asset = (Location::parent(), total_fees).into();
-		let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+		let inbound_queue_pezpallet_index = InboundQueuePalletInstance::get();
 
 		let mut instructions = vec![
 			ReceiveTeleportedAsset(total_fee_asset.into()),
 			BuyExecution { fees: asset_hub_fee_asset, weight_limit: Unlimited },
-			DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+			DescendOrigin(PalletInstance(inbound_queue_pezpallet_index).into()),
 			UniversalOrigin(GlobalConsensus(network)),
 			ReserveAssetDeposited(asset.clone().into()),
 			ClearOrigin,
@@ -437,12 +437,12 @@ where
 
 		let asset: Asset = (reanchored_asset_loc, amount).into();
 
-		let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+		let inbound_queue_pezpallet_index = InboundQueuePalletInstance::get();
 
 		let instructions = vec![
 			ReceiveTeleportedAsset(total_fee_asset.clone().into()),
 			BuyExecution { fees: asset_hub_fee_asset, weight_limit: Unlimited },
-			DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+			DescendOrigin(PalletInstance(inbound_queue_pezpallet_index).into()),
 			UniversalOrigin(GlobalConsensus(network)),
 			WithdrawAsset(asset.clone().into()),
 			// Deposit both asset and fees to beneficiary so the fees will not get

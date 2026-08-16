@@ -213,7 +213,7 @@ impl<T: GetStorageVersion<InCodeStorageVersion = NoStorageVersionSet> + PalletIn
 	}
 }
 
-/// Trait used by [`migrate_from_pallet_version_to_storage_version`] to do the actual migration.
+/// Trait used by [`migrate_from_pezpallet_version_to_storage_version`] to do the actual migration.
 pub trait PalletVersionToStorageVersionHelper {
 	fn migrate(db_weight: &RuntimeDbWeight) -> Weight;
 }
@@ -253,7 +253,7 @@ impl PalletVersionToStorageVersionHelper for T {
 /// Migrate from the `PalletVersion` struct to the new [`StorageVersion`] struct.
 ///
 /// This will remove all `PalletVersion's` from the state and insert the in-code storage version.
-pub fn migrate_from_pallet_version_to_storage_version<
+pub fn migrate_from_pezpallet_version_to_storage_version<
 	Pallets: PalletVersionToStorageVersionHelper,
 >(
 	db_weight: &RuntimeDbWeight,

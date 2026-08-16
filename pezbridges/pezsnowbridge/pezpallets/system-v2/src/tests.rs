@@ -4,7 +4,7 @@ use crate::{mock::*, DispatchError::BadOrigin, *};
 use pezframe_support::{assert_noop, assert_ok};
 use pezsp_keyring::sr25519::Keyring;
 use snowbridge_test_utils::FAILING_NONCE;
-use xcm::{latest::WESTEND_GENESIS_HASH, prelude::*};
+use xcm::{latest::ZAGROS_GENESIS_HASH, prelude::*};
 
 #[test]
 fn register_tokens_succeeds() {
@@ -31,7 +31,7 @@ fn agent_id_from_location() {
 			[
 				Teyrchain(1000),
 				AccountId32 {
-					network: Some(NetworkId::ByGenesis(WESTEND_GENESIS_HASH)),
+					network: Some(NetworkId::ByGenesis(ZAGROS_GENESIS_HASH)),
 					id: bob.into(),
 				},
 			],

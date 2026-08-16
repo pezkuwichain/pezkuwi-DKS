@@ -441,6 +441,7 @@ members = [
 	"pezcumulus/test/runtime",
 	"pezcumulus/test/service",
 	"pezcumulus/teyrchains/common",
+	"pezcumulus/teyrchains/common/types",
 	"pezcumulus/teyrchains/integration-tests/emulated/chains/relays/pezkuwichain",
 	"pezcumulus/teyrchains/integration-tests/emulated/chains/relays/zagros",
 	"pezcumulus/teyrchains/integration-tests/emulated/chains/teyrchains/assets/asset-hub-pezkuwichain",
@@ -580,7 +581,7 @@ members = [
 	"pezkuwi/teyrchain/test-teyrchains/adder/collator",
 	"pezkuwi/teyrchain/test-teyrchains/halt",
 	"pezkuwi/teyrchain/test-teyrchains/undying",
-	"pezkuwi/teyrchain/test-teyrchains/undying/collator",                                                    # People Parachain Custom pezpallets (Phase 2)	# Asset Hub Custom pezpallets (Phase 3)
+	"pezkuwi/teyrchain/test-teyrchains/undying/collator",                                                    # People Teyrchain Custom pezpallets (Phase 2)	# Asset Hub Custom pezpallets (Phase 3)
 	"pezkuwi/utils/pez-generate-bags",
 	"pezkuwi/utils/remote-ext-tests/bags-list",
 	"pezkuwi/xcm",
@@ -1147,7 +1148,7 @@ pezpallet-teyrchain-template = { path = "templates/teyrchain/pezpallets/template
 pezpallet-staking-reward-fn = { path = "bizinikiwi/pezframe/staking/reward-fn", version = "19.0.0", default-features = false }
 pezpallet-validator-pool = { path = "pezkuwi/pezpallets/validator-pool", version = "1.0.0", default-features = false }
 
-# People Parachain pezpallets (Phase 2)
+# People Teyrchain pezpallets (Phase 2)
 pezpallet-identity-kyc = { path = "pezcumulus/teyrchains/pezpallets/identity-kyc", version = "1.0.0", default-features = false }
 pezpallet-messaging = { path = "pezcumulus/teyrchains/pezpallets/messaging", version = "1.0.0", default-features = false }
 pezpallet-perwerde = { path = "pezcumulus/teyrchains/pezpallets/perwerde", version = "1.0.0", default-features = false }
@@ -1559,6 +1560,7 @@ tempfile = { version = "3.8.1" }
 teyrchain-info = { path = "pezcumulus/teyrchains/pezpallets/teyrchain-info", version = "0.7.0", default-features = false, package = "pezstaging-teyrchain-info" }
 teyrchain-template-runtime = { version = "0.0.0", path = "templates/teyrchain/runtime" }
 teyrchains-common = { path = "pezcumulus/teyrchains/common", version = "7.0.0", default-features = false }
+teyrchains-common-types = { path = "pezcumulus/teyrchains/common/types", version = "0.4.0", default-features = false }
 teyrchains-relay = { version = "0.1.0", path = "pezbridges/relays/teyrchains" }
 teyrchains-runtimes-test-utils = { path = "pezcumulus/teyrchains/runtimes/test-utils", version = "7.0.0", default-features = false }
 # pinned test-case to 3.3.1 because they support only the latest stable version of rust

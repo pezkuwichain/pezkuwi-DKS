@@ -1020,7 +1020,7 @@ fn invalid_claimer_does_not_fail_the_message() {
 }
 
 #[test]
-fn create_foreign_asset_deposit_is_equal_to_asset_hub_foreign_asset_pallet_deposit() {
+fn create_foreign_asset_deposit_is_equal_to_asset_hub_foreign_asset_pezpallet_deposit() {
 	let asset_hub_deposit = asset_hub_zagros_runtime::ForeignAssetsAssetDeposit::get();
 	let bridge_hub_deposit = pezbp_asset_hub_zagros::CreateForeignAssetDeposit::get();
 	assert!(

@@ -43,7 +43,7 @@ fn can_pause_specific_call() {
 
 #[docify::export]
 #[test]
-fn can_pause_all_calls_in_pallet_except_on_whitelist() {
+fn can_pause_all_calls_in_pezpallet_except_on_whitelist() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(call_transfer(1, 1).dispatch(RuntimeOrigin::signed(0)));
 

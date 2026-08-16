@@ -72,11 +72,11 @@ pub struct ParaInfo {
 ///
 /// The head is stored by the `paras` pezpallet in the `Heads` map.
 pub fn teyrchain_head_storage_key_at_source(
-	paras_pallet_name: &str,
+	paras_pezpallet_name: &str,
 	para_id: ParaId,
 ) -> StorageKey {
 	pezbp_runtime::storage_map_final_key::<Twox64Concat>(
-		paras_pallet_name,
+		paras_pezpallet_name,
 		"Heads",
 		&para_id.encode(),
 	)

@@ -650,7 +650,7 @@ mod tests {
 	}
 
 	#[test]
-	fn exporter_is_compatible_with_pallet_xcm_bridge_hub_router() {
+	fn exporter_is_compatible_with_pezpallet_xcm_bridge_hub_router() {
 		run_test(|| {
 			// valid routable destination
 			let dest = Location::new(2, BridgedUniversalDestination::get());
@@ -799,7 +799,7 @@ mod tests {
 	}
 
 	#[test]
-	fn congestion_with_pallet_xcm_bridge_hub_router_works() {
+	fn congestion_with_pezpallet_xcm_bridge_hub_router_works() {
 		run_test(|| {
 			// valid routable destination
 			let dest = Location::new(2, BridgedUniversalDestination::get());

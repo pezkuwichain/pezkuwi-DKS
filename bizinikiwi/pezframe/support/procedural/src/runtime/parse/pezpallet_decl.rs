@@ -151,7 +151,7 @@ fn declaration_works_with_pallet() {
 }
 
 #[test]
-fn declaration_works_with_pallet_and_instance() {
+fn declaration_works_with_pezpallet_and_instance() {
 	use syn::parse_quote;
 
 	let decl: PalletDeclaration = PalletDeclaration::try_from(

@@ -196,6 +196,6 @@
 //! [`--dev-block-time`]: pezkuwi_omni_node_lib::cli::Cli::dev_block_time
 //! [`pezkuwi-omni-node`]: https://crates.io/crates/polkadot-omni-node
 //! [`chain-spec-builder`]: https://crates.io/crates/pezstaging-chain-spec-builder
-//! [`pezcumulus-pezpallet-teyrchain-system`]: https://docs.rs/cumulus-pallet-parachain-system/latest/cumulus_pallet_parachain_system/
+//! [`pezcumulus-pezpallet-teyrchain-system`]: https://docs.rs/cumulus-pallet-parachain-system/latest/cumulus_pezpallet_parachain_system/
 //! [`pezframe-system`]: https://docs.rs/frame-system/latest/frame_system/
 //! [`block number`]: https://docs.rs/frame-system/latest/frame_system/pallet/storage_types/struct.Number.html

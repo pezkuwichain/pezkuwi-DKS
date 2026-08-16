@@ -122,8 +122,8 @@ impl<P: BizinikiwiMessageLane, SourceClnt: Client<P::SourceChain>, TargetClnt>
 	}
 
 	/// Ensure that the messages pezpallet at source chain is active.
-	async fn ensure_pallet_active(&self) -> Result<(), BizinikiwiError> {
-		ensure_messages_pallet_active::<P::SourceChain, P::TargetChain, _>(&self.source_client)
+	async fn ensure_pezpallet_active(&self) -> Result<(), BizinikiwiError> {
+		ensure_messages_pezpallet_active::<P::SourceChain, P::TargetChain, _>(&self.source_client)
 			.await
 	}
 }
@@ -193,7 +193,7 @@ where
 		self.source_client.ensure_synced().await?;
 		self.target_client.ensure_synced().await?;
 		// we can't relay confirmations if messages pezpallet at source chain is halted
-		self.ensure_pallet_active().await?;
+		self.ensure_pezpallet_active().await?;
 
 		read_client_state_from_both_chains(&self.source_client, &self.target_client).await
 	}
@@ -410,7 +410,7 @@ where
 }
 
 /// Ensure that the messages pezpallet at source chain is active.
-pub(crate) async fn ensure_messages_pallet_active<AtChain, WithChain, AtChainClient>(
+pub(crate) async fn ensure_messages_pezpallet_active<AtChain, WithChain, AtChainClient>(
 	client: &AtChainClient,
 ) -> Result<(), BizinikiwiError>
 where

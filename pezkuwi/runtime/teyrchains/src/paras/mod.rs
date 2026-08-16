@@ -132,7 +132,6 @@ use pezsp_runtime::{
 	DispatchResult, SaturatedConversion,
 };
 use scale_info::{Type, TypeInfo};
-use Debug;
 
 use serde::{Deserialize, Serialize};
 

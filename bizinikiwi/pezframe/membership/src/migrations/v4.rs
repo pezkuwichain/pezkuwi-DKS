@@ -40,13 +40,13 @@ pub fn migrate<
 	P: GetStorageVersion + PalletInfoAccess,
 	N: AsRef<str>,
 >(
-	old_pallet_name: N,
-	new_pallet_name: N,
+	old_pezpallet_name: N,
+	new_pezpallet_name: N,
 ) -> Weight {
-	let old_pallet_name = old_pallet_name.as_ref();
-	let new_pallet_name = new_pallet_name.as_ref();
+	let old_pezpallet_name = old_pezpallet_name.as_ref();
+	let new_pezpallet_name = new_pezpallet_name.as_ref();
 
-	if new_pallet_name == old_pallet_name {
+	if new_pezpallet_name == old_pezpallet_name {
 		log::info!(
 			target: LOG_TARGET,
 			"New pezpallet name is equal to the old prefix. No migration needs to be done.",
@@ -63,10 +63,10 @@ pub fn migrate<
 
 	if on_chain_storage_version < 4 {
 		pezframe_support::storage::migration::move_pallet(
-			old_pallet_name.as_bytes(),
-			new_pallet_name.as_bytes(),
+			old_pezpallet_name.as_bytes(),
+			new_pezpallet_name.as_bytes(),
 		);
-		log_migration("migration", old_pallet_name, new_pallet_name);
+		log_migration("migration", old_pezpallet_name, new_pezpallet_name);
 
 		StorageVersion::new(4).put::<P>();
 		<T as pezframe_system::Config>::BlockWeights::get().max_block
@@ -84,26 +84,29 @@ pub fn migrate<
 /// `pezframe_support::traits::OnRuntimeUpgrade::pre_upgrade` for further testing.
 ///
 /// Panics if anything goes wrong.
-pub fn pre_migrate<P: GetStorageVersion, N: AsRef<str>>(old_pallet_name: N, new_pallet_name: N) {
-	let old_pallet_name = old_pallet_name.as_ref();
-	let new_pallet_name = new_pallet_name.as_ref();
-	log_migration("pre-migration", old_pallet_name, new_pallet_name);
+pub fn pre_migrate<P: GetStorageVersion, N: AsRef<str>>(
+	old_pezpallet_name: N,
+	new_pezpallet_name: N,
+) {
+	let old_pezpallet_name = old_pezpallet_name.as_ref();
+	let new_pezpallet_name = new_pezpallet_name.as_ref();
+	log_migration("pre-migration", old_pezpallet_name, new_pezpallet_name);
 
-	if new_pallet_name == old_pallet_name {
+	if new_pezpallet_name == old_pezpallet_name {
 		return;
 	}
 
-	let new_pallet_prefix = twox_128(new_pallet_name.as_bytes());
+	let new_pezpallet_prefix = twox_128(new_pezpallet_name.as_bytes());
 	let storage_version_key = twox_128(STORAGE_VERSION_STORAGE_KEY_POSTFIX);
 
-	let mut new_pallet_prefix_iter = pezframe_support::storage::KeyPrefixIterator::new(
-		new_pallet_prefix.to_vec(),
-		new_pallet_prefix.to_vec(),
+	let mut new_pezpallet_prefix_iter = pezframe_support::storage::KeyPrefixIterator::new(
+		new_pezpallet_prefix.to_vec(),
+		new_pezpallet_prefix.to_vec(),
 		|key| Ok(key.to_vec()),
 	);
 
 	// Ensure nothing except maybe the storage_version_key is stored in the new prefix.
-	assert!(new_pallet_prefix_iter.all(|key| key == storage_version_key));
+	assert!(new_pezpallet_prefix_iter.all(|key| key == storage_version_key));
 
 	assert!(<P as GetStorageVersion>::on_chain_storage_version() < 4);
 }
@@ -112,42 +115,45 @@ pub fn pre_migrate<P: GetStorageVersion, N: AsRef<str>>(old_pallet_name: N, new_
 /// `pezframe_support::traits::OnRuntimeUpgrade::post_upgrade` for further testing.
 ///
 /// Panics if anything goes wrong.
-pub fn post_migrate<P: GetStorageVersion, N: AsRef<str>>(old_pallet_name: N, new_pallet_name: N) {
-	let old_pallet_name = old_pallet_name.as_ref();
-	let new_pallet_name = new_pallet_name.as_ref();
-	log_migration("post-migration", old_pallet_name, new_pallet_name);
+pub fn post_migrate<P: GetStorageVersion, N: AsRef<str>>(
+	old_pezpallet_name: N,
+	new_pezpallet_name: N,
+) {
+	let old_pezpallet_name = old_pezpallet_name.as_ref();
+	let new_pezpallet_name = new_pezpallet_name.as_ref();
+	log_migration("post-migration", old_pezpallet_name, new_pezpallet_name);
 
-	if new_pallet_name == old_pallet_name {
+	if new_pezpallet_name == old_pezpallet_name {
 		return;
 	}
 
 	// Assert that nothing remains at the old prefix.
-	let old_pallet_prefix = twox_128(old_pallet_name.as_bytes());
-	let old_pallet_prefix_iter = pezframe_support::storage::KeyPrefixIterator::new(
-		old_pallet_prefix.to_vec(),
-		old_pallet_prefix.to_vec(),
+	let old_pezpallet_prefix = twox_128(old_pezpallet_name.as_bytes());
+	let old_pezpallet_prefix_iter = pezframe_support::storage::KeyPrefixIterator::new(
+		old_pezpallet_prefix.to_vec(),
+		old_pezpallet_prefix.to_vec(),
 		|_| Ok(()),
 	);
-	assert_eq!(old_pallet_prefix_iter.count(), 0);
+	assert_eq!(old_pezpallet_prefix_iter.count(), 0);
 
 	// NOTE: storage_version_key is already in the new prefix.
-	let new_pallet_prefix = twox_128(new_pallet_name.as_bytes());
-	let new_pallet_prefix_iter = pezframe_support::storage::KeyPrefixIterator::new(
-		new_pallet_prefix.to_vec(),
-		new_pallet_prefix.to_vec(),
+	let new_pezpallet_prefix = twox_128(new_pezpallet_name.as_bytes());
+	let new_pezpallet_prefix_iter = pezframe_support::storage::KeyPrefixIterator::new(
+		new_pezpallet_prefix.to_vec(),
+		new_pezpallet_prefix.to_vec(),
 		|_| Ok(()),
 	);
-	assert!(new_pallet_prefix_iter.count() >= 1);
+	assert!(new_pezpallet_prefix_iter.count() >= 1);
 
 	assert_eq!(<P as GetStorageVersion>::on_chain_storage_version(), 4);
 }
 
-fn log_migration(stage: &str, old_pallet_name: &str, new_pallet_name: &str) {
+fn log_migration(stage: &str, old_pezpallet_name: &str, new_pezpallet_name: &str) {
 	log::info!(
 		target: LOG_TARGET,
 		"{}, prefix: '{}' ==> '{}'",
 		stage,
-		old_pallet_name,
-		new_pallet_name,
+		old_pezpallet_name,
+		new_pezpallet_name,
 	);
 }

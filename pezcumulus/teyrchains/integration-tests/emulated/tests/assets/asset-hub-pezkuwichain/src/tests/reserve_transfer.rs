@@ -19,7 +19,10 @@ use pezsp_core::{crypto::get_public_from_string_or_panic, sr25519};
 fn relay_to_para_sender_assertions(t: RelayToParaTest) {
 	type RuntimeEvent = <Pezkuwichain as Chain>::RuntimeEvent;
 
-	Pezkuwichain::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(350_000_000, 7000)));
+	Pezkuwichain::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(
+		350_000_000,
+		7000,
+	)));
 
 	assert_expected_events!(
 		Pezkuwichain,
@@ -40,7 +43,10 @@ fn relay_to_para_sender_assertions(t: RelayToParaTest) {
 
 fn para_to_relay_sender_assertions(t: ParaToRelayTest) {
 	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
-	PenpalA::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(2_000_000_000, 140_000)));
+	PenpalA::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(
+		2_000_000_000,
+		140_000,
+	)));
 	assert_expected_events!(
 		PenpalA,
 		vec![
@@ -58,7 +64,7 @@ fn para_to_relay_sender_assertions(t: ParaToRelayTest) {
 
 pub fn system_para_to_para_sender_assertions(t: SystemParaToParaTest) {
 	type RuntimeEvent = <AssetHubPezkuwichain as Chain>::RuntimeEvent;
-	AssetHubPezkuwichain::assert_xcm_pallet_attempted_complete(None);
+	AssetHubPezkuwichain::assert_xcm_pezpallet_attempted_complete(None);
 
 	let sov_acc_of_dest = AssetHubPezkuwichain::sovereign_account_id_of(t.args.dest.clone());
 	for asset in t.args.assets.into_inner().into_iter() {
@@ -119,7 +125,7 @@ pub fn system_para_to_para_sender_assertions(t: SystemParaToParaTest) {
 			RuntimeEvent::PezkuwiXcm(pezpallet_xcm::Event::FeesPaid { .. }) => {},
 		]
 	);
-	AssetHubPezkuwichain::assert_xcm_pallet_sent();
+	AssetHubPezkuwichain::assert_xcm_pezpallet_sent();
 }
 
 pub fn system_para_to_para_receiver_assertions(t: SystemParaToParaTest) {
@@ -170,7 +176,7 @@ pub fn system_para_to_penpal_receiver_assertions(t: SystemParaToParaTest) {
 
 pub fn para_to_system_para_sender_assertions(t: ParaToSystemParaTest) {
 	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
-	PenpalA::assert_xcm_pallet_attempted_complete(None);
+	PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 	for asset in t.args.assets.into_inner().into_iter() {
 		let expected_id = asset.id.0;
 		let asset_amount = if let Fungible(a) = asset.fun { Some(a) } else { None }.unwrap();
@@ -282,7 +288,7 @@ pub fn para_to_system_para_receiver_assertions(t: ParaToSystemParaTest) {
 
 fn system_para_to_para_assets_sender_assertions(t: SystemParaToParaTest) {
 	type RuntimeEvent = <AssetHubPezkuwichain as Chain>::RuntimeEvent;
-	AssetHubPezkuwichain::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(
+	AssetHubPezkuwichain::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(
 		864_610_000,
 		8799,
 	)));
@@ -317,7 +323,10 @@ fn para_to_system_para_assets_sender_assertions(t: ParaToSystemParaTest) {
 	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
 	let system_para_native_asset_location = RelayLocation::get();
 	let reservable_asset_location = PenpalLocalReservableFromAssetHub::get();
-	PenpalA::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(2_000_000_000, 140000)));
+	PenpalA::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(
+		2_000_000_000,
+		140000,
+	)));
 	assert_expected_events!(
 		PenpalA,
 		vec![
@@ -417,7 +426,7 @@ fn relay_to_para_assets_receiver_assertions(t: RelayToParaTest) {
 pub fn para_to_para_through_hop_sender_assertions<Hop: Clone>(t: Test<PenpalA, PenpalB, Hop>) {
 	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
 
-	PenpalA::assert_xcm_pallet_attempted_complete(None);
+	PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 	for asset in t.args.assets.into_inner() {
 		let expected_id = asset.id.0.clone().try_into().unwrap();
 		let amount = if let Fungible(a) = asset.fun { Some(a) } else { None }.unwrap();

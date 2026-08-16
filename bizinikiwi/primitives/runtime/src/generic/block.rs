@@ -33,7 +33,6 @@ use crate::{
 };
 use alloc::vec::Vec;
 use core::marker::PhantomData;
-use Debug;
 
 /// Something to identify a block.
 #[derive(PartialEq, Eq, Clone, Encode, Decode, Debug)]

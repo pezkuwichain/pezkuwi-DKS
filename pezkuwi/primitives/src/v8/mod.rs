@@ -87,7 +87,7 @@ mod collator_app {
 /// Identity that collators use.
 pub type CollatorId = collator_app::Public;
 
-/// A Parachain collator keypair.
+/// A Teyrchain collator keypair.
 #[cfg(feature = "std")]
 pub type CollatorPair = collator_app::Pair;
 
@@ -162,7 +162,7 @@ impl TypeIndex for ValidatorIndex {
 }
 
 pezsp_application_crypto::with_pair! {
-	/// A Parachain validator keypair.
+	/// A Teyrchain validator keypair.
 	pub type ValidatorPair = validator_app::Pair;
 }
 
@@ -390,7 +390,7 @@ pub mod well_known_keys {
 	}
 }
 
-/// Unique identifier for the Parachains Inherent
+/// Unique identifier for the Teyrchains Inherent
 pub const PARACHAINS_INHERENT_IDENTIFIER: InherentIdentifier = *b"parachn0";
 
 /// The key type ID for parachain assignment key.
@@ -404,7 +404,7 @@ pub const MIN_CODE_SIZE: u32 = 9;
 /// to have bigger values, we should fix that first.
 ///
 /// Used for:
-/// * initial genesis for the Parachains configuration
+/// * initial genesis for the Teyrchains configuration
 /// * checking updates to this stored runtime configuration do not exceed this limit
 /// * when detecting a code decompression bomb in the client
 // NOTE: This value is used in the runtime so be careful when changing it.
@@ -413,7 +413,7 @@ pub const MAX_CODE_SIZE: u32 = 3 * 1024 * 1024;
 /// Maximum head data size we support right now.
 ///
 /// Used for:
-/// * initial genesis for the Parachains configuration
+/// * initial genesis for the Teyrchains configuration
 /// * checking updates to this stored runtime configuration do not exceed this limit
 // NOTE: This value is used in the runtime so be careful when changing it.
 pub const MAX_HEAD_DATA_SIZE: u32 = 1 * 1024 * 1024;
@@ -421,7 +421,7 @@ pub const MAX_HEAD_DATA_SIZE: u32 = 1 * 1024 * 1024;
 /// Maximum PoV size we support right now.
 ///
 /// Used for:
-/// * initial genesis for the Parachains configuration
+/// * initial genesis for the Teyrchains configuration
 /// * checking updates to this stored runtime configuration do not exceed this limit
 /// * when detecting a PoV decompression bomb in the client
 // NOTE: This value is used in the runtime so be careful when changing it.
@@ -1116,7 +1116,7 @@ pub enum CoreState<H = Hash, N = BlockNumber> {
 	#[codec(index = 1)]
 	Scheduled(ScheduledCore),
 	/// The core is currently free and there is nothing scheduled. This can be the case for
-	/// parathread cores when there are no parathread blocks queued. Parachain cores will never be
+	/// parathread cores when there are no parathread blocks queued. Teyrchain cores will never be
 	/// left idle.
 	#[codec(index = 2)]
 	Free,
@@ -1630,7 +1630,7 @@ pub struct DisputeState<N = BlockNumber> {
 	pub concluded_at: Option<N>,
 }
 
-/// Parachains inherent-data passed into the runtime by a block author
+/// Teyrchains inherent-data passed into the runtime by a block author
 #[derive(Encode, Decode, Clone, PartialEq, Debug, TypeInfo)]
 pub struct InherentData<HDR: HeaderT = Header> {
 	/// Signed bitfields by validators about availability.

@@ -634,7 +634,7 @@ asset_test_pezutils::include_asset_transactor_transfer_with_local_consensus_curr
 	})
 );
 
-asset_test_pezutils::include_asset_transactor_transfer_with_pallet_assets_instance_works!(
+asset_test_pezutils::include_asset_transactor_transfer_with_pezpallet_assets_instance_works!(
 	asset_transactor_transfer_with_trust_backed_assets_works,
 	Runtime,
 	XcmConfig,
@@ -652,7 +652,7 @@ asset_test_pezutils::include_asset_transactor_transfer_with_pallet_assets_instan
 	})
 );
 
-asset_test_pezutils::include_asset_transactor_transfer_with_pallet_assets_instance_works!(
+asset_test_pezutils::include_asset_transactor_transfer_with_pezpallet_assets_instance_works!(
 	asset_transactor_transfer_with_foreign_assets_works,
 	Runtime,
 	XcmConfig,

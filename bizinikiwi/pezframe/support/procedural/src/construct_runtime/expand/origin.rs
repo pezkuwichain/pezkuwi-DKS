@@ -55,7 +55,7 @@ pub fn expand_outer_origin(
 				instance,
 				generics,
 			));
-			pezpallet_conversions.extend(expand_origin_pallet_conversions(
+			pezpallet_conversions.extend(expand_origin_pezpallet_conversions(
 				scrate,
 				runtime,
 				pezpallet_decl,
@@ -356,7 +356,7 @@ fn expand_origin_caller_variant(
 	}
 }
 
-fn expand_origin_pallet_conversions(
+fn expand_origin_pezpallet_conversions(
 	_scrate: &TokenStream,
 	runtime: &Ident,
 	pezpallet: &Pezpallet,

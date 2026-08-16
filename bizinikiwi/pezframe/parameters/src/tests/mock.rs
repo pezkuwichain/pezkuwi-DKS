@@ -22,7 +22,7 @@
 
 use pezframe_support::{
 	construct_runtime, derive_impl,
-	dynamic_params::{dynamic_pallet_params, dynamic_params},
+	dynamic_params::{dynamic_params, dynamic_pezpallet_params},
 	traits::EnsureOriginWithArg,
 };
 
@@ -46,7 +46,7 @@ impl pezpallet_balances::Config for Runtime {
 pub mod dynamic_params {
 	use super::*;
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 3)]
 	pub mod pallet1 {
 		#[codec(index = 0)]
@@ -57,7 +57,7 @@ pub mod dynamic_params {
 		pub static Key3: u128 = 2;
 	}
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 1)]
 	pub mod pallet2 {
 		#[codec(index = 2)]
@@ -68,14 +68,14 @@ pub mod dynamic_params {
 		pub static Key3: u128 = 4;
 	}
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 2)]
 	pub mod nis {
 		#[codec(index = 0)]
 		pub static Target: u64 = 0;
 	}
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 4)]
 	pub mod somE_weird_SPElLInG_s {
 		#[codec(index = 0)]

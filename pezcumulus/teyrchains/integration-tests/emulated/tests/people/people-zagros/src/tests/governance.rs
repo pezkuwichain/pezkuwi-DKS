@@ -100,7 +100,7 @@ fn relay_commands_add_registrar_wrong_origin() {
 		(OriginKind::Superuser, WelatiAdminOrigin.into()),
 	];
 
-	// The relay only lets governance pallet origins originate `pallet_xcm::send`; an ordinary
+	// The relay only lets governance pallet origins originate `pezpallet_xcm::send`; an ordinary
 	// signed account is refused there, before any message leaves. The Welati origin is accepted
 	// and its message is then refused by the People chain, which only raises a relay
 	// `Plurality(Index(40..=42))` carried as `Superuser` to Root — and `add_registrar` needs Root.
@@ -262,7 +262,7 @@ fn relay_commands_kill_identity_wrong_origin() {
 		(OriginKind::Superuser, CitizenshipAdminOrigin.into()),
 	];
 
-	// The relay refuses `pallet_xcm::send` from a signed account; only governance pallet origins
+	// The relay refuses `pezpallet_xcm::send` from a signed account; only governance pallet origins
 	// may originate raw XCM. The Welati origin is accepted and refused on arrival instead.
 	let mut signed_origin = true;
 
@@ -483,7 +483,7 @@ fn relay_commands_add_remove_username_authority_wrong_origin() {
 		(OriginKind::Superuser, WelatiAdminOrigin.into()),
 	];
 
-	// The relay refuses `pallet_xcm::send` from a signed account; only governance pallet origins
+	// The relay refuses `pezpallet_xcm::send` from a signed account; only governance pallet origins
 	// may originate raw XCM. The Welati origin is accepted and refused on arrival instead.
 	let mut signed_origin = true;
 

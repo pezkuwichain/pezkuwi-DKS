@@ -87,7 +87,7 @@ const _: () = assert!(
 /// - `invulnerables`: Initial collators with their Aura keys
 /// - `endowed_accounts`: Accounts to receive initial HEZ balance
 /// - `endowment`: HEZ amount for each endowed account
-/// - `id`: Parachain ID
+/// - `id`: Teyrchain ID
 /// - `treasury_account`: Account holding Treasury PEZ allocation
 /// - `founder_account`: Account holding Founder PEZ allocation
 /// - `presale_account`: Account holding Presale PEZ allocation

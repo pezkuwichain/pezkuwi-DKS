@@ -52,7 +52,7 @@ fn default_founding_citizen_identity_hash() -> H256 {
 /// - `invulnerables`: Initial collators with their Aura keys
 /// - `endowed_accounts`: Accounts to receive initial HEZ balance
 /// - `endowment`: HEZ amount for each endowed account
-/// - `id`: Parachain ID
+/// - `id`: Teyrchain ID
 /// - `founding_citizens`: Accounts that start as Approved citizens (can accept referrals)
 /// - `founding_citizen`: The account that receives NFT #0 and Collection 0 ownership
 fn people_pezkuwichain_genesis(

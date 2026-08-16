@@ -59,7 +59,7 @@ macro_rules! assert_chain_types(
 /// Macro that ensures that the bridge messages pezpallet is configured properly to bridge using given
 /// configuration.
 #[macro_export]
-macro_rules! assert_bridge_messages_pallet_types(
+macro_rules! assert_bridge_messages_pezpallet_types(
 	(
 		runtime: $r:path,
 		with_bridged_chain_messages_instance: $i:path,
@@ -87,7 +87,7 @@ macro_rules! assert_bridge_messages_pallet_types(
 );
 
 /// Macro that combines four other macro calls - `assert_chain_types`, `assert_bridge_types`,
-/// and `assert_bridge_messages_pallet_types`. It may be used
+/// and `assert_bridge_messages_pezpallet_types`. It may be used
 /// at the chain that is implementing standard messages bridge with messages pezpallets deployed.
 #[macro_export]
 macro_rules! assert_complete_bridge_types(
@@ -99,7 +99,7 @@ macro_rules! assert_complete_bridge_types(
 		expected_payload_type: $payload:path,
 	) => {
 		$crate::assert_chain_types!(runtime: $r, this_chain: $this);
-		$crate::assert_bridge_messages_pallet_types!(
+		$crate::assert_bridge_messages_pezpallet_types!(
 			runtime: $r,
 			with_bridged_chain_messages_instance: $mi,
 			this_chain: $this,
@@ -155,7 +155,7 @@ where
 }
 
 /// Test that the constants, used in GRANDPA pezpallet configuration are valid.
-pub fn assert_bridge_grandpa_pallet_constants<R, GI>()
+pub fn assert_bridge_grandpa_pezpallet_constants<R, GI>()
 where
 	R: pezpallet_bridge_grandpa::Config<GI>,
 	GI: 'static,
@@ -168,7 +168,7 @@ where
 }
 
 /// Test that the constants, used in messages pezpallet configuration are valid.
-pub fn assert_bridge_messages_pallet_constants<R, MI>()
+pub fn assert_bridge_messages_pezpallet_constants<R, MI>()
 where
 	R: pezpallet_bridge_messages::Config<MI>,
 	MI: 'static,
@@ -190,12 +190,12 @@ where
 struct AssertBridgeGrandpaPalletNames<'a> {
 	/// Name of the GRANDPA pezpallet, deployed at this chain and used to bridge with the bridged
 	/// chain.
-	pub with_bridged_chain_grandpa_pallet_name: &'a str,
+	pub with_bridged_chain_grandpa_pezpallet_name: &'a str,
 }
 
 /// Tests that bridge pezpallet names used in `construct_runtime!()` macro call are matching constants
 /// from chain primitives crates.
-fn assert_bridge_grandpa_pallet_names<R, GI>(params: AssertBridgeGrandpaPalletNames)
+fn assert_bridge_grandpa_pezpallet_names<R, GI>(params: AssertBridgeGrandpaPalletNames)
 where
 	R: pezpallet_bridge_grandpa::Config<GI>,
 	GI: 'static,
@@ -204,7 +204,7 @@ where
 	assert_eq!(
 		pezpallet_bridge_grandpa::PalletOwner::<R, GI>::storage_value_final_key().to_vec(),
 		pezbp_runtime::storage_value_key(
-			params.with_bridged_chain_grandpa_pallet_name,
+			params.with_bridged_chain_grandpa_pezpallet_name,
 			"PalletOwner",
 		)
 		.0,
@@ -212,7 +212,7 @@ where
 	assert_eq!(
 		pezpallet_bridge_grandpa::PalletOperatingMode::<R, GI>::storage_value_final_key().to_vec(),
 		pezbp_runtime::storage_value_key(
-			params.with_bridged_chain_grandpa_pallet_name,
+			params.with_bridged_chain_grandpa_pezpallet_name,
 			"PalletOperatingMode",
 		)
 		.0,
@@ -224,12 +224,12 @@ where
 struct AssertBridgeMessagesPalletNames<'a> {
 	/// Name of the messages pezpallet, deployed at this chain and used to bridge with the bridged
 	/// chain.
-	pub with_bridged_chain_messages_pallet_name: &'a str,
+	pub with_bridged_chain_messages_pezpallet_name: &'a str,
 }
 
 /// Tests that bridge pezpallet names used in `construct_runtime!()` macro call are matching constants
 /// from chain primitives crates.
-fn assert_bridge_messages_pallet_names<R, MI>(params: AssertBridgeMessagesPalletNames)
+fn assert_bridge_messages_pezpallet_names<R, MI>(params: AssertBridgeMessagesPalletNames)
 where
 	R: pezpallet_bridge_messages::Config<MI>,
 	MI: 'static,
@@ -238,7 +238,7 @@ where
 	assert_eq!(
 		pezpallet_bridge_messages::PalletOwner::<R, MI>::storage_value_final_key().to_vec(),
 		pezbp_runtime::storage_value_key(
-			params.with_bridged_chain_messages_pallet_name,
+			params.with_bridged_chain_messages_pezpallet_name,
 			"PalletOwner",
 		)
 		.0,
@@ -246,7 +246,7 @@ where
 	assert_eq!(
 		pezpallet_bridge_messages::PalletOperatingMode::<R, MI>::storage_value_final_key().to_vec(),
 		pezbp_runtime::storage_value_key(
-			params.with_bridged_chain_messages_pallet_name,
+			params.with_bridged_chain_messages_pezpallet_name,
 			"PalletOperatingMode",
 		)
 		.0,
@@ -272,16 +272,22 @@ pub fn assert_complete_with_relay_chain_bridge_constants<R, GI, MI>(
 	MI: 'static,
 {
 	assert_chain_constants::<R>(params.this_chain_constants);
-	assert_bridge_grandpa_pallet_constants::<R, GI>();
-	assert_bridge_messages_pallet_constants::<R, MI>();
-	assert_bridge_grandpa_pallet_names::<R, GI>(AssertBridgeGrandpaPalletNames {
-		with_bridged_chain_grandpa_pallet_name:
-			<R as pezpallet_bridge_grandpa::Config<GI>>::BridgedChain::WITH_CHAIN_GRANDPA_PALLET_NAME,
-	});
-	assert_bridge_messages_pallet_names::<R, MI>(AssertBridgeMessagesPalletNames {
-		with_bridged_chain_messages_pallet_name:
-			<R as pezpallet_bridge_messages::Config<MI>>::BridgedChain::WITH_CHAIN_MESSAGES_PALLET_NAME,
-	});
+	assert_bridge_grandpa_pezpallet_constants::<R, GI>();
+	assert_bridge_messages_pezpallet_constants::<R, MI>();
+	assert_bridge_grandpa_pezpallet_names::<R, GI>(
+		AssertBridgeGrandpaPalletNames {
+			with_bridged_chain_grandpa_pezpallet_name: <R as pezpallet_bridge_grandpa::Config<
+				GI,
+			>>::BridgedChain::WITH_CHAIN_GRANDPA_PALLET_NAME,
+		},
+	);
+	assert_bridge_messages_pezpallet_names::<R, MI>(
+		AssertBridgeMessagesPalletNames {
+			with_bridged_chain_messages_pezpallet_name: <R as pezpallet_bridge_messages::Config<
+				MI,
+			>>::BridgedChain::WITH_CHAIN_MESSAGES_PALLET_NAME,
+		},
+	);
 }
 
 /// All bridge-related constants tests for the complete standard teyrchain messages bridge
@@ -299,20 +305,23 @@ pub fn assert_complete_with_teyrchain_bridge_constants<R, PI, MI>(
 	MI: 'static,
 {
 	assert_chain_constants::<R>(params.this_chain_constants);
-	assert_bridge_grandpa_pallet_constants::<R, R::BridgesGrandpaPalletInstance>();
-	assert_bridge_messages_pallet_constants::<R, MI>();
-	assert_bridge_grandpa_pallet_names::<R, R::BridgesGrandpaPalletInstance>(
+	assert_bridge_grandpa_pezpallet_constants::<R, R::BridgesGrandpaPalletInstance>();
+	assert_bridge_messages_pezpallet_constants::<R, MI>();
+	assert_bridge_grandpa_pezpallet_names::<R, R::BridgesGrandpaPalletInstance>(
 		AssertBridgeGrandpaPalletNames {
-			with_bridged_chain_grandpa_pallet_name:
+			with_bridged_chain_grandpa_pezpallet_name:
 				<<R as pezpallet_bridge_teyrchains::BoundedBridgeGrandpaConfig<
 					R::BridgesGrandpaPalletInstance,
 				>>::BridgedRelayChain>::WITH_CHAIN_GRANDPA_PALLET_NAME,
 		},
 	);
-	assert_bridge_messages_pallet_names::<R, MI>(AssertBridgeMessagesPalletNames {
-		with_bridged_chain_messages_pallet_name:
-			<R as pezpallet_bridge_messages::Config<MI>>::BridgedChain::WITH_CHAIN_MESSAGES_PALLET_NAME,
-	});
+	assert_bridge_messages_pezpallet_names::<R, MI>(
+		AssertBridgeMessagesPalletNames {
+			with_bridged_chain_messages_pezpallet_name: <R as pezpallet_bridge_messages::Config<
+				MI,
+			>>::BridgedChain::WITH_CHAIN_MESSAGES_PALLET_NAME,
+		},
+	);
 }
 
 /// All bridge-related constants tests for the standalone messages bridge deployment (only with
@@ -323,11 +332,14 @@ where
 	MI: 'static,
 {
 	assert_chain_constants::<R>(params.this_chain_constants);
-	assert_bridge_messages_pallet_constants::<R, MI>();
-	assert_bridge_messages_pallet_names::<R, MI>(AssertBridgeMessagesPalletNames {
-		with_bridged_chain_messages_pallet_name:
-			<R as pezpallet_bridge_messages::Config<MI>>::BridgedChain::WITH_CHAIN_MESSAGES_PALLET_NAME,
-	});
+	assert_bridge_messages_pezpallet_constants::<R, MI>();
+	assert_bridge_messages_pezpallet_names::<R, MI>(
+		AssertBridgeMessagesPalletNames {
+			with_bridged_chain_messages_pezpallet_name: <R as pezpallet_bridge_messages::Config<
+				MI,
+			>>::BridgedChain::WITH_CHAIN_MESSAGES_PALLET_NAME,
+		},
+	);
 }
 
 /// Check that the message lane weights are correct.

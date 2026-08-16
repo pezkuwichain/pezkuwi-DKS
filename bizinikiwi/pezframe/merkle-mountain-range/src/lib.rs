@@ -332,7 +332,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 	fn leaf_index_to_parent_block_num(leaf_index: LeafIndex) -> BlockNumberFor<T> {
 		// leaves are zero-indexed and were added one per block since pezpallet activation,
 		// while block numbers are one-indexed, so block number that added `leaf_idx` is:
-		// `block_num = block_num_when_pallet_activated + leaf_idx + 1`
+		// `block_num = block_num_when_pezpallet_activated + leaf_idx + 1`
 		// `block_num = (current_block_num - leaves_count) + leaf_idx + 1`
 		// `parent_block_num = current_block_num - leaves_count + leaf_idx`.
 		<pezframe_system::Pezpallet<T>>::block_number()

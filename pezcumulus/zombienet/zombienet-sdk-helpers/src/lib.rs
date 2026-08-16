@@ -17,14 +17,14 @@ use zombienet_sdk::{
 	pezkuwi_subxt::{
 		self,
 		blocks::Block,
-		config::{polkadot::PolkadotExtrinsicParamsBuilder, substrate::DigestItem},
+		config::{polkadot::PezkuwiExtrinsicParamsBuilder, substrate::DigestItem},
 		dynamic::Value,
 		events::Events,
 		ext::scale_value::value,
 		metadata::Metadata,
 		tx::{signer::Signer, DynamicPayload, SubmittableTransaction, TxStatus},
 		utils::H256,
-		Config, OnlineClient, PolkadotConfig,
+		Config, OnlineClient, PezkuwiConfig,
 	},
 	LocalFileSystem, Network,
 };
@@ -68,7 +68,7 @@ fn format_dispatch_error(err: &pezsp_runtime::DispatchError, metadata: &Metadata
 
 /// Find an event in subxt `Events` and attempt to decode the fields of the event.
 fn find_event_and_decode_fields<T: Decode>(
-	events: &Events<PolkadotConfig>,
+	events: &Events<PezkuwiConfig>,
 	pezpallet: &str,
 	variant: &str,
 ) -> Result<Vec<T>, anyhow::Error> {
@@ -83,7 +83,7 @@ fn find_event_and_decode_fields<T: Decode>(
 }
 /// Returns `true` if the `block` is a session change.
 async fn is_session_change(
-	block: &Block<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+	block: &Block<PezkuwiConfig, OnlineClient<PezkuwiConfig>>,
 ) -> Result<bool, anyhow::Error> {
 	let events = block.events().await?;
 	Ok(events.iter().any(|event| {
@@ -104,10 +104,10 @@ async fn is_session_change(
 // upgrades), call [`wait_for_pvf_prepare`] before this helper to ensure all validators have
 // finished preparing the relevant PVFs.
 pub async fn assert_para_throughput(
-	relay_client: &OnlineClient<PolkadotConfig>,
+	relay_client: &OnlineClient<PezkuwiConfig>,
 	stop_after: u32,
 	expected_candidate_ranges: impl Into<HashMap<ParaId, Range<u32>>>,
-	expected_number_of_blocks: impl Into<HashMap<ParaId, (OnlineClient<PolkadotConfig>, Range<u32>)>>,
+	expected_number_of_blocks: impl Into<HashMap<ParaId, (OnlineClient<PezkuwiConfig>, Range<u32>)>>,
 ) -> Result<(), anyhow::Error> {
 	let ranges = expected_candidate_ranges.into();
 	let expected_number_of_blocks = expected_number_of_blocks.into();
@@ -128,7 +128,7 @@ pub async fn assert_para_throughput(
 ///
 /// Only receipts for para IDs present in `expected_candidate_ranges` are passed to the closure.
 pub async fn assert_para_throughput_with<F>(
-	relay_client: &OnlineClient<PolkadotConfig>,
+	relay_client: &OnlineClient<PezkuwiConfig>,
 	stop_after: u32,
 	expected_candidate_ranges: impl Into<HashMap<ParaId, Range<u32>>>,
 	validate: F,
@@ -187,7 +187,7 @@ pub async fn wait_for_pvf_prepare(
 }
 
 async fn collect_para_throughput<F>(
-	relay_client: &OnlineClient<PolkadotConfig>,
+	relay_client: &OnlineClient<PezkuwiConfig>,
 	stop_after: u32,
 	expected_candidate_ranges: impl Into<HashMap<ParaId, Range<u32>>>,
 	validate: F,
@@ -292,7 +292,7 @@ where
 
 async fn assert_expected_number_of_blocks(
 	candidate_count: HashMap<ParaId, Vec<CandidateReceiptV2<H256>>>,
-	expected_number_of_blocks: HashMap<ParaId, (OnlineClient<PolkadotConfig>, Range<u32>)>,
+	expected_number_of_blocks: HashMap<ParaId, (OnlineClient<PezkuwiConfig>, Range<u32>)>,
 ) -> Result<(), anyhow::Error> {
 	for (para_id, (para_client, expected_number_of_blocks)) in expected_number_of_blocks {
 		let receipts = candidate_count
@@ -310,7 +310,7 @@ async fn assert_expected_number_of_blocks(
 			let mut core_info = None;
 
 			loop {
-				let block: Block<PolkadotConfig, OnlineClient<PolkadotConfig>> =
+				let block: Block<PezkuwiConfig, OnlineClient<PezkuwiConfig>> =
 					para_client.blocks().at(next_para_block_hash).await?;
 
 				// Genesis block is not part of a candidate :)
@@ -346,7 +346,7 @@ async fn assert_expected_number_of_blocks(
 
 /// Returns [`CoreInfo`] for the given teyrchain block.
 pub fn find_core_info(
-	block: &Block<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+	block: &Block<PezkuwiConfig, OnlineClient<PezkuwiConfig>>,
 ) -> Result<CoreInfo, anyhow::Error> {
 	let bizinikiwi_digest = pezsp_runtime::generic::Digest::decode(
 		&mut &block.header().digest.encode()[..],
@@ -359,7 +359,7 @@ pub fn find_core_info(
 
 /// Returns [`RelayBlockIdentifier`] for the given teyrchain block.
 fn find_relay_block_identifier(
-	block: &Block<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+	block: &Block<PezkuwiConfig, OnlineClient<PezkuwiConfig>>,
 ) -> Result<RelayBlockIdentifier, anyhow::Error> {
 	let bizinikiwi_digest = pezsp_runtime::generic::Digest::decode(
 		&mut &block.header().digest.encode()[..],
@@ -375,7 +375,7 @@ fn find_relay_block_identifier(
 /// The session change is detected by inspecting the events in the block.
 pub async fn wait_for_first_session_change(
 	blocks_sub: &mut zombienet_sdk::pezkuwi_subxt::backend::StreamOfResults<
-		Block<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+		Block<PezkuwiConfig, OnlineClient<PezkuwiConfig>>,
 	>,
 ) -> Result<(), anyhow::Error> {
 	wait_for_nth_session_change(blocks_sub, 1).await
@@ -386,7 +386,7 @@ pub async fn wait_for_first_session_change(
 /// The session change is detected by inspecting the events in the block.
 pub async fn wait_for_nth_session_change(
 	blocks_sub: &mut zombienet_sdk::pezkuwi_subxt::backend::StreamOfResults<
-		Block<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+		Block<PezkuwiConfig, OnlineClient<PezkuwiConfig>>,
 	>,
 	mut sessions_to_wait: u32,
 ) -> Result<(), anyhow::Error> {
@@ -415,7 +415,7 @@ pub async fn wait_for_nth_session_change(
 
 // Helper function that asserts the maximum finality lag.
 pub async fn assert_finality_lag(
-	client: &OnlineClient<PolkadotConfig>,
+	client: &OnlineClient<PezkuwiConfig>,
 	maximum_lag: u32,
 ) -> Result<(), anyhow::Error> {
 	let mut best_stream = client.blocks().subscribe_best().await?;
@@ -435,7 +435,7 @@ pub async fn assert_finality_lag(
 
 /// Assert that finality has not stalled.
 pub async fn assert_blocks_are_being_finalized(
-	client: &OnlineClient<PolkadotConfig>,
+	client: &OnlineClient<PezkuwiConfig>,
 ) -> Result<(), anyhow::Error> {
 	let sleep_duration = Duration::from_secs(12);
 	let mut finalized_blocks = client.blocks().subscribe_finalized().await?;
@@ -463,7 +463,7 @@ pub async fn assert_blocks_are_being_finalized(
 /// Checks if the given `RelayBlockIdentifier` matches a relay chain header.
 fn identifier_matches_header(
 	identifier: &RelayBlockIdentifier,
-	header: &<PolkadotConfig as Config>::Header,
+	header: &<PezkuwiConfig as Config>::Header,
 ) -> bool {
 	match identifier {
 		RelayBlockIdentifier::ByHash(hash) => {
@@ -486,8 +486,8 @@ fn identifier_matches_header(
 /// * `offset` - Expected minimum offset between relay parent and highest seen relay block
 /// * `block_limit` - Number of teyrchain blocks to verify before completing
 pub async fn assert_relay_parent_offset(
-	relay_client: &OnlineClient<PolkadotConfig>,
-	para_client: &OnlineClient<PolkadotConfig>,
+	relay_client: &OnlineClient<PezkuwiConfig>,
+	para_client: &OnlineClient<PezkuwiConfig>,
 	offset: u32,
 	block_limit: u32,
 ) -> Result<(), anyhow::Error> {
@@ -568,12 +568,12 @@ pub async fn assert_relay_parent_offset(
 /// Submits the given `call` as signed transaction and waits for its successful finalization.
 ///
 /// The transaction is sent as immortal transaction.
-pub async fn submit_extrinsic_and_wait_for_finalization_success<S: Signer<PolkadotConfig>>(
-	client: &OnlineClient<PolkadotConfig>,
+pub async fn submit_extrinsic_and_wait_for_finalization_success<S: Signer<PezkuwiConfig>>(
+	client: &OnlineClient<PezkuwiConfig>,
 	call: &DynamicPayload,
 	signer: &S,
 ) -> Result<H256, anyhow::Error> {
-	let extensions = PolkadotExtrinsicParamsBuilder::new().immortal().build();
+	let extensions = PezkuwiExtrinsicParamsBuilder::new().immortal().build();
 
 	log::info!("Submitting transaction...");
 
@@ -584,7 +584,7 @@ pub async fn submit_extrinsic_and_wait_for_finalization_success<S: Signer<Polkad
 
 /// Submits the given `call` as unsigned transaction and waits for it successful finalization.
 pub async fn submit_unsigned_extrinsic_and_wait_for_finalization_success(
-	client: &OnlineClient<PolkadotConfig>,
+	client: &OnlineClient<PezkuwiConfig>,
 	call: &DynamicPayload,
 ) -> Result<H256, anyhow::Error> {
 	let tx = client.tx().create_unsigned(call)?;
@@ -594,7 +594,7 @@ pub async fn submit_unsigned_extrinsic_and_wait_for_finalization_success(
 
 /// Submit the given transaction and wait for its finalization.
 async fn submit_tx_and_wait_for_finalization(
-	tx: SubmittableTransaction<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+	tx: SubmittableTransaction<PezkuwiConfig, OnlineClient<PezkuwiConfig>>,
 ) -> Result<H256, anyhow::Error> {
 	log::info!("Submitting transaction: {:?}", tx.hash());
 
@@ -628,9 +628,9 @@ async fn submit_tx_and_wait_for_finalization(
 /// If the transaction does not reach the finalized state in `timeout_secs` an error is returned.
 /// The transaction is send as immortal transaction.
 pub async fn submit_extrinsic_and_wait_for_finalization_success_with_timeout<
-	S: Signer<PolkadotConfig>,
+	S: Signer<PezkuwiConfig>,
 >(
-	client: &OnlineClient<PolkadotConfig>,
+	client: &OnlineClient<PezkuwiConfig>,
 	call: &DynamicPayload,
 	signer: &S,
 	timeout_secs: impl Into<u64>,
@@ -652,7 +652,7 @@ pub async fn submit_extrinsic_and_wait_for_finalization_success_with_timeout<
 
 /// Asserts that the given `para_id` is registered at the relay chain.
 pub async fn assert_para_is_registered(
-	relay_client: &OnlineClient<PolkadotConfig>,
+	relay_client: &OnlineClient<PezkuwiConfig>,
 	para_id: ParaId,
 	blocks_to_wait: u32,
 ) -> Result<(), anyhow::Error> {
@@ -692,7 +692,7 @@ pub async fn assert_para_is_registered(
 
 /// Returns [`BlockBundleInfo`] for the given teyrchain block.
 fn find_block_bundle_info(
-	block: &Block<PolkadotConfig, OnlineClient<PolkadotConfig>>,
+	block: &Block<PezkuwiConfig, OnlineClient<PezkuwiConfig>>,
 ) -> Result<BlockBundleInfo, anyhow::Error> {
 	let bizinikiwi_digest = pezsp_runtime::generic::Digest::decode(
 		&mut &block.header().digest.encode()[..],
@@ -708,7 +708,7 @@ fn find_block_bundle_info(
 /// If `is_only_block_in_core` is true, it checks if the given block is the first block in the core
 /// and the only one. If this is `false`, it only checks if the block is the last block in the core.
 async fn ensure_is_block_in_core_impl(
-	para_client: &OnlineClient<PolkadotConfig>,
+	para_client: &OnlineClient<PezkuwiConfig>,
 	block_hash: H256,
 	is_only_block_in_core: bool,
 ) -> Result<(), anyhow::Error> {
@@ -771,7 +771,7 @@ async fn ensure_is_block_in_core_impl(
 
 /// Checks if the specified block occupies a full core.
 pub async fn ensure_is_only_block_in_core(
-	para_client: &OnlineClient<PolkadotConfig>,
+	para_client: &OnlineClient<PezkuwiConfig>,
 	block_to_check: BlockToCheck,
 ) -> Result<(), anyhow::Error> {
 	let blocks = para_client.blocks();
@@ -813,7 +813,7 @@ pub async fn ensure_is_only_block_in_core(
 ///
 /// Also ensures that the last block is NOT the first block.
 pub async fn ensure_is_last_block_in_core(
-	para_client: &OnlineClient<PolkadotConfig>,
+	para_client: &OnlineClient<PezkuwiConfig>,
 	block_to_check: H256,
 ) -> Result<(), anyhow::Error> {
 	ensure_is_block_in_core_impl(para_client, block_to_check, false).await?;
@@ -859,7 +859,7 @@ pub async fn ensure_is_last_block_in_core(
 ///
 /// The cores `2` and `3` are assigned to the teyrchains by Zombienet.
 pub async fn assign_cores(
-	client: &OnlineClient<PolkadotConfig>,
+	client: &OnlineClient<PezkuwiConfig>,
 	para_id: u32,
 	cores: Vec<u32>,
 ) -> Result<(), anyhow::Error> {
@@ -924,8 +924,8 @@ pub fn create_runtime_upgrade_call(wasm: &[u8]) -> DynamicPayload {
 /// This submits a `Sudo::sudo_unchecked_weight(System::set_code(wasm))` extrinsic,
 /// waits for finalization, then checks the `Sudid` event to verify the inner dispatch
 /// succeeded. Returns the hash of the finalized block containing the upgrade extrinsic.
-pub async fn submit_sudo_runtime_upgrade<S: Signer<PolkadotConfig>>(
-	client: &OnlineClient<PolkadotConfig>,
+pub async fn submit_sudo_runtime_upgrade<S: Signer<PezkuwiConfig>>(
+	client: &OnlineClient<PezkuwiConfig>,
 	wasm: &[u8],
 	signer: &S,
 ) -> Result<H256, anyhow::Error> {
@@ -965,7 +965,7 @@ pub async fn submit_sudo_runtime_upgrade<S: Signer<PolkadotConfig>>(
 ///
 /// Returns the hash of the block at which the runtime upgrade was applied.
 pub async fn wait_for_runtime_upgrade(
-	client: &OnlineClient<PolkadotConfig>,
+	client: &OnlineClient<PezkuwiConfig>,
 ) -> Result<H256, anyhow::Error> {
 	let mut finalized_blocks = client.blocks().subscribe_finalized().await?;
 

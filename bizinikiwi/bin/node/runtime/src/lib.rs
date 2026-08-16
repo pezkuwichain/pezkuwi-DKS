@@ -45,7 +45,7 @@ use pezframe_election_provider_support::{
 use pezframe_support::{
 	derive_impl,
 	dispatch::DispatchClass,
-	dynamic_params::{dynamic_pallet_params, dynamic_params},
+	dynamic_params::{dynamic_params, dynamic_pezpallet_params},
 	genesis_builder_helper::{build_state, get_preset},
 	instances::{Instance1, Instance2},
 	ord_parameter_types, parameter_types,
@@ -2462,7 +2462,7 @@ impl pezpallet_mixnet::Config for Runtime {
 pub mod dynamic_params {
 	use super::*;
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 0)]
 	pub mod storage {
 		/// Configures the base deposit of storing some data.
@@ -2474,7 +2474,7 @@ pub mod dynamic_params {
 		pub static ByteDeposit: Balance = 1 * CENTS;
 	}
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 1)]
 	pub mod referenda {
 		/// The configuration for the tracks

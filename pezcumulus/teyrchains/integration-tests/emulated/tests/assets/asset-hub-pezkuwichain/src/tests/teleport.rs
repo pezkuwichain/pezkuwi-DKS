@@ -26,7 +26,7 @@ fn relay_dest_assertions_fail(_t: SystemParaToRelayTest) {
 fn para_origin_assertions(t: SystemParaToRelayTest) {
 	type RuntimeEvent = <AssetHubPezkuwichain as Chain>::RuntimeEvent;
 
-	AssetHubPezkuwichain::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(
+	AssetHubPezkuwichain::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(
 		730_053_000,
 		4_000,
 	)));
@@ -51,7 +51,7 @@ fn penpal_to_ah_foreign_assets_sender_assertions(t: ParaToSystemParaTest) {
 	let expected_asset_id = t.args.asset_id.unwrap();
 	let (_, expected_asset_amount) = non_fee_asset(&t.args.assets, &t.args.fee_asset_id).unwrap();
 
-	PenpalA::assert_xcm_pallet_attempted_complete(None);
+	PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 	assert_expected_events!(
 		PenpalA,
 		vec![
@@ -106,7 +106,7 @@ fn penpal_to_ah_foreign_assets_receiver_assertions(t: ParaToSystemParaTest) {
 
 fn ah_to_penpal_foreign_assets_sender_assertions(t: SystemParaToParaTest) {
 	type RuntimeEvent = <AssetHubPezkuwichain as Chain>::RuntimeEvent;
-	AssetHubPezkuwichain::assert_xcm_pallet_attempted_complete(None);
+	AssetHubPezkuwichain::assert_xcm_pezpallet_attempted_complete(None);
 	let (expected_foreign_asset_id, expected_foreign_asset_amount) =
 		non_fee_asset(&t.args.assets, &t.args.fee_asset_id).unwrap();
 	let (_, fee_asset_amount) = fee_asset(&t.args.assets, &t.args.fee_asset_id).unwrap();

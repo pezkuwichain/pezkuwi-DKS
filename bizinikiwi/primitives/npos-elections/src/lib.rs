@@ -83,7 +83,6 @@ use pezsp_arithmetic::{traits::Zero, Normalizable, PerThing, Rational128, Thresh
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use Debug;
 
 #[cfg(test)]
 mod mock;

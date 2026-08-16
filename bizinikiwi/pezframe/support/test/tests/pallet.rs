@@ -1358,7 +1358,7 @@ fn pezpallet_on_genesis() {
 }
 
 #[test]
-fn migrate_from_pallet_version_to_storage_version() {
+fn migrate_from_pezpallet_version_to_storage_version() {
 	const PALLET_VERSION_STORAGE_KEY_POSTFIX: &[u8] = b":__PALLET_VERSION__:";
 
 	fn pezpallet_version_key(name: &str) -> [u8; 32] {
@@ -1380,9 +1380,10 @@ fn migrate_from_pallet_version_to_storage_version() {
 		assert_eq!(System::on_chain_storage_version(), StorageVersion::new(0));
 
 		let db_weight = RuntimeDbWeight { read: 0, write: 5 };
-		let weight = pezframe_support::migrations::migrate_from_pallet_version_to_storage_version::<
-			AllPalletsWithSystem,
-		>(&db_weight);
+		let weight =
+			pezframe_support::migrations::migrate_from_pezpallet_version_to_storage_version::<
+				AllPalletsWithSystem,
+			>(&db_weight);
 
 		let mut pezpallet_num = 4;
 		if cfg!(feature = "frame-feature-testing") {
@@ -1451,7 +1452,7 @@ fn metadata_v15() {
 
 	let readme = "Very important information :D\n";
 	let pezpallet_doc = "This is the best pezpallet\n";
-	let expected_pallet_doc = vec![" Pezpallet documentation", readme, pezpallet_doc];
+	let expected_pezpallet_doc = vec![" Pezpallet documentation", readme, pezpallet_doc];
 
 	let pallets = vec![
 		PalletMetadata {
@@ -1796,7 +1797,7 @@ fn metadata_v15() {
 				},
 			],
 			error: Some(PalletErrorMetadata { ty: meta_type::<pezpallet::Error<Runtime>>() }),
-			docs: expected_pallet_doc,
+			docs: expected_pezpallet_doc,
 		},
 		PalletMetadata {
 			index: 2,
@@ -2085,7 +2086,7 @@ fn metadata_versions() {
 }
 
 #[test]
-fn metadata_ir_pallet_runtime_docs() {
+fn metadata_ir_pezpallet_runtime_docs() {
 	let ir = Runtime::metadata_ir();
 	let pezpallet = ir
 		.pallets
@@ -2129,7 +2130,7 @@ fn extrinsic_metadata_ir_types() {
 }
 
 #[test]
-fn test_pallet_runtime_docs() {
+fn test_pezpallet_runtime_docs() {
 	let docs = crate::pezpallet::Pezpallet::<Runtime>::pezpallet_documentation_metadata();
 	let readme = "Very important information :D\n";
 	let pezpallet_doc = "This is the best pezpallet\n";
@@ -2138,7 +2139,7 @@ fn test_pallet_runtime_docs() {
 }
 
 #[test]
-fn test_pallet_info_access() {
+fn test_pezpallet_info_access() {
 	assert_eq!(<System as pezframe_support::traits::PalletInfoAccess>::name(), "System");
 	assert_eq!(<Example as pezframe_support::traits::PalletInfoAccess>::name(), "Example");
 	assert_eq!(<Example2 as pezframe_support::traits::PalletInfoAccess>::name(), "Example2");

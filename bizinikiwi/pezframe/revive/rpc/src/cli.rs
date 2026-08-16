@@ -17,7 +17,7 @@
 //! The Ethereum JSON-RPC server.
 use crate::{
 	DbContext, DebugRpcServer, DebugRpcServerImpl, EthRpcServer, EthRpcServerImpl, LOG_TARGET,
-	PolkadotRpcServer, PolkadotRpcServerImpl, ReceiptExtractor, ReceiptProvider,
+	PezkuwiRpcServer, PezkuwiRpcServerImpl, ReceiptExtractor, ReceiptProvider,
 	SubxtBlockInfoProvider, SystemHealthRpcServer, SystemHealthRpcServerImpl,
 	client::{Client, ClientError, SubscriptionGapQueue, SubscriptionType, connect},
 };
@@ -465,7 +465,7 @@ fn rpc_module(
 
 	let health_api = SystemHealthRpcServerImpl::new(client.clone()).into_rpc();
 	let debug_api = DebugRpcServerImpl::new(client.clone()).into_rpc();
-	let pezkuwi_api = PolkadotRpcServerImpl::new(client).into_rpc();
+	let pezkuwi_api = PezkuwiRpcServerImpl::new(client).into_rpc();
 
 	let mut module = RpcModule::new(());
 	module.merge(eth_api).map_err(|e| pezsc_service::Error::Application(e.into()))?;

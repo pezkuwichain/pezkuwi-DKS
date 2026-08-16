@@ -173,7 +173,7 @@ fn transact_from_para_to_para_through_asset_hub() {
 		transfer_and_transact_in_same_xcm(destination, usdt_to_send, receiver.clone().into(), call);
 
 		// verify expected events;
-		PenpalA::assert_xcm_pallet_attempted_complete(None);
+		PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 	});
 	AssetHubZagros::execute_with(|| {
 		let sov_penpal_a_on_ah = AssetHubZagros::sovereign_account_id_of(
@@ -362,7 +362,7 @@ fn transact_using_authorized_alias_from_para_to_asset_hub_and_back_to_para() {
 		.unwrap();
 
 		// verify expected events;
-		PenpalA::assert_xcm_pallet_attempted_complete(None);
+		PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 
 		let msg_sent_id = find_xcm_sent_message_id::<PenpalA>().expect("Missing Sent Event");
 		topic_id_tracker.insert("PenpalA_sent", msg_sent_id.into());
@@ -571,7 +571,7 @@ fn transact_using_sov_account_from_para_to_asset_hub_and_back_to_para() {
 		.unwrap();
 
 		// verify expected events;
-		PenpalA::assert_xcm_pallet_attempted_complete(None);
+		PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 
 		let msg_sent_id = find_xcm_sent_message_id::<PenpalA>().expect("Missing Sent Event");
 		topic_id_tracker.insert("PenpalA_sent", msg_sent_id.into());

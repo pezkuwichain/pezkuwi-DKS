@@ -56,7 +56,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		duration: BlockNumberFor<T, I>,
 	) -> DispatchResult {
 		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Swaps),
+			Self::is_pezpallet_feature_enabled(PalletFeature::Swaps),
 			Error::<T, I>::MethodDisabled
 		);
 		ensure!(duration <= T::MaxDeadlineDuration::get(), Error::<T, I>::WrongDuration);
@@ -166,7 +166,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		witness_price: Option<PriceWithDirection<ItemPrice<T, I>>>,
 	) -> DispatchResult {
 		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Swaps),
+			Self::is_pezpallet_feature_enabled(PalletFeature::Swaps),
 			Error::<T, I>::MethodDisabled
 		);
 

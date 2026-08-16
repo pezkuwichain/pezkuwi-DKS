@@ -167,7 +167,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 	/// This function checks if the given `feature` is enabled in the runtime using the
 	/// pezpallet's `T::Features::get()` function. It returns `true` if the feature is enabled,
 	/// otherwise it returns `false`.
-	pub(crate) fn is_pallet_feature_enabled(feature: PalletFeature) -> bool {
+	pub(crate) fn is_pezpallet_feature_enabled(feature: PalletFeature) -> bool {
 		let features = T::Features::get();
 		return features.is_enabled(feature);
 	}

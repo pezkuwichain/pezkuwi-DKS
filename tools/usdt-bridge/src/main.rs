@@ -1053,7 +1053,7 @@ async fn process_deposit_block(
         let event = event?;
 
         // Check for Assets.Transferred event
-        if event.pallet_name() == "Assets" && event.variant_name() == "Transferred" {
+        if event.pezpallet_name() == "Assets" && event.variant_name() == "Transferred" {
                 // Parse event data
                 if let Ok(fields) = event.field_values() {
                     // Fields: asset_id, from, to, amount
@@ -1430,7 +1430,7 @@ async fn process_withdrawal_block(
     for event in events.iter() {
         let event = event?;
 
-        if event.pallet_name() == "Assets" && event.variant_name() == "Transferred" {
+        if event.pezpallet_name() == "Assets" && event.variant_name() == "Transferred" {
                 if let Ok(fields) = event.field_values() {
                     let asset_id = fields.at("asset_id")
                         .and_then(|v| v.as_u128())

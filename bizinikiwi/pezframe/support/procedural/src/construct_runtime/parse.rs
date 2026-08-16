@@ -255,7 +255,7 @@ impl Parse for PalletDeclaration {
 		let (is_expanded, extra_parts) = if input.peek(keyword::expanded) {
 			let _: keyword::expanded = input.parse()?;
 			let _: Token![::] = input.parse()?;
-			(true, parse_pallet_parts(input)?)
+			(true, parse_pezpallet_parts(input)?)
 		} else {
 			(false, vec![])
 		};
@@ -263,7 +263,7 @@ impl Parse for PalletDeclaration {
 		// Parse for explicit parts
 		let pezpallet_parts = if input.peek(Token![::]) && input.peek3(token::Brace) {
 			let _: Token![::] = input.parse()?;
-			let mut parts = parse_pallet_parts(input)?;
+			let mut parts = parse_pezpallet_parts(input)?;
 			parts.extend(extra_parts.into_iter());
 			Some(parts)
 		} else if !input.peek(keyword::exclude_parts)
@@ -282,10 +282,10 @@ impl Parse for PalletDeclaration {
 		// Parse for specified parts
 		let specified_parts = if input.peek(keyword::exclude_parts) {
 			let _: keyword::exclude_parts = input.parse()?;
-			SpecifiedParts::Exclude(parse_pallet_parts_no_generic(input)?)
+			SpecifiedParts::Exclude(parse_pezpallet_parts_no_generic(input)?)
 		} else if input.peek(keyword::use_parts) {
 			let _: keyword::use_parts = input.parse()?;
-			SpecifiedParts::Use(parse_pallet_parts_no_generic(input)?)
+			SpecifiedParts::Use(parse_pezpallet_parts_no_generic(input)?)
 		} else if !input.peek(Token![=]) && !input.peek(Token![,]) && !input.is_empty() {
 			return Err(input.error("Unexpected tokens, expected one of `exclude_parts`, `=`, `,`"));
 		} else {
@@ -373,7 +373,7 @@ impl quote::ToTokens for PalletPath {
 /// Parse [`PalletPart`]'s from a braces enclosed list that is split by commas, e.g.
 ///
 /// `{ Call, Event }`
-fn parse_pallet_parts(input: ParseStream) -> Result<Vec<PalletPart>> {
+fn parse_pezpallet_parts(input: ParseStream) -> Result<Vec<PalletPart>> {
 	let pezpallet_parts: ext::Braces<ext::Punctuated<PalletPart, Token![,]>> = input.parse()?;
 
 	let mut resolved = HashSet::new();
@@ -568,7 +568,7 @@ impl Parse for PalletPartNoGeneric {
 /// Parse [`PalletPartNoGeneric`]'s from a braces enclosed list that is split by commas, e.g.
 ///
 /// `{ Call, Event }`
-fn parse_pallet_parts_no_generic(input: ParseStream) -> Result<Vec<PalletPartNoGeneric>> {
+fn parse_pezpallet_parts_no_generic(input: ParseStream) -> Result<Vec<PalletPartNoGeneric>> {
 	let pezpallet_parts: ext::Braces<ext::Punctuated<PalletPartNoGeneric, Token![,]>> =
 		input.parse()?;
 

@@ -40,7 +40,7 @@ use alloc::{
 };
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::cmp::Ordering;
-use pezframe_support::dynamic_params::{dynamic_pallet_params, dynamic_params};
+use pezframe_support::dynamic_params::{dynamic_params, dynamic_pezpallet_params};
 use pezkuwi_primitives::{
 	async_backing::Constraints, slashing, AccountId, AccountIndex, ApprovalVotingParams, Balance,
 	BlockNumber, CandidateEvent, CandidateHash,
@@ -250,7 +250,7 @@ impl PrivilegeCmp<OriginCaller> for OriginPrivilegeCmp {
 pub mod dynamic_params {
 	use super::*;
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 0)]
 	pub mod preimage {
 		use super::*;
@@ -654,7 +654,7 @@ impl ah_client::Config for Runtime {
 // =====================================================
 
 /// Stub Trust Score Provider - returns default trust for shadow mode
-/// Will be replaced with XCM cache from People Parachain in Phase 5
+/// Will be replaced with XCM cache from People Teyrchain in Phase 5
 pub struct StubTrustProvider;
 impl pezpallet_validator_pool::TrustScoreProvider<AccountId> for StubTrustProvider {
 	fn trust_score_of(_who: &AccountId) -> u128 {
@@ -663,7 +663,7 @@ impl pezpallet_validator_pool::TrustScoreProvider<AccountId> for StubTrustProvid
 }
 
 /// Stub Tiki Score Provider - returns default tiki for shadow mode
-/// Will be replaced with XCM cache from People Parachain in Phase 5
+/// Will be replaced with XCM cache from People Teyrchain in Phase 5
 pub struct StubTikiProvider;
 impl pezpallet_validator_pool::TikiScoreProvider<AccountId> for StubTikiProvider {
 	fn get_tiki_score(_who: &AccountId) -> u32 {
@@ -672,7 +672,7 @@ impl pezpallet_validator_pool::TikiScoreProvider<AccountId> for StubTikiProvider
 }
 
 /// Stub Referral Provider - returns default referral count for shadow mode
-/// Will be replaced with XCM cache from People Parachain in Phase 5
+/// Will be replaced with XCM cache from People Teyrchain in Phase 5
 pub struct StubReferralProvider;
 impl pezpallet_validator_pool::types::ReferralProvider<AccountId> for StubReferralProvider {
 	fn get_referral_count(_who: &AccountId) -> u32 {
@@ -681,7 +681,7 @@ impl pezpallet_validator_pool::types::ReferralProvider<AccountId> for StubReferr
 }
 
 /// Stub Perwerde Provider - returns default perwerde score for shadow mode
-/// Will be replaced with XCM cache from People Parachain in Phase 5
+/// Will be replaced with XCM cache from People Teyrchain in Phase 5
 pub struct StubPerwerdeProvider;
 impl pezpallet_validator_pool::types::PerwerdeProvider<AccountId> for StubPerwerdeProvider {
 	fn get_perwerde_score(_who: &AccountId) -> u32 {
@@ -1729,11 +1729,11 @@ pub mod migrations {
 	>;
 
 	/// Releases `Balances::Holds` entries tagged with `RuntimeHoldReason` discriminant 9 — the
-	/// pallet index the old (pre-`StakingAhClient`) `pallet_staking` occupied on this runtime
+	/// pallet index the old (pre-`StakingAhClient`) `pezpallet_staking` occupied on this runtime
 	/// before it was removed. Confirmed via live `state_getMetadata` against the currently-
 	/// deployed mainnet runtime that no pallet at index 9 exists any more (nothing in the
 	/// construct_runtime! pallet list uses index 9), so these entries are undecodable under any
-	/// `RuntimeHoldReason` value the current code can express — `pallet_staking` never released
+	/// `RuntimeHoldReason` value the current code can express — `pezpallet_staking` never released
 	/// them before its removal (a prior upgrade, predating this one). Found via the first live-
 	/// state `try-runtime on-runtime-upgrade --checks all` ever run against mainnet:
 	/// `try_decode_entire_state` failed post-upgrade on 25 accounts (~12.49M HEZ total, including
@@ -1884,7 +1884,7 @@ pub mod migrations {
 		// deliberately NOT a RemovePallet: Council is a live pallet here, not a retired Gov1 one.
 		InitializeCouncilStorageVersion,
 		// Releases ~12.49M HEZ of orphaned Balances::Holds left behind by the old (pre-
-		// StakingAhClient) pallet_staking's removal (see doc comment above).
+		// StakingAhClient) pezpallet_staking's removal (see doc comment above).
 		ReleaseOrphanedStakingHolds,
 		// Delete all Gov v1 pezpallet storage key/values (still needed to clean up any leftover
 		// storage)

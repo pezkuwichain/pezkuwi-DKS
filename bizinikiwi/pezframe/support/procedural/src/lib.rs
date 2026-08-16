@@ -413,8 +413,8 @@ pub fn match_and_insert(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(PalletError, attributes(codec))]
-pub fn derive_pallet_error(input: TokenStream) -> TokenStream {
-	pezpallet_error::derive_pallet_error(input)
+pub fn derive_pezpallet_error(input: TokenStream) -> TokenStream {
+	pezpallet_error::derive_pezpallet_error(input)
 }
 
 /// Internal macro used by `pezframe_support` to create tt-call-compliant macros
@@ -1301,8 +1301,8 @@ pub fn dynamic_params(attrs: TokenStream, input: TokenStream) -> TokenStream {
 /// This attribute takes one optional argument. The argument can either be put here or on the
 /// surrounding `#[dynamic_params]` attribute. If set on both, the inner one takes precedence.
 #[proc_macro_attribute]
-pub fn dynamic_pallet_params(attrs: TokenStream, input: TokenStream) -> TokenStream {
-	dynamic_params::dynamic_pallet_params(attrs.into(), input.into())
+pub fn dynamic_pezpallet_params(attrs: TokenStream, input: TokenStream) -> TokenStream {
+	dynamic_params::dynamic_pezpallet_params(attrs.into(), input.into())
 		.unwrap_or_else(|r| r.into_compile_error())
 		.into()
 }

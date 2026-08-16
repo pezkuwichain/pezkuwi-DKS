@@ -92,7 +92,7 @@ pezframe_support::construct_runtime!(
 		System: pezframe_system,
 		Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
 		XcmOrigin: pezpallet_xcm_origin::{Pezpallet, Origin},
-		OutboundQueue: snowbridge_pallet_outbound_queue::{Pezpallet, Call, Storage, Event<T>},
+		OutboundQueue: snowbridge_pezpallet_outbound_queue::{Pezpallet, Call, Storage, Event<T>},
 		EthereumSystem: snowbridge_system,
 		MessageQueue: pezpallet_message_queue::{Pezpallet, Call, Storage, Event<T>}
 	}
@@ -151,7 +151,7 @@ parameter_types! {
 	pub const OwnParaId: ParaId = ParaId::new(1013);
 }
 
-impl snowbridge_pallet_outbound_queue::Config for Test {
+impl snowbridge_pezpallet_outbound_queue::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Hashing = Keccak256;
 	type MessageQueue = MessageQueue;
@@ -169,7 +169,7 @@ impl snowbridge_pallet_outbound_queue::Config for Test {
 parameter_types! {
 	pub const SS58Prefix: u8 = 42;
 	pub const AnyNetwork: Option<NetworkId> = None;
-	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::Polkadot);
+	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::Pezkuwi);
 	pub const RelayLocation: Location = Location::parent();
 	pub UniversalLocation: InteriorLocation =
 		[GlobalConsensus(RelayNetwork::get().unwrap()), Teyrchain(1013)].into();

@@ -32,7 +32,6 @@ use pezsp_std::{collections::vec_deque::VecDeque, ops::RangeInclusive, prelude::
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use source_chain::RelayersRewards;
-use Debug;
 
 pub use call_info::{
 	BaseMessagesProofInfo, BridgeMessagesCall, MessagesCallInfo, ReceiveMessagesDeliveryProofInfo,

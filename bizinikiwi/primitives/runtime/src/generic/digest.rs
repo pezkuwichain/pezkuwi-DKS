@@ -32,7 +32,6 @@ use crate::{
 	},
 	ConsensusEngineId,
 };
-use Debug;
 
 /// Generic header digest.
 #[derive(PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Debug, TypeInfo, Default)]

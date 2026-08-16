@@ -160,11 +160,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let mut has_sudid = false;
                         let mut has_sent = false;
                         for ev in events.iter().flatten() {
-                            println!("  event: {}::{}", ev.pallet_name(), ev.variant_name());
-                            if ev.pallet_name() == "Sudo" && ev.variant_name() == "Sudid" {
+                            println!("  event: {}::{}", ev.pezpallet_name(), ev.variant_name());
+                            if ev.pezpallet_name() == "Sudo" && ev.variant_name() == "Sudid" {
                                 has_sudid = true;
                             }
-                            if ev.pallet_name() == "XcmPallet" && ev.variant_name() == "Sent" {
+                            if ev.pezpallet_name() == "XcmPallet" && ev.variant_name() == "Sent" {
                                 has_sent = true;
                             }
                         }

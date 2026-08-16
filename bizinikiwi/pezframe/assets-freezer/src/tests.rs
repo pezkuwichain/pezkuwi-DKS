@@ -290,7 +290,7 @@ mod impl_mutate_freeze {
 	}
 }
 
-mod with_pallet_assets {
+mod with_pezpallet_assets {
 	use super::*;
 
 	#[test]

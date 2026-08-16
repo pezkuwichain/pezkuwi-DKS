@@ -59,7 +59,7 @@ pub fn expand(mut def: Def) -> proc_macro2::TokenStream {
 	// Remove the `pezpallet_doc` attribute first.
 	let metadata_docs = documentation::expand_documentation(&mut def);
 	let constants = constants::expand_constants(&mut def);
-	let pezpallet_struct = pezpallet_struct::expand_pallet_struct(&mut def);
+	let pezpallet_struct = pezpallet_struct::expand_pezpallet_struct(&mut def);
 	let config = config::expand_config(&mut def);
 	let associated_types = config::expand_config_metadata(&def);
 	let call = call::expand_call(&mut def);

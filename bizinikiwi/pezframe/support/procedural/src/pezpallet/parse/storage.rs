@@ -805,7 +805,7 @@ impl StorageDef {
 			));
 		};
 
-		let attrs: Vec<PalletStorageAttr> = helper::take_item_pallet_attrs(&mut item.attrs)?;
+		let attrs: Vec<PalletStorageAttr> = helper::take_item_pezpallet_attrs(&mut item.attrs)?;
 		let PalletStorageAttrInfo { getter, rename_as, mut unbounded, whitelisted, try_decode } =
 			PalletStorageAttrInfo::from_attrs(attrs)?;
 

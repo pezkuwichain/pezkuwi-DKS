@@ -16,7 +16,6 @@
 // limitations under the License.
 
 use crate::{Config, DebugSettingsOf};
-use Debug;
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezsp_core::Get;
 use scale_info::TypeInfo;

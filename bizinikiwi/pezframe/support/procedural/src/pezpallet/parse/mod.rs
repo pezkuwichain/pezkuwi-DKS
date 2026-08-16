@@ -110,7 +110,7 @@ impl Def {
 		let mut is_pezframe_system = false;
 
 		for (index, item) in items.iter_mut().enumerate() {
-			let pezpallet_attr: Option<PalletAttr> = helper::take_first_item_pallet_attr(item)?;
+			let pezpallet_attr: Option<PalletAttr> = helper::take_first_item_pezpallet_attr(item)?;
 
 			match pezpallet_attr {
 				Some(PalletAttr::Config{ with_default, pezframe_system_config: is_pezframe_system_val, without_automatic_metadata, ..}) if config.is_none() => {

@@ -26,7 +26,7 @@ use pezframe_support_procedural_tools::get_doc_literals;
 /// * replace the first field type of `struct Pezpallet` with `PhantomData` if it is `_`
 /// * implementation of `PalletInfoAccess` information
 /// * implementation of `StorageInfoTrait` on Pezpallet
-pub fn expand_pallet_struct(def: &mut Def) -> proc_macro2::TokenStream {
+pub fn expand_pezpallet_struct(def: &mut Def) -> proc_macro2::TokenStream {
 	let pezframe_support = &def.pezframe_support;
 	let pezframe_system = &def.pezframe_system;
 	let type_impl_gen = &def.type_impl_generics(def.pezpallet_struct.attr_span);

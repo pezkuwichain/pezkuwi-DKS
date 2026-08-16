@@ -288,10 +288,10 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 	};
 
 	// Implementation of the authorize function for each call
-	// `authorize_fn_pallet_impl` writes the user-defined authorize function as a function
+	// `authorize_fn_pezpallet_impl` writes the user-defined authorize function as a function
 	// implementation for the pezpallet.
 	// `authorize_impl` is the call to this former function to implement `Authorize` trait.
-	let (authorize_fn_pallet_impl, authorize_impl) = methods
+	let (authorize_fn_pezpallet_impl, authorize_impl) = methods
 		.iter()
 		.zip(args_name.iter())
 		.zip(args_type.iter())
@@ -305,7 +305,7 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 				);
 				let source = syn::Ident::new("source", span);
 
-				let authorize_fn_pallet_impl = quote::quote_spanned!(authorize_fn.span() =>
+				let authorize_fn_pezpallet_impl = quote::quote_spanned!(authorize_fn.span() =>
 					// Closure don't have a writable type. So we fix the authorize token stream to
 					// be any implementation of a specific function.
 					// This allows to have good type inference on the closure.
@@ -334,7 +334,7 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 					}
 				);
 
-				(authorize_fn_pallet_impl, authorize_impl)
+				(authorize_fn_pezpallet_impl, authorize_impl)
 			} else {
 				(Default::default(), quote::quote!(None))
 			}
@@ -444,27 +444,27 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 					#(
 						#cfg_attrs
 						Self::#fn_name { #( #args_name_pattern_ref, )* } => {
-							let __pallet_base_weight = #fn_weight;
+							let __pezpallet_base_weight = #fn_weight;
 
-							let __pallet_weight = <
+							let __pezpallet_weight = <
 								dyn #pezframe_support::dispatch::WeighData<( #( & #args_type, )* )>
-							>::weigh_data(&__pallet_base_weight, ( #( #args_name, )* ));
+							>::weigh_data(&__pezpallet_base_weight, ( #( #args_name, )* ));
 
-							let __pallet_class = <
+							let __pezpallet_class = <
 								dyn #pezframe_support::dispatch::ClassifyDispatch<
 									( #( & #args_type, )* )
 								>
-							>::classify_dispatch(&__pallet_base_weight, ( #( #args_name, )* ));
+							>::classify_dispatch(&__pezpallet_base_weight, ( #( #args_name, )* ));
 
-							let __pallet_pays_fee = <
+							let __pezpallet_pays_fee = <
 								dyn #pezframe_support::dispatch::PaysFee<( #( & #args_type, )* )>
-							>::pays_fee(&__pallet_base_weight, ( #( #args_name, )* ));
+							>::pays_fee(&__pezpallet_base_weight, ( #( #args_name, )* ));
 
 							#pezframe_support::dispatch::DispatchInfo {
-								call_weight: __pallet_weight,
+								call_weight: __pezpallet_weight,
 								extension_weight: Default::default(),
-								class: __pallet_class,
-								pays_fee: __pallet_pays_fee,
+								class: __pezpallet_class,
+								pays_fee: __pezpallet_pays_fee,
 							}
 						},
 					)*
@@ -571,7 +571,7 @@ pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 			}
 		}
 
-		#( #authorize_fn_pallet_impl )*
+		#( #authorize_fn_pezpallet_impl )*
 
 		impl<#type_impl_gen> #pezframe_support::traits::Authorize for #call_ident<#type_use_gen>
 			#where_clause

@@ -39,7 +39,7 @@ use pezcumulus_relay_chain_interface::{
 };
 use pezkuwi_primitives::{CandidateEvent, NodeFeatures};
 use pezkuwi_service::{
-	builder::PolkadotServiceBuilder, CollatorOverseerGen, CollatorPair, Configuration, FullBackend,
+	builder::PezkuwiServiceBuilder, CollatorOverseerGen, CollatorPair, Configuration, FullBackend,
 	FullClient, Handle, NewFull, NewFullParams, TaskManager,
 };
 use pezsc_cli::{BizinikiwiCli, RuntimeVersion};
@@ -391,7 +391,7 @@ where
 	Network: NetworkBackend<PBlock, PHash>,
 {
 	let fork_id = config.chain_spec.fork_id().map(ToString::to_string);
-	let mut pezkuwi_builder = PolkadotServiceBuilder::<_, Network>::new(config, params)?;
+	let mut pezkuwi_builder = PezkuwiServiceBuilder::<_, Network>::new(config, params)?;
 	let (config, request_receiver) = bootnode_request_response_config::<_, _, Network>(
 		pezkuwi_builder.genesis_hash(),
 		fork_id.as_deref(),

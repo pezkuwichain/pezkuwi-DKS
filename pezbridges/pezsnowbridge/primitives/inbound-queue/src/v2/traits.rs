@@ -4,7 +4,6 @@
 use super::Message;
 use pezsp_runtime::DispatchError;
 use xcm::latest::{SendError, Xcm};
-use Debug;
 
 /// Converts an inbound message from Ethereum to an XCM message that can be
 /// executed on a teyrchain.

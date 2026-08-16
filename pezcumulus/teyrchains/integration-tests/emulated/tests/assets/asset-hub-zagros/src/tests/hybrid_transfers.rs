@@ -750,7 +750,7 @@ fn transfer_native_asset_from_relay_to_penpal_through_asset_hub() {
 
 	fn relay_assertions(t: RelayToParaThroughAHTest) {
 		type RuntimeEvent = <Zagros as Chain>::RuntimeEvent;
-		Zagros::assert_xcm_pallet_attempted_complete(None);
+		Zagros::assert_xcm_pezpallet_attempted_complete(None);
 		assert_expected_events!(
 			Zagros,
 			vec![

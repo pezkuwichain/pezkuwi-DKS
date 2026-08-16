@@ -417,7 +417,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn bridge_hub_inbound_queue_pallet_index_is_correct() {
+	fn bridge_hub_inbound_queue_pezpallet_index_is_correct() {
 		assert_eq!(
 			INBOUND_QUEUE_PALLET_INDEX_V1,
 			<EthereumInboundQueue as pezframe_support::traits::PalletInfoAccess>::index() as u8
@@ -425,7 +425,7 @@ mod tests {
 	}
 
 	#[test]
-	fn bridge_hub_inbound_v2_queue_pallet_index_is_correct() {
+	fn bridge_hub_inbound_v2_queue_pezpallet_index_is_correct() {
 		assert_eq!(
 			INBOUND_QUEUE_PALLET_INDEX_V2,
 			<EthereumInboundQueueV2 as pezframe_support::traits::PalletInfoAccess>::index() as u8

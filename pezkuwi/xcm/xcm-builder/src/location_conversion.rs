@@ -860,7 +860,7 @@ mod tests {
 			parents: 1,
 			interior: [
 				Teyrchain(1),
-				AccountId32 { network: Some(NetworkId::Polkadot), id: [0u8; 32] },
+				AccountId32 { network: Some(NetworkId::Pezkuwi), id: [0u8; 32] },
 			]
 			.into(),
 		};
@@ -904,7 +904,7 @@ mod tests {
 			parents: 1,
 			interior: [
 				Teyrchain(1),
-				AccountKey20 { network: Some(NetworkId::Polkadot), key: [0u8; 20] },
+				AccountKey20 { network: Some(NetworkId::Pezkuwi), key: [0u8; 20] },
 			]
 			.into(),
 		};
@@ -946,7 +946,7 @@ mod tests {
 
 		let mul = Location {
 			parents: 1,
-			interior: [AccountId32 { network: Some(NetworkId::Polkadot), id: [0u8; 32] }].into(),
+			interior: [AccountId32 { network: Some(NetworkId::Pezkuwi), id: [0u8; 32] }].into(),
 		};
 
 		assert_eq!(ForeignChainAliasAccount::<[u8; 32]>::convert_location(&mul).unwrap(), rem_1);
@@ -1021,7 +1021,7 @@ mod tests {
 			parents: 0,
 			interior: [
 				Teyrchain(1),
-				AccountId32 { network: Some(NetworkId::Polkadot), id: [0u8; 32] },
+				AccountId32 { network: Some(NetworkId::Pezkuwi), id: [0u8; 32] },
 			]
 			.into(),
 		};

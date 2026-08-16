@@ -87,7 +87,7 @@ macro_rules! assert_parse_error_matches {
 /// The general syntax is:
 ///
 /// ```ignore
-/// assert_pallet_parses! {
+/// assert_pezpallet_parses! {
 /// 	#[manifest_dir("../../examples/basic")]
 /// 	#[pezframe_support::pezpallet]
 /// 	pub mod pezpallet {
@@ -112,7 +112,7 @@ macro_rules! assert_parse_error_matches {
 /// macro crate, we need to temporarily convince this function that we are running from the
 /// directory of a valid pezpallet.
 #[macro_export]
-macro_rules! assert_pallet_parses {
+macro_rules! assert_pezpallet_parses {
 	(
 		#[manifest_dir($manifest_dir:literal)]
 		$($tokens:tt)*
@@ -129,10 +129,10 @@ macro_rules! assert_pallet_parses {
 	}
 }
 
-/// Similar to [`assert_pallet_parses`], except this instead expects the pezpallet not to parse,
+/// Similar to [`assert_pezpallet_parses`], except this instead expects the pezpallet not to parse,
 /// and allows you to specify a regex matching the expected parse error.
 ///
-/// This is identical syntactically to [`assert_pallet_parses`] in every way except there is a
+/// This is identical syntactically to [`assert_pezpallet_parses`] in every way except there is a
 /// second attribute that must be specified immediately after `#[manifest_dir(..)]` which is
 /// `#[error_regex(..)]` which should contain a string/regex literal designed to match what you
 /// consider to be the correct parsing error we should see when we try to parse this particular
@@ -141,7 +141,7 @@ macro_rules! assert_pallet_parses {
 /// ## Example:
 ///
 /// ```
-/// assert_pallet_parse_error! {
+/// assert_pezpallet_parse_error! {
 /// 	#[manifest_dir("../../examples/basic")]
 /// 	#[error_regex("Missing `\\#\\[pezpallet::pezpallet\\]`")]
 /// 	#[pezframe_support::pezpallet]
@@ -152,7 +152,7 @@ macro_rules! assert_pallet_parses {
 /// }
 /// ```
 #[macro_export]
-macro_rules! assert_pallet_parse_error {
+macro_rules! assert_pezpallet_parse_error {
 	(
 		#[manifest_dir($manifest_dir:literal)]
 		#[error_regex($reg:literal)]
@@ -224,7 +224,7 @@ mod tasks;
 
 #[test]
 fn test_parse_minimal_pallet() {
-	assert_pallet_parses! {
+	assert_pezpallet_parses! {
 		#[manifest_dir("../../examples/basic")]
 		#[pezframe_support::pezpallet]
 		pub mod pezpallet {
@@ -238,8 +238,8 @@ fn test_parse_minimal_pallet() {
 }
 
 #[test]
-fn test_parse_pallet_missing_pallet() {
-	assert_pallet_parse_error! {
+fn test_parse_pezpallet_missing_pallet() {
+	assert_pezpallet_parse_error! {
 		#[manifest_dir("../../examples/basic")]
 		#[error_regex("Missing `\\#\\[pezpallet::pezpallet\\]`")]
 		#[pezframe_support::pezpallet]
@@ -251,8 +251,8 @@ fn test_parse_pallet_missing_pallet() {
 }
 
 #[test]
-fn test_parse_pallet_missing_config() {
-	assert_pallet_parse_error! {
+fn test_parse_pezpallet_missing_config() {
+	assert_pezpallet_parse_error! {
 		#[manifest_dir("../../examples/basic")]
 		#[error_regex("Missing `\\#\\[pezpallet::config\\]`")]
 		#[pezframe_support::pezpallet]
@@ -264,8 +264,8 @@ fn test_parse_pallet_missing_config() {
 }
 
 #[test]
-fn test_parse_pallet_deprecated_attribute_on_error_enum() {
-	assert_pallet_parse_error! {
+fn test_parse_pezpallet_deprecated_attribute_on_error_enum() {
+	assert_pezpallet_parse_error! {
 		#[manifest_dir("../../examples/basic")]
 		#[error_regex("The `\\#\\[deprecated\\]` attribute should be applied to individual variants, not the enum as a whole\\.")]
 		#[pezframe_support::pezpallet]
@@ -280,8 +280,8 @@ fn test_parse_pallet_deprecated_attribute_on_error_enum() {
 }
 
 #[test]
-fn test_parse_pallet_deprecated_attribute_on_event_enum() {
-	assert_pallet_parse_error! {
+fn test_parse_pezpallet_deprecated_attribute_on_event_enum() {
+	assert_pezpallet_parse_error! {
 		#[manifest_dir("../../examples/basic")]
 		#[error_regex("The `\\#\\[deprecated\\]` attribute should be applied to individual variants, not the enum as a whole\\.")]
 		#[pezframe_support::pezpallet]

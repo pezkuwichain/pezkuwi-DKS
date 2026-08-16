@@ -251,9 +251,9 @@ fn create_inherent_data<Client: UsageProvider<Block> + HeaderBackend<Block>, Blo
 /// Chains containing the `TeyrchainSystem` and `TeyrchainInfo` pezpallet are considered teyrchains.
 /// Chains containing the `ParaInherent` pezpallet are considered relay chains.
 fn identify_chain(metadata: &Metadata, para_id: Option<u32>) -> ChainType {
-	let teyrchain_info_exists = metadata.pallet_by_name("TeyrchainInfo").is_some();
-	let teyrchain_system_exists = metadata.pallet_by_name("TeyrchainSystem").is_some();
-	let para_inherent_exists = metadata.pallet_by_name("ParaInherent").is_some();
+	let teyrchain_info_exists = metadata.pezpallet_by_name("TeyrchainInfo").is_some();
+	let teyrchain_system_exists = metadata.pezpallet_by_name("TeyrchainSystem").is_some();
+	let para_inherent_exists = metadata.pezpallet_by_name("ParaInherent").is_some();
 
 	log::debug!("{} TeyrchainSystem", if teyrchain_system_exists { "✅" } else { "❌" });
 	log::debug!("{} TeyrchainInfo", if teyrchain_info_exists { "✅" } else { "❌" });

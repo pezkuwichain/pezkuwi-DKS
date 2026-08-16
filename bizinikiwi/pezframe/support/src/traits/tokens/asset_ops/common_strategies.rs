@@ -21,7 +21,6 @@ use super::*;
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezsp_runtime::traits::Convert;
 use scale_info::TypeInfo;
-use Debug;
 
 /// The `CheckState` is a strategy that accepts an `Inspect` value and the `Inner` strategy.
 ///

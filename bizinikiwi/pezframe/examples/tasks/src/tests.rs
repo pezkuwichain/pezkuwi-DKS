@@ -64,7 +64,7 @@ fn runtime_task_enumerate_works_via_pezframe_system_config() {
 }
 
 #[test]
-fn runtime_task_enumerate_works_via_pallet_config() {
+fn runtime_task_enumerate_works_via_pezpallet_config() {
 	new_test_ext().execute_with(|| {
 		Numbers::<Runtime>::insert(1, 4);
 		assert_eq!(
@@ -77,7 +77,7 @@ fn runtime_task_enumerate_works_via_pallet_config() {
 }
 
 #[test]
-fn task_index_works_at_pallet_level() {
+fn task_index_works_at_pezpallet_level() {
 	new_test_ext().execute_with(|| {
 		assert_eq!(
 			crate::pezpallet::Task::<Runtime>::AddNumberIntoTotal { i: 2u32 }.task_index(),

@@ -324,7 +324,7 @@ impl AbridgedInboundHrmpMessages {
 #[derive(
 	codec::Encode, codec::Decode, codec::DecodeWithMemTracking, Debug, Clone, PartialEq, TypeInfo,
 )]
-pub struct BasicParachainInherentData {
+pub struct BasicTeyrchainInherentData {
 	pub validation_data: PersistedValidationData,
 	pub relay_chain_state: pezsp_trie::StorageProof,
 	pub relay_parent_descendants: Vec<RelayHeader>,
@@ -354,9 +354,9 @@ impl InboundMessagesData {
 /// Deconstructs a `TeyrchainInherentData` instance.
 pub fn deconstruct_teyrchain_inherent_data(
 	data: TeyrchainInherentData,
-) -> (BasicParachainInherentData, InboundDownwardMessages, InboundHrmpMessages) {
+) -> (BasicTeyrchainInherentData, InboundDownwardMessages, InboundHrmpMessages) {
 	(
-		BasicParachainInherentData {
+		BasicTeyrchainInherentData {
 			validation_data: data.validation_data,
 			relay_chain_state: data.relay_chain_state,
 			relay_parent_descendants: data.relay_parent_descendants,

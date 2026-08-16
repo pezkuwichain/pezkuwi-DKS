@@ -26,7 +26,6 @@ use pezbp_messages::{
 use pezframe_support::{traits::Get, BoundedVec, PalletError};
 use pezsp_std::{collections::vec_deque::VecDeque, marker::PhantomData, ops::RangeInclusive};
 use scale_info::TypeInfo;
-use Debug;
 
 /// Outbound lane storage.
 pub trait OutboundLaneStorage {

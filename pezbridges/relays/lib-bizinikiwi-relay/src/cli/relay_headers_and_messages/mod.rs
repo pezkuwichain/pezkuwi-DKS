@@ -398,11 +398,11 @@ mod tests {
 			kusama_teyrchains_to_bridge_hub_polkadot
 		);
 		declare_chain_cli_schema!(
-			PolkadotHeadersToBridgeHubKusama,
+			PezkuwiHeadersToBridgeHubKusama,
 			pezkuwi_headers_to_bridge_hub_kusama
 		);
 		declare_chain_cli_schema!(
-			PolkadotTeyrchainsToBridgeHubKusama,
+			PezkuwiTeyrchainsToBridgeHubKusama,
 			pezkuwi_teyrchains_to_bridge_hub_kusama
 		);
 		// Bridges.
@@ -489,9 +489,9 @@ mod tests {
 					bridge_hub_polkadot_signer_password_file: None,
 					bridge_hub_polkadot_transactions_mortality: Some(64),
 				},
-				right_relay: PolkadotConnectionParams {
+				right_relay: PezkuwiConnectionParams {
 					pezkuwi_uri: "ws://pezkuwi-alice:9944".into(),
-					pezkuwi_runtime_version: PolkadotRuntimeVersionParams {
+					pezkuwi_runtime_version: PezkuwiRuntimeVersionParams {
 						pezkuwi_version_mode: RuntimeVersionType::Bundle,
 						pezkuwi_spec_version: None,
 						pezkuwi_transaction_version: None,

@@ -34,7 +34,7 @@ const LOG_TARGET: &'static str = "pezframe::benchmark::pezpallet";
 
 // Add a more relaxed parsing for pezpallet names by allowing pezpallet directory names with `-` to
 // be used like crate names with `_`
-fn parse_pallet_name(pezpallet: &str) -> std::result::Result<String, String> {
+fn parse_pezpallet_name(pezpallet: &str) -> std::result::Result<String, String> {
 	Ok(pezpallet.replace("-", "_"))
 }
 
@@ -52,7 +52,7 @@ pub enum ListOutput {
 pub struct PalletCmd {
 	/// Select a FRAME Pezpallets to benchmark, or `*` for all (in which case `extrinsic` must be
 	/// `*`).
-	#[arg(short, long, alias = "pallet", num_args = 1.., value_delimiter = ',', value_parser = parse_pallet_name, required_unless_present_any = ["list", "json_input", "all"], default_value_if("all", "true", Some("*".into())))]
+	#[arg(short, long, alias = "pallet", num_args = 1.., value_delimiter = ',', value_parser = parse_pezpallet_name, required_unless_present_any = ["list", "json_input", "all"], default_value_if("all", "true", Some("*".into())))]
 	pub pezpallet: Vec<String>,
 
 	/// Select an extrinsic inside the pezpallet to benchmark, or `*` or 'all' for all.

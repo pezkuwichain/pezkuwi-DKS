@@ -358,7 +358,7 @@ fn register_pezkuwichain_asset_on_ethereum_from_rah() {
 			bx!(xcm),
 		));
 
-		AssetHubPezkuwichain::assert_xcm_pallet_sent();
+		AssetHubPezkuwichain::assert_xcm_pezpallet_sent();
 	});
 
 	assert_bridge_hub_pezkuwichain_message_accepted(true);

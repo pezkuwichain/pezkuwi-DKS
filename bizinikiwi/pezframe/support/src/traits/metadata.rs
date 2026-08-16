@@ -21,7 +21,6 @@ use alloc::{vec, vec::Vec};
 use codec::{Decode, Encode};
 use core::ops::Add;
 use impl_trait_for_tuples::impl_for_tuples;
-use Debug;
 
 /// Provides information about the pezpallet itself and its setup in the runtime.
 ///

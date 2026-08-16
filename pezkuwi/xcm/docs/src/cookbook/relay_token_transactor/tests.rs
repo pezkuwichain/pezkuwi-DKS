@@ -59,7 +59,7 @@ fn reserve_asset_transfers_work() {
 		// The teyrchain id is specified in the network.rs file in this recipe.
 		let destination: Location = Teyrchain(2222).into();
 		let beneficiary: Location =
-			AccountId32 { id: BOB.clone().into(), network: Some(NetworkId::Polkadot) }.into();
+			AccountId32 { id: BOB.clone().into(), network: Some(NetworkId::Pezkuwi) }.into();
 		// We need to use `u128` here for the conversion to work properly.
 		// If we don't specify anything, it will be a `u64`, which the conversion
 		// will turn into a non-fungible token instead of a fungible one.
@@ -99,7 +99,7 @@ fn reserve_asset_transfers_work() {
 		// BOB gives back half to ALICE in the relay chain
 		let destination: Location = Parent.into();
 		let beneficiary: Location =
-			AccountId32 { id: ALICE.clone().into(), network: Some(NetworkId::Polkadot) }.into();
+			AccountId32 { id: ALICE.clone().into(), network: Some(NetworkId::Pezkuwi) }.into();
 		// We specify `Parent` because we are referencing the Relay Chain token.
 		// This chain doesn't have a token of its own, so we always refer to this token,
 		// and we do so by the Location of the Relay Chain.

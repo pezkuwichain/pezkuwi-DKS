@@ -175,9 +175,9 @@ parameter_types! {
 }
 
 /// Pezkuwi Bulletin Chain declaration.
-pub struct PolkadotBulletin;
+pub struct PezkuwiBulletin;
 
-impl Chain for PolkadotBulletin {
+impl Chain for PezkuwiBulletin {
 	const ID: ChainId = *b"pdbc";
 
 	type BlockNumber = BlockNumber;
@@ -207,7 +207,7 @@ impl Chain for PolkadotBulletin {
 	}
 }
 
-impl ChainWithGrandpa for PolkadotBulletin {
+impl ChainWithGrandpa for PezkuwiBulletin {
 	const WITH_CHAIN_GRANDPA_PALLET_NAME: &'static str = WITH_POLKADOT_BULLETIN_GRANDPA_PALLET_NAME;
 	const MAX_AUTHORITIES_COUNT: u32 = MAX_AUTHORITIES_COUNT;
 	const REASONABLE_HEADERS_IN_JUSTIFICATION_ANCESTRY: u32 =
@@ -216,7 +216,7 @@ impl ChainWithGrandpa for PolkadotBulletin {
 	const AVERAGE_HEADER_SIZE: u32 = AVERAGE_HEADER_SIZE;
 }
 
-impl ChainWithMessages for PolkadotBulletin {
+impl ChainWithMessages for PezkuwiBulletin {
 	const WITH_CHAIN_MESSAGES_PALLET_NAME: &'static str =
 		WITH_POLKADOT_BULLETIN_MESSAGES_PALLET_NAME;
 

@@ -21,7 +21,7 @@
 
 use pezframe_support::{
 	assert_noop, assert_ok, construct_runtime, derive_impl,
-	dynamic_params::{dynamic_pallet_params, dynamic_params},
+	dynamic_params::{dynamic_params, dynamic_pezpallet_params},
 	traits::AsEnsureOriginWithArg,
 };
 use pezframe_system::EnsureRoot;
@@ -47,7 +47,7 @@ impl pezpallet_balances::Config for Runtime {
 pub mod dynamic_params {
 	use super::*;
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 3)]
 	pub mod pallet1 {
 		#[codec(index = 0)]
@@ -58,7 +58,7 @@ pub mod dynamic_params {
 		pub static Key3: u128 = 2;
 	}
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 1)]
 	pub mod pallet2 {
 		#[codec(index = 2)]
@@ -152,7 +152,7 @@ fn set_parameters_example() {
 }
 
 #[test]
-fn get_through_external_pallet_works() {
+fn get_through_external_pezpallet_works() {
 	new_test_ext().execute_with(|| {
 		assert_eq!(<Runtime as pezpallet_example_basic::Config>::MagicNumber::get(), 0);
 

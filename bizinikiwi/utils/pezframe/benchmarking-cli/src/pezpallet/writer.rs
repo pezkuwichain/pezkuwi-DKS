@@ -470,7 +470,7 @@ pub(crate) fn write_results(
 				// Append "_instance_name".
 				file_name = format!("{}_{}", file_name, instance.to_snake_case());
 			}
-			// "mod::pezpallet_name.rs" becomes "mod_pallet_name.rs".
+			// "mod::pezpallet_name.rs" becomes "mod_pezpallet_name.rs".
 			file_name = file_name.replace("::", "_");
 			// Some old runtimes have a bug with the pezpallet and instance name containing a space
 			file_name = file_name.replace(" ", "");
@@ -1237,22 +1237,22 @@ mod test {
 		assert_eq!(second_benchmark.name, "second_benchmark");
 		check_data(second_benchmark, "b", 9, 2);
 
-		let second_pallet_benchmark = &mapped_results
+		let second_pezpallet_benchmark = &mapped_results
 			.get(&("second_pallet".to_string(), "instance".to_string()))
 			.unwrap()[0];
-		assert_eq!(second_pallet_benchmark.name, "first_benchmark");
-		check_data(second_pallet_benchmark, "c", 3, 4);
+		assert_eq!(second_pezpallet_benchmark.name, "first_benchmark");
+		check_data(second_pezpallet_benchmark, "c", 3, 4);
 
-		let bounded_pallet_benchmark = &mapped_results
+		let bounded_pezpallet_benchmark = &mapped_results
 			.get(&("bounded_pallet".to_string(), "instance".to_string()))
 			.unwrap()[0];
-		assert_eq!(bounded_pallet_benchmark.name, "bounded_benchmark");
-		check_data(bounded_pallet_benchmark, "d", 4, 6);
+		assert_eq!(bounded_pezpallet_benchmark.name, "bounded_benchmark");
+		check_data(bounded_pezpallet_benchmark, "d", 4, 6);
 		// (5 * 15 * 33 + 32) * 4 = 10028
-		assert_eq!(bounded_pallet_benchmark.base_calculated_proof_size, 10028);
+		assert_eq!(bounded_pezpallet_benchmark.base_calculated_proof_size, 10028);
 		// (5 * 15 * 33 + 32) * 6 = 15042
 		assert_eq!(
-			bounded_pallet_benchmark.component_calculated_proof_size,
+			bounded_pezpallet_benchmark.component_calculated_proof_size,
 			vec![ComponentSlope { name: "d".into(), slope: 15042, error: 0 }]
 		);
 	}

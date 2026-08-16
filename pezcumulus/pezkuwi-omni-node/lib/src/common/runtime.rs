@@ -324,7 +324,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_pallet_exists() {
+	fn test_pezpallet_exists() {
 		let inspector = pezcumulus_test_runtime_inspector();
 		assert!(inspector.pezpallet_exists(DEFAULT_PARACHAIN_SYSTEM_PALLET_NAME));
 		assert!(inspector.pezpallet_exists(DEFAULT_FRAME_SYSTEM_PALLET_NAME));

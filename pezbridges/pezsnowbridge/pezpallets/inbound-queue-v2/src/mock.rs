@@ -19,7 +19,7 @@ use snowbridge_inbound_queue_primitives::{
 	v2::{CreateAssetCallInfo, MessageProcessorError, MessageToXcm, XcmMessageProcessor},
 	Log, Proof, VerificationError,
 };
-use xcm::{opaque::latest::WESTEND_GENESIS_HASH, prelude::*};
+use xcm::{opaque::latest::ZAGROS_GENESIS_HASH, prelude::*};
 type Block = pezframe_system::mocking::MockBlock<Test>;
 use snowbridge_test_utils::mock_rewards::{BridgeReward, MockRewardLedger};
 pub use snowbridge_test_utils::mock_xcm::{MockXcmExecutor, MockXcmSender};
@@ -27,7 +27,7 @@ pub use snowbridge_test_utils::mock_xcm::{MockXcmExecutor, MockXcmSender};
 #[cfg(feature = "runtime-benchmarks")]
 use snowbridge_inbound_queue_primitives::EventFixture;
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_pallet_inbound_queue_v2_fixtures::register_token::make_register_token_message;
+use snowbridge_pezpallet_inbound_queue_v2_fixtures::register_token::make_register_token_message;
 
 pezframe_support::construct_runtime!(
 	pub enum Test
@@ -108,7 +108,7 @@ parameter_types! {
 	pub const CreateAssetCallIndex: [u8;2] = [53, 0];
 	pub const SetReservesCallIndex: [u8;2] = [53, 33];
 	pub const CreateAssetDeposit: u128 = 10_000_000_000u128;
-	pub const LocalNetwork: NetworkId = ByGenesis(WESTEND_GENESIS_HASH);
+	pub const LocalNetwork: NetworkId = ByGenesis(ZAGROS_GENESIS_HASH);
 	pub CreateAssetCall: CreateAssetCallInfo = CreateAssetCallInfo {
 		create_call: CreateAssetCallIndex::get(),
 		deposit: CreateAssetDeposit::get(),
@@ -295,7 +295,7 @@ pub mod exploit {
 		{
 			System: pezframe_system::{Pezpallet, Call, Storage, Event<T>},
 			Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
-			EthereumBeaconClient: snowbridge_pallet_ethereum_client::{Pezpallet, Call, Storage, Event<T>},
+			EthereumBeaconClient: snowbridge_pezpallet_ethereum_client::{Pezpallet, Call, Storage, Event<T>},
 			InboundQueue: inbound_queue_v2::{Pezpallet, Call, Storage, Event<T>},
 		}
 	);
@@ -327,7 +327,7 @@ pub mod exploit {
 		};
 	}
 
-	impl snowbridge_pallet_ethereum_client::Config for ExploitTest {
+	impl snowbridge_pezpallet_ethereum_client::Config for ExploitTest {
 		type RuntimeEvent = RuntimeEvent;
 		type ForkVersions = ChainForkVersions;
 		type FreeHeadersInterval = ConstU32<32>;

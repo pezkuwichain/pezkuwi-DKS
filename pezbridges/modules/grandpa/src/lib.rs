@@ -372,8 +372,8 @@ pub mod pezpallet {
 		/// No other checks are made. Previously imported headers stay in the storage and
 		/// are still accessible after the call.
 		#[pezpallet::call_index(5)]
-		#[pezpallet::weight(T::WeightInfo::force_set_pallet_state())]
-		pub fn force_set_pallet_state(
+		#[pezpallet::weight(T::WeightInfo::force_set_pezpallet_state())]
+		pub fn force_set_pezpallet_state(
 			origin: OriginFor<T>,
 			new_current_set_id: SetId,
 			new_authorities: AuthorityList,
@@ -1018,7 +1018,7 @@ mod tests {
 	}
 
 	#[test]
-	fn init_can_only_initialize_pallet_once() {
+	fn init_can_only_initialize_pezpallet_once() {
 		run_test(|| {
 			initialize_bizinikiwi_bridge();
 			assert_noop!(
@@ -1755,7 +1755,7 @@ mod tests {
 	}
 
 	#[test]
-	fn force_set_pallet_state_works() {
+	fn force_set_pezpallet_state_works() {
 		run_test(|| {
 			let header25 = test_header(25);
 			let header50 = test_header(50);
@@ -1772,7 +1772,7 @@ mod tests {
 
 			// wrong origin => error
 			assert_noop!(
-				Pezpallet::<TestRuntime>::force_set_pallet_state(
+				Pezpallet::<TestRuntime>::force_set_pezpallet_state(
 					RuntimeOrigin::signed(1),
 					ok_new_set_id,
 					ok_new_authorities.clone(),
@@ -1783,7 +1783,7 @@ mod tests {
 
 			// too many authorities in the set => error
 			assert_noop!(
-				Pezpallet::<TestRuntime>::force_set_pallet_state(
+				Pezpallet::<TestRuntime>::force_set_pezpallet_state(
 					RuntimeOrigin::root(),
 					bad_new_set_id,
 					bad_new_authorities.clone(),
@@ -1793,7 +1793,7 @@ mod tests {
 			);
 
 			// force import header 50 => ok
-			assert_ok!(Pezpallet::<TestRuntime>::force_set_pallet_state(
+			assert_ok!(Pezpallet::<TestRuntime>::force_set_pezpallet_state(
 				RuntimeOrigin::root(),
 				ok_new_set_id,
 				ok_new_authorities.clone(),
@@ -1801,7 +1801,7 @@ mod tests {
 			),);
 
 			// force import header 25 after 50 => ok
-			assert_ok!(Pezpallet::<TestRuntime>::force_set_pallet_state(
+			assert_ok!(Pezpallet::<TestRuntime>::force_set_pezpallet_state(
 				RuntimeOrigin::root(),
 				ok_new_set_id,
 				ok_new_authorities.clone(),

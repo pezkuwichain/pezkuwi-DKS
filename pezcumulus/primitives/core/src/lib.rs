@@ -24,7 +24,6 @@ use alloc::vec::Vec;
 use codec::{Compact, Decode, DecodeAll, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezkuwi_teyrchain_primitives::primitives::HeadData;
 use scale_info::TypeInfo;
-use Debug;
 
 /// The ref time per core in seconds.
 ///

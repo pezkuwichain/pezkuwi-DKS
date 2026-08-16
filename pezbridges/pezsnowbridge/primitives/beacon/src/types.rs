@@ -5,7 +5,6 @@ use pezframe_support::{CloneNoBound, DebugNoBound, PartialEqNoBound};
 use pezsp_core::{H160, H256, U256};
 use pezsp_std::{boxed::Box, iter::repeat, prelude::*};
 use scale_info::TypeInfo;
-use Debug;
 
 use crate::config::{PUBKEY_SIZE, SIGNATURE_SIZE};
 

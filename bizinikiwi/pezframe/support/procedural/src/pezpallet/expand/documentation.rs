@@ -27,7 +27,7 @@ const PALLET_DOC: &'static str = "pezpallet_doc";
 ///
 /// Supported format:
 /// `#[pezpallet_doc(PATH)]`: The path of the file from which the documentation is loaded
-fn parse_pallet_doc_value(attr: &Attribute) -> syn::Result<DocMetaValue> {
+fn parse_pezpallet_doc_value(attr: &Attribute) -> syn::Result<DocMetaValue> {
 	let lit: syn::LitStr = attr.parse_args().map_err(|_| {
 		let msg = "The `pezpallet_doc` received an unsupported argument. Supported format: `pezpallet_doc(\"PATH\")`";
 		syn::Error::new(attr.span(), msg)
@@ -151,7 +151,7 @@ pub fn expand_documentation(def: &mut Def) -> proc_macro2::TokenStream {
 	// Capture the `#[pezpallet_doc("../README.md")]`.
 	let pezpallet_docs = match pezpallet_docs
 		.into_iter()
-		.map(|attr| parse_pallet_doc_value(&attr))
+		.map(|attr| parse_pezpallet_doc_value(&attr))
 		.collect::<syn::Result<Vec<_>>>()
 	{
 		Ok(docs) => docs,

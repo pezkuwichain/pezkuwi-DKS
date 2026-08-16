@@ -57,7 +57,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		depositor: T::AccountId,
 	) -> DispatchResult {
 		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Attributes),
+			Self::is_pezpallet_feature_enabled(PalletFeature::Attributes),
 			Error::<T, I>::MethodDisabled
 		);
 
@@ -376,7 +376,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		delegate: T::AccountId,
 	) -> DispatchResult {
 		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Attributes),
+			Self::is_pezpallet_feature_enabled(PalletFeature::Attributes),
 			Error::<T, I>::MethodDisabled
 		);
 
@@ -417,7 +417,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		witness: CancelAttributesApprovalWitness,
 	) -> DispatchResult {
 		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Attributes),
+			Self::is_pezpallet_feature_enabled(PalletFeature::Attributes),
 			Error::<T, I>::MethodDisabled
 		);
 

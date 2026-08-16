@@ -184,8 +184,8 @@ fn initialize_bridge_by_governance_works() {
 }
 
 #[test]
-fn change_bridge_grandpa_pallet_mode_by_governance_works() {
-	pezbridge_hub_test_utils::test_cases::change_bridge_grandpa_pallet_mode_by_governance_works::<
+fn change_bridge_grandpa_pezpallet_mode_by_governance_works() {
+	pezbridge_hub_test_utils::test_cases::change_bridge_grandpa_pezpallet_mode_by_governance_works::<
 		Runtime,
 		BridgeGrandpaPezkuwichainInstance,
 	>(
@@ -196,8 +196,8 @@ fn change_bridge_grandpa_pallet_mode_by_governance_works() {
 }
 
 #[test]
-fn change_bridge_teyrchains_pallet_mode_by_governance_works() {
-	pezbridge_hub_test_utils::test_cases::change_bridge_teyrchains_pallet_mode_by_governance_works::<
+fn change_bridge_teyrchains_pezpallet_mode_by_governance_works() {
+	pezbridge_hub_test_utils::test_cases::change_bridge_teyrchains_pezpallet_mode_by_governance_works::<
 		Runtime,
 		BridgeTeyrchainPezkuwichainInstance,
 	>(
@@ -208,8 +208,8 @@ fn change_bridge_teyrchains_pallet_mode_by_governance_works() {
 }
 
 #[test]
-fn change_bridge_messages_pallet_mode_by_governance_works() {
-	pezbridge_hub_test_utils::test_cases::change_bridge_messages_pallet_mode_by_governance_works::<
+fn change_bridge_messages_pezpallet_mode_by_governance_works() {
+	pezbridge_hub_test_utils::test_cases::change_bridge_messages_pezpallet_mode_by_governance_works::<
 		Runtime,
 		WithBridgeHubPezkuwichainMessagesInstance,
 	>(

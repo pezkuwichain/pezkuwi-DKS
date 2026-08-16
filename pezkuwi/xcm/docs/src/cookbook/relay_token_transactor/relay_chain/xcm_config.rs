@@ -34,7 +34,7 @@ use super::{AccountId, Balances, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrig
 
 parameter_types! {
 	pub HereLocation: Location = Location::here();
-	pub ThisNetwork: NetworkId = NetworkId::Polkadot;
+	pub ThisNetwork: NetworkId = NetworkId::Pezkuwi;
 }
 
 /// Converter from XCM Locations to accounts.
@@ -81,7 +81,7 @@ mod weigher {
 }
 
 parameter_types! {
-	pub UniversalLocation: InteriorLocation = [GlobalConsensus(NetworkId::Polkadot)].into();
+	pub UniversalLocation: InteriorLocation = [GlobalConsensus(NetworkId::Pezkuwi)].into();
 }
 
 pub struct XcmConfig;

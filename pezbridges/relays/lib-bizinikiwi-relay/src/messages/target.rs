@@ -21,7 +21,7 @@
 use crate::{
 	messages::{
 		source::{
-			ensure_messages_pallet_active, read_client_state_from_both_chains,
+			ensure_messages_pezpallet_active, read_client_state_from_both_chains,
 			BizinikiwiMessagesProof,
 		},
 		BatchProofTransaction, BizinikiwiMessageLane, MessageLaneAdapter,
@@ -147,8 +147,8 @@ where
 	}
 
 	/// Ensure that the messages pezpallet at target chain is active.
-	async fn ensure_pallet_active(&self) -> Result<(), BizinikiwiError> {
-		ensure_messages_pallet_active::<P::TargetChain, P::SourceChain, _>(&self.target_client)
+	async fn ensure_pezpallet_active(&self) -> Result<(), BizinikiwiError> {
+		ensure_messages_pezpallet_active::<P::TargetChain, P::SourceChain, _>(&self.target_client)
 			.await
 	}
 }
@@ -220,7 +220,7 @@ where
 		self.source_client.ensure_synced().await?;
 		self.target_client.ensure_synced().await?;
 		// we can't relay messages if messages pezpallet at target chain is halted
-		self.ensure_pallet_active().await?;
+		self.ensure_pezpallet_active().await?;
 
 		read_client_state_from_both_chains(&self.target_client, &self.source_client).await
 	}

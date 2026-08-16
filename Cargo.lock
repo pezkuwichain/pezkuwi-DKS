@@ -26787,7 +26787,17 @@ dependencies = [
  "pezstaging-xcm",
  "pezstaging-xcm-executor",
  "scale-info",
+ "teyrchains-common-types",
  "tracing",
+]
+
+[[package]]
+name = "teyrchains-common-types"
+version = "0.4.0"
+dependencies = [
+ "pezsp-consensus-aura",
+ "pezsp-core",
+ "pezsp-runtime",
 ]
 
 [[package]]

@@ -1,0 +1,25 @@
+[package]
+name = "teyrchains-common-types"
+version = "0.4.0"
+authors.workspace = true
+edition.workspace = true
+description = "Common types for teyrchains"
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+pezsp-consensus-aura = { workspace = true }
+pezsp-core = { workspace = true }
+pezsp-runtime = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"pezsp-consensus-aura/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+]

@@ -269,7 +269,7 @@ impl CallDef {
 
 		let instances = vec![
 			helper::check_impl_gen(&item_impl.generics, item_impl.impl_token.span())?,
-			helper::check_pallet_struct_usage(&item_impl.self_ty)?,
+			helper::check_pezpallet_struct_usage(&item_impl.self_ty)?,
 		];
 
 		if let Some((_, _, for_)) = item_impl.trait_ {
@@ -311,7 +311,7 @@ impl CallDef {
 					},
 				}
 
-				let return_type = helper::check_pallet_call_return_type(&method.sig)?;
+				let return_type = helper::check_pezpallet_call_return_type(&method.sig)?;
 
 				let cfg_attrs: Vec<syn::Attribute> = helper::get_item_cfg_attrs(&method.attrs);
 				let mut call_index = None;
@@ -320,7 +320,7 @@ impl CallDef {
 				let mut authorize = None;
 				let mut weight_of_authorize = None;
 
-				for attr in helper::take_item_pallet_attrs(&mut method.attrs)?.into_iter() {
+				for attr in helper::take_item_pezpallet_attrs(&mut method.attrs)?.into_iter() {
 					match attr {
 						FunctionAttr::CallIndex(idx) => {
 							if call_index.is_some() {
@@ -436,7 +436,7 @@ impl CallDef {
 					};
 
 					let arg_attrs: Vec<ArgAttrIsCompact> =
-						helper::take_item_pallet_attrs(&mut arg.attrs)?;
+						helper::take_item_pezpallet_attrs(&mut arg.attrs)?;
 
 					if arg_attrs.len() > 1 {
 						let msg = "Invalid pezpallet::call, argument has too many attributes";

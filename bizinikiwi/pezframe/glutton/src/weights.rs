@@ -72,8 +72,8 @@ use core::marker::PhantomData;
 
 /// Weight functions needed for `pezpallet_glutton`.
 pub trait WeightInfo {
-	fn initialize_pallet_grow(n: u32, ) -> Weight;
-	fn initialize_pallet_shrink(n: u32, ) -> Weight;
+	fn initialize_pezpallet_grow(n: u32, ) -> Weight;
+	fn initialize_pezpallet_shrink(n: u32, ) -> Weight;
 	fn waste_ref_time_iter(i: u32, ) -> Weight;
 	fn waste_proof_size_some(i: u32, ) -> Weight;
 	fn on_idle_high_proof_waste() -> Weight;
@@ -91,7 +91,7 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	/// Storage: `Glutton::TrashData` (r:0 w:1000)
 	/// Proof: `Glutton::TrashData` (`max_values`: Some(65000), `max_size`: Some(1036), added: 3016, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 1000]`.
-	fn initialize_pallet_grow(n: u32, ) -> Weight {
+	fn initialize_pezpallet_grow(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `1489`
@@ -108,7 +108,7 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	/// Storage: `Glutton::TrashData` (r:0 w:1000)
 	/// Proof: `Glutton::TrashData` (`max_values`: Some(65000), `max_size`: Some(1036), added: 3016, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 1000]`.
-	fn initialize_pallet_shrink(n: u32, ) -> Weight {
+	fn initialize_pezpallet_shrink(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `1489`
@@ -213,7 +213,7 @@ impl WeightInfo for () {
 	/// Storage: `Glutton::TrashData` (r:0 w:1000)
 	/// Proof: `Glutton::TrashData` (`max_values`: Some(65000), `max_size`: Some(1036), added: 3016, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 1000]`.
-	fn initialize_pallet_grow(n: u32, ) -> Weight {
+	fn initialize_pezpallet_grow(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `1489`
@@ -230,7 +230,7 @@ impl WeightInfo for () {
 	/// Storage: `Glutton::TrashData` (r:0 w:1000)
 	/// Proof: `Glutton::TrashData` (`max_values`: Some(65000), `max_size`: Some(1036), added: 3016, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 1000]`.
-	fn initialize_pallet_shrink(n: u32, ) -> Weight {
+	fn initialize_pezpallet_shrink(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `1489`

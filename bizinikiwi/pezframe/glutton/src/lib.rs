@@ -279,8 +279,8 @@ pub mod pezpallet {
 		/// Only callable by Root or `AdminOrigin`. A good default for `new_count` is `5_000`.
 		#[pezpallet::call_index(0)]
 		#[pezpallet::weight(
-			T::WeightInfo::initialize_pallet_grow(witness_count.unwrap_or_default())
-				.max(T::WeightInfo::initialize_pallet_shrink(witness_count.unwrap_or_default()))
+			T::WeightInfo::initialize_pezpallet_grow(witness_count.unwrap_or_default())
+				.max(T::WeightInfo::initialize_pezpallet_shrink(witness_count.unwrap_or_default()))
 		)]
 		pub fn initialize_pallet(
 			origin: OriginFor<T>,

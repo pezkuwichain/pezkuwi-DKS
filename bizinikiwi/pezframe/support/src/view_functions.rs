@@ -20,7 +20,6 @@
 use alloc::vec::Vec;
 use codec::{Decode, DecodeAll, Encode, Output};
 use scale_info::TypeInfo;
-use Debug;
 
 /// The unique identifier for a view function.
 #[derive(Clone, Encode, Decode, Debug, TypeInfo)]

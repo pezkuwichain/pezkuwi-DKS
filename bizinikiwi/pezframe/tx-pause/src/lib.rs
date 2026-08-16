@@ -56,7 +56,7 @@
 //! Unpause specific all:
 #![doc = docify::embed!("src/tests.rs", can_unpause_specific_call)]
 //! Pause all calls in a pezpallet:
-#![doc = docify::embed!("src/tests.rs", can_pause_all_calls_in_pallet_except_on_whitelist)]
+#![doc = docify::embed!("src/tests.rs", can_pause_all_calls_in_pezpallet_except_on_whitelist)]
 //! ## Low Level / Implementation Details
 //!
 //! ### Use Cost

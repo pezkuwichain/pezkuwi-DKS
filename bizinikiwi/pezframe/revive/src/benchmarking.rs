@@ -101,7 +101,7 @@ macro_rules! build_runtime(
 
 /// Get the pezpallet account and whitelist it for benchmarking.
 /// The account is warmed up `on_initialize` so read should not impact the PoV.
-fn whitelisted_pallet_account<T: Config>() -> T::AccountId {
+fn whitelisted_pezpallet_account<T: Config>() -> T::AccountId {
 	let pezpallet_account = Pezpallet::<T>::account_id();
 	whitelist_account!(pezpallet_account);
 	pezpallet_account
@@ -298,7 +298,7 @@ mod benchmarks {
 		c: Linear<0, { 100 * 1024 }>,
 		i: Linear<0, { limits::CALLDATA_BYTES }>,
 	) {
-		let pezpallet_account = whitelisted_pallet_account::<T>();
+		let pezpallet_account = whitelisted_pezpallet_account::<T>();
 		let input = vec![42u8; i as usize];
 		let salt = [42u8; 32];
 		let value = Pezpallet::<T>::min_balance();
@@ -401,7 +401,7 @@ mod benchmarks {
 	// `s`: Size of e salt in bytes.
 	#[benchmark(pov_mode = Measured)]
 	fn instantiate(i: Linear<0, { limits::CALLDATA_BYTES }>) -> Result<(), BenchmarkError> {
-		let pezpallet_account = whitelisted_pallet_account::<T>();
+		let pezpallet_account = whitelisted_pezpallet_account::<T>();
 		let input = vec![42u8; i as usize];
 		let salt = [42u8; 32];
 		let value = Pezpallet::<T>::min_balance();
@@ -450,7 +450,7 @@ mod benchmarks {
 	// transaction. See `call_with_pvm_code_per_byte` for this.
 	#[benchmark(pov_mode = Measured)]
 	fn call() -> Result<(), BenchmarkError> {
-		let pezpallet_account = whitelisted_pallet_account::<T>();
+		let pezpallet_account = whitelisted_pezpallet_account::<T>();
 		let data = vec![42u8; 1024];
 		let instance =
 			Contract::<T>::with_caller(whitelisted_caller(), VmBinaryModule::dummy(), vec![])?;
@@ -546,7 +546,7 @@ mod benchmarks {
 	#[benchmark(pov_mode = Measured)]
 	fn upload_code(c: Linear<0, { 100 * 1024 }>) {
 		let caller = whitelisted_caller();
-		let pezpallet_account = whitelisted_pallet_account::<T>();
+		let pezpallet_account = whitelisted_pezpallet_account::<T>();
 		T::Currency::set_balance(&caller, caller_funding::<T>());
 		let VmBinaryModule { code, hash, .. } = VmBinaryModule::sized(c);
 		let origin = RawOrigin::Signed(caller.clone());
@@ -564,7 +564,7 @@ mod benchmarks {
 	#[benchmark(pov_mode = Measured)]
 	fn remove_code() -> Result<(), BenchmarkError> {
 		let caller = whitelisted_caller();
-		let pezpallet_account = whitelisted_pallet_account::<T>();
+		let pezpallet_account = whitelisted_pezpallet_account::<T>();
 		T::Currency::set_balance(&caller, caller_funding::<T>());
 		let VmBinaryModule { code, hash, .. } = VmBinaryModule::dummy();
 		let origin = RawOrigin::Signed(caller.clone());

@@ -33,7 +33,7 @@ use emulated_integration_tests_common::{
 };
 
 // Pezkuwi
-use xcm::latest::{ROCOCO_GENESIS_HASH, WESTEND_GENESIS_HASH};
+use xcm::latest::{PEZKUWICHAIN_GENESIS_HASH, ZAGROS_GENESIS_HASH};
 
 // Penpal Teyrchain declaration
 decl_test_teyrchains! {
@@ -43,7 +43,7 @@ decl_test_teyrchains! {
 			penpal_runtime::AuraExt::on_initialize(1);
 			pezframe_support::assert_ok!(penpal_runtime::System::set_storage(
 				penpal_runtime::RuntimeOrigin::root(),
-				vec![(PenpalRelayNetworkId::key().to_vec(), NetworkId::ByGenesis(ROCOCO_GENESIS_HASH).encode())],
+				vec![(PenpalRelayNetworkId::key().to_vec(), NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH).encode())],
 			));
 		},
 		runtime = penpal_runtime,
@@ -54,7 +54,7 @@ decl_test_teyrchains! {
 			MessageOrigin: pezcumulus_primitives_core::AggregateMessageOrigin,
 		},
 		pezpallets = {
-			PolkadotXcm: penpal_runtime::PolkadotXcm,
+			PezkuwiXcm: penpal_runtime::PezkuwiXcm,
 			Assets: penpal_runtime::Assets,
 			AssetConversion: penpal_runtime::AssetConversion,
 			Balances: penpal_runtime::Balances,
@@ -66,7 +66,7 @@ decl_test_teyrchains! {
 			penpal_runtime::AuraExt::on_initialize(1);
 			pezframe_support::assert_ok!(penpal_runtime::System::set_storage(
 				penpal_runtime::RuntimeOrigin::root(),
-				vec![(PenpalRelayNetworkId::key().to_vec(), NetworkId::ByGenesis(WESTEND_GENESIS_HASH).encode())],
+				vec![(PenpalRelayNetworkId::key().to_vec(), NetworkId::ByGenesis(ZAGROS_GENESIS_HASH).encode())],
 			));
 		},
 		runtime = penpal_runtime,
@@ -77,7 +77,7 @@ decl_test_teyrchains! {
 			MessageOrigin: pezcumulus_primitives_core::AggregateMessageOrigin,
 		},
 		pezpallets = {
-			PolkadotXcm: penpal_runtime::PolkadotXcm,
+			PezkuwiXcm: penpal_runtime::PezkuwiXcm,
 			Assets: penpal_runtime::Assets,
 			AssetConversion: penpal_runtime::AssetConversion,
 			Balances: penpal_runtime::Balances,

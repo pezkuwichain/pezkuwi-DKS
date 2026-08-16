@@ -23,7 +23,7 @@ use pezframe_support::pezsp_runtime::traits::AccountIdConversion;
 type AccumulateForwardPallet = crate::Pezpallet<Test>;
 
 #[test]
-fn accumulation_account_is_derived_from_pallet_id() {
+fn accumulation_account_is_derived_from_pezpallet_id() {
 	new_test_ext(true).execute_with(|| {
 		let accumulation_account = AccumulateForwardPallet::accumulation_account();
 		let expected: u64 = AccumulateForwardPalletId::get().into_account_truncating();

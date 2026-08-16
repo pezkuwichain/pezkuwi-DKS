@@ -49,7 +49,7 @@ fn check_whitelist() {
 }
 
 #[test]
-fn check_treasury_pallet_id() {
+fn check_treasury_pezpallet_id() {
 	assert_eq!(
 		<Treasury as pezframe_support::traits::PalletInfoAccess>::index() as u8,
 		pezkuwichain_runtime_constants::TREASURY_PALLET_ID
@@ -297,10 +297,10 @@ fn governance_track_for_origin_mapping() {
 	];
 
 	for (origin, expected_id) in origin_to_track {
-		let pallet_origin: <RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin =
+		let pezpallet_origin: <RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin =
 			origin.clone().into();
 		let result =
-			<TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::track_for(&pallet_origin);
+			<TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::track_for(&pezpallet_origin);
 		assert_eq!(
 			result,
 			Ok(expected_id),

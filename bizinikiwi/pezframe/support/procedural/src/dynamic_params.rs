@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Code for the `#[dynamic_params]`, `#[dynamic_pallet_params]` and
+//! Code for the `#[dynamic_params]`, `#[dynamic_pezpallet_params]` and
 //! `#[dynamic_aggregated_params_internal]` macros.
 
 use inflector::Inflector;
@@ -29,8 +29,8 @@ pub fn dynamic_params(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
 	DynamicParamModAttr::parse(attr, item).map(ToTokens::into_token_stream)
 }
 
-/// Parse and expand `#[dynamic_pallet_params(..)]` attribute.
-pub fn dynamic_pallet_params(attr: TokenStream, item: TokenStream) -> Result<TokenStream> {
+/// Parse and expand `#[dynamic_pezpallet_params(..)]` attribute.
+pub fn dynamic_pezpallet_params(attr: TokenStream, item: TokenStream) -> Result<TokenStream> {
 	DynamicPalletParamAttr::parse(attr, item).map(ToTokens::into_token_stream)
 }
 
@@ -95,7 +95,7 @@ impl ToTokens for DynamicParamModAttr {
 			let mod_name = &m.ident;
 
 			let mut attrs = m.attrs.clone();
-			attrs.retain(|attr| !attr.path().is_ident("dynamic_pallet_params"));
+			attrs.retain(|attr| !attr.path().is_ident("dynamic_pezpallet_params"));
 			if let Err(err) = ensure_codec_index(&attrs, m.span()) {
 				tokens.extend(err.into_compile_error());
 				return;
@@ -107,7 +107,7 @@ impl ToTokens for DynamicParamModAttr {
 			});
 		}
 
-		// Inject the outer args into the inner `#[dynamic_pallet_params(..)]` attribute.
+		// Inject the outer args into the inner `#[dynamic_pezpallet_params(..)]` attribute.
 		if let Some(params_pallet) = &self.meta.params_pallet {
 			MacroInjectArgs { runtime_params: name.clone(), params_pallet: params_pallet.clone() }
 				.visit_item_mod_mut(&mut params_mod);
@@ -145,7 +145,7 @@ fn ensure_codec_index(attrs: &Vec<syn::Attribute>, span: Span) -> Result<()> {
 	}
 }
 
-/// Used to inject arguments into the inner `#[dynamic_pallet_params(..)]` attribute.
+/// Used to inject arguments into the inner `#[dynamic_pezpallet_params(..)]` attribute.
 ///
 /// This allows the outer `#[dynamic_params(..)]` attribute to specify some arguments that don't
 /// need to be repeated every time.
@@ -155,13 +155,16 @@ struct MacroInjectArgs {
 }
 impl VisitMut for MacroInjectArgs {
 	fn visit_item_mod_mut(&mut self, item: &mut syn::ItemMod) {
-		// Check if the mod has a `#[dynamic_pallet_params(..)]` attribute.
-		let attr = item.attrs.iter_mut().find(|attr| attr.path().is_ident("dynamic_pallet_params"));
+		// Check if the mod has a `#[dynamic_pezpallet_params(..)]` attribute.
+		let attr = item
+			.attrs
+			.iter_mut()
+			.find(|attr| attr.path().is_ident("dynamic_pezpallet_params"));
 
 		if let Some(attr) = attr {
 			match &attr.meta {
 				syn::Meta::Path(path) => {
-					assert_eq!(path.to_token_stream().to_string(), "dynamic_pallet_params")
+					assert_eq!(path.to_token_stream().to_string(), "dynamic_pezpallet_params")
 				},
 				_ => (),
 			}
@@ -170,7 +173,7 @@ impl VisitMut for MacroInjectArgs {
 			let params_pallet = &self.params_pallet;
 
 			attr.meta = syn::parse2::<syn::Meta>(quote! {
-				dynamic_pallet_params(#runtime_params, #params_pallet)
+				dynamic_pezpallet_params(#runtime_params, #params_pallet)
 			})
 			.unwrap()
 			.into();
@@ -179,7 +182,7 @@ impl VisitMut for MacroInjectArgs {
 		visit_mut::visit_item_mod_mut(self, item);
 	}
 }
-/// The helper attribute of a `#[dynamic_pallet_params(runtime_params, params_pallet)]`
+/// The helper attribute of a `#[dynamic_pezpallet_params(runtime_params, params_pallet)]`
 /// attribute.
 #[derive(derive_syn_parse::Parse)]
 pub struct DynamicPalletParamAttr {
@@ -187,7 +190,7 @@ pub struct DynamicPalletParamAttr {
 	meta: DynamicPalletParamAttrMeta,
 }
 
-/// The inner meta of a `#[dynamic_pallet_params(..)]` attribute.
+/// The inner meta of a `#[dynamic_pezpallet_params(..)]` attribute.
 #[derive(derive_syn_parse::Parse)]
 pub struct DynamicPalletParamAttrMeta {
 	runtime_params: syn::Ident,

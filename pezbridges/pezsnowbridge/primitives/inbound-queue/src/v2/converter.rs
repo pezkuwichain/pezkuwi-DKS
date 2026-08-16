@@ -442,7 +442,7 @@ mod tests {
 
 	parameter_types! {
 		pub const EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 1 };
-		pub const LocalNetwork: NetworkId = NetworkId::Polkadot;
+		pub const LocalNetwork: NetworkId = NetworkId::Pezkuwi;
 		pub const GatewayAddress: H160 = H160(GATEWAY_ADDRESS);
 		pub InboundQueueLocation: InteriorLocation = [PalletInstance(84)].into();
 		pub EthereumUniversalLocation: InteriorLocation =

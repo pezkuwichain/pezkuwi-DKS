@@ -16,7 +16,6 @@
 //! Runtime API definition for fungibles.
 
 use codec::{Codec, Decode, Encode};
-use Debug;
 #[cfg(feature = "std")]
 use {alloc::vec::Vec, xcm::latest::Asset};
 

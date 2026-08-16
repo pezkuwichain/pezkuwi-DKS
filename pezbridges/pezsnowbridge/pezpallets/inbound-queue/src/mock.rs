@@ -18,7 +18,7 @@ use snowbridge_core::{
 };
 use snowbridge_inbound_queue_primitives::{v1::MessageToXcm, Log, Proof, VerificationError};
 use xcm::{
-	latest::{SendXcm, WESTEND_GENESIS_HASH},
+	latest::{SendXcm, ZAGROS_GENESIS_HASH},
 	prelude::*,
 };
 use xcm_executor::AssetsInHolding;
@@ -26,7 +26,7 @@ use xcm_executor::AssetsInHolding;
 #[cfg(feature = "runtime-benchmarks")]
 use snowbridge_inbound_queue_primitives::EventFixture;
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_pallet_inbound_queue_fixtures::register_token::make_register_token_message;
+use snowbridge_pezpallet_inbound_queue_fixtures::register_token::make_register_token_message;
 
 use crate::{self as inbound_queue};
 
@@ -37,7 +37,7 @@ pezframe_support::construct_runtime!(
 	{
 		System: pezframe_system::{Pezpallet, Call, Storage, Event<T>},
 		Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
-		EthereumBeaconClient: snowbridge_pallet_ethereum_client::{Pezpallet, Call, Storage, Event<T>},
+		EthereumBeaconClient: snowbridge_pezpallet_ethereum_client::{Pezpallet, Call, Storage, Event<T>},
 		InboundQueue: inbound_queue::{Pezpallet, Call, Storage, Event<T>},
 	}
 );
@@ -99,7 +99,7 @@ parameter_types! {
 	};
 }
 
-impl snowbridge_pallet_ethereum_client::Config for Test {
+impl snowbridge_pezpallet_ethereum_client::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type ForkVersions = ChainForkVersions;
 	type FreeHeadersInterval = ConstU32<32>;
@@ -127,12 +127,12 @@ parameter_types! {
 	pub const InitialFund: u128 = 1_000_000_000_000;
 	pub const InboundQueuePalletInstance: u8 = 80;
 	pub UniversalLocation: InteriorLocation =
-		[GlobalConsensus(ByGenesis(WESTEND_GENESIS_HASH)), Teyrchain(1002)].into();
-	pub AssetHubFromEthereum: Location = Location::new(1,[GlobalConsensus(ByGenesis(WESTEND_GENESIS_HASH)),Teyrchain(1000)]);
+		[GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)), Teyrchain(1002)].into();
+	pub AssetHubFromEthereum: Location = Location::new(1,[GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)),Teyrchain(1000)]);
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl<T: snowbridge_pallet_ethereum_client::Config> BenchmarkHelper<T> for Test {
+impl<T: snowbridge_pezpallet_ethereum_client::Config> BenchmarkHelper<T> for Test {
 	fn initialize_storage() -> EventFixture {
 		make_register_token_message()
 	}

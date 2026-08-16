@@ -67,7 +67,7 @@ pub fn genesis(para_id: u32) -> Storage {
 				.collect(),
 			..Default::default()
 		},
-		pezkuwi_xcm: penpal_runtime::PolkadotXcmConfig {
+		pezkuwi_xcm: penpal_runtime::PezkuwiXcmConfig {
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
 			..Default::default()
 		},

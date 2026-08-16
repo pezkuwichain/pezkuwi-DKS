@@ -537,7 +537,7 @@ fn poc_permissionless_forged_receipt_bypasses_verifier_and_injects_xcm() {
 	use alloy_primitives::{Address, Bytes, Log as AlloyLog, B256};
 	use pezframe_support::{assert_noop, assert_ok};
 	use snowbridge_inbound_queue_primitives::{receipt::verify_receipt_proof, v2::IGatewayV2};
-	use snowbridge_pallet_ethereum_client_fixtures::make_inbound_fixture;
+	use snowbridge_pezpallet_ethereum_client_fixtures::make_inbound_fixture;
 
 	exploit::new_tester().execute_with(|| {
 		let fixture = make_inbound_fixture();

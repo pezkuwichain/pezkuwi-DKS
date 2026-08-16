@@ -20,7 +20,7 @@ use pezsp_runtime::{
 pub use snowbridge_test_utils::{
 	mock_inbound_queue::*, mock_origin::pezpallet_xcm_origin, mock_outbound_queue::*,
 };
-use xcm::{opaque::latest::WESTEND_GENESIS_HASH, prelude::*};
+use xcm::{opaque::latest::ZAGROS_GENESIS_HASH, prelude::*};
 
 #[cfg(feature = "runtime-benchmarks")]
 use crate::BenchmarkHelper;
@@ -37,7 +37,7 @@ pezframe_support::construct_runtime!(
 		System: pezframe_system,
 		Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
 		XcmOrigin: pezpallet_xcm_origin::{Pezpallet, Origin},
-		EthereumSystem: snowbridge_pallet_system,
+		EthereumSystem: snowbridge_pezpallet_system,
 		EthereumSystemV2: snowbridge_system_v2,
 	}
 );
@@ -72,7 +72,7 @@ impl pezpallet_xcm_origin::Config for Test {
 
 parameter_types! {
 	pub const AnyNetwork: Option<NetworkId> = None;
-	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::ByGenesis(WESTEND_GENESIS_HASH));
+	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::ByGenesis(ZAGROS_GENESIS_HASH));
 	pub const RelayLocation: Location = Location::parent();
 	pub UniversalLocation: InteriorLocation =
 		[GlobalConsensus(RelayNetwork::get().unwrap()), Teyrchain(1013)].into();
@@ -126,13 +126,13 @@ parameter_types! {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl snowbridge_pallet_system::BenchmarkHelper<RuntimeOrigin> for () {
+impl snowbridge_pezpallet_system::BenchmarkHelper<RuntimeOrigin> for () {
 	fn make_xcm_origin(location: Location) -> RuntimeOrigin {
 		RuntimeOrigin::from(pezpallet_xcm_origin::Origin(location))
 	}
 }
 
-impl snowbridge_pallet_system::Config for Test {
+impl snowbridge_pezpallet_system::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type OutboundQueue = MockOkOutboundQueueV1;
 	type SiblingOrigin = pezpallet_xcm_origin::EnsureXcm<AllowSiblingsOnly>;

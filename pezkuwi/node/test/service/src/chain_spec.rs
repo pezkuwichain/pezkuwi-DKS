@@ -35,9 +35,9 @@ use test_runtime_constants::currency::DOTS;
 const DEFAULT_PROTOCOL_ID: &str = "dot";
 
 /// The `ChainSpec` parameterized for polkadot test runtime.
-pub type PolkadotChainSpec = pezsc_service::GenericChainSpec<Extensions>;
+pub type PezkuwiChainSpec = pezsc_service::GenericChainSpec<Extensions>;
 
-/// Returns the properties for the [`PolkadotChainSpec`].
+/// Returns the properties for the [`PezkuwiChainSpec`].
 pub fn pezkuwi_chain_spec_properties() -> serde_json::map::Map<String, serde_json::Value> {
 	serde_json::json!({
 		"tokenDecimals": 10,
@@ -48,8 +48,8 @@ pub fn pezkuwi_chain_spec_properties() -> serde_json::map::Map<String, serde_jso
 }
 
 /// Local testnet config (multivalidator Alice + Bob)
-pub fn pezkuwi_local_testnet_config() -> PolkadotChainSpec {
-	PolkadotChainSpec::builder(
+pub fn pezkuwi_local_testnet_config() -> PezkuwiChainSpec {
+	PezkuwiChainSpec::builder(
 		pezkuwi_test_runtime::WASM_BINARY.expect("Wasm binary must be built for testing"),
 		Default::default(),
 	)

@@ -93,7 +93,7 @@ fn register_asset_on_rah_from_wah(bridged_asset_at_rah: Location) {
 			bx!(xcm),
 		));
 
-		AssetHubZagros::assert_xcm_pallet_sent();
+		AssetHubZagros::assert_xcm_pezpallet_sent();
 	});
 
 	assert_bridge_hub_zagros_message_accepted(true);

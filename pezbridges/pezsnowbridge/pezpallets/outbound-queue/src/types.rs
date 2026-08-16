@@ -7,7 +7,6 @@ use pezsp_core::H256;
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
 use snowbridge_core::ChannelId;
-use Debug;
 
 use super::Pezpallet;
 

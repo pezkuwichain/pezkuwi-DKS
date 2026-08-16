@@ -77,7 +77,7 @@ fn usdt_transfer_call(
 
 fn sender_assertions(test: ParaToParaThroughAHTest) {
 	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
-	PenpalA::assert_xcm_pallet_attempted_complete(None);
+	PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 
 	assert_expected_events!(
 		PenpalA,

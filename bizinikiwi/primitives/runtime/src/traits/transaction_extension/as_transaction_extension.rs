@@ -21,7 +21,6 @@
 #![allow(deprecated)]
 
 use scale_info::TypeInfo;
-use Debug;
 
 use crate::{
 	traits::{AsSystemOriginSigner, SignedExtension, ValidateResult},

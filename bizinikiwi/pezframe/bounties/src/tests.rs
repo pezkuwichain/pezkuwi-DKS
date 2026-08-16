@@ -1146,15 +1146,18 @@ fn test_migration_v4() {
 
 	pezsp_io::TestExternalities::new(s).execute_with(|| {
 		use pezframe_support::traits::PalletInfo;
-		let old_pallet_name = <Test as pezframe_system::Config>::PalletInfo::name::<Bounties>()
+		let old_pezpallet_name = <Test as pezframe_system::Config>::PalletInfo::name::<Bounties>()
 			.expect("Bounties is part of runtime, so it has a name; qed");
-		let new_pallet_name = "NewBounties";
+		let new_pezpallet_name = "NewBounties";
 
-		crate::migrations::v4::pre_migration::<Test, Bounties, _>(old_pallet_name, new_pallet_name);
-		crate::migrations::v4::migrate::<Test, Bounties, _>(old_pallet_name, new_pallet_name);
+		crate::migrations::v4::pre_migration::<Test, Bounties, _>(
+			old_pezpallet_name,
+			new_pezpallet_name,
+		);
+		crate::migrations::v4::migrate::<Test, Bounties, _>(old_pezpallet_name, new_pezpallet_name);
 		crate::migrations::v4::post_migration::<Test, Bounties, _>(
-			old_pallet_name,
-			new_pallet_name,
+			old_pezpallet_name,
+			new_pezpallet_name,
 		);
 	});
 }

@@ -623,7 +623,7 @@ impl TestNodeBuilder {
 	/// node.
 	pub fn connect_to_relay_chain_node(
 		mut self,
-		node: &pezkuwi_test_service::PolkadotTestNode,
+		node: &pezkuwi_test_service::PezkuwiTestNode,
 	) -> Self {
 		self.relay_chain_nodes.push(node.addr.clone());
 		self
@@ -635,7 +635,7 @@ impl TestNodeBuilder {
 	/// node.
 	pub fn connect_to_relay_chain_nodes<'a>(
 		mut self,
-		nodes: impl IntoIterator<Item = &'a pezkuwi_test_service::PolkadotTestNode>,
+		nodes: impl IntoIterator<Item = &'a pezkuwi_test_service::PezkuwiTestNode>,
 	) -> Self {
 		self.relay_chain_nodes.extend(nodes.into_iter().map(|n| n.addr.clone()));
 		self
@@ -971,7 +971,7 @@ pub fn run_relay_chain_validator_node(
 	storage_update_func: impl Fn(),
 	boot_nodes: Vec<MultiaddrWithPeerId>,
 	port: Option<u16>,
-) -> pezkuwi_test_service::PolkadotTestNode {
+) -> pezkuwi_test_service::PezkuwiTestNode {
 	let mut config = pezkuwi_test_service::node_config(
 		storage_update_func,
 		tokio_handle.clone(),

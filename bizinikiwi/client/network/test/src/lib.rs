@@ -77,7 +77,7 @@ use pezsc_network_sync::{
 	service::{network::NetworkServiceProvider, syncing_service::SyncingService},
 	state_request_handler::StateRequestHandler,
 	strategy::{
-		polkadot::{PolkadotSyncingStrategy, PolkadotSyncingStrategyConfig},
+		polkadot::{PezkuwiSyncingStrategy, PezkuwiSyncingStrategyConfig},
 		warp::{
 			EncodedProof, VerificationResult, Verifier as WarpVerifier, WarpSyncConfig,
 			WarpSyncProvider,
@@ -984,7 +984,7 @@ pub trait TestNetFactory: Default + Sized + Send {
 			<Block as BlockT>::Hash,
 		>>::register_notification_metrics(None);
 
-		let syncing_config = PolkadotSyncingStrategyConfig {
+		let syncing_config = PezkuwiSyncingStrategyConfig {
 			mode: network_config.sync_mode,
 			max_parallel_downloads: network_config.max_parallel_downloads,
 			max_blocks_per_request: network_config.max_blocks_per_request,
@@ -996,7 +996,7 @@ pub trait TestNetFactory: Default + Sized + Send {
 		};
 		// Initialize syncing strategy.
 		let syncing_strategy = Box::new(
-			PolkadotSyncingStrategy::new(
+			PezkuwiSyncingStrategy::new(
 				syncing_config,
 				client.clone(),
 				Some(warp_sync_config),

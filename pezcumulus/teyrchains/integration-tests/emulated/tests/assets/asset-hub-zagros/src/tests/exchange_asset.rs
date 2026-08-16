@@ -273,7 +273,7 @@ fn exchange_asset_from_penpal_via_asset_hub_back_to_penpal() {
 		.unwrap();
 
 		// verify expected events;
-		PenpalA::assert_xcm_pallet_attempted_complete(None);
+		PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 
 		let msg_sent_id = find_xcm_sent_message_id::<PenpalA>().expect("Missing Sent Event");
 		topic_id_tracker.insert("PenpalA_sent", msg_sent_id.into());

@@ -88,7 +88,7 @@ pub fn load_sync_committee_update_period_0_newer_fixture() -> Box<
 }
 
 pub fn get_message_verification_payload() -> (Log, Proof) {
-	let inbound_fixture = snowbridge_pallet_ethereum_client_fixtures::make_inbound_fixture();
+	let inbound_fixture = snowbridge_pezpallet_ethereum_client_fixtures::make_inbound_fixture();
 	(inbound_fixture.event.event_log, inbound_fixture.event.proof)
 }
 
@@ -162,7 +162,7 @@ pub fn new_tester() -> pezsp_io::TestExternalities {
 }
 
 pub fn initialize_storage() -> DispatchResult {
-	let inbound_fixture = snowbridge_pallet_ethereum_client_fixtures::make_inbound_fixture();
+	let inbound_fixture = snowbridge_pezpallet_ethereum_client_fixtures::make_inbound_fixture();
 	EthereumBeaconClient::store_finalized_header(
 		inbound_fixture.finalized_header,
 		inbound_fixture.block_roots_root,

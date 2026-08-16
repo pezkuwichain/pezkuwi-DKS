@@ -51,7 +51,7 @@ impl InherentDef {
 		}
 
 		let instances = vec![
-			helper::check_pallet_struct_usage(&item.self_ty)?,
+			helper::check_pezpallet_struct_usage(&item.self_ty)?,
 			helper::check_impl_gen(&item.generics, item.impl_token.span())?,
 		];
 

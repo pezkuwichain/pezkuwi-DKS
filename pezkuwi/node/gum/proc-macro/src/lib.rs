@@ -18,7 +18,7 @@
 #![deny(missing_docs)]
 #![deny(clippy::dbg_macro)]
 
-//! Generative part of `tracing-gum`. See `tracing-gum` for usage documentation.
+//! Generative part of `pez-tracing-gum`. See `pez-tracing-gum` for usage documentation.
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
@@ -185,7 +185,7 @@ fn support_crate() -> TokenStream {
 	} else {
 		use proc_macro_crate::{crate_name, FoundCrate};
 		let crate_name = crate_name("pez-tracing-gum")
-			.expect("Support crate `tracing-gum` is present in `Cargo.toml`. qed");
+			.expect("Support crate `pez-tracing-gum` is present in `Cargo.toml`. qed");
 		match crate_name {
 			FoundCrate::Itself => quote! {crate},
 			FoundCrate::Name(name) => Ident::new(&name, Span::call_site()).to_token_stream(),

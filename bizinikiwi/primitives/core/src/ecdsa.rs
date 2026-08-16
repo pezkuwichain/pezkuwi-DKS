@@ -719,7 +719,7 @@ mod test {
 	fn ss58check_full_roundtrip_works() {
 		let pair = Pair::from_seed(b"12345678901234567890123456789012");
 		let public = pair.public();
-		let format = Ss58AddressFormatRegistry::PolkadotAccount.into();
+		let format = Ss58AddressFormatRegistry::PezkuwiAccount.into();
 		let s = public.to_ss58check_with_version(format);
 		let (k, f) = Public::from_ss58check_with_version(&s).unwrap();
 		assert_eq!(k, public);

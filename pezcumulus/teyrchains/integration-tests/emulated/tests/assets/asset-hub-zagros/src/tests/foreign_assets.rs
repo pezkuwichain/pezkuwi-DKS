@@ -135,7 +135,7 @@ pub fn penpal_set_foreign_asset_reserves_on_asset_hub(
 			bx!(asset_hub_location),
 			bx!(xcm),
 		));
-		PenpalA::assert_xcm_pallet_sent();
+		PenpalA::assert_xcm_pezpallet_sent();
 	});
 }
 

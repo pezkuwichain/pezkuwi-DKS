@@ -46,7 +46,7 @@
 //! The outbound side is runtime facing for the most part. More general, it provides a `Get`
 //! implementation and can be used in every spot where that is accepted. Two macros are in place:
 //! [`pezframe_support::dynamic_params::define_parameters` and
-//! [`pezframe_support::dynamic_params:dynamic_pallet_params`] to define and expose parameters in a
+//! [`pezframe_support::dynamic_params:dynamic_pezpallet_params`] to define and expose parameters in a
 //! typed manner.
 //!
 //! See the [`pezpallet`] module for more information about the interfaces this pezpallet exposes,

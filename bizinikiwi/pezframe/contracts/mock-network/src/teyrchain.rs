@@ -159,7 +159,7 @@ parameter_types! {
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
 	pub ForeignPrefix: Location = (Parent,).into();
-	pub CheckingAccount: AccountId = PolkadotXcm::check_account();
+	pub CheckingAccount: AccountId = PezkuwiXcm::check_account();
 	pub TrustedLockPairs: (Location, AssetFilter) =
 	(Parent.into(), Wild(AllOf { id: AssetId(Parent.into()), fun: WildFungible }));
 }
@@ -258,7 +258,7 @@ pub struct XcmConfig;
 impl Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
 	type XcmSender = XcmRouter;
-	type XcmEventEmitter = PolkadotXcm;
+	type XcmEventEmitter = PezkuwiXcm;
 	type AssetTransactor = AssetTransactors;
 	type OriginConverter = XcmOriginToCallOrigin;
 	type IsReserve = (NativeAsset, TrustedReserves);
@@ -267,11 +267,11 @@ impl Config for XcmConfig {
 	type Barrier = Barrier;
 	type Weigher = FixedWeightBounds<XcmInstructionWeight, RuntimeCall, MaxInstructions>;
 	type Trader = FixedRateOfFungible<TokensPerSecondPerMegabyte, ()>;
-	type ResponseHandler = PolkadotXcm;
-	type AssetTrap = PolkadotXcm;
-	type AssetLocker = PolkadotXcm;
+	type ResponseHandler = PezkuwiXcm;
+	type AssetTrap = PezkuwiXcm;
+	type AssetLocker = PezkuwiXcm;
 	type AssetExchanger = ();
-	type SubscriptionService = PolkadotXcm;
+	type SubscriptionService = PezkuwiXcm;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type FeeManager = ();
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
@@ -284,7 +284,7 @@ impl Config for XcmConfig {
 	type HrmpNewChannelOpenRequestHandler = ();
 	type HrmpChannelAcceptedHandler = ();
 	type HrmpChannelClosingHandler = ();
-	type XcmRecorder = PolkadotXcm;
+	type XcmRecorder = PezkuwiXcm;
 }
 
 impl mock_msg_queue::Config for Runtime {
@@ -346,7 +346,7 @@ construct_runtime!(
 		Balances: pezpallet_balances,
 		Timestamp: pezpallet_timestamp,
 		MsgQueue: mock_msg_queue,
-		PolkadotXcm: pezpallet_xcm,
+		PezkuwiXcm: pezpallet_xcm,
 		Contracts: pezpallet_contracts,
 		Assets: pezpallet_assets,
 	}

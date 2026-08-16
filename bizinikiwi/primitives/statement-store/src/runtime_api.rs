@@ -28,7 +28,6 @@ use pezsp_runtime_interface::{
 	runtime_interface,
 };
 use scale_info::TypeInfo;
-use Debug;
 
 #[cfg(feature = "std")]
 use pezsp_externalities::ExternalitiesExt;

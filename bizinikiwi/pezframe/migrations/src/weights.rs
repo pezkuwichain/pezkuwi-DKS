@@ -83,7 +83,7 @@ pub trait WeightInfo {
 	fn force_set_active_cursor() -> Weight;
 	fn force_onboard_mbms() -> Weight;
 	fn clear_historic(n: u32, ) -> Weight;
-	fn reset_pallet_migration(n: u32, ) -> Weight;
+	fn reset_pezpallet_migration(n: u32, ) -> Weight;
 }
 
 /// Weights for `pezpallet_migrations` using the Bizinikiwi node and recommended hardware.
@@ -235,7 +235,7 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	/// Storage: `Skipped::Metadata` (r:0 w:0)
 	/// Proof: `Skipped::Metadata` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `n` is `[0, 2048]`.
-	fn reset_pallet_migration(n: u32, ) -> Weight {
+	fn reset_pezpallet_migration(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1605 + n * (38 ±0)`
 		//  Estimated: `686 + n * (39 ±0)`
@@ -397,7 +397,7 @@ impl WeightInfo for () {
 	/// Storage: `Skipped::Metadata` (r:0 w:0)
 	/// Proof: `Skipped::Metadata` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `n` is `[0, 2048]`.
-	fn reset_pallet_migration(n: u32, ) -> Weight {
+	fn reset_pezpallet_migration(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1605 + n * (38 ±0)`
 		//  Estimated: `686 + n * (39 ±0)`

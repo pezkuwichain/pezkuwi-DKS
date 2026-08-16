@@ -88,7 +88,7 @@ impl<T: pezframe_system::Config> pezpallet_bridge_grandpa::WeightInfo for Weight
 	/// Proof: `BridgeZagrosGrandpa::BestFinalized` (`max_values`: Some(1), `max_size`: Some(36), added: 531, mode: `MaxEncodedLen`)
 	/// Storage: `BridgeZagrosGrandpa::ImportedHeaders` (r:0 w:2)
 	/// Proof: `BridgeZagrosGrandpa::ImportedHeaders` (`max_values`: Some(1024), `max_size`: Some(68), added: 1553, mode: `MaxEncodedLen`)
-	fn force_set_pallet_state() -> Weight {
+	fn force_set_pezpallet_state() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `84`
 		//  Estimated: `51735`

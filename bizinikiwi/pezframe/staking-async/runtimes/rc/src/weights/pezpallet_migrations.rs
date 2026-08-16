@@ -209,7 +209,7 @@ impl<T: pezframe_system::Config> pezpallet_migrations::WeightInfo for WeightInfo
 	/// Storage: `Skipped::Metadata` (r:0 w:0)
 	/// Proof: `Skipped::Metadata` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `n` is `[0, 2048]`.
-	fn reset_pallet_migration(n: u32, ) -> Weight {
+	fn reset_pezpallet_migration(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1676 + n * (38 ±0)`
 		//  Estimated: `754 + n * (39 ±0)`

@@ -23,7 +23,6 @@ use codec::{Decode, Encode, FullCodec};
 use pezframe_support::{
 	pezpallet_prelude::ValueQuery, traits::PalletInfoAccess, weights::Weight, Blake2_128Concat,
 };
-use Debug;
 
 /// Type used to encode the number of references an account has.
 type RefCount = u32;

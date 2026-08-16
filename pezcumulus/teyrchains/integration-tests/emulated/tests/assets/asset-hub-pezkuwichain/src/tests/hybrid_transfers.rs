@@ -732,7 +732,7 @@ fn transfer_native_asset_from_relay_to_para_through_asset_hub() {
 
 	fn relay_assertions(t: RelayToParaThroughAHTest) {
 		type RuntimeEvent = <Pezkuwichain as Chain>::RuntimeEvent;
-		Pezkuwichain::assert_xcm_pallet_attempted_complete(None);
+		Pezkuwichain::assert_xcm_pezpallet_attempted_complete(None);
 		assert_expected_events!(
 			Pezkuwichain,
 			vec![

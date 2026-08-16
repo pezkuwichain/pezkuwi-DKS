@@ -260,7 +260,7 @@ pub async fn get_listen_address(network: Arc<dyn NetworkService>) -> pezsc_netwo
 pub async fn run_validator_node(
 	config: Configuration,
 	worker_program_path: Option<PathBuf>,
-) -> PolkadotTestNode {
+) -> PezkuwiTestNode {
 	let NewFull { task_manager, client, network, rpc_handlers, overseer_handle, .. } = new_full(
 		config,
 		IsTeyrchainNode::No,
@@ -276,7 +276,7 @@ pub async fn run_validator_node(
 
 	let addr = MultiaddrWithPeerId { multiaddr, peer_id };
 
-	PolkadotTestNode { task_manager, client, overseer_handle, addr, rpc_handlers }
+	PezkuwiTestNode { task_manager, client, overseer_handle, addr, rpc_handlers }
 }
 
 /// Run a test collator node that uses the test runtime.
@@ -290,14 +290,14 @@ pub async fn run_validator_node(
 /// # Note
 ///
 /// The collator functionality still needs to be registered at the node! This can be done using
-/// [`PolkadotTestNode::register_collator`].
+/// [`PezkuwiTestNode::register_collator`].
 pub async fn run_collator_node(
 	tokio_handle: tokio::runtime::Handle,
 	key: Sr25519Keyring,
 	storage_update_func: impl Fn(),
 	boot_nodes: Vec<MultiaddrWithPeerId>,
 	collator_pair: CollatorPair,
-) -> PolkadotTestNode {
+) -> PezkuwiTestNode {
 	let config = node_config(storage_update_func, tokio_handle, key, boot_nodes, false);
 	let NewFull { task_manager, client, network, rpc_handlers, overseer_handle, .. } = new_full(
 		config,
@@ -314,11 +314,11 @@ pub async fn run_collator_node(
 	let multiaddr = get_listen_address(network).await;
 	let addr = MultiaddrWithPeerId { multiaddr, peer_id };
 
-	PolkadotTestNode { task_manager, client, overseer_handle, addr, rpc_handlers }
+	PezkuwiTestNode { task_manager, client, overseer_handle, addr, rpc_handlers }
 }
 
 /// A Pezkuwi test node instance used for testing.
-pub struct PolkadotTestNode {
+pub struct PezkuwiTestNode {
 	/// `TaskManager`'s instance.
 	pub task_manager: TaskManager,
 	/// Client's instance.
@@ -332,7 +332,7 @@ pub struct PolkadotTestNode {
 	pub rpc_handlers: RpcHandlers,
 }
 
-impl PolkadotTestNode {
+impl PezkuwiTestNode {
 	/// Send a sudo call to this node.
 	async fn send_sudo(
 		&self,

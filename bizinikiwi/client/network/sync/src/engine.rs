@@ -643,7 +643,7 @@ where
 						number,
 					)
 				},
-				// Nothing to do, this is handled internally by `PolkadotSyncingStrategy`.
+				// Nothing to do, this is handled internally by `PezkuwiSyncingStrategy`.
 				SyncingAction::Finished => {},
 			}
 		}

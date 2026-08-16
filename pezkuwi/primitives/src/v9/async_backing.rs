@@ -21,7 +21,6 @@ use super::*;
 use alloc::vec::Vec;
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use scale_info::TypeInfo;
-use Debug;
 
 use crate::CandidateDescriptorV2;
 

@@ -30,7 +30,6 @@ use pezsp_runtime::traits::Block as BlockT;
 
 use alloc::vec::Vec;
 use pezsp_staking::SessionIndex;
-use Debug;
 
 pub mod runtime_api;
 pub use runtime_api::*;

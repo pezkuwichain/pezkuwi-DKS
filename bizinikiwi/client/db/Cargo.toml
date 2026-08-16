@@ -68,7 +68,7 @@ runtime-benchmarks = [
 	"pezsp-state-machine/runtime-benchmarks",
 	"pezsp-trie/runtime-benchmarks",
 ]
-rocksdb = ["kvdb-rocksdb"]
+rocksdb = ["kvdb-rocksdb", "pezsp-database/rocksdb"]
 std = [
 	"bizinikiwi-test-runtime-client/std",
 	"log/std",

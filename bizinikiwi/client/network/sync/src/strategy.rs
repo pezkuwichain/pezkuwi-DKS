@@ -172,7 +172,7 @@ pub enum SyncingAction<B: BlockT> {
 		number: NumberFor<B>,
 		justifications: Justifications,
 	},
-	/// Strategy finished. Nothing to do, this is handled by `PolkadotSyncingStrategy`.
+	/// Strategy finished. Nothing to do, this is handled by `PezkuwiSyncingStrategy`.
 	Finished,
 }
 

@@ -323,7 +323,7 @@ pub type LocalPalletOriginToLocation = (
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	// Production relay: only governance-controlled pallet origins (StakingAdmin, Fellows,
-	// Treasurer, Welati bodies) may originate raw `pallet_xcm::send` messages. Ordinary signed
+	// Treasurer, Welati bodies) may originate raw `pezpallet_xcm::send` messages. Ordinary signed
 	// accounts are intentionally excluded here (unlike the zagros/testnet config) so that no
 	// funded relay account can craft arbitrary XCM programs toward any current or future
 	// teyrchain. Local execution for signed accounts is still permitted via `ExecuteXcmOrigin`

@@ -95,7 +95,7 @@ fn check_whitelist() {
 }
 
 #[test]
-fn check_treasury_pallet_id() {
+fn check_treasury_pezpallet_id() {
 	assert_eq!(
 		<Treasury as pezframe_support::traits::PalletInfoAccess>::index() as u8,
 		pezpallet_staking_async_rc_runtime_constants::TREASURY_PALLET_ID

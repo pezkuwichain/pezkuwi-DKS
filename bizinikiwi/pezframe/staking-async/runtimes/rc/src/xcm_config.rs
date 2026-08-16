@@ -38,7 +38,7 @@ use pezpallet_staking_async_rc_runtime_constants::{
 };
 use pezpallet_xcm::XcmPassthrough;
 use pezsp_core::ConstU32;
-use xcm::latest::{prelude::*, WESTEND_GENESIS_HASH};
+use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
 use xcm_builder::{
 	AccountId32Aliases, AliasChildLocation, AllowExplicitUnpaidExecutionFrom,
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
@@ -54,7 +54,7 @@ use xcm_executor::XcmExecutor;
 parameter_types! {
 	pub const TokenLocation: Location = Here.into_location();
 	pub const RootLocation: Location = Location::here();
-	pub const ThisNetwork: NetworkId = ByGenesis(WESTEND_GENESIS_HASH);
+	pub const ThisNetwork: NetworkId = ByGenesis(ZAGROS_GENESIS_HASH);
 	pub UniversalLocation: InteriorLocation = [GlobalConsensus(ThisNetwork::get())].into();
 	pub CheckAccount: AccountId = XcmPallet::check_account();
 	pub LocalCheckAccount: (AccountId, MintLocation) = (CheckAccount::get(), MintLocation::Local);

@@ -33,7 +33,7 @@ use pezframe_election_provider_support::{
 };
 use pezframe_support::{
 	derive_impl,
-	dynamic_params::{dynamic_pallet_params, dynamic_params},
+	dynamic_params::{dynamic_params, dynamic_pezpallet_params},
 	genesis_builder_helper::{build_state, get_preset},
 	parameter_types,
 	traits::{
@@ -311,7 +311,7 @@ pub mod dynamic_params {
 
 	/// Parameters used to calculate era payouts, see
 	/// [`pezkuwi_runtime_common::impls::EraPayoutParams`].
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 0)]
 	pub mod inflation {
 		/// Minimum inflation rate used to calculate era payouts.

@@ -49,7 +49,7 @@ pub trait MutItemAttrs {
 }
 
 /// Take the first pezpallet attribute (e.g. attribute like `#[pezpallet..]`) and decode it to `Attr`
-pub(crate) fn take_first_item_pallet_attr<Attr>(
+pub(crate) fn take_first_item_pezpallet_attr<Attr>(
 	item: &mut impl MutItemAttrs,
 ) -> syn::Result<Option<Attr>>
 where
@@ -71,13 +71,15 @@ where
 }
 
 /// Take all the pezpallet attributes (e.g. attribute like `#[pezpallet..]`) and decode them to `Attr`
-pub(crate) fn take_item_pallet_attrs<Attr>(item: &mut impl MutItemAttrs) -> syn::Result<Vec<Attr>>
+pub(crate) fn take_item_pezpallet_attrs<Attr>(
+	item: &mut impl MutItemAttrs,
+) -> syn::Result<Vec<Attr>>
 where
 	Attr: syn::parse::Parse,
 {
 	let mut pezpallet_attrs = Vec::new();
 
-	while let Some(attr) = take_first_item_pallet_attr(item)? {
+	while let Some(attr) = take_first_item_pezpallet_attr(item)? {
 		pezpallet_attrs.push(attr)
 	}
 
@@ -344,7 +346,7 @@ pub fn check_type_def_optional_gen(
 /// * or `Pezpallet<T, I>`
 ///
 /// return the instance if found.
-pub fn check_pallet_struct_usage(type_: &Box<syn::Type>) -> syn::Result<InstanceUsage> {
+pub fn check_pezpallet_struct_usage(type_: &Box<syn::Type>) -> syn::Result<InstanceUsage> {
 	let expected = "expected `Pezpallet<T>` or `Pezpallet<T, I>`";
 	pub struct Checker(InstanceUsage);
 	impl syn::parse::Parse for Checker {
@@ -608,7 +610,7 @@ pub enum CallReturnType {
 }
 
 /// Check the keyword `DispatchResultWithPostInfo` or `DispatchResult`.
-pub fn check_pallet_call_return_type(sig: &syn::Signature) -> syn::Result<CallReturnType> {
+pub fn check_pezpallet_call_return_type(sig: &syn::Signature) -> syn::Result<CallReturnType> {
 	let syn::ReturnType::Type(_, type_) = &sig.output else {
 		let msg = "Invalid pezpallet::call, require return type \
 			DispatchResultWithPostInfo";

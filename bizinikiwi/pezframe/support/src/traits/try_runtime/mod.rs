@@ -247,7 +247,7 @@ impl<BlockNumber: Clone + core::fmt::Debug + AtLeast32BitUnsigned> TryState<Bloc
 
 				result
 			},
-			Select::AllExcept(ref excluded_pallet_names) => {
+			Select::AllExcept(ref excluded_pezpallet_names) => {
 				let try_state_fns: &[(
 					&'static str,
 					fn(BlockNumber, Select) -> Result<(), TryRuntimeError>,
@@ -255,7 +255,7 @@ impl<BlockNumber: Clone + core::fmt::Debug + AtLeast32BitUnsigned> TryState<Bloc
 					#( (<Tuple as crate::traits::PalletInfoAccess>::name(), Tuple::try_state) ),*
 				)];
 
-				excluded_pallet_names.iter().for_each(|excluded_name| {
+				excluded_pezpallet_names.iter().for_each(|excluded_name| {
 					if !try_state_fns.iter().any(|(name, _)| name.as_bytes() == excluded_name) {
 						log::warn!(
 							"Pezpallet {:?} not found while trying to filter it out in Select::AllExcept",
@@ -267,7 +267,7 @@ impl<BlockNumber: Clone + core::fmt::Debug + AtLeast32BitUnsigned> TryState<Bloc
 				let try_state_fns: Vec<_> = try_state_fns
 					.iter()
 					.filter(|(name, _)| {
-						!excluded_pallet_names
+						!excluded_pezpallet_names
 							.iter()
 							.any(|excluded_name| name.as_bytes() == excluded_name)
 					})

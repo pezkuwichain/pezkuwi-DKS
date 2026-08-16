@@ -400,7 +400,7 @@ fn generate_test_module(input: &INposInput) -> TokenStream2 {
 
 	quote!(
 		#[cfg(test)]
-		mod __pallet_staking_reward_curve_test_module {
+		mod __pezpallet_staking_reward_curve_test_module {
 			fn i_npos(x: f64) -> f64 {
 				if x <= #x_ideal {
 					#i_0 + x * (#i_ideal - #i_0 / #x_ideal)

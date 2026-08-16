@@ -79,7 +79,7 @@ fn send_xcm_from_para_to_asset_hub_paying_fee_with_system_asset() {
 			bx!(xcm),
 		));
 
-		PenpalA::assert_xcm_pallet_sent();
+		PenpalA::assert_xcm_pezpallet_sent();
 	});
 
 	AssetHubPezkuwichain::execute_with(|| {
@@ -170,7 +170,7 @@ fn send_xcm_from_para_to_asset_hub_paying_fee_with_sufficient_asset() {
 			bx!(xcm),
 		));
 
-		PenpalA::assert_xcm_pallet_sent();
+		PenpalA::assert_xcm_pezpallet_sent();
 	});
 
 	AssetHubPezkuwichain::execute_with(|| {

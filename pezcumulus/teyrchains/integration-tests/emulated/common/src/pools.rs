@@ -118,10 +118,10 @@ macro_rules! create_foreign_pool_with_parent_native_on {
 	};
 
 	// default amounts, custom pezpallet name
-	( $chain:ident, $foreign_pallet_assets:ident, $asset_id:expr, $asset_owner:expr ) => {
+	( $chain:ident, $foreign_pezpallet_assets:ident, $asset_id:expr, $asset_owner:expr ) => {
 		$crate::create_foreign_pool_with_parent_native_on!(
 			$chain,
-			$foreign_pallet_assets,
+			$foreign_pezpallet_assets,
 			$asset_id,
 			$asset_owner,
 			1_000_000_000_000,
@@ -142,13 +142,13 @@ macro_rules! create_foreign_pool_with_parent_native_on {
 	};
 
 	// custom amounts, custom pezpallet name
-	( $chain:ident, $foreign_pallet_assets:ident, $asset_id:expr, $asset_owner:expr, $wnd_amount:expr, $asset_amount:expr ) => {
+	( $chain:ident, $foreign_pezpallet_assets:ident, $asset_id:expr, $asset_owner:expr, $wnd_amount:expr, $asset_amount:expr ) => {
 		$crate::pools::paste::paste! {
 			<$chain>::execute_with(|| {
 				let owner = $asset_owner;
 				let signed_owner = <$chain as Chain>::RuntimeOrigin::signed(owner.clone());
 
-				assert_ok!(<$chain as [<$chain Pezpallet>]>::$foreign_pallet_assets::mint(
+				assert_ok!(<$chain as [<$chain Pezpallet>]>::$foreign_pezpallet_assets::mint(
 						signed_owner.clone(),
 						$asset_id.clone().into(),
 						owner.clone().into(),
@@ -177,10 +177,10 @@ macro_rules! create_foreign_pool_with_native_on {
 	};
 
 	// default amounts, custom pezpallet name
-	( $chain:ident, $foreign_pallet_asset:ident, $asset_id:expr, $asset_owner:expr ) => {
+	( $chain:ident, $foreign_pezpallet_asset:ident, $asset_id:expr, $asset_owner:expr ) => {
 		$crate::create_foreign_pool_with_native_on!(
 			$chain,
-			$foreign_pallet_asset,
+			$foreign_pezpallet_asset,
 			$asset_id,
 			$asset_owner,
 			1_000_000_000_000,

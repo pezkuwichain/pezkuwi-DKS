@@ -22,7 +22,6 @@ use codec::{Decode, Encode};
 use pezframe_support::weights::Weight;
 use pezsp_std::ops::RangeInclusive;
 use scale_info::TypeInfo;
-use Debug;
 
 /// A minimized version of `pezpallet-bridge-messages::Call` that can be used without a runtime.
 #[derive(Encode, Decode, Debug, PartialEq, Eq, Clone, TypeInfo)]

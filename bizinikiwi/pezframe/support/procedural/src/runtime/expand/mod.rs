@@ -18,8 +18,8 @@
 use super::parse::runtime_types::RuntimeType;
 use crate::{
 	construct_runtime::{
-		check_pallet_number, decl_all_pallets, decl_integrity_test, decl_pallet_runtime_setup,
-		decl_static_assertions, expand,
+		check_pezpallet_number, decl_all_pallets, decl_integrity_test,
+		decl_pezpallet_runtime_setup, decl_static_assertions, expand,
 	},
 	runtime::{
 		parse::{
@@ -43,13 +43,13 @@ const SYSTEM_PALLET_NAME: &str = "System";
 pub fn expand(def: Def, legacy_ordering: bool) -> TokenStream2 {
 	let input = def.input;
 
-	let (check_pallet_number_res, res) = match def.pezpallets {
+	let (check_pezpallet_number_res, res) = match def.pezpallets {
 		AllPalletsDeclaration::Implicit(ref decl) => (
-			check_pallet_number(input.clone(), decl.pezpallet_count),
+			check_pezpallet_number(input.clone(), decl.pezpallet_count),
 			construct_runtime_implicit_to_explicit(input.into(), decl.clone(), legacy_ordering),
 		),
 		AllPalletsDeclaration::Explicit(ref decl) => (
-			check_pallet_number(input, decl.pezpallets.len()),
+			check_pezpallet_number(input, decl.pezpallets.len()),
 			construct_runtime_final_expansion(
 				def.runtime_struct.ident.clone(),
 				decl.clone(),
@@ -64,7 +64,7 @@ pub fn expand(def: Def, legacy_ordering: bool) -> TokenStream2 {
 	// We want to provide better error messages to the user and thus, handle the error here
 	// separately. If there is an error, we print the error and still generate all of the code to
 	// get in overall less errors for the user.
-	let res = if let Err(error) = check_pallet_number_res {
+	let res = if let Err(error) = check_pezpallet_number_res {
 		let error = error.to_compile_error();
 
 		quote! {
@@ -235,7 +235,7 @@ fn construct_runtime_final_expansion(
 	}
 
 	let all_pallets = decl_all_pallets(&name, pezpallets.iter(), &features);
-	let pezpallet_to_index = decl_pallet_runtime_setup(&name, &pezpallets, &scrate);
+	let pezpallet_to_index = decl_pezpallet_runtime_setup(&name, &pezpallets, &scrate);
 
 	let metadata = expand::expand_runtime_metadata(
 		&name,

@@ -18,8 +18,8 @@
 use syn::parse_quote;
 
 #[test]
-fn test_parse_pallet_with_task_enum_missing_impl() {
-	assert_pallet_parse_error! {
+fn test_parse_pezpallet_with_task_enum_missing_impl() {
+	assert_pezpallet_parse_error! {
 		#[manifest_dir("../../examples/basic")]
 		#[error_regex("Missing `\\#\\[pezpallet::tasks_experimental\\]` impl")]
 		#[pezframe_support::pezpallet]
@@ -39,8 +39,8 @@ fn test_parse_pallet_with_task_enum_missing_impl() {
 }
 
 #[test]
-fn test_parse_pallet_with_task_enum_wrong_attribute() {
-	assert_pallet_parse_error! {
+fn test_parse_pezpallet_with_task_enum_wrong_attribute() {
+	assert_pezpallet_parse_error! {
 		#[manifest_dir("../../examples/basic")]
 		#[error_regex("expected one of")]
 		#[pezframe_support::pezpallet]
@@ -66,8 +66,8 @@ fn test_parse_pallet_with_task_enum_wrong_attribute() {
 }
 
 #[test]
-fn test_parse_pallet_missing_task_enum() {
-	assert_pallet_parses! {
+fn test_parse_pezpallet_missing_task_enum() {
+	assert_pezpallet_parses! {
 		#[manifest_dir("../../examples/basic")]
 		#[pezframe_support::pezpallet]
 		pub mod pezpallet {
@@ -88,8 +88,8 @@ fn test_parse_pallet_missing_task_enum() {
 }
 
 #[test]
-fn test_parse_pallet_task_list_in_wrong_place() {
-	assert_pallet_parse_error! {
+fn test_parse_pezpallet_task_list_in_wrong_place() {
+	assert_pezpallet_parse_error! {
 		#[manifest_dir("../../examples/basic")]
 		#[error_regex("can only be used on items within an `impl` statement.")]
 		#[pezframe_support::pezpallet]
@@ -113,8 +113,8 @@ fn test_parse_pallet_task_list_in_wrong_place() {
 }
 
 #[test]
-fn test_parse_pallet_manual_tasks_impl_without_manual_tasks_enum() {
-	assert_pallet_parse_error! {
+fn test_parse_pezpallet_manual_tasks_impl_without_manual_tasks_enum() {
+	assert_pezpallet_parse_error! {
 		#[manifest_dir("../../examples/basic")]
 		#[error_regex(".*attribute must be attached to your.*")]
 		#[pezframe_support::pezpallet]
@@ -141,8 +141,8 @@ fn test_parse_pallet_manual_tasks_impl_without_manual_tasks_enum() {
 }
 
 #[test]
-fn test_parse_pallet_manual_task_enum_non_manual_impl() {
-	assert_pallet_parses! {
+fn test_parse_pezpallet_manual_task_enum_non_manual_impl() {
+	assert_pezpallet_parses! {
 		#[manifest_dir("../../examples/basic")]
 		#[pezframe_support::pezpallet]
 		pub mod pezpallet {
@@ -166,8 +166,8 @@ fn test_parse_pallet_manual_task_enum_non_manual_impl() {
 }
 
 #[test]
-fn test_parse_pallet_non_manual_task_enum_manual_impl() {
-	assert_pallet_parses! {
+fn test_parse_pezpallet_non_manual_task_enum_manual_impl() {
+	assert_pezpallet_parses! {
 		#[manifest_dir("../../examples/basic")]
 		#[pezframe_support::pezpallet]
 		pub mod pezpallet {
@@ -191,8 +191,8 @@ fn test_parse_pallet_non_manual_task_enum_manual_impl() {
 }
 
 #[test]
-fn test_parse_pallet_manual_task_enum_manual_impl() {
-	assert_pallet_parses! {
+fn test_parse_pezpallet_manual_task_enum_manual_impl() {
+	assert_pezpallet_parses! {
 		#[manifest_dir("../../examples/basic")]
 		#[pezframe_support::pezpallet]
 		pub mod pezpallet {
@@ -215,8 +215,8 @@ fn test_parse_pallet_manual_task_enum_manual_impl() {
 }
 
 #[test]
-fn test_parse_pallet_manual_task_enum_mismatch_ident() {
-	assert_pallet_parses! {
+fn test_parse_pezpallet_manual_task_enum_mismatch_ident() {
+	assert_pezpallet_parses! {
 		#[manifest_dir("../../examples/basic")]
 		#[pezframe_support::pezpallet]
 		pub mod pezpallet {

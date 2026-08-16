@@ -24,7 +24,6 @@ use codec::{Decode, Encode, FullCodec};
 use pezframe_support::{
 	pezpallet_prelude::ValueQuery, traits::StorageVersion, weights::Weight, Twox64Concat,
 };
-use Debug;
 
 #[derive(Encode, Decode, Clone, Default, Debug, PartialEq)]
 struct SeatHolder<AccountId, Balance> {

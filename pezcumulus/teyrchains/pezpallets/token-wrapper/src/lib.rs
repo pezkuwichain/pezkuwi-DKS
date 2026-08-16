@@ -195,8 +195,8 @@ pub mod pezpallet {
 			ensure!(wrapped_balance >= amount, Error::<T>::InsufficientWrappedBalance);
 
 			// Verify pallet has sufficient backing before any state changes
-			let pallet_balance = T::Currency::free_balance(&Self::account_id());
-			ensure!(pallet_balance >= amount, Error::<T>::TransferFailed);
+			let pezpallet_balance = T::Currency::free_balance(&Self::account_id());
+			ensure!(pezpallet_balance >= amount, Error::<T>::TransferFailed);
 
 			// Burn wrapped tokens from user
 			T::Assets::burn_from(

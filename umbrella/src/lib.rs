@@ -735,7 +735,7 @@ pub use pezpallet_contracts_fixtures;
 #[cfg(feature = "pezpallet-contracts-mock-network")]
 pub use pezpallet_contracts_mock_network;
 
-/// Procedural macros used in pallet_contracts.
+/// Procedural macros used in pezpallet_contracts.
 #[cfg(feature = "pezpallet-contracts-proc-macro")]
 pub use pezpallet_contracts_proc_macro;
 
@@ -943,7 +943,7 @@ pub use pezpallet_remark;
 #[cfg(feature = "pezpallet-revive")]
 pub use pezpallet_revive;
 
-/// Procedural macros used in pallet_revive.
+/// Procedural macros used in pezpallet_revive.
 #[cfg(feature = "pezpallet-revive-proc-macro")]
 pub use pezpallet_revive_proc_macro;
 

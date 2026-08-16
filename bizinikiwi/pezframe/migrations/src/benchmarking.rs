@@ -213,7 +213,7 @@ mod benches {
 	}
 
 	#[benchmark(skip_meta, pov_mode = Measured)]
-	fn reset_pallet_migration(n: Linear<0, 2048>) -> Result<(), BenchmarkError> {
+	fn reset_pezpallet_migration(n: Linear<0, 2048>) -> Result<(), BenchmarkError> {
 		let prefix: [u8; 16] = twox_128(b"__ResetPalletBenchmarkPrefix__");
 
 		for i in 0..n {

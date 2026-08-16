@@ -38,7 +38,7 @@ use pezsp_runtime::{
 	AccountId32, BuildStorage, StateVersion,
 };
 use pezsp_std::cell::RefCell;
-use xcm::{latest::ROCOCO_GENESIS_HASH, prelude::*};
+use xcm::{latest::PEZKUWICHAIN_GENESIS_HASH, prelude::*};
 use xcm_builder::{
 	AllowUnpaidExecutionFrom, DispatchBlob, DispatchBlobError, FixedWeightBounds,
 	InspectMessageQueues, NetworkExportTable, NetworkExportTableItem, ParentIsPreset,
@@ -148,7 +148,7 @@ impl pezpallet_bridge_messages::WeightInfoExt for TestMessagesWeights {
 }
 
 parameter_types! {
-	pub const RelayNetwork: NetworkId = NetworkId::Kusama;
+	pub const RelayNetwork: NetworkId = NetworkId::Dicle;
 	pub UniversalLocation: InteriorLocation = [
 		GlobalConsensus(RelayNetwork::get()),
 		Teyrchain(THIS_BRIDGE_HUB_ID),
@@ -160,7 +160,7 @@ parameter_types! {
 	pub BridgedRelayNetworkLocation: Location = (Parent, GlobalConsensus(BridgedRelayNetwork::get())).into();
 	pub BridgedRelativeDestination: InteriorLocation = [Teyrchain(BRIDGED_ASSET_HUB_ID)].into();
 	pub BridgedUniversalDestination: InteriorLocation = [GlobalConsensus(BridgedRelayNetwork::get()), Teyrchain(BRIDGED_ASSET_HUB_ID)].into();
-	pub const NonBridgedRelayNetwork: NetworkId = NetworkId::ByGenesis(ROCOCO_GENESIS_HASH);
+	pub const NonBridgedRelayNetwork: NetworkId = NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH);
 
 	pub const BridgeDeposit: Balance = 100_000;
 

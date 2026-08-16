@@ -94,7 +94,7 @@ fn relay_dest_assertions_fail(_t: SystemParaToRelayTest) {
 fn para_origin_assertions(t: SystemParaToRelayTest) {
 	type RuntimeEvent = <PeoplePezkuwichain as Chain>::RuntimeEvent;
 
-	PeoplePezkuwichain::assert_xcm_pallet_attempted_complete(None);
+	PeoplePezkuwichain::assert_xcm_pezpallet_attempted_complete(None);
 
 	PeoplePezkuwichain::assert_teyrchain_system_ump_sent();
 

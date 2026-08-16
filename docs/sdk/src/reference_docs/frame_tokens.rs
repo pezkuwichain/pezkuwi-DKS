@@ -35,11 +35,11 @@
 //!
 //! You may then write custom pallets that interact with [`pezpallet_balances`]. The fastest way to
 //! get started with that is by
-//! [tightly coupling](crate::reference_docs::frame_pallet_coupling#tight-coupling-pallets) your
+//! [tightly coupling](crate::reference_docs::frame_pezpallet_coupling#tight-coupling-pallets) your
 //! custom pezpallet to [`pezpallet_balances`].
 //!
 //! However, to keep pallets flexible and modular, it is often preferred to
-//! [loosely couple](crate::reference_docs::frame_pallet_coupling#loosely--coupling-pallets).
+//! [loosely couple](crate::reference_docs::frame_pezpallet_coupling#loosely--coupling-pallets).
 //!
 //! To achieve loose coupling,
 //! we separate token logic into traits and trait implementations.
@@ -87,7 +87,7 @@
 //! changes to support new pallets which may be written in the future.
 //!
 //! Read more about coupling, and the benefits of loose coupling
-//! [here](crate::reference_docs::frame_pallet_coupling).
+//! [here](crate::reference_docs::frame_pezpallet_coupling).
 //!
 //! ## Fungible Token Traits in FRAME
 //!

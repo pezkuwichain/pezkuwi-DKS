@@ -77,7 +77,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		whitelisted_buyer: Option<T::AccountId>,
 	) -> DispatchResult {
 		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Trading),
+			Self::is_pezpallet_feature_enabled(PalletFeature::Trading),
 			Error::<T, I>::MethodDisabled
 		);
 
@@ -132,7 +132,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		bid_price: ItemPrice<T, I>,
 	) -> DispatchResult {
 		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Trading),
+			Self::is_pezpallet_feature_enabled(PalletFeature::Trading),
 			Error::<T, I>::MethodDisabled
 		);
 

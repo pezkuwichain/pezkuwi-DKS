@@ -1498,7 +1498,7 @@ mod tests {
 	}
 
 	#[test]
-	fn ext_rejects_batch_with_grandpa_finality_proof_when_grandpa_pallet_is_halted() {
+	fn ext_rejects_batch_with_grandpa_finality_proof_when_grandpa_pezpallet_is_halted() {
 		run_test(|| {
 			initialize_environment(100, 100, 100);
 
@@ -1528,7 +1528,7 @@ mod tests {
 	}
 
 	#[test]
-	fn ext_rejects_batch_with_teyrchain_finality_proof_when_teyrchains_pallet_is_halted() {
+	fn ext_rejects_batch_with_teyrchain_finality_proof_when_teyrchains_pezpallet_is_halted() {
 		run_test(|| {
 			initialize_environment(100, 100, 100);
 
@@ -1567,7 +1567,7 @@ mod tests {
 	}
 
 	#[test]
-	fn ext_rejects_transaction_when_messages_pallet_is_halted() {
+	fn ext_rejects_transaction_when_messages_pezpallet_is_halted() {
 		run_test(|| {
 			initialize_environment(100, 100, 100);
 

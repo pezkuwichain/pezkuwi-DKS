@@ -175,9 +175,9 @@ mod bridge_hub_zagros_tests {
 	}
 
 	#[test]
-	fn change_bridge_grandpa_pallet_mode_by_governance_works() {
+	fn change_bridge_grandpa_pezpallet_mode_by_governance_works() {
 		// for Zagros finality
-		pezbridge_hub_test_utils::test_cases::change_bridge_grandpa_pallet_mode_by_governance_works::<
+		pezbridge_hub_test_utils::test_cases::change_bridge_grandpa_pezpallet_mode_by_governance_works::<
 			Runtime,
 			BridgeGrandpaZagrosInstance,
 		>(
@@ -188,9 +188,9 @@ mod bridge_hub_zagros_tests {
 	}
 
 	#[test]
-	fn change_bridge_teyrchains_pallet_mode_by_governance_works() {
+	fn change_bridge_teyrchains_pezpallet_mode_by_governance_works() {
 		// for Zagros finality
-		pezbridge_hub_test_utils::test_cases::change_bridge_teyrchains_pallet_mode_by_governance_works::<
+		pezbridge_hub_test_utils::test_cases::change_bridge_teyrchains_pezpallet_mode_by_governance_works::<
 			Runtime,
 			BridgeTeyrchainZagrosInstance,
 		>(
@@ -201,9 +201,9 @@ mod bridge_hub_zagros_tests {
 	}
 
 	#[test]
-	fn change_bridge_messages_pallet_mode_by_governance_works() {
+	fn change_bridge_messages_pezpallet_mode_by_governance_works() {
 		// for Zagros finality
-		pezbridge_hub_test_utils::test_cases::change_bridge_messages_pallet_mode_by_governance_works::<
+		pezbridge_hub_test_utils::test_cases::change_bridge_messages_pezpallet_mode_by_governance_works::<
 			Runtime,
 			WithBridgeHubZagrosMessagesInstance,
 		>(
@@ -571,9 +571,9 @@ mod bridge_hub_bulletin_tests {
 	}
 
 	#[test]
-	fn change_bridge_grandpa_pallet_mode_by_governance_works() {
+	fn change_bridge_grandpa_pezpallet_mode_by_governance_works() {
 		// for Bulletin finality
-		pezbridge_hub_test_utils::test_cases::change_bridge_grandpa_pallet_mode_by_governance_works::<
+		pezbridge_hub_test_utils::test_cases::change_bridge_grandpa_pezpallet_mode_by_governance_works::<
 			Runtime,
 			BridgeGrandpaPezkuwichainBulletinInstance,
 		>(
@@ -584,9 +584,9 @@ mod bridge_hub_bulletin_tests {
 	}
 
 	#[test]
-	fn change_bridge_messages_pallet_mode_by_governance_works() {
+	fn change_bridge_messages_pezpallet_mode_by_governance_works() {
 		// for Bulletin finality
-		pezbridge_hub_test_utils::test_cases::change_bridge_messages_pallet_mode_by_governance_works::<
+		pezbridge_hub_test_utils::test_cases::change_bridge_messages_pezpallet_mode_by_governance_works::<
 			Runtime,
 			WithPezkuwichainBulletinMessagesInstance,
 		>(

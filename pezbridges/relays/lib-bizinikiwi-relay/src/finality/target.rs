@@ -53,7 +53,7 @@ impl<P: BizinikiwiFinalitySyncPipeline, TargetClnt: Client<P::TargetChain>>
 	}
 
 	/// Ensure that the bridge pezpallet at target chain is active.
-	pub async fn ensure_pallet_active(&self) -> Result<(), Error> {
+	pub async fn ensure_pezpallet_active(&self) -> Result<(), Error> {
 		let is_halted = P::FinalityEngine::is_halted(&self.client).await?;
 		if is_halted {
 			return Err(Error::BridgePalletIsHalted);
@@ -103,7 +103,7 @@ where
 		// it may have already received (some of) headers that we're going to relay
 		self.client.ensure_synced().await?;
 		// we can't relay finality if bridge pezpallet at target chain is halted
-		self.ensure_pallet_active().await?;
+		self.ensure_pezpallet_active().await?;
 
 		Ok(best_synced_header_id::<P::SourceChain, P::TargetChain>(
 			&self.client,

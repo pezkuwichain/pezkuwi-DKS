@@ -24,7 +24,6 @@ use pezsp_application_crypto::AppCrypto;
 use pezsp_keystore::{Error as KeystoreError, KeystorePtr};
 
 use pezsp_runtime::traits::AppVerify;
-use Debug;
 
 use super::{SigningContext, ValidatorId, ValidatorIndex, ValidatorSignature};
 

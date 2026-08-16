@@ -239,7 +239,7 @@ pub async fn get_account_nonce(
 	Ok(nonce)
 }
 
-/// Matches `indiv_pallet_people_lite::MSG_PREFIX`
+/// Matches `indiv_pezpallet_people_lite::MSG_PREFIX`
 pub const MSG_PREFIX: &[u8; 30] = b"pop:people-lite:register using";
 
 /// Builds a sudo call wrapping `PeopleLite::increase_attestation_allowance`

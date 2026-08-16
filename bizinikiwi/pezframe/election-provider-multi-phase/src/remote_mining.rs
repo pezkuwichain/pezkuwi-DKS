@@ -55,7 +55,7 @@ pub mod polkadot {
 
 	generate_solution_type!(
 		#[compact]
-		pub struct PolkadotSolution::<
+		pub struct PezkuwiSolution::<
 			VoterIndex = u32,
 			TargetIndex = u16,
 			Accuracy = pezsp_runtime::PerU16,
@@ -71,7 +71,7 @@ pub mod polkadot {
 		type MaxVotesPerVoter = ConstU32<16>;
 		type MaxWeight = MaxWeight;
 		type MaxWinners = ConstU32<1000>;
-		type Solution = PolkadotSolution;
+		type Solution = PezkuwiSolution;
 
 		fn solution_weight(
 			_voters: u32,
@@ -100,7 +100,7 @@ pub mod kusama {
 
 	generate_solution_type!(
 		#[compact]
-		pub struct PolkadotSolution::<
+		pub struct PezkuwiSolution::<
 			VoterIndex = u32,
 			TargetIndex = u16,
 			Accuracy = pezsp_runtime::PerU16,
@@ -116,7 +116,7 @@ pub mod kusama {
 		type MaxVotesPerVoter = ConstU32<24>;
 		type MaxWeight = MaxWeight;
 		type MaxWinners = ConstU32<1000>;
-		type Solution = PolkadotSolution;
+		type Solution = PezkuwiSolution;
 
 		fn solution_weight(
 			_voters: u32,

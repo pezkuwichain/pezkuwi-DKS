@@ -379,7 +379,7 @@ pub mod pezpallet {
 }
 
 impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
-	fn get_pallet_account() -> T::AccountId {
+	fn get_pezpallet_account() -> T::AccountId {
 		T::PalletId::get().into_account_truncating()
 	}
 
@@ -387,7 +387,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 	pub fn read_raw_values(key: &T::OracleKey) -> Vec<TimestampedValueOf<T, I>> {
 		T::Members::sorted_members()
 			.iter()
-			.chain([Self::get_pallet_account()].iter())
+			.chain([Self::get_pezpallet_account()].iter())
 			.filter_map(|x| Self::raw_values(x, key))
 			.collect()
 	}
@@ -408,7 +408,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 			ensure!(T::Members::contains(&who), Error::<T, I>::NoPermission);
 			Ok(who)
 		} else {
-			Ok(Self::get_pallet_account())
+			Ok(Self::get_pezpallet_account())
 		}
 	}
 

@@ -113,7 +113,7 @@ impl EventDef {
 		crate::deprecation::prevent_deprecation_attr_on_outer_enum(&item.attrs)?;
 
 		let event_attrs: Vec<PalletEventDepositAttr> =
-			helper::take_item_pallet_attrs(&mut item.attrs)?;
+			helper::take_item_pezpallet_attrs(&mut item.attrs)?;
 		let attr_info = PalletEventAttrInfo::from_attrs(event_attrs)?;
 		let deposit_event = attr_info.deposit_event;
 

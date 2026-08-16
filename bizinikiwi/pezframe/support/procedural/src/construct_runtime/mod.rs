@@ -235,17 +235,17 @@ pub fn construct_runtime(input: TokenStream) -> TokenStream {
 	let input_copy = input.clone();
 	let definition = syn::parse_macro_input!(input as RuntimeDeclaration);
 
-	let (check_pallet_number_res, res) = match definition {
+	let (check_pezpallet_number_res, res) = match definition {
 		RuntimeDeclaration::Implicit(implicit_def) => (
-			check_pallet_number(input_copy.clone().into(), implicit_def.pezpallets.len()),
+			check_pezpallet_number(input_copy.clone().into(), implicit_def.pezpallets.len()),
 			construct_runtime_implicit_to_explicit(input_copy.into(), implicit_def),
 		),
 		RuntimeDeclaration::Explicit(explicit_decl) => (
-			check_pallet_number(input_copy.clone().into(), explicit_decl.pezpallets.len()),
+			check_pezpallet_number(input_copy.clone().into(), explicit_decl.pezpallets.len()),
 			construct_runtime_explicit_to_explicit_expanded(input_copy.into(), explicit_decl),
 		),
 		RuntimeDeclaration::ExplicitExpanded(explicit_decl) => (
-			check_pallet_number(input_copy.into(), explicit_decl.pezpallets.len()),
+			check_pezpallet_number(input_copy.into(), explicit_decl.pezpallets.len()),
 			construct_runtime_final_expansion(explicit_decl),
 		),
 	};
@@ -255,7 +255,7 @@ pub fn construct_runtime(input: TokenStream) -> TokenStream {
 	// We want to provide better error messages to the user and thus, handle the error here
 	// separately. If there is an error, we print the error and still generate all of the code to
 	// get in overall less errors for the user.
-	let res = if let Err(error) = check_pallet_number_res {
+	let res = if let Err(error) = check_pezpallet_number_res {
 		let error = error.to_compile_error();
 
 		quote! {
@@ -404,7 +404,7 @@ fn construct_runtime_final_expansion(
 
 	let outer_origin = expand::expand_outer_origin(&name, system_pallet, &pezpallets, &scrate)?;
 	let all_pallets = decl_all_pallets(&name, pezpallets.iter(), &features);
-	let pezpallet_to_index = decl_pallet_runtime_setup(&name, &pezpallets, &scrate);
+	let pezpallet_to_index = decl_pezpallet_runtime_setup(&name, &pezpallets, &scrate);
 
 	let dispatch = expand::expand_outer_dispatch(&name, system_pallet, &pezpallets, &scrate);
 	let tasks = expand::expand_outer_task(&name, &pezpallets, &scrate);
@@ -640,7 +640,7 @@ pub(crate) fn decl_all_pallets<'a>(
 	)
 }
 
-pub(crate) fn decl_pallet_runtime_setup(
+pub(crate) fn decl_pezpallet_runtime_setup(
 	runtime: &Ident,
 	pezpallet_declarations: &[Pezpallet],
 	scrate: &TokenStream2,
@@ -784,8 +784,8 @@ pub(crate) fn decl_static_assertions(
 	}
 }
 
-pub(crate) fn check_pallet_number(input: TokenStream2, pezpallet_num: usize) -> Result<()> {
-	let max_pallet_num = {
+pub(crate) fn check_pezpallet_number(input: TokenStream2, pezpallet_num: usize) -> Result<()> {
+	let max_pezpallet_num = {
 		if cfg!(feature = "tuples-96") {
 			96
 		} else if cfg!(feature = "tuples-128") {
@@ -795,14 +795,14 @@ pub(crate) fn check_pallet_number(input: TokenStream2, pezpallet_num: usize) -> 
 		}
 	};
 
-	if pezpallet_num > max_pallet_num {
-		let no_feature = max_pallet_num == 128;
+	if pezpallet_num > max_pezpallet_num {
+		let no_feature = max_pezpallet_num == 128;
 		return Err(syn::Error::new(
 			input.span(),
 			format!(
 				"{} To increase this limit, enable the tuples-{} feature of [pezframe_support]. {}",
 				"The number of pezpallets exceeds the maximum number of tuple elements.",
-				max_pallet_num + 32,
+				max_pezpallet_num + 32,
 				if no_feature {
 					"If the feature does not exist - it needs to be implemented."
 				} else {

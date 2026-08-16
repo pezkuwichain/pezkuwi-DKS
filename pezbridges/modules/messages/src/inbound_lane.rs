@@ -27,7 +27,6 @@ use pezbp_messages::{
 use pezbp_runtime::AccountIdOf;
 use pezsp_std::prelude::PartialEq;
 use scale_info::{Type, TypeInfo};
-use Debug;
 
 /// Inbound lane storage.
 pub trait InboundLaneStorage {

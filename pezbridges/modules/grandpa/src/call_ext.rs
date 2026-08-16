@@ -358,7 +358,7 @@ mod tests {
 	}
 
 	#[test]
-	fn extension_rejects_new_header_if_pallet_is_halted() {
+	fn extension_rejects_new_header_if_pezpallet_is_halted() {
 		run_test(|| {
 			// when pezpallet is halted => tx is rejected
 			sync_to_header_10();

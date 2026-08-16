@@ -21,7 +21,6 @@ use crate::AccountVote;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezframe_support::dispatch::DispatchResult;
 use scale_info::TypeInfo;
-use Debug;
 
 /// Represents the differents states of a referendum.
 #[derive(

@@ -453,7 +453,7 @@ impl ConfigDef {
 			}
 
 			while let Some(pezpallet_attr) =
-				helper::take_first_item_pallet_attr::<PalletAttr>(trait_item)?
+				helper::take_first_item_pezpallet_attr::<PalletAttr>(trait_item)?
 			{
 				match (pezpallet_attr.typ, &trait_item) {
 					(PalletAttrType::Constant(_), syn::TraitItem::Type(ref typ)) => {
@@ -576,7 +576,7 @@ impl ConfigDef {
 		}
 
 		let attr: Option<DisableFrameSystemSupertraitCheck> =
-			helper::take_first_item_pallet_attr(&mut item.attrs)?;
+			helper::take_first_item_pezpallet_attr(&mut item.attrs)?;
 		let disable_system_supertrait_check = attr.is_some();
 
 		let has_pezframe_system_supertrait = item.supertraits.iter().any(|s| {

@@ -312,7 +312,7 @@ pub(crate) mod tests {
 				migrated_best_beefy,
 				_phantom,
 			),
-			migrated_pallet_genesis,
+			migrated_pezpallet_genesis,
 		): MigratedState =
 			DecodeAll::decode_all(&mut &*migrated.encode()).expect("decode migrated state; qed.");
 
@@ -322,7 +322,7 @@ pub(crate) mod tests {
 		assert_eq!(migrated_min_block_delta, 1);
 		assert_eq!(migrated_best_grandpa, best_grandpa);
 		assert_eq!(migrated_best_beefy, zero);
-		assert_eq!(migrated_pallet_genesis, beefy_genesis);
+		assert_eq!(migrated_pezpallet_genesis, beefy_genesis);
 		assert_eq!(migrated_sessions.len(), 1);
 
 		let (

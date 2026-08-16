@@ -150,7 +150,7 @@ pub struct TaskEnumDef {
 impl syn::parse::Parse for TaskEnumDef {
 	fn parse(input: ParseStream) -> Result<Self> {
 		let mut item_enum = input.parse::<ItemEnum>()?;
-		let attr = extract_pallet_attr(&mut item_enum)?;
+		let attr = extract_pezpallet_attr(&mut item_enum)?;
 		let attr = match attr {
 			Some(attr) => Some(parse2(attr)?),
 			None => None,
@@ -482,7 +482,7 @@ impl TryFrom<PalletTaskAttr<TaskAttrMeta>> for TaskListAttr {
 	}
 }
 
-fn extract_pallet_attr(item_enum: &mut ItemEnum) -> Result<Option<TokenStream2>> {
+fn extract_pezpallet_attr(item_enum: &mut ItemEnum) -> Result<Option<TokenStream2>> {
 	let mut duplicate = None;
 	let mut attr = None;
 	item_enum.attrs = item_enum

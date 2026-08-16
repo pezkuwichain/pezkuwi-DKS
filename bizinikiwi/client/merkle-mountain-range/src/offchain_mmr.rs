@@ -243,7 +243,7 @@ where
 		}
 	}
 
-	fn handle_potential_pallet_reset(&mut self, notification: &FinalityNotification<B>) {
+	fn handle_potential_pezpallet_reset(&mut self, notification: &FinalityNotification<B>) {
 		if let Some(first_mmr_block_num) = self.client.first_mmr_block_num(&notification) {
 			if first_mmr_block_num != self.first_mmr_block {
 				info!(
@@ -264,7 +264,7 @@ where
 	/// Prune leafs and nodes added by stale blocks in offchain db from _fork-aware key_.
 	pub fn canonicalize_and_prune(&mut self, notification: FinalityNotification<B>) {
 		// Update the first MMR block in case of a pezpallet reset.
-		self.handle_potential_pallet_reset(&notification);
+		self.handle_potential_pezpallet_reset(&notification);
 
 		// Move offchain MMR nodes for finalized blocks to canonical keys.
 		for hash in notification.tree_route.iter().chain(std::iter::once(&notification.hash)) {
@@ -324,7 +324,7 @@ mod tests {
 	}
 
 	#[test]
-	fn canonicalize_and_prune_handles_pallet_reset() {
+	fn canonicalize_and_prune_handles_pezpallet_reset() {
 		run_test_with_mmr_gadget(|client| async move {
 			// G -> A1 -> A2 -> A3 -> A4 -> A5
 			//      |           |
@@ -399,7 +399,7 @@ mod tests {
 	}
 
 	#[test]
-	fn canonicalize_catchup_works_correctly_with_pallet_reset() {
+	fn canonicalize_catchup_works_correctly_with_pezpallet_reset() {
 		let mmr_blocks = Arc::new(Mutex::new(vec![]));
 		let mmr_blocks_ref = mmr_blocks.clone();
 		run_test_with_mmr_gadget_pre_post(

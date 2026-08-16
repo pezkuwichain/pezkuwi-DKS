@@ -8,7 +8,7 @@
 //! via the `snowbridge-pezpallet-system-v2`:
 //!
 //! 1. `snowbridge_outbound_queue_primitives::v2::EthereumBlobExporter::deliver`
-//! 2. `snowbridge_pallet_system_v2::Pezpallet::send`
+//! 2. `snowbridge_pezpallet_system_v2::Pezpallet::send`
 //!
 //! The message submission pipeline works like this:
 //! 1. The message is first validated via the implementation for

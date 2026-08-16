@@ -24,7 +24,6 @@ use pezsp_runtime::{
 	DispatchError,
 };
 use scale_info::TypeInfo;
-use Debug;
 
 pub type BoundedInline = crate::BoundedVec<u8, ConstU32<128>>;
 

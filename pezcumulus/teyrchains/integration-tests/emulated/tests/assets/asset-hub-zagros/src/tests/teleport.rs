@@ -17,7 +17,7 @@ use crate::{foreign_balance_on, imports::*};
 
 fn relay_origin_assertions(t: RelayToSystemParaTest) {
 	type RuntimeEvent = <Zagros as Chain>::RuntimeEvent;
-	Zagros::assert_xcm_pallet_attempted_complete(None);
+	Zagros::assert_xcm_pezpallet_attempted_complete(None);
 	assert_expected_events!(
 		Zagros,
 		vec![
@@ -36,7 +36,7 @@ fn penpal_to_ah_foreign_assets_sender_assertions(t: ParaToSystemParaTest) {
 	let expected_asset_id = t.args.asset_id.unwrap();
 	let (_, expected_asset_amount) = non_fee_asset(&t.args.assets, &t.args.fee_asset_id).unwrap();
 
-	PenpalA::assert_xcm_pallet_attempted_complete(None);
+	PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 	assert_expected_events!(
 		PenpalA,
 		vec![
@@ -91,7 +91,7 @@ fn penpal_to_ah_foreign_assets_receiver_assertions(t: ParaToSystemParaTest) {
 
 fn ah_to_penpal_foreign_assets_sender_assertions(t: SystemParaToParaTest) {
 	type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
-	AssetHubZagros::assert_xcm_pallet_attempted_complete(None);
+	AssetHubZagros::assert_xcm_pezpallet_attempted_complete(None);
 	let (expected_foreign_asset_id, expected_foreign_asset_amount) =
 		non_fee_asset(&t.args.assets, &t.args.fee_asset_id).unwrap();
 	assert_expected_events!(
@@ -430,7 +430,7 @@ fn limited_teleport_native_assets_from_asset_hub_to_relay_checking_acc_mint_work
 	let receiver_balance_before = test.receiver.balance;
 
 	fn para_origin_assertions(t: SystemParaToRelayTest) {
-		AssetHubZagros::assert_xcm_pallet_attempted_complete(None);
+		AssetHubZagros::assert_xcm_pezpallet_attempted_complete(None);
 
 		AssetHubZagros::assert_teyrchain_system_ump_sent();
 

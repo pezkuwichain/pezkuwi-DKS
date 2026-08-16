@@ -12,7 +12,7 @@ use snowbridge_beacon_primitives::{
 	merkle_proof::{generalized_index_length, subtree_index},
 	prepare_aggregate_pubkey, prepare_aggregate_signature, verify_merkle_branch, Fork,
 };
-use snowbridge_pallet_ethereum_client_fixtures::*;
+use snowbridge_pezpallet_ethereum_client_fixtures::*;
 use util::*;
 
 #[benchmarks]

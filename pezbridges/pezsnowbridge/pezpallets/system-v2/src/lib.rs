@@ -47,7 +47,7 @@ use snowbridge_outbound_queue_primitives::{
 	v2::{Command, Initializer, Message, SendMessage},
 	OperatingMode, SendError,
 };
-use snowbridge_pallet_system::ForeignToNativeId;
+use snowbridge_pezpallet_system::ForeignToNativeId;
 use xcm::prelude::*;
 use xcm_executor::traits::ConvertLocation;
 
@@ -73,7 +73,7 @@ pub mod pezpallet {
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::config]
-	pub trait Config: pezframe_system::Config + snowbridge_pallet_system::Config {
+	pub trait Config: pezframe_system::Config + snowbridge_pezpallet_system::Config {
 		#[allow(deprecated)]
 		type RuntimeEvent: From<Event<Self>>
 			+ IsType<<Self as pezframe_system::Config>::RuntimeEvent>;
@@ -316,7 +316,7 @@ pub mod pezpallet {
 
 	impl<T: Config> MaybeConvert<TokenId, Location> for Pezpallet<T> {
 		fn maybe_convert(foreign_id: TokenId) -> Option<Location> {
-			snowbridge_pallet_system::Pezpallet::<T>::maybe_convert(foreign_id)
+			snowbridge_pezpallet_system::Pezpallet::<T>::maybe_convert(foreign_id)
 		}
 	}
 }

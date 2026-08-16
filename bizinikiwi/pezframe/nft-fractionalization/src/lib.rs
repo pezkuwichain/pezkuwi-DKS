@@ -233,7 +233,7 @@ pub mod pezpallet {
 				T::Nfts::owner(&nft_collection_id, &nft_id).ok_or(Error::<T>::NftNotFound)?;
 			ensure!(nft_owner == who, Error::<T>::NoPermission);
 
-			let pezpallet_account = Self::get_pallet_account();
+			let pezpallet_account = Self::get_pezpallet_account();
 			let deposit = T::Deposit::get();
 			T::Currency::hold(&HoldReason::Fractionalized.into(), &nft_owner, deposit)?;
 			Self::do_lock_nft(nft_collection_id, nft_id)?;
@@ -323,7 +323,7 @@ pub mod pezpallet {
 		///
 		/// This actually does computation. If you need to keep using it, then make sure you cache
 		/// the value and only call this once.
-		fn get_pallet_account() -> T::AccountId {
+		fn get_pezpallet_account() -> T::AccountId {
 			T::PalletId::get().into_account_truncating()
 		}
 

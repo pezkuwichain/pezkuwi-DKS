@@ -169,7 +169,7 @@ impl CliConfiguration<Self> for RelayChainCli {
 	where
 		F: FnOnce(&mut pezsc_cli::LoggerBuilder),
 	{
-		unreachable!("PolkadotCli is never initialized; qed");
+		unreachable!("PezkuwiCli is never initialized; qed");
 	}
 
 	fn chain_id(&self, is_dev: bool) -> CliResult<String> {

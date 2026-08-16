@@ -335,7 +335,7 @@ impl pezpallet_staking_async_rc_client::Config for Runtime {
 /// Forwards session events to both CollatorSelection (collator management) and
 /// Staking pallet (era management) via local SessionReport generation.
 ///
-/// This is needed because `pallet_staking_async` expects `SessionReport` messages from
+/// This is needed because `pezpallet_staking_async` expects `SessionReport` messages from
 /// the relay chain's `ah_client` pallet, which is not yet active. This wrapper generates
 /// local session reports from AH's own session rotation events.
 pub struct StakingSessionManager;

@@ -22,7 +22,6 @@ use finality_grandpa::voter_set::VoterSet;
 use pezbp_header_pez_chain::{justification::JustificationVerificationContext, AuthoritySet};
 use pezsp_consensus_grandpa::{AuthorityId, AuthorityList, AuthorityWeight, SetId};
 use pezsp_std::prelude::*;
-use Debug;
 
 /// Set of test accounts with friendly names: Alice.
 pub const ALICE: Account = Account(0);

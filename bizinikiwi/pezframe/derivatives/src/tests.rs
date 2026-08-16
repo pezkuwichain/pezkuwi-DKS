@@ -200,9 +200,9 @@ fn local_nfts() {
 			Some(nft_initial_owner),
 		);
 
-		let local_nfts_pallet_index = <PredefinedIdNfts as PalletInfoAccess>::index() as u8;
+		let local_nfts_pezpallet_index = <PredefinedIdNfts as PalletInfoAccess>::index() as u8;
 		let nft_asset: Asset = (
-			(PalletInstance(local_nfts_pallet_index), GeneralIndex(collection_id.into())),
+			(PalletInstance(local_nfts_pezpallet_index), GeneralIndex(collection_id.into())),
 			Index(nft_local_id.into()),
 		)
 			.into();
@@ -306,10 +306,10 @@ fn derivative_nfts() {
 		let nft_owner = nft_beneficiary;
 		let another_nft_beneficiary = nft_beneficiary + 1;
 
-		let local_nfts_pallet_index = <PredefinedIdNfts as PalletInfoAccess>::index() as u8;
+		let local_nfts_pezpallet_index = <PredefinedIdNfts as PalletInfoAccess>::index() as u8;
 		let nft_asset_as_local: Asset = (
 			(
-				PalletInstance(local_nfts_pallet_index),
+				PalletInstance(local_nfts_pezpallet_index),
 				GeneralIndex(derivative_collection_id.into()),
 			),
 			Index(derivative_local_nft_id.into()),
