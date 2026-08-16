@@ -689,6 +689,7 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
 	>;
 
 	type RelayParentOffset = ConstU32<0>;
+	type SchedulingSignatureVerifier = ();
 }
 
 impl teyrchain_info::Config for Runtime {}

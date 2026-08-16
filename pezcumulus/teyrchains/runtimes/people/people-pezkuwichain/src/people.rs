@@ -925,8 +925,9 @@ impl pezframe_support::traits::Randomness<Hash, BlockNumber> for TimestampRandom
 		let mut data = subject.to_vec();
 		data.extend_from_slice(&timestamp.to_le_bytes());
 		data.extend_from_slice(&block_number.to_le_bytes());
-		let hash = pezsp_core::hashing::blake2_256(&data);
-		(Hash::from(hash), block_number)
+		// sp-core stopped re-exporting `hashing`; BlakeTwo256 is the runtime-side path and is
+		// already in scope here, so no new dependency is needed for the same digest.
+		(<BlakeTwo256 as pezsp_runtime::traits::Hash>::hash(&data), block_number)
 	}
 }
 
