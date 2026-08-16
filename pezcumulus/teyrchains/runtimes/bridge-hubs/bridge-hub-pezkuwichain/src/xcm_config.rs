@@ -58,7 +58,7 @@ use xcm_builder::{
 };
 use xcm_executor::{
 	traits::{FeeManager, FeeReason, FeeReason::Export},
-	XcmExecutor,
+	AssetsInHolding, XcmExecutor,
 };
 
 parameter_types! {
@@ -323,7 +323,9 @@ impl<WaivedLocations: Contains<Location>, FeeHandler: HandleFee> FeeManager
 		WaivedLocations::contains(loc)
 	}
 
-	fn handle_fee(fee: Assets, context: Option<&XcmContext>, reason: FeeReason) {
+	// Fees now arrive as holding assets rather than a plain asset list. This wrapper adds no
+	// handling of its own, it only narrows `is_waived`, so the fee is passed straight through.
+	fn handle_fee(fee: AssetsInHolding, context: Option<&XcmContext>, reason: FeeReason) {
 		FeeHandler::handle_fee(fee, context, reason);
 	}
 }
