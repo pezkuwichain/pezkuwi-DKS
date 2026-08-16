@@ -252,7 +252,6 @@ impl xcm_executor::Config for XcmConfig {
 	>;
 	type ResponseHandler = PezkuwiXcm;
 	type AssetTrap = PezkuwiXcm;
-	type AssetClaims = PezkuwiXcm;
 	type SubscriptionService = PezkuwiXcm;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;

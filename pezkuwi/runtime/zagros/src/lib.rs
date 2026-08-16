@@ -1216,11 +1216,7 @@ impl teyrchains_paras_inherent::Config for Runtime {
 	type WeightInfo = weights::pezkuwi_runtime_teyrchains_paras_inherent::WeightInfo<Runtime>;
 }
 
-impl teyrchains_scheduler::Config for Runtime {
-	// If you change this, make sure the `Assignment` type of the new provider is binary compatible,
-	// otherwise provide a migration.
-	type AssignmentProvider = ParaScheduler;
-}
+impl teyrchains_scheduler::Config for Runtime {}
 
 parameter_types! {
 	pub const BrokerId: u32 = BROKER_ID;
@@ -1657,31 +1653,6 @@ pub mod migrations {
 
 	use pezframe_support::traits::LockIdentifier;
 
-	pub struct GetLegacyLeaseImpl;
-	impl coretime::migration::GetLegacyLease<BlockNumber> for GetLegacyLeaseImpl {
-		fn get_teyrchain_lease_in_blocks(para: ParaId) -> Option<BlockNumber> {
-			let now = pezframe_system::Pezpallet::<Runtime>::block_number();
-			let lease = slots::Leases::<Runtime>::get(para);
-			if lease.is_empty() {
-				return None;
-			}
-			// Lease not yet started, ignore:
-			if lease.iter().any(Option::is_none) {
-				return None;
-			}
-			let (index, _) =
-				<slots::Pezpallet<Runtime> as Leaser<BlockNumber>>::lease_period_index(now)?;
-			Some(index.saturating_add(lease.len() as u32).saturating_mul(LeasePeriod::get()))
-		}
-
-		fn get_all_teyrchains_with_leases() -> Vec<ParaId> {
-			slots::Leases::<Runtime>::iter()
-				.filter(|(_, lease)| !lease.is_empty())
-				.map(|(para, _)| para)
-				.collect::<Vec<_>>()
-		}
-	}
-
 	parameter_types! {
 		pub const DemocracyPalletName: &'static str = "Democracy";
 		pub const TechnicalCommitteePalletName: &'static str = "TechnicalCommittee";
@@ -1865,11 +1836,8 @@ pub mod migrations {
 
 	/// Unreleased migrations. Add new ones here:
 	pub type Unreleased = (
-		teyrchains_configuration::migration::v7::MigrateToV7<Runtime>,
 		assigned_slots::migration::v1::MigrateToV1<Runtime>,
-		teyrchains_scheduler::migration::MigrateV1ToV2<Runtime>,
-		teyrchains_configuration::migration::v8::MigrateToV8<Runtime>,
-		teyrchains_configuration::migration::v9::MigrateToV9<Runtime>,
+		teyrchains_scheduler::migration::MigrateV3ToV4<Runtime>,
 		paras_registrar::migration::MigrateToV1<Runtime, ()>,
 		pezpallet_referenda::migration::v1::MigrateV0ToV1<Runtime, ()>,
 		// NOTE: Gov1 migration steps removed - pallets no longer in runtime
@@ -1908,18 +1876,6 @@ pub mod migrations {
 			<Runtime as pezframe_system::Config>::DbWeight,
 		>,
 		pezpallet_grandpa::migrations::MigrateV4ToV5<Runtime>,
-		teyrchains_configuration::migration::v10::MigrateToV10<Runtime>,
-		teyrchains_configuration::migration::v11::MigrateToV11<Runtime>,
-		// This needs to come after the `teyrchains_configuration` above as we are reading the
-		// configuration.
-		coretime::migration::MigrateToCoretime<
-			Runtime,
-			crate::xcm_config::XcmRouter,
-			GetLegacyLeaseImpl,
-			TIMESLICE_PERIOD,
-		>,
-		teyrchains_configuration::migration::v12::MigrateToV12<Runtime>,
-		teyrchains_on_demand::migration::MigrateV0ToV1<Runtime>,
 		// migrates session storage item
 		pezpallet_session::migrations::v1::MigrateV0ToV1<
 			Runtime,
@@ -1928,8 +1884,6 @@ pub mod migrations {
 		// permanent
 		pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 		teyrchains_inclusion::migration::MigrateToV1<Runtime>,
-		teyrchains_shared::migration::MigrateToV1<Runtime>,
-		teyrchains_scheduler::migration::MigrateV2ToV3<Runtime>,
 		// Remove old staking ecosystem pallets (replaced by StakingAhClient + AH staking)
 		pezframe_support::migrations::RemovePallet<
 			StakingPalletName,

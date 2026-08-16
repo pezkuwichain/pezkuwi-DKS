@@ -487,7 +487,6 @@ impl xcm_executor::Config for XcmConfig {
 	type Trader = UsingComponents<IdentityFee<Balance>, RocLocation, AccountId, Balances, ()>;
 	type ResponseHandler = PezkuwiXcm;
 	type AssetTrap = PezkuwiXcm;
-	type AssetClaims = PezkuwiXcm;
 	type SubscriptionService = PezkuwiXcm;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;

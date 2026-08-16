@@ -79,7 +79,7 @@ pezpallet-root-testing = { workspace = true }
 pezpallet-scheduler = { workspace = true }
 pezpallet-session = { workspace = true }
 pezpallet-staking-async-ah-client = { workspace = true }
-pezpallet-staking-async-rc-client = { workspace = true }
+pezpallet-staking-async-rc-client = { workspace = true, features = ["xcm-sender"] }
 pezpallet-staking-runtime-api = { workspace = true }
 pezpallet-state-trie-migration = { workspace = true }
 pezpallet-sudo = { workspace = true }

@@ -302,7 +302,7 @@ parameter_types! {
 	pub const SS58Prefix: u8 = 42;
 }
 
-#[derive_impl(pezframe_system::config_preludes::ParaChainDefaultConfig)]
+#[derive_impl(pezframe_system::config_preludes::TeyrchainDefaultConfig)]
 impl pezframe_system::Config for Runtime {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;

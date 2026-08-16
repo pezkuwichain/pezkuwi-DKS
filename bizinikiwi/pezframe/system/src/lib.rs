@@ -477,12 +477,12 @@ pub mod pezpallet {
 		impl DefaultConfig for RelayChainDefaultConfig {}
 
 		/// Default configurations of this pezpallet in a teyrchain environment.
-		pub struct ParaChainDefaultConfig;
+		pub struct TeyrchainDefaultConfig;
 
 		/// It currently uses the same configuration as `SolochainDefaultConfig`.
 		#[derive_impl(SolochainDefaultConfig as DefaultConfig, no_aggregated_types)]
-		#[pezframe_support::register_default_impl(ParaChainDefaultConfig)]
-		impl DefaultConfig for ParaChainDefaultConfig {}
+		#[pezframe_support::register_default_impl(TeyrchainDefaultConfig)]
+		impl DefaultConfig for TeyrchainDefaultConfig {}
 	}
 
 	/// System configuration trait. Implemented by runtime.
