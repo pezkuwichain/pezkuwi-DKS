@@ -19,8 +19,8 @@
 #![cfg(feature = "full-node")]
 
 use crate::{
-	fake_runtime_api::RuntimeApi, grandpa_support, relay_chain_selection, Error, FullBackend,
-	FullClient, IdentifyVariant, GRANDPA_JUSTIFICATION_PERIOD,
+	fake_runtime_api::RuntimeApi, relay_chain_selection, Error, FullBackend, FullClient,
+	GRANDPA_JUSTIFICATION_PERIOD,
 };
 use pezkuwi_primitives::Block;
 use pezsc_consensus_grandpa::FinalityProofProvider as GrandpaFinalityProofProvider;

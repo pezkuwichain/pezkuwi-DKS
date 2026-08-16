@@ -23,7 +23,7 @@ use partial::PezkuwiPartialComponents;
 pub(crate) use partial::{new_partial, new_partial_basics};
 
 use crate::{
-	grandpa_support, open_database,
+	open_database,
 	overseer::{ExtendedOverseerGenArgs, OverseerGen, OverseerGenArgs},
 	relay_chain_selection::SelectRelayChain,
 	teyrchains_db, workers, Chain, Error, FullBackend, FullClient, IdentifyVariant,
@@ -32,6 +32,7 @@ use crate::{
 use gum::info;
 use pezframe_benchmarking_cli::BIZINIKIWI_REFERENCE_HARDWARE;
 use pezkuwi_availability_recovery::FETCH_CHUNKS_THRESHOLD;
+use pezkuwi_collator_protocol::ReputationConfig;
 use pezkuwi_node_core_approval_voting::Config as ApprovalVotingConfig;
 use pezkuwi_node_core_av_store::Config as AvailabilityConfig;
 use pezkuwi_node_core_candidate_validation::Config as CandidateValidationConfig;
@@ -97,6 +98,10 @@ pub struct NewFullParams<OverseerGenerator: OverseerGen> {
 	pub invulnerable_ah_collators: HashSet<pezkuwi_node_network_protocol::PeerId>,
 	/// Override for `HOLD_OFF_DURATION` constant .
 	pub collator_protocol_hold_off: Option<Duration>,
+	/// Use experimental collator protocol
+	pub experimental_collator_protocol: bool,
+	/// Collator reputation persistence interval. If None, defaults to 600 seconds.
+	pub collator_reputation_persist_interval: Option<Duration>,
 }
 
 /// Completely built pezkuwi node service.
@@ -208,6 +213,8 @@ where
 					keep_finalized_for,
 					invulnerable_ah_collators,
 					collator_protocol_hold_off,
+					experimental_collator_protocol,
+					collator_reputation_persist_interval,
 				},
 			overseer_connector,
 			partial_components:
@@ -415,6 +422,10 @@ where
 				stagnant_check_interval: Default::default(),
 				stagnant_check_mode: chain_selection_subsystem::StagnantCheckMode::PruneOnly,
 			};
+			let reputation_config = ReputationConfig {
+				col_reputation_data: teyrchains_db::REAL_COLUMNS.col_collator_reputation_data,
+				persist_interval: collator_reputation_persist_interval,
+			};
 
 			// Testnets get a higher threshold; we stay conservative on the production network,
 			// where recovering from chunks rather than the full PoV is the safer default.
@@ -450,6 +461,8 @@ where
 				fetch_chunks_threshold,
 				invulnerable_ah_collators,
 				collator_protocol_hold_off,
+				experimental_collator_protocol,
+				reputation_config,
 			})
 		};
 
