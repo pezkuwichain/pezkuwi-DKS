@@ -141,7 +141,6 @@ impl multi_block::Config for Runtime {
 	type Fallback = pezframe_election_provider_support::onchain::OnChainExecution<OnChainConfig>;
 	// Revert back to signed phase if nothing is submitted and queued, so we prolong the election.
 	type AreWeDone = multi_block::RevertToSignedIfNotQueuedOf<Self>;
-	type StalledRoundTimeout = StalledRoundTimeout;
 	type OnRoundRotation = multi_block::CleanRound<Self>;
 	type WeightInfo = weights::pezpallet_election_provider_multi_block::WeightInfo<Runtime>;
 }
@@ -283,7 +282,31 @@ parameter_types! {
 	pub MaxPruningItems: u32 = 100;
 }
 
+parameter_types! {
+	/// Era reward pots, used only when minting is disabled. Kept distinct from `PotId`.
+	pub const StakingPotsPalletId: PalletId = PalletId(*b"py/stkpt");
+	/// Eras a nominator must wait to fast-unbond. Matches upstream.
+	pub const NominatorFastUnbondDuration: pezsp_staking::EraIndex = 2;
+}
+
 impl pezpallet_staking_async::Config for Runtime {
+	// Upstream added a non-minting reward mode where staking pays out of a pre-funded pot
+	// instead of creating tokens. This runtime keeps the legacy minting mode: inflation here
+	// is a function of the staking ratio (see EraPayout above, 8% against a fixed 200M base),
+	// which is exactly the case the pallet documents legacy mode as being kept for. The switch
+	// to non-minting is one-way - once eras carry funded pots, going back would orphan them and
+	// double-mint - so it is not a default to drift into. Revisit with the genesis spec.
+	type DisableMinting = ConstBool<false>;
+	// Only read in non-minting mode, but the pot addresses must still be well-defined and
+	// distinct from the existing PotStake account, so they get their own id rather than
+	// borrowing one.
+	type RewardPots = pezpallet_staking_async::Seed<StakingPotsPalletId>;
+	// Non-minting mode hands expired unclaimed rewards here; in minting mode they are never
+	// created, so there is nothing to route.
+	type UnclaimedRewardHandler = ();
+	type StakerRewardCalculator =
+		pezpallet_staking_async::reward::DefaultStakerRewardCalculator<Runtime>;
+	type NominatorFastUnbondDuration = NominatorFastUnbondDuration;
 	type Filter = ();
 	type OldCurrency = Balances;
 	type Currency = Balances;
@@ -316,7 +339,6 @@ impl pezpallet_staking_async::Config for Runtime {
 	type HistoryDepth = pezframe_support::traits::ConstU32<84>;
 	type MaxControllersInDeprecationBatch = MaxControllersInDeprecationBatch;
 	type EventListeners = (NominationPools, DelegatedStaking);
-	type MaxInvulnerables = pezframe_support::traits::ConstU32<20>;
 	type PlanningEraOffset =
 		pezpallet_staking_async::PlanningEraOffsetOf<Runtime, RelaySessionDuration, ConstU32<5>>;
 	type RcClientInterface = StakingRcClient;

@@ -60,7 +60,7 @@ pezpallet-proxy = { workspace = true }
 pezpallet-session = { workspace = true }
 pezpallet-staking = { workspace = true }
 pezpallet-staking-async = { workspace = true }
-pezpallet-staking-async-rc-client = { workspace = true }
+pezpallet-staking-async-rc-client = { workspace = true, features = ["xcm-sender"] }
 pezpallet-staking-runtime-api = { workspace = true }
 pezpallet-timestamp = { workspace = true }
 pezpallet-token-wrapper = { workspace = true }
