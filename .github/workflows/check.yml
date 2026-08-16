@@ -61,10 +61,12 @@ jobs:
       # like: the hubs, coretime and collectives sat outside this job while the framework moved
       # underneath them. Not live yet is not the same as dead - they stay in.
       #
-      # Deliberately absent: pez-penpal, glutton-zagros, yet-another-teyrchain and
-      # pezkuwichain-teyrchain (test fixtures), pez-kitchensink (upstream demo, on its way out),
-      # pez-revive-dev (development harness), the framework crates' own test runtimes, and the
-      # staking-async reference runtimes we derive from.
+      # Deliberately absent from this job: pez-penpal (the XCM counterparty the integration
+      # tests need) and glutton-zagros (block-capacity load chain, kept for the weights work).
+      # Neither is deployed, and both are reached by the node job through pezkuwi-teyrchain-bin.
+      # Also absent: pez-kitchensink (upstream demo, on its way out), pez-revive-dev (development
+      # harness), the framework crates' own test runtimes, and the staking-async reference
+      # runtimes we derive from.
       - name: Build runtime WASM (check)
         run: |
           cargo check --locked \

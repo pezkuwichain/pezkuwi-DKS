@@ -40,7 +40,6 @@ pezkuwi-omni-node-lib = { features = [
 	"pezkuwichain-native",
 	"zagros-native",
 ], workspace = true }
-pezkuwichain-teyrchain-runtime = { workspace = true }
 teyrchains-common = { workspace = true, default-features = true }
 
 # Bizinikiwi
@@ -57,7 +56,6 @@ xcm = { workspace = true, default-features = true }
 # Pezcumulus
 pezcumulus-client-consensus-aura = { workspace = true }
 pezcumulus-primitives-core = { workspace = true, default-features = true }
-yet-another-teyrchain-runtime = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = { workspace = true }
@@ -82,7 +80,6 @@ runtime-benchmarks = [
 	"pezcumulus-client-consensus-aura/runtime-benchmarks",
 	"pezcumulus-primitives-core/runtime-benchmarks",
 	"pezkuwi-omni-node-lib/runtime-benchmarks",
-	"pezkuwichain-teyrchain-runtime/runtime-benchmarks",
 	"pezsc-chain-spec/runtime-benchmarks",
 	"pezsc-cli/runtime-benchmarks",
 	"pezsc-service/runtime-benchmarks",
@@ -90,7 +87,6 @@ runtime-benchmarks = [
 	"pezsp-keyring/runtime-benchmarks",
 	"teyrchains-common/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
-	"yet-another-teyrchain-runtime/runtime-benchmarks",
 ]
 try-runtime = [
 	"asset-hub-pezkuwichain-runtime/try-runtime",
@@ -107,7 +103,6 @@ try-runtime = [
 	"pezcumulus-client-consensus-aura/try-runtime",
 	"pezcumulus-primitives-core/try-runtime",
 	"pezkuwi-omni-node-lib/try-runtime",
-	"pezkuwichain-teyrchain-runtime/try-runtime",
 	"pezsc-chain-spec/try-runtime",
 	"pezsc-cli/try-runtime",
 	"pezsc-service/try-runtime",
@@ -115,7 +110,6 @@ try-runtime = [
 	"pezsp-keyring/try-runtime",
 	"teyrchains-common/try-runtime",
 	"xcm/try-runtime",
-	"yet-another-teyrchain-runtime/try-runtime",
 ]
 fast-runtime = [
 	"coretime-pezkuwichain-runtime/fast-runtime",

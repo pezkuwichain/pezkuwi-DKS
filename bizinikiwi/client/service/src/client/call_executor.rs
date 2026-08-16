@@ -29,7 +29,10 @@ use pezsp_runtime::{
 	generic::BlockId,
 	traits::{Block as BlockT, HashingFor},
 };
-use pezsp_state_machine::{backend::AsTrieBackend, OverlayedChanges, StateMachine, StorageProof};
+use pezsp_state_machine::{
+	backend::{AsTrieBackend, TryPendingCode},
+	OverlayedChanges, StateMachine, StorageProof,
+};
 use std::{cell::RefCell, sync::Arc};
 
 /// Call executor that executes methods locally, querying all required
@@ -104,10 +107,10 @@ where
 			self.backend.blockchain().expect_block_number_from_id(&BlockId::Hash(at_hash))?;
 		let state = self.backend.state_at(at_hash, context.into())?;
 
-		let state_runtime_code = pezsp_state_machine::backend::BackendRuntimeCode::new(&state);
-		let runtime_code = state_runtime_code
-			.runtime_code()
-			.map_err(pezsp_blockchain::Error::RuntimeCode)?;
+		let state_runtime_code =
+			pezsp_state_machine::backend::BackendRuntimeCode::new(&state, context.into());
+		let runtime_code =
+			state_runtime_code.runtime_code().map_err(pezsp_blockchain::Error::RuntimeCode)?;
 
 		let runtime_code = self.code_provider.maybe_override_code(runtime_code, &state, at_hash)?.0;
 
@@ -145,11 +148,11 @@ where
 		// It is important to extract the runtime code here before we create the proof
 		// recorder to not record it. We also need to fetch the runtime code from `state` to
 		// make sure we use the caching layers.
-		let state_runtime_code = pezsp_state_machine::backend::BackendRuntimeCode::new(&state);
+		let state_runtime_code =
+			pezsp_state_machine::backend::BackendRuntimeCode::new(&state, call_context.into());
 
-		let runtime_code = state_runtime_code
-			.runtime_code()
-			.map_err(pezsp_blockchain::Error::RuntimeCode)?;
+		let runtime_code =
+			state_runtime_code.runtime_code().map_err(pezsp_blockchain::Error::RuntimeCode)?;
 		let runtime_code = self.code_provider.maybe_override_code(runtime_code, &state, at_hash)?.0;
 		let mut extensions = extensions.borrow_mut();
 
@@ -192,13 +195,17 @@ where
 		.map_err(Into::into)
 	}
 
-	fn runtime_version(&self, at_hash: Block::Hash) -> pezsp_blockchain::Result<RuntimeVersion> {
+	fn runtime_version(
+		&self,
+		at_hash: Block::Hash,
+		call_context: CallContext,
+	) -> pezsp_blockchain::Result<RuntimeVersion> {
 		let state = self.backend.state_at(at_hash, backend::TrieCacheContext::Untrusted)?;
-		let state_runtime_code = pezsp_state_machine::backend::BackendRuntimeCode::new(&state);
+		let state_runtime_code =
+			pezsp_state_machine::backend::BackendRuntimeCode::new(&state, call_context.into());
 
-		let runtime_code = state_runtime_code
-			.runtime_code()
-			.map_err(pezsp_blockchain::Error::RuntimeCode)?;
+		let runtime_code =
+			state_runtime_code.runtime_code().map_err(pezsp_blockchain::Error::RuntimeCode)?;
 		self.code_provider
 			.maybe_override_code(runtime_code, &state, at_hash)
 			.map(|(_, v)| v)
@@ -217,10 +224,9 @@ where
 		let trie_backend = state.as_trie_backend();
 
 		let state_runtime_code =
-			pezsp_state_machine::backend::BackendRuntimeCode::new(trie_backend);
-		let runtime_code = state_runtime_code
-			.runtime_code()
-			.map_err(pezsp_blockchain::Error::RuntimeCode)?;
+			pezsp_state_machine::backend::BackendRuntimeCode::new(trie_backend, TryPendingCode::No);
+		let runtime_code =
+			state_runtime_code.runtime_code().map_err(pezsp_blockchain::Error::RuntimeCode)?;
 		let runtime_code = self.code_provider.maybe_override_code(runtime_code, &state, at_hash)?.0;
 
 		pezsp_state_machine::prove_execution_on_trie_backend(
@@ -256,8 +262,12 @@ where
 	E: CodeExecutor + RuntimeVersionOf + Clone + 'static,
 	Block: BlockT,
 {
-	fn runtime_version(&self, at: Block::Hash) -> Result<pezsp_version::RuntimeVersion, String> {
-		CallExecutor::runtime_version(self, at).map_err(|e| e.to_string())
+	fn runtime_version(
+		&self,
+		at: Block::Hash,
+		call_context: CallContext,
+	) -> Result<pezsp_version::RuntimeVersion, String> {
+		CallExecutor::runtime_version(self, at, call_context).map_err(|e| e.to_string())
 	}
 }
 

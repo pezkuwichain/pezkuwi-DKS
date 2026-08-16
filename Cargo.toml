@@ -504,8 +504,6 @@ members = [
 	"pezcumulus/teyrchains/runtimes/people/people-zagros",
 	"pezcumulus/teyrchains/runtimes/test-utils",
 	"pezcumulus/teyrchains/runtimes/testing/penpal",
-	"pezcumulus/teyrchains/runtimes/testing/pezkuwichain-teyrchain",
-	"pezcumulus/teyrchains/runtimes/testing/yet-another-teyrchain",
 	"pezcumulus/xcm/xcm-pez-emulator",
 	"pezcumulus/zombienet/zombienet-sdk",
 	"pezcumulus/zombienet/zombienet-sdk-helpers",
@@ -1263,7 +1261,6 @@ pezkuwichain-emulated-chain = { path = "pezcumulus/teyrchains/integration-tests/
 pezkuwichain-runtime = { path = "pezkuwi/runtime/pezkuwichain", version = "7.0.0" }
 pezkuwichain-runtime-constants = { path = "pezkuwi/runtime/pezkuwichain/constants", version = "7.0.0", default-features = false }
 pezkuwichain-system-emulated-network = { path = "pezcumulus/teyrchains/integration-tests/emulated/networks/pezkuwichain-system", version = "0.0.0" }
-pezkuwichain-teyrchain-runtime = { path = "pezcumulus/teyrchains/runtimes/testing/pezkuwichain-teyrchain", version = "0.6.0" }
 pezkuwichain-zagros-system-emulated-network = { path = "pezcumulus/teyrchains/integration-tests/emulated/networks/pezkuwichain-zagros-system", version = "0.0.0" }
 pezpallet-staking-async = { path = "bizinikiwi/pezframe/staking-async", version = "0.1.0", default-features = false }
 pezpallet-staking-async-ah-client = { path = "bizinikiwi/pezframe/staking-async/ah-client", version = "0.1.0", default-features = false }
@@ -1636,7 +1633,6 @@ xcm-pez-emulator = { path = "pezcumulus/xcm/xcm-pez-emulator", version = "0.5.0"
 xcm-pez-procedural = { path = "pezkuwi/xcm/procedural", version = "7.0.0", default-features = false }
 xcm-pez-simulator = { path = "pezkuwi/xcm/xcm-pez-simulator", version = "7.0.0", default-features = false }
 xcm-runtime-pezapis = { path = "pezkuwi/xcm/xcm-runtime-pezapis", version = "0.1.1", default-features = false }
-yet-another-teyrchain-runtime = { version = "0.6.1", path = "pezcumulus/teyrchains/runtimes/testing/yet-another-teyrchain" }
 zagros-emulated-chain = { version = "0.0.0", path = "pezcumulus/teyrchains/integration-tests/emulated/chains/relays/zagros", default-features = false }
 zagros-runtime = { path = "pezkuwi/runtime/zagros", default-features = false, version = "7.0.0" }
 zagros-runtime-constants = { path = "pezkuwi/runtime/zagros/constants", default-features = false, version = "7.0.0" }

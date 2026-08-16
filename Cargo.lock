@@ -15552,7 +15552,6 @@ dependencies = [
  "pezcumulus-client-consensus-aura",
  "pezcumulus-primitives-core",
  "pezkuwi-omni-node-lib",
- "pezkuwichain-teyrchain-runtime",
  "pezsc-chain-spec",
  "pezsc-cli",
  "pezsc-service",
@@ -15563,7 +15562,6 @@ dependencies = [
  "serde",
  "serde_json",
  "teyrchains-common",
- "yet-another-teyrchain-runtime",
 ]
 
 [[package]]
@@ -15914,58 +15912,6 @@ dependencies = [
  "pez-penpal-emulated-chain",
  "pezbridge-hub-pezkuwichain-emulated-chain",
  "pezkuwichain-emulated-chain",
-]
-
-[[package]]
-name = "pezkuwichain-teyrchain-runtime"
-version = "0.6.0"
-dependencies = [
- "bizinikiwi-wasm-builder",
- "parity-scale-codec",
- "pezcumulus-pezpallet-aura-ext",
- "pezcumulus-pezpallet-teyrchain-system",
- "pezcumulus-pezpallet-weight-reclaim",
- "pezcumulus-pezpallet-xcm",
- "pezcumulus-pezpallet-xcmp-queue",
- "pezcumulus-ping",
- "pezcumulus-primitives-aura",
- "pezcumulus-primitives-core",
- "pezcumulus-primitives-utility",
- "pezframe-benchmarking",
- "pezframe-executive",
- "pezframe-support",
- "pezframe-system",
- "pezframe-system-rpc-runtime-api",
- "pezkuwi-runtime-common",
- "pezkuwi-teyrchain-primitives",
- "pezpallet-assets",
- "pezpallet-aura",
- "pezpallet-balances",
- "pezpallet-message-queue",
- "pezpallet-sudo",
- "pezpallet-timestamp",
- "pezpallet-transaction-payment",
- "pezpallet-transaction-payment-rpc-runtime-api",
- "pezpallet-xcm",
- "pezsp-api",
- "pezsp-block-builder",
- "pezsp-consensus-aura",
- "pezsp-core",
- "pezsp-genesis-builder",
- "pezsp-inherents",
- "pezsp-keyring",
- "pezsp-offchain",
- "pezsp-runtime",
- "pezsp-session",
- "pezsp-transaction-pool",
- "pezsp-version",
- "pezstaging-teyrchain-info",
- "pezstaging-xcm",
- "pezstaging-xcm-builder",
- "pezstaging-xcm-executor",
- "scale-info",
- "serde_json",
- "teyrchains-common",
 ]
 
 [[package]]
@@ -29564,19 +29510,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e17bb3549cc1321ae1296b9cdc2698e2b6cb1992adfa19a8c72e5b7a738f44cd"
 dependencies = [
  "time",
-]
-
-[[package]]
-name = "yet-another-teyrchain-runtime"
-version = "0.6.1"
-dependencies = [
- "bizinikiwi-wasm-builder",
- "parity-scale-codec",
- "pezcumulus-pezpallet-teyrchain-system",
- "pezkuwi-sdk",
- "pezsp-runtime",
- "scale-info",
- "serde_json",
 ]
 
 [[package]]

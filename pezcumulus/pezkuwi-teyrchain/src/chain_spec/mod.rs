@@ -22,7 +22,6 @@ use pezkuwi_omni_node_lib::{
 	},
 };
 use pezsc_chain_spec::{ChainSpec, ChainType};
-use yet_another_teyrchain::yet_another_teyrchain_config;
 
 pub mod asset_hubs;
 pub mod bridge_hubs;
@@ -31,8 +30,6 @@ pub mod coretime;
 pub mod glutton;
 pub mod penpal;
 pub mod people;
-pub mod pezkuwichain_teyrchain;
-pub mod yet_another_teyrchain;
 
 /// Extracts the normalized chain id and teyrchain id from the input chain id.
 /// (H/T to Phala for the idea)
@@ -57,10 +54,6 @@ pub(crate) struct ChainSpecLoader;
 impl LoadSpec for ChainSpecLoader {
 	fn load_spec(&self, id: &str) -> Result<Box<dyn ChainSpec>, String> {
 		Ok(match id {
-			// - Default-like
-			"staging" => {
-				Box::new(pezkuwichain_teyrchain::pezstaging_pezkuwichain_teyrchain_local_config())
-			},
 			"tick" => Box::new(GenericChainSpec::from_json_bytes(
 				&include_bytes!("../../chain-specs/tick.json")[..],
 			)?),
@@ -189,24 +182,6 @@ impl LoadSpec for ChainSpecLoader {
 				))
 			},
 
-			id if id.starts_with("yap-") => {
-				let tok: Vec<String> = id.split('-').map(|s| s.to_owned()).collect();
-				assert!(
-					tok.len() == 4,
-					"Invalid YAP chain id, should be 'yap-<relay>-<chaintype>-<para-id>'"
-				);
-				let relay = if &tok[2] == "live" { tok[1].clone() } else { tok[1..=2].join("-") };
-				let chain_type = match tok[2].as_str() {
-					"local" => ChainType::Local,
-					"dev" => ChainType::Development,
-					"live" => ChainType::Live,
-					_ => unimplemented!("Unknown chain type {}", tok[2]),
-				};
-				let para_id: u32 =
-					tok[3].parse().expect(&format!("Illegal para id '{}' provided", tok[3]));
-
-				Box::new(yet_another_teyrchain_config(relay, chain_type, para_id))
-			},
 
 			// -- People
 			people_like_id if people_like_id.starts_with(people::PeopleRuntimeType::ID_PREFIX) => {
