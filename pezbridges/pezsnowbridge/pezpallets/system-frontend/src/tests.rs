@@ -4,8 +4,8 @@ use crate::{mock::*, DispatchError::Other, Error};
 use pezframe_support::{assert_err, assert_noop, assert_ok};
 use pezframe_system::RawOrigin;
 use pezsp_keyring::sr25519::Keyring;
-use snowbridge_core::{reward::MessageId, AssetMetadata, BasicOperatingMode};
-use snowbridge_test_utils::mock_swap_executor::TRIGGER_SWAP_ERROR_AMOUNT;
+use pezsnowbridge_core::{reward::MessageId, AssetMetadata, BasicOperatingMode};
+use pezsnowbridge_test_utils::mock_swap_executor::TRIGGER_SWAP_ERROR_AMOUNT;
 use xcm::{
 	latest::{Assets, Error as XcmError, Location},
 	opaque::latest::{Asset, AssetId, AssetInstance, Fungibility},

@@ -23,11 +23,11 @@ use pezframe_support::{
 use pezpallet_message_queue::OnQueueChanged;
 use pezsp_core::H256;
 use scale_info::TypeInfo;
-use snowbridge_core::ChannelId;
+use pezsnowbridge_core::ChannelId;
 use xcm::latest::prelude::{Junction, Location};
 
 /// The aggregate origin of an inbound message.
-/// This is specialized for BridgeHub, as the snowbridge-outbound-queue-pezpallet is also using
+/// This is specialized for BridgeHub, as the pezsnowbridge-outbound-queue-pezpallet is also using
 /// the shared MessageQueue pezpallet.
 #[derive(
 	Encode,

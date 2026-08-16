@@ -55,11 +55,11 @@ use xcm::prelude::{
 };
 use xcm_executor::traits::TransactAsset;
 
-use snowbridge_core::{
+use pezsnowbridge_core::{
 	sibling_sovereign_account, BasicOperatingMode, Channel, ChannelId, ParaId, PricingParameters,
 	StaticLookup,
 };
-use snowbridge_inbound_queue_primitives::{
+use pezsnowbridge_inbound_queue_primitives::{
 	v1::{ConvertMessage, ConvertMessageError, VersionedMessage},
 	EventProof, VerificationError, Verifier,
 };
@@ -74,7 +74,7 @@ type BalanceOf<T> = <<T as pezpallet::Config>::Token as Inspect<
 
 pub use pezpallet::*;
 
-pub const LOG_TARGET: &str = "snowbridge-inbound-queue";
+pub const LOG_TARGET: &str = "pezsnowbridge-inbound-queue";
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
@@ -85,7 +85,7 @@ pub mod pezpallet {
 	use pezsp_core::H256;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	use snowbridge_inbound_queue_primitives::EventFixture;
+	use pezsnowbridge_inbound_queue_primitives::EventFixture;
 
 	#[pezpallet::pezpallet]
 	pub struct Pezpallet<T>(_);

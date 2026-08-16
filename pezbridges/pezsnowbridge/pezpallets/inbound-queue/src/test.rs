@@ -7,8 +7,8 @@ use pezframe_support::{assert_noop, assert_ok};
 use pezsp_keyring::Sr25519Keyring as Keyring;
 use pezsp_runtime::DispatchError;
 use pezsp_std::convert::From;
-use snowbridge_core::ChannelId;
-use snowbridge_inbound_queue_primitives::Proof;
+use pezsnowbridge_core::ChannelId;
+use pezsnowbridge_inbound_queue_primitives::Proof;
 
 use crate::Error;
 
@@ -183,7 +183,7 @@ fn test_set_operating_mode() {
 
 		assert_ok!(InboundQueue::set_operating_mode(
 			RuntimeOrigin::root(),
-			snowbridge_core::BasicOperatingMode::Halted
+			pezsnowbridge_core::BasicOperatingMode::Halted
 		));
 
 		assert_noop!(InboundQueue::submit(origin, event), Error::<Test>::Halted);
@@ -196,7 +196,7 @@ fn test_set_operating_mode_root_only() {
 		assert_noop!(
 			InboundQueue::set_operating_mode(
 				RuntimeOrigin::signed(Keyring::Bob.into()),
-				snowbridge_core::BasicOperatingMode::Halted
+				pezsnowbridge_core::BasicOperatingMode::Halted
 			),
 			DispatchError::BadOrigin
 		);

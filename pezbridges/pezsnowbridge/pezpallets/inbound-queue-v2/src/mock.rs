@@ -11,23 +11,23 @@ use pezsp_runtime::{
 	BuildStorage,
 };
 use pezsp_std::{convert::From, default::Default, marker::PhantomData};
-use snowbridge_beacon_primitives::{
+use pezsnowbridge_beacon_primitives::{
 	types::deneb, BeaconHeader, ExecutionProof, VersionedExecutionPayloadHeader,
 };
-use snowbridge_core::{ParaId, TokenId};
-use snowbridge_inbound_queue_primitives::{
+use pezsnowbridge_core::{ParaId, TokenId};
+use pezsnowbridge_inbound_queue_primitives::{
 	v2::{CreateAssetCallInfo, MessageProcessorError, MessageToXcm, XcmMessageProcessor},
 	Log, Proof, VerificationError,
 };
 use xcm::{opaque::latest::ZAGROS_GENESIS_HASH, prelude::*};
 type Block = pezframe_system::mocking::MockBlock<Test>;
-use snowbridge_test_utils::mock_rewards::{BridgeReward, MockRewardLedger};
-pub use snowbridge_test_utils::mock_xcm::{MockXcmExecutor, MockXcmSender};
+use pezsnowbridge_test_utils::mock_rewards::{BridgeReward, MockRewardLedger};
+pub use pezsnowbridge_test_utils::mock_xcm::{MockXcmExecutor, MockXcmSender};
 
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_inbound_queue_primitives::EventFixture;
+use pezsnowbridge_inbound_queue_primitives::EventFixture;
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_pezpallet_inbound_queue_v2_fixtures::register_token::make_register_token_message;
+use pezsnowbridge_pezpallet_inbound_queue_v2_fixtures::register_token::make_register_token_message;
 
 pezframe_support::construct_runtime!(
 	pub enum Test
@@ -286,7 +286,7 @@ pub mod exploit {
 
 	use hex_literal::hex;
 	use pezframe_support::traits::ConstU32;
-	use snowbridge_beacon_primitives::{Fork, ForkVersions};
+	use pezsnowbridge_beacon_primitives::{Fork, ForkVersions};
 
 	type Block = pezframe_system::mocking::MockBlock<ExploitTest>;
 
@@ -295,7 +295,7 @@ pub mod exploit {
 		{
 			System: pezframe_system::{Pezpallet, Call, Storage, Event<T>},
 			Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
-			EthereumBeaconClient: snowbridge_pezpallet_ethereum_client::{Pezpallet, Call, Storage, Event<T>},
+			EthereumBeaconClient: pezsnowbridge_pezpallet_ethereum_client::{Pezpallet, Call, Storage, Event<T>},
 			InboundQueue: inbound_queue_v2::{Pezpallet, Call, Storage, Event<T>},
 		}
 	);
@@ -327,7 +327,7 @@ pub mod exploit {
 		};
 	}
 
-	impl snowbridge_pezpallet_ethereum_client::Config for ExploitTest {
+	impl pezsnowbridge_pezpallet_ethereum_client::Config for ExploitTest {
 		type RuntimeEvent = RuntimeEvent;
 		type ForkVersions = ChainForkVersions;
 		type FreeHeadersInterval = ConstU32<32>;

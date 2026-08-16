@@ -5,17 +5,17 @@ pub use crate::config::{
 	SYNC_COMMITTEE_SIZE as SC_SIZE,
 };
 use pezframe_support::storage::types::OptionQuery;
-use snowbridge_core::RingBufferMapImpl;
+use pezsnowbridge_core::RingBufferMapImpl;
 
 // Specialize types based on configured sync committee size
-pub type SyncCommittee = snowbridge_beacon_primitives::SyncCommittee<SC_SIZE>;
-pub type SyncCommitteePrepared = snowbridge_beacon_primitives::SyncCommitteePrepared<SC_SIZE>;
-pub type SyncAggregate = snowbridge_beacon_primitives::SyncAggregate<SC_SIZE, SC_BITS_SIZE>;
-pub type CheckpointUpdate = snowbridge_beacon_primitives::CheckpointUpdate<SC_SIZE>;
-pub type Update = snowbridge_beacon_primitives::Update<SC_SIZE, SC_BITS_SIZE>;
-pub type NextSyncCommitteeUpdate = snowbridge_beacon_primitives::NextSyncCommitteeUpdate<SC_SIZE>;
+pub type SyncCommittee = pezsnowbridge_beacon_primitives::SyncCommittee<SC_SIZE>;
+pub type SyncCommitteePrepared = pezsnowbridge_beacon_primitives::SyncCommitteePrepared<SC_SIZE>;
+pub type SyncAggregate = pezsnowbridge_beacon_primitives::SyncAggregate<SC_SIZE, SC_BITS_SIZE>;
+pub type CheckpointUpdate = pezsnowbridge_beacon_primitives::CheckpointUpdate<SC_SIZE>;
+pub type Update = pezsnowbridge_beacon_primitives::Update<SC_SIZE, SC_BITS_SIZE>;
+pub type NextSyncCommitteeUpdate = pezsnowbridge_beacon_primitives::NextSyncCommitteeUpdate<SC_SIZE>;
 
-pub use snowbridge_beacon_primitives::{AncestryProof, ExecutionProof};
+pub use pezsnowbridge_beacon_primitives::{AncestryProof, ExecutionProof};
 
 /// FinalizedState ring buffer implementation
 pub type FinalizedBeaconStateBuffer<T> = RingBufferMapImpl<

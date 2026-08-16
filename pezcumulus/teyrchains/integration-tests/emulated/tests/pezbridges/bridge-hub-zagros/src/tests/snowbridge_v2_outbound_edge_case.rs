@@ -16,7 +16,7 @@
 use crate::{
 	imports::*,
 	tests::{
-		snowbridge_common::*,
+		pezsnowbridge_common::*,
 		usdt_at_ah_zagros,
 	},
 };

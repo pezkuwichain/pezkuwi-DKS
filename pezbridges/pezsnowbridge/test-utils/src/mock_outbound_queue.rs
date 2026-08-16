@@ -3,8 +3,8 @@
 
 use crate::FAILING_NONCE;
 use pezsp_core::H256;
-use snowbridge_core::reward::{AddTip, AddTipError};
-use snowbridge_outbound_queue_primitives::{
+use pezsnowbridge_core::reward::{AddTip, AddTipError};
+use pezsnowbridge_outbound_queue_primitives::{
 	v1::{Fee, Message as MessageV1, SendMessage as SendMessageV1},
 	v2::{Message, SendMessage},
 	SendMessageFeeProvider,
@@ -16,11 +16,11 @@ impl SendMessage for MockOkOutboundQueue {
 
 	fn validate(
 		_: &Message,
-	) -> Result<Self::Ticket, snowbridge_outbound_queue_primitives::SendError> {
+	) -> Result<Self::Ticket, pezsnowbridge_outbound_queue_primitives::SendError> {
 		Ok(())
 	}
 
-	fn deliver(_: Self::Ticket) -> Result<H256, snowbridge_outbound_queue_primitives::SendError> {
+	fn deliver(_: Self::Ticket) -> Result<H256, pezsnowbridge_outbound_queue_primitives::SendError> {
 		Ok(H256::zero())
 	}
 }
@@ -50,12 +50,12 @@ impl SendMessageV1 for MockOkOutboundQueueV1 {
 		_: &MessageV1,
 	) -> Result<
 		(Self::Ticket, Fee<<Self as SendMessageFeeProvider>::Balance>),
-		snowbridge_outbound_queue_primitives::SendError,
+		pezsnowbridge_outbound_queue_primitives::SendError,
 	> {
 		Ok(((), Fee::from((0, 0))))
 	}
 
-	fn deliver(_: Self::Ticket) -> Result<H256, snowbridge_outbound_queue_primitives::SendError> {
+	fn deliver(_: Self::Ticket) -> Result<H256, pezsnowbridge_outbound_queue_primitives::SendError> {
 		Ok(H256::zero())
 	}
 }

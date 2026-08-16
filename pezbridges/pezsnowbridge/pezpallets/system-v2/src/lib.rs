@@ -36,25 +36,25 @@ use pezsp_core::{H160, H256};
 use pezsp_io::hashing::blake2_256;
 use pezsp_runtime::traits::MaybeConvert;
 use pezsp_std::prelude::*;
-use snowbridge_core::{
+use pezsnowbridge_core::{
 	reward::{
 		AddTip, MessageId,
 		MessageId::{Inbound, Outbound},
 	},
 	AgentIdOf as LocationHashOf, AssetMetadata, TokenId, TokenIdOf,
 };
-use snowbridge_outbound_queue_primitives::{
+use pezsnowbridge_outbound_queue_primitives::{
 	v2::{Command, Initializer, Message, SendMessage},
 	OperatingMode, SendError,
 };
-use snowbridge_pezpallet_system::ForeignToNativeId;
+use pezsnowbridge_pezpallet_system::ForeignToNativeId;
 use xcm::prelude::*;
 use xcm_executor::traits::ConvertLocation;
 
 #[cfg(feature = "runtime-benchmarks")]
 use pezframe_support::traits::OriginTrait;
 
-pub const LOG_TARGET: &str = "snowbridge-system-v2";
+pub const LOG_TARGET: &str = "pezsnowbridge-system-v2";
 
 pub type AccountIdOf<T> = <T as pezframe_system::Config>::AccountId;
 #[cfg(feature = "runtime-benchmarks")]
@@ -73,7 +73,7 @@ pub mod pezpallet {
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::config]
-	pub trait Config: pezframe_system::Config + snowbridge_pezpallet_system::Config {
+	pub trait Config: pezframe_system::Config + pezsnowbridge_pezpallet_system::Config {
 		#[allow(deprecated)]
 		type RuntimeEvent: From<Event<Self>>
 			+ IsType<<Self as pezframe_system::Config>::RuntimeEvent>;
@@ -316,7 +316,7 @@ pub mod pezpallet {
 
 	impl<T: Config> MaybeConvert<TokenId, Location> for Pezpallet<T> {
 		fn maybe_convert(foreign_id: TokenId) -> Option<Location> {
-			snowbridge_pezpallet_system::Pezpallet::<T>::maybe_convert(foreign_id)
+			pezsnowbridge_pezpallet_system::Pezpallet::<T>::maybe_convert(foreign_id)
 		}
 	}
 }

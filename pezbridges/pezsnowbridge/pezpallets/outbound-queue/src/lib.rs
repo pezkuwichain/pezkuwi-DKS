@@ -5,16 +5,16 @@
 //! # Overview
 //!
 //! Messages come either from sibling teyrchains via XCM, or BridgeHub itself
-//! via the `snowbridge-pezpallet-system`:
+//! via the `pezsnowbridge-pezpallet-system`:
 //!
-//! 1. `snowbridge_outbound_queue_primitives::v1::EthereumBlobExporter::deliver`
-//! 2. `snowbridge_pezpallet_system::Pezpallet::send`
+//! 1. `pezsnowbridge_outbound_queue_primitives::v1::EthereumBlobExporter::deliver`
+//! 2. `pezsnowbridge_pezpallet_system::Pezpallet::send`
 //!
 //! The message submission pipeline works like this:
 //! 1. The message is first validated via the implementation for
-//!    [`snowbridge_outbound_queue_primitives::v1::SendMessage::validate`]
+//!    [`pezsnowbridge_outbound_queue_primitives::v1::SendMessage::validate`]
 //! 2. The message is then enqueued for later processing via the implementation for
-//!    [`snowbridge_outbound_queue_primitives::v1::SendMessage::deliver`]
+//!    [`pezsnowbridge_outbound_queue_primitives::v1::SendMessage::deliver`]
 //! 3. The underlying message queue is implemented by [`Config::MessageQueue`]
 //! 4. The message queue delivers messages back to this pezpallet via the implementation for
 //!    [`pezframe_support::traits::ProcessMessage::process_message`]
@@ -116,9 +116,9 @@ use pezsp_runtime::{
 	DigestItem, Saturating,
 };
 use pezsp_std::prelude::*;
-use snowbridge_core::{digest_item::SnowbridgeDigestItem, BasicOperatingMode, ChannelId};
-use snowbridge_merkle_tree::merkle_root;
-use snowbridge_outbound_queue_primitives::v1::{
+use pezsnowbridge_core::{digest_item::SnowbridgeDigestItem, BasicOperatingMode, ChannelId};
+use pezsnowbridge_merkle_tree::merkle_root;
+use pezsnowbridge_outbound_queue_primitives::v1::{
 	Fee, GasMeter, QueuedMessage, VersionedQueuedMessage, ETHER_DECIMALS,
 };
 pub use types::{CommittedMessage, ProcessMessageOriginOf};
@@ -132,7 +132,7 @@ pub mod pezpallet {
 	use pezframe_support::pezpallet_prelude::*;
 	use pezframe_system::pezpallet_prelude::*;
 	use pezsp_arithmetic::FixedU128;
-	use snowbridge_core::PricingParameters;
+	use pezsnowbridge_core::PricingParameters;
 
 	#[pezpallet::pezpallet]
 	pub struct Pezpallet<T>(_);

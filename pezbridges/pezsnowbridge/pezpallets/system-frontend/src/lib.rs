@@ -27,7 +27,7 @@ use pezframe_support::{pezpallet_prelude::*, traits::EnsureOriginWithArg};
 use pezframe_system::pezpallet_prelude::*;
 use pezpallet_asset_conversion::Swap;
 use pezsp_std::prelude::*;
-use snowbridge_core::{
+use pezsnowbridge_core::{
 	burn_for_teleport, operating_mode::ExportPausedQuery, reward::MessageId, AssetMetadata,
 	BasicOperatingMode as OperatingMode,
 };
@@ -43,9 +43,9 @@ use pezframe_support::traits::OriginTrait;
 pub use pezpallet::*;
 pub type AccountIdOf<T> = <T as pezframe_system::Config>::AccountId;
 
-pub const LOG_TARGET: &str = "snowbridge-system-frontend";
+pub const LOG_TARGET: &str = "pezsnowbridge-system-frontend";
 
-/// Call indices within BridgeHub runtime for dispatchables within `snowbridge-pezpallet-system-v2`
+/// Call indices within BridgeHub runtime for dispatchables within `pezsnowbridge-pezpallet-system-v2`
 #[allow(clippy::large_enum_variant)]
 #[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo)]
 pub enum BridgeHubRuntime<T: pezframe_system::Config> {
@@ -53,7 +53,7 @@ pub enum BridgeHubRuntime<T: pezframe_system::Config> {
 	EthereumSystem(EthereumSystemCall<T>),
 }
 
-/// Call indices for dispatchables within `snowbridge-pezpallet-system-v2`
+/// Call indices for dispatchables within `pezsnowbridge-pezpallet-system-v2`
 #[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo)]
 pub enum EthereumSystemCall<T: pezframe_system::Config> {
 	#[codec(index = 2)]

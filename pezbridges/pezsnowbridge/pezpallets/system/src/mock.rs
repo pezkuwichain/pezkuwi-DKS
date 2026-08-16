@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
-use crate as snowbridge_system;
+use crate as pezsnowbridge_system;
 use pezframe_support::{
 	derive_impl, parameter_types,
 	traits::{tokens::fungible::Mutate, ConstU128, ConstU8},
@@ -14,11 +14,11 @@ use pezsp_runtime::{
 	traits::{AccountIdConversion, BlakeTwo256, IdentityLookup, Keccak256},
 	AccountId32, BuildStorage, FixedU128,
 };
-use snowbridge_core::{
+use pezsnowbridge_core::{
 	gwei, meth, sibling_sovereign_account, AgentId, AllowSiblingsOnly, ParaId, PricingParameters,
 	Rewards,
 };
-use snowbridge_outbound_queue_primitives::v1::ConstantGasMeter;
+use pezsnowbridge_outbound_queue_primitives::v1::ConstantGasMeter;
 use xcm::prelude::*;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -92,8 +92,8 @@ pezframe_support::construct_runtime!(
 		System: pezframe_system,
 		Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
 		XcmOrigin: pezpallet_xcm_origin::{Pezpallet, Origin},
-		OutboundQueue: snowbridge_pezpallet_outbound_queue::{Pezpallet, Call, Storage, Event<T>},
-		EthereumSystem: snowbridge_system,
+		OutboundQueue: pezsnowbridge_pezpallet_outbound_queue::{Pezpallet, Call, Storage, Event<T>},
+		EthereumSystem: pezsnowbridge_system,
 		MessageQueue: pezpallet_message_queue::{Pezpallet, Call, Storage, Event<T>}
 	}
 );
@@ -151,7 +151,7 @@ parameter_types! {
 	pub const OwnParaId: ParaId = ParaId::new(1013);
 }
 
-impl snowbridge_pezpallet_outbound_queue::Config for Test {
+impl pezsnowbridge_pezpallet_outbound_queue::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Hashing = Keccak256;
 	type MessageQueue = MessageQueue;
@@ -206,7 +206,7 @@ impl crate::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type OutboundQueue = OutboundQueue;
 	type SiblingOrigin = pezpallet_xcm_origin::EnsureXcm<AllowSiblingsOnly>;
-	type AgentIdOf = snowbridge_core::AgentIdOf;
+	type AgentIdOf = pezsnowbridge_core::AgentIdOf;
 	type TreasuryAccount = TreasuryAccount;
 	type Token = Balances;
 	type DefaultPricingParameters = Parameters;
@@ -249,6 +249,6 @@ pub fn new_test_ext(genesis_build: bool) -> pezsp_io::TestExternalities {
 // Test helpers
 
 pub fn make_agent_id(location: Location) -> AgentId {
-	<Test as snowbridge_system::Config>::AgentIdOf::convert_location(&location)
+	<Test as pezsnowbridge_system::Config>::AgentIdOf::convert_location(&location)
 		.expect("convert location")
 }

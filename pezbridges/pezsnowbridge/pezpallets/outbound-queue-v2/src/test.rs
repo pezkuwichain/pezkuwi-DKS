@@ -15,9 +15,9 @@ use pezframe_support::{
 };
 use pezsp_core::{hexdisplay::HexDisplay, H256};
 use pezsp_runtime::AccountId32;
-use snowbridge_beacon_primitives::{types::deneb, VersionedExecutionPayloadHeader};
-use snowbridge_core::{digest_item::SnowbridgeDigestItem, ChannelId, ParaId};
-use snowbridge_outbound_queue_primitives::{
+use pezsnowbridge_beacon_primitives::{types::deneb, VersionedExecutionPayloadHeader};
+use pezsnowbridge_core::{digest_item::SnowbridgeDigestItem, ChannelId, ParaId};
+use pezsnowbridge_outbound_queue_primitives::{
 	v2::{abi::OutboundMessageWrapper, Command, Initializer, SendMessage},
 	EventProof, Proof, SendError, VerificationError,
 };
@@ -333,7 +333,7 @@ fn test_add_tip_fails_no_pending_order() {
 
 fn mock_event_proof() -> EventProof {
 	EventProof {
-		event_log: snowbridge_outbound_queue_primitives::Log {
+		event_log: pezsnowbridge_outbound_queue_primitives::Log {
 			address: Default::default(),
 			topics: vec![],
 			data: vec![],
@@ -341,7 +341,7 @@ fn mock_event_proof() -> EventProof {
 		},
 		proof: Proof {
 			receipt_proof: Default::default(),
-			execution_proof: snowbridge_beacon_primitives::ExecutionProof {
+			execution_proof: pezsnowbridge_beacon_primitives::ExecutionProof {
 				header: Default::default(),
 				ancestry_proof: None,
 				execution_header: VersionedExecutionPayloadHeader::Deneb(
@@ -375,7 +375,7 @@ fn mock_event_proof() -> EventProof {
 // Nonce (indexed topic) is 0, matching a `PendingOrder` inserted with nonce=0 in tests.
 fn mock_valid_event_proof() -> EventProof {
 	let mut event = mock_event_proof();
-	event.event_log = snowbridge_outbound_queue_primitives::Log {
+	event.event_log = pezsnowbridge_outbound_queue_primitives::Log {
 		address: hex!("b1185ede04202fe62d38f5db72f71e38ff3e8305").into(),
 		topics: vec![
 			hex!("8856ab63954e6c2938803a4654fb704c8779757e7bfdbe94a578e341ec637a95").into(),

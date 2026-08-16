@@ -8,8 +8,8 @@ use crate::Pezpallet as SnowbridgeControl;
 use pezframe_benchmarking::v2::*;
 use pezframe_system::RawOrigin;
 use pezsp_runtime::SaturatedConversion;
-use snowbridge_core::eth;
-use snowbridge_outbound_queue_primitives::OperatingMode;
+use pezsnowbridge_core::eth;
+use pezsnowbridge_outbound_queue_primitives::OperatingMode;
 use xcm::prelude::*;
 
 #[benchmarks]

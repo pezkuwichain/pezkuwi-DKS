@@ -7,9 +7,9 @@ use pezframe_support::{
 };
 use pezsp_core::H256;
 
-use crate as snowbridge_system_v2;
+use crate as pezsnowbridge_system_v2;
 use pezframe_system::EnsureRootWithSuccess;
-use snowbridge_core::{
+use pezsnowbridge_core::{
 	gwei, meth, sibling_sovereign_account, AllowSiblingsOnly, ParaId, PricingParameters, Rewards,
 };
 
@@ -17,7 +17,7 @@ use pezsp_runtime::{
 	traits::{AccountIdConversion, BlakeTwo256, IdentityLookup},
 	AccountId32, BuildStorage, FixedU128,
 };
-pub use snowbridge_test_utils::{
+pub use pezsnowbridge_test_utils::{
 	mock_inbound_queue::*, mock_origin::pezpallet_xcm_origin, mock_outbound_queue::*,
 };
 use xcm::{opaque::latest::ZAGROS_GENESIS_HASH, prelude::*};
@@ -37,8 +37,8 @@ pezframe_support::construct_runtime!(
 		System: pezframe_system,
 		Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
 		XcmOrigin: pezpallet_xcm_origin::{Pezpallet, Origin},
-		EthereumSystem: snowbridge_pezpallet_system,
-		EthereumSystemV2: snowbridge_system_v2,
+		EthereumSystem: pezsnowbridge_pezpallet_system,
+		EthereumSystemV2: pezsnowbridge_system_v2,
 	}
 );
 
@@ -126,17 +126,17 @@ parameter_types! {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl snowbridge_pezpallet_system::BenchmarkHelper<RuntimeOrigin> for () {
+impl pezsnowbridge_pezpallet_system::BenchmarkHelper<RuntimeOrigin> for () {
 	fn make_xcm_origin(location: Location) -> RuntimeOrigin {
 		RuntimeOrigin::from(pezpallet_xcm_origin::Origin(location))
 	}
 }
 
-impl snowbridge_pezpallet_system::Config for Test {
+impl pezsnowbridge_pezpallet_system::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type OutboundQueue = MockOkOutboundQueueV1;
 	type SiblingOrigin = pezpallet_xcm_origin::EnsureXcm<AllowSiblingsOnly>;
-	type AgentIdOf = snowbridge_core::AgentIdOf;
+	type AgentIdOf = pezsnowbridge_core::AgentIdOf;
 	type Token = Balances;
 	type TreasuryAccount = TreasuryAccount;
 	type DefaultPricingParameters = Parameters;

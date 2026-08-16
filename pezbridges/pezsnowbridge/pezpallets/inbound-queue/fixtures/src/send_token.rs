@@ -6,10 +6,10 @@
 use hex_literal::hex;
 use pezsp_core::U256;
 use pezsp_std::vec;
-use snowbridge_beacon_primitives::{
+use pezsnowbridge_beacon_primitives::{
 	types::deneb, AncestryProof, BeaconHeader, ExecutionProof, VersionedExecutionPayloadHeader,
 };
-use snowbridge_inbound_queue_primitives::{EventFixture, EventProof, Log, Proof};
+use pezsnowbridge_inbound_queue_primitives::{EventFixture, EventProof, Log, Proof};
 
 pub fn make_send_token_message() -> EventFixture {
 	EventFixture {

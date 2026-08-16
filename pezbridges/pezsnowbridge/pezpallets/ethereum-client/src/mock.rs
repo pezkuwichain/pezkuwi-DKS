@@ -5,8 +5,8 @@ use crate::config;
 use pezframe_support::{derive_impl, dispatch::DispatchResult, parameter_types};
 use pezpallet_timestamp;
 use pezsp_std::default::Default;
-use snowbridge_beacon_primitives::{Fork, ForkVersions};
-use snowbridge_verification_primitives::{Log, Proof};
+use pezsnowbridge_beacon_primitives::{Fork, ForkVersions};
+use pezsnowbridge_verification_primitives::{Log, Proof};
 use std::{fs::File, path::PathBuf};
 
 type Block = pezframe_system::mocking::MockBlock<Test>;
@@ -23,37 +23,37 @@ where
 	serde_json::from_reader(File::open(filepath).unwrap())
 }
 
-pub fn load_execution_proof_fixture() -> snowbridge_beacon_primitives::ExecutionProof {
+pub fn load_execution_proof_fixture() -> pezsnowbridge_beacon_primitives::ExecutionProof {
 	load_fixture("execution-proof.json".to_string()).unwrap()
 }
 
 pub fn load_checkpoint_update_fixture(
-) -> snowbridge_beacon_primitives::CheckpointUpdate<{ config::SYNC_COMMITTEE_SIZE }> {
+) -> pezsnowbridge_beacon_primitives::CheckpointUpdate<{ config::SYNC_COMMITTEE_SIZE }> {
 	load_fixture("initial-checkpoint.json".to_string()).unwrap()
 }
 
-pub fn load_sync_committee_update_fixture() -> snowbridge_beacon_primitives::Update<
+pub fn load_sync_committee_update_fixture() -> pezsnowbridge_beacon_primitives::Update<
 	{ config::SYNC_COMMITTEE_SIZE },
 	{ config::SYNC_COMMITTEE_BITS_SIZE },
 > {
 	load_fixture("sync-committee-update.json".to_string()).unwrap()
 }
 
-pub fn load_finalized_header_update_fixture() -> snowbridge_beacon_primitives::Update<
+pub fn load_finalized_header_update_fixture() -> pezsnowbridge_beacon_primitives::Update<
 	{ config::SYNC_COMMITTEE_SIZE },
 	{ config::SYNC_COMMITTEE_BITS_SIZE },
 > {
 	load_fixture("finalized-header-update.json".to_string()).unwrap()
 }
 
-pub fn load_next_sync_committee_update_fixture() -> snowbridge_beacon_primitives::Update<
+pub fn load_next_sync_committee_update_fixture() -> pezsnowbridge_beacon_primitives::Update<
 	{ config::SYNC_COMMITTEE_SIZE },
 	{ config::SYNC_COMMITTEE_BITS_SIZE },
 > {
 	load_fixture("next-sync-committee-update.json".to_string()).unwrap()
 }
 
-pub fn load_next_finalized_header_update_fixture() -> snowbridge_beacon_primitives::Update<
+pub fn load_next_finalized_header_update_fixture() -> pezsnowbridge_beacon_primitives::Update<
 	{ config::SYNC_COMMITTEE_SIZE },
 	{ config::SYNC_COMMITTEE_BITS_SIZE },
 > {
@@ -61,7 +61,7 @@ pub fn load_next_finalized_header_update_fixture() -> snowbridge_beacon_primitiv
 }
 
 pub fn load_sync_committee_update_period_0() -> Box<
-	snowbridge_beacon_primitives::Update<
+	pezsnowbridge_beacon_primitives::Update<
 		{ config::SYNC_COMMITTEE_SIZE },
 		{ config::SYNC_COMMITTEE_BITS_SIZE },
 	>,
@@ -70,7 +70,7 @@ pub fn load_sync_committee_update_period_0() -> Box<
 }
 
 pub fn load_sync_committee_update_period_0_older_fixture() -> Box<
-	snowbridge_beacon_primitives::Update<
+	pezsnowbridge_beacon_primitives::Update<
 		{ config::SYNC_COMMITTEE_SIZE },
 		{ config::SYNC_COMMITTEE_BITS_SIZE },
 	>,
@@ -79,7 +79,7 @@ pub fn load_sync_committee_update_period_0_older_fixture() -> Box<
 }
 
 pub fn load_sync_committee_update_period_0_newer_fixture() -> Box<
-	snowbridge_beacon_primitives::Update<
+	pezsnowbridge_beacon_primitives::Update<
 		{ config::SYNC_COMMITTEE_SIZE },
 		{ config::SYNC_COMMITTEE_BITS_SIZE },
 	>,
@@ -88,7 +88,7 @@ pub fn load_sync_committee_update_period_0_newer_fixture() -> Box<
 }
 
 pub fn get_message_verification_payload() -> (Log, Proof) {
-	let inbound_fixture = snowbridge_pezpallet_ethereum_client_fixtures::make_inbound_fixture();
+	let inbound_fixture = pezsnowbridge_pezpallet_ethereum_client_fixtures::make_inbound_fixture();
 	(inbound_fixture.event.event_log, inbound_fixture.event.proof)
 }
 
@@ -162,7 +162,7 @@ pub fn new_tester() -> pezsp_io::TestExternalities {
 }
 
 pub fn initialize_storage() -> DispatchResult {
-	let inbound_fixture = snowbridge_pezpallet_ethereum_client_fixtures::make_inbound_fixture();
+	let inbound_fixture = pezsnowbridge_pezpallet_ethereum_client_fixtures::make_inbound_fixture();
 	EthereumBeaconClient::store_finalized_header(
 		inbound_fixture.finalized_header,
 		inbound_fixture.block_roots_root,

@@ -82,7 +82,7 @@ pub fn register_relay_token_on_bh() {
 }
 
 pub fn register_assets_on_penpal() {
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 	PenpalB::execute_with(|| {
 		assert_ok!(<PenpalB as PenpalBPallet>::ForeignAssets::force_create(
 			<PenpalB as Chain>::RuntimeOrigin::root(),
@@ -102,7 +102,7 @@ pub fn register_assets_on_penpal() {
 }
 
 pub fn register_foreign_asset(token_location: Location) {
-	let bridge_owner = snowbridge_sovereign();
+	let bridge_owner = pezsnowbridge_sovereign();
 	AssetHubZagros::execute_with(|| {
 		type RuntimeOrigin = <AssetHubZagros as Chain>::RuntimeOrigin;
 
@@ -317,14 +317,14 @@ pub fn fund_on_ah() {
 		));
 	});
 
-	AssetHubZagros::fund_accounts(vec![(snowbridge_sovereign(), INITIAL_FUND)]);
+	AssetHubZagros::fund_accounts(vec![(pezsnowbridge_sovereign(), INITIAL_FUND)]);
 	AssetHubZagros::fund_accounts(vec![(penpal_sovereign.clone(), INITIAL_FUND)]);
 	AssetHubZagros::fund_accounts(vec![(penpal_user_sovereign.clone(), INITIAL_FUND)]);
 }
 
 pub fn create_pools_on_ah() {
 	// We create a pool between ZGR and WETH in AssetHub to support paying for fees with WETH.
-	let ethereum_sovereign = snowbridge_sovereign();
+	let ethereum_sovereign = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 	PenpalB::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 	create_pool_with_native_on!(
@@ -347,14 +347,14 @@ pub fn create_pools_on_ah() {
 
 pub(crate) fn set_up_eth_and_hez_pool() {
 	// We create a pool between ZGR and WETH in AssetHub to support paying for fees with WETH.
-	let ethereum_sovereign = snowbridge_sovereign();
+	let ethereum_sovereign = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 	PenpalB::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 	create_pool_with_native_on!(AssetHubZagros, eth_location(), true, ethereum_sovereign.clone());
 }
 
 pub(crate) fn set_up_eth_and_hez_pool_on_penpal() {
-	let ethereum_sovereign = snowbridge_sovereign();
+	let ethereum_sovereign = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 	PenpalB::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 	create_pool_with_native_on!(PenpalB, eth_location(), true, ethereum_sovereign.clone());
@@ -396,7 +396,7 @@ pub fn register_pal_on_bh() {
 	});
 }
 
-pub fn snowbridge_sovereign() -> pezsp_runtime::AccountId32 {
+pub fn pezsnowbridge_sovereign() -> pezsp_runtime::AccountId32 {
 	use asset_hub_zagros_runtime::xcm_config::UniversalLocation as AssetHubZagrosUniversalLocation;
 	let ethereum_sovereign: AccountId = AssetHubZagros::execute_with(|| {
 		ExternalConsensusLocationsConverterFor::<
@@ -546,7 +546,7 @@ pub(crate) fn bridge_hub_zagros_location() -> Location {
 
 /// The Asset Hub side of the Ethereum bridge, encoded by index so a test can build the call
 /// without the pallet being present in the runtime. These live here rather than in
-/// snowbridge_v2_outbound because tests that are still enabled need them while that module
+/// pezsnowbridge_v2_outbound because tests that are still enabled need them while that module
 /// is disabled with the deferred bridge.
 #[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo)]
 pub enum EthereumSystemFrontendCall {

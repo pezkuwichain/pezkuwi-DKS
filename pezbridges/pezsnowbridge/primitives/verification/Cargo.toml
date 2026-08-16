@@ -17,6 +17,10 @@ workspace = true
 exclude-from-umbrella = true
 
 [dependencies]
+alloy-consensus = { workspace = true }
+alloy-primitives = { workspace = true }
+alloy-rlp = { workspace = true }
+alloy-trie = { workspace = true }
 codec = { workspace = true }
 pezframe-support = { workspace = true }
 pezsnowbridge-beacon-primitives = { workspace = true }
@@ -27,6 +31,10 @@ scale-info = { features = ["derive"], workspace = true }
 [features]
 default = ["std"]
 std = [
+	"alloy-consensus/std",
+	"alloy-primitives/std",
+	"alloy-rlp/std",
+	"alloy-trie/std",
 	"codec/std",
 	"pezframe-support/std",
 	"pezsnowbridge-beacon-primitives/std",

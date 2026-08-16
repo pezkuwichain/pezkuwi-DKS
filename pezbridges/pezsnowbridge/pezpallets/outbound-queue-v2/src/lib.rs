@@ -5,16 +5,16 @@
 //! # Overview
 //!
 //! Messages come either from sibling teyrchains via XCM, or BridgeHub itself
-//! via the `snowbridge-pezpallet-system-v2`:
+//! via the `pezsnowbridge-pezpallet-system-v2`:
 //!
-//! 1. `snowbridge_outbound_queue_primitives::v2::EthereumBlobExporter::deliver`
-//! 2. `snowbridge_pezpallet_system_v2::Pezpallet::send`
+//! 1. `pezsnowbridge_outbound_queue_primitives::v2::EthereumBlobExporter::deliver`
+//! 2. `pezsnowbridge_pezpallet_system_v2::Pezpallet::send`
 //!
 //! The message submission pipeline works like this:
 //! 1. The message is first validated via the implementation for
-//!    [`snowbridge_outbound_queue_primitives::v2::SendMessage::validate`]
+//!    [`pezsnowbridge_outbound_queue_primitives::v2::SendMessage::validate`]
 //! 2. The message is then enqueued for later processing via the implementation for
-//!    [`snowbridge_outbound_queue_primitives::v2::SendMessage::deliver`]
+//!    [`pezsnowbridge_outbound_queue_primitives::v2::SendMessage::deliver`]
 //! 3. The underlying message queue is implemented by [`Config::MessageQueue`]
 //! 4. The message queue delivers messages to this pezpallet via the implementation for
 //!    [`pezframe_support::traits::ProcessMessage::process_message`]
@@ -84,13 +84,13 @@ use pezsp_runtime::{
 	DigestItem,
 };
 use pezsp_std::prelude::*;
-use snowbridge_core::{
+use pezsnowbridge_core::{
 	digest_item::SnowbridgeDigestItem,
 	reward::{AddTip, AddTipError},
 	BasicOperatingMode,
 };
-use snowbridge_merkle_tree::merkle_root;
-use snowbridge_outbound_queue_primitives::{
+use pezsnowbridge_merkle_tree::merkle_root;
+use pezsnowbridge_outbound_queue_primitives::{
 	v2::{
 		abi::{CommandWrapper, OutboundMessageWrapper},
 		DeliveryReceipt, GasMeter, Message, OutboundCommandWrapper, OutboundMessage,
@@ -102,7 +102,7 @@ pub use weights::WeightInfo;
 use xcm::prelude::NetworkId;
 
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_beacon_primitives::BeaconHeader;
+use pezsnowbridge_beacon_primitives::BeaconHeader;
 
 pub use pezpallet::*;
 

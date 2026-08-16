@@ -5,7 +5,7 @@ use crate::{
 	Pezpallet as EthereumBeaconClient, Update, ValidatorsRoot, Vec,
 };
 use pezsp_core::H256;
-use snowbridge_beacon_primitives::PublicKeyPrepared;
+use pezsnowbridge_beacon_primitives::PublicKeyPrepared;
 
 pub fn participant_pubkeys<T: Config>(
 	update: &Update,

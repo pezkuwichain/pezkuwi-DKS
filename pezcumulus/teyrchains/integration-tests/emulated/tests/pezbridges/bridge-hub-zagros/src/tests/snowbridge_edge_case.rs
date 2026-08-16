@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{imports::*, tests::snowbridge_common::*};
+use crate::{imports::*, tests::pezsnowbridge_common::*};
 use emulated_integration_tests_common::snowbridge::{SEPOLIA_ID, WETH};
 use pezbridge_hub_zagros_runtime::xcm_config::LocationToAccountId;
 use pezsnowbridge_core::AssetMetadata;

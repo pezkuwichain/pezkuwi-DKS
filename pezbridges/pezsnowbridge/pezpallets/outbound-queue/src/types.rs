@@ -6,13 +6,13 @@ use pezframe_support::traits::ProcessMessage;
 use pezsp_core::H256;
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
-use snowbridge_core::ChannelId;
+use pezsnowbridge_core::ChannelId;
 
 use super::Pezpallet;
 
 pub type ProcessMessageOriginOf<T> = <Pezpallet<T> as ProcessMessage>::Origin;
 
-pub const LOG_TARGET: &str = "snowbridge-outbound-queue";
+pub const LOG_TARGET: &str = "pezsnowbridge-outbound-queue";
 
 /// Message which has been assigned a nonce and will be committed at the end of a block
 #[derive(Encode, Decode, Clone, PartialEq, Debug, TypeInfo)]

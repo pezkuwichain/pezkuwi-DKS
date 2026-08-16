@@ -17,12 +17,12 @@ use hex_literal::hex;
 use pezframe_support::{assert_err, assert_noop, assert_ok, pezpallet_prelude::Pays};
 use pezsp_core::H256;
 use pezsp_runtime::DispatchError;
-use snowbridge_beacon_primitives::{
+use pezsnowbridge_beacon_primitives::{
 	merkle_proof::{generalized_index_length, subtree_index},
 	types::deneb,
 	Fork, ForkVersions, NextSyncCommitteeUpdate, VersionedExecutionPayloadHeader,
 };
-use snowbridge_verification_primitives::{VerificationError, Verifier};
+use pezsnowbridge_verification_primitives::{VerificationError, Verifier};
 
 /// Arbitrary hash used for tests and invalid hashes.
 const TEST_HASH: [u8; 32] =
@@ -205,7 +205,7 @@ pub fn sync_committee_participation_is_supermajority() {
 		hex!("bffffffff7f1ffdfcfeffeffbfdffffbfffffdffffefefffdffff7f7ffff77fffdf7bff77ffdf7fffafffffff77fefffeff7effffffff5f7fedfffdfb6ddff7b"
 	);
 	let participation =
-		snowbridge_beacon_primitives::decompress_sync_committee_bits::<512, 64>(bits);
+		pezsnowbridge_beacon_primitives::decompress_sync_committee_bits::<512, 64>(bits);
 	assert_ok!(EthereumBeaconClient::sync_committee_participation_is_supermajority(&participation));
 }
 
@@ -833,7 +833,7 @@ fn set_operating_mode() {
 
 		assert_ok!(EthereumBeaconClient::set_operating_mode(
 			RuntimeOrigin::root(),
-			snowbridge_core::BasicOperatingMode::Halted
+			pezsnowbridge_core::BasicOperatingMode::Halted
 		));
 
 		assert_noop!(
@@ -854,7 +854,7 @@ fn verify_rejects_when_halted() {
 
 		assert_ok!(EthereumBeaconClient::set_operating_mode(
 			RuntimeOrigin::root(),
-			snowbridge_core::BasicOperatingMode::Halted
+			pezsnowbridge_core::BasicOperatingMode::Halted
 		));
 
 		// While halted, the verifier refuses all proofs — blocks inbound_queue_v2::submit and
@@ -864,7 +864,7 @@ fn verify_rejects_when_halted() {
 		// Resuming restores verification.
 		assert_ok!(EthereumBeaconClient::set_operating_mode(
 			RuntimeOrigin::root(),
-			snowbridge_core::BasicOperatingMode::Normal
+			pezsnowbridge_core::BasicOperatingMode::Normal
 		));
 		assert_ok!(EthereumBeaconClient::verify(&event_log, &proof));
 	});
@@ -876,7 +876,7 @@ fn set_operating_mode_root_only() {
 		assert_noop!(
 			EthereumBeaconClient::set_operating_mode(
 				RuntimeOrigin::signed(1),
-				snowbridge_core::BasicOperatingMode::Halted
+				pezsnowbridge_core::BasicOperatingMode::Halted
 			),
 			DispatchError::BadOrigin
 		);

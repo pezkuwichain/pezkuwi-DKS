@@ -285,7 +285,7 @@ pub(crate) fn assert_bridge_hub_zagros_message_received() {
 	})
 }
 
-pub fn snowbridge_sovereign() -> pezsp_runtime::AccountId32 {
+pub fn pezsnowbridge_sovereign() -> pezsp_runtime::AccountId32 {
 	use asset_hub_pezkuwichain_runtime::xcm_config::UniversalLocation as AssetHubPezkuwichainUniversalLocation;
 	let ethereum_sovereign: AccountId = AssetHubPezkuwichain::execute_with(|| {
 		ExternalConsensusLocationsConverterFor::<

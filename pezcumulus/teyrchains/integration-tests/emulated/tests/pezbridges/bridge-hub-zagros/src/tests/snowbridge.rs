@@ -25,7 +25,7 @@ use crate::{
 		bridged_roc_at_ah_zagros, bridged_wnd_at_ah_pezkuwichain,
 		create_foreign_on_ah_pezkuwichain, create_foreign_on_ah_zagros,
 		pez_penpal_emulated_chain::pez_penpal_runtime,
-		snowbridge_common::{bridge_hub, ethereum, register_roc_on_bh, snowbridge_sovereign},
+		pezsnowbridge_common::{bridge_hub, ethereum, register_roc_on_bh, pezsnowbridge_sovereign},
 	},
 };
 use asset_hub_zagros_runtime::xcm_config::{
@@ -82,7 +82,7 @@ fn register_token_from_ethereum_to_asset_hub() {
 	// Fund AssetHub sovereign account so that it can pay execution fees.
 	BridgeHubZagros::fund_para_sovereign(AssetHubZagros::para_id().into(), INITIAL_FUND);
 	// Fund Snowbridge Sovereign to satisfy ED.
-	AssetHubZagros::fund_accounts(vec![(snowbridge_sovereign(), INITIAL_FUND)]);
+	AssetHubZagros::fund_accounts(vec![(pezsnowbridge_sovereign(), INITIAL_FUND)]);
 
 	let token = H160::random();
 
@@ -116,7 +116,7 @@ fn register_token_from_ethereum_to_asset_hub() {
 /// a token from Ethereum to AssetHub.
 #[test]
 fn send_weth_token_from_ethereum_to_asset_hub() {
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 
 	BridgeHubZagros::fund_para_sovereign(AssetHubZagros::para_id().into(), INITIAL_FUND);
 
@@ -210,7 +210,7 @@ fn send_weth_from_ethereum_to_penpal() {
 		(Parent, Parent, ethereum_network_v5, AccountKey20 { network: None, key: WETH }).into();
 
 	// Fund ethereum sovereign on AssetHub
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 
 	// Create asset on the Penpal teyrchain.
@@ -290,7 +290,7 @@ fn send_eth_asset_from_asset_hub_to_ethereum_and_back() {
 	use asset_hub_zagros_runtime::xcm_config::bridging::to_ethereum::DefaultBridgeHubEthereumBaseFee;
 	let assethub_location = BridgeHubZagros::sibling_location_of(AssetHubZagros::para_id());
 	let assethub_sovereign = BridgeHubZagros::sovereign_account_id_of(assethub_location);
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 
 	AssetHubZagros::force_default_xcm_version(Some(XCM_VERSION));
 	BridgeHubZagros::force_default_xcm_version(Some(XCM_VERSION));
@@ -761,7 +761,7 @@ fn send_token_from_ethereum_to_penpal() {
 		(Parent, Parent, ethereum_network_v5, AccountKey20 { network: None, key: WETH }).into();
 
 	// Fund ethereum sovereign on AssetHub
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 
 	// Create asset on the Penpal teyrchain.
@@ -842,7 +842,7 @@ fn transfer_relay_token() {
 
 	let expected_token_id = TokenIdOf::convert_location(&expected_asset_id).unwrap();
 
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 
 	// Register token
 	BridgeHubZagros::execute_with(|| {
@@ -991,7 +991,7 @@ fn transfer_ah_token() {
 	let ethereum_destination =
 		Location::new(2, [GlobalConsensus(Ethereum { chain_id: SEPOLIA_ID })]);
 
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 
 	let asset_id: Location =
@@ -1690,7 +1690,7 @@ fn transfer_penpal_teleport_enabled_asset() {
 		AssetHubZagros::sibling_location_of(PenpalB::para_id()),
 	);
 	AssetHubZagros::fund_accounts(vec![(penpal_sovereign.clone(), INITIAL_FUND)]);
-	AssetHubZagros::fund_accounts(vec![(snowbridge_sovereign(), INITIAL_FUND)]);
+	AssetHubZagros::fund_accounts(vec![(pezsnowbridge_sovereign(), INITIAL_FUND)]);
 
 	// Register token
 	BridgeHubZagros::execute_with(|| {
@@ -2007,7 +2007,7 @@ fn transfer_roc_from_ah_with_legacy_api_will_fail() {
 	let ethereum_destination =
 		Location::new(2, [GlobalConsensus(Ethereum { chain_id: SEPOLIA_ID })]);
 
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 
 	let bridged_roc_at_asset_hub_zagros = bridged_roc_at_ah_zagros();
@@ -2078,7 +2078,7 @@ fn transfer_roc_from_ah_with_transfer_and_then() {
 	let ethereum_destination =
 		Location::new(2, [GlobalConsensus(Ethereum { chain_id: SEPOLIA_ID })]);
 
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 
 	let bridged_roc_at_asset_hub_zagros = bridged_roc_at_ah_zagros();
@@ -2220,7 +2220,7 @@ fn register_pna_in_v5_while_transfer_in_v4_should_work() {
 
 	let _expected_token_id = TokenIdOf::convert_location(&expected_asset_id).unwrap();
 
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 
 	// Register token in V5
 	BridgeHubZagros::execute_with(|| {

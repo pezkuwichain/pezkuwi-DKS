@@ -2,11 +2,11 @@
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
 use super::*;
 use pezframe_support::ensure;
-use snowbridge_beacon_primitives::ExecutionProof;
+use pezsnowbridge_beacon_primitives::ExecutionProof;
 
 use alloy_primitives::Log as AlloyLog;
-use snowbridge_beacon_primitives::merkle_proof::{generalized_index_length, subtree_index};
-use snowbridge_verification_primitives::{
+use pezsnowbridge_beacon_primitives::merkle_proof::{generalized_index_length, subtree_index};
+use pezsnowbridge_verification_primitives::{
 	receipt::verify_receipt_proof,
 	VerificationError::{self, *},
 	Verifier, *,

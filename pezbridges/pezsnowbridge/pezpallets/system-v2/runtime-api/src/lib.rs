@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use snowbridge_core::AgentId;
+use pezsnowbridge_core::AgentId;
 use xcm::VersionedLocation;
 
 pezsp_api::decl_runtime_apis! {

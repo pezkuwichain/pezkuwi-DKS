@@ -7,7 +7,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 use pezframe_support::traits::tokens::Balance as BalanceT;
-use snowbridge_merkle_tree::MerkleProof;
+use pezsnowbridge_merkle_tree::MerkleProof;
 
 pezsp_api::decl_runtime_apis! {
 	pub trait OutboundQueueV2Api<Balance> where Balance: BalanceT

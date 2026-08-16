@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
-use crate as snowbridge_system_frontend;
+use crate as pezsnowbridge_system_frontend;
 #[cfg(feature = "runtime-benchmarks")]
 use crate::BenchmarkHelper;
 use pezframe_support::{
@@ -12,9 +12,9 @@ use pezsp_runtime::{
 	traits::{AccountIdConversion, BlakeTwo256, IdentityLookup},
 	AccountId32, BuildStorage,
 };
-use snowbridge_core::ParaId;
-use snowbridge_test_utils::mock_swap_executor::SwapExecutor;
-pub use snowbridge_test_utils::{mock_origin::pezpallet_xcm_origin, mock_xcm::*};
+use pezsnowbridge_core::ParaId;
+use pezsnowbridge_test_utils::mock_swap_executor::SwapExecutor;
+pub use pezsnowbridge_test_utils::{mock_origin::pezpallet_xcm_origin, mock_xcm::*};
 use xcm::prelude::*;
 
 type Block = pezframe_system::mocking::MockBlock<Test>;
@@ -26,7 +26,7 @@ pezframe_support::construct_runtime!(
 	{
 		System: pezframe_system,
 		XcmOrigin: pezpallet_xcm_origin::{Pezpallet, Origin},
-		EthereumSystemFrontend: snowbridge_system_frontend,
+		EthereumSystemFrontend: pezsnowbridge_system_frontend,
 	}
 );
 

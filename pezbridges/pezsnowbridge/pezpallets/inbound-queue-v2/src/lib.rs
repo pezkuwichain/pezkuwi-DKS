@@ -40,12 +40,12 @@ use pezbp_relayers::RewardLedger;
 use pezframe_system::ensure_signed;
 use pezsp_core::H160;
 use pezsp_std::prelude::*;
-use snowbridge_core::{
+use pezsnowbridge_core::{
 	reward::{AddTip, AddTipError},
 	sparse_bitmap::{SparseBitmap, SparseBitmapImpl},
 	BasicOperatingMode,
 };
-use snowbridge_inbound_queue_primitives::{
+use pezsnowbridge_inbound_queue_primitives::{
 	v2::{ConvertMessageError, Message, MessageProcessor, MessageProcessorError},
 	EventProof, VerificationError, Verifier,
 };
@@ -53,7 +53,7 @@ use xcm::latest::SendError;
 
 pub use pezpallet::*;
 
-pub const LOG_TARGET: &str = "snowbridge-pezpallet-inbound-queue-v2";
+pub const LOG_TARGET: &str = "pezsnowbridge-pezpallet-inbound-queue-v2";
 
 pub type AccountIdOf<T> = <T as pezframe_system::Config>::AccountId;
 
@@ -67,7 +67,7 @@ pub mod pezpallet {
 	use pezframe_system::pezpallet_prelude::*;
 
 	#[cfg(feature = "runtime-benchmarks")]
-	use snowbridge_inbound_queue_primitives::EventFixture;
+	use pezsnowbridge_inbound_queue_primitives::EventFixture;
 
 	#[pezpallet::pezpallet]
 	pub struct Pezpallet<T>(_);

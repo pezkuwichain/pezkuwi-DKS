@@ -7,16 +7,16 @@
 use hex_literal::hex;
 use pezsp_core::U256;
 use pezsp_std::{boxed::Box, vec};
-use snowbridge_beacon_primitives::{
+use pezsnowbridge_beacon_primitives::{
 	types::deneb, AncestryProof, BeaconHeader, ExecutionProof, NextSyncCommitteeUpdate,
 	SyncAggregate, SyncCommittee, VersionedExecutionPayloadHeader,
 };
-use snowbridge_verification_primitives::{EventFixture, EventProof, Log, Proof};
+use pezsnowbridge_verification_primitives::{EventFixture, EventProof, Log, Proof};
 
 const SC_SIZE: usize = 512;
 const SC_BITS_SIZE: usize = 64;
-type CheckpointUpdate = snowbridge_beacon_primitives::CheckpointUpdate<SC_SIZE>;
-type Update = snowbridge_beacon_primitives::Update<SC_SIZE, SC_BITS_SIZE>;
+type CheckpointUpdate = pezsnowbridge_beacon_primitives::CheckpointUpdate<SC_SIZE>;
+type Update = pezsnowbridge_beacon_primitives::Update<SC_SIZE, SC_BITS_SIZE>;
 
 pub fn make_checkpoint() -> Box<CheckpointUpdate> {
 	Box::new(CheckpointUpdate {

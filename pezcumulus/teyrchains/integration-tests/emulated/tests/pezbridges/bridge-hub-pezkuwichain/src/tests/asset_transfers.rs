@@ -304,7 +304,7 @@ fn send_back_wnds_usdt_and_weth_from_asset_hub_pezkuwichain_to_asset_hub_zagros(
 		amount_to_send * 2,
 	);
 	AssetHubZagros::mint_foreign_asset(
-		<AssetHubZagros as Chain>::RuntimeOrigin::signed(snowbridge_sovereign()),
+		<AssetHubZagros as Chain>::RuntimeOrigin::signed(pezsnowbridge_sovereign()),
 		bridged_weth_at_ah.clone(),
 		sov_ahr_on_ahw.clone(),
 		amount_to_send * 2,

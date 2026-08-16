@@ -7,12 +7,12 @@ use crate::Pezpallet as EthereumBeaconClient;
 use hex_literal::hex;
 use pezframe_benchmarking::v2::*;
 use pezframe_system::RawOrigin;
-use snowbridge_beacon_primitives::{
+use pezsnowbridge_beacon_primitives::{
 	fast_aggregate_verify,
 	merkle_proof::{generalized_index_length, subtree_index},
 	prepare_aggregate_pubkey, prepare_aggregate_signature, verify_merkle_branch, Fork,
 };
-use snowbridge_pezpallet_ethereum_client_fixtures::*;
+use pezsnowbridge_pezpallet_ethereum_client_fixtures::*;
 use util::*;
 
 #[benchmarks]

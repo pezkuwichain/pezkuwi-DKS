@@ -18,9 +18,9 @@ use pezsp_runtime::{
 };
 use pezsp_std::marker::PhantomData;
 use scale_info::TypeInfo;
-use snowbridge_core::{AgentId, AgentIdOf, ChannelId, ParaId};
-use snowbridge_outbound_queue_primitives::{v2::*, Log, Proof, VerificationError, Verifier};
-use snowbridge_test_utils::mock_rewards::{BridgeReward, MockRewardLedger};
+use pezsnowbridge_core::{AgentId, AgentIdOf, ChannelId, ParaId};
+use pezsnowbridge_outbound_queue_primitives::{v2::*, Log, Proof, VerificationError, Verifier};
+use pezsnowbridge_test_utils::mock_rewards::{BridgeReward, MockRewardLedger};
 use xcm::prelude::Here;
 use xcm_executor::traits::ConvertLocation;
 

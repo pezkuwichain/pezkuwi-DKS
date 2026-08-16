@@ -3,7 +3,7 @@
 use crate::{mock::*, DispatchError::BadOrigin, *};
 use pezframe_support::{assert_noop, assert_ok};
 use pezsp_keyring::sr25519::Keyring;
-use snowbridge_test_utils::FAILING_NONCE;
+use pezsnowbridge_test_utils::FAILING_NONCE;
 use xcm::{latest::ZAGROS_GENESIS_HASH, prelude::*};
 
 #[test]

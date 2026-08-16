@@ -10,7 +10,7 @@ use pezsp_std::marker::PhantomData;
 use xcm::prelude::{AccountKey20, Ethereum, GlobalConsensus, Location};
 use xcm_executor::traits::ConvertLocation;
 
-pub use snowbridge_verification_primitives::*;
+pub use pezsnowbridge_verification_primitives::*;
 
 /// DEPRECATED in favor of [xcm_builder::ExternalConsensusLocationsConverterFor]
 pub struct EthereumLocationsConverterFor<AccountId>(PhantomData<AccountId>);

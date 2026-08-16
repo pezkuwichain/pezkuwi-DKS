@@ -5,7 +5,7 @@ use hex_literal::hex;
 use pezframe_support::{assert_noop, assert_ok};
 use pezsp_core::H256;
 use pezsp_runtime::{AccountId32, DispatchError::BadOrigin};
-use snowbridge_core::eth;
+use pezsnowbridge_core::eth;
 
 #[test]
 fn test_agent_for_here() {

@@ -7,8 +7,8 @@ use codec::Encode;
 use pezframe_support::{assert_noop, assert_ok};
 use pezsp_keyring::sr25519::Keyring;
 use pezsp_runtime::DispatchError;
-use snowbridge_inbound_queue_primitives::{v2::Payload, EventProof, Proof};
-use snowbridge_test_utils::{
+use pezsnowbridge_inbound_queue_primitives::{v2::Payload, EventProof, Proof};
+use pezsnowbridge_test_utils::{
 	mock_rewards::{RegisteredRewardAmount, RegisteredRewardsCount},
 	mock_xcm::{set_charge_fees_override, set_sender_override},
 };
@@ -165,7 +165,7 @@ fn test_set_operating_mode() {
 
 		assert_ok!(InboundQueue::set_operating_mode(
 			RuntimeOrigin::root(),
-			snowbridge_core::BasicOperatingMode::Halted
+			pezsnowbridge_core::BasicOperatingMode::Halted
 		));
 
 		assert_noop!(InboundQueue::submit(origin, Box::new(event)), Error::<Test>::Halted);
@@ -178,7 +178,7 @@ fn test_set_operating_mode_root_only() {
 		assert_noop!(
 			InboundQueue::set_operating_mode(
 				RuntimeOrigin::signed(Keyring::Bob.into()),
-				snowbridge_core::BasicOperatingMode::Halted
+				pezsnowbridge_core::BasicOperatingMode::Halted
 			),
 			DispatchError::BadOrigin
 		);
@@ -308,7 +308,7 @@ fn test_switch_operating_mode() {
 
 		assert_ok!(InboundQueue::set_operating_mode(
 			RuntimeOrigin::root(),
-			snowbridge_core::BasicOperatingMode::Halted
+			pezsnowbridge_core::BasicOperatingMode::Halted
 		));
 
 		assert_noop!(
@@ -318,7 +318,7 @@ fn test_switch_operating_mode() {
 
 		assert_ok!(InboundQueue::set_operating_mode(
 			RuntimeOrigin::root(),
-			snowbridge_core::BasicOperatingMode::Normal
+			pezsnowbridge_core::BasicOperatingMode::Normal
 		));
 
 		assert_ok!(InboundQueue::submit(origin, Box::new(event)));
@@ -536,8 +536,8 @@ fn poc_permissionless_forged_receipt_bypasses_verifier_and_injects_xcm() {
 	use alloy_core::sol_types::{SolEvent, SolValue};
 	use alloy_primitives::{Address, Bytes, Log as AlloyLog, B256};
 	use pezframe_support::{assert_noop, assert_ok};
-	use snowbridge_inbound_queue_primitives::{receipt::verify_receipt_proof, v2::IGatewayV2};
-	use snowbridge_pezpallet_ethereum_client_fixtures::make_inbound_fixture;
+	use pezsnowbridge_inbound_queue_primitives::{receipt::verify_receipt_proof, v2::IGatewayV2};
+	use pezsnowbridge_pezpallet_ethereum_client_fixtures::make_inbound_fixture;
 
 	exploit::new_tester().execute_with(|| {
 		let fixture = make_inbound_fixture();
@@ -592,7 +592,7 @@ fn poc_permissionless_forged_receipt_bypasses_verifier_and_injects_xcm() {
 		}
 		.encode_data();
 
-		let forged_event_log = snowbridge_inbound_queue_primitives::Log {
+		let forged_event_log = pezsnowbridge_inbound_queue_primitives::Log {
 			address: gateway_h160,
 			topics,
 			data: log_data.clone(),

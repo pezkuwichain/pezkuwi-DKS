@@ -10,7 +10,7 @@ use pezsp_core::{Get, H160, H256};
 use pezsp_runtime::{traits::MaybeConvert, MultiAddress};
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
-use snowbridge_core::TokenId;
+use pezsnowbridge_core::TokenId;
 use xcm::prelude::{Junction::AccountKey20, *};
 
 const MINIMUM_DEPOSIT: u128 = 1;
@@ -471,7 +471,7 @@ mod tests {
 		traits::{IdentifyAccount, Verify},
 		MultiSignature,
 	};
-	use snowbridge_test_utils::mock_converter::{
+	use pezsnowbridge_test_utils::mock_converter::{
 		add_location_override, reanchor_to_ethereum, LocationIdConvert,
 	};
 	use xcm::prelude::*;

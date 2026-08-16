@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
-//! Implementation for [`snowbridge_outbound_queue_primitives::v2::SendMessage`]
+//! Implementation for [`pezsnowbridge_outbound_queue_primitives::v2::SendMessage`]
 use super::*;
 use codec::Encode;
 use pezframe_support::{
@@ -9,7 +9,7 @@ use pezframe_support::{
 };
 use pezsp_core::H256;
 use pezsp_runtime::BoundedVec;
-use snowbridge_outbound_queue_primitives::{
+use pezsnowbridge_outbound_queue_primitives::{
 	v2::{Message, SendMessage},
 	SendError,
 };

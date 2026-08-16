@@ -14,12 +14,12 @@ use pezsp_runtime::{
 	AccountId32, BuildStorage, FixedU128,
 };
 use pezsp_std::marker::PhantomData;
-use snowbridge_core::{
+use pezsnowbridge_core::{
 	gwei, meth,
 	pricing::{PricingParameters, Rewards},
 	ParaId, PRIMARY_GOVERNANCE_CHANNEL,
 };
-use snowbridge_outbound_queue_primitives::v1::*;
+use pezsnowbridge_outbound_queue_primitives::v1::*;
 
 type Block = pezframe_system::mocking::MockBlock<Test>;
 type AccountId = AccountId32;

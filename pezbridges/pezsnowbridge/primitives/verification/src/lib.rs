@@ -7,7 +7,7 @@ use pezframe_support::PalletError;
 use pezsp_core::{H160, H256};
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
-use snowbridge_beacon_primitives::{BeaconHeader, ExecutionProof};
+use pezsnowbridge_beacon_primitives::{BeaconHeader, ExecutionProof};
 
 pub mod receipt;
 

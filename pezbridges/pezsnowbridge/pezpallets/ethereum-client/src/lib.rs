@@ -41,13 +41,13 @@ use pezframe_support::{
 use pezframe_system::ensure_signed;
 use pezsp_core::H256;
 use pezsp_std::prelude::*;
-use snowbridge_beacon_primitives::{
+use pezsnowbridge_beacon_primitives::{
 	fast_aggregate_verify,
 	merkle_proof::{generalized_index_length, subtree_index},
 	verify_merkle_branch, BeaconHeader, BlsError, CompactBeaconState, ForkData, ForkVersion,
 	ForkVersions, PublicKeyPrepared, SigningData,
 };
-use snowbridge_core::{BasicOperatingMode, RingBufferMap};
+use pezsnowbridge_core::{BasicOperatingMode, RingBufferMap};
 pub use weights::WeightInfo;
 
 use functions::{

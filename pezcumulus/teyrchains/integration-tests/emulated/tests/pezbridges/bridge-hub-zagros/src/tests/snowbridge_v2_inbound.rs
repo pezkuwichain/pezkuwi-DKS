@@ -14,10 +14,10 @@
 // limitations under the License.
 use crate::{
 	imports::*,
-	tests::snowbridge_common::{
+	tests::pezsnowbridge_common::{
 		erc20_token_location, eth_location, ethereum, fund_on_ah, fund_on_bh,
 		register_assets_on_ah, register_foreign_asset, set_up_eth_and_hez_pool,
-		set_up_eth_and_hez_pool_on_penpal, snowbridge_sovereign, weth_location,
+		set_up_eth_and_hez_pool_on_penpal, pezsnowbridge_sovereign, weth_location,
 	},
 };
 use asset_hub_zagros_runtime::ForeignAssets;
@@ -59,7 +59,7 @@ fn register_token_v2() {
 	let relayer_account = BridgeHubZagrosSender::get();
 	let relayer_reward = 1_500_000_000_000u128;
 	let receiver = AssetHubZagrosReceiver::get();
-	let bridge_owner = snowbridge_sovereign();
+	let bridge_owner = pezsnowbridge_sovereign();
 	BridgeHubZagros::fund_accounts(vec![(relayer_account.clone(), INITIAL_FUND)]);
 	AssetHubZagros::fund_accounts(vec![(bridge_owner.clone(), INITIAL_FUND)]);
 
@@ -375,7 +375,7 @@ fn register_and_send_token_in_one_transaction_fails() {
 	let token: H160 = TOKEN_ID.into();
 	let token_location = erc20_token_location(token);
 
-	let bridge_owner = snowbridge_sovereign();
+	let bridge_owner = pezsnowbridge_sovereign();
 
 	let beneficiary_acc_id: H256 = H256::random();
 	let beneficiary_acc_bytes: [u8; 32] = beneficiary_acc_id.into();
@@ -524,7 +524,7 @@ fn send_token_to_penpal_v2() {
 		3_000_000_000_000,
 	)]);
 
-	let snowbridge_sovereign = snowbridge_sovereign();
+	let pezsnowbridge_sovereign = pezsnowbridge_sovereign();
 	PenpalB::execute_with(|| {
 		type RuntimeOrigin = <PenpalB as Chain>::RuntimeOrigin;
 
@@ -532,7 +532,7 @@ fn send_token_to_penpal_v2() {
 		assert_ok!(<PenpalB as PenpalBPallet>::ForeignAssets::force_create(
 			RuntimeOrigin::root(),
 			token_location.clone().try_into().unwrap(),
-			snowbridge_sovereign.clone().into(),
+			pezsnowbridge_sovereign.clone().into(),
 			true,
 			1000,
 		));
@@ -545,7 +545,7 @@ fn send_token_to_penpal_v2() {
 		assert_ok!(<PenpalB as PenpalBPallet>::ForeignAssets::force_create(
 			RuntimeOrigin::root(),
 			eth_location().try_into().unwrap(),
-			snowbridge_sovereign.clone().into(),
+			pezsnowbridge_sovereign.clone().into(),
 			true,
 			1000,
 		));
@@ -762,7 +762,7 @@ fn send_foreign_erc20_token_back_to_pezkuwi() {
 		));
 	});
 
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 

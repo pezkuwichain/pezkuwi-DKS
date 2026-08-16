@@ -6,7 +6,7 @@ use pezframe_support::traits::ProcessMessage;
 use pezsp_core::H256;
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
-pub use snowbridge_merkle_tree::MerkleProof;
+pub use pezsnowbridge_merkle_tree::MerkleProof;
 
 pub type ProcessMessageOriginOf<T> = <Pezpallet<T> as ProcessMessage>::Origin;
 

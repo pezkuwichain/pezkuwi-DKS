@@ -17,11 +17,11 @@ use crate::{
 	tests::{
 		assert_bridge_hub_pezkuwichain_message_received, assert_bridge_hub_zagros_message_accepted,
 		asset_hub_pezkuwichain_location, bridged_roc_at_ah_zagros, create_foreign_on_ah_zagros,
-		snowbridge_common::{
+		pezsnowbridge_common::{
 			asset_hub_zagros_global_location, erc20_token_location, eth_location,
 			register_foreign_asset, register_roc_on_bh, set_up_eth_and_hez_pool,
 			set_up_eth_and_hez_pool_on_pezkuwichain, set_up_pool_with_wnd_on_ah_zagros,
-			snowbridge_sovereign, TOKEN_AMOUNT,
+			pezsnowbridge_sovereign, TOKEN_AMOUNT,
 		},
 	},
 };
@@ -81,7 +81,7 @@ fn send_token_to_pezkuwichain_v2() {
 	BridgeHubZagros::fund_para_sovereign(AssetHubZagros::para_id(), INITIAL_FUND);
 
 	// Register the token on AH Zagros and Pezkuwichain
-	let snowbridge_sovereign = snowbridge_sovereign();
+	let pezsnowbridge_sovereign = pezsnowbridge_sovereign();
 	AssetHubPezkuwichain::execute_with(|| {
 		type RuntimeOrigin = <AssetHubPezkuwichain as Chain>::RuntimeOrigin;
 
@@ -89,7 +89,7 @@ fn send_token_to_pezkuwichain_v2() {
 			<AssetHubPezkuwichain as AssetHubPezkuwichainPallet>::ForeignAssets::force_create(
 				RuntimeOrigin::root(),
 				token_location.clone().try_into().unwrap(),
-				snowbridge_sovereign.clone().into(),
+				pezsnowbridge_sovereign.clone().into(),
 				true,
 				1000,
 			)
@@ -420,7 +420,7 @@ fn send_roc_from_ethereum_to_pezkuwichain() {
 
 	BridgeHubZagros::fund_para_sovereign(AssetHubZagros::para_id(), INITIAL_FUND);
 
-	let ethereum_sovereign: AccountId = snowbridge_sovereign();
+	let ethereum_sovereign: AccountId = pezsnowbridge_sovereign();
 	let bridged_roc_at_asset_hub_zagros = bridged_roc_at_ah_zagros();
 	create_foreign_on_ah_zagros(
 		bridged_roc_at_asset_hub_zagros.clone(),

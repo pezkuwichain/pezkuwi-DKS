@@ -4,7 +4,7 @@
 use codec::Encode;
 use pezframe_support::pezsp_runtime::traits::MaybeConvert;
 use pezsp_core::H256;
-use snowbridge_core::TokenIdOf;
+use pezsnowbridge_core::TokenIdOf;
 use std::{cell::RefCell, collections::HashMap};
 use xcm::{
 	latest::InteriorLocation,

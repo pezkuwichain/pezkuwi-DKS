@@ -4,7 +4,7 @@
 
 use crate::{Config, MessageLeaves};
 use pezframe_support::storage::StorageStreamIter;
-use snowbridge_merkle_tree::{merkle_proof, MerkleProof};
+use pezsnowbridge_merkle_tree::{merkle_proof, MerkleProof};
 
 pub fn prove_message<T>(leaf_index: u64) -> Option<MerkleProof>
 where

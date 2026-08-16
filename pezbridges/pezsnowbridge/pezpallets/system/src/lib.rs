@@ -45,12 +45,12 @@ use pezsp_core::{H160, H256};
 use pezsp_io::hashing::blake2_256;
 use pezsp_runtime::{traits::MaybeConvert, DispatchError, SaturatedConversion};
 use pezsp_std::prelude::*;
-use snowbridge_core::{
+use pezsnowbridge_core::{
 	meth, AgentId, AssetMetadata, Channel, ChannelId, ParaId,
 	PricingParameters as PricingParametersRecord, TokenId, TokenIdOf, PRIMARY_GOVERNANCE_CHANNEL,
 	SECONDARY_GOVERNANCE_CHANNEL,
 };
-use snowbridge_outbound_queue_primitives::{
+use pezsnowbridge_outbound_queue_primitives::{
 	v1::{Command, Initializer, Message, SendMessage},
 	OperatingMode, SendError,
 };
@@ -99,7 +99,7 @@ where
 pub mod pezpallet {
 	use pezframe_support::dispatch::PostDispatchInfo;
 	use pezsp_core::U256;
-	use snowbridge_core::StaticLookup;
+	use pezsnowbridge_core::StaticLookup;
 
 	use super::*;
 

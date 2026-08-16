@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::tests::{snowbridge_common::snowbridge_sovereign, *};
+use crate::tests::{pezsnowbridge_common::pezsnowbridge_sovereign, *};
 use emulated_integration_tests_common::{
 	macros::Dmp,
 	xcm_helpers::{find_all_mq_processed_ids, find_mq_processed_id, find_xcm_sent_message_id},
@@ -218,7 +218,7 @@ fn send_wnds_usdt_and_weth_from_asset_hub_zagros_to_asset_hub_pezkuwichain() {
 	);
 	// create wETH at src and dest and prefund sender's account
 	AssetHubZagros::mint_foreign_asset(
-		<AssetHubZagros as Chain>::RuntimeOrigin::signed(snowbridge_sovereign()),
+		<AssetHubZagros as Chain>::RuntimeOrigin::signed(pezsnowbridge_sovereign()),
 		bridged_weth_at_ah.clone(),
 		sender.clone(),
 		amount * 2,
