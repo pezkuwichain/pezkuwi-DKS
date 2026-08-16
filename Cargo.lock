@@ -14951,6 +14951,7 @@ dependencies = [
  "pezkuwi-dispute-distribution",
  "pezkuwi-gossip-support",
  "pezkuwi-network-bridge",
+ "pezkuwi-node-clock",
  "pezkuwi-node-collation-generation",
  "pezkuwi-node-core-approval-voting",
  "pezkuwi-node-core-approval-voting-parallel",

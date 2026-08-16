@@ -14,6 +14,7 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
+pezkuwi-node-clock = { optional = true, workspace = true, default-features = true }
 # Bizinikiwi Client
 pezmmr-gadget = { workspace = true, default-features = true }
 pezsc-authority-discovery = { workspace = true, default-features = true }
@@ -159,6 +160,7 @@ full-node = [
 	"pezkuwi-dispute-distribution",
 	"pezkuwi-gossip-support",
 	"pezkuwi-network-bridge",
+	"pezkuwi-node-clock",
 	"pezkuwi-node-collation-generation",
 	"pezkuwi-node-core-approval-voting",
 	"pezkuwi-node-core-approval-voting-parallel",

@@ -301,6 +301,7 @@ where
 					)))
 				},
 				IsTeyrchainNode::No => ProtocolSide::Validator {
+							clock: pezkuwi_node_clock::system_clock(),
 					keystore: keystore.clone(),
 					eviction_policy: Default::default(),
 					metrics: Metrics::register(registry)?,
@@ -473,6 +474,7 @@ where
 					)))
 				},
 				IsTeyrchainNode::Collator(collator_pair) => ProtocolSide::Collator {
+							clock: pezkuwi_node_clock::system_clock(),
 					peer_id: network_service.local_peer_id(),
 					collator_pair,
 					request_receiver_v2: collation_req_v2_receiver,

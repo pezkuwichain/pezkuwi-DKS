@@ -122,11 +122,14 @@ pub(crate) fn new_partial_basics(
 		.with_runtime_cache_size(config.executor.runtime_cache_size)
 		.build();
 
+	// Blocks carrying GRANDPA justifications must survive pruning, or warp sync has nothing to
+	// verify against on a pruned node.
 	let (client, backend, keystore_container, task_manager) =
 		pezsc_service::new_full_parts::<Block, RuntimeApi, _>(
 			&config,
 			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 			executor,
+			vec![Arc::new(pezsc_consensus_grandpa::GrandpaPruningFilter)],
 		)?;
 	let client = Arc::new(client);
 
