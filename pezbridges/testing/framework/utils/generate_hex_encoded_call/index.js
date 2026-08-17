@@ -1,7 +1,7 @@
 const fs = require("fs");
 const { exit } = require("process");
-const { WsProvider, ApiPromise } = require("@polkadot/api");
-const util = require("@polkadot/util");
+const { WsProvider, ApiPromise } = require("@pezkuwi/api");
+const util = require("@pezkuwi/util");
 
 // connect to a bizinikiwi chain and return the api object
 async function connect(endpoint, types = {}) {
