@@ -1,0 +1,68 @@
+[package]
+name = "pezpallet-dap"
+version = "0.6.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+homepage.workspace = true
+repository.workspace = true
+description = "FRAME pezpallet for Dynamic Allocation Pool (DAP)"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { features = ["derive", "max-encoded-len"], workspace = true }
+pezframe-benchmarking = { optional = true, workspace = true }
+pezframe-support = { workspace = true }
+pezframe-system = { workspace = true }
+log = { workspace = true }
+pezpallet-timestamp = { workspace = true }
+scale-info = { features = ["derive"], workspace = true }
+pezsp-dap = { workspace = true }
+pezsp-runtime = { workspace = true }
+pezsp-staking = { workspace = true }
+
+[dev-dependencies]
+pezpallet-balances = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"pezframe-benchmarking?/std",
+	"pezframe-support/std",
+	"pezframe-system/std",
+	"log/std",
+	"pezpallet-timestamp/std",
+	"scale-info/std",
+	"pezsp-core/std",
+	"pezsp-dap/std",
+	"pezsp-io/std",
+	"pezsp-runtime/std",
+	"pezsp-staking/std",
+]
+runtime-benchmarks = [
+	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
+	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-timestamp/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-staking/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks"
+]
+try-runtime = [
+	"pezframe-support/try-runtime",
+	"pezframe-system/try-runtime",
+	"pezpallet-balances/try-runtime",
+	"pezpallet-timestamp/try-runtime",
+	"pezsp-runtime/try-runtime",
+	"pezframe-benchmarking?/try-runtime",
+	"pezsp-staking/try-runtime"
+]
