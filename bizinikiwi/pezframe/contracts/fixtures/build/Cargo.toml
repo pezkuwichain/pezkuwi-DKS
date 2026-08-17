@@ -7,9 +7,9 @@ edition = "2021"
 # Note: workspace = true fields removed because this is compiled in a temp directory
 description = "Pezkuwi SDK component: contracts"
 documentation.workspace = true
-repository = "https://github.com/pezkuwichain/pezkuwi-sdk"
+repository = "https://github.com/pezkuwichain/pezkuwi-DKS.git"
 homepage = "https://pezkuwichain.io"
-authors = ["Pezkuwi Chain <admin@pezkuwichain.io>"]
+authors = ["Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>"]
 license = "Apache-2.0"
 [[bin]]
 

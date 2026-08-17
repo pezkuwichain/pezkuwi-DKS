@@ -2,8 +2,7 @@
 name = "pezpallet-sassafras"
 version = "0.3.5-dev"
 authors = [
-	"Kurdistan Tech Institute <info@pezkuwichain.io>",
-	"Parity Technologies <admin@parity.io>",
+	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
 ]
 edition.workspace = true
 license = "Apache-2.0"

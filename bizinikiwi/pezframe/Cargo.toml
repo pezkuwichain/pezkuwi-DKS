@@ -2,8 +2,7 @@
 name = "pezframe"
 version = "0.1.0"
 authors = [
-	"Kurdistan Tech Institute <info@pezkuwichain.io>",
-	"Parity Technologies <admin@parity.io>",
+	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
 ]
 edition.workspace = true
 license = "Apache-2.0"

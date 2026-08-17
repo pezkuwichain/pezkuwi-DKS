@@ -32,12 +32,14 @@ pezsp-application-crypto = { workspace = true, default-features = true }
 pezsp-blockchain = { workspace = true, default-features = true }
 pezsp-consensus-aura = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true, default-features = true }
 pezsp-inherents = { workspace = true, default-features = true }
 pezsp-io = { workspace = true, default-features = true }
 pezsp-keyring = { workspace = true, default-features = true }
 pezsp-keystore = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-timestamp = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
 
 # Pezkuwi
 pezkuwi-primitives = { workspace = true, default-features = true }
@@ -45,6 +47,7 @@ pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
 
 # Pezcumulus
 pezcumulus-pezpallet-weight-reclaim = { workspace = true, default-features = true }
+pezcumulus-pezpallet-teyrchain-system = { workspace = true, default-features = true }
 pezcumulus-primitives-core = { workspace = true, default-features = true }
 pezcumulus-primitives-proof-size-hostfunction = { workspace = true, default-features = true }
 pezcumulus-primitives-teyrchain-inherent = { workspace = true, default-features = true }
@@ -81,6 +84,8 @@ runtime-benchmarks = [
 	"pezsp-keyring/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-timestamp/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks"
 ]
 std = [
 	"bizinikiwi-test-client/std",
@@ -117,6 +122,7 @@ try-runtime = [
 	"pezsp-keyring/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"pezsp-timestamp/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime"
 ]
 serde = []
 experimental = []

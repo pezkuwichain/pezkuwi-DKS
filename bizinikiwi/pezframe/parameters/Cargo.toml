@@ -6,8 +6,7 @@ license = "Apache-2.0"
 version = "0.44.0"
 authors = [
 	"Acala Developers",
-	"Kurdistan Tech Institute <info@pezkuwichain.io>",
-	"Parity Technologies <admin@parity.io>",
+	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
 ]
 edition.workspace = true
 documentation.workspace = true

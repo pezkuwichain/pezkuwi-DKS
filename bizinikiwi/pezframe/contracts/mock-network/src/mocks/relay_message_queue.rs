@@ -16,7 +16,7 @@
 
 use pezframe_support::{parameter_types, weights::Weight};
 use xcm::latest::prelude::*;
-use xcm_simulator::{
+use xcm_pez_simulator::{
 	AggregateMessageOrigin, ProcessMessage, ProcessMessageError, UmpQueueId, WeightMeter,
 };
 

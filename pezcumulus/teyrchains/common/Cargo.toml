@@ -29,6 +29,7 @@ pezpallet-assets = { workspace = true }
 pezpallet-authorship = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-message-queue = { workspace = true }
+pezpallet-multi-asset-bounties = { workspace = true }
 pezpallet-treasury = { workspace = true }
 pezsp-consensus-aura = { workspace = true }
 pezsp-core = { workspace = true }
@@ -64,6 +65,7 @@ std = [
 	"pezpallet-balances/std",
 	"pezpallet-collator-selection/std",
 	"pezpallet-message-queue/std",
+	"pezpallet-multi-asset-bounties/std",
 	"pezpallet-treasury/std",
 	"pezpallet-xcm/std",
 	"pezsp-consensus-aura/std",
@@ -90,6 +92,7 @@ runtime-benchmarks = [
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-collator-selection/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-multi-asset-bounties/runtime-benchmarks",
 	"pezpallet-treasury/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",
 	"pezsp-consensus-aura/runtime-benchmarks",
@@ -113,6 +116,7 @@ try-runtime = [
 	"pezpallet-balances/try-runtime",
 	"pezpallet-collator-selection/try-runtime",
 	"pezpallet-message-queue/try-runtime",
+	"pezpallet-multi-asset-bounties/try-runtime",
 	"pezpallet-treasury/try-runtime",
 	"pezpallet-xcm/try-runtime",
 	"pezsp-consensus-aura/try-runtime",

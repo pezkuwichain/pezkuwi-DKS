@@ -5255,10 +5255,12 @@ dependencies = [
  "pezkuwi-primitives",
  "pezkuwi-runtime-teyrchains",
  "pezkuwi-teyrchain-primitives",
+ "pezpallet-accumulate-and-forward",
  "pezpallet-asset-conversion",
  "pezpallet-assets",
  "pezpallet-balances",
  "pezpallet-bridge-messages",
+ "pezpallet-dap",
  "pezpallet-message-queue",
  "pezpallet-whitelist",
  "pezpallet-xcm",
@@ -12392,6 +12394,7 @@ version = "0.1.0"
 dependencies = [
  "bizinikiwi-test-client",
  "parity-scale-codec",
+ "pezcumulus-pezpallet-teyrchain-system",
  "pezcumulus-pezpallet-weight-reclaim",
  "pezcumulus-primitives-core",
  "pezcumulus-primitives-proof-size-hostfunction",
@@ -12415,12 +12418,14 @@ dependencies = [
  "pezsp-blockchain",
  "pezsp-consensus-aura",
  "pezsp-core",
+ "pezsp-externalities",
  "pezsp-inherents",
  "pezsp-io",
  "pezsp-keyring",
  "pezsp-keystore",
  "pezsp-runtime",
  "pezsp-timestamp",
+ "pezsp-trie",
 ]
 
 [[package]]
@@ -12450,10 +12455,12 @@ dependencies = [
  "pezcumulus-pezpallet-weight-reclaim",
  "pezcumulus-primitives-aura",
  "pezcumulus-primitives-core",
+ "pezcumulus-primitives-storage-weight-reclaim",
  "pezframe-executive",
  "pezframe-support",
  "pezframe-system",
  "pezframe-system-rpc-runtime-api",
+ "pezkuwi-primitives",
  "pezpallet-aura",
  "pezpallet-authorship",
  "pezpallet-balances",
@@ -12463,6 +12470,7 @@ dependencies = [
  "pezpallet-sudo",
  "pezpallet-timestamp",
  "pezpallet-transaction-payment",
+ "pezpallet-utility",
  "pezsp-api",
  "pezsp-block-builder",
  "pezsp-consensus-aura",
@@ -12479,6 +12487,7 @@ dependencies = [
  "pezstaging-teyrchain-info",
  "scale-info",
  "serde_json",
+ "tracing",
 ]
 
 [[package]]
@@ -14363,6 +14372,7 @@ dependencies = [
  "pezpallet-message-queue",
  "pezpallet-mmr",
  "pezpallet-session",
+ "pezpallet-session-benchmarking",
  "pezpallet-staking",
  "pezpallet-timestamp",
  "pezsc-keystore",
@@ -16640,6 +16650,7 @@ version = "9.0.0"
 dependencies = [
  "log",
  "parity-scale-codec",
+ "pezcumulus-pezpallet-session-benchmarking",
  "pezframe-benchmarking",
  "pezframe-support",
  "pezframe-system",
@@ -16823,6 +16834,25 @@ dependencies = [
  "pezsp-core",
  "pezsp-io",
  "pezsp-runtime",
+ "scale-info",
+]
+
+[[package]]
+name = "pezpallet-dap"
+version = "0.6.0"
+dependencies = [
+ "log",
+ "parity-scale-codec",
+ "pezframe-benchmarking",
+ "pezframe-support",
+ "pezframe-system",
+ "pezpallet-balances",
+ "pezpallet-timestamp",
+ "pezsp-core",
+ "pezsp-dap",
+ "pezsp-io",
+ "pezsp-runtime",
+ "pezsp-staking",
  "scale-info",
 ]
 
@@ -18456,6 +18486,7 @@ dependencies = [
  "pezframe-system",
  "pezpallet-bags-list",
  "pezpallet-balances",
+ "pezpallet-dap",
  "pezpallet-staking-async-rc-client",
  "pezpallet-timestamp",
  "pezsp-application-crypto",
@@ -21414,6 +21445,7 @@ dependencies = [
  "pezsnowbridge-core",
  "pezsnowbridge-outbound-queue-primitives",
  "pezsp-core",
+ "pezsp-crypto-hashing",
  "pezstaging-xcm",
  "pezstaging-xcm-builder",
  "pezstaging-xcm-executor",
@@ -21824,6 +21856,13 @@ dependencies = [
  "pezsp-crypto-hashing",
  "quote 1.0.46",
  "syn 2.0.118",
+]
+
+[[package]]
+name = "pezsp-dap"
+version = "0.3.0"
+dependencies = [
+ "pezframe-support",
 ]
 
 [[package]]
@@ -26863,6 +26902,7 @@ dependencies = [
  "pezpallet-balances",
  "pezpallet-collator-selection",
  "pezpallet-message-queue",
+ "pezpallet-multi-asset-bounties",
  "pezpallet-treasury",
  "pezpallet-xcm",
  "pezsp-consensus-aura",

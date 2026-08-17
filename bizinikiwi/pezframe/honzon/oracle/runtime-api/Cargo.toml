@@ -3,8 +3,7 @@ name = "pezpallet-oracle-runtime-api"
 version = "1.0.0"
 authors = [
 	"Acala Developers",
-	"Kurdistan Tech Institute <info@pezkuwichain.io>",
-	"Parity Technologies <admin@parity.io>",
+	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
 ]
 edition.workspace = true
 license = "Apache-2.0"

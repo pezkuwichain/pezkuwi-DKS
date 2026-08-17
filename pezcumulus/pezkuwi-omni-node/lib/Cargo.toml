@@ -186,6 +186,7 @@ runtime-benchmarks = [
 	"pezsp-transaction-pool/runtime-benchmarks",
 	"pezsp-version/runtime-benchmarks",
 	"teyrchains-common/runtime-benchmarks",
+	"pezsp-transaction-storage-proof/runtime-benchmarks"
 ]
 try-runtime = [
 	"bizinikiwi-frame-rpc-system/try-runtime",
@@ -243,6 +244,7 @@ try-runtime = [
 	"pezsp-transaction-pool/try-runtime",
 	"pezsp-version/try-runtime",
 	"teyrchains-common/try-runtime",
+	"pezsp-transaction-storage-proof/try-runtime"
 ]
 storage-benchmark = ["pezframe-benchmarking-cli/storage-benchmark"]
 std = [

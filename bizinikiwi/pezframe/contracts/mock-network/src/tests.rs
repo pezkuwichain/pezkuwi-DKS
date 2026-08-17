@@ -28,7 +28,7 @@ use pezpallet_contracts::{test_utils::builder::*, Code};
 use pezpallet_contracts_fixtures::compile_module;
 use pezpallet_contracts_uapi::ReturnErrorCode;
 use xcm::{v4::prelude::*, VersionedLocation, VersionedXcm};
-use xcm_simulator::TestExt;
+use xcm_pez_simulator::TestExt;
 
 macro_rules! assert_return_code {
 	( $x:expr , $y:expr $(,)? ) => {{

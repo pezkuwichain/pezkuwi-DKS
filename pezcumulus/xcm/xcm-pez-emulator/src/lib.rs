@@ -91,7 +91,7 @@ pub use xcm::latest::prelude::{
 	Teyrchain as TeyrchainJunction, WeightLimit, XcmHash,
 };
 pub use xcm_executor::traits::ConvertLocation;
-use xcm_simulator::helpers::TopicIdTracker;
+use xcm_pez_simulator::helpers::TopicIdTracker;
 
 pub type AccountIdOf<T> = <T as pezframe_system::Config>::AccountId;
 

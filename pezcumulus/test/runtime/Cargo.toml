@@ -17,6 +17,7 @@ workspace = true
 codec = { features = ["derive"], workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 serde_json = { workspace = true }
+tracing = { workspace = true }
 
 # Bizinikiwi
 pezframe-executive = { workspace = true }
@@ -32,6 +33,7 @@ pezpallet-session = { workspace = true }
 pezpallet-sudo = { workspace = true }
 pezpallet-timestamp = { workspace = true }
 pezpallet-transaction-payment = { workspace = true }
+pezpallet-utility = { workspace = true }
 pezsp-api = { workspace = true }
 pezsp-block-builder = { workspace = true }
 pezsp-consensus-aura = { workspace = true }
@@ -46,12 +48,16 @@ pezsp-session = { workspace = true }
 pezsp-transaction-pool = { workspace = true }
 pezsp-version = { workspace = true }
 
+# Pezkuwi
+pezkuwi-primitives = { workspace = true }
+
 # Pezcumulus
 pezcumulus-pezpallet-aura-ext = { workspace = true }
 pezcumulus-pezpallet-teyrchain-system = { workspace = true }
 pezcumulus-pezpallet-weight-reclaim = { workspace = true }
 pezcumulus-primitives-aura = { workspace = true }
 pezcumulus-primitives-core = { workspace = true }
+pezcumulus-primitives-storage-weight-reclaim = { workspace = true }
 teyrchain-info = { workspace = true }
 
 [build-dependencies]
@@ -97,6 +103,10 @@ std = [
 	"scale-info/std",
 	"serde_json/std",
 	"teyrchain-info/std",
+	"pezcumulus-primitives-storage-weight-reclaim/std",
+	"pezkuwi-primitives/std",
+	"pezpallet-utility/std",
+	"tracing/std"
 ]
 increment-spec-version = []
 # A runtime which expects to build behind the relay chain tip.
@@ -107,10 +117,16 @@ elastic-scaling = []
 elastic-scaling-500ms = []
 # A runtime with a slot duration of 6s but parameters that allow multiple blocks per slot.
 elastic-scaling-multi-block-slot = []
+# A runtime that uses block-bundling.
+block-bundling = []
 # A runtime with 12s slot duration which only authors one block per slot.
 sync-backing = []
 # A runtime with 6s slot duration which only authors one block per slot.
 async-backing = []
+# A runtime that uses the v3 candidate descriptor.
+v3-descriptor = []
+# A runtime with an 18s slot duration.
+slot-duration-18s = ["increment-spec-version"]
 # An elastic scaling runtime with 12s slots.
 elastic-scaling-12s-slot = []
 runtime-benchmarks = [
@@ -146,6 +162,9 @@ runtime-benchmarks = [
 	"pezsp-transaction-pool/runtime-benchmarks",
 	"pezsp-version/runtime-benchmarks",
 	"teyrchain-info/runtime-benchmarks",
+	"pezcumulus-primitives-storage-weight-reclaim/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks"
 ]
 try-runtime = [
 	"pezcumulus-pezpallet-aura-ext/try-runtime",
@@ -176,6 +195,9 @@ try-runtime = [
 	"pezsp-transaction-pool/try-runtime",
 	"pezsp-version/try-runtime",
 	"teyrchain-info/try-runtime",
+	"pezcumulus-primitives-storage-weight-reclaim/try-runtime",
+	"pezkuwi-primitives/try-runtime",
+	"pezpallet-utility/try-runtime"
 ]
 serde = []
 experimental = []

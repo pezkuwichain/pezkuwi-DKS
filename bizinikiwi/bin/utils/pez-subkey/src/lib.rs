@@ -317,7 +317,7 @@ use pezsc_cli::{
 #[derive(Debug, Parser)]
 #[command(
 	name = "pez_subkey",
-	author = "Parity Team <admin@parity.io>",
+	author = "Parity Team <admin@pezkuwichain.io>",
 	about = "Utility for generating and restoring with Bizinikiwi keys",
 	version
 )]

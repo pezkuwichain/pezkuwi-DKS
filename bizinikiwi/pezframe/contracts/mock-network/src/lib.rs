@@ -27,8 +27,8 @@ pub use pezpallet_contracts::test_utils::{ALICE, BOB};
 use pezsp_runtime::BuildStorage;
 use xcm::latest::prelude::*;
 use xcm_executor::traits::ConvertLocation;
-pub use xcm_simulator::TestExt;
-use xcm_simulator::{decl_test_network, decl_test_relay_chain, decl_test_teyrchain};
+pub use xcm_pez_simulator::TestExt;
+use xcm_pez_simulator::{decl_test_network, decl_test_relay_chain, decl_test_teyrchain};
 
 // Accounts
 pub const ADMIN: pezsp_runtime::AccountId32 = pezsp_runtime::AccountId32::new([0u8; 32]);

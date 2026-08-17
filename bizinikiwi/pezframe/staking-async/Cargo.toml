@@ -39,6 +39,7 @@ serde = { features = ["alloc", "derive"], workspace = true }
 pezframe-benchmarking = { optional = true, workspace = true }
 
 [dev-dependencies]
+pezpallet-dap = { workspace = true, default-features = true }
 anyhow = { workspace = true }
 bizinikiwi-test-utils = { workspace = true }
 env_logger = { workspace = true }
@@ -64,6 +65,7 @@ std = [
 	"pezframe-system/std",
 	"pezpallet-bags-list/std",
 	"pezpallet-balances/std",
+	"pezpallet-dap/std",
 	"pezpallet-staking-async-rc-client/std",
 	"pezpallet-timestamp/std",
 	"pezsp-application-crypto/std",
@@ -87,6 +89,7 @@ runtime-benchmarks = [
 	"pezframe-system/runtime-benchmarks",
 	"pezpallet-bags-list/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-dap/runtime-benchmarks",
 	"pezpallet-staking-async-rc-client/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
 	"pezsp-application-crypto/runtime-benchmarks",
@@ -102,6 +105,7 @@ try-runtime = [
 	"pezframe-system/try-runtime",
 	"pezpallet-bags-list/try-runtime",
 	"pezpallet-balances/try-runtime",
+	"pezpallet-dap/try-runtime",
 	"pezpallet-staking-async-rc-client/try-runtime",
 	"pezpallet-timestamp/try-runtime",
 	"pezsp-npos-elections/try-runtime",
