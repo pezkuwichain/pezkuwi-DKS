@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 
 //! Storage migrations for the Staking pezpallet. The changelog for this is maintained at
-//! [CHANGELOG.md](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/bizinikiwi/pezframe/staking/CHANGELOG.md).
+//! [CHANGELOG.md](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/bizinikiwi/pezframe/staking/CHANGELOG.md).
 
 use super::*;
 use pezframe_support::{
@@ -204,7 +204,7 @@ pub mod v15 {
 }
 
 /// Migration of era exposure storage items to paged exposures.
-/// Changelog: [v14.](https://github.com/paritytech/bizinikiwi/blob/ankan/paged-rewards-rebased2/frame/staking/CHANGELOG.md#14)
+/// Changelog: [v14.](https://github.com/paritytech/substrate/blob/ankan/paged-rewards-rebased2/frame/staking/CHANGELOG.md#14)
 pub mod v14 {
 	use super::*;
 

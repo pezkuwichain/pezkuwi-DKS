@@ -1009,7 +1009,7 @@ async fn update_active_leaves_validation_backend<Sender>(
 /// Get list of still valid scheduling parents for the given leaf.
 ///
 /// TODO: This function does not take into account session boundaries, which leads to wasted effort:
-/// https://github.com/pezkuwichain/pezkuwi-sdk/issues/11301
+/// https://github.com/pezkuwichain/pezkuwi-DKS/issues/11301
 async fn get_block_ancestors<Sender>(sender: &mut Sender, leaf: Hash) -> Vec<Hash>
 where
 	Sender: SubsystemSender<ChainApiMessage> + SubsystemSender<RuntimeApiMessage>,

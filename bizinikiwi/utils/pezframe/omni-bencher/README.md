@@ -19,7 +19,7 @@ cargo install frame-omni-bencher --profile=production --locked
 from GitHub:
 
 ```sh
-cargo install --git https://github.com/pezkuwichain/pezkuwi-sdk frame-omni-bencher --profile=production --locked
+cargo install --git https://github.com/pezkuwichain/pezkuwi-DKS frame-omni-bencher --profile=production --locked
 ```
 
 or locally from the sources:

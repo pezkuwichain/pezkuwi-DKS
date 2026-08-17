@@ -228,7 +228,7 @@ pub enum Error {
 	InvalidWorkerBinaries { prep_worker_path: PathBuf, exec_worker_path: PathBuf },
 
 	#[cfg(feature = "full-node")]
-	#[error("Worker binaries could not be found, make sure pezkuwi was built and installed correctly. Please see the readme for the latest instructions (https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/pezkuwi). If you ran with `cargo run`, please run `cargo build` first. Searched given workers path ({given_workers_path:?}), pezkuwi binary path ({current_exe_path:?}), and lib path (/usr/lib/pezkuwi), workers names: {workers_names:?}")]
+	#[error("Worker binaries could not be found, make sure pezkuwi was built and installed correctly. Please see the readme for the latest instructions (https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/pezkuwi). If you ran with `cargo run`, please run `cargo build` first. Searched given workers path ({given_workers_path:?}), pezkuwi binary path ({current_exe_path:?}), and lib path (/usr/lib/pezkuwi), workers names: {workers_names:?}")]
 	MissingWorkerBinaries {
 		given_workers_path: Option<PathBuf>,
 		current_exe_path: PathBuf,

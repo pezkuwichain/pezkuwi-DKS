@@ -26,7 +26,7 @@
 /// For new assets, the reserve location(s) and teleport status need to be explicitly configured by
 /// the asset's `Owner`.
 ///
-/// See <https://github.com/pezkuwichain/pezkuwi-sdk/pull/9948> for more info.
+/// See <https://github.com/pezkuwichain/pezkuwi-DKS/pull/9948> for more info.
 pub mod foreign_assets_reserves {
 	use crate::*;
 	use codec::{Decode, Encode, MaxEncodedLen};

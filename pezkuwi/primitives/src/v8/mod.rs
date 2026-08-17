@@ -148,7 +148,7 @@ impl From<u32> for ChunkIndex {
 	}
 }
 
-// We should really get https://github.com/pezkuwichain/pezkuwi-sdk/issues/306 going ..
+// We should really get https://github.com/pezkuwichain/pezkuwi-DKS/issues/306 going ..
 impl From<u32> for ValidatorIndex {
 	fn from(n: u32) -> Self {
 		ValidatorIndex(n)
@@ -631,7 +631,7 @@ impl PartialOrd for CommittedCandidateReceipt {
 impl Ord for CommittedCandidateReceipt {
 	fn cmp(&self, other: &Self) -> core::cmp::Ordering {
 		// TODO: compare signatures or something more sane
-		// https://github.com/pezkuwichain/pezkuwi-sdk/issues/164
+		// https://github.com/pezkuwichain/pezkuwi-DKS/issues/164
 		self.descriptor()
 			.para_id
 			.cmp(&other.descriptor().para_id)
@@ -1095,7 +1095,7 @@ impl<H, N> OccupiedCore<H, N> {
 pub struct ScheduledCore {
 	/// The ID of a para scheduled.
 	pub para_id: Id,
-	/// DEPRECATED: see: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/308>
+	/// DEPRECATED: see: <https://github.com/pezkuwichain/pezkuwi-DKS/issues/308>
 	///
 	/// Will be removed in a future version.
 	pub collator: Option<CollatorId>,
@@ -1873,7 +1873,7 @@ pub fn effective_minimum_backing_votes(
 /// Information about validator sets of a session.
 ///
 /// NOTE: `SessionInfo` is frozen. Do not include new fields, consider creating a separate runtime
-/// API. Reasoning and further outlook [here](https://github.com/pezkuwichain/pezkuwi-sdk/issues/309).
+/// API. Reasoning and further outlook [here](https://github.com/pezkuwichain/pezkuwi-DKS/issues/309).
 #[derive(Clone, Encode, Decode, Debug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(PartialEq))]
 pub struct SessionInfo {
@@ -2044,7 +2044,7 @@ pub mod node_features {
 	#[derive(Clone, Copy)]
 	pub enum FeatureIndex {
 		/// Tells if tranch0 assignments could be sent in a single certificate.
-		/// Reserved for: `<https://github.com/pezkuwichain/pezkuwi-sdk/issues/245>`
+		/// Reserved for: `<https://github.com/pezkuwichain/pezkuwi-DKS/issues/245>`
 		EnableAssignmentsV2 = 0,
 		/// This feature enables the extension of `BackedCandidate::validator_indices` by 8 bits.
 		/// The value stored there represents the assumed core index where the candidates
@@ -2098,7 +2098,7 @@ pub struct SchedulerParams<BlockNumber> {
 	/// How many cores are managed by the coretime chain.
 	pub num_cores: u32,
 	/// Deprecated and no longer used by the runtime.
-	/// Removal is tracked by <https://github.com/pezkuwichain/pezkuwi-sdk/issues/244>.
+	/// Removal is tracked by <https://github.com/pezkuwichain/pezkuwi-DKS/issues/244>.
 	#[deprecated]
 	pub max_availability_timeouts: u32,
 	/// The maximum queue size of the pay as you go module.
@@ -2111,7 +2111,7 @@ pub struct SchedulerParams<BlockNumber> {
 	/// The minimum amount needed to claim a slot in the spot pricing queue.
 	pub on_demand_base_fee: Balance,
 	/// Deprecated and no longer used by the runtime.
-	/// Removal is tracked by <https://github.com/pezkuwichain/pezkuwi-sdk/issues/244>.
+	/// Removal is tracked by <https://github.com/pezkuwichain/pezkuwi-DKS/issues/244>.
 	#[deprecated]
 	pub ttl: BlockNumber,
 }

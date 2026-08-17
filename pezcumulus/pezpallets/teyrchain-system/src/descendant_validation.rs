@@ -40,7 +40,7 @@ use pezsp_runtime::{traits::Header, RuntimeAppPublic};
 /// - `relay_parent_state_root`: The state root hash of the relay parent. This
 ///   will be matched with the first relay parent header from the descendants.
 ///   **Note:** This parameter can be removed once the hash of the relay parent is available
-///   to the runtime. https://github.com/pezkuwichain/pezkuwi-sdk/issues/83
+///   to the runtime. https://github.com/pezkuwichain/pezkuwi-DKS/issues/83
 /// - `expected_rp_descendants_num`: The expected number of headers in the
 ///   `relay_parent_descendants`. A mismatch will cause the function to return an error.
 ///

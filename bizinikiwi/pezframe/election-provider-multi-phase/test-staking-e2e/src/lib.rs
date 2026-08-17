@@ -250,7 +250,7 @@ fn continuous_slashes_below_offending_threshold() {
 /// be below ED. In that case, only the stash (or root) can kill the ledger entry by calling
 /// `withdraw_unbonded` after the bonding period has passed.
 ///
-/// Related to <https://github.com/paritytech/bizinikiwi/issues/14246>.
+/// Related to <https://github.com/paritytech/substrate/issues/14246>.
 fn ledger_consistency_active_balance_below_ed() {
 	use pezpallet_staking::{Error, Event};
 

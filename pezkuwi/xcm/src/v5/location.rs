@@ -448,7 +448,7 @@ impl Reanchorable for Location {
 	///
 	/// Does not modify `self` in case of overflow.
 	fn reanchor(&mut self, target: &Location, context: &InteriorLocation) -> Result<(), ()> {
-		// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/292 Optimize this.
+		// TODO: https://github.com/pezkuwichain/pezkuwi-DKS/issues/292 Optimize this.
 
 		// 1. Use our `context` to figure out how the `target` would address us.
 		let inverted_target = context.invert_target(target)?;

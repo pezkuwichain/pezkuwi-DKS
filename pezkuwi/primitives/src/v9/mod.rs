@@ -1743,7 +1743,7 @@ pub mod node_features {
 	#[derive(Clone, Copy)]
 	pub enum FeatureIndex {
 		/// Tells if tranch0 assignments could be sent in a single certificate.
-		/// Reserved for: `<https://github.com/pezkuwichain/pezkuwi-sdk/issues/628>`
+		/// Reserved for: `<https://github.com/pezkuwichain/pezkuwi-DKS/issues/628>`
 		EnableAssignmentsV2 = 0,
 		/// This feature enables the extension of `BackedCandidate::validator_indices` by 8 bits.
 		/// The value stored there represents the assumed core index where the candidates
@@ -1751,12 +1751,12 @@ pub mod node_features {
 		ElasticScalingMVP = 1,
 		/// Tells if the chunk mapping feature is enabled.
 		/// Enables the implementation of
-		/// [RFC-47](https://github.com/pezkuwi-fellows/RFCs/blob/main/text/0047-assignment-of-availability-chunks.md).
+		/// [RFC-47](https://github.com/pezkuwichain/pezkuwi-fellows/blob/main/text/0047-assignment-of-availability-chunks.md).
 		/// Must not be enabled unless all validators and collators have stopped using `req_chunk`
 		/// protocol version 1. If it is enabled, validators can start systematic chunk recovery.
 		AvailabilityChunkMapping = 2,
 		/// Enables node side support of `CoreIndex` committed candidate receipts.
-		/// See [RFC-103](https://github.com/pezkuwi-fellows/RFCs/pull/103) for details.
+		/// See [RFC-103](https://github.com/pezkuwichain/pezkuwi-fellows/pull/103) for details.
 		/// Only enable if at least 2/3 of nodes support the feature.
 		CandidateReceiptV2 = 3,
 		/// Enables support for scheduling information in the Candidate Descriptor.
@@ -1817,7 +1817,7 @@ pub struct SchedulerParams<BlockNumber> {
 	/// How many cores are managed by the coretime chain.
 	pub num_cores: u32,
 	/// Deprecated and no longer used by the runtime.
-	/// Removal is tracked by <https://github.com/pezkuwichain/pezkuwi-sdk/issues/6067>.
+	/// Removal is tracked by <https://github.com/pezkuwichain/pezkuwi-DKS/issues/6067>.
 	#[deprecated]
 	pub max_availability_timeouts: u32,
 	/// The maximum queue size of the pay as you go module.
@@ -1830,7 +1830,7 @@ pub struct SchedulerParams<BlockNumber> {
 	/// The minimum amount needed to claim a slot in the spot pricing queue.
 	pub on_demand_base_fee: Balance,
 	/// Deprecated and no longer used by the runtime.
-	/// Removal is tracked by <https://github.com/pezkuwichain/pezkuwi-sdk/issues/6067>.
+	/// Removal is tracked by <https://github.com/pezkuwichain/pezkuwi-DKS/issues/6067>.
 	#[deprecated]
 	pub ttl: BlockNumber,
 }

@@ -654,7 +654,7 @@ impl ValidationResult {
 	#[allow(clippy::get_first)]
 	fn try_from_bytes(bytes: Vec<u8>) -> Result<ValidationResult, ExtrinsicError> {
 		// TaggedTransactionQueue_validate_transaction returns this:
-		// https://github.com/pezkuwichain/bizinikiwi/blob/0cdf7029017b70b7c83c21a4dc0aa1020e7914f6/primitives/runtime/src/transaction_validity.rs#L210
+		// https://github.com/paritytech/substrate/blob/0cdf7029017b70b7c83c21a4dc0aa1020e7914f6/primitives/runtime/src/transaction_validity.rs#L210
 		// We copy some of the inner types and put the three states (valid, invalid, unknown) into
 		// one enum, because from our perspective, the call was successful regardless.
 		if bytes.get(0) == Some(&0) {

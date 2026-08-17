@@ -95,7 +95,7 @@
 //! inadvertently result in a bricked chain.
 //!
 //! It is recommended to run as part of your CI pipeline. See the
-//! [pezkuwi-sdk check-runtime-migration job](https://github.com/pezkuwichain/pezkuwi-sdk/blob/4a293bc5a25be637c06ce950a34490706597615b/.gitlab/pipeline/check.yml#L103-L124)
+//! [pezkuwi-sdk check-runtime-migration job](https://github.com/pezkuwichain/pezkuwi-DKS/blob/4a293bc5a25be637c06ce950a34490706597615b/.gitlab/pipeline/check.yml#L103-L124)
 //! for an example of how to configure this.
 //!
 //! ### Note on the Manipulability of PoV Size and Execution Time
@@ -125,7 +125,7 @@
 //! Suitable for migrations which could use arbitrary amounts of block weight.
 //!
 //! See the
-//! [multi-block-migrations example](https://github.com/pezkuwichain/pezkuwi-sdk/tree/0d7d2177807ec6b3094f4491a45b0bc0d74d3c8b/bizinikiwi/pezframe/examples/multi-block-migrations)
+//! [multi-block-migrations example](https://github.com/pezkuwichain/pezkuwi-DKS/tree/0d7d2177807ec6b3094f4491a45b0bc0d74d3c8b/bizinikiwi/pezframe/examples/multi-block-migrations)
 //! for reference.
 //!
 //! [`OnRuntimeUpgrade`]: pezframe_support::traits::OnRuntimeUpgrade

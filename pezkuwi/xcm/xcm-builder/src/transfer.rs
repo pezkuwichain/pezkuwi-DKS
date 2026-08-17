@@ -338,7 +338,7 @@ fn remote_transfer_xcm_paying_fees(
 		WithdrawAsset(vec![remote_fee.clone()].into()),
 		PayFees { asset: remote_fee },
 		SetAppendix(Xcm(vec![
-			// Todo: add error reporting after fixing https://github.com/pezkuwichain/pezkuwi-sdk/issues/10078
+			// Todo: add error reporting after fixing https://github.com/pezkuwichain/pezkuwi-DKS/issues/10078
 			RefundSurplus,
 			DepositAsset { assets: AssetFilter::Wild(WildAsset::All), beneficiary: from_at_target },
 		])),

@@ -1017,7 +1017,7 @@ fn bidirectional_transfer_multiple_assets_between_penpal_and_asset_hub() {
 		let mut assets = all_assets.clone();
 		let fee_asset_index = assets.iter().position(|a| a.id == t.args.fee_asset_id).unwrap();
 		let mut fees = assets.remove(fee_asset_index);
-		// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/290): dry-run to get exact fees.
+		// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/290): dry-run to get exact fees.
 		// For now just use half the fees locally, half on dest
 		if let Fungible(fees_amount) = fees.fun {
 			fees.fun = Fungible(fees_amount / 2);
@@ -1056,7 +1056,7 @@ fn bidirectional_transfer_multiple_assets_between_penpal_and_asset_hub() {
 		let mut assets = all_assets.clone();
 		let fee_asset_index = assets.iter().position(|a| a.id == t.args.fee_asset_id).unwrap();
 		let mut fees = assets.remove(fee_asset_index);
-		// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/290): dry-run to get exact fees.
+		// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/290): dry-run to get exact fees.
 		// For now just use half the fees locally, half on dest
 		if let Fungible(fees_amount) = fees.fun {
 			fees.fun = Fungible(fees_amount / 2);

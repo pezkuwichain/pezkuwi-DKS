@@ -266,7 +266,7 @@ struct PerSessionCache {
 impl Default for PerSessionCache {
 	/// Creates a new `PerSessionCache` with a default capacity.
 	// TODO: Use the actual session window for allowed relay parents once
-	// https://github.com/pezkuwichain/pezkuwi-sdk/issues/11207 is available,
+	// https://github.com/pezkuwichain/pezkuwi-DKS/issues/11207 is available,
 	// instead of DISPUTE_WINDOW.
 	fn default() -> Self {
 		Self::new(DISPUTE_WINDOW.get())

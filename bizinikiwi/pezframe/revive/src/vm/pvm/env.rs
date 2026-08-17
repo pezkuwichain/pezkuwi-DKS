@@ -50,7 +50,7 @@ impl<T: Config> ContractBlob<T> {
 		let mut config = polkavm::Config::default();
 		// Log filtering by level with log::enabled! returns always true,
 		// passing all logs through impacting performance \
-		// (more details: https://github.com/pezkuwichain/pezkuwi-sdk/issues/8760#issuecomment-3499548774)
+		// (more details: https://github.com/pezkuwichain/pezkuwi-DKS/issues/8760#issuecomment-3499548774)
 		// By default, disable polkavm logging unless pvm_logs debug setting is enabled.
 		let pvm_logs_enabled = DebugSettings::is_pvm_logs_enabled::<T>();
 		config.set_imperfect_logger_filtering_workaround(!pvm_logs_enabled);

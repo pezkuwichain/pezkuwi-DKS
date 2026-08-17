@@ -2133,7 +2133,7 @@ impl<T: Config> Pezpallet<T> {
 	/// * A bonded (stash, controller) pair must have an associated ledger.
 	///
 	/// NOTE: these checks result in warnings only. Once
-	/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/3245> is resolved, turn warns into check
+	/// <https://github.com/pezkuwichain/pezkuwi-DKS/issues/3245> is resolved, turn warns into check
 	/// failures.
 	fn check_bonded_consistency() -> Result<(), TryRuntimeError> {
 		use alloc::collections::btree_set::BTreeSet;

@@ -56,4 +56,4 @@ podman build -t paritypr/malus:v1 -f Containerfile ../../..
 ```
 
 [zombienet]: https://github.com/paritytech/zombienet
-[gke]: (https://github.com/pezkuwichain/gurke/blob/main/docs/How-to-setup-access-to-gke-k8s-cluster.md)
+[gke]: (https://github.com/paritytech/zombienet/blob/main/docs/How-to-setup-access-to-gke-k8s-cluster.md)

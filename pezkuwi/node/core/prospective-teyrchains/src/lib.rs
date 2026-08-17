@@ -1051,7 +1051,7 @@ async fn answer_prospective_validation_data_request<Context>(
 			.flatten()
 			{
 				if max_pov_size.is_none() {
-					// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/11256): serve
+					// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/11256): serve
 					// `max_pov_size` from the candidate's relay-parent session rather than the
 					// scheduling session. We are leaning hard on two assumptions here:
 					// 1. Collators need to use the max_pov_size of the scheduling session, not of

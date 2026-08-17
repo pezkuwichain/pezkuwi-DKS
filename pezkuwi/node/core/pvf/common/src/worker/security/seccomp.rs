@@ -34,7 +34,7 @@
 //! reasons.
 //!
 //! Considering `io_uring`'s status discussed above, and that it very likely would get detected
-//! either by our [static analysis](https://github.com/pezkuwichain/pezkuwi-sdk/issues/252) or by
+//! either by our [static analysis](https://github.com/pezkuwichain/pezkuwi-DKS/issues/252) or by
 //! testing, we think it is safe to block it.
 //!
 //! ## Consensus analysis

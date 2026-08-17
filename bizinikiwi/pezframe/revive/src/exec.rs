@@ -1498,7 +1498,7 @@ where
 					let pezframe_meter = &top_frame!(self).pezframe_meter;
 
 					// we treat the initial frame meter differently to address
-					// https://github.com/pezkuwichain/pezkuwi-sdk/issues/8362
+					// https://github.com/pezkuwichain/pezkuwi-DKS/issues/8362
 					let gas_consumed = if is_first_frame {
 						pezframe_meter.total_consumed_gas()
 					} else {
@@ -1529,7 +1529,7 @@ where
 					let pezframe_meter = &top_frame!(self).pezframe_meter;
 
 					// we treat the initial frame meter differently to address
-					// https://github.com/pezkuwichain/pezkuwi-sdk/issues/8362
+					// https://github.com/pezkuwichain/pezkuwi-DKS/issues/8362
 					let gas_consumed = if is_first_frame {
 						pezframe_meter.total_consumed_gas()
 					} else {

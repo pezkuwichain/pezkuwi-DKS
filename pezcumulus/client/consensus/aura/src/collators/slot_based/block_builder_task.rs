@@ -121,7 +121,7 @@ pub struct BuilderTaskParams<
 	/// wait for relay chain notifications because we woke up too early).
 	pub slot_offset: Duration,
 	/// The maximum percentage of the maximum PoV size that the collator can use.
-	/// It will be removed once https://github.com/pezkuwichain/pezkuwi-sdk/issues/6020 is fixed.
+	/// It will be removed once https://github.com/pezkuwichain/pezkuwi-DKS/issues/6020 is fixed.
 	pub max_pov_percentage: Option<u32>,
 }
 
@@ -340,7 +340,7 @@ where
 			} else {
 				// Set the block limit to 85% of the maximum PoV size.
 				//
-				// Once https://github.com/pezkuwichain/pezkuwi-sdk/issues/6020 issue is
+				// Once https://github.com/pezkuwichain/pezkuwi-DKS/issues/6020 issue is
 				// fixed, this should be removed.
 				max_pov_size * 85 / 100
 			} as usize;

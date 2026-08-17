@@ -558,7 +558,7 @@ fn full_unbonding_works() {
 }
 
 /// Test that full unbond auto-chills and removes the validator from the set.
-/// This test was added in https://github.com/pezkuwichain/pezkuwi-sdk/pull/3811.
+/// This test was added in https://github.com/pezkuwichain/pezkuwi-DKS/pull/3811.
 #[test]
 fn unbond_with_chill_works() {
 	ExtBuilder::default().nominate(false).build_and_execute(|| {

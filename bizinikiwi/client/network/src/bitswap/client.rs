@@ -103,7 +103,7 @@ fn validate_cids(cids: &[Cid]) -> Result<(), BitswapError> {
 /// or contains a duplicate CID.
 ///
 /// Note: This is a temporary API that shall be superseeded by a better abstraction such as
-///  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/12052>
+///  <https://github.com/pezkuwichain/pezkuwi-DKS/issues/12052>
 pub async fn request_bitswap_blocks<N>(
 	network: &N,
 	peer: PeerId,
@@ -126,7 +126,7 @@ where
 /// CID prefix only; integrity verification is delegated to the caller.
 ///
 /// Note: This is a temporary API that shall be superseeded by a better abstraction such as
-///  <https://github.com/pezkuwichain/pezkuwi-sdk/issues/12052>
+///  <https://github.com/pezkuwichain/pezkuwi-DKS/issues/12052>
 pub async fn request_bitswap_blocks_unverified<N>(
 	network: &N,
 	peer: PeerId,

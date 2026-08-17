@@ -1221,7 +1221,7 @@ pub mod pezpallet_macros {
 	/// The `#[pezpallet::validate_unsigned]` attribute has been deprecated and will be removed in
 	/// a future release. Use [`pezsp_runtime::traits::TransactionExtension`] instead.
 	///
-	/// For more information, see: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/2415>
+	/// For more information, see: <https://github.com/pezkuwichain/pezkuwi-DKS/issues/2415>
 	/// ---
 	/// Allows the pezpallet to validate unsigned transactions.
 	///
@@ -1927,7 +1927,7 @@ pub mod pezpallet_macros {
 	///
 	/// ## Former Usage
 	///
-	/// Prior to <https://github.com/paritytech/bizinikiwi/pull/14306>, the following syntax was used.
+	/// Prior to <https://github.com/paritytech/substrate/pull/14306>, the following syntax was used.
 	/// This is deprecated and will soon be removed.
 	///
 	/// ```

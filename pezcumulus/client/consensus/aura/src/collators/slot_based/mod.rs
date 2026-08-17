@@ -155,7 +155,7 @@ pub struct Params<Block, BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS, 
 	/// When set, the collator will export every produced `POV` to this folder.
 	pub export_pov: Option<PathBuf>,
 	/// The maximum percentage of the maximum PoV size that the collator can use.
-	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-sdk/issues/6020> is fixed.
+	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-DKS/issues/6020> is fixed.
 	pub max_pov_percentage: Option<u32>,
 }
 

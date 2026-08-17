@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *Pezkuwi*.
 //!
-//! [![github]](https://github.com/paritytech/bizinikiwi/pezframe/fast-unstake) -
+//! [![github]](https://github.com/paritytech/substrate/pezframe/fast-unstake) -
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]: https://img.shields.io/badge/polkadot-E6007A?style=for-the-badge&logo=polkadot&logoColor=white
@@ -248,7 +248,7 @@ pub mod pezpallet {
 		type SpendFunds: SpendFunds<Self, I>;
 
 		/// DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
-		/// Refer to <https://github.com/pezkuwichain/pezkuwi-sdk/pull/5961> for migration to `spend`.
+		/// Refer to <https://github.com/pezkuwichain/pezkuwi-DKS/pull/5961> for migration to `spend`.
 		///
 		/// The maximum number of approvals that can wait in the spending queue.
 		///
@@ -303,14 +303,14 @@ pub mod pezpallet {
 	}
 
 	/// DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
-	/// Refer to <https://github.com/pezkuwichain/pezkuwi-sdk/pull/5961> for migration to `spend`.
+	/// Refer to <https://github.com/pezkuwichain/pezkuwi-DKS/pull/5961> for migration to `spend`.
 	///
 	/// Number of proposals that have been made.
 	#[pezpallet::storage]
 	pub type ProposalCount<T, I = ()> = StorageValue<_, ProposalIndex, ValueQuery>;
 
 	/// DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
-	/// Refer to <https://github.com/pezkuwichain/pezkuwi-sdk/pull/5961> for migration to `spend`.
+	/// Refer to <https://github.com/pezkuwichain/pezkuwi-DKS/pull/5961> for migration to `spend`.
 	///
 	/// Proposals that have been made.
 	#[pezpallet::storage]
@@ -328,7 +328,7 @@ pub mod pezpallet {
 		StorageValue<_, BalanceOf<T, I>, ValueQuery>;
 
 	/// DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
-	/// Refer to <https://github.com/pezkuwichain/pezkuwi-sdk/pull/5961> for migration to `spend`.
+	/// Refer to <https://github.com/pezkuwichain/pezkuwi-DKS/pull/5961> for migration to `spend`.
 	///
 	/// Proposal indices that have been approved but not yet awarded.
 	#[pezpallet::storage]

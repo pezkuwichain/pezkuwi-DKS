@@ -2547,7 +2547,7 @@ fn subsystem_import_checked_approval_sets_one_block_bit_at_a_time() {
 	});
 }
 
-// See https://github.com/pezkuwichain/pezkuwi-sdk/issues/3826
+// See https://github.com/pezkuwichain/pezkuwi-DKS/issues/3826
 #[test]
 fn inclusion_events_can_be_unordered_by_core_index() {
 	let assignment_criteria = Box::new(MockAssignmentCriteria(

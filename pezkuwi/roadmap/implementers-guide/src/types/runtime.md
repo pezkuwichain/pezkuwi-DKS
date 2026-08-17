@@ -7,7 +7,7 @@ Types used within the runtime exclusively and pervasively.
 The internal-to-runtime configuration of the teyrchain host is kept in `struct HostConfiguration`. This is expected to
 be altered only by governance procedures or via migrations from the Pezkuwi-SDK codebase. The latest definition of
 `HostConfiguration` can be found in the project repo
-[the configuration source](https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs). Each
+[the configuration source](https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs). Each
 parameter has got a doc comment so for any details please refer to the code.
 
 Some related parameters in `HostConfiguration` are grouped together so that they can be managed easily. These are:
@@ -20,7 +20,7 @@ Check the definitions of these structs for further details.
 
 ### Configuration migrations
 Modifying `HostConfiguration` requires a storage migration. These migrations are located in the
-[`migrations`](https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs)
+[`migrations`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs)
 subfolder of Pezkuwi-SDK repo.
 
 ## ParaInherentData

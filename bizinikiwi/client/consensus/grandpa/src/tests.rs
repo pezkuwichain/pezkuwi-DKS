@@ -1863,7 +1863,7 @@ async fn grandpa_environment_checks_if_best_block_is_descendent_of_finality_targ
 }
 
 // This is a regression test for an issue that was triggered by a reorg
-// - https://github.com/pezkuwichain/pezkuwi-sdk/issues/3487
+// - https://github.com/pezkuwichain/pezkuwi-DKS/issues/3487
 // - https://github.com/humanode-network/humanode/issues/1104
 #[tokio::test]
 async fn grandpa_environment_uses_round_base_block_for_voting_if_finality_target_errors() {

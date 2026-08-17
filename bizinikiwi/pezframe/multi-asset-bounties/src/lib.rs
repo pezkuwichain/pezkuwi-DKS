@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *Pezkuwi*.
 //!
-//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi/pezframe/multi-asset-bounties) -
+//! [![github]](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/bizinikiwi/pezframe/multi-asset-bounties) -
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]: https://img.shields.io/badge/polkadot-E6007A?style=for-the-badge&logo=polkadot&logoColor=white

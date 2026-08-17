@@ -443,7 +443,7 @@ impl ConfigDef {
 						.old("have `RuntimeEvent` associated type in the pezpallet config")
 						.new("remove it as it is redundant since associated bound gets appended automatically: \n
 							pub trait Config: pezframe_system::Config<RuntimeEvent: From<Event<Self>>> { }")
-						.help_link("https://github.com/paritytech/pezkuwi-sdk/pull/7229")
+						.help_link("https://github.com/paritytech/polkadot-sdk/pull/7229")
 						.span(type_event.ident.span())
 						.build_or_panic();
 

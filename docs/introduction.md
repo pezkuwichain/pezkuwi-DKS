@@ -331,7 +331,7 @@ Ready to explore Pezkuwi Network? Here are your next steps:
 
 1. **[SDK Documentation](/docs/sdk)** - Explore our Rust SDK
 2. **[Whitepaper](/docs/whitepaper)** - Deep dive into our vision
-3. **[GitHub](https://github.com/pezkuwichain/pezkuwi-sdk)** - View source code
+3. **[GitHub](https://github.com/pezkuwichain/pezkuwi-DKS)** - View source code
 4. **[Explorer](https://explorer.pezkuwichain.io)** - Browse the blockchain
 
 ---

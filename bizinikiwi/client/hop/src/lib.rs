@@ -23,7 +23,7 @@
 //! See the crate [`README`] for the design overview, integration guide, CLI
 //! flags, RPC reference, and error codes.
 //!
-//! [`README`]: https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/bizinikiwi/client/hop/README.md
+//! [`README`]: https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/bizinikiwi/client/hop/README.md
 
 pub mod cli;
 pub mod pool;

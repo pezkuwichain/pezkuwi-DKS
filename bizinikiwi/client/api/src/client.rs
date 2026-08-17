@@ -73,7 +73,7 @@ pub trait BlockchainEvents<Block: BlockT> {
 	///
 	/// The events for this notification stream are emitted:
 	/// - During initial sync process: if there is a re-org while importing blocks. See
-	/// [here](https://github.com/paritytech/bizinikiwi/pull/7118#issuecomment-694091901) for the
+	/// [here](https://github.com/paritytech/substrate/pull/7118#issuecomment-694091901) for the
 	/// rationale behind this.
 	/// - After initial sync process: on every imported block, regardless of whether it is
 	/// the new best block or not, causes a re-org or not.

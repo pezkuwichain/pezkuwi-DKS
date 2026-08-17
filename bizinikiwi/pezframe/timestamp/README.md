@@ -73,7 +73,7 @@ pub mod pezpallet {
 
 ### Example from the FRAME
 
-The [Session module](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/bizinikiwi/pezframe/session/src/lib.rs) uses
+The [Session module](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/bizinikiwi/pezframe/session/src/lib.rs) uses
 the Timestamp module for session management.
 
 ## Related Modules

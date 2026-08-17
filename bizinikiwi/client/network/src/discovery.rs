@@ -349,7 +349,7 @@ pub struct DiscoveryBehaviour {
 	/// The chain based kademlia protocol name (including genesis hash and fork id).
 	///
 	/// Remove when all nodes are upgraded to genesis hash and fork ID-based Kademlia:
-	/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/504>.
+	/// <https://github.com/pezkuwichain/pezkuwi-DKS/issues/504>.
 	kademlia_protocol: Option<StreamProtocol>,
 	/// Provider keys requested with `GET_PROVIDERS` queries.
 	provider_keys_requested: HashMap<QueryId, RecordKey>,
@@ -414,7 +414,7 @@ impl DiscoveryBehaviour {
 			//
 			// Extract the chain-based Kademlia protocol from `kademlia.protocol_name()`
 			// when all nodes are upgraded to genesis hash and fork ID-based Kademlia:
-			// https://github.com/pezkuwichain/pezkuwi-sdk/issues/504.
+			// https://github.com/pezkuwichain/pezkuwi-DKS/issues/504.
 			if !supported_protocols.iter().any(|p| {
 				p == self
 					.kademlia_protocol
@@ -1332,7 +1332,7 @@ mod tests {
 	use libp2p::{identity::Keypair, Multiaddr};
 	use pezsp_core::hash::H256;
 
-	#[cfg(ignore_flaky_test)] // https://github.com/paritytech/pezkuwi-sdk/issues/48
+	#[cfg(ignore_flaky_test)] // https://github.com/paritytech/polkadot-sdk/issues/48
 	#[tokio::test]
 	async fn discovery_working() {
 		use super::DiscoveryOut;

@@ -177,7 +177,7 @@ where
 
 	io.merge(System::new(client.clone(), pool).into_rpc())?;
 	// Making synchronous calls in light client freezes the browser currently,
-	// more context: https://github.com/pezkuwichain/pezkuwi-sdk/issues/53
+	// more context: https://github.com/pezkuwichain/pezkuwi-DKS/issues/53
 	// These RPCs should use an asynchronous caller instead.
 	io.merge(
 		Mmr::new(

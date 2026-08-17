@@ -22,17 +22,17 @@ instructions](./docker/README.md) to quickly run Bizinikiwi, Bizinikiwi Node Tem
 
 Join the highly active and supportive community on the [Bizinikiwi Stack Exchange](https://exchange.pezkuwichain.io/)
 to ask questions about use and problems you run into using this software. Please do report bugs and [issues
-here](https://github.com/pezkuwichain/pezkuwi-sdk/issues) for anything you suspect requires action in the source.
+here](https://github.com/pezkuwichain/pezkuwi-DKS/issues) for anything you suspect requires action in the source.
 
 ## Contributions & Code of Conduct
 
-Please follow the contributions guidelines as outlined in [`docs/contributor/CONTRIBUTING.md`](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docs/contributor/CONTRIBUTING.md).
-In all communications and contributions, this project follows the [Contributor Covenant Code of Conduct](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docs/contributor/CODE_OF_CONDUCT.md).
+Please follow the contributions guidelines as outlined in [`docs/contributor/CONTRIBUTING.md`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docs/contributor/CONTRIBUTING.md).
+In all communications and contributions, this project follows the [Contributor Covenant Code of Conduct](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docs/contributor/CODE_OF_CONDUCT.md).
 
 ## Security
 
 The security policy and procedures can be found in
-[`docs/contributor/SECURITY.md`](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docs/contributor/SECURITY.md).
+[`docs/contributor/SECURITY.md`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docs/contributor/SECURITY.md).
 
 ## License
 

@@ -442,7 +442,7 @@ pub(super) fn advance_assignments<T: Config, F: Fn(CoreIndex) -> bool>(
 // With the restriction of only allowing for appends this function allows for
 // O(1) complexity. It could easily be lifted, if need be and in fact an
 // implementation is available
-// [here](https://github.com/pezkuwichain/pezkuwi-sdk/pull/1694/commits/c0c23b01fd2830910cde92c11960dad12cdff398#diff-0c85a46e448de79a5452395829986ee8747e17a857c27ab624304987d2dde8baR386).
+// [here](https://github.com/pezkuwichain/pezkuwi-DKS/pull/1694/commits/c0c23b01fd2830910cde92c11960dad12cdff398#diff-0c85a46e448de79a5452395829986ee8747e17a857c27ab624304987d2dde8baR386).
 // The problem is that insertion complexity then depends on the size of the existing queue,
 // which makes determining weights hard and could lead to issues like overweight blocks (at
 // least in theory).

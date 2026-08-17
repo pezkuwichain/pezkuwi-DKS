@@ -24,7 +24,7 @@
 //!
 //! Currently we are only logging these for the purposes of gathering data. In the future, we may
 //! use these stats to reject PVFs during pre-checking. See
-//! <https://github.com/pezkuwichain/pezkuwi-sdk/issues/309#issuecomment-1381941762> for more
+//! <https://github.com/pezkuwichain/pezkuwi-DKS/issues/309#issuecomment-1381941762> for more
 //! background.
 
 /// Module for the memory tracker. The memory tracker runs in its own thread, where it polls memory

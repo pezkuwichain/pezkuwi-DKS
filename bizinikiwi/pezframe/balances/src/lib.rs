@@ -303,7 +303,7 @@ pub mod pezpallet {
 
 		/// The ID type for reserves.
 		///
-		/// Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/bizinikiwi/pull/12951/`
+		/// Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/substrate/pull/12951/`
 		type ReserveIdentifier: Parameter + Member + MaxEncodedLen + Ord + Copy;
 
 		/// The ID type for freezes.
@@ -312,13 +312,13 @@ pub mod pezpallet {
 		/// The maximum number of locks that should exist on an account.
 		/// Not strictly enforced, but used for weight estimation.
 		///
-		/// Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/bizinikiwi/pull/12951/`
+		/// Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/substrate/pull/12951/`
 		#[pezpallet::constant]
 		type MaxLocks: Get<u32>;
 
 		/// The maximum number of named reserves that can exist on an account.
 		///
-		/// Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/bizinikiwi/pull/12951/`
+		/// Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/substrate/pull/12951/`
 		#[pezpallet::constant]
 		type MaxReserves: Get<u32>;
 
@@ -507,7 +507,7 @@ pub mod pezpallet {
 	/// Any liquidity locks on some account balances.
 	/// NOTE: Should only be accessed when setting, changing and freeing a lock.
 	///
-	/// Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/bizinikiwi/pull/12951/`
+	/// Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/substrate/pull/12951/`
 	#[pezpallet::storage]
 	pub type Locks<T: Config<I>, I: 'static = ()> = StorageMap<
 		_,
@@ -519,7 +519,7 @@ pub mod pezpallet {
 
 	/// Named reserves on some account balances.
 	///
-	/// Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/bizinikiwi/pull/12951/`
+	/// Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/substrate/pull/12951/`
 	#[pezpallet::storage]
 	pub type Reserves<T: Config<I>, I: 'static = ()> = StorageMap<
 		_,

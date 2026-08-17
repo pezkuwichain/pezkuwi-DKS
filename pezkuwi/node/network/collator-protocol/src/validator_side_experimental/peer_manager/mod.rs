@@ -594,7 +594,7 @@ async fn extract_reputation_bumps_on_new_finalized_block<Sender: CollatorProtoco
 		}
 	}
 
-	// This could be removed if we implemented https://github.com/pezkuwichain/pezkuwi-sdk/issues/7732.
+	// This could be removed if we implemented https://github.com/pezkuwichain/pezkuwi-DKS/issues/7732.
 	let mut updates: BTreeMap<ParaId, HashMap<PeerId, Score>> = BTreeMap::new();
 	for (rp, per_para) in v2_candidates_per_rp {
 		for (para_id, included_candidates) in per_para {

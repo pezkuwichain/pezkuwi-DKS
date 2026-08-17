@@ -30,7 +30,7 @@
 //!
 //! > The notorious `service.rs` in any node template is a good example of this.
 //!
-//! A [trend](https://github.com/pezkuwichain/pezkuwi-sdk/issues/243) has already been undergoing in
+//! A [trend](https://github.com/pezkuwichain/pezkuwi-DKS/issues/243) has already been undergoing in
 //! order to de-couple the node and the runtime for a long time. The north star of this effort is
 //! twofold :
 //!
@@ -174,7 +174,7 @@
 //!   [`pezsc_consensus_manual_seal`] under the hood, and has no restrictions on the runtime's
 //!   consensus.
 //!
-//! [This](https://github.com/pezkuwichain/pezkuwi-sdk/issues/286) future improvement to OmniNode
+//! [This](https://github.com/pezkuwichain/pezkuwi-DKS/issues/286) future improvement to OmniNode
 //! aims to make such checks automatic.
 //!
 //! ### Runtime conventions
@@ -192,7 +192,7 @@
 //!   AURA accordingly.
 //!
 //! [`templates`]: crate::pezkuwi_sdk::templates
-//! [`teyrchain-template`]: https://github.com/pezkuwichain/pezkuwi-sdk-teyrchain-template
+//! [`teyrchain-template`]: https://github.com/pezkuwichain/pez-teyrchain-template
 //! [`--dev-block-time`]: pezkuwi_omni_node_lib::cli::Cli::dev_block_time
 //! [`pezkuwi-omni-node`]: https://crates.io/crates/polkadot-omni-node
 //! [`chain-spec-builder`]: https://crates.io/crates/pezstaging-chain-spec-builder

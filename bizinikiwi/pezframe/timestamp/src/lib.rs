@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *Pezkuwi*.
 //!
-//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/bizinikiwi/pezframe/timestamp)
+//! [![github]](https://github.com/pezkuwichain/pezkuwi-DKS/bizinikiwi/pezframe/timestamp)
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]: https://img.shields.io/badge/polkadot-E6007A?style=for-the-badge&logo=polkadot&logoColor=white

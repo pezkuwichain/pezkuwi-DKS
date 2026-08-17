@@ -33,7 +33,7 @@ use tar;
 use tempfile;
 use toml_edit::{self, value, Array, Item, Table};
 
-const BIZINIKIWI_GIT_URL: &str = "https://github.com/pezkuwichain/pezkuwi-sdk.git";
+const BIZINIKIWI_GIT_URL: &str = "https://github.com/pezkuwichain/pezkuwi-DKS.git";
 
 type CargoToml = toml_edit::Document;
 
@@ -457,8 +457,8 @@ members = ["node", "pallets/template", "runtime"]
 edition = "2021"
 
 [workspace.dependencies]
-pezframe-system = { version = "4.0.0-dev", default-features = true, git = "https://github.com/pezkuwichain/pezkuwi-sdk.git", rev = "commit_id" }
-sp-io = { version = "7.0.0", git = "https://github.com/pezkuwichain/pezkuwi-sdk.git", rev = "commit_id" }
+pezframe-system = { version = "4.0.0-dev", default-features = true, git = "https://github.com/pezkuwichain/pezkuwi-DKS.git", rev = "commit_id" }
+sp-io = { version = "7.0.0", git = "https://github.com/pezkuwichain/pezkuwi-DKS.git", rev = "commit_id" }
 
 [workspace.lints]
 

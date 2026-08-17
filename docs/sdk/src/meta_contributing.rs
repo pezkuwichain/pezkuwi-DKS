@@ -29,7 +29,7 @@
 //! > To achieve this, we often use [`docify`](https://github.com/sam0x17/docify), a nifty invention
 //! > of `@sam0x17`.
 //!
-//! Also see: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/255>.
+//! Also see: <https://github.com/pezkuwichain/pezkuwi-DKS/issues/255>.
 //!
 //! ## Scope
 //!
@@ -70,7 +70,7 @@
 //! > that they already pose, rather than repeating yourself**.
 //!
 //! For more details see the [latest documenting
-//! guidelines](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docs/contributor/DOCUMENTATION_GUIDELINES.md).
+//! guidelines](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docs/contributor/DOCUMENTATION_GUIDELINES.md).
 //!
 //! #### Example: Explaining `#[pezpallet::call]`
 //!
@@ -132,7 +132,7 @@
 //! So long as not deployed in `crates.io`, please notice that all of the information in this crate,
 //! namely in [`crate::guides`] and such are compatible with the master branch of `pezkuwi-sdk`. A
 //! few solutions have been proposed to improve this, please see
-//! [here](https://github.com/pezkuwichain/pezkuwi-sdk/issues/289).
+//! [here](https://github.com/pezkuwichain/pezkuwi-DKS/issues/289).
 //!
 //! ## How to Develop Locally
 //!

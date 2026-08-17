@@ -1105,7 +1105,7 @@ mod tests {
 	/// This causes `is_slot_available` in the collator protocol to compute `valid_len = 0` for
 	/// old-but-valid scheduling parents, unconditionally rejecting advertisements.
 	///
-	/// See: https://github.com/pezkuwichain/pezkuwi-sdk/issues/11625
+	/// See: https://github.com/pezkuwichain/pezkuwi-DKS/issues/11625
 	#[test]
 	fn max_ancesty_len_honored() {
 		let pool = TaskExecutor::new();

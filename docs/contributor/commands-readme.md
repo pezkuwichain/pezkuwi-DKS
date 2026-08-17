@@ -22,7 +22,7 @@ Note: it works only for members of the `paritytech` organization.
 1.`--quiet` to suppress the output of the command in the comments.
 By default, the Start and End/Failure of the command will be commented with the link to a pipeline.
 If you want to avoid, use this flag. Go to
-[Action Tab](https://github.com/pezkuwichain/pezkuwi-sdk/actions/workflows/cmd.yml) to see the pipeline status.
+[Action Tab](https://github.com/pezkuwichain/pezkuwi-DKS/actions/workflows/cmd.yml) to see the pipeline status.
 
 3.`--clean` to clean up all yours and bot's comments in PR relevant to `/cmd` commands. If you run too many commands,
 or they keep failing, and you're rerunning them again, it's handy to add this flag to keep a PR clean.

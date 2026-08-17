@@ -175,7 +175,7 @@ pub fn canonicalize(
 
 	// due to the fork pruning, this range actually might go too far above where our actual highest
 	// block is, if a relatively short fork is canonicalized.
-	// TODO https://github.com/pezkuwichain/pezkuwi-sdk/issues/143
+	// TODO https://github.com/pezkuwichain/pezkuwi-DKS/issues/143
 	let new_range = StoredBlockRange(canon_number + 1, std::cmp::max(range.1, canon_number + 2));
 
 	overlay_db.write_stored_block_range(new_range);

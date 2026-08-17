@@ -1463,7 +1463,7 @@ const INVALID_TX_DOUBLE_VOTE: u8 = 3;
 const INVALID_TX_UNAUTHORIZED_CODE: u8 = 4;
 
 /// This is intermediate "fix" for this issue:
-/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/4737>
+/// <https://github.com/pezkuwichain/pezkuwi-DKS/issues/4737>
 ///
 /// It does not actually fix it, but makes the worst case better. Without that limit someone
 /// could completely DoS the relay chain by registering a ridiculously high amount of paras.

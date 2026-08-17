@@ -68,7 +68,7 @@ pub type RCBlockNumberProviderOf<T> = <T as CoretimeInterface>::RelayChainBlockN
 /// Type able to accept Coretime scheduling instructions and provide certain usage information.
 /// Generally implemented by the Relay-chain or some means of communicating with it.
 ///
-/// The trait representation of RFC#5 `<https://github.com/pezkuwi-fellows/RFCs/pull/5>`.
+/// The trait representation of RFC#5 `<https://github.com/pezkuwichain/pezkuwi-fellows/pull/5>`.
 pub trait CoretimeInterface {
 	/// A (Relay-chain-side) account ID.
 	type AccountId: Parameter;

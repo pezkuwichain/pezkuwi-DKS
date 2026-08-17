@@ -21,7 +21,7 @@ Run `cargo doc --package pezpallet-example-basic --open` to view this pezpallet'
         requires root, but without repeating the source code details.
         Capitalize the first word of each documentation comment and end it with
         a full stop. See
-        <a href="https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/bizinikiwi/README.md#contributing-to-documentation-for-bizinikiwi-packages"
+        <a href="https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/bizinikiwi/README.md#contributing-to-documentation-for-bizinikiwi-packages"
         target="_blank"> Generic example of annotating source code with documentation comments</a></li>
     <li>Self-documenting code - Try to refactor code to be self-documenting.</li>
     <li>Code comments - Supplement complex code with a brief explanation, not every line of code.</li>
@@ -54,7 +54,7 @@ Copy and paste this template from frame/examples/basic/src/lib.rs into file
 
 \## Overview
 
-<!-- Original author of paragraph: Various. See https://github.com/pezkuwichain/pezkuwi-sdk/issues/1 -->
+<!-- Original author of paragraph: Various. See https://github.com/pezkuwichain/pezkuwi-DKS/issues/1 -->
 // Short description of pezpallet's purpose.
 // Links to Traits that should be implemented.
 // What this pezpallet is for.
@@ -64,8 +64,8 @@ Copy and paste this template from frame/examples/basic/src/lib.rs into file
 // Inputs it uses and the source of each input.
 // Outputs it produces.
 
-<!-- Original author of paragraph: @Kianenigma in PR https://github.com/pezkuwichain/pezkuwi-sdk/issues/52 -->
-<!-- and comment https://github.com/pezkuwichain/pezkuwi-sdk/issues/1#issuecomment-471982710 -->
+<!-- Original author of paragraph: @Kianenigma in PR https://github.com/pezkuwichain/pezkuwi-DKS/issues/52 -->
+<!-- and comment https://github.com/pezkuwichain/pezkuwi-DKS/issues/1#issuecomment-471982710 -->
 
 \## Terminology
 
@@ -76,17 +76,17 @@ Copy and paste this template from frame/examples/basic/src/lib.rs into file
 // "free balance" and "reserved balance" should be noted to give context to the pezpallet.
 // Please do not link to outside resources. The reference docs should be the ultimate source of truth.
 
-<!-- Original author of heading: @Kianenigma in PR https://github.com/pezkuwichain/pezkuwi-sdk/issues/52 -->
+<!-- Original author of heading: @Kianenigma in PR https://github.com/pezkuwichain/pezkuwi-DKS/issues/52 -->
 
 \## Goals
 
 // Add goals that the custom pezpallet is designed to achieve.
 
-<!-- Original author of heading: @Kianenigma in PR https://github.com/pezkuwichain/pezkuwi-sdk/issues/52 -->
+<!-- Original author of heading: @Kianenigma in PR https://github.com/pezkuwichain/pezkuwi-DKS/issues/52 -->
 
 \### Scenarios
 
-<!-- Original author of paragraph: @Kianenigma. Based on PR https://github.com/pezkuwichain/pezkuwi-sdk/issues/52 -->
+<!-- Original author of paragraph: @Kianenigma. Based on PR https://github.com/pezkuwichain/pezkuwi-DKS/issues/52 -->
 
 \#### <INSERT_SCENARIO_NAME>
 
@@ -105,7 +105,7 @@ Copy and paste this template from frame/examples/basic/src/lib.rs into file
 <code>\`inherent\`</code> <INSERT_DESCRIPTION>
 
 <!-- Original author of paragraph: @Kianenigma in comment -->
-<!-- https://github.com/pezkuwichain/pezkuwi-sdk/issues/1#issuecomment-471982710 -->
+<!-- https://github.com/pezkuwichain/pezkuwi-DKS/issues/1#issuecomment-471982710 -->
 
 \### Types
 

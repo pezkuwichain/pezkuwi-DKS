@@ -38,7 +38,7 @@ pub(crate) fn weight_witness_warning(
 	let partial_warning = Warning::new_deprecated("UncheckedWeightWitness")
 		.old("not check weight witness data")
 		.new("ensure that all witness data for weight calculation is checked before usage")
-		.help_link("https://github.com/paritytech/pezkuwi-sdk/pull/1818");
+		.help_link("https://github.com/paritytech/polkadot-sdk/pull/1818");
 
 	for (_, arg_ident, _) in method.args.iter() {
 		if !arg_ident.to_string().starts_with('_') || !contains_ident(w.clone(), &arg_ident) {

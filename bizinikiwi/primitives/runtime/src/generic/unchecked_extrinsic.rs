@@ -250,7 +250,7 @@ where
 ///   extrinsics can be applied, the apply logic is extended with `ExtensionV0`.
 ///   Bare extrinsics are typically used for inherent extrinsics.
 ///   Bare extrinsics are also used for some unsigned transactions, this feature will be deprecated,
-///   see [transaction horizon](https://github.com/pezkuwichain/pezkuwi-sdk/issues/2415).
+///   see [transaction horizon](https://github.com/pezkuwichain/pezkuwi-DKS/issues/2415).
 /// - **Signed**: An extrinsic with a signature and extended with transaction extension
 ///   `ExtensionV0`. (transaction extension: [`TransactionExtension`]).
 /// - **General**: An extrinsic extended with a versioned transaction extension. The transaction

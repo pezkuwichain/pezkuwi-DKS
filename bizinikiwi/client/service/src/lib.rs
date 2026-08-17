@@ -110,7 +110,7 @@ const DEFAULT_PROTOCOL_ID: &str = "sup";
 #[derive(Clone)]
 pub struct RpcHandlers {
 	// This is legacy and may be removed at some point, it was for WASM stuff before smoldot was a
-	// thing. https://github.com/pezkuwichain/pezkuwi-sdk/pull/5038#discussion_r1694971805
+	// thing. https://github.com/pezkuwichain/pezkuwi-DKS/pull/5038#discussion_r1694971805
 	rpc_module: Arc<RpcModule<()>>,
 
 	// This can be used to introspect the port the RPC server is listening on. SDK consumers are
@@ -446,7 +446,7 @@ pub fn start_rpc_servers(
 		rpc_runtime,
 	};
 
-	// TODO: https://github.com/paritytech/bizinikiwi/issues/13773
+	// TODO: https://github.com/paritytech/substrate/issues/13773
 	//
 	// `block_in_place` is a hack to allow callers to call `block_on` prior to
 	// calling `start_rpc_servers`.

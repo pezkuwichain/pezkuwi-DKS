@@ -1091,7 +1091,7 @@ fn reserve_transfer_multiple_assets_from_asset_hub_to_para() {
 
 /// Reserve Transfers of a random asset and native asset from Teyrchain to Asset Hub should work
 /// Receiver is empty account to show deposit works as long as transfer includes enough HEZ for ED.
-/// Once we have https://github.com/pezkuwichain/pezkuwi-sdk/issues/283,
+/// Once we have https://github.com/pezkuwichain/pezkuwi-DKS/issues/283,
 /// we should do equivalent test with USDT instead of HEZ.
 #[test]
 fn reserve_transfer_multiple_assets_from_para_to_asset_hub() {
@@ -1430,7 +1430,7 @@ fn reserve_transfer_usdt_from_asset_hub_to_para() {
 		<ForeignAssets as Inspect<_>>::balance(usdt_from_asset_hub, &receiver)
 	});
 
-	// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/303): When we allow payment with different assets locally, this should be the same, since
+	// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/303): When we allow payment with different assets locally, this should be the same, since
 	// they aren't used for fees.
 	assert!(sender_after_native_balance < sender_initial_native_balance);
 	// Sender account's balance decreases.
@@ -1604,7 +1604,7 @@ fn reserve_transfer_usdt_from_para_to_para_through_asset_hub() {
 	let fee_asset_id: AssetId = usdt_from_asset_hub.clone().into();
 
 	// Give the sender enough Relay tokens to pay for local delivery fees.
-	// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/303): When we support local delivery fee payment in other assets, we don't need this.
+	// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/303): When we support local delivery fee payment in other assets, we don't need this.
 	PenpalA::mint_foreign_asset(
 		<PenpalA as Chain>::RuntimeOrigin::signed(PenpalAssetOwner::get()),
 		RelayLocation::get(),

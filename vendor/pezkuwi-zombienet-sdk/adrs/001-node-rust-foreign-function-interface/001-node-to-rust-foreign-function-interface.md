@@ -107,6 +107,6 @@ The prototype assume versions of `rustc` and `cargo` to be `1.69.0`, use of `sta
 
 ## Decision outcome
 
-- ### **Napi-rs** for crates dependant on async, filesystem or networking: *support*, *orchestrator*, *test-runner*, *providers* from [schema](https://github.com/paritytech/zombienet-sdk/issues/22)
+- ### **Napi-rs** for crates dependant on async, filesystem or networking: *support*, *orchestrator*, *test-runner*, *providers* from [schema](https://github.com/pezkuwichain/pezkuwi-zombienet-sdk/issues/22)
 
-- ### **Wasm-pack** for the rest of the crates: *configuration* from [schema](https://github.com/paritytech/zombienet-sdk/issues/22)
+- ### **Wasm-pack** for the rest of the crates: *configuration* from [schema](https://github.com/pezkuwichain/pezkuwi-zombienet-sdk/issues/22)

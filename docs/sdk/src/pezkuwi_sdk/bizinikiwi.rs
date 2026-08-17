@@ -108,7 +108,7 @@
 //!
 //! > The above two are conventions, not rules.
 //!
-//! > See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/241> for an update on how the node side
+//! > See <https://github.com/pezkuwichain/pezkuwi-DKS/issues/241> for an update on how the node side
 //! > components are being amalgamated.
 //!
 //! ## Teyrchain?
@@ -130,7 +130,7 @@
 //!     - [`pezsc_consensus_aura`]
 //!     - [`pezsc_consensus_babe`]
 //!     - [`pezsc_consensus_grandpa`]
-//!     - [`pezsc_consensus_beefy`] (TODO: @adrian, add some high level docs <https://github.com/pezkuwichain/pezkuwi-sdk/issues/305>)
+//!     - [`pezsc_consensus_beefy`] (TODO: @adrian, add some high level docs <https://github.com/pezkuwichain/pezkuwi-DKS/issues/305>)
 //!     - [`pezsc_consensus_manual_seal`]
 //!     - [`pezsc_consensus_pow`]
 //!

@@ -549,7 +549,7 @@ async fn can_sync_explicit_forks() {
 
 // TODO: for unknown reason, this test is flaky on a multithreaded runtime, so we run it
 //       in a single-threaded mode.
-//       See issue https://github.com/paritytech/bizinikiwi/issues/14622.
+//       See issue https://github.com/paritytech/substrate/issues/14622.
 #[tokio::test]
 async fn syncs_header_only_forks() {
 	pezsp_tracing::try_init_simple();
@@ -826,7 +826,7 @@ async fn sync_to_tip_requires_that_sync_protocol_is_informed_about_best_block() 
 
 /// Ensures that if we as a syncing node sync to the tip while we are connected to another peer
 /// that is currently also doing a major sync.
-#[cfg(ignore_flaky_test)] // https://github.com/paritytech/pezkuwi-sdk/issues/48
+#[cfg(ignore_flaky_test)] // https://github.com/paritytech/polkadot-sdk/issues/48
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn sync_to_tip_when_we_sync_together_with_multiple_peers() {
 	pezsp_tracing::try_init_simple();

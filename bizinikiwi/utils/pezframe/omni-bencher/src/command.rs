@@ -42,7 +42,7 @@ use pezsp_runtime::traits::BlakeTwo256;
 /// from GitHub:
 ///
 /// ```sh
-/// cargo install --git https://github.com/pezkuwichain/pezkuwi-sdk frame-omni-bencher --profile=production
+/// cargo install --git https://github.com/pezkuwichain/pezkuwi-DKS frame-omni-bencher --profile=production
 /// ```
 ///
 /// or locally from the sources:

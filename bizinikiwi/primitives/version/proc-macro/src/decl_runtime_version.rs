@@ -142,7 +142,7 @@ impl ParseRuntimeVersion {
 			let warning = Warning::new_deprecated("RuntimeVersion")
 				.old("state_version")
 				.new("system_version)")
-				.help_link("https://github.com/paritytech/pezkuwi-sdk/pull/4257")
+				.help_link("https://github.com/paritytech/polkadot-sdk/pull/4257")
 				.span(field_name.span())
 				.build_or_panic();
 			warnings.push(warning);

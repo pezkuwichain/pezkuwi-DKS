@@ -202,7 +202,7 @@ the dispute-coordinator already knows about the dispute.
 
 Goal 3 and 4 are obviously very related and both can easily be solved via rate
 limiting as we shall see below. Rate limits should already be implemented at the
-Bizinikiwi level, but [are not](https://github.com/pezkuwichain/pezkuwi-sdk/issues/30)
+Bizinikiwi level, but [are not](https://github.com/pezkuwichain/pezkuwi-DKS/issues/30)
 at the time of writing. But even if they were, the enforced Bizinikiwi limits would
 likely not be configurable and thus would still be to high for our needs as we can
 rely on the following observations:
@@ -246,7 +246,7 @@ This is probably an argument for not imposing a too low rate limit, although the
 issue is more general: Even without any rate limit, if an attacker generates
 disputes at a very high rate, nodes will be having trouble keeping participation
 up, hence the problem should be mitigated at a [more fundamental
-layer](https://github.com/pezkuwichain/pezkuwi-sdk/issues/162).
+layer](https://github.com/pezkuwichain/pezkuwi-DKS/issues/162).
 
 For nodes that have been offline for a while, the same argument as for session
 changes holds, but matters even less: We assume 2/3 of nodes to be online, so

@@ -311,7 +311,7 @@ pub fn migrate_from_pezpallet_version_to_storage_version<
 /// If your pezpallet has too many keys to be removed in a single block, it is advised to wait for
 /// a multi-block scheduler currently under development which will allow for removal of storage
 /// items (and performing other heavy migrations) over multiple blocks
-/// (see <https://github.com/paritytech/bizinikiwi/issues/13690>).
+/// (see <https://github.com/paritytech/substrate/issues/13690>).
 pub struct RemovePallet<P: Get<&'static str>, DbWeight: Get<RuntimeDbWeight>>(
 	PhantomData<(P, DbWeight)>,
 );
@@ -418,7 +418,7 @@ impl<P: Get<&'static str>, DbWeight: Get<RuntimeDbWeight>>
 /// If your storage has too many keys to be removed in a single block, it is advised to wait for
 /// a multi-block scheduler currently under development which will allow for removal of storage
 /// items (and performing other heavy migrations) over multiple blocks
-/// (see <https://github.com/paritytech/bizinikiwi/issues/13690>).
+/// (see <https://github.com/paritytech/substrate/issues/13690>).
 pub struct RemoveStorage<P: Get<&'static str>, S: Get<&'static str>, DbWeight: Get<RuntimeDbWeight>>(
 	PhantomData<(P, S, DbWeight)>,
 );

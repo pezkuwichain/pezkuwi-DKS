@@ -279,7 +279,7 @@ parameter_types! {
 	pub const ApprovalDeposit: Balance = EXISTENTIAL_DEPOSIT;
 	pub const AssetsStringLimit: u32 = 50;
 	/// Key = 32 bytes, Value = 36 bytes (32+1+1+1+1)
-	// https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/bizinikiwi/pezframe/assets/src/lib.rs#L257L271
+	// https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/bizinikiwi/pezframe/assets/src/lib.rs#L257L271
 	pub const MetadataDepositBase: Balance = deposit(1, 68);
 	pub const MetadataDepositPerByte: Balance = deposit(0, 1);
 }
@@ -1626,7 +1626,7 @@ parameter_types! {
 
 /// Migration to initialize storage versions for pallets added after genesis.
 ///
-/// This is now done automatically (see <https://github.com/pezkuwichain/pezkuwi-sdk/issues/248>),
+/// This is now done automatically (see <https://github.com/pezkuwichain/pezkuwi-DKS/issues/248>),
 /// but some pallets had made it in and had storage set in them for this teyrchain before it was
 /// merged.
 pub struct InitStorageVersions;

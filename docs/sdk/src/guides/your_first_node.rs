@@ -16,7 +16,7 @@
 //!
 //! ### Installs
 //!
-//! The `pezkuwi-omni-node` can either be downloaded from the latest [Release](https://github.com/pezkuwichain/pezkuwi-sdk/releases/) of `pezkuwi-sdk`,
+//! The `pezkuwi-omni-node` can either be downloaded from the latest [Release](https://github.com/pezkuwichain/pezkuwi-DKS/releases/) of `pezkuwi-sdk`,
 //! or installed using `cargo`:
 //!
 //! ```text

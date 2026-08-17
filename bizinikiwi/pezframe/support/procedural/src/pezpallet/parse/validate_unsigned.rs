@@ -64,7 +64,7 @@ impl ValidateUnsignedDef {
 		} else {
 			const DEPRECATION_MSG: &str = "#[pezpallet::validate_unsigned] will be removed after \
 				April 2027. Use `#[pezpallet::authorize]` with `pezframe_system::AuthorizeCall` instead.";
-			const REFERENCE_LINK: &str = "https://github.com/paritytech/pezkuwi-sdk/issues/2415";
+			const REFERENCE_LINK: &str = "https://github.com/paritytech/polkadot-sdk/issues/2415";
 			let count = COUNTER.with(|counter| counter.borrow_mut().inc());
 			let warning = proc_macro_warning::FormattedWarning::new_deprecated(
 				format!("validate_unsigned_deprecation_{count}"),

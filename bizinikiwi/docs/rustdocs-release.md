@@ -2,7 +2,7 @@
 
 There is [a script in place](../.maintain/rustdocs-release.sh) to manage the deployment of Bizinikiwi rustdocs at
 https://docs.pezkuwichain.io/bizinikiwi, which is pushing the rustdocs file in `gh-pages` branch of
-https://github.com/pezkuwichain/pezkuwi-sdk.
+https://github.com/pezkuwichain/pezkuwi-DKS.
 
 The documentation at the top of the `rustdocs-release.sh` explains most of the mechanics of the script.
 

@@ -14,7 +14,7 @@
 //! `Vec<u8>`, meaning that it is up to the runtime developer to decide on the format of this.
 //!
 //! All [`crate::pezkuwi_sdk::frame_runtime`] based runtimes expose a specific metadata language,
-//! maintained in <https://github.com/paritytech/frame-metadata> which is adopted in the Pezkuwi
+//! maintained in <https://github.com/pezkuwichain/pezframe-metadata> which is adopted in the Pezkuwi
 //! ecosystem.
 //!
 //! ## Metadata Explorers:

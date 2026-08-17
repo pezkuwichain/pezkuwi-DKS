@@ -109,9 +109,9 @@ cargo run --profile=production -- benchmark overhead --chain=pezkuwi-dev --wasm-
 ```
 
 This will overwrite the
-[block_weights.rs](https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/pezkuwi/runtime/pezkuwichain/constants/src/weights/block_weights.rs)
+[block_weights.rs](https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/pezkuwi/runtime/pezkuwichain/constants/src/weights/block_weights.rs)
 and
-[extrinsic_weights.rs](https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/pezkuwi/runtime/pezkuwichain/constants/src/weights/extrinsic_weights.rs)
+[extrinsic_weights.rs](https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/pezkuwi/runtime/pezkuwichain/constants/src/weights/extrinsic_weights.rs)
 files in the PezkuwiChain runtime directory. You can try the same for *pezkuwichain* and to see that the results slightly differ.
 👉 It is paramount to use `--profile=production` and `--wasm-execution=compiled` as the results are otherwise useless.
 
@@ -138,9 +138,9 @@ License: Apache-2.0
 
 <!-- LINKS -->
 [`ExtrinsicBaseWeight`]:
-    https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/bizinikiwi/pezframe/support/src/weights/extrinsic_weights.rs#L26
+    https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/bizinikiwi/pezframe/support/src/weights/extrinsic_weights.rs#L26
 [`BlockExecutionWeight`]:
-    https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/bizinikiwi/pezframe/support/src/weights/block_weights.rs#L26
+    https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/bizinikiwi/pezframe/support/src/weights/block_weights.rs#L26
 
 [System::Remark]:
-    https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/bizinikiwi/pezframe/system/src/lib.rs#L382
+    https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/bizinikiwi/pezframe/system/src/lib.rs#L382

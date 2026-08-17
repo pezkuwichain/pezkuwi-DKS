@@ -440,7 +440,7 @@ impl NetworkStatusProvider for Litep2pNetworkService {
 			connected_peers: HashMap::new(),
 			not_connected_peers: HashMap::new(),
 			// TODO: Check what info we can include here.
-			//       Issue reference: https://github.com/paritytech/bizinikiwi/issues/14160.
+			//       Issue reference: https://github.com/paritytech/substrate/issues/14160.
 			peerset: serde_json::json!(
 				"Unimplemented. See https://github.com/paritytech/substrate/issues/14160."
 			),

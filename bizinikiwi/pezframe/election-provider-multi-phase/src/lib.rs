@@ -1355,7 +1355,7 @@ pub mod pezpallet {
 
 	/// The in-code storage version.
 	///
-	/// v1: https://github.com/paritytech/bizinikiwi/pull/12237/
+	/// v1: https://github.com/paritytech/substrate/pull/12237/
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 	#[pezpallet::pezpallet]

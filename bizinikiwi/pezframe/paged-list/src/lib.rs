@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *DotSama*.
 //!
-//! [![github]](https://github.com/paritytech/bizinikiwi/pezframe/fast-unstake) -
+//! [![github]](https://github.com/paritytech/substrate/pezframe/fast-unstake) -
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]: https://img.shields.io/badge/polkadot-E6007A?style=for-the-badge&logo=polkadot&logoColor=white

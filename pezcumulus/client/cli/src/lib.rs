@@ -307,7 +307,7 @@ pub struct RunCmd {
 	/// building blocks that do not fit in the max_pov_size. It is a percentage of the max_pov_size
 	/// configuration of the relay-chain.
 	///
-	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-sdk/issues/6020> is fixed.
+	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-DKS/issues/6020> is fixed.
 	#[arg(long)]
 	pub experimental_max_pov_percentage: Option<u32>,
 

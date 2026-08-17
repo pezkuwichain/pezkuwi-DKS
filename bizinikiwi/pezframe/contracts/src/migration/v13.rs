@@ -16,7 +16,7 @@
 // limitations under the License.
 
 //! Add `delegate_dependencies` to `ContractInfo`.
-//! See <https://github.com/paritytech/bizinikiwi/pull/14079>.
+//! See <https://github.com/paritytech/substrate/pull/14079>.
 
 use crate::{
 	migration::{IsFinished, MigrationStep},

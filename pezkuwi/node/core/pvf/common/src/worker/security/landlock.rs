@@ -52,7 +52,7 @@ use std::path::{Path, PathBuf};
 /// - ABI V3: kernel 6.2 - Adds ability to prevent file truncation. During execution, can
 ///   prevent attackers from affecting a symlinked artifact. We don't strictly need this as we
 ///   plan to check for file integrity anyway; see
-///   <https://github.com/pezkuwichain/pezkuwi-sdk/issues/253>.
+///   <https://github.com/pezkuwichain/pezkuwi-DKS/issues/253>.
 ///
 /// # Determinism
 ///

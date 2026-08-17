@@ -1035,7 +1035,7 @@ fn sync_restart_removes_block_but_not_justification_requests() {
 	assert_eq!(pending_responses.len(), 0);
 }
 
-/// The test demonstrates https://github.com/pezkuwichain/pezkuwi-sdk/issues/2094.
+/// The test demonstrates https://github.com/pezkuwichain/pezkuwi-DKS/issues/2094.
 /// TODO: convert it into desired behavior test once the issue is fixed (see inline comments).
 /// The issue: we currently rely on block numbers instead of block hash
 /// to download blocks from peers. As a result, we can end up with blocks

@@ -107,7 +107,7 @@ pub struct Params<BI, CIDP, Client, Backend, RClient, CHP, ProposerFactory, CS> 
 	/// Whether we should reinitialize the collator config (i.e. we are transitioning to aura).
 	pub reinitialize: bool,
 	/// The maximum percentage of the maximum PoV size that the collator can use.
-	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-sdk/issues/6020> is fixed.
+	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-DKS/issues/6020> is fixed.
 	pub max_pov_percentage: Option<u32>,
 }
 
@@ -473,7 +473,7 @@ where
 				} else {
 					// Set the block limit to 85% of the maximum PoV size.
 					//
-					// Once https://github.com/pezkuwichain/pezkuwi-sdk/issues/6020 issue is
+					// Once https://github.com/pezkuwichain/pezkuwi-DKS/issues/6020 issue is
 					// fixed, the reservation should be removed.
 					validation_data.max_pov_size * 85 / 100
 				} as usize;

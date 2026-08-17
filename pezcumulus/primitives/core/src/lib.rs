@@ -647,7 +647,7 @@ pezsp_api::decl_runtime_apis! {
 	/// The max claim queue offset determines how far "into the future" collators target when
 	/// selecting cores from the claim queue. This provides async backing flexibility while
 	/// preventing collators from skipping slots.
-	/// See: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/8893>
+	/// See: <https://github.com/pezkuwichain/pezkuwi-DKS/issues/8893>
 	///
 	/// Version history:
 	/// - Version 1: Initial version with `relay_parent_offset` only
@@ -692,7 +692,7 @@ pezsp_api::decl_runtime_apis! {
 		/// and should fall back to a sensible default (current collator defaults: `1` on the
 		/// V3 path, `0` on the V1/V2 path).
 		///
-		/// See: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/8893>
+		/// See: <https://github.com/pezkuwichain/pezkuwi-DKS/issues/8893>
 		#[api_version(2)]
 		fn max_claim_queue_offset() -> u8;
 	}

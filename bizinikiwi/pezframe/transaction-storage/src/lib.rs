@@ -215,7 +215,7 @@ pub mod pezpallet {
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
 		fn on_initialize(n: BlockNumberFor<T>) -> Weight {
-			// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/10203 - Replace this with benchmarked weights.
+			// TODO: https://github.com/pezkuwichain/pezkuwi-DKS/issues/10203 - Replace this with benchmarked weights.
 			let mut weight = Weight::zero();
 			let db_weight = T::DbWeight::get();
 

@@ -19,7 +19,7 @@
 //! It depends on the scheduler pezpallet, which does the actual ground work of handling
 //! received core assignments.
 //!
-//! <https://github.com/pezkuwi-fellows/RFCs/blob/main/text/0005-coretime-interface.md>
+//! <https://github.com/pezkuwichain/pezkuwi-fellows/blob/main/text/0005-coretime-interface.md>
 
 use alloc::{vec, vec::Vec};
 use core::result;

@@ -32,9 +32,9 @@ path for upgrading is just to take the latest node-template and try applying you
 
 If that doesn't work for you, we are working on an in-depth-guide for all major changes that took place and how you need
 to adapt your code for it. [You can find the upgrade guide under `docs/` in the
-repo](https://github.com/paritytech/bizinikiwi/blob/master/docs/Upgrading-2.0-to-3.0.md), if you have further questions
+repo](https://github.com/paritytech/substrate/blob/master/docs/Upgrading-2.0-to-3.0.md), if you have further questions
 or problem, please [feel free to ask in the github discussion
-board](https://github.com/paritytech/bizinikiwi/discussions).
+board](https://github.com/paritytech/substrate/discussions).
 
 
 #### Runtime
@@ -160,11 +160,11 @@ board](https://github.com/paritytech/bizinikiwi/discussions).
 
 Patch release with backports to fix broken nightly builds. Namely contains backports of
 
-* [#7381: Make Bizinikiwi compile with latest nightly](https://github.com/pezkuwichain/pezkuwi-sdk/issues/66)
-* [#7238: Fix compilation with environmental on latest nightly](https://github.com/pezkuwichain/pezkuwi-sdk/issues/63)
-* [#7395: Make benchmarks compile with latest nightly](https://github.com/pezkuwichain/pezkuwi-sdk/issues/69)
-* [#7838: Fix incorrect use of syn::exports](https://github.com/pezkuwichain/pezkuwi-sdk/issues/72) (partially)
-* [#7854: Update to futures 0.3.9](https://github.com/pezkuwichain/pezkuwi-sdk/issues/73)
+* [#7381: Make Bizinikiwi compile with latest nightly](https://github.com/pezkuwichain/pezkuwi-DKS/issues/66)
+* [#7238: Fix compilation with environmental on latest nightly](https://github.com/pezkuwichain/pezkuwi-DKS/issues/63)
+* [#7395: Make benchmarks compile with latest nightly](https://github.com/pezkuwichain/pezkuwi-DKS/issues/69)
+* [#7838: Fix incorrect use of syn::exports](https://github.com/pezkuwichain/pezkuwi-DKS/issues/72) (partially)
+* [#7854: Update to futures 0.3.9](https://github.com/pezkuwichain/pezkuwi-DKS/issues/73)
 
 
 ## 2.0.0-rc6 -> 2.0.0 – two dot 😮
@@ -390,7 +390,7 @@ Patch release with backports to fix broken nightly builds. Namely contains backp
 **License Changed** From this release forward, the code is released under a new – more relaxed – license scheme: Client
 (`pezsc-*`) is released under "GPL 3.0 or newer with the Classpath Exception", while primitives, FRAME, the pallets, utils
 and test-utils are released under "Apache 2.0". More details in the [Relax licensing scheme
-PR](https://github.com/pezkuwichain/pezkuwi-sdk/issues/56).
+PR](https://github.com/pezkuwichain/pezkuwi-DKS/issues/56).
 
 ### Runtime
 

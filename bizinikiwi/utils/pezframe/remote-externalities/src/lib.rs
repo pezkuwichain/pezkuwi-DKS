@@ -485,7 +485,7 @@ where
 
 		loop {
 			// This loop can hit the node with very rapid requests, occasionally causing it to
-			// error out in CI (https://github.com/pezkuwichain/pezkuwi-sdk/issues/327), so we retry.
+			// error out in CI (https://github.com/pezkuwichain/pezkuwi-DKS/issues/327), so we retry.
 			let retry_strategy =
 				FixedInterval::new(Self::KEYS_PAGE_RETRY_INTERVAL).take(Self::MAX_RETRIES);
 			let get_page_closure =
@@ -676,7 +676,7 @@ where
 		let keys = logging::with_elapsed_async(
 			|| async {
 				// TODO: We could start downloading when having collected the first batch of keys.
-				// https://github.com/pezkuwichain/pezkuwi-sdk/issues/123
+				// https://github.com/pezkuwichain/pezkuwi-DKS/issues/123
 				let keys = self
 					.rpc_get_keys_parallel(&prefix, at, Self::PARALLEL_REQUESTS)
 					.await?

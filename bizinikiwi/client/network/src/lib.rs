@@ -160,7 +160,7 @@
 //! resolved by deprecating the protocol entirely.
 //!
 //! Within the unique Bizinikiwi substream, messages encoded using
-//! [*parity-scale-codec*](https://github.com/paritytech/parity-scale-codec) are exchanged.
+//! [*parity-scale-codec*](https://github.com/pezkuwichain/parity-scale-codec) are exchanged.
 //! The detail of theses messages is not totally in place, but they can be found in the
 //! `message.rs` file.
 //!

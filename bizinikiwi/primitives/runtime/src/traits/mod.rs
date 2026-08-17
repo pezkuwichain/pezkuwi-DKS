@@ -1908,9 +1908,9 @@ pub trait GetNodeBlockType {
 /// This trait is deprecated and will be removed after April 2027. Use
 /// `#[pezpallet::authorize]` with `pezframe_system::AuthorizeCall` transaction extension instead.
 ///
-/// For more information, see: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/2415>
+/// For more information, see: <https://github.com/pezkuwichain/pezkuwi-DKS/issues/2415>
 #[deprecated(
-	note = "`ValidateUnsigned` will be removed after April 2027. Use `#[pezpallet::authorize]` with `pezframe_system::AuthorizeCall` instead. See https://github.com/paritytech/pezkuwi-sdk/issues/2415"
+	note = "`ValidateUnsigned` will be removed after April 2027. Use `#[pezpallet::authorize]` with `pezframe_system::AuthorizeCall` instead. See https://github.com/paritytech/polkadot-sdk/issues/2415"
 )]
 pub trait ValidateUnsigned {
 	/// The call to validate

@@ -64,7 +64,7 @@ fn get_current_relay_slot(slot_offset: Duration, relay_chain_slot_duration: Dura
 ///   `slot_offset` — the relay block must arrive within ~1s of the slot starting. If
 ///   not, we wait for it before building, so we don't end up using the previous slot's
 ///   relay block past our own slot. See
-///   <https://github.com/pezkuwichain/pezkuwi-sdk/pull/11453>.
+///   <https://github.com/pezkuwichain/pezkuwi-DKS/pull/11453>.
 /// - **V3**: build on the *last finished* slot's relay block. No offset hack, no waiting: the relay
 ///   block had a full slot to propagate, which is what slots are for. Matches the low-latency v2
 ///   design.

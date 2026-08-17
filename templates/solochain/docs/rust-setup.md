@@ -151,7 +151,7 @@ configure your Rust compiler to use [`nightly` builds](https://doc.rust-lang.org
 allow you to compile Bizinikiwi runtime code to the Wasm target.
 
 > There are upstream issues in Rust that need to be resolved before all of Bizinikiwi can use the stable Rust toolchain.
-> [This is our tracking issue](https://github.com/pezkuwichain/pezkuwi-sdk/issues/9) if you're curious as to why and how
+> [This is our tracking issue](https://github.com/pezkuwichain/pezkuwi-DKS/issues/9) if you're curious as to why and how
 > this will be resolved.
 
 #### Latest nightly for Bizinikiwi `master`
@@ -179,7 +179,7 @@ If you want to guarantee that your build works on your computer as you update Ru
 use a specific Rust nightly version that is known to be compatible with the version of Bizinikiwi they are using; this
 version will vary from project to project and different projects may use different mechanisms to communicate this
 version to developers. For instance, the Pezkuwi client specifies this information in its [release
-notes](https://github.com/pezkuwichain/pezkuwi-sdk/releases).
+notes](https://github.com/pezkuwichain/pezkuwi-DKS/releases).
 
 ```bash
 # Specify the specific nightly toolchain in the date below:

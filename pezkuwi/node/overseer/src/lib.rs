@@ -60,7 +60,7 @@
 // unused dependencies can not work for test and examples at the same time
 // yielding false positives
 #![warn(missing_docs)]
-// TODO https://github.com/pezkuwichain/pezkuwi-sdk/issues/5793
+// TODO https://github.com/pezkuwichain/pezkuwi-DKS/issues/5793
 #![allow(dead_code, irrefutable_let_patterns)]
 
 use std::{

@@ -32,7 +32,7 @@ fn transfer_and_transact_in_same_xcm(
 
 	let Fungible(total_usdt) = usdt.fun else { unreachable!() };
 
-	// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/290): dry-run to get local fees, for now use hardcoded value.
+	// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/290): dry-run to get local fees, for now use hardcoded value.
 	let local_fees_amount = 80_000_000_000; // current exact value 69_200_786_622
 	let ah_fees_amount = 90_000_000_000; // current exact value 79_948_099_299
 	let usdt_to_ah_then_onward_amount = total_usdt - local_fees_amount - ah_fees_amount;

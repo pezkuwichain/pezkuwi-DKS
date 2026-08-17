@@ -65,7 +65,7 @@ type MessagesToRefine<'a> = Vec<(MessagePayload, &'a mut OutboundMessageDetails)
 /// Outbound lane data - for backwards compatibility with `pezbp_messages::OutboundLaneData` which has
 /// additional `lane_state` attribute.
 ///
-/// TODO: remove - https://github.com/pezkuwichain/pezkuwi-sdk/issues/5923
+/// TODO: remove - https://github.com/pezkuwichain/pezkuwi-DKS/issues/5923
 #[derive(Decode)]
 struct LegacyOutboundLaneData {
 	#[allow(unused)]

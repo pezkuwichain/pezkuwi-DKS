@@ -56,7 +56,7 @@ impl<Runtime, AccountId> ToTeyrchainIdentityReaper<Runtime, AccountId> {
 	fn calculate_remote_deposit(bytes: u32, subs: u32) -> Balance {
 		// Remote deposit constants. Teyrchain uses `deposit / 100`
 		// Source:
-		// https://github.com/pezkuwichain/pezkuwi-sdk/blob/a146918/cumulus/teyrchains/common/src/westend.rs#L28
+		// https://github.com/pezkuwichain/pezkuwi-DKS/blob/a146918/cumulus/teyrchains/common/src/westend.rs#L28
 		//
 		// Teyrchain Deposit Configuration:
 		//

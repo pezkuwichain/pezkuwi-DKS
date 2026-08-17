@@ -339,7 +339,7 @@
 //!
 //! To be fair to joiners, this implementation also need joining pools, which are actively staking,
 //! in addition to the unbonding pools. For maintenance simplicity these are not implemented.
-//! Related: <https://github.com/paritytech/bizinikiwi/issues/10860>
+//! Related: <https://github.com/paritytech/substrate/issues/10860>
 //!
 //! ### Limitations
 //!
@@ -2474,8 +2474,8 @@ pub mod pezpallet {
 				// accounts might have had an extra consumer increment. We know at this point no
 				// other pezpallet should depend on pool account so safe to do this.
 				// Refer to following issues:
-				// - https://github.com/pezkuwichain/pezkuwi-sdk/issues/4440
-				// - https://github.com/pezkuwichain/pezkuwi-sdk/issues/2037
+				// - https://github.com/pezkuwichain/pezkuwi-DKS/issues/4440
+				// - https://github.com/pezkuwichain/pezkuwi-DKS/issues/2037
 			}
 
 			let mut sum_unlocked_points: BalanceOf<T> = Zero::zero();

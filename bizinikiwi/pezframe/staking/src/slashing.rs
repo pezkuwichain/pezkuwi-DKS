@@ -289,7 +289,7 @@ pub(crate) fn compute_slash<T: Config>(
 
 		if target_span == Some(spans.span_index()) {
 			// misbehavior occurred within the current slashing span - end current span.
-			// Check <https://github.com/pezkuwichain/pezkuwi-sdk/issues/2650> for details.
+			// Check <https://github.com/pezkuwichain/pezkuwi-DKS/issues/2650> for details.
 			spans.end_span(params.now);
 		}
 	}
@@ -321,7 +321,7 @@ fn kick_out_if_recent<T: Config>(params: SlashParams<T>) {
 	);
 
 	if spans.era_span(params.slash_era).map(|s| s.index) == Some(spans.span_index()) {
-		// Check https://github.com/pezkuwichain/pezkuwi-sdk/issues/2650 for details
+		// Check https://github.com/pezkuwichain/pezkuwi-DKS/issues/2650 for details
 		spans.end_span(params.now);
 	}
 }

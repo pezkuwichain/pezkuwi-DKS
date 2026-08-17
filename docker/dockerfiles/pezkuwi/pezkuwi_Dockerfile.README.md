@@ -2,6 +2,6 @@
 
 ## [Pezkuwi](https://pezkuwichain.io/)
 
-## [GitHub](https://github.com/pezkuwichain/pezkuwi-sdk)
+## [GitHub](https://github.com/pezkuwichain/pezkuwi-DKS)
 
 ## [Pezkuwi Wiki](https://wiki.network.pezkuwichain.io/)

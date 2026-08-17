@@ -530,7 +530,7 @@ pub mod pezpallet {
 		/// keys which are then hashed and concatenated, resulting in arbitrarily long keys.
 		///
 		/// Use the *state migration RPC* to retrieve the length of the longest key in your
-		/// storage: <https://github.com/paritytech/bizinikiwi/issues/11642>
+		/// storage: <https://github.com/paritytech/substrate/issues/11642>
 		///
 		/// The migration will halt with a `Halted` event if this value is too small.
 		/// Since there is no real penalty from over-estimating, it is advised to use a large

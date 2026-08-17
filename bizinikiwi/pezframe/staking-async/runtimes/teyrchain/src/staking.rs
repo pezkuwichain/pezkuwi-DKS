@@ -72,7 +72,7 @@ parameter_types! {
 	/// * Dicle: 16 (1.6m snapshot)
 	///
 	/// Reasoning: Both leads to around 700 nominators per-page, yielding the weights in
-	/// https://github.com/pezkuwichain/pezkuwi-sdk/issues/273, the maximum of which being around 1mb
+	/// https://github.com/pezkuwichain/pezkuwi-DKS/issues/273, the maximum of which being around 1mb
 	/// compressed PoV and 2mb uncompressed.
 	///
 	/// NOTE: in principle, there is nothing preventing us from stretching these values further, it

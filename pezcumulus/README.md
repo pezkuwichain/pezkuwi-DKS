@@ -22,7 +22,7 @@ Pezcumulus clouds are shaped sort of like dots; together they form a system that
 
 ### Consensus
 
-[`teyrchain-consensus`](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/pezcumulus/client/consensus/common/src/parachain_consensus.rs)
+[`teyrchain-consensus`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/pezcumulus/client/consensus/common/src/parachain_consensus.rs)
 is a [consensus engine](https://docs.pezkuwichain.io/v3/advanced/consensus) for Bizinikiwi that follows a PezkuwiChain [relay
 chain](https://wiki.network.pezkuwichain.io/docs/en/learn-architecture#relay-chain). This will run a PezkuwiChain node internally,
 and dictate to the client and synchronization algorithms which chain to follow,
@@ -117,7 +117,7 @@ zombienet --provider native spawn ./zombienet/examples/small_network.toml
 
 ```bash
 # Clone
-git clone https://github.com/pezkuwichain/pezkuwi-sdk
+git clone https://github.com/pezkuwichain/pezkuwi-DKS
 
 # Compile PezkuwiChain's required binaries
 cargo build --release -p pezkuwi

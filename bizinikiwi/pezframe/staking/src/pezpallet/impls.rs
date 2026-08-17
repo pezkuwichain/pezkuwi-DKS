@@ -1527,7 +1527,7 @@ impl<T: Config> ElectionDataProvider for Pezpallet<T> {
 		let targets = Self::get_npos_targets(bounds);
 
 		// We can't handle this case yet -- return an error. WIP to improve handling this case in
-		// <https://github.com/paritytech/bizinikiwi/pull/13195>.
+		// <https://github.com/paritytech/substrate/pull/13195>.
 		if bounds.exhausted(None, CountBound(T::TargetList::count()).into()) {
 			return Err("Target snapshot too big");
 		}
@@ -2082,7 +2082,7 @@ impl<T: Config> StakingInterface for Pezpallet<T> {
 
 	fn is_exposed_in_era(who: &Self::AccountId, era: &EraIndex) -> bool {
 		// look in the non paged exposures
-		// FIXME: Can be cleaned up once non paged exposures are cleared (https://github.com/pezkuwichain/pezkuwi-sdk/issues/433)
+		// FIXME: Can be cleaned up once non paged exposures are cleared (https://github.com/pezkuwichain/pezkuwi-DKS/issues/433)
 		ErasStakers::<T>::iter_prefix(era).any(|(validator, exposures)| {
 			validator == *who || exposures.others.iter().any(|i| i.who == *who)
 		})
@@ -2240,7 +2240,7 @@ impl<T: Config> Pezpallet<T> {
 	/// * A bonded (stash, controller) pair must have an associated ledger.
 	///
 	/// NOTE: these checks result in warnings only. Once
-	/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/3245> is resolved, turn warns into check
+	/// <https://github.com/pezkuwichain/pezkuwi-DKS/issues/3245> is resolved, turn warns into check
 	/// failures.
 	fn check_bonded_consistency() -> Result<(), TryRuntimeError> {
 		use alloc::collections::btree_set::BTreeSet;

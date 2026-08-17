@@ -1498,7 +1498,7 @@ pub mod pezpallet {
 
 			// We check for network native asset reserve transfers in preparation for the Asset Hub
 			// Migration. This check will be removed after the migration and the determined
-			// reserve location adjusted accordingly. For more information, see https://github.com/pezkuwichain/pezkuwi-sdk/issues/9054.
+			// reserve location adjusted accordingly. For more information, see https://github.com/pezkuwichain/pezkuwi-DKS/issues/9054.
 			Self::ensure_network_asset_reserve_transfer_allowed(
 				&assets,
 				fee_asset_item,
@@ -2092,7 +2092,7 @@ impl<T: Config> Pezpallet<T> {
 
 		// We check for network native asset reserve transfers in preparation for the Asset Hub
 		// Migration. This check will be removed after the migration and the determined
-		// reserve location adjusted accordingly. For more information, see https://github.com/pezkuwichain/pezkuwi-sdk/issues/9054.
+		// reserve location adjusted accordingly. For more information, see https://github.com/pezkuwichain/pezkuwi-DKS/issues/9054.
 		Self::ensure_network_asset_reserve_transfer_allowed(
 			&assets,
 			fee_asset_item,

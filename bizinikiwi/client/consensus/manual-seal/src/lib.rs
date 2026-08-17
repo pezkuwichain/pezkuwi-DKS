@@ -467,7 +467,7 @@ mod tests {
 	}
 
 	// TODO: enable once the flakiness is fixed
-	// See https://github.com/pezkuwichain/pezkuwi-sdk/issues/3603
+	// See https://github.com/pezkuwichain/pezkuwi-DKS/issues/3603
 	//#[tokio::test]
 	#[allow(unused)]
 	async fn instant_seal_delayed_finalize() {

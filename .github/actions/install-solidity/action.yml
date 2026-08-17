@@ -44,7 +44,7 @@ runs:
           echo "resolc $RESOLC_VERSION already present"
         else
           curl -fsSL -o "$HOME/.local/bin/resolc" \
-            "https://github.com/paritytech/revive/releases/download/v${RESOLC_VERSION}/resolc-x86_64-unknown-linux-musl"
+            "https://github.com/pezkuwichain/revive/releases/download/v${RESOLC_VERSION}/resolc-x86_64-unknown-linux-musl"
           chmod +x "$HOME/.local/bin/resolc"
         fi
 

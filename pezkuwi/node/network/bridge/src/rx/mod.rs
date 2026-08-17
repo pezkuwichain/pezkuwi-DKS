@@ -685,12 +685,12 @@ where
 	for (discovery_id, validator_index) in neighbors {
 		let addr = get_peer_id_by_authority_id(ads, discovery_id.clone()).await;
 		if addr.is_none() {
-			// See on why is not good in https://github.com/pezkuwichain/pezkuwi-sdk/issues/2138
+			// See on why is not good in https://github.com/pezkuwichain/pezkuwi-DKS/issues/2138
 			gum::debug!(
 				target: LOG_TARGET,
 				?validator_index,
 				"Could not determine peer_id for validator, let the team know in \n
-				https://github.com/pezkuwichain/pezkuwi-sdk/issues/2138"
+				https://github.com/pezkuwichain/pezkuwi-DKS/issues/2138"
 			)
 		}
 		peers.push(TopologyPeerInfo {
@@ -1147,7 +1147,7 @@ async fn dispatch_validation_events_to_all<I>(
 					event,
 					// NetworkBridgeEvent::OurViewChange(..) must also be here,
 					// but it is sent via an unbounded channel.
-					// See https://github.com/pezkuwichain/pezkuwi-sdk/issues/824
+					// See https://github.com/pezkuwichain/pezkuwi-DKS/issues/824
 					NetworkBridgeEvent::PeerConnected(..)
 						| NetworkBridgeEvent::PeerDisconnected(..)
 						| NetworkBridgeEvent::PeerViewChange(..)

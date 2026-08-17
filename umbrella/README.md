@@ -11,7 +11,7 @@
 </div>
 
 `pezkuwi-sdk` is an umbrella crate for the [PezkuwiChain
-SDK](https://github.com/pezkuwichain/pezkuwi-sdk), in the sense that it is an "umbrella" that
+SDK](https://github.com/pezkuwichain/pezkuwi-DKS), in the sense that it is an "umbrella" that
 encompasses other components. More specifically, it re-exports all the crates that are needed by
 builders.
 

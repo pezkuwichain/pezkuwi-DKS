@@ -182,7 +182,7 @@ pub trait Backend<Block: BlockT>:
 	/// chain or descendants of it.
 	///
 	/// Returns `Ok(None)` if `base_hash` is not found in search space.
-	// TODO: document time complexity of this, see [#1444](https://github.com/paritytech/bizinikiwi/issues/1444)
+	// TODO: document time complexity of this, see [#1444](https://github.com/paritytech/substrate/issues/1444)
 	fn longest_containing(
 		&self,
 		base_hash: Block::Hash,

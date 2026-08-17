@@ -85,7 +85,7 @@ pub enum CompatibilityMode<N> {
 	/// Call `initialize_block` before doing any runtime calls.
 	///
 	/// Previously the node would execute `initialize_block` before fetching the authorities
-	/// from the runtime. This behaviour changed in: <https://github.com/paritytech/bizinikiwi/pull/9132>
+	/// from the runtime. This behaviour changed in: <https://github.com/paritytech/substrate/pull/9132>
 	///
 	/// By calling `initialize_block` before fetching the authorities, on a block that
 	/// would enact a new validator set, the block would already be build/sealed by an

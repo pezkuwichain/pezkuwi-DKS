@@ -20,8 +20,8 @@
 //! is currently (as of 2023-06-26) deployed on Pezkuwi and [Dicle (as "Statemine")](https://parachains.info/details/statemine).
 //!
 //! To construct a valid [`crate::config::Config`] implementation, we need to find out which types
-//! to use for `AccountId`, `Hasher`, etc. For this, we need to take a look at the source code of Statemint, which is currently a part of the [Pezcumulus directory in pezkuwi-sdk](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/pezcumulus).
-//! The crate defining the asset hub runtime can be found [here](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain).
+//! to use for `AccountId`, `Hasher`, etc. For this, we need to take a look at the source code of Statemint, which is currently a part of the [Pezcumulus directory in pezkuwi-sdk](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/pezcumulus).
+//! The crate defining the asset hub runtime can be found [here](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain).
 //!
 //! ## `AccountId`, `Hash`, `Hasher` and `Header`
 //!

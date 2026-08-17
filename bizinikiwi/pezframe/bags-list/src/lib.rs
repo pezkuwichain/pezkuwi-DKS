@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *Pezkuwi*.
 //!
-//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/tree/master/bizinikiwi/pezframe/bags-list) -
+//! [![github]](https://github.com/pezkuwichain/pezkuwi-DKS/tree/master/bizinikiwi/pezframe/bags-list) -
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]:

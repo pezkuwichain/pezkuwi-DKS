@@ -57,7 +57,7 @@ pub type BizinikiwiMessagesDeliveryProof<C, L> =
 /// Inbound lane data - for backwards compatibility with `pezbp_messages::InboundLaneData` which has
 /// additional `lane_state` attribute.
 ///
-/// TODO: remove - https://github.com/pezkuwichain/pezkuwi-sdk/issues/5923
+/// TODO: remove - https://github.com/pezkuwichain/pezkuwi-DKS/issues/5923
 #[derive(Decode)]
 struct LegacyInboundLaneData<RelayerId> {
 	relayers: VecDeque<UnrewardedRelayer<RelayerId>>,

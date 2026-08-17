@@ -24,10 +24,10 @@ const ETHEREUM_BOB: [u8; 20] = hex_literal::hex!("11b0b11000011b0b11000011b0b110
 ///
 /// This particular test is not testing snowbridge, but only Bridge Hub, so the tested XCM flow from
 /// Ethereum starts from Bridge Hub.
-// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/292): Once Snowbridge supports Transact, start the flow from Ethereum and test completely e2e.
+// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/292): Once Snowbridge supports Transact, start the flow from Ethereum and test completely e2e.
 /// What the Asset Hub leg charges, paid out of the WETH the message carries.
 ///
-/// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/290): dry-run to get local fees, for
+/// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/290): dry-run to get local fees, for
 /// now use a hardcoded value. Current exact value 79_948_099_299.
 const AH_FEES_AMOUNT: u128 = 90_000_000_000;
 
@@ -89,7 +89,7 @@ fn transfer_and_transact_in_same_xcm(
 ///
 /// This particular test is not testing snowbridge, but only Bridge Hub, so the tested XCM flow from
 /// Ethereum starts from Bridge Hub.
-// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/292): Once Snowbridge supports Transact, start the flow from Ethereum and test completely e2e.
+// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/292): Once Snowbridge supports Transact, start the flow from Ethereum and test completely e2e.
 #[test]
 fn transact_from_ethereum_to_penpalb_through_asset_hub() {
 	// Snowbridge doesn't support transact yet, we are emulating it by sending one from Bridge Hub

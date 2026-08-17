@@ -7,7 +7,7 @@ edition = "2021"
 version = "0.43.1"
 rust-version = "1.81"
 license = "Apache-2.0 OR GPL-3.0"
-repository = "https://github.com/pezkuwichain/pezkuwi-sdk"
+repository = "https://github.com/pezkuwichain/pezkuwi-DKS"
 documentation = "https://docs.rs/pezkuwi-subxt"
 homepage = "https://www.pezkuwichain.io/"
 

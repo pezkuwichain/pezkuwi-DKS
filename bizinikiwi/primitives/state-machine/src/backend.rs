@@ -398,7 +398,7 @@ pub trait AsTrieBackend<H: Hasher, C = pezsp_trie::cache::LocalTrieCache<H>> {
 /// We want to use `:pending_code` in block production and import
 /// but avoid using it in runtime api calls.
 ///
-/// See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/64> for more details.
+/// See <https://github.com/pezkuwichain/pezkuwi-DKS/issues/64> for more details.
 #[cfg(feature = "std")]
 pub enum TryPendingCode {
 	/// Used by runtime api calls.

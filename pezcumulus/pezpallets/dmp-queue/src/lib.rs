@@ -42,7 +42,7 @@ pub type MaxDmpMessageLenOf<T> =
 
 #[pezframe_support::pezpallet]
 #[deprecated(
-	note = "`pezcumulus-pezpallet-dmp-queue` will be removed after November 2024. It can be removed once its lazy migration completed. See <https://github.com/paritytech/pezkuwi-sdk/pull/1246>."
+	note = "`pezcumulus-pezpallet-dmp-queue` will be removed after November 2024. It can be removed once its lazy migration completed. See <https://github.com/paritytech/polkadot-sdk/pull/1246>."
 )]
 pub mod pezpallet {
 	use super::*;

@@ -64,7 +64,7 @@ mod utils;
 ///
 /// Provides: BLS12-381, Ed-on-BLS12-381-Bandersnatch, Pallas, Vesta.
 ///
-/// As ratified by [RFC-0163](https://github.com/pezkuwi-fellows/RFCs/pull/163).
+/// As ratified by [RFC-0163](https://github.com/pezkuwichain/pezkuwi-fellows/pull/163).
 #[cfg(feature = "rfc163")]
 pub type HostFunctionsRfc163 = (
 	bls12_381::host_calls::HostFunctions,

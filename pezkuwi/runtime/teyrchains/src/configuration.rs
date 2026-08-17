@@ -532,9 +532,9 @@ pub mod pezpallet {
 	/// v6-v7:  <https://github.com/paritytech/polkadot/pull/7396>
 	/// v7-v8:  <https://github.com/paritytech/polkadot/pull/6969>
 	/// v8-v9:  <https://github.com/paritytech/polkadot/pull/7577>
-	/// v9-v10: <https://github.com/pezkuwichain/pezkuwi-sdk/pull/2177>
-	/// v10-11: <https://github.com/pezkuwichain/pezkuwi-sdk/pull/1191>
-	/// v11-12: <https://github.com/pezkuwichain/pezkuwi-sdk/pull/3181>
+	/// v9-v10: <https://github.com/pezkuwichain/pezkuwi-DKS/pull/2177>
+	/// v10-11: <https://github.com/pezkuwichain/pezkuwi-DKS/pull/1191>
+	/// v11-12: <https://github.com/pezkuwichain/pezkuwi-DKS/pull/3181>
 	/// v12-13: added max_relay_parent_session_age to SchedulerParams
 	const STORAGE_VERSION: StorageVersion = StorageVersion::new(13);
 

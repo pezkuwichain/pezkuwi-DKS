@@ -79,7 +79,7 @@
 //! ```
 //!
 //! Apart from this, no issues are known. There could be some bugs with how macros locate their own
-//! re-exports. Please [report issues](https://github.com/pezkuwichain/pezkuwi-sdk/issues) that arise from using this crate.
+//! re-exports. Please [report issues](https://github.com/pezkuwichain/pezkuwi-DKS/issues) that arise from using this crate.
 //!
 //! ## Dependencies
 //!

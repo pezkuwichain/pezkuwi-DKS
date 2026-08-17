@@ -2488,7 +2488,7 @@ async fn test_collation_response_out_of_view() {
 	assert!(db.witnessed_slash().is_none());
 }
 
-// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/10883?issue=paritytech%7Cpolkadot-sdk%7C11084): Add
+// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/10883?issue=paritytech%7Cpolkadot-sdk%7C11084): Add
 // test for V3 descriptor validation. The previous test_v2_descriptor_without_feature_enabled was
 // removed because V2 is now always enabled. The v3_enabled parameter has been removed from
 // descriptor methods.
@@ -3661,7 +3661,7 @@ async fn core_assignment_uses_ancestor_not_leaf() {
 	assert!(db.witnessed_slash().is_none());
 }
 
-// Regression test for https://github.com/pezkuwichain/pezkuwi-sdk/issues/11556
+// Regression test for https://github.com/pezkuwichain/pezkuwi-DKS/issues/11556
 // Ensure that after a core rotation, candidates for both the old core's para (at the pre-rotation
 // leaf) and the new core's para (at the post-rotation leaf) are accepted.
 #[tokio::test]

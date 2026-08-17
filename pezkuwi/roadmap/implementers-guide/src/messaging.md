@@ -91,7 +91,7 @@ are required to be processed by the receiver's candidate, only the processed mes
 rest are provided as hashes.
 
 Further details can be found at the official repository for the [Cross-Consensus Message Format
-(XCM)](https://github.com/pezkuwichain/xcm-format/blob/master/README.md), as well as at the [W3F research
+(XCM)](https://github.com/polkadot-fellows/xcm-format/blob/master/README.md), as well as at the [W3F research
 website](https://research.web3.foundation/en/latest/polkadot/XCMP.html) and [this
 blogpost](https://medium.com/web3foundation/polkadots-messaging-scheme-b1ec560908b7).
 

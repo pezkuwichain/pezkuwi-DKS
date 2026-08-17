@@ -55,4 +55,4 @@ migrations.
 - Field `claimed_rewards` in item `Ledger` is renamed
   to `legacy_claimed_rewards` and can be removed after 84 eras.
 
-[v14]: https://github.com/pezkuwichain/pezkuwi-sdk/issues/46
+[v14]: https://github.com/pezkuwichain/pezkuwi-DKS/issues/46

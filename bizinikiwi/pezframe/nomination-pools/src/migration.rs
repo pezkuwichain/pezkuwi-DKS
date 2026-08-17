@@ -701,7 +701,7 @@ pub mod v4 {
 	/// # Warning
 	///
 	/// To avoid mangled storage please use `MigrateV3ToV5` instead.
-	/// See: github.com/paritytech/bizinikiwi/pull/13715
+	/// See: github.com/paritytech/substrate/pull/13715
 	///
 	/// This migration adds a `commission` field to every `BondedPoolInner`, if
 	/// any.
@@ -927,7 +927,7 @@ pub mod v2 {
 	}
 
 	/// Migrate the pool reward scheme to the new version, as per
-	/// <https://github.com/paritytech/bizinikiwi/pull/11669.>.
+	/// <https://github.com/paritytech/substrate/pull/11669.>.
 	pub struct MigrateToV2<T>(core::marker::PhantomData<T>);
 	impl<T: Config> MigrateToV2<T> {
 		fn run(current: StorageVersion) -> Weight {

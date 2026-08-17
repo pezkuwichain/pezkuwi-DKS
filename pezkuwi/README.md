@@ -11,7 +11,7 @@ guides, like how to run a validator node, see the [Pezkuwi SDK docs website](htt
 
 If you just wish to run a Pezkuwi node without compiling it yourself, you may either:
 
-- run the [latest released binary](https://github.com/pezkuwichain/pezkuwi-sdk/releases/latest) (make sure to also
+- run the [latest released binary](https://github.com/pezkuwichain/pezkuwi-DKS/releases/latest) (make sure to also
   download all the `worker` binaries and put them in the same directory as `pezkuwi`), or
 - install Pezkuwi from one of our package repositories.
 
@@ -70,7 +70,7 @@ section.
 If you want to install Pezkuwi in your PATH, you can do so with:
 
 ```bash
-cargo install --git https://github.com/pezkuwichain/pezkuwi-sdk --tag <version> pezkuwi --locked
+cargo install --git https://github.com/pezkuwichain/pezkuwi-DKS --tag <version> pezkuwi --locked
 ```
 
 ### Build from Source
@@ -93,7 +93,7 @@ cargo install --path . --locked
 
 #### Build from Source with Docker
 
-You can also build from source using [Pezkuwi CI docker image](https://github.com/pezkuwichain/scripts/tree/master/dockerfiles/ci-linux):
+You can also build from source using [Pezkuwi CI docker image](https://github.com/paritytech/scripts/tree/master/dockerfiles/ci-linux):
 
 ```bash
 git checkout <latest tagged release>
@@ -104,7 +104,7 @@ sudo chown -R $(id -u):$(id -g) target/
 ```
 
 If you want to reproduce other steps of CI process you can use the following
-[guide](https://github.com/pezkuwichain/scripts#gitlab-ci-for-building-docker-images).
+[guide](https://github.com/paritytech/scripts#gitlab-ci-for-building-docker-images).
 
 ## Networks
 
@@ -158,7 +158,7 @@ have Rust and the support software installed.
 Then, grab the Pezkuwi source code:
 
 ```bash
-git clone https://github.com/pezkuwichain/pezkuwi-sdk.git
+git clone https://github.com/pezkuwichain/pezkuwi-DKS.git
 cd pezkuwi-sdk
 ```
 
@@ -226,22 +226,22 @@ that we currently maintain.
 
 ### Using Docker
 
-[Using Docker](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docs/contributor/docker.md)
+[Using Docker](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docs/contributor/docker.md)
 
 ### Shell Completion
 
-[Shell Completion](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/pezkuwi/doc/shell-completion.md)
+[Shell Completion](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/pezkuwi/doc/shell-completion.md)
 
 ## Contributing
 
 ### Contributing Guidelines
 
-[Contribution Guidelines](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docs/contributor/CONTRIBUTING.md)
+[Contribution Guidelines](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docs/contributor/CONTRIBUTING.md)
 
 ### Contributor Code of Conduct
 
-[Code of Conduct](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docs/contributor/CODE_OF_CONDUCT.md)
+[Code of Conduct](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docs/contributor/CODE_OF_CONDUCT.md)
 
 ## License
 
-Pezkuwi is [GPL 3.0 licensed](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/pezkuwi/LICENSE).
+Pezkuwi is [GPL 3.0 licensed](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/pezkuwi/LICENSE).

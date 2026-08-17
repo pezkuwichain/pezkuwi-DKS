@@ -532,7 +532,7 @@ async fn wait_runtime_upgrade_in_finalized_block<T: Config>(
 		let value = client_at
 			.entry(addr)
 			// The storage `system::lastRuntimeUpgrade` should always exist.
-			// <https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/bizinikiwi/frame/system/src/lib.rs#L958>
+			// <https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/bizinikiwi/frame/system/src/lib.rs#L958>
 			.map_err(|_| RuntimeUpdaterError::CantFindSystemLastRuntimeUpgrade)?
 			.fetch(())
 			.await

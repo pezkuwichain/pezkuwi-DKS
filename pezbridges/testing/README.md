@@ -1,24 +1,24 @@
 # Bridges Tests for Local pezkuwichain <> zagros Bridge
 
-This folder contains [zombienet](https://github.com/pezkuwichain/zombienet-sdk/) based integration tests for both
+This folder contains [zombienet](https://github.com/pezkuwichain/pezkuwi-zombienet-sdk/) based integration tests for both
 onchain and offchain bridges code.
 
 Prerequisites for running the tests locally:
 
-- download latest [zombienet release](https://github.com/pezkuwichain/zombienet-sdk/releases) and place it at
+- download latest [zombienet release](https://github.com/pezkuwichain/pezkuwi-zombienet-sdk/releases) and place it at
 `~/local_bridge_testing/bin/zombienet`;
 
 - build PezkuwiChain binary by running `cargo build -p pezkuwi --release  --features fast-runtime` command in the
-  [`pezkuwi-sdk`](https://github.com/pezkuwichain/pezkuwi-sdk) repository clone;
+  [`pezkuwi-sdk`](https://github.com/pezkuwichain/pezkuwi-DKS) repository clone;
 
 - build PezkuwiChain Teyrchain binary by running `cargo build -p pezkuwi-teyrchain-bin --release` command in the
-  [`pezkuwi-sdk`](https://github.com/pezkuwichain/pezkuwi-sdk) repository clone;
+  [`pezkuwi-sdk`](https://github.com/pezkuwichain/pezkuwi-DKS) repository clone;
 
 - ensure that you have [`node`](https://nodejs.org/en) installed. Additionally, we'll need the globally installed
   `pezkuwi/api-cli` package. Use `yarn global add @pezkuwi/api-cli` to install it.
 
 - build Bizinikiwi relay by running `cargo build -p bizinikiwi-relay --release` command in the
-  [`pezkuwichain/pezkuwi-sdk`](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bridges) repository clone;
+  [`pezkuwichain/pezkuwi-sdk`](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/bridges) repository clone;
 
 - copy the `bizinikiwi-relay` binary, built in the previous step, to `~/local_bridge_testing/bin/bizinikiwi-relay`;
 

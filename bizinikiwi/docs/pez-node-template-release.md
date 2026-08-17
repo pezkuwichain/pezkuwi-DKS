@@ -1,7 +1,7 @@
 # Bizinikiwi Node Template Release Process
 
 ## This release process has to be run in a github checkout Bizinikiwi directory with your work committed into
-`https://github.com/pezkuwichain/pezkuwi-sdk/`, because the build script will check the existence of your current git commit
+`https://github.com/pezkuwichain/pezkuwi-DKS/`, because the build script will check the existence of your current git commit
 ID in the remote repository.
 
 Assume you are in root directory of Bizinikiwi. Run:
@@ -26,7 +26,7 @@ that are removed from the source. So you need to manually check and remove them 
 commit in Bizinikiwi remote repository, such as:
 
 ```toml
-toml pezsp-core = { version = "7.0.0", git = "https://github.com/pezkuwichain/pezkuwi-sdk.git", rev =
+toml pezsp-core = { version = "7.0.0", git = "https://github.com/pezkuwichain/pezkuwi-DKS.git", rev =
 "de80d0107336a9c7a2efdc0199015e4d67fcbdb5", default-features = false }
 ```
 
@@ -40,7 +40,7 @@ package is published in the crate, the above will become:
 P.S: This step can be automated if we update `pez-node-template-release` package in `scripts/ci/pez-node-template-release`.
 
 ## Once the `Cargo.toml` is updated, compile and confirm that the Node Template builds. Then commit the changes to a new
-branch in [Bizinikiwi Node Template](https://github.com/bizinikiwi-developer-hub/bizinikiwi-node-template), and make a PR.
+branch in [Bizinikiwi Node Template](https://github.com/paritytech/polkadot-sdk-solochain-template), and make a PR.
 
 > Note that there is a chance the code in Bizinikiwi Node Template works with the linked Bizinikiwi git commit but not
 with published packages due to the latest (as yet) unpublished features. In this case, rollback that section of the

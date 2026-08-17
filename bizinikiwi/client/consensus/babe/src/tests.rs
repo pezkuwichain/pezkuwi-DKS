@@ -418,7 +418,7 @@ async fn run_one_test(mutator: impl Fn(&mut TestHeader, Stage) + Send + Sync + '
 	.await;
 }
 
-#[cfg(ignore_flaky_test)] // https://github.com/pezkuwichain/pezkuwi-sdk/issues/96
+#[cfg(ignore_flaky_test)] // https://github.com/pezkuwichain/pezkuwi-DKS/issues/96
 #[tokio::test]
 async fn authoring_blocks() {
 	run_one_test(|_, _| ()).await;
@@ -437,7 +437,7 @@ async fn rejects_missing_inherent_digest() {
 	.await;
 }
 
-#[cfg(ignore_flaky_test)] // https://github.com/pezkuwichain/pezkuwi-sdk/issues/96
+#[cfg(ignore_flaky_test)] // https://github.com/pezkuwichain/pezkuwi-DKS/issues/96
 #[tokio::test]
 #[should_panic(expected = "has a bad seal")]
 async fn rejects_missing_seals() {
