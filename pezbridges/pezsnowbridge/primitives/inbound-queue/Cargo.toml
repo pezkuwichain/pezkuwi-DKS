@@ -22,11 +22,11 @@ codec = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 tracing = { workspace = true }
 
+impl-trait-for-tuples = { workspace = true }
 pezframe-support = { workspace = true }
 pezframe-system = { workspace = true }
 pezsp-core = { workspace = true }
 pezsp-crypto-hashing = { workspace = true }
-impl-trait-for-tuples = { workspace = true }
 pezsp-io = { workspace = true }
 pezsp-runtime = { workspace = true }
 pezsp-std = { workspace = true }

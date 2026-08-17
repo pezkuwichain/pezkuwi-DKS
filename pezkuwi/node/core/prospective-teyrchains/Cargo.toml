@@ -13,10 +13,10 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
-schnellru = { workspace = true }
 fatality = { workspace = true }
 futures = { workspace = true }
 gum = { workspace = true, default-features = true }
+schnellru = { workspace = true }
 thiserror = { workspace = true }
 
 pezkuwi-node-subsystem = { workspace = true, default-features = true }

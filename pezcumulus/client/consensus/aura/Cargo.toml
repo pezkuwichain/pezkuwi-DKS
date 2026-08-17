@@ -13,12 +13,12 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
-pezcumulus-client-proof-size-recording = { workspace = true, default-features = true }
-pezsp-externalities = { workspace = true, default-features = true }
 async-trait = { workspace = true }
 codec = { features = ["derive"], workspace = true, default-features = true }
 futures = { workspace = true }
 parking_lot = { workspace = true }
+pezcumulus-client-proof-size-recording = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true, default-features = true }
 schnellru = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tracing = { workspace = true, default-features = true }

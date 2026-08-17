@@ -13,15 +13,15 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
+async-trait = { workspace = true }
+bitvec = { features = ["alloc"], workspace = true }
 codec = { workspace = true }
+futures = { workspace = true }
+gum = { workspace = true, default-features = true }
+pezkuwi-node-clock = { workspace = true, default-features = true }
 pezsp-consensus-babe = { workspace = true, default-features = true }
 pezsp-consensus-slots = { workspace = true, default-features = true }
 pezsp-timestamp = { workspace = true, default-features = true }
-pezkuwi-node-clock = { workspace = true, default-features = true }
-async-trait = { workspace = true }
-bitvec = { features = ["alloc"], workspace = true }
-futures = { workspace = true }
-gum = { workspace = true, default-features = true }
 schnellru = { workspace = true }
 
 pezsp-core = { workspace = true, default-features = true }
@@ -42,8 +42,8 @@ tokio-util = { workspace = true }
 tokio = { workspace = true }
 
 [dev-dependencies]
-futures-timer = { workspace = true }
 assert_matches = { workspace = true }
+futures-timer = { workspace = true }
 pezsp-tracing = { workspace = true }
 rstest = { workspace = true }
 
@@ -71,11 +71,11 @@ runtime-benchmarks = [
 	"pezkuwi-primitives/runtime-benchmarks",
 	"pezsc-keystore/runtime-benchmarks",
 	"pezsc-network/runtime-benchmarks",
-	"pezsp-keyring/runtime-benchmarks",
-	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-consensus-babe/runtime-benchmarks",
 	"pezsp-consensus-slots/runtime-benchmarks",
-	"pezsp-timestamp/runtime-benchmarks"
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-timestamp/runtime-benchmarks",
 ]
 std = [
 	"bitvec/std",
@@ -95,10 +95,10 @@ try-runtime = [
 	"pezkuwi-primitives-test-helpers/try-runtime",
 	"pezkuwi-primitives/try-runtime",
 	"pezsc-network/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
 	"pezsp-keyring/try-runtime",
 	"pezsp-runtime/try-runtime",
-	"pezsp-consensus-babe/try-runtime",
-	"pezsp-timestamp/try-runtime"
+	"pezsp-timestamp/try-runtime",
 ]
 serde = []
 with-tracing = []

@@ -19,11 +19,11 @@ harness = false
 required-features = ["subsystem-benchmarks"]
 
 [dependencies]
-pezkuwi-node-clock = { workspace = true, default-features = true }
 codec = { workspace = true, default-features = true }
 fatality = { workspace = true }
 futures = { workspace = true }
 gum = { workspace = true, default-features = true }
+pezkuwi-node-clock = { workspace = true, default-features = true }
 schnellru = { workspace = true }
 thiserror = { workspace = true }
 

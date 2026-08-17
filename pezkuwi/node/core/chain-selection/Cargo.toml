@@ -13,11 +13,11 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
-pezkuwi-node-clock = { workspace = true, default-features = true }
 codec = { workspace = true, default-features = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
 gum = { workspace = true, default-features = true }
+pezkuwi-node-clock = { workspace = true, default-features = true }
 pezkuwi-node-subsystem = { workspace = true, default-features = true }
 pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
 pezkuwi-pez-node-primitives = { workspace = true, default-features = true }

@@ -13,7 +13,6 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
-pezsp-core = { workspace = true, default-features = true }
 itertools = { workspace = true }
 pezkuwi-node-metrics = { workspace = true, default-features = true }
 pezkuwi-node-network-protocol = { workspace = true, default-features = true }
@@ -21,6 +20,7 @@ pezkuwi-node-subsystem = { workspace = true, default-features = true }
 pezkuwi-node-subsystem-util = { workspace = true, default-features = true }
 pezkuwi-pez-node-primitives = { workspace = true, default-features = true }
 pezkuwi-primitives = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
 rand = { workspace = true, default-features = true }
 
 futures = { workspace = true }

@@ -1,7 +1,7 @@
 [book]
 authors = [
-	"Kurdistan Tech Institute <info@pezkuwichain.io>",
 	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
+	"Kurdistan Tech Institute <info@pezkuwichain.io>",
 ]
 language = "en"
 src = "src"
