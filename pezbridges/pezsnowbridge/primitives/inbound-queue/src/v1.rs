@@ -489,9 +489,9 @@ mod tests {
 		pub const InboundQueuePalletInstance: u8 = 80;
 		pub EthereumUniversalLocation: InteriorLocation =
 			[GlobalConsensus(NETWORK)].into();
-		pub AssetHubFromEthereum: Location = Location::new(1,[GlobalConsensus(Polkadot),Teyrchain(1000)]);
+		pub AssetHubFromEthereum: Location = Location::new(1,[GlobalConsensus(Pezkuwi),Teyrchain(1000)]);
 		pub EthereumLocation: Location = Location::new(2,EthereumUniversalLocation::get());
-		pub BridgeHubContext: InteriorLocation = [GlobalConsensus(Polkadot),Teyrchain(1002)].into();
+		pub BridgeHubContext: InteriorLocation = [GlobalConsensus(Pezkuwi),Teyrchain(1002)].into();
 	}
 
 	type AccountId = <<MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
@@ -522,7 +522,7 @@ mod tests {
 
 	#[test]
 	fn test_contract_location_with_incorrect_location_fails_convert() {
-		let contract_location = Location::new(2, [GlobalConsensus(Polkadot), Teyrchain(1000)]);
+		let contract_location = Location::new(2, [GlobalConsensus(Pezkuwi), Teyrchain(1000)]);
 
 		assert_eq!(
 			EthereumLocationsConverterFor::<[u8; 32]>::convert_location(&contract_location),
@@ -534,7 +534,7 @@ mod tests {
 	fn test_reanchor_all_assets() {
 		let ethereum_context: InteriorLocation = [GlobalConsensus(Ethereum { chain_id: 1 })].into();
 		let ethereum = Location::new(2, ethereum_context.clone());
-		let ah_context: InteriorLocation = [GlobalConsensus(Polkadot), Teyrchain(1000)].into();
+		let ah_context: InteriorLocation = [GlobalConsensus(Pezkuwi), Teyrchain(1000)].into();
 		let global_ah = Location::new(1, ah_context.clone());
 		let assets = vec![
 			// DOT
@@ -544,9 +544,9 @@ mod tests {
 			// AH asset
 			Location::new(0, [PalletInstance(50), GeneralIndex(42)]),
 			// KSM
-			Location::new(2, [GlobalConsensus(Kusama)]),
+			Location::new(2, [GlobalConsensus(Dicle)]),
 			// KAR (Some Dicle teyrchain currency)
-			Location::new(2, [GlobalConsensus(Kusama), Teyrchain(2000)]),
+			Location::new(2, [GlobalConsensus(Dicle), Teyrchain(2000)]),
 		];
 		for asset in assets.iter() {
 			// reanchor logic in pezpallet_xcm on AH

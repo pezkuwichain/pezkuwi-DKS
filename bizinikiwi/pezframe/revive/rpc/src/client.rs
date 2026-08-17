@@ -336,9 +336,9 @@ impl SubscriptionGapQueue {
 fn known_first_evm_block_for_chain(chain_id: u64) -> Option<u32> {
 	match chain_id {
 		420420417 => Some(4_367_914),  // Paseo Asset Hub
-		420420418 => Some(12_234_156), // Kusama Asset Hub
+		420420418 => Some(12_234_156), // Dicle Asset Hub
 		420420419 => Some(11_405_259), // Polkadot Asset Hub
-		420420421 => Some(13_169_391), // Westend Asset Hub
+		420420421 => Some(13_169_391), // Pezkuwichain Asset Hub
 		_ => None,
 	}
 }

@@ -49,7 +49,7 @@ pub use xcm_executor::{
 	},
 	AssetsInHolding, Config,
 };
-pub use xcm_simulator::helpers::derive_topic_id;
+pub use xcm_pez_simulator::helpers::derive_topic_id;
 
 pub use xcm_executor::test_helpers::{mock_asset_to_holding as asset_to_holding, MockCredit};
 
@@ -429,8 +429,8 @@ pub fn to_account(l: impl Into<Location>) -> Result<u64, Location> {
 				return Err(l);
 			}
 			match l.first_interior() {
-				Some(GlobalConsensus(Kusama)) => 4000,
-				Some(GlobalConsensus(Polkadot)) => 4001,
+				Some(GlobalConsensus(Dicle)) => 4000,
+				Some(GlobalConsensus(Pezkuwi)) => 4001,
 				_ => return Err(l),
 			}
 		},

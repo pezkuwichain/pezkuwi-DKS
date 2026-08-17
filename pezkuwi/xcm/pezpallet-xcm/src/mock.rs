@@ -48,7 +48,7 @@ use xcm_executor::{
 	traits::{Identity, JustTry},
 	XcmExecutor,
 };
-use xcm_simulator::helpers::derive_topic_id;
+use xcm_pez_simulator::helpers::derive_topic_id;
 
 use crate::{self as pezpallet_xcm, TestWeightInfo};
 

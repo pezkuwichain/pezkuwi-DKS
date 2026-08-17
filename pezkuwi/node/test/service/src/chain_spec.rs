@@ -30,7 +30,7 @@ use pezsp_consensus_babe::AuthorityId as BabeId;
 use pezsp_core::{crypto::get_public_from_string_or_panic, sr25519};
 use pezsp_keyring::Sr25519Keyring;
 use pezsp_runtime::Perbill;
-use test_runtime_constants::currency::DOTS;
+use peztest_runtime_constants::currency::DOTS;
 
 const DEFAULT_PROTOCOL_ID: &str = "dot";
 

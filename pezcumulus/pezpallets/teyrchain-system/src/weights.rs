@@ -20,14 +20,14 @@
 //! DATE: 2023-03-28, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
 //! HOSTNAME: `i9`, CPU: `13th Gen Intel(R) Core(TM) i9-13900K`
-//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("westmint-dev"), DB CACHE: 1024
+//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("asset-hub-zagros-dev"), DB CACHE: 1024
 
 // Executed Command:
 // ./target/release/pezkuwi-teyrchain
 // benchmark
 // pezpallet
 // --chain
-// westmint-dev
+// asset-hub-zagros-dev
 // --pezpallet
 // pezcumulus_pezpallet_teyrchain_system
 // --extrinsic

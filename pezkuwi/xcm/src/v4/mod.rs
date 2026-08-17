@@ -976,7 +976,7 @@ pub enum Instruction<Call> {
 	///   should be sent on arrival.
 	/// - `xcm`: The message to be exported.
 	///
-	/// As an example, to export a message for execution on Statemine (teyrchain #1000 in the
+	/// As an example, to export a message for execution on Asset Hub Dicle (teyrchain #1000 in the
 	/// Dicle network), you would call with `network: NetworkId::Dicle` and
 	/// `destination: [Teyrchain(1000)].into()`. Alternatively, to export a message for execution
 	/// on Pezkuwi, you would call with `network: NetworkId:: Pezkuwi` and `destination: Here`.

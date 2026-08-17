@@ -45,27 +45,27 @@ pub enum AuraConsensusId {
 /// Determines the appropriate Aura consensus ID based on the chain spec ID.
 ///
 /// Most teyrchains use Sr25519 for Aura consensus, but Asset Hub Pezkuwi
-/// (formerly Statemint) uses Ed25519.
+/// uses Ed25519.
 ///
 /// # Returns
 ///
 /// Returns `AuraConsensusId::Ed25519` for chain spec IDs starting with
-/// `asset-hub-polkadot` or `statemint`, and `AuraConsensusId::Sr25519` for all
+/// `asset-hub-pezkuwi`, and `AuraConsensusId::Sr25519` for all
 /// other chains.
 pub fn aura_id_from_chain_spec_id(id: &str) -> AuraConsensusId {
 	let id_normalized = id.replace('_', "-");
-	if id_normalized.starts_with("asset-hub-polkadot") || id_normalized.starts_with("statemint") {
+	if id_normalized.starts_with("asset-hub-pezkuwi") {
 		log::warn!(
 			"⚠️  Aura authority id type is assumed to be `ed25519` because the chain spec id \
-			starts with `asset-hub-polkadot` or `statemint`. This is a known special case for \
-			Asset Hub Polkadot (formerly Statemint). If this assumption is wrong for your runtime, \
+			starts with `asset-hub-pezkuwi`. This is a known special case for \
+			Asset Hub Pezkuwi. If this assumption is wrong for your runtime, \
 			the node may not work correctly."
 		);
 		AuraConsensusId::Ed25519
 	} else {
 		log::warn!(
 			"⚠️  Aura authority id type is assumed to be `sr25519` by default. Runtimes using \
-			`ed25519` for Aura are not yet supported (except for `asset-hub-polkadot` / `statemint`). \
+			`ed25519` for Aura are not yet supported (except for `asset-hub-pezkuwi`). \
 			If your runtime uses `ed25519` for Aura, it may not work correctly with this node."
 		);
 		AuraConsensusId::Sr25519
@@ -347,11 +347,11 @@ mod tests {
 
 		// Asset Hub Pezkuwi uses Ed25519
 		assert_eq!(aura_id_from_chain_spec_id("asset-hub-polkadot"), AuraConsensusId::Ed25519);
-		assert_eq!(aura_id_from_chain_spec_id("statemint"), AuraConsensusId::Ed25519);
+		assert_eq!(aura_id_from_chain_spec_id("asset-hub-pezkuwi"), AuraConsensusId::Ed25519);
 
 		// Other chains use Sr25519
 		assert_eq!(aura_id_from_chain_spec_id("asset-hub-dicle"), AuraConsensusId::Sr25519);
-		assert_eq!(aura_id_from_chain_spec_id("penpal-rococo-1000"), AuraConsensusId::Sr25519);
-		assert_eq!(aura_id_from_chain_spec_id("collectives-westend"), AuraConsensusId::Sr25519);
+		assert_eq!(aura_id_from_chain_spec_id("penpal-zagros-1000"), AuraConsensusId::Sr25519);
+		assert_eq!(aura_id_from_chain_spec_id("collectives-zagros"), AuraConsensusId::Sr25519);
 	}
 }

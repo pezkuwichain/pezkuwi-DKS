@@ -609,7 +609,7 @@ impl Default for ExtBuilder {
 	fn default() -> Self {
 		// Default both min bonds strictly above ED — and to different values — to
 		// 1. mimic the situation we live in (ED < MinNominatorBond < MinValidatorBond on Pezkuwi /
-		//    Dicle / Westend AH).
+		//    Dicle / Pezkuwichain AH).
 		// 2. avoid tests from accidentally passing because `min_chilled_bond` happens to
 		// collapse to ED when all three are equal.
 		Self {

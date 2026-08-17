@@ -146,8 +146,8 @@ fn alias_child_location() {
 		&Location::new(0, PalletInstance(42)),
 	));
 	assert!(AliasChildLocation::contains(
-		&Location::new(2, GlobalConsensus(Kusama)),
-		&Location::new(2, [GlobalConsensus(Kusama), Teyrchain(42), GeneralIndex(12)]),
+		&Location::new(2, GlobalConsensus(Dicle)),
+		&Location::new(2, [GlobalConsensus(Dicle), Teyrchain(42), GeneralIndex(12)]),
 	));
 }
 

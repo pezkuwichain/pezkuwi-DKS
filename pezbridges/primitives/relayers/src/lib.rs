@@ -283,7 +283,7 @@ mod tests {
 	fn pay_reward_from_account_for_legacy_lane_id_works() {
 		let test_data = vec![
 			// Note: these accounts are used for integration tests within
-			// `bridges_rococo_westend.sh`
+			// `bridges_zagros_pezkuwichain.sh`
 			(
 				LegacyLaneId([0, 0, 0, 1]),
 				b"bhks",
@@ -309,7 +309,7 @@ mod tests {
 				(2_u16, "EoQBtnx69txxumxSJexVzxYD1Q4LWAuWmRq8LrBWb27nhYN"),
 			),
 			// Note: these accounts are used for integration tests within
-			// `bridges_pezkuwi_kusama.sh` from fellows.
+			// `bridges_pezkuwi_dicle.sh` from fellows.
 			(
 				LegacyLaneId([0, 0, 0, 2]),
 				b"bhwd",

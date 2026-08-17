@@ -91,8 +91,8 @@ pub type BridgeRejectObsoleteHeadersAndMessages = GenericTransactionExtensionSch
 /// This schema is dedicated for `RefundBridgedTeyrchainMessages` signed extension as
 /// wildcard/placeholder, which relies on the scale encoding for `()` or `((), ())`, or `((), (),
 /// ())` is the same. So runtime can contains any kind of tuple:
-/// `(BridgeRefundBridgeHubRococoMessages)`
-/// `(BridgeRefundBridgeHubRococoMessages, BridgeRefundBridgeHubWestendMessages)`
+/// `(BridgeRefundBridgeHubZagrosMessages)`
+/// `(BridgeRefundBridgeHubZagrosMessages, BridgeRefundBridgeHubPezkuwichainMessages)`
 /// `(BridgeRefundTeyrchainMessages1, ..., BridgeRefundTeyrchainMessagesN)`
 pub type RefundBridgedTeyrchainMessagesSchema = GenericTransactionExtensionSchema<(), ()>;
 

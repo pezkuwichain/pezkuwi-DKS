@@ -31,7 +31,7 @@ use codec::Encode;
 use pezpallet_transaction_payment::FungibleAdapter;
 
 use pezkuwi_runtime_teyrchains::{
-	assigner_coretime as teyrchains_assigner_coretime, configuration as teyrchains_configuration,
+	configuration as teyrchains_configuration,
 	configuration::ActiveConfigHrmpChannelSizeAndCapacityRatio,
 	coretime, disputes as teyrchains_disputes,
 	disputes::slashing as teyrchains_slashing,
@@ -607,7 +607,7 @@ impl teyrchains_paras::Config for Runtime {
 	type QueueFootprinter = ParaInclusion;
 	type NextSessionRotation = Babe;
 	type OnNewHead = ();
-	type AssignCoretime = CoretimeAssignmentProvider;
+	type AssignCoretime = Scheduler;
 	type Fungible = Balances;
 	type CooldownRemovalMultiplier = ConstUint<1>;
 	type AuthorizeCurrentCodeOrigin = pezframe_system::EnsureRoot<AccountId>;
@@ -660,11 +660,7 @@ impl teyrchains_on_demand::Config for Runtime {
 	type PalletId = OnDemandPalletId;
 }
 
-impl teyrchains_assigner_coretime::Config for Runtime {}
-
-impl teyrchains_scheduler::Config for Runtime {
-	type AssignmentProvider = CoretimeAssignmentProvider;
-}
+impl teyrchains_scheduler::Config for Runtime {}
 
 pub struct DummyXcmSender;
 impl SendXcm for DummyXcmSender {
@@ -837,7 +833,6 @@ construct_runtime! {
 		ParasDisputes: teyrchains_disputes,
 		ParasSlashing: teyrchains_slashing,
 		OnDemandAssignmentProvider: teyrchains_on_demand,
-		CoretimeAssignmentProvider: teyrchains_assigner_coretime,
 		Coretime: coretime,
 
 		Sudo: pezpallet_sudo,

@@ -65,12 +65,12 @@ impl LoadSpec for ChainSpecLoader {
 			)?),
 
 			// -- Asset Hub Pezkuwi
-			"asset-hub-pezkuwi" | "statemint" => Box::new(GenericChainSpec::from_json_bytes(
+			"asset-hub-pezkuwi" => Box::new(GenericChainSpec::from_json_bytes(
 				&include_bytes!("../../chain-specs/asset-hub-pezkuwi.json")[..],
 			)?),
 
 			// -- Asset Hub Dicle
-			"asset-hub-dicle" | "statemine" => Box::new(GenericChainSpec::from_json_bytes(
+			"asset-hub-dicle" => Box::new(GenericChainSpec::from_json_bytes(
 				&include_bytes!("../../chain-specs/asset-hub-dicle.json")[..],
 			)?),
 
@@ -90,18 +90,18 @@ impl LoadSpec for ChainSpecLoader {
 			)?),
 
 			// -- Asset Hub Zagros
-			"asset-hub-zagros-dev" | "westmint-dev" => {
+			"asset-hub-zagros-dev" => {
 				Box::new(asset_hubs::asset_hub_zagros_development_config())
 			},
-			"asset-hub-zagros-local" | "westmint-local" => {
+			"asset-hub-zagros-local" => {
 				Box::new(asset_hubs::asset_hub_zagros_local_config())
 			},
 			// the chain spec as used for generating the upgrade genesis values
-			"asset-hub-zagros-genesis" | "westmint-genesis" => {
+			"asset-hub-zagros-genesis" => {
 				Box::new(asset_hubs::asset_hub_zagros_config())
 			},
 			// the shell-based chain spec as used for syncing
-			"asset-hub-zagros" | "westmint" => Box::new(GenericChainSpec::from_json_bytes(
+			"asset-hub-zagros" => Box::new(GenericChainSpec::from_json_bytes(
 				&include_bytes!("../../chain-specs/asset-hub-zagros.json")[..],
 			)?),
 
@@ -182,7 +182,6 @@ impl LoadSpec for ChainSpecLoader {
 				))
 			},
 
-
 			// -- People
 			people_like_id if people_like_id.starts_with(people::PeopleRuntimeType::ID_PREFIX) => {
 				people_like_id
@@ -193,8 +192,11 @@ impl LoadSpec for ChainSpecLoader {
 
 			// -- Fallback (generic chainspec)
 			"" => {
-				log::warn!("No ChainSpec.id specified, so using default one, based on pezkuwichain-teyrchain runtime");
-				Box::new(pezkuwichain_teyrchain::pezkuwichain_teyrchain_local_config())
+				log::warn!(
+					"No ChainSpec.id specified, so using default one, based on Penpal runtime \
+					 against a local Zagros relay"
+				);
+				Box::new(penpal::get_penpal_chain_spec(2000.into(), "zagros-local"))
 			},
 
 			// -- Loading a specific spec from disk
@@ -227,13 +229,10 @@ impl LegacyRuntime {
 		// pezkuwichain before pezkuwi.
 		if id.starts_with("asset-hub-pezkuwichain")
 			| id.starts_with("asset-hub-dicle")
-			| id.starts_with("statemine")
-			| id.starts_with("rockmine")
 			| id.starts_with("asset-hub-zagros")
-			| id.starts_with("westmint")
 		{
 			LegacyRuntime::AssetHub
-		} else if id.starts_with("asset-hub-pezkuwi") | id.starts_with("statemint") {
+		} else if id.starts_with("asset-hub-pezkuwi") {
 			LegacyRuntime::AssetHubPezkuwi
 		} else if id.starts_with("penpal") {
 			LegacyRuntime::Penpal

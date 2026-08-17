@@ -114,22 +114,22 @@
 //! Example of opening a bridge between some random teyrchains from Pezkuwi and Dicle:
 //!
 //! 0. Let's have:
-//! 	- BridgeHubPolkadot with `UniversalLocation` = `[GlobalConsensus(Pezkuwi), Teyrchain(1002)]`
-//! 	- BridgeHubKusama with `UniversalLocation` = `[GlobalConsensus(Dicle), Teyrchain(1002)]`
+//! 	- BridgeHubPezkuwi with `UniversalLocation` = `[GlobalConsensus(Pezkuwi), Teyrchain(1002)]`
+//! 	- BridgeHubDicle with `UniversalLocation` = `[GlobalConsensus(Dicle), Teyrchain(1002)]`
 //! 1. The Pezkuwi local sibling teyrchain `Location::new(1, Teyrchain(1234))` must send some DOTs
-//!    to its sovereign account on BridgeHubPolkadot to cover `BridgeDeposit`, fees for `Transact`,
+//!    to its sovereign account on BridgeHubPezkuwi to cover `BridgeDeposit`, fees for `Transact`,
 //!    and the existential deposit.
-//! 2. Send a call to the BridgeHubPolkadot from the local sibling teyrchain: `Location::new(1,
+//! 2. Send a call to the BridgeHubPezkuwi from the local sibling teyrchain: `Location::new(1,
 //!    Teyrchain(1234))` ``` xcm::Transact( origin_kind: OriginKind::Xcm,
-//!    XcmOverBridgeHubKusama::open_bridge( VersionedInteriorLocation::V4([GlobalConsensus(Dicle),
+//!    XcmOverBridgeHubDicle::open_bridge( VersionedInteriorLocation::V4([GlobalConsensus(Dicle),
 //!    Teyrchain(4567)].into()), ); ) ```
 //! 3. Check the stored bridge metadata and generated `LaneId`.
 //! 4. The Dicle local sibling teyrchain `Location::new(1, Teyrchain(4567))` must send some KSMs to
 //!    its sovereign account
-//! on BridgeHubKusama to cover `BridgeDeposit`, fees for `Transact`, and the existential deposit.
-//! 5. Send a call to the BridgeHubKusama from the local sibling teyrchain: `Location::new(1,
+//! on BridgeHubDicle to cover `BridgeDeposit`, fees for `Transact`, and the existential deposit.
+//! 5. Send a call to the BridgeHubDicle from the local sibling teyrchain: `Location::new(1,
 //!    Teyrchain(4567))` ``` xcm::Transact( origin_kind: OriginKind::Xcm,
-//!    XcmOverBridgeHubKusama::open_bridge(
+//!    XcmOverBridgeHubDicle::open_bridge(
 //!    VersionedInteriorLocation::V4([GlobalConsensus(Pezkuwi), Teyrchain(1234)].into()), ); ) ```
 //! 6. Check the stored bridge metadata and generated `LaneId`.
 //! 7. Both `LaneId`s from steps 3 and 6 must be the same (see above _Concept of `lane` and

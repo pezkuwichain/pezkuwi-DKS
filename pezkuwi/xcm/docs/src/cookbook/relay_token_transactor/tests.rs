@@ -19,7 +19,7 @@ use pezframe::testing_prelude::*;
 use test_log::test;
 use xcm::prelude::*;
 use xcm_executor::traits::{ConvertLocation, TransferType};
-use xcm_simulator::TestExt;
+use xcm_pez_simulator::TestExt;
 
 use super::{
 	network::{MockNet, ParaA, Relay, ALICE, BOB, CENTS, INITIAL_BALANCE},

@@ -18,7 +18,7 @@
 
 use crate::test_cases::{bridges_prelude::*, run_test, RuntimeHelper};
 
-use asset_test_utils::BasicTeyrchainRuntime;
+use asset_test_pezutils::BasicTeyrchainRuntime;
 use codec::Decode;
 use core::marker::PhantomData;
 use pezbp_messages::MessageNonce;

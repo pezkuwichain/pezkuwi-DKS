@@ -256,7 +256,7 @@ where
 		);
 
 		match network {
-			super::message::Network::Polkadot => Ok(Self::make_create_asset_xcm_for_polkadot(
+			super::message::Network::Pezkuwi => Ok(Self::make_create_asset_xcm_for_pezkuwi(
 				create_call_index,
 				set_reserves_call_index,
 				create_min_blance,
@@ -270,7 +270,7 @@ where
 	}
 
 	/// Construct the asset creation XCM for the Polkdot network.
-	fn make_create_asset_xcm_for_polkadot(
+	fn make_create_asset_xcm_for_pezkuwi(
 		create_call_index: [u8; 2],
 		set_reserves_call_index: [u8; 2],
 		create_min_blance: u128,
@@ -453,7 +453,7 @@ mod tests {
 		pub const CreateAssetDeposit: u128 = 10_000_000_000u128;
 		pub const CreateAssetMinBalance: u128 = 1;
 		pub EthereumLocation: Location = Location::new(2,EthereumUniversalLocation::get());
-		pub BridgeHubContext: InteriorLocation = [GlobalConsensus(Polkadot),Teyrchain(1002)].into();
+		pub BridgeHubContext: InteriorLocation = [GlobalConsensus(Pezkuwi),Teyrchain(1002)].into();
 		pub CreateAssetCall: CreateAssetCallInfo = CreateAssetCallInfo {
 			create_call: CreateAssetCallIndex::get(),
 			deposit: CreateAssetDeposit::get(),

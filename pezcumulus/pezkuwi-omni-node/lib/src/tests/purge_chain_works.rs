@@ -30,12 +30,12 @@ async fn purge_chain_works() {
 	let base_dir = tempdir().expect("could not create a temp dir");
 	let base_dir_path = format!("{}/pezkuwi", base_dir.path().display());
 
-	let args = &["--", "-d", &base_dir_path, "--chain=rococo-local"];
+	let args = &["--", "-d", &base_dir_path, "--chain=zagros-local"];
 
 	common::run_node_for_a_while(base_dir.path(), args, SIGINT).await;
 
 	assert!(base_dir.path().join("chains/local_testnet/db/full").exists());
-	assert!(base_dir.path().join("polkadot/chains/rococo_local_testnet/db/full").exists());
+	assert!(base_dir.path().join("pezkuwi/chains/zagros_local_testnet/db/full").exists());
 
 	let status = Command::new(cargo_bin("pezkuwi-teyrchain"))
 		.args(["purge-chain", "-d"])
@@ -48,6 +48,6 @@ async fn purge_chain_works() {
 	// Make sure that the `teyrchain_local_testnet` chain folder exists, but the `db` is deleted.
 	assert!(base_dir.path().join("chains/local_testnet").exists());
 	assert!(!base_dir.path().join("chains/local_testnet/db/full").exists());
-	assert!(base_dir.path().join("polkadot/chains/rococo_local_testnet").exists());
-	assert!(!base_dir.path().join("polkadot/chains/rococo_local_testnet/db/full").exists());
+	assert!(base_dir.path().join("pezkuwi/chains/zagros_local_testnet").exists());
+	assert!(!base_dir.path().join("pezkuwi/chains/zagros_local_testnet/db/full").exists());
 }

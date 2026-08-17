@@ -258,7 +258,7 @@ mod tests {
 		let asset: Location = (
 			Parent,
 			Parent,
-			GlobalConsensus(Polkadot),
+			GlobalConsensus(Pezkuwi),
 			Teyrchain(1000),
 			PalletInstance(1),
 			GeneralIndex(1),
@@ -279,20 +279,20 @@ mod tests {
 			GeneralIndex(1),
 		)
 			.into();
-		let origin: Location = (Parent, Parent, GlobalConsensus(Polkadot), Teyrchain(1000)).into();
+		let origin: Location = (Parent, Parent, GlobalConsensus(Pezkuwi), Teyrchain(1000)).into();
 		assert!(!FromNetwork::<UniversalLocation, ExpectedNetworkId>::contains(&asset, &origin));
 
 		// asset and origin from unexpected consensus fails
 		let asset: Location = (
 			Parent,
 			Parent,
-			GlobalConsensus(Polkadot),
+			GlobalConsensus(Pezkuwi),
 			Teyrchain(1000),
 			PalletInstance(1),
 			GeneralIndex(1),
 		)
 			.into();
-		let origin: Location = (Parent, Parent, GlobalConsensus(Polkadot), Teyrchain(1000)).into();
+		let origin: Location = (Parent, Parent, GlobalConsensus(Pezkuwi), Teyrchain(1000)).into();
 		assert!(!FromNetwork::<UniversalLocation, ExpectedNetworkId>::contains(&asset, &origin));
 	}
 }

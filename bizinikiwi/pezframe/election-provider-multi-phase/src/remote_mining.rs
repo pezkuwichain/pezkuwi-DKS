@@ -235,7 +235,7 @@ async fn mine_for_polkadot() {
 }
 
 #[tokio::test]
-async fn mine_for_kusama() {
+async fn mine_for_dicle() {
 	pezsp_tracing::try_init_simple();
 
 	// good way to find good block hashes: https://dicle.subscan.io/event?page=1&time_dimension=date&module=electionprovidermultiphase&event_id=solutionstored
@@ -249,7 +249,7 @@ async fn mine_for_kusama() {
 		at: Some(block_hash),
 		pezpallets: vec!["ElectionProviderMultiPhase".to_string()],
 		transport_uris: vec![std::option_env!("WS")
-			.unwrap_or("wss://rpc.ibp.network/kusama")
+			.unwrap_or("wss://rpc.pezkuwichain.io/dicle")
 			.to_string()],
 		..Default::default()
 	};

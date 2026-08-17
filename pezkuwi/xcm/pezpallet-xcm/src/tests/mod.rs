@@ -46,7 +46,7 @@ use xcm_executor::{
 	traits::{Properties, QueryHandler, QueryResponseStatus, ShouldExecute},
 	XcmExecutor,
 };
-use xcm_simulator::fake_message_hash;
+use xcm_pez_simulator::fake_message_hash;
 
 const ALICE: AccountId = AccountId::new([0u8; 32]);
 const BOB: AccountId = AccountId::new([1u8; 32]);
@@ -449,7 +449,7 @@ fn authorized_aliases_work() {
 
 		// --- setting single alias works
 		let who = ALICE;
-		let first_alias: Location = AccountId32 { network: Some(Polkadot), id: BOB.into() }.into();
+		let first_alias: Location = AccountId32 { network: Some(Pezkuwi), id: BOB.into() }.into();
 		let total_balance_before = <Balances as Currency<_>>::total_balance(&who);
 		let free_balance = <Balances as Currency<_>>::free_balance(&who);
 		assert_eq!(free_balance, total_balance_before);

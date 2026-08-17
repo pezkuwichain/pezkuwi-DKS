@@ -481,7 +481,7 @@ where
 				LaneIdOf::<RuntimeHelper::Runtime, RuntimeHelper::MPI>::default(),
 				vec![Instruction::<()>::ClearOrigin; 1_024].into(),
 				1,
-				[GlobalConsensus(Polkadot), Teyrchain(1_000)].into(),
+				[GlobalConsensus(Pezkuwi), Teyrchain(1_000)].into(),
 				1u32.into(),
 				false,
 			);
@@ -587,7 +587,7 @@ where
 				LaneIdOf::<RuntimeHelper::Runtime, RuntimeHelper::MPI>::default(),
 				vec![Instruction::<()>::ClearOrigin; 1_024].into(),
 				1,
-				[GlobalConsensus(Polkadot), Teyrchain(1_000)].into(),
+				[GlobalConsensus(Pezkuwi), Teyrchain(1_000)].into(),
 				1u32.into(),
 				false,
 			);

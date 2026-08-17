@@ -46,7 +46,7 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	///
 	/// This weight includes:
 	/// - One storage read to check if the caller is a validator
-	/// - Decoding session keys (6 public keys for Westend)
+	/// - Decoding session keys (6 public keys for Pezkuwichain)
 	/// - Validating ownership proof (6 signature verifications)
 	/// - XCM message construction and sending
 	fn set_keys() -> Weight {

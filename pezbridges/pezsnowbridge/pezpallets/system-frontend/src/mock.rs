@@ -72,7 +72,7 @@ parameter_types! {
 	pub storage DeliveryFee: Asset = (Location::parent(), 80_000_000_000u128).into();
 	pub BridgeHubLocation: Location = Location::new(1, [Teyrchain(1002)]);
 	pub UniversalLocation: InteriorLocation =
-		[GlobalConsensus(Polkadot), Teyrchain(1000)].into();
+		[GlobalConsensus(Pezkuwi), Teyrchain(1000)].into();
 	pub PalletLocation: InteriorLocation = [PalletInstance(36)].into();
 }
 

@@ -150,7 +150,7 @@ async fn test_eth_rpc(rpc_url: &str) -> anyhow::Result<()> {
 
 	let contract_address = contract_address.unwrap();
 	println!("\nReceipt:");
-	println!("Block explorer: https://westend-asset-hub-eth-explorer.parity.io/{:?}", tx.hash());
+	println!("Block explorer: https://explorer.pezkuwichain.io/{:?}", tx.hash());
 	println!("- Block number: {block_number}");
 	println!("- Gas used:     {gas_used}");
 	println!("- Address:      {contract_address:?}");
@@ -163,7 +163,7 @@ async fn test_eth_rpc(rpc_url: &str) -> anyhow::Result<()> {
 
 	let ReceiptInfo { block_number, gas_used, to, .. } = tx.wait_for_receipt().await?;
 	println!("\nReceipt:");
-	println!("Block explorer: https://westend-asset-hub-eth-explorer.parity.io/{:?}", tx.hash());
+	println!("Block explorer: https://explorer.pezkuwichain.io/{:?}", tx.hash());
 	println!("- Block number: {block_number}");
 	println!("- Gas used:     {gas_used}");
 	println!("- To:           {to:?}");

@@ -77,7 +77,7 @@
 //! To initiate rewards, an ED needs to be transferred to the pot address.
 //!
 //! Note: Eventually the Pot distribution may be modified as discussed in [this
-//! issue](https://github.com/paritytech/statemint/issues/21#issuecomment-810481073).
+//! issue](https://github.com/paritytech/polkadot-sdk (upstream discussion, carried over)).
 
 #![cfg_attr(not(feature = "std"), no_std)]
 

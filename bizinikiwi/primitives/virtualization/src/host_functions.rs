@@ -359,7 +359,7 @@ pub trait Virtualization {
 			log::warn!(
 				target: crate::LOG_TARGET,
 				"Virtualization host functions are UNSTABLE and subject to breaking changes. \
-				They are NOT available on Polkadot and using them in production will cause breakage. \
+				They are NOT available on PezkuwiChain and using them in production will cause breakage. \
 				Only use for testing and experimentation.",
 			);
 		});

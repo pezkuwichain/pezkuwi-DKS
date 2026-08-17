@@ -24,7 +24,7 @@ use pezframe_system::{EnsureRoot, EnsureSigned};
 use pezkuwi_primitives::{AccountIndex, BlakeTwo256, Signature};
 use pezsp_runtime::{generic, traits::MaybeEquivalence, AccountId32, BuildStorage};
 use xcm_executor::{traits::ConvertLocation, XcmExecutor};
-use xcm_simulator::ParaId;
+use xcm_pez_simulator::ParaId;
 
 pub type TxExtension = (
 	pezframe_system::AuthorizeCall<Test>,

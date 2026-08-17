@@ -263,8 +263,8 @@ where
 /// ```nocompile
 /// generate_bridge_reject_obsolete_headers_and_messages!{
 ///     Call, AccountId
-///     BridgeRococoGrandpa, BridgeRococoMessages,
-///     BridgeRococoTeyrchains
+///     BridgeZagrosGrandpa, BridgeZagrosMessages,
+///     BridgeZagrosTeyrchains
 /// }
 /// ```
 ///

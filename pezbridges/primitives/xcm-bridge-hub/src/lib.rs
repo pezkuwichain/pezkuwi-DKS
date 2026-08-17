@@ -364,8 +364,8 @@ mod tests {
 	use super::*;
 	use xcm::latest::PEZKUWICHAIN_GENESIS_HASH;
 
-	const LOCAL_NETWORK: NetworkId = Kusama;
-	const REMOTE_NETWORK: NetworkId = Polkadot;
+	const LOCAL_NETWORK: NetworkId = Dicle;
+	const REMOTE_NETWORK: NetworkId = Pezkuwi;
 	const UNREACHABLE_NETWORK: NetworkId = NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH);
 	const SIBLING_TEYRCHAIN: u32 = 1000;
 	const LOCAL_BRIDGE_HUB: u32 = 1001;

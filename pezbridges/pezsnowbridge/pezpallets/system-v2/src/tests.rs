@@ -115,10 +115,10 @@ fn register_all_tokens_succeeds() {
 			native: Location::new(1, [Teyrchain(1000), PalletInstance(50), GeneralIndex(1984)]),
 		},
 		// KSM
-		RegisterTokenTestCase { native: Location::new(2, [GlobalConsensus(Kusama)]) },
+		RegisterTokenTestCase { native: Location::new(2, [GlobalConsensus(Dicle)]) },
 		// KAR (Some Dicle teyrchain currency)
 		RegisterTokenTestCase {
-			native: Location::new(2, [GlobalConsensus(Kusama), Teyrchain(2000)]),
+			native: Location::new(2, [GlobalConsensus(Dicle), Teyrchain(2000)]),
 		},
 	];
 	for tc in test_cases.iter() {

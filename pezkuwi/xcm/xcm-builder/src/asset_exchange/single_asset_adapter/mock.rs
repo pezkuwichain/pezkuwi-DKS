@@ -159,7 +159,7 @@ parameter_types! {
 	pub HereLocation: Location = Here.into_location();
 	pub WeightPerInstruction: Weight = Weight::from_parts(1, 1);
 	pub MaxInstructions: u32 = 100;
-	pub UniversalLocation: InteriorLocation = [GlobalConsensus(Polkadot), Teyrchain(1000)].into();
+	pub UniversalLocation: InteriorLocation = [GlobalConsensus(Pezkuwi), Teyrchain(1000)].into();
 	pub TrustBackedAssetsPalletIndex: u8 = <AssetsPallet as PalletInfoAccess>::index() as u8;
 	pub TrustBackedAssetsPalletLocation: Location =	PalletInstance(TrustBackedAssetsPalletIndex::get()).into();
 }

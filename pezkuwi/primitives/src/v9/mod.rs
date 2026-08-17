@@ -429,7 +429,7 @@ pub mod well_known_keys {
 }
 
 /// Relay chain slot duration in milliseconds, which is the same
-/// value across all networks (e.g. Pezkuwi, Dicle, Westend, Rococo).
+/// value across all networks (e.g. Pezkuwi, Dicle, Pezkuwichain, Zagros).
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u64 = 6000;
 
 /// Unique identifier for the Teyrchains Inherent

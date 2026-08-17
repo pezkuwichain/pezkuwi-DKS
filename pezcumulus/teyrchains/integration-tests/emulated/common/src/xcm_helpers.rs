@@ -19,7 +19,7 @@ use teyrchains_common::AccountId;
 // Pezkuwi
 use pezsp_core::H256;
 use xcm::{prelude::*, DoubleEncoded};
-use xcm_emulator::Chain;
+use xcm_pez_emulator::Chain;
 
 use crate::impls::{bx, Encode};
 use pezframe_support::dispatch::{DispatchResultWithPostInfo, PostDispatchInfo};

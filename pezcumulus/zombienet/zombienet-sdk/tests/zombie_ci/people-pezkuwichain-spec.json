@@ -2,16 +2,7 @@
   "name": "Pezkuwichain People",
   "id": "people-pezkuwichain",
   "chainType": "Local",
-  "bootNodes": [
-    "/dns/pezkuwichain-people-collator-node-0.parity-testnet.parity.io/tcp/30333/p2p/12D3KooWDZg5jMYhKXTu6RU491V5sxsFnP4oaEmZJEUfcRkYzps5",
-    "/dns/pezkuwichain-people-collator-node-0.parity-testnet.parity.io/tcp/443/wss/p2p/12D3KooWDZg5jMYhKXTu6RU491V5sxsFnP4oaEmZJEUfcRkYzps5",
-    "/dns/pezkuwichain-people-collator-node-1.parity-testnet.parity.io/tcp/30333/p2p/12D3KooWGGR5i6qQqfo7iDNp7vjDRKPWuDk53idGV6nFLwS12X5H",
-    "/dns/pezkuwichain-people-collator-node-1.parity-testnet.parity.io/tcp/443/wss/p2p/12D3KooWGGR5i6qQqfo7iDNp7vjDRKPWuDk53idGV6nFLwS12X5H",
-    "/dns/pezkuwichain-people-collator-node-2.parity-testnet.parity.io/tcp/30333/p2p/12D3KooWBvA9BmBfrsVMcAcqVXGYFCpMTvkSk2igNXpmoareYbeT",
-    "/dns/pezkuwichain-people-collator-node-2.parity-testnet.parity.io/tcp/443/wss/p2p/12D3KooWBvA9BmBfrsVMcAcqVXGYFCpMTvkSk2igNXpmoareYbeT",
-    "/dns/pezkuwichain-people-collator-node-3.parity-testnet.parity.io/tcp/30333/p2p/12D3KooWQ7Q9jLcJTPXy7KEp5hSZ8YMY9pHx9CnQVz3T8TKQ81UG",
-    "/dns/pezkuwichain-people-collator-node-3.parity-testnet.parity.io/tcp/443/wss/p2p/12D3KooWQ7Q9jLcJTPXy7KEp5hSZ8YMY9pHx9CnQVz3T8TKQ81UG"
-  ],
+  "bootNodes": [],
   "telemetryEndpoints": null,
   "protocolId": null,
   "properties": null,

@@ -268,7 +268,7 @@ pub async fn run_validator_node(
 		pezkuwi_service::ValidatorOverseerGen,
 		None,
 	)
-	.expect("could not create Polkadot test service");
+	.expect("could not create Pezkuwi test service");
 
 	let overseer_handle = overseer_handle.expect("test node must have an overseer handle");
 	let peer_id = network.local_peer_id();
@@ -306,7 +306,7 @@ pub async fn run_collator_node(
 		pezkuwi_service::CollatorOverseerGen,
 		None,
 	)
-	.expect("could not create Polkadot test service");
+	.expect("could not create Pezkuwi test service");
 
 	let overseer_handle = overseer_handle.expect("test node must have an overseer handle");
 	let peer_id = network.local_peer_id();

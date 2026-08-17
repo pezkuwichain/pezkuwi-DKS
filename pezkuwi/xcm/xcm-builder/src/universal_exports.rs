@@ -682,24 +682,24 @@ mod tests {
 	#[test]
 	fn ensure_is_remote_works() {
 		// A Dicle teyrchain is remote from the Pezkuwi Relay.
-		let x = ensure_is_remote(Polkadot, (Parent, Kusama, Teyrchain(1000)));
-		assert_eq!(x, Ok((Kusama, Teyrchain(1000).into())));
+		let x = ensure_is_remote(Pezkuwi, (Parent, Dicle, Teyrchain(1000)));
+		assert_eq!(x, Ok((Dicle, Teyrchain(1000).into())));
 
 		// Pezkuwi Relay is remote from a Dicle teyrchain.
-		let x = ensure_is_remote((Kusama, Teyrchain(1000)), (Parent, Parent, Polkadot));
-		assert_eq!(x, Ok((Polkadot, Here)));
+		let x = ensure_is_remote((Dicle, Teyrchain(1000)), (Parent, Parent, Pezkuwi));
+		assert_eq!(x, Ok((Pezkuwi, Here)));
 
 		// Our own teyrchain is local.
-		let x = ensure_is_remote(Polkadot, Teyrchain(1000));
+		let x = ensure_is_remote(Pezkuwi, Teyrchain(1000));
 		assert_eq!(x, Err(Teyrchain(1000).into()));
 
 		// Pezkuwi's teyrchain is not remote if we are Pezkuwi.
-		let x = ensure_is_remote(Polkadot, (Parent, Polkadot, Teyrchain(1000)));
-		assert_eq!(x, Err((Parent, Polkadot, Teyrchain(1000)).into()));
+		let x = ensure_is_remote(Pezkuwi, (Parent, Pezkuwi, Teyrchain(1000)));
+		assert_eq!(x, Err((Parent, Pezkuwi, Teyrchain(1000)).into()));
 
 		// If we don't have a consensus ancestor, then we cannot determine remoteness.
-		let x = ensure_is_remote((), (Parent, Polkadot, Teyrchain(1000)));
-		assert_eq!(x, Err((Parent, Polkadot, Teyrchain(1000)).into()));
+		let x = ensure_is_remote((), (Parent, Pezkuwi, Teyrchain(1000)));
+		assert_eq!(x, Err((Parent, Pezkuwi, Teyrchain(1000)).into()));
 	}
 
 	pub struct OkFor<Filter>(PhantomData<Filter>);

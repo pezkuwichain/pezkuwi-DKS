@@ -108,7 +108,7 @@ pub trait Chain: Send + Sync + 'static {
 	/// A type that fulfills the abstract idea of what a Bizinikiwi block number is.
 	// Constraints come from the associated Number type of `pezsp_runtime::traits::Header`
 	// See here for more info:
-	// https://crates.parity.io/pezsp_runtime/traits/trait.Header.html#associatedtype.Number
+	// https://docs.rs/pezsp-runtime/latest/pezsp_runtime/traits/trait.Header.html#associatedtype.Number
 	//
 	// Note that the `AsPrimitive<usize>` trait is required by the GRANDPA justification
 	// verifier, and is not usually part of a Bizinikiwi Header's Number type.
@@ -129,7 +129,7 @@ pub trait Chain: Send + Sync + 'static {
 	/// A type that fulfills the abstract idea of what a Bizinikiwi hash is.
 	// Constraints come from the associated Hash type of `pezsp_runtime::traits::Header`
 	// See here for more info:
-	// https://crates.parity.io/pezsp_runtime/traits/trait.Header.html#associatedtype.Hash
+	// https://docs.rs/pezsp-runtime/latest/pezsp_runtime/traits/trait.Header.html#associatedtype.Hash
 	type Hash: Parameter
 		+ Member
 		+ MaybeSerializeDeserialize
@@ -147,12 +147,12 @@ pub trait Chain: Send + Sync + 'static {
 	/// that produces hashes) is.
 	// Constraints come from the associated Hashing type of `pezsp_runtime::traits::Header`
 	// See here for more info:
-	// https://crates.parity.io/pezsp_runtime/traits/trait.Header.html#associatedtype.Hashing
+	// https://docs.rs/pezsp-runtime/latest/pezsp_runtime/traits/trait.Header.html#associatedtype.Hashing
 	type Hasher: HashT<Output = Self::Hash>;
 
 	/// A type that fulfills the abstract idea of what a Bizinikiwi header is.
 	// See here for more info:
-	// https://crates.parity.io/pezsp_runtime/traits/trait.Header.html
+	// https://docs.rs/pezsp-runtime/latest/pezsp_runtime/traits/trait.Header.html
 	type Header: Parameter
 		+ HeaderT<Number = Self::BlockNumber, Hash = Self::Hash>
 		+ HeaderIdProvider<Self::Header>

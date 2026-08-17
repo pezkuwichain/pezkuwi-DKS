@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Tests for the Westmint (Zagros Assets Hub) chain.
+//! Tests for the Zagros Asset Hub chain.
 
 use alloy_core::{
 	primitives::U256,

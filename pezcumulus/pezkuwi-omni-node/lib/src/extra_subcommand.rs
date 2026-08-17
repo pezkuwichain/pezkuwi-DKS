@@ -113,7 +113,7 @@ pub trait ExtraSubcommand: Subcommand {
 ///
 /// This enables default support for utilities like:
 /// ```bash
-/// $ your-binary export-chain-spec --chain westmint
+/// $ your-binary export-chain-spec --chain asset-hub-zagros
 /// ```
 #[derive(Debug, Subcommand)]
 pub enum DefaultExtraSubcommands {

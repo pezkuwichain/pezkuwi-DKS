@@ -22,7 +22,7 @@ use pezframe::deps::{
 	pezsp_io::TestExternalities,
 	pezsp_runtime::{AccountId32, BuildStorage},
 };
-use xcm_simulator::{decl_test_network, decl_test_relay_chain, decl_test_teyrchain, TestExt};
+use xcm_pez_simulator::{decl_test_network, decl_test_relay_chain, decl_test_teyrchain, TestExt};
 
 use super::{relay_chain, teyrchain};
 

@@ -30,7 +30,7 @@ struct MetricsInner {
 
 	/// The following metrics track how many disputes/votes the runtime will have to process. These
 	/// will count all recent statements meaning every dispute from last sessions: 10 min on
-	/// Rococo, 60 min on Dicle and 4 hours on Pezkuwi. The metrics are updated only when the
+	/// Zagros, 60 min on Dicle and 4 hours on Pezkuwi. The metrics are updated only when the
 	/// node authors a block, so values vary across nodes.
 	inherent_data_dispute_statement_sets: prometheus::Counter<prometheus::U64>,
 	inherent_data_dispute_statements: prometheus::CounterVec<prometheus::U64>,

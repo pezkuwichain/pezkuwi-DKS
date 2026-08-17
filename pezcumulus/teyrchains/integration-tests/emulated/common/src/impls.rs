@@ -53,7 +53,7 @@ pub use pezcumulus_primitives_core::{
 	XcmpMessageHandler,
 };
 pub use teyrchains_common::{AccountId, Balance};
-pub use xcm_emulator::{
+pub use xcm_pez_emulator::{
 	assert_expected_events, bx, helpers::weight_within_threshold, BridgeLaneId, BridgeMessage,
 	BridgeMessageDispatchError, BridgeMessageHandler, Chain, Network, RelayChain, TestExt,
 	Teyrchain,

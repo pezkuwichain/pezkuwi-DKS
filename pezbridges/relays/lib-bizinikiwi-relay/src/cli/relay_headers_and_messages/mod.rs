@@ -384,36 +384,36 @@ mod tests {
 	#[allow(dead_code)]
 	fn should_parse_teyrchain_to_teyrchain_options() {
 		// Chains.
-		declare_chain_cli_schema!(Kusama, dicle);
-		declare_chain_cli_schema!(BridgeHubKusama, bridge_hub_kusama);
-		declare_chain_cli_schema!(Polkadot, polkadot);
-		declare_chain_cli_schema!(BridgeHubPolkadot, bridge_hub_polkadot);
+		declare_chain_cli_schema!(Dicle, dicle);
+		declare_chain_cli_schema!(BridgeHubDicle, bridge_hub_dicle);
+		declare_chain_cli_schema!(Pezkuwi, pezkuwi);
+		declare_chain_cli_schema!(BridgeHubPezkuwi, bridge_hub_pezkuwi);
 		// Means to override signers of different layer transactions.
 		declare_chain_cli_schema!(
-			KusamaHeadersToBridgeHubPolkadot,
-			kusama_headers_to_bridge_hub_polkadot
+			DicleHeadersToBridgeHubPezkuwi,
+			dicle_headers_to_bridge_hub_pezkuwi
 		);
 		declare_chain_cli_schema!(
-			KusamaTeyrchainsToBridgeHubPolkadot,
-			kusama_teyrchains_to_bridge_hub_polkadot
+			DicleTeyrchainsToBridgeHubPezkuwi,
+			dicle_teyrchains_to_bridge_hub_pezkuwi
 		);
 		declare_chain_cli_schema!(
-			PezkuwiHeadersToBridgeHubKusama,
-			pezkuwi_headers_to_bridge_hub_kusama
+			PezkuwiHeadersToBridgeHubDicle,
+			pezkuwi_headers_to_bridge_hub_dicle
 		);
 		declare_chain_cli_schema!(
-			PezkuwiTeyrchainsToBridgeHubKusama,
-			pezkuwi_teyrchains_to_bridge_hub_kusama
+			PezkuwiTeyrchainsToBridgeHubDicle,
+			pezkuwi_teyrchains_to_bridge_hub_dicle
 		);
 		// Bridges.
 		declare_teyrchain_to_teyrchain_bridge_schema!(
-			BridgeHubKusama,
-			Kusama,
-			BridgeHubPolkadot,
-			Polkadot
+			BridgeHubDicle,
+			Dicle,
+			BridgeHubPezkuwi,
+			Pezkuwi
 		);
 
-		let res = BridgeHubKusamaBridgeHubPolkadotHeadersAndMessages::parse_from(vec![
+		let res = BridgeHubDicleBridgeHubPezkuwiHeadersAndMessages::parse_from(vec![
 			"bridge-hub-dicle-bridge-hub-pezkuwi-headers-and-messages",
 			"--bridge-hub-dicle-uri",
 			"ws://bridge-hub-dicle-node-collator1:9944",
@@ -440,7 +440,7 @@ mod tests {
 		// then
 		assert_eq!(
 			res,
-			BridgeHubKusamaBridgeHubPolkadotHeadersAndMessages {
+			BridgeHubDicleBridgeHubPezkuwiHeadersAndMessages {
 				shared: HeadersAndMessagesSharedParams {
 					lane: vec![HexLaneId(vec![0x00u8; 32])],
 					only_mandatory_headers: false,
@@ -451,38 +451,38 @@ mod tests {
 						prometheus_port: 9616,
 					},
 				},
-				left: BridgeHubKusamaConnectionParams {
-					bridge_hub_kusama_uri: "ws://bridge-hub-dicle-node-collator1:9944".into(),
-					bridge_hub_kusama_runtime_version: BridgeHubKusamaRuntimeVersionParams {
-						bridge_hub_kusama_version_mode: RuntimeVersionType::Bundle,
-						bridge_hub_kusama_spec_version: None,
-						bridge_hub_kusama_transaction_version: None,
+				left: BridgeHubDicleConnectionParams {
+					bridge_hub_dicle_uri: "ws://bridge-hub-dicle-node-collator1:9944".into(),
+					bridge_hub_dicle_runtime_version: BridgeHubDicleRuntimeVersionParams {
+						bridge_hub_dicle_version_mode: RuntimeVersionType::Bundle,
+						bridge_hub_dicle_spec_version: None,
+						bridge_hub_dicle_transaction_version: None,
 					},
 				},
-				left_sign: BridgeHubKusamaSigningParams {
-					bridge_hub_kusama_signer: Some("//Iden".into()),
-					bridge_hub_kusama_signer_password: None,
-					bridge_hub_kusama_signer_file: None,
-					bridge_hub_kusama_signer_password_file: None,
-					bridge_hub_kusama_transactions_mortality: Some(64),
+				left_sign: BridgeHubDicleSigningParams {
+					bridge_hub_dicle_signer: Some("//Iden".into()),
+					bridge_hub_dicle_signer_password: None,
+					bridge_hub_dicle_signer_file: None,
+					bridge_hub_dicle_signer_password_file: None,
+					bridge_hub_dicle_transactions_mortality: Some(64),
 				},
-				left_relay: KusamaConnectionParams {
-					kusama_uri: "ws://dicle-alice:9944".into(),
-					kusama_runtime_version: KusamaRuntimeVersionParams {
-						kusama_version_mode: RuntimeVersionType::Bundle,
-						kusama_spec_version: None,
-						kusama_transaction_version: None,
+				left_relay: DicleConnectionParams {
+					dicle_uri: "ws://dicle-alice:9944".into(),
+					dicle_runtime_version: DicleRuntimeVersionParams {
+						dicle_version_mode: RuntimeVersionType::Bundle,
+						dicle_spec_version: None,
+						dicle_transaction_version: None,
 					},
 				},
-				right: BridgeHubPolkadotConnectionParams {
+				right: BridgeHubPezkuwiConnectionParams {
 					bridge_hub_pezkuwi_uri: "ws://bridge-hub-pezkuwi-collator1:9944".into(),
-					bridge_hub_pezkuwi_runtime_version: BridgeHubPolkadotRuntimeVersionParams {
+					bridge_hub_pezkuwi_runtime_version: BridgeHubPezkuwiRuntimeVersionParams {
 						bridge_hub_pezkuwi_version_mode: RuntimeVersionType::Bundle,
 						bridge_hub_pezkuwi_spec_version: None,
 						bridge_hub_pezkuwi_transaction_version: None,
 					},
 				},
-				right_sign: BridgeHubPolkadotSigningParams {
+				right_sign: BridgeHubPezkuwiSigningParams {
 					bridge_hub_pezkuwi_signer: Some("//George".into()),
 					bridge_hub_pezkuwi_signer_password: None,
 					bridge_hub_pezkuwi_signer_file: None,

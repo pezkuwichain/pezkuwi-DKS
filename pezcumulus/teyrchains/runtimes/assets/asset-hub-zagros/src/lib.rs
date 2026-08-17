@@ -15,7 +15,7 @@
 
 //! # Asset Hub Pezkuwichain Runtime
 //!
-//! Asset Hub Pezkuwichain, formerly known as "Rockmine", is the test network for its Dicle cousin.
+//! Asset Hub Pezkuwichain, is the test network for its Dicle cousin.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "512"]

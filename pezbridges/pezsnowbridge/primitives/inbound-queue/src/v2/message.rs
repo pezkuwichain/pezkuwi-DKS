@@ -92,7 +92,7 @@ pub enum Payload {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Encode, Decode, TypeInfo)]
 pub enum Network {
 	/// Pezkuwi network
-	Polkadot,
+	Pezkuwi,
 }
 
 /// The ethereum side sends messages which are transcoded into XCM on BH. These messages are
@@ -203,7 +203,7 @@ impl TryFrom<&IGatewayV2::Payload> for Payload {
 						.map_err(|_| MessageDecodeError)?;
 				// Convert u8 network to Network enum
 				let network = match create_asset.network {
-					0 => Network::Polkadot,
+					0 => Network::Pezkuwi,
 					_ => return Err(MessageDecodeError),
 				};
 				Payload::CreateAsset { token: H160::from(create_asset.token.as_ref()), network }

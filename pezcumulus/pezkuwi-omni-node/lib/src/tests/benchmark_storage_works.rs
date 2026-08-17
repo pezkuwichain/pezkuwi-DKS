@@ -24,7 +24,7 @@ use std::{
 use tempfile::tempdir;
 
 /// The runtimes that this command supports.
-static RUNTIMES: [&str; 1] = ["asset-hub-westend"];
+static RUNTIMES: [&str; 1] = ["asset-hub-zagros"];
 
 /// The `benchmark storage` command works for the dev runtimes.
 #[test]

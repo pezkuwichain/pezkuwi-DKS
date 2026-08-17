@@ -23,7 +23,7 @@ use pezframe_support::{
 };
 use teyrchains_common::{AccountId, Balance};
 
-use xcm_emulator::{Chain, TestExt};
+use xcm_pez_emulator::{Chain, TestExt};
 
 /// Tests that the accumulate-and-forward pezpallet accumulates native tokens, teleports them to
 /// the staging account of `pezpallet-dap` on AssetHub, and that `pezpallet-dap`'s `on_idle`

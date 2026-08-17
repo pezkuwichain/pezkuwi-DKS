@@ -26,7 +26,7 @@ pub(crate) mod helpers;
 
 use crate::{test_cases::bridges_prelude::*, test_data};
 
-use asset_test_utils::BasicTeyrchainRuntime;
+use asset_test_pezutils::BasicTeyrchainRuntime;
 use codec::Encode;
 use pezbp_messages::{
 	target_chain::{DispatchMessage, DispatchMessageData, MessageDispatch},
@@ -68,7 +68,7 @@ pub(crate) mod bridges_prelude {
 pub use for_pezpallet_xcm_bridge_hub::open_and_close_bridge_works;
 
 // Re-export test_case from assets
-pub use asset_test_utils::include_teleports_for_native_asset_works;
+pub use asset_test_pezutils::include_teleports_for_native_asset_works;
 use pezpallet_bridge_messages::LaneIdOf;
 
 pub type RuntimeHelper<Runtime, AllPalletsWithoutSystem = ()> =
@@ -609,17 +609,17 @@ where
 			beneficiary: Location::new(1, [Teyrchain(1000)]),
 		}])),
 		ExportMessage {
-			network: Polkadot,
+			network: Pezkuwi,
 			destination: [Teyrchain(1000)].into(),
 			xcm: Xcm(vec![
 				ReserveAssetDeposited(Assets::from(vec![Asset {
-					id: AssetId(Location::new(2, [GlobalConsensus(Kusama)])),
+					id: AssetId(Location::new(2, [GlobalConsensus(Dicle)])),
 					fun: Fungible(1000000000000),
 				}])),
 				ClearOrigin,
 				BuyExecution {
 					fees: Asset {
-						id: AssetId(Location::new(2, [GlobalConsensus(Kusama)])),
+						id: AssetId(Location::new(2, [GlobalConsensus(Dicle)])),
 						fun: Fungible(1000000000000),
 					},
 					weight_limit: Unlimited,

@@ -26,6 +26,7 @@ pezpallet-asset-conversion = { workspace = true, default-features = true }
 pezsnowbridge-core = { workspace = true, default-features = true }
 pezsnowbridge-outbound-queue-primitives = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
 scale-info = { features = [
 	"derive",
 ], workspace = true, default-features = true }

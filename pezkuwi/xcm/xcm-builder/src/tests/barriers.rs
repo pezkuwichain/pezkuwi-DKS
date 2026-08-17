@@ -50,7 +50,7 @@ fn take_weight_credit_barrier_should_work() {
 #[test]
 fn computed_origin_should_work() {
 	let mut message = Xcm::<()>(vec![
-		UniversalOrigin(GlobalConsensus(Kusama)),
+		UniversalOrigin(GlobalConsensus(Dicle)),
 		DescendOrigin(Teyrchain(100).into()),
 		DescendOrigin(PalletInstance(69).into()),
 		WithdrawAsset((Parent, 100).into()),
@@ -64,7 +64,7 @@ fn computed_origin_should_work() {
 	AllowPaidFrom::set(vec![(
 		Parent,
 		Parent,
-		GlobalConsensus(Kusama),
+		GlobalConsensus(Dicle),
 		Teyrchain(100),
 		PalletInstance(69),
 	)
@@ -478,7 +478,7 @@ fn allow_explicit_unpaid_fails_with_alias_origin_if_no_aliasers() {
 fn allow_explicit_unpaid_with_computed_origin() {
 	AllowExplicitUnpaidFrom::set(vec![
 		(Parent, Teyrchain(1000)).into(),
-		(Parent, Parent, GlobalConsensus(Polkadot), Teyrchain(1000)).into(),
+		(Parent, Parent, GlobalConsensus(Pezkuwi), Teyrchain(1000)).into(),
 	]);
 	type ExplicitUnpaidBarrier<T> = AllowExplicitUnpaidExecutionFrom<T, mock::Aliasers>;
 
@@ -516,14 +516,14 @@ fn allow_explicit_unpaid_with_computed_origin() {
 		((Parent, PalletInstance(10), GeneralIndex(1000)), 100u128).into(),
 	];
 	let mut message = Xcm::<()>::builder_unsafe()
-		.universal_origin(Polkadot)
+		.universal_origin(Pezkuwi)
 		.set_hints(vec![AssetClaimer {
 			location: AccountId32 { id: [100u8; 32], network: None }.into(),
 		}])
 		.receive_teleported_asset((Here, 100u128))
 		.reserve_asset_deposited(assets)
 		.withdraw_asset((GeneralIndex(1), 100u128))
-		.alias_origin((Parent, Parent, GlobalConsensus(Polkadot), Teyrchain(1000)))
+		.alias_origin((Parent, Parent, GlobalConsensus(Pezkuwi), Teyrchain(1000)))
 		.unpaid_execution(Unlimited, None)
 		.build();
 	let result = WithComputedOrigin::<
@@ -544,7 +544,7 @@ fn allow_explicit_unpaid_with_computed_origin() {
 		((Parent, PalletInstance(10), GeneralIndex(1000)), 100u128).into(),
 	];
 	let mut message = Xcm::<()>::builder_unsafe()
-		.universal_origin(Polkadot)
+		.universal_origin(Pezkuwi)
 		.set_hints(vec![AssetClaimer {
 			location: AccountId32 { id: [100u8; 32], network: None }.into(),
 		}])

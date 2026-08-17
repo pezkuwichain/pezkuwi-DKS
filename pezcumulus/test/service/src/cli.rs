@@ -362,7 +362,7 @@ impl BizinikiwiCli for TestCollatorCli {
 
 impl BizinikiwiCli for RelayChainCli {
 	fn impl_name() -> String {
-		"Polkadot collator".into()
+		"Pezkuwi collator".into()
 	}
 
 	fn impl_version() -> String {
@@ -371,7 +371,7 @@ impl BizinikiwiCli for RelayChainCli {
 
 	fn description() -> String {
 		format!(
-			"Polkadot collator\n\nThe command-line arguments provided first will be \
+			"Pezkuwi collator\n\nThe command-line arguments provided first will be \
 		passed to the teyrchain node, while the arguments provided after -- will be passed \
 		to the relay chain node.\n\n\
 		{} [teyrchain-args] -- [relay_chain-args]",
