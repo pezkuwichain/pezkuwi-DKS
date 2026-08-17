@@ -28,6 +28,16 @@ jobs:
           test -f LICENSE-GPL3
           echo "compliance files present"
 
+  # Whose chain is this. Cheap, and it catches a class the compiler cannot see: a foreign chain
+  # id kept as an alias builds fine, and a bootnode in a chain spec is JSON no compiler reads.
+  # Both had shipped here before this job existed.
+  chain-identity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: No foreign network named, no foreign host dialled
+        run: .github/scripts/check-chain-identity.sh
+
   fmt:
     runs-on: ubuntu-latest
     steps:
