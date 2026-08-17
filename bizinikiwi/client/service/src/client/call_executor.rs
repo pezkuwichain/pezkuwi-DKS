@@ -109,8 +109,9 @@ where
 
 		let state_runtime_code =
 			pezsp_state_machine::backend::BackendRuntimeCode::new(&state, context.into());
-		let runtime_code =
-			state_runtime_code.runtime_code().map_err(pezsp_blockchain::Error::RuntimeCode)?;
+		let runtime_code = state_runtime_code
+			.runtime_code()
+			.map_err(pezsp_blockchain::Error::RuntimeCode)?;
 
 		let runtime_code = self.code_provider.maybe_override_code(runtime_code, &state, at_hash)?.0;
 
@@ -151,8 +152,9 @@ where
 		let state_runtime_code =
 			pezsp_state_machine::backend::BackendRuntimeCode::new(&state, call_context.into());
 
-		let runtime_code =
-			state_runtime_code.runtime_code().map_err(pezsp_blockchain::Error::RuntimeCode)?;
+		let runtime_code = state_runtime_code
+			.runtime_code()
+			.map_err(pezsp_blockchain::Error::RuntimeCode)?;
 		let runtime_code = self.code_provider.maybe_override_code(runtime_code, &state, at_hash)?.0;
 		let mut extensions = extensions.borrow_mut();
 
@@ -204,8 +206,9 @@ where
 		let state_runtime_code =
 			pezsp_state_machine::backend::BackendRuntimeCode::new(&state, call_context.into());
 
-		let runtime_code =
-			state_runtime_code.runtime_code().map_err(pezsp_blockchain::Error::RuntimeCode)?;
+		let runtime_code = state_runtime_code
+			.runtime_code()
+			.map_err(pezsp_blockchain::Error::RuntimeCode)?;
 		self.code_provider
 			.maybe_override_code(runtime_code, &state, at_hash)
 			.map(|(_, v)| v)
@@ -225,8 +228,9 @@ where
 
 		let state_runtime_code =
 			pezsp_state_machine::backend::BackendRuntimeCode::new(trie_backend, TryPendingCode::No);
-		let runtime_code =
-			state_runtime_code.runtime_code().map_err(pezsp_blockchain::Error::RuntimeCode)?;
+		let runtime_code = state_runtime_code
+			.runtime_code()
+			.map_err(pezsp_blockchain::Error::RuntimeCode)?;
 		let runtime_code = self.code_provider.maybe_override_code(runtime_code, &state, at_hash)?.0;
 
 		pezsp_state_machine::prove_execution_on_trie_backend(

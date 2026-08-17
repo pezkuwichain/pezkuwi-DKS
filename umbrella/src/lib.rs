@@ -155,8 +155,6 @@ pub use pezcumulus_client_consensus_aura;
 #[cfg(feature = "pezcumulus-client-consensus-common")]
 pub use pezcumulus_client_consensus_common;
 
-/// A Bizinikiwi `Proposer` for building teyrchain blocks.
-
 /// The relay-chain provided consensus algorithm.
 #[cfg(feature = "pezcumulus-client-consensus-relay-chain")]
 pub use pezcumulus_client_consensus_relay_chain;
@@ -168,6 +166,10 @@ pub use pezcumulus_client_network;
 /// Teyrchain PoV recovery.
 #[cfg(feature = "pezcumulus-client-pov-recovery")]
 pub use pezcumulus_client_pov_recovery;
+
+/// Storage proof size recording utilities.
+#[cfg(feature = "pezcumulus-client-proof-size-recording")]
+pub use pezcumulus_client_proof_size_recording;
 
 /// Common functions used to assemble the components of a teyrchain node.
 #[cfg(feature = "pezcumulus-client-service")]
@@ -380,6 +382,10 @@ pub use pezkuwi_gossip_support;
 /// The Network Bridge Subsystem — protocol multiplexer for Pezkuwi.
 #[cfg(feature = "pezkuwi-network-bridge")]
 pub use pezkuwi_network_bridge;
+
+/// Clock abstraction shared by Pezkuwi node subsystems.
+#[cfg(feature = "pezkuwi-node-clock")]
+pub use pezkuwi_node_clock;
 
 /// Collator-side subsystem that handles incoming candidate submissions from the teyrchain.
 #[cfg(feature = "pezkuwi-node-collation-generation")]
@@ -601,6 +607,10 @@ pub use pezmmr_gadget;
 #[cfg(feature = "pezmmr-rpc")]
 pub use pezmmr_rpc;
 
+/// FRAME pezpallet for periodic accumulation and forwarding of native token funds.
+#[cfg(feature = "pezpallet-accumulate-and-forward")]
+pub use pezpallet_accumulate_and_forward;
+
 /// The Alliance pezpallet provides a collective for standard-setting industry collaboration.
 #[cfg(feature = "pezpallet-alliance")]
 pub use pezpallet_alliance;
@@ -748,6 +758,10 @@ pub use pezpallet_conviction_voting;
 /// Logic as per the description of The Fellowship for core Pezkuwi technology.
 #[cfg(feature = "pezpallet-core-fellowship")]
 pub use pezpallet_core_fellowship;
+
+/// FRAME pezpallet for Dynamic Allocation Pool (DAP).
+#[cfg(feature = "pezpallet-dap")]
+pub use pezpallet_dap;
 
 /// FRAME delegated staking pezpallet.
 #[cfg(feature = "pezpallet-delegated-staking")]
@@ -1209,6 +1223,10 @@ pub use pezsc_executor_polkavm;
 #[cfg(feature = "pezsc-executor-wasmtime")]
 pub use pezsc_executor_wasmtime;
 
+/// Hand-Off Protocol (HOP) ephemeral data pool service.
+#[cfg(feature = "pezsc-hop")]
+pub use pezsc_hop;
+
 /// Bizinikiwi informant.
 #[cfg(feature = "pezsc-informant")]
 pub use pezsc_informant;
@@ -1329,6 +1347,10 @@ pub use pezsc_transaction_pool_api;
 #[cfg(feature = "pezsc-utils")]
 pub use pezsc_utils;
 
+/// Host-side PolkaVM backend driving the pezsp-virtualization host functions.
+#[cfg(feature = "pezsc-virtualization")]
+pub use pezsc_virtualization;
+
 /// Bizinikiwi runtime api primitives.
 #[cfg(feature = "pezsp-api")]
 pub use pezsp_api;
@@ -1409,6 +1431,10 @@ pub use pezsp_crypto_hashing;
 #[cfg(feature = "pezsp-crypto-hashing-proc-macro")]
 pub use pezsp_crypto_hashing_proc_macro;
 
+/// Primitives for the Dynamic Allocation Pool (DAP).
+#[cfg(feature = "pezsp-dap")]
+pub use pezsp_dap;
+
 /// Bizinikiwi database trait.
 #[cfg(feature = "pezsp-database")]
 pub use pezsp_database;
@@ -1424,6 +1450,10 @@ pub use pezsp_externalities;
 /// Bizinikiwi RuntimeGenesisConfig builder API.
 #[cfg(feature = "pezsp-genesis-builder")]
 pub use pezsp_genesis_builder;
+
+/// HOP (Hand-Off Protocol) primitives and runtime API.
+#[cfg(feature = "pezsp-hop")]
+pub use pezsp_hop;
 
 /// Provides types and traits for creating and checking inherents.
 #[cfg(feature = "pezsp-inherents")]
@@ -1537,6 +1567,14 @@ pub use pezsp_version;
 #[cfg(feature = "pezsp-version-proc-macro")]
 pub use pezsp_version_proc_macro;
 
+/// Spawn a new polkavm instance from within the runtime/pvf.
+#[cfg(feature = "pezsp-virtualization")]
+pub use pezsp_virtualization;
+
+/// A PolkaVM program that is used by the `pezsp-virtualization` tests.
+#[cfg(feature = "pezsp-virtualization-test-fixture")]
+pub use pezsp_virtualization_test_fixture;
+
 /// Types and traits for interfacing between the host and the wasm runtime.
 #[cfg(feature = "pezsp-wasm-interface")]
 pub use pezsp_wasm_interface;
@@ -1580,6 +1618,10 @@ pub use testnet_teyrchains_constants;
 /// Logic which is common to all teyrchain runtimes.
 #[cfg(feature = "teyrchains-common")]
 pub use teyrchains_common;
+
+/// Common types for teyrchains.
+#[cfg(feature = "teyrchains-common-types")]
+pub use teyrchains_common_types;
 
 /// Utils for Runtimes testing.
 #[cfg(feature = "teyrchains-runtimes-test-utils")]

@@ -233,12 +233,7 @@ fn register_all_tokens_succeeds() {
 			native: Location::new(1, [Teyrchain(1000), PalletInstance(50), GeneralIndex(1984)]),
 			reanchored: Location::new(
 				1,
-				[
-					GlobalConsensus(Pezkuwi),
-					Teyrchain(1000),
-					PalletInstance(50),
-					GeneralIndex(1984),
-				],
+				[GlobalConsensus(Pezkuwi), Teyrchain(1000), PalletInstance(50), GeneralIndex(1984)],
 			),
 			foreign: hex!("14b0579be12d7d7f9971f1d4b41f0e88384b9b74799b0150d4aa6cd01afb4444")
 				.into(),
@@ -323,12 +318,7 @@ fn check_pna_token_id_compatibility() {
 			native: Location::new(1, [Teyrchain(1000), PalletInstance(50), GeneralIndex(1984)]),
 			reanchored: Location::new(
 				1,
-				[
-					GlobalConsensus(Pezkuwi),
-					Teyrchain(1000),
-					PalletInstance(50),
-					GeneralIndex(1984),
-				],
+				[GlobalConsensus(Pezkuwi), Teyrchain(1000), PalletInstance(50), GeneralIndex(1984)],
 			),
 			foreign: hex!("14b0579be12d7d7f9971f1d4b41f0e88384b9b74799b0150d4aa6cd01afb4444")
 				.into(),

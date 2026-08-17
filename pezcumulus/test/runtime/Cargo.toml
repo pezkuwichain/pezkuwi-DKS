@@ -74,10 +74,12 @@ std = [
 	"pezcumulus-pezpallet-weight-reclaim/std",
 	"pezcumulus-primitives-aura/std",
 	"pezcumulus-primitives-core/std",
+	"pezcumulus-primitives-storage-weight-reclaim/std",
 	"pezframe-executive/std",
 	"pezframe-support/std",
 	"pezframe-system-rpc-runtime-api/std",
 	"pezframe-system/std",
+	"pezkuwi-primitives/std",
 	"pezpallet-aura/std",
 	"pezpallet-authorship/std",
 	"pezpallet-balances/std",
@@ -87,6 +89,7 @@ std = [
 	"pezpallet-sudo/std",
 	"pezpallet-timestamp/std",
 	"pezpallet-transaction-payment/std",
+	"pezpallet-utility/std",
 	"pezsp-api/std",
 	"pezsp-block-builder/std",
 	"pezsp-consensus-aura/std",
@@ -103,10 +106,7 @@ std = [
 	"scale-info/std",
 	"serde_json/std",
 	"teyrchain-info/std",
-	"pezcumulus-primitives-storage-weight-reclaim/std",
-	"pezkuwi-primitives/std",
-	"pezpallet-utility/std",
-	"tracing/std"
+	"tracing/std",
 ]
 increment-spec-version = []
 # A runtime which expects to build behind the relay chain tip.
@@ -136,10 +136,12 @@ runtime-benchmarks = [
 	"pezcumulus-pezpallet-weight-reclaim/runtime-benchmarks",
 	"pezcumulus-primitives-aura/runtime-benchmarks",
 	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-primitives-storage-weight-reclaim/runtime-benchmarks",
 	"pezframe-executive/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system-rpc-runtime-api/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
 	"pezpallet-aura/runtime-benchmarks",
 	"pezpallet-authorship/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
@@ -149,6 +151,7 @@ runtime-benchmarks = [
 	"pezpallet-sudo/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
 	"pezpallet-transaction-payment/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
 	"pezsp-api/runtime-benchmarks",
 	"pezsp-block-builder/runtime-benchmarks",
 	"pezsp-consensus-aura/runtime-benchmarks",
@@ -162,18 +165,17 @@ runtime-benchmarks = [
 	"pezsp-transaction-pool/runtime-benchmarks",
 	"pezsp-version/runtime-benchmarks",
 	"teyrchain-info/runtime-benchmarks",
-	"pezcumulus-primitives-storage-weight-reclaim/runtime-benchmarks",
-	"pezkuwi-primitives/runtime-benchmarks",
-	"pezpallet-utility/runtime-benchmarks"
 ]
 try-runtime = [
 	"pezcumulus-pezpallet-aura-ext/try-runtime",
 	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
 	"pezcumulus-pezpallet-weight-reclaim/try-runtime",
 	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-primitives-storage-weight-reclaim/try-runtime",
 	"pezframe-executive/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
 	"pezpallet-aura/try-runtime",
 	"pezpallet-authorship/try-runtime",
 	"pezpallet-balances/try-runtime",
@@ -183,6 +185,7 @@ try-runtime = [
 	"pezpallet-sudo/try-runtime",
 	"pezpallet-timestamp/try-runtime",
 	"pezpallet-transaction-payment/try-runtime",
+	"pezpallet-utility/try-runtime",
 	"pezsp-api/try-runtime",
 	"pezsp-block-builder/try-runtime",
 	"pezsp-consensus-aura/try-runtime",
@@ -195,9 +198,6 @@ try-runtime = [
 	"pezsp-transaction-pool/try-runtime",
 	"pezsp-version/try-runtime",
 	"teyrchain-info/try-runtime",
-	"pezcumulus-primitives-storage-weight-reclaim/try-runtime",
-	"pezkuwi-primitives/try-runtime",
-	"pezpallet-utility/try-runtime"
 ]
 serde = []
 experimental = []

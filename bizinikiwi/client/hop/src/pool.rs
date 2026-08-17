@@ -814,10 +814,10 @@ impl HopDataPool {
 		index
 			.iter()
 			.filter(|(_, meta)| {
-				!meta.promoted &&
-					now_secs.saturating_add(buffer_secs) >= meta.expires_at &&
-					meta.promotion_attempts < MAX_PROMOTION_ATTEMPTS &&
-					current_block >= meta.next_promotion_attempt_at
+				!meta.promoted
+					&& now_secs.saturating_add(buffer_secs) >= meta.expires_at
+					&& meta.promotion_attempts < MAX_PROMOTION_ATTEMPTS
+					&& current_block >= meta.next_promotion_attempt_at
 			})
 			.map(|(h, _)| *h)
 			.take(limit)

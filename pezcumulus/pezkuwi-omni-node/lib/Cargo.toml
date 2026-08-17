@@ -36,8 +36,8 @@ teyrchains-common-types = { workspace = true, default-features = true }
 
 # Bizinikiwi
 bizinikiwi-frame-rpc-system = { workspace = true, default-features = true }
-frame-metadata = { workspace = true, default-features = true }
 bizinikiwi-state-trie-migration-rpc = { workspace = true, default-features = true }
+frame-metadata = { workspace = true, default-features = true }
 pezframe-benchmarking = { optional = true, workspace = true, default-features = true }
 pezframe-benchmarking-cli = { workspace = true, default-features = true }
 pezframe-support = { optional = true, workspace = true, default-features = true }
@@ -76,7 +76,6 @@ pezsp-consensus = { workspace = true, default-features = true }
 pezsp-consensus-aura = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
 pezsp-genesis-builder = { workspace = true }
-pezsp-transaction-storage-proof = { workspace = true, default-features = true }
 pezsp-inherents = { workspace = true, default-features = true }
 pezsp-keystore = { workspace = true, default-features = true }
 pezsp-offchain = { workspace = true, default-features = true }
@@ -86,6 +85,7 @@ pezsp-statement-store = { workspace = true, default-features = true }
 pezsp-storage = { workspace = true, default-features = true }
 pezsp-timestamp = { workspace = true, default-features = true }
 pezsp-transaction-pool = { workspace = true, default-features = true }
+pezsp-transaction-storage-proof = { workspace = true, default-features = true }
 pezsp-version = { workspace = true, default-features = true }
 pezsp-weights = { workspace = true, default-features = true }
 prometheus-endpoint = { workspace = true, default-features = true }
@@ -184,9 +184,9 @@ runtime-benchmarks = [
 	"pezsp-statement-store/runtime-benchmarks",
 	"pezsp-timestamp/runtime-benchmarks",
 	"pezsp-transaction-pool/runtime-benchmarks",
+	"pezsp-transaction-storage-proof/runtime-benchmarks",
 	"pezsp-version/runtime-benchmarks",
 	"teyrchains-common/runtime-benchmarks",
-	"pezsp-transaction-storage-proof/runtime-benchmarks"
 ]
 try-runtime = [
 	"bizinikiwi-frame-rpc-system/try-runtime",
@@ -242,9 +242,9 @@ try-runtime = [
 	"pezsp-statement-store/try-runtime",
 	"pezsp-timestamp/try-runtime",
 	"pezsp-transaction-pool/try-runtime",
+	"pezsp-transaction-storage-proof/try-runtime",
 	"pezsp-version/try-runtime",
 	"teyrchains-common/try-runtime",
-	"pezsp-transaction-storage-proof/try-runtime"
 ]
 storage-benchmark = ["pezframe-benchmarking-cli/storage-benchmark"]
 std = [

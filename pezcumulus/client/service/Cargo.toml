@@ -87,11 +87,11 @@ runtime-benchmarks = [
 	"pezsp-api/runtime-benchmarks",
 	"pezsp-blockchain/runtime-benchmarks",
 	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-crypto-ec-utils/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-transaction-pool/runtime-benchmarks",
 	"pezsp-trie/runtime-benchmarks",
-	"pezsp-crypto-ec-utils/runtime-benchmarks"
 ]
 std = [
 	"pezcumulus-client-cli/std",

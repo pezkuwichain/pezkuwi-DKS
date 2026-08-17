@@ -14,11 +14,11 @@ publish = false
 workspace = true
 
 [dependencies]
-pezpallet-accumulate-and-forward = { workspace = true, default-features = true }
-pezpallet-dap = { workspace = true, default-features = true }
 codec = { workspace = true }
 hex-literal = { workspace = true }
 paste = { workspace = true, default-features = true }
+pezpallet-accumulate-and-forward = { workspace = true, default-features = true }
+pezpallet-dap = { workspace = true, default-features = true }
 
 # Bizinikiwi
 pezframe-support = { workspace = true, default-features = true }
@@ -76,10 +76,12 @@ runtime-benchmarks = [
 	"pezkuwi-primitives/runtime-benchmarks",
 	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-accumulate-and-forward/runtime-benchmarks",
 	"pezpallet-asset-conversion/runtime-benchmarks",
 	"pezpallet-assets/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-bridge-messages/runtime-benchmarks",
+	"pezpallet-dap/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
 	"pezpallet-whitelist/runtime-benchmarks",
 	"pezpallet-xcm-bridge-hub/runtime-benchmarks",
@@ -97,8 +99,6 @@ runtime-benchmarks = [
 	"xcm-pez-simulator/runtime-benchmarks",
 	"xcm-runtime-pezapis/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
-	"pezpallet-accumulate-and-forward/runtime-benchmarks",
-	"pezpallet-dap/runtime-benchmarks"
 ]
 std = [
 	"codec/std",
@@ -118,10 +118,12 @@ try-runtime = [
 	"pezkuwi-primitives/try-runtime",
 	"pezkuwi-runtime-teyrchains/try-runtime",
 	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-accumulate-and-forward/try-runtime",
 	"pezpallet-asset-conversion/try-runtime",
 	"pezpallet-assets/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-bridge-messages/try-runtime",
+	"pezpallet-dap/try-runtime",
 	"pezpallet-message-queue/try-runtime",
 	"pezpallet-whitelist/try-runtime",
 	"pezpallet-xcm-bridge-hub/try-runtime",
@@ -139,8 +141,6 @@ try-runtime = [
 	"xcm-pez-simulator/try-runtime",
 	"xcm-runtime-pezapis/try-runtime",
 	"xcm/try-runtime",
-	"pezpallet-accumulate-and-forward/try-runtime",
-	"pezpallet-dap/try-runtime"
 ]
 serde = []
 experimental = []

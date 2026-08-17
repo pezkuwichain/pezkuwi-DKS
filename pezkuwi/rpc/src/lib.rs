@@ -112,8 +112,11 @@ where
 		+ Sync
 		+ 'static,
 	C::Api: bizinikiwi_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
-	C::Api:
-		pezmmr_rpc::MmrRuntimeApi<Block, <Block as pezsp_runtime::traits::Block>::Hash, BlockNumber>,
+	C::Api: pezmmr_rpc::MmrRuntimeApi<
+		Block,
+		<Block as pezsp_runtime::traits::Block>::Hash,
+		BlockNumber,
+	>,
 	C::Api: pezpallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: BabeApi<Block>,
 	C::Api: BlockBuilder<Block>,

@@ -17,8 +17,8 @@
 //! over a bridge.
 
 use crate::{assert_matches_reserve_asset_deposited_instructions, get_fungible_delivery_fees};
-use pez_assets_common::local_and_foreign_assets::ForeignAssetReserveData;
 use codec::Encode;
+use pez_assets_common::local_and_foreign_assets::ForeignAssetReserveData;
 use pezcumulus_primitives_core::XcmpMessageSource;
 use pezframe_support::{
 	assert_ok,

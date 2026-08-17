@@ -38,7 +38,6 @@ pub enum Error {
 	/// We tried fetching a session info which was not available.
 	#[error("There was no session with the given index {0}")]
 	NoSuchSession(SessionIndex),
-
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

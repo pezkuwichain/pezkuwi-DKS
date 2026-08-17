@@ -179,6 +179,7 @@ try-runtime = [
 	"pezpallet-broker/try-runtime",
 	"pezpallet-message-queue/try-runtime",
 	"pezpallet-mmr/try-runtime",
+	"pezpallet-session-benchmarking?/try-runtime",
 	"pezpallet-session/try-runtime",
 	"pezpallet-staking/try-runtime",
 	"pezpallet-timestamp/try-runtime",
@@ -190,7 +191,6 @@ try-runtime = [
 	"pezsp-staking/try-runtime",
 	"xcm-executor/try-runtime",
 	"xcm/try-runtime",
-	"pezpallet-session-benchmarking?/try-runtime"
 ]
 runtime-metrics = [
 	"pezkuwi-runtime-metrics/runtime-metrics",

@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
 //! Implementation for [`pezsnowbridge_outbound_queue_primitives::v1::SendMessage`]
 use super::*;
-use pezbridge_hub_common::AggregateMessageOrigin;
 use codec::Encode;
+use pezbridge_hub_common::AggregateMessageOrigin;
 use pezframe_support::{
 	ensure,
 	traits::{EnqueueMessage, Get},

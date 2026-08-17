@@ -170,7 +170,8 @@ fn map_results(
 			worst_case_map_values,
 			additional_trie_layers,
 		)?;
-		let pezpallet_benchmarks = all_benchmarks.entry((pezpallet_name, instance_name)).or_default();
+		let pezpallet_benchmarks =
+			all_benchmarks.entry((pezpallet_name, instance_name)).or_default();
 		pezpallet_benchmarks.push(benchmark_data);
 	}
 	Ok(all_benchmarks)
@@ -292,7 +293,10 @@ fn get_benchmark_data(
 	// We add additional comments showing which storage items were touched.
 	// We find the worst case proof size, and use that as the final proof size result.
 	let mut storage_per_prefix = HashMap::<Vec<u8>, Vec<BenchmarkResult>>::new();
-	let pov_mode = pov_modes.get(&(pezpallet.clone(), benchmark.clone())).cloned().unwrap_or_default();
+	let pov_mode = pov_modes
+		.get(&(pezpallet.clone(), benchmark.clone()))
+		.cloned()
+		.unwrap_or_default();
 	let comments = process_storage_results(
 		&mut storage_per_prefix,
 		&batch.db_results,
@@ -585,7 +589,9 @@ pub(crate) fn process_storage_results(
 			let mut prefix_result = result.clone();
 			let key_info = storage_info_map.get(&prefix);
 			let pezpallet_name = match key_info {
-				Some(k) => String::from_utf8(k.pezpallet_name.clone()).expect("encoded from string"),
+				Some(k) => {
+					String::from_utf8(k.pezpallet_name.clone()).expect("encoded from string")
+				},
 				None => "".to_string(),
 			};
 			let storage_name = match key_info {
@@ -607,8 +613,8 @@ pub(crate) fn process_storage_results(
 				},
 				None => None,
 			};
-			let is_all_ignored = pov_modes.get(&("ALL".to_string(), "ALL".to_string())) ==
-				Some(&PovEstimationMode::Ignored);
+			let is_all_ignored = pov_modes.get(&("ALL".to_string(), "ALL".to_string()))
+				== Some(&PovEstimationMode::Ignored);
 			if is_all_ignored && override_pov_mode != Some(&PovEstimationMode::Ignored) {
 				panic!("The syntax currently does not allow to exclude single keys from a top-level `Ignored` pov-mode.");
 			}

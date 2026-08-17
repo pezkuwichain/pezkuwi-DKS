@@ -835,16 +835,13 @@ impl pezpallet_asset_tx_payment::BenchmarkHelperTrait<AccountId, u32, u32> for A
 /// balance - the credit is dropped, which burns it.
 pub struct AssetFeesToBlockAuthor;
 impl pezpallet_asset_tx_payment::HandleCredit<AccountId, Assets> for AssetFeesToBlockAuthor {
-	fn handle_credit(
-		credit: pezframe_support::traits::fungibles::Credit<AccountId, Assets>,
-	) {
+	fn handle_credit(credit: pezframe_support::traits::fungibles::Credit<AccountId, Assets>) {
 		use pezframe_support::traits::fungibles::Balanced;
 		if let Some(author) = pezpallet_authorship::Pezpallet::<Runtime>::author() {
 			let _ = Assets::resolve(&author, credit);
 		}
 	}
 }
-
 
 impl pezpallet_asset_tx_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;

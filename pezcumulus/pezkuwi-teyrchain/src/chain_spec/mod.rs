@@ -90,16 +90,10 @@ impl LoadSpec for ChainSpecLoader {
 			)?),
 
 			// -- Asset Hub Zagros
-			"asset-hub-zagros-dev" => {
-				Box::new(asset_hubs::asset_hub_zagros_development_config())
-			},
-			"asset-hub-zagros-local" => {
-				Box::new(asset_hubs::asset_hub_zagros_local_config())
-			},
+			"asset-hub-zagros-dev" => Box::new(asset_hubs::asset_hub_zagros_development_config()),
+			"asset-hub-zagros-local" => Box::new(asset_hubs::asset_hub_zagros_local_config()),
 			// the chain spec as used for generating the upgrade genesis values
-			"asset-hub-zagros-genesis" => {
-				Box::new(asset_hubs::asset_hub_zagros_config())
-			},
+			"asset-hub-zagros-genesis" => Box::new(asset_hubs::asset_hub_zagros_config()),
 			// the shell-based chain spec as used for syncing
 			"asset-hub-zagros" => Box::new(GenericChainSpec::from_json_bytes(
 				&include_bytes!("../../chain-specs/asset-hub-zagros.json")[..],

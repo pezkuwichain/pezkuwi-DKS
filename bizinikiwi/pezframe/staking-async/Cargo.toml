@@ -39,7 +39,6 @@ serde = { features = ["alloc", "derive"], workspace = true }
 pezframe-benchmarking = { optional = true, workspace = true }
 
 [dev-dependencies]
-pezpallet-dap = { workspace = true, default-features = true }
 anyhow = { workspace = true }
 bizinikiwi-test-utils = { workspace = true }
 env_logger = { workspace = true }
@@ -49,6 +48,7 @@ pezframe-support = { features = [
 ], workspace = true, default-features = true }
 pezpallet-bags-list = { workspace = true, default-features = true }
 pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-dap = { workspace = true, default-features = true }
 pezpallet-timestamp = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
 rand_chacha = { workspace = true, default-features = true }

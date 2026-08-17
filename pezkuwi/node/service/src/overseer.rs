@@ -306,7 +306,7 @@ where
 						"build validator overseer for teyrchain node".to_owned(),
 					)))
 				},
-				IsTeyrchainNode::No =>
+				IsTeyrchainNode::No => {
 					if experimental_collator_protocol {
 						ProtocolSide::ValidatorExperimental {
 							keystore: keystore.clone(),
@@ -324,7 +324,8 @@ where
 							collator_protocol_hold_off,
 							clock: pezkuwi_node_clock::system_clock(),
 						}
-					},
+					}
+				},
 			};
 			CollatorProtocolSubsystem::new(side)
 		})
@@ -491,7 +492,7 @@ where
 					)))
 				},
 				IsTeyrchainNode::Collator(collator_pair) => ProtocolSide::Collator {
-							clock: pezkuwi_node_clock::system_clock(),
+					clock: pezkuwi_node_clock::system_clock(),
 					peer_id: network_service.local_peer_id(),
 					collator_pair,
 					request_receiver_v2: collation_req_v2_receiver,

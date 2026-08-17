@@ -38,7 +38,10 @@ use pezframe_support::build_struct_json_patch;
 use pezkuwi_primitives::{
 	// HostConfiguration carries the vstaging shape, which added on_demand_queue_max_size;
 	// the root re-export still points at v9 and no longer matches the field it fills.
-	vstaging::SchedulerParams, AccountId, AssignmentId, ValidatorId,
+	vstaging::SchedulerParams,
+	AccountId,
+	AssignmentId,
+	ValidatorId,
 };
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_babe::AuthorityId as BabeId;

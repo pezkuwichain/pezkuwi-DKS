@@ -18,10 +18,10 @@
 
 use codec::{Decode, Encode};
 use pezkuwi_primitives::{BlockNumber, Hash};
-use serde::{Deserialize, Serialize};
 use pezsp_core::{bounded_vec::BoundedVec, ConstU32};
 use pezsp_crypto_hashing::blake2_256;
 use pezsp_runtime::{MultiSignature, MultiSigner};
+use serde::{Deserialize, Serialize};
 
 /// Block number type used by HOP.
 pub type HopBlockNumber = BlockNumber;

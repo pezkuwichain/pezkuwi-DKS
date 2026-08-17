@@ -36,8 +36,8 @@ use crate::shared::{StatSelect, Stats};
 use clap::Args;
 use codec::Encode;
 use log::info;
-use serde::Serialize;
 use pezsp_trie::proof_size_extension::ProofSizeExt;
+use serde::Serialize;
 use std::{marker::PhantomData, sync::Arc, time::Instant};
 
 /// Parameters to configure an *overhead* benchmark.

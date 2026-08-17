@@ -103,8 +103,8 @@ mod mock;
 #[cfg(test)]
 mod test;
 
-use pezbridge_hub_common::AggregateMessageOrigin;
 use codec::Decode;
+use pezbridge_hub_common::AggregateMessageOrigin;
 use pezframe_support::{
 	storage::StorageStreamIter,
 	traits::{tokens::Balance, Contains, Defensive, EnqueueMessage, Get, ProcessMessageError},

@@ -17,9 +17,9 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-pezcumulus-pezpallet-session-benchmarking = { default-features = false, optional = true, workspace = true }
 codec = { features = ["derive"], workspace = true }
 log = { workspace = true }
+pezcumulus-pezpallet-session-benchmarking = { default-features = false, optional = true, workspace = true }
 rand = { features = ["std_rng"], workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 
@@ -75,6 +75,7 @@ std = [
 ]
 
 try-runtime = [
+	"pezcumulus-pezpallet-session-benchmarking?/try-runtime",
 	"pezframe-benchmarking?/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
@@ -86,7 +87,6 @@ try-runtime = [
 	"pezsp-consensus-aura/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"pezsp-staking/try-runtime",
-	"pezcumulus-pezpallet-session-benchmarking?/try-runtime"
 ]
 serde = []
 experimental = []

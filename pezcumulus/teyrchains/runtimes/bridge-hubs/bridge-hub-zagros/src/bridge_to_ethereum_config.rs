@@ -131,33 +131,33 @@ impl pezsnowbridge_pezpallet_inbound_queue::Config for Runtime {
 	type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
 }
 
-
 /// Destination the inbound queue delivers to: the Asset Hub parachain.
 pezframe_support::parameter_types! {
 	pub InboundQueueTargetLocation: Location =
 		Location::new(1, [Teyrchain(AssetHubParaId::get().into())]);
 }
 
-pub type InboundQueueXcmMessageProcessor = pezsnowbridge_inbound_queue_primitives::v2::XcmMessageProcessor<
-	Runtime,
-	crate::XcmRouter,
-	XcmExecutor<XcmConfig>,
-	pezsnowbridge_inbound_queue_primitives::v2::MessageToXcm<
-		CreateAssetCall,
-		EthereumNetwork,
-		RelayNetwork,
-		EthereumGatewayAddress,
-		InboundQueueV2Location,
-		AssetHubParaId,
-		EthereumSystem,
-		AccountId,
-	>,
-	xcm_builder::AliasesIntoAccountId32<
-		xcm_config::RelayNetwork,
-		<Runtime as pezframe_system::Config>::AccountId,
-	>,
-	InboundQueueTargetLocation,
->;
+pub type InboundQueueXcmMessageProcessor =
+	pezsnowbridge_inbound_queue_primitives::v2::XcmMessageProcessor<
+		Runtime,
+		crate::XcmRouter,
+		XcmExecutor<XcmConfig>,
+		pezsnowbridge_inbound_queue_primitives::v2::MessageToXcm<
+			CreateAssetCall,
+			EthereumNetwork,
+			RelayNetwork,
+			EthereumGatewayAddress,
+			InboundQueueV2Location,
+			AssetHubParaId,
+			EthereumSystem,
+			AccountId,
+		>,
+		xcm_builder::AliasesIntoAccountId32<
+			xcm_config::RelayNetwork,
+			<Runtime as pezframe_system::Config>::AccountId,
+		>,
+		InboundQueueTargetLocation,
+	>;
 
 impl pezsnowbridge_pezpallet_inbound_queue_v2::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;

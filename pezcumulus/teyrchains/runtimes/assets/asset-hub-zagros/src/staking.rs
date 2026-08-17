@@ -347,7 +347,6 @@ impl pezpallet_staking_async::Config for Runtime {
 	type WeightInfo = weights::pezpallet_staking_async::WeightInfo<Runtime>;
 }
 
-
 // Must mirror the relay chain's `SessionKeys` exactly - same fields, same order - because the
 // validator set is decoded on this side using this definition. Verified against
 // pezkuwi/runtime/{zagros,pezkuwichain}/src/lib.rs, which declare these six in this order.
@@ -453,7 +452,9 @@ pub enum AhClientCalls {
 }
 
 pub struct KeysMessageToXcm;
-impl pezsp_runtime::traits::Convert<rc_client::KeysMessage<AccountId>, Xcm<()>> for KeysMessageToXcm {
+impl pezsp_runtime::traits::Convert<rc_client::KeysMessage<AccountId>, Xcm<()>>
+	for KeysMessageToXcm
+{
 	fn convert(msg: rc_client::KeysMessage<AccountId>) -> Xcm<()> {
 		let encoded_call = match msg {
 			rc_client::KeysMessage::SetKeys { stash, keys } => {

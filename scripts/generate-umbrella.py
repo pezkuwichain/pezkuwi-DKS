@@ -50,6 +50,18 @@ def main(path, version):
 
 	std_crates = [] # name -> path. use list for sorting
 	nostd_crates = []
+	# crates.io rejects a dependency that carries only a path, so each entry below needs a
+	# version. Most manifests spell one out. Some inherit theirs, and since every crate reached
+	# here is a member of the workspace being generated, that is the workspace they inherit from
+	# - including the vendored trees, which have a manifest of their own that does not own them.
+	with open(os.path.join(workspace.path, "Cargo.toml"), "r") as f:
+		workspace_version = toml.load(f)['workspace']['package']['version']
+	versions = {} # name -> version
+
+	def crate_version(manifest):
+		declared = manifest['package']['version']
+		return declared if isinstance(declared, str) else workspace_version
+
 	for crate in workspace.crates:
 		if crate.name == 'pezkuwi-sdk':
 			continue
@@ -65,6 +77,7 @@ def main(path, version):
 		# Guess which crates support no_std. Proc-macro crates are always no_std:
 		with open(manifest_path, "r") as f:
 			manifest = toml.load(f)
+			versions[crate.name] = crate_version(manifest)
 			if 'lib' in manifest and 'proc-macro' in manifest['lib']:
 				if manifest['lib']['proc-macro']:
 					nostd_crates.append((crate, path))
@@ -114,10 +127,10 @@ def main(path, version):
 	dependencies = {}
 
 	for (crate, path) in nostd_crates:
-		dependencies[crate.name] = {"path": f"../{path}", "default-features": False, "optional": True}
+		dependencies[crate.name] = {"path": f"../{path}", "version": versions[crate.name], "default-features": False, "optional": True}
 
 	for (crate, path) in std_crates:
-		dependencies[crate.name] = {"path": f"../{path}", "default-features": False, "optional": True}
+		dependencies[crate.name] = {"path": f"../{path}", "version": versions[crate.name], "default-features": False, "optional": True}
 
 	# The empty features are filled by Zepter
 	features = {

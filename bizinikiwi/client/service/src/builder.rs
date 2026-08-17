@@ -28,7 +28,6 @@ use crate::{
 use futures::{select, FutureExt, StreamExt};
 use jsonrpsee::RpcModule;
 use log::{debug, error, info};
-use prometheus_endpoint::Registry;
 use pezsc_chain_spec::{get_extension, ChainSpec};
 use pezsc_client_api::{
 	execution_extensions::ExecutionExtensions, proof_provider::ProofProvider, BadBlocks,
@@ -38,8 +37,8 @@ use pezsc_client_api::{
 use pezsc_client_db::{Backend, BlocksPruning, DatabaseSettings, PruningMode};
 use pezsc_consensus::import_queue::{ImportQueue, ImportQueueService};
 use pezsc_executor::{
-	pezsp_wasm_interface::HostFunctions, HeapAllocStrategy, NativeExecutionDispatch, RuntimeVersionOf,
-	WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY,
+	pezsp_wasm_interface::HostFunctions, HeapAllocStrategy, NativeExecutionDispatch,
+	RuntimeVersionOf, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY,
 };
 use pezsc_keystore::LocalKeystore;
 use pezsc_network::{
@@ -94,6 +93,7 @@ use pezsp_core::traits::{CodeExecutor, SpawnNamed};
 use pezsp_keystore::KeystorePtr;
 use pezsp_runtime::traits::{Block as BlockT, BlockIdTo, NumberFor, Zero};
 use pezsp_storage::{ChildInfo, ChildType, PrefixedStorageKey};
+use prometheus_endpoint::Registry;
 use std::{
 	str::FromStr,
 	sync::Arc,
@@ -375,7 +375,9 @@ pub fn new_native_or_wasm_executor<D: NativeExecutionDispatch>(
 	config: &Configuration,
 ) -> pezsc_executor::NativeElseWasmExecutor<D> {
 	#[allow(deprecated)]
-	pezsc_executor::NativeElseWasmExecutor::new_with_wasm_executor(new_wasm_executor(&config.executor))
+	pezsc_executor::NativeElseWasmExecutor::new_with_wasm_executor(new_wasm_executor(
+		&config.executor,
+	))
 }
 
 /// Creates a [`WasmExecutor`] according to [`ExecutorConfiguration`].
@@ -522,10 +524,11 @@ where
 		+ CallApiAt<TBl>
 		+ Send
 		+ 'static,
-	<TCl as ProvideRuntimeApi<TBl>>::Api: pezsp_api::Metadata<TBl>
-		+ pezsp_transaction_pool::runtime_api::TaggedTransactionQueue<TBl>
-		+ pezsp_session::SessionKeys<TBl>
-		+ pezsp_api::ApiExt<TBl>,
+	<TCl as ProvideRuntimeApi<TBl>>::Api:
+		pezsp_api::Metadata<TBl>
+			+ pezsp_transaction_pool::runtime_api::TaggedTransactionQueue<TBl>
+			+ pezsp_session::SessionKeys<TBl>
+			+ pezsp_api::ApiExt<TBl>,
 	TBl: BlockT,
 	TBl::Hash: Unpin,
 	TBl::Header: Unpin,
@@ -863,7 +866,8 @@ where
 		+ Sync
 		+ 'static,
 	TBackend: pezsc_client_api::backend::Backend<TBl> + 'static,
-	<TCl as ProvideRuntimeApi<TBl>>::Api: pezsp_session::SessionKeys<TBl> + pezsp_api::Metadata<TBl>,
+	<TCl as ProvideRuntimeApi<TBl>>::Api:
+		pezsp_session::SessionKeys<TBl> + pezsp_api::Metadata<TBl>,
 	TExPool: MaintainedTransactionPool<Block = TBl, Hash = <TBl as BlockT>::Hash> + 'static,
 	TBl::Hash: Unpin,
 	TBl::Header: Unpin,
@@ -920,8 +924,8 @@ where
 	// An archive node that can respond to the `archive` RPC-v2 queries is a node with:
 	// - state pruning in archive mode: The storage of blocks is kept around
 	// - block pruning in archive mode: The block's body is kept around
-	let is_archive_node = state_pruning.as_ref().map(|sp| sp.is_archive()).unwrap_or(false) &&
-		blocks_pruning.is_archive();
+	let is_archive_node = state_pruning.as_ref().map(|sp| sp.is_archive()).unwrap_or(false)
+		&& blocks_pruning.is_archive();
 	let genesis_hash = client.hash(Zero::zero()).ok().flatten().expect("Genesis block exists; qed");
 	if is_archive_node {
 		let archive_v2 = pezsc_rpc_spec_v2::archive::Archive::new(
@@ -943,7 +947,8 @@ where
 	.into_rpc();
 
 	// Bitswap RPC-v2 (do not confuse with v1 from `bitswap_v1_get`).
-	let bitswap_v2 = pezsc_rpc_spec_v2::bitswap::Bitswap::new(client.clone(), sync_oracle).into_rpc();
+	let bitswap_v2 =
+		pezsc_rpc_spec_v2::bitswap::Bitswap::new(client.clone(), sync_oracle).into_rpc();
 
 	let author = pezsc_rpc::author::Author::new(
 		client.clone(),
@@ -1086,8 +1091,8 @@ where
 			&mut net_config,
 			network_service_provider.handle(),
 			Arc::clone(&client),
-			config.network.default_peers_set.in_peers as usize +
-				config.network.default_peers_set.out_peers as usize,
+			config.network.default_peers_set.in_peers as usize
+				+ config.network.default_peers_set.out_peers as usize,
 			&spawn_handle,
 		),
 	};
@@ -1543,8 +1548,8 @@ where
 	let genesis_hash = client.info().genesis_hash;
 
 	let (state_request_protocol_config, state_request_protocol_name) = {
-		let num_peer_hint = net_config.network_config.default_peers_set_num_full as usize +
-			net_config.network_config.default_peers_set.reserved_nodes.len();
+		let num_peer_hint = net_config.network_config.default_peers_set_num_full as usize
+			+ net_config.network_config.default_peers_set.reserved_nodes.len();
 		// Allow both outgoing and incoming requests.
 		let (handler, protocol_config) =
 			StateRequestHandler::new::<Net>(&protocol_id, fork_id, client.clone(), num_peer_hint);

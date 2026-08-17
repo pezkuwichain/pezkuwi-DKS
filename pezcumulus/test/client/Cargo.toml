@@ -46,8 +46,8 @@ pezkuwi-primitives = { workspace = true, default-features = true }
 pezkuwi-teyrchain-primitives = { workspace = true, default-features = true }
 
 # Pezcumulus
-pezcumulus-pezpallet-weight-reclaim = { workspace = true, default-features = true }
 pezcumulus-pezpallet-teyrchain-system = { workspace = true, default-features = true }
+pezcumulus-pezpallet-weight-reclaim = { workspace = true, default-features = true }
 pezcumulus-primitives-core = { workspace = true, default-features = true }
 pezcumulus-primitives-proof-size-hostfunction = { workspace = true, default-features = true }
 pezcumulus-primitives-teyrchain-inherent = { workspace = true, default-features = true }
@@ -58,6 +58,7 @@ pezcumulus-test-service = { workspace = true }
 [features]
 runtime-benchmarks = [
 	"bizinikiwi-test-client/runtime-benchmarks",
+	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
 	"pezcumulus-pezpallet-weight-reclaim/runtime-benchmarks",
 	"pezcumulus-primitives-core/runtime-benchmarks",
 	"pezcumulus-primitives-proof-size-hostfunction/runtime-benchmarks",
@@ -84,8 +85,7 @@ runtime-benchmarks = [
 	"pezsp-keyring/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-timestamp/runtime-benchmarks",
-	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
-	"pezsp-trie/runtime-benchmarks"
+	"pezsp-trie/runtime-benchmarks",
 ]
 std = [
 	"bizinikiwi-test-client/std",
@@ -100,6 +100,7 @@ std = [
 ]
 try-runtime = [
 	"bizinikiwi-test-client/try-runtime",
+	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
 	"pezcumulus-pezpallet-weight-reclaim/try-runtime",
 	"pezcumulus-primitives-core/try-runtime",
 	"pezcumulus-test-relay-sproof-builder/try-runtime",
@@ -122,7 +123,6 @@ try-runtime = [
 	"pezsp-keyring/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"pezsp-timestamp/try-runtime",
-	"pezcumulus-pezpallet-teyrchain-system/try-runtime"
 ]
 serde = []
 experimental = []
