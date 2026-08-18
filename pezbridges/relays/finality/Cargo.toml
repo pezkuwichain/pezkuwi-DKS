@@ -14,13 +14,15 @@ homepage = { workspace = true }
 workspace = true
 
 [dependencies]
-async-std = { workspace = true }
 async-trait = { workspace = true }
 backoff = { workspace = true }
 futures = { workspace = true }
 num-traits = { workspace = true, default-features = true }
 pezbp-header-pez-chain = { workspace = true, default-features = true }
 relay-utils = { workspace = true }
+# The loop times its ticks with `tokio::time::sleep` and the tests drive it on a tokio runtime.
+# `async-std` was declared here and used nowhere, left behind when the timer moved.
+tokio = { workspace = true, default-features = true, features = ["rt", "time"] }
 tracing = { workspace = true }
 
 [dev-dependencies]

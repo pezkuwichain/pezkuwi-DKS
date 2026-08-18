@@ -10418,7 +10418,6 @@ dependencies = [
 name = "pez-finality-relay"
 version = "0.1.0"
 dependencies = [
- "async-std",
  "async-trait",
  "backoff",
  "futures",
@@ -10426,6 +10425,7 @@ dependencies = [
  "parking_lot 0.12.5",
  "pezbp-header-pez-chain",
  "relay-utils",
+ "tokio",
  "tracing",
 ]
 
@@ -10591,7 +10591,6 @@ dependencies = [
  "pezsp-consensus-beefy",
  "pezsp-keystore",
  "pezsp-runtime",
- "pezsp-statement-store",
 ]
 
 [[package]]
@@ -12578,6 +12577,7 @@ dependencies = [
  "pezkuwi-primitives",
  "pezkuwi-zombienet-configuration",
  "pezkuwi-zombienet-sdk",
+ "pezsp-runtime",
  "tokio",
 ]
 

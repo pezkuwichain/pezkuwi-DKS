@@ -13,7 +13,7 @@ use tokio::{
 	join,
 	time::{sleep, Duration},
 };
-use zombienet_sdk::{
+use pezkuwi_zombienet_sdk::{
 	pezkuwi_subxt::{
 		self,
 		blocks::Block,
@@ -374,7 +374,7 @@ fn find_relay_block_identifier(
 ///
 /// The session change is detected by inspecting the events in the block.
 pub async fn wait_for_first_session_change(
-	blocks_sub: &mut zombienet_sdk::pezkuwi_subxt::backend::StreamOfResults<
+	blocks_sub: &mut pezkuwi_zombienet_sdk::pezkuwi_subxt::backend::StreamOfResults<
 		Block<PezkuwiConfig, OnlineClient<PezkuwiConfig>>,
 	>,
 ) -> Result<(), anyhow::Error> {
@@ -385,7 +385,7 @@ pub async fn wait_for_first_session_change(
 ///
 /// The session change is detected by inspecting the events in the block.
 pub async fn wait_for_nth_session_change(
-	blocks_sub: &mut zombienet_sdk::pezkuwi_subxt::backend::StreamOfResults<
+	blocks_sub: &mut pezkuwi_zombienet_sdk::pezkuwi_subxt::backend::StreamOfResults<
 		Block<PezkuwiConfig, OnlineClient<PezkuwiConfig>>,
 	>,
 	mut sessions_to_wait: u32,
@@ -871,7 +871,7 @@ pub async fn assign_cores(
 	let res = submit_extrinsic_and_wait_for_finalization_success_with_timeout(
 		client,
 		&assign_cores_call,
-		&zombienet_sdk::pezkuwi_subxt_signer::sr25519::dev::alice(),
+		&pezkuwi_zombienet_sdk::pezkuwi_subxt_signer::sr25519::dev::alice(),
 		60u64,
 	)
 	.await;
@@ -889,7 +889,7 @@ fn create_assign_core_call(core_and_para: &[(u32, u32)]) -> DynamicPayload {
 		});
 	}
 
-	zombienet_sdk::pezkuwi_subxt::tx::dynamic(
+	pezkuwi_zombienet_sdk::pezkuwi_subxt::tx::dynamic(
 		"Sudo",
 		"sudo",
 		vec![value! {
@@ -902,7 +902,7 @@ fn create_assign_core_call(core_and_para: &[(u32, u32)]) -> DynamicPayload {
 ///
 /// The `wasm_binary` should be the WASM runtime binary to upgrade to.
 pub fn create_runtime_upgrade_call(wasm: &[u8]) -> DynamicPayload {
-	zombienet_sdk::pezkuwi_subxt::tx::dynamic(
+	pezkuwi_zombienet_sdk::pezkuwi_subxt::tx::dynamic(
 		"Sudo",
 		"sudo_unchecked_weight",
 		vec![
