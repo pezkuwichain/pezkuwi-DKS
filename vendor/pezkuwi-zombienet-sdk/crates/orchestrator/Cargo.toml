@@ -27,6 +27,7 @@ pezkuwi-subxt = { workspace = true, features = ["jsonrpsee", "native"] }
 pezkuwi-subxt-signer = { workspace = true }
 pezsc-chain-spec = { workspace = true }
 pezsp-core = { workspace = true }
+pezsp-crypto-hashing = { workspace = true }
 rand = { workspace = true }
 regex = { workspace = true }
 reqwest = { workspace = true }
@@ -59,6 +60,7 @@ std = [
 	"pezkuwi-subxt/std",
 	"pezsc-chain-spec/std",
 	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
 	"prom-metrics-parser/std",
 	"provider/std",
 	"rand/std",

@@ -64,11 +64,18 @@ impl FloatJsonValueMetric {
 	}
 
 	/// Request value from HTTP service.
+	///
+	/// Goes through `reqwest` with rustls rather than `isahc`, which links libcurl and through it
+	/// OpenSSL. The manifest already named `reqwest` for that reason; this is the call site that
+	/// was still asking for the other one.
 	async fn request_value(&self) -> anyhow::Result<String> {
-		use isahc::{AsyncReadResponseExt, HttpClient, Request};
-
-		let request = Request::get(&self.url).header("Accept", "application/json").body(())?;
-		let raw_response = HttpClient::new()?.send_async(request).await?.text().await?;
+		let raw_response = reqwest::Client::new()
+			.get(&self.url)
+			.header("Accept", "application/json")
+			.send()
+			.await?
+			.text()
+			.await?;
 		Ok(raw_response)
 	}
 
