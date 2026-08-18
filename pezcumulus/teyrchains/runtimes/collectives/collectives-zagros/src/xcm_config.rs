@@ -23,7 +23,7 @@ use pezframe_support::{
 	parameter_types,
 	traits::{
 		fungible::HoldConsideration, tokens::imbalance::ResolveTo, ConstU32, Contains, Equals,
-		Everything, LinearStoragePrice, Nothing,
+		Everything, LinearStoragePrice, Nothing, PalletInfoAccess,
 	},
 };
 use pezframe_system::EnsureRoot;
@@ -63,6 +63,16 @@ parameter_types! {
 	pub UniversalLocation: InteriorLocation =
 		[GlobalConsensus(RelayNetwork::get().unwrap()), Teyrchain(TeyrchainInfo::teyrchain_id().into())].into();
 	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(zagros_runtime_constants::TREASURY_PALLET_ID)).into();
+	/// The four bodies on this chain that pay out over XCM. Each is named by its own pallet
+	/// index so the location cannot drift if the index moves.
+	pub FellowshipTreasuryLocation: Location =
+		PalletInstance(<crate::FellowshipTreasury as PalletInfoAccess>::index() as u8).into();
+	pub FellowshipSalaryLocation: Location =
+		PalletInstance(<crate::FellowshipSalary as PalletInfoAccess>::index() as u8).into();
+	pub SecretarySalaryLocation: Location =
+		PalletInstance(<crate::SecretarySalary as PalletInfoAccess>::index() as u8).into();
+	pub AmbassadorSalaryLocation: Location =
+		PalletInstance(<crate::AmbassadorSalary as PalletInfoAccess>::index() as u8).into();
 	pub CheckingAccount: AccountId = PezkuwiXcm::check_account();
 	pub const FellowshipAdminBodyId: BodyId = BodyId::Index(xcm_constants::body::FELLOWSHIP_ADMIN_INDEX);
 	pub AssetHub: Location = (Parent, Teyrchain(ASSET_HUB_ID)).into();
@@ -190,6 +200,14 @@ pub type Barrier = TrailingSetTopicAsId<
 pub type WaivedLocations = (
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
 	Equals<RelayTreasuryLocation>,
+	// The bodies that live on this chain. Their payouts travel to the Asset Hub over XCM and the
+	// delivery fee is withdrawn from the paying pallet's own account, which holds nothing — so
+	// without these entries every cross-chain payout from the fellowship treasury and from the
+	// three salary pallets fails with `PayoutError`, and the money never leaves.
+	Equals<FellowshipTreasuryLocation>,
+	Equals<FellowshipSalaryLocation>,
+	Equals<SecretarySalaryLocation>,
+	Equals<AmbassadorSalaryLocation>,
 	Equals<RootLocation>,
 	LocalPlurality,
 );
