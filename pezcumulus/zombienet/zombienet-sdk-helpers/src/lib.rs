@@ -17,7 +17,7 @@ use pezkuwi_zombienet_sdk::{
 	pezkuwi_subxt::{
 		self,
 		blocks::Block,
-		config::{pezkuwi::PezkuwiExtrinsicParamsBuilder, substrate::DigestItem},
+		config::{bizinikiwi::DigestItem, pezkuwi::PezkuwiExtrinsicParamsBuilder},
 		dynamic::Value,
 		events::Events,
 		ext::scale_value::value,
@@ -54,7 +54,10 @@ const PVF_PREPARE_TIMEOUT_SECS: u64 = 180;
 fn format_dispatch_error(err: &pezsp_runtime::DispatchError, metadata: &Metadata) -> String {
 	match err {
 		pezsp_runtime::DispatchError::Module(module_err) => {
-			let pezpallet = metadata.pezpallet_by_index(module_err.index);
+			// This is subxt's own metadata API, so it keeps subxt's names — the rebrand does not
+			// apply to it. The lookup is also specific to the kind of index now: a module error
+			// carries an error index, which is not the same numbering as calls or events.
+			let pezpallet = metadata.pallet_by_error_index(module_err.index);
 			let pezpallet_name = pezpallet.as_ref().map(|p| p.name()).unwrap_or("UnknownPallet");
 			let error_name = pezpallet
 				.and_then(|p| p.error_variant_by_index(module_err.error[0]))
@@ -659,19 +662,20 @@ pub async fn assert_para_is_registered(
 	let mut blocks_sub = relay_client.blocks().subscribe_all().await?;
 	let para_id: u32 = para_id.into();
 
+	// The address no longer carries the keys; they are supplied at fetch time. This entry is a
+	// plain storage value, so there are none.
+	let query = pezkuwi_subxt::dynamic::storage("Paras", "Teyrchains");
 	let keys: Vec<Value> = vec![];
-	let query = pezkuwi_subxt::dynamic::storage("Paras", "Teyrchains", keys);
 
 	let mut blocks_cnt = 0;
 	while let Some(block) = blocks_sub.next().await {
 		let block = block?;
 		log::debug!("Relay block #{}, checking if para_id {para_id} is registered", block.number(),);
-		let teyrchains = block.storage().fetch(&query).await?;
-
-		let teyrchains: Vec<u32> = match teyrchains {
-			Some(teyrchains) => teyrchains.as_type()?,
-			None => vec![],
-		};
+		// `fetch` returns the entry's default when it is not set, and the default for this list
+		// is empty — which is exactly what the absent case used to be turned into by hand.
+		// `try_fetch` is the one that still hands back an `Option`.
+		let teyrchains: Vec<u32> =
+			block.storage().fetch(&query, keys.clone()).await?.decode_as()?;
 
 		log::debug!("Registered para_ids: {:?}", teyrchains);
 
