@@ -140,3 +140,32 @@ jobs:
             -p pezbridge-hub-pezkuwichain-runtime -p pezbridge-hub-zagros-runtime \
             -p coretime-pezkuwichain-runtime -p coretime-zagros-runtime \
             -p collectives-zagros-runtime
+
+  # The jobs above name the packages they care about. Between them they pull in 503 of the
+  # workspace's 616 crates, which leaves 113 that nothing on this path compiles — among them
+  # all 27 crates of the emulated integration-test tree, 29 pallets and 15 client crates.
+  #
+  # Only `test.yml` reaches those, and it runs on a schedule rather than on a pull request, so
+  # a crate outside the lists above can break and stay broken until someone triggers the heavy
+  # suite by hand. The emulated tree shows what that costs: it had not compiled since the repo's
+  # first commit — a stale crate name, a runtime a release behind its own consumers, a macro
+  # keyword the rename touched, and two arguments no upstream macro ever accepted. Every one of
+  # them is an ordinary compile error that a single `cargo check` would have shown the same day.
+  #
+  # This job closes the hole at the cheapest price that still catches it: `check`, not `test`,
+  # so nothing is codegen'd or run, and `--tests` so test-only code is typechecked too — that is
+  # where all four of those defects lived. The heavy suites stay in test.yml.
+  workspace:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, substrate-build]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+      - name: Check every crate, tests included
+        run: cargo check --workspace --locked --tests
