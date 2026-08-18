@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::tests::pezsnowbridge_common::{eth_location, set_up_eth_and_hez_pool};
+use crate::tests::snowbridge_common::{eth_location, set_up_eth_and_hez_pool};
 use emulated_integration_tests_common::snowbridge::ETHER_MIN_BALANCE;
 use pezbridge_hub_zagros_runtime::bridge_common_config::{BridgeReward, BridgeRewardBeneficiaries};
 use pezpallet_bridge_relayers::{Error::FailedToPayReward, RewardLedger};
@@ -93,9 +93,9 @@ fn claim_rewards_works() {
 			AssetHubZagros,
 			vec![
 				// Check that the reward was paid on AH
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == eth_location(),
-					owner: *owner == reward_address.clone().into(),
+					who: *who == reward_address.clone().into(),
 				},
 			]
 		);

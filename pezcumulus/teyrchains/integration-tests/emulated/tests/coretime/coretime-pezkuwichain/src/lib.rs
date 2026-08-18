@@ -27,13 +27,13 @@ mod imports {
 		assert_expected_events, Chain, TestExt, Teyrchain,
 	};
 	pub(crate) use pezkuwichain_system_emulated_network::{
-		asset_hub_pezkuwichain_emulated_chain::genesis::ED as ASSET_HUB_PEZKUWICHAIN_ED,
+		asset_hub_pezkuwichain_emulated_chain::{genesis::ED as ASSET_HUB_PEZKUWICHAIN_ED, AssetHubPezkuwichainParaPallet as AssetHubPezkuwichainPallet},
 		coretime_pezkuwichain_emulated_chain::{
+			coretime_pezkuwichain_runtime::xcm_config::XcmConfig as CoretimePezkuwichainXcmConfig,
 			coretime_pezkuwichain_runtime::ExistentialDeposit as CoretimePezkuwichainExistentialDeposit,
-			genesis::ED as CORETIME_PEZKUWICHAIN_ED, CoretimePezkuwichainParaPezpallet,
-			CoretimePezkuwichainParaPezpallet as CoretimePezkuwichainPallet,
+			genesis::ED as CORETIME_PEZKUWICHAIN_ED, CoretimePezkuwichainParaPallet as CoretimePezkuwichainPallet,
 		},
-		pezkuwichain_emulated_chain::{genesis::ED as PEZKUWICHAIN_ED, PezkuwichainRelayPezpallet},
+		pezkuwichain_emulated_chain::{genesis::ED as PEZKUWICHAIN_ED, PezkuwichainRelayPallet as PezkuwichainPallet},
 		AssetHubPezkuwichainPara as AssetHubPezkuwichain,
 		AssetHubPezkuwichainParaReceiver as AssetHubPezkuwichainReceiver,
 		AssetHubPezkuwichainParaSender as AssetHubPezkuwichainSender,

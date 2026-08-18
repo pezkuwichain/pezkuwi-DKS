@@ -17,7 +17,7 @@ use crate::{
 	tests::{
 		assert_bridge_hub_pezkuwichain_message_received, assert_bridge_hub_zagros_message_accepted,
 		asset_hub_pezkuwichain_location, bridged_roc_at_ah_zagros, create_foreign_on_ah_zagros,
-		pezsnowbridge_common::{
+		snowbridge_common::{
 			asset_hub_zagros_global_location, erc20_token_location, eth_location,
 			pezsnowbridge_sovereign, register_foreign_asset, register_roc_on_bh,
 			set_up_eth_and_hez_pool, set_up_eth_and_hez_pool_on_pezkuwichain,
@@ -35,7 +35,7 @@ use pezbridge_hub_zagros_runtime::{
 use pezsnowbridge_core::TokenIdOf;
 use pezsnowbridge_inbound_queue_primitives::v2::{
 	EthereumAsset::{ForeignTokenERC20, NativeTokenERC20},
-	Message, XcmPayload,
+	Message, Payload,
 };
 use pezsp_core::{H160, H256};
 use xcm::opaque::latest::AssetTransferFilter::{ReserveDeposit, ReserveWithdraw};
@@ -156,7 +156,7 @@ fn send_token_to_pezkuwichain_v2() {
 			nonce: 1,
 			origin,
 			assets,
-			xcm: XcmPayload::Raw(versioned_message_xcm.encode()),
+			payload: Payload::Raw(versioned_message_xcm.encode()),
 			claimer: Some(claimer_bytes),
 			value: 3_500_000_000_000u128,
 			execution_fee: 1_500_000_000_000u128,
@@ -219,14 +219,14 @@ fn send_token_to_pezkuwichain_v2() {
 					pezpallet_message_queue::Event::Processed { success: true, .. }
 				) => {},
 				// Token was issued to beneficiary
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == token_location,
-					owner: *owner == beneficiary_acc_bytes.into(),
+					who: *who == beneficiary_acc_bytes.into(),
 				},
 				// Leftover fees was deposited to beneficiary
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == eth_location(),
-					owner: *owner == beneficiary_acc_bytes.into(),
+					who: *who == beneficiary_acc_bytes.into(),
 				},
 			]
 		);
@@ -321,7 +321,7 @@ fn send_ether_to_pezkuwichain_v2() {
 			nonce: 1,
 			origin,
 			assets: vec![],
-			xcm: XcmPayload::Raw(versioned_message_xcm.encode()),
+			payload: Payload::Raw(versioned_message_xcm.encode()),
 			claimer: Some(claimer_bytes),
 			value: 6_500_000_000_000u128,
 			execution_fee: 1_500_000_000_000u128,
@@ -384,9 +384,9 @@ fn send_ether_to_pezkuwichain_v2() {
 					pezpallet_message_queue::Event::Processed { success: true, .. }
 				) => {},
 				// Ether was deposited to beneficiary
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == eth_location(),
-					owner: *owner == beneficiary_acc_bytes.into(),
+					who: *who == beneficiary_acc_bytes.into(),
 				},
 			]
 		);
@@ -524,7 +524,7 @@ fn send_roc_from_ethereum_to_pezkuwichain() {
 			nonce: 1,
 			origin,
 			assets,
-			xcm: XcmPayload::Raw(versioned_message_xcm.encode()),
+			payload: Payload::Raw(versioned_message_xcm.encode()),
 			claimer: Some(claimer_bytes),
 			value: 9_500_000_000_000u128,
 			execution_fee: 3_500_000_000_000u128,
@@ -583,13 +583,13 @@ fn send_roc_from_ethereum_to_pezkuwichain() {
 			vec![
 				// HEZ is withdrawn from AHW's SA on AHR
 				RuntimeEvent::Balances(
-					pezpallet_balances::Event::Burned { who, amount }
+					pezpallet_balances::Event::Withdraw { who, amount }
 				) => {
 					who: *who == sov_ahw_on_ahr,
 					amount: *amount == TOKEN_AMOUNT,
 				},
 				// HEZ deposited to beneficiary
-				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, .. }) => {
 					who: *who == AssetHubPezkuwichainReceiver::get(),
 				},
 				// message processed successfully

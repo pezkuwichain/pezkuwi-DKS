@@ -121,9 +121,19 @@ fn transact_from_para_to_para_through_asset_hub() {
 		20_000_000_000
 	);
 	// We also need a pool between ZGR and USDT on PenpalA.
-	create_pool_with_wnd_on!(PenpalA, PenpalUsdtFromAssetHub::get(), true, PenpalAssetOwner::get());
+	create_foreign_pool_with_native_on!(
+		PenpalA,
+		ForeignAssets,
+		PenpalUsdtFromAssetHub::get(),
+		PenpalAssetOwner::get()
+	);
 	// We also need a pool between ZGR and USDT on PenpalB.
-	create_pool_with_wnd_on!(PenpalB, PenpalUsdtFromAssetHub::get(), true, PenpalAssetOwner::get());
+	create_foreign_pool_with_native_on!(
+		PenpalB,
+		ForeignAssets,
+		PenpalUsdtFromAssetHub::get(),
+		PenpalAssetOwner::get()
+	);
 
 	let usdt_from_asset_hub = PenpalUsdtFromAssetHub::get();
 	PenpalA::execute_with(|| {
@@ -636,9 +646,9 @@ fn asset_hub_hop_assertions(sender_sa: AccountId) {
 		vec![
 			// Withdrawn from sender teyrchain SA
 			RuntimeEvent::Assets(
-				pezpallet_assets::Event::Burned { owner, .. }
+				pezpallet_assets::Event::Withdrawn { who, .. }
 			) => {
-				owner: *owner == sender_sa,
+				who: *who == sender_sa,
 			},
 			RuntimeEvent::MessageQueue(
 				pezpallet_message_queue::Event::Processed { success: true, .. }

@@ -91,12 +91,12 @@ fn send_assets_from_penpal_pezkuwichain_through_pezkuwichain_ah_to_zagros_ah(
 				vec![
 					// Amount to reserve transfer is withdrawn from Penpal's sovereign account
 					RuntimeEvent::Balances(
-						pezpallet_balances::Event::Burned { who, .. }
+						pezpallet_balances::Event::Withdraw { who, .. }
 					) => {
 						who: *who == sov_penpal_on_ahr.clone().into(),
 					},
 					// Amount deposited in AHW's sovereign account
-					RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+					RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, .. }) => {
 						who: *who == TreasuryAccount::get(),
 					},
 					RuntimeEvent::XcmpQueue(
@@ -153,9 +153,9 @@ fn send_roc_from_asset_hub_pezkuwichain_to_asset_hub_zagros() {
 			AssetHubZagros,
 			vec![
 				// issue HEZ on AHW
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == roc,
-					owner: owner == &receiver,
+					who: who == &receiver,
 				},
 				// message processed successfully
 				RuntimeEvent::MessageQueue(
@@ -244,13 +244,13 @@ fn send_back_wnds_usdt_and_weth_from_asset_hub_pezkuwichain_to_asset_hub_zagros(
 			vec![
 				// ZGR is withdrawn from AHR's SA on AHW
 				RuntimeEvent::Balances(
-					pezpallet_balances::Event::Burned { who, amount }
+					pezpallet_balances::Event::Withdraw { who, amount }
 				) => {
 					who: *who == sov_ahr_on_ahw,
 					amount: *amount == amount_to_send,
 				},
 				// ZGRs deposited to beneficiary
-				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, .. }) => {
 					who: who == &receiver,
 				},
 				// message processed successfully
@@ -351,6 +351,13 @@ fn send_back_wnds_usdt_and_weth_from_asset_hub_pezkuwichain_to_asset_hub_zagros(
 	// use USDT for fees
 	let fee = usdt_id;
 
+	// Drain the XCMP `ConcatenatedOpaqueVersionedXcm` version-negotiation message that the
+	// first leg queued. Left in the queue it sits in front of this transfer, and the assets
+	// never reach the destination — the balance check below then fails for a reason that has
+	// nothing to do with the transfer.
+	BridgeHubZagros::execute_with(|| {});
+	BridgeHubPezkuwichain::execute_with(|| {});
+
 	// use the more involved transfer extrinsic
 	let custom_xcm_on_dest = Xcm::<()>(vec![DepositAsset {
 		assets: Wild(AllCounted(assets.len() as u32)),
@@ -441,9 +448,9 @@ fn send_rocs_from_penpal_pezkuwichain_through_asset_hub_pezkuwichain_to_asset_hu
 			AssetHubZagros,
 			vec![
 				// issue HEZ on AHW
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == roc,
-					owner: owner == &receiver,
+					who: who == &receiver,
 				},
 				// message processed successfully
 				RuntimeEvent::MessageQueue(
@@ -585,7 +592,7 @@ fn send_back_wnds_from_penpal_pezkuwichain_through_asset_hub_pezkuwichain_to_ass
 			AssetHubZagros,
 			vec![
 				// issue HEZ on AHW
-				RuntimeEvent::Balances(pezpallet_balances::Event::Issued { .. }) => {},
+				RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { .. }) => {},
 				// message processed successfully
 				RuntimeEvent::MessageQueue(
 					pezpallet_message_queue::Event::Processed { success: true, .. }

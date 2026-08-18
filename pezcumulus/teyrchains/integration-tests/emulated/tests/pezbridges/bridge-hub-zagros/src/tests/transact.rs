@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::tests::{pezsnowbridge_common::pezsnowbridge_sovereign, *};
+use crate::tests::{snowbridge_common::pezsnowbridge_sovereign, *};
 use pezsp_core::Get;
 use xcm::latest::AssetTransferFilter;
 
@@ -146,19 +146,18 @@ fn transact_from_ethereum_to_penpalb_through_asset_hub() {
 
 	// We create a pool between ZGR and WETH in AssetHub to support paying for fees with WETH.
 	let pezsnowbridge_sovereign = pezsnowbridge_sovereign();
-	create_pool_with_native_on!(
+	create_foreign_pool_with_parent_native_on!(
 		AssetHubZagros,
 		bridged_weth.clone(),
-		true,
-		pezsnowbridge_sovereign,
+		pezsnowbridge_sovereign.clone(),
 		1_000_000_000_000,
 		20_000_000_000
 	);
 	// We also need a pool between ZGR and WETH on PenpalB to support paying for fees with WETH.
-	create_pool_with_native_on!(
+	create_foreign_pool_with_native_on!(
 		PenpalB,
+		ForeignAssets,
 		bridged_weth.clone(),
-		true,
 		PenpalAssetOwner::get(),
 		1_000_000_000_000,
 		20_000_000_000

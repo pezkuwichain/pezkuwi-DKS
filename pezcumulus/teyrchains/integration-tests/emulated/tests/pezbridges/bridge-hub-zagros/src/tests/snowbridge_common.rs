@@ -18,12 +18,12 @@ use asset_hub_zagros_runtime::xcm_config::LocationToAccountId;
 use emulated_integration_tests_common::impls::Decode;
 use emulated_integration_tests_common::{
 	snowbridge::{SEPOLIA_ID, WETH},
-	PenpalBTeleportableAssetLocation,
+	PenpalBPen2TeleportableAssetLocation,
 };
 use hex_literal::hex;
 use pezframe_support::{pezpallet_prelude::TypeInfo, traits::fungibles::Mutate};
 use pezkuwichain_zagros_system_emulated_network::pez_penpal_emulated_chain::{
-	pez_penpal_runtime::xcm_config::{CheckingAccount, TELEPORTABLE_ASSET_ID},
+	pez_penpal_runtime::xcm_config::CheckingAccount,
 	PenpalAssetOwner,
 };
 use pezsnowbridge_core::AssetMetadata;
@@ -193,17 +193,17 @@ pub fn fund_on_penpal() {
 	});
 	PenpalB::execute_with(|| {
 		assert_ok!(<PenpalB as PenpalBPallet>::Assets::mint_into(
-			TELEPORTABLE_ASSET_ID,
+			PEN2_TELEPORTABLE_ASSET_ID,
 			&PenpalBReceiver::get(),
 			INITIAL_FUND,
 		));
 		assert_ok!(<PenpalB as PenpalBPallet>::Assets::mint_into(
-			TELEPORTABLE_ASSET_ID,
+			PEN2_TELEPORTABLE_ASSET_ID,
 			&PenpalBSender::get(),
 			INITIAL_FUND,
 		));
 		assert_ok!(<PenpalB as PenpalBPallet>::Assets::mint_into(
-			TELEPORTABLE_ASSET_ID,
+			PEN2_TELEPORTABLE_ASSET_ID,
 			&sudo_account,
 			INITIAL_FUND,
 		));
@@ -327,18 +327,16 @@ pub fn create_pools_on_ah() {
 	let ethereum_sovereign = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 	PenpalB::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
-	create_pool_with_native_on!(
+	create_foreign_pool_with_parent_native_on!(
 		AssetHubZagros,
 		weth_location(),
-		true,
 		ethereum_sovereign.clone(),
 		1_000_000_000_000,
 		20_000_000_000
 	);
-	create_pool_with_native_on!(
+	create_foreign_pool_with_parent_native_on!(
 		AssetHubZagros,
 		ethereum(),
-		true,
 		ethereum_sovereign.clone(),
 		1_000_000_000_000,
 		20_000_000_000
@@ -350,14 +348,23 @@ pub(crate) fn set_up_eth_and_hez_pool() {
 	let ethereum_sovereign = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 	PenpalB::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
-	create_pool_with_native_on!(AssetHubZagros, eth_location(), true, ethereum_sovereign.clone());
+	create_foreign_pool_with_parent_native_on!(
+		AssetHubZagros,
+		eth_location(),
+		ethereum_sovereign.clone()
+	);
 }
 
 pub(crate) fn set_up_eth_and_hez_pool_on_penpal() {
 	let ethereum_sovereign = pezsnowbridge_sovereign();
 	AssetHubZagros::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
 	PenpalB::fund_accounts(vec![(ethereum_sovereign.clone(), INITIAL_FUND)]);
-	create_pool_with_native_on!(PenpalB, eth_location(), true, ethereum_sovereign.clone());
+	create_foreign_pool_with_native_on!(
+		PenpalB,
+		ForeignAssets,
+		eth_location(),
+		ethereum_sovereign.clone()
+	);
 }
 
 pub(crate) fn set_up_eth_and_hez_pool_on_pezkuwichain() {
@@ -367,10 +374,9 @@ pub(crate) fn set_up_eth_and_hez_pool_on_pezkuwichain() {
 			AssetHubZagros::para_id(),
 		);
 	AssetHubPezkuwichain::fund_accounts(vec![(sa_of_wah_on_rah.clone(), INITIAL_FUND)]);
-	create_pool_with_native_on!(
+	create_foreign_pool_with_parent_native_on!(
 		AssetHubPezkuwichain,
 		eth_location(),
-		true,
 		sa_of_wah_on_rah.clone()
 	);
 }
@@ -382,7 +388,7 @@ pub fn register_pal_on_bh() {
 
 		assert_ok!(<BridgeHubZagros as BridgeHubZagrosPallet>::EthereumSystem::register_token(
 			RuntimeOrigin::root(),
-			Box::new(VersionedLocation::from(PenpalBTeleportableAssetLocation::get())),
+			Box::new(VersionedLocation::from(PenpalBPen2TeleportableAssetLocation::get())),
 			AssetMetadata {
 				name: "pal".as_bytes().to_vec().try_into().unwrap(),
 				symbol: "pal".as_bytes().to_vec().try_into().unwrap(),

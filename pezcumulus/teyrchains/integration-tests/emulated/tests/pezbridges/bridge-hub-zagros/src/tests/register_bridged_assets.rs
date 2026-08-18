@@ -105,7 +105,7 @@ fn register_asset_on_rah_from_wah(bridged_asset_at_rah: Location) {
 			AssetHubPezkuwichain,
 			vec![
 				// Burned the fee
-				RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Withdraw { who, amount }) => {
 					who: *who == sa_of_wah_on_rah.clone(),
 					amount: *amount == fee_amount,
 				},
@@ -116,7 +116,7 @@ fn register_asset_on_rah_from_wah(bridged_asset_at_rah: Location) {
 					owner: *owner == sa_of_wah_on_rah,
 				},
 				// Unspent fee minted to origin
-				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, .. }) => {
 					who: *who == sa_of_wah_on_rah.clone(),
 				},
 			]

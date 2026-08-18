@@ -18,13 +18,18 @@ use crate::{
 	tests::send::penpal_register_foreign_asset_on_asset_hub,
 };
 
+/// What the pool on Penpal is seeded with. These are the amounts the mint-and-pool macros use by
+/// default; spelled out here because this file seeds the asset and the pool in two separate steps.
+const POOL_NATIVE_LIQUIDITY: u128 = 1_000_000_000_000;
+const POOL_ASSET_LIQUIDITY: u128 = 2_000_000_000_000;
+
 // Registers a new asset on Penpal, then registers it over XCM as foreign asset on Asset Hub.
 // The foreign asset is set up either as teleportable between Penpal and AH, by making AH a reserve
 // for it too. Or it keeps the asset's reserve solely on Penpal resulting in reserve-based transfers
 // between Penpal and AH.
 pub fn set_up_foreign_asset(
 	sender: pezsp_runtime::AccountId32,
-	asset_id_on_penpal: u32,
+	asset_location_on_penpal: Location,
 	asset_amount_to_send: u128,
 	teleportable: bool,
 ) -> (Location, Location) {
@@ -38,30 +43,50 @@ pub fn set_up_foreign_asset(
 		asset_amount_to_send,
 	);
 
-	// Create the asset on Penpal
+	// Create the asset on Penpal.
+	//
+	// The caller hands in a location, and on this chain a location of the form
+	// `PalletInstance(50)/GeneralIndex(n)` is not a foreign asset at all: `AssetsPalletLocation`
+	// together with `AsPrefixedGeneralIndex` is exactly how the runtime spells "asset `n` in the
+	// index-keyed instance", and it is how `LocalAndForeignAssets` routes the location. So that is
+	// where the asset is created, by index. Upstream creates it in the location-keyed instance
+	// instead, which for them is the same pallet — their penpal carries only one. Ours carries two,
+	// like both of our production Asset Hubs, so the two have to be told apart here.
+	let asset_id_on_penpal: u32 = match asset_location_on_penpal.unpack() {
+		(0, [Junction::PalletInstance(pallet), Junction::GeneralIndex(index)])
+			if *pallet == PENPAL_ASSETS_PALLET_ID =>
+			(*index).try_into().expect("asset index fits in u32"),
+		_ => panic!(
+			"expected an asset held by Penpal's own assets pallet, got {asset_location_on_penpal:?}"
+		),
+	};
 	let to_fund = asset_amount_to_send * 2;
+	// The owner is funded alongside the sender because it is the one that seeds the pool below,
+	// and the pool takes its liquidity from the owner's own holding of this asset.
 	PenpalA::force_create_asset(
 		asset_id_on_penpal,
 		asset_owner.clone(),
 		true,
 		ASSET_MIN_BALANCE,
-		vec![(sender.clone(), to_fund)],
+		vec![(sender.clone(), to_fund), (asset_owner.clone(), POOL_ASSET_LIQUIDITY * 2)],
 	);
-	PenpalA::execute_with(|| {
-		type Assets = <PenpalA as PenpalAPallet>::Assets;
-		assert!(Assets::asset_exists(asset_id_on_penpal));
-	});
-	let asset_location_on_penpal = Location::new(
-		0,
-		[
-			Junction::PalletInstance(ASSETS_PALLET_ID),
-			Junction::GeneralIndex(asset_id_on_penpal.into()),
-		],
-	);
+	assert!(asset_exists_on!(PenpalA, asset_id_on_penpal));
 
 	// Setup a pool on Penpal between native asset and newly created asset, so we can pay fees using
 	// new asset directly.
-	create_pool_with_wnd_on!(PenpalA, asset_location_on_penpal.clone(), false, asset_owner.clone());
+	//
+	// The pool is keyed by location, not by index — asset conversion on Penpal sits on top of the
+	// union — so it is the location that goes in here even though the asset itself was created by
+	// index. The mint-and-pool macros bundle those two into one argument, which cannot express a
+	// chain where the two differ; the asset is already minted above, so only the pool is left.
+	create_pool_with_native_location_on!(
+		PenpalA,
+		Location::here(),
+		asset_location_on_penpal.clone(),
+		asset_owner.clone(),
+		POOL_NATIVE_LIQUIDITY,
+		POOL_ASSET_LIQUIDITY
+	);
 
 	// Register asset on Asset Hub using XCM
 	let penpal_sovereign_account = AssetHubZagros::sovereign_account_id_of(
@@ -114,7 +139,7 @@ pub fn penpal_set_foreign_asset_reserves_on_asset_hub(
 		pezpallet_assets::Instance2,
 	>::set_reserves {
 		id: asset_id_on_ah.into(),
-		reserves,
+		reserves: reserves.try_into().expect("reserve list fits the pallet bound"),
 	})
 	.encode()
 	.into();
@@ -148,10 +173,11 @@ pub fn penpal_set_foreign_asset_reserves_on_asset_hub(
 fn bidirectional_teleport_foreign_asset_between_penpal_and_asset_hub() {
 	let sender = PenpalASender::get();
 	let receiver = AssetHubZagrosReceiver::get();
-	let new_asset_id = 42;
+	let new_asset_id: u32 = 42;
+	let asset_location_on_penpal = local_penpal_asset(new_asset_id);
 	let asset_amount_to_send = ASSET_HUB_ZAGROS_ED * 10_000;
 	let (asset_location_on_penpal, foreign_asset_location_on_ah) =
-		set_up_foreign_asset(sender.clone(), new_asset_id, asset_amount_to_send, true);
+		set_up_foreign_asset(sender.clone(), asset_location_on_penpal.clone(), asset_amount_to_send, true);
 
 	////////////////////////////////
 	// Teleport it from Penpal to AH
@@ -318,10 +344,11 @@ fn bidirectional_teleport_foreign_asset_between_penpal_and_asset_hub() {
 fn bidirectional_reserve_transfer_foreign_asset_between_penpal_and_asset_hub() {
 	let sender = PenpalASender::get();
 	let receiver = AssetHubZagrosReceiver::get();
-	let new_asset_id = 42;
+	let new_asset_id: u32 = 42;
+	let asset_location_on_penpal = local_penpal_asset(new_asset_id);
 	let asset_amount_to_send = ASSET_HUB_ZAGROS_ED * 10_000;
 	let (asset_location_on_penpal, foreign_asset_location_on_ah) =
-		set_up_foreign_asset(sender.clone(), new_asset_id, asset_amount_to_send, false);
+		set_up_foreign_asset(sender.clone(), asset_location_on_penpal.clone(), asset_amount_to_send, false);
 
 	////////////////////////////////////////
 	// Reserve-transfer it from Penpal to AH
@@ -464,10 +491,11 @@ fn bidirectional_reserve_transfer_foreign_asset_between_penpal_and_asset_hub() {
 #[test]
 fn verify_foreign_asset_origin_checks() {
 	let sender = PenpalASender::get();
-	let new_asset_id = 42;
+	let new_asset_id: u32 = 42;
+	let asset_location_on_penpal = local_penpal_asset(new_asset_id);
 	let asset_amount_to_send = ASSET_HUB_ZAGROS_ED * 10_000;
 	let (_, foreign_asset_location_on_ah) =
-		set_up_foreign_asset(sender.clone(), new_asset_id, asset_amount_to_send, false);
+		set_up_foreign_asset(sender.clone(), asset_location_on_penpal.clone(), asset_amount_to_send, false);
 
 	let penpal_sovereign = AssetHubZagros::sovereign_account_id_of(
 		AssetHubZagros::sibling_location_of(PenpalA::para_id()),
@@ -483,7 +511,7 @@ fn verify_foreign_asset_origin_checks() {
 		<AssetHubZagros as AssetHubZagrosPallet>::ForeignAssets::set_reserves(
 			origin,
 			foreign_asset_location_on_ah.clone(),
-			vec![reserves_data.clone()],
+			vec![reserves_data.clone()].try_into().expect("reserve list fits the pallet bound"),
 		)
 		.unwrap();
 		assert_expected_events!(
@@ -501,13 +529,14 @@ fn verify_foreign_asset_origin_checks() {
 		assert!(<AssetHubZagros as AssetHubZagrosPallet>::ForeignAssets::set_reserves(
 			origin,
 			foreign_asset_location_on_ah.clone(),
-			vec![reserves_data],
+			vec![reserves_data].try_into().expect("reserve list fits the pallet bound"),
 		)
 		.is_err());
 	});
 	// Now set asset reserves using remote XCM from correct origin chain.
 	// Use wrong `{origin, asset}` combination.
-	let asset_id_on_ah = emulated_integration_tests_common::PenpalBTeleportableAssetLocation::get();
+	let asset_id_on_ah =
+		emulated_integration_tests_common::PenpalBPen2TeleportableAssetLocation::get();
 	penpal_set_foreign_asset_reserves_on_asset_hub(asset_id_on_ah, vec![]);
 	// Verify it failed.
 	AssetHubZagros::execute_with(|| {

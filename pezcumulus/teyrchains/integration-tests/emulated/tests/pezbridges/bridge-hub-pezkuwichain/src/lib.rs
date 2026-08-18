@@ -46,27 +46,26 @@ mod imports {
 				xcm_config::TreasuryAccount, ForeignAssetReserveData,
 			},
 			genesis::ED as ASSET_HUB_PEZKUWICHAIN_ED,
-			AssetHubPezkuwichainParaPezpallet,
-			AssetHubPezkuwichainParaPezpallet as AssetHubPezkuwichainPallet,
+			AssetHubPezkuwichainParaPallet as AssetHubPezkuwichainPallet,
 		},
 		asset_hub_zagros_emulated_chain::{
 			genesis::{AssetHubZagrosAssetOwner, ED as ASSET_HUB_ZAGROS_ED},
-			AssetHubZagrosParaPezpallet as AssetHubZagrosPallet,
+			AssetHubZagrosParaPallet as AssetHubZagrosPallet,
 		},
 		pez_penpal_emulated_chain::{
 			pez_penpal_runtime::xcm_config::{
 				CustomizableAssetFromSystemAssetHub as PenpalCustomizableAssetFromSystemAssetHub,
 				UniversalLocation as PenpalUniversalLocation,
 			},
-			PenpalAParaPezpallet as PenpalAPallet, PenpalAssetOwner,
+			PenpalAParaPallet as PenpalAPallet, PenpalAssetOwner,
 		},
 		pezbridge_hub_pezkuwichain_emulated_chain::{
+			pezbridge_hub_pezkuwichain_runtime::xcm_config::XcmConfig as BridgeHubPezkuwichainXcmConfig,
 			genesis::ED as BRIDGE_HUB_PEZKUWICHAIN_ED, BridgeHubPezkuwichainExistentialDeposit,
-			BridgeHubPezkuwichainParaPezpallet,
+			BridgeHubPezkuwichainParaPallet as BridgeHubPezkuwichainPallet,
 		},
 		pezkuwichain_emulated_chain::{
-			genesis::ED as PEZKUWICHAIN_ED, PezkuwichainRelayPezpallet,
-			PezkuwichainRelayPezpallet as PezkuwichainPallet,
+			genesis::ED as PEZKUWICHAIN_ED, PezkuwichainRelayPallet as PezkuwichainPallet,
 		},
 		AssetHubPezkuwichainPara as AssetHubPezkuwichain,
 		AssetHubPezkuwichainParaReceiver as AssetHubPezkuwichainReceiver,

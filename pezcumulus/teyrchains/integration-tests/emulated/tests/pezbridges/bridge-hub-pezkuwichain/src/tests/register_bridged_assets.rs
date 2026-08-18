@@ -87,7 +87,7 @@ fn register_pezkuwichain_asset_on_wah_from_rah() {
 			AssetHubZagros,
 			vec![
 				// Burned the fee
-				RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Withdraw { who, amount }) => {
 					who: *who == sa_of_rah_on_wah.clone(),
 					amount: *amount == fee_amount,
 				},
@@ -98,7 +98,7 @@ fn register_pezkuwichain_asset_on_wah_from_rah() {
 					owner: *owner == sa_of_rah_on_wah,
 				},
 				// Unspent fee minted to origin
-				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, .. }) => {
 					who: *who == sa_of_rah_on_wah.clone(),
 				},
 			]

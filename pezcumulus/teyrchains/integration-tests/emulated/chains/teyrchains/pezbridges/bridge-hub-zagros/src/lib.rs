@@ -28,7 +28,6 @@ use pezframe_support::traits::OnInitialize;
 use emulated_integration_tests_common::{
 	impl_accounts_helpers_for_teyrchain, impl_assert_events_helpers_for_teyrchain,
 	impl_xcm_helpers_for_teyrchain, impls::Teyrchain, xcm_pez_emulator::decl_test_teyrchains,
-	AuraDigestProvider,
 };
 
 // BridgeHubZagros Teyrchain declaration
@@ -44,7 +43,6 @@ decl_test_teyrchains! {
 			LocationToAccountId: pezbridge_hub_zagros_runtime::xcm_config::LocationToAccountId,
 			TeyrchainInfo: pezbridge_hub_zagros_runtime::TeyrchainInfo,
 			MessageOrigin: pezbridge_hub_common::AggregateMessageOrigin,
-			DigestProvider: AuraDigestProvider,
 		},
 		pallets = {
 			PezkuwiXcm: pezbridge_hub_zagros_runtime::PezkuwiXcm,

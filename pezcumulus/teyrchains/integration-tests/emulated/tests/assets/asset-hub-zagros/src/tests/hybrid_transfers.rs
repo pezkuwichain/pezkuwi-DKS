@@ -20,9 +20,12 @@ use zagros_system_emulated_network::zagros_emulated_chain::zagros_runtime::Dmp;
 
 use super::reserve_transfer::*;
 use crate::{
-	imports::*,
+	foreign_balance_on, imports::*,
 	tests::teleport::do_bidirectional_teleport_foreign_assets_between_para_and_asset_hub_using_xt,
 };
+// This crate keeps its own copies of the balance-reading macros in `tests/mod.rs`, but not of the
+// issuance ones, so this one comes from where it is defined.
+use emulated_integration_tests_common::foreign_issuance_on;
 
 fn para_to_para_assethub_hop_assertions(mut t: ParaToParaThroughAHTest) {
 	type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
@@ -38,14 +41,14 @@ fn para_to_para_assethub_hop_assertions(mut t: ParaToParaThroughAHTest) {
 		vec![
 			// Withdrawn from sender teyrchain SA
 			RuntimeEvent::Balances(
-				pezpallet_balances::Event::Burned { who, amount }
+				pezpallet_balances::Event::Withdraw { who, amount }
 			) => {
 				who: *who == sov_penpal_a_on_ah,
 				amount: *amount == t.args.amount,
 			},
 			// Deposited to receiver teyrchain SA
 			RuntimeEvent::Balances(
-				pezpallet_balances::Event::Minted { who, .. }
+				pezpallet_balances::Event::Deposit { who, .. }
 			) => {
 				who: *who == sov_penpal_b_on_ah,
 			},
@@ -425,14 +428,9 @@ fn transfer_foreign_assets_from_para_to_asset_hub() {
 	let mut test = ParaToSystemParaTest::new(test_args);
 
 	// Query initial balances
-	let sender_native_before = PenpalA::execute_with(|| {
-		type ForeignAssets = <PenpalA as PenpalAPallet>::ForeignAssets;
-		<ForeignAssets as Inspect<_>>::balance(native_asset_location.clone(), &sender)
-	});
-	let sender_rocs_before = PenpalA::execute_with(|| {
-		type ForeignAssets = <PenpalA as PenpalAPallet>::ForeignAssets;
-		<ForeignAssets as Inspect<_>>::balance(roc_at_zagros_teyrchains.clone(), &sender)
-	});
+	// Penpal holds both of these by location, so both reads name the location-keyed instance.
+	let sender_native_before = foreign_balance_on!(PenpalA, native_asset_location.clone(), &sender);
+	let sender_rocs_before = foreign_balance_on!(PenpalA, roc_at_zagros_teyrchains.clone(), &sender);
 	let receiver_native_before = test.receiver.balance;
 	let receiver_rocs_before = AssetHubZagros::execute_with(|| {
 		type ForeignAssets = <AssetHubZagros as AssetHubZagrosPallet>::ForeignAssets;
@@ -441,6 +439,8 @@ fn transfer_foreign_assets_from_para_to_asset_hub() {
 			&receiver,
 		)
 	});
+	let penpal_issuance_before = foreign_issuance_on!(PenpalA, roc_at_zagros_teyrchains.clone());
+	let ah_issuance_before = foreign_issuance_on!(AssetHubZagros, roc_at_zagros_teyrchains.clone());
 
 	// Set assertions and dispatchables
 	test.set_assertion::<PenpalA>(para_to_system_para_sender_assertions);
@@ -449,25 +449,21 @@ fn transfer_foreign_assets_from_para_to_asset_hub() {
 	test.assert();
 
 	// Query final balances
-	let sender_native_after = PenpalA::execute_with(|| {
-		type ForeignAssets = <PenpalA as PenpalAPallet>::ForeignAssets;
-		<ForeignAssets as Inspect<_>>::balance(native_asset_location, &sender)
-	});
-	let sender_rocs_after = PenpalA::execute_with(|| {
-		type ForeignAssets = <PenpalA as PenpalAPallet>::ForeignAssets;
-		<ForeignAssets as Inspect<_>>::balance(roc_at_zagros_teyrchains.clone(), &sender)
-	});
+	let sender_native_after = foreign_balance_on!(PenpalA, native_asset_location, &sender);
+	let sender_rocs_after = foreign_balance_on!(PenpalA, roc_at_zagros_teyrchains.clone(), &sender);
 	let receiver_native_after = test.receiver.balance;
 	let receiver_rocs_after = AssetHubZagros::execute_with(|| {
 		type ForeignAssets = <AssetHubZagros as AssetHubZagrosPallet>::ForeignAssets;
 		<ForeignAssets as Inspect<_>>::balance(
-			roc_at_zagros_teyrchains.try_into().unwrap(),
+			roc_at_zagros_teyrchains.clone().try_into().unwrap(),
 			&receiver,
 		)
 	});
+	let penpal_issuance_after = foreign_issuance_on!(PenpalA, roc_at_zagros_teyrchains.clone());
+	let ah_issuance_after = foreign_issuance_on!(AssetHubZagros, roc_at_zagros_teyrchains);
 
-	// Sender's balance is reduced by amount sent plus delivery fees
-	assert!(sender_native_after < sender_native_before - native_amount_to_send);
+	// Sender's balance is reduced by exact amount sent (delivery fees are charged in native)
+	assert_eq!(sender_native_after, sender_native_before - native_amount_to_send);
 	// Sender's balance is reduced by foreign amount sent
 	assert_eq!(sender_rocs_after, sender_rocs_before - foreign_amount_to_send);
 	// Receiver's balance is increased
@@ -478,6 +474,10 @@ fn transfer_foreign_assets_from_para_to_asset_hub() {
 	assert!(receiver_native_after < receiver_native_before + native_amount_to_send);
 	// Receiver's balance is increased by foreign amount sent
 	assert_eq!(receiver_rocs_after, receiver_rocs_before + foreign_amount_to_send);
+	// Penpal burns bridged asset transferred out
+	assert_eq!(penpal_issuance_after, penpal_issuance_before - foreign_amount_to_send);
+	// AH supply doesn't change (assets move from sovereign account)
+	assert_eq!(ah_issuance_after, ah_issuance_before);
 }
 
 // ==============================================================================
@@ -676,7 +676,7 @@ fn transfer_foreign_assets_from_para_to_para_through_asset_hub() {
 	});
 
 	// Sender's balance is reduced by amount sent.
-	assert!(sender_wnds_after < sender_wnds_before - wnd_to_send);
+	assert_eq!(sender_wnds_after, sender_wnds_before - wnd_to_send);
 	assert_eq!(sender_rocs_after, sender_rocs_before - roc_to_send);
 	// Sovereign accounts on reserve are changed accordingly.
 	assert_eq!(
@@ -755,7 +755,7 @@ fn transfer_native_asset_from_relay_to_penpal_through_asset_hub() {
 			Zagros,
 			vec![
 				// Amount to teleport is withdrawn from Sender
-				RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Withdraw { who, amount }) => {
 					who: *who == t.sender.account_id,
 					amount: *amount == t.args.amount,
 				},
@@ -772,7 +772,7 @@ fn transfer_native_asset_from_relay_to_penpal_through_asset_hub() {
 			vec![
 				// Deposited to receiver teyrchain SA
 				RuntimeEvent::Balances(
-					pezpallet_balances::Event::Minted { who, .. }
+					pezpallet_balances::Event::Deposit { who, .. }
 				) => {
 					who: *who == sov_penpal_on_ah,
 				},
@@ -787,9 +787,9 @@ fn transfer_native_asset_from_relay_to_penpal_through_asset_hub() {
 		assert_expected_events!(
 			PenpalA,
 			vec![
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == Location::new(1, Here),
-					owner: *owner == t.receiver.account_id,
+					who: *who == t.receiver.account_id,
 				},
 			]
 		);
@@ -921,10 +921,13 @@ fn transfer_native_asset_from_penpal_to_relay_through_asset_hub() {
 	AssetHubZagros::fund_accounts(vec![(sov_penpal_on_ah.clone().into(), amount_to_send * 2)]);
 
 	// Query initial balances
-	let sender_balance_before = PenpalA::execute_with(|| {
-		type ForeignAssets = <PenpalA as PenpalAPallet>::ForeignAssets;
-		<ForeignAssets as Inspect<_>>::balance(relay_native_asset_location.clone(), &sender)
+	let sender_native_balance_before = PenpalA::execute_with(|| {
+		type Balances = <PenpalA as PenpalAPallet>::Balances;
+		<Balances as fungible::Inspect<_>>::balance(&sender)
 	});
+	// The relay's token is held here by location, so this read names the location-keyed instance.
+	let sender_relay_balance_before =
+		foreign_balance_on!(PenpalA, relay_native_asset_location.clone(), &sender);
 	let sov_penpal_on_ah_before = AssetHubZagros::execute_with(|| {
 		<AssetHubZagros as AssetHubZagrosPallet>::Balances::free_balance(sov_penpal_on_ah.clone())
 	});
@@ -983,18 +986,22 @@ fn transfer_native_asset_from_penpal_to_relay_through_asset_hub() {
 	test.assert();
 
 	// Query final balances
-	let sender_balance_after = PenpalA::execute_with(|| {
-		type ForeignAssets = <PenpalA as PenpalAPallet>::ForeignAssets;
-		<ForeignAssets as Inspect<_>>::balance(relay_native_asset_location.clone(), &sender)
+	let sender_native_balance_after = PenpalA::execute_with(|| {
+		type Balances = <PenpalA as PenpalAPallet>::Balances;
+		<Balances as fungible::Inspect<_>>::balance(&sender)
 	});
+	let sender_relay_balance_after =
+		foreign_balance_on!(PenpalA, relay_native_asset_location.clone(), &sender);
 	let sov_penpal_on_ah_after = AssetHubZagros::execute_with(|| {
 		<AssetHubZagros as AssetHubZagrosPallet>::Balances::free_balance(sov_penpal_on_ah.clone())
 	});
 	let receiver_balance_after =
 		Zagros::execute_with(|| <Zagros as ZagrosPallet>::Balances::free_balance(receiver.clone()));
 
-	// Sender's asset balance is reduced by amount sent plus delivery fees
-	assert!(sender_balance_after < sender_balance_before - amount_to_send);
+	// Delivery fees come out of the sender's own native balance, not out of the asset sent
+	assert!(sender_native_balance_after < sender_native_balance_before);
+	// Sender's asset balance is reduced by exact amount
+	assert_eq!(sender_relay_balance_after, sender_relay_balance_before - amount_to_send);
 	// SA on AH balance is decreased by `amount_to_send`
 	assert_eq!(sov_penpal_on_ah_after, sov_penpal_on_ah_before - amount_to_send);
 	// Receiver's balance is increased

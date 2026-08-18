@@ -15,12 +15,12 @@
 
 use crate::{
 	imports::*,
-	tests::{pezsnowbridge_common::*, usdt_at_ah_zagros},
+	tests::{snowbridge_common::*, usdt_at_ah_zagros},
 };
 use pezbridge_hub_zagros_runtime::{
 	bridge_to_ethereum_config::EthereumGatewayAddress, EthereumOutboundQueueV2,
 };
-use emulated_integration_tests_common::{impls::Decode, PenpalBTeleportableAssetLocation};
+use emulated_integration_tests_common::{impls::Decode, PenpalBPen2TeleportableAssetLocation};
 use pezframe_support::{assert_err_ignore_postinfo, pezpallet_prelude::TypeInfo};
 use pezkuwichain_zagros_system_emulated_network::pez_penpal_emulated_chain::pez_penpal_runtime::xcm_config::LocalTeleportableToAssetHub;
 use pezsnowbridge_core::{reward::MessageId, AssetMetadata, BasicOperatingMode};
@@ -377,7 +377,7 @@ fn transfer_relay_token_from_ah() {
 		assert!(
 			events.iter().any(|event| matches!(
 				event,
-				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, amount})
+				RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, amount})
 					if *who == ethereum_sovereign.clone() && *amount == TOKEN_AMOUNT,
 			)),
 			"native token reserved to Ethereum sovereign account."
@@ -768,7 +768,7 @@ fn register_token_from_penpal() {
 		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
 		assert_expected_events!(
 			AssetHubZagros,
-			vec![RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Burned { .. }) => {},]
+			vec![RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Withdrawn { .. }) => {},]
 		);
 	});
 
@@ -833,7 +833,7 @@ fn send_message_from_penpal_to_ethereum(sudo: bool) {
 		let ena = Asset { id: AssetId(weth_location()), fun: Fungible(TOKEN_AMOUNT / 2) };
 
 		let transfer_asset_reanchor_on_ah = Asset {
-			id: AssetId(PenpalBTeleportableAssetLocation::get()),
+			id: AssetId(PenpalBPen2TeleportableAssetLocation::get()),
 			fun: Fungible(TOKEN_AMOUNT),
 		};
 
@@ -916,7 +916,7 @@ fn send_message_from_penpal_to_ethereum(sudo: bool) {
 		);
 		assert_expected_events!(
 			AssetHubZagros,
-			vec![RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { .. }) => {},]
+			vec![RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { .. }) => {},]
 		);
 	});
 

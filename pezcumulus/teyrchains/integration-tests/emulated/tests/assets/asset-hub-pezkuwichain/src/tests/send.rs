@@ -89,7 +89,7 @@ fn send_xcm_from_para_to_asset_hub_paying_fee_with_system_asset() {
 			AssetHubPezkuwichain,
 			vec![
 				// Burned the fee
-				RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Withdraw { who, amount }) => {
 					who: *who == para_sovereign_account,
 					amount: *amount == fee_amount,
 				},
@@ -180,10 +180,10 @@ fn send_xcm_from_para_to_asset_hub_paying_fee_with_sufficient_asset() {
 			AssetHubPezkuwichain,
 			vec![
 				// Burned the fee
-				RuntimeEvent::Assets(pezpallet_assets::Event::Burned { asset_id, owner, balance }) => {
+				RuntimeEvent::Assets(pezpallet_assets::Event::Withdrawn { asset_id, who, amount }) => {
 					asset_id: *asset_id == ASSET_ID,
-					owner: *owner == para_sovereign_account,
-					balance: *balance == fee_amount,
+					who: *who == para_sovereign_account,
+					amount: *amount == fee_amount,
 				},
 				// Asset created
 				RuntimeEvent::Assets(pezpallet_assets::Event::Created { asset_id, creator, owner }) => {

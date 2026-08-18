@@ -41,7 +41,7 @@ macro_rules! foreign_balance_on {
 	( $chain:ident, $id:expr, $who:expr ) => {
 		emulated_integration_tests_common::impls::paste::paste! {
 			<$chain>::execute_with(|| {
-				type ForeignAssets = <$chain as [<$chain ParaPezpallet>]>::ForeignAssets;
+				type ForeignAssets = <$chain as [<$chain ParaPallet>]>::ForeignAssets;
 				<ForeignAssets as pezframe_support::traits::fungibles::Inspect<_>>::balance($id, $who)
 			})
 		}
@@ -53,7 +53,7 @@ macro_rules! assets_balance_on {
 	( $chain:ident, $id:expr, $who:expr ) => {
 		emulated_integration_tests_common::impls::paste::paste! {
 			<$chain>::execute_with(|| {
-				type Assets = <$chain as [<$chain ParaPezpallet>]>::Assets;
+				type Assets = <$chain as [<$chain ParaPallet>]>::Assets;
 				<Assets as pezframe_support::traits::fungibles::Inspect<_>>::balance($id, $who)
 			})
 		}
@@ -83,7 +83,7 @@ macro_rules! create_pool_with_wnd_on {
 				let signed_owner = <$chain as Chain>::RuntimeOrigin::signed(owner.clone());
 				let wnd_location: Location = Parent.into();
 				if $is_foreign {
-					assert_ok!(<$chain as [<$chain ParaPezpallet>]>::ForeignAssets::mint(
+					assert_ok!(<$chain as [<$chain ParaPallet>]>::ForeignAssets::mint(
 						signed_owner.clone(),
 						$asset_id.clone().into(),
 						owner.clone().into(),
@@ -94,7 +94,7 @@ macro_rules! create_pool_with_wnd_on {
 						Some(GeneralIndex(id)) => *id as u32,
 						_ => unreachable!(),
 					};
-					assert_ok!(<$chain as [<$chain ParaPezpallet>]>::Assets::mint(
+					assert_ok!(<$chain as [<$chain ParaPallet>]>::Assets::mint(
 						signed_owner.clone(),
 						asset_id.into(),
 						owner.clone().into(),
@@ -102,7 +102,7 @@ macro_rules! create_pool_with_wnd_on {
 					));
 				}
 
-				assert_ok!(<$chain as [<$chain ParaPezpallet>]>::AssetConversion::create_pool(
+				assert_ok!(<$chain as [<$chain ParaPallet>]>::AssetConversion::create_pool(
 					signed_owner.clone(),
 					Box::new(wnd_location.clone()),
 					Box::new($asset_id.clone()),
@@ -115,7 +115,7 @@ macro_rules! create_pool_with_wnd_on {
 					]
 				);
 
-				assert_ok!(<$chain as [<$chain ParaPezpallet>]>::AssetConversion::add_liquidity(
+				assert_ok!(<$chain as [<$chain ParaPallet>]>::AssetConversion::add_liquidity(
 					signed_owner,
 					Box::new(wnd_location),
 					Box::new($asset_id),

@@ -17,7 +17,7 @@ use crate::{
 	imports::*,
 	tests::{
 		asset_hub_pezkuwichain_location, bridged_roc_at_ah_zagros, create_foreign_on_ah_zagros,
-		pezsnowbridge_common::*,
+		snowbridge_common::*,
 	},
 };
 use pezframe_support::traits::fungibles::Mutate;
@@ -94,8 +94,6 @@ pub(crate) fn assert_bridge_hub_pezkuwichain_message_accepted(expected_processed
 			assert_expected_events!(
 				BridgeHubPezkuwichain,
 				vec![
-					// pay for bridge fees
-					RuntimeEvent::Balances(pezpallet_balances::Event::Burned { .. }) => {},
 					// message exported
 					RuntimeEvent::BridgeZagrosMessages(
 						pezpallet_bridge_messages::Event::MessageAccepted { .. }

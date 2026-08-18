@@ -431,7 +431,7 @@ macro_rules! decl_test_relay_chains {
 				core = {
 					SovereignAccountOf: $sovereign_acc_of:path,
 				},
-				pezpallets = {
+				pallets = {
 					$($pezpallet_name:ident: $pezpallet_path:path,)*
 				}
 			}
@@ -675,7 +675,7 @@ macro_rules! decl_test_teyrchains {
 					$( native_total_supply_tracker: $total_supply_tracker:expr,)?
 					$( BlockProducer: $block_producer:ty,)?
 				},
-				pezpallets = {
+				pallets = {
 					$($pezpallet_name:ident: $pezpallet_path:path,)*
 				}
 			}
@@ -1621,7 +1621,10 @@ pub struct TestArgs<AssetId = u32> {
 	pub amount: Balance,
 	pub assets: Assets,
 	pub asset_id: Option<AssetId>,
-	pub fee_asset_item: u32,
+	/// The asset that pays the fee, named outright. Upstream keeps an index into `assets`
+	/// instead; naming the asset says which one it is at the point the test is read, and the
+	/// assertions here compare fee assets by id rather than by position.
+	pub fee_asset_id: xcm::latest::AssetId,
 	pub weight_limit: WeightLimit,
 }
 
@@ -1634,7 +1637,7 @@ impl<AssetId> TestArgs<AssetId> {
 			amount,
 			assets: (Here, amount).into(),
 			asset_id: None,
-			fee_asset_item: 0,
+			fee_asset_id: Here.into(),
 			weight_limit: WeightLimit::Unlimited,
 		}
 	}
@@ -1646,7 +1649,7 @@ impl<AssetId> TestArgs<AssetId> {
 		amount: Balance,
 		assets: Assets,
 		asset_id: Option<AssetId>,
-		fee_asset_item: u32,
+		fee_asset_id: xcm::latest::AssetId,
 	) -> Self {
 		Self {
 			dest,
@@ -1654,9 +1657,22 @@ impl<AssetId> TestArgs<AssetId> {
 			amount,
 			assets,
 			asset_id,
-			fee_asset_item,
+			fee_asset_id,
 			weight_limit: WeightLimit::Unlimited,
 		}
+	}
+
+	/// Where `fee_asset_id` sits in `assets`, which is what the extrinsics take.
+	///
+	/// The tests name the fee asset; the calls want its position. Deriving one from the other
+	/// keeps the two from drifting apart — an index written out by hand still points somewhere
+	/// after the asset list is reordered, just not where the author meant.
+	pub fn fee_asset_index(&self) -> u32 {
+		self.assets
+			.inner()
+			.iter()
+			.position(|asset| asset.id == self.fee_asset_id)
+			.unwrap_or(0) as u32
 	}
 }
 

@@ -37,7 +37,7 @@ fn para_origin_assertions(t: SystemParaToRelayTest) {
 		AssetHubPezkuwichain,
 		vec![
 			// Amount is withdrawn from Sender's account
-			RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+			RuntimeEvent::Balances(pezpallet_balances::Event::Withdraw { who, amount }) => {
 				who: *who == t.sender.account_id,
 				amount: *amount == t.args.amount,
 			},
@@ -56,15 +56,15 @@ fn penpal_to_ah_foreign_assets_sender_assertions(t: ParaToSystemParaTest) {
 		PenpalA,
 		vec![
 			RuntimeEvent::ForeignAssets(
-				pezpallet_assets::Event::Burned { asset_id, owner, .. }
+				pezpallet_assets::Event::Withdrawn { asset_id, who, .. }
 			) => {
 				asset_id: *asset_id == system_para_native_asset_location,
-				owner: *owner == t.sender.account_id,
+				who: *who == t.sender.account_id,
 			},
-			RuntimeEvent::Assets(pezpallet_assets::Event::Burned { asset_id, owner, balance }) => {
+			RuntimeEvent::Assets(pezpallet_assets::Event::Withdrawn { asset_id, who, amount }) => {
 				asset_id: *asset_id == expected_asset_id,
-				owner: *owner == t.sender.account_id,
-				balance: *balance == expected_asset_amount,
+				who: *who == t.sender.account_id,
+				amount: *amount == expected_asset_amount,
 			},
 		]
 	);
@@ -86,17 +86,17 @@ fn penpal_to_ah_foreign_assets_receiver_assertions(t: ParaToSystemParaTest) {
 		vec![
 			// native asset reserve transfer for paying fees, withdrawn from Penpal's sov account
 			RuntimeEvent::Balances(
-				pezpallet_balances::Event::Burned { who, amount }
+				pezpallet_balances::Event::Withdraw { who, amount }
 			) => {
 				who: *who == sov_penpal_on_ahr.clone().into(),
 				amount: *amount == fee_asset_amount,
 			},
-			RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+			RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, .. }) => {
 				who: *who == t.receiver.account_id,
 			},
-			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, amount }) => {
-				asset_id: *asset_id == PenpalATeleportableAssetLocation::get(),
-				owner: *owner == t.receiver.account_id,
+			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, amount }) => {
+				asset_id: *asset_id == PenpalAPen2TeleportableAssetLocation::get(),
+				who: *who == t.receiver.account_id,
 				amount: *amount == expected_foreign_asset_amount,
 			},
 			RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { .. }) => {},
@@ -124,10 +124,10 @@ fn ah_to_penpal_foreign_assets_sender_assertions(t: SystemParaToParaTest) {
 				amount: *amount == fee_asset_amount,
 			},
 			// foreign asset is burned locally as part of teleportation
-			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Burned { asset_id, owner, balance }) => {
+			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Withdrawn { asset_id, who, amount }) => {
 				asset_id: *asset_id == expected_foreign_asset_id,
-				owner: *owner == t.sender.account_id,
-				balance: *balance == expected_foreign_asset_amount,
+				who: *who == t.sender.account_id,
+				amount: *amount == expected_foreign_asset_amount,
 			},
 		]
 	);
@@ -152,27 +152,28 @@ fn ah_to_penpal_foreign_assets_receiver_assertions(t: SystemParaToParaTest) {
 				balance: *balance == expected_asset_amount,
 			},
 			// local asset is teleported into account of receiver
-			RuntimeEvent::Assets(pezpallet_assets::Event::Issued { asset_id, owner, amount }) => {
+			RuntimeEvent::Assets(pezpallet_assets::Event::Deposited { asset_id, who, amount }) => {
 				asset_id: *asset_id == expected_asset_id,
-				owner: *owner == t.receiver.account_id,
+				who: *who == t.receiver.account_id,
 				amount: *amount == expected_asset_amount,
 			},
 			// native asset for fee is deposited to receiver
-			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 				asset_id: *asset_id == system_para_native_asset_location,
-				owner: *owner == t.receiver.account_id,
+				who: *who == t.receiver.account_id,
 			},
 		]
 	);
 }
 
 fn system_para_limited_teleport_assets(t: SystemParaToRelayTest) -> DispatchResult {
+	let fee_asset_index = t.args.fee_asset_index();
 	<AssetHubPezkuwichain as AssetHubPezkuwichainPallet>::PezkuwiXcm::limited_teleport_assets(
 		t.signed_origin,
 		bx!(t.args.dest.into()),
 		bx!(t.args.beneficiary.into()),
 		bx!(t.args.assets.into()),
-		bx!(t.args.fee_asset_id.into()),
+		fee_asset_index,
 		t.args.weight_limit,
 	)
 }
@@ -215,13 +216,11 @@ fn system_para_to_para_transfer_assets(t: SystemParaToParaTest) -> DispatchResul
 fn teleport_via_limited_teleport_assets_to_other_system_teyrchains_works() {
 	let amount = ASSET_HUB_PEZKUWICHAIN_ED * 100;
 	let native_asset: Assets = (Parent, amount).into();
-	let fee_asset_id: AssetId = Parent.into();
 
 	test_teyrchain_is_trusted_teleporter!(
 		AssetHubPezkuwichain,        // Origin
 		vec![BridgeHubPezkuwichain], // Destinations
 		(native_asset, amount),
-		fee_asset_id,
 		limited_teleport_assets
 	);
 }
@@ -230,13 +229,11 @@ fn teleport_via_limited_teleport_assets_to_other_system_teyrchains_works() {
 fn teleport_via_transfer_assets_to_other_system_teyrchains_works() {
 	let amount = ASSET_HUB_PEZKUWICHAIN_ED * 100;
 	let native_asset: Assets = (Parent, amount).into();
-	let fee_asset_id: AssetId = Parent.into();
 
 	test_teyrchain_is_trusted_teleporter!(
 		AssetHubPezkuwichain,        // Origin
 		vec![BridgeHubPezkuwichain], // Destinations
 		(native_asset, amount),
-		fee_asset_id,
 		transfer_assets
 	);
 }
@@ -244,11 +241,12 @@ fn teleport_via_transfer_assets_to_other_system_teyrchains_works() {
 #[test]
 fn teleport_via_limited_teleport_assets_from_and_to_relay() {
 	let amount = PEZKUWICHAIN_ED * 100;
+	let native_asset: Assets = (Here, amount).into();
 
 	test_relay_is_trusted_teleporter!(
 		Pezkuwichain,
 		vec![AssetHubPezkuwichain],
-		amount,
+		(native_asset, amount),
 		limited_teleport_assets
 	);
 
@@ -263,11 +261,12 @@ fn teleport_via_limited_teleport_assets_from_and_to_relay() {
 #[test]
 fn teleport_via_transfer_assets_from_and_to_relay() {
 	let amount = PEZKUWICHAIN_ED * 100;
+	let native_asset: Assets = (Here, amount).into();
 
 	test_relay_is_trusted_teleporter!(
 		Pezkuwichain,
 		vec![AssetHubPezkuwichain],
-		amount,
+		(native_asset, amount),
 		transfer_assets
 	);
 
@@ -321,7 +320,7 @@ fn limited_teleport_native_assets_from_system_para_to_relay_fails() {
 			<AssetHubPezkuwichainXcmConfig as xcm_executor::Config>::XcmSender,
 		>(
 			test.args.assets.clone(),
-			fee_asset_id,
+			fee_asset_index(&test.args.assets, &fee_asset_id),
 			test.args.weight_limit,
 			test.args.beneficiary,
 			test.args.dest,

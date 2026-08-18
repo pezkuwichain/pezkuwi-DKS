@@ -22,7 +22,7 @@ mod imports {
 		assert_err, assert_ok,
 		pezpallet_prelude::Weight,
 		pezsp_runtime::{DispatchError, DispatchResult, ModuleError},
-		traits::fungibles::Inspect,
+		traits::{fungible, fungibles::Inspect},
 		BoundedVec,
 	};
 
@@ -40,8 +40,13 @@ mod imports {
 		test_relay_is_trusted_teleporter, test_teyrchain_is_trusted_teleporter,
 		test_teyrchain_is_trusted_teleporter_for_relay,
 		test_xcm_fee_querying_apis_work_for_asset_hub,
+		asset_exists_on,
+		create_foreign_pool_with_native_on,
+		create_pool_with_native_location_on,
+		local_penpal_asset,
+		PENPAL_ASSETS_PALLET_ID,
 		xcm_helpers::{
-			fee_asset, find_mq_processed_id, find_xcm_sent_message_id,
+			fee_asset, fee_asset_index, find_mq_processed_id, find_xcm_sent_message_id,
 			get_amount_from_versioned_assets, non_fee_asset, xcm_transact_paid_execution,
 		},
 		xcm_pez_emulator::{
@@ -49,7 +54,8 @@ mod imports {
 			TestExt, Teyrchain as Para,
 		},
 		xcm_pez_simulator::helpers::TopicIdTracker,
-		PenpalATeleportableAssetLocation, ASSETS_PALLET_ID, RESERVABLE_ASSET_ID, USDT_ID, XCM_V3,
+		PenpalAPen2TeleportableAssetLocation, ASSETS_PALLET_ID, RESERVABLE_ASSET_ID, USDT_ID,
+		XCM_V3,
 	};
 	pub(crate) use teyrchains_common::{AccountId, Balance};
 	pub(crate) use zagros_system_emulated_network::{
@@ -64,14 +70,13 @@ mod imports {
 				ExistentialDeposit as AssetHubZagrosExistentialDeposit, ForeignAssetReserveData,
 			},
 			genesis::{AssetHubZagrosAssetOwner, ED as ASSET_HUB_ZAGROS_ED},
-			AssetHubZagrosParaPezpallet, AssetHubZagrosParaPezpallet as AssetHubZagrosPallet,
+			AssetHubZagrosParaPallet, AssetHubZagrosParaPallet as AssetHubZagrosPallet,
 		},
 		collectives_zagros_emulated_chain::{
-			CollectivesZagrosParaPezpallet,
-			CollectivesZagrosParaPezpallet as CollectivesZagrosPallet,
+			CollectivesZagrosParaPallet as CollectivesZagrosPallet,
 		},
-		coretime_zagros_emulated_chain::CoretimeZagrosParaPezpallet,
-		people_zagros_emulated_chain::PeopleZagrosParaPezpallet,
+		coretime_zagros_emulated_chain::CoretimeZagrosParaPallet as CoretimeZagrosPallet,
+		people_zagros_emulated_chain::PeopleZagrosParaPallet as PeopleZagrosPallet,
 		pez_penpal_emulated_chain::{
 			pez_penpal_runtime::xcm_config::{
 				CustomizableAssetFromSystemAssetHub as PenpalCustomizableAssetFromSystemAssetHub,
@@ -80,12 +85,12 @@ mod imports {
 				UniversalLocation as PenpalUniversalLocation,
 				UsdtFromAssetHub as PenpalUsdtFromAssetHub,
 			},
-			PenpalAParaPezpallet, PenpalAParaPezpallet as PenpalAPallet, PenpalAssetOwner,
-			PenpalBParaPezpallet, PenpalBParaPezpallet as PenpalBPallet, ED as PENPAL_ED,
+			PenpalAParaPallet, PenpalAParaPallet as PenpalAPallet, PenpalAssetOwner,
+			PenpalBParaPallet, PenpalBParaPallet as PenpalBPallet, ED as PENPAL_ED,
 		},
 		pezbridge_hub_zagros_emulated_chain::{
 			pezbridge_hub_zagros_runtime::xcm_config::{self as bhw_xcm_config},
-			BridgeHubZagrosParaPezpallet,
+			BridgeHubZagrosParaPallet as BridgeHubZagrosPallet,
 		},
 		zagros_emulated_chain::{
 			genesis::ED as ZAGROS_ED,
@@ -96,7 +101,7 @@ mod imports {
 				},
 				Dmp,
 			},
-			ZagrosRelayPezpallet, ZagrosRelayPezpallet as ZagrosPallet,
+			ZagrosRelayPallet as ZagrosPallet,
 		},
 		AssetHubZagrosPara as AssetHubZagros, AssetHubZagrosParaReceiver as AssetHubZagrosReceiver,
 		AssetHubZagrosParaSender as AssetHubZagrosSender, BridgeHubZagrosPara as BridgeHubZagros,

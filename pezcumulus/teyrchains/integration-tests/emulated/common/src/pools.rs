@@ -30,7 +30,7 @@ macro_rules! create_pool_with_native_location_on {
 				let signed_owner = <$chain as Chain>::RuntimeOrigin::signed(owner.clone());
 				let native_location: Location = $native_location;
 
-				assert_ok!(<$chain as [<$chain Pezpallet>]>::AssetConversion::create_pool(
+				assert_ok!(<$chain as [<$chain Pallet>]>::AssetConversion::create_pool(
 					signed_owner.clone(),
 					Box::new(native_location.clone()),
 					Box::new($asset_id.clone()),
@@ -43,7 +43,7 @@ macro_rules! create_pool_with_native_location_on {
 					]
 				);
 
-				assert_ok!(<$chain as [<$chain Pezpallet>]>::AssetConversion::add_liquidity(
+				assert_ok!(<$chain as [<$chain Pallet>]>::AssetConversion::add_liquidity(
 					signed_owner,
 					Box::new(native_location),
 					Box::new($asset_id),
@@ -89,7 +89,7 @@ macro_rules! create_pool_with_relay_native_on {
 					Some(GeneralIndex(id)) => *id as u32,
 					_ => unreachable!(),
 				};
-				assert_ok!(<$chain as [<$chain Pezpallet>]>::Assets::mint(
+				assert_ok!(<$chain as [<$chain Pallet>]>::Assets::mint(
 					signed_owner.clone(),
 					asset_id.into(),
 					owner.clone().into(),
@@ -148,7 +148,7 @@ macro_rules! create_foreign_pool_with_parent_native_on {
 				let owner = $asset_owner;
 				let signed_owner = <$chain as Chain>::RuntimeOrigin::signed(owner.clone());
 
-				assert_ok!(<$chain as [<$chain Pezpallet>]>::$foreign_pezpallet_assets::mint(
+				assert_ok!(<$chain as [<$chain Pallet>]>::$foreign_pezpallet_assets::mint(
 						signed_owner.clone(),
 						$asset_id.clone().into(),
 						owner.clone().into(),
@@ -207,7 +207,7 @@ macro_rules! create_foreign_pool_with_native_on {
 				let owner = $asset_owner;
 				let signed_owner = <$chain as Chain>::RuntimeOrigin::signed(owner.clone());
 
-				assert_ok!(<$chain as [<$chain Pezpallet>]>::$foreign_asset_pallet::mint(
+				assert_ok!(<$chain as [<$chain Pallet>]>::$foreign_asset_pallet::mint(
 						signed_owner.clone(),
 						$asset_id.clone().into(),
 						owner.clone().into(),

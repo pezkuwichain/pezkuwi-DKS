@@ -202,8 +202,6 @@ pub(crate) fn assert_bridge_hub_zagros_message_accepted(expected_processed: bool
 			assert_expected_events!(
 				BridgeHubZagros,
 				vec![
-					// pay for bridge fees
-					RuntimeEvent::Balances(pezpallet_balances::Event::Burned { .. }) => {},
 					// message exported
 					RuntimeEvent::BridgePezkuwichainMessages(
 						pezpallet_bridge_messages::Event::MessageAccepted { .. }

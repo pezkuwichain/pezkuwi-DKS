@@ -20,17 +20,16 @@ use pezsp_keyring::Sr25519Keyring as Keyring;
 
 // Cumulus
 use emulated_integration_tests_common::{
-	accounts, build_genesis_storage, collators, SAFE_XCM_VERSION,
+	accounts, build_genesis_storage, collators, PEN2_TELEPORTABLE_ASSET_ID, SAFE_XCM_VERSION,
 };
-use penpal_runtime::xcm_config::{
-	LocalPen2Asset, LocalReservableFromAssetHub, PenpalNativeCurrency, RelayLocation,
-	UsdtFromAssetHub,
+use pez_penpal_runtime::xcm_config::{
+	LocalReservableFromAssetHub, PenpalNativeCurrency, RelayLocation, UsdtFromAssetHub,
 };
 use teyrchains_common::{AccountId, Balance};
 // Penpal
 pub const PARA_ID_A: u32 = 2000;
 pub const PARA_ID_B: u32 = 2001;
-pub const ED: Balance = penpal_runtime::EXISTENTIAL_DEPOSIT;
+pub const ED: Balance = pez_penpal_runtime::EXISTENTIAL_DEPOSIT;
 pub const USDT_ED: Balance = 70_000;
 
 parameter_types! {
@@ -39,45 +38,78 @@ parameter_types! {
 }
 
 pub fn genesis(para_id: u32) -> Storage {
-	let genesis_config = penpal_runtime::RuntimeGenesisConfig {
-		system: penpal_runtime::SystemConfig::default(),
-		balances: penpal_runtime::BalancesConfig {
-			balances: accounts::init_balances().iter().cloned().map(|k| (k, ED * 4096)).collect(),
+	let genesis_config = pez_penpal_runtime::RuntimeGenesisConfig {
+		system: pez_penpal_runtime::SystemConfig::default(),
+		balances: pez_penpal_runtime::BalancesConfig {
+			// Two parts, because two different things are funded from this one list.
+			//
+			// `ED * 4096` is what the transfers in these suites move: they are written in
+			// deposits, so they scaled with the deposit when it was rederived from `CENTS`
+			// and the relation still holds. Left at that on purpose — a test that fails for
+			// want of funds says something, while one that passes only because every account
+			// was handed far more than its case needs says nothing, and the tests asserting a
+			// transfer is refused for insufficient balance are the first to go quiet.
+			//
+			// The four units are for the genesis asset-conversion pool below, which seeds one
+			// whole unit of native liquidity from the owner in this same list. That amount is
+			// absolute, so it did not move when the deposit did, and `ED * 4096` alone leaves
+			// it seventy times short — genesis then fails with `Arithmetic(Underflow)` before
+			// a single test runs. Measured, not padded: one unit for the pool, the rest headroom.
+			balances: accounts::init_balances()
+				.iter()
+				.cloned()
+				.map(|k| (k, pez_penpal_runtime::UNIT * 4 + ED * 4096))
+				.collect(),
 			..Default::default()
 		},
-		teyrchain_info: penpal_runtime::TeyrchainInfoConfig {
+		teyrchain_info: pez_penpal_runtime::TeyrchainInfoConfig {
 			teyrchain_id: para_id.into(),
 			..Default::default()
 		},
-		collator_selection: penpal_runtime::CollatorSelectionConfig {
+		collator_selection: pez_penpal_runtime::CollatorSelectionConfig {
 			invulnerables: collators::invulnerables().iter().cloned().map(|(acc, _)| acc).collect(),
 			candidacy_bond: ED * 16,
 			..Default::default()
 		},
-		session: penpal_runtime::SessionConfig {
+		session: pez_penpal_runtime::SessionConfig {
 			keys: collators::invulnerables()
 				.into_iter()
 				.map(|(acc, aura)| {
 					(
-						acc.clone(),                          // account id
-						acc,                                  // validator id
-						penpal_runtime::SessionKeys { aura }, // session keys
+						acc.clone(),                              // account id
+						acc,                                      // validator id
+						pez_penpal_runtime::SessionKeys { aura }, // session keys
 					)
 				})
 				.collect(),
 			..Default::default()
 		},
-		pezkuwi_xcm: penpal_runtime::PezkuwiXcmConfig {
+		pezkuwi_xcm: pez_penpal_runtime::PezkuwiXcmConfig {
 			safe_xcm_version: Some(SAFE_XCM_VERSION),
 			..Default::default()
 		},
-		sudo: penpal_runtime::SudoConfig { key: Some(PenpalSudoAccount::get()) },
-		assets: penpal_runtime::AssetsConfig {
+		sudo: pez_penpal_runtime::SudoConfig { key: Some(PenpalSudoAccount::get()) },
+		// Upstream seeds all four of these into one pallet, because its penpal carries one. Ours
+		// carries two, so each asset is seeded into the instance that `LocalAndForeignAssets`
+		// routes its location to — otherwise the asset is registered where nothing will look for
+		// it and every use of it fails with `UnknownAsset`.
+		//
+		// Pen2 is the one that lands on this side: its location is
+		// `PalletInstance(50)/GeneralIndex(2)`, which is this chain's own address for asset 2 in
+		// the index-keyed instance, so it is seeded by index rather than by location.
+		assets: pez_penpal_runtime::AssetsConfig {
+			assets: vec![(
+				PEN2_TELEPORTABLE_ASSET_ID,
+				PenpalAssetOwner::get(),
+				false,
+				ED,
+			)],
+			..Default::default()
+		},
+		foreign_assets: pez_penpal_runtime::ForeignAssetsConfig {
 			assets: vec![
 				// Relay Native asset representation
 				(RelayLocation::get(), PenpalAssetOwner::get(), true, ED),
-				// Local Pen2 representation
-				(LocalPen2Asset::get(), PenpalAssetOwner::get(), false, ED),
 				// Sufficient AssetHub asset representation
 				(LocalReservableFromAssetHub::get(), PenpalAssetOwner::get(), true, ED),
 				// USDT from AssetHub
@@ -89,9 +121,9 @@ pub fn genesis(para_id: u32) -> Storage {
 			],
 			..Default::default()
 		},
-		asset_conversion: penpal_runtime::AssetConversionConfig {
+		asset_conversion: pez_penpal_runtime::AssetConversionConfig {
 			pools: vec![
-				// Relay token pool (native PEN <-> relay WND) for XCM fee payment.
+				// Relay token pool (native PEN <-> relay HEZ) for XCM fee payment.
 				(
 					PenpalNativeCurrency::get(),
 					RelayLocation::get(),
@@ -106,6 +138,6 @@ pub fn genesis(para_id: u32) -> Storage {
 
 	build_genesis_storage(
 		&genesis_config,
-		penpal_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
+		pez_penpal_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
 	)
 }

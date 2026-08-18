@@ -23,6 +23,10 @@ pub use pezpallet_balances;
 pub use pezpallet_message_queue;
 pub use pezpallet_whitelist;
 pub use pezpallet_xcm;
+// Re-exported so the macros below can name it themselves. Without this every crate that calls
+// them has to declare the dependency, and the one that forgets fails inside a macro expansion
+// with an error that points at the call site rather than the missing line in its manifest.
+pub use xcm_executor;
 
 pub use pezframe_support::assert_ok;
 
@@ -150,17 +154,17 @@ macro_rules! test_teyrchain_is_trusted_teleporter {
 					<$sender_para as $crate::macros::TestExt>::execute_with(|| { });
 
 					let receiver_total_issuance_before = <$receiver_para as $crate::macros::TestExt>::execute_with(|| {
-						<<$receiver_para as [<$receiver_para Pezpallet>]>::Balances
+						<<$receiver_para as [<$receiver_para Pallet>]>::Balances
 							as $crate::macros::Currency<_>>::total_issuance()
 					});
 					// Send XCM message from Origin Teyrchain
 					<$sender_para as $crate::macros::TestExt>::execute_with(|| {
 						let total_issuance_source_of_truth = <$sender_para as $crate::macros::Chain>::native_total_issuance_source_of_truth();
-						let total_issuance_before = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+						let total_issuance_before = <<$sender_para as [<$sender_para Pallet>]>::Balances
 							as $crate::macros::Currency<_>>::total_issuance();
 						let origin = <$sender_para as $crate::macros::Chain>::RuntimeOrigin::signed(sender.clone());
 						$crate::macros::assert_ok!(<_ as $crate::macros::Dispatchable>::dispatch(call, origin));
-						let total_issuance_after = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+						let total_issuance_after = <<$sender_para as [<$sender_para Pallet>]>::Balances
 							as $crate::macros::Currency<_>>::total_issuance();
 
 						type RuntimeEvent = <$sender_para as $crate::macros::Chain>::RuntimeEvent;
@@ -211,7 +215,7 @@ macro_rules! test_teyrchain_is_trusted_teleporter {
 								) => {},
 							]
 						);
-						let receiver_total_issuance_after = <<$receiver_para as [<$receiver_para Pezpallet>]>::Balances
+						let receiver_total_issuance_after = <<$receiver_para as [<$receiver_para Pallet>]>::Balances
 							as $crate::macros::Currency<_>>::total_issuance();
 						if <$receiver_para as $crate::macros::Chain>::native_total_issuance_source_of_truth() {
 							assert_eq!(
@@ -395,7 +399,7 @@ macro_rules! test_teyrchain_is_trusted_teleporter_for_relay {
 			let sender = [<$sender_para Sender>]::get();
 			// Mint assets to `$sender_para` to succeed with teleport.
 			<$sender_para as $crate::macros::TestExt>::execute_with(|| {
-				$crate::macros::assert_ok!(<<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				$crate::macros::assert_ok!(<<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Mutate<_>>::mint_into(&sender, $amount + 10_000_000_000));
 
 			});
@@ -411,8 +415,8 @@ macro_rules! test_teyrchain_is_trusted_teleporter_for_relay {
 			// Else we'd get a `NotWithdrawable` error since it tries to reduce the check account balance, which
 			// would be 0.
 			<$receiver_relay as $crate::macros::TestExt>::execute_with(|| {
-				let check_account = <$receiver_relay as [<$receiver_relay Pezpallet>]>::XcmPallet::check_account();
-				$crate::macros::assert_ok!(<<$receiver_relay as [<$receiver_relay Pezpallet>]>::Balances
+				let check_account = <$receiver_relay as [<$receiver_relay Pallet>]>::XcmPallet::check_account();
+				$crate::macros::assert_ok!(<<$receiver_relay as [<$receiver_relay Pallet>]>::Balances
 					as $crate::macros::Mutate<_>>::mint_into(&check_account, $amount));
 			});
 
@@ -484,14 +488,14 @@ macro_rules! test_teyrchain_is_trusted_teleporter_for_relay {
 			<$receiver_relay as $crate::macros::TestExt>::reset_ext();
 			// Mint assets to `$sender_para` to succeed with teleport.
 			<$sender_para as $crate::macros::TestExt>::execute_with(|| {
-				$crate::macros::assert_ok!(<<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				$crate::macros::assert_ok!(<<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Mutate<_>>::mint_into(&sender, $amount + 10_000_000_000));
 			});
 
 			// Since we reset everything, we need to mint funds into the checking account again.
 			<$receiver_relay as $crate::macros::TestExt>::execute_with(|| {
-				let check_account = <$receiver_relay as [<$receiver_relay Pezpallet>]>::XcmPallet::check_account();
-				$crate::macros::assert_ok!(<<$receiver_relay as [<$receiver_relay Pezpallet>]>::Balances
+				let check_account = <$receiver_relay as [<$receiver_relay Pallet>]>::XcmPallet::check_account();
+				$crate::macros::assert_ok!(<<$receiver_relay as [<$receiver_relay Pallet>]>::Balances
 					as $crate::macros::Mutate<_>>::mint_into(&check_account, $amount));
 			});
 
@@ -558,7 +562,7 @@ macro_rules! test_teyrchain_is_trusted_teleporter_for_relay {
 macro_rules! test_chain_can_claim_assets {
 	( $sender_para:ty, $xcm_config:ty, $network_id:expr, $asset:expr, $amount:expr ) => {
 		$crate::macros::paste::paste! {
-			use xcm_executor::traits::TransactAsset;
+			use $crate::macros::xcm_executor::traits::TransactAsset;
 			let sender = [<$sender_para Sender>]::get();
 			let origin = <$sender_para as $crate::macros::Chain>::RuntimeOrigin::signed(sender.clone());
 			// Receiver is the same as sender
@@ -571,18 +575,18 @@ macro_rules! test_chain_can_claim_assets {
 			<$sender_para as $crate::macros::TestExt>::execute_with(|| {
 				// Mint some assets to trap.
 				let holdings =
-					<$xcm_config as xcm_executor::Config>::AssetTransactor::mint_asset(
+					<$xcm_config as $crate::macros::xcm_executor::Config>::AssetTransactor::mint_asset(
 						&$asset, &context,
 					).unwrap();
-				let total_issuance_before = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				let total_issuance_before = <<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Currency<_>>::total_issuance();
 				// Assets are trapped for whatever reason.
 				// The possible reasons for this might differ from runtime to runtime, so here we just drop them directly.
-				<<$sender_para as [<$sender_para Pezpallet>]>::PezkuwiXcm as $crate::macros::DropAssets>::drop_assets(
+				<<$sender_para as [<$sender_para Pallet>]>::PezkuwiXcm as $crate::macros::DropAssets>::drop_assets(
 					&beneficiary, holdings, &context,
 				);
 				// assert trapping assets does not alter total issuance
-				let total_issuance_after = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				let total_issuance_after = <<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Currency<_>>::total_issuance();
 				assert_eq!(total_issuance_before, total_issuance_after);
 
@@ -599,25 +603,25 @@ macro_rules! test_chain_can_claim_assets {
 					]
 				);
 
-				let balance_before = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				let balance_before = <<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Currency<_>>::free_balance(&sender);
 
 				// Different origin or different assets won't work.
 				let other_origin = <$sender_para as $crate::macros::Chain>::RuntimeOrigin::signed([<$sender_para Receiver>]::get());
-				assert!(<$sender_para as [<$sender_para Pezpallet>]>::PezkuwiXcm::claim_assets(
+				assert!(<$sender_para as [<$sender_para Pallet>]>::PezkuwiXcm::claim_assets(
 					other_origin,
 					Box::new(versioned_assets.clone().into()),
 					Box::new(beneficiary.clone().into()),
 				).is_err());
 				let other_versioned_assets: $crate::macros::VersionedAssets = $crate::macros::Assets::new().into();
-				assert!(<$sender_para as [<$sender_para Pezpallet>]>::PezkuwiXcm::claim_assets(
+				assert!(<$sender_para as [<$sender_para Pallet>]>::PezkuwiXcm::claim_assets(
 					origin.clone(),
 					Box::new(other_versioned_assets.into()),
 					Box::new(beneficiary.clone().into()),
 				).is_err());
 
 				// Assets will be claimed to `beneficiary`, which is the same as `sender`.
-				$crate::macros::assert_ok!(<$sender_para as [<$sender_para Pezpallet>]>::PezkuwiXcm::claim_assets(
+				$crate::macros::assert_ok!(<$sender_para as [<$sender_para Pallet>]>::PezkuwiXcm::claim_assets(
 					origin.clone(),
 					Box::new(versioned_assets.clone().into()),
 					Box::new(beneficiary.clone().into()),
@@ -636,51 +640,51 @@ macro_rules! test_chain_can_claim_assets {
 				);
 
 				// After claiming the assets, the balance has increased.
-				let balance_after = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				let balance_after = <<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Currency<_>>::free_balance(&sender);
 				assert_eq!(balance_after, balance_before + $amount);
 
 				// assert claiming trapped assets does not alter total issuance
-				let total_issuance_after = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				let total_issuance_after = <<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Currency<_>>::total_issuance();
 				assert_eq!(total_issuance_before, total_issuance_after);
 
 				// Claiming the assets again doesn't work.
-				assert!(<$sender_para as [<$sender_para Pezpallet>]>::PezkuwiXcm::claim_assets(
+				assert!(<$sender_para as [<$sender_para Pallet>]>::PezkuwiXcm::claim_assets(
 					origin.clone(),
 					Box::new(versioned_assets.clone().into()),
 					Box::new(beneficiary.clone().into()),
 				).is_err());
 
-				let balance = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				let balance = <<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Currency<_>>::free_balance(&sender);
 				assert_eq!(balance, balance_after);
 
 				let holdings =
-					<$xcm_config as xcm_executor::Config>::AssetTransactor::mint_asset(
+					<$xcm_config as $crate::macros::xcm_executor::Config>::AssetTransactor::mint_asset(
 						&$asset, &context,
 					).unwrap();
-				let total_issuance_before = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				let total_issuance_before = <<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Currency<_>>::total_issuance();
 				// You can also claim assets and send them to a different account.
-				<<$sender_para as [<$sender_para Pezpallet>]>::PezkuwiXcm as $crate::macros::DropAssets>::drop_assets(
+				<<$sender_para as [<$sender_para Pallet>]>::PezkuwiXcm as $crate::macros::DropAssets>::drop_assets(
 					&beneficiary, holdings, &context,
 				);
 				let receiver = [<$sender_para Receiver>]::get();
 				let other_beneficiary: $crate::macros::Location =
 					$crate::macros::Junction::AccountId32 { network: Some($network_id), id: receiver.clone().into() }.into();
-				let balance_before = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				let balance_before = <<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Currency<_>>::free_balance(&receiver);
-				$crate::macros::assert_ok!(<$sender_para as [<$sender_para Pezpallet>]>::PezkuwiXcm::claim_assets(
+				$crate::macros::assert_ok!(<$sender_para as [<$sender_para Pallet>]>::PezkuwiXcm::claim_assets(
 					origin.clone(),
 					Box::new(versioned_assets.clone().into()),
 					Box::new(other_beneficiary.clone().into()),
 				));
-				let balance_after = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				let balance_after = <<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Currency<_>>::free_balance(&receiver);
 				assert_eq!(balance_after, balance_before + $amount);
 				// assert claiming trapped assets does not alter total issuance
-				let total_issuance_after = <<$sender_para as [<$sender_para Pezpallet>]>::Balances
+				let total_issuance_after = <<$sender_para as [<$sender_para Pallet>]>::Balances
 					as $crate::macros::Currency<_>>::total_issuance();
 				assert_eq!(total_issuance_before, total_issuance_after);
 			});
@@ -761,7 +765,7 @@ macro_rules! test_can_estimate_and_pay_exact_fees {
 					$amount,
 					($asset_id, $amount).into(),
 					None,
-					0,
+					$crate::macros::AssetId($asset_id.into()),
 				),
 			};
 			let mut test = ParaToParaThroughAHTest::new(test_args);
@@ -892,12 +896,12 @@ macro_rules! test_can_estimate_and_pay_exact_fees {
 
 			// Actually run the extrinsic.
 			let sender_assets_before = <$sender_para as $crate::macros::TestExt>::execute_with(|| {
-				type Assets = <$sender_para as [<$sender_para Pezpallet>]>::Assets;
-				<Assets as $crate::macros::Inspect<_>>::balance($asset_id.clone().into(), &sender)
+				type ForeignAssets = <$sender_para as [<$sender_para Pallet>]>::ForeignAssets;
+				<ForeignAssets as $crate::macros::Inspect<_>>::balance($asset_id.clone().into(), &sender)
 			});
 			let receiver_assets_before = <$receiver_para as $crate::macros::TestExt>::execute_with(|| {
-				type Assets = <$receiver_para as [<$receiver_para Pezpallet>]>::Assets;
-				<Assets as $crate::macros::Inspect<_>>::balance($asset_id.clone().into(), &beneficiary_id)
+				type ForeignAssets = <$receiver_para as [<$receiver_para Pallet>]>::ForeignAssets;
+				<ForeignAssets as $crate::macros::Inspect<_>>::balance($asset_id.clone().into(), &beneficiary_id)
 			});
 
 			test.set_assertion::<$sender_para>(sender_assertions);
@@ -912,12 +916,12 @@ macro_rules! test_can_estimate_and_pay_exact_fees {
 			test.assert();
 
 			let sender_assets_after = <$sender_para as $crate::macros::TestExt>::execute_with(|| {
-				type Assets = <$sender_para as [<$sender_para Pezpallet>]>::Assets;
-				<Assets as $crate::macros::Inspect<_>>::balance($asset_id.clone().into(), &sender)
+				type ForeignAssets = <$sender_para as [<$sender_para Pallet>]>::ForeignAssets;
+				<ForeignAssets as $crate::macros::Inspect<_>>::balance($asset_id.clone().into(), &sender)
 			});
 			let receiver_assets_after = <$receiver_para as $crate::macros::TestExt>::execute_with(|| {
-				type Assets = <$receiver_para as [<$receiver_para Pezpallet>]>::Assets;
-				<Assets as $crate::macros::Inspect<_>>::balance($asset_id.into(), &beneficiary_id)
+				type ForeignAssets = <$receiver_para as [<$receiver_para Pallet>]>::ForeignAssets;
+				<ForeignAssets as $crate::macros::Inspect<_>>::balance($asset_id.into(), &beneficiary_id)
 			});
 
 			// We know the exact fees on every hop.
@@ -951,7 +955,7 @@ macro_rules! test_dry_run_transfer_across_pk_bridge {
 				type Runtime = <$sender_asset_hub as $crate::macros::Chain>::Runtime;
 				type RuntimeCall = <$sender_asset_hub as $crate::macros::Chain>::RuntimeCall;
 				type OriginCaller = <$sender_asset_hub as $crate::macros::Chain>::OriginCaller;
-				type Balances = <$sender_asset_hub as [<$sender_asset_hub Pezpallet>]>::Balances;
+				type Balances = <$sender_asset_hub as [<$sender_asset_hub Pallet>]>::Balances;
 
 				// Give some initial funds.
 				<Balances as $crate::macros::Mutate<_>>::set_balance(&who, initial_balance);
@@ -993,10 +997,10 @@ macro_rules! test_xcm_fee_querying_apis_work_for_asset_hub {
 		$crate::macros::paste::paste! {
 
 			<$asset_hub as $crate::macros::TestExt>::execute_with(|| {
-				// Setup a pool between USDT and WND.
+				// Setup a pool between USDT and HEZ.
 				type RuntimeOrigin = <$asset_hub as $crate::macros::Chain>::RuntimeOrigin;
-				type Assets = <$asset_hub as [<$asset_hub Pezpallet>]>::Assets;
-				type AssetConversion = <$asset_hub as [<$asset_hub Pezpallet>]>::AssetConversion;
+				type Assets = <$asset_hub as [<$asset_hub Pallet>]>::Assets;
+				type AssetConversion = <$asset_hub as [<$asset_hub Pallet>]>::AssetConversion;
 				let wnd = $crate::macros::Location::new(1, []);
 				let usdt = $crate::macros::Location::new(0, [$crate::macros::PalletInstance($crate::macros::ASSETS_PALLET_ID),
 					$crate::macros::GeneralIndex($crate::macros::USDT_ID.into())]);
@@ -1046,7 +1050,7 @@ macro_rules! test_xcm_fee_querying_apis_work_for_asset_hub {
 					sender.clone().into(),
 					5_000_000_000_000
 				));
-				// We make 1 WND = 4 USDT.
+				// We make 1 HEZ = 4 USDT.
 				$crate::macros::assert_ok!(AssetConversion::add_liquidity(
 					RuntimeOrigin::signed(sender.clone()),
 					Box::new(wnd),
@@ -1117,7 +1121,7 @@ macro_rules! test_cross_chain_alias {
 						]);
 
 						let signed_origin = <$sender_para as $crate::macros::Chain>::RuntimeOrigin::signed(account.into());
-						$crate::macros::assert_ok!(<$sender_para as [<$sender_para Pezpallet>]>::PezkuwiXcm::execute(
+						$crate::macros::assert_ok!(<$sender_para as [<$sender_para Pallet>]>::PezkuwiXcm::execute(
 							signed_origin,
 							Box::new($crate::macros::VersionedXcm::from(xcm_message.into())),
 							$crate::macros::Weight::MAX
@@ -1168,7 +1172,7 @@ macro_rules! assets_balance_on {
 	( $chain:ident, $id:expr, $who:expr ) => {
 		$crate::macros::paste::paste! {
 			<$chain as $crate::macros::TestExt>::ext_wrapper(|| {
-				type Assets = <$chain as [<$chain Pezpallet>]>::Assets;
+				type Assets = <$chain as [<$chain Pallet>]>::Assets;
 				<Assets as pezframe_support::traits::fungibles::Inspect<_>>::balance($id, $who)
 			})
 		}
@@ -1181,7 +1185,7 @@ macro_rules! foreign_balance_on {
 	( $chain:ident, $id:expr, $who:expr ) => {
 		$crate::macros::paste::paste! {
 			<$chain as $crate::macros::TestExt>::ext_wrapper(|| {
-				type ForeignAssets = <$chain as [<$chain Pezpallet>]>::ForeignAssets;
+				type ForeignAssets = <$chain as [<$chain Pallet>]>::ForeignAssets;
 				<ForeignAssets as pezframe_support::traits::fungibles::Inspect<_>>::balance($id, $who)
 			})
 		}
@@ -1194,7 +1198,7 @@ macro_rules! assets_issuance_on {
 	( $chain:ident, $id:expr ) => {
 		$crate::macros::paste::paste! {
 			<$chain as $crate::macros::TestExt>::ext_wrapper(|| {
-				type Assets = <$chain as [<$chain Pezpallet>]>::Assets;
+				type Assets = <$chain as [<$chain Pallet>]>::Assets;
 				<Assets as pezframe_support::traits::fungibles::Inspect<_>>::total_issuance($id)
 			})
 		}
@@ -1207,7 +1211,7 @@ macro_rules! foreign_issuance_on {
 	( $chain:ident, $id:expr ) => {
 		$crate::macros::paste::paste! {
 			<$chain as $crate::macros::TestExt>::ext_wrapper(|| {
-				type ForeignAssets = <$chain as [<$chain Pezpallet>]>::ForeignAssets;
+				type ForeignAssets = <$chain as [<$chain Pallet>]>::ForeignAssets;
 				<ForeignAssets as pezframe_support::traits::fungibles::Inspect<_>>::total_issuance($id)
 			})
 		}
@@ -1220,7 +1224,7 @@ macro_rules! balances_issuance_on {
 	( $chain:ident ) => {
 		$crate::macros::paste::paste! {
 			<$chain as $crate::macros::TestExt>::ext_wrapper(|| {
-				type Balances = <$chain as [<$chain Pezpallet>]>::Balances;
+				type Balances = <$chain as [<$chain Pallet>]>::Balances;
 				<Balances as pezframe_support::traits::fungible::Inspect<_>>::total_issuance()
 			})
 		}
@@ -1233,7 +1237,7 @@ macro_rules! asset_exists_on {
 	( $chain:ident, $id:expr ) => {
 		$crate::macros::paste::paste! {
 			<$chain as $crate::macros::TestExt>::ext_wrapper(|| {
-				type Assets = <$chain as [<$chain Pezpallet>]>::Assets;
+				type Assets = <$chain as [<$chain Pallet>]>::Assets;
 				<Assets as pezframe_support::traits::fungibles::Inspect<_>>::asset_exists($id)
 			})
 		}

@@ -23,7 +23,7 @@ use pezframe_support::traits::OnInitialize;
 // Pezcumulus
 use emulated_integration_tests_common::{
 	impl_accounts_helpers_for_teyrchain, impl_assert_events_helpers_for_teyrchain,
-	impls::Teyrchain, xcm_pez_emulator::decl_test_teyrchains, AuraDigestProvider,
+	impls::Teyrchain, xcm_pez_emulator::decl_test_teyrchains,
 };
 
 // CoretimePezkuwichain Teyrchain declaration
@@ -39,7 +39,6 @@ decl_test_teyrchains! {
 			LocationToAccountId: coretime_pezkuwichain_runtime::xcm_config::LocationToAccountId,
 			TeyrchainInfo: coretime_pezkuwichain_runtime::TeyrchainInfo,
 			MessageOrigin: pezcumulus_primitives_core::AggregateMessageOrigin,
-			DigestProvider: AuraDigestProvider,
 		},
 		pallets = {
 			PezkuwiXcm: coretime_pezkuwichain_runtime::PezkuwiXcm,

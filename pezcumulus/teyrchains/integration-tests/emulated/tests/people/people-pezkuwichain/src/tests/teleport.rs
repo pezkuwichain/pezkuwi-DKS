@@ -22,11 +22,12 @@ use emulated_integration_tests_common::{
 #[test]
 fn teleport_via_limited_teleport_assets_from_and_to_relay() {
 	let amount = PEZKUWICHAIN_ED * 100;
+	let native_asset: Assets = (Here, amount).into();
 
 	test_relay_is_trusted_teleporter!(
 		Pezkuwichain,
 		vec![PeoplePezkuwichain],
-		amount,
+		(native_asset, amount),
 		limited_teleport_assets
 	);
 
@@ -41,11 +42,12 @@ fn teleport_via_limited_teleport_assets_from_and_to_relay() {
 #[test]
 fn teleport_via_transfer_assets_from_and_to_relay() {
 	let amount = PEZKUWICHAIN_ED * 100;
+	let native_asset: Assets = (Here, amount).into();
 
 	test_relay_is_trusted_teleporter!(
 		Pezkuwichain,
 		vec![PeoplePezkuwichain],
-		amount,
+		(native_asset, amount),
 		transfer_assets
 	);
 
@@ -62,12 +64,10 @@ fn teleport_via_limited_teleport_assets_to_other_system_teyrchains_works() {
 	let amount = PEZKUWICHAIN_ED * 100;
 	let native_asset: Assets = (Parent, amount).into();
 
-	let fee_asset_id: AssetId = Parent.into();
 	test_teyrchain_is_trusted_teleporter!(
 		PeoplePezkuwichain,         // Origin
 		vec![AssetHubPezkuwichain], // Destinations
 		(native_asset, amount),
-		fee_asset_id,
 		limited_teleport_assets
 	);
 }
@@ -77,12 +77,10 @@ fn teleport_via_transfer_assets_to_other_system_teyrchains_works() {
 	let amount = PEZKUWICHAIN_ED * 100;
 	let native_asset: Assets = (Parent, amount).into();
 
-	let fee_asset_id: AssetId = Parent.into();
 	test_teyrchain_is_trusted_teleporter!(
 		PeoplePezkuwichain,         // Origin
 		vec![AssetHubPezkuwichain], // Destinations
 		(native_asset, amount),
-		fee_asset_id,
 		transfer_assets
 	);
 }
@@ -102,7 +100,7 @@ fn para_origin_assertions(t: SystemParaToRelayTest) {
 		PeoplePezkuwichain,
 		vec![
 			// Amount is withdrawn from Sender's account
-			RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+			RuntimeEvent::Balances(pezpallet_balances::Event::Withdraw { who, amount }) => {
 				who: *who == t.sender.account_id,
 				amount: *amount == t.args.amount,
 			},
@@ -111,12 +109,13 @@ fn para_origin_assertions(t: SystemParaToRelayTest) {
 }
 
 fn system_para_limited_teleport_assets(t: SystemParaToRelayTest) -> DispatchResult {
+	let fee_asset_index = t.args.fee_asset_index();
 	<PeoplePezkuwichain as PeoplePezkuwichainPallet>::PezkuwiXcm::limited_teleport_assets(
 		t.signed_origin,
 		bx!(t.args.dest.into()),
 		bx!(t.args.beneficiary.into()),
 		bx!(t.args.assets.into()),
-		bx!(t.args.fee_asset_id.into()),
+		fee_asset_index,
 		t.args.weight_limit,
 	)
 }
@@ -169,7 +168,7 @@ fn limited_teleport_native_assets_from_system_para_to_relay_fails() {
 			<PeoplePezkuwichainXcmConfig as xcm_executor::Config>::XcmSender,
 		>(
 			test.args.assets.clone(),
-			test.args.fee_asset_id,
+			test.args.fee_asset_index(),
 			test.args.weight_limit,
 			test.args.beneficiary,
 			test.args.dest,

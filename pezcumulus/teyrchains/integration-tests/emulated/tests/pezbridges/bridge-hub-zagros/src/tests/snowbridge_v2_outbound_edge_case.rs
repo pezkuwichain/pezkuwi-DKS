@@ -16,7 +16,7 @@
 use crate::{
 	imports::*,
 	tests::{
-		pezsnowbridge_common::*,
+		snowbridge_common::*,
 		usdt_at_ah_zagros,
 	},
 };
@@ -111,7 +111,7 @@ fn register_penpal_a_asset_from_penpal_b_will_fail() {
 		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
 		assert_expected_events!(
 			AssetHubZagros,
-			vec![RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Burned { .. }) => {},]
+			vec![RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Withdrawn { .. }) => {},]
 		);
 	});
 
