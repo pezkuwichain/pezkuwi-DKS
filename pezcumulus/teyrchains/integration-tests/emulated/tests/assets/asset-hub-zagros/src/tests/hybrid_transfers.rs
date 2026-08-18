@@ -430,7 +430,8 @@ fn transfer_foreign_assets_from_para_to_asset_hub() {
 	// Query initial balances
 	// Penpal holds both of these by location, so both reads name the location-keyed instance.
 	let sender_native_before = foreign_balance_on!(PenpalA, native_asset_location.clone(), &sender);
-	let sender_rocs_before = foreign_balance_on!(PenpalA, roc_at_zagros_teyrchains.clone(), &sender);
+	let sender_rocs_before =
+		foreign_balance_on!(PenpalA, roc_at_zagros_teyrchains.clone(), &sender);
 	let receiver_native_before = test.receiver.balance;
 	let receiver_rocs_before = AssetHubZagros::execute_with(|| {
 		type ForeignAssets = <AssetHubZagros as AssetHubZagrosPallet>::ForeignAssets;

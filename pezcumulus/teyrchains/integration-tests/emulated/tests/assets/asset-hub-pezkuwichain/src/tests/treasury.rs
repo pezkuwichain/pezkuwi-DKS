@@ -69,7 +69,7 @@ fn spend_roc_on_asset_hub() {
 					fun: treasury_balance.into()
 				}))),
 				// The call carries a single asset, so it is the one that pays.
-			fee_asset_item: 0,
+				fee_asset_item: 0,
 			})),
 		});
 

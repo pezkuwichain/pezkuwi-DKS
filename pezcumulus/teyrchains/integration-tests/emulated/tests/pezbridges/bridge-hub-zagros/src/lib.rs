@@ -34,7 +34,6 @@ mod imports {
 	pub(crate) use emulated_integration_tests_common::{
 		accounts::ALICE,
 		create_foreign_pool_with_native_on, create_foreign_pool_with_parent_native_on,
-		PEN2_TELEPORTABLE_ASSET_ID,
 		impls::Inspect,
 		test_dry_run_transfer_across_pk_bridge, test_relay_is_trusted_teleporter,
 		test_teyrchain_is_trusted_teleporter, test_teyrchain_is_trusted_teleporter_for_relay,
@@ -42,7 +41,7 @@ mod imports {
 		xcm_pez_emulator::{
 			assert_expected_events, bx, Chain, RelayChain as Relay, TestExt, Teyrchain as Para,
 		},
-		ASSETS_PALLET_ID, USDT_ID,
+		ASSETS_PALLET_ID, PEN2_TELEPORTABLE_ASSET_ID, USDT_ID,
 	};
 	pub(crate) use pezkuwichain_zagros_system_emulated_network::{
 		asset_hub_pezkuwichain_emulated_chain::{
@@ -67,14 +66,13 @@ mod imports {
 			PenpalBParaPallet as PenpalBPallet,
 		},
 		pezbridge_hub_zagros_emulated_chain::{
-			pezbridge_hub_zagros_runtime::xcm_config::XcmConfig as BridgeHubZagrosXcmConfig,
 			genesis::ED as BRIDGE_HUB_ZAGROS_ED, pezbridge_hub_zagros_runtime,
-			BridgeHubZagrosExistentialDeposit, BridgeHubZagrosParaPallet as BridgeHubZagrosPallet, BridgeHubZagrosRuntimeOrigin,
+			pezbridge_hub_zagros_runtime::xcm_config::XcmConfig as BridgeHubZagrosXcmConfig,
+			BridgeHubZagrosExistentialDeposit, BridgeHubZagrosParaPallet as BridgeHubZagrosPallet,
+			BridgeHubZagrosRuntimeOrigin,
 		},
 		pezkuwichain_emulated_chain::PezkuwichainRelayPallet as PezkuwichainPallet,
-		zagros_emulated_chain::{
-			genesis::ED as ZAGROS_ED, ZagrosRelayPallet as ZagrosPallet,
-		},
+		zagros_emulated_chain::{genesis::ED as ZAGROS_ED, ZagrosRelayPallet as ZagrosPallet},
 		AssetHubPezkuwichainPara as AssetHubPezkuwichain,
 		AssetHubPezkuwichainParaReceiver as AssetHubPezkuwichainReceiver,
 		AssetHubPezkuwichainParaSender as AssetHubPezkuwichainSender,

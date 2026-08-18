@@ -13,12 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 use crate::{
-	imports::{
-		pez_penpal_emulated_chain::pez_penpal_runtime::xcm_config::{
-			CheckingAccount,
-		},
-		*,
-	},
+	imports::{pez_penpal_emulated_chain::pez_penpal_runtime::xcm_config::CheckingAccount, *},
 	tests::{
 		assert_bridge_hub_pezkuwichain_message_received, assert_bridge_hub_zagros_message_accepted,
 		asset_hub_pezkuwichain_location, asset_hub_zagros_global_location,

@@ -424,7 +424,7 @@ fn usdt_fee_estimation_in_usdt_works() {
 		PenpalAssetOwner::get(),
 		1_000_000_000_000,
 		// 1 ZGR
-		2_000_000          // 2 USDT (1:2 ratio)
+		2_000_000 // 2 USDT (1:2 ratio)
 	);
 
 	let beneficiary_id = PenpalBReceiver::get();

@@ -37,14 +37,10 @@ mod imports {
 	pub(crate) use asset_test_pezutils::xcm_helpers;
 	pub(crate) use emulated_integration_tests_common::{
 		accounts::DUMMY_EMPTY,
-		test_relay_is_trusted_teleporter, test_teyrchain_is_trusted_teleporter,
+		asset_exists_on, create_foreign_pool_with_native_on, create_pool_with_native_location_on,
+		local_penpal_asset, test_relay_is_trusted_teleporter, test_teyrchain_is_trusted_teleporter,
 		test_teyrchain_is_trusted_teleporter_for_relay,
 		test_xcm_fee_querying_apis_work_for_asset_hub,
-		asset_exists_on,
-		create_foreign_pool_with_native_on,
-		create_pool_with_native_location_on,
-		local_penpal_asset,
-		PENPAL_ASSETS_PALLET_ID,
 		xcm_helpers::{
 			fee_asset, fee_asset_index, find_mq_processed_id, find_xcm_sent_message_id,
 			get_amount_from_versioned_assets, non_fee_asset, xcm_transact_paid_execution,
@@ -54,8 +50,8 @@ mod imports {
 			TestExt, Teyrchain as Para,
 		},
 		xcm_pez_simulator::helpers::TopicIdTracker,
-		PenpalAPen2TeleportableAssetLocation, ASSETS_PALLET_ID, RESERVABLE_ASSET_ID, USDT_ID,
-		XCM_V3,
+		PenpalAPen2TeleportableAssetLocation, ASSETS_PALLET_ID, PENPAL_ASSETS_PALLET_ID,
+		RESERVABLE_ASSET_ID, USDT_ID, XCM_V3,
 	};
 	pub(crate) use teyrchains_common::{AccountId, Balance};
 	pub(crate) use zagros_system_emulated_network::{
@@ -72,9 +68,7 @@ mod imports {
 			genesis::{AssetHubZagrosAssetOwner, ED as ASSET_HUB_ZAGROS_ED},
 			AssetHubZagrosParaPallet, AssetHubZagrosParaPallet as AssetHubZagrosPallet,
 		},
-		collectives_zagros_emulated_chain::{
-			CollectivesZagrosParaPallet as CollectivesZagrosPallet,
-		},
+		collectives_zagros_emulated_chain::CollectivesZagrosParaPallet as CollectivesZagrosPallet,
 		coretime_zagros_emulated_chain::CoretimeZagrosParaPallet as CoretimeZagrosPallet,
 		people_zagros_emulated_chain::PeopleZagrosParaPallet as PeopleZagrosPallet,
 		pez_penpal_emulated_chain::{

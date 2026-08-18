@@ -32,8 +32,8 @@ mod imports {
 		},
 		collectives_zagros_emulated_chain::CollectivesZagrosParaPallet as CollectivesZagrosPallet,
 		coretime_zagros_emulated_chain::{
-			coretime_zagros_runtime::xcm_config::XcmConfig as CoretimeZagrosXcmConfig,
-			self, coretime_zagros_runtime::ExistentialDeposit as CoretimeZagrosExistentialDeposit,
+			self, coretime_zagros_runtime::xcm_config::XcmConfig as CoretimeZagrosXcmConfig,
+			coretime_zagros_runtime::ExistentialDeposit as CoretimeZagrosExistentialDeposit,
 			genesis::ED as CORETIME_ZAGROS_ED, CoretimeZagrosParaPallet as CoretimeZagrosPallet,
 		},
 		people_zagros_emulated_chain::PeopleZagrosParaPallet as PeopleZagrosPallet,

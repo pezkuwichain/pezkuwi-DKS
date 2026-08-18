@@ -22,7 +22,7 @@ use pezkuwi_sdk::*;
 use crate::{
 	constants::currency::*, pezframe_support::build_struct_json_patch, AccountId, AssetsConfig,
 	BabeConfig, Balance, BalancesConfig, ElectionsConfig, NominationPoolsConfig, ReviveConfig,
-	RuntimeGenesisConfig, Runtime, SessionConfig, SessionKeys, SocietyConfig, StakerStatus,
+	Runtime, RuntimeGenesisConfig, SessionConfig, SessionKeys, SocietyConfig, StakerStatus,
 	StakingConfig, SudoConfig, TechnicalCommitteeConfig, BABE_GENESIS_EPOCH_CONFIG,
 };
 use alloc::{vec, vec::Vec};

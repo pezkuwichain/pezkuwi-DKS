@@ -1372,11 +1372,8 @@ parameter_types! {
 impl pezpallet_bounties::Config for Runtime {
 	// On cancellation the bounty account is emptied into the treasury. The unit type would compile
 	// and silently strand whatever the account holds, so this is wired to the real mover.
-	type TransferAllAssets = pezpallet_bounties::TransferAllFungibles<
-		AccountId,
-		NativeAndAssets,
-		BountyRelevantAssets,
-	>;
+	type TransferAllAssets =
+		pezpallet_bounties::TransferAllFungibles<AccountId, NativeAndAssets, BountyRelevantAssets>;
 	type RuntimeEvent = RuntimeEvent;
 	type BountyDepositBase = BountyDepositBase;
 	type BountyDepositPayoutDelay = BountyDepositPayoutDelay;

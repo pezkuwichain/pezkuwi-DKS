@@ -23,8 +23,7 @@ use emulated_integration_tests_common::{
 use hex_literal::hex;
 use pezframe_support::{pezpallet_prelude::TypeInfo, traits::fungibles::Mutate};
 use pezkuwichain_zagros_system_emulated_network::pez_penpal_emulated_chain::{
-	pez_penpal_runtime::xcm_config::CheckingAccount,
-	PenpalAssetOwner,
+	pez_penpal_runtime::xcm_config::CheckingAccount, PenpalAssetOwner,
 };
 use pezsnowbridge_core::AssetMetadata;
 use pezsp_core::H160;

@@ -98,12 +98,7 @@ pub fn genesis(para_id: u32) -> Storage {
 		// `PalletInstance(50)/GeneralIndex(2)`, which is this chain's own address for asset 2 in
 		// the index-keyed instance, so it is seeded by index rather than by location.
 		assets: pez_penpal_runtime::AssetsConfig {
-			assets: vec![(
-				PEN2_TELEPORTABLE_ASSET_ID,
-				PenpalAssetOwner::get(),
-				false,
-				ED,
-			)],
+			assets: vec![(PEN2_TELEPORTABLE_ASSET_ID, PenpalAssetOwner::get(), false, ED)],
 			..Default::default()
 		},
 		foreign_assets: pez_penpal_runtime::ForeignAssetsConfig {

@@ -440,8 +440,9 @@ impl RuntimeTarget {
 					"wasm32-unknown-unknown".into()
 				}
 			},
-			RuntimeTarget::Riscv =>
-				Self::riscv_target_json_path().into_os_string().into_string().unwrap(),
+			RuntimeTarget::Riscv => {
+				Self::riscv_target_json_path().into_os_string().into_string().unwrap()
+			},
 		}
 	}
 

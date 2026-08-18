@@ -26,8 +26,9 @@ use pezsp_core::Encode;
 
 // Cumulus
 use emulated_integration_tests_common::{
-	impl_accounts_helpers_for_teyrchain, impl_assert_events_helpers_for_teyrchain, impl_assets_helpers_for_teyrchain,
-	impl_foreign_assets_helpers_for_teyrchain, impl_xcm_helpers_for_teyrchain,
+	impl_accounts_helpers_for_teyrchain, impl_assert_events_helpers_for_teyrchain,
+	impl_assets_helpers_for_teyrchain, impl_foreign_assets_helpers_for_teyrchain,
+	impl_xcm_helpers_for_teyrchain,
 	impls::{NetworkId, Teyrchain},
 	xcm_pez_emulator::decl_test_teyrchains,
 };

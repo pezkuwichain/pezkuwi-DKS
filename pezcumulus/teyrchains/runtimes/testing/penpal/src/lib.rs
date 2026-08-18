@@ -614,10 +614,7 @@ pub type LocalAndForeignAssets = fungibles::UnionOf<
 	Assets,
 	ForeignAssets,
 	LocalFromLeft<
-		AssetIdForTrustBackedAssetsConvert<
-			xcm_config::AssetsPalletLocation,
-			xcm::latest::Location,
-		>,
+		AssetIdForTrustBackedAssetsConvert<xcm_config::AssetsPalletLocation, xcm::latest::Location>,
 		AssetId,
 		xcm::latest::Location,
 	>,

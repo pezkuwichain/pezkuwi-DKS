@@ -36,12 +36,12 @@ mod imports {
 	pub(crate) use asset_test_pezutils::xcm_helpers;
 	pub(crate) use emulated_integration_tests_common::{
 		accounts::DUMMY_EMPTY,
-		test_relay_is_trusted_teleporter, test_teyrchain_is_trusted_teleporter,
-		test_teyrchain_is_trusted_teleporter_for_relay,
+		create_foreign_pool_with_native_on, test_relay_is_trusted_teleporter,
+		test_teyrchain_is_trusted_teleporter, test_teyrchain_is_trusted_teleporter_for_relay,
 		test_xcm_fee_querying_apis_work_for_asset_hub,
-		create_foreign_pool_with_native_on,
 		xcm_helpers::{
-			fee_asset, fee_asset_index, get_amount_from_versioned_assets, non_fee_asset, xcm_transact_paid_execution,
+			fee_asset, fee_asset_index, get_amount_from_versioned_assets, non_fee_asset,
+			xcm_transact_paid_execution,
 		},
 		xcm_pez_emulator::{
 			assert_expected_events, bx, Chain, RelayChain as Relay, Test, TestArgs, TestContext,
@@ -50,7 +50,6 @@ mod imports {
 		PenpalAPen2TeleportableAssetLocation, ASSETS_PALLET_ID, RESERVABLE_ASSET_ID, XCM_V3,
 	};
 	pub(crate) use pezkuwichain_system_emulated_network::{
-		pezbridge_hub_pezkuwichain_emulated_chain::BridgeHubPezkuwichainParaPallet as BridgeHubPezkuwichainPallet,
 		asset_hub_pezkuwichain_emulated_chain::{
 			asset_hub_pezkuwichain_runtime::{
 				self,
@@ -75,6 +74,7 @@ mod imports {
 			PenpalAParaPallet as PenpalAPallet, PenpalAssetOwner,
 			PenpalBParaPallet as PenpalBPallet, ED as PENPAL_ED,
 		},
+		pezbridge_hub_pezkuwichain_emulated_chain::BridgeHubPezkuwichainParaPallet as BridgeHubPezkuwichainPallet,
 		pezkuwichain_emulated_chain::{
 			genesis::ED as PEZKUWICHAIN_ED,
 			pezkuwichain_runtime::{

@@ -60,8 +60,9 @@ mod imports {
 			PenpalAParaPallet as PenpalAPallet, PenpalAssetOwner,
 		},
 		pezbridge_hub_pezkuwichain_emulated_chain::{
+			genesis::ED as BRIDGE_HUB_PEZKUWICHAIN_ED,
 			pezbridge_hub_pezkuwichain_runtime::xcm_config::XcmConfig as BridgeHubPezkuwichainXcmConfig,
-			genesis::ED as BRIDGE_HUB_PEZKUWICHAIN_ED, BridgeHubPezkuwichainExistentialDeposit,
+			BridgeHubPezkuwichainExistentialDeposit,
 			BridgeHubPezkuwichainParaPallet as BridgeHubPezkuwichainPallet,
 		},
 		pezkuwichain_emulated_chain::{

@@ -55,7 +55,9 @@ pub fn set_up_foreign_asset(
 	let asset_id_on_penpal: u32 = match asset_location_on_penpal.unpack() {
 		(0, [Junction::PalletInstance(pallet), Junction::GeneralIndex(index)])
 			if *pallet == PENPAL_ASSETS_PALLET_ID =>
-			(*index).try_into().expect("asset index fits in u32"),
+		{
+			(*index).try_into().expect("asset index fits in u32")
+		},
 		_ => panic!(
 			"expected an asset held by Penpal's own assets pallet, got {asset_location_on_penpal:?}"
 		),
@@ -176,8 +178,12 @@ fn bidirectional_teleport_foreign_asset_between_penpal_and_asset_hub() {
 	let new_asset_id: u32 = 42;
 	let asset_location_on_penpal = local_penpal_asset(new_asset_id);
 	let asset_amount_to_send = ASSET_HUB_ZAGROS_ED * 10_000;
-	let (asset_location_on_penpal, foreign_asset_location_on_ah) =
-		set_up_foreign_asset(sender.clone(), asset_location_on_penpal.clone(), asset_amount_to_send, true);
+	let (asset_location_on_penpal, foreign_asset_location_on_ah) = set_up_foreign_asset(
+		sender.clone(),
+		asset_location_on_penpal.clone(),
+		asset_amount_to_send,
+		true,
+	);
 
 	////////////////////////////////
 	// Teleport it from Penpal to AH
@@ -347,8 +353,12 @@ fn bidirectional_reserve_transfer_foreign_asset_between_penpal_and_asset_hub() {
 	let new_asset_id: u32 = 42;
 	let asset_location_on_penpal = local_penpal_asset(new_asset_id);
 	let asset_amount_to_send = ASSET_HUB_ZAGROS_ED * 10_000;
-	let (asset_location_on_penpal, foreign_asset_location_on_ah) =
-		set_up_foreign_asset(sender.clone(), asset_location_on_penpal.clone(), asset_amount_to_send, false);
+	let (asset_location_on_penpal, foreign_asset_location_on_ah) = set_up_foreign_asset(
+		sender.clone(),
+		asset_location_on_penpal.clone(),
+		asset_amount_to_send,
+		false,
+	);
 
 	////////////////////////////////////////
 	// Reserve-transfer it from Penpal to AH
@@ -494,8 +504,12 @@ fn verify_foreign_asset_origin_checks() {
 	let new_asset_id: u32 = 42;
 	let asset_location_on_penpal = local_penpal_asset(new_asset_id);
 	let asset_amount_to_send = ASSET_HUB_ZAGROS_ED * 10_000;
-	let (_, foreign_asset_location_on_ah) =
-		set_up_foreign_asset(sender.clone(), asset_location_on_penpal.clone(), asset_amount_to_send, false);
+	let (_, foreign_asset_location_on_ah) = set_up_foreign_asset(
+		sender.clone(),
+		asset_location_on_penpal.clone(),
+		asset_amount_to_send,
+		false,
+	);
 
 	let penpal_sovereign = AssetHubZagros::sovereign_account_id_of(
 		AssetHubZagros::sibling_location_of(PenpalA::para_id()),
@@ -511,7 +525,9 @@ fn verify_foreign_asset_origin_checks() {
 		<AssetHubZagros as AssetHubZagrosPallet>::ForeignAssets::set_reserves(
 			origin,
 			foreign_asset_location_on_ah.clone(),
-			vec![reserves_data.clone()].try_into().expect("reserve list fits the pallet bound"),
+			vec![reserves_data.clone()]
+				.try_into()
+				.expect("reserve list fits the pallet bound"),
 		)
 		.unwrap();
 		assert_expected_events!(
