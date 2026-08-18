@@ -176,9 +176,12 @@ fn create_cargo_toml<'a>(
 }
 
 fn invoke_build(current_dir: &Path) -> Result<()> {
-	// Use -Zbuild-std-features=panic_immediate_abort for immediate abort panic strategy
-	// This works with stable rust when RUSTC_BOOTSTRAP=1 is set
-	let encoded_rustflags = ["-Dwarnings"].join("\x1f");
+	// `panic_immediate_abort` stopped being a `build-std` feature and became a real panic
+	// strategy; asking for it the old way now makes `core` refuse to compile with a message
+	// saying exactly that. It has to be requested as a rustflag, and only here — cargo's command
+	// line does not accept `-C`. `builder.rs` in this crate was already moved over.
+	let encoded_rustflags =
+		["-Dwarnings", "-Zunstable-options", "-Cpanic=immediate-abort"].join("\x1f");
 
 	let mut build_command = Command::new("cargo");
 	build_command
@@ -193,13 +196,19 @@ fn invoke_build(current_dir: &Path) -> Result<()> {
 			"build",
 			"--release",
 			"-Zbuild-std=core",
-			"-Zbuild-std-features=panic_immediate_abort",
 			// Rust 1.96+ gates custom `.json` target specs behind this flag.
 			// RUSTC_BOOTSTRAP=1 (above) permits the -Z flag on stable.
 			"-Zjson-target-spec",
 		])
 		.arg("--target")
-		.arg(polkavm_linker::target_json_64_path().unwrap());
+		.arg({
+			// The linker asks for the target spec through `TargetJsonArgs` now; the standalone
+			// 64-bit accessor this used to call is gone. `builder.rs` in this same crate was
+			// already moved over — this is the copy that was left behind.
+			let mut args = polkavm_linker::TargetJsonArgs::default();
+			args.is_64_bit = true;
+			polkavm_linker::target_json_path(args).unwrap()
+		});
 
 	if let Ok(toolchain) = env::var(OVERRIDE_RUSTUP_TOOLCHAIN_ENV_VAR) {
 		build_command.env("RUSTUP_TOOLCHAIN", &toolchain);
@@ -226,8 +235,14 @@ fn post_process(input_path: &Path, output_path: &Path) -> Result<()> {
 	config.set_strip(strip);
 	config.set_optimize(optimize);
 	let orig = fs::read(input_path).with_context(|| format!("Failed to read {input_path:?}"))?;
-	let linked = polkavm_linker::program_from_elf(config, orig.as_ref())
-		.map_err(|err| anyhow::format_err!("Failed to link polkavm program: {}", err))?;
+	// The instruction set is named explicitly now rather than assumed. `ReviveV1` is what
+	// `builder.rs` links against, and these fixtures run under the same pallet.
+	let linked = polkavm_linker::program_from_elf(
+		config,
+		polkavm_linker::TargetInstructionSet::ReviveV1,
+		orig.as_ref(),
+	)
+	.map_err(|err| anyhow::format_err!("Failed to link polkavm program: {}", err))?;
 	fs::write(output_path, linked).with_context(|| format!("Failed to write {output_path:?}"))?;
 	Ok(())
 }
