@@ -28,6 +28,7 @@ runtime-benchmarks = [
   "pezcumulus-primitives-core/runtime-benchmarks",
   "pezkuwi-primitives/runtime-benchmarks",
   "pezkuwi-zombienet-sdk/runtime-benchmarks",
+  "pezsp-runtime/runtime-benchmarks",
 ]
 std = [
   "log/std",
