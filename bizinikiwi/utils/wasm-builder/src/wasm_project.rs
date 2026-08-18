@@ -878,6 +878,16 @@ fn build_bloaty_blob(
 			}
 
 			rustflags.push_str("-C link-arg=--export-table ");
+
+			// A runtime imports its host functions as undefined wasm symbols that the executor
+			// resolves at call time. Rust 1.96 stopped passing `--allow-undefined` to the wasm
+			// linker on our behalf, so the link now fails on exactly those symbols unless we ask
+			// for it ourselves:
+			// https://blog.rust-lang.org/2026/04/04/changes-to-webassembly-targets-and-handling-undefined-symbols/
+			//
+			// This belongs to the wasm target and only to it. `rust-lld` rejects the argument
+			// outright when linking the riscv blob, so passing it globally breaks that build.
+			rustflags.push_str("-C link-arg=--allow-undefined ");
 		},
 		RuntimeTarget::Riscv => (),
 	}
@@ -962,6 +972,17 @@ fn build_bloaty_blob(
 	// https://blog.rust-lang.org/2024/09/24/webassembly-targets-change-in-default-target-features.html#disabling-on-by-default-webassembly-proposals
 	if let Some(arg) = target.rustc_target_build_std(&cargo_cmd) {
 		build_cmd.arg("-Z").arg(arg);
+
+		if !cargo_cmd.supports_nightly_features() {
+			build_cmd.env("RUSTC_BOOTSTRAP", "1");
+		}
+	}
+
+	// The riscv target is not a built-in target name but a path to a specification file that
+	// `polkavm_linker` writes out, and since Rust 1.96 passing one of those requires asking for it
+	// explicitly. Nightly-only, like `build-std` above, with the same bootstrap escape.
+	if matches!(target, RuntimeTarget::Riscv) {
+		build_cmd.arg("-Zjson-target-spec");
 
 		if !cargo_cmd.supports_nightly_features() {
 			build_cmd.env("RUSTC_BOOTSTRAP", "1");
