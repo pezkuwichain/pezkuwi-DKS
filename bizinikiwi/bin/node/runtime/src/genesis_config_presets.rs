@@ -22,12 +22,14 @@ use pezkuwi_sdk::*;
 use crate::{
 	constants::currency::*, pezframe_support::build_struct_json_patch, AccountId, AssetsConfig,
 	BabeConfig, Balance, BalancesConfig, ElectionsConfig, NominationPoolsConfig, ReviveConfig,
-	RuntimeGenesisConfig, SessionConfig, SessionKeys, SocietyConfig, StakerStatus, StakingConfig,
-	SudoConfig, TechnicalCommitteeConfig, BABE_GENESIS_EPOCH_CONFIG,
+	RuntimeGenesisConfig, Runtime, SessionConfig, SessionKeys, SocietyConfig, StakerStatus,
+	StakingConfig, SudoConfig, TechnicalCommitteeConfig, BABE_GENESIS_EPOCH_CONFIG,
 };
 use alloc::{vec, vec::Vec};
 use pezpallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use pezpallet_revive::is_eth_derived;
+// `is_eth_derived` moved from a free function to a method on `AddressMapper`, so the answer now
+// comes from whichever mapper the runtime configured rather than from a fixed rule.
+use pezpallet_revive::AddressMapper;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_babe::AuthorityId as BabeId;
 use pezsp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId;
@@ -96,7 +98,15 @@ pub fn kitchensink_genesis(
 			min_join_bond: 1 * DOLLARS,
 		},
 		revive: ReviveConfig {
-			mapped_accounts: endowed_accounts.iter().filter(|x| ! is_eth_derived(x)).cloned().collect(),
+			mapped_accounts: endowed_accounts
+				.iter()
+				.filter(|x| {
+					!<<Runtime as pezpallet_revive::Config>::AddressMapper as AddressMapper<
+						Runtime,
+					>>::is_eth_derived(x)
+				})
+				.cloned()
+				.collect(),
 		},
 	})
 }
