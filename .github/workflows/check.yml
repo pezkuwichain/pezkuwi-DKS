@@ -47,6 +47,20 @@ jobs:
           rustup component add rustfmt
           cargo fmt --all --check
 
+  # The two tools under tools/ each declare their own [workspace], so `cargo check --workspace`
+  # at the root never reaches them and nothing else compiles them either. That gap is not
+  # theoretical: a dependabot PR bumped fourteen of the bridge's dependencies and every check on
+  # it reported green without compiling a line of the crate it changed. Both are small and pull
+  # from crates.io rather than this tree, so an ordinary runner is enough.
+  tool-workspaces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check the bridge tooling
+        run: cargo check --locked --all-targets --manifest-path tools/usdt-bridge/Cargo.toml
+      - name: Check the chain-spec tooling
+        run: cargo check --locked --all-targets --manifest-path tools/chain-spec-tool/Cargo.toml
+
   # Build the runtimes (the on-chain deliverable). This is the gating job.
   # Heavy zombienet / emulated integration suites are intentionally NOT run here;
   # they are available in-tree and run on demand, not on every push.
