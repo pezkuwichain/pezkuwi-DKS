@@ -362,8 +362,15 @@ where
 						xcm: vec![
 							// Buy execution on target.
 							BuyExecution { fees: dest_para_fee_asset, weight_limit: Unlimited },
-							// Deposit assets to beneficiary.
-							DepositAsset { assets: Wild(AllCounted(2)), beneficiary },
+							// Token first, same reason as the Asset Hub branch: it is the sufficient
+							// asset, so it opens the account, and a leftover fee under the existential
+							// deposit cannot take it down with it.
+							DepositAsset {
+								assets: Definite(asset.clone().into()),
+								beneficiary: beneficiary.clone(),
+							},
+							// Then whatever fee is left.
+							DepositAsset { assets: Wild(AllCounted(1)), beneficiary },
 							// Forward message id to destination teyrchain.
 							SetTopic(message_id.into()),
 						]
@@ -373,10 +380,16 @@ where
 			},
 			None => {
 				instructions.extend(vec![
-					// Deposit both asset and fees to beneficiary so the fees will not get
-					// trapped. Another benefit is when fees left more than ED on AssetHub could be
-					// used to create the beneficiary account in case it does not exist.
-					DepositAsset { assets: Wild(AllCounted(2)), beneficiary },
+					// The token goes first, on its own. It is a sufficient asset, so depositing it
+					// opens the beneficiary account when that account does not yet exist.
+					DepositAsset {
+						assets: Definite(asset.clone().into()),
+						beneficiary: beneficiary.clone(),
+					},
+					// Then the unspent fee, into the account the token just opened. Kept in the same
+					// instruction as the token this used to fail whenever the leftover was under the
+					// existential deposit, and took the token down with it.
+					DepositAsset { assets: Wild(AllCounted(1)), beneficiary },
 				]);
 			},
 		}
