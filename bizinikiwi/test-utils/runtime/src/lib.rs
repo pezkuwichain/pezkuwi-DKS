@@ -364,7 +364,12 @@ parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 
 	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 
 	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
@@ -746,8 +751,11 @@ impl_runtime_apis! {
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(_: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(None)
+		fn generate_session_keys(
+			owner: Vec<u8>,
+			seed: Option<Vec<u8>>,
+		) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(

@@ -37,7 +37,9 @@ impl InspectCmd {
 		RA: Send + Sync + 'static,
 	{
 		let executor = pezsc_service::new_wasm_executor::<HostFunctions>(&config.executor);
-		let client = pezsc_service::new_full_client::<B, RA, _>(&config, None, executor)?;
+		// No pruning filters: the inspector reads blocks, it never imports or finalizes one, so
+		// nothing here can prune and a retention policy would have nothing to act on.
+		let client = pezsc_service::new_full_client::<B, RA, _>(&config, None, executor, vec![])?;
 		let inspect = Inspector::<B>::new(client);
 
 		match &self.command {

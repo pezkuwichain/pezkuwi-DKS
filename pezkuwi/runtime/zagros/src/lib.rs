@@ -56,7 +56,7 @@ use pezkuwi_runtime_common::{
 		LocatableAssetConverter, ToAuthor, VersionedLocatableAsset, VersionedLocationConverter,
 	},
 	paras_registrar, paras_sudo_wrapper, prod_or_fast, slots,
-	traits::{Leaser, OnSwap},
+	traits::OnSwap,
 	BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
 };
 use pezkuwi_runtime_teyrchains::{

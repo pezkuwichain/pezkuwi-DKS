@@ -49,9 +49,12 @@ pezframe_support::construct_runtime!(
 
 pezframe_support::parameter_types! {
 	pub BlockLength: pezframe_system::limits::BlockLength =
-		pezframe_system::limits::BlockLength::max_with_normal_ratio(
-			4 * 1024 * 1024, Perbill::from_percent(75),
-		);
+		pezframe_system::limits::BlockLength::builder()
+			.max_length(4 * 1024 * 1024)
+			.modify_max_length_for_class(DispatchClass::Normal, |m| {
+				*m = Perbill::from_percent(75) * *m
+			})
+			.build();
 }
 
 #[derive_impl(pezframe_system::config_preludes::TestDefaultConfig)]

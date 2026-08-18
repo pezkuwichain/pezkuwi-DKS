@@ -224,11 +224,14 @@ pub fn new_partial(
 
 	let executor = pezsc_service::new_wasm_executor(&config.executor);
 
+	// Blocks carrying GRANDPA justifications must survive pruning, or warp sync has nothing to
+	// verify against on a pruned node.
 	let (client, backend, keystore_container, task_manager) =
 		pezsc_service::new_full_parts::<Block, RuntimeApi, _>(
 			config,
 			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 			executor,
+			vec![Arc::new(pezsc_consensus_grandpa::GrandpaPruningFilter)],
 		)?;
 	let client = Arc::new(client);
 

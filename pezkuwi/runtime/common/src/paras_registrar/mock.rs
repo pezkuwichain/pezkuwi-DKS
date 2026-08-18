@@ -20,7 +20,7 @@
 use super::*;
 use crate::paras_registrar;
 use alloc::collections::btree_map::BTreeMap;
-use pezframe_support::{derive_impl, parameter_types};
+use pezframe_support::{derive_impl, dispatch::DispatchClass, parameter_types};
 use pezframe_system::limits;
 use pezkuwi_primitives::{Balance, BlockNumber, MAX_CODE_SIZE};
 use pezkuwi_runtime_teyrchains::{configuration, origin, shared};
@@ -71,7 +71,10 @@ parameter_types! {
 	pub BlockWeights: limits::BlockWeights =
 		pezframe_system::limits::BlockWeights::simple_max(Weight::from_parts(1024, u64::MAX));
 	pub BlockLength: limits::BlockLength =
-		limits::BlockLength::max_with_normal_ratio(4 * 1024 * 1024, NORMAL_RATIO);
+		limits::BlockLength::builder()
+			.max_length(4 * 1024 * 1024)
+			.modify_max_length_for_class(DispatchClass::Normal, |m| *m = NORMAL_RATIO * *m)
+			.build();
 }
 
 #[derive_impl(pezframe_system::config_preludes::TestDefaultConfig)]

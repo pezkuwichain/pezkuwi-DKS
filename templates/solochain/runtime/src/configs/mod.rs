@@ -56,7 +56,12 @@ parameter_types! {
 		Weight::from_parts(2u64 * WEIGHT_REF_TIME_PER_SECOND, u64::MAX),
 		NORMAL_DISPATCH_RATIO,
 	);
-	pub RuntimeBlockLength: BlockLength = BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+	pub RuntimeBlockLength: BlockLength = BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 	pub const SS58Prefix: u8 = 42;
 }
 
