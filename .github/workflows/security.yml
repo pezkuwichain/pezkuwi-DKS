@@ -28,6 +28,23 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check ${{ matrix.checks }}
+
+  # The tools under tools/ declare their own [workspace], so the run above never reaches their
+  # dependency graphs. That is not a small gap: the bridge tooling was carrying a `bytes`
+  # integer overflow and a `time` stack-exhaustion DoS, and nothing here would have said so.
+  # Same policy file, so the ignore list stays single-sourced.
+  cargo-deny-tools:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        manifest: [tools/usdt-bridge/Cargo.toml, tools/chain-spec-tool/Cargo.toml]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          manifest-path: ${{ matrix.manifest }}
+          command: check --config ${{ github.workspace }}/deny.toml advisories
     # cargo-deny "advisories" uses the same RUSTSEC database as cargo-audit and is the
     # single source of truth for the ignore policy (see deny.toml). A separate cargo-audit
     # job is intentionally omitted to avoid maintaining two divergent ignore lists.
@@ -53,7 +70,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: ossf/scorecard-action@v2.4.3
+      - uses: ossf/scorecard-action@v2.4.4
         with:
           results_file: results.sarif
           results_format: sarif

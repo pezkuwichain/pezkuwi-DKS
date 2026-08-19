@@ -220,7 +220,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with: { python-version: '3.x' }
       - name: Install tooling
         run: pip3 install toml "cargo-workspace>=1.2.6" --quiet
@@ -272,7 +272,7 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with: { python-version: '3.x' }
       - name: Install tooling
         run: |
