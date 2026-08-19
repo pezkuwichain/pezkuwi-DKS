@@ -50,6 +50,13 @@ mod benchmarks {
 		// `set_next_id` exists for exactly this and is compiled under `runtime-benchmarks`, so
 		// no loop is needed. `force_create` is checked rather than discarded: a failure here
 		// means the benchmark is set up wrong, and it should say so instead of hanging.
+		// The genesis preset already creates this collection, so creating it again fails with
+		// CollectionIdInUse. That is what the old `while` loop kept hitting: it discarded the
+		// error and retried the same doomed call forever, at full CPU, producing nothing.
+		if pezpallet_nfts::Collection::<T>::contains_key(collection_id) {
+			return;
+		}
+
 		pezpallet_nfts::Pezpallet::<T>::set_next_id(collection_id);
 		pezpallet_nfts::Pezpallet::<T>::force_create(
 			RawOrigin::Root.into(),
@@ -60,7 +67,7 @@ mod benchmarks {
 				mint_settings: Default::default(),
 			},
 		)
-		.expect("root can force-create a collection in a benchmark; qed");
+		.expect("root can force-create a collection that does not exist yet; qed");
 	}
 
 	// Helper to ensure user has a citizen NFT
