@@ -16,12 +16,21 @@
 # cargo-deny does not see -- and our own crates are excluded from it. cargo-deny already checks
 # them against the real manifests and passes.
 #
+# Keys here are kebab-case, matching the action's inputs. They were snake_case first, and the
+# action accepted the file, ran green and ignored every one of them -- a config that parses and
+# does nothing looks exactly like a config that works.
+#
 # Regenerate after changing umbrella/Cargo.toml:
 #   python3 -c "import re;print('\n'.join(sorted(set('  - pkg:cargo/'+m for m in re.findall(r'^\[dependencies\.([A-Za-z0-9][A-Za-z0-9_-]*)\]', open('umbrella/Cargo.toml').read(), re.M)))))"
 
-fail_on_severity: high
+fail-on-severity: high
 
-allow_dependencies_licenses:
+# Put the verdict on the pull request, not only in the job summary. The unknown-licence
+# count is the thing this file exists to keep readable, and it is worth seeing where it was
+# first noticed.
+comment-summary-in-pr: on-failure
+
+allow-dependencies-licenses:
   - pkg:cargo/asset-test-pezutils
   - pkg:cargo/bizinikiwi-bip39
   - pkg:cargo/bizinikiwi-build-script-utils
