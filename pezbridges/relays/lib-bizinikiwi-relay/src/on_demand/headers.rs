@@ -27,7 +27,9 @@ use pezsp_runtime::traits::Header;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use finality_relay::{FinalitySyncParams, HeadersToRelay, TargetClient as FinalityTargetClient};
+use pez_finality_relay::{
+	FinalitySyncParams, HeadersToRelay, TargetClient as FinalityTargetClient,
+};
 use relay_bizinikiwi_client::{
 	AccountIdOf, AccountKeyPairOf, BlockNumberOf, CallOf, Chain, Client, Error as BizinikiwiError,
 	HeaderIdOf,
@@ -361,7 +363,7 @@ async fn background_task<P: BizinikiwiFinalitySyncPipeline>(
 			);
 
 			finality_relay_task.set(
-				finality_relay::run(
+				pez_finality_relay::run(
 					finality_source.clone(),
 					finality_target.clone(),
 					FinalitySyncParams {

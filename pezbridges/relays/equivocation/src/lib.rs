@@ -20,7 +20,7 @@ mod mock;
 mod reporter;
 
 use async_trait::async_trait;
-use finality_relay::{FinalityPipeline, SourceClientBase};
+use pez_finality_relay::{FinalityPipeline, SourceClientBase};
 use pezbp_header_pez_chain::{FinalityProof, FindEquivocations};
 use relay_utils::{relay_loop::Client as RelayClient, MaybeConnectionError, TransactionTracker};
 use std::{fmt::Debug, time::Duration};

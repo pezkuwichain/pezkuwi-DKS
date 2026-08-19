@@ -19,9 +19,9 @@ use crate::{
 	EquivocationReportingContext, HeaderFinalityInfo, SourceClient, TargetClient,
 };
 
-use finality_relay::FinalityProofsBuf;
 use futures::future::{BoxFuture, FutureExt};
 use num_traits::Saturating;
+use pez_finality_relay::FinalityProofsBuf;
 use pezbp_header_pez_chain::{FinalityProof, FindEquivocations as FindEquivocationsT};
 use std::time::Duration;
 

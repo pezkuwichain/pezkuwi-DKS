@@ -14,6 +14,8 @@ homepage = { workspace = true }
 workspace = true
 
 [dependencies]
+# Bizinikiwi Dependencies
+# Bridge dependencies
 anyhow = { workspace = true }
 async-std = { workspace = true }
 async-trait = { workspace = true }
@@ -22,40 +24,34 @@ codec = { workspace = true, default-features = true }
 futures = { workspace = true }
 hex = { workspace = true, default-features = true }
 num-traits = { workspace = true, default-features = true }
-rbtag = { workspace = true }
-strum = { features = ["derive"], workspace = true, default-features = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
-
-# Bridge dependencies
-pezbp-header-pez-chain = { workspace = true, default-features = true }
-pezbp-pezkuwi-core = { workspace = true, default-features = true }
-pezbp-relayers = { workspace = true, default-features = true }
-pezbp-teyrchains = { workspace = true, default-features = true }
-
 pez-equivocation-detector = { workspace = true }
 pez-finality-relay = { workspace = true }
 pez-messages-relay = { workspace = true }
-relay-bizinikiwi-client = { workspace = true }
-relay-utils = { workspace = true }
-teyrchains-relay = { workspace = true }
-
-pezpallet-bridge-grandpa = { workspace = true, default-features = true }
-pezpallet-bridge-messages = { workspace = true, default-features = true }
-pezpallet-bridge-teyrchains = { workspace = true, default-features = true }
-
+pezbp-header-pez-chain = { workspace = true, default-features = true }
 pezbp-messages = { workspace = true, default-features = true }
+pezbp-pezkuwi-core = { workspace = true, default-features = true }
+pezbp-relayers = { workspace = true, default-features = true }
 pezbp-runtime = { workspace = true, default-features = true }
-
-# Bizinikiwi Dependencies
+pezbp-teyrchains = { workspace = true, default-features = true }
 pezframe-support = { workspace = true, default-features = true }
 pezframe-system = { workspace = true, default-features = true }
 pezpallet-balances = { workspace = true, default-features = true }
+pezpallet-bridge-grandpa = { workspace = true, default-features = true }
+pezpallet-bridge-messages = { workspace = true, default-features = true }
+pezpallet-bridge-teyrchains = { workspace = true, default-features = true }
 pezpallet-grandpa = { workspace = true, default-features = true }
 pezsp-consensus-grandpa = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-trie = { workspace = true }
+rbtag = { workspace = true }
+relay-bizinikiwi-client = { workspace = true }
+relay-utils = { workspace = true }
+strum = { features = ["derive"], workspace = true, default-features = true }
+teyrchains-relay = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "sync", "time"] }
+tracing = { workspace = true }
 
 [dev-dependencies]
 relay-bizinikiwi-client = { features = ["test-helpers"], workspace = true }

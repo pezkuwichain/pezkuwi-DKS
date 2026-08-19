@@ -34,7 +34,7 @@ use crate::{
 
 use async_trait::async_trait;
 use codec::Decode;
-use messages_relay::{
+use pez_messages_relay::{
 	message_lane::{MessageLane, SourceHeaderIdOf, TargetHeaderIdOf},
 	message_lane_loop::{NoncesSubmitArtifacts, TargetClient, TargetClientState},
 };

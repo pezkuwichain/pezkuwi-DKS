@@ -20,9 +20,9 @@ use crate::{
 };
 
 use crate::block_checker::BlockChecker;
-use finality_relay::{FinalityProofsBuf, FinalityProofsStream};
 use futures::{select_biased, FutureExt};
 use num_traits::Saturating;
+use pez_finality_relay::{FinalityProofsBuf, FinalityProofsStream};
 use relay_utils::{metrics::MetricsParams, FailedClient};
 use std::{future::Future, time::Duration};
 

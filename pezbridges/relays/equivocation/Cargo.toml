@@ -14,13 +14,13 @@ homepage = { workspace = true }
 workspace = true
 
 [dependencies]
-async-std = { features = ["attributes"], workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 num-traits = { workspace = true, default-features = true }
 pez-finality-relay = { workspace = true }
 pezbp-header-pez-chain = { workspace = true, default-features = true }
 relay-utils = { workspace = true }
+tokio = { workspace = true, default-features = true, features = ["rt", "time"] }
 tracing = { workspace = true }
 
 [features]

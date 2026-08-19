@@ -25,7 +25,7 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use finality_relay::TargetClient;
+use pez_finality_relay::TargetClient;
 use pezbp_runtime::BlockNumberOf;
 use pezsp_core::Pair;
 use pezsp_runtime::traits::Header;

@@ -2730,6 +2730,7 @@ dependencies = [
  "strum 0.26.3",
  "teyrchains-relay",
  "thiserror 1.0.69",
+ "tokio",
  "tracing",
 ]
 
@@ -10387,13 +10388,13 @@ dependencies = [
 name = "pez-equivocation-detector"
 version = "0.1.0"
 dependencies = [
- "async-std",
  "async-trait",
  "futures",
  "num-traits",
  "pez-finality-relay",
  "pezbp-header-pez-chain",
  "relay-utils",
+ "tokio",
  "tracing",
 ]
 
@@ -10477,7 +10478,6 @@ dependencies = [
 name = "pez-messages-relay"
 version = "0.1.0"
 dependencies = [
- "async-std",
  "async-trait",
  "futures",
  "hex",
@@ -10488,6 +10488,7 @@ dependencies = [
  "pezsp-arithmetic",
  "pezsp-core",
  "relay-utils",
+ "tokio",
  "tracing",
 ]
 
@@ -24052,7 +24053,6 @@ name = "relay-utils"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-std",
  "async-trait",
  "backoff",
  "bizinikiwi-prometheus-endpoint",

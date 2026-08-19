@@ -27,8 +27,8 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use equivocation_detector::EquivocationDetectionPipeline;
-use finality_relay::FinalityPipeline;
+use pez_equivocation_detector::EquivocationDetectionPipeline;
+use pez_finality_relay::FinalityPipeline;
 use pezbp_runtime::{AccountIdOf, BlockNumberOf, HashOf};
 use pezpallet_grandpa::{Call as GrandpaCall, Config as GrandpaConfig};
 use pezsp_core::Pair;
@@ -211,7 +211,7 @@ pub async fn run<P: BizinikiwiEquivocationDetectionPipeline>(
 		"Starting equivocations detection loop"
 	);
 
-	equivocation_detector::run(
+	pez_equivocation_detector::run(
 		BizinikiwiEquivocationSource::<P, _>::new(source_client, source_transaction_params),
 		BizinikiwiEquivocationTarget::<P, _>::new(target_client),
 		P::TargetChain::AVERAGE_BLOCK_INTERVAL,

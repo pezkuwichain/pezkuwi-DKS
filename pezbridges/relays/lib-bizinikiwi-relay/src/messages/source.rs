@@ -31,14 +31,14 @@ use crate::{
 
 use async_trait::async_trait;
 use codec::{Decode, Encode};
-use messages_relay::{
+use num_traits::Zero;
+use pez_messages_relay::{
 	message_lane::{MessageLane, SourceHeaderIdOf, TargetHeaderIdOf},
 	message_lane_loop::{
 		ClientState, MessageDetails, MessageDetailsMap, MessageProofParameters, SourceClient,
 		SourceClientState,
 	},
 };
-use num_traits::Zero;
 use pezbp_messages::{
 	storage_keys::{operating_mode_key, outbound_lane_data_key},
 	target_chain::FromBridgedChainMessagesProof,

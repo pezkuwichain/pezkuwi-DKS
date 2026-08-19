@@ -19,7 +19,7 @@
 use crate::TaggedAccount;
 
 use codec::{Decode, EncodeLike};
-use messages_relay::Labeled;
+use pez_messages_relay::Labeled;
 use pezbp_relayers::{RewardsAccountOwner, RewardsAccountParams};
 use pezframe_system::AccountInfo;
 use pezpallet_balances::AccountData;

@@ -26,7 +26,7 @@ use crate::{
 };
 
 use codec::{Codec, Encode, EncodeLike};
-use messages_relay::{message_lane::MessageLane, message_lane_loop::BatchTransaction, Labeled};
+use pez_messages_relay::{message_lane::MessageLane, message_lane_loop::BatchTransaction, Labeled};
 use pezbp_messages::{
 	target_chain::FromBridgedChainMessagesProof, ChainWithMessages as _, MessageNonce,
 };
@@ -252,13 +252,13 @@ where
 		"Starting source -> target messages relay."
 	);
 
-	messages_relay::message_lane_loop::run(
-		messages_relay::message_lane_loop::Params {
+	pez_messages_relay::message_lane_loop::run(
+		pez_messages_relay::message_lane_loop::Params {
 			lane: params.lane_id,
 			source_tick: P::SourceChain::AVERAGE_BLOCK_INTERVAL,
 			target_tick: P::TargetChain::AVERAGE_BLOCK_INTERVAL,
 			reconnect_delay: relay_utils::relay_loop::RECONNECT_DELAY,
-			delivery_params: messages_relay::message_lane_loop::MessageDeliveryParams {
+			delivery_params: pez_messages_relay::message_lane_loop::MessageDeliveryParams {
 				max_unrewarded_relayer_entries_at_target:
 					P::SourceChain::MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX,
 				max_unconfirmed_nonces_at_target:
@@ -312,7 +312,7 @@ where
 {
 	let relayer_id_at_source: AccountIdOf<P::SourceChain> =
 		source_transaction_params.signer.public().into();
-	messages_relay::relay_messages_range(
+	pez_messages_relay::relay_messages_range(
 		BizinikiwiMessagesSource::<P, _, _>::new(
 			source_client.clone(),
 			target_client.clone(),
@@ -352,7 +352,7 @@ where
 {
 	let relayer_id_at_source: AccountIdOf<P::SourceChain> =
 		source_transaction_params.signer.public().into();
-	messages_relay::relay_messages_delivery_confirmation(
+	pez_messages_relay::relay_messages_delivery_confirmation(
 		BizinikiwiMessagesSource::<P, _, _>::new(
 			source_client.clone(),
 			target_client.clone(),

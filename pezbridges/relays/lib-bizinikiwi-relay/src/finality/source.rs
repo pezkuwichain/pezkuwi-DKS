@@ -25,12 +25,12 @@ use crate::{
 
 use async_trait::async_trait;
 use codec::Decode;
-use finality_relay::{SourceClient, SourceClientBase};
 use futures::{
 	select,
 	stream::{try_unfold, Stream, StreamExt, TryStreamExt},
 };
 use num_traits::One;
+use pez_finality_relay::{SourceClient, SourceClientBase};
 use pezbp_header_pez_chain::FinalityProof;
 use relay_bizinikiwi_client::{BlockNumberOf, BlockWithJustification, Client, Error, HeaderOf};
 use relay_utils::{relay_loop::Client as RelayClient, UniqueSaturatedInto};

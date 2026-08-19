@@ -22,8 +22,8 @@ use relay_bizinikiwi_client::{Chain, ChainWithUtilityPallet, UtilityPallet};
 
 use std::marker::PhantomData;
 
-// to avoid `finality_relay` dependency in other crates
-pub use finality_relay::HeadersToRelay;
+// to avoid `pez_finality_relay` dependency in other crates
+pub use pez_finality_relay::HeadersToRelay;
 
 pub mod cli;
 pub mod equivocation;

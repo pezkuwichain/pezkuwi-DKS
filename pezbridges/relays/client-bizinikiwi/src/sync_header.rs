@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
-use finality_relay::SourceHeader as FinalitySourceHeader;
+use pez_finality_relay::SourceHeader as FinalitySourceHeader;
 use pezbp_header_pez_chain::ConsensusLogReader;
 use pezsp_runtime::traits::Header as HeaderT;
 
 /// Generic wrapper for `pezsp_runtime::traits::Header` based headers, that
-/// implements `finality_relay::SourceHeader` and may be used in headers sync directly.
+/// implements `pez_finality_relay::SourceHeader` and may be used in headers sync directly.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SyncHeader<Header>(Header);
 

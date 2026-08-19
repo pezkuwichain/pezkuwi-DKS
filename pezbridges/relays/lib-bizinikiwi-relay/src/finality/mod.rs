@@ -24,7 +24,7 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use finality_relay::{
+use pez_finality_relay::{
 	FinalityPipeline, FinalitySyncPipeline, HeadersToRelay, SourceClient, TargetClient,
 };
 use pezbp_header_pez_chain::justification::{
@@ -256,10 +256,10 @@ pub async fn run<P: BizinikiwiFinalitySyncPipeline>(
 		"Starting source -> target finality proof relay"
 	);
 
-	finality_relay::run(
+	pez_finality_relay::run(
 		BizinikiwiFinalitySource::<P, _>::new(source_client, None),
 		BizinikiwiFinalityTarget::<P, _>::new(target_client, transaction_params.clone()),
-		finality_relay::FinalitySyncParams {
+		pez_finality_relay::FinalitySyncParams {
 			tick: std::cmp::max(
 				P::SourceChain::AVERAGE_BLOCK_INTERVAL,
 				P::TargetChain::AVERAGE_BLOCK_INTERVAL,
