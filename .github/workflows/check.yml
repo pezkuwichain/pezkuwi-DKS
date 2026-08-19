@@ -176,6 +176,12 @@ jobs:
     runs-on: [self-hosted, substrate-build]
     steps:
       - uses: actions/checkout@v7
+      # pallet-revive's fixtures compile Solidity contracts from their build script, so this
+      # job needs solc on PATH or it stops there. test.yml installs it in every job that
+      # reaches those crates; this one reaches them too and was the only place it was missing.
+      # Skipping the fixtures instead (SKIP_PALLET_REVIVE_FIXTURES=1) would leave a gate that
+      # reports success over code it never built.
+      - uses: ./.github/actions/install-solidity
       - name: Toolchain & targets
         run: |
           rustup show
