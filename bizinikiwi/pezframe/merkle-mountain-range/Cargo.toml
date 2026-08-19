@@ -19,8 +19,6 @@ targets = ["x86_64-unknown-linux-gnu"]
 codec = { workspace = true }
 log = { workspace = true }
 pezframe = { workspace = true, features = ["runtime"] }
-pezframe-support = { workspace = true }
-pezframe-system = { workspace = true }
 pezsp-mmr-primitives = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 
@@ -33,21 +31,15 @@ default = ["std"]
 std = [
 	"codec/std",
 	"log/std",
-	"pezframe-support/std",
-	"pezframe-system/std",
 	"pezframe/std",
 	"pezsp-mmr-primitives/std",
 	"scale-info/std",
 ]
 runtime-benchmarks = [
-	"pezframe-support/runtime-benchmarks",
-	"pezframe-system/runtime-benchmarks",
 	"pezframe/runtime-benchmarks",
 	"pezsp-mmr-primitives/runtime-benchmarks",
 ]
 try-runtime = [
-	"pezframe-support/try-runtime",
-	"pezframe-system/try-runtime",
 	"pezframe/try-runtime",
 	"pezsp-mmr-primitives/try-runtime",
 ]
