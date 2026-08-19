@@ -44,7 +44,10 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           manifest-path: ${{ matrix.manifest }}
-          command: check --config ${{ github.workspace }}/deny.toml advisories
+          command: check advisories
+          # The action runs cargo-deny inside a container where the checkout is mounted at
+          # /github/workspace, so the policy is named by that path rather than the runner's.
+          arguments: --config /github/workspace/deny.toml
     # cargo-deny "advisories" uses the same RUSTSEC database as cargo-audit and is the
     # single source of truth for the ignore policy (see deny.toml). A separate cargo-audit
     # job is intentionally omitted to avoid maintaining two divergent ignore lists.
