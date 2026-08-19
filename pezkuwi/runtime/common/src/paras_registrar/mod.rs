@@ -543,14 +543,14 @@ impl<T: Config> Registrar for Pezpallet<T> {
 	fn worst_head_data() -> HeadData {
 		let max_head_size = configuration::ActiveConfig::<T>::get().max_head_data_size;
 		assert!(max_head_size > 0, "max_head_data can't be zero for generating worst head data.");
-		vec![0u8; max_head_size as usize].into()
+		alloc::vec![0u8; max_head_size as usize].into()
 	}
 
 	#[cfg(any(feature = "runtime-benchmarks", test))]
 	fn worst_validation_code() -> ValidationCode {
 		let max_code_size = configuration::ActiveConfig::<T>::get().max_code_size;
 		assert!(max_code_size > 0, "max_code_size can't be zero for generating worst code data.");
-		let validation_code = vec![0u8; max_code_size as usize];
+		let validation_code = alloc::vec![0u8; max_code_size as usize];
 		validation_code.into()
 	}
 
