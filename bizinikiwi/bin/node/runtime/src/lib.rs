@@ -3834,6 +3834,18 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 		}
 	}
 
+	impl pezsp_transaction_storage_proof::runtime_api::TransactionStorageApi<Block> for Runtime {
+		fn retention_period() -> NumberFor<Block> {
+			TransactionStorage::retention_period()
+		}
+
+		fn indexed_transactions(
+			block: NumberFor<Block>,
+		) -> Vec<pezsp_transaction_storage_proof::IndexedTransactionInfo> {
+			TransactionStorage::indexed_transactions(block)
+		}
+	}
+
 	#[cfg(feature = "try-runtime")]
 	impl pezframe_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade(checks: pezframe_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
