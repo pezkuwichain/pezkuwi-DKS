@@ -24,15 +24,21 @@ common_args = {
     '--image': {"help": "Override docker image '--image ghcr.io/pezkuwichain/ci-unified:latest'"},
 }
 
-def print_and_log(message, output_file='/tmp/cmd/command_output.log'):
+# A fixed /tmp/cmd belongs to whoever created it first, so on a host where more than one
+# account runs this -- a CI runner beside an operator shell, which is exactly the weights
+# machine -- the second one gets EACCES before the script has done anything. Keep the path
+# per-user, and let the caller override it.
+LOG_DIR = os.environ.get('CMD_LOG_DIR') or f'/tmp/cmd-{os.getuid()}'
+
+
+def print_and_log(message, output_file=f'{LOG_DIR}/command_output.log'):
     print(message)
     with open(output_file, 'a') as f:
         f.write(message + '\n')
 
 def setup_logging():
-    if not os.path.exists('/tmp/cmd'):
-        os.makedirs('/tmp/cmd')
-    open('/tmp/cmd/command_output.log', 'w')
+    os.makedirs(LOG_DIR, exist_ok=True)
+    open(f'{LOG_DIR}/command_output.log', 'w')
 
 def fetch_repo_labels():
     """Fetch current labels from the GitHub repository"""
