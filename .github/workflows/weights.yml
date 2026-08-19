@@ -1,0 +1,86 @@
+name: weights
+
+# Re-generates the weights the runtimes charge for extrinsics.
+#
+# Never on push: a weight is a measurement, and a measurement is only worth the machine it
+# was taken on. This runs on one pinned host -- the weakest validator class in the fleet --
+# because block production waits on the slowest node. Numbers taken anywhere faster describe
+# work the fleet cannot finish in the time the block allows.
+#
+# The same reasoning fixes reference_hardware.json, and the two belong together: if this
+# workflow ever moves to a different host, re-take that baseline in the same change.
+
+on:
+  workflow_dispatch:
+    inputs:
+      runtime:
+        description: "Runtime to benchmark (matrix name, e.g. people-zagros). Empty = all."
+        required: false
+        type: string
+      pallet:
+        description: "Pallet to benchmark (e.g. pezpallet_balances). Empty = all in the runtime."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # Keyed on the commit, and never cancelled: a half-finished weights run leaves some files
+  # measured and some not, which is worse than no run at all.
+  group: weights-${{ github.sha }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_RELEASE_DEBUG: "0"
+
+jobs:
+  generate:
+    # Pinned, and not to the substrate-build pool. The pool is heterogeneous -- 4-core boxes
+    # next to an 18-core one -- and a weight measured on the fast box under-charges every
+    # extrinsic for validators running on the slow ones. This host is the reference class.
+    runs-on: [self-hosted, weights-reference]
+    timeout-minutes: 1440
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Tooling
+        run: |
+          python3 -m pip install --break-system-packages --quiet -r .github/scripts/requirements.txt
+          command -v frame-omni-bencher >/dev/null || cargo install frame-omni-bencher --locked
+
+      # A weight is a timing, so anything else running on the box is part of the measurement.
+      # Refuse rather than record a number the fleet cannot reproduce.
+      - name: Refuse to measure a busy machine
+        run: |
+          load=$(awk '{print int($1 + 0.5)}' /proc/loadavg)
+          echo "load average: $(awk '{print $1}' /proc/loadavg)"
+          if [ "$load" -gt 1 ]; then
+            echo "::error::Load is ${load}; a benchmark taken here would measure the contention too."
+            exit 1
+          fi
+
+      - name: Generate
+        run: |
+          args=""
+          [ -n "${{ inputs.runtime }}" ] && args="$args --runtime ${{ inputs.runtime }}"
+          [ -n "${{ inputs.pallet }}" ] && args="$args --pezpallet ${{ inputs.pallet }}"
+          echo "running: cmd.py bench $args"
+          python3 .github/scripts/cmd/cmd.py bench $args
+
+      # The weights are the product; they are reviewed and committed by hand rather than
+      # pushed from CI, because a number nobody looked at is not a measurement either.
+      - name: Collect
+        if: always()
+        run: git diff --stat -- '*weights*' | tail -20
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: weights-${{ github.sha }}
+          path: |
+            **/weights/*.rs
+            **/weights.rs
+          if-no-files-found: warn
