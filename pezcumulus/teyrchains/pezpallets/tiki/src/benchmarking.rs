@@ -39,18 +39,28 @@ mod benchmarks {
 		let funding = Balances::<T>::minimum_balance() * 1_000_000_000u32.into();
 		Balances::<T>::make_free_balance_be(&caller, funding);
 
-		// The `while` loop removes the need for the 'Step' trait.
-		while pezpallet_nfts::NextCollectionId::<T>::get().unwrap_or_default() <= collection_id {
-			let _ = pezpallet_nfts::Pezpallet::<T>::force_create(
-				RawOrigin::Root.into(),
-				T::Lookup::unlookup(caller.clone()),
-				pezpallet_nfts::CollectionConfig {
-					settings: Default::default(),
-					max_supply: None,
-					mint_settings: Default::default(),
-				},
-			);
-		}
+		// Point the counter straight at the id we need, then create that one collection.
+		//
+		// This used to be a `while` loop that called `force_create` until the counter passed
+		// `collection_id`, discarding the result each time. When the call failed the loop had
+		// no way to know: it re-ran the same failing call forever. Measured on 2026-08-19 --
+		// the weights run sat on this pallet for 3h53m at full CPU with flat memory, producing
+		// nothing, and every other pallet waited behind it.
+		//
+		// `set_next_id` exists for exactly this and is compiled under `runtime-benchmarks`, so
+		// no loop is needed. `force_create` is checked rather than discarded: a failure here
+		// means the benchmark is set up wrong, and it should say so instead of hanging.
+		pezpallet_nfts::Pezpallet::<T>::set_next_id(collection_id);
+		pezpallet_nfts::Pezpallet::<T>::force_create(
+			RawOrigin::Root.into(),
+			T::Lookup::unlookup(caller.clone()),
+			pezpallet_nfts::CollectionConfig {
+				settings: Default::default(),
+				max_supply: None,
+				mint_settings: Default::default(),
+			},
+		)
+		.expect("root can force-create a collection in a benchmark; qed");
 	}
 
 	// Helper to ensure user has a citizen NFT
