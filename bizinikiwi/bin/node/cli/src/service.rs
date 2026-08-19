@@ -33,6 +33,7 @@ use pez_kitchensink_runtime::RuntimeApi;
 use pez_node_primitives::Block;
 use pezframe_benchmarking_cli::BIZINIKIWI_REFERENCE_HARDWARE;
 use pezframe_system_rpc_runtime_api::AccountNonceApi;
+use pezkuwi_sdk::pezsp_transaction_storage_proof::runtime_api::TransactionStorageApi;
 use pezkuwi_sdk::{pezsp_api::ProvideRuntimeApi, pezsp_core::Pair};
 use pezsc_client_api::{Backend, BlockBackend};
 use pezsc_consensus_babe::{self, SlotProportion};
@@ -177,6 +178,16 @@ pub fn create_extrinsic(
 }
 
 /// Creates a new partial node.
+/// The statement-store settings this node runs with.
+///
+/// Upstream threads a CLI-configured value through `new_partial` and reuses it when the
+/// network handler is built. This node has no such flags and runs on the defaults, but the
+/// two call sites still have to agree: reading them from one place here keeps them from
+/// drifting the moment either side changes.
+fn statement_store_config() -> pezsc_statement_store::Config {
+	Default::default()
+}
+
 pub fn new_partial(
 	config: &Configuration,
 	mixnet_config: Option<&pezsc_mixnet::Config>,
@@ -305,11 +316,11 @@ pub fn new_partial(
 
 	let statement_store = pezsc_statement_store::Store::new_shared(
 		&config.data_path,
-		Default::default(),
+		statement_store_config(),
 		client.clone(),
 		keystore_container.local_keystore(),
 		config.prometheus_registry(),
-		&task_manager.spawn_handle(),
+		Box::new(task_manager.spawn_handle()),
 	)
 	.map_err(|e| ServiceError::Other(format!("Statement store error: {:?}", e)))?;
 
@@ -537,6 +548,7 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 			client: client.clone(),
 			transaction_pool: transaction_pool.clone(),
 			spawn_handle: task_manager.spawn_handle(),
+			spawn_essential_handle: task_manager.spawn_essential_handle(),
 			import_queue,
 			block_announce_validator_builder: None,
 			warp_sync_config: Some(WarpSyncConfig::WithProvider(warp_sync)),
@@ -638,6 +650,9 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 						pezkuwi_sdk::pezsp_transaction_storage_proof::registration::new_data_provider(
 							&*client_clone,
 							&parent,
+							// `unwrap_or` because the runtime api is optional: this node's
+							// runtime does not implement it, and upstream guards it the same way.
+							client_clone.runtime_api().retention_period(parent).unwrap_or(100800),
 						)?;
 
 					Ok((slot, timestamp, storage_proof))
@@ -793,6 +808,8 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 		statement_store.clone(),
 		prometheus_registry.as_ref(),
 		statement_protocol_executor,
+		statement_store_config().network_workers,
+		statement_store_config().rate_limit,
 	)?;
 	task_manager.spawn_handle().spawn(
 		"network-statement-handler",
