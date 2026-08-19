@@ -213,11 +213,26 @@ mod benchmarks {
 		let caller: T::AccountId = whitelisted_caller();
 		let dest: T::AccountId = account("dest", 0, 0);
 
-		// Ensure collections exist past tiki collection so we have a valid non-tiki ID
+		// This benchmark needs a collection that is NOT the tiki one, because transfers out of
+		// the tiki collection are refused ("Citizen NFTs are non-transferable") and the
+		// benchmark would measure the rejection rather than the check.
+		//
+		// It used to read NextCollectionId after calling `ensure_collection_exists`, assuming
+		// that helper had pushed the counter past the tiki id. It no longer does -- the genesis
+		// preset already creates that collection, so the helper returns early -- and the id
+		// read back was the tiki collection itself. Create one here instead of inferring it.
 		ensure_collection_exists::<T>();
-
-		// NextCollectionId is past tiki, so it's a non-tiki collection (call succeeds)
 		let non_tiki_id = pezpallet_nfts::NextCollectionId::<T>::get().unwrap_or_default();
+		pezpallet_nfts::Pezpallet::<T>::force_create(
+			RawOrigin::Root.into(),
+			T::Lookup::unlookup(caller.clone()),
+			pezpallet_nfts::CollectionConfig {
+				settings: Default::default(),
+				max_supply: None,
+				mint_settings: Default::default(),
+			},
+		)
+		.expect("root can force-create the next collection; qed");
 
 		#[extrinsic_call]
 		_(RawOrigin::Signed(caller.clone()), non_tiki_id, 0u32, caller.clone(), dest);
