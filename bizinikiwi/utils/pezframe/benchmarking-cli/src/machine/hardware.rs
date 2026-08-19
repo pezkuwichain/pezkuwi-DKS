@@ -22,8 +22,20 @@ use std::sync::LazyLock;
 
 /// The hardware requirements as measured on reference hardware.
 ///
-/// These values are provided by Parity, however it is possible
-/// to use your own requirements if you are running a custom chain.
+/// These are ours, measured on the machine the weights are generated on: four cores, 8 GB, a
+/// Contabo SSD -- the weakest class in the validator fleet. That choice is deliberate. Block
+/// production waits on the slowest validator, not the fastest, so a threshold taken from a
+/// stronger machine would pass every node while still describing work they cannot finish in
+/// time.
+///
+/// Each figure is the measured score less ten percent, so an ordinary machine of that class
+/// passes and a genuinely degraded one does not. Re-take them with `benchmark machine` on the
+/// reference host if the fleet moves to different hardware, and re-generate the weights in the
+/// same move -- the two belong together.
+///
+/// The numbers upstream ships are for its own reference hardware, which is roughly twice this
+/// on memory and disk. Keeping those here would have meant every node in this fleet reporting
+/// a hardware failure on every check, which is noise that hides a real one.
 pub static BIZINIKIWI_REFERENCE_HARDWARE: LazyLock<Requirements> = LazyLock::new(|| {
 	let raw = include_bytes!("reference_hardware.json").as_slice();
 	serde_json::from_slice(raw).expect("Hardcoded data is known good; qed")
