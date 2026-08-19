@@ -31,6 +31,41 @@ fail-on-severity: high
 comment-summary-in-pr: on-failure
 
 allow-dependencies-licenses:
+  # Not ours, but measured and allowed by name rather than left to the graph. Each of these
+  # publishes a licence we accept; the graph reports null because it cannot resolve them, not
+  # because anything is missing. Verified 2026-08-19:
+  #
+  #   ark-vrf MIT · aws-lc-sys ISC/Apache-2.0/MIT/BSD-3-Clause · litep2p MIT
+  #   w3f-pcs, w3f-plonk-common, w3f-ring-proof MIT/Apache-2.0
+  #   const-crypto MIT OR Apache-2.0 · time-macros MIT OR Apache-2.0
+  #   @polkadot-labs/hdkd MIT · polkadot-api MIT · @pezkuwi/api, @pezkuwi/util Apache-2.0
+  #
+  # cargo-deny checks the Rust ones against their real manifests on every run and passes, so
+  # they are covered by a gate that can actually read them. The npm ones are not covered by
+  # anything else, which is why they are named here individually rather than the ecosystem
+  # being switched off.
+  #
+  # PyGithub is deliberately NOT listed. It is LGPL -- the only copyleft in our CI tooling and
+  # the one licence here outside deny.toml's allow list -- and it reports null only because the
+  # package leaves its metadata licence field empty and states LGPL in a classifier instead.
+  # Leaving it visible costs one warning line and keeps the fact in view.
+  - pkg:cargo/ark-vrf
+  - pkg:cargo/aws-lc-sys
+  - pkg:cargo/const-crypto
+  - pkg:cargo/litep2p
+  - pkg:cargo/time-macros
+  - pkg:cargo/w3f-pcs
+  - pkg:cargo/w3f-plonk-common
+  - pkg:cargo/w3f-ring-proof
+  - pkg:npm/%40pezkuwi/api
+  - pkg:npm/%40pezkuwi/util
+  - pkg:npm/%40polkadot-labs/hdkd
+  - pkg:npm/polkadot-api
+  # GitHub's own actions, MIT, licence file present in each repo. The graph reports null
+  # because a floating major tag (@v7) does not resolve to a release it can look up.
+  - pkg:githubactions/actions/checkout
+  - pkg:githubactions/actions/setup-python
+  - pkg:githubactions/actions/upload-artifact
   - pkg:cargo/asset-test-pezutils
   - pkg:cargo/bizinikiwi-bip39
   - pkg:cargo/bizinikiwi-build-script-utils
