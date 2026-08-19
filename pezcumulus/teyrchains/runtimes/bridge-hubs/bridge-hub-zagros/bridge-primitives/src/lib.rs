@@ -91,9 +91,9 @@ decl_bridge_messages_runtime_apis!(bridge_hub_zagros, LegacyLaneId);
 
 // These three are the fees this chain charges for bridge work, and each one is the figure the
 // test named beside it measures, plus the 33% headroom upstream also leaves. They had been
-// carrying upstream's Westend numbers, which are ~300x ours: our CENTS is UNITS/30_000 where
-// upstream's is UNITS/100, so a constant copied across that boundary overcharges by the ratio
-// between the two scales. The sibling chain's constants were already at our scale, which is how
+// carrying the numbers upstream measured on its own chains, which are ~300x ours: our CENTS is
+// UNITS/30_000 where upstream's is UNITS/100, so a constant copied across that boundary
+// overcharges by the ratio between the two scales. The sibling chain's constants were already at our scale, which is how
 // the asymmetry showed.
 //
 // They are measured figures, not derived ones: re-run the tests and update these when the
