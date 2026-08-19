@@ -221,8 +221,14 @@ mod benchmarks {
 		// that helper had pushed the counter past the tiki id. It no longer does -- the genesis
 		// preset already creates that collection, so the helper returns early -- and the id
 		// read back was the tiki collection itself. Create one here instead of inferring it.
+		let collection_id = T::TikiCollectionId::get();
 		ensure_collection_exists::<T>();
+
+		// The genesis preset leaves NextCollectionId pointing past the tiki collection, so the
+		// next id is free and is not the tiki one -- which matters, because transfers out of
+		// the tiki collection are refused and this benchmark would measure the refusal.
 		let non_tiki_id = pezpallet_nfts::NextCollectionId::<T>::get().unwrap_or_default();
+		assert!(non_tiki_id != collection_id, "next collection id must not be the tiki one");
 		pezpallet_nfts::Pezpallet::<T>::force_create(
 			RawOrigin::Root.into(),
 			T::Lookup::unlookup(caller.clone()),
@@ -232,7 +238,7 @@ mod benchmarks {
 				mint_settings: Default::default(),
 			},
 		)
-		.expect("root can force-create the next collection; qed");
+		.expect("root can force-create a free collection id; qed");
 
 		#[extrinsic_call]
 		_(RawOrigin::Signed(caller.clone()), non_tiki_id, 0u32, caller.clone(), dest);

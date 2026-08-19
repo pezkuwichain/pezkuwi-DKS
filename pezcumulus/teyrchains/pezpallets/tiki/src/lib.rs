@@ -113,7 +113,10 @@ extern crate alloc;
 pub use pezpallet::*;
 
 use alloc::{format, vec::Vec};
-use pezframe_support::pezpallet_prelude::{MaybeSerializeDeserialize, Parameter};
+use pezframe_support::{
+	pezpallet_prelude::{MaybeSerializeDeserialize, Parameter},
+	traits::Incrementable,
+};
 use pezsp_runtime::DispatchError;
 
 /// Trait for notifying trust score system when tiki score changes.
@@ -444,6 +447,19 @@ pub mod pezpallet {
 					},
 				)
 				.expect("Tiki genesis: failed to create Collection 0");
+
+				// `do_create_collection` writes the collection but does not move
+				// `NextCollectionId`; every caller inside pallet-nfts advances it separately,
+				// and this one has to as well. Without it the chain starts with collection 0
+				// occupied and the counter still pointing at 0, so the first attempt to create
+				// any other collection fails with `CollectionIdInUse` -- a failure that would
+				// surface long after genesis, on whichever call happened to be first.
+				//
+				// Measured on the live People chain (block 2_132_268): 96 citizen NFTs, tiki's
+				// own NextItemId at 96, collection 0 present, and `Nfts::NextCollectionId`
+				// never written. Nothing has needed a second collection there yet, which is
+				// the only reason it has not been hit.
+				pezpallet_nfts::NextCollectionId::<T>::set(collection_id.increment());
 
 				// Step 2: Mint NFT #0 for the founding citizen
 				let item_config = pezpallet_nfts::ItemConfig {
