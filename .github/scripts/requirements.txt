@@ -5,6 +5,11 @@
 # script dies before it parses its own arguments. The workflows install these ad hoc
 # in three different places; this file is so a machine running the tooling by hand can
 # get the same set.
+# Licences, since two of these are copyleft and the question will come up: PyGithub is LGPL and
+# cargo-workspace is GPLv3; toml and whatthepatch are MIT. They are build-time tools invoked as
+# separate processes in CI -- nothing here is linked into the node, the runtimes or anything we
+# distribute -- so neither licence reaches our code. Recorded rather than silently relied on:
+# the workflows already installed all four inline before this file existed.
 toml
 cargo-workspace>=1.2.6
 PyGithub
