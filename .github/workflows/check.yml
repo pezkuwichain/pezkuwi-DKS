@@ -72,7 +72,7 @@ jobs:
     if: >-
       github.event_name == 'push' ||
       github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     steps:
       - uses: actions/checkout@v7
       - name: Toolchain & targets
@@ -115,7 +115,7 @@ jobs:
     if: >-
       github.event_name == 'push' ||
       github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     steps:
       - uses: actions/checkout@v7
       - name: Toolchain & targets
@@ -142,7 +142,7 @@ jobs:
     if: >-
       github.event_name == 'push' ||
       github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     steps:
       - uses: actions/checkout@v7
       # Same eleven as the WASM job above; every one of them declares the feature.
@@ -173,7 +173,7 @@ jobs:
     if: >-
       github.event_name == 'push' ||
       github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     steps:
       - uses: actions/checkout@v7
       # pallet-revive's fixtures compile Solidity contracts from their build script, so this

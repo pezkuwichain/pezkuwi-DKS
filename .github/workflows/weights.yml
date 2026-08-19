@@ -38,7 +38,7 @@ env:
 
 jobs:
   generate:
-    # Pinned, and not to the substrate-build pool. The pool is heterogeneous -- 4-core boxes
+    # Pinned, and not to the bizinikiwi-build pool. The pool is heterogeneous -- 4-core boxes
     # next to an 18-core one -- and a weight measured on the fast box under-charges every
     # extrinsic for validators running on the slow ones. This host is the reference class.
     runs-on: [self-hosted, weights-reference]

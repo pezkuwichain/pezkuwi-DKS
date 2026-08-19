@@ -68,7 +68,7 @@ jobs:
 
   build-runtime:
     needs: full-ci-gate
-    # Pinned to one specific runner (not the whole substrate-build pool): these
+    # Pinned to one specific runner (not the whole bizinikiwi-build pool): these
     # builds aren't hermetic yet (pending srtool), and the self-hosted fleet
     # doesn't share a common absolute install path, so which runner picks up
     # the job changes the resulting WASM hash even for identical source. Fixing
