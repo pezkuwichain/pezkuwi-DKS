@@ -21211,7 +21211,10 @@ dependencies = [
 name = "pezsnowbridge-pezpallet-inbound-queue-v2"
 version = "0.2.0"
 dependencies = [
+ "alloy-consensus",
  "alloy-core",
+ "alloy-primitives",
+ "alloy-rlp",
  "hex-literal",
  "parity-scale-codec",
  "pezbp-relayers",
@@ -21222,6 +21225,8 @@ dependencies = [
  "pezsnowbridge-beacon-primitives",
  "pezsnowbridge-core",
  "pezsnowbridge-inbound-queue-primitives",
+ "pezsnowbridge-pezpallet-ethereum-client",
+ "pezsnowbridge-pezpallet-ethereum-client-fixtures",
  "pezsnowbridge-pezpallet-inbound-queue-v2-fixtures",
  "pezsnowbridge-test-utils",
  "pezsp-api",
