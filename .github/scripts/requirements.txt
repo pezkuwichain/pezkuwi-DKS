@@ -1,0 +1,11 @@
+# Python dependencies for .github/scripts.
+#
+# cmd.py loads generate-prdoc.py at import time to register its subcommand, so every
+# command it offers -- bench included -- needs the prdoc dependencies present or the
+# script dies before it parses its own arguments. The workflows install these ad hoc
+# in three different places; this file is so a machine running the tooling by hand can
+# get the same set.
+toml
+cargo-workspace>=1.2.6
+PyGithub
+whatthepatch
