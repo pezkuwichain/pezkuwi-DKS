@@ -76,7 +76,14 @@ jobs:
       - name: Run tests (nextest, partition ${{ matrix.partition }}/2)
         run: |
           # The excluded tests below are NOT on-chain fund logic — every runtime and
-          # FRAME/pezpallet test runs. They are vendor/SDK & chain-spec/metadata tooling
+          # FRAME/pezpallet test runs. Two entries that did not fit that description were
+          # removed on 2026-08-19: asset-hub-pezkuwichain-integration-tests and
+          # people-pezkuwichain-integration-tests, 46 tests covering mainnet teleports, a
+          # treasury spend in USDT and multi-hop fee payment. They were excluded on
+          # 2026-06-23 because the emulated tree did not compile; it was repaired on
+          # 2026-08-18 and passes 238/238, so the reason had expired while the exclusion
+          # stayed. The zagros equivalents were never excluded, which is what made the gap
+          # visible. They are vendor/SDK & chain-spec/metadata tooling
           # snapshots, docs-guide node runs, dep-version match tests, the testnet-only
           # contracts/revive pallets, and an xcm-emulator harness test. The sr25519/subkey
           # "verify" tests check hardcoded SUBSTRATE-context signature vectors; PezkuwiChain
@@ -90,8 +97,6 @@ jobs:
             package(bizinikiwi-txtesttool) | package(pezpallet-contracts) |
             package(pezpallet-revive-eth-rpc) | package(pezpallet-revive-fixtures) |
             (package(asset-hub-zagros-runtime) & test(smart_contract_not_erc20_will_error)) |
-            package(asset-hub-pezkuwichain-integration-tests) |
-            package(people-pezkuwichain-integration-tests) |
             (package(pezkuwi-zombienet-configuration) & test(network_config_builder))
           )'
           cargo nextest run --workspace --locked --no-fail-fast \
