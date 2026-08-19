@@ -126,9 +126,15 @@ pub fn generate_hidden_includes(unique_id: &str, def_crate: &str) -> TokenStream
 
 /// Generates the path to the frame crate deps.
 fn get_frame_crate_path(def_crate: &str) -> Option<syn::Path> {
-	// This does not work if the frame crate is renamed.
-	if let Ok(FoundCrate::Name(name)) =
-		crate_name(&"pezkuwi-sdk-frame").or_else(|_| crate_name(&"frame"))
+	// The umbrella crate is `pezframe` here. Upstream's comment on this function warns that it
+	// breaks if the frame crate is renamed, and it did: the rename left `pezkuwi-sdk-frame` in
+	// place but not the bare `frame`, so nothing resolved through the umbrella and every macro
+	// asking for a crate this way fell through to looking it up by name in the manifest. Pallets
+	// that reach their dependencies through `pezframe` alone -- which is the point of an umbrella
+	// -- then failed to build with "could not find X in dependencies".
+	if let Ok(FoundCrate::Name(name)) = crate_name(&"pezkuwi-sdk-frame")
+		.or_else(|_| crate_name(&"pezframe"))
+		.or_else(|_| crate_name(&"frame"))
 	{
 		let path = format!("{}::deps::{}", name, def_crate.to_string().replace("-", "_"));
 		Some(syn::parse_str::<syn::Path>(&path).expect("is a valid path; qed"))

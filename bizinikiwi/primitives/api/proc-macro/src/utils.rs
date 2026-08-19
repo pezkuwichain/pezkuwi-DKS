@@ -35,8 +35,11 @@ pub fn generate_crate_access() -> TokenStream {
 			quote!(#renamed_name::__private)
 		},
 		Err(e) => {
-			if let Ok(FoundCrate::Name(name)) =
-				crate_name(&"pezkuwi-sdk-frame").or_else(|_| crate_name(&"frame"))
+			// `pezframe` is the umbrella crate here; see the same lookup in
+			// pezframe-support-procedural-tools for what its absence broke.
+			if let Ok(FoundCrate::Name(name)) = crate_name(&"pezkuwi-sdk-frame")
+				.or_else(|_| crate_name(&"pezframe"))
+				.or_else(|_| crate_name(&"frame"))
 			{
 				let path = format!("{}::deps::pezsp_api::__private", name);
 				let path = syn::parse_str::<syn::Path>(&path).expect("is a valid path; qed");
