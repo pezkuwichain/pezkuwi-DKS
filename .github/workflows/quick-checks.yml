@@ -61,7 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install checker deps
-        run: python3 -m pip install --break-system-packages "cargo-workspace>=1.2.4" toml
+        run: python3 -m pip install --break-system-packages -r .github/scripts/requirements.txt
       - name: Deny git dependencies in [workspace.dependencies]
         # [patch.crates-io] entries (vendored/wasm-fix forks) are allowed and not checked.
         run: python3 .github/scripts/deny-git-deps.py .

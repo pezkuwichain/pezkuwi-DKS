@@ -223,7 +223,7 @@ jobs:
       - uses: actions/setup-python@v7
         with: { python-version: '3.x' }
       - name: Install tooling
-        run: pip3 install toml "cargo-workspace>=1.2.6" --quiet
+        run: pip3 install -r .github/scripts/requirements.txt --quiet
       - name: Check workspace membership and manifests
         # Catches a crate that is in the tree but absent from the workspace, which is
         # how pezpallet-staking-async-teyrchain-runtime stayed broken on main unnoticed.
@@ -276,7 +276,7 @@ jobs:
         with: { python-version: '3.x' }
       - name: Install tooling
         run: |
-          pip3 install "cargo-workspace>=1.2.4" toml --quiet
+          pip3 install -r .github/scripts/requirements.txt --quiet
           cargo install zepter@1.82.1 --force --quiet
           # generate-umbrella.py formats the manifest it writes with taplo; without it the
           # generated file differs from the committed one on formatting alone.
