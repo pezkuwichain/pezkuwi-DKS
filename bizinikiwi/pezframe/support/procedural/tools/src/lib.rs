@@ -57,9 +57,13 @@ pub fn generate_crate_access(unique_id: &str, def_crate: &str) -> TokenStream {
 /// case `path` would start with `frame`, something like `pezkuwi_sdk_frame::x::y:z` or
 /// pezframe::x::y:z.
 pub fn is_using_frame_crate(path: &syn::Path) -> bool {
+	// `pezframe` is the umbrella crate's name here. Leaving it out made every path that goes
+	// through the umbrella read as an ordinary crate path, so the pallet macro compared a
+	// supertrait it had resolved one way against an expectation built the other way and
+	// rejected its own answer.
 	path.segments
 		.first()
-		.map(|s| s.ident == "pezkuwi_sdk_frame" || s.ident == "frame")
+		.map(|s| s.ident == "pezkuwi_sdk_frame" || s.ident == "pezframe" || s.ident == "frame")
 		.unwrap_or(false)
 }
 
