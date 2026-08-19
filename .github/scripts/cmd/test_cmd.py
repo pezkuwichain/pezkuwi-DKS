@@ -46,9 +46,9 @@ mock_runtimes_matrix = [
 ]
 
 def get_mock_bench_output(runtime, pallets, output_path, header, bench_flags, template = None):
-    return f"pezframe-omni-bencher v1 benchmark pezpallet --extrinsic=* " \
+    return f"frame-omni-bencher v1 benchmark pallet --extrinsic=* " \
            f"--runtime=target/production/wbuild/{runtime}-runtime/{runtime.replace('-', '_')}_runtime.wasm " \
-           f"--pezpallet={pallets} --header={header} " \
+           f"--pallet={pallets} --header={header} " \
            f"--output={output_path} " \
            f"--wasm-execution=compiled " \
            f"--steps=50 --repeat=20 --heap-pages=4096 " \

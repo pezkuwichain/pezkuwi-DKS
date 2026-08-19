@@ -345,7 +345,7 @@ def main():
         runtimesMatrix = {x['name']: x for x in runtimesMatrix}
         print(f'Filtered out runtimes: {runtimesMatrix}')
 
-        compile_bencher = os.system(f"cargo install -q --path substrate/utils/frame/omni-bencher --locked --profile {profile}")
+        compile_bencher = os.system(f"cargo install -q --path bizinikiwi/utils/pezframe/omni-bencher --locked --profile {profile}")
         if compile_bencher != 0:
             print_and_log('❌ Failed to compile frame-omni-bencher')
             sys.exit(1)
@@ -454,10 +454,10 @@ def main():
                         output_path = xcm_path
 
                 print(f'-- benchmarking {pallet} in {runtime} into {output_path}')
-                cmd = f"pezframe-omni-bencher v1 benchmark pezpallet " \
+                cmd = f"frame-omni-bencher v1 benchmark pallet " \
                     f"--extrinsic=* " \
                     f"--runtime=target/{profile}/wbuild/{config['package']}/{config['package'].replace('-', '_')}.wasm " \
-                    f"--pezpallet={pallet} " \
+                    f"--pallet={pallet} " \
                     f"--header={header_path} " \
                     f"--output={output_path} " \
                     f"--wasm-execution=compiled " \
