@@ -1033,6 +1033,11 @@ impl_runtime_apis! {
 			use pezframe_benchmarking::BenchmarkList;
 			use pezframe_support::traits::StorageInfoTrait;
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
+			// The pallet's benchmarks are listed above, and they need this to be implemented.
+			// Upstream's people runtime does not list the pallet at all, so there was nothing to
+			// copy: the runtimes that do list it implement this empty trait alongside.
+			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
+
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
 
@@ -1070,7 +1075,12 @@ impl_runtime_apis! {
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
-			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
+			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 			use testnet_teyrchains_constants::zagros::locations::{AssetHubParaId, AssetHubLocation};
 
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
@@ -1102,7 +1112,7 @@ impl_runtime_apis! {
 					None
 				}
 
-				fn set_up_complex_asset_transfer() -> Option<(Assets, AssetId, Location, alloc::boxed::Box<dyn FnOnce()>)> {
+				fn set_up_complex_asset_transfer() -> Option<(Assets, u32, Location, alloc::boxed::Box<dyn FnOnce()>)> {
 					let native_location = Parent.into();
 					let dest = AssetHubLocation::get();
 
@@ -1143,15 +1153,15 @@ impl_runtime_apis! {
 				fn valid_destination() -> Result<Location, BenchmarkError> {
 					Ok(AssetHubLocation::get())
 				}
-				fn worst_case_holding(_depositable_count: u32) -> Assets {
+				fn worst_case_holding(_depositable_count: u32) -> xcm_executor::AssetsInHolding {
+					use pezpallet_xcm_benchmarks::MockCredit;
 					// just concrete assets according to relay chain.
-					let assets: Vec<Asset> = vec![
-						Asset {
-							id: AssetId(RelayLocation::get()),
-							fun: Fungible(1_000_000 * UNITS),
-						}
-					];
-					assets.into()
+					let mut holding = xcm_executor::AssetsInHolding::new();
+					holding.fungible.insert(
+						AssetId(RelayLocation::get()),
+						alloc::boxed::Box::new(MockCredit(1_000_000 * UNITS)),
+					);
+					holding
 				}
 			}
 

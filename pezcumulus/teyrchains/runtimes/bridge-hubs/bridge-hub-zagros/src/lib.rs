@@ -1012,6 +1012,9 @@ impl_runtime_apis! {
 		) {
 			use pezframe_benchmarking::BenchmarkList;
 			use pezframe_support::traits::StorageInfoTrait;
+			// The pallet's benchmarks are listed above, and they need this implemented.
+			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
+
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
