@@ -13,6 +13,7 @@ documentation.workspace = true
 array-bytes = { workspace = true }
 codec = { workspace = true }
 pezkuwi-sdk = { workspace = true, features = [
+	"pezkuwi-primitives",
 	"pezkuwi-runtime-common",
 	"pezpallet-balances",
 	"pezpallet-revive",
