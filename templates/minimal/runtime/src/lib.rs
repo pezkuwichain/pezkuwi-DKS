@@ -126,7 +126,7 @@ type TxExtension = (
 );
 
 // Composes the runtime by adding all the used pallets and deriving necessary types.
-#[frame_construct_runtime]
+#[pezframe_construct_runtime]
 mod runtime {
 	/// The main runtime type.
 	#[runtime::runtime]
@@ -287,7 +287,10 @@ impl_runtime_apis! {
 	}
 
 	impl apis::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(_seed: Option<Vec<u8>>) -> Vec<u8> {
+		fn generate_session_keys(
+			_owner: Vec<u8>,
+			_seed: Option<Vec<u8>>,
+		) -> apis::OpaqueGeneratedSessionKeys {
 			Default::default()
 		}
 

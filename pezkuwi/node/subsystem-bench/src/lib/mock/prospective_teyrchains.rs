@@ -52,9 +52,6 @@ impl MockProspectiveTeyrchains {
 					}
 				},
 				orchestra::FromOrchestra::Communication { msg } => match msg {
-					ProspectiveTeyrchainsMessage::GetMinimumRelayParents(_relay_parent, tx) => {
-						tx.send(vec![]).unwrap();
-					},
 					ProspectiveTeyrchainsMessage::GetHypotheticalMembership(req, tx) => {
 						tx.send(
 							req.candidates

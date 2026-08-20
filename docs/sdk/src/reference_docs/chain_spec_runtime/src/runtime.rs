@@ -52,7 +52,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 type SignedExtra = ();
 
 // Composes the runtime by adding all the used pallets and deriving necessary types.
-#[frame_construct_runtime]
+#[pezframe_construct_runtime]
 mod runtime {
 	/// The main runtime type.
 	#[runtime::runtime]
