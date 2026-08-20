@@ -135,6 +135,49 @@ pub(super) async fn update_view(
 		let ancestry_numbers = (min_number..=leaf_number).rev();
 		let ancestry_iter = ancestry_hashes.clone().zip(ancestry_numbers).peekable();
 
+		// `activate_leaf` now derives the allowed relay parents itself: it asks for the leaf's
+		// session, then the scheduling lookahead for that session, then the ancestors, and finally
+		// the session of each ancestor so it can stop at a session boundary. It no longer asks
+		// prospective-teyrchains for the minimum relay parents.
+		assert_matches!(
+			overseer_recv(virtual_overseer).await,
+			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+				parent,
+				RuntimeApiRequest::SchedulingLookahead(session_index, tx)
+			)) if parent == leaf_hash && session_index == test_state.session_index => {
+				tx.send(Ok(test_state.scheduling_lookahead)).unwrap();
+			}
+		);
+
+		let ancestry_hashes_for_request: Vec<Hash> =
+			std::iter::successors(Some(get_parent_hash(leaf_hash)), |h| Some(get_parent_hash(*h)))
+				.take(test_state.scheduling_lookahead.saturating_sub(1) as usize)
+				.collect();
+
+		assert_matches!(
+			overseer_recv(virtual_overseer).await,
+			AllMessages::ChainApi(ChainApiMessage::Ancestors {
+				hash,
+				k,
+				response_channel: tx,
+			}) if hash == leaf_hash => {
+				assert_eq!(k, test_state.scheduling_lookahead.saturating_sub(1) as usize);
+				tx.send(Ok(ancestry_hashes_for_request.clone())).unwrap();
+			}
+		);
+
+		for _ in &ancestry_hashes_for_request {
+			assert_matches!(
+				overseer_recv(virtual_overseer).await,
+				AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+					_,
+					RuntimeApiRequest::SessionIndexForChild(tx)
+				)) => {
+					tx.send(Ok(test_state.session_index)).unwrap();
+				}
+			);
+		}
+
 		// How many blocks were actually requested.
 		let mut requested_len: usize = 0;
 		{
@@ -173,17 +216,6 @@ pub(super) async fn update_view(
 						tx.send(Ok(Some(header))).unwrap();
 					}
 				);
-
-				if requested_len == 0 {
-					assert_matches!(
-						overseer_recv(virtual_overseer).await,
-						AllMessages::ProspectiveTeyrchains(
-							ProspectiveTeyrchainsMessage::GetMinimumRelayParents(parent, tx),
-						) if parent == leaf_hash => {
-							tx.send(test_state.chain_ids.iter().map(|para_id| (*para_id, min_number)).collect()).unwrap();
-						}
-					);
-				}
 
 				requested_len += 1;
 			}
