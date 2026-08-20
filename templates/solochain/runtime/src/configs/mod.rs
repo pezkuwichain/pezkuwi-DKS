@@ -25,7 +25,9 @@
 
 // Bizinikiwi and Pezkuwi dependencies
 use pezframe_support::{
-	derive_impl, parameter_types,
+	derive_impl,
+	dispatch::DispatchClass,
+	parameter_types,
 	traits::{ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, VariantCountOf},
 	weights::{
 		constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
