@@ -255,6 +255,7 @@ fn handle_export_message_from_system_teyrchain_add_to_outbound_queue_works() {
 			Runtime,
 			XcmConfig,
 			WithBridgeHubPezkuwichainMessagesInstance,
+			LocationToAccountId,
 		>(
 			collator_session_keys(),
 			pezbp_bridge_hub_zagros::BRIDGE_HUB_ZAGROS_TEYRCHAIN_ID,

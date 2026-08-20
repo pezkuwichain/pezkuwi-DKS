@@ -210,6 +210,7 @@ parameter_types! {
 }
 
 impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
+	type SchedulingSignatureVerifier = ();
 	type WeightInfo = ();
 	type RuntimeEvent = RuntimeEvent;
 	type OnSystemEvent = ();

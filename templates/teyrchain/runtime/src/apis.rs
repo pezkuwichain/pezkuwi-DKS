@@ -82,6 +82,10 @@ impl_runtime_apis! {
 		fn relay_parent_offset() -> u32 {
 			0
 		}
+
+		fn max_claim_queue_offset() -> u8 {
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
+		}
 	}
 
 	impl pezcumulus_primitives_aura::AuraUnincludedSegmentApi<Block> for Runtime {

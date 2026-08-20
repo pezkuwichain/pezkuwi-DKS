@@ -322,6 +322,7 @@ mod bridge_hub_zagros_tests {
 			Runtime,
 			XcmConfig,
 			WithBridgeHubZagrosMessagesInstance,
+			LocationToAccountId,
 		>(
 			collator_session_keys(),
 			pezbp_bridge_hub_pezkuwichain::BRIDGE_HUB_PEZKUWICHAIN_TEYRCHAIN_ID,
@@ -603,6 +604,7 @@ mod bridge_hub_bulletin_tests {
 			Runtime,
 			XcmConfig,
 			WithPezkuwichainBulletinMessagesInstance,
+			LocationToAccountId,
 		>(
 			collator_session_keys(),
 			pezbp_bridge_hub_pezkuwichain::BRIDGE_HUB_PEZKUWICHAIN_TEYRCHAIN_ID,
