@@ -75,30 +75,29 @@ jobs:
           fi
       - name: Run tests (nextest, partition ${{ matrix.partition }}/2)
         run: |
-          # The excluded tests below are NOT on-chain fund logic — every runtime and
-          # FRAME/pezpallet test runs. Two entries that did not fit that description were
-          # removed on 2026-08-19: asset-hub-pezkuwichain-integration-tests and
-          # people-pezkuwichain-integration-tests, 46 tests covering mainnet teleports, a
-          # treasury spend in USDT and multi-hop fee payment. They were excluded on
-          # 2026-06-23 because the emulated tree did not compile; it was repaired on
-          # 2026-08-18 and passes 238/238, so the reason had expired while the exclusion
-          # stayed. The zagros equivalents were never excluded, which is what made the gap
-          # visible. They are vendor/SDK & chain-spec/metadata tooling
-          # snapshots, docs-guide node runs, dep-version match tests, the testnet-only
-          # contracts/revive pallets, and an xcm-emulator harness test. The sr25519/subkey
-          # "verify" tests check hardcoded SUBSTRATE-context signature vectors; PezkuwiChain
-          # signs with the sovereign b"bizinikiwi" context (see the wallet's sr25519-bizinikiwi
-          # binding), so those upstream vectors do not apply — the verify code path itself is
-          # sound. Tracked in issue #11 to re-enable as fixtures/tooling are updated.
-          FILTER='not (
-            package(pezkuwi-zombienet-sdk) |
-            package(pez-chain-spec-guide-runtime) | package(pezkuwi-sdk-docs) |
-            package(pezframe-omni-bencher) |
-            package(bizinikiwi-txtesttool) | package(pezpallet-contracts) |
-            package(pezpallet-revive-eth-rpc) | package(pezpallet-revive-fixtures) |
-            (package(asset-hub-zagros-runtime) & test(smart_contract_not_erc20_will_error)) |
-            (package(pezkuwi-zombienet-configuration) & test(network_config_builder))
-          )'
+          # One exclusion, and it is an environment one: the zombienet SDK tests ask a
+          # provider to create a Kubernetes namespace and a volume, and there is no cluster
+          # behind these runners, so they fail before reaching any of our code
+          # (ProviderError(CreateNamespaceFailed) on main, 2026-08-20). Nothing in the
+          # workspace can fix that; only giving the runners a cluster, or teaching the tests
+          # to skip when no provider answers, will. Tracked in issue #11 — the right fix is
+          # one of those two, not this line.
+          #
+          # Everything else that used to be listed here has been removed. The entries were
+          # accurate when written and had quietly outlived their reasons: chain-spec-guide,
+          # sdk-docs, omni-bencher, txtesttool, contracts, revive-eth-rpc, revive-fixtures
+          # and an asset-hub erc20 case. Two of them show what the drift costs — the
+          # zombienet-configuration `network_config_builder` case passes on main, so it was
+          # being excluded for nothing, and contracts and revive were held out as
+          # "testnet-only" although mainnet is to be a mirror of a validated Zagros, which
+          # makes today's testnet tomorrow's mainnet.
+          #
+          # If any of these are still red, that is work this sync exists to surface, and a
+          # red run states it. An exclusion states nothing, and nobody returns to it: the 46
+          # mainnet integration tests were excluded on 2026-06-23 because the emulated tree
+          # did not compile, it was repaired on 2026-08-18 and passes 238/238, and the
+          # exclusion was still in place a month after its reason expired.
+          FILTER='not (package(pezkuwi-zombienet-sdk))'
           cargo nextest run --workspace --locked --no-fail-fast \
             -E "$FILTER" \
             --partition count:${{ matrix.partition }}/2 \
@@ -350,7 +349,10 @@ jobs:
         # try-runtime changes which code paths compile; the suite has to pass without it too.
         run: |
           git config --global --add safe.directory '*'
+          # Same single exclusion as the `test` job: no cluster, no zombienet. The reason is
+          # the runner environment, which does not change with the try-runtime feature.
           cargo nextest run --workspace --locked --no-fail-fast \
+            -E 'not (package(pezkuwi-zombienet-sdk))' \
             --features experimental,ci-only-tests \
             --partition count:${{ matrix.partition }}/2 \
             --config-file .config/nextest.toml
