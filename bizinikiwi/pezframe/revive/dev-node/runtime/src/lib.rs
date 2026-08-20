@@ -31,7 +31,7 @@ use pezframe_support::weights::{
 };
 use pezframe_system::limits::BlockWeights;
 use pezkuwi_sdk::{
-	pezkuwi_sdk_frame::{
+	pezframe::{
 		deps::pezsp_genesis_builder,
 		runtime::{apis, prelude::*},
 		traits::Block as BlockT,
@@ -51,7 +51,7 @@ use pezpallet_transaction_payment::{
 use pezsp_weights::ConstantMultiplier;
 
 pub use pezkuwi_sdk::{
-	pezkuwi_sdk_frame::runtime::types_common::OpaqueBlock,
+	pezframe::runtime::types_common::OpaqueBlock,
 	teyrchains_common::{AccountId, Balance, BlockNumber, Hash, Header, Nonce, Signature},
 };
 

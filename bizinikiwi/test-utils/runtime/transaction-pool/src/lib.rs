@@ -57,6 +57,12 @@ impl pezsc_transaction_pool_api::error::IntoPoolError for Error {
 	}
 }
 
+impl pezsc_transaction_pool_api::error::IntoMetricsLabel for Error {
+	fn label(&self) -> String {
+		pezsc_transaction_pool_api::error::IntoMetricsLabel::label(&self.0)
+	}
+}
+
 pub enum IsBestBlock {
 	Yes,
 	No,
