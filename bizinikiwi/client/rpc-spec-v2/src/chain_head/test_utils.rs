@@ -241,8 +241,12 @@ impl<Block: BlockT, Client: CallApiAt<Block>> CallApiAt<Block> for ChainHeadMock
 		self.client.call_api_at(params)
 	}
 
-	fn runtime_version_at(&self, hash: Block::Hash) -> Result<RuntimeVersion, pezsp_api::ApiError> {
-		self.client.runtime_version_at(hash)
+	fn runtime_version_at(
+		&self,
+		hash: Block::Hash,
+		call_context: pezsp_api::CallContext,
+	) -> Result<RuntimeVersion, pezsp_api::ApiError> {
+		self.client.runtime_version_at(hash, call_context)
 	}
 
 	fn state_at(&self, at: Block::Hash) -> Result<Self::StateBackend, pezsp_api::ApiError> {

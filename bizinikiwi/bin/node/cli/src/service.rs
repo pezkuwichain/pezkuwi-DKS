@@ -1092,7 +1092,10 @@ mod tests {
 				let genesis_hash = service.client().block_hash(0).unwrap().unwrap();
 				let best_hash = service.client().chain_info().best_hash;
 				let (spec_version, transaction_version) = {
-					let version = service.client().runtime_version_at(best_hash).unwrap();
+					let version = service
+						.client()
+						.runtime_version_at(best_hash, pezsp_core::traits::CallContext::Offchain)
+						.unwrap();
 					(version.spec_version, version.transaction_version)
 				};
 				let signer = charlie.clone();
