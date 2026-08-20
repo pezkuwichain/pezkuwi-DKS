@@ -106,6 +106,61 @@ jobs:
             -p coretime-zagros-runtime \
             -p collectives-zagros-runtime
 
+  # The blobs that are not part of either network: test fixtures, the templates we ship, the
+  # documentation runtimes, and the staking-async pair we derive from upstream. They are kept
+  # apart from `runtimes` on purpose — that job is the production surface, and a red run there
+  # means a live chain will not build, while a red run here does not. Reading which of the two
+  # failed should not require opening the log.
+  #
+  # They are here at all because `workspace` used to build them as a side effect of
+  # `cargo check --workspace`, and that job no longer does (SKIP_WASM_BUILD). Dropping them
+  # instead would have retired a gate that exists today without anyone deciding to: penpal and
+  # the test teyrchains are what the emulated XCM and zombienet tests run against, and test.yml
+  # is not a substitute — it has not run on a feature branch since 2026-08-15 and every nightly
+  # on main is currently red, so a new break would land in noise.
+  #
+  # The list is derived, not remembered: the workspace members whose build.rs uses
+  # wasm_builder, minus the eleven in `runtimes`. Regenerate it that way when it drifts.
+  test-runtimes:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, bizinikiwi-build]
+    steps:
+      - uses: actions/checkout@v7
+      # pez-revive-dev-runtime pulls in pallet-revive's fixtures, which compile Solidity from a
+      # build script.
+      - uses: ./.github/actions/install-solidity
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+      - name: Build test and template runtime WASM (check)
+        run: |
+          cargo check --locked \
+            -p bizinikiwi-test-runtime \
+            -p glutton-zagros-runtime \
+            -p pez-chain-spec-guide-runtime \
+            -p pez-kitchensink-runtime \
+            -p pez-minimal-template-runtime \
+            -p pez-penpal-runtime \
+            -p pez-revive-dev-runtime \
+            -p pez-solochain-template-runtime \
+            -p pezcumulus-test-runtime \
+            -p pezkuwi-sdk-docs-first-runtime \
+            -p pezkuwi-test-runtime \
+            -p pezpallet-staking-async-rc-runtime \
+            -p pezpallet-staking-async-teyrchain-runtime \
+            -p pezsc-runtime-test \
+            -p pezsp-runtime-interface-test-wasm \
+            -p pezsp-runtime-interface-test-wasm-deprecated \
+            -p pezsp-virtualization-test-fixture \
+            -p test-teyrchain-adder \
+            -p test-teyrchain-halt \
+            -p test-teyrchain-undying \
+            -p teyrchain-template-runtime
+
   # The runtimes are the on-chain deliverable; these are the off-chain one. Nothing on the
   # every-push path compiled them until now, so the node could stop building and every gating
   # job would still report green: a framework sync moved several client crates and left their
@@ -187,5 +242,12 @@ jobs:
           rustup show
           rustup component add rust-src
           rustup target add wasm32v1-none wasm32-unknown-unknown
+      # The blobs this would otherwise build now have their own job, `test-runtimes`, which
+      # runs beside this one instead of inside it. Typechecking does not need them, and
+      # building them here put all 32 wasm compilations on the critical path of the longest
+      # job in the workflow. Nothing is dropped: `runtimes` covers the eleven production
+      # blobs and `test-runtimes` covers the other twenty-one.
       - name: Check every crate, tests included
+        env:
+          SKIP_WASM_BUILD: 1
         run: cargo check --workspace --locked --tests
