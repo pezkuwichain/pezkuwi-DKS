@@ -7,7 +7,7 @@ fn wasm_file_path() -> &'static str {
 		.expect("pez_chain_spec_guide_runtime wasm should exist. qed")
 }
 
-const CHAIN_SPEC_BUILDER_PATH: &str = "../../../../../target/release/chain-spec-builder";
+const CHAIN_SPEC_BUILDER_PATH: &str = "../../../../../target/release/pezstaging-chain-spec-builder";
 
 macro_rules! bash(
 	( chain-spec-builder $($a:tt)* ) => {{
@@ -24,7 +24,7 @@ macro_rules! bash(
 
 fn get_chain_spec_builder_path() -> &'static str {
 	run_cmd!(
-		cargo build --release -p pezstaging-chain-spec-builder --bin chain-spec-builder
+		cargo build --release -p pezstaging-chain-spec-builder --bin pezstaging-chain-spec-builder
 	)
 	.expect("Failed to execute command");
 	CHAIN_SPEC_BUILDER_PATH
