@@ -663,8 +663,11 @@ pub async fn assert_para_is_registered(
 	let para_id: u32 = para_id.into();
 
 	// The address no longer carries the keys; they are supplied at fetch time. This entry is a
-	// plain storage value, so there are none.
-	let query = pezkuwi_subxt::dynamic::storage("Paras", "Teyrchains");
+	// plain storage value, so there are none. `dynamic::storage` no longer defaults its type
+	// parameters the way `DynamicAddress` does, so both are spelled out: the keys are encoded
+	// from the empty `keys` vector below and the value is decoded into `Vec<u32>` by
+	// `decode_as` further down.
+	let query = pezkuwi_subxt::dynamic::storage::<Vec<Value>, Value>("Paras", "Teyrchains");
 	let keys: Vec<Value> = vec![];
 
 	let mut blocks_cnt = 0;
