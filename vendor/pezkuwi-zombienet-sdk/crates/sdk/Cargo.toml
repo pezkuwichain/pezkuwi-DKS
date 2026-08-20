@@ -9,6 +9,13 @@ license.workspace = true
 repository.workspace = true
 description = "Pezkuwi Zombienet SDK - Network orchestration for Pezkuwi blockchain testing"
 keywords = ["blockchain", "pezkuwi", "sdk", "zombienet"]
+# The upstream integration tests in tests/ spawn Rococo from Parity's published
+# polkadot images. They exercise the SDK against a network that is not ours and
+# binaries we do not build, so they say nothing about this chain while costing a
+# container runtime the runners do not have. Our own network tests live in
+# pezkuwi-zombienet-sdk-tests and are unaffected: this only stops the vendored
+# test targets from being discovered; the library itself is untouched.
+autotests = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

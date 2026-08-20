@@ -75,31 +75,21 @@ jobs:
           fi
       - name: Run tests (nextest, partition ${{ matrix.partition }}/2)
         run: |
-          # One exclusion, and it is an environment one: the zombienet SDK tests ask a
-          # provider to create a Kubernetes namespace and a volume, and there is no cluster
-          # behind these runners, so they fail before reaching any of our code
-          # (ProviderError(CreateNamespaceFailed) on main, 2026-08-20). Nothing in the
-          # workspace can fix that; only giving the runners a cluster, or teaching the tests
-          # to skip when no provider answers, will. Tracked in issue #11 — the right fix is
-          # one of those two, not this line.
+          # Nothing is excluded. The suite runs the whole workspace.
           #
-          # Everything else that used to be listed here has been removed. The entries were
-          # accurate when written and had quietly outlived their reasons: chain-spec-guide,
-          # sdk-docs, omni-bencher, txtesttool, contracts, revive-eth-rpc, revive-fixtures
-          # and an asset-hub erc20 case. Two of them show what the drift costs — the
-          # zombienet-configuration `network_config_builder` case passes on main, so it was
-          # being excluded for nothing, and contracts and revive were held out as
-          # "testnet-only" although mainnet is to be a mirror of a validated Zagros, which
-          # makes today's testnet tomorrow's mainnet.
+          # The list that used to be here had grown to nine entries and had outlived its
+          # reasons: the zombienet-configuration case passes on main, and contracts and
+          # revive were held back as "testnet-only" although mainnet is to be a mirror of a
+          # validated Zagros. The last entry was the vendored zombienet SDK's own tests,
+          # which spawn Rococo from Parity's images; those are no longer built at all
+          # (autotests = false in that package), so there is nothing left to filter.
           #
-          # If any of these are still red, that is work this sync exists to surface, and a
-          # red run states it. An exclusion states nothing, and nobody returns to it: the 46
-          # mainnet integration tests were excluded on 2026-06-23 because the emulated tree
-          # did not compile, it was repaired on 2026-08-18 and passes 238/238, and the
-          # exclusion was still in place a month after its reason expired.
-          FILTER='not (package(pezkuwi-zombienet-sdk))'
+          # Precedent for keeping it this way: 46 mainnet integration tests were excluded on
+          # 2026-06-23 because the emulated tree did not compile, the tree was repaired on
+          # 2026-08-18 and passes 238/238, and the exclusion was still in place a month
+          # after its reason expired. A red test states the work; an exclusion states
+          # nothing and nobody returns to it.
           cargo nextest run --workspace --locked --no-fail-fast \
-            -E "$FILTER" \
             --partition count:${{ matrix.partition }}/2 \
             --config-file .config/nextest.toml
 
@@ -349,10 +339,7 @@ jobs:
         # try-runtime changes which code paths compile; the suite has to pass without it too.
         run: |
           git config --global --add safe.directory '*'
-          # Same single exclusion as the `test` job: no cluster, no zombienet. The reason is
-          # the runner environment, which does not change with the try-runtime feature.
           cargo nextest run --workspace --locked --no-fail-fast \
-            -E 'not (package(pezkuwi-zombienet-sdk))' \
             --features experimental,ci-only-tests \
             --partition count:${{ matrix.partition }}/2 \
             --config-file .config/nextest.toml
