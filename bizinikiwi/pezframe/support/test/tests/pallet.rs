@@ -2089,7 +2089,7 @@ fn metadata_versions() {
 fn metadata_ir_pezpallet_runtime_docs() {
 	let ir = Runtime::metadata_ir();
 	let pezpallet = ir
-		.pallets
+		.pezpallets
 		.iter()
 		.find(|pezpallet| pezpallet.name == "Example")
 		.expect("Pezpallet should be present");
@@ -2683,7 +2683,7 @@ fn pezpallet_metadata() {
 	use pezsp_metadata_ir::{
 		EnumDeprecationInfoIR, ItemDeprecationInfoIR, VariantDeprecationInfoIR,
 	};
-	let pallets = Runtime::metadata_ir().pallets;
+	let pallets = Runtime::metadata_ir().pezpallets;
 	let example = pallets[0].clone();
 	let example2 = pallets[1].clone();
 	{

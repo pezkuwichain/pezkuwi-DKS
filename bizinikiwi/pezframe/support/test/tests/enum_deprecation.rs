@@ -155,7 +155,7 @@ pezframe_support::construct_runtime!(
 #[test]
 fn pezpallet_metadata() {
 	use pezsp_metadata_ir::{EnumDeprecationInfoIR, VariantDeprecationInfoIR};
-	let pallets = Runtime::metadata_ir().pallets;
+	let pallets = Runtime::metadata_ir().pezpallets;
 	let example = pallets[0].clone();
 	{
 		// Example pezpallet events are partially and fully deprecated
