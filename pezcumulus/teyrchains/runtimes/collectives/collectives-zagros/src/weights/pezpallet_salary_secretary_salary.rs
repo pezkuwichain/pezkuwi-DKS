@@ -50,68 +50,68 @@ use core::marker::PhantomData;
 /// Weight functions for `pezpallet_salary`.
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: pezframe_system::Config> pezpallet_salary::WeightInfo for WeightInfo<T> {
-	/// Storage: `AmbassadorSalary::Status` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Status` (r:1 w:1)
+	/// Proof: `SecretarySalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
 	fn init() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `4`
 		//  Estimated: `1541`
-		// Minimum execution time: 13_956_000 picoseconds.
-		Weight::from_parts(26_078_000, 0)
+		// Minimum execution time: 13_846_000 picoseconds.
+		Weight::from_parts(25_427_000, 0)
 			.saturating_add(Weight::from_parts(0, 1541))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `AmbassadorSalary::Status` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Status` (r:1 w:1)
+	/// Proof: `SecretarySalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
 	fn bump() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `86`
 		//  Estimated: `1541`
-		// Minimum execution time: 15_960_000 picoseconds.
-		Weight::from_parts(29_405_000, 0)
+		// Minimum execution time: 15_880_000 picoseconds.
+		Weight::from_parts(28_303_000, 0)
 			.saturating_add(Weight::from_parts(0, 1541))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `AmbassadorSalary::Status` (r:1 w:0)
-	/// Proof: `AmbassadorSalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
-	/// Storage: `AmbassadorCollective::Members` (r:1 w:0)
-	/// Proof: `AmbassadorCollective::Members` (`max_values`: None, `max_size`: Some(42), added: 2517, mode: `MaxEncodedLen`)
-	/// Storage: `AmbassadorSalary::Claimant` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Claimant` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Status` (r:1 w:0)
+	/// Proof: `SecretarySalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
+	/// Storage: `SecretaryCollective::Members` (r:1 w:0)
+	/// Proof: `SecretaryCollective::Members` (`max_values`: None, `max_size`: Some(42), added: 2517, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Claimant` (r:1 w:1)
+	/// Proof: `SecretarySalary::Claimant` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
 	fn induct() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `258`
+		//  Measured:  `295`
 		//  Estimated: `3551`
-		// Minimum execution time: 28_322_000 picoseconds.
-		Weight::from_parts(47_930_000, 0)
+		// Minimum execution time: 29_124_000 picoseconds.
+		Weight::from_parts(49_122_000, 0)
 			.saturating_add(Weight::from_parts(0, 3551))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `AmbassadorCollective::Members` (r:1 w:0)
-	/// Proof: `AmbassadorCollective::Members` (`max_values`: None, `max_size`: Some(42), added: 2517, mode: `MaxEncodedLen`)
-	/// Storage: `AmbassadorSalary::Status` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
-	/// Storage: `AmbassadorSalary::Claimant` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Claimant` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
+	/// Storage: `SecretaryCollective::Members` (r:1 w:0)
+	/// Proof: `SecretaryCollective::Members` (`max_values`: None, `max_size`: Some(42), added: 2517, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Status` (r:1 w:1)
+	/// Proof: `SecretarySalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Claimant` (r:1 w:1)
+	/// Proof: `SecretarySalary::Claimant` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
 	fn register() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `325`
+		//  Measured:  `362`
 		//  Estimated: `3551`
-		// Minimum execution time: 34_545_000 picoseconds.
-		Weight::from_parts(58_108_000, 0)
+		// Minimum execution time: 35_636_000 picoseconds.
+		Weight::from_parts(58_509_000, 0)
 			.saturating_add(Weight::from_parts(0, 3551))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: `AmbassadorSalary::Status` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
-	/// Storage: `AmbassadorSalary::Claimant` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Claimant` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
-	/// Storage: `AmbassadorCollective::Members` (r:1 w:0)
-	/// Proof: `AmbassadorCollective::Members` (`max_values`: None, `max_size`: Some(42), added: 2517, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Status` (r:1 w:1)
+	/// Proof: `SecretarySalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Claimant` (r:1 w:1)
+	/// Proof: `SecretarySalary::Claimant` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
+	/// Storage: `SecretaryCollective::Members` (r:1 w:0)
+	/// Proof: `SecretaryCollective::Members` (`max_values`: None, `max_size`: Some(42), added: 2517, mode: `MaxEncodedLen`)
 	/// Storage: `TeyrchainInfo::TeyrchainId` (r:1 w:0)
 	/// Proof: `TeyrchainInfo::TeyrchainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
 	/// Storage: `PezkuwiXcm::QueryCounter` (r:1 w:1)
@@ -130,20 +130,20 @@ impl<T: pezframe_system::Config> pezpallet_salary::WeightInfo for WeightInfo<T> 
 	/// Proof: `PezkuwiXcm::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn payout() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `554`
-		//  Estimated: `4019`
-		// Minimum execution time: 92_833_000 picoseconds.
-		Weight::from_parts(156_541_000, 0)
-			.saturating_add(Weight::from_parts(0, 4019))
+		//  Measured:  `591`
+		//  Estimated: `4056`
+		// Minimum execution time: 94_356_000 picoseconds.
+		Weight::from_parts(159_737_000, 0)
+			.saturating_add(Weight::from_parts(0, 4056))
 			.saturating_add(T::DbWeight::get().reads(9))
 			.saturating_add(T::DbWeight::get().writes(6))
 	}
-	/// Storage: `AmbassadorSalary::Status` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
-	/// Storage: `AmbassadorSalary::Claimant` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Claimant` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
-	/// Storage: `AmbassadorCollective::Members` (r:1 w:0)
-	/// Proof: `AmbassadorCollective::Members` (`max_values`: None, `max_size`: Some(42), added: 2517, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Status` (r:1 w:1)
+	/// Proof: `SecretarySalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Claimant` (r:1 w:1)
+	/// Proof: `SecretarySalary::Claimant` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
+	/// Storage: `SecretaryCollective::Members` (r:1 w:0)
+	/// Proof: `SecretaryCollective::Members` (`max_values`: None, `max_size`: Some(42), added: 2517, mode: `MaxEncodedLen`)
 	/// Storage: `TeyrchainInfo::TeyrchainId` (r:1 w:0)
 	/// Proof: `TeyrchainInfo::TeyrchainId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
 	/// Storage: `PezkuwiXcm::QueryCounter` (r:1 w:1)
@@ -162,26 +162,26 @@ impl<T: pezframe_system::Config> pezpallet_salary::WeightInfo for WeightInfo<T> 
 	/// Proof: `PezkuwiXcm::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn payout_other() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `554`
-		//  Estimated: `4019`
-		// Minimum execution time: 93_094_000 picoseconds.
-		Weight::from_parts(155_800_000, 0)
-			.saturating_add(Weight::from_parts(0, 4019))
+		//  Measured:  `591`
+		//  Estimated: `4056`
+		// Minimum execution time: 94_696_000 picoseconds.
+		Weight::from_parts(155_109_000, 0)
+			.saturating_add(Weight::from_parts(0, 4056))
 			.saturating_add(T::DbWeight::get().reads(9))
 			.saturating_add(T::DbWeight::get().writes(6))
 	}
-	/// Storage: `AmbassadorSalary::Status` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
-	/// Storage: `AmbassadorSalary::Claimant` (r:1 w:1)
-	/// Proof: `AmbassadorSalary::Claimant` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Status` (r:1 w:1)
+	/// Proof: `SecretarySalary::Status` (`max_values`: Some(1), `max_size`: Some(56), added: 551, mode: `MaxEncodedLen`)
+	/// Storage: `SecretarySalary::Claimant` (r:1 w:1)
+	/// Proof: `SecretarySalary::Claimant` (`max_values`: None, `max_size`: Some(86), added: 2561, mode: `MaxEncodedLen`)
 	/// Storage: `PezkuwiXcm::Queries` (r:1 w:1)
 	/// Proof: `PezkuwiXcm::Queries` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn check_payment() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `198`
 		//  Estimated: `3663`
-		// Minimum execution time: 35_957_000 picoseconds.
-		Weight::from_parts(59_582_000, 0)
+		// Minimum execution time: 35_616_000 picoseconds.
+		Weight::from_parts(59_501_000, 0)
 			.saturating_add(Weight::from_parts(0, 3663))
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(3))
