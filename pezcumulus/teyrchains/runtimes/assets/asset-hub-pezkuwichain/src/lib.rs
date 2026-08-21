@@ -2210,7 +2210,8 @@ impl_runtime_apis! {
 					let transfer_asset: Asset = (asset_location, asset_amount).into();
 
 					let assets: XcmAssets = vec![fee_asset.clone(), transfer_asset].into();
-					let fee_asset_id = fee_asset.id;
+					// The api takes the fee's position in `assets` now, not its id.
+					let fee_index = if assets.get(0).unwrap().eq(&fee_asset) { 0 } else { 1 };
 
 					// verify transferred successfully
 					let verify = alloc::boxed::Box::new(move || {
@@ -2223,7 +2224,7 @@ impl_runtime_apis! {
 							initial_asset_amount - asset_amount,
 						);
 					});
-					Some((assets, fee_asset_id, dest, verify))
+					Some((assets, fee_index as u32, dest, verify))
 				}
 
 				fn get_asset() -> Asset {

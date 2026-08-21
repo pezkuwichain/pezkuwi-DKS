@@ -39,6 +39,7 @@ pub mod xcm_config;
 extern crate alloc;
 
 use alloc::{vec, vec::Vec};
+use codec::Encode;
 use pezbridge_runtime_common::extensions::{
 	CheckAndBoostBridgeGrandpaTransactions, CheckAndBoostBridgeTeyrchainsTransactions,
 };
@@ -1389,7 +1390,7 @@ impl_runtime_apis! {
 					params: MessageProofParams<LaneIdOf<Runtime, bridge_to_zagros_config::WithBridgeHubZagrosMessagesInstance>>,
 				) -> (bridge_to_zagros_config::FromZagrosBridgeHubMessagesProof<bridge_to_zagros_config::WithBridgeHubZagrosMessagesInstance>, Weight) {
 					use pezcumulus_primitives_core::XcmpMessageSource;
-					assert!(XcmpQueue::take_outbound_messages(usize::MAX).is_empty());
+					assert!(XcmpQueue::take_outbound_messages(usize::MAX, &[]).is_empty());
 					TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(42.into());
 					let universal_source = bridge_to_zagros_config::open_bridge_for_benchmarks::<
 						Runtime,
@@ -1420,7 +1421,7 @@ impl_runtime_apis! {
 
 				fn is_message_successfully_dispatched(_nonce: pezbp_messages::MessageNonce) -> bool {
 					use pezcumulus_primitives_core::XcmpMessageSource;
-					!XcmpQueue::take_outbound_messages(usize::MAX).is_empty()
+					!XcmpQueue::take_outbound_messages(usize::MAX, &[]).is_empty()
 				}
 			}
 
@@ -1434,7 +1435,7 @@ impl_runtime_apis! {
 					params: MessageProofParams<LaneIdOf<Runtime, bridge_to_bulletin_config::WithPezkuwichainBulletinMessagesInstance>>,
 				) -> (bridge_to_bulletin_config::FromPezkuwichainBulletinMessagesProof<bridge_to_bulletin_config::WithPezkuwichainBulletinMessagesInstance>, Weight) {
 					use pezcumulus_primitives_core::XcmpMessageSource;
-					assert!(XcmpQueue::take_outbound_messages(usize::MAX).is_empty());
+					assert!(XcmpQueue::take_outbound_messages(usize::MAX, &[]).is_empty());
 					TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(42.into());
 					let universal_source = bridge_to_bulletin_config::open_bridge_for_benchmarks::<
 						Runtime,
@@ -1465,7 +1466,7 @@ impl_runtime_apis! {
 
 				fn is_message_successfully_dispatched(_nonce: pezbp_messages::MessageNonce) -> bool {
 					use pezcumulus_primitives_core::XcmpMessageSource;
-					!XcmpQueue::take_outbound_messages(usize::MAX).is_empty()
+					!XcmpQueue::take_outbound_messages(usize::MAX, &[]).is_empty()
 				}
 			}
 
@@ -1510,9 +1511,10 @@ impl_runtime_apis! {
 				}
 
 				fn prepare_rewards_account(
+					_relayer: &AccountId,
 					reward_kind: Self::Reward,
 					reward: Balance,
-				) -> Option<AccountId> {
+				) -> Option<(Self::Reward, AccountId)> {
 					let rewards_account = pezbp_relayers::PayRewardFromAccount::<
 						Balances,
 						AccountId,
@@ -1540,9 +1542,10 @@ impl_runtime_apis! {
 				}
 
 				fn prepare_rewards_account(
+					_relayer: &AccountId,
 					reward_kind: Self::Reward,
 					reward: Balance,
-				) -> Option<AccountId> {
+				) -> Option<(Self::Reward, AccountId)> {
 					let rewards_account = pezbp_relayers::PayRewardFromAccount::<
 						Balances,
 						AccountId,

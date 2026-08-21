@@ -37,6 +37,7 @@ pub mod xcm_config;
 extern crate alloc;
 
 use alloc::{vec, vec::Vec};
+use codec::Encode;
 use pezbridge_runtime_common::extensions::{
 	CheckAndBoostBridgeGrandpaTransactions, CheckAndBoostBridgeTeyrchainsTransactions,
 };
@@ -1330,7 +1331,7 @@ impl_runtime_apis! {
 					params: MessageProofParams<LaneIdOf<Runtime, bridge_to_pezkuwichain_config::WithBridgeHubPezkuwichainMessagesInstance>>,
 				) -> (bridge_to_pezkuwichain_config::FromPezkuwichainBridgeHubMessagesProof<bridge_to_pezkuwichain_config::WithBridgeHubPezkuwichainMessagesInstance>, Weight) {
 					use pezcumulus_primitives_core::XcmpMessageSource;
-					assert!(XcmpQueue::take_outbound_messages(usize::MAX).is_empty());
+					assert!(XcmpQueue::take_outbound_messages(usize::MAX, &[]).is_empty());
 					TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(42.into());
 					let universal_source = bridge_to_pezkuwichain_config::open_bridge_for_benchmarks::<
 						Runtime,
@@ -1361,7 +1362,7 @@ impl_runtime_apis! {
 
 				fn is_message_successfully_dispatched(_nonce: pezbp_messages::MessageNonce) -> bool {
 					use pezcumulus_primitives_core::XcmpMessageSource;
-					!XcmpQueue::take_outbound_messages(usize::MAX).is_empty()
+					!XcmpQueue::take_outbound_messages(usize::MAX, &[]).is_empty()
 				}
 			}
 
@@ -1406,9 +1407,10 @@ impl_runtime_apis! {
 				}
 
 				fn prepare_rewards_account(
+					_relayer: &AccountId,
 					reward_kind: Self::Reward,
 					reward: Balance,
-				) -> Option<pezpallet_bridge_relayers::BeneficiaryOf<Runtime, bridge_common_config::BridgeRelayersInstance>> {
+				) -> Option<(Self::Reward, pezpallet_bridge_relayers::BeneficiaryOf<Runtime, bridge_common_config::BridgeRelayersInstance>)> {
 					let bridge_common_config::BridgeReward::PezkuwichainZagros(reward_kind) = reward_kind else {
 						panic!("Unexpected reward_kind: {:?} - not compatible with `bench_reward`!", reward_kind);
 					};

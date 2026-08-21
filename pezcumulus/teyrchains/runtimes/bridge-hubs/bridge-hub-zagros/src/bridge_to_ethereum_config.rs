@@ -397,6 +397,28 @@ pub mod benchmark_helpers {
 		}
 	}
 
+	/// Stands in for the inbound-queue v2 processor while benchmarking. The real one sends xcm,
+	/// converts accounts and reaches the executor; a benchmark of the queue itself should measure
+	/// none of that, so this accepts everything and reports a fixed id.
+	pub struct DoNothingMessageProcessor;
+	impl<AccountId> pezsnowbridge_inbound_queue_primitives::v2::MessageProcessor<AccountId>
+		for DoNothingMessageProcessor
+	{
+		fn can_process_message(
+			_relayer: &AccountId,
+			_message: &pezsnowbridge_inbound_queue_primitives::v2::Message,
+		) -> bool {
+			true
+		}
+
+		fn process_message(
+			_relayer: AccountId,
+			_message: pezsnowbridge_inbound_queue_primitives::v2::Message,
+		) -> Result<[u8; 32], pezsnowbridge_inbound_queue_primitives::v2::MessageProcessorError> {
+			Ok([0u8; 32])
+		}
+	}
+
 	pub struct DoNothingRouter;
 	impl SendXcm for DoNothingRouter {
 		type Ticket = Xcm<()>;
