@@ -84,7 +84,7 @@
 //!   [`crate::reference_docs::omni_node`].
 //! * [`pezkuwi-teyrchain-bin`]: The collator node used to run collators for all Pezkuwi system
 //!   teyrchains.
-//! * [`frame-omni-bencher`]: a benchmarking tool for FRAME-based runtimes. Nodes typically contain
+//! * [`pezframe-omni-bencher`]: a benchmarking tool for FRAME-based runtimes. Nodes typically contain
 //!   a
 //!  `benchmark` subcommand that does the same.
 //! * [`chain_spec_builder`]: Utility to build chain-specs Nodes  typically contain a `build-spec`
@@ -136,7 +136,7 @@
 //! [`pezcumulus`]: crate::pezkuwi_sdk::pezcumulus
 //! [`pezkuwi`]: crate::pezkuwi_sdk::pezkuwi
 //! [`xcm`]: crate::pezkuwi_sdk::xcm
-//! [`frame-omni-bencher`]: https://crates.io/crates/frame-omni-bencher
+//! [`pezframe-omni-bencher`]: https://crates.io/crates/pezframe-omni-bencher
 //! [`pezkuwi-teyrchain-bin`]: https://crates.io/crates/polkadot-parachain-bin
 //! [`pezkuwi-omni-node`]: https://crates.io/crates/polkadot-omni-node
 

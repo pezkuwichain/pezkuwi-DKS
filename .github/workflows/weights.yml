@@ -49,7 +49,6 @@ jobs:
       - name: Tooling
         run: |
           python3 -m pip install --break-system-packages --quiet -r .github/scripts/requirements.txt
-          command -v frame-omni-bencher >/dev/null || cargo install frame-omni-bencher --locked
 
       # A weight is a timing, so anything else running on the box is part of the measurement.
       # Refuse rather than record a number the fleet cannot reproduce.

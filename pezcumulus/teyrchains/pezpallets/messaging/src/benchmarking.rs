@@ -7,7 +7,7 @@
 //!
 //! Run benchmarks with:
 //! ```text
-//! ./target/release/frame-omni-bencher v1 benchmark pezpallet \
+//! ./target/release/pezframe-omni-bencher v1 benchmark pezpallet \
 //!   --runtime target/release/wbuild/people-pezkuwichain-runtime/people_pezkuwichain_runtime.compact.compressed.wasm \
 //!   --pallets pezpallet_messaging -e all --steps 50 --repeat 20 \
 //!   --output pezcumulus/teyrchains/pezpallets/messaging/src/weights.rs \

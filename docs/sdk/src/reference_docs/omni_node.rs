@@ -93,7 +93,7 @@
 //!   obtaining a `.wasm` file. References:
 //!     * [`crate::guides::your_first_pallet`]
 //!     * [`crate::guides::your_first_runtime`]
-//! * If need be, the weights of the runtime need to be updated using `frame-omni-bencher`.
+//! * If need be, the weights of the runtime need to be updated using `pezframe-omni-bencher`.
 //!   References:
 //!     * [`crate::reference_docs::pezframe_benchmarking_weight`]
 //! * Next, [`chain-spec-builder`] is used to generate a `chain_spec.json`, either for development,

@@ -433,7 +433,7 @@ pub fn run() -> Result<()> {
 				BenchmarkCmd::Overhead(cmd) => runner.sync_run(|config| {
 					if cmd.params.runtime.is_some() {
 						return Err(pezsc_cli::Error::Input(
-							"Pezkuwi binary does not support `--runtime` flag for `benchmark overhead`. Please provide a chain spec or use the `frame-omni-bencher`."
+							"Pezkuwi binary does not support `--runtime` flag for `benchmark overhead`. Please provide a chain spec or use the `pezframe-omni-bencher`."
 								.into(),
 						)
 						.into())
