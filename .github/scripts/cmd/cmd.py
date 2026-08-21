@@ -336,6 +336,7 @@ def main():
         runtime_pallets_map = {}
         failed_benchmarks = {}
         successful_benchmarks = {}
+        failed_builds = []
 
         profile = "production"
 
@@ -357,6 +358,7 @@ def main():
             build_status = os.system(build_command)
             if build_status != 0:
                 print_and_log(f'❌ Failed to build {runtime["name"]}')
+                failed_builds.append(runtime["name"])
                 if args.fail_fast:
                     sys.exit(1)
                 else:
@@ -490,6 +492,17 @@ def main():
             print_and_log('✅ Successful benchmarks of runtimes/pallets:')
             for runtime, pallets in successful_benchmarks.items():
                 print_and_log(f'-- {runtime}: {pallets}')
+
+        # A runtime that never built produced no weights at all, which is a worse outcome than
+        # a pallet whose benchmark failed -- and until now it was the quieter one: the loop
+        # moved on, the summary above only counts benchmarks, and the command exited 0. A run
+        # could report success having skipped four runtimes, which is exactly what happened on
+        # 2026-08-21 (both asset hubs and both bridge hubs).
+        if failed_builds:
+            print_and_log('❌ Runtimes that did not build, so produced NO weights:')
+            for name in failed_builds:
+                print_and_log(f'-- {name}')
+            sys.exit(1)
 
     elif args.command == 'fmt':
         command = f"cargo +nightly fmt"
