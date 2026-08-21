@@ -137,8 +137,11 @@ jobs:
           rustup component add rust-src
           rustup target add wasm32v1-none wasm32-unknown-unknown
       - name: Build test and template runtime WASM (check)
+        # --keep-going: this job takes roughly two hours, and cancel-in-progress means a push
+        # discards whatever is running. Stopping at the first broken runtime would surface one
+        # defect per two-hour cycle; carrying on reports all of them in a single run.
         run: |
-          cargo check --locked \
+          cargo check --locked --keep-going \
             -p bizinikiwi-test-runtime \
             -p glutton-zagros-runtime \
             -p pez-chain-spec-guide-runtime \
