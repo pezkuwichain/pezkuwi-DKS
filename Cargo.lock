@@ -21485,6 +21485,7 @@ dependencies = [
  "alloy-primitives",
  "alloy-rlp",
  "alloy-trie",
+ "hex-literal",
  "parity-scale-codec",
  "pezframe-support",
  "pezsnowbridge-beacon-primitives",

@@ -63,8 +63,10 @@ try-runtime = [
 	"pezframe/try-runtime",
 	"pezpallet-authorship/try-runtime",
 	"pezpallet-balances/try-runtime",
+	"pezpallet-dap/try-runtime",
 	"pezpallet-election-provider-multi-block/try-runtime",
 	"pezpallet-offences/try-runtime",
+	"pezpallet-proxy/try-runtime",
 	"pezpallet-root-offences/try-runtime",
 	"pezpallet-session/try-runtime",
 	"pezpallet-staking-async-ah-client/try-runtime",
@@ -74,6 +76,9 @@ try-runtime = [
 	"pezpallet-timestamp/try-runtime",
 	"pezsp-session/try-runtime",
 	"pezsp-staking/try-runtime",
+	"xcm-builder/try-runtime",
+	"xcm-executor/try-runtime",
+	"xcm/try-runtime",
 ]
 runtime-benchmarks = [
 	"pezframe-election-provider-support/runtime-benchmarks",
@@ -82,8 +87,10 @@ runtime-benchmarks = [
 	"pezframe/runtime-benchmarks",
 	"pezpallet-authorship/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-dap/runtime-benchmarks",
 	"pezpallet-election-provider-multi-block/runtime-benchmarks",
 	"pezpallet-offences/runtime-benchmarks",
+	"pezpallet-proxy/runtime-benchmarks",
 	"pezpallet-root-offences/runtime-benchmarks",
 	"pezpallet-session/runtime-benchmarks",
 	"pezpallet-staking-async-ah-client/runtime-benchmarks",
@@ -93,6 +100,9 @@ runtime-benchmarks = [
 	"pezpallet-timestamp/runtime-benchmarks",
 	"pezsp-session/runtime-benchmarks",
 	"pezsp-staking/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 serde = []
 experimental = []
