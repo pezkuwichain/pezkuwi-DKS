@@ -55,7 +55,7 @@ use xcm::latest::{
 	ZAGROS_GENESIS_HASH,
 };
 use xcm_builder::WithLatestLocationConverter;
-use xcm_executor::traits::{JustTry, WeightTrader};
+use xcm_executor::traits::{JustTry, TransactAsset, WeightTrader};
 use xcm_runtime_pezapis::conversions::LocationToAccountHelper;
 
 const ALICE: [u8; 32] = [1u8; 32];
@@ -118,14 +118,28 @@ fn test_buy_and_refund_weight_in_native() {
 			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
 			let payment: Asset = (native_location.clone(), fee + extra_amount).into();
 
+			// AssetsInHolding no longer converts from an Asset: it carries imbalances now, so the
+			// payment has to come out of a real account.
+			let bob_location: Location =
+				Junction::AccountId32 { network: None, id: bob.clone().into() }.into();
+			let payment_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&payment,
+					&bob_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw payment");
+
 			// init trader and buy weight.
 			let mut trader = <XcmConfig as xcm_executor::Config>::Trader::new();
 			let unused_asset =
-				trader.buy_weight(weight, payment.into(), &ctx).expect("Expected Ok");
+				trader.buy_weight(weight, payment_holding, &ctx).expect("Expected Ok");
 
 			// assert.
-			let unused_amount =
-				unused_asset.fungible.get(&native_location.clone().into()).map_or(0, |a| *a);
+			let unused_amount = unused_asset
+				.fungible
+				.get(&native_location.clone().into())
+				.map_or(0, |a| a.amount());
 			assert_eq!(unused_amount, extra_amount);
 			assert_eq!(Balances::total_issuance(), total_issuance);
 
@@ -206,14 +220,28 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
 			let payment: Asset = (asset_1_location.clone(), asset_fee + extra_amount).into();
 
+			// AssetsInHolding no longer converts from an Asset: it carries imbalances now, so the
+			// payment has to come out of a real account.
+			let bob_location: Location =
+				Junction::AccountId32 { network: None, id: bob.clone().into() }.into();
+			let payment_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&payment,
+					&bob_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw payment");
+
 			// init trader and buy weight.
 			let mut trader = <XcmConfig as xcm_executor::Config>::Trader::new();
 			let unused_asset =
-				trader.buy_weight(weight, payment.into(), &ctx).expect("Expected Ok");
+				trader.buy_weight(weight, payment_holding, &ctx).expect("Expected Ok");
 
 			// assert.
-			let unused_amount =
-				unused_asset.fungible.get(&asset_1_location.clone().into()).map_or(0, |a| *a);
+			let unused_amount = unused_asset
+				.fungible
+				.get(&asset_1_location.clone().into())
+				.map_or(0, |a| a.amount());
 			assert_eq!(unused_amount, extra_amount);
 			assert_eq!(Assets::total_issuance(asset_1), asset_total_issuance + asset_fee);
 
@@ -312,14 +340,28 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
 			let payment: Asset = (foreign_location.clone(), asset_fee + extra_amount).into();
 
+			// AssetsInHolding no longer converts from an Asset: it carries imbalances now, so the
+			// payment has to come out of a real account.
+			let bob_location: Location =
+				Junction::AccountId32 { network: None, id: bob.clone().into() }.into();
+			let payment_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&payment,
+					&bob_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw payment");
+
 			// init trader and buy weight.
 			let mut trader = <XcmConfig as xcm_executor::Config>::Trader::new();
 			let unused_asset =
-				trader.buy_weight(weight, payment.into(), &ctx).expect("Expected Ok");
+				trader.buy_weight(weight, payment_holding, &ctx).expect("Expected Ok");
 
 			// assert.
-			let unused_amount =
-				unused_asset.fungible.get(&foreign_location.clone().into()).map_or(0, |a| *a);
+			let unused_amount = unused_asset
+				.fungible
+				.get(&foreign_location.clone().into())
+				.map_or(0, |a| a.amount());
 			assert_eq!(unused_amount, extra_amount);
 			assert_eq!(
 				ForeignAssets::total_issuance(foreign_location.clone()),

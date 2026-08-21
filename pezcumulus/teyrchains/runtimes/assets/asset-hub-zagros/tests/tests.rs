@@ -58,7 +58,7 @@ use pezframe_support::{
 };
 use pezpallet_revive::{
 	test_utils::builder::{BareInstantiateBuilder, Contract},
-	Code,
+	Code, TransactionLimits,
 };
 use pezpallet_revive_fixtures::compile_module;
 use pezpallet_uniques::{asset_ops::Item, asset_strategies::Attribute};
@@ -161,14 +161,28 @@ fn test_buy_and_refund_weight_in_native() {
 			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
 			let payment: Asset = (native_location.clone(), fee + extra_amount).into();
 
+			// AssetsInHolding no longer converts from an Asset: it carries imbalances now, so the
+			// payment has to come out of a real account.
+			let bob_location: Location =
+				Junction::AccountId32 { network: None, id: bob.clone().into() }.into();
+			let payment_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&payment,
+					&bob_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw payment");
+
 			// init trader and buy weight.
 			let mut trader = <XcmConfig as xcm_executor::Config>::Trader::new();
 			let unused_asset =
-				trader.buy_weight(weight, payment.into(), &ctx).expect("Expected Ok");
+				trader.buy_weight(weight, payment_holding, &ctx).expect("Expected Ok");
 
 			// assert.
-			let unused_amount =
-				unused_asset.fungible.get(&native_location.clone().into()).map_or(0, |a| *a);
+			let unused_amount = unused_asset
+				.fungible
+				.get(&native_location.clone().into())
+				.map_or(0, |a| a.amount());
 			assert_eq!(unused_amount, extra_amount);
 			assert_eq!(Balances::total_issuance(), total_issuance);
 
@@ -260,14 +274,28 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
 			let payment: Asset = (asset_1_location.clone(), asset_fee + extra_amount).into();
 
+			// AssetsInHolding no longer converts from an Asset: it carries imbalances now, so the
+			// payment has to come out of a real account.
+			let bob_location: Location =
+				Junction::AccountId32 { network: None, id: bob.clone().into() }.into();
+			let payment_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&payment,
+					&bob_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw payment");
+
 			// init trader and buy weight.
 			let mut trader = <XcmConfig as xcm_executor::Config>::Trader::new();
 			let unused_asset =
-				trader.buy_weight(weight, payment.into(), &ctx).expect("Expected Ok");
+				trader.buy_weight(weight, payment_holding, &ctx).expect("Expected Ok");
 
 			// assert.
-			let unused_amount =
-				unused_asset.fungible.get(&asset_1_location.clone().into()).map_or(0, |a| *a);
+			let unused_amount = unused_asset
+				.fungible
+				.get(&asset_1_location.clone().into())
+				.map_or(0, |a| a.amount());
 			assert_eq!(unused_amount, extra_amount);
 			assert_eq!(Assets::total_issuance(asset_1), asset_total_issuance + asset_fee);
 
@@ -371,14 +399,28 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
 			let payment: Asset = (foreign_location.clone(), asset_fee + extra_amount).into();
 
+			// AssetsInHolding no longer converts from an Asset: it carries imbalances now, so the
+			// payment has to come out of a real account.
+			let bob_location: Location =
+				Junction::AccountId32 { network: None, id: bob.clone().into() }.into();
+			let payment_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&payment,
+					&bob_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw payment");
+
 			// init trader and buy weight.
 			let mut trader = <XcmConfig as xcm_executor::Config>::Trader::new();
 			let unused_asset =
-				trader.buy_weight(weight, payment.into(), &ctx).expect("Expected Ok");
+				trader.buy_weight(weight, payment_holding, &ctx).expect("Expected Ok");
 
 			// assert.
-			let unused_amount =
-				unused_asset.fungible.get(&foreign_location.clone().into()).map_or(0, |a| *a);
+			let unused_amount = unused_asset
+				.fungible
+				.get(&foreign_location.clone().into())
+				.map_or(0, |a| a.amount());
 			assert_eq!(unused_amount, extra_amount);
 			assert_eq!(
 				ForeignAssets::total_issuance(foreign_location.clone()),
@@ -1711,8 +1753,10 @@ fn withdraw_and_deposit_erc20s() {
 		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
 		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
 		let Contract { addr: erc20_address, .. } = bare_instantiate(&sender, code)
-			.gas_limit(Weight::from_parts(500_000_000_000, 10 * 1024 * 1024))
-			.storage_deposit_limit(Balance::MAX)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
 			.data(constructor_data)
 			.build_and_unwrap_contract();
 
@@ -1824,8 +1868,10 @@ fn smart_contract_not_erc20_will_error() {
 		let (code, _) = compile_module("dummy").unwrap();
 
 		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
-			.gas_limit(Weight::from_parts(500_000_000_000, 10 * 1024 * 1024))
-			.storage_deposit_limit(Balance::MAX)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
 			.build_and_unwrap_contract();
 
 		let wnd_amount_for_fees = 1_000_000_000_000u128;
@@ -1882,8 +1928,10 @@ fn smart_contract_does_not_return_bool_fails() {
 		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
 
 		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
-			.gas_limit(Weight::from_parts(500_000_000_000, 10 * 1024 * 1024))
-			.storage_deposit_limit(Balance::MAX)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
 			.data(constructor_data)
 			.build_and_unwrap_contract();
 
@@ -1938,8 +1986,10 @@ fn expensive_erc20_runs_out_of_gas() {
 		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
 		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
 		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
-			.gas_limit(Weight::from_parts(500_000_000_000, 10 * 1024 * 1024))
-			.storage_deposit_limit(Balance::MAX)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
 			.data(constructor_data)
 			.build_and_unwrap_contract();
 
