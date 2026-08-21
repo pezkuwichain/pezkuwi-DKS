@@ -366,7 +366,7 @@ def main():
 
             print(f'-- listing pallets for benchmark for {runtime["name"]}')
             wasm_file = f"target/{profile}/wbuild/{runtime['package']}/{runtime['package'].replace('-', '_')}.wasm"
-            list_command = f"pezframe-omni-bencher v1 benchmark pallet " \
+            list_command = f"pezframe-omni-bencher v1 benchmark pezpallet " \
                 f"--no-csv-header " \
                 f"--no-storage-info " \
                 f"--no-min-squares " \
@@ -456,10 +456,10 @@ def main():
                         output_path = xcm_path
 
                 print(f'-- benchmarking {pallet} in {runtime} into {output_path}')
-                cmd = f"pezframe-omni-bencher v1 benchmark pallet " \
+                cmd = f"pezframe-omni-bencher v1 benchmark pezpallet " \
                     f"--extrinsic=* " \
                     f"--runtime=target/{profile}/wbuild/{config['package']}/{config['package'].replace('-', '_')}.wasm " \
-                    f"--pallet={pallet} " \
+                    f"--pezpallet={pallet} " \
                     f"--header={header_path} " \
                     f"--output={output_path} " \
                     f"--wasm-execution=compiled " \
