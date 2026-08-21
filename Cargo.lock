@@ -16064,8 +16064,10 @@ dependencies = [
  "pezframe-system",
  "pezpallet-authorship",
  "pezpallet-balances",
+ "pezpallet-dap",
  "pezpallet-election-provider-multi-block",
  "pezpallet-offences",
+ "pezpallet-proxy",
  "pezpallet-root-offences",
  "pezpallet-session",
  "pezpallet-staking",
@@ -16077,6 +16079,9 @@ dependencies = [
  "pezsp-session",
  "pezsp-staking",
  "pezsp-tracing",
+ "pezstaging-xcm",
+ "pezstaging-xcm-builder",
+ "pezstaging-xcm-executor",
  "scale-info",
 ]
 
@@ -18756,6 +18761,7 @@ dependencies = [
  "pezpallet-balances",
  "pezpallet-collator-selection",
  "pezpallet-conviction-voting",
+ "pezpallet-dap",
  "pezpallet-delegated-staking",
  "pezpallet-election-provider-multi-block",
  "pezpallet-fast-unstake",
