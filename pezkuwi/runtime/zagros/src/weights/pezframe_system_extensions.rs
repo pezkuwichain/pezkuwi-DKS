@@ -50,7 +50,7 @@ use core::marker::PhantomData;
 
 /// Weight functions for `pezframe_system_extensions`.
 pub struct WeightInfo<T>(PhantomData<T>);
-impl<T: pezframe_system::Config> pezframe_system_extensions::WeightInfo for WeightInfo<T> {
+impl<T: pezframe_system::Config> pezframe_system::ExtensionsWeightInfo for WeightInfo<T> {
 	fn check_genesis() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
