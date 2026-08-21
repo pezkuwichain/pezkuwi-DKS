@@ -250,7 +250,11 @@ jobs:
       # building them here put all 32 wasm compilations on the critical path of the longest
       # job in the workflow. Nothing is dropped: `runtimes` covers the eleven production
       # blobs and `test-runtimes` covers the other twenty-one.
+      # --keep-going for the same reason as test-runtimes: this job is the longest in the
+      # workflow, so stopping at the first broken crate turns a list of defects into one
+      # defect per cycle. It found twelve errors in one test file, then three more that the
+      # first pass had masked, then would have found the sibling file's on a third run.
       - name: Check every crate, tests included
         env:
           SKIP_WASM_BUILD: 1
-        run: cargo check --workspace --locked --tests
+        run: cargo check --workspace --locked --tests --keep-going

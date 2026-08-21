@@ -262,7 +262,7 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 				pool_liquidity,
 				1,
 				1,
-				bob,
+				bob.clone(),
 			));
 
 			// keep initial total issuance to assert later.
@@ -391,7 +391,7 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 				pool_liquidity,
 				1,
 				1,
-				bob,
+				bob.clone(),
 			));
 
 			// keep initial total issuance to assert later.
@@ -681,7 +681,7 @@ fn test_nft_asset_transactor_works<T: TransactAsset>() {
 				.appended_with(GeneralIndex(collection_id.into()))
 				.unwrap();
 			let item_asset: Asset =
-				(collection_location, AssetInstance::Index(item_id.into())).into();
+				(collection_location.clone(), AssetInstance::Index(item_id.into())).into();
 
 			let alice_account_location: Location = alice.clone().into();
 			let bob_account_location: Location = bob.clone().into();

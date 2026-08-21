@@ -208,7 +208,7 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 				pool_liquidity,
 				1,
 				1,
-				bob,
+				bob.clone(),
 			));
 
 			// keep initial total issuance to assert later.
@@ -332,7 +332,7 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 				pool_liquidity,
 				1,
 				1,
-				bob,
+				bob.clone(),
 			));
 
 			// keep initial total issuance to assert later.
