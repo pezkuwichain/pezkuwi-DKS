@@ -35,7 +35,7 @@ use asset_test_pezutils::{
 use codec::{Decode, Encode};
 use hex_literal::hex;
 use pezframe_support::{
-	assert_noop, assert_ok, parameter_types,
+	assert_ok, parameter_types,
 	traits::{
 		fungible::{Inspect, Mutate},
 		fungibles::{
@@ -149,7 +149,11 @@ fn test_buy_and_refund_weight_in_native() {
 
 			// refund.
 			let actual_refund = trader.refund_weight(refund_weight, &ctx).unwrap();
-			assert_eq!(actual_refund, (native_location, refund).into());
+			let actual_refund_amount = actual_refund
+				.fungible
+				.get(&native_location.clone().into())
+				.map_or(0, |a| a.amount());
+			assert_eq!(actual_refund_amount, refund);
 
 			// assert.
 			assert_eq!(Balances::balance(&staking_pot), initial_balance);
@@ -258,7 +262,11 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 
 			// refund.
 			let actual_refund = trader.refund_weight(refund_weight, &ctx).unwrap();
-			assert_eq!(actual_refund, (asset_1_location, asset_refund).into());
+			let actual_refund_amount = actual_refund
+				.fungible
+				.get(&asset_1_location.clone().into())
+				.map_or(0, |a| a.amount());
+			assert_eq!(actual_refund_amount, asset_refund);
 
 			// assert.
 			assert_eq!(Balances::balance(&staking_pot), initial_balance);
@@ -378,7 +386,11 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 
 			// refund.
 			let actual_refund = trader.refund_weight(refund_weight, &ctx).unwrap();
-			assert_eq!(actual_refund, (foreign_location.clone(), asset_refund).into());
+			let actual_refund_amount = actual_refund
+				.fungible
+				.get(&foreign_location.clone().into())
+				.map_or(0, |a| a.amount());
+			assert_eq!(actual_refund_amount, asset_refund);
 
 			// assert.
 			assert_eq!(Balances::balance(&staking_pot), initial_balance);
@@ -433,10 +445,39 @@ fn test_asset_xcm_take_first_trader_refund_not_possible_since_amount_less_than_e
 				"we are testing what happens when the amount does not exceed ED"
 			);
 
-			let asset: Asset = (asset_location, amount_bought).into();
+			let asset: Asset = (asset_location.clone(), amount_bought).into();
 
-			// Buy weight should return an error
-			assert_noop!(trader.buy_weight(bought, asset.into(), &ctx), XcmError::TooExpensive);
+			// Mint the asset to alice so the withdraw below has something to take; at least
+			// ED, or the mint itself is rejected.
+			let mint_amount = amount_bought.max(ExistentialDeposit::get() + 1);
+			assert_ok!(Assets::mint(
+				RuntimeHelper::origin_of(AccountId::from(ALICE)),
+				1.into(),
+				AccountId::from(ALICE).into(),
+				mint_amount
+			));
+			let alice_location: Location =
+				Junction::AccountId32 { network: None, id: ALICE.into() }.into();
+			let asset_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&asset,
+					&alice_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw asset");
+
+			// Buy weight fails and hands the asset back inside the error.
+			let result = trader.buy_weight(bought, asset_holding, &ctx);
+			assert!(result.is_err());
+			if let Err((returned_asset, xcm_error)) = result {
+				assert_eq!(xcm_error, XcmError::TooExpensive);
+				// The whole minted amount comes back: withdrawing only `amount_bought` would
+				// leave a sub-ED remainder, so the transactor takes the account down.
+				assert_eq!(
+					returned_asset.fungible.get(&asset_location.into()).map_or(0, |a| a.amount()),
+					mint_amount
+				);
+			}
 
 			// not credited since the ED is higher than this value
 			assert_eq!(Assets::balance(1, AccountId::from(ALICE)), 0);
@@ -489,10 +530,35 @@ fn test_asset_xcm_trader_not_possible_for_non_sufficient_assets() {
 
 			let asset_location = AssetIdForTrustBackedAssetsConvert::convert_back(&1).unwrap();
 
-			let asset: Asset = (asset_location, asset_amount_needed).into();
+			let asset: Asset = (asset_location.clone(), asset_amount_needed).into();
 
-			// Make sure again buy_weight does return an error
-			assert_noop!(trader.buy_weight(bought, asset.into(), &ctx), XcmError::TooExpensive);
+			// Mint what the withdraw below takes; alice only holds the minimum balance.
+			assert_ok!(Assets::mint(
+				RuntimeHelper::origin_of(AccountId::from(ALICE)),
+				1.into(),
+				AccountId::from(ALICE).into(),
+				asset_amount_needed
+			));
+			let alice_location: Location =
+				Junction::AccountId32 { network: None, id: ALICE.into() }.into();
+			let asset_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&asset,
+					&alice_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw asset");
+
+			// Make sure again buy_weight does return an error, handing the asset back.
+			let result = trader.buy_weight(bought, asset_holding, &ctx);
+			assert!(result.is_err());
+			if let Err((returned_asset, xcm_error)) = result {
+				assert_eq!(xcm_error, XcmError::TooExpensive);
+				assert_eq!(
+					returned_asset.fungible.get(&asset_location.into()).map_or(0, |a| a.amount()),
+					asset_amount_needed
+				);
+			}
 
 			// Drop trader
 			drop(trader);

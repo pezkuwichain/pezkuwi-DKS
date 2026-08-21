@@ -192,7 +192,11 @@ fn test_buy_and_refund_weight_in_native() {
 
 			// refund.
 			let actual_refund = trader.refund_weight(refund_weight, &ctx).unwrap();
-			assert_eq!(actual_refund, (native_location, refund).into());
+			let actual_refund_amount = actual_refund
+				.fungible
+				.get(&native_location.clone().into())
+				.map_or(0, |a| a.amount());
+			assert_eq!(actual_refund_amount, refund);
 
 			// assert.
 			assert_eq!(Balances::balance(&staking_pot), initial_balance);
@@ -312,7 +316,11 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 
 			// refund.
 			let actual_refund = trader.refund_weight(refund_weight, &ctx).unwrap();
-			assert_eq!(actual_refund, (asset_1_location, asset_refund).into());
+			let actual_refund_amount = actual_refund
+				.fungible
+				.get(&asset_1_location.clone().into())
+				.map_or(0, |a| a.amount());
+			assert_eq!(actual_refund_amount, asset_refund);
 
 			// assert.
 			assert_eq!(Balances::balance(&staking_pot), initial_balance);
@@ -437,7 +445,11 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 
 			// refund.
 			let actual_refund = trader.refund_weight(refund_weight, &ctx).unwrap();
-			assert_eq!(actual_refund, (foreign_location.clone(), asset_refund).into());
+			let actual_refund_amount = actual_refund
+				.fungible
+				.get(&foreign_location.clone().into())
+				.map_or(0, |a| a.amount());
+			assert_eq!(actual_refund_amount, asset_refund);
 
 			// assert.
 			assert_eq!(Balances::balance(&staking_pot), initial_balance);
@@ -493,10 +505,40 @@ fn test_asset_xcm_take_first_trader_refund_not_possible_since_amount_less_than_e
 				"we are testing what happens when the amount does not exceed ED"
 			);
 
-			let asset: Asset = (asset_location, amount_bought).into();
+			let asset: Asset = (asset_location.clone(), amount_bought).into();
 
 			// Buy weight should return an error
-			assert_noop!(trader.buy_weight(bought, asset.into(), &ctx), XcmError::TooExpensive);
+			// The holding is built by withdrawing, so the account needs a balance to withdraw
+			// from -- at least ED, or the mint itself is rejected.
+			let mint_amount = amount_bought.max(ExistentialDeposit::get() + 1);
+			assert_ok!(Assets::mint(
+				RuntimeHelper::origin_of(AccountId::from(ALICE)),
+				1.into(),
+				AccountId::from(ALICE).into(),
+				mint_amount
+			));
+			let alice_location: Location =
+				Junction::AccountId32 { network: None, id: ALICE.into() }.into();
+			let asset_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&asset,
+					&alice_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw asset");
+
+			// Buy weight fails and hands the asset back inside the error.
+			let result = trader.buy_weight(bought, asset_holding, &ctx);
+			assert!(result.is_err());
+			if let Err((returned_asset, xcm_error)) = result {
+				assert_eq!(xcm_error, XcmError::TooExpensive);
+				// The whole minted amount comes back: withdrawing only `amount_bought` would
+				// leave a sub-ED remainder, so the transactor takes the account down.
+				assert_eq!(
+					returned_asset.fungible.get(&asset_location.into()).map_or(0, |a| a.amount()),
+					mint_amount
+				);
+			}
 
 			// not credited since the ED is higher than this value
 			assert_eq!(Assets::balance(1, AccountId::from(ALICE)), 0);
@@ -550,10 +592,35 @@ fn test_asset_xcm_take_first_trader_not_possible_for_non_sufficient_assets() {
 
 			let asset_location = AssetIdForTrustBackedAssetsConvert::convert_back(&1).unwrap();
 
-			let asset: Asset = (asset_location, asset_amount_needed).into();
+			let asset: Asset = (asset_location.clone(), asset_amount_needed).into();
 
-			// Make sure again buy_weight does return an error
-			assert_noop!(trader.buy_weight(bought, asset.into(), &ctx), XcmError::TooExpensive);
+			// Mint what the withdraw below takes; alice only holds the minimum balance.
+			assert_ok!(Assets::mint(
+				RuntimeHelper::origin_of(AccountId::from(ALICE)),
+				1.into(),
+				AccountId::from(ALICE).into(),
+				asset_amount_needed
+			));
+
+			// Make sure again buy_weight does return an error, handing the asset back.
+			let alice_location: Location =
+				Junction::AccountId32 { network: None, id: ALICE.into() }.into();
+			let asset_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&asset,
+					&alice_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw asset");
+			let result = trader.buy_weight(bought, asset_holding, &ctx);
+			assert!(result.is_err());
+			if let Err((returned_asset, xcm_error)) = result {
+				assert_eq!(xcm_error, XcmError::TooExpensive);
+				assert_eq!(
+					returned_asset.fungible.get(&asset_location.into()).map_or(0, |a| a.amount()),
+					asset_amount_needed
+				);
+			}
 
 			// Drop trader
 			drop(trader);
@@ -620,10 +687,14 @@ fn test_nft_asset_transactor_works<T: TransactAsset>() {
 			let bob_account_location: Location = bob.clone().into();
 
 			// Can't deposit the token that isn't withdrawn
-			assert_err!(
-				T::deposit_asset(&item_asset, &alice_account_location, Some(&ctx),),
-				XcmError::FailedToTransactAsset("AlreadyExists")
+			let item_holding = xcm_executor::AssetsInHolding::new_from_non_fungible(
+				collection_location.clone().into(),
+				AssetInstance::Index(item_id.into()),
 			);
+			assert!(matches!(
+				T::deposit_asset(item_holding, &alice_account_location, Some(&ctx)),
+				Err((_, XcmError::FailedToTransactAsset("AlreadyExists")))
+			));
 
 			// Alice isn't the owner, she can't withdraw the token
 			assert_noop!(
@@ -631,8 +702,11 @@ fn test_nft_asset_transactor_works<T: TransactAsset>() {
 				XcmError::FailedToTransactAsset("NoPermission")
 			);
 
-			// Bob, the owner, can withdraw the token
-			assert_ok!(T::withdraw_asset(&item_asset, &bob_account_location, Some(&ctx),));
+			// Bob, the owner, can withdraw the token. The holding it returns is what the
+			// deposit below consumes -- deposit_asset takes a holding, not an asset.
+			let withdrawn_holding =
+				T::withdraw_asset(&item_asset, &bob_account_location, Some(&ctx))
+					.expect("Bob owns the token");
 
 			// The token is withdrawn
 			assert_eq!(
@@ -655,8 +729,8 @@ fn test_nft_asset_transactor_works<T: TransactAsset>() {
 				XcmError::FailedToTransactAsset("UnknownCollection")
 			);
 
-			// Deposit the token to alice
-			assert_ok!(T::deposit_asset(&item_asset, &alice_account_location, Some(&ctx),));
+			// Deposit the token to alice, using the holding bob's withdraw produced
+			assert_ok!(T::deposit_asset(withdrawn_holding, &alice_account_location, Some(&ctx),));
 
 			// The token is deposited
 			assert_eq!(
@@ -674,10 +748,14 @@ fn test_nft_asset_transactor_works<T: TransactAsset>() {
 			);
 
 			// Can't deposit the token twice
-			assert_err!(
-				T::deposit_asset(&item_asset, &alice_account_location, Some(&ctx),),
-				XcmError::FailedToTransactAsset("AlreadyExists")
+			let item_holding_again = xcm_executor::AssetsInHolding::new_from_non_fungible(
+				collection_location.clone().into(),
+				AssetInstance::Index(item_id.into()),
 			);
+			assert!(matches!(
+				T::deposit_asset(item_holding_again, &alice_account_location, Some(&ctx)),
+				Err((_, XcmError::FailedToTransactAsset("AlreadyExists")))
+			));
 
 			// Transfer the token directly
 			assert_ok!(T::transfer_asset(

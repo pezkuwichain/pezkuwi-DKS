@@ -348,7 +348,7 @@ def main():
 
         compile_bencher = os.system(f"cargo install -q --path bizinikiwi/utils/pezframe/omni-bencher --locked --profile {profile}")
         if compile_bencher != 0:
-            print_and_log('❌ Failed to compile frame-omni-bencher')
+            print_and_log('❌ Failed to compile pezframe-omni-bencher')
             sys.exit(1)
 
         # loop over remaining runtimes to collect available pallets
@@ -366,7 +366,7 @@ def main():
 
             print(f'-- listing pallets for benchmark for {runtime["name"]}')
             wasm_file = f"target/{profile}/wbuild/{runtime['package']}/{runtime['package'].replace('-', '_')}.wasm"
-            list_command = f"frame-omni-bencher v1 benchmark pallet " \
+            list_command = f"pezframe-omni-bencher v1 benchmark pallet " \
                 f"--no-csv-header " \
                 f"--no-storage-info " \
                 f"--no-min-squares " \
@@ -445,7 +445,7 @@ def main():
                         uses_polkadot_sdk_frame = False
                     template = config['template']
                     if uses_polkadot_sdk_frame and re.match(r"frame-(:?umbrella-)?weight-template\.hbs", os.path.normpath(template).split(os.path.sep)[-1]):
-                        template = "substrate/.maintain/frame-umbrella-weight-template.hbs"
+                        template = "bizinikiwi/.maintain/frame-umbrella-weight-template.hbs"
                     print(f'template: {template}')
                 else:
                     default_path = f"./{config['path']}/src/weights"
@@ -456,7 +456,7 @@ def main():
                         output_path = xcm_path
 
                 print(f'-- benchmarking {pallet} in {runtime} into {output_path}')
-                cmd = f"frame-omni-bencher v1 benchmark pallet " \
+                cmd = f"pezframe-omni-bencher v1 benchmark pallet " \
                     f"--extrinsic=* " \
                     f"--runtime=target/{profile}/wbuild/{config['package']}/{config['package'].replace('-', '_')}.wasm " \
                     f"--pallet={pallet} " \
