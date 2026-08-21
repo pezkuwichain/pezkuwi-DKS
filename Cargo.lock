@@ -29509,6 +29509,7 @@ dependencies = [
  "pezpallet-uniques",
  "pezpallet-xcm",
  "pezsp-core",
+ "pezsp-crypto-hashing",
  "pezsp-io",
  "pezsp-runtime",
  "pezsp-tracing",
