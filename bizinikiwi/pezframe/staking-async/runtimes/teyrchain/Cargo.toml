@@ -119,6 +119,7 @@ pezcumulus-primitives-aura = { workspace = true }
 pezcumulus-primitives-core = { workspace = true }
 pezcumulus-primitives-utility = { workspace = true }
 pezpallet-collator-selection = { workspace = true }
+pezpallet-dap = { workspace = true }
 pezpallet-message-queue = { workspace = true }
 testnet-teyrchains-constants = { features = ["zagros"], workspace = true }
 teyrchain-info = { workspace = true }
@@ -187,6 +188,7 @@ runtime-benchmarks = [
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-collator-selection/runtime-benchmarks",
 	"pezpallet-conviction-voting/runtime-benchmarks",
+	"pezpallet-dap/runtime-benchmarks",
 	"pezpallet-delegated-staking/runtime-benchmarks",
 	"pezpallet-election-provider-multi-block/runtime-benchmarks",
 	"pezpallet-fast-unstake/runtime-benchmarks",
@@ -283,6 +285,7 @@ try-runtime = [
 	"pezpallet-balances/try-runtime",
 	"pezpallet-collator-selection/try-runtime",
 	"pezpallet-conviction-voting/try-runtime",
+	"pezpallet-dap/try-runtime",
 	"pezpallet-delegated-staking/try-runtime",
 	"pezpallet-election-provider-multi-block/try-runtime",
 	"pezpallet-fast-unstake/try-runtime",
@@ -382,6 +385,7 @@ std = [
 	"pezpallet-balances/std",
 	"pezpallet-collator-selection/std",
 	"pezpallet-conviction-voting/std",
+	"pezpallet-dap/std",
 	"pezpallet-delegated-staking/std",
 	"pezpallet-election-provider-multi-block/std",
 	"pezpallet-fast-unstake/std",

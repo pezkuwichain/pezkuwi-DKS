@@ -18,7 +18,8 @@
 use crate::rc::mock::*;
 use pezframe::testing_prelude::*;
 use pezpallet_staking_async_ah_client::{
-	self as ah_client, Mode, OffenceSendQueue, OperatingMode, OutgoingSessionReport, UnexpectedKind,
+	self as ah_client, Mode, OffenceSendQueue, OperatingMode, OutgoingSessionReport,
+	SessionKeysUpdate, UnexpectedKind,
 };
 use pezpallet_staking_async_rc_client::{
 	self as rc_client, Offence, SessionReport, ValidatorSetReport,
@@ -983,8 +984,7 @@ mod session_pruning {
 					)
 				}
 
-				// ensure that we have the root for these recorded in the historical session
-				// pezpallet
+				// ensure that we have the root for these recorded in the historical session pezpallet
 				assert_eq!(pezpallet_session::historical::StoredRange::<T>::get(), Some((2, 12)));
 
 				// send back a new validator set, but with some pruning info.
@@ -1400,7 +1400,6 @@ mod splitting {
 	}
 }
 
-#[cfg(test)]
 mod key_proofs {
 	use pezframe::traits::KeyOwnerProofSystem;
 	use pezframe_support::pezsp_runtime;
@@ -1449,7 +1448,7 @@ mod key_proofs {
 					key_types::DUMMY, testing::UintAuthorityId, traits::OpaqueKeys,
 				};
 
-				let key_ids = <SessionKeys as OpaqueKeys>::key_ids();
+				let key_ids = <UintAuthorityId as OpaqueKeys>::key_ids();
 				assert_eq!(key_ids.len(), 1, "we have inserted only one key type in mock");
 
 				let keys = pezpallet_session::Pezpallet::<T>::load_keys(&1).unwrap();
@@ -1474,6 +1473,175 @@ mod key_proofs {
 					.unwrap(),
 					(1, pezsp_staking::Exposure::default())
 				)
+			})
+	}
+}
+
+mod session_keys {
+	use super::*;
+	use pezframe::deps::pezsp_runtime::DispatchError;
+	use pezframe_support::assert_noop;
+
+	#[test]
+	fn set_update_purge_keys_from_ah_works() {
+		ExtBuilder::default()
+			.session_keys(vec![1])
+			.local_queue()
+			.build()
+			.execute_with(|| {
+				// GIVEN: A valid validator stash account.
+				let stash: AccountId = 1;
+				let keys1 = pezframe::deps::pezsp_runtime::testing::UintAuthorityId(42);
+
+				// WHEN: Setting initial keys from AH.
+				assert_ok!(ah_client::Pezpallet::<Runtime>::set_keys_from_ah(
+					RuntimeOrigin::root(),
+					stash,
+					keys1.encode(),
+				));
+
+				// THEN: Keys are registered.
+				assert_eq!(
+					pezpallet_session::NextKeys::<Runtime>::get(stash).unwrap(),
+					pezframe::deps::pezsp_runtime::testing::UintAuthorityId(42)
+				);
+
+				// WHEN: Updating to different keys.
+				let keys2 = pezframe::deps::pezsp_runtime::testing::UintAuthorityId(99);
+				assert_ok!(ah_client::Pezpallet::<Runtime>::set_keys_from_ah(
+					RuntimeOrigin::root(),
+					stash,
+					keys2.encode(),
+				));
+
+				// THEN: Keys are updated.
+				assert_eq!(
+					pezpallet_session::NextKeys::<Runtime>::get(stash).unwrap(),
+					pezframe::deps::pezsp_runtime::testing::UintAuthorityId(99)
+				);
+
+				// WHEN: Purging keys.
+				assert_ok!(ah_client::Pezpallet::<Runtime>::purge_keys_from_ah(
+					RuntimeOrigin::root(),
+					stash,
+				));
+
+				// THEN: Keys are removed.
+				assert!(pezpallet_session::NextKeys::<Runtime>::get(stash).is_none());
+			})
+	}
+
+	#[test]
+	fn set_keys_from_ah_invalid_keys() {
+		ExtBuilder::default().local_queue().build().execute_with(|| {
+			// GIVEN: A stash with no existing keys and malformed keys that cannot be decoded.
+			let stash: AccountId = 42;
+			let invalid_keys = vec![0xff, 0xfe, 0xfd];
+
+			// WHEN: Setting invalid keys.
+			// THEN: Returns Ok (defensive - this should never happen since AH validates).
+			assert_ok!(ah_client::Pezpallet::<Runtime>::set_keys_from_ah(
+				RuntimeOrigin::root(),
+				stash,
+				invalid_keys,
+			));
+
+			// AND: An Unexpected event is emitted since this should never happen.
+			assert_eq!(
+				ah_client_events_since_last_call(),
+				vec![ah_client::Event::Unexpected(UnexpectedKind::InvalidKeysFromAssetHub)]
+			);
+
+			// AND: Keys were NOT set (operation silently failed).
+			assert!(pezpallet_session::NextKeys::<Runtime>::get(stash).is_none());
+		})
+	}
+
+	#[test]
+	fn set_keys_from_ah_bad_origin() {
+		ExtBuilder::default()
+			.session_keys(vec![1])
+			.local_queue()
+			.build()
+			.execute_with(|| {
+				// GIVEN: Valid stash and keys but an invalid origin (none).
+				let stash: AccountId = 1;
+				let keys = pezframe::deps::pezsp_runtime::testing::UintAuthorityId(42);
+				let encoded_keys = keys.encode();
+
+				// WHEN: Using RuntimeOrigin::none().
+				// THEN: Fails with BadOrigin.
+				assert_noop!(
+					ah_client::Pezpallet::<Runtime>::set_keys_from_ah(
+						RuntimeOrigin::none(),
+						stash,
+						encoded_keys,
+					),
+					DispatchError::BadOrigin
+				);
+
+				assert_noop!(
+					ah_client::Pezpallet::<Runtime>::purge_keys_from_ah(
+						RuntimeOrigin::none(),
+						stash,
+					),
+					DispatchError::BadOrigin
+				);
+			})
+	}
+
+	#[test]
+	fn purge_keys_from_ah_no_keys() {
+		ExtBuilder::default()
+			.session_keys(vec![1])
+			.local_queue()
+			.build()
+			.execute_with(|| {
+				// GIVEN: A stash that has never set session keys.
+				let stash: AccountId = 99;
+
+				// WHEN: Purging keys for an account that has none.
+				// THEN: Returns Ok but emits SessionKeysUpdateFailed with NoKeys error.
+				assert_ok!(ah_client::Pezpallet::<Runtime>::purge_keys_from_ah(
+					RuntimeOrigin::root(),
+					stash,
+				));
+				System::assert_has_event(
+					ah_client::Event::<Runtime>::SessionKeysUpdateFailed {
+						stash,
+						update: SessionKeysUpdate::Purged,
+						error: pezpallet_session::Error::<Runtime>::NoKeys.into(),
+					}
+					.into(),
+				);
+			})
+	}
+
+	#[test]
+	fn set_keys_from_ah_works_for_account_without_providers() {
+		ExtBuilder::default()
+			.session_keys(vec![1])
+			.local_queue()
+			.build()
+			.execute_with(|| {
+				// GIVEN: Account 999 doesn't exist on RC (not funded, no provider reference).
+				// This simulates post-AHM scenario where stash balance is on AssetHub.
+				let stash: AccountId = 999;
+				let keys = pezframe::deps::pezsp_runtime::testing::UintAuthorityId(42);
+				let encoded_keys = keys.encode();
+
+				// WHEN: Setting keys via ah-client (privileged path).
+				// THEN: Succeeds because SessionInterface::set_keys bypasses provider checks.
+				assert_ok!(ah_client::Pezpallet::<Runtime>::set_keys_from_ah(
+					RuntimeOrigin::root(),
+					stash,
+					encoded_keys,
+				));
+
+				// AND: Keys are stored correctly.
+				let next_keys = pezpallet_session::NextKeys::<Runtime>::get(stash);
+				assert!(next_keys.is_some());
+				assert_eq!(next_keys.unwrap(), keys.into());
 			})
 	}
 }

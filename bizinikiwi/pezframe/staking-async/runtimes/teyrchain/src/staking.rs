@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-///! Staking, and election related pezpallet configurations.
+/// ! Staking, and election related pezpallet configurations.
 use super::*;
 use pezcumulus_primitives_core::relay_chain::SessionIndex;
 use pezframe_election_provider_support::{ElectionDataProvider, SequentialPhragmen};
@@ -31,6 +31,7 @@ use pezsp_runtime::{
 	SaturatedConversion,
 };
 use xcm::latest::prelude::*;
+use xcm_executor::XcmExecutor as XcmExec;
 
 pub(crate) fn enable_hez_preset(fast: bool) {
 	Pages::set(&32);
@@ -60,11 +61,11 @@ pub(crate) fn enable_dcl_preset(fast: bool) {
 // Note that this runtime has 3 broad presets:
 //
 // 1. dev: fast development preset.
-// 2. dot-size: as close to Pezkuwi as possible.
+// 2. hez-size: as close to Pezkuwi as possible.
 // 3. dcl-size: as close to Dicle as possible.
 //
 // The default values here are related to `dev`. The above helper functions are used at launch (see
-// `build_state` runtime-api) to enable dot/dcl presets.
+// `build_state` runtime-api) to enable hez/dcl presets.
 parameter_types! {
 	/// Number of election pages that we operate upon.
 	///
@@ -159,8 +160,9 @@ parameter_types! {
 	/// Number of nominators per page of the snapshot, and consequently number of backers in the
 	/// solution.
 	///
-	/// 703 in both Pezkuwi and Dicle.
-	pub VoterSnapshotPerBlock: u32 = MaxElectingVoters::get() / Pages::get();
+	/// 704 in Pezkuwi (32 pages), 782 in Dicle (16 pages). Uses ceiling division so that
+	/// `VoterSnapshotPerBlock * Pages >= MaxElectingVoters` holds for any configured values.
+	pub VoterSnapshotPerBlock: u32 = MaxElectingVoters::get().div_ceil(Pages::get());
 
 	/// In each page, we may observe up to all of the validators.
 	pub const MaxWinnersPerPage: u32 = MaxValidatorSet::get();
@@ -231,7 +233,7 @@ parameter_types! {
 	/// benefit of the honest submitter.
 	pub EjectGraceRatio: Perbill = Perbill::from_percent(50);
 
-	/// * Pezkuwi: 5 DOTs per era/day
+	/// * Pezkuwi: 5 HEZ per era/day
 	/// * Dicle: 1 DCL per era/6h
 	pub RewardBase: Balance = 10 * UNITS;
 }
@@ -275,16 +277,8 @@ impl pezframe_election_provider_support::onchain::Config for OnChainConfig {
 	type WeightInfo = ();
 }
 
-parameter_types! {
-	/// Abandon an election that has produced nothing usable for this long, and start over.
-	/// This runtime is only used by the staking-async test fixtures, where rounds are short,
-	/// so the window is correspondingly small.
-	pub storage StalledRoundTimeout: BlockNumber = 100;
-}
-
 impl multi_block::Config for Runtime {
 	type AreWeDone = multi_block::RevertToSignedIfNotQueuedOf<Self>;
-	type StalledRoundTimeout = StalledRoundTimeout;
 	type Pages = Pages;
 	type UnsignedPhase = UnsignedPhase;
 	type SignedPhase = SignedPhase;
@@ -299,6 +293,7 @@ impl multi_block::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type Fallback = pezframe_election_provider_support::onchain::OnChainExecution<OnChainConfig>;
 	type MinerConfig = Self;
+	type Signed = MultiBlockElectionSigned;
 	type Verifier = MultiBlockElectionVerifier;
 	type OnRoundRotation = multi_block::CleanRound<Self>;
 	type WeightInfo = multi_block::weights::pezkuwi::MultiBlockWeightInfo<Self>;
@@ -364,6 +359,9 @@ impl multi_block::unsigned::miner::MinerConfig for Runtime {
 	type MaxVotesPerVoter =
 		<<Self as multi_block::Config>::DataProvider as ElectionDataProvider>::MaxVotesPerVoter;
 	type MaxLength = MinerMaxLength;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Solver = pezframe_election_provider_support::QuickDirtySolver<AccountId, Perbill>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
 	type Solver = <Runtime as multi_block::unsigned::Config>::OffchainSolver;
 	type Pages = Pages;
 	type Solution = NposCompactSolution16;
@@ -385,29 +383,27 @@ impl pezpallet_bags_list::Config<VoterBagsListInstance> for Runtime {
 	type MaxAutoRebagPerBlock = ();
 }
 
-pub struct EraPayout;
-impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
-	fn era_payout(
-		_total_staked: Balance,
-		_total_issuance: Balance,
-		era_duration_millis: u64,
-	) -> (Balance, Balance) {
-		const MILLISECONDS_PER_YEAR: u64 = (1000 * 3600 * 24 * 36525) / 100;
-		// A normal-sized era will have 1 / 365.25 here:
-		let relative_era_len =
-			FixedU128::from_rational(era_duration_millis.into(), MILLISECONDS_PER_YEAR.into());
+parameter_types! {
+	pub const StakingPotsPalletId: pezframe_support::PalletId = pezframe_support::PalletId(*b"py/stkng");
+}
 
-		// Fixed total TI that we use as baseline for the issuance.
+/// Pezkuwi inflation curve for DAP.
+///
+/// Same computation as the previous `EraPayout` but returns total emission
+/// (the staker/treasury split is now handled by DAP budget allocation).
+pub struct PezkuwiIssuanceCurve;
+impl pezsp_staking::budget::IssuanceCurve<Balance> for PezkuwiIssuanceCurve {
+	fn issue(_total_issuance: Balance, elapsed_millis: u64) -> Balance {
+		const MILLISECONDS_PER_YEAR: u64 = (1000 * 3600 * 24 * 36525) / 100;
+		let relative_period =
+			FixedU128::from_rational(elapsed_millis.into(), MILLISECONDS_PER_YEAR.into());
+
 		let fixed_total_issuance: i128 = 5_216_342_402_773_185_773;
 		let fixed_inflation_rate = FixedU128::from_rational(8, 100);
 		let yearly_emission = fixed_inflation_rate.saturating_mul_int(fixed_total_issuance);
 
-		let era_emission = relative_era_len.saturating_mul_int(yearly_emission);
-		// 15% to treasury, as per Pezkuwi ref 1139.
-		let to_treasury = FixedU128::from_rational(15, 100).saturating_mul_int(era_emission);
-		let to_stakers = era_emission.saturating_sub(to_treasury);
-
-		(to_stakers.saturated_into(), to_treasury.saturated_into())
+		let emission = relative_period.saturating_mul_int(yearly_emission);
+		emission.saturated_into()
 	}
 }
 
@@ -420,14 +416,13 @@ parameter_types! {
 	pub const BondingDuration: pezsp_staking::EraIndex = 2;
 	// 1 era in which slashes can be cancelled (6 hours).
 	pub const SlashDeferDuration: pezsp_staking::EraIndex = 1;
+	// Nominators can unbond faster (2 eras) when not slashable.
+	pub const NominatorFastUnbondDuration: pezsp_staking::EraIndex = 2;
 	// Note: this is not really correct as Max Nominators is (MaxExposurePageSize * page_count) but
 	// this is an unbounded number. We just set it to a reasonably high value, 1 full page
 	// of nominators.
 	pub const MaxControllersInDeprecationBatch: u32 = 751;
 	pub const MaxNominations: u32 = <NposCompactSolution16 as pezframe_election_provider_support::NposSolution>::LIMIT as u32;
-	// Note: In WAH, this should be set closer to the ideal era duration to trigger capping more
-	// frequently. On Dicle and Pezkuwi, a higher value like 7 × ideal_era_duration is more
-	// appropriate.
 	pub const MaxEraDuration: u64 = RelaySessionDuration::get() as u64 * RELAY_CHAIN_SLOT_DURATION_MILLIS as u64 * SessionsPerEra::get() as u64;
 	pub MaxPruningItems: u32 = 100;
 }
@@ -440,13 +435,14 @@ impl pezpallet_staking_async::Config for Runtime {
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type CurrencyToVote = pezsp_staking::currency_to_vote::SaturatingCurrencyToVote;
 	type RewardRemainder = ();
-	type Slash = ();
+	type Slash = Dap;
 	type Reward = ();
 	type SessionsPerEra = SessionsPerEra;
 	type BondingDuration = BondingDuration;
 	type SlashDeferDuration = SlashDeferDuration;
+	type NominatorFastUnbondDuration = NominatorFastUnbondDuration;
 	type AdminOrigin = EitherOf<EnsureRoot<AccountId>, StakingAdmin>;
-	type EraPayout = EraPayout;
+	type EraPayout = ();
 	type MaxExposurePageSize = MaxExposurePageSize;
 	type ElectionProvider = MultiBlockElection;
 	type VoterList = VoterList;
@@ -459,19 +455,68 @@ impl pezpallet_staking_async::Config for Runtime {
 	type MaxControllersInDeprecationBatch = MaxControllersInDeprecationBatch;
 	type EventListeners = (NominationPools, DelegatedStaking);
 	type WeightInfo = pezpallet_staking_async::weights::BizinikiwiWeight<Runtime>;
-	type MaxInvulnerables = pezframe_support::traits::ConstU32<20>;
 	type MaxEraDuration = MaxEraDuration;
+	type DisableMinting = ConstBool<true>;
+	type UnclaimedRewardHandler = Dap;
+	type RewardPots = pezpallet_staking_async::Seed<StakingPotsPalletId>;
+	type StakerRewardCalculator =
+		pezpallet_staking_async::reward::DefaultStakerRewardCalculator<Runtime>;
 	type MaxPruningItems = MaxPruningItems;
 	type PlanningEraOffset =
 		pezpallet_staking_async::PlanningEraOffsetOf<Self, RelaySessionDuration, ConstU32<10>>;
 	type RcClientInterface = StakingRcClient;
 }
 
+// Relay chain session keys matching Westend configuration.
+pezsp_runtime::impl_opaque_keys! {
+	pub struct RelayChainSessionKeys {
+		pub grandpa: pezsp_consensus_grandpa::AuthorityId,
+		pub babe: pezsp_consensus_babe::AuthorityId,
+		pub para_validator: pezkuwi_primitives::ValidatorId,
+		pub para_assignment: pezkuwi_primitives::AssignmentId,
+		pub authority_discovery: pezsp_authority_discovery::AuthorityId,
+		pub beefy: pezsp_consensus_beefy::ecdsa_crypto::AuthorityId,
+	}
+}
+
+// Relay chain session keys type for rc-client.
 impl pezpallet_staking_async_rc_client::Config for Runtime {
 	type RelayChainOrigin = EnsureRoot<AccountId>;
 	type AHStakingInterface = Staking;
 	type SendToRelayChain = StakingXcmToRelayChain;
 	type MaxValidatorSetRetries = ConstU32<5>;
+	// export validator session at end of session 4 within an era.
+	type ValidatorSetExportSession = ConstU32<4>;
+	type RelayChainSessionKeys = RelayChainSessionKeys;
+	type Currency = Balances;
+	type KeyDeposit = ConstU128<{ 10_000 * UNITS }>;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const DapPalletId: pezframe_support::PalletId = pezpallet_dap::DAP_PALLET_ID;
+	pub const DapIssuanceCadence: u64 = 60_000;
+	pub const DapMaxElapsedPerDrip: u64 = 600_000;
+}
+
+impl pezpallet_dap::Config for Runtime {
+	type Currency = Balances;
+	type PalletId = DapPalletId;
+	type IssuanceCurve = PezkuwiIssuanceCurve;
+	type BudgetRecipients = (
+		pezpallet_dap::Pezpallet<Runtime>,
+		pezpallet_staking_async::StakerRewardRecipient<
+			pezpallet_staking_async::Seed<StakingPotsPalletId>,
+		>,
+		pezpallet_staking_async::ValidatorIncentiveRecipient<
+			pezpallet_staking_async::Seed<StakingPotsPalletId>,
+		>,
+	);
+	type Time = pezpallet_timestamp::Pezpallet<Runtime>;
+	type IssuanceCadence = DapIssuanceCadence;
+	type MaxElapsedPerDrip = DapMaxElapsedPerDrip;
+	type BudgetOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -489,24 +534,35 @@ pub enum RelayChainRuntimePallets {
 pub enum AhClientCalls {
 	#[codec(index = 0)]
 	ValidatorSet(rc_client::ValidatorSetReport<AccountId>),
+	#[codec(index = 3)]
+	SetKeysFromAh { stash: AccountId, keys: Vec<u8> },
+	#[codec(index = 4)]
+	PurgeKeysFromAh { stash: AccountId },
 }
 
 pub struct ValidatorSetToXcm;
 impl Convert<rc_client::ValidatorSetReport<AccountId>, Xcm<()>> for ValidatorSetToXcm {
 	fn convert(report: rc_client::ValidatorSetReport<AccountId>) -> Xcm<()> {
-		Xcm(vec![
-			Instruction::UnpaidExecution {
-				weight_limit: WeightLimit::Unlimited,
-				check_origin: None,
-			},
-			Instruction::Transact {
-				origin_kind: OriginKind::Native,
-				fallback_max_weight: None,
-				call: RelayChainRuntimePallets::AhClient(AhClientCalls::ValidatorSet(report))
+		rc_client::build_transact_xcm(
+			RelayChainRuntimePallets::AhClient(AhClientCalls::ValidatorSet(report)).encode(),
+		)
+	}
+}
+
+pub struct KeysMessageToXcm;
+impl Convert<rc_client::KeysMessage<AccountId>, Xcm<()>> for KeysMessageToXcm {
+	fn convert(msg: rc_client::KeysMessage<AccountId>) -> Xcm<()> {
+		let encoded_call = match msg {
+			rc_client::KeysMessage::SetKeys { stash, keys } => {
+				RelayChainRuntimePallets::AhClient(AhClientCalls::SetKeysFromAh { stash, keys })
 					.encode()
-					.into(),
 			},
-		])
+			rc_client::KeysMessage::PurgeKeys { stash } => {
+				RelayChainRuntimePallets::AhClient(AhClientCalls::PurgeKeysFromAh { stash })
+					.encode()
+			},
+		};
+		rc_client::build_transact_xcm(encoded_call)
 	}
 }
 
@@ -514,6 +570,8 @@ pub struct StakingXcmToRelayChain;
 
 impl rc_client::SendToRelayChain for StakingXcmToRelayChain {
 	type AccountId = AccountId;
+	type Balance = Balance;
+
 	fn validator_set(report: rc_client::ValidatorSetReport<Self::AccountId>) -> Result<(), ()> {
 		rc_client::XCMSender::<
 			xcm_config::XcmRouter,
@@ -521,6 +579,43 @@ impl rc_client::SendToRelayChain for StakingXcmToRelayChain {
 			rc_client::ValidatorSetReport<Self::AccountId>,
 			ValidatorSetToXcm,
 		>::send(report)
+	}
+
+	fn set_keys(
+		stash: Self::AccountId,
+		keys: Vec<u8>,
+		max_fee: Option<Self::Balance>,
+	) -> Result<Self::Balance, rc_client::SendKeysError<Self::Balance>> {
+		rc_client::XCMSender::<
+			xcm_config::XcmRouter,
+			StakingXcmDestination,
+			rc_client::KeysMessage<Self::AccountId>,
+			KeysMessageToXcm,
+		>::send_with_fees::<
+			XcmExec<xcm_config::XcmConfig>,
+			RuntimeCall,
+			AccountId,
+			rc_client::AccountId32ToLocation,
+			Self::Balance,
+		>(rc_client::KeysMessage::set_keys(stash.clone(), keys), stash, max_fee, 0)
+	}
+
+	fn purge_keys(
+		stash: Self::AccountId,
+		max_fee: Option<Self::Balance>,
+	) -> Result<Self::Balance, rc_client::SendKeysError<Self::Balance>> {
+		rc_client::XCMSender::<
+			xcm_config::XcmRouter,
+			StakingXcmDestination,
+			rc_client::KeysMessage<Self::AccountId>,
+			KeysMessageToXcm,
+		>::send_with_fees::<
+			XcmExec<xcm_config::XcmConfig>,
+			RuntimeCall,
+			AccountId,
+			rc_client::AccountId32ToLocation,
+			Self::Balance,
+		>(rc_client::KeysMessage::purge_keys(stash.clone()), stash, max_fee, 0)
 	}
 }
 
@@ -674,9 +769,7 @@ mod tests {
 	use pezpallet_election_provider_multi_block::{
 		self as mb, signed::WeightInfo as _, unsigned::WeightInfo as _,
 	};
-	use remote_externalities::{
-		Builder, Mode, OfflineConfig, OnlineConfig, SnapshotConfig, Transport,
-	};
+	use remote_externalities::{Builder, Mode, OfflineConfig, OnlineConfig, SnapshotConfig};
 	use std::env::var;
 
 	fn weight_diff(block: Weight, op: Weight) {
@@ -695,6 +788,62 @@ mod tests {
 	}
 
 	#[test]
+	fn fake_dot_preset_snapshot_capacity_covers_max_electing_voters() {
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			super::enable_hez_preset(false);
+			assert!(
+				VoterSnapshotPerBlock::get() * Pages::get() >= MaxElectingVoters::get(),
+				"paged snapshot capacity {} < MaxElectingVoters {}",
+				VoterSnapshotPerBlock::get() * Pages::get(),
+				MaxElectingVoters::get(),
+			);
+		});
+	}
+
+	#[test]
+	fn fake_ksm_preset_snapshot_capacity_covers_max_electing_voters() {
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			super::enable_dcl_preset(false);
+			assert!(
+				VoterSnapshotPerBlock::get() * Pages::get() >= MaxElectingVoters::get(),
+				"paged snapshot capacity {} < MaxElectingVoters {}",
+				VoterSnapshotPerBlock::get() * Pages::get(),
+				MaxElectingVoters::get(),
+			);
+		});
+	}
+
+	#[test]
+	fn ensure_epmb_weights_sane_pezkuwi() {
+		use pezsp_io::TestExternalities;
+		use pezsp_runtime::Percent;
+		pezsp_tracing::try_init_simple();
+		TestExternalities::default().execute_with(|| {
+			super::enable_hez_preset(false);
+			pezpallet_election_provider_multi_block::Pezpallet::<Runtime>::check_all_weights(
+				<Runtime as pezframe_system::Config>::BlockWeights::get().max_block,
+				Some(Percent::from_percent(75)),
+				Some(Percent::from_percent(50)),
+			)
+		});
+	}
+
+	#[test]
+	fn ensure_epmb_weights_sane_dicle() {
+		use pezsp_io::TestExternalities;
+		use pezsp_runtime::Percent;
+		pezsp_tracing::try_init_simple();
+		TestExternalities::default().execute_with(|| {
+			super::enable_dcl_preset(false);
+			pezpallet_election_provider_multi_block::Pezpallet::<Runtime>::check_all_weights(
+				<Runtime as pezframe_system::Config>::BlockWeights::get().max_block,
+				Some(Percent::from_percent(75)),
+				Some(Percent::from_percent(50)),
+			)
+		});
+	}
+
+	#[test]
 	fn signed_weight_ratios() {
 		pezsp_tracing::try_init_simple();
 		let block_weight = <Runtime as pezframe_system::Config>::BlockWeights::get().max_block;
@@ -703,9 +852,9 @@ mod tests {
 		let dicle_signed_submission =
 			mb::weights::dicle::MultiBlockSignedWeightInfo::<Runtime>::submit_page();
 
-		log::info!(target: "runtime", "Pezkuwi:");
+		log::info!(target: "runtime", "Polkadot:");
 		weight_diff(block_weight, pezkuwi_signed_submission);
-		log::info!(target: "runtime", "Dicle:");
+		log::info!(target: "runtime", "Kusama:");
 		weight_diff(block_weight, dicle_signed_submission);
 	}
 
@@ -718,7 +867,7 @@ mod tests {
 			let pezkuwi_session = 6 * HOURS;
 			log::info!(
 				target: "runtime",
-				"Pezkuwi election duration: {:?}, session: {:?} ({} sessions)",
+				"Polkadot election duration: {:?}, session: {:?} ({} sessions)",
 				duration,
 				pezkuwi_session,
 				duration / pezkuwi_session
@@ -731,7 +880,7 @@ mod tests {
 			let dicle_session = 1 * HOURS;
 			log::info!(
 				target: "runtime",
-				"Dicle election duration: {:?}, session: {:?} ({} sessions)",
+				"Kusama election duration: {:?}, session: {:?} ({} sessions)",
 				duration,
 				dicle_session,
 				duration / dicle_session
@@ -781,8 +930,7 @@ mod tests {
 		}
 		pezsp_tracing::try_init_simple();
 
-		let transport: Transport =
-			var("WS").unwrap_or("wss://zagros-rpc.pezkuwichain.io:443".to_string()).into();
+		let transport_uri = var("WS").unwrap_or("wss://zagros-rpc.pezkuwichain.io:443".to_string());
 		let maybe_state_snapshot: Option<SnapshotConfig> = var("SNAP").map(|s| s.into()).ok();
 
 		let mut ext = Builder::<Block>::default()
@@ -790,7 +938,7 @@ mod tests {
 				Mode::OfflineOrElseOnline(
 					OfflineConfig { state_snapshot: state_snapshot.clone() },
 					OnlineConfig {
-						transport,
+						transport_uris: vec![transport_uri.clone()],
 						hashed_prefixes: vec![vec![]],
 						state_snapshot: Some(state_snapshot),
 						..Default::default()
@@ -799,7 +947,7 @@ mod tests {
 			} else {
 				Mode::Online(OnlineConfig {
 					hashed_prefixes: vec![vec![]],
-					transport,
+					transport_uris: vec![transport_uri],
 					..Default::default()
 				})
 			})

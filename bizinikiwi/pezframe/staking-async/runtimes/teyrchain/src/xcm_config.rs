@@ -447,16 +447,16 @@ impl xcm_executor::Config for XcmConfig {
 		>,
 		// This trader allows to pay with `is_sufficient=true` "Trust Backed" assets from dedicated
 		// `pezpallet_assets` instance - `Assets`.
+		// XcmFeesTo32ByteAccount is gone; ResolveAssetTo replaces it and takes a Get<AccountId>
+		// rather than an Option, so the fees can no longer go to `XcmAssetFeesReceiver`
+		// (the block author, which is None when there is not one). They go to the staking pot,
+		// which is where upstream and our own asset hubs send them.
 		pezcumulus_primitives_utility::TakeFirstAssetTrader<
 			AccountId,
 			AssetFeeAsExistentialDepositMultiplierFeeCharger,
 			TrustBackedAssetsConvertedConcreteId,
 			Assets,
-			pezcumulus_primitives_utility::XcmFeesTo32ByteAccount<
-				FungiblesTransactor,
-				AccountId,
-				XcmAssetFeesReceiver,
-			>,
+			ResolveAssetTo<StakingPot, Assets>,
 		>,
 		// This trader allows to pay with `is_sufficient=true` "Foreign" assets from dedicated
 		// `pezpallet_assets` instance - `ForeignAssets`.
@@ -465,11 +465,7 @@ impl xcm_executor::Config for XcmConfig {
 			ForeignAssetFeeAsExistentialDepositMultiplierFeeCharger,
 			ForeignAssetsConvertedConcreteId,
 			ForeignAssets,
-			pezcumulus_primitives_utility::XcmFeesTo32ByteAccount<
-				ForeignFungiblesTransactor,
-				AccountId,
-				XcmAssetFeesReceiver,
-			>,
+			ResolveAssetTo<StakingPot, ForeignAssets>,
 		>,
 	);
 	type ResponseHandler = PezkuwiXcm;
