@@ -18,19 +18,23 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
 //! DATE: 2025-05-18, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `c47a012f15ca`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! HOSTNAME: upstream (see note below)
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: 1024
+//! NOTE: derived from upstream, not measured on our hardware. This runtime is a
+//! staking-async test fixture: it is not in the runtimes job, has no chain spec, and
+//! is never deployed, so nothing prices anything from these numbers. They are here
+//! because the weight traits gained methods and the impl has to be complete.
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
 // --extrinsic=*
-// --runtime=target/production/wbuild/asset-hub-pezkuwichain-runtime/asset_hub_pezkuwichain_runtime.wasm
+// --runtime=target/production/wbuild/asset-hub-rococo-runtime/asset_hub_rococo_runtime.wasm
 // --pezpallet=pezpallet_assets
-// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/pezcumulus/file_header.txt
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain/src/weights
+// --header=/__w/pezkuwi-sdk/pezkuwi-sdk/cumulus/file_header.txt
+// --output=./cumulus/teyrchains/runtimes/assets/asset-hub-rococo/src/weights
 // --wasm-execution=compiled
 // --steps=50
 // --repeat=20
@@ -49,6 +53,7 @@ use core::marker::PhantomData;
 
 /// Weight functions for `pezpallet_assets`.
 pub struct WeightInfo<T>(PhantomData<T>);
+
 impl<T: pezframe_system::Config> pezpallet_assets::WeightInfo for WeightInfo<T> {
 	/// Storage: `PoolAssets::Asset` (r:1 w:1)
 	/// Proof: `PoolAssets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
@@ -105,7 +110,7 @@ impl<T: pezframe_system::Config> pezpallet_assets::WeightInfo for WeightInfo<T> 
 	/// The range of component `c` is `[0, 1000]`.
 	/// The range of component `c` is `[0, 1000]`.
 	/// The range of component `c` is `[0, 1000]`.
-	fn destroy_accounts(c: u32, ) -> Weight {
+	fn destroy_accounts(c: u32) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0 + c * (208 ±0)`
 		//  Estimated: `3675 + c * (2609 ±0)`
@@ -127,7 +132,7 @@ impl<T: pezframe_system::Config> pezpallet_assets::WeightInfo for WeightInfo<T> 
 	/// The range of component `a` is `[0, 1000]`.
 	/// The range of component `a` is `[0, 1000]`.
 	/// The range of component `a` is `[0, 1000]`.
-	fn destroy_approvals(a: u32, ) -> Weight {
+	fn destroy_approvals(a: u32) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `451 + a * (86 ±0)`
 		//  Estimated: `3675 + a * (2623 ±0)`
@@ -334,7 +339,7 @@ impl<T: pezframe_system::Config> pezpallet_assets::WeightInfo for WeightInfo<T> 
 	/// The range of component `s` is `[0, 50]`.
 	/// The range of component `n` is `[0, 50]`.
 	/// The range of component `s` is `[0, 50]`.
-	fn set_metadata(n: u32, _s: u32, ) -> Weight {
+	fn set_metadata(n: u32, _s: u32) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `280`
 		//  Estimated: `3675`
@@ -370,7 +375,7 @@ impl<T: pezframe_system::Config> pezpallet_assets::WeightInfo for WeightInfo<T> 
 	/// The range of component `s` is `[0, 50]`.
 	/// The range of component `n` is `[0, 50]`.
 	/// The range of component `s` is `[0, 50]`.
-	fn force_set_metadata(_n: u32, s: u32, ) -> Weight {
+	fn force_set_metadata(_n: u32, s: u32) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `119`
 		//  Estimated: `3675`
@@ -615,9 +620,28 @@ impl<T: pezframe_system::Config> pezpallet_assets::WeightInfo for WeightInfo<T> 
 			.saturating_add(Weight::from_parts(0, 3613))
 			.saturating_add(T::DbWeight::get().reads(1))
 	}
-	fn set_reserves() -> Weight {
+	/// The range of component `n` is `[0, 5]`.
+	/// The range of component `n` is `[0, 5]`.
+	/// The range of component `n` is `[0, 5]`.
+	fn set_reserves(n: u32) -> Weight {
 		Weight::from_parts(31_972_000, 3675)
+			// Standard Error: 13_748
+			.saturating_add(Weight::from_parts(198_975, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	fn migration_v2_foreign_asset_set_reserve_weight() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `256`
+		//  Estimated: `0`
+		// Minimum execution time: 9_596_000 picoseconds.
+		Weight::from_parts(10_031_000, 0)
+	}
+	fn get_metadata() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `344`
+		//  Estimated: `0`
+		// Minimum execution time: 10_591_000 picoseconds.
+		Weight::from_parts(11_015_000, 0)
 	}
 }

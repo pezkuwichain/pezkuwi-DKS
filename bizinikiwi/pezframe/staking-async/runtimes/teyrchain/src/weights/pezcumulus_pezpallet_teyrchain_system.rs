@@ -20,8 +20,12 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 4.0.0-dev
 //! DATE: 2023-03-28, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `i9`, CPU: `13th Gen Intel(R) Core(TM) i9-13900K`
+//! HOSTNAME: upstream (see note below)
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("statemine-dev"), DB CACHE: 1024
+//! NOTE: derived from upstream, not measured on our hardware. This runtime is a
+//! staking-async test fixture: it is not in the runtimes job, has no chain spec, and
+//! is never deployed, so nothing prices anything from these numbers. They are here
+//! because the weight traits gained methods and the impl has to be complete.
 
 // Executed Command:
 // ./target/release/pezkuwi-teyrchain
@@ -78,5 +82,16 @@ impl<T: pezframe_system::Config> pezcumulus_pezpallet_teyrchain_system::WeightIn
 			.saturating_add(Weight::from_parts(23_923_169, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(4))
+	}
+	fn block_weight_tx_extension_max_weight() -> Weight {
+		Weight::zero()
+	}
+
+	fn block_weight_tx_extension_stays_fraction_of_core() -> Weight {
+		Weight::zero()
+	}
+
+	fn block_weight_tx_extension_full_core() -> Weight {
+		Weight::zero()
 	}
 }

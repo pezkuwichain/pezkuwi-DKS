@@ -20,14 +20,18 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 4.0.0-dev
 //! DATE: 2023-06-14, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `runner--ss9ysm1-project-163-concurrent-0`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
-//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("zagros-dev"), DB CACHE: 1024
+//! HOSTNAME: upstream (see note below)
+//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("<upstream reference runtime>"), DB CACHE: 1024
+//! NOTE: derived from upstream, not measured on our hardware. This runtime is a
+//! staking-async test fixture: it is not in the runtimes job, has no chain spec, and
+//! is never deployed, so nothing prices anything from these numbers. They are here
+//! because the weight traits gained methods and the impl has to be complete.
 
 // Executed Command:
-// ./target/production/pezkuwi
+// ./target/production/polkadot
 // benchmark
 // pezpallet
-// --chain=zagros-dev
+// --chain=<upstream reference runtime>
 // --steps=50
 // --repeat=20
 // --no-storage-info
@@ -38,7 +42,7 @@
 // --execution=wasm
 // --wasm-execution=compiled
 // --header=./file_header.txt
-// --output=./runtime/zagros/src/weights/
+// --output=./runtime/westend/src/weights/
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -107,21 +111,7 @@ impl<T: pezframe_system::Config> pezpallet_bags_list::WeightInfo for WeightInfo<
 			.saturating_add(T::DbWeight::get().reads(10))
 			.saturating_add(T::DbWeight::get().writes(6))
 	}
-	/// Storage: `VoterList::CounterForListNodes` (r:1 w:0)
-	/// Proof: `VoterList::CounterForListNodes` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
-	/// Storage: `VoterList::Lock` (r:1 w:0)
-	/// Proof: `VoterList::Lock` (`max_values`: Some(1), `max_size`: Some(0), added: 495, mode: `MaxEncodedLen`)
-	/// Storage: `VoterList::NextNodeAutoRebagged` (r:1 w:1)
-	/// Proof: `VoterList::NextNodeAutoRebagged` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
-	/// Storage: `VoterList::ListBags` (r:200 w:2)
-	/// Proof: `VoterList::ListBags` (`max_values`: None, `max_size`: Some(82), added: 2557, mode: `MaxEncodedLen`)
-	/// Storage: `VoterList::ListNodes` (r:12 w:11)
-	/// Proof: `VoterList::ListNodes` (`max_values`: None, `max_size`: Some(154), added: 2629, mode: `MaxEncodedLen`)
-	/// Storage: `Staking::Bonded` (r:10 w:0)
-	/// Proof: `Staking::Bonded` (`max_values`: None, `max_size`: Some(72), added: 2547, mode: `MaxEncodedLen`)
-	/// Storage: `Staking::Ledger` (r:10 w:0)
-	/// Proof: `Staking::Ledger` (`max_values`: None, `max_size`: Some(1091), added: 3566, mode: `MaxEncodedLen`)
-	fn on_idle() -> Weight {
+	fn on_idle_rebag() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `37539`
 		//  Estimated: `512390`
