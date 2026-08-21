@@ -26,7 +26,11 @@ set -uo pipefail
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
 ROOTS=("$@")
-[ ${#ROOTS[@]} -eq 0 ] && ROOTS=(pezcumulus pezkuwi pezbridges bizinikiwi)
+# templates/ and docs/ ship too: a template is what someone starts a chain from, and the
+# guides are read as instructions. Both were outside this gate until 2026-08-21, which is
+# how three `#[frame_construct_runtime]` attributes survived the rebrand there -- the
+# compiler caught those, but a chain name in the same files would have gone out unread.
+[ ${#ROOTS[@]} -eq 0 ] && ROOTS=(pezcumulus pezkuwi pezbridges bizinikiwi templates docs)
 
 # Networks we do not operate, and the legacy names of chains that were never ours.
 FOREIGN_NET='rococo|westend|kusama|statemint|statemine|westmint|rockmine'
@@ -46,6 +50,9 @@ allow() {
     *staking-async/runtimes/rc/*) return 0 ;;
     *staking-async/runtimes/teyrchain/*) return 0 ;;
     pezkuwi/xcm/src/v5/junction.rs) return 0 ;;
+    # A link to the Parity article the guide is summarising. It cites a source; it names no
+    # network we would connect to, and the heritage note says attribution stays.
+    docs/sdk/src/guides/enable_elastic_scaling.rs) return 0 ;;
   esac
   return 1
 }
