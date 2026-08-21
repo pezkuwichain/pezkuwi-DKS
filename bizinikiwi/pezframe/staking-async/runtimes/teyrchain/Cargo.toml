@@ -30,6 +30,7 @@ pezframe-system = { workspace = true }
 pezframe-system-benchmarking = { optional = true, workspace = true }
 pezframe-system-rpc-runtime-api = { workspace = true }
 pezframe-try-runtime = { optional = true, workspace = true }
+pezkuwi-primitives = { workspace = true }
 pezpallet-asset-conversion = { workspace = true }
 pezpallet-asset-conversion-ops = { workspace = true }
 pezpallet-asset-conversion-tx-payment = { workspace = true }
@@ -73,8 +74,12 @@ pezpallet-vesting = { workspace = true }
 pezpallet-whitelist = { workspace = true }
 pezsp-api = { workspace = true }
 pezsp-arithmetic = { workspace = true }
+pezsp-authority-discovery = { workspace = true }
 pezsp-block-builder = { workspace = true }
 pezsp-consensus-aura = { workspace = true }
+pezsp-consensus-babe = { workspace = true }
+pezsp-consensus-beefy = { workspace = true }
+pezsp-consensus-grandpa = { workspace = true }
 pezsp-core = { workspace = true }
 pezsp-genesis-builder = { workspace = true }
 pezsp-inherents = { workspace = true }
@@ -172,6 +177,7 @@ runtime-benchmarks = [
 	"pezframe-system-rpc-runtime-api/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
 	"pezframe-try-runtime?/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
 	"pezkuwi-runtime-common/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezpallet-asset-conversion-ops/runtime-benchmarks",
@@ -369,6 +375,7 @@ std = [
 	"pezframe-system-rpc-runtime-api/std",
 	"pezframe-system/std",
 	"pezframe-try-runtime?/std",
+	"pezkuwi-primitives/std",
 	"pezkuwi-runtime-common/std",
 	"pezkuwi-teyrchain-primitives/std",
 	"pezpallet-asset-conversion-ops/std",
@@ -421,8 +428,12 @@ std = [
 	"pezpallet-xcm/std",
 	"pezsp-api/std",
 	"pezsp-arithmetic/std",
+	"pezsp-authority-discovery/std",
 	"pezsp-block-builder/std",
 	"pezsp-consensus-aura/std",
+	"pezsp-consensus-babe/std",
+	"pezsp-consensus-beefy/std",
+	"pezsp-consensus-grandpa/std",
 	"pezsp-core/std",
 	"pezsp-genesis-builder/std",
 	"pezsp-inherents/std",
