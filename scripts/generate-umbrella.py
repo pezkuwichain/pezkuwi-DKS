@@ -35,7 +35,9 @@ def exclude(crate):
 	# No runtime crates:
 	if name.endswith("-runtime"):
 		# Note: this is a bit hacky. We should use custom crate metadata instead.
-		return name != "sp-runtime" and name != "pezbp-runtime" and name != "frame-try-runtime"
+		# Our names, not upstream's: the rebrand reached `pezbp-runtime` here and missed the
+		# other two, which quietly dropped both crates out of the umbrella.
+		return name not in ("pezsp-runtime", "pezbp-runtime", "pezframe-try-runtime")
 
 	# Exclude snowbridge crates.
 	if name.startswith("snowbridge-"):
@@ -121,7 +123,10 @@ def main(path, version):
 		"pezkuwi-subxt-metadata",
 	}
 
-	runtime_crates = [crate for crate in nostd_crates if 'frame' in crate[0].name or crate[0].name.startswith('sp-')]
+	# Our primitives are `pezsp-*`, so the upstream `sp-` prefix matched none of them and the
+	# `runtime` feature came out with only the frame crates in it. ('frame' still matches
+	# `pezframe-*` as a substring, which is why only this half was silently wrong.)
+	runtime_crates = [crate for crate in nostd_crates if 'frame' in crate[0].name or crate[0].name.startswith('pezsp-')]
 	all_crates = std_crates + nostd_crates
 	all_crates.sort(key=lambda x: x[0].name)
 	dependencies = {}

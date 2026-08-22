@@ -83,6 +83,7 @@ std = [
 	"pezframe-system-benchmarking?/std",
 	"pezframe-system-rpc-runtime-api?/std",
 	"pezframe-system?/std",
+	"pezframe-try-runtime?/std",
 	"pezframe?/std",
 	"pezkuwi-approval-distribution?/std",
 	"pezkuwi-availability-bitfield-distribution?/std",
@@ -367,6 +368,7 @@ std = [
 	"pezsp-panic-handler?/std",
 	"pezsp-rpc?/std",
 	"pezsp-runtime-interface?/std",
+	"pezsp-runtime?/std",
 	"pezsp-session?/std",
 	"pezsp-ss58-registry?/std",
 	"pezsp-staking?/std",
@@ -470,6 +472,7 @@ runtime-benchmarks = [
 	"pezframe-system-benchmarking?/runtime-benchmarks",
 	"pezframe-system-rpc-runtime-api?/runtime-benchmarks",
 	"pezframe-system?/runtime-benchmarks",
+	"pezframe-try-runtime?/runtime-benchmarks",
 	"pezframe?/runtime-benchmarks",
 	"pezkuwi-approval-distribution?/runtime-benchmarks",
 	"pezkuwi-availability-bitfield-distribution?/runtime-benchmarks",
@@ -717,6 +720,7 @@ runtime-benchmarks = [
 	"pezsp-npos-elections?/runtime-benchmarks",
 	"pezsp-offchain?/runtime-benchmarks",
 	"pezsp-runtime-interface?/runtime-benchmarks",
+	"pezsp-runtime?/runtime-benchmarks",
 	"pezsp-session?/runtime-benchmarks",
 	"pezsp-staking?/runtime-benchmarks",
 	"pezsp-state-machine?/runtime-benchmarks",
@@ -798,6 +802,7 @@ try-runtime = [
 	"pezframe-support?/try-runtime",
 	"pezframe-system-benchmarking?/try-runtime",
 	"pezframe-system?/try-runtime",
+	"pezframe-try-runtime?/try-runtime",
 	"pezframe?/try-runtime",
 	"pezkuwi-cli?/try-runtime",
 	"pezkuwi-collator-protocol?/try-runtime",
@@ -992,6 +997,7 @@ try-runtime = [
 	"pezsp-mmr-primitives?/try-runtime",
 	"pezsp-npos-elections?/try-runtime",
 	"pezsp-offchain?/try-runtime",
+	"pezsp-runtime?/try-runtime",
 	"pezsp-session?/try-runtime",
 	"pezsp-staking?/try-runtime",
 	"pezsp-statement-store?/try-runtime",
@@ -1083,6 +1089,7 @@ serde = [
 	"pezframe-system-benchmarking?/serde",
 	"pezframe-system-rpc-runtime-api?/serde",
 	"pezframe-system?/serde",
+	"pezframe-try-runtime?/serde",
 	"pezframe?/serde",
 	"pezkuwi-approval-distribution?/serde",
 	"pezkuwi-availability-bitfield-distribution?/serde",
@@ -1353,6 +1360,7 @@ serde = [
 	"pezsp-panic-handler?/serde",
 	"pezsp-rpc?/serde",
 	"pezsp-runtime-interface?/serde",
+	"pezsp-runtime?/serde",
 	"pezsp-session?/serde",
 	"pezsp-ss58-registry?/serde",
 	"pezsp-staking?/serde",
@@ -1416,6 +1424,7 @@ experimental = [
 	"pezframe-support?/experimental",
 	"pezframe-system-benchmarking?/experimental",
 	"pezframe-system?/experimental",
+	"pezframe-try-runtime?/experimental",
 	"pezframe?/experimental",
 	"pezkuwi-omni-node-lib?/experimental",
 	"pezkuwi-pez-node-primitives?/experimental",
@@ -1539,6 +1548,7 @@ experimental = [
 	"pezsp-consensus-beefy?/experimental",
 	"pezsp-core?/experimental",
 	"pezsp-maybe-compressed-blob?/experimental",
+	"pezsp-runtime?/experimental",
 	"pezstaging-teyrchain-info?/experimental",
 	"pezstaging-xcm-builder?/experimental",
 	"pezstaging-xcm-executor?/experimental",
@@ -1722,6 +1732,7 @@ with-tracing = [
 	"pezsp-consensus-beefy?/with-tracing",
 	"pezsp-io?/with-tracing",
 	"pezsp-runtime-interface?/with-tracing",
+	"pezsp-runtime?/with-tracing",
 	"pezsp-tracing?/with-tracing",
 	"pezstaging-chain-spec-builder?/with-tracing",
 	"pezstaging-node-inspect?/with-tracing",
@@ -1783,6 +1794,7 @@ runtime-full = [
 	"pezframe-system",
 	"pezframe-system-benchmarking",
 	"pezframe-system-rpc-runtime-api",
+	"pezframe-try-runtime",
 	"pezkuwi-core-primitives",
 	"pezkuwi-primitives",
 	"pezkuwi-runtime-common",
@@ -1947,6 +1959,7 @@ runtime-full = [
 	"pezsp-mmr-primitives",
 	"pezsp-npos-elections",
 	"pezsp-offchain",
+	"pezsp-runtime",
 	"pezsp-runtime-interface",
 	"pezsp-runtime-interface-proc-macro",
 	"pezsp-session",
@@ -1990,8 +2003,58 @@ runtime = [
 	"pezframe-system",
 	"pezframe-system-benchmarking",
 	"pezframe-system-rpc-runtime-api",
+	"pezframe-try-runtime",
 	"pezframe?/runtime",
 	"pezkuwi-subxt?/runtime",
+	"pezsp-api",
+	"pezsp-api-proc-macro",
+	"pezsp-application-crypto",
+	"pezsp-arithmetic",
+	"pezsp-authority-discovery",
+	"pezsp-block-builder",
+	"pezsp-consensus-aura",
+	"pezsp-consensus-babe",
+	"pezsp-consensus-beefy",
+	"pezsp-consensus-grandpa",
+	"pezsp-consensus-pow",
+	"pezsp-consensus-slots",
+	"pezsp-core",
+	"pezsp-crypto-ec-utils",
+	"pezsp-crypto-hashing",
+	"pezsp-crypto-hashing-proc-macro",
+	"pezsp-dap",
+	"pezsp-debug-derive",
+	"pezsp-externalities",
+	"pezsp-genesis-builder",
+	"pezsp-hop",
+	"pezsp-inherents",
+	"pezsp-io",
+	"pezsp-keyring",
+	"pezsp-keystore",
+	"pezsp-metadata-ir",
+	"pezsp-mixnet",
+	"pezsp-mmr-primitives",
+	"pezsp-npos-elections",
+	"pezsp-offchain",
+	"pezsp-runtime",
+	"pezsp-runtime-interface",
+	"pezsp-runtime-interface-proc-macro",
+	"pezsp-session",
+	"pezsp-ss58-registry",
+	"pezsp-staking",
+	"pezsp-state-machine",
+	"pezsp-statement-store",
+	"pezsp-std",
+	"pezsp-storage",
+	"pezsp-timestamp",
+	"pezsp-tracing",
+	"pezsp-transaction-pool",
+	"pezsp-transaction-storage-proof",
+	"pezsp-trie",
+	"pezsp-version",
+	"pezsp-version-proc-macro",
+	"pezsp-wasm-interface",
+	"pezsp-weights",
 ]
 node = [
 	"asset-test-pezutils",
@@ -2197,6 +2260,7 @@ tuples-96 = [
 	"pezframe-support?/tuples-96",
 	"pezframe-system-benchmarking?/tuples-96",
 	"pezframe-system?/tuples-96",
+	"pezframe-try-runtime?/tuples-96",
 	"pezframe?/tuples-96",
 	"pezkuwi-omni-node-lib?/tuples-96",
 	"pezkuwi-runtime-common?/tuples-96",
@@ -2624,6 +2688,12 @@ default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/system/rpc/runtime-api"
 version = "26.0.0"
+
+[dependencies.pezframe-try-runtime]
+default-features = false
+optional = true
+path = "../bizinikiwi/pezframe/try-runtime"
+version = "0.34.0"
 
 [dependencies.pezkuwi-core-primitives]
 default-features = false
@@ -3632,6 +3702,12 @@ default-features = false
 optional = true
 path = "../bizinikiwi/primitives/offchain"
 version = "26.0.0"
+
+[dependencies.pezsp-runtime]
+default-features = false
+optional = true
+path = "../bizinikiwi/primitives/runtime"
+version = "31.0.1"
 
 [dependencies.pezsp-runtime-interface]
 default-features = false

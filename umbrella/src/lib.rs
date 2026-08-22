@@ -339,6 +339,10 @@ pub use pezframe_system_benchmarking;
 #[cfg(feature = "pezframe-system-rpc-runtime-api")]
 pub use pezframe_system_rpc_runtime_api;
 
+/// Supporting types for try-runtime, testing and dry-running commands.
+#[cfg(feature = "pezframe-try-runtime")]
+pub use pezframe_try_runtime;
+
 /// Pezkuwi Approval Distribution subsystem for the distribution of assignments and approvals for approval checks on candidates over the network.
 #[cfg(feature = "pezkuwi-approval-distribution")]
 pub use pezkuwi_approval_distribution;
@@ -1502,6 +1506,10 @@ pub use pezsp_panic_handler;
 /// Bizinikiwi RPC primitives and utilities.
 #[cfg(feature = "pezsp-rpc")]
 pub use pezsp_rpc;
+
+/// Runtime Modules shared primitive types.
+#[cfg(feature = "pezsp-runtime")]
+pub use pezsp_runtime;
 
 /// Bizinikiwi runtime interface.
 #[cfg(feature = "pezsp-runtime-interface")]
