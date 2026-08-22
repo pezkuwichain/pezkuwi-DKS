@@ -338,7 +338,8 @@ mod benchmarks {
 		let (payment_asset, reward_asset) = setup_benchmark_assets::<T>(&caller, &presale_treasury);
 
 		// Create presale (will get the presale_id we calculated)
-		assert_ok!(create_test_presale::<T>(&caller, payment_asset, reward_asset, false, false));
+		// Returns the id, not a Result.
+		let _ = create_test_presale::<T>(&caller, payment_asset, reward_asset, false, false);
 
 		// Add n contributors
 		for i in 0..n {
