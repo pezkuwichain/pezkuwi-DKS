@@ -283,9 +283,9 @@ impl RuntimeResolverT for RuntimeResolver {
 mod tests {
 	use super::*;
 
-	// Upstream dropped this module along with the legacy rococo-parachain spec it built its
-	// chain specs from. `LegacyRuntime::from_id` is still live here, so the coverage stays --
-	// it takes an id string, so there was never a reason to build a chain spec to obtain one.
+	// Upstream dropped the legacy teyrchain module this test used to build its chain specs
+	// from. `LegacyRuntime::from_id` is still live here, so the coverage stays -- it takes an
+	// id string, so there was never a reason to build a chain spec just to read its id back.
 	#[test]
 	fn test_legacy_runtime_for_different_chain_specs() {
 		assert_eq!(LegacyRuntime::Penpal, LegacyRuntime::from_id("penpal-pezkuwichain-1000"));
