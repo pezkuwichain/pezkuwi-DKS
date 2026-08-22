@@ -18,7 +18,7 @@
 
 use crate::{RuntimeT, LOG_TARGET};
 use pezframe_support::traits::PalletInfoAccess;
-use pezpallet_staking::Nominators;
+use pezpallet_staking_async::Nominators;
 use pezsp_runtime::{traits::Block as BlockT, DeserializeOwned};
 use remote_externalities::{Builder, Mode, OnlineConfig};
 
@@ -36,7 +36,7 @@ pub async fn execute<Runtime, Block>(
 	let mut ext = Builder::<Block>::new()
 		.mode(Mode::Online(OnlineConfig {
 			transport_uris: vec![ws_url.to_string()],
-			pezpallets: vec![pezpallet_staking::Pezpallet::<Runtime>::name().to_string()],
+			pezpallets: vec![pezpallet_staking_async::Pezpallet::<Runtime>::name().to_string()],
 			..Default::default()
 		}))
 		.build()
@@ -50,15 +50,15 @@ pub async fn execute<Runtime, Block>(
 
 		use pezframe_election_provider_support::SortedListProvider;
 		// run the actual migration
-		let moved = <Runtime as pezpallet_staking::Config>::VoterList::unsafe_regenerate(
-			pezpallet_staking::Nominators::<Runtime>::iter().map(|(n, _)| n),
-			Box::new(|x| Some(pezpallet_staking::Pezpallet::<Runtime>::weight_of(x))),
+		let moved = <Runtime as pezpallet_staking_async::Config>::VoterList::unsafe_regenerate(
+			pezpallet_staking_async::Nominators::<Runtime>::iter().map(|(n, _)| n),
+			Box::new(|x| Some(pezpallet_staking_async::Pezpallet::<Runtime>::weight_of(x))),
 		);
 		log::info!(target: LOG_TARGET, "Moved {} nominators", moved);
 
 		let voter_list_len =
-			<Runtime as pezpallet_staking::Config>::VoterList::iter().count() as u32;
-		let voter_list_count = <Runtime as pezpallet_staking::Config>::VoterList::count();
+			<Runtime as pezpallet_staking_async::Config>::VoterList::iter().count() as u32;
+		let voter_list_count = <Runtime as pezpallet_staking_async::Config>::VoterList::count();
 		// and confirm it is equal to the length of the `VoterList`.
 		assert_eq!(pre_migrate_nominator_count, voter_list_len);
 		assert_eq!(pre_migrate_nominator_count, voter_list_count);

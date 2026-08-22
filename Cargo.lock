@@ -16438,7 +16438,6 @@ dependencies = [
  "pezframe-support",
  "pezframe-system",
  "pezpallet-bags-list",
- "pezpallet-staking",
  "pezpallet-staking-async",
  "pezsp-core",
  "pezsp-runtime",

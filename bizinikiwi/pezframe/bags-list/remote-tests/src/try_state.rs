@@ -42,8 +42,8 @@ pub async fn execute<Runtime, Block>(
 			>::name()
 			.to_string()],
 			hashed_prefixes: vec![
-				<pezpallet_staking::Bonded<Runtime>>::prefix_hash().to_vec(),
-				<pezpallet_staking::Ledger<Runtime>>::prefix_hash().to_vec(),
+				<pezpallet_staking_async::Bonded<Runtime>>::prefix_hash().to_vec(),
+				<pezpallet_staking_async::Ledger<Runtime>>::prefix_hash().to_vec(),
 			],
 			..Default::default()
 		}))
