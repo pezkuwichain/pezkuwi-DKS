@@ -12877,16 +12877,17 @@ dependencies = [
  "jsonrpsee",
  "log",
  "parity-scale-codec",
+ "pezframe-support",
  "pezsp-core",
  "pezsp-crypto-hashing",
  "pezsp-io",
  "pezsp-runtime",
  "pezsp-state-machine",
  "pezsp-tracing",
+ "rand 0.8.6",
  "serde",
  "spinners",
  "tokio",
- "tokio-retry",
 ]
 
 [[package]]
@@ -27222,17 +27223,6 @@ dependencies = [
  "proc-macro2 1.0.106",
  "quote 1.0.46",
  "syn 2.0.118",
-]
-
-[[package]]
-name = "tokio-retry"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f57eb36ecbe0fc510036adff84824dd3c24bb781e21bfa67b69d556aa85214f"
-dependencies = [
- "pin-project",
- "rand 0.8.6",
- "tokio",
 ]
 
 [[package]]

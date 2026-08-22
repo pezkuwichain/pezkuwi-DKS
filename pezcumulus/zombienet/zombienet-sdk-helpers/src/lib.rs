@@ -888,7 +888,10 @@ pub async fn assign_cores(
 	Ok(())
 }
 
-fn create_assign_core_call(core_and_para: &[(u32, u32)]) -> DynamicPayload {
+// Public for our transaction-pool yap_test, which assigns extra cores before measuring.
+// Upstream's copy of that test does not, so upstream keeps this private. Ours needs it
+// across the crate boundary; do not narrow it back on the next sync.
+pub fn create_assign_core_call(core_and_para: &[(u32, u32)]) -> DynamicPayload {
 	let mut assign_cores = vec![];
 	for (core, para_id) in core_and_para.iter() {
 		assign_cores.push(value! {

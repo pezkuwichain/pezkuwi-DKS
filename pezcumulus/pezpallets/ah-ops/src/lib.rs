@@ -448,7 +448,10 @@ pub mod pezpallet {
 		}
 
 		// TODO Test this
-		fn contributions_withdrawn(block: BlockNumberFor<T>, para_id: ParaId) -> bool {
+		// pub(crate) so our own `contributions_withdrawn_works` test can call it. Upstream
+		// keeps this private because nothing outside the pallet calls it there; the test is
+		// ours, so the visibility has to be ours too. Do not narrow it back on the next sync.
+		pub(crate) fn contributions_withdrawn(block: BlockNumberFor<T>, para_id: ParaId) -> bool {
 			let mut contrib_iter = RcCrowdloanContribution::<T>::iter_prefix((block, para_id));
 			contrib_iter.next().is_none()
 		}
