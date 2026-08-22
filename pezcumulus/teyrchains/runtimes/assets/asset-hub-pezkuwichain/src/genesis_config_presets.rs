@@ -53,6 +53,11 @@ pub const WHEZ_ASSET_ID: AssetIdForTrustBackedAssets = 2;
 /// Using 1000 to match chains.json configuration in pezWallet
 pub const WUSDT_ASSET_ID: AssetIdForTrustBackedAssets = 1000;
 
+/// Where permissionless asset creation starts. Everything below is reserved for the assets
+/// genesis creates above. `pezpallet_assets` enforces this as the *only* id `force_create`
+/// will accept while it is set, so the benchmark helper has to hand out this same value.
+pub const FIRST_AUTO_ASSET_ID: AssetIdForTrustBackedAssets = 1001;
+
 /// PEZ Token decimals (same as HEZ)
 pub const PEZ_DECIMALS: u8 = 12;
 
@@ -180,7 +185,7 @@ fn asset_hub_pezkuwichain_genesis(
 				// wUSDT starts with 0 balance - minted via Custodial Bridge
 			],
 			// Next asset ID after PEZ (1), wHEZ (2), and wUSDT (1000)
-			next_asset_id: Some(1001),
+			next_asset_id: Some(FIRST_AUTO_ASSET_ID),
 			..Default::default()
 		},
 

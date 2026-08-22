@@ -319,7 +319,24 @@ impl pezpallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
 	type AssetAccountDeposit = AssetAccountDeposit;
 	type RemoveItemsLimit = pezframe_support::traits::ConstU32<1000>;
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
+	type BenchmarkHelper = TrustBackedAssetsBenchmarkHelper;
+}
+
+/// Genesis sets `NextAssetId`, and while it is set `force_create` accepts that id and no other.
+/// The pallet's default helper asks for id 0, which the benchmarks then fail to create; this
+/// hands out the id the chain will actually accept. Every benchmark starts from genesis and
+/// creates at most one asset, so the value is stable for the reference lookups that follow.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct TrustBackedAssetsBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_assets::BenchmarkHelper<codec::Compact<AssetIdForTrustBackedAssets>, ()>
+	for TrustBackedAssetsBenchmarkHelper
+{
+	fn create_asset_id_parameter(_id: u32) -> codec::Compact<AssetIdForTrustBackedAssets> {
+		codec::Compact(genesis_config_presets::FIRST_AUTO_ASSET_ID)
+	}
+
+	fn create_reserve_id_parameter(_id: u32) {}
 }
 
 // Allow Freezes for the `Assets` pezpallet
