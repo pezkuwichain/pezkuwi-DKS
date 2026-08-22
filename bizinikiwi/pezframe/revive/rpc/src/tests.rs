@@ -723,7 +723,10 @@ async fn get_evm_block_from_storage(
 		.unwrap();
 
 	let query = pezkuwi_subxt_client::storage().revive().ethereum_block();
-	let Ok(block) = node_client.storage().at(block_hash).entry(query)?.fetch().await else {
+	// `StorageValue` borrows the entry, so the entry needs a binding of its own.
+	let storage_at = node_client.storage().at(block_hash);
+	let entry = storage_at.entry(query)?;
+	let Ok(block) = entry.fetch().await else {
 		return Err(anyhow!("EVM block {block_hash:?} not found"));
 	};
 	Ok(block.decode()?.0)
