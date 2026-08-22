@@ -25,13 +25,19 @@ use pezframe_system::RawOrigin;
 )]
 mod benchmarks {
 	use super::*;
-	use pezframe_support::traits::{fungibles::Create, Get};
+	use pezframe_support::{
+		assert_ok,
+		traits::{fungibles::Create, Get},
+	};
 
-	fn get_asset_id<T: Config>(seed: u32) -> T::AssetId
-	where
-		T::AssetId: From<u32>,
-	{
-		seed.into()
+	// The runtime decides which ids it will accept; a genesis that sets `NextAssetId` rejects
+	// anything else, and the failures used to be swallowed below rather than reported.
+	fn payment_asset_id<T: Config>() -> T::AssetId {
+		<T::BenchmarkHelper as crate::BenchmarkHelper<T::AssetId>>::payment_asset()
+	}
+
+	fn reward_asset_id<T: Config>() -> T::AssetId {
+		<T::BenchmarkHelper as crate::BenchmarkHelper<T::AssetId>>::reward_asset()
 	}
 
 	/// Setup assets for presale benchmarking
@@ -44,13 +50,15 @@ mod benchmarks {
 		T::AssetId: From<u32>,
 		T::Assets: Create<T::AccountId> + Mutate<T::AccountId>,
 	{
-		let payment_asset = get_asset_id::<T>(1);
-		let reward_asset = get_asset_id::<T>(2);
+		let payment_asset = payment_asset_id::<T>();
+		let reward_asset = reward_asset_id::<T>();
 
-		// Create assets if they don't exist (ignore errors if already created)
+		// Not `let _ =`: when these silently failed, every later step failed too and the
+		// component range collapsed to a single value, which surfaced as an unrelated
+		// "cannot compute a slope" error hundreds of lines away.
 		let min_balance: T::Balance = 1u128.into();
-		let _ = T::Assets::create(payment_asset, caller.clone(), true, min_balance);
-		let _ = T::Assets::create(reward_asset, caller.clone(), true, min_balance);
+		assert_ok!(T::Assets::create(payment_asset, caller.clone(), true, min_balance));
+		assert_ok!(T::Assets::create(reward_asset, caller.clone(), true, min_balance));
 
 		// Mint payment tokens to caller for contributions
 		let payment_amount: T::Balance = 100_000_000u128.into();
@@ -121,8 +129,8 @@ mod benchmarks {
 	#[benchmark]
 	fn create_presale() {
 		let caller: T::AccountId = whitelisted_caller();
-		let payment_asset = get_asset_id::<T>(1);
-		let reward_asset = get_asset_id::<T>(2);
+		let payment_asset = payment_asset_id::<T>();
+		let reward_asset = reward_asset_id::<T>();
 
 		let params = crate::PresaleCreationParams {
 			tokens_for_sale: 1_000_000u128,
@@ -152,8 +160,8 @@ mod benchmarks {
 	#[benchmark]
 	fn cancel_presale() {
 		let caller: T::AccountId = whitelisted_caller();
-		let payment_asset = get_asset_id::<T>(1);
-		let reward_asset = get_asset_id::<T>(2);
+		let payment_asset = payment_asset_id::<T>();
+		let reward_asset = reward_asset_id::<T>();
 
 		// Create a presale first
 		let presale_id =
@@ -171,8 +179,8 @@ mod benchmarks {
 	fn add_to_whitelist() {
 		let owner: T::AccountId = whitelisted_caller();
 		let user: T::AccountId = account("user", 0, 0);
-		let payment_asset = get_asset_id::<T>(1);
-		let reward_asset = get_asset_id::<T>(2);
+		let payment_asset = payment_asset_id::<T>();
+		let reward_asset = reward_asset_id::<T>();
 
 		// Create a whitelist presale
 		let presale_id = create_test_presale::<T>(&owner, payment_asset, reward_asset, true, false);

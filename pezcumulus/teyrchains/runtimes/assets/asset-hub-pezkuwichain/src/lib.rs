@@ -987,6 +987,8 @@ impl pezpallet_nft_fractionalization::Config for Runtime {
 	type AssetId = <Self as pezpallet_assets::Config<TrustBackedAssetsInstance>>::AssetId;
 	type Assets = Assets;
 	type Nfts = Nfts;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = NftFractionalizationBenchmarkHelper;
 	type PalletId = NftFractionalizationPalletId;
 	type WeightInfo = weights::pezpallet_nft_fractionalization::WeightInfo<Runtime>;
 	type RuntimeHoldReason = RuntimeHoldReason;
@@ -1062,6 +1064,45 @@ impl pezpallet_xcm_bridge_hub_router::Config<ToZagrosXcmRouterInstance> for Runt
 }
 
 #[cfg(feature = "runtime-benchmarks")]
+/// The presale benchmarks create two assets, so they need the next two ids the chain accepts.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct PresaleBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_presale::BenchmarkHelper<AssetIdForTrustBackedAssets> for PresaleBenchmarkHelper {
+	fn payment_asset() -> AssetIdForTrustBackedAssets {
+		genesis_config_presets::FIRST_AUTO_ASSET_ID
+	}
+
+	fn reward_asset() -> AssetIdForTrustBackedAssets {
+		genesis_config_presets::FIRST_AUTO_ASSET_ID + 1
+	}
+}
+
+/// The default helper asks for asset id 0, which `force_create` refuses while genesis has
+/// `NextAssetId` set. Hands out the id the chain will accept instead.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct NftFractionalizationBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl
+	pezpallet_nft_fractionalization::BenchmarkHelper<
+		AssetIdForTrustBackedAssets,
+		CollectionId,
+		ItemId,
+	> for NftFractionalizationBenchmarkHelper
+{
+	fn asset(_id: u32) -> AssetIdForTrustBackedAssets {
+		genesis_config_presets::FIRST_AUTO_ASSET_ID
+	}
+
+	fn collection(id: u32) -> CollectionId {
+		id.into()
+	}
+
+	fn nft(id: u32) -> ItemId {
+		id.into()
+	}
+}
+
 pub struct PalletAssetRewardsBenchmarkHelper;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -1071,13 +1112,19 @@ impl pezpallet_asset_rewards::benchmarking::BenchmarkHelper<xcm::v5::Location>
 	fn staked_asset() -> Location {
 		Location::new(
 			0,
-			[PalletInstance(<Assets as PalletInfoAccess>::index() as u8), GeneralIndex(100)],
+			[
+				PalletInstance(<Assets as PalletInfoAccess>::index() as u8),
+				GeneralIndex(genesis_config_presets::FIRST_AUTO_ASSET_ID as u128),
+			],
 		)
 	}
 	fn reward_asset() -> Location {
 		Location::new(
 			0,
-			[PalletInstance(<Assets as PalletInfoAccess>::index() as u8), GeneralIndex(101)],
+			[
+				PalletInstance(<Assets as PalletInfoAccess>::index() as u8),
+				GeneralIndex(genesis_config_presets::FIRST_AUTO_ASSET_ID as u128 + 1),
+			],
 		)
 	}
 }
@@ -1324,6 +1371,8 @@ impl pezpallet_presale::Config for Runtime {
 	type CreatePresaleOrigin = EnsureSigned<AccountId>;
 	type EmergencyOrigin = EnsureRoot<AccountId>;
 	type PresaleWeightInfo = pezpallet_presale::BizinikiwiWeight<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = PresaleBenchmarkHelper;
 }
 
 // -----------------------------------------------------------------------------
@@ -2180,7 +2229,7 @@ impl_runtime_apis! {
 					));
 
 					// We then create USDT.
-					let usdt_id = 1984u32;
+					let usdt_id: u32 = genesis_config_presets::FIRST_AUTO_ASSET_ID;
 					let usdt_location = Location::new(0, [PalletInstance(50), GeneralIndex(usdt_id.into())]);
 					assert_ok!(Assets::force_create(
 						RuntimeOrigin::root(),
@@ -2252,7 +2301,7 @@ impl_runtime_apis! {
 						&account,
 						<Balances as Inspect<_>>::minimum_balance(),
 					));
-					let asset_id = 1984;
+					let asset_id = genesis_config_presets::FIRST_AUTO_ASSET_ID;
 					assert_ok!(Assets::force_create(
 						RuntimeOrigin::root(),
 						asset_id.into(),
@@ -2381,7 +2430,7 @@ impl_runtime_apis! {
 						&account,
 						<Balances as Inspect<_>>::minimum_balance(),
 					));
-					let asset_id = 1984;
+					let asset_id = genesis_config_presets::FIRST_AUTO_ASSET_ID;
 					assert_ok!(Assets::force_create(
 						RuntimeOrigin::root(),
 						asset_id.into(),

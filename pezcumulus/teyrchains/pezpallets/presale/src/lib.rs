@@ -42,6 +42,27 @@ pub use weights::*;
 
 extern crate alloc;
 
+/// Lets a runtime hand the presale benchmarks asset ids it will accept.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkHelper<AssetId> {
+	/// The asset contributors pay with.
+	fn payment_asset() -> AssetId;
+	/// The asset the presale distributes.
+	fn reward_asset() -> AssetId;
+}
+
+/// Ids 1 and 2, which is what the benchmarks used before this trait existed.
+#[cfg(feature = "runtime-benchmarks")]
+impl<AssetId: From<u32>> BenchmarkHelper<AssetId> for () {
+	fn payment_asset() -> AssetId {
+		1u32.into()
+	}
+
+	fn reward_asset() -> AssetId {
+		2u32.into()
+	}
+}
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
@@ -346,6 +367,12 @@ pub mod pezpallet {
 
 		/// Weight information
 		type PresaleWeightInfo: crate::weights::WeightInfo;
+
+		/// Supplies asset ids the runtime will actually let the benchmarks create.
+		/// A runtime whose genesis sets `NextAssetId` accepts only that id from
+		/// `force_create`, so the benchmarks cannot pick ids of their own.
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::BenchmarkHelper<Self::AssetId>;
 	}
 
 	/// Next presale ID
