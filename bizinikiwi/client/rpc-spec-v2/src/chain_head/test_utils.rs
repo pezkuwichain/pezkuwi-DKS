@@ -297,11 +297,14 @@ impl<Block: BlockT, Client: BlockBackend<Block>> BlockBackend<Block>
 		self.client.block_hash(number)
 	}
 
-	fn indexed_transaction(&self, hash: Block::Hash) -> pezsp_blockchain::Result<Option<Vec<u8>>> {
+	fn indexed_transaction(
+		&self,
+		hash: pezsp_core::H256,
+	) -> pezsp_blockchain::Result<Option<Vec<u8>>> {
 		self.client.indexed_transaction(hash)
 	}
 
-	fn has_indexed_transaction(&self, hash: Block::Hash) -> pezsp_blockchain::Result<bool> {
+	fn has_indexed_transaction(&self, hash: pezsp_core::H256) -> pezsp_blockchain::Result<bool> {
 		self.client.has_indexed_transaction(hash)
 	}
 
@@ -310,6 +313,13 @@ impl<Block: BlockT, Client: BlockBackend<Block>> BlockBackend<Block>
 		hash: Block::Hash,
 	) -> pezsp_blockchain::Result<Option<Vec<Vec<u8>>>> {
 		self.client.block_indexed_body(hash)
+	}
+
+	fn block_indexed_hashes(
+		&self,
+		hash: Block::Hash,
+	) -> pezsp_blockchain::Result<Option<Vec<H256>>> {
+		self.client.block_indexed_hashes(hash)
 	}
 
 	fn requires_full_sync(&self) -> bool {

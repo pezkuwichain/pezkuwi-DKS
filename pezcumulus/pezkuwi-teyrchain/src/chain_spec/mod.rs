@@ -282,54 +282,20 @@ impl RuntimeResolverT for RuntimeResolver {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use pezsc_chain_spec::{ChainSpecExtension, ChainSpecGroup, ChainType, Extension};
-	use serde::{Deserialize, Serialize};
 
-	#[derive(
-		Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension, Default,
-	)]
-	#[serde(deny_unknown_fields)]
-	pub struct Extensions1 {
-		pub attribute1: String,
-		pub attribute2: u32,
-	}
-
-	#[derive(
-		Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension, Default,
-	)]
-	#[serde(deny_unknown_fields)]
-	pub struct Extensions2 {
-		pub attribute_x: String,
-		pub attribute_y: String,
-		pub attribute_z: u32,
-	}
-
-	pub type DummyChainSpec<E> = pezsc_service::GenericChainSpec<E>;
-
-	pub fn create_default_with_extensions<E: Extension>(
-		id: &str,
-		extension: E,
-	) -> DummyChainSpec<E> {
-		DummyChainSpec::builder(
-			pezkuwichain_teyrchain_runtime::WASM_BINARY
-				.expect("WASM binary was not built, please build it!"),
-			extension,
-		)
-		.with_name("Dummy local testnet")
-		.with_id(id)
-		.with_chain_type(ChainType::Local)
-		.with_genesis_config_preset_name(pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET)
-		.build()
-	}
-
+	// Upstream dropped this module along with the legacy rococo-parachain spec it built its
+	// chain specs from. `LegacyRuntime::from_id` is still live here, so the coverage stays --
+	// it takes an id string, so there was never a reason to build a chain spec to obtain one.
 	#[test]
 	fn test_legacy_runtime_for_different_chain_specs() {
-		let chain_spec =
-			create_default_with_extensions("penpal-pezkuwichain-1000", Extensions2::default());
-		assert_eq!(LegacyRuntime::Penpal, LegacyRuntime::from_id(chain_spec.id()));
+		assert_eq!(LegacyRuntime::Penpal, LegacyRuntime::from_id("penpal-pezkuwichain-1000"));
 
-		let chain_spec =
-			crate::chain_spec::pezkuwichain_teyrchain::pezkuwichain_teyrchain_local_config();
-		assert_eq!(LegacyRuntime::Omni, LegacyRuntime::from_id(chain_spec.id()));
+		// Anything unrecognised falls through to the omni runtime.
+		assert_eq!(LegacyRuntime::Omni, LegacyRuntime::from_id("some-unknown-teyrchain"));
+
+		// The prefix order matters, as the comment on `from_id` warns: "asset-hub-pezkuwichain"
+		// starts with "asset-hub-pezkuwi", so the longer one has to be recognised first.
+		assert_eq!(LegacyRuntime::AssetHub, LegacyRuntime::from_id("asset-hub-pezkuwichain"));
+		assert_eq!(LegacyRuntime::AssetHubPezkuwi, LegacyRuntime::from_id("asset-hub-pezkuwi"));
 	}
 }
