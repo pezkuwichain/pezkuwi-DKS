@@ -54,6 +54,7 @@ pezpallet-nft-fractionalization = { workspace = true }
 pezpallet-nfts = { workspace = true }
 pezpallet-nis = { workspace = true }
 pezpallet-nomination-pools = { workspace = true }
+pezpallet-nomination-pools-benchmarking = { optional = true, workspace = true }
 pezpallet-nomination-pools-runtime-api = { workspace = true }
 pezpallet-pez-treasury = { workspace = true }
 pezpallet-presale = { workspace = true }
@@ -196,6 +197,7 @@ runtime-benchmarks = [
 	"pezpallet-nft-fractionalization/runtime-benchmarks",
 	"pezpallet-nfts/runtime-benchmarks",
 	"pezpallet-nis/runtime-benchmarks",
+	"pezpallet-nomination-pools-benchmarking/runtime-benchmarks",
 	"pezpallet-nomination-pools-runtime-api/runtime-benchmarks",
 	"pezpallet-nomination-pools/runtime-benchmarks",
 	"pezpallet-pez-treasury/runtime-benchmarks",
@@ -291,6 +293,7 @@ try-runtime = [
 	"pezpallet-nft-fractionalization/try-runtime",
 	"pezpallet-nfts/try-runtime",
 	"pezpallet-nis/try-runtime",
+	"pezpallet-nomination-pools-benchmarking/try-runtime",
 	"pezpallet-nomination-pools-runtime-api/try-runtime",
 	"pezpallet-nomination-pools/try-runtime",
 	"pezpallet-pez-treasury/try-runtime",
@@ -390,6 +393,7 @@ std = [
 	"pezpallet-nft-fractionalization/std",
 	"pezpallet-nfts/std",
 	"pezpallet-nis/std",
+	"pezpallet-nomination-pools-benchmarking/std",
 	"pezpallet-nomination-pools-runtime-api/std",
 	"pezpallet-nomination-pools/std",
 	"pezpallet-pez-treasury/std",

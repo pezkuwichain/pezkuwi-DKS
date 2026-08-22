@@ -316,6 +316,7 @@ try-runtime = [
 	"pezpallet-nft-fractionalization/try-runtime",
 	"pezpallet-nfts/try-runtime",
 	"pezpallet-nis/try-runtime",
+	"pezpallet-nomination-pools-benchmarking/try-runtime",
 	"pezpallet-nomination-pools-runtime-api/try-runtime",
 	"pezpallet-nomination-pools/try-runtime",
 	"pezpallet-pez-treasury/try-runtime",

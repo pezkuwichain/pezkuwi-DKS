@@ -1703,6 +1703,9 @@ impl
 }
 
 #[cfg(feature = "runtime-benchmarks")]
+#[cfg(feature = "runtime-benchmarks")]
+type StakingRcClientBench<T> = pezpallet_staking_async_rc_client::benchmarking::Pezpallet<T>;
+
 mod benches {
 	pezframe_benchmarking::define_benchmarks!(
 		[pezframe_system, SystemBench::<Runtime>]
@@ -1736,6 +1739,16 @@ mod benches {
 		[pezpallet_xcm_benchmarks::fungible, XcmBalances]
 		[pezpallet_xcm_benchmarks::generic, XcmGeneric]
 		[pezcumulus_pezpallet_weight_reclaim, WeightReclaim]
+		// Staking, voter list and the multi-block election run on this chain; without these
+		// entries their benchmarks are never listed and their weights are never measured.
+		[pezpallet_staking_async, Staking]
+		[pezpallet_staking_async_rc_client, StakingRcClientBench::<Runtime>]
+		[pezpallet_bags_list, VoterList]
+		[pezpallet_election_provider_multi_block, MultiBlockElection]
+		[pezpallet_election_provider_multi_block::verifier, MultiBlockElectionVerifier]
+		[pezpallet_election_provider_multi_block::unsigned, MultiBlockElectionUnsigned]
+		[pezpallet_election_provider_multi_block::signed, MultiBlockElectionSigned]
+		[pezpallet_nomination_pools, NominationPoolsBench::<Runtime>]
 		// PezkuwiChain Custom Pallets
 		[pezpallet_pez_treasury, PezTreasury]
 		[pezpallet_presale, Presale]
@@ -2115,6 +2128,7 @@ impl_runtime_apis! {
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
+			use pezpallet_nomination_pools_benchmarking::Pezpallet as NominationPoolsBench;
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
 			use pezpallet_xcm_bridge_hub_router::benchmarking::Pezpallet as XcmBridgeHubRouterBench;
 
@@ -2163,6 +2177,7 @@ impl_runtime_apis! {
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
+			use pezpallet_nomination_pools_benchmarking::Pezpallet as NominationPoolsBench;
 			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
 				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
 					let keys = SessionKeys::generate(&owner.encode(), None);
@@ -2186,6 +2201,49 @@ impl_runtime_apis! {
 			}
 
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
+			// Both helper pallets need their own Config. Rust registers impls written inside a
+			// function body globally, which is how the listing block sees them too.
+			impl pezpallet_nomination_pools_benchmarking::Config for Runtime {}
+
+			impl pezpallet_staking_async_rc_client::benchmarking::Config for Runtime {
+				type DeliveryHelper = pezcumulus_primitives_utility::ToParentDeliveryHelper<
+					xcm_config::XcmConfig,
+					ExistentialDepositAsset,
+					xcm_config::PriceForParentDelivery,
+				>;
+
+				fn account_to_location(account: Self::AccountId) -> Location {
+					[AccountId32 { network: None, id: account.into() }].into()
+				}
+
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Vec<u8>, Vec<u8>) {
+					use staking::RelayChainSessionKeys;
+					let keys = RelayChainSessionKeys::generate(&owner.encode(), None);
+					(keys.keys.encode(), keys.proof.encode())
+				}
+
+				fn setup_validator() -> Self::AccountId {
+					use pezframe_benchmarking::account;
+					use pezframe_support::traits::fungible::Mutate;
+
+					let stash: Self::AccountId = account("validator", 0, 0);
+					let balance = 10_000 * UNITS;
+					let _ = Balances::mint_into(&stash, balance);
+
+					assert_ok!(Staking::bond(
+						RuntimeOrigin::signed(stash.clone()),
+						balance / 2,
+						pezpallet_staking_async::RewardDestination::Stash
+					));
+					assert_ok!(Staking::validate(
+						RuntimeOrigin::signed(stash.clone()),
+						pezpallet_staking_async::ValidatorPrefs::default()
+					));
+
+					stash
+				}
+			}
+
 			impl pezpallet_xcm::benchmarking::Config for Runtime {
 				type DeliveryHelper = (
 				pezkuwi_runtime_common::xcm_sender::ToTeyrchainDeliveryHelper<
