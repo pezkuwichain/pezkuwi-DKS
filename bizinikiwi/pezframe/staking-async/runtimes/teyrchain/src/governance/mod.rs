@@ -148,7 +148,7 @@ impl pezpallet_treasury::Config for Runtime {
 	type BeneficiaryLookup = IdentityLookup<Self::Beneficiary>;
 	type Paymaster = PayOverXcm<
 		TreasuryInteriorLocation,
-		crate::xcm_config::XcmRouter,
+		crate::xcm_config::XcmConfig,
 		crate::PezkuwiXcm,
 		ConstU32<{ 6 * HOURS }>,
 		Self::Beneficiary,
