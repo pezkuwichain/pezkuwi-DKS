@@ -31,7 +31,6 @@ smallvec = { workspace = true, default-features = true }
 pezpallet-teyrchain-template = { workspace = true }
 
 # Direct dependency needed for runtime (not through umbrella due to macro visibility issues)
-pezsp-runtime = { workspace = true }
 
 pezkuwi-sdk = { workspace = true, default-features = false, features = [
 	# Primitives needed for runtime
@@ -86,7 +85,6 @@ pezkuwi-sdk = { workspace = true, default-features = false, features = [
 pezcumulus-pezpallet-teyrchain-system = { workspace = true }
 
 # Try runtime
-pezframe-try-runtime = { optional = true, workspace = true }
 
 [build-dependencies]
 bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features = true }
@@ -100,10 +98,8 @@ std = [
 	"codec/std",
 	"log/std",
 	"pezcumulus-pezpallet-teyrchain-system/std",
-	"pezframe-try-runtime?/std",
 	"pezkuwi-sdk/std",
 	"pezpallet-teyrchain-template/std",
-	"pezsp-runtime/std",
 	"scale-info/std",
 	"serde_json/std",
 ]
@@ -111,18 +107,13 @@ runtime-benchmarks = [
 	"bizinikiwi-wasm-builder?/runtime-benchmarks",
 	"hex-literal",
 	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
-	"pezframe-try-runtime?/runtime-benchmarks",
 	"pezkuwi-sdk/runtime-benchmarks",
 	"pezpallet-teyrchain-template/runtime-benchmarks",
-	"pezsp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
 	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
-	"pezframe-try-runtime",
-	"pezframe-try-runtime/try-runtime",
 	"pezkuwi-sdk/try-runtime",
 	"pezpallet-teyrchain-template/try-runtime",
-	"pezsp-runtime/try-runtime",
 ]
 
 # Enable the metadata hash generation.

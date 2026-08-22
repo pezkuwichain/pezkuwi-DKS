@@ -25,7 +25,6 @@ futures-timer = { workspace = true }
 jsonrpsee = { features = ["server"], workspace = true }
 
 # Direct dependency needed (not through umbrella due to macro visibility issues)
-pezsp-runtime = { workspace = true }
 
 pez-minimal-template-runtime = { workspace = true }
 pezkuwi-sdk = { workspace = true, features = [
@@ -46,17 +45,14 @@ default = ["std"]
 std = [
 	"pez-minimal-template-runtime/std",
 	"pezkuwi-sdk/std",
-	"pezsp-runtime/std",
 ]
 runtime-benchmarks = [
 	"pez-minimal-template-runtime/runtime-benchmarks",
 	"pezkuwi-sdk/runtime-benchmarks",
-	"pezsp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
 	"pez-minimal-template-runtime/try-runtime",
 	"pezkuwi-sdk/try-runtime",
-	"pezsp-runtime/try-runtime",
 ]
 serde = []
 experimental = []
