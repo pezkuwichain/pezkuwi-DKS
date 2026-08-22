@@ -1,0 +1,63 @@
+# Compiles the zombienet test suites and keeps the result as an artifact.
+#
+# These tests spawn real networks, so running them needs node images and is a separate
+# concern. Compiling them is not: their whole bodies sit behind `zombie-ci`, and until this
+# workflow existed no job enabled that feature, so the code was invisible to CI -- not
+# excluded, which at least leaves a readable list, but simply never built. That is how the
+# bridge attack PoC went months without compiling.
+#
+# Upstream does the same thing in build-publish-images.yml: `nextest archive` with the
+# feature on, then runs the archive elsewhere against real images. The archive we produce
+# here is what a future zombienet job will execute.
+name: zombienet-archive
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, bizinikiwi-build]
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: pezkuwi
+            manifest: pezkuwi/zombienet-sdk-tests/Cargo.toml
+            features: zombie-metadata,zombie-ci
+          - name: pezcumulus
+            manifest: pezcumulus/zombienet/zombienet-sdk/Cargo.toml
+            features: zombie-ci
+    steps:
+      - uses: actions/checkout@v7
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+      - name: Archive ${{ matrix.name }} zombienet tests
+        run: |
+          cargo nextest --manifest-path ${{ matrix.manifest }} archive \
+            --locked \
+            --cargo-profile testnet \
+            --features ${{ matrix.features }} \
+            --archive-file ${{ matrix.name }}-zombienet-tests.tar.zst
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-zombienet-tests
+          path: ${{ matrix.name }}-zombienet-tests.tar.zst
+          retention-days: 7
