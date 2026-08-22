@@ -127,9 +127,8 @@ impl BlockInfoProvider for SubxtBlockInfoProvider {
 
 		match self.api.blocks().at(hash).await {
 			Ok(block) => Ok(Some(Arc::new(block))),
-			Err(pezkuwi_subxt::Error::BlockError(
-				pezkuwi_subxt::error::BlockError::BlockNotFound { .. },
-			)) => Ok(None),
+			// `blocks().at()` returns BlockError directly here, not the umbrella Error.
+			Err(pezkuwi_subxt::error::BlockError::BlockNotFound { .. }) => Ok(None),
 			Err(err) => Err(err.into()),
 		}
 	}
@@ -150,9 +149,8 @@ impl BlockInfoProvider for SubxtBlockInfoProvider {
 
 		match self.api.blocks().at(*hash).await {
 			Ok(block) => Ok(Some(Arc::new(block))),
-			Err(pezkuwi_subxt::Error::BlockError(
-				pezkuwi_subxt::error::BlockError::BlockNotFound { .. },
-			)) => {
+			// `blocks().at()` returns BlockError directly here, not the umbrella Error.
+			Err(pezkuwi_subxt::error::BlockError::BlockNotFound { .. }) => {
 				log::trace!(target: LOG_TARGET, "block_by_hash: block {hash:?} not found");
 				Ok(None)
 			},

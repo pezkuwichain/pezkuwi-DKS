@@ -66,6 +66,7 @@ alloy-rpc-types = { workspace = true, default-features = true, features = ["trac
 alloy-signer-local = { workspace = true, default-features = true }
 env_logger = { workspace = true }
 pez-revive-dev-node = { workspace = true }
+pez-revive-dev-runtime = { workspace = true, default-features = true }
 pezframe-system = { workspace = true, default-features = true }
 pezpallet-revive-fixtures = { workspace = true, default-features = true }
 pezsp-io = { workspace = true, default-features = true }

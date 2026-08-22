@@ -95,7 +95,7 @@ impl SharedResources {
 	fn start() -> Self {
 		// Start revive-dev-node
 		let _node_handle = thread::spawn(move || {
-			if let Err(e) = revive_dev_node::command::run_with_args(vec![
+			if let Err(e) = pez_revive_dev_node::command::run_with_args(vec![
 				"--dev".to_string(),
 				"--rpc-port=45789".to_string(),
 				"-lerror,pezsc_rpc_server=info,runtime::revive=debug".to_string(),
@@ -723,10 +723,10 @@ async fn get_evm_block_from_storage(
 		.unwrap();
 
 	let query = pezkuwi_subxt_client::storage().revive().ethereum_block();
-	let Some(block) = node_client.storage().at(block_hash).fetch(&query).await.unwrap() else {
+	let Ok(block) = node_client.storage().at(block_hash).entry(query)?.fetch(()).await else {
 		return Err(anyhow!("EVM block {block_hash:?} not found"));
 	};
-	Ok(block.0)
+	Ok(block.decode()?.0)
 }
 
 async fn test_evm_blocks_should_match() -> anyhow::Result<()> {
@@ -1118,11 +1118,18 @@ async fn test_runtime_pallets_address_upload_code() -> anyhow::Result<()> {
 
 	// Step 5: Verify the code was actually uploaded
 	let code_hash = H256(pezsp_io::hashing::keccak_256(&bytecode));
-	let query = pezkuwi_subxt_client::storage().revive().pristine_code(code_hash);
+	let query = pezkuwi_subxt_client::storage().revive().pristine_code();
 	let block_hash: pezsp_core::H256 = get_bizinikiwi_block_hash(receipt.block_number).await?;
-	let stored_code = node_client.storage().at(block_hash).fetch(&query).await?;
-	assert!(stored_code.is_some(), "Code with hash {code_hash:?} should exist in storage");
-	assert_eq!(stored_code.unwrap(), bytecode, "Stored code should match the uploaded bytecode");
+	// The key moved into `fetch`, and a missing entry is an error rather than `None`.
+	let stored_code = node_client
+		.storage()
+		.at(block_hash)
+		.entry(query)?
+		.fetch((code_hash,))
+		.await
+		.unwrap_or_else(|e| panic!("Code with hash {code_hash:?} should exist in storage: {e:?}"))
+		.decode()?;
+	assert_eq!(stored_code, bytecode, "Stored code should match the uploaded bytecode");
 
 	Ok(())
 }
