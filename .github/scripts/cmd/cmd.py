@@ -451,7 +451,10 @@ def main():
                     default_path = f"./{config['path']}/src/weights"
                     xcm_path = f"./{config['path']}/src/weights/xcm"
                     output_path = default_path
-                    if pallet.startswith("pallet_xcm_benchmarks"):
+                    # Our pallets are `pezpallet_*`, so this never matched and every XCM
+                    # benchmark was written to the flat weights directory instead of the xcm
+                    # subdirectory the runtimes actually read.
+                    if pallet.startswith("pezpallet_xcm_benchmarks"):
                         template = config['template']
                         output_path = xcm_path
 

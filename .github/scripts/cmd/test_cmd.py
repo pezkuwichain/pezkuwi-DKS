@@ -195,7 +195,7 @@ class TestCmd(unittest.TestCase):
         self.mock_parse_args.return_value = (argparse.Namespace(
             command='bench-omni',
             runtime=['zagros'],
-            pezpallet=['pallet_xcm_benchmarks::generic'],
+            pezpallet=['pezpallet_xcm_benchmarks::generic'],
             fail_fast=True,
             quiet=False,
             clean=False,
@@ -203,7 +203,7 @@ class TestCmd(unittest.TestCase):
         ), [])
         header_path = os.path.abspath('pezkuwi/file_header.txt')
         self.mock_popen.return_value.read.side_effect = [
-            "pallet_balances\npallet_staking\npallet_something\npallet_xcm_benchmarks::generic\n",  # Output for zagros runtime
+            "pallet_balances\npallet_staking\npallet_something\npezpallet_xcm_benchmarks::generic\n",  # Output for zagros runtime
         ]
 
         with patch('sys.exit') as mock_exit:
@@ -218,7 +218,7 @@ class TestCmd(unittest.TestCase):
                 # Zagros runtime calls
                 call(get_mock_bench_output(
                     runtime='zagros',
-                    pallets='pallet_xcm_benchmarks::generic',
+                    pallets='pezpallet_xcm_benchmarks::generic',
                     output_path='./pezkuwi/runtime/zagros/src/weights/xcm',
                     header=header_path,
                     bench_flags='--flag3 --flag4',
@@ -361,14 +361,14 @@ class TestCmd(unittest.TestCase):
         self.mock_parse_args.return_value = (argparse.Namespace(
             command='bench-omni',
             runtime=['asset-hub-zagros'],
-            pezpallet=['pallet_xcm_benchmarks::generic', 'pallet_assets'],
+            pezpallet=['pezpallet_xcm_benchmarks::generic', 'pallet_assets'],
             fail_fast=True,
             quiet=False,
             clean=False,
             image=None
         ), [])
         self.mock_popen.return_value.read.side_effect = [
-            "pallet_assets\npallet_xcm_benchmarks::generic\n",  # Output for asset-hub-zagros runtime
+            "pallet_assets\npezpallet_xcm_benchmarks::generic\n",  # Output for asset-hub-zagros runtime
         ]
         header_path = os.path.abspath('cumulus/file_header.txt')
 
@@ -383,7 +383,7 @@ class TestCmd(unittest.TestCase):
                 # Asset-hub-zagros runtime calls
                 call(get_mock_bench_output(
                     runtime='asset-hub-zagros',
-                    pallets='pallet_xcm_benchmarks::generic',
+                    pallets='pezpallet_xcm_benchmarks::generic',
                     output_path='./cumulus/teyrchains/runtimes/assets/asset-hub-zagros/src/weights/xcm',
                     header=header_path,
                     bench_flags='--flag7 --flag8',
