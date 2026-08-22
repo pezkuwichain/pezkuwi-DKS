@@ -502,6 +502,11 @@ def main():
             print_and_log('❌ Runtimes that did not build, so produced NO weights:')
             for name in failed_builds:
                 print_and_log(f'-- {name}')
+
+        # A pallet whose benchmark failed has no weights either, and the summary above was the
+        # only trace of it: the command still exited 0. The 2026-08-21 run reported success
+        # having produced nothing for twelve pallets across the two asset hubs.
+        if failed_builds or failed_benchmarks:
             sys.exit(1)
 
     elif args.command == 'fmt':
