@@ -2325,6 +2325,19 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			}
 
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
+			// Both helper pallets need their own Config. Rust registers impls written inside a
+			// function body globally, which is how the listing block sees them too -- this is
+			// where upstream puts them as well.
+			impl pezpallet_nomination_pools_benchmarking::Config for Runtime {}
+
+			impl pezpallet_staking_async_rc_client::benchmarking::Config for Runtime {
+				type DeliveryHelper = pezcumulus_primitives_utility::ToParentDeliveryHelper<
+					xcm_config::XcmConfig,
+					ExistentialDepositAsset,
+					xcm_config::PriceForParentDelivery,
+				>;
+			}
+
 			impl pezpallet_xcm::benchmarking::Config for Runtime {
 				type DeliveryHelper = (
 				pezkuwi_runtime_common::xcm_sender::ToTeyrchainDeliveryHelper<
