@@ -332,4 +332,10 @@ impl_runtime_apis! {
 			teyrchain_info::Pezpallet::<Runtime>::teyrchain_id()
 		}
 	}
+
+	impl pezcumulus_primitives_core::KeyToIncludeInRelayProof<Block> for Runtime {
+		fn keys_to_prove() -> pezcumulus_primitives_core::RelayProofRequest {
+			Default::default()
+		}
+	}
 }

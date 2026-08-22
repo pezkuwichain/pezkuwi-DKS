@@ -44,6 +44,8 @@ tokio = { workspace = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 futures-timer = { workspace = true }
+kvdb-memorydb = { workspace = true }
+pezsc-network-types = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true }
 rstest = { workspace = true }
 
@@ -87,6 +89,7 @@ std = [
 	"pezkuwi-pez-node-primitives/std",
 	"pezkuwi-primitives-test-helpers/std",
 	"pezsc-keystore/std",
+	"pezsc-network-types/std",
 	"pezsc-network/std",
 	"pezsp-tracing/std",
 ]
