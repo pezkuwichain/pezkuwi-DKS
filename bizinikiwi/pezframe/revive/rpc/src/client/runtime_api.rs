@@ -130,11 +130,16 @@ impl RuntimeApi {
 				Err(Metadata(MetadataError::RuntimeMethodNotFound(name))) => {
 					log::debug!(target: LOG_TARGET, "Method {name:?} not found falling back");
 				},
-				Err(pezkuwi_subxt::Error::Rpc(pezkuwi_subxt::error::RpcError::ClientError(
-					pezkuwi_subxt::ext::pezkuwi_subxt_rpcs::Error::User(UserError {
-						message, ..
-					}),
-				))) if message.contains("is not found") => {
+				Err(pezkuwi_subxt::Error::BackendError(
+					pezkuwi_subxt::error::BackendError::Rpc(
+						pezkuwi_subxt::error::RpcError::ClientError(
+							pezkuwi_subxt::ext::pezkuwi_subxt_rpcs::Error::User(UserError {
+								message,
+								..
+							}),
+						),
+					),
+				)) if message.contains("is not found") => {
 					log::debug!(target: LOG_TARGET, "{message:?} not found falling back")
 				},
 				Err(err) => return Err(err.into()),
@@ -167,40 +172,43 @@ impl RuntimeApi {
 			.eth_transact_with_config(tx.clone().into(), config.into())
 			.unvalidated();
 
-		let result = self
-			.0
-			.call(payload)
-			.or_else(|err| async {
-				match err {
-					// This will be hit if subxt metadata (subxt uses the latest finalized block
-					// metadata when the eth-rpc starts) does not contain the new method
-					Metadata(MetadataError::RuntimeMethodNotFound(name)) => {
-						log::debug!(target: LOG_TARGET, "Method {name:?} not found falling back to eth_transact");
-						let payload = pezkuwi_subxt_client::apis()
-							.revive_api()
-							.eth_transact(tx.into())
-							.unvalidated();
-						self.0.call(payload).await
-					},
-					// This will be hit if we are trying to hit a block where the runtime did not
-					// have this new runtime `eth_transact_with_config` defined
-					pezkuwi_subxt::Error::Rpc(pezkuwi_subxt::error::RpcError::ClientError(
-						pezkuwi_subxt::ext::pezkuwi_subxt_rpcs::Error::User(UserError {
-							message,
-							..
-						}),
-					)) if message.contains("eth_transact_with_config is not found") => {
-						log::debug!(target: LOG_TARGET, "{message:?} not found falling back to eth_transact");
-						let payload = pezkuwi_subxt_client::apis()
-							.revive_api()
-							.eth_transact(tx.into())
-							.unvalidated();
-						self.0.call(payload).await
-					},
-					e => Err(e),
-				}
-			})
-			.await?;
+		let result =
+			self.0
+				.call(payload)
+				.or_else(|err| async {
+					match err {
+						// This will be hit if subxt metadata (subxt uses the latest finalized block
+						// metadata when the eth-rpc starts) does not contain the new method
+						Metadata(MetadataError::RuntimeMethodNotFound(name)) => {
+							log::debug!(target: LOG_TARGET, "Method {name:?} not found falling back to eth_transact");
+							let payload = pezkuwi_subxt_client::apis()
+								.revive_api()
+								.eth_transact(tx.into())
+								.unvalidated();
+							self.0.call(payload).await
+						},
+						// This will be hit if we are trying to hit a block where the runtime did not
+						// have this new runtime `eth_transact_with_config` defined
+						pezkuwi_subxt::Error::BackendError(
+							pezkuwi_subxt::error::BackendError::Rpc(
+								pezkuwi_subxt::error::RpcError::ClientError(
+									pezkuwi_subxt::ext::pezkuwi_subxt_rpcs::Error::User(
+										UserError { message, .. },
+									),
+								),
+							),
+						) if message.contains("eth_transact_with_config is not found") => {
+							log::debug!(target: LOG_TARGET, "{message:?} not found falling back to eth_transact");
+							let payload = pezkuwi_subxt_client::apis()
+								.revive_api()
+								.eth_transact(tx.into())
+								.unvalidated();
+							self.0.call(payload).await
+						},
+						e => Err(e),
+					}
+				})
+				.await?;
 
 		match result {
 			Err(err) => {

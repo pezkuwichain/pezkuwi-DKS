@@ -16,12 +16,14 @@
 // limitations under the License.
 use pezkuwi_subxt::OnlineClient;
 use pezkuwi_subxt_signer::sr25519::dev;
-use pezpallet_revive_eth_rpc::subxt_client::{self, SrcChainConfig, system::calls::types::Remark};
+use pezpallet_revive_eth_rpc::pezkuwi_subxt_client::{
+	self, SrcChainConfig, system::calls::types::Remark,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let client = OnlineClient::<SrcChainConfig>::new().await?;
-	let tx_payload = subxt_client::tx().system().remark(b"bonjour".to_vec());
+	let tx_payload = pezkuwi_subxt_client::tx().system().remark(b"bonjour".to_vec());
 	let res = client
 		.tx()
 		.sign_and_submit_then_watch_default(&tx_payload, &dev::alice())

@@ -15,11 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use pez_revive_dev_runtime::WASM_BINARY;
 use pezkuwi_sdk::{
 	pezsc_service::{ChainType, Properties},
 	*,
 };
-use revive_dev_runtime::WASM_BINARY;
 
 /// This is a specialization of the general Bizinikiwi ChainSpec type.
 pub type ChainSpec = pezsc_service::GenericChainSpec;

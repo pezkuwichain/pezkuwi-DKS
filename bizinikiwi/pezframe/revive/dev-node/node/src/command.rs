@@ -120,7 +120,7 @@ pub fn run_with_args(args: Vec<String>) -> pezsc_cli::Result<()> {
 		},
 		Some(Subcommand::ChainInfo(cmd)) => {
 			let runner = cli.create_runner(cmd)?;
-			runner.sync_run(|config| cmd.run::<revive_dev_runtime::OpaqueBlock>(&config))
+			runner.sync_run(|config| cmd.run::<pez_revive_dev_runtime::OpaqueBlock>(&config))
 		},
 		None => {
 			// Enforce dev

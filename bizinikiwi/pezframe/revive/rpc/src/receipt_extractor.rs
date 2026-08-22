@@ -692,9 +692,9 @@ mod tests {
 	}
 
 	use codec::{Compact, Decode, Encode};
+	use pez_revive_dev_runtime::{Runtime, RuntimeEvent};
 	use pezframe_system::EventRecord;
 	use pezkuwi_subxt::{events::Events, metadata::Metadata};
-	use revive_dev_runtime::{Runtime, RuntimeEvent};
 
 	/// Build `Events` by SCALE-encoding revive events against the generated runtime metadata.
 	struct EventsBuilder {

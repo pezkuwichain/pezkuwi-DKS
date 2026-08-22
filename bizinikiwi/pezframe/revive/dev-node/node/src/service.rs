@@ -16,6 +16,7 @@
 // limitations under the License.
 
 use crate::cli::Consensus;
+use pez_revive_dev_runtime::{OpaqueBlock as Block, Runtime, RuntimeApi};
 use pezkuwi_sdk::{
 	pezsc_client_api::StorageProvider,
 	pezsc_executor::WasmExecutor,
@@ -24,7 +25,6 @@ use pezkuwi_sdk::{
 	pezsp_runtime::traits::Block as BlockT,
 	*,
 };
-use revive_dev_runtime::{OpaqueBlock as Block, Runtime, RuntimeApi};
 use std::sync::Arc;
 
 type HostFunctions = (pezsp_io::BizinikiwiHostFunctions, pezsp_virtualization::HostFunctions);

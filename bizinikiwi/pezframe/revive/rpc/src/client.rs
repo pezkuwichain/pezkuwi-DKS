@@ -210,9 +210,11 @@ const NOTIFIER_CAPACITY: usize = 16;
 impl From<ClientError> for ErrorObjectOwned {
 	fn from(err: ClientError) -> Self {
 		match err {
-			ClientError::SubxtError(pezkuwi_subxt::Error::Rpc(
-				pezkuwi_subxt::error::RpcError::ClientError(
-					pezkuwi_subxt::ext::pezkuwi_subxt_rpcs::Error::User(err),
+			ClientError::SubxtError(pezkuwi_subxt::Error::BackendError(
+				pezkuwi_subxt::error::BackendError::Rpc(
+					pezkuwi_subxt::error::RpcError::ClientError(
+						pezkuwi_subxt::ext::pezkuwi_subxt_rpcs::Error::User(err),
+					),
 				),
 			))
 			| ClientError::RpcError(pezkuwi_subxt::ext::pezkuwi_subxt_rpcs::Error::User(err)) => {
