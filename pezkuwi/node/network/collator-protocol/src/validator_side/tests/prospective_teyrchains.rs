@@ -28,10 +28,10 @@ use pezkuwi_primitives_test_helpers::{
 	dummy_committed_candidate_receipt_v2, dummy_committed_candidate_receipt_v3,
 	make_valid_candidate_descriptor_v3, CandidateDescriptor,
 };
-use rstest::rstest;
 use pezsp_consensus_babe::digests::{CompatibleDigestItem, PreDigest, SecondaryPlainPreDigest};
 use pezsp_consensus_slots::Slot;
 use pezsp_runtime::DigestItem;
+use rstest::rstest;
 
 fn get_parent_hash(hash: Hash) -> Hash {
 	Hash::from_low_u64_be(hash.to_low_u64_be() + 1)

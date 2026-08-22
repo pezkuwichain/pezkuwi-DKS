@@ -84,6 +84,7 @@ bizinikiwi-test-runtime = { workspace = true }
 bizinikiwi-test-runtime-client = { workspace = true }
 
 [features]
+jemalloc-allocator = ["pezsc-client-db/jemalloc-allocator"]
 default = ["rocksdb"]
 # The RocksDB feature activates the RocksDB database backend. If it is not activated, and you pass
 # a path to a database, an error will be produced at runtime.

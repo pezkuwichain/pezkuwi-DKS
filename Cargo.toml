@@ -515,6 +515,7 @@ members = [
 	"pezkuwi/core-primitives",
 	"pezkuwi/erasure-coding",
 	"pezkuwi/erasure-coding/fuzzer",
+	"pezkuwi/jemalloc-shim",
 	"pezkuwi/node/clock",
 	"pezkuwi/node/collation-generation",
 	"pezkuwi/node/core/approval-voting",
@@ -1216,6 +1217,7 @@ pezkuwi-core-primitives = { path = "pezkuwi/core-primitives", version = "7.0.0",
 pezkuwi-dispute-distribution = { path = "pezkuwi/node/network/dispute-distribution", version = "7.0.0", default-features = false }
 pezkuwi-erasure-coding = { path = "pezkuwi/erasure-coding", version = "7.0.0", default-features = false }
 pezkuwi-gossip-support = { path = "pezkuwi/node/network/gossip-support", version = "7.0.0", default-features = false }
+pezkuwi-jemalloc-shim = { path = "pezkuwi/jemalloc-shim" }
 pezkuwi-network-bridge = { path = "pezkuwi/node/network/bridge", version = "7.0.0", default-features = false }
 pezkuwi-node-clock = { path = "pezkuwi/node/clock", version = "0.3.0", default-features = false }
 pezkuwi-node-collation-generation = { path = "pezkuwi/node/collation-generation", version = "7.0.0", default-features = false }

@@ -47,6 +47,7 @@ pezsp-runtime = { workspace = true, default-features = true }
 bizinikiwi-build-script-utils = { workspace = true, default-features = true }
 
 [features]
+jemalloc-allocator = ["pezsc-service?/jemalloc-allocator"]
 default = ["cli", "db", "full-node"]
 db = ["pezkuwi-service/db"]
 metadata-hash = ["pezkuwi-service/metadata-hash"]

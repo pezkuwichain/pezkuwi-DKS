@@ -8572,6 +8572,7 @@ dependencies = [
  "cc",
  "libc",
  "libz-sys",
+ "tikv-jemalloc-sys",
 ]
 
 [[package]]
@@ -13412,6 +13413,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezkuwi-jemalloc-shim"
+version = "0.6.0"
+dependencies = [
+ "pezkuwi-cli",
+ "pezkuwi-node-core-pvf",
+ "pezkuwi-node-core-pvf-prepare-worker",
+ "pezkuwi-overseer",
+ "tikv-jemallocator",
+]
+
+[[package]]
 name = "pezkuwi-network-bridge"
 version = "7.0.0"
 dependencies = [
@@ -14068,6 +14080,7 @@ dependencies = [
  "assert_cmd",
  "bizinikiwi-build-script-utils",
  "color-eyre",
+ "pezkuwi-jemalloc-shim",
  "pezkuwi-omni-node-lib",
 ]
 
