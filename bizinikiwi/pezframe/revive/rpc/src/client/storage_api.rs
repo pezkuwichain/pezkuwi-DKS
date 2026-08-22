@@ -22,15 +22,15 @@ use crate::{
 		runtime_types::pezpallet_revive::storage::{AccountType, ContractInfo},
 	},
 };
-use pezkuwi_subxt::{OnlineClient, storage::Storage};
+use pezkuwi_subxt::{OnlineClient, error::StorageError, storage::StorageClientAt};
 
 /// A wrapper around the Bizinikiwi Storage API.
 #[derive(Clone)]
-pub struct StorageApi(Storage<SrcChainConfig, OnlineClient<SrcChainConfig>>);
+pub struct StorageApi(StorageClientAt<SrcChainConfig, OnlineClient<SrcChainConfig>>);
 
 impl StorageApi {
 	/// Create a new instance of the StorageApi.
-	pub fn new(api: Storage<SrcChainConfig, OnlineClient<SrcChainConfig>>) -> Self {
+	pub fn new(api: StorageClientAt<SrcChainConfig, OnlineClient<SrcChainConfig>>) -> Self {
 		Self(api)
 	}
 
@@ -42,12 +42,13 @@ impl StorageApi {
 		// TODO: remove once subxt is updated
 		let contract_address: pezkuwi_subxt::utils::H160 = contract_address.0.into();
 
-		let query = pezkuwi_subxt_client::storage()
-			.revive()
-			.account_info_of(contract_address)
-			.unvalidated();
-		let Some(info) = self.0.fetch(&query).await? else {
-			return Err(ClientError::ContractNotFound);
+		// The key moved out of the address and into `fetch`, and a missing entry is now an
+		// error variant rather than `None`.
+		let query = pezkuwi_subxt_client::storage().revive().account_info_of().unvalidated();
+		let info = match self.0.entry(query)?.fetch((contract_address,)).await {
+			Ok(value) => value.decode()?,
+			Err(StorageError::NoValueFound) => return Err(ClientError::ContractNotFound),
+			Err(err) => return Err(err.into()),
 		};
 
 		let AccountType::Contract(contract_info) = info.account_type else {

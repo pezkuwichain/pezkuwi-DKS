@@ -124,6 +124,34 @@ impl From<TransactionStatus<BizinikiwiBlockHash>> for SubmitError {
 }
 
 /// The error type for the client.
+/// Our vendored subxt returns a specific error type per operation rather than the single
+/// `subxt::Error` upstream's 0.44 returned, and `?` cannot bridge that on its own. Each of
+/// these is already a `#[from]` arm of `pezkuwi_subxt::Error`, so the conversion just routes
+/// through it rather than adding a variant per operation.
+macro_rules! subxt_error_from {
+	($($ty:ty),* $(,)?) => {
+		$(
+			impl From<$ty> for ClientError {
+				fn from(err: $ty) -> Self {
+					ClientError::SubxtError(pezkuwi_subxt::Error::from(err))
+				}
+			}
+		)*
+	};
+}
+
+subxt_error_from!(
+	pezkuwi_subxt::error::BackendError,
+	pezkuwi_subxt::error::BlockError,
+	pezkuwi_subxt::error::ConstantError,
+	pezkuwi_subxt::error::EventsError,
+	pezkuwi_subxt::error::ExtrinsicError,
+	pezkuwi_subxt::error::OnlineClientError,
+	pezkuwi_subxt::error::RuntimeApiError,
+	pezkuwi_subxt::error::StorageError,
+	pezkuwi_subxt::error::StorageValueError,
+);
+
 #[derive(Error, Debug)]
 pub enum ClientError {
 	/// A [`jsonrpsee::core::ClientError`] wrapper error.
