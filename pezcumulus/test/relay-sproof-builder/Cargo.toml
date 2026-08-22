@@ -31,6 +31,9 @@ pezkuwi-primitives = { workspace = true }
 # Pezcumulus
 pezcumulus-primitives-core = { workspace = true }
 
+[dev-dependencies]
+proptest = { workspace = true }
+
 [features]
 default = ["std"]
 std = [

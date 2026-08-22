@@ -59,6 +59,7 @@ pezcumulus-primitives-teyrchain-inherent = { workspace = true }
 assert_matches = { workspace = true }
 futures = { workspace = true }
 hex-literal = { workspace = true, default-features = true }
+pezframe-executive = { workspace = true }
 rand = { workspace = true, default-features = true }
 rstest = { workspace = true }
 trie-standardmap = { workspace = true }
@@ -89,6 +90,7 @@ std = [
 	"pezcumulus-primitives-teyrchain-inherent/std",
 	"pezcumulus-test-client/std",
 	"pezframe-benchmarking/std",
+	"pezframe-executive/std",
 	"pezframe-support/std",
 	"pezframe-system/std",
 	"pezkuwi-primitives/std",
@@ -120,6 +122,7 @@ runtime-benchmarks = [
 	"pezcumulus-test-client/runtime-benchmarks",
 	"pezcumulus-test-relay-sproof-builder/runtime-benchmarks",
 	"pezframe-benchmarking/runtime-benchmarks",
+	"pezframe-executive/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
 	"pezkuwi-primitives/runtime-benchmarks",
@@ -146,6 +149,7 @@ try-runtime = [
 	"pezcumulus-test-client/try-runtime",
 	"pezcumulus-test-relay-sproof-builder/try-runtime",
 	"pezframe-benchmarking?/try-runtime",
+	"pezframe-executive/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
 	"pezkuwi-primitives/try-runtime",

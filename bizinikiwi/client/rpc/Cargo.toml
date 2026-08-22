@@ -48,11 +48,14 @@ tokio = { workspace = true, default-features = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 bizinikiwi-test-runtime-client = { workspace = true }
+futures-timer = { workspace = true }
+pezsc-keystore = { workspace = true }
 pezsc-network = { workspace = true, default-features = true }
 pezsc-transaction-pool = { workspace = true, default-features = true }
 pezsp-consensus = { workspace = true, default-features = true }
 pezsp-crypto-hashing = { workspace = true, default-features = true }
 pretty_assertions = { workspace = true }
+tempfile = { workspace = true }
 
 [features]
 test-helpers = []
@@ -61,6 +64,7 @@ runtime-benchmarks = [
 	"pezsc-block-builder/runtime-benchmarks",
 	"pezsc-chain-spec/runtime-benchmarks",
 	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-keystore/runtime-benchmarks",
 	"pezsc-mixnet/runtime-benchmarks",
 	"pezsc-network/runtime-benchmarks",
 	"pezsc-rpc-api/runtime-benchmarks",
@@ -83,6 +87,7 @@ std = [
 	"pezsc-block-builder/std",
 	"pezsc-chain-spec/std",
 	"pezsc-client-api/std",
+	"pezsc-keystore/std",
 	"pezsc-mixnet/std",
 	"pezsc-network/std",
 	"pezsc-rpc-api/std",

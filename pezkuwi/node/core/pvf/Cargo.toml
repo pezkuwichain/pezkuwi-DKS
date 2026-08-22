@@ -55,6 +55,7 @@ criterion = { features = [
 	"async_tokio",
 	"cargo_bench_support",
 ], workspace = true }
+pezkuwi-primitives-test-helpers = { workspace = true }
 
 pezkuwi-node-core-pvf-common = { features = [
 	"test-utils",
@@ -95,6 +96,7 @@ runtime-benchmarks = [
 	"pezkuwi-node-subsystem-test-helpers/runtime-benchmarks",
 	"pezkuwi-node-subsystem/runtime-benchmarks",
 	"pezkuwi-pez-node-primitives/runtime-benchmarks",
+	"pezkuwi-primitives-test-helpers/runtime-benchmarks",
 	"pezkuwi-primitives/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezkuwichain-runtime/runtime-benchmarks",
@@ -114,6 +116,7 @@ std = [
 	"pezkuwi-node-subsystem-test-helpers/std",
 	"pezkuwi-node-subsystem/std",
 	"pezkuwi-pez-node-primitives/std",
+	"pezkuwi-primitives-test-helpers/std",
 	"pezsc-sysinfo/std",
 	"pezsc-tracing/std",
 ]

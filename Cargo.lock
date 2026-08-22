@@ -11849,6 +11849,7 @@ dependencies = [
  "pezsp-api",
  "pezsp-blockchain",
  "pezsp-consensus",
+ "pezsp-core",
  "pezsp-maybe-compressed-blob",
  "pezsp-runtime",
  "pezsp-tracing",
@@ -12028,6 +12029,7 @@ dependencies = [
  "pezcumulus-test-client",
  "pezcumulus-test-relay-sproof-builder",
  "pezframe-benchmarking",
+ "pezframe-executive",
  "pezframe-support",
  "pezframe-system",
  "pezkuwi-primitives",
@@ -12443,6 +12445,7 @@ dependencies = [
  "pezsp-runtime",
  "pezsp-state-machine",
  "pezsp-trie",
+ "proptest",
 ]
 
 [[package]]
@@ -13431,6 +13434,7 @@ dependencies = [
  "pezsp-consensus",
  "pezsp-core",
  "pezsp-keyring",
+ "strum 0.26.3",
  "thiserror 1.0.69",
 ]
 
@@ -13773,6 +13777,7 @@ dependencies = [
  "pezkuwi-node-subsystem-test-helpers",
  "pezkuwi-pez-node-primitives",
  "pezkuwi-primitives",
+ "pezkuwi-primitives-test-helpers",
  "pezkuwi-teyrchain-primitives",
  "pezkuwichain-runtime",
  "pezsc-sysinfo",
@@ -19386,6 +19391,7 @@ dependencies = [
  "pezpallet-assets",
  "pezpallet-balances",
  "pezpallet-revive",
+ "pezpallet-revive-fixtures",
  "pezpallet-timestamp",
  "pezpallet-xcm",
  "pezsp-io",
@@ -19628,6 +19634,7 @@ dependencies = [
  "pezsp-tracing",
  "pezsp-trie",
  "rand 0.8.6",
+ "rstest",
  "schnellru",
  "sysinfo",
  "tempfile",
@@ -20482,6 +20489,7 @@ dependencies = [
  "async-channel 1.9.0",
  "bizinikiwi-test-runtime-client",
  "futures",
+ "futures-timer",
  "jsonrpsee",
  "log",
  "parity-scale-codec",
@@ -20489,6 +20497,7 @@ dependencies = [
  "pezsc-block-builder",
  "pezsc-chain-spec",
  "pezsc-client-api",
+ "pezsc-keystore",
  "pezsc-mixnet",
  "pezsc-network",
  "pezsc-rpc-api",
@@ -20511,6 +20520,7 @@ dependencies = [
  "pezsp-version",
  "pretty_assertions",
  "serde_json",
+ "tempfile",
  "tokio",
 ]
 
@@ -20593,6 +20603,7 @@ dependencies = [
  "pezsp-blockchain",
  "pezsp-consensus",
  "pezsp-core",
+ "pezsp-crypto-hashing",
  "pezsp-externalities",
  "pezsp-maybe-compressed-blob",
  "pezsp-rpc",
@@ -24029,6 +24040,7 @@ checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
 name = "relay-bizinikiwi-client"
 version = "0.1.0"
 dependencies = [
+ "async-channel 1.9.0",
  "async-std",
  "async-trait",
  "futures",
