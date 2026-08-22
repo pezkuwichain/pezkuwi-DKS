@@ -54,8 +54,10 @@ where
 				<pezpallet_staking_async::Nominators<Runtime>>::map_storage_final_prefix(),
 			],
 			hashed_keys: vec![
-				<pezpallet_staking_async::Validators<Runtime>>::counter_storage_final_key().to_vec(),
-				<pezpallet_staking_async::Nominators<Runtime>>::counter_storage_final_key().to_vec(),
+				<pezpallet_staking_async::Validators<Runtime>>::counter_storage_final_key()
+					.to_vec(),
+				<pezpallet_staking_async::Nominators<Runtime>>::counter_storage_final_key()
+					.to_vec(),
 			],
 			..Default::default()
 		}))
