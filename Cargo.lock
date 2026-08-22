@@ -1973,6 +1973,7 @@ dependencies = [
  "pezpallet-nfts",
  "pezpallet-nis",
  "pezpallet-nomination-pools",
+ "pezpallet-nomination-pools-benchmarking",
  "pezpallet-nomination-pools-runtime-api",
  "pezpallet-pez-treasury",
  "pezpallet-presale",

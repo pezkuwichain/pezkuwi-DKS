@@ -1820,6 +1820,9 @@ impl
 }
 
 #[cfg(feature = "runtime-benchmarks")]
+#[cfg(feature = "runtime-benchmarks")]
+type StakingRcClientBench<T> = pezpallet_staking_async_rc_client::benchmarking::Pezpallet<T>;
+
 mod benches {
 	pezframe_benchmarking::define_benchmarks!(
 		[pezframe_system, SystemBench::<Runtime>]
@@ -1852,6 +1855,19 @@ mod benches {
 		[pezpallet_xcm_benchmarks::fungible, XcmBalances]
 		[pezpallet_xcm_benchmarks::generic, XcmGeneric]
 		[pezcumulus_pezpallet_weight_reclaim, WeightReclaim]
+		// Staking, voter list and the multi-block election run on this chain; without these
+		// entries their benchmarks are never listed and their weights are never measured.
+		[pezpallet_staking_async, Staking]
+		[pezpallet_staking_async_rc_client, StakingRcClientBench::<Runtime>]
+		[pezpallet_bags_list, VoterList]
+		[pezpallet_election_provider_multi_block, MultiBlockElection]
+		[pezpallet_election_provider_multi_block::verifier, MultiBlockElectionVerifier]
+		[pezpallet_election_provider_multi_block::unsigned, MultiBlockElectionUnsigned]
+		[pezpallet_election_provider_multi_block::signed, MultiBlockElectionSigned]
+		[pezpallet_nomination_pools, NominationPoolsBench::<Runtime>]
+		[pezpallet_migrations, MultiBlockMigrations]
+		[pezpallet_ah_ops, AhOps]
+		[pezpallet_sudo, Sudo]
 		// PezkuwiChain Custom Pallets
 		[pezpallet_pez_treasury, PezTreasury]
 		[pezpallet_presale, Presale]
@@ -2236,6 +2252,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
+			use pezpallet_nomination_pools_benchmarking::Pezpallet as NominationPoolsBench;
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
 			use pezpallet_xcm_bridge_hub_router::benchmarking::Pezpallet as XcmBridgeHubRouterBench;
 
@@ -2284,6 +2301,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
+			use pezpallet_nomination_pools_benchmarking::Pezpallet as NominationPoolsBench;
 			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
 				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
 					let keys = SessionKeys::generate(&owner.encode(), None);
