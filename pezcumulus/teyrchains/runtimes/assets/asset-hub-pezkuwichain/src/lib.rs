@@ -992,8 +992,6 @@ impl pezpallet_nft_fractionalization::Config for Runtime {
 	type PalletId = NftFractionalizationPalletId;
 	type WeightInfo = weights::pezpallet_nft_fractionalization::WeightInfo<Runtime>;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
 }
 
 parameter_types! {
