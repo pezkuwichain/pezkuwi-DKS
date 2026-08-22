@@ -14912,6 +14912,7 @@ dependencies = [
  "pezsp-io",
  "pezsp-keyring",
  "pezsp-offchain",
+ "pezsp-runtime",
  "pezsp-runtime-interface",
  "pezsp-std",
  "pezsp-storage",

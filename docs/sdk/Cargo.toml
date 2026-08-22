@@ -104,6 +104,7 @@ pezsp-genesis-builder = { workspace = true, default-features = true }
 pezsp-io = { workspace = true, default-features = true }
 pezsp-keyring = { workspace = true, default-features = true }
 pezsp-offchain = { workspace = true, default-features = true }
+pezsp-runtime = { workspace = true, default-features = true }
 pezsp-runtime-interface = { workspace = true, default-features = true }
 pezsp-std = { workspace = true, default-features = true }
 pezsp-storage = { workspace = true, default-features = true }
@@ -202,6 +203,7 @@ runtime-benchmarks = [
 	"pezsp-keyring/runtime-benchmarks",
 	"pezsp-offchain/runtime-benchmarks",
 	"pezsp-runtime-interface/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-version/runtime-benchmarks",
 	"teyrchain-info/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
@@ -305,6 +307,7 @@ try-runtime = [
 	"pezsp-genesis-builder/try-runtime",
 	"pezsp-keyring/try-runtime",
 	"pezsp-offchain/try-runtime",
+	"pezsp-runtime/try-runtime",
 	"pezsp-version/try-runtime",
 	"teyrchain-info/try-runtime",
 	"xcm-builder/try-runtime",
