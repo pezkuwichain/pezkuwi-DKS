@@ -31,6 +31,7 @@ pezsp-consensus = { workspace = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 kvdb-memorydb = { workspace = true }
+pezkuwi-node-clock = { workspace = true, default-features = true, features = ["test"] }
 pezsp-tracing = { workspace = true }
 
 parking_lot = { workspace = true, default-features = true }
