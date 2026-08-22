@@ -338,7 +338,7 @@ mod benchmarks {
 		let (payment_asset, reward_asset) = setup_benchmark_assets::<T>(&caller, &presale_treasury);
 
 		// Create presale (will get the presale_id we calculated)
-		let _ = create_test_presale::<T>(&caller, payment_asset, reward_asset, false, false);
+		assert_ok!(create_test_presale::<T>(&caller, payment_asset, reward_asset, false, false));
 
 		// Add n contributors
 		for i in 0..n {
@@ -346,14 +346,14 @@ mod benchmarks {
 
 			// Mint payment tokens to contributor
 			let contribution_amount: T::Balance = 50_000u128.into();
-			let _ = T::Assets::mint_into(payment_asset, &contributor, contribution_amount);
+			assert_ok!(T::Assets::mint_into(payment_asset, &contributor, contribution_amount));
 
 			// Make contribution
-			let _ = Presale::<T>::contribute(
+			assert_ok!(Presale::<T>::contribute(
 				RawOrigin::Signed(contributor).into(),
 				presale_id,
 				10_000u128,
-			);
+			));
 		}
 
 		// Advance blocks past presale end
