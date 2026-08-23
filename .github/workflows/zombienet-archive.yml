@@ -56,7 +56,7 @@ jobs:
             --cargo-profile testnet \
             --features ${{ matrix.features }} \
             --archive-file ${{ matrix.name }}-zombienet-tests.tar.zst
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}-zombienet-tests
           path: ${{ matrix.name }}-zombienet-tests.tar.zst
