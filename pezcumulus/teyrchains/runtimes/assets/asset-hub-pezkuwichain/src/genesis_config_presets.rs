@@ -108,6 +108,7 @@ fn asset_hub_pezkuwichain_genesis(
 	presale_account: AccountId,
 	foreign_assets: Vec<(Location, AccountId, Balance)>,
 	foreign_assets_endowed_accounts: Vec<(Location, AccountId, Balance)>,
+	dev_stakers: Option<(u32, u32)>,
 ) -> serde_json::Value {
 	// Verify total PEZ minted at genesis equals PEZ_TOTAL_SUPPLY (5 billion)
 	debug_assert_eq!(
@@ -145,6 +146,14 @@ fn asset_hub_pezkuwichain_genesis(
 		// After staking setup, trigger manually with force_new_era().
 		staking: StakingConfig {
 			force_era: pezpallet_staking_async::Forcing::ForceNone,
+			// Synthetic stakers, for the presets that ask for them. The multi-block election
+			// benchmarks assert that a snapshot page is FULL -- `TargetSnapshotPerBlock` is
+			// `MaxValidatorSet`, i.e. 1000 -- and a genesis with no stakers makes that
+			// assertion fail before any weight is taken, which is why
+			// `pezpallet_election_provider_multi_block` and its verifier had no measured
+			// weights at all. Only the dev and local presets set this; the real genesis is a
+			// deliberate design and does not get 25k invented nominators.
+			dev_stakers,
 			..Default::default()
 		},
 
@@ -258,6 +267,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				presale_account,
 				vec![],
 				vec![],
+				None,
 			)
 		},
 
@@ -301,6 +311,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 						10_000_000 * 4096 * 4096,
 					),
 				],
+				Some((1000, 25_000)),
 			)
 		},
 
@@ -332,6 +343,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				presale_account,
 				vec![],
 				vec![],
+				Some((1000, 25_000)),
 			)
 		},
 

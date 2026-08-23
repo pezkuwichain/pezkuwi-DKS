@@ -22,8 +22,8 @@ use pezcumulus_primitives_core::{
 	relay_chain::AccountId, PersistedValidationData, ValidationParams,
 };
 use pezcumulus_test_client::{
-	generate_extrinsic_with_pair, BlockBuilderAndSupportData, BuildTeyrchainBlockData, Client,
-	InitBlockBuilder, TestClientBuilder, TeyrchainBlockData, ValidationResult,
+	generate_extrinsic_with_pair, BlockBuilderAndSupportData, BuildBlockBuilder,
+	BuildTeyrchainBlockData, Client, TestClientBuilder, TeyrchainBlockData, ValidationResult,
 };
 use pezcumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
 use pezcumulus_test_runtime::{Block, GluttonCall, Header, SudoCall};
@@ -32,7 +32,7 @@ use pezsc_client_api::UsageProvider;
 use pezsc_consensus::{
 	BlockImport, BlockImportParams, ForkChoiceStrategy, ImportResult, StateAction,
 };
-use pezsc_executor_common::wasm_runtime::WasmModule;
+use pezsc_executor_common::wasm_runtime::{WasmModule, DEFAULT_HEAP_ALLOC_STRATEGY};
 use pezsp_api::ProvideRuntimeApi;
 
 use pezframe_system_rpc_runtime_api::AccountNonceApi;
@@ -92,8 +92,10 @@ fn benchmark_block_validation(c: &mut Criterion) {
 			parent_head: parent_header.encode().into(),
 			..Default::default()
 		};
-		let BlockBuilderAndSupportData { block_builder, .. } =
-			client.init_block_builder(Some(validation_data), Default::default());
+		let BlockBuilderAndSupportData { block_builder, .. } = client
+			.init_block_builder_builder()
+			.with_validation_data(validation_data)
+			.build();
 		let teyrchain_block = block_builder.build_teyrchain_block(*parent_header.state_root());
 
 		let proof_size_in_kb = teyrchain_block.proof().encoded_size() as f64 / 1024f64;
@@ -122,7 +124,7 @@ fn benchmark_block_validation(c: &mut Criterion) {
 			),
 			|b| {
 				b.iter_batched(
-					|| runtime.new_instance().unwrap(),
+					|| runtime.new_instance(DEFAULT_HEAP_ALLOC_STRATEGY).unwrap(),
 					|mut instance| {
 						instance.call_export("validate_block", &encoded_params).unwrap();
 					},
@@ -135,7 +137,7 @@ fn benchmark_block_validation(c: &mut Criterion) {
 
 fn verify_expected_result(runtime: &Box<dyn WasmModule>, encoded_params: &[u8], block: Block) {
 	let res = runtime
-		.new_instance()
+		.new_instance(DEFAULT_HEAP_ALLOC_STRATEGY)
 		.unwrap()
 		.call_export("validate_block", encoded_params)
 		.expect("Call `validate_block`.");
@@ -202,8 +204,10 @@ fn set_glutton_parameters(
 	);
 	extrinsics.push(set_storage);
 
-	let BlockBuilderAndSupportData { mut block_builder, .. } =
-		client.init_block_builder(Some(validation_data), Default::default());
+	let BlockBuilderAndSupportData { mut block_builder, .. } = client
+		.init_block_builder_builder()
+		.with_validation_data(validation_data)
+		.build();
 
 	for extrinsic in extrinsics {
 		block_builder.push(extrinsic).unwrap();

@@ -24,7 +24,7 @@ pezkuwi-zombienet-orchestrator = { workspace = true }
 pezkuwi-zombienet-configuration = { workspace = true }
 pezcumulus-zombienet-sdk-helpers = { workspace = true }
 pezsp-statement-store = { workspace = true, default-features = true, features = ["serde"] }
-pezsc-statement-store = { workspace = true, default-features = true, features = ["test-helpers"] }
+pezsc-statement-store = { workspace = true, default-features = true }
 pezsp-keyring = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
 pezsp-crypto-hashing = { workspace = true, default-features = true }

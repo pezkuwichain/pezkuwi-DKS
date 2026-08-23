@@ -16,7 +16,7 @@
 // limitations under the License.
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pezframe_support::derive_impl;
+use pezframe_support::{derive_impl, dispatch::DispatchClass};
 use pezsp_runtime::{BuildStorage, Perbill};
 #[pezframe_support::pezpallet]
 mod module {

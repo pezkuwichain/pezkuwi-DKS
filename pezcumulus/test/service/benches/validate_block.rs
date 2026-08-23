@@ -22,7 +22,7 @@ use pezcumulus_primitives_core::{
 	relay_chain::AccountId, ParaId, PersistedValidationData, ValidationParams,
 };
 use pezcumulus_test_client::{
-	generate_extrinsic_with_pair, BuildTeyrchainBlockData, InitBlockBuilder, TestClientBuilder,
+	generate_extrinsic_with_pair, BuildBlockBuilder, BuildTeyrchainBlockData, TestClientBuilder,
 	ValidationResult,
 };
 use pezcumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
@@ -31,7 +31,7 @@ use pezcumulus_test_service::bench_utils as utils;
 use pezkuwi_primitives::HeadData;
 use pezsc_block_builder::BlockBuilderBuilder;
 use pezsc_client_api::UsageProvider;
-use pezsc_executor_common::wasm_runtime::WasmModule;
+use pezsc_executor_common::wasm_runtime::{WasmModule, DEFAULT_HEAP_ALLOC_STRATEGY};
 
 use pezsp_blockchain::{ApplyExtrinsicFailed::Validity, Error::ApplyExtrinsicFailed};
 
@@ -111,8 +111,11 @@ fn benchmark_block_validation(c: &mut Criterion) {
 		..Default::default()
 	};
 
-	let pezcumulus_test_client::BlockBuilderAndSupportData { mut block_builder, .. } =
-		client.init_block_builder(Some(validation_data), sproof_builder.clone());
+	let pezcumulus_test_client::BlockBuilderAndSupportData { mut block_builder, .. } = client
+		.init_block_builder_builder()
+		.with_validation_data(validation_data)
+		.with_relay_sproof_builder(sproof_builder.clone())
+		.build();
 
 	for extrinsic in extrinsics {
 		block_builder.push(extrinsic).unwrap();
@@ -149,7 +152,7 @@ fn benchmark_block_validation(c: &mut Criterion) {
 		),
 		|b| {
 			b.iter_batched(
-				|| runtime.new_instance().unwrap(),
+				|| runtime.new_instance(DEFAULT_HEAP_ALLOC_STRATEGY).unwrap(),
 				|mut instance| {
 					instance.call_export("validate_block", &encoded_params).unwrap();
 				},
@@ -165,7 +168,7 @@ fn verify_expected_result(
 	teyrchain_block: Block,
 ) {
 	let res = runtime
-		.new_instance()
+		.new_instance(DEFAULT_HEAP_ALLOC_STRATEGY)
 		.unwrap()
 		.call_export("validate_block", encoded_params)
 		.expect("Call `validate_block`.");
