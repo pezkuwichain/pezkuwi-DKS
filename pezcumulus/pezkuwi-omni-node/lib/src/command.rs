@@ -252,7 +252,11 @@ where
 						node.run_benchmark_block_cmd(config, cmd)
 					})
 				},
-				#[cfg(feature = "runtime-benchmarks")]
+				// `StorageCmd` and the `Storage` variant are behind `storage-benchmark`, which is
+				// ours -- upstream compiles the storage benchmark unconditionally. Gating this
+				// arm on `runtime-benchmarks` alone named a variant that does not exist whenever
+				// only that feature was on, which is exactly how `check-benches` builds.
+				#[cfg(all(feature = "runtime-benchmarks", feature = "storage-benchmark"))]
 				BenchmarkCmd::Storage(cmd) => {
 					// The command needs the full node configuration because it uses the node
 					// client and the database API, storage and shared_trie_cache. It requires

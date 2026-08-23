@@ -40,7 +40,7 @@
 //! - [`pezpallet_example_split`]: A simple example of a FRAME pezpallet demonstrating the ability to
 //!   split sections across multiple files.
 //!
-//! - [`pezpallet_example_frame_crate`]: Example pezpallet showcasing how one can be built using only the
+//! - [`pezpallet_example_pezframe_crate`]: Example pezpallet showcasing how one can be built using only the
 //! `frame` umbrella crate.
 //!
 //! - [`pezpallet_example_single_block_migrations`]: An example pezpallet demonstrating best-practices for
