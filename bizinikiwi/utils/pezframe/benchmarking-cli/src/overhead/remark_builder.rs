@@ -27,8 +27,6 @@ use pezsp_api::{ApiExt, Core, Metadata, ProvideRuntimeApi};
 use pezsp_runtime::{traits::Block as BlockT, OpaqueExtrinsic};
 use std::sync::Arc;
 
-/// Bizinikiwi configuration
-pub type BizinikiwiConfig = BizinikiwiConfig;
 /// Bizinikiwi extrinsic params builder
 pub type BizinikiwiExtrinsicParamsBuilder = ParamsBuilder<BizinikiwiConfig>;
 
