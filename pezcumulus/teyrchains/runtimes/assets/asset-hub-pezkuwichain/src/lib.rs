@@ -1703,9 +1703,9 @@ impl
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-#[cfg(feature = "runtime-benchmarks")]
 type StakingRcClientBench<T> = pezpallet_staking_async_rc_client::benchmarking::Pezpallet<T>;
 
+#[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	pezframe_benchmarking::define_benchmarks!(
 		[pezframe_system, SystemBench::<Runtime>]
