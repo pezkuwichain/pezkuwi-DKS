@@ -62,6 +62,13 @@ async fn async_backing_6_seconds_rate_test() -> Result<(), anyhow::Error> {
 				.with_default_args(vec![("-lteyrchain=debug,aura=debug").into()])
 				.with_collator(|n| n.with_name("collator-2001"))
 		})
+		.with_global_settings(|global_settings| {
+			let global_settings = match std::env::var("ZOMBIENET_SDK_BASE_DIR") {
+				Ok(val) => global_settings.with_base_dir(val),
+				_ => global_settings,
+			};
+			global_settings.with_tear_down_on_failure(false)
+		})
 		.build()
 		.map_err(|e| {
 			let errs = e.into_iter().map(|e| e.to_string()).collect::<Vec<_>>().join(" ");
@@ -79,14 +86,13 @@ async fn async_backing_6_seconds_rate_test() -> Result<(), anyhow::Error> {
 	assert_para_throughput(
 		&relay_client,
 		15,
-		[(ParaId::from(2000), 11..16), (ParaId::from(2001), 11..16)]
-			.into_iter()
-			.collect(),
+		[(ParaId::from(2000), 11..16), (ParaId::from(2001), 11..16)],
+		[],
 	)
 	.await?;
 
 	// Assert the teyrchain finalized block height is also on par with the number of backed
-	// candidates. We can only do this for the collator based on pezcumulus.
+	// candidates. We can only do this for the collator based on cumulus.
 	assert_finality_lag(&para_node_2001.wait_client().await?, 6).await?;
 
 	log::info!("Test finished successfully");

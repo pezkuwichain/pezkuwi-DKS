@@ -11,8 +11,9 @@ use pezkuwi_zombienet_sdk::{
 	LocalFileSystem, Network, NetworkConfigBuilder,
 };
 use pezsc_statement_store::{DEFAULT_MAX_TOTAL_SIZE, DEFAULT_MAX_TOTAL_STATEMENTS};
-use pezsp_core::{blake2_256, sr25519, Bytes, Pair};
-use pezsp_statement_store::{Channel, Statement, Topic};
+use pezsp_core::{sr25519, Bytes, Pair};
+use pezsp_crypto_hashing::blake2_256;
+use pezsp_statement_store::{Channel, Statement, StatementEvent, SubmitResult, Topic, TopicFilter};
 use std::{cell::Cell, collections::HashMap, time::Duration};
 use tokio::time::timeout;
 
@@ -190,7 +191,7 @@ async fn statement_store_memory_stress_bench() -> Result<(), anyhow::Error> {
 				loop {
 					let statement_bytes: Bytes = statement.encode().into();
 					let Err(err) = rpc_client
-						.request::<()>("statement_submit", rpc_params![statement_bytes])
+						.request::<SubmitResult>("statement_submit", rpc_params![statement_bytes])
 						.await
 					else {
 						break; // Successfully submitted
@@ -492,7 +493,7 @@ impl Participant {
 
 	async fn statement_submit(&mut self, statement: Statement) -> Result<(), anyhow::Error> {
 		let statement_bytes: Bytes = statement.encode().into();
-		let _: () = self
+		let _: SubmitResult = self
 			.rpc_client
 			.request("statement_submit", rpc_params![statement_bytes])
 			.await?;
@@ -504,19 +505,39 @@ impl Participant {
 		Ok(())
 	}
 
+	/// Reads the statements the store already holds for `topics`.
+	///
+	/// stable2606 removed `statement_broadcastsStatement`, the poll this bench was written
+	/// against; the RPC surface is now a subscription. A fresh subscription opens by
+	/// replaying every statement already in the store that matches the filter, so taking
+	/// the first batch and dropping the subscription gives the same answer the poll gave.
 	async fn statement_broadcasts_statement(
 		&mut self,
 		topics: Vec<Topic>,
 	) -> Result<Vec<Statement>, anyhow::Error> {
-		let statements: Vec<Bytes> = self
+		let filter = TopicFilter::MatchAll(
+			topics.try_into().map_err(|_| anyhow!("Too many topics for one filter"))?,
+		);
+		let mut subscription = self
 			.rpc_client
-			.request("statement_broadcastsStatement", rpc_params![topics])
+			.subscribe::<StatementEvent>(
+				"statement_subscribeStatement",
+				rpc_params![filter],
+				"statement_unsubscribeStatement",
+			)
 			.await?;
 
 		let mut decoded_statements = Vec::new();
-		for statement_bytes in &statements {
-			let statement = Statement::decode(&mut &statement_bytes[..])?;
-			decoded_statements.push(statement);
+		// The initial replay may arrive in several batches; `remaining` says how many more
+		// the node still owes us. Anything beyond that is live traffic we do not wait for.
+		while let Some(event) = subscription.next().await {
+			let StatementEvent::NewStatements { statements, remaining } = event?;
+			for statement_bytes in &statements {
+				decoded_statements.push(Statement::decode(&mut &statement_bytes[..])?);
+			}
+			if remaining.unwrap_or(0) == 0 {
+				break;
+			}
 		}
 
 		self.received_count += decoded_statements.len() as u32;
@@ -528,7 +549,7 @@ impl Participant {
 	fn create_session_key_statement(&self) -> Statement {
 		let mut statement = Statement::new();
 		statement.set_channel(channel_public_key());
-		statement.set_priority(self.sent_count);
+		statement.set_expiry_from_parts(u32::MAX, self.sent_count);
 		statement.set_topic(0, topic_public_key());
 		statement.set_topic(1, topic_idx(self.idx));
 		statement.set_plain_data(self.session_key.public().to_vec());
@@ -557,7 +578,7 @@ impl Participant {
 		statement.set_topic(0, topic0);
 		statement.set_topic(1, topic1);
 		statement.set_channel(channel);
-		statement.set_priority(self.sent_count);
+		statement.set_expiry_from_parts(u32::MAX, self.sent_count);
 		statement.set_plain_data(request_data);
 		statement.sign_sr25519_private(&self.keyring);
 

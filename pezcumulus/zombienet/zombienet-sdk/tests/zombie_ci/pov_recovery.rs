@@ -45,7 +45,7 @@ async fn pov_recovery() -> Result<(), anyhow::Error> {
 		.is_ok());
 
 	log::info!("Registering teyrchain para_id = {PARA_ID}");
-	network.register_parachain(PARA_ID).await?;
+	network.register_teyrchain(PARA_ID).await?;
 
 	let validator = network.get_node("validator-0")?;
 	let validator_client: OnlineClient<PezkuwiConfig> = validator.wait_client().await?;
@@ -54,12 +54,7 @@ async fn pov_recovery() -> Result<(), anyhow::Error> {
 	assert_para_is_registered(&validator_client, ParaId::from(PARA_ID), 30).await?;
 
 	log::info!("Ensuring teyrchain making progress");
-	assert_para_throughput(
-		&validator_client,
-		20,
-		[(ParaId::from(PARA_ID), 2..20)].into_iter().collect(),
-	)
-	.await?;
+	assert_para_throughput(&validator_client, 20, [(ParaId::from(PARA_ID), 2..20)], []).await?;
 
 	for (name, timeout_secs) in [("bob", 600u64)] {
 		log::info!("Checking block production for {name} within {timeout_secs}s");
@@ -145,7 +140,7 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 			let r = r
 				.with_chain("pezkuwichain-local")
 				.with_default_command("pezkuwi")
-				.with_default_image(images.polkadot.as_str())
+				.with_default_image(images.pezkuwi())
 				.with_genesis_overrides(json!({
 						"configuration": {
 							"config": {

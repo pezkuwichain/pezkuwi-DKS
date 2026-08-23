@@ -4,7 +4,6 @@
 // Test that checks approval voting coalescing does not lag finality.
 
 use anyhow::anyhow;
-
 use pezcumulus_zombienet_sdk_helpers::{assert_finality_lag, assert_para_throughput};
 use pezkuwi_primitives::Id as ParaId;
 use pezkuwi_zombienet_sdk::{
@@ -89,9 +88,8 @@ async fn approval_voting_coalescing_test() -> Result<(), anyhow::Error> {
 			(ParaId::from(2005), 11..35),
 			(ParaId::from(2006), 11..35),
 			(ParaId::from(2007), 11..35),
-		]
-		.into_iter()
-		.collect(),
+		],
+		[],
 	)
 	.await?;
 

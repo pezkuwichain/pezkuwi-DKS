@@ -75,7 +75,7 @@ async fn shared_core_idle_teyrchain_test() -> Result<(), anyhow::Error> {
 	let alice = dev::alice();
 
 	// Assign core 0 to be shared between paraid 2000 and another, non-existant paraid 2001.
-	let assign_core_call = subxt::tx::dynamic(
+	let assign_core_call = pezkuwi_subxt::tx::dynamic(
 		"Sudo",
 		"sudo",
 		vec![value! {
@@ -93,8 +93,7 @@ async fn shared_core_idle_teyrchain_test() -> Result<(), anyhow::Error> {
 
 	// Check that para 2000 is essentially getting 12-second block time, while para 2001 does not
 	// produce anything.
-	assert_para_throughput(&relay_client, 15, [(ParaId::from(2000), 5..9)].into_iter().collect())
-		.await?;
+	assert_para_throughput(&relay_client, 15, [(ParaId::from(2000), 5..9)], []).await?;
 
 	assert_finality_lag(&para_node_2000.wait_client().await?, 5).await?;
 

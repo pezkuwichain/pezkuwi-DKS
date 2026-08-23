@@ -9,13 +9,12 @@ use std::time::Duration;
 use anyhow::anyhow;
 
 use pezcumulus_zombienet_sdk_helpers::{
-	assert_finality_lag, assert_para_throughput, create_assign_core_call,
+	assert_finality_lag, assert_para_throughput, assign_cores, wait_for_pvf_prepare,
 };
 use pezkuwi_primitives::Id as ParaId;
 use pezkuwi_zombienet_orchestrator::network::node::LogLineCountOptions;
 use pezkuwi_zombienet_sdk::{
 	subxt::{OnlineClient, PezkuwiConfig},
-	subxt_signer::sr25519::dev,
 	NetworkConfigBuilder,
 };
 use serde_json::json;
@@ -49,8 +48,8 @@ async fn slot_based_12cores_test() -> Result<(), anyhow::Error> {
 						}
 					}
 				}))
-				// Have to set a `with_node` outside of the loop below, so that `r` has the right
-				// type.
+				// Have to set a `with_validator` outside of the loop below, so that `r` has the
+				// right type.
 				.with_validator(|node| node.with_name("validator-0"));
 
 			(1..12).fold(r, |acc, i| {
@@ -86,20 +85,12 @@ async fn slot_based_12cores_test() -> Result<(), anyhow::Error> {
 	let para_node = network.get_node("collator-5")?;
 
 	let relay_client: OnlineClient<PezkuwiConfig> = relay_node.wait_client().await?;
-	let alice = dev::alice();
 
 	// Assign 11 extra cores to the teyrchain.
-	let cores = (0..11).map(|idx| (idx, 2300)).collect::<Vec<(u32, u32)>>();
+	assign_cores(&relay_client, 2300, (0..11).collect()).await?;
 
-	let assign_cores_call = create_assign_core_call(&cores);
-	relay_client
-		.tx()
-		.sign_and_submit_then_watch_default(&assign_cores_call, &alice)
-		.await?
-		.wait_for_finalized_success()
-		.await?;
-
-	log::info!("11 more cores assigned to the teyrchain");
+	// Wait for PVF preparation to complete.
+	wait_for_pvf_prepare(&network, 1).await?;
 
 	// Expect a backed candidate count of at least 170 in 15 relay chain blocks
 	// (11.33 candidates per para per relay chain block).
@@ -107,12 +98,7 @@ async fn slot_based_12cores_test() -> Result<(), anyhow::Error> {
 	// change will be counted.
 	// Since the calculated backed candidate count is theoretical and the CI tests are observed to
 	// occasionally fail, let's apply 15% tolerance to the expected range: 170 - 15% = 144
-	assert_para_throughput(
-		&relay_client,
-		15,
-		[(ParaId::from(2300), 153..181)].into_iter().collect(),
-	)
-	.await?;
+	assert_para_throughput(&relay_client, 15, [(ParaId::from(2300), 144..181)], []).await?;
 
 	// Expect that `collator-5` claims at least 3 slots during this run.
 	let result = para_node

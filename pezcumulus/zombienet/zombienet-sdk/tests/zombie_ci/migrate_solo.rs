@@ -10,7 +10,9 @@ use crate::utils::{initialize_network, BEST_BLOCK_METRIC};
 use pezcumulus_zombienet_sdk_helpers::assert_para_throughput;
 use pezkuwi_primitives::Id as ParaId;
 use pezkuwi_zombienet_sdk::{
-	subxt::{self, dynamic::Value, tx::DynamicPayload, OnlineClient, PezkuwiConfig},
+	subxt::{
+		self, dynamic::Value, tx::DynamicPayload, BizinikiwiConfig, OnlineClient, PezkuwiConfig,
+	},
 	subxt_signer::sr25519::dev,
 	NetworkConfig, NetworkConfigBuilder, RegistrationStrategy,
 };
@@ -28,8 +30,11 @@ async fn create_migrate_solo_to_para_call(
 	let genesis_state = std::fs::read_to_string(file_path)?;
 	let genesis_head = Value::from_bytes(Bytes::from_str(&genesis_state)?.as_bytes_ref());
 
-	let call =
-		subxt::dynamic::tx("TestPallet", "set_custom_validation_head_data", vec![genesis_head]);
+	let call = pezkuwi_subxt::dynamic::tx(
+		"TestPallet",
+		"set_custom_validation_head_data",
+		vec![genesis_head],
+	);
 	Ok(call)
 }
 
@@ -47,12 +52,7 @@ async fn migrate_solo_to_para() -> Result<(), anyhow::Error> {
 	let alice_client: OnlineClient<PezkuwiConfig> = alice.wait_client().await?;
 
 	log::info!("Ensuring teyrchain making progress");
-	assert_para_throughput(
-		&alice_client,
-		20,
-		[(ParaId::from(PARA_ID), 2..40)].into_iter().collect(),
-	)
-	.await?;
+	assert_para_throughput(&alice_client, 20, [(ParaId::from(PARA_ID), 2..40)], []).await?;
 
 	let dave = network.get_node("dave")?;
 
@@ -74,7 +74,7 @@ async fn migrate_solo_to_para() -> Result<(), anyhow::Error> {
 	log::info!("Migrating solo to para");
 	let base_dir = network.base_dir().ok_or(anyhow!("failed to get base dir"))?;
 	let call = create_migrate_solo_to_para_call(base_dir, "2000-1").await?;
-	let dave_client: OnlineClient<PezkuwiConfig> = dave.wait_client().await?;
+	let dave_client: OnlineClient<BizinikiwiConfig> = dave.wait_client().await?;
 
 	// Don't wait for finalization. dave will be disconnected after transaction success and it won't
 	// be able to get its status
@@ -122,7 +122,7 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 		.with_relaychain(|r| {
 			r.with_chain("pezkuwichain-local")
 				.with_default_command("pezkuwi")
-				.with_default_image(images.polkadot.as_str())
+				.with_default_image(images.pezkuwi())
 				.with_default_args(vec![("-lteyrchain=debug").into()])
 				.with_validator(|node| node.with_name("alice"))
 				.with_validator(|node| node.with_name("bob"))
