@@ -1,4 +1,4 @@
-// This file is part of Bizinikiwi
+// This file is part of Bizinikiwi.
 
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0

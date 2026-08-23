@@ -1,5 +1,5 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// This file is part of Cumulus.
+// This file is part of Pezcumulus.
 // SPDX-License-Identifier: Apache-2.0
 
 //! Scheduling validation for V3 candidates.
