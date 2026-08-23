@@ -70,8 +70,8 @@ impl<T: pezframe_system::Config> pezpallet_bags_list::WeightInfo for WeightInfo<
 		// Proof Size summary in bytes:
 		//  Measured:  `1626`
 		//  Estimated: `11506`
-		// Minimum execution time: 103_844_000 picoseconds.
-		Weight::from_parts(161_062_000, 0)
+		// Minimum execution time: 104_734_000 picoseconds.
+		Weight::from_parts(157_022_000, 0)
 			.saturating_add(Weight::from_parts(0, 11506))
 			.saturating_add(T::DbWeight::get().reads(11))
 			.saturating_add(T::DbWeight::get().writes(6))
@@ -96,8 +96,8 @@ impl<T: pezframe_system::Config> pezpallet_bags_list::WeightInfo for WeightInfo<
 		// Proof Size summary in bytes:
 		//  Measured:  `1520`
 		//  Estimated: `8877`
-		// Minimum execution time: 100_958_000 picoseconds.
-		Weight::from_parts(155_090_000, 0)
+		// Minimum execution time: 101_309_000 picoseconds.
+		Weight::from_parts(159_787_000, 0)
 			.saturating_add(Weight::from_parts(0, 8877))
 			.saturating_add(T::DbWeight::get().reads(11))
 			.saturating_add(T::DbWeight::get().writes(6))
@@ -122,8 +122,8 @@ impl<T: pezframe_system::Config> pezpallet_bags_list::WeightInfo for WeightInfo<
 		// Proof Size summary in bytes:
 		//  Measured:  `1889`
 		//  Estimated: `11506`
-		// Minimum execution time: 120_786_000 picoseconds.
-		Weight::from_parts(181_609_000, 0)
+		// Minimum execution time: 119_522_000 picoseconds.
+		Weight::from_parts(184_193_000, 0)
 			.saturating_add(Weight::from_parts(0, 11506))
 			.saturating_add(T::DbWeight::get().reads(15))
 			.saturating_add(T::DbWeight::get().writes(6))
@@ -150,8 +150,8 @@ impl<T: pezframe_system::Config> pezpallet_bags_list::WeightInfo for WeightInfo<
 		// Proof Size summary in bytes:
 		//  Measured:  `1713`
 		//  Estimated: `11506`
-		// Minimum execution time: 101_409_000 picoseconds.
-		Weight::from_parts(156_722_000, 0)
+		// Minimum execution time: 101_379_000 picoseconds.
+		Weight::from_parts(153_226_000, 0)
 			.saturating_add(Weight::from_parts(0, 11506))
 			.saturating_add(T::DbWeight::get().reads(12))
 			.saturating_add(T::DbWeight::get().writes(7))
