@@ -631,16 +631,18 @@ impl ScenarioBuilder {
 				.await;
 				let txs =
 					self.build_transactions(builder, sink.clone(), tip, payload_builder).await;
-				let (stop_sender, runner) =
-					Runner::<DefaultTxTask<BizinikiwiTransaction>, BizinikiwiTransactionsSink>::new(
-						send_threshold,
-						sink,
-						txs.into_iter().rev().collect(),
-						self.log_file_name_prefix,
-						self.base_dir_path,
-						self.executor_id,
-						self.timeout,
-					);
+				let (stop_sender, runner) = Runner::<
+					DefaultTxTask<BizinikiwiTransaction>,
+					BizinikiwiTransactionsSink,
+				>::new(
+					send_threshold,
+					sink,
+					txs.into_iter().rev().collect(),
+					self.log_file_name_prefix,
+					self.base_dir_path,
+					self.executor_id,
+					self.timeout,
+				);
 
 				let executor = ScenarioExecutor::Substrate(BizinikiwiScenarioExecutor::new(
 					stop_sender,

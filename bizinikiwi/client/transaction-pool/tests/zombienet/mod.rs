@@ -21,8 +21,8 @@
 
 use anyhow::anyhow;
 use pezkuwi_zombienet_sdk::{
-	pezkuwi_subxt::BizinikiwiConfig, GlobalSettingsBuilder, LocalFileSystem, Network, NetworkConfig,
-	NetworkConfigBuilder, NetworkConfigExt, WithRelaychain,
+	pezkuwi_subxt::BizinikiwiConfig, GlobalSettingsBuilder, LocalFileSystem, Network,
+	NetworkConfig, NetworkConfigBuilder, NetworkConfigExt, WithRelaychain,
 };
 use std::time::SystemTime;
 use tracing_subscriber::EnvFilter;

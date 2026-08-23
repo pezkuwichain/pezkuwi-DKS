@@ -492,7 +492,8 @@ mod tests {
 		let metadata = metadata();
 
 		// Decode with invalid version.
-		let result = Extrinsics::<BizinikiwiConfig>::decode_from(vec![vec![3u8].encode()], metadata);
+		let result =
+			Extrinsics::<BizinikiwiConfig>::decode_from(vec![vec![3u8].encode()], metadata);
 
 		assert_matches!(
 			result.err(),
