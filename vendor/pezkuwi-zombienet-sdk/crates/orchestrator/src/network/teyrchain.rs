@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::anyhow;
 use async_trait::async_trait;
-use pezkuwi_subxt::{dynamic::Value, tx::TxStatus, BizinikiwConfig, OnlineClient};
+use pezkuwi_subxt::{dynamic::Value, tx::TxStatus, BizinikiwiConfig, OnlineClient};
 use pezkuwi_subxt_signer::{sr25519::Keypair, SecretUri};
 use provider::types::TransferedFile;
 use serde::{Deserialize, Serialize};
@@ -165,7 +165,7 @@ impl Parachain {
 			anyhow::anyhow!("Error waiting for ws to be ready, at {}", options.node_ws_url.as_str())
 		})?;
 
-		let api: OnlineClient<BizinikiwConfig> = get_client_from_url(&options.node_ws_url).await?;
+		let api: OnlineClient<BizinikiwiConfig> = get_client_from_url(&options.node_ws_url).await?;
 
 		let schedule_para = pezkuwi_subxt::dynamic::tx(
 			"ParasSudoWrapper",

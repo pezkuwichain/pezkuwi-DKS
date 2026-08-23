@@ -81,9 +81,9 @@ pub type EthTransaction = SubxtTransaction<EthRuntimeConfig>;
 /// Holds the RPC API connection for transaction execution.
 pub type EthTransactionsSink = SubxtTransactionsSink<EthRuntimeConfig, EthKeypair>;
 /// Transaction type that runs on `bizinikiwi` compatible chains.
-pub type BizinikiwTransaction = SubxtTransaction<PezkuwiConfig>;
+pub type BizinikiwiTransaction = SubxtTransaction<PezkuwiConfig>;
 /// Holds the RPC API connection for transaction execution.
-pub type BizinikiwTransactionsSink = SubxtTransactionsSink<PezkuwiConfig, SrPair>;
+pub type BizinikiwiTransactionsSink = SubxtTransactionsSink<PezkuwiConfig, SrPair>;
 
 /// Context for building transaction payloads.
 /// Generic over account type `A` to support both Substrate and Ethereum chains.
@@ -722,7 +722,7 @@ where
 
 #[cfg(test)]
 mod tests {
-	use pezkuwi_subxt::BizinikiwConfig;
+	use pezkuwi_subxt::BizinikiwiConfig;
 
 	use crate::{
 		subxt_transaction::{
@@ -733,7 +733,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_derive_accounts_len() {
-		let accounts = derive_accounts::<BizinikiwConfig, pezkuwi_subxt_signer::sr25519::Keypair, _>(
+		let accounts = derive_accounts::<BizinikiwiConfig, pezkuwi_subxt_signer::sr25519::Keypair, _>(
 			crate::scenario::AccountsDescription::Derived(0..11),
 			SENDER_SEED,
 			generate_sr25519_keypair,
@@ -753,7 +753,7 @@ mod tests {
 			assert_eq!(AccountMetadata::Derived(id), meta);
 		}
 
-		let accounts = derive_accounts::<BizinikiwConfig, pezkuwi_subxt_signer::sr25519::Keypair, _>(
+		let accounts = derive_accounts::<BizinikiwiConfig, pezkuwi_subxt_signer::sr25519::Keypair, _>(
 			crate::scenario::AccountsDescription::Keyring("alice".to_string()),
 			SENDER_SEED,
 			generate_sr25519_keypair,

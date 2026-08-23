@@ -53,13 +53,13 @@ pub mod view_functions;
 
 /// This module provides a [`Config`] type, which is used to define various
 /// types that are important in order to speak to a particular chain.
-/// [`BizinikiwConfig`] provides a default set of these types suitable for the
+/// [`BizinikiwiConfig`] provides a default set of these types suitable for the
 /// default Bizinikiwi node implementation, and [`PezkuwiConfig`] for a
 /// Pezkuwi node.
 pub mod config {
 	pub use pezkuwi_subxt_core::{
 		config::{
-			bizinikiwi, pezkuwi, transaction_extensions, BizinikiwConfig,
+			bizinikiwi, pezkuwi, transaction_extensions, BizinikiwiConfig,
 			BizinikiwiExtrinsicParams, Config, DefaultExtrinsicParams,
 			DefaultExtrinsicParamsBuilder, ExtrinsicParams, ExtrinsicParamsEncoder, Hash, HashFor,
 			Hasher, Header, PezkuwiConfig, PezkuwiExtrinsicParams, TransactionExtension,
@@ -87,7 +87,7 @@ cfg_unstable_light_client! {
 // but leave most types behind their respective modules.
 pub use crate::{
 	client::{OfflineClient, OnlineClient},
-	config::{BizinikiwConfig, Config, PezkuwiConfig},
+	config::{BizinikiwiConfig, Config, PezkuwiConfig},
 	error::Error,
 	metadata::Metadata,
 };

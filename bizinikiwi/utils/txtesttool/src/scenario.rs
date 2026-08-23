@@ -18,12 +18,12 @@ use crate::{
 	runner::{DefaultTxTask, Runner, TxTask},
 	subxt_transaction::{
 		eth_transfer_payload_builder, generate_ecdsa_keypair, generate_sr25519_keypair,
-		remark_payload_builder, sub_transfer_payload_builder, BizinikiwTransaction,
-		BizinikiwTransactionsSink, EthPayloadBuilderFn, EthTransaction, EthTransactionsSink,
+		remark_payload_builder, sub_transfer_payload_builder, BizinikiwiTransaction,
+		BizinikiwiTransactionsSink, EthPayloadBuilderFn, EthTransaction, EthTransactionsSink,
 		EthTxBuildContext, SubPayloadBuilderFn, SubTxBuildContext,
 	},
 	transaction::{
-		BizinikiwTransactionBuilder, BuildTransactionParams, EthTransactionBuilder, Transaction,
+		BizinikiwiTransactionBuilder, BuildTransactionParams, EthTransactionBuilder, Transaction,
 		TransactionBuilder, TransactionCall, TransactionRecipe, TransactionsSink,
 	},
 };
@@ -107,16 +107,16 @@ pub struct EthScenarioExecutor {
 	runner: EthScenarioRunner,
 }
 
-pub type BizinikiwScenarioRunner =
-	Runner<DefaultTxTask<BizinikiwTransaction>, BizinikiwTransactionsSink>;
-pub struct BizinikiwScenarioExecutor {
+pub type BizinikiwiScenarioRunner =
+	Runner<DefaultTxTask<BizinikiwiTransaction>, BizinikiwiTransactionsSink>;
+pub struct BizinikiwiScenarioExecutor {
 	stop_sender: Sender<()>,
-	runner: BizinikiwScenarioRunner,
+	runner: BizinikiwiScenarioRunner,
 }
 
-impl BizinikiwScenarioExecutor {
-	pub(crate) fn new(stop_sender: Sender<()>, runner: BizinikiwScenarioRunner) -> Self {
-		BizinikiwScenarioExecutor { stop_sender, runner }
+impl BizinikiwiScenarioExecutor {
+	pub(crate) fn new(stop_sender: Sender<()>, runner: BizinikiwiScenarioRunner) -> Self {
+		BizinikiwiScenarioExecutor { stop_sender, runner }
 	}
 }
 
@@ -129,7 +129,7 @@ impl EthScenarioExecutor {
 /// Multi-chain scenario executor.
 pub enum ScenarioExecutor {
 	Eth(EthScenarioExecutor),
-	Substrate(BizinikiwScenarioExecutor),
+	Substrate(BizinikiwiScenarioExecutor),
 }
 
 impl ScenarioExecutor {
@@ -616,8 +616,8 @@ impl ScenarioBuilder {
 					.expect("No payload source configured")
 					.into_sub_builder();
 
-				let builder = BizinikiwTransactionBuilder::default();
-				let sink = BizinikiwTransactionsSink::new_with_uri_with_accounts_description(
+				let builder = BizinikiwiTransactionBuilder::default();
+				let sink = BizinikiwiTransactionsSink::new_with_uri_with_accounts_description(
 					rpc_uri.as_str(),
 					accounts_description,
 					generate_sr25519_keypair,
@@ -632,7 +632,7 @@ impl ScenarioBuilder {
 				let txs =
 					self.build_transactions(builder, sink.clone(), tip, payload_builder).await;
 				let (stop_sender, runner) =
-					Runner::<DefaultTxTask<BizinikiwTransaction>, BizinikiwTransactionsSink>::new(
+					Runner::<DefaultTxTask<BizinikiwiTransaction>, BizinikiwiTransactionsSink>::new(
 						send_threshold,
 						sink,
 						txs.into_iter().rev().collect(),
@@ -642,7 +642,7 @@ impl ScenarioBuilder {
 						self.timeout,
 					);
 
-				let executor = ScenarioExecutor::Substrate(BizinikiwScenarioExecutor::new(
+				let executor = ScenarioExecutor::Substrate(BizinikiwiScenarioExecutor::new(
 					stop_sender,
 					runner,
 				));

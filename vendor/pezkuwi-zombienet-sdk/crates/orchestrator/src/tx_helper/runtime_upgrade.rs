@@ -1,4 +1,4 @@
-use pezkuwi_subxt::{dynamic::Value, tx::TxStatus, BizinikiwConfig, OnlineClient};
+use pezkuwi_subxt::{dynamic::Value, tx::TxStatus, BizinikiwiConfig, OnlineClient};
 use pezkuwi_subxt_signer::sr25519::Keypair;
 use tracing::{debug, info};
 
@@ -10,7 +10,7 @@ pub async fn upgrade(
 	sudo: &Keypair,
 ) -> Result<(), anyhow::Error> {
 	debug!("Upgrading runtime, using node: {} with endpoting {}", node.name, node.ws_uri);
-	let api: OnlineClient<BizinikiwConfig> = node.wait_client().await?;
+	let api: OnlineClient<BizinikiwiConfig> = node.wait_client().await?;
 
 	let upgrade = pezkuwi_subxt::dynamic::tx(
 		"System",

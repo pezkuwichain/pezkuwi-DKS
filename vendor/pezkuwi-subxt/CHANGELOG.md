@@ -196,7 +196,7 @@ let _is_call_allowed = api
 
 ### Updated `Config` trait
 
-Another change to be aware of is that [our `Config` trait has been tweaked](https://github.com/paritytech/subxt/pull/1974). The `Hash` associated type is no longer needed, as it can be obtained via the `Hasher` associated type already, and `PezkuwiConfig`/`BizinikiwConfig` now set the hasher by default to be `DynamicHasher256`, which will (when V16 metadata is available for a runtime) automatically select between Keccak256 and BlakeTwo256 hashers depending on what the chain requires.
+Another change to be aware of is that [our `Config` trait has been tweaked](https://github.com/paritytech/subxt/pull/1974). The `Hash` associated type is no longer needed, as it can be obtained via the `Hasher` associated type already, and `PezkuwiConfig`/`BizinikiwiConfig` now set the hasher by default to be `DynamicHasher256`, which will (when V16 metadata is available for a runtime) automatically select between Keccak256 and BlakeTwo256 hashers depending on what the chain requires.
 
 ### Other changes
 
@@ -1023,7 +1023,7 @@ Now, the client only knows about a `Backend` (ie it has a `.backend()` method in
 
 ```rust
 use subxt::{
-    config::BizinikiwConfig,
+    config::BizinikiwiConfig,
     backend::rpc::RpcClient,
     backend::legacy::LegacyRpcMethods,
 };
@@ -1032,13 +1032,13 @@ use subxt::{
 let rpc_client = RpcClient::from_url("ws://localhost:9944").await?;
 
 // We could also call unstable RPCs with `backend::unstable::UnstableRpcMethods`:
-let rpc_methods = LegacyRpcMethods::<BizinikiwConfig>::new(rpc_client);
+let rpc_methods = LegacyRpcMethods::<BizinikiwiConfig>::new(rpc_client);
 
 // Use it to make RPC calls, here calling the legacy genesis_hash method.
 let genesis_hash = rpc_methods.genesis_hash().await?
 ```
 
-If you'd like to share a single client for RPCs and Subxt usage, you can clone this RPC client and run `OnlineClient::<BizinikiwConfig>::from_rpc_client(rpc_client)` to create a Subxt client using it.
+If you'd like to share a single client for RPCs and Subxt usage, you can clone this RPC client and run `OnlineClient::<BizinikiwiConfig>::from_rpc_client(rpc_client)` to create a Subxt client using it.
 
 Another side effect of this change is that RPC related things have moved from `subxt::rpc::*` to `subxt::backend::rpc::*` and some renaming has happened along the way.
 
@@ -1061,11 +1061,11 @@ Now, we have "upgraded" the `ExtrinsicParams` trait to give it access to metadat
 
 How can you use `SignedExtension`s? Well, `subxt::config::signed_extensions::AnyOf<T, Params>` is a type which can accept any tuple of `SignedExtension`s, and itself implements `ExtrinsicParams`. It's smart, and will use the metadata to know which of the signed extensions that you provided to actually use on a given chain. So, `AnyOf` makes it easy to compose whichever `SignedExtension`s you need to work with a chain.
 
-Finally, we expose `subxt::config::{ DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder }`; the former just uses `AnyOf` to automatically use any of the "standard" signed extensions as needed, and the latter provided a nice builder interface to configure any parameters for them. This is now the default type used in `BizinikiwConfig` and `PezkuwiConfig`, so long story short: those configurations (and particularly their `ExtrinsicParams`) are more likely to _Just Work_ now across default chains.
+Finally, we expose `subxt::config::{ DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder }`; the former just uses `AnyOf` to automatically use any of the "standard" signed extensions as needed, and the latter provided a nice builder interface to configure any parameters for them. This is now the default type used in `BizinikiwiConfig` and `PezkuwiConfig`, so long story short: those configurations (and particularly their `ExtrinsicParams`) are more likely to _Just Work_ now across default chains.
 
 [See this example](https://github.com/paritytech/subxt/blob/cd5060a5a08c9bd73477477cd2cadc16015e77bf/subxt/examples/setup_config_signed_extension.rs) for how to create and use custom signed extensions, or [this example](https://github.com/paritytech/subxt/blob/cd5060a5a08c9bd73477477cd2cadc16015e77bf/subxt/examples/setup_config_custom.rs) for how to implement custom `ExtrinsicParams` if you'd prefer to ignore `SignedExtension`s entirely.
 
-As a result of using the new `DefaultExtrinsicParams` in `BizinikiwConfig` and `PezkuwiConfig`, the interface to configure transactions has changed (and in fact been generally simplified). Configuring a mortal transaction with a small tip ƒor instance used to look like:
+As a result of using the new `DefaultExtrinsicParams` in `BizinikiwiConfig` and `PezkuwiConfig`, the interface to configure transactions has changed (and in fact been generally simplified). Configuring a mortal transaction with a small tip ƒor instance used to look like:
 
 ```rust
 use subxt::config::pezkuwi::{Era, PlainTip, PezkuwiExtrinsicParamsBuilder as Params};

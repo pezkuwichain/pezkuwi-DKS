@@ -13,8 +13,8 @@ use bizinikiwi_txtesttool::{
 	runner::DefaultTxTask,
 	scenario::{AccountsDescription, ChainType, ScenarioBuilder, ScenarioType},
 	subxt_transaction::{
-		self, generate_ecdsa_keypair, generate_sr25519_keypair, BizinikiwTransaction,
-		BizinikiwTransactionsSink, EthRuntimeConfig, EthTransaction, EthTransactionsSink,
+		self, generate_ecdsa_keypair, generate_sr25519_keypair, BizinikiwiTransaction,
+		BizinikiwiTransactionsSink, EthRuntimeConfig, EthTransaction, EthTransactionsSink,
 		SENDER_SEED,
 	},
 };
@@ -145,7 +145,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 					} else {
 						AccountsDescription::Keyring(account.clone())
 					};
-					let sink = BizinikiwTransactionsSink::new_with_uri_with_accounts_description(
+					let sink = BizinikiwiTransactionsSink::new_with_uri_with_accounts_description(
 						ws,
 						desc,
 						generate_sr25519_keypair,
@@ -200,7 +200,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 		},
 		CliCommand::LoadLog { chain, log_file, show_graphs, out_csv_filename, .. } => match chain {
 			ChainType::Sub => {
-				let logs = Journal::<DefaultTxTask<BizinikiwTransaction>>::load_logs(
+				let logs = Journal::<DefaultTxTask<BizinikiwiTransaction>>::load_logs(
 					log_file,
 					out_csv_filename,
 				);

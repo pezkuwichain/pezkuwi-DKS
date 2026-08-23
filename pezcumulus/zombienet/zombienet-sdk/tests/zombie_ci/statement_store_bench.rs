@@ -179,8 +179,9 @@ async fn statement_store_memory_stress_bench() -> Result<(), anyhow::Error> {
 
 			for statement_count in 0..statements_per_task {
 				let mut statement = Statement::new();
-				let topic =
-					|idx: usize| blake2_256(format!("{idx}{statement_count}{public:?}").as_bytes());
+				let topic = |idx: usize| {
+					Topic(blake2_256(format!("{idx}{statement_count}{public:?}").as_bytes()))
+				};
 				statement.set_topic(0, topic(0));
 				statement.set_topic(1, topic(1));
 				statement.set_topic(2, topic(2));
@@ -747,22 +748,22 @@ impl Participant {
 }
 
 fn topic_public_key() -> Topic {
-	blake2_256(b"public key")
+	Topic(blake2_256(b"public key"))
 }
 
 fn topic_idx(idx: u32) -> Topic {
-	blake2_256(&idx.to_le_bytes())
+	Topic(blake2_256(&idx.to_le_bytes()))
 }
 
 fn topic_pair(sender: &sr25519::Public, receiver: &sr25519::Public) -> Topic {
 	let mut data = Vec::new();
 	data.extend_from_slice(sender.as_ref());
 	data.extend_from_slice(receiver.as_ref());
-	blake2_256(&data)
+	Topic(blake2_256(&data))
 }
 
 fn topic_message() -> Topic {
-	blake2_256(b"message")
+	Topic(blake2_256(b"message"))
 }
 
 fn channel_public_key() -> Channel {

@@ -18,9 +18,9 @@ use serde::{Deserialize, Serialize};
 // The trait implementations exist just to make life easier,
 // but shouldn't strictly be necessary since users can't instantiate this type.
 #[derive(Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub enum BizinikiwConfig {}
+pub enum BizinikiwiConfig {}
 
-impl Config for BizinikiwConfig {
+impl Config for BizinikiwiConfig {
 	type AccountId = AccountId32;
 	type Address = MultiAddress<Self::AccountId, u32>;
 	type Signature = MultiSignature;

@@ -6,7 +6,7 @@
 
 use super::{Config, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 
-use crate::config::BizinikiwConfig;
+use crate::config::BizinikiwiConfig;
 pub use crate::utils::{AccountId32, MultiAddress, MultiSignature};
 pub use primitive_types::{H256, U256};
 
@@ -17,11 +17,11 @@ pub use primitive_types::{H256, U256};
 pub enum PezkuwiConfig {}
 
 impl Config for PezkuwiConfig {
-	type AccountId = <BizinikiwConfig as Config>::AccountId;
-	type Signature = <BizinikiwConfig as Config>::Signature;
-	type Hasher = <BizinikiwConfig as Config>::Hasher;
-	type Header = <BizinikiwConfig as Config>::Header;
-	type AssetId = <BizinikiwConfig as Config>::AssetId;
+	type AccountId = <BizinikiwiConfig as Config>::AccountId;
+	type Signature = <BizinikiwiConfig as Config>::Signature;
+	type Hasher = <BizinikiwiConfig as Config>::Hasher;
+	type Header = <BizinikiwiConfig as Config>::Header;
+	type AssetId = <BizinikiwiConfig as Config>::AssetId;
 
 	// Address on Pezkuwi has no account index, whereas it's u32 on
 	// the default bizinikiwi dev node.

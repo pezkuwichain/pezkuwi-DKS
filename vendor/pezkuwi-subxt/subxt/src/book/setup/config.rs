@@ -6,14 +6,14 @@
 //! shipped with Subxt:
 //!
 //! - [`PezkuwiConfig`](crate::config::PezkuwiConfig) for talking to Pezkuwi nodes, and
-//! - [`BizinikiwConfig`](crate::config::BizinikiwConfig) for talking to generic nodes built with
+//! - [`BizinikiwiConfig`](crate::config::BizinikiwiConfig) for talking to generic nodes built with
 //!   Bizinikiwi.
 //!
 //! # How to create a Config for a custom chain?
 //!
 //! Some chains may use config that is not compatible with our
 //! [`PezkuwiConfig`](crate::config::PezkuwiConfig) or
-//! [`BizinikiwConfig`](crate::config::BizinikiwConfig).
+//! [`BizinikiwiConfig`](crate::config::BizinikiwiConfig).
 //!
 //! We now walk through creating a custom [`crate::config::Config`] for a parachain, using the
 //! ["Statemint"](https://parachains.info/details/statemint) parachain, also known as "Asset Hub", as an example. It
