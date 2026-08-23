@@ -131,7 +131,7 @@ impl pezsnowbridge_pezpallet_inbound_queue::Config for Runtime {
 	type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
 }
 
-/// Destination the inbound queue delivers to: the Asset Hub parachain.
+// Destination the inbound queue delivers to: the Asset Hub teyrchain.
 pezframe_support::parameter_types! {
 	pub InboundQueueTargetLocation: Location =
 		Location::new(1, [Teyrchain(AssetHubParaId::get().into())]);

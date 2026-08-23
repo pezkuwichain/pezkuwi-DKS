@@ -525,9 +525,15 @@ pub mod pezpallet {
 				metrics.last_active_era = Self::current_era();
 
 				// Update reputation based on performance
-				let total_blocks = metrics.blocks_produced + metrics.blocks_missed;
-				if total_blocks > 0 {
-					let success_rate = (metrics.blocks_produced * 100) / total_blocks;
+				// u64 for the intermediate: both counters are u32 and accumulate for the life
+				// of the chain, so `blocks_produced * 100` overflows once a validator has
+				// produced ~43M blocks. A runtime is built without overflow checks, so that
+				// would wrap silently and hand out a reputation score computed from garbage.
+				let total_blocks =
+					(metrics.blocks_produced as u64).saturating_add(metrics.blocks_missed as u64);
+				if let Some(success_rate) =
+					(metrics.blocks_produced as u64).saturating_mul(100).checked_div(total_blocks)
+				{
 					metrics.reputation_score = success_rate.min(100) as u8;
 				}
 			});
@@ -923,10 +929,18 @@ pub mod pezpallet {
 				stats.total_npos_only = stats.total_npos_only.saturating_add(npos_only_count);
 
 				// Recalculate average overlap
-				let total_selections =
-					stats.total_overlap + stats.total_tnpos_only + stats.total_npos_only;
-				if total_selections > 0 {
-					stats.avg_overlap_bps = (stats.total_overlap * 10000) / total_selections;
+				// Same reason, and this one is reachable: `total_overlap` is a u32 that counts
+				// selections across every era, so `* 10000` wraps past 429_496 -- a few years
+				// at a hundred validators an era. The value it corrupts is the shadow-mode
+				// overlap metric, i.e. the number TNPoS is being judged by.
+				let total_selections = (stats.total_overlap as u64)
+					.saturating_add(stats.total_tnpos_only as u64)
+					.saturating_add(stats.total_npos_only as u64);
+				if let Some(bps) = (stats.total_overlap as u64)
+					.saturating_mul(10_000)
+					.checked_div(total_selections)
+				{
+					stats.avg_overlap_bps = bps as u32;
 				}
 			});
 

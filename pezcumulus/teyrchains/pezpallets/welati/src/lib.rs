@@ -1346,7 +1346,7 @@ pub mod pezpallet {
 				})
 				.collect();
 
-			candidates_with_votes.sort_by(|a, b| b.1.cmp(&a.1));
+			candidates_with_votes.sort_by_key(|(_, votes)| core::cmp::Reverse(*votes));
 
 			match election.election_type {
 				ElectionType::Presidential => {

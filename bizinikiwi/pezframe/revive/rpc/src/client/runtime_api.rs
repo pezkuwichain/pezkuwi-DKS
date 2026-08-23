@@ -23,7 +23,7 @@ use crate::{
 use futures::{StreamExt, TryFutureExt, stream};
 use pezkuwi_subxt::{
 	OnlineClient,
-	error::{BackendError, RuntimeApiError, RuntimeApiError as _RtApi},
+	error::{BackendError, RuntimeApiError},
 	ext::pezkuwi_subxt_rpcs::UserError,
 };
 use pezpallet_revive::{

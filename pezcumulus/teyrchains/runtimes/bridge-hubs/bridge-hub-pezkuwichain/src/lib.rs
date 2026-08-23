@@ -39,7 +39,6 @@ pub mod xcm_config;
 extern crate alloc;
 
 use alloc::{vec, vec::Vec};
-use codec::Encode;
 use pezbridge_runtime_common::extensions::{
 	CheckAndBoostBridgeGrandpaTransactions, CheckAndBoostBridgeTeyrchainsTransactions,
 };
