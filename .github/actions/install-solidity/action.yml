@@ -47,15 +47,24 @@ runs:
         # a partial download still has a valid ELF header, so it installs and then misbehaves
         # somewhere far from here. Measured on 2026-08-19 -- an interrupted transfer produced
         # 13.9 MB of a 71 MB file and nothing complained.
+        # Download beside the destination and rename into place, never write the destination
+        # directly. Two jobs share a runner's $HOME, and the version check above EXECUTES the
+        # binary -- so one job running `solc --version` while another curls over the same path
+        # gets ETXTBSY, which bash reports as "Text file busy" and exit 126. That took down
+        # test-runtimes twice on 2026-08-23. `rename` swaps the directory entry instead of
+        # writing the in-use inode, so it cannot fail that way, and two jobs racing here now
+        # simply write the same verified bytes.
         fetch() { # url  dest  sha256
-          curl -fsSL --retry 3 -o "$2" "$1"
-          echo "$3  $2" | sha256sum -c - >/dev/null || {
+          tmp="$2.$$.tmp"
+          curl -fsSL --retry 3 -o "$tmp" "$1"
+          echo "$3  $tmp" | sha256sum -c - >/dev/null || {
             echo "::error::$(basename "$2") does not match its expected sha256"
             echo "  expected $3"
-            echo "  got      $(sha256sum "$2" | cut -d" " -f1)"
-            rm -f "$2"; exit 1
+            echo "  got      $(sha256sum "$tmp" | cut -d" " -f1)"
+            rm -f "$tmp"; exit 1
           }
-          chmod +x "$2"
+          chmod +x "$tmp"
+          mv -f "$tmp" "$2"
         }
 
         if have solc "$SOLC_VERSION"; then
