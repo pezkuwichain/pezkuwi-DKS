@@ -25,9 +25,11 @@
 //! frame-decode, so this module provides a `CustomConfig` that handles them
 //! explicitly.
 
-use pezkuwi_subxt::{
+use pezsp_core::{sr25519, Pair};
+use scale_info::PortableRegistry;
+use statement_store_subxt::{
 	config::{
-		substrate::BizinikiwiConfig,
+		substrate::SubstrateConfig,
 		transaction_extensions::{
 			ChargeAssetTxPayment, ChargeTransactionPayment, CheckGenesis, CheckMetadataHash,
 			CheckMortality, CheckNonce, CheckSpecVersion, CheckTxVersion, VerifySignature,
@@ -41,8 +43,6 @@ use pezkuwi_subxt::{
 	utils::H256,
 	OnlineClient,
 };
-use pezsp_core::{sr25519, Pair};
-use scale_info::PortableRegistry;
 
 /// Wrapper around `VerifySignature` that matches the runtime's `VerifyMultiSignature` name
 pub struct VerifyMultiSignature<T: Config>(VerifySignature<T>);
@@ -61,14 +61,10 @@ impl<T: Config> frame_decode::extrinsics::TransactionExtension<PortableRegistry>
 		self.0.encode_value_to(type_id, type_resolver, v)
 	}
 
-	fn encode_value_for_signer_payload_to(
-		&self,
-		type_id: u32,
-		type_resolver: &PortableRegistry,
-		v: &mut Vec<u8>,
-	) -> Result<(), frame_decode::extrinsics::TransactionExtensionError> {
-		self.0.encode_value_for_signer_payload_to(type_id, type_resolver, v)
-	}
+	// `encode_value_for_signer_payload_to` was dropped from frame-decode's
+	// `TransactionExtension` trait by 0.18, which is what subxt 0.50.3 pulls -- and the inner
+	// `VerifySignature` no longer carries it either. The distinction it drew is now folded
+	// into `encode_value_to`, so a wrapper that only delegates has nothing left to override.
 
 	fn encode_implicit_to(
 		&self,
@@ -87,7 +83,7 @@ impl<T: Config> TransactionExtension<T> for VerifyMultiSignature<T> {
 	fn new(
 		client: &ClientState<T>,
 		params: Self::Params,
-	) -> Result<Self, pezkuwi_subxt::error::TransactionExtensionError> {
+	) -> Result<Self, statement_store_subxt::error::TransactionExtensionError> {
 		Ok(VerifyMultiSignature(VerifySignature::new(client, params)?))
 	}
 
@@ -134,7 +130,7 @@ impl<T: Config> TransactionExtension<T> for RestrictOrigins {
 	fn new(
 		_client: &ClientState<T>,
 		_params: Self::Params,
-	) -> Result<Self, pezkuwi_subxt::error::TransactionExtensionError> {
+	) -> Result<Self, statement_store_subxt::error::TransactionExtensionError> {
 		Ok(RestrictOrigins)
 	}
 }
@@ -144,21 +140,21 @@ impl<T: Config> TransactionExtension<T> for RestrictOrigins {
 /// Registers the non-standard `VerifyMultiSignature` and `RestrictOrigins`
 /// transaction extensions so that subxt can correctly encode extrinsics
 #[derive(Debug, Clone)]
-pub struct CustomConfig(BizinikiwiConfig);
+pub struct CustomConfig(SubstrateConfig);
 
 impl Default for CustomConfig {
 	fn default() -> Self {
-		CustomConfig(BizinikiwiConfig::new())
+		CustomConfig(SubstrateConfig::new())
 	}
 }
 
 impl Config for CustomConfig {
-	type AccountId = <BizinikiwiConfig as Config>::AccountId;
-	type Address = pezkuwi_subxt::utils::MultiAddress<Self::AccountId, ()>;
-	type Signature = <BizinikiwiConfig as Config>::Signature;
-	type Hasher = <BizinikiwiConfig as Config>::Hasher;
-	type Header = <BizinikiwiConfig as Config>::Header;
-	type AssetId = <BizinikiwiConfig as Config>::AssetId;
+	type AccountId = <SubstrateConfig as Config>::AccountId;
+	type Address = statement_store_subxt::utils::MultiAddress<Self::AccountId, ()>;
+	type Signature = <SubstrateConfig as Config>::Signature;
+	type Hasher = <SubstrateConfig as Config>::Hasher;
+	type Header = <SubstrateConfig as Config>::Header;
+	type AssetId = <SubstrateConfig as Config>::AssetId;
 	type TransactionExtensions = (
 		VerifyMultiSignature<Self>,
 		CheckSpecVersion,
@@ -172,7 +168,7 @@ impl Config for CustomConfig {
 		RestrictOrigins,
 	);
 
-	fn genesis_hash(&self) -> Option<pezkuwi_subxt::config::HashFor<Self>> {
+	fn genesis_hash(&self) -> Option<statement_store_subxt::config::HashFor<Self>> {
 		self.0.genesis_hash()
 	}
 
@@ -186,14 +182,14 @@ impl Config for CustomConfig {
 	fn metadata_for_spec_version(
 		&self,
 		spec_version: u32,
-	) -> Option<pezkuwi_subxt::metadata::ArcMetadata> {
+	) -> Option<statement_store_subxt::metadata::ArcMetadata> {
 		self.0.metadata_for_spec_version(spec_version)
 	}
 
 	fn set_metadata_for_spec_version(
 		&self,
 		spec_version: u32,
-		metadata: pezkuwi_subxt::metadata::ArcMetadata,
+		metadata: statement_store_subxt::metadata::ArcMetadata,
 	) {
 		self.0.set_metadata_for_spec_version(spec_version, metadata)
 	}
@@ -214,7 +210,7 @@ fn build_params(
 /// Submits an extrinsic with an explicit nonce and waits for it to be finalized
 pub async fn submit_extrinsic<S: Signer<CustomConfig>>(
 	client: &OnlineClient<CustomConfig>,
-	call: &pezkuwi_subxt::transactions::DynamicPayload<Vec<Value>>,
+	call: &statement_store_subxt::transactions::DynamicPayload<Vec<Value>>,
 	signer: &S,
 	nonce: u64,
 ) -> Result<H256, anyhow::Error> {
@@ -246,8 +242,8 @@ pub const MSG_PREFIX: &[u8; 30] = b"pop:people-lite:register using";
 pub fn create_increase_allowance_call(
 	who: Vec<u8>,
 	count: u32,
-) -> pezkuwi_subxt::transactions::DynamicPayload<Vec<Value>> {
-	pezkuwi_subxt::tx::dynamic(
+) -> statement_store_subxt::transactions::DynamicPayload<Vec<Value>> {
+	statement_store_subxt::tx::dynamic(
 		"Sudo",
 		"sudo",
 		vec![value! {
@@ -266,12 +262,12 @@ pub fn create_attest_call(
 	ring_vrf_key: Vec<u8>,
 	proof_of_ownership: Vec<u8>,
 	consumer_registration: Option<Value>,
-) -> pezkuwi_subxt::transactions::DynamicPayload<Vec<Value>> {
+) -> statement_store_subxt::transactions::DynamicPayload<Vec<Value>> {
 	let reg = match consumer_registration {
 		Some(v) => Value::unnamed_variant("Some", [v]),
 		None => Value::unnamed_variant("None", []),
 	};
-	pezkuwi_subxt::tx::dynamic(
+	statement_store_subxt::tx::dynamic(
 		"PeopleLite",
 		"attest",
 		vec![
@@ -342,13 +338,13 @@ pub async fn set_allowances_via_sudo(
 		ws_uri,
 	)
 	.await?;
-	let alice = pezkuwi_subxt_signer::sr25519::dev::alice();
+	let alice = statement_store_subxt_signer::sr25519::dev::alice();
 
 	let items_value: Vec<Value> = items
 		.into_iter()
 		.map(|(key, value)| value!((Value::from_bytes(key), Value::from_bytes(value))))
 		.collect();
-	let call = pezkuwi_subxt::tx::dynamic(
+	let call = statement_store_subxt::tx::dynamic(
 		"Sudo",
 		"sudo",
 		vec![value! {
