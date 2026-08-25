@@ -42,6 +42,15 @@ construct_runtime!(
 );
 
 parameter_types! {
+	pub const ReferralFallbackPeriod: u64 = 100;
+	pub const OracleGracePeriod: u64 = 100;
+	pub const TrustScoreScale: u32 = 1_000;
+	pub const TrustStakingWeight: u32 = 20;
+	pub const TrustReferralWeight: u32 = 25;
+	pub const TrustPerwerdeWeight: u32 = 30;
+	pub const TrustTikiWeight: u32 = 25;
+	pub const AssociationHeadThreshold: u32 = 25;
+	pub const CommunityModeratorThreshold: u32 = 50;
 	pub const BlockHashCount: u64 = 250;
 	pub const SS58Prefix: u8 = 42;
 }
@@ -244,7 +253,7 @@ parameter_types! {
 
 pub struct NoOpOnKycApproved;
 impl pezpallet_identity_kyc::types::OnKycApproved<AccountId> for NoOpOnKycApproved {
-	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId) {}
+	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId, _inviter: Option<&AccountId>) {}
 }
 
 pub struct NoOpOnCitizenshipRevoked;
@@ -285,6 +294,7 @@ impl pezpallet_identity_kyc::Config for Test {
 	type MaxStringLength = MaxStringLength;
 	type MaxCidLength = MaxCidLength;
 	type DefaultReferrer = DefaultReferrerKyc;
+	type ReferralFallbackPeriod = ReferralFallbackPeriod;
 }
 
 // Staking Score Configuration
@@ -305,6 +315,7 @@ impl pezpallet_staking_score::Config for Test {
 	type DisputeOrigin = pezframe_system::EnsureSigned<AccountId>;
 	type SlashOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type SlashDestination = StakingScoreSlashDestination;
+	type OracleGracePeriod = OracleGracePeriod;
 }
 
 // Referral Configuration
@@ -318,6 +329,9 @@ impl pezpallet_referral::Config for Test {
 	type DefaultReferrer = DefaultReferrerAccount;
 	type PenaltyPerRevocation = PenaltyPerRevocation;
 	type TrustScoreUpdater = ();
+	type EarnedRoles = ();
+	type AssociationHeadThreshold = AssociationHeadThreshold;
+	type CommunityModeratorThreshold = CommunityModeratorThreshold;
 }
 
 // Tiki Configuration
@@ -330,6 +344,8 @@ impl pezpallet_tiki::Config for Test {
 	type AdminOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type ElectedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type ImpeachmentOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type HonoraryCitizenshipOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type WeightInfo = ();
 	type MaxTikisPerUser = MaxTikisPerUser;
 	type Tiki = pezpallet_tiki::Tiki;
@@ -340,6 +356,10 @@ impl pezpallet_tiki::Config for Test {
 // Mock implementations for required traits - PROVIDE HIGH SCORES
 pub struct MockStakingScoreProvider;
 impl pezpallet_staking_score::StakingScoreProvider<AccountId, u64> for MockStakingScoreProvider {
+	fn max_score() -> u32 {
+		100
+	}
+
 	fn get_staking_score(_account: &AccountId) -> (u32, u64) {
 		(1000, 0) // High score
 	}
@@ -347,6 +367,10 @@ impl pezpallet_staking_score::StakingScoreProvider<AccountId, u64> for MockStaki
 
 pub struct MockReferralScoreProvider;
 impl pezpallet_trust::ReferralScoreProvider<AccountId> for MockReferralScoreProvider {
+	fn max_score() -> u32 {
+		500
+	}
+
 	fn get_referral_score(_account: &AccountId) -> u32 {
 		500 // High score
 	}
@@ -354,6 +378,10 @@ impl pezpallet_trust::ReferralScoreProvider<AccountId> for MockReferralScoreProv
 
 pub struct MockPerwerdeScoreProvider;
 impl pezpallet_trust::PerwerdeScoreProvider<AccountId> for MockPerwerdeScoreProvider {
+	fn max_score() -> u32 {
+		50_000
+	}
+
 	fn get_perwerde_score(_account: &AccountId) -> u32 {
 		750 // High score
 	}
@@ -363,6 +391,10 @@ pub struct MockTikiScoreProvider;
 
 // Implementation for `pezpallet_trust`
 impl pezpallet_trust::TikiScoreProvider<AccountId> for MockTikiScoreProvider {
+	fn max_score() -> u32 {
+		1_000
+	}
+
 	fn get_tiki_score(_account: &AccountId) -> u32 {
 		100
 	}
@@ -391,9 +423,24 @@ impl pezpallet_trust::TrustScoreProvider<AccountId> for MockTrustProvider {
 }
 
 // CitizenInfo trait implementation for MockTrustProvider
+thread_local! {
+	/// How many citizens the mock register reports.
+	///
+	/// Settable because the population gate has two sides -- below the threshold nothing may
+	/// be sent, above it exactly one message may be -- and a constant can only show one of
+	/// them. Starts above the mock threshold so the tests written before the gate existed
+	/// keep behaving as they did.
+	pub static CITIZEN_COUNT: core::cell::Cell<u32> = const { core::cell::Cell::new(110) };
+}
+
+/// Set what the register reports.
+pub fn set_citizen_count(n: u32) {
+	CITIZEN_COUNT.with(|c| c.set(n));
+}
+
 impl CitizenInfo for MockTrustProvider {
 	fn citizen_count() -> u32 {
-		110
+		CITIZEN_COUNT.with(|c| c.get())
 	}
 }
 
@@ -407,7 +454,11 @@ parameter_types! {
 impl pezpallet_trust::Config for Test {
 	type WeightInfo = ();
 	type Score = u128;
-	type ScoreMultiplierBase = ScoreMultiplierBase;
+	type ScoreScale = TrustScoreScale;
+	type StakingWeight = TrustStakingWeight;
+	type ReferralWeight = TrustReferralWeight;
+	type PerwerdeWeight = TrustPerwerdeWeight;
+	type TikiWeight = TrustTikiWeight;
 	type UpdateInterval = UpdateInterval;
 	type MaxBatchSize = MaxBatchSize;
 	type StakingScoreSource = MockStakingScoreProvider;
@@ -421,14 +472,71 @@ impl pezpallet_trust::Config for Test {
 parameter_types! {
 	pub const ParliamentSize: u32 = 201;
 	pub const DiwanSize: u32 = 11;
-	pub const ElectionPeriod: u64 = 432_000;
-	pub const CandidacyPeriod: u64 = 86_400;
-	pub const CampaignPeriod: u64 = 259_200;
+	pub const DiwanElectedSeats: u32 = 6;
+	// Kept in the same proportion as the real chain -- a term much longer than the time it
+	// takes to run an election -- but small enough that a test can watch a whole term go by.
+	// They used to be the real block counts, which made one election cycle nearly eight times
+	// longer than a term in this mock: every office was permanently overdue for an election,
+	// and every test that ran a term walked through eight hundred thousand blocks to do it.
+	pub const ElectionPeriod: u64 = 30;
+	pub const CandidacyPeriod: u64 = 10;
+	pub const CampaignPeriod: u64 = 20;
 	pub const ElectoralDistricts: u32 = 10;
 	pub const CandidacyDeposit: u128 = 10_000;
 	pub const PresidentialEndorsements: u32 = 100;
 	pub const ParliamentaryEndorsements: u32 = 50;
 	pub const MaxEndorsers: u32 = 100;
+	/// Short enough that a test can watch a term run out, long enough that an election fits
+	/// inside it several times over.
+	pub const TermLength: u64 = 1_000;
+	pub const CourtTermLength: u64 = 2_250;
+	pub const MaxConsecutiveTerms: u32 = 2;
+
+	/// Stands in for the Asset Hub. The mock never delivers anything there; what the tests
+	/// check is which messages the pallet decides to send, not that they arrive.
+	pub TreasuryChain: xcm::latest::Location = xcm::latest::Location::new(1, [xcm::latest::Junction::Teyrchain(1000)]);
+	pub const TreasuryPalletIndex: u8 = 70;
+	/// Small enough that a test can cross it.
+	pub const PopulationThreshold: u32 = 100;
+	pub const PopulationCheckPeriod: u64 = 10;
+}
+
+/// Records what the pallet tried to send instead of sending it.
+///
+/// A test that only checked storage could not tell "decided not to send" from "sent and it
+/// vanished". Keeping the messages makes the difference visible.
+pub struct RecordingXcmSender;
+
+thread_local! {
+	pub static SENT_XCM: core::cell::RefCell<Vec<(xcm::latest::Location, xcm::latest::Xcm<()>)>> =
+		const { core::cell::RefCell::new(Vec::new()) };
+}
+
+impl xcm::latest::SendXcm for RecordingXcmSender {
+	type Ticket = (xcm::latest::Location, xcm::latest::Xcm<()>);
+
+	fn validate(
+		dest: &mut Option<xcm::latest::Location>,
+		msg: &mut Option<xcm::latest::Xcm<()>>,
+	) -> xcm::latest::SendResult<Self::Ticket> {
+		let pair = (dest.take().unwrap(), msg.take().unwrap());
+		Ok((pair, xcm::latest::Assets::new()))
+	}
+
+	fn deliver(ticket: Self::Ticket) -> Result<xcm::latest::XcmHash, xcm::latest::SendError> {
+		SENT_XCM.with(|q| q.borrow_mut().push(ticket));
+		Ok([0u8; 32])
+	}
+}
+
+/// Everything the pallet has tried to send so far.
+pub fn sent_xcm() -> Vec<(xcm::latest::Location, xcm::latest::Xcm<()>)> {
+	SENT_XCM.with(|q| q.borrow().clone())
+}
+
+/// Forget what was sent, so a test can assert about one stretch of blocks.
+pub fn clear_sent_xcm() {
+	SENT_XCM.with(|q| q.borrow_mut().clear());
 }
 
 impl pezpallet_welati::Config for Test {
@@ -441,6 +549,10 @@ impl pezpallet_welati::Config for Test {
 	type KycSource = IdentityKyc;
 	type ParliamentSize = ParliamentSize;
 	type DiwanSize = DiwanSize;
+	type DiwanElectedSeats = DiwanElectedSeats;
+	// The court's deliberations are the collective's job on a real runtime; the mock only
+	// needs the membership rules, so nothing is relayed here.
+	type CourtRoster = ();
 	type ElectionPeriod = ElectionPeriod;
 	type CandidacyPeriod = CandidacyPeriod;
 	type CampaignPeriod = CampaignPeriod;
@@ -450,6 +562,14 @@ impl pezpallet_welati::Config for Test {
 	type ParliamentaryEndorsements = ParliamentaryEndorsements;
 	type NativeCurrency = Balances;
 	type MaxEndorsers = MaxEndorsers;
+	type TermLength = TermLength;
+	type CourtTermLength = CourtTermLength;
+	type MaxConsecutiveTerms = MaxConsecutiveTerms;
+	type XcmSender = RecordingXcmSender;
+	type TreasuryChainLocation = TreasuryChain;
+	type TreasuryPalletIndex = TreasuryPalletIndex;
+	type PopulationThreshold = PopulationThreshold;
+	type PopulationCheckPeriod = PopulationCheckPeriod;
 }
 
 // CRITICAL: CitizenInfo trait implementation - DEFINE ONLY ONCE
@@ -491,13 +611,18 @@ impl ExtBuilder {
 }
 
 // SIMPLIFIED TEST USER SETUP - LEAVE EMPTY, MOCK PROVIDERS ARE SUFFICIENT
+/// Make the accounts the tests use into citizens.
+///
+/// This used to do nothing, on the grounds that the mock providers reported a high trust score
+/// and a non-zero tiki score for everybody. That was enough while `register_candidate` only
+/// asked whether the tiki score was above zero -- a question every citizen passes, since
+/// citizenship itself is worth points, and which the mock answered "yes" to for accounts that
+/// were not citizens at all. Now that the check asks for the *specific* role an office
+/// requires, the candidates have to actually hold it.
 pub fn setup_test_users() {
-	// The mock providers already ensure everyone has a high trust score,
-	// and the TikiScoreProvider also reports that everyone owns a Tiki.
-	// This way we do not have to deal with pezpallet-tiki.
-
-	// Only the NFTs collection was created, and that is sufficient.
-	// The KYC check is already bypassed in tests.
+	for who in 1..=12u64 {
+		assert_ok!(pezpallet_tiki::Pezpallet::<Test>::mint_citizen_nft_for_user(&who));
+	}
 }
 
 // CRITICAL HELPER FUNCTION FOR TESTS
@@ -527,7 +652,76 @@ pub fn run_to_block(n: u64) {
 		System::set_block_number(System::block_number() + 1);
 		Welati::on_initialize(System::block_number());
 		System::on_initialize(System::block_number());
+		check_invariants();
 	}
+}
+
+/// Assert the pallet's `try_state` invariant.
+///
+/// Run after every block the tests advance through, so the constitutional rules are checked
+/// against the histories the tests actually produce -- an election counted late, a vacancy, a
+/// handover -- rather than in a test of its own that would only ever see the states somebody
+/// thought to write down.
+pub fn check_invariants() {
+	#[cfg(feature = "try-runtime")]
+	{
+		use pezframe_support::traits::Hooks;
+		<Welati as Hooks<u64>>::try_state(System::block_number()).expect("try_state failed");
+	}
+}
+
+/// Give `who` a citizen NFT, so a tiki can be granted to them.
+///
+/// `internal_grant_role` refuses anyone without one, which is the rule that keeps offices from
+/// being handed to accounts that are not citizens. Tests that appoint someone have to satisfy
+/// it the same way the chain does.
+pub fn make_citizen(who: AccountId) {
+	// Idempotent: `setup_test_users` already made the low-numbered accounts citizens, and a
+	// test that names one of them should not have to know which.
+	if pezpallet_tiki::CitizenNft::<Test>::get(who).is_none() {
+		assert_ok!(pezpallet_tiki::Pezpallet::<Test>::mint_citizen_nft_for_user(&who));
+	}
+}
+
+/// Who holds a single-holder office right now.
+pub fn holder_of(tiki: pezpallet_tiki::Tiki) -> Option<AccountId> {
+	pezpallet_tiki::TikiHolder::<Test>::get(tiki)
+}
+
+/// Seat `who` as President, the way a won election would.
+///
+/// Including the mandate. A counted election calls `begin_term`, and `try_state` holds the
+/// chain to it: an elected office with no term recorded is an officeholder no clock will ever
+/// remove. A helper that seated the tiki and skipped the clock would put the tests in a state
+/// the chain cannot reach.
+pub fn seat_president(who: AccountId) {
+	make_citizen(who);
+	assert_ok!(Welati::seat_unique_tiki(&who, pezpallet_tiki::Tiki::Serok));
+	CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, who);
+	crate::TermEnds::<Test>::insert(
+		ElectionType::Presidential,
+		System::block_number() + TermLength::get(),
+	);
+}
+
+/// Have each account endorse `candidate`, then hand the list back for the candidacy.
+///
+/// A candidate used to submit a list of names and the pallet counted them. Now every name has
+/// to have said so itself, so a test that registers a candidacy has to produce the
+/// endorsements the same way a real one would.
+pub fn endorsed_by(
+	election_id: u32,
+	candidate: AccountId,
+	endorsers: Vec<AccountId>,
+) -> Vec<AccountId> {
+	for endorser in &endorsers {
+		assert_ok!(Welati::endorse_candidate(
+			RuntimeOrigin::signed(*endorser),
+			election_id,
+			candidate
+		));
+	}
+	endorsers
 }
 
 pub fn last_event() -> RuntimeEvent {

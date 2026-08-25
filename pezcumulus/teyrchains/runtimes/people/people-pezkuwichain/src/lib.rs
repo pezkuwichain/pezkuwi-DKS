@@ -24,7 +24,7 @@ mod weights;
 pub mod xcm_config;
 
 // Re-export komisyon tipleri (lib.rs'de kullanım için)
-pub use people::CouncilCollective;
+pub use people::{CouncilCollective, DiwanCollective};
 
 extern crate alloc;
 
@@ -377,8 +377,15 @@ pub type RootOrParliament =
 
 /// Root VEYA Divan (Anayasa Mahkemesi) yetkisi
 /// Kullanım: Anayasal kararlar, vatandaşlık işlemleri
-pub type RootOrDiwan =
-	EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_welati::EnsureDiwan<Runtime>>;
+/// Root, or the Diwan deciding as a court.
+///
+/// Two thirds of the bench -- eight of eleven. It used to accept any single member, which
+/// meant the powers behind it (citizenship, impeachment, fraud) each had eleven independent
+/// keys. A court convenes and rules; one judge acting alone is not the court.
+pub type RootOrDiwan = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pezpallet_collective::EnsureProportionAtLeast<AccountId, people::DiwanCollective, 2, 3>,
+>;
 
 /// Root VEYA Council (Genel Konsey) yetkisi
 /// Kullanım: Genel yönetişim kararları
@@ -729,7 +736,7 @@ construct_runtime!(
 		Welati: pezpallet_welati = 75,
 
 		// Reserved slots for future committee instances:
-		// EducationCommittee: pezpallet_collective::<Instance2> = 74,
+		Diwan: pezpallet_collective::<Instance2> = 74,
 		// TechnicalCommittee: pezpallet_collective::<Instance3> = 76,
 		// TreasuryCommittee: pezpallet_collective::<Instance4> = 77,
 

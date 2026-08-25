@@ -478,7 +478,6 @@ members = [
 	"pezcumulus/teyrchains/pezpallets/pez-rewards",
 	"pezcumulus/teyrchains/pezpallets/pez-treasury",
 	"pezcumulus/teyrchains/pezpallets/ping",
-	"pezcumulus/teyrchains/pezpallets/presale",
 	"pezcumulus/teyrchains/pezpallets/referral",
 	"pezcumulus/teyrchains/pezpallets/staking-score",
 	"pezcumulus/teyrchains/pezpallets/teyrchain-info",
@@ -1170,7 +1169,6 @@ pezpallet-welati = { path = "pezcumulus/teyrchains/pezpallets/welati", version =
 # Asset Hub pezpallets (Phase 3)
 pezpallet-pez-rewards = { path = "pezcumulus/teyrchains/pezpallets/pez-rewards", version = "1.0.0", default-features = false }
 pezpallet-pez-treasury = { path = "pezcumulus/teyrchains/pezpallets/pez-treasury", version = "1.0.0", default-features = false }
-pezpallet-presale = { path = "pezcumulus/teyrchains/pezpallets/presale", version = "1.0.0", default-features = false }
 pezpallet-staking-score = { path = "pezcumulus/teyrchains/pezpallets/staking-score", version = "1.0.0", default-features = false }
 pezpallet-token-wrapper = { path = "pezcumulus/teyrchains/pezpallets/token-wrapper", version = "1.0.0", default-features = false }
 

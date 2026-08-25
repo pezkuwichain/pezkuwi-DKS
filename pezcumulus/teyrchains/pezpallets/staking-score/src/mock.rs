@@ -43,6 +43,8 @@ pub const DISPUTE_WINDOW: BlockNumber = 10;
 
 // --- Constants ---
 parameter_types! {
+	/// Generous enough to cover the dispute window and a bot cycle in the tests.
+	pub const OracleGracePeriod: u64 = 100;
 	pub const BlockHashCount: BlockNumber = 250;
 	pub const ExistentialDeposit: Balance = 1;
 	pub const NoterBondAmount: Balance = 1_000 * UNITS;
@@ -108,6 +110,7 @@ impl crate::Config for Test {
 	type DisputeWindow = DisputeWindowBlocks;
 	type DisputeOrigin = EnsureSignedBy<DisputeMemberProvider, AccountId>;
 	type SlashOrigin = EnsureSignedBy<SlashMemberProvider, AccountId>;
+	type OracleGracePeriod = OracleGracePeriod;
 	type SlashDestination = SlashDestinationAccount;
 }
 

@@ -25,6 +25,7 @@ pezpallet-asset-rewards = { workspace = true }
 pezpallet-assets = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-message-queue = { workspace = true }
+pezpallet-pez-treasury = { workspace = true }
 pezpallet-treasury = { workspace = true }
 pezpallet-utility = { workspace = true }
 pezsp-core = { workspace = true }
@@ -41,6 +42,7 @@ xcm-runtime-pezapis = { workspace = true, default-features = true }
 # Pezcumulus
 asset-test-pezutils = { workspace = true, default-features = true }
 emulated-integration-tests-common = { workspace = true }
+people-pezkuwichain-emulated-chain = { workspace = true }
 pezcumulus-pezpallet-teyrchain-system = { workspace = true }
 pezkuwichain-system-emulated-network = { workspace = true }
 teyrchains-common = { workspace = true, default-features = true }
@@ -60,6 +62,7 @@ runtime-benchmarks = [
 	"pezpallet-assets/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-pez-treasury/runtime-benchmarks",
 	"pezpallet-treasury/runtime-benchmarks",
 	"pezpallet-utility/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",

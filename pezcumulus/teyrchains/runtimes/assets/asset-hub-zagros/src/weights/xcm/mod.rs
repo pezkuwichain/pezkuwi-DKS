@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod pezpallet_xcm_benchmarks_fungible;
+pub mod pezpallet_xcm_benchmarks_fungible;
 mod pezpallet_xcm_benchmarks_generic;
 
 use crate::{xcm_config::MaxAssetsIntoHolding, Runtime};

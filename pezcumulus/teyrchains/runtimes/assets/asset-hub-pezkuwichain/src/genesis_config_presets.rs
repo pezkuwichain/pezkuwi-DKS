@@ -31,6 +31,7 @@ use pezframe_support::build_struct_json_patch;
 use pezsp_core::crypto::UncheckedInto;
 use pezsp_genesis_builder::PresetId;
 use pezsp_keyring::Sr25519Keyring;
+use pezsp_runtime::traits::AccountIdConversion;
 use testnet_teyrchains_constants::pezkuwichain::{currency::UNITS, xcm_version::SAFE_XCM_VERSION};
 use teyrchains_common::{AccountId, AssetIdForTrustBackedAssets, AuraId};
 use xcm::latest::prelude::*;
@@ -38,6 +39,21 @@ use xcm_builder::GlobalConsensusConvertsFor;
 use xcm_executor::traits::ConvertLocation;
 
 const ASSET_HUB_PEZKUWICHAIN_ED: Balance = ExistentialDeposit::get();
+
+/// The treasury's own account, derived from `PezTreasuryPalletId`.
+///
+/// No seed produces this address, which is the whole point: the state's PEZ is not held by
+/// anyone who could be persuaded, compelled or compromised into moving it. It leaves only
+/// through `pezpallet-pez-treasury`'s monthly release, on the schedule written into the
+/// runtime.
+fn pez_treasury_pot() -> AccountId {
+	PezTreasuryPalletId::get().into_account_truncating()
+}
+
+/// The account that owns the PEZ asset -- see `PezAssetTeamId` for why it is keyless.
+fn pez_asset_team() -> AccountId {
+	PezAssetTeamId::get().into_account_truncating()
+}
 
 // ============================================================================
 // PEZ TOKEN CONSTANTS
@@ -93,9 +109,15 @@ const _: () = assert!(
 /// - `endowed_accounts`: Accounts to receive initial HEZ balance
 /// - `endowment`: HEZ amount for each endowed account
 /// - `id`: Teyrchain ID
-/// - `treasury_account`: Account holding Treasury PEZ allocation
-/// - `founder_account`: Account holding Founder PEZ allocation
-/// - `presale_account`: Account holding Presale PEZ allocation
+/// - `asset_owner`: Account that administers the wHEZ and wUSDT assets, both of which are
+///   minted and burned by live systems and so need a team that can act. PEZ is deliberately
+///   not among them -- see `pez_asset_team()`.
+/// - `founder_account`: Account holding the Founder PEZ allocation. This one is genuinely
+///   owned -- it is property, and what happens to it is the founder's to decide.
+/// - `presale_account`: Account holding the presale allocation. Owned, like the founder's:
+///   the sale happens on the exchange, not on chain, so this allocation is moved by whoever
+///   holds it rather than released by a pallet. Once the sale is done the account has no
+///   further role.
 /// - `foreign_assets`: Foreign assets to create at genesis
 /// - `foreign_assets_endowed_accounts`: Initial balances for foreign assets
 fn asset_hub_pezkuwichain_genesis(
@@ -103,7 +125,7 @@ fn asset_hub_pezkuwichain_genesis(
 	endowed_accounts: Vec<AccountId>,
 	endowment: Balance,
 	id: ParaId,
-	treasury_account: AccountId,
+	asset_owner: AccountId,
 	founder_account: AccountId,
 	presale_account: AccountId,
 	foreign_assets: Vec<(Location, AccountId, Balance)>,
@@ -163,13 +185,14 @@ fn asset_hub_pezkuwichain_genesis(
 		assets: AssetsConfig {
 			// Asset definitions: (id, owner, is_sufficient, min_balance)
 			assets: vec![
-				// PEZ Token - Governance token with 5B fixed supply
-				(PEZ_ASSET_ID, treasury_account.clone(), true, 1),
+				// PEZ Token - Governance token with 5B fixed supply.
+				// The asset team is keyless by design -- see `PezAssetTeamId`.
+				(PEZ_ASSET_ID, pez_asset_team(), true, 1),
 				// wHEZ Token - Wrapped HEZ for DeFi operations
-				(WHEZ_ASSET_ID, treasury_account.clone(), true, 1),
+				(WHEZ_ASSET_ID, asset_owner.clone(), true, 1),
 				// wUSDT - Wrapped USDT (1:1 backed by Polkadot USDT or TRC20 USDT)
 				// Min balance: 10_000 (0.01 USDT with 6 decimals)
-				(WUSDT_ASSET_ID, treasury_account.clone(), true, 10_000),
+				(WUSDT_ASSET_ID, asset_owner.clone(), true, 10_000),
 			],
 			// Asset metadata: (id, name, symbol, decimals)
 			metadata: vec![
@@ -179,16 +202,14 @@ fn asset_hub_pezkuwichain_genesis(
 			],
 			// Initial balances: (asset_id, account, balance)
 			accounts: vec![
-				// Treasury gets: 20.25% + 76% rewards pool = 4,812,500,000 PEZ
-				// Rewards will be distributed via pezpallet-pez-treasury with sentetik halving
-				(
-					PEZ_ASSET_ID,
-					treasury_account.clone(),
-					PEZ_TREASURY_ALLOCATION + PEZ_REWARDS_POOL
-				),
-				// Founder allocation: 1.875% = 93,750,000 PEZ (4 year vesting)
+				// Treasury: 20.25% + 76% rewards pool = 4,812,500,000 PEZ, held by the
+				// treasury pallet's own keyless account. Released monthly, halving every 48
+				// releases; nothing else can move it.
+				(PEZ_ASSET_ID, pez_treasury_pot(), PEZ_TREASURY_ALLOCATION + PEZ_REWARDS_POOL),
+				// Founder allocation: 1.875% = 93,750,000 PEZ. Property, not treasury.
 				(PEZ_ASSET_ID, founder_account.clone(), PEZ_FOUNDER_ALLOCATION),
-				// Presale allocation: 1.875% = 93,750,000 PEZ
+				// Presale allocation: 1.875% = 93,750,000 PEZ. Sold on the exchange, so it
+				// is held by an account that can move it, not by a pallet.
 				(PEZ_ASSET_ID, presale_account.clone(), PEZ_PRESALE_ALLOCATION),
 				// wHEZ starts with 0 balance - only created via TokenWrapper
 				// wUSDT starts with 0 balance - minted via Custodial Bridge
@@ -226,18 +247,24 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 	let patch = match id.as_ref() {
 		// ====================================================================
 		// GENESIS PRESET - For mainnet or production use
-		// Uses hardcoded hex keys for collators
-		// Treasury, Founder, Presale accounts should be replaced with real addresses
+		// Uses hardcoded hex keys for collators, and the wallets generated on 2026-01-29
+		// for the founder and the presale holder. The treasury needs no address: it is a
+		// keyless pallet account, and so is the PEZ asset team.
 		// ====================================================================
 		PRESET_GENESIS => {
 			// MAINNET ACCOUNTS - NEW SECURE WALLETS (2026-01-29)
-			// Treasury_1: 5EhCpn82QtdU53MF6PoNFrKHgSrsfcAxFTMwrn3JYf9dioQw
-			let treasury_account: AccountId =
+			// Administrator of wHEZ and wUSDT only -- both are minted and burned by live
+			// systems, so they need a team that can act. PEZ is deliberately not among
+			// them; see `PezAssetTeamId`.
+			// Asset_Admin_1: 5EhCpn82QtdU53MF6PoNFrKHgSrsfcAxFTMwrn3JYf9dioQw
+			let asset_owner: AccountId =
 				hex!("744ed0812d6096827376b4625fe4f840d4950d5aef0ab12902e64c444c8e9d29").into();
 			// Founder_Satoshi_Qazi_Muhammed: 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
 			let founder_account: AccountId =
 				hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
 			// Presale_1: 5Fs1VXbPVvmHAaQ8a7bKcdJ8h8c1mgJKLJ6Pwce69fSqhLJ5
+			// Holds the whole presale allocation. Presale_2 and Presale_3 exist in the same
+			// wallet set if the allocation is ever to be split across several holders.
 			let presale_account: AccountId =
 				hex!("a8055af9df1db60bea4277f7e91157246a6245123564bff10435f461f284bf55").into();
 
@@ -262,7 +289,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				Vec::new(),
 				ASSET_HUB_PEZKUWICHAIN_ED * 524_288,
 				1000.into(),
-				treasury_account,
+				asset_owner,
 				founder_account,
 				presale_account,
 				vec![],
@@ -276,9 +303,9 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 		// ====================================================================
 		pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET => {
 			// For local testnet, Alice acts as treasury/founder/presale
-			let treasury_account = Sr25519Keyring::Alice.to_account_id();
+			let asset_owner = Sr25519Keyring::Alice.to_account_id();
 			let founder_account = Sr25519Keyring::Alice.to_account_id();
-			let presale_account = Sr25519Keyring::Bob.to_account_id();
+			let presale_account = Sr25519Keyring::Alice.to_account_id();
 
 			asset_hub_pezkuwichain_genesis(
 				// initial collators.
@@ -289,7 +316,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				Sr25519Keyring::well_known().map(|x| x.to_account_id()).collect(),
 				testnet_teyrchains_constants::pezkuwichain::currency::UNITS * 1_000_000,
 				1000.into(),
-				treasury_account,
+				asset_owner,
 				founder_account,
 				presale_account,
 				vec![
@@ -320,7 +347,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 		// ====================================================================
 		pezsp_genesis_builder::DEV_RUNTIME_PRESET => {
 			// For dev, Alice acts as all special accounts
-			let treasury_account = Sr25519Keyring::Alice.to_account_id();
+			let asset_owner = Sr25519Keyring::Alice.to_account_id();
 			let founder_account = Sr25519Keyring::Alice.to_account_id();
 			let presale_account = Sr25519Keyring::Alice.to_account_id();
 
@@ -338,7 +365,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				],
 				UNITS * 1_000_000,
 				1000.into(),
-				treasury_account,
+				asset_owner,
 				founder_account,
 				presale_account,
 				vec![],

@@ -3,9 +3,7 @@
 // Copyright (C) Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-	mock::*, Error, Event, PendingReferrals, ReferralCount, Referrals, ReferrerStatsStorage,
-};
+use crate::{mock::*, Error, Event, Invitations, ReferralCount, Referrals, ReferrerStatsStorage};
 use pezframe_support::{assert_noop, assert_ok};
 use pezpallet_identity_kyc::types::{OnCitizenshipRevoked, OnKycApproved};
 use pezsp_runtime::DispatchError;
@@ -23,7 +21,7 @@ fn initiate_referral_works() {
 		assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(REFERRER), REFERRED));
 
 		// Verification: Correct record is added to pending referrals list.
-		assert_eq!(ReferralPallet::pending_referrals(REFERRED), Some(REFERRER));
+		assert!(ReferralPallet::invitation_claim(REFERRED, REFERRER).is_some());
 
 		// Correct event is emitted.
 		System::assert_last_event(
@@ -44,12 +42,27 @@ fn initiate_referral_fails_for_self_referral() {
 }
 
 #[test]
-fn initiate_referral_fails_if_already_referred() {
+fn several_people_may_claim_the_same_newcomer() {
+	// This used to refuse the second claim, which meant whoever called first held the only
+	// slot for any address in existence -- a stranger could take the place of the person who
+	// had actually done the inviting, and nothing could clear it. A claim decides nothing on
+	// its own, so letting several stand costs nothing and takes the race away. The newcomer
+	// settles it by naming one of them.
 	new_test_ext().execute_with(|| {
-		// First referral succeeds
 		assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(REFERRER), REFERRED));
+		assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(USER_3), REFERRED));
 
-		// Second referral attempt by USER_3 fails
+		assert!(ReferralPallet::invitation_claim(REFERRED, REFERRER).is_some());
+		assert!(ReferralPallet::invitation_claim(REFERRED, USER_3).is_some());
+	});
+}
+
+#[test]
+fn nobody_claims_a_newcomer_whose_invitation_is_already_settled() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(REFERRER), REFERRED));
+		crate::InvitedBy::<Test>::insert(REFERRED, REFERRER);
+
 		assert_noop!(
 			ReferralPallet::initiate_referral(RuntimeOrigin::signed(USER_3), REFERRED),
 			Error::<Test>::AlreadyReferred
@@ -74,11 +87,11 @@ fn on_kyc_approved_hook_works() {
 		);
 
 		// Action: Call on_kyc_approved with referrer parameter
-		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER);
+		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
 
 		// Verification
 		// 1. Pending referral record is deleted
-		assert_eq!(PendingReferrals::<Test>::get(REFERRED), None);
+		assert!(Invitations::<Test>::iter_prefix(REFERRED).next().is_none());
 		// 2. Referrer's referral count increases by 1
 		assert_eq!(ReferralCount::<Test>::get(REFERRER), 1);
 		// 3. Permanent referral information is created
@@ -113,7 +126,7 @@ fn on_kyc_approved_uses_referrer_parameter() {
 		);
 
 		// Call with explicit referrer parameter
-		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER);
+		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
 
 		// Should use the passed referrer, not look up from PendingReferrals
 		let referral_info = Referrals::<Test>::get(REFERRED).unwrap();
@@ -129,7 +142,7 @@ fn on_kyc_approved_does_nothing_if_not_approved_status() {
 		// on_kyc_approved should do nothing
 
 		let initial_count = ReferralCount::<Test>::get(REFERRER);
-		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER);
+		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
 
 		// No changes should have occurred
 		assert_eq!(ReferralCount::<Test>::get(REFERRER), initial_count);
@@ -146,11 +159,11 @@ fn on_kyc_approved_prevents_double_counting() {
 		);
 
 		// First approval
-		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER);
+		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
 		assert_eq!(ReferralCount::<Test>::get(REFERRER), 1);
 
 		// Second approval attempt should be ignored (already processed)
-		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER);
+		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
 		assert_eq!(ReferralCount::<Test>::get(REFERRER), 1); // Still 1
 	});
 }
@@ -167,7 +180,7 @@ fn on_citizenship_revoked_penalizes_referrer() {
 			REFERRED,
 			pezpallet_identity_kyc::types::KycLevel::Approved,
 		);
-		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER);
+		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
 
 		// Verify initial stats
 		let stats = ReferrerStatsStorage::<Test>::get(REFERRER);
@@ -383,7 +396,7 @@ fn get_inviter_returns_correct_referrer() {
 			REFERRED,
 			pezpallet_identity_kyc::types::KycLevel::Approved,
 		);
-		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER);
+		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
 
 		// Verify InviterProvider trait
 		assert_eq!(ReferralPallet::get_inviter(&REFERRED), Some(REFERRER));
@@ -404,107 +417,11 @@ fn get_inviter_returns_none_for_non_referred() {
 // Force Confirm Referral Tests (Sudo-only)
 // ============================================================================
 
-#[test]
-fn force_confirm_referral_works() {
-	use crate::types::InviterProvider;
-
-	new_test_ext().execute_with(|| {
-		// Force confirm referral (sudo-only)
-		assert_ok!(ReferralPallet::force_confirm_referral(
-			RuntimeOrigin::root(),
-			REFERRER,
-			REFERRED
-		));
-
-		// Verify storage updates
-		assert_eq!(ReferralCount::<Test>::get(REFERRER), 1);
-		assert!(Referrals::<Test>::contains_key(REFERRED));
-		assert_eq!(Referrals::<Test>::get(REFERRED).unwrap().referrer, REFERRER);
-
-		// Verify ReferrerStats is updated (was missing before fix)
-		let stats = ReferrerStatsStorage::<Test>::get(REFERRER);
-		assert_eq!(stats.total_referrals, 1);
-		assert_eq!(stats.revoked_referrals, 0);
-		assert_eq!(stats.penalty_score, 0);
-
-		// Verify trait implementations
-		assert_eq!(ReferralPallet::get_inviter(&REFERRED), Some(REFERRER));
-	});
-}
-
-#[test]
-fn force_confirm_referral_requires_root() {
-	new_test_ext().execute_with(|| {
-		// Non-root origin should fail
-		assert_noop!(
-			ReferralPallet::force_confirm_referral(
-				RuntimeOrigin::signed(REFERRER),
-				REFERRER,
-				REFERRED
-			),
-			DispatchError::BadOrigin
-		);
-	});
-}
-
-#[test]
-fn force_confirm_referral_prevents_self_referral() {
-	new_test_ext().execute_with(|| {
-		assert_noop!(
-			ReferralPallet::force_confirm_referral(RuntimeOrigin::root(), REFERRER, REFERRER),
-			Error::<Test>::SelfReferral
-		);
-	});
-}
-
-#[test]
-fn force_confirm_referral_prevents_duplicate() {
-	new_test_ext().execute_with(|| {
-		// First force confirm succeeds
-		assert_ok!(ReferralPallet::force_confirm_referral(
-			RuntimeOrigin::root(),
-			REFERRER,
-			REFERRED
-		));
-
-		// Second attempt fails
-		assert_noop!(
-			ReferralPallet::force_confirm_referral(RuntimeOrigin::root(), REFERRER, REFERRED),
-			Error::<Test>::AlreadyReferred
-		);
-	});
-}
-
-// ============================================================================
-// Integration Tests
-// ============================================================================
-
-#[test]
-fn complete_referral_flow_integration() {
-	use crate::types::{InviterProvider, ReferralScoreProvider};
-
-	new_test_ext().execute_with(|| {
-		// Step 1: Initiate referral (legacy way via PendingReferrals)
-		assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(REFERRER), REFERRED));
-		assert_eq!(PendingReferrals::<Test>::get(REFERRED), Some(REFERRER));
-
-		// Step 2: KYC approval triggers confirmation
-		pezpallet_identity_kyc::KycStatuses::<Test>::insert(
-			REFERRED,
-			pezpallet_identity_kyc::types::KycLevel::Approved,
-		);
-		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER);
-
-		// Step 3: Verify all storage updates
-		assert_eq!(PendingReferrals::<Test>::get(REFERRED), None);
-		assert_eq!(ReferralCount::<Test>::get(REFERRER), 1);
-		assert!(Referrals::<Test>::contains_key(REFERRED));
-
-		// Step 4: Verify trait implementations
-		assert_eq!(ReferralPallet::get_inviter(&REFERRED), Some(REFERRER));
-		assert_eq!(ReferralPallet::get_referral_score(&REFERRER), 10);
-	});
-}
+// The four tests that were here exercised `force_confirm_referral`, the root call that could
+// invent a confirmed referral between two accounts with no KYC, no citizenship and no
+// application. It existed to repair historical data; both chains start again from genesis, so
+// there is none, and a call that writes a referral out of nothing writes a trust score out of
+// nothing.
 
 #[test]
 fn multiple_referrals_for_same_referrer() {
@@ -520,7 +437,7 @@ fn multiple_referrals_for_same_referrer() {
 				referred,
 				pezpallet_identity_kyc::types::KycLevel::Approved,
 			);
-			ReferralPallet::on_kyc_approved(&referred, &REFERRER);
+			ReferralPallet::on_kyc_approved(&referred, &REFERRER, None);
 		}
 
 		// Verify count
@@ -542,11 +459,204 @@ fn referral_info_stores_block_number() {
 			REFERRED,
 			pezpallet_identity_kyc::types::KycLevel::Approved,
 		);
-		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER);
+		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
 
 		// Verify stored block number
 		let info = Referrals::<Test>::get(REFERRED).unwrap();
 		assert_eq!(info.created_at, block_number);
 		assert_eq!(info.referrer, REFERRER);
 	});
+}
+
+// ============================================================================
+// WHO BROUGHT SOMEBODY HERE, AND WHO STOOD FOR THEM
+// ============================================================================
+//
+// Two different facts about the same citizen, and frequently two different people. You can be
+// brought to the state by one person and ask another -- a parent, a friend -- to stand for
+// you. The guarantor takes the credit and the consequences; the one who brought you gets a
+// record of having done it and nothing else.
+
+mod invitations {
+	use super::*;
+	use crate::{InvitationCount, InvitedBy};
+	use pezpallet_identity_kyc::types::OnKycApproved;
+
+	const INVITER: u64 = 7;
+
+	/// Mark the applicant approved, the way `identity-kyc` does before it calls the hook.
+	/// The hook re-checks it on-chain rather than trusting the caller.
+	fn approved(who: u64) {
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+			who,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
+	}
+
+	#[test]
+	fn an_invitation_needs_both_sides_to_say_so() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(INVITER), REFERRED));
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, Some(&INVITER));
+
+			assert_eq!(InvitedBy::<Test>::get(REFERRED), Some(INVITER));
+			assert_eq!(InvitationCount::<Test>::get(INVITER), 1);
+		});
+	}
+
+	#[test]
+	fn a_claim_nobody_confirms_counts_for_nothing() {
+		// Otherwise a bot could watch for new addresses, claim every one of them, and collect
+		// a record of having built the community it never touched.
+		new_test_ext().execute_with(|| {
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(INVITER), REFERRED));
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
+
+			assert_eq!(InvitedBy::<Test>::get(REFERRED), None);
+			assert_eq!(InvitationCount::<Test>::get(INVITER), 0);
+		});
+	}
+
+	#[test]
+	fn naming_somebody_who_never_claimed_counts_for_nothing() {
+		// The other direction: a citizen cannot hand the credit for their arrival to whoever
+		// they like. Both people have to have said it.
+		new_test_ext().execute_with(|| {
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, Some(&INVITER));
+
+			assert_eq!(InvitedBy::<Test>::get(REFERRED), None);
+			assert_eq!(InvitationCount::<Test>::get(INVITER), 0);
+		});
+	}
+
+	#[test]
+	fn only_the_claim_the_newcomer_named_survives() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(INVITER), REFERRED));
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(USER_3), REFERRED));
+
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, Some(&INVITER));
+
+			assert_eq!(InvitedBy::<Test>::get(REFERRED), Some(INVITER));
+			assert_eq!(InvitationCount::<Test>::get(USER_3), 0);
+			// The losing claims are cleared; they cannot be reused.
+			assert!(crate::Invitations::<Test>::iter_prefix(REFERRED).next().is_none());
+		});
+	}
+
+	#[test]
+	fn bringing_somebody_in_is_not_standing_for_them() {
+		// The record the Serok would read: somebody who has grown the country and taken
+		// nothing from it shows up as a high invitation count beside a referral count of
+		// zero. One number could never show that.
+		new_test_ext().execute_with(|| {
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(INVITER), REFERRED));
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, Some(&INVITER));
+
+			assert_eq!(InvitationCount::<Test>::get(INVITER), 1);
+			assert_eq!(ReferralCount::<Test>::get(INVITER), 0);
+			// And the guarantor has the reverse.
+			assert_eq!(ReferralCount::<Test>::get(REFERRER), 1);
+			assert_eq!(InvitationCount::<Test>::get(REFERRER), 0);
+		});
+	}
+
+	#[test]
+	fn the_record_outlives_the_claim_that_made_it() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(INVITER), REFERRED));
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, Some(&INVITER));
+
+			// The claim is gone, the fact it settled is not -- the old code deleted the
+			// invitation at exactly the moment it started to mean something.
+			assert!(crate::Invitations::<Test>::iter_prefix(REFERRED).next().is_none());
+			assert_eq!(InvitedBy::<Test>::get(REFERRED), Some(INVITER));
+		});
+	}
+}
+
+// ============================================================================
+// WHO PAYS WHEN A CITIZEN IS REVOKED
+// ============================================================================
+
+mod accountability {
+	use super::*;
+	use crate::{InvitedBy, ReferrerStatsStorage};
+	use pezpallet_identity_kyc::types::{OnCitizenshipRevoked, OnKycApproved};
+
+	const INVITER: u64 = 7;
+
+	/// Mark the applicant approved, the way `identity-kyc` does before it calls the hook.
+	/// The hook re-checks it on-chain rather than trusting the caller.
+	fn approved(who: u64) {
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+			who,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
+	}
+
+	#[test]
+	fn the_guarantor_pays() {
+		// Standing for somebody is saying you believe in them. The cost of a guarantee
+		// belongs to the guarantor.
+		new_test_ext().execute_with(|| {
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
+			ReferralPallet::on_citizenship_revoked(&REFERRED);
+
+			assert_eq!(ReferrerStatsStorage::<Test>::get(REFERRER).revoked_referrals, 1);
+		});
+	}
+
+	#[test]
+	fn the_founder_standing_in_does_not_pay() {
+		// The founder approves applications nobody else answered. That is a structural role,
+		// and charging it to them would be a certainty rather than a risk: their referral
+		// score is capped at five hundred and reached almost at once, while the penalty has
+		// no ceiling. It falls instead to whoever actually brought the person here.
+		new_test_ext().execute_with(|| {
+			assert_ok!(ReferralPallet::initiate_referral(RuntimeOrigin::signed(INVITER), REFERRED));
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &FOUNDER, Some(&INVITER));
+			pezpallet_identity_kyc::ApprovedByFallback::<Test>::insert(REFERRED, ());
+
+			ReferralPallet::on_citizenship_revoked(&REFERRED);
+
+			assert_eq!(ReferrerStatsStorage::<Test>::get(FOUNDER).revoked_referrals, 0);
+			assert_eq!(ReferrerStatsStorage::<Test>::get(INVITER).revoked_referrals, 1);
+		});
+	}
+
+	#[test]
+	fn the_founder_pays_for_the_people_they_chose_to_stand_for() {
+		// Being the guarantor of last resort does not make the founder exempt everywhere. If
+		// they stood for somebody in the ordinary way, they carry it in the ordinary way.
+		new_test_ext().execute_with(|| {
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &FOUNDER, None);
+			ReferralPallet::on_citizenship_revoked(&REFERRED);
+
+			assert_eq!(ReferrerStatsStorage::<Test>::get(FOUNDER).revoked_referrals, 1);
+		});
+	}
+
+	#[test]
+	fn nobody_pays_when_nobody_vouched_in_any_sense() {
+		new_test_ext().execute_with(|| {
+			approved(REFERRED);
+			ReferralPallet::on_kyc_approved(&REFERRED, &FOUNDER, None);
+			pezpallet_identity_kyc::ApprovedByFallback::<Test>::insert(REFERRED, ());
+			assert_eq!(InvitedBy::<Test>::get(REFERRED), None);
+
+			ReferralPallet::on_citizenship_revoked(&REFERRED);
+
+			assert_eq!(ReferrerStatsStorage::<Test>::get(FOUNDER).revoked_referrals, 0);
+		});
+	}
 }

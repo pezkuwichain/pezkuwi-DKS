@@ -5,7 +5,7 @@
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezframe_support::pezpallet_prelude::*;
-use pezframe_system::{pezpallet_prelude::BlockNumberFor, Config as SystemConfig};
+use pezframe_system::pezpallet_prelude::BlockNumberFor;
 use pezpallet_tiki::Tiki;
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
@@ -251,10 +251,6 @@ pub enum CollectiveDecisionType {
 	ParliamentSuperMajority,
 	/// Parliament absolute majority (3/4 - constitutional amendment)
 	ParliamentAbsoluteMajority,
-	/// Diwan decision (constitutional review - 2/3)
-	ConstitutionalReview,
-	/// Diwan unanimous decision (all members)
-	ConstitutionalUnanimous,
 	/// Hybrid decision (Parliament + Serok approval)
 	HybridDecision,
 	/// President's sole decision
@@ -331,9 +327,19 @@ pub struct CollectiveProposal<T: pezframe_system::Config> {
 	pub votes_cast: u32,
 	/// Priority level
 	pub priority: ProposalPriority,
-	/// UPDATED: The call (extrinsic) to be executed if the proposal is accepted.
-	#[codec(skip)]
-	pub call: Option<Box<<T as SystemConfig>::RuntimeCall>>,
+	/// The spending allowance this proposal asks Parliament to grant, if it is a budget.
+	///
+	/// This used to be `Option<Box<RuntimeCall>>` carrying an arbitrary call -- and it was
+	/// marked `#[codec(skip)]`, because a `RuntimeCall` has no bounded size and this struct
+	/// derives `MaxEncodedLen`. Skipped means the call was dropped on the way into storage and
+	/// read back as `None`, every time. So the proposal system appeared to be able to enact
+	/// anything and could in fact enact nothing, and no amount of writing a tally would have
+	/// changed that.
+	///
+	/// A number is storable. Carrying arbitrary calls needs the call to be bounded -- stored
+	/// by hash with the body in a preimage, the way `pezpallet-democracy` does it -- and that
+	/// is a design of its own, not a field.
+	pub budget_amount: Option<u128>,
 }
 
 /// Proposal priority levels
@@ -481,10 +487,6 @@ pub struct DiwanMember<T: pezframe_system::Config> {
 	pub term_ends_at: BlockNumberFor<T>,
 	/// Appointing authority (Parliament/Serok)
 	pub appointed_by: AppointmentAuthority<T>,
-	/// Area of specialization
-	pub specialization: ConstitutionalSpecialization,
-	/// Number of decisions made
-	pub decisions_made: u32,
 }
 
 /// Appointment authority
@@ -493,42 +495,19 @@ pub struct DiwanMember<T: pezframe_system::Config> {
 )]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
+/// How a member reached the bench, and the two halves of it.
+///
+/// The court is eleven: six the house elects, five the President appoints. The two halves
+/// answer different needs and carry different conditions. The elected six need no
+/// qualification beyond citizenship -- their legitimacy is the vote. The appointed five must
+/// each hold one of the qualifying tikis, because a court that rules on whether an upgrade
+/// is constitutional, whether a slash was just, or whether an election counted, has to
+/// contain people who can read those things.
 pub enum AppointmentAuthority<T: pezframe_system::Config> {
-	/// Appointed by Parliament (6 members)
+	/// Elected by the sitting Parliament. Six seats.
 	Parliament,
-	/// Appointed by Serok (5 members)
+	/// Appointed by the President, who is named here. Five seats.
 	President(T::AccountId),
-}
-
-/// Constitutional areas of specialization
-#[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	Eq,
-	PartialEq,
-	Debug,
-	TypeInfo,
-	MaxEncodedLen,
-	Copy,
-)]
-#[codec(mel_bound())]
-pub enum ConstitutionalSpecialization {
-	/// Fundamental rights and freedoms
-	FundamentalRights,
-	/// State organization
-	StateOrganization,
-	/// Economic order
-	EconomicOrder,
-	/// Social rights
-	SocialRights,
-	/// Judicial independence
-	JudicialIndependence,
-	/// Local governments
-	LocalGovernment,
-	/// International law
-	InternationalLaw,
 }
 
 /// Appointment process information
@@ -629,6 +608,12 @@ pub enum ElectionStatus {
 	Completed,
 	/// Cancelled
 	Cancelled,
+	/// Closed without a result because too little of the country voted.
+	///
+	/// Distinct from `Cancelled`, which is somebody calling an election off, and from
+	/// `Completed`, which produced officeholders. This one is an ending too: the record is
+	/// final, the deposits are back, and the scheduler opens another.
+	FailedForTurnout,
 }
 
 /// Candidate information

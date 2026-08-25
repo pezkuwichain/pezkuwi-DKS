@@ -20,6 +20,7 @@ pezframe-benchmarking = { optional = true, workspace = true }
 pezframe-support = { default-features = false, workspace = true }
 pezframe-system = { default-features = false, workspace = true }
 pezpallet-identity-kyc = { workspace = true, default-features = false }
+pezpallet-tiki = { workspace = true, default-features = false }
 pezsp-runtime = { default-features = false, workspace = true }
 pezsp-std = { default-features = false, workspace = true }
 scale-info = { default-features = false, features = [
@@ -46,6 +47,7 @@ std = [
 	"pezkuwi-primitives/std",
 	"pezpallet-balances/std",
 	"pezpallet-identity-kyc/std",
+	"pezpallet-tiki/std",
 	"pezpallet-nfts/std",
 	"pezsp-core/std",
 	"pezsp-io/std",
@@ -61,6 +63,7 @@ runtime-benchmarks = [
 	"pezkuwi-primitives/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-identity-kyc/runtime-benchmarks",
+	"pezpallet-tiki/runtime-benchmarks",
 	"pezpallet-nfts/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
@@ -72,6 +75,7 @@ try-runtime = [
 	"pezkuwi-primitives/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-identity-kyc/try-runtime",
+	"pezpallet-tiki/try-runtime",
 	"pezpallet-nfts/try-runtime",
 	"pezsp-runtime/try-runtime",
 ]

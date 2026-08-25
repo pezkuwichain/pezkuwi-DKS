@@ -55,7 +55,9 @@ use pezsp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, Permill, Perquintill,
 };
-use testnet_teyrchains_constants::pezkuwichain::snowbridge::EthereumNetwork;
+use testnet_teyrchains_constants::pezkuwichain::{
+	locations::PeopleLocation, snowbridge::EthereumNetwork,
+};
 
 #[cfg(feature = "std")]
 use pezsp_version::NativeVersion;
@@ -1061,21 +1063,6 @@ impl pezpallet_xcm_bridge_hub_router::Config<ToZagrosXcmRouterInstance> for Runt
 	type FeeAsset = xcm_config::bridging::XcmBridgeHubRouterFeeAssetId;
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-/// The presale benchmarks create two assets, so they need the next two ids the chain accepts.
-#[cfg(feature = "runtime-benchmarks")]
-pub struct PresaleBenchmarkHelper;
-#[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_presale::BenchmarkHelper<AssetIdForTrustBackedAssets> for PresaleBenchmarkHelper {
-	fn payment_asset() -> AssetIdForTrustBackedAssets {
-		genesis_config_presets::FIRST_AUTO_ASSET_ID
-	}
-
-	fn reward_asset() -> AssetIdForTrustBackedAssets {
-		genesis_config_presets::FIRST_AUTO_ASSET_ID + 1
-	}
-}
-
 /// The default helper asks for asset id 0, which `force_create` refuses while genesis has
 /// `NextAssetId` set. Hands out the id the chain will accept instead.
 #[cfg(feature = "runtime-benchmarks")]
@@ -1325,8 +1312,17 @@ parameter_types! {
 	pub const PezIncentivePotId: PalletId = PalletId(*b"pez/incv");
 	pub const PezGovernmentPotId: PalletId = PalletId(*b"pez/govr");
 	pub const PezAssetId: u32 = 1; // PEZ token asset ID
-	pub PezPresaleAccount: AccountId = PalletId(*b"pez/pres").into_account_truncating();
-	pub PezFounderAccount: AccountId = PalletId(*b"pez/foun").into_account_truncating();
+	/// Owner, issuer, admin and freezer of the PEZ asset.
+	///
+	/// A `PalletId` account: no seed produces it, so none of those four roles can ever be
+	/// exercised. PEZ needs none of them -- the entire supply is created at genesis and the
+	/// fixed five billion is the whole point of the token.
+	///
+	/// wHEZ and wUSDT are administered normally, because live systems mint and burn them.
+	/// PEZ must not be. Do not give this asset a signable owner.
+	pub const PezAssetTeamId: PalletId = PalletId(*b"pez/asst");
+	/// `PezRewards` on the People chain, which is where the funding report is addressed.
+	pub const PezRewardsPalletIndex: u8 = 91;
 }
 
 impl pezpallet_pez_treasury::Config for Runtime {
@@ -1336,41 +1332,21 @@ impl pezpallet_pez_treasury::Config for Runtime {
 	type TreasuryPalletId = PezTreasuryPalletId;
 	type IncentivePotId = PezIncentivePotId;
 	type GovernmentPotId = PezGovernmentPotId;
-	type PresaleAccount = PezPresaleAccount;
-	type FounderAccount = PezFounderAccount;
-	type ForceOrigin = EnsureRoot<AccountId>;
-}
-
-// -----------------------------------------------------------------------------
-// Presale Pezpallet
-// -----------------------------------------------------------------------------
-
-parameter_types! {
-	pub const PresalePalletId: PalletId = PalletId(*b"pez/sale");
-	pub PresalePlatformTreasury: AccountId = PalletId(*b"pez/plat").into_account_truncating();
-	pub PresaleStakingRewardPool: AccountId = PalletId(*b"pez/stak").into_account_truncating();
-	pub const PresalePlatformFeePercent: u8 = 2; // 2% platform fee
-	pub const PresaleMaxContributors: u32 = 10_000;
-	pub const PresaleMaxBonusTiers: u32 = 5;
-	pub const PresaleMaxWhitelistedAccounts: u32 = 1_000;
-}
-
-impl pezpallet_presale::Config for Runtime {
-	type AssetId = AssetIdForTrustBackedAssets;
-	type Balance = Balance;
-	type Assets = Assets;
-	type PalletId = PresalePalletId;
-	type PlatformTreasury = PresalePlatformTreasury;
-	type StakingRewardPool = PresaleStakingRewardPool;
-	type PlatformFeePercent = PresalePlatformFeePercent;
-	type MaxContributors = PresaleMaxContributors;
-	type MaxBonusTiers = PresaleMaxBonusTiers;
-	type MaxWhitelistedAccounts = PresaleMaxWhitelistedAccounts;
-	type CreatePresaleOrigin = EnsureSigned<AccountId>;
-	type EmergencyOrigin = EnsureRoot<AccountId>;
-	type PresaleWeightInfo = pezpallet_presale::BizinikiwiWeight<Runtime>;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = PresaleBenchmarkHelper;
+	// Only the People chain may report that the citizen register has passed the threshold.
+	// It is the chain that holds the register, so it is the only body in a position to know;
+	// root is deliberately not accepted, because a key that can start the schedule early is a
+	// key that can pay a month to a state that has not yet earned it.
+	type ActivationOrigin = EnsureXcm<Equals<PeopleLocation>>;
+	// Same chain, same reason: the budget that authorises a payment and the officeholder who
+	// draws against it both live on People. This chain only holds the money.
+	type GovernmentSpendOrigin = EnsureXcm<Equals<PeopleLocation>>;
+	// And the same again for the incentive pot. Every number behind a reward -- the trust
+	// score, the epoch rate, the parliamentary seat -- is computed on People; this chain
+	// holds the money and takes instruction.
+	type IncentiveSpendOrigin = EnsureXcm<Equals<PeopleLocation>>;
+	type XcmSender = xcm_config::XcmRouter;
+	type RewardsChainLocation = PeopleLocation;
+	type RewardsPalletIndex = PezRewardsPalletIndex;
 }
 
 // -----------------------------------------------------------------------------
@@ -1475,7 +1451,6 @@ construct_runtime!(
 
 		// PezkuwiChain Custom Pallets
 		PezTreasury: pezpallet_pez_treasury = 70,
-		Presale: pezpallet_presale = 71,
 		TokenWrapper: pezpallet_token_wrapper = 73,
 
 		// Staking
@@ -1751,7 +1726,6 @@ mod benches {
 		[pezpallet_nomination_pools, NominationPoolsBench::<Runtime>]
 		// PezkuwiChain Custom Pallets
 		[pezpallet_pez_treasury, PezTreasury]
-		[pezpallet_presale, Presale]
 		[pezpallet_token_wrapper, TokenWrapper]
 	);
 }

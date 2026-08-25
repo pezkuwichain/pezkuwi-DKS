@@ -756,34 +756,66 @@ fn full_workflow_charlie_dual_chain_partial_unbond() {
 }
 
 // ============================================================================
-// E2E: Duration Counts from Opt-in, Not from Data Arrival
+// E2E: Duration Counts from Opt-in, Bounded by the Stake Actually Existing
 // ============================================================================
 
 #[test]
-fn duration_counts_from_optin_not_from_data_arrival() {
+fn the_delay_in_getting_the_data_here_is_not_charged_to_the_user() {
+	// Staking details arrive through a bot and a noter, so there is always a gap between
+	// asking for your time to be counted and the chain being able to see any stake. That gap
+	// is the system's, not the user's.
 	ExtBuilder.build_and_execute(|| {
-		// Block 100: User opts in (no data yet)
 		System::set_block_number(100);
 		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
-		assert_eq!(StakingScore::get_staking_score(&USER_STASH), (0, 0u64));
 
-		// Block 50_000: Bot + noter submit data (much later). It finalizes
-		// DISPUTE_WINDOW blocks after submission (block 50_010), not at 50_000.
-		System::set_block_number(50_000);
+		// The data lands a few blocks later -- ordinary latency, well inside the grace.
+		System::set_block_number(150);
 		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 200 * UNITS, 0, 0);
 
-		// Duration is from block 100, NOT from block 50_000 (or 50_010).
-		// 50_010 - 100 = 49_910 blocks. MONTH_IN_BLOCKS = 432_000
-		// 49_910 < 432_000 → x1.0 → 30
-		let (score, duration) = StakingScore::get_staking_score(&USER_STASH);
-		assert_eq!(duration, 49_910);
-		assert_eq!(score, 30);
-
-		// After reaching 1 month from opt-in: 100 + 432_000 = 432_100
 		System::set_block_number(100 + MONTH_IN_BLOCKS as u64);
+		let (score, duration) = StakingScore::get_staking_score(&USER_STASH);
+
+		// Counted from the opt-in at 100, not from when the message arrived.
+		assert_eq!(duration, MONTH_IN_BLOCKS as u64);
+		assert_eq!(score, 36); // 30 * 1.2
+	});
+}
+
+#[test]
+fn time_is_never_credited_for_longer_than_there_has_been_a_stake() {
+	// The other half of the rule, and the reason it exists: opting in on an empty account,
+	// waiting a year and then staking would otherwise collect the twelve-month multiplier the
+	// moment the funds landed. Nothing was held for those twelve months.
+	ExtBuilder.build_and_execute(|| {
+		System::set_block_number(100);
+		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+
+		// A year passes with no stake at all.
+		System::set_block_number(100 + 12 * MONTH_IN_BLOCKS as u64);
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 200 * UNITS, 0, 0);
+
+		let (score, duration) = StakingScore::get_staking_score(&USER_STASH);
+
+		// Credited with the grace and the handful of blocks the stake has existed for --
+		// not with the year of holding nothing.
+		assert!(duration <= OracleGracePeriod::get() + DISPUTE_WINDOW, "the year was banked");
+		assert_eq!(score, 30, "the multiplier was collected without holding anything");
+	});
+}
+
+#[test]
+fn a_stake_that_stays_earns_its_multiplier_in_time() {
+	// The cap bites only while the stake is young. Once it has genuinely been held, the
+	// opt-in anchor is what counts again.
+	ExtBuilder.build_and_execute(|| {
+		System::set_block_number(100);
+		assert_ok!(StakingScore::start_score_tracking(RuntimeOrigin::signed(USER_STASH)));
+		System::set_block_number(150);
+		submit_and_finalize(NOTER, USER_STASH, StakingSource::RelayChain, 200 * UNITS, 0, 0);
+
+		System::set_block_number(150 + 12 * MONTH_IN_BLOCKS as u64);
 		let (score, _) = StakingScore::get_staking_score(&USER_STASH);
-		// 30 * 1.2 = 36
-		assert_eq!(score, 36);
+		assert_eq!(score, 60); // 30 * 2.0
 	});
 }
 
@@ -1551,4 +1583,195 @@ fn a_second_independent_noter_can_register_and_submit() {
 		assert!(NoterBonds::<Test>::get(NOTER).is_some());
 		assert!(NoterBonds::<Test>::get(NOTER_2).is_some());
 	});
+}
+
+// ============================================================================
+// FREEZING SOMEBODY'S DATA
+// ============================================================================
+//
+// A frozen submission is discarded, so the noter has to send it again. If freezing were free
+// and repeatable by one person, that person could keep any account's stake at zero for ever --
+// and zero stake is a trust score of zero, which is no candidacy for any office at all.
+
+mod disputes {
+	use super::*;
+	use crate::{DisputeCount, DisputesAgainstNoter};
+
+	fn pending_submission(who: u64) {
+		ensure_registered(NOTER);
+		assert_ok!(StakingScore::receive_staking_details(
+			RuntimeOrigin::signed(NOTER),
+			who,
+			StakingSource::RelayChain,
+			200 * UNITS,
+			0,
+			0,
+		));
+	}
+
+	#[test]
+	fn the_first_objection_is_one_members_to_make() {
+		ExtBuilder.build_and_execute(|| {
+			pending_submission(USER_STASH);
+			assert_ok!(StakingScore::dispute_staking_details(
+				RuntimeOrigin::signed(DISPUTE_MEMBER),
+				USER_STASH,
+				StakingSource::RelayChain,
+			));
+			assert!(
+				PendingStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).is_none()
+			);
+			assert_eq!(DisputeCount::<Test>::get(USER_STASH, StakingSource::RelayChain), 1);
+		});
+	}
+
+	#[test]
+	fn repeating_it_is_not() {
+		// The griefing case: freeze, the noter resends, freeze again, for ever and for
+		// nothing. The second time it takes governance.
+		ExtBuilder.build_and_execute(|| {
+			pending_submission(USER_STASH);
+			assert_ok!(StakingScore::dispute_staking_details(
+				RuntimeOrigin::signed(DISPUTE_MEMBER),
+				USER_STASH,
+				StakingSource::RelayChain,
+			));
+
+			pending_submission(USER_STASH);
+			assert_noop!(
+				StakingScore::dispute_staking_details(
+					RuntimeOrigin::signed(DISPUTE_MEMBER),
+					USER_STASH,
+					StakingSource::RelayChain,
+				),
+				Error::<Test>::RepeatDisputeNeedsGovernance
+			);
+			// And the submission is still standing.
+			assert!(
+				PendingStakingDetails::<Test>::get(USER_STASH, StakingSource::RelayChain).is_some()
+			);
+		});
+	}
+
+	#[test]
+	fn governance_can_still_freeze_it_again() {
+		ExtBuilder.build_and_execute(|| {
+			pending_submission(USER_STASH);
+			assert_ok!(StakingScore::dispute_staking_details(
+				RuntimeOrigin::signed(DISPUTE_MEMBER),
+				USER_STASH,
+				StakingSource::RelayChain,
+			));
+
+			pending_submission(USER_STASH);
+			assert_ok!(StakingScore::dispute_staking_details(
+				RuntimeOrigin::signed(SLASH_MEMBER),
+				USER_STASH,
+				StakingSource::RelayChain,
+			));
+			assert_eq!(DisputeCount::<Test>::get(USER_STASH, StakingSource::RelayChain), 2);
+		});
+	}
+
+	#[test]
+	fn a_pattern_against_one_noter_is_recorded() {
+		// Evidence rather than punishment: one frozen submission is an accusation, several is
+		// something governance can act on when it decides whether to slash.
+		ExtBuilder.build_and_execute(|| {
+			for who in [USER_STASH, NOTER_2] {
+				pending_submission(who);
+				assert_ok!(StakingScore::dispute_staking_details(
+					RuntimeOrigin::signed(DISPUTE_MEMBER),
+					who,
+					StakingSource::RelayChain,
+				));
+			}
+			assert_eq!(DisputesAgainstNoter::<Test>::get(NOTER), 2);
+		});
+	}
+}
+
+// ============================================================================
+// A NOTARY DOES NOT NOTARISE THEIR OWN DEED
+// ============================================================================
+
+#[test]
+fn a_noter_cannot_submit_their_own_staking_data() {
+	// The bond makes a false submission expensive; it does not make it proper to be the only
+	// witness to your own stake, which is the one submission a noter has an interest in.
+	ExtBuilder.build_and_execute(|| {
+		ensure_registered(NOTER);
+		assert_noop!(
+			StakingScore::receive_staking_details(
+				RuntimeOrigin::signed(NOTER),
+				NOTER,
+				StakingSource::RelayChain,
+				200 * UNITS,
+				0,
+				0,
+			),
+			Error::<Test>::NoterCannotAttestSelf
+		);
+	});
+}
+
+// ============================================================================
+// THE INVARIANT CAN FAIL
+// ============================================================================
+
+#[cfg(feature = "try-runtime")]
+mod invariant {
+	use super::*;
+	use pezframe_support::traits::Hooks;
+
+	fn check() -> Result<(), pezsp_runtime::TryRuntimeError> {
+		<StakingScore as Hooks<u64>>::try_state(System::block_number())
+	}
+
+	fn assert_rejected(what: &str) {
+		assert!(check().is_err(), "try_state accepted a state where {what}");
+	}
+
+	#[test]
+	fn an_ordinary_state_passes() {
+		ExtBuilder.build_and_execute(|| {
+			ensure_registered(NOTER);
+			assert_ok!(StakingScore::receive_staking_details(
+				RuntimeOrigin::signed(NOTER),
+				USER_STASH,
+				StakingSource::RelayChain,
+				200 * UNITS,
+				0,
+				0,
+			));
+			assert_ok!(check());
+		});
+	}
+
+	#[test]
+	fn a_bond_recorded_but_not_reserved_is_caught() {
+		// The bond is the whole reason a noter's word is accepted about state this chain
+		// cannot see. A registration with nothing behind it is that assurance quietly gone.
+		ExtBuilder.build_and_execute(|| {
+			NoterBonds::<Test>::insert(USER_STASH, 1_000_000_000_000u128);
+			assert_rejected("a noter's bond was recorded but never reserved");
+		});
+	}
+
+	#[test]
+	fn a_pending_submission_from_an_unbonded_account_is_caught() {
+		ExtBuilder.build_and_execute(|| {
+			ensure_registered(NOTER);
+			assert_ok!(StakingScore::receive_staking_details(
+				RuntimeOrigin::signed(NOTER),
+				USER_STASH,
+				StakingSource::RelayChain,
+				200 * UNITS,
+				0,
+				0,
+			));
+			NoterBonds::<Test>::remove(NOTER);
+			assert_rejected("a pending submission was left by somebody with no bond");
+		});
+	}
 }

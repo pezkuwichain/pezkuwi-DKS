@@ -51,114 +51,31 @@ use core::marker::PhantomData;
 pub struct WeightInfo<T>(PhantomData<T>);
 impl<T: pezframe_system::Config> pezpallet_pez_rewards::WeightInfo for WeightInfo<T> {
 	/// Storage: `PezRewards::EpochInfo` (r:1 w:1)
-	/// Proof: `PezRewards::EpochInfo` (`max_values`: Some(1), `max_size`: Some(12), added: 507, mode: `MaxEncodedLen`)
 	/// Storage: `PezRewards::EpochStatus` (r:0 w:1)
-	/// Proof: `PezRewards::EpochStatus` (`max_values`: None, `max_size`: Some(21), added: 2496, mode: `MaxEncodedLen`)
 	fn initialize_rewards_system() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `42`
-		//  Estimated: `1497`
-		// Minimum execution time: 17_994_000 picoseconds.
-		Weight::from_parts(31_549_000, 0)
+		Weight::from_parts(31_328_000, 0)
 			.saturating_add(Weight::from_parts(0, 1497))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: `PezRewards::EpochInfo` (r:1 w:0)
-	/// Proof: `PezRewards::EpochInfo` (`max_values`: Some(1), `max_size`: Some(12), added: 507, mode: `MaxEncodedLen`)
+	/// Storage: `PezRewards::EpochRewardPools` (r:1 w:0)
 	/// Storage: `PezRewards::EpochStatus` (r:1 w:0)
-	/// Proof: `PezRewards::EpochStatus` (`max_values`: None, `max_size`: Some(21), added: 2496, mode: `MaxEncodedLen`)
-	/// Storage: `Trust::TrustScores` (r:1 w:0)
-	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
-	/// Storage: `PezRewards::UserEpochScores` (r:0 w:1)
-	/// Proof: `PezRewards::UserEpochScores` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
-	fn record_trust_score() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `124`
-		//  Estimated: `3529`
-		// Minimum execution time: 23_885_000 picoseconds.
-		Weight::from_parts(38_632_000, 0)
-			.saturating_add(Weight::from_parts(0, 3529))
-			.saturating_add(T::DbWeight::get().reads(3))
-			.saturating_add(T::DbWeight::get().writes(1))
-	}
-	/// Storage: `PezRewards::EpochInfo` (r:1 w:1)
-	/// Proof: `PezRewards::EpochInfo` (`max_values`: Some(1), `max_size`: Some(12), added: 507, mode: `MaxEncodedLen`)
-	/// Storage: `PezRewards::EpochStatus` (r:1 w:2)
-	/// Proof: `PezRewards::EpochStatus` (`max_values`: None, `max_size`: Some(21), added: 2496, mode: `MaxEncodedLen`)
-	/// Storage: `Assets::Account` (r:1 w:0)
-	/// Proof: `Assets::Account` (`max_values`: None, `max_size`: Some(134), added: 2609, mode: `MaxEncodedLen`)
-	/// Storage: `PezRewards::ParliamentaryNftOwners` (r:201 w:0)
-	/// Proof: `PezRewards::ParliamentaryNftOwners` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
-	/// Storage: `PezRewards::UserEpochScores` (r:1 w:0)
-	/// Proof: `PezRewards::UserEpochScores` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
-	/// Storage: `PezRewards::EpochRewardPools` (r:0 w:1)
-	/// Proof: `PezRewards::EpochRewardPools` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
-	fn finalize_epoch() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `342`
-		//  Estimated: `508917`
-		// Minimum execution time: 527_902_000 picoseconds.
-		Weight::from_parts(858_967_000, 0)
-			.saturating_add(Weight::from_parts(0, 508917))
-			.saturating_add(T::DbWeight::get().reads(205))
-			.saturating_add(T::DbWeight::get().writes(4))
-	}
-	/// Storage: `PezRewards::EpochStatus` (r:1 w:0)
-	/// Proof: `PezRewards::EpochStatus` (`max_values`: None, `max_size`: Some(21), added: 2496, mode: `MaxEncodedLen`)
 	/// Storage: `PezRewards::ClaimedRewards` (r:1 w:1)
-	/// Proof: `PezRewards::ClaimedRewards` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
-	/// Storage: `PezRewards::EpochRewardPools` (r:1 w:0)
-	/// Proof: `PezRewards::EpochRewardPools` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
-	/// Storage: `PezRewards::UserEpochScores` (r:1 w:0)
-	/// Proof: `PezRewards::UserEpochScores` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
-	/// Storage: `Assets::Asset` (r:1 w:1)
-	/// Proof: `Assets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
-	/// Storage: `Assets::Account` (r:2 w:2)
-	/// Proof: `Assets::Account` (`max_values`: None, `max_size`: Some(134), added: 2609, mode: `MaxEncodedLen`)
-	/// Storage: `PezRewards::EpochTotalClaimed` (r:1 w:1)
-	/// Proof: `PezRewards::EpochTotalClaimed` (`max_values`: None, `max_size`: Some(36), added: 2511, mode: `MaxEncodedLen`)
+	/// Storage: `Trust::TrustScores` (r:1 w:0)
+	/// Storage: `Welati::ParliamentMembers` (r:1 w:0)
+	/// Storage: `Tiki::UserTikis` (r:1 w:0)
+	/// Storage: `PezRewards::PaidOutTotal` (r:1 w:1)
 	fn claim_reward() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `797`
-		//  Estimated: `6208`
-		// Minimum execution time: 101_729_000 picoseconds.
-		Weight::from_parts(157_322_000, 0)
-			.saturating_add(Weight::from_parts(0, 6208))
-			.saturating_add(T::DbWeight::get().reads(8))
-			.saturating_add(T::DbWeight::get().writes(5))
+		Weight::from_parts(60_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 9000))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().writes(2))
 	}
-	/// Storage: `PezRewards::EpochStatus` (r:1 w:1)
-	/// Proof: `PezRewards::EpochStatus` (`max_values`: None, `max_size`: Some(21), added: 2496, mode: `MaxEncodedLen`)
-	/// Storage: `PezRewards::EpochRewardPools` (r:1 w:0)
-	/// Proof: `PezRewards::EpochRewardPools` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
-	/// Storage: `PezRewards::EpochTotalClaimed` (r:1 w:0)
-	/// Proof: `PezRewards::EpochTotalClaimed` (`max_values`: None, `max_size`: Some(36), added: 2511, mode: `MaxEncodedLen`)
-	/// Storage: `Assets::Account` (r:2 w:2)
-	/// Proof: `Assets::Account` (`max_values`: None, `max_size`: Some(134), added: 2609, mode: `MaxEncodedLen`)
-	/// Storage: `Assets::Asset` (r:1 w:1)
-	/// Proof: `Assets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:2 w:2)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	fn close_epoch() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `716`
-		//  Estimated: `6208`
-		// Minimum execution time: 105_295_000 picoseconds.
-		Weight::from_parts(164_447_000, 0)
-			.saturating_add(Weight::from_parts(0, 6208))
-			.saturating_add(T::DbWeight::get().reads(8))
-			.saturating_add(T::DbWeight::get().writes(6))
-	}
-	/// Storage: `PezRewards::ParliamentaryNftOwners` (r:0 w:1)
-	/// Proof: `PezRewards::ParliamentaryNftOwners` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
-	fn register_parliamentary_nft_owner() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 12_372_000 picoseconds.
-		Weight::from_parts(22_912_000, 0)
-			.saturating_add(Weight::from_parts(0, 0))
+	/// Storage: `PezRewards::ReportedIncentiveTotal` (r:1 w:1)
+	fn note_incentive_funding() -> Weight {
+		Weight::from_parts(12_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 500))
+			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
 }

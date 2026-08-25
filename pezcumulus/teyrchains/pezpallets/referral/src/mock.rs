@@ -49,6 +49,10 @@ parameter_types! {
 	pub const MaxStringLen: u32 = 50;
 	pub const MaxCidLen: u32 = 128;
 	pub const PenaltyPerRevocationAmount: u32 = 3;
+	/// Small enough that a test can cross them.
+	pub const AssociationHeadThreshold: u32 = 3;
+	pub const CommunityModeratorThreshold: u32 = 5;
+	pub const ReferralFallbackPeriod: u64 = 100;
 }
 
 // Mock implementation for CitizenNftProvider
@@ -75,6 +79,7 @@ impl pezpallet_identity_kyc::Config for Test {
 	type OnCitizenshipRevoked = Referral; // Referral pezpallet handles revocation penalty
 	type CitizenNftProvider = MockCitizenNftProvider;
 	type DefaultReferrer = DefaultReferrerAccount;
+	type ReferralFallbackPeriod = ReferralFallbackPeriod;
 	type KycApplicationDeposit = KycApplicationDepositAmount;
 	type MaxStringLength = MaxStringLen;
 	type MaxCidLength = MaxCidLen;
@@ -93,6 +98,11 @@ impl pezpallet_referral::Config for Test {
 	type DefaultReferrer = DefaultReferrerAccount;
 	type PenaltyPerRevocation = PenaltyPerRevocationAmount;
 	type TrustScoreUpdater = ();
+	// The mock has no tiki pallet; what the tests check here is the counting, and the
+	// awarding itself is tested in `tiki`.
+	type EarnedRoles = ();
+	type AssociationHeadThreshold = AssociationHeadThreshold;
+	type CommunityModeratorThreshold = CommunityModeratorThreshold;
 }
 
 /// Build test externalities with founding citizens

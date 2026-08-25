@@ -22,7 +22,7 @@ pub mod v1 {
 
 	/// Type alias for the pre-upgrade state tuple to reduce type complexity
 	#[cfg(feature = "try-runtime")]
-	type PreUpgradeState = (u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
+	type PreUpgradeState = (u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
 
 	pub struct MigrateToV1<T>(PhantomData<T>);
 
@@ -42,19 +42,17 @@ pub mod v1 {
 
 				// Count existing storage items for logging
 				let officials_count = CurrentOfficials::<T>::iter().count() as u64;
-				let ministers_count = CurrentMinisters::<T>::iter().count() as u64;
 				let elections_count = ActiveElections::<T>::iter().count() as u64;
 				let proposals_count = ActiveProposals::<T>::iter().count() as u64;
 
-				let migrated =
-					officials_count + ministers_count + elections_count + proposals_count;
+				let migrated = officials_count + elections_count + proposals_count;
 
 				// Update storage version
 				STORAGE_VERSION.put::<Pezpallet<T>>();
 
 				log::info!("✅ Migrated {migrated} entries in pezpallet-welati");
 				log::info!(
-					"   Officials: {officials_count}, Ministers: {ministers_count}, Elections: {elections_count}, Proposals: {proposals_count}"
+					"   Officials: {officials_count}, Elections: {elections_count}, Proposals: {proposals_count}"
 				);
 
 				// Return weight used
@@ -80,7 +78,6 @@ pub mod v1 {
 
 			// Encode current storage counts for verification
 			let officials_count = CurrentOfficials::<T>::iter().count() as u32;
-			let ministers_count = CurrentMinisters::<T>::iter().count() as u32;
 			let parliament_count = ParliamentMembers::<T>::get().len() as u32;
 			let diwan_count = DiwanMembers::<T>::get().len() as u32;
 			let appointed_count = AppointedOfficials::<T>::iter().count() as u32;
@@ -95,7 +92,6 @@ pub mod v1 {
 			let collective_votes_count = CollectiveVotes::<T>::iter().count() as u32;
 
 			log::info!("   CurrentOfficials entries: {officials_count}");
-			log::info!("   CurrentMinisters entries: {ministers_count}");
 			log::info!("   ParliamentMembers entries: {parliament_count}");
 			log::info!("   DiwanMembers entries: {diwan_count}");
 			log::info!("   AppointedOfficials entries: {appointed_count}");
@@ -111,7 +107,6 @@ pub mod v1 {
 
 			Ok((
 				officials_count,
-				ministers_count,
 				parliament_count,
 				diwan_count,
 				appointed_count,
@@ -136,7 +131,6 @@ pub mod v1 {
 
 			let (
 				pre_officials_count,
-				pre_ministers_count,
 				pre_parliament_count,
 				pre_diwan_count,
 				pre_appointed_count,
@@ -161,7 +155,6 @@ pub mod v1 {
 
 			// Verify storage counts (should be same or more, never less)
 			let post_officials_count = CurrentOfficials::<T>::iter().count() as u32;
-			let post_ministers_count = CurrentMinisters::<T>::iter().count() as u32;
 			let post_parliament_count = ParliamentMembers::<T>::get().len() as u32;
 			let post_diwan_count = DiwanMembers::<T>::get().len() as u32;
 			let post_appointed_count = AppointedOfficials::<T>::iter().count() as u32;
@@ -177,9 +170,6 @@ pub mod v1 {
 
 			log::info!(
 				"   CurrentOfficials entries: {pre_officials_count} -> {post_officials_count}"
-			);
-			log::info!(
-				"   CurrentMinisters entries: {pre_ministers_count} -> {post_ministers_count}"
 			);
 			log::info!(
 				"   ParliamentMembers entries: {pre_parliament_count} -> {post_parliament_count}"
@@ -208,10 +198,6 @@ pub mod v1 {
 			assert!(
 				post_officials_count >= pre_officials_count,
 				"CurrentOfficials entries decreased during migration"
-			);
-			assert!(
-				post_ministers_count >= pre_ministers_count,
-				"CurrentMinisters entries decreased during migration"
 			);
 			assert!(
 				post_parliament_count >= pre_parliament_count,

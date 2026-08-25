@@ -73,7 +73,7 @@ impl pezpallet_balances::Config for Test {
 
 pub struct NoOpOnKycApproved;
 impl pezpallet_identity_kyc::types::OnKycApproved<u64> for NoOpOnKycApproved {
-	fn on_kyc_approved(_who: &u64, _referrer: &u64) {}
+	fn on_kyc_approved(_who: &u64, _referrer: &u64, _inviter: Option<&u64>) {}
 }
 
 pub struct NoOpOnCitizenshipRevoked;
@@ -114,39 +114,94 @@ impl pezpallet_identity_kyc::Config for Test {
 	type KycApplicationDeposit = pezframe_support::traits::ConstU128<100>;
 	type MaxStringLength = pezframe_support::traits::ConstU32<128>;
 	type MaxCidLength = pezframe_support::traits::ConstU32<64>;
+	type ReferralFallbackPeriod = pezframe_support::traits::ConstU64<100>;
 }
 
 parameter_types! {
-	pub const ScoreMultiplierBase: u128 = 1000;
+	/// A perfect record. Chosen to match the real chains so the arithmetic in the tests is
+	/// the arithmetic the state does.
+	pub const TrustScoreScale: u32 = 1_000;
+	pub const StakingWeight: u32 = 20;
+	pub const ReferralWeight: u32 = 25;
+	pub const PerwerdeWeight: u32 = 30;
+	pub const TikiWeight: u32 = 25;
 	pub const TrustUpdateInterval: u64 = 100; // Short interval for tests
 	pub const MaxBatchSizeValue: u32 = 100; // Max users per batch
 }
 
+/// The maxima the mock components report, matching the real chains' shape: education runs
+/// far higher than the rest, which is exactly why normalising matters.
+pub const REFERRAL_MAX: u32 = 500;
+pub const PERWERDE_MAX: u32 = 50_000;
+pub const TIKI_MAX: u32 = 1_000;
+
 pub struct MockStakingScoreProvider;
 impl pezpallet_trust::StakingScoreProvider<u64, u64> for MockStakingScoreProvider {
-	fn get_staking_score(_who: &u64) -> (u32, u64) {
-		(100, 0)
+	fn max_score() -> u32 {
+		100
 	}
+	fn get_staking_score(who: &u64) -> (u32, u64) {
+		(STAKING.with(|s| s.borrow().get(who).copied().unwrap_or(100)), 0)
+	}
+}
+
+thread_local! {
+	/// Per-account component scores, so a test can build a profile rather than only ever
+	/// seeing one. Anything not set here takes the default, which is what the old fixed
+	/// providers always returned.
+	pub static STAKING: core::cell::RefCell<std::collections::BTreeMap<u64, u32>> =
+		core::cell::RefCell::new(Default::default());
+	pub static REFERRAL: core::cell::RefCell<std::collections::BTreeMap<u64, u32>> =
+		core::cell::RefCell::new(Default::default());
+	pub static PERWERDE: core::cell::RefCell<std::collections::BTreeMap<u64, u32>> =
+		core::cell::RefCell::new(Default::default());
+	pub static TIKI: core::cell::RefCell<std::collections::BTreeMap<u64, u32>> =
+		core::cell::RefCell::new(Default::default());
+}
+
+/// Give one account a full set of component scores.
+pub fn set_profile(who: u64, staking: u32, referral: u32, perwerde: u32, tiki: u32) {
+	STAKING.with(|m| m.borrow_mut().insert(who, staking));
+	REFERRAL.with(|m| m.borrow_mut().insert(who, referral));
+	PERWERDE.with(|m| m.borrow_mut().insert(who, perwerde));
+	TIKI.with(|m| m.borrow_mut().insert(who, tiki));
+}
+
+/// Forget every profile, so one test's setup is not another's starting point.
+pub fn clear_profiles() {
+	STAKING.with(|m| m.borrow_mut().clear());
+	REFERRAL.with(|m| m.borrow_mut().clear());
+	PERWERDE.with(|m| m.borrow_mut().clear());
+	TIKI.with(|m| m.borrow_mut().clear());
 }
 
 pub struct MockReferralScoreProvider;
 impl pezpallet_trust::ReferralScoreProvider<u64> for MockReferralScoreProvider {
-	fn get_referral_score(_who: &u64) -> u32 {
-		50
+	fn max_score() -> u32 {
+		REFERRAL_MAX
+	}
+	fn get_referral_score(who: &u64) -> u32 {
+		REFERRAL.with(|s| s.borrow().get(who).copied().unwrap_or(50))
 	}
 }
 
 pub struct MockPerwerdeScoreProvider;
 impl pezpallet_trust::PerwerdeScoreProvider<u64> for MockPerwerdeScoreProvider {
-	fn get_perwerde_score(_who: &u64) -> u32 {
-		30
+	fn max_score() -> u32 {
+		PERWERDE_MAX
+	}
+	fn get_perwerde_score(who: &u64) -> u32 {
+		PERWERDE.with(|s| s.borrow().get(who).copied().unwrap_or(30))
 	}
 }
 
 pub struct MockTikiScoreProvider;
 impl pezpallet_trust::TikiScoreProvider<u64> for MockTikiScoreProvider {
-	fn get_tiki_score(_who: &u64) -> u32 {
-		20
+	fn max_score() -> u32 {
+		TIKI_MAX
+	}
+	fn get_tiki_score(who: &u64) -> u32 {
+		TIKI.with(|s| s.borrow().get(who).copied().unwrap_or(20))
 	}
 }
 
@@ -161,7 +216,11 @@ impl pezpallet_trust::CitizenshipStatusProvider<u64> for MockCitizenshipStatusPr
 impl pezpallet_trust::Config for Test {
 	type WeightInfo = ();
 	type Score = u128;
-	type ScoreMultiplierBase = ScoreMultiplierBase;
+	type ScoreScale = TrustScoreScale;
+	type StakingWeight = StakingWeight;
+	type ReferralWeight = ReferralWeight;
+	type PerwerdeWeight = PerwerdeWeight;
+	type TikiWeight = TikiWeight;
 	type UpdateInterval = TrustUpdateInterval;
 	type MaxBatchSize = MaxBatchSizeValue;
 	type StakingScoreSource = MockStakingScoreProvider;

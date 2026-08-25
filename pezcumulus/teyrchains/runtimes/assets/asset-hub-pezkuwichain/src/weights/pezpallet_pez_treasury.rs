@@ -56,7 +56,7 @@ impl<T: pezframe_system::Config> pezpallet_pez_treasury::WeightInfo for WeightIn
 	/// Proof: `PezTreasury::NextReleaseMonth` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
 	/// Storage: `PezTreasury::HalvingInfo` (r:0 w:1)
 	/// Proof: `PezTreasury::HalvingInfo` (`max_values`: Some(1), `max_size`: Some(40), added: 535, mode: `MaxEncodedLen`)
-	fn initialize_treasury() -> Weight {
+	fn activate_distribution() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `3`
 		//  Estimated: `1489`
@@ -65,24 +65,6 @@ impl<T: pezframe_system::Config> pezpallet_pez_treasury::WeightInfo for WeightIn
 			.saturating_add(Weight::from_parts(0, 1489))
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(3))
-	}
-	/// Storage: `PezTreasury::GenesisDistributionDone` (r:1 w:1)
-	/// Proof: `PezTreasury::GenesisDistributionDone` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
-	/// Storage: `Assets::Asset` (r:1 w:1)
-	/// Proof: `Assets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
-	/// Storage: `Assets::Account` (r:3 w:3)
-	/// Proof: `Assets::Account` (`max_values`: None, `max_size`: Some(134), added: 2609, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:3 w:3)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	fn force_genesis_distribution() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `523`
-		//  Estimated: `8817`
-		// Minimum execution time: 97_292_000 picoseconds.
-		Weight::from_parts(149_679_000, 0)
-			.saturating_add(Weight::from_parts(0, 8817))
-			.saturating_add(T::DbWeight::get().reads(8))
-			.saturating_add(T::DbWeight::get().writes(8))
 	}
 	/// Storage: `PezTreasury::TreasuryStartBlock` (r:1 w:0)
 	/// Proof: `PezTreasury::TreasuryStartBlock` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
@@ -109,5 +91,21 @@ impl<T: pezframe_system::Config> pezpallet_pez_treasury::WeightInfo for WeightIn
 			.saturating_add(Weight::from_parts(0, 8817))
 			.saturating_add(T::DbWeight::get().reads(11))
 			.saturating_add(T::DbWeight::get().writes(9))
+	}
+	/// Storage: `Assets::Asset` (r:1 w:1)
+	/// Proof: `Assets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
+	/// Storage: `Assets::Account` (r:2 w:2)
+	/// Proof: `Assets::Account` (`max_values`: None, `max_size`: Some(134), added: 2609, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	fn spend_from_government_pot() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `701`
+		//  Estimated: `6208`
+		// Minimum execution time: 45_000_000 picoseconds.
+		Weight::from_parts(45_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 6208))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(4))
 	}
 }

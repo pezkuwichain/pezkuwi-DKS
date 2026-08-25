@@ -90,6 +90,11 @@ pub mod pezpallet {
 	pub const HOUR_IN_BLOCKS: u32 = 60 * 10;
 	pub const UNITS: u128 = 1_000_000_000_000;
 
+	/// The ceiling the score is clamped to: the largest amount tier (50) at the longest
+	/// duration multiplier (x2). Named rather than written twice, because it is both the cap
+	/// applied at the end of the calculation and the maximum this component reports to trust.
+	pub const MAX_STAKING_SCORE: RawScore = 100;
+
 	/// The chain from which staking data originates.
 	#[derive(
 		Encode,
@@ -112,6 +117,45 @@ pub mod pezpallet {
 
 	#[pezpallet::pezpallet]
 	pub struct Pezpallet<T>(_);
+
+	#[pezpallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T>
+	where
+		BlockNumberFor<T>: From<u32>,
+	{
+		/// What the pallet has recorded about noters and stake has to hold together.
+		///
+		/// This is the one input to the trust score that the People chain cannot see for
+		/// itself -- it is told, by bonded accounts, about state on another chain. The bond
+		/// and the dispute window are what make being told acceptable, so a registration
+		/// without a bond behind it, or a pending submission from somebody who is no longer a
+		/// registered noter, is the assurance quietly not being there.
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
+			use pezframe_support::ensure;
+
+			for (noter, bond) in NoterBonds::<T>::iter() {
+				ensure!(
+					T::Currency::reserved_balance(&noter) >= bond,
+					"a noter's bond is recorded but not actually reserved"
+				);
+			}
+
+			for (who, source, pending) in PendingStakingDetails::<T>::iter() {
+				ensure!(
+					NoterBonds::<T>::contains_key(&pending.submitted_by),
+					"a pending submission is from somebody who is not a bonded noter"
+				);
+				ensure!(
+					pending.submitted_by != who,
+					"a noter submitted staking data about themselves"
+				);
+				let _ = source;
+			}
+
+			Ok(())
+		}
+	}
 
 	/// Trait for checking if an account has noter authority.
 	/// Noter-authorized accounts can submit staking details on behalf of users.
@@ -191,6 +235,19 @@ pub mod pezpallet {
 
 		/// Where a slashed noter's bond goes.
 		type SlashDestination: Get<Self::AccountId>;
+
+		/// How much of the gap between opting in and the stake being recorded is forgiven.
+		///
+		/// Staking data arrives through a bot and a noter, so there is always a delay between
+		/// a user asking for their time to be counted and the chain being able to see any
+		/// stake. That delay is the system's, not the user's, and this is how much of it the
+		/// user is not charged for.
+		///
+		/// A constant of its own rather than a multiple of `DisputeWindow`: the real delay is
+		/// how often the bot runs plus the window it then waits out, and those are two
+		/// different things that would not move together.
+		#[pezpallet::constant]
+		type OracleGracePeriod: Get<BlockNumberFor<Self>>;
 	}
 
 	/// Balance type of `T::Currency` (the noter bond currency) — distinct from
@@ -252,6 +309,61 @@ pub mod pezpallet {
 		OptionQuery,
 	>;
 
+	/// The block a non-zero stake was first recorded for an account.
+	///
+	/// The duration multiplier is anchored to when the user opted in, so that a slow bot costs
+	/// them nothing. On its own that let anyone opt in on an empty account, wait a year and
+	/// then stake, collecting the twelve-month multiplier the moment the funds landed. This is
+	/// the other end of the measurement: time is credited from the opt-in, but never more of
+	/// it than the stake has actually existed for, plus the grace the delay is worth.
+	///
+	/// Cleared with the stake, so somebody who unstakes entirely and returns years later
+	/// starts again rather than carrying the old date.
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn stake_first_seen)]
+	pub type StakeFirstSeen<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
+	/// Accounts that have asked for their staking time to be counted.
+	///
+	/// Separate from the block the clock starts at. Opting in says "count my duration"; the
+	/// clock itself starts when there is stake to count -- otherwise a person could opt in on
+	/// day one, stake a year later, and collect the twelve-month multiplier the moment the
+	/// funds arrived. The multiplier is for having kept a stake, not for having asked early.
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn tracking_opted_in)]
+	pub type TrackingOptIn<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, (), OptionQuery>;
+
+	/// How many times a pending update for this account and source has been frozen.
+	///
+	/// Read as an escalation: the first objection is one member's to make, and the second is
+	/// not. Without it a single member could freeze the same account's data on every
+	/// resubmission, for ever and at no cost -- and an account whose stake never lands scores
+	/// zero, which is a trust score of zero, which is no candidacy for any office at all. One
+	/// person should not be able to do that to a citizen quietly.
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn dispute_count)]
+	pub type DisputeCount<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::AccountId,
+		Blake2_128Concat,
+		StakingSource,
+		u32,
+		ValueQuery,
+	>;
+
+	/// How many of each noter's submissions have been frozen.
+	///
+	/// Evidence rather than punishment. Slashing is a governance decision after review, and
+	/// this is part of what there is to review -- one disputed submission is an accusation, a
+	/// pattern of them is something else.
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn disputes_against)]
+	pub type DisputesAgainstNoter<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -290,8 +402,10 @@ pub mod pezpallet {
 
 	#[pezpallet::error]
 	pub enum Error<T> {
-		/// User must have stake to start score tracking.
-		NoStakeFound,
+		/// A noter may not submit staking data about themselves.
+		NoterCannotAttestSelf,
+		/// This account's data has been frozen before; freezing it again is governance's.
+		RepeatDisputeNeedsGovernance,
 		/// Score tracking has already been started for this account.
 		TrackingAlreadyStarted,
 		/// Caller does not have noter authority (missing the Noter tiki).
@@ -330,6 +444,11 @@ pub mod pezpallet {
 			);
 
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
+			TrackingOptIn::<T>::insert(&who, ());
+			// The clock starts here rather than when the data lands, deliberately: staking
+			// details arrive through a noter, asynchronously, and a slow bot should not cost
+			// the user duration they actually held the stake for. See
+			// `duration_counts_from_optin_not_from_data_arrival`.
 			StakingStartBlock::<T>::insert(&who, current_block);
 
 			// Notify trust pallet. Score may be 0 if CachedStakingDetails is empty.
@@ -370,6 +489,10 @@ pub mod pezpallet {
 			let caller = ensure_signed(origin)?;
 			ensure!(T::NoterChecker::is_noter(&caller), Error::<T>::NotAuthorized);
 			ensure!(NoterBonds::<T>::contains_key(&caller), Error::<T>::NotRegisteredNoter);
+			// A notary does not notarise their own deed. The bond makes a false submission
+			// expensive, but it does not make it improper to be the only witness to your own
+			// stake -- and this is the one submission a noter has a direct interest in.
+			ensure!(caller != who, Error::<T>::NoterCannotAttestSelf);
 
 			// Opportunistically finalize a previously-matured pending entry for
 			// this (who, source) before recording the new candidate. Without this,
@@ -458,13 +581,31 @@ pub mod pezpallet {
 			who: T::AccountId,
 			source: StakingSource,
 		) -> DispatchResult {
-			let disputed_by = T::DisputeOrigin::ensure_origin(origin)?;
-			ensure!(
-				PendingStakingDetails::<T>::contains_key(&who, source),
-				Error::<T>::NoPendingSubmission
-			);
+			let already = DisputeCount::<T>::get(&who, source);
+
+			// The first objection is one member's to make. Repeating it is not.
+			//
+			// Freezing discards the candidate, so a noter has to resubmit -- and a member who
+			// could freeze every resubmission for nothing would keep that account's stake at
+			// zero indefinitely. Zero stake is a trust score of zero, and a trust score of
+			// zero is no candidacy for any office. One member should not be able to remove a
+			// citizen from public life by repeating a free action.
+			let disputed_by = if already == 0 {
+				T::DisputeOrigin::ensure_origin(origin)?
+			} else {
+				T::SlashOrigin::ensure_origin(origin.clone())
+					.map_err(|_| Error::<T>::RepeatDisputeNeedsGovernance)?;
+				// The stronger origin is collective and has no single account behind it, so
+				// the event records whoever signed for it where there is one.
+				ensure_signed(origin).unwrap_or_else(|_| who.clone())
+			};
+
+			let pending = PendingStakingDetails::<T>::get(&who, source)
+				.ok_or(Error::<T>::NoPendingSubmission)?;
 
 			PendingStakingDetails::<T>::remove(&who, source);
+			DisputeCount::<T>::insert(&who, source, already.saturating_add(1));
+			DisputesAgainstNoter::<T>::mutate(&pending.submitted_by, |n| *n = n.saturating_add(1));
 
 			Self::deposit_event(Event::StakingDetailsDisputed { who, source, disputed_by });
 			Ok(())
@@ -568,6 +709,12 @@ pub mod pezpallet {
 	pub trait StakingScoreProvider<AccountId, BlockNumber> {
 		/// Returns (score, duration_in_blocks) for the given account.
 		fn get_staking_score(who: &AccountId) -> (RawScore, BlockNumber);
+
+		/// The most this component can ever report.
+		///
+		/// Declared here rather than assumed by the reader: trust weights its inputs as
+		/// percentages, and a percentage of an unknown range is not a percentage.
+		fn max_score() -> RawScore;
 	}
 
 	/// Callback trait for when staking data changes.
@@ -613,6 +760,7 @@ pub mod pezpallet {
 				let remaining = Self::total_cached_stake(who);
 				if remaining.is_zero() {
 					StakingStartBlock::<T>::remove(who);
+					StakeFirstSeen::<T>::remove(who);
 				}
 			} else {
 				let details =
@@ -620,6 +768,12 @@ pub mod pezpallet {
 				CachedStakingDetails::<T>::insert(who, source, details);
 
 				let new_total = Self::total_cached_stake(who);
+				if previous_total.is_zero() {
+					StakeFirstSeen::<T>::insert(
+						who,
+						pezframe_system::Pezpallet::<T>::block_number(),
+					);
+				}
 				if !previous_total.is_zero()
 					&& new_total > previous_total
 					&& StakingStartBlock::<T>::contains_key(who)
@@ -667,6 +821,12 @@ pub mod pezpallet {
 	// --- StakingScoreProvider Implementation ---
 
 	impl<T: Config> StakingScoreProvider<T::AccountId, BlockNumberFor<T>> for Pezpallet<T> {
+		/// The largest amount tier at the longest duration multiplier, which is also the cap
+		/// the calculation applies at the end.
+		fn max_score() -> RawScore {
+			MAX_STAKING_SCORE
+		}
+
 		fn get_staking_score(who: &T::AccountId) -> (RawScore, BlockNumberFor<T>) {
 			// Aggregate stake from all cached sources.
 			let total_staked = Self::total_cached_stake(who);
@@ -691,7 +851,22 @@ pub mod pezpallet {
 			let (final_score, duration_for_return) = match StakingStartBlock::<T>::get(who) {
 				Some(start_block) => {
 					let current_block = pezframe_system::Pezpallet::<T>::block_number();
-					let duration_in_blocks = current_block.saturating_sub(start_block);
+
+					// Counted from the opt-in, so the delay in getting the data here is not
+					// charged to the user -- but never for longer than there has actually
+					// been a stake, plus what that delay is reckoned to be worth. Without the
+					// second half, opting in on an empty account and staking a year later
+					// would collect the twelve-month multiplier on arrival.
+					let since_optin = current_block.saturating_sub(start_block);
+					let duration_in_blocks = match StakeFirstSeen::<T>::get(who) {
+						Some(first_seen) => since_optin.min(
+							current_block
+								.saturating_sub(first_seen)
+								.saturating_add(T::OracleGracePeriod::get()),
+						),
+						// No stake has ever been recorded, so there is nothing to have held.
+						None => Zero::zero(),
+					};
 
 					let score = if duration_in_blocks >= (12 * MONTH_IN_BLOCKS).into() {
 						amount_score.saturating_mul(2) // x2.0 (12+ months)
@@ -710,7 +885,7 @@ pub mod pezpallet {
 				None => (amount_score, Zero::zero()),
 			};
 
-			(final_score.min(100), duration_for_return)
+			(final_score.min(MAX_STAKING_SCORE), duration_for_return)
 		}
 	}
 }

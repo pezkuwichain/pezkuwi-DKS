@@ -3,742 +3,557 @@
 // Copyright (C) Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: Apache-2.0
 
-// tests.rs (v11 - Final Bug Fixes)
+//! Tests for `pezpallet-pez-rewards`.
+//!
+//! The pallet has one job -- work out what the state owes and instruct the payment -- and
+//! three rules behind it. It cannot pay out more than the pot was given; it must measure
+//! every claimant against the same roll at the same instant; and a seat is paid because it is
+//! held, not because a list still names its holder. Most of what follows is there to keep
+//! those three honest.
 
-use crate::{mock::*, EpochState, Error, Event};
-use pezframe_support::{
-	assert_noop, assert_ok,
-	traits::{
-		fungibles::Mutate,
-		tokens::{Fortitude, Precision, Preservation},
-	},
+use crate::{
+	mock::*, EpochState, Error, Event, BLOCKS_PER_EPOCH, CLAIM_PERIOD_BLOCKS, PARLIAMENT_SIZE,
 };
-use pezsp_runtime::traits::BadOrigin;
+use pezframe_support::{assert_noop, assert_ok};
+
+const EPOCH: u64 = BLOCKS_PER_EPOCH as u64;
+const WINDOW: u64 = CLAIM_PERIOD_BLOCKS as u64;
+
+/// Start the clock at block 1, which is where `new_test_ext` leaves it.
+fn start() {
+	assert_ok!(PezRewards::initialize_rewards_system(RuntimeOrigin::root()));
+}
+
+/// Report `total` as everything the pot has been given.
+fn fund(total: u128) {
+	assert_ok!(PezRewards::note_incentive_funding(RuntimeOrigin::root(), total));
+}
+
+/// Land on the block the current epoch falls due, so `on_initialize` finalises it.
+fn finalize_current_epoch() -> u64 {
+	let due = PezRewards::epoch_info().epoch_start_block + EPOCH;
+	jump_to_block(due);
+	due
+}
 
 // =============================================================================
-// 1. INITIALIZATION TESTS
+// 1. THE CLOCK
 // =============================================================================
 
 #[test]
-fn initialize_rewards_system_works() {
+fn the_clock_starts_with_one_open_epoch() {
 	new_test_ext().execute_with(|| {
-		let epoch_info = PezRewards::get_current_epoch_info();
-		assert_eq!(epoch_info.current_epoch, 0);
-		assert_eq!(epoch_info.total_epochs_completed, 0);
-		assert_eq!(epoch_info.epoch_start_block, 1);
+		start();
+		assert_eq!(PezRewards::epoch_info().current_epoch, 0);
 		assert_eq!(PezRewards::epoch_status(0), EpochState::Open);
-
-		// BUG FIX E0599: Matches lib.rs v2
-		System::assert_has_event(Event::NewEpochStarted { epoch_index: 0, start_block: 1 }.into());
+		assert!(PezRewards::epoch_in_claim().is_none());
 	});
 }
 
 #[test]
-fn cannot_initialize_twice() {
+fn the_clock_cannot_be_started_twice() {
 	new_test_ext().execute_with(|| {
+		start();
 		assert_noop!(
 			PezRewards::initialize_rewards_system(RuntimeOrigin::root()),
-			Error::<Test>::AlreadyInitialized // BUG FIX E0599: Matches lib.rs v2
-		);
-	});
-}
-
-// =============================================================================
-// 2. TRUST SCORE RECORDING TESTS
-// =============================================================================
-
-#[test]
-fn record_trust_score_works() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		let score = PezRewards::get_user_trust_score_for_epoch(0, &alice());
-		assert_eq!(score, Some(100));
-
-		System::assert_has_event(
-			Event::TrustScoreRecorded { user: alice(), epoch_index: 0, trust_score: 100 }.into(),
+			Error::<Test>::AlreadyInitialized
 		);
 	});
 }
 
 #[test]
-fn multiple_users_can_record_scores() {
+fn an_epoch_finalises_itself_when_its_month_is_up() {
+	// There is no `finalize_epoch` extrinsic any more. There does not need to be: the work is
+	// constant now, so the block can do it -- and a month's rewards no longer depend on
+	// somebody remembering to send a transaction.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(bob())));
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(charlie())));
+		start();
+		fund(1_000_000);
 
-		assert_eq!(PezRewards::get_user_trust_score_for_epoch(0, &alice()), Some(100));
-		assert_eq!(PezRewards::get_user_trust_score_for_epoch(0, &bob()), Some(50));
-		assert_eq!(PezRewards::get_user_trust_score_for_epoch(0, &charlie()), Some(75));
-	});
-}
+		jump_to_block(EPOCH); // one block short
+		assert_eq!(PezRewards::epoch_status(0), EpochState::Open, "not due yet");
 
-#[test]
-fn record_trust_score_twice_updates() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		assert_eq!(PezRewards::get_user_trust_score_for_epoch(0, &alice()), Some(100));
-
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		assert_eq!(PezRewards::get_user_trust_score_for_epoch(0, &alice()), Some(100));
-	});
-}
-
-#[test]
-fn cannot_record_score_for_closed_epoch() {
-	new_test_ext().execute_with(|| {
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-		advance_blocks(crate::CLAIM_PERIOD_BLOCKS as u64 + 1);
-		assert_ok!(PezRewards::close_epoch(RuntimeOrigin::root(), 0));
-
-		// FIX: Dave now registering in epoch 1 (epoch 1 Open)
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(dave())));
-
-		// Dave's score should be recorded in epoch 1
-		assert_eq!(PezRewards::get_user_trust_score_for_epoch(1, &dave()), Some(0));
-	});
-}
-
-// =============================================================================
-// 3. EPOCH FINALIZATION TESTS
-// =============================================================================
-
-#[test]
-fn getter_functions_work_correctly() {
-	new_test_ext().execute_with(|| {
-		assert_eq!(PezRewards::get_claimed_reward(0, &alice()), None);
-		assert_eq!(PezRewards::get_user_trust_score_for_epoch(0, &alice()), None);
-		assert_eq!(PezRewards::get_epoch_reward_pool(0), None);
-		assert_eq!(PezRewards::epoch_status(0), EpochState::Open);
-
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		assert_eq!(PezRewards::get_user_trust_score_for_epoch(0, &alice()), Some(100));
-
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-		assert!(PezRewards::get_epoch_reward_pool(0).is_some());
-		// FIX: Should be ClaimPeriod after finalize
+		let at = finalize_current_epoch();
 		assert_eq!(PezRewards::epoch_status(0), EpochState::ClaimPeriod);
+		assert_eq!(PezRewards::epoch_in_claim(), Some(0));
+		assert_eq!(PezRewards::epoch_status(1), EpochState::Open, "and the next one is running");
+		assert_eq!(PezRewards::epoch_info().current_epoch, 1);
 
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0));
-		assert!(PezRewards::get_claimed_reward(0, &alice()).is_some());
+		let pool = PezRewards::epoch_reward_pools(0).unwrap();
+		assert_eq!(pool.finalized_at, at);
+		assert_eq!(pool.claim_deadline, at + WINDOW);
 	});
 }
 
 #[test]
-fn finalize_epoch_too_early_fails() {
+fn an_epoch_with_nothing_behind_it_still_ends() {
+	// A month where the pot was empty pays nothing, and that is all it does. If it stopped
+	// the clock instead, every later month would be lost with it.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
+		start();
+		finalize_current_epoch();
 
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64 - 1);
+		let pool = PezRewards::epoch_reward_pools(0).unwrap();
+		assert_eq!(pool.reward_per_trust_point, 0);
+		assert_eq!(pool.seat_share, 0);
+		assert_eq!(PezRewards::epoch_info().current_epoch, 1, "the clock moved on regardless");
+	});
+}
+
+#[test]
+fn the_claim_window_closes_itself() {
+	new_test_ext().execute_with(|| {
+		start();
+		fund(1_000_000);
+		let at = finalize_current_epoch();
+
+		jump_to_block(at + WINDOW);
+		assert_eq!(PezRewards::epoch_status(0), EpochState::ClaimPeriod, "still open on the day");
+
+		jump_to_block(at + WINDOW + 1);
+		assert_eq!(PezRewards::epoch_status(0), EpochState::Closed);
+		assert!(PezRewards::epoch_in_claim().is_none());
+	});
+}
+
+// =============================================================================
+// 2. FUNDING
+// =============================================================================
+
+#[test]
+fn funding_is_a_running_total_and_cannot_go_backwards() {
+	// The treasury reports the sum, not the month, so a message that never arrives is
+	// repaired by the next one. That only works if the number is monotonic -- a report that
+	// went backwards would be a lost message read as a refund.
+	new_test_ext().execute_with(|| {
+		fund(500);
+		assert_eq!(PezRewards::reported_incentive_total(), 500);
+
+		fund(1_200);
+		assert_eq!(PezRewards::reported_incentive_total(), 1_200);
+
 		assert_noop!(
-			PezRewards::finalize_epoch(RuntimeOrigin::root()),
-			Error::<Test>::EpochNotFinished
+			PezRewards::note_incentive_funding(RuntimeOrigin::root(), 900),
+			Error::<Test>::FundingReportWentBackwards
 		);
+		assert_eq!(PezRewards::reported_incentive_total(), 1_200);
 	});
 }
 
 #[test]
-fn finalize_epoch_calculates_rewards_correctly() {
+fn only_the_funding_origin_may_report() {
+	// A signed account that could report funding could conjure a payroll out of a pot with
+	// no money in it -- and the failure would land on the far side of a bridge.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // 100
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(bob()))); // 50
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(charlie()))); // 75
-		let total_trust: u128 = 100 + 50 + 75;
-		let expected_deadline = System::block_number()
-			+ crate::BLOCKS_PER_EPOCH as u64
-			+ crate::CLAIM_PERIOD_BLOCKS as u64;
+		assert_noop!(
+			PezRewards::note_incentive_funding(RuntimeOrigin::signed(1), 1_000),
+			pezsp_runtime::DispatchError::BadOrigin
+		);
+		assert_eq!(PezRewards::reported_incentive_total(), 0);
+	});
+}
 
-		let incentive_pot = PezRewards::incentive_pot_account_id();
-		let initial_pot_balance = pez_balance(&incentive_pot);
+#[test]
+fn what_is_available_is_what_was_reported_minus_what_was_paid() {
+	new_test_ext().execute_with(|| {
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		assert_eq!(PezRewards::available_funds(), 1_000_000);
 
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
+		finalize_current_epoch();
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
 
-		let reward_pool = PezRewards::get_epoch_reward_pool(0).unwrap();
+		let paid = PezRewards::claimed_rewards(0, 1).unwrap();
+		assert_eq!(PezRewards::paid_out_total(), paid);
+		assert_eq!(PezRewards::available_funds(), 1_000_000 - paid);
+	});
+}
 
-		// FIX: Reduced amount after parliamentary reward (90%)
-		let trust_score_pool = initial_pot_balance * 90u128 / 100;
+// =============================================================================
+// 3. THE RATE
+// =============================================================================
 
-		assert_eq!(reward_pool.total_reward_pool, trust_score_pool);
-		assert_eq!(reward_pool.total_trust_score, total_trust);
-		assert_eq!(reward_pool.participants_count, 3);
-		assert_eq!(reward_pool.reward_per_trust_point, trust_score_pool / total_trust);
+#[test]
+fn the_rate_is_the_citizens_share_spread_over_the_whole_roll() {
+	new_test_ext().execute_with(|| {
+		start();
+		fund(1_000_000);
+		set_trust(1, 100);
+		set_trust(2, 200);
+		set_trust(3, 700);
+
+		finalize_current_epoch();
+		let pool = PezRewards::epoch_reward_pools(0).unwrap();
+
+		// Ten per cent to the house, divided by its size and not by its membership.
+		assert_eq!(pool.seat_share, 100_000 / PARLIAMENT_SIZE as u128);
+		// The rest over the whole roll.
+		assert_eq!(pool.reward_per_trust_point, 900_000 / 1_000);
+	});
+}
+
+#[test]
+fn the_shares_add_up_to_the_pool() {
+	// The property that makes the denominator safe to take from the trust pallet: if the sum
+	// of every share came to more than the pool, the last claimant would find it empty.
+	new_test_ext().execute_with(|| {
+		start();
+		fund(1_000_000);
+		set_trust(1, 100);
+		set_trust(2, 200);
+		set_trust(3, 700);
+
+		finalize_current_epoch();
+		for who in 1..=3u64 {
+			assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(who), 0));
+		}
+
+		assert_eq!(PezRewards::paid_out_total(), 900_000, "exactly the citizens' share");
+	});
+}
+
+#[test]
+fn finalising_freezes_the_trust_roll_for_the_claim_window() {
+	// The whole of the cheap design rests on this. The rate is computed against the roll at
+	// one instant and each share is read from the roll when it is claimed; if the roll could
+	// move in between, the shares would not add up and claiming late would be worth doing.
+	new_test_ext().execute_with(|| {
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+
+		let at = finalize_current_epoch();
 		assert_eq!(
-			reward_pool.claim_deadline,
-			System::block_number() + crate::CLAIM_PERIOD_BLOCKS as u64
-		);
-
-		// FIX: Expect trust_score_pool (90%) in the event
-		System::assert_has_event(
-			Event::EpochRewardPoolCalculated {
-				epoch_index: 0,
-				total_pool: trust_score_pool,
-				participants_count: 3,
-				total_trust_score: total_trust,
-				claim_deadline: expected_deadline,
-			}
-			.into(),
-		);
-		System::assert_has_event(
-			Event::NewEpochStarted {
-				epoch_index: 1,
-				start_block: crate::BLOCKS_PER_EPOCH as u64 + 1,
-			}
-			.into(),
-		);
-		// FIX: ClaimPeriod after finalize
-		assert_eq!(PezRewards::epoch_status(0), EpochState::ClaimPeriod);
-		assert_eq!(PezRewards::epoch_status(1), EpochState::Open);
-	});
-}
-
-#[test]
-fn finalize_epoch_fails_if_already_finalized_or_closed() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-
-		// FIX: Second finalize tries to finalize epoch 1 (not finished yet)
-		assert_noop!(
-			PezRewards::finalize_epoch(RuntimeOrigin::root()),
-			Error::<Test>::EpochNotFinished
-		);
-	});
-}
-
-#[test]
-fn finalize_epoch_no_participants() {
-	new_test_ext().execute_with(|| {
-		let incentive_pot = PezRewards::incentive_pot_account_id();
-		let pot_balance_before = pez_balance(&incentive_pot);
-
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-
-		let reward_pool = PezRewards::get_epoch_reward_pool(0).unwrap();
-		assert_eq!(reward_pool.total_trust_score, 0);
-		assert_eq!(reward_pool.participants_count, 0);
-		assert_eq!(reward_pool.reward_per_trust_point, 0);
-
-		// FIX: NFT owner not registered, parliamentary reward not distributed
-		// All balance remains in pot (100%)
-		let pot_balance_after = pez_balance(&incentive_pot);
-		assert_eq!(pot_balance_after, pot_balance_before);
-	});
-}
-
-#[test]
-fn finalize_epoch_zero_trust_score_participant() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(dave()))); // Score 0
-																			 // FIX: Zero scores are now being recorded
-		assert_eq!(PezRewards::get_user_trust_score_for_epoch(0, &dave()), Some(0));
-
-		let incentive_pot = PezRewards::incentive_pot_account_id();
-		let pot_balance_before = pez_balance(&incentive_pot);
-
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-
-		let reward_pool = PezRewards::get_epoch_reward_pool(0).unwrap();
-		assert_eq!(reward_pool.total_trust_score, 0);
-		assert_eq!(reward_pool.participants_count, 1);
-		assert_eq!(reward_pool.reward_per_trust_point, 0);
-
-		// FIX: NFT owner not registered, parliamentary reward not distributed
-		// All balance remains in pot (100%)
-		let pot_balance_after = pez_balance(&incentive_pot);
-		assert_eq!(pot_balance_after, pot_balance_before);
-
-		// FIX: NoRewardToClaim instead of NoTrustScoreForEpoch (0 score exists but reward is 0)
-		assert_noop!(
-			PezRewards::claim_reward(RuntimeOrigin::signed(dave()), 0),
-			Error::<Test>::NoRewardToClaim
+			freezes(),
+			vec![at + WINDOW],
+			"the roll is held still for exactly as long as it can be drawn against"
 		);
 	});
 }
 
 // =============================================================================
-// 4. CLAIM REWARD TESTS
+// 4. CLAIMS
 // =============================================================================
 
 #[test]
-fn claim_reward_works_for_single_user() {
+fn a_citizen_claims_their_share_and_the_payment_is_instructed() {
+	// Recording the claim is not paying it: the money is on another chain. A test that only
+	// checked storage would pass on a pallet that never sent anything.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // 100
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
+		start();
+		fund(1_000_000);
+		set_trust(1, 100);
+		set_trust(2, 900);
+		finalize_current_epoch();
+		clear_sent_xcm();
 
-		let balance_before = pez_balance(&alice());
-		let reward_pool = PezRewards::get_epoch_reward_pool(0).unwrap();
-		let expected_reward = reward_pool.reward_per_trust_point * 100;
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
 
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0));
-
-		let balance_after = pez_balance(&alice());
-		assert_eq!(balance_after, balance_before + expected_reward);
-
-		System::assert_last_event(
-			Event::RewardClaimed { user: alice(), epoch_index: 0, amount: expected_reward }.into(),
+		let expected = 900 * 100;
+		assert_eq!(PezRewards::claimed_rewards(0, 1), Some(expected));
+		assert_eq!(sent_xcm().len(), 1, "the payment was actually instructed");
+		System::assert_has_event(
+			Event::RewardClaimed { who: 1, epoch_index: 0, amount: expected }.into(),
 		);
-		assert!(PezRewards::get_claimed_reward(0, &alice()).is_some());
 	});
 }
 
 #[test]
-fn claim_reward_works_for_multiple_users() {
+fn nobody_is_paid_twice() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // 100
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(bob()))); // 50
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		finalize_current_epoch();
 
-		let balance1_before = pez_balance(&alice());
-		let balance2_before = pez_balance(&bob());
-
-		let reward_pool = PezRewards::get_epoch_reward_pool(0).unwrap();
-		let reward1 = reward_pool.reward_per_trust_point * 100;
-		let reward2 = reward_pool.reward_per_trust_point * 50;
-
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0));
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(bob()), 0));
-
-		let balance1_after = pez_balance(&alice());
-		let balance2_after = pez_balance(&bob());
-
-		assert_eq!(balance1_after, balance1_before + reward1);
-		assert_eq!(balance2_after, balance2_before + reward2);
-	});
-}
-
-#[test]
-fn claim_reward_fails_if_already_claimed() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0));
-
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
 		assert_noop!(
-			PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0),
+			PezRewards::claim_reward(RuntimeOrigin::signed(1), 0),
 			Error::<Test>::RewardAlreadyClaimed
 		);
 	});
 }
 
 #[test]
-fn claim_reward_fails_if_not_participant() {
+fn a_claim_after_the_deadline_is_refused() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		let at = finalize_current_epoch();
 
-		// FIX: Bob not registered, should get NoTrustScoreForEpoch error
+		jump_to_block(at + WINDOW + 1);
 		assert_noop!(
-			PezRewards::claim_reward(RuntimeOrigin::signed(bob()), 0),
-			Error::<Test>::NoTrustScoreForEpoch
+			PezRewards::claim_reward(RuntimeOrigin::signed(1), 0),
+			Error::<Test>::NotInClaimPeriod
 		);
 	});
 }
 
 #[test]
-fn claim_reward_fails_if_epoch_not_finalized() {
+fn nothing_owed_is_nothing_claimed() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		// FIX: Unfinalized epoch -> ClaimPeriodExpired error (Open state)
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		finalize_current_epoch();
+
 		assert_noop!(
-			PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0),
-			Error::<Test>::ClaimPeriodExpired
+			PezRewards::claim_reward(RuntimeOrigin::signed(99), 0),
+			Error::<Test>::NoRewardToClaim
 		);
 	});
 }
 
 #[test]
-fn claim_reward_fails_if_claim_period_over() {
+fn a_revoked_citizen_is_paid_nothing_and_no_citizenship_check_says_so() {
+	// There is no `is_citizen` here on purpose. Revoking a citizenship takes the trust score
+	// away, so the share is zero by arithmetic -- and the rule lives in one place instead of
+	// two that can disagree.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
+		start();
+		fund(1_000_000);
+		set_trust(1, 500);
+		set_trust(2, 500);
+		finalize_current_epoch();
 
-		advance_blocks(crate::CLAIM_PERIOD_BLOCKS as u64 + 1);
+		set_trust(1, 0); // what `OnCitizenshipRevoked` does to the roll
 
 		assert_noop!(
-			PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0),
-			Error::<Test>::ClaimPeriodExpired // BUG FIX E0599
+			PezRewards::claim_reward(RuntimeOrigin::signed(1), 0),
+			Error::<Test>::NoRewardToClaim
 		);
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(2), 0));
 	});
 }
 
 #[test]
-fn claim_reward_fails_if_epoch_closed() {
+fn an_unreachable_treasury_leaves_no_record_of_a_payment_that_did_not_happen() {
+	// The record and the money must not be able to disagree. If the instruction cannot be
+	// sent, the claim has to unwind -- otherwise the claimant is marked paid and never was.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-		advance_blocks(crate::CLAIM_PERIOD_BLOCKS as u64 + 1);
-		assert_ok!(PezRewards::close_epoch(RuntimeOrigin::root(), 0));
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		finalize_current_epoch();
 
-		// FIX: Epoch Closed -> ClaimPeriodExpired error
+		fail_sending(true);
 		assert_noop!(
-			PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0),
-			Error::<Test>::ClaimPeriodExpired
+			PezRewards::claim_reward(RuntimeOrigin::signed(1), 0),
+			Error::<Test>::CouldNotReachTreasury
 		);
+		assert!(PezRewards::claimed_rewards(0, 1).is_none());
+		assert_eq!(PezRewards::paid_out_total(), 0);
+
+		fail_sending(false);
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
 	});
 }
 
 #[test]
-fn claim_reward_fails_if_pot_insufficient_during_claim() {
+fn the_payment_is_addressed_to_the_treasury_pallet_and_its_call() {
+	// The two chains do not share a runtime type, so the call is addressed by index. This
+	// pins both ends of that agreement; the treasury pallet has the mirror of this test.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		finalize_current_epoch();
+		clear_sent_xcm();
 
-		let incentive_pot = PezRewards::incentive_pot_account_id();
-		let pez_pot_balance = pez_balance(&incentive_pot);
-		assert_ok!(Assets::burn_from(
-			PezAssetId::get(),
-			&incentive_pot,
-			pez_pot_balance,
-			Preservation::Expendable,
-			Precision::Exact,
-			Fortitude::Polite
-		));
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
+		let (destination, message) = sent_xcm().pop().expect("a payment was instructed");
+		assert_eq!(destination, TreasuryChain::get());
 
-		// FIX: Arithmetic Underflow error expected
-		assert!(PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0).is_err());
-	});
-}
+		let transact = message
+			.inner()
+			.iter()
+			.find_map(|i| match i {
+				xcm::latest::Instruction::Transact { call, .. } => Some(call.clone()),
+				_ => None,
+			})
+			.expect("a Transact");
+		let encoded = transact.into_encoded();
+		assert_eq!(encoded[0], TreasuryPalletIndex::get(), "the treasury pallet's index");
+		assert_eq!(encoded[1], 3, "pay_from_incentive_pot");
 
-#[test]
-fn claim_reward_fails_for_wrong_epoch() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-
-		// FIX: Epoch 1 not yet finalized -> ClaimPeriodExpired
-		assert_noop!(
-			PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 1),
-			Error::<Test>::ClaimPeriodExpired
-		);
-
-		// Epoch 999 does not exist -> ClaimPeriodExpired
-		assert_noop!(
-			PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 999),
-			Error::<Test>::ClaimPeriodExpired
-		);
+		assert!(message
+			.inner()
+			.iter()
+			.any(|i| matches!(i, xcm::latest::Instruction::UnpaidExecution { .. })));
 	});
 }
 
 // =============================================================================
-// 5. CLOSE EPOCH TESTS
+// 5. PARLIAMENTARY SEATS
 // =============================================================================
 
 #[test]
-fn close_epoch_works_after_claim_period() {
+fn a_seat_is_paid_by_the_seat_and_never_by_the_member() {
+	// Dividing by the number of people sitting would make removing a member profitable for
+	// everyone left. The divisor is the size of the house, always.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // Will not claim
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(bob()))); // Will claim
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		set_seat(1, 1, true);
+		finalize_current_epoch();
 
-		let incentive_pot = PezRewards::incentive_pot_account_id();
-		let _pot_balance_before_finalize = pez_balance(&incentive_pot);
+		let pool = PezRewards::epoch_reward_pools(0).unwrap();
+		assert_eq!(pool.seat_share, 100_000 / PARLIAMENT_SIZE as u128);
 
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-
-		let reward_pool = PezRewards::get_epoch_reward_pool(0).unwrap();
-		let _alice_reward = reward_pool.reward_per_trust_point * 100;
-		let bob_reward = reward_pool.reward_per_trust_point * 50;
-
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(bob()), 0)); // Bob claimed
-
-		let clawback_recipient = ClawbackRecipient::get();
-		let balance_before = pez_balance(&clawback_recipient);
-
-		// Only unclaimed rewards should be clawed back, not the entire pot.
-		// total_allocated = reward_pool.total_reward_pool (90% trust score pool)
-		// total_claimed = bob_reward
-		// unclaimed = total_allocated - bob_reward = alice_reward (+ any rounding remainder)
-		let total_claimed = bob_reward;
-		let expected_unclaimed = reward_pool.total_reward_pool - total_claimed;
-
-		advance_blocks(crate::CLAIM_PERIOD_BLOCKS as u64 + 1);
-
-		assert_ok!(PezRewards::close_epoch(RuntimeOrigin::root(), 0));
-
-		let balance_after = pez_balance(&clawback_recipient);
-		// Only alice's unclaimed reward (not entire pot) should be clawed back
-		assert_eq!(balance_after, balance_before + expected_unclaimed);
-
-		assert_eq!(PezRewards::epoch_status(0), EpochState::Closed);
-
-		// Verify the pot still has funds from future epochs (not drained)
-		let pot_after = pez_balance(&incentive_pot);
-		// The pot should still have the 10% remaining from parliamentary allocation
-		// that wasn't distributed (no NFT owners registered)
-		assert!(pot_after > 0, "Pot should not be completely drained");
-
-		System::assert_last_event(
-			Event::EpochClosed {
-				epoch_index: 0,
-				unclaimed_amount: expected_unclaimed,
-				clawback_recipient,
-			}
-			.into(),
-		);
-	});
-}
-
-#[test]
-fn close_epoch_fails_before_claim_period_ends() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-
-		advance_blocks(crate::CLAIM_PERIOD_BLOCKS as u64 - 1);
-		assert_noop!(
-			PezRewards::close_epoch(RuntimeOrigin::root(), 0),
-			Error::<Test>::ClaimPeriodExpired // BUG FIX E0599
-		);
-	});
-}
-
-#[test]
-fn close_epoch_fails_if_already_closed() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-		advance_blocks(crate::CLAIM_PERIOD_BLOCKS as u64 + 1);
-		assert_ok!(PezRewards::close_epoch(RuntimeOrigin::root(), 0));
-
-		assert_noop!(
-			PezRewards::close_epoch(RuntimeOrigin::root(), 0),
-			Error::<Test>::EpochAlreadyClosed
-		);
-	});
-}
-
-#[test]
-fn close_epoch_fails_if_not_finalized() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice())));
-		advance_blocks(crate::CLAIM_PERIOD_BLOCKS as u64 + 1);
-		assert_noop!(
-			PezRewards::close_epoch(RuntimeOrigin::root(), 0),
-			Error::<Test>::EpochAlreadyClosed // This error returns even if not finalized
-		);
-	});
-}
-
-// =============================================================================
-// 6. PARLIAMENTARY REWARDS TESTS
-// =============================================================================
-
-#[test]
-fn parliamentary_rewards_distributed_correctly() {
-	new_test_ext().execute_with(|| {
-		register_nft_owner(1, dave());
-		register_nft_owner(2, alice());
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // 100
-
-		let incentive_pot = PezRewards::incentive_pot_account_id();
-		let pot_balance = pez_balance(&incentive_pot);
-
-		let expected_parliamentary_reward_pot =
-			pot_balance * u128::from(crate::PARLIAMENTARY_REWARD_PERCENT) / 100;
-		let expected_parliamentary_reward =
-			expected_parliamentary_reward_pot / u128::from(crate::PARLIAMENTARY_NFT_COUNT);
-
-		let dave_balance_before = pez_balance(&dave());
-		let alice_balance_before = pez_balance(&alice());
-
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-
-		let dave_balance_after = pez_balance(&dave());
-		assert_eq!(dave_balance_after, dave_balance_before + expected_parliamentary_reward);
-
-		let reward_pool = PezRewards::get_epoch_reward_pool(0).unwrap();
-		let trust_reward = reward_pool.reward_per_trust_point * 100;
-
-		let alice_balance_after_finalize = pez_balance(&alice());
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
 		assert_eq!(
-			alice_balance_after_finalize,
-			alice_balance_before + expected_parliamentary_reward
-		);
-
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0));
-		let alice_balance_after_claim = pez_balance(&alice());
-		assert_eq!(alice_balance_after_claim, alice_balance_after_finalize + trust_reward);
-
-		System::assert_has_event(
-			Event::ParliamentaryNftRewardDistributed {
-				nft_id: 1,
-				owner: dave(),
-				amount: expected_parliamentary_reward,
-				epoch: 0,
-			}
-			.into(),
-		);
-		System::assert_has_event(
-			Event::ParliamentaryNftRewardDistributed {
-				nft_id: 2,
-				owner: alice(),
-				amount: expected_parliamentary_reward,
-				epoch: 0,
-			}
-			.into(),
+			PezRewards::claimed_rewards(0, 1),
+			Some(pool.reward_per_trust_point * 1_000 + pool.seat_share),
+			"one seat's worth, not a two-hundred-and-first of the house between one member"
 		);
 	});
 }
 
 #[test]
-fn parliamentary_reward_division_precision() {
+fn a_member_the_diwan_removed_is_paid_nothing_for_the_seat() {
+	// The roll still names them -- that is the design, `welati::ParliamentMembers` is not
+	// rewritten when a seat is forfeited. The tiki is what is asked, and it says no.
 	new_test_ext().execute_with(|| {
-		register_nft_owner(1, dave());
-		register_nft_owner(2, alice());
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		set_seat(1, 1, false); // on the roll, no longer holding the seat
+		finalize_current_epoch();
 
-		let incentive_pot = PezRewards::incentive_pot_account_id();
-		let current_balance = pez_balance(&incentive_pot);
-		assert_ok!(Assets::burn_from(
-			PezAssetId::get(),
-			&incentive_pot,
-			current_balance,
-			Preservation::Expendable,
-			Precision::Exact,
-			Fortitude::Polite
-		));
+		let pool = PezRewards::epoch_reward_pools(0).unwrap();
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
+		assert_eq!(
+			PezRewards::claimed_rewards(0, 1),
+			Some(pool.reward_per_trust_point * 1_000),
+			"the citizen's share and not a penny of the seat's"
+		);
+	});
+}
 
-		// FIX: Put larger amount (to avoid BelowMinimum error)
-		fund_incentive_pot(100_000);
+#[test]
+fn a_seat_taken_during_the_claim_window_is_not_paid_for_the_month_before_it() {
+	// An election counted inside the claim window must not pay the new house for the old
+	// house's month. That is what `finalized_at` is for.
+	new_test_ext().execute_with(|| {
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		let at = finalize_current_epoch();
 
-		let dave_balance_before = pez_balance(&dave());
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
+		set_seat(1, at + 1, true); // seated after the roll was measured
 
-		let dave_balance_after = pez_balance(&dave());
-		// 10% of 100_000 = 10_000 / 201 NFT = 49 per NFT
-		let expected_reward = 49;
-		assert_eq!(dave_balance_after, dave_balance_before + expected_reward);
+		let pool = PezRewards::epoch_reward_pools(0).unwrap();
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
+		assert_eq!(PezRewards::claimed_rewards(0, 1), Some(pool.reward_per_trust_point * 1_000));
+	});
+}
+
+#[test]
+fn an_unclaimed_seat_stays_in_the_pot_for_the_following_month() {
+	// Two hundred seats go unclaimed here. Nothing is clawed back, because nothing left: the
+	// money is still on the other chain, and next month's rate is computed over more of it.
+	new_test_ext().execute_with(|| {
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		finalize_current_epoch();
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
+
+		let paid = PezRewards::paid_out_total();
+		assert!(paid < 1_000_000);
+
+		let second = finalize_current_epoch();
+		let pool = PezRewards::epoch_reward_pools(1).unwrap();
+		assert_eq!(pool.finalized_at, second);
+		assert_eq!(
+			pool.reward_per_trust_point,
+			(1_000_000 - paid) * 90 / 100 / 1_000,
+			"what nobody claimed is simply next month's pot"
+		);
 	});
 }
 
 // =============================================================================
-// 7. NFT OWNER REGISTRATION TESTS
+// 6. THE CALL SURFACE
 // =============================================================================
 
 #[test]
-fn register_parliamentary_nft_owner_works() {
-	new_test_ext().execute_with(|| {
-		assert_eq!(PezRewards::get_parliamentary_nft_owner(10), None);
-		assert_ok!(PezRewards::register_parliamentary_nft_owner(
-			RuntimeOrigin::root(),
-			10,
-			alice()
-		));
-		assert_eq!(PezRewards::get_parliamentary_nft_owner(10), Some(alice()));
-
-		System::assert_last_event(
-			Event::ParliamentaryOwnerRegistered { nft_id: 10, owner: alice() }.into(),
-		);
-	});
-}
-
-#[test]
-fn register_parliamentary_nft_owner_fails_for_non_root() {
-	new_test_ext().execute_with(|| {
-		assert_noop!(
-			PezRewards::register_parliamentary_nft_owner(
-				RuntimeOrigin::signed(alice()),
-				10,
-				alice()
-			),
-			BadOrigin
-		);
-	});
-}
-
-#[test]
-fn register_parliamentary_nft_owner_updates_existing() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezRewards::register_parliamentary_nft_owner(
-			RuntimeOrigin::root(),
-			10,
-			alice()
-		));
-		assert_eq!(PezRewards::get_parliamentary_nft_owner(10), Some(alice()));
-
-		assert_ok!(PezRewards::register_parliamentary_nft_owner(RuntimeOrigin::root(), 10, bob()));
-		assert_eq!(PezRewards::get_parliamentary_nft_owner(10), Some(bob()));
-	});
+fn the_call_surface_is_three_calls_and_none_of_them_moves_money_directly() {
+	// A compile-time statement of the surface. Adding a call stops this matching and the
+	// test fails to build, which is the point. None of the three touches a balance: this
+	// chain has no PEZ on it at all, and the only way money moves is an instruction to the
+	// chain that does.
+	use crate::pezpallet::Call;
+	fn assert_exhaustive(call: Call<Test>) {
+		match call {
+			Call::initialize_rewards_system {} => {},
+			Call::claim_reward { .. } => {},
+			Call::note_incentive_funding { .. } => {},
+			Call::__Ignore(_, _) => {},
+		}
+	}
+	let _ = assert_exhaustive;
 }
 
 // =============================================================================
-// 8. MULTIPLE EPOCHS TEST
+// 7. THE INVARIANTS, PROVED BREAKABLE
 // =============================================================================
 
+#[cfg(feature = "try-runtime")]
 #[test]
-fn multiple_epochs_work_correctly() {
+#[should_panic(expected = "more has been paid out than the pot was ever given")]
+fn paying_out_more_than_the_pot_was_given_is_caught() {
 	new_test_ext().execute_with(|| {
-		// --- EPOCH 0 ---
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // 100
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(bob()))); // 50
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root()));
-
-		let reward_pool_0 = PezRewards::get_epoch_reward_pool(0).unwrap();
-		let reward1_0 = reward_pool_0.reward_per_trust_point * 100;
-		let reward2_0 = reward_pool_0.reward_per_trust_point * 50;
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 0));
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(bob()), 0));
-
-		// --- EPOCH 1 ---
-		assert_eq!(PezRewards::get_current_epoch_info().current_epoch, 1);
-
-		fund_incentive_pot(1_000_000_000_000_000);
-
-		assert_ok!(PezRewards::record_trust_score(RuntimeOrigin::signed(alice()))); // 100 (for Epoch 1)
-		advance_blocks(crate::BLOCKS_PER_EPOCH as u64);
-		assert_ok!(PezRewards::finalize_epoch(RuntimeOrigin::root())); // Finalize Epoch 1
-
-		let reward_pool_1 = PezRewards::get_epoch_reward_pool(1).unwrap(); // Epoch 1 pool
-		let reward1_1 = reward_pool_1.reward_per_trust_point * 100;
-		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(alice()), 1)); // Claim from Epoch 1
-
-		// Check balances
-		let alice_balance = pez_balance(&alice());
-		let bob_balance = pez_balance(&bob());
-		assert_eq!(alice_balance, reward1_0 + reward1_1);
-		assert_eq!(bob_balance, reward2_0);
+		start();
+		fund(100);
+		crate::PaidOutTotal::<Test>::put(101u128);
+		check_invariants();
 	});
 }
 
-// =============================================================================
-// 9. ORIGIN CHECKS
-// =============================================================================
-
+#[cfg(feature = "try-runtime")]
 #[test]
-fn non_root_origin_fails_for_privileged_calls() {
+#[should_panic(expected = "the claims recorded do not add up to what was paid out")]
+fn a_claim_the_ledger_does_not_know_about_is_caught() {
 	new_test_ext().execute_with(|| {
-		assert_noop!(
-			PezRewards::initialize_rewards_system(RuntimeOrigin::signed(alice())),
-			BadOrigin
-		);
-		assert_noop!(
-			PezRewards::register_parliamentary_nft_owner(RuntimeOrigin::signed(alice()), 1, bob()),
-			BadOrigin
-		);
+		start();
+		fund(1_000_000);
+		set_trust(1, 1_000);
+		finalize_current_epoch();
+		assert_ok!(PezRewards::claim_reward(RuntimeOrigin::signed(1), 0));
+
+		crate::PaidOutTotal::<Test>::put(1u128);
+		check_invariants();
 	});
 }
 
+#[cfg(feature = "try-runtime")]
 #[test]
-fn non_signed_origin_fails_for_user_calls() {
+#[should_panic(expected = "two epochs are open to claims at once")]
+fn two_claim_windows_at_once_is_caught() {
+	// The same pot promised twice over. Nothing in the pallet can produce this today, which
+	// is exactly why it is worth a check: it is the shape the bug would take.
 	new_test_ext().execute_with(|| {
-		assert_noop!(PezRewards::record_trust_score(RuntimeOrigin::root()), BadOrigin);
+		start();
+		fund(1_000_000);
+		finalize_current_epoch();
+		crate::EpochStatus::<Test>::insert(1, EpochState::ClaimPeriod);
+		check_invariants();
+	});
+}
+
+#[cfg(feature = "try-runtime")]
+#[test]
+#[should_panic(expected = "a reward was paid for an epoch that is still collecting")]
+fn a_reward_paid_against_an_open_epoch_is_caught() {
+	new_test_ext().execute_with(|| {
+		start();
+		crate::ClaimedRewards::<Test>::insert(0, 1u64, 5u128);
+		crate::PaidOutTotal::<Test>::put(5u128);
+		crate::ReportedIncentiveTotal::<Test>::put(5u128);
+		check_invariants();
 	});
 }

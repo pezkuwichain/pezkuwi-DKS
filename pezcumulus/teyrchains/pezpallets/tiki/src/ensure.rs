@@ -60,6 +60,15 @@ impl GetTiki for WezirRole {
 /// ```ignore
 /// type ParlementerOrigin = EnsureTiki<Runtime, ParlementerRole>;
 /// ```
+pub struct SerokWeziranRole;
+
+impl GetTiki for SerokWeziranRole {
+	fn tiki() -> crate::Tiki {
+		crate::Tiki::SerokWeziran
+	}
+}
+
+/// Marker struct representing the `Parlementer` (Parliamentarian) role.
 pub struct ParlementerRole;
 
 impl GetTiki for ParlementerRole {
@@ -114,19 +123,19 @@ where
 		// Get the required Tiki role from the marker type
 		let required_tiki = I::tiki();
 
-		// For unique roles, check TikiHolder (fast O(1) lookup)
+		// Both paths go through the expiry-aware readers. Asking `TikiHolder` directly would
+		// let an officeholder whose term ran out keep authorising things for as long as
+		// nobody removed them -- which is the one failure the term exists to prevent, and it
+		// would fail open, in the direction of more authority rather than less.
 		if TikiPallet::<T>::is_unique_role(&required_tiki) {
-			match TikiPallet::<T>::tiki_holder(required_tiki) {
+			match TikiPallet::<T>::current_holder(&required_tiki) {
 				Some(holder) if holder == who => Ok(who),
 				_ => Err(o),
 			}
+		} else if TikiPallet::<T>::has_tiki(&who, &required_tiki) {
+			Ok(who)
 		} else {
-			// For non-unique roles (Wezir, Parlementer, etc.), check UserTikis storage
-			if TikiPallet::<T>::user_tikis(&who).contains(&required_tiki) {
-				Ok(who)
-			} else {
-				Err(o)
-			}
+			Err(o)
 		}
 	}
 
@@ -171,3 +180,4 @@ where
 pub type EnsureSerok<T> = EnsureTiki<T, SerokRole>;
 pub type EnsureWezir<T> = EnsureTiki<T, WezirRole>;
 pub type EnsureParlementer<T> = EnsureTiki<T, ParlementerRole>;
+pub type EnsureSerokWeziran<T> = EnsureTiki<T, SerokWeziranRole>;

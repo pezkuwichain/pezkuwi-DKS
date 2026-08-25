@@ -129,6 +129,7 @@ impl pezpallet_balances::Config for Test {
 
 // pezpallet_identity::Config implementation
 parameter_types! {
+	pub const ReferralFallbackPeriod: u64 = 100;
 	pub const BasicDeposit: Balance = 1000;
 	pub const ByteDeposit: Balance = 10;
 	pub const SubAccountDeposit: Balance = 100;
@@ -180,7 +181,7 @@ parameter_types! {
 // Mock implementation for OnKycApproved hook (updated for new trait signature)
 pub struct MockOnKycApproved;
 impl pezpallet_identity_kyc::types::OnKycApproved<AccountId> for MockOnKycApproved {
-	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId) {
+	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId, _inviter: Option<&AccountId>) {
 		// No-op for tests
 	}
 }
@@ -227,6 +228,7 @@ impl pezpallet_identity_kyc::Config for Test {
 	type OnCitizenshipRevoked = MockOnCitizenshipRevoked;
 	type CitizenNftProvider = MockCitizenNftProvider;
 	type DefaultReferrer = DefaultReferrerAccount;
+	type ReferralFallbackPeriod = ReferralFallbackPeriod;
 }
 
 parameter_types! {
@@ -272,6 +274,10 @@ impl crate::Config for Test {
 	type AdminOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type ElectedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
+	// On the real runtimes these are the court and the head of government. Root stands in
+	// here; what the tests check is that the paths are different, not who fills them.
+	type ImpeachmentOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type HonoraryCitizenshipOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type WeightInfo = ();
 	type TikiCollectionId = TikiCollectionId;
 	type MaxTikisPerUser = MaxTikisPerUser;

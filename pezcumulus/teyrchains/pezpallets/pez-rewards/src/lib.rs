@@ -5,95 +5,58 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-//! # PEZ Rewards Pezpallet
+//! # PEZ Rewards
 //!
-//! A pezpallet for distributing PEZ token rewards based on trust scores with epoch-based mechanics.
+//! The state's monthly payroll: it works out what each citizen is owed out of the incentive
+//! pot, and what each parliamentary seat is owed, and instructs the chain that holds the
+//! money to pay it.
 //!
-//! ## Overview
+//! ## Where the money is, and where the arithmetic is
 //!
-//! This pezpallet implements a sophisticated reward distribution system that incentivizes
-//! ecosystem participation through trust-based rewards. The system operates in monthly
-//! epochs with automatic reward calculation, distribution, and clawback mechanisms.
+//! The incentive pot lives on the Asset Hub, filled by `pezpallet-pez-treasury` out of the
+//! monthly release. Everything that decides who is owed what -- the citizen register, trust
+//! scores, the elected Parliament -- lives here on the People chain. Neither can be moved to
+//! the other cheaply, so neither is: this pallet keeps a local ledger of what the pot has
+//! been given and what has been drawn against it, and every payment goes out as an XCM
+//! instruction to `pay_from_incentive_pot`.
 //!
-//! ## Core Mechanisms
+//! The pot's funding arrives the same way in reverse: the treasury reports a **running
+//! total** after each release. A report that goes missing is repaired by the next one,
+//! instead of leaving a month of rewards that nobody can ever claim.
 //!
-//! ### Epoch System
+//! ## A frozen payroll
 //!
-//! - **Duration**: 1 month (~432,000 blocks at 10 blocks/minute)
-//! - **States**: Open → ClaimPeriod → Closed
-//! - **Claim Window**: 1 week after epoch finalization (~100,800 blocks)
-//! - **Automatic Progression**: Scheduler-driven state transitions
+//! An epoch is finalised in constant time. The denominator is `TotalActiveTrustScore`, which
+//! the trust pallet already keeps and already proves; the numerator is read from each
+//! claimant when they claim. Between those two moments the trust roll is **frozen**, so the
+//! number used to compute the rate and the number used to compute a share are the same
+//! number.
 //!
-//! ### Reward Distribution
+//! That is what makes this cheap and fair at once. There is no per-citizen snapshot to write,
+//! no registration to remember, and no advantage in claiming early or late -- there is
+//! nothing a claimant can do between finalisation and their claim that changes what they get.
 //!
-//! 1. **Trust Score Recording**: Users record their trust scores during the Open epoch
-//! 2. **Epoch Finalization**: Total pool and per-trust-point rewards calculated
-//! 3. **Claim Period**: Users claim proportional rewards based on their trust scores
-//! 4. **Clawback**: Unclaimed rewards returned to designated recipient after claim period
+//! The freeze carries its own expiry rather than a flag someone has to clear. If the epoch is
+//! never closed, the roll thaws anyway when the claim window ends.
 //!
-//! ### Parliamentary NFT Rewards
+//! ## Parliamentary seats
 //!
-//! - **Allocation**: 10% of each epoch's incentive pool reserved for NFT holders
-//! - **NFT Collection**: ID 100 with 201 Parliamentary NFTs
-//! - **Automatic Distribution**: Pro-rata distribution to all NFT holders at epoch finalization
+//! Ten per cent of each epoch goes to Parliament, divided by the size of the house and not by
+//! the number of people sitting in it. Dividing by the number sitting would make removing a
+//! member profitable for the rest. An empty or forfeited seat simply goes unclaimed, and what
+//! goes unclaimed stays in the pot for the following month.
 //!
-//! ## Reward Calculation Formula
+//! A seat is the `Parlementer` tiki and nothing else. `welati::ParliamentMembers` says who won
+//! the seat -- it is what makes this a lookup over two hundred and one accounts instead of the
+//! whole population -- but the tiki is what says whether they still hold it. A member the
+//! Diwan has removed, or who has lost their citizenship, fails that check and is paid nothing,
+//! whatever the roll still says.
 //!
-//! ```text
-//! user_reward = (user_trust_score / total_trust_score) * epoch_reward_pool
-//! ```
+//! ## Citizenship
 //!
-//! Where:
-//! - `epoch_reward_pool` = Incentive pot balance - 10% parliamentary allocation
-//! - `total_trust_score` = Sum of all recorded trust scores in epoch
-//! - `user_trust_score` = User's trust score snapshot from epoch
-//!
-//! ## Interface
-//!
-//! ### User Extrinsics
-//!
-//! - `record_trust_score()` - Record current trust score for active epoch
-//! - `claim_reward(epoch_index)` - Claim reward from a finalized epoch (within claim period)
-//!
-//! ### Privileged Extrinsics
-//!
-//! - `initialize_rewards_system()` - Start the first epoch (one-time, root)
-//! - `finalize_epoch()` - Calculate rewards and start claim period (scheduler/root)
-//! - `close_epoch(epoch_index)` - Close claim period and claw back unclaimed rewards
-//!   (scheduler/root)
-//!
-//! ### Storage
-//!
-//! - `EpochInfo` - Current epoch metadata (index, start block, completion count)
-//! - `EpochRewardPools` - Historical reward pool data for each epoch
-//! - `UserEpochScores` - User trust score snapshots per epoch
-//! - `ClaimedRewards` - Tracking claimed rewards per user per epoch
-//! - `EpochStatus` - Current state (Open/ClaimPeriod/Closed) for each epoch
-//! - `ParliamentaryNftOwners` - Mapping of Parliamentary NFT IDs to owners
-//!
-//! ## Dependencies
-//!
-//! This pezpallet requires integration with:
-//! - `pezpallet-trust` - Trust score provider
-//! - `pezpallet-pez-treasury` - Incentive pot funding source
-//! - `pezpallet-nfts` - Parliamentary NFT collection (optional)
-//!
-//! ## Runtime Integration Example
-//!
-//! ```ignore
-//! impl pezpallet_pez_rewards::Config for Runtime {
-//!     type RuntimeEvent = RuntimeEvent;
-//!     type Assets = Assets;
-//!     type PezAssetId = ConstU32<1>; // PEZ asset ID
-//!     type WeightInfo = pezpallet_pez_rewards::weights::BizinikiwiWeight<Runtime>;
-//!     type TrustScoreSource = Trust;
-//!     type IncentivePotId = IncentivePotId;
-//!     type ClawbackRecipient = ClawbackRecipient; // Governance account
-//!     type ForceOrigin = EnsureRoot<AccountId>;
-//!     type CollectionId = u32;
-//!     type ItemId = u32;
-//! }
-//! ```
+//! There is no citizenship check here, and that is deliberate rather than an omission. When a
+//! citizenship is revoked the trust pallet takes the score away, so a revoked citizen's share
+//! is zero by arithmetic. A second check would be a second place for the same rule to live.
 
 pub use pezpallet::*;
 
@@ -110,128 +73,151 @@ mod tests;
 mod benchmarking;
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use pezframe_support::{
-	traits::{
-		fungibles::{Inspect, Mutate},
-		tokens::Preservation,
-		Get,
-	},
-	PalletId, Parameter,
-};
+use pezframe_support::traits::Get;
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
-use pezpallet_trust::TrustScoreProvider;
-use pezsp_runtime::traits::{AccountIdConversion, Member, Saturating, Zero};
+use pezsp_runtime::traits::{Saturating, Zero};
 use scale_info::TypeInfo;
+use xcm::latest::prelude::*;
+
+/// `pay_from_incentive_pot` in the treasury pallet on the chain that holds the pot.
+const PAY_FROM_INCENTIVE_POT_CALL_INDEX: u8 = 3;
+
+/// The trust roll this pallet pays against.
+///
+/// Three questions, and one instruction. The instruction is the unusual one: the payroll is
+/// only fair if the roll cannot move between the moment the rate is computed and the moment
+/// a share is drawn against it, so this pallet asks the trust pallet to hold still.
+pub trait TrustRoll<AccountId, BlockNumber> {
+	/// What `who` is worth on the roll right now.
+	fn score_of(who: &AccountId) -> u128;
+
+	/// The sum of every citizen's score. The denominator of the whole payroll.
+	fn total_score() -> u128;
+
+	/// Stop recalculating scores until `until`.
+	///
+	/// Expiring rather than latching: a freeze that had to be lifted by a later call would
+	/// leave the roll frozen for good the first time that call did not happen.
+	fn freeze_until(until: BlockNumber);
+}
+
+/// Who sits in Parliament, and who actually holds the seat.
+///
+/// Two questions rather than one because they have two different answers. The roll is written
+/// by the election and can go stale between elections; the seat is a tiki and is always
+/// current. Payment needs both: the roll to know where to look, the seat to know whether to
+/// pay.
+pub trait ParliamentRoll<AccountId, BlockNumber> {
+	/// When `who` was seated, if the current house's roll names them.
+	fn seated_at(who: &AccountId) -> Option<BlockNumber>;
+
+	/// Whether `who` holds a parliamentary seat at this moment.
+	fn holds_seat(who: &AccountId) -> bool;
+}
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
 	use pezframe_support::pezpallet_prelude::*;
 	use pezframe_system::pezpallet_prelude::*;
-	use pezsp_runtime::traits::{CheckedDiv, CheckedMul};
 
-	/// Epoch (period) constants
-	// pub const BLOCKS_PER_EPOCH: u32 = 20; // CHANGED FOR TESTING - Original is 432_000
-	pub const BLOCKS_PER_EPOCH: u32 = 432_000; // 1 month = ~30 days * 24 hours * 60 minutes * 10 blocks/minute
-	pub const CLAIM_PERIOD_BLOCKS: u32 = 100_800; // 1 week = ~7 days * 24 hours * 60 minutes * 10 blocks/minute
+	/// One month at 10 blocks a minute -- the same period the treasury releases on, so an
+	/// epoch is funded by exactly one release.
+	pub const BLOCKS_PER_EPOCH: u32 = 432_000;
 
-	/// Parliamentary NFT constants
-	pub const PARLIAMENTARY_COLLECTION_ID: u32 = 100;
-	pub const PARLIAMENTARY_NFT_COUNT: u32 = 201;
-	pub const PARLIAMENTARY_REWARD_PERCENT: u32 = 10; // 10% of incentive pool
+	/// One week to claim.
+	pub const CLAIM_PERIOD_BLOCKS: u32 = 100_800;
+
+	/// Seats in the house. The divisor of the parliamentary share, always -- see the module
+	/// documentation for why it is not the number of members.
+	pub const PARLIAMENT_SIZE: u32 = 201;
+
+	/// Parliament's share of an epoch, as a percentage.
+	pub const PARLIAMENTARY_REWARD_PERCENT: u128 = 10;
 
 	#[pezpallet::pezpallet]
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::config]
-	pub trait Config: pezframe_system::Config + pezpallet_trust::Config + TypeInfo {
-		type Assets: Mutate<Self::AccountId>;
-		#[pezpallet::constant]
-		type PezAssetId: Get<<Self::Assets as Inspect<Self::AccountId>>::AssetId>;
+	pub trait Config: pezframe_system::Config + TypeInfo {
 		type WeightInfo: crate::weights::WeightInfo;
 
-		/// Trust score provider
-		type TrustScoreSource: pezpallet_trust::TrustScoreProvider<Self::AccountId>;
+		/// The trust roll: the denominator, each share, and the freeze.
+		type TrustSource: TrustRoll<Self::AccountId, BlockNumberFor<Self>>;
 
-		/// Authority to spend from incentive pot
+		/// Who sits in Parliament and who holds a seat.
+		type ParliamentSource: ParliamentRoll<Self::AccountId, BlockNumberFor<Self>>;
+
+		/// Who may report what the incentive pot has been given.
+		///
+		/// The chain that holds the pot, and nothing else. Root is deliberately not accepted:
+		/// a key that can report funding is a key that can conjure a payroll out of a pot
+		/// that has no money in it.
+		type FundingOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Sends payment instructions to the chain that holds the pot.
+		type XcmSender: SendXcm;
+
+		/// Where that chain is.
+		type TreasuryChainLocation: Get<Location>;
+
+		/// The treasury pallet's index on that chain.
 		#[pezpallet::constant]
-		type IncentivePotId: Get<PalletId>;
+		type TreasuryPalletIndex: Get<u8>;
 
-		/// Clawback recipient (Qazi Muhammed)
-		#[pezpallet::constant]
-		type ClawbackRecipient: Get<Self::AccountId>;
-
-		/// Authority check for root origin
+		/// Who may start the very first epoch, on a chain whose genesis did not.
 		type ForceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
-
-		/// NFT Collection ID and Item ID types - must match pezpallet_nfts::Config
-		type CollectionId: Member + Parameter + MaxEncodedLen + Copy + From<u32> + Into<u32>;
-		type ItemId: Member + Parameter + MaxEncodedLen + Copy + From<u32> + Into<u32>;
 	}
 
-	pub type BalanceOf<T> =
-		<<T as Config>::Assets as Inspect<<T as pezframe_system::Config>::AccountId>>::Balance;
-
-	/// Storage holding epoch (period) information
+	/// Where the epoch clock is.
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn epoch_info)]
 	pub type EpochInfo<T: Config> = StorageValue<_, EpochData<T>, ValueQuery>;
 
-	/// Storage holding total reward pool for each epoch
+	/// What each finalised epoch pays, per trust point and per seat.
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn epoch_reward_pools)]
 	pub type EpochRewardPools<T: Config> =
 		StorageMap<_, Blake2_128Concat, u32, EpochRewardPool<T>, OptionQuery>;
 
-	/// Storage holding user's trust score for a specific epoch
-	#[pezpallet::storage]
-	#[pezpallet::getter(fn user_epoch_scores)]
-	pub type UserEpochScores<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		u32, // epoch_index
-		Blake2_128Concat,
-		T::AccountId, // user
-		u128,         // trust_score
-		OptionQuery,
-	>;
-
-	/// Storage tracking whether user has claimed reward from a specific epoch
+	/// What each claimant has already been paid, so nobody is paid twice.
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn claimed_rewards)]
 	pub type ClaimedRewards<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		u32, // epoch_index
+		u32,
 		Blake2_128Concat,
-		T::AccountId, // user
-		BalanceOf<T>, // claimed_amount
+		T::AccountId,
+		u128,
 		OptionQuery,
 	>;
 
-	/// Storage holding epoch state (Open, ClaimPeriod, Closed)
+	/// Open, being claimed against, or done.
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn epoch_status)]
 	pub type EpochStatus<T: Config> = StorageMap<_, Blake2_128Concat, u32, EpochState, ValueQuery>;
 
-	/// Total amount claimed from each epoch's trust score reward pool
-	/// Used to calculate correct clawback amount (total_allocated - total_claimed)
+	/// The one epoch currently open to claims, if any.
+	///
+	/// Kept so that closing an epoch does not have to search for it. There can only ever be
+	/// one: the claim window is a week and an epoch is a month.
 	#[pezpallet::storage]
-	#[pezpallet::getter(fn epoch_total_claimed)]
-	pub type EpochTotalClaimed<T: Config> =
-		StorageMap<_, Blake2_128Concat, u32, BalanceOf<T>, ValueQuery>;
+	#[pezpallet::getter(fn epoch_in_claim)]
+	pub type EpochInClaim<T: Config> = StorageValue<_, u32, OptionQuery>;
 
-	/// Parliamentary NFT ID to owner mapping
-	/// This will be populated by governance or runtime integration
+	/// Everything the incentive pot has been given, as last reported by the chain holding it.
 	#[pezpallet::storage]
-	#[pezpallet::getter(fn parliamentary_nft_owners)]
-	pub type ParliamentaryNftOwners<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		u32,          // nft_id
-		T::AccountId, // owner
-		OptionQuery,
-	>;
+	#[pezpallet::getter(fn reported_incentive_total)]
+	pub type ReportedIncentiveTotal<T: Config> = StorageValue<_, u128, ValueQuery>;
+
+	/// Everything this pallet has instructed to be paid out of it.
+	///
+	/// The difference between the two is what is left, and it is the only measure of the pot
+	/// this chain has -- the balance itself is on the other side of a bridge.
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn paid_out_total)]
+	pub type PaidOutTotal<T: Config> = StorageValue<_, u128, ValueQuery>;
 
 	#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct EpochData<T: Config> {
@@ -243,11 +229,15 @@ pub mod pezpallet {
 	#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	pub struct EpochRewardPool<T: Config> {
 		pub epoch_index: u32,
-		pub total_reward_pool: BalanceOf<T>, // Total reward for this epoch
-		pub total_trust_score: u128,         // Total trust score in this epoch
-		pub reward_per_trust_point: BalanceOf<T>, // Reward per trust point
-		pub participants_count: u32,         // Number of participants
-		pub claim_deadline: BlockNumberFor<T>, // Claim deadline
+		/// What one trust point is worth this epoch.
+		pub reward_per_trust_point: u128,
+		/// What one parliamentary seat is worth this epoch.
+		pub seat_share: u128,
+		/// The block the roll was measured at. A seat taken after this is not paid for this
+		/// epoch -- an election counted during the claim window must not pay the new house
+		/// for the old house's month.
+		pub finalized_at: BlockNumberFor<T>,
+		pub claim_deadline: BlockNumberFor<T>,
 	}
 
 	#[derive(
@@ -255,9 +245,9 @@ pub mod pezpallet {
 	)]
 	pub enum EpochState {
 		#[default]
-		Open, // Active epoch - scores being collected
-		ClaimPeriod, // Claim period - claims can be made for 1 week
-		Closed,      // Closed - unclaimed rewards have been clawed back
+		Open,
+		ClaimPeriod,
+		Closed,
 	}
 
 	impl<T: Config> Default for EpochData<T> {
@@ -266,69 +256,47 @@ pub mod pezpallet {
 		}
 	}
 
-	// Part to be added to Event enum in lib.rs (around line ~174)
-
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// New epoch started
+		/// A new epoch began.
 		NewEpochStarted { epoch_index: u32, start_block: BlockNumberFor<T> },
-		/// Epoch reward pool calculated and claim period started
-		EpochRewardPoolCalculated {
+		/// An epoch was finalised and is now open to claims.
+		EpochFinalized {
 			epoch_index: u32,
-			total_pool: BalanceOf<T>,
-			total_trust_score: u128,
-			participants_count: u32,
+			available: u128,
+			reward_per_trust_point: u128,
+			seat_share: u128,
 			claim_deadline: BlockNumberFor<T>,
 		},
-		/// User claimed their reward
-		RewardClaimed { user: T::AccountId, epoch_index: u32, amount: BalanceOf<T> },
-		/// Epoch claim period ended and unclaimed rewards were clawed back
-		EpochClosed {
-			epoch_index: u32,
-			unclaimed_amount: BalanceOf<T>,
-			clawback_recipient: T::AccountId,
-		},
-		/// User's trust score recorded for epoch
-		TrustScoreRecorded { user: T::AccountId, epoch_index: u32, trust_score: u128 },
-		/// Parliamentary NFT reward automatically distributed
-		ParliamentaryNftRewardDistributed {
-			nft_id: u32,
-			owner: T::AccountId,
-			amount: BalanceOf<T>,
-			epoch: u32,
-		},
-		/// Parliamentary NFT owner registered (NEW EVENT - for tests.rs:590)
-		ParliamentaryOwnerRegistered { nft_id: u32, owner: T::AccountId },
+		/// A claim was paid.
+		RewardClaimed { who: T::AccountId, epoch_index: u32, amount: u128 },
+		/// An epoch's claim window closed. Whatever went unclaimed stayed in the pot.
+		EpochClosed { epoch_index: u32 },
+		/// The chain holding the pot reported what it has been given.
+		IncentiveFundingNoted { total: u128 },
 	}
 
 	#[pezpallet::error]
 	pub enum Error<T> {
-		/// Reward system not yet initialized
+		/// The epoch clock has not been started.
 		RewardsNotInitialized,
-		/// Epoch not yet finished
-		EpochNotFinished,
-		/// Reward already claimed for this epoch
-		RewardAlreadyClaimed,
-		/// Reward pool not yet calculated for this epoch
+		/// It has already been started.
+		AlreadyInitialized,
+		/// Nothing has been calculated for that epoch.
 		RewardPoolNotCalculated,
-		/// User has no trust score for this epoch
-		NoTrustScoreForEpoch,
-		/// Claim period has expired
+		/// That epoch is not open to claims.
+		NotInClaimPeriod,
+		/// The claim window for that epoch has closed.
 		ClaimPeriodExpired,
-		/// Epoch already closed
-		EpochAlreadyClosed,
-		/// Insufficient incentive pot balance
-		InsufficientIncentivePot,
-		/// Invalid epoch index
-		InvalidEpochIndex,
-		/// Calculation overflow
-		CalculationOverflow,
-		/// System already initialized
-		AlreadyInitialized, // ADD THIS LINE (for tests.rs:37)
-		/// User has no reward to claim from this epoch
-		NoRewardToClaim, /* ADD THIS LINE (for tests.rs:251 and 333)
-		                  * EpochNotFinished already exists in lib.rs as shown in 'help' */
+		/// This account has already been paid for that epoch.
+		RewardAlreadyClaimed,
+		/// There is nothing owed.
+		NoRewardToClaim,
+		/// A funding report went backwards. The total is cumulative and cannot shrink.
+		FundingReportWentBackwards,
+		/// The payment instruction could not be sent to the chain holding the pot.
+		CouldNotReachTreasury,
 	}
 
 	#[pezpallet::genesis_config]
@@ -348,9 +316,90 @@ pub mod pezpallet {
 		}
 	}
 
+	#[pezpallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
+		/// The payroll runs itself.
+		///
+		/// It can, now that finalising an epoch is constant work: there is no per-citizen
+		/// loop to page over. Leaving it to an extrinsic somebody has to remember to call
+		/// would mean the month's rewards quietly did not happen the month nobody called.
+		fn on_initialize(n: BlockNumberFor<T>) -> Weight {
+			let mut weight = T::DbWeight::get().reads(2);
+
+			if let Some(epoch) = EpochInClaim::<T>::get() {
+				if Self::claim_window_has_closed(epoch, n) {
+					let _ = Self::do_close_epoch(epoch);
+					weight = weight.saturating_add(T::DbWeight::get().reads_writes(2, 3));
+				}
+			}
+
+			if Self::epoch_is_due(n) {
+				let _ = Self::do_finalize_epoch(n);
+				weight = weight.saturating_add(T::DbWeight::get().reads_writes(4, 6));
+			}
+
+			weight
+		}
+
+		/// What the pallet has paid must be what it has recorded paying, and it can never
+		/// have paid out more than the pot was given.
+		///
+		/// The second of those is the one that matters on a fixed supply: this pallet cannot
+		/// mint, but it can instruct a payment, and an instruction for money that is not
+		/// there is a payment that fails on the far side of a bridge with nothing here to
+		/// show for it.
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
+			use pezframe_support::ensure;
+
+			let reported = ReportedIncentiveTotal::<T>::get();
+			let paid = PaidOutTotal::<T>::get();
+			ensure!(paid <= reported, "more has been paid out than the pot was ever given");
+
+			let mut summed = 0u128;
+			for (epoch, _who, amount) in ClaimedRewards::<T>::iter() {
+				let state = EpochStatus::<T>::get(epoch);
+				ensure!(
+					state != EpochState::Open,
+					"a reward was paid for an epoch that is still collecting"
+				);
+				ensure!(
+					EpochRewardPools::<T>::contains_key(epoch),
+					"a reward was paid for an epoch that was never finalised"
+				);
+				summed = summed.saturating_add(amount);
+			}
+			ensure!(summed == paid, "the claims recorded do not add up to what was paid out");
+
+			// One claim window at a time, and it is the one the pallet says it is. Two open
+			// windows would let the same pot be promised twice.
+			let mut in_claim = None;
+			for (epoch, state) in EpochStatus::<T>::iter() {
+				if state == EpochState::ClaimPeriod {
+					ensure!(in_claim.is_none(), "two epochs are open to claims at once");
+					in_claim = Some(epoch);
+				}
+			}
+			ensure!(
+				in_claim == EpochInClaim::<T>::get(),
+				"the epoch marked as open to claims is not the one being claimed against"
+			);
+
+			if EpochInfo::<T>::exists() {
+				let current = EpochInfo::<T>::get().current_epoch;
+				ensure!(
+					EpochStatus::<T>::get(current) == EpochState::Open,
+					"the current epoch is not collecting"
+				);
+			}
+
+			Ok(())
+		}
+	}
+
 	#[pezpallet::call]
 	impl<T: Config> Pezpallet<T> {
-		/// Initialize reward system (root only)
+		/// Start the epoch clock on a chain whose genesis did not.
 		#[pezpallet::call_index(0)]
 		#[pezpallet::weight(<T as Config>::WeightInfo::initialize_rewards_system())]
 		pub fn initialize_rewards_system(origin: OriginFor<T>) -> DispatchResult {
@@ -358,374 +407,247 @@ pub mod pezpallet {
 			Self::do_initialize_rewards_system()
 		}
 
-		/// Record user's current trust score
+		/// Draw what you are owed for a finalised epoch.
+		///
+		/// The only call a citizen makes. There is nothing to register beforehand: the roll
+		/// is frozen between finalisation and the end of the window, so the share computed
+		/// here is the share the rate was computed against, whenever it is drawn.
 		#[pezpallet::call_index(1)]
-		#[pezpallet::weight(<T as Config>::WeightInfo::record_trust_score())]
-		pub fn record_trust_score(origin: OriginFor<T>) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-			Self::do_record_trust_score(&who)
-		}
-
-		/// Finalize epoch and calculate reward pool (called by scheduler)
-		#[pezpallet::call_index(2)]
-		#[pezpallet::weight(<T as Config>::WeightInfo::finalize_epoch())]
-		pub fn finalize_epoch(origin: OriginFor<T>) -> DispatchResult {
-			<T as Config>::ForceOrigin::ensure_origin(origin)?;
-			Self::do_finalize_epoch()
-		}
-
-		/// Claim reward
-		#[pezpallet::call_index(3)]
 		#[pezpallet::weight(<T as Config>::WeightInfo::claim_reward())]
 		pub fn claim_reward(origin: OriginFor<T>, epoch_index: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			Self::do_claim_reward(&who, epoch_index)
 		}
 
-		/// Close epoch and claw back unclaimed rewards (called by scheduler)
-		#[pezpallet::call_index(4)]
-		#[pezpallet::weight(<T as Config>::WeightInfo::close_epoch())]
-		pub fn close_epoch(origin: OriginFor<T>, epoch_index: u32) -> DispatchResult {
-			<T as Config>::ForceOrigin::ensure_origin(origin)?;
-			Self::do_close_epoch(epoch_index)
-		}
-
-		/// Register parliamentary NFT owner (governance only)
-		#[pezpallet::call_index(5)]
-		#[pezpallet::weight(<T as Config>::WeightInfo::register_parliamentary_nft_owner())]
-		pub fn register_parliamentary_nft_owner(
+		/// Record what the incentive pot has been given, in total, to date.
+		///
+		/// Cumulative rather than incremental, so a report that never arrives costs nothing
+		/// but a month's delay.
+		#[pezpallet::call_index(2)]
+		#[pezpallet::weight(<T as Config>::WeightInfo::note_incentive_funding())]
+		pub fn note_incentive_funding(
 			origin: OriginFor<T>,
-			nft_id: u32,
-			owner: T::AccountId,
+			#[pezpallet::compact] total: u128,
 		) -> DispatchResult {
-			<T as Config>::ForceOrigin::ensure_origin(origin)?;
-			Self::do_register_parliamentary_nft_owner(nft_id, owner);
+			T::FundingOrigin::ensure_origin(origin)?;
+			ensure!(
+				total >= ReportedIncentiveTotal::<T>::get(),
+				Error::<T>::FundingReportWentBackwards
+			);
+			ReportedIncentiveTotal::<T>::put(total);
+			Self::deposit_event(Event::IncentiveFundingNoted { total });
 			Ok(())
 		}
 	}
 
 	impl<T: Config> Pezpallet<T> {
-		/// Return incentive pot account
-		pub fn incentive_pot_account_id() -> T::AccountId {
-			<T as Config>::IncentivePotId::get().into_account_truncating()
-		}
-
-		/// Initialize reward system
 		pub fn do_initialize_rewards_system() -> DispatchResult {
-			// GUARD: Check if already initialized
-			if EpochInfo::<T>::exists() {
-				return Err(Error::<T>::AlreadyInitialized.into());
-			}
+			ensure!(!EpochInfo::<T>::exists(), Error::<T>::AlreadyInitialized);
 
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
-
-			let epoch_data = EpochData {
+			EpochInfo::<T>::put(EpochData {
 				current_epoch: 0,
 				epoch_start_block: current_block,
 				total_epochs_completed: 0,
-			};
-
-			EpochInfo::<T>::put(epoch_data);
+			});
 			EpochStatus::<T>::insert(0, EpochState::Open);
 
 			Self::deposit_event(Event::NewEpochStarted {
 				epoch_index: 0,
 				start_block: current_block,
 			});
-
 			Ok(())
 		}
 
-		/// Record user's trust score for current epoch
-		pub fn do_record_trust_score(who: &T::AccountId) -> DispatchResult {
-			let epoch_data = EpochInfo::<T>::get();
-			let current_epoch = epoch_data.current_epoch;
-
-			// Scores can only be recorded in open epochs
-			let epoch_state = EpochStatus::<T>::get(current_epoch);
-			ensure!(epoch_state == EpochState::Open, Error::<T>::EpochAlreadyClosed);
-
-			// Get trust score
-			let trust_score = <T as Config>::TrustScoreSource::trust_score_of(who);
-			let trust_score_u128: u128 = trust_score;
-
-			// FIX: Also record zero scores (tests expect this)
-			UserEpochScores::<T>::insert(current_epoch, who, trust_score_u128);
-
-			Self::deposit_event(Event::TrustScoreRecorded {
-				user: who.clone(),
-				epoch_index: current_epoch,
-				trust_score: trust_score_u128,
-			});
-
-			Ok(())
+		/// What the pot still holds, as far as this chain can tell.
+		pub fn available_funds() -> u128 {
+			ReportedIncentiveTotal::<T>::get().saturating_sub(PaidOutTotal::<T>::get())
 		}
 
-		/// Finalize epoch and calculate reward pool
-		pub fn do_finalize_epoch() -> DispatchResult {
-			let mut epoch_data = EpochInfo::<T>::get();
-			let current_epoch = epoch_data.current_epoch;
-			let current_block = pezframe_system::Pezpallet::<T>::block_number();
-
-			// Check if epoch has finished
-			let epoch_duration = current_block.saturating_sub(epoch_data.epoch_start_block);
-			ensure!(epoch_duration >= BLOCKS_PER_EPOCH.into(), Error::<T>::EpochNotFinished);
-
-			// GUARD: Epoch already finalized?
-			let epoch_state = EpochStatus::<T>::get(current_epoch);
-			ensure!(epoch_state == EpochState::Open, Error::<T>::EpochAlreadyClosed);
-
-			// Get incentive pot balance
-			let incentive_pot = Self::incentive_pot_account_id();
-			let total_reward_pool = T::Assets::balance(T::PezAssetId::get(), &incentive_pot);
-
-			ensure!(total_reward_pool > Zero::zero(), Error::<T>::InsufficientIncentivePot);
-
-			// Distribute parliamentary rewards (10%)
-			Self::distribute_parliamentary_rewards(current_epoch, total_reward_pool)?;
-
-			// Remaining 90% for trust score rewards
-			let trust_score_pool = total_reward_pool
-				.checked_mul(&90u32.into())
-				.and_then(|v| v.checked_div(&100u32.into()))
-				.unwrap_or_else(Zero::zero);
-
-			// Calculate total trust score of all users in this epoch
-			let mut total_trust_score = 0u128;
-			let mut participants_count = 0u32;
-
-			for (_, trust_score) in UserEpochScores::<T>::iter_prefix(current_epoch) {
-				total_trust_score = total_trust_score.saturating_add(trust_score);
-				participants_count = participants_count.saturating_add(1);
+		fn epoch_is_due(now: BlockNumberFor<T>) -> bool {
+			if !EpochInfo::<T>::exists() {
+				return false;
 			}
+			let epoch_data = EpochInfo::<T>::get();
+			if EpochStatus::<T>::get(epoch_data.current_epoch) != EpochState::Open {
+				return false;
+			}
+			now.saturating_sub(epoch_data.epoch_start_block) >= BLOCKS_PER_EPOCH.into()
+		}
 
-			let reward_per_trust_point = if total_trust_score > 0 {
-				let trust_score_balance = BalanceOf::<T>::try_from(total_trust_score)
-					.map_err(|_| Error::<T>::CalculationOverflow)?;
-				trust_score_pool.checked_div(&trust_score_balance).unwrap_or_else(Zero::zero)
+		fn claim_window_has_closed(epoch: u32, now: BlockNumberFor<T>) -> bool {
+			match EpochRewardPools::<T>::get(epoch) {
+				Some(pool) => now > pool.claim_deadline,
+				None => false,
+			}
+		}
+
+		/// Fix the rate for the epoch that has just ended, and freeze the roll it was
+		/// measured against.
+		///
+		/// Constant work. The denominator is a single value the trust pallet already keeps
+		/// and already proves correct; nothing is written per citizen.
+		pub fn do_finalize_epoch(now: BlockNumberFor<T>) -> DispatchResult {
+			let mut epoch_data = EpochInfo::<T>::get();
+			let epoch = epoch_data.current_epoch;
+
+			let available = Self::available_funds();
+			let claim_deadline = now.saturating_add(CLAIM_PERIOD_BLOCKS.into());
+
+			// An epoch with nothing behind it still has to end, or the clock stops and every
+			// later month is lost with it. It simply pays nothing.
+			let (reward_per_trust_point, seat_share) = if available.is_zero() {
+				(0, 0)
 			} else {
-				Zero::zero()
+				let seat_pool =
+					available.saturating_mul(PARLIAMENTARY_REWARD_PERCENT).saturating_div(100);
+				let seat_share = seat_pool.saturating_div(PARLIAMENT_SIZE as u128);
+				let citizen_pool = available.saturating_sub(seat_pool);
+				let total = T::TrustSource::total_score();
+				let rate = if total.is_zero() { 0 } else { citizen_pool.saturating_div(total) };
+				(rate, seat_share)
 			};
 
-			// Set the claim deadline (1 week later)
-			let claim_deadline = current_block.saturating_add(CLAIM_PERIOD_BLOCKS.into());
+			EpochRewardPools::<T>::insert(
+				epoch,
+				EpochRewardPool {
+					epoch_index: epoch,
+					reward_per_trust_point,
+					seat_share,
+					finalized_at: now,
+					claim_deadline,
+				},
+			);
+			EpochStatus::<T>::insert(epoch, EpochState::ClaimPeriod);
+			EpochInClaim::<T>::put(epoch);
 
-			// Save reward pool information
-			let reward_pool = EpochRewardPool {
-				epoch_index: current_epoch,
-				total_reward_pool: trust_score_pool,
-				total_trust_score,
-				reward_per_trust_point,
-				participants_count,
-				claim_deadline,
-			};
+			// Hold the roll still for as long as it can be drawn against. Everyone is then
+			// measured by the same ruler at the same instant, whenever they get round to
+			// claiming, and there is nothing to gain by claiming at any particular moment.
+			T::TrustSource::freeze_until(claim_deadline);
 
-			EpochRewardPools::<T>::insert(current_epoch, reward_pool);
-
-			// FIX: Set epoch state to ClaimPeriod (not Closed!)
-			EpochStatus::<T>::insert(current_epoch, EpochState::ClaimPeriod);
-
-			// Start new epoch
-			let new_epoch = epoch_data.current_epoch.saturating_add(1);
+			let new_epoch = epoch.saturating_add(1);
 			epoch_data.current_epoch = new_epoch;
-			epoch_data.epoch_start_block = current_block;
+			epoch_data.epoch_start_block = now;
 			epoch_data.total_epochs_completed = epoch_data.total_epochs_completed.saturating_add(1);
 			EpochInfo::<T>::put(epoch_data);
 			EpochStatus::<T>::insert(new_epoch, EpochState::Open);
 
-			// FIX: Show trust_score_pool in event (not total_reward_pool)
-			Self::deposit_event(Event::EpochRewardPoolCalculated {
-				epoch_index: current_epoch,
-				total_pool: trust_score_pool, // ← 90% pool
-				total_trust_score,
-				participants_count,
+			Self::deposit_event(Event::EpochFinalized {
+				epoch_index: epoch,
+				available,
+				reward_per_trust_point,
+				seat_share,
 				claim_deadline,
 			});
-
 			Self::deposit_event(Event::NewEpochStarted {
 				epoch_index: new_epoch,
-				start_block: current_block,
+				start_block: now,
 			});
-
 			Ok(())
 		}
 
-		pub fn do_claim_reward(who: &T::AccountId, epoch_index: u32) -> DispatchResult {
-			let current_block = pezframe_system::Pezpallet::<T>::block_number();
+		/// What `who` is owed for `epoch`, without paying it.
+		pub fn entitlement(who: &T::AccountId, epoch: u32) -> u128 {
+			let pool = match EpochRewardPools::<T>::get(epoch) {
+				Some(pool) => pool,
+				None => return 0,
+			};
 
-			let epoch_state = EpochStatus::<T>::get(epoch_index);
-			ensure!(epoch_state == EpochState::ClaimPeriod, Error::<T>::ClaimPeriodExpired);
+			let mut amount =
+				pool.reward_per_trust_point.saturating_mul(T::TrustSource::score_of(who));
+
+			// A seat is only paid if it was held when the roll was measured and is still held
+			// now. The first keeps a house elected during the claim window from being paid
+			// for the previous house's month; the second is what makes removal by the Diwan,
+			// or a lost citizenship, stop the salary the same day.
+			if T::ParliamentSource::holds_seat(who) {
+				if let Some(seated_at) = T::ParliamentSource::seated_at(who) {
+					if seated_at <= pool.finalized_at {
+						amount = amount.saturating_add(pool.seat_share);
+					}
+				}
+			}
+
+			amount
+		}
+
+		pub fn do_claim_reward(who: &T::AccountId, epoch: u32) -> DispatchResult {
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			let pool =
+				EpochRewardPools::<T>::get(epoch).ok_or(Error::<T>::RewardPoolNotCalculated)?;
 
 			ensure!(
-				!ClaimedRewards::<T>::contains_key(epoch_index, who),
+				EpochStatus::<T>::get(epoch) == EpochState::ClaimPeriod,
+				Error::<T>::NotInClaimPeriod
+			);
+			ensure!(now <= pool.claim_deadline, Error::<T>::ClaimPeriodExpired);
+			ensure!(
+				!ClaimedRewards::<T>::contains_key(epoch, who),
 				Error::<T>::RewardAlreadyClaimed
 			);
 
-			let reward_pool = EpochRewardPools::<T>::get(epoch_index)
-				.ok_or(Error::<T>::RewardPoolNotCalculated)?;
+			let amount = Self::entitlement(who, epoch);
+			ensure!(!amount.is_zero(), Error::<T>::NoRewardToClaim);
 
-			ensure!(current_block <= reward_pool.claim_deadline, Error::<T>::ClaimPeriodExpired);
+			// Recorded before the instruction goes out. If the send fails the whole call
+			// reverts, so the record and the money cannot disagree; recording afterwards
+			// would leave a moment where the pot had been drawn on and nothing said so.
+			ClaimedRewards::<T>::insert(epoch, who, amount);
+			PaidOutTotal::<T>::put(PaidOutTotal::<T>::get().saturating_add(amount));
 
-			let user_trust_score = UserEpochScores::<T>::get(epoch_index, who)
-				.ok_or(Error::<T>::NoTrustScoreForEpoch)?;
-
-			let user_trust_balance = BalanceOf::<T>::try_from(user_trust_score)
-				.map_err(|_| Error::<T>::CalculationOverflow)?;
-			let reward_amount = reward_pool
-				.reward_per_trust_point
-				.checked_mul(&user_trust_balance)
-				.ok_or(Error::<T>::CalculationOverflow)?;
-
-			// FIX: If reward is 0, there is nothing to claim
-			ensure!(reward_amount > Zero::zero(), Error::<T>::NoRewardToClaim);
-
-			let incentive_pot = Self::incentive_pot_account_id();
-			T::Assets::transfer(
-				T::PezAssetId::get(),
-				&incentive_pot,
-				who,
-				reward_amount,
-				Preservation::Expendable,
-			)?;
-			ClaimedRewards::<T>::insert(epoch_index, who, reward_amount);
-
-			// Track total claimed for this epoch (used by clawback calculation)
-			EpochTotalClaimed::<T>::mutate(epoch_index, |total| {
-				*total = total.saturating_add(reward_amount);
-			});
+			Self::send_payment(who, amount).map_err(|_| Error::<T>::CouldNotReachTreasury)?;
 
 			Self::deposit_event(Event::RewardClaimed {
-				user: who.clone(),
-				epoch_index,
-				amount: reward_amount,
+				who: who.clone(),
+				epoch_index: epoch,
+				amount,
 			});
-
 			Ok(())
 		}
 
-		/// Close epoch and claw back only unclaimed rewards (not entire pot)
-		pub fn do_close_epoch(epoch_index: u32) -> DispatchResult {
-			let current_block = pezframe_system::Pezpallet::<T>::block_number();
-
-			let epoch_state = EpochStatus::<T>::get(epoch_index);
-			ensure!(epoch_state == EpochState::ClaimPeriod, Error::<T>::EpochAlreadyClosed);
-
-			let reward_pool = EpochRewardPools::<T>::get(epoch_index)
-				.ok_or(Error::<T>::RewardPoolNotCalculated)?;
-
-			ensure!(current_block > reward_pool.claim_deadline, Error::<T>::ClaimPeriodExpired);
-
-			// Calculate unclaimed amount: total allocated - total claimed
-			let total_claimed = EpochTotalClaimed::<T>::get(epoch_index);
-			let unclaimed_amount = reward_pool.total_reward_pool.saturating_sub(total_claimed);
-
-			let incentive_pot = Self::incentive_pot_account_id();
-			let clawback_recipient = <T as Config>::ClawbackRecipient::get();
-
-			if unclaimed_amount > Zero::zero() {
-				// Only transfer the unclaimed portion, not the entire pot balance
-				let pot_balance = T::Assets::balance(T::PezAssetId::get(), &incentive_pot);
-				// Transfer the lesser of unclaimed_amount and actual pot balance (safety)
-				let transfer_amount = core::cmp::min(unclaimed_amount, pot_balance);
-				if transfer_amount > Zero::zero() {
-					T::Assets::transfer(
-						T::PezAssetId::get(),
-						&incentive_pot,
-						&clawback_recipient,
-						transfer_amount,
-						Preservation::Expendable,
-					)?;
-				}
-			}
-
-			EpochStatus::<T>::insert(epoch_index, EpochState::Closed);
-
-			Self::deposit_event(Event::EpochClosed {
-				epoch_index,
-				unclaimed_amount,
-				clawback_recipient,
-			});
-
+		/// Close a claim window. Nothing moves: what was not claimed never left the pot, and
+		/// is available again the following month.
+		pub fn do_close_epoch(epoch: u32) -> DispatchResult {
+			ensure!(
+				EpochStatus::<T>::get(epoch) == EpochState::ClaimPeriod,
+				Error::<T>::NotInClaimPeriod
+			);
+			EpochStatus::<T>::insert(epoch, EpochState::Closed);
+			EpochInClaim::<T>::kill();
+			Self::deposit_event(Event::EpochClosed { epoch_index: epoch });
 			Ok(())
 		}
 
-		/// Return current epoch information
-		pub fn get_current_epoch_info() -> EpochData<T> {
-			EpochInfo::<T>::get()
-		}
+		/// Ask the chain holding the pot to pay `amount` to `who`.
+		///
+		/// Unpaid, like every other message between these two system chains: a reward the
+		/// state owes a citizen should not be lost because a sovereign account was short of
+		/// fees.
+		fn send_payment(who: &T::AccountId, amount: u128) -> Result<(), SendError> {
+			let call = (
+				T::TreasuryPalletIndex::get(),
+				PAY_FROM_INCENTIVE_POT_CALL_INDEX,
+				who,
+				codec::Compact(amount),
+			)
+				.encode();
 
-		/// Return reward pool information for specific epoch
-		pub fn get_epoch_reward_pool(epoch_index: u32) -> Option<EpochRewardPool<T>> {
-			EpochRewardPools::<T>::get(epoch_index)
-		}
+			let message = Xcm(vec![
+				UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+				Transact {
+					origin_kind: OriginKind::Xcm,
+					fallback_max_weight: None,
+					call: call.into(),
+				},
+			]);
 
-		/// Return user's trust score for specific epoch
-		pub fn get_user_trust_score_for_epoch(
-			epoch_index: u32,
-			who: &T::AccountId,
-		) -> Option<u128> {
-			UserEpochScores::<T>::get(epoch_index, who)
-		}
-
-		/// Return reward amount claimed by user from specific epoch
-		pub fn get_claimed_reward(epoch_index: u32, who: &T::AccountId) -> Option<BalanceOf<T>> {
-			ClaimedRewards::<T>::get(epoch_index, who)
-		}
-
-		/// Distribute rewards to parliamentary NFT holders automatically
-		pub fn distribute_parliamentary_rewards(
-			epoch: u32,
-			total_incentive_pool: BalanceOf<T>,
-		) -> DispatchResult {
-			let parliamentary_allocation = total_incentive_pool
-				.checked_mul(&PARLIAMENTARY_REWARD_PERCENT.into())
-				.and_then(|v| v.checked_div(&100u32.into()))
-				.unwrap_or_else(Zero::zero);
-			let per_nft_reward = parliamentary_allocation
-				.checked_div(&PARLIAMENTARY_NFT_COUNT.into())
-				.unwrap_or_else(Zero::zero);
-
-			// Skip the loop entirely if per_nft_reward rounds to zero
-			if per_nft_reward.is_zero() {
-				return Ok(());
-			}
-
-			let incentive_pot = Self::incentive_pot_account_id();
-
-			for nft_id in 1..=PARLIAMENTARY_NFT_COUNT {
-				if let Some(owner) = Self::get_parliamentary_nft_owner(nft_id) {
-					T::Assets::transfer(
-						T::PezAssetId::get(),
-						&incentive_pot,
-						&owner,
-						per_nft_reward,
-						Preservation::Expendable, /* Allow source account to be deleted even if
-						                           * it has no tokens during fund transfer */
-					)?;
-
-					Self::deposit_event(Event::ParliamentaryNftRewardDistributed {
-						nft_id,
-						owner,
-						amount: per_nft_reward,
-						epoch,
-					});
-				}
-			}
-
+			let (ticket, _) = T::XcmSender::validate(
+				&mut Some(T::TreasuryChainLocation::get()),
+				&mut Some(message),
+			)?;
+			T::XcmSender::deliver(ticket)?;
 			Ok(())
-		}
-
-		/// Get parliamentary NFT owner from our storage
-		pub fn get_parliamentary_nft_owner(nft_id: u32) -> Option<T::AccountId> {
-			ParliamentaryNftOwners::<T>::get(nft_id)
-		}
-
-		/// Register parliamentary NFT owner (can be called by governance)
-		pub fn do_register_parliamentary_nft_owner(nft_id: u32, owner: T::AccountId) {
-			ParliamentaryNftOwners::<T>::insert(nft_id, owner.clone());
-
-			// NEW: Emit event
-			Self::deposit_event(Event::ParliamentaryOwnerRegistered { nft_id, owner });
 		}
 	}
 }

@@ -139,7 +139,7 @@ Pezkuwi Network aims to provide a secure, consistent, and scalable blockchain in
 | Category | Percentage | Amount (PEZ) | Vesting/Lock |
 | --- | --- | --- | --- |
 | Treasury (Governance) | 20.25% | 1,012,500,000 | Governance controlled |
-| Presale | 1.875% | 93,750,000 | Presale pezpallet managed |
+| Presale | 1.875% | 93,750,000 | Held by a named account; sold on the exchange |
 | Founder | 1.875% | 93,750,000 | 4-year vesting |
 | Validator/Nominator Rewards | 76.00% | 3,800,000,000 | Synthetic halving distribution |
 
@@ -199,7 +199,6 @@ Pezkuwi Network includes 12 custom pallets:
 
 | # | Pezpallet | Purpose | Benchmarks |
 | --- | --- | --- | --- |
-| 1 | pezpallet-presale | Token launch platform | ✅ Complete |
 | 2 | pezpallet-identity-kyc | KYC verification (6 extrinsics) | ✅ Complete |
 | 3 | pezpallet-welati | Democratic governance | ✅ Complete |
 | 4 | pezpallet-perwerde | Education platform (4 extrinsics) | ✅ Complete |
@@ -228,7 +227,7 @@ assets: AssetsConfig {
     accounts: vec![
         (PEZ_ASSET_ID, treasury_account.clone(), TREASURY_ALLOCATION + REWARDS_POOL),
         (PEZ_ASSET_ID, founder_account.clone(), FOUNDER_ALLOCATION),
-        (PEZ_ASSET_ID, presale_account.clone(), PRESALE_ALLOCATION),
+        (PEZ_ASSET_ID, presale_account.clone(), PEZ_PRESALE_ALLOCATION),
     ],
     next_asset_id: Some(3),
 },

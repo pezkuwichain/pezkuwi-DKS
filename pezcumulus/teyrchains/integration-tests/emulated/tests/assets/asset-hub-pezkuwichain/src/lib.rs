@@ -64,6 +64,7 @@ mod imports {
 			AssetHubPezkuwichainParaPallet,
 			AssetHubPezkuwichainParaPallet as AssetHubPezkuwichainPallet,
 		},
+		people_pezkuwichain_emulated_chain::PeoplePezkuwichainParaPallet as PeoplePezkuwichainPallet,
 		pez_penpal_emulated_chain::{
 			pez_penpal_runtime::xcm_config::{
 				CustomizableAssetFromSystemAssetHub as PenpalCustomizableAssetFromSystemAssetHub,
@@ -92,7 +93,8 @@ mod imports {
 		BridgeHubPezkuwichainParaReceiver as BridgeHubPezkuwichainReceiver, PenpalAPara as PenpalA,
 		PenpalAParaReceiver as PenpalAReceiver, PenpalAParaSender as PenpalASender,
 		PenpalBPara as PenpalB, PenpalBParaReceiver as PenpalBReceiver,
-		PezkuwichainRelay as Pezkuwichain, PezkuwichainRelayReceiver as PezkuwichainReceiver,
+		PeoplePezkuwichainPara as PeoplePezkuwichain, PezkuwichainRelay as Pezkuwichain,
+		PezkuwichainRelayReceiver as PezkuwichainReceiver,
 		PezkuwichainRelaySender as PezkuwichainSender,
 	};
 	pub(crate) use teyrchains_common::Balance;

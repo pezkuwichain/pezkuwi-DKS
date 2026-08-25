@@ -16,6 +16,7 @@
 //! # Tests for the Pezkuwichain runtime.
 
 use super::*;
+use crate::genesis_config_presets::PEZ_ASSET_ID;
 use crate::{CENTS, MILLICENTS};
 use pezsp_runtime::traits::Zero;
 use pezsp_weights::WeightToFee;
@@ -71,4 +72,60 @@ fn full_block_fee_ratio() {
 	assert!(proof_o_time <= 30, "{} should be at most 30", proof_o_time);
 	let time_o_proof = time_fee.checked_div(proof_fee).unwrap_or_default();
 	assert!(time_o_proof <= 30, "{} should be at most 30", time_o_proof);
+}
+
+// =============================================================================
+// THE PEZ ASSET TEAM
+// =============================================================================
+
+/// The genesis preset must hand PEZ to an account nobody can sign as.
+///
+/// `pallet-assets` gives the owner named at genesis all four roles -- owner, issuer, admin
+/// and freezer -- and two of those are not bookkeeping: the issuer creates tokens and the
+/// admin moves them out of accounts it does not hold. On a token whose entire point is a
+/// fixed five billion, and on a chain whose treasury sits in a keyless pot, neither may
+/// belong to a key.
+///
+/// This reads the preset the chain is actually built from, not a hand-written copy of it.
+#[test]
+fn the_pez_asset_team_is_keyless_in_every_preset() {
+	use pezsp_runtime::traits::AccountIdConversion;
+
+	let expected: AccountId = PezAssetTeamId::get().into_account_truncating();
+
+	// Building a preset reaches for host functions, so it needs an externalities environment.
+	pezsp_io::TestExternalities::default().execute_with(|| {
+		for preset in [
+			Some(pezsp_genesis_builder::PresetId::from("genesis")),
+			Some(pezsp_genesis_builder::PresetId::from(
+				pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET,
+			)),
+			Some(pezsp_genesis_builder::PresetId::from(pezsp_genesis_builder::DEV_RUNTIME_PRESET)),
+		] {
+			let id = preset.expect("named preset");
+			let raw = crate::genesis_config_presets::get_preset(&id)
+				.unwrap_or_else(|| panic!("preset {id:?} exists"));
+			let json: serde_json::Value =
+				serde_json::from_slice(&raw).expect("the preset is valid json");
+
+			let assets = json["assets"]["assets"]
+				.as_array()
+				.unwrap_or_else(|| panic!("preset {id:?} declares assets"));
+
+			let pez = assets
+				.iter()
+				.find(|entry| entry[0] == serde_json::json!(PEZ_ASSET_ID))
+				.unwrap_or_else(|| panic!("preset {id:?} creates PEZ"));
+
+			let owner: AccountId =
+				serde_json::from_value(pez[1].clone()).expect("the owner decodes");
+
+			assert_eq!(
+				owner, expected,
+				"preset {id:?} gives PEZ an owner that can be signed for; \
+			 the issuer could then mint past the fixed supply and the admin could \
+			 force-transfer out of the treasury pot"
+			);
+		}
+	});
 }

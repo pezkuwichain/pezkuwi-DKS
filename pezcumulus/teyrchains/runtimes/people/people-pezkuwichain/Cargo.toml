@@ -107,6 +107,8 @@ teyrchain-info = { workspace = true }
 teyrchains-common = { workspace = true }
 
 [dev-dependencies]
+# The court-roster test builds genesis and runs against it.
+pezsp-io = { workspace = true, default-features = true }
 teyrchains-runtimes-test-utils = { workspace = true, default-features = true }
 
 [build-dependencies]

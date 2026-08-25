@@ -7,24 +7,82 @@ use crate::{mock::*, Error, Event};
 use pezframe_support::{assert_noop, assert_ok};
 use pezsp_runtime::traits::BadOrigin;
 
+/// What the pallet should produce for a given record, worked out independently of it.
+///
+/// Each part as a share of its own maximum, brought onto the common scale, then weighted.
+/// Written out rather than calling into the pallet, so the test disagrees with the code when
+/// the code changes rather than agreeing with whatever it happens to do.
+fn expected_trust(staking: u32, referral: u32, perwerde: u32, tiki: u32) -> u128 {
+	let scale = TrustScoreScale::get() as u128;
+	let part = |score: u32, max: u32, weight: u32| -> u128 {
+		(score.min(max) as u128) * scale / (max as u128) * (weight as u128)
+	};
+	(part(staking, 100, StakingWeight::get())
+		+ part(referral, REFERRAL_MAX, ReferralWeight::get())
+		+ part(perwerde, PERWERDE_MAX, PerwerdeWeight::get())
+		+ part(tiki, TIKI_MAX, TikiWeight::get()))
+		/ 100
+}
+
 #[test]
 fn calculate_trust_score_works() {
 	new_test_ext().execute_with(|| {
 		let account = 1u64;
 		let score = TrustPallet::calculate_trust_score(&account).unwrap();
 
-		let expected = {
-			let staking = 100u128;
-			let referral = 50u128;
-			let perwerde = 30u128;
-			let tiki = 20u128;
-			let base = ScoreMultiplierBase::get();
+		// The mock's defaults: staking 100, referral 50, perwerde 30, tiki 20.
+		assert_eq!(score, expected_trust(100, 50, 30, 20));
+	});
+}
 
-			let weighted_sum = staking * 100 + referral * 300 + perwerde * 300 + tiki * 300;
-			staking * weighted_sum / base
-		};
+#[test]
+fn a_perfect_record_scores_exactly_the_scale() {
+	// The weights are percentages and add to a hundred, so somebody at the maximum of every
+	// part of the record scores the scale itself -- which is what makes every election
+	// threshold readable as a share of what a citizen can be.
+	new_test_ext().execute_with(|| {
+		set_profile(1, 100, REFERRAL_MAX, PERWERDE_MAX, TIKI_MAX);
+		assert_eq!(TrustPallet::calculate_trust_score(&1).unwrap(), TrustScoreScale::get() as u128);
+		clear_profiles();
+	});
+}
 
-		assert_eq!(score, expected);
+#[test]
+fn no_single_part_of_the_record_can_carry_somebody_alone() {
+	// The reason for normalising. Before it, education ran to fifty thousand and referrals to
+	// five hundred, both weighted the same -- so an education was worth a hundred referrals,
+	// not by anyone's decision but by arithmetic nobody had looked at.
+	new_test_ext().execute_with(|| {
+		let scale = TrustScoreScale::get() as u128;
+
+		set_profile(1, 100, 0, 0, 0);
+		let staking_alone = TrustPallet::calculate_trust_score(&1).unwrap();
+		set_profile(1, 1, PERWERDE_MAX, 0, 0);
+		let education_alone = TrustPallet::calculate_trust_score(&1).unwrap();
+		set_profile(1, 1, REFERRAL_MAX, 0, 0);
+		let referrals_alone = TrustPallet::calculate_trust_score(&1).unwrap();
+
+		// Each is its own weight's share of the scale, and none of them is the whole thing.
+		assert_eq!(staking_alone, scale * StakingWeight::get() as u128 / 100);
+		assert!(education_alone < scale);
+		assert!(referrals_alone < scale);
+
+		// And money is the smallest of them, deliberately: the stake is already a gate.
+		assert!(staking_alone < education_alone);
+		assert!(staking_alone < referrals_alone);
+		clear_profiles();
+	});
+}
+
+#[test]
+fn a_component_above_its_own_maximum_cannot_borrow_the_others_weight() {
+	new_test_ext().execute_with(|| {
+		set_profile(1, 100, REFERRAL_MAX * 10, 0, 0);
+		let inflated = TrustPallet::calculate_trust_score(&1).unwrap();
+		set_profile(1, 100, REFERRAL_MAX, 0, 0);
+		let at_max = TrustPallet::calculate_trust_score(&1).unwrap();
+		assert_eq!(inflated, at_max);
+		clear_profiles();
 	});
 }
 
@@ -483,5 +541,282 @@ fn total_active_trust_score_accumulates_correctly() {
 
 		let total = TrustPallet::total_active_trust_score();
 		assert_eq!(total, expected_total);
+	});
+}
+
+// ============================================================================
+// THE GATE
+// ============================================================================
+//
+// A state with no economy can do nothing, so standing requires having something at stake. It
+// is the one condition nothing else can substitute for -- not an education, not a hundred
+// citizens brought in, not high office.
+
+mod gate {
+	use super::*;
+
+	#[test]
+	fn nothing_at_stake_is_no_standing_whatever_else_there_is() {
+		new_test_ext().execute_with(|| {
+			// Everything else at its maximum.
+			set_profile(1, 0, REFERRAL_MAX, PERWERDE_MAX, TIKI_MAX);
+			assert_eq!(TrustPallet::calculate_trust_score(&1).unwrap(), 0);
+			clear_profiles();
+		});
+	}
+
+	#[test]
+	fn the_smallest_stake_opens_everything_else_up() {
+		// The gate is a condition, not a scale: it asks whether there is a stake, and the
+		// weight below decides what more of it is worth.
+		new_test_ext().execute_with(|| {
+			set_profile(1, 1, REFERRAL_MAX, PERWERDE_MAX, TIKI_MAX);
+			let with_a_token_stake = TrustPallet::calculate_trust_score(&1).unwrap();
+			assert!(with_a_token_stake > 0);
+
+			// And it is most of a perfect record, because the other three parts are.
+			let scale = TrustScoreScale::get() as u128;
+			assert!(with_a_token_stake >= scale * 79 / 100);
+			clear_profiles();
+		});
+	}
+
+	#[test]
+	fn losing_the_stake_removes_the_standing_it_supported() {
+		new_test_ext().execute_with(|| {
+			set_profile(1, 100, REFERRAL_MAX, PERWERDE_MAX, TIKI_MAX);
+			assert_ok!(TrustPallet::update_score_for_account(&1));
+			assert!(TrustPallet::trust_score_of(1) > 0);
+
+			set_profile(1, 0, REFERRAL_MAX, PERWERDE_MAX, TIKI_MAX);
+			assert_ok!(TrustPallet::update_score_for_account(&1));
+			assert_eq!(TrustPallet::trust_score_of(1), 0);
+			clear_profiles();
+		});
+	}
+}
+
+// ============================================================================
+// LOSING CITIZENSHIP
+// ============================================================================
+
+#[test]
+fn a_revoked_citizen_keeps_no_standing() {
+	// `calculate_trust_score` refuses to compute for a non-citizen, and refusing meant the old
+	// value was never overwritten -- so somebody whose citizenship had been taken kept their
+	// standing for good, and the running total kept counting it as though they were still
+	// here. Nothing read it for candidacy, which checks citizenship too, but the total is what
+	// reward shares are drawn against.
+	new_test_ext().execute_with(|| {
+		use pezpallet_identity_kyc::types::OnCitizenshipRevoked;
+
+		assert_ok!(TrustPallet::update_score_for_account(&1));
+		let standing = TrustPallet::trust_score_of(1);
+		assert!(standing > 0);
+		assert_eq!(TrustPallet::total_active_trust_score(), standing);
+
+		TrustPallet::on_citizenship_revoked(&1);
+
+		assert_eq!(TrustPallet::trust_score_of(1), 0);
+		assert_eq!(TrustPallet::total_active_trust_score(), 0);
+	});
+}
+
+// ============================================================================
+// THE INVARIANT CAN FAIL
+// ============================================================================
+
+#[cfg(feature = "try-runtime")]
+mod invariant {
+	use super::*;
+	use crate::{TotalActiveTrustScore, TrustScores};
+	use pezframe_support::traits::Hooks;
+
+	fn check() -> Result<(), pezsp_runtime::TryRuntimeError> {
+		<TrustPallet as Hooks<u64>>::try_state(System::block_number())
+	}
+
+	fn assert_rejected(what: &str) {
+		assert!(check().is_err(), "try_state accepted a state where {what}");
+	}
+
+	#[test]
+	fn an_ordinary_state_passes() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(TrustPallet::update_score_for_account(&1));
+			assert_ok!(check());
+		});
+	}
+
+	#[test]
+	fn standing_without_a_stake_is_caught() {
+		// The gate, checked against the register rather than trusted.
+		new_test_ext().execute_with(|| {
+			assert_ok!(TrustPallet::update_score_for_account(&1));
+			set_profile(1, 0, 0, 0, 0);
+			assert_rejected("an account held standing with nothing staked");
+			clear_profiles();
+		});
+	}
+
+	#[test]
+	fn standing_for_somebody_who_is_not_a_citizen_is_caught() {
+		new_test_ext().execute_with(|| {
+			TrustScores::<Test>::insert(999, 100u128);
+			TotalActiveTrustScore::<Test>::put(100u128);
+			assert_rejected("an account held standing without being a citizen");
+		});
+	}
+
+	#[test]
+	fn a_running_total_that_does_not_match_is_caught() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(TrustPallet::update_score_for_account(&1));
+			TotalActiveTrustScore::<Test>::mutate(|t| *t += 1);
+			assert_rejected("the running total did not match the register");
+		});
+	}
+
+	#[test]
+	fn scoring_more_than_a_perfect_record_is_caught() {
+		new_test_ext().execute_with(|| {
+			TrustScores::<Test>::insert(1, TrustScoreScale::get() as u128 + 1);
+			TotalActiveTrustScore::<Test>::put(TrustScoreScale::get() as u128 + 1);
+			assert_rejected("an account scored more than a perfect record");
+		});
+	}
+}
+
+// =============================================================================
+// A FROZEN ROLL
+// =============================================================================
+//
+// The payroll fixes a rate against `TotalActiveTrustScore` at one instant and pays each
+// claimant their own score over the week that follows. Those two numbers have to come from
+// the same roll, or the shares will not add up and claiming at the right moment will be worth
+// money. Holding the roll still is how that is arranged.
+
+use crate::{FrozenUntil, TotalActiveTrustScore, TrustScores};
+use pezpallet_identity_kyc::types::OnCitizenshipRevoked;
+
+#[test]
+fn a_frozen_roll_does_not_recalculate() {
+	new_test_ext().execute_with(|| {
+		clear_profiles();
+		set_profile(1, 100, 500, 50_000, 1_000);
+		assert_ok!(TrustPallet::force_recalculate_trust_score(RuntimeOrigin::root(), 1));
+		let before = TrustPallet::trust_score_of(1);
+		assert!(before > 0);
+
+		TrustPallet::freeze_until(System::block_number() + 100);
+
+		// Everything about this account changes, and its score does not.
+		set_profile(1, 1, 1, 1, 1);
+		assert_ok!(TrustPallet::force_recalculate_trust_score(RuntimeOrigin::root(), 1));
+		assert_eq!(
+			TrustPallet::trust_score_of(1),
+			before,
+			"the roll was supposed to be held still"
+		);
+	});
+}
+
+#[test]
+fn a_freeze_expires_by_itself() {
+	// Deliberately not a flag somebody has to clear. The thing that would clear it is the
+	// same subsystem that set it, so a freeze that outlived one missed call would be
+	// permanent -- and a permanently frozen roll is a state whose standing never changes.
+	new_test_ext().execute_with(|| {
+		clear_profiles();
+		set_profile(1, 100, 500, 50_000, 1_000);
+		assert_ok!(TrustPallet::force_recalculate_trust_score(RuntimeOrigin::root(), 1));
+		let before = TrustPallet::trust_score_of(1);
+
+		TrustPallet::freeze_until(System::block_number() + 10);
+		set_profile(1, 1, 1, 1, 1);
+
+		System::set_block_number(System::block_number() + 11);
+		assert!(!TrustPallet::roll_is_frozen());
+		assert_ok!(TrustPallet::force_recalculate_trust_score(RuntimeOrigin::root(), 1));
+		assert!(
+			TrustPallet::trust_score_of(1) < before,
+			"and it recalculates once the hold is over"
+		);
+	});
+}
+
+#[test]
+fn a_second_freeze_can_only_extend_the_first() {
+	// Two payrolls must not be able to shorten each other's hold: the earlier one is still
+	// being drawn against.
+	new_test_ext().execute_with(|| {
+		TrustPallet::freeze_until(500);
+		TrustPallet::freeze_until(100);
+		assert_eq!(FrozenUntil::<Test>::get(), Some(500));
+
+		TrustPallet::freeze_until(900);
+		assert_eq!(FrozenUntil::<Test>::get(), Some(900));
+	});
+}
+
+#[test]
+fn a_frozen_roll_still_drops_a_revoked_citizen() {
+	// The one thing the freeze must not block. Someone who stops being a citizen mid-payroll
+	// has to stop being paid the same day -- and because their score is what the reward is
+	// computed from, taking the score is what stops it. No second check is needed anywhere.
+	new_test_ext().execute_with(|| {
+		clear_profiles();
+		set_profile(1, 100, 500, 50_000, 1_000);
+		assert_ok!(TrustPallet::force_recalculate_trust_score(RuntimeOrigin::root(), 1));
+		let score = TrustPallet::trust_score_of(1);
+		assert!(score > 0);
+		let total_before = TotalActiveTrustScore::<Test>::get();
+
+		TrustPallet::freeze_until(System::block_number() + 100);
+		<TrustPallet as OnCitizenshipRevoked<u64>>::on_citizenship_revoked(&1);
+
+		assert_eq!(TrustPallet::trust_score_of(1), 0, "a revoked citizen is worth nothing at once");
+		assert!(!TrustScores::<Test>::contains_key(1));
+		assert_eq!(TotalActiveTrustScore::<Test>::get(), total_before - score);
+	});
+}
+
+// =============================================================================
+// ONE BATCH IMPLEMENTATION, TWO WAYS IN
+// =============================================================================
+
+#[test]
+fn the_call_and_the_hook_share_one_batch_and_one_checkpoint() {
+	// `update_all_trust_scores` and `on_initialize` used to be two copies of the same
+	// paginated loop, both writing `LastProcessedAccount` and `BatchUpdateInProgress`. Two
+	// copies of a checkpointed loop drift the moment a fix lands in one of them -- and while
+	// they disagree, the pagination itself is what breaks. This pins that there is one body.
+	use pezframe_support::traits::Hooks;
+	use pezpallet_identity_kyc::types::KycLevel;
+
+	new_test_ext().execute_with(|| {
+		// One and a half batches' worth of citizens (the mock's batch size is 100).
+		for who in 1..=150u64 {
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(who, KycLevel::Approved);
+		}
+
+		// The call takes the first batch and leaves a checkpoint behind.
+		assert_ok!(TrustPallet::update_all_trust_scores(RuntimeOrigin::root()));
+		assert!(crate::BatchUpdateInProgress::<Test>::get(), "a batch is still owed");
+		let checkpoint = crate::LastProcessedAccount::<Test>::get();
+		assert!(checkpoint.is_some(), "the call has to leave its place in the register");
+
+		// The hook picks up from that same checkpoint rather than starting over.
+		System::set_block_number(2);
+		<TrustPallet as Hooks<u64>>::on_initialize(2);
+
+		assert!(
+			!crate::BatchUpdateInProgress::<Test>::get(),
+			"the hook finished what the call started"
+		);
+		assert!(
+			crate::LastProcessedAccount::<Test>::get().is_none(),
+			"a finished run leaves no checkpoint"
+		);
 	});
 }

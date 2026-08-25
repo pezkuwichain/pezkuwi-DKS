@@ -128,7 +128,7 @@ impl<T: pezframe_system::Config> pezpallet_tiki::WeightInfo for WeightInfo<T> {
 	/// Proof: `Tiki::RoleAssignmentTypeOf` (`max_values`: None, `max_size`: Some(66), added: 2541, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::Account` (r:0 w:1)
 	/// Proof: `Nfts::Account` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
-	fn force_mint_citizen_nft() -> Weight {
+	fn grant_honorary_citizenship() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `757`
 		//  Estimated: `4326`
@@ -227,13 +227,5 @@ impl<T: pezframe_system::Config> pezpallet_tiki::WeightInfo for WeightInfo<T> {
 			.saturating_add(Weight::from_parts(0, 4326))
 			.saturating_add(T::DbWeight::get().reads(10))
 			.saturating_add(T::DbWeight::get().writes(10))
-	}
-	fn check_transfer_permission() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `0`
-		//  Estimated: `0`
-		// Minimum execution time: 4_919_000 picoseconds.
-		Weight::from_parts(10_139_000, 0)
-			.saturating_add(Weight::from_parts(0, 0))
 	}
 }

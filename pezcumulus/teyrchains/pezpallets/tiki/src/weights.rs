@@ -57,11 +57,10 @@ use core::marker::PhantomData;
 pub trait WeightInfo {
 	fn grant_tiki() -> Weight;
 	fn revoke_tiki() -> Weight;
-	fn force_mint_citizen_nft() -> Weight;
+	fn grant_honorary_citizenship() -> Weight;
 	fn grant_earned_role() -> Weight;
 	fn grant_elected_role() -> Weight;
 	fn apply_for_citizenship() -> Weight;
-	fn check_transfer_permission() -> Weight;
 }
 
 /// Weights for `pezpallet_tiki` using the Bizinikiwi node and recommended hardware.
@@ -129,7 +128,7 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::Account` (r:0 w:1)
 	/// Proof: `Nfts::Account` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
-	fn force_mint_citizen_nft() -> Weight {
+	fn grant_honorary_citizenship() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `439`
 		//  Estimated: `4326`
@@ -189,14 +188,6 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 		Weight::from_parts(125_000_000, 4326)
 			.saturating_add(T::DbWeight::get().reads(10_u64))
 			.saturating_add(T::DbWeight::get().writes(9_u64))
-	}
-	/// Storage: `Tiki::CitizenNft` (r:1 w:0)
-	/// Proof: `Tiki::CitizenNft` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
-	fn check_transfer_permission() -> Weight {
-		// Lightweight read-only check
-		// Minimum execution time: 12_000_000 picoseconds.
-		Weight::from_parts(13_000_000, 2527)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
 }
 
@@ -264,7 +255,7 @@ impl WeightInfo for () {
 	/// Proof: `Nfts::ItemMetadataOf` (`max_values`: None, `max_size`: Some(347), added: 2822, mode: `MaxEncodedLen`)
 	/// Storage: `Nfts::Account` (r:0 w:1)
 	/// Proof: `Nfts::Account` (`max_values`: None, `max_size`: Some(88), added: 2563, mode: `MaxEncodedLen`)
-	fn force_mint_citizen_nft() -> Weight {
+	fn grant_honorary_citizenship() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `439`
 		//  Estimated: `4326`
@@ -320,10 +311,5 @@ impl WeightInfo for () {
 		Weight::from_parts(125_000_000, 4326)
 			.saturating_add(RocksDbWeight::get().reads(10_u64))
 			.saturating_add(RocksDbWeight::get().writes(9_u64))
-	}
-	fn check_transfer_permission() -> Weight {
-		// Lightweight read-only check
-		Weight::from_parts(13_000_000, 2527)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
 	}
 }

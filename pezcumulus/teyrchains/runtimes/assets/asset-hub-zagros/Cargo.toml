@@ -59,7 +59,6 @@ pezpallet-nomination-pools = { workspace = true }
 pezpallet-nomination-pools-benchmarking = { optional = true, workspace = true }
 pezpallet-nomination-pools-runtime-api = { workspace = true }
 pezpallet-pez-treasury = { workspace = true }
-pezpallet-presale = { workspace = true }
 pezpallet-proxy = { workspace = true }
 pezpallet-revive = { workspace = true }
 pezpallet-session = { workspace = true }
@@ -146,6 +145,9 @@ pezpallet-xcm-bridge-hub-router = { workspace = true }
 # dropped them along with the pallet's XCM plumbing.
 alloy-core = { workspace = true, features = ["sol-types"] }
 asset-test-pezutils = { workspace = true, default-features = true }
+# Building a genesis preset reaches for host functions, so the preset tests need an
+# externalities environment.
+pezsp-io = { workspace = true, default-features = true }
 pezpallet-revive-fixtures = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
 teyrchains-runtimes-test-utils = { workspace = true, default-features = true }
@@ -217,7 +219,6 @@ runtime-benchmarks = [
 	"pezpallet-nomination-pools-runtime-api/runtime-benchmarks",
 	"pezpallet-nomination-pools/runtime-benchmarks",
 	"pezpallet-pez-treasury/runtime-benchmarks",
-	"pezpallet-presale/runtime-benchmarks",
 	"pezpallet-proxy/runtime-benchmarks",
 	"pezpallet-revive-fixtures/runtime-benchmarks",
 	"pezpallet-revive/runtime-benchmarks",
@@ -320,7 +321,6 @@ try-runtime = [
 	"pezpallet-nomination-pools-runtime-api/try-runtime",
 	"pezpallet-nomination-pools/try-runtime",
 	"pezpallet-pez-treasury/try-runtime",
-	"pezpallet-presale/try-runtime",
 	"pezpallet-proxy/try-runtime",
 	"pezpallet-revive/try-runtime",
 	"pezpallet-session/try-runtime",
@@ -427,7 +427,6 @@ std = [
 	"pezpallet-nomination-pools-runtime-api/std",
 	"pezpallet-nomination-pools/std",
 	"pezpallet-pez-treasury/std",
-	"pezpallet-presale/std",
 	"pezpallet-proxy/std",
 	"pezpallet-revive/std",
 	"pezpallet-session/std",

@@ -130,7 +130,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn force_mint_citizen_nft() -> Result<(), BenchmarkError> {
+	fn grant_honorary_citizenship() -> Result<(), BenchmarkError> {
 		let dest: T::AccountId = whitelisted_caller();
 
 		// Ensure collection exists first
@@ -208,43 +208,10 @@ mod benchmarks {
 		Ok(())
 	}
 
-	#[benchmark]
-	fn check_transfer_permission() -> Result<(), BenchmarkError> {
-		let caller: T::AccountId = whitelisted_caller();
-		let dest: T::AccountId = account("dest", 0, 0);
-
-		// This benchmark needs a collection that is NOT the tiki one, because transfers out of
-		// the tiki collection are refused ("Citizen NFTs are non-transferable") and the
-		// benchmark would measure the rejection rather than the check.
-		//
-		// It used to read NextCollectionId after calling `ensure_collection_exists`, assuming
-		// that helper had pushed the counter past the tiki id. It no longer does -- the genesis
-		// preset already creates that collection, so the helper returns early -- and the id
-		// read back was the tiki collection itself. Create one here instead of inferring it.
-		let collection_id = T::TikiCollectionId::get();
-		ensure_collection_exists::<T>();
-
-		// The genesis preset leaves NextCollectionId pointing past the tiki collection, so the
-		// next id is free and is not the tiki one -- which matters, because transfers out of
-		// the tiki collection are refused and this benchmark would measure the refusal.
-		let non_tiki_id = pezpallet_nfts::NextCollectionId::<T>::get().unwrap_or_default();
-		assert!(non_tiki_id != collection_id, "next collection id must not be the tiki one");
-		pezpallet_nfts::Pezpallet::<T>::force_create(
-			RawOrigin::Root.into(),
-			T::Lookup::unlookup(caller.clone()),
-			pezpallet_nfts::CollectionConfig {
-				settings: Default::default(),
-				max_supply: None,
-				mint_settings: Default::default(),
-			},
-		)
-		.expect("root can force-create a free collection id; qed");
-
-		#[extrinsic_call]
-		_(RawOrigin::Signed(caller.clone()), non_tiki_id, 0u32, caller.clone(), dest);
-
-		Ok(())
-	}
+	// `check_transfer_permission` was benchmarked here. The call is gone: an extrinsic
+	// nobody invoked, returning an error that read as the mechanism keeping citizen NFTs
+	// soulbound. The mechanism is `disable_transfer` at mint, and a test now attempts a
+	// real transfer.
 
 	impl_benchmark_test_suite!(Tiki, crate::mock::new_test_ext(), crate::mock::Test);
 }

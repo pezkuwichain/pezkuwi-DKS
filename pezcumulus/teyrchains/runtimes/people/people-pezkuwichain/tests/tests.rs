@@ -17,11 +17,15 @@
 #![cfg(test)]
 
 use people_pezkuwichain_runtime::{
-	xcm_config::LocationToAccountId, Block, Runtime, RuntimeCall, RuntimeOrigin,
+	xcm_config::{GovernanceLocation, LocationToAccountId},
+	Block, Runtime, RuntimeCall, RuntimeOrigin,
 };
+use pezframe_support::{assert_err, assert_ok};
 use pezsp_core::crypto::Ss58Codec;
+use pezsp_runtime::Either;
 use testnet_teyrchains_constants::pezkuwichain::fee::WeightToFee;
 use teyrchains_common::AccountId;
+use teyrchains_runtimes_test_utils::GovernanceOrigin;
 use xcm::latest::prelude::*;
 use xcm_runtime_pezapis::conversions::LocationToAccountHelper;
 
@@ -145,4 +149,170 @@ fn xcm_payment_api_works() {
 		Block,
 		WeightToFee,
 	>();
+}
+
+/// Who may tell this chain to accept a new runtime.
+///
+/// The mainnet twin of the test people-zagros carries. It was missing here entirely, which is
+/// how a difference between the two chains' XCM barriers could have gone unnoticed: the twins
+/// are supposed to answer this identically, and only one of them was ever asked.
+///
+/// The answer is the relay chain and its governance, and nothing else. Asset Hub holds the
+/// state's money but not its authority -- every power it exercises arrives as an instruction
+/// from People, never the reverse -- so a message from there is refused at the barrier.
+#[test]
+fn governance_authorize_upgrade_works() {
+	use pezkuwichain_runtime_constants::system_teyrchain::ASSET_HUB_ID;
+
+	// no - a teyrchain nobody granted anything to
+	assert_err!(
+		teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
+			Runtime,
+			RuntimeOrigin,
+		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(12334)))),
+		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
+	);
+
+	// no - Asset Hub. Upstream allows this because its governance has moved there; ours has
+	// not, and `GovernanceLocation` below is the proof.
+	assert_err!(
+		teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
+			Runtime,
+			RuntimeOrigin,
+		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(ASSET_HUB_ID)))),
+		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
+	);
+
+	// ok - the relay chain
+	assert_ok!(teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
+		Runtime,
+		RuntimeOrigin,
+	>(GovernanceOrigin::Location(Location::parent())));
+
+	// ok - the governance location this runtime declares
+	assert_ok!(teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
+		Runtime,
+		RuntimeOrigin,
+	>(GovernanceOrigin::Location(GovernanceLocation::get())));
+}
+
+// =============================================================================
+// THE COURT'S TWO REGISTERS
+// =============================================================================
+
+/// welati decides who sits on the Diwan; the collective is what lets them decide as a court.
+/// That is two places holding the same fact, and the only thing keeping them together is that
+/// welati writes both. This is the test of that -- at the runtime, because the pallet's own
+/// mock has nowhere to relay to.
+///
+/// It matters because the two halves fail differently. A collective that keeps somebody
+/// welati removed is a judge who still votes; one that misses somebody welati seated is a
+/// judge who cannot.
+mod the_court_roster {
+	use super::*;
+	use people_pezkuwichain_runtime::{DiwanCollective, Welati};
+	use pezsp_runtime::BuildStorage;
+
+	const FOUNDER: [u8; 32] = [9u8; 32];
+	const JURIST: [u8; 32] = [10u8; 32];
+	const ENGINEER: [u8; 32] = [11u8; 32];
+
+	fn account(raw: [u8; 32]) -> AccountId {
+		raw.into()
+	}
+
+	/// Genesis with a citizen register that exists and two people qualified for the bench.
+	fn new_test_ext() -> pezsp_io::TestExternalities {
+		let mut t = pezframe_system::GenesisConfig::<Runtime>::default().build_storage().unwrap();
+
+		pezpallet_tiki::GenesisConfig::<Runtime> {
+			founding_citizen: Some(account(FOUNDER)),
+			founding_government: vec![
+				(account(JURIST), pezpallet_tiki::Tiki::Hiquqnas),
+				(account(ENGINEER), pezpallet_tiki::Tiki::Bernamenivîs),
+			],
+			..Default::default()
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
+
+		let mut ext = pezsp_io::TestExternalities::new(t);
+		ext.execute_with(|| pezframe_system::Pezpallet::<Runtime>::set_block_number(1));
+		ext
+	}
+
+	fn bench() -> Vec<AccountId> {
+		Welati::diwan_members().iter().map(|member| member.account.clone()).collect()
+	}
+
+	fn collective() -> Vec<AccountId> {
+		pezpallet_collective::Members::<Runtime, DiwanCollective>::get()
+	}
+
+	#[test]
+	fn seating_a_judge_puts_them_on_both_registers() {
+		new_test_ext().execute_with(|| {
+			assert!(bench().is_empty());
+			assert!(collective().is_empty());
+
+			assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::root(), account(JURIST).into()));
+
+			assert_eq!(bench(), vec![account(JURIST)]);
+			assert_eq!(
+				collective(),
+				vec![account(JURIST)],
+				"a judge welati seated who cannot vote is not on the court"
+			);
+		});
+	}
+
+	#[test]
+	fn the_two_registers_stay_together_as_the_bench_grows() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::root(), account(JURIST).into()));
+			assert_ok!(Welati::appoint_diwan_member(
+				RuntimeOrigin::root(),
+				account(ENGINEER).into()
+			));
+
+			let mut seated = bench();
+			let mut voting = collective();
+			seated.sort();
+			voting.sort();
+
+			assert_eq!(seated.len(), 2);
+			assert_eq!(seated, voting, "the bench and the body that votes it must be one list");
+		});
+	}
+
+	#[test]
+	fn a_refused_appointment_leaves_neither_register_touched() {
+		// The failure that would be hardest to see: welati rejects the nominee but the
+		// collective was already told. Then somebody nobody appointed can vote on the court.
+		new_test_ext().execute_with(|| {
+			assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::root(), account(JURIST).into()));
+
+			// The founder is a citizen and nothing more, so the qualification gate refuses.
+			assert!(Welati::appoint_diwan_member(RuntimeOrigin::root(), account(FOUNDER).into())
+				.is_err());
+
+			assert_eq!(bench(), vec![account(JURIST)]);
+			assert_eq!(collective(), vec![account(JURIST)]);
+		});
+	}
+
+	/// Kept honest about what the qualification pool actually is: a jurist and an engineer
+	/// both belong on this bench, and a citizen with neither does not.
+	#[test]
+	fn the_pool_admits_law_and_the_chain_alike() {
+		new_test_ext().execute_with(|| {
+			for who in [JURIST, ENGINEER] {
+				assert_ok!(Welati::appoint_diwan_member(
+					RuntimeOrigin::root(),
+					account(who).into()
+				));
+			}
+			assert_eq!(collective().len(), 2);
+		});
+	}
 }

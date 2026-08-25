@@ -25,13 +25,24 @@ pub enum KycLevel {
 /// Privacy-preserving citizenship application
 /// SECURITY: No personal data on-chain, only hash
 #[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
-pub struct CitizenshipApplication<AccountId> {
+pub struct CitizenshipApplication<AccountId, BlockNumber> {
 	/// Hash of identity documents (actual documents stored off-chain/IPFS)
 	/// Frontend calculates: H256(name + email + document_cids)
 	pub identity_hash: H256,
 	/// The existing citizen who vouches for this applicant
 	/// TRUSTLESS: Referrer is personally responsible for their referrals
 	pub referrer: AccountId,
+	/// Who the applicant says brought them to the state, if anyone.
+	///
+	/// Separate from the guarantor and often a different person. It counts only if that
+	/// account also claimed the invitation, so neither side can record it alone.
+	pub inviter: Option<AccountId>,
+	/// When the application was made.
+	///
+	/// An applicant waits on their referrer for as long as it takes, but not for ever alone:
+	/// after a set period the founder may approve instead, and this is what that period is
+	/// measured from.
+	pub applied_at: BlockNumber,
 }
 
 #[derive(Encode, Decode, Clone, Default, MaxEncodedLen)]
@@ -161,13 +172,16 @@ pub trait IdentityInfoProvider<AccountId, MaxStringLength: Get<u32>> {
 pub trait OnKycApproved<AccountId> {
 	/// Called when a citizen is approved
 	/// - `who`: The newly approved citizen
-	/// - `referrer`: The citizen who vouched for them (from identity-kyc storage)
-	fn on_kyc_approved(who: &AccountId, referrer: &AccountId);
+	/// - `referrer`: The citizen who vouched for them, and who carries the consequences
+	/// - `inviter`: Who they say brought them to the state, if they named anyone. A different
+	///   fact from the guarantor and frequently a different person: you can be brought here by
+	///   one person and ask another to stand for you.
+	fn on_kyc_approved(who: &AccountId, referrer: &AccountId, inviter: Option<&AccountId>);
 }
 
 /// No-op implementation for when no hook is needed
 impl<AccountId> OnKycApproved<AccountId> for () {
-	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId) {}
+	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId, _inviter: Option<&AccountId>) {}
 }
 
 /// Interface for minting a citizenship NFT.
@@ -192,4 +206,17 @@ pub trait OnCitizenshipRevoked<AccountId> {
 /// No-op implementation for when no hook is needed
 impl<AccountId> OnCitizenshipRevoked<AccountId> for () {
 	fn on_citizenship_revoked(_who: &AccountId) {}
+}
+
+/// Losing citizenship concerns more than one pallet: the referral record has a penalty to
+/// apply, and the trust score has to stop existing. Both, in order.
+impl<AccountId, A, B> OnCitizenshipRevoked<AccountId> for (A, B)
+where
+	A: OnCitizenshipRevoked<AccountId>,
+	B: OnCitizenshipRevoked<AccountId>,
+{
+	fn on_citizenship_revoked(who: &AccountId) {
+		A::on_citizenship_revoked(who);
+		B::on_citizenship_revoked(who);
+	}
 }
