@@ -147,8 +147,8 @@ alloy-core = { workspace = true, features = ["sol-types"] }
 asset-test-pezutils = { workspace = true, default-features = true }
 # Building a genesis preset reaches for host functions, so the preset tests need an
 # externalities environment.
-pezsp-io = { workspace = true, default-features = true }
 pezpallet-revive-fixtures = { workspace = true, default-features = true }
+pezsp-io = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
 teyrchains-runtimes-test-utils = { workspace = true, default-features = true }
 # The runtime takes its constants from the mainnet set; the governance test still
@@ -248,6 +248,7 @@ runtime-benchmarks = [
 	"pezsp-consensus-grandpa/runtime-benchmarks",
 	"pezsp-genesis-builder/runtime-benchmarks",
 	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
 	"pezsp-keyring/runtime-benchmarks",
 	"pezsp-npos-elections/runtime-benchmarks",
 	"pezsp-offchain/runtime-benchmarks",

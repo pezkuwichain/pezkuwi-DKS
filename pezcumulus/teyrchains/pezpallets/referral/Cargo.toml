@@ -47,8 +47,8 @@ std = [
 	"pezkuwi-primitives/std",
 	"pezpallet-balances/std",
 	"pezpallet-identity-kyc/std",
-	"pezpallet-tiki/std",
 	"pezpallet-nfts/std",
+	"pezpallet-tiki/std",
 	"pezsp-core/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
@@ -63,8 +63,8 @@ runtime-benchmarks = [
 	"pezkuwi-primitives/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-identity-kyc/runtime-benchmarks",
-	"pezpallet-tiki/runtime-benchmarks",
 	"pezpallet-nfts/runtime-benchmarks",
+	"pezpallet-tiki/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 ]
@@ -75,8 +75,8 @@ try-runtime = [
 	"pezkuwi-primitives/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-identity-kyc/try-runtime",
-	"pezpallet-tiki/try-runtime",
 	"pezpallet-nfts/try-runtime",
+	"pezpallet-tiki/try-runtime",
 	"pezsp-runtime/try-runtime",
 ]
 serde = []

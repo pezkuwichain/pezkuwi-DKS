@@ -46,11 +46,11 @@ pezsp-io = { workspace = true, default-features = false, optional = true }
 
 [dev-dependencies]
 # Test için gerekli olan bağımlılıklar
-pezsp-core = { workspace = true, default-features = false }
-pezsp-io = { workspace = true, default-features = false }
 pezpallet-assets = { workspace = true, default-features = false, features = [
 	"std",
 ] } # <-- BU SATIRI EKLEYİN
+pezsp-core = { workspace = true, default-features = false }
+pezsp-io = { workspace = true, default-features = false }
 xcm = { workspace = true, default-features = false, features = ["std"] }
 
 [features]
@@ -98,6 +98,7 @@ try-runtime = [
 	"pezpallet-balances/try-runtime",
 	"pezpallet-scheduler/try-runtime",
 	"pezsp-runtime/try-runtime",
+	"xcm/try-runtime",
 ]
 serde = [
 	"codec/serde",

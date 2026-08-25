@@ -520,14 +520,48 @@ pub struct StatementHandler<
 /// The token bucket allows short bursts up to the per-second limit while enforcing
 /// the average rate over time.
 #[derive(Debug)]
-struct PeerRateLimiter {
-	limiter: RateLimiter<NotKeyed, InMemoryState, DefaultClock>,
+enum PeerRateLimiter {
+	/// Refills against the wall clock. This is the only variant a node ever builds.
+	Wall(RateLimiter<NotKeyed, InMemoryState, DefaultClock>),
+	/// Refills against a clock the test advances by hand.
+	///
+	/// A sustained-rate test cannot use the wall clock: it measures the host rather than the
+	/// limiter. Building a batch is itself work, so on a slow or loaded machine each iteration
+	/// spans more than the refill window, the bucket is full again by the next check, and a rate
+	/// that is nominally far above the limit never exceeds it.
+	#[cfg(test)]
+	Simulated(
+		RateLimiter<
+			NotKeyed,
+			InMemoryState,
+			governor::clock::FakeRelativeClock,
+			governor::middleware::NoOpMiddleware<
+				<governor::clock::FakeRelativeClock as governor::clock::Clock>::Instant,
+			>,
+		>,
+	),
 }
 
 impl PeerRateLimiter {
 	fn new(statements_per_second: NonZeroU32, burst: NonZeroU32) -> Self {
-		let quota = Quota::per_second(statements_per_second).allow_burst(burst);
-		Self { limiter: RateLimiter::direct(quota) }
+		Self::Wall(RateLimiter::direct(Self::quota(statements_per_second, burst)))
+	}
+
+	/// Same bucket, driven by a clock the caller owns.
+	#[cfg(test)]
+	fn simulated(
+		statements_per_second: NonZeroU32,
+		burst: NonZeroU32,
+		clock: &governor::clock::FakeRelativeClock,
+	) -> Self {
+		Self::Simulated(RateLimiter::direct_with_clock(
+			Self::quota(statements_per_second, burst),
+			clock,
+		))
+	}
+
+	fn quota(statements_per_second: NonZeroU32, burst: NonZeroU32) -> Quota {
+		Quota::per_second(statements_per_second).allow_burst(burst)
 	}
 
 	/// Check if receiving `count` statements would exceed the rate limit.
@@ -539,7 +573,11 @@ impl PeerRateLimiter {
 		let Some(n) = NonZeroU32::new(count as u32) else {
 			return false;
 		};
-		!matches!(self.limiter.check_n(n), Ok(Ok(())))
+		match self {
+			Self::Wall(limiter) => !matches!(limiter.check_n(n), Ok(Ok(()))),
+			#[cfg(test)]
+			Self::Simulated(limiter) => !matches!(limiter.check_n(n), Ok(Ok(()))),
+		}
 	}
 }
 
@@ -1926,6 +1964,21 @@ mod tests {
 		async_channel::Receiver<(Statement, oneshot::Sender<SubmitResult>)>,
 		Vec<PeerId>,
 	) {
+		build_handler_with_clock(num_peers, None)
+	}
+
+	/// `build_handler`, but every peer's bucket refills against `clock` when one is given.
+	fn build_handler_with_clock(
+		num_peers: usize,
+		clock: Option<&governor::clock::FakeRelativeClock>,
+	) -> (
+		StatementHandler<TestNetwork, TestSync>,
+		TestStatementStore,
+		TestNetwork,
+		TestNotificationService,
+		async_channel::Receiver<(Statement, oneshot::Sender<SubmitResult>)>,
+		Vec<PeerId>,
+	) {
 		let statement_store = TestStatementStore::new();
 		let (queue_sender, queue_receiver) = async_channel::bounded(100);
 		let network = TestNetwork::new();
@@ -1940,14 +1993,18 @@ mod tests {
 				peer_id,
 				Peer {
 					known_statements: LruHashSet::new(NonZeroUsize::new(1000).unwrap()),
-					rate_limiter: PeerRateLimiter::new(
-						NonZeroU32::new(DEFAULT_STATEMENTS_PER_SECOND)
-							.expect("DEFAULT_STATEMENTS_PER_SECOND is nonzero"),
-						NonZeroU32::new(
+					rate_limiter: {
+						let rate = NonZeroU32::new(DEFAULT_STATEMENTS_PER_SECOND)
+							.expect("DEFAULT_STATEMENTS_PER_SECOND is nonzero");
+						let burst = NonZeroU32::new(
 							DEFAULT_STATEMENTS_PER_SECOND * config::STATEMENTS_BURST_COEFFICIENT,
 						)
-						.expect("burst capacity is nonzero"),
-					),
+						.expect("burst capacity is nonzero");
+						match clock {
+							Some(clock) => PeerRateLimiter::simulated(rate, burst, clock),
+							None => PeerRateLimiter::new(rate, burst),
+						}
+					},
 					protocol_version: PeerProtocolVersion::V1,
 					topic_affinity: None,
 					is_light: false,
@@ -2821,18 +2878,21 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_sustained_rate_above_limit_triggers_flooding() {
+		// 30k statements every simulated 100ms is 300k/sec against a 50k/sec limit, so the bucket
+		// loses 25k of its 250k burst on every step and must run dry. The clock is advanced by
+		// hand rather than slept on: the batch construction below is slower than the refill
+		// window on a loaded machine, which would keep the bucket full and the rate legal.
+		let clock = governor::clock::FakeRelativeClock::default();
 		let (mut handler, _statement_store, network, _notification_service, _queue_receiver, _) =
-			build_handler(1);
+			build_handler_with_clock(1, Some(&clock));
 
 		let peer_id = *handler.peers.keys().next().unwrap();
 
 		let mut counter = 0u32;
 
-		let start = std::time::Instant::now();
-		let duration = std::time::Duration::from_secs(5);
-
+		// 250k burst / 25k net drain per step leaves room for ten steps; twenty is margin.
 		let mut flooding_detected = false;
-		while start.elapsed() < duration {
+		for _ in 0..20 {
 			let mut statements = Vec::new();
 			for i in 0..30_000 {
 				let mut statement = Statement::new();
@@ -2858,7 +2918,7 @@ mod tests {
 				break;
 			}
 
-			tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+			clock.advance(std::time::Duration::from_millis(100));
 		}
 
 		assert!(flooding_detected, "Sustained rate of 300k/sec should trigger flooding");

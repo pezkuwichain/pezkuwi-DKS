@@ -264,6 +264,7 @@ runtime-benchmarks = [
 	"pezsp-consensus-aura/runtime-benchmarks",
 	"pezsp-genesis-builder/runtime-benchmarks",
 	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
 	"pezsp-keyring/runtime-benchmarks",
 	"pezsp-offchain/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",

@@ -38,8 +38,8 @@ pezsp-std = { default-features = false, workspace = true }
 pezpallet-identity-kyc = { workspace = true, default-features = false }
 pezpallet-referral = { workspace = true, default-features = false }
 pezpallet-tiki = { workspace = true, default-features = false }
-xcm = { workspace = true, default-features = false }
 pezpallet-trust = { workspace = true, default-features = false }
+xcm = { workspace = true, default-features = false }
 
 # Bizinikiwi core paletler
 pezpallet-collective = { default-features = false, workspace = true }
@@ -75,7 +75,6 @@ std = [
 	"pezpallet-scheduler/std",
 	"pezpallet-staking-score/std",
 	"pezpallet-tiki/std",
-	"xcm/std",
 	"pezpallet-timestamp/std",
 	"pezpallet-trust/std",
 	"pezsp-core/std",
@@ -85,6 +84,7 @@ std = [
 	"scale-info/std",
 	"serde",
 	"serde?/std",
+	"xcm/std",
 ]
 runtime-benchmarks = [
 	"pezframe-benchmarking/runtime-benchmarks",
@@ -101,13 +101,13 @@ runtime-benchmarks = [
 	"pezpallet-scheduler/runtime-benchmarks",
 	"pezpallet-staking-score/runtime-benchmarks",
 	"pezpallet-tiki/runtime-benchmarks",
-	"xcm/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
 	"pezpallet-trust/runtime-benchmarks",
 	"pezsp-core",
 	"pezsp-io",
 	"pezsp-io?/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
@@ -127,6 +127,7 @@ try-runtime = [
 	"pezpallet-timestamp/try-runtime",
 	"pezpallet-trust/try-runtime",
 	"pezsp-runtime/try-runtime",
+	"xcm/try-runtime",
 ]
 serde = [
 	"codec/serde",
