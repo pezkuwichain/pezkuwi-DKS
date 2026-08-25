@@ -345,9 +345,16 @@ mod tests {
 	fn test_aura_id_from_chain_spec_id() {
 		use crate::runtime::{aura_id_from_chain_spec_id, AuraConsensusId};
 
-		// Asset Hub Pezkuwi uses Ed25519
-		assert_eq!(aura_id_from_chain_spec_id("asset-hub-polkadot"), AuraConsensusId::Ed25519);
+		// Asset Hub Pezkuwi uses Ed25519. Upstream's special case was keyed on
+		// `asset-hub-polkadot`; the rebrand moved the prefix but left its assertion behind, so
+		// the test asked this node to recognise a chain it deliberately does not serve.
 		assert_eq!(aura_id_from_chain_spec_id("asset-hub-pezkuwi"), AuraConsensusId::Ed25519);
+		assert_eq!(
+			aura_id_from_chain_spec_id("asset-hub-pezkuwichain"),
+			AuraConsensusId::Ed25519,
+			"the real chain spec id has to hit the same prefix"
+		);
+		assert_eq!(aura_id_from_chain_spec_id("asset-hub-polkadot"), AuraConsensusId::Sr25519);
 
 		// Other chains use Sr25519
 		assert_eq!(aura_id_from_chain_spec_id("asset-hub-dicle"), AuraConsensusId::Sr25519);

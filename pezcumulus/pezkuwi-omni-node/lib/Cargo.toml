@@ -105,9 +105,7 @@ pezcumulus-client-consensus-aura = { workspace = true, default-features = true }
 pezcumulus-client-consensus-common = { workspace = true, default-features = true }
 pezcumulus-client-consensus-relay-chain = { workspace = true, default-features = true }
 pezcumulus-client-service = { workspace = true, default-features = true }
-pezcumulus-client-teyrchain-inherent = { workspace = true, default-features = true, features = [
-	"mock",
-] }
+pezcumulus-client-teyrchain-inherent = { workspace = true, default-features = true }
 pezcumulus-primitives-aura = { workspace = true, default-features = true }
 pezcumulus-primitives-core = { workspace = true, default-features = true }
 pezcumulus-relay-chain-interface = { workspace = true, default-features = true }

@@ -74,10 +74,10 @@
             "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
           ]
         },
-        "teyrchainInfo": {
-          "teyrchainId": 1000
+        "parachainInfo": {
+          "parachainId": 1000
         },
-        "pezkuwiXcm": {
+        "polkadotXcm": {
           "safeXcmVersion": 5
         },
         "session": {

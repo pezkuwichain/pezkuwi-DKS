@@ -76,8 +76,8 @@
             ]
           ]
         },
-        "teyrchainInfo": {
-          "teyrchainId": 100
+        "parachainInfo": {
+          "parachainId": 100
         },
         "sudo": {
           "key": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"

@@ -94,8 +94,6 @@ zagros-runtime = { workspace = true, default-features = true }
 default = []
 # Enable storage benchmark command
 storage-benchmark = ["pezframe-storage-access-test-runtime"]
-# Enable teyrchain/parachain benchmark inherent data
-teyrchain-benchmarks = ["pezcumulus-client-teyrchain-inherent/mock"]
 runtime-benchmarks = [
 	"bizinikiwi-test-runtime/runtime-benchmarks",
 	"pezcumulus-client-teyrchain-inherent/runtime-benchmarks",

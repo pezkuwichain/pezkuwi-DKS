@@ -32,7 +32,6 @@ pezcumulus-test-relay-sproof-builder = { workspace = true, default-features = tr
 
 [features]
 default = []
-mock = []
 runtime-benchmarks = [
 	"pezcumulus-primitives-core/runtime-benchmarks",
 	"pezcumulus-primitives-teyrchain-inherent/runtime-benchmarks",

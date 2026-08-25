@@ -84,11 +84,11 @@
             "5DkKcSP5MboNMpXScW1CyRqaktKMXH8QLP4Mn49TwS5vhL6k"
           ]
         },
-        "teyrchainInfo": {
-          "teyrchainId": 1004
+        "parachainInfo": {
+          "parachainId": 1004
         },
-        "teyrchainSystem": {},
-        "pezkuwiXcm": {
+        "parachainSystem": {},
+        "polkadotXcm": {
           "safeXcmVersion": 5
         },
         "session": {

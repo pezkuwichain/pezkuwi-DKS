@@ -154,11 +154,21 @@ impl<T: pezframe_system::Config> WeightInfo<T> {
 	// Storage: `Benchmark::Override` (r:0 w:0)
 	// Proof: `Benchmark::Override` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	pub fn receive_teleported_asset() -> Weight {
+		// PROVISIONAL -- carried over from the asset-hub-pezkuwichain twin, measured in the
+		// same run on the same host. This runtime's own benchmark could not complete: its
+		// `CheckedAccount` was configured `None` while the executor insisted on a checking
+		// account, so the generator wrote `u64::MAX` -- a weight no block can hold, which
+		// refused every teleport into this chain before it executed.
+		//
+		// That configuration is fixed now, so the benchmark can run. Until it does, the
+		// twin's figure is the closest real measurement there is: the same instruction, the
+		// same pallet, the same hardware. It is approximately right, where `u64::MAX` was
+		// certainly wrong. Replace it with this runtime's own number on the next weights run.
+		//
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 18_446_744_073_709_551_000 picoseconds.
-		Weight::from_parts(18_446_744_073_709_551_000, 0)
+		Weight::from_parts(21_550_000, 0)
 	}
 	// Storage: `Assets::Asset` (r:1 w:1)
 	// Proof: `Assets::Asset` (`max_values`: None, `max_size`: Some(210), added: 2685, mode: `MaxEncodedLen`)
