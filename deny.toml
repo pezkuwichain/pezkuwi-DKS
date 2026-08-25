@@ -21,27 +21,12 @@ yanked = "warn"
 unmaintained = "none"
 ignore = [
 	# ── wasmtime ──────────────────────────────────────────────────────────────
-	# wasmtime is pinned at 37.x (the version sc-executor-wasmtime targets). Clearing
-	# these needs wasmtime 42.0.2+ — a 5-major-version bump requiring cranelift updates
-	# and executor API adaptation, so it is a dedicated, tested effort (issue #7), not a
-	# drop-in bump; we will NOT destabilize the fund-critical executor on a whim. The
-	# toolchain (now 1.96.0) no longer blocks it. Risk is contained regardless: these
-	# CVEs only affect the Winch backend, Component Model, or 64-bit tables — none of
-	# which PezkuwiChain's executor uses.
-	"RUSTSEC-2026-0006", # wasmtime: segfault with f64.copysign on x86-64
-	"RUSTSEC-2026-0020", # wasmtime: WASI guest-controlled resource exhaustion
-	"RUSTSEC-2026-0021", # wasmtime: panic in wasi:http/types.fields
-	"RUSTSEC-2026-0085", # wasmtime: panic lifting flags component value
-	"RUSTSEC-2026-0086", # wasmtime: host data leakage 64-bit tables + Winch
-	"RUSTSEC-2026-0087", # wasmtime: segfault f64x2.splat on Cranelift x86-64
-	"RUSTSEC-2026-0088", # wasmtime: data leakage pooling allocator instances
-	"RUSTSEC-2026-0089", # wasmtime: host panic table.fill with Winch
-	"RUSTSEC-2026-0091", # wasmtime: OOB write transcoding component model strings
-	"RUSTSEC-2026-0092", # wasmtime: panic transcoding misaligned UTF-16 strings
-	"RUSTSEC-2026-0093", # wasmtime: heap OOB read UTF-16 to latin1+utf16
-	"RUSTSEC-2026-0094", # wasmtime: masked return value table.grow Winch
-	"RUSTSEC-2026-0095", # wasmtime: Winch sandbox-escaping memory access
-	"RUSTSEC-2026-0096", # wasmtime: miscompiled guest heap aarch64 Cranelift
+	# Nothing is exempted here. The block that used to sit here listed fourteen wasmtime
+	# advisories and justified them with "wasmtime is pinned at 37.x"; the lock says 36.0.13
+	# and cargo-deny reported every one of them as "no crate matched advisory criteria",
+	# on our graph and on main's. Fifteen dead entries also meant fifteen warnings on every
+	# run, which is how a live one would have gone unread. Re-add an entry only with the
+	# advisory that actually fires and the reason it is tolerable.
 
 	# ── memmap2 ───────────────────────────────────────────────────────────────
 	# Unsound unchecked pointer-offset in memory-mapping. Host-side only — memmap2
@@ -68,8 +53,6 @@ ignore = [
 	"RUSTSEC-2026-0118", # hickory: NSEC3 closest-encloser proof unbounded loop
 	"RUSTSEC-2026-0119", # hickory: O(n^2) name-compression CPU exhaustion
 
-	# ── wasmtime (additional; see toolchain note above) ───────────────────────
-	"RUSTSEC-2026-0114", # wasmtime: panic allocating table exceeding host address space (64-bit tables; unused)
 ]
 
 # License compliance
