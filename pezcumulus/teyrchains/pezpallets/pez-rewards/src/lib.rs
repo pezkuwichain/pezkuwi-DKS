@@ -72,6 +72,9 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+extern crate alloc;
+
+use alloc::vec;
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezframe_support::traits::Get;
 use pezframe_system::pezpallet_prelude::BlockNumberFor;

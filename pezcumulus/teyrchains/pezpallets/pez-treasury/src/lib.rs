@@ -94,6 +94,9 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+extern crate alloc;
+
+use alloc::vec;
 use pezframe_support::{
 	traits::{
 		fungibles::{Inspect, Mutate},
