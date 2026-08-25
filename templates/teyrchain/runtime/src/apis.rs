@@ -299,7 +299,13 @@ impl_runtime_apis! {
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
-			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
+			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					use codec::Encode;
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 
 			use pezkuwi_sdk::pezframe_support::traits::WhitelistedStorageKeys;
 			let whitelist = AllPalletsWithSystem::whitelisted_storage_keys();

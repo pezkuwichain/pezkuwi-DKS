@@ -3208,7 +3208,6 @@ mod benches {
 		[pezpallet_mmr, Mmr]
 		[pezpallet_multi_asset_bounties, MultiAssetBounties]
 		[pezpallet_multisig, Multisig]
-		[pezpallet_nomination_pools, NominationPoolsBench::<Runtime>]
 		[pezpallet_offences, OffencesBench::<Runtime>]
 		[pezpallet_oracle, Oracle]
 		[pezpallet_preimage, Preimage]
@@ -3886,7 +3885,6 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use baseline::Pezpallet as BaselineBench;
-			use pezpallet_nomination_pools_benchmarking::Pezpallet as NominationPoolsBench;
 
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
@@ -3912,14 +3910,18 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use baseline::Pezpallet as BaselineBench;
-			use pezpallet_nomination_pools_benchmarking::Pezpallet as NominationPoolsBench;
 
-			impl pezpallet_session_benchmarking::Config for Runtime {}
+			impl pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 			impl pezpallet_offences_benchmarking::Config for Runtime {}
 			impl pezpallet_election_provider_support_benchmarking::Config for Runtime {}
 			impl pezframe_system_benchmarking::Config for Runtime {}
+			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
 			impl baseline::Config for Runtime {}
-			impl pezpallet_nomination_pools_benchmarking::Config for Runtime {}
 
 			use pezframe_support::traits::WhitelistedStorageKeys;
 			let mut whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();

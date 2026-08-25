@@ -47,11 +47,9 @@
 //! ### Example Usage
 //!
 //! ```
-//! use pezkuwi_sdk_frame as frame;
 //!
 //! #[pezframe::pezpallet]
 //! pub mod pezpallet {
-//! 	# use pezkuwi_sdk_frame as frame;
 //! 	use pezframe::prelude::*;
 //! 	// ^^ using the prelude!
 //!
@@ -64,18 +62,15 @@
 //!
 //! #[cfg(test)]
 //! pub mod tests {
-//! 	# use pezkuwi_sdk_frame as frame;
 //! 	use pezframe::testing_prelude::*;
 //! }
 //!
 //! #[cfg(feature = "runtime-benchmarks")]
 //! pub mod benchmarking {
-//! 	# use pezkuwi_sdk_frame as frame;
 //! 	use pezframe::benchmarking::prelude::*;
 //! }
 //!
 //! pub mod runtime {
-//! 	# use pezkuwi_sdk_frame as frame;
 //! 	use pezframe::runtime::prelude::*;
 //! }
 //! ```
@@ -86,13 +81,13 @@
 //! runtimes. For runtime development, import it as:
 //!
 //! ```text
-//! pezkuwi-sdk-pezframe = { version = "foo", features = ["runtime"] }
+//! pezframe = { version = "foo", features = ["runtime"] }
 //! ```
 //!
 //! If you just want to build a pezpallet instead, import it as
 //!
 //! ```text
-//! pezkuwi-sdk-pezframe = { version = "foo" }
+//! pezframe = { version = "foo" }
 //! ```
 //!
 //! ### Prelude Relationships
@@ -104,7 +99,7 @@
 //!
 //! ## Naming
 //!
-//! Please note that this crate can only be imported as `pezkuwi-sdk-frame` or `frame`. This is due
+//! Please note that this crate can only be imported as `pezframe` or `frame`. This is due
 //! to compatibility matters with `pezframe-support`.
 //!
 //! A typical pezpallet's `Cargo.toml` using this crate looks like:
@@ -132,7 +127,7 @@
 //!
 //! ## Documentation
 //!
-//! For more detailed documentation and examples, see [`pezkuwi_sdk_frame`](https://paritytech.github.io/pezkuwi-sdk/master/pezkuwi_sdk_frame/index.html).
+//! For more detailed documentation and examples, see [`pezframe`](https://paritytech.github.io/pezkuwi-sdk/master/pezframe/index.html).
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -165,7 +160,7 @@ pub mod pezpallet_macros {
 /// This prelude should almost always be the first line of code in any pezpallet or runtime.
 ///
 /// ```
-/// use pezkuwi_sdk_frame::prelude::*;
+/// use pezframe::prelude::*;
 ///
 /// // rest of your pezpallet..
 /// mod pezpallet {}
@@ -174,7 +169,7 @@ pub mod prelude {
 	/// `pezframe_system`'s parent crate, which is mandatory in all pezpallets build with this crate.
 	///
 	/// Conveniently, the keyword `pezframe_system` is in scope as one uses `use
-	/// pezkuwi_sdk_frame::prelude::*`.
+	/// pezframe::prelude::*`.
 	#[doc(inline)]
 	pub use pezframe_system;
 
@@ -253,11 +248,11 @@ pub mod try_runtime {
 /// It supports both the `benchmarking::v1::benchmarks` and `benchmarking::v2::benchmark` syntax.
 ///
 /// ```
-/// use pezkuwi_sdk_frame::benchmarking::prelude::*;
+/// use pezframe::benchmarking::prelude::*;
 /// // rest of your code.
 /// ```
 ///
-/// It already includes `pezkuwi_sdk_frame::prelude::*` and `pezkuwi_sdk_frame::testing_prelude`.
+/// It already includes `pezframe::prelude::*` and `pezframe::testing_prelude`.
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking {
 	mod shared {
@@ -293,7 +288,7 @@ pub mod benchmarking {
 /// Prelude to be included in the `weight.rs` of each pezpallet.
 ///
 /// ```
-/// pub use pezkuwi_sdk_frame::weights_prelude::*;
+/// pub use pezframe::weights_prelude::*;
 /// ```
 pub mod weights_prelude {
 	pub use core::marker::PhantomData;
@@ -312,12 +307,12 @@ pub mod weights_prelude {
 /// A test setup typically starts with:
 ///
 /// ```
-/// use pezkuwi_sdk_frame::testing_prelude::*;
+/// use pezframe::testing_prelude::*;
 /// // rest of your test setup.
 /// ```
 ///
-/// This automatically brings in `pezkuwi_sdk_frame::prelude::*` and
-/// `pezkuwi_sdk_frame::runtime::prelude::*`.
+/// This automatically brings in `pezframe::prelude::*` and
+/// `pezframe::runtime::prelude::*`.
 #[cfg(feature = "std")]
 pub mod testing_prelude {
 	pub use crate::{prelude::*, runtime::prelude::*};
@@ -353,10 +348,10 @@ pub mod runtime {
 	/// A runtime typically starts with:
 	///
 	/// ```
-	/// use pezkuwi_sdk_frame::runtime::prelude::*;
+	/// use pezframe::runtime::prelude::*;
 	/// ```
 	///
-	/// This automatically brings in `pezkuwi_sdk_frame::prelude::*`.
+	/// This automatically brings in `pezframe::prelude::*`.
 	pub mod prelude {
 		pub use crate::prelude::*;
 
@@ -428,7 +423,7 @@ pub mod runtime {
 	/// A non-testing runtime should have this enabled, as such:
 	///
 	/// ```
-	/// use pezkuwi_sdk_frame::runtime::{prelude::*, apis::{*,}};
+	/// use pezframe::runtime::{prelude::*, apis::{*,}};
 	/// ```
 	// TODO: This is because of wildcard imports, and it should be not needed once we can avoid
 	// that. Imports like that are needed because we seem to need some unknown types in the macro

@@ -203,6 +203,13 @@ impl pezframe_system::Config for Runtime {
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = pezcumulus_pezpallet_teyrchain_system::TeyrchainSetCode<Self>;
 	type MaxConsumers = pezframe_support::traits::ConstU32<16>;
+	// `pezpallet_revive::Config::AutoMap` is on for this chain. Turning it on disables the
+	// `map_account` dispatchable -- it returns `Ok(())` and maps nothing -- and moves the
+	// mapping to these two hooks. They were left at their default of `()` when `AutoMap` was
+	// adopted, so nothing was ever mapped and every signed contract call was refused with
+	// `AccountUnmapped`, including for users who dutifully called `map_account` first.
+	type OnNewAccount = pezpallet_revive::AutoMapper<Runtime>;
+	type OnKilledAccount = pezpallet_revive::AutoMapper<Runtime>;
 	type SingleBlockMigrations = Migrations;
 	// The pallet sits in this runtime at index 6, but leaving this at the default `()`
 	// leaves it unreachable: `frame_system` never hands it a block, so a multi-block

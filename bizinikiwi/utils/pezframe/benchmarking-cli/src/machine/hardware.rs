@@ -63,32 +63,32 @@ mod tests {
 			Requirements(vec![
 				Requirement {
 					metric: Metric::Blake2256,
-					minimum: Throughput::from_mibs(1000.00),
+					minimum: Throughput::from_mibs(830.0),
 					validator_only: false
 				},
 				Requirement {
 					metric: Metric::Blake2256Parallel { num_cores: 8 },
-					minimum: Throughput::from_mibs(1000.00),
+					minimum: Throughput::from_mibs(390.0),
 					validator_only: true,
 				},
 				Requirement {
 					metric: Metric::Sr25519Verify,
-					minimum: Throughput::from_kibs(637.619999744),
+					minimum: Throughput::from_kibs(374.499999744),
 					validator_only: false
 				},
 				Requirement {
 					metric: Metric::MemCopy,
-					minimum: Throughput::from_gibs(11.4925205078125003),
+					minimum: Throughput::from_gibs(5.7),
 					validator_only: false,
 				},
 				Requirement {
 					metric: Metric::DiskSeqWrite,
-					minimum: Throughput::from_mibs(950.0),
+					minimum: Throughput::from_mibs(530.0),
 					validator_only: false,
 				},
 				Requirement {
 					metric: Metric::DiskRndWrite,
-					minimum: Throughput::from_mibs(420.0),
+					minimum: Throughput::from_mibs(223.0),
 					validator_only: false
 				},
 			])

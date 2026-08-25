@@ -61,10 +61,14 @@ impl<T: Config> frame_decode::extrinsics::TransactionExtension<PortableRegistry>
 		self.0.encode_value_to(type_id, type_resolver, v)
 	}
 
-	// `encode_value_for_signer_payload_to` was dropped from frame-decode's
-	// `TransactionExtension` trait by 0.18, which is what subxt 0.50.3 pulls -- and the inner
-	// `VerifySignature` no longer carries it either. The distinction it drew is now folded
-	// into `encode_value_to`, so a wrapper that only delegates has nothing left to override.
+	// frame-decode 0.18 replaced `encode_value_for_signer_payload_to` with this flag rather
+	// than dropping the distinction. It defaults to `false`, and the inner `VerifySignature`
+	// sets it to `true`; a wrapper that forgets to pass it through signs a payload that
+	// still contains the authorization extension and everything before it, which the chain
+	// then rejects. Nothing about that is visible to the compiler.
+	fn is_authorization_extension(&self) -> bool {
+		self.0.is_authorization_extension()
+	}
 
 	fn encode_implicit_to(
 		&self,
