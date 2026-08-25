@@ -278,6 +278,9 @@ impl pezframe_election_provider_support::onchain::Config for OnChainConfig {
 }
 
 impl multi_block::Config for Runtime {
+	// Reference runtime: the watchdog is wired but left off; the two Asset Hubs set a real
+	// window. See their `staking.rs` for the reasoning.
+	type StalledRoundTimeout = ConstU32<0>;
 	type AreWeDone = multi_block::RevertToSignedIfNotQueuedOf<Self>;
 	type Pages = Pages;
 	type UnsignedPhase = UnsignedPhase;

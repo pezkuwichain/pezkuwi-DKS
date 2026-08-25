@@ -574,6 +574,21 @@ pub mod pezpallet {
 			BlockNumber = BlockNumberFor<Self>,
 		>;
 
+		/// After how many blocks an election that has not produced a usable result is
+		/// abandoned, rotating the round to start over.
+		///
+		/// Without this, an election that cannot be solved holds its round forever: with
+		/// `RevertToSignedIfNotQueuedOf` the phase keeps looping back to [`Phase::Signed`] and
+		/// never returns to [`Phase::Off`], so nothing -- not even the staking pezpallet's own
+		/// stall detection, which waits for the election to be idle -- can recover it, and no
+		/// new era is ever elected. Rotating drops the snapshot and the verifier, so the next
+		/// round starts from freshly collected data.
+		///
+		/// Must be comfortably larger than a full election (snapshot + signed + validation +
+		/// unsigned + export), otherwise healthy elections get cut short. Zero disables it.
+		#[pezpallet::constant]
+		type StalledRoundTimeout: Get<BlockNumberFor<Self>>;
+
 		/// The miner configuration.
 		///
 		/// These configurations are passed to [`crate::unsigned::miner::BaseMiner`]. An external
@@ -712,7 +727,7 @@ pub mod pezpallet {
 
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
-		fn on_poll(_now: BlockNumberFor<T>, weight_meter: &mut WeightMeter) {
+		fn on_poll(now: BlockNumberFor<T>, weight_meter: &mut WeightMeter) {
 			// first check we can at least read one storage.
 			if !weight_meter.can_consume(T::DbWeight::get().reads(1)) {
 				Self::deposit_event(Event::UnexpectedPhaseTransitionHalt {
@@ -725,6 +740,12 @@ pub mod pezpallet {
 			// if so, consume and prepare the next phase.
 			let current_phase = Self::current_phase();
 			weight_meter.consume(T::DbWeight::get().reads(1));
+
+			// An election that cannot produce a result must not hold its round forever.
+			if let Some(weight) = Self::maybe_rotate_stalled_round(now, &current_phase) {
+				weight_meter.consume(weight);
+				return;
+			}
 
 			let (self_weight, self_exec) = Self::per_block_exec(current_phase);
 			let (verifier_weight, verifier_exc) = T::Verifier::per_block_exec();
@@ -764,15 +785,15 @@ pub mod pezpallet {
 			// NOTE: why in here? because it is more accessible, for example `roll_to_with_ocw`.
 			#[cfg(test)]
 			{
-				if _now > 200u32.into() {
+				if now > 200u32.into() {
 					panic!("Looping to death: in case of errors in election start time in tests, we might loop \
 					infinitely. This panic is preventing you from that. Double check `mock::ElectionStart` or increase \
 					the 200 limit");
 				}
 				let test_election_start: BlockNumberFor<T> =
 					(crate::mock::ElectionStart::get() as u32).into();
-				if _now == test_election_start {
-					crate::log!(info, "TESTING: Starting election at block {}", _now);
+				if now == test_election_start {
+					crate::log!(info, "TESTING: Starting election at block {}", now);
 					crate::mock::MultiBlock::start().unwrap();
 				}
 			}
@@ -867,6 +888,14 @@ pub mod pezpallet {
 		},
 		/// Phase transition could not even begin becaseu of being out of weight.
 		UnexpectedPhaseTransitionHalt { required: Weight, had: Weight },
+		/// An election was abandoned because it did not produce a result in time, and the
+		/// round was rotated so that a new one can start from a fresh snapshot.
+		StalledRoundRotated {
+			/// The round that was abandoned.
+			round: u32,
+			/// For how many blocks it had been running.
+			blocks: BlockNumberFor<T>,
+		},
 	}
 
 	/// Error of the pezpallet that can be returned in response to dispatches.
@@ -905,6 +934,13 @@ pub mod pezpallet {
 	/// diagnostics of the pezpallet.
 	///
 	/// This is merely incremented once per every time that an upstream `elect` is called.
+	/// Block at which the current election started, if one is ongoing.
+	///
+	/// Set when the election provider is started, cleared when the round rotates. Only used to
+	/// detect a round that stalls past [`Config::StalledRoundTimeout`].
+	#[pezpallet::storage]
+	pub type ElectionStartedAt<T: Config> = StorageValue<_, BlockNumberFor<T>, OptionQuery>;
+
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn round)]
 	pub type Round<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -1555,8 +1591,51 @@ impl<T: Config> Pezpallet<T> {
 			*r += 1
 		});
 
+		// No election is running anymore, so there is nothing for the stall watchdog to time.
+		ElectionStartedAt::<T>::kill();
+
 		// Phase is off now.
 		Self::phase_transition(Phase::Off);
+	}
+
+	/// Abandon the current round if it has been running for longer than
+	/// [`Config::StalledRoundTimeout`], so a new election can start from a fresh snapshot.
+	///
+	/// Returns the consumed weight if it rotated, `None` if it did nothing.
+	fn maybe_rotate_stalled_round(now: BlockNumberFor<T>, phase: &Phase<T>) -> Option<Weight> {
+		let timeout = T::StalledRoundTimeout::get();
+		if timeout.is_zero() {
+			return None;
+		}
+
+		// Only phases that are still trying to produce a solution may be abandoned. `Done` and
+		// `Export` mean a solution exists and the data provider may already be fetching it, so
+		// cutting in would corrupt that hand-off. `Emergency` is a deliberate halt waiting for
+		// governance, and `Off` is not an election at all.
+		if !matches!(
+			phase,
+			Phase::Snapshot(_) | Phase::Signed(_) | Phase::SignedValidation(_) | Phase::Unsigned(_)
+		) {
+			return None;
+		}
+
+		let started = ElectionStartedAt::<T>::get()?;
+		let elapsed = now.saturating_sub(started);
+		if elapsed <= timeout {
+			return None;
+		}
+
+		let round = Self::round();
+		log!(
+			error,
+			"round {} has been running for {:?} blocks without a result, rotating to recover",
+			round,
+			elapsed
+		);
+		Self::deposit_event(Event::StalledRoundRotated { round, blocks: elapsed });
+		Self::rotate_round();
+
+		Some(T::DbWeight::get().reads_writes(3, 3))
 	}
 
 	/// Call fallback for the given page.
@@ -1988,6 +2067,7 @@ impl<T: Config> ElectionProvider for Pezpallet<T> {
 			Ok(_) => return Err(ElectionError::Ongoing),
 		}
 
+		ElectionStartedAt::<T>::put(pezframe_system::Pezpallet::<T>::block_number());
 		Self::phase_transition(Phase::<T>::start_phase());
 		Ok(())
 	}
@@ -3466,5 +3546,95 @@ mod admin_ops {
 				ElectionScore { minimal_stake: 100, ..Default::default() }
 			);
 		});
+	}
+}
+
+#[cfg(test)]
+mod stalled_round_watchdog {
+	use super::*;
+	use crate::{mock::*, Phase};
+
+	/// An election that keeps looping back to the signed phase without ever producing a
+	/// solution holds its round forever. The watchdog must abandon it and rotate, so a new
+	/// election can be started from a fresh snapshot.
+	#[test]
+	fn stalled_round_is_rotated_after_timeout() {
+		ExtBuilder::full().build_and_execute(|| {
+			AreWeDone::set(AreWeDoneModes::BackToSigned);
+			StalledRoundTimeout::set(50);
+
+			// election starts, and no solution is ever submitted (no OCW in `roll_next`).
+			roll_to(ElectionStart::get() + 1);
+			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
+			assert_eq!(MultiBlock::round(), 0);
+			assert_eq!(ElectionStartedAt::<Runtime>::get(), Some(ElectionStart::get()));
+
+			// well past a full election, but still short of the timeout: untouched.
+			roll_to(ElectionStart::get() + 50);
+			assert_eq!(MultiBlock::round(), 0);
+			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
+
+			// one block past the timeout: the round is abandoned.
+			roll_to(ElectionStart::get() + 51);
+			assert_eq!(MultiBlock::round(), 1);
+			assert_eq!(MultiBlock::current_phase(), Phase::Off);
+			assert_eq!(ElectionStartedAt::<Runtime>::get(), None);
+			assert!(multi_block_events()
+				.iter()
+				.any(|e| matches!(e, Event::StalledRoundRotated { round: 0, .. })));
+		})
+	}
+
+	/// A healthy election must never be cut short by the watchdog.
+	#[test]
+	fn healthy_election_is_not_interrupted() {
+		ExtBuilder::full().build_and_execute(|| {
+			StalledRoundTimeout::set(500);
+
+			roll_to_done();
+			assert!(MultiBlock::current_phase().is_done());
+			assert_eq!(MultiBlock::round(), 0);
+			assert!(!multi_block_events()
+				.iter()
+				.any(|e| matches!(e, Event::StalledRoundRotated { .. })));
+		})
+	}
+
+	/// Once a solution exists the data provider may already be fetching it page by page, so the
+	/// watchdog must keep its hands off `Done`/`Export` no matter how long they take.
+	#[test]
+	fn done_phase_is_never_interrupted() {
+		ExtBuilder::full().build_and_execute(|| {
+			StalledRoundTimeout::set(500);
+			roll_to_done();
+			assert!(MultiBlock::current_phase().is_done());
+
+			// make the timeout trivially exceeded.
+			StalledRoundTimeout::set(1);
+			let now = pezframe_system::Pezpallet::<Runtime>::block_number();
+			roll_to(now + 2);
+
+			assert!(MultiBlock::current_phase().is_done(), "done phase was interrupted");
+			assert_eq!(MultiBlock::round(), 0);
+			assert!(!multi_block_events()
+				.iter()
+				.any(|e| matches!(e, Event::StalledRoundRotated { .. })));
+		})
+	}
+
+	/// Zero means the watchdog is off, and a stalled round then stays stalled -- this is the
+	/// pre-watchdog behaviour, kept as an explicit escape hatch.
+	#[test]
+	fn zero_timeout_disables_the_watchdog() {
+		ExtBuilder::full().build_and_execute(|| {
+			AreWeDone::set(AreWeDoneModes::BackToSigned);
+			StalledRoundTimeout::set(0);
+
+			// The mock refuses to roll past block 200, so this is as long a stall as the
+			// harness allows -- and it is many times a full election either way.
+			roll_to(ElectionStart::get() + 150);
+			assert_eq!(MultiBlock::round(), 0);
+			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
+		})
 	}
 }

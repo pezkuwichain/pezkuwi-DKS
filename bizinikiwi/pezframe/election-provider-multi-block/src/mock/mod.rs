@@ -89,6 +89,8 @@ pezframe_election_provider_support::generate_solution_type!(
 );
 
 parameter_types! {
+	/// Zero disables the stalled-round watchdog, which is what most tests want.
+	pub static StalledRoundTimeout: BlockNumber = 0;
 	pub DbWeight: RuntimeDbWeight = RuntimeDbWeight { read: 1, write: 1};
 }
 
@@ -230,6 +232,7 @@ impl crate::Config for Runtime {
 	type Fallback = MockFallback;
 	type TargetSnapshotPerBlock = TargetSnapshotPerBlock;
 	type VoterSnapshotPerBlock = VoterSnapshotPerBlock;
+	type StalledRoundTimeout = StalledRoundTimeout;
 	type MinerConfig = Self;
 	type Verifier = VerifierPallet;
 	type AdminOrigin = EnsureRoot<AccountId>;

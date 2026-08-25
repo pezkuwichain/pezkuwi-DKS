@@ -760,9 +760,35 @@ impl<T: Config> Rotator<T> {
 				// (STALL_GRACE_SESSIONS) to avoid prematurely reverting the era.
 				let election_idle = T::ElectionProvider::status().is_err();
 				let not_fetching = NextElectionPage::<T>::get().is_none();
-				if election_idle && not_fetching {
+				// And nothing has been written for the pending era yet.
+				//
+				// This watchdog exists for the case its comment describes: an election that
+				// finished having produced no winners. Rewinding then costs nothing, because
+				// there is nothing to rewind. But `cleanup()` does not clear
+				// `ErasStakersOverview`/`ErasStakersPaged`, and a re-plan lands on the *same*
+				// era index -- so if exposures are already stored, the replacement election's
+				// pages are added on top of them. A validator's recorded backing doubles;
+				// rewards are split against the inflated total, and slashing, which is
+				// `slash_fraction x exposure.total`, takes twice what it was told to.
+				//
+				// `defensive!` is a no-op in a release runtime, so on a live chain none of
+				// that announces itself. An era with exposures is not stalled in the sense
+				// this recovery was written for -- it is waiting on the relay chain, and
+				// rewinding is precisely what breaks it.
+				let nothing_to_lose = Self::is_planning()
+					.map(|era| ErasStakersOverview::<T>::iter_key_prefix(era).next().is_none())
+					.unwrap_or(true);
+				if election_idle && not_fetching && nothing_to_lose {
+					// An era legitimately sits in this arm for as many sessions as
+					// `PlanningEraOffset` puts between planning and activation. A fixed grace
+					// of three counts the design's own waiting window as a stall wherever
+					// that offset is three or more.
+					let grace = T::PlanningEraOffset::get()
+						.min(T::SessionsPerEra::get())
+						.saturating_add(1)
+						.max(STALL_GRACE_SESSIONS);
 					let count = StallDetectionCount::<T>::get();
-					if count >= STALL_GRACE_SESSIONS {
+					if count >= grace {
 						crate::log!(
 							warn,
 							"Detected stalled pending era {:?}: election finished \
@@ -1029,11 +1055,18 @@ pub(crate) struct EraElectionPlanner<T: Config>(PhantomData<T>);
 impl<T: Config> EraElectionPlanner<T> {
 	/// Cleanup all associated storage items.
 	pub(crate) fn cleanup() {
-		VoterSnapshotStatus::<T>::kill();
+		// The voter snapshot cursor survives an election that is still running.
+		//
+		// Killing it mid-snapshot makes the next page start from the beginning of the voter
+		// list, so voters already taken are taken again -- the duplicate-snapshot fault. Only
+		// an idle provider has no cursor worth keeping.
+		if T::ElectionProvider::status().is_err() {
+			VoterSnapshotStatus::<T>::kill();
+		}
 		NextElectionPage::<T>::kill();
 		ElectableStashes::<T>::kill();
 		StallDetectionCount::<T>::kill();
-		Pezpallet::<T>::register_weight(T::DbWeight::get().writes(3));
+		Pezpallet::<T>::register_weight(T::DbWeight::get().reads_writes(1, 4));
 	}
 
 	/// Fetches the number of pages configured by the election provider.

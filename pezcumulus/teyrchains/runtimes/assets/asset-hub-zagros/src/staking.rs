@@ -56,14 +56,10 @@ parameter_types! {
 	/// validate up to 4 signed solution. Each solution.
 	pub storage SignedValidationPhase: u32 = prod_or_fast!(Pages::get() * 4, Pages::get());
 
-	/// Abandon an election that has produced nothing usable for this long, and start over.
-	///
-	/// A full election takes snapshot (`Pages` + 1) + signed + signed-validation + unsigned +
-	/// export, roughly 400 blocks here. With `AreWeDone = RevertToSignedIfNotQueuedOf` a failing
-	/// election loops back to the signed phase instead of ever returning to `Phase::Off`, which is
-	/// what let round 673 stay frozen for four days in July 2026 — staking's own stall detection
-	/// waits for an *idle* election, so it could never count. Two hours leaves room for about three
-	/// honest attempts before the round is given up on.
+	/// Abandon an election that has produced nothing usable for this long, and start over. See
+	/// the mainnet Asset Hub counterpart for the reasoning; testnet uses a shorter window so a
+	/// stall and its recovery can be observed within one hour instead of three.
+	pub storage StalledRoundTimeout: BlockNumber = prod_or_fast!(1 * HOURS, 10 * MINUTES);
 
 	/// In each page, we may observe up to all of the validators.
 	pub MaxWinnersPerPage: u32 = MaxValidatorSet::get();
@@ -120,6 +116,7 @@ impl pezframe_election_provider_support::onchain::Config for OnChainConfig {
 }
 
 impl multi_block::Config for Runtime {
+	type StalledRoundTimeout = StalledRoundTimeout;
 	type Signed = MultiBlockElectionSigned;
 	type Pages = Pages;
 	type UnsignedPhase = UnsignedPhase;

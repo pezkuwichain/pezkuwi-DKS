@@ -64,6 +64,7 @@ parameter_types! {
 	/// what let round 673 stay frozen for four days in July 2026 — staking's own stall detection
 	/// waits for an *idle* election, so it could never count. Two hours leaves room for about three
 	/// honest attempts before the round is given up on.
+	pub storage StalledRoundTimeout: BlockNumber = prod_or_fast!(2 * HOURS, 10 * MINUTES);
 
 	/// In each page, we may observe up to all of the validators.
 	pub MaxWinnersPerPage: u32 = MaxValidatorSet::get();
@@ -120,6 +121,7 @@ impl pezframe_election_provider_support::onchain::Config for OnChainConfig {
 }
 
 impl multi_block::Config for Runtime {
+	type StalledRoundTimeout = StalledRoundTimeout;
 	type Signed = MultiBlockElectionSigned;
 	type Pages = Pages;
 	type UnsignedPhase = UnsignedPhase;

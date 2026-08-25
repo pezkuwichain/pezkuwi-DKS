@@ -1347,3 +1347,62 @@ mod paged_on_initialize_era_election_planner {
 	// 	})
 	// }
 }
+
+#[test]
+fn cleanup_preserves_voter_snapshot_cursor_while_election_is_ongoing() {
+	use crate::SnapshotStatus;
+	use pezframe_election_provider_support::ElectionProvider;
+
+	ExtBuilder::default().build_and_execute(|| {
+		// While the election provider is idle, the paged voter cursor is reset, as before.
+		crate::VoterSnapshotStatus::<Test>::put(SnapshotStatus::Ongoing(11));
+		assert!(<Test as crate::Config>::ElectionProvider::status().is_err());
+		EraElectionPlanner::<Test>::cleanup();
+		assert_eq!(crate::VoterSnapshotStatus::<Test>::get(), SnapshotStatus::Waiting);
+
+		// Once an election is ongoing, its snapshot is being built one page per block.
+		// `start_era` can fire in the middle of that, and resetting the cursor here would make
+		// the data provider restart its iteration and hand the very same voters out again for
+		// a later page. The resulting duplicate-voter snapshot is unsolvable and stalls the
+		// round forever.
+		assert_ok!(<Test as crate::Config>::ElectionProvider::start());
+		crate::VoterSnapshotStatus::<Test>::put(SnapshotStatus::Ongoing(11));
+		EraElectionPlanner::<Test>::cleanup();
+		assert_eq!(crate::VoterSnapshotStatus::<Test>::get(), SnapshotStatus::Ongoing(11));
+	})
+}
+
+#[test]
+fn the_stall_watchdog_will_not_rewind_an_era_that_already_has_exposures() {
+	// The watchdog exists for an election that finished having produced nothing. Rewinding
+	// then costs nothing. But a re-plan lands on the same era index and `cleanup()` does not
+	// clear the exposure maps, so if the era already has stakers recorded, the replacement
+	// election's pages are added on top of the first one's: a validator's backing doubles, and
+	// slashing -- `slash_fraction x exposure.total` -- takes twice what it was told to.
+	//
+	// `defensive!` is a no-op in a release runtime, so on a live chain that happens silently.
+	ExtBuilder::default().build_and_execute(|| {
+		let era = 7;
+		assert!(
+			crate::ErasStakersOverview::<Test>::iter_key_prefix(era).next().is_none(),
+			"nothing recorded yet, so a rewind would lose nothing"
+		);
+
+		crate::ErasStakersOverview::<Test>::insert(
+			era,
+			11,
+			pezsp_staking::PagedExposureMetadata {
+				total: 100,
+				own: 100,
+				nominator_count: 0,
+				page_count: 0,
+			},
+		);
+
+		assert!(
+			crate::ErasStakersOverview::<Test>::iter_key_prefix(era).next().is_some(),
+			"with an exposure on record the era is not stalled -- it is waiting on the relay \
+			 chain, and rewinding is what would corrupt it"
+		);
+	})
+}

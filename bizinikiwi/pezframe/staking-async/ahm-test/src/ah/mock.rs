@@ -383,6 +383,9 @@ impl multi_block::Config for Runtime {
 	type ManagerOrigin = EnsureRoot<AccountId>;
 	type DataProvider = Staking;
 	type Fallback = pezframe_election_provider_support::onchain::OnChainExecution<OnChainConfig>;
+	// These tests drive the election by hand, block by block; the stall watchdog would only
+	// get in the way, so it stays off.
+	type StalledRoundTimeout = ConstU64<0>;
 	type MinerConfig = Self;
 
 	type Pages = Pages;
