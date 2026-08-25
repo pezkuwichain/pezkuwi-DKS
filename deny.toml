@@ -16,9 +16,14 @@ all-features = true
 # Use `ignore` to suppress specific advisories.
 [advisories]
 yanked = "warn"
-# All unmaintained crates are transitive upstream dependencies we cannot replace.
-# Track via quarterly review instead of blocking CI.
-unmaintained = "none"
+# Checked, not switched off. "none" suppressed the whole class, which meant it also covered
+# any unmaintained crate we might add ourselves, and the reason recorded for it -- that these
+# are transitive upstream dependencies we cannot replace -- was measurably wrong: every one
+# of the seven listed below is declared in our own workspace manifest. "workspace" keeps the
+# check on the surface we can actually act on. The transitive-only ones stay out of scope
+# because we cannot act on them, and a gate that reports what you cannot fix teaches you to
+# skim it. An eighth unmaintained crate now fails the run instead of arriving unannounced.
+unmaintained = "workspace"
 ignore = [
 	# ── wasmtime ──────────────────────────────────────────────────────────────
 	# Nothing is exempted here. The block that used to sit here listed fourteen wasmtime
@@ -27,6 +32,28 @@ ignore = [
 	# on our graph and on main's. Fifteen dead entries also meant fifteen warnings on every
 	# run, which is how a live one would have gone unread. Re-add an entry only with the
 	# advisory that actually fires and the reason it is tolerable.
+
+	# ── unmaintained ──────────────────────────────────────────────────────────
+	# None of these is a known vulnerability. The advisory says only that no further
+	# patches will come, so each needs a reason it is tolerable to carry.
+	#
+	# Macro crates: they run at compile time and no part of them reaches a binary or a blob.
+	"RUSTSEC-2024-0436", # paste
+	"RUSTSEC-2026-0173", # proc-macro-error2
+	#
+	# Host and build-time tooling, never inside a runtime blob — the same class as git2 below.
+	"RUSTSEC-2022-0061", # parity-wasm: wasm-builder, sp-version embed, contracts fixtures
+	"RUSTSEC-2025-0012", # backoff
+	"RUSTSEC-2025-0052", # async-std
+	"RUSTSEC-2025-0141", # bincode
+	#
+	# libsecp256k1 — this line records the item, it does not settle it. The crate is the
+	# host-side body of the secp256k1 ECDSA recovery host function, so every node has to
+	# agree on what it returns: replacing it is a consensus change, not a version bump.
+	# Upstream carries the same crate, so follow upstream rather than diverging alone. If it
+	# is ever to be replaced, the genesis reset is the only window where that costs nothing;
+	# after genesis, changing signature recovery breaks consensus.
+	"RUSTSEC-2025-0161", # libsecp256k1
 
 	# ── memmap2 ───────────────────────────────────────────────────────────────
 	# Unsound unchecked pointer-offset in memory-mapping. Host-side only — memmap2
