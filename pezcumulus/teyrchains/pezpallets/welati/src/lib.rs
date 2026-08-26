@@ -200,7 +200,7 @@ use pezframe_support::traits::Currency;
 use pezframe_support::{
 	dispatch::{GetDispatchInfo, PostDispatchInfo},
 	pezpallet_prelude::*,
-	traits::{EnsureOrigin, Get, Randomness, ReservableCurrency},
+	traits::{EnsureOrigin, Get, Polling, Randomness, ReservableCurrency},
 	weights::Weight,
 };
 use pezframe_system::pezpallet_prelude::*;
@@ -309,6 +309,25 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type PresidentialEndorsements: Get<u32>;
 		type ParliamentaryEndorsements: Get<u32>;
+
+		/// The roll, as the state tally measures support against.
+		///
+		/// Must be the same source the runtime hands `CitizenTally`, or a referendum would be
+		/// counted against one roll and decided against another.
+		type Electorate: Get<u32> + 'static;
+
+		/// The state referenda whose questions this pallet's citizens answer.
+		///
+		/// Voting lives here rather than beside the ballot box because the question of who may
+		/// vote is this pallet's: it holds the roll, and it already answers that question for
+		/// elections. Two pallets answering it would be two answers.
+		type Polls: Polling<
+			crate::types::CitizenTally<Self::Electorate>,
+			Index = u32,
+			Votes = u32,
+			Class = u16,
+			Moment = BlockNumberFor<Self>,
+		>;
 
 		/// Currency used for candidacy deposits
 		type NativeCurrency: ReservableCurrency<Self::AccountId>;
@@ -607,10 +626,34 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn population_gate_reported)]
 	pub type PopulationGateReported<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+	/// How each citizen answered a state referendum.
+	///
+	/// Kept so that nobody is counted twice and so that a citizen can change their mind while
+	/// the question is still open. Nothing is locked -- the count is of heads, not of tokens --
+	/// so the only reason this outlives the poll is to be cleared, which anyone may do once the
+	/// poll is over.
+	#[pezpallet::storage]
+	pub type ReferendumVotes<T: Config> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		u32,
+		Blake2_128Concat,
+		T::AccountId,
+		bool,
+		OptionQuery,
+	>;
+
 	// --- Events ---
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		// --- STATE REFERENDUM EVENTS ---
+		/// A citizen answered a state referendum. Recasting the other way replaces the answer
+		/// rather than adding one.
+		ReferendumVoteCast { who: T::AccountId, poll: u32, aye: bool },
+		/// Answers to a finished referendum were discarded.
+		ReferendumVotesCleared { poll: u32, removed: u32 },
+
 		// --- ELECTION EVENTS ---
 		/// Election started
 		ElectionStarted {
@@ -748,6 +791,16 @@ pub mod pezpallet {
 		InsufficientTrustScore,
 		MissingRequiredTiki,
 		NotACitizen,
+
+		// State referendum errors
+		/// Trust of zero is technical death, and the dead do not vote.
+		NoTrustToVote,
+		/// The referendum is not open for answers -- it never existed, or it has finished.
+		ReferendumNotOngoing,
+		/// The same answer is already recorded. Changing sides is allowed; repeating is not.
+		AlreadyAnsweredThatWay,
+		/// Answers are only discarded once the question is settled.
+		ReferendumStillOngoing,
 
 		// Election errors
 		ElectionNotFound,
@@ -1203,6 +1256,96 @@ pub mod pezpallet {
 				.map_err(|_| Error::<T>::CouldNotReachTreasury)?;
 
 			Self::deposit_event(Event::BudgetSpent { beneficiary, amount });
+			Ok(())
+		}
+
+		/// Answer a state referendum: one citizen, one voice.
+		///
+		/// Nothing is staked and nothing is locked. The count is of people, so weight cannot be
+		/// bought, and a citizen who owns nothing answers as loudly as one who owns everything
+		/// -- which is the whole reason state questions are settled here rather than where the
+		/// tokens are.
+		///
+		/// Two conditions, and both are about standing rather than stake: the caller has to be
+		/// an approved citizen, and their trust has to be above zero. Trust of zero is technical
+		/// death, and the dead do not vote.
+		///
+		/// Answering the other way while the question is open replaces the earlier answer. That
+		/// is not a second vote -- the tally moves by one either way, never by two.
+		#[pezpallet::call_index(50)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		pub fn answer_referendum(
+			origin: OriginFor<T>,
+			#[pezpallet::compact] poll: u32,
+			aye: bool,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+			ensure!(
+				<pezpallet_identity_kyc::Pezpallet<T> as KycStatus<T::AccountId>>::get_kyc_status(
+					&who
+				) == KycLevel::Approved,
+				Error::<T>::NotACitizen
+			);
+			ensure!(
+				T::TrustScoreSource::trust_score_of(&who) > 0,
+				Error::<T>::NoTrustToVote
+			);
+
+			T::Polls::try_access_poll(poll, |status| {
+				let (tally, _class) =
+					status.ensure_ongoing().ok_or(Error::<T>::ReferendumNotOngoing)?;
+
+				match ReferendumVotes::<T>::get(poll, &who) {
+					Some(previous) if previous == aye =>
+						return Err(Error::<T>::AlreadyAnsweredThatWay.into()),
+					// Take the earlier answer back out before putting the new one in, or the
+					// citizen would be counted on both sides at once.
+					Some(true) => tally.ayes = tally.ayes.saturating_sub(1),
+					Some(false) => tally.nays = tally.nays.saturating_sub(1),
+					None => {},
+				}
+
+				if aye {
+					tally.ayes = tally.ayes.saturating_add(1);
+				} else {
+					tally.nays = tally.nays.saturating_add(1);
+				}
+				ReferendumVotes::<T>::insert(poll, &who, aye);
+				Ok(())
+			})?;
+
+			Self::deposit_event(Event::ReferendumVoteCast { who, poll, aye });
+			Ok(())
+		}
+
+		/// Discard the answers to a referendum that has finished.
+		///
+		/// Permissionless, because nothing here belongs to anyone: no deposit is held against
+		/// these entries and no one is disadvantaged by their removal. Without it the map only
+		/// ever grows, one entry per citizen per question, forever.
+		///
+		/// `limit` bounds the work so a long-running question can be cleared across several
+		/// calls rather than in one block nobody else fits into.
+		#[pezpallet::call_index(51)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		pub fn clear_referendum_answers(
+			origin: OriginFor<T>,
+			#[pezpallet::compact] poll: u32,
+			limit: u32,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			ensure!(
+				T::Polls::as_ongoing(poll).is_none(),
+				Error::<T>::ReferendumStillOngoing
+			);
+
+			let removed = ReferendumVotes::<T>::clear_prefix(poll, limit, None);
+			Self::deposit_event(Event::ReferendumVotesCleared {
+				poll,
+				removed: removed.unique,
+			});
 			Ok(())
 		}
 

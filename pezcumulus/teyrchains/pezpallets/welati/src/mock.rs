@@ -6,9 +6,13 @@
 use crate::{self as pezpallet_welati, *};
 use pezframe_support::{
 	assert_ok, construct_runtime, derive_impl, parameter_types,
-	traits::{AsEnsureOriginWithArg, ConstU128, ConstU32, ConstU64, Everything, Randomness},
+	traits::{
+		AsEnsureOriginWithArg, ConstU128, ConstU32, ConstU64, Everything, PollStatus, Polling,
+		Randomness,
+	},
 	BoundedVec,
 };
+use std::collections::BTreeMap;
 use pezsp_core::H256;
 use pezsp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
@@ -415,10 +419,24 @@ impl pezpallet_trust::CitizenshipStatusProvider<AccountId> for MockCitizenshipSt
 }
 
 // MOCK TRUST PROVIDER - HIGH SCORE FOR EVERYONE
+thread_local! {
+	/// What the mock register scores everyone at.
+	///
+	/// Settable because trust of zero is a rule, not an edge: it is technical death, and a
+	/// constant high score can only show the living half of it. Starts high so the tests
+	/// written before it was settable keep behaving as they did.
+	pub static TRUST_SCORE: core::cell::Cell<u128> = const { core::cell::Cell::new(1000) };
+}
+
+/// Set what the register scores everyone at.
+pub fn set_trust_score(n: u128) {
+	TRUST_SCORE.with(|c| c.set(n));
+}
+
 pub struct MockTrustProvider;
 impl pezpallet_trust::TrustScoreProvider<AccountId> for MockTrustProvider {
 	fn trust_score_of(_account: &AccountId) -> u128 {
-		1000u128 // High trust score for everyone
+		TRUST_SCORE.with(|c| c.get())
 	}
 }
 
@@ -539,6 +557,98 @@ pub fn clear_sent_xcm() {
 	SENT_XCM.with(|q| q.borrow_mut().clear());
 }
 
+// --- State referenda, as the voting extrinsic sees them ---
+//
+// A map standing in for `pezpallet_referenda`. The pallet under test only ever reaches a poll
+// through `Polling`, so the whole of what it can observe is here: whether a question is open,
+// what class it belongs to, and the running count. Wiring the real pallet in would test that
+// pallet, not this one.
+
+/// How many citizens the roll holds, as the tally divides by.
+parameter_types! {
+	pub static MockElectorate: u32 = 100;
+	pub static MockPolls: BTreeMap<u32, MockPollState> =
+		vec![(1u32, MockPollState::Ongoing(<CitizenTally<MockElectorate> as pezframe_support::traits::VoteTally<u32, u16>>::new(0), 0u16))].into_iter().collect();
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum MockPollState {
+	Ongoing(CitizenTally<MockElectorate>, u16),
+	Completed(u64, bool),
+}
+
+pub struct TestPolls;
+impl Polling<CitizenTally<MockElectorate>> for TestPolls {
+	type Index = u32;
+	type Votes = u32;
+	type Moment = u64;
+	type Class = u16;
+
+	fn classes() -> Vec<u16> {
+		vec![0]
+	}
+
+	fn as_ongoing(index: u32) -> Option<(CitizenTally<MockElectorate>, u16)> {
+		match MockPolls::get().remove(&index) {
+			Some(MockPollState::Ongoing(tally, class)) => Some((tally, class)),
+			_ => None,
+		}
+	}
+
+	fn access_poll<R>(
+		index: u32,
+		f: impl FnOnce(PollStatus<&mut CitizenTally<MockElectorate>, u64, u16>) -> R,
+	) -> R {
+		let mut polls = MockPolls::get();
+		let r = match polls.get_mut(&index) {
+			Some(MockPollState::Ongoing(ref mut tally, class)) =>
+				f(PollStatus::Ongoing(tally, *class)),
+			Some(MockPollState::Completed(when, ok)) => f(PollStatus::Completed(*when, *ok)),
+			None => f(PollStatus::None),
+		};
+		MockPolls::set(polls);
+		r
+	}
+
+	fn try_access_poll<R>(
+		index: u32,
+		f: impl FnOnce(
+			PollStatus<&mut CitizenTally<MockElectorate>, u64, u16>,
+		) -> Result<R, pezsp_runtime::DispatchError>,
+	) -> Result<R, pezsp_runtime::DispatchError> {
+		let mut polls = MockPolls::get();
+		let r = match polls.get_mut(&index) {
+			Some(MockPollState::Ongoing(ref mut tally, class)) =>
+				f(PollStatus::Ongoing(tally, *class)),
+			Some(MockPollState::Completed(when, ok)) => f(PollStatus::Completed(*when, *ok)),
+			None => f(PollStatus::None),
+		}?;
+		MockPolls::set(polls);
+		Ok(r)
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn create_ongoing(class: u16) -> Result<u32, ()> {
+		let mut polls = MockPolls::get();
+		let i = polls.keys().next_back().map_or(0, |x| x + 1);
+		polls.insert(i, MockPollState::Ongoing(<CitizenTally<MockElectorate> as pezframe_support::traits::VoteTally<u32, u16>>::new(0), class));
+		MockPolls::set(polls);
+		Ok(i)
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn end_ongoing(index: u32, approved: bool) -> Result<(), ()> {
+		let mut polls = MockPolls::get();
+		match polls.get(&index) {
+			Some(MockPollState::Ongoing(..)) => {},
+			_ => return Err(()),
+		}
+		polls.insert(index, MockPollState::Completed(0, approved));
+		MockPolls::set(polls);
+		Ok(())
+	}
+}
+
 impl pezpallet_welati::Config for Test {
 	type WeightInfo = ();
 	type Randomness = MockRandomness;
@@ -546,6 +656,8 @@ impl pezpallet_welati::Config for Test {
 	type TrustScoreSource = MockTrustProvider; // Use the mock provider
 	type TikiSource = MockTikiScoreProvider; // Use the mock Tiki provider
 	type CitizenSource = MockTrustProvider; // Use the mock provider
+	type Electorate = MockElectorate;
+	type Polls = TestPolls;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = ParliamentSize;
 	type DiwanSize = DiwanSize;

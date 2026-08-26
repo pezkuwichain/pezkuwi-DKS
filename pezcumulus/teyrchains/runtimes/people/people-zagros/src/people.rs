@@ -1189,6 +1189,10 @@ impl pezpallet_welati::Config for Runtime {
 	type TrustScoreSource = WelatiTrustScoreSource;
 	type TikiSource = WelatiTikiScoreSource;
 	type CitizenSource = WelatiCitizenSource;
+	// The same roll the tally divides by, so a question is counted and decided against one
+	// register rather than two.
+	type Electorate = CitizenRoll;
+	type Polls = Referenda;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = WelatiParliamentSize;
 	type DiwanSize = WelatiDiwanSize;

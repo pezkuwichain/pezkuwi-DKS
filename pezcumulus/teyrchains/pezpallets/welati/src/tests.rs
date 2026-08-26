@@ -3111,3 +3111,133 @@ mod citizen_tally {
 		});
 	}
 }
+
+// ===== ANSWERING A STATE REFERENDUM =====
+//
+// The ballot box counts heads. Everything below is about that being true in the awkward
+// cases: a citizen who changes their mind, one who tries to answer twice, one whose trust has
+// gone to zero, and a question that is no longer open.
+
+mod state_referendum {
+	use super::*;
+	use crate::{
+		mock::{set_trust_score, MockElectorate, MockPollState, MockPolls, TestPolls},
+		ReferendumVotes,
+	};
+	use pezframe_support::traits::{Polling, VoteTally};
+
+	const VOTER: u64 = 7;
+	const OTHER: u64 = 8;
+	/// The poll the mock starts with, open and empty.
+	const OPEN: u32 = 1;
+
+	fn tally() -> crate::types::CitizenTally<MockElectorate> {
+		TestPolls::as_ongoing(OPEN).expect("poll 1 is open in the mock").0
+	}
+
+	#[test]
+	fn a_citizen_answers_once_and_the_count_moves_by_one() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(VOTER), OPEN, true));
+
+			let t = tally();
+			assert_eq!(t.ayes, 1);
+			assert_eq!(t.nays, 0);
+			assert_eq!(ReferendumVotes::<Test>::get(OPEN, VOTER), Some(true));
+		});
+	}
+
+	#[test]
+	fn two_citizens_are_two_voices_not_two_stakes() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(VOTER), OPEN, true));
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(OTHER), OPEN, true));
+
+			assert_eq!(tally().ayes, 2);
+		});
+	}
+
+	#[test]
+	fn changing_sides_moves_the_count_by_one_not_two() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(VOTER), OPEN, true));
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(VOTER), OPEN, false));
+
+			// The earlier aye has to come back out, or one citizen stands on both sides.
+			let t = tally();
+			assert_eq!(t.ayes, 0);
+			assert_eq!(t.nays, 1);
+			assert_eq!(ReferendumVotes::<Test>::get(OPEN, VOTER), Some(false));
+		});
+	}
+
+	#[test]
+	fn the_same_answer_twice_is_refused() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(VOTER), OPEN, true));
+			assert_noop!(
+				Welati::answer_referendum(RuntimeOrigin::signed(VOTER), OPEN, true),
+				Error::<Test>::AlreadyAnsweredThatWay
+			);
+			assert_eq!(tally().ayes, 1);
+		});
+	}
+
+	#[test]
+	fn trust_of_zero_does_not_vote() {
+		ExtBuilder::default().build().execute_with(|| {
+			set_trust_score(0);
+			assert_noop!(
+				Welati::answer_referendum(RuntimeOrigin::signed(VOTER), OPEN, true),
+				Error::<Test>::NoTrustToVote
+			);
+			set_trust_score(1000);
+		});
+	}
+
+	#[test]
+	fn a_question_that_is_not_open_takes_no_answer() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_noop!(
+				Welati::answer_referendum(RuntimeOrigin::signed(VOTER), 99, true),
+				Error::<Test>::ReferendumNotOngoing
+			);
+		});
+	}
+
+	#[test]
+	fn answers_are_kept_until_the_question_is_settled_and_then_anyone_may_discard_them() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(VOTER), OPEN, true));
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(OTHER), OPEN, false));
+
+			// While it is open the record stands: it is what stops a second vote.
+			assert_noop!(
+				Welati::clear_referendum_answers(RuntimeOrigin::signed(VOTER), OPEN, 10),
+				Error::<Test>::ReferendumStillOngoing
+			);
+
+			let mut polls = MockPolls::get();
+			polls.insert(OPEN, MockPollState::Completed(1, true));
+			MockPolls::set(polls);
+
+			assert_ok!(Welati::clear_referendum_answers(RuntimeOrigin::signed(VOTER), OPEN, 10));
+			assert_eq!(ReferendumVotes::<Test>::get(OPEN, VOTER), None);
+			assert_eq!(ReferendumVotes::<Test>::get(OPEN, OTHER), None);
+		});
+	}
+
+	#[test]
+	fn support_is_measured_against_the_whole_roll_not_against_who_turned_up() {
+		ExtBuilder::default().build().execute_with(|| {
+			assert_ok!(Welati::answer_referendum(RuntimeOrigin::signed(VOTER), OPEN, true));
+
+			let t = tally();
+			// One aye out of a hundred citizens is one percent of the register, however
+			// lopsided the turnout was.
+			assert_eq!(t.support(0u16), pezsp_runtime::Perbill::from_rational(1u32, 100u32));
+			// ..and unanimous among those who came, which is a different question.
+			assert_eq!(t.approval(0u16), pezsp_runtime::Perbill::from_percent(100));
+		});
+	}
+}
