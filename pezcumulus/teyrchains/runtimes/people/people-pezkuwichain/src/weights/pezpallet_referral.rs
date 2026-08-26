@@ -64,26 +64,4 @@ impl<T: pezframe_system::Config> pezpallet_referral::WeightInfo for WeightInfo<T
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: `Referral::Referrals` (r:1 w:1)
-	/// Proof: `Referral::Referrals` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
-	/// Storage: `Referral::ReferralCount` (r:1 w:1)
-	/// Proof: `Referral::ReferralCount` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
-	/// Storage: `Referral::ReferrerStatsStorage` (r:1 w:1)
-	/// Proof: `Referral::ReferrerStatsStorage` (`max_values`: None, `max_size`: Some(60), added: 2535, mode: `MaxEncodedLen`)
-	/// Storage: `Trust::TrustScores` (r:1 w:0)
-	/// Proof: `Trust::TrustScores` (`max_values`: None, `max_size`: Some(64), added: 2539, mode: `MaxEncodedLen`)
-	/// Storage: `StakingScore::CachedStakingDetails` (r:1 w:0)
-	/// Proof: `StakingScore::CachedStakingDetails` (`max_values`: None, `max_size`: Some(89), added: 2564, mode: `MaxEncodedLen`)
-	/// Storage: `Referral::PendingReferrals` (r:0 w:1)
-	/// Proof: `Referral::PendingReferrals` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
-	fn force_confirm_referral() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `148`
-		//  Estimated: `3554`
-		// Minimum execution time: 42_048_000 picoseconds.
-		Weight::from_parts(71_212_000, 0)
-			.saturating_add(Weight::from_parts(0, 3554))
-			.saturating_add(T::DbWeight::get().reads(5))
-			.saturating_add(T::DbWeight::get().writes(4))
-	}
 }

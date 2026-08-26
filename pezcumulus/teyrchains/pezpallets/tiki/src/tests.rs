@@ -48,7 +48,7 @@ fn honorary_citizenship_works() {
 fn grant_appointed_role_works() {
 	new_test_ext().execute_with(|| {
 		let user_account = 2;
-		let tiki_to_grant = TikiEnum::Wezir; // Appointed role
+		let tiki_to_grant = TikiEnum::PisporêEwlehiyaSîber; // Appointed role
 
 		// First mint the citizenship NFT
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), user_account));
@@ -142,7 +142,7 @@ fn role_assignment_types_work_correctly() {
 			RoleAssignmentType::Automatic
 		);
 		assert_eq!(
-			TikiPallet::get_role_assignment_type(&TikiEnum::Wezir),
+			TikiPallet::get_role_assignment_type(&TikiEnum::PisporêEwlehiyaSîber),
 			RoleAssignmentType::Appointed
 		);
 		assert_eq!(
@@ -163,7 +163,10 @@ fn role_assignment_types_work_correctly() {
 		);
 
 		// Test can_grant_role_type
-		assert!(TikiPallet::can_grant_role_type(&TikiEnum::Wezir, &RoleAssignmentType::Appointed));
+		assert!(TikiPallet::can_grant_role_type(
+			&TikiEnum::PisporêEwlehiyaSîber,
+			&RoleAssignmentType::Appointed
+		));
 		assert!(TikiPallet::can_grant_role_type(
 			&TikiEnum::Parlementer,
 			&RoleAssignmentType::Elected
@@ -171,7 +174,10 @@ fn role_assignment_types_work_correctly() {
 		assert!(TikiPallet::can_grant_role_type(&TikiEnum::Axa, &RoleAssignmentType::Earned));
 
 		// Cross-type assignment should fail
-		assert!(!TikiPallet::can_grant_role_type(&TikiEnum::Wezir, &RoleAssignmentType::Elected));
+		assert!(!TikiPallet::can_grant_role_type(
+			&TikiEnum::PisporêEwlehiyaSîber,
+			&RoleAssignmentType::Elected
+		));
 		assert!(!TikiPallet::can_grant_role_type(
 			&TikiEnum::Parlementer,
 			&RoleAssignmentType::Appointed
@@ -257,7 +263,7 @@ fn unique_role_identification_works() {
 		assert!(TikiPallet::is_unique_role(&TikiEnum::Balyoz));
 
 		// Non-unique roles
-		assert!(!TikiPallet::is_unique_role(&TikiEnum::Wezir));
+		assert!(!TikiPallet::is_unique_role(&TikiEnum::PisporêEwlehiyaSîber));
 		assert!(!TikiPallet::is_unique_role(&TikiEnum::Parlementer));
 		assert!(!TikiPallet::is_unique_role(&TikiEnum::Welati));
 		assert!(!TikiPallet::is_unique_role(&TikiEnum::Mamoste));
@@ -268,7 +274,7 @@ fn unique_role_identification_works() {
 fn revoke_tiki_works() {
 	new_test_ext().execute_with(|| {
 		let user_account = 2;
-		let tiki_to_revoke = TikiEnum::Wezir;
+		let tiki_to_revoke = TikiEnum::PisporêEwlehiyaSîber;
 
 		// Mint NFT and grant the role
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), user_account));
@@ -393,14 +399,22 @@ fn scoring_updates_after_role_changes() {
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), user));
 
 		// Add two roles
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), user, TikiEnum::Wezir)); // 100 points
+		assert_ok!(TikiPallet::grant_tiki(
+			RuntimeOrigin::root(),
+			user,
+			TikiEnum::PisporêEwlehiyaSîber
+		)); // 100 points
 		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), user, TikiEnum::Dadger)); // 150 points
 
 		// Total: 10 + 100 + 150 = 260
 		assert_eq!(TikiPallet::get_tiki_score(&user), 260);
 
 		// Revoke one role
-		assert_ok!(TikiPallet::revoke_tiki(RuntimeOrigin::root(), user, TikiEnum::Wezir));
+		assert_ok!(TikiPallet::revoke_tiki(
+			RuntimeOrigin::root(),
+			user,
+			TikiEnum::PisporêEwlehiyaSîber
+		));
 
 		// The score should be updated: 10 + 150 = 160
 		assert_eq!(TikiPallet::get_tiki_score(&user), 160);
@@ -421,7 +435,11 @@ fn multiple_users_work_independently() {
 
 		// Grant different roles
 		assert_ok!(TikiPallet::grant_earned_role(RuntimeOrigin::root(), user1, TikiEnum::Axa)); // 250 points
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), user2, TikiEnum::Wezir)); // 100 points
+		assert_ok!(TikiPallet::grant_tiki(
+			RuntimeOrigin::root(),
+			user2,
+			TikiEnum::PisporêEwlehiyaSîber
+		)); // 100 points
 
 		// Verify the scores
 		assert_eq!(TikiPallet::get_tiki_score(&user1), 260); // 10 + 250
@@ -429,14 +447,14 @@ fn multiple_users_work_independently() {
 
 		// Verify the roles are distributed correctly
 		assert!(TikiPallet::user_tikis(user1).contains(&TikiEnum::Axa));
-		assert!(!TikiPallet::user_tikis(user1).contains(&TikiEnum::Wezir));
+		assert!(!TikiPallet::user_tikis(user1).contains(&TikiEnum::PisporêEwlehiyaSîber));
 
-		assert!(TikiPallet::user_tikis(user2).contains(&TikiEnum::Wezir));
+		assert!(TikiPallet::user_tikis(user2).contains(&TikiEnum::PisporêEwlehiyaSîber));
 		assert!(!TikiPallet::user_tikis(user2).contains(&TikiEnum::Axa));
 
 		// TikiProvider trait tests
 		assert!(TikiPallet::has_tiki(&user1, &TikiEnum::Axa));
-		assert!(!TikiPallet::has_tiki(&user1, &TikiEnum::Wezir));
+		assert!(!TikiPallet::has_tiki(&user1, &TikiEnum::PisporêEwlehiyaSîber));
 		assert_eq!(TikiPallet::get_user_tikis(&user1).len(), 2); // Welati + Axa
 	});
 }
@@ -450,7 +468,11 @@ fn cannot_grant_role_without_citizen_nft() {
 
 		// Attempt to grant a role without an NFT
 		assert_noop!(
-			TikiPallet::grant_tiki(RuntimeOrigin::root(), user_account, TikiEnum::Wezir),
+			TikiPallet::grant_tiki(
+				RuntimeOrigin::root(),
+				user_account,
+				TikiEnum::PisporêEwlehiyaSîber
+			),
 			Error::<Test>::CitizenNftNotFound
 		);
 	});
@@ -509,7 +531,7 @@ fn citizen_nft_already_exists_error() {
 fn cannot_revoke_role_user_does_not_have() {
 	new_test_ext().execute_with(|| {
 		let user = 2;
-		let role = TikiEnum::Wezir;
+		let role = TikiEnum::PisporêEwlehiyaSîber;
 
 		// Mint NFT but do not grant a role
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), user));
@@ -561,18 +583,22 @@ fn tiki_provider_trait_works() {
 
 		// Mint NFT
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), user));
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), user, TikiEnum::Wezir));
+		assert_ok!(TikiPallet::grant_tiki(
+			RuntimeOrigin::root(),
+			user,
+			TikiEnum::PisporêEwlehiyaSîber
+		));
 
 		// Test the TikiProvider trait functions
 		assert!(TikiPallet::is_citizen(&user));
 		assert!(TikiPallet::has_tiki(&user, &TikiEnum::Welati));
-		assert!(TikiPallet::has_tiki(&user, &TikiEnum::Wezir));
+		assert!(TikiPallet::has_tiki(&user, &TikiEnum::PisporêEwlehiyaSîber));
 		assert!(!TikiPallet::has_tiki(&user, &TikiEnum::Serok));
 
 		let user_tikis = TikiPallet::get_user_tikis(&user);
 		assert_eq!(user_tikis.len(), 2);
 		assert!(user_tikis.contains(&TikiEnum::Welati));
-		assert!(user_tikis.contains(&TikiEnum::Wezir));
+		assert!(user_tikis.contains(&TikiEnum::PisporêEwlehiyaSîber));
 	});
 }
 
@@ -585,7 +611,11 @@ fn complex_multi_role_scenario() {
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), user));
 
 		// Add roles of various types
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), user, TikiEnum::Wezir)); // Appointed
+		assert_ok!(TikiPallet::grant_tiki(
+			RuntimeOrigin::root(),
+			user,
+			TikiEnum::PisporêEwlehiyaSîber
+		)); // Appointed
 		assert_ok!(TikiPallet::grant_earned_role(RuntimeOrigin::root(), user, TikiEnum::Mamoste)); // Earned
 		assert_ok!(TikiPallet::grant_elected_role(
 			RuntimeOrigin::root(),
@@ -596,7 +626,7 @@ fn complex_multi_role_scenario() {
 		// Verify all roles were added
 		let user_tikis = TikiPallet::user_tikis(user);
 		assert!(user_tikis.contains(&TikiEnum::Welati)); // 10 points
-		assert!(user_tikis.contains(&TikiEnum::Wezir)); // 100 points
+		assert!(user_tikis.contains(&TikiEnum::PisporêEwlehiyaSîber)); // 100 points
 		assert!(user_tikis.contains(&TikiEnum::Mamoste)); // 70 points
 		assert!(user_tikis.contains(&TikiEnum::Parlementer)); // 100 points
 
@@ -604,7 +634,11 @@ fn complex_multi_role_scenario() {
 		assert_eq!(TikiPallet::get_tiki_score(&user), 280);
 
 		// Revoke one role and verify the score is updated
-		assert_ok!(TikiPallet::revoke_tiki(RuntimeOrigin::root(), user, TikiEnum::Wezir));
+		assert_ok!(TikiPallet::revoke_tiki(
+			RuntimeOrigin::root(),
+			user,
+			TikiEnum::PisporêEwlehiyaSîber
+		));
 		assert_eq!(TikiPallet::get_tiki_score(&user), 180); // 280 - 100 = 180
 	});
 }
@@ -656,7 +690,7 @@ fn role_assignment_type_logic_comprehensive() {
 
 		// Appointed roles (officer roles - default)
 		assert_eq!(
-			TikiPallet::get_role_assignment_type(&TikiEnum::Wezir),
+			TikiPallet::get_role_assignment_type(&TikiEnum::PisporêEwlehiyaSîber),
 			RoleAssignmentType::Appointed
 		);
 		assert_eq!(
@@ -690,7 +724,11 @@ fn stress_test_multiple_users_roles() {
 
 		// User 2: High-level elected roles
 		assert_ok!(TikiPallet::grant_elected_role(RuntimeOrigin::root(), 2, TikiEnum::Serok)); // Unique
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 2, TikiEnum::Wezir));
+		assert_ok!(TikiPallet::grant_tiki(
+			RuntimeOrigin::root(),
+			2,
+			TikiEnum::PisporêEwlehiyaSîber
+		));
 
 		// User 3: Technical roles
 		assert_ok!(TikiPallet::grant_earned_role(RuntimeOrigin::root(), 3, TikiEnum::Mamoste));
@@ -743,7 +781,7 @@ fn maximum_roles_per_user_limit() {
 
 		// For testing purposes add only a few roles (to avoid exceeding the metadata length limit)
 		let roles_to_add = vec![
-			TikiEnum::Wezir,
+			TikiEnum::PisporêEwlehiyaSîber,
 			TikiEnum::Dadger,
 			TikiEnum::Dozger,
 			TikiEnum::Noter,
@@ -890,7 +928,7 @@ fn revoke_tiki_nonexistent_role() {
 
 		// The user does not have this role
 		assert_noop!(
-			TikiPallet::revoke_tiki(RuntimeOrigin::root(), user, TikiEnum::Wezir),
+			TikiPallet::revoke_tiki(RuntimeOrigin::root(), user, TikiEnum::PisporêEwlehiyaSîber),
 			Error::<Test>::RoleNotAssigned
 		);
 	});
@@ -927,7 +965,11 @@ fn get_tiki_score_role_accumulation() {
 		assert_eq!(score2, 160); // 10 + 150
 
 		// Add Wezir (+100)
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), user, TikiEnum::Wezir));
+		assert_ok!(TikiPallet::grant_tiki(
+			RuntimeOrigin::root(),
+			user,
+			TikiEnum::PisporêEwlehiyaSîber
+		));
 		let score3 = TikiPallet::get_tiki_score(&user);
 		assert_eq!(score3, 260); // 10 + 150 + 100
 	});
@@ -984,7 +1026,11 @@ fn user_tikis_consistent_with_score() {
 
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), user));
 		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), user, TikiEnum::Dadger));
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), user, TikiEnum::Wezir));
+		assert_ok!(TikiPallet::grant_tiki(
+			RuntimeOrigin::root(),
+			user,
+			TikiEnum::PisporêEwlehiyaSîber
+		));
 
 		// The UserTikis count should be consistent with the score
 		let user_tikis = TikiPallet::user_tikis(user);
@@ -1005,16 +1051,20 @@ fn multiple_users_independent_roles() {
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), user2));
 
 		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), user1, TikiEnum::Dadger));
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), user2, TikiEnum::Wezir));
+		assert_ok!(TikiPallet::grant_tiki(
+			RuntimeOrigin::root(),
+			user2,
+			TikiEnum::PisporêEwlehiyaSîber
+		));
 
 		// The roles are independent
 		let tikis1 = TikiPallet::user_tikis(user1);
 		let tikis2 = TikiPallet::user_tikis(user2);
 
 		assert!(tikis1.contains(&TikiEnum::Dadger));
-		assert!(!tikis1.contains(&TikiEnum::Wezir));
+		assert!(!tikis1.contains(&TikiEnum::PisporêEwlehiyaSîber));
 
-		assert!(tikis2.contains(&TikiEnum::Wezir));
+		assert!(tikis2.contains(&TikiEnum::PisporêEwlehiyaSîber));
 		assert!(!tikis2.contains(&TikiEnum::Dadger));
 	});
 }
@@ -1120,13 +1170,13 @@ mod terms {
 	fn an_expired_role_reads_as_absent_without_anyone_removing_it() {
 		new_test_ext().execute_with(|| {
 			citizen(2);
-			assert_ok!(TikiPallet::internal_grant_role_until(&2, TikiEnum::WezireDarayiye, 100));
+			assert_ok!(TikiPallet::internal_grant_role_until(&2, TikiEnum::Xezinedar, 100));
 
 			System::set_block_number(100);
-			assert!(TikiPallet::has_tiki(&2, &TikiEnum::WezireDarayiye));
+			assert!(TikiPallet::has_tiki(&2, &TikiEnum::Xezinedar));
 
 			System::set_block_number(101);
-			assert!(!TikiPallet::has_tiki(&2, &TikiEnum::WezireDarayiye));
+			assert!(!TikiPallet::has_tiki(&2, &TikiEnum::Xezinedar));
 		});
 	}
 
@@ -1136,14 +1186,14 @@ mod terms {
 		// portfolio. Reading the raw map would hand it to someone whose term ended.
 		new_test_ext().execute_with(|| {
 			citizen(2);
-			assert_ok!(TikiPallet::internal_grant_role_until(&2, TikiEnum::WezireDarayiye, 100));
+			assert_ok!(TikiPallet::internal_grant_role_until(&2, TikiEnum::Xezinedar, 100));
 
-			assert_eq!(TikiPallet::current_holder(&TikiEnum::WezireDarayiye), Some(2));
+			assert_eq!(TikiPallet::current_holder(&TikiEnum::Xezinedar), Some(2));
 
 			System::set_block_number(200);
-			assert_eq!(TikiPallet::current_holder(&TikiEnum::WezireDarayiye), None);
+			assert_eq!(TikiPallet::current_holder(&TikiEnum::Xezinedar), None);
 			// The raw map still names them, which is exactly why nothing should read it.
-			assert_eq!(TikiPallet::tiki_holder(TikiEnum::WezireDarayiye), Some(2));
+			assert_eq!(TikiPallet::tiki_holder(TikiEnum::Xezinedar), Some(2));
 		});
 	}
 
@@ -1154,19 +1204,19 @@ mod terms {
 		new_test_ext().execute_with(|| {
 			citizen(2);
 			citizen(3);
-			assert_ok!(TikiPallet::internal_grant_role_until(&2, TikiEnum::WezireDarayiye, 100));
+			assert_ok!(TikiPallet::internal_grant_role_until(&2, TikiEnum::Xezinedar, 100));
 
 			// While the term runs, the office is taken.
 			assert_noop!(
-				TikiPallet::internal_grant_role(&3, TikiEnum::WezireDarayiye),
+				TikiPallet::internal_grant_role(&3, TikiEnum::Xezinedar),
 				Error::<Test>::RoleAlreadyTaken
 			);
 
 			System::set_block_number(200);
-			assert_ok!(TikiPallet::internal_grant_role(&3, TikiEnum::WezireDarayiye));
+			assert_ok!(TikiPallet::internal_grant_role(&3, TikiEnum::Xezinedar));
 
-			assert_eq!(TikiPallet::current_holder(&TikiEnum::WezireDarayiye), Some(3));
-			assert!(!TikiPallet::has_tiki(&2, &TikiEnum::WezireDarayiye));
+			assert_eq!(TikiPallet::current_holder(&TikiEnum::Xezinedar), Some(3));
+			assert!(!TikiPallet::has_tiki(&2, &TikiEnum::Xezinedar));
 		});
 	}
 
@@ -1175,7 +1225,7 @@ mod terms {
 		new_test_ext().execute_with(|| {
 			citizen(2);
 			let with_citizenship_only = TikiPallet::get_tiki_score(&2);
-			assert_ok!(TikiPallet::internal_grant_role_until(&2, TikiEnum::WezireDarayiye, 100));
+			assert_ok!(TikiPallet::internal_grant_role_until(&2, TikiEnum::Xezinedar, 100));
 			assert!(TikiPallet::get_tiki_score(&2) > with_citizenship_only);
 
 			System::set_block_number(200);
@@ -1250,7 +1300,7 @@ mod earned {
 		new_test_ext().execute_with(|| {
 			assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), 2));
 
-			for forbidden in [TikiEnum::Serok, TikiEnum::Dadger, TikiEnum::WezireDarayiye] {
+			for forbidden in [TikiEnum::Serok, TikiEnum::Dadger, TikiEnum::Xezinedar] {
 				assert_noop!(
 					<TikiPallet as EarnedRoleGranter<u64, TikiEnum>>::grant_earned(&2, forbidden),
 					Error::<Test>::InvalidRoleAssignmentMethod
@@ -1290,7 +1340,11 @@ mod invariant {
 	fn seated() {
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), 2));
 		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 2, TikiEnum::Xezinedar));
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 2, TikiEnum::Wezir));
+		assert_ok!(TikiPallet::grant_tiki(
+			RuntimeOrigin::root(),
+			2,
+			TikiEnum::PisporêEwlehiyaSîber
+		));
 	}
 
 	#[test]
@@ -1350,7 +1404,7 @@ mod invariant {
 		new_test_ext().execute_with(|| {
 			seated();
 			UserTikis::<Test>::mutate(2, |tikis| {
-				let _ = tikis.try_push(TikiEnum::Wezir);
+				let _ = tikis.try_push(TikiEnum::PisporêEwlehiyaSîber);
 			});
 			assert_rejected("an account held the same role twice");
 		});
@@ -1403,5 +1457,65 @@ fn losing_citizenship_takes_the_offices_first() {
 		assert_eq!(TikiPallet::current_holder(&TikiEnum::Xezinedar), None);
 		assert!(TikiPallet::user_tikis(2).is_empty());
 		assert_eq!(TikiPallet::citizen_nft(2), None);
+	});
+}
+
+#[test]
+fn the_admin_call_cannot_seat_an_office_governance_owns() {
+	new_test_ext().execute_with(|| {
+		let who = 42u64;
+		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), who));
+
+		// The cabinet is the Prime Minister's to fill, the Prime Minister is the President's,
+		// and the bench answers to the court's own rules. Each writes into this register
+		// through welati. This call answers to a wider origin than any of them, so it must
+		// refuse -- otherwise the register can assert an office nobody constitutional decided.
+		for office in [
+			TikiEnum::WezireDarayiye,
+			TikiEnum::WezireDad,
+			TikiEnum::Wezir,
+			TikiEnum::SerokWeziran,
+			TikiEnum::EndameDiwane,
+		] {
+			assert_noop!(
+				TikiPallet::grant_tiki(RuntimeOrigin::root(), who, office),
+				Error::<Test>::SeatedByGovernance
+			);
+		}
+	});
+}
+
+#[test]
+fn the_admin_call_cannot_unseat_an_office_governance_owns() {
+	new_test_ext().execute_with(|| {
+		let minister = 43u64;
+		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), minister));
+
+		// Seat it the way welati does, bypassing the extrinsic.
+		assert_ok!(TikiPallet::internal_grant_role(&minister, TikiEnum::WezireDarayiye));
+
+		// Taking it away has to go back through welati too. An origin that can revoke is an
+		// origin that can replace: revoke then grant is the same as appointing.
+		assert_noop!(
+			TikiPallet::revoke_tiki(RuntimeOrigin::root(), minister, TikiEnum::WezireDarayiye),
+			Error::<Test>::SeatedByGovernance
+		);
+		assert!(TikiPallet::has_tiki(&minister, &TikiEnum::WezireDarayiye));
+	});
+}
+
+#[test]
+fn the_guard_does_not_close_the_only_door_an_office_has() {
+	new_test_ext().execute_with(|| {
+		let who = 44u64;
+		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), who));
+
+		// Nothing in welati seats the Treasurer or the Ambassador, so this call is the only
+		// door they have. Guarding them would leave the offices unfillable.
+		for office in [TikiEnum::Xezinedar, TikiEnum::Balyoz] {
+			assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), who, office));
+			assert!(TikiPallet::has_tiki(&who, &office));
+			assert_ok!(TikiPallet::revoke_tiki(RuntimeOrigin::root(), who, office));
+		}
 	});
 }

@@ -56,7 +56,6 @@ use core::marker::PhantomData;
 /// Weight functions needed for `pezpallet_referral`.
 pub trait WeightInfo {
 	fn initiate_referral() -> Weight;
-	fn force_confirm_referral() -> Weight;
 }
 
 /// Weights for `pezpallet_referral` using the Bizinikiwi node and recommended hardware.
@@ -75,21 +74,6 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
-	/// Storage: `Referral::Referrals` (r:1 w:1)
-	/// Proof: `Referral::Referrals` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
-	/// Storage: `Referral::ReferralCount` (r:1 w:1)
-	/// Proof: `Referral::ReferralCount` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
-	/// Storage: `Referral::PendingReferrals` (r:0 w:1)
-	/// Proof: `Referral::PendingReferrals` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
-	fn force_confirm_referral() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `3`
-		//  Estimated: `3549`
-		// Minimum execution time: 14_792_000 picoseconds.
-		Weight::from_parts(15_141_000, 3549)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
-	}
 }
 
 // For backwards compatibility and tests.
@@ -106,20 +90,5 @@ impl WeightInfo for () {
 		Weight::from_parts(11_696_000, 3549)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
-	}
-	/// Storage: `Referral::Referrals` (r:1 w:1)
-	/// Proof: `Referral::Referrals` (`max_values`: None, `max_size`: Some(84), added: 2559, mode: `MaxEncodedLen`)
-	/// Storage: `Referral::ReferralCount` (r:1 w:1)
-	/// Proof: `Referral::ReferralCount` (`max_values`: None, `max_size`: Some(52), added: 2527, mode: `MaxEncodedLen`)
-	/// Storage: `Referral::PendingReferrals` (r:0 w:1)
-	/// Proof: `Referral::PendingReferrals` (`max_values`: None, `max_size`: Some(80), added: 2555, mode: `MaxEncodedLen`)
-	fn force_confirm_referral() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `3`
-		//  Estimated: `3549`
-		// Minimum execution time: 14_792_000 picoseconds.
-		Weight::from_parts(15_141_000, 3549)
-			.saturating_add(RocksDbWeight::get().reads(2_u64))
-			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 }

@@ -451,6 +451,8 @@ pub mod pezpallet {
 		InvalidRoleAssignmentMethod,
 		/// This role cannot be taken away by anyone.
 		RoleNotRevocable,
+		/// Another pallet owns the seating of this office; use its path.
+		SeatedByGovernance,
 	}
 
 	#[pezpallet::event]
@@ -654,6 +656,8 @@ pub mod pezpallet {
 			T::AdminOrigin::ensure_origin(origin)?;
 			let dest_account = T::Lookup::lookup(dest)?;
 
+			ensure!(!Self::is_seated_by_governance(&tiki), Error::<T>::SeatedByGovernance);
+
 			// Check if the role can be appointed
 			ensure!(
 				Self::can_grant_role_type(&tiki, &RoleAssignmentType::Appointed),
@@ -693,6 +697,8 @@ pub mod pezpallet {
 			// seated before provenance was recorded still has a taxonomy.
 			let assignment = RoleAssignmentTypeOf::<T>::get(&target_account, tiki)
 				.unwrap_or_else(|| Self::get_role_assignment_type(&tiki));
+
+			ensure!(!Self::is_seated_by_governance(&tiki), Error::<T>::SeatedByGovernance);
 
 			match assignment {
 				RoleAssignmentType::Automatic => return Err(Error::<T>::RoleNotRevocable.into()),
@@ -1029,6 +1035,45 @@ pub mod pezpallet {
 					| Tiki::WezireAva
 					| Tiki::WezireCand
 			)
+		}
+
+		/// Whether `tiki` is a cabinet portfolio.
+		///
+		/// The list lives here because this pallet is the register these offices are written
+		/// into. A second copy in the pallet that seats them would be free to drift from the
+		/// one the guard below reads, and the guard would then protect a different set than
+		/// the appointer is allowed to fill.
+		pub fn is_cabinet_tiki(tiki: &Tiki) -> bool {
+			matches!(
+				tiki,
+				Tiki::WezireDarayiye
+					| Tiki::WezireParez
+					| Tiki::WezireDad
+					| Tiki::WezireBelaw
+					| Tiki::WezireTend
+					| Tiki::WezireAva
+					| Tiki::WezireCand
+					| Tiki::Wezir
+			)
+		}
+
+		/// Whether a constitutional process, rather than this pallet's admin call, seats `tiki`.
+		///
+		/// The cabinet is the Prime Minister's to fill, the Prime Minister is the President's,
+		/// and the bench is filled by the house and the President under the court's own rules.
+		/// Each of those paths writes into this register through the internal functions.
+		///
+		/// `grant_tiki` and `revoke_tiki` are the ordinary door, and they answer to a wider
+		/// origin than any of those paths do. Without this guard the register could assert an
+		/// office no constitutional process decided: a council majority could seat a Prime
+		/// Minister the President never appointed, or mint a judge who never sat -- and the
+		/// forged seat carries the trust score of a real one.
+		///
+		/// Offices nobody else seats -- Xezinedar, Balyoz -- are deliberately absent: for them
+		/// this pallet's admin call is the only door there is, and closing it would leave the
+		/// office unfillable.
+		pub fn is_seated_by_governance(tiki: &Tiki) -> bool {
+			Self::is_cabinet_tiki(tiki) || matches!(tiki, Tiki::SerokWeziran | Tiki::EndameDiwane)
 		}
 
 		/// Returns the assignment type of a specific role

@@ -2967,21 +2967,12 @@ pub mod pezpallet {
 
 		/// Whether `tiki` is a cabinet post that `SerokWeziran` may fill.
 		///
-		/// The named portfolios are single-holder; `Wezir` is not, so the state can create a
-		/// ministry for something nobody has thought of yet without a runtime upgrade. What it
-		/// cannot do is create a second finance minister.
+		/// The list itself belongs to `tiki`: that pallet is the register these offices are
+		/// written into, and it reads the same list to refuse its own admin call for them.
+		/// Two copies would be free to drift, and the drift would show up as an office the
+		/// Prime Minister may fill but the register will not accept -- or worse, the reverse.
 		pub fn is_cabinet_tiki(tiki: &Tiki) -> bool {
-			matches!(
-				tiki,
-				Tiki::WezireDarayiye
-					| Tiki::WezireParez
-					| Tiki::WezireDad
-					| Tiki::WezireBelaw
-					| Tiki::WezireTend
-					| Tiki::WezireAva
-					| Tiki::WezireCand
-					| Tiki::Wezir
-			)
+			pezpallet_tiki::Pezpallet::<T>::is_cabinet_tiki(tiki)
 		}
 
 		/// Ask the treasury chain to pay `amount` to `beneficiary` from the government pot.
