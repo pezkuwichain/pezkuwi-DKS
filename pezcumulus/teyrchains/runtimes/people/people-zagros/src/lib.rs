@@ -725,8 +725,9 @@ construct_runtime!(
 		// PezkuwiChain Governance (Welati handles committees internally)
 		Welati: pezpallet_welati = 75,
 
-		// Reserved slots for future committee instances:
 		Diwan: pezpallet_collective::<Instance2> = 74,
+
+		// Reserved slots for future committee instances:
 		// TechnicalCommittee: pezpallet_collective::<Instance3> = 76,
 		// TreasuryCommittee: pezpallet_collective::<Instance4> = 77,
 
