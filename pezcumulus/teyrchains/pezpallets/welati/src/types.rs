@@ -82,9 +82,9 @@ pub enum OfficialRole {
 
 	// Under the Ministry of Technology and Infrastructure
 	#[codec(index = 7)]
-	OperatoreTore,
+	OperatorêTorê,
 	#[codec(index = 8)]
-	PisporeEwlehiyaSiber,
+	PisporêEwlehiyaSîber,
 	#[codec(index = 9)]
 	GerinendeyeDaneye,
 
@@ -100,66 +100,33 @@ pub enum OfficialRole {
 	#[codec(index = 13)]
 	Navbeynkar,
 	#[codec(index = 14)]
-	ParezvaneCandi,
+	ParêzvaneÇandî,
 
 	// Under the Ministry of Audit
 	#[codec(index = 15)]
-	Mufetis,
+	Mufetîs,
 	#[codec(index = 16)]
-	KaliteKontrolker,
+	KalîteKontrolker,
 
 	// Under the Ministry of Economy and Trade
 	#[codec(index = 17)]
 	Bazargan,
 	#[codec(index = 18)]
-	RêvebereProjeyê,
+	RêveberêProjeyê,
 
 	// Under the Ministry of National Education and Religious Affairs
 	#[codec(index = 19)]
-	Feqi,
+	Feqî,
 	#[codec(index = 20)]
 	Perwerdekar,
 	#[codec(index = 21)]
-	Rewsenbir,
+	Rewsenbîr,
 	#[codec(index = 22)]
 	Mamoste,
 
 	// Exceptional appointment (directly by Serok)
 	#[codec(index = 23)]
 	Mela,
-}
-
-/// Minister positions (Wezîr subcategories)
-#[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	Eq,
-	PartialEq,
-	Debug,
-	TypeInfo,
-	MaxEncodedLen,
-	Copy,
-)]
-#[codec(mel_bound())]
-pub enum MinisterRole {
-	/// Minister of Justice
-	AdvaletWeziri,
-	/// Minister of the Treasury
-	XezineWeziri,
-	/// Minister of Technology and Infrastructure
-	TeknolojîWeziri,
-	/// Minister of Internal Affairs and Communications
-	NavxweWeziri,
-	/// Minister of Foreign Affairs
-	DerveWeziri,
-	/// Minister of Audit
-	DenetimWeziri,
-	/// Minister of Economy and Trade
-	AbûrîWeziri,
-	/// Minister of National Education and Religious Affairs
-	PerwerdeDiyanetWeziri,
 }
 
 /// Election types
@@ -1333,7 +1300,6 @@ impl GovernmentPositionInfo for GovernmentPosition {
 
 pub trait OfficialRoleInfo {
 	fn required_trust_score(&self) -> u128;
-	fn nominating_minister(&self) -> MinisterRole;
 	fn requires_parliament_approval(&self) -> bool;
 }
 
@@ -1342,48 +1308,13 @@ impl OfficialRoleInfo for OfficialRole {
 		75 // General requirement specified in the constitution
 	}
 
-	fn nominating_minister(&self) -> MinisterRole {
-		match self {
-			OfficialRole::Dadger
-			| OfficialRole::Dozger
-			| OfficialRole::Hiquqnas
-			| OfficialRole::Noter => MinisterRole::AdvaletWeziri,
-
-			OfficialRole::Xezinedar | OfficialRole::Bacgir | OfficialRole::GerinendeyeCavkaniye => {
-				MinisterRole::XezineWeziri
-			},
-
-			OfficialRole::OperatoreTore
-			| OfficialRole::PisporeEwlehiyaSiber
-			| OfficialRole::GerinendeyeDaneye => MinisterRole::TeknolojîWeziri,
-
-			OfficialRole::Berdevk | OfficialRole::Qeydkar => MinisterRole::NavxweWeziri,
-
-			OfficialRole::Balyoz | OfficialRole::Navbeynkar | OfficialRole::ParezvaneCandi => {
-				MinisterRole::DerveWeziri
-			},
-
-			OfficialRole::Mufetis | OfficialRole::KaliteKontrolker => MinisterRole::DenetimWeziri,
-
-			OfficialRole::Bazargan | OfficialRole::RêvebereProjeyê => MinisterRole::AbûrîWeziri,
-
-			OfficialRole::Feqi
-			| OfficialRole::Perwerdekar
-			| OfficialRole::Rewsenbir
-			| OfficialRole::Mamoste => MinisterRole::PerwerdeDiyanetWeziri,
-
-			// Mela is a special case - appointed directly by Serok
-			OfficialRole::Mela => MinisterRole::AdvaletWeziri, // Placeholder
-		}
-	}
-
 	fn requires_parliament_approval(&self) -> bool {
 		match self {
 			// High-level positions require parliamentary approval
 			OfficialRole::Dadger
 			| OfficialRole::Xezinedar
-			| OfficialRole::PisporeEwlehiyaSiber
-			| OfficialRole::Mufetis
+			| OfficialRole::PisporêEwlehiyaSîber
+			| OfficialRole::Mufetîs
 			| OfficialRole::Balyoz => true,
 			// The others only require Serok approval
 			_ => false,
@@ -1555,21 +1486,21 @@ mod stored_enum_encoding {
 			("Xezinedar", 4u8, &|| OfficialRole::Xezinedar.encode()),
 			("Bacgir", 5u8, &|| OfficialRole::Bacgir.encode()),
 			("GerinendeyeCavkaniye", 6u8, &|| OfficialRole::GerinendeyeCavkaniye.encode()),
-			("OperatoreTore", 7u8, &|| OfficialRole::OperatoreTore.encode()),
-			("PisporeEwlehiyaSiber", 8u8, &|| OfficialRole::PisporeEwlehiyaSiber.encode()),
+			("OperatoreTore", 7u8, &|| OfficialRole::OperatorêTorê.encode()),
+			("PisporeEwlehiyaSiber", 8u8, &|| OfficialRole::PisporêEwlehiyaSîber.encode()),
 			("GerinendeyeDaneye", 9u8, &|| OfficialRole::GerinendeyeDaneye.encode()),
 			("Berdevk", 10u8, &|| OfficialRole::Berdevk.encode()),
 			("Qeydkar", 11u8, &|| OfficialRole::Qeydkar.encode()),
 			("Balyoz", 12u8, &|| OfficialRole::Balyoz.encode()),
 			("Navbeynkar", 13u8, &|| OfficialRole::Navbeynkar.encode()),
-			("ParezvaneCandi", 14u8, &|| OfficialRole::ParezvaneCandi.encode()),
-			("Mufetis", 15u8, &|| OfficialRole::Mufetis.encode()),
-			("KaliteKontrolker", 16u8, &|| OfficialRole::KaliteKontrolker.encode()),
+			("ParezvaneCandi", 14u8, &|| OfficialRole::ParêzvaneÇandî.encode()),
+			("Mufetis", 15u8, &|| OfficialRole::Mufetîs.encode()),
+			("KaliteKontrolker", 16u8, &|| OfficialRole::KalîteKontrolker.encode()),
 			("Bazargan", 17u8, &|| OfficialRole::Bazargan.encode()),
-			("RêvebereProjeyê", 18u8, &|| OfficialRole::RêvebereProjeyê.encode()),
-			("Feqi", 19u8, &|| OfficialRole::Feqi.encode()),
+			("RêvebereProjeyê", 18u8, &|| OfficialRole::RêveberêProjeyê.encode()),
+			("Feqi", 19u8, &|| OfficialRole::Feqî.encode()),
 			("Perwerdekar", 20u8, &|| OfficialRole::Perwerdekar.encode()),
-			("Rewsenbir", 21u8, &|| OfficialRole::Rewsenbir.encode()),
+			("Rewsenbir", 21u8, &|| OfficialRole::Rewsenbîr.encode()),
 			("Mamoste", 22u8, &|| OfficialRole::Mamoste.encode()),
 			("Mela", 23u8, &|| OfficialRole::Mela.encode()),
 		];
