@@ -119,8 +119,17 @@ impl<T: Config> Pezpallet<T> {
 						NetworkId::ByGenesis(genesis_hash) => {
 							// Our networks identify themselves by genesis hash rather than by a
 							// NetworkId variant, so this is the arm that actually decides.
-							*genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH
-								|| *genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH
+							//
+							// An all-zero hash is never us. `ZAGROS_GENESIS_HASH` is `[0; 32]`
+							// until the rebuilt network has a chain spec, and zero is also what
+							// every mock and unconfigured location carries -- so without this
+							// line the guard fires for anyone who has not set a genesis hash,
+							// and reserve transfers of their native asset are refused. A
+							// placeholder that matches is worse than one that identifies
+							// nothing, which is what it was chosen to be.
+							*genesis_hash != [0u8; 32]
+								&& (*genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH
+									|| *genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH)
 						},
 						_ => false,
 					};
@@ -141,8 +150,17 @@ impl<T: Config> Pezpallet<T> {
 						NetworkId::ByGenesis(genesis_hash) => {
 							// Our networks identify themselves by genesis hash rather than by a
 							// NetworkId variant, so this is the arm that actually decides.
-							*genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH
-								|| *genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH
+							//
+							// An all-zero hash is never us. `ZAGROS_GENESIS_HASH` is `[0; 32]`
+							// until the rebuilt network has a chain spec, and zero is also what
+							// every mock and unconfigured location carries -- so without this
+							// line the guard fires for anyone who has not set a genesis hash,
+							// and reserve transfers of their native asset are refused. A
+							// placeholder that matches is worse than one that identifies
+							// nothing, which is what it was chosen to be.
+							*genesis_hash != [0u8; 32]
+								&& (*genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH
+									|| *genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH)
 						},
 						_ => false,
 					};
