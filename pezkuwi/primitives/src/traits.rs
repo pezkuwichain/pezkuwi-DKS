@@ -6,8 +6,8 @@ use pezsp_runtime::traits::BlockNumber as BlockNumberT;
 use pezsp_std::prelude::*;
 use codec::{Encode, Decode};
 use scale_info::TypeInfo;
-// `pezpallet-staking-score`'dan StakingDetails'ı doğrudan kullanabilmek için
-// StakingDetails'ı burada yeniden tanımlıyoruz. Bu struct, pezpallet-staking-score'daki ile BİREBİR AYNI olmalı.
+// `StakingDetails` is redeclared here so this crate need not depend on
+// `pezpallet-staking-score`. It must stay byte-identical to the one there.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, Debug)]
 pub struct StakingDetails<Balance> {
     pub staked_amount: Balance,
@@ -49,7 +49,7 @@ pub trait TikiScoreProvider<AccountId> {
     fn get_tiki_score(who: &AccountId) -> RawScore;
 }
 
-// Trust skorunun güncellenmesi için bir arayüz.
+// An interface for updating a trust score.
 // Bu trait'i Trust paleti implemente edecektir.
 pub trait TrustScoreUpdater<AccountId> {
     /// Belirli bir hesabın Trust Puanını yeniden hesaplar ve günceller.

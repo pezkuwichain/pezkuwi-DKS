@@ -299,8 +299,8 @@ impl pezpallet_perwerde::TrustScoreUpdater<AccountId> for TrustScoreNotifier {
 
 impl pezpallet_identity_kyc::Config for Runtime {
 	type Currency = Balances;
-	// Kademeli yetki devri: Root → Diwan → Teknik Komisyon
-	// Vatandaşlık kararları için Divan (Anayasa Mahkemesi) yetkili
+	// Authority hands over in stages: Root, then the Diwan, then the technical body.
+	// Citizenship is the court's to decide.
 	// The court, and root while sudo exists. Losing citizenship takes every tiki, every
 	// office and the vote with it, so it cannot be a thing a council majority does -- the
 	// comment above this line always said the Diwan decided citizenship; the type did not.
@@ -356,12 +356,12 @@ parameter_types! {
 
 /// Admin origin for Perwerde pezpallet that supports progressive decentralization
 ///
-/// Yetki devri sırası:
-/// 1. Root (Sudo) - Başlangıç aşaması
-/// 2. Council (1/2 çoğunluk) - Seçimler sonrası
-/// 3. Serok atayabilir - Cumhurbaşkanlığı yetkisi
+/// The order authority is handed over in:
+/// 1. Root (sudo), at the start.
+/// 2. The Council at half, once elections have run.
+/// 3. The President, by appointment.
 ///
-/// Bu origin AccountId döndürür (kurs sahibi olarak kullanılır).
+/// Returns an `AccountId`, used as the owner of the course.
 ///
 /// SECURITY: Root and Council origins carry no real signer/AccountId of their own. This
 /// origin previously stood in with the well-known dev keypair `//Alice`, whose private key
@@ -380,7 +380,7 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for PerwerdeAdminOrig
 	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
 		// 1. Root origin kontrolü
 		if let Ok(_) = pezframe_system::ensure_root(o.clone()) {
-			// Root için keyless (private key'i olmayan) sovereign hesap
+			// A keyless sovereign account for Root: nobody holds a private key to it.
 			return Ok(PerwerdeAdminPotId::get().into_account_truncating());
 		}
 
@@ -392,7 +392,7 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for PerwerdeAdminOrig
 			2,
 		>::try_origin(o.clone())
 		{
-			// Komisyon için keyless (private key'i olmayan) sovereign hesap
+			// A keyless sovereign account for the body: nobody holds a private key to it.
 			return Ok(PerwerdeAdminPotId::get().into_account_truncating());
 		}
 
@@ -534,8 +534,8 @@ parameter_types! {
 }
 
 impl pezpallet_tiki::Config for Runtime {
-	// Kademeli yetki devri: Root → Teknik Komisyon
-	// NFT/Rol yönetimi için Teknik Komisyon yetkili
+	// Authority hands over in stages: Root, then the technical body, which is what
+	// administers NFTs and roles.
 	type AdminOrigin = crate::RootOrSerokOrCouncil;
 	// Elected/Earned roles (Serok, SerokiMeclise, Parlementer, Axa, ...) are meant to
 	// carry evidence of a real election/exam, not just committee say-so. Until a
@@ -646,7 +646,7 @@ parameter_types! {
 	pub MaxProposalWeight: Weight = pezsp_runtime::Perbill::from_percent(50) * RuntimeBlockWeights::get().max_block;
 }
 
-// Instance tanımları
+// Collective instances
 pub type CouncilCollective = pezpallet_collective::Instance1;
 
 /// Council (Genel Konsey) - Ana yönetişim organı

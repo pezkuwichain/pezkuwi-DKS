@@ -25,7 +25,7 @@ pub mod people;
 mod weights;
 pub mod xcm_config;
 
-// Re-export komisyon tipleri (lib.rs'de kullanım için)
+// Re-exported so `lib.rs` can name the collectives.
 pub use people::{CouncilCollective, DiwanCollective};
 
 extern crate alloc;
@@ -353,20 +353,17 @@ pub type RootOrFellows = EitherOfDiverse<
 >;
 
 // =============================================================================
-// Kademeli Yetki Devri Origin Tanımları (Progressive Decentralization)
+// Origins for progressive decentralisation
 // =============================================================================
 //
-// Bu origin'ler başlangıçta Root (Sudo) ile çalışır, ancak Welati pezpallet'i
-// aracılığıyla seçimler yapıldığında yetki demokratik organlara devredilir.
+// These begin as Root (sudo) and hand over to the elected bodies as Welati seats them.
 //
-// Kullanım:
-// - Başlangıç: Root (Sudo) tüm yetkilere sahip
-// - Seçim sonrası: Root VEYA ilgili demokratik organ
-// - Sudo kaldırıldığında: Sadece demokratik organlar
+// At first Root holds everything; after an election, Root or the elected body; once sudo
+// retires, the elected body alone.
 // =============================================================================
 
-/// Root VEYA Serok (Cumhurbaşkanı) yetkisi
-/// Kullanım: Yüksek düzey yönetim kararları, atamalar
+/// Root, or the President.
+/// For high-level administrative decisions and appointments.
 pub type RootOrSerok =
 	EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_welati::EnsureSerok<Runtime>>;
 
@@ -374,8 +371,8 @@ pub type RootOrSerok =
 // approvals"; its body accepted **one** member of the house. Nothing used it. An origin
 // meaning "the house resolved" belongs with the state franchise, and it is not this.
 
-/// Root VEYA Divan (Anayasa Mahkemesi) yetkisi
-/// Kullanım: Anayasal kararlar, vatandaşlık işlemleri
+/// Root, or the Diwan.
+/// For constitutional decisions and citizenship.
 /// Root, or the Diwan deciding as a court.
 ///
 /// Two thirds of the bench -- eight of eleven. It used to accept any single member, which
@@ -386,22 +383,21 @@ pub type RootOrDiwan = EitherOfDiverse<
 	pezpallet_collective::EnsureProportionAtLeast<AccountId, people::DiwanCollective, 2, 3>,
 >;
 
-/// Root VEYA Serok VEYA Council yetkisi
-/// Kullanım: Çoğu yönetim işlemi için esnek yetki
+/// Root, the President, or the Council.
+/// The looser authority most administrative work runs under.
 pub type RootOrSerokOrCouncil = EitherOfDiverse<
 	RootOrSerok,
 	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
 >;
 
 // =============================================================================
-// Welati-Based Origin Combinations (Welati Tabanlı Origin Kombinasyonları)
+// Origin combinations built on Welati
 // =============================================================================
 //
-// Bu origin'ler şu an için sadece Welati pezpallet origin'lerini kullanıyor.
-// İleride pezpallet_collective instance'ları eklendiğinde genişletilebilir.
+// These currently name only Welati's origins; collective instances can join them later.
 //
-// Fee Muafiyeti Notu: Komisyon üyeleri (Serok, Parlementer, Diwan) resmi
-// görevlerini yaparken fee'den muaf olmalı. Bu SignedExtension ile sağlanabilir.
+// Fee exemption: office holders acting in office should not pay one. A `SignedExtension`
+// is where that would go; it is not written yet.
 // =============================================================================
 
 /// Root, the President, or two thirds of the Council.
@@ -414,8 +410,8 @@ pub type RootOrSerokOrCouncilTwoThirds = EitherOfDiverse<
 	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 2, 3>,
 >;
 
-/// Root VEYA Diwan VEYA Council
-/// Kullanım: Vatandaşlık ve kimlik işlemleri için kademeli yetki devri
+/// Root, the Diwan, or the Council.
+/// Citizenship and identity, with authority handed over in stages.
 pub type RootOrDiwanOrTechnical = EitherOfDiverse<
 	RootOrDiwan,
 	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,

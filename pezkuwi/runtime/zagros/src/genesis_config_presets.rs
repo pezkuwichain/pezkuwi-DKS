@@ -182,7 +182,7 @@ fn default_teyrchains_host_configuration(
 			lookahead: 3,
 			group_rotation_frequency: 20,
 			paras_availability_period: 4,
-			// System teyrchains için 2 core gerekli (Asset Hub + People Chain)
+			// Two cores, one for each system teyrchain: the Asset Hub and People.
 			num_cores: 2,
 			..Default::default()
 		},
