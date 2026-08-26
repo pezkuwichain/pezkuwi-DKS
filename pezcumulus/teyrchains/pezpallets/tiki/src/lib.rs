@@ -271,12 +271,16 @@ pub mod pezpallet {
 	)]
 	pub enum RoleAssignmentType {
 		/// Automatically assigned roles (like Welati after KYC)
+		#[codec(index = 0)]
 		Automatic,
 		/// Admin-assigned roles (like Wezir, Dadger)
+		#[codec(index = 1)]
 		Appointed,
 		/// Community-elected roles (like Parlementer) - assigned by pezpallet-voting
+		#[codec(index = 2)]
 		Elected,
 		/// Earned roles (Axa, roles obtained through exams)
+		#[codec(index = 3)]
 		Earned,
 	}
 
@@ -296,67 +300,123 @@ pub mod pezpallet {
 	)]
 	#[repr(u32)]
 	pub enum Tiki {
+		#[codec(index = 0)]
 		Welati,
+		#[codec(index = 1)]
 		Parlementer,
+		#[codec(index = 2)]
 		SerokiMeclise,
+		#[codec(index = 3)]
 		Serok,
+		#[codec(index = 4)]
 		Wezir,
+		#[codec(index = 5)]
 		EndameDiwane,
+		#[codec(index = 6)]
 		Dadger,
+		#[codec(index = 7)]
 		Dozger,
+		#[codec(index = 8)]
 		Hiquqnas,
+		#[codec(index = 9)]
 		Noter,
+		#[codec(index = 10)]
 		Xezinedar,
+		#[codec(index = 11)]
 		Bacgir,
+		#[codec(index = 12)]
 		GerinendeyeCavkaniye,
+		#[codec(index = 13)]
 		OperatorêTorê,
+		#[codec(index = 14)]
 		PisporêEwlehiyaSîber,
+		#[codec(index = 15)]
 		GerinendeyeDaneye,
+		#[codec(index = 16)]
 		Berdevk,
+		#[codec(index = 17)]
 		Qeydkar,
+		#[codec(index = 18)]
 		Balyoz,
+		#[codec(index = 19)]
 		Navbeynkar,
+		#[codec(index = 20)]
 		ParêzvaneÇandî,
+		#[codec(index = 21)]
 		Mufetîs,
+		#[codec(index = 22)]
 		KalîteKontrolker,
+		#[codec(index = 23)]
 		Mela,
+		#[codec(index = 24)]
 		Feqî,
+		#[codec(index = 25)]
 		Perwerdekar,
+		#[codec(index = 26)]
 		Rewsenbîr,
+		#[codec(index = 27)]
 		RêveberêProjeyê,
+		#[codec(index = 28)]
 		SerokêKomele,
+		#[codec(index = 29)]
 		ModeratorêCivakê,
+		#[codec(index = 30)]
 		Axa,
+		#[codec(index = 31)]
 		Pêseng,
+		#[codec(index = 32)]
 		Sêwirmend,
+		#[codec(index = 33)]
 		Hekem,
+		#[codec(index = 34)]
 		Mamoste,
 		// Newly added economic roles
+		#[codec(index = 35)]
 		Bazargan,
 		// Government roles
+		#[codec(index = 36)]
 		SerokWeziran,
+		#[codec(index = 37)]
 		WezireDarayiye,
+		#[codec(index = 38)]
 		WezireParez,
+		#[codec(index = 39)]
 		WezireDad,
+		#[codec(index = 40)]
 		WezireBelaw,
+		#[codec(index = 41)]
 		WezireTend,
+		#[codec(index = 42)]
 		WezireAva,
+		#[codec(index = 43)]
 		WezireCand,
 		// Newly added functional / professional roles. Appended at the end to preserve
 		// the SCALE encoding (discriminant order) of existing on-chain values. The trust
 		// bonuses assigned below are provisional and should be ratified by governance.
-		Bernamenivîs,       // Software developer / engineer (builds the chain itself)
-		Wergêr,             // Translator (a six-language nation needs this)
-		Aborînas,           // Economist
-		Hesabdar,           // Accountant
-		Rojnamevan,         // Journalist
+		#[codec(index = 44)]
+		Bernamenivîs, // Software developer / engineer (builds the chain itself)
+		#[codec(index = 45)]
+		Wergêr, // Translator (a six-language nation needs this)
+		#[codec(index = 46)]
+		Aborînas, // Economist
+		#[codec(index = 47)]
+		Hesabdar, // Accountant
+		#[codec(index = 48)]
+		Rojnamevan, // Journalist
+		#[codec(index = 49)]
 		PisporêBazarkirinê, // Marketing specialist
-		Statîstîknas,       // Statistician
-		Piştrastkar,        // KYC verifier
-		Hilbijartinkar,     // Election officer
-		Îcrakar,            // Executor / enforcement officer
-		Karguzar,           // Human-resources officer
-		Plansaz,            // Budget planner
+		#[codec(index = 50)]
+		Statîstîknas, // Statistician
+		#[codec(index = 51)]
+		Piştrastkar, // KYC verifier
+		#[codec(index = 52)]
+		Hilbijartinkar, // Election officer
+		#[codec(index = 53)]
+		Îcrakar, // Executor / enforcement officer
+		#[codec(index = 54)]
+		Karguzar, // Human-resources officer
+		#[codec(index = 55)]
+		Plansaz, // Budget planner
 	}
 
 	impl From<Tiki> for u32 {
@@ -1367,5 +1427,114 @@ impl<T: Config> pezpallet_identity_kyc::types::CitizenNftProvider<T::AccountId> 
 		}
 
 		Ok(())
+	}
+}
+
+// ===== STORED ENUM ENCODING =====
+//
+// SCALE encodes a fieldless enum by the variant's position, and three of these are storage
+// keys. Insert a variant in the middle -- grouping by ministry, or alphabetising, is the most
+// natural thing anyone would do -- and every key already written decodes as a different
+// value. It does not break; it quietly means something else. A judge becomes a treasurer.
+//
+// The explicit indices pin the number to the variant rather than to its position, and this
+// holds those numbers to what they were when the chain started. A variant may be added at the
+// end with the next free number; nothing here may be renumbered, and a number left behind by
+// a removed variant is not reusable.
+//
+// Generating those indices is itself the hazard this guards against: the first attempt lost
+// nineteen variants whose names carry Kurdish letters and silently shifted everything after
+// them. Two of the shifts collided and the codec derive refused to compile; the rest would
+// have gone through.
+
+#[cfg(test)]
+mod stored_enum_encoding {
+	use super::*;
+	use codec::Encode;
+
+	#[test]
+	fn tiki_indices_are_pinned() {
+		let pinned: &[(&str, u8, &dyn Fn() -> Vec<u8>)] = &[
+			("Welati", 0u8, &|| Tiki::Welati.encode()),
+			("Parlementer", 1u8, &|| Tiki::Parlementer.encode()),
+			("SerokiMeclise", 2u8, &|| Tiki::SerokiMeclise.encode()),
+			("Serok", 3u8, &|| Tiki::Serok.encode()),
+			("Wezir", 4u8, &|| Tiki::Wezir.encode()),
+			("EndameDiwane", 5u8, &|| Tiki::EndameDiwane.encode()),
+			("Dadger", 6u8, &|| Tiki::Dadger.encode()),
+			("Dozger", 7u8, &|| Tiki::Dozger.encode()),
+			("Hiquqnas", 8u8, &|| Tiki::Hiquqnas.encode()),
+			("Noter", 9u8, &|| Tiki::Noter.encode()),
+			("Xezinedar", 10u8, &|| Tiki::Xezinedar.encode()),
+			("Bacgir", 11u8, &|| Tiki::Bacgir.encode()),
+			("GerinendeyeCavkaniye", 12u8, &|| Tiki::GerinendeyeCavkaniye.encode()),
+			("OperatorêTorê", 13u8, &|| Tiki::OperatorêTorê.encode()),
+			("PisporêEwlehiyaSîber", 14u8, &|| Tiki::PisporêEwlehiyaSîber.encode()),
+			("GerinendeyeDaneye", 15u8, &|| Tiki::GerinendeyeDaneye.encode()),
+			("Berdevk", 16u8, &|| Tiki::Berdevk.encode()),
+			("Qeydkar", 17u8, &|| Tiki::Qeydkar.encode()),
+			("Balyoz", 18u8, &|| Tiki::Balyoz.encode()),
+			("Navbeynkar", 19u8, &|| Tiki::Navbeynkar.encode()),
+			("ParêzvaneÇandî", 20u8, &|| Tiki::ParêzvaneÇandî.encode()),
+			("Mufetîs", 21u8, &|| Tiki::Mufetîs.encode()),
+			("KalîteKontrolker", 22u8, &|| Tiki::KalîteKontrolker.encode()),
+			("Mela", 23u8, &|| Tiki::Mela.encode()),
+			("Feqî", 24u8, &|| Tiki::Feqî.encode()),
+			("Perwerdekar", 25u8, &|| Tiki::Perwerdekar.encode()),
+			("Rewsenbîr", 26u8, &|| Tiki::Rewsenbîr.encode()),
+			("RêveberêProjeyê", 27u8, &|| Tiki::RêveberêProjeyê.encode()),
+			("SerokêKomele", 28u8, &|| Tiki::SerokêKomele.encode()),
+			("ModeratorêCivakê", 29u8, &|| Tiki::ModeratorêCivakê.encode()),
+			("Axa", 30u8, &|| Tiki::Axa.encode()),
+			("Pêseng", 31u8, &|| Tiki::Pêseng.encode()),
+			("Sêwirmend", 32u8, &|| Tiki::Sêwirmend.encode()),
+			("Hekem", 33u8, &|| Tiki::Hekem.encode()),
+			("Mamoste", 34u8, &|| Tiki::Mamoste.encode()),
+			("Bazargan", 35u8, &|| Tiki::Bazargan.encode()),
+			("SerokWeziran", 36u8, &|| Tiki::SerokWeziran.encode()),
+			("WezireDarayiye", 37u8, &|| Tiki::WezireDarayiye.encode()),
+			("WezireParez", 38u8, &|| Tiki::WezireParez.encode()),
+			("WezireDad", 39u8, &|| Tiki::WezireDad.encode()),
+			("WezireBelaw", 40u8, &|| Tiki::WezireBelaw.encode()),
+			("WezireTend", 41u8, &|| Tiki::WezireTend.encode()),
+			("WezireAva", 42u8, &|| Tiki::WezireAva.encode()),
+			("WezireCand", 43u8, &|| Tiki::WezireCand.encode()),
+			("Bernamenivîs", 44u8, &|| Tiki::Bernamenivîs.encode()),
+			("Wergêr", 45u8, &|| Tiki::Wergêr.encode()),
+			("Aborînas", 46u8, &|| Tiki::Aborînas.encode()),
+			("Hesabdar", 47u8, &|| Tiki::Hesabdar.encode()),
+			("Rojnamevan", 48u8, &|| Tiki::Rojnamevan.encode()),
+			("PisporêBazarkirinê", 49u8, &|| Tiki::PisporêBazarkirinê.encode()),
+			("Statîstîknas", 50u8, &|| Tiki::Statîstîknas.encode()),
+			("Piştrastkar", 51u8, &|| Tiki::Piştrastkar.encode()),
+			("Hilbijartinkar", 52u8, &|| Tiki::Hilbijartinkar.encode()),
+			("Îcrakar", 53u8, &|| Tiki::Îcrakar.encode()),
+			("Karguzar", 54u8, &|| Tiki::Karguzar.encode()),
+			("Plansaz", 55u8, &|| Tiki::Plansaz.encode()),
+		];
+		let moved: Vec<&str> = pinned
+			.iter()
+			.filter(|(_, want, enc)| enc() != vec![*want])
+			.map(|(name, _, _)| *name)
+			.collect();
+		assert!(moved.is_empty(), "`Tiki` indices moved: {moved:?}");
+		assert_eq!(pinned.len(), 56, "a variant was added or removed");
+	}
+
+	#[test]
+	fn roleassignmenttype_indices_are_pinned() {
+		let pinned: &[(&str, u8, &dyn Fn() -> Vec<u8>)] = &[
+			("Automatic", 0u8, &|| RoleAssignmentType::Automatic.encode()),
+			("Appointed", 1u8, &|| RoleAssignmentType::Appointed.encode()),
+			("Elected", 2u8, &|| RoleAssignmentType::Elected.encode()),
+			("Earned", 3u8, &|| RoleAssignmentType::Earned.encode()),
+		];
+		let moved: Vec<&str> = pinned
+			.iter()
+			.filter(|(_, want, enc)| enc() != vec![*want])
+			.map(|(name, _, _)| *name)
+			.collect();
+		assert!(moved.is_empty(), "`RoleAssignmentType` indices moved: {moved:?}");
+		assert_eq!(pinned.len(), 4, "a variant was added or removed");
 	}
 }

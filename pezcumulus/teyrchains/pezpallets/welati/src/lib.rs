@@ -1032,7 +1032,7 @@ pub mod pezpallet {
 			// to "who is President" depends on who is asking.
 			for (position, tiki) in [
 				(GovernmentPosition::Serok, Tiki::Serok),
-				(GovernmentPosition::MeclisBaskanı, Tiki::SerokiMeclise),
+				(GovernmentPosition::SerokiMeclise, Tiki::SerokiMeclise),
 			] {
 				if let Some(holder) = pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki) {
 					ensure!(
@@ -2802,7 +2802,7 @@ pub mod pezpallet {
 						// replaced, so it ends with it. Clearing the term here is what makes
 						// the scheduler open a Speaker election for the new house.
 						let _ = Self::vacate_unique_tiki(Tiki::SerokiMeclise);
-						CurrentOfficials::<T>::remove(GovernmentPosition::MeclisBaskanı);
+						CurrentOfficials::<T>::remove(GovernmentPosition::SerokiMeclise);
 						TermEnds::<T>::remove(ElectionType::SpeakerElection);
 
 						let parliament_members: Result<BoundedVec<_, _>, _> = winners
@@ -2846,7 +2846,7 @@ pub mod pezpallet {
 						TermEnds::<T>::insert(election_type, ends_at);
 						Self::seat_elected_tiki(winner, Tiki::SerokiMeclise, ends_at)?;
 						Self::record_consecutive_term(election_type, winner);
-						CurrentOfficials::<T>::insert(GovernmentPosition::MeclisBaskanı, winner);
+						CurrentOfficials::<T>::insert(GovernmentPosition::SerokiMeclise, winner);
 					}
 				},
 				ElectionType::ConstitutionalCourt => {

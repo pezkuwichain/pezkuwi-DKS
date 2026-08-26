@@ -9,16 +9,21 @@ use scale_info::TypeInfo;
 pub enum KycLevel {
 	/// No citizenship application
 	#[default]
+	#[codec(index = 0)]
 	NotStarted,
 	/// Application submitted, waiting for referrer approval
 	/// TRUSTLESS: Referrer must approve before self-confirmation
+	#[codec(index = 1)]
 	PendingReferral,
 	/// Referrer approved, waiting for applicant's self-confirmation
 	/// TRUSTLESS: No admin involved, applicant confirms themselves
+	#[codec(index = 2)]
 	ReferrerApproved,
 	/// Approved citizen with full rights
+	#[codec(index = 3)]
 	Approved,
 	/// Citizenship revoked (by governance or self-renounce)
+	#[codec(index = 4)]
 	Revoked,
 }
 
@@ -218,5 +223,46 @@ where
 	fn on_citizenship_revoked(who: &AccountId) {
 		A::on_citizenship_revoked(who);
 		B::on_citizenship_revoked(who);
+	}
+}
+
+// ===== STORED ENUM ENCODING =====
+//
+// SCALE encodes a fieldless enum by the variant's position, and three of these are storage
+// keys. Insert a variant in the middle -- grouping by ministry, or alphabetising, is the most
+// natural thing anyone would do -- and every key already written decodes as a different
+// value. It does not break; it quietly means something else. A judge becomes a treasurer.
+//
+// The explicit indices pin the number to the variant rather than to its position, and this
+// holds those numbers to what they were when the chain started. A variant may be added at the
+// end with the next free number; nothing here may be renumbered, and a number left behind by
+// a removed variant is not reusable.
+//
+// Generating those indices is itself the hazard this guards against: the first attempt lost
+// nineteen variants whose names carry Kurdish letters and silently shifted everything after
+// them. Two of the shifts collided and the codec derive refused to compile; the rest would
+// have gone through.
+
+#[cfg(test)]
+mod stored_enum_encoding {
+	use super::*;
+	use codec::Encode;
+
+	#[test]
+	fn kyclevel_indices_are_pinned() {
+		let pinned: &[(&str, u8, &dyn Fn() -> Vec<u8>)] = &[
+			("NotStarted", 0u8, &|| KycLevel::NotStarted.encode()),
+			("PendingReferral", 1u8, &|| KycLevel::PendingReferral.encode()),
+			("ReferrerApproved", 2u8, &|| KycLevel::ReferrerApproved.encode()),
+			("Approved", 3u8, &|| KycLevel::Approved.encode()),
+			("Revoked", 4u8, &|| KycLevel::Revoked.encode()),
+		];
+		let moved: Vec<&str> = pinned
+			.iter()
+			.filter(|(_, want, enc)| enc() != vec![*want])
+			.map(|(name, _, _)| *name)
+			.collect();
+		assert!(moved.is_empty(), "`KycLevel` indices moved: {moved:?}");
+		assert_eq!(pinned.len(), 5, "a variant was added or removed");
 	}
 }

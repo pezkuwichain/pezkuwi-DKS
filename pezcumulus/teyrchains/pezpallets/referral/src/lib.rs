@@ -137,7 +137,15 @@ pub mod pezpallet {
 	use pezframe_system::pezpallet_prelude::*;
 	use pezpallet_identity_kyc::types::{KycStatus, OnCitizenshipRevoked, OnKycApproved};
 
+	/// The version this pallet's storage layout is at.
+	///
+	/// Declared so that the first migration has a baseline to compare against. Without it the
+	/// in-code and on-chain versions are both an implicit zero, and a migration cannot tell a
+	/// chain that has never been migrated from one that has been migrated to zero.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
 	#[pezpallet::pezpallet]
+	#[pezpallet::storage_version(STORAGE_VERSION)]
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::hooks]

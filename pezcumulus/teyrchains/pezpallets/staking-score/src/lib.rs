@@ -110,12 +110,22 @@ pub mod pezpallet {
 	)]
 	pub enum StakingSource {
 		/// Direct staking on the Relay Chain.
+		#[codec(index = 0)]
 		RelayChain = 0,
 		/// Staking via nomination pools on Asset Hub.
+		#[codec(index = 1)]
 		AssetHub = 1,
 	}
 
+	/// The version this pallet's storage layout is at.
+	///
+	/// Declared so that the first migration has a baseline to compare against. Without it the
+	/// in-code and on-chain versions are both an implicit zero, and a migration cannot tell a
+	/// chain that has never been migrated from one that has been migrated to zero.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
 	#[pezpallet::pezpallet]
+	#[pezpallet::storage_version(STORAGE_VERSION)]
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::hooks]
@@ -887,5 +897,43 @@ pub mod pezpallet {
 
 			(final_score.min(MAX_STAKING_SCORE), duration_for_return)
 		}
+	}
+}
+
+// ===== STORED ENUM ENCODING =====
+//
+// SCALE encodes a fieldless enum by the variant's position, and three of these are storage
+// keys. Insert a variant in the middle -- grouping by ministry, or alphabetising, is the most
+// natural thing anyone would do -- and every key already written decodes as a different
+// value. It does not break; it quietly means something else. A judge becomes a treasurer.
+//
+// The explicit indices pin the number to the variant rather than to its position, and this
+// holds those numbers to what they were when the chain started. A variant may be added at the
+// end with the next free number; nothing here may be renumbered, and a number left behind by
+// a removed variant is not reusable.
+//
+// Generating those indices is itself the hazard this guards against: the first attempt lost
+// nineteen variants whose names carry Kurdish letters and silently shifted everything after
+// them. Two of the shifts collided and the codec derive refused to compile; the rest would
+// have gone through.
+
+#[cfg(test)]
+mod stored_enum_encoding {
+	use super::*;
+	use codec::Encode;
+
+	#[test]
+	fn stakingsource_indices_are_pinned() {
+		let pinned: &[(&str, u8, &dyn Fn() -> Vec<u8>)] = &[
+			("RelayChain", 0u8, &|| pezpallet::StakingSource::RelayChain.encode()),
+			("AssetHub", 1u8, &|| pezpallet::StakingSource::AssetHub.encode()),
+		];
+		let moved: Vec<&str> = pinned
+			.iter()
+			.filter(|(_, want, enc)| enc() != vec![*want])
+			.map(|(name, _, _)| *name)
+			.collect();
+		assert!(moved.is_empty(), "`StakingSource` indices moved: {moved:?}");
+		assert_eq!(pinned.len(), 2, "a variant was added or removed");
 	}
 }

@@ -34,12 +34,16 @@ pub enum ElectionOutcome<AccountId> {
 #[codec(mel_bound())]
 pub enum GovernmentPosition {
 	/// President (Serok)
+	#[codec(index = 0)]
 	Serok,
 	/// Member of Parliament (Parlementer)
+	#[codec(index = 1)]
 	Parlementer,
 	/// Speaker of Parliament (SerokiMeclise)
-	MeclisBaskanı,
+	#[codec(index = 2)]
+	SerokiMeclise,
 	/// Diwan Member (EndameDiwane)
+	#[codec(index = 3)]
 	EndameDiwane,
 }
 
@@ -59,45 +63,69 @@ pub enum GovernmentPosition {
 #[codec(mel_bound())]
 pub enum OfficialRole {
 	// Under the Ministry of Justice
+	#[codec(index = 0)]
 	Dadger,
+	#[codec(index = 1)]
 	Dozger,
+	#[codec(index = 2)]
 	Hiquqnas,
+	#[codec(index = 3)]
 	Noter,
 
 	// Under the Ministry of the Treasury
+	#[codec(index = 4)]
 	Xezinedar,
+	#[codec(index = 5)]
 	Bacgir,
+	#[codec(index = 6)]
 	GerinendeyeCavkaniye,
 
 	// Under the Ministry of Technology and Infrastructure
+	#[codec(index = 7)]
 	OperatoreTore,
+	#[codec(index = 8)]
 	PisporeEwlehiyaSiber,
+	#[codec(index = 9)]
 	GerinendeyeDaneye,
 
 	// Under the Ministry of Internal Affairs and Communications
+	#[codec(index = 10)]
 	Berdevk,
+	#[codec(index = 11)]
 	Qeydkar,
 
 	// Under the Ministry of Foreign Affairs
+	#[codec(index = 12)]
 	Balyoz,
+	#[codec(index = 13)]
 	Navbeynkar,
+	#[codec(index = 14)]
 	ParezvaneCandi,
 
 	// Under the Ministry of Audit
+	#[codec(index = 15)]
 	Mufetis,
+	#[codec(index = 16)]
 	KaliteKontrolker,
 
 	// Under the Ministry of Economy and Trade
+	#[codec(index = 17)]
 	Bazargan,
+	#[codec(index = 18)]
 	RêvebereProjeyê,
 
 	// Under the Ministry of National Education and Religious Affairs
+	#[codec(index = 19)]
 	Feqi,
+	#[codec(index = 20)]
 	Perwerdekar,
+	#[codec(index = 21)]
 	Rewsenbir,
+	#[codec(index = 22)]
 	Mamoste,
 
 	// Exceptional appointment (directly by Serok)
+	#[codec(index = 23)]
 	Mela,
 }
 
@@ -150,12 +178,16 @@ pub enum MinisterRole {
 #[codec(mel_bound())]
 pub enum ElectionType {
 	/// Presidential election (special rules)
+	#[codec(index = 0)]
 	Presidential,
 	/// Parliamentary election (201 members)
+	#[codec(index = 1)]
 	Parliamentary,
 	/// Speaker election (among members of parliament)
+	#[codec(index = 2)]
 	SpeakerElection,
 	/// Diwan member election
+	#[codec(index = 3)]
 	ConstitutionalCourt,
 }
 
@@ -1275,7 +1307,7 @@ impl GovernmentPositionInfo for GovernmentPosition {
 		match self {
 			GovernmentPosition::Serok => 600,
 			GovernmentPosition::Parlementer => 300,
-			GovernmentPosition::MeclisBaskanı => 400,
+			GovernmentPosition::SerokiMeclise => 400,
 			GovernmentPosition::EndameDiwane => 750,
 		}
 	}
@@ -1284,7 +1316,7 @@ impl GovernmentPositionInfo for GovernmentPosition {
 		match self {
 			GovernmentPosition::Serok => Some(Tiki::Welati),
 			GovernmentPosition::Parlementer => Some(Tiki::Welati),
-			GovernmentPosition::MeclisBaskanı => Some(Tiki::Parlementer),
+			GovernmentPosition::SerokiMeclise => Some(Tiki::Parlementer),
 			GovernmentPosition::EndameDiwane => Some(Tiki::Welati),
 		}
 	}
@@ -1293,7 +1325,7 @@ impl GovernmentPositionInfo for GovernmentPosition {
 		match self {
 			GovernmentPosition::Serok => 4 * 365 * 24 * 60 * 10, // 4 years
 			GovernmentPosition::Parlementer => 4 * 365 * 24 * 60 * 10, // 4 years
-			GovernmentPosition::MeclisBaskanı => 2 * 365 * 24 * 60 * 10, // 2 years
+			GovernmentPosition::SerokiMeclise => 2 * 365 * 24 * 60 * 10, // 2 years
 			GovernmentPosition::EndameDiwane => 9 * 365 * 24 * 60 * 10, // 9 years
 		}
 	}
@@ -1472,4 +1504,98 @@ pub struct Initiative<AccountId, BlockNumber, Hash> {
 	pub backing: u32,
 	/// What the proposer put up, returned on success and forfeit on lapse.
 	pub deposit: u128,
+}
+
+// ===== STORED ENUM ENCODING =====
+//
+// SCALE encodes a fieldless enum by the variant's position, and three of these are storage
+// keys. Insert a variant in the middle -- grouping by ministry, or alphabetising, is the most
+// natural thing anyone would do -- and every key already written decodes as a different
+// value. It does not break; it quietly means something else. A judge becomes a treasurer.
+//
+// The explicit indices pin the number to the variant rather than to its position, and this
+// holds those numbers to what they were when the chain started. A variant may be added at the
+// end with the next free number; nothing here may be renumbered, and a number left behind by
+// a removed variant is not reusable.
+//
+// Generating those indices is itself the hazard this guards against: the first attempt lost
+// nineteen variants whose names carry Kurdish letters and silently shifted everything after
+// them. Two of the shifts collided and the codec derive refused to compile; the rest would
+// have gone through.
+
+#[cfg(test)]
+mod stored_enum_encoding {
+	use super::*;
+	use codec::Encode;
+
+	#[test]
+	fn electiontype_indices_are_pinned() {
+		let pinned: &[(&str, u8, &dyn Fn() -> Vec<u8>)] = &[
+			("Presidential", 0u8, &|| ElectionType::Presidential.encode()),
+			("Parliamentary", 1u8, &|| ElectionType::Parliamentary.encode()),
+			("SpeakerElection", 2u8, &|| ElectionType::SpeakerElection.encode()),
+			("ConstitutionalCourt", 3u8, &|| ElectionType::ConstitutionalCourt.encode()),
+		];
+		let moved: Vec<&str> = pinned
+			.iter()
+			.filter(|(_, want, enc)| enc() != vec![*want])
+			.map(|(name, _, _)| *name)
+			.collect();
+		assert!(moved.is_empty(), "`ElectionType` indices moved: {moved:?}");
+		assert_eq!(pinned.len(), 4, "a variant was added or removed");
+	}
+
+	#[test]
+	fn officialrole_indices_are_pinned() {
+		let pinned: &[(&str, u8, &dyn Fn() -> Vec<u8>)] = &[
+			("Dadger", 0u8, &|| OfficialRole::Dadger.encode()),
+			("Dozger", 1u8, &|| OfficialRole::Dozger.encode()),
+			("Hiquqnas", 2u8, &|| OfficialRole::Hiquqnas.encode()),
+			("Noter", 3u8, &|| OfficialRole::Noter.encode()),
+			("Xezinedar", 4u8, &|| OfficialRole::Xezinedar.encode()),
+			("Bacgir", 5u8, &|| OfficialRole::Bacgir.encode()),
+			("GerinendeyeCavkaniye", 6u8, &|| OfficialRole::GerinendeyeCavkaniye.encode()),
+			("OperatoreTore", 7u8, &|| OfficialRole::OperatoreTore.encode()),
+			("PisporeEwlehiyaSiber", 8u8, &|| OfficialRole::PisporeEwlehiyaSiber.encode()),
+			("GerinendeyeDaneye", 9u8, &|| OfficialRole::GerinendeyeDaneye.encode()),
+			("Berdevk", 10u8, &|| OfficialRole::Berdevk.encode()),
+			("Qeydkar", 11u8, &|| OfficialRole::Qeydkar.encode()),
+			("Balyoz", 12u8, &|| OfficialRole::Balyoz.encode()),
+			("Navbeynkar", 13u8, &|| OfficialRole::Navbeynkar.encode()),
+			("ParezvaneCandi", 14u8, &|| OfficialRole::ParezvaneCandi.encode()),
+			("Mufetis", 15u8, &|| OfficialRole::Mufetis.encode()),
+			("KaliteKontrolker", 16u8, &|| OfficialRole::KaliteKontrolker.encode()),
+			("Bazargan", 17u8, &|| OfficialRole::Bazargan.encode()),
+			("RêvebereProjeyê", 18u8, &|| OfficialRole::RêvebereProjeyê.encode()),
+			("Feqi", 19u8, &|| OfficialRole::Feqi.encode()),
+			("Perwerdekar", 20u8, &|| OfficialRole::Perwerdekar.encode()),
+			("Rewsenbir", 21u8, &|| OfficialRole::Rewsenbir.encode()),
+			("Mamoste", 22u8, &|| OfficialRole::Mamoste.encode()),
+			("Mela", 23u8, &|| OfficialRole::Mela.encode()),
+		];
+		let moved: Vec<&str> = pinned
+			.iter()
+			.filter(|(_, want, enc)| enc() != vec![*want])
+			.map(|(name, _, _)| *name)
+			.collect();
+		assert!(moved.is_empty(), "`OfficialRole` indices moved: {moved:?}");
+		assert_eq!(pinned.len(), 24, "a variant was added or removed");
+	}
+
+	#[test]
+	fn governmentposition_indices_are_pinned() {
+		let pinned: &[(&str, u8, &dyn Fn() -> Vec<u8>)] = &[
+			("Serok", 0u8, &|| GovernmentPosition::Serok.encode()),
+			("Parlementer", 1u8, &|| GovernmentPosition::Parlementer.encode()),
+			("SerokiMeclise", 2u8, &|| GovernmentPosition::SerokiMeclise.encode()),
+			("EndameDiwane", 3u8, &|| GovernmentPosition::EndameDiwane.encode()),
+		];
+		let moved: Vec<&str> = pinned
+			.iter()
+			.filter(|(_, want, enc)| enc() != vec![*want])
+			.map(|(name, _, _)| *name)
+			.collect();
+		assert!(moved.is_empty(), "`GovernmentPosition` indices moved: {moved:?}");
+		assert_eq!(pinned.len(), 4, "a variant was added or removed");
+	}
 }
