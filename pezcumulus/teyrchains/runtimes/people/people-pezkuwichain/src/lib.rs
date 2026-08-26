@@ -19,6 +19,8 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod genesis_config_presets;
+pub mod governance;
+use governance::pezpallet_custom_origins;
 pub mod people;
 mod weights;
 pub mod xcm_config;
@@ -718,6 +720,7 @@ construct_runtime!(
 		Council: pezpallet_collective::<Instance1> = 70,
 		Scheduler: pezpallet_scheduler = 71,
 		Preimage: pezpallet_preimage = 64,
+		Origins: pezpallet_custom_origins = 63,
 
 		// RIP Democracy 72, Elections 73. Indices left unused on purpose.
 

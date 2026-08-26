@@ -978,6 +978,8 @@ parameter_types! {
 		RuntimeHoldReason::Preimage(pezpallet_preimage::HoldReason::Preimage);
 }
 
+impl pezpallet_custom_origins::Config for Runtime {}
+
 impl pezpallet_preimage::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
