@@ -1580,3 +1580,48 @@ fn the_treasury_call_encodes_the_way_welati_builds_it() {
 
 	assert_eq!(real, by_hand, "welati builds a treasury call this runtime cannot decode");
 }
+
+/// The two franchises must not name the same office.
+///
+/// One counts citizens, one each; the other counts holdings. An origin appearing on both
+/// lists would let a holding reach a state power, and the register would be for sale. The
+/// separation is currently kept by two files that never see each other, so this checks the
+/// thing they are both supposed to be true about.
+///
+/// It compares the track *names*, because that is what the two lists have in common: a track
+/// is a subject, and the same subject decided by two different electorates is the fault.
+/// `root` is the deliberate exception -- each chain's own Root track governs that chain's own
+/// code, and neither can reach the other's.
+#[test]
+fn state_and_economic_origins_do_not_overlap() {
+	use pezpallet_referenda::TracksInfo as _;
+
+	fn names_of<T: pezpallet_referenda::TracksInfo<Balance, teyrchains_common::BlockNumber>>(
+	) -> Vec<String> {
+		T::tracks()
+			.map(|t| String::from_utf8_lossy(&t.info.name).trim_end_matches('\0').to_string())
+			.collect()
+	}
+
+	let economic: Vec<String> =
+		names_of::<asset_hub_pezkuwichain_runtime::governance::TracksInfo>();
+
+	// What the register decides, named as its own track list names it.
+	let state = ["welati_election", "welati_admin", "citizenship_admin"];
+
+	for s in state {
+		assert!(
+			!economic.contains(&s.to_string()),
+			"`{s}` is a state matter and must not be decided by holdings",
+		);
+	}
+
+	// ..and the money's subjects must not have drifted onto the register's chain either. This
+	// half is asserted from here because this is the file that knows the economic names.
+	for e in &economic {
+		assert!(e == "root" || !state.contains(&e.as_str()), "`{e}` appears on both franchises",);
+	}
+
+	// The lists are not empty, or the assertions above pass by saying nothing.
+	assert_eq!(economic.len(), 9, "the economic franchise lost a track");
+}

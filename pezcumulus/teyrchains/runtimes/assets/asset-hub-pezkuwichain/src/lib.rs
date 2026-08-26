@@ -26,6 +26,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod bag_thresholds;
 mod genesis_config_presets;
+pub mod governance;
 mod staking;
 mod weights;
 pub mod xcm_config;
@@ -36,6 +37,7 @@ pub use staking::*;
 extern crate alloc;
 
 use alloc::{vec, vec::Vec};
+use governance::pezpallet_custom_origins;
 use pez_assets_common::{
 	foreign_creators::ForeignCreators,
 	local_and_foreign_assets::{LocalFromLeft, TargetFromLeft},
@@ -1131,7 +1133,7 @@ impl pezpallet_asset_rewards::Config for Runtime {
 	type AssetId = xcm::v5::Location;
 	type CreatePoolOrigin = EnsureSigned<AccountId>;
 	type RuntimeFreezeReason = RuntimeFreezeReason;
-	type Consideration = HoldConsideration<
+	type Consideration = pezframe_support::traits::fungible::HoldConsideration<
 		AccountId,
 		Balances,
 		RewardsPoolCreationHoldReason,
@@ -1212,8 +1214,16 @@ impl pezpallet_treasury::Config for Runtime {
 	type MaxApprovals = MaxApprovals;
 	type WeightInfo = ();
 	type SpendFunds = ();
-	type SpendOrigin =
-		pezframe_system::EnsureRootWithSuccess<AccountId, ConstU128<{ Balance::max_value() }>>;
+	// Root, or a spender the economic franchise elected to trust with an amount.
+	//
+	// Root alone meant there was no governance path to this treasury at all: the five
+	// spending tracks could be voted through and the origin they produced could not reach the
+	// money. `Spender` maps each tier to its ceiling, so what a referendum authorises is
+	// bounded by the track it ran on rather than by nothing.
+	type SpendOrigin = pezframe_support::traits::EitherOf<
+		pezframe_system::EnsureRootWithSuccess<AccountId, ConstU128<{ Balance::max_value() }>>,
+		governance::Spender,
+	>;
 	type AssetKind = ();
 	type Beneficiary = AccountId;
 	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
@@ -1391,6 +1401,104 @@ impl pezpallet_migrations::Config for Runtime {
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
+
+// =============================================================================
+// The economic franchise
+// =============================================================================
+//
+// Weight-counted, and that is the whole point of it sitting here rather than on People. What
+// a token costs and what the treasury spends is decided by those who bear the cost of being
+// wrong about it; who holds office and who is a citizen is not, and is decided on the chain
+// that holds the register, one citizen one voice.
+//
+// The two track lists are disjoint by construction and a test holds them apart.
+
+parameter_types! {
+	pub const EconomicMaxScheduledPerBlock: u32 = 50;
+	pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) *
+		RuntimeBlockWeights::get().max_block;
+	pub const PreimageBaseDeposit: Balance = deposit(2, 64);
+	pub const PreimageByteDeposit: Balance = deposit(0, 1);
+	pub const PreimageHoldReason: RuntimeHoldReason =
+		RuntimeHoldReason::Preimage(pezpallet_preimage::HoldReason::Preimage);
+	pub const VoteLockingPeriod: BlockNumber = 7 * DAYS;
+	pub const EconomicSubmissionDeposit: Balance = 100 * UNITS;
+	pub const EconomicUndecidingTimeout: BlockNumber = 21 * DAYS;
+	pub const EconomicAlarmInterval: BlockNumber = 1;
+	pub const EconomicMaxQueued: u32 = 100;
+}
+
+impl pezpallet_scheduler::Config for Runtime {
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeEvent = RuntimeEvent;
+	type PalletsOrigin = OriginCaller;
+	type RuntimeCall = RuntimeCall;
+	type MaximumWeight = MaximumSchedulerWeight;
+	type ScheduleOrigin = EnsureRoot<AccountId>;
+	type MaxScheduledPerBlock = EconomicMaxScheduledPerBlock;
+	type WeightInfo = pezpallet_scheduler::weights::BizinikiwiWeight<Runtime>;
+	type OriginPrivilegeCmp = pezframe_support::traits::EqualPrivilegeOnly;
+	type Preimages = Preimage;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+}
+
+impl pezpallet_preimage::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type ManagerOrigin = EnsureRoot<AccountId>;
+	type Consideration = pezframe_support::traits::fungible::HoldConsideration<
+		AccountId,
+		Balances,
+		PreimageHoldReason,
+		pezframe_support::traits::LinearStoragePrice<
+			PreimageBaseDeposit,
+			PreimageByteDeposit,
+			Balance,
+		>,
+	>;
+	type WeightInfo = pezpallet_preimage::weights::BizinikiwiWeight<Runtime>;
+}
+
+impl pezpallet_custom_origins::Config for Runtime {}
+
+impl pezpallet_conviction_voting::Config for Runtime {
+	type WeightInfo = pezpallet_conviction_voting::weights::BizinikiwiWeight<Runtime>;
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type VoteLockingPeriod = VoteLockingPeriod;
+	type MaxVotes = ConstU32<512>;
+	type MaxTurnout =
+		pezframe_support::traits::tokens::currency::ActiveIssuanceOf<Balances, AccountId>;
+	type Polls = Referenda;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+	type VotingHooks = ();
+}
+
+impl pezpallet_referenda::Config for Runtime {
+	type WeightInfo = pezpallet_referenda::weights::BizinikiwiWeight<Runtime>;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type Scheduler = Scheduler;
+	type Currency = Balances;
+	type SubmitOrigin = pezframe_system::EnsureSigned<AccountId>;
+	type CancelOrigin =
+		pezframe_support::traits::EitherOf<EnsureRoot<AccountId>, governance::ReferendumCanceller>;
+	type KillOrigin =
+		pezframe_support::traits::EitherOf<EnsureRoot<AccountId>, governance::ReferendumKiller>;
+	// Not `()`: dropping a negative imbalance destroys the tokens, and this chain's supply is
+	// fixed and halving with no burn anywhere in it.
+	type Slash = Treasury;
+	type Votes = pezpallet_conviction_voting::VotesOf<Runtime>;
+	type Tally = pezpallet_conviction_voting::TallyOf<Runtime>;
+	type SubmissionDeposit = EconomicSubmissionDeposit;
+	type MaxQueued = EconomicMaxQueued;
+	type UndecidingTimeout = EconomicUndecidingTimeout;
+	type AlarmInterval = EconomicAlarmInterval;
+	type Tracks = governance::TracksInfo;
+	type Preimages = Preimage;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+}
+
 construct_runtime!(
 	pub enum Runtime
 	{
@@ -1452,6 +1560,14 @@ construct_runtime!(
 		// PezkuwiChain Custom Pallets
 		PezTreasury: pezpallet_pez_treasury = 70,
 		TokenWrapper: pezpallet_token_wrapper = 73,
+
+		// The economic franchise: what the money decides, and how. Weight-counted, unlike the
+		// register's ballot on People, which counts citizens one each.
+		Scheduler: pezpallet_scheduler = 74,
+		Preimage: pezpallet_preimage = 75,
+		ConvictionVoting: pezpallet_conviction_voting = 76,
+		Referenda: pezpallet_referenda = 77,
+		Origins: pezpallet_custom_origins = 78,
 
 		// Staking
 		Staking: pezpallet_staking_async = 80,

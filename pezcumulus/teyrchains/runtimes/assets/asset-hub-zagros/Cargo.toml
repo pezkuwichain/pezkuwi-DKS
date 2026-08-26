@@ -47,6 +47,7 @@ pezpallet-bags-list = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-bounties = { workspace = true }
 pezpallet-child-bounties = { workspace = true }
+pezpallet-conviction-voting = { workspace = true }
 pezpallet-delegated-staking = { workspace = true }
 pezpallet-election-provider-multi-block = { workspace = true }
 pezpallet-message-queue = { workspace = true }
@@ -59,8 +60,11 @@ pezpallet-nomination-pools = { workspace = true }
 pezpallet-nomination-pools-benchmarking = { optional = true, workspace = true }
 pezpallet-nomination-pools-runtime-api = { workspace = true }
 pezpallet-pez-treasury = { workspace = true }
+pezpallet-preimage = { workspace = true }
 pezpallet-proxy = { workspace = true }
+pezpallet-referenda = { workspace = true }
 pezpallet-revive = { workspace = true }
+pezpallet-scheduler = { workspace = true }
 pezpallet-session = { workspace = true }
 pezpallet-staking = { workspace = true }
 pezpallet-staking-async = { workspace = true }
@@ -207,6 +211,7 @@ runtime-benchmarks = [
 	"pezpallet-bounties/runtime-benchmarks",
 	"pezpallet-child-bounties/runtime-benchmarks",
 	"pezpallet-collator-selection/runtime-benchmarks",
+	"pezpallet-conviction-voting/runtime-benchmarks",
 	"pezpallet-delegated-staking/runtime-benchmarks",
 	"pezpallet-election-provider-multi-block/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
@@ -219,9 +224,12 @@ runtime-benchmarks = [
 	"pezpallet-nomination-pools-runtime-api/runtime-benchmarks",
 	"pezpallet-nomination-pools/runtime-benchmarks",
 	"pezpallet-pez-treasury/runtime-benchmarks",
+	"pezpallet-preimage/runtime-benchmarks",
 	"pezpallet-proxy/runtime-benchmarks",
+	"pezpallet-referenda/runtime-benchmarks",
 	"pezpallet-revive-fixtures/runtime-benchmarks",
 	"pezpallet-revive/runtime-benchmarks",
+	"pezpallet-scheduler/runtime-benchmarks",
 	"pezpallet-session/runtime-benchmarks",
 	"pezpallet-staking-async-rc-client/runtime-benchmarks",
 	"pezpallet-staking-async/runtime-benchmarks",
@@ -310,6 +318,7 @@ try-runtime = [
 	"pezpallet-bounties/try-runtime",
 	"pezpallet-child-bounties/try-runtime",
 	"pezpallet-collator-selection/try-runtime",
+	"pezpallet-conviction-voting/try-runtime",
 	"pezpallet-delegated-staking/try-runtime",
 	"pezpallet-election-provider-multi-block/try-runtime",
 	"pezpallet-message-queue/try-runtime",
@@ -322,8 +331,11 @@ try-runtime = [
 	"pezpallet-nomination-pools-runtime-api/try-runtime",
 	"pezpallet-nomination-pools/try-runtime",
 	"pezpallet-pez-treasury/try-runtime",
+	"pezpallet-preimage/try-runtime",
 	"pezpallet-proxy/try-runtime",
+	"pezpallet-referenda/try-runtime",
 	"pezpallet-revive/try-runtime",
+	"pezpallet-scheduler/try-runtime",
 	"pezpallet-session/try-runtime",
 	"pezpallet-staking-async-rc-client/try-runtime",
 	"pezpallet-staking-async/try-runtime",
@@ -416,6 +428,7 @@ std = [
 	"pezpallet-bounties/std",
 	"pezpallet-child-bounties/std",
 	"pezpallet-collator-selection/std",
+	"pezpallet-conviction-voting/std",
 	"pezpallet-delegated-staking/std",
 	"pezpallet-election-provider-multi-block/std",
 	"pezpallet-message-queue/std",
@@ -428,8 +441,11 @@ std = [
 	"pezpallet-nomination-pools-runtime-api/std",
 	"pezpallet-nomination-pools/std",
 	"pezpallet-pez-treasury/std",
+	"pezpallet-preimage/std",
 	"pezpallet-proxy/std",
+	"pezpallet-referenda/std",
 	"pezpallet-revive/std",
+	"pezpallet-scheduler/std",
 	"pezpallet-session/std",
 	"pezpallet-staking-async-rc-client/std",
 	"pezpallet-staking-async/std",
