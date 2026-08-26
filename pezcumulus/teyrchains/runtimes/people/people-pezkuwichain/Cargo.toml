@@ -47,6 +47,7 @@ pezpallet-multisig = { workspace = true }
 pezpallet-nfts = { workspace = true }
 pezpallet-perwerde = { workspace = true }
 pezpallet-pez-rewards = { workspace = true }
+pezpallet-preimage = { workspace = true }
 pezpallet-proxy = { workspace = true }
 pezpallet-recovery = { workspace = true }
 pezpallet-referral = { workspace = true }
@@ -154,6 +155,7 @@ std = [
 	"pezpallet-nfts/std",
 	"pezpallet-perwerde/std",
 	"pezpallet-pez-rewards/std",
+	"pezpallet-preimage/std",
 	"pezpallet-proxy/std",
 	"pezpallet-recovery/std",
 	"pezpallet-referral/std",
@@ -235,6 +237,7 @@ runtime-benchmarks = [
 	"pezpallet-nfts/runtime-benchmarks",
 	"pezpallet-perwerde/runtime-benchmarks",
 	"pezpallet-pez-rewards/runtime-benchmarks",
+	"pezpallet-preimage/runtime-benchmarks",
 	"pezpallet-proxy/runtime-benchmarks",
 	"pezpallet-recovery/runtime-benchmarks",
 	"pezpallet-referral/runtime-benchmarks",
@@ -309,6 +312,7 @@ try-runtime = [
 	"pezpallet-nfts/try-runtime",
 	"pezpallet-perwerde/try-runtime",
 	"pezpallet-pez-rewards/try-runtime",
+	"pezpallet-preimage/try-runtime",
 	"pezpallet-proxy/try-runtime",
 	"pezpallet-recovery/try-runtime",
 	"pezpallet-referral/try-runtime",

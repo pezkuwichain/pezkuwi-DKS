@@ -957,6 +957,40 @@ parameter_types! {
 	pub MaximumSchedulerWeight: Weight = pezsp_runtime::Perbill::from_percent(80) * RuntimeBlockWeights::get().max_block;
 }
 
+// =============================================================================
+// Preimage Pezpallet Configuration
+// =============================================================================
+//
+// The Scheduler and, after it, state referenda need somewhere to keep a call too large to
+// carry inline. Deposits are taken as a hold rather than a reserve so the funds stay
+// visible as the depositor's, and they are priced with this chain's `deposit()`, which is a
+// hundredth of the relay's -- People is where citizens act, not where the network's
+// validators do.
+//
+// The relay prices its own preimages through `pezpallet_parameters` dynamic params. People
+// has no such pallet, so these are ordinary constants; changing them is a runtime upgrade,
+// which is the honest cost of not carrying a parameters pallet here.
+
+parameter_types! {
+	pub const PreimageBaseDeposit: Balance = deposit(2, 64);
+	pub const PreimageByteDeposit: Balance = deposit(0, 1);
+	pub const PreimageHoldReason: RuntimeHoldReason =
+		RuntimeHoldReason::Preimage(pezpallet_preimage::HoldReason::Preimage);
+}
+
+impl pezpallet_preimage::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type ManagerOrigin = EnsureRoot<AccountId>;
+	type Consideration = HoldConsideration<
+		AccountId,
+		Balances,
+		PreimageHoldReason,
+		LinearStoragePrice<PreimageBaseDeposit, PreimageByteDeposit, Balance>,
+	>;
+	type WeightInfo = pezpallet_preimage::weights::BizinikiwiWeight<Runtime>;
+}
+
 impl pezpallet_scheduler::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;
@@ -967,7 +1001,7 @@ impl pezpallet_scheduler::Config for Runtime {
 	type MaxScheduledPerBlock = ConstU32<50>;
 	type WeightInfo = pezpallet_scheduler::weights::BizinikiwiWeight<Runtime>;
 	type OriginPrivilegeCmp = pezframe_support::traits::EqualPrivilegeOnly;
-	type Preimages = ();
+	type Preimages = Preimage;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
 }
 

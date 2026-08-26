@@ -1,4 +1,12 @@
 [build]
+# Off here, not only in CI. All three workflows already set `CARGO_INCREMENTAL: "0"`; a local
+# shell did not, and the cache it leaves is the largest single thing on this repo's disk --
+# 86 GB of a 201 GB `target`, twice, on a machine whose real budget is the Windows drive the
+# WSL image sits on rather than the size Linux reports. Nothing local needs the rebuild speed
+# it buys: heavy builds belong on CI or the build VPS, and what stays here is single-package
+# checks. Note `[env]` is the wrong place for this -- that section sets the environment of
+# the processes cargo spawns, not cargo's own configuration.
+incremental = false
 rustdocflags = [
 	"-Dwarnings",
 	"-Arustdoc::redundant_explicit_links", # stylistic

@@ -715,6 +715,8 @@ construct_runtime!(
 		// Governance - Core Council
 		Council: pezpallet_collective::<Instance1> = 70,
 		Scheduler: pezpallet_scheduler = 71,
+		Preimage: pezpallet_preimage = 64,
+
 		// RIP Democracy 72, Elections 73. Indices left unused on purpose.
 
 		// PezkuwiChain Governance (Welati handles committees internally)
@@ -764,6 +766,7 @@ mod benches {
 		[pezpallet_transaction_payment, TransactionPayment]
 		// Governance pallets
 		[pezpallet_scheduler, Scheduler]
+		[pezpallet_preimage, Preimage]
 		[pezpallet_assets, PeopleAssets]
 		// Pezkuwi - Custom People Pallets
 		[pezpallet_identity_kyc, IdentityKyc]
