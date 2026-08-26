@@ -46,7 +46,8 @@ use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
 	DenyRecursively, DenyReserveTransferToRelayChain, DenyThenTry, DescribeAllTerminal,
 	DescribeFamily, DescribeTerminus, EnsureXcmOrigin, FrameTransactionalProcessor,
-	FungibleAdapter, HashedDescription, IsConcrete, ParentAsSuperuser, ParentIsPreset,
+	FungibleAdapter, HashedDescription, IsConcrete, OriginToPluralityVoice, ParentAsSuperuser,
+	ParentIsPreset,
 	RelayChainAsNative, SendXcmFeeToAccount, SiblingTeyrchainAsNative, SiblingTeyrchainConvertsVia,
 	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
 	TrailingSetTopicAsId, UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
@@ -299,6 +300,39 @@ pub type XcmRouter = WithUniqueTopic<(
 )>;
 
 parameter_types! {
+	/// The three bodies the relay already addresses by these indices when it sends here
+	/// (`RelayWelatiPluralityAsRoot` below). The register speaks with the same voice going
+	/// the other way, or the two sides name the same office differently.
+	pub const WelatiElectionBodyId: BodyId = BodyId::Index(40);
+	pub const WelatiAdminBodyId: BodyId = BodyId::Index(41);
+	pub const CitizenshipAdminBodyId: BodyId = BodyId::Index(42);
+}
+
+/// The state governance origins, as the voice of the body that holds them.
+///
+/// A message sent this way carries which office decided it, rather than only that this chain
+/// did -- a building asks its own question at its own door, and the answer has to say who is
+/// standing there. Only the three administrative origins convert: `ReferendumCanceller` and
+/// `ReferendumKiller` act on this chain's own referenda and have nothing to say elsewhere.
+pub type GovernanceToPlurality = (
+	OriginToPluralityVoice<
+		RuntimeOrigin,
+		crate::governance::pezpallet_custom_origins::WelatiElection,
+		WelatiElectionBodyId,
+	>,
+	OriginToPluralityVoice<
+		RuntimeOrigin,
+		crate::governance::pezpallet_custom_origins::WelatiAdmin,
+		WelatiAdminBodyId,
+	>,
+	OriginToPluralityVoice<
+		RuntimeOrigin,
+		crate::governance::pezpallet_custom_origins::CitizenshipAdmin,
+		CitizenshipAdminBodyId,
+	>,
+);
+
+parameter_types! {
 	pub const DepositPerItem: Balance = crate::deposit(1, 0);
 	pub const DepositPerByte: Balance = crate::deposit(0, 1);
 	pub const AuthorizeAliasHoldReason: RuntimeHoldReason = RuntimeHoldReason::PezkuwiXcm(pezpallet_xcm::HoldReason::AuthorizeAlias);
@@ -306,8 +340,10 @@ parameter_types! {
 
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	// We want to disallow users sending (arbitrary) XCM programs from this chain.
-	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, ()>;
+	// Users may not send arbitrary XCM from here. The state governance origins may, as the
+	// voice of their body; `EnsureXcmOrigin`'s root fallback covers a referendum that carries
+	// the whole chain rather than one office.
+	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, GovernanceToPlurality>;
 	type XcmRouter = XcmRouter;
 	// We support local origins dispatching XCM executions.
 	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
