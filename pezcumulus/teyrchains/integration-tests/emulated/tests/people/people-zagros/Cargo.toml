@@ -21,6 +21,7 @@ pezframe-support = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-identity = { workspace = true }
 pezpallet-message-queue = { workspace = true }
+pezpallet-pez-treasury = { workspace = true }
 pezpallet-xcm = { workspace = true }
 pezsp-runtime = { workspace = true }
 
@@ -41,6 +42,7 @@ runtime-benchmarks = [
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-identity/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-pez-treasury/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 	"teyrchains-common/runtime-benchmarks",
@@ -56,6 +58,7 @@ std = [
 	"pezpallet-balances/std",
 	"pezpallet-identity/std",
 	"pezpallet-message-queue/std",
+	"pezpallet-pez-treasury/std",
 	"pezpallet-xcm/std",
 	"pezsp-runtime/std",
 	"xcm-executor/std",
@@ -69,6 +72,7 @@ try-runtime = [
 	"pezpallet-balances/try-runtime",
 	"pezpallet-identity/try-runtime",
 	"pezpallet-message-queue/try-runtime",
+	"pezpallet-pez-treasury/try-runtime",
 	"pezpallet-xcm/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"teyrchains-common/try-runtime",

@@ -10171,6 +10171,7 @@ dependencies = [
  "pezpallet-balances",
  "pezpallet-identity",
  "pezpallet-message-queue",
+ "pezpallet-pez-treasury",
  "pezpallet-xcm",
  "pezsp-runtime",
  "pezstaging-xcm",

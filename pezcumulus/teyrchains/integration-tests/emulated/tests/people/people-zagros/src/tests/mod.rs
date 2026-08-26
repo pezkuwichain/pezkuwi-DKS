@@ -16,5 +16,6 @@
 mod aliases;
 mod claim_assets;
 mod governance;
+mod government_spend;
 mod identity;
 mod teleport;
