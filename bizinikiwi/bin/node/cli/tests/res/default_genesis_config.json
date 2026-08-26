@@ -3,11 +3,11 @@
   "babe": {
     "authorities": [],
     "epochConfig": {
-        "allowed_slots": "PrimaryAndSecondaryVRFSlots",
-        "c": [
-            1,
-            4
-        ]
+      "c": [
+        1,
+        4
+      ],
+      "allowed_slots": "PrimaryAndSecondaryVRFSlots"
     }
   },
   "indices": {
@@ -17,7 +17,6 @@
     "balances": [],
     "devAccounts": null
   },
-  "broker": {},
   "transactionPayment": {
     "multiplier": "1000000000000000000"
   },
@@ -37,9 +36,6 @@
   "session": {
     "keys": [],
     "nonAuthorityKeys": []
-
-  },
-  "revive": {
   },
   "democracy": {},
   "council": {
@@ -56,10 +52,6 @@
   },
   "grandpa": {
     "authorities": []
-  },
-  "beefy": {
-    "authorities": [],
-    "genesisBlock": 1
   },
   "treasury": {},
   "sudo": {
@@ -80,8 +72,8 @@
   "glutton": {
     "compute": "0",
     "storage": "0",
-    "blockLength": "0",
-    "trashDataCount": 0
+    "trashDataCount": 0,
+    "blockLength": "0"
   },
   "assets": {
     "assets": [],
@@ -97,10 +89,14 @@
     "nextAssetId": null,
     "reserves": []
   },
+  "beefy": {
+    "authorities": [],
+    "genesisBlock": 1
+  },
   "transactionStorage": {
     "byteFee": 10,
     "entryFee": 1000,
-    "storagePeriod": 100800
+    "retentionPeriod": 100800
   },
   "allianceMotion": {
     "members": []
@@ -108,9 +104,6 @@
   "alliance": {
     "fellows": [],
     "allies": []
-  },
-  "mixnet": {
-    "mixnodes": []
   },
   "nominationPools": {
     "minJoinBond": 0,
@@ -120,10 +113,18 @@
     "maxMembers": 512,
     "globalMaxCommission": null
   },
+  "assetConversion": {
+    "pools": []
+  },
   "txPause": {
     "paused": []
   },
   "safeMode": {
     "enteredUntil": null
-  }
+  },
+  "broker": {},
+  "mixnet": {
+    "mixnodes": []
+  },
+  "revive": {}
 }

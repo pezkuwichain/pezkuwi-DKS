@@ -114,7 +114,9 @@ mod tests {
 	};
 
 	const PARA_RUNTIME: &'static str = "teyrchain-template-runtime";
-	const CHAIN_SPEC_BUILDER: &'static str = "chain-spec-builder";
+	// The binary carries the package name here, unlike upstream: `CARGO_BIN_EXE_`, the
+	// reference-doc test and the umbrella feature all spell it this way.
+	const CHAIN_SPEC_BUILDER: &'static str = "pezstaging-chain-spec-builder";
 	const OMNI_NODE: &'static str = "pezkuwi-omni-node";
 
 	fn cargo() -> Command {
