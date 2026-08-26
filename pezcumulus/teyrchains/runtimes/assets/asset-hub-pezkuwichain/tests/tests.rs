@@ -1504,3 +1504,80 @@ fn xcm_payment_api_works() {
 		WeightToFee,
 	>(ExistentialDeposit::get(), ZAGROS_GENESIS_HASH);
 }
+
+/// The register decides and the treasury pays, so a spend voted on People has to reach the
+/// Asset Hub. Two gates stand in the way and only one of them was open: `WaivedLocations`
+/// already charges a sibling system chain nothing, but the barrier runs first and named only
+/// the relay, its pluralities, the relay treasury and the Bridge Hub -- so the
+/// message `welati::send_government_spend` builds was refused before the fee policy was ever
+/// consulted, and the origin check it was written against was never reached.
+///
+/// Neither side of that pair is exercised by the runtime's other tests, and the pallet's own
+/// tests use a mock sender, so nothing caught it.
+#[test]
+fn people_may_execute_unpaid_on_this_asset_hub() {
+	use pezframe_support::traits::Contains;
+	use testnet_teyrchains_constants::pezkuwichain::locations::PeopleLocation;
+	use xcm::latest::prelude::*;
+	use xcm_executor::traits::{Properties, ShouldExecute};
+
+	let people = PeopleLocation::get();
+
+	pezsp_io::TestExternalities::new_empty().execute_with(|| {
+		// The shape `send_government_spend` produces, instruction for instruction.
+		let mut message: Vec<Instruction<()>> = vec![
+			UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+			Transact {
+				origin_kind: OriginKind::Xcm,
+				call: vec![0u8; 8].into(),
+				fallback_max_weight: None,
+			},
+		];
+		let mut properties =
+			Properties { weight_credit: Weight::zero(), message_id: None };
+
+		assert!(
+			<xcm_config::Barrier as ShouldExecute>::should_execute(
+				&people,
+				&mut message,
+				Weight::from_parts(1_000_000_000, 100_000),
+				&mut properties,
+			)
+			.is_ok(),
+			"the barrier refuses the government spend People sends",
+		);
+
+		// The fee side has to agree, or the spend is charged to a sovereign account that holds
+		// nothing here.
+		assert!(
+			<xcm_config::WaivedLocations as Contains<Location>>::contains(&people),
+			"People pays a fee it has no balance for",
+		);
+	});
+}
+
+/// `welati` cannot name this runtime's `RuntimeCall`, so `send_government_spend` builds the
+/// treasury call by hand: pallet index, call index, beneficiary, amount. That hand-built
+/// encoding is an ABI between two crates that never see each other, and nothing here fails
+/// if it drifts -- the `Transact` simply cannot decode, while `welati` has already docked the
+/// budget and emitted `BudgetSpent`. This pins the bytes it has to produce.
+#[test]
+fn the_treasury_call_encodes_the_way_welati_builds_it() {
+	use codec::Encode;
+
+	let beneficiary: AccountId = [7u8; 32].into();
+	let amount: Balance = 1_000_000_000_000;
+
+	let real = RuntimeCall::PezTreasury(
+		pezpallet_pez_treasury::Call::<Runtime>::spend_from_government_pot {
+			beneficiary: beneficiary.clone(),
+			amount,
+		},
+	)
+	.encode();
+
+	// Exactly what `welati::send_government_spend` puts on the wire.
+	let by_hand = (70u8, 1u8, beneficiary, amount).encode();
+
+	assert_eq!(real, by_hand, "welati builds a treasury call this runtime cannot decode");
+}

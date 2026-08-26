@@ -45,6 +45,7 @@ use pezsp_runtime::traits::{AccountIdConversion, TryConvertInto};
 // modules carry the same figures today, so nothing was misbehaving, but the whole reason the
 // modules are separate is that either ecosystem may point at a different Ethereum, and this chain
 // would have silently followed the mainnet's choice.
+use testnet_teyrchains_constants::zagros::locations::PeopleLocation;
 use testnet_teyrchains_constants::zagros::snowbridge::{
 	EthereumNetwork, INBOUND_QUEUE_PALLET_INDEX_V1, INBOUND_QUEUE_PALLET_INDEX_V2,
 };
@@ -354,6 +355,11 @@ pub type Barrier = TrailingSetTopicAsId<
 						Equals<FellowshipSalaryLocation>,
 						Equals<FellowshipTreasuryLocation>,
 						Equals<SecretarySalaryLocation>,
+						// The register decides and the treasury pays, so the chain holding the
+						// register has to be able to reach the one holding the money.
+						// `WaivedLocations` already charges it nothing; without this the
+						// barrier turns the message away before the fee policy is consulted.
+						Equals<PeopleLocation>,
 						Equals<bridging::SiblingBridgeHub>,
 					)>,
 					// Subscriptions for version tracking are OK.

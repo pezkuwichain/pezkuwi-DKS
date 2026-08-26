@@ -55,7 +55,7 @@ use pezsp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedU128, Permill, Perquintill,
 };
-use testnet_teyrchains_constants::pezkuwichain::{
+use testnet_teyrchains_constants::zagros::{
 	locations::PeopleLocation, snowbridge::EthereumNetwork,
 };
 

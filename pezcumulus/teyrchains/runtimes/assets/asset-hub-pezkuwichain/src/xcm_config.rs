@@ -40,6 +40,7 @@ use pezkuwi_teyrchain_primitives::primitives::Sibling;
 use pezkuwichain_runtime_constants::system_teyrchain::ASSET_HUB_ID;
 use pezpallet_xcm::{AuthorizedAliasers, XcmPassthrough};
 use pezsp_runtime::traits::{AccountIdConversion, TryConvertInto};
+use testnet_teyrchains_constants::pezkuwichain::locations::PeopleLocation;
 use testnet_teyrchains_constants::pezkuwichain::snowbridge::{
 	EthereumNetwork, INBOUND_QUEUE_PALLET_INDEX,
 };
@@ -283,6 +284,11 @@ pub type Barrier = TrailingSetTopicAsId<
 					AllowExplicitUnpaidExecutionFrom<(
 						ParentOrParentsPlurality,
 						Equals<RelayTreasuryLocation>,
+						// The register decides and the treasury pays, so the chain holding the
+						// register has to be able to reach the one holding the money.
+						// `WaivedLocations` already charges it nothing; without this the
+						// barrier turns the message away before the fee policy is consulted.
+						Equals<PeopleLocation>,
 						Equals<bridging::SiblingBridgeHub>,
 					)>,
 					// Subscriptions for version tracking are OK.
