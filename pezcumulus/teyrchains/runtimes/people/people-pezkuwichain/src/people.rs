@@ -993,6 +993,62 @@ impl pezpallet_preimage::Config for Runtime {
 	type WeightInfo = pezpallet_preimage::weights::BizinikiwiWeight<Runtime>;
 }
 
+// The register's ballot box. Everything above decides *who* may put a question; this decides
+// how a question is settled, and by whom it is counted.
+//
+// `CitizenTally` counts heads, not tokens: one citizen, one voice, and `support` measured
+// against the whole roll rather than against those who happened to turn up. That is the whole
+// reason this sits here rather than on the Asset Hub -- the register is the only place that
+// knows who the citizens are.
+
+parameter_types! {
+	/// Enough to make a frivolous submission cost something, low enough that a citizen can
+	/// afford to be the one who asks.
+	pub const StateSubmissionDeposit: Balance = 10 * UNITS;
+	pub const StateUndecidingTimeout: BlockNumber = 21 * DAYS;
+	pub const StateAlarmInterval: BlockNumber = 1;
+	pub const StateMaxQueued: u32 = 20;
+}
+
+/// The roll, as the tally measures itself against.
+pub struct CitizenRoll;
+impl pezsp_core::Get<u32> for CitizenRoll {
+	fn get() -> u32 {
+		<WelatiCitizenSource as pezpallet_welati::CitizenInfo>::citizen_count()
+	}
+}
+
+impl pezpallet_referenda::Config for Runtime {
+	type WeightInfo = pezpallet_referenda::weights::BizinikiwiWeight<Runtime>;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type Scheduler = Scheduler;
+	type Currency = Balances;
+	// Anyone may ask. What they may ask for is the track's business, not this one's.
+	type SubmitOrigin = pezframe_system::EnsureSigned<AccountId>;
+	type CancelOrigin = pezframe_support::traits::EitherOf<
+		EnsureRoot<AccountId>,
+		crate::governance::ReferendumCanceller,
+	>;
+	type KillOrigin = pezframe_support::traits::EitherOf<
+		EnsureRoot<AccountId>,
+		crate::governance::ReferendumKiller,
+	>;
+	// Not `()`: dropping a negative imbalance destroys the tokens, and this chain's supply is
+	// fixed and halving -- there is no burn anywhere in it, by decision. This is the same
+	// handler `pezpallet_identity` slashes into, one line 60-odd above.
+	type Slash = ToParentTreasury<RelayTreasuryAccount, LocationToAccountId, Runtime>;
+	type Votes = u32;
+	type Tally = pezpallet_welati::types::CitizenTally<CitizenRoll>;
+	type SubmissionDeposit = StateSubmissionDeposit;
+	type MaxQueued = StateMaxQueued;
+	type UndecidingTimeout = StateUndecidingTimeout;
+	type AlarmInterval = StateAlarmInterval;
+	type Tracks = crate::governance::TracksInfo;
+	type Preimages = Preimage;
+	type BlockNumberProvider = System;
+}
+
 impl pezpallet_scheduler::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeOrigin = RuntimeOrigin;

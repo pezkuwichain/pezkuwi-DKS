@@ -6,6 +6,9 @@
 //! The state franchise: its origins today, its tracks when Referenda lands.
 
 mod origins;
+mod tracks;
+
+pub use tracks::TracksInfo;
 
 pub use origins::{
 	pezpallet_custom_origins, CitizenshipAdmin, ReferendumCanceller, ReferendumKiller, WelatiAdmin,

@@ -561,7 +561,14 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				c,
 				RuntimeCall::Balances { .. } |
 				// `request_judgement` puts up a deposit to transfer to a registrar
-				RuntimeCall::Identity(pezpallet_identity::Call::request_judgement { .. })
+				RuntimeCall::Identity(pezpallet_identity::Call::request_judgement { .. }) |
+				// This filter names what a delegate may *not* do, so every pallet added to
+				// the runtime is granted to every existing NonTransfer proxy unless it is
+				// named here. These two reserve the principal's balance.
+				RuntimeCall::Referenda(pezpallet_referenda::Call::submit { .. }) |
+				RuntimeCall::Referenda(
+					pezpallet_referenda::Call::place_decision_deposit { .. }
+				)
 			),
 			ProxyType::CancelProxy => matches!(
 				c,
@@ -717,6 +724,7 @@ construct_runtime!(
 		// Governance - Core Council
 		Council: pezpallet_collective::<Instance1> = 70,
 		Scheduler: pezpallet_scheduler = 71,
+		Referenda: pezpallet_referenda = 62,
 		Preimage: pezpallet_preimage = 64,
 		Origins: pezpallet_custom_origins = 63,
 
@@ -771,6 +779,7 @@ mod benches {
 		// Governance pallets
 		[pezpallet_scheduler, Scheduler]
 		[pezpallet_preimage, Preimage]
+		[pezpallet_referenda, Referenda]
 		[pezpallet_assets, PeopleAssets]
 		// Pezkuwi - Custom People Pallets
 		[pezpallet_identity_kyc, IdentityKyc]
