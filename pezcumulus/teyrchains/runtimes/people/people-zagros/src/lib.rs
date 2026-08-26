@@ -368,10 +368,9 @@ pub type RootOrFellows = EitherOfDiverse<
 pub type RootOrSerok =
 	EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_welati::EnsureSerok<Runtime>>;
 
-/// Root VEYA Parlamento üyesi yetkisi
-/// Kullanım: Yasama işlemleri, bütçe onayları
-pub type RootOrParliament =
-	EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_welati::EnsureParlementer<Runtime>>;
+// `RootOrParliament` used to sit here. Its comment said "legislative acts, budget
+// approvals"; its body accepted **one** member of the house. Nothing used it. An origin
+// meaning "the house resolved" belongs with the state franchise, and it is not this.
 
 /// Root VEYA Divan (Anayasa Mahkemesi) yetkisi
 /// Kullanım: Anayasal kararlar, vatandaşlık işlemleri
@@ -383,13 +382,6 @@ pub type RootOrParliament =
 pub type RootOrDiwan = EitherOfDiverse<
 	EnsureRoot<AccountId>,
 	pezpallet_collective::EnsureProportionAtLeast<AccountId, people::DiwanCollective, 2, 3>,
->;
-
-/// Root VEYA Council (Genel Konsey) yetkisi
-/// Kullanım: Genel yönetişim kararları
-pub type RootOrCouncil = EitherOfDiverse<
-	EnsureRoot<AccountId>,
-	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
 >;
 
 /// Root VEYA Serok VEYA Council yetkisi
@@ -410,16 +402,12 @@ pub type RootOrSerokOrCouncil = EitherOfDiverse<
 // görevlerini yaparken fee'den muaf olmalı. Bu SignedExtension ile sağlanabilir.
 // =============================================================================
 
-/// Root VEYA Serok VEYA Council için esnek yetki
-/// Kullanım: Teknik kararlar, NFT/Tiki yönetimi
-pub type RootOrTechnicalCommittee = EitherOfDiverse<
-	RootOrSerok,
-	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
->;
-
-/// Root VEYA Serok VEYA Council için hazine yetkisi
-/// Kullanım: PEZ dağıtım yönetimi, ekonomik kararlar
-pub type RootOrTreasuryCommittee = EitherOfDiverse<
+/// Root, the President, or two thirds of the Council.
+///
+/// Named for what it contains. The alias that used to sit here was called
+/// `RootOrTreasuryCommittee` and there is no treasury committee; a reader had to open the
+/// definition to learn that one signature from the President satisfies it.
+pub type RootOrSerokOrCouncilTwoThirds = EitherOfDiverse<
 	RootOrSerok,
 	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 2, 3>,
 >;
@@ -727,8 +715,7 @@ construct_runtime!(
 		// Governance - Core Council
 		Council: pezpallet_collective::<Instance1> = 70,
 		Scheduler: pezpallet_scheduler = 71,
-		Democracy: pezpallet_democracy = 72,
-		Elections: pezpallet_elections_phragmen = 73,
+		// RIP Democracy 72, Elections 73. Indices left unused on purpose.
 
 		// PezkuwiChain Governance (Welati handles committees internally)
 		Welati: pezpallet_welati = 75,
@@ -777,8 +764,6 @@ mod benches {
 		[pezpallet_transaction_payment, TransactionPayment]
 		// Governance pallets
 		[pezpallet_scheduler, Scheduler]
-		[pezpallet_democracy, Democracy]
-		[pezpallet_elections_phragmen, Elections]
 		[pezpallet_assets, PeopleAssets]
 		// Pezkuwi - Custom People Pallets
 		[pezpallet_identity_kyc, IdentityKyc]

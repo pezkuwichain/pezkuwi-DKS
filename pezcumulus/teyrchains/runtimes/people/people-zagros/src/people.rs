@@ -536,7 +536,7 @@ parameter_types! {
 impl pezpallet_tiki::Config for Runtime {
 	// Kademeli yetki devri: Root → Teknik Komisyon
 	// NFT/Rol yönetimi için Teknik Komisyon yetkili
-	type AdminOrigin = crate::RootOrTechnicalCommittee;
+	type AdminOrigin = crate::RootOrSerokOrCouncil;
 	// Elected/Earned roles (Serok, SerokiMeclise, Parlementer, Axa, ...) are meant to
 	// carry evidence of a real election/exam, not just committee say-so. Until a
 	// dedicated voting/exam pezpallet exists to escalate to Root on their behalf, require
@@ -972,91 +972,22 @@ impl pezpallet_scheduler::Config for Runtime {
 }
 
 // =============================================================================
-// Democracy Pezpallet Configuration (required by Welati)
+// Democracy 72 and Elections 73 used to sit here. Both are gone; their indices are not
+// reused.
+//
+// Democracy was a live root path, not a dormant shell. Its listed origins are all
+// `EnsureRoot`, but `SubmitOrigin` was `EnsureSigned` and the public queue does not pass
+// through them: any account could propose, and `pezpallet_democracy` enacts a passed
+// referendum with `RawOrigin::Root`. `Preimages = ()` did not close it either -- `bound()`
+// takes the `Bounded::Inline` branch before it ever calls `note()`, so every call whose
+// encoding fits inline was reachable. `tiki::grant_tiki` is about thirty-six bytes.
+//
+// Elections could not reach the Council it existed to fill: `ChangeMembers` and
+// `InitializeMembers` were both `()`. The bench is seated from Welati instead.
+//
+// The header on both blocks said "required by Welati". It was not true in either case:
+// `pezpallet_welati::Config` asks only for Tiki, Trust and IdentityKyc.
 // =============================================================================
-
-parameter_types! {
-	pub const DemocracyLaunchPeriod: BlockNumber = 7 * DAYS;
-	pub const DemocracyVotingPeriod: BlockNumber = 7 * DAYS;
-	pub const DemocracyFastTrackVotingPeriod: BlockNumber = HOURS;
-	pub const DemocracyMinimumDeposit: Balance = 10 * UNITS;
-	pub const DemocracyEnactmentPeriod: BlockNumber = DAYS;
-	pub const DemocracyCooloffPeriod: BlockNumber = 7 * DAYS;
-	pub const DemocracyMaxVotes: u32 = 100;
-	pub const DemocracyMaxProposals: u32 = 100;
-}
-
-impl pezpallet_democracy::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type EnactmentPeriod = DemocracyEnactmentPeriod;
-	type LaunchPeriod = DemocracyLaunchPeriod;
-	type VotingPeriod = DemocracyVotingPeriod;
-	type VoteLockingPeriod = DemocracyEnactmentPeriod;
-	type MinimumDeposit = DemocracyMinimumDeposit;
-	type InstantAllowed = ConstBool<true>;
-	type FastTrackVotingPeriod = DemocracyFastTrackVotingPeriod;
-	type CooloffPeriod = DemocracyCooloffPeriod;
-	type MaxVotes = DemocracyMaxVotes;
-	type MaxProposals = DemocracyMaxProposals;
-	type MaxDeposits = ConstU32<100>;
-	type MaxBlacklisted = ConstU32<100>;
-	type ExternalOrigin = EnsureRoot<AccountId>;
-	type ExternalMajorityOrigin = EnsureRoot<AccountId>;
-	type ExternalDefaultOrigin = EnsureRoot<AccountId>;
-	type FastTrackOrigin = EnsureRoot<AccountId>;
-	type InstantOrigin = EnsureRoot<AccountId>;
-	type CancellationOrigin = EnsureRoot<AccountId>;
-	type BlacklistOrigin = EnsureRoot<AccountId>;
-	type CancelProposalOrigin = EnsureRoot<AccountId>;
-	// VetoOrigin must be a small privileged body, not any signed account (upstream contract:
-	// see bizinikiwi/bin/node/runtime's `EnsureMember<AccountId, TechnicalCollective>`). This
-	// runtime has no separate technical collective, so require membership in the Council
-	// instead — any single Council member may veto/blacklist an external proposal, but an
-	// arbitrary unprivileged account can no longer do so.
-	type VetoOrigin = pezpallet_collective::EnsureMember<AccountId, CouncilCollective>;
-	type Slash = ();
-	type Scheduler = Scheduler;
-	type PalletsOrigin = OriginCaller;
-	type Preimages = ();
-	type SubmitOrigin = pezframe_system::EnsureSigned<AccountId>;
-	type WeightInfo = pezpallet_democracy::weights::BizinikiwiWeight<Runtime>;
-}
-
-// =============================================================================
-// Elections Phragmen Pezpallet Configuration (required by Welati)
-// =============================================================================
-
-parameter_types! {
-	pub const ElectionsCandidacyBond: Balance = 10 * UNITS;
-	pub const ElectionsVotingBondBase: Balance = UNITS;
-	pub const ElectionsVotingBondFactor: Balance = UNITS / 10;
-	pub const ElectionsDesiredMembers: u32 = 13;
-	pub const ElectionsDesiredRunnersUp: u32 = 7;
-	pub const ElectionsTermDuration: BlockNumber = 7 * DAYS;
-	pub const ElectionsPalletId: pezframe_support::traits::LockIdentifier = *b"phrelect";
-}
-
-impl pezpallet_elections_phragmen::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type PalletId = ElectionsPalletId;
-	type ChangeMembers = ();
-	type InitializeMembers = ();
-	type CurrencyToVote = pezsp_staking::currency_to_vote::U128CurrencyToVote;
-	type CandidacyBond = ElectionsCandidacyBond;
-	type VotingBondBase = ElectionsVotingBondBase;
-	type VotingBondFactor = ElectionsVotingBondFactor;
-	type LoserCandidate = ();
-	type KickedMember = ();
-	type DesiredMembers = ElectionsDesiredMembers;
-	type DesiredRunnersUp = ElectionsDesiredRunnersUp;
-	type TermDuration = ElectionsTermDuration;
-	type MaxCandidates = ConstU32<64>;
-	type MaxVoters = ConstU32<512>;
-	type MaxVotesPerVoter = ConstU32<16>;
-	type WeightInfo = pezpallet_elections_phragmen::weights::BizinikiwiWeight<Runtime>;
-}
 
 // =============================================================================
 // Welati (Governance) Pezpallet Configuration
@@ -1246,7 +1177,7 @@ impl pezpallet_pez_rewards::Config for Runtime {
 	type TreasuryChainLocation = WelatiTreasuryChain;
 	type TreasuryPalletIndex = PezRewardsTreasuryPalletIndex;
 	// Only ever used on a chain whose genesis did not start the clock.
-	type ForceOrigin = crate::RootOrTreasuryCommittee;
+	type ForceOrigin = crate::RootOrSerokOrCouncilTwoThirds;
 }
 
 // =============================================================================

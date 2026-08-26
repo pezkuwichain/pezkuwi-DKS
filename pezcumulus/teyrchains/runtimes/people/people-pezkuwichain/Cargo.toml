@@ -38,8 +38,6 @@ pezpallet-aura = { workspace = true }
 pezpallet-authorship = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-collective = { workspace = true }
-pezpallet-democracy = { workspace = true }
-pezpallet-elections-phragmen = { workspace = true }
 pezpallet-identity = { workspace = true }
 pezpallet-identity-kyc = { workspace = true }
 pezpallet-message-queue = { workspace = true }
@@ -147,8 +145,6 @@ std = [
 	"pezpallet-balances/std",
 	"pezpallet-collator-selection/std",
 	"pezpallet-collective/std",
-	"pezpallet-democracy/std",
-	"pezpallet-elections-phragmen/std",
 	"pezpallet-identity-kyc/std",
 	"pezpallet-identity/std",
 	"pezpallet-message-queue/std",
@@ -230,8 +226,6 @@ runtime-benchmarks = [
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-collator-selection/runtime-benchmarks",
 	"pezpallet-collective/runtime-benchmarks",
-	"pezpallet-democracy/runtime-benchmarks",
-	"pezpallet-elections-phragmen/runtime-benchmarks",
 	"pezpallet-identity-kyc/runtime-benchmarks",
 	"pezpallet-identity/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
@@ -306,8 +300,6 @@ try-runtime = [
 	"pezpallet-balances/try-runtime",
 	"pezpallet-collator-selection/try-runtime",
 	"pezpallet-collective/try-runtime",
-	"pezpallet-democracy/try-runtime",
-	"pezpallet-elections-phragmen/try-runtime",
 	"pezpallet-identity-kyc/try-runtime",
 	"pezpallet-identity/try-runtime",
 	"pezpallet-message-queue/try-runtime",
@@ -366,7 +358,6 @@ serde = [
 	"dep:serde",
 	"enumflags2/serde",
 	"pezframe-benchmarking?/serde",
-	"pezpallet-democracy/serde",
 	"pezpallet-message-queue/serde",
 	"pezpallet-perwerde/serde",
 	"pezpallet-pez-rewards/serde",
