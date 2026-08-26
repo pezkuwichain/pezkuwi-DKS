@@ -48,6 +48,15 @@ jobs:
       - name: Zagros and Pezkuwichain carry the same pallet index map
         run: python3 .github/scripts/check-twin-runtimes.py
 
+  # A note describing the tree goes stale the moment the tree moves. This measures the tree.
+  # It reports the backlog and fails only on regression: an item that was closed and is not.
+  durum:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: The pre-genesis work has not gone backwards
+        run: python3 .github/scripts/durum.py
+
   fmt:
     runs-on: ubuntu-latest
     steps:
