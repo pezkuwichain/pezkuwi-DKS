@@ -37,6 +37,7 @@ enum-pin and unsafe before, because until the number is pinned it follows the na
     python3 .github/scripts/plan.py --gaps    # only what is left
     python3 .github/scripts/plan.py --flows   # the cross-chain paths, gate by gate
     python3 .github/scripts/plan.py --arch    # which chain carries which pallet
+    python3 .github/scripts/plan.py --phases  # the sequence, and what each phase must show
 """
 import re, subprocess, sys
 from pathlib import Path
@@ -371,7 +372,92 @@ def print_arch():
     return len(set(gaps))
 
 
+
+# --- the sequence sheet: phases, what blocks what, and what counts as done ---
+#
+# The hard part of a phase plan is not the order, it is the acceptance criterion. "Zagros is
+# validated" is not a decision anyone can check, and a phase whose exit is a judgement call
+# is a phase that ends whenever somebody is tired.
+#
+# So the criteria are derived from the design rather than invented: the other sheets already
+# enumerate what the chain depends on -- eight cross-chain paths, thirteen governance tracks,
+# a citizen initiative, a spend that crosses two chains. "Validated" means each of those has
+# happened once on a running chain. That number is not a matter of taste; it is however many
+# the design declares.
+#
+# Two of the gates are irreversible and that is why they are gates rather than milestones:
+#
+#   pre-genesis  Enum indices, storage versions and pallet indices are frozen the moment a
+#                chain has a genesis. Everything the static sheet lists has to be closed
+#                *before* FAZ 2, not before mainnet -- Zagros is a real chain with real
+#                storage keys and a testnet's keys are no easier to renumber.
+#   FAZ 3        Mainnet is meant to mirror a validated Zagros. Launching before Zagros has
+#                exercised the design means the mirror has nothing to copy.
+
+GENESIS_FILE = "pezkuwi/xcm/src/v5/junction.rs"
+
+
+def phases():
+    src = read(ROOT / GENESIS_FILE)
+    zagros_born = "pub const ZAGROS_GENESIS_HASH: [u8; 32] = [0; 32];" not in src
+    # `[^;]*` stops inside `[u8; 32]`. The type annotation has a semicolon in it.
+    mainnet_hash = re.search(
+        r"pub const PEZKUWICHAIN_GENESIS_HASH[\s\S]{0,80}?hex!\[\"(\w+)\"\]", src)
+    mainnet = mainnet_hash.group(1)[:12] if mainnet_hash else "?"
+
+    # the static sheet, reused rather than restated
+    subjects = [(q, "pallet") for q in pallets()] + [(q, "runtime") for q in runtimes()]
+    static_gaps = sum(1 for q, k in subjects for _, fn in INVARIANTS if fn(q, k)[0] == "GAP")
+    dead_paths = sum(1 for r in flows() if "GAP" in (r[3], r[4], r[5]))
+
+    # what FAZ 3 has to have exercised, counted from the design
+    # FAZ 3 validates Zagros, so it is Zagros's own tracks that have to be exercised --
+    # its relay, its Asset Hub and its People chain. Summing both families counted the
+    # mainnet twin's as well, which nothing in this phase runs.
+    paths = len([r for r in flows() if "zagros" in r[0]])
+    tracks = 0
+    for rt in runtimes():
+        if not rt.name.endswith("zagros"):
+            continue
+        tracks += len(re.findall(r"pezpallet_referenda::Track \{",
+                                 read(rt / "src/governance/tracks.rs")))
+
+    return [
+        # Not measurable from the tree: the criterion is a green run on the branch, and a
+        # sheet that reports it from here would be reporting a guess.
+        ("FAZ 0", "framework sync", "evidence", None,
+         "green CI on `framework-sync-stable2606`, then merged"),
+        ("pre-genesis", "invariants frozen at genesis", "GATE",
+         static_gaps == 0 and dead_paths == 0,
+         f"{static_gaps} static gaps, {dead_paths} dead paths — must be 0 BEFORE FAZ 2"),
+        ("FAZ 2", "Zagros from genesis", "milestone",
+         zagros_born, "ZAGROS_GENESIS_HASH is still [0; 32]" if not zagros_born
+         else "genesis hash set"),
+        ("FAZ 3", "Zagros validated", "GATE", False,
+         f"needs, live and once each: {paths} cross-chain paths, {tracks} governance tracks, "
+         f"one citizen initiative start to finish, one spend crossing People to the Asset Hub, "
+         f"and nothing done by sudo that governance is meant to do"),
+        ("FAZ 4", "mainnet from genesis, mirroring Zagros", "milestone", False,
+         f"PEZKUWICHAIN_GENESIS_HASH is {mainnet}… — the old chain's; the reset writes a new one"),
+    ]
+
+
+def print_phases():
+    print(f"{'phase':<14} {'kind':<10} {'state':<7} what")
+    print("-" * 118)
+    for name, what, kind, done, note in phases():
+        state = "?" if done is None else ("done" if done else "open")
+        print(f"{name:<14} {kind:<10} {state:<7} {what} — {note}")
+    print()
+    print("blocks:  pre-genesis → FAZ 2 → FAZ 3 → FAZ 4.  A gate skipped is not a delay, it is")
+    print("         a decision taken by default: after FAZ 2 the indices are frozen, and after")
+    print("         FAZ 4 the mirror has copied whatever Zagros was.")
+    return 0
+
+
 def main():
+    if "--phases" in sys.argv:
+        return print_phases()
     if "--arch" in sys.argv:
         return 1 if print_arch() else 0
     if "--flows" in sys.argv:

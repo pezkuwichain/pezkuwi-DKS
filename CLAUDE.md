@@ -1,5 +1,32 @@
 # Working on this tree
 
+## The plan
+
+Five sheets. Each answers one question, and each derives its own completeness rather than
+listing what somebody remembered -- a pallet that exists has a row, an invariant that exists
+has a column, so a gap cannot hide by never having been written down.
+
+```
+python3 .github/scripts/plan.py            # what must be true at genesis   (subject x invariant)
+python3 .github/scripts/plan.py --flows    # do the cross-chain paths work  (path x gate)
+python3 .github/scripts/plan.py --arch     # which chain carries what       (pallet x chain)
+python3 .github/scripts/plan.py --phases   # the order, and what each phase must show
+python3 .github/scripts/durum.py           # the planned work, and its regressions
+```
+
+The wiring sheet is the one that earns its keep. A cross-chain path has three gates and the
+origin check is the last of them; both ends can be right while the path is dead, and neither
+end can see it. Two paths sat broken that way, in opposite directions, and neither was found
+by reading.
+
+Order matters in two places and both are irreversible:
+
+- **Everything the static sheet lists closes before FAZ 2, not before mainnet.** Enum indices,
+  storage versions and pallet indices freeze the moment a chain has a genesis, and a testnet's
+  storage keys are no easier to renumber than a mainnet's.
+- **A variant may be renamed only after its index is pinned.** Until then the encoding follows
+  the name.
+
 ## The state of the work is measured, not written down
 
 ```
