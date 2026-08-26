@@ -375,6 +375,13 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type InitiativeDeposit: Get<u128>;
 
+		/// How long a proposer waits after one of their initiatives lapses.
+		///
+		/// Without it, an initiative the register declined can be reopened the next block, and
+		/// the window that was supposed to settle the question settles nothing.
+		#[pezpallet::constant]
+		type InitiativeCooldown: Get<BlockNumberFor<Self>>;
+
 		/// Where a forfeit deposit goes. Not nowhere: this chain's supply is fixed and halving,
 		/// and there is no burn anywhere in it.
 		type InitiativeSlashTarget: Get<Self::AccountId>;
@@ -697,6 +704,11 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type NextInitiativeId<T: Config> = StorageValue<_, u32, ValueQuery>;
 
+	/// The block from which a proposer whose initiative lapsed may open another.
+	#[pezpallet::storage]
+	pub type InitiativeCooldownUntil<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
 	/// How each citizen answered a state referendum.
 	///
 	/// Kept so that nobody is counted twice and so that a citizen can change their mind while
@@ -877,6 +889,8 @@ pub mod pezpallet {
 		AlreadyBacked,
 		/// Not enough of the roll has signed.
 		NotEnoughBacking,
+		/// This proposer's last initiative lapsed and the wait has not run out.
+		InitiativeCooldown,
 
 		// State referendum errors
 		/// Trust of zero is technical death, and the dead do not vote.
@@ -1373,13 +1387,17 @@ pub mod pezpallet {
 			);
 			ensure!(T::TrustScoreSource::trust_score_of(&proposer) > 0, Error::<T>::NoTrustToVote);
 
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			if let Some(until) = InitiativeCooldownUntil::<T>::get(&proposer) {
+				ensure!(now >= until, Error::<T>::InitiativeCooldown);
+			}
+
 			let deposit = T::InitiativeDeposit::get();
 			T::NativeCurrency::reserve(&proposer, deposit.saturated_into())?;
 
 			let id = NextInitiativeId::<T>::get();
 			NextInitiativeId::<T>::put(id.saturating_add(1));
-			let closes = pezframe_system::Pezpallet::<T>::block_number()
-				.saturating_add(T::InitiativeWindow::get());
+			let closes = now.saturating_add(T::InitiativeWindow::get());
 
 			// The proposer counts as the first signature. Asking is backing.
 			Initiatives::<T>::insert(
@@ -1497,6 +1515,12 @@ pub mod pezpallet {
 				&T::InitiativeSlashTarget::get(),
 				deposit,
 				pezframe_support::traits::ExistenceRequirement::AllowDeath,
+			);
+
+			InitiativeCooldownUntil::<T>::insert(
+				&init.proposer,
+				pezframe_system::Pezpallet::<T>::block_number()
+					.saturating_add(T::InitiativeCooldown::get()),
 			);
 
 			Initiatives::<T>::remove(id);

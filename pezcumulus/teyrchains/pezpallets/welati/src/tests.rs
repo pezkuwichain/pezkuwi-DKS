@@ -3399,3 +3399,38 @@ mod initiative {
 		});
 	}
 }
+
+mod initiative_cooldown {
+	use super::*;
+	use crate::mock::{set_citizen_count, Balances};
+	use pezframe_support::traits::Currency;
+
+	const PROPOSER: u64 = 21;
+
+	fn hash() -> pezsp_core::H256 {
+		pezsp_core::H256::repeat_byte(8)
+	}
+
+	#[test]
+	fn a_lapsed_proposer_waits_before_asking_again() {
+		ExtBuilder::default().build().execute_with(|| {
+			set_citizen_count(100_000); // threshold far above one signature
+			let _ = Balances::deposit_creating(&PROPOSER, 1_000);
+
+			assert_ok!(Welati::open_initiative(RuntimeOrigin::signed(PROPOSER), 0, hash(), 42));
+			System::set_block_number(System::block_number() + 101);
+			assert_ok!(Welati::close_lapsed_initiative(RuntimeOrigin::signed(PROPOSER), 0));
+
+			// Re-asking the next block would make the window settle nothing.
+			assert_noop!(
+				Welati::open_initiative(RuntimeOrigin::signed(PROPOSER), 0, hash(), 42),
+				Error::<Test>::InitiativeCooldown
+			);
+
+			System::set_block_number(System::block_number() + 51);
+			assert_ok!(Welati::open_initiative(RuntimeOrigin::signed(PROPOSER), 0, hash(), 42));
+
+			set_citizen_count(110);
+		});
+	}
+}

@@ -680,6 +680,7 @@ parameter_types! {
 	pub const MockInitiativeWindow: u64 = 100;
 	pub const MockInitiativeDeposit: u128 = 10;
 	pub const MockInitiativeSlashTarget: AccountId = 999;
+	pub const MockInitiativeCooldown: u64 = 50;
 }
 
 impl pezpallet_welati::Config for Test {
@@ -696,6 +697,7 @@ impl pezpallet_welati::Config for Test {
 	type InitiativeWindow = MockInitiativeWindow;
 	type InitiativeDeposit = MockInitiativeDeposit;
 	type InitiativeSlashTarget = MockInitiativeSlashTarget;
+	type InitiativeCooldown = MockInitiativeCooldown;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = ParliamentSize;
 	type DiwanSize = DiwanSize;

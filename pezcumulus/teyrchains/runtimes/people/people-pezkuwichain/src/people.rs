@@ -1013,6 +1013,8 @@ parameter_types! {
 	/// cannot cross the line by patience alone.
 	pub const StateInitiativeWindow: BlockNumber = 14 * DAYS;
 	pub const StateInitiativeDeposit: u128 = 10 * UNITS;
+	/// Long enough that a declined question is not simply re-asked until it sticks.
+	pub const StateInitiativeCooldown: BlockNumber = 30 * DAYS;
 	pub const StateUndecidingTimeout: BlockNumber = 21 * DAYS;
 	pub const StateAlarmInterval: BlockNumber = 1;
 	pub const StateMaxQueued: u32 = 20;
@@ -1258,6 +1260,7 @@ impl pezpallet_welati::Config for Runtime {
 	type InitiativeWindow = StateInitiativeWindow;
 	type InitiativeDeposit = StateInitiativeDeposit;
 	type InitiativeSlashTarget = RelayTreasuryAccount;
+	type InitiativeCooldown = StateInitiativeCooldown;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = WelatiParliamentSize;
 	type DiwanSize = WelatiDiwanSize;
