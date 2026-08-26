@@ -24,7 +24,9 @@ fn send_transact_as_superuser_from_relay_to_asset_hub_works() {
 		ASSET_MIN_BALANCE,
 		true,
 		AssetHubPezkuwichainSender::get().into(),
-		Some(Weight::from_parts(144_933_000, 3675)),
+		// Measured against this runtime's weights; the previous value predates the
+		// weight files the Asset Hub now carries.
+		Some(Weight::from_parts(296_149_000, 3675)),
 	)
 }
 
@@ -122,7 +124,7 @@ fn send_xcm_from_para_to_asset_hub_paying_fee_with_sufficient_asset() {
 		ASSET_MIN_BALANCE,
 		true,
 		para_sovereign_account.clone(),
-		Some(Weight::from_parts(144_933_000, 3675)),
+		Some(Weight::from_parts(296_149_000, 3675)),
 		ASSET_MIN_BALANCE * 1000000000,
 	);
 

@@ -288,9 +288,11 @@ pub fn para_to_system_para_receiver_assertions(t: ParaToSystemParaTest) {
 
 fn system_para_to_para_assets_sender_assertions(t: SystemParaToParaTest) {
 	type RuntimeEvent = <AssetHubPezkuwichain as Chain>::RuntimeEvent;
+	// Measured against this runtime's weights. The twin was re-measured after the sync and
+	// this one was not, so it kept a pre-sync figure that the 33% threshold no longer covered.
 	AssetHubPezkuwichain::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(
-		864_610_000,
-		8799,
+		1_293_772_000,
+		12_416,
 	)));
 
 	assert_expected_events!(
