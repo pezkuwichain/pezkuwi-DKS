@@ -114,6 +114,34 @@ pub type LocalAssetTransactor = FungibleAdapter<
 >;
 
 /// The means that we convert the XCM message origin location into a local dispatch origin.
+/// The state register's own Root, as this chain's Root.
+///
+/// Sudo is meant to retire, and when it does the relay's privileged surface has to answer to
+/// something. All of it is `EnsureRoot` -- `Configuration`, `set_code`, HRMP, the initializer
+/// -- and no converter here turned any child chain into Root, so retiring sudo would have
+/// left the constitution unreachable rather than democratic.
+///
+/// It answers to the register as a whole, not to an office within it. A referendum on the
+/// People chain's root track speaks as that chain itself (`EnsureXcmOrigin` falls back to
+/// `Here` for Root, so the message arrives bare); the three ministerial bodies speak as
+/// pluralities and are deliberately not matched here. Changing the chain's own code is the
+/// whole register's business, not a ministry's.
+pub struct StateRegisterAsRoot;
+impl xcm_executor::traits::ConvertOrigin<RuntimeOrigin> for StateRegisterAsRoot {
+	fn convert_origin(
+		origin: impl Into<Location>,
+		kind: OriginKind,
+	) -> Result<RuntimeOrigin, Location> {
+		let origin = origin.into();
+		match (kind, origin.unpack()) {
+			(OriginKind::Superuser, (0, [Teyrchain(id)])) if u32::from(*id) == PEOPLE_ID => {
+				Ok(RuntimeOrigin::root())
+			},
+			_ => Err(origin),
+		}
+	}
+}
+
 type LocalOriginConverter = (
 	// A `Signed` origin of the sovereign account that the original location controls.
 	SovereignSignedViaLocation<LocationConverter, RuntimeOrigin>,
@@ -121,6 +149,8 @@ type LocalOriginConverter = (
 	ChildTeyrchainAsNative<teyrchains_origin::Origin, RuntimeOrigin>,
 	// The AccountId32 location type can be expressed natively as a `Signed` origin.
 	SignedAccountId32AsNative<ThisNetwork, RuntimeOrigin>,
+	// A referendum of the whole register, as this chain's Root.
+	StateRegisterAsRoot,
 	// Xcm origins can be represented natively under the Xcm pezpallet's Xcm origin. Without this
 	// there is no converter for `OriginKind::Xcm` at all, so a `Transact` sent that way is
 	// rejected with `BadOrigin` no matter who sent it — which is how the Fellowship's whitelist
