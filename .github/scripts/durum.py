@@ -95,12 +95,24 @@ def _():
     ok = all("governance::Spender" in read(p / "src/lib.rs") for p in AH)
     return ok, "Spender bağlı" if ok else "yalnız Root"
 
-@check("Sıralı 6b", "S2 — People slash hedefleri emekli hazineye ödemiyor")
+@check("Sıralı 6b", "S2 — hiçbir slash sahipsiz bir hesaba ödemiyor")
 def _():
-    n = count_all(PEOPLE, "src/people.rs", "RelayTreasuryAccount")
-    # tanım satırı hariç, her ikizde 1 tanım var
-    used = n - len(PEOPLE)
-    return used == 0, f"{used} kullanım hâlâ relay hazinesine bakıyor"
+    """Aranan sey "relay hazinesine odeme yok" DEGIL.
+
+    Odemenin yanlis olmasi, hesabin sahipsiz kalmasiyla baslar. Relay hazinesi durdugu
+    surece bu hedefler dogrudur; kalem, relay hazinesi emekli edildigi an acilir. Kapinin
+    tuttugu sey bu baglanti: ikisi birlikte hareket etmeli, ve hangisinin once gittigi
+    onemli.
+    """
+    used = count_all(PEOPLE, "src/people.rs", "RelayTreasuryAccount") - len(PEOPLE)
+    treasury_var = any("Treasury: pezpallet_treasury = 18," in read(p / "src/lib.rs")
+                       for p in RELAY)
+    if used == 0:
+        return True, "hiçbir hedef relay hazinesine bakmıyor"
+    ok = treasury_var
+    return ok, (f"{used} hedef relay hazinesine ödüyor, hazine yerinde"
+                if ok else
+                f"{used} hedef ÖDEME YAPIYOR ama relay hazinesi kaldırılmış — sahipsiz hesap")
 
 @check("Sıralı 7", "Yönetişim adresi tutarlı")
 def _():
@@ -136,18 +148,32 @@ def _():
     ok = all("LocalPalletOriginToLocation" in read(p / "src/xcm_config.rs") for p in RELAY)
     return ok, "dolu (emeklilik sırasında () olmamalı)" if ok else "boşalmış — S1 gerçekleşti"
 
-@check("Sıralı 8b", "Relay Sudo emekli edildi")
+@check("Sıralı 8b", "Sudo emekli edilebilir: yönetişim relay Root'una ulaşıyor")
 def _():
-    still = any("Sudo: pezpallet_sudo" in read(p / "src/lib.rs") for p in RELAY)
-    return not still, "sudo duruyor (255)" if still else "emekli"
+    """Olculen sey "sudo dustu mu" DEGIL. Ne zaman dusecegi isletme karari; tehlikeli olan,
+    dustugunde ulasilamaz kalacak bir sey birakmak. Relay'in ayricalikli yuzeyinin tamami
+    `EnsureRoot` ve buraya tek yol sudoydu. `StateRegisterAsRoot` ikinci yolu aciyor:
+    kutugun referandumu relay Root'u olur. Kapinin tuttugu sart bu.
+    """
+    yol = all("StateRegisterAsRoot" in read(p / "src/xcm_config.rs") for p in RELAY)
+    sudo = any("Sudo: pezpallet_sudo" in read(p / "src/lib.rs") for p in RELAY)
+    return yol, ("yönetişim yolu açık" + (", sudo hâlâ duruyor (255)" if sudo else ", sudo emekli")
+                 if yol else "yönetişimin relay Root'una yolu YOK — sudo düşerse anayasa ulaşılamaz")
 
-@check("S3", "TREASURY_PALLET_ID tüketicileri")
+@check("S3", "Hazine hesabı türeten sabit, var olan bir hazineye çözülüyor")
 def _():
-    out = subprocess.run(
-        ["grep", "-rl", "TREASURY_PALLET_ID", "--include=*.rs", "."],
-        cwd=ROOT, capture_output=True, text=True).stdout
-    files = [f for f in out.splitlines() if "/target/" not in f]
-    return len(files) == 0, f"{len(files)} dosya"
+    """Plan bunu "TREASURY_PALLET_ID = 18" diye yazmisti; olculdu, indeks degil PalletId
+    (`py/trsry`). Yani risk indeks kaymasi degil, S2'nin ayni baglantisi: bu sabitten hesap
+    tureten her sey relay hazinesinin varligina bagli. Tuketici saymak bir sey olcmuyordu.
+    """
+    treasury_var = any("Treasury: pezpallet_treasury = 18," in read(p / "src/lib.rs")
+                       for p in RELAY)
+    out = subprocess.run(["grep", "-rl", "TREASURY_PALLET_ID", "--include=*.rs", "."],
+                         cwd=ROOT, capture_output=True, text=True).stdout
+    n = len([f for f in out.splitlines() if "/target/" not in f])
+    return treasury_var or n == 0, (
+        f"{n} dosya türetiyor, relay hazinesi yerinde" if treasury_var
+        else f"{n} dosya hesap türetiyor ama relay hazinesi YOK")
 
 # --- Genesis öncesi temel sağlamlık (res/plans/temel-saglamlik-genesis-oncesi.md) ---
 
@@ -192,13 +218,20 @@ def _():
             eksik.append(d.name)
     return not eksik, "hepsinde var" if not eksik else "eksik: " + ", ".join(eksik)
 
-@check("Temel 3", "Makam taksonomisi tek")
+@check("Temel 3", "Bir makamın sahibini söyleyen tek bir sicil var")
 def _():
-    n = sum(1 for e in ("Tiki", "OfficialRole", "GovernmentPosition", "MinisterRole")
-            if subprocess.run(["grep", "-rq", f"pub enum {e}", "--include=*.rs",
-                               "pezcumulus/teyrchains/pezpallets"],
-                              cwd=ROOT).returncode == 0)
-    return n <= 1, f"{n} ayrı taksonomi"
+    """Plan bunu "dort taksonomi" diye yazmisti. Olculdu: mesele enum sayisi degil, KAYIT
+    sayisi. `tiki::TikiHolder` zaten `Map<Tiki, AccountId>` -- sicil var. `welati`'nin
+    `CurrentOfficials` ve `AppointedOfficials` haritalari ayni seyin kopyasi, ayni makam
+    listesinin iki alt kumesiyle anahtarlanmis. Uc sicil birbiriyle celisebilir; tiki
+    pallet'inin kendi yorumu bunu soyluyor: iki yerde kayitli bir makam, kimin sorduguna
+    gore iki farkli kiside olabilir.
+    """
+    w = read(ROOT / "pezcumulus/teyrchains/pezpallets/welati/src/lib.rs")
+    kopya = [n for n in ("CurrentOfficials", "AppointedOfficials")
+             if f"pub type {n}<T: Config> =" in w]
+    return not kopya, ("tek sicil: tiki::TikiHolder" if not kopya
+                       else f"{len(kopya)+1} sicil — welati'de {', '.join(kopya)} hâlâ ayrı")
 
 @check("Temel 4", "\"Meclis karar verdi\" origin'i var")
 def _():

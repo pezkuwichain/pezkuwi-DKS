@@ -1234,7 +1234,11 @@ impl pezpallet_treasury::Config for Runtime {
 	type Burn = Burn;
 	type BurnDestination = ();
 	type MaxApprovals = MaxApprovals;
-	type WeightInfo = ();
+	// Not `()`: that is zero weight, which prices every call in this pallet at
+	// nothing. These are the pallet's own reference figures, measured on
+	// somebody else's hardware -- the same caveat every weight file here carries
+	// -- and a wrong non-zero number is not in the same class as no number.
+	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
 	type SpendFunds = ();
 	// Root, or a spender the economic franchise elected to trust with an amount.
 	//
@@ -1262,7 +1266,11 @@ impl pezpallet_treasury::Config for Runtime {
 // AssetRate Pezpallet
 // -----------------------------------------------------------------------------
 impl pezpallet_asset_rate::Config for Runtime {
-	type WeightInfo = ();
+	// Not `()`: that is zero weight, which prices every call in this pallet at
+	// nothing. These are the pallet's own reference figures, measured on
+	// somebody else's hardware -- the same caveat every weight file here carries
+	// -- and a wrong non-zero number is not in the same class as no number.
+	type WeightInfo = pezpallet_asset_rate::weights::BizinikiwiWeight<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
 	type CreateOrigin = EnsureRoot<AccountId>;
 	type RemoveOrigin = EnsureRoot<AccountId>;
@@ -1319,7 +1327,11 @@ impl pezpallet_bounties::Config for Runtime {
 	type BountyValueMinimum = BountyValueMinimum;
 	type DataDepositPerByte = DataDepositPerByte;
 	type MaximumReasonLength = MaximumReasonLength;
-	type WeightInfo = ();
+	// Not `()`: that is zero weight, which prices every call in this pallet at
+	// nothing. These are the pallet's own reference figures, measured on
+	// somebody else's hardware -- the same caveat every weight file here carries
+	// -- and a wrong non-zero number is not in the same class as no number.
+	type WeightInfo = pezpallet_bounties::weights::BizinikiwiWeight<Runtime>;
 	type ChildBountyManager = ChildBounties;
 	type OnSlash = Treasury;
 }
@@ -1336,7 +1348,11 @@ impl pezpallet_child_bounties::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type MaxActiveChildBountyCount = MaxActiveChildBountyCount;
 	type ChildBountyValueMinimum = ChildBountyValueMinimum;
-	type WeightInfo = ();
+	// Not `()`: that is zero weight, which prices every call in this pallet at
+	// nothing. These are the pallet's own reference figures, measured on
+	// somebody else's hardware -- the same caveat every weight file here carries
+	// -- and a wrong non-zero number is not in the same class as no number.
+	type WeightInfo = pezpallet_child_bounties::weights::BizinikiwiWeight<Runtime>;
 }
 
 // =============================================================================
