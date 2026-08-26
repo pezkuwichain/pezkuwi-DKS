@@ -675,6 +675,55 @@ impl pezpallet_collective::Config<CouncilCollective> for Runtime {
 /// judges were eleven separate keys over citizenship, impeachment and slashing.
 ///
 /// `SetMembersOrigin` is root because the ordinary path is welati's, not a call.
+/// Parliament, as a body that can resolve.
+///
+/// The house is elected by `welati` and mirrored here, exactly as the bench is: one writer,
+/// one direction, `set_members` called with the whole roster so the collective cannot hold
+/// somebody the register has removed.
+///
+/// It exists so that "Parliament resolved" is something an origin can say. The alias that
+/// used to carry that name accepted a single member -- a name promising a body and a check
+/// giving one person -- and nothing used it, which is the only reason it was harmless.
+pub type ParliamentCollective = pezpallet_collective::Instance3;
+
+parameter_types! {
+	pub const ParliamentMotionDuration: BlockNumber = 7 * DAYS;
+	pub const ParliamentMaxProposals: u32 = 100;
+}
+
+pub struct ParliamentRoster;
+impl pezpallet_welati::HouseRoster<AccountId> for ParliamentRoster {
+	fn set_members(members: alloc::vec::Vec<AccountId>) {
+		let mut sorted = members;
+		sorted.sort();
+		sorted.dedup();
+		let prime = sorted.first().cloned();
+		let _ = pezpallet_collective::Pezpallet::<Runtime, ParliamentCollective>::set_members(
+			pezframe_system::RawOrigin::Root.into(),
+			sorted,
+			prime,
+			WelatiParliamentSize::get(),
+		);
+	}
+}
+
+impl pezpallet_collective::Config<ParliamentCollective> for Runtime {
+	type RuntimeOrigin = RuntimeOrigin;
+	type Proposal = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type MotionDuration = ParliamentMotionDuration;
+	type MaxProposals = ParliamentMaxProposals;
+	type MaxMembers = WelatiParliamentSize;
+	// A member who does not vote is not counted as agreeing.
+	type DefaultVote = pezpallet_collective::MoreThanMajorityThenPrimeDefaultVote;
+	type WeightInfo = pezpallet_collective::weights::BizinikiwiWeight<Runtime>;
+	type SetMembersOrigin = EnsureRoot<AccountId>;
+	type MaxProposalWeight = MaxProposalWeight;
+	type DisapproveOrigin = EnsureRoot<AccountId>;
+	type KillOrigin = EnsureRoot<AccountId>;
+	type Consideration = ();
+}
+
 pub type DiwanCollective = pezpallet_collective::Instance2;
 
 parameter_types! {
@@ -1266,6 +1315,7 @@ impl pezpallet_welati::Config for Runtime {
 	type DiwanSize = WelatiDiwanSize;
 	type DiwanElectedSeats = WelatiDiwanElectedSeats;
 	type CourtRoster = DiwanRoster;
+	type HouseRoster = ParliamentRoster;
 	type ElectionPeriod = WelatiElectionPeriod;
 	type CandidacyPeriod = WelatiCandidacyPeriod;
 	type CampaignPeriod = WelatiCampaignPeriod;

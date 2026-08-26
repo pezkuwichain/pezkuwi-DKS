@@ -274,6 +274,22 @@ impl<AccountId> CourtRoster<AccountId> for () {
 	fn set_members(_members: Vec<AccountId>) {}
 }
 
+/// The house, as the body that resolves.
+///
+/// Same shape and same reason as `CourtRoster`. This pallet decides *who* sits in Parliament;
+/// it does not run the house's business, and a collective does. Without this the only origin
+/// meaning "Parliament" was one that accepted a single member -- a name promising a body and
+/// a check giving one person. An origin standing for the house as a whole has to be seated
+/// from the register, and this is the one direction that seating travels.
+pub trait HouseRoster<AccountId> {
+	/// Replace the house's membership with exactly `members`.
+	fn set_members(members: Vec<AccountId>);
+}
+
+impl<AccountId> HouseRoster<AccountId> for () {
+	fn set_members(_members: Vec<AccountId>) {}
+}
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
@@ -307,6 +323,9 @@ pub mod pezpallet {
 		/// Seats on the court, in total. Eleven.
 		#[pezpallet::constant]
 		type DiwanSize: Get<u32>;
+
+		/// Where the house's membership is mirrored so that Parliament can resolve as a body.
+		type HouseRoster: HouseRoster<Self::AccountId>;
 
 		/// Where the bench's membership is mirrored so that the court can vote as a body.
 		type CourtRoster: CourtRoster<Self::AccountId>;
@@ -1767,6 +1786,7 @@ pub mod pezpallet {
 				.map_err(|_| Error::<T>::ParliamentFull)?;
 
 			ParliamentMembers::<T>::put(seated);
+			T::HouseRoster::set_members(members.clone());
 			Self::queue_seat_handover(&[], &members, term_end)?;
 
 			Self::deposit_event(Event::FoundingParliamentSeated {
@@ -2827,6 +2847,7 @@ pub mod pezpallet {
 						ParliamentMembers::<T>::put(
 							parliament_members.map_err(|_| Error::<T>::ParliamentFull)?,
 						);
+						T::HouseRoster::set_members(winners.to_vec());
 						Self::queue_seat_handover(&outgoing, winners, term_end)?;
 
 						Self::deposit_event(Event::ParliamentUpdated {

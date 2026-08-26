@@ -26,7 +26,7 @@ mod weights;
 pub mod xcm_config;
 
 // Re-exported so `lib.rs` can name the collectives.
-pub use people::{CouncilCollective, DiwanCollective};
+pub use people::{CouncilCollective, DiwanCollective, ParliamentCollective};
 
 extern crate alloc;
 
@@ -370,6 +370,16 @@ pub type RootOrSerok =
 // `RootOrParliament` used to sit here. Its comment said "legislative acts, budget
 // approvals"; its body accepted **one** member of the house. Nothing used it. An origin
 // meaning "the house resolved" belongs with the state franchise, and it is not this.
+
+/// Root, or the house resolving by simple majority.
+///
+/// The alias that used to carry this name accepted a single member of Parliament while its
+/// comment said "legislative acts, budget approvals". Nothing used it, which is the only
+/// reason that was harmless. This one means what it says.
+pub type RootOrParliament = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pezpallet_collective::EnsureProportionMoreThan<AccountId, people::ParliamentCollective, 1, 2>,
+>;
 
 /// Root, or the Diwan.
 /// For constitutional decisions and citizenship.
@@ -731,9 +741,11 @@ construct_runtime!(
 
 		Diwan: pezpallet_collective::<Instance2> = 74,
 
+		Parliament: pezpallet_collective::<Instance3> = 78,
+
 		// Reserved slots for future committee instances:
-		// TechnicalCommittee: pezpallet_collective::<Instance3> = 76,
-		// TreasuryCommittee: pezpallet_collective::<Instance4> = 77,
+		// TechnicalCommittee: pezpallet_collective::<Instance4> = 76,
+		// TreasuryCommittee: pezpallet_collective::<Instance5> = 77,
 
 		// Trust & Staking
 		StakingScore: pezpallet_staking_score = 80,

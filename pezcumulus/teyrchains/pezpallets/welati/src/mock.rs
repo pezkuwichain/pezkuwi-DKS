@@ -704,6 +704,7 @@ impl pezpallet_welati::Config for Test {
 	type DiwanElectedSeats = DiwanElectedSeats;
 	// The court's deliberations are the collective's job on a real runtime; the mock only
 	// needs the membership rules, so nothing is relayed here.
+	type HouseRoster = ();
 	type CourtRoster = ();
 	type ElectionPeriod = ElectionPeriod;
 	type CandidacyPeriod = CandidacyPeriod;
