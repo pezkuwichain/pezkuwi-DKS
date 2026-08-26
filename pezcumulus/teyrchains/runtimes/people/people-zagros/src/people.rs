@@ -1005,6 +1005,14 @@ parameter_types! {
 	/// Enough to make a frivolous submission cost something, low enough that a citizen can
 	/// afford to be the one who asks.
 	pub const StateSubmissionDeposit: Balance = 10 * UNITS;
+	/// A hundredth of the register. Every jurisdiction that runs citizens' initiatives sets
+	/// this between one and five per cent; this is the low end, because the initiative only
+	/// opens a question rather than settling one.
+	pub const StateInitiativeThreshold: Perbill = Perbill::from_percent(1);
+	/// Long enough that a real initiative can be organised, short enough that a petition
+	/// cannot cross the line by patience alone.
+	pub const StateInitiativeWindow: BlockNumber = 14 * DAYS;
+	pub const StateInitiativeDeposit: u128 = 10 * UNITS;
 	pub const StateUndecidingTimeout: BlockNumber = 21 * DAYS;
 	pub const StateAlarmInterval: BlockNumber = 1;
 	pub const StateMaxQueued: u32 = 20;
@@ -1158,6 +1166,58 @@ impl pezframe_support::traits::Randomness<Hash, BlockNumber> for TimestampRandom
 	}
 }
 
+/// How a backed citizens' initiative reaches the ballot.
+///
+/// The pallet that collects the signatures cannot see what a referendum is made of, and the
+/// ballot cannot see who signed. This is the only place that sees both.
+///
+/// It submits as the proposer, so the ballot's own submission deposit comes from the person
+/// who asked, exactly as it would if they had submitted directly. The initiative's deposit is
+/// a separate thing and is returned at the same moment.
+pub struct LaunchBackedInitiative;
+impl pezpallet_welati::InitiativeLaunch<AccountId, Hash> for LaunchBackedInitiative {
+	fn launch(
+		proposer: &AccountId,
+		track: u16,
+		hash: Hash,
+		len: u32,
+	) -> pezsp_runtime::DispatchResult {
+		use pezsp_runtime::traits::Dispatchable;
+
+		// The track list is the one authority on which origin a track speaks for; asking it
+		// backwards keeps the two from drifting apart.
+		let origin = <crate::governance::TracksInfo as pezpallet_referenda::TracksInfo<
+			Balance,
+			BlockNumber,
+		>>::tracks()
+		.find(|t| t.id == track)
+		.and_then(|_| Self::origin_for(track))
+		.ok_or(pezsp_runtime::DispatchError::Other("no such track"))?;
+
+		let call = RuntimeCall::Referenda(pezpallet_referenda::Call::<Runtime>::submit {
+			proposal_origin: alloc::boxed::Box::new(origin),
+			proposal: pezframe_support::traits::Bounded::Lookup { hash, len },
+			enactment_moment: pezframe_support::traits::schedule::DispatchTime::After(0),
+		});
+		call.dispatch(RuntimeOrigin::signed(proposer.clone()))
+			.map(|_| ())
+			.map_err(|e| e.error)
+	}
+}
+
+impl LaunchBackedInitiative {
+	fn origin_for(track: u16) -> Option<OriginCaller> {
+		use crate::governance::pezpallet_custom_origins::Origin as StateOrigin;
+		Some(match track {
+			0 => OriginCaller::system(pezframe_system::RawOrigin::Root),
+			40 => OriginCaller::Origins(StateOrigin::WelatiElection),
+			41 => OriginCaller::Origins(StateOrigin::WelatiAdmin),
+			42 => OriginCaller::Origins(StateOrigin::CitizenshipAdmin),
+			_ => return None,
+		})
+	}
+}
+
 /// Citizen count provider for Welati
 pub struct WelatiCitizenSource;
 impl pezpallet_welati::CitizenInfo for WelatiCitizenSource {
@@ -1193,6 +1253,11 @@ impl pezpallet_welati::Config for Runtime {
 	// register rather than two.
 	type Electorate = CitizenRoll;
 	type Polls = Referenda;
+	type Initiatives = LaunchBackedInitiative;
+	type InitiativeThreshold = StateInitiativeThreshold;
+	type InitiativeWindow = StateInitiativeWindow;
+	type InitiativeDeposit = StateInitiativeDeposit;
+	type InitiativeSlashTarget = RelayTreasuryAccount;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = WelatiParliamentSize;
 	type DiwanSize = WelatiDiwanSize;

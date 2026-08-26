@@ -1447,3 +1447,29 @@ impl<Electorate: Get<u32> + 'static, Class> pezframe_support::traits::VoteTally<
 	#[cfg(feature = "runtime-benchmarks")]
 	fn setup(_: Class, _: pezsp_runtime::Perbill) {}
 }
+
+/// A citizens' initiative: a question one citizen asks and others sign onto.
+///
+/// The proposal itself is not held here, only the preimage that carries it. What this record
+/// is for is the part that is about people: who asked, on which track, by when, and how many
+/// have joined so far.
+#[derive(
+	Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
+)]
+#[scale_info(skip_type_params(T))]
+pub struct Initiative<AccountId, BlockNumber, Hash> {
+	/// Who opened it and whose deposit is at stake.
+	pub proposer: AccountId,
+	/// The track whose authority the proposal asks for.
+	pub track: u16,
+	/// The stored preimage of the call a successful referendum would dispatch.
+	pub proposal: Hash,
+	/// Its length, which the ballot needs in order to look it up.
+	pub proposal_len: u32,
+	/// After this block no more backing may be added.
+	pub closes: BlockNumber,
+	/// How many citizens have signed, the proposer included.
+	pub backing: u32,
+	/// What the proposer put up, returned on success and forfeit on lapse.
+	pub deposit: u128,
+}

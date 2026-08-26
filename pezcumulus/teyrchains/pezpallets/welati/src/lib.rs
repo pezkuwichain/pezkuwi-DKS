@@ -239,6 +239,25 @@ pub trait CitizenInfo {
 	fn citizen_count() -> u32;
 }
 
+/// How a backed citizens' initiative reaches the ballot.
+///
+/// The runtime implements this by submitting to the referenda pallet on the proposer's behalf.
+/// It is a trait so that this pallet does not have to know what a referendum is made of --
+/// it knows who may ask and when enough people have asked with them, and nothing else.
+pub trait InitiativeLaunch<AccountId, Hash> {
+	/// Put the proposal to the register on the given track.
+	///
+	/// `track` is the index the runtime's track list gives the origin being asked for; the
+	/// runtime maps it back. `hash`/`len` name a preimage that is already stored.
+	fn launch(proposer: &AccountId, track: u16, hash: Hash, len: u32) -> DispatchResult;
+}
+
+impl<AccountId, Hash> InitiativeLaunch<AccountId, Hash> for () {
+	fn launch(_: &AccountId, _: u16, _: Hash, _: u32) -> DispatchResult {
+		Err(pezsp_runtime::DispatchError::Other("no ballot to launch onto"))
+	}
+}
+
 /// The bench, as the body that votes.
 ///
 /// This pallet decides *who* sits on the court -- six the house elects, five the President
@@ -328,6 +347,37 @@ pub mod pezpallet {
 			Class = u16,
 			Moment = BlockNumberFor<Self>,
 		>;
+
+		/// How a backed initiative becomes a question on the register's ballot.
+		///
+		/// A trait rather than the pallet itself: what this pallet knows is who may ask and
+		/// when enough people have asked with them. Turning that into a referendum is the
+		/// ballot box's job, and the runtime is the only place that can see both.
+		type Initiatives: InitiativeLaunch<Self::AccountId, Self::Hash>;
+
+		/// Share of the roll whose backing turns a citizen's initiative into a referendum.
+		///
+		/// A share rather than a count: fifty thousand citizens make a fixed threshold of
+		/// twenty per cent impossible and five million make it free. Every real jurisdiction
+		/// that runs initiatives sets it between one and five per cent of the electorate.
+		#[pezpallet::constant]
+		type InitiativeThreshold: Get<pezsp_runtime::Perbill>;
+
+		/// How long backing may be collected before the initiative lapses.
+		///
+		/// Without it a petition left open long enough eventually crosses any threshold, and
+		/// what it would then show is patience rather than support.
+		#[pezpallet::constant]
+		type InitiativeWindow: Get<BlockNumberFor<Self>>;
+
+		/// What the proposer puts up. Returned when the threshold is reached, forfeit when the
+		/// window closes without it -- so a real initiative is free and a frivolous one is not.
+		#[pezpallet::constant]
+		type InitiativeDeposit: Get<u128>;
+
+		/// Where a forfeit deposit goes. Not nowhere: this chain's supply is fixed and halving,
+		/// and there is no burn anywhere in it.
+		type InitiativeSlashTarget: Get<Self::AccountId>;
 
 		/// Currency used for candidacy deposits
 		type NativeCurrency: ReservableCurrency<Self::AccountId>;
@@ -626,6 +676,27 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn population_gate_reported)]
 	pub type PopulationGateReported<T: Config> = StorageValue<_, bool, ValueQuery>;
 
+	/// Initiatives open for backing, and those that closed but were not yet settled.
+	#[pezpallet::storage]
+	pub type Initiatives<T: Config> = StorageMap<
+		_,
+		Twox64Concat,
+		u32,
+		crate::types::Initiative<T::AccountId, BlockNumberFor<T>, T::Hash>,
+		OptionQuery,
+	>;
+
+	/// Who has signed which initiative.
+	///
+	/// Open on purpose: an initiative exists so that citizens can see whether the state has
+	/// been captured, and a signature nobody can see says nothing about who is behind it.
+	#[pezpallet::storage]
+	pub type InitiativeBacking<T: Config> =
+		StorageDoubleMap<_, Twox64Concat, u32, Blake2_128Concat, T::AccountId, (), OptionQuery>;
+
+	#[pezpallet::storage]
+	pub type NextInitiativeId<T: Config> = StorageValue<_, u32, ValueQuery>;
+
 	/// How each citizen answered a state referendum.
 	///
 	/// Kept so that nobody is counted twice and so that a citizen can change their mind while
@@ -633,20 +704,23 @@ pub mod pezpallet {
 	/// so the only reason this outlives the poll is to be cleared, which anyone may do once the
 	/// poll is over.
 	#[pezpallet::storage]
-	pub type ReferendumVotes<T: Config> = StorageDoubleMap<
-		_,
-		Twox64Concat,
-		u32,
-		Blake2_128Concat,
-		T::AccountId,
-		bool,
-		OptionQuery,
-	>;
+	pub type ReferendumVotes<T: Config> =
+		StorageDoubleMap<_, Twox64Concat, u32, Blake2_128Concat, T::AccountId, bool, OptionQuery>;
 
 	// --- Events ---
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		// --- CITIZENS' INITIATIVE EVENTS ---
+		/// A citizen opened an initiative and put up the deposit for it.
+		InitiativeOpened { id: u32, proposer: T::AccountId, track: u16, closes: BlockNumberFor<T> },
+		/// A citizen signed one.
+		InitiativeBacked { id: u32, who: T::AccountId, backing: u32 },
+		/// Enough citizens signed; the question went to the ballot and the deposit came back.
+		InitiativeLaunched { id: u32, backing: u32 },
+		/// The window closed without the threshold. The deposit did not come back.
+		InitiativeLapsed { id: u32, backing: u32 },
+
 		// --- STATE REFERENDUM EVENTS ---
 		/// A citizen answered a state referendum. Recasting the other way replaces the answer
 		/// rather than adding one.
@@ -791,6 +865,18 @@ pub mod pezpallet {
 		InsufficientTrustScore,
 		MissingRequiredTiki,
 		NotACitizen,
+
+		// Citizens' initiative errors
+		/// No initiative under that id.
+		NoSuchInitiative,
+		/// The window has closed; nothing more may be added.
+		InitiativeClosed,
+		/// The window is still open, so it is neither backed enough nor lapsed.
+		InitiativeStillOpen,
+		/// One signature per citizen. A second says nothing the first did not.
+		AlreadyBacked,
+		/// Not enough of the roll has signed.
+		NotEnoughBacking,
 
 		// State referendum errors
 		/// Trust of zero is technical death, and the dead do not vote.
@@ -1259,6 +1345,167 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// Open a citizens' initiative.
+		///
+		/// No state anywhere lets one person put a question to the whole country by themselves,
+		/// and neither does this. What a citizen may do alone is *ask*: name a proposal, name
+		/// the track whose authority it needs, and put up a deposit. It reaches the ballot only
+		/// once enough of the register has asked with them.
+		///
+		/// The proposal is named by a preimage that is already stored, so what is being asked
+		/// is readable before anyone signs it.
+		#[pezpallet::call_index(52)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::submit_proposal())]
+		pub fn open_initiative(
+			origin: OriginFor<T>,
+			track: u16,
+			proposal: T::Hash,
+			proposal_len: u32,
+		) -> DispatchResult {
+			let proposer = ensure_signed(origin)?;
+
+			#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+			ensure!(
+				<pezpallet_identity_kyc::Pezpallet<T> as KycStatus<T::AccountId>>::get_kyc_status(
+					&proposer
+				) == KycLevel::Approved,
+				Error::<T>::NotACitizen
+			);
+			ensure!(T::TrustScoreSource::trust_score_of(&proposer) > 0, Error::<T>::NoTrustToVote);
+
+			let deposit = T::InitiativeDeposit::get();
+			T::NativeCurrency::reserve(&proposer, deposit.saturated_into())?;
+
+			let id = NextInitiativeId::<T>::get();
+			NextInitiativeId::<T>::put(id.saturating_add(1));
+			let closes = pezframe_system::Pezpallet::<T>::block_number()
+				.saturating_add(T::InitiativeWindow::get());
+
+			// The proposer counts as the first signature. Asking is backing.
+			Initiatives::<T>::insert(
+				id,
+				crate::types::Initiative {
+					proposer: proposer.clone(),
+					track,
+					proposal,
+					proposal_len,
+					closes,
+					backing: 1,
+					deposit,
+				},
+			);
+			InitiativeBacking::<T>::insert(id, &proposer, ());
+
+			Self::deposit_event(Event::InitiativeOpened { id, proposer, track, closes });
+			Ok(())
+		}
+
+		/// Sign an open initiative.
+		///
+		/// Free, and one per citizen. Charging for it would put a price on a constitutional
+		/// right, and letting one account sign twice would make the threshold measure balance
+		/// rather than people.
+		#[pezpallet::call_index(53)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		#[pezpallet::feeless_if(|_origin: &OriginFor<T>, id: &u32| -> bool {
+			Initiatives::<T>::contains_key(id)
+		})]
+		pub fn back_initiative(
+			origin: OriginFor<T>,
+			#[pezpallet::compact] id: u32,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			#[cfg(not(any(test, feature = "runtime-benchmarks")))]
+			ensure!(
+				<pezpallet_identity_kyc::Pezpallet<T> as KycStatus<T::AccountId>>::get_kyc_status(
+					&who
+				) == KycLevel::Approved,
+				Error::<T>::NotACitizen
+			);
+			ensure!(T::TrustScoreSource::trust_score_of(&who) > 0, Error::<T>::NoTrustToVote);
+			ensure!(!InitiativeBacking::<T>::contains_key(id, &who), Error::<T>::AlreadyBacked);
+
+			let backing =
+				Initiatives::<T>::try_mutate(id, |maybe| -> Result<u32, DispatchError> {
+					let init = maybe.as_mut().ok_or(Error::<T>::NoSuchInitiative)?;
+					ensure!(
+						pezframe_system::Pezpallet::<T>::block_number() <= init.closes,
+						Error::<T>::InitiativeClosed
+					);
+					init.backing = init.backing.saturating_add(1);
+					Ok(init.backing)
+				})?;
+
+			InitiativeBacking::<T>::insert(id, &who, ());
+			Self::deposit_event(Event::InitiativeBacked { id, who, backing });
+			Ok(())
+		}
+
+		/// Put a sufficiently backed initiative to the register.
+		///
+		/// Permissionless: the threshold is the decision, and making the proposer come back to
+		/// collect it would let an initiative that the register already backed die because one
+		/// person went quiet.
+		#[pezpallet::call_index(54)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::submit_proposal())]
+		pub fn launch_initiative(
+			origin: OriginFor<T>,
+			#[pezpallet::compact] id: u32,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+
+			let init = Initiatives::<T>::get(id).ok_or(Error::<T>::NoSuchInitiative)?;
+			ensure!(init.backing >= Self::initiative_threshold(), Error::<T>::NotEnoughBacking);
+
+			T::Initiatives::launch(&init.proposer, init.track, init.proposal, init.proposal_len)?;
+
+			// It did what it was taken for.
+			T::NativeCurrency::unreserve(&init.proposer, init.deposit.saturated_into());
+			Initiatives::<T>::remove(id);
+			let _ = InitiativeBacking::<T>::clear_prefix(id, u32::MAX, None);
+
+			Self::deposit_event(Event::InitiativeLaunched { id, backing: init.backing });
+			Ok(())
+		}
+
+		/// Close an initiative whose window ran out without the backing.
+		///
+		/// The deposit is forfeit to the treasury -- not destroyed. This chain's supply is
+		/// fixed and halving and there is no burn anywhere in it.
+		#[pezpallet::call_index(55)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		pub fn close_lapsed_initiative(
+			origin: OriginFor<T>,
+			#[pezpallet::compact] id: u32,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+
+			let init = Initiatives::<T>::get(id).ok_or(Error::<T>::NoSuchInitiative)?;
+			ensure!(
+				pezframe_system::Pezpallet::<T>::block_number() > init.closes,
+				Error::<T>::InitiativeStillOpen
+			);
+			ensure!(init.backing < Self::initiative_threshold(), Error::<T>::NotEnoughBacking);
+
+			let deposit: <<T as pezpallet::Config>::NativeCurrency as Currency<
+				T::AccountId,
+			>>::Balance = init.deposit.saturated_into();
+			T::NativeCurrency::unreserve(&init.proposer, deposit);
+			let _ = T::NativeCurrency::transfer(
+				&init.proposer,
+				&T::InitiativeSlashTarget::get(),
+				deposit,
+				pezframe_support::traits::ExistenceRequirement::AllowDeath,
+			);
+
+			Initiatives::<T>::remove(id);
+			let _ = InitiativeBacking::<T>::clear_prefix(id, u32::MAX, None);
+
+			Self::deposit_event(Event::InitiativeLapsed { id, backing: init.backing });
+			Ok(())
+		}
+
 		/// Answer a state referendum: one citizen, one voice.
 		///
 		/// Nothing is staked and nothing is locked. The count is of people, so weight cannot be
@@ -1288,18 +1535,16 @@ pub mod pezpallet {
 				) == KycLevel::Approved,
 				Error::<T>::NotACitizen
 			);
-			ensure!(
-				T::TrustScoreSource::trust_score_of(&who) > 0,
-				Error::<T>::NoTrustToVote
-			);
+			ensure!(T::TrustScoreSource::trust_score_of(&who) > 0, Error::<T>::NoTrustToVote);
 
 			T::Polls::try_access_poll(poll, |status| {
 				let (tally, _class) =
 					status.ensure_ongoing().ok_or(Error::<T>::ReferendumNotOngoing)?;
 
 				match ReferendumVotes::<T>::get(poll, &who) {
-					Some(previous) if previous == aye =>
-						return Err(Error::<T>::AlreadyAnsweredThatWay.into()),
+					Some(previous) if previous == aye => {
+						return Err(Error::<T>::AlreadyAnsweredThatWay.into())
+					},
 					// Take the earlier answer back out before putting the new one in, or the
 					// citizen would be counted on both sides at once.
 					Some(true) => tally.ayes = tally.ayes.saturating_sub(1),
@@ -1336,16 +1581,10 @@ pub mod pezpallet {
 			limit: u32,
 		) -> DispatchResult {
 			ensure_signed(origin)?;
-			ensure!(
-				T::Polls::as_ongoing(poll).is_none(),
-				Error::<T>::ReferendumStillOngoing
-			);
+			ensure!(T::Polls::as_ongoing(poll).is_none(), Error::<T>::ReferendumStillOngoing);
 
 			let removed = ReferendumVotes::<T>::clear_prefix(poll, limit, None);
-			Self::deposit_event(Event::ReferendumVotesCleared {
-				poll,
-				removed: removed.unique,
-			});
+			Self::deposit_event(Event::ReferendumVotesCleared { poll, removed: removed.unique });
 			Ok(())
 		}
 
@@ -2702,6 +2941,15 @@ pub mod pezpallet {
 		/// Read from the tiki rather than from a separate register, because the tiki is what
 		/// every other pallet reads. An office recorded in two places is an office that can be
 		/// held by two different people depending on who is asking.
+		/// How many signatures an initiative needs, as a count of the roll today.
+		///
+		/// Recomputed rather than stored: the register grows, and a threshold fixed when an
+		/// initiative opened would be the share of a country that no longer exists. At least
+		/// one, so an empty register cannot let a proposal through unasked.
+		pub fn initiative_threshold() -> u32 {
+			T::InitiativeThreshold::get().mul_ceil(T::CitizenSource::citizen_count()).max(1)
+		}
+
 		fn ensure_prime_minister(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(

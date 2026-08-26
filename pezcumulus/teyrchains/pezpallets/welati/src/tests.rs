@@ -3241,3 +3241,161 @@ mod state_referendum {
 		});
 	}
 }
+
+// ===== CITIZENS' INITIATIVE =====
+//
+// No state lets one person put a question to the whole country alone. What a citizen may do
+// alone is ask; the register decides whether the asking becomes a question. These are about
+// where that line sits: the threshold moving with the roll, one signature per person, the
+// window running out, and the deposit going somewhere rather than nowhere.
+
+mod initiative {
+	use super::*;
+	use crate::{
+		mock::{launched, set_citizen_count, set_trust_score, Balances},
+		InitiativeBacking, Initiatives,
+	};
+	use pezframe_support::traits::{Currency, ReservableCurrency};
+
+	const PROPOSER: u64 = 11;
+	const SIGNER: u64 = 12;
+	const TREASURY: u64 = 999;
+	const DEPOSIT: u128 = 10;
+
+	fn hash() -> pezsp_core::H256 {
+		pezsp_core::H256::repeat_byte(9)
+	}
+
+	fn open() -> u32 {
+		let _ = Balances::deposit_creating(&PROPOSER, 1_000);
+		assert_ok!(Welati::open_initiative(RuntimeOrigin::signed(PROPOSER), 0, hash(), 42));
+		0
+	}
+
+	#[test]
+	fn opening_takes_a_deposit_and_counts_the_proposer_as_the_first_signature() {
+		ExtBuilder::default().build().execute_with(|| {
+			let id = open();
+
+			let init = Initiatives::<Test>::get(id).expect("opened");
+			assert_eq!(init.proposer, PROPOSER);
+			assert_eq!(init.backing, 1, "asking is backing");
+			assert_eq!(Balances::reserved_balance(PROPOSER), DEPOSIT);
+			assert!(InitiativeBacking::<Test>::contains_key(id, PROPOSER));
+		});
+	}
+
+	#[test]
+	fn the_threshold_is_a_share_of_the_roll_not_a_fixed_count() {
+		ExtBuilder::default().build().execute_with(|| {
+			// One percent of the mock register.
+			set_citizen_count(1_000);
+			assert_eq!(Welati::initiative_threshold(), 10);
+
+			set_citizen_count(100_000);
+			assert_eq!(Welati::initiative_threshold(), 1_000);
+
+			// An empty register must not let a proposal through unasked.
+			set_citizen_count(0);
+			assert_eq!(Welati::initiative_threshold(), 1);
+
+			set_citizen_count(110);
+		});
+	}
+
+	#[test]
+	fn one_signature_per_citizen() {
+		ExtBuilder::default().build().execute_with(|| {
+			let id = open();
+			assert_ok!(Welati::back_initiative(RuntimeOrigin::signed(SIGNER), id));
+			assert_noop!(
+				Welati::back_initiative(RuntimeOrigin::signed(SIGNER), id),
+				Error::<Test>::AlreadyBacked
+			);
+			assert_eq!(Initiatives::<Test>::get(id).unwrap().backing, 2);
+		});
+	}
+
+	#[test]
+	fn trust_of_zero_neither_opens_nor_signs() {
+		ExtBuilder::default().build().execute_with(|| {
+			let id = open();
+			set_trust_score(0);
+			assert_noop!(
+				Welati::back_initiative(RuntimeOrigin::signed(SIGNER), id),
+				Error::<Test>::NoTrustToVote
+			);
+			assert_noop!(
+				Welati::open_initiative(RuntimeOrigin::signed(SIGNER), 0, hash(), 42),
+				Error::<Test>::NoTrustToVote
+			);
+			set_trust_score(1000);
+		});
+	}
+
+	#[test]
+	fn backing_stops_when_the_window_closes() {
+		ExtBuilder::default().build().execute_with(|| {
+			let id = open();
+			System::set_block_number(System::block_number() + 101);
+			assert_noop!(
+				Welati::back_initiative(RuntimeOrigin::signed(SIGNER), id),
+				Error::<Test>::InitiativeClosed
+			);
+		});
+	}
+
+	#[test]
+	fn enough_backing_reaches_the_ballot_and_returns_the_deposit() {
+		ExtBuilder::default().build().execute_with(|| {
+			// Two signatures clear one percent of a register of a hundred and ten.
+			let id = open();
+			assert_ok!(Welati::back_initiative(RuntimeOrigin::signed(SIGNER), id));
+
+			assert_ok!(Welati::launch_initiative(RuntimeOrigin::signed(SIGNER), id));
+
+			assert_eq!(launched(), vec![(PROPOSER, 0u16, hash(), 42u32)]);
+			assert_eq!(Balances::reserved_balance(PROPOSER), 0, "it did what it was taken for");
+			assert!(Initiatives::<Test>::get(id).is_none());
+			assert!(!InitiativeBacking::<Test>::contains_key(id, PROPOSER));
+		});
+	}
+
+	#[test]
+	fn too_little_backing_reaches_nothing() {
+		ExtBuilder::default().build().execute_with(|| {
+			set_citizen_count(100_000); // threshold 1000, and only the proposer has asked
+			let id = open();
+			assert_noop!(
+				Welati::launch_initiative(RuntimeOrigin::signed(SIGNER), id),
+				Error::<Test>::NotEnoughBacking
+			);
+			assert!(launched().is_empty());
+			set_citizen_count(110);
+		});
+	}
+
+	#[test]
+	fn a_lapsed_deposit_goes_to_the_treasury_rather_than_nowhere() {
+		ExtBuilder::default().build().execute_with(|| {
+			set_citizen_count(100_000);
+			let id = open();
+			let before = Balances::free_balance(TREASURY);
+
+			// Still inside the window, so there is nothing to settle yet.
+			assert_noop!(
+				Welati::close_lapsed_initiative(RuntimeOrigin::signed(SIGNER), id),
+				Error::<Test>::InitiativeStillOpen
+			);
+
+			System::set_block_number(System::block_number() + 101);
+			assert_ok!(Welati::close_lapsed_initiative(RuntimeOrigin::signed(SIGNER), id));
+
+			assert_eq!(Balances::reserved_balance(PROPOSER), 0);
+			// The supply is fixed and halving: a forfeit deposit moves, it does not vanish.
+			assert_eq!(Balances::free_balance(TREASURY), before + DEPOSIT);
+			assert!(Initiatives::<Test>::get(id).is_none());
+			set_citizen_count(110);
+		});
+	}
+}

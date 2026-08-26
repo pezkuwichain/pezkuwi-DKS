@@ -12,12 +12,12 @@ use pezframe_support::{
 	},
 	BoundedVec,
 };
-use std::collections::BTreeMap;
 use pezsp_core::H256;
 use pezsp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage,
 };
+use std::collections::BTreeMap;
 
 #[cfg(feature = "runtime-benchmarks")]
 use pezsp_runtime::testing::{TestSignature, UintAuthorityId};
@@ -601,8 +601,9 @@ impl Polling<CitizenTally<MockElectorate>> for TestPolls {
 	) -> R {
 		let mut polls = MockPolls::get();
 		let r = match polls.get_mut(&index) {
-			Some(MockPollState::Ongoing(ref mut tally, class)) =>
-				f(PollStatus::Ongoing(tally, *class)),
+			Some(MockPollState::Ongoing(ref mut tally, class)) => {
+				f(PollStatus::Ongoing(tally, *class))
+			},
 			Some(MockPollState::Completed(when, ok)) => f(PollStatus::Completed(*when, *ok)),
 			None => f(PollStatus::None),
 		};
@@ -618,8 +619,9 @@ impl Polling<CitizenTally<MockElectorate>> for TestPolls {
 	) -> Result<R, pezsp_runtime::DispatchError> {
 		let mut polls = MockPolls::get();
 		let r = match polls.get_mut(&index) {
-			Some(MockPollState::Ongoing(ref mut tally, class)) =>
-				f(PollStatus::Ongoing(tally, *class)),
+			Some(MockPollState::Ongoing(ref mut tally, class)) => {
+				f(PollStatus::Ongoing(tally, *class))
+			},
 			Some(MockPollState::Completed(when, ok)) => f(PollStatus::Completed(*when, *ok)),
 			None => f(PollStatus::None),
 		}?;
@@ -649,6 +651,37 @@ impl Polling<CitizenTally<MockElectorate>> for TestPolls {
 	}
 }
 
+// --- Girisimin ulastigi sandik ---
+//
+// Gercek runtime bunu `Referenda::submit` cagirarak uygular. Burada onemli olan tek sey
+// pallet'in dogru anda, dogru argumanlarla cagirmasi; sandigin kendisi baska bir pallet'in
+// testidir.
+thread_local! {
+	pub static LAUNCHED: core::cell::RefCell<Vec<(AccountId, u16, H256, u32)>> =
+		const { core::cell::RefCell::new(Vec::new()) };
+}
+
+/// What reached the ballot, in order.
+pub fn launched() -> Vec<(AccountId, u16, H256, u32)> {
+	LAUNCHED.with(|l| l.borrow().clone())
+}
+
+pub struct MockInitiativeLaunch;
+impl pezpallet_welati::InitiativeLaunch<AccountId, H256> for MockInitiativeLaunch {
+	fn launch(proposer: &AccountId, track: u16, hash: H256, len: u32) -> DispatchResult {
+		LAUNCHED.with(|l| l.borrow_mut().push((*proposer, track, hash, len)));
+		Ok(())
+	}
+}
+
+parameter_types! {
+	pub const MockInitiativeThreshold: pezsp_runtime::Perbill =
+		pezsp_runtime::Perbill::from_percent(1);
+	pub const MockInitiativeWindow: u64 = 100;
+	pub const MockInitiativeDeposit: u128 = 10;
+	pub const MockInitiativeSlashTarget: AccountId = 999;
+}
+
 impl pezpallet_welati::Config for Test {
 	type WeightInfo = ();
 	type Randomness = MockRandomness;
@@ -658,6 +691,11 @@ impl pezpallet_welati::Config for Test {
 	type CitizenSource = MockTrustProvider; // Use the mock provider
 	type Electorate = MockElectorate;
 	type Polls = TestPolls;
+	type Initiatives = MockInitiativeLaunch;
+	type InitiativeThreshold = MockInitiativeThreshold;
+	type InitiativeWindow = MockInitiativeWindow;
+	type InitiativeDeposit = MockInitiativeDeposit;
+	type InitiativeSlashTarget = MockInitiativeSlashTarget;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = ParliamentSize;
 	type DiwanSize = DiwanSize;
