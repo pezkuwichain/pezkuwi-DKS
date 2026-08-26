@@ -3027,3 +3027,83 @@ fn an_unqualified_appointee_is_caught() {
 		crate::mock::check_invariants();
 	});
 }
+
+mod citizen_tally {
+	use super::*;
+	use crate::types::CitizenTally;
+	use pezframe_support::traits::VoteTally;
+	use pezsp_runtime::Perbill;
+
+	pezframe_support::parameter_types! {
+		pub storage Roll: u32 = 0;
+	}
+	type Tally = CitizenTally<Roll>;
+
+	fn tally(ayes: u32, nays: u32) -> Tally {
+		let mut t = <Tally as VoteTally<u32, ()>>::new(());
+		t.ayes = ayes;
+		t.nays = nays;
+		t
+	}
+
+	#[test]
+	fn every_citizen_counts_once() {
+		ExtBuilder::default().build().execute_with(|| {
+			// Not a weight: a hundred citizens who vote aye are a hundred ayes, whatever they hold.
+			let t = tally(100, 40);
+			assert_eq!(VoteTally::<u32, ()>::ayes(&t, ()), 100);
+			assert_eq!(
+				VoteTally::<u32, ()>::approval(&t, ()),
+				Perbill::from_rational(100u32, 140u32)
+			);
+		});
+	}
+
+	#[test]
+	fn support_is_measured_against_the_whole_roll_not_the_turnout() {
+		ExtBuilder::default().build().execute_with(|| {
+			Roll::set(&1_000);
+			let t = tally(100, 40);
+			// 100 of a thousand citizens, not 100 of the 140 who bothered.
+			assert_eq!(
+				VoteTally::<u32, ()>::support(&t, ()),
+				Perbill::from_rational(100u32, 1_000u32)
+			);
+			assert_eq!(
+				VoteTally::<u32, ()>::approval(&t, ()),
+				Perbill::from_rational(100u32, 140u32)
+			);
+		});
+	}
+
+	#[test]
+	fn silence_is_not_consent() {
+		ExtBuilder::default().build().execute_with(|| {
+			Roll::set(&1_000);
+			let t = tally(0, 0);
+			// The failure this guards: dividing by turnout would make an unvoted proposal
+			// unanimously supported.
+			assert_eq!(VoteTally::<u32, ()>::support(&t, ()), Perbill::zero());
+			assert_eq!(VoteTally::<u32, ()>::approval(&t, ()), Perbill::zero());
+		});
+	}
+
+	#[test]
+	fn an_empty_roll_gives_no_support_rather_than_dividing_by_zero() {
+		ExtBuilder::default().build().execute_with(|| {
+			Roll::set(&0);
+			let t = tally(5, 0);
+			assert_eq!(VoteTally::<u32, ()>::support(&t, ()), Perbill::zero());
+		});
+	}
+
+	#[test]
+	fn a_whole_roll_voting_aye_is_full_support_and_full_approval() {
+		ExtBuilder::default().build().execute_with(|| {
+			Roll::set(&7);
+			let t = tally(7, 0);
+			assert_eq!(VoteTally::<u32, ()>::support(&t, ()), Perbill::one());
+			assert_eq!(VoteTally::<u32, ()>::approval(&t, ()), Perbill::one());
+		});
+	}
+}

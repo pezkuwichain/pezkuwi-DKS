@@ -1358,3 +1358,92 @@ impl OfficialRoleInfo for OfficialRole {
 		}
 	}
 }
+
+/// A referendum tally where every citizen counts once.
+///
+/// The state's own rule: in state matters one person is one vote, and stake does not weigh
+/// (see the note on `cast_vote`). `pezpallet_conviction_voting`'s tally cannot express that --
+/// it reads `Currency` and multiplies by conviction -- so state referenda carry this one and
+/// economic referenda, where the holder bears the consequence in proportion, carry that one.
+///
+/// `Electorate` is the roll a proposal must carry, not the number who turned out: `support`
+/// is measured against every citizen, so a proposal nobody voted on has no support rather
+/// than unanimous support. `approval` is measured against those who did vote.
+#[derive(
+	pezframe_support::CloneNoBound,
+	pezframe_support::PartialEqNoBound,
+	pezframe_support::EqNoBound,
+	pezframe_support::DebugNoBound,
+	TypeInfo,
+	Encode,
+	Decode,
+	DecodeWithMemTracking,
+	MaxEncodedLen,
+)]
+#[scale_info(skip_type_params(Electorate))]
+#[codec(mel_bound())]
+pub struct CitizenTally<Electorate: 'static> {
+	/// Citizens who voted aye.
+	pub ayes: u32,
+	/// Citizens who voted nay.
+	pub nays: u32,
+	#[codec(skip)]
+	dummy: core::marker::PhantomData<Electorate>,
+}
+
+impl<Electorate: Get<u32> + 'static, Class> pezframe_support::traits::VoteTally<u32, Class>
+	for CitizenTally<Electorate>
+{
+	fn new(_: Class) -> Self {
+		Self { ayes: 0, nays: 0, dummy: core::marker::PhantomData }
+	}
+
+	fn ayes(&self, _: Class) -> u32 {
+		self.ayes
+	}
+
+	fn support(&self, _: Class) -> pezsp_runtime::Perbill {
+		// Against the whole roll. An empty roll is not unanimous consent, it is no consent.
+		let electorate = Electorate::get();
+		if electorate == 0 {
+			pezsp_runtime::Perbill::zero()
+		} else {
+			pezsp_runtime::Perbill::from_rational(self.ayes, electorate)
+		}
+	}
+
+	fn approval(&self, _: Class) -> pezsp_runtime::Perbill {
+		let cast = self.ayes.saturating_add(self.nays);
+		if cast == 0 {
+			pezsp_runtime::Perbill::zero()
+		} else {
+			pezsp_runtime::Perbill::from_rational(self.ayes, cast)
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn unanimity(_: Class) -> Self {
+		Self { ayes: Electorate::get(), nays: 0, dummy: core::marker::PhantomData }
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn rejection(_: Class) -> Self {
+		Self { ayes: 0, nays: Electorate::get(), dummy: core::marker::PhantomData }
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn from_requirements(
+		support: pezsp_runtime::Perbill,
+		approval: pezsp_runtime::Perbill,
+		_: Class,
+	) -> Self {
+		// `support` is a share of the whole roll and every voter counts once, so the number who
+		// turned out is exactly that share of the electorate; `approval` then splits it.
+		let turnout = support.mul_ceil(Electorate::get());
+		let ayes = approval.mul_ceil(turnout);
+		Self { ayes, nays: turnout.saturating_sub(ayes), dummy: core::marker::PhantomData }
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn setup(_: Class, _: pezsp_runtime::Perbill) {}
+}

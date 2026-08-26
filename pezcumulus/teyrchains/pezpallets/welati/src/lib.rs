@@ -193,7 +193,9 @@ impl WeightInfo for () {
 		Weight::from_parts(23_225_000, 12542)
 	}
 }
-#[cfg(not(feature = "runtime-benchmarks"))]
+// Not feature-gated. `return_candidacy_deposits` names `Currency<T::AccountId>::Balance` in
+// every configuration, so gating the import to `not(runtime-benchmarks)` did not silence a
+// warning -- it removed the trait from scope in the build that check-benches runs.
 use pezframe_support::traits::Currency;
 use pezframe_support::{
 	dispatch::{GetDispatchInfo, PostDispatchInfo},
@@ -208,7 +210,8 @@ use pezpallet_identity_kyc::types::KycStatus;
 use pezpallet_tiki::{Tiki, TikiScoreProvider};
 use pezpallet_trust::TrustScoreProvider;
 use pezsp_runtime::traits::{Dispatchable, Saturating};
-#[cfg(not(feature = "runtime-benchmarks"))]
+// Not feature-gated, for the same reason as `Currency` above: `return_candidacy_deposits`
+// calls `saturated_into` in every configuration.
 use pezsp_runtime::SaturatedConversion;
 use pezsp_std::{vec, vec::Vec};
 use xcm::latest::prelude::*;
