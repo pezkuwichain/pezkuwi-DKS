@@ -2024,8 +2024,12 @@ mod budget {
 				.expect("no Transact in the message");
 
 			// Pallet 70, call 1: `pez_treasury::spend_from_government_pot`, then the
-			// beneficiary and the amount as the treasury chain will decode them.
-			let expected = (70u8, 1u8, BENEFICIARY, codec::Compact(400u128)).encode();
+			// beneficiary and the amount. The amount is plain, not compact -- that pallet's
+			// call takes a bare `Balance`. This expectation used to be copied from the code
+			// it was checking rather than from the call it has to decode as, so it agreed
+			// with a message the treasury chain could not read. The Asset Hub runtimes now
+			// pin the same bytes from the other side.
+			let expected = (70u8, 1u8, BENEFICIARY, 400u128).encode();
 			assert_eq!(transact.into_encoded(), expected);
 		});
 	}

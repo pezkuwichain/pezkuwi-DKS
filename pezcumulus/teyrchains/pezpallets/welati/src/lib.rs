@@ -2987,11 +2987,15 @@ pub mod pezpallet {
 			beneficiary: &T::AccountId,
 			amount: u128,
 		) -> Result<(), SendError> {
+			// `spend_from_government_pot` takes a plain `Balance`, not a compact one, so the
+			// amount goes on the wire at full width. A compact here decodes as a different
+			// call on the other side -- and nothing reports it, because the budget below is
+			// already docked by the time the message is refused.
 			let call = (
 				T::TreasuryPalletIndex::get(),
 				SPEND_FROM_GOVERNMENT_POT_CALL_INDEX,
 				beneficiary,
-				codec::Compact(amount),
+				amount,
 			)
 				.encode();
 
