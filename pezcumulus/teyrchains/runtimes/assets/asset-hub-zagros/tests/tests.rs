@@ -2195,8 +2195,7 @@ fn people_may_execute_unpaid_on_this_asset_hub() {
 				fallback_max_weight: None,
 			},
 		];
-		let mut properties =
-			Properties { weight_credit: Weight::zero(), message_id: None };
+		let mut properties = Properties { weight_credit: Weight::zero(), message_id: None };
 
 		assert!(
 			<xcm_config::Barrier as ShouldExecute>::should_execute(
