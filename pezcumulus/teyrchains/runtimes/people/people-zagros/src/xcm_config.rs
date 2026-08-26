@@ -201,7 +201,15 @@ pub type Barrier = TrailingSetTopicAsId<
 					// allow it.
 					AllowTopLevelPaidExecutionFrom<Everything>,
 					// Parent and its pluralities (i.e. governance bodies) get free execution.
-					AllowExplicitUnpaidExecutionFrom<ParentOrParentsPlurality>,
+					AllowExplicitUnpaidExecutionFrom<(
+						ParentOrParentsPlurality,
+						// The rewards pallet here is funded from the Asset Hub, and the
+						// treasury there is reached from here. Both directions were
+						// configured and only the Asset Hub's door was open: this barrier
+						// named the relay and its bodies alone, so a sibling's message was
+						// turned away before the origin check that was written for it.
+						Equals<AssetHubLocation>,
+					)>,
 					// Subscriptions for version tracking are OK.
 					AllowSubscriptionsFrom<ParentRelayOrSiblingTeyrchains>,
 					// HRMP notifications from the relay chain are OK.

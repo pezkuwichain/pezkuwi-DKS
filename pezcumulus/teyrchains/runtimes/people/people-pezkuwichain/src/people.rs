@@ -34,6 +34,7 @@ use pezpallet_xcm::EnsureXcm;
 use pezsp_runtime::traits::{AccountIdConversion, ConvertInto, Verify};
 use scale_info::TypeInfo;
 use testnet_teyrchains_constants::pezkuwichain::currency::UNITS;
+use testnet_teyrchains_constants::pezkuwichain::locations::AssetHubLocation;
 use teyrchains_common::{impls::ToParentTreasury, DAYS, HOURS};
 
 parameter_types! {
@@ -1186,7 +1187,7 @@ parameter_types! {
 	pub const WelatiMaxConsecutiveTerms: u32 = 2;
 
 	/// Where the PEZ treasury lives, as seen from here: a sibling teyrchain.
-	pub WelatiTreasuryChain: Location = Location::new(1, [Teyrchain(testnet_teyrchains_constants::pezkuwichain::locations::AssetHubParaId::get().into())]);
+	pub WelatiTreasuryChain: Location = AssetHubLocation::get();
 
 	/// `PezTreasury`'s index in the Asset Hub runtime (`pezpallet_pez_treasury = 70`).
 	///
