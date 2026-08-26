@@ -777,8 +777,11 @@ async fn artifact_does_reprepare_on_meaningful_exec_parameter_change() {
 	.await;
 	let cache_dir = host.cache_dir.path();
 
+	// The parameter has to be one `prep_hash` actually covers, or no second artifact is
+	// produced and the test asserts the opposite of the code. `MaxMemoryPages` was such a
+	// parameter until it moved to the exclusion list; `StackLogicalMax` is one now.
 	let set1 = ExecutorParams::default();
-	let set2 = ExecutorParams::from(&[ExecutorParam::MaxMemoryPages(128)][..]);
+	let set2 = ExecutorParams::from(&[ExecutorParam::StackLogicalMax(1024)][..]);
 
 	let _stats = host
 		.precheck_pvf(test_teyrchain_halt::wasm_binary_unwrap(), set1)
