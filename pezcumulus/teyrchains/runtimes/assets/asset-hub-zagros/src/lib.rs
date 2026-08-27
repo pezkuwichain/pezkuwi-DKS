@@ -88,6 +88,7 @@ use pezframe_system::{
 };
 use pezpallet_asset_conversion_tx_payment::SwapAssetAdapter;
 use pezpallet_assets_precompiles::{InlineIdConfig, ERC20};
+use pezpallet_collator_selection::StakingPotAccountId;
 use pezpallet_nfts::PalletFeatures;
 use pezpallet_revive::evm::runtime::EthExtra;
 use pezpallet_xcm_precompiles::XcmPrecompile;
@@ -247,7 +248,14 @@ impl pezpallet_balances::Config for Runtime {
 	type Balance = Balance;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
-	type DustRemoval = ();
+	/// Dust -- what is left in an account too small to keep -- goes where this chain's fee
+	/// income goes, rather than being dropped.
+	///
+	/// `()` destroys it. Small per account and not small across a population, and on a chain
+	/// that collects fees for its treasury there is no reason for the remainder to be the one
+	/// thing that vanishes. Upstream stopped dropping it too, with a pallet of its own; this
+	/// gets the same result without taking on a new pallet.
+	type DustRemoval = ResolveTo<StakingPotAccountId<Runtime>, Balances>;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = weights::pezpallet_balances::WeightInfo<Runtime>;

@@ -34,6 +34,7 @@ use alloc::{vec, vec::Vec};
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezcumulus_pezpallet_teyrchain_system::RelayNumberMonotonicallyIncreases;
 use pezcumulus_primitives_core::{AggregateMessageOrigin, ParaId};
+use pezframe_support::traits::tokens::imbalance::ResolveTo;
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
@@ -51,6 +52,7 @@ use pezframe_system::{
 	EnsureRoot,
 };
 use pezkuwi_runtime_common::{identity_migrator, BlockHashCount, SlowAdjustingFeeUpdate};
+use pezpallet_collator_selection::StakingPotAccountId;
 use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
 use pezsp_api::impl_runtime_apis;
 pub use pezsp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -247,7 +249,14 @@ parameter_types! {
 
 impl pezpallet_balances::Config for Runtime {
 	type Balance = Balance;
-	type DustRemoval = ();
+	/// Dust -- what is left in an account too small to keep -- goes where this chain's fee
+	/// income goes, rather than being dropped.
+	///
+	/// `()` destroys it. Small per account and not small across a population, and on a chain
+	/// that collects fees for its treasury there is no reason for the remainder to be the one
+	/// thing that vanishes. Upstream stopped dropping it too, with a pallet of its own; this
+	/// gets the same result without taking on a new pallet.
+	type DustRemoval = ResolveTo<StakingPotAccountId<Runtime>, Balances>;
 	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;

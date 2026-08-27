@@ -41,6 +41,7 @@ use alloc::{
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::cmp::Ordering;
 use pezframe_support::dynamic_params::{dynamic_params, dynamic_pezpallet_params};
+use pezframe_support::traits::tokens::imbalance::ResolveTo;
 use pezkuwi_primitives::{
 	async_backing::Constraints, slashing, AccountId, AccountIndex, ApprovalVotingParams, Balance,
 	BlockNumber, CandidateEvent, CandidateHash,
@@ -76,6 +77,7 @@ use pezkuwi_runtime_teyrchains::{
 	shared as teyrchains_shared,
 };
 use pezpallet_balances::WeightInfo;
+use pezpallet_treasury::TreasuryAccountId;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_beefy::{
 	ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
@@ -373,7 +375,14 @@ parameter_types! {
 
 impl pezpallet_balances::Config for Runtime {
 	type Balance = Balance;
-	type DustRemoval = ();
+	/// Dust -- what is left in an account too small to keep -- goes where this chain's fee
+	/// income goes, rather than being dropped.
+	///
+	/// `()` destroys it. Small per account and not small across a population, and on a chain
+	/// that collects fees for its treasury there is no reason for the remainder to be the one
+	/// thing that vanishes. Upstream stopped dropping it too, with a pallet of its own; this
+	/// gets the same result without taking on a new pallet.
+	type DustRemoval = ResolveTo<TreasuryAccountId<Runtime>, Balances>;
 	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
