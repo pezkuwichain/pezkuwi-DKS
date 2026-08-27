@@ -54,8 +54,13 @@ def read(p):
 # --- subjects, enumerated from the tree rather than listed by hand ---
 
 def pallets():
-    d = ROOT / "pezcumulus/teyrchains/pezpallets"
-    return sorted(p for p in d.iterdir() if (p / "src/lib.rs").exists())
+    # Both trees. Scanning only the teyrchain one left `pezkuwi/pezpallets/*` unmeasured, so
+    # validator-pool sat outside every invariant while the sheet reported no gaps.
+    out = []
+    for d in (ROOT / "pezcumulus/teyrchains/pezpallets", ROOT / "pezkuwi/pezpallets"):
+        if d.is_dir():
+            out += [p for p in d.iterdir() if (p / "src/lib.rs").exists()]
+    return sorted(out, key=lambda p: p.name)
 
 def runtimes():
     out = []
@@ -81,20 +86,69 @@ def twin_of(name):
 # --- invariants ---
 
 def inv_enum_pin(p, kind):
-    src = read(p / "src/lib.rs") + read(p / "src/types.rs")
-    enums = re.findall(r"^\s*pub enum (\w+) \{", src, re.M)
-    stored = [e for e in enums if re.search(rf"StorageMap<[^>]*\b{e}\b|StorageDoubleMap<[^>]*\b{e}\b", src)]
+    """Every enum whose bytes reach storage must have every variant pinned.
+
+    Three ways the earlier version reported green while measuring nothing, all found by
+    reading it against the tree rather than trusting it:
+
+      - it looked only at `StorageMap`/`StorageDoubleMap` and only where the enum's name
+        appeared literally in the type, so a `StorageValue` and anything reached through a
+        struct field was invisible. Most of this tree's enums are reached that way.
+      - it accepted the enum if `#[codec(index` appeared ANYWHERE in the body, so pinning
+        four variants out of eight passed.
+      - it read only `lib.rs` and `types.rs`.
+
+    Reachability is transitive: a struct in storage drags in the enums it holds, and those
+    drag in theirs. Anything named in a storage declaration is a root; the closure over
+    struct and enum fields is what actually gets encoded.
+    """
+    src = "\n".join(read(f) for f in sorted((p / "src").rglob("*.rs"))
+                     if f.name not in ("tests.rs", "mock.rs", "benchmarking.rs"))
+    if not src:
+        return "n/a", ""
+
+    # Every type body, so we can walk from a storage root down through the fields.
+    bodies = {}
+    for m in re.finditer(r"^(\s*)pub (?:enum|struct) (\w+)[^\n{]*\{$", src, re.M):
+        cl = re.search(rf"^{m.group(1)}\}}$", src[m.end():], re.M)
+        if cl:
+            # Keep the declaration's own indent: variants sit one level in from it. An anchored
+            # count that assumes a fixed depth reads zero for anything nested in the pallet
+            # module and then reports it as pinned -- the same blindness this rewrite is fixing.
+            bodies[m.group(2)] = (m.group(1), src[m.end():m.end() + cl.start()])
+    enums = {m.group(1) for m in re.finditer(r"^\s*pub enum (\w+)[^\n{]*\{$", src, re.M)}
+    if not enums:
+        return "n/a", ""
+
+    roots = set()
+    for decl in re.findall(r"Storage(?:Value|Map|DoubleMap|NMap)<[^;]*?>", src, re.S):
+        roots |= {w for w in re.findall(r"\b(\w+)\b", decl) if w in bodies}
+
+    reached, queue = set(), list(roots)
+    while queue:
+        name = queue.pop()
+        if name in reached:
+            continue
+        reached.add(name)
+        queue += [w for w in re.findall(r"\b(\w+)\b", bodies.get(name, ("", ""))[1]) if w in bodies]
+
+    stored = sorted(e for e in reached if e in enums)
     if not stored:
         return "n/a", ""
+
     missing = []
     for e in stored:
-        m = re.search(rf"^(\s*)pub enum {e} \{{$", src, re.M)
-        if not m:
-            continue
-        st = m.end()
-        cl = re.search(rf"^{m.group(1)}\}}$", src[st:], re.M)
-        if not cl or "#[codec(index" not in src[st:st + cl.start()]:
-            missing.append(e)
+        indent, body = bodies[e]
+        # Count variants, not occurrences: partial pinning has to fail. Variants sit exactly
+        # one level in from the enum's own indent, so the pattern is derived, not assumed --
+        # and trailing `// ...` is stripped first, because twelve of Tiki's variants carry one
+        # and a pattern anchored to end-of-line silently counted 44 of 56, which is enough
+        # pins to pass. Found by pulling a pin out and watching the gate stay green.
+        stripped = re.sub(r"//[^\n]*", "", body)
+        variants = re.findall(rf"^{indent}\t(\w+)\s*[,({{=]?\s*$", stripped, re.M)
+        pinned = len(re.findall(r"#\[codec\(index", body))
+        if variants and pinned < len(variants):
+            missing.append(f"{e} {pinned}/{len(variants)}")
     return ("GAP", ", ".join(missing)) if missing else ("ok", f"{len(stored)} stored")
 
 def inv_storage_v(p, kind):
