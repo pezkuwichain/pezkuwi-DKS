@@ -76,7 +76,7 @@ const SUP_WELATI_ADMIN: Curve = SUP_GENERAL_ADMIN;
 const APP_CITIZENSHIP_ADMIN: Curve = APP_STAKING_ADMIN;
 const SUP_CITIZENSHIP_ADMIN: Curve = SUP_STAKING_ADMIN;
 
-const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 18] = [
+const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 12] = [
 	pezpallet_referenda::Track {
 		id: 0,
 		info: pezpallet_referenda::TrackInfo {
@@ -117,20 +117,6 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 18] =
 			min_enactment_period: 10 * MINUTES,
 			min_approval: APP_STAKING_ADMIN,
 			min_support: SUP_STAKING_ADMIN,
-		},
-	},
-	pezpallet_referenda::Track {
-		id: 11,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("treasurer"),
-			max_deciding: 10,
-			decision_deposit: 1 * GRAND,
-			prepare_period: 2 * HOURS,
-			decision_period: 28 * DAYS,
-			confirm_period: 3 * HOURS,
-			min_enactment_period: 24 * HOURS,
-			min_approval: APP_TREASURER,
-			min_support: SUP_TREASURER,
 		},
 	},
 	pezpallet_referenda::Track {
@@ -217,76 +203,6 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 18] =
 			min_support: SUP_REFERENDUM_KILLER,
 		},
 	},
-	pezpallet_referenda::Track {
-		id: 30,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("small_tipper"),
-			max_deciding: 200,
-			decision_deposit: 1 * DOLLARS,
-			prepare_period: 1 * MINUTES,
-			decision_period: 7 * DAYS,
-			confirm_period: 10 * MINUTES,
-			min_enactment_period: 1 * MINUTES,
-			min_approval: APP_SMALL_TIPPER,
-			min_support: SUP_SMALL_TIPPER,
-		},
-	},
-	pezpallet_referenda::Track {
-		id: 31,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("big_tipper"),
-			max_deciding: 100,
-			decision_deposit: 10 * DOLLARS,
-			prepare_period: 10 * MINUTES,
-			decision_period: 7 * DAYS,
-			confirm_period: 1 * HOURS,
-			min_enactment_period: 10 * MINUTES,
-			min_approval: APP_BIG_TIPPER,
-			min_support: SUP_BIG_TIPPER,
-		},
-	},
-	pezpallet_referenda::Track {
-		id: 32,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("small_spender"),
-			max_deciding: 50,
-			decision_deposit: 100 * DOLLARS,
-			prepare_period: 4 * HOURS,
-			decision_period: 28 * DAYS,
-			confirm_period: 12 * HOURS,
-			min_enactment_period: 24 * HOURS,
-			min_approval: APP_SMALL_SPENDER,
-			min_support: SUP_SMALL_SPENDER,
-		},
-	},
-	pezpallet_referenda::Track {
-		id: 33,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("medium_spender"),
-			max_deciding: 50,
-			decision_deposit: 200 * DOLLARS,
-			prepare_period: 4 * HOURS,
-			decision_period: 28 * DAYS,
-			confirm_period: 24 * HOURS,
-			min_enactment_period: 24 * HOURS,
-			min_approval: APP_MEDIUM_SPENDER,
-			min_support: SUP_MEDIUM_SPENDER,
-		},
-	},
-	pezpallet_referenda::Track {
-		id: 34,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("big_spender"),
-			max_deciding: 50,
-			decision_deposit: 400 * DOLLARS,
-			prepare_period: 4 * HOURS,
-			decision_period: 28 * DAYS,
-			confirm_period: 48 * HOURS,
-			min_enactment_period: 24 * HOURS,
-			min_approval: APP_BIG_SPENDER,
-			min_support: SUP_BIG_SPENDER,
-		},
-	},
 	// Welati governance tracks (RC → People Chain via XCM)
 	pezpallet_referenda::Track {
 		id: 40,
@@ -353,7 +269,6 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 				origins::Origin::WhitelistedCaller => Ok(1),
 				// General admin
 				origins::Origin::StakingAdmin => Ok(10),
-				origins::Origin::Treasurer => Ok(11),
 				origins::Origin::LeaseAdmin => Ok(12),
 				origins::Origin::FellowshipAdmin => Ok(13),
 				origins::Origin::GeneralAdmin => Ok(14),
@@ -362,11 +277,6 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 				origins::Origin::ReferendumCanceller => Ok(20),
 				origins::Origin::ReferendumKiller => Ok(21),
 				// Limited treasury spenders
-				origins::Origin::SmallTipper => Ok(30),
-				origins::Origin::BigTipper => Ok(31),
-				origins::Origin::SmallSpender => Ok(32),
-				origins::Origin::MediumSpender => Ok(33),
-				origins::Origin::BigSpender => Ok(34),
 				// Welati governance (RC → People Chain)
 				origins::Origin::WelatiElection => Ok(40),
 				origins::Origin::WelatiAdmin => Ok(41),

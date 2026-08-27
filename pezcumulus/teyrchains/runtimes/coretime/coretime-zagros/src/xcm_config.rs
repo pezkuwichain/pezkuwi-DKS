@@ -205,7 +205,6 @@ parameter_types! {
 	pub StakingPot: AccountId =
 		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
-	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(zagros_runtime_constants::TREASURY_PALLET_ID)).into();
 }
 
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
@@ -213,7 +212,11 @@ parameter_types! {
 pub type WaivedLocations = (
 	Equals<RootLocation>,
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
-	Equals<RelayTreasuryLocation>,
+	// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+	// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+	// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+	// sending body has to be waived again or every payment is charged a fee it cannot pay
+	// and is dropped without an error.
 );
 
 /// Cases where a remote origin is accepted as trusted Teleporter for a given asset:

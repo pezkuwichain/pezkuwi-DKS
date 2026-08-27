@@ -18,8 +18,7 @@
 
 use super::{
 	teyrchains_origin, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId, Runtime,
-	RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasurer, Treasury, WeightToFee,
-	XcmPallet,
+	RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, WeightToFee, XcmPallet,
 };
 
 use crate::governance::{CitizenshipAdmin, StakingAdmin, WelatiAdmin, WelatiElection};
@@ -30,10 +29,7 @@ use pezframe_support::{
 	weights::Weight,
 };
 use pezframe_system::EnsureRoot;
-use pezkuwi_runtime_common::{
-	xcm_sender::{ChildTeyrchainRouter, ExponentialPrice},
-	DealWithFees,
-};
+use pezkuwi_runtime_common::xcm_sender::{ChildTeyrchainRouter, ExponentialPrice};
 use pezkuwichain_runtime_constants::{currency::CENTS, system_teyrchain::*};
 use pezsp_core::ConstU32;
 use xcm::latest::{prelude::*, PEZKUWICHAIN_GENESIS_HASH};
@@ -79,7 +75,10 @@ parameter_types! {
 	/// chain can only mint back what previously left. Rehearsed on Zagros first, where turning it
 	/// on cost nothing: all six suites stayed green.
 	pub TeleportTracking: Option<(AccountId, MintLocation)> = Some((CheckAccount::get(), MintLocation::Local));
-	pub TreasuryAccount: AccountId = Treasury::account_id();
+	/// Delivery fees this chain earns. The treasury is on the Asset Hub now, so they join
+	/// the accumulation account with the rest of the income and cross with it.
+	pub TreasuryAccount: AccountId =
+		pezpallet_accumulate_and_forward::Pezpallet::<Runtime>::accumulation_account();
 }
 
 pub type LocationConverter = (
@@ -252,8 +251,13 @@ impl xcm_executor::Config for XcmConfig {
 		RuntimeCall,
 		MaxInstructions,
 	>;
-	type Trader =
-		UsingComponents<WeightToFee, TokenLocation, AccountId, Balances, DealWithFees<Runtime>>;
+	type Trader = UsingComponents<
+		WeightToFee,
+		TokenLocation,
+		AccountId,
+		Balances,
+		crate::DealWithFeesAccumulate,
+	>;
 	type ResponseHandler = XcmPallet;
 	type AssetTrap = XcmPallet;
 	type AssetLocker = ();
@@ -285,7 +289,6 @@ parameter_types! {
 	/// Fellows pluralistic body.
 	pub const FellowsBodyId: BodyId = BodyId::Technical;
 	/// Treasury pluralistic body.
-	pub const TreasuryBodyId: BodyId = BodyId::Treasury;
 	/// Welati Election pluralistic body (People Chain governance via XCM).
 	pub const WelatiElectionBodyId: BodyId = BodyId::Index(40);
 	/// Welati Admin pluralistic body (People Chain tiki/appointment admin via XCM).
@@ -309,7 +312,6 @@ pub type StakingAdminToPlurality =
 pub type FellowsToPlurality = OriginToPluralityVoice<RuntimeOrigin, Fellows, FellowsBodyId>;
 
 /// Type to convert the Treasury origin to a Plurality `Location` value.
-pub type TreasurerToPlurality = OriginToPluralityVoice<RuntimeOrigin, Treasurer, TreasuryBodyId>;
 
 /// Welati governance origin to Plurality converters (RC → People Chain via XCM).
 pub type WelatiElectionToPlurality =
@@ -326,8 +328,6 @@ pub type LocalPalletOriginToLocation = (
 	StakingAdminToPlurality,
 	// Fellows origin to be used in XCM as a corresponding Plurality `Location` value.
 	FellowsToPlurality,
-	// Treasurer origin to be used in XCM as a corresponding Plurality `Location` value.
-	TreasurerToPlurality,
 	// Welati governance origins — enable RC OpenGov to dispatch XCM to People Chain.
 	WelatiElectionToPlurality,
 	WelatiAdminToPlurality,

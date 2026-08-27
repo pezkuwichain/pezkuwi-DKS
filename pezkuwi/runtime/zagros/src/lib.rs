@@ -51,13 +51,9 @@ use pezkuwi_primitives::{
 	ValidationCodeHash, ValidatorId, ValidatorIndex, TEYRCHAIN_KEY_TYPE_ID,
 };
 use pezkuwi_runtime_common::{
-	assigned_slots, auctions, claims, crowdloan, impl_runtime_weights,
-	impls::{
-		LocatableAssetConverter, ToAuthor, VersionedLocatableAsset, VersionedLocationConverter,
-	},
-	paras_registrar, paras_sudo_wrapper, prod_or_fast, slots,
-	traits::OnSwap,
-	BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
+	assigned_slots, auctions, claims, crowdloan, impl_runtime_weights, impls::ToAuthor,
+	paras_registrar, paras_sudo_wrapper, prod_or_fast, slots, traits::OnSwap, BlockHashCount,
+	BlockLength, SlowAdjustingFeeUpdate,
 };
 use pezkuwi_runtime_teyrchains::{
 	configuration as teyrchains_configuration,
@@ -92,9 +88,9 @@ use pezframe_support::{
 	genesis_builder_helper::{build_state, get_preset},
 	parameter_types,
 	traits::{
-		fungible::HoldConsideration, EitherOf, EitherOfDiverse, EnsureOriginWithArg,
-		InstanceFilter, KeyOwnerProofSystem, LinearStoragePrice, PrivilegeCmp, ProcessMessage,
-		ProcessMessageError, WithdrawReasons,
+		fungible::HoldConsideration, EitherOf, EnsureOriginWithArg, InstanceFilter,
+		KeyOwnerProofSystem, LinearStoragePrice, PrivilegeCmp, ProcessMessage, ProcessMessageError,
+		WithdrawReasons,
 	},
 	weights::{ConstantMultiplier, WeightMeter},
 	PalletId,
@@ -109,11 +105,11 @@ use pezsp_core::{ConstUint, Get, OpaqueMetadata, H256};
 use pezsp_runtime::{
 	generic, impl_opaque_keys,
 	traits::{
-		AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, ConvertInto, IdentityLookup,
-		Keccak256, OpaqueKeys, SaturatedConversion, Verify,
+		AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, ConvertInto, Keccak256,
+		OpaqueKeys, SaturatedConversion, Verify,
 	},
 	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent, Permill,
+	ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent,
 };
 use pezsp_staking::SessionIndex;
 #[cfg(any(feature = "std", test))]
@@ -123,7 +119,6 @@ use xcm::{
 	latest::prelude::*, Version as XcmVersion, VersionedAsset, VersionedAssetId, VersionedAssets,
 	VersionedLocation, VersionedXcm,
 };
-use xcm_builder::PayOverXcm;
 
 pub use pezframe_system::Call as SystemCall;
 pub use pezpallet_balances::Call as BalancesCall;
@@ -139,9 +134,7 @@ pub mod xcm_config;
 
 // Governance and configurations.
 pub mod governance;
-use governance::{
-	pezpallet_custom_origins, AuctionAdmin, Fellows, LeaseAdmin, Treasurer, TreasurySpender,
-};
+use governance::{pezpallet_custom_origins, AuctionAdmin, Fellows, LeaseAdmin};
 use xcm_config::XcmConfig;
 use xcm_runtime_pezapis::{
 	dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
@@ -441,7 +434,10 @@ impl pezpallet_accumulate_and_forward::Config for Runtime {
 }
 
 /// Fees: four fifths accumulated for the treasury, one fifth to whoever produced the block.
-type DealWithFeesAccumulate = pezpallet_accumulate_and_forward::DealWithFeesSplit<
+/// Penalties collected here, in the imbalance shape the older pallets speak.
+pub type PenaltiesToTreasury = pezpallet_accumulate_and_forward::LegacyAdapter<Runtime, Balances>;
+
+pub type DealWithFeesAccumulate = pezpallet_accumulate_and_forward::DealWithFeesSplit<
 	Runtime,
 	AccumulateFeePercent,
 	ToAuthor<Runtime>,
@@ -765,86 +761,10 @@ impl pezpallet_validator_pool::Config for Runtime {
 // =====================================================
 
 parameter_types! {
-	pub const CouncilMotionDuration: BlockNumber = 7 * DAYS;
-	pub const CouncilMaxProposals: u32 = 100;
-	pub const CouncilMaxMembers: u32 = 100;
-	pub MaxCollectivesProposalWeight: pezframe_support::weights::Weight = Perbill::from_percent(50) * BlockWeights::get().max_block;
-}
-
-pub type CouncilCollective = pezpallet_collective::Instance1;
-impl pezpallet_collective::Config<CouncilCollective> for Runtime {
-	type RuntimeOrigin = RuntimeOrigin;
-	type Proposal = RuntimeCall;
-	type RuntimeEvent = RuntimeEvent;
-	type MotionDuration = CouncilMotionDuration;
-	type MaxProposals = CouncilMaxProposals;
-	type MaxMembers = CouncilMaxMembers;
-	type DefaultVote = pezpallet_collective::PrimeDefaultVote;
-	type WeightInfo = pezpallet_collective::weights::BizinikiwiWeight<Runtime>;
-	type SetMembersOrigin = EnsureRoot<AccountId>;
-	type MaxProposalWeight = MaxCollectivesProposalWeight;
-	type DisapproveOrigin = EnsureRoot<AccountId>;
-	type KillOrigin = EnsureRoot<AccountId>;
-	type Consideration = ();
-}
-
-parameter_types! {
-	pub const SpendPeriod: BlockNumber = 6 * DAYS;
-	/// Nothing. The supply is fixed and halving, so there is no rate at which destroying it
-	/// is correct -- and `BurnDestination` below is `()`, which drops the imbalance rather
-	/// than moving it. At two per thousand of the unspent balance every spend period this was
-	/// live: a slow, quiet leak out of total issuance that no event names.
-	///
-	/// Zero rather than a destination on purpose. Giving the burn somewhere to go would say
-	/// this chain burns and has chosen a recipient; it does not burn.
-	pub const Burn: Permill = Permill::zero();
-	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
-	pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
-	// The asset's interior location for the paying account. This is the Treasury
-	// pezpallet instance (which sits at index 18).
-	pub TreasuryInteriorLocation: InteriorLocation = PalletInstance(18).into();
-
-	pub const TipCountdown: BlockNumber = 1 * DAYS;
-	pub const TipFindersFee: Percent = Percent::from_percent(20);
-	pub const TipReportDepositBase: Balance = 100 * CENTS;
 	pub const DataDepositPerByte: Balance = 1 * CENTS;
-	pub const MaxApprovals: u32 = 100;
 	pub const MaxAuthorities: u32 = 100_000;
 	pub const MaxKeys: u32 = 10_000;
 	pub const MaxPeerInHeartbeats: u32 = 10_000;
-	pub const MaxBalance: Balance = Balance::max_value();
-}
-
-impl pezpallet_treasury::Config for Runtime {
-	type PalletId = TreasuryPalletId;
-	type Currency = Balances;
-	type RejectOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
-	type RuntimeEvent = RuntimeEvent;
-	type SpendPeriod = SpendPeriod;
-	type Burn = Burn;
-	type BurnDestination = ();
-	type MaxApprovals = MaxApprovals;
-	type WeightInfo = weights::pezpallet_treasury::WeightInfo<Runtime>;
-	type SpendFunds = ();
-	type SpendOrigin = TreasurySpender;
-	type AssetKind = VersionedLocatableAsset;
-	type Beneficiary = VersionedLocation;
-	type BeneficiaryLookup = IdentityLookup<Self::Beneficiary>;
-	type Paymaster = PayOverXcm<
-		TreasuryInteriorLocation,
-		crate::xcm_config::XcmConfig,
-		crate::XcmPallet,
-		ConstU32<{ 6 * HOURS }>,
-		Self::Beneficiary,
-		Self::AssetKind,
-		LocatableAssetConverter,
-		VersionedLocationConverter,
-	>;
-	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
-	type PayoutPeriod = PayoutSpendPeriod;
-	type BlockNumberProvider = System;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = pezkuwi_runtime_common::impls::benchmarks::TreasuryArguments;
 }
 
 impl pezpallet_offences::Config for Runtime {
@@ -1092,7 +1012,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				// Specifically omitting the entire Balances pezpallet
 				RuntimeCall::Session(..) |
 				RuntimeCall::Grandpa(..) |
-				RuntimeCall::Treasury(..) |
 				RuntimeCall::ConvictionVoting(..) |
 				RuntimeCall::Referenda(..) |
 				RuntimeCall::Whitelist(..) |
@@ -1579,8 +1498,9 @@ construct_runtime! {
 		AuthorityDiscovery: pezpallet_authority_discovery = 12,
 
 		// Governance stuff; uncallable initially.
-		Council: pezpallet_collective::<Instance1> = 17,
-		Treasury: pezpallet_treasury = 18,
+		// RIP Council 17, Treasury 18. The treasury moved to the Asset Hub, where the
+		// franchise that votes on spending it lives; the council was its reject origin and
+		// nothing else. Indices left unused on purpose.
 		ConvictionVoting: pezpallet_conviction_voting = 20,
 		Referenda: pezpallet_referenda = 21,
 		AccumulateAndForward: pezpallet_accumulate_and_forward = 22,
@@ -1714,7 +1634,9 @@ pub mod migrations {
 	use pezframe_support::traits::LockIdentifier;
 
 	parameter_types! {
-		pub const DemocracyPalletName: &'static str = "Democracy";
+		pub const TreasuryPalletName: &'static str = "Treasury";
+	pub const CouncilPalletName: &'static str = "Council";
+	pub const DemocracyPalletName: &'static str = "Democracy";
 		pub const TechnicalCommitteePalletName: &'static str = "TechnicalCommittee";
 		pub const PhragmenElectionPalletName: &'static str = "PhragmenElection";
 		pub const TechnicalMembershipPalletName: &'static str = "TechnicalMembership";
@@ -1733,30 +1655,6 @@ pub mod migrations {
 	// implementing their configs on [`Runtime`].
 	// NOTE: Gov1 migration configs removed - pezpallet-democracy, pezpallet-elections-phragmen,
 	// and pezpallet-tips are no longer part of this runtime (using pezpallet-welati for governance)
-
-	/// `Council` (`pezpallet_collective::<Instance1>`) is a live, actively-configured pallet in
-	/// this runtime — unrelated to the retired Gov1 `Democracy`/`TechnicalCommittee`/
-	/// `PhragmenElection`/`TechnicalMembership`/`Tips` pallets removed below. It has never
-	/// actually been used on mainnet (confirmed via live storage query: zero keys under its
-	/// prefix), so its on-chain storage version was never stamped and defaults to 0, while
-	/// `pezpallet_collective`'s in-code version is 4. There is no data to migrate — this only
-	/// needs its version bumped so `Executive`'s storage-version check stops flagging a real
-	/// runtime upgrade as missing. `pezpallet_collective::migrations::v4` doesn't apply: it's a
-	/// pallet-rename migration (old prefix -> new prefix) that no-ops whenever the name hasn't
-	/// changed, which is the case here.
-	pub struct NoopCouncilMigration;
-	impl pezframe_support::traits::UncheckedOnRuntimeUpgrade for NoopCouncilMigration {
-		fn on_runtime_upgrade() -> Weight {
-			Weight::zero()
-		}
-	}
-	pub type InitializeCouncilStorageVersion = pezframe_support::migrations::VersionedMigration<
-		0,
-		4,
-		NoopCouncilMigration,
-		Council,
-		<Runtime as pezframe_system::Config>::DbWeight,
-	>;
 
 	/// Releases `Balances::Holds` entries tagged with `RuntimeHoldReason` discriminant 9 — the
 	/// pallet index the old (pre-`StakingAhClient`) `pezpallet_staking` occupied on this runtime
@@ -1901,15 +1799,16 @@ pub mod migrations {
 		paras_registrar::migration::MigrateToV1<Runtime, ()>,
 		pezpallet_referenda::migration::v1::MigrateV0ToV1<Runtime, ()>,
 		// NOTE: Gov1 migration steps removed - pallets no longer in runtime
-		// Treasury cleanup still included as it may have existing proposals
-		pezpallet_treasury::migration::cleanup_proposals::Migration<
-			Runtime,
-			(),
-			BalanceUnreserveWeight,
+		// Treasury and Council are retired: the treasury moved to the Asset Hub, and the
+		// council existed to reject its proposals. Their storage goes with them.
+		pezframe_support::migrations::RemovePallet<
+			TreasuryPalletName,
+			<Runtime as pezframe_system::Config>::DbWeight,
 		>,
-		// Bumps Council's on-chain storage version to match in-code (see doc comment above) —
-		// deliberately NOT a RemovePallet: Council is a live pallet here, not a retired Gov1 one.
-		InitializeCouncilStorageVersion,
+		pezframe_support::migrations::RemovePallet<
+			CouncilPalletName,
+			<Runtime as pezframe_system::Config>::DbWeight,
+		>,
 		// Releases ~12.49M HEZ of orphaned Balances::Holds left behind by the old (pre-
 		// StakingAhClient) pezpallet_staking's removal (see doc comment above).
 		ReleaseOrphanedStakingHolds,
@@ -2038,7 +1937,6 @@ mod benches {
 		[pezframe_system_extensions, SystemExtensionsBench::<Runtime>]
 		[pezpallet_timestamp, Timestamp]
 		[pezpallet_transaction_payment, TransactionPayment]
-		[pezpallet_treasury, Treasury]
 		[pezpallet_utility, Utility]
 		[pezpallet_vesting, Vesting]
 		[pezpallet_whitelist, Whitelist]

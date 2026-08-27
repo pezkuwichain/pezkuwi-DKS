@@ -75,9 +75,9 @@ use pezframe_support::{
 	ord_parameter_types, parameter_types,
 	traits::tokens::imbalance::ResolveTo,
 	traits::{
-		fungible, fungible::HoldConsideration, fungibles, tokens::imbalance::ResolveAssetTo,
-		AsEnsureOriginWithArg, ConstBool, ConstU128, ConstU32, ConstU64, ConstU8,
-		ConstantStoragePrice, EitherOfDiverse, Equals, InstanceFilter, Nothing, TransformOrigin,
+		fungible, fungibles, tokens::imbalance::ResolveAssetTo, AsEnsureOriginWithArg, ConstBool,
+		ConstU128, ConstU32, ConstU64, ConstU8, ConstantStoragePrice, EitherOfDiverse, Equals,
+		InstanceFilter, Nothing, TransformOrigin,
 	},
 	weights::{ConstantMultiplier, Weight},
 	BoundedVec, PalletId,

@@ -113,7 +113,6 @@ parameter_types! {
 	pub const GovernanceLocation: Location = Location::parent();
 	pub StakingPot: AccountId = CollatorSelection::account_id();
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
-	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(pezkuwichain_runtime_constants::TREASURY_PALLET_ID)).into();
 	/// The Fellowship's salary and treasury pallets on the Collectives chain. Both dispatch
 	/// unpaid XCM to this chain to settle their spends, so both need free execution here.
 	///
@@ -351,7 +350,11 @@ pub type Barrier = TrailingSetTopicAsId<
 					// and BridgeHub get free execution.
 					AllowExplicitUnpaidExecutionFrom<(
 						ParentOrParentsPlurality,
-						Equals<RelayTreasuryLocation>,
+						// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+						// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+						// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+						// sending body has to be waived again or every payment is charged a fee it cannot pay
+						// and is dropped without an error.
 						Equals<FellowshipSalaryLocation>,
 						Equals<FellowshipTreasuryLocation>,
 						Equals<SecretarySalaryLocation>,
@@ -380,7 +383,11 @@ pub type Barrier = TrailingSetTopicAsId<
 pub type WaivedLocations = (
 	Equals<RootLocation>,
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
-	Equals<RelayTreasuryLocation>,
+	// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+	// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+	// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+	// sending body has to be waived again or every payment is charged a fee it cannot pay
+	// and is dropped without an error.
 	// The Collectives chain's spending pallets. `RelayOrOtherSystemTeyrchains` admits the
 	// Collectives chain itself but not a pallet within it, and these payouts carry an
 	// appendix that reports the outcome home under `SetFeesMode { jit_withdraw }` — so without

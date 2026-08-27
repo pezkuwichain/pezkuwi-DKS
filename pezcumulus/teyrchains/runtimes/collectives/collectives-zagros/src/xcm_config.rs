@@ -69,7 +69,6 @@ parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = pezcumulus_pezpallet_xcm::Origin::Relay.into();
 	pub UniversalLocation: InteriorLocation =
 		[GlobalConsensus(RelayNetwork::get().unwrap()), Teyrchain(TeyrchainInfo::teyrchain_id().into())].into();
-	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(zagros_runtime_constants::TREASURY_PALLET_ID)).into();
 	/// The four bodies on this chain that pay out over XCM. Each is named by its own pallet
 	/// index so the location cannot drift if the index moves.
 	pub FellowshipTreasuryLocation: Location =
@@ -206,7 +205,11 @@ pub type Barrier = TrailingSetTopicAsId<
 /// We only waive fees for system functions, which these locations represent.
 pub type WaivedLocations = (
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
-	Equals<RelayTreasuryLocation>,
+	// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+	// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+	// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+	// sending body has to be waived again or every payment is charged a fee it cannot pay
+	// and is dropped without an error.
 	// The bodies that live on this chain. Their payouts travel to the Asset Hub over XCM and the
 	// delivery fee is withdrawn from the paying pallet's own account, which holds nothing — so
 	// without these entries every cross-chain payout from the fellowship treasury and from the

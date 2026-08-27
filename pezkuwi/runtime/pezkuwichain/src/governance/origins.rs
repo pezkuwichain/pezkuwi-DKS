@@ -20,7 +20,6 @@ pub use pezpallet_custom_origins::*;
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet_custom_origins {
-	use crate::{Balance, DOLLARS, GRAND};
 	use pezframe_support::pezpallet_prelude::*;
 
 	#[pezpallet::config]
@@ -37,9 +36,6 @@ pub mod pezpallet_custom_origins {
 		/// Origin for cancelling slashes.
 		#[codec(index = 0)]
 		StakingAdmin,
-		/// Origin for spending (any amount of) funds.
-		#[codec(index = 1)]
-		Treasurer,
 		/// Origin for managing the composition of the fellowship.
 		#[codec(index = 2)]
 		FellowshipAdmin,
@@ -58,21 +54,6 @@ pub mod pezpallet_custom_origins {
 		/// Origin able to kill referenda.
 		#[codec(index = 7)]
 		ReferendumKiller,
-		/// Origin able to spend up to 1 HEZ from the treasury at once.
-		#[codec(index = 8)]
-		SmallTipper,
-		/// Origin able to spend up to 5 HEZ from the treasury at once.
-		#[codec(index = 9)]
-		BigTipper,
-		/// Origin able to spend up to 50 HEZ from the treasury at once.
-		#[codec(index = 10)]
-		SmallSpender,
-		/// Origin able to spend up to 500 HEZ from the treasury at once.
-		#[codec(index = 11)]
-		MediumSpender,
-		/// Origin able to spend up to 5,000 HEZ from the treasury at once.
-		#[codec(index = 12)]
-		BigSpender,
 		/// Origin able to dispatch a whitelisted call.
 		#[codec(index = 13)]
 		WhitelistedCaller,
@@ -161,7 +142,6 @@ pub mod pezpallet_custom_origins {
 	}
 	decl_unit_ensures!(
 		StakingAdmin,
-		Treasurer,
 		FellowshipAdmin,
 		GeneralAdmin,
 		AuctionAdmin,
@@ -211,17 +191,6 @@ pub mod pezpallet_custom_origins {
 					_result
 				}
 			}
-		}
-	}
-
-	decl_ensure! {
-		pub type Spender: EnsureOrigin<Success = Balance> {
-			SmallTipper = 250 * DOLLARS,
-			BigTipper = 1 * GRAND,
-			SmallSpender = 10 * GRAND,
-			MediumSpender = 100 * GRAND,
-			BigSpender = 1_000 * GRAND,
-			Treasurer = 10_000 * GRAND,
 		}
 	}
 

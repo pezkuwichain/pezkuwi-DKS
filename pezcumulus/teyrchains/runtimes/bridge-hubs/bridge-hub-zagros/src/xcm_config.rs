@@ -80,7 +80,6 @@ parameter_types! {
 	pub StakingPot: AccountId =
 		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
-	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(zagros_runtime_constants::TREASURY_PALLET_ID)).into();
 }
 
 /// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
@@ -173,7 +172,11 @@ pub type Barrier = TrailingSetTopicAsId<
 					// pezpallet get free execution.
 					AllowExplicitUnpaidExecutionFrom<(
 						ParentOrParentsPlurality,
-						Equals<RelayTreasuryLocation>,
+						// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+						// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+						// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+						// sending body has to be waived again or every payment is charged a fee it cannot pay
+						// and is dropped without an error.
 						Equals<SnowbridgeFrontendLocation>,
 						Equals<GovernanceLocation>,
 					)>,
@@ -195,7 +198,11 @@ pub type Barrier = TrailingSetTopicAsId<
 pub type WaivedLocations = (
 	Equals<RootLocation>,
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
-	Equals<RelayTreasuryLocation>,
+	// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+	// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+	// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+	// sending body has to be waived again or every payment is charged a fee it cannot pay
+	// and is dropped without an error.
 );
 
 /// Cases where a remote origin is accepted as trusted Teleporter for a given asset:

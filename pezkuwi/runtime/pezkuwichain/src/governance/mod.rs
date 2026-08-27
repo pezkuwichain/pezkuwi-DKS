@@ -27,8 +27,8 @@ mod origins;
 pub use origins::{
 	pezpallet_custom_origins, AuctionAdmin, CitizenshipAdmin, Fellows, FellowshipAdmin,
 	FellowshipExperts, FellowshipInitiates, FellowshipMasters, GeneralAdmin, LeaseAdmin,
-	ReferendumCanceller, ReferendumKiller, Spender, StakingAdmin, Treasurer, WelatiAdmin,
-	WelatiElection, WhitelistedCaller,
+	ReferendumCanceller, ReferendumKiller, StakingAdmin, WelatiAdmin, WelatiElection,
+	WhitelistedCaller,
 };
 mod tracks;
 pub use tracks::TracksInfo;
@@ -80,7 +80,6 @@ parameter_types! {
 parameter_types! {
 	pub const MaxBalance: Balance = Balance::max_value();
 }
-pub type TreasurySpender = EitherOf<EnsureRootWithSuccess<AccountId, MaxBalance>, Spender>;
 
 impl origins::pezpallet_custom_origins::Config for Runtime {}
 
@@ -103,7 +102,10 @@ impl pezpallet_referenda::Config for Runtime {
 	type SubmitOrigin = pezframe_system::EnsureSigned<AccountId>;
 	type CancelOrigin = EitherOf<EnsureRoot<AccountId>, ReferendumCanceller>;
 	type KillOrigin = EitherOf<EnsureRoot<AccountId>, ReferendumKiller>;
-	type Slash = Treasury;
+	// Referendum deposits that are killed rather than refunded. They go where every other
+	// penalty on this chain goes: accumulated here and forwarded to the Asset Hub's
+	// treasury. Not `()`, which would destroy them.
+	type Slash = crate::PenaltiesToTreasury;
 	type Votes = pezpallet_conviction_voting::VotesOf<Runtime>;
 	type Tally = pezpallet_conviction_voting::TallyOf<Runtime>;
 	type SubmissionDeposit = SubmissionDeposit;

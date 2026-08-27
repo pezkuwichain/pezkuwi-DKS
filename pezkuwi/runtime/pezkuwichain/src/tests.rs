@@ -49,11 +49,18 @@ fn check_whitelist() {
 }
 
 #[test]
-fn check_treasury_pezpallet_id() {
-	assert_eq!(
-		<Treasury as pezframe_support::traits::PalletInfoAccess>::index() as u8,
-		pezkuwichain_runtime_constants::TREASURY_PALLET_ID
-	);
+fn retired_indices_stay_retired() {
+	// `Treasury` held 18 and `Council` 17 until the treasury moved to the Asset Hub. An index
+	// is part of the composite `RuntimeCall` and `RuntimeEvent` encodings, so giving either
+	// number to a new pallet makes old bytes decode as that pallet.
+	use pezframe_support::traits::PalletsInfoAccess;
+	let taken: Vec<usize> = <AllPalletsWithSystem as PalletsInfoAccess>::infos()
+		.iter()
+		.map(|i| i.index)
+		.collect();
+	for index in [17usize, 18] {
+		assert!(!taken.contains(&index), "index {index} is retired and was handed to a pallet");
+	}
 }
 
 #[test]
@@ -141,7 +148,9 @@ use std::collections::HashMap;
 #[test]
 fn governance_tracks_total_count() {
 	let count = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks().count();
-	assert_eq!(count, 18, "Expected 18 tracks (15 standard + 3 welati), got {count}");
+	// Twelve since the treasury moved to the Asset Hub and took its six tracks -- the
+	// treasurer and the five spenders -- with it. Nine relay tracks and three Welati.
+	assert_eq!(count, 12, "Expected 12 tracks (9 relay + 3 welati), got {count}");
 }
 
 #[test]
@@ -184,18 +193,12 @@ fn governance_production_periods_match_spec() {
 		(0, "root", 2 * HOURS, 28 * DAYS, 24 * HOURS, 24 * HOURS),
 		(1, "whitelisted_caller", 30 * MINUTES, 28 * DAYS, 10 * MINUTES, 10 * MINUTES),
 		(10, "staking_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
-		(11, "treasurer", 2 * HOURS, 28 * DAYS, 3 * HOURS, 24 * HOURS),
 		(12, "lease_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(13, "fellowship_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(14, "general_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(15, "auction_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(20, "referendum_canceller", 2 * HOURS, 7 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(21, "referendum_killer", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
-		(30, "small_tipper", 1 * MINUTES, 7 * DAYS, 10 * MINUTES, 1 * MINUTES),
-		(31, "big_tipper", 10 * MINUTES, 7 * DAYS, 1 * HOURS, 10 * MINUTES),
-		(32, "small_spender", 4 * HOURS, 28 * DAYS, 12 * HOURS, 24 * HOURS),
-		(33, "medium_spender", 4 * HOURS, 28 * DAYS, 24 * HOURS, 24 * HOURS),
-		(34, "big_spender", 4 * HOURS, 28 * DAYS, 48 * HOURS, 24 * HOURS),
 		(40, "welati_election", 2 * HOURS, 14 * DAYS, 12 * HOURS, 24 * HOURS),
 		(41, "welati_admin", 2 * HOURS, 7 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(42, "citizenship_admin", 2 * HOURS, 14 * DAYS, 6 * HOURS, 24 * HOURS),
@@ -279,18 +282,12 @@ fn governance_track_for_origin_mapping() {
 	let origin_to_track: Vec<(Origin, u16)> = vec![
 		(Origin::WhitelistedCaller, 1),
 		(Origin::StakingAdmin, 10),
-		(Origin::Treasurer, 11),
 		(Origin::LeaseAdmin, 12),
 		(Origin::FellowshipAdmin, 13),
 		(Origin::GeneralAdmin, 14),
 		(Origin::AuctionAdmin, 15),
 		(Origin::ReferendumCanceller, 20),
 		(Origin::ReferendumKiller, 21),
-		(Origin::SmallTipper, 30),
-		(Origin::BigTipper, 31),
-		(Origin::SmallSpender, 32),
-		(Origin::MediumSpender, 33),
-		(Origin::BigSpender, 34),
 		(Origin::WelatiElection, 40),
 		(Origin::WelatiAdmin, 41),
 		(Origin::CitizenshipAdmin, 42),

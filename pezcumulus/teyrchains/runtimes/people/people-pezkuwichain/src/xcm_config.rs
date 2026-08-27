@@ -75,8 +75,6 @@ parameter_types! {
 	pub StakingPot: AccountId =
 		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
-	pub RelayTreasuryLocation: Location =
-		(Parent, PalletInstance(pezkuwichain_runtime_constants::TREASURY_PALLET_ID)).into();
 }
 
 pub type PriceForParentDelivery = pezkuwi_runtime_common::xcm_sender::ExponentialPrice<
@@ -230,7 +228,11 @@ pub type Barrier = TrailingSetTopicAsId<
 /// only waive fees for system functions, which these locations represent.
 pub type WaivedLocations = (
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
-	Equals<RelayTreasuryLocation>,
+	// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+	// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+	// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+	// sending body has to be waived again or every payment is charged a fee it cannot pay
+	// and is dropped without an error.
 	Equals<RootLocation>,
 	LocalPlurality,
 );
