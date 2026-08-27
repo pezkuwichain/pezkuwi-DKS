@@ -110,22 +110,55 @@ def inv_weight(p, kind):
     return ("ok", "") if n == 0 else ("GAP", f"{n} at zero")
 
 def inv_no_burn(p, kind):
+    """Whether any supply is destroyed, which is not the same as whether a handler is `()`.
+
+    `BurnDestination = ()` only destroys anything when `Burn` is above zero, and the rate is
+    the thing that decides. Reading the handler alone reported the fault correctly here but
+    for the wrong reason, and would have called `Burn = 0` a gap forever.
+    """
     src = read(p / "src/lib.rs") + read(p / "src/people.rs")
-    n = len(re.findall(r"type (?:Slash|Slashed|OnSlash|BurnDestination) = \(\);", src))
-    return ("ok", "") if n == 0 else ("GAP", f"{n} drop to nowhere")
+    hits = []
+
+    # Treasury: a rate with nowhere to send it is a leak out of total issuance.
+    if "type BurnDestination = ();" in src:
+        m = re.search(r"pub const Burn: Permill = ([^;]+);", src)
+        rate = m.group(1).strip() if m else "?"
+        if "zero()" not in rate and "from_percent(0)" not in rate:
+            hits.append(f"treasury burns {rate} to nowhere")
+
+    # Slash handlers: `()` drops the imbalance outright, with no rate to soften it.
+    n = len(re.findall(r"type (?:Slash|Slashed|OnSlash) = \(\);", src))
+    if n:
+        hits.append(f"{n} slash handler(s) drop to nowhere")
+
+    return ("ok", "") if not hits else ("GAP", "; ".join(hits))
 
 def inv_twin(p, kind):
+    """Defers to the placement sheet rather than answering the same question differently.
+
+    Two sheets disagreeing about one fact is worse than either being wrong: the placement
+    sheet knows which asymmetries are deliberate -- a bridge named after the other chain, an
+    entry recorded with a reason -- and this one was calling all of them drift.
+    """
     t = twin_of(p.name)
     if t is None:
         return "n/a", "no twin"
-    other = p.parent / t
-    if not other.exists():
+    if not (p.parent / t).exists():
         return "GAP", f"{t} missing"
-    a, b = read(p / "src/lib.rs"), read(other / "src/lib.rs")
-    fa = set(re.findall(r"^\s*(\w+): pez\w+(?:::<\w+>)? = \d+,", a, re.M))
-    fb = set(re.findall(r"^\s*(\w+): pez\w+(?:::<\w+>)? = \d+,", b, re.M))
-    d = fa ^ fb
-    return ("ok", f"{len(fa)} pallets") if not d else ("GAP", ", ".join(sorted(d)[:4]))
+    table = placement()
+    stray = []
+    for pal, row in table.items():
+        if p.name in row and t not in row and (pal, p.name) not in DELIBERATE:
+            mirrored = None
+            for a, b in TWINS:
+                if a.capitalize() in pal:
+                    mirrored = pal.replace(a.capitalize(), b.capitalize())
+                elif b.capitalize() in pal:
+                    mirrored = pal.replace(b.capitalize(), a.capitalize())
+            if mirrored and mirrored in table and t in table[mirrored]:
+                continue
+            stray.append(pal)
+    return ("ok", "") if not stray else ("GAP", ", ".join(sorted(stray)[:4]))
 
 TR_ONLY = "ıİğĞ"
 TR_STEMS = ["Advalet", "Adalet", "Denetim", "Teknoloji", "Baskan", "Bakanlik", "Yetki",

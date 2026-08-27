@@ -738,7 +738,14 @@ impl pezpallet_collective::Config<CouncilCollective> for Runtime {
 
 parameter_types! {
 	pub const SpendPeriod: BlockNumber = 6 * DAYS;
-	pub const Burn: Permill = Permill::from_perthousand(2);
+	/// Nothing. The supply is fixed and halving, so there is no rate at which destroying it
+	/// is correct -- and `BurnDestination` below is `()`, which drops the imbalance rather
+	/// than moving it. At two per thousand of the unspent balance every spend period this was
+	/// live: a slow, quiet leak out of total issuance that no event names.
+	///
+	/// Zero rather than a destination on purpose. Giving the burn somewhere to go would say
+	/// this chain burns and has chosen a recipient; it does not burn.
+	pub const Burn: Permill = Permill::zero();
 	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 	pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
 	// The asset's interior location for the paying account. This is the Treasury
