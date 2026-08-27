@@ -174,63 +174,6 @@ where
 	}
 }
 
-/// `ToParentTreasury` for pallets whose slash handler takes a `fungible` credit.
-///
-/// The tree carries two imbalance types and a pallet takes whichever its own config declares.
-/// They cannot both be handled by one struct -- the impls overlap as far as coherence is
-/// concerned -- so this is the same policy under a second name rather than a second policy.
-///
-/// Without it a chain has to pick a different destination for those pallets, which is exactly
-/// how `Recovery` came to resolve its slashes into a local address with no pallet behind it
-/// while the slashes on either side of it were teleported to the treasury. Money that is not
-/// burnt but cannot be spent is the harder failure to notice.
-pub struct ToParentTreasuryFungible<TreasuryAccount, AccountIdConverter, T>(
-	PhantomData<(TreasuryAccount, AccountIdConverter, T)>,
-);
-
-impl<TreasuryAccount, AccountIdConverter, T>
-	OnUnbalanced<fungible::Credit<AccountIdOf<T>, pezpallet_balances::Pezpallet<T>>>
-	for ToParentTreasuryFungible<TreasuryAccount, AccountIdConverter, T>
-where
-	T: pezpallet_balances::Config + pezpallet_xcm::Config + pezframe_system::Config,
-	<<T as pezframe_system::Config>::RuntimeOrigin as OriginTrait>::AccountId: From<AccountIdOf<T>>,
-	[u8; 32]: From<<T as pezframe_system::Config>::AccountId>,
-	TreasuryAccount: Get<AccountIdOf<T>>,
-	AccountIdConverter: ConvertLocation<AccountIdOf<T>>,
-	BalanceOf<T>: Into<Fungibility>,
-{
-	fn on_nonzero_unbalanced(
-		amount: fungible::Credit<AccountIdOf<T>, pezpallet_balances::Pezpallet<T>>,
-	) {
-		use pezframe_support::traits::fungible::Balanced;
-		let imbalance = amount.peek();
-		let Some(root_account) = AccountIdConverter::convert_location(&Here.into()) else {
-			tracing::warn!(target: "xcm::on_unbalanced", "Failed to convert root origin into account id");
-			return;
-		};
-		let treasury_account: AccountIdOf<T> = TreasuryAccount::get();
-
-		let _ = <pezpallet_balances::Pezpallet<T>>::resolve(&root_account, amount);
-
-		let result = <pezpallet_xcm::Pezpallet<T>>::limited_teleport_assets(
-			<<T as pezframe_system::Config>::RuntimeOrigin>::root(),
-			Box::new(Parent.into()),
-			Box::new(
-				Junction::AccountId32 { network: None, id: treasury_account.into() }
-					.into_location()
-					.into(),
-			),
-			Box::new((Parent, imbalance).into()),
-			0,
-			WeightLimit::Unlimited,
-		);
-
-		if let Err(err) = result {
-			tracing::warn!(target: "xcm::on_unbalanced", error=?err, "Failed to teleport slashed assets");
-		}
-	}
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;

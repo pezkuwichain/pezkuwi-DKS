@@ -743,6 +743,7 @@ construct_runtime!(
 		Scheduler: pezpallet_scheduler = 71,
 		Referenda: pezpallet_referenda = 62,
 		Preimage: pezpallet_preimage = 64,
+		AccumulateAndForward: pezpallet_accumulate_and_forward = 65,
 		Origins: pezpallet_custom_origins = 63,
 
 		// RIP Democracy 72, Elections 73. Indices left unused on purpose.

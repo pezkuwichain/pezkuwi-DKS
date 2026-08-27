@@ -14,17 +14,13 @@
 // limitations under the License.
 
 use super::*;
-use crate::xcm_config::LocationToAccountId;
 use codec::{Decode, Encode, MaxEncodedLen};
 use enumflags2::{bitflags, BitFlags};
 use pezframe_support::traits::EitherOfDiverse;
 use pezframe_support::traits::Equals;
 use pezframe_support::{
 	parameter_types,
-	traits::{
-		fungible::HoldConsideration, tokens::imbalance::ResolveTo, ConstU32, LinearStoragePrice,
-		WithdrawReasons,
-	},
+	traits::{fungible::HoldConsideration, ConstU32, LinearStoragePrice, WithdrawReasons},
 	weights::Weight,
 	CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound,
 };
@@ -35,10 +31,7 @@ use pezsp_runtime::traits::{AccountIdConversion, ConvertInto, Verify};
 use scale_info::TypeInfo;
 use testnet_teyrchains_constants::zagros::currency::UNITS;
 use testnet_teyrchains_constants::zagros::locations::AssetHubLocation;
-use teyrchains_common::{
-	impls::{ToParentTreasury, ToParentTreasuryFungible},
-	DAYS, HOURS,
-};
+use teyrchains_common::{DAYS, HOURS};
 
 parameter_types! {
 	//   27 | Min encoded size of `Registration`
@@ -53,6 +46,44 @@ parameter_types! {
 		teyrchains_common::TREASURY_PALLET_ID.into_account_truncating();
 }
 
+parameter_types! {
+	/// Where penalties collected here wait before crossing to the treasury.
+	///
+	/// The treasury is on the Asset Hub. A slash is rare, so a teleport each would be
+	/// affordable -- but there is no reason for penalties to take a different road from every
+	/// other kind of income, and one road means one thing to keep working.
+	pub const AccumulateForwardPalletId: PalletId = PalletId(*b"py/accfw");
+	/// One forward a day.
+	pub const ForwardPeriod: BlockNumber = 1 * DAYS;
+	/// Below this the message costs more than the money in it.
+	pub const MinForwardAmount: Balance = 10 * UNITS;
+	/// The treasury's own account on the Asset Hub, as that chain names it.
+	pub AhTreasuryStaging: InteriorLocation = {
+		let account: AccountId = PalletId(*b"py/trsry").into_account_truncating();
+		Junction::AccountId32 { network: None, id: account.into() }.into()
+	};
+}
+
+impl pezpallet_accumulate_and_forward::Config for Runtime {
+	type Currency = Balances;
+	type PalletId = AccumulateForwardPalletId;
+	type Forwarder = xcm_builder::TeleportForwarderForAccountId32<
+		crate::xcm_config::XcmConfig,
+		WelatiTreasuryChain,
+		crate::xcm_config::RelayLocation,
+		AhTreasuryStaging,
+	>;
+	type TransferPeriod = ForwardPeriod;
+	type MinTransferAmount = MinForwardAmount;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+	// Rate-limited to one forward a day, so an estimate here cannot compound. Listed with the
+	// rest of the weights work.
+	type WeightInfo = ();
+}
+
+/// Penalties, in whichever imbalance shape the pallet that collected them speaks.
+type PenaltiesToTreasury = pezpallet_accumulate_and_forward::LegacyAdapter<Runtime, Balances>;
+
 impl pezpallet_identity::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
@@ -63,7 +94,7 @@ impl pezpallet_identity::Config for Runtime {
 	type MaxSubAccounts = ConstU32<100>;
 	type IdentityInformation = IdentityInfo;
 	type MaxRegistrars = ConstU32<20>;
-	type Slashed = ToParentTreasury<RelayTreasuryAccount, LocationToAccountId, Runtime>;
+	type Slashed = PenaltiesToTreasury;
 	type ForceOrigin = EnsureRoot<Self::AccountId>;
 	type RegistrarOrigin = EnsureRoot<Self::AccountId>;
 	type OffchainSignature = Signature;
@@ -625,7 +656,7 @@ impl pezpallet_staking_score::Config for Runtime {
 	// for. A day covers a slow bot cycle and the dispute window it then waits out; past
 	// that, time is only credited for a stake that has actually existed.
 	type OracleGracePeriod = StakingOracleGracePeriod;
-	type SlashDestination = ToParentTreasury<RelayTreasuryAccount, LocationToAccountId, Runtime>;
+	type SlashDestination = PenaltiesToTreasury;
 }
 
 // =============================================================================
@@ -1100,7 +1131,7 @@ impl pezpallet_referenda::Config for Runtime {
 	// Not `()`: dropping a negative imbalance destroys the tokens, and this chain's supply is
 	// fixed and halving -- there is no burn anywhere in it, by decision. This is the same
 	// handler `pezpallet_identity` slashes into, one line 60-odd above.
-	type Slash = ToParentTreasury<RelayTreasuryAccount, LocationToAccountId, Runtime>;
+	type Slash = PenaltiesToTreasury;
 	type Votes = u32;
 	type Tally = pezpallet_welati::types::CitizenTally<CitizenRoll>;
 	type SubmissionDeposit = StateSubmissionDeposit;
@@ -1312,8 +1343,7 @@ impl pezpallet_welati::Config for Runtime {
 	type InitiativeThreshold = StateInitiativeThreshold;
 	type InitiativeWindow = StateInitiativeWindow;
 	type InitiativeDeposit = StateInitiativeDeposit;
-	type InitiativeSlashTarget =
-		ToParentTreasury<RelayTreasuryAccount, LocationToAccountId, Runtime>;
+	type InitiativeSlashTarget = PenaltiesToTreasury;
 	type InitiativeCooldown = StateInitiativeCooldown;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = WelatiParliamentSize;
@@ -1459,7 +1489,7 @@ impl pezpallet_recovery::Config for Runtime {
 		LinearStoragePrice<RecoveryDepositPerItem, RecoveryDepositPerByte, Balance>,
 	>;
 	type SecurityDeposit = RecoveryDeposit;
-	type Slash = ToParentTreasuryFungible<RelayTreasuryAccount, LocationToAccountId, Runtime>;
+	type Slash = AccumulateAndForward;
 	// Documented upstream as never safe to reduce: shrinking it makes stored bounded vectors
 	// undecodable. Held at the previous MaxFriends value.
 	type MaxFriendsPerConfig = ConstU32<9>;
