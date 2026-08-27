@@ -59,10 +59,10 @@ pezpallet-nis = { workspace = true }
 pezpallet-nomination-pools = { workspace = true }
 pezpallet-nomination-pools-benchmarking = { optional = true, workspace = true }
 pezpallet-nomination-pools-runtime-api = { workspace = true }
+pezpallet-parameters = { workspace = true }
 pezpallet-pez-treasury = { workspace = true }
 pezpallet-preimage = { workspace = true }
 pezpallet-proxy = { workspace = true }
-pezpallet-parameters = { workspace = true }
 pezpallet-referenda = { workspace = true }
 pezpallet-revive = { workspace = true }
 pezpallet-scheduler = { workspace = true }
@@ -224,10 +224,10 @@ runtime-benchmarks = [
 	"pezpallet-nomination-pools-benchmarking/runtime-benchmarks",
 	"pezpallet-nomination-pools-runtime-api/runtime-benchmarks",
 	"pezpallet-nomination-pools/runtime-benchmarks",
+	"pezpallet-parameters/runtime-benchmarks",
 	"pezpallet-pez-treasury/runtime-benchmarks",
 	"pezpallet-preimage/runtime-benchmarks",
 	"pezpallet-proxy/runtime-benchmarks",
-	"pezpallet-parameters/runtime-benchmarks",
 	"pezpallet-referenda/runtime-benchmarks",
 	"pezpallet-revive-fixtures/runtime-benchmarks",
 	"pezpallet-revive/runtime-benchmarks",
@@ -332,10 +332,10 @@ try-runtime = [
 	"pezpallet-nomination-pools-benchmarking/try-runtime",
 	"pezpallet-nomination-pools-runtime-api/try-runtime",
 	"pezpallet-nomination-pools/try-runtime",
+	"pezpallet-parameters/try-runtime",
 	"pezpallet-pez-treasury/try-runtime",
 	"pezpallet-preimage/try-runtime",
 	"pezpallet-proxy/try-runtime",
-	"pezpallet-parameters/try-runtime",
 	"pezpallet-referenda/try-runtime",
 	"pezpallet-revive/try-runtime",
 	"pezpallet-scheduler/try-runtime",
@@ -443,10 +443,10 @@ std = [
 	"pezpallet-nomination-pools-benchmarking/std",
 	"pezpallet-nomination-pools-runtime-api/std",
 	"pezpallet-nomination-pools/std",
+	"pezpallet-parameters/std",
 	"pezpallet-pez-treasury/std",
 	"pezpallet-preimage/std",
 	"pezpallet-proxy/std",
-	"pezpallet-parameters/std",
 	"pezpallet-referenda/std",
 	"pezpallet-revive/std",
 	"pezpallet-scheduler/std",
