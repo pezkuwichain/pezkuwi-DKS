@@ -70,6 +70,14 @@ parameter_types! {
 		[GlobalConsensus(RelayNetwork::get()), Teyrchain(TeyrchainInfo::teyrchain_id().into())].into();
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
+	/// Delivery fees for messages this chain forwards.
+	///
+	/// They used to go to an address derived from the treasury's pallet id, which is right on a
+	/// chain that has a treasury and meaningless on one that does not: the money arrived at an
+	/// address with no pallet behind it and stayed there. This chain has no treasury, so the
+	/// fee goes where its other operating income goes -- the collators who did the delivering.
+	pub StakingPot: AccountId =
+		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
 	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(pezkuwichain_runtime_constants::TREASURY_PALLET_ID)).into();
 	pub SiblingPeople: Location = (Parent, Teyrchain(pezkuwichain_runtime_constants::system_teyrchain::PEOPLE_ID)).into();
@@ -223,7 +231,7 @@ impl xcm_executor::Config for XcmConfig {
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
 	type FeeManager = XcmFeeManagerFromComponents<
 		WaivedLocations,
-		SendXcmFeeToAccount<Self::AssetTransactor, TreasuryAccount>,
+		SendXcmFeeToAccount<Self::AssetTransactor, StakingPot>,
 	>;
 	type MessageExporter = (
 		XcmOverBridgeHubZagros,

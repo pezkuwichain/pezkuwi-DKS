@@ -17,7 +17,6 @@ use super::{
 	AccountId, AllPalletsWithSystem, Balance, Balances, BaseDeliveryFee, FeeAssetId, Fellows,
 	PezkuwiXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
 	TeyrchainInfo, TeyrchainSystem, TransactionByteFee, WeightToFee, XcmpQueue,
-	ZagrosTreasuryAccount,
 };
 use pezframe_support::{
 	parameter_types,
@@ -56,6 +55,14 @@ use zagros_runtime_constants::{system_teyrchain::ASSET_HUB_ID, xcm as xcm_consta
 pub use testnet_teyrchains_constants::zagros::locations::GovernanceLocation;
 
 parameter_types! {
+	/// Delivery fees for messages this chain forwards.
+	///
+	/// They went to an address derived from the relay treasury's pallet id, which on a chain
+	/// with no treasury is an address with no pallet behind it. This chain has none, so the
+	/// fee goes where its other operating income goes -- the collators who delivered.
+	pub StakingPot: AccountId =
+		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
+
 	pub const RootLocation: Location = Location::here();
 	pub const WndLocation: Location = Location::parent();
 	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::ByGenesis(ZAGROS_GENESIS_HASH));
@@ -263,7 +270,7 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetExchanger = ();
 	type FeeManager = XcmFeeManagerFromComponents<
 		WaivedLocations,
-		SendXcmFeeToAccount<Self::AssetTransactor, ZagrosTreasuryAccount>,
+		SendXcmFeeToAccount<Self::AssetTransactor, StakingPot>,
 	>;
 	type MessageExporter = ();
 	type UniversalAliases = Nothing;
