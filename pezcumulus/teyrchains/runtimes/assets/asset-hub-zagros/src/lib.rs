@@ -27,7 +27,8 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 mod bag_thresholds;
 mod genesis_config_presets;
 pub mod governance;
-mod staking;
+// Public so the integration tests can hold the emission rule to its ceiling.
+pub mod staking;
 pub mod weights;
 pub mod xcm_config;
 
@@ -71,13 +72,14 @@ use pezcumulus_primitives_core::ParaId;
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
+	dynamic_params::{dynamic_params, dynamic_pezpallet_params},
 	genesis_builder_helper::{build_state, get_preset},
 	ord_parameter_types, parameter_types,
 	traits::tokens::imbalance::ResolveTo,
 	traits::{
 		fungible, fungibles, tokens::imbalance::ResolveAssetTo, AsEnsureOriginWithArg, ConstBool,
 		ConstU128, ConstU32, ConstU64, ConstU8, ConstantStoragePrice, EitherOfDiverse, Equals,
-		InstanceFilter, Nothing, TransformOrigin,
+		AsEnsureOriginWithArg as _, InstanceFilter, Nothing, TransformOrigin,
 	},
 	weights::{ConstantMultiplier, Weight},
 	BoundedVec, PalletId,
@@ -1720,6 +1722,7 @@ construct_runtime!(
 		ConvictionVoting: pezpallet_conviction_voting = 76,
 		Referenda: pezpallet_referenda = 77,
 		Origins: pezpallet_custom_origins = 78,
+		Parameters: pezpallet_parameters = 79,
 
 		// Staking
 		Staking: pezpallet_staking_async = 80,
@@ -2955,6 +2958,58 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 		}
 	}
 );
+
+/// HEZ's economic knobs, held in storage rather than in the binary.
+///
+/// The rule this follows: an upgrade is the constitution and a parameter is policy. A rate is
+/// not a fact about what this chain *is*, it is a decision about what it should do this year,
+/// and a decision that can only be changed by shipping new code is a decision nobody can
+/// revisit. These two live here so the franchise that bears them can turn them.
+///
+/// What is *not* here is as deliberate. The 200 million HEZ the emission is measured against
+/// is the token's identity rather than a policy about it, and PEZ's fixed supply and its
+/// halving are not adjustable by anyone at all.
+#[dynamic_params(RuntimeParameters, pezpallet_parameters::Parameters::<Runtime>)]
+pub mod dynamic_params {
+	use super::*;
+
+	#[dynamic_pezpallet_params]
+	#[codec(index = 0)]
+	pub mod hez {
+		/// Yearly emission, as a share of the fixed 200 million base.
+		///
+		/// Read through `EraPayout`, which clamps it to `MAX_INFLATION_RATE`. The ceiling is
+		/// in the code because a ceiling that the same body could raise is not a ceiling.
+		#[codec(index = 0)]
+		pub static InflationRate: Perbill = Perbill::from_percent(8);
+
+		/// The treasury's cut of each era's emission; the rest goes to those who staked.
+		#[codec(index = 1)]
+		pub static TreasuryShare: Perbill = Perbill::from_percent(15);
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for RuntimeParameters {
+	fn default() -> Self {
+		RuntimeParameters::Hez(dynamic_params::hez::Parameters::InflationRate(
+			dynamic_params::hez::InflationRate,
+			Some(Perbill::from_percent(8)),
+		))
+	}
+}
+
+impl pezpallet_parameters::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeParameters = RuntimeParameters;
+	// Those who bear a decision decide it: dilution falls on holders in proportion to what
+	// they hold, and `EconomicAdmin` is this franchise's slowest track. Root is not here --
+	// this chain has no root track any more, on purpose.
+	type AdminOrigin = pezframe_support::traits::AsEnsureOriginWithArg<
+		governance::pezpallet_custom_origins::EconomicAdmin,
+	>;
+	type WeightInfo = ();
+}
 
 pezcumulus_pezpallet_teyrchain_system::register_validate_block! {
 	Runtime = Runtime,

@@ -57,6 +57,14 @@ pub mod pezpallet_custom_origins {
 		/// Kill a referendum on this chain and slash its deposit.
 		#[codec(index = 7)]
 		ReferendumKiller,
+		/// The knobs of HEZ's own economy: what it emits, and how that emission is split.
+		///
+		/// Those who bear a decision decide it. Dilution falls on holders in proportion to
+		/// what they hold, and this is the franchise that counts holdings -- so this is where
+		/// the rate belongs. It is deliberately not `Treasurer`: the treasury's share of
+		/// emission is the treasury's own budget, and no organ writes its own input.
+		#[codec(index = 8)]
+		EconomicAdmin,
 	}
 
 	macro_rules! decl_unit_ensures {
@@ -93,7 +101,7 @@ pub mod pezpallet_custom_origins {
 		() => {}
 	}
 
-	decl_unit_ensures!(Treasurer, ReferendumCanceller, ReferendumKiller,);
+	decl_unit_ensures!(Treasurer, ReferendumCanceller, ReferendumKiller, EconomicAdmin,);
 
 	macro_rules! decl_ensure {
 		(

@@ -60,6 +60,7 @@ pezpallet-nomination-pools-runtime-api = { workspace = true }
 pezpallet-pez-treasury = { workspace = true }
 pezpallet-preimage = { workspace = true }
 pezpallet-proxy = { workspace = true }
+pezpallet-parameters = { workspace = true }
 pezpallet-referenda = { workspace = true }
 pezpallet-scheduler = { workspace = true }
 pezpallet-session = { workspace = true }
@@ -210,6 +211,7 @@ runtime-benchmarks = [
 	"pezpallet-pez-treasury/runtime-benchmarks",
 	"pezpallet-preimage/runtime-benchmarks",
 	"pezpallet-proxy/runtime-benchmarks",
+	"pezpallet-parameters/runtime-benchmarks",
 	"pezpallet-referenda/runtime-benchmarks",
 	"pezpallet-scheduler/runtime-benchmarks",
 	"pezpallet-session/runtime-benchmarks",
@@ -310,6 +312,7 @@ try-runtime = [
 	"pezpallet-pez-treasury/try-runtime",
 	"pezpallet-preimage/try-runtime",
 	"pezpallet-proxy/try-runtime",
+	"pezpallet-parameters/try-runtime",
 	"pezpallet-referenda/try-runtime",
 	"pezpallet-scheduler/try-runtime",
 	"pezpallet-session/try-runtime",
@@ -413,6 +416,7 @@ std = [
 	"pezpallet-pez-treasury/std",
 	"pezpallet-preimage/std",
 	"pezpallet-proxy/std",
+	"pezpallet-parameters/std",
 	"pezpallet-referenda/std",
 	"pezpallet-scheduler/std",
 	"pezpallet-session/std",

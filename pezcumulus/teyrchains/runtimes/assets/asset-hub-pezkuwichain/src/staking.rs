@@ -241,8 +241,28 @@ impl pezpallet_bags_list::Config<VoterBagsListInstance> for Runtime {
 	type WeightInfo = weights::pezpallet_bags_list::WeightInfo<Runtime>;
 }
 
+/// The most this chain will emit in a year, whatever the parameter says.
+///
+/// The rate is policy and lives in storage; this is not. A ceiling the same body could raise
+/// is not a ceiling, so it is compiled in and only a runtime upgrade moves it -- which is the
+/// distinction the whole arrangement rests on: the constitution is code, policy is storage.
+pub const MAX_INFLATION_RATE: Perbill = Perbill::from_percent(10);
+
+/// The base the emission is measured against: 200M HEZ at twelve decimals.
+///
+/// Not a parameter. How much HEZ there is meant to be is the token's identity rather than a
+/// policy about it, and measuring emission against a movable base would make the rate mean
+/// nothing.
+pub const HEZ_ISSUANCE_BASE: u128 = 200_000_000_000_000_000_000;
+
 pub struct EraPayout;
 impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
+	/// Neither argument is read, and the names say so.
+	///
+	/// Upstream's payout is a function of the staking ratio: emit more when little is staked,
+	/// less when much is. This one is a flat share of a fixed base, so how much is staked and
+	/// how much exists change nothing. The comment on `pezpallet_staking_async::Config` below
+	/// used to describe the upstream behaviour as if it were this one.
 	fn era_payout(
 		_total_staked: Balance,
 		_total_issuance: Balance,
@@ -253,15 +273,13 @@ impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
 		let relative_era_len =
 			FixedU128::from_rational(era_duration_millis.into(), MILLISECONDS_PER_YEAR.into());
 
-		// Fixed total TI that we use as baseline for the issuance.
-		// 200M HEZ (12 decimals) = 200_000_000 * 10^12
-		let fixed_total_issuance: i128 = 200_000_000_000_000_000_000;
-		let fixed_inflation_rate = FixedU128::from_rational(8, 100);
-		let yearly_emission = fixed_inflation_rate.saturating_mul_int(fixed_total_issuance);
+		use pezframe_support::traits::Get;
+		let rate = crate::dynamic_params::hez::InflationRate::get().min(MAX_INFLATION_RATE);
+		let yearly_emission = rate.mul_floor(HEZ_ISSUANCE_BASE);
 
 		let era_emission = relative_era_len.saturating_mul_int(yearly_emission);
-		// 15% to treasury, as per Pezkuwi ref 1139.
-		let to_treasury = FixedU128::from_rational(15, 100).saturating_mul_int(era_emission);
+		let to_treasury =
+			crate::dynamic_params::hez::TreasuryShare::get().mul_floor(era_emission);
 		let to_stakers = era_emission.saturating_sub(to_treasury);
 
 		(to_stakers.saturated_into(), to_treasury.saturated_into())
@@ -294,7 +312,8 @@ parameter_types! {
 impl pezpallet_staking_async::Config for Runtime {
 	// Upstream added a non-minting reward mode where staking pays out of a pre-funded pot
 	// instead of creating tokens. This runtime keeps the legacy minting mode: inflation here
-	// is a function of the staking ratio (see EraPayout above, 8% against a fixed 200M base),
+	// is a flat share of a fixed 200M base (see EraPayout above), not a function of the
+	// staking ratio -- the sentence that used to stand here described upstream, not this,
 	// which is exactly the case the pallet documents legacy mode as being kept for. The switch
 	// to non-minting is one-way - once eras carry funded pots, going back would orphan them and
 	// double-mint - so it is not a default to drift into. Revisit with the genesis spec.

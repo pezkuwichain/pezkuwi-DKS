@@ -1627,7 +1627,7 @@ fn state_and_economic_origins_do_not_overlap() {
 	assert!(!economic.contains(&"root".to_string()), "holdings must not reach an upgrade");
 
 	// The lists are not empty, or the assertions above pass by saying nothing.
-	assert_eq!(economic.len(), 8, "the economic franchise lost a track");
+	assert_eq!(economic.len(), 9, "the economic franchise lost a track");
 }
 
 /// PEZ cannot be minted or destroyed by anything arriving over XCM, including the relay's sudo.
@@ -1693,5 +1693,88 @@ fn pez_cannot_be_minted_or_destroyed_over_xcm() {
 			NoTouchingPez::contains(&call),
 			"`{name}` on another asset was refused; the filter names the asset, not the call"
 		);
+	}
+}
+
+/// HEZ's rate is policy, its ceiling and its base are not.
+///
+/// The two knobs moved from the binary into storage so the franchise that bears them can turn
+/// them; the ceiling stayed compiled in, because a ceiling the same body could raise is not a
+/// ceiling.
+mod hez_parameters {
+	use asset_hub_pezkuwichain_runtime::{
+		dynamic_params::hez, staking::MAX_INFLATION_RATE, Runtime, RuntimeOrigin,
+	};
+	use pezframe_support::{assert_noop, assert_ok, traits::Get};
+	use pezpallet_staking_async::EraPayout as _;
+	use pezsp_runtime::{traits::BadOrigin, BuildStorage, Perbill};
+
+	fn new_test_ext() -> pezsp_io::TestExternalities {
+		pezframe_system::GenesisConfig::<Runtime>::default().build_storage().unwrap().into()
+	}
+
+	const YEAR_MS: u64 = (1000 * 3600 * 24 * 36525) / 100;
+
+	fn yearly_payout() -> (u128, u128) {
+		<asset_hub_pezkuwichain_runtime::staking::EraPayout as pezpallet_staking_async::EraPayout<
+			u128,
+		>>::era_payout(0, 0, YEAR_MS)
+	}
+
+	#[test]
+	fn the_defaults_are_what_the_constants_were() {
+		new_test_ext().execute_with(|| {
+			assert_eq!(hez::InflationRate::get(), Perbill::from_percent(8));
+			assert_eq!(hez::TreasuryShare::get(), Perbill::from_percent(15));
+
+			// 8% of 200M, split 85/15. Moving these to storage must not have moved the money.
+			let (stakers, treasury) = yearly_payout();
+			let emission = 16_000_000_000_000_000_000u128;
+			assert_eq!(treasury, Perbill::from_percent(15).mul_floor(emission));
+			assert_eq!(stakers + treasury, emission);
+		});
+	}
+
+	#[test]
+	fn the_economic_franchise_turns_them_and_nobody_else_does() {
+		new_test_ext().execute_with(|| {
+			let raise = |o: RuntimeOrigin| {
+				pezpallet_parameters::Pezpallet::<Runtime>::set_parameter(
+					o,
+					asset_hub_pezkuwichain_runtime::RuntimeParameters::Hez(
+						hez::Parameters::InflationRate(
+							hez::InflationRate,
+							Some(Perbill::from_percent(9)),
+						),
+					),
+				)
+			};
+
+			// This chain has no root track, and Root is not the body that bears dilution.
+			assert_noop!(raise(RuntimeOrigin::root()), BadOrigin);
+			assert_noop!(raise(RuntimeOrigin::signed([1u8; 32].into())), BadOrigin);
+
+			assert_ok!(raise(asset_hub_pezkuwichain_runtime::governance::pezpallet_custom_origins::Origin::EconomicAdmin.into()));
+			assert_eq!(hez::InflationRate::get(), Perbill::from_percent(9));
+			assert_eq!(yearly_payout().0 + yearly_payout().1, 18_000_000_000_000_000_000);
+		});
+	}
+
+	#[test]
+	fn the_ceiling_holds_whatever_the_parameter_says() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(pezpallet_parameters::Pezpallet::<Runtime>::set_parameter(
+				asset_hub_pezkuwichain_runtime::governance::pezpallet_custom_origins::Origin::EconomicAdmin.into(),
+				asset_hub_pezkuwichain_runtime::RuntimeParameters::Hez(hez::Parameters::InflationRate(
+					hez::InflationRate,
+					Some(Perbill::from_percent(90)),
+				)),
+			));
+
+			// The parameter took the value; the payout did not.
+			assert_eq!(hez::InflationRate::get(), Perbill::from_percent(90));
+			let (stakers, treasury) = yearly_payout();
+			assert_eq!(stakers + treasury, MAX_INFLATION_RATE.mul_floor(200_000_000_000_000_000_000u128));
+		});
 	}
 }
