@@ -41,7 +41,7 @@ pub mod v1 {
 				// If storage format changes in the future, implement transformation here
 
 				// Count existing storage items for logging
-				let officials_count = CurrentOfficials::<T>::iter().count() as u64;
+				let officials_count = pezpallet_tiki::TikiHolder::<T>::iter().count() as u64;
 				let elections_count = ActiveElections::<T>::iter().count() as u64;
 				let proposals_count = ActiveProposals::<T>::iter().count() as u64;
 
@@ -77,10 +77,10 @@ pub mod v1 {
 			log::info!("   Current version: {current:?}");
 
 			// Encode current storage counts for verification
-			let officials_count = CurrentOfficials::<T>::iter().count() as u32;
+			let officials_count = pezpallet_tiki::TikiHolder::<T>::iter().count() as u32;
 			let parliament_count = ParliamentMembers::<T>::get().len() as u32;
 			let diwan_count = DiwanMembers::<T>::get().len() as u32;
-			let appointed_count = AppointedOfficials::<T>::iter().count() as u32;
+			let appointed_count = pezpallet_tiki::UserTikis::<T>::iter().count() as u32;
 			let elections_count = ActiveElections::<T>::iter().count() as u32;
 			let candidates_count = ElectionCandidates::<T>::iter().count() as u32;
 			let votes_count = ElectionVotes::<T>::iter().count() as u32;
@@ -91,10 +91,10 @@ pub mod v1 {
 			let proposals_count = ActiveProposals::<T>::iter().count() as u32;
 			let collective_votes_count = CollectiveVotes::<T>::iter().count() as u32;
 
-			log::info!("   CurrentOfficials entries: {officials_count}");
+			log::info!("   TikiHolder entries: {officials_count}");
 			log::info!("   ParliamentMembers entries: {parliament_count}");
 			log::info!("   DiwanMembers entries: {diwan_count}");
-			log::info!("   AppointedOfficials entries: {appointed_count}");
+			log::info!("   UserTikis entries: {appointed_count}");
 			log::info!("   ActiveElections entries: {elections_count}");
 			log::info!("   ElectionCandidates entries: {candidates_count}");
 			log::info!("   ElectionVotes entries: {votes_count}");
@@ -154,10 +154,10 @@ pub mod v1 {
 			log::info!("✅ Storage version updated to {current_version:?}");
 
 			// Verify storage counts (should be same or more, never less)
-			let post_officials_count = CurrentOfficials::<T>::iter().count() as u32;
+			let post_officials_count = pezpallet_tiki::TikiHolder::<T>::iter().count() as u32;
 			let post_parliament_count = ParliamentMembers::<T>::get().len() as u32;
 			let post_diwan_count = DiwanMembers::<T>::get().len() as u32;
-			let post_appointed_count = AppointedOfficials::<T>::iter().count() as u32;
+			let post_appointed_count = pezpallet_tiki::UserTikis::<T>::iter().count() as u32;
 			let post_elections_count = ActiveElections::<T>::iter().count() as u32;
 			let post_candidates_count = ElectionCandidates::<T>::iter().count() as u32;
 			let post_votes_count = ElectionVotes::<T>::iter().count() as u32;
@@ -168,16 +168,12 @@ pub mod v1 {
 			let post_proposals_count = ActiveProposals::<T>::iter().count() as u32;
 			let post_collective_votes_count = CollectiveVotes::<T>::iter().count() as u32;
 
-			log::info!(
-				"   CurrentOfficials entries: {pre_officials_count} -> {post_officials_count}"
-			);
+			log::info!("   TikiHolder entries: {pre_officials_count} -> {post_officials_count}");
 			log::info!(
 				"   ParliamentMembers entries: {pre_parliament_count} -> {post_parliament_count}"
 			);
 			log::info!("   DiwanMembers entries: {pre_diwan_count} -> {post_diwan_count}");
-			log::info!(
-				"   AppointedOfficials entries: {pre_appointed_count} -> {post_appointed_count}"
-			);
+			log::info!("   UserTikis entries: {pre_appointed_count} -> {post_appointed_count}");
 			log::info!(
 				"   ActiveElections entries: {pre_elections_count} -> {post_elections_count}"
 			);
@@ -197,7 +193,7 @@ pub mod v1 {
 			// Verify no data was lost
 			assert!(
 				post_officials_count >= pre_officials_count,
-				"CurrentOfficials entries decreased during migration"
+				"TikiHolder entries decreased during migration"
 			);
 			assert!(
 				post_parliament_count >= pre_parliament_count,
@@ -209,7 +205,7 @@ pub mod v1 {
 			);
 			assert!(
 				post_appointed_count >= pre_appointed_count,
-				"AppointedOfficials entries decreased during migration"
+				"UserTikis entries decreased during migration"
 			);
 			assert!(
 				post_elections_count >= pre_elections_count,

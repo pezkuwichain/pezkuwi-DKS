@@ -7,6 +7,7 @@ use super::*;
 use crate::types::*;
 use pezframe_benchmarking::v2::*;
 use pezframe_system::RawOrigin;
+use pezpallet_tiki::Tiki;
 
 #[benchmarks]
 mod benchmarks {
@@ -152,10 +153,10 @@ mod benchmarks {
 		let justification = b"Test nomination".to_vec().try_into().unwrap();
 
 		// Set nominator as Serok to pass authorization check
-		CurrentOfficials::<T>::insert(GovernmentPosition::Serok, nominator.clone());
+		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, nominator.clone());
 
 		// Ensure the role is not already filled (clean state for benchmark)
-		// AppointedOfficials storage should be empty for Dadger role
+		// nobody holds the bench yet
 		// This is important because we added RoleAlreadyFilled check in lib.rs
 
 		#[extrinsic_call]
@@ -168,7 +169,7 @@ mod benchmarks {
 
 		assert_eq!(NextAppointmentId::<T>::get(), 1);
 		// Verify that the role is still not filled (nomination doesn't fill it, approval does)
-		assert!(!AppointedOfficials::<T>::contains_key(OfficialRole::Dadger));
+		assert!(pezpallet_tiki::TikiHolder::<T>::get(Tiki::Dadger).is_none());
 	}
 
 	#[benchmark]
@@ -180,7 +181,7 @@ mod benchmarks {
 		let justification = b"Test nomination".to_vec().try_into().unwrap();
 
 		// Set nominator as Serok to pass authorization check for nomination
-		CurrentOfficials::<T>::insert(GovernmentPosition::Serok, nominator.clone());
+		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, nominator.clone());
 
 		// Use a different role (Dozger) to avoid conflicts with nominate_official benchmark
 		Pezpallet::<T>::nominate_official(
@@ -192,16 +193,16 @@ mod benchmarks {
 		.unwrap();
 
 		// Set approver as Serok to pass authorization check for approval
-		CurrentOfficials::<T>::insert(GovernmentPosition::Serok, approver.clone());
+		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, approver.clone());
 
 		#[extrinsic_call]
 		approve_appointment(RawOrigin::Signed(approver), 0);
 
 		// Verify appointment ID incremented
 		assert_eq!(NextAppointmentId::<T>::get(), 1);
-		// CRITICAL: Verify that the role was assigned in AppointedOfficials storage
+		// The appointment has to reach the register, not just this pallet's own map.
 		// This tests the new storage write we added in lib.rs approve_appointment()
-		assert_eq!(AppointedOfficials::<T>::get(OfficialRole::Dozger), Some(nominee));
+		assert!(pezpallet_tiki::UserTikis::<T>::get(&nominee).contains(&Tiki::Dozger));
 	}
 
 	// ----------------------------------------------------------------

@@ -9,9 +9,10 @@ use crate::{
 		ExtBuilder, RuntimeEvent, RuntimeOrigin, System, Test, Welati,
 	},
 	types::*,
-	CurrentOfficials, Error, Event as WelatiEvent, GovernmentPosition,
+	Error, Event as WelatiEvent, GovernmentPosition,
 };
 use pezframe_support::{assert_noop, assert_ok, BoundedVec};
+use pezpallet_tiki::Tiki;
 use pezsp_runtime::traits::BadOrigin;
 
 // ===== ELECTION SYSTEM TESTS =====
@@ -294,7 +295,7 @@ fn finalize_election_works() {
 fn nominate_official_works() {
 	ExtBuilder::default().build().execute_with(|| {
 		// Setup: Make user 1 the Serok (President) so they can nominate
-		CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 1);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
 
 		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
 
@@ -313,7 +314,7 @@ fn nominate_official_works() {
 fn approve_appointment_works() {
 	ExtBuilder::default().build().execute_with(|| {
 		// Setup: Make user 1 the Serok
-		CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 1);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
 
 		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
 
@@ -552,7 +553,7 @@ fn complete_election_cycle_works() {
 fn complete_appointment_cycle_works() {
 	ExtBuilder::default().build().execute_with(|| {
 		// Setup: Make user 1 the Serok
-		CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 1);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
 
 		let justification = b"Experienced lawyer".to_vec().try_into().unwrap();
 
@@ -910,38 +911,28 @@ fn nominate_official_fails_not_authorized() {
 }
 
 #[test]
-fn nominate_official_fails_role_already_filled() {
+fn a_bench_takes_more_than_one_judge_and_a_single_seat_takes_one() {
 	ExtBuilder::default().build().execute_with(|| {
-		// Set Serok (President) first
-		CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 1);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
 
-		let justification1 = b"Qualified candidate".to_vec().try_into().unwrap();
+		let reason = || b"Qualified candidate".to_vec().try_into().unwrap();
+		let appoint = |who: u64, role: OfficialRole| {
+			Welati::nominate_official(RuntimeOrigin::signed(1), who, role, reason())?;
+			let id = Welati::next_appointment_id() - 1;
+			Welati::approve_appointment(RuntimeOrigin::signed(1), id)
+		};
 
-		// Nominate Dadger
-		assert_ok!(Welati::nominate_official(
-			RuntimeOrigin::signed(1),
-			2,
-			OfficialRole::Dadger,
-			justification1,
-		));
+		// A state has more than one judge. Refusing the second was the register confusing
+		// an office with the person holding it.
+		assert_ok!(appoint(2, OfficialRole::Dadger));
+		assert_ok!(appoint(3, OfficialRole::Dadger));
+		assert!(pezpallet_tiki::UserTikis::<Test>::get(2).contains(&Tiki::Dadger));
+		assert!(pezpallet_tiki::UserTikis::<Test>::get(3).contains(&Tiki::Dadger));
 
-		let process_id = Welati::next_appointment_id() - 1;
-
-		// Approve appointment
-		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(1), process_id,));
-
-		let justification2 = b"Another candidate".to_vec().try_into().unwrap();
-
-		// Try to nominate same role again
-		assert_noop!(
-			Welati::nominate_official(
-				RuntimeOrigin::signed(1),
-				3,
-				OfficialRole::Dadger,
-				justification2,
-			),
-			Error::<Test>::RoleAlreadyFilled
-		);
+		// The Treasury has one seat, and `tiki` is where that is written down.
+		assert_ok!(appoint(4, OfficialRole::Xezinedar));
+		assert_noop!(appoint(5, OfficialRole::Xezinedar), Error::<Test>::RoleAlreadyFilled);
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::Xezinedar), Some(4));
 	});
 }
 
@@ -966,7 +957,7 @@ fn nominate_official_requires_president() {
 #[test]
 fn approve_appointment_fails_not_authorized() {
 	ExtBuilder::default().build().execute_with(|| {
-		CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 1);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
 
 		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
 
@@ -990,7 +981,7 @@ fn approve_appointment_fails_not_authorized() {
 #[test]
 fn approve_appointment_fails_already_processed() {
 	ExtBuilder::default().build().execute_with(|| {
-		CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 1);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
 
 		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
 
@@ -1017,7 +1008,7 @@ fn approve_appointment_fails_already_processed() {
 #[test]
 fn approve_appointment_process_not_found() {
 	ExtBuilder::default().build().execute_with(|| {
-		CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 1);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
 
 		assert_noop!(
 			Welati::approve_appointment(
@@ -1032,7 +1023,7 @@ fn approve_appointment_process_not_found() {
 #[test]
 fn nominate_and_approve_multiple_officials() {
 	ExtBuilder::default().build().execute_with(|| {
-		CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 1);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
 
 		let officials = vec![
 			(2, OfficialRole::Dadger),
@@ -1345,7 +1336,7 @@ fn election_id_increments_correctly() {
 #[test]
 fn appointment_id_increments_correctly() {
 	ExtBuilder::default().build().execute_with(|| {
-		CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 1);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
 
 		assert_eq!(Welati::next_appointment_id(), 0);
 
@@ -2555,7 +2546,7 @@ mod invariant {
 	/// A President in office, recorded in both places.
 	fn seated_president() {
 		assert_ok!(Welati::seat_unique_tiki(&2, Tiki::Serok));
-		CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 2);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 2);
 		TermEnds::<Test>::insert(ElectionType::Presidential, 10_000);
 	}
 
@@ -2600,7 +2591,7 @@ mod invariant {
 		// which record the asking pallet happens to read.
 		ExtBuilder::default().build().execute_with(|| {
 			seated_president();
-			CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, 3);
+			pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 3);
 			assert_rejected("the office and the register named different people");
 		});
 	}

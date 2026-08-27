@@ -103,7 +103,6 @@
 //! - `vote_on_proposal(proposal_id, vote)` - Vote on active proposal
 //!
 //! ### Storage
-//! - `CurrentOfficials` - Current government position holders
 //! - `ParliamentMembers` - Active parliament members
 //! - `DiwanMembers` - Active Diwan council members
 //! - `ActiveElections` - Ongoing election processes
@@ -469,12 +468,6 @@ pub mod pezpallet {
 
 	// --- CORE GOVERNANCE STORAGE ---
 
-	/// Storage holding current government positions
-	#[pezpallet::storage]
-	#[pezpallet::getter(fn current_officials)]
-	pub type CurrentOfficials<T: Config> =
-		StorageMap<_, Blake2_128Concat, GovernmentPosition, T::AccountId, OptionQuery>;
-
 	/// Storage holding parliament members
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn parliament_members)]
@@ -510,12 +503,6 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn diwan_members)]
 	pub type DiwanMembers<T: Config> =
 		StorageValue<_, BoundedVec<DiwanMember<T>, T::DiwanSize>, ValueQuery>;
-
-	/// Storage holding appointed government officials (OfficialRole)
-	#[pezpallet::storage]
-	#[pezpallet::getter(fn appointed_officials)]
-	pub type AppointedOfficials<T: Config> =
-		StorageMap<_, Blake2_128Concat, OfficialRole, T::AccountId, OptionQuery>;
 
 	// --- ELECTION SYSTEM STORAGE ---
 
@@ -1044,21 +1031,6 @@ pub mod pezpallet {
 					election.status != ElectionStatus::Completed,
 					"an office is marked as voting on an election that has been counted"
 				);
-			}
-
-			// The two single-holder elected offices, and the register that names them. Every
-			// authority check in the state reads one of these; if they disagree, the answer
-			// to "who is President" depends on who is asking.
-			for (position, tiki) in [
-				(GovernmentPosition::Serok, Tiki::Serok),
-				(GovernmentPosition::SerokiMeclise, Tiki::SerokiMeclise),
-			] {
-				if let Some(holder) = pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki) {
-					ensure!(
-						CurrentOfficials::<T>::get(position) == Some(holder),
-						"an office is held by someone the government register does not name"
-					);
-				}
 			}
 
 			// A mandate with nobody serving it is not an error -- that is a vacancy, and the
@@ -2298,13 +2270,23 @@ pub mod pezpallet {
 			// Verify nominator is authorized (must be a minister or Serok)
 			// For simplicity, we'll require Serok or any minister can nominate
 			let is_serok =
-				CurrentOfficials::<T>::get(GovernmentPosition::Serok) == Some(nominator.clone());
+				pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok) == Some(nominator.clone());
 			let is_minister = Self::is_minister(&nominator);
 
 			ensure!(is_serok || is_minister, Error::<T>::NotAuthorizedToNominate);
 
-			// Check if role is already filled
-			ensure!(!AppointedOfficials::<T>::contains_key(role), Error::<T>::RoleAlreadyFilled);
+			// Only where the office genuinely has one seat. A state has many judges, many
+			// notaries and many teachers; treating every appointed post as single-holder
+			// meant the second one could never be appointed. `tiki` is the register and it
+			// already says which offices are unique -- the Treasurer and the Ambassador among
+			// these, not the bench.
+			let tiki = Self::tiki_for_role(&role);
+			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
+				ensure!(
+					pezpallet_tiki::TikiHolder::<T>::get(tiki).is_none(),
+					Error::<T>::RoleAlreadyFilled
+				);
+			}
 
 			// Check if this specific nominee already has a pending nomination for this role
 			ensure!(
@@ -2369,7 +2351,7 @@ pub mod pezpallet {
 
 			// Verify approver is authorized (typically Serok)
 			let is_serok =
-				CurrentOfficials::<T>::get(GovernmentPosition::Serok) == Some(approver.clone());
+				pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok) == Some(approver.clone());
 			ensure!(is_serok, Error::<T>::NotAuthorizedToApprove);
 
 			// Get appointment process
@@ -2387,8 +2369,11 @@ pub mod pezpallet {
 			// reach WaitingPresidentialApproval; without this check, approving a
 			// second stale process would silently overwrite an already-appointed
 			// official with no removal event and no error.
-			if let Some(current_holder) = AppointedOfficials::<T>::get(process.position) {
-				ensure!(current_holder == process.nominee, Error::<T>::RoleAlreadyFilled);
+			let tiki = Self::tiki_for_role(&process.position);
+			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
+				if let Some(current) = pezpallet_tiki::TikiHolder::<T>::get(tiki) {
+					ensure!(current == process.nominee, Error::<T>::RoleAlreadyFilled);
+				}
 			}
 
 			// Get nomination
@@ -2409,8 +2394,11 @@ pub mod pezpallet {
 			PendingNominations::<T>::insert(process.position, &process.nominee, nomination);
 			AppointmentProcesses::<T>::insert(process_id, process.clone());
 
-			// Assign the official to the role
-			AppointedOfficials::<T>::insert(process.position, &process.nominee);
+			// Seat them in the register everything else reads. Writing only to a map of
+			// this pallet's own left an appointed official holding no tiki at all: every
+			// authority check in the state asks the register, and the register had never
+			// heard of them.
+			pezpallet_tiki::Pezpallet::<T>::internal_grant_role(&process.nominee, tiki)?;
 
 			Self::deposit_event(Event::AppointmentApproved {
 				process_id,
@@ -2627,7 +2615,7 @@ pub mod pezpallet {
 		/// Serok origin check
 		pub fn ensure_serok(origin: OriginFor<T>) -> Result<T::AccountId, DispatchError> {
 			let who = ensure_signed(origin)?;
-			let current_serok = CurrentOfficials::<T>::get(GovernmentPosition::Serok)
+			let current_serok = pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok)
 				.ok_or(DispatchError::BadOrigin)?;
 			ensure!(who == current_serok, DispatchError::BadOrigin);
 			Ok(who)
@@ -2806,7 +2794,6 @@ pub mod pezpallet {
 						let ends_at = Self::begin_term(election_type);
 						Self::seat_elected_tiki(winner, Tiki::Serok, ends_at)?;
 						Self::record_consecutive_term(election_type, winner);
-						CurrentOfficials::<T>::insert(GovernmentPosition::Serok, winner);
 					}
 				},
 				ElectionType::Parliamentary => {
@@ -2822,7 +2809,6 @@ pub mod pezpallet {
 						// replaced, so it ends with it. Clearing the term here is what makes
 						// the scheduler open a Speaker election for the new house.
 						let _ = Self::vacate_unique_tiki(Tiki::SerokiMeclise);
-						CurrentOfficials::<T>::remove(GovernmentPosition::SerokiMeclise);
 						TermEnds::<T>::remove(ElectionType::SpeakerElection);
 
 						let parliament_members: Result<BoundedVec<_, _>, _> = winners
@@ -2867,7 +2853,6 @@ pub mod pezpallet {
 						TermEnds::<T>::insert(election_type, ends_at);
 						Self::seat_elected_tiki(winner, Tiki::SerokiMeclise, ends_at)?;
 						Self::record_consecutive_term(election_type, winner);
-						CurrentOfficials::<T>::insert(GovernmentPosition::SerokiMeclise, winner);
 					}
 				},
 				ElectionType::ConstitutionalCourt => {
@@ -2933,15 +2918,14 @@ pub mod pezpallet {
 		) -> Result<bool, Error<T>> {
 			match decision_type {
 				CollectiveDecisionType::ExecutiveDecision => {
-					Ok(CurrentOfficials::<T>::get(GovernmentPosition::Serok)
-						== Some(proposer.clone()))
+					Ok(pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok) == Some(proposer.clone()))
 				},
 				_ => {
 					let is_parliamentarian = ParliamentMembers::<T>::get()
 						.iter()
 						.any(|member| member.account == *proposer);
-					let is_president = CurrentOfficials::<T>::get(GovernmentPosition::Serok)
-						== Some(proposer.clone());
+					let is_president =
+						pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok) == Some(proposer.clone());
 
 					Ok(is_parliamentarian || is_president)
 				},
@@ -3384,6 +3368,43 @@ pub mod pezpallet {
 		/// it a handover rather than two events that might not both happen: a ballot that
 		/// unseated the incumbent and then failed to seat the winner would leave the office
 		/// empty and everything gated on it dead, with nothing to say why.
+		/// The office an appointed role *is*. They are the same office under two names, and
+		/// the register keeps only one of them.
+		pub fn tiki_for_role(role: &OfficialRole) -> Tiki {
+			match role {
+				OfficialRole::Dadger => Tiki::Dadger,
+				OfficialRole::Dozger => Tiki::Dozger,
+				OfficialRole::Hiquqnas => Tiki::Hiquqnas,
+				OfficialRole::Noter => Tiki::Noter,
+				OfficialRole::Xezinedar => Tiki::Xezinedar,
+				OfficialRole::Bacgir => Tiki::Bacgir,
+				OfficialRole::GerinendeyeCavkaniye => Tiki::GerinendeyeCavkaniye,
+				OfficialRole::OperatorêTorê => Tiki::OperatorêTorê,
+				OfficialRole::PisporêEwlehiyaSîber => Tiki::PisporêEwlehiyaSîber,
+				OfficialRole::GerinendeyeDaneye => Tiki::GerinendeyeDaneye,
+				OfficialRole::Berdevk => Tiki::Berdevk,
+				OfficialRole::Qeydkar => Tiki::Qeydkar,
+				OfficialRole::Balyoz => Tiki::Balyoz,
+				OfficialRole::Navbeynkar => Tiki::Navbeynkar,
+				OfficialRole::ParêzvaneÇandî => Tiki::ParêzvaneÇandî,
+				OfficialRole::Mufetîs => Tiki::Mufetîs,
+				OfficialRole::KalîteKontrolker => Tiki::KalîteKontrolker,
+				OfficialRole::Bazargan => Tiki::Bazargan,
+				OfficialRole::RêveberêProjeyê => Tiki::RêveberêProjeyê,
+				OfficialRole::Feqî => Tiki::Feqî,
+				OfficialRole::Perwerdekar => Tiki::Perwerdekar,
+				OfficialRole::Rewsenbîr => Tiki::Rewsenbîr,
+				OfficialRole::Mamoste => Tiki::Mamoste,
+				OfficialRole::Mela => Tiki::Mela,
+			}
+		}
+
+		/// Whether a tiki is one of the appointed civil-service offices, as opposed to an
+		/// elected seat or a badge somebody earns.
+		pub fn is_appointed_office(tiki: &Tiki) -> bool {
+			OfficialRole::iter_all().any(|r| Self::tiki_for_role(&r) == *tiki)
+		}
+
 		pub fn seat_unique_tiki(to: &T::AccountId, tiki: Tiki) -> DispatchResult {
 			if let Some(current) = pezpallet_tiki::TikiHolder::<T>::get(tiki) {
 				if current == *to {
@@ -3511,9 +3532,7 @@ impl<T: pezpallet::Config> EnsureOrigin<<T as pezframe_system::Config>::RuntimeO
 	) -> Result<Self::Success, <T as pezframe_system::Config>::RuntimeOrigin> {
 		match o.clone().into() {
 			Ok(pezframe_system::RawOrigin::Signed(who)) => {
-				if let Some(current_serok) =
-					pezpallet::Pezpallet::<T>::current_officials(GovernmentPosition::Serok)
-				{
+				if let Some(current_serok) = pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok) {
 					if who == current_serok {
 						return Ok(who);
 					}
@@ -3527,7 +3546,6 @@ impl<T: pezpallet::Config> EnsureOrigin<<T as pezframe_system::Config>::RuntimeO
 	#[cfg(feature = "runtime-benchmarks")]
 	fn try_successful_origin() -> Result<<T as pezframe_system::Config>::RuntimeOrigin, ()> {
 		let serok_account: T::AccountId = pezframe_benchmarking::account("serok", 0, 0);
-		pezpallet::CurrentOfficials::<T>::insert(GovernmentPosition::Serok, serok_account.clone());
 		Ok(pezframe_system::RawOrigin::Signed(serok_account).into())
 	}
 }
@@ -3587,7 +3605,7 @@ impl<T: Config> Pezpallet<T> {
 
 	/// Check if account is Serok (President)
 	pub fn is_serok(who: &T::AccountId) -> bool {
-		CurrentOfficials::<T>::get(GovernmentPosition::Serok)
+		pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok)
 			.map(|serok| &serok == who)
 			.unwrap_or(false)
 	}
@@ -3617,6 +3635,8 @@ impl<T: Config> Pezpallet<T> {
 
 	/// Check if account is an Official (non-minister appointed position)
 	pub fn is_official(who: &T::AccountId) -> bool {
-		AppointedOfficials::<T>::iter().any(|(_, official)| &official == who)
+		pezpallet_tiki::UserTikis::<T>::get(who)
+			.iter()
+			.any(|t| Self::is_appointed_office(t))
 	}
 }

@@ -850,7 +850,7 @@ pub fn holder_of(tiki: pezpallet_tiki::Tiki) -> Option<AccountId> {
 pub fn seat_president(who: AccountId) {
 	make_citizen(who);
 	assert_ok!(Welati::seat_unique_tiki(&who, pezpallet_tiki::Tiki::Serok));
-	CurrentOfficials::<Test>::insert(GovernmentPosition::Serok, who);
+	pezpallet_tiki::TikiHolder::<Test>::insert(pezpallet_tiki::Tiki::Serok, who);
 	crate::TermEnds::<Test>::insert(
 		ElectionType::Presidential,
 		System::block_number() + TermLength::get(),

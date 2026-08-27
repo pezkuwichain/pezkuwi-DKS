@@ -1530,3 +1530,36 @@ mod stored_enum_encoding {
 		assert_eq!(pinned.len(), 4, "a variant was added or removed");
 	}
 }
+
+impl OfficialRole {
+	/// Every appointed office, in declaration order.
+	pub fn iter_all() -> impl Iterator<Item = OfficialRole> {
+		[
+			OfficialRole::Dadger,
+			OfficialRole::Dozger,
+			OfficialRole::Hiquqnas,
+			OfficialRole::Noter,
+			OfficialRole::Xezinedar,
+			OfficialRole::Bacgir,
+			OfficialRole::GerinendeyeCavkaniye,
+			OfficialRole::OperatorêTorê,
+			OfficialRole::PisporêEwlehiyaSîber,
+			OfficialRole::GerinendeyeDaneye,
+			OfficialRole::Berdevk,
+			OfficialRole::Qeydkar,
+			OfficialRole::Balyoz,
+			OfficialRole::Navbeynkar,
+			OfficialRole::ParêzvaneÇandî,
+			OfficialRole::Mufetîs,
+			OfficialRole::KalîteKontrolker,
+			OfficialRole::Bazargan,
+			OfficialRole::RêveberêProjeyê,
+			OfficialRole::Feqî,
+			OfficialRole::Perwerdekar,
+			OfficialRole::Rewsenbîr,
+			OfficialRole::Mamoste,
+			OfficialRole::Mela,
+		]
+		.into_iter()
+	}
+}

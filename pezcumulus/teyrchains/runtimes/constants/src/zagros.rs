@@ -216,10 +216,11 @@ pub mod locations {
 		/// trusts, and a referendum of the whole register reaches its Root through
 		/// `StateRegisterAsRoot`.
 		///
-		/// This line also arrived in the wrong twin: upstream declares it for Westend and not
-		/// for Rococo, and the derivation put it here, on the chain Rococo maps to, while the
-		/// Westend twin went without. So the two chains disagreed on who holds superuser over
-		/// four system chains, and `coretime` disagreed with its own twin.
+		/// It also arrived in the wrong twin. Upstream declares this for the chain our
+		/// mainnet derives from and not for the one our testnet derives from, and the
+		/// derivation dropped it here while leaving the other side without -- so the two
+		/// disagreed on who holds superuser over four system chains, and `coretime`
+		/// disagreed with its own twin.
 		pub GovernanceLocation: Location = Location::parent();
 	}
 }
