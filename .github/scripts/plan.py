@@ -287,6 +287,34 @@ def inv_language(p, kind):
                     hits.append(f"{f.name}:{i} {name}")
     return ("ok", "") if not hits else ("GAP", f"{len(hits)}: {hits[0]}")
 
+def inv_rip_index(p, kind):
+    """A pallet index left behind by a removed pallet must never be handed to a new one.
+
+    The tree already records these as `// RIP <Name> <index>` inside `construct_runtime!`, and
+    that comment is load-bearing: the index is baked into the composite `RuntimeCall`,
+    `RuntimeEvent` and `RuntimeOrigin` encodings, so reusing one makes old bytes decode as the
+    new pallet's. It cost this project twelve and a half million HEZ once, in `Balances::Holds`
+    entries left by a Staking pallet that used to sit at index 9.
+
+    A comment is not a check. This makes it one.
+    """
+    if kind != "runtime":
+        return "n/a", ""
+    # Read declaration lines directly rather than carving out the macro body. The invocation
+    # is `construct_runtime!(` with a paren on these runtimes, and a pattern expecting a brace
+    # matches nothing and returns "no data" -- which reads as a pass. `placement()` below
+    # already learned this; the comment there says so, and it got repeated here anyway.
+    src = read(p / "src/lib.rs")
+    rip = {}
+    for c in re.finditer(r"//\s*RIP\s+(.*)", src):
+        for name, idx in re.findall(r"(\w+)\s+(\d+)", c.group(1)):
+            rip[int(idx)] = name
+    if not rip:
+        return "n/a", ""
+    live = {int(i): n for n, i in re.findall(r"^\s*(\w+): [a-z]\w+(?:::<\w+>)? = (\d+),", src, re.M)}
+    taken = [f"{live[i]} took {rip[i]}'s {i}" for i in sorted(rip) if i in live]
+    return ("GAP", ", ".join(taken)) if taken else ("ok", f"{len(rip)} retired")
+
 def inv_one_record(p, kind):
     """A fact stored in more than one place. Only checkable where we know the pair."""
     if p.name != "welati":
@@ -299,7 +327,7 @@ def inv_one_record(p, kind):
 INVARIANTS = [
     ("enum-pin", inv_enum_pin), ("storage-v", inv_storage_v), ("weight", inv_weight),
     ("no-burn", inv_no_burn), ("twin", inv_twin), ("language", inv_language),
-    ("one-record", inv_one_record),
+    ("rip-index", inv_rip_index), ("one-record", inv_one_record),
 ]
 
 
