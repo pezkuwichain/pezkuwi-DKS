@@ -174,10 +174,13 @@ pub enum ElectionType {
 #[codec(mel_bound())]
 pub enum VoteType {
 	/// Normal citizen vote
+	#[codec(index = 0)]
 	Citizen,
 	/// Weighted vote (based on Trust Score)
+	#[codec(index = 1)]
 	Weighted,
 	/// Delegated vote
+	#[codec(index = 2)]
 	Delegated,
 }
 
@@ -218,14 +221,19 @@ pub struct NominationInfo<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum NominationStatus {
 	/// Pending nomination
+	#[codec(index = 0)]
 	Pending,
 	/// Approved
+	#[codec(index = 1)]
 	Approved,
 	/// Rejected
+	#[codec(index = 2)]
 	Rejected,
 	/// Cancelled
+	#[codec(index = 3)]
 	Cancelled,
 	/// Expired
+	#[codec(index = 4)]
 	Expired,
 }
 
@@ -245,16 +253,22 @@ pub enum NominationStatus {
 #[codec(mel_bound())]
 pub enum CollectiveDecisionType {
 	/// Parliament decision (simple majority - 50%+1)
+	#[codec(index = 0)]
 	ParliamentSimpleMajority,
 	/// Parliament supermajority decision (2/3)
+	#[codec(index = 1)]
 	ParliamentSuperMajority,
 	/// Parliament absolute majority (3/4 - constitutional amendment)
+	#[codec(index = 2)]
 	ParliamentAbsoluteMajority,
 	/// Hybrid decision (Parliament + Serok approval)
+	#[codec(index = 3)]
 	HybridDecision,
 	/// President's sole decision
+	#[codec(index = 4)]
 	ExecutiveDecision,
 	/// Veto override (Parliament overriding a veto with 2/3)
+	#[codec(index = 5)]
 	VetoOverride,
 }
 
@@ -274,20 +288,28 @@ pub enum CollectiveDecisionType {
 #[codec(mel_bound())]
 pub enum ProposalStatus {
 	/// In draft (not yet submitted to a vote)
+	#[codec(index = 0)]
 	Draft,
 	/// Active vote
+	#[codec(index = 1)]
 	Active,
 	/// Accepted
+	#[codec(index = 2)]
 	Approved,
 	/// Rejected
+	#[codec(index = 3)]
 	Rejected,
 	/// Cancelled
+	#[codec(index = 4)]
 	Cancelled,
 	/// Timed out
+	#[codec(index = 5)]
 	Expired,
 	/// Vetoed (by Serok)
+	#[codec(index = 6)]
 	Vetoed,
 	/// Under constitutional review (at the Diwan)
+	#[codec(index = 7)]
 	UnderConstitutionalReview,
 }
 
@@ -357,14 +379,19 @@ pub struct CollectiveProposal<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum ProposalPriority {
 	/// Low priority
+	#[codec(index = 0)]
 	Low,
 	/// Normal priority
+	#[codec(index = 1)]
 	Normal,
 	/// High priority
+	#[codec(index = 2)]
 	High,
 	/// Urgent (within 24 hours)
+	#[codec(index = 3)]
 	Urgent,
 	/// Critical (immediate)
+	#[codec(index = 4)]
 	Critical,
 }
 
@@ -401,10 +428,13 @@ pub struct CollectiveVote<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum VoteChoice {
 	/// Yes
+	#[codec(index = 0)]
 	Aye,
 	/// No
+	#[codec(index = 1)]
 	Nay,
 	/// Abstain
+	#[codec(index = 2)]
 	Abstain,
 }
 
@@ -456,18 +486,25 @@ pub struct ParliamentMember<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum CommitteeType {
 	/// Budget Committee
+	#[codec(index = 0)]
 	Budget,
 	/// Foreign Affairs Committee
+	#[codec(index = 1)]
 	ForeignAffairs,
 	/// Justice Committee
+	#[codec(index = 2)]
 	Justice,
 	/// Technology Committee
+	#[codec(index = 3)]
 	Technology,
 	/// Education Committee
+	#[codec(index = 4)]
 	Education,
 	/// Health Committee
+	#[codec(index = 5)]
 	Health,
 	/// Constitutional Committee
+	#[codec(index = 6)]
 	Constitutional,
 }
 
@@ -504,8 +541,10 @@ pub struct DiwanMember<T: pezframe_system::Config> {
 /// contain people who can read those things.
 pub enum AppointmentAuthority<T: pezframe_system::Config> {
 	/// Elected by the sitting Parliament. Six seats.
+	#[codec(index = 0)]
 	Parliament,
 	/// Appointed by the President, who is named here. Five seats.
+	#[codec(index = 1)]
 	President(T::AccountId),
 }
 
@@ -548,16 +587,22 @@ pub struct AppointmentProcess<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum AppointmentStatus {
 	/// Waiting for minister nomination
+	#[codec(index = 0)]
 	WaitingNomination,
 	/// Waiting for Serok approval
+	#[codec(index = 1)]
 	WaitingPresidentialApproval,
 	/// Waiting for parliamentary approval (for some positions)
+	#[codec(index = 2)]
 	WaitingParliamentaryApproval,
 	/// Approved
+	#[codec(index = 3)]
 	Approved,
 	/// Rejected
+	#[codec(index = 4)]
 	Rejected,
 	/// Expired
+	#[codec(index = 5)]
 	Expired,
 }
 
@@ -598,20 +643,26 @@ pub struct GovernanceMetrics<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum ElectionStatus {
 	/// Candidacy registration period
+	#[codec(index = 0)]
 	CandidacyPeriod,
 	/// Campaign period
+	#[codec(index = 1)]
 	CampaignPeriod,
 	/// Voting period
+	#[codec(index = 2)]
 	VotingPeriod,
 	/// Completed
+	#[codec(index = 3)]
 	Completed,
 	/// Cancelled
+	#[codec(index = 4)]
 	Cancelled,
 	/// Closed without a result because too little of the country voted.
 	///
 	/// Distinct from `Cancelled`, which is somebody calling an election off, and from
 	/// `Completed`, which produced officeholders. This one is an ending too: the record is
 	/// final, the deposits are back, and the scheduler opens another.
+	#[codec(index = 5)]
 	FailedForTurnout,
 }
 

@@ -27,10 +27,13 @@ use scale_info::TypeInfo;
 #[codec(mel_bound())]
 pub enum ValidatorPoolCategory {
 	/// Stake-based validators (high stake + trust score)
+	#[codec(index = 0)]
 	StakeValidator { min_stake: u128, trust_threshold: u128 },
 	/// Parliamentary validators (elected parliament members)
+	#[codec(index = 1)]
 	ParliamentaryValidator,
 	/// Merit-based validators (special Tikis + community support)
+	#[codec(index = 2)]
 	MeritValidator {
 		special_tikis: BoundedVec<u8, ConstU32<5>>, // Tiki types they hold
 		community_threshold: u32,                   // Minimum referral count
@@ -153,9 +156,11 @@ pub enum OperationMode {
 	/// Shadow mode: TNPoS runs in parallel but doesn't control consensus
 	/// NPoS remains the authority, TNPoS results are recorded for comparison
 	#[default]
+	#[codec(index = 0)]
 	Shadow,
 	/// Active mode: TNPoS directly controls validator selection
 	/// Used on Zagros testnet and after full transition
+	#[codec(index = 1)]
 	Active,
 }
 
@@ -298,4 +303,56 @@ pub struct CategoryDistribution {
 	pub target_parliamentary: u8,
 	/// Target merit count
 	pub target_merit: u8,
+}
+
+// What follows guards the numbers above. A variant's index is what the chain wrote into
+// storage; move it and the old bytes decode as a different variant -- no error, no crash, a
+// different answer. Reading the source cannot catch that, because the source will look
+// perfectly reasonable: variants sorted alphabetically, or a new one slotted in where it
+// belongs by meaning.
+//
+// The check reads `scale_info` rather than encoding values, so it also fails when a variant
+// is added without a number, and it names the variant that moved instead of printing two
+// byte strings.
+
+#[cfg(test)]
+mod stored_enum_encoding {
+	use super::*;
+	use scale_info::{TypeDef, TypeInfo};
+
+	fn pinned<T: TypeInfo + 'static>(name: &str, expected: &[(&str, u8)]) {
+		let info = <T as TypeInfo>::type_info();
+		let TypeDef::Variant(v) = info.type_def() else { panic!("{name} is not an enum") };
+		let got: Vec<(String, u8)> =
+			v.variants().iter().map(|x| (x.name.to_string(), x.index)).collect();
+		assert_eq!(
+			got.len(),
+			expected.len(),
+			"{name}: the chain has {} variants, this list pins {} -- a new variant needs a \
+			 number of its own and a line here",
+			got.len(),
+			expected.len()
+		);
+		for (i, (want_name, want_index)) in expected.iter().enumerate() {
+			let (have_name, have_index) = &got[i];
+			assert_eq!(
+				(have_name.as_str(), *have_index),
+				(*want_name, *want_index),
+				"{name}: variant {i} is now {have_name}={have_index}, was {want_name}={want_index}"
+			);
+		}
+	}
+
+	#[test]
+	fn operationmode_indices_are_pinned() {
+		pinned::<OperationMode>("OperationMode", &[("Shadow", 0u8), ("Active", 1u8)]);
+	}
+
+	#[test]
+	fn validatorpoolcategory_indices_are_pinned() {
+		pinned::<ValidatorPoolCategory>(
+			"ValidatorPoolCategory",
+			&[("StakeValidator", 0u8), ("ParliamentaryValidator", 1u8), ("MeritValidator", 2u8)],
+		);
+	}
 }

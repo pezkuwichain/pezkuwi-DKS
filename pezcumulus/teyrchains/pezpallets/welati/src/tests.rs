@@ -3425,3 +3425,155 @@ mod initiative_cooldown {
 		});
 	}
 }
+
+// ===== STORED ENUM INDEX TESTS =====
+//
+// A variant's index is what the chain wrote into storage. Move it and the old bytes decode as
+// a different variant -- no error, no crash, a different answer. `VoteChoice` is the one that
+// shows what that means: shift it and a recorded Aye reads back as Nay.
+//
+// The check reads `scale_info` rather than encoding values, so it also fails when a variant is
+// added without a number, and it names the variant that moved.
+
+use scale_info::{TypeDef, TypeInfo};
+
+fn pinned<T: TypeInfo + 'static>(name: &str, expected: &[(&str, u8)]) {
+	let info = <T as TypeInfo>::type_info();
+	let TypeDef::Variant(v) = info.type_def() else { panic!("{name} is not an enum") };
+	let got: Vec<(String, u8)> =
+		v.variants().iter().map(|x| (x.name.to_string(), x.index)).collect();
+	assert_eq!(
+		got.len(),
+		expected.len(),
+		"{name}: the chain has {} variants, this list pins {} -- a new variant needs a \
+		 number of its own and a line here",
+		got.len(),
+		expected.len()
+	);
+	for (i, (want_name, want_index)) in expected.iter().enumerate() {
+		let (have_name, have_index) = &got[i];
+		assert_eq!(
+			(have_name.as_str(), *have_index),
+			(*want_name, *want_index),
+			"{name}: variant {i} is now {have_name}={have_index}, was {want_name}={want_index}"
+		);
+	}
+}
+
+#[test]
+fn appointmentauthority_indices_are_pinned() {
+	pinned::<AppointmentAuthority<crate::mock::Test>>(
+		"AppointmentAuthority",
+		&[("Parliament", 0u8), ("President", 1u8)],
+	);
+}
+
+#[test]
+fn appointmentstatus_indices_are_pinned() {
+	pinned::<AppointmentStatus>(
+		"AppointmentStatus",
+		&[
+			("WaitingNomination", 0u8),
+			("WaitingPresidentialApproval", 1u8),
+			("WaitingParliamentaryApproval", 2u8),
+			("Approved", 3u8),
+			("Rejected", 4u8),
+			("Expired", 5u8),
+		],
+	);
+}
+
+#[test]
+fn collectivedecisiontype_indices_are_pinned() {
+	pinned::<CollectiveDecisionType>(
+		"CollectiveDecisionType",
+		&[
+			("ParliamentSimpleMajority", 0u8),
+			("ParliamentSuperMajority", 1u8),
+			("ParliamentAbsoluteMajority", 2u8),
+			("HybridDecision", 3u8),
+			("ExecutiveDecision", 4u8),
+			("VetoOverride", 5u8),
+		],
+	);
+}
+
+#[test]
+fn committeetype_indices_are_pinned() {
+	pinned::<CommitteeType>(
+		"CommitteeType",
+		&[
+			("Budget", 0u8),
+			("ForeignAffairs", 1u8),
+			("Justice", 2u8),
+			("Technology", 3u8),
+			("Education", 4u8),
+			("Health", 5u8),
+			("Constitutional", 6u8),
+		],
+	);
+}
+
+#[test]
+fn electionstatus_indices_are_pinned() {
+	pinned::<ElectionStatus>(
+		"ElectionStatus",
+		&[
+			("CandidacyPeriod", 0u8),
+			("CampaignPeriod", 1u8),
+			("VotingPeriod", 2u8),
+			("Completed", 3u8),
+			("Cancelled", 4u8),
+			("FailedForTurnout", 5u8),
+		],
+	);
+}
+
+#[test]
+fn nominationstatus_indices_are_pinned() {
+	pinned::<NominationStatus>(
+		"NominationStatus",
+		&[
+			("Pending", 0u8),
+			("Approved", 1u8),
+			("Rejected", 2u8),
+			("Cancelled", 3u8),
+			("Expired", 4u8),
+		],
+	);
+}
+
+#[test]
+fn proposalpriority_indices_are_pinned() {
+	pinned::<ProposalPriority>(
+		"ProposalPriority",
+		&[("Low", 0u8), ("Normal", 1u8), ("High", 2u8), ("Urgent", 3u8), ("Critical", 4u8)],
+	);
+}
+
+#[test]
+fn proposalstatus_indices_are_pinned() {
+	pinned::<ProposalStatus>(
+		"ProposalStatus",
+		&[
+			("Draft", 0u8),
+			("Active", 1u8),
+			("Approved", 2u8),
+			("Rejected", 3u8),
+			("Cancelled", 4u8),
+			("Expired", 5u8),
+			("Vetoed", 6u8),
+			("UnderConstitutionalReview", 7u8),
+		],
+	);
+}
+
+#[test]
+fn votechoice_indices_are_pinned() {
+	pinned::<VoteChoice>("VoteChoice", &[("Aye", 0u8), ("Nay", 1u8), ("Abstain", 2u8)]);
+}
+
+#[test]
+fn votetype_indices_are_pinned() {
+	pinned::<VoteType>("VoteType", &[("Citizen", 0u8), ("Weighted", 1u8), ("Delegated", 2u8)]);
+}

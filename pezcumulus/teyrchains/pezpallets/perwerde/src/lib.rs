@@ -315,14 +315,19 @@ pub mod pezpallet {
 	#[derive(Encode, Decode, Clone, Copy, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 	pub enum CourseStatus {
 		/// Open: students may enrol and the teacher may record results, which are drafts.
+		#[codec(index = 0)]
 		Enrolling,
 		/// The teacher has submitted the results; the board is ratifying.
+		#[codec(index = 1)]
 		AwaitingRatification,
 		/// Ratified. The points are real and the course is closed.
+		#[codec(index = 2)]
 		Completed,
 		/// The year ran out before the results were ratified. Nothing was awarded.
+		#[codec(index = 3)]
 		Expired,
 		/// The court found the course fraudulent. What it awarded has been taken back.
+		#[codec(index = 4)]
 		Annulled,
 	}
 
@@ -885,5 +890,58 @@ pub mod pezpallet {
 		pub fn get_perwerde_score(who: &T::AccountId) -> u32 {
 			PerwerdeScores::<T>::get(who)
 		}
+	}
+}
+
+// What follows guards the numbers above. A variant's index is what the chain wrote into
+// storage; move it and the old bytes decode as a different variant -- no error, no crash, a
+// different answer. Reading the source cannot catch that, because the source will look
+// perfectly reasonable: variants sorted alphabetically, or a new one slotted in where it
+// belongs by meaning.
+//
+// The check reads `scale_info` rather than encoding values, so it also fails when a variant
+// is added without a number, and it names the variant that moved instead of printing two
+// byte strings.
+
+#[cfg(test)]
+mod stored_enum_encoding {
+	use super::*;
+	use scale_info::{TypeDef, TypeInfo};
+
+	fn pinned<T: TypeInfo + 'static>(name: &str, expected: &[(&str, u8)]) {
+		let info = <T as TypeInfo>::type_info();
+		let TypeDef::Variant(v) = info.type_def() else { panic!("{name} is not an enum") };
+		let got: Vec<(String, u8)> =
+			v.variants().iter().map(|x| (x.name.to_string(), x.index)).collect();
+		assert_eq!(
+			got.len(),
+			expected.len(),
+			"{name}: the chain has {} variants, this list pins {} -- a new variant needs a \
+			 number of its own and a line here",
+			got.len(),
+			expected.len()
+		);
+		for (i, (want_name, want_index)) in expected.iter().enumerate() {
+			let (have_name, have_index) = &got[i];
+			assert_eq!(
+				(have_name.as_str(), *have_index),
+				(*want_name, *want_index),
+				"{name}: variant {i} is now {have_name}={have_index}, was {want_name}={want_index}"
+			);
+		}
+	}
+
+	#[test]
+	fn coursestatus_indices_are_pinned() {
+		pinned::<CourseStatus>(
+			"CourseStatus",
+			&[
+				("Enrolling", 0u8),
+				("AwaitingRatification", 1u8),
+				("Completed", 2u8),
+				("Expired", 3u8),
+				("Annulled", 4u8),
+			],
+		);
 	}
 }

@@ -125,7 +125,13 @@ pub trait WeightInfo {
 pub mod pezpallet {
 	use super::*;
 
+	/// Version 0 is what this pallet has always been on chain, and it is written down here
+	/// so a future migration can tell whether it has run. Without it the on-chain version
+	/// stays at the default forever and `VersionedMigration` cannot be used at all.
+	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
+
 	#[pezpallet::pezpallet]
+	#[pezpallet::storage_version(STORAGE_VERSION)]
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::config]
