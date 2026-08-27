@@ -51,5 +51,12 @@ the tests you happened to run.
 
 ## Where the reasoning lives
 
-`res/plans/` holds *why* each item exists and what breaks if it is skipped -- never its
-status. `res/` is outside the repository and stays there.
+**One file: `res/plans/PLAN.md`.** It is the plan, the checklist and the open items, and it
+is the only one -- `res/plans/arsiv/` is history, not policy. Do not start a second plan
+file; eight of them accumulated here once, each written and then never reopened, and the
+work went into deciding which was true.
+
+It holds *why* each item exists, who has to close it, and what breaks if it is skipped. It
+does **not** hold a status the sheets can measure -- it names the command instead. A status
+carried by hand goes stale, and a stale mark is worse than no mark. `res/` is outside the
+repository and stays there.
