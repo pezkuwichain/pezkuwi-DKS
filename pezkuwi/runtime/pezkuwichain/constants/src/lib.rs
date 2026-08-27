@@ -133,13 +133,13 @@ pub mod system_teyrchain {
 
 	/// Network's Asset Hub teyrchain ID.
 	pub const ASSET_HUB_ID: u32 = 1000;
-	/// Contracts teyrchain ID.
-	pub const CONTRACTS_ID: u32 = 1002;
-	/// Encointer teyrchain ID.
-	pub const ENCOINTER_ID: u32 = 1003;
 	/// People teyrchain ID.
 	pub const PEOPLE_ID: u32 = 1004;
 	/// BridgeHub teyrchain ID.
+	///
+	/// 1002 was also declared as `CONTRACTS_ID`, so `Teyrchain(CONTRACTS_ID)` resolved to this
+	/// chain and the relay trusted it twice under two names. There is no contracts chain here;
+	/// the constant is gone rather than renumbered.
 	pub const BRIDGE_HUB_ID: u32 = 1002;
 	/// Brokerage teyrchain ID.
 	pub const BROKER_ID: u32 = 1005;

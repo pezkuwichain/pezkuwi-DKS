@@ -169,36 +169,32 @@ pub type XcmRouter = WithUniqueTopic<
 parameter_types! {
 	pub Tyr: AssetFilter = Wild(AllOf { fun: WildFungible, id: AssetId(TokenLocation::get()) });
 	pub AssetHub: Location = Teyrchain(ASSET_HUB_ID).into_location();
-	pub Contracts: Location = Teyrchain(CONTRACTS_ID).into_location();
-	pub Encointer: Location = Teyrchain(ENCOINTER_ID).into_location();
 	pub BridgeHub: Location = Teyrchain(BRIDGE_HUB_ID).into_location();
 	pub People: Location = Teyrchain(PEOPLE_ID).into_location();
 	pub Broker: Location = Teyrchain(BROKER_ID).into_location();
-	pub Tick: Location = Teyrchain(100).into_location();
-	pub Trick: Location = Teyrchain(110).into_location();
-	pub Track: Location = Teyrchain(120).into_location();
-	pub RocForTick: (AssetFilter, Location) = (Tyr::get(), Tick::get());
-	pub RocForTrick: (AssetFilter, Location) = (Tyr::get(), Trick::get());
-	pub RocForTrack: (AssetFilter, Location) = (Tyr::get(), Track::get());
-	pub RocForAssetHub: (AssetFilter, Location) = (Tyr::get(), AssetHub::get());
-	pub RocForContracts: (AssetFilter, Location) = (Tyr::get(), Contracts::get());
-	pub RocForEncointer: (AssetFilter, Location) = (Tyr::get(), Encointer::get());
-	pub RocForBridgeHub: (AssetFilter, Location) = (Tyr::get(), BridgeHub::get());
-	pub RocForPeople: (AssetFilter, Location) = (Tyr::get(), People::get());
-	pub RocForBroker: (AssetFilter, Location) = (Tyr::get(), Broker::get());
+	pub TyrForAssetHub: (AssetFilter, Location) = (Tyr::get(), AssetHub::get());
+	pub TyrForBridgeHub: (AssetFilter, Location) = (Tyr::get(), BridgeHub::get());
+	pub TyrForPeople: (AssetFilter, Location) = (Tyr::get(), People::get());
+	pub TyrForBroker: (AssetFilter, Location) = (Tyr::get(), Broker::get());
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
 }
+/// The system teyrchains this relay will teleport its native token to and from.
+///
+/// One entry per chain that actually exists in this ecosystem. Zagros was corrected first and
+/// this side was left behind: the list the mirror brought over named chains from another
+/// network -- `Tick` (100), `Trick` (110), `Track` (120) and `Encointer` (1003) have no runtime
+/// here, and `Contracts` resolved to 1002, which is the Bridge Hub, so it trusted the same
+/// chain twice under two names.
+///
+/// Teleport trust is the right to mint this chain's token on arrival, so a name here that
+/// belongs to somebody else's network is not clutter. Collectives is absent because this
+/// network has no Collectives runtime; Zagros lists it because Zagros runs one.
 pub type TrustedTeleporters = (
-	xcm_builder::Case<RocForTick>,
-	xcm_builder::Case<RocForTrick>,
-	xcm_builder::Case<RocForTrack>,
-	xcm_builder::Case<RocForAssetHub>,
-	xcm_builder::Case<RocForContracts>,
-	xcm_builder::Case<RocForEncointer>,
-	xcm_builder::Case<RocForBridgeHub>,
-	xcm_builder::Case<RocForPeople>,
-	xcm_builder::Case<RocForBroker>,
+	xcm_builder::Case<TyrForAssetHub>,
+	xcm_builder::Case<TyrForBridgeHub>,
+	xcm_builder::Case<TyrForPeople>,
+	xcm_builder::Case<TyrForBroker>,
 );
 
 pub struct OnlyTeyrchains;
