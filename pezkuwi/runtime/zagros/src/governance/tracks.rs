@@ -68,15 +68,7 @@ const APP_WHITELISTED_CALLER: Curve =
 const SUP_WHITELISTED_CALLER: Curve =
 	Curve::make_reciprocal(1, 28, percent(20), percent(5), percent(50));
 
-// Welati governance curves
-const APP_WELATI_ELECTION: Curve = APP_ROOT;
-const SUP_WELATI_ELECTION: Curve = SUP_ROOT;
-const APP_WELATI_ADMIN: Curve = APP_GENERAL_ADMIN;
-const SUP_WELATI_ADMIN: Curve = SUP_GENERAL_ADMIN;
-const APP_CITIZENSHIP_ADMIN: Curve = APP_STAKING_ADMIN;
-const SUP_CITIZENSHIP_ADMIN: Curve = SUP_STAKING_ADMIN;
-
-const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 12] = [
+const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 9] = [
 	pezpallet_referenda::Track {
 		id: 0,
 		info: pezpallet_referenda::TrackInfo {
@@ -203,49 +195,6 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 12] =
 			min_support: SUP_REFERENDUM_KILLER,
 		},
 	},
-	// Welati governance tracks (RC → People Chain via XCM)
-	pezpallet_referenda::Track {
-		id: 40,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("welati_election"),
-			max_deciding: 1,
-			decision_deposit: 50 * GRAND,
-			prepare_period: 2 * HOURS,
-			decision_period: 14 * DAYS,
-			confirm_period: 12 * HOURS,
-			min_enactment_period: 24 * HOURS,
-			min_approval: APP_WELATI_ELECTION,
-			min_support: SUP_WELATI_ELECTION,
-		},
-	},
-	pezpallet_referenda::Track {
-		id: 41,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("welati_admin"),
-			max_deciding: 10,
-			decision_deposit: 10 * GRAND,
-			prepare_period: 2 * HOURS,
-			decision_period: 7 * DAYS,
-			confirm_period: 3 * HOURS,
-			min_enactment_period: 10 * MINUTES,
-			min_approval: APP_WELATI_ADMIN,
-			min_support: SUP_WELATI_ADMIN,
-		},
-	},
-	pezpallet_referenda::Track {
-		id: 42,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("citizenship_admin"),
-			max_deciding: 10,
-			decision_deposit: 20 * GRAND,
-			prepare_period: 2 * HOURS,
-			decision_period: 14 * DAYS,
-			confirm_period: 6 * HOURS,
-			min_enactment_period: 24 * HOURS,
-			min_approval: APP_CITIZENSHIP_ADMIN,
-			min_support: SUP_CITIZENSHIP_ADMIN,
-		},
-	},
 ];
 
 pub struct TracksInfo;
@@ -277,10 +226,6 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 				origins::Origin::ReferendumCanceller => Ok(20),
 				origins::Origin::ReferendumKiller => Ok(21),
 				// Limited treasury spenders
-				// Welati governance (RC → People Chain)
-				origins::Origin::WelatiElection => Ok(40),
-				origins::Origin::WelatiAdmin => Ok(41),
-				origins::Origin::CitizenshipAdmin => Ok(42),
 				_ => Err(()),
 			}
 		} else {

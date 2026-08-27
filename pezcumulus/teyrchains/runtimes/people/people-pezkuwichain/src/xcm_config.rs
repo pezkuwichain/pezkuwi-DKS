@@ -117,33 +117,6 @@ pub type FungibleTransactor = FungibleAdapter<
 	(),
 >;
 
-/// Converts relay chain Welati governance Plurality origins to Root.
-///
-/// When an RC OpenGov referendum passes on a Welati track (40/41/42), the enacted call sends
-/// an XCM Transact to this People Chain. The Welati origins are encoded as Plurality
-/// (BodyId::Index(40/41/42)) from the relay parent. This converter maps them to Root so that
-/// the welati pallet's `ensure_root` calls succeed.
-///
-/// Recognized Welati body IDs:
-/// - Index(40): WelatiElection — initiate/finalize elections
-/// - Index(41): WelatiAdmin — tiki grants, official appointments
-/// - Index(42): CitizenshipAdmin — citizenship revocation, trust score updates
-pub struct RelayWelatiPluralityAsRoot;
-impl xcm_executor::traits::ConvertOrigin<RuntimeOrigin> for RelayWelatiPluralityAsRoot {
-	fn convert_origin(
-		origin: impl Into<Location>,
-		kind: OriginKind,
-	) -> Result<RuntimeOrigin, Location> {
-		let origin = origin.into();
-		match (kind, origin.unpack()) {
-			(OriginKind::Superuser, (1, [Plurality { id: BodyId::Index(40..=42), .. }])) => {
-				Ok(RuntimeOrigin::root())
-			},
-			_ => Err(origin),
-		}
-	}
-}
-
 /// This is the type we use to convert an (incoming) XCM origin into a local `Origin` instance,
 /// ready for dispatching a transaction with XCM's `Transact`. There is an `OriginKind` that can
 /// bias the kind of local `Origin` it will become.
@@ -161,8 +134,6 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	// Superuser converter for the Relay-chain (Parent) location. This will allow it to issue a
 	// transaction from the Root origin.
 	ParentAsSuperuser<RuntimeOrigin>,
-	// Welati governance origins from relay chain — converts Plurality(Index(40/41/42)) to Root.
-	RelayWelatiPluralityAsRoot,
 	// Native signed account converter; this just converts an `AccountId32` origin into a normal
 	// `RuntimeOrigin::Signed` origin of the same 32-byte value.
 	SignedAccountId32AsNative<RelayNetwork, RuntimeOrigin>,
@@ -295,9 +266,12 @@ pub type XcmRouter = WithUniqueTopic<(
 )>;
 
 parameter_types! {
-	/// The three bodies the relay already addresses by these indices when it sends here
-	/// (`RelayWelatiPluralityAsRoot` below). The register speaks with the same voice going
-	/// the other way, or the two sides name the same office differently.
+	/// The three bodies the register speaks as when it sends a message out.
+	///
+	/// The relay used to address these same indices inbound, and a converter here turned them
+	/// into Root -- so the relay's token-weighted electorate could revoke a citizenship. That
+	/// converter is gone and these indices are now outbound only: this chain's head-counted
+	/// tracks naming which office decided, never a way in.
 	pub const WelatiElectionBodyId: BodyId = BodyId::Index(40);
 	pub const WelatiAdminBodyId: BodyId = BodyId::Index(41);
 	pub const CitizenshipAdminBodyId: BodyId = BodyId::Index(42);

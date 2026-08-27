@@ -25,9 +25,9 @@ use pezframe_system::EnsureRootWithSuccess;
 
 mod origins;
 pub use origins::{
-	pezpallet_custom_origins, AuctionAdmin, CitizenshipAdmin, Fellows, FellowshipAdmin,
+	pezpallet_custom_origins, AuctionAdmin, Fellows, FellowshipAdmin,
 	FellowshipExperts, FellowshipInitiates, FellowshipMasters, GeneralAdmin, LeaseAdmin,
-	ReferendumCanceller, ReferendumKiller, StakingAdmin, WelatiAdmin, WelatiElection,
+	ReferendumCanceller, ReferendumKiller, StakingAdmin,
 	WhitelistedCaller,
 };
 mod tracks;

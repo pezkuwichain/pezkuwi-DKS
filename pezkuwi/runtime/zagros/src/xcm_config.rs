@@ -21,7 +21,7 @@ use super::{
 	RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, WeightToFee, XcmPallet,
 };
 
-use crate::governance::{CitizenshipAdmin, StakingAdmin, WelatiAdmin, WelatiElection};
+use crate::governance::StakingAdmin;
 
 use pezframe_support::{
 	parameter_types,
@@ -303,13 +303,6 @@ parameter_types! {
 	pub const StakingAdminBodyId: BodyId = BodyId::Defense;
 	/// Fellows pluralistic body.
 	pub const FellowsBodyId: BodyId = BodyId::Technical;
-	/// Treasury pluralistic body.
-	/// Welati Election pluralistic body (People Chain governance via XCM).
-	pub const WelatiElectionBodyId: BodyId = BodyId::Index(40);
-	/// Welati Admin pluralistic body (People Chain tiki/appointment admin via XCM).
-	pub const WelatiAdminBodyId: BodyId = BodyId::Index(41);
-	/// Citizenship Admin pluralistic body (People Chain citizenship mgmt via XCM).
-	pub const CitizenshipAdminBodyId: BodyId = BodyId::Index(42);
 }
 
 /// Type to convert an `Origin` type value into a `Location` value which represents an interior
@@ -328,14 +321,6 @@ pub type FellowsToPlurality = OriginToPluralityVoice<RuntimeOrigin, Fellows, Fel
 
 /// Type to convert the Treasury origin to a Plurality `Location` value.
 
-/// Welati governance origin to Plurality converters (RC → People Chain via XCM).
-pub type WelatiElectionToPlurality =
-	OriginToPluralityVoice<RuntimeOrigin, WelatiElection, WelatiElectionBodyId>;
-pub type WelatiAdminToPlurality =
-	OriginToPluralityVoice<RuntimeOrigin, WelatiAdmin, WelatiAdminBodyId>;
-pub type CitizenshipAdminToPlurality =
-	OriginToPluralityVoice<RuntimeOrigin, CitizenshipAdmin, CitizenshipAdminBodyId>;
-
 /// Type to convert a pezpallet `Origin` type value into a `Location` value which represents an
 /// interior location of this chain for a destination chain.
 pub type LocalPalletOriginToLocation = (
@@ -343,16 +328,12 @@ pub type LocalPalletOriginToLocation = (
 	StakingAdminToPlurality,
 	// Fellows origin to be used in XCM as a corresponding Plurality `Location` value.
 	FellowsToPlurality,
-	// Welati governance origins — enable RC OpenGov to dispatch XCM to People Chain.
-	WelatiElectionToPlurality,
-	WelatiAdminToPlurality,
-	CitizenshipAdminToPlurality,
 );
 
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	// Production relay: only governance-controlled pallet origins (StakingAdmin, Fellows,
-	// Treasurer, Welati bodies) may originate raw `pezpallet_xcm::send` messages. Ordinary signed
+	// Treasurer) may originate raw `pezpallet_xcm::send` messages. Ordinary signed
 	// accounts are intentionally excluded here (unlike the zagros/testnet config) so that no
 	// funded relay account can craft arbitrary XCM programs toward any current or future
 	// teyrchain. Local execution for signed accounts is still permitted via `ExecuteXcmOrigin`

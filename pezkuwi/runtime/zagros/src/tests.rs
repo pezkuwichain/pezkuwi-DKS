@@ -148,9 +148,10 @@ use zagros_runtime_constants::time::{DAYS, HOURS, MINUTES};
 #[test]
 fn governance_tracks_total_count() {
 	let count = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks().count();
-	// Twelve since the treasury moved to the Asset Hub and took its six tracks -- the
-	// treasurer and the five spenders -- with it. Nine relay tracks and three Welati.
-	assert_eq!(count, 12, "Expected 12 tracks (9 relay + 3 welati), got {count}");
+	// Nine. The treasury moved to the Asset Hub and took its six tracks with it -- the
+	// treasurer and the five spenders -- and the three register tracks moved to the People
+	// chain, where the tally counts heads instead of tokens.
+	assert_eq!(count, 9, "Expected 9 relay tracks, got {count}");
 }
 
 #[test]
@@ -199,9 +200,6 @@ fn governance_production_periods_match_spec() {
 		(15, "auction_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(20, "referendum_canceller", 2 * HOURS, 7 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(21, "referendum_killer", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
-		(40, "welati_election", 2 * HOURS, 14 * DAYS, 12 * HOURS, 24 * HOURS),
-		(41, "welati_admin", 2 * HOURS, 7 * DAYS, 3 * HOURS, 10 * MINUTES),
-		(42, "citizenship_admin", 2 * HOURS, 14 * DAYS, 6 * HOURS, 24 * HOURS),
 	];
 
 	let tracks: HashMap<u16, _> = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks()
@@ -237,23 +235,29 @@ fn governance_production_periods_match_spec() {
 	assert_eq!(expected.len(), tracks.len(), "Track count mismatch");
 }
 
+/// The register is not reachable from this chain's referenda.
+///
+/// Tracks 40, 41 and 42 -- `welati_election`, `welati_admin`, `citizenship_admin` -- used to
+/// sit here, and this test used to assert they existed. This chain's referenda weigh tokens
+/// and conviction, so those three let stake decide who is a person, who holds office and who
+/// stops being a citizen. They live on the People chain now, where the tally counts heads.
 #[test]
-fn governance_welati_tracks_exist() {
+fn the_relay_has_no_track_that_reaches_the_register() {
 	let tracks: HashMap<u16, _> = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks()
 		.map(|t| (t.id, t.into_owned()))
 		.collect();
 
-	// welati_election
-	let t40 = tracks.get(&40).expect("welati_election track (id=40) missing");
-	assert_eq!(t40.info.max_deciding, 1, "welati_election should allow only 1 deciding");
+	for id in [40u16, 41, 42] {
+		assert!(!tracks.contains_key(&id), "track {id} reaches the register from a token vote");
+	}
 
-	// welati_admin
-	let t41 = tracks.get(&41).expect("welati_admin track (id=41) missing");
-	assert_eq!(t41.info.max_deciding, 10);
-
-	// citizenship_admin
-	let t42 = tracks.get(&42).expect("citizenship_admin track (id=42) missing");
-	assert_eq!(t42.info.max_deciding, 10);
+	for track in tracks.values() {
+		let name = String::from_utf8_lossy(&track.info.name).to_string();
+		assert!(
+			!name.contains("welati") && !name.contains("citizenship"),
+			"track '{name}' names a register matter on a token-weighted chain"
+		);
+	}
 }
 
 #[test]
@@ -288,9 +292,6 @@ fn governance_track_for_origin_mapping() {
 		(Origin::AuctionAdmin, 15),
 		(Origin::ReferendumCanceller, 20),
 		(Origin::ReferendumKiller, 21),
-		(Origin::WelatiElection, 40),
-		(Origin::WelatiAdmin, 41),
-		(Origin::CitizenshipAdmin, 42),
 	];
 
 	for (origin, expected_id) in origin_to_track {

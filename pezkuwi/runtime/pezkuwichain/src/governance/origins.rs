@@ -57,15 +57,11 @@ pub mod pezpallet_custom_origins {
 		/// Origin able to dispatch a whitelisted call.
 		#[codec(index = 13)]
 		WhitelistedCaller,
-		/// Origin for Welati election management (initiate/finalize elections on People Chain).
-		#[codec(index = 14)]
-		WelatiElection,
-		/// Origin for Welati administrative actions (tiki grants, appointments on People Chain).
-		#[codec(index = 15)]
-		WelatiAdmin,
-		/// Origin for citizenship management (revocation, trust score updates on People Chain).
-		#[codec(index = 16)]
-		CitizenshipAdmin,
+		// Indices 14, 15 and 16 held `WelatiElection`, `WelatiAdmin` and `CitizenshipAdmin`.
+		// They are retired rather than reused: this chain's referenda weigh tokens, and a body
+		// that weighs tokens has no business naming who is a person. The register's own
+		// head-counted tracks on the People chain carry those three names now, and they are
+		// the only ones that do.
 		/// Origin commanded by any members of the Pezkuwi Fellowship (no Dan grade needed).
 		#[codec(index = 17)]
 		FellowshipInitiates,
@@ -149,9 +145,6 @@ pub mod pezpallet_custom_origins {
 		ReferendumCanceller,
 		ReferendumKiller,
 		WhitelistedCaller,
-		WelatiElection,
-		WelatiAdmin,
-		CitizenshipAdmin,
 		FellowshipInitiates: u16 = 0,
 		Fellows: u16 = 3,
 		FellowshipExperts: u16 = 5,
