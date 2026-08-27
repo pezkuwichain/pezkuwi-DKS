@@ -365,6 +365,39 @@ pub type PoolAssetsExchanger = SingleAssetExchangeAdapter<
 >;
 
 pub struct XcmConfig;
+/// Calls that XCM `Transact` may not dispatch here, whatever origin it arrives with.
+///
+/// PEZ has a fixed supply of five billion and a halving schedule; nothing mints it and nothing
+/// burns it. That is a property of the design, and until now it was only a property of nobody
+/// having tried: PEZ is asset {pez}, `Assets`' `ForceOrigin` is `EnsureRoot`, and Root arrives
+/// here from the relay through `ParentAsSuperuser`. So the relay's sudo key could reassign the
+/// asset's issuer with `force_asset_status` and mint without limit, or call `start_destroy` and
+/// take the whole supply out. Neither is a hole in sudo -- sudo is meant to be absolute during
+/// the founding period -- it is a hole in the token, and Serok's rule is explicit that no
+/// force-mint of PEZ exists even with sudo.
+///
+/// This is the door that can actually be shut. `pallet_sudo` dispatches with
+/// `dispatch_bypass_filter` and so ignores `BaseCallFilter` by construction; a call arriving
+/// over XCM does not, and every route from the relay to this chain's Root is an XCM `Transact`.
+///
+/// The filter names the asset rather than the call, so ordinary asset administration keeps
+/// working for every other asset on the hub.
+pub struct NoTouchingPez;
+impl Contains<RuntimeCall> for NoTouchingPez {
+	fn contains(call: &RuntimeCall) -> bool {
+		let pez = crate::PezAssetId::get();
+		!matches!(
+			call,
+			RuntimeCall::Assets(pezpallet_assets::Call::force_asset_status { id, .. })
+				| RuntimeCall::Assets(pezpallet_assets::Call::start_destroy { id })
+				| RuntimeCall::Assets(pezpallet_assets::Call::mint { id, .. })
+				| RuntimeCall::Assets(pezpallet_assets::Call::burn { id, .. })
+				| RuntimeCall::Assets(pezpallet_assets::Call::force_create { id, .. })
+			if id.0 == pez
+		)
+	}
+}
+
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
 	type XcmSender = XcmRouter;
@@ -420,7 +453,7 @@ impl xcm_executor::Config for XcmConfig {
 	type UniversalAliases =
 		(bridging::to_zagros::UniversalAliases, bridging::to_ethereum::UniversalAliases);
 	type CallDispatcher = RuntimeCall;
-	type SafeCallFilter = Everything;
+	type SafeCallFilter = NoTouchingPez;
 	// We allow any origin to alias into a child sub-location (equivalent to DescendOrigin).
 	type Aliasers = TrustedAliasers;
 	type TransactionalProcessor = FrameTransactionalProcessor;

@@ -1625,3 +1625,69 @@ fn state_and_economic_origins_do_not_overlap() {
 	// The lists are not empty, or the assertions above pass by saying nothing.
 	assert_eq!(economic.len(), 9, "the economic franchise lost a track");
 }
+
+/// PEZ cannot be minted or destroyed by anything arriving over XCM, including the relay's sudo.
+///
+/// The path this closes: relay sudo sends `Transact` with `OriginKind::Superuser`,
+/// `ParentAsSuperuser` turns it into this chain's Root, and `Assets`' `ForceOrigin` is
+/// `EnsureRoot`. From there `force_asset_status` reassigns the issuer and `mint` has no
+/// ceiling, or `start_destroy` removes the supply outright. Five billion PEZ, fixed and
+/// halving, held open by nobody having tried it.
+///
+/// The filter is written against the asset id rather than the call, so every other asset on
+/// the hub is administered exactly as before. Both halves are asserted here, because a filter
+/// that rejects everything would also pass the first half.
+#[test]
+fn pez_cannot_be_minted_or_destroyed_over_xcm() {
+	use asset_hub_pezkuwichain_runtime::{xcm_config::NoTouchingPez, PezAssetId, RuntimeCall};
+	use pezframe_support::traits::{Contains, Get};
+
+	let who = || -> pezsp_runtime::MultiAddress<pezsp_runtime::AccountId32, ()> {
+		pezsp_runtime::MultiAddress::Id(pezsp_runtime::AccountId32::new([0u8; 32]))
+	};
+	let who = || -> pezsp_runtime::MultiAddress<pezsp_runtime::AccountId32, ()> {
+		pezsp_runtime::MultiAddress::Id(pezsp_runtime::AccountId32::new([0u8; 32]))
+	};
+	let pez = PezAssetId::get();
+	let other = pez + 1;
+
+	let calls = |id: u32| -> Vec<(&'static str, RuntimeCall)> {
+		vec![
+			(
+				"force_asset_status",
+				RuntimeCall::Assets(pezpallet_assets::Call::force_asset_status {
+					id: id.into(),
+					owner: who(),
+					issuer: who(),
+					admin: who(),
+					freezer: who(),
+					min_balance: 1,
+					is_sufficient: false,
+					is_frozen: false,
+				}),
+			),
+			(
+				"start_destroy",
+				RuntimeCall::Assets(pezpallet_assets::Call::start_destroy { id: id.into() }),
+			),
+			(
+				"mint",
+				RuntimeCall::Assets(pezpallet_assets::Call::mint {
+					id: id.into(),
+					beneficiary: who(),
+					amount: 1,
+				}),
+			),
+		]
+	};
+
+	for (name, call) in calls(pez) {
+		assert!(!NoTouchingPez::contains(&call), "XCM can still reach `{name}` on PEZ");
+	}
+	for (name, call) in calls(other) {
+		assert!(
+			NoTouchingPez::contains(&call),
+			"`{name}` on another asset was refused; the filter names the asset, not the call"
+		);
+	}
+}
