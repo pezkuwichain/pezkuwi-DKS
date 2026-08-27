@@ -607,7 +607,7 @@ construct_runtime!(
 		Multisig: pezpallet_multisig = 36,
 
 		// Bridge relayers pezpallet, used by several bridges here.
-		BridgeRelayers: pezpallet_bridge_relayers = 47,
+		BridgeRelayers: pezpallet_bridge_relayers = 41,
 
 		// With-Zagros GRANDPA bridge module.
 		BridgeZagrosGrandpa: pezpallet_bridge_grandpa::<Instance3> = 48,
@@ -643,7 +643,7 @@ construct_runtime!(
 
 		// Message Queue. Importantly, is registered last so that messages are processed after
 		// the `on_initialize` hooks of bridging pallets.
-		MessageQueue: pezpallet_message_queue = 175,
+		MessageQueue: pezpallet_message_queue = 250,
 	}
 );
 

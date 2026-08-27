@@ -46,10 +46,6 @@ ACCEPTED = {
 	# different numbers, which is the dangerous kind. Inherited from upstream's two bridge
 	# hubs, never a decision of ours. Left as they are because renumbering a published index
 	# is its own decision; recorded so it is settled before any bridge hub opens (issue #4).
-	("bridge-hub", "BridgeRelayers"):
-		"INDEX DRIFT, inherited: 41 on Zagros, 47 on Pezkuwichain. Settle before launch.",
-	("bridge-hub", "MessageQueue"):
-		"INDEX DRIFT, inherited: 250 on Zagros, 175 on Pezkuwichain. Settle before launch.",
 }
 
 DECL = re.compile(r"^\s*([A-Za-z0-9_]+)\s*:\s*[a-z_:<>0-9]+\s*=\s*(\d+)\s*,", re.M)
