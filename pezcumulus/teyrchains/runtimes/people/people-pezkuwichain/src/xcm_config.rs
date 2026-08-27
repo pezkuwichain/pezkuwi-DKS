@@ -117,6 +117,42 @@ pub type FungibleTransactor = FungibleAdapter<
 	(),
 >;
 
+/// No message from another chain may write the register, whoever sends it.
+///
+/// `ParentAsSuperuser` gives the relay Root here, and Root is what every register call asks
+/// for. This chain's referenda count heads; the relay's weigh tokens and conviction. So a
+/// token vote upstairs could revoke a citizenship, seat an official or run an election,
+/// without ever appearing on this chain's own tracks.
+///
+/// The narrowing is written as a call filter rather than a narrower origin because FRAME's
+/// Root origin bypasses origin filters by construction -- `add_filter` on a Root origin is a
+/// no-op, so a converter that handed out "Root, but only for upgrades" would have handed out
+/// plain Root. `SafeCallFilter` runs on every incoming `Transact` before the origin is even
+/// resolved, which is the honest place for this rule: it is not a fact about the relay, it is
+/// a fact about the register. Who is a person, who holds office and who sits in the house are
+/// decided here or not at all.
+///
+/// The relay keeps everything else, including this chain's code. A runtime upgrade can of
+/// course reinstate anything -- but it is a published artefact on the slowest track there is,
+/// and every citizen can read what it would do before it lands. `Transact` is none of those
+/// things. What remains after this is the founding hand: the relay's sudo, which is retired
+/// with the rest of sudo.
+pub struct TheRegisterIsNotWritableFromAbroad;
+impl Contains<RuntimeCall> for TheRegisterIsNotWritableFromAbroad {
+	fn contains(call: &RuntimeCall) -> bool {
+		!matches!(
+			call,
+			RuntimeCall::IdentityKyc(..) |
+				RuntimeCall::Referral(..) |
+				RuntimeCall::Tiki(..) |
+				RuntimeCall::Welati(..) |
+				RuntimeCall::Diwan(..) |
+				RuntimeCall::Parliament(..) |
+				RuntimeCall::Trust(..)
+		)
+	}
+}
+
 /// This is the type we use to convert an (incoming) XCM origin into a local `Origin` instance,
 /// ready for dispatching a transaction with XCM's `Transact`. There is an `OriginKind` that can
 /// bias the kind of local `Origin` it will become.
@@ -243,7 +279,7 @@ impl xcm_executor::Config for XcmConfig {
 	type MessageExporter = ();
 	type UniversalAliases = Nothing;
 	type CallDispatcher = RuntimeCall;
-	type SafeCallFilter = Everything;
+	type SafeCallFilter = TheRegisterIsNotWritableFromAbroad;
 	type Aliasers = Nothing;
 	type TransactionalProcessor = FrameTransactionalProcessor;
 	type HrmpNewChannelOpenRequestHandler = ();

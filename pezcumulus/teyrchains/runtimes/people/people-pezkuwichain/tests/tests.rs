@@ -326,3 +326,39 @@ mod the_court_roster {
 		});
 	}
 }
+
+/// No message from another chain may write the register.
+///
+/// `ParentAsSuperuser` hands the relay Root here, and Root is what every register call asks
+/// for -- so the relay's token-weighted electorate could revoke a citizenship. The rule is a
+/// call filter rather than a narrower origin because FRAME's Root bypasses origin filters.
+mod the_register_is_not_writable_from_abroad {
+	use super::*;
+	use people_pezkuwichain_runtime::xcm_config::TheRegisterIsNotWritableFromAbroad as Filter;
+	use pezframe_support::traits::Contains;
+
+	#[test]
+	fn who_is_a_person_who_holds_office_and_who_sits_are_all_refused() {
+		let calls = vec![
+			RuntimeCall::IdentityKyc(pezpallet_identity_kyc::Call::revoke_citizenship {
+				who: ALICE.into(),
+			}),
+			RuntimeCall::Welati(pezpallet_welati::Call::confirm_prime_minister {}),
+			RuntimeCall::Tiki(pezpallet_tiki::Call::grant_honorary_citizenship {
+				dest: AccountId::from(ALICE).into(),
+			}),
+		];
+
+		for call in calls {
+			assert!(!Filter::contains(&call), "an off-chain message reached the register");
+		}
+	}
+
+	#[test]
+	fn the_relay_keeps_this_chains_code() {
+		let upgrade = RuntimeCall::System(pezframe_system::Call::authorize_upgrade {
+			code_hash: Default::default(),
+		});
+		assert!(Filter::contains(&upgrade), "the upgrade path must stay open");
+	}
+}
