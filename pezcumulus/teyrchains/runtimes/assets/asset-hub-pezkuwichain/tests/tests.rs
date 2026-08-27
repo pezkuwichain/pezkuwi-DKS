@@ -1590,8 +1590,9 @@ fn the_treasury_call_encodes_the_way_welati_builds_it() {
 ///
 /// It compares the track *names*, because that is what the two lists have in common: a track
 /// is a subject, and the same subject decided by two different electorates is the fault.
-/// `root` is the deliberate exception -- each chain's own Root track governs that chain's own
-/// code, and neither can reach the other's.
+/// This chain no longer has a `root` track at all: an upgrade is the constitution and the
+/// constitution is not decided by holdings, so code is decided on the People chain, whose
+/// tally counts heads.
 #[test]
 fn state_and_economic_origins_do_not_overlap() {
 	use pezpallet_referenda::TracksInfo as _;
@@ -1619,11 +1620,14 @@ fn state_and_economic_origins_do_not_overlap() {
 	// ..and the money's subjects must not have drifted onto the register's chain either. This
 	// half is asserted from here because this is the file that knows the economic names.
 	for e in &economic {
-		assert!(e == "root" || !state.contains(&e.as_str()), "`{e}` appears on both franchises",);
+		assert!(!state.contains(&e.as_str()), "`{e}` appears on both franchises");
 	}
 
+	// And no root track, or the holdings decide the code after all.
+	assert!(!economic.contains(&"root".to_string()), "holdings must not reach an upgrade");
+
 	// The lists are not empty, or the assertions above pass by saying nothing.
-	assert_eq!(economic.len(), 9, "the economic franchise lost a track");
+	assert_eq!(economic.len(), 8, "the economic franchise lost a track");
 }
 
 /// PEZ cannot be minted or destroyed by anything arriving over XCM, including the relay's sudo.

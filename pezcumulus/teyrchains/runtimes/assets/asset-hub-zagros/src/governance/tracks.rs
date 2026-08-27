@@ -50,21 +50,17 @@ const SUP_MEDIUM_SPENDER: Curve =
 const APP_BIG_SPENDER: Curve = Curve::make_linear(28, 28, percent(50), percent(100));
 const SUP_BIG_SPENDER: Curve = Curve::make_reciprocal(20, 28, percent(1), percent(0), percent(50));
 
-const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 9] = [
-	pezpallet_referenda::Track {
-		id: 0,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("root"),
-			max_deciding: 5,
-			decision_deposit: 100 * UNITS,
-			prepare_period: 2 * HOURS,
-			decision_period: 28 * DAYS,
-			confirm_period: 24 * HOURS,
-			min_enactment_period: 24 * HOURS,
-			min_approval: APP_TREASURER,
-			min_support: SUP_TREASURER,
-		},
-	},
+// A `root` track used to head this list, and it is gone. Root here reaches
+// `System::authorize_upgrade`, and this chain's electorate is holdings: HEZ, weighted by
+// conviction. An upgrade is the constitution, and the constitution is not decided by how much
+// of the token someone holds -- the People chain's root track counts heads, and that is the
+// one that decides code. This chain's franchise keeps what it is for: the treasury, the
+// spenders, and its own referenda.
+//
+// It was also priced as if it were not root at all. `min_approval` and `min_support` were
+// `APP_TREASURER` and `SUP_TREASURER` -- a spending track's thresholds on a track that could
+// rewrite the runtime.
+const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 8] = [
 	pezpallet_referenda::Track {
 		id: 11,
 		info: pezpallet_referenda::TrackInfo {
@@ -191,11 +187,9 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 	}
 
 	fn track_for(id: &Self::RuntimeOrigin) -> Result<Self::Id, ()> {
-		if let Ok(system_origin) = pezframe_system::RawOrigin::try_from(id.clone()) {
-			match system_origin {
-				pezframe_system::RawOrigin::Root => Ok(0),
-				_ => Err(()),
-			}
+		if pezframe_system::RawOrigin::try_from(id.clone()).is_ok() {
+			// No system origin, Root included, has a track on this chain any more.
+			Err(())
 		} else if let Ok(custom_origin) = origins::Origin::try_from(id.clone()) {
 			match custom_origin {
 				origins::Origin::Treasurer => Ok(11),
