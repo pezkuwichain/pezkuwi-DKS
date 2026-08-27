@@ -2,10 +2,11 @@
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "startup|resume|compact",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.github/scripts/plan.py --work\" 2>&1 || true"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/orient.sh\""
           }
         ]
       }
