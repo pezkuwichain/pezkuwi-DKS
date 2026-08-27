@@ -41,7 +41,6 @@ use alloc::{
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::cmp::Ordering;
 use pezframe_support::dynamic_params::{dynamic_params, dynamic_pezpallet_params};
-use pezframe_support::traits::tokens::imbalance::ResolveTo;
 use pezkuwi_primitives::{
 	async_backing::Constraints, slashing, AccountId, AccountIndex, ApprovalVotingParams, Balance,
 	BlockNumber, CandidateEvent, CandidateHash,
@@ -54,7 +53,7 @@ use pezkuwi_primitives::{
 use pezkuwi_runtime_common::{
 	assigned_slots, auctions, claims, crowdloan, impl_runtime_weights,
 	impls::{
-		DealWithFees, LocatableAssetConverter, VersionedLocatableAsset, VersionedLocationConverter,
+		LocatableAssetConverter, ToAuthor, VersionedLocatableAsset, VersionedLocationConverter,
 	},
 	paras_registrar, paras_sudo_wrapper, prod_or_fast, slots,
 	traits::OnSwap,
@@ -80,7 +79,6 @@ use pezkuwichain_runtime_constants::system_teyrchain::{
 	coretime::TIMESLICE_PERIOD, ASSET_HUB_ID, BROKER_ID,
 };
 use pezpallet_balances::WeightInfo;
-use pezpallet_treasury::TreasuryAccountId;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_beefy::{
 	ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
@@ -382,7 +380,7 @@ impl pezpallet_balances::Config for Runtime {
 	/// that collects fees for its treasury there is no reason for the remainder to be the one
 	/// thing that vanishes. Upstream stopped dropping it too, with a pallet of its own; this
 	/// gets the same result without taking on a new pallet.
-	type DustRemoval = ResolveTo<TreasuryAccountId<Runtime>, Balances>;
+	type DustRemoval = AccumulateAndForward;
 	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -404,9 +402,54 @@ parameter_types! {
 	pub const OperationalFeeMultiplier: u8 = 5;
 }
 
+parameter_types! {
+	/// Where this chain's income waits before it crosses to the treasury.
+	///
+	/// The treasury lives on the Asset Hub, with the economic franchise that votes on how it is
+	/// spent and the accounts most of its spending reaches. Income arrives here, per
+	/// transaction, so it is gathered and sent once a day rather than teleported one fee at a
+	/// time -- a message per transaction would cost more than it carried.
+	pub const AccumulateForwardPalletId: PalletId = PalletId(*b"py/accfw");
+	/// One forward a day. Rate limit, not a deadline: nothing is lost by waiting.
+	pub const ForwardPeriod: BlockNumber = 1 * DAYS;
+	/// Below this the message costs more than the money in it.
+	pub const MinForwardAmount: Balance = 10 * UNITS;
+	/// The treasury's own account on the Asset Hub, as that chain names it.
+	pub AhTreasuryStaging: InteriorLocation = {
+		let account: AccountId = PalletId(*b"py/trsry").into_account_truncating();
+		Junction::AccountId32 { network: None, id: account.into() }.into()
+	};
+	/// Four fifths of every fee. The remaining fifth stays with the block author.
+	pub const AccumulateFeePercent: Percent = Percent::from_percent(80);
+}
+
+impl pezpallet_accumulate_and_forward::Config for Runtime {
+	type Currency = Balances;
+	type PalletId = AccumulateForwardPalletId;
+	type Forwarder = xcm_builder::TeleportForwarderForAccountId32<
+		xcm_config::XcmConfig,
+		xcm_config::AssetHub,
+		xcm_config::TokenLocation,
+		AhTreasuryStaging,
+	>;
+	type TransferPeriod = ForwardPeriod;
+	type MinTransferAmount = MinForwardAmount;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+	// No measurement of our own yet; the hook is rate-limited to one forward a day, so
+	// the estimate cannot compound. Listed in the weights work with the rest.
+	type WeightInfo = ();
+}
+
+/// Fees: four fifths accumulated for the treasury, one fifth to whoever produced the block.
+type DealWithFeesAccumulate = pezpallet_accumulate_and_forward::DealWithFeesSplit<
+	Runtime,
+	AccumulateFeePercent,
+	ToAuthor<Runtime>,
+>;
+
 impl pezpallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type OnChargeTransaction = FungibleAdapter<Balances, DealWithFees<Runtime>>;
+	type OnChargeTransaction = FungibleAdapter<Balances, DealWithFeesAccumulate>;
 	type OperationalFeeMultiplier = OperationalFeeMultiplier;
 	type WeightToFee = WeightToFee;
 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -1540,6 +1583,7 @@ construct_runtime! {
 		Treasury: pezpallet_treasury = 18,
 		ConvictionVoting: pezpallet_conviction_voting = 20,
 		Referenda: pezpallet_referenda = 21,
+		AccumulateAndForward: pezpallet_accumulate_and_forward = 22,
 		Origins: pezpallet_custom_origins = 43,
 		Whitelist: pezpallet_whitelist = 44,
 		// Claims. Usable initially.

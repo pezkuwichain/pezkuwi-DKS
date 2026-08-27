@@ -449,6 +449,21 @@ pub mod pezpallet {
 				Error::<T>::FundingReportWentBackwards
 			);
 			ReportedIncentiveTotal::<T>::put(total);
+
+			// The payroll clock starts here, on the first funding and not before.
+			//
+			// Not at genesis, because months would then close one after another with nothing
+			// behind them until the register fills -- an epoch that pays nothing is handled,
+			// but it is still a month of the state's payroll recorded as having happened and
+			// paid zero. Epoch 0 should be the first month there was anything to pay.
+			//
+			// And not by a call somebody has to remember to make. This origin is the Asset
+			// Hub, which sends only after the register passes the population threshold, so
+			// the gate that ought to decide when payroll begins is the one that does.
+			if !EpochInfo::<T>::exists() {
+				Self::do_initialize_rewards_system()?;
+			}
+
 			Self::deposit_event(Event::IncentiveFundingNoted { total });
 			Ok(())
 		}

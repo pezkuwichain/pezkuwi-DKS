@@ -52,6 +52,7 @@ pezframe-support = { features = ["tuples-96"], workspace = true }
 pezframe-system = { workspace = true }
 pezframe-system-rpc-runtime-api = { workspace = true }
 pezpallet-authority-discovery = { workspace = true }
+pezpallet-accumulate-and-forward = { workspace = true }
 pezpallet-authorship = { workspace = true }
 pezpallet-babe = { workspace = true }
 pezpallet-balances = { workspace = true }
@@ -152,6 +153,7 @@ std = [
 	"pezkuwi-teyrchain-primitives/std",
 	"pezkuwichain-runtime-constants/std",
 	"pezpallet-authority-discovery/std",
+	"pezpallet-accumulate-and-forward/std",
 	"pezpallet-authorship/std",
 	"pezpallet-babe/std",
 	"pezpallet-balances/std",
@@ -243,6 +245,7 @@ runtime-benchmarks = [
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezkuwichain-runtime-constants/runtime-benchmarks",
 	"pezpallet-authority-discovery/runtime-benchmarks",
+	"pezpallet-accumulate-and-forward/runtime-benchmarks",
 	"pezpallet-authorship/runtime-benchmarks",
 	"pezpallet-babe/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
@@ -325,6 +328,7 @@ try-runtime = [
 	"pezkuwi-teyrchain-primitives/try-runtime",
 	"pezkuwichain-runtime-constants/try-runtime",
 	"pezpallet-authority-discovery/try-runtime",
+	"pezpallet-accumulate-and-forward/try-runtime",
 	"pezpallet-authorship/try-runtime",
 	"pezpallet-babe/try-runtime",
 	"pezpallet-balances/try-runtime",
