@@ -584,6 +584,15 @@ pub mod pezpallet {
 	pub type AppointmentProcesses<T: Config> =
 		StorageMap<_, Blake2_128Concat, u32, AppointmentProcess<T>, OptionQuery>;
 
+	/// Which offices need the confirming body's consent, where the legislature has spoken.
+	///
+	/// Absent an entry the office's founding rule stands (`requires_parliament_approval`), so
+	/// this map holds departures from the founding list rather than a copy of it: an empty map
+	/// is the constitution as written, not an executive with no checks on it.
+	#[pezpallet::storage]
+	pub type ConfirmationRequired<T: Config> =
+		StorageMap<_, Twox64Concat, OfficialRole, bool, OptionQuery>;
+
 	/// Next appointment process ID
 	#[pezpallet::storage]
 	pub type NextAppointmentId<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -791,6 +800,9 @@ pub mod pezpallet {
 		},
 
 		// --- APPOINTMENT EVENTS ---
+		/// The legislature moved an office on or off the list that needs confirming.
+		ConfirmationRequirementSet { role: OfficialRole, required: bool },
+
 		/// An appointment was confirmed by the body that confirms it.
 		AppointmentConfirmedByParliament {
 			process_id: u32,
@@ -2360,13 +2372,17 @@ pub mod pezpallet {
 				// This is the shape of a presidential system. The executive proposes and
 				// another body disposes, and which offices need the second body is drawn by
 				// law rather than by the executive -- the same line the American constitution
-				// draws between principal and inferior officers.
-				status: if role.requires_parliament_approval() {
+				// draws between principal and inferior officers. `confirmation_is_required`
+				// asks the legislature's list first and the founding one only where the
+				// legislature has not spoken.
+				status: if Self::confirmation_is_required(&role) {
 					AppointmentStatus::WaitingParliamentaryApproval
 				} else {
 					AppointmentStatus::WaitingPresidentialApproval
 				},
 				documents,
+				confirmed_by: None,
+				confirmed_at: None,
 			};
 
 			AppointmentProcesses::<T>::insert(process_id, appointment_process);
@@ -2428,6 +2444,8 @@ pub mod pezpallet {
 
 			// Update process status
 			process.status = AppointmentStatus::Approved;
+			process.confirmed_by = Some(ConfirmedBy::Appointer(approver.clone()));
+			process.confirmed_at = Some(current_block);
 
 			// Store updates
 			PendingNominations::<T>::insert(process.position, &process.nominee, nomination);
@@ -2483,6 +2501,8 @@ pub mod pezpallet {
 			nomination.approved_at = Some(pezframe_system::Pezpallet::<T>::block_number());
 			nomination.status = NominationStatus::Approved;
 			process.status = AppointmentStatus::Approved;
+			process.confirmed_by = Some(ConfirmedBy::Parliament);
+			process.confirmed_at = nomination.approved_at;
 
 			PendingNominations::<T>::insert(process.position, &process.nominee, nomination);
 			AppointmentProcesses::<T>::insert(process_id, process.clone());
@@ -2493,6 +2513,39 @@ pub mod pezpallet {
 				appointee: process.nominee,
 				role: process.position,
 			});
+
+			Ok(())
+		}
+
+		/// Move an office on or off the list that needs confirming.
+		///
+		/// The legislature draws this line, and it is the same body that does the confirming --
+		/// so it can hand a power away but cannot hand itself one the executive did not offer.
+		/// Deliberately not reachable by the President: an executive able to decide which of
+		/// his own appointments need consent has no check on him at all.
+		///
+		/// It binds appointments started after it, not ones already in flight: a process that
+		/// is already waiting on a body keeps waiting on that body, because moving the
+		/// goalposts under a pending nomination is how a confirmation requirement gets erased
+		/// one nomination at a time.
+		#[pezpallet::call_index(13)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn set_confirmation_requirement(
+			origin: OriginFor<T>,
+			role: OfficialRole,
+			required: bool,
+		) -> DispatchResult {
+			T::ConfirmationOrigin::ensure_origin(origin)?;
+
+			if required == role.requires_parliament_approval() {
+				// Back to the founding rule: drop the entry rather than store a copy of it, so
+				// the map keeps meaning "where the legislature departed from the constitution".
+				ConfirmationRequired::<T>::remove(role);
+			} else {
+				ConfirmationRequired::<T>::insert(role, required);
+			}
+
+			Self::deposit_event(Event::ConfirmationRequirementSet { role, required });
 
 			Ok(())
 		}
@@ -3672,6 +3725,13 @@ impl<T: Config> Pezpallet<T> {
 	}
 
 	/// Check if account is a Parliament member
+	/// Does this office need the confirming body's consent?
+	///
+	/// The legislature's answer where it has given one, the founding rule otherwise.
+	pub fn confirmation_is_required(role: &OfficialRole) -> bool {
+		ConfirmationRequired::<T>::get(role).unwrap_or_else(|| role.requires_parliament_approval())
+	}
+
 	pub fn is_parliament_member(who: &T::AccountId) -> bool {
 		ParliamentMembers::<T>::get().iter().any(|member| &member.account == who)
 	}

@@ -1161,8 +1161,8 @@ pub mod pezpallet {
 		/// call was the only door to them, and closing it would leave the offices unfillable.
 		/// That has not been true for some time: `welati::tiki_for_role` maps both from an
 		/// `OfficialRole`, so the nomination path seats them -- and
-		/// `OfficialRole::requires_parliament_approval` names these two among the five that a
-		/// parliament must confirm. There is a second door and it is the better one.
+		/// `OfficialRole::requires_parliament_approval` names these two among the five a
+		/// parliament confirms at founding. There is a second door and it is the better one.
 		pub fn is_seated_by_governance(tiki: &Tiki) -> bool {
 			Self::is_cabinet_tiki(tiki)
 				|| matches!(

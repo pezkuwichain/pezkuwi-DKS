@@ -419,6 +419,123 @@ fn nobody_is_both_parties_to_their_own_appointment() {
 	});
 }
 
+#[test]
+fn the_record_says_which_body_agreed_to_seat_them() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+		run_to_block(9);
+
+		let reason = || b"Qualified candidate".to_vec().try_into().unwrap();
+
+		// The President's own track names the person, because there the decision is one
+		// person's.
+		assert_ok!(Welati::nominate_official(
+			RuntimeOrigin::signed(SEROK),
+			2,
+			OfficialRole::Noter,
+			reason(),
+		));
+		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0));
+		let clerk = Welati::appointment_processes(0).expect("recorded");
+		assert_eq!(clerk.confirmed_by, Some(ConfirmedBy::Appointer(SEROK)));
+		assert_eq!(clerk.confirmed_at, Some(9));
+
+		// Parliament's track names the House, not the member who submitted the call. A
+		// register that recorded MP as the decision would be recording a clerk.
+		assert_ok!(Welati::nominate_official(
+			RuntimeOrigin::signed(SEROK),
+			3,
+			OfficialRole::Dadger,
+			reason(),
+		));
+		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 1));
+		let judge = Welati::appointment_processes(1).expect("recorded");
+		assert_eq!(judge.confirmed_by, Some(ConfirmedBy::Parliament));
+		assert_eq!(judge.confirmed_at, Some(9));
+	});
+}
+
+#[test]
+fn the_legislature_draws_the_line_and_the_president_cannot() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+		let reason = || b"Qualified candidate".to_vec().try_into().unwrap();
+
+		// A Noter needs nobody's consent at founding.
+		assert!(!Welati::confirmation_is_required(&OfficialRole::Noter));
+
+		// The executive cannot decide which of his own appointments need consent.
+		assert_noop!(
+			Welati::set_confirmation_requirement(
+				RuntimeOrigin::signed(SEROK),
+				OfficialRole::Noter,
+				true
+			),
+			BadOrigin
+		);
+
+		// The House can, and the next nomination lands on the parliamentary track.
+		assert_ok!(Welati::set_confirmation_requirement(
+			RuntimeOrigin::signed(MP),
+			OfficialRole::Noter,
+			true
+		));
+		assert!(Welati::confirmation_is_required(&OfficialRole::Noter));
+
+		assert_ok!(Welati::nominate_official(
+			RuntimeOrigin::signed(SEROK),
+			2,
+			OfficialRole::Noter,
+			reason(),
+		));
+		assert_noop!(
+			Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0),
+			Error::<Test>::AppointmentAlreadyProcessed
+		);
+		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+
+		// Putting it back stores nothing: the map holds departures from the constitution, so
+		// an office restored to its founding rule leaves no entry behind.
+		assert_ok!(Welati::set_confirmation_requirement(
+			RuntimeOrigin::signed(MP),
+			OfficialRole::Noter,
+			false
+		));
+		assert_eq!(crate::ConfirmationRequired::<Test>::get(OfficialRole::Noter), None);
+		assert!(!Welati::confirmation_is_required(&OfficialRole::Noter));
+	});
+}
+
+#[test]
+fn moving_the_line_does_not_move_a_nomination_already_in_flight() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+		let reason = || b"Qualified candidate".to_vec().try_into().unwrap();
+
+		// A judge is nominated while judges need Parliament.
+		assert_ok!(Welati::nominate_official(
+			RuntimeOrigin::signed(SEROK),
+			2,
+			OfficialRole::Dadger,
+			reason(),
+		));
+
+		// Parliament then exempts the office. That is the law from here on, and it is not
+		// how this pending nomination gets seated -- otherwise a confirmation requirement
+		// could be erased one nomination at a time, after the fact.
+		assert_ok!(Welati::set_confirmation_requirement(
+			RuntimeOrigin::signed(MP),
+			OfficialRole::Dadger,
+			false
+		));
+		assert_noop!(
+			Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0),
+			Error::<Test>::AppointmentAlreadyProcessed
+		);
+		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+	});
+}
+
 // ===== COLLECTIVE DECISION TESTS =====
 
 #[test]

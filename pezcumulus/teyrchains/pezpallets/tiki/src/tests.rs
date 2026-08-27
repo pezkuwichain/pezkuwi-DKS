@@ -1520,7 +1520,7 @@ fn the_admin_door_is_shut_on_offices_a_nomination_confirms() {
 		// The Treasurer and the Ambassador used to be reachable here, on the grounds that this
 		// call was their only door. It is not: `welati::tiki_for_role` maps both from an
 		// `OfficialRole`, and `requires_parliament_approval` names them among the offices a
-		// parliament must confirm. Shutting the shortcut leaves the proper road open.
+		// parliament confirms at founding. Shutting the shortcut leaves the proper road open.
 		for office in [TikiEnum::Xezinedar, TikiEnum::Balyoz] {
 			assert_noop!(
 				TikiPallet::grant_tiki(RuntimeOrigin::root(), who, office),

@@ -569,6 +569,40 @@ pub struct AppointmentProcess<T: pezframe_system::Config> {
 	pub status: AppointmentStatus,
 	/// Supporting documents/justification
 	pub documents: BoundedVec<BoundedVec<u8, ConstU32<1000>>, ConstU32<10>>,
+	/// Which body confirmed it, once one has.
+	///
+	/// The record used to hold the nominator and stop there, so a seated official carried no
+	/// trace of who had agreed to seat him. A state that cannot answer that question cannot
+	/// hold anyone to the appointment.
+	pub confirmed_by: Option<ConfirmedBy<T::AccountId>>,
+	/// When that happened.
+	pub confirmed_at: Option<BlockNumberFor<T>>,
+}
+
+/// Who said yes to an appointment.
+///
+/// A body rather than a person. On the parliamentary track the origin is the House acting as
+/// one, and recording whichever member happened to submit the executed call would put a clerk
+/// in the register where the decision belongs. The President's track does name him, because
+/// there the decision really is one person's.
+#[derive(
+	Encode,
+	Decode,
+	DecodeWithMemTracking,
+	Clone,
+	Eq,
+	PartialEq,
+	Debug,
+	TypeInfo,
+	MaxEncodedLen,
+)]
+pub enum ConfirmedBy<AccountId> {
+	/// The House confirmed it, acting as one body.
+	#[codec(index = 0)]
+	Parliament,
+	/// The appointing authority's own signature was the whole appointment.
+	#[codec(index = 1)]
+	Appointer(AccountId),
 }
 
 /// Appointment process statuses
@@ -1359,6 +1393,13 @@ impl OfficialRoleInfo for OfficialRole {
 		75 // General requirement specified in the constitution
 	}
 
+	/// The line as it stands at founding.
+	///
+	/// This is where the line *starts*, not where it is kept: `ConfirmationRequired` in the
+	/// pallet overrides it per office, and the legislature writes that. A constitution names
+	/// the principal offices and then leaves it to law to say which of the rest need consent,
+	/// which is exactly the seam Article II leaves open for inferior officers. Hard-coding
+	/// the whole list would have made a legislative question a compile-time one.
 	fn requires_parliament_approval(&self) -> bool {
 		match self {
 			// High-level positions require parliamentary approval
