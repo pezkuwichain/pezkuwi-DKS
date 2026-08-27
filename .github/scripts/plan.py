@@ -265,19 +265,21 @@ def inv_twin(p, kind):
             stray.append(pal)
     return ("ok", "") if not stray else ("GAP", ", ".join(sorted(stray)[:4]))
 
-TR_ONLY = "ıİğĞ"
+TR_ONLY = "ıİğĞ"  # tr-ok: the detector's own alphabet
 TR_STEMS = ["Advalet", "Adalet", "Denetim", "Teknoloji", "Baskan", "Bakanlik", "Yetki",
             "Karar", "Secim", "Gorev", "Odeme", "Durum", "Kayit", "Onay", "Islem"]
 # Turkish in a comment, found by the alphabet rather than by a word list.
 #
 # A remembered vocabulary only catches what somebody thought of: the list here held thirteen
-# words and missed `kullanılıyor` sitting in two production runtimes. `ı` and `ğ` are the
-# discriminating letters -- Kurdish uses ç, ş, î, ê and û, and has neither of these -- and the
-# apostrophe-suffix (`origin'leri`, `Tiki'nin`) is a Turkish construction English does not make.
+# words and missed `kullanilyor` sitting in two production runtimes. The two letters below
+# are the discriminating ones: Kurdish uses ç, ş, î, ê and û and has neither. The
+# apostrophe-suffix is a Turkish construction English does not make.
 # Backticked spans are skipped, since a comment may legitimately quote a Kurdish identifier.
-TR_COMMENT = re.compile(r"[ıİğĞ]|\b\w+'(?:leri|ları|nin|nın|nun|nün|de|da|ye|ya|yi|yı|si|sı)\b|"
-                        r"\b(için|olarak|değil|çünkü|olmalı|yetkili|kararları|gerekir|sadece|"
-                        r"ancak|zorunlu|kullanım|yetkisi|üzerinden|ve|bir|bu)\b")
+TR_COMMENT = re.compile(  # tr-ok: this is the vocabulary, not a use of it
+    r"[ıİğĞ]|\b\w+'(?:leri|ları|nin|nın|nun|nün|de|da|ye|ya|yi|yı|si|sı)\b|"  # tr-ok
+    r"\b(için|olarak|değil|çünkü|olmalı|yetkili|kararları|gerekir|sadece|"  # tr-ok
+    r"ancak|zorunlu|kullanım|yetkisi|üzerinden|bir|bu)\b|"  # tr-ok
+    r"(?<!')\bve\b")  # tr-ok: bare `ve`, but not the `'ve` of `you've`
 ALLOW = {"Mela", "Noter", "Balyoz", "Bazargan", "Karguzar", "Hesabdar"}
 
 def _tr_comment(ln):
@@ -409,7 +411,7 @@ def location_kind_and_aliases(name, runtime):
     src += read(ROOT / "pezcumulus/teyrchains/runtimes/constants/src/pezkuwichain.rs")
     aliases = {name}
     body = None
-    for _ in range(4):  # `A = B::get()` zincirini takip et; aynı yerin iki adı olabiliyor
+    for _ in range(4):  # follow an `A = B::get()` chain; one place can have two names
         m = re.search(rf"pub {name}: Location = ([^;]+);", src)
         if not m:
             break
@@ -525,6 +527,57 @@ def placement():
         for name, idx in re.findall(r"^\s*(\w+): [a-z]\w+(?:::<\w+>)? = (\d+),", src, re.M):
             table.setdefault(name, {})[rt.name] = int(idx)
     return table
+
+
+
+# --- franchise: which electorate decides which subject -----------------------------------
+#
+# State matters are head-counted on the People chain, one citizen one vote. Economic matters
+# are token-weighted on the Asset Hub. The claim written above People's origins is that the
+# two lists are disjoint, because "if an origin appeared in both, a holding could reach a state
+# power and the register would be for sale."
+#
+# The runtime test that was supposed to hold that line reads the Asset Hub's own tracks and
+# nothing else, so it cannot see the relay -- and the relay is token-weighted too
+# (`ConvictionVoting::TallyOf`) and still runs three of the state tracks by name. No single
+# runtime's tests can compare three chains; this can.
+#
+# Recorded as a breach rather than waived: the relay's three are a leftover from before the
+# split, six months older than the People ballot box, and what to do about them is Serok's.
+# Naming them here keeps the count from growing while that is decided.
+KNOWN_FRANCHISE_BREACH = {
+    ("pezkuwichain", "welati_election"), ("pezkuwichain", "welati_admin"),
+    ("pezkuwichain", "citizenship_admin"),
+    ("zagros", "welati_election"), ("zagros", "welati_admin"),
+    ("zagros", "citizenship_admin"),
+}
+
+def track_names(rt):
+    return set(re.findall(r'name: s\("([a-z_]+)"\)', read(rt / "src/governance/tracks.rs")))
+
+def print_franchise():
+    state, weighted = {}, {}
+    for rt in runtimes():
+        names = track_names(rt)
+        if not names:
+            continue
+        (state if rt.name.startswith("people-") else weighted)[rt.name] = names
+    subjects = set().union(*state.values()) - {"root"}
+
+    print(f"{'chain':<26}{'state subject':<24}{'verdict'}")
+    print("-" * 74)
+    breaches = 0
+    for chain in sorted(weighted):
+        for name in sorted(weighted[chain] & subjects):
+            known = (chain, name) in KNOWN_FRANCHISE_BREACH
+            print(f"{chain:<26}{name:<24}{'recorded breach' if known else 'NEW BREACH'}")
+            breaches += 0 if known else 1
+    if not any(weighted[c] & subjects for c in weighted):
+        print("(no token-weighted chain runs a state subject)")
+    print()
+    print(f"{len(subjects)} state subjects, {len(KNOWN_FRANCHISE_BREACH)} recorded breaches, "
+          f"{breaches} new")
+    return 1 if breaches else 0
 
 
 def print_arch():
@@ -818,11 +871,39 @@ def print_work(record=False):
     return 0
 
 
+def docs_language():
+    """Turkish outside the pallet trees: documentation and the tools themselves.
+
+    The per-subject check reads `<subject>/src/**.rs`, which is every place a pallet can hide
+    Turkish and no place else. It never saw `.md`, so a document could say anything; it never
+    saw `.py`, so these scripts could -- and did, until somebody read them. A gate whose scope
+    is narrower than the rule it enforces reports green about the part it can see.
+    """
+    hits = []
+    roots = [ROOT / "README.md", ROOT / "docs", ROOT / ".github/scripts", ROOT / "CLAUDE.md"]
+    files = []
+    for r in roots:
+        if r.is_file():
+            files.append(r)
+        elif r.is_dir():
+            files += [f for f in r.rglob("*") if f.suffix in (".md", ".py")]
+    for f in sorted(files):
+        for i, ln in enumerate(read(f).splitlines(), 1):
+            # `# tr-ok` marks a line that carries Turkish on purpose -- the detector's own
+            # vocabulary is the only such line, and it cannot describe itself in English.
+            if "# tr-ok" in ln:
+                continue
+            if _tr_comment(ln):
+                hits.append(f"{f.relative_to(ROOT)}:{i}")
+    return hits
+
 def main():
     if "--work" in sys.argv:
         return print_work(record="--record" in sys.argv)
     if "--phases" in sys.argv:
         return print_phases()
+    if "--franchise" in sys.argv:
+        return print_franchise()
     if "--arch" in sys.argv:
         return 1 if print_arch() else 0
     if "--flows" in sys.argv:
@@ -849,8 +930,12 @@ def main():
             print(f"{p.name:<{w}}" + "  ".join(f"{c:<10}" for c in cells))
 
     print()
+    docs = docs_language()
     print(f"{len(subjects)} subjects x {len(INVARIANTS)} invariants = "
-          f"{len(subjects)*len(INVARIANTS)} cells, {len(gaps)} gaps, {len(unknown)} undecidable")
+          f"{len(subjects)*len(INVARIANTS)} cells, {len(gaps)} gaps, {len(unknown)} undecidable"
+          + (f", {len(docs)} Turkish in docs/tools" if docs else ""))
+    for h in docs[:5]:
+        print(f"  GAP  {'docs/tools':<26} {'language':<11} {h}")
     for name, inv, note in gaps:
         print(f"  GAP  {name:<26} {inv:<11} {note}")
     for name, inv in unknown:

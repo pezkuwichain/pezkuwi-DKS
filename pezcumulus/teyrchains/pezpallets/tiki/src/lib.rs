@@ -1076,6 +1076,17 @@ pub mod pezpallet {
 		/// something that should be here lets an office quietly acquire a second holder, with
 		/// `TikiHolder` naming only one of them and every lookup answering differently
 		/// depending on which record it reads.
+		/// Whether this tiki is an office of state rather than a qualification a person holds.
+		///
+		/// The same twelve as `is_unique_role`, and deliberately the same list rather than a
+		/// second one: an office is exactly a seat that admits one holder. A state has many
+		/// judges, many notaries and many teachers, and those are qualifications -- earned,
+		/// held by the person, and counted towards their standing. The twelve below are held
+		/// by whoever occupies them and earn nothing.
+		pub fn is_office(tiki: &Tiki) -> bool {
+			Self::is_unique_role(tiki)
+		}
+
 		pub fn is_unique_role(tiki: &Tiki) -> bool {
 			matches!(
 				tiki,
@@ -1245,6 +1256,18 @@ impl<T: Config> TikiScoreProvider<T::AccountId> for Pezpallet<T> {
 			// An office whose term has ended stops counting towards standing the moment it
 			// ends, not whenever someone gets around to removing it.
 			.filter(|tiki| !Self::has_expired(who, tiki))
+			// Holding office earns the person nothing. Standing is what someone has done --
+			// taught, vouched, staked, qualified -- and an office is not a thing done, it is a
+			// thing held. Counting it here made the state pay for the office twice: once as the
+			// budget it commands and again as the holder's share of the citizens' pot.
+			//
+			// It also opened a door. The Serok satisfies `tiki::AdminOrigin` alone, and
+			// `grant_tiki` refuses only the offices `is_seated_by_governance` names -- which
+			// left the Treasurer and the Ambassador reachable. Granting himself those two was
+			// worth a hundred and eighty points of standing, and standing is the divisor of
+			// every reward. `Tumey v. Ohio` is the same fault in a courtroom: an official whose
+			// income moves with his own decision is not deciding.
+			.filter(|tiki| !Self::is_office(tiki))
 			.map(Self::get_bonus_for_tiki)
 			.fold(0u32, |acc, x| acc.saturating_add(x))
 			.min(MAX_TIKI_SCORE)
