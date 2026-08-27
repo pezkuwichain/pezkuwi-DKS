@@ -3008,7 +3008,10 @@ impl pezpallet_parameters::Config for Runtime {
 	type AdminOrigin = pezframe_support::traits::AsEnsureOriginWithArg<
 		governance::pezpallet_custom_origins::EconomicAdmin,
 	>;
-	type WeightInfo = ();
+	// Upstream's reference weight rather than `()`. A zero-weight extrinsic is a free one, and
+	// a free call is a free block: measured numbers for this chain come with the next
+	// benchmarking pass.
+	type WeightInfo = weights::pezpallet_parameters::WeightInfo<Runtime>;
 }
 
 pezcumulus_pezpallet_teyrchain_system::register_validate_block! {

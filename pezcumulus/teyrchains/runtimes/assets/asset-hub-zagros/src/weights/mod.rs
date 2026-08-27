@@ -43,6 +43,7 @@ pub mod pezpallet_multisig;
 pub mod pezpallet_nft_fractionalization;
 pub mod pezpallet_nfts;
 pub mod pezpallet_nomination_pools;
+pub mod pezpallet_parameters;
 pub mod pezpallet_proxy;
 pub mod pezpallet_session;
 pub mod pezpallet_staking_async;
