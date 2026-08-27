@@ -274,13 +274,23 @@ mod the_court_roster {
 		pezpallet_collective::Members::<Runtime, DiwanCollective>::get()
 	}
 
+	/// Seat a judge the way the state does: the President names, the House confirms.
+	///
+	/// Root stands in for both halves here because `RootOrParliament` accepts it while sudo
+	/// lives. What these tests are about is whether the two registers stay one list, not who
+	/// signed -- the separation itself is held in the pallet's own tests.
+	fn seat_judge(who: AccountId) -> pezsp_runtime::DispatchResult {
+		Welati::appoint_diwan_member(RuntimeOrigin::root(), who.into())?;
+		Welati::confirm_diwan_member(RuntimeOrigin::root())
+	}
+
 	#[test]
 	fn seating_a_judge_puts_them_on_both_registers() {
 		new_test_ext().execute_with(|| {
 			assert!(bench().is_empty());
 			assert!(collective().is_empty());
 
-			assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::root(), account(JURIST).into()));
+			assert_ok!(seat_judge(account(JURIST)));
 
 			assert_eq!(bench(), vec![account(JURIST)]);
 			assert_eq!(
@@ -294,11 +304,8 @@ mod the_court_roster {
 	#[test]
 	fn the_two_registers_stay_together_as_the_bench_grows() {
 		new_test_ext().execute_with(|| {
-			assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::root(), account(JURIST).into()));
-			assert_ok!(Welati::appoint_diwan_member(
-				RuntimeOrigin::root(),
-				account(ENGINEER).into()
-			));
+			assert_ok!(seat_judge(account(JURIST)));
+			assert_ok!(seat_judge(account(ENGINEER)));
 
 			let mut seated = bench();
 			let mut voting = collective();
@@ -315,11 +322,10 @@ mod the_court_roster {
 		// The failure that would be hardest to see: welati rejects the nominee but the
 		// collective was already told. Then somebody nobody appointed can vote on the court.
 		new_test_ext().execute_with(|| {
-			assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::root(), account(JURIST).into()));
+			assert_ok!(seat_judge(account(JURIST)));
 
 			// The founder is a citizen and nothing more, so the qualification gate refuses.
-			assert!(Welati::appoint_diwan_member(RuntimeOrigin::root(), account(FOUNDER).into())
-				.is_err());
+			assert!(seat_judge(account(FOUNDER)).is_err());
 
 			assert_eq!(bench(), vec![account(JURIST)]);
 			assert_eq!(collective(), vec![account(JURIST)]);
@@ -332,10 +338,7 @@ mod the_court_roster {
 	fn the_pool_admits_law_and_the_chain_alike() {
 		new_test_ext().execute_with(|| {
 			for who in [JURIST, ENGINEER] {
-				assert_ok!(Welati::appoint_diwan_member(
-					RuntimeOrigin::root(),
-					account(who).into()
-				));
+				assert_ok!(seat_judge(account(who)));
 			}
 			assert_eq!(collective().len(), 2);
 		});

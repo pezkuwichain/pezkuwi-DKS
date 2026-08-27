@@ -895,6 +895,23 @@ pub fn holder_of(tiki: pezpallet_tiki::Tiki) -> Option<AccountId> {
 /// chain to it: an elected office with no term recorded is an officeholder no clock will ever
 /// remove. A helper that seated the tiki and skipped the clock would put the tests in a state
 /// the chain cannot reach.
+/// Put a Prime Minister in the chair the way the state does, in both halves.
+///
+/// The President names and the House seats, and a test about what a Prime Minister can do
+/// afterwards should not have to spell that out. `ParliamentBody` takes Root here; the tests
+/// that are actually about the separation use a seated member and check that the President's
+/// own origin is refused.
+pub fn install_prime_minister(nominating: RuntimeOrigin, who: AccountId) {
+	assert_ok!(Welati::appoint_prime_minister(nominating, who));
+	assert_ok!(Welati::confirm_prime_minister(RuntimeOrigin::root()));
+}
+
+/// Seat one of the President's court nominees, in both halves.
+pub fn install_diwan_member(nominating: RuntimeOrigin, who: AccountId) {
+	assert_ok!(Welati::appoint_diwan_member(nominating, who));
+	assert_ok!(Welati::confirm_diwan_member(RuntimeOrigin::root()));
+}
+
 pub fn seat_president(who: AccountId) {
 	make_citizen(who);
 	assert_ok!(Welati::seat_unique_tiki(&who, pezpallet_tiki::Tiki::Serok));

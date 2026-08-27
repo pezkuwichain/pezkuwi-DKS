@@ -5,7 +5,8 @@
 
 use crate::{
 	mock::{
-		add_parliament_member, endorsed_by, last_event, make_citizen, run_to_block, seat_president,
+		add_parliament_member, endorsed_by, install_diwan_member, install_prime_minister,
+		last_event, make_citizen, run_to_block, seat_president,
 		ExtBuilder, RuntimeEvent, RuntimeOrigin, System, Test, Welati,
 	},
 	types::*,
@@ -533,6 +534,80 @@ fn moving_the_line_does_not_move_a_nomination_already_in_flight() {
 			Error::<Test>::AppointmentAlreadyProcessed
 		);
 		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+	});
+}
+
+#[test]
+fn the_president_names_the_prime_minister_and_the_house_seats_him() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+
+		assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::signed(SEROK), 2));
+
+		// Naming is not seating. Until the House acts there is no head of government, and the
+		// President cannot supply the second signature himself.
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::SerokWeziran), None);
+		assert_noop!(Welati::confirm_prime_minister(RuntimeOrigin::signed(SEROK)), BadOrigin);
+
+		assert_ok!(Welati::confirm_prime_minister(RuntimeOrigin::signed(MP)));
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::SerokWeziran), Some(2));
+		assert_eq!(crate::PendingPrimeMinister::<Test>::get(), None);
+	});
+}
+
+#[test]
+fn the_house_can_refuse_the_prime_minister_out_loud() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+
+		assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::signed(SEROK), 2));
+		assert_ok!(Welati::reject_prime_minister(RuntimeOrigin::signed(MP)));
+
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::SerokWeziran), None);
+		// Refusing consumes the nomination, so a later confirmation cannot resurrect it.
+		assert_noop!(
+			Welati::confirm_prime_minister(RuntimeOrigin::signed(MP)),
+			Error::<Test>::NoNomineeStanding
+		);
+
+		// The President may put a different name forward, which is the whole remedy.
+		assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::signed(SEROK), 3));
+		assert_ok!(Welati::confirm_prime_minister(RuntimeOrigin::signed(MP)));
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::SerokWeziran), Some(3));
+	});
+}
+
+#[test]
+fn naming_again_replaces_the_standing_nominee() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+
+		assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::signed(SEROK), 2));
+		assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::signed(SEROK), 3));
+
+		// Withdrawing is the only power the President keeps over a name already sent, and it
+		// works by sending another one -- he never reaches the seat itself.
+		assert_ok!(Welati::confirm_prime_minister(RuntimeOrigin::signed(MP)));
+		assert_eq!(pezpallet_tiki::TikiHolder::<Test>::get(Tiki::SerokWeziran), Some(3));
+	});
+}
+
+#[test]
+fn a_court_the_president_can_fill_alone_is_not_a_check_on_him() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+		make_citizen(2);
+		pezpallet_tiki::UserTikis::<Test>::mutate(2, |tikis| {
+			let _ = tikis.try_push(Tiki::Hiquqnas);
+		});
+
+		assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(SEROK), 2));
+		assert!(Welati::diwan_members().is_empty(), "naming is not seating");
+		assert_noop!(Welati::confirm_diwan_member(RuntimeOrigin::signed(SEROK)), BadOrigin);
+
+		assert_ok!(Welati::confirm_diwan_member(RuntimeOrigin::signed(MP)));
+		assert_eq!(Welati::diwan_members().len(), 1);
+		assert_eq!(crate::PendingCourtNominee::<Test>::get(), None);
 	});
 }
 
@@ -1867,7 +1942,7 @@ mod appointments {
 			seat_president(SEROK);
 			make_citizen(PM);
 
-			assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::signed(SEROK), PM));
+			install_prime_minister(RuntimeOrigin::signed(SEROK), PM);
 
 			assert_eq!(holder_of(Tiki::SerokWeziran), Some(PM));
 		});
@@ -1893,7 +1968,7 @@ mod appointments {
 		// that has to be deleted, deliberately, rather than a behaviour that quietly changes.
 		ExtBuilder::default().build().execute_with(|| {
 			make_citizen(PM);
-			assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::root(), PM));
+			install_prime_minister(RuntimeOrigin::root(), PM);
 			assert_eq!(holder_of(Tiki::SerokWeziran), Some(PM));
 		});
 	}
@@ -1904,7 +1979,7 @@ mod appointments {
 			seat_president(SEROK);
 			make_citizen(PM);
 			make_citizen(MINISTER);
-			assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::signed(SEROK), PM));
+			install_prime_minister(RuntimeOrigin::signed(SEROK), PM);
 
 			// The President names the head of government, not the cabinet.
 			assert_noop!(
@@ -1931,7 +2006,7 @@ mod appointments {
 			make_citizen(PM);
 			make_citizen(MINISTER);
 			make_citizen(OUTSIDER);
-			assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::root(), PM));
+			install_prime_minister(RuntimeOrigin::root(), PM);
 			assert_ok!(Welati::appoint_minister(
 				RuntimeOrigin::signed(PM),
 				MINISTER,
@@ -1961,7 +2036,7 @@ mod appointments {
 			make_citizen(PM);
 			make_citizen(MINISTER);
 			make_citizen(OUTSIDER);
-			assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::root(), PM));
+			install_prime_minister(RuntimeOrigin::root(), PM);
 
 			assert_ok!(Welati::appoint_minister(RuntimeOrigin::signed(PM), MINISTER, Tiki::Wezir));
 			assert_ok!(Welati::appoint_minister(RuntimeOrigin::signed(PM), OUTSIDER, Tiki::Wezir));
@@ -1978,7 +2053,7 @@ mod appointments {
 		ExtBuilder::default().build().execute_with(|| {
 			make_citizen(PM);
 			make_citizen(MINISTER);
-			assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::root(), PM));
+			install_prime_minister(RuntimeOrigin::root(), PM);
 
 			for forbidden in [Tiki::Serok, Tiki::Parlementer, Tiki::Dadger, Tiki::SerokWeziran] {
 				assert_noop!(
@@ -1996,7 +2071,7 @@ mod appointments {
 		ExtBuilder::default().build().execute_with(|| {
 			make_citizen(PM);
 			make_citizen(MINISTER);
-			assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::root(), PM));
+			install_prime_minister(RuntimeOrigin::root(), PM);
 			assert_ok!(Welati::appoint_minister(
 				RuntimeOrigin::signed(PM),
 				MINISTER,
@@ -2019,7 +2094,7 @@ mod appointments {
 			make_citizen(MINISTER);
 			assert!(!Welati::is_minister(&MINISTER));
 
-			assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::root(), PM));
+			install_prime_minister(RuntimeOrigin::root(), PM);
 			assert_ok!(Welati::appoint_minister(
 				RuntimeOrigin::signed(PM),
 				MINISTER,
@@ -2056,7 +2131,7 @@ mod budget {
 	fn seat_finance_minister() {
 		make_citizen(PM);
 		make_citizen(FINANCE);
-		assert_ok!(Welati::appoint_prime_minister(RuntimeOrigin::root(), PM));
+		install_prime_minister(RuntimeOrigin::root(), PM);
 		assert_ok!(Welati::appoint_minister(
 			RuntimeOrigin::signed(PM),
 			FINANCE,
@@ -3090,7 +3165,7 @@ fn the_president_may_only_appoint_somebody_qualified() {
 		);
 
 		make_qualified(8, pezpallet_tiki::Tiki::Bernamenivîs);
-		assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(1), 8));
+		install_diwan_member(RuntimeOrigin::signed(1), 8);
 		assert_eq!(bench(), vec![8]);
 		assert!(pezpallet_tiki::Pezpallet::<Test>::has_tiki(
 			&8,
@@ -3113,7 +3188,7 @@ fn the_qualifying_pool_is_wider_than_law() {
 			(14, pezpallet_tiki::Tiki::Rewsenbîr),            // society
 		] {
 			make_qualified(who, tiki);
-			assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(1), who));
+			install_diwan_member(RuntimeOrigin::signed(1), who);
 		}
 		assert_eq!(bench().len(), 5);
 	});
@@ -3127,7 +3202,7 @@ fn the_president_cannot_take_more_than_five_seats() {
 		seat_president(1);
 		for who in 10..=14u64 {
 			make_qualified(who, pezpallet_tiki::Tiki::Hiquqnas);
-			assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(1), who));
+			install_diwan_member(RuntimeOrigin::signed(1), who);
 		}
 
 		make_qualified(15, pezpallet_tiki::Tiki::Hiquqnas);
@@ -3143,7 +3218,7 @@ fn nobody_takes_two_seats() {
 	ExtBuilder::default().build().execute_with(|| {
 		seat_president(1);
 		make_qualified(10, pezpallet_tiki::Tiki::Dadger);
-		assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(1), 10));
+		install_diwan_member(RuntimeOrigin::signed(1), 10);
 		assert_noop!(
 			Welati::appoint_diwan_member(RuntimeOrigin::signed(1), 10),
 			Error::<Test>::AlreadyOnTheCourt
@@ -3161,7 +3236,7 @@ fn only_the_president_or_root_appoints_to_the_court() {
 			Welati::appoint_diwan_member(RuntimeOrigin::signed(7), 10),
 			Error::<Test>::NotAuthorizedToNominate
 		);
-		assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::root(), 10));
+		install_diwan_member(RuntimeOrigin::root(), 10);
 	});
 }
 

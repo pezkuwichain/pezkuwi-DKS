@@ -584,6 +584,14 @@ pub mod pezpallet {
 	pub type AppointmentProcesses<T: Config> =
 		StorageMap<_, Blake2_128Concat, u32, AppointmentProcess<T>, OptionQuery>;
 
+	/// The President's standing nominee for Prime Minister, waiting on the House.
+	#[pezpallet::storage]
+	pub type PendingPrimeMinister<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
+
+	/// The President's standing nominee for one of his court seats, waiting on the House.
+	#[pezpallet::storage]
+	pub type PendingCourtNominee<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
+
 	/// Which offices need the confirming body's consent, where the legislature has spoken.
 	///
 	/// Absent an entry the office's founding rule stands (`requires_parliament_approval`), so
@@ -800,6 +808,18 @@ pub mod pezpallet {
 		},
 
 		// --- APPOINTMENT EVENTS ---
+		/// The President put a name forward for Prime Minister.
+		PrimeMinisterNominated { nominee: T::AccountId },
+
+		/// The House refused the President's nominee for Prime Minister.
+		PrimeMinisterRejected { nominee: T::AccountId },
+
+		/// The President put a name forward for one of his court seats.
+		DiwanMemberNominated { nominee: T::AccountId },
+
+		/// The House refused the President's court nominee.
+		DiwanMemberRejected { nominee: T::AccountId },
+
 		/// The legislature moved an office on or off the list that needs confirming.
 		ConfirmationRequirementSet { role: OfficialRole, required: bool },
 
@@ -998,6 +1018,10 @@ pub mod pezpallet {
 		RoleAlreadyFilled,
 		/// Nobody is both parties to an appointment: the proposer is not the appointee.
 		CannotNominateSelf,
+		/// There is no nominee for Prime Minister to act on.
+		NoNomineeStanding,
+		/// There is no court nominee to act on.
+		NoCourtNominee,
 
 		// Collective decision errors
 		ProposalNotFound,
@@ -1678,16 +1702,7 @@ pub mod pezpallet {
 			Ok(())
 		}
 
-		/// Appoint the Prime Minister.
-		///
-		/// The President's call alone. In a presidential system the head of state names the
-		/// head of government; what limits him is not who he may appoint but that the person
-		/// he appoints cannot write their own budget -- Parliament approves it, and the
-		/// finance minister only executes what was approved.
-		///
-		/// Root is accepted for as long as sudo exists. When it goes, this reads as Serok
-		/// alone, and the line below is the only thing that has to change.
-		/// Appoint one of the President's five seats on the court.
+		/// Nominate one of the President's five seats on the court.
 		///
 		/// Unlike the elected six, the nominee has to be qualified -- see
 		/// `qualifies_for_an_appointed_seat`. There is no matching dismissal call, and that is
@@ -1698,30 +1713,34 @@ pub mod pezpallet {
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
 		pub fn appoint_diwan_member(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
 			Self::ensure_root_or_serok(origin)?;
+			Self::a_court_seat_is_open_for(&who)?;
+
+			// Nominating again replaces the standing nominee. That is how the President
+			// withdraws a name, and it is the only way he can: he cannot reach the seat.
+			PendingCourtNominee::<T>::put(who.clone());
+			Self::deposit_event(Event::DiwanMemberNominated { nominee: who });
+			Ok(())
+		}
+
+		/// Confirm the President's court nominee, and seat them.
+		///
+		/// The half of the appointment the President does not hold. Nominating puts a name
+		/// forward; this is what puts a judge on the bench, and the body that does it is not
+		/// the one that chose the name.
+		#[pezpallet::call_index(36)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn confirm_diwan_member(origin: OriginFor<T>) -> DispatchResult {
+			T::ConfirmationOrigin::ensure_origin(origin)?;
+
+			let who = PendingCourtNominee::<T>::take().ok_or(Error::<T>::NoCourtNominee)?;
+
+			// Re-checked rather than trusted from nomination time: seats fill and citizenships
+			// lapse between the two moments, and the checks belong at the moment of the act.
+			Self::a_court_seat_is_open_for(&who)?;
 
 			let president = pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
 				.unwrap_or_else(|| who.clone());
-
 			let mut bench = DiwanMembers::<T>::get();
-			ensure!(
-				!bench.iter().any(|member| member.account == who),
-				Error::<T>::AlreadyOnTheCourt
-			);
-
-			let appointed = bench
-				.iter()
-				.filter(|member| matches!(member.appointed_by, AppointmentAuthority::President(_)))
-				.count() as u32;
-			ensure!(
-				appointed < T::DiwanSize::get().saturating_sub(T::DiwanElectedSeats::get()),
-				Error::<T>::AppointedCourtSeatsAreFull
-			);
-
-			ensure!(
-				Self::qualifies_for_an_appointed_seat(&who),
-				Error::<T>::NotQualifiedForTheCourt
-			);
-
 			let now = pezframe_system::Pezpallet::<T>::block_number();
 			let term_end = now.saturating_add(T::CourtTermLength::get());
 
@@ -1742,6 +1761,17 @@ pub mod pezpallet {
 				member: who,
 				appointed_by: AppointmentAuthority::President(president),
 			});
+			Ok(())
+		}
+
+		/// Refuse the President's court nominee.
+		#[pezpallet::call_index(37)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn reject_diwan_member(origin: OriginFor<T>) -> DispatchResult {
+			T::ConfirmationOrigin::ensure_origin(origin)?;
+
+			let who = PendingCourtNominee::<T>::take().ok_or(Error::<T>::NoCourtNominee)?;
+			Self::deposit_event(Event::DiwanMemberRejected { nominee: who });
 			Ok(())
 		}
 
@@ -1801,12 +1831,48 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// Nominate the Prime Minister.
+		///
+		/// The President names the head of government and the House seats him. The comment
+		/// that used to stand here said this was the President's call alone, on the grounds
+		/// that what limits him is the budget rather than the appointment. That is a check on
+		/// what the office can spend, not on who holds it, and a head of government nobody
+		/// else agreed to is an executive appointing his own second executive.
+		///
+		/// Root is accepted for as long as sudo exists. When it goes, this reads as Serok
+		/// alone, and the line below is the only thing that has to change.
 		#[pezpallet::call_index(30)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
 		pub fn appoint_prime_minister(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
 			Self::ensure_root_or_serok(origin)?;
+			PendingPrimeMinister::<T>::put(who.clone());
+			Self::deposit_event(Event::PrimeMinisterNominated { nominee: who });
+			Ok(())
+		}
+
+		/// Confirm the President's nominee for Prime Minister, and seat him.
+		#[pezpallet::call_index(38)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn confirm_prime_minister(origin: OriginFor<T>) -> DispatchResult {
+			T::ConfirmationOrigin::ensure_origin(origin)?;
+
+			let who = PendingPrimeMinister::<T>::take().ok_or(Error::<T>::NoNomineeStanding)?;
 			Self::seat_unique_tiki(&who, Tiki::SerokWeziran)?;
 			Self::deposit_event(Event::PrimeMinisterAppointed { who });
+			Ok(())
+		}
+
+		/// Refuse the President's nominee for Prime Minister.
+		///
+		/// Saying no out loud, rather than by never saying yes. A nomination left standing
+		/// forever is a refusal the record cannot see.
+		#[pezpallet::call_index(39)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn reject_prime_minister(origin: OriginFor<T>) -> DispatchResult {
+			T::ConfirmationOrigin::ensure_origin(origin)?;
+
+			let who = PendingPrimeMinister::<T>::take().ok_or(Error::<T>::NoNomineeStanding)?;
+			Self::deposit_event(Event::PrimeMinisterRejected { nominee: who });
 			Ok(())
 		}
 
@@ -3725,6 +3791,30 @@ impl<T: Config> Pezpallet<T> {
 	}
 
 	/// Check if account is a Parliament member
+	/// Is there a seat for this person on the President's side of the bench?
+	///
+	/// Asked twice -- once when the name goes forward and once when it is confirmed -- because
+	/// the two moments are far apart and a seat can fill in between.
+	fn a_court_seat_is_open_for(who: &T::AccountId) -> DispatchResult {
+		let bench = DiwanMembers::<T>::get();
+		ensure!(
+			!bench.iter().any(|member| &member.account == who),
+			Error::<T>::AlreadyOnTheCourt
+		);
+
+		let appointed = bench
+			.iter()
+			.filter(|member| matches!(member.appointed_by, AppointmentAuthority::President(_)))
+			.count() as u32;
+		ensure!(
+			appointed < T::DiwanSize::get().saturating_sub(T::DiwanElectedSeats::get()),
+			Error::<T>::AppointedCourtSeatsAreFull
+		);
+
+		ensure!(Self::qualifies_for_an_appointed_seat(who), Error::<T>::NotQualifiedForTheCourt);
+		Ok(())
+	}
+
 	/// Does this office need the confirming body's consent?
 	///
 	/// The legislature's answer where it has given one, the founding rule otherwise.
