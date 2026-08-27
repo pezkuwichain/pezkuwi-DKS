@@ -1338,7 +1338,7 @@ pub mod pezpallet {
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(
-				pezpallet_tiki::TikiHolder::<T>::get(Tiki::WezireDarayiye) == Some(who),
+				pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::WezireDarayiye) == Some(who),
 				Error::<T>::NotTheFinanceMinister
 			);
 			ensure!(amount > 0, Error::<T>::NothingToSpend);
@@ -1671,8 +1671,8 @@ pub mod pezpallet {
 		pub fn appoint_diwan_member(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
 			Self::ensure_root_or_serok(origin)?;
 
-			let president =
-				pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok).unwrap_or_else(|| who.clone());
+			let president = pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
+				.unwrap_or_else(|| who.clone());
 
 			let mut bench = DiwanMembers::<T>::get();
 			ensure!(
@@ -2274,8 +2274,8 @@ pub mod pezpallet {
 
 			// Verify nominator is authorized (must be a minister or Serok)
 			// For simplicity, we'll require Serok or any minister can nominate
-			let is_serok =
-				pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok) == Some(nominator.clone());
+			let is_serok = pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
+				== Some(nominator.clone());
 			let is_minister = Self::is_minister(&nominator);
 
 			ensure!(is_serok || is_minister, Error::<T>::NotAuthorizedToNominate);
@@ -2288,7 +2288,7 @@ pub mod pezpallet {
 			let tiki = Self::tiki_for_role(&role);
 			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
 				ensure!(
-					pezpallet_tiki::TikiHolder::<T>::get(tiki).is_none(),
+					pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki).is_none(),
 					Error::<T>::RoleAlreadyFilled
 				);
 			}
@@ -2355,8 +2355,8 @@ pub mod pezpallet {
 			let approver = ensure_signed(origin)?;
 
 			// Verify approver is authorized (typically Serok)
-			let is_serok =
-				pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok) == Some(approver.clone());
+			let is_serok = pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
+				== Some(approver.clone());
 			ensure!(is_serok, Error::<T>::NotAuthorizedToApprove);
 
 			// Get appointment process
@@ -2376,7 +2376,7 @@ pub mod pezpallet {
 			// official with no removal event and no error.
 			let tiki = Self::tiki_for_role(&process.position);
 			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
-				if let Some(current) = pezpallet_tiki::TikiHolder::<T>::get(tiki) {
+				if let Some(current) = pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki) {
 					ensure!(current == process.nominee, Error::<T>::RoleAlreadyFilled);
 				}
 			}
@@ -2620,7 +2620,7 @@ pub mod pezpallet {
 		/// Serok origin check
 		pub fn ensure_serok(origin: OriginFor<T>) -> Result<T::AccountId, DispatchError> {
 			let who = ensure_signed(origin)?;
-			let current_serok = pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok)
+			let current_serok = pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
 				.ok_or(DispatchError::BadOrigin)?;
 			ensure!(who == current_serok, DispatchError::BadOrigin);
 			Ok(who)
@@ -2923,14 +2923,15 @@ pub mod pezpallet {
 		) -> Result<bool, Error<T>> {
 			match decision_type {
 				CollectiveDecisionType::ExecutiveDecision => {
-					Ok(pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok) == Some(proposer.clone()))
+					Ok(pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
+						== Some(proposer.clone()))
 				},
 				_ => {
 					let is_parliamentarian = ParliamentMembers::<T>::get()
 						.iter()
 						.any(|member| member.account == *proposer);
-					let is_president =
-						pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok) == Some(proposer.clone());
+					let is_president = pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
+						== Some(proposer.clone());
 
 					Ok(is_parliamentarian || is_president)
 				},
@@ -2987,7 +2988,7 @@ pub mod pezpallet {
 		fn ensure_prime_minister(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(
-				pezpallet_tiki::TikiHolder::<T>::get(Tiki::SerokWeziran) == Some(who),
+				pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::SerokWeziran) == Some(who),
 				Error::<T>::NotThePrimeMinister
 			);
 			Ok(())
@@ -3337,6 +3338,10 @@ pub mod pezpallet {
 		) -> Result<(), Error<T>> {
 			let grace = ends_at.saturating_add(Self::election_cycle_length());
 
+			// The raw map on purpose, unlike every authority check in this pallet. Seating and
+			// vacating have to act on whoever the register physically holds, expired or not:
+			// `current_holder` would report a lapsed officeholder as absent and their tiki
+			// would be left behind, still in the map, for the next reader to find.
 			if let Some(current) = pezpallet_tiki::TikiHolder::<T>::get(tiki) {
 				if current != *who {
 					pezpallet_tiki::Pezpallet::<T>::internal_revoke_role(&current, tiki)
@@ -3411,6 +3416,10 @@ pub mod pezpallet {
 		}
 
 		pub fn seat_unique_tiki(to: &T::AccountId, tiki: Tiki) -> DispatchResult {
+			// The raw map on purpose, unlike every authority check in this pallet. Seating and
+			// vacating have to act on whoever the register physically holds, expired or not:
+			// `current_holder` would report a lapsed officeholder as absent and their tiki
+			// would be left behind, still in the map, for the next reader to find.
 			if let Some(current) = pezpallet_tiki::TikiHolder::<T>::get(tiki) {
 				if current == *to {
 					return Ok(());
@@ -3422,6 +3431,10 @@ pub mod pezpallet {
 
 		/// Remove a single-holder office from whoever holds it. Empty is not an error.
 		pub fn vacate_unique_tiki(tiki: Tiki) -> DispatchResult {
+			// The raw map on purpose, unlike every authority check in this pallet. Seating and
+			// vacating have to act on whoever the register physically holds, expired or not:
+			// `current_holder` would report a lapsed officeholder as absent and their tiki
+			// would be left behind, still in the map, for the next reader to find.
 			match pezpallet_tiki::TikiHolder::<T>::get(tiki) {
 				Some(current) => {
 					pezpallet_tiki::Pezpallet::<T>::internal_revoke_role(&current, tiki)
@@ -3537,7 +3550,9 @@ impl<T: pezpallet::Config> EnsureOrigin<<T as pezframe_system::Config>::RuntimeO
 	) -> Result<Self::Success, <T as pezframe_system::Config>::RuntimeOrigin> {
 		match o.clone().into() {
 			Ok(pezframe_system::RawOrigin::Signed(who)) => {
-				if let Some(current_serok) = pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok) {
+				if let Some(current_serok) =
+					pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
+				{
 					if who == current_serok {
 						return Ok(who);
 					}
@@ -3610,7 +3625,7 @@ impl<T: Config> Pezpallet<T> {
 
 	/// Check if account is Serok (President)
 	pub fn is_serok(who: &T::AccountId) -> bool {
-		pezpallet_tiki::TikiHolder::<T>::get(Tiki::Serok)
+		pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
 			.map(|serok| &serok == who)
 			.unwrap_or(false)
 	}

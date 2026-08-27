@@ -3577,3 +3577,51 @@ fn votechoice_indices_are_pinned() {
 fn votetype_indices_are_pinned() {
 	pinned::<VoteType>("VoteType", &[("Citizen", 0u8), ("Weighted", 1u8), ("Delegated", 2u8)]);
 }
+
+// ===== TERM EXPIRY =====
+
+/// A President whose term has run out is not the President any more.
+///
+/// `tiki` keeps the term next to the office and offers `current_holder`, which reads the map
+/// and then checks the expiry. Every authority check in this pallet read the raw map instead,
+/// which is the exact case a term exists to prevent: nobody has to remove a lapsed holder for
+/// them to keep the office, and `tiki`'s own comment says as much above `current_holder`.
+///
+/// The powers below are the ones that answer to the seat, so each has to stop answering:
+/// appointing and dismissing a Prime Minister, seating a Diwan member, nominating and
+/// approving an official, and proposing an executive decision.
+#[test]
+fn an_expired_president_holds_no_authority() {
+	ExtBuilder::default().build().execute_with(|| {
+		let president = 1u64;
+		let nominee = 2u64;
+		seat_president(president);
+		make_citizen(nominee);
+
+		// Give the seat a term, the way an election does.
+		let ends_at = System::block_number() + 10;
+		pezpallet_tiki::TikiExpiry::<Test>::insert(president, pezpallet_tiki::Tiki::Serok, ends_at);
+
+		assert!(Welati::is_serok(&president), "still in office before the term ends");
+		assert_ok!(Welati::ensure_serok(RuntimeOrigin::signed(president)));
+
+		run_to_block(ends_at + 1);
+
+		assert!(!Welati::is_serok(&president), "the term ran out and nobody removed them");
+		assert_noop!(
+			Welati::ensure_serok(RuntimeOrigin::signed(president)),
+			pezsp_runtime::DispatchError::BadOrigin
+		);
+		// These two go through `ensure_root_or_serok`, which answers with its own reason
+		// rather than a bare bad origin. Pinned as they are rather than smoothed over: what
+		// matters is that the seat no longer opens them.
+		assert_noop!(
+			Welati::appoint_prime_minister(RuntimeOrigin::signed(president), nominee),
+			Error::<Test>::NotAuthorizedToNominate
+		);
+		assert_noop!(
+			Welati::appoint_diwan_member(RuntimeOrigin::signed(president), nominee),
+			Error::<Test>::NotAuthorizedToNominate
+		);
+	});
+}

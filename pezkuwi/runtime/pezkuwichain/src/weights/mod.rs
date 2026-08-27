@@ -32,6 +32,7 @@ pub mod pezkuwi_runtime_teyrchains_initializer;
 pub mod pezkuwi_runtime_teyrchains_on_demand;
 pub mod pezkuwi_runtime_teyrchains_paras;
 pub mod pezkuwi_runtime_teyrchains_paras_inherent;
+pub mod pezpallet_accumulate_and_forward;
 pub mod pezpallet_balances_balances;
 pub mod pezpallet_beefy_mmr;
 pub mod pezpallet_conviction_voting;

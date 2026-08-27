@@ -428,9 +428,7 @@ impl pezpallet_accumulate_and_forward::Config for Runtime {
 	type TransferPeriod = ForwardPeriod;
 	type MinTransferAmount = MinForwardAmount;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
-	// No measurement of our own yet; the hook is rate-limited to one forward a day, so
-	// the estimate cannot compound. Listed in the weights work with the rest.
-	type WeightInfo = ();
+	type WeightInfo = weights::pezpallet_accumulate_and_forward::WeightInfo<Runtime>;
 }
 
 /// Fees: four fifths accumulated for the treasury, one fifth to whoever produced the block.

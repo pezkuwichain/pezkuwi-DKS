@@ -315,6 +315,35 @@ def inv_rip_index(p, kind):
     taken = [f"{live[i]} took {rip[i]}'s {i}" for i in sorted(rip) if i in live]
     return ("GAP", ", ".join(taken)) if taken else ("ok", f"{len(rip)} retired")
 
+def inv_term_blind(p, kind):
+    """Authority must be read through `tiki::current_holder`, never off the raw map.
+
+    An office can carry a term. `TikiHolder` says who was seated; `current_holder` says who
+    still holds it. Read the map directly and an officeholder whose term ran out keeps the
+    office until somebody notices and removes them by hand -- which is the failure a term
+    exists to prevent, and `tiki`'s own comment above `current_holder` says so.
+
+    Seating and vacating are the exception and must use the raw map, because they act on
+    whoever is physically recorded. Those sites say so in a comment on the line above.
+    """
+    if kind != "pallet" or p.name == "tiki":
+        return "n/a", ""
+    bad = []
+    for f in sorted((p / "src").rglob("*.rs")):
+        if f.name in ("tests.rs", "mock.rs", "benchmarking.rs"):
+            continue
+        lines = read(f).split("\n")
+        for i, ln in enumerate(lines):
+            if "TikiHolder::<T>::get" not in ln:
+                continue
+            window = "\n".join(lines[max(0, i - 5):i])
+            if "raw map on purpose" not in window:
+                bad.append(f"{f.name}:{i + 1}")
+    if not bad:
+        return ("n/a", "") if not any("TikiHolder" in read(f) for f in (p / "src").rglob("*.rs")) \
+            else ("ok", "reads through current_holder")
+    return "GAP", f"{len(bad)} raw reads: {bad[0]}"
+
 def inv_one_record(p, kind):
     """A fact stored in more than one place. Only checkable where we know the pair."""
     if p.name != "welati":
@@ -327,7 +356,7 @@ def inv_one_record(p, kind):
 INVARIANTS = [
     ("enum-pin", inv_enum_pin), ("storage-v", inv_storage_v), ("weight", inv_weight),
     ("no-burn", inv_no_burn), ("twin", inv_twin), ("language", inv_language),
-    ("rip-index", inv_rip_index), ("one-record", inv_one_record),
+    ("rip-index", inv_rip_index), ("term-blind", inv_term_blind), ("one-record", inv_one_record),
 ]
 
 
