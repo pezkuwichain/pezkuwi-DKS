@@ -33,10 +33,10 @@ pezframe-system-benchmarking = { optional = true, workspace = true }
 pezframe-system-rpc-runtime-api = { workspace = true }
 pezframe-try-runtime = { optional = true, workspace = true }
 pezkuwi-primitives = { workspace = true }
+pezpallet-accumulate-and-forward = { workspace = true }
 pezpallet-assets = { workspace = true }
 pezpallet-aura = { workspace = true }
 pezpallet-authorship = { workspace = true }
-pezpallet-accumulate-and-forward = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-collective = { workspace = true }
 pezpallet-identity = { workspace = true }
@@ -142,10 +142,10 @@ std = [
 	"pezkuwi-runtime-common/std",
 	"pezkuwi-teyrchain-primitives/std",
 	"pezkuwichain-runtime-constants/std",
+	"pezpallet-accumulate-and-forward/std",
 	"pezpallet-assets/std",
 	"pezpallet-aura/std",
 	"pezpallet-authorship/std",
-	"pezpallet-accumulate-and-forward/std",
 	"pezpallet-balances/std",
 	"pezpallet-collator-selection/std",
 	"pezpallet-collective/std",
@@ -226,10 +226,10 @@ runtime-benchmarks = [
 	"pezkuwi-runtime-common/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezkuwichain-runtime-constants/runtime-benchmarks",
+	"pezpallet-accumulate-and-forward/runtime-benchmarks",
 	"pezpallet-assets/runtime-benchmarks",
 	"pezpallet-aura/runtime-benchmarks",
 	"pezpallet-authorship/runtime-benchmarks",
-	"pezpallet-accumulate-and-forward/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-collator-selection/runtime-benchmarks",
 	"pezpallet-collective/runtime-benchmarks",
@@ -303,10 +303,10 @@ try-runtime = [
 	"pezkuwi-runtime-common/try-runtime",
 	"pezkuwi-teyrchain-primitives/try-runtime",
 	"pezkuwichain-runtime-constants/try-runtime",
+	"pezpallet-accumulate-and-forward/try-runtime",
 	"pezpallet-assets/try-runtime",
 	"pezpallet-aura/try-runtime",
 	"pezpallet-authorship/try-runtime",
-	"pezpallet-accumulate-and-forward/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-collator-selection/try-runtime",
 	"pezpallet-collective/try-runtime",
