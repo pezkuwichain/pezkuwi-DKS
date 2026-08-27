@@ -101,6 +101,20 @@ fn people_pezkuwichain_genesis(
 		// Creates Collection 0 in pezpallet_nfts and mints NFT #0 for the founder
 		// This is required before any citizenship NFTs can be minted
 		tiki: TikiConfig { founding_citizen },
+
+		// ====================================================================
+		// PezRewards - start the payroll clock at genesis
+		// ====================================================================
+		// The epoch clock has to be running before anyone can ever claim, and it was left
+		// unstarted: the field defaults to false and no preset set it, so the only way to
+		// begin was a governance call somebody had to remember to make. A state's payroll is
+		// not a thing to switch on by hand.
+		//
+		// Starting it is safe well before there is anyone to pay. The pot fills on its own
+		// schedule, and payment is gated separately on the register reaching a hundred
+		// thousand citizens -- that gate is checked on chain and reported over XCM, and it
+		// opens once and does not close.
+		pez_rewards: PezRewardsConfig { start_rewards_system: true, ..Default::default() },
 	})
 }
 

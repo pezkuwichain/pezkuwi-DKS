@@ -318,7 +318,7 @@ impl pezpallet_staking_score::Config for Test {
 	type DisputeWindow = StakingScoreDisputeWindow;
 	type DisputeOrigin = pezframe_system::EnsureSigned<AccountId>;
 	type SlashOrigin = pezframe_system::EnsureRoot<AccountId>;
-	type SlashDestination = StakingScoreSlashDestination;
+	type SlashDestination = SlashesTo<StakingScoreSlashDestination>;
 	type OracleGracePeriod = OracleGracePeriod;
 }
 
@@ -696,7 +696,7 @@ impl pezpallet_welati::Config for Test {
 	type InitiativeThreshold = MockInitiativeThreshold;
 	type InitiativeWindow = MockInitiativeWindow;
 	type InitiativeDeposit = MockInitiativeDeposit;
-	type InitiativeSlashTarget = MockInitiativeSlashTarget;
+	type InitiativeSlashTarget = SlashesTo<MockInitiativeSlashTarget>;
 	type InitiativeCooldown = MockInitiativeCooldown;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = ParliamentSize;
@@ -879,4 +879,18 @@ pub fn endorsed_by(
 
 pub fn last_event() -> RuntimeEvent {
 	System::events().pop().expect("Event expected").event
+}
+
+/// Mock handler: puts the slashed value into an account instead of dropping it, so a test can
+/// assert where it went. Dropping the imbalance would destroy the tokens and the test would
+/// still pass, which is the failure mode the real handler exists to prevent.
+pub struct SlashesTo<A>(core::marker::PhantomData<A>);
+impl<A: pezframe_support::traits::Get<AccountId>>
+	pezframe_support::traits::OnUnbalanced<pezpallet_balances::NegativeImbalance<Test>>
+	for SlashesTo<A>
+{
+	fn on_nonzero_unbalanced(amount: pezpallet_balances::NegativeImbalance<Test>) {
+		use pezframe_support::traits::Currency;
+		Balances::resolve_creating(&A::get(), amount);
+	}
 }

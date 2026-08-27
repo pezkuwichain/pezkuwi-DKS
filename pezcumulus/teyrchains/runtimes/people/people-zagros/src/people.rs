@@ -35,7 +35,10 @@ use pezsp_runtime::traits::{AccountIdConversion, ConvertInto, Verify};
 use scale_info::TypeInfo;
 use testnet_teyrchains_constants::zagros::currency::UNITS;
 use testnet_teyrchains_constants::zagros::locations::AssetHubLocation;
-use teyrchains_common::{impls::ToParentTreasury, DAYS, HOURS};
+use teyrchains_common::{
+	impls::{ToParentTreasury, ToParentTreasuryFungible},
+	DAYS, HOURS,
+};
 
 parameter_types! {
 	//   27 | Min encoded size of `Registration`
@@ -622,7 +625,7 @@ impl pezpallet_staking_score::Config for Runtime {
 	// for. A day covers a slow bot cycle and the dispute window it then waits out; past
 	// that, time is only credited for a stake that has actually existed.
 	type OracleGracePeriod = StakingOracleGracePeriod;
-	type SlashDestination = RelayTreasuryAccount;
+	type SlashDestination = ToParentTreasury<RelayTreasuryAccount, LocationToAccountId, Runtime>;
 }
 
 // =============================================================================
@@ -1309,7 +1312,8 @@ impl pezpallet_welati::Config for Runtime {
 	type InitiativeThreshold = StateInitiativeThreshold;
 	type InitiativeWindow = StateInitiativeWindow;
 	type InitiativeDeposit = StateInitiativeDeposit;
-	type InitiativeSlashTarget = RelayTreasuryAccount;
+	type InitiativeSlashTarget =
+		ToParentTreasury<RelayTreasuryAccount, LocationToAccountId, Runtime>;
 	type InitiativeCooldown = StateInitiativeCooldown;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = WelatiParliamentSize;
@@ -1455,7 +1459,7 @@ impl pezpallet_recovery::Config for Runtime {
 		LinearStoragePrice<RecoveryDepositPerItem, RecoveryDepositPerByte, Balance>,
 	>;
 	type SecurityDeposit = RecoveryDeposit;
-	type Slash = ResolveTo<RelayTreasuryAccount, Balances>;
+	type Slash = ToParentTreasuryFungible<RelayTreasuryAccount, LocationToAccountId, Runtime>;
 	// Documented upstream as never safe to reduce: shrinking it makes stored bounded vectors
 	// undecodable. Held at the previous MaxFriends value.
 	type MaxFriendsPerConfig = ConstU32<9>;

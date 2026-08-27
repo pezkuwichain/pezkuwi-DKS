@@ -199,7 +199,7 @@ use pezframe_support::traits::Currency;
 use pezframe_support::{
 	dispatch::{GetDispatchInfo, PostDispatchInfo},
 	pezpallet_prelude::*,
-	traits::{EnsureOrigin, Get, Polling, Randomness, ReservableCurrency},
+	traits::{EnsureOrigin, Get, OnUnbalanced, Polling, Randomness, ReservableCurrency},
 	weights::Weight,
 };
 use pezframe_system::pezpallet_prelude::*;
@@ -296,6 +296,11 @@ pub mod pezpallet {
 	#[pezpallet::pezpallet]
 	#[pezpallet::storage_version(migrations::STORAGE_VERSION)]
 	pub struct Pezpallet<T>(_);
+
+	/// What a forfeit produces: value taken out of an account and not yet given to anyone.
+	pub type NegativeImbalanceOf<T> = <<T as Config>::NativeCurrency as Currency<
+		<T as pezframe_system::Config>::AccountId,
+	>>::NegativeImbalance;
 
 	#[pezpallet::config]
 	pub trait Config:
@@ -400,9 +405,13 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type InitiativeCooldown: Get<BlockNumberFor<Self>>;
 
-		/// Where a forfeit deposit goes. Not nowhere: this chain's supply is fixed and halving,
-		/// and there is no burn anywhere in it.
-		type InitiativeSlashTarget: Get<Self::AccountId>;
+		/// What becomes of a forfeit deposit. Not nothing: this chain's supply is fixed and
+		/// halving, and there is no burn anywhere in it.
+		///
+		/// A handler rather than an account, for the same reason as `SlashDestination` in
+		/// staking-score: the treasury this should reach is on another chain, and an address
+		/// cannot teleport. Pointed at a bare address it accumulated where nobody could spend.
+		type InitiativeSlashTarget: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
 		/// Currency used for candidacy deposits
 		type NativeCurrency: ReservableCurrency<Self::AccountId>;
@@ -1501,12 +1510,8 @@ pub mod pezpallet {
 				T::AccountId,
 			>>::Balance = init.deposit.saturated_into();
 			T::NativeCurrency::unreserve(&init.proposer, deposit);
-			let _ = T::NativeCurrency::transfer(
-				&init.proposer,
-				&T::InitiativeSlashTarget::get(),
-				deposit,
-				pezframe_support::traits::ExistenceRequirement::AllowDeath,
-			);
+			let (forfeit, _) = T::NativeCurrency::slash(&init.proposer, deposit);
+			T::InitiativeSlashTarget::on_unbalanced(forfeit);
 
 			InitiativeCooldownUntil::<T>::insert(
 				&init.proposer,

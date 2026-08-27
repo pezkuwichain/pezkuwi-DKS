@@ -29,7 +29,7 @@
 //! which `T::DisputeOrigin` (any single Council member) can call
 //! `dispute_staking_details()` to freeze it pending governance review. If
 //! governance (`T::SlashOrigin`) confirms the submission was fraudulent, it can
-//! call `slash_noter()` to burn the noter's bond to `T::SlashDestination`.
+//! call `slash_noter()` to hand the noter's bond to `T::SlashDestination`. Nothing is burnt.
 //!
 //! Root (XCM Transact) submissions are exempt from the bond and the dispute
 //! window: that origin is chain-authenticated (backed by consensus, not a single
@@ -67,7 +67,7 @@ pub mod pezpallet {
 	use core::ops::Div;
 	use pezframe_support::{
 		pezpallet_prelude::*,
-		traits::{Currency, ExistenceRequirement, ReservableCurrency},
+		traits::{Currency, OnUnbalanced, ReservableCurrency},
 	};
 	use pezframe_system::pezpallet_prelude::*;
 	use pezsp_runtime::traits::{Saturating, Zero};
@@ -189,6 +189,12 @@ pub mod pezpallet {
 		}
 	}
 
+	/// What a slash produces: value taken out of an account and not yet given to anyone.
+	/// Whoever handles it decides where it lands, and dropping it would destroy it.
+	pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<
+		<T as pezframe_system::Config>::AccountId,
+	>>::NegativeImbalance;
+
 	#[pezpallet::config]
 	pub trait Config: pezframe_system::Config<RuntimeEvent: From<Event<Self>>>
 	where
@@ -243,8 +249,14 @@ pub mod pezpallet {
 		/// `DisputeOrigin`.
 		type SlashOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
-		/// Where a slashed noter's bond goes.
-		type SlashDestination: Get<Self::AccountId>;
+		/// What becomes of a slashed noter's bond.
+		///
+		/// A handler rather than an account, because on a teyrchain the treasury usually lives
+		/// on another chain and reaching it takes a teleport, which an address cannot do. This
+		/// was a bare `Get<AccountId>` pointing at the relay treasury's derived address, an
+		/// address with no pallet behind it on this side: the bond was not burnt, it was
+		/// parked somewhere nobody can spend from.
+		type SlashDestination: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
 		/// How much of the gap between opting in and the stake being recorded is forgiven.
 		///
@@ -667,12 +679,8 @@ pub mod pezpallet {
 			NoterLastSubmission::<T>::remove(&noter);
 
 			T::Currency::unreserve(&noter, bond);
-			T::Currency::transfer(
-				&noter,
-				&T::SlashDestination::get(),
-				bond,
-				ExistenceRequirement::AllowDeath,
-			)?;
+			let (slashed, _) = T::Currency::slash(&noter, bond);
+			T::SlashDestination::on_unbalanced(slashed);
 
 			Self::deposit_event(Event::NoterSlashed { who: noter, amount: bond });
 			Ok(())
