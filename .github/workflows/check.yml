@@ -59,7 +59,7 @@ jobs:
       - name: Every cross-chain path still has its three gates open
         run: python3 .github/scripts/plan.py --flows
       - name: Report the remaining pre-genesis gaps
-        run: python3 .github/scripts/plan.py --gaps || true
+        run: python3 .github/scripts/plan.py --gaps
 
   fmt:
     runs-on: ubuntu-latest

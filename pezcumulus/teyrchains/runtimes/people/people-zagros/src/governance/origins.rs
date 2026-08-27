@@ -39,14 +39,19 @@ pub mod pezpallet_custom_origins {
 	#[pezpallet::origin]
 	pub enum Origin {
 		/// Origin for Welati administrative actions: tiki grants and appointments.
+		#[codec(index = 0)]
 		WelatiAdmin,
 		/// Origin for citizenship management: revocation and restoration.
+		#[codec(index = 1)]
 		CitizenshipAdmin,
 		/// Origin for election management: initiating and finalizing an election.
+		#[codec(index = 2)]
 		WelatiElection,
 		/// Origin able to cancel a referendum, refunding its deposit.
+		#[codec(index = 3)]
 		ReferendumCanceller,
 		/// Origin able to kill a referendum, slashing its deposit.
+		#[codec(index = 4)]
 		ReferendumKiller,
 	}
 

@@ -35,19 +35,27 @@ pub mod pezpallet_custom_origins {
 	#[pezpallet::origin]
 	pub enum Origin {
 		/// The treasury as a whole: rates, budgets, and what the other spenders may reach.
+		#[codec(index = 0)]
 		Treasurer,
 		/// Small tips, decided quickly because the amount cannot do much harm.
+		#[codec(index = 1)]
 		SmallTipper,
 		/// Larger tips.
+		#[codec(index = 2)]
 		BigTipper,
 		/// Ordinary spending.
+		#[codec(index = 3)]
 		SmallSpender,
+		#[codec(index = 4)]
 		MediumSpender,
 		/// The largest single amounts this chain will move without Root.
+		#[codec(index = 5)]
 		BigSpender,
 		/// Cancel a referendum on this chain, refunding its deposit.
+		#[codec(index = 6)]
 		ReferendumCanceller,
 		/// Kill a referendum on this chain and slash its deposit.
+		#[codec(index = 7)]
 		ReferendumKiller,
 	}
 

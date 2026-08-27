@@ -35,64 +35,94 @@ pub mod pezpallet_custom_origins {
 	#[pezpallet::origin]
 	pub enum Origin {
 		/// Origin for cancelling slashes.
+		#[codec(index = 0)]
 		StakingAdmin,
 		/// Origin for spending (any amount of) funds.
+		#[codec(index = 1)]
 		Treasurer,
 		/// Origin for managing the composition of the fellowship.
+		#[codec(index = 2)]
 		FellowshipAdmin,
 		/// Origin for managing the registrar.
+		#[codec(index = 3)]
 		GeneralAdmin,
 		/// Origin for starting auctions.
+		#[codec(index = 4)]
 		AuctionAdmin,
 		/// Origin able to force slot leases.
+		#[codec(index = 5)]
 		LeaseAdmin,
 		/// Origin able to cancel referenda.
+		#[codec(index = 6)]
 		ReferendumCanceller,
 		/// Origin able to kill referenda.
+		#[codec(index = 7)]
 		ReferendumKiller,
 		/// Origin able to spend up to 1 HEZ from the treasury at once.
+		#[codec(index = 8)]
 		SmallTipper,
 		/// Origin able to spend up to 5 HEZ from the treasury at once.
+		#[codec(index = 9)]
 		BigTipper,
 		/// Origin able to spend up to 50 HEZ from the treasury at once.
+		#[codec(index = 10)]
 		SmallSpender,
 		/// Origin able to spend up to 500 HEZ from the treasury at once.
+		#[codec(index = 11)]
 		MediumSpender,
 		/// Origin able to spend up to 5,000 HEZ from the treasury at once.
+		#[codec(index = 12)]
 		BigSpender,
 		/// Origin able to dispatch a whitelisted call.
+		#[codec(index = 13)]
 		WhitelistedCaller,
 		/// Origin for Welati election management (initiate/finalize elections on People Chain).
+		#[codec(index = 14)]
 		WelatiElection,
 		/// Origin for Welati administrative actions (tiki grants, appointments on People Chain).
+		#[codec(index = 15)]
 		WelatiAdmin,
 		/// Origin for citizenship management (revocation, trust score updates on People Chain).
+		#[codec(index = 16)]
 		CitizenshipAdmin,
 		/// Origin commanded by any members of the Pezkuwi Fellowship (no Dan grade needed).
+		#[codec(index = 17)]
 		FellowshipInitiates,
 		/// Origin commanded by Pezkuwi Fellows (3rd Dan fellows or greater).
+		#[codec(index = 18)]
 		Fellows,
 		/// Origin commanded by Pezkuwi Experts (5th Dan fellows or greater).
+		#[codec(index = 19)]
 		FellowshipExperts,
 		/// Origin commanded by Pezkuwi Masters (7th Dan fellows of greater).
+		#[codec(index = 20)]
 		FellowshipMasters,
 		/// Origin commanded by rank 1 of the Pezkuwi Fellowship and with a success of 1.
+		#[codec(index = 21)]
 		Fellowship1Dan,
 		/// Origin commanded by rank 2 of the Pezkuwi Fellowship and with a success of 2.
+		#[codec(index = 22)]
 		Fellowship2Dan,
 		/// Origin commanded by rank 3 of the Pezkuwi Fellowship and with a success of 3.
+		#[codec(index = 23)]
 		Fellowship3Dan,
 		/// Origin commanded by rank 4 of the Pezkuwi Fellowship and with a success of 4.
+		#[codec(index = 24)]
 		Fellowship4Dan,
 		/// Origin commanded by rank 5 of the Pezkuwi Fellowship and with a success of 5.
+		#[codec(index = 25)]
 		Fellowship5Dan,
 		/// Origin commanded by rank 6 of the Pezkuwi Fellowship and with a success of 6.
+		#[codec(index = 26)]
 		Fellowship6Dan,
 		/// Origin commanded by rank 7 of the Pezkuwi Fellowship and with a success of 7.
+		#[codec(index = 27)]
 		Fellowship7Dan,
 		/// Origin commanded by rank 8 of the Pezkuwi Fellowship and with a success of 8.
+		#[codec(index = 28)]
 		Fellowship8Dan,
 		/// Origin commanded by rank 9 of the Pezkuwi Fellowship and with a success of 9.
+		#[codec(index = 29)]
 		Fellowship9Dan,
 	}
 

@@ -107,6 +107,26 @@ def inv_enum_pin(p, kind):
     if not src:
         return "n/a", ""
 
+    # A runtime's `Origin` enum never appears in a storage declaration, so the walk below
+    # cannot reach it -- but the Scheduler's agenda and every open referendum hold encoded
+    # `PalletsOrigin` bytes, which is the same exposure by a different route. Renumbering one
+    # would hand a scheduled call to a different body.
+    if kind == "runtime":
+        gov = p / "src/governance/origins.rs"
+        if not gov.exists():
+            return "n/a", ""
+        g = read(gov)
+        m = re.search(r"^(\s*)pub enum Origin \{$", g, re.M)
+        if not m:
+            return "n/a", ""
+        cl = re.search(rf"^{m.group(1)}\}}$", g[m.end():], re.M)
+        body = re.sub(r"//[^\n]*", "", g[m.end():m.end() + cl.start()])
+        variants = re.findall(rf"^{m.group(1)}\t(\w+)\s*[,({{=]?\s*$", body, re.M)
+        pinned = len(re.findall(r"#\[codec\(index", body))
+        if variants and pinned < len(variants):
+            return "GAP", f"Origin {pinned}/{len(variants)}"
+        return ("ok", f"Origin {len(variants)}") if variants else ("n/a", "")
+
     # Every type body, so we can walk from a storage root down through the fields.
     bodies = {}
     for m in re.finditer(r"^(\s*)pub (?:enum|struct) (\w+)[^\n{]*\{$", src, re.M):
