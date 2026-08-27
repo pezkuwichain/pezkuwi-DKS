@@ -350,17 +350,17 @@ fn tiki_scoring_works_correctly() {
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), user));
 		assert_eq!(TikiPallet::get_tiki_score(&user), 10);
 
-		// Add a high-scoring role
-		assert_ok!(TikiPallet::grant_elected_role(RuntimeOrigin::root(), user, TikiEnum::Serok)); // 200 points
-
-		// Verify the total score (10 + 200 = 210)
-		assert_eq!(TikiPallet::get_tiki_score(&user), 210);
+		// An office. It carries a bonus in the table and contributes none of it: holding
+		// office earns the holder nothing.
+		assert_ok!(TikiPallet::grant_elected_role(RuntimeOrigin::root(), user, TikiEnum::Serok));
+		assert_eq!(TikiPallet::get_bonus_for_tiki(&TikiEnum::Serok), 200);
+		assert_eq!(TikiPallet::get_tiki_score(&user), 10);
 
 		// Add another role
 		assert_ok!(TikiPallet::grant_earned_role(RuntimeOrigin::root(), user, TikiEnum::Axa)); // 250 points
 
-		// Total score (10 + 200 + 250 = 460)
-		assert_eq!(TikiPallet::get_tiki_score(&user), 460);
+		// 10 citizenship + 250 landholder. The presidency adds nothing.
+		assert_eq!(TikiPallet::get_tiki_score(&user), 260);
 	});
 }
 
@@ -628,10 +628,10 @@ fn complex_multi_role_scenario() {
 		assert!(user_tikis.contains(&TikiEnum::Welati)); // 10 points
 		assert!(user_tikis.contains(&TikiEnum::PisporêEwlehiyaSîber)); // 100 points
 		assert!(user_tikis.contains(&TikiEnum::Mamoste)); // 70 points
-		assert!(user_tikis.contains(&TikiEnum::Parlementer)); // 100 points
+		assert!(user_tikis.contains(&TikiEnum::Parlementer)); // a seat: 0 towards standing
 
-		// Verify the total score (10 + 100 + 70 + 100 = 280)
-		assert_eq!(TikiPallet::get_tiki_score(&user), 280);
+		// 10 citizenship + 100 specialist + 70 teacher. The seat contributes nothing.
+		assert_eq!(TikiPallet::get_tiki_score(&user), 180);
 
 		// Revoke one role and verify the score is updated
 		assert_ok!(TikiPallet::revoke_tiki(
@@ -639,7 +639,7 @@ fn complex_multi_role_scenario() {
 			user,
 			TikiEnum::PisporêEwlehiyaSîber
 		));
-		assert_eq!(TikiPallet::get_tiki_score(&user), 180); // 280 - 100 = 180
+		assert_eq!(TikiPallet::get_tiki_score(&user), 80); // 180 - 100 specialist
 	});
 }
 
@@ -751,10 +751,12 @@ fn stress_test_multiple_users_roles() {
 		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 5, TikiEnum::Dadger));
 
 		// Verify the scores
-		assert_eq!(TikiPallet::get_tiki_score(&2), 310); // 10 + 200 + 100
-		assert_eq!(TikiPallet::get_tiki_score(&3), 180); // 10 + 70 + 100
-		assert_eq!(TikiPallet::get_tiki_score(&4), 260); // 10 + 100 + 150
-		assert_eq!(TikiPallet::get_tiki_score(&5), 410); // 10 + 250 + 150
+		// Offices contribute nothing. What is left is citizenship and what each person earned.
+		assert_eq!(TikiPallet::get_tiki_score(&2), 110); // 10 welati + 100 security specialist
+												   //                                                 Serok 200 is an office: nothing
+		assert_eq!(TikiPallet::get_tiki_score(&3), 180); // 10 + 70 teacher + 100 specialist
+		assert_eq!(TikiPallet::get_tiki_score(&4), 10); //  10; both seats are offices
+		assert_eq!(TikiPallet::get_tiki_score(&5), 410); // 10 + 250 landholder + 150 judge
 
 		// Verify the unique roles are assigned correctly
 		assert_eq!(TikiPallet::tiki_holder(TikiEnum::Serok), Some(2));
@@ -1225,7 +1227,10 @@ mod terms {
 		new_test_ext().execute_with(|| {
 			citizen(2);
 			let with_citizenship_only = TikiPallet::get_tiki_score(&2);
-			assert_ok!(TikiPallet::internal_grant_role_until(&2, TikiEnum::Xezinedar, 100));
+			// A qualification, not an office. Offices earn the holder nothing at all now, so
+			// one would prove nothing here -- what is under test is that a term ending stops
+			// the count, and only something that counts can show that.
+			assert_ok!(TikiPallet::internal_grant_role_until(&2, TikiEnum::Mamoste, 100));
 			assert!(TikiPallet::get_tiki_score(&2) > with_citizenship_only);
 
 			System::set_block_number(200);
@@ -1449,7 +1454,9 @@ fn losing_citizenship_takes_the_offices_first() {
 		use pezpallet_identity_kyc::types::CitizenNftProvider;
 
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), 2));
-		assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), 2, TikiEnum::Xezinedar));
+		// Seated the way an office is seated now: `grant_tiki` refuses the ones a nomination
+		// confirms, and the Treasurer is one of them.
+		assert_ok!(TikiPallet::internal_grant_role(&2, TikiEnum::Xezinedar));
 		assert_eq!(TikiPallet::current_holder(&TikiEnum::Xezinedar), Some(2));
 
 		assert_ok!(<TikiPallet as CitizenNftProvider<u64>>::burn_citizen_nft(&2));
@@ -1505,17 +1512,81 @@ fn the_admin_call_cannot_unseat_an_office_governance_owns() {
 }
 
 #[test]
-fn the_guard_does_not_close_the_only_door_an_office_has() {
+fn the_admin_door_is_shut_on_offices_a_nomination_confirms() {
 	new_test_ext().execute_with(|| {
 		let who = 44u64;
 		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), who));
 
-		// Nothing in welati seats the Treasurer or the Ambassador, so this call is the only
-		// door they have. Guarding them would leave the offices unfillable.
+		// The Treasurer and the Ambassador used to be reachable here, on the grounds that this
+		// call was their only door. It is not: `welati::tiki_for_role` maps both from an
+		// `OfficialRole`, and `requires_parliament_approval` names them among the offices a
+		// parliament must confirm. Shutting the shortcut leaves the proper road open.
 		for office in [TikiEnum::Xezinedar, TikiEnum::Balyoz] {
-			assert_ok!(TikiPallet::grant_tiki(RuntimeOrigin::root(), who, office));
+			assert_noop!(
+				TikiPallet::grant_tiki(RuntimeOrigin::root(), who, office),
+				Error::<Test>::SeatedByGovernance
+			);
+			// And the road that remains still works.
+			assert_ok!(TikiPallet::internal_grant_role(&who, office));
 			assert!(TikiPallet::has_tiki(&who, &office));
-			assert_ok!(TikiPallet::revoke_tiki(RuntimeOrigin::root(), who, office));
 		}
+	});
+}
+
+#[test]
+fn a_president_cannot_enlarge_his_own_share() {
+	// The path this closes, measured before it was closed:
+	//
+	//   `AdminOrigin` on the People chain is `RootOrSerokOrCouncil`, so the sitting President
+	//   satisfies it alone. `grant_tiki` refused only the offices `is_seated_by_governance`
+	//   named, and the Treasurer and the Ambassador were not among them. Granting himself
+	//   those two was worth a hundred and eighty points of standing, and every reward is
+	//   divided by standing -- so the office that grants offices could raise its holder's
+	//   share of the citizens' pot.
+	//
+	// Three things had to be true for that to work, and each is now false on its own: an
+	// office contributes nothing to standing, nobody may grant to themselves, and those two
+	// offices are seated by nomination rather than by this call.
+	new_test_ext().execute_with(|| {
+		let president = crate::mock::MOCK_SEROK;
+		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), president));
+		assert_ok!(TikiPallet::internal_grant_role(&president, TikiEnum::Serok));
+
+		let standing = TikiPallet::get_tiki_score(&president);
+
+		// The presidency itself adds nothing: the table prices it at two hundred and the
+		// holder's standing is citizenship alone.
+		assert!(TikiPallet::has_tiki(&president, &TikiEnum::Serok));
+		assert_eq!(TikiPallet::get_bonus_for_tiki(&TikiEnum::Serok), 200);
+		assert_eq!(standing, TikiPallet::get_bonus_for_tiki(&TikiEnum::Welati));
+
+		// Those two offices are no longer reachable by this call at all, for anyone.
+		let someone = 8u64;
+		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), someone));
+		for office in [TikiEnum::Xezinedar, TikiEnum::Balyoz] {
+			assert_noop!(
+				TikiPallet::grant_tiki(RuntimeOrigin::signed(president), someone, office),
+				Error::<Test>::SeatedByGovernance
+			);
+		}
+
+		// Nor anything else, office or qualification: an appointment has two parties.
+		assert_noop!(
+			TikiPallet::grant_tiki(RuntimeOrigin::signed(president), president, TikiEnum::Dadger),
+			Error::<Test>::CannotGrantToSelf
+		);
+
+		// Someone else may still be given a qualification, and it still counts for them.
+		let other = 9u64;
+		assert_ok!(TikiPallet::grant_honorary_citizenship(RuntimeOrigin::root(), other));
+		assert_ok!(TikiPallet::grant_tiki(
+			RuntimeOrigin::signed(president),
+			other,
+			TikiEnum::Dadger
+		));
+		assert!(TikiPallet::get_tiki_score(&other) > TikiPallet::get_tiki_score(&president));
+
+		// And his standing has not moved through any of it.
+		assert_eq!(TikiPallet::get_tiki_score(&president), standing);
 	});
 }

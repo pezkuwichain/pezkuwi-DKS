@@ -271,7 +271,7 @@ parameter_types! {
 }
 
 impl crate::Config for Test {
-	type AdminOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type AdminOrigin = RootOrAPerson;
 	type ElectedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	// On the real runtimes these are the court and the head of government. Root stands in
@@ -317,4 +317,34 @@ pub fn new_test_ext() -> pezsp_io::TestExternalities {
 		));
 	});
 	ext
+}
+
+/// The account this mock treats as the sitting President.
+pub const MOCK_SEROK: AccountId = 7;
+
+/// What `AdminOrigin` actually is in production, near enough to test against.
+///
+/// On the People chain it is `RootOrSerokOrCouncil` -- satisfied by Root, and satisfied by the
+/// sitting President on his own. The mock had only `EnsureRoot`, so no test could ever make
+/// this call as a person, and the one thing a person can do that Root cannot -- hand something
+/// to themselves -- was untestable. That is why the hole survived: not unnoticed, unreachable.
+///
+/// One named account rather than any signed one, because that is the shape of the real origin:
+/// a particular officeholder, not the public.
+pub struct RootOrAPerson;
+impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for RootOrAPerson {
+	type Success = ();
+
+	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		match o.clone().into() {
+			Ok(pezframe_system::RawOrigin::Root) => Ok(()),
+			Ok(pezframe_system::RawOrigin::Signed(who)) if who == MOCK_SEROK => Ok(()),
+			_ => Err(o),
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+		Ok(pezframe_system::RawOrigin::Root.into())
+	}
 }

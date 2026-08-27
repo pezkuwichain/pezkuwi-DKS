@@ -513,6 +513,8 @@ pub mod pezpallet {
 		RoleNotRevocable,
 		/// Another pallet owns the seating of this office; use its path.
 		SeatedByGovernance,
+		/// Nobody may be both parties to their own appointment.
+		CannotGrantToSelf,
 	}
 
 	#[pezpallet::event]
@@ -713,8 +715,19 @@ pub mod pezpallet {
 			dest: <T::Lookup as StaticLookup>::Source,
 			tiki: Tiki,
 		) -> DispatchResult {
+			// Who is asking, before the origin is consumed. `AdminOrigin` is satisfied by Root,
+			// by the President alone, and by half the Council, so a signed caller is a person
+			// and the others are not -- and only a person can hand something to themselves.
+			let caller = ensure_signed(origin.clone()).ok();
 			T::AdminOrigin::ensure_origin(origin)?;
 			let dest_account = T::Lookup::lookup(dest)?;
+
+			// An appointment has two parties and nobody is both of them. The President
+			// satisfies this origin on his own, so without this line the office that grants
+			// offices could grant them to the man holding it.
+			if let Some(caller) = caller {
+				ensure!(caller != dest_account, Error::<T>::CannotGrantToSelf);
+			}
 
 			ensure!(!Self::is_seated_by_governance(&tiki), Error::<T>::SeatedByGovernance);
 
@@ -1076,15 +1089,19 @@ pub mod pezpallet {
 		/// something that should be here lets an office quietly acquire a second holder, with
 		/// `TikiHolder` naming only one of them and every lookup answering differently
 		/// depending on which record it reads.
-		/// Whether this tiki is an office of state rather than a qualification a person holds.
+		/// Whether this tiki is a seat of state rather than a qualification a person holds.
 		///
-		/// The same twelve as `is_unique_role`, and deliberately the same list rather than a
-		/// second one: an office is exactly a seat that admits one holder. A state has many
-		/// judges, many notaries and many teachers, and those are qualifications -- earned,
-		/// held by the person, and counted towards their standing. The twelve below are held
-		/// by whoever occupies them and earn nothing.
+		/// Fourteen: the twelve single-seat offices, and the two benches. A bench seat is no
+		/// less an office for there being two hundred of them -- a parliamentarian is elected
+		/// to a seat, holds it for a term, and commands from it. What separates the two kinds
+		/// is not how many there are but what they are: a seat is occupied, a qualification is
+		/// earned and belongs to the person who earned it.
+		///
+		/// None of the fourteen counts towards standing. Parliament is paid from its own pot by
+		/// its own annual vote, and the bench likewise; an office already commands a budget and
+		/// has no business also enlarging its holder's share of the citizens' pot.
 		pub fn is_office(tiki: &Tiki) -> bool {
-			Self::is_unique_role(tiki)
+			Self::is_unique_role(tiki) || matches!(tiki, Tiki::Parlementer | Tiki::EndameDiwane)
 		}
 
 		pub fn is_unique_role(tiki: &Tiki) -> bool {
@@ -1140,11 +1157,18 @@ pub mod pezpallet {
 		/// Minister the President never appointed, or mint a judge who never sat -- and the
 		/// forged seat carries the trust score of a real one.
 		///
-		/// Offices nobody else seats -- Xezinedar, Balyoz -- are deliberately absent: for them
-		/// this pallet's admin call is the only door there is, and closing it would leave the
-		/// office unfillable.
+		/// `Xezinedar` and `Balyoz` were absent here on the grounds that this pallet's admin
+		/// call was the only door to them, and closing it would leave the offices unfillable.
+		/// That has not been true for some time: `welati::tiki_for_role` maps both from an
+		/// `OfficialRole`, so the nomination path seats them -- and
+		/// `OfficialRole::requires_parliament_approval` names these two among the five that a
+		/// parliament must confirm. There is a second door and it is the better one.
 		pub fn is_seated_by_governance(tiki: &Tiki) -> bool {
-			Self::is_cabinet_tiki(tiki) || matches!(tiki, Tiki::SerokWeziran | Tiki::EndameDiwane)
+			Self::is_cabinet_tiki(tiki)
+				|| matches!(
+					tiki,
+					Tiki::SerokWeziran | Tiki::EndameDiwane | Tiki::Xezinedar | Tiki::Balyoz
+				)
 		}
 
 		/// Returns the assignment type of a specific role
