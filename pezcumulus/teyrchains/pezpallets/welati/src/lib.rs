@@ -3570,47 +3570,6 @@ impl<T: pezpallet::Config> EnsureOrigin<<T as pezframe_system::Config>::RuntimeO
 	}
 }
 
-/// For Parliament member origin check
-pub struct EnsureParlementer<T>(pezsp_std::marker::PhantomData<T>);
-
-impl<T: pezpallet::Config> EnsureOrigin<<T as pezframe_system::Config>::RuntimeOrigin>
-	for EnsureParlementer<T>
-{
-	type Success = T::AccountId;
-
-	fn try_origin(
-		o: <T as pezframe_system::Config>::RuntimeOrigin,
-	) -> Result<Self::Success, <T as pezframe_system::Config>::RuntimeOrigin> {
-		match o.clone().into() {
-			Ok(pezframe_system::RawOrigin::Signed(who)) => {
-				let parliament_members = pezpallet::Pezpallet::<T>::parliament_members();
-				if parliament_members.iter().any(|member| member.account == who) {
-					return Ok(who);
-				}
-				Err(o)
-			},
-			_ => Err(o),
-		}
-	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	fn try_successful_origin() -> Result<<T as pezframe_system::Config>::RuntimeOrigin, ()> {
-		let parlementer_account: T::AccountId = pezframe_benchmarking::account("parlementer", 0, 0);
-		let member = ParliamentMember {
-			account: parlementer_account.clone(),
-			elected_at: 0u32.into(),
-			term_ends_at: u32::MAX.into(),
-			votes_participated: 0,
-			total_votes_eligible: 0,
-			participation_rate: 100,
-			committees: Default::default(),
-		};
-		let members: BoundedVec<_, T::ParliamentSize> = vec![member].try_into().unwrap();
-		ParliamentMembers::<T>::put(members);
-		Ok(pezframe_system::RawOrigin::Signed(parlementer_account).into())
-	}
-}
-
 // ====== HELPER FUNCTIONS FOR FEE EXEMPTION ======
 
 impl<T: Config> Pezpallet<T> {

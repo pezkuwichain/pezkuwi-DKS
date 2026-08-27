@@ -651,11 +651,11 @@ impl Polling<CitizenTally<MockElectorate>> for TestPolls {
 	}
 }
 
-// --- Girisimin ulastigi sandik ---
+// --- The ballot box an initiative reaches ---
 //
-// Gercek runtime bunu `Referenda::submit` cagirarak uygular. Burada onemli olan tek sey
-// pallet'in dogru anda, dogru argumanlarla cagirmasi; sandigin kendisi baska bir pallet'in
-// testidir.
+// The real runtime does this by calling `Referenda::submit`. All that matters here is that the
+// pallet calls at the right moment with the right arguments; the ballot box itself is another
+// pallet's test.
 thread_local! {
 	pub static LAUNCHED: core::cell::RefCell<Vec<(AccountId, u16, H256, u32)>> =
 		const { core::cell::RefCell::new(Vec::new()) };

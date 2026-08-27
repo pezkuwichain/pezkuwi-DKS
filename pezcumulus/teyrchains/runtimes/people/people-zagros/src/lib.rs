@@ -429,9 +429,13 @@ pub type RootOrSerokOrCouncilTwoThirds = EitherOfDiverse<
 	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 2, 3>,
 >;
 
-/// Root, the Diwan, or the Council.
-/// Citizenship and identity, with authority handed over in stages.
-pub type RootOrDiwanOrTechnical = EitherOfDiverse<
+/// Root, two thirds of the Diwan, or more than half the Council.
+///
+/// Named `RootOrDiwanOrTechnical` until now, which promised a technical committee. There is no
+/// technical committee on this chain and never has been; the third arm is the Council. A name
+/// that describes a body the chain does not have is how a reader concludes a power is narrower
+/// than it is.
+pub type RootOrDiwanOrCouncil = EitherOfDiverse<
 	RootOrDiwan,
 	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
 >;

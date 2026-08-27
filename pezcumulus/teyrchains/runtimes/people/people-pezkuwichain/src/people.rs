@@ -431,7 +431,7 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for PerwerdeAdminOrig
 			return Ok(PerwerdeAdminPotId::get().into_account_truncating());
 		}
 
-		// 3. Serok (Cumhurbaşkanı) kontrolü
+		// 3. The President, in person.
 		if let Ok(serok) = pezpallet_welati::EnsureSerok::<Runtime>::try_origin(o.clone()) {
 			return Ok(serok);
 		}
@@ -621,7 +621,7 @@ impl pezpallet_staking_score::NoterCheck<AccountId> for TikiNoterChecker {
 parameter_types! {
 	// Real-world analogy: a notary's bond/insurance. An account must hold the
 	// Noter tiki *and* post this bond via `register_as_noter` before its
-	// submissions are accepted. Slashable by `RootOrDiwanOrTechnical` if a
+	// submissions are accepted. Slashable by `RootOrDiwanOrCouncil` if a
 	// disputed submission is confirmed fraudulent. The tiki role itself
 	// supports any number of independently registered accounts — this is not
 	// a single hardcoded noter, the same way a state can authorize any number
@@ -651,7 +651,7 @@ impl pezpallet_staking_score::Config for Runtime {
 	type DisputeOrigin = pezpallet_collective::EnsureMember<AccountId, CouncilCollective>;
 	// Deliberately stronger: slashing a noter's bond needs an actual
 	// governance decision, not one member's word.
-	type SlashOrigin = crate::RootOrDiwanOrTechnical;
+	type SlashOrigin = crate::RootOrDiwanOrCouncil;
 	// How much of the gap between opting in and the data landing the user is not charged
 	// for. A day covers a slow bot cycle and the dispute window it then waits out; past
 	// that, time is only credited for a stake that has actually existed.
@@ -663,15 +663,16 @@ impl pezpallet_staking_score::Config for Runtime {
 // Collective Pezpallet Configuration (for governance)
 // =============================================================================
 //
-// Pezkuwichain Komisyon Yapısı:
-// - Council (Instance1): Genel Konsey - Ana yönetişim organı
+// Collective bodies on this chain.
 //
-// Ek komisyonlar (EducationCommittee, TechnicalCommittee, TreasuryCommittee)
-// runtime upgrade ile eklenecek. Şu an Welati pezpallet'in EnsureSerok,
-// EnsureParlementer ve EnsureDiwan origin'leri kullanılıyor.
+// One exists: `Council` (Instance1), the general council, whose roster is written by `welati`
+// from the elected parliament.
 //
-// Bu komisyonlar başlangıçta Root (Sudo) tarafından yönetilir.
-// Welati pezpallet'i aracılığıyla seçimler yapıldığında yetki devredilir.
+// An education committee, a technical committee and a treasury committee are named in places
+// that expect them and none of them has been constituted. Until they are, the origins that
+// stand in for them come from `welati` -- `EnsureSerok`, `EnsureParlementer`, `EnsureDiwan` --
+// and an origin whose name promises one of those bodies is naming something that does not
+// exist yet. Adding a body is a runtime upgrade, not a genesis matter.
 // =============================================================================
 
 parameter_types! {
@@ -684,7 +685,7 @@ parameter_types! {
 // Collective instances
 pub type CouncilCollective = pezpallet_collective::Instance1;
 
-/// Council (Genel Konsey) - Ana yönetişim organı
+/// The general council. Its members are seated by `welati` from the elected parliament.
 impl pezpallet_collective::Config<CouncilCollective> for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	type Proposal = RuntimeCall;

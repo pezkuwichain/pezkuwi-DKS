@@ -268,16 +268,27 @@ def inv_twin(p, kind):
 TR_ONLY = "ıİğĞ"
 TR_STEMS = ["Advalet", "Adalet", "Denetim", "Teknoloji", "Baskan", "Bakanlik", "Yetki",
             "Karar", "Secim", "Gorev", "Odeme", "Durum", "Kayit", "Onay", "Islem"]
-TR_WORDS = re.compile(r"\b(için|olarak|değil|çünkü|olmalı|yetkili|kararları|gerekir|sadece|"
-                      r"ancak|zorunlu|Kullanım|yetkisi|üzerinden)\b")
+# Turkish in a comment, found by the alphabet rather than by a word list.
+#
+# A remembered vocabulary only catches what somebody thought of: the list here held thirteen
+# words and missed `kullanılıyor` sitting in two production runtimes. `ı` and `ğ` are the
+# discriminating letters -- Kurdish uses ç, ş, î, ê and û, and has neither of these -- and the
+# apostrophe-suffix (`origin'leri`, `Tiki'nin`) is a Turkish construction English does not make.
+# Backticked spans are skipped, since a comment may legitimately quote a Kurdish identifier.
+TR_COMMENT = re.compile(r"[ıİğĞ]|\b\w+'(?:leri|ları|nin|nın|nun|nün|de|da|ye|ya|yi|yı|si|sı)\b|"
+                        r"\b(için|olarak|değil|çünkü|olmalı|yetkili|kararları|gerekir|sadece|"
+                        r"ancak|zorunlu|kullanım|yetkisi|üzerinden|ve|bir|bu)\b")
 ALLOW = {"Mela", "Noter", "Balyoz", "Bazargan", "Karguzar", "Hesabdar"}
+
+def _tr_comment(ln):
+    return bool(TR_COMMENT.search(re.sub(r"`[^`]*`", "", ln)))
 
 def inv_language(p, kind):
     hits = []
     for f in (p / "src").rglob("*.rs"):
         for i, ln in enumerate(read(f).splitlines(), 1):
             if re.match(r"^\s*(//|///|//!)", ln):
-                if TR_WORDS.search(ln):
+                if _tr_comment(ln):
                     hits.append(f"{f.name}:{i} comment")
                 continue
             for name in re.findall(r"\b([A-Z][\w]*)\b", ln.split("//")[0], re.U):
