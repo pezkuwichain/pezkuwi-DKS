@@ -38,6 +38,7 @@ enum-pin and unsafe before, because until the number is pinned it follows the na
     python3 .github/scripts/plan.py --flows   # the cross-chain paths, gate by gate
     python3 .github/scripts/plan.py --arch    # which chain carries which pallet
     python3 .github/scripts/plan.py --phases  # the sequence, and what each phase must show
+    python3 .github/scripts/plan.py --work    # has the agreed design landed; fails on regression
 """
 import re, subprocess, sys
 from pathlib import Path
@@ -518,7 +519,166 @@ def print_phases():
     return 0
 
 
+
+# --- the work sheet: the placement decisions, and whether they have landed ---
+#
+# The other sheets ask whether the tree is sound. This one asks whether the design that was
+# agreed has actually been built: the state's ballot on the chain that holds the register,
+# the economy's on the chain that holds the money, and the paths between them.
+#
+# `plan-baseline.json` is what makes this a gate rather than a list. It records which of
+# these had landed, and one going back exits non-zero. Work not yet started is the backlog
+# and does not fail a build; work that came undone does.
+
+BASELINE = Path(__file__).resolve().parent / "plan-baseline.json"
+
+WORK_ITEMS = []
+
+
+def work(name):
+    def deco(fn):
+        WORK_ITEMS.append((name, fn))
+        return fn
+    return deco
+
+
+def _people():
+    return [q for q in runtimes() if q.name.startswith("people-")]
+
+
+def _asset_hubs():
+    return [q for q in runtimes() if q.name.startswith("asset-hub-")]
+
+
+def _relays():
+    return [q for q in runtimes() if q.name in ("pezkuwichain", "zagros")]
+
+
+@work("democracy retired")
+def _():
+    gone = all("pezpallet_democracy" not in read(q / "src/lib.rs") for q in _people())
+    return gone, "72 and 73 left unused on purpose" if gone else "still wired in"
+
+
+@work("state ballot")
+def _():
+    need = ["Referenda: pezpallet_referenda = 62,", "Origins: pezpallet_custom_origins = 63,",
+            "Preimage: pezpallet_preimage = 64,"]
+    ok = all(all(n in read(q / "src/lib.rs") for n in need) for q in _people())
+    tracks = all((q / "src/governance/tracks.rs").exists() for q in _people())
+    return ok and tracks, "Referenda 62, Origins 63, Preimage 64, with tracks" if ok and tracks \
+        else "incomplete"
+
+
+@work("citizens vote")
+def _():
+    w = read(ROOT / "pezcumulus/teyrchains/pezpallets/welati/src/lib.rs")
+    surface = "fn answer_referendum" in w and "fn open_initiative" in w
+    wired = all("type Polls = Referenda;" in read(q / "src/people.rs") for q in _people())
+    return surface and wired, "a head-counted answer and a citizens' initiative" if surface and wired \
+        else "half done"
+
+
+@work("state speaks abroad")
+def _():
+    ok = all("EnsureXcmOrigin<RuntimeOrigin, GovernanceToPlurality>" in read(q / "src/xcm_config.rs")
+             for q in _people())
+    return ok, "the three offices speak as their body" if ok else "SendXcmOrigin is still ()"
+
+
+@work("economic ballot")
+def _():
+    need = ["Scheduler: pezpallet_scheduler = 74,", "Preimage: pezpallet_preimage = 75,",
+            "ConvictionVoting: pezpallet_conviction_voting = 76,",
+            "Referenda: pezpallet_referenda = 77,", "Origins: pezpallet_custom_origins = 78,"]
+    ok = all(all(n in read(q / "src/lib.rs") for n in need) for q in _asset_hubs())
+    return ok, "five pallets, 74 to 78" if ok else "incomplete"
+
+
+@work("franchises disjoint")
+def _():
+    ok = all("state_and_economic_origins_do_not_overlap" in read(q / "tests/tests.rs")
+             for q in _asset_hubs())
+    return ok, "held apart by a test on both hubs" if ok else "nothing holds them apart"
+
+
+@work("treasury answers to a vote")
+def _():
+    ok = all("governance::Spender" in read(q / "src/lib.rs") for q in _asset_hubs())
+    return ok, "each tier bounded by its track" if ok else "Root only"
+
+
+@work("house has an origin")
+def _():
+    ok = all(re.search(r"^pub type RootOrParliament\b", read(q / "src/lib.rs"), re.M)
+             for q in _people())
+    return ok, "the body, not a member of it" if ok else "nothing stands for the house"
+
+
+@work("sudo can retire")
+def _():
+    path = all("StateRegisterAsRoot" in read(q / "src/xcm_config.rs") for q in _relays())
+    sudo = any("Sudo: pezpallet_sudo" in read(q / "src/lib.rs") for q in _relays())
+    return path, ("a referendum reaches relay Root" + ("; sudo still at 255" if sudo else "; retired")) \
+        if path else "retiring sudo would strand the constitution"
+
+
+@work("one address for governance")
+def _():
+    seen = set()
+    for q in runtimes():
+        src = read(q / "src/xcm_config.rs")
+        if "GovernanceLocation" not in src:
+            continue
+        seen.add("relay" if "GovernanceLocation: Location = Location::parent()" in src
+                 or "GovernanceLocation: Location = Location::parent()" in
+                 read(ROOT / "pezcumulus/teyrchains/runtimes/constants/src/zagros.rs")
+                 else "other")
+    return seen == {"relay"}, ", ".join(sorted(seen)) or "none"
+
+
+@work("slashes have an owner")
+def _():
+    used = sum(read(q / "src/people.rs").count("RelayTreasuryAccount") for q in _people()) \
+        - len(_people())
+    exists = any("Treasury: pezpallet_treasury = 18," in read(q / "src/lib.rs") for q in _relays())
+    if used == 0:
+        return True, "nothing points at the relay treasury"
+    return exists, (f"{used} targets, and the treasury they pay exists" if exists
+                    else f"{used} targets pay a treasury that is gone")
+
+
+def print_work(record=False):
+    import json
+    before = json.loads(BASELINE.read_text()) if BASELINE.exists() else {}
+    now, regressed, open_ = {}, [], 0
+    print(f"{'item':<28} {'state':<7} note")
+    print("-" * 110)
+    for name, fn in WORK_ITEMS:
+        ok, note = fn()
+        now[name] = ok
+        if not ok:
+            open_ += 1
+            if before.get(name) is True:
+                regressed.append(name)
+        print(f"{name:<28} {'done' if ok else 'open':<7} {note}")
+    print()
+    print(f"{len(now) - open_}/{len(now)} landed")
+    if record:
+        BASELINE.write_text(json.dumps(now, indent=1, sort_keys=True) + "\n")
+        print(f"baseline written: {BASELINE.name}")
+        return 0
+    if regressed:
+        print("\nREGRESSION -- something that had landed is gone:")
+        for r in regressed:
+            print("  x", r)
+        return 1
+    return 0
+
+
 def main():
+    if "--work" in sys.argv:
+        return print_work(record="--record" in sys.argv)
     if "--phases" in sys.argv:
         return print_phases()
     if "--arch" in sys.argv:

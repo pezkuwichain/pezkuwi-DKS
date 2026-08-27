@@ -11,7 +11,7 @@ python3 .github/scripts/plan.py            # what must be true at genesis   (sub
 python3 .github/scripts/plan.py --flows    # do the cross-chain paths work  (path x gate)
 python3 .github/scripts/plan.py --arch     # which chain carries what       (pallet x chain)
 python3 .github/scripts/plan.py --phases   # the order, and what each phase must show
-python3 .github/scripts/durum.py           # the planned work, and its regressions
+python3 .github/scripts/plan.py --work     # has the agreed design landed; fails on regression
 ```
 
 The wiring sheet is the one that earns its keep. A cross-chain path has three gates and the
@@ -27,20 +27,8 @@ Order matters in two places and both are irreversible:
 - **A variant may be renamed only after its index is pinned.** Until then the encoding follows
   the name.
 
-## The state of the work is measured, not written down
-
-```
-python3 .github/scripts/durum.py
-```
-
-Nineteen items, each answering its question by reading the source. This is the plan's status;
-there is no file to keep in step with it, because a note describing the tree stops being true
-the moment the tree moves and nothing tells you. It runs automatically at session start.
-
-It is also a CI gate. An item that was closed and is not any more exits non-zero and the build
-goes red. The backlog does not fail the build; work that came undone does.
-
-When an item closes, `--record` moves the baseline. Do that in the same commit as the work.
+The work sheet runs at session start and in CI. When an item lands, `--record` moves the
+baseline; do that in the same commit as the work.
 
 ## Before finishing a piece of work
 
