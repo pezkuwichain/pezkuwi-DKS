@@ -129,11 +129,11 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+use core::convert::TryFrom;
+use pezframe_system::pezpallet_prelude::BlockNumberFor;
 pub use pezpallet_staking_score::{
 	OnStakingDataUpdate, RawScore as StakingRawScore, StakingScoreProvider,
 };
-use core::convert::TryFrom;
-use pezframe_system::pezpallet_prelude::BlockNumberFor;
 
 use pezframe_support::pezpallet_prelude::{
 	Get, MaxEncodedLen, Member, OptionQuery, Parameter, ValueQuery,

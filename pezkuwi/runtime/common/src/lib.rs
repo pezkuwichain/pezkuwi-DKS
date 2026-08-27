@@ -63,7 +63,7 @@ pub use pezsp_runtime::traits::Bounded;
 pub use pezsp_runtime::BuildStorage;
 
 /// Implementations of some helper traits passed into runtime modules as associated types.
-pub use impls::ToAuthor;
+pub use impls::{DealWithFees, ToAuthor};
 
 #[deprecated(
 	note = "Please use fungible::Credit instead. This type will be removed some time after March 2024."

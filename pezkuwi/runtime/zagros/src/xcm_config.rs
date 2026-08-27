@@ -32,7 +32,7 @@ use pezframe_support::{
 use pezframe_system::EnsureRoot;
 use pezkuwi_runtime_common::{
 	xcm_sender::{ChildTeyrchainRouter, ExponentialPrice},
-	ToAuthor,
+	DealWithFees,
 };
 use pezpallet_xcm::XcmPassthrough;
 use pezsp_core::ConstU32;
@@ -280,7 +280,7 @@ impl xcm_executor::Config for XcmConfig {
 		MaxInstructions,
 	>;
 	type Trader =
-		UsingComponents<WeightToFee, TokenLocation, AccountId, Balances, ToAuthor<Runtime>>;
+		UsingComponents<WeightToFee, TokenLocation, AccountId, Balances, DealWithFees<Runtime>>;
 	type ResponseHandler = XcmPallet;
 	type AssetTrap = XcmPallet;
 	type AssetLocker = ();
