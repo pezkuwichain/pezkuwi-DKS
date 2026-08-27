@@ -120,6 +120,7 @@ use pezframe_support::{pezpallet_prelude::*, traits::ReservableCurrency};
 use pezframe_system::pezpallet_prelude::*;
 use pezsp_core::H256;
 use pezsp_runtime::traits::Saturating;
+use pezsp_runtime::traits::Zero;
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
@@ -221,6 +222,19 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type ReferralFallbackPeriod: Get<BlockNumberFor<Self>>;
 
+		/// How long a new citizen waits before they may vouch for anyone.
+		///
+		/// Vouching is the only thing standing between the register and a manufactured
+		/// population: there is no authority in this path, only a citizen saying "I know this
+		/// person". A chain of that kind grows as fast as its newest member can vouch, so the
+		/// newest member waits. The delay is what a forger cannot buy -- they can afford the
+		/// deposits and the accounts, and they cannot afford the calendar.
+		#[pezpallet::constant]
+		type VouchingWaitingPeriod: Get<BlockNumberFor<Self>>;
+
+		/// How many more citizens an account may bring in, asked of whoever counts them.
+		type VouchingCapacity: crate::types::VouchingCapacity<Self::AccountId>;
+
 		/// Deposit required to apply (spam prevention, returned on approval)
 		#[pezpallet::constant]
 		type KycApplicationDeposit: Get<BalanceOf<Self>>;
@@ -262,6 +276,15 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn identity_hash_of)]
 	pub type IdentityHashes<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, H256>;
+
+	/// When each citizen was admitted.
+	///
+	/// Needed because vouching capacity is earned rather than granted: an account that became
+	/// a citizen this block has none. Nothing else in the register knew the date -- membership
+	/// was a yes or a no, with no age to it.
+	#[pezpallet::storage]
+	pub type CitizenSince<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>>;
 
 	/// Reverse mapping: identity hash -> account ID (uniqueness enforcement)
 	/// Ensures no two accounts can register with the same identity hash.
@@ -367,6 +390,10 @@ pub mod pezpallet {
 				KycStatuses::<T>::insert(account, KycLevel::Approved);
 				// Store identity hash
 				IdentityHashes::<T>::insert(account, *identity_hash);
+				// Citizens since the first block, which is what lets them vouch at all: the
+				// waiting period counts from this date and the founding generation has no
+				// earlier one. Without it the tree could never take its first branch.
+				CitizenSince::<T>::insert(account, BlockNumberFor::<T>::from(0u32));
 				// Store reverse mapping for uniqueness enforcement
 				IdentityHashToAccount::<T>::insert(*identity_hash, account);
 			}
@@ -403,6 +430,12 @@ pub mod pezpallet {
 
 	#[pezpallet::error]
 	pub enum Error<T> {
+		/// Only a citizen may vouch, and this account is not one.
+		NotEligibleToVouch,
+		/// A citizen admitted this recently may not vouch yet.
+		VouchingTooSoon,
+		/// This account has brought in as many as its record allows.
+		VouchingCapacityReached,
 		/// Application already exists for this account
 		ApplicationAlreadyExists,
 		/// No application found for this account
@@ -539,6 +572,38 @@ pub mod pezpallet {
 		pub fn approve_referral(origin: OriginFor<T>, applicant: T::AccountId) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
+			// Two limits on the act of vouching, and neither is about the applicant.
+			//
+			// The register admits people on one citizen's word, so the word has to cost
+			// something or the population can be manufactured. It costs waiting -- a citizen
+			// admitted today vouches for nobody -- and it costs having vouched well before:
+			// capacity is earned from settled referrals and lost to revoked ones.
+			//
+			// The founder is exempt from both. The root of the tree has no earlier record to
+			// earn from, and the fallback that lets it approve a stalled application would
+			// stop working if it could run out.
+			if caller != T::DefaultReferrer::get() {
+				let since =
+					CitizenSince::<T>::get(&caller).ok_or(Error::<T>::NotEligibleToVouch)?;
+				// The founding generation waits for nothing. The waiting period exists to slow
+				// a chain of vouching -- one forged citizen admitting the next within minutes
+				// -- and the founding citizens were not vouched in. They were written at
+				// genesis, checked off chain, and their number is fixed, so an attacker cannot
+				// grow that set and there is nothing here to slow down. Making them wait would
+				// close the register for a month and prevent no attack at all.
+				let admitted_at_genesis = since.is_zero();
+				ensure!(
+					admitted_at_genesis
+						|| pezframe_system::Pezpallet::<T>::block_number().saturating_sub(since)
+							>= T::VouchingWaitingPeriod::get(),
+					Error::<T>::VouchingTooSoon
+				);
+				ensure!(
+					T::VouchingCapacity::remaining(&caller) != Some(0),
+					Error::<T>::VouchingCapacityReached
+				);
+			}
+
 			// Must be in PendingReferral state
 			ensure!(
 				KycStatuses::<T>::get(&applicant) == KycLevel::PendingReferral,
@@ -617,6 +682,9 @@ pub mod pezpallet {
 
 			// Store identity hash permanently (for proof of citizenship)
 			IdentityHashes::<T>::insert(&applicant, application.identity_hash);
+
+			// The date the vouching clock runs from.
+			CitizenSince::<T>::insert(&applicant, pezframe_system::Pezpallet::<T>::block_number());
 
 			// Reverse mapping was already reserved for this applicant at apply time
 			// (see apply_for_citizenship); re-affirm it here for good measure. This

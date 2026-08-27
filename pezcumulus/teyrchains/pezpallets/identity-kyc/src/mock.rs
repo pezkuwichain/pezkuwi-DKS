@@ -89,7 +89,17 @@ impl pezframe_support::traits::Get<AccountId> for DefaultReferrerAccount {
 	}
 }
 
+parameter_types! {
+	/// Ten blocks rather than thirty days: the rule is that a new citizen waits, and a test
+	/// should exercise the rule, not the calendar. Zero would leave the gate untested.
+	pub const VouchingWaitingPeriod: u64 = 10;
+}
+
 impl crate::Config for Test {
+	type VouchingWaitingPeriod = VouchingWaitingPeriod;
+	// Counting vouches is the referral pallet's job and it is not in this mock; unlimited
+	// here means this pallet's tests exercise the waiting period alone.
+	type VouchingCapacity = ();
 	type Currency = Balances;
 	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
 	type WeightInfo = ();

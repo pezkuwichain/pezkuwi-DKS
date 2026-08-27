@@ -879,3 +879,46 @@ mod invariant {
 		});
 	}
 }
+
+/// A citizen waits before vouching; the founding generation does not.
+///
+/// The waiting period exists to slow a chain of vouching -- one forged citizen admitting the
+/// next within minutes. That attack needs a citizen to have been admitted, so the rule binds
+/// whoever was admitted. It does not bind the founding citizens: they were written at genesis
+/// rather than vouched in, their number is fixed, and an attacker cannot add to that set. If
+/// they waited too, the register would simply be shut for a month and no attack prevented.
+#[test]
+fn a_new_citizen_waits_before_vouching_and_the_founders_do_not() {
+	new_test_ext().execute_with(|| {
+		// Genesis citizen, first block, vouches immediately.
+		assert_ok!(IdentityKycPallet::apply_for_citizenship(
+			RuntimeOrigin::signed(APPLICANT),
+			H256::from_low_u64_be(42),
+			Some(CITIZEN_1),
+			None,
+		));
+		assert_ok!(IdentityKycPallet::approve_referral(
+			RuntimeOrigin::signed(CITIZEN_1),
+			APPLICANT
+		));
+		assert_ok!(IdentityKycPallet::confirm_citizenship(RuntimeOrigin::signed(APPLICANT)));
+
+		// The one just admitted may not pass it on yet.
+		// A funded account: the application reserves a deposit.
+		let newcomer = CITIZEN_2;
+		assert_ok!(IdentityKycPallet::apply_for_citizenship(
+			RuntimeOrigin::signed(newcomer),
+			H256::from_low_u64_be(43),
+			Some(APPLICANT),
+			None,
+		));
+		assert_noop!(
+			IdentityKycPallet::approve_referral(RuntimeOrigin::signed(APPLICANT), newcomer),
+			Error::<Test>::VouchingTooSoon
+		);
+
+		// And may once the period has run.
+		System::set_block_number(System::block_number() + VouchingWaitingPeriod::get());
+		assert_ok!(IdentityKycPallet::approve_referral(RuntimeOrigin::signed(APPLICANT), newcomer));
+	});
+}

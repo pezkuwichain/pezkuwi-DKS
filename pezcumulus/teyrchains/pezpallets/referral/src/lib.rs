@@ -220,6 +220,25 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type PenaltyPerRevocation: Get<u32>;
 
+		/// How many people a citizen may vouch for before having vouched for anyone.
+		///
+		/// Small on purpose. This is the width of the tree at its newest edge, and a forger
+		/// buys accounts far more cheaply than they buy a record.
+		#[pezpallet::constant]
+		type InitialVouchingCapacity: Get<u32>;
+
+		/// How many settled referrals buy one more place.
+		///
+		/// Capacity is earned rather than granted: bring one person in and stand behind them,
+		/// and after this many you may bring another. A revoked referral is subtracted, so the
+		/// account that vouches carelessly loses the room to do it again.
+		#[pezpallet::constant]
+		type SettledVouchesPerPlace: Get<u32>;
+
+		/// The most anyone may ever have brought in.
+		#[pezpallet::constant]
+		type MaxVouchingCapacity: Get<u32>;
+
 		/// Trust score updater - notifies trust pallet when referral score changes
 		type TrustScoreUpdater: TrustScoreUpdater<Self::AccountId>;
 
@@ -564,5 +583,35 @@ pub mod pezpallet {
 		fn get_inviter(who: &T::AccountId) -> Option<T::AccountId> {
 			Referrals::<T>::get(who).map(|info| info.referrer)
 		}
+	}
+}
+
+use pezframe_support::traits::Get as _;
+
+impl<T: Config> Pezpallet<T> {
+	/// How many people this account may still vouch into the register.
+	///
+	/// `initial + settled / per_place`, capped, minus those already brought in. Settled means
+	/// referrals that became citizens and stayed citizens: a revoked one is subtracted, so an
+	/// account that vouched for a forgery pays for it in the room it has left rather than only
+	/// in its standing.
+	pub fn vouching_capacity(who: &T::AccountId) -> u32 {
+		let stats = ReferrerStatsStorage::<T>::get(who);
+		let settled = stats.total_referrals.saturating_sub(stats.revoked_referrals);
+		let earned = settled.checked_div(T::SettledVouchesPerPlace::get().max(1)).unwrap_or(0);
+		T::InitialVouchingCapacity::get()
+			.saturating_add(earned)
+			.min(T::MaxVouchingCapacity::get())
+	}
+
+	/// What is left of that capacity.
+	pub fn vouching_remaining(who: &T::AccountId) -> u32 {
+		Self::vouching_capacity(who).saturating_sub(InvitationCount::<T>::get(who))
+	}
+}
+
+impl<T: Config> pezpallet_identity_kyc::types::VouchingCapacity<T::AccountId> for Pezpallet<T> {
+	fn remaining(who: &T::AccountId) -> Option<u32> {
+		Some(Self::vouching_remaining(who))
 	}
 }

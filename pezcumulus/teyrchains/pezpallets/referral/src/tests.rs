@@ -660,3 +660,76 @@ mod accountability {
 		});
 	}
 }
+
+// ===== VOUCHING CAPACITY =====
+
+/// Bringing people into the register costs room, and the room is earned.
+///
+/// The register has no authority in its path: a citizen says "I know this person" and that is
+/// the whole of it. So the word has to cost something, or the population can be manufactured
+/// as cheaply as accounts can be made. It costs two things. Waiting -- a citizen admitted
+/// today vouches for nobody -- and having vouched well before: capacity starts small, grows
+/// with settled referrals, and shrinks when one of them is revoked.
+///
+/// The arithmetic here uses the mock's numbers: two places to begin with, one more for every
+/// two who stayed, never more than six.
+#[test]
+fn vouching_capacity_is_earned_and_bounded() {
+	new_test_ext().execute_with(|| {
+		let who = REFERRER;
+
+		// Nothing vouched for yet: the opening allowance and no more.
+		assert_eq!(ReferralPallet::vouching_capacity(&who), 2);
+		assert_eq!(ReferralPallet::vouching_remaining(&who), 2);
+
+		// Two who stayed buys a third place.
+		ReferrerStatsStorage::<Test>::insert(
+			who,
+			crate::types::ReferrerStats {
+				total_referrals: 2,
+				revoked_referrals: 0,
+				penalty_score: 0,
+			},
+		);
+		assert_eq!(ReferralPallet::vouching_capacity(&who), 3);
+
+		// One of them revoked and the place goes with it. Vouching carelessly costs the room
+		// to do it again, which is the part a penalty on the score alone does not reach.
+		ReferrerStatsStorage::<Test>::insert(
+			who,
+			crate::types::ReferrerStats {
+				total_referrals: 2,
+				revoked_referrals: 1,
+				penalty_score: 3,
+			},
+		);
+		assert_eq!(ReferralPallet::vouching_capacity(&who), 2);
+
+		// However good the record, there is a ceiling.
+		ReferrerStatsStorage::<Test>::insert(
+			who,
+			crate::types::ReferrerStats {
+				total_referrals: 1_000,
+				revoked_referrals: 0,
+				penalty_score: 0,
+			},
+		);
+		assert_eq!(ReferralPallet::vouching_capacity(&who), 6);
+	});
+}
+
+/// What is left counts those already brought in, not only what was allowed.
+#[test]
+fn settled_invitations_use_up_the_allowance() {
+	new_test_ext().execute_with(|| {
+		let who = REFERRER;
+		assert_eq!(ReferralPallet::vouching_remaining(&who), 2);
+
+		crate::InvitationCount::<Test>::insert(who, 2);
+		assert_eq!(ReferralPallet::vouching_remaining(&who), 0);
+
+		// And the register asks this exact question before letting anyone vouch.
+		use pezpallet_identity_kyc::types::VouchingCapacity;
+		assert_eq!(<ReferralPallet as VouchingCapacity<AccountId>>::remaining(&who), Some(0));
+	});
+}

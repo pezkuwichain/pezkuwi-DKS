@@ -266,3 +266,18 @@ mod stored_enum_encoding {
 		assert_eq!(pinned.len(), 5, "a variant was added or removed");
 	}
 }
+
+/// How many more citizens an account may vouch into the register.
+///
+/// Asked of the pallet that counts vouching, so the register need not know how the number is
+/// arrived at -- only that there is one. `None` means unlimited, which is what the founder is:
+/// the root of the tree cannot be rate-limited by a record of vouching it predates.
+pub trait VouchingCapacity<AccountId> {
+	fn remaining(who: &AccountId) -> Option<u32>;
+}
+
+impl<AccountId> VouchingCapacity<AccountId> for () {
+	fn remaining(_who: &AccountId) -> Option<u32> {
+		None
+	}
+}

@@ -103,7 +103,14 @@ impl pezframe_support::traits::Get<u64> for DefaultReferrerAccount {
 	}
 }
 
+parameter_types! {
+	/// The register's own tests exercise vouching; here it only has to compile.
+	pub const VouchingWaitingPeriod: u64 = 0;
+}
+
 impl pezpallet_identity_kyc::Config for Test {
+	type VouchingWaitingPeriod = VouchingWaitingPeriod;
+	type VouchingCapacity = ();
 	type Currency = Balances;
 	type GovernanceOrigin = pezframe_system::EnsureRoot<u64>;
 	type WeightInfo = ();

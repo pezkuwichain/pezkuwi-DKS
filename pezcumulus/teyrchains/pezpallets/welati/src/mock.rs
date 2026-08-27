@@ -287,7 +287,14 @@ impl pezframe_support::traits::Get<AccountId> for DefaultReferrerKyc {
 	}
 }
 
+parameter_types! {
+	/// The register's own tests exercise vouching; here it only has to compile.
+	pub const VouchingWaitingPeriod: u64 = 0;
+}
+
 impl pezpallet_identity_kyc::Config for Test {
+	type VouchingWaitingPeriod = VouchingWaitingPeriod;
+	type VouchingCapacity = ();
 	type Currency = Balances;
 	type GovernanceOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type WeightInfo = ();
@@ -328,7 +335,16 @@ parameter_types! {
 	pub const PenaltyPerRevocation: u32 = 10;
 }
 
+parameter_types! {
+	pub const InitialVouchingCapacity: u32 = 5;
+	pub const SettledVouchesPerPlace: u32 = 3;
+	pub const MaxVouchingCapacity: u32 = 50;
+}
+
 impl pezpallet_referral::Config for Test {
+	type InitialVouchingCapacity = InitialVouchingCapacity;
+	type SettledVouchesPerPlace = SettledVouchesPerPlace;
+	type MaxVouchingCapacity = MaxVouchingCapacity;
 	type WeightInfo = ();
 	type DefaultReferrer = DefaultReferrerAccount;
 	type PenaltyPerRevocation = PenaltyPerRevocation;

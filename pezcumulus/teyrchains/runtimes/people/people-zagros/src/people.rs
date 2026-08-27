@@ -332,8 +332,31 @@ impl pezpallet_perwerde::TrustScoreUpdater<AccountId> for TrustScoreNotifier {
 	}
 }
 
+parameter_types! {
+	/// How long a new citizen waits before vouching for anyone: one day.
+	///
+	/// The waiting period and the capacity below do different work, and confusing them costs
+	/// the register its growth. Capacity bounds how *wide* one person's mistake can be;
+	/// waiting bounds how *fast* a chain of vouching can deepen. Width is already bounded, so
+	/// a long wait mostly taxes honest growth: at a month a realistic population takes years
+	/// to assemble, at a day it takes weeks, and the attack the wait exists to stop -- one
+	/// forged citizen admitting five more in the same block, and those five admitting
+	/// twenty-five -- is stopped just as well by one day as by thirty.
+	pub const KycVouchingWaitingPeriod: BlockNumber = 1 * DAYS;
+	/// Five to begin with, one more for every three who stayed, never more than fifty.
+	///
+	/// Five is a household, not a network. Reaching a hundred thousand from the founder takes
+	/// five generations at this width and costs five generations of waiting, which is the
+	/// point: an honest register has the time and a manufactured one does not.
+	pub const ReferralInitialVouchingCapacity: u32 = 5;
+	pub const ReferralSettledVouchesPerPlace: u32 = 3;
+	pub const ReferralMaxVouchingCapacity: u32 = 50;
+}
+
 impl pezpallet_identity_kyc::Config for Runtime {
 	type Currency = Balances;
+	type VouchingWaitingPeriod = KycVouchingWaitingPeriod;
+	type VouchingCapacity = Referral;
 	// Authority hands over in stages: Root, then the Diwan, then the technical body.
 	// Citizenship is the court's to decide.
 	// The court, and root while sudo exists. Losing citizenship takes every tiki, every
@@ -501,6 +524,9 @@ parameter_types! {
 
 impl pezpallet_referral::Config for Runtime {
 	type WeightInfo = pezpallet_referral::weights::BizinikiwiWeight<Runtime>;
+	type InitialVouchingCapacity = ReferralInitialVouchingCapacity;
+	type SettledVouchesPerPlace = ReferralSettledVouchesPerPlace;
+	type MaxVouchingCapacity = ReferralMaxVouchingCapacity;
 	type DefaultReferrer = DefaultReferrer;
 	type PenaltyPerRevocation = PenaltyPerRevocation;
 	type TrustScoreUpdater = TrustScoreNotifier;
