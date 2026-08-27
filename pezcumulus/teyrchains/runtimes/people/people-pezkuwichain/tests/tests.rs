@@ -175,12 +175,19 @@ fn governance_authorize_upgrade_works() {
 
 	// no - Asset Hub. Upstream allows this because its governance has moved there; ours has
 	// not, and `GovernanceLocation` below is the proof.
+	//
+	// Refused at the origin rather than at the barrier, and the difference is deliberate. The
+	// rewards pallet here is funded from the Asset Hub, so the barrier has to let a message
+	// from there arrive at all -- it decides who may speak, not what they may say. What they
+	// may say is the origin converter's question, and it converts a sibling into nothing
+	// privileged. Two doors rather than one, and the second is the one that belongs here:
+	// were this asserted at the barrier, funding could not reach us either.
 	assert_err!(
 		teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
 			Runtime,
 			RuntimeOrigin,
 		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(ASSET_HUB_ID)))),
-		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
+		Either::Right(InstructionError { index: 1, error: XcmError::BadOrigin })
 	);
 
 	// ok - the relay chain

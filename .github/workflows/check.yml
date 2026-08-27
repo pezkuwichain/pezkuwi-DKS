@@ -129,6 +129,30 @@ jobs:
             -p coretime-zagros-runtime \
             -p collectives-zagros-runtime
 
+      # Type-checking a runtime says the parts fit together. It says nothing about what the
+      # assembled thing does, and this repository has a `collectives-zagros` assertion that has
+      # been wrong since the fork arrived -- it asserted upstream's arrangement, where
+      # governance moved to the Asset Hub, and ours keeps it on the relay. Nothing caught it
+      # because nothing ran it: this job checked and never tested.
+      #
+      # These are the tests that answer questions a type cannot: whether a message from a
+      # sibling is refused, whether a body that should be able to authorise an upgrade can, and
+      # whether the two ballot boxes count separate electorates.
+      - name: Run the runtime integration tests
+        run: |
+          SKIP_WASM_BUILD=1 cargo test --locked \
+            -p asset-hub-pezkuwichain-runtime \
+            -p asset-hub-zagros-runtime \
+            -p people-pezkuwichain-runtime \
+            -p people-zagros-runtime \
+            -p pezbridge-hub-pezkuwichain-runtime \
+            -p pezbridge-hub-zagros-runtime \
+            -p coretime-pezkuwichain-runtime \
+            -p coretime-zagros-runtime \
+            -p collectives-zagros-runtime \
+            -p pezkuwichain-runtime \
+            -p zagros-runtime
+
   # The blobs that are not part of either network: test fixtures, the templates we ship, the
   # documentation runtimes, and the staking-async pair we derive from upstream. They are kept
   # apart from `runtimes` on purpose — that job is the production surface, and a red run there

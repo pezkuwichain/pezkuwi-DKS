@@ -402,15 +402,45 @@ pub type RootOrDiwan = EitherOfDiverse<
 	pezpallet_collective::EnsureProportionAtLeast<AccountId, people::DiwanCollective, 2, 3>,
 >;
 
-/// Two thirds of the bench, and nobody else.
+/// Two thirds of the bench -- and Root, but only until there is a bench.
 ///
-/// The register is the one thing no other organ may write. Whoever writes the electorate wins
-/// the election, so an executive that can add or remove citizens does not need to win one --
-/// and Root reaches this chain from the relay, which is to say from the executive while sudo
-/// exists. Every other authority here admits Root because Root is the founding period's
-/// shortcut; this one cannot, or the shortcut is a way to choose the voters.
-pub type DiwanOnly =
-	pezpallet_collective::EnsureProportionAtLeast<AccountId, people::DiwanCollective, 2, 3>;
+/// The register is the one thing no other organ should write. Whoever writes the electorate
+/// wins the election, so an executive that can add or remove citizens does not need to win
+/// one, and Root reaches this chain from the relay: from the executive, for as long as sudo
+/// exists.
+///
+/// Yet a register with no correction at all is worse during the founding period than one the
+/// executive can correct, because a forged citizen compounds -- each one can vouch for more.
+/// So the exemption exists and expires by construction rather than by promise: Root is
+/// admitted only while the court is not yet whole, and the day the bench is seated that door
+/// shuts on its own. Nobody has to remember to close it.
+pub struct RegisterAuthority;
+impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for RegisterAuthority {
+	type Success = ();
+
+	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		type Bench =
+			pezpallet_collective::EnsureProportionAtLeast<AccountId, people::DiwanCollective, 2, 3>;
+		match Bench::try_origin(o) {
+			Ok(_) => Ok(()),
+			Err(o) => {
+				let seated =
+					pezpallet_collective::Members::<Runtime, people::DiwanCollective>::get().len()
+						as u32;
+				if seated < <Runtime as pezpallet_welati::Config>::DiwanSize::get() {
+					EnsureRoot::<AccountId>::try_origin(o).map(|_| ())
+				} else {
+					Err(o)
+				}
+			},
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+		Ok(pezframe_system::RawOrigin::Root.into())
+	}
+}
 
 /// Root, the President, or the Council.
 /// The looser authority most administrative work runs under.

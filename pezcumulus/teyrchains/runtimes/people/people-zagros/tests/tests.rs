@@ -166,10 +166,14 @@ fn governance_authorize_upgrade_works() {
 	// no - AssetHub
 	//
 	// Upstream expects this to pass, because upstream's governance has moved to its Asset
-	// Hub. Ours has not: `GovernanceLocation` is the relay on both People runtimes, and the
-	// barrier grants free execution to `ParentOrParentsPlurality` and nothing else. Asset Hub
+	// Hub. Ours has not: `GovernanceLocation` is the relay on both People runtimes. Asset Hub
 	// holds the money, not the authority -- every power it exercises arrives as an
 	// instruction from People, never the reverse.
+	//
+	// Refused at the origin rather than at the barrier. The rewards pallet here is funded
+	// from the Asset Hub, so a message from there has to be able to arrive: the barrier
+	// decides who may speak and the origin converter decides what they may say. Asserting
+	// this at the barrier would mean funding could not reach us either.
 	//
 	// If that ever changes, this is one of the places that has to change with it.
 	assert_err!(
@@ -177,7 +181,7 @@ fn governance_authorize_upgrade_works() {
 			Runtime,
 			RuntimeOrigin,
 		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(ASSET_HUB_ID)))),
-		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
+		Either::Right(InstructionError { index: 1, error: XcmError::BadOrigin })
 	);
 	// no - Collectives
 	assert_err!(

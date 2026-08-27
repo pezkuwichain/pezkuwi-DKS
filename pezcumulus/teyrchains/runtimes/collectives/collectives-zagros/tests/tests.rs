@@ -163,11 +163,21 @@ fn governance_authorize_upgrade_works() {
 		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(12334)))),
 		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
 	);
-	// ok - AssetHub
-	assert_ok!(teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
-		Runtime,
-		RuntimeOrigin,
-	>(GovernanceOrigin::Location(Location::new(1, Teyrchain(ASSET_HUB_ID)))));
+	// no - Asset Hub. Upstream expects this to pass because their governance moved there;
+	// ours did not. `GovernanceLocation` on this network is the relay, and the barrier grants
+	// free execution to the parent and its bodies. Asset Hub holds the economy, not the
+	// constitution.
+	//
+	// This assertion has never held in this repository -- it arrived with the fork asserting
+	// upstream's arrangement, and nothing ran it: the per-push gate type-checks the runtimes
+	// and does not run their integration tests. That is fixed alongside this.
+	assert_err!(
+		teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
+			Runtime,
+			RuntimeOrigin,
+		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(ASSET_HUB_ID)))),
+		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
+	);
 	// no - Collectives
 	assert_err!(
 		teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
