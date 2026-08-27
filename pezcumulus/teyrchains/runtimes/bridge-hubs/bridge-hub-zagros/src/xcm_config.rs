@@ -37,13 +37,11 @@ use pezsp_runtime::traits::AccountIdConversion;
 use testnet_teyrchains_constants::zagros::{
 	locations::AssetHubLocation, snowbridge::EthereumNetwork,
 };
-use teyrchains_common::{
-	xcm_config::{
-		AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
-		RelayOrOtherSystemTeyrchains,
-	},
-	TREASURY_PALLET_ID,
+use teyrchains_common::xcm_config::{
+	AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
+	RelayOrOtherSystemTeyrchains,
 };
+use teyrchains_common::TREASURY_PALLET_ID;
 use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
 use xcm_builder::{
 	AccountId32Aliases, AliasChildLocation, AllowExplicitUnpaidExecutionFrom,
@@ -63,6 +61,14 @@ use xcm_executor::XcmExecutor;
 pub use testnet_teyrchains_constants::zagros::locations::GovernanceLocation;
 
 parameter_types! {
+	/// Where a slashed bridge-relayer stake goes.
+	///
+	/// The relay's treasury is retired, so this address has no pallet behind it on this chain --
+	/// the same shape as the People slashes fixed earlier. It stays for now because the bridge
+	/// relayer pallets take an account rather than a handler, and changing that is its own
+	/// piece of work; it is listed as one.
+	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
+
 	pub const RootLocation: Location = Location::here();
 	pub const ZagrosLocation: Location = Location::parent();
 	pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(ZAGROS_GENESIS_HASH);
@@ -79,7 +85,6 @@ parameter_types! {
 	/// fee goes where its other operating income goes -- the collators who did the delivering.
 	pub StakingPot: AccountId =
 		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
-	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
 }
 
 /// Type for specifying how a `Location` can be converted into an `AccountId`. This is used

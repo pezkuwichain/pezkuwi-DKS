@@ -48,17 +48,6 @@ use xcm_executor::XcmExecutor;
 parameter_types! {
 	pub TokenLocation: Location = Here.into_location();
 	pub RootLocation: Location = Location::here();
-	/// The treasury's own location on this chain. A cross-chain spend sends the money from the
-	/// treasury pot, but the delivery fee for that message is withdrawn from the account this
-	/// location converts to — which is not the pot and holds nothing, so without this entry every
-	/// such spend fails with `PayoutError` and the money never leaves.
-	///
-	/// Upstream has no line to copy here: its relay treasury moved to the Asset Hub, so the path
-	/// does not exist there. It does exist here. The same structural problem on the Collectives
-	/// chain is answered upstream by waiving its paying bodies, and this is that answer applied
-	/// where the body actually lives. The origin is the treasury pallet itself, reachable only
-	/// through an approved spend, so waiving it grants nothing that governance had not granted.
-	pub TreasuryLocation: Location = PalletInstance(pezkuwichain_runtime_constants::TREASURY_PALLET_ID).into();
 	pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH);
 	pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
 	pub CheckAccount: AccountId = XcmPallet::check_account();
@@ -232,8 +221,7 @@ pub type Barrier = TrailingSetTopicAsId<(
 
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
-pub type WaivedLocations =
-	(SystemTeyrchains, Equals<RootLocation>, Equals<TreasuryLocation>, LocalPlurality);
+pub type WaivedLocations = (SystemTeyrchains, Equals<RootLocation>, LocalPlurality);
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {

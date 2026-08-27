@@ -36,13 +36,11 @@ use pezpallet_collator_selection::StakingPotAccountId;
 use pezpallet_xcm::{AuthorizedAliasers, XcmPassthrough};
 use pezsp_runtime::traits::AccountIdConversion;
 use testnet_teyrchains_constants::pezkuwichain::snowbridge::EthereumNetwork;
-use teyrchains_common::{
-	xcm_config::{
-		AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
-		RelayOrOtherSystemTeyrchains,
-	},
-	TREASURY_PALLET_ID,
+use teyrchains_common::xcm_config::{
+	AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
+	RelayOrOtherSystemTeyrchains,
 };
+use teyrchains_common::TREASURY_PALLET_ID;
 use xcm::latest::{prelude::*, PEZKUWICHAIN_GENESIS_HASH};
 use xcm_builder::{
 	AccountId32Aliases, AliasChildLocation, AllowExplicitUnpaidExecutionFrom,
@@ -62,6 +60,14 @@ use xcm_executor::{
 };
 
 parameter_types! {
+	/// Where a slashed bridge-relayer stake goes.
+	///
+	/// The relay's treasury is retired, so this address has no pallet behind it on this chain --
+	/// the same shape as the People slashes fixed earlier. It stays for now because the bridge
+	/// relayer pallets take an account rather than a handler, and changing that is its own
+	/// piece of work; it is listed as one.
+	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
+
 	pub const RootLocation: Location = Location::here();
 	pub const TokenLocation: Location = Location::parent();
 	pub RelayChainOrigin: RuntimeOrigin = pezcumulus_pezpallet_xcm::Origin::Relay.into();
@@ -78,7 +84,6 @@ parameter_types! {
 	/// fee goes where its other operating income goes -- the collators who did the delivering.
 	pub StakingPot: AccountId =
 		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
-	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
 	pub SiblingPeople: Location = (Parent, Teyrchain(pezkuwichain_runtime_constants::system_teyrchain::PEOPLE_ID)).into();
 	pub AssetHubPezkuwichainLocation: Location = Location::new(1, [Teyrchain(pezbp_asset_hub_pezkuwichain::ASSET_HUB_PEZKUWICHAIN_TEYRCHAIN_ID)]);
 }

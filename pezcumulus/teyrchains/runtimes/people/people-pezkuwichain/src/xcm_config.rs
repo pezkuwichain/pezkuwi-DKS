@@ -28,14 +28,10 @@ use pezframe_system::EnsureRoot;
 use pezkuwi_teyrchain_primitives::primitives::Sibling;
 use pezpallet_collator_selection::StakingPotAccountId;
 use pezpallet_xcm::XcmPassthrough;
-use pezsp_runtime::traits::AccountIdConversion;
 use testnet_teyrchains_constants::pezkuwichain::locations::AssetHubLocation;
-use teyrchains_common::{
-	xcm_config::{
-		AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
-		RelayOrOtherSystemTeyrchains,
-	},
-	TREASURY_PALLET_ID,
+use teyrchains_common::xcm_config::{
+	AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
+	RelayOrOtherSystemTeyrchains,
 };
 use xcm::latest::{prelude::*, PEZKUWICHAIN_GENESIS_HASH};
 use xcm_builder::{
@@ -74,7 +70,6 @@ parameter_types! {
 	/// fee goes where its other operating income goes -- the collators who did the delivering.
 	pub StakingPot: AccountId =
 		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
-	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
 }
 
 pub type PriceForParentDelivery = pezkuwi_runtime_common::xcm_sender::ExponentialPrice<
