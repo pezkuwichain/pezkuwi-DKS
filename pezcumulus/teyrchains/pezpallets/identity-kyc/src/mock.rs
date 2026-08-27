@@ -96,6 +96,7 @@ parameter_types! {
 }
 
 impl crate::Config for Test {
+	type OnCitizenshipRestored = ();
 	type VouchingWaitingPeriod = VouchingWaitingPeriod;
 	// Counting vouches is the referral pallet's job and it is not in this mock; unlimited
 	// here means this pallet's tests exercise the waiting period alone.

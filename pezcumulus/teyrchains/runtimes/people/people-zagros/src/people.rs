@@ -351,6 +351,12 @@ parameter_types! {
 	pub const ReferralInitialVouchingCapacity: u32 = 5;
 	pub const ReferralSettledVouchesPerPlace: u32 = 3;
 	pub const ReferralMaxVouchingCapacity: u32 = 50;
+	/// Three revoked referrals before the record is judged, and a fifth of them.
+	///
+	/// The floor keeps a rate from meaning anything on small numbers; the share keeps a
+	/// prolific and honest voucher from being stopped by three mistakes in a hundred.
+	pub const ReferralSuspensionRevocationFloor: u32 = 3;
+	pub const ReferralSuspensionRevocationPercent: u32 = 20;
 }
 
 impl pezpallet_identity_kyc::Config for Runtime {
@@ -371,6 +377,8 @@ impl pezpallet_identity_kyc::Config for Runtime {
 	// Losing citizenship concerns both: the referral record has a penalty to apply, and the
 	// trust score has to stop existing rather than being left behind at its last value.
 	type OnCitizenshipRevoked = (Referral, Trust);
+	// The other direction: a revocation the court reverses refunds what it charged the voucher.
+	type OnCitizenshipRestored = Referral;
 	type CitizenNftProvider = Tiki;
 	type KycApplicationDeposit = KycApplicationDeposit;
 	type MaxStringLength = MaxStringLength;
@@ -530,6 +538,8 @@ impl pezpallet_referral::Config for Runtime {
 	type InitialVouchingCapacity = ReferralInitialVouchingCapacity;
 	type SettledVouchesPerPlace = ReferralSettledVouchesPerPlace;
 	type MaxVouchingCapacity = ReferralMaxVouchingCapacity;
+	type SuspensionRevocationFloor = ReferralSuspensionRevocationFloor;
+	type SuspensionRevocationPercent = ReferralSuspensionRevocationPercent;
 	type DefaultReferrer = DefaultReferrer;
 	type PenaltyPerRevocation = PenaltyPerRevocation;
 	type TrustScoreUpdater = TrustScoreNotifier;

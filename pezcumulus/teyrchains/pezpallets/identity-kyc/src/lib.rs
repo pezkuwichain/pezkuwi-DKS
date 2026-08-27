@@ -208,6 +208,10 @@ pub mod pezpallet {
 		/// Hook called when citizenship is revoked - used by referral pezpallet for penalty
 		type OnCitizenshipRevoked: crate::types::OnCitizenshipRevoked<Self::AccountId>;
 
+		/// Told when a revocation is undone, so whatever the revocation charged can be
+		/// refunded.
+		type OnCitizenshipRestored: crate::types::OnCitizenshipRestored<Self::AccountId>;
+
 		/// Provider for minting citizen NFTs - used by tiki pezpallet
 		type CitizenNftProvider: crate::types::CitizenNftProvider<Self::AccountId>;
 
@@ -774,6 +778,12 @@ pub mod pezpallet {
 			// and if that fails the restoration fails with it, for the same reason approval
 			// does: a citizen the rest of the state cannot see is not restored.
 			T::CitizenNftProvider::mint_citizen_nft(&who)?;
+
+			// Undo what the revocation charged. The voucher's record is what their capacity to
+			// vouch is computed from, so leaving the mark would keep punishing them for a
+			// finding the court has just reversed.
+			<T::OnCitizenshipRestored as crate::types::OnCitizenshipRestored<T::AccountId>>::
+				on_citizenship_restored(&who);
 
 			Self::deposit_event(Event::CitizenshipRestored { who });
 			Ok(())

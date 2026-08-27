@@ -208,6 +208,20 @@ pub trait OnCitizenshipRevoked<AccountId> {
 	fn on_citizenship_revoked(who: &AccountId);
 }
 
+/// Called when a revocation is undone.
+///
+/// Revoking a citizenship charges whoever vouched for them, which is right: a guarantee costs
+/// the guarantor. But a revocation can be wrong, and the court that corrects it has to correct
+/// the charge as well -- otherwise the voucher is punished for a fraud that was never a fraud,
+/// and now permanently, because vouching capacity is computed from that same record.
+pub trait OnCitizenshipRestored<AccountId> {
+	fn on_citizenship_restored(who: &AccountId);
+}
+
+impl<AccountId> OnCitizenshipRestored<AccountId> for () {
+	fn on_citizenship_restored(_who: &AccountId) {}
+}
+
 /// No-op implementation for when no hook is needed
 impl<AccountId> OnCitizenshipRevoked<AccountId> for () {
 	fn on_citizenship_revoked(_who: &AccountId) {}

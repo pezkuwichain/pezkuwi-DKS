@@ -76,9 +76,12 @@ parameter_types! {
 	pub const InitialVouchingCapacity: u32 = 2;
 	pub const SettledVouchesPerPlace: u32 = 2;
 	pub const MaxVouchingCapacity: u32 = 6;
+	pub const SuspensionRevocationFloor: u32 = 3;
+	pub const SuspensionRevocationPercent: u32 = 20;
 }
 
 impl pezpallet_identity_kyc::Config for Test {
+	type OnCitizenshipRestored = Referral;
 	type VouchingWaitingPeriod = VouchingWaitingPeriod;
 	type VouchingCapacity = Referral;
 	type Currency = Balances;
@@ -106,6 +109,8 @@ impl pezpallet_referral::Config for Test {
 	type InitialVouchingCapacity = InitialVouchingCapacity;
 	type SettledVouchesPerPlace = SettledVouchesPerPlace;
 	type MaxVouchingCapacity = MaxVouchingCapacity;
+	type SuspensionRevocationFloor = SuspensionRevocationFloor;
+	type SuspensionRevocationPercent = SuspensionRevocationPercent;
 	type WeightInfo = ();
 	type DefaultReferrer = DefaultReferrerAccount;
 	type PenaltyPerRevocation = PenaltyPerRevocationAmount;

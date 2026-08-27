@@ -733,3 +733,85 @@ fn settled_invitations_use_up_the_allowance() {
 		assert_eq!(<ReferralPallet as VouchingCapacity<AccountId>>::remaining(&who), Some(0));
 	});
 }
+
+/// A record bad enough stops the account vouching, and the court undoing it lifts the stop.
+///
+/// The tree is public and a manufactured cluster shows as a subtree with an anomalous share of
+/// revocations. But a revocation only happens once somebody has noticed, so this is a lagging
+/// signal, and the right answer to a lagging signal is to stop the bleeding rather than to
+/// punish -- the penalty to standing already does the punishing.
+///
+/// The second half matters as much as the first. A revocation can be wrong. If restoring the
+/// citizenship left the voucher's record marked, the court would correct its own mistake and
+/// the person who vouched honestly would carry it for ever -- and now not only in standing but
+/// in the capacity to vouch again at all.
+#[test]
+fn a_bad_record_suspends_vouching_and_the_court_can_lift_it() {
+	new_test_ext().execute_with(|| {
+		let who = REFERRER;
+
+		// Ten brought in, two of them revoked: a fifth, which is at the line but under the
+		// floor of three. Still vouching.
+		ReferrerStatsStorage::<Test>::insert(
+			who,
+			crate::types::ReferrerStats {
+				total_referrals: 10,
+				revoked_referrals: 2,
+				penalty_score: 6,
+			},
+		);
+		assert!(ReferralPallet::vouching_capacity(&who) > 0);
+
+		// A third: floor reached and three in ten is above a fifth. Stopped.
+		ReferrerStatsStorage::<Test>::insert(
+			who,
+			crate::types::ReferrerStats {
+				total_referrals: 10,
+				revoked_referrals: 3,
+				penalty_score: 9,
+			},
+		);
+		assert_eq!(ReferralPallet::vouching_capacity(&who), 0);
+
+		// Three in a hundred is not a pattern, and a prolific voucher is not stopped by it.
+		ReferrerStatsStorage::<Test>::insert(
+			who,
+			crate::types::ReferrerStats {
+				total_referrals: 100,
+				revoked_referrals: 3,
+				penalty_score: 9,
+			},
+		);
+		assert!(ReferralPallet::vouching_capacity(&who) > 0);
+	});
+}
+
+/// Undoing a revocation undoes what it charged the voucher.
+///
+/// A guarantee costs the guarantor, and a wrongful finding must not. Before this, the court
+/// could restore a citizenship it had taken and the person who vouched for them kept the mark
+/// -- in standing, and now also in the capacity to vouch again, since capacity is computed
+/// from that same record.
+#[test]
+fn restoring_a_citizenship_refunds_the_voucher() {
+	use pezpallet_identity_kyc::types::OnCitizenshipRestored;
+
+	new_test_ext().execute_with(|| {
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+			REFERRED,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
+		ReferralPallet::on_kyc_approved(&REFERRED, &REFERRER, None);
+		let before = ReferrerStatsStorage::<Test>::get(REFERRER);
+
+		ReferralPallet::on_citizenship_revoked(&REFERRED);
+		let charged = ReferrerStatsStorage::<Test>::get(REFERRER);
+		assert_eq!(charged.revoked_referrals, before.revoked_referrals + 1);
+		assert!(charged.penalty_score > before.penalty_score);
+
+		<ReferralPallet as OnCitizenshipRestored<AccountId>>::on_citizenship_restored(&REFERRED);
+		let refunded = ReferrerStatsStorage::<Test>::get(REFERRER);
+		assert_eq!(refunded.revoked_referrals, before.revoked_referrals);
+		assert_eq!(refunded.penalty_score, before.penalty_score);
+	});
+}

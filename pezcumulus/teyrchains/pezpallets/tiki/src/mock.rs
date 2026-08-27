@@ -217,7 +217,14 @@ impl pezframe_support::traits::Get<AccountId> for DefaultReferrerAccount {
 	}
 }
 
+parameter_types! {
+	pub const VouchingWaitingPeriod: u64 = 0;
+}
+
 impl pezpallet_identity_kyc::Config for Test {
+	type VouchingWaitingPeriod = VouchingWaitingPeriod;
+	type VouchingCapacity = ();
+	type OnCitizenshipRestored = ();
 	type Currency = Balances;
 	type WeightInfo = ();
 	type GovernanceOrigin = pezframe_system::EnsureRoot<AccountId>;

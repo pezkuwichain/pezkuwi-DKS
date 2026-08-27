@@ -239,6 +239,22 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type MaxVouchingCapacity: Get<u32>;
 
+		/// How many revoked referrals before a record is judged at all.
+		///
+		/// A floor, because a rate on small numbers says nothing: one revoked out of one is a
+		/// hundred per cent and also a single unlucky guarantee.
+		#[pezpallet::constant]
+		type SuspensionRevocationFloor: Get<u32>;
+
+		/// The share of a voucher's referrals that may be revoked before they stop vouching.
+		///
+		/// Reached, and this account brings nobody else in until the court says otherwise.
+		/// Not a punishment -- the penalty to standing is that -- but a stop: whatever is
+		/// producing forgeries here, it does not get to keep producing them while the question
+		/// is being answered.
+		#[pezpallet::constant]
+		type SuspensionRevocationPercent: Get<u32>;
+
 		/// Trust score updater - notifies trust pallet when referral score changes
 		type TrustScoreUpdater: TrustScoreUpdater<Self::AccountId>;
 
@@ -518,6 +534,32 @@ pub mod pezpallet {
 		}
 	}
 
+	/// Undo what a revocation charged the voucher.
+	impl<T: Config> pezpallet_identity_kyc::types::OnCitizenshipRestored<T::AccountId>
+		for Pezpallet<T>
+	{
+		fn on_citizenship_restored(who: &T::AccountId) {
+			if let Some(referral_info) = Referrals::<T>::get(who) {
+				let stood_in = pezpallet_identity_kyc::ApprovedByFallback::<T>::contains_key(who);
+				let referrer = if stood_in {
+					match InvitedBy::<T>::get(who) {
+						Some(inviter) => inviter,
+						None => return,
+					}
+				} else {
+					referral_info.referrer
+				};
+				let penalty_per_revocation = T::PenaltyPerRevocation::get();
+				ReferrerStatsStorage::<T>::mutate(&referrer, |stats| {
+					stats.revoked_referrals = stats.revoked_referrals.saturating_sub(1);
+					stats.penalty_score =
+						stats.penalty_score.saturating_sub(penalty_per_revocation);
+				});
+				T::TrustScoreUpdater::on_score_component_changed(&referrer);
+			}
+		}
+	}
+
 	impl<T: Config> ReferralScoreProvider<T::AccountId> for Pezpallet<T> {
 		type Score = RawScore;
 
@@ -597,6 +639,19 @@ impl<T: Config> Pezpallet<T> {
 	/// in its standing.
 	pub fn vouching_capacity(who: &T::AccountId) -> u32 {
 		let stats = ReferrerStatsStorage::<T>::get(who);
+
+		// A record bad enough stops the account vouching entirely. The tree is public and a
+		// manufactured cluster shows as a subtree with an anomalous share of revocations --
+		// but a revocation only happens once somebody has noticed, so this is a lagging
+		// signal and the right response to a lagging signal is to stop the bleeding rather
+		// than to punish. It lifts on its own the moment the court restores what it revoked.
+		if stats.revoked_referrals >= T::SuspensionRevocationFloor::get()
+			&& stats.revoked_referrals.saturating_mul(100)
+				>= stats.total_referrals.saturating_mul(T::SuspensionRevocationPercent::get())
+		{
+			return 0;
+		}
+
 		let settled = stats.total_referrals.saturating_sub(stats.revoked_referrals);
 		let earned = settled.checked_div(T::SettledVouchesPerPlace::get().max(1)).unwrap_or(0);
 		T::InitialVouchingCapacity::get()
