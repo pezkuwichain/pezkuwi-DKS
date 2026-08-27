@@ -103,11 +103,30 @@ def inv_storage_v(p, kind):
         return "n/a", "upstream's"
     return ("ok", "") if "STORAGE_VERSION" in read(p / "src/lib.rs") else ("GAP", "")
 
+# Pallets upstream itself leaves at zero, measured against `polkadot-stable2606-1` rather
+# than waved through. The consensus three take unsigned equivocation reports, which do not
+# pass a weight gate; glutton's sudo is on a chain whose purpose is to burn block space.
+UPSTREAM_ZERO_WEIGHT = {"pezpallet_babe", "pezpallet_grandpa", "pezpallet_beefy",
+                        "pezpallet_sudo"}
+
+# Runtimes that never carry value: emulated harnesses and load generators.
+NOT_SHIPPED = {"test-runtime", "penpal"}
+
+
 def inv_weight(p, kind):
     if kind != "runtime":
         return "n/a", ""
-    n = read(p / "src/lib.rs").count("type WeightInfo = ();")
-    return ("ok", "") if n == 0 else ("GAP", f"{n} at zero")
+    if p.name in NOT_SHIPPED:
+        return "n/a", "never launched"
+    src = read(p / "src/lib.rs")
+    cur, hits = None, []
+    for ln in src.split("\n"):
+        m = re.match(r"impl (pez\w+)::Config(?:<[^>]*>)? for Runtime \{", ln)
+        if m:
+            cur = m.group(1)
+        if ln.strip() == "type WeightInfo = ();" and cur not in UPSTREAM_ZERO_WEIGHT:
+            hits.append(cur or "?")
+    return ("ok", "") if not hits else ("GAP", f"{len(hits)} at zero: " + ", ".join(hits[:3]))
 
 def inv_no_burn(p, kind):
     """Whether any supply is destroyed, which is not the same as whether a handler is `()`.
@@ -116,6 +135,8 @@ def inv_no_burn(p, kind):
     the thing that decides. Reading the handler alone reported the fault correctly here but
     for the wrong reason, and would have called `Burn = 0` a gap forever.
     """
+    if p.name in NOT_SHIPPED:
+        return "n/a", "never launched"
     src = read(p / "src/lib.rs") + read(p / "src/people.rs")
     hits = []
 
@@ -140,9 +161,18 @@ def inv_twin(p, kind):
     sheet knows which asymmetries are deliberate -- a bridge named after the other chain, an
     entry recorded with a reason -- and this one was calling all of them drift.
     """
+    # Upstream ships one variant of these and it is the test network's. Glutton exists to
+    # eat block space in load tests and has no business on a live chain; the collectives
+    # chain is where the fellowship sits while the network is a testnet. Measured against
+    # `polkadot-stable2606-1`, which carries `glutton-westend` and `collectives-westend` and
+    # no other variant of either. One variant here too, on our testnet, is the same shape.
+    TESTNET_ONLY = {"collectives", "glutton"}
+
     t = twin_of(p.name)
     if t is None:
         return "n/a", "no twin"
+    if any(p.name.startswith(f + "-") for f in TESTNET_ONLY):
+        return "n/a", "testnet only, as upstream"
     if not (p.parent / t).exists():
         return "GAP", f"{t} missing"
     table = placement()
