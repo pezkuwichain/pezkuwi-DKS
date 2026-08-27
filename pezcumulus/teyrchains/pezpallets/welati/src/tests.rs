@@ -13,7 +13,7 @@ use crate::{
 };
 use pezframe_support::{assert_noop, assert_ok, BoundedVec};
 use pezpallet_tiki::Tiki;
-use pezsp_runtime::traits::BadOrigin;
+use pezsp_runtime::{traits::BadOrigin, DispatchResult};
 
 // ===== ELECTION SYSTEM TESTS =====
 
@@ -291,6 +291,33 @@ fn finalize_election_works() {
 
 // ===== APPOINTMENT SYSTEM TESTS =====
 
+/// The account the tests seat as Serok, and the one they seat in Parliament.
+///
+/// They are different people on purpose. An appointment has two parties in this state, and a
+/// fixture that let one account play both would test nothing about the separation.
+const SEROK: u64 = 1;
+const MP: u64 = 42;
+
+/// Seat a Parliament that can confirm, and a Serok who can nominate.
+fn seat_the_two_bodies() {
+	pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, SEROK);
+	add_parliament_member(MP);
+}
+
+/// Carry an appointment through whichever body confirms that particular office.
+///
+/// Which body it is belongs to the office rather than to the caller: this asks the same
+/// `requires_parliament_approval` the pallet branches on, so a test cannot drift from the
+/// pallet by hard-coding the wrong route.
+fn install(process_id: u32, role: OfficialRole) -> DispatchResult {
+	if role.requires_parliament_approval() {
+		Welati::confirm_appointment(RuntimeOrigin::signed(MP), process_id)
+	} else {
+		Welati::approve_appointment(RuntimeOrigin::signed(SEROK), process_id)
+	}
+}
+
+
 #[test]
 fn nominate_official_works() {
 	ExtBuilder::default().build().execute_with(|| {
@@ -313,19 +340,82 @@ fn nominate_official_works() {
 #[test]
 fn approve_appointment_works() {
 	ExtBuilder::default().build().execute_with(|| {
-		// Setup: Make user 1 the Serok
-		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
+		seat_the_two_bodies();
+
+		// A Noter is a clerk of the executive rather than a check on it, so the office's own
+		// rule puts the whole appointment in the President's signature.
+		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
+		assert_ok!(Welati::nominate_official(
+			RuntimeOrigin::signed(SEROK),
+			2,
+			OfficialRole::Noter,
+			justification,
+		));
+
+		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0,));
+	});
+}
+
+#[test]
+fn a_judge_is_not_seated_by_the_president_alone() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
 
 		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
-
 		assert_ok!(Welati::nominate_official(
-			RuntimeOrigin::signed(1),
+			RuntimeOrigin::signed(SEROK),
 			2,
 			OfficialRole::Dadger,
 			justification,
 		));
 
-		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(1), 0,));
+		// The office carries its own rule, and the President is not the body that rule names.
+		// He put the process on the parliamentary track by nominating; his own signature no
+		// longer reaches it.
+		assert_noop!(
+			Welati::approve_appointment(RuntimeOrigin::signed(SEROK), 0),
+			Error::<Test>::AppointmentAlreadyProcessed
+		);
+		assert!(!pezpallet_tiki::UserTikis::<Test>::get(2).contains(&Tiki::Dadger));
+
+		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+		assert!(pezpallet_tiki::UserTikis::<Test>::get(2).contains(&Tiki::Dadger));
+	});
+}
+
+#[test]
+fn a_stranger_cannot_confirm_and_neither_can_the_president() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+
+		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
+		assert_ok!(Welati::nominate_official(
+			RuntimeOrigin::signed(SEROK),
+			2,
+			OfficialRole::Dadger,
+			justification,
+		));
+
+		assert_noop!(Welati::confirm_appointment(RuntimeOrigin::signed(999), 0), BadOrigin);
+		assert_noop!(Welati::confirm_appointment(RuntimeOrigin::signed(SEROK), 0), BadOrigin);
+	});
+}
+
+#[test]
+fn nobody_is_both_parties_to_their_own_appointment() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_two_bodies();
+
+		let justification = b"I am qualified".to_vec().try_into().unwrap();
+		assert_noop!(
+			Welati::nominate_official(
+				RuntimeOrigin::signed(SEROK),
+				SEROK,
+				OfficialRole::Xezinedar,
+				justification,
+			),
+			Error::<Test>::CannotNominateSelf
+		);
 	});
 }
 
@@ -552,23 +642,27 @@ fn complete_election_cycle_works() {
 #[test]
 fn complete_appointment_cycle_works() {
 	ExtBuilder::default().build().execute_with(|| {
-		// Setup: Make user 1 the Serok
-		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
+		seat_the_two_bodies();
 
 		let justification = b"Experienced lawyer".to_vec().try_into().unwrap();
 
 		assert_ok!(Welati::nominate_official(
-			RuntimeOrigin::signed(1),
+			RuntimeOrigin::signed(SEROK),
 			5,
 			OfficialRole::Dadger,
 			justification,
 		));
 
-		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(1), 0,));
+		// A judge is nominated by the President and confirmed by Parliament, and the record
+		// walks both moments: it waits before it is approved.
+		let waiting = Welati::appointment_processes(0).expect("the process was recorded");
+		assert_eq!(waiting.status, AppointmentStatus::WaitingParliamentaryApproval);
 
-		if let Some(process) = Welati::appointment_processes(0) {
-			assert_eq!(process.status, AppointmentStatus::Approved);
-		}
+		assert_ok!(Welati::confirm_appointment(RuntimeOrigin::signed(MP), 0));
+
+		// `if let Some(..)` used to stand here, so a vanished process asserted nothing at all.
+		let process = Welati::appointment_processes(0).expect("the process survived approval");
+		assert_eq!(process.status, AppointmentStatus::Approved);
 	});
 }
 
@@ -913,13 +1007,13 @@ fn nominate_official_fails_not_authorized() {
 #[test]
 fn a_bench_takes_more_than_one_judge_and_a_single_seat_takes_one() {
 	ExtBuilder::default().build().execute_with(|| {
-		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
+		seat_the_two_bodies();
 
 		let reason = || b"Qualified candidate".to_vec().try_into().unwrap();
 		let appoint = |who: u64, role: OfficialRole| {
-			Welati::nominate_official(RuntimeOrigin::signed(1), who, role, reason())?;
+			Welati::nominate_official(RuntimeOrigin::signed(SEROK), who, role, reason())?;
 			let id = Welati::next_appointment_id() - 1;
-			Welati::approve_appointment(RuntimeOrigin::signed(1), id)
+			install(id, role)
 		};
 
 		// A state has more than one judge. Refusing the second was the register confusing
@@ -957,14 +1051,14 @@ fn nominate_official_requires_president() {
 #[test]
 fn approve_appointment_fails_not_authorized() {
 	ExtBuilder::default().build().execute_with(|| {
-		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
+		seat_the_two_bodies();
 
 		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
 
 		assert_ok!(Welati::nominate_official(
-			RuntimeOrigin::signed(1),
+			RuntimeOrigin::signed(SEROK),
 			2,
-			OfficialRole::Dadger,
+			OfficialRole::Noter,
 			justification,
 		));
 
@@ -981,25 +1075,25 @@ fn approve_appointment_fails_not_authorized() {
 #[test]
 fn approve_appointment_fails_already_processed() {
 	ExtBuilder::default().build().execute_with(|| {
-		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
+		seat_the_two_bodies();
 
 		let justification = b"Qualified candidate".to_vec().try_into().unwrap();
 
 		assert_ok!(Welati::nominate_official(
-			RuntimeOrigin::signed(1),
+			RuntimeOrigin::signed(SEROK),
 			2,
-			OfficialRole::Dadger,
+			OfficialRole::Noter,
 			justification,
 		));
 
 		let process_id = Welati::next_appointment_id() - 1;
 
 		// First approval
-		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(1), process_id,));
+		assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(SEROK), process_id,));
 
 		// Try to approve again
 		assert_noop!(
-			Welati::approve_appointment(RuntimeOrigin::signed(1), process_id,),
+			Welati::approve_appointment(RuntimeOrigin::signed(SEROK), process_id,),
 			Error::<Test>::AppointmentAlreadyProcessed
 		);
 	});
@@ -1023,8 +1117,10 @@ fn approve_appointment_process_not_found() {
 #[test]
 fn nominate_and_approve_multiple_officials() {
 	ExtBuilder::default().build().execute_with(|| {
-		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, 1);
+		seat_the_two_bodies();
 
+		// Two of these three offices answer to Parliament and one does not, which is the
+		// point of running them together: the route is a property of the office.
 		let officials = vec![
 			(2, OfficialRole::Dadger),
 			(3, OfficialRole::Dozger),
@@ -1035,18 +1131,18 @@ fn nominate_and_approve_multiple_officials() {
 			let justification = b"Qualified candidate".to_vec().try_into().unwrap();
 
 			assert_ok!(Welati::nominate_official(
-				RuntimeOrigin::signed(1),
+				RuntimeOrigin::signed(SEROK),
 				nominee,
 				role,
 				justification,
 			));
 
 			let process_id = Welati::next_appointment_id() - 1;
+			assert_ok!(install(process_id, role));
 
-			assert_ok!(Welati::approve_appointment(RuntimeOrigin::signed(1), process_id,));
-
-			// Verify appointment was processed
-			assert!(Welati::appointment_processes(process_id).is_some());
+			let process =
+				Welati::appointment_processes(process_id).expect("the process was recorded");
+			assert_eq!(process.status, AppointmentStatus::Approved);
 		}
 	});
 }

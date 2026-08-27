@@ -413,6 +413,13 @@ pub mod pezpallet {
 		/// cannot teleport. Pointed at a bare address it accumulated where nobody could spend.
 		type InitiativeSlashTarget: OnUnbalanced<NegativeImbalanceOf<Self>>;
 
+		/// The body that confirms an appointment the executive has proposed.
+		///
+		/// A presidential system's central check: the executive names, another body says yes
+		/// or no, and neither alone suffices. Deliberately not satisfiable by the President --
+		/// he nominates, and one person is not both parties to an appointment.
+		type ConfirmationOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
 		/// Currency used for candidacy deposits
 		type NativeCurrency: ReservableCurrency<Self::AccountId>;
 
@@ -784,6 +791,13 @@ pub mod pezpallet {
 		},
 
 		// --- APPOINTMENT EVENTS ---
+		/// An appointment was confirmed by the body that confirms it.
+		AppointmentConfirmedByParliament {
+			process_id: u32,
+			appointee: T::AccountId,
+			role: OfficialRole,
+		},
+
 		/// Official nominated
 		OfficialNominated {
 			process_id: u32,
@@ -970,6 +984,8 @@ pub mod pezpallet {
 		NominationNotFound,
 		AppointmentAlreadyProcessed,
 		RoleAlreadyFilled,
+		/// Nobody is both parties to an appointment: the proposer is not the appointee.
+		CannotNominateSelf,
 
 		// Collective decision errors
 		ProposalNotFound,
@@ -2280,6 +2296,11 @@ pub mod pezpallet {
 
 			ensure!(is_serok || is_minister, Error::<T>::NotAuthorizedToNominate);
 
+			// An appointment has two parties and nobody is both of them. Without this the
+			// President -- who may nominate and, below, approve -- appoints himself to any
+			// office in the civil service in two calls of his own.
+			ensure!(nominator != nominee, Error::<T>::CannotNominateSelf);
+
 			// Only where the office genuinely has one seat. A state has many judges, many
 			// notaries and many teachers; treating every appointed post as single-holder
 			// meant the second one could never be appointed. `tiki` is the register and it
@@ -2331,7 +2352,20 @@ pub mod pezpallet {
 				nominee: nominee.clone(),
 				initiated_at: current_block,
 				deadline,
-				status: AppointmentStatus::WaitingPresidentialApproval,
+				// Who confirms depends on the office, and the office says so. `OfficialRole`
+				// has carried `requires_parliament_approval` since it was written and nothing
+				// ever asked it: every appointment went to the President, including the ones
+				// the type says a parliament must confirm.
+				//
+				// This is the shape of a presidential system. The executive proposes and
+				// another body disposes, and which offices need the second body is drawn by
+				// law rather than by the executive -- the same line the American constitution
+				// draws between principal and inferior officers.
+				status: if role.requires_parliament_approval() {
+					AppointmentStatus::WaitingParliamentaryApproval
+				} else {
+					AppointmentStatus::WaitingPresidentialApproval
+				},
 				documents,
 			};
 
@@ -2408,6 +2442,54 @@ pub mod pezpallet {
 			Self::deposit_event(Event::AppointmentApproved {
 				process_id,
 				approver,
+				appointee: process.nominee,
+				role: process.position,
+			});
+
+			Ok(())
+		}
+
+		/// Confirm an appointment the executive proposed.
+		///
+		/// Takes a process number and nothing else, and that is the design rather than an
+		/// economy. A confirming body that could name an account would be choosing the
+		/// officeholder, which is a parliamentary system; here it answers yes or no to a name
+		/// it did not pick. In the American arrangement this repository borrows the shape from,
+		/// the Senate has never been able to nominate -- roughly nine cabinet nominees have
+		/// ever been rejected outright, and the check works anyway, because a President does
+		/// not send a name that will be refused.
+		#[pezpallet::call_index(12)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::approve_appointment())]
+		pub fn confirm_appointment(origin: OriginFor<T>, process_id: u32) -> DispatchResult {
+			T::ConfirmationOrigin::ensure_origin(origin)?;
+
+			let mut process = AppointmentProcesses::<T>::get(process_id)
+				.ok_or(Error::<T>::AppointmentProcessNotFound)?;
+			ensure!(
+				process.status == AppointmentStatus::WaitingParliamentaryApproval,
+				Error::<T>::AppointmentAlreadyProcessed
+			);
+
+			let tiki = Self::tiki_for_role(&process.position);
+			if pezpallet_tiki::Pezpallet::<T>::is_unique_role(&tiki) {
+				if let Some(current) = pezpallet_tiki::Pezpallet::<T>::current_holder(&tiki) {
+					ensure!(current == process.nominee, Error::<T>::RoleAlreadyFilled);
+				}
+			}
+
+			let mut nomination = PendingNominations::<T>::get(process.position, &process.nominee)
+				.ok_or(Error::<T>::NominationNotFound)?;
+			nomination.approved = true;
+			nomination.approved_at = Some(pezframe_system::Pezpallet::<T>::block_number());
+			nomination.status = NominationStatus::Approved;
+			process.status = AppointmentStatus::Approved;
+
+			PendingNominations::<T>::insert(process.position, &process.nominee, nomination);
+			AppointmentProcesses::<T>::insert(process_id, process.clone());
+			pezpallet_tiki::Pezpallet::<T>::internal_grant_role(&process.nominee, tiki)?;
+
+			Self::deposit_event(Event::AppointmentConfirmedByParliament {
+				process_id,
 				appointee: process.nominee,
 				role: process.position,
 			});

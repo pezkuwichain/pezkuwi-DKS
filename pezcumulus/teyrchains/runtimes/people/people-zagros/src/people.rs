@@ -1384,6 +1384,10 @@ impl pezpallet_welati::Config for Runtime {
 	type InitiativeWindow = StateInitiativeWindow;
 	type InitiativeDeposit = StateInitiativeDeposit;
 	type InitiativeSlashTarget = PenaltiesToTreasury;
+	// The executive names, Parliament confirms. Root is here for the founding period only,
+	// on the same footing as everywhere else in this runtime; the Serok's own origin is
+	// deliberately absent, because one person cannot be both parties to an appointment.
+	type ConfirmationOrigin = crate::RootOrParliament;
 	type InitiativeCooldown = StateInitiativeCooldown;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = WelatiParliamentSize;

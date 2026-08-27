@@ -17,6 +17,8 @@ use pezsp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage,
 };
+use pezframe_support::traits::EnsureOrigin;
+use pezframe_system::RawOrigin;
 use std::collections::BTreeMap;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -704,6 +706,30 @@ parameter_types! {
 	pub const MockInitiativeCooldown: u64 = 50;
 }
 
+/// Stands in for the >1/2 Parliament proportion the runtime uses.
+///
+/// It accepts a single sitting member rather than a majority, which is looser than production,
+/// but the property the tests are here to hold is the one it keeps exactly: the Serok's own
+/// signed origin does not satisfy it. A mock narrower than production would have made that
+/// unreachable instead of merely untested.
+pub struct ParliamentBody;
+impl EnsureOrigin<RuntimeOrigin> for ParliamentBody {
+	type Success = ();
+
+	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		match o.clone().into() {
+			Ok(RawOrigin::Root) => Ok(()),
+			Ok(RawOrigin::Signed(who)) if Welati::is_parliament_member(&who) => Ok(()),
+			_ => Err(o),
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+		Ok(RawOrigin::Root.into())
+	}
+}
+
 impl pezpallet_welati::Config for Test {
 	type WeightInfo = ();
 	type Randomness = MockRandomness;
@@ -718,6 +744,7 @@ impl pezpallet_welati::Config for Test {
 	type InitiativeWindow = MockInitiativeWindow;
 	type InitiativeDeposit = MockInitiativeDeposit;
 	type InitiativeSlashTarget = SlashesTo<MockInitiativeSlashTarget>;
+	type ConfirmationOrigin = ParliamentBody;
 	type InitiativeCooldown = MockInitiativeCooldown;
 	type KycSource = IdentityKyc;
 	type ParliamentSize = ParliamentSize;
