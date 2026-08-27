@@ -132,11 +132,6 @@ mod benchmarking;
 pub use pezpallet_staking_score::{
 	OnStakingDataUpdate, RawScore as StakingRawScore, StakingScoreProvider,
 };
-/* use pezkuwi_primitives::traits::{
-	CitizenshipStatusProvider, PerwerdeScoreProvider, ReferralScoreProvider, RawScore,
-	StakingDetails, StakingScoreProvider, TikiScoreProvider, TrustScoreUpdater, TrustScoreProvider
-}; */
-
 use core::convert::TryFrom;
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
 
