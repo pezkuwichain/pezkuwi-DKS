@@ -25,6 +25,7 @@ use alloc::{vec, vec::Vec};
 use hex_literal::hex;
 use pezcumulus_primitives_core::ParaId;
 use pezframe_support::build_struct_json_patch;
+use pezpallet_tiki::Tiki;
 use pezsp_core::{crypto::UncheckedInto, H256};
 use pezsp_genesis_builder::PresetId;
 use pezsp_keyring::Sr25519Keyring;
@@ -64,6 +65,10 @@ fn people_pezkuwichain_genesis(
 	id: ParaId,
 	founding_citizens: Vec<(AccountId, H256)>,
 	founding_citizen: Option<AccountId>,
+	// The bench and the offices the state starts with. Empty is a decision, not a default:
+	// the register is the court's to write, so a chain launched with no court cannot revoke a
+	// citizenship until an election seats one.
+	founding_government: Vec<(AccountId, Tiki)>,
 ) -> serde_json::Value {
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
@@ -100,7 +105,7 @@ fn people_pezkuwichain_genesis(
 		// ====================================================================
 		// Creates Collection 0 in pezpallet_nfts and mints NFT #0 for the founder
 		// This is required before any citizenship NFTs can be minted
-		tiki: TikiConfig { founding_citizen },
+		tiki: TikiConfig { founding_citizen, founding_government },
 	})
 }
 
@@ -149,6 +154,10 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				vec![(founder_account.clone(), default_founding_citizen_identity_hash())],
 				// Founding citizen gets NFT #0 and Collection 0 ownership
 				Some(founder_account),
+				// The founding bench and cabinet. Named by whoever launches the chain; empty
+				// until then, and empty means the register cannot be corrected until an
+				// election seats a court.
+				vec![],
 			)
 		},
 
@@ -171,6 +180,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			],
 			// Alice gets NFT #0 for testing
 			Some(Sr25519Keyring::Alice.to_account_id()),
+			vec![],
 		),
 
 		// ====================================================================
@@ -191,6 +201,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			vec![(Sr25519Keyring::Alice.to_account_id(), default_founding_citizen_identity_hash())],
 			// Alice gets NFT #0 for dev
 			Some(Sr25519Keyring::Alice.to_account_id()),
+			vec![],
 		),
 
 		_ => return None,

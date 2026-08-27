@@ -357,12 +357,15 @@ impl pezpallet_identity_kyc::Config for Runtime {
 	type Currency = Balances;
 	type VouchingWaitingPeriod = KycVouchingWaitingPeriod;
 	type VouchingCapacity = Referral;
-	// Authority hands over in stages: Root, then the Diwan, then the technical body.
-	// Citizenship is the court's to decide.
-	// The court, and root while sudo exists. Losing citizenship takes every tiki, every
-	// office and the vote with it, so it cannot be a thing a council majority does -- the
-	// comment above this line always said the Diwan decided citizenship; the type did not.
-	type GovernanceOrigin = crate::RootOrDiwan;
+	// The court alone. Losing citizenship takes every tiki, every office and the vote with
+	// it, and gaining one adds a voter -- so the register is the one authority Root does not
+	// share. Root arrives here from the relay, meaning from the executive for as long as sudo
+	// exists, and an executive that can write the electorate has no need to win it.
+	//
+	// The cost is real and is the point: a chain launched with no bench cannot correct its
+	// register until an election seats one. `founding_government` in the genesis config is
+	// where that is answered.
+	type GovernanceOrigin = crate::DiwanOnly;
 	type WeightInfo = pezpallet_identity_kyc::weights::BizinikiwiWeight<Runtime>;
 	type OnKycApproved = Referral;
 	// Losing citizenship concerns both: the referral record has a penalty to apply, and the

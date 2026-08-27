@@ -404,6 +404,16 @@ pub type RootOrDiwan = EitherOfDiverse<
 	pezpallet_collective::EnsureProportionAtLeast<AccountId, people::DiwanCollective, 2, 3>,
 >;
 
+/// Two thirds of the bench, and nobody else.
+///
+/// The register is the one thing no other organ may write. Whoever writes the electorate wins
+/// the election, so an executive that can add or remove citizens does not need to win one --
+/// and Root reaches this chain from the relay, which is to say from the executive while sudo
+/// exists. Every other authority here admits Root because Root is the founding period's
+/// shortcut; this one cannot, or the shortcut is a way to choose the voters.
+pub type DiwanOnly =
+	pezpallet_collective::EnsureProportionAtLeast<AccountId, people::DiwanCollective, 2, 3>;
+
 /// Root, the President, or the Council.
 /// The looser authority most administrative work runs under.
 pub type RootOrSerokOrCouncil = EitherOfDiverse<
