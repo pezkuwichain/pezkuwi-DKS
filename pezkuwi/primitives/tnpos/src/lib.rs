@@ -12,6 +12,7 @@
 extern crate alloc;
 
 pub mod committee;
+pub mod invariant;
 pub mod scores;
 pub mod sortition;
 pub mod stratum;
