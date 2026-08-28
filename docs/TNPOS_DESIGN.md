@@ -97,6 +97,13 @@ atamasının bağımsızlaştırılması. Kapanana kadar bütçe hesabı Divan'�
 **(b) Makam tikileri, Tiki katmanını Meclis'e bağlar.** Düzeltmesi kod: **12 makam tikisi
 Tiki katmanının uygunluk ölçütünden hariç tutulur.** Yalnız topluluk kaynaklı tikiler sayılır.
 
+> **Bu dışlamanın nerede yaşadığı önemli** (Görev 8 incelemesinde ölçüldü): `pezpallet-tnpos`
+> Tiki kapısını yalnız `tiki_of`'a soruyor ve başka hiçbir şeye bakmıyor — doğru sınır bu.
+> Ama demek ki **dışlamayı pallet zorlamıyor, `ScoreProvider`'ı uygulayan taraf zorluyor.**
+> Yani dokuz kapının bağımsızlığı, konsensüs pallet'inde değil **skor köprüsünde** (M7.1)
+> duruyor. O köprü makam tikilerini süzmezse iki katman sessizce tek katman olur ve §5'in
+> tüm olasılıkları yanlış bir zinciri tarif etmeye başlar — hiçbir test kırılmadan.
+
 ---
 
 ## 5. Güvenlik bütçesi — ölçülmüş, varsayılmamış
@@ -286,7 +293,7 @@ edilmeden** parasını kaybeder. Mekanizma Semaphore'un nullifier'ı; Ethereum'd
 | Faz | İçerik | Kabul ölçütü |
 |---|---|---|
 | **0 — ön koşul, bloke edici** | `staking_score` oracle'ının kriptografik yola taşınması · People→Relay skor XCM kanalı · genesis reset takvimine hizalama | Kanal canlı, oracle bot değil |
-| **1 — çekirdek** | primitives + havuz + 9 katman + kotalar + güvenlik kısıtı + bozulma + `SessionManager` teslimi + katman-özel slashing + basit eğilemez tohum (commit-reveal). Ring-VRF **yok** | Zagros'a dağıtıldı, `try_state` yeşil |
+| **1 — çekirdek** | primitives + havuz + 9 katman + kotalar + güvenlik kısıtı + bozulma + `SessionManager` teslimi + katman-özel slashing + commit-reveal tohum (**kestirilemez, ama esirgemeyle eğilebilir** — bkz. aşağıdaki not). Ring-VRF **yok** | Zagros'a dağıtıldı, `try_state` yeşil |
 | **2 — sortition sertleştirme** | `Sortition` trait'ine ring-VRF · **gerçek SRS** (bugün `new_testing()`) · era içi alt-turlar · otomatik finality kurtarma | Komite kestirilemez; kurtarma tatbikatı geçti |
 | **3 — anonimlik** | Nullifier'a bağlı anonim emanet bond · takma adlı havuz üyeliği · **ileri-güvenli geçici katılım anahtarları** (Algorand'dan alınan ders: ele geçirilen anahtar geçmişi yeniden imzalayamaz) | Devlet aktörü tehdit modeli karşılandı |
 | **4 — Ar-Ge, paralel** | SAFROLE / `sc-consensus-sassafras` portu, **yalnız Zagros** | Mainnet taahhüdü yok |
@@ -297,6 +304,7 @@ edilmeden** parasını kaybeder. Mekanizma Semaphore'un nullifier'ı; Ethereum'd
 
 | # | Risk | Durum |
 |---|---|---|
+| R0 | **Faz 1'in commit-reveal tohumu eğilemez DEĞİL.** Kestirilemez (açıklama penceresi kapanmadan kimse bilemez), ama katkısını **esirgeyen** bir katılımcı sonucu değiştirir: k hesabı tutan saldırganın 2^k tohum seçeneği olur. Erken taslakta "eğilemez" yazmıştım; yanlıştı. Üç şey bunu Faz 1 için savunulabilir kılıyor: katkı havuz üyeleriyle sınırlı (öğütme kümesi havuz kadar), açılmamış commitment **zincirde görünür ve teşhis edilebilir**, ve esirgeme Görev 11'in yasak merdiveniyle cezalandırılabilir. Gerçek cevap Faz 2'dir: ring-VRF'te esirgemenin karşılığı yoktur | **Mainnet öncesi Faz 2 zorunlu** — Faz 1 yalnız Zagros içindir |
 | R1 | `bandersnatch-experimental` **hiçbir üretim zincirinde koşmuyor**. Kriptografi (bandersnatch, ark-vrf) akademik olarak sağlam; *entegrasyon* sahada değil | Faz 2'nin taşıdığı risk. Ücretli denetim zorunlu |
 | R2 | `staking_score` oracle'ı bir bot; TNPoS onu konsensüs-kritik yapıyor | **Faz 0 bloke edici** |
 | R3 | **Sybil direnci tüm modelin taşıyıcı varsayımı.** Kimlik katmanı çökerse dokuz katman da çöker | KYC, konsensüs pallet'inden daha sert denetlenmeli |

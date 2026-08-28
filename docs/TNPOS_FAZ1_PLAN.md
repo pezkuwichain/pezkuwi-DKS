@@ -209,7 +209,7 @@ use scale_info::TypeInfo;
 /// One of the nine independent gates a committee seat can be drawn through.
 #[derive(
 	Encode, Decode, DecodeWithMemTracking, Clone, Copy, PartialEq, Eq, PartialOrd, Ord,
-	Debug, TypeInfo, MaxEncodedLen,
+	Debug, TypeInfo, MaxEncodedLen, serde::Serialize, serde::Deserialize,
 )]
 pub enum StratumId {
 	/// Bonded HEZ; ranked internally by the existing Phragmen election on Asset Hub.
@@ -263,7 +263,7 @@ impl StratumId {
 /// the number lives in `analysis`, which never reaches the runtime.
 #[derive(
 	Encode, Decode, DecodeWithMemTracking, Clone, Copy, PartialEq, Eq, Debug, TypeInfo,
-	MaxEncodedLen,
+	MaxEncodedLen, serde::Serialize, serde::Deserialize,
 )]
 pub struct StratumConfig {
 	pub id: StratumId,
@@ -332,6 +332,17 @@ mod tests {
 	}
 
 	#[test]
+	fn the_thresholds_hold_at_the_top_of_the_domain() {
+		// `Seating::quorum` calls these on a committee size read from storage, and the
+		// runtime is built without overflow checks. A bare `2 * n` would wrap here and
+		// return a quorum smaller than the committee it is supposed to bind.
+		let n = u32::MAX;
+		assert!(quorum(n) <= n);
+		assert!(halt_threshold(n) >= 1);
+		assert!(fork_threshold(n) >= halt_threshold(n));
+	}
+
+	#[test]
 	fn quorum_never_exceeds_the_committee() {
 		// A degraded committee still has to have a reachable quorum.
 		for n in 1..=64u32 {
@@ -341,11 +352,25 @@ mod tests {
 	}
 
 	#[test]
-	fn safety_margin_is_never_below_liveness_margin() {
-		// With q > 2n/3 the fork threshold must stay above the halt threshold, otherwise
-		// a set that can stall could also fork and the whole budget collapses.
-		for n in 3..=64u32 {
+	fn safety_margin_exceeds_liveness_margin_at_every_size_this_design_produces() {
+		// Every stratum carries three seats, so a committee -- full or degraded -- is always
+		// a multiple of three. Across that whole family the fork threshold stays strictly
+		// above the halt threshold, which is what makes stalling the recoverable failure and
+		// forking the one the budget is spent on.
+		for n in (3..=64u32).step_by(3) {
 			assert!(fork_threshold(n) > halt_threshold(n), "n = {n}");
+		}
+	}
+
+	#[test]
+	fn a_committee_of_size_one_mod_three_collapses_the_two_margins() {
+		// Not a defect in the formulas -- a fact about them, written down so nobody "fixes"
+		// it later. Where n leaves remainder one on division by three, q lands such that the
+		// thresholds coincide: every set large enough to stall is large enough to fork, and
+		// the safety margin is gone. Sizes of this shape must never be seated, which is a
+		// condition `invariant::seat` enforces rather than something callers must remember.
+		for n in (4..=64u32).step_by(3) {
+			assert_eq!(fork_threshold(n), halt_threshold(n), "n = {n}");
 		}
 	}
 }
@@ -371,32 +396,38 @@ Beklenen: derleme hatası — `quorum` bulunamadı.
 //! thresholds that matter from it.
 
 /// Votes needed to finalise: strictly more than two thirds of `n`.
+///
+/// The doubling happens in `u64`. These are called at runtime on a committee size read
+/// from storage -- not only const-evaluated -- and the runtime is built without overflow
+/// checks, so a bare `2 * n` would wrap silently and hand back a quorum smaller than the
+/// committee it is meant to bind. `+ 1` cannot overflow, because `2n/3 < n` for every `n`.
 pub const fn quorum(n: u32) -> u32 {
-	(2 * n) / 3 + 1
+	(((2u64 * n as u64) / 3) as u32).saturating_add(1)
 }
 
 /// Seats an adversary needs to stop the committee reaching quorum.
 ///
 /// Recoverable: a stalled committee is re-sampled. Compare `fork_threshold`, which is not.
 pub const fn halt_threshold(n: u32) -> u32 {
-	n - quorum(n) + 1
+	n.saturating_sub(quorum(n)).saturating_add(1)
 }
 
 /// Seats an adversary needs before two conflicting quorums can intersect in adversary-only
 /// members -- that is, before the chain can fork. Not recoverable.
 pub const fn fork_threshold(n: u32) -> u32 {
-	2 * quorum(n) - n
+	(2u64 * quorum(n) as u64).saturating_sub(n as u64) as u32
 }
 ```
 
 - [ ] **Adım 4: Testlerin geçtiğini doğrula**
 
 Çalıştır: `cargo test -p pezkuwi-tnpos-primitives committee`
-Beklenen: 4 test PASS.
+Beklenen: 10 test PASS.
 
-> **Not:** `quorum` içindeki `2 * n` çıplak çarpımdır ama `const fn`'dir ve `n ≤ 64`
-> ile çağrılır; derleme zamanı taşma denetimi bunu yakalar. Runtime'da hesaplanan
-> aritmetik için global kısıt geçerlidir.
+> **Not:** Bu üç fonksiyon `const fn` olsa da **çalışma zamanında da çağrılır** —
+> Görev 5'teki `Seating::quorum()` onları depodan gelen canlı komite boyutuyla çağırır.
+> Runtime overflow denetimi kapalı derlendiği için çarpımlar `u64`'te yapılır ve
+> çıkarmalar `saturating_sub`'dır; aksi halde sessizce sarar.
 
 - [ ] **Adım 5: Commit**
 
@@ -587,6 +618,31 @@ mod tests {
 	}
 
 	#[test]
+	fn each_round_draws_from_its_own_randomness() {
+		// If `round` were dropped from the hash preimage, every round of one call would
+		// share a random word. The shrinking bound would still hand back distinct picks, so
+		// the draw would look valid and every other test in this file would still pass --
+		// but consecutive picks would track each other almost exactly instead of being
+		// independent, and a draw whose second seat is a function of its first is a weaker
+		// draw than the security argument assumes. This measures the consequence: over many
+		// seeds, two draws from a large pool land next to each other only rarely.
+		let pool: Vec<u32> = (0..1_000).collect();
+		let trials = 500u32;
+		let mut adjacent = 0u32;
+		for i in 0..trials {
+			let mut seed = [0u8; 32];
+			seed[..4].copy_from_slice(&i.to_le_bytes());
+			let got = sample_k(&pool, 2, &seed, b"stake");
+			if got[0].abs_diff(got[1]) <= 2 {
+				adjacent += 1;
+			}
+		}
+		// Independent rounds collide this closely about half a percent of the time; a shared
+		// word puts it near certainty. The bar is deliberately loose so this cannot flake.
+		assert!(adjacent < trials / 10, "{adjacent} of {trials} draws were adjacent");
+	}
+
+	#[test]
 	fn every_candidate_is_reachable() {
 		// The old implementation read one byte per swap, so with a pool above 256 the tail
 		// was unreachable -- members could never be seated at all. This is that regression.
@@ -684,7 +740,7 @@ pub fn sample_k<T: Clone>(candidates: &[T], k: u32, seed: &[u8; 32], domain: &[u
 - [ ] **Adım 4: Testlerin geçtiğini doğrula**
 
 Çalıştır: `cargo test -p pezkuwi-tnpos-primitives sortition`
-Beklenen: 5 test PASS.
+Beklenen: 6 test PASS.
 
 - [ ] **Adım 5: Commit**
 
@@ -766,9 +822,43 @@ mod tests {
 	}
 
 	#[test]
-	fn too_small_a_committee_is_refused() {
+	fn four_healthy_strata_are_still_too_few_gates() {
+		// Population is not the point: four fully-populated strata still mean one collusion
+		// short of deciding the chain, so the count is refused on its own.
 		let four: Vec<StratumConfig> = nine().into_iter().take(4).collect();
 		assert_eq!(seat(&four, &[200; 4]), Err(InvariantError::TooFewStrata));
+	}
+
+	#[test]
+	fn a_repeated_stratum_is_refused() {
+		// Nine entries naming eight gates is not nine gates. The budget is computed from the
+		// number of independent gates, so a duplicate would let a configuration claim an
+		// independence it does not have -- and every probability downstream would be wrong.
+		let mut dup = nine();
+		dup[8].id = dup[0].id;
+		assert_eq!(seat(&dup, &[200; 9]), Err(InvariantError::DuplicateStratum));
+	}
+
+	#[test]
+	fn a_committee_too_large_to_store_is_refused() {
+		// The pallet keeps the seated committee in a bounded vector. A configuration whose
+		// seats exceed that bound clears every other check here and then fails at an era
+		// boundary -- the one place a configuration must never be allowed to fail.
+		let huge: Vec<StratumConfig> = StratumId::ALL
+			.iter()
+			.map(|&id| StratumConfig { id, seats: 10, min_eligible: 50 })
+			.collect();
+		assert_eq!(seat(&huge, &[200; 9]), Err(InvariantError::CommitteeTooLarge));
+	}
+
+	#[test]
+	fn a_stratum_carrying_no_seats_is_refused() {
+		// A zero-seat stratum would count towards MIN_STRATA while carrying nothing: nine
+		// gates on paper, eight in the committee. The number of independent gates is the
+		// quantity the entire security budget is computed from, so it has to mean seats.
+		let mut with_empty = nine();
+		with_empty[3].seats = 0;
+		assert_eq!(seat(&with_empty, &[200; 9]), Err(InvariantError::EmptyStratum));
 	}
 
 	#[test]
@@ -807,6 +897,12 @@ pub const MIN_STRATA: u32 = 5;
 /// Below this the committee is too small for the thresholds to mean anything.
 pub const MIN_COMMITTEE: u32 = 15;
 
+/// The most seats a committee may carry. The pallet stores the seated committee in a
+/// bounded vector of exactly this size, so a configuration above it would pass validation
+/// and then fail at an era boundary -- which is the one moment a configuration must not be
+/// allowed to fail.
+pub const MAX_COMMITTEE: u32 = 64;
+
 /// Why a configuration cannot be seated.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum InvariantError {
@@ -819,6 +915,11 @@ pub enum InvariantError {
 	/// A stratum declares zero seats, which would let it be counted as independent while
 	/// carrying nothing.
 	EmptyStratum,
+	/// The same stratum appears twice. Nine entries naming eight gates is eight gates, and
+	/// the security budget is computed from that count.
+	DuplicateStratum,
+	/// More seats than the pallet can store for a committee.
+	CommitteeTooLarge,
 }
 
 /// Which strata are seated this era, and how large the committee therefore is.
@@ -844,6 +945,11 @@ pub fn seat(strata: &[StratumConfig], eligible: &[u32]) -> Result<Seating, Invar
 	if strata.len() != eligible.len() {
 		return Err(InvariantError::LengthMismatch);
 	}
+	for (i, a) in strata.iter().enumerate() {
+		if strata.iter().skip(i.saturating_add(1)).any(|b| b.id == a.id) {
+			return Err(InvariantError::DuplicateStratum);
+		}
+	}
 	if strata.iter().any(|c| c.seats == 0) {
 		return Err(InvariantError::EmptyStratum);
 	}
@@ -862,6 +968,9 @@ pub fn seat(strata: &[StratumConfig], eligible: &[u32]) -> Result<Seating, Invar
 	}
 	if n < MIN_COMMITTEE {
 		return Err(InvariantError::CommitteeTooSmall);
+	}
+	if n > MAX_COMMITTEE {
+		return Err(InvariantError::CommitteeTooLarge);
 	}
 
 	Ok(Seating { seated, n })
@@ -961,13 +1070,26 @@ mod tests {
 	}
 
 	#[test]
-	fn stratification_is_what_makes_a_small_committee_safe() {
-		// Nine strata of three, each five percent adversary, against the same committee
-		// drawn as one pool. The gap is the whole argument for strata.
-		let strat = tail(&committee_distribution(&vec![stratum_distribution(200, 10, 3); 9]),
-			fork_threshold(27));
+	fn stratification_bounds_a_concentrated_adversary_where_probability_alone_would_not() {
+		// Ninety adversary members against a pool of eighteen hundred, drawn two ways.
+		//
+		// Spread evenly, the two draws are near-identical: same mean, and stratification
+		// only trims the variance. That is not what strata are for, and a test comparing
+		// that case would be measuring nothing.
+		//
+		// The difference shows when the adversary concentrates -- which is the realistic
+		// attack, since capital can buy the stake stratum outright and cannot buy the other
+		// eight. Drawn as one pool those ninety can reach any number of seats. Drawn by
+		// stratum they are capped at that stratum's three, and the fork probability is not
+		// merely small but exactly zero: a deterministic bound where the flat draw offers
+		// only a probabilistic one. That substitution is the whole argument for strata.
+		let mut per = vec![stratum_distribution(200, 0, 3); 9];
+		per[0] = stratum_distribution(200, 90, 3);
+		let concentrated = tail(&committee_distribution(&per), fork_threshold(27));
 		let flat = tail(&stratum_distribution(1800, 90, 27), fork_threshold(27));
-		assert!(flat > strat * 10.0, "stratified {strat} vs flat {flat}");
+
+		assert_eq!(concentrated, 0.0, "three seats is a cap, not a likelihood");
+		assert!(flat > 0.0, "the same adversary keeps a real chance in a flat draw: {flat}");
 	}
 }
 ```
@@ -1219,7 +1341,7 @@ use pezkuwi_tnpos_primitives::{
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
-	use super::*;
+	use super::{weights::WeightInfo, *};
 
 	/// First version this pallet has ever had on chain. Written down so a future migration
 	/// can tell whether it has run.
@@ -1317,7 +1439,6 @@ pub mod pezpallet {
 `src/lib.rs`, genesis ve yapılandırma çağrısı (pezpallet modülünün içine):
 ```rust
 	#[pezpallet::genesis_config]
-	#[derive(pezframe_support::DefaultNoBound)]
 	pub struct GenesisConfig<T: Config> {
 		pub strata: Vec<StratumConfig>,
 		pub members: Vec<(T::AccountId, StratumId)>,
@@ -1981,9 +2102,20 @@ fn a_refused_seating_does_not_retry_every_block() {
 			empty_stratum(s);
 		}
 		run_to_block(EraLength::get());
-		let after_first = EraStart::<Test>::get();
+		// The window must have been written even though seating failed. Asserting only that
+		// it is unchanged between two blocks would pass while it sat at genesis zero, which
+		// is the exact bug this test exists for.
+		assert_eq!(
+			EraStart::<Test>::get(),
+			EraLength::get(),
+			"a failed seating must still move the era window"
+		);
 		run_to_block(EraLength::get() + 1);
-		assert_eq!(EraStart::<Test>::get(), after_first, "the era window must have moved on");
+		assert_eq!(
+			EraStart::<Test>::get(),
+			EraLength::get(),
+			"and must not fire again on the very next block"
+		);
 	});
 }
 ```
@@ -2041,8 +2173,15 @@ impl<T: Config> Pezpallet<T> {
 			committee.extend(drawn);
 		}
 
-		let bounded: BoundedVec<T::AccountId, ConstU32<64>> =
-			committee.try_into().map_err(|_| Error::<T>::UnseatableConfiguration)?;
+		// The ceiling is named once, in the primitives crate, and `CurrentCommittee` is
+		// declared against the same constant -- two places that must agree should not be two
+		// numbers. `seat` already refuses configurations above it, so this conversion cannot
+		// fail today; the branch stays because a future change to `seat` should surface as a
+		// refused era rather than a panic.
+		let bounded: BoundedVec<
+			T::AccountId,
+			ConstU32<{ pezkuwi_tnpos_primitives::invariant::MAX_COMMITTEE }>,
+		> = committee.try_into().map_err(|_| Error::<T>::UnseatableConfiguration)?;
 
 		let unseated: Vec<StratumId> = strata
 			.iter()
@@ -2461,9 +2600,14 @@ impl<T: Config> Pezpallet<T> {
 		// towards quorum immediately, not at the end of the era.
 		CurrentCommittee::<T>::mutate(|c| c.retain(|m| m != &who));
 
-		let until = CurrentEra::<T>::get().saturating_add(offence.ban_eras());
-		Banned::<T>::insert(&who, until);
-		Self::deposit_event(Event::Punished { who, offence, banned_until: until });
+		let proposed = CurrentEra::<T>::get().saturating_add(offence.ban_eras());
+		// A ban only ever lengthens. Recomputing it from whichever report arrived last would
+		// let a trivial offence reported afterwards cut short the penalty for a serious one,
+		// and equivocation costs fifteen times what going offline does.
+		let banned_until =
+			Banned::<T>::get(&who).map_or(proposed, |existing| existing.max(proposed));
+		Banned::<T>::insert(&who, banned_until);
+		Self::deposit_event(Event::Punished { who, offence, banned_until });
 		Ok(())
 	}
 }
