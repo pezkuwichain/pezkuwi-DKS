@@ -94,7 +94,7 @@ use testnet_teyrchains_constants::zagros::{
 };
 pub use teyrchains_common as common;
 use teyrchains_common::{
-	impls::{DealWithFees, ToParentTreasury},
+	impls::{DealWithFees, ToSiblingTreasury},
 	message_queue::*,
 	AccountId, AuraId, Balance, BlockNumber, Hash, Header, Nonce, Signature,
 	AVERAGE_ON_INITIALIZE_RATIO, NORMAL_DISPATCH_RATIO,
@@ -606,7 +606,14 @@ pub const MAX_ALLIES: u32 = 100;
 
 parameter_types! {
 	pub const AllyDeposit: Balance = 1_000 * UNITS; // 1,000 ZGR bond to join as an Ally
+	/// The treasury's account. The bytes are the same wherever the pallet sits -- what changed
+	/// is which chain holds it: the Asset Hub, not the relay.
 	pub ZagrosTreasuryAccount: AccountId = ZAGROS_TREASURY_PALLET_ID.into_account_truncating();
+	/// Where penalties collected here are sent. `ToParentTreasury` used to send them to the
+	/// relay, which has had no treasury since it moved; the account there answers to no pallet,
+	/// so the funds would have been unspendable.
+	pub AssetHubTreasuryLocation: Location =
+		Location::new(1, [Teyrchain(zagros_runtime_constants::system_teyrchain::ASSET_HUB_ID)]);
 	// The number of blocks a member must wait between giving a retirement notice and retiring.
 	// Supposed to be greater than time required to `kick_member` with alliance motion.
 	pub const AllianceRetirementPeriod: BlockNumber = (90 * DAYS) + ALLIANCE_MOTION_DURATION;
@@ -619,7 +626,12 @@ impl pezpallet_alliance::Config for Runtime {
 	type MembershipManager = RootOrAllianceTwoThirdsMajority;
 	type AnnouncementOrigin = RootOrAllianceTwoThirdsMajority;
 	type Currency = Balances;
-	type Slashed = ToParentTreasury<ZagrosTreasuryAccount, LocationToAccountId, Runtime>;
+	type Slashed = ToSiblingTreasury<
+		ZagrosTreasuryAccount,
+		LocationToAccountId,
+		AssetHubTreasuryLocation,
+		Runtime,
+	>;
 	type InitializeMembers = AllianceMotion;
 	type MembershipChanged = AllianceMotion;
 	type RetirementPeriod = AllianceRetirementPeriod;

@@ -21,9 +21,9 @@ mod tracks;
 use crate::{
 	weights,
 	xcm_config::{FellowshipAdminBodyId, LocationToAccountId, TreasurerBodyId, UsdtAssetHub},
-	AccountId, AssetRate, Balance, Balances, FellowshipReferenda, GovernanceLocation, Preimage,
-	Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Scheduler, TeyrchainInfo,
-	ZagrosTreasuryAccount, DAYS,
+	AccountId, AssetHubTreasuryLocation, AssetRate, Balance, Balances, FellowshipReferenda,
+	GovernanceLocation, Preimage, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, Scheduler,
+	TeyrchainInfo, ZagrosTreasuryAccount, DAYS,
 };
 pub use origins::{
 	pezpallet_origins as pezpallet_fellowship_origins, Architects, EnsureCanPromoteTo,
@@ -48,7 +48,7 @@ use pezsp_arithmetic::Permill;
 use pezsp_core::{ConstU128, ConstU32, ConstU8};
 use pezsp_runtime::traits::{ConstU16, ConvertToValue, IdentityLookup, Replace, TakeFirst};
 use testnet_teyrchains_constants::zagros::{account, currency::GRAND};
-use teyrchains_common::impls::ToParentTreasury;
+use teyrchains_common::impls::ToSiblingTreasury;
 use xcm::prelude::*;
 use xcm_builder::{AliasesIntoAccountId32, PayOverXcm};
 use zagros_runtime_constants::time::HOURS;
@@ -97,7 +97,12 @@ impl pezpallet_referenda::Config<FellowshipReferendaInstance> for Runtime {
 	>;
 	type CancelOrigin = Architects;
 	type KillOrigin = Masters;
-	type Slash = ToParentTreasury<ZagrosTreasuryAccount, LocationToAccountId, Runtime>;
+	type Slash = ToSiblingTreasury<
+		ZagrosTreasuryAccount,
+		LocationToAccountId,
+		AssetHubTreasuryLocation,
+		Runtime,
+	>;
 	type Votes = pezpallet_ranked_collective::Votes;
 	type Tally = pezpallet_ranked_collective::TallyOf<Runtime, FellowshipCollectiveInstance>;
 	type SubmissionDeposit = ConstU128<0>;

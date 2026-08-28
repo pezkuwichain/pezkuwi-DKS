@@ -120,8 +120,78 @@ pub type BalanceOf<T> = <pezpallet_balances::Pezpallet<T> as Currency<
 	<T as pezframe_system::Config>::AccountId,
 >>::Balance;
 
+/// Implements `OnUnbalanced::on_unbalanced` to teleport slashed assets to the treasury on a
+/// sibling teyrchain.
+///
+/// The counterpart to `ToParentTreasury`, and the one this network needs: the treasury moved
+/// off the relay to the Asset Hub, so a chain sending its penalties to `Parent` is sending
+/// them to an account no pallet stands behind. On a chain whose rule is that nothing burns,
+/// that is a burn with extra steps.
+///
+/// `Destination` names the sibling; the beneficiary account is unchanged, because a treasury's
+/// account is derived from `PalletId(*b"py/trsry")` and those bytes are the same wherever the
+/// pallet sits. Only the chain was wrong.
+pub struct ToSiblingTreasury<TreasuryAccount, AccountIdConverter, Destination, T>(
+	PhantomData<(TreasuryAccount, AccountIdConverter, Destination, T)>,
+);
+
+impl<TreasuryAccount, AccountIdConverter, Destination, T> OnUnbalanced<NegativeImbalance<T>>
+	for ToSiblingTreasury<TreasuryAccount, AccountIdConverter, Destination, T>
+where
+	T: pezpallet_balances::Config + pezpallet_xcm::Config + pezframe_system::Config,
+	<<T as pezframe_system::Config>::RuntimeOrigin as OriginTrait>::AccountId: From<AccountIdOf<T>>,
+	[u8; 32]: From<<T as pezframe_system::Config>::AccountId>,
+	TreasuryAccount: Get<AccountIdOf<T>>,
+	AccountIdConverter: ConvertLocation<AccountIdOf<T>>,
+	Destination: Get<Location>,
+	BalanceOf<T>: Into<Fungibility>,
+{
+	fn on_unbalanced(amount: NegativeImbalance<T>) {
+		let amount = match amount.drop_zero() {
+			Ok(..) => return,
+			Err(amount) => amount,
+		};
+		let imbalance = amount.peek();
+		let root_location: Location = Here.into();
+		let root_account: AccountIdOf<T> =
+			match AccountIdConverter::convert_location(&root_location) {
+				Some(a) => a,
+				None => {
+					tracing::warn!(target: "xcm::on_unbalanced", "Failed to convert root origin into account id");
+					return;
+				},
+			};
+		let treasury_account: AccountIdOf<T> = TreasuryAccount::get();
+
+		<pezpallet_balances::Pezpallet<T>>::resolve_creating(&root_account, amount);
+
+		let result = <pezpallet_xcm::Pezpallet<T>>::limited_teleport_assets(
+			<<T as pezframe_system::Config>::RuntimeOrigin>::root(),
+			Box::new(Destination::get().into()),
+			Box::new(
+				Junction::AccountId32 { network: None, id: treasury_account.into() }
+					.into_location()
+					.into(),
+			),
+			Box::new((Parent, imbalance).into()),
+			0,
+			WeightLimit::Unlimited,
+		);
+
+		// Logged rather than swallowed: a failed teleport leaves the funds sitting in this
+		// chain's own root account, where they are recoverable. Dropping the imbalance instead
+		// would destroy them.
+		if let Err(err) = result {
+			tracing::warn!(target: "xcm::on_unbalanced", error=?err, "Failed to teleport slashed assets to the sibling treasury");
+		}
+	}
+}
+
 /// Implements `OnUnbalanced::on_unbalanced` to teleport slashed assets to relay chain treasury
 /// account.
+///
+/// Kept for chains whose treasury really is on the relay. Ours is not -- see
+/// `ToSiblingTreasury`.
 pub struct ToParentTreasury<TreasuryAccount, AccountIdConverter, T>(
 	PhantomData<(TreasuryAccount, AccountIdConverter, T)>,
 );
