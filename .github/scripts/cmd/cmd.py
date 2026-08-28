@@ -212,6 +212,17 @@ for arg, config in common_args.items():
 parser_bench.add_argument('--runtime', help='Runtime(s) space separated', choices=runtimeNames, nargs='*', default=runtimeNames)
 parser_bench.add_argument('--pezpallet', help='Pezpallet(s) space separated', nargs='*', default=[])
 parser_bench.add_argument('--fail-fast', help='Fail fast on first failed benchmark', action='store_true')
+# Steps and repeat were written into the command below and could not be changed without editing
+# this file. They are the two knobs that decide whether a fitted weight is a measurement or a
+# draw: `pezcumulus_pezpallet_xcmp_queue`'s `enqueue_n_full_pages` came back from two separate
+# runs at 50/20 with a base twelve times its own recorded minimum, because a steep slope leaves
+# the intercept poorly determined and 20 samples do not pin it down. The defaults stay where
+# they were so every existing run reproduces; a pallet that needs a tighter fit can ask for one.
+parser_bench.add_argument('--steps', help='Benchmark steps per component (default 50)',
+                          type=int, default=50)
+parser_bench.add_argument('--repeat', help='Repetitions per step (default 20). Raise it for a '
+                          'pallet whose fitted base disagrees with its measured minimum.',
+                          type=int, default=20)
 
 
 """
@@ -466,8 +477,8 @@ def main():
                     f"--header={header_path} " \
                     f"--output={output_path} " \
                     f"--wasm-execution=compiled " \
-                    f"--steps=50 " \
-                    f"--repeat=20 " \
+                    f"--steps={args.steps} " \
+                    f"--repeat={args.repeat} " \
                     f"--heap-pages=4096 " \
                     f"{f'--template={template} ' if template else ''}" \
                     f"--no-storage-info --no-min-squares --no-median-slopes " \
