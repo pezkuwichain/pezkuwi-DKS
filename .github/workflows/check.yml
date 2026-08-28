@@ -47,6 +47,12 @@ jobs:
       - uses: actions/checkout@v7
       - name: Zagros and Pezkuwichain carry the same pallet index map
         run: python3 .github/scripts/check-twin-runtimes.py
+      # The franchise separation from the other end. `no_subject_is_decided_by_two_different_
+      # electorates` compares the two ballots' track names; this resolves every origin binding on
+      # a register pallet down to what can actually produce it, so a track under some other name
+      # cannot slip through. Seconds to run, and it fails closed on anything it cannot classify.
+      - name: No token-weighted ballot reaches the register
+        run: python3 .github/scripts/check-register-origins.py
 
   # A note describing the tree goes stale the moment the tree moves. These measure the tree.
   # The gaps are the backlog and do not fail a build; work that came undone does.
