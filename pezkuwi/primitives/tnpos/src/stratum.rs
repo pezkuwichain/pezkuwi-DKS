@@ -113,9 +113,9 @@ mod tests {
 	#[test]
 	fn stratum_indices_are_pinned() {
 		let info = <StratumId as TypeInfo>::type_info();
-		let TypeDef::Variant(v) = info.type_def() else { panic!("StratumId is not an enum") };
+		let TypeDef::Variant(v) = info.type_def else { panic!("StratumId is not an enum") };
 		let got: Vec<(String, u8)> =
-			v.variants().iter().map(|x| (x.name.to_string(), x.index)).collect();
+			v.variants.iter().map(|x| (x.name.to_string(), x.index)).collect();
 		let want = [
 			("Stake", 0u8),
 			("Meclis", 1),
