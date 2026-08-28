@@ -140,3 +140,5 @@ macro_rules! create_pool_with_wnd_on {
 		}
 	};
 }
+
+mod franchises;

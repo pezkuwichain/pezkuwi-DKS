@@ -26,6 +26,7 @@ pezpallet-assets = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-message-queue = { workspace = true }
 pezpallet-pez-treasury = { workspace = true }
+pezpallet-referenda = { workspace = true }
 pezpallet-treasury = { workspace = true }
 pezpallet-utility = { workspace = true }
 pezsp-core = { workspace = true }
@@ -64,6 +65,7 @@ runtime-benchmarks = [
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
 	"pezpallet-pez-treasury/runtime-benchmarks",
+	"pezpallet-referenda/runtime-benchmarks",
 	"pezpallet-treasury/runtime-benchmarks",
 	"pezpallet-utility/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",
@@ -87,6 +89,7 @@ std = [
 	"pezpallet-balances/std",
 	"pezpallet-message-queue/std",
 	"pezpallet-pez-treasury/std",
+	"pezpallet-referenda/std",
 	"pezpallet-treasury/std",
 	"pezpallet-utility/std",
 	"pezpallet-xcm/std",
@@ -110,6 +113,7 @@ try-runtime = [
 	"pezpallet-balances/try-runtime",
 	"pezpallet-message-queue/try-runtime",
 	"pezpallet-pez-treasury/try-runtime",
+	"pezpallet-referenda/try-runtime",
 	"pezpallet-treasury/try-runtime",
 	"pezpallet-utility/try-runtime",
 	"pezpallet-xcm/try-runtime",
