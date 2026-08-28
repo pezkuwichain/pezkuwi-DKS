@@ -588,10 +588,6 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type PendingPrimeMinister<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
 
-	/// The President's standing nominee for one of his court seats, waiting on the House.
-	#[pezpallet::storage]
-	pub type PendingCourtNominee<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
-
 	/// Which offices need the confirming body's consent, where the legislature has spoken.
 	///
 	/// Absent an entry the office's founding rule stands (`requires_parliament_approval`), so
@@ -814,12 +810,6 @@ pub mod pezpallet {
 		/// The House refused the President's nominee for Prime Minister.
 		PrimeMinisterRejected { nominee: T::AccountId },
 
-		/// The President put a name forward for one of his court seats.
-		DiwanMemberNominated { nominee: T::AccountId },
-
-		/// The House refused the President's court nominee.
-		DiwanMemberRejected { nominee: T::AccountId },
-
 		/// The legislature moved an office on or off the list that needs confirming.
 		ConfirmationRequirementSet { role: OfficialRole, required: bool },
 
@@ -1020,8 +1010,6 @@ pub mod pezpallet {
 		CannotNominateSelf,
 		/// There is no nominee for Prime Minister to act on.
 		NoNomineeStanding,
-		/// There is no court nominee to act on.
-		NoCourtNominee,
 
 		// Collective decision errors
 		ProposalNotFound,
@@ -1702,9 +1690,17 @@ pub mod pezpallet {
 			Ok(())
 		}
 
-		/// Nominate one of the President's five seats on the court.
+		/// Appoint one of the President's five seats on the court. His call alone.
 		///
-		/// Unlike the elected six, the nominee has to be qualified -- see
+		/// The court is eleven: the house elects six, the President appoints five. That split
+		/// *is* the separation -- each half is chosen by a body the other does not control, and
+		/// neither can seat a majority. Putting a parliamentary confirmation on top of the
+		/// President's five was tried and reverted: it would have let the house reach all
+		/// eleven seats while its own six stayed beyond the President's reach, which is not a
+		/// stronger separation but a one-sided one. The American analogy does not carry here,
+		/// because there the Senate elects no justices at all.
+		///
+		/// Unlike the elected six, the appointee has to be qualified -- see
 		/// `qualifies_for_an_appointed_seat`. There is no matching dismissal call, and that is
 		/// the point: a court the President can empty is not a check on the President. A seat
 		/// ends when its nine years run out, when the Diwan itself removes the holder, or
@@ -1713,29 +1709,6 @@ pub mod pezpallet {
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
 		pub fn appoint_diwan_member(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
 			Self::ensure_root_or_serok(origin)?;
-			Self::a_court_seat_is_open_for(&who)?;
-
-			// Nominating again replaces the standing nominee. That is how the President
-			// withdraws a name, and it is the only way he can: he cannot reach the seat.
-			PendingCourtNominee::<T>::put(who.clone());
-			Self::deposit_event(Event::DiwanMemberNominated { nominee: who });
-			Ok(())
-		}
-
-		/// Confirm the President's court nominee, and seat them.
-		///
-		/// The half of the appointment the President does not hold. Nominating puts a name
-		/// forward; this is what puts a judge on the bench, and the body that does it is not
-		/// the one that chose the name.
-		#[pezpallet::call_index(36)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
-		pub fn confirm_diwan_member(origin: OriginFor<T>) -> DispatchResult {
-			T::ConfirmationOrigin::ensure_origin(origin)?;
-
-			let who = PendingCourtNominee::<T>::take().ok_or(Error::<T>::NoCourtNominee)?;
-
-			// Re-checked rather than trusted from nomination time: seats fill and citizenships
-			// lapse between the two moments, and the checks belong at the moment of the act.
 			Self::a_court_seat_is_open_for(&who)?;
 
 			let president = pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok)
@@ -1761,17 +1734,6 @@ pub mod pezpallet {
 				member: who,
 				appointed_by: AppointmentAuthority::President(president),
 			});
-			Ok(())
-		}
-
-		/// Refuse the President's court nominee.
-		#[pezpallet::call_index(37)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
-		pub fn reject_diwan_member(origin: OriginFor<T>) -> DispatchResult {
-			T::ConfirmationOrigin::ensure_origin(origin)?;
-
-			let who = PendingCourtNominee::<T>::take().ok_or(Error::<T>::NoCourtNominee)?;
-			Self::deposit_event(Event::DiwanMemberRejected { nominee: who });
 			Ok(())
 		}
 
@@ -3792,9 +3754,6 @@ impl<T: Config> Pezpallet<T> {
 
 	/// Check if account is a Parliament member
 	/// Is there a seat for this person on the President's side of the bench?
-	///
-	/// Asked twice -- once when the name goes forward and once when it is confirmed -- because
-	/// the two moments are far apart and a seat can fill in between.
 	fn a_court_seat_is_open_for(who: &T::AccountId) -> DispatchResult {
 		let bench = DiwanMembers::<T>::get();
 		ensure!(!bench.iter().any(|member| &member.account == who), Error::<T>::AlreadyOnTheCourt);

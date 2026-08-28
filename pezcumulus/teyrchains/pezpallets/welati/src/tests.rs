@@ -5,9 +5,9 @@
 
 use crate::{
 	mock::{
-		add_parliament_member, endorsed_by, install_diwan_member, install_prime_minister,
-		last_event, make_citizen, run_to_block, seat_president, ExtBuilder, RuntimeEvent,
-		RuntimeOrigin, System, Test, Welati,
+		add_parliament_member, endorsed_by, install_prime_minister, last_event, make_citizen,
+		run_to_block, seat_president, ExtBuilder, RuntimeEvent, RuntimeOrigin, System, Test,
+		Welati,
 	},
 	types::*,
 	Error, Event as WelatiEvent, GovernmentPosition,
@@ -591,8 +591,18 @@ fn naming_again_replaces_the_standing_nominee() {
 	});
 }
 
+/// The court's separation is the split, not a confirmation on top of it.
+///
+/// Six seats are the house's -- it elects them from candidates who stand for themselves, and
+/// the President reaches none of them. Five are the President's, and he seats them with his
+/// own signature. Each half is chosen by a body the other does not control.
+///
+/// A parliamentary confirmation on the President's five was written and reverted. It would
+/// have let the house touch all eleven seats while its own six stayed beyond the President's
+/// reach: one-sided, not separated. This test holds the decision, so the confirmation cannot
+/// come back as a tidy-up.
 #[test]
-fn a_court_the_president_can_fill_alone_is_not_a_check_on_him() {
+fn the_president_seats_his_five_and_the_house_cannot_reach_them() {
 	ExtBuilder::default().build().execute_with(|| {
 		seat_the_two_bodies();
 		make_citizen(2);
@@ -600,13 +610,16 @@ fn a_court_the_president_can_fill_alone_is_not_a_check_on_him() {
 			let _ = tikis.try_push(Tiki::Hiquqnas);
 		});
 
+		// One call, one signature, one judge.
 		assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(SEROK), 2));
-		assert!(Welati::diwan_members().is_empty(), "naming is not seating");
-		assert_noop!(Welati::confirm_diwan_member(RuntimeOrigin::signed(SEROK)), BadOrigin);
-
-		assert_ok!(Welati::confirm_diwan_member(RuntimeOrigin::signed(MP)));
 		assert_eq!(Welati::diwan_members().len(), 1);
-		assert_eq!(crate::PendingCourtNominee::<Test>::get(), None);
+
+		// And the house has no call that reaches this half of the bench: a member of
+		// parliament is not an appointing authority here.
+		assert_noop!(
+			Welati::appoint_diwan_member(RuntimeOrigin::signed(MP), 3),
+			Error::<Test>::NotAuthorizedToNominate
+		);
 	});
 }
 
@@ -3164,7 +3177,7 @@ fn the_president_may_only_appoint_somebody_qualified() {
 		);
 
 		make_qualified(8, pezpallet_tiki::Tiki::Bernamenivîs);
-		install_diwan_member(RuntimeOrigin::signed(1), 8);
+		assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(1), 8));
 		assert_eq!(bench(), vec![8]);
 		assert!(pezpallet_tiki::Pezpallet::<Test>::has_tiki(
 			&8,
@@ -3187,7 +3200,7 @@ fn the_qualifying_pool_is_wider_than_law() {
 			(14, pezpallet_tiki::Tiki::Rewsenbîr),            // society
 		] {
 			make_qualified(who, tiki);
-			install_diwan_member(RuntimeOrigin::signed(1), who);
+			assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(1), who));
 		}
 		assert_eq!(bench().len(), 5);
 	});
@@ -3201,7 +3214,7 @@ fn the_president_cannot_take_more_than_five_seats() {
 		seat_president(1);
 		for who in 10..=14u64 {
 			make_qualified(who, pezpallet_tiki::Tiki::Hiquqnas);
-			install_diwan_member(RuntimeOrigin::signed(1), who);
+			assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(1), who));
 		}
 
 		make_qualified(15, pezpallet_tiki::Tiki::Hiquqnas);
@@ -3217,7 +3230,7 @@ fn nobody_takes_two_seats() {
 	ExtBuilder::default().build().execute_with(|| {
 		seat_president(1);
 		make_qualified(10, pezpallet_tiki::Tiki::Dadger);
-		install_diwan_member(RuntimeOrigin::signed(1), 10);
+		assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(1), 10));
 		assert_noop!(
 			Welati::appoint_diwan_member(RuntimeOrigin::signed(1), 10),
 			Error::<Test>::AlreadyOnTheCourt
@@ -3235,7 +3248,7 @@ fn only_the_president_or_root_appoints_to_the_court() {
 			Welati::appoint_diwan_member(RuntimeOrigin::signed(7), 10),
 			Error::<Test>::NotAuthorizedToNominate
 		);
-		install_diwan_member(RuntimeOrigin::root(), 10);
+		assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::root(), 10));
 	});
 }
 

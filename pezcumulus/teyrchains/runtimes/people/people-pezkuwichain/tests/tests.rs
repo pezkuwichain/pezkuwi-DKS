@@ -256,14 +256,12 @@ mod the_court_roster {
 		pezpallet_collective::Members::<Runtime, DiwanCollective>::get()
 	}
 
-	/// Seat a judge the way the state does: the President names, the House confirms.
+	/// Seat a judge the way the state does: the President's own signature, and nothing else.
 	///
-	/// Root stands in for both halves here because `RootOrParliament` accepts it while sudo
-	/// lives. What these tests are about is whether the two registers stay one list, not who
-	/// signed -- the separation itself is held in the pallet's own tests.
+	/// Root stands in for the President while sudo lives. These tests are about whether the
+	/// two registers stay one list, not about who signed.
 	fn seat_judge(who: AccountId) -> pezsp_runtime::DispatchResult {
-		Welati::appoint_diwan_member(RuntimeOrigin::root(), who.into())?;
-		Welati::confirm_diwan_member(RuntimeOrigin::root())
+		Welati::appoint_diwan_member(RuntimeOrigin::root(), who.into())
 	}
 
 	#[test]

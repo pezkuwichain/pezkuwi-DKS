@@ -906,12 +906,6 @@ pub fn install_prime_minister(nominating: RuntimeOrigin, who: AccountId) {
 	assert_ok!(Welati::confirm_prime_minister(RuntimeOrigin::root()));
 }
 
-/// Seat one of the President's court nominees, in both halves.
-pub fn install_diwan_member(nominating: RuntimeOrigin, who: AccountId) {
-	assert_ok!(Welati::appoint_diwan_member(nominating, who));
-	assert_ok!(Welati::confirm_diwan_member(RuntimeOrigin::root()));
-}
-
 pub fn seat_president(who: AccountId) {
 	make_citizen(who);
 	assert_ok!(Welati::seat_unique_tiki(&who, pezpallet_tiki::Tiki::Serok));
