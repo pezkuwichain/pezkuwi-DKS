@@ -449,3 +449,46 @@ fn an_offender_who_already_left_the_pool_still_leaves_the_committee() {
 		assert!(!CurrentCommittee::<Test>::get().contains(&victim));
 	});
 }
+
+#[test]
+fn a_new_session_hands_over_the_seated_committee() {
+	use pezpallet_session::SessionManager;
+
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let handed = <Tnpos as SessionManager<u64>>::new_session(1).expect("a committee exists");
+		assert_eq!(handed, CurrentCommittee::<Test>::get().to_vec());
+		assert_eq!(handed.len(), 27);
+	});
+}
+
+#[test]
+fn no_committee_hands_over_nothing_rather_than_an_empty_set() {
+	// Returning Some(vec![]) would tell session to install an empty authority set and stop
+	// the chain. None means "keep the current one", which is the recoverable answer.
+	use pezpallet_session::SessionManager;
+
+	new_test_ext().execute_with(|| {
+		assert!(<Tnpos as SessionManager<u64>>::new_session(1).is_none());
+	});
+}
+
+#[test]
+fn a_banned_member_is_never_handed_over() {
+	use pezpallet_session::SessionManager;
+
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let victim = CurrentCommittee::<Test>::get()[0].clone();
+		assert_ok!(Tnpos::report_offence(
+			RuntimeOrigin::root(),
+			victim.clone(),
+			Offence::Equivocation
+		));
+		let handed = <Tnpos as SessionManager<u64>>::new_session(2).unwrap();
+		assert!(!handed.contains(&victim));
+		assert_eq!(handed.len(), 26);
+	});
+}

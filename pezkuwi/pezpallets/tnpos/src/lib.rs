@@ -361,3 +361,23 @@ pub mod pezpallet {
 		}
 	}
 }
+
+impl<T: Config> pezpallet_session::SessionManager<T::AccountId> for Pezpallet<T> {
+	/// The seated committee, or `None` to keep the current authorities.
+	///
+	/// `None` rather than an empty vector: session reads `Some(vec![])` as an
+	/// instruction to install no authorities, which stops the chain. When this pallet
+	/// has nothing to offer, the safe answer is to change nothing.
+	fn new_session(_index: u32) -> Option<Vec<T::AccountId>> {
+		let c = CurrentCommittee::<T>::get();
+		if c.is_empty() {
+			log::warn!(target: "tnpos", "no committee seated; authorities unchanged");
+			return None;
+		}
+		Some(c.to_vec())
+	}
+
+	fn end_session(_index: u32) {}
+
+	fn start_session(_index: u32) {}
+}
