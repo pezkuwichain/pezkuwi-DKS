@@ -564,6 +564,7 @@ members = [
 	"pezkuwi/pezpallets/validator-pool",
 	"pezkuwi/primitives",
 	"pezkuwi/primitives/test-helpers",
+	"pezkuwi/primitives/tnpos",
 	"pezkuwi/rpc",
 	"pezkuwi/runtime/common",
 	"pezkuwi/runtime/common/pez-slot-range-helper",
@@ -1263,6 +1264,7 @@ pezkuwi-test-client = { path = "pezkuwi/node/test/client", version = "1.0.0" }
 pezkuwi-test-runtime = { path = "pezkuwi/runtime/test-runtime", version = "1.0.0" }
 pezkuwi-test-service = { path = "pezkuwi/node/test/service", version = "1.0.0" }
 pezkuwi-teyrchain-primitives = { path = "pezkuwi/teyrchain", version = "6.0.0", default-features = false }
+pezkuwi-tnpos-primitives = { path = "pezkuwi/primitives/tnpos", version = "1.0.0", default-features = false }
 pezkuwichain-emulated-chain = { path = "pezcumulus/teyrchains/integration-tests/emulated/chains/relays/pezkuwichain", version = "0.0.0" }
 pezkuwichain-runtime = { path = "pezkuwi/runtime/pezkuwichain", version = "7.0.0" }
 pezkuwichain-runtime-constants = { path = "pezkuwi/runtime/pezkuwichain/constants", version = "7.0.0", default-features = false }
