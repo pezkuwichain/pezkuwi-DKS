@@ -164,8 +164,12 @@ pub mod system_teyrchain {
 	}
 }
 
-/// Pezkuwichain Treasury pezpallet instance.
-pub const TREASURY_PALLET_ID: u8 = 18;
+// `TREASURY_PALLET_ID: u8 = 18` stood here, naming the relay's Treasury pallet so a
+// `PalletInstance` location could address it. The treasury moved to the Asset Hub and index 18
+// is retired; the constant outlived the pallet and named a number nothing answers on. Nothing
+// consumed it, which is the only reason it was harmless -- a location built from it would have
+// addressed an empty slot. The Asset Hub's treasury is reached by its own `PalletId`
+// (`teyrchains_common::TREASURY_PALLET_ID`), which is a different thing with the same name.
 
 #[cfg(test)]
 mod tests {
