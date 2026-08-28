@@ -88,11 +88,16 @@ impl pezpallet_whitelist::Config for Runtime {
 	type WeightInfo = weights::pezpallet_whitelist::WeightInfo<Self>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	/// Two keys, and what the first one means changed underneath this line. With the root track
+	/// removed, Root on this chain is the register's referendum arriving over XCM -- so the
+	/// people approve a call hash and this chain's own fast track enacts it.
+	///
 	/// The Fellowship is a body on the Collectives chain, so its authority reaches this pallet
 	/// over XCM. The second arm used to be the local `Fellows` custom origin, which no track in
 	/// `tracks.rs` maps to and no collective on this chain can raise — leaving root as the only
 	/// caller able to whitelist anything, and the whole `whitelisted_caller` fast path unusable
-	/// by the body it was built for.
+	/// by the body it was built for. Mainnet has no Collectives chain and therefore no second
+	/// arm at all; that asymmetry is recorded as C9 and closes with the Fellowship decision.
 	type WhitelistOrigin = EitherOfDiverse<
 		EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
 		EnsureXcm<IsVoiceOfBody<Collectives, FellowsBodyId>>,

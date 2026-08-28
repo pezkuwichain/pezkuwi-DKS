@@ -86,8 +86,12 @@ impl pezpallet_whitelist::Config for Runtime {
 	type WeightInfo = weights::pezpallet_whitelist::WeightInfo<Self>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
-	type WhitelistOrigin =
-		EitherOf<EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>, Fellows>;
+	// Root, and Root alone. `Fellows` stood beside it and no track on this chain produces that
+	// origin -- there is no Fellowship collective here -- so the alternative was never an
+	// alternative. What Root means changed underneath it: with the root track gone, Root here is
+	// the register's referendum arriving over XCM. So the people whitelist and this chain's fast
+	// track enacts, which is the two-key shape the arrangement wanted all along.
+	type WhitelistOrigin = EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>;
 	type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
 	type Preimages = Preimage;
 }

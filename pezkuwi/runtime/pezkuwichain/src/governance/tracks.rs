@@ -68,21 +68,24 @@ const APP_WHITELISTED_CALLER: Curve =
 const SUP_WHITELISTED_CALLER: Curve =
 	Curve::make_reciprocal(1, 28, percent(20), percent(5), percent(50));
 
-const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 9] = [
-	pezpallet_referenda::Track {
-		id: 0,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("root"),
-			max_deciding: 1,
-			decision_deposit: 100 * GRAND,
-			prepare_period: 2 * HOURS,
-			decision_period: 28 * DAYS,
-			confirm_period: 24 * HOURS,
-			min_enactment_period: 24 * HOURS,
-			min_approval: APP_ROOT,
-			min_support: SUP_ROOT,
-		},
-	},
+// A `root` track used to head this list, and it is gone.
+//
+// Root on this chain reaches every chain: `System::set_code` here, and
+// `Paras::force_set_current_code` for each teyrchain. This chain's electorate is HEZ weighted by
+// conviction, and its root curve asked for no support at all by day 28 -- so an upgrade of the
+// whole network was, on paper, a large enough holding plus four weeks.
+//
+// Removing the track does not remove the power; it moves who holds it. Root here is still
+// reachable, by `StateRegisterAsRoot`: a referendum on the People chain, where the tally counts
+// citizens one each, arrives as `Superuser` and converts to Root. The constitution is decided by
+// the people and enacted by the relay, which is the arrangement the whole design rests on.
+//
+// The `whitelisted_caller` track below keeps its purpose and gains a second key. `Whitelist`'s
+// `WhitelistOrigin` is Root, and Root now means the register's referendum -- so the people
+// approve a call hash and this chain's own fast track enacts it. Neither half alone suffices.
+//
+// Sudo remains for the founding period and is the one hand outside this arrangement.
+const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 8] = [
 	pezpallet_referenda::Track {
 		id: 1,
 		info: pezpallet_referenda::TrackInfo {
@@ -208,11 +211,10 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 		TRACKS_DATA.iter().map(Cow::Borrowed)
 	}
 	fn track_for(id: &Self::RuntimeOrigin) -> Result<Self::Id, ()> {
-		if let Ok(system_origin) = pezframe_system::RawOrigin::try_from(id.clone()) {
-			match system_origin {
-				pezframe_system::RawOrigin::Root => Ok(0),
-				_ => Err(()),
-			}
+		if pezframe_system::RawOrigin::try_from(id.clone()).is_ok() {
+			// No system origin has a track here any more, Root included. Root arrives from the
+			// People chain's referendum, not from a ballot of this chain's holders.
+			Err(())
 		} else if let Ok(custom_origin) = origins::Origin::try_from(id.clone()) {
 			match custom_origin {
 				origins::Origin::WhitelistedCaller => Ok(1),

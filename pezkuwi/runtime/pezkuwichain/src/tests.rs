@@ -148,10 +148,11 @@ use std::collections::HashMap;
 #[test]
 fn governance_tracks_total_count() {
 	let count = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks().count();
-	// Nine. The treasury moved to the Asset Hub and took its six tracks with it -- the
-	// treasurer and the five spenders -- and the three register tracks moved to the People
-	// chain, where the tally counts heads instead of tokens.
-	assert_eq!(count, 9, "Expected 9 relay tracks, got {count}");
+	// Eight. The treasury moved to the Asset Hub and took its six tracks with it -- the
+	// treasurer and the five spenders -- the three register tracks moved to the People chain,
+	// and `root` was removed: Root here is the register's referendum arriving over XCM, not a
+	// ballot of this chain's holders.
+	assert_eq!(count, 8, "Expected 8 relay tracks, got {count}");
 }
 
 #[test]
@@ -191,7 +192,6 @@ fn governance_no_test_periods_remain() {
 fn governance_production_periods_match_spec() {
 	// Build expected values: (track_id, prepare, decision, confirm, enact)
 	let expected: Vec<(u16, &str, BlockNumber, BlockNumber, BlockNumber, BlockNumber)> = vec![
-		(0, "root", 2 * HOURS, 28 * DAYS, 24 * HOURS, 24 * HOURS),
 		(1, "whitelisted_caller", 30 * MINUTES, 28 * DAYS, 10 * MINUTES, 10 * MINUTES),
 		(10, "staking_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(12, "lease_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
@@ -233,6 +233,57 @@ fn governance_production_periods_match_spec() {
 	}
 
 	assert_eq!(expected.len(), tracks.len(), "Track count mismatch");
+}
+
+/// Root is not on this chain's ballot.
+///
+/// Root here reaches every chain in the network -- `System::set_code` locally, and
+/// `Paras::force_set_current_code` for each teyrchain. This chain's electorate is holdings, and
+/// the root track's support curve asked for none at all by day 28, so an upgrade of the whole
+/// network was a large enough position plus four weeks.
+///
+/// The power did not go away, it changed hands: `StateRegisterAsRoot` converts a `Superuser`
+/// message from the People chain into Root here, and that chain's tally counts citizens one
+/// each. The constitution is decided by the people and enacted by the relay.
+#[test]
+fn root_is_not_reachable_from_this_chains_ballot() {
+	use governance::pezpallet_custom_origins::Origin;
+
+	let tracks: HashMap<u16, _> = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks()
+		.map(|t| (t.id, t.into_owned()))
+		.collect();
+
+	assert!(!tracks.contains_key(&0), "the root track is back on a holdings ballot");
+	for track in tracks.values() {
+		let name = String::from_utf8_lossy(&track.info.name).to_string();
+		assert_ne!(name, "root", "a track named root is a track that upgrades the network");
+	}
+
+	// And no system origin maps to a track, so none can start a referendum here.
+	let root: <RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin =
+		pezframe_system::RawOrigin::Root.into();
+	assert!(<TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::track_for(&root).is_err());
+
+	// The custom origins that remain are this chain's own business -- none of them is Root by
+	// another name, and each still has a track to run on.
+	for origin in [
+		Origin::StakingAdmin,
+		Origin::LeaseAdmin,
+		Origin::FellowshipAdmin,
+		Origin::GeneralAdmin,
+		Origin::AuctionAdmin,
+		Origin::ReferendumCanceller,
+		Origin::ReferendumKiller,
+		Origin::WhitelistedCaller,
+	] {
+		let pallets_origin: <RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin =
+			origin.into();
+		assert!(
+			<TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::track_for(&pallets_origin)
+				.is_ok(),
+			"an origin with no track cannot be dispatched at all"
+		);
+	}
 }
 
 /// The register is not reachable from this chain's referenda.
