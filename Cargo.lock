@@ -15699,6 +15699,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pezkuwi-tnpos-primitives"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "pezsp-io",
+ "scale-info",
+ "serde",
+]
+
+[[package]]
 name = "pezkuwi-voter-bags"
 version = "7.0.0"
 dependencies = [
@@ -19060,6 +19070,25 @@ dependencies = [
  "pezsp-storage",
  "scale-info",
  "serde",
+]
+
+[[package]]
+name = "pezpallet-tnpos"
+version = "1.0.0"
+dependencies = [
+ "log",
+ "parity-scale-codec",
+ "pezframe-benchmarking",
+ "pezframe-support",
+ "pezframe-system",
+ "pezkuwi-tnpos-primitives",
+ "pezpallet-balances",
+ "pezpallet-session",
+ "pezsp-core",
+ "pezsp-io",
+ "pezsp-runtime",
+ "pezsp-std",
+ "scale-info",
 ]
 
 [[package]]
