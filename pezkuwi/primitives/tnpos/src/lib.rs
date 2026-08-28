@@ -12,6 +12,7 @@
 extern crate alloc;
 
 pub mod committee;
+pub mod scores;
 pub mod stratum;
 
 pub use stratum::{StratumConfig, StratumId};
