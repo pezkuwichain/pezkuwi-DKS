@@ -65,6 +65,13 @@ pub fn set_perwerde_at(who: AccountId, v: u128, at: BlockNumber) {
 	put_score(who, PERWERDE, v, at);
 }
 
+/// Put `who` in the pool. Contributing to the seed requires membership, so any test that
+/// exercises the seed needs this first.
+pub fn join_pool(who: AccountId) {
+	put_score(who, PERWERDE, 1_000, System::block_number());
+	assert!(Tnpos::join(RuntimeOrigin::signed(who), StratumId::Perwerde).is_ok());
+}
+
 pub fn set_tiki(who: AccountId, v: u128) {
 	put_score(who, TIKI, v, System::block_number());
 }
@@ -115,25 +122,9 @@ impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for
 	}
 }
 
-/// Phase 1's real `Sortition` arrives in a later task. Until then the mock draws from a
-/// fixed per-era seed, which is all the genesis and configuration tests here need.
-pub struct StubSortition;
-impl pezkuwi_tnpos_primitives::sortition::Sortition<AccountId> for StubSortition {
-	fn select(
-		era: u32,
-		stratum: StratumId,
-		candidates: &[AccountId],
-		k: u32,
-	) -> Option<Vec<AccountId>> {
-		let mut seed = [0u8; 32];
-		seed[..4].copy_from_slice(&era.to_le_bytes());
-		Some(pezkuwi_tnpos_primitives::sortition::sample_k(candidates, k, &seed, &[stratum as u8]))
-	}
-}
-
 impl pezpallet_tnpos::Config for Test {
 	type WeightInfo = ();
-	type Sortition = StubSortition;
+	type Sortition = crate::seed::CommitRevealSortition<Test>;
 	type Scores = MockScores;
 	type ManagerOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type MaxScoreAge = MaxScoreAge;
@@ -179,6 +170,35 @@ pub fn fill_every_stratum(per: u32) {
 			who += 1;
 		}
 	}
+	seed_the_era();
+}
+
+/// Move directly to the reveal half of the current round, without triggering
+/// `on_initialize` -- so this can set up a round without also seating one.
+pub fn advance_to_reveal_window() {
+	let midpoint = pezpallet_tnpos::EraStart::<Test>::get() + EraLength::get() / 2;
+	while System::block_number() < midpoint {
+		System::set_block_number(System::block_number() + 1);
+	}
+}
+
+/// Run one commit-reveal round: commit inside the era's first half, then advance past the
+/// midpoint and reveal.
+pub fn seed_the_era() {
+	let who = pezpallet_tnpos::PoolMembers::<Test>::iter()
+		.next()
+		.map(|(w, _)| w)
+		.unwrap_or(ALICE);
+	let pre = [42u8; 32];
+	assert!(
+		Tnpos::commit_seed(RuntimeOrigin::signed(who), pezsp_io::hashing::blake2_256(&pre)).is_ok()
+	);
+	advance_to_reveal_window();
+	assert!(Tnpos::reveal_seed(RuntimeOrigin::signed(who), pre).is_ok());
+}
+
+pub fn clear_seed() {
+	pezpallet_tnpos::NextSeed::<Test>::kill();
 }
 
 pub fn empty_stratum(s: StratumId) {

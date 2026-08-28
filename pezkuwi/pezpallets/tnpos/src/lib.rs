@@ -18,6 +18,7 @@ extern crate alloc;
 pub use pezpallet::*;
 pub mod pool;
 pub mod sample;
+pub mod seed;
 pub mod weights;
 
 #[cfg(test)]
@@ -112,6 +113,29 @@ pub mod pezpallet {
 		ValueQuery,
 	>;
 
+	/// Commitments for an era's seed, scoped to the era they are for.
+	///
+	/// Scoped because a commit-reveal round belongs to one era. An unscoped pot lets an
+	/// account commit again after seeing what others revealed, which is not withholding but
+	/// steering.
+	#[pezpallet::storage]
+	pub type SeedCommitments<T: Config> = StorageDoubleMap<
+		_,
+		Twox64Concat,
+		u32,
+		Blake2_128Concat,
+		T::AccountId,
+		[u8; 32],
+		OptionQuery,
+	>;
+
+	/// The mixed seed for an era's draw, and the era it belongs to.
+	///
+	/// Spent when that era is drawn. An era with no round of its own has no seed and is
+	/// refused, rather than drawing from a value the whole chain has already seen.
+	#[pezpallet::storage]
+	pub type NextSeed<T: Config> = StorageValue<_, ([u8; 32], u32), OptionQuery>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -139,6 +163,16 @@ pub mod pezpallet {
 		ScoreUnavailable,
 		/// The strata configuration cannot be seated at all.
 		UnseatableConfiguration,
+		/// A reveal was submitted with no matching commitment.
+		NoCommitment,
+		/// The revealed preimage does not hash to the commitment on record.
+		BadReveal,
+		/// This account already committed for this round.
+		AlreadyCommitted,
+		/// The commit half of this round has closed; only reveals are accepted now.
+		CommitWindowClosed,
+		/// The reveal half of this round has not opened yet; the commit half is still running.
+		RevealWindowNotOpen,
 	}
 
 	#[pezpallet::genesis_config]
@@ -227,6 +261,16 @@ pub mod pezpallet {
 				.map_err(|_| "tnpos: strata cannot satisfy the security floors")?;
 			Ok(())
 		}
+
+		fn integrity_test() {
+			// A commit half of zero blocks accepts no contribution, so no seed is ever built
+			// and no era is ever drawn -- silently, and forever. The window is half the era,
+			// so the era needs at least two blocks for both halves to exist at all.
+			assert!(
+				T::EraLength::get() >= 2u32.into(),
+				"EraLength must be at least two blocks: the commit and reveal halves each need one"
+			);
+		}
 	}
 
 	#[pezpallet::call]
@@ -257,6 +301,21 @@ pub mod pezpallet {
 					Err(e.into())
 				},
 			}
+		}
+
+		/// Commit to a future seed contribution by hash. Reveal it in a later call with
+		/// `reveal_seed`.
+		#[pezpallet::call_index(3)]
+		#[pezpallet::weight(T::WeightInfo::commit_seed())]
+		pub fn commit_seed(origin: OriginFor<T>, hash: [u8; 32]) -> DispatchResult {
+			Self::do_commit_seed(ensure_signed(origin)?, hash)
+		}
+
+		/// Reveal a prior commitment. Its preimage is mixed into the next era's seed.
+		#[pezpallet::call_index(4)]
+		#[pezpallet::weight(T::WeightInfo::reveal_seed())]
+		pub fn reveal_seed(origin: OriginFor<T>, preimage: [u8; 32]) -> DispatchResult {
+			Self::do_reveal_seed(ensure_signed(origin)?, preimage)
 		}
 
 		/// Replace the strata configuration.

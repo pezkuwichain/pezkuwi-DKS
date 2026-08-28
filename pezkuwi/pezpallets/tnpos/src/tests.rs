@@ -5,6 +5,7 @@
 
 use crate::{mock::*, *};
 use pezframe_support::{assert_noop, assert_ok};
+use pezsp_io::hashing::blake2_256;
 
 #[test]
 fn genesis_installs_the_nine_strata() {
@@ -182,6 +183,7 @@ fn a_new_era_draws_a_different_committee() {
 		fill_every_stratum(200);
 		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
 		let first = CurrentCommittee::<Test>::get();
+		seed_the_era();
 		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
 		assert_ne!(CurrentCommittee::<Test>::get(), first);
 	});
@@ -225,6 +227,130 @@ fn a_refused_seating_does_not_retry_every_block() {
 			EraStart::<Test>::get(),
 			EraLength::get(),
 			"and must not fire again on the very next block"
+		);
+	});
+}
+
+#[test]
+fn a_revealed_seed_matches_its_commitment() {
+	new_test_ext().execute_with(|| {
+		join_pool(ALICE);
+		let pre = [3u8; 32];
+		assert_ok!(Tnpos::commit_seed(RuntimeOrigin::signed(ALICE), blake2_256(&pre)));
+		advance_to_reveal_window();
+		assert_ok!(Tnpos::reveal_seed(RuntimeOrigin::signed(ALICE), pre));
+		assert!(NextSeed::<Test>::get().is_some());
+	});
+}
+
+#[test]
+fn a_reveal_that_does_not_match_is_rejected() {
+	new_test_ext().execute_with(|| {
+		join_pool(ALICE);
+		assert_ok!(Tnpos::commit_seed(RuntimeOrigin::signed(ALICE), blake2_256(&[3u8; 32])));
+		advance_to_reveal_window();
+		assert_noop!(
+			Tnpos::reveal_seed(RuntimeOrigin::signed(ALICE), [9u8; 32]),
+			Error::<Test>::BadReveal
+		);
+	});
+}
+
+#[test]
+fn one_honest_contributor_changes_the_seed() {
+	// The property the whole scheme rests on: an adversary who reveals last still cannot
+	// choose the result, because every contribution is mixed in. Both commits land inside
+	// the commit half (the window is one shared deadline, not one per account), then both
+	// reveals land after it closes.
+	new_test_ext().execute_with(|| {
+		join_pool(ALICE);
+		join_pool(BOB);
+		assert_ok!(Tnpos::commit_seed(RuntimeOrigin::signed(ALICE), blake2_256(&[1u8; 32])));
+		assert_ok!(Tnpos::commit_seed(RuntimeOrigin::signed(BOB), blake2_256(&[2u8; 32])));
+		advance_to_reveal_window();
+		assert_ok!(Tnpos::reveal_seed(RuntimeOrigin::signed(ALICE), [1u8; 32]));
+		let only_alice = NextSeed::<Test>::get().unwrap();
+		assert_ok!(Tnpos::reveal_seed(RuntimeOrigin::signed(BOB), [2u8; 32]));
+		assert_ne!(NextSeed::<Test>::get().unwrap(), only_alice);
+	});
+}
+
+#[test]
+fn seating_is_refused_when_no_seed_was_contributed() {
+	// Falling back to a predictable seed would hand an adversary the draw. Refusing keeps
+	// the previous committee, which is the safe direction.
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		clear_seed();
+		assert_noop!(
+			Tnpos::force_new_era(RuntimeOrigin::root()),
+			Error::<Test>::UnseatableConfiguration
+		);
+	});
+}
+
+#[test]
+fn only_pool_members_may_contribute() {
+	new_test_ext().execute_with(|| {
+		assert_noop!(
+			Tnpos::commit_seed(RuntimeOrigin::signed(9_999), blake2_256(&[1u8; 32])),
+			Error::<Test>::NotInPool
+		);
+	});
+}
+
+#[test]
+fn a_drawn_seed_is_spent_and_the_next_draw_needs_its_own_round() {
+	// Every preimage is public the instant it is revealed, so carrying a spent seed into
+	// another era would let anyone compute that era's committee in advance.
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		assert!(NextSeed::<Test>::get().is_none(), "the seed is spent once its era is drawn");
+		assert_noop!(
+			Tnpos::force_new_era(RuntimeOrigin::root()),
+			Error::<Test>::UnseatableConfiguration
+		);
+	});
+}
+
+#[test]
+fn an_account_may_commit_only_once_per_round() {
+	// An unscoped commitment pot would let an account commit again after seeing what
+	// others revealed -- not withholding, but steering.
+	new_test_ext().execute_with(|| {
+		join_pool(ALICE);
+		assert_ok!(Tnpos::commit_seed(RuntimeOrigin::signed(ALICE), blake2_256(&[1u8; 32])));
+		assert_noop!(
+			Tnpos::commit_seed(RuntimeOrigin::signed(ALICE), blake2_256(&[2u8; 32])),
+			Error::<Test>::AlreadyCommitted
+		);
+	});
+}
+
+#[test]
+fn committing_after_the_window_closes_is_rejected() {
+	new_test_ext().execute_with(|| {
+		join_pool(ALICE);
+		advance_to_reveal_window();
+		assert_noop!(
+			Tnpos::commit_seed(RuntimeOrigin::signed(ALICE), blake2_256(&[1u8; 32])),
+			Error::<Test>::CommitWindowClosed
+		);
+	});
+}
+
+#[test]
+fn revealing_before_the_window_opens_is_rejected() {
+	// Without this deadline a member could wait for everyone else to reveal, then commit
+	// and reveal in the same block with a preimage chosen to land the seed where they want.
+	new_test_ext().execute_with(|| {
+		join_pool(ALICE);
+		let pre = [1u8; 32];
+		assert_ok!(Tnpos::commit_seed(RuntimeOrigin::signed(ALICE), blake2_256(&pre)));
+		assert_noop!(
+			Tnpos::reveal_seed(RuntimeOrigin::signed(ALICE), pre),
+			Error::<Test>::RevealWindowNotOpen
 		);
 	});
 }

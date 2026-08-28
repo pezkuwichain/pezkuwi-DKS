@@ -22,6 +22,15 @@ impl<T: Config> Pezpallet<T> {
 	/// Its seats are never given to another stratum: that repair would concentrate the very
 	/// power the strata exist to divide, so `seat` does not offer it.
 	pub(crate) fn do_seat_committee() -> Result<Seating, Error<T>> {
+		let outcome = Self::try_seat_committee();
+		// The round is spent whether or not it produced a committee. Its preimages are
+		// public now, so carrying the value into another era would draw from a seed anyone
+		// can recompute.
+		NextSeed::<T>::kill();
+		outcome
+	}
+
+	fn try_seat_committee() -> Result<Seating, Error<T>> {
 		let strata = Strata::<T>::get();
 		let sizes: Vec<u32> = strata.iter().map(|c| StratumSize::<T>::get(c.id)).collect();
 
