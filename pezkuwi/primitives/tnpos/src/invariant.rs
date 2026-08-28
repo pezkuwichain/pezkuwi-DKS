@@ -19,6 +19,12 @@ pub const MIN_STRATA: u32 = 5;
 /// Below this the committee is too small for the thresholds to mean anything.
 pub const MIN_COMMITTEE: u32 = 15;
 
+/// The most seats a committee may carry. The pallet stores the seated committee in a
+/// bounded vector of exactly this size, so a configuration above it would pass validation
+/// and then fail at an era boundary -- which is the one moment a configuration must not be
+/// allowed to fail.
+pub const MAX_COMMITTEE: u32 = 64;
+
 /// Why a configuration cannot be seated.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum InvariantError {
@@ -31,6 +37,11 @@ pub enum InvariantError {
 	/// A stratum declares zero seats, which would let it be counted as independent while
 	/// carrying nothing.
 	EmptyStratum,
+	/// The same stratum appears twice. Nine entries naming eight gates is eight gates, and
+	/// the security budget is computed from that count.
+	DuplicateStratum,
+	/// More seats than the pallet can store for a committee.
+	CommitteeTooLarge,
 	/// The committee size leaves remainder one on division by three, where the fork and
 	/// halt thresholds coincide and the safety margin disappears.
 	DegenerateCommitteeSize,
@@ -59,6 +70,11 @@ pub fn seat(strata: &[StratumConfig], eligible: &[u32]) -> Result<Seating, Invar
 	if strata.len() != eligible.len() {
 		return Err(InvariantError::LengthMismatch);
 	}
+	for (i, a) in strata.iter().enumerate() {
+		if strata.iter().skip(i.saturating_add(1)).any(|b| b.id == a.id) {
+			return Err(InvariantError::DuplicateStratum);
+		}
+	}
 	if strata.iter().any(|c| c.seats == 0) {
 		return Err(InvariantError::EmptyStratum);
 	}
@@ -77,6 +93,9 @@ pub fn seat(strata: &[StratumConfig], eligible: &[u32]) -> Result<Seating, Invar
 	}
 	if n < MIN_COMMITTEE {
 		return Err(InvariantError::CommitteeTooSmall);
+	}
+	if n > MAX_COMMITTEE {
+		return Err(InvariantError::CommitteeTooLarge);
 	}
 	// At n % 3 == 1 the fork and halt thresholds are equal (see `committee`'s tests), so a
 	// set that can stall the chain can also fork it. Seats come in threes, so this is
@@ -145,6 +164,28 @@ mod tests {
 		// short of deciding the chain, so the count is refused on its own.
 		let four: Vec<StratumConfig> = nine().into_iter().take(4).collect();
 		assert_eq!(seat(&four, &[200; 4]), Err(InvariantError::TooFewStrata));
+	}
+
+	#[test]
+	fn a_repeated_stratum_is_refused() {
+		// Nine entries naming eight gates is not nine gates. The budget is computed from the
+		// number of independent gates, so a duplicate would let a configuration claim an
+		// independence it does not have -- and every probability downstream would be wrong.
+		let mut dup = nine();
+		dup[8].id = dup[0].id;
+		assert_eq!(seat(&dup, &[200; 9]), Err(InvariantError::DuplicateStratum));
+	}
+
+	#[test]
+	fn a_committee_too_large_to_store_is_refused() {
+		// The pallet keeps the seated committee in a bounded vector. A configuration whose
+		// seats exceed that bound clears every other check here and then fails at an era
+		// boundary -- the one place a configuration must never be allowed to fail.
+		let huge: Vec<StratumConfig> = StratumId::ALL
+			.iter()
+			.map(|&id| StratumConfig { id, seats: 10, min_eligible: 50 })
+			.collect();
+		assert_eq!(seat(&huge, &[200; 9]), Err(InvariantError::CommitteeTooLarge));
 	}
 
 	#[test]

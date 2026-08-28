@@ -100,8 +100,11 @@ pub mod pezpallet {
 
 	/// The committee seated for the current era, in stratum order.
 	#[pezpallet::storage]
-	pub type CurrentCommittee<T: Config> =
-		StorageValue<_, BoundedVec<T::AccountId, ConstU32<64>>, ValueQuery>;
+	pub type CurrentCommittee<T: Config> = StorageValue<
+		_,
+		BoundedVec<T::AccountId, ConstU32<{ pezkuwi_tnpos_primitives::invariant::MAX_COMMITTEE }>>,
+		ValueQuery,
+	>;
 
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
