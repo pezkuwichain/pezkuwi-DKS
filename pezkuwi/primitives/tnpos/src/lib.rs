@@ -17,4 +17,7 @@ pub mod scores;
 pub mod sortition;
 pub mod stratum;
 
+#[cfg(feature = "std")]
+pub mod analysis;
+
 pub use stratum::{StratumConfig, StratumId};
