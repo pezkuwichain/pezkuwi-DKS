@@ -201,6 +201,10 @@ pub fn clear_seed() {
 	pezpallet_tnpos::NextSeed::<Test>::kill();
 }
 
+pub fn advance_eras(n: u32) {
+	pezpallet_tnpos::CurrentEra::<Test>::mutate(|e| *e = e.saturating_add(n));
+}
+
 pub fn empty_stratum(s: StratumId) {
 	let members: Vec<AccountId> = pezpallet_tnpos::PoolMembers::<Test>::iter()
 		.filter_map(|(w, st)| (st == s).then_some(w))

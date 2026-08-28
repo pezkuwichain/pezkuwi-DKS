@@ -19,6 +19,7 @@ pub use pezpallet::*;
 pub mod pool;
 pub mod sample;
 pub mod seed;
+pub mod slash;
 pub mod weights;
 
 #[cfg(test)]
@@ -36,6 +37,7 @@ use pezkuwi_tnpos_primitives::{
 	StratumConfig, StratumId,
 };
 use pezsp_runtime::Saturating;
+use slash::Offence;
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
@@ -136,6 +138,10 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type NextSeed<T: Config> = StorageValue<_, ([u8; 32], u32), OptionQuery>;
 
+	/// Accounts barred from the pool, and the era their ban lifts.
+	#[pezpallet::storage]
+	pub type Banned<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u32, OptionQuery>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
@@ -149,6 +155,8 @@ pub mod pezpallet {
 		SeatingRefused { era: u32 },
 		/// The strata configuration changed.
 		StrataSet { count: u32 },
+		/// A member was punished for `offence` and barred from the pool until `banned_until`.
+		Punished { who: T::AccountId, offence: Offence, banned_until: u32 },
 	}
 
 	#[pezpallet::error]
@@ -173,6 +181,8 @@ pub mod pezpallet {
 		CommitWindowClosed,
 		/// The reveal half of this round has not opened yet; the commit half is still running.
 		RevealWindowNotOpen,
+		/// This account is barred from the pool until its ban expires.
+		Banned,
 	}
 
 	#[pezpallet::genesis_config]
@@ -316,6 +326,19 @@ pub mod pezpallet {
 		#[pezpallet::weight(T::WeightInfo::reveal_seed())]
 		pub fn reveal_seed(origin: OriginFor<T>, preimage: [u8; 32]) -> DispatchResult {
 			Self::do_reveal_seed(ensure_signed(origin)?, preimage)
+		}
+
+		/// Punish `who` for `offence`: remove them from the pool and the seated committee, and
+		/// bar them from rejoining until their ban expires.
+		#[pezpallet::call_index(5)]
+		#[pezpallet::weight(T::WeightInfo::report_offence())]
+		pub fn report_offence(
+			origin: OriginFor<T>,
+			who: T::AccountId,
+			offence: Offence,
+		) -> DispatchResult {
+			T::ManagerOrigin::ensure_origin(origin)?;
+			Self::do_report_offence(who, offence)
 		}
 
 		/// Replace the strata configuration.

@@ -354,3 +354,98 @@ fn revealing_before_the_window_opens_is_rejected() {
 		);
 	});
 }
+
+#[test]
+fn an_offence_bans_the_member_from_the_pool() {
+	new_test_ext().execute_with(|| {
+		set_perwerde(ALICE, 500);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), ALICE, Offence::Equivocation));
+		assert_eq!(PoolMembers::<Test>::get(ALICE), None);
+		assert_eq!(StratumSize::<Test>::get(StratumId::Perwerde), 0);
+		assert_eq!(Banned::<Test>::get(ALICE), Some(360));
+	});
+}
+
+#[test]
+fn a_banned_member_cannot_rejoin_until_the_ban_expires() {
+	new_test_ext().execute_with(|| {
+		set_perwerde(ALICE, 500);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), ALICE, Offence::Unavailable));
+		assert_noop!(
+			Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde),
+			Error::<Test>::Banned
+		);
+		advance_eras(24);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
+	});
+}
+
+#[test]
+fn being_unavailable_costs_less_than_equivocating() {
+	// Going offline is a failure; signing two conflicting blocks is an attack. The ladder
+	// has to say so, or the deterrent for the thing that can fork the chain is the same as
+	// the deterrent for a bad connection.
+	new_test_ext().execute_with(|| {
+		set_perwerde(ALICE, 500);
+		set_perwerde(BOB, 500);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(BOB), StratumId::Perwerde));
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), ALICE, Offence::Unavailable));
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), BOB, Offence::Equivocation));
+		assert!(Banned::<Test>::get(BOB) > Banned::<Test>::get(ALICE));
+	});
+}
+
+#[test]
+fn reporting_requires_the_manager_origin() {
+	new_test_ext().execute_with(|| {
+		assert_noop!(
+			Tnpos::report_offence(RuntimeOrigin::signed(ALICE), BOB, Offence::Unavailable),
+			pezsp_runtime::DispatchError::BadOrigin
+		);
+	});
+}
+
+#[test]
+fn an_offence_removes_the_member_from_the_seated_committee() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let victim = CurrentCommittee::<Test>::get()[0];
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), victim, Offence::Equivocation));
+		assert!(!CurrentCommittee::<Test>::get().contains(&victim));
+	});
+}
+
+#[test]
+fn a_lesser_offence_cannot_shorten_a_longer_ban() {
+	// Reports arrive from outside and in no guaranteed order. Recomputed from whichever
+	// came last, a trivial report following an equivocation would cut the penalty from
+	// three hundred and sixty eras to twenty-four.
+	new_test_ext().execute_with(|| {
+		set_perwerde(ALICE, 500);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), ALICE, Offence::Equivocation));
+		let heavy = Banned::<Test>::get(ALICE);
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), ALICE, Offence::Unavailable));
+		assert_eq!(Banned::<Test>::get(ALICE), heavy, "a ban may only ever lengthen");
+	});
+}
+
+#[test]
+fn an_offender_who_already_left_the_pool_still_leaves_the_committee() {
+	// Leaving the pool does not unseat a member from the era they are already serving.
+	// If punishment only reached pool members, an offender could call `leave` first and
+	// keep counting towards quorum for the rest of the era.
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let victim = CurrentCommittee::<Test>::get()[0];
+		assert_ok!(Tnpos::leave(RuntimeOrigin::signed(victim)));
+		assert!(CurrentCommittee::<Test>::get().contains(&victim));
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), victim, Offence::Equivocation));
+		assert!(!CurrentCommittee::<Test>::get().contains(&victim));
+	});
+}

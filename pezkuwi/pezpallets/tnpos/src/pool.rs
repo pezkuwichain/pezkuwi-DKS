@@ -53,6 +53,11 @@ impl<T: Config> Pezpallet<T> {
 	}
 
 	pub(crate) fn do_join(who: T::AccountId, stratum: StratumId) -> DispatchResult {
+		if let Some(until) = Banned::<T>::get(&who) {
+			ensure!(CurrentEra::<T>::get() >= until, Error::<T>::Banned);
+			Banned::<T>::remove(&who);
+		}
+
 		ensure!(!PoolMembers::<T>::contains_key(&who), Error::<T>::AlreadyInPool);
 		let size: u32 = StratumId::ALL
 			.iter()
