@@ -17,12 +17,17 @@ mod claim_assets;
 mod hybrid_transfers;
 mod pez_treasury_activation;
 mod reserve_transfer;
+// `treasury` stood here, and on Zagros `fellowship_treasury` beside it. Both moved money from
+// the *relay's* treasury to this chain over XCM, with the relay's `Treasurer` origin. The
+// treasury lives here now and pays from its own account, so the relay has no treasury and no
+// treasurer: the tests could not be repaired, only rewritten against a mechanism that was
+// deliberately removed. What this chain's own treasury does is covered by `reward_pool` and,
+// on Pezkuwichain, `pez_treasury_activation`.
 mod reward_pool;
 mod send;
 mod set_xcm_versions;
 mod swap;
 mod teleport;
-mod treasury;
 mod xcm_fee_estimation;
 
 #[macro_export]

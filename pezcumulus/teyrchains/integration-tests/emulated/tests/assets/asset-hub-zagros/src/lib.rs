@@ -43,7 +43,7 @@ mod imports {
 		test_xcm_fee_querying_apis_work_for_asset_hub,
 		xcm_helpers::{
 			fee_asset, fee_asset_index, find_mq_processed_id, find_xcm_sent_message_id,
-			get_amount_from_versioned_assets, non_fee_asset, xcm_transact_paid_execution,
+			non_fee_asset, xcm_transact_paid_execution,
 		},
 		xcm_pez_emulator::{
 			assert_expected_events, bx, Chain, RelayChain as Relay, Test, TestArgs, TestContext,
@@ -89,7 +89,6 @@ mod imports {
 		zagros_emulated_chain::{
 			genesis::ED as ZAGROS_ED,
 			zagros_runtime::{
-				governance::pezpallet_custom_origins::Origin::Treasurer,
 				xcm_config::{
 					UniversalLocation as ZagrosUniversalLocation, XcmConfig as ZagrosXcmConfig,
 				},

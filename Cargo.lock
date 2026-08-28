@@ -10182,6 +10182,7 @@ dependencies = [
  "pezframe-support",
  "pezpallet-balances",
  "pezpallet-identity",
+ "pezpallet-identity-kyc",
  "pezpallet-message-queue",
  "pezpallet-pez-treasury",
  "pezpallet-xcm",

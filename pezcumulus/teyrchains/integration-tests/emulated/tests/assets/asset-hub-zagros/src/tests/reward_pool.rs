@@ -14,103 +14,44 @@
 // limitations under the License.
 
 use crate::imports::*;
-use codec::Encode;
-use pezframe_support::{
-	assert_ok, pezsp_runtime::traits::Dispatchable, traits::schedule::DispatchTime,
-};
-use xcm_executor::traits::ConvertLocation;
+use emulated_integration_tests_common::accounts::ALICE;
+use pezframe_support::traits::schedule::DispatchTime;
 
+/// A reward pool is opened on this chain, by an account on this chain.
+///
+/// It used to be opened from the relay: the relay's `Treasurer` sent a `Transact` and the
+/// treasury body's sovereign account here paid for it. Both halves of that are gone. The
+/// treasury lives on this chain now, the relay has no treasurer, and the relay's
+/// `SendXcmOrigin` no longer carries an origin that could send this message -- so the test
+/// could not be repaired, only pointed at the arrangement we actually have.
+///
+/// What it still covers is the wiring the cross-chain framing was only a delivery mechanism
+/// for: `CreatePoolOrigin` here is `EnsureSigned`, so opening a pool is a local act, and this
+/// asserts the pallet is reachable and its freezer and consideration are configured.
 #[test]
-fn treasury_creates_asset_reward_pool() {
+fn an_asset_reward_pool_is_opened_on_this_chain() {
 	AssetHubZagros::execute_with(|| {
-		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
+		type Runtime = <AssetHubZagros as Chain>::Runtime;
+		type RuntimeOrigin = <AssetHubZagros as Chain>::RuntimeOrigin;
 		type Balances = <AssetHubZagros as AssetHubZagrosPallet>::Balances;
 
-		let treasurer =
-			Location::new(1, [Plurality { id: BodyId::Treasury, part: BodyPart::Voice }]);
-		let treasurer_account =
-			ahw_xcm_config::LocationToAccountId::convert_location(&treasurer).unwrap();
+		let creator = AssetHubZagros::account_id_of(ALICE);
 
 		assert_ok!(Balances::force_set_balance(
-			<AssetHubZagros as Chain>::RuntimeOrigin::root(),
-			treasurer_account.clone().into(),
+			RuntimeOrigin::root(),
+			creator.clone().into(),
 			ASSET_HUB_ZAGROS_ED * 100_000,
 		));
 
-		let events = AssetHubZagros::events();
-		match events.iter().last() {
-			Some(RuntimeEvent::Balances(pezpallet_balances::Event::BalanceSet { who, .. })) => {
-				assert_eq!(*who, treasurer_account)
-			},
-			_ => panic!("Expected Balances::BalanceSet event"),
-		}
-	});
-	Zagros::execute_with(|| {
-		type AssetHubZagrosRuntimeCall = <AssetHubZagros as Chain>::RuntimeCall;
-		type AssetHubZagrosRuntime = <AssetHubZagros as Chain>::Runtime;
-		type ZagrosRuntimeCall = <Zagros as Chain>::RuntimeCall;
-		type ZagrosRuntime = <Zagros as Chain>::Runtime;
-		type ZagrosRuntimeEvent = <Zagros as Chain>::RuntimeEvent;
-		type ZagrosRuntimeOrigin = <Zagros as Chain>::RuntimeOrigin;
-
-		Dmp::make_teyrchain_reachable(AssetHubZagros::para_id());
-
-		let staked_asset_id = bx!(RelayLocation::get());
-		let reward_asset_id = bx!(RelayLocation::get());
-
-		let reward_rate_per_block = 1_000_000_000;
-		let lifetime = 1_000_000_000;
-		let admin = None;
-
-		let create_pool_call =
-			ZagrosRuntimeCall::XcmPallet(pezpallet_xcm::Call::<ZagrosRuntime>::send {
-				dest: bx!(VersionedLocation::V4(
-					xcm::v4::Junction::Teyrchain(AssetHubZagros::para_id().into()).into()
-				)),
-				message: bx!(VersionedXcm::V5(Xcm(vec![
-					UnpaidExecution { weight_limit: Unlimited, check_origin: None },
-					Transact {
-						origin_kind: OriginKind::SovereignAccount,
-						fallback_max_weight: None,
-						call: AssetHubZagrosRuntimeCall::AssetRewards(
-							pezpallet_asset_rewards::Call::<AssetHubZagrosRuntime>::create_pool {
-								staked_asset_id,
-								reward_asset_id,
-								reward_rate_per_block,
-								expiry: DispatchTime::After(lifetime),
-								admin
-							}
-						)
-						.encode()
-						.into(),
-					}
-				]))),
-			});
-
-		let treasury_origin: ZagrosRuntimeOrigin = Treasurer.into();
-		assert_ok!(create_pool_call.dispatch(treasury_origin));
-
-		assert_expected_events!(
-			Zagros,
-			vec![
-				ZagrosRuntimeEvent::XcmPallet(pezpallet_xcm::Event::Sent { .. }) => {},
-			]
-		);
-	});
-
-	AssetHubZagros::execute_with(|| {
-		type Runtime = <AssetHubZagros as Chain>::Runtime;
-		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
+		assert_ok!(pezpallet_asset_rewards::Pezpallet::<Runtime>::create_pool(
+			RuntimeOrigin::signed(creator),
+			bx!(RelayLocation::get()),
+			bx!(RelayLocation::get()),
+			1_000_000_000,
+			DispatchTime::After(1_000_000_000),
+			None,
+		));
 
 		assert_eq!(1, pezpallet_asset_rewards::Pools::<Runtime>::iter().count());
-
-		let events = AssetHubZagros::events();
-		match events.iter().last() {
-			Some(RuntimeEvent::MessageQueue(pezpallet_message_queue::Event::Processed {
-				success: true,
-				..
-			})) => (),
-			_ => panic!("Expected MessageQueue::Processed event"),
-		}
 	});
 }

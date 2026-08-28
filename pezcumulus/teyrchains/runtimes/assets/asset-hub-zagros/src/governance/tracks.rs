@@ -61,6 +61,20 @@ const SUP_BIG_SPENDER: Curve = Curve::make_reciprocal(20, 28, percent(1), percen
 // `APP_TREASURER` and `SUP_TREASURER` -- a spending track's thresholds on a track that could
 // rewrite the runtime.
 const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 9] = [
+	pezpallet_referenda::Track {
+		id: 11,
+		info: pezpallet_referenda::TrackInfo {
+			name: s("treasurer"),
+			max_deciding: 10,
+			decision_deposit: 100 * UNITS,
+			prepare_period: 2 * HOURS,
+			decision_period: 28 * DAYS,
+			confirm_period: 3 * HOURS,
+			min_enactment_period: 24 * HOURS,
+			min_approval: APP_TREASURER,
+			min_support: SUP_TREASURER,
+		},
+	},
 	// The emission knobs. Slower and dearer than any spend, because a spend is one payment
 	// and a rate is every payment after it -- and it is the holders' own dilution, so it is
 	// theirs to set. The ceiling it cannot pass is in the code, not here.
@@ -73,20 +87,6 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 9] = 
 			prepare_period: 2 * HOURS,
 			decision_period: 28 * DAYS,
 			confirm_period: 24 * HOURS,
-			min_enactment_period: 24 * HOURS,
-			min_approval: APP_TREASURER,
-			min_support: SUP_TREASURER,
-		},
-	},
-	pezpallet_referenda::Track {
-		id: 11,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("treasurer"),
-			max_deciding: 10,
-			decision_deposit: 100 * UNITS,
-			prepare_period: 2 * HOURS,
-			decision_period: 28 * DAYS,
-			confirm_period: 3 * HOURS,
 			min_enactment_period: 24 * HOURS,
 			min_approval: APP_TREASURER,
 			min_support: SUP_TREASURER,

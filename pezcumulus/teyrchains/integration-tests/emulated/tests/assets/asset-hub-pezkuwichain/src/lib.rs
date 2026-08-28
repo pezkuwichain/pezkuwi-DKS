@@ -79,10 +79,7 @@ mod imports {
 		pezkuwichain_emulated_chain::{
 			genesis::ED as PEZKUWICHAIN_ED,
 			pezkuwichain_runtime::{
-				governance as pezkuwichain_governance,
-				governance::pezpallet_custom_origins::Origin::Treasurer,
 				xcm_config::UniversalLocation as PezkuwichainUniversalLocation, Dmp,
-				OriginCaller as PezkuwichainOriginCaller,
 			},
 			PezkuwichainRelayPallet as PezkuwichainPallet,
 		},

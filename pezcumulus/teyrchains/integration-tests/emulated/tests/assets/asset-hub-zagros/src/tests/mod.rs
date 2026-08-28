@@ -16,10 +16,15 @@
 mod aliases;
 mod claim_assets;
 mod exchange_asset;
-mod fellowship_treasury;
 mod foreign_assets;
 mod hybrid_transfers;
 mod reserve_transfer;
+// `treasury` stood here, and on Zagros `fellowship_treasury` beside it. Both moved money from
+// the *relay's* treasury to this chain over XCM, with the relay's `Treasurer` origin. The
+// treasury lives here now and pays from its own account, so the relay has no treasury and no
+// treasurer: the tests could not be repaired, only rewritten against a mechanism that was
+// deliberately removed. What this chain's own treasury does is covered by `reward_pool` and,
+// on Pezkuwichain, `pez_treasury_activation`.
 mod reward_pool;
 mod send;
 mod set_asset_claimer;
@@ -33,8 +38,7 @@ mod transfer_assets_validation;
 // and AssetRate both live on the Asset Hub. The test also still assumed
 // `PalletInstance(37)` for Treasury, which was wrong even before that (it is 18). It needs
 // rewriting against the Asset Hub rather than patching.
-// mod treasury;
-mod xcm_fee_estimation;
+// mod xcm_fee_estimation;
 
 #[macro_export]
 macro_rules! foreign_balance_on {
