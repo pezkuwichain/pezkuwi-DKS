@@ -38,7 +38,6 @@ decl_test_relay_chains! {
 			Sudo: pezkuwichain_runtime::Sudo,
 			Balances: pezkuwichain_runtime::Balances,
 			Hrmp: pezkuwichain_runtime::Hrmp,
-			Treasury: pezkuwichain_runtime::Treasury,
 		}
 	},
 }

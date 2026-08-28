@@ -146,13 +146,13 @@ impl Contains<RuntimeCall> for TheRegisterIsNotWritableFromAbroad {
 	fn contains(call: &RuntimeCall) -> bool {
 		!matches!(
 			call,
-			RuntimeCall::IdentityKyc(..) |
-				RuntimeCall::Referral(..) |
-				RuntimeCall::Tiki(..) |
-				RuntimeCall::Welati(..) |
-				RuntimeCall::Diwan(..) |
-				RuntimeCall::Parliament(..) |
-				RuntimeCall::Trust(..)
+			RuntimeCall::IdentityKyc(..)
+				| RuntimeCall::Referral(..)
+				| RuntimeCall::Tiki(..)
+				| RuntimeCall::Welati(..)
+				| RuntimeCall::Diwan(..)
+				| RuntimeCall::Parliament(..)
+				| RuntimeCall::Trust(..)
 		)
 	}
 }

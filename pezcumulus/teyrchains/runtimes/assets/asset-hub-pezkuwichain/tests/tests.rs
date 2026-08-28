@@ -1710,7 +1710,10 @@ mod hez_parameters {
 	use pezsp_runtime::{traits::BadOrigin, BuildStorage, Perbill};
 
 	fn new_test_ext() -> pezsp_io::TestExternalities {
-		pezframe_system::GenesisConfig::<Runtime>::default().build_storage().unwrap().into()
+		pezframe_system::GenesisConfig::<Runtime>::default()
+			.build_storage()
+			.unwrap()
+			.into()
 	}
 
 	const YEAR_MS: u64 = (1000 * 3600 * 24 * 36525) / 100;

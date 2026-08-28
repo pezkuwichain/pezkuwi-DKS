@@ -3797,10 +3797,7 @@ impl<T: Config> Pezpallet<T> {
 	/// the two moments are far apart and a seat can fill in between.
 	fn a_court_seat_is_open_for(who: &T::AccountId) -> DispatchResult {
 		let bench = DiwanMembers::<T>::get();
-		ensure!(
-			!bench.iter().any(|member| &member.account == who),
-			Error::<T>::AlreadyOnTheCourt
-		);
+		ensure!(!bench.iter().any(|member| &member.account == who), Error::<T>::AlreadyOnTheCourt);
 
 		let appointed = bench
 			.iter()

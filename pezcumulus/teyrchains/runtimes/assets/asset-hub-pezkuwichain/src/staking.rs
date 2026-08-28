@@ -278,8 +278,7 @@ impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
 		let yearly_emission = rate.mul_floor(HEZ_ISSUANCE_BASE);
 
 		let era_emission = relative_era_len.saturating_mul_int(yearly_emission);
-		let to_treasury =
-			crate::dynamic_params::hez::TreasuryShare::get().mul_floor(era_emission);
+		let to_treasury = crate::dynamic_params::hez::TreasuryShare::get().mul_floor(era_emission);
 		let to_stakers = era_emission.saturating_sub(to_treasury);
 
 		(to_stakers.saturated_into(), to_treasury.saturated_into())

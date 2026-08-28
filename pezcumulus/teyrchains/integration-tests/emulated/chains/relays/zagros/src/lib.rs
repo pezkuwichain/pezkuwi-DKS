@@ -37,7 +37,6 @@ decl_test_relay_chains! {
 			XcmPallet: zagros_runtime::XcmPallet,
 			Sudo: zagros_runtime::Sudo,
 			Balances: zagros_runtime::Balances,
-			Treasury: zagros_runtime::Treasury,
 			Hrmp: zagros_runtime::Hrmp,
 		}
 	},

@@ -586,15 +586,7 @@ pub struct AppointmentProcess<T: pezframe_system::Config> {
 /// in the register where the decision belongs. The President's track does name him, because
 /// there the decision really is one person's.
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	Eq,
-	PartialEq,
-	Debug,
-	TypeInfo,
-	MaxEncodedLen,
+	Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
 )]
 pub enum ConfirmedBy<AccountId> {
 	/// The House confirmed it, acting as one body.

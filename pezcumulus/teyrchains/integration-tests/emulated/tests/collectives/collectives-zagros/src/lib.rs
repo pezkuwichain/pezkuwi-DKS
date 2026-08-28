@@ -41,11 +41,7 @@ mod imports {
 		people_zagros_emulated_chain::PeopleZagrosParaPallet as PeopleZagrosPallet,
 		pez_penpal_emulated_chain::{PenpalAssetOwner, PenpalBParaPallet as PenpalBPallet},
 		pezbridge_hub_zagros_emulated_chain::BridgeHubZagrosParaPallet as BridgeHubZagrosPallet,
-		zagros_emulated_chain::{
-			genesis::ED as ZAGROS_ED,
-			zagros_runtime::{governance as zagros_governance, OriginCaller as ZagrosOriginCaller},
-			ZagrosRelayPallet as ZagrosPallet,
-		},
+		zagros_emulated_chain::{genesis::ED as ZAGROS_ED, ZagrosRelayPallet as ZagrosPallet},
 		AssetHubZagrosPara as AssetHubZagros, AssetHubZagrosParaReceiver as AssetHubZagrosReceiver,
 		AssetHubZagrosParaSender as AssetHubZagrosSender, BridgeHubZagrosPara as BridgeHubZagros,
 		CollectivesZagrosPara as CollectivesZagros,

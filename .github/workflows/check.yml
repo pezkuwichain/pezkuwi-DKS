@@ -98,6 +98,12 @@ jobs:
     runs-on: [self-hosted, bizinikiwi-build]
     steps:
       - uses: actions/checkout@v7
+      # Needed since this job gained the integration-test step below: those tests pull crates
+      # whose build script compiles Solidity, so without solc the job stops before it runs
+      # anything. Installed rather than skipped with `SKIP_PALLET_REVIVE_FIXTURES=1`, for the
+      # reason recorded on the `workspace` job -- skipping leaves a gate reporting success over
+      # code it never built.
+      - uses: ./.github/actions/install-solidity
       - name: Toolchain & targets
         run: |
           rustup show

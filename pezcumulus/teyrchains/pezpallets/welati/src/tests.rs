@@ -6,8 +6,8 @@
 use crate::{
 	mock::{
 		add_parliament_member, endorsed_by, install_diwan_member, install_prime_minister,
-		last_event, make_citizen, run_to_block, seat_president,
-		ExtBuilder, RuntimeEvent, RuntimeOrigin, System, Test, Welati,
+		last_event, make_citizen, run_to_block, seat_president, ExtBuilder, RuntimeEvent,
+		RuntimeOrigin, System, Test, Welati,
 	},
 	types::*,
 	Error, Event as WelatiEvent, GovernmentPosition,
@@ -317,7 +317,6 @@ fn install(process_id: u32, role: OfficialRole) -> DispatchResult {
 		Welati::approve_appointment(RuntimeOrigin::signed(SEROK), process_id)
 	}
 }
-
 
 #[test]
 fn nominate_official_works() {

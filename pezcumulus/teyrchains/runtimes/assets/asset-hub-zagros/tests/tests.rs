@@ -2371,7 +2371,10 @@ mod hez_parameters {
 	use pezsp_runtime::{traits::BadOrigin, BuildStorage, Perbill};
 
 	fn new_test_ext() -> pezsp_io::TestExternalities {
-		pezframe_system::GenesisConfig::<Runtime>::default().build_storage().unwrap().into()
+		pezframe_system::GenesisConfig::<Runtime>::default()
+			.build_storage()
+			.unwrap()
+			.into()
 	}
 
 	const YEAR_MS: u64 = (1000 * 3600 * 24 * 36525) / 100;
@@ -2435,7 +2438,10 @@ mod hez_parameters {
 			// The parameter took the value; the payout did not.
 			assert_eq!(hez::InflationRate::get(), Perbill::from_percent(90));
 			let (stakers, treasury) = yearly_payout();
-			assert_eq!(stakers + treasury, MAX_INFLATION_RATE.mul_floor(200_000_000_000_000_000_000u128));
+			assert_eq!(
+				stakers + treasury,
+				MAX_INFLATION_RATE.mul_floor(200_000_000_000_000_000_000u128)
+			);
 		});
 	}
 }

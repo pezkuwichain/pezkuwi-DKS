@@ -78,7 +78,6 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 9] = 
 			min_support: SUP_TREASURER,
 		},
 	},
-
 	pezpallet_referenda::Track {
 		id: 11,
 		info: pezpallet_referenda::TrackInfo {
