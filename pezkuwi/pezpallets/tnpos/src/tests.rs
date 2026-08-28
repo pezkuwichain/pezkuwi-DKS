@@ -112,3 +112,119 @@ fn the_pool_is_bounded() {
 		);
 	});
 }
+
+#[test]
+fn a_healthy_pool_seats_twenty_seven_across_nine_strata() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let c = CurrentCommittee::<Test>::get();
+		assert_eq!(c.len(), 27);
+		let mut per = std::collections::BTreeMap::new();
+		for who in c.iter() {
+			*per.entry(PoolMembers::<Test>::get(who).unwrap()).or_insert(0) += 1;
+		}
+		assert_eq!(per.len(), 9);
+		assert!(per.values().all(|&v| v == 3), "each stratum seats exactly three");
+	});
+}
+
+#[test]
+fn a_short_stratum_shrinks_the_committee_it_does_not_hand_its_seats_away() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		empty_stratum(StratumId::Tiki);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let c = CurrentCommittee::<Test>::get();
+		assert_eq!(c.len(), 24, "three seats are lost, not moved");
+		assert!(!c.iter().any(|w| PoolMembers::<Test>::get(w) == Some(StratumId::Tiki)));
+	});
+}
+
+#[test]
+fn seating_is_refused_rather_than_run_below_the_budget() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		for s in [
+			StratumId::Tiki,
+			StratumId::Divan,
+			StratumId::Geography,
+			StratumId::Tenure,
+			StratumId::Infrastructure,
+		] {
+			empty_stratum(s);
+		}
+		let before = CurrentCommittee::<Test>::get();
+		assert_noop!(
+			Tnpos::force_new_era(RuntimeOrigin::root()),
+			Error::<Test>::UnseatableConfiguration
+		);
+		assert_eq!(CurrentCommittee::<Test>::get(), before, "the old committee stays");
+	});
+}
+
+#[test]
+fn nobody_is_seated_twice() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let mut c = CurrentCommittee::<Test>::get().to_vec();
+		let n = c.len();
+		c.sort();
+		c.dedup();
+		assert_eq!(c.len(), n);
+	});
+}
+
+#[test]
+fn a_new_era_draws_a_different_committee() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(200);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let first = CurrentCommittee::<Test>::get();
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		assert_ne!(CurrentCommittee::<Test>::get(), first);
+	});
+}
+
+#[test]
+fn the_era_advances_on_schedule() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		run_to_block(EraLength::get());
+		assert_eq!(CurrentEra::<Test>::get(), 1);
+	});
+}
+
+#[test]
+fn a_refused_seating_does_not_retry_every_block() {
+	// The pallet this replaces swallowed the error and left EraStart untouched, so it
+	// re-ran the whole selection on every single block and paid full weight for it.
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		for s in [
+			StratumId::Tiki,
+			StratumId::Divan,
+			StratumId::Geography,
+			StratumId::Tenure,
+			StratumId::Infrastructure,
+		] {
+			empty_stratum(s);
+		}
+		run_to_block(EraLength::get());
+		// The window must have been written even though seating failed. Asserting only that
+		// it is unchanged between two blocks would pass while it sat at genesis zero, which
+		// is the exact bug this test exists for.
+		assert_eq!(
+			EraStart::<Test>::get(),
+			EraLength::get(),
+			"a failed seating must still move the era window"
+		);
+		run_to_block(EraLength::get() + 1);
+		assert_eq!(
+			EraStart::<Test>::get(),
+			EraLength::get(),
+			"and must not fire again on the very next block"
+		);
+	});
+}

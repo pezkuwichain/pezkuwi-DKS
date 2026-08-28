@@ -17,6 +17,7 @@ extern crate alloc;
 
 pub use pezpallet::*;
 pub mod pool;
+pub mod sample;
 pub mod weights;
 
 #[cfg(test)]
@@ -28,8 +29,12 @@ use alloc::vec::Vec;
 use pezframe_support::{pezpallet_prelude::*, traits::Get};
 use pezframe_system::pezpallet_prelude::*;
 use pezkuwi_tnpos_primitives::{
-	invariant::seat, scores::ScoreProvider, sortition::Sortition, StratumConfig, StratumId,
+	invariant::{seat, InvariantError, Seating},
+	scores::ScoreProvider,
+	sortition::Sortition,
+	StratumConfig, StratumId,
 };
+use pezsp_runtime::Saturating;
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
@@ -190,6 +195,40 @@ pub mod pezpallet {
 		}
 	}
 
+	#[pezpallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
+		fn on_initialize(now: BlockNumberFor<T>) -> Weight {
+			let mut weight = T::DbWeight::get().reads(1);
+			if now < EraStart::<T>::get().saturating_add(T::EraLength::get()) {
+				return weight;
+			}
+
+			// The era window moves on whether or not a committee could be drawn. The pallet
+			// this replaces left it in place on failure and so re-ran the entire selection
+			// on every block, paying full weight each time and never recovering.
+			EraStart::<T>::put(now);
+			weight = weight.saturating_add(T::DbWeight::get().writes(1));
+			weight = weight.saturating_add(T::WeightInfo::seat_committee(T::MaxPoolSize::get()));
+
+			if Self::do_seat_committee().is_err() {
+				Self::deposit_event(Event::SeatingRefused { era: CurrentEra::<T>::get() });
+				log::warn!(target: "tnpos", "no committee could be seated; previous one stands");
+			}
+			weight
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
+			let strata = Strata::<T>::get();
+			let sizes: Vec<u32> = strata.iter().map(|c| StratumSize::<T>::get(c.id)).collect();
+			// A live chain whose strata cannot be seated is a chain running outside its
+			// security budget; that must surface as a failure, not as a quiet degradation.
+			seat(&strata, &sizes)
+				.map_err(|_| "tnpos: strata cannot satisfy the security floors")?;
+			Ok(())
+		}
+	}
+
 	#[pezpallet::call]
 	impl<T: Config> Pezpallet<T> {
 		/// Join `stratum`. Every gate is measured against current scores.
@@ -204,6 +243,20 @@ pub mod pezpallet {
 		#[pezpallet::weight(T::WeightInfo::leave())]
 		pub fn leave(origin: OriginFor<T>) -> DispatchResult {
 			Self::do_leave(ensure_signed(origin)?)
+		}
+
+		/// Seat a new committee now.
+		#[pezpallet::call_index(2)]
+		#[pezpallet::weight(T::WeightInfo::seat_committee(T::MaxPoolSize::get()))]
+		pub fn force_new_era(origin: OriginFor<T>) -> DispatchResult {
+			T::ManagerOrigin::ensure_origin(origin)?;
+			match Self::do_seat_committee() {
+				Ok(_) => Ok(()),
+				Err(e) => {
+					Self::deposit_event(Event::SeatingRefused { era: CurrentEra::<T>::get() });
+					Err(e.into())
+				},
+			}
 		}
 
 		/// Replace the strata configuration.

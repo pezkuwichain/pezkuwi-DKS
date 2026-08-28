@@ -53,7 +53,6 @@ const PERWERDE: u8 = 2;
 const REFERRAL: u8 = 3;
 const STAKING: u8 = 4;
 
-#[allow(dead_code)]
 fn put_score(who: AccountId, kind: u8, value: u128, at: BlockNumber) {
 	SCORES.with(|s| s.borrow_mut().insert((who, kind), (value, at)));
 }
@@ -80,11 +79,13 @@ pub fn set_office_tiki_only(who: AccountId) {
 	put_score(who, TRUST, 1_000, System::block_number());
 }
 
-/// Advance the block number. Task 9 extends this to drive `on_initialize` once the hook
-/// exists; here it only needs to move the clock so a score can go stale.
+/// Advance the block number, running `on_initialize` at every step.
 pub fn run_to_block(n: BlockNumber) {
+	use pezframe_support::traits::OnInitialize;
 	while System::block_number() < n {
-		System::set_block_number(System::block_number() + 1);
+		let next = System::block_number() + 1;
+		System::set_block_number(next);
+		Tnpos::on_initialize(next);
 	}
 }
 
@@ -164,4 +165,27 @@ pub fn new_test_ext_with_strata(n: usize) -> pezsp_io::TestExternalities {
 	let mut ext = pezsp_io::TestExternalities::new(t);
 	ext.execute_with(|| System::set_block_number(1));
 	ext
+}
+
+/// Put `per` eligible members into every stratum.
+pub fn fill_every_stratum(per: u32) {
+	let mut who: AccountId = 100;
+	for &s in StratumId::ALL.iter() {
+		for _ in 0..per {
+			for kind in [TRUST, TIKI, PERWERDE, STAKING] {
+				put_score(who, kind, 1_000, System::block_number());
+			}
+			assert!(Tnpos::join(RuntimeOrigin::signed(who), s).is_ok());
+			who += 1;
+		}
+	}
+}
+
+pub fn empty_stratum(s: StratumId) {
+	let members: Vec<AccountId> = pezpallet_tnpos::PoolMembers::<Test>::iter()
+		.filter_map(|(w, st)| (st == s).then_some(w))
+		.collect();
+	for w in members {
+		assert!(Tnpos::leave(RuntimeOrigin::signed(w)).is_ok());
+	}
 }
