@@ -26,6 +26,8 @@ use scale_info::TypeInfo;
 	Debug,
 	TypeInfo,
 	MaxEncodedLen,
+	serde::Serialize,
+	serde::Deserialize,
 )]
 pub enum StratumId {
 	/// Bonded HEZ; ranked internally by the existing Phragmen election on Asset Hub.
@@ -88,6 +90,8 @@ impl StratumId {
 	Debug,
 	TypeInfo,
 	MaxEncodedLen,
+	serde::Serialize,
+	serde::Deserialize,
 )]
 pub struct StratumConfig {
 	pub id: StratumId,

@@ -16,9 +16,9 @@ workspace = true
 [dependencies]
 codec = { workspace = true, default-features = false, features = ["derive", "max-encoded-len"] }
 pezsp-io = { workspace = true, default-features = false }
-pezsp-std = { workspace = true, default-features = false }
 scale-info = { workspace = true, default-features = false, features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 
 [features]
 default = ["std"]
-std = ["codec/std", "pezsp-io/std", "pezsp-std/std", "scale-info/std"]
+std = ["codec/std", "pezsp-io/std", "scale-info/std", "serde/std"]
