@@ -252,52 +252,21 @@ pub mod v1 {
 
 /// Example migration for future version changes
 /// This demonstrates how to handle storage format changes in governance data
-pub mod v2 {
-	use super::*;
-
-	/// Example: Migration when election or proposal format changes
-	pub struct MigrateToV2<T>(PhantomData<T>);
-
-	impl<T: Config> OnRuntimeUpgrade for MigrateToV2<T> {
-		fn on_runtime_upgrade() -> Weight {
-			let current = Pezpallet::<T>::on_chain_storage_version();
-
-			if current < StorageVersion::new(2) {
-				log::info!("🔄 Running migration for pezpallet-welati to v2");
-
-				// Example migration logic
-				// 1. Transform election data if format changed
-				// 2. Migrate proposal structure if needed
-				// 3. Update parliament/diwan member format
-				// 4. Update version
-
-				// For now, this is just a template
-				StorageVersion::new(2).put::<Pezpallet<T>>();
-
-				log::info!("✅ Completed migration to pezpallet-welati v2");
-
-				T::DbWeight::get().reads_writes(1, 1)
-			} else {
-				log::info!("👌 pezpallet-welati v2 migration not needed");
-				T::DbWeight::get().reads(1)
-			}
-		}
-
-		#[cfg(feature = "try-runtime")]
-		fn pre_upgrade() -> Result<pezsp_std::vec::Vec<u8>, pezsp_runtime::TryRuntimeError> {
-			log::info!("🔍 Pre-upgrade check for pezpallet-welati v2");
-			Ok(pezsp_std::vec::Vec::new())
-		}
-
-		#[cfg(feature = "try-runtime")]
-		fn post_upgrade(
-			_state: pezsp_std::vec::Vec<u8>,
-		) -> Result<(), pezsp_runtime::TryRuntimeError> {
-			log::info!("✅ Post-upgrade check passed for pezpallet-welati v2");
-			Ok(())
-		}
-	}
-}
+// `v2` stood here and was deleted rather than repaired.
+//
+// It transformed nothing -- its body was four comment lines and the word "template" -- and the
+// one thing it did do was wrong: it wrote `StorageVersion::new(2)` while this pallet declares
+// version 1. An on-chain version above the declared one is not a small inconsistency. FRAME
+// compares the two, a real v2 migration would later see `current >= 2` and skip itself, and the
+// transformation nobody wrote would be recorded as already done.
+//
+// It was scheduled in no runtime, which is the only reason it never fired. A placeholder that
+// is harmless only because it is unreachable is one wiring away from being harmful, and the
+// wiring is a single line somebody adds while tidying.
+//
+// When welati really needs a v2, the version in `STORAGE_VERSION` moves with it, in the same
+// commit as the transformation. `pezpallet_tiki` is the shape to copy: it declares 2, its v1
+// writes 1, its v2 writes what it declares, and both are scheduled.
 
 #[cfg(test)]
 mod tests {

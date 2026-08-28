@@ -172,11 +172,36 @@ def inv_enum_pin(p, kind):
     return ("GAP", ", ".join(missing)) if missing else ("ok", f"{len(stored)} stored")
 
 def inv_storage_v(p, kind):
+    """A declared version, and no migration that writes a higher one.
+
+    The second half was added after `welati::migrations::v2` was found writing
+    `StorageVersion::new(2)` into a pallet declaring 1. An on-chain version above the declared
+    one is not a cosmetic mismatch: a later migration for that version sees `current >= 2`,
+    decides its work is already done, and skips a transformation nobody ever wrote. That one
+    was scheduled in no runtime and therefore never fired -- harmless only because it was
+    unreachable, which is one line away from not being.
+    """
     if kind != "pallet":
         return "n/a", ""
     if p.name in UPSTREAM_PALLETS:
         return "n/a", "upstream's"
-    return ("ok", "") if "STORAGE_VERSION" in read(p / "src/lib.rs") else ("GAP", "")
+    if "STORAGE_VERSION" not in read(p / "src/lib.rs"):
+        return "GAP", ""
+
+    mig = read(p / "src/migrations.rs")
+    if not mig:
+        return "ok", ""
+    declared = re.search(r"STORAGE_VERSION: StorageVersion = StorageVersion::new\((\d+)\)", mig)
+    if not declared:
+        return "ok", ""
+    declared = int(declared.group(1))
+    # Tests set versions freely to drive the migration under test; only the shipped half counts.
+    shipped = mig.split("#[cfg(test)]")[0]
+    over = sorted({int(v) for v in re.findall(r"StorageVersion::new\((\d+)\)\.put", shipped)
+                   if int(v) > declared})
+    if over:
+        return "GAP", "migration writes %s, pallet declares %d" % (over, declared)
+    return "ok", ""
 
 # Pallets upstream itself leaves at zero, measured against `polkadot-stable2606-1` rather
 # than waved through. The consensus three take unsigned equivocation reports, which do not
