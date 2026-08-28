@@ -54,12 +54,20 @@ OK_LEAF = [
     (re.compile(r"^EnsureRoot(WithSuccess)?\b"), "root"),
     (re.compile(r"^pezframe_system::EnsureRoot"), "root"),
     (re.compile(r"^pezpallet_collective::Ensure\w+<[^>]*?(\w+Collective)"), "collective"),
-    (re.compile(r"^pezpallet_tiki::ensure::Ensure(\w+)"), "office"),
-    (re.compile(r"^pezpallet_welati::Ensure(\w+)"), "office"),
-    (re.compile(r"^Ensure(Serok|Diwan|Parlementer|Wezir)\w*"), "office"),
+    # Single-holder offices only, and which those are is read out of `is_unique_role` below
+    # rather than listed here. One person holds the tiki, so "the holder decided" and "the
+    # office decided" are the same sentence.
+    (re.compile(r"^pezpallet_welati::Ensure(Serok|SerokWeziran)\b"), "single-holder office"),
 ]
 BAD_LEAF = [
     (re.compile(r"EnsureSigned"), "any signed account may write the register"),
+    # One member of a body is not the body. Not hypothetical: an alias in this tree was named
+    # `RootOrParliament` and accepted a single member of parliament, and its *name* is the only
+    # reason anybody caught it. A collective decides by proportion, and `EnsureProportion*` is
+    # the origin that says so. If a register power really is meant to rest with any single
+    # member, it should say so here with a reason rather than ride on the resemblance.
+    (re.compile(r"Ensure(Parlementer|EndameDiwane|Endam)\w*"),
+     "one member of a body, standing in for the body"),
     (re.compile(r"pezpallet_custom_origins::"), "a referendum track; check its tally"),
     (re.compile(r"governance::(WelatiElection|WelatiAdmin|CitizenshipAdmin)"),
      "a referendum track; check its tally"),
@@ -67,6 +75,50 @@ BAD_LEAF = [
 ]
 
 SPLIT = re.compile(r"^(EitherOf|EitherOfDiverse|EnsureOneOf)\s*<(.*)>$", re.S)
+
+TIKI = REPO / "pezcumulus/teyrchains/pezpallets/tiki/src"
+
+
+def tiki_facts():
+    """Which tikis one person holds, and which tiki each `*Role` marker names.
+
+    Read out of the pallet, not listed here. A list in this file would be a second copy of
+    `is_unique_role`, and the copy is what goes stale -- the same fault the franchise sentinel
+    had before it was moved to read the real track lists.
+    """
+    lib = (TIKI / "lib.rs").read_text()
+    m = re.search(r"pub fn is_unique_role\(tiki: &Tiki\) -> bool \{(.*?)\n\t\t\}", lib, re.S)
+    unique = set(re.findall(r"Tiki::(\w+)", m.group(1))) if m else set()
+
+    ens = (TIKI / "ensure.rs").read_text()
+    roles = {}
+    for rm in re.finditer(r"pub struct (\w*Role);(.*?)crate::Tiki::(\w+)", ens, re.S):
+        roles[rm.group(1)] = rm.group(3)
+
+    # The convenience aliases -- `pub type EnsureSerok<T> = EnsureTiki<T, SerokRole>;` -- read
+    # from the pallet too. Naming them here instead would be a third copy of the same fact, and
+    # the one most likely to be forgotten when a new office gets an alias.
+    for am in re.finditer(r"pub type (Ensure\w+)<T> = EnsureTiki<T, (\w*Role)>;", ens):
+        if am.group(2) in roles:
+            roles[am.group(1)] = roles[am.group(2)]
+    return unique, roles
+
+
+def runtime_roles(text):
+    """Role markers a runtime declares for itself.
+
+    They do not all live in the pallet: `EducationMinisterRole` is declared in `people.rs` and
+    resolves to `WezireBelaw`. Looking in only one of the two places a thing can be defined is
+    how a check reports a gap that is really its own blind spot -- this one did, until this.
+    """
+    out = {}
+    for m in re.finditer(r"pub struct (\w*Role);\s*\nimpl [\w:]*GetTiki for \1\b.*?"
+                         r"Tiki::(\w+)", text, re.S):
+        out[m.group(1)] = m.group(2)
+    return out
+
+
+UNIQUE_TIKIS, ROLE_TIKI = tiki_facts()
 
 
 def top_level_split(s):
@@ -161,7 +213,27 @@ def leaves(expr, alias, hand, seen=None):
     return [expr]
 
 
-def classify(leaf):
+def classify(leaf, local_roles):
+    # `EnsureTiki<_, XRole>` -- resolve the marker to its tiki and ask the pallet whether one
+    # person holds it. A member of a body standing in for the body is what this catches.
+    m = re.search(r"EnsureTiki<[^,]*,\s*(\w*Role)\s*>", leaf)
+    if m is None:
+        # The convenience aliases, but only when the name really is one -- matching every
+        # `EnsureX<..>` here would swallow `EnsureRoot` and `EnsureProportionAtLeast` and turn
+        # the whole report into "unknown", which is how a check drowns its own signal.
+        a = re.search(r"(?:^|::)(Ensure\w+)<[^>]*>$", leaf)
+        if a and (a.group(1) in local_roles or a.group(1) in ROLE_TIKI):
+            m = a
+    if m:
+        role = m.group(1)
+        tiki = local_roles.get(role) or ROLE_TIKI.get(role)
+        if tiki is None:
+            return "UNKNOWN", f"`{role}` names no tiki in the pallet or this runtime"
+        if tiki in UNIQUE_TIKIS:
+            return "ok", f"single-holder office ({tiki})"
+        return "BAD", (f"`{tiki}` is a seat in a body, not an office -- one member is standing "
+                       f"in for the body")
+
     for pat, kind in BAD_LEAF:
         if pat.search(leaf):
             return "BAD", kind
@@ -194,6 +266,7 @@ def main():
         text = read(src)
         alias = aliases(text)
         hand = hand_written(text)
+        local_roles = runtime_roles(text)
 
         tally = tally_is_head_counted(text)
         if tally is None or "CitizenTally" not in tally:
@@ -211,7 +284,7 @@ def main():
 
         for pallet, item, expr in rows:
             for leaf in leaves(expr, alias, hand):
-                verdict, why = classify(leaf)
+                verdict, why = classify(leaf, local_roles)
                 if verdict == "ok":
                     if verbose:
                         print(f"  ok       {name} {pallet}::{item} -> {leaf[:60]} ({why})")
