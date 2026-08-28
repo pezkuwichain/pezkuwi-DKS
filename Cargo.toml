@@ -561,6 +561,7 @@ members = [
 	"pezkuwi/node/test/service",
 	"pezkuwi/node/tracking-allocator",
 	"pezkuwi/node/zombienet-backchannel",
+	"pezkuwi/pezpallets/tnpos",
 	"pezkuwi/pezpallets/validator-pool",
 	"pezkuwi/primitives",
 	"pezkuwi/primitives/test-helpers",
@@ -1156,6 +1157,7 @@ pezpallet-teyrchain-template = { path = "templates/teyrchain/pezpallets/template
 
 # Pezkuwi Custom pezpallets (Relay Chain)
 pezpallet-staking-reward-fn = { path = "bizinikiwi/pezframe/staking/reward-fn", version = "19.0.0", default-features = false }
+pezpallet-tnpos = { path = "pezkuwi/pezpallets/tnpos", version = "1.0.0", default-features = false }
 pezpallet-validator-pool = { path = "pezkuwi/pezpallets/validator-pool", version = "1.0.0", default-features = false }
 
 # People Teyrchain pezpallets (Phase 2)
