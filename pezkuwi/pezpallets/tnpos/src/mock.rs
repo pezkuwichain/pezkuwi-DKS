@@ -58,6 +58,36 @@ fn put_score(who: AccountId, kind: u8, value: u128, at: BlockNumber) {
 	SCORES.with(|s| s.borrow_mut().insert((who, kind), (value, at)));
 }
 
+pub fn set_perwerde(who: AccountId, v: u128) {
+	put_score(who, PERWERDE, v, System::block_number());
+}
+
+pub fn set_perwerde_at(who: AccountId, v: u128, at: BlockNumber) {
+	put_score(who, PERWERDE, v, at);
+}
+
+pub fn set_tiki(who: AccountId, v: u128) {
+	put_score(who, TIKI, v, System::block_number());
+}
+
+/// An account holding office tikis and nothing else.
+///
+/// `tiki_of` excludes office tikis, so it reads zero. That exclusion is what keeps the Tiki
+/// stratum independent of Meclis; without it the two gates would collapse into one and the
+/// security arithmetic would be describing a chain that does not exist.
+pub fn set_office_tiki_only(who: AccountId) {
+	put_score(who, TIKI, 0, System::block_number());
+	put_score(who, TRUST, 1_000, System::block_number());
+}
+
+/// Advance the block number. Task 9 extends this to drive `on_initialize` once the hook
+/// exists; here it only needs to move the clock so a score can go stale.
+pub fn run_to_block(n: BlockNumber) {
+	while System::block_number() < n {
+		System::set_block_number(System::block_number() + 1);
+	}
+}
+
 fn read_score(who: &AccountId, kind: u8) -> ScoreSnapshot<BlockNumber> {
 	SCORES
 		.with(|s| s.borrow().get(&(*who, kind)).copied())

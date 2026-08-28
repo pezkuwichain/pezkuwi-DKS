@@ -16,6 +16,7 @@
 extern crate alloc;
 
 pub use pezpallet::*;
+pub mod pool;
 pub mod weights;
 
 #[cfg(test)]
@@ -191,6 +192,20 @@ pub mod pezpallet {
 
 	#[pezpallet::call]
 	impl<T: Config> Pezpallet<T> {
+		/// Join `stratum`. Every gate is measured against current scores.
+		#[pezpallet::call_index(0)]
+		#[pezpallet::weight(T::WeightInfo::join())]
+		pub fn join(origin: OriginFor<T>, stratum: StratumId) -> DispatchResult {
+			Self::do_join(ensure_signed(origin)?, stratum)
+		}
+
+		/// Leave the pool.
+		#[pezpallet::call_index(1)]
+		#[pezpallet::weight(T::WeightInfo::leave())]
+		pub fn leave(origin: OriginFor<T>) -> DispatchResult {
+			Self::do_leave(ensure_signed(origin)?)
+		}
+
 		/// Replace the strata configuration.
 		///
 		/// Refused unless the new configuration could be seated, so the chain cannot be
