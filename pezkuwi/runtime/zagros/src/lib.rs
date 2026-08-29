@@ -96,8 +96,8 @@ use pezframe_support::{
 	PalletId,
 };
 use pezframe_system::EnsureRoot;
-use pezpallet_grandpa::{fg_primitives, AuthorityId as GrandpaId};
 use pezkuwi_tnpos_primitives::scores::ScoreSnapshot;
+use pezpallet_grandpa::{fg_primitives, AuthorityId as GrandpaId};
 use pezpallet_session::historical as session_historical;
 use pezpallet_staking_async_ah_client as ah_client;
 use pezpallet_staking_async_rc_client as rc_client;
@@ -2901,10 +2901,9 @@ mod tnpos_wiring {
 	fn tnpos_is_the_session_manager() {
 		fn assert_is_manager<M: pezpallet_session::SessionManager<AccountId>>() {}
 		assert_is_manager::<<Runtime as pezpallet_session::Config>::SessionManager>();
-		let wired = core::any::type_name::<
-			<Runtime as pezpallet_session::Config>::SessionManager,
-		>()
-		.to_lowercase();
+		let wired =
+			core::any::type_name::<<Runtime as pezpallet_session::Config>::SessionManager>()
+				.to_lowercase();
 		assert!(
 			wired.contains("tnpos"),
 			"TNPoS must be reachable from session, not merely compiled: {wired}"
