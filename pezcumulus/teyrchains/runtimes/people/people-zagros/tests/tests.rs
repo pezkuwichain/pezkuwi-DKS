@@ -439,3 +439,67 @@ mod register_scores {
 		});
 	}
 }
+
+/// The register's rules moved from the binary to storage. Two things must stay true.
+mod register_parameters {
+	use super::*;
+	use pezframe_support::{assert_noop, traits::Get};
+	use pezsp_runtime::{traits::BadOrigin, BuildStorage};
+	use testnet_teyrchains_constants::zagros::time::DAYS;
+
+	fn new_test_ext() -> pezsp_io::TestExternalities {
+		pezframe_system::GenesisConfig::<Runtime>::default()
+			.build_storage()
+			.unwrap()
+			.into()
+	}
+
+	/// Genesis behaves exactly as it did when these were `const`.
+	///
+	/// A default that drifted from the constant it replaced would change the register's growth
+	/// rules on the day of the move, and nothing else in the tree would say so.
+	#[test]
+	fn the_defaults_are_what_the_constants_were() {
+		use people_zagros_runtime::dynamic_params::qeyd;
+
+		new_test_ext().execute_with(|| {
+			assert_eq!(qeyd::VouchingWaitingPeriod::get(), DAYS);
+			assert_eq!(qeyd::InitialVouchingCapacity::get(), 5);
+			assert_eq!(qeyd::SettledVouchesPerPlace::get(), 3);
+			assert_eq!(qeyd::MaxVouchingCapacity::get(), 50);
+			assert_eq!(qeyd::SuspensionRevocationFloor::get(), 3);
+			assert_eq!(qeyd::SuspensionRevocationPercent::get(), 20);
+			assert_eq!(qeyd::PenaltyPerRevocation::get(), 10);
+		});
+	}
+
+	/// Moving them to storage must not have made them easier to change than a runtime upgrade.
+	///
+	/// This is the whole reason `AdminOrigin` is Root and not the court: a body that both
+	/// writes the register's entries and sets the rules for writing them has no rule above it.
+	/// When the register-rules track lands, this test is what has to be edited deliberately.
+	#[test]
+	fn only_root_turns_them() {
+		use people_zagros_runtime::{dynamic_params::qeyd, Parameters, RuntimeParameters};
+
+		let widen = || {
+			RuntimeParameters::Qeyd(qeyd::Parameters::MaxVouchingCapacity(
+				qeyd::MaxVouchingCapacity,
+				Some(50_000),
+			))
+		};
+
+		new_test_ext().execute_with(|| {
+			// The court writes the register; it does not write the register's rules.
+			assert_noop!(
+				Parameters::set_parameter(
+					RuntimeOrigin::signed(AccountId::from([1u8; 32])),
+					widen()
+				),
+				BadOrigin
+			);
+			assert_ok!(Parameters::set_parameter(RuntimeOrigin::root(), widen()));
+			assert_eq!(qeyd::MaxVouchingCapacity::get(), 50_000);
+		});
+	}
+}

@@ -31,6 +31,7 @@ pub mod pezpallet_identity;
 pub mod pezpallet_message_queue;
 pub mod pezpallet_migrations;
 pub mod pezpallet_multisig;
+pub mod pezpallet_parameters;
 pub mod pezpallet_proxy;
 pub mod pezpallet_session;
 pub mod pezpallet_timestamp;

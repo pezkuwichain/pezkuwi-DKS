@@ -38,6 +38,7 @@ use pezframe_support::traits::tokens::imbalance::ResolveTo;
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
+	dynamic_params::{dynamic_params, dynamic_pezpallet_params},
 	genesis_builder_helper::{build_state, get_preset},
 	parameter_types,
 	traits::{
@@ -802,6 +803,7 @@ construct_runtime!(
 		// TreasuryCommittee: pezpallet_collective::<Instance5> = 77,
 
 		// Trust & Staking
+		Parameters: pezpallet_parameters = 79,
 		StakingScore: pezpallet_staking_score = 80,
 		Trust: pezpallet_trust = 81,
 		Society: pezpallet_society = 82,
@@ -831,6 +833,7 @@ mod benches {
 		[pezpallet_identity, Identity]
 		[pezpallet_message_queue, MessageQueue]
 		[pezpallet_multisig, Multisig]
+		[pezpallet_parameters, Parameters]
 		[pezpallet_nfts, Nfts]
 		[pezpallet_proxy, Proxy]
 		[pezpallet_recovery, Recovery]
@@ -1363,6 +1366,87 @@ impl_runtime_apis! {
 			1
 		}
 	}
+}
+
+/// The register's own rules, in storage rather than in the binary.
+///
+/// These are the numbers that decide how fast the electorate can grow and how wide one
+/// person's mistake reaches. They were compile-time constants, which meant changing one took a
+/// runtime upgrade -- a referendum. Moving them to storage is what gives a governance track
+/// something to turn; it is also, by itself, a loosening, so `AdminOrigin` below is deliberately
+/// Root until the register-rules track exists to hold them at their proper pace.
+///
+/// The defaults are the constants they replace, so genesis behaves exactly as it did.
+#[dynamic_params(RuntimeParameters, pezpallet_parameters::Parameters::<Runtime>)]
+pub mod dynamic_params {
+	use super::*;
+
+	#[dynamic_pezpallet_params]
+	#[codec(index = 0)]
+	pub mod qeyd {
+		/// How long a new citizen waits before vouching for anyone.
+		///
+		/// Bounds how *fast* a chain of vouching can deepen; capacity below bounds how *wide*
+		/// one person's mistake can be. The two are often confused, and confusing them costs
+		/// the register its growth.
+		#[codec(index = 0)]
+		pub static VouchingWaitingPeriod: BlockNumber = 1 * DAYS;
+
+		/// How many a new citizen may vouch for at first.
+		#[codec(index = 1)]
+		pub static InitialVouchingCapacity: u32 = 5;
+
+		/// How many settled vouches earn one more place.
+		#[codec(index = 2)]
+		pub static SettledVouchesPerPlace: u32 = 3;
+
+		/// The ceiling on one citizen's vouching width.
+		#[codec(index = 3)]
+		pub static MaxVouchingCapacity: u32 = 50;
+
+		/// Revocations before a voucher's record is judged at all.
+		///
+		/// The floor keeps a rate from meaning anything on small numbers; the share below keeps
+		/// a prolific and honest voucher from being stopped by three mistakes in a hundred.
+		#[codec(index = 4)]
+		pub static SuspensionRevocationFloor: u32 = 3;
+
+		/// The share of revocations that suspends a voucher.
+		#[codec(index = 5)]
+		pub static SuspensionRevocationPercent: u32 = 20;
+
+		/// Trust lost per revoked referral.
+		#[codec(index = 6)]
+		pub static PenaltyPerRevocation: u32 = 10;
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for RuntimeParameters {
+	fn default() -> Self {
+		RuntimeParameters::Qeyd(dynamic_params::qeyd::Parameters::InitialVouchingCapacity(
+			dynamic_params::qeyd::InitialVouchingCapacity,
+			Some(5),
+		))
+	}
+}
+
+impl pezpallet_parameters::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeParameters = RuntimeParameters;
+	// Root, and only until M5.1 gives the register's rules their own track.
+	//
+	// Today these numbers change by runtime upgrade, which on this chain means a referendum.
+	// Putting them in storage under any lighter origin would make the register's rules easier
+	// to change than they are now -- the opposite of what moving them is for. Root arrives here
+	// from the relay and keeps exactly the present bar until the slow track replaces it.
+	//
+	// Not `RegisterAuthority`: the court writes the register, and a body that both writes the
+	// entries and sets the rules for writing them has no rule above it.
+	type AdminOrigin = pezframe_support::traits::AsEnsureOriginWithArg<EnsureRoot<AccountId>>;
+	// The pallet's reference weight. A zero-weight extrinsic is a free block; a measured
+	// number for this chain comes with the next benchmarking pass.
+	type WeightInfo = weights::pezpallet_parameters::WeightInfo<Runtime>;
 }
 
 pezcumulus_pezpallet_teyrchain_system::register_validate_block! {

@@ -46,6 +46,10 @@ REGISTER_PALLETS = {
     "pezpallet_trust",
     "pezpallet_perwerde",
     "pezpallet_staking_score",
+    # Not a register itself: it holds the register's *rules* -- how long a new citizen waits
+    # before vouching, how wide one person's vouching reaches. Whoever turns those decides how
+    # fast the electorate can be manufactured, which is the same power one step back.
+    "pezpallet_parameters",
 }
 
 # Leaf classifications. `ok` means the producer is head-counted, a seated body, or a named
@@ -75,6 +79,12 @@ BAD_LEAF = [
 ]
 
 SPLIT = re.compile(r"^(EitherOf|EitherOfDiverse|EnsureOneOf)\s*<(.*)>$", re.S)
+
+# Wrappers that add an argument or a mapping and cannot widen who gets through. Unwrapped so
+# the leaf inside is classified rather than reported as unrecognised -- but listed one by one,
+# never matched by shape, because a wrapper that *does* widen would look exactly the same here.
+WRAP = re.compile(r"^(?:pezframe_support::traits::)?(AsEnsureOriginWithArg|MapSuccess|"
+                  r"TryMapSuccess|EnsureWithSuccess)\s*<(.*)>$", re.S)
 
 TIKI = REPO / "pezcumulus/teyrchains/pezpallets/tiki/src"
 
@@ -204,6 +214,10 @@ def leaves(expr, alias, hand, seen=None):
         return out
     if expr in alias and expr not in seen:
         return leaves(alias[expr], alias, hand, seen | {expr})
+    m = WRAP.match(expr)
+    if m:
+        # The origin is the first argument; the rest is the mapping or the success value.
+        return leaves(top_level_split(m.group(2))[0], alias, hand, seen)
     m = SPLIT.match(expr)
     if m:
         out = []
