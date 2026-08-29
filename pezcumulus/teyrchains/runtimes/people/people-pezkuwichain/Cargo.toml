@@ -58,12 +58,12 @@ pezpallet-scheduler = { workspace = true }
 pezpallet-session = { workspace = true }
 pezpallet-skip-feeless-payment = { workspace = true }
 pezpallet-society = { workspace = true }
-pezpallet-staking-score = { workspace = true }
-pezpallet-tiki = { workspace = true }
-pezpallet-timestamp = { workspace = true }
 pezpallet-staking-async-rc-client = { workspace = true, features = [
 	"xcm-sender",
 ] }
+pezpallet-staking-score = { workspace = true }
+pezpallet-tiki = { workspace = true }
+pezpallet-timestamp = { workspace = true }
 pezpallet-tnpos = { workspace = true }
 pezpallet-transaction-payment = { workspace = true }
 pezpallet-transaction-payment-rpc-runtime-api = { workspace = true }
@@ -177,10 +177,10 @@ std = [
 	"pezpallet-session/std",
 	"pezpallet-skip-feeless-payment/std",
 	"pezpallet-society/std",
+	"pezpallet-staking-async-rc-client/std",
 	"pezpallet-staking-score/std",
 	"pezpallet-tiki/std",
 	"pezpallet-timestamp/std",
-	"pezpallet-staking-async-rc-client/std",
 	"pezpallet-tnpos/std",
 	"pezpallet-transaction-payment-rpc-runtime-api/std",
 	"pezpallet-transaction-payment/std",
@@ -267,10 +267,10 @@ runtime-benchmarks = [
 	"pezpallet-session/runtime-benchmarks",
 	"pezpallet-skip-feeless-payment/runtime-benchmarks",
 	"pezpallet-society/runtime-benchmarks",
+	"pezpallet-staking-async-rc-client/runtime-benchmarks",
 	"pezpallet-staking-score/runtime-benchmarks",
 	"pezpallet-tiki/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
-	"pezpallet-staking-async-rc-client/runtime-benchmarks",
 	"pezpallet-tnpos/runtime-benchmarks",
 	"pezpallet-transaction-payment-rpc-runtime-api/runtime-benchmarks",
 	"pezpallet-transaction-payment/runtime-benchmarks",
@@ -281,8 +281,12 @@ runtime-benchmarks = [
 	"pezpallet-xcm-benchmarks/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",
 	"pezsp-api/runtime-benchmarks",
+	"pezsp-authority-discovery/runtime-benchmarks",
 	"pezsp-block-builder/runtime-benchmarks",
 	"pezsp-consensus-aura/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus-beefy/runtime-benchmarks",
+	"pezsp-consensus-grandpa/runtime-benchmarks",
 	"pezsp-genesis-builder/runtime-benchmarks",
 	"pezsp-inherents/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
@@ -346,10 +350,10 @@ try-runtime = [
 	"pezpallet-session/try-runtime",
 	"pezpallet-skip-feeless-payment/try-runtime",
 	"pezpallet-society/try-runtime",
+	"pezpallet-staking-async-rc-client/try-runtime",
 	"pezpallet-staking-score/try-runtime",
 	"pezpallet-tiki/try-runtime",
 	"pezpallet-timestamp/try-runtime",
-	"pezpallet-staking-async-rc-client/try-runtime",
 	"pezpallet-tnpos/try-runtime",
 	"pezpallet-transaction-payment-rpc-runtime-api/try-runtime",
 	"pezpallet-transaction-payment/try-runtime",
@@ -360,8 +364,12 @@ try-runtime = [
 	"pezpallet-xcm-benchmarks?/try-runtime",
 	"pezpallet-xcm/try-runtime",
 	"pezsp-api/try-runtime",
+	"pezsp-authority-discovery/try-runtime",
 	"pezsp-block-builder/try-runtime",
 	"pezsp-consensus-aura/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus-beefy/try-runtime",
+	"pezsp-consensus-grandpa/try-runtime",
 	"pezsp-genesis-builder/try-runtime",
 	"pezsp-inherents/try-runtime",
 	"pezsp-keyring/try-runtime",

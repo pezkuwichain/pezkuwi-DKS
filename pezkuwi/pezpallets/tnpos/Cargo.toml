@@ -29,7 +29,6 @@ scale-info = { workspace = true, default-features = false, features = ["derive"]
 [dev-dependencies]
 pezpallet-balances = { workspace = true }
 pezsp-core = { workspace = true }
-pezsp-io = { workspace = true }
 
 [features]
 default = ["std"]
@@ -42,6 +41,7 @@ std = [
 	"pezkuwi-tnpos-primitives/std",
 	"pezpallet-balances/std",
 	"pezpallet-session/std",
+	"pezsp-core/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
 	"pezsp-std/std",
@@ -52,11 +52,15 @@ runtime-benchmarks = [
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
+	"pezpallet-session/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 ]
 try-runtime = [
+	"pezframe-benchmarking?/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
 	"pezpallet-balances/try-runtime",
+	"pezpallet-session/try-runtime",
 	"pezsp-runtime/try-runtime",
 ]
