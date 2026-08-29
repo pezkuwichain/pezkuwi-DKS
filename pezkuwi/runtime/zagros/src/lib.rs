@@ -96,7 +96,6 @@ use pezframe_support::{
 	PalletId,
 };
 use pezframe_system::EnsureRoot;
-use pezkuwi_tnpos_primitives::scores::ScoreSnapshot;
 use pezpallet_grandpa::{fg_primitives, AuthorityId as GrandpaId};
 use pezpallet_session::historical as session_historical;
 use pezpallet_staking_async_ah_client as ah_client;
@@ -492,8 +491,12 @@ impl pezpallet_session::Config for Runtime {
 	type ValidatorIdOf = ValidatorIdOf;
 	type ShouldEndSession = Babe;
 	type NextSessionRotation = Babe;
-	type SessionManager =
-		pezpallet_session::historical::NoteHistoricalRoot<Self, TnposSessionManager>;
+	// Back to `StakingAhClient`, which is what mainnet uses and what the Asset Hub's exporter
+	// is aimed at. TNPoS was wired here and the placement turned out to be wrong: it reads five
+	// scores that all live on the People chain, so drawing the committee on the relay means
+	// importing them across a chain boundary -- and a partial import seats a committee whose
+	// stratum proportions are silently wrong. It is being rewired on People instead.
+	type SessionManager = pezpallet_session::historical::NoteHistoricalRoot<Self, StakingAhClient>;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
 	type DisablingStrategy = ();
@@ -697,130 +700,13 @@ impl ah_client::Config for Runtime {
 	type MaxSessionReportRetries = ConstU32<64>;
 }
 
-// =====================================================
-// TNPOS CONFIGURATION
-// =====================================================
-
-/// Score source. Still a stub: the People-chain channel is M7.1 and the staking-score
-/// oracle is M7.0, which blocks mainnet. Timestamps are current, so nothing reads as stale
-/// while the real channel is absent.
-pub struct StubScores;
-impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for StubScores {
-	fn trust_of(_: &AccountId) -> ScoreSnapshot<BlockNumber> {
-		ScoreSnapshot { value: 1_000, last_updated: System::block_number() }
-	}
-	fn tiki_of(_: &AccountId) -> ScoreSnapshot<BlockNumber> {
-		ScoreSnapshot { value: 0, last_updated: System::block_number() }
-	}
-	fn perwerde_of(_: &AccountId) -> ScoreSnapshot<BlockNumber> {
-		ScoreSnapshot { value: 0, last_updated: System::block_number() }
-	}
-	fn referral_of(_: &AccountId) -> ScoreSnapshot<BlockNumber> {
-		ScoreSnapshot { value: 0, last_updated: System::block_number() }
-	}
-	fn staking_of(_: &AccountId) -> ScoreSnapshot<BlockNumber> {
-		ScoreSnapshot { value: 0, last_updated: System::block_number() }
-	}
-}
-
-parameter_types! {
-	pub const TnposMaxScoreAge: BlockNumber = 4 * HOURS;
-	pub const TnposEraLength: BlockNumber = 6 * HOURS;
-	pub const TnposMaxPoolSize: u32 = 1_000;
-}
-
-/// Zagros's scores are stubs that already answer for every account, so the score half of
-/// eligibility needs no arrangement: `StubScores::trust_of` returns a fresh non-zero value,
-/// which is what the six trust-gated strata ask for. When the People-chain channel replaces
-/// the stub this must arrange real standing instead.
-///
-/// Session keys are not stubbed, and `do_join` now checks them for real (see
-/// `HasSessionKeys`), so a benchmark account needs an actual registration -- generated and
-/// submitted the same way `pezpallet-session`'s own benchmarks do it for a validator under
-/// test (`bizinikiwi/pezframe/session/benchmarking/src/inner.rs`): generate a key pair with
-/// its ownership proof, then call the real `set_keys` extrinsic rather than writing
-/// `NextKeys` by hand, so the benchmarked path is the one a real validator goes through.
-#[cfg(feature = "runtime-benchmarks")]
-pub struct TnposBenchmarkHelper;
-#[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
-	fn make_eligible(who: &AccountId, _stratum: pezkuwi_tnpos_primitives::StratumId) {
-		let generated = SessionKeys::generate(&who.encode(), None);
-		pezpallet_session::Pezpallet::<Runtime>::ensure_can_pay_key_deposit(who)
-			.expect("a benchmark account can always be funded for the key deposit; qed");
-		pezpallet_session::Pezpallet::<Runtime>::set_keys(
-			pezframe_system::RawOrigin::Signed(who.clone()).into(),
-			generated.keys,
-			generated.proof.encode(),
-		)
-		.expect("a freshly generated key pair must register; qed");
-	}
-}
-
-/// Whether an account has registered session keys, read from the session pallet itself.
-///
-/// This is what `pezpallet_session::rotate_session` consults before seating a validator;
-/// asking anywhere else -- the pool, a cache -- would let the two disagree.
-pub struct SessionHasKeys;
-impl pezpallet_tnpos::HasSessionKeys<AccountId> for SessionHasKeys {
-	fn has_keys(who: &AccountId) -> bool {
-		pezpallet_session::Pezpallet::<Runtime>::load_keys(who).is_some()
-	}
-}
-
-impl pezpallet_tnpos::Config for Runtime {
-	type WeightInfo = ();
-	type Sortition = pezpallet_tnpos::seed::CommitRevealSortition<Runtime>;
-	type Scores = StubScores;
-	type HasSessionKeys = SessionHasKeys;
-	type ManagerOrigin = EnsureRoot<AccountId>;
-	type MaxScoreAge = TnposMaxScoreAge;
-	type EraLength = TnposEraLength;
-	type MaxPoolSize = TnposMaxPoolSize;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = TnposBenchmarkHelper;
-}
-
-/// Presents the TNPoS committee to the historical session pallet.
-///
-/// `NoteHistoricalRoot` wants a `historical::SessionManager`, which pairs each validator
-/// with a full identification. `pezpallet-tnpos` implements only the plain trait on purpose:
-/// exposure is an Asset Hub concern, and eight of the nine strata carry no stake at all.
-/// `ExposureOfOrDefault` already answers `Some(Default::default())` for every account on
-/// this chain for that same reason, so pairing with a default here invents nothing.
-pub struct TnposSessionManager;
-
-impl pezpallet_session::SessionManager<AccountId> for TnposSessionManager {
-	fn new_session(index: SessionIndex) -> Option<Vec<AccountId>> {
-		<Tnpos as pezpallet_session::SessionManager<AccountId>>::new_session(index)
-	}
-	fn start_session(index: SessionIndex) {
-		<Tnpos as pezpallet_session::SessionManager<AccountId>>::start_session(index)
-	}
-	fn end_session(index: SessionIndex) {
-		<Tnpos as pezpallet_session::SessionManager<AccountId>>::end_session(index)
-	}
-}
-
-impl
-	pezpallet_session::historical::SessionManager<
-		AccountId,
-		pezsp_staking::Exposure<AccountId, Balance>,
-	> for TnposSessionManager
-{
-	fn new_session(
-		index: SessionIndex,
-	) -> Option<Vec<(AccountId, pezsp_staking::Exposure<AccountId, Balance>)>> {
-		<Tnpos as pezpallet_session::SessionManager<AccountId>>::new_session(index)
-			.map(|set| set.into_iter().map(|who| (who, Default::default())).collect())
-	}
-	fn start_session(index: SessionIndex) {
-		<Tnpos as pezpallet_session::SessionManager<AccountId>>::start_session(index)
-	}
-	fn end_session(index: SessionIndex) {
-		<Tnpos as pezpallet_session::SessionManager<AccountId>>::end_session(index)
-	}
-}
+// TNPoS was configured here and is now configured on the People chain instead. The pallet is
+// unchanged -- the nine strata, the sampling, the security floor, the seed and the penalties
+// never referred to the relay -- and nothing of it is lost by unwiring: what was wrong was the
+// placement, not the mechanism. See `M7-YER` in the plan for the measurement that moved it.
+//
+// The relay does not elect; it receives. That is already this network's shape for staking, and
+// TNPoS now follows it.
 
 // =====================================================
 // COUNCIL CONFIGURATION
@@ -1645,7 +1531,6 @@ construct_runtime! {
 		// === CUSTOM PEZKUWI PALLETS ===
 		// TNPoS: draws the validator committee and is the session manager (see
 		// `pezpallet_session::Config::SessionManager` above).
-		Tnpos: pezpallet_tnpos = 91,
 
 		// Root testing pezpallet.
 		RootTesting: pezpallet_root_testing = 249,
@@ -2008,7 +1893,6 @@ mod benches {
 		[pezpallet_vesting, Vesting]
 		[pezpallet_whitelist, Whitelist]
 		// Pezkuwichain Custom Pallets
-		[pezpallet_tnpos, Tnpos]
 		// XCM
 		[pezpallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pezpallet_xcm_benchmarks::fungible, pezpallet_xcm_benchmarks::fungible::Pezpallet::<Runtime>]
@@ -2892,21 +2776,40 @@ mod remote_tests {
 }
 
 #[cfg(test)]
-mod tnpos_wiring {
+mod session_manager_wiring {
 	use super::*;
 
-	// The pallet this replaces implemented SessionManager and was never wired to anything,
-	// so none of it ever ran. This asserts the type actually reaches session.
+	/// The relay receives its validator set; it does not elect one.
+	///
+	/// This test used to assert the opposite -- that TNPoS was reachable from session -- and it
+	/// was right to exist, because the pallet it replaced implemented `SessionManager` and was
+	/// wired to nothing, so none of it ever ran. The assertion is inverted rather than deleted
+	/// for the same reason: TNPoS is being placed on the People chain, where the five scores it
+	/// reads actually live, and wiring it back here would silently reintroduce the fault that
+	/// moved it -- a committee drawn from scores that crossed a chain boundary, where three of
+	/// five arriving stale seats a committee whose stratum proportions are wrong while storage
+	/// still says they are right.
+	///
+	/// Exactly one thing may hand this chain a validator set. Today that is `StakingAhClient`,
+	/// which is also what mainnet uses; when TNPoS exports from People it takes that place, and
+	/// the Asset Hub's exporter has to stop at the same moment. Two exporters is the state this
+	/// branch was in for a while: the Asset Hub kept sending a set every era, the relay kept
+	/// receiving it, and nothing used it.
 	#[test]
-	fn tnpos_is_the_session_manager() {
+	fn the_relay_does_not_elect_its_own_validators() {
 		fn assert_is_manager<M: pezpallet_session::SessionManager<AccountId>>() {}
 		assert_is_manager::<<Runtime as pezpallet_session::Config>::SessionManager>();
+
 		let wired =
 			core::any::type_name::<<Runtime as pezpallet_session::Config>::SessionManager>()
 				.to_lowercase();
 		assert!(
-			wired.contains("tnpos"),
-			"TNPoS must be reachable from session, not merely compiled: {wired}"
+			!wired.contains("tnpos"),
+			"TNPoS is wired to the relay's session again; it belongs where the register is: {wired}"
+		);
+		assert!(
+			wired.contains("ah_client"),
+			"something other than the Asset Hub's client is seating validators: {wired}"
 		);
 	}
 }
