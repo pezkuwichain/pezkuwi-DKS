@@ -97,6 +97,7 @@ use pezframe_support::{
 };
 use pezframe_system::EnsureRoot;
 use pezpallet_grandpa::{fg_primitives, AuthorityId as GrandpaId};
+use pezkuwi_tnpos_primitives::scores::ScoreSnapshot;
 use pezpallet_session::historical as session_historical;
 use pezpallet_staking_async_ah_client as ah_client;
 use pezpallet_staking_async_rc_client as rc_client;
@@ -491,7 +492,8 @@ impl pezpallet_session::Config for Runtime {
 	type ValidatorIdOf = ValidatorIdOf;
 	type ShouldEndSession = Babe;
 	type NextSessionRotation = Babe;
-	type SessionManager = pezpallet_session::historical::NoteHistoricalRoot<Self, StakingAhClient>;
+	type SessionManager =
+		pezpallet_session::historical::NoteHistoricalRoot<Self, TnposSessionManager>;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
 	type DisablingStrategy = ();
@@ -696,62 +698,86 @@ impl ah_client::Config for Runtime {
 }
 
 // =====================================================
-// VALIDATOR POOL CONFIGURATION (TNPoS Shadow Mode)
+// TNPOS CONFIGURATION
 // =====================================================
 
-/// Stub Trust Score Provider - returns default trust for shadow mode
-/// Will be replaced with XCM cache from People Teyrchain in Phase 5
-pub struct StubTrustProvider;
-impl pezpallet_validator_pool::TrustScoreProvider<AccountId> for StubTrustProvider {
-	fn trust_score_of(_who: &AccountId) -> u128 {
-		1000 // Default trust score for shadow mode
+/// Score source. Still a stub: the People-chain channel is M7.1 and the staking-score
+/// oracle is M7.0, which blocks mainnet. Timestamps are current, so nothing reads as stale
+/// while the real channel is absent.
+pub struct StubScores;
+impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for StubScores {
+	fn trust_of(_: &AccountId) -> ScoreSnapshot<BlockNumber> {
+		ScoreSnapshot { value: 1_000, last_updated: System::block_number() }
 	}
-}
-
-/// Stub Tiki Score Provider - returns default tiki for shadow mode
-/// Will be replaced with XCM cache from People Teyrchain in Phase 5
-pub struct StubTikiProvider;
-impl pezpallet_validator_pool::TikiScoreProvider<AccountId> for StubTikiProvider {
-	fn get_tiki_score(_who: &AccountId) -> u32 {
-		0 // No tiki in shadow mode
+	fn tiki_of(_: &AccountId) -> ScoreSnapshot<BlockNumber> {
+		ScoreSnapshot { value: 0, last_updated: System::block_number() }
 	}
-}
-
-/// Stub Referral Provider - returns default referral count for shadow mode
-/// Will be replaced with XCM cache from People Teyrchain in Phase 5
-pub struct StubReferralProvider;
-impl pezpallet_validator_pool::types::ReferralProvider<AccountId> for StubReferralProvider {
-	fn get_referral_count(_who: &AccountId) -> u32 {
-		0 // No referrals in shadow mode
+	fn perwerde_of(_: &AccountId) -> ScoreSnapshot<BlockNumber> {
+		ScoreSnapshot { value: 0, last_updated: System::block_number() }
 	}
-}
-
-/// Stub Perwerde Provider - returns default perwerde score for shadow mode
-/// Will be replaced with XCM cache from People Teyrchain in Phase 5
-pub struct StubPerwerdeProvider;
-impl pezpallet_validator_pool::types::PerwerdeProvider<AccountId> for StubPerwerdeProvider {
-	fn get_perwerde_score(_who: &AccountId) -> u32 {
-		0 // No perwerde in shadow mode
+	fn referral_of(_: &AccountId) -> ScoreSnapshot<BlockNumber> {
+		ScoreSnapshot { value: 0, last_updated: System::block_number() }
+	}
+	fn staking_of(_: &AccountId) -> ScoreSnapshot<BlockNumber> {
+		ScoreSnapshot { value: 0, last_updated: System::block_number() }
 	}
 }
 
 parameter_types! {
-	pub const ValidatorPoolMaxValidators: u32 = 21; // Target: 10 stake + 6 parliamentary + 5 merit
-	pub const ValidatorPoolMaxPoolSize: u32 = 1000;
-	pub const ValidatorPoolMinStakeAmount: u128 = 100 * UNITS;
+	pub const TnposMaxScoreAge: BlockNumber = 4 * HOURS;
+	pub const TnposEraLength: BlockNumber = 6 * HOURS;
+	pub const TnposMaxPoolSize: u32 = 1_000;
 }
 
-impl pezpallet_validator_pool::Config for Runtime {
-	type WeightInfo = pezpallet_validator_pool::weights::BizinikiwiWeight<Runtime>;
-	type Randomness = pezpallet_babe::RandomnessFromOneEpochAgo<Runtime>;
-	type TrustSource = StubTrustProvider;
-	type TikiSource = StubTikiProvider;
-	type ReferralSource = StubReferralProvider;
-	type PerwerdeSource = StubPerwerdeProvider;
-	type PoolManagerOrigin = EnsureRoot<AccountId>;
-	type MaxValidators = ValidatorPoolMaxValidators;
-	type MaxPoolSize = ValidatorPoolMaxPoolSize;
-	type MinStakeAmount = ValidatorPoolMinStakeAmount;
+impl pezpallet_tnpos::Config for Runtime {
+	type WeightInfo = ();
+	type Sortition = pezpallet_tnpos::seed::CommitRevealSortition<Runtime>;
+	type Scores = StubScores;
+	type ManagerOrigin = EnsureRoot<AccountId>;
+	type MaxScoreAge = TnposMaxScoreAge;
+	type EraLength = TnposEraLength;
+	type MaxPoolSize = TnposMaxPoolSize;
+}
+
+/// Presents the TNPoS committee to the historical session pallet.
+///
+/// `NoteHistoricalRoot` wants a `historical::SessionManager`, which pairs each validator
+/// with a full identification. `pezpallet-tnpos` implements only the plain trait on purpose:
+/// exposure is an Asset Hub concern, and eight of the nine strata carry no stake at all.
+/// `ExposureOfOrDefault` already answers `Some(Default::default())` for every account on
+/// this chain for that same reason, so pairing with a default here invents nothing.
+pub struct TnposSessionManager;
+
+impl pezpallet_session::SessionManager<AccountId> for TnposSessionManager {
+	fn new_session(index: SessionIndex) -> Option<Vec<AccountId>> {
+		<Tnpos as pezpallet_session::SessionManager<AccountId>>::new_session(index)
+	}
+	fn start_session(index: SessionIndex) {
+		<Tnpos as pezpallet_session::SessionManager<AccountId>>::start_session(index)
+	}
+	fn end_session(index: SessionIndex) {
+		<Tnpos as pezpallet_session::SessionManager<AccountId>>::end_session(index)
+	}
+}
+
+impl
+	pezpallet_session::historical::SessionManager<
+		AccountId,
+		pezsp_staking::Exposure<AccountId, Balance>,
+	> for TnposSessionManager
+{
+	fn new_session(
+		index: SessionIndex,
+	) -> Option<Vec<(AccountId, pezsp_staking::Exposure<AccountId, Balance>)>> {
+		<Tnpos as pezpallet_session::SessionManager<AccountId>>::new_session(index)
+			.map(|set| set.into_iter().map(|who| (who, Default::default())).collect())
+	}
+	fn start_session(index: SessionIndex) {
+		<Tnpos as pezpallet_session::SessionManager<AccountId>>::start_session(index)
+	}
+	fn end_session(index: SessionIndex) {
+		<Tnpos as pezpallet_session::SessionManager<AccountId>>::end_session(index)
+	}
 }
 
 // =====================================================
@@ -1575,8 +1601,9 @@ construct_runtime! {
 		StateTrieMigration: pezpallet_state_trie_migration = 254,
 
 		// === CUSTOM PEZKUWI PALLETS ===
-		// TNPoS Validator Pool - Shadow Mode (runs parallel to NPoS)
-		ValidatorPool: pezpallet_validator_pool = 91,
+		// TNPoS: draws the validator committee and is the session manager (see
+		// `pezpallet_session::Config::SessionManager` above).
+		Tnpos: pezpallet_tnpos = 91,
 
 		// Root testing pezpallet.
 		RootTesting: pezpallet_root_testing = 249,
@@ -1939,7 +1966,7 @@ mod benches {
 		[pezpallet_vesting, Vesting]
 		[pezpallet_whitelist, Whitelist]
 		// Pezkuwichain Custom Pallets
-		[pezpallet_validator_pool, ValidatorPool]
+		[pezpallet_tnpos, Tnpos]
 		// XCM
 		[pezpallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pezpallet_xcm_benchmarks::fungible, pezpallet_xcm_benchmarks::fungible::Pezpallet::<Runtime>]
@@ -2816,5 +2843,26 @@ mod remote_tests {
 			.await
 			.unwrap();
 		ext.execute_with(|| Runtime::on_runtime_upgrade(UpgradeCheckSelect::PreAndPost));
+	}
+}
+
+#[cfg(test)]
+mod tnpos_wiring {
+	use super::*;
+
+	// The pallet this replaces implemented SessionManager and was never wired to anything,
+	// so none of it ever ran. This asserts the type actually reaches session.
+	#[test]
+	fn tnpos_is_the_session_manager() {
+		fn assert_is_manager<M: pezpallet_session::SessionManager<AccountId>>() {}
+		assert_is_manager::<<Runtime as pezpallet_session::Config>::SessionManager>();
+		let wired = core::any::type_name::<
+			<Runtime as pezpallet_session::Config>::SessionManager,
+		>()
+		.to_lowercase();
+		assert!(
+			wired.contains("tnpos"),
+			"TNPoS must be reachable from session, not merely compiled: {wired}"
+		);
 	}
 }

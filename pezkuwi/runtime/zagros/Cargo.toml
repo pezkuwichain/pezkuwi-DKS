@@ -111,7 +111,8 @@ pezkuwi-runtime-teyrchains = { workspace = true }
 pezkuwi-teyrchain-primitives = { workspace = true }
 
 # Custom Pezkuwi Pallets
-pezpallet-validator-pool = { workspace = true }
+pezkuwi-tnpos-primitives = { workspace = true }
+pezpallet-tnpos = { workspace = true }
 
 xcm = { workspace = true }
 xcm-builder = { workspace = true }
@@ -151,6 +152,7 @@ std = [
 	"pezkuwi-runtime-common/std",
 	"pezkuwi-runtime-teyrchains/std",
 	"pezkuwi-teyrchain-primitives/std",
+	"pezkuwi-tnpos-primitives/std",
 	"pezpallet-accumulate-and-forward/std",
 	"pezpallet-authority-discovery/std",
 	"pezpallet-authorship/std",
@@ -186,11 +188,11 @@ std = [
 	"pezpallet-state-trie-migration/std",
 	"pezpallet-sudo/std",
 	"pezpallet-timestamp/std",
+	"pezpallet-tnpos/std",
 	"pezpallet-transaction-payment-rpc-runtime-api/std",
 	"pezpallet-transaction-payment/std",
 	"pezpallet-treasury/std",
 	"pezpallet-utility/std",
-	"pezpallet-validator-pool/std",
 	"pezpallet-vesting/std",
 	"pezpallet-whitelist/std",
 	"pezpallet-xcm-benchmarks?/std",
@@ -278,11 +280,11 @@ runtime-benchmarks = [
 	"pezpallet-state-trie-migration/runtime-benchmarks",
 	"pezpallet-sudo/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-tnpos/runtime-benchmarks",
 	"pezpallet-transaction-payment-rpc-runtime-api/runtime-benchmarks",
 	"pezpallet-transaction-payment/runtime-benchmarks",
 	"pezpallet-treasury/runtime-benchmarks",
 	"pezpallet-utility/runtime-benchmarks",
-	"pezpallet-validator-pool/runtime-benchmarks",
 	"pezpallet-vesting/runtime-benchmarks",
 	"pezpallet-whitelist/runtime-benchmarks",
 	"pezpallet-xcm-benchmarks/runtime-benchmarks",
@@ -360,11 +362,11 @@ try-runtime = [
 	"pezpallet-state-trie-migration/try-runtime",
 	"pezpallet-sudo/try-runtime",
 	"pezpallet-timestamp/try-runtime",
+	"pezpallet-tnpos/try-runtime",
 	"pezpallet-transaction-payment-rpc-runtime-api/try-runtime",
 	"pezpallet-transaction-payment/try-runtime",
 	"pezpallet-treasury/try-runtime",
 	"pezpallet-utility/try-runtime",
-	"pezpallet-validator-pool/try-runtime",
 	"pezpallet-vesting/try-runtime",
 	"pezpallet-whitelist/try-runtime",
 	"pezpallet-xcm-benchmarks?/try-runtime",

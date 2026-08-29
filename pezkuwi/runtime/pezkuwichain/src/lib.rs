@@ -696,65 +696,6 @@ impl ah_client::Config for Runtime {
 }
 
 // =====================================================
-// VALIDATOR POOL CONFIGURATION (TNPoS Shadow Mode)
-// =====================================================
-
-/// Stub Trust Score Provider - returns default trust for shadow mode
-/// Will be replaced with XCM cache from People Teyrchain in Phase 5
-pub struct StubTrustProvider;
-impl pezpallet_validator_pool::TrustScoreProvider<AccountId> for StubTrustProvider {
-	fn trust_score_of(_who: &AccountId) -> u128 {
-		1000 // Default trust score for shadow mode
-	}
-}
-
-/// Stub Tiki Score Provider - returns default tiki for shadow mode
-/// Will be replaced with XCM cache from People Teyrchain in Phase 5
-pub struct StubTikiProvider;
-impl pezpallet_validator_pool::TikiScoreProvider<AccountId> for StubTikiProvider {
-	fn get_tiki_score(_who: &AccountId) -> u32 {
-		0 // No tiki in shadow mode
-	}
-}
-
-/// Stub Referral Provider - returns default referral count for shadow mode
-/// Will be replaced with XCM cache from People Teyrchain in Phase 5
-pub struct StubReferralProvider;
-impl pezpallet_validator_pool::types::ReferralProvider<AccountId> for StubReferralProvider {
-	fn get_referral_count(_who: &AccountId) -> u32 {
-		0 // No referrals in shadow mode
-	}
-}
-
-/// Stub Perwerde Provider - returns default perwerde score for shadow mode
-/// Will be replaced with XCM cache from People Teyrchain in Phase 5
-pub struct StubPerwerdeProvider;
-impl pezpallet_validator_pool::types::PerwerdeProvider<AccountId> for StubPerwerdeProvider {
-	fn get_perwerde_score(_who: &AccountId) -> u32 {
-		0 // No perwerde in shadow mode
-	}
-}
-
-parameter_types! {
-	pub const ValidatorPoolMaxValidators: u32 = 21; // Target: 10 stake + 6 parliamentary + 5 merit
-	pub const ValidatorPoolMaxPoolSize: u32 = 1000;
-	pub const ValidatorPoolMinStakeAmount: u128 = 100 * UNITS;
-}
-
-impl pezpallet_validator_pool::Config for Runtime {
-	type WeightInfo = pezpallet_validator_pool::weights::BizinikiwiWeight<Runtime>;
-	type Randomness = pezpallet_babe::RandomnessFromOneEpochAgo<Runtime>;
-	type TrustSource = StubTrustProvider;
-	type TikiSource = StubTikiProvider;
-	type ReferralSource = StubReferralProvider;
-	type PerwerdeSource = StubPerwerdeProvider;
-	type PoolManagerOrigin = EnsureRoot<AccountId>;
-	type MaxValidators = ValidatorPoolMaxValidators;
-	type MaxPoolSize = ValidatorPoolMaxPoolSize;
-	type MinStakeAmount = ValidatorPoolMinStakeAmount;
-}
-
-// =====================================================
 // COUNCIL CONFIGURATION
 // =====================================================
 
@@ -1575,8 +1516,10 @@ construct_runtime! {
 		StateTrieMigration: pezpallet_state_trie_migration = 254,
 
 		// === CUSTOM PEZKUWI PALLETS ===
-		// TNPoS Validator Pool - Shadow Mode (runs parallel to NPoS)
-		ValidatorPool: pezpallet_validator_pool = 91,
+		// RIP ValidatorPool 91 - it implemented SessionManager but was never wired to
+		// anything, so its shadow-mode apparatus ran zero times. TNPoS replaces it on
+		// Zagros; it does not land here yet because the staking-score oracle it needs is
+		// still open (M7.0). Index left unused on purpose.
 
 		// Root testing pezpallet.
 		RootTesting: pezpallet_root_testing = 249,
@@ -1938,8 +1881,6 @@ mod benches {
 		[pezpallet_utility, Utility]
 		[pezpallet_vesting, Vesting]
 		[pezpallet_whitelist, Whitelist]
-		// Pezkuwichain Custom Pallets
-		[pezpallet_validator_pool, ValidatorPool]
 		// XCM
 		[pezpallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
 		[pezpallet_xcm_benchmarks::fungible, pezpallet_xcm_benchmarks::fungible::Pezpallet::<Runtime>]

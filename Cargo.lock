@@ -15978,7 +15978,6 @@ dependencies = [
  "pezpallet-transaction-payment-rpc-runtime-api",
  "pezpallet-treasury",
  "pezpallet-utility",
- "pezpallet-validator-pool",
  "pezpallet-vesting",
  "pezpallet-whitelist",
  "pezpallet-xcm",
@@ -19262,27 +19261,6 @@ dependencies = [
  "pezsp-io",
  "pezsp-runtime",
  "scale-info",
-]
-
-[[package]]
-name = "pezpallet-validator-pool"
-version = "1.0.0"
-dependencies = [
- "log",
- "parity-scale-codec",
- "pezframe-benchmarking",
- "pezframe-support",
- "pezframe-system",
- "pezpallet-balances",
- "pezpallet-session",
- "pezpallet-timestamp",
- "pezsp-core",
- "pezsp-io",
- "pezsp-runtime",
- "pezsp-staking",
- "pezsp-std",
- "scale-info",
- "serde",
 ]
 
 [[package]]
@@ -30068,6 +30046,7 @@ dependencies = [
  "pezkuwi-runtime-common",
  "pezkuwi-runtime-teyrchains",
  "pezkuwi-teyrchain-primitives",
+ "pezkuwi-tnpos-primitives",
  "pezpallet-accumulate-and-forward",
  "pezpallet-authority-discovery",
  "pezpallet-authorship",
@@ -30103,11 +30082,11 @@ dependencies = [
  "pezpallet-state-trie-migration",
  "pezpallet-sudo",
  "pezpallet-timestamp",
+ "pezpallet-tnpos",
  "pezpallet-transaction-payment",
  "pezpallet-transaction-payment-rpc-runtime-api",
  "pezpallet-treasury",
  "pezpallet-utility",
- "pezpallet-validator-pool",
  "pezpallet-vesting",
  "pezpallet-whitelist",
  "pezpallet-xcm",

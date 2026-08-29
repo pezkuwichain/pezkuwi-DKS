@@ -80,9 +80,10 @@
 //! - Provides referral scores for composite trust calculation
 //! - Contributes to overall reputation metrics
 //!
-//! ### With pezpallet-validator-pool
-//! - Community validator category requires referral participation
-//! - Referral count affects pool eligibility
+//! ### With pezpallet-tnpos
+//! - Referral score is one of the components trust is computed from, and trust gates six of
+//!   the nine strata a validator committee is drawn from
+//! - It is not a gate of its own: there is no stratum an account enters by referrals alone
 //!
 //! ## Runtime Integration Example
 //!
