@@ -110,6 +110,51 @@ mod tests {
 		assert!((55.0..65.0).contains(&years), "fork interval drifted: {years} years");
 	}
 
+	// The module doc claims the published numbers and the tested numbers cannot drift
+	// apart. `the_published_budget_reproduces` above locks exactly one of the eight rows
+	// in section 5's table; this locks the rest, so the claim is actually true.
+	#[test]
+	fn every_published_row_reproduces() {
+		// Two significant figures is what the table is printed to, so a match within ten
+		// percent is a match; anything looser would let a genuinely wrong number through,
+		// and anything tighter would fail on the table's own rounding.
+		fn approx_rel(got: f64, published: f64, rel: f64) {
+			assert!((got - published).abs() <= rel * published, "got {got}, published {published}");
+		}
+
+		// `n` strata fully captured (adversary equals the tiny pool outright), the rest
+		// drawing from `spread`.
+		fn captured(n: usize, spread: Vec<f64>) -> Vec<Vec<f64>> {
+			let mut per = vec![stratum_distribution(3, 3, 3); n];
+			per.extend(std::iter::repeat(spread).take(9 - n));
+			per
+		}
+
+		// (per-stratum distributions, published P(halt), published P(fork))
+		let rows: [(Vec<Vec<f64>>, f64, f64); 8] = [
+			(vec![stratum_distribution(200, 4, 3); 9], 8.7e-10, 6.5e-13), // Sybil %2
+			(vec![stratum_distribution(200, 10, 3); 9], 3.2e-06, 2.1e-08), // Sybil %5
+			(vec![stratum_distribution(200, 20, 3); 9], 8.1e-04, 2.5e-05), // Sybil %10
+			(vec![stratum_distribution(200, 40, 3); 9], 7.3e-02, 1.1e-02), // Sybil %20
+			(captured(1, stratum_distribution(200, 10, 3)), 8.8e-04, 1.2e-05), // 1 erk TAM + %5
+			(captured(1, stratum_distribution(200, 20, 3)), 2.7e-02, 1.6e-03), // 1 erk TAM + %10
+			(captured(2, stratum_distribution(200, 10, 3)), 8.4e-02, 3.0e-03), // 2 erk TAM + %5
+			(captured(3, stratum_distribution(200, 0, 3)), 1.00, 0.0),    // 3 erk TAM
+		];
+
+		for (per, want_halt, want_fork) in rows {
+			let d = committee_distribution(&per);
+			let got_halt = tail(&d, halt_threshold(27));
+			let got_fork = tail(&d, fork_threshold(27));
+			if want_fork == 0.0 {
+				assert_eq!(got_fork, 0.0, "three captured strata cap the fork chance at zero");
+			} else {
+				approx_rel(got_fork, want_fork, 0.1);
+			}
+			approx_rel(got_halt, want_halt, 0.1);
+		}
+	}
+
 	// This is what the runtime's `min_eligible` floor has to buy. Below fifty eligible
 	// members a stratum holding ten adversaries loses all three seats far too often.
 	#[test]

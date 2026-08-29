@@ -9,10 +9,17 @@ use crate::*;
 
 impl<T: Config> Pezpallet<T> {
 	/// Candidates standing in `stratum`, bounded by `MaxPoolSize`.
+	///
+	/// Filtered on session keys here as well as at `join`: `join` keeps a keyless account
+	/// out, but an account can deregister its keys after joining and would otherwise stay
+	/// in `PoolMembers` with nothing to back a seat. Checking both places closes both the
+	/// entry and the standing-membership route to the same silent drop in session.
 	fn candidates(stratum: StratumId) -> Vec<T::AccountId> {
 		PoolMembers::<T>::iter()
 			.take(T::MaxPoolSize::get() as usize)
-			.filter_map(|(who, s)| (s == stratum).then_some(who))
+			.filter_map(|(who, s)| {
+				(s == stratum && T::HasSessionKeys::has_keys(&who)).then_some(who)
+			})
 			.collect()
 	}
 
@@ -41,7 +48,8 @@ impl<T: Config> Pezpallet<T> {
 			| InvariantError::EmptyStratum
 			| InvariantError::DuplicateStratum
 			| InvariantError::CommitteeTooLarge
-			| InvariantError::DegenerateCommitteeSize => Error::<T>::UnseatableConfiguration,
+			| InvariantError::DegenerateCommitteeSize
+			| InvariantError::FloorTooLow => Error::<T>::UnseatableConfiguration,
 		})?;
 
 		let era = CurrentEra::<T>::get().saturating_add(1);
@@ -50,6 +58,11 @@ impl<T: Config> Pezpallet<T> {
 			let pool = Self::candidates(cfg.id);
 			let drawn = T::Sortition::select(era, cfg.id, &pool, cfg.seats)
 				.ok_or(Error::<T>::UnseatableConfiguration)?;
+			// `seat` judged this stratum on `StratumSize`, which counts pool membership;
+			// `candidates` filters that same pool by session keys. If enough members have
+			// deregistered, the draw comes back short -- and a short draw seated anyway
+			// would announce a committee, and a quorum, that do not exist.
+			ensure!(drawn.len() as u32 == cfg.seats, Error::<T>::UnseatableConfiguration);
 			committee.extend(drawn);
 		}
 

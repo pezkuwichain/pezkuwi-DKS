@@ -34,7 +34,9 @@ fn set_strata_requires_the_manager_origin() {
 fn joining_measures_the_score_it_does_not_take_the_callers_word() {
 	new_test_ext().execute_with(|| {
 		// ALICE has no perwerde credential in the mock; nothing she can put in the call
-		// should get her into that stratum.
+		// should get her into that stratum. Keys are granted up front so this failure is
+		// the score gate, not the session-keys gate underneath it.
+		ensure_has_keys(ALICE);
 		set_perwerde(ALICE, 0);
 		assert_noop!(
 			Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde),
@@ -50,6 +52,7 @@ fn joining_measures_the_score_it_does_not_take_the_callers_word() {
 #[test]
 fn a_stale_score_blocks_joining_and_says_so() {
 	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
 		set_perwerde_at(ALICE, 500, 1);
 		run_to_block(1 + MaxScoreAge::get() + 1);
 		// Not NotEligible: the account may well qualify. The chain simply does not know.
@@ -63,6 +66,7 @@ fn a_stale_score_blocks_joining_and_says_so() {
 #[test]
 fn a_member_stands_in_exactly_one_stratum() {
 	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
 		set_perwerde(ALICE, 500);
 		set_tiki(ALICE, 500);
 		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
@@ -76,6 +80,7 @@ fn a_member_stands_in_exactly_one_stratum() {
 #[test]
 fn leaving_decrements_the_stratum_it_left() {
 	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
 		set_perwerde(ALICE, 500);
 		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
 		assert_ok!(Tnpos::leave(RuntimeOrigin::signed(ALICE)));
@@ -90,6 +95,7 @@ fn office_tikis_do_not_open_the_tiki_stratum() {
 	// assembly, so counting it here would quietly collapse two strata into one and the
 	// security arithmetic would be measuring a chain that does not exist.
 	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
 		set_office_tiki_only(ALICE);
 		assert_noop!(
 			Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Tiki),
@@ -99,10 +105,76 @@ fn office_tikis_do_not_open_the_tiki_stratum() {
 }
 
 #[test]
+fn joining_without_session_keys_is_refused() {
+	// Session silently drops a keyless validator on rotation, so the join gate has to
+	// catch this itself rather than let it surface later as an unexplained absence.
+	// Nothing has keys by default, so ALICE is already in exactly the state this checks.
+	new_test_ext().execute_with(|| {
+		set_perwerde(ALICE, 500);
+		assert_noop!(
+			Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde),
+			Error::<Test>::NoSessionKeys
+		);
+	});
+}
+
+#[test]
+fn an_account_that_loses_its_keys_after_joining_is_not_drawn() {
+	// `join` only catches a keyless account at the door; an account that deregisters its
+	// keys afterwards stays in `PoolMembers`, so the draw itself has to filter it too.
+	// Stripping all but three of Perwerde's sixty members down to no keys makes this
+	// deterministic: with exactly three candidates left, all three must be seated and
+	// none of the other fifty-seven can be, regardless of the seed.
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		let perwerde: Vec<AccountId> = PoolMembers::<Test>::iter()
+			.filter_map(|(w, s)| (s == StratumId::Perwerde).then_some(w))
+			.collect();
+		let (keep, drop) = perwerde.split_at(3);
+		for &who in drop {
+			remove_keys(who);
+		}
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let committee = CurrentCommittee::<Test>::get();
+		for &who in keep {
+			assert!(committee.contains(&who), "a keyed account must be seated");
+		}
+		for &who in drop {
+			assert!(!committee.contains(&who), "a keyless account must not be seated");
+		}
+	});
+}
+
+#[test]
+fn a_stratum_short_on_keyed_candidates_refuses_the_era_rather_than_seating_short() {
+	// `seat` judges a stratum seatable from `StratumSize`, which counts pool membership;
+	// the draw filters that same pool by session keys. Leaving Perwerde only two keyed
+	// candidates for its three seats keeps it counted as seatable while its real candidate
+	// pool cannot fill it -- the whole era must be refused, not seated with a stratum short
+	// of its announced size.
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		let perwerde: Vec<AccountId> = PoolMembers::<Test>::iter()
+			.filter_map(|(w, s)| (s == StratumId::Perwerde).then_some(w))
+			.collect();
+		for &who in &perwerde[2..] {
+			remove_keys(who);
+		}
+		let before = CurrentCommittee::<Test>::get();
+		assert_noop!(
+			Tnpos::force_new_era(RuntimeOrigin::root()),
+			Error::<Test>::UnseatableConfiguration
+		);
+		assert_eq!(CurrentCommittee::<Test>::get(), before, "the old committee stays");
+	});
+}
+
+#[test]
 fn the_pool_is_bounded() {
 	new_test_ext().execute_with(|| {
 		for i in 0..MaxPoolSize::get() {
 			let who = 1_000 + i as u64;
+			ensure_has_keys(who);
 			set_perwerde(who, 500);
 			assert_ok!(Tnpos::join(RuntimeOrigin::signed(who), StratumId::Perwerde));
 		}
@@ -358,6 +430,7 @@ fn revealing_before_the_window_opens_is_rejected() {
 #[test]
 fn an_offence_bans_the_member_from_the_pool() {
 	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
 		set_perwerde(ALICE, 500);
 		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
 		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), ALICE, Offence::Equivocation));
@@ -370,6 +443,7 @@ fn an_offence_bans_the_member_from_the_pool() {
 #[test]
 fn a_banned_member_cannot_rejoin_until_the_ban_expires() {
 	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
 		set_perwerde(ALICE, 500);
 		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
 		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), ALICE, Offence::Unavailable));
@@ -388,6 +462,8 @@ fn being_unavailable_costs_less_than_equivocating() {
 	// has to say so, or the deterrent for the thing that can fork the chain is the same as
 	// the deterrent for a bad connection.
 	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
+		ensure_has_keys(BOB);
 		set_perwerde(ALICE, 500);
 		set_perwerde(BOB, 500);
 		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
@@ -425,6 +501,7 @@ fn a_lesser_offence_cannot_shorten_a_longer_ban() {
 	// came last, a trivial report following an equivocation would cut the penalty from
 	// three hundred and sixty eras to twenty-four.
 	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
 		set_perwerde(ALICE, 500);
 		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
 		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), ALICE, Offence::Equivocation));

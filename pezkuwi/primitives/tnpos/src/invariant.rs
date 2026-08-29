@@ -19,6 +19,13 @@ pub const MIN_STRATA: u32 = 5;
 /// Below this the committee is too small for the thresholds to mean anything.
 pub const MIN_COMMITTEE: u32 = 15;
 
+/// Eligible members a stratum needs before it may be seated. Section 5 of the design puts
+/// a stratum's chance of losing all three seats to a ten-member adversary under one percent
+/// at this floor. Lives here, next to `FloorTooLow`, rather than in the pallet: the floor
+/// and the check that enforces it belong together, not on opposite sides of a crate
+/// boundary that only one of them crosses.
+pub const MIN_ELIGIBLE_PER_STRATUM: u32 = 50;
+
 /// The most seats a committee may carry. The pallet stores the seated committee in a
 /// bounded vector of exactly this size, so a configuration above it would pass validation
 /// and then fail at an era boundary -- which is the one moment a configuration must not be
@@ -37,6 +44,10 @@ pub enum InvariantError {
 	/// A stratum declares zero seats, which would let it be counted as independent while
 	/// carrying nothing.
 	EmptyStratum,
+	/// A stratum's floor is set below `MIN_ELIGIBLE_PER_STRATUM`. Comparing eligible counts
+	/// against a floor nobody validated let a configuration declare a floor of two, pass
+	/// every other gate, and seat nine members while the event announced twenty-seven.
+	FloorTooLow,
 	/// The same stratum appears twice. Nine entries naming eight gates is eight gates, and
 	/// the security budget is computed from that count.
 	DuplicateStratum,
@@ -77,6 +88,12 @@ pub fn seat(strata: &[StratumConfig], eligible: &[u32]) -> Result<Seating, Invar
 	}
 	if strata.iter().any(|c| c.seats == 0) {
 		return Err(InvariantError::EmptyStratum);
+	}
+	// `min_eligible` is compared against below, never validated on its own -- a
+	// configuration could declare a floor under the design minimum, clear every other
+	// check here, and then seat a committee smaller than the one its event announces.
+	if strata.iter().any(|c| c.min_eligible < MIN_ELIGIBLE_PER_STRATUM) {
+		return Err(InvariantError::FloorTooLow);
 	}
 
 	let mut seated = Vec::with_capacity(strata.len());
@@ -196,6 +213,15 @@ mod tests {
 		let mut with_empty = nine();
 		with_empty[3].seats = 0;
 		assert_eq!(seat(&with_empty, &[200; 9]), Err(InvariantError::EmptyStratum));
+	}
+
+	#[test]
+	fn a_floor_below_the_design_minimum_is_refused() {
+		// Nine strata of three seats each with a floor of two would pass every other check
+		// here and then seat a nine-member committee while the event announces twenty-seven.
+		let mut low_floor = nine();
+		low_floor[0].min_eligible = MIN_ELIGIBLE_PER_STRATUM - 1;
+		assert_eq!(seat(&low_floor, &[200; 9]), Err(InvariantError::FloorTooLow));
 	}
 
 	#[test]

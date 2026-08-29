@@ -729,21 +729,50 @@ parameter_types! {
 	pub const TnposMaxPoolSize: u32 = 1_000;
 }
 
-/// Zagros's scores are stubs that already answer for every account, so nothing has to be
-/// arranged: `StubScores::trust_of` returns a fresh non-zero value, which is what the six
-/// trust-gated strata ask for. When the People-chain channel replaces the stub this must
-/// arrange real standing instead.
+/// Zagros's scores are stubs that already answer for every account, so the score half of
+/// eligibility needs no arrangement: `StubScores::trust_of` returns a fresh non-zero value,
+/// which is what the six trust-gated strata ask for. When the People-chain channel replaces
+/// the stub this must arrange real standing instead.
+///
+/// Session keys are not stubbed, and `do_join` now checks them for real (see
+/// `HasSessionKeys`), so a benchmark account needs an actual registration -- generated and
+/// submitted the same way `pezpallet-session`'s own benchmarks do it for a validator under
+/// test (`bizinikiwi/pezframe/session/benchmarking/src/inner.rs`): generate a key pair with
+/// its ownership proof, then call the real `set_keys` extrinsic rather than writing
+/// `NextKeys` by hand, so the benchmarked path is the one a real validator goes through.
 #[cfg(feature = "runtime-benchmarks")]
 pub struct TnposBenchmarkHelper;
 #[cfg(feature = "runtime-benchmarks")]
 impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
-	fn make_eligible(_who: &AccountId, _stratum: pezkuwi_tnpos_primitives::StratumId) {}
+	fn make_eligible(who: &AccountId, _stratum: pezkuwi_tnpos_primitives::StratumId) {
+		let generated = SessionKeys::generate(&who.encode(), None);
+		pezpallet_session::Pezpallet::<Runtime>::ensure_can_pay_key_deposit(who)
+			.expect("a benchmark account can always be funded for the key deposit; qed");
+		pezpallet_session::Pezpallet::<Runtime>::set_keys(
+			pezframe_system::RawOrigin::Signed(who.clone()).into(),
+			generated.keys,
+			generated.proof.encode(),
+		)
+		.expect("a freshly generated key pair must register; qed");
+	}
+}
+
+/// Whether an account has registered session keys, read from the session pallet itself.
+///
+/// This is what `pezpallet_session::rotate_session` consults before seating a validator;
+/// asking anywhere else -- the pool, a cache -- would let the two disagree.
+pub struct SessionHasKeys;
+impl pezpallet_tnpos::HasSessionKeys<AccountId> for SessionHasKeys {
+	fn has_keys(who: &AccountId) -> bool {
+		pezpallet_session::Pezpallet::<Runtime>::load_keys(who).is_some()
+	}
 }
 
 impl pezpallet_tnpos::Config for Runtime {
 	type WeightInfo = ();
 	type Sortition = pezpallet_tnpos::seed::CommitRevealSortition<Runtime>;
 	type Scores = StubScores;
+	type HasSessionKeys = SessionHasKeys;
 	type ManagerOrigin = EnsureRoot<AccountId>;
 	type MaxScoreAge = TnposMaxScoreAge;
 	type EraLength = TnposEraLength;

@@ -64,6 +64,12 @@ impl<T: Config> Pezpallet<T> {
 			.fold(0u32, |a, &s| a.saturating_add(StratumSize::<T>::get(s)));
 		ensure!(size < T::MaxPoolSize::get(), Error::<T>::PoolFull);
 
+		// Session drops a keyless validator silently on rotation, so an account with no
+		// keys must never enter the pool in the first place: refusing here is the only
+		// place the applicant sees the reason, rather than discovering it as an
+		// unexplained absence from the committee.
+		ensure!(T::HasSessionKeys::has_keys(&who), Error::<T>::NoSessionKeys);
+
 		Self::eligible_for(&who, stratum)?;
 
 		PoolMembers::<T>::insert(&who, stratum);

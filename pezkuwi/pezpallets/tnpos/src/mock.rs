@@ -10,7 +10,7 @@ use core::cell::RefCell;
 use pezframe_support::{construct_runtime, derive_impl, parameter_types};
 use pezkuwi_tnpos_primitives::{scores::ScoreSnapshot, StratumConfig, StratumId};
 use pezsp_runtime::BuildStorage;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub type AccountId = u64;
 pub type BlockNumber = u64;
@@ -67,6 +67,7 @@ pub fn set_perwerde_at(who: AccountId, v: u128, at: BlockNumber) {
 /// exercises the seed needs this first.
 pub fn join_pool(who: AccountId) {
 	put_score(who, PERWERDE, 1_000, System::block_number());
+	ensure_has_keys(who);
 	assert!(Tnpos::join(RuntimeOrigin::signed(who), StratumId::Perwerde).is_ok());
 }
 
@@ -91,6 +92,34 @@ pub fn run_to_block(n: BlockNumber) {
 		let next = System::block_number() + 1;
 		System::set_block_number(next);
 		Tnpos::on_initialize(next);
+	}
+}
+
+// Accounts that have registered session keys. Absence from this set means the account
+// has no keys: a real runtime starts every account keyless too, and an unprepared account
+// there cannot join or be drawn, so the mock must agree rather than default to the
+// opposite and let that disagreement hide a bug like the one this default once caused.
+thread_local! {
+	static KEYED: RefCell<BTreeSet<AccountId>> = RefCell::new(BTreeSet::new());
+}
+
+/// Register `who`'s session keys, as a real validator would via `session::set_keys`
+/// before joining the pool. Nothing has keys by default, so any test or helper that
+/// expects `join` or a draw to succeed must call this first.
+pub fn ensure_has_keys(who: AccountId) {
+	KEYED.with(|k| k.borrow_mut().insert(who));
+}
+
+/// Deregister `who`'s session keys, as if they had called `session::purge_keys` after
+/// joining the pool.
+pub fn remove_keys(who: AccountId) {
+	KEYED.with(|k| k.borrow_mut().remove(&who));
+}
+
+pub struct MockHasSessionKeys;
+impl pezpallet_tnpos::HasSessionKeys<AccountId> for MockHasSessionKeys {
+	fn has_keys(who: &AccountId) -> bool {
+		KEYED.with(|k| k.borrow().contains(who))
 	}
 }
 
@@ -124,6 +153,7 @@ impl pezpallet_tnpos::Config for Test {
 	type WeightInfo = ();
 	type Sortition = crate::seed::CommitRevealSortition<Test>;
 	type Scores = MockScores;
+	type HasSessionKeys = MockHasSessionKeys;
 	type ManagerOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type MaxScoreAge = MaxScoreAge;
 	type EraLength = EraLength;
@@ -138,14 +168,23 @@ pub struct BenchHelper;
 impl pezpallet_tnpos::BenchmarkHelper<AccountId> for BenchHelper {
 	fn make_eligible(who: &AccountId, _stratum: StratumId) {
 		put_score(*who, TRUST, 1_000, System::block_number());
+		// `do_join` also requires session keys; arrange them here so this mirrors what
+		// the runtime's own `BenchmarkHelper` guarantees.
+		ensure_has_keys(*who);
 	}
 }
 
-/// The nine strata at their specified sizes, with a floor small enough for tests.
+/// The nine strata at their specified sizes, at the design's floor. `FloorTooLow` refuses
+/// anything under `MIN_ELIGIBLE_PER_STRATUM`, so tests populate with `fill_every_stratum`
+/// rather than lowering the floor to make small pools convenient.
 pub fn nine_strata() -> Vec<StratumConfig> {
 	StratumId::ALL
 		.iter()
-		.map(|&id| StratumConfig { id, seats: 3, min_eligible: 5 })
+		.map(|&id| StratumConfig {
+			id,
+			seats: 3,
+			min_eligible: pezpallet_tnpos::MIN_ELIGIBLE_PER_STRATUM,
+		})
 		.collect()
 }
 
@@ -175,6 +214,7 @@ pub fn fill_every_stratum(per: u32) {
 			for kind in [TRUST, TIKI, PERWERDE, STAKING] {
 				put_score(who, kind, 1_000, System::block_number());
 			}
+			ensure_has_keys(who);
 			assert!(Tnpos::join(RuntimeOrigin::signed(who), s).is_ok());
 			who += 1;
 		}

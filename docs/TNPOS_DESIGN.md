@@ -126,8 +126,21 @@ Tiki katmanının uygunluk ölçütünden hariç tutulur.** Yalnız topluluk kay
 | 3 erk TAM | 1.00 | 0 | durdurur, çatallayamaz |
 
 **Okunuşu:** tasarım Sybil'e karşı çok geniş marjlı; baskın risk kurumsal ele geçirmedir.
-Katmansız (basit rastgele) örneklemede aynı komite, saldırgan havuzun %20'sini tutuyorsa
-69 era'da bir çatallardı — katmanlaştırmanın satın aldığı şey budur.
+
+**Katmanlaştırma yayılmış saldırgana karşı hiçbir şey satın almaz.** Saldırgan
+1800 uygun üyenin %20'sini (360) dokuz katmana eşit dağıtırsa, katmansız 27 kişilik düz
+örneklemede çatallama olasılığı era başına 1.04e-2'dir — 96 era'da bir. Tablodaki kendi
+katmanlaştırılmış "Sybil %20" satırı ise 1.1e-02 — yaklaşık 94 era'da bir: neredeyse aynı
+sayı. Eşit yayılmış bir saldırgana karşı iki tasarım da aynı şeyi söylüyor, çünkü ortalama
+aynı ve katmanlaştırma yalnızca varyansı kırpıyor.
+
+Katmanlaştırmanın gerçekten satın aldığı şey, saldırgan **yoğunlaştığında** ortaya çıkar —
+ki gerçekçi senaryo da budur: sermaye bir katmanı tamamen satın alabilir, kalan sekizini
+alamaz. `analysis.rs`'in kendi testi (`stratification_bounds_a_concentrated_adversary...`)
+bunu ölçer: aynı doksan üyelik saldırgan tek katmanda toplanınca çatallama olasılığı
+**tam olarak sıfırdır** — üç koltuk bir tavandır, düşük bir ihtimal değil. Düz örneklemede
+ise aynı doksan kişi hâlâ gerçek bir şansa sahiptir. Katmanlaştırmanın değeri olasılığı
+küçültmek değil, yoğunlaşmış saldırganı deterministik bir tavana çarptırmaktır.
 
 **Durdurma ile çatallama simetrik değildir:** durdurma otomatik yeniden örneklemeyle
 kurtarılabilir, çatallama kurtarılamaz. Bu yüzden Faz 2'deki otomatik yeniden örnekleme
@@ -304,7 +317,7 @@ edilmeden** parasını kaybeder. Mekanizma Semaphore'un nullifier'ı; Ethereum'd
 
 | # | Risk | Durum |
 |---|---|---|
-| R0 | **Faz 1'in commit-reveal tohumu eğilemez DEĞİL.** Kestirilemez (açıklama penceresi kapanmadan kimse bilemez), ama katkısını **esirgeyen** bir katılımcı sonucu değiştirir: k hesabı tutan saldırganın 2^k tohum seçeneği olur. Erken taslakta "eğilemez" yazmıştım; yanlıştı. Üç şey bunu Faz 1 için savunulabilir kılıyor: katkı havuz üyeleriyle sınırlı (öğütme kümesi havuz kadar), açılmamış commitment **zincirde görünür ve teşhis edilebilir**, ve esirgeme Görev 11'in yasak merdiveniyle cezalandırılabilir. Gerçek cevap Faz 2'dir: ring-VRF'te esirgemenin karşılığı yoktur | **Mainnet öncesi Faz 2 zorunlu** — Faz 1 yalnız Zagros içindir |
+| R0 | **Faz 1'in commit-reveal tohumu eğilemez DEĞİL.** Kestirilemez (açıklama penceresi kapanmadan kimse bilemez), ama katkısını **esirgeyen** bir katılımcı sonucu değiştirir: k hesabı tutan saldırganın 2^k tohum seçeneği olur. Erken taslakta "eğilemez" yazmıştım; yanlıştı. Üç şey bunu Faz 1 için savunulabilir kılıyor: katkı havuz üyeleriyle sınırlı (öğütme kümesi havuz kadar), açılmamış commitment **zincirde görünür ve teşhis edilebilir**, ve — düzeltiyorum — esirgeme Faz 1'de **otomatik olarak cezalandırılamaz**: `Offence` enum'unda esirgemeye karşılık gelen bir varyant yok ve zincir üstünde tespit mekanizması yok; tek yol `ManagerOrigin`'in elle raporlayıp `Offence::Unavailable`'a eşlemesi, ki o varyantın kendi belgesi de "oturmuş ama oy vermemiş" der, "esirgemiş" demez. Gerçek cevap Faz 2'dir: ring-VRF'te esirgemenin karşılığı yoktur, çünkü tohum katkısına bağlı değildir | **Mainnet öncesi Faz 2 zorunlu** — Faz 1 yalnız Zagros içindir |
 | R1 | `bandersnatch-experimental` **hiçbir üretim zincirinde koşmuyor**. Kriptografi (bandersnatch, ark-vrf) akademik olarak sağlam; *entegrasyon* sahada değil | Faz 2'nin taşıdığı risk. Ücretli denetim zorunlu |
 | R2 | `staking_score` oracle'ı bir bot; TNPoS onu konsensüs-kritik yapıyor | **Faz 0 bloke edici** |
 | R3 | **Sybil direnci tüm modelin taşıyıcı varsayımı.** Kimlik katmanı çökerse dokuz katman da çöker | KYC, konsensüs pallet'inden daha sert denetlenmeli |
@@ -312,3 +325,4 @@ edilmeden** parasını kaybeder. Mekanizma Semaphore'un nullifier'ı; Ethereum'd
 | R5 | Divan, Meclis+Serok atamasıyla kuruluyor → etkin `k` < 9 | Anayasal düzeltme bekliyor; o zamana kadar Divan yarım katman sayılır |
 | R6 | Gerçek SRS edinilmedi; genesis `RingContext::new_testing()` kullanıyor | Faz 2. Ethereum KZG seremonisi transkripti aday — doğrulanmalı |
 | R7 | Ağ katmanı (IP) kimlik sızdırabilir; kriptografi tek başına yetmez | Sentry/Tor altyapı politikası tasarımın parçası sayılır |
+| R8 | **Zagros'ta dokuz katmandan altısı `trust_of` üzerinden geçiyor, `StubScores::trust_of` ise her hesap için aynı taze değeri döndürüyor.** Yani dağıtılmış Faz 1 yapılandırmasının etkin bağımsız kapı sayısı dokuz değil, **birdir** — Bölüm 5'teki güvenlik bütçesinin merkezi varsayımı (dokuz bağımsız erk) testnet'te hiç sınanmıyor. Zagros'un yeşil olması katman bağımsızlığına kanıt DEĞİLDİR; `k = 9`'u gerçek kılan şey People-chain köprüsünün getireceği gerçek skor kanalıdır (M7.1) | People-chain köprüsü gelene kadar açık; mainnet öncesi kapanmalı |

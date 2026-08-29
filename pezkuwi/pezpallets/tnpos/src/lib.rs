@@ -43,14 +43,29 @@ use slash::Offence;
 
 /// Lets a runtime make an account eligible so `join` can be benchmarked.
 ///
-/// Benchmarks run against a real runtime, whose scores arrive over XCM from another
-/// chain and cannot be conjured from inside a benchmark. The runtime supplies this
-/// so the measured path stays the real one: `eligible_for` still reads scores
-/// through `Scores` exactly as it does in production.
+/// "Eligible" here means everything `do_join` checks, not only the score gate: session
+/// keys are part of that since the fix that made `join` refuse a keyless account. Both
+/// arrangements have to happen here rather than inside the benchmark itself, because
+/// benchmarks run against a real runtime -- scores arrive over XCM from another chain and
+/// session keys come from a real keystore, and neither can be conjured from inside a
+/// benchmark. The runtime supplies this so the measured path stays the real one:
+/// `eligible_for` still reads scores through `Scores`, and `do_join` still reads keys
+/// through `HasSessionKeys`, exactly as they do in production.
 #[cfg(feature = "runtime-benchmarks")]
 pub trait BenchmarkHelper<AccountId> {
-	/// Give `who` whatever standing `stratum` requires.
+	/// Give `who` whatever standing `stratum` requires, including session keys.
 	fn make_eligible(who: &AccountId, stratum: StratumId);
+}
+
+/// Reports whether an account can actually serve: session drops keyless validators.
+///
+/// `pezpallet_session::rotate_session` silently filters out any validator with no
+/// registered session keys, logging a warning and moving on. Nothing upstream of that point
+/// knows it happened, so a stratum can be seated in storage at its full three seats and
+/// still hand session fewer authorities than that -- or, if enough seats went the same way,
+/// none at all.
+pub trait HasSessionKeys<AccountId> {
+	fn has_keys(who: &AccountId) -> bool;
 }
 
 #[pezframe_support::pezpallet]
@@ -64,10 +79,10 @@ pub mod pezpallet {
 	/// Seats each stratum carries in the specified committee.
 	pub const SEATS_PER_STRATUM: u32 = 3;
 
-	/// Eligible members a stratum needs before it may be seated. Section 5 of the design
-	/// puts a stratum's chance of losing all three seats to a ten-member adversary under
-	/// one percent at this floor.
-	pub const MIN_ELIGIBLE_PER_STRATUM: u32 = 50;
+	/// Eligible members a stratum needs before it may be seated. Defined in `invariant`
+	/// alongside `FloorTooLow`, the check that enforces it, and re-exported here for
+	/// genesis and the benchmarks.
+	pub use pezkuwi_tnpos_primitives::invariant::MIN_ELIGIBLE_PER_STRATUM;
 
 	#[pezpallet::pezpallet]
 	#[pezpallet::storage_version(STORAGE_VERSION)]
@@ -83,6 +98,13 @@ pub mod pezpallet {
 
 		/// Cached People-chain scores. Reads go through `ScoreSnapshot::value_if_fresh`.
 		type Scores: ScoreProvider<Self::AccountId, BlockNumberFor<Self>>;
+
+		/// Whether an account has registered session keys.
+		///
+		/// A validator without keys is silently dropped when the session rotates, which
+		/// would let a stratum's real share of the committee differ from its seated one --
+		/// and, if enough seats went that way, leave the authority set empty.
+		type HasSessionKeys: crate::HasSessionKeys<Self::AccountId>;
 
 		/// May set strata and force an era.
 		type ManagerOrigin: EnsureOrigin<Self::RuntimeOrigin>;
@@ -206,6 +228,10 @@ pub mod pezpallet {
 		RevealWindowNotOpen,
 		/// This account is barred from the pool until its ban expires.
 		Banned,
+		/// This account has no session keys registered. Session silently drops a keyless
+		/// validator on rotation, so seating one would let a stratum's storage record
+		/// disagree with its real authority count.
+		NoSessionKeys,
 	}
 
 	#[pezpallet::genesis_config]
