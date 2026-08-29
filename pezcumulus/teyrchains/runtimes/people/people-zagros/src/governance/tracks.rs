@@ -64,7 +64,19 @@ const APP_CITIZENSHIP_ADMIN: Curve = Curve::make_linear(17, 28, percent(50), per
 const SUP_CITIZENSHIP_ADMIN: Curve =
 	Curve::make_reciprocal(12, 28, percent(10), percent(1), percent(50));
 
-const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 4] = [
+/// The register's rules: root's demands, stretched over three months.
+///
+/// The shape is deliberately root's rather than a new one -- what changes here is the *time*,
+/// not how convincing the case has to be. Ninety days to prepare and ninety to decide is what
+/// makes a rule hard to move in a mood; the approval and support a proposal must reach are
+/// already argued for on the constitution track and there is no reason for this one to differ.
+/// The curves are the number a future Serok is most likely to want to revisit; the periods are
+/// the ones the decision fixed.
+const APP_QEYD_RULES: Curve =
+	Curve::make_reciprocal(13, 90, percent(80), percent(50), percent(100));
+const SUP_QEYD_RULES: Curve = Curve::make_linear(90, 90, percent(2), percent(50));
+
+const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 5] = [
 	pezpallet_referenda::Track {
 		id: 0,
 		info: pezpallet_referenda::TrackInfo {
@@ -121,6 +133,22 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 4] = 
 			min_support: SUP_CITIZENSHIP_ADMIN,
 		},
 	},
+	pezpallet_referenda::Track {
+		id: 43,
+		info: pezpallet_referenda::TrackInfo {
+			name: s("qeyd_rules"),
+			// One at a time. Two simultaneous proposals to reshape the register would be
+			// decided against each other's assumptions, and both would enact.
+			max_deciding: 1,
+			decision_deposit: 100 * UNITS,
+			prepare_period: 90 * DAYS,
+			decision_period: 90 * DAYS,
+			confirm_period: 7 * DAYS,
+			min_enactment_period: 30 * DAYS,
+			min_approval: APP_QEYD_RULES,
+			min_support: SUP_QEYD_RULES,
+		},
+	},
 ];
 
 pub struct TracksInfo;
@@ -145,6 +173,7 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 				origins::Origin::WelatiElection => Ok(40),
 				origins::Origin::WelatiAdmin => Ok(41),
 				origins::Origin::CitizenshipAdmin => Ok(42),
+				origins::Origin::QeydRules => Ok(43),
 				// These two act on referenda themselves and are handed out by the tracks
 				// above rather than being tracks of their own.
 				origins::Origin::ReferendumCanceller | origins::Origin::ReferendumKiller => Err(()),

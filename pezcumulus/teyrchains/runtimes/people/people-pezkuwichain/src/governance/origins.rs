@@ -47,6 +47,16 @@ pub mod pezpallet_custom_origins {
 		/// Origin for election management: initiating and finalizing an election.
 		#[codec(index = 2)]
 		WelatiElection,
+		/// Origin for the register's own rules: how long a new citizen waits before vouching,
+		/// how wide one person's vouching reaches, when a voucher's record is judged.
+		///
+		/// Separate from the three above, and the separation is the point. Those decide
+		/// *entries* -- who is a citizen, who holds an office -- and the constitution gives
+		/// that to the court. This one decides the *rules under which entries are made*, which
+		/// belongs to the people whose register it is. A body that both wrote the entries and
+		/// set the rules for writing them would have no rule above it.
+		#[codec(index = 5)]
+		QeydRules,
 		/// Origin able to cancel a referendum, refunding its deposit.
 		#[codec(index = 3)]
 		ReferendumCanceller,
@@ -93,6 +103,7 @@ pub mod pezpallet_custom_origins {
 		WelatiAdmin,
 		CitizenshipAdmin,
 		WelatiElection,
+		QeydRules,
 		ReferendumCanceller,
 		ReferendumKiller,
 	);

@@ -1434,16 +1434,19 @@ impl Default for RuntimeParameters {
 impl pezpallet_parameters::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeParameters = RuntimeParameters;
-	// Root, and only until M5.1 gives the register's rules their own track.
+	// The `qeyd_rules` track, and deliberately nothing else -- not Root.
 	//
-	// Today these numbers change by runtime upgrade, which on this chain means a referendum.
-	// Putting them in storage under any lighter origin would make the register's rules easier
-	// to change than they are now -- the opposite of what moving them is for. Root arrives here
-	// from the relay and keeps exactly the present bar until the slow track replaces it.
+	// Root reaches this chain two ways: track 0, a referendum that decides in twenty-eight
+	// days, and the relay. Leaving either of them here would make the ninety-day track
+	// optional, and an optional slow path is a fast path: nobody takes the long road when the
+	// short one arrives at the same place.
 	//
-	// Not `RegisterAuthority`: the court writes the register, and a body that both writes the
-	// entries and sets the rules for writing them has no rule above it.
-	type AdminOrigin = pezframe_support::traits::AsEnsureOriginWithArg<EnsureRoot<AccountId>>;
+	// Not `RegisterAuthority` either. The court writes the register's *entries*; these are the
+	// *rules under which entries are made*, and a body that holds both has no rule above it.
+	//
+	// The escape hatch is the honest one: a runtime upgrade can still change the defaults, and
+	// an upgrade is the constitution being amended, which is what changing this ought to be.
+	type AdminOrigin = pezframe_support::traits::AsEnsureOriginWithArg<governance::QeydRules>;
 	// The pallet's reference weight. A zero-weight extrinsic is a free block; a measured
 	// number for this chain comes with the next benchmarking pass.
 	type WeightInfo = weights::pezpallet_parameters::WeightInfo<Runtime>;

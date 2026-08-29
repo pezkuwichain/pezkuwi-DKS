@@ -473,13 +473,15 @@ mod register_parameters {
 		});
 	}
 
-	/// Moving them to storage must not have made them easier to change than a runtime upgrade.
+	/// The slow track turns them, and nothing faster does -- not even Root.
 	///
-	/// This is the whole reason `AdminOrigin` is Root and not the court: a body that both
-	/// writes the register's entries and sets the rules for writing them has no rule above it.
-	/// When the register-rules track lands, this test is what has to be edited deliberately.
+	/// Root reaches this chain in twenty-eight days through track 0, and from the relay
+	/// directly. Either one left in `AdminOrigin` would make the ninety-day track optional,
+	/// and an optional slow path is a fast path. The court is excluded for a different reason:
+	/// it writes the register's entries, and a body that also sets the rules for writing them
+	/// has no rule above it.
 	#[test]
-	fn only_root_turns_them() {
+	fn only_the_slow_track_turns_them() {
 		use people_zagros_runtime::{dynamic_params::qeyd, Parameters, RuntimeParameters};
 
 		let widen = || {
@@ -490,7 +492,6 @@ mod register_parameters {
 		};
 
 		new_test_ext().execute_with(|| {
-			// The court writes the register; it does not write the register's rules.
 			assert_noop!(
 				Parameters::set_parameter(
 					RuntimeOrigin::signed(AccountId::from([1u8; 32])),
@@ -498,7 +499,12 @@ mod register_parameters {
 				),
 				BadOrigin
 			);
-			assert_ok!(Parameters::set_parameter(RuntimeOrigin::root(), widen()));
+			// Root is the one that has to be refused here. It is the origin a proposal would
+			// reach for if the slow track were merely inconvenient.
+			assert_noop!(Parameters::set_parameter(RuntimeOrigin::root(), widen()), BadOrigin);
+
+			let track = pezpallet_custom_origins::Origin::QeydRules;
+			assert_ok!(Parameters::set_parameter(track.into(), widen()));
 			assert_eq!(qeyd::MaxVouchingCapacity::get(), 50_000);
 		});
 	}

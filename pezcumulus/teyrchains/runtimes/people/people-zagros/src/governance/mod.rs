@@ -11,6 +11,6 @@ mod tracks;
 pub use tracks::TracksInfo;
 
 pub use origins::{
-	pezpallet_custom_origins, CitizenshipAdmin, ReferendumCanceller, ReferendumKiller, WelatiAdmin,
-	WelatiElection,
+	pezpallet_custom_origins, CitizenshipAdmin, QeydRules, ReferendumCanceller, ReferendumKiller,
+	WelatiAdmin, WelatiElection,
 };

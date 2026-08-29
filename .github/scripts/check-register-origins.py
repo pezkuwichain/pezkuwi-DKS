@@ -62,6 +62,12 @@ OK_LEAF = [
     # rather than listed here. One person holds the tiki, so "the holder decided" and "the
     # office decided" are the same sentence.
     (re.compile(r"^pezpallet_welati::Ensure(Serok|SerokWeziran)\b"), "single-holder office"),
+    # The one referendum track allowed near the register, and only because of what it decides.
+    # `qeyd_rules` sets the *rules under which entries are made*; the tracks in the list below
+    # decide *entries* -- who is a citizen, who holds an office -- and the constitution gives
+    # those to the court. This one is head-counted like every ballot on this chain, which
+    # `tally_is_head_counted` verifies separately and which every verdict here rests on.
+    (re.compile(r"^(governance::)?QeydRules$"), "the register-rules track, head-counted"),
 ]
 BAD_LEAF = [
     (re.compile(r"EnsureSigned"), "any signed account may write the register"),
