@@ -289,6 +289,20 @@ jobs:
     runs-on: [self-hosted, bizinikiwi-build]
     steps:
       - uses: actions/checkout@v7
+      # `pallet-revive` compiles Solidity fixtures in a build script, and without solc the job
+      # stops before checking anything. Installed, not skipped with
+      # `SKIP_PALLET_REVIVE_FIXTURES=1`, for the reason the `workspace` job records: skipping
+      # leaves a gate reporting success over code it never built. This job was added without
+      # the step and spent its first two runs failing on the environment rather than on code.
+      - uses: ./.github/actions/install-solidity
+      # Also in step with the other runtime jobs. This runner happens to have the targets
+      # already, which is exactly why it has to be written down: a fresh one would fail here
+      # with nothing explaining it.
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
       # The same eleven as every other runtime job here. Kept in step deliberately: a runtime
       # that is checked by one of these lists and not the others is a runtime with a gap
       # nobody chose.
