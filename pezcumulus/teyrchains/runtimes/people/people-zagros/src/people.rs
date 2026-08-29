@@ -1668,6 +1668,74 @@ pezsp_runtime::impl_opaque_keys! {
 	}
 }
 
+/// Puts an account in a state where `eligible_for` passes, for benchmarking only.
+///
+/// The pallet cannot conjure this itself, which is why the trait exists: standing is written
+/// by five other pallets on this chain and session keys come from a keystore. What matters is
+/// that the *measured path stays the real one* -- so this writes the state those pallets read
+/// from, and `eligible_for` then reads it back exactly as it does in production. A helper that
+/// short-circuited the check would benchmark a code path nobody runs.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct TnposBenchmarkHelper;
+
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
+	fn make_eligible(who: &AccountId, stratum: pezkuwi_tnpos_primitives::StratumId) {
+		use pezkuwi_tnpos_primitives::StratumId;
+
+		// Keys first: `do_join` refuses a keyless account whatever its standing, so without
+		// this every benchmark would measure the refusal path. The bytes only have to decode
+		// as `RelaySessionKeys` -- the ownership proof was checked before registration, and
+		// nothing here re-checks it.
+		let keys = [0u8; 192];
+		let bounded: pezframe_support::BoundedVec<u8, pezframe_support::traits::ConstU32<512>> =
+			keys.to_vec().try_into().expect("192 bytes fit in 512; qed");
+		pezpallet_tnpos::RelayKeys::<Runtime>::insert(who, bounded);
+
+		match stratum {
+			StratumId::Stake => {
+				// The score is derived from cached stake and its duration, so write the
+				// cache: 1000 HEZ from the relay, bonded long enough to clear the
+				// flash-stake guard.
+				pezpallet_staking_score::CachedStakingDetails::<Runtime>::insert(
+					who,
+					pezpallet_staking_score::StakingSource::RelayChain,
+					pezpallet_staking_score::StakingDetails {
+						staked_amount: 1_000 * UNITS,
+						nominations_count: 1,
+						unlocking_chunks_count: 0,
+					},
+				);
+				pezpallet_staking_score::StakingStartBlock::<Runtime>::insert(
+					who,
+					BlockNumber::from(1u32),
+				);
+			},
+			StratumId::Perwerde => {
+				pezpallet_perwerde::PerwerdeScores::<Runtime>::insert(who, 100u32);
+			},
+			StratumId::Tiki => {
+				// A community tiki, not an office. `get_tiki_score` filters offices out, so
+				// granting one of those would leave the score at zero and the benchmark
+				// measuring a rejection.
+				let tikis: pezframe_support::BoundedVec<pezpallet_tiki::Tiki, MaxTikisPerUser> =
+					alloc::vec![pezpallet_tiki::Tiki::Mela].try_into().expect("one fits; qed");
+				pezpallet_tiki::UserTikis::<Runtime>::insert(who, tikis);
+			},
+			// The remaining six reach this chain as trust standing until their own channels
+			// land; one write covers all of them.
+			StratumId::Meclis
+			| StratumId::Divan
+			| StratumId::WelatiLottery
+			| StratumId::Geography
+			| StratumId::Tenure
+			| StratumId::Infrastructure => {
+				pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+			},
+		}
+	}
+}
+
 parameter_types! {
 	/// How old a score may be before the committee treats it as absent.
 	pub const TnposMaxScoreAge: BlockNumber = 4 * HOURS;
