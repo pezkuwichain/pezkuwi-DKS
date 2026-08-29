@@ -733,3 +733,39 @@ fn a_committee_that_could_not_be_delivered_says_so() {
 		);
 	});
 }
+
+/// Shrinking past the security floor is announced, not inferred.
+///
+/// Thirteen removals take a committee of 27 down to 14, one under `MIN_COMMITTEE`. The chain
+/// keeps going -- refusing the removals would leave equivocators signing, and a redraw is
+/// impossible mid-era because the seed is consumed at seating -- but the era it is running
+/// degraded has to be visible from a block explorer. Without this the only symptom is a
+/// validator set that quietly got shorter.
+#[test]
+fn falling_under_the_security_floor_is_announced() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		assert_eq!(CurrentCommittee::<Test>::get().len(), 27);
+
+		let floor = pezkuwi_tnpos_primitives::invariant::MIN_COMMITTEE;
+		let mut announced_at = None;
+		for _ in 0..13 {
+			let victim = CurrentCommittee::<Test>::get()[0];
+			assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), victim, Offence::Equivocation));
+			let size = CurrentCommittee::<Test>::get().len() as u32;
+			let fired = System::events().iter().any(|r| {
+				matches!(r.event, RuntimeEvent::Tnpos(Event::CommitteeBelowSecurityFloor { .. }))
+			});
+			if fired && announced_at.is_none() {
+				announced_at = Some(size);
+			}
+			// The alarm must not fire while the committee is still at or above the floor;
+			// an alarm that cries early is one operators learn to ignore.
+			assert_eq!(fired, size < floor, "alarm disagreed with the floor at size {size}");
+		}
+
+		assert_eq!(announced_at, Some(floor - 1), "the alarm fired at the wrong size");
+		assert_eq!(CurrentCommittee::<Test>::get().len() as u32, 14);
+	});
+}

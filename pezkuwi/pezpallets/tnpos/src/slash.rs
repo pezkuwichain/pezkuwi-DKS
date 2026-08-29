@@ -78,7 +78,13 @@ impl<T: Config> Pezpallet<T> {
 		// Tell the validating chain, or the removal only happened here. It keeps its own copy
 		// and re-reads nothing; without this the offender goes on signing until the next era.
 		if was_seated {
-			Self::export_committee(CurrentEra::<T>::get());
+			let era = CurrentEra::<T>::get();
+			let size = CurrentCommittee::<T>::decode_len().unwrap_or_default() as u32;
+			let floor = pezkuwi_tnpos_primitives::invariant::MIN_COMMITTEE;
+			if size < floor {
+				Self::deposit_event(Event::CommitteeBelowSecurityFloor { era, size, floor });
+			}
+			Self::export_committee(era);
 		}
 		Ok(())
 	}

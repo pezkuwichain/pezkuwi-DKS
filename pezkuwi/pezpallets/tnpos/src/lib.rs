@@ -275,6 +275,18 @@ pub mod pezpallet {
 		CommitteeSentToRelay { era: u32, size: u32 },
 		/// The committee was seated but could not even be sent; the relay keeps the old one.
 		CommitteeCouldNotBeSent { era: u32 },
+		/// The seated committee has fallen below the size its security budget was chosen for.
+		///
+		/// Removals inside an era shrink the committee and there is no way to refill it: the
+		/// seed is consumed and killed at each seating, so a redraw needs the next
+		/// commit-reveal round -- half an era away. Refusing the removal instead would leave
+		/// an equivocator signing, which is worse than a smaller committee.
+		///
+		/// So the chain goes on with what is left and says so. `MIN_COMMITTEE` is where the
+		/// fork and halt probabilities in the design were computed; below it they are worse
+		/// than anyone agreed to, and that has to be an alarm rather than something an
+		/// operator infers from a validator set that quietly got shorter.
+		CommitteeBelowSecurityFloor { era: u32, size: u32, floor: u32 },
 		/// Nothing was sent because the committee is empty; the relay keeps the old one.
 		///
 		/// Distinct from a failed send: this one is not a delivery problem, it is this chain
