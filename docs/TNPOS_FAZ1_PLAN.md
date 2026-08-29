@@ -1,98 +1,101 @@
-# TNPoS Faz 1 — Uygulama Planı (M7.2 + M7.3)
+# TNPoS Phase 1 — Implementation Plan (M7.2 + M7.3)
 
-> **Ajan çalışanlar için:** ZORUNLU ALT-SKILL: `superpowers:subagent-driven-development`
-> (önerilen) veya `superpowers:executing-plans` ile görev görev uygulayın.
-> Adımlar takip için checkbox (`- [ ]`) sözdizimi kullanır.
+> **For agent workers:** MANDATORY SUB-SKILL: implement this task by task with
+> `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans`.
+> The steps use checkbox (`- [ ]`) syntax so that progress can be tracked.
 
-**Hedef:** `pezpallet-validator-pool`'un yerine, dokuz bağımsız katmandan katmanlı
-örneklemeyle 27 kişilik komite seçen, güvenlik bütçesini runtime kısıtı olarak zorlayan
-`pezpallet-tnpos`'u ve onun matematik/tip tabanı `pezkuwi-tnpos-primitives`'i inşa etmek.
+**Goal:** to build `pezpallet-tnpos`, which replaces `pezpallet-validator-pool`, selects a
+27-member committee by stratified sampling from nine independent strata and enforces the
+security budget as a runtime constraint — together with its mathematics/type base,
+`pezkuwi-tnpos-primitives`.
 
-**Mimari:** İki yeni crate. Primitives katman tiplerini, paylaşılan skor trait'lerini,
-`Sortition` sınırını ve güvenlik matematiğini taşır — runtime'sız test edilir. Pallet
-havuzu, uygunluğu, örneklemeyi ve bozulmayı yönetir; rastgelelik `Sortition` trait'inin
-arkasındadır, böylece Faz 2'de ring-VRF çekirdeğe dokunmadan takılır.
+**Architecture:** Two new crates. The primitives carry the stratum types, the shared score
+traits, the `Sortition` boundary and the security mathematics — they are tested without a
+runtime. The pallet manages the pool, eligibility, sampling and degradation; randomness sits
+behind the `Sortition` trait, so that in Phase 2 ring-VRF is plugged in without touching the core.
 
-**Tech Stack:** Rust, `no_std` + `std` çift hedef, PezFRAME (`pezframe_support::pezpallet`),
+**Tech Stack:** Rust, `no_std` + `std` dual target, PezFRAME (`pezframe_support::pezpallet`),
 SCALE codec, `pezsp-io` blake2_256, `pezpallet-session`.
 
-**Spec:** `docs/TNPOS_DESIGN.md` — plan spec'ten argüman kurar; ikisi birlikte okunur.
+**Spec:** `docs/TNPOS_DESIGN.md` — the plan builds its argument from the spec; the two are read
+together.
 
-## Global Kısıtlar
+## Global Constraints
 
-- **Rust edition ve lint'ler workspace'ten devralınır.** `[lints] workspace = true` her yeni
-  crate'te zorunlu. `clippy::correctness = deny` — asla bastırılmaz.
-- **`no_std` uyumu zorunlu.** Runtime'a giren her kod `default-features = false` ile derlenir;
-  `std` yalnız test/analiz içindir. **Kayan nokta (f32/f64) runtime koduna GİREMEZ** —
-  platformlar arası belirlenimsizdir.
-- **Depolanan her enum `#[codec(index = N)]` taşır** ve `scale_info` üzerinden bir pinleme
-  testiyle sabitlenir. Desen: `pezkuwi/pezpallets/validator-pool/src/types.rs`'teki
-  `stored_enum_encoding` modülü (o dosya silinmeden önce kopyalanır).
-- **Runtime overflow-check kapalı derlenir.** Her aritmetik `saturating_*` / `checked_*`
-  olmak zorunda; çıplak `+`, `*` kod incelemesinde reddedilir.
-- **Yorumlar İngilizce**, commit mesajları İngilizce, PR açıklamaları İngilizce.
-- **`taplo` her zaman `--config .config/taplo.toml` ile çalıştırılır.**
-- **Ağır derleme WSL'de koşulmaz** — `cargo test -p <crate>` yereldedir ve kabul edilebilir;
-  runtime derlemesi ve benchmark CI'ya gider.
-- Komite sabitleri (spec §3): `k=9` katman × `3` koltuk = `n=27`, `q=19`,
-  durdurma eşiği `≥9`, çatallama eşiği `≥11`.
+- **The Rust edition and the lints are inherited from the workspace.** `[lints] workspace = true`
+  is mandatory in every new crate. `clippy::correctness = deny` — never suppressed.
+- **`no_std` compatibility is mandatory.** Every piece of code that enters the runtime is built
+  with `default-features = false`; `std` is for tests and analysis only. **Floating point
+  (f32/f64) MUST NOT enter runtime code** — it is non-deterministic across platforms.
+- **Every stored enum carries `#[codec(index = N)]`** and is pinned by a test that goes through
+  `scale_info`. The pattern: the `stored_enum_encoding` module in
+  `pezkuwi/pezpallets/validator-pool/src/types.rs` (copy it before that file is deleted).
+- **The runtime is built with overflow checks off.** Every arithmetic operation must be
+  `saturating_*` / `checked_*`; a bare `+` or `*` is rejected in code review.
+- **Comments in English**, commit messages in English, PR descriptions in English.
+- **`taplo` is always run with `--config .config/taplo.toml`.**
+- **Heavy builds are not run on WSL** — `cargo test -p <crate>` is local and acceptable;
+  runtime builds and benchmarks go to CI.
+- Committee constants (spec §3): `k=9` strata × `3` seats = `n=27`, `q=19`,
+  halt threshold `≥9`, fork threshold `≥11`.
 
-## Kapsam — ve bu planın DIŞINDA kalan
+## Scope — and what this plan leaves OUT
 
-**İçinde:** M7.2'nin tamamı; M7.3'ün havuz, katmanlar, uygunluk, skor önbelleği,
-örnekleme, güvenlik kısıtı, bozulma, `SessionManager` teslimi, katman-özel slashing.
+**In:** all of M7.2; and from M7.3 the pool, the strata, eligibility, the score cache,
+sampling, the security constraint, degradation, `SessionManager` handover, and stratum-specific
+slashing.
 
-**Dışında, ayrı plan gerektirir:**
-- **M7.0 / M7.1** — oracle ve People→Relay XCM kanalı. **M7.0 bloke edicidir**: bu plan
-  Zagros'ta koşabilir ama skorlar stub kaldığı sürece **mainnet'e giremez**.
-- **M7.6 Faz 2** — ring-VRF sortition, gerçek SRS, **era içi alt-turlar ve finality
-  durunca otomatik yeniden örnekleme** (spec §7.2). `Sortition` trait'i o eklemeyi
-  yeniden yazma olmadan kabul edecek şekilde tasarlandı.
-- **M7.7 Faz 3** — anonim emanet bond, takma adlı üyelik.
-- **M7.4 / M7.5** — Monte Carlo ve formel spec; Görev 4 onların girdisini üretir.
+**Out, requiring a separate plan:**
+- **M7.0 / M7.1** — the oracle and the People→Relay XCM channel. **M7.0 is blocking**: this plan
+  can run on Zagros, but as long as the scores remain stubs it **cannot go to mainnet**.
+- **M7.6 Phase 2** — ring-VRF sortition, a real SRS, **sub-rounds within an era and automatic
+  resampling when finality stalls** (spec §7.2). The `Sortition` trait is designed to accept
+  that addition without a rewrite.
+- **M7.7 Phase 3** — the anonymous escrow bond, pseudonymous membership.
+- **M7.4 / M7.5** — Monte Carlo and the formal spec; Task 4 produces their input.
 
 ---
 
-## Dosya Yapısı
+## File Layout
 
-**Yeni crate: `pezkuwi/primitives/tnpos/`** → `pezkuwi-tnpos-primitives`
+**New crate: `pezkuwi/primitives/tnpos/`** → `pezkuwi-tnpos-primitives`
 
-| Dosya | Sorumluluk |
+| File | Responsibility |
 |---|---|
-| `src/lib.rs` | Modül beyanları, yeniden dışa aktarımlar |
-| `src/stratum.rs` | `StratumId` (9 varyant, pinlenmiş), `StratumConfig` |
+| `src/lib.rs` | Module declarations, re-exports |
+| `src/stratum.rs` | `StratumId` (9 variants, pinned), `StratumConfig` |
 | `src/committee.rs` | `quorum` / `halt_threshold` / `fork_threshold` — `const fn` |
-| `src/scores.rs` | Paylaşılan skor trait'leri + `ScoreSnapshot` (bayatlama) — **P-1'i kapatır** |
-| `src/sortition.rs` | `Sortition` trait'i (Faz 2 sınırı) + `sample_k` (yansız Fisher-Yates) |
-| `src/invariant.rs` | Güvenlik kısıtı — **tamsayı, `no_std`** |
-| `src/analysis.rs` | Kesin olasılık matematiği — **`std` özelliği ardında, WASM'a girmez** |
+| `src/scores.rs` | Shared score traits + `ScoreSnapshot` (staleness) — **closes P-1** |
+| `src/sortition.rs` | The `Sortition` trait (the Phase 2 boundary) + `sample_k` (unbiased Fisher-Yates) |
+| `src/invariant.rs` | The security constraint — **integer, `no_std`** |
+| `src/analysis.rs` | Exact probability mathematics — **behind the `std` feature, never enters WASM** |
 
-**Yeni crate: `pezkuwi/pezpallets/tnpos/`** → `pezpallet-tnpos`
+**New crate: `pezkuwi/pezpallets/tnpos/`** → `pezpallet-tnpos`
 
-| Dosya | Sorumluluk |
+| File | Responsibility |
 |---|---|
-| `src/lib.rs` | Pallet beyanı, Config, depo, çağrılar, hook'lar, genesis |
-| `src/pool.rs` | Katılma/ayrılma, katman uygunluğu |
-| `src/scores.rs` | Skor önbelleği, bayatlama fail-closed |
-| `src/sample.rs` | Katmanlı örnekleme, bozulma |
-| `src/slash.rs` | Katman-özel ceza |
-| `src/weights.rs`, `src/benchmarking.rs`, `src/mock.rs`, `src/tests.rs` | Standart |
+| `src/lib.rs` | Pallet declaration, Config, storage, calls, hooks, genesis |
+| `src/pool.rs` | Join/leave, stratum eligibility |
+| `src/scores.rs` | Score cache, fail-closed staleness |
+| `src/sample.rs` | Stratified sampling, degradation |
+| `src/slash.rs` | Stratum-specific penalty |
+| `src/weights.rs`, `src/benchmarking.rs`, `src/mock.rs`, `src/tests.rs` | Standard |
 
-**Silinen:** `pezkuwi/pezpallets/validator-pool/` (tamamı) ve workspace/runtime kayıtları.
+**Deleted:** `pezkuwi/pezpallets/validator-pool/` (all of it) and its workspace/runtime entries.
 
 ---
 
-## Görev 1: Primitives crate iskeleti + katman tipleri
+## Task 1: Primitives crate skeleton + stratum types
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/primitives/tnpos/Cargo.toml`, `src/lib.rs`, `src/stratum.rs`
-- Değiştir: `Cargo.toml` (workspace üyeleri ~satır 565; workspace bağımlılıkları ~satır 1250)
+**Files:**
+- Create: `pezkuwi/primitives/tnpos/Cargo.toml`, `src/lib.rs`, `src/stratum.rs`
+- Modify: `Cargo.toml` (workspace members ~line 565; workspace dependencies ~line 1250)
 
-**Arayüzler:**
-- Üretir: `StratumId` (Copy, Eq, Ord, codec-pinned), `StratumId::ALL: [StratumId; 9]`,
+**Interfaces:**
+- Produces: `StratumId` (Copy, Eq, Ord, codec-pinned), `StratumId::ALL: [StratumId; 9]`,
   `StratumConfig { id: StratumId, seats: u32, min_eligible: u32 }`
 
-- [ ] **Adım 1: Başarısız testi yaz** — `pezkuwi/primitives/tnpos/src/stratum.rs` sonuna:
+- [ ] **Step 1: Write the failing test** — at the end of `pezkuwi/primitives/tnpos/src/stratum.rs`:
 
 ```rust
 #[cfg(test)]
@@ -128,12 +131,12 @@ mod tests {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives`
-Beklenen: derleme hatası — `StratumId` tanımlı değil.
+Run: `cargo test -p pezkuwi-tnpos-primitives`
+Expected: a compile error — `StratumId` is not defined.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz**
+- [ ] **Step 3: Write the minimal implementation**
 
 `Cargo.toml` (crate):
 ```toml
@@ -190,7 +193,7 @@ pub mod analysis;
 pub use stratum::{StratumConfig, StratumId};
 ```
 
-`src/stratum.rs` (test modülünün üstüne):
+`src/stratum.rs` (above the test module):
 ```rust
 // This file is part of PezkuwiChain.
 
@@ -272,21 +275,21 @@ pub struct StratumConfig {
 }
 ```
 
-Workspace `Cargo.toml`, üyeler listesine (alfabetik sırayı koru):
+Workspace `Cargo.toml`, in the members list (keep the alphabetical order):
 ```toml
 	"pezkuwi/primitives/tnpos",
 ```
-Workspace bağımlılıklarına:
+In the workspace dependencies:
 ```toml
 pezkuwi-tnpos-primitives = { path = "pezkuwi/primitives/tnpos", version = "1.0.0", default-features = false }
 ```
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives`
-Beklenen: 2 test PASS.
+Run: `cargo test -p pezkuwi-tnpos-primitives`
+Expected: 2 tests PASS.
 
-- [ ] **Adım 5: Biçimlendir ve commit et**
+- [ ] **Step 5: Format and commit**
 
 ```bash
 cargo fmt -p pezkuwi-tnpos-primitives
@@ -297,17 +300,17 @@ git commit -m "Add TNPoS stratum types with pinned codec indices"
 
 ---
 
-## Görev 2: Komite aritmetiği
+## Task 2: Committee arithmetic
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/primitives/tnpos/src/committee.rs`
+**Files:**
+- Create: `pezkuwi/primitives/tnpos/src/committee.rs`
 
-**Arayüzler:**
-- Tüketir: yok
-- Üretir: `const fn quorum(n: u32) -> u32`, `const fn halt_threshold(n: u32) -> u32`,
+**Interfaces:**
+- Consumes: nothing
+- Produces: `const fn quorum(n: u32) -> u32`, `const fn halt_threshold(n: u32) -> u32`,
   `const fn fork_threshold(n: u32) -> u32`
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 ```rust
 #[cfg(test)]
@@ -376,12 +379,12 @@ mod tests {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives committee`
-Beklenen: derleme hatası — `quorum` bulunamadı.
+Run: `cargo test -p pezkuwi-tnpos-primitives committee`
+Expected: a compile error — `quorum` not found.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz**
+- [ ] **Step 3: Write the minimal implementation**
 
 ```rust
 // This file is part of PezkuwiChain.
@@ -419,17 +422,17 @@ pub const fn fork_threshold(n: u32) -> u32 {
 }
 ```
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives committee`
-Beklenen: 10 test PASS.
+Run: `cargo test -p pezkuwi-tnpos-primitives committee`
+Expected: 10 tests PASS.
 
-> **Not:** Bu üç fonksiyon `const fn` olsa da **çalışma zamanında da çağrılır** —
-> Görev 5'teki `Seating::quorum()` onları depodan gelen canlı komite boyutuyla çağırır.
-> Runtime overflow denetimi kapalı derlendiği için çarpımlar `u64`'te yapılır ve
-> çıkarmalar `saturating_sub`'dır; aksi halde sessizce sarar.
+> **Note:** although these three functions are `const fn`, they are **also called at run time** —
+> `Seating::quorum()` in Task 5 calls them with the live committee size read from storage.
+> Because the runtime is built with overflow checks off, the multiplications are done in `u64`
+> and the subtractions are `saturating_sub`; otherwise they would wrap silently.
 
-- [ ] **Adım 5: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cargo fmt -p pezkuwi-tnpos-primitives
@@ -439,19 +442,19 @@ git commit -m "Derive TNPoS halt and fork thresholds from the GRANDPA quorum"
 
 ---
 
-## Görev 3: Paylaşılan skor trait'leri + bayatlama (P-1'i kapatır)
+## Task 3: Shared score traits + staleness (closes P-1)
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/primitives/tnpos/src/scores.rs`
+**Files:**
+- Create: `pezkuwi/primitives/tnpos/src/scores.rs`
 
-**Arayüzler:**
-- Üretir: `ScoreSnapshot<BlockNumber>`, `ScoreProvider<AccountId, BlockNumber>`
+**Interfaces:**
+- Produces: `ScoreSnapshot<BlockNumber>`, `ScoreProvider<AccountId, BlockNumber>`
   (`trust_of`, `tiki_of`, `perwerde_of`, `referral_of`, `staking_of`)
 
-**Neden:** Bu trait'ler bugün `perwerde` · `tiki` · `trust` · `referral` pallet'lerinde
-**bayt bayt kopyalanmış** (PLAN.md P-1). Tek tanım burada yaşar.
+**Why:** these traits are today **copied byte for byte** across the `perwerde` · `tiki` ·
+`trust` · `referral` pallets (PLAN.md P-1). The single definition lives here.
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 ```rust
 #[cfg(test)]
@@ -482,12 +485,12 @@ mod tests {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives scores`
-Beklenen: derleme hatası — `ScoreSnapshot` bulunamadı.
+Run: `cargo test -p pezkuwi-tnpos-primitives scores`
+Expected: a compile error — `ScoreSnapshot` not found.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz**
+- [ ] **Step 3: Write the minimal implementation**
 
 ```rust
 // This file is part of PezkuwiChain.
@@ -544,12 +547,12 @@ pub trait ScoreProvider<AccountId, BlockNumber> {
 }
 ```
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives scores`
-Beklenen: 3 test PASS.
+Run: `cargo test -p pezkuwi-tnpos-primitives scores`
+Expected: 3 tests PASS.
 
-- [ ] **Adım 5: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cargo fmt -p pezkuwi-tnpos-primitives
@@ -559,25 +562,25 @@ git commit -m "Define TNPoS score traits once, with staleness that fails closed"
 
 ---
 
-## Görev 4: Örnekleme — yansız Fisher-Yates + `Sortition` sınırı
+## Task 4: Sampling — unbiased Fisher-Yates + the `Sortition` boundary
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/primitives/tnpos/src/sortition.rs`
+**Files:**
+- Create: `pezkuwi/primitives/tnpos/src/sortition.rs`
 
-**Arayüzler:**
-- Tüketir: `StratumId` (Görev 1)
-- Üretir: `trait Sortition<AccountId>` (`select`), `fn sample_k<T: Clone>(candidates: &[T],
+**Interfaces:**
+- Consumes: `StratumId` (Task 1)
+- Produces: `trait Sortition<AccountId>` (`select`), `fn sample_k<T: Clone>(candidates: &[T],
   k: u32, seed: &[u8; 32], domain: &[u8]) -> alloc::vec::Vec<T>`
 
-**Neden bu sınır:** Faz 2'de ring-VRF bu trait'in ikinci bir implementasyonu olarak gelir;
-çekirdek pallet değişmez.
+**Why this boundary:** in Phase 2 ring-VRF arrives as a second implementation of this trait;
+the core pallet does not change.
 
-**Neden yeni bir karıştırma:** Silinen `validator-pool` tohumdan **tek bayt** okuyup
-`% (i+1)` alıyordu — hem ciddi modulo yanlılığı hem de 256'dan büyük havuzlarda çöküş.
-Burada indeks Lemire'in çarp-kaydır yöntemiyle 64 bitten türetilir: sabit maliyet,
-ihmal edilebilir yanlılık, reddetme döngüsü yok (ağırlık belirlenimli kalır).
+**Why a new shuffle:** the deleted `validator-pool` read **a single byte** from the seed and
+took `% (i+1)` — both a serious modulo bias and a collapse for pools larger than 256. Here the
+index is derived from 64 bits by Lemire's multiply-shift method: constant cost, negligible bias,
+no rejection loop (so the weight stays deterministic).
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 ```rust
 #[cfg(test)]
@@ -658,12 +661,12 @@ mod tests {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives sortition`
-Beklenen: derleme hatası — `sample_k` bulunamadı.
+Run: `cargo test -p pezkuwi-tnpos-primitives sortition`
+Expected: a compile error — `sample_k` not found.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz**
+- [ ] **Step 3: Write the minimal implementation**
 
 ```rust
 // This file is part of PezkuwiChain.
@@ -737,12 +740,12 @@ pub fn sample_k<T: Clone>(candidates: &[T], k: u32, seed: &[u8; 32], domain: &[u
 }
 ```
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives sortition`
-Beklenen: 6 test PASS.
+Run: `cargo test -p pezkuwi-tnpos-primitives sortition`
+Expected: 6 tests PASS.
 
-- [ ] **Adım 5: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cargo fmt -p pezkuwi-tnpos-primitives
@@ -752,23 +755,24 @@ git commit -m "Draw stratum seats with an unbiased shuffle behind a Sortition bo
 
 ---
 
-## Görev 5: Güvenlik kısıtı — tamsayı, runtime'da zorlanır
+## Task 5: The security constraint — integer, enforced in the runtime
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/primitives/tnpos/src/invariant.rs`
+**Files:**
+- Create: `pezkuwi/primitives/tnpos/src/invariant.rs`
 
-**Arayüzler:**
-- Tüketir: `StratumConfig` (Görev 1), `committee::*` (Görev 2)
-- Üretir: `enum InvariantError`, `struct Seating { pub seated: Vec<StratumConfig>, pub n: u32 }`,
+**Interfaces:**
+- Consumes: `StratumConfig` (Task 1), `committee::*` (Task 2)
+- Produces: `enum InvariantError`, `struct Seating { pub seated: Vec<StratumConfig>, pub n: u32 }`,
   `fn seat(strata: &[StratumConfig], eligible: &[u32]) -> Result<Seating, InvariantError>`
-- Sabitler: `MIN_STRATA: u32 = 5`, `MIN_COMMITTEE: u32 = 15`
+- Constants: `MIN_STRATA: u32 = 5`, `MIN_COMMITTEE: u32 = 15`
 
-**Spec netleştirmesi (uygulama sırasında alınan karar):** Tam olasılık hesabı **runtime'a
-girmez** — kayan nokta belirlenimsizdir ve dokuz katmanlı konvolüsyon blok bütçesine
-sığmaz. Runtime **yeterli koşulu** zorlar: her oturan katman `min_eligible` tabanını
-karşılar. O tabanın bütçeyi ima ettiğinin ispatı Görev 6'daki `analysis`'te üretilir.
+**Spec clarification (a decision taken during implementation):** the exact probability
+computation **does not enter the runtime** — floating point is non-deterministic and a
+nine-stratum convolution does not fit in the block budget. The runtime enforces a **sufficient
+condition**: every seated stratum meets its `min_eligible` floor. The proof that this floor
+implies the budget is produced by `analysis` in Task 6.
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 ```rust
 #[cfg(test)]
@@ -868,12 +872,12 @@ mod tests {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives invariant`
-Beklenen: derleme hatası — `seat` bulunamadı.
+Run: `cargo test -p pezkuwi-tnpos-primitives invariant`
+Expected: a compile error — `seat` not found.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz**
+- [ ] **Step 3: Write the minimal implementation**
 
 ```rust
 // This file is part of PezkuwiChain.
@@ -977,12 +981,12 @@ pub fn seat(strata: &[StratumConfig], eligible: &[u32]) -> Result<Seating, Invar
 }
 ```
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives invariant`
-Beklenen: 6 test PASS.
+Run: `cargo test -p pezkuwi-tnpos-primitives invariant`
+Expected: 6 tests PASS.
 
-- [ ] **Adım 5: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cargo fmt -p pezkuwi-tnpos-primitives
@@ -992,22 +996,22 @@ git commit -m "Refuse to seat a committee that misses the security floors"
 
 ---
 
-## Görev 6: Olasılık analizi — `std` ardında, whitepaper tablosunu üretir
+## Task 6: Probability analysis — behind `std`, produces the whitepaper table
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/primitives/tnpos/src/analysis.rs`
-- Değiştir: `pezkuwi/primitives/tnpos/Cargo.toml` (test bağımlılığı yok; `std` yeterli)
+**Files:**
+- Create: `pezkuwi/primitives/tnpos/src/analysis.rs`
+- Modify: `pezkuwi/primitives/tnpos/Cargo.toml` (no test dependency; `std` is enough)
 
-**Arayüzler:**
-- Tüketir: `StratumConfig`, `committee::*`
-- Üretir: `fn stratum_distribution(eligible: u32, adversary: u32, seats: u32) -> Vec<f64>`,
+**Interfaces:**
+- Consumes: `StratumConfig`, `committee::*`
+- Produces: `fn stratum_distribution(eligible: u32, adversary: u32, seats: u32) -> Vec<f64>`,
   `fn committee_distribution(per_stratum: &[Vec<f64>]) -> Vec<f64>`,
   `fn tail(dist: &[f64], from: u32) -> f64`
 
-**Bu Görev 5'in tabanını ispatlar ve M7.4/M7.5'in girdisidir.** Kod `#[cfg(feature = "std")]`
-altındadır ve WASM'a **girmez**.
+**This proves Task 5's floor and is the input to M7.4/M7.5.** The code sits under
+`#[cfg(feature = "std")]` and **does not enter** WASM.
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 ```rust
 #[cfg(test)]
@@ -1094,12 +1098,12 @@ mod tests {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives analysis`
-Beklenen: derleme hatası — `stratum_distribution` bulunamadı.
+Run: `cargo test -p pezkuwi-tnpos-primitives analysis`
+Expected: a compile error — `stratum_distribution` not found.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz**
+- [ ] **Step 3: Write the minimal implementation**
 
 ```rust
 // This file is part of PezkuwiChain.
@@ -1166,18 +1170,18 @@ pub fn tail(dist: &[f64], from: u32) -> f64 {
 }
 ```
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezkuwi-tnpos-primitives analysis`
-Beklenen: 6 test PASS. Özellikle `the_published_budget_reproduces` — spec §5'teki
-tablonun testi budur.
+Run: `cargo test -p pezkuwi-tnpos-primitives analysis`
+Expected: 6 tests PASS. In particular `the_published_budget_reproduces` — that one is the test
+of the table in spec §5.
 
-- [ ] **Adım 5: `no_std` derlemesini doğrula**
+- [ ] **Step 5: Verify the `no_std` build**
 
-Çalıştır: `cargo build -p pezkuwi-tnpos-primitives --no-default-features`
-Beklenen: BAŞARILI. `analysis` derlenmemiş olmalı — kayan nokta runtime'a girmedi.
+Run: `cargo build -p pezkuwi-tnpos-primitives --no-default-features`
+Expected: SUCCESS. `analysis` must not have been compiled — no floating point entered the runtime.
 
-- [ ] **Adım 6: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 cargo fmt -p pezkuwi-tnpos-primitives
@@ -1187,19 +1191,19 @@ git commit -m "Prove the security floors in std-only analysis, tested against th
 
 ---
 
-## Görev 7: Pallet iskeleti — Config, depo, genesis
+## Task 7: Pallet skeleton — Config, storage, genesis
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/pezpallets/tnpos/Cargo.toml`, `src/lib.rs`, `src/mock.rs`, `src/tests.rs`,
+**Files:**
+- Create: `pezkuwi/pezpallets/tnpos/Cargo.toml`, `src/lib.rs`, `src/mock.rs`, `src/tests.rs`,
   `src/weights.rs`
-- Değiştir: `Cargo.toml` (workspace üyeleri + bağımlılıklar)
+- Modify: `Cargo.toml` (workspace members + dependencies)
 
-**Arayüzler:**
-- Tüketir: `pezkuwi-tnpos-primitives`'in tamamı
-- Üretir: `pezpallet_tnpos::{Config, Pezpallet, Event, Error}`; depo öğeleri
+**Interfaces:**
+- Consumes: all of `pezkuwi-tnpos-primitives`
+- Produces: `pezpallet_tnpos::{Config, Pezpallet, Event, Error}`; the storage items
   `Strata`, `PoolMembers`, `StratumSize`, `CurrentEra`, `CurrentCommittee`
 
-- [ ] **Adım 1: Başarısız testi yaz** — `src/tests.rs`:
+- [ ] **Step 1: Write the failing test** — `src/tests.rs`:
 
 ```rust
 use crate::{mock::*, *};
@@ -1229,12 +1233,12 @@ fn set_strata_requires_the_manager_origin() {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezpallet-tnpos`
-Beklenen: crate yok.
+Run: `cargo test -p pezpallet-tnpos`
+Expected: the crate does not exist.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz**
+- [ ] **Step 3: Write the minimal implementation**
 
 `Cargo.toml`:
 ```toml
@@ -1302,7 +1306,7 @@ try-runtime = [
 ]
 ```
 
-`src/lib.rs` (çekirdek — çağrılar Görev 8+'de eklenir):
+`src/lib.rs` (the core — the calls are added from Task 8 onwards):
 ```rust
 // This file is part of PezkuwiChain.
 
@@ -1436,7 +1440,7 @@ pub mod pezpallet {
 }
 ```
 
-`src/lib.rs`, genesis ve yapılandırma çağrısı (pezpallet modülünün içine):
+`src/lib.rs`, genesis and the configuration call (inside the pezpallet module):
 ```rust
 	#[pezpallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
@@ -1493,11 +1497,11 @@ pub mod pezpallet {
 	}
 ```
 
-> Sonraki görevler bu `#[pezpallet::call]` bloğuna ekleme yapar: 0-1 katılma/ayrılma
-> (Görev 8), 2 `force_new_era` (Görev 9), 3-4 tohum (Görev 10), 5 `report_offence`
-> (Görev 11). İndeksler tanım sırasına göre değil, **sabit** olmak zorundadır.
+> Later tasks add to this `#[pezpallet::call]` block: 0-1 join/leave (Task 8), 2 `force_new_era`
+> (Task 9), 3-4 the seed (Task 10), 5 `report_offence` (Task 11). The indices must be **fixed**,
+> not follow the order of definition.
 
-`src/weights.rs` (tamamı — Görev 13'te ölçülmüş değerlerle değiştirilir):
+`src/weights.rs` (in full — replaced in Task 13 with measured values):
 ```rust
 // This file is part of PezkuwiChain.
 
@@ -1548,7 +1552,7 @@ impl WeightInfo for () {
 }
 ```
 
-`src/mock.rs` (tamamı — **sonraki her görevin testleri bu yardımcıları kullanır**):
+`src/mock.rs` (in full — **the tests of every later task use these helpers**):
 ```rust
 // This file is part of PezkuwiChain.
 
@@ -1744,9 +1748,9 @@ pub fn advance_eras(n: u32) {
 }
 ```
 
-> **Not:** `mock.rs`, Görev 10'un `crate::seed::CommitRevealSortition`'ına ve Görev 8'in
-> `join`/`leave`'ine atıf yapar. Görev 7 uygulanırken bu iki satır geçici olarak yorumda
-> bırakılır ve ilgili görevde açılır; Görev 7'nin testleri onlara ihtiyaç duymaz.
+> **Note:** `mock.rs` refers to Task 10's `crate::seed::CommitRevealSortition` and to Task 8's
+> `join`/`leave`. While Task 7 is being implemented these two lines are left commented out and
+> uncommented in the task concerned; Task 7's own tests do not need them.
 
 Workspace `Cargo.toml`:
 ```toml
@@ -1756,12 +1760,12 @@ Workspace `Cargo.toml`:
 pezpallet-tnpos = { path = "pezkuwi/pezpallets/tnpos", version = "1.0.0", default-features = false }
 ```
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezpallet-tnpos`
-Beklenen: 3 test PASS.
+Run: `cargo test -p pezpallet-tnpos`
+Expected: 3 tests PASS.
 
-- [ ] **Adım 5: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cargo fmt -p pezpallet-tnpos
@@ -1772,21 +1776,21 @@ git commit -m "Add pezpallet-tnpos skeleton with strata storage and genesis"
 
 ---
 
-## Görev 8: Havuza katılma — uygunluk ölçülür, beyan edilmez
+## Task 8: Joining the pool — eligibility is measured, not declared
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/pezpallets/tnpos/src/pool.rs`
-- Değiştir: `src/lib.rs` (çağrı indeksleri 0-1), `src/tests.rs`
+**Files:**
+- Create: `pezkuwi/pezpallets/tnpos/src/pool.rs`
+- Modify: `src/lib.rs` (call indices 0-1), `src/tests.rs`
 
-**Arayüzler:**
-- Tüketir: `Strata`, `PoolMembers`, `StratumSize`, `T::Scores`
-- Üretir: `Pezpallet::<T>::join(origin, stratum)`, `Pezpallet::<T>::leave(origin)`,
+**Interfaces:**
+- Consumes: `Strata`, `PoolMembers`, `StratumSize`, `T::Scores`
+- Produces: `Pezpallet::<T>::join(origin, stratum)`, `Pezpallet::<T>::leave(origin)`,
   `fn eligible_for(who: &T::AccountId, stratum: StratumId) -> Result<(), Error<T>>`
 
-**Bu, silinen pallet'in en ciddi açığını kapatır:** eski `validate_category_requirements`
-`min_stake`'i **çağıranın verdiği argümandan** okuyordu; kimse gerçek bakiyeye bakmıyordu.
+**This closes the deleted pallet's most serious hole:** the old `validate_category_requirements`
+read `min_stake` **from an argument supplied by the caller**; nobody looked at the real balance.
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 ```rust
 #[test]
@@ -1874,12 +1878,12 @@ fn the_pool_is_bounded() {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezpallet-tnpos pool`
-Beklenen: `join` bulunamadı.
+Run: `cargo test -p pezpallet-tnpos pool`
+Expected: `join` not found.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz** — `src/pool.rs`:
+- [ ] **Step 3: Write the minimal implementation** — `src/pool.rs`:
 
 ```rust
 // This file is part of PezkuwiChain.
@@ -1963,7 +1967,7 @@ impl<T: Config> Pezpallet<T> {
 }
 ```
 
-`src/lib.rs`'e çağrılar:
+The calls, into `src/lib.rs`:
 ```rust
 	#[pezpallet::call]
 	impl<T: Config> Pezpallet<T> {
@@ -1982,14 +1986,14 @@ impl<T: Config> Pezpallet<T> {
 		}
 	}
 ```
-ve `pub mod pool;`'u `lib.rs`'e ekle.
+and add `pub mod pool;` to `lib.rs`.
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezpallet-tnpos`
-Beklenen: 9 test PASS.
+Run: `cargo test -p pezpallet-tnpos`
+Expected: 9 tests PASS.
 
-- [ ] **Adım 5: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cargo fmt -p pezpallet-tnpos
@@ -1999,18 +2003,18 @@ git commit -m "Gate pool entry on measured scores instead of caller-declared val
 
 ---
 
-## Görev 9: Komiteyi oturtma — katmanlı örnekleme ve bozulma
+## Task 9: Seating the committee — stratified sampling and degradation
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/pezpallets/tnpos/src/sample.rs`
-- Değiştir: `src/lib.rs` (hook + çağrı indeksi 2), `src/tests.rs`
+**Files:**
+- Create: `pezkuwi/pezpallets/tnpos/src/sample.rs`
+- Modify: `src/lib.rs` (hook + call index 2), `src/tests.rs`
 
-**Arayüzler:**
-- Tüketir: `seat` (Görev 5), `sample_k` / `Sortition` (Görev 4), `PoolMembers`, `StratumSize`
-- Üretir: `fn do_seat_committee() -> Result<Seating, Error<T>>`,
+**Interfaces:**
+- Consumes: `seat` (Task 5), `sample_k` / `Sortition` (Task 4), `PoolMembers`, `StratumSize`
+- Produces: `fn do_seat_committee() -> Result<Seating, Error<T>>`,
   `Pezpallet::<T>::force_new_era(origin)`
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 ```rust
 #[test]
@@ -2120,12 +2124,12 @@ fn a_refused_seating_does_not_retry_every_block() {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezpallet-tnpos sample`
-Beklenen: `force_new_era` bulunamadı.
+Run: `cargo test -p pezpallet-tnpos sample`
+Expected: `force_new_era` not found.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz** — `src/sample.rs`:
+- [ ] **Step 3: Write the minimal implementation** — `src/sample.rs`:
 
 ```rust
 // This file is part of PezkuwiChain.
@@ -2204,7 +2208,7 @@ impl<T: Config> Pezpallet<T> {
 }
 ```
 
-`src/lib.rs`'e hook ve çağrı:
+The hook and the call, into `src/lib.rs`:
 ```rust
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
@@ -2255,12 +2259,12 @@ impl<T: Config> Pezpallet<T> {
 		}
 ```
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezpallet-tnpos`
-Beklenen: 16 test PASS.
+Run: `cargo test -p pezpallet-tnpos`
+Expected: 16 tests PASS.
 
-- [ ] **Adım 5: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cargo fmt -p pezpallet-tnpos
@@ -2270,22 +2274,22 @@ git commit -m "Seat committees by stratum, shrinking rather than redistributing 
 
 ---
 
-## Görev 10: Faz 1 rastgeleliği — commit-reveal tohum
+## Task 10: Phase 1 randomness — the commit-reveal seed
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/pezpallets/tnpos/src/seed.rs`
-- Değiştir: `src/lib.rs` (çağrı indeksleri 3-4, depo), `src/tests.rs`
+**Files:**
+- Create: `pezkuwi/pezpallets/tnpos/src/seed.rs`
+- Modify: `src/lib.rs` (call indices 3-4, storage), `src/tests.rs`
 
-**Arayüzler:**
-- Üretir: `struct CommitRevealSortition<T>` (`impl Sortition<T::AccountId>`),
+**Interfaces:**
+- Produces: `struct CommitRevealSortition<T>` (`impl Sortition<T::AccountId>`),
   `Pezpallet::<T>::commit_seed(origin, hash)`, `Pezpallet::<T>::reveal_seed(origin, preimage)`
 
-**Neden commit-reveal:** `RandomnessFromOneEpochAgo` bir epoch önceden **herkesçe
-hesaplanabilir** ve epoch'un son blok üreticileri blok saklayarak eğebilir. Faz 1 için
-katılımcı bir commit-reveal yeterlidir: en az bir dürüst katılımcı varsa tohum
-öngörülemez. Faz 2 bunu ring-VRF ile değiştirir.
+**Why commit-reveal:** `RandomnessFromOneEpochAgo` is **computable by anyone** an epoch in
+advance, and the epoch's last block producers can bias it by withholding a block. For Phase 1 a
+participatory commit-reveal is enough: if there is at least one honest participant the seed is
+unpredictable. Phase 2 replaces this with ring-VRF.
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 ```rust
 #[test]
@@ -2348,12 +2352,12 @@ fn only_pool_members_may_contribute() {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezpallet-tnpos seed`
-Beklenen: `commit_seed` bulunamadı.
+Run: `cargo test -p pezpallet-tnpos seed`
+Expected: `commit_seed` not found.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz** — `src/seed.rs`:
+- [ ] **Step 3: Write the minimal implementation** — `src/seed.rs`:
 
 ```rust
 // This file is part of PezkuwiChain.
@@ -2424,7 +2428,7 @@ impl<T: Config> pezkuwi_tnpos_primitives::sortition::Sortition<T::AccountId>
 }
 ```
 
-`src/lib.rs`'e depo ve hatalar:
+Storage and errors, into `src/lib.rs`:
 ```rust
 	/// Commitments for the next era's seed.
 	#[pezpallet::storage]
@@ -2435,15 +2439,15 @@ impl<T: Config> pezkuwi_tnpos_primitives::sortition::Sortition<T::AccountId>
 	#[pezpallet::storage]
 	pub type NextSeed<T: Config> = StorageValue<_, [u8; 32], OptionQuery>;
 ```
-`Error`'a: `NoCommitment`, `BadReveal`.
-Çağrılar (indeks 3, 4): `commit_seed`, `reveal_seed`; `pub mod seed;` ekle.
+To `Error`: `NoCommitment`, `BadReveal`.
+The calls (indices 3, 4): `commit_seed`, `reveal_seed`; add `pub mod seed;`.
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezpallet-tnpos`
-Beklenen: 21 test PASS.
+Run: `cargo test -p pezpallet-tnpos`
+Expected: 21 tests PASS.
 
-- [ ] **Adım 5: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cargo fmt -p pezpallet-tnpos
@@ -2453,21 +2457,22 @@ git commit -m "Draw eras from a mixed commit-reveal seed instead of a predictabl
 
 ---
 
-## Görev 11: Katman-özel ceza
+## Task 11: Stratum-specific penalty
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/pezpallets/tnpos/src/slash.rs`
-- Değiştir: `src/lib.rs` (depo, çağrı indeksi 5), `src/tests.rs`
+**Files:**
+- Create: `pezkuwi/pezpallets/tnpos/src/slash.rs`
+- Modify: `src/lib.rs` (storage, call index 5), `src/tests.rs`
 
-**Arayüzler:**
-- Üretir: `enum Offence { Unavailable, Equivocation }`,
-  `Pezpallet::<T>::report_offence(origin, who, offence)`, depo `Banned`
+**Interfaces:**
+- Produces: `enum Offence { Unavailable, Equivocation }`,
+  `Pezpallet::<T>::report_offence(origin, who, offence)`, the `Banned` storage item
 
-**Tasarım (spec §9):** Stake katmanında ceza mevcut `staking-async` slashing'idir ve bu
-pallet ona dokunmaz. Diğer sekiz katmanda cezalandırılan şey **standing**'dir: havuz yasağı
-(hafif 24 era, ağır 360 era) ve trust cezası. Anonim emanet bond Faz 3'tür.
+**Design (spec §9):** in the stake stratum the penalty is the existing `staking-async` slashing,
+and this pallet does not touch it. In the other eight strata what is punished is **standing**: a
+pool ban (24 eras for minor, 360 eras for severe) and a trust penalty. The anonymous escrow bond
+is Phase 3.
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 ```rust
 #[test]
@@ -2536,12 +2541,12 @@ fn an_offence_removes_the_member_from_the_seated_committee() {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezpallet-tnpos slash`
-Beklenen: `report_offence` bulunamadı.
+Run: `cargo test -p pezpallet-tnpos slash`
+Expected: `report_offence` not found.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz** — `src/slash.rs`:
+- [ ] **Step 3: Write the minimal implementation** — `src/slash.rs`:
 
 ```rust
 // This file is part of PezkuwiChain.
@@ -2613,9 +2618,9 @@ impl<T: Config> Pezpallet<T> {
 }
 ```
 
-`src/lib.rs`: depo `Banned: StorageMap<_, Blake2_128Concat, T::AccountId, u32, OptionQuery>`;
-`Error::Banned`; `Event::Punished { who, offence, banned_until }`; çağrı indeksi 5
-`report_offence` (`ManagerOrigin`). **Ve `pool.rs::do_join`'ın başına yasak kontrolü:**
+`src/lib.rs`: the storage item `Banned: StorageMap<_, Blake2_128Concat, T::AccountId, u32, OptionQuery>`;
+`Error::Banned`; `Event::Punished { who, offence, banned_until }`; call index 5
+`report_offence` (`ManagerOrigin`). **And a ban check at the head of `pool.rs::do_join`:**
 ```rust
 		if let Some(until) = Banned::<T>::get(&who) {
 			ensure!(CurrentEra::<T>::get() >= until, Error::<T>::Banned);
@@ -2623,12 +2628,12 @@ impl<T: Config> Pezpallet<T> {
 		}
 ```
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezpallet-tnpos`
-Beklenen: 26 test PASS.
+Run: `cargo test -p pezpallet-tnpos`
+Expected: 26 tests PASS.
 
-- [ ] **Adım 5: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cargo fmt -p pezpallet-tnpos
@@ -2638,19 +2643,19 @@ git commit -m "Punish offences by taking standing, scaled to what the member did
 
 ---
 
-## Görev 12: `SessionManager` teslimi
+## Task 12: `SessionManager` handover
 
-**Dosyalar:**
-- Değiştir: `pezkuwi/pezpallets/tnpos/src/lib.rs`, `src/tests.rs`
+**Files:**
+- Modify: `pezkuwi/pezpallets/tnpos/src/lib.rs`, `src/tests.rs`
 
-**Arayüzler:**
-- Üretir: `impl pezpallet_session::SessionManager<T::AccountId> for Pezpallet<T>`
+**Interfaces:**
+- Produces: `impl pezpallet_session::SessionManager<T::AccountId> for Pezpallet<T>`
 
-**Kritik:** Silinen pallet'in `SessionManager` implementasyonu **hiçbir runtime'a bağlı
-değildi** — `new_session` bir kez bile çağrılmadı, shadow mode hiç çalışmadı. Bu görev
-implementasyonu yazar; Görev 14 onu gerçekten **bağlar** ve bağlandığını doğrular.
+**Critical:** the deleted pallet's `SessionManager` implementation **was not wired into any
+runtime** — `new_session` was never called even once, and shadow mode never ran. This task
+writes the implementation; Task 14 actually **wires** it and verifies that it is wired.
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Step 1: Write the failing test**
 
 ```rust
 use pezpallet_session::SessionManager;
@@ -2690,12 +2695,12 @@ fn a_banned_member_is_never_handed_over() {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p pezpallet-tnpos session`
-Beklenen: `SessionManager` implementasyonu yok.
+Run: `cargo test -p pezpallet-tnpos session`
+Expected: there is no `SessionManager` implementation.
 
-- [ ] **Adım 3: Asgari implementasyonu yaz** — `src/lib.rs`'e:
+- [ ] **Step 3: Write the minimal implementation** — into `src/lib.rs`:
 
 ```rust
 	impl<T: Config> pezpallet_session::SessionManager<T::AccountId> for Pezpallet<T> {
@@ -2719,12 +2724,12 @@ Beklenen: `SessionManager` implementasyonu yok.
 	}
 ```
 
-- [ ] **Adım 4: Testlerin geçtiğini doğrula**
+- [ ] **Step 4: Verify the tests pass**
 
-Çalıştır: `cargo test -p pezpallet-tnpos`
-Beklenen: 29 test PASS.
+Run: `cargo test -p pezpallet-tnpos`
+Expected: 29 tests PASS.
 
-- [ ] **Adım 5: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cargo fmt -p pezpallet-tnpos
@@ -2734,16 +2739,16 @@ git commit -m "Hand the seated committee to session, keeping authorities on fail
 
 ---
 
-## Görev 13: Benchmarklar ve ağırlıklar
+## Task 13: Benchmarks and weights
 
-**Dosyalar:**
-- Oluştur: `pezkuwi/pezpallets/tnpos/src/benchmarking.rs`
-- Değiştir: `src/weights.rs`, `src/lib.rs`
+**Files:**
+- Create: `pezkuwi/pezpallets/tnpos/src/benchmarking.rs`
+- Modify: `src/weights.rs`, `src/lib.rs`
 
-**Arayüzler:**
-- Üretir: ölçülmüş `WeightInfo` implementasyonu
+**Interfaces:**
+- Produces: a measured `WeightInfo` implementation
 
-- [ ] **Adım 1: Benchmarkları yaz** — `src/benchmarking.rs`:
+- [ ] **Step 1: Write the benchmarks** — `src/benchmarking.rs`:
 
 ```rust
 // This file is part of PezkuwiChain.
@@ -2802,18 +2807,18 @@ mod benchmarks {
 }
 ```
 
-- [ ] **Adım 2: Benchmark testlerinin geçtiğini doğrula**
+- [ ] **Step 2: Verify the benchmark tests pass**
 
-Çalıştır: `cargo test -p pezpallet-tnpos --features runtime-benchmarks`
-Beklenen: benchmark test paketi PASS.
+Run: `cargo test -p pezpallet-tnpos --features runtime-benchmarks`
+Expected: the benchmark test suite PASSes.
 
-- [ ] **Adım 3: Ağırlıkları CI'da ölç**
+- [ ] **Step 3: Measure the weights in CI**
 
-**WSL'de çalıştırma.** CI iş akışını `pezpallet_tnpos` için tetikle ve üretilen
-`weights.rs`'i içeri al. Beklenen: `seat_committee`'nin `p` katsayısı sıfırdan büyük —
-sabit çıkarsa iterasyon ölçülmemiş demektir.
+**Do not run this on WSL.** Trigger the CI workflow for `pezpallet_tnpos` and bring in the
+generated `weights.rs`. Expected: the `p` coefficient of `seat_committee` is greater than zero —
+if it comes out constant, the iteration was not measured.
 
-- [ ] **Adım 4: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add pezkuwi/pezpallets/tnpos/src/benchmarking.rs pezkuwi/pezpallets/tnpos/src/weights.rs
@@ -2822,19 +2827,19 @@ git commit -m "Measure TNPoS weights, with seating parameterised by pool size"
 
 ---
 
-## Görev 14: Zagros'a bağla ve `validator-pool`'u sil
+## Task 14: Wire it into Zagros and delete `validator-pool`
 
-**Dosyalar:**
-- Değiştir: `pezkuwi/runtime/zagros/src/lib.rs`, `pezkuwi/runtime/zagros/Cargo.toml`
-- Sil: `pezkuwi/pezpallets/validator-pool/` (tamamı),
+**Files:**
+- Modify: `pezkuwi/runtime/zagros/src/lib.rs`, `pezkuwi/runtime/zagros/Cargo.toml`
+- Delete: `pezkuwi/pezpallets/validator-pool/` (all of it),
   `pezkuwi/runtime/{zagros,pezkuwichain}/src/weights/pezpallet_validator_pool.rs`
-- Değiştir: `Cargo.toml`, `pezkuwi/runtime/pezkuwichain/src/lib.rs` (kayıt kaldırılır)
+- Modify: `Cargo.toml`, `pezkuwi/runtime/pezkuwichain/src/lib.rs` (the entry is removed)
 
-**Kritik:** Bu görev, silinen pallet'in hiç yapmadığı şeyi yapar: `SessionManager`'ı
-**gerçekten bağlar**. `pezpallet_session::Config::SessionManager` bugün
-`NoteHistoricalRoot<Self, StakingAhClient>`. TNPoS Zagros'ta o zincire girer.
+**Critical:** this task does what the deleted pallet never did: it **actually wires**
+`SessionManager`. Today `pezpallet_session::Config::SessionManager` is
+`NoteHistoricalRoot<Self, StakingAhClient>`. On Zagros, TNPoS enters that chain.
 
-- [ ] **Adım 1: Bağlantının test edildiğini yaz** — `pezkuwi/runtime/zagros/src/lib.rs` içine:
+- [ ] **Step 1: Write the test for the wiring** — into `pezkuwi/runtime/zagros/src/lib.rs`:
 
 ```rust
 #[cfg(test)]
@@ -2859,15 +2864,15 @@ mod tnpos_wiring {
 }
 ```
 
-- [ ] **Adım 2: Testin başarısız olduğunu doğrula**
+- [ ] **Step 2: Verify the test fails**
 
-Çalıştır: `cargo test -p zagros-runtime tnpos_wiring`
-Beklenen: FAIL — `SessionManager` hâlâ `StakingAhClient`.
+Run: `cargo test -p zagros-runtime tnpos_wiring`
+Expected: FAIL — `SessionManager` is still `StakingAhClient`.
 
-- [ ] **Adım 3: Runtime'ı bağla**
+- [ ] **Step 3: Wire the runtime**
 
-`pezkuwi/runtime/zagros/src/lib.rs`, `StubTrustProvider`..`StubPerwerdeProvider` bloğunu ve
-`pezpallet_validator_pool::Config` implementasyonunu **sil**, yerine:
+In `pezkuwi/runtime/zagros/src/lib.rs`, **delete** the `StubTrustProvider`..`StubPerwerdeProvider`
+block and the `pezpallet_validator_pool::Config` implementation, and in their place:
 
 ```rust
 // =====================================================
@@ -2913,38 +2918,37 @@ impl pezpallet_tnpos::Config for Runtime {
 }
 ```
 
-`construct_runtime!`: `ValidatorPool: pezpallet_validator_pool = 91,` yerine
-`Tnpos: pezpallet_tnpos = 91,`. Benchmark listesinde de değiştir.
+`construct_runtime!`: replace `ValidatorPool: pezpallet_validator_pool = 91,` with
+`Tnpos: pezpallet_tnpos = 91,`. Change it in the benchmark list too.
 
 `pezpallet_session::Config`:
 ```rust
 	type SessionManager = pezpallet_session::historical::NoteHistoricalRoot<Self, Tnpos>;
 ```
 
-- [ ] **Adım 4: Testin geçtiğini doğrula**
+- [ ] **Step 4: Verify the test passes**
 
-Çalıştır: `cargo test -p zagros-runtime tnpos_wiring`
-Beklenen: PASS.
+Run: `cargo test -p zagros-runtime tnpos_wiring`
+Expected: PASS.
 
-- [ ] **Adım 5: Eski pallet'i sil ve derlemeyi doğrula**
+- [ ] **Step 5: Delete the old pallet and verify the build**
 
 ```bash
 git rm -r pezkuwi/pezpallets/validator-pool
 git rm pezkuwi/runtime/zagros/src/weights/pezpallet_validator_pool.rs
 git rm pezkuwi/runtime/pezkuwichain/src/weights/pezpallet_validator_pool.rs
 ```
-`Cargo.toml`'dan `pezkuwi/pezpallets/validator-pool` üyesini ve
-`pezpallet-validator-pool` bağımlılığını kaldır. `pezkuwichain` runtime'ından
-pallet kaydını ve stub sağlayıcıları kaldır (mainnet **henüz TNPoS'a bağlanmaz** —
-M7.0 açık).
+Remove the `pezkuwi/pezpallets/validator-pool` member and the `pezpallet-validator-pool`
+dependency from `Cargo.toml`. Remove the pallet entry and the stub providers from the
+`pezkuwichain` runtime (mainnet is **not wired to TNPoS yet** — M7.0 is open).
 
-Çalıştır: `grep -rn "validator_pool\|validator-pool" --include="*.rs" --include="*.toml" .`
-Beklenen: **çıktı yok.**
+Run: `grep -rn "validator_pool\|validator-pool" --include="*.rs" --include="*.toml" .`
+Expected: **no output.**
 
-Çalıştır: `cargo check --workspace --all-targets`
-Beklenen: BAŞARILI.
+Run: `cargo check --workspace --all-targets`
+Expected: SUCCESS.
 
-- [ ] **Adım 6: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 cargo fmt --all
@@ -2955,17 +2959,17 @@ git commit -m "Wire TNPoS into Zagros session and remove pezpallet-validator-poo
 
 ---
 
-## Tamamlanma kapısı
+## Completion gate
 
-Faz 1 ancak şunların hepsi doğrulandığında bitmiştir:
+Phase 1 is finished only when all of the following are verified:
 
-- [ ] `cargo test -p pezkuwi-tnpos-primitives` — hepsi geçiyor
-- [ ] `cargo build -p pezkuwi-tnpos-primitives --no-default-features` — `analysis` WASM'a girmiyor
-- [ ] `cargo test -p pezpallet-tnpos` — hepsi geçiyor
+- [ ] `cargo test -p pezkuwi-tnpos-primitives` — all passing
+- [ ] `cargo build -p pezkuwi-tnpos-primitives --no-default-features` — `analysis` does not enter WASM
+- [ ] `cargo test -p pezpallet-tnpos` — all passing
 - [ ] `cargo test -p pezpallet-tnpos --features runtime-benchmarks`
 - [ ] `cargo check --workspace --all-targets`
-- [ ] `grep -rn "validator_pool\|validator-pool"` — çıktı yok
-- [ ] CI'da `try-runtime` Zagros'a karşı yeşil
-- [ ] Ağırlıklar CI runner'ında ölçüldü, `seat_committee`'nin `p` katsayısı > 0
-- [ ] `docs/TNPOS_DESIGN.md` §5 tablosu Görev 6'daki testle üretilen sayılarla eşleşiyor
-- [ ] `res/plans/PLAN.md`'de M7.2 ve M7.3 kabul ölçütleriyle işaretlendi
+- [ ] `grep -rn "validator_pool\|validator-pool"` — no output
+- [ ] `try-runtime` green against Zagros in CI
+- [ ] The weights were measured on the CI runner, the `p` coefficient of `seat_committee` > 0
+- [ ] The §5 table in `docs/TNPOS_DESIGN.md` matches the numbers produced by the test in Task 6
+- [ ] M7.2 and M7.3 marked in `res/plans/PLAN.md` with their acceptance criteria
