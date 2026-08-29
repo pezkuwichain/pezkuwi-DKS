@@ -61,6 +61,7 @@ pezpallet-society = { workspace = true }
 pezpallet-staking-score = { workspace = true }
 pezpallet-tiki = { workspace = true }
 pezpallet-timestamp = { workspace = true }
+pezpallet-tnpos = { workspace = true }
 pezpallet-transaction-payment = { workspace = true }
 pezpallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pezpallet-trust = { workspace = true }
@@ -68,8 +69,12 @@ pezpallet-utility = { workspace = true }
 pezpallet-vesting = { workspace = true }
 pezpallet-welati = { workspace = true }
 pezsp-api = { workspace = true }
+pezsp-authority-discovery = { workspace = true }
 pezsp-block-builder = { workspace = true }
 pezsp-consensus-aura = { workspace = true }
+pezsp-consensus-babe = { workspace = true }
+pezsp-consensus-beefy = { workspace = true }
+pezsp-consensus-grandpa = { workspace = true }
 pezsp-core = { workspace = true }
 pezsp-genesis-builder = { workspace = true }
 pezsp-inherents = { workspace = true }
@@ -172,6 +177,7 @@ std = [
 	"pezpallet-staking-score/std",
 	"pezpallet-tiki/std",
 	"pezpallet-timestamp/std",
+	"pezpallet-tnpos/std",
 	"pezpallet-transaction-payment-rpc-runtime-api/std",
 	"pezpallet-transaction-payment/std",
 	"pezpallet-trust/std",
@@ -181,8 +187,12 @@ std = [
 	"pezpallet-xcm-benchmarks?/std",
 	"pezpallet-xcm/std",
 	"pezsp-api/std",
+	"pezsp-authority-discovery/std",
 	"pezsp-block-builder/std",
 	"pezsp-consensus-aura/std",
+	"pezsp-consensus-babe/std",
+	"pezsp-consensus-beefy/std",
+	"pezsp-consensus-grandpa/std",
 	"pezsp-core/std",
 	"pezsp-genesis-builder/std",
 	"pezsp-inherents/std",
@@ -256,6 +266,7 @@ runtime-benchmarks = [
 	"pezpallet-staking-score/runtime-benchmarks",
 	"pezpallet-tiki/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-tnpos/runtime-benchmarks",
 	"pezpallet-transaction-payment-rpc-runtime-api/runtime-benchmarks",
 	"pezpallet-transaction-payment/runtime-benchmarks",
 	"pezpallet-trust/runtime-benchmarks",
@@ -333,6 +344,7 @@ try-runtime = [
 	"pezpallet-staking-score/try-runtime",
 	"pezpallet-tiki/try-runtime",
 	"pezpallet-timestamp/try-runtime",
+	"pezpallet-tnpos/try-runtime",
 	"pezpallet-transaction-payment-rpc-runtime-api/try-runtime",
 	"pezpallet-transaction-payment/try-runtime",
 	"pezpallet-trust/try-runtime",

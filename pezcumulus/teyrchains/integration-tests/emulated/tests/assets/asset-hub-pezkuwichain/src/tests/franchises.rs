@@ -62,3 +62,46 @@ fn no_subject_is_decided_by_two_different_electorates() {
 		);
 	}
 }
+/// The People chain's mirror of this runtime's `SessionKeys` decodes what this one produces.
+///
+/// People checks a registration before forwarding it, and it can only do that against a
+/// structurally identical type it declares itself. If the two drift, People accepts a payload
+/// this chain then refuses -- and People is left holding a record of a key that was never
+/// registered here, which is the one disagreement the design is built to prevent.
+#[test]
+fn the_relay_key_mirror_matches() {
+	use codec::{Decode, Encode};
+	use pezkuwichain_system_emulated_network::{
+		people_pezkuwichain_emulated_chain::people_pezkuwichain_runtime,
+		pezkuwichain_emulated_chain::pezkuwichain_runtime,
+	};
+
+	let ours = pezkuwichain_runtime::SessionKeys {
+		grandpa: pezsp_core::ed25519::Public::from_raw([1u8; 32]).into(),
+		babe: pezsp_core::sr25519::Public::from_raw([2u8; 32]).into(),
+		para_validator: pezsp_core::sr25519::Public::from_raw([3u8; 32]).into(),
+		para_assignment: pezsp_core::sr25519::Public::from_raw([4u8; 32]).into(),
+		authority_discovery: pezsp_core::sr25519::Public::from_raw([5u8; 32]).into(),
+		beefy: pezsp_core::ecdsa::Public::from_raw([6u8; 33]).into(),
+	}
+	.encode();
+
+	let mirrored = people_pezkuwichain_runtime::people::RelaySessionKeys::decode(&mut &ours[..]);
+	assert!(mirrored.is_ok(), "People's mirror cannot decode this chain's session keys");
+	assert_eq!(
+		mirrored.expect("decoded").encode(),
+		ours,
+		"the mirror decodes but re-encodes differently: a field has changed size"
+	);
+
+	// Round-tripping the bytes is not enough on its own. `grandpa` and `babe` are both 32
+	// bytes, so swapping them decodes cleanly and re-encodes identically -- and every key
+	// would then be registered against the wrong role. The key-type ids are what carry the
+	// roles, so they are what has to match, in order.
+	use pezsp_runtime::traits::OpaqueKeys;
+	assert_eq!(
+		people_pezkuwichain_runtime::people::RelaySessionKeys::key_ids(),
+		pezkuwichain_runtime::SessionKeys::key_ids(),
+		"the mirror names the same keys in a different order, or names different keys"
+	);
+}

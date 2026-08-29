@@ -805,6 +805,9 @@ construct_runtime!(
 		StakingScore: pezpallet_staking_score = 80,
 		Trust: pezpallet_trust = 81,
 		Society: pezpallet_society = 82,
+		// The validator committee. It lives here rather than on the relay because all five
+		// scores it reads are pallets on this chain -- see `RegisterScores` in `people.rs`.
+		Tnpos: pezpallet_tnpos = 83,
 
 		// Assets & Rewards
 		Assets: pezpallet_assets = 90,

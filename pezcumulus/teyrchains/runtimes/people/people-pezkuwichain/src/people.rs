@@ -1679,3 +1679,116 @@ impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for
 		ScoreSnapshot { value: value.into(), last_updated: observed_at }
 	}
 }
+
+/// The relay's `SessionKeys`, mirrored so a registration can be checked before it is sent.
+///
+/// Must match the relay's definition field for field and in order -- it is what decodes the
+/// bytes, and a mismatch would accept a payload the relay then refuses, leaving this chain
+/// holding a key the relay does not have. `the_relay_key_mirror_matches` in the relay's tests
+/// compares the two; this comment is not the check.
+pezsp_runtime::impl_opaque_keys! {
+	pub struct RelaySessionKeys {
+		pub grandpa: pezsp_consensus_grandpa::AuthorityId,
+		pub babe: pezsp_consensus_babe::AuthorityId,
+		pub para_validator: pezkuwi_primitives::ValidatorId,
+		pub para_assignment: pezkuwi_primitives::AssignmentId,
+		pub authority_discovery: pezsp_authority_discovery::AuthorityId,
+		pub beefy: pezsp_consensus_beefy::ecdsa_crypto::AuthorityId,
+	}
+}
+
+parameter_types! {
+	/// How old a score may be before the committee treats it as absent.
+	pub const TnposMaxScoreAge: BlockNumber = 4 * HOURS;
+	pub const TnposEraLength: BlockNumber = 6 * HOURS;
+	pub const TnposMaxPoolSize: u32 = 1_000;
+}
+
+impl pezpallet_tnpos::Config for Runtime {
+	type WeightInfo = ();
+	type Sortition = pezpallet_tnpos::seed::CommitRevealSortition<Runtime>;
+	// The register itself, read locally. This is the reason the pallet is on this chain.
+	type Scores = RegisterScores;
+	// The pallet's own register: it decides who may validate, so it holds the record of who
+	// has keys to validate with. Anything else here would be a second opinion about a fact it
+	// already keeps.
+	type HasSessionKeys = Tnpos;
+	type RelaySessionKeys = RelaySessionKeys;
+	type SendKeysToRelay = KeysToRelay;
+	// Strata and forced eras are constitutional, not administrative: the court writes the
+	// register's rules, and how the committee is composed is one of them.
+	type ManagerOrigin = crate::RegisterAuthority;
+	type MaxScoreAge = TnposMaxScoreAge;
+	type EraLength = TnposEraLength;
+	type MaxPoolSize = TnposMaxPoolSize;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = TnposBenchmarkHelper;
+}
+
+/// How a key registration reaches the relay's session pallet.
+///
+/// This chain cannot name the relay's calls by type, so it addresses them the way `welati`
+/// addresses the treasury's: pallet index, then call index, then arguments. Both numbers are
+/// load-bearing and neither is checked by the compiler -- if the relay renumbers, the message
+/// lands on whatever now sits at 67. `the_key_calls_encode_the_way_people_builds_them` in the
+/// relay's tests is what holds the two ends together.
+///
+/// `ah_client` accepts these from the chains named in `EnsureAssetHub`, and writes them into
+/// the relay's own `pezpallet_session`. That is the only copy consensus reads; the register
+/// this chain keeps says who holds keys, not what they are worth.
+#[derive(codec::Encode, codec::Decode)]
+enum RelayRuntimePallets {
+	// `StakingAhClient` in both relay runtimes.
+	#[codec(index = 67)]
+	AhClient(AhClientCalls),
+}
+
+#[derive(codec::Encode, codec::Decode)]
+enum AhClientCalls {
+	// `fn set_keys_from_ah`. The ownership proof was checked before this was built, so only
+	// the keys travel.
+	#[codec(index = 3)]
+	SetKeys { stash: AccountId, keys: alloc::vec::Vec<u8> },
+	// `fn purge_keys_from_ah`.
+	#[codec(index = 4)]
+	PurgeKeys { stash: AccountId },
+}
+
+pub struct KeysToRelay;
+impl KeysToRelay {
+	fn send(call: RelayRuntimePallets) -> Result<(), ()> {
+		use codec::Encode;
+		use xcm::latest::prelude::*;
+
+		let message = Xcm(alloc::vec![
+			UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+			Transact {
+				origin_kind: OriginKind::Native,
+				fallback_max_weight: None,
+				call: call.encode().into(),
+			},
+		]);
+
+		let (ticket, _) = <crate::xcm_config::XcmRouter as SendXcm>::validate(
+			&mut Some(Location::parent()),
+			&mut Some(message),
+		)
+		.map_err(|_| ())?;
+		<crate::xcm_config::XcmRouter as SendXcm>::deliver(ticket)
+			.map(|_| ())
+			.map_err(|_| ())
+	}
+}
+
+impl pezpallet_tnpos::SendKeysToRelay<AccountId> for KeysToRelay {
+	fn set_keys(stash: &AccountId, keys: alloc::vec::Vec<u8>) -> Result<(), ()> {
+		Self::send(RelayRuntimePallets::AhClient(AhClientCalls::SetKeys {
+			stash: stash.clone(),
+			keys,
+		}))
+	}
+
+	fn purge_keys(stash: &AccountId) -> Result<(), ()> {
+		Self::send(RelayRuntimePallets::AhClient(AhClientCalls::PurgeKeys { stash: stash.clone() }))
+	}
+}

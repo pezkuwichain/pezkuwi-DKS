@@ -422,3 +422,34 @@ fn fast_track_support_floor_is_measured_against_what_can_vote() {
 		);
 	});
 }
+
+/// The People chain builds the key calls by hand, and nothing fails if the bytes drift.
+///
+/// It cannot name this runtime's types, so `KeysToRelay` writes the address itself: pallet
+/// index 67, then call index 3 or 4. If either moves, the `Transact` stops decoding -- and it
+/// stops silently, because the sending side has already taken the registration. This pins the
+/// bytes it has to produce, the same way the treasury call is pinned for `welati`.
+#[test]
+fn the_key_calls_encode_the_way_people_builds_them() {
+	use codec::Encode;
+
+	let stash: AccountId = [7u8; 32].into();
+	let keys = vec![1u8, 2, 3];
+
+	let real_set = RuntimeCall::StakingAhClient(
+		pezpallet_staking_async_ah_client::Call::<Runtime>::set_keys_from_ah {
+			stash: stash.clone(),
+			keys: keys.clone(),
+		},
+	)
+	.encode();
+	assert_eq!(real_set, (67u8, 3u8, stash.clone(), keys).encode(), "set_keys address moved");
+
+	let real_purge = RuntimeCall::StakingAhClient(pezpallet_staking_async_ah_client::Call::<
+		Runtime,
+	>::purge_keys_from_ah {
+		stash: stash.clone(),
+	})
+	.encode();
+	assert_eq!(real_purge, (67u8, 4u8, stash).encode(), "purge_keys address moved");
+}
