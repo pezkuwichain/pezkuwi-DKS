@@ -2680,12 +2680,15 @@ pezsp_api::impl_runtime_apis! {
 				}
 			}
 
-			// Upstream whitelists the treasury's account here, so a benchmark that touches it
-			// is not charged for a read every runtime performs anyway. This relay has no
-			// treasury -- it moved to the Asset Hub -- so there is no account to whitelist and
-			// naming one stopped the runtime compiling under this feature. Nothing else took
-			// its place: a whitelist entry only ever removes a cost, so an absent one makes a
-			// weight slightly pessimistic rather than wrong.
+			// Upstream whitelists the treasury's account here, so a benchmark that touches it is
+			// not charged for a read every runtime performs anyway. This relay has no treasury --
+			// it moved to the Asset Hub -- so there is no account to name, and naming one meant
+			// neither relay could be built with `runtime-benchmarks` at all. The breakage was
+			// invisible because the only configuration that compiles the line is the one it
+			// breaks.
+			//
+			// Nothing takes its place: a whitelist entry only ever removes a cost, so an absent
+			// one makes a weight slightly pessimistic rather than wrong.
 			let whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
