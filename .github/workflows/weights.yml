@@ -21,6 +21,16 @@ on:
         description: "Pallet to benchmark (e.g. pezpallet_balances). Empty = all in the runtime."
         required: false
         type: string
+      repeat:
+        description: >-
+          Repetitions per step (default 20). Raise it when a pallet's fitted base disagrees
+          with its own recorded minimum -- xcmp-queue needed 100, and 200 for one runtime.
+        required: false
+        type: string
+      steps:
+        description: "Samples per component (default 50)."
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -66,6 +76,8 @@ jobs:
           args=""
           [ -n "${{ inputs.runtime }}" ] && args="$args --runtime ${{ inputs.runtime }}"
           [ -n "${{ inputs.pallet }}" ] && args="$args --pezpallet ${{ inputs.pallet }}"
+          [ -n "${{ inputs.repeat }}" ] && args="$args --repeat ${{ inputs.repeat }}"
+          [ -n "${{ inputs.steps }}" ] && args="$args --steps ${{ inputs.steps }}"
           echo "running: cmd.py bench $args"
           python3 .github/scripts/cmd/cmd.py bench $args
 
