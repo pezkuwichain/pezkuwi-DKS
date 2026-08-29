@@ -2,15 +2,27 @@ name: weights
 
 # Re-generates the weights the runtimes charge for extrinsics.
 #
-# Never on push: a weight is a measurement, and a measurement is only worth the machine it
-# was taken on. This runs on one pinned host -- the weakest validator class in the fleet --
-# because block production waits on the slowest node. Numbers taken anywhere faster describe
-# work the fleet cannot finish in the time the block allows.
+# A weight is a measurement, and a measurement is only worth the machine it was taken on.
+# This runs on one pinned host -- the weakest validator class in the fleet -- because block
+# production waits on the slowest node. Numbers taken anywhere faster describe work the fleet
+# cannot finish in the time the block allows.
 #
 # The same reasoning fixes reference_hardware.json, and the two belong together: if this
 # workflow ever moves to a different host, re-take that baseline in the same change.
+#
+# Two ways in, and the second exists because the first cannot reach a branch. GitHub only
+# offers `workflow_dispatch` for workflows that are already on the default branch, so for the
+# ten days this file has existed it could not be run at all -- the measurements it describes
+# were taken by hand on the box instead, which is how two bridge hubs came to be skipped with
+# nobody noticing. A request file fixes that: edit `.github/weights-request.yml`, push, and
+# the run happens here with the busy-machine check in front of it and an artifact behind it.
+# It is still not "on push" in the sense the fleet has to worry about -- ordinary commits do
+# not touch that file, and nothing else triggers this.
 
 on:
+  push:
+    paths:
+      - ".github/weights-request.yml"
   workflow_dispatch:
     inputs:
       runtime:
@@ -71,12 +83,11 @@ jobs:
             exit 1
           fi
 
-      # Inputs arrive through `env`, never interpolated into the script. `${{ }}` is
-      # substituted into the shell *before* bash sees it, so a value containing `;` or a
-      # backtick would run as a command on the reference host -- with the runner's token and
-      # the fleet's SSH keys in reach. `workflow_dispatch` narrows who can send one, but a
-      # dispatch is not a review, and this pattern is the reason a runner compromise usually
-      # starts with a workflow input.
+      # `workflow_dispatch` inputs win when present; otherwise the request file is read.
+      # Either way the values arrive through `env` and go into an argv array, never into the
+      # script text. `${{ }}` is substituted before bash sees the line, so a value containing
+      # a semicolon or a backtick would run as a command on the one host that holds the runner
+      # token and reaches the fleet. A dispatch is not a review.
       - name: Generate
         env:
           IN_RUNTIME: ${{ inputs.runtime }}
@@ -85,20 +96,9 @@ jobs:
           IN_STEPS: ${{ inputs.steps }}
         run: |
           set -euo pipefail
-          # The two numbers are checked because they are numbers. A shape check on a free-text
-          # field is worth more than a promise in a description.
-          for n in "$IN_REPEAT" "$IN_STEPS"; do
-            case "$n" in
-              ''|*[!0-9]*) [ -z "$n" ] || { echo "::error::repeat/steps must be digits"; exit 1; };;
-            esac
-          done
-          args=()
-          [ -n "$IN_RUNTIME" ] && args+=(--runtime "$IN_RUNTIME")
-          [ -n "$IN_PALLET" ] && args+=(--pezpallet "$IN_PALLET")
-          [ -n "$IN_REPEAT" ] && args+=(--repeat "$IN_REPEAT")
-          [ -n "$IN_STEPS" ] && args+=(--steps "$IN_STEPS")
-          echo "running: cmd.py bench ${args[*]}"
-          python3 .github/scripts/cmd/cmd.py bench "${args[@]}"
+          python3 .github/scripts/weights_request.py \
+            --runtime "$IN_RUNTIME" --pallet "$IN_PALLET" \
+            --repeat "$IN_REPEAT" --steps "$IN_STEPS"
 
       # The weights are the product; they are reviewed and committed by hand rather than
       # pushed from CI, because a number nobody looked at is not a measurement either.

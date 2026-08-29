@@ -14,6 +14,11 @@
 # installed whatever was newest that day and the tooling could change under us without a commit
 # saying so. Pinning also lets the dependency graph resolve them, which is how their licences
 # became visible in the first place.
+# PyYAML was already needed and never written down: `check-prdoc.py` and `generate-prdoc.py`
+# both import it, and the runs worked only because something else on the runner had pulled it
+# in. `weights_request.py` makes that three. An undeclared dependency is a run that passes
+# until the day the box is rebuilt.
+PyYAML==6.0.2
 toml==0.10.2
 cargo-workspace==1.2.8
 PyGithub==2.9.1

@@ -1,0 +1,31 @@
+# Asking for a weights measurement.
+#
+# Editing this file and pushing runs the `weights` workflow on the reference host. Nothing
+# else triggers it, and no ordinary commit touches this file. The request stays in git, so
+# what was measured -- and why -- is answerable later from the history rather than from
+# somebody's shell.
+#
+# Each entry may set `runtime`, `pallet`, `repeat`, `steps` and `why`. Leave `runtime` or
+# `pallet` out to mean "all of them", which takes many hours.
+#
+# `repeat` is the knob that decides whether a fitted weight is a measurement or a draw.
+# `enqueue_n_full_pages` has a steep slope over a wide component range, so the intercept is
+# poorly determined and the default 20 samples do not pin it down: seven runtimes came back
+# with a base up to twelve times their own recorded minimum, and 100 fixed them.
+#
+# Both twins, always. Measuring one and not the other is how they drift, and `check-twin-
+# runtimes.py` compares pallet indices, not weights -- nothing else would catch it.
+
+runs:
+  - runtime: bridge-hub-pezkuwichain
+    pallet: pezcumulus_pezpallet_xcmp_queue
+    repeat: 100
+    why: >-
+      Skipped in the 2026-08-28 re-measurement because this runtime could not be built with
+      `runtime-benchmarks` at the time. It still carries the old figures and fails the
+      pallet's own `check_accuracy` by 22%, which is the last red in the `runtimes` job.
+
+  - runtime: bridge-hub-zagros
+    pallet: pezcumulus_pezpallet_xcmp_queue
+    repeat: 100
+    why: The twin. Same reason, same numbers, and it must not be left behind.
