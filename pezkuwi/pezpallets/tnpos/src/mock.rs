@@ -123,9 +123,25 @@ thread_local! {
 	/// but `Config` is singular, so a runtime cannot hold both. The flag is reset by
 	/// `ExtBuilder`, so a test that does not set it cannot inherit it from one that did.
 	pub static SEND_FAILS: RefCell<bool> = const { RefCell::new(false) };
+
+	/// Every committee handed to the sender, in order. Recorded even when the send fails, so
+	/// a test can tell "was not delivered" from "was never offered" -- two very different
+	/// faults that look identical from the relay's side.
+	pub static EXPORTED: RefCell<Vec<(u32, Vec<AccountId>)>> = const { RefCell::new(Vec::new()) };
 }
 
 pub struct MockSender;
+impl pezpallet_tnpos::SendCommitteeToRelay<AccountId> for MockSender {
+	fn send(era: u32, committee: alloc::vec::Vec<AccountId>) -> Result<(), ()> {
+		EXPORTED.with(|e| e.borrow_mut().push((era, committee)));
+		if SEND_FAILS.with(|f| *f.borrow()) {
+			Err(())
+		} else {
+			Ok(())
+		}
+	}
+}
+
 impl pezpallet_tnpos::SendKeysToRelay<AccountId> for MockSender {
 	fn set_keys(_: &AccountId, _: alloc::vec::Vec<u8>) -> Result<(), ()> {
 		if SEND_FAILS.with(|f| *f.borrow()) {
@@ -209,6 +225,7 @@ impl pezpallet_tnpos::Config for Test {
 	type RelaySessionKeys = MockRelayKeys;
 	// Succeeds unless `SEND_FAILS` says otherwise; the reverting case has its own test.
 	type SendKeysToRelay = MockSender;
+	type SendCommitteeToRelay = MockSender;
 	type ManagerOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type MaxScoreAge = MaxScoreAge;
 	type EraLength = EraLength;
@@ -252,6 +269,7 @@ pub fn new_test_ext_with_strata(n: usize) -> pezsp_io::TestExternalities {
 	// Reset the thread-locals: these outlive a single test in the same thread, and a flag left
 	// on by one test is a failure that appears in another.
 	SEND_FAILS.with(|f| *f.borrow_mut() = false);
+	EXPORTED.with(|e| e.borrow_mut().clear());
 	let mut t = pezframe_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 	pezpallet_tnpos::GenesisConfig::<Test> {
 		strata: nine_strata().into_iter().take(n).collect(),

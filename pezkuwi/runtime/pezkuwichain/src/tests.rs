@@ -453,3 +453,43 @@ fn the_key_calls_encode_the_way_people_builds_them() {
 	.encode();
 	assert_eq!(real_purge, (67u8, 4u8, stash).encode(), "purge_keys address moved");
 }
+
+/// The committee call, pinned the same way and for the same reason.
+///
+/// This one matters more than the key calls: a key that never arrives costs one validator a
+/// session, while a committee that never arrives means the relay keeps validating with the
+/// set it already had, era after era, while People believes it has been handing over a new
+/// one. Both ends would look healthy.
+#[test]
+fn the_committee_call_encodes_the_way_people_builds_it() {
+	use codec::Encode;
+
+	let committee: Vec<AccountId> = vec![[1u8; 32].into(), [2u8; 32].into()];
+	let report = pezpallet_staking_async_rc_client::ValidatorSetReport::new_terminal(
+		committee.clone(),
+		9,
+		None,
+	);
+
+	let real = RuntimeCall::StakingAhClient(
+		pezpallet_staking_async_ah_client::Call::<Runtime>::validator_set {
+			report: report.clone(),
+		},
+	)
+	.encode();
+	assert_eq!(real, (67u8, 0u8, report).encode(), "validator_set address moved");
+
+	// The report's own shape is half the contract: People builds it from the crate that
+	// defines it, so a field added upstream stops that runtime compiling. What the compiler
+	// cannot see is the order, so pin the bytes.
+	let by_hand = (
+		67u8,
+		0u8,
+		committee,
+		9u32,
+		Option::<u32>::None, // prune_up_to: this chain does not track relay sessions
+		false,               // leftover: a committee is bounded and always fits one message
+	)
+		.encode();
+	assert_eq!(real, by_hand, "ValidatorSetReport's field order changed");
+}

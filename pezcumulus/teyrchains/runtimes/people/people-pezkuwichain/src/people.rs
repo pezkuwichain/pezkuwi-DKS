@@ -1715,6 +1715,7 @@ impl pezpallet_tnpos::Config for Runtime {
 	type HasSessionKeys = Tnpos;
 	type RelaySessionKeys = RelaySessionKeys;
 	type SendKeysToRelay = KeysToRelay;
+	type SendCommitteeToRelay = CommitteeToRelay;
 	// Strata and forced eras are constitutional, not administrative: the court writes the
 	// register's rules, and how the committee is composed is one of them.
 	type ManagerOrigin = crate::RegisterAuthority;
@@ -1745,6 +1746,13 @@ enum RelayRuntimePallets {
 
 #[derive(codec::Encode, codec::Decode)]
 enum AhClientCalls {
+	// `fn validator_set`. The report is the relay's own type, taken from the crate that
+	// defines it rather than mirrored here: a field added upstream then stops this runtime
+	// from compiling, instead of quietly encoding a shape the relay decodes as something
+	// else. A committee is bounded at `MAX_COMMITTEE` accounts, so a report always fits in
+	// one message and never needs the paging `ValidatorSetReport::split` exists for.
+	#[codec(index = 0)]
+	ValidatorSet(pezpallet_staking_async_rc_client::ValidatorSetReport<AccountId>),
 	// `fn set_keys_from_ah`. The ownership proof was checked before this was built, so only
 	// the keys travel.
 	#[codec(index = 3)]
@@ -1754,9 +1762,9 @@ enum AhClientCalls {
 	PurgeKeys { stash: AccountId },
 }
 
-pub struct KeysToRelay;
-impl KeysToRelay {
-	fn send(call: RelayRuntimePallets) -> Result<(), ()> {
+/// One route for everything this chain tells the relay: an unpaid `Transact` at the parent.
+fn send_to_relay(call: RelayRuntimePallets) -> Result<(), ()> {
+	{
 		use codec::Encode;
 		use xcm::latest::prelude::*;
 
@@ -1780,15 +1788,41 @@ impl KeysToRelay {
 	}
 }
 
+pub struct KeysToRelay;
 impl pezpallet_tnpos::SendKeysToRelay<AccountId> for KeysToRelay {
 	fn set_keys(stash: &AccountId, keys: alloc::vec::Vec<u8>) -> Result<(), ()> {
-		Self::send(RelayRuntimePallets::AhClient(AhClientCalls::SetKeys {
+		send_to_relay(RelayRuntimePallets::AhClient(AhClientCalls::SetKeys {
 			stash: stash.clone(),
 			keys,
 		}))
 	}
 
 	fn purge_keys(stash: &AccountId) -> Result<(), ()> {
-		Self::send(RelayRuntimePallets::AhClient(AhClientCalls::PurgeKeys { stash: stash.clone() }))
+		send_to_relay(RelayRuntimePallets::AhClient(AhClientCalls::PurgeKeys {
+			stash: stash.clone(),
+		}))
+	}
+}
+
+/// How a seated committee reaches the relay.
+///
+/// This is the whole point of drawing one here: until the relay receives it, a committee is a
+/// list in this chain's storage and consensus is still run by whoever the relay already knew.
+///
+/// A send that fails is *not* retried. The relay keeps validating with the previous committee,
+/// which is safe -- those validators are still elected members of the register -- and the next
+/// era draws again. What must not happen is that the failure is invisible, so the pallet emits
+/// `CommitteeExportFailed`; a run of them means the era clock here and the validator set there
+/// have come apart, and that is an operational alarm, not a state to reconcile in code.
+pub struct CommitteeToRelay;
+impl pezpallet_tnpos::SendCommitteeToRelay<AccountId> for CommitteeToRelay {
+	fn send(era: u32, committee: alloc::vec::Vec<AccountId>) -> Result<(), ()> {
+		// `prune_up_to: None`: pruning the relay's session history is the relay's own
+		// bookkeeping, and this chain does not track its session indices. Saying nothing is
+		// the honest answer; saying a number we did not measure would discard history.
+		let report = pezpallet_staking_async_rc_client::ValidatorSetReport::new_terminal(
+			committee, era, None,
+		);
+		send_to_relay(RelayRuntimePallets::AhClient(AhClientCalls::ValidatorSet(report)))
 	}
 }

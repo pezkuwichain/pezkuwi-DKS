@@ -80,6 +80,18 @@ impl<T: Config> HasSessionKeys<T::AccountId> for Pezpallet<T> {
 	}
 }
 
+/// Carries a seated committee to the chain that will validate with it.
+///
+/// Deliberately without a `()` implementation, here and on [`SendKeysToRelay`]. The obvious
+/// default -- do nothing, report success -- is the shape of every silent gate this tree has
+/// had to dig out: a runtime that forgot to wire delivery would compile, emit
+/// `CommitteeExported`, and seat nobody. Making the type system ask the question costs one
+/// line per runtime and cannot be answered wrongly by omission.
+pub trait SendCommitteeToRelay<AccountId> {
+	/// `era` is the identifier the receiving chain records the set under.
+	fn send(era: u32, committee: alloc::vec::Vec<AccountId>) -> Result<(), ()>;
+}
+
 /// Carries a key registration to the chain whose session pallet will hold it.
 ///
 /// Failure is reported, not swallowed. The caller reverts on `Err`, so this chain never keeps a
@@ -87,15 +99,6 @@ impl<T: Config> HasSessionKeys<T::AccountId> for Pezpallet<T> {
 pub trait SendKeysToRelay<AccountId> {
 	fn set_keys(stash: &AccountId, keys: alloc::vec::Vec<u8>) -> Result<(), ()>;
 	fn purge_keys(stash: &AccountId) -> Result<(), ()>;
-}
-
-impl<AccountId> SendKeysToRelay<AccountId> for () {
-	fn set_keys(_: &AccountId, _: alloc::vec::Vec<u8>) -> Result<(), ()> {
-		Ok(())
-	}
-	fn purge_keys(_: &AccountId) -> Result<(), ()> {
-		Ok(())
-	}
 }
 
 #[pezframe_support::pezpallet]
@@ -144,6 +147,18 @@ pub mod pezpallet {
 		/// the bytes -- and `the_relay_key_mirror_matches` in the runtime tests is what holds
 		/// the two definitions together.
 		type RelaySessionKeys: pezsp_runtime::traits::OpaqueKeys + codec::Decode;
+
+		/// How a seated committee reaches the chain it will validate.
+		///
+		/// The committee is only a list in storage until somebody acts on it. Delivery is
+		/// separated from seating so the pallet stays independent of where it runs, but it is
+		/// not optional: a pallet that draws a committee nobody receives is a mechanism that
+		/// was designed and never wired, and this tree has spent a week removing those.
+		///
+		/// A failed send is logged and the era still advances. The alternative -- refusing to
+		/// seat because the message could not go out -- would hand an unreachable relay the
+		/// power to freeze this chain's own era clock.
+		type SendCommitteeToRelay: crate::SendCommitteeToRelay<Self::AccountId>;
 
 		/// How the keys reach the relay, where the session pallet that uses them lives.
 		///
@@ -251,6 +266,16 @@ pub mod pezpallet {
 		Joined { who: T::AccountId, stratum: StratumId },
 		/// A member left the pool.
 		Left { who: T::AccountId },
+		/// A seated committee was handed to the router for the relay.
+		///
+		/// Sent, not accepted. A successful `send` means the message left this chain; whether
+		/// the relay's `ah_client` took it depends on an origin check over there, and this
+		/// chain never hears the answer. Reading this event as "the relay is now using this
+		/// committee" is the mistake `isInBlock` teaches every time.
+		CommitteeSentToRelay { era: u32, size: u32 },
+		/// The committee was seated but could not even be sent; the relay keeps the old one.
+		CommitteeCouldNotBeSent { era: u32 },
+
 		/// Relay session keys were registered here and forwarded.
 		RelayKeysSet { who: T::AccountId },
 		/// Relay session keys were withdrawn here and on the relay.

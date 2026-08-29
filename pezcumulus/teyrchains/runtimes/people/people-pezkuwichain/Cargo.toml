@@ -61,6 +61,9 @@ pezpallet-society = { workspace = true }
 pezpallet-staking-score = { workspace = true }
 pezpallet-tiki = { workspace = true }
 pezpallet-timestamp = { workspace = true }
+pezpallet-staking-async-rc-client = { workspace = true, features = [
+	"xcm-sender",
+] }
 pezpallet-tnpos = { workspace = true }
 pezpallet-transaction-payment = { workspace = true }
 pezpallet-transaction-payment-rpc-runtime-api = { workspace = true }
@@ -177,6 +180,7 @@ std = [
 	"pezpallet-staking-score/std",
 	"pezpallet-tiki/std",
 	"pezpallet-timestamp/std",
+	"pezpallet-staking-async-rc-client/std",
 	"pezpallet-tnpos/std",
 	"pezpallet-transaction-payment-rpc-runtime-api/std",
 	"pezpallet-transaction-payment/std",
@@ -266,6 +270,7 @@ runtime-benchmarks = [
 	"pezpallet-staking-score/runtime-benchmarks",
 	"pezpallet-tiki/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
+	"pezpallet-staking-async-rc-client/runtime-benchmarks",
 	"pezpallet-tnpos/runtime-benchmarks",
 	"pezpallet-transaction-payment-rpc-runtime-api/runtime-benchmarks",
 	"pezpallet-transaction-payment/runtime-benchmarks",
@@ -344,6 +349,7 @@ try-runtime = [
 	"pezpallet-staking-score/try-runtime",
 	"pezpallet-tiki/try-runtime",
 	"pezpallet-timestamp/try-runtime",
+	"pezpallet-staking-async-rc-client/try-runtime",
 	"pezpallet-tnpos/try-runtime",
 	"pezpallet-transaction-payment-rpc-runtime-api/try-runtime",
 	"pezpallet-transaction-payment/try-runtime",

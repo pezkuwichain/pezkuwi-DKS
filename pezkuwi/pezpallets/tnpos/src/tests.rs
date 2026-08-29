@@ -644,3 +644,57 @@ fn purging_keys_also_leaves_the_pool() {
 		assert_eq!(StratumSize::<Test>::get(StratumId::Perwerde), 0, "a seat was left behind");
 	});
 }
+
+// ===== EXPORT =====
+//
+// A committee is a list in storage until the chain that validates with it receives it. These
+// hold the delivery, because a pallet that draws a committee nobody gets is a mechanism that
+// was designed and never wired.
+
+/// Seating a committee hands it to the relay, with the era it belongs to.
+#[test]
+fn a_seated_committee_is_handed_to_the_relay() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+
+		let seated = CurrentCommittee::<Test>::get().to_vec();
+		assert!(!seated.is_empty(), "nothing was seated, so the test proves nothing");
+
+		let exported = EXPORTED.with(|e| e.borrow().clone());
+		assert_eq!(exported.len(), 1, "the committee was seated but never offered to the relay");
+		let (era, sent) = &exported[0];
+		assert_eq!(*era, CurrentEra::<Test>::get());
+		assert_eq!(sent, &seated, "the relay was sent a different set than the one seated");
+	});
+}
+
+/// A delivery that fails is reported, and the era still moves.
+///
+/// The alternative -- refusing to seat because the message could not go out -- would let an
+/// unreachable relay freeze this chain's era clock. What must not happen is silence: the
+/// difference between "the relay has an old committee because delivery failed" and "because
+/// nothing was drawn" has to be visible without reading the relay.
+#[test]
+fn a_committee_that_could_not_be_delivered_says_so() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		SEND_FAILS.with(|f| *f.borrow_mut() = true);
+
+		let era_before = CurrentEra::<Test>::get();
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+
+		assert!(CurrentEra::<Test>::get() > era_before, "a failed send froze the era clock");
+		assert!(
+			EXPORTED.with(|e| !e.borrow().is_empty()),
+			"the committee was never offered, which is a different fault"
+		);
+		assert!(
+			System::events().iter().any(|r| matches!(
+				r.event,
+				RuntimeEvent::Tnpos(Event::CommitteeCouldNotBeSent { .. })
+			)),
+			"a failed delivery must be visible on chain, not only in a log line"
+		);
+	});
+}

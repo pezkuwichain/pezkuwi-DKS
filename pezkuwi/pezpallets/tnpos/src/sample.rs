@@ -92,6 +92,19 @@ impl<T: Config> Pezpallet<T> {
 			quorum: seating.quorum(),
 			unseated,
 		});
+
+		// Hand it to the chain that will validate with it. Reported either way: a committee
+		// that was drawn but never delivered is the difference between this chain's storage
+		// and the authority set actually running, and it must be visible from a block
+		// explorer rather than inferred from a validator set that stopped changing.
+		match T::SendCommitteeToRelay::send(era, bounded.to_vec()) {
+			Ok(()) => Self::deposit_event(Event::CommitteeSentToRelay { era, size: seating.n }),
+			Err(()) => {
+				log::warn!(target: "tnpos", "committee for era {era} could not be delivered");
+				Self::deposit_event(Event::CommitteeCouldNotBeSent { era });
+			},
+		}
+
 		Ok(seating)
 	}
 }
