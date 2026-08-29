@@ -482,7 +482,10 @@ mod register_parameters {
 	/// has no rule above it.
 	#[test]
 	fn only_the_slow_track_turns_them() {
-		use people_zagros_runtime::{dynamic_params::qeyd, Parameters, RuntimeParameters};
+		use people_zagros_runtime::{
+			dynamic_params::qeyd, governance::pezpallet_custom_origins, Parameters,
+			RuntimeParameters,
+		};
 
 		let widen = || {
 			RuntimeParameters::Qeyd(qeyd::Parameters::MaxVouchingCapacity(
