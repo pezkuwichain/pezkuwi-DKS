@@ -569,3 +569,78 @@ fn a_banned_member_is_never_handed_over() {
 		assert_eq!(handed.len(), 26);
 	});
 }
+
+// ===== RELAY KEY REGISTER =====
+//
+// The pallet keeps the register of who holds relay session keys, and the relay keeps the keys
+// consensus reads. Those are two writes and they must not come apart -- a local record of a key
+// the relay never received would let a keyless account into the pool, and session drops a
+// keyless validator silently on rotation.
+
+/// Keys are recorded only if the relay accepted the message.
+#[test]
+fn a_key_the_relay_did_not_receive_is_not_recorded() {
+	new_test_ext().execute_with(|| {
+		let keys = mock_keys(ALICE);
+		let proof = mock_proof(ALICE);
+
+		SEND_FAILS.with(|f| *f.borrow_mut() = true);
+		assert_noop!(
+			Tnpos::set_relay_keys(RuntimeOrigin::signed(ALICE), keys.clone(), proof.clone()),
+			Error::<Test>::CouldNotReachRelay
+		);
+		assert!(!RelayKeys::<Test>::contains_key(ALICE), "recorded a key that never arrived");
+
+		SEND_FAILS.with(|f| *f.borrow_mut() = false);
+		assert_ok!(Tnpos::set_relay_keys(RuntimeOrigin::signed(ALICE), keys, proof));
+		assert!(RelayKeys::<Test>::contains_key(ALICE));
+	});
+}
+
+/// Bytes that are not the relay's keys are refused before they are recorded.
+#[test]
+fn keys_that_would_not_decode_on_the_relay_are_refused_here() {
+	new_test_ext().execute_with(|| {
+		assert_noop!(
+			Tnpos::set_relay_keys(RuntimeOrigin::signed(ALICE), vec![0xff], vec![]),
+			Error::<Test>::InvalidRelayKeys
+		);
+		assert!(!RelayKeys::<Test>::contains_key(ALICE));
+	});
+}
+
+/// A proof for somebody else's account does not register keys for this one.
+#[test]
+fn the_proof_has_to_belong_to_the_account_offering_it() {
+	new_test_ext().execute_with(|| {
+		assert_noop!(
+			Tnpos::set_relay_keys(RuntimeOrigin::signed(ALICE), mock_keys(ALICE), mock_proof(BOB)),
+			Error::<Test>::InvalidKeyOwnershipProof
+		);
+		assert!(!RelayKeys::<Test>::contains_key(ALICE));
+	});
+}
+
+/// Withdrawing keys takes the member out of the pool in the same call.
+///
+/// A member without keys is a seat the session would silently drop, which is the reason `join`
+/// refuses one. Leaving them in the pool would let the stratum counts claim a seat that cannot
+/// be filled -- the same arithmetic error, arrived at from the other direction.
+#[test]
+fn purging_keys_also_leaves_the_pool() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(Tnpos::set_relay_keys(
+			RuntimeOrigin::signed(ALICE),
+			mock_keys(ALICE),
+			mock_proof(ALICE)
+		));
+		set_perwerde(ALICE, 500);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Perwerde));
+		assert_eq!(StratumSize::<Test>::get(StratumId::Perwerde), 1);
+
+		assert_ok!(Tnpos::purge_relay_keys(RuntimeOrigin::signed(ALICE)));
+		assert!(!RelayKeys::<Test>::contains_key(ALICE));
+		assert!(!PoolMembers::<Test>::contains_key(ALICE));
+		assert_eq!(StratumSize::<Test>::get(StratumId::Perwerde), 0, "a seat was left behind");
+	});
+}

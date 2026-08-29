@@ -7,10 +7,12 @@
 
 use crate as pezpallet_tnpos;
 use core::cell::RefCell;
-use pezframe_support::{construct_runtime, derive_impl, parameter_types};
+use pezframe_support::{
+	construct_runtime, derive_impl, parameter_types, traits::ConstU32, BoundedVec,
+};
 use pezkuwi_tnpos_primitives::{scores::ScoreSnapshot, StratumConfig, StratumId};
 use pezsp_runtime::BuildStorage;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 pub type AccountId = u64;
 pub type BlockNumber = u64;
@@ -95,33 +97,74 @@ pub fn run_to_block(n: BlockNumber) {
 	}
 }
 
-// Accounts that have registered session keys. Absence from this set means the account
-// has no keys: a real runtime starts every account keyless too, and an unprepared account
-// there cannot join or be drawn, so the mock must agree rather than default to the
-// opposite and let that disagreement hide a bug like the one this default once caused.
-thread_local! {
-	static KEYED: RefCell<BTreeSet<AccountId>> = RefCell::new(BTreeSet::new());
-}
-
-/// Register `who`'s session keys, as a real validator would via `session::set_keys`
-/// before joining the pool. Nothing has keys by default, so any test or helper that
-/// expects `join` or a draw to succeed must call this first.
+/// Register `who`'s keys the way a validator does, straight into the pallet's own register.
+///
+/// This used to write a thread-local set of its own, and that was a second answer to a
+/// question the pallet already holds -- `join` read the pallet's register and the helper wrote
+/// somewhere else, so a test could set up an account the pallet would still refuse. Writing
+/// here means the mock and the runtime agree by construction rather than by habit.
+///
+/// Nothing has keys by default, so any test expecting `join` or a draw to succeed calls this.
 pub fn ensure_has_keys(who: AccountId) {
-	KEYED.with(|k| k.borrow_mut().insert(who));
+	let keys: BoundedVec<u8, ConstU32<512>> =
+		mock_keys(who).try_into().expect("mock keys fit the bound");
+	pezpallet_tnpos::RelayKeys::<Test>::insert(who, keys);
 }
 
-/// Deregister `who`'s session keys, as if they had called `session::purge_keys` after
-/// joining the pool.
+/// Deregister `who`'s keys, as if they had purged them after joining the pool.
 pub fn remove_keys(who: AccountId) {
-	KEYED.with(|k| k.borrow_mut().remove(&who));
+	pezpallet_tnpos::RelayKeys::<Test>::remove(who);
 }
 
-pub struct MockHasSessionKeys;
-impl pezpallet_tnpos::HasSessionKeys<AccountId> for MockHasSessionKeys {
-	fn has_keys(who: &AccountId) -> bool {
-		KEYED.with(|k| k.borrow().contains(who))
+thread_local! {
+	/// Whether the mock's sender refuses. Default is to succeed, so no existing test changes.
+	///
+	/// A hidden flag is worse than a second type, and a second type is what I tried first --
+	/// but `Config` is singular, so a runtime cannot hold both. The flag is reset by
+	/// `ExtBuilder`, so a test that does not set it cannot inherit it from one that did.
+	pub static SEND_FAILS: RefCell<bool> = const { RefCell::new(false) };
+}
+
+pub struct MockSender;
+impl pezpallet_tnpos::SendKeysToRelay<AccountId> for MockSender {
+	fn set_keys(_: &AccountId, _: alloc::vec::Vec<u8>) -> Result<(), ()> {
+		if SEND_FAILS.with(|f| *f.borrow()) {
+			Err(())
+		} else {
+			Ok(())
+		}
+	}
+	fn purge_keys(_: &AccountId) -> Result<(), ()> {
+		if SEND_FAILS.with(|f| *f.borrow()) {
+			Err(())
+		} else {
+			Ok(())
+		}
 	}
 }
+
+/// Well-formed mock relay keys for `who`, and the proof that goes with them.
+///
+/// `UintAuthorityId` signs by pairing its own id with the message, so a valid proof is the
+/// key's id together with the encoded account it claims. Built the same way the real thing is
+/// -- the account is what is signed over -- so a proof made for one account does not verify
+/// for another, which is what `the_proof_has_to_belong_to_the_account_offering_it` rests on.
+pub fn mock_keys(who: AccountId) -> alloc::vec::Vec<u8> {
+	use codec::Encode;
+	MockRelayKeys { dummy: pezsp_runtime::testing::UintAuthorityId(who) }.encode()
+}
+
+pub fn mock_proof(who: AccountId) -> alloc::vec::Vec<u8> {
+	use codec::Encode;
+	// The proof decodes as a tuple of one signature per key, and a one-element tuple encodes
+	// as the element itself -- so with a single key in the mirror it is one signature over the
+	// encoded owner.
+	pezsp_runtime::testing::TestSignature(who, who.encode()).encode()
+}
+
+// `HasSessionKeys` is bound to the pallet itself, here and in the runtime: the register lives
+// in the pallet, so anything else answering this question is a second opinion about a fact it
+// already holds. The trait stays for the shape, not for a second implementation.
 
 fn read_score(who: &AccountId, kind: u8) -> ScoreSnapshot<BlockNumber> {
 	SCORES
@@ -149,11 +192,23 @@ impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for
 	}
 }
 
+pezsp_runtime::impl_opaque_keys! {
+	pub struct MockRelayKeys {
+		pub dummy: pezsp_runtime::testing::UintAuthorityId,
+	}
+}
+
 impl pezpallet_tnpos::Config for Test {
 	type WeightInfo = ();
 	type Sortition = crate::seed::CommitRevealSortition<Test>;
 	type Scores = MockScores;
-	type HasSessionKeys = MockHasSessionKeys;
+	type HasSessionKeys = Tnpos;
+	// A one-field mirror: the tests are about who may join and who gets seated, not about the
+	// relay's key layout. The real mirror is checked against the relay's own definition in the
+	// runtime tests, which is the only place both are visible.
+	type RelaySessionKeys = MockRelayKeys;
+	// Succeeds unless `SEND_FAILS` says otherwise; the reverting case has its own test.
+	type SendKeysToRelay = MockSender;
 	type ManagerOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type MaxScoreAge = MaxScoreAge;
 	type EraLength = EraLength;
@@ -194,6 +249,9 @@ pub fn new_test_ext() -> pezsp_io::TestExternalities {
 
 /// Build genesis with the first `n` strata. Fewer than five must panic in `build`.
 pub fn new_test_ext_with_strata(n: usize) -> pezsp_io::TestExternalities {
+	// Reset the thread-locals: these outlive a single test in the same thread, and a flag left
+	// on by one test is a failure that appears in another.
+	SEND_FAILS.with(|f| *f.borrow_mut() = false);
 	let mut t = pezframe_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 	pezpallet_tnpos::GenesisConfig::<Test> {
 		strata: nine_strata().into_iter().take(n).collect(),

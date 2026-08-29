@@ -68,6 +68,36 @@ pub trait HasSessionKeys<AccountId> {
 	fn has_keys(who: &AccountId) -> bool;
 }
 
+/// The pallet answers this from its own register.
+///
+/// Bound as `type HasSessionKeys = Tnpos;` in the runtime. The trait stays rather than being
+/// replaced by a direct read because the tests need to drive it, but the register the pallet
+/// keeps is the one answer that cannot disagree with itself -- anything else bound here is a
+/// second opinion about a fact this pallet already holds.
+impl<T: Config> HasSessionKeys<T::AccountId> for Pezpallet<T> {
+	fn has_keys(who: &T::AccountId) -> bool {
+		RelayKeys::<T>::contains_key(who)
+	}
+}
+
+/// Carries a key registration to the chain whose session pallet will hold it.
+///
+/// Failure is reported, not swallowed. The caller reverts on `Err`, so this chain never keeps a
+/// record of keys the relay did not receive.
+pub trait SendKeysToRelay<AccountId> {
+	fn set_keys(stash: &AccountId, keys: alloc::vec::Vec<u8>) -> Result<(), ()>;
+	fn purge_keys(stash: &AccountId) -> Result<(), ()>;
+}
+
+impl<AccountId> SendKeysToRelay<AccountId> for () {
+	fn set_keys(_: &AccountId, _: alloc::vec::Vec<u8>) -> Result<(), ()> {
+		Ok(())
+	}
+	fn purge_keys(_: &AccountId) -> Result<(), ()> {
+		Ok(())
+	}
+}
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::{weights::WeightInfo, *};
@@ -105,6 +135,23 @@ pub mod pezpallet {
 		/// would let a stratum's real share of the committee differ from its seated one --
 		/// and, if enough seats went that way, leave the authority set empty.
 		type HasSessionKeys: crate::HasSessionKeys<Self::AccountId>;
+
+		/// The relay chain's own `SessionKeys`, mirrored so keys can be checked before they
+		/// are forwarded.
+		///
+		/// This chain cannot name the relay's type, so it declares a structurally identical
+		/// one. The mirror has to match field for field and in order -- it is what decodes
+		/// the bytes -- and `the_relay_key_mirror_matches` in the runtime tests is what holds
+		/// the two definitions together.
+		type RelaySessionKeys: pezsp_runtime::traits::OpaqueKeys + codec::Decode;
+
+		/// How the keys reach the relay, where the session pallet that uses them lives.
+		///
+		/// Registration is a local write *and* a message: this chain keeps the register of who
+		/// holds keys, and the relay keeps the keys themselves. Both happen in one call, and
+		/// the call reverts as a whole if the message cannot be sent -- a local record of a key
+		/// the relay never received is the disagreement this design exists to make impossible.
+		type SendKeysToRelay: crate::SendKeysToRelay<Self::AccountId>;
 
 		/// May set strata and force an era.
 		type ManagerOrigin: EnsureOrigin<Self::RuntimeOrigin>;
@@ -145,6 +192,16 @@ pub mod pezpallet {
 	/// Eligible members per stratum. Kept as a counter so seating never has to iterate.
 	#[pezpallet::storage]
 	pub type StratumSize<T: Config> = StorageMap<_, Twox64Concat, StratumId, u32, ValueQuery>;
+
+	/// Who has registered relay session keys, and the keys themselves.
+	///
+	/// The register of holders is here because this is where eligibility is decided; the keys
+	/// are here too so a re-send after a failed delivery does not need the holder to type them
+	/// again. The relay's session pallet holds the authoritative copy that consensus reads --
+	/// but it accepts writes only from this chain, so the two cannot drift.
+	#[pezpallet::storage]
+	pub type RelayKeys<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BoundedVec<u8, ConstU32<512>>, OptionQuery>;
 
 	#[pezpallet::storage]
 	pub type CurrentEra<T: Config> = StorageValue<_, u32, ValueQuery>;
@@ -194,6 +251,10 @@ pub mod pezpallet {
 		Joined { who: T::AccountId, stratum: StratumId },
 		/// A member left the pool.
 		Left { who: T::AccountId },
+		/// Relay session keys were registered here and forwarded.
+		RelayKeysSet { who: T::AccountId },
+		/// Relay session keys were withdrawn here and on the relay.
+		RelayKeysPurged { who: T::AccountId },
 		/// A committee was seated. `unseated` names the strata that stood down.
 		CommitteeSeated { era: u32, size: u32, quorum: u32, unseated: Vec<StratumId> },
 		/// No committee could be seated; the previous one stays.
@@ -232,6 +293,16 @@ pub mod pezpallet {
 		/// validator on rotation, so seating one would let a stratum's storage record
 		/// disagree with its real authority count.
 		NoSessionKeys,
+		/// The bytes do not decode as the relay's `SessionKeys`.
+		InvalidRelayKeys,
+		/// The ownership proof does not match the keys and the account offering them.
+		InvalidKeyOwnershipProof,
+		/// The keys are longer than the register will hold.
+		RelayKeysTooLong,
+		/// The relay could not be reached, so nothing was recorded.
+		CouldNotReachRelay,
+		/// There are no keys registered for this account.
+		NoRelayKeys,
 	}
 
 	#[pezpallet::genesis_config]
@@ -339,6 +410,70 @@ pub mod pezpallet {
 		#[pezpallet::weight(T::WeightInfo::join())]
 		pub fn join(origin: OriginFor<T>, stratum: StratumId) -> DispatchResult {
 			Self::do_join(ensure_signed(origin)?, stratum)
+		}
+
+		/// Register the relay session keys this account will validate with.
+		///
+		/// The keys are checked here and held on the relay. Checked here because this is where
+		/// eligibility is decided and an applicant deserves the reason rather than an
+		/// unexplained absence from the committee; held there because that is where consensus
+		/// reads them.
+		///
+		/// One call, two writes, and they cannot come apart: the message goes first and the
+		/// whole call reverts if it cannot be sent, so this chain never records a key the relay
+		/// did not receive. The relay accepts key writes from here and nowhere else, which is
+		/// what makes the pair a single register rather than two that agree by habit.
+		#[pezpallet::call_index(7)]
+		#[pezpallet::weight(T::WeightInfo::join())]
+		pub fn set_relay_keys(
+			origin: OriginFor<T>,
+			keys: alloc::vec::Vec<u8>,
+			proof: alloc::vec::Vec<u8>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			// Decoded as the relay's own key type, so a payload that would be rejected on
+			// arrival is rejected before it is recorded.
+			let decoded = <T::RelaySessionKeys as codec::Decode>::decode(&mut &keys[..])
+				.map_err(|_| Error::<T>::InvalidRelayKeys)?;
+			ensure!(
+				pezsp_runtime::traits::OpaqueKeys::ownership_proof_is_valid(
+					&decoded,
+					&who.encode(),
+					&proof
+				),
+				Error::<T>::InvalidKeyOwnershipProof
+			);
+
+			let bounded: BoundedVec<u8, ConstU32<512>> =
+				keys.clone().try_into().map_err(|_| Error::<T>::RelayKeysTooLong)?;
+
+			T::SendKeysToRelay::set_keys(&who, keys).map_err(|_| Error::<T>::CouldNotReachRelay)?;
+			RelayKeys::<T>::insert(&who, bounded);
+
+			Self::deposit_event(Event::RelayKeysSet { who });
+			Ok(())
+		}
+
+		/// Withdraw the keys, here and on the relay.
+		///
+		/// Leaves the pool as well, because a member without keys is a seat that the session
+		/// would silently drop -- the same reason `join` refuses one. Removing them from the
+		/// pool here is what keeps the stratum counts honest.
+		#[pezpallet::call_index(8)]
+		#[pezpallet::weight(T::WeightInfo::leave())]
+		pub fn purge_relay_keys(origin: OriginFor<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(RelayKeys::<T>::contains_key(&who), Error::<T>::NoRelayKeys);
+
+			T::SendKeysToRelay::purge_keys(&who).map_err(|_| Error::<T>::CouldNotReachRelay)?;
+			RelayKeys::<T>::remove(&who);
+			if PoolMembers::<T>::contains_key(&who) {
+				Self::do_leave(who.clone())?;
+			}
+
+			Self::deposit_event(Event::RelayKeysPurged { who });
+			Ok(())
 		}
 
 		/// Leave the pool.
