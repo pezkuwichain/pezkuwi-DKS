@@ -42,7 +42,7 @@ together.
 ## Scope — and what this plan leaves OUT
 
 **In:** all of M7.2; and from M7.3 the pool, the strata, eligibility, the score cache,
-sampling, the security constraint, degradation, `SessionManager` handover, and stratum-specific
+sampling, the security constraint, degradation, committee export to the validating chain, and stratum-specific
 slashing.
 
 **Out, requiring a separate plan:**
@@ -2643,7 +2643,17 @@ git commit -m "Punish offences by taking standing, scaled to what the member did
 
 ---
 
-## Task 12: `SessionManager` handover
+## Task 12: committee handover (superseded 2026-08-29)
+
+> **This task was completed as written and then undone, deliberately.** It produced
+> `impl SessionManager for Tnpos`, which was right while the pallet lived on the relay. After
+> the move to People it belonged to nobody: People's session is `CollatorSelection`'s and the
+> chain the committee validates is two hops away. The implementation was removed and replaced
+> by `SendCommitteeToRelay` — see "committee export" below. The steps are kept because the
+> tests they describe still hold, rewritten to go through the export instead. A dead trait
+> implementation is a claim the compiler keeps agreeing with.
+
+## Task 12 (as originally written): `SessionManager` handover
 
 **Files:**
 - Modify: `pezkuwi/pezpallets/tnpos/src/lib.rs`, `src/tests.rs`

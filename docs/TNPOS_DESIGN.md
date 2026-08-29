@@ -195,12 +195,20 @@ is what lets the phasing proceed without a rewrite.
 
 ### 6.2 Where it lives
 
-- **Relay:** pool, eligibility, strata, sampling, committee handover (`SessionManager`)
+- **People:** the pool, eligibility, the strata, sampling, and the committee — together with
+  the identity and credential sources they read (trust, tiki, perwerde, referral,
+  staking-score). It sits here because the scores it draws on are local: on the relay, five
+  of them arrived by XCM and could go stale independently, and three-of-five stale seats a
+  committee whose stratum proportions are silently wrong — worse than five-of-five, which
+  seats nobody
 - **AssetHub:** the **internal** ranking of the stake stratum — the existing `staking-async` +
-  `MultiBlockElection`. The nominator, exposure, slashing and reward machinery is **left
-  untouched**
-- **People:** the identity and credential sources (trust, tiki, perwerde, referral,
-  staking-score)
+  `MultiBlockElection` — and the payment. The nominator, exposure and slashing machinery is
+  left untouched; what changes is the **list it is fed** (decision of 2026-08-29: People
+  elects, AssetHub pays, the relay validates)
+- **Relay:** validates with the committee it is handed, through `ah_client`. No TNPoS code
+  runs here and the pallet has **no `SessionManager` implementation** — one was written while
+  it lived on the relay and removed on 2026-08-29, because a dead implementation reads as a
+  claim that the committee seats itself somewhere
 
 ### 6.3 The three rings
 
@@ -323,7 +331,7 @@ that destroyed tokens would pay itself out of every holder's balance instead of 
 | Phase | Content | Acceptance criterion |
 |---|---|---|
 | **0 — precondition, blocking** | Moving the `staking_score` oracle onto a cryptographic path · the People→Relay score XCM channel · alignment with the genesis reset schedule | The channel is live, the oracle is not a bot |
-| **1 — core** | primitives + pool + the 9 strata + quotas + the security constraint + degradation + `SessionManager` handover + stratum-specific slashing + a commit-reveal seed (**unpredictable, but biasable by withholding** — see the note below). **No** ring-VRF | Deployed to Zagros, `try_state` green |
+| **1 — core** | primitives + pool + the 9 strata + quotas + the security constraint + degradation + committee export to the validating chain + stratum-specific slashing + a commit-reveal seed (**unpredictable, but biasable by withholding** — see the note below). **No** ring-VRF | Deployed to Zagros, `try_state` green |
 | **2 — hardening the sortition** | Ring-VRF behind the `Sortition` trait · **a real SRS** (today `new_testing()`) · sub-rounds within an era · automatic finality recovery | The committee is unpredictable; the recovery drill passed |
 | **3 — anonymity** | An anonymous escrow bond bound to a nullifier · pseudonymous pool membership · **forward-secure ephemeral participation keys** (the lesson taken from Algorand: a captured key cannot re-sign the past) | The state-actor threat model is answered |
 | **4 — R&D, in parallel** | A SAFROLE / `sc-consensus-sassafras` port, **Zagros only** | No mainnet commitment |
