@@ -272,6 +272,35 @@ jobs:
             -p coretime-pezkuwichain-runtime -p coretime-zagros-runtime \
             -p collectives-zagros-runtime
 
+  # And with `runtime-benchmarks`, for the same reason and a demonstrated one.
+  #
+  # On 2026-08-28 a weights run stopped on both bridge hubs: `Encode` was never imported, so
+  # `generate_session_keys_and_proof` did not compile. That code exists only under this feature,
+  # nothing on the push path turned it on, and the nightly job checks `--benches` -- which does
+  # not build a runtime. So the two hubs had been unbuildable under the feature for as long as
+  # the code had been there, and the way it surfaced was a measurement failing hours in.
+  #
+  # A benchmark that cannot be run is a weight that cannot be measured, and an unmeasured weight
+  # is the chain mispricing its own blocks.
+  check-runtime-benchmarks:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, bizinikiwi-build]
+    steps:
+      - uses: actions/checkout@v7
+      # The same eleven as every other runtime job here. Kept in step deliberately: a runtime
+      # that is checked by one of these lists and not the others is a runtime with a gap
+      # nobody chose.
+      - run: |
+          cargo check --locked --features runtime-benchmarks \
+            -p pezkuwichain-runtime -p zagros-runtime \
+            -p asset-hub-pezkuwichain-runtime -p asset-hub-zagros-runtime \
+            -p people-pezkuwichain-runtime -p people-zagros-runtime \
+            -p pezbridge-hub-pezkuwichain-runtime -p pezbridge-hub-zagros-runtime \
+            -p coretime-pezkuwichain-runtime -p coretime-zagros-runtime \
+            -p collectives-zagros-runtime
+
   # The jobs above name the packages they care about. Between them they pull in 503 of the
   # workspace's 616 crates, which leaves 113 that nothing on this path compiles — among them
   # all 27 crates of the emulated integration-test tree, 29 pallets and 15 client crates.

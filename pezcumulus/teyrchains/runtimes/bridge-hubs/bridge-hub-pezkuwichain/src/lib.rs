@@ -1131,6 +1131,12 @@ impl_runtime_apis! {
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
+			// Imported here rather than at the top of the file: this is the only place the
+			// runtime encodes anything, and it exists only under `runtime-benchmarks`. The
+			// People chains carry `Encode` in their file-level imports and so compiled; these
+			// two did not, and the gap was invisible because no per-push job builds a runtime
+			// with this feature on -- it surfaced the first time a benchmark run reached them.
+			use codec::Encode;
 			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
 				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
 					let keys = SessionKeys::generate(&owner.encode(), None);

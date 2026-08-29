@@ -2739,9 +2739,13 @@ pezsp_api::impl_runtime_apis! {
 				}
 			}
 
-			let mut whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
-			let treasury_key = pezframe_system::Account::<Runtime>::hashed_key_for(Treasury::account_id());
-			whitelist.push(treasury_key.to_vec().into());
+			// Upstream whitelists the treasury's account here, so a benchmark that touches it
+			// is not charged for a read every runtime performs anyway. This relay has no
+			// treasury -- it moved to the Asset Hub -- so there is no account to whitelist and
+			// naming one stopped the runtime compiling under this feature. Nothing else took
+			// its place: a whitelist entry only ever removes a cost, so an absent one makes a
+			// weight slightly pessimistic rather than wrong.
+			let whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
