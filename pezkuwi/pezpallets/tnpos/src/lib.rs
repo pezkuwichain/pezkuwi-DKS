@@ -22,6 +22,8 @@ pub mod seed;
 pub mod slash;
 pub mod weights;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
@@ -38,6 +40,18 @@ use pezkuwi_tnpos_primitives::{
 };
 use pezsp_runtime::Saturating;
 use slash::Offence;
+
+/// Lets a runtime make an account eligible so `join` can be benchmarked.
+///
+/// Benchmarks run against a real runtime, whose scores arrive over XCM from another
+/// chain and cannot be conjured from inside a benchmark. The runtime supplies this
+/// so the measured path stays the real one: `eligible_for` still reads scores
+/// through `Scores` exactly as it does in production.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkHelper<AccountId> {
+	/// Give `who` whatever standing `stratum` requires.
+	fn make_eligible(who: &AccountId, stratum: StratumId);
+}
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
@@ -84,6 +98,15 @@ pub mod pezpallet {
 		/// Upper bound on pool members. Bounds every iteration in this pallet.
 		#[pezpallet::constant]
 		type MaxPoolSize: Get<u32>;
+
+		/// Makes an account eligible for a stratum during benchmarking.
+		///
+		/// Benchmarks run against a real runtime, whose scores arrive over XCM from another
+		/// chain and cannot be conjured from inside a benchmark. The runtime supplies this
+		/// so the measured path stays the real one: `eligible_for` still reads scores
+		/// through `Scores` exactly as it does in production.
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::BenchmarkHelper<Self::AccountId>;
 	}
 
 	/// The strata this chain draws from, and what each carries.

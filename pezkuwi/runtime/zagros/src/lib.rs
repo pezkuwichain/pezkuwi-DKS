@@ -729,6 +729,17 @@ parameter_types! {
 	pub const TnposMaxPoolSize: u32 = 1_000;
 }
 
+/// Zagros's scores are stubs that already answer for every account, so nothing has to be
+/// arranged: `StubScores::trust_of` returns a fresh non-zero value, which is what the six
+/// trust-gated strata ask for. When the People-chain channel replaces the stub this must
+/// arrange real standing instead.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct TnposBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_tnpos::BenchmarkHelper<AccountId> for TnposBenchmarkHelper {
+	fn make_eligible(_who: &AccountId, _stratum: pezkuwi_tnpos_primitives::StratumId) {}
+}
+
 impl pezpallet_tnpos::Config for Runtime {
 	type WeightInfo = ();
 	type Sortition = pezpallet_tnpos::seed::CommitRevealSortition<Runtime>;
@@ -737,6 +748,8 @@ impl pezpallet_tnpos::Config for Runtime {
 	type MaxScoreAge = TnposMaxScoreAge;
 	type EraLength = TnposEraLength;
 	type MaxPoolSize = TnposMaxPoolSize;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = TnposBenchmarkHelper;
 }
 
 /// Presents the TNPoS committee to the historical session pallet.

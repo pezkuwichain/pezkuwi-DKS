@@ -15,9 +15,7 @@ use std::collections::BTreeMap;
 pub type AccountId = u64;
 pub type BlockNumber = u64;
 
-#[allow(dead_code)]
 pub const ALICE: AccountId = 1;
-#[allow(dead_code)]
 pub const BOB: AccountId = 2;
 
 construct_runtime!(
@@ -130,6 +128,17 @@ impl pezpallet_tnpos::Config for Test {
 	type MaxScoreAge = MaxScoreAge;
 	type EraLength = EraLength;
 	type MaxPoolSize = MaxPoolSize;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = BenchHelper;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct BenchHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_tnpos::BenchmarkHelper<AccountId> for BenchHelper {
+	fn make_eligible(who: &AccountId, _stratum: StratumId) {
+		put_score(*who, TRUST, 1_000, System::block_number());
+	}
 }
 
 /// The nine strata at their specified sizes, with a floor small enough for tests.
