@@ -528,45 +528,80 @@ fn an_offender_who_already_left_the_pool_still_leaves_the_committee() {
 }
 
 #[test]
-fn a_new_session_hands_over_the_seated_committee() {
-	use pezpallet_session::SessionManager;
-
+fn what_is_sent_is_what_was_seated() {
 	new_test_ext().execute_with(|| {
 		fill_every_stratum(60);
 		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
-		let handed = <Tnpos as SessionManager<u64>>::new_session(1).expect("a committee exists");
-		assert_eq!(handed, CurrentCommittee::<Test>::get().to_vec());
-		assert_eq!(handed.len(), 27);
+
+		let (_, sent) = EXPORTED.with(|e| e.borrow().last().cloned().expect("nothing was sent"));
+		assert_eq!(sent, CurrentCommittee::<Test>::get().to_vec());
+		assert_eq!(sent.len(), 27);
 	});
 }
 
+/// An empty committee is never sent, and the silence is announced.
+///
+/// The receiving chain reads a set of no validators as an instruction to install none, which
+/// stops it. "Change nothing" is the recoverable answer, but it has to be distinguishable
+/// from a delivery that failed -- the two have different causes and different fixes.
 #[test]
-fn no_committee_hands_over_nothing_rather_than_an_empty_set() {
-	// Returning Some(vec![]) would tell session to install an empty authority set and stop
-	// the chain. None means "keep the current one", which is the recoverable answer.
-	use pezpallet_session::SessionManager;
-
+fn an_empty_committee_is_not_sent_at_all() {
 	new_test_ext().execute_with(|| {
-		assert!(<Tnpos as SessionManager<u64>>::new_session(1).is_none());
+		Tnpos::export_committee(0);
+
+		assert!(EXPORTED.with(|e| e.borrow().is_empty()), "an empty set was offered to the relay");
+		assert!(System::events()
+			.iter()
+			.any(|r| matches!(r.event, RuntimeEvent::Tnpos(Event::EmptyCommitteeNotSent { .. }))));
 	});
 }
 
+/// A member removed inside an era is sent again, not left until the next one.
+///
+/// This is the behaviour that was nearly lost. While the pallet implemented `SessionManager`,
+/// session re-read `CurrentCommittee` every session, so a ban took effect within a session on
+/// its own. Exporting once per era replaced that with a copy on the other chain that nothing
+/// refreshes -- and an equivocator would have kept signing there for the rest of the era while
+/// this chain's storage said they were gone.
 #[test]
-fn a_banned_member_is_never_handed_over() {
-	use pezpallet_session::SessionManager;
-
+fn a_member_banned_mid_era_is_exported_again_without_them() {
 	new_test_ext().execute_with(|| {
 		fill_every_stratum(60);
 		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
-		let victim = CurrentCommittee::<Test>::get()[0].clone();
-		assert_ok!(Tnpos::report_offence(
-			RuntimeOrigin::root(),
-			victim.clone(),
-			Offence::Equivocation
-		));
-		let handed = <Tnpos as SessionManager<u64>>::new_session(2).unwrap();
-		assert!(!handed.contains(&victim));
-		assert_eq!(handed.len(), 26);
+		let sends_after_seating = EXPORTED.with(|e| e.borrow().len());
+
+		let victim = CurrentCommittee::<Test>::get()[0];
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), victim, Offence::Equivocation));
+
+		let exported = EXPORTED.with(|e| e.borrow().clone());
+		assert_eq!(exported.len(), sends_after_seating + 1, "the ban never left this chain");
+		let (era, sent) = exported.last().unwrap();
+		assert_eq!(*era, CurrentEra::<Test>::get());
+		assert!(!sent.contains(&victim));
+		assert_eq!(sent.len(), 26);
+	});
+}
+
+/// Punishing somebody who was not seated does not re-send the committee.
+///
+/// Every export is a cross-chain message. A pool member who is banned before ever being drawn
+/// changes nothing the validating chain knows, and sending anyway would put the cost of every
+/// offence report on a path that has nothing to carry.
+#[test]
+fn punishing_an_unseated_member_sends_nothing() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let seated = CurrentCommittee::<Test>::get();
+		let bystander = PoolMembers::<Test>::iter()
+			.map(|(w, _)| w)
+			.find(|w| !seated.contains(w))
+			.expect("sixty per stratum cannot all be seated");
+		let before = EXPORTED.with(|e| e.borrow().len());
+
+		assert_ok!(Tnpos::report_offence(RuntimeOrigin::root(), bystander, Offence::Unavailable));
+
+		assert_eq!(EXPORTED.with(|e| e.borrow().len()), before);
 	});
 }
 

@@ -275,6 +275,11 @@ pub mod pezpallet {
 		CommitteeSentToRelay { era: u32, size: u32 },
 		/// The committee was seated but could not even be sent; the relay keeps the old one.
 		CommitteeCouldNotBeSent { era: u32 },
+		/// Nothing was sent because the committee is empty; the relay keeps the old one.
+		///
+		/// Distinct from a failed send: this one is not a delivery problem, it is this chain
+		/// having no committee to offer, and the two need different answers.
+		EmptyCommitteeNotSent { era: u32 },
 
 		/// Relay session keys were registered here and forwarded.
 		RelayKeysSet { who: T::AccountId },
@@ -571,22 +576,45 @@ pub mod pezpallet {
 	}
 }
 
-impl<T: Config> pezpallet_session::SessionManager<T::AccountId> for Pezpallet<T> {
-	/// The seated committee, or `None` to keep the current authorities.
+impl<T: Config> Pezpallet<T> {
+	/// Send the committee as it currently stands to the chain that validates with it.
 	///
-	/// `None` rather than an empty vector: session reads `Some(vec![])` as an
-	/// instruction to install no authorities, which stops the chain. When this pallet
-	/// has nothing to offer, the safe answer is to change nothing.
-	fn new_session(_index: u32) -> Option<Vec<T::AccountId>> {
-		let c = CurrentCommittee::<T>::get();
-		if c.is_empty() {
-			log::warn!(target: "tnpos", "no committee seated; authorities unchanged");
-			return None;
+	/// Called at seating and again whenever the committee changes inside an era, because the
+	/// receiving chain keeps a copy and nothing over there re-reads this storage. While this
+	/// pallet was a `SessionManager` the question did not arise -- session asked every time --
+	/// and the export replaced that with a single message per era, which silently dropped
+	/// mid-era removals: a member banned for equivocation left `CurrentCommittee` here and
+	/// kept validating there until the next era.
+	///
+	/// An empty committee is never sent. The receiving side reads a set of no validators as an
+	/// instruction to install none, which stops the chain; when there is nothing to offer, the
+	/// recoverable answer is to change nothing and say so.
+	pub(crate) fn export_committee(era: u32) {
+		let committee = CurrentCommittee::<T>::get();
+		let size = committee.len() as u32;
+		if committee.is_empty() {
+			log::warn!(target: "tnpos", "committee for era {era} is empty; not exporting");
+			Self::deposit_event(Event::EmptyCommitteeNotSent { era });
+			return;
 		}
-		Some(c.to_vec())
+
+		match T::SendCommitteeToRelay::send(era, committee.to_vec()) {
+			Ok(()) => Self::deposit_event(Event::CommitteeSentToRelay { era, size }),
+			Err(()) => {
+				log::warn!(target: "tnpos", "committee for era {era} could not be delivered");
+				Self::deposit_event(Event::CommitteeCouldNotBeSent { era });
+			},
+		}
 	}
-
-	fn end_session(_index: u32) {}
-
-	fn start_session(_index: u32) {}
 }
+
+// There is deliberately no `SessionManager` implementation here.
+//
+// One was written while this pallet lived on the relay, where seating the committee and
+// running the session were the same act. It does not live there any more: this chain's own
+// session belongs to `CollatorSelection`, and the chain the committee validates is two hops
+// away. An `impl SessionManager for Tnpos` left behind would tell the next reader that the
+// committee seats itself somewhere, and nothing would contradict them -- a dead
+// implementation is a claim the compiler keeps agreeing with.
+//
+// The committee leaves through `SendCommitteeToRelay` and nowhere else.

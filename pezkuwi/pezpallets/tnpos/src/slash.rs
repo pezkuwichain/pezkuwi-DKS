@@ -60,7 +60,11 @@ impl<T: Config> Pezpallet<T> {
 
 		// Leave the seated committee too. A member who equivocated must stop counting
 		// towards quorum immediately, not at the end of the era.
-		CurrentCommittee::<T>::mutate(|c| c.retain(|m| m != &who));
+		let was_seated = CurrentCommittee::<T>::mutate(|c| {
+			let before = c.len();
+			c.retain(|m| m != &who);
+			c.len() != before
+		});
 
 		let proposed = CurrentEra::<T>::get().saturating_add(offence.ban_eras());
 		// A ban only ever lengthens. Recomputing it from whichever report arrived last would
@@ -70,6 +74,12 @@ impl<T: Config> Pezpallet<T> {
 			Banned::<T>::get(&who).map_or(proposed, |existing| existing.max(proposed));
 		Banned::<T>::insert(&who, banned_until);
 		Self::deposit_event(Event::Punished { who, offence, banned_until });
+
+		// Tell the validating chain, or the removal only happened here. It keeps its own copy
+		// and re-reads nothing; without this the offender goes on signing until the next era.
+		if was_seated {
+			Self::export_committee(CurrentEra::<T>::get());
+		}
 		Ok(())
 	}
 }
