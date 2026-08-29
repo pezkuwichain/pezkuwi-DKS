@@ -2860,12 +2860,22 @@ impl Default for RuntimeParameters {
 impl pezpallet_parameters::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeParameters = RuntimeParameters;
-	// Those who bear a decision decide it: dilution falls on holders in proportion to what
-	// they hold, and `EconomicAdmin` is this franchise's slowest track. Root is not here --
-	// this chain has no root track any more, on purpose.
-	type AdminOrigin = pezframe_support::traits::AsEnsureOriginWithArg<
-		governance::pezpallet_custom_origins::EconomicAdmin,
-	>;
+	// The Treasurer, arriving from the People chain.
+	//
+	// This was `EconomicAdmin`, a referendum of HEZ holders, on the argument that those who bear
+	// a decision decide it. That argument is right for fees and for the treasury's scale and
+	// wrong for money creation, which is why central banks exist: holders voting on their own
+	// dilution under-emit, and emission is what pays for the chain's security. Handing it to the
+	// executive instead is the older failure -- a government that can print pays its bills by
+	// printing.
+	//
+	// So it goes to an office that is neither: nominated by the President, confirmed by
+	// Parliament, removable only by the court, and bounded on both sides -- `MAX_INFLATION_RATE`
+	// here is the ceiling and only a runtime upgrade moves it, `MaxEmissionStep` on People is the
+	// pace. The office check itself is on People, where the register lives, exactly as it is for
+	// the finance minister's `spend_budget`.
+	type AdminOrigin =
+		pezframe_support::traits::AsEnsureOriginWithArg<EnsureXcm<Equals<PeopleLocation>>>;
 	// Upstream's reference weight rather than `()`. A zero-weight extrinsic is a free one, and
 	// a free call is a free block: measured numbers for this chain come with the next
 	// benchmarking pass.

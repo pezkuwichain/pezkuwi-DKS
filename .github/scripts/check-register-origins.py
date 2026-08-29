@@ -296,11 +296,12 @@ def main():
 
     if failed:
         print()
-        print("Sicili yazan bir yetki, jeton ağırlıklı bir sandıktan ya da tanımadığım bir")
-        print("yerden geliyor. Tanımadığım bir yaprak da hatadır: sınıflandır, deseni")
-        print("genişletme -- bir kapının sessizce yeşile dönmesi tam böyle olur.")
+        print("A register power is reachable from a token-weighted ballot, or from something")
+        print("this script does not recognise. An unrecognised leaf is a failure too:")
+        print("classify it rather than widening the pattern -- widening is how a gate goes")
+        print("quietly green.")
     else:
-        print("sicil yetkileri temiz: hiçbiri jeton ağırlıklı bir sandığa dayanmıyor")
+        print("register authorities are clean: none rests on a token-weighted ballot")
     return 1 if failed else 0
 
 

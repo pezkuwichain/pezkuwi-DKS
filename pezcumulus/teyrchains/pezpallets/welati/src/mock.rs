@@ -537,6 +537,11 @@ parameter_types! {
 	/// check is which messages the pallet decides to send, not that they arrive.
 	pub TreasuryChain: xcm::latest::Location = xcm::latest::Location::new(1, [xcm::latest::Junction::Teyrchain(1000)]);
 	pub const TreasuryPalletIndex: u8 = 70;
+	pub const ParametersPalletIndex: u8 = 79;
+	/// One point per step and ten blocks between them. The production values are a point per
+	/// quarter; what the tests need is the shape, not the calendar.
+	pub const MaxEmissionStep: pezsp_runtime::Perbill = pezsp_runtime::Perbill::from_percent(1);
+	pub const MinEmissionInterval: u64 = 10;
 	/// Small enough that a test can cross it.
 	pub const PopulationThreshold: u32 = 100;
 	pub const PopulationCheckPeriod: u64 = 10;
@@ -769,6 +774,9 @@ impl pezpallet_welati::Config for Test {
 	type XcmSender = RecordingXcmSender;
 	type TreasuryChainLocation = TreasuryChain;
 	type TreasuryPalletIndex = TreasuryPalletIndex;
+	type ParametersPalletIndex = ParametersPalletIndex;
+	type MaxEmissionStep = MaxEmissionStep;
+	type MinEmissionInterval = MinEmissionInterval;
 	type PopulationThreshold = PopulationThreshold;
 	type PopulationCheckPeriod = PopulationCheckPeriod;
 }

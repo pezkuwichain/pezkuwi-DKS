@@ -1259,7 +1259,7 @@ fn receive_reserve_asset_deposited_roc_from_asset_hub_pezkuwichain_fees_paid_by_
 			(
 				[PalletInstance(pezbp_bridge_hub_zagros::WITH_BRIDGE_ZAGROS_TO_PEZKUWICHAIN_MESSAGES_PALLET_INDEX)].into(),
 				GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH)),
-				[Teyrchain(1000)].into()
+				[xcm::latest::Junction::Teyrchain(1000)].into()
 			),
 			|| {
 				// check staking pot for ED
@@ -1335,7 +1335,7 @@ fn receive_reserve_asset_deposited_roc_from_asset_hub_pezkuwichain_fees_paid_by_
 		(
 			[PalletInstance(pezbp_bridge_hub_zagros::WITH_BRIDGE_ZAGROS_TO_PEZKUWICHAIN_MESSAGES_PALLET_INDEX)].into(),
 			GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH)),
-			[Teyrchain(1000)].into()
+			[xcm::latest::Junction::Teyrchain(1000)].into()
 		),
 		|| {
 			// check block author before
@@ -1569,7 +1569,10 @@ fn location_conversion_works() {
 			description: "DescribeAccountKey20Terminal Sibling",
 			location: Location::new(
 				1,
-				[Teyrchain(1111), AccountKey20 { network: None, key: [0u8; 20] }],
+				[
+					xcm::latest::Junction::Teyrchain(1111),
+					AccountKey20 { network: None, key: [0u8; 20] },
+				],
 			),
 			expected_account_id_str: "5CB2FbUds2qvcJNhDiTbRZwiS3trAy6ydFGMSVutmYijpPAg",
 		},
@@ -1583,7 +1586,10 @@ fn location_conversion_works() {
 			description: "DescribeTreasuryVoiceTerminal Sibling",
 			location: Location::new(
 				1,
-				[Teyrchain(1111), Plurality { id: BodyId::Treasury, part: BodyPart::Voice }],
+				[
+					xcm::latest::Junction::Teyrchain(1111),
+					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
+				],
 			),
 			expected_account_id_str: "5G6TDwaVgbWmhqRUKjBhRRnH4ry9L9cjRymUEmiRsLbSE4gB",
 		},
@@ -1597,7 +1603,10 @@ fn location_conversion_works() {
 			description: "DescribeBodyTerminal Sibling",
 			location: Location::new(
 				1,
-				[Teyrchain(1111), Plurality { id: BodyId::Unit, part: BodyPart::Voice }],
+				[
+					xcm::latest::Junction::Teyrchain(1111),
+					Plurality { id: BodyId::Unit, part: BodyPart::Voice },
+				],
 			),
 			expected_account_id_str: "5DBoExvojy8tYnHgLL97phNH975CyT45PWTZEeGoBZfAyRMH",
 		},
@@ -2243,6 +2252,35 @@ fn the_treasury_call_encodes_the_way_welati_builds_it() {
 	assert_eq!(real, by_hand, "welati builds a treasury call this runtime cannot decode");
 }
 
+/// `welati` builds the emission call by hand, and nothing fails if the bytes drift.
+///
+/// The Treasurer's call lives on the People chain, which cannot name this runtime's types, so
+/// `send_emission_rate` writes the address itself: pallet index, call index, then the two
+/// variant indices that reach `InflationRate` inside `RuntimeParameters`. If any of the four
+/// moves, the `Transact` stops decoding -- silently, because the sending chain has already
+/// recorded the change and emitted its event. This pins the bytes it has to produce, exactly
+/// as `the_treasury_call_encodes_the_way_welati_builds_it` does for the spending call.
+#[test]
+fn the_emission_call_encodes_the_way_welati_builds_it() {
+	use asset_hub_zagros_runtime::dynamic_params::hez;
+	use codec::Encode;
+
+	let rate = pezsp_runtime::Perbill::from_percent(9);
+
+	let real = RuntimeCall::Parameters(pezpallet_parameters::Call::<Runtime>::set_parameter {
+		key_value: asset_hub_zagros_runtime::RuntimeParameters::Hez(
+			hez::Parameters::InflationRate(hez::InflationRate, Some(rate)),
+		),
+	})
+	.encode();
+
+	// Exactly what `welati::send_emission_rate` puts on the wire: pallet 79, call 0, then
+	// `Hez` (0), `InflationRate` (0), and the value.
+	let by_hand = (79u8, 0u8, 0u8, 0u8, Some(rate)).encode();
+
+	assert_eq!(real, by_hand, "welati builds an emission call this runtime cannot decode");
+}
+
 // `state_and_economic_origins_do_not_overlap` stood here and moved to the emulated tests.
 //
 // It compared this chain's track names against a *hardcoded copy* of the register's three, and
@@ -2338,6 +2376,22 @@ mod hez_parameters {
 
 	const YEAR_MS: u64 = (1000 * 3600 * 24 * 36525) / 100;
 
+	/// The People chain speaking as itself -- what `welati::set_emission_rate` produces after
+	/// the Treasurer's tiki has been checked over there. This chain trusts the register's chain
+	/// and does not re-check which office sent it, exactly as it does for `spend_budget`.
+	fn people_origin() -> RuntimeOrigin {
+		// `EnsureXcm` reads `pezpallet_xcm::Origin::Xcm(location)` -- the location an incoming
+		// message was converted from -- not the sibling-teyrchain origin. Those are two
+		// different things and only the first one carries where the message came from.
+		pezpallet_xcm::Origin::Xcm(xcm::latest::Location::new(
+			1,
+			[xcm::latest::Junction::Teyrchain(
+				zagros_runtime_constants::system_teyrchain::PEOPLE_ID,
+			)],
+		))
+		.into()
+	}
+
 	fn yearly_payout() -> (u128, u128) {
 		<asset_hub_zagros_runtime::staking::EraPayout as pezpallet_staking_async::EraPayout<
 			u128,
@@ -2359,7 +2413,7 @@ mod hez_parameters {
 	}
 
 	#[test]
-	fn the_economic_franchise_turns_them_and_nobody_else_does() {
+	fn the_people_chain_turns_them_and_nobody_else_does() {
 		new_test_ext().execute_with(|| {
 			let raise = |o: RuntimeOrigin| {
 				pezpallet_parameters::Pezpallet::<Runtime>::set_parameter(
@@ -2373,11 +2427,12 @@ mod hez_parameters {
 				)
 			};
 
-			// This chain has no root track, and Root is not the body that bears dilution.
+			// Neither Root nor a signed account: the rate is the Treasurer's, and the Treasurer
+			// is an office on the People chain. What arrives here is that chain's message.
 			assert_noop!(raise(RuntimeOrigin::root()), BadOrigin);
 			assert_noop!(raise(RuntimeOrigin::signed([1u8; 32].into())), BadOrigin);
 
-			assert_ok!(raise(asset_hub_zagros_runtime::governance::pezpallet_custom_origins::Origin::EconomicAdmin.into()));
+			assert_ok!(raise(people_origin()));
 			assert_eq!(hez::InflationRate::get(), Perbill::from_percent(9));
 			assert_eq!(yearly_payout().0 + yearly_payout().1, 18_000_000_000_000_000_000);
 		});
@@ -2387,7 +2442,7 @@ mod hez_parameters {
 	fn the_ceiling_holds_whatever_the_parameter_says() {
 		new_test_ext().execute_with(|| {
 			assert_ok!(pezpallet_parameters::Pezpallet::<Runtime>::set_parameter(
-				asset_hub_zagros_runtime::governance::pezpallet_custom_origins::Origin::EconomicAdmin.into(),
+				people_origin(),
 				asset_hub_zagros_runtime::RuntimeParameters::Hez(hez::Parameters::InflationRate(
 					hez::InflationRate,
 					Some(Perbill::from_percent(90)),

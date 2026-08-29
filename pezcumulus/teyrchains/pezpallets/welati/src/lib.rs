@@ -224,6 +224,17 @@ const ACTIVATE_DISTRIBUTION_CALL_INDEX: u8 = 0;
 /// `pezpallet-pez-treasury::spend_from_government_pot`, by call index.
 const SPEND_FROM_GOVERNMENT_POT_CALL_INDEX: u8 = 1;
 
+/// `pezpallet-parameters::set_parameter` on the treasury chain, by call index.
+const SET_PARAMETER_CALL_INDEX: u8 = 0;
+
+/// The two variant indices that address HEZ's emission rate inside `RuntimeParameters`.
+///
+/// `RuntimeParameters::Hez(hez::Parameters::InflationRate(key, value))`. The key is a unit
+/// struct and encodes to nothing, so the wire form is the two indices followed by the value.
+/// `the_emission_call_encodes_the_way_welati_builds_it` on the treasury chain pins the bytes.
+const HEZ_PARAMETERS_VARIANT: u8 = 0;
+const INFLATION_RATE_VARIANT: u8 = 0;
+
 /// How many seats change hands per block while a handover is being applied.
 ///
 /// A weight ceiling, not a policy: each seat rewrites a citizen NFT's metadata, and two
@@ -445,6 +456,24 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type TreasuryPalletIndex: Get<u8>;
 
+		/// The index `pezpallet-parameters` occupies in the treasury chain's runtime.
+		#[pezpallet::constant]
+		type ParametersPalletIndex: Get<u8>;
+
+		/// The most the emission rate may move in one step.
+		///
+		/// A ceiling says how high the rate may ever go; this says how fast it may get there.
+		/// Without it the ceiling is the only limit and a single call reaches it, which is the
+		/// difference between a mandate and a lever. The ceiling itself is not mirrored here --
+		/// it lives on the treasury chain, in the code that applies the rate, so there is one
+		/// of it rather than two that can disagree.
+		#[pezpallet::constant]
+		type MaxEmissionStep: Get<pezsp_runtime::Perbill>;
+
+		/// The least time between two changes to the emission rate.
+		#[pezpallet::constant]
+		type MinEmissionInterval: Get<BlockNumberFor<Self>>;
+
 		/// How long an elected mandate runs.
 		///
 		/// Four years, for every office the country votes on -- except the court, below.
@@ -583,6 +612,16 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type AppointmentProcesses<T: Config> =
 		StorageMap<_, Blake2_128Concat, u32, AppointmentProcess<T>, OptionQuery>;
+
+	/// The emission rate this chain last told the treasury chain to apply, and when.
+	///
+	/// Kept here rather than read back from the treasury chain because a cross-chain read is not
+	/// a thing a runtime can do, and because this chain is the only writer: the treasury chain
+	/// accepts the change from `EnsureXcm<Equals<PeopleLocation>>` and nothing else, so what was
+	/// last sent from here is what is in force there.
+	#[pezpallet::storage]
+	pub type EmissionRate<T: Config> =
+		StorageValue<_, (pezsp_runtime::Perbill, BlockNumberFor<T>), OptionQuery>;
 
 	/// The President's standing nominee for Prime Minister, waiting on the House.
 	#[pezpallet::storage]
@@ -804,6 +843,9 @@ pub mod pezpallet {
 		},
 
 		// --- APPOINTMENT EVENTS ---
+		/// The Treasurer moved the emission rate.
+		EmissionRateSet { rate: pezsp_runtime::Perbill, by: T::AccountId },
+
 		/// The President put a name forward for Prime Minister.
 		PrimeMinisterNominated { nominee: T::AccountId },
 
@@ -1010,6 +1052,12 @@ pub mod pezpallet {
 		CannotNominateSelf,
 		/// There is no nominee for Prime Minister to act on.
 		NoNomineeStanding,
+		/// Only the Treasurer sets the emission rate.
+		NotTheTreasurer,
+		/// The step is larger than one change may move the rate.
+		EmissionStepTooLarge,
+		/// Not enough time has passed since the last change.
+		EmissionChangedTooRecently,
 
 		// Collective decision errors
 		ProposalNotFound,
@@ -1360,6 +1408,55 @@ pub mod pezpallet {
 				nay_votes: nay,
 				abstain_votes: abstain,
 			});
+			Ok(())
+		}
+
+		/// Move HEZ's emission rate. The Treasurer's call, and nobody else's.
+		///
+		/// The office is this state's central bank, and the separation is the reason it exists
+		/// separately from the finance minister at all: the one who spends must not be the one
+		/// who creates the money. `WezîrêDarayiyê` draws against what Parliament appropriated
+		/// and cannot reach this; the Treasurer sets what comes into being and cannot spend a
+		/// penny of it.
+		///
+		/// Three limits, in three different places, and none of them is this officeholder's to
+		/// move. The ceiling is `MAX_INFLATION_RATE` in the treasury chain's own code -- raising
+		/// it is a runtime upgrade, which on this network is a referendum of the whole register.
+		/// The pace is `MaxEmissionStep` and `MinEmissionInterval` here, so a mandate cannot be
+		/// spent in a single call. Removal from the office is the court's, not the President's:
+		/// a central bank the executive can empty is not independent of the executive.
+		///
+		/// The rate the treasury chain will *apply* is still clamped there. This call is the
+		/// target; the ceiling is the last word.
+		#[pezpallet::call_index(14)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn set_emission_rate(
+			origin: OriginFor<T>,
+			rate: pezsp_runtime::Perbill,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(
+				pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Xezinedar)
+					== Some(who.clone()),
+				Error::<T>::NotTheTreasurer
+			);
+
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			if let Some((last_rate, changed_at)) = EmissionRate::<T>::get() {
+				ensure!(
+					now.saturating_sub(changed_at) >= T::MinEmissionInterval::get(),
+					Error::<T>::EmissionChangedTooRecently
+				);
+				let step = if rate > last_rate { rate - last_rate } else { last_rate - rate };
+				ensure!(step <= T::MaxEmissionStep::get(), Error::<T>::EmissionStepTooLarge);
+			}
+
+			// Recorded before sending, and the whole call reverts if the send fails -- so the
+			// record cannot claim a change the treasury chain never received.
+			EmissionRate::<T>::put((rate, now));
+			Self::send_emission_rate(rate).map_err(|_| Error::<T>::CouldNotReachTreasury)?;
+
+			Self::deposit_event(Event::EmissionRateSet { rate, by: who });
 			Ok(())
 		}
 
@@ -3634,6 +3731,41 @@ pub mod pezpallet {
 				SPEND_FROM_GOVERNMENT_POT_CALL_INDEX,
 				beneficiary,
 				amount,
+			)
+				.encode();
+
+			let message = Xcm(vec![
+				UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+				Transact {
+					origin_kind: OriginKind::Xcm,
+					fallback_max_weight: None,
+					call: call.into(),
+				},
+			]);
+
+			let (ticket, _) = T::XcmSender::validate(
+				&mut Some(T::TreasuryChainLocation::get()),
+				&mut Some(message),
+			)?;
+			T::XcmSender::deliver(ticket)?;
+			Ok(())
+		}
+
+		/// Put the new emission rate on the wire.
+		///
+		/// `RuntimeParameters::Hez(hez::Parameters::InflationRate(key, Some(rate)))`, addressed
+		/// by index because this chain cannot name the other chain's types. The key is a unit
+		/// struct and contributes no bytes. `the_emission_call_encodes_the_way_welati_builds_it`
+		/// on the treasury chain pins this, for the same reason the treasury call has a pin:
+		/// nothing here fails if the encoding drifts -- the `Transact` simply does not decode,
+		/// while this chain has already recorded the change.
+		fn send_emission_rate(rate: pezsp_runtime::Perbill) -> Result<(), SendError> {
+			let call = (
+				T::ParametersPalletIndex::get(),
+				SET_PARAMETER_CALL_INDEX,
+				HEZ_PARAMETERS_VARIANT,
+				INFLATION_RATE_VARIANT,
+				Some(rate),
 			)
 				.encode();
 

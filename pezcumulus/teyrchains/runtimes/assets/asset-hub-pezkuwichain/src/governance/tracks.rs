@@ -60,7 +60,7 @@ const SUP_BIG_SPENDER: Curve = Curve::make_reciprocal(20, 28, percent(1), percen
 // It was also priced as if it were not root at all. `min_approval` and `min_support` were
 // `APP_TREASURER` and `SUP_TREASURER` -- a spending track's thresholds on a track that could
 // rewrite the runtime.
-const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 9] = [
+const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 8] = [
 	pezpallet_referenda::Track {
 		id: 11,
 		info: pezpallet_referenda::TrackInfo {
@@ -70,23 +70,6 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 9] = 
 			prepare_period: 2 * HOURS,
 			decision_period: 28 * DAYS,
 			confirm_period: 3 * HOURS,
-			min_enactment_period: 24 * HOURS,
-			min_approval: APP_TREASURER,
-			min_support: SUP_TREASURER,
-		},
-	},
-	// The emission knobs. Slower and dearer than any spend, because a spend is one payment
-	// and a rate is every payment after it -- and it is the holders' own dilution, so it is
-	// theirs to set. The ceiling it cannot pass is in the code, not here.
-	pezpallet_referenda::Track {
-		id: 12,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("economic_admin"),
-			max_deciding: 2,
-			decision_deposit: 100 * UNITS,
-			prepare_period: 2 * HOURS,
-			decision_period: 28 * DAYS,
-			confirm_period: 24 * HOURS,
 			min_enactment_period: 24 * HOURS,
 			min_approval: APP_TREASURER,
 			min_support: SUP_TREASURER,
@@ -210,7 +193,6 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 		} else if let Ok(custom_origin) = origins::Origin::try_from(id.clone()) {
 			match custom_origin {
 				origins::Origin::Treasurer => Ok(11),
-				origins::Origin::EconomicAdmin => Ok(12),
 				origins::Origin::ReferendumCanceller => Ok(20),
 				origins::Origin::ReferendumKiller => Ok(21),
 				origins::Origin::SmallTipper => Ok(30),

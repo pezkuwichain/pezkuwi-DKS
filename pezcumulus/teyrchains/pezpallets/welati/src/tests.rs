@@ -623,6 +623,97 @@ fn the_president_seats_his_five_and_the_house_cannot_reach_them() {
 	});
 }
 
+/// The emission rate is the Treasurer's, and the finance minister cannot reach it.
+///
+/// This is the separation the office exists for. `WezîrêDarayiyê` draws against what Parliament
+/// appropriated; `Xezinedar` decides what comes into being. One hand spends, the other creates,
+/// and a state where they are the same hand pays its bills by printing.
+#[test]
+fn only_the_treasurer_moves_the_emission_rate() {
+	ExtBuilder::default().build().execute_with(|| {
+		let treasurer = 20u64;
+		let minister = 21u64;
+		make_citizen(treasurer);
+		make_citizen(minister);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Xezinedar, treasurer);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::WezireDarayiye, minister);
+
+		let rate = pezsp_runtime::Perbill::from_percent(8);
+
+		assert_noop!(
+			Welati::set_emission_rate(RuntimeOrigin::signed(minister), rate),
+			Error::<Test>::NotTheTreasurer
+		);
+		assert_noop!(
+			Welati::set_emission_rate(RuntimeOrigin::signed(SEROK), rate),
+			Error::<Test>::NotTheTreasurer
+		);
+		assert_noop!(Welati::set_emission_rate(RuntimeOrigin::root(), rate), BadOrigin);
+
+		assert_ok!(Welati::set_emission_rate(RuntimeOrigin::signed(treasurer), rate));
+		assert_eq!(crate::EmissionRate::<Test>::get().map(|(r, _)| r), Some(rate));
+	});
+}
+
+/// A mandate cannot be spent in one call.
+///
+/// The ceiling on the treasury chain says how high the rate may ever go. Without a limit on the
+/// step, the ceiling is the only limit and one call reaches it -- which is the difference
+/// between an office with a mandate and an office with a lever.
+#[test]
+fn the_rate_moves_by_steps_and_not_in_one_leap() {
+	ExtBuilder::default().build().execute_with(|| {
+		let treasurer = 20u64;
+		make_citizen(treasurer);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Xezinedar, treasurer);
+		let pct = pezsp_runtime::Perbill::from_percent;
+
+		// The first setting has nothing to step from -- there is no rate on record yet, so
+		// there is no distance to measure. Every one after it is bounded.
+		assert_ok!(Welati::set_emission_rate(RuntimeOrigin::signed(treasurer), pct(8)));
+
+		run_to_block(50);
+		assert_noop!(
+			Welati::set_emission_rate(RuntimeOrigin::signed(treasurer), pct(10)),
+			Error::<Test>::EmissionStepTooLarge
+		);
+		// Down is bounded the same way: starving the chain's security is a move too.
+		assert_noop!(
+			Welati::set_emission_rate(RuntimeOrigin::signed(treasurer), pct(4)),
+			Error::<Test>::EmissionStepTooLarge
+		);
+
+		assert_ok!(Welati::set_emission_rate(RuntimeOrigin::signed(treasurer), pct(9)));
+		assert_eq!(crate::EmissionRate::<Test>::get().map(|(r, _)| r), Some(pct(9)));
+	});
+}
+
+/// And not twice in quick succession.
+///
+/// A rate moved faster than its own effect can be observed is not policy. The interval is what
+/// makes the step limit mean something: without it, two calls in two blocks cover the same
+/// ground one large call would have.
+#[test]
+fn the_rate_cannot_be_moved_twice_in_quick_succession() {
+	ExtBuilder::default().build().execute_with(|| {
+		let treasurer = 20u64;
+		make_citizen(treasurer);
+		pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Xezinedar, treasurer);
+		let pct = pezsp_runtime::Perbill::from_percent;
+
+		assert_ok!(Welati::set_emission_rate(RuntimeOrigin::signed(treasurer), pct(8)));
+
+		run_to_block(System::block_number() + 3);
+		assert_noop!(
+			Welati::set_emission_rate(RuntimeOrigin::signed(treasurer), pct(9)),
+			Error::<Test>::EmissionChangedTooRecently
+		);
+
+		run_to_block(System::block_number() + 10);
+		assert_ok!(Welati::set_emission_rate(RuntimeOrigin::signed(treasurer), pct(9)));
+	});
+}
+
 // ===== COLLECTIVE DECISION TESTS =====
 
 #[test]

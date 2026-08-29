@@ -1270,6 +1270,22 @@ parameter_types! {
 	/// renumbers, that test is what fails rather than a message landing on the wrong pallet.
 	pub const WelatiTreasuryPalletIndex: u8 = 70;
 
+	/// `pezpallet-parameters` on the Asset Hub, where HEZ's emission rate is stored.
+	pub const WelatiParametersPalletIndex: u8 = 79;
+
+	/// The most the Treasurer may move the emission rate in one step: one point.
+	///
+	/// The ceiling on the Asset Hub says how high the rate may ever be; this says how long it
+	/// takes to get there. Eight per cent to the ten per cent ceiling is two steps and half a
+	/// year, which is enough time for the change to be argued about before it is complete.
+	pub const WelatiMaxEmissionStep: Perbill = Perbill::from_percent(1);
+
+	/// And the least time between two of them: a quarter.
+	///
+	/// Long enough that the previous change has shown up in a payout before the next is made --
+	/// a rate moved faster than its own effect can be observed is not policy, it is guessing.
+	pub const WelatiMinEmissionInterval: BlockNumber = 90 * DAYS;
+
 	/// The state starts paying its citizens once there are a hundred thousand of them.
 	pub const WelatiPopulationThreshold: u32 = 100_000;
 
@@ -1410,6 +1426,9 @@ impl pezpallet_welati::Config for Runtime {
 	type XcmSender = crate::xcm_config::XcmRouter;
 	type TreasuryChainLocation = WelatiTreasuryChain;
 	type TreasuryPalletIndex = WelatiTreasuryPalletIndex;
+	type ParametersPalletIndex = WelatiParametersPalletIndex;
+	type MaxEmissionStep = WelatiMaxEmissionStep;
+	type MinEmissionInterval = WelatiMinEmissionInterval;
 	type PopulationThreshold = WelatiPopulationThreshold;
 	type PopulationCheckPeriod = WelatiPopulationCheckPeriod;
 }
