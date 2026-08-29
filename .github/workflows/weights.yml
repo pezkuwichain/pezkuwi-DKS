@@ -71,15 +71,34 @@ jobs:
             exit 1
           fi
 
+      # Inputs arrive through `env`, never interpolated into the script. `${{ }}` is
+      # substituted into the shell *before* bash sees it, so a value containing `;` or a
+      # backtick would run as a command on the reference host -- with the runner's token and
+      # the fleet's SSH keys in reach. `workflow_dispatch` narrows who can send one, but a
+      # dispatch is not a review, and this pattern is the reason a runner compromise usually
+      # starts with a workflow input.
       - name: Generate
+        env:
+          IN_RUNTIME: ${{ inputs.runtime }}
+          IN_PALLET: ${{ inputs.pallet }}
+          IN_REPEAT: ${{ inputs.repeat }}
+          IN_STEPS: ${{ inputs.steps }}
         run: |
-          args=""
-          [ -n "${{ inputs.runtime }}" ] && args="$args --runtime ${{ inputs.runtime }}"
-          [ -n "${{ inputs.pallet }}" ] && args="$args --pezpallet ${{ inputs.pallet }}"
-          [ -n "${{ inputs.repeat }}" ] && args="$args --repeat ${{ inputs.repeat }}"
-          [ -n "${{ inputs.steps }}" ] && args="$args --steps ${{ inputs.steps }}"
-          echo "running: cmd.py bench $args"
-          python3 .github/scripts/cmd/cmd.py bench $args
+          set -euo pipefail
+          # The two numbers are checked because they are numbers. A shape check on a free-text
+          # field is worth more than a promise in a description.
+          for n in "$IN_REPEAT" "$IN_STEPS"; do
+            case "$n" in
+              ''|*[!0-9]*) [ -z "$n" ] || { echo "::error::repeat/steps must be digits"; exit 1; };;
+            esac
+          done
+          args=()
+          [ -n "$IN_RUNTIME" ] && args+=(--runtime "$IN_RUNTIME")
+          [ -n "$IN_PALLET" ] && args+=(--pezpallet "$IN_PALLET")
+          [ -n "$IN_REPEAT" ] && args+=(--repeat "$IN_REPEAT")
+          [ -n "$IN_STEPS" ] && args+=(--steps "$IN_STEPS")
+          echo "running: cmd.py bench ${args[*]}"
+          python3 .github/scripts/cmd/cmd.py bench "${args[@]}"
 
       # The weights are the product; they are reviewed and committed by hand rather than
       # pushed from CI, because a number nobody looked at is not a measurement either.
