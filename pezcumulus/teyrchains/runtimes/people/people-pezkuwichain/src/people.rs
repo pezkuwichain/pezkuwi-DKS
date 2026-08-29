@@ -25,6 +25,7 @@ use pezframe_support::{
 	CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound,
 };
 use pezframe_system::EnsureRoot;
+use pezkuwi_tnpos_primitives::scores::ScoreSnapshot;
 use pezpallet_identity::{Data, IdentityInformationProvider};
 use pezpallet_xcm::EnsureXcm;
 use pezsp_runtime::traits::{AccountIdConversion, ConvertInto, Verify};
@@ -1611,4 +1612,70 @@ impl pezpallet_vesting::Config for Runtime {
 	type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
 	type BlockNumberProvider = System;
 	const MAX_VESTING_SCHEDULES: u32 = 28;
+}
+
+// =====================================================
+// TNPOS CONFIGURATION
+// =====================================================
+
+/// TNPoS reads the register directly, because the register lives here.
+///
+/// Every one of the nine strata is decided by a pallet on this chain -- trust, tiki, perwerde,
+/// referral and the staking oracle -- so this is a local read. That is the whole reason the
+/// committee is drawn here rather than on the relay: a relay-side TNPoS would have to import
+/// five scores across a chain boundary, and a partial import is worse than none. With all five
+/// stale at once the pallet seats nobody and the relay keeps its previous authorities; with
+/// three of five stale it would seat a committee whose stratum proportions are quietly wrong,
+/// and storage would still say they are right.
+///
+/// The timestamps are honest per source. `staking_of` carries the oracle's own observation
+/// height -- the one number here that can genuinely go stale, because it comes from off-chain.
+/// The other four are computed on this chain from state written on this chain, so they are
+/// current by construction and say so.
+pub struct RegisterScores;
+impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for RegisterScores {
+	fn trust_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
+		ScoreSnapshot {
+			value: <Trust as pezpallet_trust::TrustScoreProvider<AccountId>>::trust_score_of(who),
+			last_updated: System::block_number(),
+		}
+	}
+
+	fn tiki_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
+		ScoreSnapshot {
+			value:
+				<TikiScoreSource as pezpallet_trust::TikiScoreProvider<AccountId>>::get_tiki_score(
+					who,
+				)
+				.into(),
+			last_updated: System::block_number(),
+		}
+	}
+
+	fn perwerde_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
+		ScoreSnapshot {
+			value: <PerwerdeScoreSource as pezpallet_trust::PerwerdeScoreProvider<AccountId>>::get_perwerde_score(who)
+				.into(),
+			last_updated: System::block_number(),
+		}
+	}
+
+	fn referral_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
+		ScoreSnapshot {
+			value: <ReferralScoreSource as pezpallet_trust::ReferralScoreProvider<AccountId>>::get_referral_score(who)
+				.into(),
+			last_updated: System::block_number(),
+		}
+	}
+
+	fn staking_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
+		// The oracle's own height, not this block's. This is the one score that comes from
+		// outside the chain, so it is the one that can be stale -- and `value_if_fresh` is
+		// what turns a stalled oracle into an absent score rather than a confident old one.
+		let (value, observed_at) = <StakingScoreSource as pezpallet_trust::StakingScoreProvider<
+			AccountId,
+			BlockNumber,
+		>>::get_staking_score(who);
+		ScoreSnapshot { value: value.into(), last_updated: observed_at }
+	}
 }

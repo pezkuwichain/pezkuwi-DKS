@@ -220,16 +220,16 @@ mod the_court_roster {
 	use people_pezkuwichain_runtime::{DiwanCollective, Welati};
 	use pezsp_runtime::BuildStorage;
 
-	const FOUNDER: [u8; 32] = [9u8; 32];
+	pub(crate) const FOUNDER: [u8; 32] = [9u8; 32];
 	const JURIST: [u8; 32] = [10u8; 32];
 	const ENGINEER: [u8; 32] = [11u8; 32];
 
-	fn account(raw: [u8; 32]) -> AccountId {
+	pub(crate) fn account(raw: [u8; 32]) -> AccountId {
 		raw.into()
 	}
 
 	/// Genesis with a citizen register that exists and two people qualified for the bench.
-	fn new_test_ext() -> pezsp_io::TestExternalities {
+	pub(crate) fn new_test_ext() -> pezsp_io::TestExternalities {
 		let mut t = pezframe_system::GenesisConfig::<Runtime>::default().build_storage().unwrap();
 
 		pezpallet_tiki::GenesisConfig::<Runtime> {
@@ -358,5 +358,66 @@ mod the_register_is_not_writable_from_abroad {
 			code_hash: Default::default(),
 		});
 		assert!(Filter::contains(&upgrade), "the upgrade path must stay open");
+	}
+}
+
+/// The register's scores are read locally, and the oracle's is the only one that can be stale.
+///
+/// This is the measurement behind putting TNPoS on this chain rather than the relay. Four of
+/// the five scores are computed here from state written here, so they are current by
+/// construction. The fifth comes from off-chain and carries the observation height the oracle
+/// itself reported -- which is what lets `value_if_fresh` turn a stalled oracle into an absent
+/// score instead of a confident old one.
+///
+/// A relay-side TNPoS would have had all five arrive over XCM, and the failure that matters is
+/// not all five going stale at once -- that seats nobody and leaves the authorities alone. It
+/// is three of five going stale, which seats a committee whose stratum proportions are wrong
+/// while storage still says they are right.
+mod register_scores {
+	use super::*;
+	// Borrowed rather than duplicated: two `new_test_ext`s in one file drift, and the second
+	// one is always the one that stops matching the runtime.
+	use crate::the_court_roster::{account, new_test_ext, FOUNDER};
+	use people_pezkuwichain_runtime::people::RegisterScores;
+	use pezkuwi_tnpos_primitives::scores::ScoreProvider;
+
+	#[test]
+	fn four_scores_are_current_and_the_oracle_carries_its_own_height() {
+		new_test_ext().execute_with(|| {
+			let who: AccountId = account(FOUNDER);
+			pezframe_system::Pezpallet::<Runtime>::set_block_number(500);
+
+			// Computed on this chain, so their height is this block -- not a remembered one.
+			for got in [
+				RegisterScores::trust_of(&who),
+				RegisterScores::tiki_of(&who),
+				RegisterScores::perwerde_of(&who),
+				RegisterScores::referral_of(&who),
+			] {
+				assert_eq!(got.last_updated, 500, "a local score claimed a height it did not have");
+				assert!(got.value_if_fresh(500, 1).is_some(), "a local score read as stale");
+			}
+
+			// The oracle carries its own height: nothing observed means height zero, not this
+			// block. Once the chain is older than the window that reads as absent, which is
+			// what the type exists for -- a stalled oracle must not hand back a confident old
+			// number.
+			let staking = RegisterScores::staking_of(&who);
+			assert_eq!(staking.last_updated, 0, "the oracle claimed a height it never reported");
+			assert!(
+				staking.value_if_fresh(500, 4 * 600).is_some(),
+				"before the window has elapsed nothing can be stale -- staleness is measured \
+				 as an absolute distance, and at block 500 no distance exceeds 2400"
+			);
+
+			pezframe_system::Pezpallet::<Runtime>::set_block_number(100_000);
+			assert!(
+				RegisterScores::staking_of(&who).value_if_fresh(100_000, 4 * 600).is_none(),
+				"an unobserved stake must read absent once the window has passed"
+			);
+
+			// And the four local ones follow the block, so they never go stale by sitting.
+			assert_eq!(RegisterScores::trust_of(&who).last_updated, 100_000);
+		});
 	}
 }
