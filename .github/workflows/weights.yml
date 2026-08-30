@@ -68,6 +68,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Building any runtime with `runtime-benchmarks` pulls `pezpallet-revive-fixtures`,
+      # whose build script compiles Solidity. Installed rather than skipped with
+      # `SKIP_PALLET_REVIVE_FIXTURES=1`, for the reason the `workspace` job records: skipping
+      # leaves a job reporting success over code it never built. `check-workflow-solc.py`
+      # keeps this step and the jobs that need it from drifting apart.
+      - uses: ./.github/actions/install-solidity
+
       - name: Tooling
         run: |
           python3 -m pip install --break-system-packages --quiet -r .github/scripts/requirements.txt

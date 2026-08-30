@@ -45,6 +45,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # The other checks here are stdlib-only; the solc one reads workflow YAML. Installed
+      # rather than assumed present on the image -- PyYAML was already an undeclared
+      # dependency of two scripts in this tree and the runs only worked because something
+      # else had pulled it in.
+      - run: python3 -m pip install --quiet PyYAML==6.0.2
       - name: Zagros and Pezkuwichain carry the same pallet index map
         run: python3 .github/scripts/check-twin-runtimes.py
       # The franchise separation from the other end. `no_subject_is_decided_by_two_different_
@@ -53,6 +58,11 @@ jobs:
       # cannot slip through. Seconds to run, and it fails closed on anything it cannot classify.
       - name: No token-weighted ballot reaches the register
         run: python3 .github/scripts/check-register-origins.py
+      # Three jobs have been written that build with `runtime-benchmarks` and forgot to
+      # install solc, and each one was found by running it -- the last after the workflow had
+      # sat unrun for ten days. Three identical fixes is where a habit becomes a check.
+      - name: Benchmark builds install solc before they build
+        run: python3 .github/scripts/check-workflow-solc.py
 
   # A note describing the tree goes stale the moment the tree moves. These measure the tree.
   # The gaps are the backlog and do not fail a build; work that came undone does.
