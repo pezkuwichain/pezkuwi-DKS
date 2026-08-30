@@ -21,6 +21,13 @@ pub mod sample;
 pub mod seed;
 pub mod slash;
 pub mod weights;
+/// Re-exported at the crate root because that is where a generated weights file looks for it.
+///
+/// `benchmark pallet` writes `impl pezpallet_tnpos::WeightInfo for WeightInfo<T>`, and without
+/// this the generated file does not compile -- which is how the first real weights run for this
+/// pallet failed, after the benchmark itself had succeeded. Every other pallet here reaches the
+/// same place through `pub use pezpallet::*`; this one has no such re-export, so it says it.
+pub use weights::WeightInfo;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
