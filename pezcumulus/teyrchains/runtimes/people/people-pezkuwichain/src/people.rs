@@ -1745,7 +1745,7 @@ parameter_types! {
 }
 
 impl pezpallet_tnpos::Config for Runtime {
-	type WeightInfo = ();
+	type WeightInfo = crate::weights::pezpallet_tnpos::WeightInfo<Runtime>;
 	type Sortition = pezpallet_tnpos::seed::CommitRevealSortition<Runtime>;
 	// The register itself, read locally. This is the reason the pallet is on this chain.
 	type Scores = RegisterScores;

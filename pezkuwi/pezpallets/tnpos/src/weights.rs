@@ -22,7 +22,19 @@ pub trait WeightInfo {
 	fn seat_committee(p: u32) -> Weight;
 }
 
-/// Not measured, and deliberately not zero.
+/// Not measured, and deliberately not zero -- and measured now says these are too low.
+///
+/// This impl is the fallback for a runtime that has not generated weights. It returned
+/// `Weight::zero()` for all seven calls until 2026-08-30, which made every TNPoS extrinsic
+/// free on both People chains. The figures below replaced the zeros as a stand-in, and the
+/// benchmark run that followed showed the stand-in undercharging five of the seven: `join` by
+/// 1.8x, `report_offence` by 9x, and `seat_committee` by 107x -- its measured base alone is
+/// 21.5 billion ref_time, one per cent of a block, because it draws from nine strata.
+///
+/// They are left as they are rather than raised to match, because both production runtimes now
+/// bind the generated file and nothing reads this. What it must never be again is zero. A
+/// runtime that binds `()` is a runtime whose weights were never generated, and this should
+/// cost it visibly rather than silently.
 ///
 /// This returned `Weight::zero()` for all seven calls, and both People runtimes bound
 /// `WeightInfo = ()` -- so every TNPoS extrinsic was free, `join` and `commit_seed` included,

@@ -35,6 +35,7 @@ pub mod pezpallet_parameters;
 pub mod pezpallet_proxy;
 pub mod pezpallet_session;
 pub mod pezpallet_timestamp;
+pub mod pezpallet_tnpos;
 pub mod pezpallet_transaction_payment;
 pub mod pezpallet_utility;
 pub mod pezpallet_xcm;
