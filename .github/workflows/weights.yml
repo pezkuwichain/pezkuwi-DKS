@@ -72,6 +72,25 @@ jobs:
         run: |
           python3 -m pip install --break-system-packages --quiet -r .github/scripts/requirements.txt
 
+      # This host is not in the build pool and its runner does not start from a login shell,
+      # so rustup's PATH entry never arrives -- the first run of this workflow got as far as
+      # `sh: 1: cargo: not found`. Written out rather than assumed: the build jobs get their
+      # toolchain from a step of their own, and a workflow that borrows another job's
+      # environment works until the day it runs somewhere else.
+      - name: Toolchain
+        run: |
+          set -euo pipefail
+          for dir in "$HOME/.cargo/bin" /root/.cargo/bin /usr/local/cargo/bin; do
+            [ -x "$dir/cargo" ] && { echo "$dir" >> "$GITHUB_PATH"; export PATH="$dir:$PATH"; break; }
+          done
+          command -v cargo >/dev/null || {
+            echo "::error::no cargo on this host; the reference machine cannot measure anything without a toolchain"
+            exit 1
+          }
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+
       # A weight is a timing, so anything else running on the box is part of the measurement.
       # Refuse rather than record a number the fleet cannot reproduce.
       - name: Refuse to measure a busy machine
