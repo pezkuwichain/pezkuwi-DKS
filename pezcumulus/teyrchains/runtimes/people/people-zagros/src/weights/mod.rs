@@ -24,6 +24,7 @@ pub mod pezcumulus_pezpallet_xcmp_queue;
 pub mod pezframe_system;
 pub mod pezframe_system_extensions;
 pub mod pezkuwi_runtime_common_identity_migrator;
+pub mod pezpallet_accumulate_and_forward;
 pub mod pezpallet_assets;
 pub mod pezpallet_balances;
 pub mod pezpallet_collator_selection;

@@ -77,9 +77,7 @@ impl pezpallet_accumulate_and_forward::Config for Runtime {
 	type TransferPeriod = ForwardPeriod;
 	type MinTransferAmount = MinForwardAmount;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
-	// Rate-limited to one forward a day, so an estimate here cannot compound. Listed with the
-	// rest of the weights work.
-	type WeightInfo = ();
+	type WeightInfo = crate::weights::pezpallet_accumulate_and_forward::WeightInfo<Runtime>;
 }
 
 /// Penalties, in whichever imbalance shape the pallet that collected them speaks.
