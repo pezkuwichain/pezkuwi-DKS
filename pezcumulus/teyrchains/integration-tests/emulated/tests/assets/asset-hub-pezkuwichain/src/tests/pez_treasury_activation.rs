@@ -17,8 +17,8 @@
 //!
 //! `pezpallet-pez-treasury` cannot mint and has no manual release. Its entire external surface
 //! is one extrinsic, `activate_distribution`, and whoever can reach it decides when a state
-//! that may not yet have enough citizens starts paying them -- an irreversible latch on a
-//! fixed supply. The runtime binds it to `EnsureXcm<Equals<PeopleLocation>>`, because the
+//! that may not yet have enough citizens starts paying them -- an irreversible latch on
+//! PEZ's fixed five billion. The runtime binds it to `EnsureXcm<Equals<PeopleLocation>>`, because the
 //! citizen register lives on the People chain and no other body is in a position to know.
 //!
 //! The pallet's own tests stand Root in for that origin, because a mock has no siblings. That

@@ -294,8 +294,9 @@ onto M-of-N attestation.
 **The anonymous member's bond (Phase 3):** the bond is locked not to an identity but to **a
 commitment belonging to the ticket**; an anonymous escrow bound to a nullifier. If an offence
 is proven the escrow is forfeited to the treasury — the member loses their money **without
-ever being identified**. Forfeited, not burned: the supply is fixed and halving, so a penalty
-that destroyed tokens would pay itself out of every holder's balance instead of the offender's. The mechanism is Semaphore's nullifier; in production on Ethereum.
+ever being identified**. Forfeited, not burned: the bond is HEZ and HEZ inflates, so destroying
+it would spread the penalty across everyone still holding some rather than funding the state.
+The forfeit has to become something the state can spend. The mechanism is Semaphore's nullifier; in production on Ethereum.
 *Anonymity is not impunity.*
 
 ---

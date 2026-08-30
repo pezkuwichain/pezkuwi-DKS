@@ -174,8 +174,8 @@ pub mod pezpallet {
 		/// step: every quantity below has exactly one correct value that can be recomputed
 		/// from the release index. That is what makes the check worth running -- a mismatch is
 		/// never "close enough", it means a release paid an amount no month was owed, or a
-		/// month was paid twice, or the period advanced without a release behind it. On a
-		/// fixed supply those are the failures that cannot be undone.
+		/// month was paid twice, or the period advanced without a release behind it. PEZ's
+		/// five billion is fixed, so those are the failures that cannot be undone.
 		#[cfg(feature = "try-runtime")]
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
 			use pezframe_support::ensure;

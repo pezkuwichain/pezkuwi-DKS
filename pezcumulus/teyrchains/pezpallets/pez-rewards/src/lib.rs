@@ -358,7 +358,7 @@ pub mod pezpallet {
 		/// What the pallet has paid must be what it has recorded paying, and it can never
 		/// have paid out more than the pot was given.
 		///
-		/// The second of those is the one that matters on a fixed supply: this pallet cannot
+		/// The second matters because PEZ's supply is fixed: this pallet cannot
 		/// mint, but it can instruct a payment, and an instruction for money that is not
 		/// there is a payment that fails on the far side of a bridge with nothing here to
 		/// show for it.

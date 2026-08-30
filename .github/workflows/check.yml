@@ -63,6 +63,12 @@ jobs:
       # sat unrun for ten days. Three identical fixes is where a habit becomes a check.
       - name: Benchmark builds install solc before they build
         run: python3 .github/scripts/check-workflow-solc.py
+      # PEZ is fixed and halving; HEZ inflates. `CLAUDE.md` used to state the rule without
+      # naming either, and the sentence travelled into eleven comments as the reason for not
+      # burning HEZ -- a right rule with a false reason, which is a rule somebody later
+      # measures and discards.
+      - name: No claim confuses the two tokens' supply rules
+        run: python3 .github/scripts/check-token-claims.py
 
   # A note describing the tree goes stale the moment the tree moves. These measure the tree.
   # The gaps are the backlog and do not fail a build; work that came undone does.

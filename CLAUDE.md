@@ -39,8 +39,16 @@ the tests you happened to run.
 
 - **Identifiers are Kurdish, comments are English.** The gate checks this; it cannot check
   that a Kurdish word is the *right* one.
-- **Nothing burns.** The supply is fixed and halving. `OnUnbalanced = ()` destroys tokens --
-  route slashes to a treasury instead.
+- **Nothing burns, and the two tokens are not the same token.** `OnUnbalanced = ()` destroys
+  tokens -- route slashes and forfeits to a treasury instead. This line used to read "the
+  supply is fixed and halving", with no token named, and that sentence is true of PEZ and
+  false of HEZ: PEZ is an asset on the Asset Hub, five billion, fixed, its rewards pool
+  halving every 48 months; HEZ is the native token of the relay, the Asset Hub and People
+  alike, and it inflates -- `MAX_INFLATION_RATE` caps it at 10% a year. The unnamed sentence
+  got copied into eleven comments as a reason for not burning HEZ.
+  The reason for HEZ is different and stronger: burning an inflating token hands the
+  confiscated value to everyone holding it. A penalty should become something the state can
+  spend, not a quiet dividend. `check-token-claims.py` keeps the two apart.
 - **Both twins or neither.** Zagros and Pezkuwichain are the same chain at different stages.
   A change landing in one is a bug in the other. `check-twin-runtimes.py` holds the pallet
   index maps together; nothing holds the rest, so read both.

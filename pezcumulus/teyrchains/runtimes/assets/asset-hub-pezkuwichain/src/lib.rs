@@ -1208,7 +1208,8 @@ impl pezpallet_nis::Config for Runtime {
 parameter_types! {
 	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 	pub const SpendPeriod: BlockNumber = 6 * DAYS;
-	/// Nothing. The supply is fixed and halving, so there is no rate at which destroying it
+	/// Nothing. Burning HEZ hands the value to whoever still holds some, so there is no rate
+	/// at which destroying it
 	/// is correct -- and `BurnDestination` below is `()`, which drops the imbalance rather
 	/// than moving it. At two per thousand of the unspent balance every spend period this was
 	/// live: a slow, quiet leak out of total issuance that no event names.
@@ -1519,8 +1520,9 @@ impl pezpallet_referenda::Config for Runtime {
 		pezframe_support::traits::EitherOf<EnsureRoot<AccountId>, governance::ReferendumCanceller>;
 	type KillOrigin =
 		pezframe_support::traits::EitherOf<EnsureRoot<AccountId>, governance::ReferendumKiller>;
-	// Not `()`: dropping a negative imbalance destroys the tokens, and this chain's supply is
-	// fixed and halving with no burn anywhere in it.
+	// Not `()`: dropping a negative imbalance destroys the tokens. These are HEZ, HEZ
+	// inflates, and burning it pays the slash out to every other holder instead of to the
+	// state. The treasury can spend what it takes; a burn cannot.
 	type Slash = Treasury;
 	type Votes = pezpallet_conviction_voting::VotesOf<Runtime>;
 	type Tally = pezpallet_conviction_voting::TallyOf<Runtime>;

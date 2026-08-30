@@ -3774,7 +3774,8 @@ mod initiative {
 			assert_ok!(Welati::close_lapsed_initiative(RuntimeOrigin::signed(SIGNER), id));
 
 			assert_eq!(Balances::reserved_balance(PROPOSER), 0);
-			// The supply is fixed and halving: a forfeit deposit moves, it does not vanish.
+			// A forfeit deposit moves, it does not vanish: destroying HEZ would pay it out to
+			// every other holder rather than to the state.
 			assert_eq!(Balances::free_balance(TREASURY), before + DEPOSIT);
 			assert!(Initiatives::<Test>::get(id).is_none());
 			set_citizen_count(110);

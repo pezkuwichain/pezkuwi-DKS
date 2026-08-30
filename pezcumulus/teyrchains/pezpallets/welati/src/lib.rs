@@ -416,8 +416,9 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type InitiativeCooldown: Get<BlockNumberFor<Self>>;
 
-		/// What becomes of a forfeit deposit. Not nothing: this chain's supply is fixed and
-		/// halving, and there is no burn anywhere in it.
+		/// What becomes of a forfeit deposit. Not nothing: deposits here are HEZ, HEZ
+		/// inflates, and destroying it would spread the forfeit across everyone holding
+		/// some. A penalty has to become something the state can spend.
 		///
 		/// A handler rather than an account, for the same reason as `SlashDestination` in
 		/// staking-score: the treasury this should reach is on another chain, and an address
@@ -1626,8 +1627,8 @@ pub mod pezpallet {
 
 		/// Close an initiative whose window ran out without the backing.
 		///
-		/// The deposit is forfeit to the treasury -- not destroyed. This chain's supply is
-		/// fixed and halving and there is no burn anywhere in it.
+		/// The deposit is forfeit to the treasury -- not destroyed. Destroying HEZ would pay
+		/// the forfeit out to every other holder instead of to the state.
 		#[pezpallet::call_index(55)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
 		pub fn close_lapsed_initiative(

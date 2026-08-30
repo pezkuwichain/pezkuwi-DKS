@@ -1140,8 +1140,9 @@ impl pezpallet_referenda::Config for Runtime {
 		EnsureRoot<AccountId>,
 		crate::governance::ReferendumKiller,
 	>;
-	// Not `()`: dropping a negative imbalance destroys the tokens, and this chain's supply is
-	// fixed and halving -- there is no burn anywhere in it, by decision. This is the same
+	// Not `()`: dropping a negative imbalance destroys the tokens. These are HEZ, which
+	// inflates, so a burn spreads the slash across every other holder instead of funding
+	// the state. This is the same
 	// handler `pezpallet_identity` slashes into, one line 60-odd above.
 	type Slash = PenaltiesToTreasury;
 	type Votes = u32;
