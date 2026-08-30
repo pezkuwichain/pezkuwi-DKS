@@ -69,6 +69,11 @@ jobs:
       # measures and discards.
       - name: No claim confuses the two tokens' supply rules
         run: python3 .github/scripts/check-token-claims.py
+      # A missing barrier entry turns a message away before any of it runs, and leaves no
+      # symptom on either side. `bridge-hub-zagros` lost the Asset Hub while still waiving its
+      # fees, so the Snowbridge export path was dead on Zagros and the money side looked right.
+      - name: Twins waive and admit the same locations
+        run: python3 .github/scripts/check-xcm-waivers.py
 
   # A note describing the tree goes stale the moment the tree moves. These measure the tree.
   # The gaps are the backlog and do not fail a build; work that came undone does.
