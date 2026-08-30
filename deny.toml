@@ -56,10 +56,10 @@ ignore = [
 	"RUSTSEC-2025-0161", # libsecp256k1
 
 	# ── memmap2 ───────────────────────────────────────────────────────────────
-	# Unsound unchecked pointer-offset in memory-mapping. Host-side only — memmap2
-	# is not reachable from the WASM runtime (no mmap in WASM), so it cannot affect
-	# on-chain/fund logic. Transitive dep; no fixed release for the pinned versions.
-	"RUSTSEC-2026-0186", # memmap2: unchecked pointer offset (unsound, host-side)
+	# Nothing exempted. The note here said "no fixed release for the pinned versions"; 0.9.11
+	# fixes 0186 and the workspace pins it now. It was tolerable while it stood -- memmap2 is
+	# host-side and there is no mmap in WASM -- but tolerable stops being a reason the day a
+	# patched release exists.
 
 	# ── webpki ────────────────────────────────────────────────────────────────
 	# Name-constraints and CRL parsing bugs in transitive webpki dep.
@@ -68,11 +68,10 @@ ignore = [
 	"RUSTSEC-2026-0099", # webpki: wildcard name constraints incorrectly accepted
 	"RUSTSEC-2026-0104", # webpki: reachable panic in CRL parsing (onlySomeReasons BIT STRING)
 
-	# ── git2 / libgit2 (build tooling only) ───────────────────────────────────
-	# Pulled by build-time tooling (wasm-builder / cargo metadata), NOT present in
-	# the runtime WASM or the node consensus path. Track for upstream git2 bump.
-	"RUSTSEC-2026-0183", # git2: potential UB in Remote::list()
-	"RUSTSEC-2026-0184", # git2: potential UB in Signature from buffer-created BlameHunk
+	# ── git2 / libgit2 ────────────────────────────────────────────────────────
+	# Nothing exempted. The note said "track for upstream git2 bump" -- we are a fork and did
+	# not have to wait: 0183 and 0184 are fixed in 0.21.0, which the workspace pins. One crate
+	# uses it, `revive/rpc`'s build script, and only to read the branch and commit id.
 
 	# ── hickory DNS (node networking only) ────────────────────────────────────
 	# Transitive via libp2p DNS resolution. DoS on malformed/cross-zone responses.

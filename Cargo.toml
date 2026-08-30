@@ -835,7 +835,7 @@ futures-timer = { version = "3.0.2" }
 futures-util = { version = "0.3.30", default-features = false }
 gethostname = { version = "0.2.3" }
 getrandom = { version = "0.2", default-features = false }
-git2 = { version = "0.20.0", default-features = false }
+git2 = { version = "0.21.0", default-features = false }
 glob = { version = "0.3" }
 glob-match = { version = "0.2.1" }
 glutton-zagros-runtime = { version = "3.0.0", path = "pezcumulus/teyrchains/runtimes/glutton/glutton-zagros" }
@@ -908,7 +908,7 @@ litep2p = { version = "0.14.3", features = ["rsa", "websocket"] }
 log = { version = "0.4.22", default-features = false }
 macro_magic = { version = "0.5.1" }
 maplit = { version = "1.0.2" }
-memmap2 = { version = "0.9.3" }
+memmap2 = { version = "0.9.11" }
 memory-db = { version = "0.34.0", default-features = false }
 merkleized-metadata = { version = "0.5.0" }
 merlin = { version = "3.0", default-features = false }

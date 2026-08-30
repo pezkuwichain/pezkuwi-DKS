@@ -6265,15 +6265,14 @@ dependencies = [
 
 [[package]]
 name = "git2"
-version = "0.20.4"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b88256088d75a56f8ecfa070513a775dd9107f6530ef14919dac831af9cfe2b"
+checksum = "ddddbf932745a6be37109b6112d3ee09696106f848449069d3a57bba937ab82e"
 dependencies = [
  "bitflags 2.10.0",
  "libc",
  "libgit2-sys",
  "log",
- "url",
 ]
 
 [[package]]
@@ -6801,7 +6800,7 @@ checksum = "6e8319f3cc8fe416e7aa1ab95dcc04fd49f35397a47d0b2f0f225f6dba346a07"
 dependencies = [
  "arbitrary",
  "lazy_static",
- "memmap2 0.9.9",
+ "memmap2 0.9.11",
  "rustc_version 0.4.1",
  "semver 1.0.27",
 ]
@@ -8150,9 +8149,9 @@ dependencies = [
 
 [[package]]
 name = "libgit2-sys"
-version = "0.18.3+1.9.2"
+version = "0.18.8+1.9.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9b3acc4b91781bb0b3386669d325163746af5f6e4f73e6d2d630e09a35f3487"
+checksum = "7f7c568b25d7489bc3fb2988ed69ab111d2944d2f5fec3d5c987fe545ea97b50"
 dependencies = [
  "cc",
  "libc",
@@ -9039,9 +9038,9 @@ dependencies = [
 
 [[package]]
 name = "memmap2"
-version = "0.9.9"
+version = "0.9.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "744133e4a0e0a658e1374cf3bf8e415c4052a15a111acd372764c55b4177d490"
+checksum = "d1219ed1b7f229ee7104d281dd01d6802fe28bb6e95d292942c4daacdeb798c0"
 dependencies = [
  "libc",
 ]
@@ -19565,7 +19564,7 @@ dependencies = [
  "bizinikiwi-test-runtime",
  "clap",
  "docify",
- "memmap2 0.9.9",
+ "memmap2 0.9.11",
  "parity-scale-codec",
  "pezsc-chain-spec-derive",
  "pezsc-client-api",
@@ -26884,7 +26883,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "520cf51c674f8b93d533f80832babe413214bb766b6d7cb74ee99ad2971f8467"
 dependencies = [
  "debugid",
- "memmap2 0.9.9",
+ "memmap2 0.9.11",
  "stable_deref_trait",
  "uuid",
 ]
