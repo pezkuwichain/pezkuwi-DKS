@@ -62,7 +62,7 @@ use pezpallet_revive::{
 	test_utils::builder::{BareInstantiateBuilder, Contract},
 	Code, TransactionLimits,
 };
-use pezpallet_revive_fixtures::compile_module;
+use pezpallet_revive_fixtures::{compile_module, compile_module_with_type, FixtureType};
 use pezpallet_uniques::{asset_ops::Item, asset_strategies::Attribute};
 use pezsp_consensus_aura::SlotDuration;
 use pezsp_core::crypto::Ss58Codec;
@@ -88,16 +88,20 @@ const ALICE: [u8; 32] = [1u8; 32];
 const BOB: [u8; 32] = [2u8; 32];
 const SOME_ASSET_ADMIN: [u8; 32] = [5u8; 32];
 
-const ERC20_PVM: &[u8] =
-	include_bytes!("../../../../../../bizinikiwi/pezframe/revive/fixtures/erc20/erc20.polkavm");
-
-const FAKE_ERC20_PVM: &[u8] = include_bytes!(
-	"../../../../../../bizinikiwi/pezframe/revive/fixtures/erc20/fake_erc20.polkavm"
-);
-
-const EXPENSIVE_ERC20_PVM: &[u8] = include_bytes!(
-	"../../../../../../bizinikiwi/pezframe/revive/fixtures/erc20/expensive_erc20.polkavm"
-);
+/// The three ERC20 fixtures, compiled from their Solidity rather than read as bytes.
+///
+/// They used to be `include_bytes!` of three `.polkavm` blobs checked in beside their sources,
+/// and nothing in the tree built them. Editing the `.sol` left the blob untouched, so the test
+/// went on passing against the old binary and said nothing -- and `fake_erc20.polkavm` had no
+/// source at all, a binary in the tree that nobody could regenerate or read.
+///
+/// `compile_module_with_type` is what the rest of the fixtures already use, and the crate
+/// already requires resolc to build its other thirty contracts, so this costs no new tooling.
+fn erc20_code(name: &str) -> Vec<u8> {
+	compile_module_with_type(name, FixtureType::Resolc)
+		.unwrap_or_else(|e| panic!("compiling {name}: {e}"))
+		.0
+}
 
 parameter_types! {
 	pub Governance: GovernanceOrigin<RuntimeOrigin> = GovernanceOrigin::Origin(RuntimeOrigin::root());
@@ -1880,7 +1884,7 @@ fn withdraw_and_deposit_erc20s() {
 		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
 		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
 
-		let code = ERC20_PVM.to_vec();
+		let code = erc20_code("MyToken");
 
 		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
 		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
@@ -2054,7 +2058,7 @@ fn smart_contract_does_not_return_bool_fails() {
 		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
 
 		// This contract implements the ERC20 interface for `transfer` except it returns a uint256.
-		let code = FAKE_ERC20_PVM.to_vec();
+		let code = erc20_code("MyTokenFake");
 
 		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
 		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
@@ -2113,7 +2117,7 @@ fn expensive_erc20_runs_out_of_gas() {
 		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
 
 		// This contract does a lot more storage writes in `transfer`.
-		let code = EXPENSIVE_ERC20_PVM.to_vec();
+		let code = erc20_code("MyTokenExpensive");
 
 		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
 		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
