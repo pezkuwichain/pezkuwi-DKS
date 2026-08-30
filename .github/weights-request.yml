@@ -16,16 +16,26 @@
 # Both twins, always. Measuring one and not the other is how they drift, and `check-twin-
 # runtimes.py` compares pallet indices, not weights -- nothing else would catch it.
 
-# 2026-08-29: the first two runs of this file measured nothing. First the reference host had
-# no cargo on PATH -- the workflow had never had a toolchain step and had never run to find
-# out. Then it had no solc, which any runtime built with `runtime-benchmarks` needs because
-# `pezpallet-revive-fixtures` compiles Solidity in its build script. Both fixed; the third
-# ask is this line. `check-workflow-solc.py` now keeps the second one from recurring anywhere.
+# 2026-08-29, three asks. The first two measured nothing -- the reference host had no cargo on
+# PATH, then no solc; both were things this workflow had never run long enough to discover.
+#
+# The third measured, at `--repeat 100`, and the numbers say something worth writing down: it
+# did not simply improve the fit. `bridge-hub-pezkuwichain` went from 22% out to 13.2%, and
+# `bridge-hub-zagros` went the other way, from 7.2% -- passing -- to 19.1%. Between the two
+# runs `enqueue_n_full_pages`'s fitted base moved 47% on zagros and the directly measured
+# `enqueue_1000_small_xcmp_messages` moved 26%. That is not a fit converging; that is scatter
+# larger than the 15% the pallet's own check allows, on this hardware, for this pallet.
+#
+# It is not extrapolation: `enqueue_empty_xcmp_message_at` samples the whole component range
+# and the check evaluates it mid-range. So the fourth ask is 200 -- the number that settled
+# `asset-hub-pezkuwichain` when 100 was not enough. If both twins do not land inside 15% at
+# 200, the answer is not a fifth run: it is that this box cannot resolve this pallet to that
+# tolerance, and that is a finding rather than a knob.
 
 runs:
   - runtime: bridge-hub-pezkuwichain
     pallet: pezcumulus_pezpallet_xcmp_queue
-    repeat: 100
+    repeat: 200
     why: >-
       Skipped in the 2026-08-28 re-measurement because this runtime could not be built with
       `runtime-benchmarks` at the time. It still carries the old figures and fails the
@@ -33,5 +43,5 @@ runs:
 
   - runtime: bridge-hub-zagros
     pallet: pezcumulus_pezpallet_xcmp_queue
-    repeat: 100
+    repeat: 200
     why: The twin. Same reason, same numbers, and it must not be left behind.
