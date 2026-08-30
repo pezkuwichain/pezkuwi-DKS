@@ -16,6 +16,10 @@
 # Both twins, always. Measuring one and not the other is how they drift, and `check-twin-
 # runtimes.py` compares pallet indices, not weights -- nothing else would catch it.
 
+# 2026-08-29: the first run of this file failed before measuring anything -- the reference
+# host had no cargo on PATH, because this workflow never had a toolchain step and had never
+# run to find out. Fixed in the same push as this line, which is also what re-triggers it.
+
 runs:
   - runtime: bridge-hub-pezkuwichain
     pallet: pezcumulus_pezpallet_xcmp_queue
