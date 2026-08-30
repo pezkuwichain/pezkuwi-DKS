@@ -74,6 +74,10 @@ jobs:
       # fees, so the Snowbridge export path was dead on Zagros and the money side looked right.
       - name: Twins waive and admit the same locations
         run: python3 .github/scripts/check-xcm-waivers.py
+      # Two shapes, both silent: a call that costs nothing, and a budget guard read as
+      # `meter.try_consume(...)` that can never refuse. Both were live on 2026-08-30.
+      - name: No runtime binds a zero-weight fallback
+        run: python3 .github/scripts/check-zero-weights.py
 
   # A note describing the tree goes stale the moment the tree moves. These measure the tree.
   # The gaps are the backlog and do not fail a build; work that came undone does.
