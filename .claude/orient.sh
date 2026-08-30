@@ -7,10 +7,32 @@
 # malformed path, so it printed nothing for its whole life and no one could tell the difference
 # between "nothing to report" and "never ran".
 set -uo pipefail
-cd "${CLAUDE_PROJECT_DIR:-/home/myhez/pezkuwi-DKS}" || { echo "ORIENT: no project dir"; exit 0; }
+# No default. This file lives in two worktrees on two different branches, and a hardcoded
+# fallback means running it without the variable set measures the *other* tree and reports the
+# answer as if it were this one -- which happened, and read as a regression that was not there.
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+	echo "ORIENT: CLAUDE_PROJECT_DIR is unset. Refusing to guess which worktree you mean --"
+	echo "        run it as: CLAUDE_PROJECT_DIR=\$PWD bash .claude/orient.sh"
+	exit 0
+fi
+cd "$CLAUDE_PROJECT_DIR" || { echo "ORIENT: $CLAUDE_PROJECT_DIR is not a directory"; exit 0; }
 
 PLAN=/home/myhez/res/plans/PLAN.md
 
+echo "=============================================================================="
+echo " TWO HATS, AND YOU WEAR BOTH. Default is the CEO who builds. Put on the Serok"
+echo " hat -- the one who ACCEPTS the work -- before saying anything is ready, and the"
+echo " moment an anomaly appears. Serok's test: would an independent audit firm pass"
+echo " this? If you never put that hat on, the user has to audit you, and that is the"
+echo " failure that cost 2026-08-29."
+echo ""
+echo " AND: never report a belief as a measurement. On that day it happened four times"
+echo " -- a grep cut with 'head -5', a git pathspec outside the repo with the error"
+echo " swallowed by 2>/dev/null, a grep that missed a backtick, paths searched against"
+echo " the wrong repo. Each one produced a confident wrong answer. Before you write"
+echo " 'I measured', check the command actually measured what you claim."
+echo "=============================================================================="
+echo ""
 echo "=============================================================================="
 echo " THE PLAN IS ONE FILE:  $PLAN"
 echo " Read it before starting work. Do not open a second plan file. Do not re-derive"

@@ -1229,14 +1229,23 @@ impl pezpallet_nis::Config for Runtime {
 parameter_types! {
 	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 	pub const SpendPeriod: BlockNumber = 6 * DAYS;
-	/// Nothing. Burning HEZ hands the value to whoever still holds some, so there is no rate
-	/// at which destroying it
-	/// is correct -- and `BurnDestination` below is `()`, which drops the imbalance rather
-	/// than moving it. At two per thousand of the unspent balance every spend period this was
-	/// live: a slow, quiet leak out of total issuance that no event names.
+	/// Nothing -- and this is an open question, not a settled one.
 	///
-	/// Zero rather than a destination on purpose. Giving the burn somewhere to go would say
-	/// this chain burns and has chosen a recipient; it does not burn.
+	/// The reason written here until 2026-08-30 was that the supply is fixed and halving. That
+	/// is PEZ's property, not HEZ's: HEZ inflates, capped at ten per cent a year, so a treasury
+	/// burn is exactly the counter-inflationary sink upstream uses it as. The number stays at
+	/// zero because moving it is a monetary decision, and a wrong reason for a number is not by
+	/// itself a reason to change the number -- but it now rests on nothing rather than on
+	/// something false.
+	///
+	/// Measured, so the cost of leaving it is visible: the treasury takes 15% of a 16M HEZ
+	/// yearly emission, so 2.4M HEZ a year arrives with no sink. Unspent, that is 24M in a
+	/// decade, about seven per cent of the supply by then, and nothing takes it back.
+	///
+	/// `BurnDestination` is `()`, which drops the imbalance rather than moving it. Upstream ran
+	/// this live at two per thousand of the unspent balance every spend period: a slow leak out
+	/// of total issuance that no event names. Zero rather than a destination is deliberate --
+	/// giving the burn somewhere to go would say this chain burns and has chosen a recipient.
 	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
 	pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
