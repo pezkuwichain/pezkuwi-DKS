@@ -361,7 +361,7 @@ impl pezpallet_staking_async::Config for Runtime {
 	type EventListeners = (NominationPools, DelegatedStaking);
 	type PlanningEraOffset =
 		pezpallet_staking_async::PlanningEraOffsetOf<Runtime, RelaySessionDuration, ConstU32<5>>;
-	type RcClientInterface = ElectionStaysHome;
+	type RcClientInterface = StakingRcClient;
 	type MaxEraDuration = MaxEraDuration;
 	type MaxPruningItems = MaxPruningItems;
 	type WeightInfo = weights::pezpallet_staking_async::WeightInfo<Runtime>;
@@ -514,34 +514,6 @@ parameter_types! {
 	/// Relay-side cost of set/purge keys. Held above the benchmarked figure on purpose:
 	/// undercharging strands the message, overpaying only costs the sender a little.
 	pub RemoteKeysExecutionWeight: Weight = Weight::from_parts(200_000_000, 20_000);
-}
-
-/// Asset Hub elects, and its result stops here.
-///
-/// `staking-async` calls this when its election finishes, and until 2026-08-29 it went
-/// straight to `rc_client`, which put the set in `OutgoingValidatorSet` and shipped it to the
-/// relay every era. That is no longer who decides: the committee is drawn on the People chain
-/// by TNPoS, from nine strata whose scores are written there.
-///
-/// The election still runs, and it still matters -- it is the stake stratum's internal
-/// ranking, three seats out of twenty-seven, and the exposure it builds is what slashing and
-/// the payout machinery read. What it no longer does is leave the chain.
-///
-/// This is dropped rather than the export being disabled, and the difference is the point:
-/// `rc_client`'s exporter is still live and still the one path to the relay. If both this and
-/// the People chain wrote `OutgoingValidatorSet`, the later write would win and the validator
-/// set would be whichever message happened to land second.
-pub struct ElectionStaysHome;
-impl rc_client::RcClientInterface for ElectionStaysHome {
-	type AccountId = AccountId;
-
-	fn validator_set(new_validator_set: Vec<Self::AccountId>, id: u32, _prune_up_to: Option<u32>) {
-		log::debug!(
-			target: "runtime::staking",
-			"election for era {id} produced {} stashes; kept local, the committee comes from People",
-			new_validator_set.len(),
-		);
-	}
 }
 
 pub struct StakingXcmToRelayChain;

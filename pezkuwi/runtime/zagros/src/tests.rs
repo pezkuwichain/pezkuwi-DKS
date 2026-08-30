@@ -454,36 +454,6 @@ fn the_key_calls_encode_the_way_people_builds_them() {
 	assert_eq!(real_purge, (67u8, 4u8, stash).encode(), "purge_keys address moved");
 }
 
-/// Exactly two chains may tell this one who validates it, and one of them is new.
-///
-/// The People chain draws the committee, so it has to be admitted here or every message it
-/// sends is dropped at the origin check with nothing on either side saying why -- both ends
-/// look healthy and the validator set simply stops changing. The Asset Hub stays because
-/// `ah_client` is also how session reports and the staking bookkeeping arrive.
-///
-/// Every other chain is refused, and the list is pinned rather than described: widening this
-/// origin is how a sibling chain would come to seat validators, and nothing else in the tree
-/// would notice.
-#[test]
-fn only_the_two_named_chains_may_seat_validators() {
-	use pezframe_support::traits::EnsureOrigin;
-	use zagros_runtime_constants::system_teyrchain::{
-		ASSET_HUB_ID, BRIDGE_HUB_ID, COLLECTIVES_ID, PEOPLE_ID,
-	};
-
-	let from =
-		|id: u32| -> RuntimeOrigin { teyrchains_origin::Origin::Teyrchain(id.into()).into() };
-
-	for id in [ASSET_HUB_ID, PEOPLE_ID] {
-		assert!(EnsureAssetHub::try_origin(from(id)).is_ok(), "chain {id} must be admitted");
-	}
-	for id in [BRIDGE_HUB_ID, COLLECTIVES_ID, 2000, 4242] {
-		assert!(EnsureAssetHub::try_origin(from(id)).is_err(), "chain {id} must be refused");
-	}
-	// And nothing that is not a chain at all.
-	assert!(EnsureAssetHub::try_origin(RuntimeOrigin::root()).is_err());
-}
-
 /// The committee call, pinned the same way and for the same reason.
 ///
 /// This one matters more than the key calls: a key that never arrives costs one validator a

@@ -72,7 +72,7 @@ use pezkuwi_runtime_teyrchains::{
 	shared as teyrchains_shared,
 };
 use pezkuwichain_runtime_constants::system_teyrchain::{
-	coretime::TIMESLICE_PERIOD, ASSET_HUB_ID, BROKER_ID, PEOPLE_ID,
+	coretime::TIMESLICE_PERIOD, ASSET_HUB_ID, BROKER_ID,
 };
 use pezpallet_balances::WeightInfo;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -590,16 +590,6 @@ impl Get<Location> for AssetHubLocation {
 	}
 }
 
-/// The chains allowed to tell this one who validates it.
-///
-/// Two, and they do different halves. The Asset Hub sends session reports and the staking
-/// bookkeeping that follows from them; the People chain sends the committee itself, because
-/// that is where it is drawn -- the scores every stratum rests on are written there, and a
-/// relay-side draw would have to import five of them across a chain boundary.
-///
-/// Named `EnsureAssetHub` still, because the pallet it feeds is `ah_client` and renaming the
-/// type would not rename that. What matters is the list, and the list is checked by
-/// `only_the_two_named_chains_may_seat_validators`.
 pub struct EnsureAssetHub;
 impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for EnsureAssetHub {
 	type Success = ();
@@ -607,11 +597,7 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for EnsureAssetHub {
 		match <RuntimeOrigin as Into<Result<teyrchains_origin::Origin, RuntimeOrigin>>>::into(
 			o.clone(),
 		) {
-			Ok(teyrchains_origin::Origin::Teyrchain(id))
-				if id == ASSET_HUB_ID.into() || id == PEOPLE_ID.into() =>
-			{
-				Ok(())
-			},
+			Ok(teyrchains_origin::Origin::Teyrchain(id)) if id == ASSET_HUB_ID.into() => Ok(()),
 			_ => Err(o),
 		}
 	}
