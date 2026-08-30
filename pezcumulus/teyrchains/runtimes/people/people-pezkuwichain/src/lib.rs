@@ -858,6 +858,7 @@ mod benches {
 		[pezpallet_referral, Referral]
 		[pezpallet_tiki, Tiki]
 		[pezpallet_staking_score, StakingScore]
+		[pezpallet_tnpos, Tnpos]
 		[pezpallet_trust, Trust]
 		[pezpallet_welati, Welati]
 		[pezpallet_pez_rewards, PezRewards]

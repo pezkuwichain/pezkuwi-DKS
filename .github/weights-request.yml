@@ -33,15 +33,16 @@
 # tolerance, and that is a finding rather than a knob.
 
 runs:
-  - runtime: bridge-hub-pezkuwichain
-    pallet: pezcumulus_pezpallet_xcmp_queue
-    repeat: 200
+  - runtime: people-pezkuwichain
+    pallet: pezpallet_tnpos
+    repeat: 100
     why: >-
-      Skipped in the 2026-08-28 re-measurement because this runtime could not be built with
-      `runtime-benchmarks` at the time. It still carries the old figures and fails the
-      pallet's own `check_accuracy` by 22%, which is the last red in the `runtimes` job.
+      Never measured. `WeightInfo` was bound to `()`, whose impl returned `Weight::zero()` for
+      all seven calls, so every TNPoS extrinsic was free -- `join` and `commit_seed` write
+      storage. The pallet was also missing from `define_benchmarks!`, which is why nothing
+      caught it. A ceiling now stands in the pallet; this replaces it with a measurement.
 
-  - runtime: bridge-hub-zagros
-    pallet: pezcumulus_pezpallet_xcmp_queue
-    repeat: 200
-    why: The twin. Same reason, same numbers, and it must not be left behind.
+  - runtime: people-zagros
+    pallet: pezpallet_tnpos
+    repeat: 100
+    why: The twin. Same reason, and measuring one without the other is how they drift.
