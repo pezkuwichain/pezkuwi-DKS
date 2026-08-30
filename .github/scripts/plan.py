@@ -868,6 +868,32 @@ def _():
                     else f"{used} targets pay a treasury that is gone")
 
 
+@work("register rules are entrenched")
+def _():
+    """The register's own rules must live in storage and answer only to the slow track.
+
+    Two ways for this to come undone, and neither shows up as a failing test elsewhere. The
+    parameters could go back to `const`, which takes the governance track's subject away; or
+    `AdminOrigin` could gain Root, which makes the ninety-day track optional -- and an
+    optional slow path is a fast path, because nobody takes the long road when the short one
+    arrives at the same place.
+    """
+    missing = []
+    for q in _people():
+        src = read(q / "src/lib.rs")
+        if "pub mod qeyd {" not in src:
+            missing.append(f"{q.name}: rules are not in storage")
+            continue
+        admin = re.search(r"impl pezpallet_parameters::Config for Runtime \{(.*?)\n\}", src, re.S)
+        admin = re.search(r"type AdminOrigin =([^;]+);", admin.group(1)) if admin else None
+        admin = " ".join(admin.group(1).split()) if admin else ""
+        if "QeydRules" not in admin:
+            missing.append(f"{q.name}: {admin or 'no AdminOrigin'}")
+        elif "EnsureRoot" in admin:
+            missing.append(f"{q.name}: the slow track shares with Root")
+    return not missing, "; ".join(missing) or "in storage on both, behind qeyd_rules alone"
+
+
 def print_work(record=False):
     import json
     before = json.loads(BASELINE.read_text()) if BASELINE.exists() else {}
