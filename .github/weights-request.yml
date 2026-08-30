@@ -34,15 +34,15 @@
 
 runs:
   - runtime: people-pezkuwichain
-    pallet: pezpallet_tnpos
+    pallet: pezpallet_accumulate_and_forward
     repeat: 100
     why: >-
-      Never measured. `WeightInfo` was bound to `()`, whose impl returned `Weight::zero()` for
-      all seven calls, so every TNPoS extrinsic was free -- `join` and `commit_seed` write
-      storage. The pallet was also missing from `define_benchmarks!`, which is why nothing
-      caught it. A ceiling now stands in the pallet; this replaces it with a measurement.
+      `send_native()` is not a call weight, it is the budget guard `on_initialize` reads as
+      `meter.try_consume(...)` before teleporting. It returned `Weight::zero()`, so the guard
+      could never refuse and the send happened whatever the block had left. A generous
+      stand-in stands in the pallet; this measures it.
 
   - runtime: people-zagros
-    pallet: pezpallet_tnpos
+    pallet: pezpallet_accumulate_and_forward
     repeat: 100
-    why: The twin. Same reason, and measuring one without the other is how they drift.
+    why: The twin.

@@ -25,7 +25,7 @@
 #![allow(unused_imports)]
 #![allow(missing_docs)]
 
-use pezframe_support::weights::Weight;
+use pezframe_support::weights::{constants::RocksDbWeight, Weight};
 
 /// Weight functions needed for `pezpallet_accumulate_and_forward`.
 pub trait WeightInfo {
@@ -33,8 +33,21 @@ pub trait WeightInfo {
 }
 
 /// Default weights (not benchmarked).
+/// Not a call weight -- a budget guard, and zero disabled it.
+///
+/// `send_native()` is read inside `on_initialize` as `meter.try_consume(...)`, so the pallet
+/// can decline to forward when the block has no room left. At `Weight::zero()` the consume
+/// always succeeds and the guard can never refuse: the XCM send happens whatever the block
+/// has left. That is worse than a free extrinsic, which at least only costs the caller
+/// nothing; this one spends a budget it did not check.
+///
+/// The figure below is a stand-in and is deliberately generous, because the failure it
+/// prevents is a block that overruns. The pallet is benchmarked; the measurement replaces it.
 impl WeightInfo for () {
 	fn send_native() -> Weight {
-		Weight::zero()
+		// One teleport: read the accumulation account, burn locally, send the message.
+		Weight::from_parts(500_000_000, 8_000)
+			.saturating_add(RocksDbWeight::get().reads(4))
+			.saturating_add(RocksDbWeight::get().writes(3))
 	}
 }

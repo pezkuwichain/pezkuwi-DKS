@@ -1498,8 +1498,10 @@ parameter_types! {
 // they are priced like every other byte this chain stores, with the same `deposit()` helper the
 // NFT and assets pallets use here. The inheritor feature itself is new and unexercised.
 //
-// A slashed security deposit goes to the relay treasury rather than being burnt, matching how
-// this runtime already routes identity slashes.
+// A slashed security deposit is forwarded to the treasury rather than burnt, matching how
+// this runtime already routes identity slashes. `Slash = AccumulateAndForward`, which pools
+// the amounts and teleports them to the Asset Hub's treasury -- this line said "the relay
+// treasury" until 2026-08-30, which stopped being true when the treasury moved.
 impl pezpallet_recovery::Config for Runtime {
 	type WeightInfo = ();
 	type RuntimeCall = RuntimeCall;
