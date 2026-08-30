@@ -51,9 +51,12 @@ RECORDED = {
     ("bridge-hub", "barrier", "zagros", "Equals<GovernanceLocation>"):
         "Zagros governance addresses this hub directly; on mainnet it arrives as Parent.",
     ("bridge-hub", "barrier", "pezkuwichain", "Equals<SiblingPeople>"):
-        "Named People explicitly; the Zagros twin spells the same chain PeopleLocation.",
-    ("bridge-hub", "barrier", "zagros", "Equals<PeopleLocation>"):
-        "The same chain as the twin's SiblingPeople, under the constants module's name.",
+        "Inherited from upstream's bridge-hub-rococo, and measured 2026-08-30 as having no "
+        "sender: `plan.py --flows` declares no People-to-bridge-hub path, and every message "
+        "People sends goes to the relay or the Asset Hub. Kept for now rather than removed "
+        "because a barrier entry that is absent fails silently -- see the Asset Hub above -- "
+        "so dropping it is a change to make deliberately, not while fixing something else. "
+        "The Zagros twin does not have it.",
     ("bridge-hub", "barrier", "pezkuwichain", "Equals<AssetHubPezkuwichainLocation>"):
         "The same chain as the twin's AssetHubLocation, under the bridge primitives' name.",
     ("bridge-hub", "barrier", "zagros", "Equals<AssetHubLocation>"):

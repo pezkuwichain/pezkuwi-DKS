@@ -823,7 +823,13 @@ fn governance_authorize_upgrade_works() {
 			Runtime,
 			RuntimeOrigin,
 		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(ASSET_HUB_ID)))),
-		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
+		// `BadOrigin` at index 1, not `Barrier` at index 0, and the difference is the point.
+		// The Asset Hub is admitted by the barrier now -- it has to be, it sends this chain the
+		// Snowbridge export -- so the refusal comes from the origin check, which is the layer
+		// that is meant to decide who may govern. Before, the Asset Hub was kept out by a
+		// barrier that excluded it for an unrelated reason, and "cannot authorize an upgrade"
+		// rested on that accident. It rests on the origin now.
+		Either::Right(InstructionError { index: 1, error: XcmError::BadOrigin })
 	);
 	// no - Collectives
 	assert_err!(

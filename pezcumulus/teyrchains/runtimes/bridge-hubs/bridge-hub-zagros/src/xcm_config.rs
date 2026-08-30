@@ -35,8 +35,7 @@ use pezpallet_collator_selection::StakingPotAccountId;
 use pezpallet_xcm::{AuthorizedAliasers, XcmPassthrough};
 use pezsp_runtime::traits::AccountIdConversion;
 use testnet_teyrchains_constants::zagros::{
-	locations::{AssetHubLocation, PeopleLocation},
-	snowbridge::EthereumNetwork,
+	locations::AssetHubLocation, snowbridge::EthereumNetwork,
 };
 use teyrchains_common::xcm_config::{
 	AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
@@ -185,13 +184,16 @@ pub type Barrier = TrailingSetTopicAsId<
 						// and is dropped without an error.
 						Equals<SnowbridgeFrontendLocation>,
 						Equals<GovernanceLocation>,
-						// The Asset Hub and People, and the reason they have to be named.
+						// The Asset Hub, and the reason it has to be named.
 						//
 						// Upstream waives every sibling system chain here with
 						// `RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>`. The
-						// twin narrowed that to the two chains that actually send, which is the
+						// twin narrowed that to the chains that actually send, which is the
 						// better rule -- and this runtime lost the general one without gaining the
-						// narrow one. Nothing announced it: `WaivedLocations` below still waives
+						// narrow one. People is deliberately not here: `plan.py --flows` declares
+						// no People-to-bridge-hub path and every message People sends goes to the
+						// relay or the Asset Hub. The twin lists `SiblingPeople`, inherited from
+						// upstream; by the same measurement that entry has no sender either. Nothing announced it: `WaivedLocations` below still waives
 						// the fees, so the money side looked right while the barrier turned the
 						// message away before any of it ran.
 						//
@@ -200,7 +202,6 @@ pub type Barrier = TrailingSetTopicAsId<
 						// `unpaid_transfer_token_to_ethereum_should_work` is the test that says
 						// so, and it had never run -- the job died earlier, on weights.
 						Equals<AssetHubLocation>,
-						Equals<PeopleLocation>,
 					)>,
 					// Subscriptions for version tracking are OK.
 					AllowSubscriptionsFrom<ParentRelayOrSiblingTeyrchains>,
