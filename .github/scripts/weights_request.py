@@ -48,8 +48,15 @@ def from_file():
 
     doc = yaml.safe_load(REQUEST.read_text()) or {}
     runs = doc.get("runs")
-    if not isinstance(runs, list) or not runs:
-        sys.exit("the request file must hold a non-empty `runs:` list")
+    if runs is None or not isinstance(runs, list):
+        sys.exit("the request file must hold a `runs:` list (use `runs: []` for none)")
+    if not runs:
+        # The finished state, not a broken one. A request left in place after it has been
+        # answered re-runs on the reference host at every push -- which is what emptying the
+        # list prevents. Saying so and exiting clean is the honest answer; failing here would
+        # teach people to leave stale asks behind rather than clear them.
+        print("no runs requested -- nothing to measure")
+        return []
 
     out = []
     for i, run in enumerate(runs):
@@ -83,6 +90,8 @@ def main():
 
     dispatched = {k: v for k, v in vars(a).items() if v}
     runs = [dispatched] if dispatched else from_file()
+    if not runs:
+        return 0
 
     failed = []
     for run in runs:
