@@ -1017,13 +1017,13 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 		balances: BalancesConfig {
 			balances: vec![
 				// HEZ Genesis Distribution (200M Total)
-				(founder_account.clone(), HEZ_FOUNDER_ALLOCATION), // 10% = 20M HEZ
-				(presale_account.clone(), HEZ_PRESALE_ALLOCATION), // 50% = 100M HEZ
-				(treasury_account.clone(), HEZ_TREASURY_ALLOCATION), // 20% = 40M HEZ
 				// The airdrop's 40M is not here. It is minted straight into the Asset Hub's
 				// airdrop pot, a keyless treasury instance -- so no key ever holds it and no
 				// manual transfer has to be remembered after launch. See
 				// `HEZ_AIRDROP_ALLOCATION`'s comment and the Asset Hub's `AirdropPot`.
+				(founder_account.clone(), HEZ_FOUNDER_ALLOCATION), // 10% = 20M HEZ
+				(presale_account.clone(), HEZ_PRESALE_ALLOCATION), // 50% = 100M HEZ
+				(treasury_account.clone(), HEZ_TREASURY_ALLOCATION), // 20% = 40M HEZ
 			]
 			.into_iter()
 			// Add validator stash balances (STASH * 2 to cover bond + existential deposit)

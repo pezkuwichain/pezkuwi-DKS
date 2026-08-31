@@ -1343,7 +1343,7 @@ impl pezpallet_treasury::Config<AirdropPotInstance> for Runtime {
 	// People, and only People -- with a ceiling. `EnsureWithSuccess` is what turns "this
 	// origin may spend" into "this origin may spend up to this much", and the amount it
 	// returns is what the pallet checks the spend against.
-	type SpendOrigin = pezframe_support::traits::EnsureWithSuccess<
+	type SpendOrigin = pezframe_system::EnsureWithSuccess<
 		EnsureXcm<Equals<PeopleLocation>>,
 		AccountId,
 		AirdropSpendCeiling,
@@ -1791,7 +1791,7 @@ construct_runtime!(
 		AssetsPrecompilesPermit: pezpallet_assets_precompiles::permit::pezpallet = 67,
 		ChildBounties: pezpallet_child_bounties = 64,
 		Treasury: pezpallet_treasury = 65,
-		AirdropPot: pezpallet_treasury::<AirdropPotInstance> = 66,
+		AirdropPot: pezpallet_treasury::<Instance2> = 66,
 		Revive: pezpallet_revive = 66,
 
 		// PezkuwiChain Custom Pallets
