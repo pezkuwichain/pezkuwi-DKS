@@ -1672,7 +1672,7 @@ construct_runtime!(
 		Bounties: pezpallet_bounties = 63,
 		ChildBounties: pezpallet_child_bounties = 64,
 		Treasury: pezpallet_treasury = 65,
-		AirdropPot: pezpallet_treasury::<Instance2> = 66,
+		AirdropPot: pezpallet_treasury::<Instance2> = 68,
 
 		// PezkuwiChain Custom Pallets
 		PezTreasury: pezpallet_pez_treasury = 70,

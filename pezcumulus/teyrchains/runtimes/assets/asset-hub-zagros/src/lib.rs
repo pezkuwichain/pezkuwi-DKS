@@ -1791,7 +1791,7 @@ construct_runtime!(
 		AssetsPrecompilesPermit: pezpallet_assets_precompiles::permit::pezpallet = 67,
 		ChildBounties: pezpallet_child_bounties = 64,
 		Treasury: pezpallet_treasury = 65,
-		AirdropPot: pezpallet_treasury::<Instance2> = 66,
+		AirdropPot: pezpallet_treasury::<Instance2> = 68,
 		Revive: pezpallet_revive = 66,
 
 		// PezkuwiChain Custom Pallets

@@ -538,7 +538,7 @@ parameter_types! {
 	pub TreasuryChain: xcm::latest::Location = xcm::latest::Location::new(1, [xcm::latest::Junction::Teyrchain(1000)]);
 	pub const TreasuryPalletIndex: u8 = 70;
 	pub const ParametersPalletIndex: u8 = 79;
-	pub const AirdropPotPalletIndex: u8 = 66;
+	pub const AirdropPotPalletIndex: u8 = 68;
 	/// Small next to the balances the tests use, so a test can cross it on purpose without
 	/// having to mint a realistic amount first.
 	pub const AirdropCeiling: u128 = 1_000;

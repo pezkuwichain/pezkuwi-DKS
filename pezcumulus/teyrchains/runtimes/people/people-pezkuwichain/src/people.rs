@@ -1244,13 +1244,16 @@ parameter_types! {
 	/// `pezpallet-parameters` on the Asset Hub, where HEZ's emission rate is stored.
 	pub const WelatiParametersPalletIndex: u8 = 79;
 
-	/// The airdrop pot on the Asset Hub -- `pezpallet_treasury`'s second instance, at 66.
+	/// The airdrop pot on the Asset Hub -- `pezpallet_treasury`'s second instance, at 68.
 	///
 	/// Its own index because it is its own pallet over there, sharing only the treasury's
 	/// code. A message addressed to 65 instead would reach the ordinary treasury, which would
 	/// accept it and pay out of the wrong pot; the encoding pin in the Asset Hub's tests is
 	/// what holds the number, not this comment.
-	pub const WelatiAirdropPotPalletIndex: u8 = 66;
+	///
+	/// 68 rather than 66: `pezpallet_revive` holds 66 on the Zagros hub, and the twins keep
+	/// one index map, so the pot could not take it on either.
+	pub const WelatiAirdropPotPalletIndex: u8 = 68;
 
 	/// What one airdrop may move on two signatures.
 	///
