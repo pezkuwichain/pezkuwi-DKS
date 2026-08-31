@@ -59,7 +59,11 @@ use pezsp_keyring::Sr25519Keyring;
 /// Founder allocation: 10% = 20,000,000 HEZ
 pub const HEZ_FOUNDER_ALLOCATION: u128 = 20_000_000 * HEZ;
 
-/// Presale allocation: 50% = 100,000,000 HEZ
+/// Presale allocation: 50% = 100,000,000 HEZ.
+///
+/// **Minted on the Asset Hub, not here** -- into `PresalePot`, a keyless treasury instance
+/// that only Parliament can release. It used to be a plain balance on `Presale_1`, a single
+/// key holding half the supply.
 pub const HEZ_PRESALE_ALLOCATION: u128 = 100_000_000 * HEZ;
 
 /// Kurdistan Treasury allocation: 20% = 40,000,000 HEZ
@@ -76,9 +80,10 @@ pub const HEZ_AIRDROP_ALLOCATION: u128 = 40_000_000 * HEZ;
 // ===========================================================================
 // COMPILE-TIME VALIDATION: the four shares still sum to 200M.
 //
-// Unchanged by the airdrop moving to the Asset Hub: what moved is where a share is minted,
-// not how the supply is divided. `hez_allocations_sum_to_200m` below checks the other half of
-// that -- which chain mints which share -- because this assert cannot see it.
+// Unchanged by the airdrop and the presale moving to the Asset Hub: what moved is where a
+// share is minted, not how the supply is divided. `hez_allocations_sum_to_200m` below checks
+// the other half of that -- which chain mints which share -- because this assert cannot see
+// it, and a share that moved chain while keeping its number would pass here in silence.
 // ===========================================================================
 const _: () = assert!(
 	HEZ_FOUNDER_ALLOCATION
@@ -206,16 +211,20 @@ fn default_teyrchains_host_configuration_is_consistent() {
 
 /// The four allocations still sum to 200M, across two chains rather than one.
 ///
-/// Three are minted here; the airdrop's 40M is minted into the Asset Hub's `AirdropPot`. The
-/// constant stays in this file because this is where the split is decided and where anybody
-/// changing one share will look -- moving it to the chain that holds the money would leave
-/// three-quarters of the arithmetic here and a quarter somewhere else.
+/// Two are minted here; the airdrop's 40M and the presale's 100M are minted into the Asset
+/// Hub's `AirdropPot` and `PresalePot`. The constants stay in this file because this is where
+/// the split is decided and where anybody changing one share will look -- moving them to the
+/// chain that holds the money would leave half the arithmetic here and half somewhere else.
+///
+/// The two that stay are the two with an owner: the founder's is property, and the treasury's
+/// is the relay's own. The two that moved are the two that answer to a body rather than to a
+/// key, and the pots that hold them live on the Asset Hub.
 #[test]
 fn hez_allocations_sum_to_200m() {
-	let here = HEZ_FOUNDER_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION;
-	let on_asset_hub = HEZ_AIRDROP_ALLOCATION;
-	assert_eq!(here, 160_000_000 * HEZ, "the relay mints 160M: founder, presale, treasury");
-	assert_eq!(on_asset_hub, 40_000_000 * HEZ, "the Asset Hub mints the airdrop pot's 40M");
+	let here = HEZ_FOUNDER_ALLOCATION + HEZ_TREASURY_ALLOCATION;
+	let on_asset_hub = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION;
+	assert_eq!(here, 60_000_000 * HEZ, "the relay mints 60M: founder and treasury");
+	assert_eq!(on_asset_hub, 140_000_000 * HEZ, "the Asset Hub mints the airdrop and presale pots");
 	assert_eq!(here + on_asset_hub, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
 }
 
@@ -595,11 +604,6 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 		hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
 
 	// Presale account - receives 50% (100M HEZ)
-	// Presale_1
-	// SS58: 5Fs1VXbPVvmHAaQ8a7bKcdJ8h8c1mgJKLJ6Pwce69fSqhLJ5
-	let presale_account: AccountId =
-		hex!("a8055af9df1db60bea4277f7e91157246a6245123564bff10435f461f284bf55").into();
-
 	// Kurdistan Treasury account - receives 20% (40M HEZ)
 	// Treasury_1
 	// SS58: 5EhCpn82QtdU53MF6PoNFrKHgSrsfcAxFTMwrn3JYf9dioQw
@@ -1022,7 +1026,6 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				// manual transfer has to be remembered after launch. See
 				// `HEZ_AIRDROP_ALLOCATION`'s comment and the Asset Hub's `AirdropPot`.
 				(founder_account.clone(), HEZ_FOUNDER_ALLOCATION), // 10% = 20M HEZ
-				(presale_account.clone(), HEZ_PRESALE_ALLOCATION), // 50% = 100M HEZ
 				(treasury_account.clone(), HEZ_TREASURY_ALLOCATION), // 20% = 40M HEZ
 			]
 			.into_iter()

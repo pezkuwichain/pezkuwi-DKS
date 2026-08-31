@@ -581,6 +581,70 @@ pub struct AirdropProposal<T: pezframe_system::Config> {
 	pub payable_from: BlockNumberFor<T>,
 }
 
+/// What a presale release does.
+///
+/// A verb rather than a note beside the amount, because the two do different things and the
+/// difference has to survive the vote. A note saying "this one is locked" is a claim about a
+/// plain transfer; a verb is the transfer the code performs. `execute_presale` reads this and
+/// nothing else to decide when the money may move, so a `Locked` release cannot be carried
+/// out as an immediate one -- not by mistake and not on purpose.
+#[derive(
+	Encode,
+	Decode,
+	DecodeWithMemTracking,
+	Clone,
+	Copy,
+	Eq,
+	PartialEq,
+	Debug,
+	TypeInfo,
+	MaxEncodedLen,
+)]
+pub enum PresaleVerb {
+	/// Pay as soon as Parliament has agreed.
+	Transfer,
+	/// Pay, but not before `months` have passed since the proposal.
+	///
+	/// The money stays in the pot for the whole of that time -- the buyer never holds it, so
+	/// there is nothing to sell early and no lock to enforce on an account this chain does not
+	/// control. A vesting schedule would put the balance in the buyer's hands and rely on a
+	/// lock; this does not hand it over at all.
+	Locked { months: u8 },
+}
+
+/// A release from the presale pot, waiting on Parliament.
+///
+/// Unlike `AirdropProposal` this record carries no approval flags. The approval is a vote and
+/// votes are counted somewhere already -- `vote_id` names the proposal Parliament is voting
+/// on, and `execute_presale` reads its tally rather than a copy of it. Two tallies of the same
+/// decision is one tally too many; the second one is always the one that goes stale.
+#[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
+#[codec(mel_bound())]
+#[scale_info(skip_type_params(T))]
+pub struct PresaleProposal<T: pezframe_system::Config> {
+	/// What this release does.
+	pub verb: PresaleVerb,
+	/// Who receives it. An exchange's cold wallet, a bot, an early buyer -- named in the
+	/// proposal itself, which is what Parliament reads before voting. There is no register of
+	/// permitted addresses: a register would mean voting twice on the same address, once to
+	/// allow it and once to fund it, and the second vote already shows the first one.
+	pub beneficiary: T::AccountId,
+	/// HEZ, in the smallest unit.
+	pub amount: u128,
+	/// The terms of the sale: price, venue, who the buyer is. Recorded because this is the
+	/// half of the decision the amount does not carry, and because half the supply leaving on
+	/// a bare number is exactly what this replaces.
+	pub terms: BoundedVec<u8, ConstU32<256>>,
+	/// The Finance Minister who proposed it.
+	pub proposer: T::AccountId,
+	/// The `ActiveProposals` entry Parliament votes on. The authority is there, not here.
+	pub vote_id: u32,
+	/// When it was proposed. A `Locked` release counts its months from this block.
+	pub proposed_at: BlockNumberFor<T>,
+	/// The earliest block it may be paid. Equal to `proposed_at` for a plain transfer.
+	pub payable_from: BlockNumberFor<T>,
+}
+
 /// Appointment process information
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]

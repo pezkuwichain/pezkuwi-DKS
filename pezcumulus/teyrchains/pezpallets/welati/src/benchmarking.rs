@@ -306,6 +306,173 @@ mod benchmarks {
 		// 2. ProposalAlreadyVoted check (voter hasn't voted before)
 	}
 
+	// ----------------------------------------------------------------
+	// AIRDROP AND PRESALE POT BENCHMARKS
+	//
+	// These seven shipped borrowing `nominate_official` and friends, on the reasoning that the
+	// work is the same shape. It is not: `propose_presale` also opens a proposal, which is two
+	// more writes, and both payment calls send an XCM. A stand-in was measured wrong in this
+	// tree once already -- the TNPoS committee weights undercharged by a hundredfold -- and the
+	// direction of that error is the dangerous one, because a call that costs less than it
+	// takes is a call somebody can repeat.
+	// ----------------------------------------------------------------
+
+	/// Seat the offices these calls check, and return them.
+	fn seat_pot_offices<T: Config>() -> (T::AccountId, T::AccountId, T::AccountId) {
+		let president: T::AccountId = account("president", 20, 0);
+		let prime_minister: T::AccountId = account("prime_minister", 21, 0);
+		let finance_minister: T::AccountId = account("finance_minister", 22, 0);
+		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, president.clone());
+		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::SerokWeziran, prime_minister.clone());
+		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::WezireDarayiye, finance_minister.clone());
+		(president, prime_minister, finance_minister)
+	}
+
+	#[benchmark]
+	fn propose_airdrop() {
+		let (_, prime_minister, _) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+
+		#[extrinsic_call]
+		propose_airdrop(
+			RawOrigin::Signed(prime_minister),
+			beneficiary,
+			1_000u128,
+			// The bound, not a short string: the record is a `BoundedVec` and the worst case
+			// is the one that fills it.
+			vec![0u8; 256],
+		);
+
+		assert!(AirdropProposals::<T>::get(0).is_some());
+	}
+
+	#[benchmark]
+	fn approve_airdrop() {
+		let (president, prime_minister, _) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		Pezpallet::<T>::propose_airdrop(
+			RawOrigin::Signed(prime_minister).into(),
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		)
+		.unwrap();
+
+		#[extrinsic_call]
+		approve_airdrop(RawOrigin::Signed(president), 0);
+
+		assert!(AirdropProposals::<T>::get(0).unwrap().approved_by_president);
+	}
+
+	#[benchmark]
+	fn pay_airdrop() {
+		let (president, prime_minister, _) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		let caller: T::AccountId = whitelisted_caller();
+		Pezpallet::<T>::propose_airdrop(
+			RawOrigin::Signed(prime_minister).into(),
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		)
+		.unwrap();
+		Pezpallet::<T>::approve_airdrop(RawOrigin::Signed(president).into(), 0).unwrap();
+
+		#[extrinsic_call]
+		pay_airdrop(RawOrigin::Signed(caller), 0);
+
+		assert!(AirdropProposals::<T>::get(0).is_none());
+	}
+
+	#[benchmark]
+	fn cancel_airdrop() {
+		let (_, prime_minister, _) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		Pezpallet::<T>::propose_airdrop(
+			RawOrigin::Signed(prime_minister.clone()).into(),
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		)
+		.unwrap();
+
+		#[extrinsic_call]
+		cancel_airdrop(RawOrigin::Signed(prime_minister), 0);
+
+		assert!(AirdropProposals::<T>::get(0).is_none());
+	}
+
+	#[benchmark]
+	fn propose_presale() {
+		let (_, _, finance_minister) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+
+		#[extrinsic_call]
+		// `Locked` rather than `Transfer`: it is the arm that does the extra arithmetic, and a
+		// benchmark of the cheaper arm would price the dearer one.
+		propose_presale(
+			RawOrigin::Signed(finance_minister),
+			PresaleVerb::Locked { months: 12 },
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		);
+
+		// Both records: the release and the vote it hangs on. This call writes two.
+		assert!(PresaleProposals::<T>::get(0).is_some());
+		assert!(ActiveProposals::<T>::get(0).is_some());
+	}
+
+	#[benchmark]
+	fn execute_presale() {
+		let (_, _, finance_minister) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		let caller: T::AccountId = whitelisted_caller();
+		Pezpallet::<T>::propose_presale(
+			RawOrigin::Signed(finance_minister).into(),
+			PresaleVerb::Transfer,
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		)
+		.unwrap();
+
+		// Carry the vote. The tally is written here rather than cast, because a hundred and
+		// one `vote_on_proposal` calls would be benchmarked into this one's cost.
+		let vote_id = PresaleProposals::<T>::get(0).unwrap().vote_id;
+		ActiveProposals::<T>::mutate(vote_id, |maybe| {
+			let p = maybe.as_mut().unwrap();
+			p.aye_votes = p.threshold;
+		});
+		Pezpallet::<T>::finalize_proposal(RawOrigin::Signed(caller.clone()).into(), vote_id)
+			.unwrap();
+
+		#[extrinsic_call]
+		execute_presale(RawOrigin::Signed(caller), 0);
+
+		assert!(PresaleProposals::<T>::get(0).is_none());
+		assert_eq!(PresaleReleased::<T>::get(), 1_000u128);
+	}
+
+	#[benchmark]
+	fn cancel_presale() {
+		let (_, _, finance_minister) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		Pezpallet::<T>::propose_presale(
+			RawOrigin::Signed(finance_minister.clone()).into(),
+			PresaleVerb::Transfer,
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		)
+		.unwrap();
+
+		#[extrinsic_call]
+		cancel_presale(RawOrigin::Signed(finance_minister), 0);
+
+		assert!(PresaleProposals::<T>::get(0).is_none());
+	}
+
 	impl_benchmark_test_suite!(
 		Pezpallet,
 		crate::mock::ExtBuilder::default().build(),

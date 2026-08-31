@@ -303,6 +303,14 @@ pub type AssetsForceOrigin = EnsureRoot<AccountId>;
 /// after genesis moves every key it owns.
 pub type AirdropPotInstance = pezpallet_treasury::Instance2;
 
+/// The presale pot, as a third treasury.
+///
+/// Separate from the airdrop pot because the two answer to different bodies and hold different
+/// money: the airdrop is a distribution the President and Prime Minister authorise, the presale
+/// is the sale of half the supply and Parliament authorises it. One pot with two doors would
+/// let either body's ceiling be reached through the other's.
+pub type PresalePotInstance = pezpallet_treasury::Instance3;
+
 pub type TrustBackedAssetsInstance = pezpallet_assets::Instance1;
 type TrustBackedAssetsCall = pezpallet_assets::Call<Runtime, TrustBackedAssetsInstance>;
 impl pezpallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
@@ -1294,6 +1302,29 @@ parameter_types! {
 	/// long enough that a week containing a weekend still leaves five days in which anyone can
 	/// see it coming.
 	pub const AirdropSpendCeiling: Balance = 1_000_000 * UNITS;
+
+	/// The presale pot, holding half the supply until Parliament releases it.
+	///
+	/// A third `pezpallet_treasury` instance, for the same reason the airdrop is a second one:
+	/// a keyless account, an origin-bound spend, and upstream's audited payout machinery are
+	/// all already here. What is written on People is the authorisation.
+	pub const PresalePotPalletId: PalletId = PalletId(*b"py/prsal");
+	pub PresalePotAccount: AccountId = PresalePot::account_id();
+	/// No ceiling. `Balance::MAX` rather than the allocation, so this is a ceiling only in the
+	/// type's sense and never in the pot's: how much of the presale goes out is Parliament's
+	/// decision in full, and the one real limit is what the pot holds. Writing 100M here would
+	/// read as a cap that happens to equal the balance, which is a different rule wearing the
+	/// same number.
+	pub const PresaleSpendCeiling: Balance = Balance::MAX;
+	/// How long a released sum stays claimable after its lock opens.
+	///
+	/// The ordinary treasury gives thirty days, which suits a supplier who is waiting to be
+	/// paid this month. A presale buyer may be waiting a year: the spend is approved now and
+	/// `valid_from` holds it until the lock opens, so thirty days after that would put a
+	/// purchase made in the first week of the chain's life on a deadline the buyer has had a
+	/// year to forget. An unclaimed spend is voided and the money stays in the pot, so the
+	/// short window is not a safety property -- it is a way to lose a sale.
+	pub const PresalePayoutPeriod: BlockNumber = 365 * DAYS;
 }
 
 /// The airdrop pot.
@@ -1334,6 +1365,43 @@ impl pezpallet_treasury::Config<AirdropPotInstance> for Runtime {
 		pezframe_support::traits::tokens::pay::PayFromAccount<Balances, AirdropPotAccount>;
 	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
 	type PayoutPeriod = PayoutSpendPeriod;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+}
+
+/// The presale pot.
+///
+/// Half the supply, and the only way out is a vote. Like the airdrop pot this is reachable
+/// only from People -- but for a different reason. The airdrop is not an economic question;
+/// the presale plainly is, and an economic question is exactly what this chain's conviction
+/// voting decides. It is still kept away from that track: conviction voting weighs holdings,
+/// and letting holdings release the supply that has not been sold yet would let whoever holds
+/// most decide how much more is issued to the market. Parliament counts members, so the
+/// authorisation lives there.
+impl pezpallet_treasury::Config<PresalePotInstance> for Runtime {
+	type PalletId = PresalePotPalletId;
+	type Currency = Balances;
+	type RejectOrigin = EnsureRoot<AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type SpendPeriod = SpendPeriod;
+	type Burn = Burn;
+	type BurnDestination = ();
+	type MaxApprovals = MaxApprovals;
+	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
+	type SpendFunds = ();
+	type SpendOrigin = pezframe_system::EnsureWithSuccess<
+		EnsureXcm<Equals<PeopleLocation>>,
+		AccountId,
+		PresaleSpendCeiling,
+	>;
+	type AssetKind = ();
+	type Beneficiary = AccountId;
+	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
+	type Paymaster =
+		pezframe_support::traits::tokens::pay::PayFromAccount<Balances, PresalePotAccount>;
+	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
+	type PayoutPeriod = PresalePayoutPeriod;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = ();
@@ -1673,6 +1741,7 @@ construct_runtime!(
 		ChildBounties: pezpallet_child_bounties = 64,
 		Treasury: pezpallet_treasury = 65,
 		AirdropPot: pezpallet_treasury::<Instance2> = 68,
+		PresalePot: pezpallet_treasury::<Instance3> = 69,
 
 		// PezkuwiChain Custom Pallets
 		PezTreasury: pezpallet_pez_treasury = 70,

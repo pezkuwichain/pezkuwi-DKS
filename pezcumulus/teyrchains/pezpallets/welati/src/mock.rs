@@ -539,6 +539,9 @@ parameter_types! {
 	pub const TreasuryPalletIndex: u8 = 70;
 	pub const ParametersPalletIndex: u8 = 79;
 	pub const AirdropPotPalletIndex: u8 = 68;
+	pub const PresalePotPalletIndex: u8 = 69;
+	// Short, so a lock can be waited out in a test without a hundred thousand blocks.
+	pub const PresaleLockMonth: u64 = 30;
 	/// Small next to the balances the tests use, so a test can cross it on purpose without
 	/// having to mint a realistic amount first.
 	pub const AirdropCeiling: u128 = 1_000;
@@ -782,6 +785,8 @@ impl pezpallet_welati::Config for Test {
 	type ParametersPalletIndex = ParametersPalletIndex;
 	type AirdropPotPalletIndex = AirdropPotPalletIndex;
 	type AirdropCeiling = AirdropCeiling;
+	type PresalePotPalletIndex = PresalePotPalletIndex;
+	type PresaleLockMonth = PresaleLockMonth;
 	type LargeAirdropDelay = LargeAirdropDelay;
 	type MaxEmissionStep = MaxEmissionStep;
 	type MinEmissionInterval = MinEmissionInterval;

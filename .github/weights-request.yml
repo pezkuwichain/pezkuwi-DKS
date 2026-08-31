@@ -38,4 +38,24 @@
 # replaced. `weights_request.py` refuses an empty `runs:` and the workflow only fires when
 # this file changes, so nothing runs until somebody asks for something.
 
-runs: []
+# 2026-08-31: the airdrop and presale pots. Seven new calls on `pezpallet-welati` shipped
+# borrowing weights from `nominate_official` and its neighbours, on the reasoning that the work
+# is the same shape. Measuring the borrowed set says it is not, in a direction that matters:
+# none of the eight existing benchmarks sends an XCM, and both payment calls do. `pay_airdrop`
+# and `execute_presale` are therefore priced for everything except the one thing they do that
+# the others do not.
+#
+# That is the same error as the TNPoS committee weights, where a stand-in undercharged
+# `seat_committee` by a hundredfold, and the direction is the dangerous one: a call that costs
+# less than it takes is a call somebody can repeat. Benchmarks for all seven are in the tree
+# now; this asks for the numbers.
+#
+# Both twins. `check-twin-runtimes.py` compares pallet indices, not weights -- nothing catches
+# a weights drift between the two People chains except measuring both.
+runs:
+  - runtime: people-pezkuwichain
+    pallet: pezpallet_welati
+    why: seven pot calls, two of which send an XCM no existing benchmark covers
+  - runtime: people-zagros
+    pallet: pezpallet_welati
+    why: the twin, measured in the same run so the two cannot drift apart unnoticed

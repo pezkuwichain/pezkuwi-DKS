@@ -6,11 +6,12 @@
 use crate::{
 	mock::{
 		add_parliament_member, endorsed_by, install_prime_minister, last_event, make_citizen,
-		run_to_block, seat_president, AirdropCeiling, ExtBuilder, LargeAirdropDelay, RuntimeEvent,
-		RuntimeOrigin, System, Test, Welati,
+		run_to_block, seat_president, sent_xcm, AirdropCeiling, ExtBuilder, LargeAirdropDelay,
+		RuntimeEvent, RuntimeOrigin, System, Test, Welati,
 	},
 	types::*,
-	AirdropProposals, Error, Event as WelatiEvent, GovernmentPosition, NextAirdropId,
+	ActiveProposals, AirdropProposals, Error, Event as WelatiEvent, GovernmentPosition,
+	NextAirdropId, PresaleProposals, PresaleReleased,
 };
 use pezframe_support::{assert_noop, assert_ok, BoundedVec};
 use pezpallet_tiki::Tiki;
@@ -4243,5 +4244,225 @@ fn airdrop_ids_are_not_reused() {
 		assert_eq!(NextAirdropId::<Test>::get(), 4, "a cancelled id is not handed out again");
 		assert!(AirdropProposals::<Test>::get(1).is_none());
 		assert!(AirdropProposals::<Test>::get(3).is_some());
+	});
+}
+
+// ============================================================================
+// PRESALE
+// ============================================================================
+
+const MINISTER: u64 = 11;
+const BUYER: u64 = 78;
+
+fn seat_the_finance_minister() {
+	pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::WezireDarayiye, MINISTER);
+}
+
+/// Carry a vote the way the house would, without seating a hundred and one members.
+///
+/// The tally is written directly and `finalize_proposal` is then called for real, so what is
+/// short-circuited is the voting and not the counting: the threshold, the status transition and
+/// the permissionless finalize are all the pallet's own. Setting the status directly instead
+/// would test nothing -- `execute_presale` reads the status, so a test that wrote it would be
+/// asserting its own arrangement.
+fn carry_the_vote(vote_id: u32) {
+	ActiveProposals::<Test>::mutate(vote_id, |maybe| {
+		let p = maybe.as_mut().expect("the vote exists");
+		p.aye_votes = p.threshold;
+	});
+	assert_ok!(Welati::finalize_proposal(RuntimeOrigin::signed(OUTSIDER), vote_id));
+}
+
+/// Only the Finance Minister opens a release.
+#[test]
+fn a_presale_is_proposed_by_the_finance_minister_alone() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		seat_the_finance_minister();
+		// The President, the Prime Minister and the Treasurer are all refused here. The
+		// Treasurer especially: that office is the one this was nearly bound to.
+		for who in [SEROK, PM, TREASURER, OUTSIDER] {
+			assert_noop!(
+				Welati::propose_presale(
+					RuntimeOrigin::signed(who),
+					PresaleVerb::Transfer,
+					BUYER,
+					100,
+					b"x".to_vec()
+				),
+				Error::<Test>::NotTheFinanceMinisterForPresale
+			);
+		}
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			100,
+			b"1M HEZ to PEX at listing price".to_vec()
+		));
+		assert!(PresaleProposals::<Test>::get(0).is_some());
+	});
+}
+
+/// A release the house has not agreed to moves nothing.
+#[test]
+fn a_presale_release_waits_for_parliament() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			1_000,
+			b"terms".to_vec()
+		));
+		assert_noop!(
+			Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::PresaleNotApproved
+		);
+		assert!(sent_xcm().is_empty(), "nothing may be sent before the vote carries");
+	});
+}
+
+/// The verb decides when, and a locked release cannot be carried out as an immediate one.
+///
+/// This is the whole reason the verb is a field rather than a note beside the amount. The
+/// house agreed to a sale locked for six months; if `execute_presale` could pay it out today
+/// the lock would be a sentence in the terms and nothing else.
+#[test]
+fn a_locked_presale_cannot_be_paid_early() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Locked { months: 6 },
+			BUYER,
+			1_000,
+			b"early buyer, six months".to_vec()
+		));
+		let p = PresaleProposals::<Test>::get(0).unwrap();
+		let vote_id = p.vote_id;
+		assert_eq!(
+			p.payable_from,
+			p.proposed_at + 6 * crate::mock::PresaleLockMonth::get(),
+			"the lock is six of this chain's months from the proposal"
+		);
+
+		carry_the_vote(vote_id);
+
+		// Agreed, and still not payable.
+		assert_noop!(
+			Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::PresaleStillLocked
+		);
+		assert!(sent_xcm().is_empty(), "the money stays in the pot for the whole term");
+
+		// One block before it opens, still refused.
+		run_to_block(p.payable_from - 1);
+		assert_noop!(
+			Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::PresaleStillLocked
+		);
+
+		run_to_block(p.payable_from);
+		// The delta, not the total: `check_population_gate` runs in `on_initialize` and sends
+		// its own message once the citizen count crosses the threshold, which it does while
+		// these blocks go by. Counting everything sent would make this test fail for a reason
+		// that has nothing to do with the presale.
+		let before = sent_xcm().len();
+		assert_ok!(Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert_eq!(sent_xcm().len(), before + 1, "and then exactly one spend is sent");
+	});
+}
+
+/// A plain transfer is payable as soon as the vote carries, and pays once.
+#[test]
+fn a_plain_presale_transfer_pays_when_the_vote_carries() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			1_000,
+			b"to the exchange cold wallet".to_vec()
+		));
+		let vote_id = PresaleProposals::<Test>::get(0).unwrap().vote_id;
+		carry_the_vote(vote_id);
+
+		assert_ok!(Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert_eq!(sent_xcm().len(), 1);
+		// The record is gone, so a second call cannot pay the same release twice.
+		assert_noop!(
+			Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::PresaleNotFound
+		);
+		assert_eq!(sent_xcm().len(), 1);
+	});
+}
+
+/// What has left the pot is counted, because the pot's balance does not answer that question.
+#[test]
+fn the_released_total_counts_what_left() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_eq!(PresaleReleased::<Test>::get(), 0);
+		for (id, amount) in [(0u32, 1_000u128), (1, 250)] {
+			assert_ok!(Welati::propose_presale(
+				RuntimeOrigin::signed(MINISTER),
+				PresaleVerb::Transfer,
+				BUYER,
+				amount,
+				b"terms".to_vec()
+			));
+			let vote_id = PresaleProposals::<Test>::get(id).unwrap().vote_id;
+			carry_the_vote(vote_id);
+			assert_ok!(Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), id));
+		}
+		assert_eq!(PresaleReleased::<Test>::get(), 1_250);
+	});
+}
+
+/// A lock of no months, or one longer than ten years, is refused.
+#[test]
+fn a_presale_lock_is_bounded_at_both_ends() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		for months in [0u8, 121] {
+			assert_noop!(
+				Welati::propose_presale(
+					RuntimeOrigin::signed(MINISTER),
+					PresaleVerb::Locked { months },
+					BUYER,
+					100,
+					b"x".to_vec()
+				),
+				Error::<Test>::PresaleLockOutOfRange
+			);
+		}
+	});
+}
+
+/// The proposer may withdraw before the vote closes; nobody else may.
+#[test]
+fn only_the_proposer_withdraws_a_presale() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			100,
+			b"terms".to_vec()
+		));
+		for who in [SEROK, PM, OUTSIDER] {
+			assert_noop!(
+				Welati::cancel_presale(RuntimeOrigin::signed(who), 0),
+				Error::<Test>::NotTheFinanceMinisterForPresale
+			);
+		}
+		assert_ok!(Welati::cancel_presale(RuntimeOrigin::signed(MINISTER), 0));
+		assert!(PresaleProposals::<Test>::get(0).is_none());
 	});
 }

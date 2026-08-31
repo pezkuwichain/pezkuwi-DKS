@@ -1264,6 +1264,20 @@ parameter_types! {
 	/// sent that the other chain would refuse.
 	pub const WelatiAirdropCeiling: u128 = 1_000_000 * UNITS;
 
+	/// The presale pot on the Asset Hub -- `pezpallet_treasury`'s third instance, at 69.
+	///
+	/// Its own index, like the airdrop pot's: the instances share the treasury's call enum, so
+	/// the call index is identical for both and this number is the only thing that decides
+	/// which pot pays. Addressed to 68 it would empty the airdrop.
+	pub const WelatiPresalePotPalletIndex: u8 = 69;
+
+	/// One month of a presale lock, in this chain's blocks.
+	///
+	/// Thirty days rather than a calendar month, because a lock measured in blocks has no
+	/// calendar and a term the buyer can compute beats one that depends on which months it
+	/// crosses.
+	pub const WelatiPresaleLockMonth: BlockNumber = 30 * DAYS;
+
 	/// How long a large airdrop waits after its last signature.
 	///
 	/// Seven days rather than three: a three-day window that falls across a weekend is not a
@@ -1428,6 +1442,8 @@ impl pezpallet_welati::Config for Runtime {
 	type ParametersPalletIndex = WelatiParametersPalletIndex;
 	type AirdropPotPalletIndex = WelatiAirdropPotPalletIndex;
 	type AirdropCeiling = WelatiAirdropCeiling;
+	type PresalePotPalletIndex = WelatiPresalePotPalletIndex;
+	type PresaleLockMonth = WelatiPresaleLockMonth;
 	type LargeAirdropDelay = WelatiLargeAirdropDelay;
 	type MaxEmissionStep = WelatiMaxEmissionStep;
 	type MinEmissionInterval = WelatiMinEmissionInterval;
