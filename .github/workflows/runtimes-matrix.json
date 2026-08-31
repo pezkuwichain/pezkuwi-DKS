@@ -1,0 +1,123 @@
+[
+  {
+    "name": "pezkuwichain",
+    "package": "pezkuwichain-runtime",
+    "path": "pezkuwi/runtime/pezkuwichain",
+    "header": "pezkuwi/file_header.txt",
+    "template": "pezkuwi/xcm/pezpallet-xcm-benchmarks/template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": true
+  },
+  {
+    "name": "zagros",
+    "package": "zagros-runtime",
+    "path": "pezkuwi/runtime/zagros",
+    "header": "pezkuwi/file_header.txt",
+    "template": "pezkuwi/xcm/pezpallet-xcm-benchmarks/template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": true
+  },
+  {
+    "name": "asset-hub-pezkuwichain",
+    "package": "asset-hub-pezkuwichain-runtime",
+    "path": "pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain",
+    "header": "pezcumulus/file_header.txt",
+    "template": "pezcumulus/templates/xcm-bench-template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": false
+  },
+  {
+    "name": "asset-hub-zagros",
+    "package": "asset-hub-zagros-runtime",
+    "path": "pezcumulus/teyrchains/runtimes/assets/asset-hub-zagros",
+    "header": "pezcumulus/file_header.txt",
+    "template": "pezcumulus/templates/xcm-bench-template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": false
+  },
+  {
+    "name": "people-pezkuwichain",
+    "package": "people-pezkuwichain-runtime",
+    "path": "pezcumulus/teyrchains/runtimes/people/people-pezkuwichain",
+    "header": "pezcumulus/file_header.txt",
+    "template": "pezcumulus/templates/xcm-bench-template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": false
+  },
+  {
+    "name": "people-zagros",
+    "package": "people-zagros-runtime",
+    "path": "pezcumulus/teyrchains/runtimes/people/people-zagros",
+    "header": "pezcumulus/file_header.txt",
+    "template": "pezcumulus/templates/xcm-bench-template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": false
+  },
+  {
+    "name": "bridge-hub-pezkuwichain",
+    "package": "pezbridge-hub-pezkuwichain-runtime",
+    "path": "pezcumulus/teyrchains/runtimes/bridge-hubs/bridge-hub-pezkuwichain",
+    "header": "pezcumulus/file_header.txt",
+    "template": "pezcumulus/templates/xcm-bench-template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": false
+  },
+  {
+    "name": "bridge-hub-zagros",
+    "package": "pezbridge-hub-zagros-runtime",
+    "path": "pezcumulus/teyrchains/runtimes/bridge-hubs/bridge-hub-zagros",
+    "header": "pezcumulus/file_header.txt",
+    "template": "pezcumulus/templates/xcm-bench-template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": false
+  },
+  {
+    "name": "coretime-pezkuwichain",
+    "package": "coretime-pezkuwichain-runtime",
+    "path": "pezcumulus/teyrchains/runtimes/coretime/coretime-pezkuwichain",
+    "header": "pezcumulus/file_header.txt",
+    "template": "pezcumulus/templates/xcm-bench-template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": false
+  },
+  {
+    "name": "coretime-zagros",
+    "package": "coretime-zagros-runtime",
+    "path": "pezcumulus/teyrchains/runtimes/coretime/coretime-zagros",
+    "header": "pezcumulus/file_header.txt",
+    "template": "pezcumulus/templates/xcm-bench-template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": false
+  },
+  {
+    "name": "collectives-zagros",
+    "package": "collectives-zagros-runtime",
+    "path": "pezcumulus/teyrchains/runtimes/collectives/collectives-zagros",
+    "header": "pezcumulus/file_header.txt",
+    "template": "pezcumulus/templates/xcm-bench-template.hbs",
+    "bench_features": "runtime-benchmarks",
+    "bench_flags": "",
+    "uri": null,
+    "is_relay": false
+  }
+]

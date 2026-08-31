@@ -53,46 +53,17 @@ async fn runtime_can_publish_metrics() {
 	// Start validator Bob.
 	let _bob = run_validator_node(bob_config, None).await;
 
-	// Wait for enough finalized blocks so that bitfields are processed.
-	// With 2 validators, we need several blocks for the inherent data pipeline
-	// to produce and process availability bitfields.
-	alice.wait_for_finalized_blocks(4).await;
+	// Wait for Alice to see two finalized blocks.
+	alice.wait_for_finalized_blocks(2).await;
 
 	let metrics_uri = format!("http://localhost:{}/metrics", DEFAULT_PROMETHEUS_PORT);
-	let metric_name = TEYRCHAIN_INHERENT_DATA_BITFIELDS_PROCESSED.name.to_owned();
+	let metrics = scrape_prometheus_metrics(&metrics_uri).await;
 
-	// Retry scraping a few times — the metric may take a moment to propagate
-	// through the wasm tracing pipeline after blocks are finalized.
-	let mut metrics = HashMap::new();
-	for attempt in 0..3 {
-		metrics = scrape_prometheus_metrics(&metrics_uri).await;
-		if metrics.get(&metric_name).copied().unwrap_or(0) > 0 {
-			break;
-		}
-		if attempt < 2 {
-			tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-		}
-	}
-
-	// Print all pezkuwi_teyrchain metrics for diagnostics on failure.
-	let teyrchain_metrics: Vec<_> = metrics
-		.iter()
-		.filter(|(k, _)| k.contains("teyrchain") || k.contains("pezkuwi"))
-		.collect();
-	eprintln!("Available teyrchain/pezkuwi metrics ({}):", teyrchain_metrics.len());
-	for (k, v) in &teyrchain_metrics {
-		eprintln!("  {} = {}", k, v);
-	}
-
-	let bitfields_value = metrics.get(&metric_name).copied().unwrap_or(0);
+	// There should be at least 1 bitfield processed by now.
 	assert!(
-		bitfields_value > 0,
-		"Expected metric '{}' to be > 0 but got {}. \
-		 Total metrics scraped: {}. Teyrchain metrics found: {}.",
-		metric_name,
-		bitfields_value,
-		metrics.len(),
-		teyrchain_metrics.len(),
+		*metrics
+			.get(&TEYRCHAIN_INHERENT_DATA_BITFIELDS_PROCESSED.name.to_owned())
+			.unwrap() > 1
 	);
 }
 

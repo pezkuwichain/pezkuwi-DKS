@@ -37,12 +37,11 @@
 //!
 //! ### Usage Example
 //!
-//! This example shows how to interact with pezpallet-uniques (assuming the pezpallet called Uniques
-//! in the chain’s Runtime) via the asset ops.
+//! This example shows how to interact with pezpallet-uniques (assuming the pezpallet called Uniques in
+//! the chain’s Runtime) via the asset ops.
 //!
 //! If you are interested in the implementation example, you can look at the pezpallet-uniques
-//! implementation. You can check out the pezpallet-uniques tests if you want more examples of
-//! usage.
+//! implementation. You can check out the pezpallet-uniques tests if you want more examples of usage.
 //!
 //! ```rust,ignore
 //! type Collection = pezpallet_uniques::asset_ops::Collection<Uniques>;

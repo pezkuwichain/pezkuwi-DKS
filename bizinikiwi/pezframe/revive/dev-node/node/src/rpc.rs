@@ -16,7 +16,7 @@
 // limitations under the License.
 
 //! A collection of node-specific RPC methods.
-//! Bizinikiwi provides the `sc-rpc` crate, which defines the core RPC layer
+//! Bizinikiwi provides the `pezsc-rpc` crate, which defines the core RPC layer
 //! used by Bizinikiwi nodes. This file extends those RPC definitions with
 //! capabilities that are specific to this project's runtime configuration.
 
@@ -81,11 +81,11 @@ where
 	C: Send
 		+ Sync
 		+ 'static
-		+ pezkuwi_sdk::pezsp_api::ProvideRuntimeApi<OpaqueBlock>
+		+ pezsp_api::ProvideRuntimeApi<OpaqueBlock>
 		+ HeaderBackend<OpaqueBlock>
 		+ HeaderMetadata<OpaqueBlock, Error = BlockChainError>
 		+ 'static,
-	C::Api: pezkuwi_sdk::pezsp_block_builder::BlockBuilder<OpaqueBlock>,
+	C::Api: pezsp_block_builder::BlockBuilder<OpaqueBlock>,
 	C::Api: bizinikiwi_frame_rpc_system::AccountNonceApi<OpaqueBlock, AccountId, Nonce>,
 	P: TransactionPool + 'static,
 {

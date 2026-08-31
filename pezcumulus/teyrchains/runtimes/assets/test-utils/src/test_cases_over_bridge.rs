@@ -58,7 +58,7 @@ pub fn limited_reserve_transfer_assets_for_native_asset_works<
 	slot_durations: SlotDurations,
 	existential_deposit: BalanceOf<Runtime>,
 	alice_account: AccountIdOf<Runtime>,
-	unwrap_pallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
+	unwrap_pezpallet_xcm_event: Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
 	unwrap_xcmp_queue_event: Box<
 		dyn Fn(Vec<u8>) -> Option<pezcumulus_pezpallet_xcmp_queue::Event<Runtime>>,
 	>,
@@ -208,8 +208,8 @@ pub fn limited_reserve_transfer_assets_for_native_asset_works<
 
 			// check events
 			// check pezpallet_xcm attempted
-			RuntimeHelper::<Runtime, AllPalletsWithoutSystem>::assert_pallet_xcm_event_outcome(
-				&unwrap_pallet_xcm_event,
+			RuntimeHelper::<Runtime, AllPalletsWithoutSystem>::assert_pezpallet_xcm_event_outcome(
+				&unwrap_pezpallet_xcm_event,
 				|outcome| {
 					assert_ok!(outcome.ensure_complete());
 				},
@@ -417,7 +417,7 @@ pub fn receive_reserve_asset_deposited_from_different_consensus_works<
 						foreign_asset_owner
 					),
 					foreign_asset_id_location.clone().into(),
-					vec![foreign_asset_reserve_data],
+					vec![foreign_asset_reserve_data].try_into().unwrap(),
 				)
 			);
 

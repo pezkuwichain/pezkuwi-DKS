@@ -131,8 +131,8 @@ where
 	/// 5. Returns the pre-migration actual reserved balance for each account that will
 	/// be part of the migration.
 	///
-	/// Fails with a `TryRuntimeError` if somehow the amount reserved by this pezpallet is greater
-	/// than the actual total reserved amount for any accounts.
+	/// Fails with a `TryRuntimeError` if somehow the amount reserved by this pezpallet is greater than
+	/// the actual total reserved amount for any accounts.
 	#[cfg(feature = "try-runtime")]
 	fn pre_upgrade() -> Result<alloc::vec::Vec<u8>, pezsp_runtime::TryRuntimeError> {
 		use codec::Encode;
@@ -148,8 +148,8 @@ where
 			.collect();
 
 		// The deposit amount must be less than or equal to the reserved amount.
-		// If it is higher, there is either a bug with the pezpallet or a bug in the calculation of
-		// the deposit amount.
+		// If it is higher, there is either a bug with the pezpallet or a bug in the calculation of the
+		// deposit amount.
 		ensure!(
 			account_deposits.iter().all(|(account, deposit)| *deposit
 				<= *account_reserved_before.get(account).unwrap_or(&Zero::zero())),

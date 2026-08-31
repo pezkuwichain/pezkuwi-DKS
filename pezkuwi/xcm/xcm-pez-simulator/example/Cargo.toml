@@ -26,6 +26,7 @@ pezpallet-balances = { workspace = true, default-features = true }
 pezpallet-message-queue = { workspace = true, default-features = true }
 pezpallet-uniques = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
 pezsp-io = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }

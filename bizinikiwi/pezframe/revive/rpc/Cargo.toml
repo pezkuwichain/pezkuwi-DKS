@@ -2,7 +2,7 @@
 name = "pezpallet-revive-eth-rpc"
 version = "0.1.0"
 authors.workspace = true
-edition.workspace = true
+edition = "2024"
 license = "Apache-2.0"
 homepage.workspace = true
 repository.workspace = true
@@ -24,9 +24,11 @@ path = "src/main.rs"
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 codec = { workspace = true, features = ["derive"] }
+derive_more = { workspace = true }
 futures = { workspace = true, features = ["thread-pool"] }
 hex = { workspace = true }
 jsonrpsee = { workspace = true, features = ["full"] }
+libsqlite3-sys = { workspace = true }
 log = { workspace = true }
 pezkuwi-subxt = { workspace = true, default-features = true, features = [
 	"reconnecting-rpc-client",
@@ -54,13 +56,22 @@ serde_json = { workspace = true }
 sqlx = { workspace = true, features = ["macros", "runtime-tokio", "sqlite"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
+tokio-stream = { workspace = true }
 
 [dev-dependencies]
+alloy-network = { workspace = true, default-features = true }
+alloy-primitives = { workspace = true, default-features = true }
+alloy-provider = { workspace = true, default-features = true, features = ["debug-api", "reqwest"] }
+alloy-rpc-types = { workspace = true, default-features = true, features = ["trace"] }
+alloy-signer-local = { workspace = true, default-features = true }
 env_logger = { workspace = true }
 pez-revive-dev-node = { workspace = true }
+pez-revive-dev-runtime = { workspace = true, default-features = true }
+pezframe-system = { workspace = true, default-features = true }
 pezpallet-revive-fixtures = { workspace = true, default-features = true }
 pezsp-io = { workspace = true, default-features = true }
 pretty_assertions = { workspace = true }
+tempfile = { workspace = true }
 
 [build-dependencies]
 git2 = { workspace = true }
@@ -72,6 +83,7 @@ pezsp-runtime = { workspace = true, default-features = true }
 runtime-benchmarks = [
 	"pez-revive-dev-node/runtime-benchmarks",
 	"pez-revive-dev-runtime/runtime-benchmarks",
+	"pezframe-system/runtime-benchmarks",
 	"pezkuwi-subxt-signer/runtime-benchmarks",
 	"pezkuwi-subxt/runtime-benchmarks",
 	"pezpallet-revive-fixtures/runtime-benchmarks",
@@ -104,6 +116,7 @@ std = [
 try-runtime = [
 	"pez-revive-dev-node/try-runtime",
 	"pez-revive-dev-runtime/try-runtime",
+	"pezframe-system/try-runtime",
 	"pezkuwi-subxt/try-runtime",
 	"pezpallet-revive/try-runtime",
 	"pezsc-cli/try-runtime",

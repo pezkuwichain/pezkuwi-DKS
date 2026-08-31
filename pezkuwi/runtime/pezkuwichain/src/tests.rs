@@ -49,11 +49,18 @@ fn check_whitelist() {
 }
 
 #[test]
-fn check_treasury_pallet_id() {
-	assert_eq!(
-		<Treasury as pezframe_support::traits::PalletInfoAccess>::index() as u8,
-		pezkuwichain_runtime_constants::TREASURY_PALLET_ID
-	);
+fn retired_indices_stay_retired() {
+	// `Treasury` held 18 and `Council` 17 until the treasury moved to the Asset Hub. An index
+	// is part of the composite `RuntimeCall` and `RuntimeEvent` encodings, so giving either
+	// number to a new pallet makes old bytes decode as that pallet.
+	use pezframe_support::traits::PalletsInfoAccess;
+	let taken: Vec<usize> = <AllPalletsWithSystem as PalletsInfoAccess>::infos()
+		.iter()
+		.map(|i| i.index)
+		.collect();
+	for index in [17usize, 18] {
+		assert!(!taken.contains(&index), "index {index} is retired and was handed to a pallet");
+	}
 }
 
 #[test]
@@ -141,7 +148,11 @@ use std::collections::HashMap;
 #[test]
 fn governance_tracks_total_count() {
 	let count = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks().count();
-	assert_eq!(count, 18, "Expected 18 tracks (15 standard + 3 welati), got {count}");
+	// Eight. The treasury moved to the Asset Hub and took its six tracks with it -- the
+	// treasurer and the five spenders -- the three register tracks moved to the People chain,
+	// and `root` was removed: Root here is the register's referendum arriving over XCM, not a
+	// ballot of this chain's holders.
+	assert_eq!(count, 8, "Expected 8 relay tracks, got {count}");
 }
 
 #[test]
@@ -181,24 +192,14 @@ fn governance_no_test_periods_remain() {
 fn governance_production_periods_match_spec() {
 	// Build expected values: (track_id, prepare, decision, confirm, enact)
 	let expected: Vec<(u16, &str, BlockNumber, BlockNumber, BlockNumber, BlockNumber)> = vec![
-		(0, "root", 2 * HOURS, 28 * DAYS, 24 * HOURS, 24 * HOURS),
 		(1, "whitelisted_caller", 30 * MINUTES, 28 * DAYS, 10 * MINUTES, 10 * MINUTES),
 		(10, "staking_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
-		(11, "treasurer", 2 * HOURS, 28 * DAYS, 3 * HOURS, 24 * HOURS),
 		(12, "lease_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(13, "fellowship_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(14, "general_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(15, "auction_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(20, "referendum_canceller", 2 * HOURS, 7 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(21, "referendum_killer", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
-		(30, "small_tipper", 1 * MINUTES, 7 * DAYS, 10 * MINUTES, 1 * MINUTES),
-		(31, "big_tipper", 10 * MINUTES, 7 * DAYS, 1 * HOURS, 10 * MINUTES),
-		(32, "small_spender", 4 * HOURS, 28 * DAYS, 12 * HOURS, 24 * HOURS),
-		(33, "medium_spender", 4 * HOURS, 28 * DAYS, 24 * HOURS, 24 * HOURS),
-		(34, "big_spender", 4 * HOURS, 28 * DAYS, 48 * HOURS, 24 * HOURS),
-		(40, "welati_election", 2 * HOURS, 14 * DAYS, 12 * HOURS, 24 * HOURS),
-		(41, "welati_admin", 2 * HOURS, 7 * DAYS, 3 * HOURS, 10 * MINUTES),
-		(42, "citizenship_admin", 2 * HOURS, 14 * DAYS, 6 * HOURS, 24 * HOURS),
 	];
 
 	let tracks: HashMap<u16, _> = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks()
@@ -234,23 +235,80 @@ fn governance_production_periods_match_spec() {
 	assert_eq!(expected.len(), tracks.len(), "Track count mismatch");
 }
 
+/// Root is not on this chain's ballot.
+///
+/// Root here reaches every chain in the network -- `System::set_code` locally, and
+/// `Paras::force_set_current_code` for each teyrchain. This chain's electorate is holdings, and
+/// the root track's support curve asked for none at all by day 28, so an upgrade of the whole
+/// network was a large enough position plus four weeks.
+///
+/// The power did not go away, it changed hands: `StateRegisterAsRoot` converts a `Superuser`
+/// message from the People chain into Root here, and that chain's tally counts citizens one
+/// each. The constitution is decided by the people and enacted by the relay.
 #[test]
-fn governance_welati_tracks_exist() {
+fn root_is_not_reachable_from_this_chains_ballot() {
+	use governance::pezpallet_custom_origins::Origin;
+
 	let tracks: HashMap<u16, _> = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks()
 		.map(|t| (t.id, t.into_owned()))
 		.collect();
 
-	// welati_election
-	let t40 = tracks.get(&40).expect("welati_election track (id=40) missing");
-	assert_eq!(t40.info.max_deciding, 1, "welati_election should allow only 1 deciding");
+	assert!(!tracks.contains_key(&0), "the root track is back on a holdings ballot");
+	for track in tracks.values() {
+		let name = String::from_utf8_lossy(&track.info.name).to_string();
+		assert_ne!(name, "root", "a track named root is a track that upgrades the network");
+	}
 
-	// welati_admin
-	let t41 = tracks.get(&41).expect("welati_admin track (id=41) missing");
-	assert_eq!(t41.info.max_deciding, 10);
+	// And no system origin maps to a track, so none can start a referendum here.
+	let root: <RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin =
+		pezframe_system::RawOrigin::Root.into();
+	assert!(<TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::track_for(&root).is_err());
 
-	// citizenship_admin
-	let t42 = tracks.get(&42).expect("citizenship_admin track (id=42) missing");
-	assert_eq!(t42.info.max_deciding, 10);
+	// The custom origins that remain are this chain's own business -- none of them is Root by
+	// another name, and each still has a track to run on.
+	for origin in [
+		Origin::StakingAdmin,
+		Origin::LeaseAdmin,
+		Origin::FellowshipAdmin,
+		Origin::GeneralAdmin,
+		Origin::AuctionAdmin,
+		Origin::ReferendumCanceller,
+		Origin::ReferendumKiller,
+		Origin::WhitelistedCaller,
+	] {
+		let pallets_origin: <RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin =
+			origin.into();
+		assert!(
+			<TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::track_for(&pallets_origin)
+				.is_ok(),
+			"an origin with no track cannot be dispatched at all"
+		);
+	}
+}
+
+/// The register is not reachable from this chain's referenda.
+///
+/// Tracks 40, 41 and 42 -- `welati_election`, `welati_admin`, `citizenship_admin` -- used to
+/// sit here, and this test used to assert they existed. This chain's referenda weigh tokens
+/// and conviction, so those three let stake decide who is a person, who holds office and who
+/// stops being a citizen. They live on the People chain now, where the tally counts heads.
+#[test]
+fn the_relay_has_no_track_that_reaches_the_register() {
+	let tracks: HashMap<u16, _> = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks()
+		.map(|t| (t.id, t.into_owned()))
+		.collect();
+
+	for id in [40u16, 41, 42] {
+		assert!(!tracks.contains_key(&id), "track {id} reaches the register from a token vote");
+	}
+
+	for track in tracks.values() {
+		let name = String::from_utf8_lossy(&track.info.name).to_string();
+		assert!(
+			!name.contains("welati") && !name.contains("citizenship"),
+			"track '{name}' names a register matter on a token-weighted chain"
+		);
+	}
 }
 
 #[test]
@@ -279,28 +337,19 @@ fn governance_track_for_origin_mapping() {
 	let origin_to_track: Vec<(Origin, u16)> = vec![
 		(Origin::WhitelistedCaller, 1),
 		(Origin::StakingAdmin, 10),
-		(Origin::Treasurer, 11),
 		(Origin::LeaseAdmin, 12),
 		(Origin::FellowshipAdmin, 13),
 		(Origin::GeneralAdmin, 14),
 		(Origin::AuctionAdmin, 15),
 		(Origin::ReferendumCanceller, 20),
 		(Origin::ReferendumKiller, 21),
-		(Origin::SmallTipper, 30),
-		(Origin::BigTipper, 31),
-		(Origin::SmallSpender, 32),
-		(Origin::MediumSpender, 33),
-		(Origin::BigSpender, 34),
-		(Origin::WelatiElection, 40),
-		(Origin::WelatiAdmin, 41),
-		(Origin::CitizenshipAdmin, 42),
 	];
 
 	for (origin, expected_id) in origin_to_track {
-		let pallet_origin: <RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin =
+		let pezpallet_origin: <RuntimeOrigin as pezframe_support::traits::OriginTrait>::PalletsOrigin =
 			origin.clone().into();
 		let result =
-			<TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::track_for(&pallet_origin);
+			<TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::track_for(&pezpallet_origin);
 		assert_eq!(
 			result,
 			Ok(expected_id),
@@ -372,4 +421,75 @@ fn fast_track_support_floor_is_measured_against_what_can_vote() {
 			"the floor has to sit well inside what is actually held: {required} of {circulating}"
 		);
 	});
+}
+
+/// The People chain builds the key calls by hand, and nothing fails if the bytes drift.
+///
+/// It cannot name this runtime's types, so `KeysToRelay` writes the address itself: pallet
+/// index 67, then call index 3 or 4. If either moves, the `Transact` stops decoding -- and it
+/// stops silently, because the sending side has already taken the registration. This pins the
+/// bytes it has to produce, the same way the treasury call is pinned for `welati`.
+#[test]
+fn the_key_calls_encode_the_way_people_builds_them() {
+	use codec::Encode;
+
+	let stash: AccountId = [7u8; 32].into();
+	let keys = vec![1u8, 2, 3];
+
+	let real_set = RuntimeCall::StakingAhClient(
+		pezpallet_staking_async_ah_client::Call::<Runtime>::set_keys_from_ah {
+			stash: stash.clone(),
+			keys: keys.clone(),
+		},
+	)
+	.encode();
+	assert_eq!(real_set, (67u8, 3u8, stash.clone(), keys).encode(), "set_keys address moved");
+
+	let real_purge = RuntimeCall::StakingAhClient(pezpallet_staking_async_ah_client::Call::<
+		Runtime,
+	>::purge_keys_from_ah {
+		stash: stash.clone(),
+	})
+	.encode();
+	assert_eq!(real_purge, (67u8, 4u8, stash).encode(), "purge_keys address moved");
+}
+
+/// The committee call, pinned the same way and for the same reason.
+///
+/// This one matters more than the key calls: a key that never arrives costs one validator a
+/// session, while a committee that never arrives means the relay keeps validating with the
+/// set it already had, era after era, while People believes it has been handing over a new
+/// one. Both ends would look healthy.
+#[test]
+fn the_committee_call_encodes_the_way_people_builds_it() {
+	use codec::Encode;
+
+	let committee: Vec<AccountId> = vec![[1u8; 32].into(), [2u8; 32].into()];
+	let report = pezpallet_staking_async_rc_client::ValidatorSetReport::new_terminal(
+		committee.clone(),
+		9,
+		None,
+	);
+
+	let real = RuntimeCall::StakingAhClient(
+		pezpallet_staking_async_ah_client::Call::<Runtime>::validator_set {
+			report: report.clone(),
+		},
+	)
+	.encode();
+	assert_eq!(real, (67u8, 0u8, report).encode(), "validator_set address moved");
+
+	// The report's own shape is half the contract: People builds it from the crate that
+	// defines it, so a field added upstream stops that runtime compiling. What the compiler
+	// cannot see is the order, so pin the bytes.
+	let by_hand = (
+		67u8,
+		0u8,
+		committee,
+		9u32,
+		Option::<u32>::None, // prune_up_to: this chain does not track relay sessions
+		false,               // leftover: a committee is bounded and always fits one message
+	)
+		.encode();
+	assert_eq!(real, by_hand, "ValidatorSetReport's field order changed");
 }

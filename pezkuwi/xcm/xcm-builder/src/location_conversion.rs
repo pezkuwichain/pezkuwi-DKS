@@ -58,6 +58,12 @@ pub struct DescribePalletTerminal;
 impl DescribeLocation for DescribePalletTerminal {
 	fn describe_location(l: &Location) -> Option<Vec<u8>> {
 		match l.unpack() {
+			// The literal is hashed, so it is part of the wire format and not a name.
+			// Renaming it to "Pezpallet" changed every account derived from a
+			// pallet-instance location, silently and only on this chain: anything computing
+			// the same sovereign account the standard way -- another chain, a bridge, a
+			// wallet -- would arrive at a different address, and value sent to it would land
+			// where nobody can reach it.
 			(0, [PalletInstance(i)]) => Some((b"Pallet", Compact::<u32>::from(*i as u32)).encode()),
 			_ => return None,
 		}

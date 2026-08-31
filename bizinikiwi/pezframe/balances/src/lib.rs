@@ -21,10 +21,10 @@
 //! token.
 //!
 //! It makes heavy use of concepts such as Holds and Freezes from the
-//! [`pezframe_support::traits::fungible`] traits, therefore you should read and understand those
-//! docs as a prerequisite to understanding this pezpallet.
+//! [`pezframe_support::traits::fungible`] traits, therefore you should read and understand those docs
+//! as a prerequisite to understanding this pezpallet.
 //!
-//! Also see the [`frame_tokens`] reference docs for higher level information regarding the
+//! Also see the [`pezframe_tokens`] reference docs for higher level information regarding the
 //! place of this palet in FRAME.
 //!
 //! ## Overview
@@ -81,8 +81,8 @@
 //!
 //! ### Examples from the FRAME
 //!
-//! The Contract pezpallet uses the `Currency` trait to handle gas payment, and its types inherit
-//! from `Currency`:
+//! The Contract pezpallet uses the `Currency` trait to handle gas payment, and its types inherit from
+//! `Currency`:
 //!
 //! ```
 //! use pezframe_support::traits::Currency;
@@ -139,7 +139,7 @@
 //! `insecure_zero_ed` cargo feature is enabled. However this is not a configuration which is
 //! generally supported, nor will it be.
 //!
-//! [`frame_tokens`]: ../pezkuwi_sdk_docs/reference_docs/frame_tokens/index.html
+//! [`pezframe_tokens`]: ../pezkuwi_sdk_docs/reference_docs/pezframe_tokens/index.html
 
 #![cfg_attr(not(feature = "std"), no_std)]
 mod benchmarking;
@@ -182,7 +182,7 @@ use pezsp_runtime::{
 		AtLeast32BitUnsigned, CheckedAdd, CheckedSub, MaybeSerializeDeserialize, Saturating,
 		StaticLookup, Zero,
 	},
-	ArithmeticError, DispatchError, FixedPointOperand, Perbill, RuntimeDebug, TokenError,
+	ArithmeticError, DispatchError, FixedPointOperand, Perbill, TokenError,
 };
 use scale_info::TypeInfo;
 
@@ -288,9 +288,9 @@ pub mod pezpallet {
 		/// The minimum amount required to keep an account open. MUST BE GREATER THAN ZERO!
 		///
 		/// If you *really* need it to be zero, you can enable the feature `insecure_zero_ed` for
-		/// this pezpallet. However, you do so at your own risk: this will open up a major DoS
-		/// vector. In case you have multiple sources of provider references, you may also get
-		/// unexpected behaviour if you set this to zero.
+		/// this pezpallet. However, you do so at your own risk: this will open up a major DoS vector.
+		/// In case you have multiple sources of provider references, you may also get unexpected
+		/// behaviour if you set this to zero.
 		///
 		/// Bottom line: Do yourself a favour and make it at least one!
 		#[pezpallet::constant]
@@ -303,7 +303,7 @@ pub mod pezpallet {
 
 		/// The ID type for reserves.
 		///
-		/// Use of reserves is deprecated in favour of holds. See `https://github.com/pezkuwichain/pezkuwi-sdk/issues/209/`
+		/// Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/substrate/pull/12951/`
 		type ReserveIdentifier: Parameter + Member + MaxEncodedLen + Ord + Copy;
 
 		/// The ID type for freezes.
@@ -312,13 +312,13 @@ pub mod pezpallet {
 		/// The maximum number of locks that should exist on an account.
 		/// Not strictly enforced, but used for weight estimation.
 		///
-		/// Use of locks is deprecated in favour of freezes. See `https://github.com/pezkuwichain/pezkuwi-sdk/issues/209/`
+		/// Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/substrate/pull/12951/`
 		#[pezpallet::constant]
 		type MaxLocks: Get<u32>;
 
 		/// The maximum number of named reserves that can exist on an account.
 		///
-		/// Use of reserves is deprecated in favour of holds. See `https://github.com/pezkuwichain/pezkuwi-sdk/issues/209/`
+		/// Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/substrate/pull/12951/`
 		#[pezpallet::constant]
 		type MaxReserves: Get<u32>;
 
@@ -326,7 +326,7 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type MaxFreezes: Get<u32>;
 
-		/// Allows callbacks to other pallets so they can update their bookkeeping when a slash
+		/// Allows callbacks to other pezpallets so they can update their bookkeeping when a slash
 		/// occurs.
 		type DoneSlashHandler: fungible::hold::DoneSlash<
 			Self::RuntimeHoldReason,
@@ -428,7 +428,7 @@ pub mod pezpallet {
 	/// Defensive/unexpected errors/events.
 	///
 	/// In case of observation in explorers, report it as an issue in pezkuwi-sdk.
-	#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, TypeInfo, RuntimeDebug)]
+	#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, TypeInfo, Debug)]
 	pub enum UnexpectedKind {
 		/// Balance was altered/dusted during an operation that should have NOT done so.
 		BalanceUpdated,
@@ -497,8 +497,8 @@ pub mod pezpallet {
 	/// ```
 	///
 	/// But this comes with tradeoffs, storing account balances in the system pezpallet stores
-	/// `pezframe_system` data alongside the account data contrary to storing account balances in
-	/// the `Balances` pezpallet, which uses a `StorageMap` to store balances data only.
+	/// `pezframe_system` data alongside the account data contrary to storing account balances in the
+	/// `Balances` pezpallet, which uses a `StorageMap` to store balances data only.
 	/// NOTE: This is only used in the case that this pezpallet is used to store balances.
 	#[pezpallet::storage]
 	pub type Account<T: Config<I>, I: 'static = ()> =
@@ -507,7 +507,7 @@ pub mod pezpallet {
 	/// Any liquidity locks on some account balances.
 	/// NOTE: Should only be accessed when setting, changing and freeing a lock.
 	///
-	/// Use of locks is deprecated in favour of freezes. See `https://github.com/pezkuwichain/pezkuwi-sdk/issues/209/`
+	/// Use of locks is deprecated in favour of freezes. See `https://github.com/paritytech/substrate/pull/12951/`
 	#[pezpallet::storage]
 	pub type Locks<T: Config<I>, I: 'static = ()> = StorageMap<
 		_,
@@ -519,7 +519,7 @@ pub mod pezpallet {
 
 	/// Named reserves on some account balances.
 	///
-	/// Use of reserves is deprecated in favour of holds. See `https://github.com/pezkuwichain/pezkuwi-sdk/issues/209/`
+	/// Use of reserves is deprecated in favour of holds. See `https://github.com/paritytech/substrate/pull/12951/`
 	#[pezpallet::storage]
 	pub type Reserves<T: Config<I>, I: 'static = ()> = StorageMap<
 		_,
@@ -821,7 +821,6 @@ pub mod pezpallet {
 		/// Can only be called by root and always needs a positive `delta`.
 		///
 		/// # Example
-		#[doc = docify::embed!("./src/tests/dispatchable_tests.rs", force_adjust_total_issuance_example)]
 		#[pezpallet::call_index(9)]
 		#[pezpallet::weight(T::WeightInfo::force_adjust_total_issuance())]
 		pub fn force_adjust_total_issuance(
@@ -855,7 +854,7 @@ pub mod pezpallet {
 		/// Unlike sending funds to a _burn_ address, which merely makes the funds inaccessible,
 		/// this `burn` operation will reduce total issuance by the amount _burned_.
 		#[pezpallet::call_index(10)]
-		#[pezpallet::weight(if *keep_alive {T::WeightInfo::burn_allow_death() } else {T::WeightInfo::burn_keep_alive()})]
+		#[pezpallet::weight(if *keep_alive {T::WeightInfo::burn_keep_alive()} else {T::WeightInfo::burn_allow_death()})]
 		pub fn burn(
 			origin: OriginFor<T>,
 			#[pezpallet::compact] value: T::Balance,
@@ -1135,9 +1134,6 @@ pub mod pezpallet {
 						Some(account.free)
 					}
 				} else {
-					assert!(
-						account.free.is_zero() || account.free >= ed || !account.reserved.is_zero()
-					);
 					*maybe_account = Some(account);
 					None
 				};

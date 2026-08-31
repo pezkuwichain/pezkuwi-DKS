@@ -29,7 +29,7 @@
 #![doc(
 	html_logo_url = "https://raw.githubusercontent.com/paritytech/polkadot-sdk/master/docs/images/Polkadot_Logo_Horizontal_Pink_White.png"
 )]
-#![doc(issue_tracker_base_url = "https://github.com/pezkuwichain/pezkuwi-sdk/issues")]
+#![doc(issue_tracker_base_url = "https://github.com/pezkuwichain/pezkuwi-DKS/issues")]
 
 /// Meta information about this crate, how it is built, what principles dictates its evolution and
 /// how one can contribute to it.

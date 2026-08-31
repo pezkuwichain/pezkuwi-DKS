@@ -97,11 +97,11 @@
 //!
 //! Protocols that are specific to a certain chain have a `<protocol-id>` in their name. This
 //! "protocol ID" is defined in the chain specifications. For example, the protocol ID of Pezkuwi
-//! is "hez". In the protocol names below, `<protocol-id>` must be replaced with the corresponding
+//! is "dot". In the protocol names below, `<protocol-id>` must be replaced with the corresponding
 //! protocol ID.
 //!
 //! > **Note**: It is possible for the same connection to be used for multiple chains. For example,
-//! > one can use both the `/hez/sync/2` and `/sub/sync/2` protocols on the same
+//! > one can use both the `/dot/sync/2` and `/sub/sync/2` protocols on the same
 //! > connection, provided that the remote supports them.
 //!
 //! Bizinikiwi uses the following standard libp2p protocols:
@@ -151,7 +151,7 @@
 //! if necessary and open a unique substream for Bizinikiwi-based communications. If the PSM decides
 //! that we should disconnect a node, then that substream is closed.
 //!
-//! For more information about the PSM, see the *sc-peerset* crate.
+//! For more information about the PSM, see the *pezsc-peerset* crate.
 //!
 //! Note that at the moment there is no mechanism in place to solve the issues that arise where the
 //! two sides of a connection open the unique substream simultaneously. In order to not run into
@@ -159,7 +159,8 @@
 //! substream is closed, the entire connection is closed as well. This is a bug that will be
 //! resolved by deprecating the protocol entirely.
 //!
-//! Within the unique Bizinikiwi substream, messages encoded using [*parity-scale-codec*](https://github.com/pezkuwichain/parity-scale-codec) are exchanged.
+//! Within the unique Bizinikiwi substream, messages encoded using
+//! [*parity-scale-codec*](https://github.com/pezkuwichain/parity-scale-codec) are exchanged.
 //! The detail of theses messages is not totally in place, but they can be found in the
 //! `message.rs` file.
 //!
@@ -205,11 +206,11 @@
 //! - Either party can signal that it doesn't want a notifications substream anymore by closing
 //! its writing side. The other party should respond by closing its own writing side soon after.
 //!
-//! The API of `sc-network` allows one to register user-defined notification protocols.
-//! `sc-network` automatically tries to open a substream towards each node for which the legacy
+//! The API of `pezsc-network` allows one to register user-defined notification protocols.
+//! `pezsc-network` automatically tries to open a substream towards each node for which the legacy
 //! Substream substream is open. The handshake is then performed automatically.
 //!
-//! For example, the `sc-consensus-grandpa` crate registers the `/paritytech/grandpa/1`
+//! For example, the `pezsc-consensus-grandpa` crate registers the `/paritytech/grandpa/1`
 //! notifications protocol.
 //!
 //! At the moment, for backwards-compatibility, notification protocols are tied to the legacy
@@ -224,7 +225,7 @@
 //!
 //! # Usage
 //!
-//! Using the `sc-network` crate is done through the [`NetworkWorker`] struct. Create this
+//! Using the `pezsc-network` crate is done through the [`NetworkWorker`] struct. Create this
 //! struct by passing a [`config::Params`], then poll it as if it was a `Future`. You can extract an
 //! `Arc<NetworkService>` from the `NetworkWorker`, which can be shared amongst multiple places
 //! in order to give orders to the networking.
@@ -242,7 +243,8 @@
 //! More precise usage details are still being worked on and will likely change in the future.
 
 mod behaviour;
-mod bitswap;
+pub mod bitswap;
+mod ipfs_block_provider;
 mod litep2p;
 mod protocol;
 
@@ -265,6 +267,9 @@ pub mod utils;
 
 pub use crate::litep2p::Litep2pNetworkBackend;
 pub use event::{DhtEvent, Event};
+pub use ipfs_block_provider::{
+	BlockProvider as IpfsBlockProvider, IndexedTransactions as IpfsIndexedTransactions,
+};
 pub use pezsc_network_common::{
 	role::{ObservedRole, Roles},
 	types::ReputationChange,
@@ -290,7 +295,7 @@ pub use service::{
 };
 pub use types::ProtocolName;
 
-/// Log target for `sc-network`.
+/// Log target for `pezsc-network`.
 const LOG_TARGET: &str = "sub-libp2p";
 
 /// The maximum allowed number of established connections per peer.

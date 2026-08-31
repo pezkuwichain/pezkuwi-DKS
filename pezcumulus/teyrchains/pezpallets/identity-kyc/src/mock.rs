@@ -42,6 +42,8 @@ impl pezpallet_balances::Config for Test {
 }
 
 parameter_types! {
+	/// Short enough that a test can wait it out.
+	pub const ReferralFallbackPeriod: u64 = 100;
 	pub const KycApplicationDepositAmount: Balance = 100;
 	pub const MaxStringLen: u32 = 50;
 	pub const MaxCidLen: u32 = 128;
@@ -51,7 +53,7 @@ parameter_types! {
 // UPDATED: Now includes referrer parameter
 pub struct MockOnKycApproved;
 impl crate::types::OnKycApproved<AccountId> for MockOnKycApproved {
-	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId) {
+	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId, _inviter: Option<&AccountId>) {
 		// No-op for tests - in real runtime this triggers referral pezpallet
 	}
 }
@@ -87,7 +89,18 @@ impl pezframe_support::traits::Get<AccountId> for DefaultReferrerAccount {
 	}
 }
 
+parameter_types! {
+	/// Ten blocks rather than thirty days: the rule is that a new citizen waits, and a test
+	/// should exercise the rule, not the calendar. Zero would leave the gate untested.
+	pub const VouchingWaitingPeriod: u64 = 10;
+}
+
 impl crate::Config for Test {
+	type OnCitizenshipRestored = ();
+	type VouchingWaitingPeriod = VouchingWaitingPeriod;
+	// Counting vouches is the referral pallet's job and it is not in this mock; unlimited
+	// here means this pallet's tests exercise the waiting period alone.
+	type VouchingCapacity = ();
 	type Currency = Balances;
 	type GovernanceOrigin = EnsureRoot<Self::AccountId>;
 	type WeightInfo = ();
@@ -95,6 +108,7 @@ impl crate::Config for Test {
 	type OnCitizenshipRevoked = MockOnCitizenshipRevoked;
 	type CitizenNftProvider = MockCitizenNftProvider;
 	type DefaultReferrer = DefaultReferrerAccount;
+	type ReferralFallbackPeriod = ReferralFallbackPeriod;
 	type KycApplicationDeposit = KycApplicationDepositAmount;
 	type MaxStringLength = MaxStringLen;
 	type MaxCidLength = MaxCidLen;

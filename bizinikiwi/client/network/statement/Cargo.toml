@@ -19,7 +19,9 @@ targets = ["x86_64-unknown-linux-gnu"]
 array-bytes = { workspace = true, default-features = true }
 async-channel = { workspace = true }
 codec = { features = ["derive"], workspace = true, default-features = true }
+fastbloom = { workspace = true }
 futures = { workspace = true }
+governor = { workspace = true }
 log = { workspace = true, default-features = true }
 pezsc-network = { workspace = true, default-features = true }
 pezsc-network-common = { workspace = true, default-features = true }
@@ -29,35 +31,63 @@ pezsp-consensus = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-statement-store = { workspace = true, default-features = true }
 prometheus-endpoint = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
 tokio = { workspace = true }
 
 [dev-dependencies]
 async-trait = { workspace = true }
+bizinikiwi-test-runtime-client = { workspace = true }
+criterion = { workspace = true, default-features = true }
+pezsc-keystore = { workspace = true, default-features = true }
+pezsc-statement-store = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-blockchain = { workspace = true, default-features = true }
+pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
+pezsp-keyring = { workspace = true, default-features = true }
+tempfile = { workspace = true }
 
 [features]
 runtime-benchmarks = [
+	"bizinikiwi-test-runtime-client/runtime-benchmarks",
+	"pezsc-keystore/runtime-benchmarks",
 	"pezsc-network-common/runtime-benchmarks",
 	"pezsc-network-sync/runtime-benchmarks",
 	"pezsc-network/runtime-benchmarks",
+	"pezsc-statement-store/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
+	"pezsp-blockchain/runtime-benchmarks",
 	"pezsp-consensus/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-statement-store/runtime-benchmarks",
 ]
 std = [
+	"bizinikiwi-test-runtime-client/std",
+	"fastbloom/std",
 	"log/std",
+	"pezsc-keystore/std",
 	"pezsc-network-common/std",
 	"pezsc-network-sync/std",
 	"pezsc-network-types/std",
 	"pezsc-network/std",
+	"pezsc-statement-store/std",
+	"pezsp-blockchain/std",
 	"pezsp-consensus/std",
 	"prometheus-endpoint/std",
 ]
 try-runtime = [
+	"bizinikiwi-test-runtime-client/try-runtime",
 	"pezsc-network-common/try-runtime",
 	"pezsc-network-sync/try-runtime",
 	"pezsc-network/try-runtime",
+	"pezsc-statement-store/try-runtime",
+	"pezsp-api/try-runtime",
+	"pezsp-blockchain/try-runtime",
 	"pezsp-consensus/try-runtime",
+	"pezsp-keyring/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"pezsp-statement-store/try-runtime",
 ]
 serde = []
+test-helpers = []

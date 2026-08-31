@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Bizinikiwi.  If not, see <http://www.gnu.org/licenses/>.
 
-//! The Zagros runtime. This can be compiled with `#[no_std]`, ready for Wasm.
+//! The Westend runtime. This can be compiled with `#[no_std]`, ready for Wasm.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 // `#[pezframe_support::runtime]!` does a lot of recursion and requires us to increase the limit.
@@ -33,7 +33,7 @@ use pezframe_election_provider_support::{
 };
 use pezframe_support::{
 	derive_impl,
-	dynamic_params::{dynamic_pallet_params, dynamic_params},
+	dynamic_params::{dynamic_params, dynamic_pezpallet_params},
 	genesis_builder_helper::{build_state, get_preset},
 	parameter_types,
 	traits::{
@@ -68,7 +68,7 @@ use pezkuwi_runtime_common::{
 	BlockHashCount, BlockLength, SlowAdjustingFeeUpdate,
 };
 use pezkuwi_runtime_teyrchains::{
-	assigner_coretime as teyrchains_assigner_coretime, configuration as teyrchains_configuration,
+	configuration as teyrchains_configuration,
 	configuration::ActiveConfigHrmpChannelSizeAndCapacityRatio,
 	coretime, disputes as teyrchains_disputes,
 	disputes::slashing as teyrchains_slashing,
@@ -99,7 +99,7 @@ use pezsp_consensus_beefy::{
 	ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
 	mmr::{BeefyDataProvider, MmrLeafVersion},
 };
-use pezsp_core::{ConstU8, ConstUint, OpaqueMetadata, RuntimeDebug, H256};
+use pezsp_core::{ConstU8, ConstUint, OpaqueMetadata, H256};
 #[cfg(any(feature = "std", test))]
 pub use pezsp_runtime::BuildStorage;
 use pezsp_runtime::{
@@ -212,7 +212,7 @@ pub mod fast_runtime_binary {
 	include!(concat!(env!("OUT_DIR"), "/fast_runtime_binary.rs"));
 }
 
-/// Runtime version (Zagros).
+/// Runtime version (Westend).
 #[pezsp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("staking-async-rc"),
@@ -238,10 +238,10 @@ pub fn native_version() -> NativeVersion {
 	NativeVersion { runtime_version: VERSION, can_author_with: Default::default() }
 }
 
-/// A type to identify calls to the Identity pezpallet. These will be filtered to prevent
-/// invocation, locking the state of the pezpallet and preventing further updates to identities and
-/// sub-identities. The locked state will be the genesis state of a new system chain and then
-/// removed from the Relay Chain.
+/// A type to identify calls to the Identity pezpallet. These will be filtered to prevent invocation,
+/// locking the state of the pezpallet and preventing further updates to identities and sub-identities.
+/// The locked state will be the genesis state of a new system chain and then removed from the Relay
+/// Chain.
 pub struct IsIdentityCall;
 impl Contains<RuntimeCall> for IsIdentityCall {
 	fn contains(c: &RuntimeCall) -> bool {
@@ -311,7 +311,7 @@ pub mod dynamic_params {
 
 	/// Parameters used to calculate era payouts, see
 	/// [`pezkuwi_runtime_common::impls::EraPayoutParams`].
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 0)]
 	pub mod inflation {
 		/// Minimum inflation rate used to calculate era payouts.
@@ -794,7 +794,7 @@ impl pezpallet_staking_async_ah_client::Config for Runtime {
 	type AssetHubOrigin =
 		pezframe_support::traits::EitherOfDiverse<EnsureRoot<AccountId>, EnsureAssetHub>;
 	type AdminOrigin = EnsureRoot<AccountId>;
-	type SessionInterface = Self;
+	type SessionInterface = Session;
 	type SendToAssetHub = StakingXcmToAssetHub;
 	type MinimumValidatorSetSize = ConstU32<1>;
 	type MaximumValidatorsWithPoints = ConstU32<{ MaxActiveValidators::get() * 4 }>;
@@ -822,7 +822,7 @@ parameter_types! {
 	pub const SignedFixedDeposit: Balance = deposit(2, 0);
 	pub const SignedDepositIncreaseFactor: Percent = Percent::from_percent(10);
 	pub const SignedDepositByte: Balance = deposit(0, 10) / 1024;
-	// Each good submission will get 1 ZGR as reward
+	// Each good submission will get 1 WND as reward
 	pub SignedRewardBase: Balance = 1 * UNITS;
 
 	// 1 hour session, 15 minutes unsigned phase, 4 offchain executions.
@@ -1001,7 +1001,7 @@ impl pezpallet_bags_list::Config<VoterBagsListInstance> for Runtime {
 
 parameter_types! {
 	pub const SpendPeriod: BlockNumber = 6 * DAYS;
-	pub const Burn: Permill = Permill::from_perthousand(2);
+	pub const Burn: Permill = Permill::zero();
 	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 	pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
 	// The asset's interior location for the paying account. This is the Treasury
@@ -1036,7 +1036,7 @@ impl pezpallet_treasury::Config for Runtime {
 	type BeneficiaryLookup = IdentityLookup<Self::Beneficiary>;
 	type Paymaster = PayOverXcm<
 		TreasuryInteriorLocation,
-		crate::xcm_config::XcmRouter,
+		crate::xcm_config::XcmConfig,
 		crate::XcmPallet,
 		ConstU32<{ 6 * HOURS }>,
 		Self::Beneficiary,
@@ -1179,7 +1179,7 @@ where
 }
 
 parameter_types! {
-	// Minimum 100 bytes/DCL deposited (1 CENT/byte)
+	// Minimum 100 bytes/KSM deposited (1 CENT/byte)
 	pub const BasicDeposit: Balance = 1000 * CENTS;       // 258 bytes on-chain
 	pub const ByteDeposit: Balance = deposit(0, 1);
 	pub const UsernameDeposit: Balance = deposit(0, 32);
@@ -1241,22 +1241,27 @@ impl pezpallet_multisig::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ConfigDepositBase: Balance = 500 * CENTS;
-	pub const FriendDepositFactor: Balance = 50 * CENTS;
-	pub const MaxFriends: u16 = 9;
-	pub const RecoveryDeposit: Balance = 500 * CENTS;
+	pub const MaxFriendsPerConfig: u32 = 128;
+
+	pub const FriendGroupsHoldReason: RuntimeHoldReason = RuntimeHoldReason::Recovery(pezpallet_recovery::HoldReason::FriendGroupsStorage);
+	pub const AttemptHoldReason: RuntimeHoldReason = RuntimeHoldReason::Recovery(pezpallet_recovery::HoldReason::AttemptStorage);
+	pub const InheritorHoldReason: RuntimeHoldReason = RuntimeHoldReason::Recovery(pezpallet_recovery::HoldReason::InheritorStorage);
 }
 
+pub const SECURITY_DEPOSIT: u32 = 100;
+
 impl pezpallet_recovery::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = ();
 	type RuntimeCall = RuntimeCall;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type BlockNumberProvider = System;
 	type Currency = Balances;
-	type ConfigDepositBase = ConfigDepositBase;
-	type FriendDepositFactor = FriendDepositFactor;
-	type MaxFriends = MaxFriends;
-	type RecoveryDeposit = RecoveryDeposit;
+	type FriendGroupsConsideration = ();
+	type AttemptConsideration = ();
+	type InheritorConsideration = ();
+	type SecurityDeposit = ();
+	type MaxFriendsPerConfig = MaxFriendsPerConfig;
+	type Slash = (); // burn
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -1304,7 +1309,7 @@ parameter_types! {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	TypeInfo,
 )]
@@ -1346,12 +1351,10 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::ConvictionVoting(..) |
 				RuntimeCall::Referenda(..) |
 				RuntimeCall::Whitelist(..) |
-				RuntimeCall::Recovery(pezpallet_recovery::Call::as_recovered{..}) |
-				RuntimeCall::Recovery(pezpallet_recovery::Call::vouch_recovery{..}) |
-				RuntimeCall::Recovery(pezpallet_recovery::Call::claim_recovery{..}) |
-				RuntimeCall::Recovery(pezpallet_recovery::Call::close_recovery{..}) |
-				RuntimeCall::Recovery(pezpallet_recovery::Call::remove_recovery{..}) |
-				RuntimeCall::Recovery(pezpallet_recovery::Call::cancel_recovered{..}) |
+				RuntimeCall::Recovery(pezpallet_recovery::Call::control_inherited_account{..}) |
+				RuntimeCall::Recovery(pezpallet_recovery::Call::initiate_attempt{..}) |
+				RuntimeCall::Recovery(pezpallet_recovery::Call::approve_attempt{..}) |
+				RuntimeCall::Recovery(pezpallet_recovery::Call::finish_attempt{..}) |
 				// Specifically omitting Recovery `create_recovery`, `initiate_recovery`
 				RuntimeCall::Vesting(pezpallet_vesting::Call::vest{..}) |
 				RuntimeCall::Vesting(pezpallet_vesting::Call::vest_other{..}) |
@@ -1475,7 +1478,7 @@ impl teyrchains_paras::Config for Runtime {
 	type QueueFootprinter = ParaInclusion;
 	type NextSessionRotation = Babe;
 	type OnNewHead = ();
-	type AssignCoretime = CoretimeAssignmentProvider;
+	type AssignCoretime = ParaScheduler;
 	type Fungible = Balances;
 	type CooldownRemovalMultiplier = ConstUint<1>;
 	type AuthorizeCurrentCodeOrigin = EnsureRoot<AccountId>;
@@ -1554,11 +1557,7 @@ impl teyrchains_paras_inherent::Config for Runtime {
 	type WeightInfo = weights::pezkuwi_runtime_teyrchains_paras_inherent::WeightInfo<Runtime>;
 }
 
-impl teyrchains_scheduler::Config for Runtime {
-	// If you change this, make sure the `Assignment` type of the new provider is binary compatible,
-	// otherwise provide a migration.
-	type AssignmentProvider = CoretimeAssignmentProvider;
-}
+impl teyrchains_scheduler::Config for Runtime {}
 
 parameter_types! {
 	pub const BrokerId: u32 = BROKER_ID;
@@ -1605,8 +1604,6 @@ impl teyrchains_on_demand::Config for Runtime {
 	type MaxHistoricalRevenue = MaxHistoricalRevenue;
 	type PalletId = OnDemandPalletId;
 }
-
-impl teyrchains_assigner_coretime::Config for Runtime {}
 
 impl teyrchains_initializer::Config for Runtime {
 	type Randomness = pezpallet_babe::RandomnessFromOneEpochAgo<Runtime>;
@@ -1744,9 +1741,10 @@ parameter_types! {
 
 impl pezpallet_migrations::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	// For this test runtime, always use MockedMigrations to satisfy both regular and benchmark
-	// builds. When runtime-benchmarks is enabled on pezframe-support (via --benches), the
-	// Migrations type must implement MockedMigrations, but LazyMigrationV1ToV2 doesn't.
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type Migrations = pezpallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>;
+	// Benchmarks need mocked migrations to guarantee that they succeed.
+	#[cfg(feature = "runtime-benchmarks")]
 	type Migrations = pezpallet_migrations::mock_helpers::MockedMigrations;
 	type CursorMaxLen = ConstU32<65_536>;
 	type IdentifierMaxLen = ConstU32<256>;
@@ -1896,7 +1894,7 @@ mod runtime {
 	#[runtime::pezpallet_index(37)]
 	pub type Treasury = pezpallet_treasury;
 
-	// Teyrchains pallets. Start indices at 40 to leave room.
+	// Teyrchains pezpallets. Start indices at 40 to leave room.
 	#[runtime::pezpallet_index(41)]
 	pub type TeyrchainsOrigin = teyrchains_origin;
 	#[runtime::pezpallet_index(42)]
@@ -1926,8 +1924,6 @@ mod runtime {
 	pub type ParasSlashing = teyrchains_slashing;
 	#[runtime::pezpallet_index(56)]
 	pub type OnDemandAssignmentProvider = teyrchains_on_demand;
-	#[runtime::pezpallet_index(57)]
-	pub type CoretimeAssignmentProvider = teyrchains_assigner_coretime;
 
 	// Teyrchain Onboarding Pallets. Start indices at 60 to leave room.
 	#[runtime::pezpallet_index(60)]
@@ -2020,25 +2016,8 @@ parameter_types! {
 	pub const MaxAgentsToMigrate: u32 = 300;
 }
 
-/// All migrations that will run on the next runtime upgrade.
-///
-/// This contains the combined migrations of the last 10 releases. It allows to skip runtime
-/// upgrades in case governance decides to do so. THE ORDER IS IMPORTANT.
-pub type Migrations = migrations::Unreleased;
-
-/// The runtime migrations per release.
-#[allow(deprecated, missing_docs)]
-pub mod migrations {
-	use super::*;
-
-	/// Unreleased migrations. Add new ones here:
-	pub type Unreleased = (
-		teyrchains_shared::migration::MigrateToV1<Runtime>,
-		teyrchains_scheduler::migration::MigrateV2ToV3<Runtime>,
-		// permanent
-		pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-	);
-}
+/// No migrations needed for test runtime (always starts from fresh genesis).
+pub type Migrations = ();
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -2190,7 +2169,7 @@ pezsp_api::impl_runtime_apis! {
 		}
 	}
 
-	#[api_version(15)]
+	#[api_version(16)]
 	impl pezkuwi_primitives::runtime_api::TeyrchainHost<Block> for Runtime {
 		fn validators() -> Vec<ValidatorId> {
 			teyrchains_runtime_api_impl::validators::<Runtime>()
@@ -2376,6 +2355,17 @@ pezsp_api::impl_runtime_apis! {
 
 		fn para_ids() -> Vec<ParaId> {
 			teyrchains_staging_runtime_api_impl::para_ids::<Runtime>()
+		}
+
+		fn max_relay_parent_session_age() -> u32 {
+			teyrchains_staging_runtime_api_impl::max_relay_parent_session_age::<Runtime>()
+		}
+
+		fn ancestor_relay_parent_info(
+			session_index: SessionIndex,
+			relay_parent: Hash,
+		) -> Option<pezkuwi_primitives::vstaging::RelayParentInfo<Hash, BlockNumber>> {
+			teyrchains_staging_runtime_api_impl::ancestor_relay_parent_info::<Runtime>(session_index, relay_parent)
 		}
 	}
 
@@ -2597,8 +2587,8 @@ pezsp_api::impl_runtime_apis! {
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+		fn generate_session_keys(owner: Vec<u8>, seed: Option<Vec<u8>>) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(
@@ -2708,7 +2698,7 @@ pezsp_api::impl_runtime_apis! {
 	#[cfg(feature = "try-runtime")]
 	impl pezframe_try_runtime::TryRuntime<Block> for Runtime {
 		fn on_runtime_upgrade(checks: pezframe_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
-			log::info!("try-runtime::on_runtime_upgrade zagros.");
+			log::info!("try-runtime::on_runtime_upgrade westend.");
 			let weight = Executive::try_runtime_upgrade(checks).unwrap();
 			(weight, BlockWeights::get().max_block)
 		}
@@ -2761,7 +2751,7 @@ pezsp_api::impl_runtime_apis! {
 			use pezframe_support::traits::WhitelistedStorageKeys;
 			use pezframe_benchmarking::{BenchmarkBatch, BenchmarkError};
 			use pezsp_storage::TrackedStorageKey;
-			// Trying to add benchmarks directly to some pallets caused cyclic dependency issues.
+			// Trying to add benchmarks directly to some pezpallets caused cyclic dependency issues.
 			// To get around that, we separated the benchmarks into its own crate.
 			use pezpallet_session_benchmarking::Pezpallet as SessionBench;
 			use pezpallet_offences_benchmarking::Pezpallet as OffencesBench;
@@ -2770,9 +2760,15 @@ pezsp_api::impl_runtime_apis! {
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 
-			impl pezpallet_session_benchmarking::Config for Runtime {}
+			impl pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 			impl pezpallet_offences_benchmarking::Config for Runtime {}
 			impl pezpallet_election_provider_support_benchmarking::Config for Runtime {}
+
 
 			use xcm_config::{AssetHub, TokenLocation};
 
@@ -2829,7 +2825,7 @@ pezsp_api::impl_runtime_apis! {
 				}
 
 				fn set_up_complex_asset_transfer(
-				) -> Option<(Assets, AssetId, Location, Box<dyn FnOnce()>)> {
+				) -> Option<(Assets, u32, Location, Box<dyn FnOnce()>)> {
 					// Relay supports only native token, either reserve transfer it to non-system teyrchains,
 					// or teleport it to system teyrchain. Use the teleport case for benchmarking as it's
 					// slightly heavier.
@@ -2851,6 +2847,7 @@ pezsp_api::impl_runtime_apis! {
 				}
 			}
 			impl pezframe_system_benchmarking::Config for Runtime {}
+			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
 			impl pezkuwi_runtime_teyrchains::disputes::slashing::benchmarking::Config for Runtime {}
 
 			use xcm::latest::{
@@ -2871,12 +2868,15 @@ pezsp_api::impl_runtime_apis! {
 				fn valid_destination() -> Result<Location, BenchmarkError> {
 					Ok(AssetHub::get())
 				}
-				fn worst_case_holding(_depositable_count: u32) -> Assets {
-					// Zagros only knows about ZGR.
-					vec![Asset{
-						id: AssetId(TokenLocation::get()),
-						fun: Fungible(1_000_000 * UNITS),
-					}].into()
+				fn worst_case_holding(_depositable_count: u32) -> xcm_executor::AssetsInHolding {
+					use pezpallet_xcm_benchmarks::MockCredit;
+					// Westend only knows about WND.
+					let mut holding = xcm_executor::AssetsInHolding::new();
+					holding.fungible.insert(
+						AssetId(TokenLocation::get()),
+						alloc::boxed::Box::new(MockCredit(1_000_000 * UNITS)),
+					);
+					holding
 				}
 			}
 
@@ -2912,12 +2912,12 @@ pezsp_api::impl_runtime_apis! {
 				}
 
 				fn worst_case_asset_exchange() -> Result<(Assets, Assets), BenchmarkError> {
-					// Zagros doesn't support asset exchanges
+					// Westend doesn't support asset exchanges
 					Err(BenchmarkError::Skip)
 				}
 
 				fn universal_alias() -> Result<(Location, Junction), BenchmarkError> {
-					// The XCM executor of Zagros doesn't have a configured `UniversalAliases`
+					// The XCM executor of Westend doesn't have a configured `UniversalAliases`
 					Err(BenchmarkError::Skip)
 				}
 
@@ -2944,13 +2944,13 @@ pezsp_api::impl_runtime_apis! {
 				}
 
 				fn unlockable_asset() -> Result<(Location, Location, Asset), BenchmarkError> {
-					// Zagros doesn't support asset locking
+					// Westend doesn't support asset locking
 					Err(BenchmarkError::Skip)
 				}
 
 				fn export_message_origin_and_destination(
 				) -> Result<(Location, NetworkId, InteriorLocation), BenchmarkError> {
-					// Zagros doesn't support exporting messages
+					// Westend doesn't support exporting messages
 					Err(BenchmarkError::Skip)
 				}
 

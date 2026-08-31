@@ -26,7 +26,7 @@ E.g.
 ```
 
 Some pieces of code cannot be labeled as deprecated, like [reexports](https://github.com/rust-lang/rust/issues/30827)
-or [dispatchables](https://github.com/pezkuwichain/pezkuwi-sdk/issues/100#issuecomment-1691684159), for instance.
+or [dispatchables](https://github.com/pezkuwichain/pezkuwi-DKS/issues/100#issuecomment-1691684159), for instance.
 In cases like that we can only make a visible enough comment, and make sure that we [announce the deprecation properly](#announce-the-deprecation-and-removal).
 
 ## Remove usage of the deprecated code in the code base
@@ -39,11 +39,11 @@ when building the code.
 
 Make sure that the rust docs are updated.
 We also need [https://docs.pezkuwichain.io/](https://docs.pezkuwichain.io/) to be updated accordingly. The repo behind it is
-[https://github.com/polkadot-developers/polkadot-docs](https://github.com/polkadot-developers/polkadot-docs).
+[https://github.com/pezkuwichain/docs](https://github.com/pezkuwichain/docs).
 
 ## Announce the deprecation and removal
 
-**At minimum they should be noted in the release log.** Please see how to document a PR [the contribution guidelines](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docs/contributor/CONTRIBUTING.md#documentation).
+**At minimum they should be noted in the release log.** Please see how to document a PR [the contribution guidelines](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docs/contributor/CONTRIBUTING.md#documentation).
 There you can give instructions based on the audience and tell them what they need to do to upgrade the code.
 
 Some breaking changes have a bigger impact than others. When the impact is big the release note is not enough, though

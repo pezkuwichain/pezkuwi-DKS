@@ -207,7 +207,7 @@ pub mod pezpallet {
 	#[pezpallet::origin]
 	#[derive(
 		EqNoBound,
-		RuntimeDebugNoBound,
+		DebugNoBound,
 		CloneNoBound,
 		PartialEqNoBound,
 		PartialOrdNoBound,
@@ -248,7 +248,7 @@ pub mod pezpallet {
 		}
 	}
 
-	#[derive(codec::Encode, pezsp_runtime::RuntimeDebug)]
+	#[derive(codec::Encode, Debug)]
 	#[cfg_attr(feature = "std", derive(codec::Decode))]
 	pub enum InherentError {}
 
@@ -748,7 +748,7 @@ fn pezpallet_on_genesis() {
 fn metadata() {
 	use frame_metadata::{v14::*, *};
 
-	let system_pallet_metadata = PalletMetadata {
+	let system_pezpallet_metadata = PalletMetadata {
 		index: 0,
 		name: "System",
 		storage: None, // The storage metadatas have been excluded.
@@ -799,7 +799,7 @@ fn metadata() {
 		}),
 	};
 
-	let example_pallet_metadata = PalletMetadata {
+	let example_pezpallet_metadata = PalletMetadata {
 		index: 1,
 		name: "Example",
 		storage: Some(PalletStorageMetadata {
@@ -928,39 +928,42 @@ fn metadata() {
 		}),
 	};
 
-	let mut example_pallet_instance1_metadata = example_pallet_metadata.clone();
-	example_pallet_instance1_metadata.name = "Instance1Example";
-	example_pallet_instance1_metadata.index = 2;
-	match example_pallet_instance1_metadata.calls {
+	let mut example_pezpallet_instance1_metadata = example_pezpallet_metadata.clone();
+	example_pezpallet_instance1_metadata.name = "Instance1Example";
+	example_pezpallet_instance1_metadata.index = 2;
+	match example_pezpallet_instance1_metadata.calls {
 		Some(ref mut calls_meta) => {
 			calls_meta.ty =
 				scale_info::meta_type::<pezpallet::Call<Runtime, pezpallet::Instance1>>();
 		},
 		_ => unreachable!(),
 	}
-	match example_pallet_instance1_metadata.event {
+	match example_pezpallet_instance1_metadata.event {
 		Some(ref mut event_meta) => {
 			event_meta.ty =
 				scale_info::meta_type::<pezpallet::Event<Runtime, pezpallet::Instance1>>();
 		},
 		_ => unreachable!(),
 	}
-	match example_pallet_instance1_metadata.error {
+	match example_pezpallet_instance1_metadata.error {
 		Some(ref mut error_meta) => {
 			error_meta.ty =
 				scale_info::meta_type::<pezpallet::Error<Runtime, pezpallet::Instance1>>();
 		},
 		_ => unreachable!(),
 	}
-	match example_pallet_instance1_metadata.storage {
+	match example_pezpallet_instance1_metadata.storage {
 		Some(ref mut storage_meta) => {
 			storage_meta.prefix = "Instance1Example";
 		},
 		_ => unreachable!(),
 	}
 
-	let pallets =
-		vec![system_pallet_metadata, example_pallet_metadata, example_pallet_instance1_metadata];
+	let pallets = vec![
+		system_pezpallet_metadata,
+		example_pezpallet_metadata,
+		example_pezpallet_instance1_metadata,
+	];
 
 	let extrinsic = ExtrinsicMetadata {
 		ty: scale_info::meta_type::<UncheckedExtrinsic>(),
@@ -990,7 +993,7 @@ fn metadata() {
 }
 
 #[test]
-fn test_pallet_info_access() {
+fn test_pezpallet_info_access() {
 	assert_eq!(<System as pezframe_support::traits::PalletInfoAccess>::name(), "System");
 	assert_eq!(<Example as pezframe_support::traits::PalletInfoAccess>::name(), "Example");
 	assert_eq!(

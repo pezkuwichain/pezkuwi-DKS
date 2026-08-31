@@ -50,7 +50,7 @@ pub mod target;
 pub(crate) const RECENT_FINALITY_PROOFS_LIMIT: usize = 4096;
 
 /// Convenience trait that adds bounds to `BizinikiwiFinalitySyncPipeline`.
-pub trait BaseBizinikiwiFinalitySyncPipeline:
+pub trait BaseSubstrateFinalitySyncPipeline:
 	BizinikiwiFinalityPipeline<TargetChain = Self::BoundedTargetChain>
 {
 	/// Bounded `BizinikiwiFinalityPipeline::TargetChain`.
@@ -61,7 +61,7 @@ pub trait BaseBizinikiwiFinalitySyncPipeline:
 		+ Send;
 }
 
-impl<T> BaseBizinikiwiFinalitySyncPipeline for T
+impl<T> BaseSubstrateFinalitySyncPipeline for T
 where
 	T: BizinikiwiFinalityPipeline,
 	T::TargetChain: ChainWithTransactions,
@@ -73,7 +73,7 @@ where
 
 /// Bizinikiwi -> Bizinikiwi finality proofs synchronization pipeline.
 #[async_trait]
-pub trait BizinikiwiFinalitySyncPipeline: BaseBizinikiwiFinalitySyncPipeline {
+pub trait BizinikiwiFinalitySyncPipeline: BaseSubstrateFinalitySyncPipeline {
 	/// How submit finality proof call is built?
 	type SubmitFinalityProofCallBuilder: SubmitFinalityProofCallBuilder<Self>;
 

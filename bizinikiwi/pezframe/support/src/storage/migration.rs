@@ -306,13 +306,13 @@ pub fn take_storage_item<K: Encode + Sized, T: Decode + Sized, H: StorageHasher>
 /// `concat(twox_128(pezpallet_name), twox_128(storage_name))`.
 ///
 /// This function will remove all value for which the key start with
-/// `concat(twox_128(old_pallet_name), twox_128(storage_name))` and insert them at the key with
-/// the start replaced by `concat(twox_128(new_pallet_name), twox_128(storage_name))`.
+/// `concat(twox_128(old_pezpallet_name), twox_128(storage_name))` and insert them at the key with
+/// the start replaced by `concat(twox_128(new_pezpallet_name), twox_128(storage_name))`.
 ///
 /// # Example
 ///
-/// If a pezpallet named "my_example" has 2 storages named "Foo" and "Bar" and the pezpallet is
-/// renamed "my_new_example_name", a migration can be:
+/// If a pezpallet named "my_example" has 2 storages named "Foo" and "Bar" and the pezpallet is renamed
+/// "my_new_example_name", a migration can be:
 /// ```
 /// # use pezframe_support::storage::migration::move_storage_from_pallet;
 /// # pezsp_io::TestExternalities::new_empty().execute_with(|| {
@@ -322,11 +322,11 @@ pub fn take_storage_item<K: Encode + Sized, T: Decode + Sized, H: StorageHasher>
 /// ```
 pub fn move_storage_from_pallet(
 	storage_name: &[u8],
-	old_pallet_name: &[u8],
-	new_pallet_name: &[u8],
+	old_pezpallet_name: &[u8],
+	new_pezpallet_name: &[u8],
 ) {
-	let new_prefix = storage_prefix(new_pallet_name, storage_name);
-	let old_prefix = storage_prefix(old_pallet_name, storage_name);
+	let new_prefix = storage_prefix(new_pezpallet_name, storage_name);
+	let old_prefix = storage_prefix(old_pezpallet_name, storage_name);
 
 	move_prefix(&old_prefix, &new_prefix);
 
@@ -341,10 +341,10 @@ pub fn move_storage_from_pallet(
 /// Keys used in pezpallet storages always start with:
 /// `concat(twox_128(pezpallet_name), twox_128(storage_name))`.
 ///
-/// This function will remove all value for which the key start with `twox_128(old_pallet_name)`
-/// and insert them at the key with the start replaced by `twox_128(new_pallet_name)`.
+/// This function will remove all value for which the key start with `twox_128(old_pezpallet_name)`
+/// and insert them at the key with the start replaced by `twox_128(new_pezpallet_name)`.
 ///
-/// NOTE: The value at the key `twox_128(old_pallet_name)` is not moved.
+/// NOTE: The value at the key `twox_128(old_pezpallet_name)` is not moved.
 ///
 /// # Example
 ///
@@ -356,8 +356,8 @@ pub fn move_storage_from_pallet(
 /// move_pallet(b"my_example", b"my_new_example_name");
 /// # })
 /// ```
-pub fn move_pallet(old_pallet_name: &[u8], new_pallet_name: &[u8]) {
-	move_prefix(&Twox128::hash(old_pallet_name), &Twox128::hash(new_pallet_name))
+pub fn move_pallet(old_pezpallet_name: &[u8], new_pezpallet_name: &[u8]) {
+	move_prefix(&Twox128::hash(old_pezpallet_name), &Twox128::hash(new_pezpallet_name))
 }
 
 /// Move all `(key, value)` after some prefix to the another prefix

@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *Pezkuwi*.
 //!
-//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi/pezframe/sudo)
+//! [![github]](https://github.com/pezkuwichain/pezkuwi-DKS/tree/master/bizinikiwi/pezframe/sudo)
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [github]: https://img.shields.io/badge/github-8da0cb?style=for-the-badge&labelColor=555555&logo=github
@@ -25,8 +25,8 @@
 //!
 //! # Sudo Pezpallet
 //!
-//! A pezpallet to provide a way to execute privileged runtime calls using a specified sudo
-//! ("superuser do") account.
+//! A pezpallet to provide a way to execute privileged runtime calls using a specified sudo ("superuser
+//! do") account.
 //!
 //! ## Pezpallet API
 //!
@@ -35,7 +35,7 @@
 //!
 //! ## Overview
 //!
-//! In Bizinikiwi blockchains, pallets may contain dispatchable calls that can only be called at
+//! In Bizinikiwi blockchains, pezpallets may contain dispatchable calls that can only be called at
 //! the system level of the chain (i.e. dispatchables that require a `Root` origin).
 //! Setting a privileged account, called the _sudo key_, allows you to make such calls as an
 //! extrinsic.
@@ -81,12 +81,11 @@
 //!
 //! <div class="example-wrap" style="display:inline-block"><pre class="compile_fail"
 //! style="white-space:normal;font:inherit;">
-//! <strong>Note:</strong> this pezpallet is not meant to be used inside other pallets. It is only
+//! <strong>Note:</strong> this pezpallet is not meant to be used inside other pezpallets. It is only
 //! meant to be used by constructing runtime calls from outside the runtime.
 //! </pre></div>
 //!
-//! This pezpallet also defines a
-//! [`TransactionExtension`](pezsp_runtime::traits::TransactionExtension)
+//! This pezpallet also defines a [`TransactionExtension`](pezsp_runtime::traits::TransactionExtension)
 //! called [`CheckOnlySudoAccount`] to ensure that only signed transactions by the sudo account are
 //! accepted by the transaction pool. The intended use of this signed extension is to prevent other
 //! accounts from spamming the transaction pool for the initial phase of a chain, during which
@@ -100,20 +99,17 @@
 //! 1. You can make a privileged runtime call using `sudo` with an account that matches the sudo
 //!    key.
 #![doc = docify::embed!("src/tests.rs", sudo_basics)]
-//!
 //! 2. Only an existing sudo key can set a new one.
 #![doc = docify::embed!("src/tests.rs", set_key_basics)]
-//!
 //! 3. You can also make non-privileged calls using `sudo_as`.
 #![doc = docify::embed!("src/tests.rs", sudo_as_emits_events_correctly)]
-//!
 //! ## Low Level / Implementation Details
 //!
-//! This pezpallet checks that the caller of its dispatchables is a signed account and ensures that
-//! the caller matches the sudo key in storage.
-//! A caller of this pezpallet's dispatchables does not pay any fees to dispatch a call. If the
-//! account making one of these calls is not the sudo key, the pezpallet returns a
-//! [`Error::RequireSudo`] error.
+//! This pezpallet checks that the caller of its dispatchables is a signed account and ensures that the
+//! caller matches the sudo key in storage.
+//! A caller of this pezpallet's dispatchables does not pay any fees to dispatch a call. If the account
+//! making one of these calls is not the sudo key, the pezpallet returns a [`Error::RequireSudo`]
+//! error.
 //!
 //! Once an origin is verified, sudo calls use `dispatch_bypass_filter` from the
 //! [`UnfilteredDispatchable`](pezframe_support::traits::UnfilteredDispatchable) trait to allow call

@@ -21,7 +21,7 @@ codec = { features = ["derive"], workspace = true }
 pezsp-api = { workspace = true }
 pezsp-core = { workspace = true }
 pezsp-keystore = { optional = true, workspace = true }
-pezsp-runtime = { optional = true, workspace = true }
+pezsp-runtime = { workspace = true }
 pezsp-staking = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 
@@ -38,12 +38,12 @@ std = [
 ]
 runtime-benchmarks = [
 	"pezsp-api/runtime-benchmarks",
-	"pezsp-runtime?/runtime-benchmarks",
+	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-staking/runtime-benchmarks",
 ]
 try-runtime = [
 	"pezsp-api/try-runtime",
-	"pezsp-runtime?/try-runtime",
+	"pezsp-runtime/try-runtime",
 	"pezsp-staking/try-runtime",
 ]
 serde = []

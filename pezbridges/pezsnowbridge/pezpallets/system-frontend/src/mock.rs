@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
-use crate as snowbridge_system_frontend;
+use crate as pezsnowbridge_system_frontend;
 #[cfg(feature = "runtime-benchmarks")]
 use crate::BenchmarkHelper;
 use pezframe_support::{
@@ -26,7 +26,7 @@ pezframe_support::construct_runtime!(
 	{
 		System: pezframe_system,
 		XcmOrigin: pezpallet_xcm_origin::{Pezpallet, Origin},
-		EthereumSystemFrontend: snowbridge_system_frontend,
+		EthereumSystemFrontend: pezsnowbridge_system_frontend,
 	}
 );
 

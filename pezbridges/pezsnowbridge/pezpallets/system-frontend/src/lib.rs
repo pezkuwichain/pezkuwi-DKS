@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
-//!
 //! System frontend pezpallet that acts as the user-facing control-plane for Snowbridge.
 //!
 //! Some operations are delegated to a backend pezpallet installed on a remote teyrchain.
@@ -44,10 +43,9 @@ use pezframe_support::traits::OriginTrait;
 pub use pezpallet::*;
 pub type AccountIdOf<T> = <T as pezframe_system::Config>::AccountId;
 
-pub const LOG_TARGET: &str = "snowbridge-system-frontend";
+pub const LOG_TARGET: &str = "pezsnowbridge-system-frontend";
 
-/// Call indices within BridgeHub runtime for dispatchables within
-/// `pezsnowbridge-pezpallet-system-v2`
+/// Call indices within BridgeHub runtime for dispatchables within `pezsnowbridge-pezpallet-system-v2`
 #[allow(clippy::large_enum_variant)]
 #[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo)]
 pub enum BridgeHubRuntime<T: pezframe_system::Config> {

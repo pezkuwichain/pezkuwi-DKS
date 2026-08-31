@@ -27,9 +27,9 @@
 //!
 //! The kitchen-sink catalog of the the FRAME macros and their various syntax options.
 //!
-//! This example does not focus on pezpallet instancing, `dev_mode`, and does nto include any
-//! 'where' clauses on `T`. These will both incur additional complexity to the syntax, but are not
-//! discussed here.
+//! This example does not focus on pezpallet instancing, `dev_mode`, and does nto include any 'where'
+//! clauses on `T`. These will both incur additional complexity to the syntax, but are not discussed
+//! here.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -56,20 +56,19 @@ pub mod pezpallet {
 	use pezframe_support::pezpallet_prelude::*;
 	use pezframe_system::pezpallet_prelude::*;
 
-	/// The config trait of the pezpallet. You can basically do anything with the config trait that
-	/// you can do with a normal rust trait: import items consisting of types, constants and
-	/// functions.
+	/// The config trait of the pezpallet. You can basically do anything with the config trait that you
+	/// can do with a normal rust trait: import items consisting of types, constants and functions.
 	///
 	/// A very common pattern is for a pezpallet to import implementations of traits such as
 	/// [`pezframe_support::traits::Currency`], [`pezframe_support::traits::fungibles::Inspect`] and
-	/// [`pezframe_support::traits::Get`]. These are all types that the pezpallet is delegating to
-	/// the top level runtime to provide to it.
+	/// [`pezframe_support::traits::Get`]. These are all types that the pezpallet is delegating to the top
+	/// level runtime to provide to it.
 	///
 	/// The `FRAME`-specific syntax are:
 	///
-	/// * the use of `#[pezpallet::constant]`([`pezframe_support::procedural`]), which places a
-	///   `Get` implementation in the metadata.
-	/// * `type RuntimeEvent`, which is mandatory if your pezpallet has events. See TODO.
+	/// * the use of `#[pezpallet::constant]`([`pezframe_support::procedural`]), which places a `Get`
+	///   implementation in the metadata.
+	/// * `type RuntimeEvent`, which is mandatory if your pezpallet has events. See [`Event`].
 	/// * Needless to say, because [`Config`] is bounded by [`pezframe_system::Config`], you can use
 	///   all the items from [`pezframe_system::Config`] as well, such as `AccountId`.
 	/// * `#[pezpallet::disable_pezframe_system_supertrait_check]` would remove the need for
@@ -110,8 +109,8 @@ pub mod pezpallet {
 
 	const STORAGE_VERSION: pezframe_support::traits::StorageVersion = StorageVersion::new(1);
 
-	/// The pezpallet struct. There's nothing special to FRAME about this; it can implement
-	/// functions in an impl blocks, traits and so on.
+	/// The pezpallet struct. There's nothing special to FRAME about this; it can implement functions
+	/// in an impl blocks, traits and so on.
 	#[pezpallet::pezpallet]
 	#[pezpallet::without_storage_info]
 	#[pezpallet::storage_version(STORAGE_VERSION)]
@@ -263,9 +262,9 @@ pub mod pezpallet {
 	/// the variants actually use `<T: Config>`, the macro will generate a hidden `PhantomData`
 	/// variant.
 	///
-	/// The `generate_deposit` macro generates a function on `Pezpallet` called `deposit_event`
-	/// which will properly convert the error type of your pezpallet into `RuntimeEvent` (recall
-	/// `type RuntimeEvent: From<Event<Self>>`, so it can be converted) and deposit it via
+	/// The `generate_deposit` macro generates a function on `Pezpallet` called `deposit_event` which
+	/// will properly convert the error type of your pezpallet into `RuntimeEvent` (recall `type
+	/// RuntimeEvent: From<Event<Self>>`, so it can be converted) and deposit it via
 	/// `pezframe_system::Pezpallet::deposit_event`.
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub fn deposit_event)]
@@ -286,8 +285,8 @@ pub mod pezpallet {
 		SomethingBroke,
 	}
 
-	/// All the possible hooks that a pezpallet can have. See [`pezframe_support::traits::Hooks`]
-	/// for more info.
+	/// All the possible hooks that a pezpallet can have. See [`pezframe_support::traits::Hooks`] for more
+	/// info.
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
 		fn integrity_test() {}
@@ -328,15 +327,15 @@ pub mod pezpallet {
 		}
 	}
 
-	/// Allows you to define an enum on the pezpallet which will then instruct `construct_runtime`
-	/// to amalgamate all similarly-named enums from other pallets into an aggregate enum.
+	/// Allows you to define an enum on the pezpallet which will then instruct `construct_runtime` to
+	/// amalgamate all similarly-named enums from other pezpallets into an aggregate enum.
 	#[pezpallet::composite_enum]
 	pub enum HoldReason {
 		Staking,
 	}
 
-	/// Allows the pezpallet to provide some inherent. See
-	/// [`pezframe_support::inherent::ProvideInherent`] for more info.
+	/// Allows the pezpallet to provide some inherent. See [`pezframe_support::inherent::ProvideInherent`]
+	/// for more info.
 	#[pezpallet::inherent]
 	impl<T: Config> ProvideInherent for Pezpallet<T> {
 		type Call = Call<T>;

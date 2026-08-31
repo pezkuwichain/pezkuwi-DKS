@@ -25,7 +25,6 @@ use crate::{
 	BatchCallBuilder, BatchCallBuilderConstructor, TransactionParams,
 };
 
-use async_std::sync::Arc;
 use codec::{Codec, Encode, EncodeLike};
 use pez_messages_relay::{message_lane::MessageLane, message_lane_loop::BatchTransaction, Labeled};
 use pezbp_messages::{
@@ -47,7 +46,7 @@ use relay_utils::{
 	metrics::{GlobalMetrics, MetricsParams, StandaloneMetric},
 	STALL_TIMEOUT,
 };
-use std::{fmt::Debug, marker::PhantomData, ops::RangeInclusive};
+use std::{fmt::Debug, marker::PhantomData, ops::RangeInclusive, sync::Arc};
 
 pub mod metrics;
 pub mod source;
@@ -294,8 +293,8 @@ where
 	.map_err(Into::into)
 }
 
-/// Deliver range of Bizinikiwi-to-Bizinikiwi messages. No checks are made to ensure that
-/// transaction will succeed.
+/// Deliver range of Bizinikiwi-to-Bizinikiwi messages. No checks are made to ensure that transaction
+/// will succeed.
 pub async fn relay_messages_range<P: BizinikiwiMessageLane>(
 	source_client: impl Client<P::SourceChain>,
 	target_client: impl Client<P::TargetChain>,

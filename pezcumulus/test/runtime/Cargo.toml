@@ -17,6 +17,7 @@ workspace = true
 codec = { features = ["derive"], workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 serde_json = { workspace = true }
+tracing = { workspace = true }
 
 # Bizinikiwi
 pezframe-executive = { workspace = true }
@@ -32,6 +33,7 @@ pezpallet-session = { workspace = true }
 pezpallet-sudo = { workspace = true }
 pezpallet-timestamp = { workspace = true }
 pezpallet-transaction-payment = { workspace = true }
+pezpallet-utility = { workspace = true }
 pezsp-api = { workspace = true }
 pezsp-block-builder = { workspace = true }
 pezsp-consensus-aura = { workspace = true }
@@ -46,12 +48,16 @@ pezsp-session = { workspace = true }
 pezsp-transaction-pool = { workspace = true }
 pezsp-version = { workspace = true }
 
+# Pezkuwi
+pezkuwi-primitives = { workspace = true }
+
 # Pezcumulus
 pezcumulus-pezpallet-aura-ext = { workspace = true }
 pezcumulus-pezpallet-teyrchain-system = { workspace = true }
 pezcumulus-pezpallet-weight-reclaim = { workspace = true }
 pezcumulus-primitives-aura = { workspace = true }
 pezcumulus-primitives-core = { workspace = true }
+pezcumulus-primitives-storage-weight-reclaim = { workspace = true }
 teyrchain-info = { workspace = true }
 
 [build-dependencies]
@@ -68,10 +74,12 @@ std = [
 	"pezcumulus-pezpallet-weight-reclaim/std",
 	"pezcumulus-primitives-aura/std",
 	"pezcumulus-primitives-core/std",
+	"pezcumulus-primitives-storage-weight-reclaim/std",
 	"pezframe-executive/std",
 	"pezframe-support/std",
 	"pezframe-system-rpc-runtime-api/std",
 	"pezframe-system/std",
+	"pezkuwi-primitives/std",
 	"pezpallet-aura/std",
 	"pezpallet-authorship/std",
 	"pezpallet-balances/std",
@@ -81,6 +89,7 @@ std = [
 	"pezpallet-sudo/std",
 	"pezpallet-timestamp/std",
 	"pezpallet-transaction-payment/std",
+	"pezpallet-utility/std",
 	"pezsp-api/std",
 	"pezsp-block-builder/std",
 	"pezsp-consensus-aura/std",
@@ -97,6 +106,7 @@ std = [
 	"scale-info/std",
 	"serde_json/std",
 	"teyrchain-info/std",
+	"tracing/std",
 ]
 increment-spec-version = []
 # A runtime which expects to build behind the relay chain tip.
@@ -107,10 +117,16 @@ elastic-scaling = []
 elastic-scaling-500ms = []
 # A runtime with a slot duration of 6s but parameters that allow multiple blocks per slot.
 elastic-scaling-multi-block-slot = []
+# A runtime that uses block-bundling.
+block-bundling = []
 # A runtime with 12s slot duration which only authors one block per slot.
 sync-backing = []
 # A runtime with 6s slot duration which only authors one block per slot.
 async-backing = []
+# A runtime that uses the v3 candidate descriptor.
+v3-descriptor = []
+# A runtime with an 18s slot duration.
+slot-duration-18s = ["increment-spec-version"]
 # An elastic scaling runtime with 12s slots.
 elastic-scaling-12s-slot = []
 runtime-benchmarks = [
@@ -120,10 +136,12 @@ runtime-benchmarks = [
 	"pezcumulus-pezpallet-weight-reclaim/runtime-benchmarks",
 	"pezcumulus-primitives-aura/runtime-benchmarks",
 	"pezcumulus-primitives-core/runtime-benchmarks",
+	"pezcumulus-primitives-storage-weight-reclaim/runtime-benchmarks",
 	"pezframe-executive/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system-rpc-runtime-api/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
 	"pezpallet-aura/runtime-benchmarks",
 	"pezpallet-authorship/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
@@ -133,6 +151,7 @@ runtime-benchmarks = [
 	"pezpallet-sudo/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
 	"pezpallet-transaction-payment/runtime-benchmarks",
+	"pezpallet-utility/runtime-benchmarks",
 	"pezsp-api/runtime-benchmarks",
 	"pezsp-block-builder/runtime-benchmarks",
 	"pezsp-consensus-aura/runtime-benchmarks",
@@ -152,9 +171,11 @@ try-runtime = [
 	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
 	"pezcumulus-pezpallet-weight-reclaim/try-runtime",
 	"pezcumulus-primitives-core/try-runtime",
+	"pezcumulus-primitives-storage-weight-reclaim/try-runtime",
 	"pezframe-executive/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
+	"pezkuwi-primitives/try-runtime",
 	"pezpallet-aura/try-runtime",
 	"pezpallet-authorship/try-runtime",
 	"pezpallet-balances/try-runtime",
@@ -164,6 +185,7 @@ try-runtime = [
 	"pezpallet-sudo/try-runtime",
 	"pezpallet-timestamp/try-runtime",
 	"pezpallet-transaction-payment/try-runtime",
+	"pezpallet-utility/try-runtime",
 	"pezsp-api/try-runtime",
 	"pezsp-block-builder/try-runtime",
 	"pezsp-consensus-aura/try-runtime",

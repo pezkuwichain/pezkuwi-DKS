@@ -31,7 +31,7 @@
 //! At the time of writing, the inherent and consensus checks in most Pezcumulus runtimes
 //! are only performed during teyrchain validation, not full node block execution.
 //!
-//! See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/238> for details.
+//! See <https://github.com/pezkuwichain/pezkuwi-DKS/issues/238> for details.
 
 use pezsp_consensus::error::Error as ConsensusError;
 use pezsp_runtime::traits::Block as BlockT;

@@ -149,7 +149,7 @@ where
 
 			let best_indicator = if n.is_new_best { "🏆" } else { "🆕" };
 			info!(
-				target: "bizinikiwi",
+				target: "substrate",
 				"{best_indicator} Imported #{} ({} → {})",
 				style(n.header.number()).white().bold(),
 				PrintFullHashOnDebugLogging(n.header.parent_hash()),

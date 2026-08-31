@@ -32,7 +32,7 @@ mod benchmarks {
 	use super::*;
 
 	#[benchmark]
-	fn initialize_pallet_grow(n: Linear<0, 1_000>) -> Result<(), BenchmarkError> {
+	fn initialize_pezpallet_grow(n: Linear<0, 1_000>) -> Result<(), BenchmarkError> {
 		#[block]
 		{
 			Pezpallet::<T>::initialize_pallet(RawOrigin::Root.into(), n, None)?;
@@ -44,7 +44,7 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn initialize_pallet_shrink(n: Linear<0, 1_000>) -> Result<(), BenchmarkError> {
+	fn initialize_pezpallet_shrink(n: Linear<0, 1_000>) -> Result<(), BenchmarkError> {
 		Pezpallet::<T>::initialize_pallet(RawOrigin::Root.into(), n, None)?;
 
 		#[block]

@@ -36,7 +36,7 @@ use pezbp_runtime::BasicOperatingMode;
 use pezframe_support::{
 	assert_ok,
 	dispatch::GetDispatchInfo,
-	traits::{Contains, Get, OnFinalize, OnInitialize, OriginTrait},
+	traits::{fungible::Mutate, Contains, Get, OnFinalize, OnInitialize, OriginTrait},
 };
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
 use pezsp_runtime::{traits::Zero, AccountId32};
@@ -48,7 +48,7 @@ use teyrchains_runtimes_test_utils::{
 use xcm::{latest::prelude::*, AlwaysLatest};
 use xcm_builder::DispatchBlobError;
 use xcm_executor::{
-	traits::{ConvertLocation, TransactAsset, WeightBounds},
+	traits::{ConvertLocation, WeightBounds},
 	XcmExecutor,
 };
 
@@ -65,7 +65,7 @@ pub(crate) mod bridges_prelude {
 }
 
 // Re-export test-case
-pub use for_pallet_xcm_bridge_hub::open_and_close_bridge_works;
+pub use for_pezpallet_xcm_bridge_hub::open_and_close_bridge_works;
 
 // Re-export test_case from assets
 pub use asset_test_pezutils::include_teleports_for_native_asset_works;
@@ -142,7 +142,7 @@ pub fn initialize_bridge_by_governance_works<Runtime, GrandpaPalletInstance>(
 
 /// Test-case makes sure that `Runtime` can change bridge GRANDPA pezpallet operating mode via
 /// governance-like call.
-pub fn change_bridge_grandpa_pallet_mode_by_governance_works<Runtime, GrandpaPalletInstance>(
+pub fn change_bridge_grandpa_pezpallet_mode_by_governance_works<Runtime, GrandpaPalletInstance>(
 	collator_session_key: CollatorSessionKeys<Runtime>,
 	runtime_para_id: u32,
 	governance_origin: GovernanceOrigin<RuntimeOriginOf<Runtime>>,
@@ -193,7 +193,10 @@ pub fn change_bridge_grandpa_pallet_mode_by_governance_works<Runtime, GrandpaPal
 
 /// Test-case makes sure that `Runtime` can change bridge teyrchains pezpallet operating mode via
 /// governance-like call.
-pub fn change_bridge_teyrchains_pallet_mode_by_governance_works<Runtime, TeyrchainsPalletInstance>(
+pub fn change_bridge_teyrchains_pezpallet_mode_by_governance_works<
+	Runtime,
+	TeyrchainsPalletInstance,
+>(
 	collator_session_key: CollatorSessionKeys<Runtime>,
 	runtime_para_id: u32,
 	governance_origin: GovernanceOrigin<RuntimeOriginOf<Runtime>>,
@@ -246,7 +249,7 @@ pub fn change_bridge_teyrchains_pallet_mode_by_governance_works<Runtime, Teyrcha
 
 /// Test-case makes sure that `Runtime` can change bridge messaging pezpallet operating mode via
 /// governance-like call.
-pub fn change_bridge_messages_pallet_mode_by_governance_works<Runtime, MessagesPalletInstance>(
+pub fn change_bridge_messages_pezpallet_mode_by_governance_works<Runtime, MessagesPalletInstance>(
 	collator_session_key: CollatorSessionKeys<Runtime>,
 	runtime_para_id: u32,
 	governance_origin: GovernanceOrigin<RuntimeOriginOf<Runtime>>,
@@ -315,23 +318,25 @@ pub fn handle_export_message_from_system_teyrchain_to_outbound_queue_works<
 	Runtime,
 	XcmConfig,
 	MessagesPalletInstance,
+	LocationToAccountId,
 >(
 	collator_session_key: CollatorSessionKeys<Runtime>,
 	runtime_para_id: u32,
 	sibling_teyrchain_id: u32,
-	unwrap_pallet_bridge_messages_event: Box<
+	unwrap_pezpallet_bridge_messages_event: Box<
 		dyn Fn(
 			Vec<u8>,
 		) -> Option<pezpallet_bridge_messages::Event<Runtime, MessagesPalletInstance>>,
 	>,
 	export_message_instruction: fn() -> Instruction<XcmConfig::RuntimeCall>,
-	existential_deposit: Option<Asset>,
+	_existential_deposit: Option<Asset>,
 	maybe_paid_export_message: Option<Asset>,
 	prepare_configuration: impl Fn() -> LaneIdOf<Runtime, MessagesPalletInstance>,
 ) where
 	Runtime: BasicTeyrchainRuntime + BridgeMessagesConfig<MessagesPalletInstance>,
 	XcmConfig: xcm_executor::Config,
 	MessagesPalletInstance: 'static,
+	LocationToAccountId: ConvertLocation<AccountIdOf<Runtime>>,
 {
 	assert_ne!(runtime_para_id, sibling_teyrchain_id);
 	let sibling_teyrchain_location = Location::new(1, [Teyrchain(sibling_teyrchain_id)]);
@@ -354,22 +359,25 @@ pub fn handle_export_message_from_system_teyrchain_to_outbound_queue_works<
 
 		// prepare `ExportMessage`
 		let xcm = if let Some(fee) = maybe_paid_export_message {
-			// deposit ED to origin (if needed)
-			if let Some(ed) = existential_deposit {
-				XcmConfig::AssetTransactor::deposit_asset(
-					&ed,
-					&sibling_teyrchain_location,
-					Some(&XcmContext::with_message_id([0; 32])),
-				)
-				.expect("deposited ed");
-			}
-			// deposit fee to origin
-			XcmConfig::AssetTransactor::deposit_asset(
-				&fee,
-				&sibling_teyrchain_location,
-				Some(&XcmContext::with_message_id([0; 32])),
-			)
-			.expect("deposited fee");
+			// Pre-fund the sibling teyrchain's sovereign account with the fee
+			// We need to convert the location to an account and mint funds
+			let sibling_account =
+				LocationToAccountId::convert_location(&sibling_teyrchain_location)
+					.expect("valid location conversion");
+
+			// Extract the amount from the fee asset
+			let fee_amount = if let Fungibility::Fungible(amount) = fee.fun {
+				amount
+			} else {
+				panic!("Expected fungible asset for fee");
+			};
+
+			// Mint the fee amount to the sibling account using the runtime's Balances pezpallet
+			let balance_amount: BalanceOf<Runtime> = fee_amount
+				.try_into()
+				.unwrap_or_else(|_| panic!("Failed to convert fee amount to balance"));
+			<pezpallet_balances::Pezpallet<Runtime>>::mint_into(&sibling_account, balance_amount)
+				.expect("minting should succeed");
 
 			Xcm(vec![
 				WithdrawAsset(Assets::from(vec![fee.clone()])),
@@ -410,7 +418,7 @@ pub fn handle_export_message_from_system_teyrchain_to_outbound_queue_works<
 		// check events
 		let mut events = <pezframe_system::Pezpallet<Runtime>>::events()
 			.into_iter()
-			.filter_map(|e| unwrap_pallet_bridge_messages_event(e.event.encode()));
+			.filter_map(|e| unwrap_pezpallet_bridge_messages_event(e.event.encode()));
 		assert!(
 			events.any(|e| matches!(e, pezpallet_bridge_messages::Event::MessageAccepted { .. }))
 		);
@@ -436,10 +444,10 @@ pub fn message_dispatch_routing_works<
 	slot_durations: SlotDurations,
 	runtime_para_id: u32,
 	sibling_teyrchain_id: u32,
-	unwrap_pezcumulus_pezpallet_teyrchain_system_event: Box<
+	unwrap_cumulus_pezpallet_teyrchain_system_event: Box<
 		dyn Fn(Vec<u8>) -> Option<pezcumulus_pezpallet_teyrchain_system::Event<Runtime>>,
 	>,
-	unwrap_pezcumulus_pezpallet_xcmp_queue_event: Box<
+	unwrap_cumulus_pezpallet_xcmp_queue_event: Box<
 		dyn Fn(Vec<u8>) -> Option<pezcumulus_pezpallet_xcmp_queue::Event<Runtime>>,
 	>,
 	prepare_configuration: impl Fn(),
@@ -505,7 +513,7 @@ pub fn message_dispatch_routing_works<
 		// check events - UpwardMessageSent
 		let mut events = <pezframe_system::Pezpallet<Runtime>>::events()
 			.into_iter()
-			.filter_map(|e| unwrap_pezcumulus_pezpallet_teyrchain_system_event(e.event.encode()));
+			.filter_map(|e| unwrap_cumulus_pezpallet_teyrchain_system_event(e.event.encode()));
 		assert!(events.any(|e| matches!(
 			e,
 			pezcumulus_pezpallet_teyrchain_system::Event::UpwardMessageSent { .. }
@@ -540,7 +548,7 @@ pub fn message_dispatch_routing_works<
 		assert_eq!(
 			<pezframe_system::Pezpallet<Runtime>>::events()
 				.into_iter()
-				.filter_map(|e| unwrap_pezcumulus_pezpallet_xcmp_queue_event(e.event.encode()))
+				.filter_map(|e| unwrap_cumulus_pezpallet_xcmp_queue_event(e.event.encode()))
 				.count(),
 			0
 		);
@@ -568,7 +576,7 @@ pub fn message_dispatch_routing_works<
 		// check events - XcmpMessageSent
 		let mut events = <pezframe_system::Pezpallet<Runtime>>::events()
 			.into_iter()
-			.filter_map(|e| unwrap_pezcumulus_pezpallet_xcmp_queue_event(e.event.encode()));
+			.filter_map(|e| unwrap_cumulus_pezpallet_xcmp_queue_event(e.event.encode()));
 		assert!(events
 			.any(|e| matches!(e, pezcumulus_pezpallet_xcmp_queue::Event::XcmpMessageSent { .. })));
 	})
@@ -662,9 +670,9 @@ where
 	estimated_fee.into()
 }
 
-pub(crate) mod for_pallet_xcm_bridge_hub {
+pub(crate) mod for_pezpallet_xcm_bridge_hub {
 	use super::*;
-	use crate::test_cases::helpers::for_pallet_xcm_bridge_hub::{
+	use crate::test_cases::helpers::for_pezpallet_xcm_bridge_hub::{
 		close_bridge, ensure_opened_bridge, open_bridge_with_extrinsic,
 	};
 	pub(crate) use pezpallet_xcm_bridge_hub::{

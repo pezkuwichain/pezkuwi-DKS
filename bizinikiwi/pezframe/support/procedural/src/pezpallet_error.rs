@@ -19,7 +19,7 @@ use pezframe_support_procedural_tools::generate_access_from_frame_or_crate;
 use quote::ToTokens;
 
 // Derive `PalletError`
-pub fn derive_pallet_error(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn derive_pezpallet_error(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 	let syn::DeriveInput { ident: name, generics, data, .. } = match syn::parse(input) {
 		Ok(input) => input,
 		Err(e) => return e.to_compile_error().into(),

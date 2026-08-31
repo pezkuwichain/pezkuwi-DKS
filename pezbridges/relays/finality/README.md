@@ -4,7 +4,7 @@ The finality relay is able to work with different finality engines. In the moder
 and BEEFY. Let's talk about GRANDPA here, because BEEFY relay and bridge BEEFY pezpallet are in development.
 
 In general, the relay works as follows: it connects to the source and target chain. The source chain must have the
-[GRANDPA gadget](https://github.com/pezkuwichain/finality-grandpa) running (so it can't be a teyrchain). The target
+[GRANDPA gadget](https://github.com/paritytech/finality-grandpa) running (so it can't be a teyrchain). The target
 chain must have the [bridge GRANDPA pezpallet](../../modules/grandpa/) deployed at its runtime. The relay subscribes
 to the GRANDPA finality notifications at the source chain and when the new justification is received, it is submitted
 to the pezpallet at the target chain.

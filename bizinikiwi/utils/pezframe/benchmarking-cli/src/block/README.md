@@ -12,7 +12,7 @@ In the following it will be explained once for PezkuwiChain and once for Bizinik
 
 Suppose you either have a synced PezkuwiChain node or downloaded a snapshot from [Polkachu]. This example uses a pruned
 ParityDB snapshot from the 2022-4-19 with the last block being 9939462. For pruned snapshots you need to know the number
-of the last block (to be improved in [this GitHub issue](https://github.com/pezkuwichain/pezkuwi-sdk/issues/6)). Pruned snapshots normally store the last 256 blocks, archive nodes can use
+of the last block (to be improved in [this GitHub issue](https://github.com/pezkuwichain/pezkuwi-DKS/issues/6)). Pruned snapshots normally store the last 256 blocks, archive nodes can use
 any block range.
 
 In this example we will benchmark just the last 10 blocks:
@@ -106,7 +106,7 @@ License: Apache-2.0
 <!-- LINKS -->
 
 [Polkachu]: https://polkachu.com/snapshots
-[pezkuwi#5192]: https://github.com/pezkuwichain/pezkuwi-sdk/issues/154
+[pezkuwi#5192]: https://github.com/pezkuwichain/pezkuwi-DKS/issues/154
 
 [`--db`]: ../shared/README.md#arguments
 [`--pruning`]: ../shared/README.md#arguments

@@ -83,28 +83,28 @@ impl fmt::Debug for Keypair {
 impl From<litep2p_ed25519::Keypair> for Keypair {
 	fn from(kp: litep2p_ed25519::Keypair) -> Self {
 		Self::try_from_bytes(&mut kp.to_bytes())
-			.expect("ed25519_dalek in bizinikiwi & litep2p to use the same format")
+			.expect("ed25519_dalek in substrate & litep2p to use the same format")
 	}
 }
 
 impl From<Keypair> for litep2p_ed25519::Keypair {
 	fn from(kp: Keypair) -> Self {
 		Self::try_from_bytes(&mut kp.to_bytes())
-			.expect("ed25519_dalek in bizinikiwi & litep2p to use the same format")
+			.expect("ed25519_dalek in substrate & litep2p to use the same format")
 	}
 }
 
 impl From<libp2p_ed25519::Keypair> for Keypair {
 	fn from(kp: libp2p_ed25519::Keypair) -> Self {
 		Self::try_from_bytes(&mut kp.to_bytes())
-			.expect("ed25519_dalek in bizinikiwi & libp2p to use the same format")
+			.expect("ed25519_dalek in substrate & libp2p to use the same format")
 	}
 }
 
 impl From<Keypair> for libp2p_ed25519::Keypair {
 	fn from(kp: Keypair) -> Self {
 		Self::try_from_bytes(&mut kp.to_bytes())
-			.expect("ed25519_dalek in bizinikiwi & libp2p to use the same format")
+			.expect("ed25519_dalek in substrate & libp2p to use the same format")
 	}
 }
 
@@ -192,28 +192,28 @@ impl PublicKey {
 impl From<litep2p_ed25519::PublicKey> for PublicKey {
 	fn from(k: litep2p_ed25519::PublicKey) -> Self {
 		Self::try_from_bytes(&k.to_bytes())
-			.expect("ed25519_dalek in bizinikiwi & litep2p to use the same format")
+			.expect("ed25519_dalek in substrate & litep2p to use the same format")
 	}
 }
 
 impl From<PublicKey> for litep2p_ed25519::PublicKey {
 	fn from(k: PublicKey) -> Self {
 		Self::try_from_bytes(&k.to_bytes())
-			.expect("ed25519_dalek in bizinikiwi & litep2p to use the same format")
+			.expect("ed25519_dalek in substrate & litep2p to use the same format")
 	}
 }
 
 impl From<libp2p_ed25519::PublicKey> for PublicKey {
 	fn from(k: libp2p_ed25519::PublicKey) -> Self {
 		Self::try_from_bytes(&k.to_bytes())
-			.expect("ed25519_dalek in bizinikiwi & libp2p to use the same format")
+			.expect("ed25519_dalek in substrate & libp2p to use the same format")
 	}
 }
 
 impl From<PublicKey> for libp2p_ed25519::PublicKey {
 	fn from(k: PublicKey) -> Self {
 		Self::try_from_bytes(&k.to_bytes())
-			.expect("ed25519_dalek in bizinikiwi & libp2p to use the same format")
+			.expect("ed25519_dalek in substrate & libp2p to use the same format")
 	}
 }
 

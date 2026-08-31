@@ -24,7 +24,7 @@ use crate::{
 	disputes, dmp, hrmp,
 	paras::{self, UpgradeStrategy},
 	scheduler,
-	shared::{self, AllowedRelayParentsTracker},
+	shared::{self, AllowedSchedulingParentsTracker},
 	util::make_persisted_validation_data_with_parent,
 };
 use alloc::{
@@ -219,15 +219,7 @@ impl QueueFootprinter for () {
 /// Can be extended to serve further use-cases besides just UMP. Is stored in storage, so any change
 /// to existing values will require a migration.
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	MaxEncodedLen,
-	Eq,
-	PartialEq,
-	RuntimeDebug,
-	TypeInfo,
+	Encode, Decode, DecodeWithMemTracking, Clone, MaxEncodedLen, Eq, PartialEq, Debug, TypeInfo,
 )]
 pub enum AggregateMessageOrigin {
 	/// Inbound upward message.
@@ -240,15 +232,7 @@ pub enum AggregateMessageOrigin {
 /// It is written in verbose form since future variants like `Here` and `Bridged` are already
 /// foreseeable.
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	MaxEncodedLen,
-	Eq,
-	PartialEq,
-	RuntimeDebug,
-	TypeInfo,
+	Encode, Decode, DecodeWithMemTracking, Clone, MaxEncodedLen, Eq, PartialEq, Debug, TypeInfo,
 )]
 pub enum UmpQueueId {
 	/// The message originated from this teyrchain.
@@ -334,8 +318,10 @@ pub mod pezpallet {
 		/// The candidate's relay-parent was not allowed. Either it was
 		/// not recent enough or it didn't advance based on the last teyrchain block.
 		DisallowedRelayParent,
+		/// The candidate's scheduling-parent was not allowed.
+		DisallowedSchedulingParent,
 		/// Failed to compute group index for the core: either it's out of bounds
-		/// or the relay parent doesn't belong to the current session.
+		/// or the scheduling parent doesn't belong to the current session.
 		InvalidAssignment,
 		/// Invalid group index in core assignment.
 		InvalidGroupIndex,
@@ -631,10 +617,15 @@ impl<T: Config> Pezpallet<T> {
 	///
 	/// Candidates of the same paraid should be sorted according to their dependency order (they
 	/// should form a chain). If this condition is not met, this function will return an error.
-	/// (This really should not happen here, if the candidates were properly sanitised in
+	/// (This really should not happen here, if the candidates were properly sanitized in
 	/// paras_inherent).
+	///
+	/// Precondition: all candidates must have passed `sanitize_backed_candidates` in
+	/// `paras_inherent`, which enforces version gating, relay/scheduling parent validity,
+	/// and session restrictions via `check_descriptor_version_and_signals`.
+	/// See the pipeline documentation on `sanitize_backed_candidates` for details.
 	pub(crate) fn process_candidates<GV>(
-		allowed_relay_parents: &AllowedRelayParentsTracker<T::Hash, BlockNumberFor<T>>,
+		allowed_scheduling_parents: &AllowedSchedulingParentsTracker<T::Hash, BlockNumberFor<T>>,
 		candidates: &BTreeMap<ParaId, Vec<(BackedCandidate<T::Hash>, CoreIndex)>>,
 		group_validators: GV,
 	) -> Result<
@@ -670,19 +661,22 @@ impl<T: Config> Pezpallet<T> {
 				// The previous context is None, as it's already checked during candidate
 				// sanitization.
 				let check_ctx = CandidateCheckContext::<T>::new(None);
-				let relay_parent_number = check_ctx.verify_backed_candidate(
-					&allowed_relay_parents,
-					candidate.candidate(),
-					latest_head_data.clone(),
-				)?;
+				let relay_parent_number = check_ctx
+					.verify_backed_candidate(candidate.candidate(), latest_head_data.clone())?;
 
-				// The candidate based upon relay parent `N` should be backed by a
+				let scheduling_parent = candidate.descriptor().scheduling_parent();
+
+				let (_, scheduling_parent_number) = allowed_scheduling_parents
+					.acquire_info(scheduling_parent)
+					.ok_or(Error::<T>::DisallowedSchedulingParent)?;
+
+				// The candidate based upon scheduling parent `N` should be backed by a
 				// group assigned to core at block `N + 1`. Thus,
-				// `relay_parent_number + 1` will always land in the current
+				// `scheduling_parent_number + 1` will always land in the current
 				// session.
 				let group_idx = scheduler::Pezpallet::<T>::group_assigned_to_core(
 					*core,
-					relay_parent_number + One::one(),
+					scheduling_parent_number + One::one(),
 				)
 				.ok_or_else(|| {
 					log::warn!(
@@ -769,7 +763,7 @@ impl<T: Config> Pezpallet<T> {
 
 		let mut backers = bitvec::bitvec![u8, BitOrderLsb0; 0; validators.len()];
 		let signing_context = SigningContext {
-			parent_hash: backed_candidate.descriptor().relay_parent(),
+			parent_hash: backed_candidate.candidate().descriptor.scheduling_parent(),
 			session_index: shared::CurrentSessionIndex::<T>::get(),
 		};
 
@@ -1202,7 +1196,7 @@ impl<T: Config> OnQueueChanged<AggregateMessageOrigin> for Pezpallet<T> {
 		};
 		let QueueFootprint { storage: Footprint { count, size }, .. } = fp;
 		let (count, size) = (count.saturated_into(), size.saturated_into());
-		// TODO paritytech/pezkuwi#6283: Remove all usages of `relay_dispatch_queue_size`
+		// TODO paritytech/polkadot#6283: Remove all usages of `relay_dispatch_queue_size`
 		#[allow(deprecated)]
 		well_known_keys::relay_dispatch_queue_size_typed(para).set((count, size));
 
@@ -1229,26 +1223,49 @@ impl<T: Config> CandidateCheckContext<T> {
 	///
 	/// Assures:
 	///  * relay-parent in-bounds
+	///  * persisted validation data hash matches
 	///  * code hash of commitments matches current code hash
 	///  * para head in the descriptor and commitments match
+	///
+	/// Precondition: candidates must have passed `check_descriptor_version_and_signals`
+	/// (in `paras_inherent`) which enforces session restrictions:
+	///  * V1/V2: relay parent is in the current session
+	///  * V2: scheduling_session == current_session (so session_index() == current_session)
+	///  * V3: relay parent exists in the session indicated by session_index()
 	///
 	/// Returns the relay-parent block number.
 	pub(crate) fn verify_backed_candidate(
 		&self,
-		allowed_relay_parents: &AllowedRelayParentsTracker<T::Hash, BlockNumberFor<T>>,
 		backed_candidate_receipt: &CommittedCandidateReceipt<<T as pezframe_system::Config>::Hash>,
 		parent_head_data: HeadData,
 	) -> Result<BlockNumberFor<T>, Error<T>> {
 		let para_id = backed_candidate_receipt.descriptor.para_id();
 		let relay_parent = backed_candidate_receipt.descriptor.relay_parent();
 
+		// For V1: session_index() returns None, falls back to current session.
+		// For V2: session_index() returns the embedded value, which
+		//   check_descriptor_version_and_signals already verified == current session.
+		// For V3: session_index() returns the embedded value, which may differ from
+		//   current session (cross-session relay parents).
+		let session_index = backed_candidate_receipt
+			.descriptor
+			.session_index()
+			.unwrap_or_else(|| shared::CurrentSessionIndex::<T>::get());
+
 		// Check that the relay-parent is one of the allowed relay-parents.
 		let (state_root, relay_parent_number) = {
-			match allowed_relay_parents.acquire_info(relay_parent, self.prev_context) {
+			match shared::Pezpallet::<T>::get_relay_parent_info(session_index, relay_parent) {
 				None => return Err(Error::<T>::DisallowedRelayParent),
-				Some((info, relay_parent_number)) => (info.state_root, relay_parent_number),
+				Some(info) => (info.state_root, info.number),
 			}
 		};
+
+		// Candidate's relay parent cannot move backwards.
+		if let Some(prev_context) = self.prev_context {
+			if relay_parent_number < prev_context {
+				return Err(Error::<T>::DisallowedRelayParent);
+			}
+		}
 
 		{
 			let persisted_validation_data = make_persisted_validation_data_with_parent::<T>(

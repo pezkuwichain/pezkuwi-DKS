@@ -25,7 +25,7 @@ use pezframe_support::{
 	CloneNoBound, DefaultNoBound, EqNoBound, PartialEqNoBound,
 };
 use pezframe_system::{CheckNonce, ValidNonceInfo};
-use pezsp_core::twox_64;
+use pezsp_crypto_hashing::twox_64;
 use pezsp_runtime::{
 	traits::{DispatchInfoOf, TransactionExtension, ValidateResult},
 	transaction_validity::{InvalidTransaction, TransactionValidityError, ValidTransaction},

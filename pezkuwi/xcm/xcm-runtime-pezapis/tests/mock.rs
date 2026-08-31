@@ -335,7 +335,6 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTrap = ();
 	type AssetLocker = ();
 	type AssetExchanger = MockAssetExchanger;
-	type AssetClaims = ();
 	type SubscriptionService = ();
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
@@ -375,10 +374,14 @@ impl xcm_executor::traits::AssetExchange for MockAssetExchanger {
 		if let Some(give_asset) = give.fungible.get(&AssetId(HereLocation::get())) {
 			if let Some(want_asset) = want.get(0) {
 				if want_asset.id.0 == usdt_location {
-					// Convert native asset to USDT at 1:2 rate
-					let usdt_amount = give_asset.saturating_mul(2);
-					let mut result = xcm_executor::AssetsInHolding::new();
-					result.subsume((AssetId(usdt_location), usdt_amount).into());
+					// Convert native asset to USDT at 1:2 rate. The holding carries credits
+					// rather than amounts now, so the figure comes off the imbalance and a
+					// fresh one is built for the result.
+					let usdt_amount = give_asset.amount().saturating_mul(2);
+					let result = xcm_executor::AssetsInHolding::new_from_fungible_credit(
+						AssetId(usdt_location),
+						Box::new(xcm_executor::test_helpers::MockCredit(usdt_amount)),
+					);
 					return Ok(result);
 				}
 			}

@@ -54,7 +54,7 @@ use pezsp_application_crypto::{ecdsa, ed25519, sr25519, RuntimeAppPublic};
 #[cfg(feature = "bls-experimental")]
 use pezsp_application_crypto::{bls381, ecdsa_bls381};
 
-use pezsp_core::{OpaqueMetadata, RuntimeDebug};
+use pezsp_core::OpaqueMetadata;
 use pezsp_trie::{
 	trie_types::{TrieDBBuilder, TrieDBMutBuilderV1},
 	PrefixedMemoryDB, StorageProof,
@@ -140,7 +140,7 @@ pub fn native_version() -> NativeVersion {
 }
 
 /// Transfer data extracted from Extrinsic containing `Balances::transfer_allow_death`.
-#[derive(Clone, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo)]
+#[derive(Clone, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, Debug, TypeInfo)]
 pub struct TransferData {
 	pub from: AccountId,
 	pub to: AccountId,
@@ -275,9 +275,7 @@ pub type Executive = pezframe_executive::Executive<
 	AllPalletsWithSystem,
 >;
 
-#[derive(
-	Copy, Clone, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo,
-)]
+#[derive(Copy, Clone, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, Debug, TypeInfo)]
 pub struct CheckBizinikiwiCall;
 
 impl pezsp_runtime::traits::Printable for CheckBizinikiwiCall {
@@ -366,7 +364,12 @@ parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 
 	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 
 	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
@@ -748,8 +751,11 @@ impl_runtime_apis! {
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(_: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(None)
+		fn generate_session_keys(
+			owner: Vec<u8>,
+			seed: Option<Vec<u8>>,
+		) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(
@@ -1191,7 +1197,7 @@ mod tests {
 		// than the heap.
 		let mut runtime_api = client.runtime_api();
 		// This is currently required to allocate the 1024k of memory as configured above.
-		runtime_api.set_call_context(CallContext::Onchain);
+		runtime_api.set_call_context(CallContext::Onchain { import: false });
 		let ret = runtime_api.vec_with_capacity(best_hash, 1048576);
 		assert!(ret.is_err());
 

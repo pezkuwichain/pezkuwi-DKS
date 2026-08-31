@@ -18,9 +18,9 @@
 //! Precompiles added to the test runtime.
 
 use crate::{
-	exec::{ErrorOrigin, ExecError},
+	Config, DispatchError, ExecOrigin as Origin, ReentrancyProtection, U256, Weight,
+	exec::{CallResources, ErrorOrigin, ExecError},
 	precompiles::{AddressMatcher, Error, Ext, ExtWithInfo, Precompile, Token},
-	Config, DispatchError, ExecOrigin as Origin, Weight, U256,
 };
 use alloc::vec::Vec;
 use alloy_core::{
@@ -93,18 +93,18 @@ impl<T: Config> Precompile for NoInfo<T> {
 				Err(Error::Error(DispatchError::Other("precompile failed").into()))
 			},
 			INoInfoCalls::consumeMaxGas(INoInfo::consumeMaxGasCall {}) => {
-				env.gas_meter_mut().charge(MaxGasToken)?;
+				env.pezframe_meter_mut().charge_weight_token(MaxGasToken)?;
 				Ok(Vec::new())
 			},
 			INoInfoCalls::callRuntime(INoInfo::callRuntimeCall { call }) => {
 				let origin = env.caller();
-				let frame_origin = match origin {
+				let pezframe_origin = match origin {
 					Origin::Root => RawOrigin::Root.into(),
 					Origin::Signed(account_id) => RawOrigin::Signed(account_id.clone()).into(),
 				};
 
 				let call = <T as Config>::RuntimeCall::decode(&mut &call[..]).unwrap();
-				match call.dispatch(frame_origin) {
+				match call.dispatch(pezframe_origin) {
 					Ok(_) => Ok(Vec::new()),
 					Err(e) => {
 						Err(Error::Error(ExecError { error: e.error, origin: ErrorOrigin::Caller }))
@@ -113,12 +113,11 @@ impl<T: Config> Precompile for NoInfo<T> {
 			},
 			INoInfoCalls::passData(INoInfo::passDataCall { inputLen }) => {
 				env.call(
-					Weight::MAX,
-					U256::MAX,
+					&CallResources::from_weight_and_deposit(Weight::MAX, U256::MAX),
 					&env.address(),
 					0.into(),
 					vec![42; *inputLen as usize],
-					true,
+					ReentrancyProtection::AllowReentry,
 					false,
 				)?;
 				Ok(Vec::new())

@@ -250,8 +250,8 @@ impl<C: ChainWithGrandpa> Engine<C> for Grandpa<C> {
 		source_client: impl Client<C>,
 	) -> Result<Self::InitializationData, Error<HashOf<C>, BlockNumberOf<C>>> {
 		// In ideal world we just need to get best finalized header and then to read GRANDPA
-		// authorities set (`pezpallet_grandpa::CurrentSetId` + `GrandpaApi::grandpa_authorities()`)
-		// at this header.
+		// authorities set (`pezpallet_grandpa::CurrentSetId` + `GrandpaApi::grandpa_authorities()`) at
+		// this header.
 		//
 		// But now there are problems with this approach - `CurrentSetId` may return invalid value.
 		// So here we're waiting for the next justification, read the authorities set and then try

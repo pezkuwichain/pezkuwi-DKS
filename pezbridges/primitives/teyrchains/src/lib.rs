@@ -30,7 +30,7 @@ use pezbp_runtime::{
 };
 use pezframe_support::{weights::Weight, Blake2_128Concat, Twox64Concat};
 use pezsp_core::storage::StorageKey;
-use pezsp_runtime::{traits::Header as HeaderT, RuntimeDebug};
+use pezsp_runtime::traits::Header as HeaderT;
 use pezsp_std::{marker::PhantomData, prelude::*};
 use scale_info::TypeInfo;
 
@@ -44,7 +44,7 @@ pub type RelayBlockHasher = pezbp_pezkuwi_core::Hasher;
 mod call_info;
 
 /// Best known teyrchain head hash.
-#[derive(Clone, Decode, Encode, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Decode, Encode, MaxEncodedLen, PartialEq, Debug, TypeInfo)]
 pub struct BestParaHeadHash {
 	/// Number of relay block where this head has been read.
 	///
@@ -60,7 +60,7 @@ pub struct BestParaHeadHash {
 }
 
 /// Best known teyrchain head as it is stored in the runtime storage.
-#[derive(Decode, Encode, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Decode, Encode, MaxEncodedLen, PartialEq, Debug, TypeInfo)]
 pub struct ParaInfo {
 	/// Best known teyrchain head hash.
 	pub best_head_hash: BestParaHeadHash,
@@ -72,11 +72,11 @@ pub struct ParaInfo {
 ///
 /// The head is stored by the `paras` pezpallet in the `Heads` map.
 pub fn teyrchain_head_storage_key_at_source(
-	paras_pallet_name: &str,
+	paras_pezpallet_name: &str,
 	para_id: ParaId,
 ) -> StorageKey {
 	pezbp_runtime::storage_map_final_key::<Twox64Concat>(
-		paras_pallet_name,
+		paras_pezpallet_name,
 		"Heads",
 		&para_id.encode(),
 	)
@@ -96,8 +96,7 @@ impl StorageMapKeyProvider for ParasInfoKeyProvider {
 
 /// Can be use to access the runtime storage key of the teyrchain head at the target chain.
 ///
-/// The head is stored by the `pezpallet-bridge-teyrchains` pezpallet in the `ImportedParaHeads`
-/// map.
+/// The head is stored by the `pezpallet-bridge-teyrchains` pezpallet in the `ImportedParaHeads` map.
 pub struct ImportedParaHeadsKeyProvider;
 impl StorageDoubleMapKeyProvider for ImportedParaHeadsKeyProvider {
 	const MAP_NAME: &'static str = "ImportedParaHeads";
@@ -113,9 +112,8 @@ impl StorageDoubleMapKeyProvider for ImportedParaHeadsKeyProvider {
 /// `pezbp_runtime::StoredHeaderData` structure.
 ///
 /// We do not know exact structure of the teyrchain head, so we always store encoded version
-/// of the `pezbp_runtime::StoredHeaderData`. It is only decoded when we talk about specific
-/// teyrchain.
-#[derive(Clone, Decode, Encode, PartialEq, RuntimeDebug, TypeInfo)]
+/// of the `pezbp_runtime::StoredHeaderData`. It is only decoded when we talk about specific teyrchain.
+#[derive(Clone, Decode, Encode, PartialEq, Debug, TypeInfo)]
 pub struct ParaStoredHeaderData(pub Vec<u8>);
 
 impl ParaStoredHeaderData {

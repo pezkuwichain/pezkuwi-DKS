@@ -188,8 +188,7 @@ macro_rules! benchmarks {
 
 /// Same as [`benchmarks`] but for instantiable module.
 ///
-/// NOTE: For pezpallet declared with [`pezframe_support::pezpallet`], use
-/// [`benchmarks_instance_pallet`].
+/// NOTE: For pezpallet declared with [`pezframe_support::pezpallet`], use [`benchmarks_instance_pallet`].
 #[macro_export]
 macro_rules! benchmarks_instance {
 	(
@@ -1086,9 +1085,18 @@ macro_rules! impl_benchmark {
 					$crate::benchmarking::commit_db();
 
 					// Access all whitelisted keys to get them into the proof recorder since the
-					// recorder does now have a whitelist.
-					for key in &whitelist {
-						$crate::__private::storage::unhashed::get_raw(&key.key);
+					// recorder does not have a whitelist.
+					// NOTE: We read from the global whitelist
+					// because the benchmark setup code may have added additional keys via
+					// add_to_whitelist() or add_to_whitelist_child().
+					let current_whitelist = $crate::benchmarking::get_whitelist();
+					for key in &current_whitelist {
+						if let Some(child_trie_key) = &key.child_trie_key {
+							let child_info = $crate::__private::storage::ChildInfo::new_default(child_trie_key);
+							$crate::__private::storage::child::get_raw(&child_info, &key.key);
+						} else {
+							$crate::__private::storage::unhashed::get_raw(&key.key);
+						}
 					}
 
 					// Reset the read/write counter so we don't count operations in the setup process.
@@ -1788,7 +1796,7 @@ pub fn show_benchmark_debug_info(
 /// let mut batches = Vec::<BenchmarkBatch>::new();
 /// ````
 ///
-/// Then add the pallets you want to benchmark to this object, using their crate name and generated
+/// Then add the pezpallets you want to benchmark to this object, using their crate name and generated
 /// module struct:
 ///
 /// ```ignore
@@ -1800,9 +1808,9 @@ pub fn show_benchmark_debug_info(
 ///
 /// At the end of `dispatch_benchmark`, you should return this batches object.
 ///
-/// In the case where you have multiple instances of a pezpallet that you need to separately
-/// benchmark, the name of your module struct will be used as a suffix to your outputted weight
-/// file. For example:
+/// In the case where you have multiple instances of a pezpallet that you need to separately benchmark,
+/// the name of your module struct will be used as a suffix to your outputted weight file. For
+/// example:
 ///
 /// ```ignore
 /// add_benchmark!(params, batches, pezpallet_balances, Balances); // pezpallet_balances.rs
@@ -1894,7 +1902,7 @@ macro_rules! add_benchmark {
 	};
 }
 
-/// This macro allows users to easily generate a list of benchmarks for the pallets configured
+/// This macro allows users to easily generate a list of benchmarks for the pezpallets configured
 /// in the runtime.
 ///
 /// To use this macro, first create an object to store the list:

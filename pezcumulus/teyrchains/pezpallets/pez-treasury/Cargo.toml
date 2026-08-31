@@ -35,6 +35,10 @@ pezkuwi-primitives = { workspace = true, default-features = false }
 pezpallet-balances = { default-features = false, workspace = true }
 pezpallet-scheduler = { default-features = false, workspace = true }
 
+# The incentive pot is paid out on instruction from the People chain, and the
+# release schedule is reported back to it, so this pallet speaks XCM.
+xcm = { workspace = true, default-features = false }
+
 # Test ve Benchmark için Gerekli İsteğe Bağlı Bağımlılıklar
 pezframe-benchmarking = { optional = true, workspace = true }
 pezsp-core = { workspace = true, default-features = false, optional = true }
@@ -42,11 +46,12 @@ pezsp-io = { workspace = true, default-features = false, optional = true }
 
 [dev-dependencies]
 # Test için gerekli olan bağımlılıklar
-pezsp-core = { workspace = true, default-features = false }
-pezsp-io = { workspace = true, default-features = false }
 pezpallet-assets = { workspace = true, default-features = false, features = [
 	"std",
 ] } # <-- BU SATIRI EKLEYİN
+pezsp-core = { workspace = true, default-features = false }
+pezsp-io = { workspace = true, default-features = false }
+xcm = { workspace = true, default-features = false, features = ["std"] }
 
 [features]
 default = ["std"]
@@ -67,6 +72,7 @@ std = [
 	"scale-info/std",
 	"serde",
 	"serde?/std",
+	"xcm/std",
 ]
 runtime-benchmarks = [
 	"pezframe-benchmarking",
@@ -81,6 +87,7 @@ runtime-benchmarks = [
 	"pezsp-io",
 	"pezsp-io?/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
@@ -91,6 +98,7 @@ try-runtime = [
 	"pezpallet-balances/try-runtime",
 	"pezpallet-scheduler/try-runtime",
 	"pezsp-runtime/try-runtime",
+	"xcm/try-runtime",
 ]
 serde = [
 	"codec/serde",

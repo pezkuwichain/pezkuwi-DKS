@@ -29,21 +29,20 @@ use pezsc_consensus_slots::BackoffAuthoringOnFinalizedHeadLagging;
 use pezsc_network_test::{Block as TestBlock, *};
 use pezsc_transaction_pool_api::RejectAllTxPool;
 use pezsp_application_crypto::key_types::BABE;
-use pezsp_consensus::{DisableProofRecording, NoNetwork as DummyOracle, Proposal};
+use pezsp_consensus::{NoNetwork as DummyOracle, Proposal, ProposeArgs};
 use pezsp_consensus_babe::{
 	inherents::{BabeCreateInherentDataProviders, InherentDataProvider},
 	make_vrf_sign_data, AllowedSlots, AuthorityId, AuthorityPair, Slot,
 };
 use pezsp_consensus_slots::SlotDuration;
 use pezsp_core::crypto::Pair;
-use pezsp_inherents::InherentData;
 use pezsp_keyring::Sr25519Keyring;
 use pezsp_keystore::{testing::MemoryKeystore, Keystore};
 use pezsp_runtime::{
 	generic::{Digest, DigestItem},
 	traits::Block as BlockT,
 };
-use std::{cell::RefCell, task::Poll, time::Duration};
+use std::{cell::RefCell, task::Poll};
 
 type Item = DigestItem;
 
@@ -105,7 +104,7 @@ impl DummyProposer {
 	fn propose_with(
 		&mut self,
 		pre_digests: Digest,
-	) -> future::Ready<Result<Proposal<TestBlock, ()>, Error>> {
+	) -> future::Ready<Result<Proposal<TestBlock>, Error>> {
 		let block_builder = BlockBuilderBuilder::new(&*self.factory.client)
 			.on_parent_block(self.parent_hash)
 			.fetch_parent_block_number(&*self.factory.client)
@@ -122,24 +121,16 @@ impl DummyProposer {
 		// mutate the block header according to the mutator.
 		(self.factory.mutator)(&mut block.header, Stage::PreSeal);
 
-		future::ready(Ok(Proposal { block, proof: (), storage_changes: Default::default() }))
+		future::ready(Ok(Proposal { block, storage_changes: Default::default() }))
 	}
 }
 
 impl Proposer<TestBlock> for DummyProposer {
 	type Error = Error;
-	type Proposal = future::Ready<Result<Proposal<TestBlock, ()>, Error>>;
-	type ProofRecording = DisableProofRecording;
-	type Proof = ();
+	type Proposal = future::Ready<Result<Proposal<TestBlock>, Error>>;
 
-	fn propose(
-		mut self,
-		_: InherentData,
-		pre_digests: Digest,
-		_: Duration,
-		_: Option<usize>,
-	) -> Self::Proposal {
-		self.propose_with(pre_digests)
+	fn propose(mut self, args: ProposeArgs<TestBlock>) -> Self::Proposal {
+		self.propose_with(args.inherent_digests)
 	}
 }
 
@@ -418,7 +409,7 @@ async fn run_one_test(mutator: impl Fn(&mut TestHeader, Stage) + Send + Sync + '
 	.await;
 }
 
-#[cfg(ignore_flaky_test)] // https://github.com/pezkuwichain/pezkuwi-sdk/issues/96
+#[cfg(ignore_flaky_test)] // https://github.com/pezkuwichain/pezkuwi-DKS/issues/96
 #[tokio::test]
 async fn authoring_blocks() {
 	run_one_test(|_, _| ()).await;
@@ -437,7 +428,7 @@ async fn rejects_missing_inherent_digest() {
 	.await;
 }
 
-#[cfg(ignore_flaky_test)] // https://github.com/pezkuwichain/pezkuwi-sdk/issues/96
+#[cfg(ignore_flaky_test)] // https://github.com/pezkuwichain/pezkuwi-DKS/issues/96
 #[tokio::test]
 #[should_panic(expected = "has a bad seal")]
 async fn rejects_missing_seals() {

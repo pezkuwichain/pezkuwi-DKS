@@ -22,7 +22,7 @@ mod imports {
 		assert_err, assert_ok,
 		pezpallet_prelude::Weight,
 		pezsp_runtime::{DispatchError, DispatchResult, ModuleError},
-		traits::fungibles::Inspect,
+		traits::{fungible, fungibles::Inspect},
 	};
 
 	// Pezkuwi
@@ -36,17 +36,18 @@ mod imports {
 	pub(crate) use asset_test_pezutils::xcm_helpers;
 	pub(crate) use emulated_integration_tests_common::{
 		accounts::DUMMY_EMPTY,
-		test_relay_is_trusted_teleporter, test_teyrchain_is_trusted_teleporter,
-		test_teyrchain_is_trusted_teleporter_for_relay,
+		create_foreign_pool_with_native_on, test_relay_is_trusted_teleporter,
+		test_teyrchain_is_trusted_teleporter, test_teyrchain_is_trusted_teleporter_for_relay,
 		test_xcm_fee_querying_apis_work_for_asset_hub,
 		xcm_helpers::{
-			fee_asset, get_amount_from_versioned_assets, non_fee_asset, xcm_transact_paid_execution,
+			fee_asset, fee_asset_index, get_amount_from_versioned_assets, non_fee_asset,
+			xcm_transact_paid_execution,
 		},
 		xcm_pez_emulator::{
 			assert_expected_events, bx, Chain, RelayChain as Relay, Test, TestArgs, TestContext,
 			TestExt, Teyrchain as Para,
 		},
-		PenpalATeleportableAssetLocation, ASSETS_PALLET_ID, RESERVABLE_ASSET_ID, XCM_V3,
+		PenpalAPen2TeleportableAssetLocation, ASSETS_PALLET_ID, RESERVABLE_ASSET_ID, XCM_V3,
 	};
 	pub(crate) use pezkuwichain_system_emulated_network::{
 		asset_hub_pezkuwichain_emulated_chain::{
@@ -60,9 +61,10 @@ mod imports {
 				ExistentialDeposit as AssetHubPezkuwichainExistentialDeposit,
 			},
 			genesis::{AssetHubPezkuwichainAssetOwner, ED as ASSET_HUB_PEZKUWICHAIN_ED},
-			AssetHubPezkuwichainParaPezpallet,
-			AssetHubPezkuwichainParaPezpallet as AssetHubPezkuwichainPallet,
+			AssetHubPezkuwichainParaPallet,
+			AssetHubPezkuwichainParaPallet as AssetHubPezkuwichainPallet,
 		},
+		people_pezkuwichain_emulated_chain::PeoplePezkuwichainParaPallet as PeoplePezkuwichainPallet,
 		pez_penpal_emulated_chain::{
 			pez_penpal_runtime::xcm_config::{
 				CustomizableAssetFromSystemAssetHub as PenpalCustomizableAssetFromSystemAssetHub,
@@ -70,18 +72,16 @@ mod imports {
 				LocalTeleportableToAssetHub as PenpalLocalTeleportableToAssetHub,
 				UsdtFromAssetHub as PenpalUsdtFromAssetHub,
 			},
-			PenpalAParaPezpallet, PenpalAParaPezpallet as PenpalAPallet, PenpalAssetOwner,
-			PenpalBParaPezpallet, PenpalBParaPezpallet as PenpalBPallet, ED as PENPAL_ED,
+			PenpalAParaPallet as PenpalAPallet, PenpalAssetOwner,
+			PenpalBParaPallet as PenpalBPallet, ED as PENPAL_ED,
 		},
+		pezbridge_hub_pezkuwichain_emulated_chain::BridgeHubPezkuwichainParaPallet as BridgeHubPezkuwichainPallet,
 		pezkuwichain_emulated_chain::{
 			genesis::ED as PEZKUWICHAIN_ED,
 			pezkuwichain_runtime::{
-				governance as pezkuwichain_governance,
-				governance::pezpallet_custom_origins::Origin::Treasurer,
 				xcm_config::UniversalLocation as PezkuwichainUniversalLocation, Dmp,
-				OriginCaller as PezkuwichainOriginCaller,
 			},
-			PezkuwichainRelayPezpallet, PezkuwichainRelayPezpallet as PezkuwichainPallet,
+			PezkuwichainRelayPallet as PezkuwichainPallet,
 		},
 		AssetHubPezkuwichainPara as AssetHubPezkuwichain,
 		AssetHubPezkuwichainParaReceiver as AssetHubPezkuwichainReceiver,
@@ -90,7 +90,8 @@ mod imports {
 		BridgeHubPezkuwichainParaReceiver as BridgeHubPezkuwichainReceiver, PenpalAPara as PenpalA,
 		PenpalAParaReceiver as PenpalAReceiver, PenpalAParaSender as PenpalASender,
 		PenpalBPara as PenpalB, PenpalBParaReceiver as PenpalBReceiver,
-		PezkuwichainRelay as Pezkuwichain, PezkuwichainRelayReceiver as PezkuwichainReceiver,
+		PeoplePezkuwichainPara as PeoplePezkuwichain, PezkuwichainRelay as Pezkuwichain,
+		PezkuwichainRelayReceiver as PezkuwichainReceiver,
 		PezkuwichainRelaySender as PezkuwichainSender,
 	};
 	pub(crate) use teyrchains_common::Balance;

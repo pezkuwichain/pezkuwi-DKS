@@ -16,14 +16,20 @@
 //! Benchmarking setup for pezpallet-session.
 #![cfg(feature = "runtime-benchmarks")]
 
-use alloc::{vec, vec::Vec};
+use alloc::vec::Vec;
 
-use codec::Decode;
 use pezframe_benchmarking::v2::*;
 use pezframe_system::RawOrigin;
 use pezpallet_session::*;
 pub struct Pezpallet<T: Config>(pezpallet_session::Pezpallet<T>);
-pub trait Config: pezpallet_session::Config {}
+pub trait Config: pezpallet_session::Config {
+	/// Generate a session key and a proof of ownership.
+	///
+	/// The given `owner` is the account that will call `set_keys` using the returned session keys
+	/// and proof. This means that the proof should prove the ownership of `owner` over the private
+	/// keys associated to the session keys.
+	fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>);
+}
 
 #[benchmarks]
 mod benchmarks {
@@ -33,9 +39,8 @@ mod benchmarks {
 	fn set_keys() -> Result<(), BenchmarkError> {
 		let caller: T::AccountId = whitelisted_caller();
 		pezframe_system::Pezpallet::<T>::inc_providers(&caller);
-		let keys =
-			T::Keys::decode(&mut pezsp_runtime::traits::TrailingZeroInput::zeroes()).unwrap();
-		let proof: Vec<u8> = vec![0, 1, 2, 3];
+		let (keys, proof) = T::generate_session_keys_and_proof(caller.clone());
+
 		<pezpallet_session::Pezpallet<T>>::ensure_can_pay_key_deposit(&caller).unwrap();
 
 		#[extrinsic_call]
@@ -48,10 +53,9 @@ mod benchmarks {
 	fn purge_keys() -> Result<(), BenchmarkError> {
 		let caller: T::AccountId = whitelisted_caller();
 		pezframe_system::Pezpallet::<T>::inc_providers(&caller);
-		let keys =
-			T::Keys::decode(&mut pezsp_runtime::traits::TrailingZeroInput::zeroes()).unwrap();
-		let proof: Vec<u8> = vec![0, 1, 2, 3];
+		let (keys, proof) = T::generate_session_keys_and_proof(caller.clone());
 		<pezpallet_session::Pezpallet<T>>::ensure_can_pay_key_deposit(&caller).unwrap();
+
 		let _t = pezpallet_session::Pezpallet::<T>::set_keys(
 			RawOrigin::Signed(caller.clone()).into(),
 			keys,

@@ -577,8 +577,8 @@ pub mod tests {
 
 	use super::*;
 	use codec::Encode;
-	use pezsp_core::Blake2Hasher as BlakeTwo256;
 	use pezsp_core::H256;
+	use pezsp_runtime::traits::BlakeTwo256;
 	use pezsp_trie::{
 		cache::{CacheSize, SharedTrieCache},
 		trie_types::{TrieDBBuilder, TrieDBMutBuilderV0, TrieDBMutBuilderV1},
@@ -924,7 +924,7 @@ pub mod tests {
 		);
 	}
 
-	// This test reproduces an actual real-world issue: https://github.com/polkadot-js/apps/issues/9103
+	// This test reproduces an actual real-world issue: https://github.com/pezkuwichain/pezkuwi-apps/issues/9103
 	parameterized_test!(
 		storage_iter_does_not_return_out_of_prefix_keys,
 		storage_iter_does_not_return_out_of_prefix_keys_inner

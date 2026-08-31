@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Provide types to help defining a mock environment when testing pallets.
+//! Provide types to help defining a mock environment when testing pezpallets.
 
 use pezsp_runtime::generic;
 
@@ -28,21 +28,20 @@ pub type MockUncheckedExtrinsic<T, Signature = (), Extra = ()> = generic::Unchec
 >;
 
 /// An implementation of `pezsp_runtime::traits::Block` to be used in tests.
-pub type MockBlock<T> = generic::Block<
+pub type MockBlock<T, Signature = (), Extra = ()> = generic::Block<
 	generic::Header<u64, pezsp_runtime::traits::BlakeTwo256>,
-	MockUncheckedExtrinsic<T>,
+	MockUncheckedExtrinsic<T, Signature, Extra>,
 >;
 
-/// An implementation of `pezsp_runtime::traits::Block` to be used in tests with u32 BlockNumber
-/// type.
-pub type MockBlockU32<T> = generic::Block<
+/// An implementation of `pezsp_runtime::traits::Block` to be used in tests with u32 BlockNumber type.
+pub type MockBlockU32<T, Signature = (), Extra = ()> = generic::Block<
 	generic::Header<u32, pezsp_runtime::traits::BlakeTwo256>,
-	MockUncheckedExtrinsic<T>,
+	MockUncheckedExtrinsic<T, Signature, Extra>,
 >;
 
 /// An implementation of `pezsp_runtime::traits::Block` to be used in tests with u128 BlockNumber
 /// type.
-pub type MockBlockU128<T> = generic::Block<
+pub type MockBlockU128<T, Signature = (), Extra = ()> = generic::Block<
 	generic::Header<u128, pezsp_runtime::traits::BlakeTwo256>,
-	MockUncheckedExtrinsic<T>,
+	MockUncheckedExtrinsic<T, Signature, Extra>,
 >;

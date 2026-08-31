@@ -73,7 +73,7 @@ pub struct Config {
 	/// Reply manager configuration.
 	pub reply_manager: mixnet::reply_manager::Config,
 	/// Bizinikiwi-specific configuration.
-	pub bizinikiwi: BizinikiwiConfig,
+	pub substrate: BizinikiwiConfig,
 }
 
 impl Default for Config {
@@ -82,7 +82,7 @@ impl Default for Config {
 			core: Default::default(),
 			request_manager: Default::default(),
 			reply_manager: Default::default(),
-			bizinikiwi: Default::default(),
+			substrate: Default::default(),
 		}
 	}
 }

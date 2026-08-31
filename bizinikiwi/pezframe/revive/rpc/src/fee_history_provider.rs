@@ -14,7 +14,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::{client::BizinikiwiBlockNumber, ClientError};
+use crate::{ClientError, client::BizinikiwiBlockNumber};
 use pezpallet_revive::evm::{Block, FeeHistoryResult, ReceiptInfo};
 use pezsp_core::U256;
 use std::{collections::BTreeMap, sync::Arc};
@@ -61,7 +61,7 @@ impl FeeHistoryProvider {
 				(gas_used, effective_reward)
 			})
 			.collect::<Vec<_>>();
-		receipts.sort_by(|(_, a), (_, b)| a.cmp(b));
+		receipts.sort_by_key(|(_, block_number)| *block_number);
 
 		// Calculate percentile rewards.
 		result.rewards = reward_percentiles

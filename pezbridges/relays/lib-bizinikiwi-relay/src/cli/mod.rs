@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Deal with CLI args of bizinikiwi-to-bizinikiwi relay.
+//! Deal with CLI args of bizinikiwi-to-substrate relay.
 
 use clap::Parser;
 use pezsp_runtime::traits::TryConvert;

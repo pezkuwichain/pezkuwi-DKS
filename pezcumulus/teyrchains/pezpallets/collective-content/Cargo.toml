@@ -2,8 +2,7 @@
 name = "pezpallet-collective-content"
 version = "0.6.0"
 authors = [
-	"Kurdistan Tech Institute <info@pezkuwichain.io>",
-	"Parity Technologies <admin@parity.io>",
+	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
 ]
 edition.workspace = true
 description = "Managed content"

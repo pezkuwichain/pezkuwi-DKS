@@ -27,11 +27,11 @@
 //! # FRAME integration
 //!
 //! The FRAME macros implement
-//! [`UnfilteredDispatchable`](pezframe_support::traits::UnfilteredDispatchable) for each pezpallet
-//! `Call` enum. Part of this implementation is the call to [`run_in_context`], so that each call to
+//! [`UnfilteredDispatchable`](pezframe_support::traits::UnfilteredDispatchable) for each pezpallet `Call`
+//! enum. Part of this implementation is the call to [`run_in_context`], so that each call to
 //! [`UnfilteredDispatchable::dispatch_bypass_filter`](crate::traits::UnfilteredDispatchable::dispatch_bypass_filter)
-//! or [`Dispatchable::dispatch`](pezsp_runtime::traits::Dispatchable::dispatch) will run in a
-//! dispatch context.
+//! or [`Dispatchable::dispatch`](pezsp_runtime::traits::Dispatchable::dispatch) will run in a dispatch
+//! context.
 //!
 //! # Example
 //!

@@ -47,22 +47,21 @@ std = [
 	"pezsp-runtime-interface/std",
 	"pezsp-runtime/std",
 	"pezsp-state-machine/std",
+	"pezsp-test-primitives/std",
 	"pezsp-trie/std",
 	"pezsp-version/std",
 	"scale-info/std",
 	"thiserror",
 ]
-# Special feature to disable logging completely.
-#
-# By default `pezsp-api` initializes the `RuntimeLogger` for each runtime api function. However,
-# logging functionality increases the code size. It is recommended to enable this feature when
-# building a runtime for registering it on chain.
-#
-# This sets the max logging level to `off` for `log`.
-disable-logging = ["log/max_level_off"]
-# Do not report the documentation in the metadata.
-no-metadata-docs = ["pezsp-api-proc-macro/no-metadata-docs"]
-frame-metadata = ["pezsp-metadata-ir"]
+disable-logging = [
+	"log/max_level_off",
+]
+no-metadata-docs = [
+	"pezsp-api-proc-macro/no-metadata-docs",
+]
+frame-metadata = [
+	"pezsp-metadata-ir",
+]
 runtime-benchmarks = [
 	"pezsp-runtime-interface/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
@@ -77,6 +76,5 @@ try-runtime = [
 	"pezsp-version/try-runtime",
 ]
 serde = []
-
 [dev-dependencies]
 pezsp-test-primitives = { workspace = true }

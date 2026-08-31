@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Pezpallet and transaction extensions to reclaim PoV proof size weight after an extrinsic has
-//! been applied.
+//! Pezpallet and transaction extensions to reclaim PoV proof size weight after an extrinsic has been
+//! applied.
 //!
 //! This crate provides:
 //! * [`StorageWeightReclaim`] transaction extension: it must wrap the whole transaction extension
@@ -53,8 +53,8 @@ pub use weights::WeightInfo;
 
 const LOG_TARGET: &'static str = "runtime::storage_reclaim_pallet";
 
-/// Pezpallet to use alongside the transaction extension [`StorageWeightReclaim`], the pezpallet
-/// provides weight information and benchmarks.
+/// Pezpallet to use alongside the transaction extension [`StorageWeightReclaim`], the pezpallet provides
+/// weight information and benchmarks.
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
@@ -71,8 +71,6 @@ pub mod pezpallet {
 /// Storage weight reclaim mechanism.
 ///
 /// This extension must wrap all the transaction extensions:
-#[doc = docify::embed!("./src/tests.rs", Tx)]
-///
 /// This extension checks the size of the node-side storage proof before and after executing a given
 /// extrinsic using the proof size host function. The difference between benchmarked and used weight
 /// is reclaimed.
@@ -241,12 +239,11 @@ where
 				current_weight.accrue(accurate_weight, info.class);
 
 				// If we encounter a situation where the node-side proof size is already higher than
-				// what we have in the runtime bookkeeping, we add the difference to the
-				// `BlockWeight`. This prevents that the proof size grows faster than the
-				// runtime proof size.
-				let extrinsic_len = pezframe_system::AllExtrinsicsLen::<T>::get().unwrap_or(0);
+				// what we have in the runtime bookkeeping, we add the difference to the `BlockWeight`.
+				// This prevents that the proof size grows faster than the runtime proof size.
+				let block_size = pezframe_system::BlockSize::<T>::get().unwrap_or(0);
 				let node_side_pov_size =
-					proof_size_after_dispatch.saturating_add(extrinsic_len.into());
+					proof_size_after_dispatch.saturating_add(block_size.into());
 				let block_weight_proof_size = current_weight.total().proof_size();
 				let pov_size_missing_from_node =
 					node_side_pov_size.saturating_sub(block_weight_proof_size);
@@ -254,7 +251,7 @@ where
 					log::warn!(
 						target: LOG_TARGET,
 						"Node-side PoV size higher than runtime proof size weight. node-side: \
-						{node_side_pov_size} extrinsic_len: {extrinsic_len} runtime: \
+						{node_side_pov_size} block_size: {block_size} runtime: \
 						{block_weight_proof_size}, missing: {pov_size_missing_from_node}. Setting to \
 						node-side proof size."
 					);

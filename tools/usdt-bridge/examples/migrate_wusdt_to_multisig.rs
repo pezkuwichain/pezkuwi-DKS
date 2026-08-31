@@ -101,8 +101,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Ok(events) => {
                         let mut has_batch_completed = false;
                         for ev in events.iter().flatten() {
-                            println!("  event: {}::{}", ev.pallet_name(), ev.variant_name());
-                            if ev.pallet_name() == "Utility" && ev.variant_name() == "BatchCompleted"
+                            println!("  event: {}::{}", ev.pezpallet_name(), ev.variant_name());
+                            if ev.pezpallet_name() == "Utility" && ev.variant_name() == "BatchCompleted"
                             {
                                 has_batch_completed = true;
                             }

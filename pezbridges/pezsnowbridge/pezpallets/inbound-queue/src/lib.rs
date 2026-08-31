@@ -74,7 +74,7 @@ type BalanceOf<T> = <<T as pezpallet::Config>::Token as Inspect<
 
 pub use pezpallet::*;
 
-pub const LOG_TARGET: &str = "snowbridge-inbound-queue";
+pub const LOG_TARGET: &str = "pezsnowbridge-inbound-queue";
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet {

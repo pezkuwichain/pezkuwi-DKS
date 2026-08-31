@@ -340,7 +340,7 @@ pub mod pezpallet {
 		/// Origin for anyone able to veto proposals.
 		type VetoOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 
-		/// Overarching type of all pallets origins.
+		/// Overarching type of all pezpallets origins.
 		type PalletsOrigin: From<pezframe_system::RawOrigin<Self::AccountId>>;
 
 		/// Handler for the unbalanced reduction when slashing a preimage deposit.

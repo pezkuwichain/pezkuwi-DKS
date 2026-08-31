@@ -386,7 +386,10 @@ pezsp_api::impl_runtime_apis! {
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(_: Option<Vec<u8>>) -> Vec<u8> {
+		fn generate_session_keys(
+			_: Vec<u8>,
+			_: Option<Vec<u8>>,
+		) -> pezsp_session::OpaqueGeneratedSessionKeys {
 			unimplemented!()
 		}
 

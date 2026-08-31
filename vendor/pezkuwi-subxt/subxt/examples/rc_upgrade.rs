@@ -2,7 +2,7 @@
 //!
 //! Two-step process (same pattern as ah_upgrade.rs / people_upgrade.rs, minus
 //! the XCM hop — Sudo is local on the relay chain):
-//! 1. RC direct: System.authorize_upgrade_without_checks(blake2_256(wasm))
+//! 1. RC direct: System.authorize_upgrade(blake2_256(wasm))
 //! 2. RC direct: System.apply_authorized_upgrade(wasm)
 //!
 //! Run:
@@ -60,9 +60,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	// ═══════════════════════════════════════════
 	println!("=== STEP 1: Authorize upgrade ===");
 
+	// `authorize_upgrade`, not `authorize_upgrade_without_checks`. The two differ by one flag,
+	// and the flag turns on the check that the blob's `spec_name` belongs to this chain and its
+	// `spec_version` is higher than the running one. This network is twins -- Zagros and
+	// Pezkuwichain build near-identical artefacts from one tree -- so authorising the wrong
+	// twin's blob is a plausible slip on a tired evening, not a theoretical one. Skipping the
+	// check is upstream's escape hatch for a chain that has to be recovered; using it as the
+	// default in every upgrade tool removes the guard for the ordinary case too.
 	let authorize_call = pezkuwi_subxt::dynamic::tx(
 		"System",
-		"authorize_upgrade_without_checks",
+		"authorize_upgrade",
 		vec![Value::from_bytes(&code_hash)],
 	);
 	let sudo_tx = pezkuwi_subxt::dynamic::tx("Sudo", "sudo", vec![authorize_call.into_value()]);

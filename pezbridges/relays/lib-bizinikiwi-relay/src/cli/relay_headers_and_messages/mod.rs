@@ -162,7 +162,7 @@ where
 	}
 
 	/// Returns message relay parameters.
-	fn pez_messages_relay_params(
+	fn messages_relay_params(
 		&self,
 		source_to_target_headers_relay: Arc<dyn OnDemandRelay<Source, Target>>,
 		target_to_source_headers_relay: Arc<dyn OnDemandRelay<Target, Source>>,
@@ -336,7 +336,7 @@ where
 		for lane in lanes_l2r {
 			let left_to_right_messages =
 				crate::messages::run::<<Self::L2R as MessagesCliBridge>::MessagesLane, _, _>(
-					self.left_to_right().pez_messages_relay_params(
+					self.left_to_right().messages_relay_params(
 						left_to_right_on_demand_headers.clone(),
 						right_to_left_on_demand_headers.clone(),
 						lane,
@@ -350,7 +350,7 @@ where
 		for lane in lanes_r2l {
 			let right_to_left_messages =
 				crate::messages::run::<<Self::R2L as MessagesCliBridge>::MessagesLane, _, _>(
-					self.right_to_left().pez_messages_relay_params(
+					self.right_to_left().messages_relay_params(
 						right_to_left_on_demand_headers.clone(),
 						left_to_right_on_demand_headers.clone(),
 						lane,
@@ -416,21 +416,21 @@ mod tests {
 		let res = BridgeHubDicleBridgeHubPezkuwiHeadersAndMessages::parse_from(vec![
 			"bridge-hub-dicle-bridge-hub-pezkuwi-headers-and-messages",
 			"--bridge-hub-dicle-uri",
-			"ws://bridge-hub-zagros-collator1:9944",
+			"ws://bridge-hub-dicle-node-collator1:9944",
 			"--bridge-hub-dicle-signer",
 			"//Iden",
 			"--bridge-hub-dicle-transactions-mortality",
 			"64",
 			"--dicle-uri",
-			"ws://zagros-alice:9944",
+			"ws://dicle-alice:9944",
 			"--bridge-hub-pezkuwi-uri",
-			"ws://bridge-hub-pezkuwichain-collator1:9944",
+			"ws://bridge-hub-pezkuwi-collator1:9944",
 			"--bridge-hub-pezkuwi-signer",
 			"//George",
 			"--bridge-hub-pezkuwi-transactions-mortality",
 			"64",
 			"--pezkuwi-uri",
-			"ws://pezkuwichain-alice:9944",
+			"ws://pezkuwi-alice:9944",
 			"--lane",
 			"0000000000000000000000000000000000000000000000000000000000000000",
 			"--prometheus-host",
@@ -452,7 +452,7 @@ mod tests {
 					},
 				},
 				left: BridgeHubDicleConnectionParams {
-					bridge_hub_dicle_uri: "ws://bridge-hub-zagros-collator1:9944".into(),
+					bridge_hub_dicle_uri: "ws://bridge-hub-dicle-node-collator1:9944".into(),
 					bridge_hub_dicle_runtime_version: BridgeHubDicleRuntimeVersionParams {
 						bridge_hub_dicle_version_mode: RuntimeVersionType::Bundle,
 						bridge_hub_dicle_spec_version: None,
@@ -467,7 +467,7 @@ mod tests {
 					bridge_hub_dicle_transactions_mortality: Some(64),
 				},
 				left_relay: DicleConnectionParams {
-					dicle_uri: "ws://zagros-alice:9944".into(),
+					dicle_uri: "ws://dicle-alice:9944".into(),
 					dicle_runtime_version: DicleRuntimeVersionParams {
 						dicle_version_mode: RuntimeVersionType::Bundle,
 						dicle_spec_version: None,
@@ -475,7 +475,7 @@ mod tests {
 					},
 				},
 				right: BridgeHubPezkuwiConnectionParams {
-					bridge_hub_pezkuwi_uri: "ws://bridge-hub-pezkuwichain-collator1:9944".into(),
+					bridge_hub_pezkuwi_uri: "ws://bridge-hub-pezkuwi-collator1:9944".into(),
 					bridge_hub_pezkuwi_runtime_version: BridgeHubPezkuwiRuntimeVersionParams {
 						bridge_hub_pezkuwi_version_mode: RuntimeVersionType::Bundle,
 						bridge_hub_pezkuwi_spec_version: None,
@@ -490,7 +490,7 @@ mod tests {
 					bridge_hub_pezkuwi_transactions_mortality: Some(64),
 				},
 				right_relay: PezkuwiConnectionParams {
-					pezkuwi_uri: "ws://pezkuwichain-alice:9944".into(),
+					pezkuwi_uri: "ws://pezkuwi-alice:9944".into(),
 					pezkuwi_runtime_version: PezkuwiRuntimeVersionParams {
 						pezkuwi_version_mode: RuntimeVersionType::Bundle,
 						pezkuwi_spec_version: None,

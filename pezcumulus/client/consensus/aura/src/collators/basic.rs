@@ -2,18 +2,18 @@
 // This file is part of Pezcumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 //! This provides the option to run a basic relay-chain driven Aura implementation.
 //!
@@ -28,9 +28,9 @@ use pezcumulus_client_collator::{
 	relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
 };
 use pezcumulus_client_consensus_common::TeyrchainBlockImportMarker;
-use pezcumulus_client_consensus_proposer::ProposerInterface;
 use pezcumulus_primitives_core::{relay_chain::BlockId as RBlockId, CollectCollationInfo};
 use pezcumulus_relay_chain_interface::RelayChainInterface;
+use pezsp_consensus::Environment;
 
 use pezkuwi_overseer::Handle as OverseerHandle;
 use pezkuwi_pez_node_primitives::CollationResult;
@@ -40,7 +40,7 @@ use futures::{channel::mpsc::Receiver, prelude::*};
 use pezsc_client_api::{backend::AuxStore, BlockBackend, BlockOf};
 use pezsc_consensus::BlockImport;
 use pezsc_network_types::PeerId;
-use pezsp_api::{CallApiAt, ProvideRuntimeApi};
+use pezsp_api::{ApiExt, CallApiAt, ProvideRuntimeApi};
 use pezsp_application_crypto::AppPublic;
 use pezsp_blockchain::HeaderBackend;
 use pezsp_consensus_aura::AuraApi;
@@ -77,7 +77,7 @@ pub struct Params<BI, CIDP, Client, RClient, Proposer, CS> {
 	pub overseer_handle: OverseerHandle,
 	/// The length of slots in the relay chain.
 	pub relay_chain_slot_duration: Duration,
-	/// The underlying block proposer this should call into.
+	/// The proposer for building blocks.
 	pub proposer: Proposer,
 	/// The generic collator service used to plug into this consensus engine.
 	pub collator_service: CS,
@@ -109,7 +109,7 @@ where
 	CIDP: CreateInherentDataProviders<Block, ()> + Send + 'static,
 	CIDP::InherentDataProviders: Send,
 	BI: BlockImport<Block> + TeyrchainBlockImportMarker + Send + Sync + 'static,
-	Proposer: ProposerInterface<Block> + Send + Sync + 'static,
+	Proposer: Environment<Block> + Clone + Send + Sync + 'static,
 	CS: CollatorServiceInterface<Block> + Send + Sync + 'static,
 	P: Pair,
 	P::Public: AppPublic + Member + Codec,
@@ -175,12 +175,19 @@ where
 				continue;
 			}
 
-			let Ok(Some(code)) =
-				params.para_client.state_at(parent_hash).map_err(drop).and_then(|s| {
-					s.storage(&pezsp_core::storage::well_known_keys::CODE).map_err(drop)
-				})
-			else {
-				continue;
+			let code = {
+				let Ok(state) = params.para_client.state_at(parent_hash) else { continue };
+				let Ok(pending) =
+					state.storage(&pezsp_core::storage::well_known_keys::PENDING_CODE)
+				else {
+					continue;
+				};
+				let Some(code) = pending.or_else(|| {
+					state.storage(&pezsp_core::storage::well_known_keys::CODE).ok().flatten()
+				}) else {
+					continue;
+				};
+				code
 			};
 
 			super::check_validation_code_or_log(
@@ -198,7 +205,10 @@ where
 					Ok(Some(h)) => h,
 				};
 
-			let slot_duration = match params.para_client.runtime_api().slot_duration(parent_hash) {
+			let mut runtime_api = params.para_client.runtime_api();
+			runtime_api
+				.set_call_context(pezsp_core::traits::CallContext::Onchain { import: false });
+			let slot_duration = match runtime_api.slot_duration(parent_hash) {
 				Ok(d) => d,
 				Err(e) => reject_with_error!(e),
 			};
@@ -224,7 +234,7 @@ where
 			// produce multiple blocks per slot which very likely would fail on chain. Thus, we have
 			// this "hack" to only produce one block per slot per relay chain fork.
 			//
-			// With https://github.com/pezkuwichain/pezkuwi-sdk/issues/272 this implementation will be
+			// With https://github.com/pezkuwichain/pezkuwi-DKS/issues/3168 this implementation will be
 			// obsolete and also the underlying issue will be fixed.
 			if last_processed_slot >= *claim.slot()
 				&& last_relay_chain_block < *relay_parent_header.number()
@@ -239,6 +249,7 @@ where
 						&validation_data,
 						parent_hash,
 						claim.timestamp(),
+						Default::default(),
 						params.collator_peer_id,
 					)
 					.await
@@ -255,6 +266,7 @@ where
 						(teyrchain_inherent_data, other_inherent_data),
 						params.authoring_duration,
 						allowed_pov_size,
+						None,
 					)
 					.await
 			);

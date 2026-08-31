@@ -32,10 +32,12 @@ jsonrpsee = { features = ["server"], workspace = true }
 pezkuwi-subxt-metadata = { workspace = true, default-features = true }
 scale-info = { workspace = true }
 teyrchains-common = { workspace = true, default-features = true }
+teyrchains-common-types = { workspace = true, default-features = true }
 
 # Bizinikiwi
 bizinikiwi-frame-rpc-system = { workspace = true, default-features = true }
 bizinikiwi-state-trie-migration-rpc = { workspace = true, default-features = true }
+frame-metadata = { workspace = true, default-features = true }
 pezframe-benchmarking = { optional = true, workspace = true, default-features = true }
 pezframe-benchmarking-cli = { workspace = true, default-features = true }
 pezframe-support = { optional = true, workspace = true, default-features = true }
@@ -52,6 +54,7 @@ pezsc-client-db = { workspace = true, default-features = true }
 pezsc-consensus = { workspace = true, default-features = true }
 pezsc-consensus-manual-seal = { workspace = true, default-features = true }
 pezsc-executor = { workspace = true, default-features = true }
+pezsc-hop = { workspace = true, default-features = true }
 pezsc-keystore = { workspace = true, default-features = true }
 pezsc-network = { workspace = true, default-features = true }
 pezsc-network-statement = { workspace = true, default-features = true }
@@ -82,6 +85,7 @@ pezsp-statement-store = { workspace = true, default-features = true }
 pezsp-storage = { workspace = true, default-features = true }
 pezsp-timestamp = { workspace = true, default-features = true }
 pezsp-transaction-pool = { workspace = true, default-features = true }
+pezsp-transaction-storage-proof = { workspace = true, default-features = true }
 pezsp-version = { workspace = true, default-features = true }
 pezsp-weights = { workspace = true, default-features = true }
 prometheus-endpoint = { workspace = true, default-features = true }
@@ -99,12 +103,9 @@ pezcumulus-client-cli = { workspace = true, default-features = true }
 pezcumulus-client-collator = { workspace = true, default-features = true }
 pezcumulus-client-consensus-aura = { workspace = true, default-features = true }
 pezcumulus-client-consensus-common = { workspace = true, default-features = true }
-pezcumulus-client-consensus-proposer = { workspace = true, default-features = true }
 pezcumulus-client-consensus-relay-chain = { workspace = true, default-features = true }
 pezcumulus-client-service = { workspace = true, default-features = true }
-pezcumulus-client-teyrchain-inherent = { workspace = true, default-features = true, features = [
-	"mock",
-] }
+pezcumulus-client-teyrchain-inherent = { workspace = true, default-features = true }
 pezcumulus-primitives-aura = { workspace = true, default-features = true }
 pezcumulus-primitives-core = { workspace = true, default-features = true }
 pezcumulus-relay-chain-interface = { workspace = true, default-features = true }
@@ -130,7 +131,6 @@ runtime-benchmarks = [
 	"pezcumulus-client-collator/runtime-benchmarks",
 	"pezcumulus-client-consensus-aura/runtime-benchmarks",
 	"pezcumulus-client-consensus-common/runtime-benchmarks",
-	"pezcumulus-client-consensus-proposer/runtime-benchmarks",
 	"pezcumulus-client-consensus-relay-chain/runtime-benchmarks",
 	"pezcumulus-client-service/runtime-benchmarks",
 	"pezcumulus-client-teyrchain-inherent/runtime-benchmarks",
@@ -182,6 +182,7 @@ runtime-benchmarks = [
 	"pezsp-statement-store/runtime-benchmarks",
 	"pezsp-timestamp/runtime-benchmarks",
 	"pezsp-transaction-pool/runtime-benchmarks",
+	"pezsp-transaction-storage-proof/runtime-benchmarks",
 	"pezsp-version/runtime-benchmarks",
 	"teyrchains-common/runtime-benchmarks",
 ]
@@ -193,7 +194,6 @@ try-runtime = [
 	"pezcumulus-client-collator/try-runtime",
 	"pezcumulus-client-consensus-aura/try-runtime",
 	"pezcumulus-client-consensus-common/try-runtime",
-	"pezcumulus-client-consensus-proposer/try-runtime",
 	"pezcumulus-client-consensus-relay-chain/try-runtime",
 	"pezcumulus-client-service/try-runtime",
 	"pezcumulus-client-teyrchain-inherent/try-runtime",
@@ -240,6 +240,7 @@ try-runtime = [
 	"pezsp-statement-store/try-runtime",
 	"pezsp-timestamp/try-runtime",
 	"pezsp-transaction-pool/try-runtime",
+	"pezsp-transaction-storage-proof/try-runtime",
 	"pezsp-version/try-runtime",
 	"teyrchains-common/try-runtime",
 ]
@@ -254,7 +255,6 @@ std = [
 	"pezcumulus-client-collator/std",
 	"pezcumulus-client-consensus-aura/std",
 	"pezcumulus-client-consensus-common/std",
-	"pezcumulus-client-consensus-proposer/std",
 	"pezcumulus-client-consensus-relay-chain/std",
 	"pezcumulus-client-service/std",
 	"pezcumulus-client-teyrchain-inherent/std",

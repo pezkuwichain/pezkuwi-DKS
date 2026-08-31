@@ -23,7 +23,7 @@ use std::process::Command;
 
 /// `benchmark pezpallet` works for the different combinations of `steps` and `repeat`.
 #[test]
-fn benchmark_pallet_works() {
+fn benchmark_pezpallet_works() {
 	// Some invalid combinations:
 	benchmark_pallet(0, 10, false);
 	benchmark_pallet(1, 10, false);
@@ -34,14 +34,14 @@ fn benchmark_pallet_works() {
 }
 
 #[test]
-fn benchmark_pallet_args_work() {
-	benchmark_pallet_args(&["--list", "--pezpallet=pezpallet_balances"], true);
-	benchmark_pallet_args(&["--list", "--pezpallet=pezpallet_balances"], true);
-	benchmark_pallet_args(
+fn benchmark_pezpallet_args_work() {
+	benchmark_pezpallet_args(&["--list", "--pezpallet=pezpallet_balances"], true);
+	benchmark_pezpallet_args(&["--list", "--pezpallet=pezpallet_balances"], true);
+	benchmark_pezpallet_args(
 		&["--list", "--pezpallet=pezpallet_balances", "--genesis-builder=spec-genesis"],
 		true,
 	);
-	benchmark_pallet_args(
+	benchmark_pezpallet_args(
 		&[
 			"--list",
 			"--pezpallet=pezpallet_balances",
@@ -50,7 +50,7 @@ fn benchmark_pallet_args_work() {
 		],
 		true,
 	);
-	benchmark_pallet_args(
+	benchmark_pezpallet_args(
 		&[
 			"--list",
 			"--pezpallet=pezpallet_balances",
@@ -60,7 +60,7 @@ fn benchmark_pallet_args_work() {
 		true,
 	);
 	// Error because no runtime is provided:
-	benchmark_pallet_args(
+	benchmark_pezpallet_args(
 		&["--list", "--pezpallet=pezpallet_balances", "--chain=dev", "--genesis-builder=runtime"],
 		false,
 	);
@@ -85,7 +85,7 @@ fn benchmark_pallet(steps: u32, repeat: u32, should_work: bool) {
 	assert_eq!(status.success(), should_work);
 }
 
-fn benchmark_pallet_args(args: &[&str], should_work: bool) {
+fn benchmark_pezpallet_args(args: &[&str], should_work: bool) {
 	let status = Command::new(cargo_bin("bizinikiwi-node"))
 		.args(["benchmark", "pezpallet"])
 		.args(args)

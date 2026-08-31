@@ -87,11 +87,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	// ═══════════════════════════════════════════
 	println!("=== STEP 1: Authorize upgrade (RC → XCM → People) ===");
 
-	// Encode System::authorize_upgrade_without_checks(code_hash)
-	// System pallet index = 0, call_index = 10
+	// `authorize_upgrade`, not `authorize_upgrade_without_checks`. The two differ by one flag,
+	// and the flag turns on the check that the blob's `spec_name` belongs to this chain and its
+	// `spec_version` is higher than the running one. This network is twins -- Zagros and
+	// Pezkuwichain build near-identical artefacts from one tree -- so authorising the wrong
+	// twin's blob is a plausible slip on a tired evening, not a theoretical one. Skipping the
+	// check is upstream's escape hatch for a chain that has to be recovered; using it as the
+	// default in every upgrade tool removes the guard for the ordinary case too.
+	// Encode System::authorize_upgrade(code_hash)
+	// System pallet index = 0, call_index = 9
 	let mut encoded_call = Vec::with_capacity(34);
 	encoded_call.push(0x00); // System pallet
-	encoded_call.push(0x0a); // authorize_upgrade_without_checks (10)
+	encoded_call.push(0x09); // authorize_upgrade (9)
 	encoded_call.extend_from_slice(&code_hash);
 	println!("  Encoded call: {} bytes", encoded_call.len());
 

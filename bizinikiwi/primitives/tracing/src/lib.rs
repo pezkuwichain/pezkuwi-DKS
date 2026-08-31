@@ -30,7 +30,7 @@
 //! the associated Fields mentioned above.
 //!
 //! Note: The `tracing` crate requires trace metadata to be static. This does not work
-//! for wasm code in bizinikiwi, as it is regularly updated with new code from on-chain
+//! for wasm code in substrate, as it is regularly updated with new code from on-chain
 //! events. The workaround for this is for the wasm tracing wrappers to put the
 //! `name` and `target` data in the `values` map (normally they would be in the static
 //! metadata assembled at compile time).

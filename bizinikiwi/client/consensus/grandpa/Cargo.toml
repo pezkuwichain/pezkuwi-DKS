@@ -33,6 +33,7 @@ pez-fork-tree = { workspace = true, default-features = true }
 pezsc-block-builder = { workspace = true, default-features = true }
 pezsc-chain-spec = { workspace = true, default-features = true }
 pezsc-client-api = { workspace = true, default-features = true }
+pezsc-client-db = { workspace = true, default-features = true }
 pezsc-consensus = { workspace = true, default-features = true }
 pezsc-network = { workspace = true, default-features = true }
 pezsc-network-common = { workspace = true, default-features = true }
@@ -75,6 +76,7 @@ runtime-benchmarks = [
 	"pezsc-block-builder/runtime-benchmarks",
 	"pezsc-chain-spec/runtime-benchmarks",
 	"pezsc-client-api/runtime-benchmarks",
+	"pezsc-client-db/runtime-benchmarks",
 	"pezsc-consensus/runtime-benchmarks",
 	"pezsc-network-common/runtime-benchmarks",
 	"pezsc-network-gossip/runtime-benchmarks",
@@ -97,6 +99,7 @@ std = [
 	"pezsc-block-builder/std",
 	"pezsc-chain-spec/std",
 	"pezsc-client-api/std",
+	"pezsc-client-db/std",
 	"pezsc-consensus/std",
 	"pezsc-network-common/std",
 	"pezsc-network-gossip/std",
@@ -116,6 +119,7 @@ try-runtime = [
 	"pezsc-block-builder/try-runtime",
 	"pezsc-chain-spec/try-runtime",
 	"pezsc-client-api/try-runtime",
+	"pezsc-client-db/try-runtime",
 	"pezsc-consensus/try-runtime",
 	"pezsc-network-common/try-runtime",
 	"pezsc-network-gossip/try-runtime",

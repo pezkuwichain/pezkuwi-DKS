@@ -93,7 +93,7 @@ fn test_submit_with_invalid_gateway() {
 		let relayer: AccountId = Keyring::Bob.into();
 		let origin = RuntimeOrigin::signed(relayer);
 
-		// Deposit funds into sovereign account of Asset Hub (Statemint)
+		// Deposit funds into sovereign account of Asset Hub
 		let sovereign_account = sibling_sovereign_account::<Test>(ASSET_HUB_PARAID.into());
 		let _ = Balances::mint_into(&sovereign_account, 10000);
 
@@ -118,7 +118,7 @@ fn test_submit_with_invalid_nonce() {
 		let relayer: AccountId = Keyring::Bob.into();
 		let origin = RuntimeOrigin::signed(relayer);
 
-		// Deposit funds into sovereign account of Asset Hub (Statemint)
+		// Deposit funds into sovereign account of Asset Hub
 		let sovereign_account = sibling_sovereign_account::<Test>(ASSET_HUB_PARAID.into());
 		let _ = Balances::mint_into(&sovereign_account, 10000);
 

@@ -17,7 +17,7 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-array-bytes = { workspace = true, default-features = true }
+array-bytes = { optional = true, workspace = true, default-features = true }
 codec = { workspace = true }
 log = { workspace = true }
 pezframe-benchmarking = { optional = true, workspace = true }
@@ -30,6 +30,7 @@ pezsp-runtime = { workspace = true }
 pezsp-transaction-storage-proof = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 serde = { optional = true, workspace = true, default-features = true }
+tracing = { workspace = true }
 
 [dev-dependencies]
 pezsp-transaction-storage-proof = { default-features = true, workspace = true }
@@ -46,10 +47,13 @@ std = [
 	"pezsp-inherents/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
+	"pezsp-transaction-storage-proof/std",
 	"scale-info/std",
 	"serde",
+	"tracing/std",
 ]
 runtime-benchmarks = [
+	"array-bytes",
 	"pezframe-benchmarking/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",

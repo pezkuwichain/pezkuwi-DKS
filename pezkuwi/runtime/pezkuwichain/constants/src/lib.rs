@@ -25,6 +25,11 @@ pub mod currency {
 	/// The existential deposit.
 	pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
+	/// One HEZ, which is what `tokenSymbol` reports on the relay chain, the Asset Hub and
+	/// People alike. Balances are carried in the smallest indivisible amount, the TYR, and
+	/// one HEZ is 10^12 of them -- the same relationship a DOT has to a planck. Chain specs
+	/// pair this with `tokenDecimals: 12`; the two have to agree or every displayed balance
+	/// is wrong by a power of ten.
 	pub const UNITS: Balance = 1_000_000_000_000;
 	pub const CENTS: Balance = UNITS / 30_000;
 	/// One unit, named for what a deposit or a spend is reckoned in.
@@ -128,13 +133,13 @@ pub mod system_teyrchain {
 
 	/// Network's Asset Hub teyrchain ID.
 	pub const ASSET_HUB_ID: u32 = 1000;
-	/// Contracts teyrchain ID.
-	pub const CONTRACTS_ID: u32 = 1002;
-	/// Encointer teyrchain ID.
-	pub const ENCOINTER_ID: u32 = 1003;
 	/// People teyrchain ID.
 	pub const PEOPLE_ID: u32 = 1004;
 	/// BridgeHub teyrchain ID.
+	///
+	/// 1002 was also declared as `CONTRACTS_ID`, so `Teyrchain(CONTRACTS_ID)` resolved to this
+	/// chain and the relay trusted it twice under two names. There is no contracts chain here;
+	/// the constant is gone rather than renumbered.
 	pub const BRIDGE_HUB_ID: u32 = 1002;
 	/// Brokerage teyrchain ID.
 	pub const BROKER_ID: u32 = 1005;
@@ -154,8 +159,12 @@ pub mod system_teyrchain {
 	}
 }
 
-/// Pezkuwichain Treasury pezpallet instance.
-pub const TREASURY_PALLET_ID: u8 = 18;
+// `TREASURY_PALLET_ID: u8 = 18` stood here, naming the relay's Treasury pallet so a
+// `PalletInstance` location could address it. The treasury moved to the Asset Hub and index 18
+// is retired; the constant outlived the pallet and named a number nothing answers on. Nothing
+// consumed it, which is the only reason it was harmless -- a location built from it would have
+// addressed an empty slot. The Asset Hub's treasury is reached by its own `PalletId`
+// (`teyrchains_common::TREASURY_PALLET_ID`), which is a different thing with the same name.
 
 #[cfg(test)]
 mod tests {

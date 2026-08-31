@@ -23,9 +23,9 @@ use syn::{Generics, Ident};
 /// Represents the types supported for creating an outer enum.
 #[derive(Clone, Copy, PartialEq)]
 pub enum OuterEnumType {
-	/// Collects the Event enums from all pallets.
+	/// Collects the Event enums from all pezpallets.
 	Event,
-	/// Collects the Error enums from all pallets.
+	/// Collects the Error enums from all pezpallets.
 	Error,
 }
 
@@ -56,7 +56,7 @@ impl ToTokens for OuterEnumType {
 	}
 }
 
-/// Create an outer enum that encapsulates all pallets as variants.
+/// Create an outer enum that encapsulates all pezpallets as variants.
 ///
 /// Each variant represents a pezpallet and contains the corresponding type declared with either:
 /// - #[pezpallet::event] for the [`OuterEnumType::Event`] variant

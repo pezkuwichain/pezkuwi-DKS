@@ -30,7 +30,7 @@ use crate::{
 };
 use codec::Encode;
 use futures::FutureExt;
-use log::info;
+use log::{debug, info};
 use pezcumulus_client_bootnodes::{start_bootnode_tasks, StartBootnodeTasksParams};
 use pezcumulus_client_cli::CollatorOptions;
 use pezcumulus_client_service::{
@@ -59,7 +59,14 @@ use pezsp_keystore::KeystorePtr;
 use pezsp_runtime::traits::AccountIdConversion;
 use prometheus_endpoint::Registry;
 use std::{future::Future, pin::Pin, sync::Arc, time::Duration};
-use teyrchains_common::Hash;
+use teyrchains_common_types::Hash;
+
+// Override default idle connection timeout of 10 seconds to give IPFS clients more
+// time to query data over Bitswap. This is needed when manually adding our node
+// to a swarm of an IPFS node, because the IPFS node doesn't keep any active
+// substreams with us and our node closes a connection after
+// `idle_connection_timeout`.
+const IPFS_WORKAROUND_TIMEOUT: Duration = Duration::from_secs(3600);
 
 pub(crate) trait BuildImportQueue<
 	Block: BlockT,
@@ -110,7 +117,7 @@ fn warn_if_slow_hardware(hwbench: &pezsc_sysinfo::HwBench) {
 	{
 		log::warn!(
 			"⚠️  The hardware does not meet the minimal requirements {} for role 'Authority' find out more at:\n\
-			https://wiki.network.pezkuwichain.io/docs/maintain-guides-how-to-validate-polkadot#reference-hardware",
+			https://docs.polkadot.com/infrastructure/running-a-validator/requirements/#minimum-hardware-requirements",
 			err
 		);
 	}
@@ -175,9 +182,9 @@ pub(crate) trait BaseNodeSpec {
 				.teyrchain_id(best_hash)
 				.inspect_err(|err| {
 					log::error!(
-								"`pezcumulus_primitives_core::GetTeyrchainInfo` runtime API call errored with {}",
-								err
-							);
+						"`pezcumulus_primitives_core::GetTeyrchainInfo` runtime API call errored with {}",
+						err
+					);
 				})
 				.ok()?
 		} else {
@@ -239,6 +246,7 @@ pub(crate) trait BaseNodeSpec {
 				telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 				executor,
 				true,
+				Default::default(),
 			)?;
 		let client = Arc::new(client);
 
@@ -306,6 +314,7 @@ pub(crate) trait NodeSpec: BaseNodeSpec {
 	fn start_dev_node(
 		_config: Configuration,
 		_mode: DevSealMode,
+		_node_extra_args: NodeExtraArgs,
 	) -> pezsc_service::error::Result<TaskManager> {
 		Err(pezsc_service::Error::Other("Dev not supported for this node type".into()))
 	}
@@ -324,7 +333,19 @@ pub(crate) trait NodeSpec: BaseNodeSpec {
 		Net: NetworkBackend<Self::Block, Hash>,
 	{
 		let fut = async move {
-			let teyrchain_config = prepare_node_config(teyrchain_config);
+			let mut teyrchain_config = prepare_node_config(teyrchain_config);
+
+			// Some additional customization in relation to starting the node as an ipfs server.
+			if teyrchain_config.network.idle_connection_timeout < IPFS_WORKAROUND_TIMEOUT
+				&& teyrchain_config.network.ipfs_server
+			{
+				debug!(
+					"Overriding `config.network.idle_connection_timeout` to allow long-lived connections with IPFS nodes. The old value: {:?} is replaced by: {:?}.",
+					teyrchain_config.network.idle_connection_timeout, IPFS_WORKAROUND_TIMEOUT
+				);
+				teyrchain_config.network.idle_connection_timeout = IPFS_WORKAROUND_TIMEOUT;
+			}
+
 			let teyrchain_public_addresses = teyrchain_config.network.public_addresses.clone();
 			let teyrchain_fork_id = teyrchain_config.chain_spec.fork_id().map(ToString::to_string);
 			let advertise_non_global_ips = teyrchain_config.network.allow_non_globals_in_dht;
@@ -364,8 +385,14 @@ pub(crate) trait NodeSpec: BaseNodeSpec {
 				teyrchain_config.prometheus_config.as_ref().map(|config| &config.registry),
 			);
 
-			let statement_handler_proto = node_extra_args.enable_statement_store.then(|| {
-				new_statement_handler_proto(&*client, &teyrchain_config, &metrics, &mut net_config)
+			let statement_handler_proto = node_extra_args.statement_store_config.map(|config| {
+				let proto = new_statement_handler_proto(
+					&*client,
+					&teyrchain_config,
+					&metrics,
+					&mut net_config,
+				);
+				(proto, config)
 			});
 
 			let (network, system_rpc_tx, tx_handler_controller, sync_service) =
@@ -376,16 +403,17 @@ pub(crate) trait NodeSpec: BaseNodeSpec {
 					transaction_pool: transaction_pool.clone(),
 					para_id,
 					spawn_handle: task_manager.spawn_handle(),
+					spawn_essential_handle: task_manager.spawn_essential_handle(),
 					relay_chain_interface: relay_chain_interface.clone(),
 					import_queue: params.import_queue,
 					sybil_resistance_level: Self::SYBIL_RESISTANCE,
 					metrics,
 				})
 				.await?;
-			let peer_id = network.local_peer_id();
+			let peer_id = relay_chain_network.local_peer_id();
 
 			let statement_store = statement_handler_proto
-				.map(|statement_handler_proto| {
+				.map(|(statement_handler_proto, config)| {
 					build_statement_store(
 						&teyrchain_config,
 						&mut task_manager,
@@ -394,9 +422,33 @@ pub(crate) trait NodeSpec: BaseNodeSpec {
 						sync_service.clone(),
 						params.keystore_container.local_keystore(),
 						statement_handler_proto,
+						config,
 					)
 				})
 				.transpose()?;
+
+			let hop_pool = node_extra_args.hop.as_ref().and_then(|params| {
+				match params.build_pool(teyrchain_config.database.path().map(|p| p.to_path_buf())) {
+					Ok(pool) => Some(pool),
+					Err(e) => {
+						log::warn!(
+							target: "hop",
+							"Failed to initialize HOP data pool, continuing without HOP: {e}",
+						);
+						None
+					},
+				}
+			});
+			if let (Some(pool), Some(hop)) = (hop_pool.as_ref(), node_extra_args.hop.as_ref()) {
+				let task = pezsc_hop::build_maintenance_task::<Self::Block, _, _>(
+					&client,
+					&transaction_pool,
+					pool.clone(),
+					hop.promotion_buffer_secs,
+					hop.check_interval,
+				);
+				task_manager.spawn_handle().spawn("hop-maintenance", None, task.run());
+			}
 
 			if teyrchain_config.offchain_worker.enabled {
 				let custom_extensions = {
@@ -431,18 +483,22 @@ pub(crate) trait NodeSpec: BaseNodeSpec {
 				);
 			}
 
+			let spawn_handle = Arc::new(task_manager.spawn_handle());
+
 			let rpc_builder = {
 				let client = client.clone();
 				let transaction_pool = transaction_pool.clone();
 				let backend_for_rpc = backend.clone();
 				let statement_store = statement_store.clone();
-
+				let hop_pool = hop_pool.clone();
 				Box::new(move |_| {
 					Self::BuildRpcExtensions::build_rpc_extensions(
 						client.clone(),
 						backend_for_rpc.clone(),
 						transaction_pool.clone(),
 						statement_store.clone(),
+						hop_pool.clone(),
+						spawn_handle.clone(),
 					)
 				})
 			};
@@ -579,6 +635,7 @@ pub(crate) trait DynNodeSpec: NodeCommandRunner {
 		self: Box<Self>,
 		config: Configuration,
 		mode: DevSealMode,
+		node_extra_args: NodeExtraArgs,
 	) -> pezsc_service::error::Result<TaskManager>;
 
 	/// Start the node.
@@ -600,8 +657,9 @@ where
 		self: Box<Self>,
 		config: Configuration,
 		mode: DevSealMode,
+		node_extra_args: NodeExtraArgs,
 	) -> pezsc_service::error::Result<TaskManager> {
-		<Self as NodeSpec>::start_dev_node(config, mode)
+		<Self as NodeSpec>::start_dev_node(config, mode, node_extra_args)
 	}
 
 	fn start_node(

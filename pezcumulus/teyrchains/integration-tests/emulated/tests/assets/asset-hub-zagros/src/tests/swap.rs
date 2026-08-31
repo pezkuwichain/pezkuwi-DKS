@@ -377,7 +377,7 @@ fn pay_xcm_fee_with_some_asset_swapped_for_native() {
 			bx!(xcm),
 		));
 
-		PenpalA::assert_xcm_pallet_sent();
+		PenpalA::assert_xcm_pezpallet_sent();
 	});
 
 	AssetHubZagros::execute_with(|| {

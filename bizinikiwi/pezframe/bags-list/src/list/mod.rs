@@ -35,7 +35,7 @@ use pezframe_election_provider_support::ScoreProvider;
 use pezframe_support::{
 	defensive, ensure,
 	traits::{Defensive, DefensiveOption, Get},
-	CloneNoBound, DefaultNoBound, EqNoBound, PalletError, PartialEqNoBound, RuntimeDebugNoBound,
+	CloneNoBound, DebugNoBound, DefaultNoBound, EqNoBound, PalletError, PartialEqNoBound,
 };
 use pezsp_runtime::traits::{Bounded, Zero};
 use scale_info::TypeInfo;
@@ -93,7 +93,6 @@ pub fn notional_bag_for<T: Config<I>, I: 'static>(score: T::Score) -> T::Score {
 
 /// The **ONLY** entry point of this module. All operations to the bags-list should happen through
 /// this interface. It is forbidden to access other module members directly.
-//
 // Data structure providing efficient mostly-accurate selection of the top N id by `Score`.
 //
 // It's implemented as a set of linked lists. Each linked list comprises a bag of ids of
@@ -644,7 +643,7 @@ impl<T: Config<I>, I: 'static> List<T, I> {
 	Decode,
 	MaxEncodedLen,
 	TypeInfo,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	CloneNoBound,
 	PartialEqNoBound,
 	EqNoBound,
@@ -848,14 +847,7 @@ impl<T: Config<I>, I: 'static> Bag<T, I> {
 
 /// A Node is the fundamental element comprising the doubly-linked list described by `Bag`.
 #[derive(
-	Encode,
-	Decode,
-	MaxEncodedLen,
-	TypeInfo,
-	CloneNoBound,
-	PartialEqNoBound,
-	EqNoBound,
-	RuntimeDebugNoBound,
+	Encode, Decode, MaxEncodedLen, TypeInfo, CloneNoBound, PartialEqNoBound, EqNoBound, DebugNoBound,
 )]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T, I))]

@@ -33,7 +33,7 @@ Command:
 
 ```bash
 # Install only `pez_subkey`, at a specific version of the pez_subkey crate
-cargo install --force pez_subkey --git https://github.com/pezkuwichain/pezkuwi-sdk --version <SET VERSION> --locked
+cargo install --force pez_subkey --git https://github.com/pezkuwichain/pezkuwi-DKS --version <SET VERSION> --locked
 # If you run into issues building, you likely are missing deps defined in https://docs.pezkuwichain.io/install/
 ```
 

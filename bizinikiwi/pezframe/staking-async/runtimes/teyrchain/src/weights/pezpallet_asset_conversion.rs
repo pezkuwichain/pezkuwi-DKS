@@ -20,21 +20,25 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 4.0.0-dev
 //! DATE: 2023-10-30, STEPS: `20`, REPEAT: `2`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
-//! HOSTNAME: `cob`, CPU: `<UNKNOWN>`
-//! WASM-EXECUTION: `Compiled`, CHAIN: `Some("asset-hub-next-zagros-dev")`, DB CACHE: 1024
+//! HOSTNAME: upstream (see note below)
+//! WASM-EXECUTION: `Compiled`, CHAIN: `Some("asset-hub-next-<upstream reference runtime>")`, DB CACHE: 1024
+//! NOTE: derived from upstream, not measured on our hardware. This runtime is a
+//! staking-async test fixture: it is not in the runtimes job, has no chain spec, and
+//! is never deployed, so nothing prices anything from these numbers. They are here
+//! because the weight traits gained methods and the impl has to be complete.
 
 // Executed Command:
 // ./target/debug/pezkuwi-teyrchain
 // benchmark
 // pezpallet
-// --chain=asset-hub-next-zagros-dev
+// --chain=<upstream reference runtime>
 // --steps=20
 // --repeat=2
 // --pezpallet=pezpallet-asset-conversion
 // --extrinsic=*
 // --wasm-execution=compiled
 // --heap-pages=4096
-// --output=./pezcumulus/teyrchains/runtimes/assets/asset-hub-next-zagros/src/weights/pezpallet_asset_conversion.rs
+// --output=./cumulus/teyrchains/runtimes/assets/asset-hub-next-westend/src/weights/pezpallet_asset_conversion.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -176,5 +180,10 @@ impl<T: pezframe_system::Config> pezpallet_asset_conversion::WeightInfo for Weig
 			.saturating_add(Weight::from_parts(209_463_636, 0).saturating_mul(n.into()))
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(n.into())))
+	}
+	fn get_reserves() -> Weight {
+		// Placeholder: will be replaced by running benchmarks.
+		Weight::from_parts(16_000_000, 6566)
+			.saturating_add(T::DbWeight::get().reads(4))
 	}
 }

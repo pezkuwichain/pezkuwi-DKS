@@ -18,13 +18,14 @@
 
 use crate::finality::SubmitFinalityProofCallBuilder;
 
-use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use futures::{select, FutureExt};
 use num_traits::{One, Saturating, Zero};
 use pezbp_header_pez_chain::ConsensusLogReader;
 use pezbp_runtime::HeaderIdProvider;
 use pezsp_runtime::traits::Header;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use pez_finality_relay::{
 	FinalitySyncParams, HeadersToRelay, TargetClient as FinalityTargetClient,
@@ -94,7 +95,7 @@ impl<
 			source_client: source_client.clone(),
 			target_client: target_client.clone(),
 		};
-		async_std::task::spawn(async move {
+		tokio::spawn(async move {
 			background_task::<P>(
 				source_client,
 				target_client,
@@ -228,13 +229,13 @@ async fn background_task<P: BizinikiwiFinalitySyncPipeline>(
 	let mut latest_non_mandatory_at_source = Zero::zero();
 
 	let mut restart_relay = true;
-	let pez_finality_relay_task = futures::future::Fuse::terminated();
-	futures::pin_mut!(pez_finality_relay_task);
+	let finality_relay_task = futures::future::Fuse::terminated();
+	futures::pin_mut!(finality_relay_task);
 
 	loop {
 		select! {
-			_ = async_std::task::sleep(P::TargetChain::AVERAGE_BLOCK_INTERVAL).fuse() => {},
-			_ = pez_finality_relay_task => {
+			_ = tokio::time::sleep(P::TargetChain::AVERAGE_BLOCK_INTERVAL).fuse() => {},
+			_ = finality_relay_task => {
 				// this should never happen in practice given the current code
 				restart_relay = true;
 			},
@@ -361,7 +362,7 @@ async fn background_task<P: BizinikiwiFinalitySyncPipeline>(
 				"Starting on-demand headers relay task"
 			);
 
-			pez_finality_relay_task.set(
+			finality_relay_task.set(
 				pez_finality_relay::run(
 					finality_source.clone(),
 					finality_target.clone(),
@@ -554,7 +555,7 @@ mod tests {
 	const AT_SOURCE: Option<BlockNumberOf<TestChain>> = Some(10);
 	const AT_TARGET: Option<BlockNumberOf<TestChain>> = Some(1);
 
-	#[async_std::test]
+	#[tokio::test]
 	async fn mandatory_headers_scan_range_selects_range_if_some_headers_are_missing() {
 		assert_eq!(
 			mandatory_headers_scan_range::<TestChain>(AT_SOURCE, AT_TARGET, 0,).await,
@@ -562,7 +563,7 @@ mod tests {
 		);
 	}
 
-	#[async_std::test]
+	#[tokio::test]
 	async fn mandatory_headers_scan_range_selects_nothing_if_already_queued() {
 		assert_eq!(
 			mandatory_headers_scan_range::<TestChain>(AT_SOURCE, AT_TARGET, AT_SOURCE.unwrap(),)

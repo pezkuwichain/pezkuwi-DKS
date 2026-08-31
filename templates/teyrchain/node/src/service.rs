@@ -100,6 +100,7 @@ pub fn new_partial(config: &Configuration) -> Result<Service, pezsc_service::Err
 			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 			executor,
 			true,
+			Default::default(),
 		)?;
 	let client = Arc::new(client);
 
@@ -294,6 +295,7 @@ pub async fn start_teyrchain_node(
 			transaction_pool: transaction_pool.clone(),
 			para_id,
 			spawn_handle: task_manager.spawn_handle(),
+			spawn_essential_handle: task_manager.spawn_essential_handle(),
 			relay_chain_interface: relay_chain_interface.clone(),
 			import_queue: params.import_queue,
 			sybil_resistance_level: CollatorSybilResistance::Resistant, // because of Aura

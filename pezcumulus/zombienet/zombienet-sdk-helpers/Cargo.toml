@@ -18,6 +18,8 @@ pezkuwi-primitives = { workspace = true, default-features = true }
 pezcumulus-primitives-core = { workspace = true, default-features = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
 pezkuwi-zombienet-sdk = { workspace = true }
+# Used to decode digests and to render `DispatchError` against runtime metadata.
+pezsp-runtime = { workspace = true, default-features = true }
 futures = { workspace = true }
 pezkuwi-zombienet-configuration = { workspace = true }
 
@@ -26,6 +28,7 @@ runtime-benchmarks = [
   "pezcumulus-primitives-core/runtime-benchmarks",
   "pezkuwi-primitives/runtime-benchmarks",
   "pezkuwi-zombienet-sdk/runtime-benchmarks",
+  "pezsp-runtime/runtime-benchmarks",
 ]
 std = [
   "log/std",

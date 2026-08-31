@@ -22,7 +22,8 @@ use super::*;
 use core::array;
 use pezframe_benchmarking::{v2::*, BenchmarkError};
 use pezframe_system::{Pezpallet as System, RawOrigin};
-use pezsp_core::{twox_128, Get};
+use pezsp_core::Get;
+use pezsp_crypto_hashing::twox_128;
 use pezsp_io::{storage, KillStorageResult};
 use pezsp_runtime::traits::One;
 
@@ -212,7 +213,7 @@ mod benches {
 	}
 
 	#[benchmark(skip_meta, pov_mode = Measured)]
-	fn reset_pallet_migration(n: Linear<0, 2048>) -> Result<(), BenchmarkError> {
+	fn reset_pezpallet_migration(n: Linear<0, 2048>) -> Result<(), BenchmarkError> {
 		let prefix: [u8; 16] = twox_128(b"__ResetPalletBenchmarkPrefix__");
 
 		for i in 0..n {

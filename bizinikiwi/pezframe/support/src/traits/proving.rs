@@ -128,7 +128,7 @@ mod tests {
 	};
 
 	#[test]
-	fn verify_pez_binary_merkle_tree_prover_works() {
+	fn verify_binary_merkle_tree_prover_works() {
 		let proof = pez_binary_merkle_tree::merkle_proof::<BlakeTwo256, _, _>(
 			vec![b"hey".encode(), b"yes".encode()],
 			1,

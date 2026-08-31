@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Pezcumulus timestamp related primitives.
+//! Cumulus timestamp related primitives.
 //!
 //! Provides a [`InherentDataProvider`] that should be used in the validation phase of the
 //! teyrchain. It will be used to create the inherent data and that will be used to check the

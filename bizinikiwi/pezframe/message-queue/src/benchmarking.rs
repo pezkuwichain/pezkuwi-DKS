@@ -22,7 +22,6 @@
 
 use super::{mock_helpers::*, Pezpallet as MessageQueue, *};
 
-use alloc::vec;
 use pezframe_benchmarking::v2::*;
 use pezframe_support::traits::Get;
 use pezframe_system::RawOrigin;
@@ -38,6 +37,7 @@ use pezsp_io::hashing::blake2_256;
 )]
 mod benchmarks {
 	use super::*;
+	use alloc::vec;
 
 	// Worst case path of `ready_ring_knit`.
 	#[benchmark]

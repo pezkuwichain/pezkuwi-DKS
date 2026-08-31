@@ -7,7 +7,7 @@ use pezbridge_hub_common::AggregateMessageOrigin;
 use pezframe_support::{
 	ensure,
 	traits::{EnqueueMessage, Get},
-	CloneNoBound, PartialEqNoBound, RuntimeDebugNoBound,
+	CloneNoBound, DebugNoBound, PartialEqNoBound,
 };
 use pezframe_system::unique;
 use pezsnowbridge_core::{ChannelId, PRIMARY_GOVERNANCE_CHANNEL};
@@ -22,7 +22,7 @@ use pezsp_runtime::BoundedVec;
 pub type MaxEnqueuedMessageSizeOf<T> =
 	<<T as Config>::MessageQueue as EnqueueMessage<AggregateMessageOrigin>>::MaxMessageLen;
 
-#[derive(Encode, Decode, CloneNoBound, PartialEqNoBound, RuntimeDebugNoBound)]
+#[derive(Encode, Decode, CloneNoBound, PartialEqNoBound, DebugNoBound)]
 pub struct Ticket<T>
 where
 	T: Config,

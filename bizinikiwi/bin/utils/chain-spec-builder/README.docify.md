@@ -28,7 +28,7 @@ around by the `bash!(...)` macro calls.
 
 ### Note for `CreateCmd`'s `para-id` flag
 
-<!-- TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/156 -->
+<!-- TODO: https://github.com/pezkuwichain/pezkuwi-DKS/issues/156 -->
 Runtimes relying on generating the chain specification with this tool should
 implement `cumulus_primitives_core::GetTeyrchainInfo` trait, a new runtime API
 designed to provide the teyrchain ID from the `teyrchain-info`

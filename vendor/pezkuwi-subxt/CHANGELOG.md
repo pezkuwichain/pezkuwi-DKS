@@ -135,7 +135,7 @@ This patch release reduces the rust-version to 1.85.0, given that we don't use a
 
 ## [0.42.0] - 2025-05-09
 
-The primary benefit of this release is introducing support for the [_about-to-be-stabilised-in-pezkuwi-sdk_](https://github.com/pezkuwichain/pezkuwi-sdk/pull/8443) V16 metadata, and with that, support for calling Pallet View Functions on runtimes which will support this. Pallet View Functions are used much like Runtime APIs, except that they are declared in specific pallets and not declared at the runtime-wide level, allowing pallets to carry their own APIs with them.
+The primary benefit of this release is introducing support for the [_about-to-be-stabilised-in-pezkuwi-sdk_](https://github.com/pezkuwichain/pezkuwi-DKS/pull/8443) V16 metadata, and with that, support for calling Pallet View Functions on runtimes which will support this. Pallet View Functions are used much like Runtime APIs, except that they are declared in specific pallets and not declared at the runtime-wide level, allowing pallets to carry their own APIs with them.
 
 ### Pallet View Functions
 
@@ -196,7 +196,7 @@ let _is_call_allowed = api
 
 ### Updated `Config` trait
 
-Another change to be aware of is that [our `Config` trait has been tweaked](https://github.com/paritytech/subxt/pull/1974). The `Hash` associated type is no longer needed, as it can be obtained via the `Hasher` associated type already, and `PezkuwiConfig`/`BizinikiwConfig` now set the hasher by default to be `DynamicHasher256`, which will (when V16 metadata is available for a runtime) automatically select between Keccak256 and BlakeTwo256 hashers depending on what the chain requires.
+Another change to be aware of is that [our `Config` trait has been tweaked](https://github.com/paritytech/subxt/pull/1974). The `Hash` associated type is no longer needed, as it can be obtained via the `Hasher` associated type already, and `PezkuwiConfig`/`BizinikiwiConfig` now set the hasher by default to be `DynamicHasher256`, which will (when V16 metadata is available for a runtime) automatically select between Keccak256 and BlakeTwo256 hashers depending on what the chain requires.
 
 ### Other changes
 
@@ -655,9 +655,9 @@ For a full list of changes, please see the following:
 
 This release introduces a bunch of features that make subxt easier to use. Let's look at a few of them.
 
-### Codegen - Integrating [`scale-typegen`](https://github.com/pezkuwichain/scale-typegen) and adding type aliases ([#1249](https://github.com/paritytech/subxt/pull/1249))
+### Codegen - Integrating [`scale-typegen`](https://github.com/paritytech/scale-typegen) and adding type aliases ([#1249](https://github.com/paritytech/subxt/pull/1249))
 
-We rewrote the code generation functionality of subxt and outsourced it to the new [`scale-typegen`](https://github.com/pezkuwichain/scale-typegen) crate, which serves a more general purpose.
+We rewrote the code generation functionality of subxt and outsourced it to the new [`scale-typegen`](https://github.com/paritytech/scale-typegen) crate, which serves a more general purpose.
 
 Since a lot of types used in bizinikiwi are rich with generics, this release introduces type aliases into the generated code.
 A type alias is generated for the arguments/keys or each call, storage entry, and runtime API method ([#1249](https://github.com/paritytech/subxt/pull/1249)).
@@ -719,7 +719,7 @@ pub mod pezkuwi {}
 
 ### Subxt CLI - New features and usability improvements ([#1290](https://github.com/paritytech/subxt/pull/1290), [#1336](https://github.com/paritytech/subxt/pull/1336), and [#1379](https://github.com/paritytech/subxt/pull/1379))
 
-Our CLI tool now allows you to explore runtime APIs and events ([#1290](https://github.com/paritytech/subxt/pull/1290)). We also fully integrated with [`scale-typegen-description`](https://github.com/pezkuwichain/scale-typegen/tree/master/description), a crate that can describe types in a friendly way and provide type examples. The output is also color-coded to be easier on the eyes. Get started with these commands:
+Our CLI tool now allows you to explore runtime APIs and events ([#1290](https://github.com/paritytech/subxt/pull/1290)). We also fully integrated with [`scale-typegen-description`](https://github.com/paritytech/scale-typegen/tree/master/description), a crate that can describe types in a friendly way and provide type examples. The output is also color-coded to be easier on the eyes. Get started with these commands:
 
 ```sh
 # Show details about a runtime API call:
@@ -943,7 +943,7 @@ This PR tidies up the interface to that crate so that it's much easier now to pr
 
 Each method aims to expose a similar and consistent set of options.
 
-If you were previously looking to use parts of the type generation logic to, for instance, generate runtime types but not the rest of the Subxt interface, then the https://github.com/pezkuwichain/scale-typegen crate will aim to fill this role eventually.
+If you were previously looking to use parts of the type generation logic to, for instance, generate runtime types but not the rest of the Subxt interface, then the https://github.com/paritytech/scale-typegen crate will aim to fill this role eventually.
 
 That sums up the most significant changes. A summary of all of the relevant changes is as follows:
 
@@ -1023,7 +1023,7 @@ Now, the client only knows about a `Backend` (ie it has a `.backend()` method in
 
 ```rust
 use subxt::{
-    config::BizinikiwConfig,
+    config::BizinikiwiConfig,
     backend::rpc::RpcClient,
     backend::legacy::LegacyRpcMethods,
 };
@@ -1032,13 +1032,13 @@ use subxt::{
 let rpc_client = RpcClient::from_url("ws://localhost:9944").await?;
 
 // We could also call unstable RPCs with `backend::unstable::UnstableRpcMethods`:
-let rpc_methods = LegacyRpcMethods::<BizinikiwConfig>::new(rpc_client);
+let rpc_methods = LegacyRpcMethods::<BizinikiwiConfig>::new(rpc_client);
 
 // Use it to make RPC calls, here calling the legacy genesis_hash method.
 let genesis_hash = rpc_methods.genesis_hash().await?
 ```
 
-If you'd like to share a single client for RPCs and Subxt usage, you can clone this RPC client and run `OnlineClient::<BizinikiwConfig>::from_rpc_client(rpc_client)` to create a Subxt client using it.
+If you'd like to share a single client for RPCs and Subxt usage, you can clone this RPC client and run `OnlineClient::<BizinikiwiConfig>::from_rpc_client(rpc_client)` to create a Subxt client using it.
 
 Another side effect of this change is that RPC related things have moved from `subxt::rpc::*` to `subxt::backend::rpc::*` and some renaming has happened along the way.
 
@@ -1061,11 +1061,11 @@ Now, we have "upgraded" the `ExtrinsicParams` trait to give it access to metadat
 
 How can you use `SignedExtension`s? Well, `subxt::config::signed_extensions::AnyOf<T, Params>` is a type which can accept any tuple of `SignedExtension`s, and itself implements `ExtrinsicParams`. It's smart, and will use the metadata to know which of the signed extensions that you provided to actually use on a given chain. So, `AnyOf` makes it easy to compose whichever `SignedExtension`s you need to work with a chain.
 
-Finally, we expose `subxt::config::{ DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder }`; the former just uses `AnyOf` to automatically use any of the "standard" signed extensions as needed, and the latter provided a nice builder interface to configure any parameters for them. This is now the default type used in `BizinikiwConfig` and `PezkuwiConfig`, so long story short: those configurations (and particularly their `ExtrinsicParams`) are more likely to _Just Work_ now across default chains.
+Finally, we expose `subxt::config::{ DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder }`; the former just uses `AnyOf` to automatically use any of the "standard" signed extensions as needed, and the latter provided a nice builder interface to configure any parameters for them. This is now the default type used in `BizinikiwiConfig` and `PezkuwiConfig`, so long story short: those configurations (and particularly their `ExtrinsicParams`) are more likely to _Just Work_ now across default chains.
 
 [See this example](https://github.com/paritytech/subxt/blob/cd5060a5a08c9bd73477477cd2cadc16015e77bf/subxt/examples/setup_config_signed_extension.rs) for how to create and use custom signed extensions, or [this example](https://github.com/paritytech/subxt/blob/cd5060a5a08c9bd73477477cd2cadc16015e77bf/subxt/examples/setup_config_custom.rs) for how to implement custom `ExtrinsicParams` if you'd prefer to ignore `SignedExtension`s entirely.
 
-As a result of using the new `DefaultExtrinsicParams` in `BizinikiwConfig` and `PezkuwiConfig`, the interface to configure transactions has changed (and in fact been generally simplified). Configuring a mortal transaction with a small tip ƒor instance used to look like:
+As a result of using the new `DefaultExtrinsicParams` in `BizinikiwiConfig` and `PezkuwiConfig`, the interface to configure transactions has changed (and in fact been generally simplified). Configuring a mortal transaction with a small tip ƒor instance used to look like:
 
 ```rust
 use subxt::config::pezkuwi::{Era, PlainTip, PezkuwiExtrinsicParamsBuilder as Params};
@@ -1123,7 +1123,7 @@ Note also that the pagination size no longer needs to be provided; that's handle
 
 This is not a breaking change, but just a noteworthy addition; see [#1106](https://github.com/paritytech/subxt/pull/1106), [#1117](https://github.com/paritytech/subxt/pull/1117) and [#1147](https://github.com/paritytech/subxt/pull/1147) for more information.
 
-V15 metadata allows chains to insert arbitrary information into a new "custom values" hashmap ([see this](https://github.com/pezkuwichain/frame-metadata/blob/0e90489c8588d48b55779f1c6b93216346ecc8a9/frame-metadata/src/v15.rs#L306)). Subxt has now added APIs to allow accessing these custom values a little like how constants can be accessed.
+V15 metadata allows chains to insert arbitrary information into a new "custom values" hashmap ([see this](https://github.com/pezkuwichain/pezframe-metadata/blob/0e90489c8588d48b55779f1c6b93216346ecc8a9/frame-metadata/src/v15.rs#L306)). Subxt has now added APIs to allow accessing these custom values a little like how constants can be accessed.
 
 Dynamically accessing custom values looks a bit like this:
 

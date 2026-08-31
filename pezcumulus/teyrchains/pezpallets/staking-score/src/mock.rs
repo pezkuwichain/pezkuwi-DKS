@@ -43,6 +43,8 @@ pub const DISPUTE_WINDOW: BlockNumber = 10;
 
 // --- Constants ---
 parameter_types! {
+	/// Generous enough to cover the dispute window and a bot cycle in the tests.
+	pub const OracleGracePeriod: u64 = 100;
 	pub const BlockHashCount: BlockNumber = 250;
 	pub const ExistentialDeposit: Balance = 1;
 	pub const NoterBondAmount: Balance = 1_000 * UNITS;
@@ -108,7 +110,8 @@ impl crate::Config for Test {
 	type DisputeWindow = DisputeWindowBlocks;
 	type DisputeOrigin = EnsureSignedBy<DisputeMemberProvider, AccountId>;
 	type SlashOrigin = EnsureSignedBy<SlashMemberProvider, AccountId>;
-	type SlashDestination = SlashDestinationAccount;
+	type OracleGracePeriod = OracleGracePeriod;
+	type SlashDestination = SlashesTo<SlashDestinationAccount>;
 }
 
 // --- ExtBuilder ---
@@ -192,4 +195,18 @@ pub fn submit_and_finalize(
 		StakingScore::finalize_staking_details(RuntimeOrigin::signed(noter), who, source).is_ok(),
 		"test setup: finalize_staking_details failed"
 	);
+}
+
+/// Mock handler: puts the slashed value into an account instead of dropping it, so a test can
+/// assert where it went. Dropping the imbalance would destroy the tokens and the test would
+/// still pass, which is the failure mode the real handler exists to prevent.
+pub struct SlashesTo<A>(core::marker::PhantomData<A>);
+impl<A: pezframe_support::traits::Get<AccountId>>
+	pezframe_support::traits::OnUnbalanced<pezpallet_balances::NegativeImbalance<Test>>
+	for SlashesTo<A>
+{
+	fn on_nonzero_unbalanced(amount: pezpallet_balances::NegativeImbalance<Test>) {
+		use pezframe_support::traits::Currency;
+		Balances::resolve_creating(&A::get(), amount);
+	}
 }

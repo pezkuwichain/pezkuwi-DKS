@@ -35,8 +35,8 @@ pub mod versioned {
 		<T as pezframe_system::Config>::DbWeight,
 	>;
 
-	/// Migration V6 to V7 wrapped in a [`pezframe_support::migrations::VersionedMigration`],
-	/// ensuring the migration is only performed when on-chain version is 6.
+	/// Migration V6 to V7 wrapped in a [`pezframe_support::migrations::VersionedMigration`], ensuring
+	/// the migration is only performed when on-chain version is 6.
 	pub type V6ToV7<T> = pezframe_support::migrations::VersionedMigration<
 		6,
 		7,
@@ -237,6 +237,90 @@ pub mod unversioned {
 			Ok(())
 		}
 	}
+
+	/// One-time migration to claim trapped balance for a specific pool member.
+	///
+	/// Generic over `T: Config` and `A: Get<T::AccountId>` where `A` provides the account
+	/// of the affected member. If `A` does not have trapped balance, this is a no-op.
+	pub struct ClaimTrappedBalance<T, A>(core::marker::PhantomData<(T, A)>);
+
+	impl<T: Config, A: Get<T::AccountId>> OnRuntimeUpgrade for ClaimTrappedBalance<T, A> {
+		fn on_runtime_upgrade() -> Weight {
+			let member_account = A::get();
+			match Pezpallet::<T>::do_claim_trapped_balance(&member_account) {
+				Ok(()) => {
+					log!(info, "Successfully claimed trapped balance for {:?}", member_account);
+				},
+				Err(e) => {
+					log!(info, "No trapped balance to claim for {:?}: {:?}", member_account, e);
+				},
+			}
+
+			// Worst case: slash applied + trapped balance withdrawn.
+			T::WeightInfo::apply_slash()
+				.saturating_add(T::WeightInfo::withdraw_unbonded_update(T::MaxUnbonding::get()))
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn pre_upgrade() -> Result<Vec<u8>, TryRuntimeError> {
+			let member_account = A::get();
+			let expected = PoolMembers::<T>::get(&member_account)
+				.map(|m| m.total_balance())
+				.unwrap_or_default();
+			let actual =
+				T::StakeAdapter::member_delegation_balance(Member::from(member_account.clone()))
+					.unwrap_or_default();
+
+			log!(
+				info,
+				"pre_upgrade: member {:?}, expected_balance: {:?}, actual_balance: {:?}, \
+				 trapped: {:?}",
+				member_account,
+				expected,
+				actual,
+				actual.saturating_sub(expected)
+			);
+
+			Ok((expected, actual).encode())
+		}
+
+		#[cfg(feature = "try-runtime")]
+		fn post_upgrade(data: Vec<u8>) -> Result<(), TryRuntimeError> {
+			let member_account = A::get();
+			let (pre_expected, pre_actual): (BalanceOf<T>, BalanceOf<T>) =
+				Decode::decode(&mut &data[..])
+					.map_err(|_| TryRuntimeError::Other("Failed to decode pre_upgrade data"))?;
+
+			let post_actual =
+				T::StakeAdapter::member_delegation_balance(Member::from(member_account.clone()))
+					.unwrap_or_default();
+
+			let post_expected = PoolMembers::<T>::get(&member_account)
+				.map(|m| m.total_balance())
+				.unwrap_or_default();
+
+			log!(
+				info,
+				"post_upgrade: member {:?}, pre_expected: {:?}, pre_actual: {:?}, \
+				 post_expected: {:?}, post_actual: {:?}",
+				member_account,
+				pre_expected,
+				pre_actual,
+				post_expected,
+				post_actual
+			);
+
+			// If there was trapped balance before, it should now be resolved
+			if pre_actual > pre_expected {
+				ensure!(
+					post_actual == post_expected,
+					TryRuntimeError::Other("Trapped balance was not fully claimed after migration")
+				);
+			}
+
+			Ok(())
+		}
+	}
 }
 
 pub mod v8 {
@@ -319,7 +403,7 @@ pub(crate) mod v7 {
 	}
 
 	#[allow(dead_code)]
-	#[derive(RuntimeDebugNoBound)]
+	#[derive(DebugNoBound)]
 	#[cfg_attr(feature = "std", derive(Clone, PartialEq))]
 	pub struct V7BondedPool<T: Config> {
 		/// The identifier of the pool.
@@ -617,10 +701,13 @@ pub mod v4 {
 	/// # Warning
 	///
 	/// To avoid mangled storage please use `MigrateV3ToV5` instead.
+	/// See: github.com/paritytech/substrate/pull/13715
 	///
 	/// This migration adds a `commission` field to every `BondedPoolInner`, if
 	/// any.
-	#[deprecated(note = "To avoid mangled storage please use `MigrateV3ToV5` instead.")]
+	#[deprecated(
+		note = "To avoid mangled storage please use `MigrateV3ToV5` instead. See: github.com/paritytech/substrate/pull/13715"
+	)]
 	pub struct MigrateToV4<T, U>(core::marker::PhantomData<(T, U)>);
 	#[allow(deprecated)]
 	impl<T: Config, U: Get<Perbill>> OnRuntimeUpgrade for MigrateToV4<T, U> {
@@ -636,7 +723,7 @@ pub mod v4 {
 			);
 
 			if onchain == 3 {
-				log!(warn, "Please run MigrateToV5 immediately after this migration.");
+				log!(warn, "Please run MigrateToV5 immediately after this migration. See github.com/paritytech/substrate/pull/13715");
 				let initial_global_max_commission = U::get();
 				GlobalMaxCommission::<T>::set(Some(initial_global_max_commission));
 				log!(
@@ -840,7 +927,7 @@ pub mod v2 {
 	}
 
 	/// Migrate the pool reward scheme to the new version, as per
-	/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/206.>.
+	/// <https://github.com/paritytech/substrate/pull/11669.>.
 	pub struct MigrateToV2<T>(core::marker::PhantomData<T>);
 	impl<T: Config> MigrateToV2<T> {
 		fn run(current: StorageVersion) -> Weight {

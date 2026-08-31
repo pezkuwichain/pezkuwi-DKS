@@ -28,6 +28,70 @@ jobs:
           test -f LICENSE-GPL3
           echo "compliance files present"
 
+  # Whose chain is this. Cheap, and it catches a class the compiler cannot see: a foreign chain
+  # id kept as an alias builds fine, and a bootnode in a chain spec is JSON no compiler reads.
+  # Both had shipped here before this job existed.
+  chain-identity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: No foreign network named, no foreign host dialled
+        run: .github/scripts/check-chain-identity.sh
+
+  # Mainnet is to be relaunched as a mirror of a validated Zagros, so a change that lands on
+  # one twin and not the other does not stay on a testnet -- it reaches mainnet as an absence.
+  # Cheap, and it catches what neither compiler sees: each runtime builds fine on its own.
+  twin-runtimes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # The other checks here are stdlib-only; the solc one reads workflow YAML. Installed
+      # rather than assumed present on the image -- PyYAML was already an undeclared
+      # dependency of two scripts in this tree and the runs only worked because something
+      # else had pulled it in.
+      - run: python3 -m pip install --quiet PyYAML==6.0.2
+      - name: Zagros and Pezkuwichain carry the same pallet index map
+        run: python3 .github/scripts/check-twin-runtimes.py
+      # The franchise separation from the other end. `no_subject_is_decided_by_two_different_
+      # electorates` compares the two ballots' track names; this resolves every origin binding on
+      # a register pallet down to what can actually produce it, so a track under some other name
+      # cannot slip through. Seconds to run, and it fails closed on anything it cannot classify.
+      - name: No token-weighted ballot reaches the register
+        run: python3 .github/scripts/check-register-origins.py
+      # Three jobs have been written that build with `runtime-benchmarks` and forgot to
+      # install solc, and each one was found by running it -- the last after the workflow had
+      # sat unrun for ten days. Three identical fixes is where a habit becomes a check.
+      - name: Benchmark builds install solc before they build
+        run: python3 .github/scripts/check-workflow-solc.py
+      # PEZ is fixed and halving; HEZ inflates. `CLAUDE.md` used to state the rule without
+      # naming either, and the sentence travelled into eleven comments as the reason for not
+      # burning HEZ -- a right rule with a false reason, which is a rule somebody later
+      # measures and discards.
+      - name: No claim confuses the two tokens' supply rules
+        run: python3 .github/scripts/check-token-claims.py
+      # A missing barrier entry turns a message away before any of it runs, and leaves no
+      # symptom on either side. `bridge-hub-zagros` lost the Asset Hub while still waiving its
+      # fees, so the Snowbridge export path was dead on Zagros and the money side looked right.
+      - name: Twins waive and admit the same locations
+        run: python3 .github/scripts/check-xcm-waivers.py
+      # Two shapes, both silent: a call that costs nothing, and a budget guard read as
+      # `meter.try_consume(...)` that can never refuse. Both were live on 2026-08-30.
+      - name: No runtime binds a zero-weight fallback
+        run: python3 .github/scripts/check-zero-weights.py
+
+  # A note describing the tree goes stale the moment the tree moves. These measure the tree.
+  # The gaps are the backlog and do not fail a build; work that came undone does.
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: The agreed design has not gone backwards
+        run: python3 .github/scripts/plan.py --work
+      - name: Every cross-chain path still has its three gates open
+        run: python3 .github/scripts/plan.py --flows
+      - name: Report the remaining pre-genesis gaps
+        run: python3 .github/scripts/plan.py --gaps
+
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -36,6 +100,20 @@ jobs:
         run: |
           rustup component add rustfmt
           cargo fmt --all --check
+
+  # The two tools under tools/ each declare their own [workspace], so `cargo check --workspace`
+  # at the root never reaches them and nothing else compiles them either. That gap is not
+  # theoretical: a dependabot PR bumped fourteen of the bridge's dependencies and every check on
+  # it reported green without compiling a line of the crate it changed. Both are small and pull
+  # from crates.io rather than this tree, so an ordinary runner is enough.
+  tool-workspaces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check the bridge tooling
+        run: cargo check --locked --all-targets --manifest-path tools/usdt-bridge/Cargo.toml
+      - name: Check the chain-spec tooling
+        run: cargo check --locked --all-targets --manifest-path tools/chain-spec-tool/Cargo.toml
 
   # Build the runtimes (the on-chain deliverable). This is the gating job.
   # Heavy zombienet / emulated integration suites are intentionally NOT run here;
@@ -48,14 +126,31 @@ jobs:
     if: >-
       github.event_name == 'push' ||
       github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     steps:
       - uses: actions/checkout@v7
+      # Needed since this job gained the integration-test step below: those tests pull crates
+      # whose build script compiles Solidity, so without solc the job stops before it runs
+      # anything. Installed rather than skipped with `SKIP_PALLET_REVIVE_FIXTURES=1`, for the
+      # reason recorded on the `workspace` job -- skipping leaves a gate reporting success over
+      # code it never built.
+      - uses: ./.github/actions/install-solidity
       - name: Toolchain & targets
         run: |
           rustup show
           rustup component add rust-src
           rustup target add wasm32v1-none wasm32-unknown-unknown
+      # Every runtime that is, or is planned to be, part of the two networks. A runtime left off
+      # this list is a runtime nothing compiles, and a green run then says less than it looks
+      # like: the hubs, coretime and collectives sat outside this job while the framework moved
+      # underneath them. Not live yet is not the same as dead - they stay in.
+      #
+      # Deliberately absent from this job: pez-penpal (the XCM counterparty the integration
+      # tests need) and glutton-zagros (block-capacity load chain, kept for the weights work).
+      # Neither is deployed, and both are reached by the node job through pezkuwi-teyrchain-bin.
+      # Also absent: pez-kitchensink (upstream demo, on its way out), pez-revive-dev (development
+      # harness), the framework crates' own test runtimes, and the staking-async reference
+      # runtimes we derive from.
       - name: Build runtime WASM (check)
         run: |
           cargo check --locked \
@@ -64,7 +159,122 @@ jobs:
             -p asset-hub-pezkuwichain-runtime \
             -p asset-hub-zagros-runtime \
             -p people-pezkuwichain-runtime \
-            -p people-zagros-runtime
+            -p people-zagros-runtime \
+            -p pezbridge-hub-pezkuwichain-runtime \
+            -p pezbridge-hub-zagros-runtime \
+            -p coretime-pezkuwichain-runtime \
+            -p coretime-zagros-runtime \
+            -p collectives-zagros-runtime
+
+      # Type-checking a runtime says the parts fit together. It says nothing about what the
+      # assembled thing does, and this repository has a `collectives-zagros` assertion that has
+      # been wrong since the fork arrived -- it asserted upstream's arrangement, where
+      # governance moved to the Asset Hub, and ours keeps it on the relay. Nothing caught it
+      # because nothing ran it: this job checked and never tested.
+      #
+      # These are the tests that answer questions a type cannot: whether a message from a
+      # sibling is refused, whether a body that should be able to authorise an upgrade can, and
+      # whether the two ballot boxes count separate electorates.
+      - name: Run the runtime integration tests
+        run: |
+          SKIP_WASM_BUILD=1 cargo test --locked \
+            -p asset-hub-pezkuwichain-runtime \
+            -p asset-hub-zagros-runtime \
+            -p people-pezkuwichain-runtime \
+            -p people-zagros-runtime \
+            -p pezbridge-hub-pezkuwichain-runtime \
+            -p pezbridge-hub-zagros-runtime \
+            -p coretime-pezkuwichain-runtime \
+            -p coretime-zagros-runtime \
+            -p collectives-zagros-runtime \
+            -p pezkuwichain-runtime \
+            -p zagros-runtime
+
+  # The blobs that are not part of either network: test fixtures, the templates we ship, the
+  # documentation runtimes, and the staking-async pair we derive from upstream. They are kept
+  # apart from `runtimes` on purpose — that job is the production surface, and a red run there
+  # means a live chain will not build, while a red run here does not. Reading which of the two
+  # failed should not require opening the log.
+  #
+  # They are here at all because `workspace` used to build them as a side effect of
+  # `cargo check --workspace`, and that job no longer does (SKIP_WASM_BUILD). Dropping them
+  # instead would have retired a gate that exists today without anyone deciding to: penpal and
+  # the test teyrchains are what the emulated XCM and zombienet tests run against, and test.yml
+  # is not a substitute — it has not run on a feature branch since 2026-08-15 and every nightly
+  # on main is currently red, so a new break would land in noise.
+  #
+  # The list is derived, not remembered: the workspace members whose build.rs uses
+  # wasm_builder, minus the eleven in `runtimes`. Regenerate it that way when it drifts.
+  test-runtimes:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, bizinikiwi-build]
+    steps:
+      - uses: actions/checkout@v7
+      # pez-revive-dev-runtime pulls in pallet-revive's fixtures, which compile Solidity from a
+      # build script.
+      - uses: ./.github/actions/install-solidity
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+      - name: Build test and template runtime WASM (check)
+        # --keep-going: this job takes roughly two hours, and cancel-in-progress means a push
+        # discards whatever is running. Stopping at the first broken runtime would surface one
+        # defect per two-hour cycle; carrying on reports all of them in a single run.
+        run: |
+          cargo check --locked --keep-going \
+            -p bizinikiwi-test-runtime \
+            -p glutton-zagros-runtime \
+            -p pez-chain-spec-guide-runtime \
+            -p pez-kitchensink-runtime \
+            -p pez-minimal-template-runtime \
+            -p pez-penpal-runtime \
+            -p pez-revive-dev-runtime \
+            -p pez-solochain-template-runtime \
+            -p pezcumulus-test-runtime \
+            -p pezkuwi-sdk-docs-first-runtime \
+            -p pezkuwi-test-runtime \
+            -p pezpallet-staking-async-rc-runtime \
+            -p pezpallet-staking-async-teyrchain-runtime \
+            -p pezsc-runtime-test \
+            -p pezsp-runtime-interface-test-wasm \
+            -p pezsp-runtime-interface-test-wasm-deprecated \
+            -p pezsp-virtualization-test-fixture \
+            -p test-teyrchain-adder \
+            -p test-teyrchain-halt \
+            -p test-teyrchain-undying \
+            -p teyrchain-template-runtime
+
+  # The runtimes are the on-chain deliverable; these are the off-chain one. Nothing on the
+  # every-push path compiled them until now, so the node could stop building and every gating
+  # job would still report green: a framework sync moved several client crates and left their
+  # consumers behind, and `cargo check -p pezsc-network` failed for weeks without a red run.
+  # The runtime jobs cannot catch this — they never reach the client layer.
+  node:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, bizinikiwi-build]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+      # Everything the release workflows actually build and ship. The chain-spec builder was
+      # missing from this list while being built by release-testnet, which is the same shape of
+      # hole the runtime jobs had: a package nothing checks on the push path can break and only
+      # surface at release time, when it is most expensive.
+      - name: Build node binaries (check)
+        run: |
+          cargo check --locked \
+            -p pezkuwi \
+            -p pezkuwi-teyrchain-bin \
+            -p pezstaging-chain-spec-builder
 
   # The runtimes must also build with the try-runtime feature — this is what makes
   # safe storage migrations possible, a fund-critical gate before any upgrade. It is
@@ -74,11 +284,104 @@ jobs:
     if: >-
       github.event_name == 'push' ||
       github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     steps:
       - uses: actions/checkout@v7
+      # Same eleven as the WASM job above; every one of them declares the feature.
       - run: |
           cargo check --locked --features try-runtime \
             -p pezkuwichain-runtime -p zagros-runtime \
             -p asset-hub-pezkuwichain-runtime -p asset-hub-zagros-runtime \
-            -p people-pezkuwichain-runtime -p people-zagros-runtime
+            -p people-pezkuwichain-runtime -p people-zagros-runtime \
+            -p pezbridge-hub-pezkuwichain-runtime -p pezbridge-hub-zagros-runtime \
+            -p coretime-pezkuwichain-runtime -p coretime-zagros-runtime \
+            -p collectives-zagros-runtime
+
+  # And with `runtime-benchmarks`, for the same reason and a demonstrated one.
+  #
+  # On 2026-08-28 a weights run stopped on both bridge hubs: `Encode` was never imported, so
+  # `generate_session_keys_and_proof` did not compile. That code exists only under this feature,
+  # nothing on the push path turned it on, and the nightly job checks `--benches` -- which does
+  # not build a runtime. So the two hubs had been unbuildable under the feature for as long as
+  # the code had been there, and the way it surfaced was a measurement failing hours in.
+  #
+  # A benchmark that cannot be run is a weight that cannot be measured, and an unmeasured weight
+  # is the chain mispricing its own blocks.
+  check-runtime-benchmarks:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, bizinikiwi-build]
+    steps:
+      - uses: actions/checkout@v7
+      # `pallet-revive` compiles Solidity fixtures in a build script, and without solc the job
+      # stops before checking anything. Installed, not skipped with
+      # `SKIP_PALLET_REVIVE_FIXTURES=1`, for the reason the `workspace` job records: skipping
+      # leaves a gate reporting success over code it never built. This job was added without
+      # the step and spent its first two runs failing on the environment rather than on code.
+      - uses: ./.github/actions/install-solidity
+      # Also in step with the other runtime jobs. This runner happens to have the targets
+      # already, which is exactly why it has to be written down: a fresh one would fail here
+      # with nothing explaining it.
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+      # The same eleven as every other runtime job here. Kept in step deliberately: a runtime
+      # that is checked by one of these lists and not the others is a runtime with a gap
+      # nobody chose.
+      - run: |
+          cargo check --locked --features runtime-benchmarks \
+            -p pezkuwichain-runtime -p zagros-runtime \
+            -p asset-hub-pezkuwichain-runtime -p asset-hub-zagros-runtime \
+            -p people-pezkuwichain-runtime -p people-zagros-runtime \
+            -p pezbridge-hub-pezkuwichain-runtime -p pezbridge-hub-zagros-runtime \
+            -p coretime-pezkuwichain-runtime -p coretime-zagros-runtime \
+            -p collectives-zagros-runtime
+
+  # The jobs above name the packages they care about. Between them they pull in 503 of the
+  # workspace's 616 crates, which leaves 113 that nothing on this path compiles — among them
+  # all 27 crates of the emulated integration-test tree, 29 pallets and 15 client crates.
+  #
+  # Only `test.yml` reaches those, and it runs on a schedule rather than on a pull request, so
+  # a crate outside the lists above can break and stay broken until someone triggers the heavy
+  # suite by hand. The emulated tree shows what that costs: it had not compiled since the repo's
+  # first commit — a stale crate name, a runtime a release behind its own consumers, a macro
+  # keyword the rename touched, and two arguments no upstream macro ever accepted. Every one of
+  # them is an ordinary compile error that a single `cargo check` would have shown the same day.
+  #
+  # This job closes the hole at the cheapest price that still catches it: `check`, not `test`,
+  # so nothing is codegen'd or run, and `--tests` so test-only code is typechecked too — that is
+  # where all four of those defects lived. The heavy suites stay in test.yml.
+  workspace:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, bizinikiwi-build]
+    steps:
+      - uses: actions/checkout@v7
+      # pallet-revive's fixtures compile Solidity contracts from their build script, so this
+      # job needs solc on PATH or it stops there. test.yml installs it in every job that
+      # reaches those crates; this one reaches them too and was the only place it was missing.
+      # Skipping the fixtures instead (SKIP_PALLET_REVIVE_FIXTURES=1) would leave a gate that
+      # reports success over code it never built.
+      - uses: ./.github/actions/install-solidity
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+      # The blobs this would otherwise build now have their own job, `test-runtimes`, which
+      # runs beside this one instead of inside it. Typechecking does not need them, and
+      # building them here put all 32 wasm compilations on the critical path of the longest
+      # job in the workflow. Nothing is dropped: `runtimes` covers the eleven production
+      # blobs and `test-runtimes` covers the other twenty-one.
+      # --keep-going for the same reason as test-runtimes: this job is the longest in the
+      # workflow, so stopping at the first broken crate turns a list of defects into one
+      # defect per cycle. It found twelve errors in one test file, then three more that the
+      # first pass had masked, then would have found the sibling file's on a third run.
+      - name: Check every crate, tests included
+        env:
+          SKIP_WASM_BUILD: 1
+        run: cargo check --workspace --locked --tests --keep-going

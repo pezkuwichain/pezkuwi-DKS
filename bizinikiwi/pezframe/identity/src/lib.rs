@@ -48,8 +48,8 @@
 //! - a username without setting an identity
 //! - an identity and a username
 //!
-//! The username functionality implemented in this pezpallet is meant to be a user friendly lookup
-//! of accounts. There are mappings in both directions, "account -> username" and "username ->
+//! The username functionality implemented in this pezpallet is meant to be a user friendly lookup of
+//! accounts. There are mappings in both directions, "account -> username" and "username ->
 //! account".
 //!
 //! Usernames are granted by authorities and grouped by suffix, with each suffix being administered

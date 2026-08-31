@@ -25,7 +25,6 @@ log = { workspace = true, default-features = true }
 serde = { features = ["derive"], workspace = true, default-features = true }
 
 # Direct dependency needed (not through umbrella due to macro visibility issues)
-pezsp-runtime = { workspace = true }
 
 pezkuwi-sdk = { workspace = true, features = [
 	"node",
@@ -51,21 +50,18 @@ std = [
 	"log/std",
 	"pezframe-benchmarking-cli?/std",
 	"pezkuwi-sdk/std",
-	"pezsp-runtime/std",
 	"prometheus-endpoint/std",
 	"teyrchain-template-runtime/std",
 ]
 runtime-benchmarks = [
 	"pezframe-benchmarking-cli?/runtime-benchmarks",
 	"pezkuwi-sdk/runtime-benchmarks",
-	"pezsp-runtime/runtime-benchmarks",
 	"teyrchain-template-runtime/runtime-benchmarks",
 ]
 storage-benchmark = ["pezframe-benchmarking-cli/storage-benchmark"]
 try-runtime = [
 	"pezframe-benchmarking-cli?/try-runtime",
 	"pezkuwi-sdk/try-runtime",
-	"pezsp-runtime/try-runtime",
 	"teyrchain-template-runtime/try-runtime",
 ]
 serde = []

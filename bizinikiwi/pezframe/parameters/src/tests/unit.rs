@@ -197,7 +197,7 @@ fn set_parameters_wrong_origin_errors() {
 }
 
 #[test]
-fn get_through_external_pallet_works() {
+fn get_through_external_pezpallet_works() {
 	new_test_ext().execute_with(|| {
 		assert_eq!(<Runtime as pezpallet_example_basic::Config>::MagicNumber::get(), 0);
 

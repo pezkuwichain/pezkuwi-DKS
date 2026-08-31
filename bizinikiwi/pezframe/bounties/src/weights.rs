@@ -41,7 +41,7 @@
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: `1024`
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
@@ -54,11 +54,11 @@
 // --steps=50
 // --repeat=20
 // --heap-pages=4096
-// --template=bizinikiwi/.maintain/frame-weight-template.hbs
+// --template=bizinikiwi/.maintain/pezframe-weight-template.hbs
 // --no-storage-info
 // --no-min-squares
 // --no-median-slopes
-// --exclude-pallets=pezpallet_xcm,pezpallet_xcm_benchmarks::fungible,pezpallet_xcm_benchmarks::generic,pezpallet_nomination_pools,pezpallet_remark,pezpallet_transaction_storage
+// --exclude-pezpallets=pezpallet_xcm,pezpallet_xcm_benchmarks::fungible,pezpallet_xcm_benchmarks::generic,pezpallet_nomination_pools,pezpallet_remark,pezpallet_transaction_storage
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]

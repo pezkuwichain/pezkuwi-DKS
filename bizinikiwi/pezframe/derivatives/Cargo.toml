@@ -34,6 +34,7 @@ xcm-executor = { workspace = true }
 
 [dev-dependencies]
 pezpallet-balances = { workspace = true, default-features = true }
+pezsp-tracing = { workspace = true, default-features = true }
 
 [features]
 default = ["std"]
@@ -47,6 +48,7 @@ std = [
 	"pezsp-io/std",
 	"pezsp-runtime/std",
 	"pezsp-std/std",
+	"pezsp-tracing/std",
 	"scale-info/std",
 	"xcm-builder/std",
 	"xcm-executor/std",

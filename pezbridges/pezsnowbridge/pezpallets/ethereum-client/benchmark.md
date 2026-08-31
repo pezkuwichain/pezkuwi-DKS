@@ -1,7 +1,7 @@
 # Motivation
 Demonstrate that
 [FastAggregateVerify](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bls-signature-04#section-3.3.4) is the most
-expensive call in ethereum beacon light client, though in [#13031](https://github.com/pezkuwichain/pezkuwi-sdk/issues/42)
+expensive call in ethereum beacon light client, though in [#13031](https://github.com/pezkuwichain/pezkuwi-DKS/issues/42)
 Parity team has wrapped some low level host functions for `bls-12381` but adding a high level host function specific
 for it is super helpful.
 

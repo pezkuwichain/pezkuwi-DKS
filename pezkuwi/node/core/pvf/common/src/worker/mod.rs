@@ -192,7 +192,7 @@ macro_rules! decl_worker_main {
 	};
 }
 
-//taken from the os_pipe crate. Copied here to reduce one dependency and
+// taken from the os_pipe crate. Copied here to reduce one dependency and
 // because its type-safe abstractions do not play well with nix's clone
 #[cfg(not(target_os = "macos"))]
 pub fn pipe2_cloexec() -> io::Result<(libc::c_int, libc::c_int)> {

@@ -27,7 +27,7 @@ pub use pezsp_application_crypto;
 use pezsp_application_crypto::sr25519;
 
 use alloc::vec::Vec;
-pub use pezsp_core::{hash::H256, RuntimeDebug};
+pub use pezsp_core::hash::H256;
 use pezsp_runtime::{
 	traits::{BlakeTwo256, ExtrinsicLike, LazyExtrinsic, Verify},
 	OpaqueExtrinsic,
@@ -35,7 +35,7 @@ use pezsp_runtime::{
 
 /// Extrinsic for test-runtime.
 #[derive(
-	Clone, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, scale_info::TypeInfo,
+	Clone, PartialEq, Eq, Encode, Decode, DecodeWithMemTracking, Debug, scale_info::TypeInfo,
 )]
 pub enum Extrinsic {
 	IncludeData(Vec<u8>),

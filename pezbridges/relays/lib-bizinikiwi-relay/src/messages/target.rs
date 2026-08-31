@@ -21,7 +21,7 @@
 use crate::{
 	messages::{
 		source::{
-			ensure_messages_pallet_active, read_client_state_from_both_chains,
+			ensure_messages_pezpallet_active, read_client_state_from_both_chains,
 			BizinikiwiMessagesProof,
 		},
 		BatchProofTransaction, BizinikiwiMessageLane, MessageLaneAdapter,
@@ -32,7 +32,6 @@ use crate::{
 	TransactionParams,
 };
 
-use async_std::sync::Arc;
 use async_trait::async_trait;
 use codec::Decode;
 use pez_messages_relay::{
@@ -49,7 +48,7 @@ use relay_bizinikiwi_client::{
 	HashOf, TransactionEra, TransactionTracker, UnsignedTransaction,
 };
 use relay_utils::relay_loop::Client as RelayClient;
-use std::{collections::VecDeque, convert::TryFrom, ops::RangeInclusive};
+use std::{collections::VecDeque, convert::TryFrom, ops::RangeInclusive, sync::Arc};
 
 /// Message receiving proof returned by the target Bizinikiwi node.
 pub type BizinikiwiMessagesDeliveryProof<C, L> =
@@ -58,7 +57,7 @@ pub type BizinikiwiMessagesDeliveryProof<C, L> =
 /// Inbound lane data - for backwards compatibility with `pezbp_messages::InboundLaneData` which has
 /// additional `lane_state` attribute.
 ///
-/// TODO: remove - https://github.com/pezkuwichain/pezkuwi-sdk/issues/22
+/// TODO: remove - https://github.com/pezkuwichain/pezkuwi-DKS/issues/5923
 #[derive(Decode)]
 struct LegacyInboundLaneData<RelayerId> {
 	relayers: VecDeque<UnrewardedRelayer<RelayerId>>,
@@ -148,8 +147,8 @@ where
 	}
 
 	/// Ensure that the messages pezpallet at target chain is active.
-	async fn ensure_pallet_active(&self) -> Result<(), BizinikiwiError> {
-		ensure_messages_pallet_active::<P::TargetChain, P::SourceChain, _>(&self.target_client)
+	async fn ensure_pezpallet_active(&self) -> Result<(), BizinikiwiError> {
+		ensure_messages_pezpallet_active::<P::TargetChain, P::SourceChain, _>(&self.target_client)
 			.await
 	}
 }
@@ -189,7 +188,7 @@ impl<
 		//
 		// this may lead to multiple reconnects to the same node during the same call and it
 		// needs to be addressed in the future
-		// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/82
+		// TODO: https://github.com/paritytech/parity-bridges-common/issues/1928
 		if let Some(ref mut source_to_target_headers_relay) = self.source_to_target_headers_relay {
 			source_to_target_headers_relay.reconnect().await?;
 		}
@@ -221,7 +220,7 @@ where
 		self.source_client.ensure_synced().await?;
 		self.target_client.ensure_synced().await?;
 		// we can't relay messages if messages pezpallet at target chain is halted
-		self.ensure_pallet_active().await?;
+		self.ensure_pezpallet_active().await?;
 
 		read_client_state_from_both_chains(&self.target_client, &self.source_client).await
 	}

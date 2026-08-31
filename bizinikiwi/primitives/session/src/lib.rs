@@ -29,7 +29,6 @@ use pezsp_api::ProvideRuntimeApi;
 use pezsp_runtime::traits::Block as BlockT;
 
 use alloc::vec::Vec;
-use pezsp_core::RuntimeDebug;
 use pezsp_staking::SessionIndex;
 
 pub mod runtime_api;
@@ -47,7 +46,7 @@ pub type ValidatorCount = u32;
 	Eq,
 	PartialEq,
 	Default,
-	RuntimeDebug,
+	Debug,
 	scale_info::TypeInfo,
 )]
 pub struct MembershipProof {
@@ -115,7 +114,7 @@ where
 	T: ProvideRuntimeApi<Block>,
 	T::Api: SessionKeys<Block>,
 {
-	use pezsp_api::ApiExt;
+	use pezsp_api::{ApiError, ApiExt};
 
 	if seeds.is_empty() {
 		return Ok(());
@@ -123,10 +122,22 @@ where
 
 	let mut runtime_api = client.runtime_api();
 
+	let version = runtime_api.api_version::<dyn SessionKeys<Block>>(at)?.ok_or_else(|| {
+		ApiError::Application(Box::from("Could not find `SessionKeys` runtime api"))
+	})?;
+
 	runtime_api.register_extension(pezsp_keystore::KeystoreExt::from(keystore));
 
 	for seed in seeds {
-		runtime_api.generate_session_keys(at, Some(seed.as_bytes().to_vec()))?;
+		let seed = Some(seed.as_bytes().to_vec());
+
+		if version < 2 {
+			#[allow(deprecated)]
+			runtime_api.generate_session_keys_before_version_2(at, seed.clone())?;
+		} else {
+			// `owner` isn't important here as we don't need a `proof`.
+			runtime_api.generate_session_keys(at, vec![], seed.clone())?;
+		}
 	}
 
 	Ok(())

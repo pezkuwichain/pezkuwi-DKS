@@ -89,7 +89,8 @@ pub fn extrinsic_set_validation_data(
 		..Default::default()
 	};
 
-	let (relay_parent_storage_root, relay_chain_state) = sproof_builder.into_state_root_and_proof();
+	let (relay_parent_storage_root, relay_chain_state, relay_parent_descendants) =
+		sproof_builder.into_state_root_proof_and_descendants(1);
 	let data = BasicTeyrchainInherentData {
 		validation_data: PersistedValidationData {
 			parent_head,
@@ -98,7 +99,7 @@ pub fn extrinsic_set_validation_data(
 			max_pov_size: 10000,
 		},
 		relay_chain_state,
-		relay_parent_descendants: Default::default(),
+		relay_parent_descendants,
 		collator_peer_id: None,
 	};
 
@@ -188,7 +189,7 @@ pub fn create_benchmarking_transfer_extrinsics(
 	(max_transfer_count, extrinsics)
 }
 
-/// Prepare pezcumulus test runtime for execution
+/// Prepare cumulus test runtime for execution
 pub fn get_wasm_module() -> Box<dyn pezsc_executor_common::wasm_runtime::WasmModule> {
 	let blob = RuntimeBlob::uncompress_if_needed(
 		WASM_BINARY.expect("You need to build the WASM binaries to run the benchmark!"),

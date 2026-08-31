@@ -22,7 +22,7 @@ use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::result::Result;
 use pezsp_runtime::{
 	traits::{Bounded, CheckedDiv, CheckedMul, Zero},
-	RuntimeDebug,
+	Debug,
 };
 use scale_info::TypeInfo;
 
@@ -38,7 +38,7 @@ use scale_info::TypeInfo;
 	PartialEq,
 	Ord,
 	PartialOrd,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 )]
 pub enum Conviction {

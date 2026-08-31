@@ -28,6 +28,7 @@ use pezsp_core::hexdisplay::{AsBytesRef, HexDisplay};
 mod common;
 
 pub mod archive;
+pub mod bitswap;
 pub mod chain_head;
 pub mod chain_spec;
 pub mod transaction;

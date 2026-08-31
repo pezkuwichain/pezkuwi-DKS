@@ -22,6 +22,7 @@ pezsp-core = { workspace = true }
 pezsp-io = { features = ["improved_panic_error_reporting"], workspace = true }
 pezsp-runtime = { workspace = true }
 pezsp-runtime-interface = { workspace = true }
+pezsp-virtualization = { workspace = true }
 
 [build-dependencies]
 bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features = true }
@@ -35,6 +36,7 @@ std = [
 	"pezsp-io/std",
 	"pezsp-runtime-interface/std",
 	"pezsp-runtime/std",
+	"pezsp-virtualization/std",
 ]
 runtime-benchmarks = [
 	"bizinikiwi-wasm-builder?/runtime-benchmarks",
@@ -42,6 +44,8 @@ runtime-benchmarks = [
 	"pezsp-runtime-interface/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 ]
-try-runtime = ["pezsp-runtime/try-runtime"]
+try-runtime = [
+	"pezsp-runtime/try-runtime",
+]
 serde = []
 with-tracing = []

@@ -153,7 +153,7 @@ pub enum ExecutionError {
 	/// The weight of an XCM message is not computable ahead of execution.
 	WeightNotComputable,
 	/// Recursion stack limit reached
-	// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/291): This should have a fixed index since
+	// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/291): This should have a fixed index since
 	// we use it in `FrameTransactionalProcessor` // which is used in instructions.
 	// Or we should create a different error for that.
 	ExceedsStackLimit,

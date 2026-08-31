@@ -1,6 +1,6 @@
 #![allow(missing_docs)]
 use pezkuwi_subxt::config::{
-	BizinikiwConfig, Config, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder, PezkuwiConfig,
+	BizinikiwiConfig, Config, DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder, PezkuwiConfig,
 };
 use pezkuwi_subxt_signer::sr25519::dev;
 
@@ -21,11 +21,11 @@ use runtime::runtime_types::{
 pub enum AssetHubConfig {}
 
 impl Config for AssetHubConfig {
-	type AccountId = <BizinikiwConfig as Config>::AccountId;
+	type AccountId = <BizinikiwiConfig as Config>::AccountId;
 	type Address = <PezkuwiConfig as Config>::Address;
-	type Signature = <BizinikiwConfig as Config>::Signature;
-	type Hasher = <BizinikiwConfig as Config>::Hasher;
-	type Header = <BizinikiwConfig as Config>::Header;
+	type Signature = <BizinikiwiConfig as Config>::Signature;
+	type Hasher = <BizinikiwiConfig as Config>::Hasher;
+	type Header = <BizinikiwiConfig as Config>::Header;
 	type ExtrinsicParams = DefaultExtrinsicParams<AssetHubConfig>;
 	// Here we use the MultiLocation from the metadata as a part of the config:
 	// The `ChargeAssetTxPayment` signed extension that is part of the ExtrinsicParams above, now

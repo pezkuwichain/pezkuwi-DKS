@@ -23,7 +23,6 @@ use pezsp_application_crypto::AppCrypto;
 #[cfg(feature = "std")]
 use pezsp_keystore::{Error as KeystoreError, KeystorePtr};
 
-use pezsp_core::RuntimeDebug;
 use pezsp_runtime::traits::AppVerify;
 
 use super::{SigningContext, ValidatorId, ValidatorIndex, ValidatorSignature};
@@ -36,7 +35,7 @@ use super::{SigningContext, ValidatorId, ValidatorIndex, ValidatorSignature};
 ///
 /// `Signed` can easily be converted into `UncheckedSigned` and conversion back via `into_signed`
 /// enforces a valid signature again.
-#[derive(Clone, PartialEq, Eq, RuntimeDebug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Signed<Payload, RealPayload = Payload>(UncheckedSigned<Payload, RealPayload>);
 
 impl<Payload, RealPayload> Signed<Payload, RealPayload> {
@@ -47,7 +46,7 @@ impl<Payload, RealPayload> Signed<Payload, RealPayload> {
 }
 
 /// Unchecked signed data, can be converted to `Signed` by checking the signature.
-#[derive(Clone, PartialEq, Eq, RuntimeDebug, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
+#[derive(Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeWithMemTracking, TypeInfo)]
 pub struct UncheckedSigned<Payload, RealPayload = Payload> {
 	/// The payload is part of the signed data. The rest is the signing context,
 	/// which is known both at signing and at validation.

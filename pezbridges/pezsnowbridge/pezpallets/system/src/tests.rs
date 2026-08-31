@@ -214,7 +214,7 @@ pub struct RegisterTokenTestCase {
 #[test]
 fn register_all_tokens_succeeds() {
 	let test_cases = vec![
-		// HEZ
+		// DOT
 		RegisterTokenTestCase {
 			native: Location::parent(),
 			reanchored: Location::new(1, GlobalConsensus(Pezkuwi)),
@@ -238,7 +238,7 @@ fn register_all_tokens_succeeds() {
 			foreign: hex!("14b0579be12d7d7f9971f1d4b41f0e88384b9b74799b0150d4aa6cd01afb4444")
 				.into(),
 		},
-		// DCL
+		// KSM
 		RegisterTokenTestCase {
 			native: Location::new(2, [GlobalConsensus(Dicle)]),
 			reanchored: Location::new(1, [GlobalConsensus(Dicle)]),
@@ -299,7 +299,7 @@ fn register_ethereum_native_token_fails() {
 #[test]
 fn check_pna_token_id_compatibility() {
 	let test_cases = vec![
-		// HEZ
+		// DOT
 		RegisterTokenTestCase {
 			native: Location::parent(),
 			reanchored: Location::new(1, GlobalConsensus(Pezkuwi)),
@@ -323,7 +323,7 @@ fn check_pna_token_id_compatibility() {
 			foreign: hex!("14b0579be12d7d7f9971f1d4b41f0e88384b9b74799b0150d4aa6cd01afb4444")
 				.into(),
 		},
-		// DCL
+		// KSM
 		RegisterTokenTestCase {
 			native: Location::new(2, [GlobalConsensus(Dicle)]),
 			reanchored: Location::new(1, [GlobalConsensus(Dicle)]),

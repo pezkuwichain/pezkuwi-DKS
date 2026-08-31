@@ -12,7 +12,7 @@
 //! // This causes trait bound mismatches (e.g., `From<PublicKey> for sp_core::crypto::AccountId32`).
 //! // The metadata should be regenerated from a running Pezkuwi chain to fix this permanently.
 //! // Real functionality is tested in integration tests.
-//! // Tracking: https://github.com/pezkuwichain/pezkuwi-sdk/issues/358
+//! // Tracking: https://github.com/pezkuwichain/pezkuwi-DKS/issues/358
 //! use pezkuwi_subxt_signer::sr25519::dev;
 //! use pezkuwi_subxt_macro::subxt;
 //! use pezkuwi_subxt_core::storage;

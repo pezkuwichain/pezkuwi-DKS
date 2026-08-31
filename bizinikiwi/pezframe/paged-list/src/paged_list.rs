@@ -63,9 +63,9 @@ pub type ValueIndex = u32;
 /// [`storage::append`](pezframe::deps::pezsp_io::storage::append). It allows to directly extend
 /// the elements of `values` vector of the page without loading the whole vector from storage. A new
 /// page is instantiated once [`Page::next`] overflows `ValuesPerNewPage`. Its vector will also be
-/// created through [`storage::append`](pezframe::deps::pezsp_io::storage::append). **Draining**
-/// advances the internal indices identical to Iteration. It additionally persists the increments to
-/// storage and thereby 'drains' elements. Completely drained pages are deleted from storage.
+/// created through [`storage::append`](pezframe::deps::pezsp_io::storage::append). **Draining** advances
+/// the internal indices identical to Iteration. It additionally persists the increments to storage
+/// and thereby 'drains' elements. Completely drained pages are deleted from storage.
 ///
 /// # Further Observations
 ///

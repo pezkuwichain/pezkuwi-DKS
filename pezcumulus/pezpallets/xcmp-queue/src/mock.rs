@@ -107,6 +107,7 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Test {
 	type ConsensusHook =
 		pezcumulus_pezpallet_teyrchain_system::consensus_hook::ExpectParentIncluded;
 	type RelayParentOffset = ConstU32<0>;
+	type SchedulingSignatureVerifier = ();
 }
 
 parameter_types! {

@@ -30,7 +30,7 @@ use pezbp_runtime::{
 pub use pezbp_xcm_bridge_hub_router::XcmBridgeHubRouterCall;
 use pezframe_support::{
 	dispatch::DispatchClass,
-	pezsp_runtime::{MultiAddress, MultiSigner, RuntimeDebug, StateVersion},
+	pezsp_runtime::{MultiAddress, MultiSigner, StateVersion},
 };
 use testnet_teyrchains_constants::pezkuwichain::currency::UNITS;
 use xcm::latest::prelude::*;
@@ -84,7 +84,7 @@ pub fn build_congestion_message<RuntimeCall>(
 pub const ASSET_HUB_PEZKUWICHAIN_TEYRCHAIN_ID: u32 = 1000;
 
 /// AssetHubPezkuwichain teyrchain.
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 
 pub struct AssetHubPezkuwichain;
 

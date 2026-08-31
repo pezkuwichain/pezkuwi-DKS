@@ -21,8 +21,7 @@
 //! The `DiscoveryBehaviour` struct implements the `NetworkBehaviour` trait of libp2p and is
 //! responsible for discovering other nodes that are part of the network.
 //!
-//! Bizinikiwi uses the following mechanisms in order to discover nodes that are part of the
-//! network:
+//! Bizinikiwi uses the following mechanisms in order to discover nodes that are part of the network:
 //!
 //! - Bootstrap nodes. These are hard-coded node identities and addresses passed in the constructor
 //! of the `DiscoveryBehaviour`. You can also call `add_known_address` later to add an entry.
@@ -350,7 +349,7 @@ pub struct DiscoveryBehaviour {
 	/// The chain based kademlia protocol name (including genesis hash and fork id).
 	///
 	/// Remove when all nodes are upgraded to genesis hash and fork ID-based Kademlia:
-	/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/250>.
+	/// <https://github.com/pezkuwichain/pezkuwi-DKS/issues/504>.
 	kademlia_protocol: Option<StreamProtocol>,
 	/// Provider keys requested with `GET_PROVIDERS` queries.
 	provider_keys_requested: HashMap<QueryId, RecordKey>,
@@ -415,7 +414,7 @@ impl DiscoveryBehaviour {
 			//
 			// Extract the chain-based Kademlia protocol from `kademlia.protocol_name()`
 			// when all nodes are upgraded to genesis hash and fork ID-based Kademlia:
-			// https://github.com/pezkuwichain/pezkuwi-sdk/issues/250.
+			// https://github.com/pezkuwichain/pezkuwi-DKS/issues/504.
 			if !supported_protocols.iter().any(|p| {
 				p == self
 					.kademlia_protocol
@@ -1333,7 +1332,7 @@ mod tests {
 	use libp2p::{identity::Keypair, Multiaddr};
 	use pezsp_core::hash::H256;
 
-	#[cfg(ignore_flaky_test)] // https://github.com/pezkuwichain/pezkuwi-sdk/issues/96
+	#[cfg(ignore_flaky_test)] // https://github.com/paritytech/polkadot-sdk/issues/48
 	#[tokio::test]
 	async fn discovery_working() {
 		use super::DiscoveryOut;
@@ -1352,7 +1351,7 @@ mod tests {
 
 		let genesis_hash = H256::from_low_u64_be(1);
 		let fork_id = Some("test-fork-id");
-		let protocol_id = ProtocolId::from("hez");
+		let protocol_id = ProtocolId::from("dot");
 
 		// Build swarms whose behaviour is `DiscoveryBehaviour`, each aware of
 		// the first swarm via `with_permanent_addresses`.

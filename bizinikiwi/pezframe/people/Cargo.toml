@@ -21,6 +21,7 @@ pezframe-support = { workspace = true }
 pezframe-system = { workspace = true }
 pezsp-arithmetic = { workspace = true }
 pezsp-core = { workspace = true }
+pezsp-crypto-hashing = { workspace = true }
 pezsp-io = { workspace = true }
 pezsp-runtime = { workspace = true }
 scale-info = { workspace = true, features = ["derive"] }
@@ -37,6 +38,7 @@ std = [
 	"pezframe-system/std",
 	"pezsp-arithmetic/std",
 	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
 	"scale-info/std",

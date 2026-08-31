@@ -252,7 +252,11 @@ where
 						node.run_benchmark_block_cmd(config, cmd)
 					})
 				},
-				#[cfg(feature = "storage-benchmark")]
+				// `StorageCmd` and the `Storage` variant are behind `storage-benchmark`, which is
+				// ours -- upstream compiles the storage benchmark unconditionally. Gating this
+				// arm on `runtime-benchmarks` alone named a variant that does not exist whenever
+				// only that feature was on, which is exactly how `check-benches` builds.
+				#[cfg(all(feature = "runtime-benchmarks", feature = "storage-benchmark"))]
 				BenchmarkCmd::Storage(cmd) => {
 					// The command needs the full node configuration because it uses the node
 					// client and the database API, storage and shared_trie_cache. It requires
@@ -302,50 +306,14 @@ where
 			}
 
 			runner.run_node_until_exit(|config| async move {
+				let node_extra_args = cli.node_extra_args();
 				let node_spec =
-					new_node_spec(&config, &cmd_config.runtime_resolver, &cli.node_extra_args())?;
+					new_node_spec(&config, &cmd_config.runtime_resolver, &node_extra_args)?;
 
 				if let Some(dev_mode) = cli.dev_mode() {
-					return node_spec.start_dev_node(config, dev_mode).map_err(Into::into);
-				}
-
-				// If Statemint (Statemine, Westmint, Rockmine) DB exists and we're using the
-				// asset-hub chain spec, then rename the base path to the new chain ID. In the case
-				// that both file paths exist, the node will exit, as the user must decide (by
-				// deleting one path) the information that they want to use as their DB.
-				let old_name = match config.chain_spec.id() {
-					"asset-hub-pezkuwi" => Some("statemint"),
-					"asset-hub-dicle" => Some("statemine"),
-					"asset-hub-zagros" => Some("westmint"),
-					"asset-hub-pezkuwichain" => Some("rockmine"),
-					_ => None,
-				};
-
-				if let Some(old_name) = old_name {
-					let new_path = config.base_path.config_dir(config.chain_spec.id());
-					let old_path = config.base_path.config_dir(old_name);
-
-					if old_path.exists() && new_path.exists() {
-						return Err(format!(
-							"Found legacy {} path {} and new Asset Hub path {}. \
-							Delete one path such that only one exists.",
-							old_name,
-							old_path.display(),
-							new_path.display()
-						)
-						.into());
-					}
-
-					if old_path.exists() {
-						std::fs::rename(old_path.clone(), new_path.clone())?;
-						info!(
-							"{} was renamed to Asset Hub. The filepath with associated data on disk \
-							has been renamed from {} to {}.",
-							old_name,
-							old_path.display(),
-							new_path.display()
-						);
-					}
+					return node_spec
+						.start_dev_node(config, dev_mode, node_extra_args)
+						.map_err(Into::into);
 				}
 
 				let hwbench = (!cli.no_hardware_benchmarks)

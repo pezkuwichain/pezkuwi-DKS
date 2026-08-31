@@ -49,7 +49,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 		maybe_deadline: Option<BlockNumberFor<T, I>>,
 	) -> DispatchResult {
 		ensure!(
-			Self::is_pallet_feature_enabled(PalletFeature::Approvals),
+			Self::is_pezpallet_feature_enabled(PalletFeature::Approvals),
 			Error::<T, I>::MethodDisabled
 		);
 		let mut details =

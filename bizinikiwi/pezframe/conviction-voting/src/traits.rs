@@ -20,7 +20,6 @@
 use crate::AccountVote;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezframe_support::dispatch::DispatchResult;
-use pezsp_runtime::RuntimeDebug;
 use scale_info::TypeInfo;
 
 /// Represents the differents states of a referendum.
@@ -32,7 +31,7 @@ use scale_info::TypeInfo;
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 )]

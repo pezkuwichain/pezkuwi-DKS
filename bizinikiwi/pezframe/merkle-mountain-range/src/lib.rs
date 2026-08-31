@@ -40,8 +40,8 @@
 //!
 //! ## What for?
 //!
-//! Primary use case for this pezpallet is to generate MMR root hashes, that can latter on be used
-//! by BEEFY protocol (see <https://github.com/paritytech/grandpa-bridge-gadget>).
+//! Primary use case for this pezpallet is to generate MMR root hashes, that can latter on be used by
+//! BEEFY protocol (see <https://github.com/paritytech/grandpa-bridge-gadget>).
 //! MMR root hashes along with BEEFY will make it possible to build Super Light Clients (SLC) of
 //! Bizinikiwi-based chains. The SLC will be able to follow finality and can be shown proofs of more
 //! details that happened on the source chain.
@@ -122,7 +122,7 @@ pub trait WeightInfo {
 	fn on_initialize(peaks: u32) -> Weight;
 }
 
-/// This trait decoples dependencies on pallets needed for benchmarking.
+/// This trait decoples dependencies on pezpallets needed for benchmarking.
 #[cfg(feature = "runtime-benchmarks")]
 pub trait BenchmarkHelper {
 	fn setup();
@@ -222,7 +222,6 @@ pub mod pezpallet {
 
 	/// Current size of the MMR (number of leaves).
 	#[pezpallet::storage]
-	#[pezpallet::getter(fn mmr_leaves)]
 	pub type NumberOfLeaves<T, I = ()> = StorageValue<_, LeafIndex, ValueQuery>;
 
 	/// Hashes of the nodes in the MMR.
@@ -230,7 +229,6 @@ pub mod pezpallet {
 	/// Note this collection only contains MMR peaks, the inner nodes (and leaves)
 	/// are pruned and only stored in the Offchain DB.
 	#[pezpallet::storage]
-	#[pezpallet::getter(fn mmr_peak)]
 	pub type Nodes<T: Config<I>, I: 'static = ()> =
 		StorageMap<_, Identity, NodeIndex, HashOf<T, I>, OptionQuery>;
 
@@ -334,11 +332,11 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 	fn leaf_index_to_parent_block_num(leaf_index: LeafIndex) -> BlockNumberFor<T> {
 		// leaves are zero-indexed and were added one per block since pezpallet activation,
 		// while block numbers are one-indexed, so block number that added `leaf_idx` is:
-		// `block_num = block_num_when_pallet_activated + leaf_idx + 1`
+		// `block_num = block_num_when_pezpallet_activated + leaf_idx + 1`
 		// `block_num = (current_block_num - leaves_count) + leaf_idx + 1`
 		// `parent_block_num = current_block_num - leaves_count + leaf_idx`.
 		<pezframe_system::Pezpallet<T>>::block_number()
-			.saturating_sub(Self::mmr_leaves().saturated_into())
+			.saturating_sub(NumberOfLeaves::<T, I>::get().saturated_into())
 			.saturating_add(leaf_index.saturated_into())
 	}
 
@@ -462,5 +460,15 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 	/// Return the on-chain MMR root hash.
 	pub fn mmr_root() -> HashOf<T, I> {
 		RootHash::<T, I>::get()
+	}
+
+	/// Returns the current size of the MMR (number of leaves).
+	pub fn mmr_leaves() -> LeafIndex {
+		NumberOfLeaves::<T, I>::get()
+	}
+
+	/// Returns the hash of a node in the MMR, if one exists.
+	pub fn mmr_peak(node_index: NodeIndex) -> Option<HashOf<T, I>> {
+		Nodes::<T, I>::get(node_index)
 	}
 }

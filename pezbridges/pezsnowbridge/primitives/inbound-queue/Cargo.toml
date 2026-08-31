@@ -22,9 +22,11 @@ codec = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 tracing = { workspace = true }
 
+impl-trait-for-tuples = { workspace = true }
 pezframe-support = { workspace = true }
 pezframe-system = { workspace = true }
 pezsp-core = { workspace = true }
+pezsp-crypto-hashing = { workspace = true }
 pezsp-io = { workspace = true }
 pezsp-runtime = { workspace = true }
 pezsp-std = { workspace = true }
@@ -57,6 +59,7 @@ std = [
 	"pezsnowbridge-test-utils/std",
 	"pezsnowbridge-verification-primitives/std",
 	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
 	"pezsp-std/std",

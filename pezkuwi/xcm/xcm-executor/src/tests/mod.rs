@@ -17,10 +17,11 @@
 //! Unit tests for the XCM executor.
 //!
 //! These exclude any cross-chain functionality. For those, look at the
-//! `xcm-pez-emulator` based tests in the pezcumulus folder.
+//! `xcm-emulator` based tests in the cumulus folder.
 //! These tests deal with internal state changes of the XCVM.
 
 mod initiate_transfer;
-mod mock;
+pub(crate) mod mock;
 mod pay_fees;
 mod set_asset_claimer;
+mod transactional;

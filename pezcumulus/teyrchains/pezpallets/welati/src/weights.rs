@@ -1,4 +1,4 @@
-// This file is part of Bizinikiwi.
+// This file is part of PezkuwiChain.
 
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: Apache-2.0
@@ -130,8 +130,6 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	}
 	/// Storage: `Welati::CurrentOfficials` (r:1 w:0)
 	/// Proof: `Welati::CurrentOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
-	/// Storage: `Welati::CurrentMinisters` (r:1 w:0)
-	/// Proof: `Welati::CurrentMinisters` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::AppointedOfficials` (r:1 w:0)
 	/// Proof: `Welati::AppointedOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::PendingNominations` (r:1 w:1)
@@ -264,8 +262,6 @@ impl WeightInfo for () {
 	}
 	/// Storage: `Welati::CurrentOfficials` (r:1 w:0)
 	/// Proof: `Welati::CurrentOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
-	/// Storage: `Welati::CurrentMinisters` (r:1 w:0)
-	/// Proof: `Welati::CurrentMinisters` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::AppointedOfficials` (r:1 w:0)
 	/// Proof: `Welati::AppointedOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::PendingNominations` (r:1 w:1)

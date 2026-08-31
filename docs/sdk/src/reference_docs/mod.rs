@@ -98,7 +98,7 @@ pub mod frame_offchain_workers;
 
 /// Learn about the different ways through which multiple [`crate::pezkuwi_sdk::frame_runtime`] pallets can be combined to work
 /// together.
-pub mod frame_pallet_coupling;
+pub mod frame_pezpallet_coupling;
 
 /// Learn about how to do logging in FRAME-based runtimes.
 pub mod frame_logging;

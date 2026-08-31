@@ -17,8 +17,8 @@
 
 //! Adapter to use `fungibles::*` implementations as `fungible::*`.
 //!
-//! This allows for a `fungibles` asset, e.g. from the `pezpallet_assets` pezpallet, to be used when
-//! a `fungible` asset is expected.
+//! This allows for a `fungibles` asset, e.g. from the `pezpallet_assets` pezpallet, to be used when a
+//! `fungible` asset is expected.
 //!
 //! See the [`crate::traits::fungible`] doc for more information about fungible traits.
 
@@ -30,6 +30,7 @@ use crate::traits::{
 		WithdrawConsequence,
 	},
 };
+use alloc::vec::Vec;
 use pezframe_support::traits::fungible::hold::DoneSlash;
 use pezsp_core::Get;
 use pezsp_runtime::{DispatchError, DispatchResult};
@@ -481,6 +482,59 @@ impl<
 			who,
 			amount,
 		)
+	}
+}
+
+/// Adapter implementation of [`super::metadata::Inspect`] for [`ItemOf`].
+///
+/// See the original trait documentation for information on item meaning and usage.
+impl<
+		F: fungibles::metadata::Inspect<AccountId>,
+		A: Get<<F as fungibles::Inspect<AccountId>>::AssetId>,
+		AccountId,
+	> super::metadata::Inspect<AccountId> for ItemOf<F, A, AccountId>
+{
+	/// See [`fungibles::metadata::Inspect::name`].
+	fn name() -> Vec<u8> {
+		<F as fungibles::metadata::Inspect<AccountId>>::name(A::get())
+	}
+	/// See [`fungibles::metadata::Inspect::symbol`].
+	fn symbol() -> Vec<u8> {
+		<F as fungibles::metadata::Inspect<AccountId>>::symbol(A::get())
+	}
+	/// See [`fungibles::metadata::Inspect::decimals`].
+	fn decimals() -> u8 {
+		<F as fungibles::metadata::Inspect<AccountId>>::decimals(A::get())
+	}
+}
+
+/// Adapter implementation of [`super::metadata::Mutate`] for [`ItemOf`].
+///
+/// See the original trait documentation for information on item meaning and usage.
+impl<
+		F: fungibles::metadata::Mutate<AccountId>,
+		A: Get<<F as fungibles::Inspect<AccountId>>::AssetId>,
+		AccountId,
+	> super::metadata::Mutate<AccountId> for ItemOf<F, A, AccountId>
+{
+	/// See [`fungibles::metadata::Mutate::set`].
+	fn set(from: &AccountId, name: Vec<u8>, symbol: Vec<u8>, decimals: u8) -> DispatchResult {
+		<F as fungibles::metadata::Mutate<AccountId>>::set(A::get(), from, name, symbol, decimals)
+	}
+}
+
+/// Adapter implementation of [`super::lifetime::Create`] for [`ItemOf`].
+///
+/// See the original trait documentation for information on item meaning and usage.
+impl<
+		F: fungibles::Create<AccountId>,
+		A: Get<<F as fungibles::Inspect<AccountId>>::AssetId>,
+		AccountId,
+	> super::lifetime::Create<AccountId> for ItemOf<F, A, AccountId>
+{
+	/// See [`fungibles::Create::create`].
+	fn create(admin: AccountId, is_sufficient: bool, min_balance: Self::Balance) -> DispatchResult {
+		<F as fungibles::Create<AccountId>>::create(A::get(), admin, is_sufficient, min_balance)
 	}
 }
 

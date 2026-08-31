@@ -73,12 +73,12 @@ parameter_types! {
 	pub Parameters: PricingParameters<u128> = PricingParameters {
 		exchange_rate: FixedU128::from_rational(1, 400),
 		fee_per_gas: gwei(20),
-		rewards: Rewards { local: HEZ, remote: meth(1) },
+		rewards: Rewards { local: DOT, remote: meth(1) },
 		multiplier: FixedU128::from_rational(4, 3),
 	};
 }
 
-pub const HEZ: u128 = 10_000_000_000;
+pub const DOT: u128 = 10_000_000_000;
 
 impl crate::Config for Test {
 	type RuntimeEvent = RuntimeEvent;

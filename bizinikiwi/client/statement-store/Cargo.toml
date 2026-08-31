@@ -17,18 +17,34 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+anyhow = { workspace = true, optional = true }
+async-channel = { workspace = true }
+futures = { workspace = true }
+itertools = { workspace = true }
 log = { workspace = true, default-features = true }
 parity-db = { workspace = true }
 parking_lot = { workspace = true, default-features = true }
+# Deliberately NOT the vendored `pezkuwi-subxt`: this test helper is a generated client that
+# upstream writes against subxt 0.50, while our fork sits at 0.44 alongside upstream's own
+# workspace pin. The rebrand pointed it at the workspace crate, which silently changed the
+# version and left the file calling APIs that do not exist -- `transactions`, `ClientState`,
+# `TransactionExtensions`, `ArcMetadata`. Nothing noticed because no job enabled the feature
+# until `cargo doc --all-features` did. Upstream keeps a second, separately-named subxt here
+# for exactly this reason; so do we, under names that cannot be mistaken for the fork.
 pezsc-client-api = { workspace = true, default-features = true }
 pezsc-keystore = { workspace = true, default-features = true }
 pezsc-network-statement = { workspace = true, default-features = true }
+pezsc-utils = { workspace = true }
 pezsp-api = { workspace = true, default-features = true }
 pezsp-blockchain = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-statement-store = { workspace = true, default-features = true }
+pezsp-storage = { workspace = true, default-features = true }
 prometheus-endpoint = { workspace = true, default-features = true }
+scale-info = { workspace = true, default-features = true, optional = true }
+statement-store-subxt = { package = "subxt", version = "0.50", features = ["jsonrpsee", "native"], optional = true }
+statement-store-subxt-signer = { package = "subxt-signer", version = "0.50", features = ["sr25519"], optional = true }
 tokio = { features = ["time"], workspace = true, default-features = true }
 
 [dev-dependencies]
@@ -52,10 +68,12 @@ runtime-benchmarks = [
 	"pezsp-statement-store/runtime-benchmarks",
 ]
 std = [
+	"anyhow?/std",
 	"log/std",
 	"pezsc-client-api/std",
 	"pezsc-keystore/std",
 	"pezsc-network-statement/std",
+	"pezsc-utils/std",
 	"pezsp-blockchain/std",
 	"pezsp-tracing/std",
 	"prometheus-endpoint/std",
@@ -70,3 +88,9 @@ try-runtime = [
 ]
 serde = []
 with-tracing = []
+test-helpers = [
+	"anyhow",
+	"scale-info",
+	"statement-store-subxt",
+	"statement-store-subxt-signer",
+]

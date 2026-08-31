@@ -108,7 +108,7 @@ pub mod pezpallet {
 		SetBar { account: T::AccountId, balance: BalanceOf<T> },
 	}
 
-	/// The MEL requirement for bounded pallets is skipped by `dev_mode`.
+	/// The MEL requirement for bounded pezpallets is skipped by `dev_mode`.
 	/// This means that all storages are marked as unbounded.
 	/// This is equivalent to specifying `#[pezpallet::unbounded]` on this type definitions.
 	/// When the dev_mode is removed, we would need to implement implement `MaxEncodedLen`.

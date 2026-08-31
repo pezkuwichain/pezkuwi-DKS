@@ -1,0 +1,41 @@
+# Asking for a weights measurement.
+#
+# Editing this file and pushing runs the `weights` workflow on the reference host. Nothing
+# else triggers it, and no ordinary commit touches this file. The request stays in git, so
+# what was measured -- and why -- is answerable later from the history rather than from
+# somebody's shell.
+#
+# Each entry may set `runtime`, `pallet`, `repeat`, `steps` and `why`. Leave `runtime` or
+# `pallet` out to mean "all of them", which takes many hours.
+#
+# `repeat` is the knob that decides whether a fitted weight is a measurement or a draw.
+# `enqueue_n_full_pages` has a steep slope over a wide component range, so the intercept is
+# poorly determined and the default 20 samples do not pin it down: seven runtimes came back
+# with a base up to twelve times their own recorded minimum, and 100 fixed them.
+#
+# Both twins, always. Measuring one and not the other is how they drift, and `check-twin-
+# runtimes.py` compares pallet indices, not weights -- nothing else would catch it.
+
+# 2026-08-29, three asks. The first two measured nothing -- the reference host had no cargo on
+# PATH, then no solc; both were things this workflow had never run long enough to discover.
+#
+# The third measured, at `--repeat 100`, and the numbers say something worth writing down: it
+# did not simply improve the fit. `bridge-hub-pezkuwichain` went from 22% out to 13.2%, and
+# `bridge-hub-zagros` went the other way, from 7.2% -- passing -- to 19.1%. Between the two
+# runs `enqueue_n_full_pages`'s fitted base moved 47% on zagros and the directly measured
+# `enqueue_1000_small_xcmp_messages` moved 26%. That is not a fit converging; that is scatter
+# larger than the 15% the pallet's own check allows, on this hardware, for this pallet.
+#
+# It is not extrapolation: `enqueue_empty_xcmp_message_at` samples the whole component range
+# and the check evaluates it mid-range. So the fourth ask is 200 -- the number that settled
+# `asset-hub-pezkuwichain` when 100 was not enough. If both twins do not land inside 15% at
+# 200, the answer is not a fifth run: it is that this box cannot resolve this pallet to that
+# tolerance, and that is a finding rather than a knob.
+
+# 2026-08-30: both asks were measured and the files are in the tree, so the list is empty.
+# An empty list is the finished state, not a broken one -- a request that stays after it has
+# been answered re-runs on the reference host at every push, which is what this comment
+# replaced. `weights_request.py` refuses an empty `runs:` and the workflow only fires when
+# this file changes, so nothing runs until somebody asks for something.
+
+runs: []

@@ -20,6 +20,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 array-bytes = { workspace = true }
 bitflags = { workspace = true }
 codec = { features = ["derive", "max-encoded-len"], workspace = true }
+derive-where = { workspace = true }
 docify = { workspace = true }
 environmental = { workspace = true }
 frame-metadata = { features = ["current", "unstable"], workspace = true }
@@ -70,6 +71,7 @@ std = [
 	"log/std",
 	"pez-binary-merkle-tree/std",
 	"pezframe-support-procedural/std",
+	"pezframe-system/std",
 	"pezsp-api/std",
 	"pezsp-arithmetic/std",
 	"pezsp-core/std",
@@ -114,19 +116,21 @@ try-runtime = [
 	"pezsp-staking/try-runtime",
 	"pezsp-timestamp/try-runtime",
 ]
-experimental = ["pezframe-support-procedural/experimental"]
-# By default some types have documentation, `no-metadata-docs` allows to reduce the documentation
-# in the metadata.
+experimental = [
+	"pezframe-support-procedural/experimental",
+]
 no-metadata-docs = [
 	"pezframe-support-procedural/no-metadata-docs",
 	"pezsp-api/no-metadata-docs",
 ]
-# By default some types have documentation, `full-metadata-docs` allows to add documentation to
-# more types in the metadata.
-full-metadata-docs = ["scale-info/docs"]
-# Generate impl-trait for tuples with the given number of tuples. Will be needed as the number of
-# pallets in a runtime grows. Does increase the compile time!
-tuples-96 = ["pezframe-support-procedural/tuples-96"]
-tuples-128 = ["pezframe-support-procedural/tuples-128"]
+full-metadata-docs = [
+	"scale-info/docs",
+]
+tuples-96 = [
+	"pezframe-support-procedural/tuples-96",
+]
+tuples-128 = [
+	"pezframe-support-procedural/tuples-128",
+]
 serde = []
 with-tracing = []

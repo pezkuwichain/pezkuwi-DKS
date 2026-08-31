@@ -42,7 +42,7 @@ pub trait WeightInfoExt: WeightInfo {
 	//
 	// 2) slash relayer if he submits an invalid transaction.
 	//
-	// We read and update storage values of other pallets (`pezpallet-bridge-relayers` and
+	// We read and update storage values of other pezpallets (`pezpallet-bridge-relayers` and
 	// balances/assets pezpallet). So we need to add this weight to the weight of our call.
 	// Hence two following methods.
 

@@ -186,9 +186,9 @@ impl<
 	}
 
 	fn check_obsolete_call(&self) -> TransactionValidity {
-		let is_pallet_halted = Pezpallet::<T, I>::ensure_not_halted().is_err();
+		let is_pezpallet_halted = Pezpallet::<T, I>::ensure_not_halted().is_err();
 		match self.call_info() {
-			Some(proof_info) if is_pallet_halted => {
+			Some(proof_info) if is_pezpallet_halted => {
 				tracing::trace!(
 					target: LOG_TARGET,
 					?proof_info,

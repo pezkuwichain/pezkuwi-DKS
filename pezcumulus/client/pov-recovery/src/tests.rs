@@ -2,18 +2,18 @@
 // This file is part of Pezcumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 use super::*;
 use assert_matches::assert_matches;
@@ -23,7 +23,7 @@ use pezcumulus_primitives_core::relay_chain::{
 	BlockId, CandidateCommitments, CandidateDescriptorV2, CoreIndex, CoreState,
 };
 use pezcumulus_relay_chain_interface::{
-	InboundDownwardMessage, InboundHrmpMessage, OccupiedCoreAssumption, PHash, PHeader,
+	ChildInfo, InboundDownwardMessage, InboundHrmpMessage, OccupiedCoreAssumption, PHash, PHeader,
 	PersistedValidationData, RelayChainResult, StorageValue, ValidationCodeHash, ValidatorId,
 };
 use pezcumulus_test_client::runtime::{Block, Header};
@@ -32,7 +32,7 @@ use pezkuwi_node_subsystem::{
 	RecoveryError, TimeoutExt,
 };
 use pezkuwi_pez_node_primitives::AvailableData;
-use pezkuwi_primitives::CandidateEvent;
+use pezkuwi_primitives::{CandidateEvent, NodeFeatures};
 use pezsc_client_api::{
 	BlockImportNotification, ClientInfo, CompactProof, FinalityNotification, FinalityNotifications,
 	FinalizeSummary, ImportNotifications, StorageEventStream, StorageKey,
@@ -41,6 +41,7 @@ use pezsc_consensus::import_queue::RuntimeOrigin;
 use pezsc_utils::mpsc::{TracingUnboundedReceiver, TracingUnboundedSender};
 use pezsp_api::RuntimeApiInfo;
 use pezsp_blockchain::Info;
+use pezsp_core::H256;
 use pezsp_runtime::{generic::SignedBlock, Justifications};
 use pezsp_version::RuntimeVersion;
 use rstest::rstest;
@@ -201,11 +202,15 @@ impl<Block: BlockT> BlockBackend<Block> for TeyrchainClient<Block> {
 		unimplemented!()
 	}
 
-	fn indexed_transaction(&self, _: Block::Hash) -> pezsp_blockchain::Result<Option<Vec<u8>>> {
+	fn indexed_transaction(&self, _: H256) -> pezsp_blockchain::Result<Option<Vec<u8>>> {
 		unimplemented!()
 	}
 
-	fn has_indexed_transaction(&self, _: Block::Hash) -> pezsp_blockchain::Result<bool> {
+	fn has_indexed_transaction(&self, _: H256) -> pezsp_blockchain::Result<bool> {
+		unimplemented!()
+	}
+
+	fn block_indexed_hashes(&self, _: Block::Hash) -> pezsp_blockchain::Result<Option<Vec<H256>>> {
 		unimplemented!()
 	}
 
@@ -473,6 +478,15 @@ impl RelayChainInterface for Relaychain {
 		unimplemented!("Not needed for test")
 	}
 
+	async fn prove_child_read(
+		&self,
+		_: PHash,
+		_: &ChildInfo,
+		_: &[Vec<u8>],
+	) -> RelayChainResult<pezsc_client_api::StorageProof> {
+		unimplemented!("Not needed for test")
+	}
+
 	async fn wait_for_block(&self, _: PHash) -> RelayChainResult<()> {
 		unimplemented!("Not needed for test");
 	}
@@ -515,6 +529,14 @@ impl RelayChainInterface for Relaychain {
 	}
 
 	async fn candidate_events(&self, _: PHash) -> RelayChainResult<Vec<CandidateEvent>> {
+		unimplemented!("Not needed for test");
+	}
+
+	async fn max_relay_parent_session_age(&self, _at: PHash) -> RelayChainResult<u32> {
+		unimplemented!("Not needed for test");
+	}
+
+	async fn node_features(&self, _at: PHash) -> RelayChainResult<NodeFeatures> {
 		unimplemented!("Not needed for test");
 	}
 }
@@ -701,7 +723,9 @@ async fn single_pending_candidate_recovery_success(
 			assert_eq!(session_index, TEST_SESSION_INDEX);
 			let block_data =
 					TeyrchainBlockData::<Block>::new(
-						vec![Block::new(header.clone(), vec![])], CompactProof { encoded_nodes: vec![] }
+						vec![Block::new(header.clone(), vec![])],
+						CompactProof { encoded_nodes: vec![] },
+						None
 					);
 
 			response_tx.send(
@@ -813,7 +837,9 @@ async fn single_pending_candidate_recovery_retry_succeeds() {
 					AvailableData {
 						pov: Arc::new(PoV {
 							block_data: TeyrchainBlockData::<Block>::new(
-								vec![Block::new(header.clone(), Vec::new())], CompactProof { encoded_nodes: vec![] }
+								vec![Block::new(header.clone(), Vec::new())],
+								CompactProof { encoded_nodes: vec![] },
+								None
 							).encode().into()
 						}),
 						validation_data: dummy_pvd(),
@@ -1120,6 +1146,7 @@ async fn candidate_is_imported_while_awaiting_recovery() {
 				block_data: TeyrchainBlockData::<Block>::new(
 					vec![Block::new(header.clone(), vec![])],
 					CompactProof { encoded_nodes: vec![] },
+					None,
 				)
 				.encode()
 				.into(),
@@ -1217,6 +1244,7 @@ async fn candidate_is_finalized_while_awaiting_recovery() {
 				block_data: TeyrchainBlockData::<Block>::new(
 					vec![Block::new(header.clone(), vec![])],
 					CompactProof { encoded_nodes: vec![] },
+					None,
 				)
 				.encode()
 				.into(),
@@ -1302,7 +1330,9 @@ async fn chained_recovery_success() {
 					.send(Ok(AvailableData {
 						pov: Arc::new(PoV {
 							block_data: TeyrchainBlockData::<Block>::new(
-								vec![Block::new(header.clone(), vec![])], CompactProof { encoded_nodes: vec![] }
+								vec![Block::new(header.clone(), vec![])],
+								CompactProof { encoded_nodes: vec![] },
+								None
 							)
 							.encode()
 							.into(),
@@ -1420,6 +1450,7 @@ async fn chained_recovery_child_succeeds_before_parent() {
 					block_data: TeyrchainBlockData::<Block>::new(
 						vec![Block::new(header.clone(), vec![])],
 						CompactProof { encoded_nodes: vec![] },
+						None,
 					)
 					.encode()
 					.into(),
@@ -1508,6 +1539,7 @@ async fn recovery_multiple_blocks_per_candidate() {
 						block_data: TeyrchainBlockData::<Block>::new(
 							headers.iter().map(|h| Block::new(h.clone(), vec![])).collect(),
 							CompactProof { encoded_nodes: vec![] },
+							None
 						)
 						.encode()
 						.into(),

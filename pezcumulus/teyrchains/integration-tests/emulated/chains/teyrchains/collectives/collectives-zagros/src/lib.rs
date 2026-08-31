@@ -23,7 +23,7 @@ use pezframe_support::traits::OnInitialize;
 // Pezcumulus
 use emulated_integration_tests_common::{
 	impl_accounts_helpers_for_teyrchain, impl_assert_events_helpers_for_teyrchain,
-	impls::Teyrchain, xcm_pez_emulator::decl_test_teyrchains, AuraDigestProvider,
+	impls::Teyrchain, xcm_pez_emulator::decl_test_teyrchains,
 };
 
 // CollectivesZagros Teyrchain declaration
@@ -39,7 +39,6 @@ decl_test_teyrchains! {
 			LocationToAccountId: collectives_zagros_runtime::xcm_config::LocationToAccountId,
 			TeyrchainInfo: collectives_zagros_runtime::TeyrchainInfo,
 			MessageOrigin: pezcumulus_primitives_core::AggregateMessageOrigin,
-			DigestProvider: AuraDigestProvider,
 		},
 		pallets = {
 			PezkuwiXcm: collectives_zagros_runtime::PezkuwiXcm,

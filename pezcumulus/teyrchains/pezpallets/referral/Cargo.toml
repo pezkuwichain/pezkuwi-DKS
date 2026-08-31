@@ -20,6 +20,7 @@ pezframe-benchmarking = { optional = true, workspace = true }
 pezframe-support = { default-features = false, workspace = true }
 pezframe-system = { default-features = false, workspace = true }
 pezpallet-identity-kyc = { workspace = true, default-features = false }
+pezpallet-tiki = { workspace = true, default-features = false }
 pezsp-runtime = { default-features = false, workspace = true }
 pezsp-std = { default-features = false, workspace = true }
 scale-info = { default-features = false, features = [
@@ -47,6 +48,7 @@ std = [
 	"pezpallet-balances/std",
 	"pezpallet-identity-kyc/std",
 	"pezpallet-nfts/std",
+	"pezpallet-tiki/std",
 	"pezsp-core/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
@@ -62,6 +64,7 @@ runtime-benchmarks = [
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-identity-kyc/runtime-benchmarks",
 	"pezpallet-nfts/runtime-benchmarks",
+	"pezpallet-tiki/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 ]
@@ -73,6 +76,7 @@ try-runtime = [
 	"pezpallet-balances/try-runtime",
 	"pezpallet-identity-kyc/try-runtime",
 	"pezpallet-nfts/try-runtime",
+	"pezpallet-tiki/try-runtime",
 	"pezsp-runtime/try-runtime",
 ]
 serde = []

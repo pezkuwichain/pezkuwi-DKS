@@ -20,7 +20,6 @@ use crate::{MessageNonce, UnrewardedRelayer};
 
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezbp_runtime::{raw_storage_proof_size, RawStorageProof, Size};
-use pezsp_core::RuntimeDebug;
 use pezsp_std::{
 	collections::{btree_map::BTreeMap, vec_deque::VecDeque},
 	fmt::Debug,
@@ -38,7 +37,7 @@ use scale_info::TypeInfo;
 /// - storage proof of the inbound lane state;
 ///
 /// - lane id.
-#[derive(Clone, Decode, DecodeWithMemTracking, Encode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Decode, DecodeWithMemTracking, Encode, Eq, PartialEq, Debug, TypeInfo)]
 pub struct FromBridgedChainMessagesDeliveryProof<BridgedHeaderHash, LaneId> {
 	/// Hash of the bridge header the proof is for.
 	pub bridged_header_hash: BridgedHeaderHash,
@@ -74,7 +73,7 @@ pub trait DeliveryConfirmationPayments<AccountId, LaneId> {
 	/// Returns number of actually rewarded relayers.
 	fn pay_reward(
 		lane_id: LaneId,
-		pez_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
+		messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
 		confirmation_relayer: &AccountId,
 		received_range: &RangeInclusive<MessageNonce>,
 	) -> MessageNonce;
@@ -85,7 +84,7 @@ impl<AccountId, LaneId> DeliveryConfirmationPayments<AccountId, LaneId> for () {
 
 	fn pay_reward(
 		_lane_id: LaneId,
-		_pez_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
+		_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
 		_confirmation_relayer: &AccountId,
 		_received_range: &RangeInclusive<MessageNonce>,
 	) -> MessageNonce {
@@ -108,7 +107,7 @@ impl<LaneId> OnMessagesDelivered<LaneId> for () {
 }
 
 /// Send message artifacts.
-#[derive(Eq, RuntimeDebug, PartialEq)]
+#[derive(Eq, Debug, PartialEq)]
 pub struct SendMessageArtifacts {
 	/// Nonce of the message.
 	pub nonce: MessageNonce,
@@ -116,7 +115,7 @@ pub struct SendMessageArtifacts {
 	pub enqueued_messages: MessageNonce,
 }
 
-/// Messages bridge API to be used from other pallets.
+/// Messages bridge API to be used from other pezpallets.
 pub trait MessagesBridge<Payload, LaneId> {
 	/// Error type.
 	type Error: Debug;
@@ -148,7 +147,7 @@ impl<AccountId, LaneId> DeliveryConfirmationPayments<AccountId, LaneId> for Forb
 
 	fn pay_reward(
 		_lane_id: LaneId,
-		_pez_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
+		_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
 		_confirmation_relayer: &AccountId,
 		_received_range: &RangeInclusive<MessageNonce>,
 	) -> MessageNonce {

@@ -27,7 +27,7 @@ use scale_info::TypeInfo;
 use xcm::latest::prelude::{Junction, Location};
 
 /// The aggregate origin of an inbound message.
-/// This is specialized for BridgeHub, as the snowbridge-outbound-queue-pezpallet is also using
+/// This is specialized for BridgeHub, as the pezsnowbridge-outbound-queue-pezpallet is also using
 /// the shared MessageQueue pezpallet.
 #[derive(
 	Encode,

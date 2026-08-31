@@ -18,6 +18,7 @@ environmental = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
 pezframe-support = { workspace = true }
 pezframe-system = { workspace = true }
+pezpallet-accumulate-and-forward = { workspace = true }
 pezpallet-asset-conversion = { workspace = true }
 pezpallet-transaction-payment = { workspace = true }
 pezsp-arithmetic = { workspace = true }
@@ -58,6 +59,7 @@ runtime-benchmarks = [
 	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
 	"pezkuwi-test-runtime/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-accumulate-and-forward/runtime-benchmarks",
 	"pezpallet-asset-conversion/runtime-benchmarks",
 	"pezpallet-assets/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
@@ -76,6 +78,7 @@ std = [
 	"pezframe-support/std",
 	"pezframe-system/std",
 	"pezkuwi-teyrchain-primitives/std",
+	"pezpallet-accumulate-and-forward/std",
 	"pezpallet-asset-conversion/std",
 	"pezpallet-transaction-payment/std",
 	"pezsp-arithmetic/std",
@@ -97,6 +100,7 @@ try-runtime = [
 	"pezkuwi-runtime-teyrchains/try-runtime",
 	"pezkuwi-test-runtime/try-runtime",
 	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-accumulate-and-forward/try-runtime",
 	"pezpallet-asset-conversion/try-runtime",
 	"pezpallet-assets/try-runtime",
 	"pezpallet-balances/try-runtime",

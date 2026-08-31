@@ -23,6 +23,7 @@ use std::{
 	path::PathBuf,
 };
 
+use anyhow::Context;
 use inflector::Inflector;
 use itertools::Itertools;
 use serde::Serialize;
@@ -142,10 +143,10 @@ fn map_results(
 	pov_analysis_choice: &AnalysisChoice,
 	worst_case_map_values: u32,
 	additional_trie_layers: u8,
-) -> Result<HashMap<(String, String), Vec<BenchmarkData>>, std::io::Error> {
+) -> Result<HashMap<(String, String), Vec<BenchmarkData>>, pezsc_cli::Error> {
 	// Skip if batches is empty.
 	if batches.is_empty() {
-		return Err(io_error("empty batches"));
+		return Err(io_error("empty batches").into());
 	}
 
 	let mut all_benchmarks = HashMap::<_, Vec<BenchmarkData>>::new();
@@ -168,7 +169,7 @@ fn map_results(
 			pov_analysis_choice,
 			worst_case_map_values,
 			additional_trie_layers,
-		);
+		)?;
 		let pezpallet_benchmarks =
 			all_benchmarks.entry((pezpallet_name, instance_name)).or_default();
 		pezpallet_benchmarks.push(benchmark_data);
@@ -199,7 +200,7 @@ fn get_benchmark_data(
 	pov_analysis_choice: &AnalysisChoice,
 	worst_case_map_values: u32,
 	additional_trie_layers: u8,
-) -> BenchmarkData {
+) -> Result<BenchmarkData, pezsc_cli::Error> {
 	// Analyze benchmarks to get the linear regression.
 	let analysis_function = match analysis_choice {
 		AnalysisChoice::MinSquares => Analysis::min_squares_iqr,
@@ -215,14 +216,18 @@ fn get_benchmark_data(
 	let benchmark = String::from_utf8(batch.benchmark.clone()).unwrap();
 
 	let extrinsic_time = analysis_function(&batch.time_results, BenchmarkSelector::ExtrinsicTime)
-		.expect("analysis function should return an extrinsic time for valid inputs");
+		.context(format!("benchmark '{pezpallet}::{benchmark}'"))
+		.map_err(|e| pezsc_cli::Error::Application(e.into()))?;
 	let reads = analysis_function(&batch.db_results, BenchmarkSelector::Reads)
-		.expect("analysis function should return the number of reads for valid inputs");
+		.context(format!("benchmark '{pezpallet}::{benchmark}'"))
+		.map_err(|e| pezsc_cli::Error::Application(e.into()))?;
 	let writes = analysis_function(&batch.db_results, BenchmarkSelector::Writes)
-		.expect("analysis function should return the number of writes for valid inputs");
+		.context(format!("benchmark '{pezpallet}::{benchmark}'"))
+		.map_err(|e| pezsc_cli::Error::Application(e.into()))?;
 	let recorded_proof_size =
 		pov_analysis_function(&batch.db_results, BenchmarkSelector::ProofSize)
-			.expect("analysis function should return proof sizes for valid inputs");
+			.context(format!("benchmark '{pezpallet}::{benchmark}'"))
+			.map_err(|e| pezsc_cli::Error::Application(e.into()))?;
 
 	// Analysis data may include components that are not used, this filters out anything whose value
 	// is zero.
@@ -302,11 +307,12 @@ fn get_benchmark_data(
 		additional_trie_layers,
 	);
 
-	let proof_size_per_components = storage_per_prefix
+	let proof_size_per_components: Vec<_> = storage_per_prefix
 		.iter()
 		.map(|(prefix, results)| {
 			let proof_size = analysis_function(results, BenchmarkSelector::ProofSize)
-				.expect("analysis function should return proof sizes for valid inputs");
+				.context(format!("benchmark '{pezpallet}::{benchmark}'"))
+				.map_err(|e| pezsc_cli::Error::Application(e.into()))?;
 			let slope = proof_size
 				.slopes
 				.into_iter()
@@ -314,9 +320,9 @@ fn get_benchmark_data(
 				.zip(extract_errors(&proof_size.errors))
 				.map(|((slope, name), error)| ComponentSlope { name: name.clone(), slope, error })
 				.collect::<Vec<_>>();
-			(prefix.clone(), slope, proof_size.base)
+			Ok((prefix.clone(), slope, proof_size.base))
 		})
-		.collect::<Vec<_>>();
+		.collect::<Result<_, pezsc_cli::Error>>()?;
 
 	let mut base_calculated_proof_size = 0;
 	// Sum up the proof sizes per component
@@ -361,7 +367,7 @@ fn get_benchmark_data(
 		.map(|c| c.clone())
 		.unwrap_or_default();
 
-	BenchmarkData {
+	Ok(BenchmarkData {
 		name: benchmark,
 		components,
 		base_weight: extrinsic_time.base,
@@ -377,7 +383,7 @@ fn get_benchmark_data(
 		component_ranges,
 		comments,
 		min_execution_time: extrinsic_time.minimum,
-	}
+	})
 }
 
 /// Create weight file from benchmark data and Handlebars template.
@@ -470,7 +476,7 @@ pub(crate) fn write_results(
 				// Append "_instance_name".
 				file_name = format!("{}_{}", file_name, instance.to_snake_case());
 			}
-			// "mod::pezpallet_name.rs" becomes "mod_pallet_name.rs".
+			// "mod::pezpallet_name.rs" becomes "mod_pezpallet_name.rs".
 			file_name = file_name.replace("::", "_");
 			// Some old runtimes have a bug with the pezpallet and instance name containing a space
 			file_name = file_name.replace(" ", "");
@@ -521,7 +527,7 @@ pub(crate) fn write_results(
 }
 
 /// This function looks at the keys touched during the benchmark, and the storage info we collected
-/// from the pallets, and creates comments with information about the storage keys touched during
+/// from the pezpallets, and creates comments with information about the storage keys touched during
 /// each benchmark.
 ///
 /// It returns informational comments for human consumption.
@@ -1237,22 +1243,22 @@ mod test {
 		assert_eq!(second_benchmark.name, "second_benchmark");
 		check_data(second_benchmark, "b", 9, 2);
 
-		let second_pallet_benchmark = &mapped_results
+		let second_pezpallet_benchmark = &mapped_results
 			.get(&("second_pallet".to_string(), "instance".to_string()))
 			.unwrap()[0];
-		assert_eq!(second_pallet_benchmark.name, "first_benchmark");
-		check_data(second_pallet_benchmark, "c", 3, 4);
+		assert_eq!(second_pezpallet_benchmark.name, "first_benchmark");
+		check_data(second_pezpallet_benchmark, "c", 3, 4);
 
-		let bounded_pallet_benchmark = &mapped_results
+		let bounded_pezpallet_benchmark = &mapped_results
 			.get(&("bounded_pallet".to_string(), "instance".to_string()))
 			.unwrap()[0];
-		assert_eq!(bounded_pallet_benchmark.name, "bounded_benchmark");
-		check_data(bounded_pallet_benchmark, "d", 4, 6);
+		assert_eq!(bounded_pezpallet_benchmark.name, "bounded_benchmark");
+		check_data(bounded_pezpallet_benchmark, "d", 4, 6);
 		// (5 * 15 * 33 + 32) * 4 = 10028
-		assert_eq!(bounded_pallet_benchmark.base_calculated_proof_size, 10028);
+		assert_eq!(bounded_pezpallet_benchmark.base_calculated_proof_size, 10028);
 		// (5 * 15 * 33 + 32) * 6 = 15042
 		assert_eq!(
-			bounded_pallet_benchmark.component_calculated_proof_size,
+			bounded_pezpallet_benchmark.component_calculated_proof_size,
 			vec![ComponentSlope { name: "d".into(), slope: 15042, error: 0 }]
 		);
 	}

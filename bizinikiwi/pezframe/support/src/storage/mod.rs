@@ -27,7 +27,6 @@ use crate::{
 use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 use codec::{Decode, Encode, EncodeLike, FullCodec, FullEncode};
 use core::marker::PhantomData;
-use pezsp_core::storage::ChildInfo;
 use pezsp_runtime::generic::{Digest, DigestItem};
 
 pub use self::{
@@ -37,6 +36,7 @@ pub use self::{
 	},
 	types::StorageEntryMetadataBuilder,
 };
+pub use pezsp_core::storage::ChildInfo;
 pub use pezsp_runtime::TransactionOutcome;
 pub use types::Key;
 
@@ -59,7 +59,7 @@ pub mod weak_bounded_vec;
 /// key size.
 pub struct KeyLenOf<M>(PhantomData<M>);
 
-/// A trait for working with macro-generated storage values under the bizinikiwi storage API.
+/// A trait for working with macro-generated storage values under the substrate storage API.
 ///
 /// Details on implementation can be found at [`generator::StorageValue`].
 pub trait StorageValue<T: FullCodec> {
@@ -185,7 +185,6 @@ pub trait StorageValue<T: FullCodec> {
 	/// ignored by this function.
 	///
 	/// # Example
-	#[doc = docify::embed!("src/storage/mod.rs", btree_set_decode_non_dedup_len)]
 	/// This demonstrates how `decode_non_dedup_len` will count even the duplicate values in the
 	/// storage (in this case, the number `4` is counted twice).
 	fn decode_non_dedup_len() -> Option<usize>
@@ -885,9 +884,8 @@ pub trait StorageNMap<K: KeyGenerator, V: FullCodec> {
 
 	/// Attempt to remove items from the map matching a `partial_key` prefix.
 	///
-	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result.
-	/// Once the resultant `maybe_cursor` field is `None`, then no further items remain to be
-	/// deleted.
+	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result. Once
+	/// the resultant `maybe_cursor` field is `None`, then no further items remain to be deleted.
 	///
 	/// NOTE: After the initial call for any given map, it is important that no further items
 	/// are inserted into the map which match the `partial key`. If so, then the map may not be
@@ -1392,9 +1390,8 @@ pub trait StoragePrefixedMap<Value: FullCodec> {
 
 	/// Attempt to remove all items from the map.
 	///
-	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result.
-	/// Once the resultant `maybe_cursor` field is `None`, then no further items remain to be
-	/// deleted.
+	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result. Once
+	/// the resultant `maybe_cursor` field is `None`, then no further items remain to be deleted.
 	///
 	/// NOTE: After the initial call for any given map, it is important that no further items
 	/// are inserted into the map. If so, then the map may not be empty when the resultant

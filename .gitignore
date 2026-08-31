@@ -23,3 +23,7 @@ secrets/
 *.log
 /chains
 /data
+
+# Running the cmd.py tests locally leaves these behind.
+__pycache__/
+*.pyc

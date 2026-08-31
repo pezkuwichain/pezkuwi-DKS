@@ -96,7 +96,7 @@ fn unavailable_yet<R: Default>(name: &str) -> R {
 	tracing::error!(
 		target: LOG_TARGET,
 		"The {:?} API is not available for offchain workers yet. Follow \
-		https://github.com/pezkuwichain/pezkuwi-sdk/issues/332 for details",
+		https://github.com/paritytech/substrate/issues/1458 for details",
 		name
 	);
 	Default::default()

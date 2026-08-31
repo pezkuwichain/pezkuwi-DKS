@@ -18,18 +18,13 @@
 //! This validation is a temporary patch in preparation for the Asset Hub Migration (AHM).
 //! This module will be removed after the migration and the determined
 //! reserve location will be adjusted accordingly to be Asset Hub.
-//! For more information, see <https://github.com/pezkuwichain/pezkuwi-sdk/issues/301>.
+//! For more information, see <https://github.com/pezkuwichain/pezkuwi-DKS/issues/9054>.
 
 use crate::{Config, Error, Pezpallet};
 use alloc::vec::Vec;
-use hex_literal::hex;
 use pezsp_core::Get;
 use xcm::prelude::*;
 use xcm_executor::traits::TransferType;
-
-/// The genesis hash of the Paseo Relay Chain. Used to identify it.
-const PASEO_GENESIS_HASH: [u8; 32] =
-	hex!["77afd6190f1554ad45fd0d31aee62aacc33c6db0ea801129acb813f913e0764f"];
 
 impl<T: Config> Pezpallet<T> {
 	/// Check if network native asset reserve transfers should be blocked during Asset Hub
@@ -46,14 +41,15 @@ impl<T: Config> Pezpallet<T> {
 	/// `execute` instead, which allows explicit reserve specification.
 	pub(crate) fn ensure_network_asset_reserve_transfer_allowed(
 		assets: &Vec<Asset>,
-		fee_asset_id: &AssetId,
+		fee_asset_index: usize,
 		assets_transfer_type: &TransferType,
 		fees_transfer_type: &TransferType,
 	) -> Result<(), Error<T>> {
 		// Extract fee asset and check both assets and fees separately.
 		let mut remaining_assets = assets.clone();
-		let fee_asset_index =
-			assets.iter().position(|a| a.id == *fee_asset_id).ok_or(Error::<T>::Empty)?;
+		if fee_asset_index >= remaining_assets.len() {
+			return Err(Error::<T>::Empty);
+		}
 		let fee_asset = remaining_assets.remove(fee_asset_index);
 
 		// Check remaining assets with their transfer type.
@@ -106,7 +102,7 @@ impl<T: Config> Pezpallet<T> {
 	/// Check if the given asset ID represents a network native asset based on our
 	/// UniversalLocation.
 	///
-	/// Returns true if the asset is a native network asset (HEZ, DCL, ZGR, PAS) that should be
+	/// Returns true if the asset is a native network asset (DOT, KSM, WND, PAS) that should be
 	/// blocked during Asset Hub Migration.
 	fn is_network_native_asset(asset_id: &AssetId) -> bool {
 		let universal_location = T::UniversalLocation::get();
@@ -121,10 +117,19 @@ impl<T: Config> Pezpallet<T> {
 					let is_target_network = match network {
 						NetworkId::Pezkuwi | NetworkId::Dicle => true,
 						NetworkId::ByGenesis(genesis_hash) => {
-							// Check if this is Zagros by genesis hash
-							*genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH
-								|| *genesis_hash == PASEO_GENESIS_HASH
-								|| *genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH // Used in tests.
+							// Our networks identify themselves by genesis hash rather than by a
+							// NetworkId variant, so this is the arm that actually decides.
+							//
+							// An all-zero hash is never us. `ZAGROS_GENESIS_HASH` is `[0; 32]`
+							// until the rebuilt network has a chain spec, and zero is also what
+							// every mock and unconfigured location carries -- so without this
+							// line the guard fires for anyone who has not set a genesis hash,
+							// and reserve transfers of their native asset are refused. A
+							// placeholder that matches is worse than one that identifies
+							// nothing, which is what it was chosen to be.
+							*genesis_hash != [0u8; 32]
+								&& (*genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH
+									|| *genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH)
 						},
 						_ => false,
 					};
@@ -143,10 +148,19 @@ impl<T: Config> Pezpallet<T> {
 					let is_target_network = match network {
 						NetworkId::Pezkuwi | NetworkId::Dicle => true,
 						NetworkId::ByGenesis(genesis_hash) => {
-							// Check if this is Zagros by genesis hash
-							*genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH
-								|| *genesis_hash == PASEO_GENESIS_HASH
-								|| *genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH // Used in tests.
+							// Our networks identify themselves by genesis hash rather than by a
+							// NetworkId variant, so this is the arm that actually decides.
+							//
+							// An all-zero hash is never us. `ZAGROS_GENESIS_HASH` is `[0; 32]`
+							// until the rebuilt network has a chain spec, and zero is also what
+							// every mock and unconfigured location carries -- so without this
+							// line the guard fires for anyone who has not set a genesis hash,
+							// and reserve transfers of their native asset are refused. A
+							// placeholder that matches is worse than one that identifies
+							// nothing, which is what it was chosen to be.
+							*genesis_hash != [0u8; 32]
+								&& (*genesis_hash == xcm::v5::PEZKUWICHAIN_GENESIS_HASH
+									|| *genesis_hash == xcm::v5::ZAGROS_GENESIS_HASH)
 						},
 						_ => false,
 					};

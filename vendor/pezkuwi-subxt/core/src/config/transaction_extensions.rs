@@ -96,7 +96,7 @@ impl<T: Config> TransactionExtension<T> for VerifySignature<T> {
 }
 
 /// This allows a signature to be provided to the [`VerifySignature`] transaction extension.
-// Dev note: this must encode identically to https://github.com/pezkuwichain/pezkuwi-sdk/blob/fd72d58313c297a10600037ce1bb88ec958d722e/bizinikiwi/frame/verify-signature/src/extension.rs#L43
+// Dev note: this must encode identically to https://github.com/pezkuwichain/pezkuwi-DKS/blob/fd72d58313c297a10600037ce1bb88ec958d722e/bizinikiwi/frame/verify-signature/src/extension.rs#L43
 #[derive(codec::Encode, codec::Decode)]
 pub enum VerifySignatureDetails<T: Config> {
 	/// A signature has been provided.

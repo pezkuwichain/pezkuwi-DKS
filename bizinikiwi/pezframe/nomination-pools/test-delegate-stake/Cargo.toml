@@ -18,6 +18,8 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dev-dependencies]
 codec = { features = ["derive"], workspace = true, default-features = true }
+pezpallet-staking-async = { workspace = true, default-features = true }
+pezpallet-staking-async-rc-client = { workspace = true, default-features = true }
 scale-info = { features = [
 	"derive",
 ], workspace = true, default-features = true }
@@ -53,6 +55,8 @@ runtime-benchmarks = [
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-delegated-staking/runtime-benchmarks",
 	"pezpallet-nomination-pools/runtime-benchmarks",
+	"pezpallet-staking-async-rc-client/runtime-benchmarks",
+	"pezpallet-staking-async/runtime-benchmarks",
 	"pezpallet-staking-reward-curve/runtime-benchmarks",
 	"pezpallet-staking/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
@@ -69,6 +73,8 @@ try-runtime = [
 	"pezpallet-balances/try-runtime",
 	"pezpallet-delegated-staking/try-runtime",
 	"pezpallet-nomination-pools/try-runtime",
+	"pezpallet-staking-async-rc-client/try-runtime",
+	"pezpallet-staking-async/try-runtime",
 	"pezpallet-staking-reward-curve/try-runtime",
 	"pezpallet-staking/try-runtime",
 	"pezpallet-timestamp/try-runtime",

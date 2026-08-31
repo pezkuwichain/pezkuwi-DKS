@@ -170,4 +170,4 @@ $ENGINE run --rm -it parity/pezkuwi:latest --version
 ```
 
 This will show you the Pezkuwi version as well as the git commit ref that was used to build your container. You can now
-paste the version information in a [new issue](https://github.com/pezkuwichain/pezkuwi-sdk/issues/new/choose).
+paste the version information in a [new issue](https://github.com/pezkuwichain/pezkuwi-DKS/issues/new/choose).

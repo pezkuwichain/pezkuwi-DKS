@@ -2,18 +2,18 @@
 // This file is part of Pezcumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 use codec::Decode;
 use pezkuwi_primitives::{Block as PBlock, Hash as PHash, Header as PHeader, ValidationCodeHash};
@@ -45,6 +45,8 @@ use level_monitor::LevelMonitor;
 pub use level_monitor::{LevelLimit, MAX_LEAVES_PER_LEVEL_SENSIBLE_DEFAULT};
 
 pub mod import_queue;
+
+const LOG_TARGET: &str = "consensus::common";
 
 /// Provides the hash of validation code used for authoring/execution of blocks at a given
 /// hash.
@@ -189,19 +191,31 @@ pub trait TeyrchainBlockImportMarker {}
 
 impl<B: BlockT, BI, BE> TeyrchainBlockImportMarker for TeyrchainBlockImport<B, BI, BE> {}
 
-/// Get the relay-parent slot and timestamp from a header.
-pub fn relay_slot_and_timestamp(
-	relay_parent_header: &PHeader,
-	relay_chain_slot_duration: Duration,
-) -> Option<(Slot, Timestamp)> {
-	pezsc_consensus_babe::find_pre_digest::<PBlock>(relay_parent_header)
-		.map(|babe_pre_digest| {
-			let slot = babe_pre_digest.slot();
-			let t = Timestamp::new(relay_chain_slot_duration.as_millis() as u64 * *slot);
+/// Get the relay slot from a header.
+pub fn get_relay_slot(relay_header: &PHeader) -> Option<Slot> {
+	match pezsc_consensus_babe::find_pre_digest::<PBlock>(relay_header) {
+		Ok(pre_digest) => Some(pre_digest.slot()),
+		Err(err) => {
+			tracing::error!(
+				target: LOG_TARGET,
+				hash = %relay_header.hash(),
+				?err,
+				"Relay chain block does not contain a BABE pre-digest. This should never happen.",
+			);
+			None
+		},
+	}
+}
 
-			(slot, t)
-		})
-		.ok()
+/// Get the relay slot and timestamp from a header.
+pub fn get_relay_slot_and_timestamp(
+	relay_header: &PHeader,
+	relay_slot_duration: Duration,
+) -> Option<(Slot, Timestamp)> {
+	get_relay_slot(relay_header).map(|slot| {
+		let t = Timestamp::new(relay_slot_duration.as_millis() as u64 * *slot);
+		(slot, t)
+	})
 }
 
 /// Reads abridged host configuration from the relay chain storage at the given relay parent.

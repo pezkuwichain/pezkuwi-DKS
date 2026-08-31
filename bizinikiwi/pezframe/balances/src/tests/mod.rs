@@ -40,7 +40,7 @@ use pezsp_core::{hexdisplay::HexDisplay, sr25519::Pair as SrPair, Pair};
 use pezsp_io;
 use pezsp_runtime::{
 	traits::{BadOrigin, Zero},
-	ArithmeticError, BuildStorage, DispatchError, DispatchResult, FixedPointNumber, RuntimeDebug,
+	ArithmeticError, BuildStorage, Debug, DispatchError, DispatchResult, FixedPointNumber,
 	TokenError,
 };
 use scale_info::TypeInfo;
@@ -69,7 +69,7 @@ type Block = pezframe_system::mocking::MockBlock<Test>;
 	PartialOrd,
 	MaxEncodedLen,
 	TypeInfo,
-	RuntimeDebug,
+	Debug,
 )]
 pub enum TestId {
 	Foo,
@@ -371,8 +371,8 @@ fn check_whitelist() {
 	assert!(whitelist.contains("c2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80"));
 }
 
-/// This pezpallet runs tests twice, once with system as `type AccountStore` and once this
-/// pezpallet. This function will return the right value based on the `UseSystem` flag.
+/// This pezpallet runs tests twice, once with system as `type AccountStore` and once this pezpallet. This
+/// function will return the right value based on the `UseSystem` flag.
 pub(crate) fn get_test_account_data(who: AccountId) -> AccountData<Balance> {
 	if UseSystem::get() {
 		<SystemAccountStore as StoredMap<_, _>>::get(&who)
@@ -381,8 +381,8 @@ pub(crate) fn get_test_account_data(who: AccountId) -> AccountData<Balance> {
 	}
 }
 
-/// Same as `get_test_account_data`, but returns a `pezframe_system::AccountInfo` with the data
-/// filled in.
+/// Same as `get_test_account_data`, but returns a `pezframe_system::AccountInfo` with the data filled
+/// in.
 pub(crate) fn get_test_account(
 	who: AccountId,
 ) -> pezframe_system::AccountInfo<u32, AccountData<Balance>> {

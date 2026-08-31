@@ -4,7 +4,7 @@ use futures::FutureExt;
 use pez_solochain_template_runtime::{self, apis::RuntimeApi, opaque::Block};
 use pezsc_client_api::{Backend, BlockBackend};
 use pezsc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
-use pezsc_consensus_grandpa::SharedVoterState;
+use pezsc_consensus_grandpa::{GrandpaPruningFilter, SharedVoterState};
 use pezsc_service::{error::Error as ServiceError, Configuration, TaskManager, WarpSyncConfig};
 use pezsc_telemetry::{Telemetry, TelemetryWorker};
 use pezsc_transaction_pool_api::OffchainTransactionPoolFactory;
@@ -60,6 +60,7 @@ pub fn new_partial(config: &Configuration) -> Result<Service, ServiceError> {
 			config,
 			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 			executor,
+			vec![Arc::new(GrandpaPruningFilter)],
 		)?;
 	let client = Arc::new(client);
 
@@ -182,6 +183,7 @@ pub fn new_full<
 			client: client.clone(),
 			transaction_pool: transaction_pool.clone(),
 			spawn_handle: task_manager.spawn_handle(),
+			spawn_essential_handle: task_manager.spawn_essential_handle(),
 			import_queue,
 			block_announce_validator_builder: None,
 			warp_sync_config: Some(WarpSyncConfig::WithProvider(warp_sync)),

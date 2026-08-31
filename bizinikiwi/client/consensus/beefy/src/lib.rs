@@ -427,8 +427,7 @@ where
 			header = wait_for_parent_header(blockchain, header, HEADER_SYNC_DELAY).await?;
 		};
 
-		aux_schema::write_current_version(backend.as_ref())?;
-		aux_schema::write_voter_state(backend.as_ref(), &state)?;
+		aux_schema::write_current_version_and_voter_state(backend.as_ref(), &state)?;
 		Ok(state)
 	}
 
@@ -443,7 +442,7 @@ where
 		is_authority: bool,
 	) -> Result<PersistedState<B, AuthorityId>, Error> {
 		// Initialize voter state from AUX DB if compatible.
-		if let Some(mut state) = crate::aux_schema::load_persistent(backend.as_ref())?
+		if let Some(mut state) = crate::aux_schema::load_and_migrate_persistent(backend.as_ref())?
 			// Verify state pezpallet genesis matches runtime.
 			.filter(|state| state.pezpallet_genesis() == beefy_genesis)
 		{
@@ -557,9 +556,8 @@ pub async fn start_beefy_gadget<B, BE, C, N, P, R, S, AuthorityId>(
 
 	let mut block_import_justif = links.from_block_import_justif_stream.subscribe(100_000).fuse();
 
-	// Subscribe to finality notifications and justifications before waiting for runtime pezpallet
-	// and reuse the streams, so we don't miss notifications while waiting for pezpallet to be
-	// available.
+	// Subscribe to finality notifications and justifications before waiting for runtime pezpallet and
+	// reuse the streams, so we don't miss notifications while waiting for pezpallet to be available.
 	let finality_notifications = client.finality_notification_stream();
 	let (mut transformer, mut finality_notifications) =
 		finality_notification_transformer_future(finality_notifications);

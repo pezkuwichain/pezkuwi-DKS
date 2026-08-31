@@ -159,7 +159,7 @@ ambiguity despite using block number instead of a hash. A collection of **votes*
 a Commitment and a collection of signatures is going to be called **Signed Commitment**. A valid
 (see later for the rules) Signed Commitment is also called a **BEEFY Justification** or
 **BEEFY Finality Proof**. For more details on the actual data structures please see
-[BEEFY primitives definitions](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi/primitives/consensus/beefy/src).
+[BEEFY primitives definitions](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/bizinikiwi/primitives/consensus/beefy/src).
 
 A **round** is an attempt by BEEFY validators to produce a BEEFY Justification. **Round number**
 is simply defined as a block number the validators are voting for, or to be more precise, the
@@ -332,7 +332,7 @@ The current cryptographic scheme used by BEEFY is `ecdsa`. This is **different**
 schemes like `sr25519` and `ed25519` which are commonly used in Bizinikiwi configurations for
 other pallets (BABE, GRANDPA, AuRa, etc). The most noticeable difference is that an `ecdsa`
 public key is `33` bytes long, instead of `32` bytes for a `sr25519` based public key. So, a
-BEEFY key [sticks out](https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/pezkuwi/node/service/src/chain_spec.rs#L738)
+BEEFY key [sticks out](https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/pezkuwi/node/service/src/chain_spec.rs#L738)
 among the other public keys a bit.
 
 For other crypto (using the default Bizinikiwi configuration) the `AccountId` (32-bytes) matches

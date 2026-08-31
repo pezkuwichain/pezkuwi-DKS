@@ -27,10 +27,9 @@ use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
 
 mod origins;
 pub use origins::{
-	pezpallet_custom_origins, AuctionAdmin, CitizenshipAdmin, Fellows, FellowshipAdmin,
-	FellowshipExperts, FellowshipInitiates, FellowshipMasters, GeneralAdmin, LeaseAdmin,
-	ReferendumCanceller, ReferendumKiller, Spender, StakingAdmin, Treasurer, WelatiAdmin,
-	WelatiElection, WhitelistedCaller,
+	pezpallet_custom_origins, AuctionAdmin, Fellows, FellowshipAdmin, FellowshipExperts,
+	FellowshipInitiates, FellowshipMasters, GeneralAdmin, LeaseAdmin, ReferendumCanceller,
+	ReferendumKiller, StakingAdmin, WhitelistedCaller,
 };
 mod tracks;
 pub use tracks::TracksInfo;
@@ -82,7 +81,6 @@ parameter_types! {
 parameter_types! {
 	pub const MaxBalance: Balance = Balance::max_value();
 }
-pub type TreasurySpender = EitherOf<EnsureRootWithSuccess<AccountId, MaxBalance>, Spender>;
 
 impl origins::pezpallet_custom_origins::Config for Runtime {}
 
@@ -90,11 +88,16 @@ impl pezpallet_whitelist::Config for Runtime {
 	type WeightInfo = weights::pezpallet_whitelist::WeightInfo<Self>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
+	/// Two keys, and what the first one means changed underneath this line. With the root track
+	/// removed, Root on this chain is the register's referendum arriving over XCM -- so the
+	/// people approve a call hash and this chain's own fast track enacts it.
+	///
 	/// The Fellowship is a body on the Collectives chain, so its authority reaches this pallet
 	/// over XCM. The second arm used to be the local `Fellows` custom origin, which no track in
 	/// `tracks.rs` maps to and no collective on this chain can raise — leaving root as the only
 	/// caller able to whitelist anything, and the whole `whitelisted_caller` fast path unusable
-	/// by the body it was built for.
+	/// by the body it was built for. Mainnet has no Collectives chain and therefore no second
+	/// arm at all; that asymmetry is recorded as C9 and closes with the Fellowship decision.
 	type WhitelistOrigin = EitherOfDiverse<
 		EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
 		EnsureXcm<IsVoiceOfBody<Collectives, FellowsBodyId>>,
@@ -112,7 +115,10 @@ impl pezpallet_referenda::Config for Runtime {
 	type SubmitOrigin = pezframe_system::EnsureSigned<AccountId>;
 	type CancelOrigin = EitherOf<EnsureRoot<AccountId>, ReferendumCanceller>;
 	type KillOrigin = EitherOf<EnsureRoot<AccountId>, ReferendumKiller>;
-	type Slash = Treasury;
+	// Referendum deposits that are killed rather than refunded. They go where every other
+	// penalty on this chain goes: accumulated here and forwarded to the Asset Hub's
+	// treasury. Not `()`, which would destroy them.
+	type Slash = crate::PenaltiesToTreasury;
 	type Votes = pezpallet_conviction_voting::VotesOf<Runtime>;
 	type Tally = pezpallet_conviction_voting::TallyOf<Runtime>;
 	type SubmissionDeposit = SubmissionDeposit;

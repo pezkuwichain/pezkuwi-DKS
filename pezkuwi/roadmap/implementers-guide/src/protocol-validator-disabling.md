@@ -361,7 +361,7 @@ between 0-2% are reasonable. 0% would still disable which with the opportunity c
 
  > **Note:** \
 > Spammy approval checkers are in fact not a big issue as a side effect of the offchain-disabling introduced by the
-> Defense Against Past-Era Dispute Spam (**Node**) [#2225](https://github.com/pezkuwichain/pezkuwi-sdk/issues/119). It
+> Defense Against Past-Era Dispute Spam (**Node**) [#2225](https://github.com/pezkuwichain/pezkuwi-DKS/issues/119). It
 > makes it so all validators loosing a dispute are locally disabled and ignored for dispute initiation so it effectively
 > silences spammers. They can still no-show but the damage is minimized.
 
@@ -395,31 +395,31 @@ Implementation of the above design covers a few additional areas that allow for 
 
 ## Core Features
 
-1. Disabled Validators Tracking (**Runtime**) [#2950](https://github.com/pezkuwichain/pezkuwi-sdk/issues/125)
+1. Disabled Validators Tracking (**Runtime**) [#2950](https://github.com/pezkuwichain/pezkuwi-DKS/issues/125)
     - Expose a ``disabled_validators`` map through a Runtime API
-1. Enforce Backing Disabling (**Runtime**) [#1592](https://github.com/pezkuwichain/pezkuwi-sdk/issues/110)
+1. Enforce Backing Disabling (**Runtime**) [#1592](https://github.com/pezkuwichain/pezkuwi-DKS/issues/110)
     - Filter out votes from ``disabled_validators`` in ``BackedCandidates`` in ``process_inherent_data``
 1. Bizinikiwi Byzantine Threshold (BZT) as Limit for Disabling
-   [#1963](https://github.com/pezkuwichain/pezkuwi-sdk/issues/114)
+   [#1963](https://github.com/pezkuwichain/pezkuwi-DKS/issues/114)
     - Can be parametrized but default to BZT
     - Disable only up to 1/3 of validators
 1. Respect Disabling in Backing Statement Distribution (**Node**)
-   [#1591](https://github.com/pezkuwichain/pezkuwi-sdk/issues/112)
+   [#1591](https://github.com/pezkuwichain/pezkuwi-DKS/issues/112)
     - This is an optimization as in the end it would get filtered in the runtime anyway
     - Filter out backing statements coming from ``disabled_validators``
-1. Respect Disablement in Backing (**Node**) [#2951](https://github.com/pezkuwichain/pezkuwi-sdk/issues/126)
+1. Respect Disablement in Backing (**Node**) [#2951](https://github.com/pezkuwichain/pezkuwi-DKS/issues/126)
     - This is an optimization as in the end it would get filtered in the runtime anyway
     - Don't start backing new candidates when disabled
     - Don't react to backing requests when disabled
-1. Stop Automatic Chilling of Offenders [#1962](https://github.com/pezkuwichain/pezkuwi-sdk/issues/113)
+1. Stop Automatic Chilling of Offenders [#1962](https://github.com/pezkuwichain/pezkuwi-DKS/issues/113)
     - Chilling still persists as a state but is no longer automatically applied on offenses
-1. Respect Disabling in Dispute Participation (**Node**) [#2225](https://github.com/pezkuwichain/pezkuwi-sdk/issues/119)
+1. Respect Disabling in Dispute Participation (**Node**) [#2225](https://github.com/pezkuwichain/pezkuwi-DKS/issues/119)
     - Receive dispute statements from ``disabled_validators`` but do not release own statements
     - Ensure dispute confirmation when BZT statements from disabled
-1. Remove Liveness Slashes [#1964](https://github.com/pezkuwichain/pezkuwi-sdk/issues/115)
+1. Remove Liveness Slashes [#1964](https://github.com/pezkuwichain/pezkuwi-DKS/issues/115)
     - Remove liveness slashes from the system
     - The are other incentives to be online and they could be abused to attack the system
-1. Defense Against Past-Era Dispute Spam (**Node**) [#2225](https://github.com/pezkuwichain/pezkuwi-sdk/issues/119)
+1. Defense Against Past-Era Dispute Spam (**Node**) [#2225](https://github.com/pezkuwichain/pezkuwi-DKS/issues/119)
     - This is needed because runtime cannot disable validators which it no longer knows about
     - Add a node-side parallel store of ``disabled_validators``
     - Add new disabled validators to node-side store when they loose a dispute in any leaf in scope
@@ -430,7 +430,7 @@ Implementation of the above design covers a few additional areas that allow for 
     > This would guarantee determinism as different nodes can see different leaves, but this approach was leaving too
     > wide of a window because of Async-Backing. Relay Parent could have been significantly in the past and it would
     > give a lot of time for past session disputes to be spammed.
-1. Do not block finality for "disabled" disputes [#3358](https://github.com/pezkuwichain/pezkuwi-sdk/issues/114)
+1. Do not block finality for "disabled" disputes [#3358](https://github.com/pezkuwichain/pezkuwi-DKS/issues/114)
     - Emergency fix to not block finality for disputes initiated only by disabled validators
 1. Re-enable small offender when approaching BZT (**Runtime**) #TODO
     - When BZT limit is reached and there are more offenders to be disabled re-enable the smallest offenders to disable

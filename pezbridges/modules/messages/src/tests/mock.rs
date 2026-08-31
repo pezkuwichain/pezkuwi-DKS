@@ -324,11 +324,11 @@ impl DeliveryConfirmationPayments<AccountId, TestLaneIdType> for TestDeliveryCon
 
 	fn pay_reward(
 		_lane_id: TestLaneIdType,
-		pez_messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
+		messages_relayers: VecDeque<UnrewardedRelayer<AccountId>>,
 		_confirmation_relayer: &AccountId,
 		received_range: &RangeInclusive<MessageNonce>,
 	) -> MessageNonce {
-		let relayers_rewards = calc_relayers_rewards(pez_messages_relayers, received_range);
+		let relayers_rewards = calc_relayers_rewards(messages_relayers, received_range);
 		let rewarded_relayers = relayers_rewards.len();
 		for (relayer, reward) in &relayers_rewards {
 			let key = (b":relayer-reward:", relayer, reward).encode();

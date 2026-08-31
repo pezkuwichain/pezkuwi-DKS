@@ -20,7 +20,6 @@ pub use pezpallet_custom_origins::*;
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet_custom_origins {
-	use crate::{Balance, DOLLARS, GRAND};
 	use pezframe_support::pezpallet_prelude::*;
 
 	#[pezpallet::config]
@@ -30,77 +29,77 @@ pub mod pezpallet_custom_origins {
 	pub struct Pezpallet<T>(_);
 
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		MaxEncodedLen,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		TypeInfo,
-		RuntimeDebug,
+		PartialEq, Eq, Clone, MaxEncodedLen, Encode, Decode, DecodeWithMemTracking, TypeInfo, Debug,
 	)]
 	#[pezpallet::origin]
 	pub enum Origin {
 		/// Origin for cancelling slashes.
+		#[codec(index = 0)]
 		StakingAdmin,
-		/// Origin for spending (any amount of) funds.
-		Treasurer,
 		/// Origin for managing the composition of the fellowship.
+		#[codec(index = 2)]
 		FellowshipAdmin,
 		/// Origin for managing the registrar.
+		#[codec(index = 3)]
 		GeneralAdmin,
 		/// Origin for starting auctions.
+		#[codec(index = 4)]
 		AuctionAdmin,
 		/// Origin able to force slot leases.
+		#[codec(index = 5)]
 		LeaseAdmin,
 		/// Origin able to cancel referenda.
+		#[codec(index = 6)]
 		ReferendumCanceller,
 		/// Origin able to kill referenda.
+		#[codec(index = 7)]
 		ReferendumKiller,
-		/// Origin able to spend up to 1 HEZ from the treasury at once.
-		SmallTipper,
-		/// Origin able to spend up to 5 HEZ from the treasury at once.
-		BigTipper,
-		/// Origin able to spend up to 50 HEZ from the treasury at once.
-		SmallSpender,
-		/// Origin able to spend up to 500 HEZ from the treasury at once.
-		MediumSpender,
-		/// Origin able to spend up to 5,000 HEZ from the treasury at once.
-		BigSpender,
 		/// Origin able to dispatch a whitelisted call.
+		#[codec(index = 13)]
 		WhitelistedCaller,
-		/// Origin for Welati election management (initiate/finalize elections on People Chain).
-		WelatiElection,
-		/// Origin for Welati administrative actions (tiki grants, appointments on People Chain).
-		WelatiAdmin,
-		/// Origin for citizenship management (revocation, trust score updates on People Chain).
-		CitizenshipAdmin,
+		// Indices 14, 15 and 16 held `WelatiElection`, `WelatiAdmin` and `CitizenshipAdmin`.
+		// They are retired rather than reused: this chain's referenda weigh tokens, and a body
+		// that weighs tokens has no business naming who is a person. The register's own
+		// head-counted tracks on the People chain carry those three names now, and they are
+		// the only ones that do.
 		/// Origin commanded by any members of the Pezkuwi Fellowship (no Dan grade needed).
+		#[codec(index = 17)]
 		FellowshipInitiates,
 		/// Origin commanded by Pezkuwi Fellows (3rd Dan fellows or greater).
+		#[codec(index = 18)]
 		Fellows,
 		/// Origin commanded by Pezkuwi Experts (5th Dan fellows or greater).
+		#[codec(index = 19)]
 		FellowshipExperts,
 		/// Origin commanded by Pezkuwi Masters (7th Dan fellows of greater).
+		#[codec(index = 20)]
 		FellowshipMasters,
 		/// Origin commanded by rank 1 of the Pezkuwi Fellowship and with a success of 1.
+		#[codec(index = 21)]
 		Fellowship1Dan,
 		/// Origin commanded by rank 2 of the Pezkuwi Fellowship and with a success of 2.
+		#[codec(index = 22)]
 		Fellowship2Dan,
 		/// Origin commanded by rank 3 of the Pezkuwi Fellowship and with a success of 3.
+		#[codec(index = 23)]
 		Fellowship3Dan,
 		/// Origin commanded by rank 4 of the Pezkuwi Fellowship and with a success of 4.
+		#[codec(index = 24)]
 		Fellowship4Dan,
 		/// Origin commanded by rank 5 of the Pezkuwi Fellowship and with a success of 5.
+		#[codec(index = 25)]
 		Fellowship5Dan,
 		/// Origin commanded by rank 6 of the Pezkuwi Fellowship and with a success of 6.
+		#[codec(index = 26)]
 		Fellowship6Dan,
 		/// Origin commanded by rank 7 of the Pezkuwi Fellowship and with a success of 7.
+		#[codec(index = 27)]
 		Fellowship7Dan,
 		/// Origin commanded by rank 8 of the Pezkuwi Fellowship and with a success of 8.
+		#[codec(index = 28)]
 		Fellowship8Dan,
 		/// Origin commanded by rank 9 of the Pezkuwi Fellowship and with a success of 9.
+		#[codec(index = 29)]
 		Fellowship9Dan,
 	}
 
@@ -139,7 +138,6 @@ pub mod pezpallet_custom_origins {
 	}
 	decl_unit_ensures!(
 		StakingAdmin,
-		Treasurer,
 		FellowshipAdmin,
 		GeneralAdmin,
 		AuctionAdmin,
@@ -147,9 +145,6 @@ pub mod pezpallet_custom_origins {
 		ReferendumCanceller,
 		ReferendumKiller,
 		WhitelistedCaller,
-		WelatiElection,
-		WelatiAdmin,
-		CitizenshipAdmin,
 		FellowshipInitiates: u16 = 0,
 		Fellows: u16 = 3,
 		FellowshipExperts: u16 = 5,
@@ -189,17 +184,6 @@ pub mod pezpallet_custom_origins {
 					_result
 				}
 			}
-		}
-	}
-
-	decl_ensure! {
-		pub type Spender: EnsureOrigin<Success = Balance> {
-			SmallTipper = 250 * DOLLARS,
-			BigTipper = 1 * GRAND,
-			SmallSpender = 10 * GRAND,
-			MediumSpender = 100 * GRAND,
-			BigSpender = 1_000 * GRAND,
-			Treasurer = 10_000 * GRAND,
 		}
 	}
 

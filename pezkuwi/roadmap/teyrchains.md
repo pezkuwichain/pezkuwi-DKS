@@ -116,7 +116,7 @@ The main event loop of a collator node:
 ---
 ### Cross-chain Messaging
 
-https://hackmd.io/ILoQltEISP697oMYe4HbrA?view https://github.com/pezkuwichain/pezkuwi-sdk/issues/163
+https://hackmd.io/ILoQltEISP697oMYe4HbrA?view https://github.com/pezkuwichain/pezkuwi-DKS/issues/163
 
 The biggest sub-project of the teyrchains roadmap - how messages are sent between teyrchains. This involves the
 state-machine ordering of incoming messages, protocols for fetching those messages, and node logic for persisting the
@@ -178,7 +178,7 @@ It is the responsibility of the full nodes of the _sending_ para to maintain all
 the link where `b` is less than the watermark of the _receiving_ para.
 
 Full nodes of the para will be aware of the head of all MQCs for its channels because they are produced by execution of
-the block. This will take collaboration with the Pezcumulus team (https://github.com/pezkuwichain/pezkuwi-sdk) on APIs.
+the block. This will take collaboration with the Pezcumulus team (https://github.com/pezkuwichain/pezkuwi-DKS) on APIs.
 
 We will need a network where collators of paras can discover and fetch the relevant portion of the MQC incoming from all
 channels.

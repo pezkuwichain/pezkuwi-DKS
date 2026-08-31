@@ -4,8 +4,7 @@ name = "pezpallet-mixnet"
 version = "0.4.0"
 license = "Apache-2.0"
 authors = [
-	"Kurdistan Tech Institute <info@pezkuwichain.io>",
-	"Parity Technologies <admin@parity.io>",
+	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
 ]
 edition.workspace = true
 homepage.workspace = true

@@ -51,7 +51,7 @@ use pezsp_std::marker::PhantomData;
 /// Weight functions needed for pezpallet_bridge_grandpa.
 pub trait WeightInfo {
 	fn submit_finality_proof(p: u32, v: u32) -> Weight;
-	fn force_set_pallet_state() -> Weight;
+	fn force_set_pezpallet_state() -> Weight;
 }
 
 /// Weights for `pezpallet_bridge_grandpa` that are generated using one of the Bridge testnets.
@@ -124,7 +124,7 @@ impl<T: pezframe_system::Config> WeightInfo for BridgeWeight<T> {
 	/// added: 531, mode: `MaxEncodedLen`) Storage: `BridgeZagrosGrandpa::ImportedHeaders` (r:0
 	/// w:2) Proof: `BridgeZagrosGrandpa::ImportedHeaders` (`max_values`: Some(1024), `max_size`:
 	/// Some(68), added: 1553, mode: `MaxEncodedLen`)
-	fn force_set_pallet_state() -> Weight {
+	fn force_set_pezpallet_state() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `452`
 		//  Estimated: `51735`
@@ -203,7 +203,7 @@ impl WeightInfo for () {
 	/// added: 531, mode: `MaxEncodedLen`) Storage: `BridgeZagrosGrandpa::ImportedHeaders` (r:0
 	/// w:2) Proof: `BridgeZagrosGrandpa::ImportedHeaders` (`max_values`: Some(1024), `max_size`:
 	/// Some(68), added: 1553, mode: `MaxEncodedLen`)
-	fn force_set_pallet_state() -> Weight {
+	fn force_set_pezpallet_state() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `452`
 		//  Estimated: `51735`

@@ -336,7 +336,7 @@ pub struct FoundExtrinsic<T: Config, E> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::config::BizinikiwConfig;
+	use crate::config::BizinikiwiConfig;
 	use assert_matches::assert_matches;
 	use codec::{Decode, Encode};
 	use frame_metadata::{
@@ -478,7 +478,7 @@ mod tests {
 		let metadata = metadata();
 
 		// Decode with empty bytes.
-		let result = Extrinsics::<BizinikiwConfig>::decode_from(vec![vec![]], metadata);
+		let result = Extrinsics::<BizinikiwiConfig>::decode_from(vec![vec![]], metadata);
 		assert_matches!(
 			result.err(),
 			Some(crate::error::ExtrinsicDecodeErrorAt { extrinsic_index: 0, error: _ })
@@ -492,7 +492,8 @@ mod tests {
 		let metadata = metadata();
 
 		// Decode with invalid version.
-		let result = Extrinsics::<BizinikiwConfig>::decode_from(vec![vec![3u8].encode()], metadata);
+		let result =
+			Extrinsics::<BizinikiwiConfig>::decode_from(vec![vec![3u8].encode()], metadata);
 
 		assert_matches!(
 			result.err(),
@@ -508,7 +509,7 @@ mod tests {
 	#[test]
 	fn tx_hashes_line_up() {
 		let metadata = metadata();
-		let hasher = <BizinikiwConfig as Config>::Hasher::new(&metadata);
+		let hasher = <BizinikiwiConfig as Config>::Hasher::new(&metadata);
 
 		let tx = crate::dynamic::tx(
 			"Test",
@@ -517,11 +518,11 @@ mod tests {
 		);
 
 		// Encoded TX ready to submit.
-		let tx_encoded = crate::tx::create_v4_unsigned::<BizinikiwConfig, _>(&tx, &metadata)
+		let tx_encoded = crate::tx::create_v4_unsigned::<BizinikiwiConfig, _>(&tx, &metadata)
 			.expect("Valid dynamic parameters are provided");
 
 		// Extrinsic details ready to decode.
-		let extrinsics = Extrinsics::<BizinikiwConfig>::decode_from(
+		let extrinsics = Extrinsics::<BizinikiwiConfig>::decode_from(
 			vec![tx_encoded.encoded().to_owned()],
 			metadata,
 		)
@@ -544,13 +545,13 @@ mod tests {
 			"TestCall",
 			vec![Value::u128(10), Value::bool(true), Value::string("SomeValue")],
 		);
-		let tx_encoded = crate::tx::create_v4_unsigned::<BizinikiwConfig, _>(&tx, &metadata)
+		let tx_encoded = crate::tx::create_v4_unsigned::<BizinikiwiConfig, _>(&tx, &metadata)
 			.expect("Valid dynamic parameters are provided");
 
 		// Note: `create_unsigned` produces the extrinsic bytes by prefixing the extrinsic length.
 		// The length is handled deserializing `ChainBlockExtrinsic`, therefore the first byte is
 		// not needed.
-		let extrinsics = Extrinsics::<BizinikiwConfig>::decode_from(
+		let extrinsics = Extrinsics::<BizinikiwiConfig>::decode_from(
 			vec![tx_encoded.encoded().to_owned()],
 			metadata,
 		)

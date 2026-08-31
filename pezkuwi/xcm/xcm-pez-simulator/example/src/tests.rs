@@ -135,7 +135,7 @@ fn reserve_transfer() {
 			Box::new(Teyrchain(1).into()),
 			Box::new(AccountId32 { network: None, id: ALICE.into() }.into()),
 			Box::new((Here, withdraw_amount).into()),
-			Box::new(Here.into()),
+			0,
 			Unlimited,
 		));
 		assert_eq!(
@@ -182,7 +182,7 @@ fn reserve_transfer_with_error() {
 				invalid_dest,
 				Box::new(AccountId32 { network: None, id: ALICE.into() }.into()),
 				Box::new((Here, withdraw_amount).into()),
-				Box::new(Here.into()),
+				0,
 				Unlimited,
 			);
 
@@ -549,7 +549,7 @@ fn query_holding() {
 		// Send withdraw and deposit with query holding
 		assert_ok!(TeyrchainPalletXcm::send_xcm(Here, Parent, message.clone(),));
 
-		VersionedXcm::from(message).using_encoded(pezsp_core::blake2_256)
+		VersionedXcm::from(message).using_encoded(pezsp_crypto_hashing::blake2_256)
 	});
 
 	// Check that transfer was executed

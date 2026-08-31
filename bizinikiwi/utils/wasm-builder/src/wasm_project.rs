@@ -23,6 +23,7 @@ use build_helper::rerun_if_changed;
 use cargo_metadata::{DependencyKind, Metadata, MetadataCommand};
 use console::style;
 use parity_wasm::elements::{deserialize_buffer, Module};
+use polkavm_linker::TargetInstructionSet;
 use std::{
 	borrow::ToOwned,
 	collections::HashSet,
@@ -877,6 +878,16 @@ fn build_bloaty_blob(
 			}
 
 			rustflags.push_str("-C link-arg=--export-table ");
+
+			// A runtime imports its host functions as undefined wasm symbols that the executor
+			// resolves at call time. Rust 1.96 stopped passing `--allow-undefined` to the wasm
+			// linker on our behalf, so the link now fails on exactly those symbols unless we ask
+			// for it ourselves:
+			// https://blog.rust-lang.org/2026/04/04/changes-to-webassembly-targets-and-handling-undefined-symbols/
+			//
+			// This belongs to the wasm target and only to it. `rust-lld` rejects the argument
+			// outright when linking the riscv blob, so passing it globally breaks that build.
+			rustflags.push_str("-C link-arg=--allow-undefined ");
 		},
 		RuntimeTarget::Riscv => (),
 	}
@@ -967,6 +978,17 @@ fn build_bloaty_blob(
 		}
 	}
 
+	// The riscv target is not a built-in target name but a path to a specification file that
+	// `polkavm_linker` writes out, and since Rust 1.96 passing one of those requires asking for it
+	// explicitly. Nightly-only, like `build-std` above, with the same bootstrap escape.
+	if matches!(target, RuntimeTarget::Riscv) {
+		build_cmd.arg("-Zjson-target-spec");
+
+		if !cargo_cmd.supports_nightly_features() {
+			build_cmd.env("RUSTC_BOOTSTRAP", "1");
+		}
+	}
+
 	// Inherit jobserver in child cargo command to ensure we don't try to use more concurrency than
 	// available
 	if let Some(c) = get_jobserver() {
@@ -1011,7 +1033,11 @@ fn build_bloaty_blob(
 				let mut config = polkavm_linker::Config::default();
 				config.set_strip(true); // TODO: This shouldn't always be done.
 
-				let program = match polkavm_linker::program_from_elf(config, &blob_bytes) {
+				let program = match polkavm_linker::program_from_elf(
+					config,
+					TargetInstructionSet::JamV1,
+					&blob_bytes,
+				) {
 					Ok(program) => program,
 					Err(error) => {
 						println!("Failed to link the runtime blob; this is probably a bug!");

@@ -375,7 +375,7 @@ async fn handle_new_block_imported<Block, P>(
 {
 	// HACK
 	//
-	// Remove after https://github.com/pezkuwichain/pezkuwi-sdk/issues/224 or similar is merged
+	// Remove after https://github.com/pezkuwichain/pezkuwi-DKS/issues/224 or similar is merged
 	if notification.origin != BlockOrigin::Own {
 		announce_block(notification.hash, None);
 	}

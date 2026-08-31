@@ -34,7 +34,7 @@ use frame_metadata::v14::{
 impl From<MetadataIR> for RuntimeMetadataV14 {
 	fn from(ir: MetadataIR) -> Self {
 		RuntimeMetadataV14::new(
-			ir.pallets.into_iter().map(Into::into).collect(),
+			ir.pezpallets.into_iter().map(Into::into).collect(),
 			ir.extrinsic.into(),
 			ir.ty,
 		)
@@ -155,7 +155,12 @@ impl From<ExtrinsicMetadataIR> for ExtrinsicMetadata {
 		ExtrinsicMetadata {
 			ty: ir.ty,
 			version: *lowest_supported_version,
-			signed_extensions: ir.extensions.into_iter().map(Into::into).collect(),
+			signed_extensions: ir
+				.extensions_v0()
+				.expect("Metadata V14 expect a defined transaction extenstion pipeline version 0")
+				.into_iter()
+				.map(Into::into)
+				.collect(),
 		}
 	}
 }

@@ -133,7 +133,9 @@ mod tests {
 	};
 	use pezkuwi_node_subsystem_test_helpers as test_helpers;
 	use pezkuwi_pez_node_primitives::BlockData;
-	use pezkuwi_primitives::{CandidateHash, ExecutorParams, Hash, NodeFeatures, ValidatorIndex};
+	use pezkuwi_primitives::{
+		ApprovalVotingParams, CandidateHash, Hash, NodeFeatures, ValidatorIndex,
+	};
 	use test_helpers::mock::make_ferdie_keystore;
 
 	use super::*;
@@ -197,15 +199,15 @@ mod tests {
 					},
 					AllMessages::RuntimeApi(RuntimeApiMessage::Request(
 						_,
-						RuntimeApiRequest::SessionExecutorParams(_, tx),
-					)) => {
-						tx.send(Ok(Some(ExecutorParams::default()))).unwrap();
-					},
-					AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-						_,
 						RuntimeApiRequest::NodeFeatures(_, si_tx),
 					)) => {
 						si_tx.send(Ok(NodeFeatures::EMPTY)).unwrap();
+					},
+					AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+						_,
+						RuntimeApiRequest::ApprovalVotingParams(_, tx),
+					)) => {
+						tx.send(Ok(ApprovalVotingParams::default())).unwrap();
 					},
 					AllMessages::NetworkBridgeTx(NetworkBridgeTxMessage::SendRequests(
 						mut reqs,

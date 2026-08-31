@@ -41,7 +41,7 @@
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: `1024`
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
@@ -54,12 +54,12 @@
 // --steps=50
 // --repeat=20
 // --heap-pages=4096
-// --template=bizinikiwi/.maintain/frame-umbrella-weight-template.hbs
+// --template=bizinikiwi/.maintain/pezframe-umbrella-weight-template.hbs
 // --no-storage-info
 // --no-min-squares
 // --no-median-slopes
 // --genesis-builder-policy=none
-// --exclude-pallets=pezpallet_xcm,pezpallet_xcm_benchmarks::fungible,pezpallet_xcm_benchmarks::generic,pezpallet_nomination_pools,pezpallet_remark,pezpallet_transaction_storage,pezpallet_election_provider_multi_block,pezpallet_election_provider_multi_block::signed,pezpallet_election_provider_multi_block::unsigned,pezpallet_election_provider_multi_block::verifier
+// --exclude-pezpallets=pezpallet_xcm,pezpallet_xcm_benchmarks::fungible,pezpallet_xcm_benchmarks::generic,pezpallet_nomination_pools,pezpallet_remark,pezpallet_transaction_storage,pezpallet_election_provider_multi_block,pezpallet_election_provider_multi_block::signed,pezpallet_election_provider_multi_block::unsigned,pezpallet_election_provider_multi_block::verifier
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -83,7 +83,7 @@ pub trait WeightInfo {
 	fn force_set_active_cursor() -> Weight;
 	fn force_onboard_mbms() -> Weight;
 	fn clear_historic(n: u32, ) -> Weight;
-	fn reset_pallet_migration(n: u32, ) -> Weight;
+	fn reset_pezpallet_migration(n: u32, ) -> Weight;
 }
 
 /// Weights for `pezpallet_migrations` using the Bizinikiwi node and recommended hardware.
@@ -235,7 +235,7 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	/// Storage: `Skipped::Metadata` (r:0 w:0)
 	/// Proof: `Skipped::Metadata` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `n` is `[0, 2048]`.
-	fn reset_pallet_migration(n: u32, ) -> Weight {
+	fn reset_pezpallet_migration(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1605 + n * (38 ±0)`
 		//  Estimated: `686 + n * (39 ±0)`
@@ -397,7 +397,7 @@ impl WeightInfo for () {
 	/// Storage: `Skipped::Metadata` (r:0 w:0)
 	/// Proof: `Skipped::Metadata` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// The range of component `n` is `[0, 2048]`.
-	fn reset_pallet_migration(n: u32, ) -> Weight {
+	fn reset_pezpallet_migration(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1605 + n * (38 ±0)`
 		//  Estimated: `686 + n * (39 ±0)`

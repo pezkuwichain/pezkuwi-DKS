@@ -1,0 +1,142 @@
+name: weights
+
+# Re-generates the weights the runtimes charge for extrinsics.
+#
+# A weight is a measurement, and a measurement is only worth the machine it was taken on.
+# This runs on one pinned host -- the weakest validator class in the fleet -- because block
+# production waits on the slowest node. Numbers taken anywhere faster describe work the fleet
+# cannot finish in the time the block allows.
+#
+# The same reasoning fixes reference_hardware.json, and the two belong together: if this
+# workflow ever moves to a different host, re-take that baseline in the same change.
+#
+# Two ways in, and the second exists because the first cannot reach a branch. GitHub only
+# offers `workflow_dispatch` for workflows that are already on the default branch, so for the
+# ten days this file has existed it could not be run at all -- the measurements it describes
+# were taken by hand on the box instead, which is how two bridge hubs came to be skipped with
+# nobody noticing. A request file fixes that: edit `.github/weights-request.yml`, push, and
+# the run happens here with the busy-machine check in front of it and an artifact behind it.
+# It is still not "on push" in the sense the fleet has to worry about -- ordinary commits do
+# not touch that file, and nothing else triggers this.
+
+on:
+  push:
+    paths:
+      - ".github/weights-request.yml"
+  workflow_dispatch:
+    inputs:
+      runtime:
+        description: "Runtime to benchmark (matrix name, e.g. people-zagros). Empty = all."
+        required: false
+        type: string
+      pallet:
+        description: "Pallet to benchmark (e.g. pezpallet_balances). Empty = all in the runtime."
+        required: false
+        type: string
+      repeat:
+        description: >-
+          Repetitions per step (default 20). Raise it when a pallet's fitted base disagrees
+          with its own recorded minimum -- xcmp-queue needed 100, and 200 for one runtime.
+        required: false
+        type: string
+      steps:
+        description: "Samples per component (default 50)."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # Keyed on the commit, and never cancelled: a half-finished weights run leaves some files
+  # measured and some not, which is worse than no run at all.
+  group: weights-${{ github.sha }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_RELEASE_DEBUG: "0"
+
+jobs:
+  generate:
+    # Pinned, and not to the bizinikiwi-build pool. The pool is heterogeneous -- 4-core boxes
+    # next to an 18-core one -- and a weight measured on the fast box under-charges every
+    # extrinsic for validators running on the slow ones. This host is the reference class.
+    runs-on: [self-hosted, weights-reference]
+    timeout-minutes: 1440
+    steps:
+      - uses: actions/checkout@v7
+
+      # Building any runtime with `runtime-benchmarks` pulls `pezpallet-revive-fixtures`,
+      # whose build script compiles Solidity. Installed rather than skipped with
+      # `SKIP_PALLET_REVIVE_FIXTURES=1`, for the reason the `workspace` job records: skipping
+      # leaves a job reporting success over code it never built. `check-workflow-solc.py`
+      # keeps this step and the jobs that need it from drifting apart.
+      - uses: ./.github/actions/install-solidity
+
+      - name: Tooling
+        run: |
+          python3 -m pip install --break-system-packages --quiet -r .github/scripts/requirements.txt
+
+      # This host is not in the build pool and its runner does not start from a login shell,
+      # so rustup's PATH entry never arrives -- the first run of this workflow got as far as
+      # `sh: 1: cargo: not found`. Written out rather than assumed: the build jobs get their
+      # toolchain from a step of their own, and a workflow that borrows another job's
+      # environment works until the day it runs somewhere else.
+      - name: Toolchain
+        run: |
+          set -euo pipefail
+          for dir in "$HOME/.cargo/bin" /root/.cargo/bin /usr/local/cargo/bin; do
+            [ -x "$dir/cargo" ] && { echo "$dir" >> "$GITHUB_PATH"; export PATH="$dir:$PATH"; break; }
+          done
+          command -v cargo >/dev/null || {
+            echo "::error::no cargo on this host; the reference machine cannot measure anything without a toolchain"
+            exit 1
+          }
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+
+      # A weight is a timing, so anything else running on the box is part of the measurement.
+      # Refuse rather than record a number the fleet cannot reproduce.
+      - name: Refuse to measure a busy machine
+        run: |
+          load=$(awk '{print int($1 + 0.5)}' /proc/loadavg)
+          echo "load average: $(awk '{print $1}' /proc/loadavg)"
+          if [ "$load" -gt 1 ]; then
+            echo "::error::Load is ${load}; a benchmark taken here would measure the contention too."
+            exit 1
+          fi
+
+      # `workflow_dispatch` inputs win when present; otherwise the request file is read.
+      # Either way the values arrive through `env` and go into an argv array, never into the
+      # script text. `${{ }}` is substituted before bash sees the line, so a value containing
+      # a semicolon or a backtick would run as a command on the one host that holds the runner
+      # token and reaches the fleet. A dispatch is not a review.
+      - name: Generate
+        env:
+          IN_RUNTIME: ${{ inputs.runtime }}
+          IN_PALLET: ${{ inputs.pallet }}
+          IN_REPEAT: ${{ inputs.repeat }}
+          IN_STEPS: ${{ inputs.steps }}
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/weights_request.py \
+            --runtime "$IN_RUNTIME" --pallet "$IN_PALLET" \
+            --repeat "$IN_REPEAT" --steps "$IN_STEPS"
+
+      # The weights are the product; they are reviewed and committed by hand rather than
+      # pushed from CI, because a number nobody looked at is not a measurement either.
+      - name: Collect
+        if: always()
+        run: git diff --stat -- '*weights*' | tail -20
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: weights-${{ github.sha }}
+          path: |
+            **/weights/*.rs
+            **/weights.rs
+          if-no-files-found: warn

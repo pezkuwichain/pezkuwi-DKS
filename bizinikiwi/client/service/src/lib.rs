@@ -48,6 +48,7 @@ use pezsc_network::{
 };
 use pezsc_network_sync::SyncingService;
 use pezsc_network_types::PeerId;
+pub use pezsc_rpc_server::create_rpc_runtime;
 use pezsc_rpc_server::Server;
 use pezsc_utils::mpsc::TracingUnboundedReceiver;
 use pezsp_blockchain::HeaderMetadata;
@@ -83,6 +84,7 @@ pub use pezsc_chain_spec::{
 	ChainSpec, ChainType, Extension as ChainSpecExtension, GenericChainSpec, NoExtension,
 	Properties,
 };
+pub use pezsc_client_db::PruningFilter;
 
 use crate::config::RpcConfiguration;
 pub use pezsc_consensus::ImportQueue;
@@ -108,7 +110,7 @@ const DEFAULT_PROTOCOL_ID: &str = "sup";
 #[derive(Clone)]
 pub struct RpcHandlers {
 	// This is legacy and may be removed at some point, it was for WASM stuff before smoldot was a
-	// thing. https://github.com/pezkuwichain/pezkuwi-sdk/issues/266#discussion_r1694971805
+	// thing. https://github.com/pezkuwichain/pezkuwi-DKS/pull/5038#discussion_r1694971805
 	rpc_module: Arc<RpcModule<()>>,
 
 	// This can be used to introspect the port the RPC server is listening on. SDK consumers are
@@ -211,7 +213,7 @@ async fn build_network_future<
 					// If this stream is shut down, that means the client has shut down, and the
 					// most appropriate thing to do for the network future is to shut down too.
 					None => {
-						debug!("Block import stream has terminated, shutting down the network future.");
+						warn!("Block import stream has terminated, shutting down the network future. Ignore if the node is stopping.");
 						return
 					},
 				};
@@ -235,7 +237,7 @@ async fn build_network_future<
 
 			// Drive the network. Shut down the network future if `NetworkWorker` has terminated.
 			_ = network_run => {
-				debug!("`NetworkWorker` has terminated, shutting down the network future.");
+				warn!("`NetworkWorker` has terminated, shutting down the network future. Ignore if the node is stopping.");
 				return
 			}
 		}
@@ -380,16 +382,14 @@ pub async fn build_system_rpc_future<
 }
 
 /// Starts RPC servers.
-pub fn start_rpc_servers<R>(
+pub fn start_rpc_servers(
 	rpc_configuration: &RpcConfiguration,
 	registry: Option<&Registry>,
 	tokio_handle: &Handle,
-	gen_rpc_module: R,
+	rpc_api: RpcModule<()>,
+	rpc_runtime: tokio::runtime::Runtime,
 	rpc_id_provider: Option<Box<dyn pezsc_rpc_server::SubscriptionIdProvider>>,
-) -> Result<Server, error::Error>
-where
-	R: Fn() -> Result<RpcModule<()>, Error>,
-{
+) -> Result<Server, error::Error> {
 	let endpoints: Vec<pezsc_rpc_server::RpcEndpoint> = if let Some(endpoints) =
 		rpc_configuration.addr.as_ref()
 	{
@@ -436,18 +436,17 @@ where
 	};
 
 	let metrics = pezsc_rpc_server::RpcMetrics::new(registry)?;
-	let rpc_api = gen_rpc_module()?;
 
 	let server_config = pezsc_rpc_server::Config {
 		endpoints,
-		rpc_api,
 		metrics,
+		rpc_api,
 		id_provider: rpc_id_provider,
-		tokio_handle: tokio_handle.clone(),
 		request_logger_limit: rpc_configuration.request_logger_limit,
+		rpc_runtime,
 	};
 
-	// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/12
+	// TODO: https://github.com/paritytech/substrate/issues/13773
 	//
 	// `block_in_place` is a hack to allow callers to call `block_on` prior to
 	// calling `start_rpc_servers`.

@@ -20,9 +20,12 @@ targets = ["x86_64-unknown-linux-gnu"]
 async-trait = { workspace = true }
 futures = { features = ["thread-pool"], workspace = true }
 log = { workspace = true, default-features = true }
+pezsp-api = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true, default-features = true }
 pezsp-inherents = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-state-machine = { workspace = true, default-features = true }
+pezsp-trie = { workspace = true, default-features = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
@@ -31,10 +34,16 @@ futures = { workspace = true }
 [features]
 default = []
 runtime-benchmarks = [
+	"pezsp-api/runtime-benchmarks",
 	"pezsp-inherents/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-state-machine/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
 ]
 std = ["log/std"]
-try-runtime = ["pezsp-inherents/try-runtime", "pezsp-runtime/try-runtime"]
+try-runtime = [
+	"pezsp-api/try-runtime",
+	"pezsp-inherents/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
 serde = []

@@ -28,7 +28,7 @@
 //! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// ./target/release/bizinikiwi
+// ./target/release/substrate
 // benchmark
 // pezpallet
 // --chain=dev
@@ -40,7 +40,7 @@
 // --repeat=20
 // --output=./
 // --template
-// ./.maintain/frame-weight-template.hbs
+// ./.maintain/pezframe-weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]

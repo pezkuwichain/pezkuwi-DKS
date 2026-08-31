@@ -243,7 +243,7 @@ where
 		}
 	}
 
-	fn handle_potential_pallet_reset(&mut self, notification: &FinalityNotification<B>) {
+	fn handle_potential_pezpallet_reset(&mut self, notification: &FinalityNotification<B>) {
 		if let Some(first_mmr_block_num) = self.client.first_mmr_block_num(&notification) {
 			if first_mmr_block_num != self.first_mmr_block {
 				info!(
@@ -264,7 +264,7 @@ where
 	/// Prune leafs and nodes added by stale blocks in offchain db from _fork-aware key_.
 	pub fn canonicalize_and_prune(&mut self, notification: FinalityNotification<B>) {
 		// Update the first MMR block in case of a pezpallet reset.
-		self.handle_potential_pallet_reset(&notification);
+		self.handle_potential_pezpallet_reset(&notification);
 
 		// Move offchain MMR nodes for finalized blocks to canonical keys.
 		for hash in notification.tree_route.iter().chain(std::iter::once(&notification.hash)) {
@@ -279,14 +279,14 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::test_utils::{run_test_with_pezmmr_gadget, run_test_with_pezmmr_gadget_pre_post};
+	use crate::test_utils::{run_test_with_mmr_gadget, run_test_with_mmr_gadget_pre_post};
 	use parking_lot::Mutex;
 	use pezsp_runtime::generic::BlockId;
 	use std::{sync::Arc, time::Duration};
 
 	#[test]
 	fn canonicalize_and_prune_works_correctly() {
-		run_test_with_pezmmr_gadget(|client| async move {
+		run_test_with_mmr_gadget(|client| async move {
 			//                     -> D4 -> D5
 			// G -> A1 -> A2 -> A3 -> A4
 			//   -> B1 -> B2 -> B3
@@ -324,8 +324,8 @@ mod tests {
 	}
 
 	#[test]
-	fn canonicalize_and_prune_handles_pallet_reset() {
-		run_test_with_pezmmr_gadget(|client| async move {
+	fn canonicalize_and_prune_handles_pezpallet_reset() {
+		run_test_with_mmr_gadget(|client| async move {
 			// G -> A1 -> A2 -> A3 -> A4 -> A5
 			//      |           |
 			//      |           | -> pezpallet reset
@@ -348,7 +348,7 @@ mod tests {
 
 			client.finalize_block(a5.hash(), Some(3));
 			tokio::time::sleep(Duration::from_millis(200)).await;
-			//expected finalized heads: a3, a4, a5,
+			// expected finalized heads: a3, a4, a5,
 			client.assert_canonicalized(&[&a3, &a4, &a5]);
 		})
 	}
@@ -357,7 +357,7 @@ mod tests {
 	fn canonicalize_catchup_works_correctly() {
 		let mmr_blocks = Arc::new(Mutex::new(vec![]));
 		let mmr_blocks_ref = mmr_blocks.clone();
-		run_test_with_pezmmr_gadget_pre_post(
+		run_test_with_mmr_gadget_pre_post(
 			|client| async move {
 				// G -> A1 -> A2
 				//      |     |
@@ -399,10 +399,10 @@ mod tests {
 	}
 
 	#[test]
-	fn canonicalize_catchup_works_correctly_with_pallet_reset() {
+	fn canonicalize_catchup_works_correctly_with_pezpallet_reset() {
 		let mmr_blocks = Arc::new(Mutex::new(vec![]));
 		let mmr_blocks_ref = mmr_blocks.clone();
-		run_test_with_pezmmr_gadget_pre_post(
+		run_test_with_mmr_gadget_pre_post(
 			|client| async move {
 				// G -> A1 -> A2
 				//      |     |

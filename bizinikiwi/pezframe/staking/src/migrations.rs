@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 
 //! Storage migrations for the Staking pezpallet. The changelog for this is maintained at
-//! [CHANGELOG.md](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/bizinikiwi/pezframe/staking/CHANGELOG.md).
+//! [CHANGELOG.md](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/bizinikiwi/pezframe/staking/CHANGELOG.md).
 
 use super::*;
 use pezframe_support::{
@@ -31,7 +31,7 @@ use pezsp_runtime::TryRuntimeError;
 /// Used for release versioning up to v12.
 ///
 /// Obsolete from v13. Keeping around to make encoding/decoding of old migration code easier.
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 enum ObsoleteReleases {
 	V5_0_0,  // blockable validators.
 	V6_0_0,  // removal of all storage associated with offchain phragmen.
@@ -204,7 +204,7 @@ pub mod v15 {
 }
 
 /// Migration of era exposure storage items to paged exposures.
-/// Changelog: [v14.](https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/bizinikiwi/pezframe/staking/CHANGELOG.md#14)
+/// Changelog: [v14.](https://github.com/paritytech/substrate/blob/ankan/paged-rewards-rebased2/frame/staking/CHANGELOG.md#14)
 pub mod v14 {
 	use super::*;
 
@@ -363,10 +363,10 @@ pub mod v11 {
 				StorageVersion::<T>::get() == ObsoleteReleases::V10_0_0,
 				"must upgrade linearly"
 			);
-			let old_pallet_prefix = twox_128(N::get().as_bytes());
+			let old_pezpallet_prefix = twox_128(N::get().as_bytes());
 
 			pezframe_support::ensure!(
-				pezsp_io::storage::next_key(&old_pallet_prefix).is_some(),
+				pezsp_io::storage::next_key(&old_pezpallet_prefix).is_some(),
 				"no data for the old pezpallet name has been detected"
 			);
 
@@ -382,13 +382,13 @@ pub mod v11 {
 		/// The migration will look into the storage version in order to avoid triggering a
 		/// migration on an up to date storage.
 		fn on_runtime_upgrade() -> Weight {
-			let old_pallet_name = N::get();
-			let new_pallet_name = <P as PalletInfoAccess>::name();
+			let old_pezpallet_name = N::get();
+			let new_pezpallet_name = <P as PalletInfoAccess>::name();
 
 			if StorageVersion::<T>::get() == ObsoleteReleases::V10_0_0 {
 				// bump version anyway, even if we don't need to move the prefix
 				StorageVersion::<T>::put(ObsoleteReleases::V11_0_0);
-				if new_pallet_name == old_pallet_name {
+				if new_pezpallet_name == old_pezpallet_name {
 					log!(
 						warn,
 						"new bags-list name is equal to the old one, only bumping the version"
@@ -398,7 +398,7 @@ pub mod v11 {
 						.saturating_add(T::DbWeight::get().writes(1));
 				}
 
-				move_pallet(old_pallet_name.as_bytes(), new_pallet_name.as_bytes());
+				move_pallet(old_pezpallet_name.as_bytes(), new_pezpallet_name.as_bytes());
 				<T as pezframe_system::Config>::BlockWeights::get().max_block
 			} else {
 				log!(warn, "v11::migrate should be removed.");
@@ -413,24 +413,24 @@ pub mod v11 {
 				"wrong version after the upgrade"
 			);
 
-			let old_pallet_name = N::get();
-			let new_pallet_name = <P as PalletInfoAccess>::name();
+			let old_pezpallet_name = N::get();
+			let new_pezpallet_name = <P as PalletInfoAccess>::name();
 
 			// skip storage prefix checks for the same pezpallet names
-			if new_pallet_name == old_pallet_name {
+			if new_pezpallet_name == old_pezpallet_name {
 				return Ok(());
 			}
 
-			let old_pallet_prefix = twox_128(N::get().as_bytes());
+			let old_pezpallet_prefix = twox_128(N::get().as_bytes());
 			pezframe_support::ensure!(
-				pezsp_io::storage::next_key(&old_pallet_prefix).is_none(),
+				pezsp_io::storage::next_key(&old_pezpallet_prefix).is_none(),
 				"old pezpallet data hasn't been removed"
 			);
 
-			let new_pallet_name = <P as PalletInfoAccess>::name();
-			let new_pallet_prefix = twox_128(new_pallet_name.as_bytes());
+			let new_pezpallet_name = <P as PalletInfoAccess>::name();
+			let new_pezpallet_prefix = twox_128(new_pezpallet_name.as_bytes());
 			pezframe_support::ensure!(
-				pezsp_io::storage::next_key(&new_pallet_prefix).is_some(),
+				pezsp_io::storage::next_key(&new_pezpallet_prefix).is_some(),
 				"new pezpallet data hasn't been created"
 			);
 

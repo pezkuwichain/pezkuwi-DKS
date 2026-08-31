@@ -31,7 +31,7 @@ automatically do so.
 
 Related issues:
 
-* <https://github.com/pezkuwichain/pezkuwi-sdk/issues/153>
+* <https://github.com/pezkuwichain/pezkuwi-DKS/issues/153>
 
 ### Decision
 

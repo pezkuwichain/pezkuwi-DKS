@@ -22,10 +22,7 @@
 use pezframe_benchmarking::v2::*;
 use pezframe_support::{traits::UnfilteredDispatchable, WeakBoundedVec};
 use pezframe_system::RawOrigin;
-use pezsp_runtime::{
-	traits::{ValidateUnsigned, Zero},
-	transaction_validity::TransactionSource,
-};
+use pezsp_runtime::{traits::Zero, transaction_validity::TransactionSource};
 
 use crate::*;
 
@@ -83,6 +80,7 @@ mod benchmarks {
 
 		#[block]
 		{
+			#[allow(deprecated)]
 			Pezpallet::<T>::validate_unsigned(TransactionSource::InBlock, &call)
 				.map_err(<&str>::from)?;
 		}
@@ -100,6 +98,7 @@ mod benchmarks {
 
 		#[block]
 		{
+			#[allow(deprecated)]
 			Pezpallet::<T>::validate_unsigned(TransactionSource::InBlock, &call)
 				.map_err(<&str>::from)?;
 			<Call<T> as Decode>::decode(&mut &*call_enc)

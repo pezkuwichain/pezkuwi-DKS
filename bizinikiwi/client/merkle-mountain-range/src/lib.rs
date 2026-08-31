@@ -201,12 +201,12 @@ where
 			},
 		};
 
-		let pezmmr_gadget = MmrGadget::<B, BE, C> {
+		let mmr_gadget = MmrGadget::<B, BE, C> {
 			finality_notifications: client.finality_notification_stream(),
 
 			_phantom: Default::default(),
 		};
-		pezmmr_gadget
+		mmr_gadget
 			.run(OffchainMmrBuilder {
 				backend,
 				client,
@@ -220,14 +220,14 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::test_utils::run_test_with_pezmmr_gadget;
+	use crate::test_utils::run_test_with_mmr_gadget;
 	use pezsp_runtime::generic::BlockId;
 	use std::time::Duration;
 
 	#[test]
 	fn mmr_first_block_is_computed_correctly() {
 		// Check the case where the first block is also the first block with MMR.
-		run_test_with_pezmmr_gadget(|client| async move {
+		run_test_with_mmr_gadget(|client| async move {
 			// G -> A1 -> A2
 			//      |
 			//      | -> first mmr block
@@ -243,7 +243,7 @@ mod tests {
 		});
 
 		// Check the case where the first block with MMR comes later.
-		run_test_with_pezmmr_gadget(|client| async move {
+		run_test_with_mmr_gadget(|client| async move {
 			// G -> A1 -> A2 -> A3 -> A4 -> A5 -> A6
 			//                        |
 			//                        | -> first mmr block
@@ -265,7 +265,7 @@ mod tests {
 
 	#[test]
 	fn does_not_panic_on_invalid_num_mmr_blocks() {
-		run_test_with_pezmmr_gadget(|client| async move {
+		run_test_with_mmr_gadget(|client| async move {
 			// G -> A1
 			//      |
 			//      | -> first mmr block

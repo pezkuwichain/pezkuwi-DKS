@@ -1,8 +1,9 @@
 [toolchain]
 # Latest stable Rust. Rust 1.96 removed the implicit `--allow-undefined` from
-# wasm linking; the runtime wasm build restores it via WASM_BUILD_RUSTFLAGS in
-# .cargo/config.toml so host-function imports (`ext_*`) link correctly. The
-# resulting runtime WASM is import-identical to prior toolchains.
+# wasm linking; wasm-builder restores it on the wasm branch of the build so
+# host-function imports (`ext_*`) link correctly. It is set there rather than
+# globally because `rust-lld` rejects the argument when linking the riscv blob.
+# The resulting runtime WASM is import-identical to prior toolchains.
 channel = "1.96.0"
 components = ["clippy", "rust-src", "rustfmt"]
 targets = ["wasm32-unknown-unknown", "wasm32v1-none"]

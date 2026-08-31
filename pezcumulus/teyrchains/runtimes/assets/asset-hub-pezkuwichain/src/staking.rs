@@ -92,7 +92,7 @@ pezframe_election_provider_support::generate_solution_type!(
 );
 
 ord_parameter_types! {
-	// https://westend.subscan.io/account/5GBoBNFP9TA7nAk82i6SUZJimerbdhxaRgyC2PVcdYQMdb8e
+	// Reference account, carried over with the upstream constant: 5GBoBNFP9TA7nAk82i6SUZJimerbdhxaRgyC2PVcdYQMdb8e
 	pub const ZagrosStakingMiner: AccountId = AccountId::from(hex_literal::hex!("b65991822483a6c3bd24b1dcf6afd3e270525da1f9c8c22a4373d1e1079e236a"));
 }
 
@@ -121,6 +121,8 @@ impl pezframe_election_provider_support::onchain::Config for OnChainConfig {
 }
 
 impl multi_block::Config for Runtime {
+	type StalledRoundTimeout = StalledRoundTimeout;
+	type Signed = MultiBlockElectionSigned;
 	type Pages = Pages;
 	type UnsignedPhase = UnsignedPhase;
 	type SignedPhase = SignedPhase;
@@ -141,7 +143,6 @@ impl multi_block::Config for Runtime {
 	type Fallback = pezframe_election_provider_support::onchain::OnChainExecution<OnChainConfig>;
 	// Revert back to signed phase if nothing is submitted and queued, so we prolong the election.
 	type AreWeDone = multi_block::RevertToSignedIfNotQueuedOf<Self>;
-	type StalledRoundTimeout = StalledRoundTimeout;
 	type OnRoundRotation = multi_block::CleanRound<Self>;
 	type WeightInfo = weights::pezpallet_election_provider_multi_block::WeightInfo<Runtime>;
 }
@@ -240,8 +241,28 @@ impl pezpallet_bags_list::Config<VoterBagsListInstance> for Runtime {
 	type WeightInfo = weights::pezpallet_bags_list::WeightInfo<Runtime>;
 }
 
+/// The most this chain will emit in a year, whatever the parameter says.
+///
+/// The rate is policy and lives in storage; this is not. A ceiling the same body could raise
+/// is not a ceiling, so it is compiled in and only a runtime upgrade moves it -- which is the
+/// distinction the whole arrangement rests on: the constitution is code, policy is storage.
+pub const MAX_INFLATION_RATE: Perbill = Perbill::from_percent(10);
+
+/// The base the emission is measured against: 200M HEZ at twelve decimals.
+///
+/// Not a parameter. How much HEZ there is meant to be is the token's identity rather than a
+/// policy about it, and measuring emission against a movable base would make the rate mean
+/// nothing.
+pub const HEZ_ISSUANCE_BASE: u128 = 200_000_000_000_000_000_000;
+
 pub struct EraPayout;
 impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
+	/// Neither argument is read, and the names say so.
+	///
+	/// Upstream's payout is a function of the staking ratio: emit more when little is staked,
+	/// less when much is. This one is a flat share of a fixed base, so how much is staked and
+	/// how much exists change nothing. The comment on `pezpallet_staking_async::Config` below
+	/// used to describe the upstream behaviour as if it were this one.
 	fn era_payout(
 		_total_staked: Balance,
 		_total_issuance: Balance,
@@ -252,15 +273,12 @@ impl pezpallet_staking_async::EraPayout<Balance> for EraPayout {
 		let relative_era_len =
 			FixedU128::from_rational(era_duration_millis.into(), MILLISECONDS_PER_YEAR.into());
 
-		// Fixed total TI that we use as baseline for the issuance.
-		// 200M HEZ (12 decimals) = 200_000_000 * 10^12
-		let fixed_total_issuance: i128 = 200_000_000_000_000_000_000;
-		let fixed_inflation_rate = FixedU128::from_rational(8, 100);
-		let yearly_emission = fixed_inflation_rate.saturating_mul_int(fixed_total_issuance);
+		use pezframe_support::traits::Get;
+		let rate = crate::dynamic_params::hez::InflationRate::get().min(MAX_INFLATION_RATE);
+		let yearly_emission = rate.mul_floor(HEZ_ISSUANCE_BASE);
 
 		let era_emission = relative_era_len.saturating_mul_int(yearly_emission);
-		// 15% to treasury, as per Pezkuwi ref 1139.
-		let to_treasury = FixedU128::from_rational(15, 100).saturating_mul_int(era_emission);
+		let to_treasury = crate::dynamic_params::hez::TreasuryShare::get().mul_floor(era_emission);
 		let to_stakers = era_emission.saturating_sub(to_treasury);
 
 		(to_stakers.saturated_into(), to_treasury.saturated_into())
@@ -283,7 +301,32 @@ parameter_types! {
 	pub MaxPruningItems: u32 = 100;
 }
 
+parameter_types! {
+	/// Era reward pots, used only when minting is disabled. Kept distinct from `PotId`.
+	pub const StakingPotsPalletId: PalletId = PalletId(*b"py/stkpt");
+	/// Eras a nominator must wait to fast-unbond. Matches upstream.
+	pub const NominatorFastUnbondDuration: pezsp_staking::EraIndex = 2;
+}
+
 impl pezpallet_staking_async::Config for Runtime {
+	// Upstream added a non-minting reward mode where staking pays out of a pre-funded pot
+	// instead of creating tokens. This runtime keeps the legacy minting mode: inflation here
+	// is a flat share of a fixed 200M base (see EraPayout above), not a function of the
+	// staking ratio -- the sentence that used to stand here described upstream, not this,
+	// which is exactly the case the pallet documents legacy mode as being kept for. The switch
+	// to non-minting is one-way - once eras carry funded pots, going back would orphan them and
+	// double-mint - so it is not a default to drift into. Revisit with the genesis spec.
+	type DisableMinting = ConstBool<false>;
+	// Only read in non-minting mode, but the pot addresses must still be well-defined and
+	// distinct from the existing PotStake account, so they get their own id rather than
+	// borrowing one.
+	type RewardPots = pezpallet_staking_async::Seed<StakingPotsPalletId>;
+	// Non-minting mode hands expired unclaimed rewards here; in minting mode they are never
+	// created, so there is nothing to route.
+	type UnclaimedRewardHandler = ();
+	type StakerRewardCalculator =
+		pezpallet_staking_async::reward::DefaultStakerRewardCalculator<Runtime>;
+	type NominatorFastUnbondDuration = NominatorFastUnbondDuration;
 	type Filter = ();
 	type OldCurrency = Balances;
 	type Currency = Balances;
@@ -316,7 +359,6 @@ impl pezpallet_staking_async::Config for Runtime {
 	type HistoryDepth = pezframe_support::traits::ConstU32<84>;
 	type MaxControllersInDeprecationBatch = MaxControllersInDeprecationBatch;
 	type EventListeners = (NominationPools, DelegatedStaking);
-	type MaxInvulnerables = pezframe_support::traits::ConstU32<20>;
 	type PlanningEraOffset =
 		pezpallet_staking_async::PlanningEraOffsetOf<Runtime, RelaySessionDuration, ConstU32<5>>;
 	type RcClientInterface = StakingRcClient;
@@ -325,7 +367,29 @@ impl pezpallet_staking_async::Config for Runtime {
 	type WeightInfo = weights::pezpallet_staking_async::WeightInfo<Runtime>;
 }
 
+// Must mirror the relay chain's `SessionKeys` exactly - same fields, same order - because the
+// validator set is decoded on this side using this definition. Verified against
+// pezkuwi/runtime/{zagros,pezkuwichain}/src/lib.rs, which declare these six in this order.
+pezsp_runtime::impl_opaque_keys! {
+	pub struct RelayChainSessionKeys {
+		pub grandpa: pezsp_consensus_grandpa::AuthorityId,
+		pub babe: pezsp_consensus_babe::AuthorityId,
+		pub para_validator: pezkuwi_primitives::ValidatorId,
+		pub para_assignment: pezkuwi_primitives::AssignmentId,
+		pub authority_discovery: pezsp_authority_discovery::AuthorityId,
+		pub beefy: pezsp_consensus_beefy::ecdsa_crypto::AuthorityId,
+	}
+}
+
 impl pezpallet_staking_async_rc_client::Config for Runtime {
+	// Export the validator set at the end of session 4 within an era, as upstream does.
+	type ValidatorSetExportSession = ConstU32<4>;
+	type RelayChainSessionKeys = RelayChainSessionKeys;
+	type Currency = Balances;
+	// Held while a validator's session keys are registered here. Six keys plus SCALE overhead;
+	// upstream charges 10 UNITS for the same payload and this chain's UNITS is the same size.
+	type KeyDeposit = ConstU128<{ 10 * UNITS }>;
+	type WeightInfo = ();
 	type RelayChainOrigin = EnsureRoot<AccountId>;
 	type AHStakingInterface = Staking;
 	type SendToRelayChain = StakingXcmToRelayChain;
@@ -335,7 +399,7 @@ impl pezpallet_staking_async_rc_client::Config for Runtime {
 /// Forwards session events to both CollatorSelection (collator management) and
 /// Staking pallet (era management) via local SessionReport generation.
 ///
-/// This is needed because `pallet_staking_async` expects `SessionReport` messages from
+/// This is needed because `pezpallet_staking_async` expects `SessionReport` messages from
 /// the relay chain's `ah_client` pallet, which is not yet active. This wrapper generates
 /// local session reports from AH's own session rotation events.
 pub struct StakingSessionManager;
@@ -395,9 +459,33 @@ pub enum RelayChainRuntimePallets {
 
 #[derive(Encode, Decode)]
 pub enum AhClientCalls {
-	// index of `fn validator_set` in `staking-async-ah-client`. It has only one call.
+	// index of `fn validator_set` in `staking-async-ah-client`.
 	#[codec(index = 0)]
 	ValidatorSet(rc_client::ValidatorSetReport<AccountId>),
+	// index of `fn set_keys_from_ah` in `staking-async-ah-client`.
+	// The proof of possession is checked here, so only the keys travel to the relay.
+	#[codec(index = 3)]
+	SetKeys { stash: AccountId, keys: Vec<u8> },
+	// index of `fn purge_keys_from_ah` in `staking-async-ah-client`.
+	#[codec(index = 4)]
+	PurgeKeys { stash: AccountId },
+}
+
+pub struct KeysMessageToXcm;
+impl pezsp_runtime::traits::Convert<rc_client::KeysMessage<AccountId>, Xcm<()>>
+	for KeysMessageToXcm
+{
+	fn convert(msg: rc_client::KeysMessage<AccountId>) -> Xcm<()> {
+		let encoded_call = match msg {
+			rc_client::KeysMessage::SetKeys { stash, keys } => {
+				RelayChainRuntimePallets::AhClient(AhClientCalls::SetKeys { stash, keys }).encode()
+			},
+			rc_client::KeysMessage::PurgeKeys { stash } => {
+				RelayChainRuntimePallets::AhClient(AhClientCalls::PurgeKeys { stash }).encode()
+			},
+		};
+		rc_client::build_transact_xcm(encoded_call)
+	}
 }
 
 pub struct ValidatorSetToXcm;
@@ -423,12 +511,17 @@ impl pezsp_runtime::traits::Convert<rc_client::ValidatorSetReport<AccountId>, Xc
 
 parameter_types! {
 	pub RelayLocation: Location = Location::parent();
+	/// Relay-side cost of set/purge keys. Held above the benchmarked figure on purpose:
+	/// undercharging strands the message, overpaying only costs the sender a little.
+	pub RemoteKeysExecutionWeight: Weight = Weight::from_parts(200_000_000, 20_000);
 }
 
 pub struct StakingXcmToRelayChain;
 
 impl rc_client::SendToRelayChain for StakingXcmToRelayChain {
 	type AccountId = AccountId;
+	type Balance = Balance;
+
 	fn validator_set(report: rc_client::ValidatorSetReport<Self::AccountId>) -> Result<(), ()> {
 		rc_client::XCMSender::<
 			xcm_config::XcmRouter,
@@ -436,6 +529,61 @@ impl rc_client::SendToRelayChain for StakingXcmToRelayChain {
 			rc_client::ValidatorSetReport<Self::AccountId>,
 			ValidatorSetToXcm,
 		>::send(report)
+	}
+
+	fn set_keys(
+		stash: Self::AccountId,
+		keys: Vec<u8>,
+		max_delivery_and_remote_execution_fee: Option<Self::Balance>,
+	) -> Result<Self::Balance, rc_client::SendKeysError<Self::Balance>> {
+		let execution_cost = <WeightToFee as pezframe_support::weights::WeightToFee>::weight_to_fee(
+			&RemoteKeysExecutionWeight::get(),
+		);
+
+		rc_client::XCMSender::<
+			xcm_config::XcmRouter,
+			RelayLocation,
+			rc_client::KeysMessage<Self::AccountId>,
+			KeysMessageToXcm,
+		>::send_with_fees::<
+			xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+			RuntimeCall,
+			AccountId,
+			rc_client::AccountId32ToLocation,
+			Self::Balance,
+		>(
+			rc_client::KeysMessage::set_keys(stash.clone(), keys),
+			stash,
+			max_delivery_and_remote_execution_fee,
+			execution_cost,
+		)
+	}
+
+	fn purge_keys(
+		stash: Self::AccountId,
+		max_delivery_and_remote_execution_fee: Option<Self::Balance>,
+	) -> Result<Self::Balance, rc_client::SendKeysError<Self::Balance>> {
+		let execution_cost = <WeightToFee as pezframe_support::weights::WeightToFee>::weight_to_fee(
+			&RemoteKeysExecutionWeight::get(),
+		);
+
+		rc_client::XCMSender::<
+			xcm_config::XcmRouter,
+			RelayLocation,
+			rc_client::KeysMessage<Self::AccountId>,
+			KeysMessageToXcm,
+		>::send_with_fees::<
+			xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+			RuntimeCall,
+			AccountId,
+			rc_client::AccountId32ToLocation,
+			Self::Balance,
+		>(
+			rc_client::KeysMessage::purge_keys(stash.clone()),
+			stash,
+			max_delivery_and_remote_execution_fee,
+			execution_cost,
+		)
 	}
 }
 

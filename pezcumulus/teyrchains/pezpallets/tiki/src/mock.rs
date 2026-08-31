@@ -129,6 +129,7 @@ impl pezpallet_balances::Config for Test {
 
 // pezpallet_identity::Config implementation
 parameter_types! {
+	pub const ReferralFallbackPeriod: u64 = 100;
 	pub const BasicDeposit: Balance = 1000;
 	pub const ByteDeposit: Balance = 10;
 	pub const SubAccountDeposit: Balance = 100;
@@ -180,7 +181,7 @@ parameter_types! {
 // Mock implementation for OnKycApproved hook (updated for new trait signature)
 pub struct MockOnKycApproved;
 impl pezpallet_identity_kyc::types::OnKycApproved<AccountId> for MockOnKycApproved {
-	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId) {
+	fn on_kyc_approved(_who: &AccountId, _referrer: &AccountId, _inviter: Option<&AccountId>) {
 		// No-op for tests
 	}
 }
@@ -216,7 +217,14 @@ impl pezframe_support::traits::Get<AccountId> for DefaultReferrerAccount {
 	}
 }
 
+parameter_types! {
+	pub const VouchingWaitingPeriod: u64 = 0;
+}
+
 impl pezpallet_identity_kyc::Config for Test {
+	type VouchingWaitingPeriod = VouchingWaitingPeriod;
+	type VouchingCapacity = ();
+	type OnCitizenshipRestored = ();
 	type Currency = Balances;
 	type WeightInfo = ();
 	type GovernanceOrigin = pezframe_system::EnsureRoot<AccountId>;
@@ -227,6 +235,7 @@ impl pezpallet_identity_kyc::Config for Test {
 	type OnCitizenshipRevoked = MockOnCitizenshipRevoked;
 	type CitizenNftProvider = MockCitizenNftProvider;
 	type DefaultReferrer = DefaultReferrerAccount;
+	type ReferralFallbackPeriod = ReferralFallbackPeriod;
 }
 
 parameter_types! {
@@ -269,9 +278,13 @@ parameter_types! {
 }
 
 impl crate::Config for Test {
-	type AdminOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type AdminOrigin = RootOrAPerson;
 	type ElectedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type EarnedRoleOrigin = pezframe_system::EnsureRoot<AccountId>;
+	// On the real runtimes these are the court and the head of government. Root stands in
+	// here; what the tests check is that the paths are different, not who fills them.
+	type ImpeachmentOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type HonoraryCitizenshipOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type WeightInfo = ();
 	type TikiCollectionId = TikiCollectionId;
 	type MaxTikisPerUser = MaxTikisPerUser;
@@ -311,4 +324,34 @@ pub fn new_test_ext() -> pezsp_io::TestExternalities {
 		));
 	});
 	ext
+}
+
+/// The account this mock treats as the sitting President.
+pub const MOCK_SEROK: AccountId = 7;
+
+/// What `AdminOrigin` actually is in production, near enough to test against.
+///
+/// On the People chain it is `RootOrSerokOrCouncil` -- satisfied by Root, and satisfied by the
+/// sitting President on his own. The mock had only `EnsureRoot`, so no test could ever make
+/// this call as a person, and the one thing a person can do that Root cannot -- hand something
+/// to themselves -- was untestable. That is why the hole survived: not unnoticed, unreachable.
+///
+/// One named account rather than any signed one, because that is the shape of the real origin:
+/// a particular officeholder, not the public.
+pub struct RootOrAPerson;
+impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for RootOrAPerson {
+	type Success = ();
+
+	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		match o.clone().into() {
+			Ok(pezframe_system::RawOrigin::Root) => Ok(()),
+			Ok(pezframe_system::RawOrigin::Signed(who)) if who == MOCK_SEROK => Ok(()),
+			_ => Err(o),
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+		Ok(pezframe_system::RawOrigin::Root.into())
+	}
 }

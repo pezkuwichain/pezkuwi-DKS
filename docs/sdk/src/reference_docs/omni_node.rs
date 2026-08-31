@@ -30,7 +30,7 @@
 //!
 //! > The notorious `service.rs` in any node template is a good example of this.
 //!
-//! A [trend](https://github.com/pezkuwichain/pezkuwi-sdk/issues/243) has already been undergoing in
+//! A [trend](https://github.com/pezkuwichain/pezkuwi-DKS/issues/243) has already been undergoing in
 //! order to de-couple the node and the runtime for a long time. The north star of this effort is
 //! twofold :
 //!
@@ -93,7 +93,7 @@
 //!   obtaining a `.wasm` file. References:
 //!     * [`crate::guides::your_first_pallet`]
 //!     * [`crate::guides::your_first_runtime`]
-//! * If need be, the weights of the runtime need to be updated using `frame-omni-bencher`.
+//! * If need be, the weights of the runtime need to be updated using `pezframe-omni-bencher`.
 //!   References:
 //!     * [`crate::reference_docs::pezframe_benchmarking_weight`]
 //! * Next, [`chain-spec-builder`] is used to generate a `chain_spec.json`, either for development,
@@ -174,7 +174,7 @@
 //!   [`pezsc_consensus_manual_seal`] under the hood, and has no restrictions on the runtime's
 //!   consensus.
 //!
-//! [This](https://github.com/pezkuwichain/pezkuwi-sdk/issues/286) future improvement to OmniNode
+//! [This](https://github.com/pezkuwichain/pezkuwi-DKS/issues/286) future improvement to OmniNode
 //! aims to make such checks automatic.
 //!
 //! ### Runtime conventions
@@ -192,10 +192,10 @@
 //!   AURA accordingly.
 //!
 //! [`templates`]: crate::pezkuwi_sdk::templates
-//! [`teyrchain-template`]: https://github.com/pezkuwichain/pezkuwi-sdk-teyrchain-template
+//! [`teyrchain-template`]: https://github.com/pezkuwichain/pez-teyrchain-template
 //! [`--dev-block-time`]: pezkuwi_omni_node_lib::cli::Cli::dev_block_time
 //! [`pezkuwi-omni-node`]: https://crates.io/crates/polkadot-omni-node
 //! [`chain-spec-builder`]: https://crates.io/crates/pezstaging-chain-spec-builder
-//! [`pezcumulus-pezpallet-teyrchain-system`]: https://docs.rs/cumulus-pallet-parachain-system/latest/cumulus_pallet_parachain_system/
+//! [`pezcumulus-pezpallet-teyrchain-system`]: https://docs.rs/cumulus-pallet-parachain-system/latest/cumulus_pezpallet_parachain_system/
 //! [`pezframe-system`]: https://docs.rs/frame-system/latest/frame_system/
 //! [`block number`]: https://docs.rs/frame-system/latest/frame_system/pallet/storage_types/struct.Number.html

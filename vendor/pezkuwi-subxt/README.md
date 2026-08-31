@@ -1,6 +1,6 @@
 # subxt &middot; [![build](https://github.com/paritytech/subxt/actions/workflows/rust.yml/badge.svg)](https://github.com/paritytech/subxt/actions/workflows/rust.yml) [![Latest Version](https://img.shields.io/crates/v/subxt.svg)](https://crates.io/crates/subxt) [![Documentation](https://docs.rs/subxt/badge.svg)](https://docs.rs/subxt)
 
-Subxt is a library for interacting with [Bizinikiwi](https://github.com/pezkuwichain/pezkuwi-sdk) based nodes in Rust and WebAssembly. It can:
+Subxt is a library for interacting with [Bizinikiwi](https://github.com/pezkuwichain/pezkuwi-DKS) based nodes in Rust and WebAssembly. It can:
 
 - Submit Extrinsics (this is where the name comes from).
 - Subscribe to blocks, reading the extrinsics and associated events from them.
@@ -48,22 +48,22 @@ bizinikiwi node per test. It requires an up-to-date `bizinikiwi` executable on y
 This can be installed from source via cargo:
 
 ```bash
-cargo install --git https://github.com/pezkuwichain/pezkuwi-sdk staging-node-cli --force
+cargo install --git https://github.com/pezkuwichain/pezkuwi-DKS staging-node-cli --force
 ```
 
 ## Real world usage
 
 Please add your project to this list via a PR.
 
-- [cargo-contract](https://github.com/pezkuwichain/cargo-contract/) CLI for interacting with Wasm smart contracts.
+- [cargo-contract](https://github.com/use-ink/cargo-contract/) CLI for interacting with Wasm smart contracts.
 - [xcm-cli](https://github.com/ascjones/xcm-cli) CLI for submitting XCM messages.
 - [phala-pherry](https://github.com/Phala-Network/phala-blockchain/tree/master/standalone/pherry) The relayer between Phala blockchain and the off-chain Secure workers.
 - [crunch](https://github.com/turboflakes/crunch) CLI to claim staking rewards in batch every Era or X hours for bizinikiwi-based chains.
 - [interbtc-clients](https://github.com/interlay/interbtc-clients) Client implementations for the interBTC parachain; notably the Vault / Relayer and Oracle.
 - [tidext](https://github.com/tidelabs/tidext) Tidechain client with Stronghold signer.
-- [staking-miner-v2](https://github.com/pezkuwichain/staking-miner-v2) Submit NPos election solutions and get rewards.
-- [pezkuwi-introspector](https://github.com/pezkuwichain/pezkuwi-introspector) Tools for monitoring Pezkuwi nodes.
-- [ink!](https://github.com/pezkuwichain/ink) Smart contract language that uses `subxt` for allowing developers to conduct [End-to-End testing](https://use.ink/basics/contract-testing/end-to-end-e2e-testing) of their contracts.
+- [staking-miner-v2](https://github.com/paritytech/staking-miner-v2) Submit NPos election solutions and get rewards.
+- [pezkuwi-introspector](https://github.com/paritytech/polkadot-introspector) Tools for monitoring Pezkuwi nodes.
+- [ink!](https://github.com/use-ink/ink) Smart contract language that uses `subxt` for allowing developers to conduct [End-to-End testing](https://use.ink/basics/contract-testing/end-to-end-e2e-testing) of their contracts.
 - [Chainflip](https://github.com/chainflip-io/chainflip-backend) A decentralised exchange for native cross-chain swaps.
 - [Hyperbridge](https://github.com/polytope-labs/hyperbridge) A hyperscalable coprocessor for verifiable cross-chain interoperability.
 - [pop CLI](https://github.com/r0gue-io/pop-cli) The all-in-one tool for Pezkuwi development.

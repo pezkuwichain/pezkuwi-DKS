@@ -55,7 +55,9 @@ use pezsc_consensus::{
 use pezsp_api::ProvideRuntimeApi;
 use pezsp_block_builder::BlockBuilder as BlockBuilderApi;
 use pezsp_blockchain::HeaderBackend;
-use pezsp_consensus::{Environment, Error as ConsensusError, Proposer, SelectChain, SyncOracle};
+use pezsp_consensus::{
+	Environment, Error as ConsensusError, ProposeArgs, Proposer, SelectChain, SyncOracle,
+};
 use pezsp_consensus_pow::{Seal, TotalDifficulty, POW_ENGINE_ID};
 use pezsp_inherents::{CreateInherentDataProviders, InherentDataProvider};
 use pezsp_runtime::{
@@ -495,10 +497,7 @@ pub fn start_mining_worker<Block, C, S, Algorithm, E, SO, L, CIDP>(
 	create_inherent_data_providers: CIDP,
 	timeout: Duration,
 	build_time: Duration,
-) -> (
-	MiningHandle<Block, Algorithm, L, <E::Proposer as Proposer<Block>>::Proof>,
-	impl Future<Output = ()>,
-)
+) -> (MiningHandle<Block, Algorithm, L>, impl Future<Output = ()>)
 where
 	Block: BlockT,
 	C: BlockchainEvents<Block> + 'static,
@@ -591,9 +590,9 @@ where
 				},
 			};
 
-			let mut inherent_digest = Digest::default();
+			let mut inherent_digests = Digest::default();
 			if let Some(pre_runtime) = &pre_runtime {
-				inherent_digest.push(DigestItem::PreRuntime(POW_ENGINE_ID, pre_runtime.to_vec()));
+				inherent_digests.push(DigestItem::PreRuntime(POW_ENGINE_ID, pre_runtime.to_vec()));
 			}
 
 			let pre_runtime = pre_runtime.clone();
@@ -611,21 +610,29 @@ where
 				},
 			};
 
-			let proposal =
-				match proposer.propose(inherent_data, inherent_digest, build_time, None).await {
-					Ok(x) => x,
-					Err(err) => {
-						warn!(
-							target: LOG_TARGET,
-							"Unable to propose new block for authoring. \
-							 Creating proposal failed: {}",
-							err,
-						);
-						continue;
-					},
-				};
+			let propose_args = ProposeArgs {
+				inherent_data,
+				inherent_digests,
+				max_duration: build_time,
+				block_size_limit: None,
+				storage_proof_recorder: None,
+				extra_extensions: Default::default(),
+			};
 
-			let build = MiningBuild::<Block, Algorithm, _> {
+			let proposal = match proposer.propose(propose_args).await {
+				Ok(x) => x,
+				Err(err) => {
+					warn!(
+						target: LOG_TARGET,
+						"Unable to propose new block for authoring. \
+						 Creating proposal failed: {}",
+						err,
+					);
+					continue;
+				},
+			};
+
+			let build = MiningBuild::<Block, Algorithm> {
 				metadata: MiningMetadata {
 					best_hash,
 					pre_hash: proposal.block.header().hash(),

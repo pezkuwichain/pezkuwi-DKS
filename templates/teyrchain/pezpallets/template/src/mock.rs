@@ -6,7 +6,7 @@ use pezframe::{
 };
 
 // Configure a mock runtime to test the pezpallet.
-#[frame_construct_runtime]
+#[pezframe_construct_runtime]
 mod test_runtime {
 	#[runtime::runtime]
 	#[runtime::derive(

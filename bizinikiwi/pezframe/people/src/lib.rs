@@ -24,10 +24,10 @@
 //! The People pezpallet stores and manages identifiers of individuals who have proven their
 //! personhood. It tracks their personal IDs, organizes their cryptographic keys into rings, and
 //! allows them to use contextual aliases through authentication in extensions. When transactions
-//! include cryptographic proofs of belonging to the people set, the pezpallet's transaction
-//! extension verifies these proofs before allowing the transaction to proceed. This enables other
-//! pallets to check if actions come from unique persons while preserving privacy through the
-//! ring-based structure.
+//! include cryptographic proofs of belonging to the people set, the pezpallet's transaction extension
+//! verifies these proofs before allowing the transaction to proceed. This enables other pezpallets to
+//! check if actions come from unique persons while preserving privacy through the ring-based
+//! structure.
 //!
 //! The pezpallet accepts new persons after they prove their uniqueness elsewhere, stores their
 //! information, and supports removing persons via suspensions. While other systems (e.g., wallets)
@@ -97,14 +97,14 @@
 //! The pezpallet provides the `AsPerson` transaction extension that allows transactions to be
 //! dispatched with special origins: `PersonalIdentity` and `PersonalAlias`. These origins prove the
 //! transaction comes from a unique person, either through their identity or through a contextual
-//! alias. To make use of the personhood system, other pallets should check for these origins.
+//! alias. To make use of the personhood system, other pezpallets should check for these origins.
 //!
 //! The extension verifies the proof of personhood during transaction validation and, if valid,
 //! transforms the transaction's origin into one of these special origins.
 //!
 //! ## Usage
 //!
-//! Other pallets can verify personhood through origin checks:
+//! Other pezpallets can verify personhood through origin checks:
 //!
 //! - `EnsurePersonalIdentity`: Verifies the origin represents a specific person using their
 //!   PersonalId
@@ -154,7 +154,7 @@ use pezframe_support::{
 };
 use pezsp_runtime::{
 	traits::{BadOrigin, Dispatchable},
-	ArithmeticError, RuntimeDebug, SaturatedConversion, Saturating,
+	ArithmeticError, Debug, SaturatedConversion, Saturating,
 };
 use scale_info::TypeInfo;
 use verifiable::{Alias, GenerateVerifiable};
@@ -338,8 +338,8 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type NextPersonalId<T> = StorageValue<_, PersonalId, ValueQuery>;
 
-	/// The state of the pezpallet regarding the actions that are currently allowed to be performed
-	/// on all existing rings.
+	/// The state of the pezpallet regarding the actions that are currently allowed to be performed on
+	/// all existing rings.
 	#[pezpallet::storage]
 	pub type RingsState<T> = StorageValue<_, RingMembersState, ValueQuery>;
 
@@ -454,15 +454,7 @@ pub mod pezpallet {
 
 	#[pezpallet::origin]
 	#[derive(
-		Clone,
-		PartialEq,
-		Eq,
-		RuntimeDebug,
-		Encode,
-		Decode,
-		MaxEncodedLen,
-		TypeInfo,
-		DecodeWithMemTracking,
+		Clone, PartialEq, Eq, Debug, Encode, Decode, MaxEncodedLen, TypeInfo, DecodeWithMemTracking,
 	)]
 	pub enum Origin {
 		PersonalIdentity(PersonalId),
@@ -570,7 +562,7 @@ pub mod pezpallet {
 			let op_res = with_storage_layer::<(), DispatchError, _>(|| Self::onboard_people());
 			weight_meter.consume(onboard_people_weight);
 			if let Err(e) = op_res {
-				log::debug!(target: LOG_TARGET, "failed to onboard people: {e:?}");
+				log::debug!(target: LOG_TARGET, "failed to onboard people: {:?}", e);
 			}
 
 			let current_ring = CurrentRingIndex::<T>::get();
@@ -592,7 +584,7 @@ pub mod pezpallet {
 				});
 				weight_meter.consume(build_ring_weight);
 				if let Err(e) = op_res {
-					log::error!(target: LOG_TARGET, "failed to build ring: {e:?}");
+					log::error!(target: LOG_TARGET, "failed to build ring: {:?}", e);
 				}
 			}
 
@@ -654,9 +646,9 @@ pub mod pezpallet {
 	impl<T: Config> Pezpallet<T> {
 		/// Build a ring root by including registered people.
 		///
-		/// This task is performed automatically by the pezpallet through the `on_idle` hook
-		/// whenever there is leftover weight in a block. This call is meant to be a backup in
-		/// case of extreme congestion and should be submitted by signed origins.
+		/// This task is performed automatically by the pezpallet through the `on_idle` hook whenever
+		/// there is leftover weight in a block. This call is meant to be a backup in case of
+		/// extreme congestion and should be submitted by signed origins.
 		#[pezpallet::weight(
 			T::WeightInfo::should_build_ring(
 				limit.unwrap_or_else(T::MaxRingSize::get)
@@ -716,9 +708,9 @@ pub mod pezpallet {
 		/// registering them into the ring. This does not compute the root, that is done using
 		/// `build_ring`.
 		///
-		/// This task is performed automatically by the pezpallet through the `on_idle` hook
-		/// whenever there is leftover weight in a block. This call is meant to be a backup in
-		/// case of extreme congestion and should be submitted by signed origins.
+		/// This task is performed automatically by the pezpallet through the `on_idle` hook whenever
+		/// there is leftover weight in a block. This call is meant to be a backup in case of
+		/// extreme congestion and should be submitted by signed origins.
 		#[pezpallet::weight(T::WeightInfo::onboard_people())]
 		#[pezpallet::call_index(101)]
 		pub fn onboard_people_manual(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
@@ -1667,7 +1659,7 @@ pub mod pezpallet {
 					},
 					Err(e) => {
 						meter.consume(weight);
-						log::error!(target: LOG_TARGET, "failed to migrate keys: {e:?}");
+						log::error!(target: LOG_TARGET, "failed to migrate keys: {:?}", e);
 						break;
 					},
 				}
@@ -1692,7 +1684,7 @@ pub mod pezpallet {
 				};
 				let mut suspended_indices = PendingSuspensions::<T>::get(ring_index);
 				let Err(insert_idx) = suspended_indices.binary_search(&ring_position) else {
-					log::info!(target: LOG_TARGET, "key migration for person {id} skipped as the person's key was already suspended");
+					log::info!(target: LOG_TARGET, "key migration for person {} skipped as the person's key was already suspended", id);
 					return Ok(());
 				};
 				suspended_indices
@@ -1702,7 +1694,7 @@ pub mod pezpallet {
 				Keys::<T>::remove(&record.key);
 				Self::push_to_onboarding_queue(id, new_key, record.account)?;
 			} else {
-				log::info!(target: LOG_TARGET, "key migration for person {id} skipped as no record was found");
+				log::info!(target: LOG_TARGET, "key migration for person {} skipped as no record was found", id);
 			}
 			Ok(())
 		}
@@ -1787,7 +1779,7 @@ pub mod pezpallet {
 				Ok(())
 			});
 			if let Err(e) = op_res {
-				log::error!(target: LOG_TARGET, "failed to merge queue pages: {e:?}");
+				log::error!(target: LOG_TARGET, "failed to merge queue pages: {:?}", e);
 			}
 		}
 	}

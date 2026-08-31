@@ -40,15 +40,15 @@
 //! - Pre-existing members may call `import_member` on themselves (formerly `import`) to have their
 //!   rank recognised and be inducted into this pezpallet (to gain a salary and allow for eventual
 //!   promotion).
-//! - If, externally to this pezpallet, a member or candidate has their rank removed completely,
-//!   then `offboard` may be called to remove them entirely from this pezpallet.
+//! - If, externally to this pezpallet, a member or candidate has their rank removed completely, then
+//!   `offboard` may be called to remove them entirely from this pezpallet.
 //!
 //! Note there is a difference between having a rank of 0 (whereby the account is a *candidate*) and
 //! having no rank at all (whereby we consider it *unranked*). An account can be demoted from rank
 //! 0 to become unranked. This process is called being offboarded and there is an extrinsic to do
-//! this explicitly when external factors to this pezpallet have caused the tracked account to
-//! become unranked. At rank 0, there is not a "demotion" period after which the account may be
-//! bumped to become offboarded but rather an "offboard timeout".
+//! this explicitly when external factors to this pezpallet have caused the tracked account to become
+//! unranked. At rank 0, there is not a "demotion" period after which the account may be bumped to
+//! become offboarded but rather an "offboard timeout".
 //!
 //! Candidates may be introduced (i.e. an account to go from unranked to rank of 0) by an origin
 //! of a different privilege to that for promotion. This allows the possibility for even a single
@@ -65,7 +65,6 @@ use alloc::boxed::Box;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::{fmt::Debug, marker::PhantomData};
 use pezsp_arithmetic::traits::{Saturating, Zero};
-use pezsp_runtime::RuntimeDebug;
 use scale_info::TypeInfo;
 
 use pezframe_support::{
@@ -76,7 +75,7 @@ use pezframe_support::{
 		tokens::Balance as BalanceTrait, EnsureOrigin, EnsureOriginWithArg, Get, RankedMembers,
 		RankedMembersSwapHandler,
 	},
-	BoundedVec, CloneNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound,
+	BoundedVec, CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound,
 };
 
 #[cfg(test)]
@@ -101,7 +100,7 @@ pub use weights::*;
 	Clone,
 	TypeInfo,
 	MaxEncodedLen,
-	RuntimeDebug,
+	Debug,
 )]
 pub enum Wish {
 	/// Member wishes only to retain their current rank.
@@ -124,7 +123,7 @@ pub type Evidence<T, I> = BoundedVec<u8, <T as Config<I>>::EvidenceSize>;
 	CloneNoBound,
 	EqNoBound,
 	PartialEqNoBound,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	TypeInfo,
 	MaxEncodedLen,
 )]
@@ -171,7 +170,7 @@ impl<Inner: Get<u16>> Get<u32> for ConvertU16ToU32<Inner> {
 }
 
 /// The status of a single member.
-#[derive(Encode, Decode, Eq, PartialEq, Clone, TypeInfo, MaxEncodedLen, RuntimeDebug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, TypeInfo, MaxEncodedLen, Debug)]
 pub struct MemberStatus<BlockNumber> {
 	/// Are they currently active?
 	is_active: bool,
@@ -219,9 +218,8 @@ pub mod pezpallet {
 		/// The origin which has permission update the parameters.
 		type ParamsOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
-		/// The origin which has permission to move a candidate into being tracked in this
-		/// pezpallet. Generally a very low-permission, such as a pre-existing member of rank 1 or
-		/// above.
+		/// The origin which has permission to move a candidate into being tracked in this pezpallet.
+		/// Generally a very low-permission, such as a pre-existing member of rank 1 or above.
 		///
 		/// This allows the candidate to deposit evidence for their request to be promoted to a
 		/// member.

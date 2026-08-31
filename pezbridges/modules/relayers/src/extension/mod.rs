@@ -36,7 +36,7 @@ use pezframe_support::{
 	dispatch::{DispatchInfo, PostDispatchInfo},
 	pezpallet_prelude::TransactionSource,
 	weights::Weight,
-	CloneNoBound, DefaultNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound,
+	CloneNoBound, DebugNoBound, DefaultNoBound, EqNoBound, PartialEqNoBound,
 };
 use pezframe_system::Config as SystemConfig;
 use pezpallet_bridge_messages::{
@@ -51,7 +51,7 @@ use pezsp_runtime::{
 		TransactionExtension, ValidateResult, Zero,
 	},
 	transaction_validity::{InvalidTransaction, TransactionValidityError, ValidTransactionBuilder},
-	DispatchResult, RuntimeDebug,
+	DispatchResult,
 };
 use scale_info::TypeInfo;
 
@@ -97,7 +97,7 @@ impl<AccountId, RemoteGrandpaChainBlockNumber: Debug, LaneId: Clone + Copy + Deb
 }
 
 /// The actions on relayer account that need to be performed because of his actions.
-#[derive(RuntimeDebug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum RelayerAccountAction<AccountId, RewardBalance, LaneId> {
 	/// Do nothing with relayer account.
 	None,
@@ -122,7 +122,7 @@ pub enum RelayerAccountAction<AccountId, RewardBalance, LaneId> {
 	Encode,
 	EqNoBound,
 	PartialEqNoBound,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	TypeInfo,
 )]
 #[scale_info(skip_type_params(Runtime, Config, LaneId))]
@@ -1498,7 +1498,7 @@ mod tests {
 	}
 
 	#[test]
-	fn ext_rejects_batch_with_grandpa_finality_proof_when_grandpa_pallet_is_halted() {
+	fn ext_rejects_batch_with_grandpa_finality_proof_when_grandpa_pezpallet_is_halted() {
 		run_test(|| {
 			initialize_environment(100, 100, 100);
 
@@ -1528,7 +1528,7 @@ mod tests {
 	}
 
 	#[test]
-	fn ext_rejects_batch_with_teyrchain_finality_proof_when_teyrchains_pallet_is_halted() {
+	fn ext_rejects_batch_with_teyrchain_finality_proof_when_teyrchains_pezpallet_is_halted() {
 		run_test(|| {
 			initialize_environment(100, 100, 100);
 
@@ -1567,7 +1567,7 @@ mod tests {
 	}
 
 	#[test]
-	fn ext_rejects_transaction_when_messages_pallet_is_halted() {
+	fn ext_rejects_transaction_when_messages_pezpallet_is_halted() {
 		run_test(|| {
 			initialize_environment(100, 100, 100);
 
@@ -1785,8 +1785,8 @@ mod tests {
 		run_test(|| {
 			initialize_environment(200, 200, 200);
 
-			let mut dispatch_info = dispatch_info();
-			dispatch_info.call_weight = Weight::from_parts(
+			let mut _dispatch_info = dispatch_info();
+			_dispatch_info.call_weight = Weight::from_parts(
 				pezframe_support::weights::constants::WEIGHT_REF_TIME_PER_SECOND * 2,
 				0,
 			);

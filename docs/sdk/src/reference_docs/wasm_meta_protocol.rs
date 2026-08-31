@@ -115,7 +115,7 @@
 //! infrastructure of native code. However, neither of the two arguments strongly hold and the
 //! native runtime is being fully removed from the node-sdk.
 //!
-//! See: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/243>
+//! See: <https://github.com/pezkuwichain/pezkuwi-DKS/issues/243>
 //!
 //! > Also, note that the flags [`pezsc_cli::ExecutionStrategy::Native`] is already a noop and all
 //! > chains built with Bizinikiwi only use WASM execution.

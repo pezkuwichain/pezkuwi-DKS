@@ -16,7 +16,7 @@
 // limitations under the License.
 
 //! Remove ED from storage base deposit.
-//! See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/261>.
+//! See <https://github.com/pezkuwichain/pezkuwi-DKS/pull/3536>.
 
 use crate::{
 	migration::{IsFinished, MigrationStep},
@@ -58,7 +58,7 @@ pub type ContractInfoOf<T: Config> = StorageMap<
 	ContractInfo<T>,
 >;
 
-#[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 pub struct ContractInfo<T: Config> {
 	trie_id: TrieId,

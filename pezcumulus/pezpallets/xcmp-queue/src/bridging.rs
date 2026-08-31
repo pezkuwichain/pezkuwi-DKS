@@ -45,7 +45,7 @@ impl<Runtime: crate::Config> pezbp_xcm_bridge_hub_router::XcmChannelStatusProvid
 	}
 }
 
-/// Adapter implementation for `bp_xcm_bridge::ChannelStatusProvider` and/or
+/// Adapter implementation for `pezbp_xcm_bridge::ChannelStatusProvider` and/or
 /// `pezbp_xcm_bridge_hub_router::XcmChannelStatusProvider` which checks only `OutboundXcmpStatus`
 /// for defined `Location` if is suspended.
 pub struct OutXcmpChannelStatusProvider<Runtime>(core::marker::PhantomData<Runtime>);

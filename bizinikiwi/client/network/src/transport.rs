@@ -25,18 +25,26 @@ use libp2p::{
 		transport::{Boxed, OptionalTransport},
 		upgrade,
 	},
-	dns, identity, noise, tcp, websocket, PeerId, Transport,
+	dns, identity, noise, tcp, websocket, PeerId, Transport, TransportExt,
 };
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
+
+// TODO: Create a wrapper similar to upstream `BandwidthTransport` that tracks sent/received bytes
+#[allow(deprecated)]
+pub use libp2p::bandwidth::BandwidthSinks;
 
 /// Builds the transport that serves as a common ground for all connections.
 ///
 /// If `memory_only` is true, then only communication within the same process are allowed. Only
 /// addresses with the format `/memory/...` are allowed.
+///
+/// Returns a `BandwidthSinks` object that allows querying the average bandwidth produced by all
+/// the connections spawned with this transport.
+#[allow(deprecated)]
 pub fn build_transport(
 	keypair: identity::Keypair,
 	memory_only: bool,
-) -> Boxed<(PeerId, StreamMuxerBox)> {
+) -> (Boxed<(PeerId, StreamMuxerBox)>, Arc<BandwidthSinks>) {
 	// Build the base layer of the transport.
 	let transport = if !memory_only {
 		// Main transport: DNS(TCP)
@@ -53,11 +61,11 @@ pub fn build_transport(
 			let tcp_trans = tcp::tokio::Transport::new(tcp_config);
 			let dns_for_wss = dns::tokio::Transport::system(tcp_trans)
 				.expect("same system_conf & resolver to work");
-			Either::Left(websocket::Config::new(dns_for_wss).or_transport(dns))
+			Either::Left(websocket::WsConfig::new(dns_for_wss).or_transport(dns))
 		} else {
 			// In case DNS can't be constructed, fallback to TCP + WS (WSS won't work)
 			let tcp_trans = tcp::tokio::Transport::new(tcp_config.clone());
-			let desktop_trans = websocket::Config::new(tcp_trans)
+			let desktop_trans = websocket::WsConfig::new(tcp_trans)
 				.or_transport(tcp::tokio::Transport::new(tcp_config));
 			Either::Right(desktop_trans)
 		})
@@ -68,10 +76,12 @@ pub fn build_transport(
 	let authentication_config = noise::Config::new(&keypair).expect("Can create noise config. qed");
 	let multiplexing_config = libp2p::yamux::Config::default();
 
-	transport
+	let transport = transport
 		.upgrade(upgrade::Version::V1Lazy)
 		.authenticate(authentication_config)
 		.multiplex(multiplexing_config)
 		.timeout(Duration::from_secs(20))
-		.boxed()
+		.boxed();
+
+	transport.with_bandwidth_logging()
 }

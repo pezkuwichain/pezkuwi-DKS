@@ -110,7 +110,7 @@ impl Def {
 		let mut is_pezframe_system = false;
 
 		for (index, item) in items.iter_mut().enumerate() {
-			let pezpallet_attr: Option<PalletAttr> = helper::take_first_item_pallet_attr(item)?;
+			let pezpallet_attr: Option<PalletAttr> = helper::take_first_item_pezpallet_attr(item)?;
 
 			match pezpallet_attr {
 				Some(PalletAttr::Config{ with_default, pezframe_system_config: is_pezframe_system_val, without_automatic_metadata, ..}) if config.is_none() => {
@@ -611,9 +611,8 @@ enum PalletAttr {
 	/// Can be used to reduce the repetitive weight annotation in the trivial case. It accepts one
 	/// argument that is expected to be an implementation of the `WeightInfo` or something that
 	/// behaves syntactically equivalent. This allows to annotate a `WeightInfo` for all the calls.
-	/// Now each call does not need to specify its own `#[pezpallet::weight]` but can instead use
-	/// the one from the `#[pezpallet::call]` definition. So instead of having to write it on each
-	/// call:
+	/// Now each call does not need to specify its own `#[pezpallet::weight]` but can instead use the
+	/// one from the `#[pezpallet::call]` definition. So instead of having to write it on each call:
 	///
 	/// ```ignore
 	/// #[pezpallet::call]
@@ -629,15 +628,14 @@ enum PalletAttr {
 	///     pub fn create(
 	/// ```
 	///
-	/// It is possible to use this syntax together with instantiated pallets by using `Config<I>`
+	/// It is possible to use this syntax together with instantiated pezpallets by using `Config<I>`
 	/// instead.
 	///
 	/// ### Dev Mode
 	///
-	/// Normally the `dev_mode` sets all weights of calls without a `#[pezpallet::weight]`
-	/// annotation to zero. Now when there is a `weight` attribute on the `#[pezpallet::call]`,
-	/// then that is used instead of the zero weight. So to say: it works together with
-	/// `dev_mode`.
+	/// Normally the `dev_mode` sets all weights of calls without a `#[pezpallet::weight]` annotation
+	/// to zero. Now when there is a `weight` attribute on the `#[pezpallet::call]`, then that is used
+	/// instead of the zero weight. So to say: it works together with `dev_mode`.
 	RuntimeCall(Option<InheritedCallWeightAttr>, proc_macro2::Span),
 	Error(proc_macro2::Span),
 	Tasks(proc_macro2::Span),
@@ -807,8 +805,7 @@ impl syn::parse::Parse for PalletAttr {
 	}
 }
 
-/// The optional weight annotation on a `#[pezpallet::call]` like
-/// `#[pezpallet::call(weight($type))]`.
+/// The optional weight annotation on a `#[pezpallet::call]` like `#[pezpallet::call(weight($type))]`.
 #[derive(Clone)]
 pub struct InheritedCallWeightAttr {
 	pub typename: syn::Type,

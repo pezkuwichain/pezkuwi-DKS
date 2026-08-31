@@ -24,7 +24,7 @@ std = [
 serde = []
 
 [dependencies]
-codec = { package = "parity-scale-codec", workspace = true, features = [
+codec = { workspace = true, features = [
 	"derive",
 ] }
 frame-metadata = { workspace = true, optional = true }

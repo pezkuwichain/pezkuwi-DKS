@@ -17,6 +17,7 @@ bitvec = { workspace = true, default-features = true }
 futures = { workspace = true }
 futures-timer = { workspace = true }
 gum = { workspace = true, default-features = true }
+pezkuwi-node-clock = { workspace = true, default-features = true }
 thiserror = { workspace = true }
 
 codec = { features = ["derive"], workspace = true, default-features = true }
@@ -30,6 +31,7 @@ pezsp-consensus = { workspace = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 kvdb-memorydb = { workspace = true }
+pezkuwi-node-clock = { workspace = true, default-features = true, features = ["test"] }
 pezsp-tracing = { workspace = true }
 
 parking_lot = { workspace = true, default-features = true }

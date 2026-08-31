@@ -31,6 +31,7 @@ pezframe-system = { workspace = true }
 pezframe-system-benchmarking = { optional = true, workspace = true }
 pezframe-system-rpc-runtime-api = { workspace = true }
 pezframe-try-runtime = { optional = true, workspace = true }
+pezkuwi-primitives = { workspace = true }
 pezpallet-asset-conversion = { workspace = true }
 pezpallet-asset-conversion-ops = { workspace = true }
 pezpallet-asset-conversion-tx-payment = { workspace = true }
@@ -44,6 +45,7 @@ pezpallet-bags-list = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-bounties = { workspace = true }
 pezpallet-child-bounties = { workspace = true }
+pezpallet-conviction-voting = { workspace = true }
 pezpallet-delegated-staking = { workspace = true }
 pezpallet-election-provider-multi-block = { workspace = true }
 pezpallet-message-queue = { workspace = true }
@@ -53,14 +55,20 @@ pezpallet-nft-fractionalization = { workspace = true }
 pezpallet-nfts = { workspace = true }
 pezpallet-nis = { workspace = true }
 pezpallet-nomination-pools = { workspace = true }
+pezpallet-nomination-pools-benchmarking = { optional = true, workspace = true }
 pezpallet-nomination-pools-runtime-api = { workspace = true }
+pezpallet-parameters = { workspace = true }
 pezpallet-pez-treasury = { workspace = true }
-pezpallet-presale = { workspace = true }
+pezpallet-preimage = { workspace = true }
 pezpallet-proxy = { workspace = true }
+pezpallet-referenda = { workspace = true }
+pezpallet-scheduler = { workspace = true }
 pezpallet-session = { workspace = true }
 pezpallet-staking = { workspace = true }
 pezpallet-staking-async = { workspace = true }
-pezpallet-staking-async-rc-client = { workspace = true }
+pezpallet-staking-async-rc-client = { workspace = true, features = [
+	"xcm-sender",
+] }
 pezpallet-staking-runtime-api = { workspace = true }
 pezpallet-timestamp = { workspace = true }
 pezpallet-token-wrapper = { workspace = true }
@@ -70,8 +78,12 @@ pezpallet-treasury = { workspace = true }
 pezpallet-uniques = { workspace = true }
 pezpallet-utility = { workspace = true }
 pezsp-api = { workspace = true }
+pezsp-authority-discovery = { workspace = true }
 pezsp-block-builder = { workspace = true }
 pezsp-consensus-aura = { workspace = true }
+pezsp-consensus-babe = { workspace = true }
+pezsp-consensus-beefy = { workspace = true }
+pezsp-consensus-grandpa = { workspace = true }
 pezsp-core = { workspace = true }
 pezsp-genesis-builder = { workspace = true }
 pezsp-inherents = { workspace = true }
@@ -129,6 +141,9 @@ pezpallet-xcm-bridge-hub-router = { workspace = true }
 
 [dev-dependencies]
 asset-test-pezutils = { workspace = true, default-features = true }
+# Building a genesis preset reaches for host functions, so the preset tests need an
+# externalities environment.
+pezsp-io = { workspace = true, default-features = true }
 teyrchains-runtimes-test-utils = { workspace = true, default-features = true }
 
 [build-dependencies]
@@ -163,6 +178,7 @@ runtime-benchmarks = [
 	"pezframe-system-rpc-runtime-api/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
 	"pezframe-try-runtime?/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
 	"pezkuwi-runtime-common/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezkuwichain-runtime-constants/runtime-benchmarks",
@@ -180,6 +196,7 @@ runtime-benchmarks = [
 	"pezpallet-bounties/runtime-benchmarks",
 	"pezpallet-child-bounties/runtime-benchmarks",
 	"pezpallet-collator-selection/runtime-benchmarks",
+	"pezpallet-conviction-voting/runtime-benchmarks",
 	"pezpallet-delegated-staking/runtime-benchmarks",
 	"pezpallet-election-provider-multi-block/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
@@ -188,11 +205,15 @@ runtime-benchmarks = [
 	"pezpallet-nft-fractionalization/runtime-benchmarks",
 	"pezpallet-nfts/runtime-benchmarks",
 	"pezpallet-nis/runtime-benchmarks",
+	"pezpallet-nomination-pools-benchmarking/runtime-benchmarks",
 	"pezpallet-nomination-pools-runtime-api/runtime-benchmarks",
 	"pezpallet-nomination-pools/runtime-benchmarks",
+	"pezpallet-parameters/runtime-benchmarks",
 	"pezpallet-pez-treasury/runtime-benchmarks",
-	"pezpallet-presale/runtime-benchmarks",
+	"pezpallet-preimage/runtime-benchmarks",
 	"pezpallet-proxy/runtime-benchmarks",
+	"pezpallet-referenda/runtime-benchmarks",
+	"pezpallet-scheduler/runtime-benchmarks",
 	"pezpallet-session/runtime-benchmarks",
 	"pezpallet-staking-async-rc-client/runtime-benchmarks",
 	"pezpallet-staking-async/runtime-benchmarks",
@@ -209,10 +230,15 @@ runtime-benchmarks = [
 	"pezpallet-xcm-bridge-hub-router/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",
 	"pezsp-api/runtime-benchmarks",
+	"pezsp-authority-discovery/runtime-benchmarks",
 	"pezsp-block-builder/runtime-benchmarks",
 	"pezsp-consensus-aura/runtime-benchmarks",
+	"pezsp-consensus-babe/runtime-benchmarks",
+	"pezsp-consensus-beefy/runtime-benchmarks",
+	"pezsp-consensus-grandpa/runtime-benchmarks",
 	"pezsp-genesis-builder/runtime-benchmarks",
 	"pezsp-inherents/runtime-benchmarks",
+	"pezsp-io/runtime-benchmarks",
 	"pezsp-keyring/runtime-benchmarks",
 	"pezsp-npos-elections/runtime-benchmarks",
 	"pezsp-offchain/runtime-benchmarks",
@@ -253,6 +279,7 @@ try-runtime = [
 	"pezframe-system-benchmarking?/try-runtime",
 	"pezframe-system/try-runtime",
 	"pezframe-try-runtime/try-runtime",
+	"pezkuwi-primitives/try-runtime",
 	"pezkuwi-runtime-common/try-runtime",
 	"pezkuwi-teyrchain-primitives/try-runtime",
 	"pezkuwichain-runtime-constants/try-runtime",
@@ -270,6 +297,7 @@ try-runtime = [
 	"pezpallet-bounties/try-runtime",
 	"pezpallet-child-bounties/try-runtime",
 	"pezpallet-collator-selection/try-runtime",
+	"pezpallet-conviction-voting/try-runtime",
 	"pezpallet-delegated-staking/try-runtime",
 	"pezpallet-election-provider-multi-block/try-runtime",
 	"pezpallet-message-queue/try-runtime",
@@ -278,11 +306,15 @@ try-runtime = [
 	"pezpallet-nft-fractionalization/try-runtime",
 	"pezpallet-nfts/try-runtime",
 	"pezpallet-nis/try-runtime",
+	"pezpallet-nomination-pools-benchmarking/try-runtime",
 	"pezpallet-nomination-pools-runtime-api/try-runtime",
 	"pezpallet-nomination-pools/try-runtime",
+	"pezpallet-parameters/try-runtime",
 	"pezpallet-pez-treasury/try-runtime",
-	"pezpallet-presale/try-runtime",
+	"pezpallet-preimage/try-runtime",
 	"pezpallet-proxy/try-runtime",
+	"pezpallet-referenda/try-runtime",
+	"pezpallet-scheduler/try-runtime",
 	"pezpallet-session/try-runtime",
 	"pezpallet-staking-async-rc-client/try-runtime",
 	"pezpallet-staking-async/try-runtime",
@@ -298,8 +330,12 @@ try-runtime = [
 	"pezpallet-xcm-bridge-hub-router/try-runtime",
 	"pezpallet-xcm/try-runtime",
 	"pezsp-api/try-runtime",
+	"pezsp-authority-discovery/try-runtime",
 	"pezsp-block-builder/try-runtime",
 	"pezsp-consensus-aura/try-runtime",
+	"pezsp-consensus-babe/try-runtime",
+	"pezsp-consensus-beefy/try-runtime",
+	"pezsp-consensus-grandpa/try-runtime",
 	"pezsp-genesis-builder/try-runtime",
 	"pezsp-inherents/try-runtime",
 	"pezsp-keyring/try-runtime",
@@ -347,6 +383,7 @@ std = [
 	"pezframe-system-rpc-runtime-api/std",
 	"pezframe-system/std",
 	"pezframe-try-runtime?/std",
+	"pezkuwi-primitives/std",
 	"pezkuwi-runtime-common/std",
 	"pezkuwi-teyrchain-primitives/std",
 	"pezkuwichain-runtime-constants/std",
@@ -364,6 +401,7 @@ std = [
 	"pezpallet-bounties/std",
 	"pezpallet-child-bounties/std",
 	"pezpallet-collator-selection/std",
+	"pezpallet-conviction-voting/std",
 	"pezpallet-delegated-staking/std",
 	"pezpallet-election-provider-multi-block/std",
 	"pezpallet-message-queue/std",
@@ -372,11 +410,15 @@ std = [
 	"pezpallet-nft-fractionalization/std",
 	"pezpallet-nfts/std",
 	"pezpallet-nis/std",
+	"pezpallet-nomination-pools-benchmarking/std",
 	"pezpallet-nomination-pools-runtime-api/std",
 	"pezpallet-nomination-pools/std",
+	"pezpallet-parameters/std",
 	"pezpallet-pez-treasury/std",
-	"pezpallet-presale/std",
+	"pezpallet-preimage/std",
 	"pezpallet-proxy/std",
+	"pezpallet-referenda/std",
+	"pezpallet-scheduler/std",
 	"pezpallet-session/std",
 	"pezpallet-staking-async-rc-client/std",
 	"pezpallet-staking-async/std",
@@ -393,8 +435,12 @@ std = [
 	"pezpallet-xcm-bridge-hub-router/std",
 	"pezpallet-xcm/std",
 	"pezsp-api/std",
+	"pezsp-authority-discovery/std",
 	"pezsp-block-builder/std",
 	"pezsp-consensus-aura/std",
+	"pezsp-consensus-babe/std",
+	"pezsp-consensus-beefy/std",
+	"pezsp-consensus-grandpa/std",
 	"pezsp-core/std",
 	"pezsp-genesis-builder/std",
 	"pezsp-inherents/std",

@@ -22,7 +22,7 @@ use pezframe_support::{
 };
 
 /// The in-code storage version.
-pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(2);
+pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(3);
 
 /// Migrates the pezpallet storage to the most recent version.
 pub struct Migration<T: Config>(PhantomData<T>);
@@ -43,6 +43,13 @@ impl<T: Config> OnRuntimeUpgrade for Migration<T> {
 				.saturating_add(v2::migrate::<T>())
 				.saturating_add(T::DbWeight::get().writes(1));
 			StorageVersion::new(2).put::<Pezpallet<T>>();
+		}
+
+		if StorageVersion::get::<Pezpallet<T>>() == 2 {
+			// Runtime upgrades are in their own PoV so there is no issue with killing this.
+			crate::PoVMessagesTracker::<T>::kill();
+			weight = weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
+			StorageVersion::new(3).put::<Pezpallet<T>>();
 		}
 
 		weight

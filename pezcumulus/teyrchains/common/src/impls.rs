@@ -14,15 +14,14 @@
 // limitations under the License.
 
 //! Auxiliary struct/enums for teyrchain runtimes.
-//! Taken from pezkuwi/runtime/common (at a21cd64) and adapted for teyrchains.
+//! Taken from polkadot/runtime/common (at a21cd64) and adapted for teyrchains.
 
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 use pezframe_support::traits::{
-	fungible, fungibles, tokens::imbalance::ResolveTo, Contains, ContainsPair, Currency, Defensive,
-	Get, Imbalance, OnUnbalanced, OriginTrait,
+	fungible, fungibles, tokens::imbalance::ResolveTo, Contains, ContainsPair, Currency, Get,
+	Imbalance, OnUnbalanced, OriginTrait, TypedGet,
 };
-use pezpallet_asset_tx_payment::HandleCredit;
 use pezpallet_collator_selection::StakingPotAccountId;
 use pezsp_runtime::traits::Zero;
 use xcm::latest::{
@@ -39,27 +38,8 @@ pub type NegativeImbalance<T> = <pezpallet_balances::Pezpallet<T> as Currency<
 	<T as pezframe_system::Config>::AccountId,
 >>::NegativeImbalance;
 
-/// Implementation of `OnUnbalanced` that deposits the fees into a staking pot for later payout.
-#[deprecated(
-	note = "ToStakingPot is deprecated and will be removed after March 2024. Please use pezframe_support::traits::tokens::imbalance::ResolveTo instead."
-)]
-pub struct ToStakingPot<R>(PhantomData<R>);
-#[allow(deprecated)]
-impl<R> OnUnbalanced<NegativeImbalance<R>> for ToStakingPot<R>
-where
-	R: pezpallet_balances::Config + pezpallet_collator_selection::Config,
-	AccountIdOf<R>: From<pezkuwi_primitives::AccountId> + Into<pezkuwi_primitives::AccountId>,
-	<R as pezframe_system::Config>::RuntimeEvent: From<pezpallet_balances::Event<R>>,
-{
-	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
-		let staking_pot = <pezpallet_collator_selection::Pezpallet<R>>::account_id();
-		// In case of error: Will drop the result triggering the `OnDrop` of the imbalance.
-		<pezpallet_balances::Pezpallet<R>>::resolve_creating(&staking_pot, amount);
-	}
-}
-
 /// Fungible implementation of `OnUnbalanced` that deals with the fees by combining tip and fee and
-/// passing the result on to `ToStakingPot`.
+/// passing the result on to the collator staking pot.
 pub struct DealWithFees<R>(PhantomData<R>);
 impl<R> OnUnbalanced<fungible::Credit<R::AccountId, pezpallet_balances::Pezpallet<R>>>
 	for DealWithFees<R>
@@ -84,22 +64,19 @@ where
 	}
 }
 
-/// A `HandleCredit` implementation that naively transfers the fees to the block author.
-/// Will drop and burn the assets in case the transfer fails.
-pub struct AssetsToBlockAuthor<R, I>(PhantomData<(R, I)>);
-impl<R, I> HandleCredit<AccountIdOf<R>, pezpallet_assets::Pezpallet<R, I>>
-	for AssetsToBlockAuthor<R, I>
+/// Implements `TypedGet` with an option return value to pass into
+/// pezframe_support::traits::tokens::imbalance::MaybeResolveTo<BlockAuthor, ...>.
+pub struct BlockAuthor<Runtime>(PhantomData<Runtime>);
+
+impl<R> TypedGet for BlockAuthor<R>
 where
-	I: 'static,
-	R: pezpallet_authorship::Config + pezpallet_assets::Config<I>,
+	R: pezpallet_authorship::Config,
 	AccountIdOf<R>: From<pezkuwi_primitives::AccountId> + Into<pezkuwi_primitives::AccountId>,
 {
-	fn handle_credit(credit: fungibles::Credit<AccountIdOf<R>, pezpallet_assets::Pezpallet<R, I>>) {
-		use pezframe_support::traits::fungibles::Balanced;
-		if let Some(author) = pezpallet_authorship::Pezpallet::<R>::author() {
-			// In case of error: Will drop the result triggering the `OnDrop` of the imbalance.
-			let _ = pezpallet_assets::Pezpallet::<R, I>::resolve(&author, credit).defensive();
-		}
+	type Type = Option<AccountIdOf<R>>;
+
+	fn get() -> Self::Type {
+		pezpallet_authorship::Pezpallet::<R>::author()
 	}
 }
 
@@ -143,8 +120,78 @@ pub type BalanceOf<T> = <pezpallet_balances::Pezpallet<T> as Currency<
 	<T as pezframe_system::Config>::AccountId,
 >>::Balance;
 
+/// Implements `OnUnbalanced::on_unbalanced` to teleport slashed assets to the treasury on a
+/// sibling teyrchain.
+///
+/// The counterpart to `ToParentTreasury`, and the one this network needs: the treasury moved
+/// off the relay to the Asset Hub, so a chain sending its penalties to `Parent` is sending
+/// them to an account no pallet stands behind. On a chain whose rule is that nothing burns,
+/// that is a burn with extra steps.
+///
+/// `Destination` names the sibling; the beneficiary account is unchanged, because a treasury's
+/// account is derived from `PalletId(*b"py/trsry")` and those bytes are the same wherever the
+/// pallet sits. Only the chain was wrong.
+pub struct ToSiblingTreasury<TreasuryAccount, AccountIdConverter, Destination, T>(
+	PhantomData<(TreasuryAccount, AccountIdConverter, Destination, T)>,
+);
+
+impl<TreasuryAccount, AccountIdConverter, Destination, T> OnUnbalanced<NegativeImbalance<T>>
+	for ToSiblingTreasury<TreasuryAccount, AccountIdConverter, Destination, T>
+where
+	T: pezpallet_balances::Config + pezpallet_xcm::Config + pezframe_system::Config,
+	<<T as pezframe_system::Config>::RuntimeOrigin as OriginTrait>::AccountId: From<AccountIdOf<T>>,
+	[u8; 32]: From<<T as pezframe_system::Config>::AccountId>,
+	TreasuryAccount: Get<AccountIdOf<T>>,
+	AccountIdConverter: ConvertLocation<AccountIdOf<T>>,
+	Destination: Get<Location>,
+	BalanceOf<T>: Into<Fungibility>,
+{
+	fn on_unbalanced(amount: NegativeImbalance<T>) {
+		let amount = match amount.drop_zero() {
+			Ok(..) => return,
+			Err(amount) => amount,
+		};
+		let imbalance = amount.peek();
+		let root_location: Location = Here.into();
+		let root_account: AccountIdOf<T> =
+			match AccountIdConverter::convert_location(&root_location) {
+				Some(a) => a,
+				None => {
+					tracing::warn!(target: "xcm::on_unbalanced", "Failed to convert root origin into account id");
+					return;
+				},
+			};
+		let treasury_account: AccountIdOf<T> = TreasuryAccount::get();
+
+		<pezpallet_balances::Pezpallet<T>>::resolve_creating(&root_account, amount);
+
+		let result = <pezpallet_xcm::Pezpallet<T>>::limited_teleport_assets(
+			<<T as pezframe_system::Config>::RuntimeOrigin>::root(),
+			Box::new(Destination::get().into()),
+			Box::new(
+				Junction::AccountId32 { network: None, id: treasury_account.into() }
+					.into_location()
+					.into(),
+			),
+			Box::new((Parent, imbalance).into()),
+			0,
+			WeightLimit::Unlimited,
+		);
+
+		// Logged rather than swallowed: a failed teleport leaves the funds sitting in this
+		// chain's own root account, where they are recoverable. Dropping the imbalance instead
+		// would destroy them.
+		if let Err(err) = result {
+			tracing::warn!(target: "xcm::on_unbalanced", error=?err, "Failed to teleport slashed assets to the sibling treasury");
+		}
+	}
+}
+
 /// Implements `OnUnbalanced::on_unbalanced` to teleport slashed assets to relay chain treasury
 /// account.
+///
+/// Kept for chains whose treasury really is on the relay. Ours is not -- see
+/// `ToSiblingTreasury`.
 pub struct ToParentTreasury<TreasuryAccount, AccountIdConverter, T>(
 	PhantomData<(TreasuryAccount, AccountIdConverter, T)>,
 );
@@ -187,7 +234,7 @@ where
 					.into(),
 			),
 			Box::new((Parent, imbalance).into()),
-			Box::new(Parent.into()),
+			0,
 			WeightLimit::Unlimited,
 		);
 
@@ -228,7 +275,9 @@ mod tests {
 	);
 
 	parameter_types! {
-		pub BlockLength: limits::BlockLength = limits::BlockLength::max(2 * 1024);
+		pub BlockLength: limits::BlockLength = limits::BlockLength::builder()
+			.max_length(2 * 1024)
+			.build();
 		pub const AvailableBlockRatio: Perbill = Perbill::one();
 	}
 

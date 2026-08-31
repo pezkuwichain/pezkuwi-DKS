@@ -71,6 +71,7 @@ use pezsp_version::RuntimeVersion;
 
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezcumulus_primitives_core::{AggregateMessageOrigin, ParaId};
+use pezframe_support::traits::tokens::imbalance::ResolveTo;
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
@@ -87,13 +88,13 @@ use pezframe_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureRoot,
 };
-use pezsp_runtime::RuntimeDebug;
+use pezpallet_collator_selection::StakingPotAccountId;
 use testnet_teyrchains_constants::zagros::{
 	account::*, consensus::*, currency::*, fee::WeightToFee, time::*,
 };
 pub use teyrchains_common as common;
 use teyrchains_common::{
-	impls::{DealWithFees, ToParentTreasury},
+	impls::{DealWithFees, ToSiblingTreasury},
 	message_queue::*,
 	AccountId, AuraId, Balance, BlockNumber, Hash, Header, Nonce, Signature,
 	AVERAGE_ON_INITIALIZE_RATIO, NORMAL_DISPATCH_RATIO,
@@ -152,7 +153,12 @@ pub type RootOrAllianceTwoThirdsMajority = EitherOfDiverse<
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
 		.for_class(DispatchClass::all(), |weights| {
@@ -223,7 +229,14 @@ impl pezpallet_balances::Config for Runtime {
 	type Balance = Balance;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
-	type DustRemoval = ();
+	/// Dust -- what is left in an account too small to keep -- goes where this chain's fee
+	/// income goes, rather than being dropped.
+	///
+	/// `()` destroys it. Small per account and not small across a population, and on a chain
+	/// that collects fees for its treasury there is no reason for the remainder to be the one
+	/// thing that vanishes. Upstream stopped dropping it too, with a pallet of its own; this
+	/// gets the same result without taking on a new pallet.
+	type DustRemoval = ResolveTo<StakingPotAccountId<Runtime>, Balances>;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = weights::pezpallet_balances::WeightInfo<Runtime>;
@@ -298,7 +311,7 @@ parameter_types! {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]
@@ -423,6 +436,7 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
 	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
 	type ConsensusHook = ConsensusHook;
 	type RelayParentOffset = ConstU32<0>;
+	type SchedulingSignatureVerifier = ();
 }
 
 type ConsensusHook = pezcumulus_pezpallet_aura_ext::FixedVelocityConsensusHook<
@@ -592,7 +606,14 @@ pub const MAX_ALLIES: u32 = 100;
 
 parameter_types! {
 	pub const AllyDeposit: Balance = 1_000 * UNITS; // 1,000 ZGR bond to join as an Ally
+	/// The treasury's account. The bytes are the same wherever the pallet sits -- what changed
+	/// is which chain holds it: the Asset Hub, not the relay.
 	pub ZagrosTreasuryAccount: AccountId = ZAGROS_TREASURY_PALLET_ID.into_account_truncating();
+	/// Where penalties collected here are sent. `ToParentTreasury` used to send them to the
+	/// relay, which has had no treasury since it moved; the account there answers to no pallet,
+	/// so the funds would have been unspendable.
+	pub AssetHubTreasuryLocation: Location =
+		Location::new(1, [Teyrchain(zagros_runtime_constants::system_teyrchain::ASSET_HUB_ID)]);
 	// The number of blocks a member must wait between giving a retirement notice and retiring.
 	// Supposed to be greater than time required to `kick_member` with alliance motion.
 	pub const AllianceRetirementPeriod: BlockNumber = (90 * DAYS) + ALLIANCE_MOTION_DURATION;
@@ -605,7 +626,12 @@ impl pezpallet_alliance::Config for Runtime {
 	type MembershipManager = RootOrAllianceTwoThirdsMajority;
 	type AnnouncementOrigin = RootOrAllianceTwoThirdsMajority;
 	type Currency = Balances;
-	type Slashed = ToParentTreasury<ZagrosTreasuryAccount, LocationToAccountId, Runtime>;
+	type Slashed = ToSiblingTreasury<
+		ZagrosTreasuryAccount,
+		LocationToAccountId,
+		AssetHubTreasuryLocation,
+		Runtime,
+	>;
 	type InitializeMembers = AllianceMotion;
 	type MembershipChanged = AllianceMotion;
 	type RetirementPeriod = AllianceRetirementPeriod;
@@ -871,6 +897,10 @@ impl_runtime_apis! {
 		fn relay_parent_offset() -> u32 {
 			0
 		}
+
+		fn max_claim_queue_offset() -> u8 {
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
+		}
 	}
 
 	impl pezcumulus_primitives_aura::AuraUnincludedSegmentApi<Block> for Runtime {
@@ -948,8 +978,11 @@ impl_runtime_apis! {
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+		fn generate_session_keys(
+			owner: Vec<u8>,
+			seed: Option<Vec<u8>>,
+		) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(
@@ -1109,6 +1142,9 @@ impl_runtime_apis! {
 		) {
 			use pezframe_benchmarking::BenchmarkList;
 			use pezframe_support::traits::StorageInfoTrait;
+			// The pallet's benchmarks are listed above, and they need this implemented.
+			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
+
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
@@ -1148,7 +1184,12 @@ impl_runtime_apis! {
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
-			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
+			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 			use xcm_config::WndLocation;
 			use testnet_teyrchains_constants::zagros::locations::{AssetHubParaId, AssetHubLocation};
 
@@ -1190,7 +1231,7 @@ impl_runtime_apis! {
 				}
 
 				fn set_up_complex_asset_transfer(
-				) -> Option<(Assets, AssetId, Location, alloc::boxed::Box<dyn FnOnce()>)> {
+				) -> Option<(Assets, u32, Location, alloc::boxed::Box<dyn FnOnce()>)> {
 					// Collectives only supports teleports to system teyrchain.
 					// Relay/native token can be teleported between Collectives and Relay.
 					let native_location = WndLocation::get();
@@ -1222,16 +1263,15 @@ impl_runtime_apis! {
 				fn valid_destination() -> Result<Location, BenchmarkError> {
 					Ok(AssetHubLocation::get())
 				}
-				fn worst_case_holding(_depositable_count: u32) -> Assets {
-					// just concrete assets according to relay chain.
-					let assets: Vec<Asset> = vec![
-						Asset {
-							id: AssetId(WndLocation::get()),
-							fun: Fungible(1_000_000 * UNITS),
+				fn worst_case_holding(_depositable_count: u32) -> xcm_executor::AssetsInHolding {
+							use pezpallet_xcm_benchmarks::MockCredit;
+							let mut holding = xcm_executor::AssetsInHolding::new();
+							holding.fungible.insert(
+								AssetId(WndLocation::get()),
+								alloc::boxed::Box::new(MockCredit(1_000_000 * UNITS)),
+							);
+							holding
 						}
-					];
-					assets.into()
-				}
 			}
 
 			parameter_types! {

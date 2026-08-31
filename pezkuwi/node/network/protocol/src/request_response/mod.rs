@@ -51,7 +51,6 @@
 
 use std::{collections::HashMap, time::Duration, u64};
 
-use pezkuwi_primitives::MAX_CODE_SIZE;
 use pezsc_network::{NetworkBackend, MAX_RESPONSE_SIZE};
 use pezsp_runtime::traits::Block;
 use strum::{EnumIter, IntoEnumIterator};
@@ -137,7 +136,7 @@ const POV_REQUEST_TIMEOUT_CONNECTED: Duration = Duration::from_millis(2000);
 /// We supply leniency because there are often large candidates and asynchronous
 /// backing allows them to be included over a longer window of time. Exponential back-off
 /// up to a maximum of 10 seconds would be ideal, but isn't supported by the
-/// infrastructure here yet: see https://github.com/pezkuwichain/pezkuwi-sdk/issues/164
+/// infrastructure here yet: see https://github.com/paritytech/polkadot/issues/6009
 const ATTESTED_CANDIDATE_TIMEOUT: Duration = Duration::from_millis(2500);
 
 /// We don't want a slow peer to slow down all the others, at the same time we want to get out the
@@ -148,14 +147,17 @@ pub const MAX_PARALLEL_ATTESTED_CANDIDATE_REQUESTS: u32 = 5;
 
 /// Response size limit for responses of POV like data.
 ///
-/// Same as what we use in bizinikiwi networking.
+/// Same as what we use in substrate networking.
 const POV_RESPONSE_SIZE: u64 = MAX_RESPONSE_SIZE;
 
 /// Maximum response sizes for `AttestedCandidateV2`.
 ///
-/// This is `MAX_CODE_SIZE` plus some additional space for protocol overhead and
-/// additional backing statements.
-const ATTESTED_CANDIDATE_RESPONSE_SIZE: u64 = MAX_CODE_SIZE as u64 + 100_000;
+/// Chosen as a safe upper bound above the governance ceiling on validation code size
+/// (`pezkuwi_primitives::MAX_CODE_SIZE`), leaving headroom for backing statements and
+/// protocol overhead. This is a transport-level DoS cap only; the effective policy is
+/// enforced by the runtime and the node-side inclusion emulator against the on-chain
+/// `HostConfiguration.max_code_size`.
+const ATTESTED_CANDIDATE_RESPONSE_SIZE: u64 = 8 * 1024 * 1024;
 
 /// We can have relative large timeouts here, there is no value of hitting a
 /// timeout as we want to get statements through to each node in any case.
@@ -282,7 +284,7 @@ impl Protocol {
 				let available_bandwidth = 7 * MIN_BANDWIDTH_BYTES / 10;
 				let size = u64::saturating_sub(
 					ATTESTED_CANDIDATE_TIMEOUT.as_millis() as u64 * available_bandwidth
-						/ (1000 * MAX_CODE_SIZE as u64),
+						/ (1000 * ATTESTED_CANDIDATE_RESPONSE_SIZE),
 					MAX_PARALLEL_ATTESTED_CANDIDATE_REQUESTS as u64,
 				);
 				debug_assert!(

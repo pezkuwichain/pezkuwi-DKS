@@ -20,11 +20,11 @@ use pezframe_election_provider_support::VoteWeight;
 use pezframe_support::{
 	derive_impl, parameter_types,
 	pezpallet_prelude::*,
-	traits::{ConstU64, Nothing, VariantCountOf},
+	traits::{ConstBool, Nothing, VariantCountOf},
 	PalletId,
 };
 use pezsp_runtime::{
-	traits::{Convert, IdentityLookup},
+	traits::{BlockNumberProvider, Convert, IdentityLookup},
 	BuildStorage, FixedU128, Perbill,
 };
 
@@ -38,13 +38,6 @@ impl pezframe_system::Config for Runtime {
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Block = Block;
 	type AccountData = pezpallet_balances::AccountData<Balance>;
-}
-
-impl pezpallet_timestamp::Config for Runtime {
-	type Moment = u64;
-	type OnTimestampSet = ();
-	type MinimumPeriod = ConstU64<5>;
-	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -62,33 +55,38 @@ impl pezpallet_balances::Config for Runtime {
 	type RuntimeFreezeReason = RuntimeFreezeReason;
 }
 
-pezpallet_staking_reward_curve::build! {
-	const I_NPOS: pezsp_runtime::curve::PiecewiseLinear<'static> = curve!(
-		min_inflation: 0_025_000,
-		max_inflation: 0_100_000,
-		ideal_stake: 0_500_000,
-		falloff: 0_050_000,
-		max_piece_count: 40,
-		test_precision: 0_005_000,
-	);
-}
 parameter_types! {
-	pub const RewardCurve: &'static pezsp_runtime::curve::PiecewiseLinear<'static> = &I_NPOS;
+	pub static BondingDuration: u32 = 3;
 }
-#[derive_impl(pezpallet_staking::config_preludes::TestDefaultConfig)]
-impl pezpallet_staking::Config for Runtime {
+
+/// A mock `RcClientInterface` for benchmarks that don't need session/validator-set management.
+pub struct MockRcClient;
+impl pezpallet_staking_async_rc_client::RcClientInterface for MockRcClient {
+	type AccountId = AccountId;
+
+	fn validator_set(
+		_new_validator_set: Vec<Self::AccountId>,
+		_id: u32,
+		_prune_up_to: Option<u32>,
+	) {
+	}
+}
+
+#[derive_impl(pezpallet_staking_async::config_preludes::TestDefaultConfig)]
+impl pezpallet_staking_async::Config for Runtime {
 	type OldCurrency = Balances;
 	type Currency = Balances;
-	type CurrencyBalance = Balance;
-	type UnixTime = pezpallet_timestamp::Pezpallet<Self>;
 	type AdminOrigin = pezframe_system::EnsureRoot<Self::AccountId>;
-	type EraPayout = pezpallet_staking::ConvertCurve<RewardCurve>;
+	type EraPayout = ();
+	type DisableMinting = ConstBool<true>;
+	type BondingDuration = BondingDuration;
+	type RewardPots = pezpallet_staking_async::SequentialTest;
 	type ElectionProvider =
 		pezframe_election_provider_support::NoElection<(AccountId, BlockNumber, Staking, (), ())>;
-	type GenesisElectionProvider = Self::ElectionProvider;
 	type VoterList = VoterList;
-	type TargetList = pezpallet_staking::UseValidatorsMap<Self>;
+	type TargetList = pezpallet_staking_async::UseValidatorsMap<Self>;
 	type EventListeners = (Pools, DelegatedStaking);
+	type RcClientInterface = MockRcClient;
 }
 
 parameter_types! {
@@ -118,6 +116,16 @@ impl Convert<pezsp_core::U256, Balance> for U256ToBalance {
 	}
 }
 
+/// Always reports block 0 so commission `throttle_from` is deterministic.
+/// While benchmarking on AH, nom-pools `BlockNumberProvider` will be `RelaychainDataProvider`.
+pub struct BenchmarkBlockNumberProvider;
+impl BlockNumberProvider for BenchmarkBlockNumberProvider {
+	type BlockNumber = BlockNumber;
+	fn current_block_number() -> Self::BlockNumber {
+		0
+	}
+}
+
 parameter_types! {
 	pub static PostUnbondingPoolsWindow: u32 = 10;
 	pub const PoolsPalletId: PalletId = PalletId(*b"py/nopls");
@@ -140,7 +148,7 @@ impl pezpallet_nomination_pools::Config for Runtime {
 	type PalletId = PoolsPalletId;
 	type MaxPointsToBalance = MaxPointsToBalance;
 	type AdminOrigin = pezframe_system::EnsureRoot<Self::AccountId>;
-	type BlockNumberProvider = System;
+	type BlockNumberProvider = BenchmarkBlockNumberProvider;
 	type Filter = Nothing;
 }
 
@@ -165,9 +173,8 @@ type Block = pezframe_system::mocking::MockBlock<Runtime>;
 pezframe_support::construct_runtime!(
 	pub enum Runtime {
 		System: pezframe_system,
-		Timestamp: pezpallet_timestamp,
 		Balances: pezpallet_balances,
-		Staking: pezpallet_staking,
+		Staking: pezpallet_staking_async,
 		VoterList: pezpallet_bags_list::<Instance1>,
 		Pools: pezpallet_nomination_pools,
 		DelegatedStaking: pezpallet_delegated_staking,

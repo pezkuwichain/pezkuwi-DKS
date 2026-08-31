@@ -19,6 +19,11 @@
 #[cfg(not(feature = "std"))]
 #[doc(hidden)]
 pub mod implementation;
+
+#[cfg(any(test, not(feature = "std")))]
+#[doc(hidden)]
+pub mod scheduling;
+
 #[cfg(test)]
 mod tests;
 
@@ -44,6 +49,9 @@ pub use codec::decode_from_bytes;
 pub use pezkuwi_teyrchain_primitives;
 #[cfg(not(feature = "std"))]
 #[doc(hidden)]
+pub use pezsp_api;
+#[cfg(not(feature = "std"))]
+#[doc(hidden)]
 pub use pezsp_runtime::traits::GetRuntimeBlockType;
 #[cfg(not(feature = "std"))]
 #[doc(hidden)]
@@ -58,7 +66,7 @@ pub use pezsp_std;
 ///
 /// The layout of this type must match exactly the layout of
 /// [`ValidationParams`](pezkuwi_teyrchain_primitives::primitives::ValidationParams) to have the
-/// same SCALE encoding.
+/// same SCALE encoding, with the extension field at the end for V3+ candidates.
 #[derive(codec::Decode)]
 #[cfg_attr(feature = "std", derive(codec::Encode))]
 #[doc(hidden)]
@@ -67,4 +75,9 @@ pub struct MemoryOptimizedValidationParams {
 	pub block_data: bytes::Bytes,
 	pub relay_parent_number: pezcumulus_primitives_core::relay_chain::BlockNumber,
 	pub relay_parent_storage_root: pezcumulus_primitives_core::relay_chain::Hash,
+	/// V3+ extension containing relay_parent and scheduling_parent hashes.
+	/// None for V1/V2 candidates (no trailing bytes).
+	pub extension: pezkuwi_teyrchain_primitives::primitives::TrailingOption<
+		pezkuwi_teyrchain_primitives::primitives::ValidationParamsExtension,
+	>,
 }

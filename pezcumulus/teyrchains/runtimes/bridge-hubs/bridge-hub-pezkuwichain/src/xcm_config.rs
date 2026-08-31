@@ -36,13 +36,11 @@ use pezpallet_collator_selection::StakingPotAccountId;
 use pezpallet_xcm::{AuthorizedAliasers, XcmPassthrough};
 use pezsp_runtime::traits::AccountIdConversion;
 use testnet_teyrchains_constants::pezkuwichain::snowbridge::EthereumNetwork;
-use teyrchains_common::{
-	xcm_config::{
-		AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
-		RelayOrOtherSystemTeyrchains,
-	},
-	TREASURY_PALLET_ID,
+use teyrchains_common::xcm_config::{
+	AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
+	RelayOrOtherSystemTeyrchains,
 };
+use teyrchains_common::TREASURY_PALLET_ID;
 use xcm::latest::{prelude::*, PEZKUWICHAIN_GENESIS_HASH};
 use xcm_builder::{
 	AccountId32Aliases, AliasChildLocation, AllowExplicitUnpaidExecutionFrom,
@@ -58,10 +56,18 @@ use xcm_builder::{
 };
 use xcm_executor::{
 	traits::{FeeManager, FeeReason, FeeReason::Export},
-	XcmExecutor,
+	AssetsInHolding, XcmExecutor,
 };
 
 parameter_types! {
+	/// Where a slashed bridge-relayer stake goes.
+	///
+	/// The relay's treasury is retired, so this address has no pallet behind it on this chain --
+	/// the same shape as the People slashes fixed earlier. It stays for now because the bridge
+	/// relayer pallets take an account rather than a handler, and changing that is its own
+	/// piece of work; it is listed as one.
+	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
+
 	pub const RootLocation: Location = Location::here();
 	pub const TokenLocation: Location = Location::parent();
 	pub RelayChainOrigin: RuntimeOrigin = pezcumulus_pezpallet_xcm::Origin::Relay.into();
@@ -70,8 +76,14 @@ parameter_types! {
 		[GlobalConsensus(RelayNetwork::get()), Teyrchain(TeyrchainInfo::teyrchain_id().into())].into();
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
-	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
-	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(pezkuwichain_runtime_constants::TREASURY_PALLET_ID)).into();
+	/// Delivery fees for messages this chain forwards.
+	///
+	/// They used to go to an address derived from the treasury's pallet id, which is right on a
+	/// chain that has a treasury and meaningless on one that does not: the money arrived at an
+	/// address with no pallet behind it and stayed there. This chain has no treasury, so the
+	/// fee goes where its other operating income goes -- the collators who did the delivering.
+	pub StakingPot: AccountId =
+		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
 	pub SiblingPeople: Location = (Parent, Teyrchain(pezkuwichain_runtime_constants::system_teyrchain::PEOPLE_ID)).into();
 	pub AssetHubPezkuwichainLocation: Location = Location::new(1, [Teyrchain(pezbp_asset_hub_pezkuwichain::ASSET_HUB_PEZKUWICHAIN_TEYRCHAIN_ID)]);
 }
@@ -154,7 +166,11 @@ pub type Barrier = TrailingSetTopicAsId<
 					// and sibling People get free execution.
 					AllowExplicitUnpaidExecutionFrom<(
 						ParentOrParentsPlurality,
-						Equals<RelayTreasuryLocation>,
+						// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+						// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+						// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+						// sending body has to be waived again or every payment is charged a fee it cannot pay
+						// and is dropped without an error.
 						Equals<SiblingPeople>,
 						Equals<AssetHubPezkuwichainLocation>,
 					)>,
@@ -176,7 +192,11 @@ pub type Barrier = TrailingSetTopicAsId<
 pub type WaivedLocations = (
 	Equals<RootLocation>,
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
-	Equals<RelayTreasuryLocation>,
+	// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+	// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+	// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+	// sending body has to be waived again or every payment is charged a fee it cannot pay
+	// and is dropped without an error.
 );
 
 /// Cases where a remote origin is accepted as trusted Teleporter for a given asset:
@@ -218,13 +238,12 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTrap = PezkuwiXcm;
 	type AssetLocker = ();
 	type AssetExchanger = ();
-	type AssetClaims = PezkuwiXcm;
 	type SubscriptionService = PezkuwiXcm;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
 	type FeeManager = XcmFeeManagerFromComponents<
 		WaivedLocations,
-		SendXcmFeeToAccount<Self::AssetTransactor, TreasuryAccount>,
+		SendXcmFeeToAccount<Self::AssetTransactor, StakingPot>,
 	>;
 	type MessageExporter = (
 		XcmOverBridgeHubZagros,
@@ -324,7 +343,9 @@ impl<WaivedLocations: Contains<Location>, FeeHandler: HandleFee> FeeManager
 		WaivedLocations::contains(loc)
 	}
 
-	fn handle_fee(fee: Assets, context: Option<&XcmContext>, reason: FeeReason) {
+	// Fees now arrive as holding assets rather than a plain asset list. This wrapper adds no
+	// handling of its own, it only narrows `is_waived`, so the fee is passed straight through.
+	fn handle_fee(fee: AssetsInHolding, context: Option<&XcmContext>, reason: FeeReason) {
 		FeeHandler::handle_fee(fee, context, reason);
 	}
 }

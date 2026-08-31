@@ -37,13 +37,11 @@ use pezsp_runtime::traits::AccountIdConversion;
 use testnet_teyrchains_constants::zagros::{
 	locations::AssetHubLocation, snowbridge::EthereumNetwork,
 };
-use teyrchains_common::{
-	xcm_config::{
-		AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
-		RelayOrOtherSystemTeyrchains,
-	},
-	TREASURY_PALLET_ID,
+use teyrchains_common::xcm_config::{
+	AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
+	RelayOrOtherSystemTeyrchains,
 };
+use teyrchains_common::TREASURY_PALLET_ID;
 use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
 use xcm_builder::{
 	AccountId32Aliases, AliasChildLocation, AllowExplicitUnpaidExecutionFrom,
@@ -63,6 +61,14 @@ use xcm_executor::XcmExecutor;
 pub use testnet_teyrchains_constants::zagros::locations::GovernanceLocation;
 
 parameter_types! {
+	/// Where a slashed bridge-relayer stake goes.
+	///
+	/// The relay's treasury is retired, so this address has no pallet behind it on this chain --
+	/// the same shape as the People slashes fixed earlier. It stays for now because the bridge
+	/// relayer pallets take an account rather than a handler, and changing that is its own
+	/// piece of work; it is listed as one.
+	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
+
 	pub const RootLocation: Location = Location::here();
 	pub const ZagrosLocation: Location = Location::parent();
 	pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(ZAGROS_GENESIS_HASH);
@@ -71,8 +77,14 @@ parameter_types! {
 		[GlobalConsensus(RelayNetwork::get()), Teyrchain(TeyrchainInfo::teyrchain_id().into())].into();
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
-	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
-	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(zagros_runtime_constants::TREASURY_PALLET_ID)).into();
+	/// Delivery fees for messages this chain forwards.
+	///
+	/// They used to go to an address derived from the treasury's pallet id, which is right on a
+	/// chain that has a treasury and meaningless on one that does not: the money arrived at an
+	/// address with no pallet behind it and stayed there. This chain has no treasury, so the
+	/// fee goes where its other operating income goes -- the collators who did the delivering.
+	pub StakingPot: AccountId =
+		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
 }
 
 /// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
@@ -165,9 +177,31 @@ pub type Barrier = TrailingSetTopicAsId<
 					// pezpallet get free execution.
 					AllowExplicitUnpaidExecutionFrom<(
 						ParentOrParentsPlurality,
-						Equals<RelayTreasuryLocation>,
+						// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+						// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+						// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+						// sending body has to be waived again or every payment is charged a fee it cannot pay
+						// and is dropped without an error.
 						Equals<SnowbridgeFrontendLocation>,
 						Equals<GovernanceLocation>,
+						// The Asset Hub, and the reason it has to be named.
+						//
+						// Upstream waives every sibling system chain here with
+						// `RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>`. The
+						// twin narrowed that to the chains that actually send, which is the
+						// better rule -- and this runtime lost the general one without gaining the
+						// narrow one. People is deliberately not here: `plan.py --flows` declares
+						// no People-to-bridge-hub path and every message People sends goes to the
+						// relay or the Asset Hub. The twin lists `SiblingPeople`, inherited from
+						// upstream; by the same measurement that entry has no sender either. Nothing announced it: `WaivedLocations` below still waives
+						// the fees, so the money side looked right while the barrier turned the
+						// message away before any of it ran.
+						//
+						// What it cost: every unpaid message from the Asset Hub to this bridge
+						// hub, which is the whole Snowbridge export path on Zagros.
+						// `unpaid_transfer_token_to_ethereum_should_work` is the test that says
+						// so, and it had never run -- the job died earlier, on weights.
+						Equals<AssetHubLocation>,
 					)>,
 					// Subscriptions for version tracking are OK.
 					AllowSubscriptionsFrom<ParentRelayOrSiblingTeyrchains>,
@@ -187,7 +221,11 @@ pub type Barrier = TrailingSetTopicAsId<
 pub type WaivedLocations = (
 	Equals<RootLocation>,
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
-	Equals<RelayTreasuryLocation>,
+	// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+	// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+	// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+	// sending body has to be waived again or every payment is charged a fee it cannot pay
+	// and is dropped without an error.
 );
 
 /// Cases where a remote origin is accepted as trusted Teleporter for a given asset:
@@ -234,13 +272,12 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTrap = PezkuwiXcm;
 	type AssetLocker = ();
 	type AssetExchanger = ();
-	type AssetClaims = PezkuwiXcm;
 	type SubscriptionService = PezkuwiXcm;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
 	type FeeManager = XcmFeeManagerFromComponents<
 		WaivedLocations,
-		SendXcmFeeToAccount<Self::AssetTransactor, TreasuryAccount>,
+		SendXcmFeeToAccount<Self::AssetTransactor, StakingPot>,
 	>;
 	type MessageExporter = (
 		XcmOverBridgeHubPezkuwichain,

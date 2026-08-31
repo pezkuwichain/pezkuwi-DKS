@@ -5,16 +5,18 @@
 use codec::{Decode, DecodeWithMemTracking, Encode};
 use pezframe_support::PalletError;
 use pezsnowbridge_beacon_primitives::{BeaconHeader, ExecutionProof};
-use pezsp_core::{RuntimeDebug, H160, H256};
+use pezsp_core::{H160, H256};
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
+
+pub mod receipt;
 
 /// A trait for verifying inbound messages from Ethereum.
 pub trait Verifier {
 	fn verify(event: &Log, proof: &Proof) -> Result<(), VerificationError>;
 }
 
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, PalletError, TypeInfo)]
+#[derive(Clone, Encode, Decode, DecodeWithMemTracking, Debug, PalletError, TypeInfo)]
 #[cfg_attr(feature = "std", derive(PartialEq))]
 pub enum VerificationError {
 	/// Execution header is missing
@@ -27,10 +29,13 @@ pub enum VerificationError {
 	InvalidProof,
 	/// Unable to verify the execution header with ancestry proof
 	InvalidExecutionProof(#[codec(skip)] &'static str),
+	/// The verifier is halted. Proofs cannot be verified while the bridge is in an emergency
+	/// halted state (e.g. a compromised beacon light client).
+	Halted,
 }
 
 /// A bridge message from the Gateway contract on Ethereum
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Debug, TypeInfo)]
 pub struct EventProof {
 	/// Event log emitted by Gateway contract
 	pub event_log: Log,
@@ -39,23 +44,24 @@ pub struct EventProof {
 }
 
 /// Event log
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Debug, TypeInfo)]
 pub struct Log {
 	pub address: H160,
 	pub topics: Vec<H256>,
 	pub data: Vec<u8>,
+	pub tx_index: u64,
 }
 
 /// Inclusion proof for a transaction receipt
-#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Debug, TypeInfo)]
 pub struct Proof {
-	// Proof keys and values (receipts tree)
-	pub receipt_proof: (Vec<Vec<u8>>, Vec<Vec<u8>>),
+	// Proof values from receipts tree
+	pub receipt_proof: Vec<Vec<u8>>,
 	// Proof that an execution header was finalized by the beacon chain
 	pub execution_proof: ExecutionProof,
 }
 
-#[derive(Clone, RuntimeDebug)]
+#[derive(Clone, Debug)]
 pub struct EventFixture {
 	pub event: EventProof,
 	pub finalized_header: BeaconHeader,

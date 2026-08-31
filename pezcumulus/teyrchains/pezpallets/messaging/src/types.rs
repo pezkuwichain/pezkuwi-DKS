@@ -1,5 +1,5 @@
 use codec::{Decode, Encode, MaxEncodedLen};
-use pezframe_support::pezpallet_prelude::{BoundedVec, Get, RuntimeDebug};
+use pezframe_support::pezpallet_prelude::{BoundedVec, Get};
 use scale_info::TypeInfo;
 
 /// An encrypted message stored on-chain.
@@ -8,7 +8,7 @@ use scale_info::TypeInfo;
 /// Only the recipient can decrypt using their x25519 private key.
 ///
 /// Messages are ephemeral — automatically deleted at era boundaries.
-#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(MaxPayloadSize))]
 #[codec(mel_bound(
 	AccountId: MaxEncodedLen,

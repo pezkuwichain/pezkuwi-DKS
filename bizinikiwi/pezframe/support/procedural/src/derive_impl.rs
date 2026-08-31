@@ -249,7 +249,7 @@ fn compute_disambiguation_path(
 /// Internal implementation behind [`#[derive_impl(..)]`](`macro@crate::derive_impl`).
 ///
 /// `default_impl_path`: the module path of the external `impl` statement whose tokens we are
-///	                     importing via `macro_magic`
+/// 	                     importing via `macro_magic`
 ///
 /// `foreign_tokens`: the tokens for the external `impl` statement
 ///

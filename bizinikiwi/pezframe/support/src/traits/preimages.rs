@@ -19,7 +19,6 @@
 
 use alloc::borrow::Cow;
 use codec::{Decode, DecodeWithMemTracking, Encode, EncodeLike, MaxEncodedLen};
-use pezsp_core::RuntimeDebug;
 use pezsp_runtime::{
 	traits::{ConstU32, Hash},
 	DispatchError,
@@ -32,15 +31,7 @@ pub type BoundedInline = crate::BoundedVec<u8, ConstU32<128>>;
 const MAX_LEGACY_LEN: u32 = 1_000_000;
 
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	MaxEncodedLen,
-	Clone,
-	Eq,
-	PartialEq,
-	TypeInfo,
-	RuntimeDebug,
+	Encode, Decode, DecodeWithMemTracking, MaxEncodedLen, Clone, Eq, PartialEq, TypeInfo, Debug,
 )]
 #[codec(mel_bound())]
 pub enum Bounded<T, H: Hash> {

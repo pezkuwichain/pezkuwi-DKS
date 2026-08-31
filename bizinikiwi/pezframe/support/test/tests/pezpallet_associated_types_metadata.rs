@@ -192,12 +192,12 @@ fn associated_types_metadata() {
 	let ir = Runtime::metadata_ir();
 
 	// No associated types to collect.
-	let pezpallet = ir.pallets.iter().find(|pezpallet| pezpallet.name == "Example").unwrap();
+	let pezpallet = ir.pezpallets.iter().find(|pezpallet| pezpallet.name == "Example").unwrap();
 	pretty_assertions::assert_eq!(pezpallet.associated_types, vec![]);
 
 	// Collect by default types that implement TypeInfo or Parameter.
 	let pezpallet = ir
-		.pallets
+		.pezpallets
 		.iter()
 		.find(|pezpallet| pezpallet.name == "DefaultInclusion")
 		.unwrap();
@@ -219,7 +219,7 @@ fn associated_types_metadata() {
 
 	// Explicitly include associated types.
 	let pezpallet = ir
-		.pallets
+		.pezpallets
 		.iter()
 		.find(|pezpallet| pezpallet.name == "ExplicitInclusion")
 		.unwrap();
@@ -233,7 +233,7 @@ fn associated_types_metadata() {
 	);
 
 	// Check system pezpallet.
-	let pezpallet = ir.pallets.iter().find(|pezpallet| pezpallet.name == "System").unwrap();
+	let pezpallet = ir.pezpallets.iter().find(|pezpallet| pezpallet.name == "System").unwrap();
 	pretty_assertions::assert_eq!(
 		pezpallet.associated_types,
 		vec![

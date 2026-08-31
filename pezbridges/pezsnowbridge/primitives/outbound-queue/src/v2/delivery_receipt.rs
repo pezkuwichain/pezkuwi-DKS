@@ -4,7 +4,7 @@ use crate::Log;
 use alloy_core::{primitives::B256, sol, sol_types::SolEvent};
 use codec::Decode;
 use pezframe_support::pezpallet_prelude::{Encode, TypeInfo};
-use pezsp_core::{RuntimeDebug, H160, H256};
+use pezsp_core::{H160, H256};
 use pezsp_std::prelude::*;
 
 sol! {
@@ -12,7 +12,7 @@ sol! {
 }
 
 /// Delivery receipt
-#[derive(Clone, RuntimeDebug)]
+#[derive(Clone, Debug)]
 pub struct DeliveryReceipt {
 	/// The address of the outbound queue on Ethereum that emitted this message as an event log
 	pub gateway: H160,

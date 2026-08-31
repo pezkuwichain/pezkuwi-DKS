@@ -50,12 +50,13 @@ fn transfer_assets_wnd_reserve_transfer_para_to_relay_fails() {
 
 	let fee_asset_id: AssetId = Parent.into();
 	PenpalA::execute_with(|| {
+		let fee_asset_index = fee_asset_index(&assets, &fee_asset_id);
 		let result = <PenpalA as PenpalAPallet>::PezkuwiXcm::transfer_assets(
 			<PenpalA as Chain>::RuntimeOrigin::signed(PenpalASender::get()),
 			bx!(destination.into()),
 			bx!(beneficiary.into()),
 			bx!(assets.into()),
-			bx!(fee_asset_id.into()),
+			fee_asset_index,
 			WeightLimit::Unlimited,
 		);
 
@@ -83,12 +84,13 @@ fn transfer_assets_wnd_reserve_transfer_relay_to_para_fails() {
 
 	let fee_asset_id: AssetId = Here.into();
 	Zagros::execute_with(|| {
+		let fee_asset_index = fee_asset_index(&assets, &fee_asset_id);
 		let result = <Zagros as ZagrosPallet>::XcmPallet::transfer_assets(
 			<Zagros as Chain>::RuntimeOrigin::signed(ZagrosSender::get()),
 			bx!(destination.into()),
 			bx!(beneficiary.into()),
 			bx!(assets.into()),
-			bx!(fee_asset_id.into()),
+			fee_asset_index,
 			WeightLimit::Unlimited,
 		);
 
@@ -127,12 +129,13 @@ fn transfer_assets_wnd_reserve_transfer_para_to_para_fails() {
 
 	let fee_asset_id: AssetId = Parent.into();
 	PenpalA::execute_with(|| {
+		let fee_asset_index = fee_asset_index(&assets, &fee_asset_id);
 		let result = <PenpalA as PenpalAPallet>::PezkuwiXcm::transfer_assets(
 			<PenpalA as Chain>::RuntimeOrigin::signed(PenpalASender::get()),
 			bx!(destination.into()),
 			bx!(beneficiary.into()),
 			bx!(assets.into()),
-			bx!(fee_asset_id.into()),
+			fee_asset_index,
 			WeightLimit::Unlimited,
 		);
 
@@ -194,12 +197,13 @@ fn transfer_assets_wnd_as_fee_in_reserve_transfer_fails() {
 	let fee_asset_id: AssetId = Parent.into(); // ZGR is the fee asset.
 
 	PenpalA::execute_with(|| {
+		let fee_asset_index = fee_asset_index(&assets, &fee_asset_id);
 		let result = <PenpalA as PenpalAPallet>::PezkuwiXcm::transfer_assets(
 			<PenpalA as Chain>::RuntimeOrigin::signed(PenpalASender::get()),
 			bx!(destination.into()),
 			bx!(beneficiary.into()),
 			bx!(assets.into()),
-			bx!(fee_asset_id.into()),
+			fee_asset_index,
 			WeightLimit::Unlimited,
 		);
 
@@ -252,12 +256,13 @@ fn transfer_assets_non_native_assets_work() {
 	let fee_asset_id: AssetId = (asset_location).into();
 
 	PenpalA::execute_with(|| {
+		let fee_asset_index = fee_asset_index(&assets, &fee_asset_id);
 		let result = <PenpalA as PenpalAPallet>::PezkuwiXcm::transfer_assets(
 			<PenpalA as Chain>::RuntimeOrigin::signed(PenpalASender::get()),
 			bx!(destination.into()),
 			bx!(beneficiary.into()),
 			bx!(assets.into()),
-			bx!(fee_asset_id.into()),
+			fee_asset_index,
 			WeightLimit::Unlimited,
 		);
 

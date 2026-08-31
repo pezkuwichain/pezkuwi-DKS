@@ -18,6 +18,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 Inflector = { workspace = true }
+anyhow = { workspace = true, default-features = true }
 array-bytes = { workspace = true, default-features = true }
 chrono = { workspace = true }
 clap = { features = ["derive"], workspace = true }
@@ -30,6 +31,7 @@ itertools = { workspace = true }
 linked-hash-map = { workspace = true }
 log = { workspace = true, default-features = true }
 pezcumulus-client-teyrchain-inherent = { workspace = true, default-features = true }
+pezcumulus-primitives-core = { workspace = true, default-features = true }
 pezcumulus-primitives-proof-size-hostfunction = { workspace = true, default-features = true }
 pezframe-benchmarking = { workspace = true, default-features = true }
 pezframe-storage-access-test-runtime = { workspace = true, optional = true }
@@ -54,10 +56,12 @@ pezsc-executor-wasmtime = { workspace = true }
 pezsc-runtime-utilities = { workspace = true, default-features = true }
 pezsc-service = { workspace = true, default-features = false }
 pezsc-sysinfo = { workspace = true, default-features = true }
+pezsc-virtualization = { workspace = true, default-features = true }
 pezsp-api = { workspace = true, default-features = true }
 pezsp-block-builder = { workspace = true, default-features = true }
 pezsp-blockchain = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
 pezsp-database = { workspace = true, default-features = true }
 pezsp-externalities = { workspace = true, default-features = true }
 pezsp-genesis-builder = { workspace = true, default-features = true }
@@ -72,6 +76,7 @@ pezsp-timestamp = { workspace = true, default-features = true }
 pezsp-transaction-pool = { workspace = true, default-features = true }
 pezsp-trie = { workspace = true, default-features = true }
 pezsp-version = { workspace = true, default-features = true }
+pezsp-virtualization = { workspace = true, default-features = true }
 pezsp-wasm-interface = { workspace = true, default-features = true }
 rand = { features = ["small_rng"], workspace = true, default-features = true }
 rand_pcg = { workspace = true }
@@ -89,11 +94,10 @@ zagros-runtime = { workspace = true, default-features = true }
 default = []
 # Enable storage benchmark command
 storage-benchmark = ["pezframe-storage-access-test-runtime"]
-# Enable teyrchain/parachain benchmark inherent data
-teyrchain-benchmarks = ["pezcumulus-client-teyrchain-inherent/mock"]
 runtime-benchmarks = [
 	"bizinikiwi-test-runtime/runtime-benchmarks",
 	"pezcumulus-client-teyrchain-inherent/runtime-benchmarks",
+	"pezcumulus-primitives-core/runtime-benchmarks",
 	"pezcumulus-primitives-proof-size-hostfunction/runtime-benchmarks",
 	"pezcumulus-test-runtime/runtime-benchmarks",
 	"pezframe-benchmarking/runtime-benchmarks",
@@ -149,6 +153,7 @@ std = [
 try-runtime = [
 	"bizinikiwi-test-runtime/try-runtime",
 	"pezcumulus-client-teyrchain-inherent/try-runtime",
+	"pezcumulus-primitives-core/try-runtime",
 	"pezcumulus-test-runtime/try-runtime",
 	"pezframe-benchmarking/try-runtime",
 	"pezframe-storage-access-test-runtime?/try-runtime",

@@ -29,9 +29,8 @@
 //!
 //! #### The first scenario
 //!
-//! The `pezpallet-derivatives` can be helpful when another pezpallet, which hosts the derivative
-//! assets, doesn't provide a good enough way to create new assets in the context of them being
-//! derivatives.
+//! The `pezpallet-derivatives` can be helpful when another pezpallet, which hosts the derivative assets,
+//! doesn't provide a good enough way to create new assets in the context of them being derivatives.
 //!
 //! For instance, the asset hosting pezpallet might have an asset class (NFT collection or fungible
 //! currency) creation extrinsic, but among its parameters, there could be things like some admin
@@ -47,7 +46,7 @@
 //! The first approach dominates in the ecosystem at the moment since:
 //! 1. It is simple
 //! 2. There was no pezpallet to make such an alternative API without rewriting individual
-//!    asset-hosting pallets
+//!    asset-hosting pezpallets
 //! 3. Only fungible derivatives were ever made (with rare exceptions like an NFT derivative
 //!    collection on Karura).
 //!
@@ -91,9 +90,9 @@
 //! because `pezpallet-nfts` requires `CollectionId` to be incrementable.
 //! * It is desired to have a continuous ID space for all objects, both derivative and local.
 //! For instance, one might want to reuse the existing pezpallet combinations (like `pezpallet-nfts`
-//! instance + `pezpallet-nfts-fractionalization` instance) without adding new pezpallet instances
-//! between the one hosting NFTs and many special logic pallets. In this case, the original ID type
-//! would be `(AssetId, AssetInstance)`, and the derivative ID type can be anything.
+//! instance + `pezpallet-nfts-fractionalization` instance) without adding new pezpallet instances between
+//! the one hosting NFTs and many special logic pezpallets. In this case, the original ID type would be
+//! `(AssetId, AssetInstance)`, and the derivative ID type can be anything.
 
 #![recursion_limit = "256"]
 // Ensure we're `no_std` when compiling for Wasm.

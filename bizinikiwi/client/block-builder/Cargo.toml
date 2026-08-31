@@ -22,6 +22,7 @@ pezsp-api = { workspace = true, default-features = true }
 pezsp-block-builder = { workspace = true, default-features = true }
 pezsp-blockchain = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
+pezsp-externalities = { workspace = true, default-features = true }
 pezsp-inherents = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-trie = { workspace = true, default-features = true }

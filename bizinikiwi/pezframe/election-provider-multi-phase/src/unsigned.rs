@@ -69,8 +69,8 @@ pub type Assignment<T> = pezsp_npos_elections::Assignment<
 	SolutionAccuracyOf<T>,
 >;
 
-/// The [`IndexAssignment`][pezframe_election_provider_support::IndexAssignment] type specialized
-/// for a particular runtime `T`.
+/// The [`IndexAssignment`][pezframe_election_provider_support::IndexAssignment] type specialized for a
+/// particular runtime `T`.
 pub type IndexAssignmentOf<T> =
 	pezframe_election_provider_support::IndexAssignmentOf<SolutionOf<T>>;
 
@@ -483,8 +483,8 @@ impl<T: MinerConfig> Miner<T> {
 			})
 	}
 
-	/// Convert a raw solution from [`pezsp_npos_elections::ElectionResult`] to [`RawSolution`],
-	/// which is ready to be submitted to the chain.
+	/// Convert a raw solution from [`pezsp_npos_elections::ElectionResult`] to [`RawSolution`], which
+	/// is ready to be submitted to the chain.
 	///
 	/// Will always reduce the solution as well.
 	pub fn prepare_election_result_with_snapshot<Accuracy: PerThing128>(
@@ -1114,13 +1114,17 @@ mod tests {
 	use pezsp_runtime::{
 		bounded_vec,
 		offchain::storage_lock::{BlockAndTime, StorageLock},
-		traits::{Dispatchable, ValidateUnsigned, Zero},
+		traits::{Dispatchable, Zero},
 		ModuleError, PerU16,
 	};
+
+	#[allow(deprecated)]
+	use pezsp_runtime::traits::ValidateUnsigned;
 
 	type Assignment = crate::unsigned::Assignment<Runtime>;
 
 	#[test]
+	#[allow(deprecated)]
 	fn validate_unsigned_retracts_wrong_phase() {
 		ExtBuilder::default().desired_targets(0).build_and_execute(|| {
 			let solution = RawSolution::<TestNposSolution> {
@@ -1193,6 +1197,7 @@ mod tests {
 	}
 
 	#[test]
+	#[allow(deprecated)]
 	fn validate_unsigned_retracts_low_score() {
 		ExtBuilder::default().desired_targets(0).build_and_execute(|| {
 			roll_to_unsigned();
@@ -1239,6 +1244,7 @@ mod tests {
 	}
 
 	#[test]
+	#[allow(deprecated)]
 	fn validate_unsigned_retracts_incorrect_winner_count() {
 		ExtBuilder::default().desired_targets(1).build_and_execute(|| {
 			roll_to_unsigned();
@@ -1265,6 +1271,7 @@ mod tests {
 	}
 
 	#[test]
+	#[allow(deprecated)]
 	fn priority_is_set() {
 		ExtBuilder::default()
 			.miner_tx_priority(20)
@@ -1910,6 +1917,7 @@ mod tests {
 	}
 
 	#[test]
+	#[allow(deprecated)]
 	fn ocw_solution_must_have_correct_round() {
 		let (mut ext, pool) = ExtBuilder::default().build_offchainify(0);
 		ext.execute_with(|| {

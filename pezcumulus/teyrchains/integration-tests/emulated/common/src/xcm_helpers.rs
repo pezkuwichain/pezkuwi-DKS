@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Pezcumulus
+// Cumulus
 use teyrchains_common::AccountId;
 
 // Pezkuwi
@@ -66,19 +66,33 @@ pub fn xcm_transact_unpaid_execution(
 	]))
 }
 
-/// Helper method to get the non-fee asset used in multiple assets transfer
-pub fn non_fee_asset(assets: &Assets, fee_asset_id: &AssetId) -> Option<(Location, u128)> {
-	let asset = assets.inner().into_iter().find(|a| a.id != *fee_asset_id)?;
+/// Where the fee asset sits in `assets`, which is what the transfer extrinsics take.
+///
+/// Lets a test name the asset that pays and leave the position to be worked out, so the two
+/// cannot drift apart. Falls back to the first asset when the id is absent, which is what a
+/// single-asset transfer means.
+pub fn fee_asset_index(assets: &Assets, fee_id: &AssetId) -> u32 {
+	assets.inner().iter().position(|asset| asset.id == *fee_id).unwrap_or(0) as u32
+}
+
+/// Helper method to get the non-fee asset used in multiple assets transfer.
+///
+/// Selected by asset id rather than by position. The callers know which asset pays the fee, not
+/// where it sits, and a position keeps pointing at something after the list is reordered — just
+/// not at what the caller meant, which makes the assertion pass while checking the wrong asset.
+pub fn non_fee_asset(assets: &Assets, fee_id: &AssetId) -> Option<(Location, u128)> {
+	let asset = assets.inner().iter().find(|asset| asset.id != *fee_id)?.clone();
 	let asset_amount = match asset.fun {
 		Fungible(amount) => amount,
 		_ => return None,
 	};
-	Some((asset.id.0.clone(), asset_amount))
+	Some((asset.id.0, asset_amount))
 }
 
-/// Helper method to get the fee asset used in multiple assets transfer
-pub fn fee_asset(assets: &Assets, fee_asset_id: &AssetId) -> Option<(Location, u128)> {
-	let asset = assets.inner().iter().find(|a| a.id == *fee_asset_id)?;
+/// Helper method to get the fee asset used in multiple assets transfer. Selected by id; see
+/// [`non_fee_asset`].
+pub fn fee_asset(assets: &Assets, fee_id: &AssetId) -> Option<(Location, u128)> {
+	let asset = assets.inner().iter().find(|asset| asset.id == *fee_id)?;
 	let asset_amount = match asset.fun {
 		Fungible(amount) => amount,
 		_ => return None,

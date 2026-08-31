@@ -360,7 +360,7 @@ mod tests {
 
 		// These should not be touched.
 		fs::write(cache_path.join("abcd.pvfartifact"), "test").unwrap();
-		fs::write(cache_path.join("pezkuwi_..."), "test").unwrap();
+		fs::write(cache_path.join("polkadot_..."), "test").unwrap();
 		fs::create_dir(cache_path.join("worker-prepare-test")).unwrap();
 
 		let artifacts = Artifacts::new(cache_path).await;
@@ -371,7 +371,7 @@ mod tests {
 			.collect();
 		assert_eq!(entries.len(), 3);
 		assert!(entries.contains(&String::from("abcd.pvfartifact")));
-		assert!(entries.contains(&String::from("pezkuwi_...")));
+		assert!(entries.contains(&String::from("polkadot_...")));
 		assert!(entries.contains(&String::from("worker-prepare-test")));
 		assert_eq!(artifacts.len(), 0);
 	}

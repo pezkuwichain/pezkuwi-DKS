@@ -91,8 +91,7 @@ pub struct CompositeDef {
 	pub composite_keyword: keyword::CompositeKeyword,
 	/// Name of the associated type.
 	pub ident: syn::Ident,
-	/// Type parameters and where clause attached to a declaration of the
-	/// pezpallet::composite_enum.
+	/// Type parameters and where clause attached to a declaration of the pezpallet::composite_enum.
 	pub generics: syn::Generics,
 	/// The span of the pezpallet::composite_enum attribute.
 	pub attr_span: proc_macro2::Span,
@@ -158,7 +157,7 @@ impl CompositeDef {
 					#scrate::__private::codec::DecodeWithMemTracking,
 					#scrate::__private::codec::MaxEncodedLen,
 					#scrate::__private::scale_info::TypeInfo,
-					#scrate::__private::RuntimeDebug,
+					#scrate::__private::Debug,
 				)]
 			};
 			item.attrs.push(derive_attr);

@@ -22,15 +22,15 @@
 
 //! It does this by extending transactions to include an optional `AssetId` that specifies the asset
 //! to be used for payment (defaulting to the native token on `None`). It expects an
-//! [`OnChargeAssetTransaction`] implementation analogously to [`pezpallet_transaction_payment`].
-//! The included [`FungiblesAdapter`] (implementing [`OnChargeAssetTransaction`]) determines the fee
-//! amount by converting the fee calculated by [`pezpallet_transaction_payment`] into the desired
+//! [`OnChargeAssetTransaction`] implementation analogously to `pezpallet-transaction-payment`. The
+//! included [`FungiblesAdapter`] (implementing [`OnChargeAssetTransaction`]) determines the fee
+//! amount by converting the fee calculated by `pezpallet-transaction-payment` into the desired
 //! asset.
 //!
 //! ## Integration
 
-//! This pezpallet wraps FRAME's transaction payment pezpallet and functions as a replacement. This
-//! means you should include both pallets in your `construct_runtime` macro, but only include this
+//! This pezpallet wraps FRAME's transaction payment pezpallet and functions as a replacement. This means
+//! you should include both pezpallets in your `construct_runtime` macro, but only include this
 //! pezpallet's [`TransactionExtension`] ([`ChargeAssetTxPayment`]).
 
 #![cfg_attr(not(feature = "std"), no_std)]

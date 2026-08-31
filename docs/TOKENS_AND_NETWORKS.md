@@ -28,10 +28,7 @@ named `HEZ_*`. Where an amount is just a base-unit multiple in a non-native cont
 
 | Network | Symbol | Notes |
 |---------|--------|-------|
-| Zagros | **ZGR** | Primary public testnet |
-| Dicle | **DCL** | Testnet |
-| Versi | **VRS** | Staging/dev network |
-| Paseo | **PAS** | Dev network |
+| Zagros | **ZGR** | The test network |
 
 Testnet symbols are intentionally distinct from `HEZ` so that testnet tokens can never
 be confused with mainnet value — this is a deliberate safety property, not an
@@ -46,5 +43,11 @@ Zagros system teyrchains report `ZGR`).
      extension used by hardware/offline signers).
   2. The Claims `Prefix` signed-payload (`b"Pay HEZ to the Pezkuwichain account:"`).
   3. The chain-spec `properties.tokenSymbol`.
-- `TYR` was an earlier placeholder that had leaked into the mainnet runtimes/specs; it
-  has been fully standardized to `HEZ`. Do not reintroduce it.
+  Of these, only the third is what `system_properties` reports: it is served from the
+  node's chain-spec file, not from chain state, so a runtime upgrade alone cannot change
+  what a wallet displays.
+- `TYR` is the smallest indivisible amount, not a symbol — one `HEZ` is 10^12 of them,
+  the same relationship a DOT has to a planck. It had also leaked into the mainnet
+  parachain specs as a `tokenSymbol`, which is the one use that is wrong: the symbol is
+  `HEZ` on the relay chain, the Asset Hub and People alike. The unit itself is named
+  alongside `UNITS` in `pezkuwi/runtime/*/constants`.

@@ -1,6 +1,6 @@
 //! # Pezkuwi SDK
 //!
-//! [Pezkuwi SDK](https://github.com/pezkuwichain/pezkuwi-sdk) provides the main resources needed to
+//! [Pezkuwi SDK](https://github.com/pezkuwichain/pezkuwi-DKS) provides the main resources needed to
 //! start building on the [Pezkuwi network](https://pezkuwichain.io/), a scalable, multi-chain
 //! blockchain platform that enables different blockchains to securely interoperate.
 //!
@@ -29,9 +29,9 @@
 //!
 //! #### Bizinikiwi
 //!
-//! [![Bizinikiwi-license](https://img.shields.io/badge/License-GPL3%2FApache2.0-blue)](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/bizinikiwi/LICENSE-APACHE2)
+//! [![Bizinikiwi-license](https://img.shields.io/badge/License-GPL3%2FApache2.0-blue)](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/bizinikiwi/LICENSE-APACHE2)
 //! [![GitHub
-//! Repo](https://img.shields.io/badge/github-bizinikiwi-2324CC85)](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/bizinikiwi)
+//! Repo](https://img.shields.io/badge/github-bizinikiwi-2324CC85)](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/bizinikiwi)
 //!
 //! [`bizinikiwi`] is the base blockchain framework used to power the Pezkuwi SDK. It is a full
 //! toolkit to create sovereign blockchains, including but not limited to those which connect to
@@ -39,9 +39,9 @@
 //!
 //! #### FRAME
 //!
-//! [![Bizinikiwi-license](https://img.shields.io/badge/License-Apache2.0-blue)](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/bizinikiwi/LICENSE-APACHE2)
+//! [![Bizinikiwi-license](https://img.shields.io/badge/License-Apache2.0-blue)](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/bizinikiwi/LICENSE-APACHE2)
 //! [![GitHub
-//! Repo](https://img.shields.io/badge/github-frame-2324CC85)](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/bizinikiwi/pezframe)
+//! Repo](https://img.shields.io/badge/github-frame-2324CC85)](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/bizinikiwi/pezframe)
 //!
 //! [`frame`] is the framework used to create Bizinikiwi-based application logic, aka. runtimes.
 //! Learn more about the distinction of a runtime and node in
@@ -49,27 +49,27 @@
 //!
 //! #### Pezcumulus
 //!
-//! [![Pezcumulus-license](https://img.shields.io/badge/License-GPL3-blue)](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/pezcumulus/LICENSE)
+//! [![Pezcumulus-license](https://img.shields.io/badge/License-GPL3-blue)](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/pezcumulus/LICENSE)
 //! [![GitHub
-//! Repo](https://img.shields.io/badge/github-pezcumulus-white)](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/pezcumulus)
+//! Repo](https://img.shields.io/badge/github-pezcumulus-white)](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/pezcumulus)
 //!
 //! [`pezcumulus`] transforms FRAME-based runtimes into Pezkuwi-compatible teyrchain runtimes, and
 //! Bizinikiwi-based nodes into Pezkuwi/Teyrchain-compatible nodes.
 //!
 //! #### XCM
 //!
-//! [![XCM-license](https://img.shields.io/badge/License-GPL3-blue)](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/pezkuwi/LICENSE)
+//! [![XCM-license](https://img.shields.io/badge/License-GPL3-blue)](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/pezkuwi/LICENSE)
 //! [![GitHub
-//! Repo](https://img.shields.io/badge/github-XCM-e6007a?logo=polkadot)](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/pezkuwi/xcm)
+//! Repo](https://img.shields.io/badge/github-XCM-e6007a?logo=polkadot)](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/pezkuwi/xcm)
 //!
 //! [`xcm`], short for "cross consensus message", is the primary format that is used for
 //! communication between teyrchains, but is intended to be extensible to other use cases as well.
 //!
 //! #### Pezkuwi
 //!
-//! [![Pezkuwi-license](https://img.shields.io/badge/License-GPL3-blue)](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/pezkuwi/LICENSE)
+//! [![Pezkuwi-license](https://img.shields.io/badge/License-GPL3-blue)](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/pezkuwi/LICENSE)
 //! [![GitHub
-//! Repo](https://img.shields.io/badge/github-polkadot-e6007a?logo=polkadot)](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/pezkuwi)
+//! Repo](https://img.shields.io/badge/github-polkadot-e6007a?logo=polkadot)](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/pezkuwi)
 //!
 //! [`pezkuwi`] is an implementation of a Pezkuwi node in Rust, by `@paritytech`. The Pezkuwi
 //! runtimes are located under the
@@ -84,7 +84,7 @@
 //!   [`crate::reference_docs::omni_node`].
 //! * [`pezkuwi-teyrchain-bin`]: The collator node used to run collators for all Pezkuwi system
 //!   teyrchains.
-//! * [`frame-omni-bencher`]: a benchmarking tool for FRAME-based runtimes. Nodes typically contain
+//! * [`pezframe-omni-bencher`]: a benchmarking tool for FRAME-based runtimes. Nodes typically contain
 //!   a
 //!  `benchmark` subcommand that does the same.
 //! * [`chain_spec_builder`]: Utility to build chain-specs Nodes  typically contain a `build-spec`
@@ -119,7 +119,7 @@
 //! - [`parity-scale-codec`](https://github.com/pezkuwichain/parity-scale-codec)
 //! - [`parity-db`](https://github.com/pezkuwichain/parity-db)
 //! - [`trie`](https://github.com/paritytech/trie)
-//! - [`parity-common`](https://github.com/paritytech/parity-common)
+//! - [`parity-common`](https://github.com/pezkuwichain/pezkuwi-common)
 //!
 //! ## Trophy Section: Notable Downstream Projects
 //!
@@ -136,7 +136,7 @@
 //! [`pezcumulus`]: crate::pezkuwi_sdk::pezcumulus
 //! [`pezkuwi`]: crate::pezkuwi_sdk::pezkuwi
 //! [`xcm`]: crate::pezkuwi_sdk::xcm
-//! [`frame-omni-bencher`]: https://crates.io/crates/frame-omni-bencher
+//! [`pezframe-omni-bencher`]: https://crates.io/crates/pezframe-omni-bencher
 //! [`pezkuwi-teyrchain-bin`]: https://crates.io/crates/polkadot-parachain-bin
 //! [`pezkuwi-omni-node`]: https://crates.io/crates/polkadot-omni-node
 

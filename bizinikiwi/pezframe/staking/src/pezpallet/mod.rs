@@ -50,7 +50,7 @@ mod impls;
 pub use impls::*;
 
 use crate::{
-	asset, slashing, weights::WeightInfo, AccountIdLookupOf, ActiveEraInfo, BalanceOf, EraPayout,
+	asset, slashing, weights::WeightInfo, AccountIdLookupOf, ActiveEraInfo, BalanceOf,
 	EraRewardPoints, Exposure, ExposurePage, Forcing, LedgerIntegrityState, MaxNominationsOf,
 	NegativeImbalanceOf, Nominations, NominationsQuota, PositiveImbalanceOf, RewardDestination,
 	SessionInterface, StakingLedger, UnappliedSlash, UnlockChunk, ValidatorPrefs,
@@ -134,9 +134,9 @@ pub mod pezpallet {
 
 		/// Convert a balance into a number used for election calculation. This must fit into a
 		/// `u64` but is allowed to be sensibly lossy. The `u64` is used to communicate with the
-		/// [`pezframe_election_provider_support`] crate which accepts u64 numbers and does
-		/// operations in 128.
-		/// Consequently, the backward convert is used convert the u128s from sp-elections back to a
+		/// [`pezframe_election_provider_support`] crate which accepts u64 numbers and does operations
+		/// in 128.
+		/// Consequently, the backward convert is used convert the u128s from pezsp-elections back to a
 		/// [`BalanceOf`].
 		#[pezpallet::no_default_bounds]
 		type CurrencyToVote: pezsp_staking::currency_to_vote::CurrencyToVote<BalanceOf<Self>>;
@@ -232,7 +232,7 @@ pub mod pezpallet {
 		/// The payout for validators and the system for the current era.
 		/// See [Era payout](./index.html#era-payout).
 		#[pezpallet::no_default]
-		type EraPayout: EraPayout<BalanceOf<Self>>;
+		type EraPayout: pezsp_staking::EraPayout<BalanceOf<Self>>;
 
 		/// Something that can estimate the next session change, accurately or as a best effort
 		/// guess.
@@ -477,12 +477,12 @@ pub mod pezpallet {
 	pub type Nominators<T: Config> =
 		CountedStorageMap<_, Twox64Concat, T::AccountId, Nominations<T>>;
 
-	/// Stakers whose funds are managed by other pallets.
+	/// Stakers whose funds are managed by other pezpallets.
 	///
-	/// This pezpallet does not apply any locks on them, therefore they are only virtually bonded.
-	/// They are expected to be keyless accounts and hence should not be allowed to mutate their
-	/// ledger directly via this pezpallet. Instead, these accounts are managed by other pallets
-	/// and accessed via low level apis. We keep track of them to do minimal integrity checks.
+	/// This pezpallet does not apply any locks on them, therefore they are only virtually bonded. They
+	/// are expected to be keyless accounts and hence should not be allowed to mutate their ledger
+	/// directly via this pezpallet. Instead, these accounts are managed by other pezpallets and accessed
+	/// via low level apis. We keep track of them to do minimal integrity checks.
 	#[pezpallet::storage]
 	pub type VirtualStakers<T: Config> = CountedStorageMap<_, Twox64Concat, T::AccountId, ()>;
 
@@ -733,8 +733,7 @@ pub mod pezpallet {
 
 	/// The last planned session scheduled by the session pezpallet.
 	///
-	/// This is basically in sync with the call to
-	/// [`pezpallet_session::SessionManager::new_session`].
+	/// This is basically in sync with the call to [`pezpallet_session::SessionManager::new_session`].
 	#[pezpallet::storage]
 	pub type CurrentPlannedSession<T> = StorageValue<_, SessionIndex, ValueQuery>;
 

@@ -45,6 +45,7 @@ use pezsp_runtime::traits::{AccountIdConversion, TryConvertInto};
 // modules carry the same figures today, so nothing was misbehaving, but the whole reason the
 // modules are separate is that either ecosystem may point at a different Ethereum, and this chain
 // would have silently followed the mainnet's choice.
+use testnet_teyrchains_constants::zagros::locations::PeopleLocation;
 use testnet_teyrchains_constants::zagros::snowbridge::{
 	EthereumNetwork, INBOUND_QUEUE_PALLET_INDEX_V1, INBOUND_QUEUE_PALLET_INDEX_V2,
 };
@@ -112,7 +113,6 @@ parameter_types! {
 	pub const GovernanceLocation: Location = Location::parent();
 	pub StakingPot: AccountId = CollatorSelection::account_id();
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
-	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(pezkuwichain_runtime_constants::TREASURY_PALLET_ID)).into();
 	/// The Fellowship's salary and treasury pallets on the Collectives chain. Both dispatch
 	/// unpaid XCM to this chain to settle their spends, so both need free execution here.
 	///
@@ -350,10 +350,19 @@ pub type Barrier = TrailingSetTopicAsId<
 					// and BridgeHub get free execution.
 					AllowExplicitUnpaidExecutionFrom<(
 						ParentOrParentsPlurality,
-						Equals<RelayTreasuryLocation>,
+						// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+						// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+						// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+						// sending body has to be waived again or every payment is charged a fee it cannot pay
+						// and is dropped without an error.
 						Equals<FellowshipSalaryLocation>,
 						Equals<FellowshipTreasuryLocation>,
 						Equals<SecretarySalaryLocation>,
+						// The register decides and the treasury pays, so the chain holding the
+						// register has to be able to reach the one holding the money.
+						// `WaivedLocations` already charges it nothing; without this the
+						// barrier turns the message away before the fee policy is consulted.
+						Equals<PeopleLocation>,
 						Equals<bridging::SiblingBridgeHub>,
 					)>,
 					// Subscriptions for version tracking are OK.
@@ -374,7 +383,11 @@ pub type Barrier = TrailingSetTopicAsId<
 pub type WaivedLocations = (
 	Equals<RootLocation>,
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
-	Equals<RelayTreasuryLocation>,
+	// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+	// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+	// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+	// sending body has to be waived again or every payment is charged a fee it cannot pay
+	// and is dropped without an error.
 	// The Collectives chain's spending pallets. `RelayOrOtherSystemTeyrchains` admits the
 	// Collectives chain itself but not a pallet within it, and these payouts carry an
 	// appendix that reports the outcome home under `SetFeesMode { jit_withdraw }` — so without
@@ -439,6 +452,39 @@ pub type PoolAssetsExchanger = SingleAssetExchangeAdapter<
 >;
 
 pub struct XcmConfig;
+/// Calls that XCM `Transact` may not dispatch here, whatever origin it arrives with.
+///
+/// PEZ has a fixed supply of five billion and a halving schedule; nothing mints it and nothing
+/// burns it. That is a property of the design, and until now it was only a property of nobody
+/// having tried: PEZ is asset {pez}, `Assets`' `ForceOrigin` is `EnsureRoot`, and Root arrives
+/// here from the relay through `ParentAsSuperuser`. So the relay's sudo key could reassign the
+/// asset's issuer with `force_asset_status` and mint without limit, or call `start_destroy` and
+/// take the whole supply out. Neither is a hole in sudo -- sudo is meant to be absolute during
+/// the founding period -- it is a hole in the token, and Serok's rule is explicit that no
+/// force-mint of PEZ exists even with sudo.
+///
+/// This is the door that can actually be shut. `pallet_sudo` dispatches with
+/// `dispatch_bypass_filter` and so ignores `BaseCallFilter` by construction; a call arriving
+/// over XCM does not, and every route from the relay to this chain's Root is an XCM `Transact`.
+///
+/// The filter names the asset rather than the call, so ordinary asset administration keeps
+/// working for every other asset on the hub.
+pub struct NoTouchingPez;
+impl Contains<RuntimeCall> for NoTouchingPez {
+	fn contains(call: &RuntimeCall) -> bool {
+		let pez = crate::PezAssetId::get();
+		!matches!(
+			call,
+			RuntimeCall::Assets(pezpallet_assets::Call::force_asset_status { id, .. })
+				| RuntimeCall::Assets(pezpallet_assets::Call::start_destroy { id })
+				| RuntimeCall::Assets(pezpallet_assets::Call::mint { id, .. })
+				| RuntimeCall::Assets(pezpallet_assets::Call::burn { id, .. })
+				| RuntimeCall::Assets(pezpallet_assets::Call::force_create { id, .. })
+			if id.0 == pez
+		)
+	}
+}
+
 impl xcm_executor::Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
 	type XcmSender = XcmRouter;
@@ -481,7 +527,6 @@ impl xcm_executor::Config for XcmConfig {
 	);
 	type ResponseHandler = PezkuwiXcm;
 	type AssetTrap = PezkuwiXcm;
-	type AssetClaims = PezkuwiXcm;
 	type SubscriptionService = PezkuwiXcm;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
@@ -495,7 +540,7 @@ impl xcm_executor::Config for XcmConfig {
 	type UniversalAliases =
 		(bridging::to_pezkuwichain::UniversalAliases, bridging::to_ethereum::UniversalAliases);
 	type CallDispatcher = RuntimeCall;
-	type SafeCallFilter = Everything;
+	type SafeCallFilter = NoTouchingPez;
 	// We allow any origin to alias into a child sub-location (equivalent to DescendOrigin).
 	type Aliasers = TrustedAliasers;
 	type TransactionalProcessor = FrameTransactionalProcessor;

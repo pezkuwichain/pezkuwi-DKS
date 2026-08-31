@@ -18,6 +18,7 @@ use crate::{
 	weights::WeightInfo, BestFinalized, BridgedBlockNumber, BridgedHeader, Config,
 	CurrentAuthoritySet, Error, FreeHeadersRemaining, Pezpallet,
 };
+use core::fmt::Debug;
 use pezbp_header_pez_chain::{
 	justification::GrandpaJustification, submit_finality_proof_limits_extras,
 	SubmitFinalityProofInfo,
@@ -32,12 +33,11 @@ use pezsp_consensus_grandpa::SetId;
 use pezsp_runtime::{
 	traits::{CheckedSub, Header, Zero},
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
-	RuntimeDebug, SaturatedConversion,
+	SaturatedConversion,
 };
-use pezsp_std::fmt::Debug;
 
 /// Verified `SubmitFinalityProofInfo<N>`.
-#[derive(Copy, Clone, PartialEq, RuntimeDebug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct VerifiedSubmitFinalityProofInfo<N: Debug> {
 	/// Base call information.
 	pub base: SubmitFinalityProofInfo<N>,
@@ -358,7 +358,7 @@ mod tests {
 	}
 
 	#[test]
-	fn extension_rejects_new_header_if_pallet_is_halted() {
+	fn extension_rejects_new_header_if_pezpallet_is_halted() {
 		run_test(|| {
 			// when pezpallet is halted => tx is rejected
 			sync_to_header_10();

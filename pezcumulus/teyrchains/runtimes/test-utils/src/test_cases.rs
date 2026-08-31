@@ -222,7 +222,7 @@ where
 	});
 }
 
-/// Generic test case for Pezcumulus-based teyrchain that verifies if runtime can process
+/// Generic test case for Cumulus-based teyrchain that verifies if runtime can process
 /// `pezframe_system::Call::authorize_upgrade` from governance system.
 pub fn can_governance_authorize_upgrade<Runtime, RuntimeOrigin>(
 	governance_origin: GovernanceOrigin<RuntimeOrigin>,

@@ -2489,22 +2489,17 @@ fn sr25519_verify() {
 			.value(100_000)
 			.build_and_unwrap_account_id();
 
-		let call_with = |message: &[u8; 11]| {
-			// Alice's signature for "hello world"
-			#[rustfmt::skip]
-			let signature: [u8; 64] = [
-				184, 49, 74, 238, 78, 165, 102, 252, 22, 92, 156, 176, 124, 118, 168, 116, 247,
-				99, 0, 94, 2, 45, 9, 170, 73, 222, 182, 74, 60, 32, 75, 64, 98, 174, 69, 55, 83,
-				85, 180, 98, 208, 75, 231, 57, 205, 62, 4, 105, 26, 136, 172, 17, 123, 99, 90, 255,
-				228, 54, 115, 63, 30, 207, 205, 131,
-			];
+		// Signed here rather than pasted in. A hard-coded signature is a wire-format constant:
+		// it verifies only under the context it was produced with, and this chain's signing
+		// context is deliberately not upstream's. The pasted pair verified under `b"substrate"`
+		// and this test began failing the moment the sovereign context was put back.
+		let pair = <pezsp_core::sr25519::Pair as pezsp_core::Pair>::from_string("//Alice", None)
+			.expect("//Alice is a valid seed; qed");
+		let public_key: [u8; 32] = <pezsp_core::sr25519::Pair as pezsp_core::Pair>::public(&pair).0;
 
-			// Alice's public key
-			#[rustfmt::skip]
-			let public_key: [u8; 32] = [
-				212, 53, 147, 199, 21, 253, 211, 28, 97, 20, 26, 189, 4, 169, 159, 214, 130, 44,
-				133, 88, 133, 76, 205, 227, 154, 86, 132, 231, 165, 109, 162, 125,
-			];
+		let call_with = |message: &[u8; 11], signed: &[u8; 11]| {
+			let signature: [u8; 64] =
+				<pezsp_core::sr25519::Pair as pezsp_core::Pair>::sign(&pair, signed).0;
 
 			let mut params = vec![];
 			params.extend_from_slice(&signature);
@@ -2514,11 +2509,14 @@ fn sr25519_verify() {
 			builder::bare_call(addr.clone()).data(params).build_and_unwrap_result()
 		};
 
-		// verification should succeed for "hello world"
-		assert_return_code!(call_with(&b"hello world"), RuntimeReturnCode::Success);
+		// The signature covers the message being checked.
+		assert_return_code!(call_with(b"hello world", b"hello world"), RuntimeReturnCode::Success);
 
-		// verification should fail for other messages
-		assert_return_code!(call_with(&b"hello worlD"), RuntimeReturnCode::Sr25519VerifyFailed);
+		// A signature over a different message must not verify.
+		assert_return_code!(
+			call_with(b"hello worlD", b"hello world"),
+			RuntimeReturnCode::Sr25519VerifyFailed
+		);
 	});
 }
 

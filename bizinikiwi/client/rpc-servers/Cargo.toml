@@ -28,6 +28,9 @@ ip_network = { workspace = true }
 jsonrpsee = { features = ["server"], workspace = true }
 log = { workspace = true, default-features = true }
 pezsc-rpc-api = { workspace = true }
+pezsc-utils = { workspace = true }
+pezsp-core = { workspace = true }
+prometheus = { workspace = true }
 prometheus-endpoint = { workspace = true, default-features = true }
 serde = { workspace = true }
 serde_json = { workspace = true, default-features = true }
@@ -39,5 +42,12 @@ tower-http = { workspace = true, features = ["cors"] }
 
 [features]
 runtime-benchmarks = ["pezsc-rpc-api/runtime-benchmarks"]
-std = ["log/std", "pezsc-rpc-api/std", "prometheus-endpoint/std", "serde/std"]
+std = [
+	"log/std",
+	"pezsc-rpc-api/std",
+	"pezsc-utils/std",
+	"pezsp-core/std",
+	"prometheus-endpoint/std",
+	"serde/std",
+]
 serde = []

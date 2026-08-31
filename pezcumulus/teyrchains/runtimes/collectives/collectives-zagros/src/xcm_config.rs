@@ -17,13 +17,12 @@ use super::{
 	AccountId, AllPalletsWithSystem, Balance, Balances, BaseDeliveryFee, FeeAssetId, Fellows,
 	PezkuwiXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
 	TeyrchainInfo, TeyrchainSystem, TransactionByteFee, WeightToFee, XcmpQueue,
-	ZagrosTreasuryAccount,
 };
 use pezframe_support::{
 	parameter_types,
 	traits::{
 		fungible::HoldConsideration, tokens::imbalance::ResolveTo, ConstU32, Contains, Equals,
-		Everything, LinearStoragePrice, Nothing,
+		Everything, LinearStoragePrice, Nothing, PalletInfoAccess,
 	},
 };
 use pezframe_system::EnsureRoot;
@@ -56,13 +55,30 @@ use zagros_runtime_constants::{system_teyrchain::ASSET_HUB_ID, xcm as xcm_consta
 pub use testnet_teyrchains_constants::zagros::locations::GovernanceLocation;
 
 parameter_types! {
+	/// Delivery fees for messages this chain forwards.
+	///
+	/// They went to an address derived from the relay treasury's pallet id, which on a chain
+	/// with no treasury is an address with no pallet behind it. This chain has none, so the
+	/// fee goes where its other operating income goes -- the collators who delivered.
+	pub StakingPot: AccountId =
+		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
+
 	pub const RootLocation: Location = Location::here();
 	pub const WndLocation: Location = Location::parent();
 	pub const RelayNetwork: Option<NetworkId> = Some(NetworkId::ByGenesis(ZAGROS_GENESIS_HASH));
 	pub RelayChainOrigin: RuntimeOrigin = pezcumulus_pezpallet_xcm::Origin::Relay.into();
 	pub UniversalLocation: InteriorLocation =
 		[GlobalConsensus(RelayNetwork::get().unwrap()), Teyrchain(TeyrchainInfo::teyrchain_id().into())].into();
-	pub RelayTreasuryLocation: Location = (Parent, PalletInstance(zagros_runtime_constants::TREASURY_PALLET_ID)).into();
+	/// The four bodies on this chain that pay out over XCM. Each is named by its own pallet
+	/// index so the location cannot drift if the index moves.
+	pub FellowshipTreasuryLocation: Location =
+		PalletInstance(<crate::FellowshipTreasury as PalletInfoAccess>::index() as u8).into();
+	pub FellowshipSalaryLocation: Location =
+		PalletInstance(<crate::FellowshipSalary as PalletInfoAccess>::index() as u8).into();
+	pub SecretarySalaryLocation: Location =
+		PalletInstance(<crate::SecretarySalary as PalletInfoAccess>::index() as u8).into();
+	pub AmbassadorSalaryLocation: Location =
+		PalletInstance(<crate::AmbassadorSalary as PalletInfoAccess>::index() as u8).into();
 	pub CheckingAccount: AccountId = PezkuwiXcm::check_account();
 	pub const FellowshipAdminBodyId: BodyId = BodyId::Index(xcm_constants::body::FELLOWSHIP_ADMIN_INDEX);
 	pub AssetHub: Location = (Parent, Teyrchain(ASSET_HUB_ID)).into();
@@ -189,7 +205,19 @@ pub type Barrier = TrailingSetTopicAsId<
 /// We only waive fees for system functions, which these locations represent.
 pub type WaivedLocations = (
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
-	Equals<RelayTreasuryLocation>,
+	// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+	// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+	// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+	// sending body has to be waived again or every payment is charged a fee it cannot pay
+	// and is dropped without an error.
+	// The bodies that live on this chain. Their payouts travel to the Asset Hub over XCM and the
+	// delivery fee is withdrawn from the paying pallet's own account, which holds nothing — so
+	// without these entries every cross-chain payout from the fellowship treasury and from the
+	// three salary pallets fails with `PayoutError`, and the money never leaves.
+	Equals<FellowshipTreasuryLocation>,
+	Equals<FellowshipSalaryLocation>,
+	Equals<SecretarySalaryLocation>,
+	Equals<AmbassadorSalaryLocation>,
 	Equals<RootLocation>,
 	LocalPlurality,
 );
@@ -238,7 +266,6 @@ impl xcm_executor::Config for XcmConfig {
 	>;
 	type ResponseHandler = PezkuwiXcm;
 	type AssetTrap = PezkuwiXcm;
-	type AssetClaims = PezkuwiXcm;
 	type SubscriptionService = PezkuwiXcm;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
@@ -246,7 +273,7 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetExchanger = ();
 	type FeeManager = XcmFeeManagerFromComponents<
 		WaivedLocations,
-		SendXcmFeeToAccount<Self::AssetTransactor, ZagrosTreasuryAccount>,
+		SendXcmFeeToAccount<Self::AssetTransactor, StakingPot>,
 	>;
 	type MessageExporter = ();
 	type UniversalAliases = Nothing;

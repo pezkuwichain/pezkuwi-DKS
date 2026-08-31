@@ -16,7 +16,6 @@
 
 use crate::{Chain, Client, Error as BizinikiwiError};
 
-use async_std::sync::{Arc, RwLock};
 use async_trait::async_trait;
 use codec::Decode;
 use num_traits::One;
@@ -26,7 +25,8 @@ use relay_utils::metrics::{
 	metric_name, register, F64SharedRef, Gauge, Metric, PrometheusError, Registry,
 	StandaloneMetric, F64,
 };
-use std::{marker::PhantomData, time::Duration};
+use std::{marker::PhantomData, sync::Arc, time::Duration};
+use tokio::sync::RwLock;
 
 /// Storage value update interval (in blocks).
 const UPDATE_INTERVAL_IN_BLOCKS: u32 = 5;

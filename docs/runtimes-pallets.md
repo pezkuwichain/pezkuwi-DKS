@@ -178,7 +178,6 @@
 
 #### 🔴 CUSTOM PEZKUWI PALLETS (Index 70-73)
 - **PezTreasury** (70) - pallet_pez_treasury ⭐ BENCHMARKED
-- **Presale** (71) - pallet_presale ⭐ BENCHMARKED
 - **TokenWrapper** (73) - pallet_token_wrapper ⭐ BENCHMARKED
 
 #### Staking (Index 80-89)
@@ -492,7 +491,6 @@
 | Pezpallet Name | Asset Hub PZ | Asset Hub ZG | People PZ | People ZG | PZ Relay | Test Runtimes | Benchmarks |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **pezpallet-pez-treasury** | ✓ | | | | | | ✅ |
-| **pezpallet-presale** | ✓ | | | | | | ✅ |
 | **pezpallet-token-wrapper** | ✓ | | | | | | ✅ |
 | **pezpallet-identity-kyc** | | | ✓ | | | | ✅ |
 | **pezpallet-referral** | | | ✓ | | | | ✅ |

@@ -90,7 +90,17 @@ parameter_types! {
 	pub const MaxCourseLinkLength: u32 = 200;
 	pub const MaxStudentsPerCourse: u32 = 100; // Reduced for test performance
 	pub const MaxCoursesPerStudent: u32 = 50;  // Max courses a student can enroll in
-	pub const MaxPointsPerCourse: u32 = 1000;  // Max points per course completion
+	pub const MaxPointsPerCourse: u32 = 1000;
+	/// Kept in the same proportion as the real chain, small enough for a test to run through.
+	pub const MinCourseDuration: u64 = 100;
+	pub const MaxCourseDuration: u64 = 400;
+	pub const RatificationsRequired: u32 = 5;
+	pub const MaxHonoraryMamoste: u32 = 100;
+	pub const RewardedCourseLimit: u32 = 3;
+	pub const MinCoursesForRole: u32 = 5;
+	pub const RewsenbirThreshold: u32 = 500;
+	pub const MamosteThreshold: u32 = 1_500;
+	pub const AxaThreshold: u32 = 4_000;  // Max points per course completion
 }
 
 // --- THE DEFINITIVE SOLUTION STARTS HERE ---
@@ -108,6 +118,21 @@ impl SortedMembers<AccountId> for TestAdminProvider {
 	}
 }
 
+/// Every account is a teacher here. What the tests check is the board rule -- five distinct
+/// ratifiers, never the course owner -- not who is allowed to be on the board, which is tiki's.
+pub struct MockTikiProvider;
+impl pezpallet_tiki::TikiProvider<AccountId> for MockTikiProvider {
+	fn has_tiki(_who: &AccountId, _tiki: &pezpallet_tiki::Tiki) -> bool {
+		true
+	}
+	fn get_user_tikis(_who: &AccountId) -> pezsp_std::vec::Vec<pezpallet_tiki::Tiki> {
+		pezsp_std::vec::Vec::new()
+	}
+	fn is_citizen(_who: &AccountId) -> bool {
+		true
+	}
+}
+
 impl pezpallet_perwerde::Config for Test {
 	// We bind AdminOrigin to our own provider, which accepts only 0 as admin.
 	type AdminOrigin = EnsureSignedBy<TestAdminProvider, AccountId>;
@@ -116,9 +141,22 @@ impl pezpallet_perwerde::Config for Test {
 	type MaxCourseDescLength = MaxCourseDescLength;
 	type MaxCourseLinkLength = MaxCourseLinkLength;
 	type MaxStudentsPerCourse = MaxStudentsPerCourse;
-	type MaxCoursesPerStudent = MaxCoursesPerStudent;
 	type MaxPointsPerCourse = MaxPointsPerCourse;
 	type TrustScoreUpdater = ();
+	type EducationMinisterOrigin = EnsureRoot<AccountId>;
+	type FraudOrigin = EnsureRoot<AccountId>;
+	// The mock has no tiki pallet wired for granting; the awarding itself is tested there.
+	type EarnedRoles = ();
+	type TikiSource = MockTikiProvider;
+	type MinCourseDuration = MinCourseDuration;
+	type MaxCourseDuration = MaxCourseDuration;
+	type RatificationsRequired = RatificationsRequired;
+	type MaxHonoraryMamoste = MaxHonoraryMamoste;
+	type RewardedCourseLimit = RewardedCourseLimit;
+	type MinCoursesForRole = MinCoursesForRole;
+	type RewsenbirThreshold = RewsenbirThreshold;
+	type MamosteThreshold = MamosteThreshold;
+	type AxaThreshold = AxaThreshold;
 }
 
 // Mock setup for the Council pallet (kept because it is required in construct_runtime)

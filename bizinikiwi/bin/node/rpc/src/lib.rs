@@ -102,8 +102,9 @@ pub struct FullDeps<C, P, SC, B, AuthorityId: AuthorityIdBound> {
 	pub grandpa: GrandpaDeps<B>,
 	/// BEEFY specific dependencies.
 	pub beefy: BeefyDeps<AuthorityId>,
-	/// Shared statement store reference.
-	pub statement_store: Arc<dyn pezsp_statement_store::StatementStore>,
+	/// Shared statement store reference. The RPC needs the store's subscription side as well as
+	/// its submit/query side, which is what the trait alias in `pezsc_rpc` names.
+	pub statement_store: Arc<dyn pezsc_rpc::statement::StatementStoreApi>,
 	/// The backend used by the node.
 	pub backend: Arc<B>,
 	/// Mixnet API.
@@ -175,9 +176,14 @@ where
 		finality_provider,
 	} = grandpa;
 
+	// The statement store serves subscriptions of its own now, and needs an executor to run them
+	// on. It is the same one GRANDPA uses; the type is a shared handle, so cloning it hands out
+	// another reference to the same task spawner rather than a second one.
+	let statement_subscription_executor = subscription_executor.clone();
+
 	io.merge(System::new(client.clone(), pool).into_rpc())?;
 	// Making synchronous calls in light client freezes the browser currently,
-	// more context: https://github.com/pezkuwichain/pezkuwi-sdk/issues/53
+	// more context: https://github.com/pezkuwichain/pezkuwi-DKS/issues/53
 	// These RPCs should use an asynchronous caller instead.
 	io.merge(
 		Mmr::new(
@@ -210,7 +216,9 @@ where
 
 	io.merge(StateMigration::new(client.clone(), backend).into_rpc())?;
 	io.merge(Dev::new(client).into_rpc())?;
-	let statement_store = pezsc_rpc::statement::StatementStore::new(statement_store).into_rpc();
+	let statement_store =
+		pezsc_rpc::statement::StatementStore::new(statement_store, statement_subscription_executor)
+			.into_rpc();
 	io.merge(statement_store)?;
 
 	if let Some(mixnet_api) = mixnet_api {

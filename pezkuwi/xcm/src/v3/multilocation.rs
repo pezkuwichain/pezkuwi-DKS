@@ -397,7 +397,7 @@ impl MultiLocation {
 		target: &MultiLocation,
 		context: InteriorMultiLocation,
 	) -> Result<(), ()> {
-		// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/292 Optimize this.
+		// TODO: https://github.com/pezkuwichain/pezkuwi-DKS/issues/292 Optimize this.
 
 		// 1. Use our `context` to figure out how the `target` would address us.
 		let inverted_target = context.invert_target(target)?;

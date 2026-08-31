@@ -13,7 +13,7 @@
 // or implied. See the License for the specific language governing permissions and limitations under
 // the License.
 
-//! A set of election algorithms to be used with a bizinikiwi runtime, typically within the staking
+//! A set of election algorithms to be used with a substrate runtime, typically within the staking
 //! sub-system. Notable implementation include:
 //!
 //! - [`seq_phragmen`]: Implements the Phragmén Sequential Method. An un-ranked, relatively fast
@@ -80,7 +80,6 @@ use alloc::{collections::btree_map::BTreeMap, rc::Rc, vec, vec::Vec};
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use core::{cell::RefCell, cmp::Ordering};
 use pezsp_arithmetic::{traits::Zero, Normalizable, PerThing, Rational128, ThresholdOrd};
-use pezsp_core::RuntimeDebug;
 use scale_info::TypeInfo;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -113,7 +112,7 @@ pub use traits::{IdentifierT, PerThing128};
 #[derive(
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	Clone,
 	codec::Encode,
 	codec::Decode,
@@ -282,7 +281,7 @@ pub struct BalancingConfig {
 pub type CandidatePtr<A> = Rc<RefCell<Candidate<A>>>;
 
 /// A candidate entity for the election.
-#[derive(RuntimeDebug, Clone, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Candidate<AccountId> {
 	/// Identifier.
 	who: AccountId,
@@ -466,7 +465,7 @@ impl<AccountId: IdentifierT> Voter<AccountId> {
 }
 
 /// Final result of the election.
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 pub struct ElectionResult<AccountId, P: PerThing> {
 	/// Just winners zipped with their approval stake. Note that the approval stake is merely the
 	/// sub of their received stake and could be used for very basic sorting and approval voting.
@@ -481,9 +480,9 @@ pub struct ElectionResult<AccountId, P: PerThing> {
 ///
 /// This complements the [`ElectionResult`] and is needed to run the balancing post-processing.
 ///
-/// This, at the current version, resembles the `Exposure` defined in the Staking pezpallet, yet
-/// they do not necessarily have to be the same.
-#[derive(RuntimeDebug, Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo)]
+/// This, at the current version, resembles the `Exposure` defined in the Staking pezpallet, yet they
+/// do not necessarily have to be the same.
+#[derive(Debug, Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Support<AccountId> {
 	/// Total support.

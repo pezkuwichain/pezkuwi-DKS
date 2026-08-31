@@ -52,7 +52,7 @@ use tempfile::TempDir;
 pub struct Configuration {
 	/// Implementation name
 	pub impl_name: String,
-	/// Implementation version (see sc-cli to see an example of format)
+	/// Implementation version (see pezsc-cli to see an example of format)
 	pub impl_version: String,
 	/// Node role.
 	pub role: Role,
@@ -235,6 +235,7 @@ impl Configuration {
 			state_pruning: self.state_pruning.clone(),
 			source: self.database.clone(),
 			blocks_pruning: self.blocks_pruning,
+			pruning_filters: Default::default(),
 			metrics_registry: self.prometheus_registry().cloned(),
 		}
 	}
@@ -250,7 +251,7 @@ pub struct BasePath {
 }
 
 impl BasePath {
-	/// Create a `BasePath` instance using a temporary directory prefixed with "bizinikiwi" and use
+	/// Create a `BasePath` instance using a temporary directory prefixed with "substrate" and use
 	/// it as base path.
 	///
 	/// Note: The temporary directory will be created automatically and deleted when the program
@@ -262,7 +263,7 @@ impl BasePath {
 		match &*temp {
 			Some(p) => Ok(Self::new(p.path())),
 			None => {
-				let temp_dir = tempfile::Builder::new().prefix("bizinikiwi").tempdir()?;
+				let temp_dir = tempfile::Builder::new().prefix("substrate").tempdir()?;
 				let path = PathBuf::from(temp_dir.path());
 
 				*temp = Some(temp_dir);

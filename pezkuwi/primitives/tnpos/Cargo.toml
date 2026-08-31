@@ -1,0 +1,24 @@
+[package]
+name = "pezkuwi-tnpos-primitives"
+version = "1.0.0"
+description = "Shared types, score traits and security arithmetic for TNPoS"
+authors.workspace = true
+homepage.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+documentation.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+codec = { workspace = true, default-features = false, features = ["derive", "max-encoded-len"] }
+pezsp-io = { workspace = true, default-features = false }
+scale-info = { workspace = true, default-features = false, features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
+
+[features]
+default = ["std"]
+std = ["codec/std", "pezsp-io/std", "scale-info/std", "serde/std"]

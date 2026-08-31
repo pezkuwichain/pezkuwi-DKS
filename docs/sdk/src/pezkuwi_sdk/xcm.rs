@@ -30,7 +30,7 @@
 //!
 //! ## Implementation
 //!
-//! A ready-to-use Rust implementation lives in the [pezkuwi-sdk repo](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/pezkuwi/xcm),
+//! A ready-to-use Rust implementation lives in the [pezkuwi-sdk repo](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/pezkuwi/xcm),
 //! but will be moved to its own repo in the future.
 //!
 //! Its main components are:

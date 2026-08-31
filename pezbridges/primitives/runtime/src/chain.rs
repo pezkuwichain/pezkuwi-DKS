@@ -108,7 +108,7 @@ pub trait Chain: Send + Sync + 'static {
 	/// A type that fulfills the abstract idea of what a Bizinikiwi block number is.
 	// Constraints come from the associated Number type of `pezsp_runtime::traits::Header`
 	// See here for more info:
-	// https://docs.rs/sp-runtime/latest/sp_runtime/traits/trait.Header.html#associatedtype.Number
+	// https://docs.rs/pezsp-runtime/latest/pezsp_runtime/traits/trait.Header.html#associatedtype.Number
 	//
 	// Note that the `AsPrimitive<usize>` trait is required by the GRANDPA justification
 	// verifier, and is not usually part of a Bizinikiwi Header's Number type.
@@ -129,7 +129,7 @@ pub trait Chain: Send + Sync + 'static {
 	/// A type that fulfills the abstract idea of what a Bizinikiwi hash is.
 	// Constraints come from the associated Hash type of `pezsp_runtime::traits::Header`
 	// See here for more info:
-	// https://docs.rs/sp-runtime/latest/sp_runtime/traits/trait.Header.html#associatedtype.Hash
+	// https://docs.rs/pezsp-runtime/latest/pezsp_runtime/traits/trait.Header.html#associatedtype.Hash
 	type Hash: Parameter
 		+ Member
 		+ MaybeSerializeDeserialize
@@ -147,12 +147,12 @@ pub trait Chain: Send + Sync + 'static {
 	/// that produces hashes) is.
 	// Constraints come from the associated Hashing type of `pezsp_runtime::traits::Header`
 	// See here for more info:
-	// https://docs.rs/sp-runtime/latest/sp_runtime/traits/trait.Header.html#associatedtype.Hashing
+	// https://docs.rs/pezsp-runtime/latest/pezsp_runtime/traits/trait.Header.html#associatedtype.Hashing
 	type Hasher: HashT<Output = Self::Hash>;
 
 	/// A type that fulfills the abstract idea of what a Bizinikiwi header is.
 	// See here for more info:
-	// https://docs.rs/sp-runtime/latest/sp_runtime/traits/trait.Header.html
+	// https://docs.rs/pezsp-runtime/latest/pezsp_runtime/traits/trait.Header.html
 	type Header: Parameter
 		+ HeaderT<Number = Self::BlockNumber, Hash = Self::Hash>
 		+ HeaderIdProvider<Self::Header>
@@ -310,7 +310,7 @@ pub type TransactionEraOf<C> = crate::TransactionEra<BlockNumberOf<C>, HashOf<C>
 /// - constants that are stringified names of runtime API methods:
 ///     - `BEST_FINALIZED_<THIS_CHAIN>_HEADER_METHOD`
 ///     - `<THIS_CHAIN>_ACCEPTED_<CONSENSUS>_FINALITY_PROOFS_METHOD`
-/// The name of the chain has to be specified in snake case (e.g. `bridge_hub_pezkuwi`).
+/// The name of the chain has to be specified in snake case (e.g. `bridge_hub_polkadot`).
 #[macro_export]
 macro_rules! decl_bridge_finality_runtime_apis {
 	($chain: ident $(, $consensus: ident => $justification_type: ty)?) => {
@@ -380,7 +380,7 @@ pub mod __private {
 ///     - `From<ThisChain>InboundLaneApi<LaneIdType>`
 /// - constants that are stringified names of runtime API methods:
 ///     - `FROM_<THIS_CHAIN>_MESSAGE_DETAILS_METHOD`,
-/// The name of the chain has to be specified in snake case (e.g. `bridge_hub_pezkuwi`).
+/// The name of the chain has to be specified in snake case (e.g. `bridge_hub_polkadot`).
 #[macro_export]
 macro_rules! decl_bridge_messages_runtime_apis {
 	($chain: ident, $lane_id_type:ty) => {
@@ -438,7 +438,7 @@ macro_rules! decl_bridge_messages_runtime_apis {
 
 /// Convenience macro that declares bridge finality runtime apis, bridge messages runtime apis
 /// and related constants for a chain.
-/// The name of the chain has to be specified in snake case (e.g. `bridge_hub_pezkuwi`).
+/// The name of the chain has to be specified in snake case (e.g. `bridge_hub_polkadot`).
 #[macro_export]
 macro_rules! decl_bridge_runtime_apis {
 	($chain: ident $(, $consensus: ident, $lane_id_type:ident)?) => {

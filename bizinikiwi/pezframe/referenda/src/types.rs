@@ -26,7 +26,7 @@ use pezframe_support::{
 	Parameter,
 };
 use pezsp_arithmetic::{Rounding::*, SignedRounding::*};
-use pezsp_runtime::{FixedI64, PerThing, RuntimeDebug};
+use pezsp_runtime::{FixedI64, PerThing};
 use scale_info::{Type, TypeInfo};
 
 pub type BalanceOf<T, I = ()> =
@@ -101,15 +101,7 @@ impl<T: Ord, S: Get<u32>> InsertSorted<T> for BoundedVec<T, S> {
 }
 
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	PartialEq,
-	Eq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen,
 )]
 pub struct DecidingStatus<BlockNumber> {
 	/// When this referendum began being "decided". If confirming, then the
@@ -121,15 +113,7 @@ pub struct DecidingStatus<BlockNumber> {
 }
 
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	PartialEq,
-	Eq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen,
 )]
 pub struct Deposit<AccountId, Balance> {
 	pub who: AccountId,
@@ -140,8 +124,8 @@ pub const DEFAULT_MAX_TRACK_NAME_LEN: usize = 25;
 
 /// Helper structure to treat a `[u8; N]` array as a string.
 ///
-/// This is a temporary fix (see [#7671](https://github.com/pezkuwichain/pezkuwi-sdk/issues/271)) in
-/// order to stop `pezkuwi.js` apps to fail when trying to decode the `name` field in `TrackInfo`.
+/// This is a temporary fix (see [#7671](https://github.com/pezkuwichain/pezkuwi-DKS/pull/7671)) in
+/// order to stop `polkadot.js` apps to fail when trying to decode the `name` field in `TrackInfo`.
 #[derive(Clone, Eq, DecodeWithMemTracking, PartialEq, Debug)]
 pub struct StringLike<const N: usize>(pub [u8; N]);
 
@@ -282,15 +266,7 @@ where
 
 /// Info regarding an ongoing referendum.
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	PartialEq,
-	Eq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen,
 )]
 pub struct ReferendumStatus<
 	TrackId: Eq + PartialEq + Debug + Encode + Decode + TypeInfo + Clone,
@@ -329,15 +305,7 @@ pub struct ReferendumStatus<
 
 /// Info regarding a referendum, present or past.
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	PartialEq,
-	Eq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen,
 )]
 pub enum ReferendumInfo<
 	TrackId: Eq + PartialEq + Debug + Encode + Decode + TypeInfo + Clone,
@@ -418,7 +386,7 @@ impl<
 /// Type for describing a curve over the 2-dimensional space of axes between 0-1, as represented
 /// by `(Perbill, Perbill)`.
 #[derive(Clone, Eq, PartialEq, Encode, Decode, DecodeWithMemTracking, TypeInfo, MaxEncodedLen)]
-#[cfg_attr(not(feature = "std"), derive(RuntimeDebug))]
+#[cfg_attr(not(feature = "std"), derive(Debug))]
 pub enum Curve {
 	/// Linear curve starting at `(0, ceil)`, proceeding linearly to `(length, floor)`, then
 	/// remaining at `floor` until the end of the period.

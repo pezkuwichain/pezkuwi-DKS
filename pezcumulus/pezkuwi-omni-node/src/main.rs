@@ -14,12 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! White labeled pezkuwi omni-node.
+//! White labeled polkadot omni-node.
 //!
 //! For documentation, see [`pezkuwi_omni_node_lib`].
 
 #![warn(missing_docs)]
 #![warn(unused_extern_crates)]
+
+// Force the linker to keep the pezkuwi_jemalloc_shim crate (and its #[global_allocator]).
+#[cfg(target_os = "linux")]
+extern crate pezkuwi_jemalloc_shim;
 
 use pezkuwi_omni_node_lib::{
 	chain_spec::DiskChainSpecLoader, extra_subcommand::NoExtraSubcommand, run_with_custom_cli,
@@ -39,7 +43,7 @@ impl CliConfigT for CliConfig {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/pezkuwichain/pezkuwi-sdk/issues/new".into()
+		"https://github.com/paritytech/polkadot-sdk/issues/new".into()
 	}
 
 	fn copyright_start_year() -> u16 {

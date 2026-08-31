@@ -3,7 +3,7 @@
 // see LICENSE for license details.
 
 //! A library to **sub**mit e**xt**rinsics to a
-//! [bizinikiwi](https://github.com/pezkuwichain/bizinikiwi) node via RPC.
+//! [bizinikiwi](https://github.com/paritytech/substrate) node via RPC.
 
 use crate::Config;
 

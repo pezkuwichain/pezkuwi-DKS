@@ -173,8 +173,8 @@ pub mod pezpallet {
 	>;
 
 	/// The voting classes which have a non-zero lock requirement and the lock amounts which they
-	/// require. The actual amount locked on behalf of this pezpallet should always be the maximum
-	/// of this list.
+	/// require. The actual amount locked on behalf of this pezpallet should always be the maximum of
+	/// this list.
 	#[pezpallet::storage]
 	pub type ClassLocksFor<T: Config<I>, I: 'static = ()> = StorageMap<
 		_,

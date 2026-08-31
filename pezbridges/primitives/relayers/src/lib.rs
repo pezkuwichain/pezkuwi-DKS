@@ -283,7 +283,7 @@ mod tests {
 	fn pay_reward_from_account_for_legacy_lane_id_works() {
 		let test_data = vec![
 			// Note: these accounts are used for integration tests within
-			// `bridges_pezkuwichain_zagros.sh`
+			// `bridges_zagros_pezkuwichain.sh`
 			(
 				LegacyLaneId([0, 0, 0, 1]),
 				b"bhks",

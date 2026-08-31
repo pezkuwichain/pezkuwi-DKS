@@ -32,12 +32,7 @@ async fn full_node_catching_up() -> Result<(), anyhow::Error> {
 	let relay_client: OnlineClient<PezkuwiConfig> = relay_alice.wait_client().await?;
 
 	log::info!("Ensuring teyrchain making progress");
-	assert_para_throughput(
-		&relay_client,
-		20,
-		[(ParaId::from(PARA_ID), 2..40)].into_iter().collect(),
-	)
-	.await?;
+	assert_para_throughput(&relay_client, 20, [(ParaId::from(PARA_ID), 2..40)], []).await?;
 
 	for (name, timeout_secs) in [("dave", 250u64), ("eve", 250u64)] {
 		log::info!("Ensuring {name} reports expected block height");
@@ -82,7 +77,7 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 		.with_relaychain(|r| {
 			r.with_chain("pezkuwichain-local")
 				.with_default_command("pezkuwi")
-				.with_default_image(images.polkadot.as_str())
+				.with_default_image(images.pezkuwi())
 				.with_default_args(vec![("-lteyrchain=debug").into()])
 				.with_validator(|node| node.with_name("alice"))
 				.with_validator(|node| node.with_name("bob"))

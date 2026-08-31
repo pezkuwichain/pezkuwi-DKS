@@ -206,6 +206,21 @@ pub mod locations {
 		pub PeopleLocation: Location = Location::new(1, Teyrchain(zagros_runtime_constants::system_teyrchain::PEOPLE_ID));
 	}
 
-	/// The governance on the AssetHub.
-	pub type GovernanceLocation = AssetHubLocation;
+	parameter_types! {
+		/// Where a system chain's own administration answers to.
+		///
+		/// The relay, not the Asset Hub. Upstream points this at the Asset Hub because that is
+		/// where its governance is going; ours splits differently -- the economy to the Asset
+		/// Hub and the state to People -- and administering a bridge or a coretime broker is
+		/// not an economic question. The relay is the one address every system chain already
+		/// trusts, and a referendum of the whole register reaches its Root through
+		/// `StateRegisterAsRoot`.
+		///
+		/// It also arrived in the wrong twin. Upstream declares this for the chain our
+		/// mainnet derives from and not for the one our testnet derives from, and the
+		/// derivation dropped it here while leaving the other side without -- so the two
+		/// disagreed on who holds superuser over four system chains, and `coretime`
+		/// disagreed with its own twin.
+		pub GovernanceLocation: Location = Location::parent();
+	}
 }

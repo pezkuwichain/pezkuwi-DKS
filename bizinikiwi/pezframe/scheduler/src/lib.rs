@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *Pezkuwi*.
 //!
-//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi/pezframe/scheduler) -
+//! [![github]](https://github.com/pezkuwichain/pezkuwi-DKS/tree/master/bizinikiwi/pezframe/scheduler) -
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]: https://img.shields.io/badge/polkadot-E6007A?style=for-the-badge&logo=polkadot&logoColor=white
@@ -45,11 +45,9 @@
 //!
 //! 1. Scheduling a runtime call at a specific block.
 #![doc = docify::embed!("src/tests.rs", basic_scheduling_works)]
-//!
 //! 2. Scheduling a preimage hash of a runtime call at a specific block
 #![doc = docify::embed!("src/tests.rs", scheduling_with_preimages_works)]
 
-//!
 //! ## Pezpallet API
 //!
 //! See the [`pezpallet`] module for more information about the interfaces this pezpallet exposes,
@@ -57,8 +55,8 @@
 //!
 //! ## Warning
 //!
-//! This Pezpallet executes all scheduled runtime calls in the [`on_initialize`] hook. Do not
-//! execute any runtime calls which should not be considered mandatory.
+//! This Pezpallet executes all scheduled runtime calls in the [`on_initialize`] hook. Do not execute
+//! any runtime calls which should not be considered mandatory.
 //!
 //! Please be aware that any scheduled runtime calls executed in a future block may __fail__ or may
 //! result in __undefined behavior__ since the runtime could have upgraded between the time of
@@ -104,7 +102,7 @@ use pezframe_system::{self as system};
 use pezsp_io::hashing::blake2_256;
 use pezsp_runtime::{
 	traits::{BadOrigin, BlockNumberProvider, Dispatchable, One, Saturating, Zero},
-	BoundedVec, DispatchError, RuntimeDebug,
+	BoundedVec, Debug, DispatchError,
 };
 use scale_info::TypeInfo;
 
@@ -129,7 +127,7 @@ pub type BlockNumberFor<T> =
 #[derive(
 	Clone,
 	Copy,
-	RuntimeDebug,
+	Debug,
 	PartialEq,
 	Eq,
 	Encode,
@@ -148,7 +146,7 @@ pub struct RetryConfig<Period> {
 }
 
 #[cfg_attr(any(feature = "std", test), derive(PartialEq, Eq))]
-#[derive(Clone, RuntimeDebug, Encode, Decode)]
+#[derive(Clone, Debug, Encode, Decode)]
 struct ScheduledV1<Call, BlockNumber> {
 	maybe_id: Option<Vec<u8>>,
 	priority: schedule::Priority,
@@ -158,15 +156,7 @@ struct ScheduledV1<Call, BlockNumber> {
 
 /// Information regarding an item to be executed in the future.
 #[derive(
-	Clone,
-	RuntimeDebug,
-	PartialEq,
-	Eq,
-	Encode,
-	Decode,
-	MaxEncodedLen,
-	TypeInfo,
-	DecodeWithMemTracking,
+	Clone, Debug, PartialEq, Eq, Encode, Decode, MaxEncodedLen, TypeInfo, DecodeWithMemTracking,
 )]
 pub struct Scheduled<Name, Call, BlockNumber, PalletsOrigin, AccountId> {
 	/// The unique identity for this task, if there is one.
@@ -273,7 +263,7 @@ pub mod pezpallet {
 			+ From<Self::PalletsOrigin>
 			+ IsType<<Self as system::Config>::RuntimeOrigin>;
 
-		/// The caller origin, overarching type of all pallets origins.
+		/// The caller origin, overarching type of all pezpallets origins.
 		type PalletsOrigin: From<system::RawOrigin<Self::AccountId>>
 			+ CallerTrait<Self::AccountId>
 			+ MaxEncodedLen;
@@ -298,14 +288,14 @@ pub mod pezpallet {
 		/// This will be used when canceling a task, to ensure that the origin that tries
 		/// to cancel has greater or equal privileges as the origin that created the scheduled task.
 		///
-		/// For simplicity the [`EqualPrivilegeOnly`](pezframe_support::traits::EqualPrivilegeOnly)
-		/// can be used. This will only check if two given origins are equal.
+		/// For simplicity the [`EqualPrivilegeOnly`](pezframe_support::traits::EqualPrivilegeOnly) can
+		/// be used. This will only check if two given origins are equal.
 		type OriginPrivilegeCmp: PrivilegeCmp<Self::PalletsOrigin>;
 
 		/// The maximum number of scheduled calls in the queue for a single block.
 		///
 		/// NOTE:
-		/// + Dependent pallets' benchmarks might require a higher limit for the setting. Set a
+		/// + Dependent pezpallets' benchmarks might require a higher limit for the setting. Set a
 		/// higher limit under `runtime-benchmarks` feature.
 		#[pezpallet::constant]
 		type MaxScheduledPerBlock: Get<u32>;
@@ -331,13 +321,13 @@ pub mod pezpallet {
 		/// - an arbitrary value through a custom implementation of the trait
 		///
 		/// Suggested values:
-		/// - Solo- and Relay-chains should use `pezframe_system::Pezpallet`. There are no concerns
-		///   with this configuration.
-		/// - Teyrchains should also use `pezframe_system::Pezpallet` for the time being. The
-		///   scheduler pezpallet is not yet ready for the case that big numbers of blocks are
-		///   skipped. In an *Agile Coretime* chain with relay chain number provider configured, it
-		///   could otherwise happen that the scheduler will not be able to catch up to its agendas,
-		///   since too many relay blocks are missing if the teyrchain only produces blocks rarely.
+		/// - Solo- and Relay-chains should use `pezframe_system::Pezpallet`. There are no concerns with
+		///   this configuration.
+		/// - Teyrchains should also use `pezframe_system::Pezpallet` for the time being. The scheduler
+		///   pezpallet is not yet ready for the case that big numbers of blocks are skipped. In an
+		///   *Agile Coretime* chain with relay chain number provider configured, it could otherwise
+		///   happen that the scheduler will not be able to catch up to its agendas, since too many
+		///   relay blocks are missing if the teyrchain only produces blocks rarely.
 		///
 		/// There is currently no migration provided to "hot-swap" block number providers and it is
 		/// therefore highly advised to stay with the default (local) values. If you still want to
@@ -485,7 +475,10 @@ pub mod pezpallet {
 			Ok(())
 		}
 
-		/// Cancel an anonymously scheduled task.
+		/// Cancel a scheduled task (named or anonymous), by providing the block it is scheduled for
+		/// execution in, as well as the index of the task in that block's agenda.
+		///
+		/// In the case of a named task, it will remove it from the lookup table as well.
 		#[pezpallet::call_index(1)]
 		#[pezpallet::weight(<T as Config>::WeightInfo::cancel(T::MaxScheduledPerBlock::get()))]
 		pub fn cancel(origin: OriginFor<T>, when: BlockNumberFor<T>, index: u32) -> DispatchResult {
@@ -587,6 +580,8 @@ pub mod pezpallet {
 		/// clones of the original task. Their retry configuration will be derived from the
 		/// original task's configuration, but will have a lower value for `remaining` than the
 		/// original `total_retries`.
+		///
+		/// This call **cannot** be used to set a retry configuration for a named task.
 		#[pezpallet::call_index(6)]
 		#[pezpallet::weight(<T as Config>::WeightInfo::set_retry())]
 		pub fn set_retry(
@@ -624,6 +619,8 @@ pub mod pezpallet {
 		/// clones of the original task. Their retry configuration will be derived from the
 		/// original task's configuration, but will have a lower value for `remaining` than the
 		/// original `total_retries`.
+		///
+		/// This is the only way to set a retry configuration for a named task.
 		#[pezpallet::call_index(7)]
 		#[pezpallet::weight(<T as Config>::WeightInfo::set_retry_named())]
 		pub fn set_retry_named(
@@ -1022,11 +1019,16 @@ impl<T: Config> Pezpallet<T> {
 	fn cleanup_agenda(when: BlockNumberFor<T>) {
 		let mut agenda = Agenda::<T>::get(when);
 		match agenda.iter().rposition(|i| i.is_some()) {
+			// Note that `agenda.len() > i + 1` implies that the agenda ends on a sequence of at
+			// least one `None` item(s).
 			Some(i) if agenda.len() > i + 1 => {
 				agenda.truncate(i + 1);
 				Agenda::<T>::insert(when, agenda);
 			},
+			// This branch is taken if `agenda.len() <= i + 1 ==> agenda.len() == i + 1 <==>
+			// agenda.len() - 1 == i` i.e. the agenda's last item is `Some`.
 			Some(_) => {},
+			// All items in the agenda are `None`.
 			None => {
 				Agenda::<T>::remove(when);
 			},

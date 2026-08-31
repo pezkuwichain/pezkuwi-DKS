@@ -3,368 +3,259 @@
 // Copyright (C) Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: Apache-2.0
 
-// pezkuwi/pallets/pez-rewards/src/mock.rs (v1.0 - dev_accounts FIXED)
+//! Test runtime for `pezpallet-pez-rewards`.
+//!
+//! Deliberately small. The trust roll and the parliamentary roll reach the pallet through
+//! traits, and the money is on another chain, so none of the trust pallet, welati, tiki or an
+//! assets instance has to be stood up here. What the mocks give back is exactly what the
+//! pallet reads, and nothing else.
 
 use crate as pezpallet_pez_rewards;
 use pezframe_support::{
-	assert_ok, construct_runtime, parameter_types,
-	traits::{
-		fungibles::Mutate, AsEnsureOriginWithArg, ConstU128, ConstU32, ConstU64, OnFinalize,
-		OnInitialize,
-	},
-	PalletId,
+	construct_runtime, parameter_types,
+	traits::{ConstU32, OnFinalize, OnInitialize},
 };
-use pezframe_system::{EnsureRoot, EnsureSigned};
-use pezsp_core::H256;
+use pezframe_system::EnsureRoot;
 use pezsp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage,
 };
 
-// --- Dummy Trait Implementations for pezpallet-trust ---
-pub struct MockStakingScoreProvider;
-impl pezpallet_trust::StakingScoreProvider<H256, u64> for MockStakingScoreProvider {
-	fn get_staking_score(_who: &H256) -> (u32, u64) {
-		(0, 0)
-	}
-}
-pub struct MockReferralScoreProvider;
-impl pezpallet_trust::ReferralScoreProvider<H256> for MockReferralScoreProvider {
-	fn get_referral_score(_who: &H256) -> u32 {
-		0
-	}
-}
-pub struct MockPerwerdeScoreProvider;
-impl pezpallet_trust::PerwerdeScoreProvider<H256> for MockPerwerdeScoreProvider {
-	fn get_perwerde_score(_who: &H256) -> u32 {
-		0
-	}
-}
-pub struct MockTikiScoreProvider;
-impl pezpallet_trust::TikiScoreProvider<H256> for MockTikiScoreProvider {
-	fn get_tiki_score(_who: &H256) -> u32 {
-		0
-	}
-}
-pub struct MockCitizenshipStatusProvider;
-impl pezpallet_trust::CitizenshipStatusProvider<H256> for MockCitizenshipStatusProvider {
-	fn is_citizen(_who: &H256) -> bool {
-		false
-	}
-}
-
+pub type AccountId = u64;
+pub type BlockNumber = u64;
 type Block = pezframe_system::mocking::MockBlock<Test>;
-type Balance = u128;
-type BlockNumber = u64;
-type Weight = pezframe_support::weights::Weight;
 
-// Configure runtime
 construct_runtime!(
-	pub enum Test
-	{
+	pub enum Test {
 		System: pezframe_system,
-		Balances: pezpallet_balances,
-		Assets: pezpallet_assets,
-		IdentityKyc: pezpallet_identity_kyc,
-		Trust: pezpallet_trust,
 		PezRewards: pezpallet_pez_rewards,
 	}
 );
 
-// --- pezframe_system::Config ---
 parameter_types! {
 	pub const BlockHashCount: BlockNumber = 250;
 	pub const SS58Prefix: u8 = 42;
 }
+
 impl pezframe_system::Config for Test {
 	type BaseCallFilter = pezframe_support::traits::Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
-	type DbWeight = ();
+	type DbWeight = pezframe_support::weights::constants::RocksDbWeight;
 	type RuntimeOrigin = RuntimeOrigin;
 	type RuntimeCall = RuntimeCall;
 	type Nonce = u64;
-	type Hash = H256;
+	type Hash = pezsp_core::H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = H256;
+	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Block = Block;
 	type RuntimeEvent = RuntimeEvent;
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
-	type AccountData = pezpallet_balances::AccountData<Balance>;
+	type AccountData = ();
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
 	type SS58Prefix = SS58Prefix;
 	type OnSetCode = ();
 	type MaxConsumers = ConstU32<16>;
-	type RuntimeTask = ();
 	type SingleBlockMigrations = ();
 	type MultiBlockMigrator = ();
 	type PreInherents = ();
 	type PostInherents = ();
 	type PostTransactions = ();
+	type RuntimeTask = ();
 	type ExtensionsWeightInfo = ();
 }
 
-// --- pezpallet_balances::Config ---
-parameter_types! {
-	pub const ExistentialDeposit: Balance = 1;
-	pub const MaxLocks: u32 = 50;
-	pub const MaxReserves: u32 = 50;
-}
-impl pezpallet_balances::Config for Test {
-	type MaxLocks = MaxLocks;
-	type MaxReserves = MaxReserves;
-	type ReserveIdentifier = [u8; 8];
-	type Balance = Balance;
-	type DustRemoval = ();
-	type RuntimeEvent = RuntimeEvent;
-	type ExistentialDeposit = ExistentialDeposit;
-	type AccountStore = System;
-	type WeightInfo = ();
-	type RuntimeHoldReason = ();
-	type RuntimeFreezeReason = ();
-	type FreezeIdentifier = ();
-	type MaxFreezes = ();
-	type DoneSlashHandler = ();
+// ---------------------------------------------------------------------------
+// The trust roll
+// ---------------------------------------------------------------------------
+
+pezframe_support::parameter_types! {
+	pub TreasuryChain: xcm::latest::Location =
+		xcm::latest::Location::new(1, [xcm::latest::Junction::Teyrchain(1000)]);
 }
 
-// --- pezpallet_assets::Config ---
-parameter_types! {
-	pub const AssetDeposit: Balance = 100;
-	pub const ApprovalDeposit: Balance = 1;
-	pub const StringLimit: u32 = 50;
-	pub const MetadataDepositBase: Balance = 10;
-	pub const MetadataDepositPerByte: Balance = 1;
-	pub const AssetAccountDeposit: Balance = 1;
-}
-impl pezpallet_assets::Config for Test {
-	type RuntimeEvent = RuntimeEvent;
-	type Balance = Balance;
-	type AssetId = u32;
-	type AssetIdParameter = u32;
-	type Currency = Balances;
-	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<Self::AccountId>>;
-	type ForceOrigin = EnsureRoot<Self::AccountId>;
-	type AssetDeposit = AssetDeposit;
-	type AssetAccountDeposit = AssetAccountDeposit;
-	type MetadataDepositBase = MetadataDepositBase;
-	type MetadataDepositPerByte = MetadataDepositPerByte;
-	type ApprovalDeposit = ApprovalDeposit;
-	type StringLimit = StringLimit;
-	type Freezer = ();
-	type Extra = ();
-	type CallbackHandle = ();
-	type WeightInfo = ();
-	type RemoveItemsLimit = ConstU32<1000>;
-	type Holder = ();
-	type ReserveData = ();
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
+thread_local! {
+	pub static SCORES: core::cell::RefCell<alloc::collections::BTreeMap<AccountId, u128>> =
+		const { core::cell::RefCell::new(alloc::collections::BTreeMap::new()) };
+	/// Every block the payroll has asked the roll to be held until.
+	pub static FREEZES: core::cell::RefCell<Vec<BlockNumber>> =
+		const { core::cell::RefCell::new(Vec::new()) };
+	pub static SEATS: core::cell::RefCell<alloc::collections::BTreeMap<AccountId, (BlockNumber, bool)>> =
+		const { core::cell::RefCell::new(alloc::collections::BTreeMap::new()) };
+	pub static SENT_XCM: core::cell::RefCell<Vec<(xcm::latest::Location, xcm::latest::Xcm<()>)>> =
+		const { core::cell::RefCell::new(Vec::new()) };
+	pub static SENDING_FAILS: core::cell::RefCell<bool> = const { core::cell::RefCell::new(false) };
 }
 
-// --- pezpallet_identity_kyc::Config ---
-pub struct NoOpOnKycApproved;
-impl pezpallet_identity_kyc::types::OnKycApproved<H256> for NoOpOnKycApproved {
-	fn on_kyc_approved(_who: &H256, _referrer: &H256) {}
-}
+extern crate alloc;
 
-pub struct NoOpOnCitizenshipRevoked;
-impl pezpallet_identity_kyc::types::OnCitizenshipRevoked<H256> for NoOpOnCitizenshipRevoked {
-	fn on_citizenship_revoked(_who: &H256) {}
-}
-
-pub struct NoOpCitizenNftProvider;
-impl pezpallet_identity_kyc::types::CitizenNftProvider<H256> for NoOpCitizenNftProvider {
-	fn mint_citizen_nft(_who: &H256) -> Result<(), pezsp_runtime::DispatchError> {
-		Ok(())
+pub struct MockTrustRoll;
+impl pezpallet_pez_rewards::TrustRoll<AccountId, BlockNumber> for MockTrustRoll {
+	fn score_of(who: &AccountId) -> u128 {
+		SCORES.with(|s| s.borrow().get(who).copied().unwrap_or(0))
 	}
-
-	fn mint_citizen_nft_confirmed(_who: &H256) -> Result<(), pezsp_runtime::DispatchError> {
-		Ok(())
+	fn total_score() -> u128 {
+		SCORES.with(|s| s.borrow().values().sum())
 	}
-
-	fn burn_citizen_nft(_who: &H256) -> Result<(), pezsp_runtime::DispatchError> {
-		Ok(())
+	fn freeze_until(until: BlockNumber) {
+		FREEZES.with(|f| f.borrow_mut().push(until));
 	}
 }
 
-parameter_types! {
-	pub const KycApplicationDeposit: Balance = 100;
-	pub const MaxStringLength: u32 = 128;
-	pub const MaxCidLength: u32 = 128;
-}
-
-pub struct DefaultReferrerAccount;
-impl pezframe_support::traits::Get<H256> for DefaultReferrerAccount {
-	fn get() -> H256 {
-		H256::from_low_u64_be(100)
-	}
-}
-
-impl pezpallet_identity_kyc::Config for Test {
-	type Currency = Balances;
-	type GovernanceOrigin = EnsureRoot<H256>;
-	type WeightInfo = ();
-	type OnKycApproved = NoOpOnKycApproved;
-	type OnCitizenshipRevoked = NoOpOnCitizenshipRevoked;
-	type CitizenNftProvider = NoOpCitizenNftProvider;
-	type DefaultReferrer = DefaultReferrerAccount;
-	type KycApplicationDeposit = KycApplicationDeposit;
-	type MaxStringLength = MaxStringLength;
-	type MaxCidLength = MaxCidLength;
-}
-
-// --- pezpallet_trust::Config ---
-pub struct MockTrustScore;
-impl pezpallet_trust::TrustScoreProvider<H256> for MockTrustScore {
-	fn trust_score_of(account: &H256) -> u128 {
-		if *account == alice() {
-			100
-		} else if *account == bob() {
-			50
-		} else if *account == charlie() {
-			75
+/// Put `who` on the trust roll with `score`.
+pub fn set_trust(who: AccountId, score: u128) {
+	SCORES.with(|s| {
+		if score == 0 {
+			s.borrow_mut().remove(&who);
 		} else {
-			0
+			s.borrow_mut().insert(who, score);
 		}
-	}
-}
-parameter_types! {
-	pub const MaxBatchSize: u32 = 100;
+	});
 }
 
-impl pezpallet_trust::Config for Test {
-	type WeightInfo = ();
-	type Score = u128;
-	type ScoreMultiplierBase = ConstU128<1>;
-	type UpdateInterval = ConstU64<100>;
-	type MaxBatchSize = MaxBatchSize;
-	type StakingScoreSource = MockStakingScoreProvider;
-	type ReferralScoreSource = MockReferralScoreProvider;
-	type PerwerdeScoreSource = MockPerwerdeScoreProvider;
-	type TikiScoreSource = MockTikiScoreProvider;
-	type CitizenshipSource = MockCitizenshipStatusProvider;
+/// Every block the payroll has asked the trust roll to be held until.
+pub fn freezes() -> Vec<BlockNumber> {
+	FREEZES.with(|f| f.borrow().clone())
 }
 
-// --- pezpallet_pez_rewards::Config ---
+// ---------------------------------------------------------------------------
+// The parliamentary roll
+// ---------------------------------------------------------------------------
+
+pub struct MockParliamentRoll;
+impl pezpallet_pez_rewards::ParliamentRoll<AccountId, BlockNumber> for MockParliamentRoll {
+	fn seated_at(who: &AccountId) -> Option<BlockNumber> {
+		SEATS.with(|s| s.borrow().get(who).map(|(at, _)| *at))
+	}
+	fn holds_seat(who: &AccountId) -> bool {
+		SEATS.with(|s| s.borrow().get(who).map(|(_, holds)| *holds).unwrap_or(false))
+	}
+}
+
+/// Put `who` on the parliamentary roll, seated at `at`, holding the seat or not.
+///
+/// The two are separate on purpose: a member the Diwan has removed is still on the roll and
+/// no longer holds the seat, and that is the case the pallet has to get right.
+pub fn set_seat(who: AccountId, seated_at: BlockNumber, holds: bool) {
+	SEATS.with(|s| {
+		s.borrow_mut().insert(who, (seated_at, holds));
+	});
+}
+
+pub fn clear_seat(who: AccountId) {
+	SEATS.with(|s| {
+		s.borrow_mut().remove(&who);
+	});
+}
+
+// ---------------------------------------------------------------------------
+// The payment channel
+// ---------------------------------------------------------------------------
+
+/// Records what the pallet tried to send instead of sending it.
+///
+/// A test that only looked at storage could not tell "recorded a claim" from "recorded a
+/// claim and actually instructed the payment", and on this pallet those are the whole point:
+/// the money is on the other side of a bridge.
+pub struct RecordingXcmSender;
+
+impl xcm::latest::SendXcm for RecordingXcmSender {
+	type Ticket = (xcm::latest::Location, xcm::latest::Xcm<()>);
+
+	fn validate(
+		dest: &mut Option<xcm::latest::Location>,
+		msg: &mut Option<xcm::latest::Xcm<()>>,
+	) -> xcm::latest::SendResult<Self::Ticket> {
+		if SENDING_FAILS.with(|f| *f.borrow()) {
+			return Err(xcm::latest::SendError::Transport("mock"));
+		}
+		let pair = (dest.take().unwrap(), msg.take().unwrap());
+		Ok((pair, xcm::latest::Assets::new()))
+	}
+
+	fn deliver(ticket: Self::Ticket) -> Result<xcm::latest::XcmHash, xcm::latest::SendError> {
+		SENT_XCM.with(|q| q.borrow_mut().push(ticket));
+		Ok([0u8; 32])
+	}
+}
+
+pub fn sent_xcm() -> Vec<(xcm::latest::Location, xcm::latest::Xcm<()>)> {
+	SENT_XCM.with(|q| q.borrow().clone())
+}
+
+pub fn clear_sent_xcm() {
+	SENT_XCM.with(|q| q.borrow_mut().clear());
+}
+
+pub fn fail_sending(on: bool) {
+	SENDING_FAILS.with(|f| *f.borrow_mut() = on);
+}
+
 parameter_types! {
-	pub const IncentivePotId: PalletId = PalletId(*b"pez/rpot");
-	pub const PezAssetId: u32 = 1;
-	pub ClawbackRecipient: H256 = H256::from_low_u64_be(999);
+	pub const TreasuryPalletIndex: u8 = 70;
 }
-pub struct MockWeightInfo;
-impl crate::weights::WeightInfo for MockWeightInfo {
-	fn initialize_rewards_system() -> Weight {
-		Weight::zero()
-	}
-	fn record_trust_score() -> Weight {
-		Weight::zero()
-	}
-	fn finalize_epoch() -> Weight {
-		Weight::zero()
-	}
-	fn claim_reward() -> Weight {
-		Weight::zero()
-	}
-	fn close_epoch() -> Weight {
-		Weight::zero()
-	}
-	fn register_parliamentary_nft_owner() -> Weight {
-		Weight::zero()
-	}
-}
+
 impl pezpallet_pez_rewards::Config for Test {
-	type Assets = Assets;
-	type TrustScoreSource = MockTrustScore;
-	type IncentivePotId = IncentivePotId;
-	type PezAssetId = PezAssetId;
-	type ClawbackRecipient = ClawbackRecipient;
-	type WeightInfo = MockWeightInfo;
-	type ForceOrigin = EnsureRoot<Self::AccountId>;
-	type CollectionId = u32;
-	type ItemId = u32;
+	type WeightInfo = ();
+	type TrustSource = MockTrustRoll;
+	type ParliamentSource = MockParliamentRoll;
+	// The Asset Hub's XCM origin on the real runtimes; root stands in here.
+	type FundingOrigin = EnsureRoot<AccountId>;
+	type XcmSender = RecordingXcmSender;
+	type TreasuryChainLocation = TreasuryChain;
+	type TreasuryPalletIndex = TreasuryPalletIndex;
+	type ForceOrigin = EnsureRoot<AccountId>;
 }
 
-// --- Helper Fonksiyonlar ---
-pub fn alice() -> H256 {
-	H256::from_low_u64_be(1)
-}
-pub fn bob() -> H256 {
-	H256::from_low_u64_be(2)
-}
-pub fn charlie() -> H256 {
-	H256::from_low_u64_be(3)
-}
-pub fn dave() -> H256 {
-	H256::from_low_u64_be(4)
-}
-
-// --- new_test_ext ---
 pub fn new_test_ext() -> pezsp_io::TestExternalities {
-	let mut t = pezframe_system::GenesisConfig::<Test>::default().build_storage().unwrap();
+	// Every thread-local is per-test, but a test binary reuses threads, so they are cleared
+	// here rather than left to whatever the previous test on this thread put in them.
+	SCORES.with(|s| s.borrow_mut().clear());
+	FREEZES.with(|f| f.borrow_mut().clear());
+	SEATS.with(|s| s.borrow_mut().clear());
+	SENT_XCM.with(|q| q.borrow_mut().clear());
+	SENDING_FAILS.with(|f| *f.borrow_mut() = false);
 
-	// BUG FIX: dev_accounts field added (Option type)
-	pezpallet_balances::GenesisConfig::<Test> {
-		balances: vec![
-			(alice(), 1_000_000_000_000_000),
-			(bob(), 1_000_000_000_000_000),
-			(charlie(), 1_000_000_000_000_000),
-			(dave(), 1_000_000_000_000_000),
-			(ClawbackRecipient::get(), 1_000_000_000_000_000),
-		],
-		dev_accounts: None, // No need for dev account in test environment
-	}
-	.assimilate_storage(&mut t)
-	.unwrap();
-
-	pezpallet_assets::GenesisConfig::<Test> {
-		assets: vec![(PezAssetId::get(), alice(), true, 1)],
-		metadata: vec![(PezAssetId::get(), b"Pez Token".to_vec(), b"PEZ".to_vec(), 12)],
-		accounts: vec![(
-			PezAssetId::get(),
-			PezRewards::incentive_pot_account_id(),
-			1_000_000_000_000_000,
-		)],
-		reserves: vec![],
-		next_asset_id: Some(PezAssetId::get() + 1),
-	}
-	.assimilate_storage(&mut t)
-	.unwrap();
-
+	let t = pezframe_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 	let mut ext = pezsp_io::TestExternalities::new(t);
 	ext.execute_with(|| {
 		System::set_block_number(1);
-		assert_ok!(PezRewards::initialize_rewards_system(RuntimeOrigin::root()));
 	});
 	ext
 }
 
-// --- Block Advancement Helper ---
-pub fn advance_blocks(n: BlockNumber) {
-	let target = System::block_number() + n;
-	while System::block_number() < target {
-		if System::block_number() > 0 {
-			AllPalletsWithSystem::on_finalize(System::block_number());
-		}
+pub fn run_to_block(n: BlockNumber) {
+	while System::block_number() < n {
+		PezRewards::on_finalize(System::block_number());
+		System::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
-		AllPalletsWithSystem::on_initialize(System::block_number());
+		System::on_initialize(System::block_number());
+		PezRewards::on_initialize(System::block_number());
+		check_invariants();
 	}
 }
 
-// --- Other Helper Functions ---
-pub fn pez_balance(account: &H256) -> Balance {
-	Assets::balance(PezAssetId::get(), account)
+/// Jump the clock without running the blocks in between.
+///
+/// The epoch is 432,000 blocks; running every one of them would make the suite unusable. The
+/// hooks are run on the block that is landed on, which is the block that matters.
+pub fn jump_to_block(n: BlockNumber) {
+	assert!(n >= System::block_number(), "cannot jump backwards");
+	System::set_block_number(n);
+	PezRewards::on_initialize(n);
+	check_invariants();
 }
 
-pub fn fund_incentive_pot(amount: Balance) {
-	let pot = PezRewards::incentive_pot_account_id();
-	assert_ok!(Assets::mint_into(PezAssetId::get(), &pot, amount));
-}
-
-pub fn register_nft_owner(nft_id: u32, owner: H256) {
-	PezRewards::do_register_parliamentary_nft_owner(nft_id, owner);
+pub fn check_invariants() {
+	#[cfg(feature = "try-runtime")]
+	{
+		use pezframe_support::traits::Hooks;
+		<PezRewards as Hooks<BlockNumber>>::try_state(System::block_number())
+			.expect("try_state failed");
+	}
 }

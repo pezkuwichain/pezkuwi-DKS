@@ -23,7 +23,7 @@ use zagros_system_emulated_network::zagros_emulated_chain::zagros_runtime::Dmp;
 fn relay_to_para_sender_assertions(t: RelayToParaTest) {
 	type RuntimeEvent = <Zagros as Chain>::RuntimeEvent;
 
-	Zagros::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(350_000_000, 7000)));
+	Zagros::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(350_000_000, 7000)));
 
 	assert_expected_events!(
 		Zagros,
@@ -44,17 +44,20 @@ fn relay_to_para_sender_assertions(t: RelayToParaTest) {
 
 fn para_to_relay_sender_assertions(t: ParaToRelayTest) {
 	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
-	PenpalA::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(2_000_000_000, 140_000)));
+	PenpalA::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(
+		2_000_000_000,
+		140_000,
+	)));
 	assert_expected_events!(
 		PenpalA,
 		vec![
 			// Amount to reserve transfer is transferred to Teyrchain's Sovereign account
 			RuntimeEvent::ForeignAssets(
-				pezpallet_assets::Event::Burned { asset_id, owner, balance, .. }
+				pezpallet_assets::Event::Withdrawn { asset_id, who, amount, .. }
 			) => {
 				asset_id: *asset_id == RelayLocation::get(),
-				owner: *owner == t.sender.account_id,
-				balance: *balance == t.args.amount,
+				who: *who == t.sender.account_id,
+				amount: *amount == t.args.amount,
 			},
 		]
 	);
@@ -62,7 +65,7 @@ fn para_to_relay_sender_assertions(t: ParaToRelayTest) {
 
 pub fn system_para_to_para_sender_assertions(t: SystemParaToParaTest) {
 	type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
-	AssetHubZagros::assert_xcm_pallet_attempted_complete(None);
+	AssetHubZagros::assert_xcm_pezpallet_attempted_complete(None);
 
 	let sov_acc_of_dest = AssetHubZagros::sovereign_account_id_of(t.args.dest.clone());
 	for asset in t.args.assets.into_inner().into_iter() {
@@ -123,7 +126,7 @@ pub fn system_para_to_para_sender_assertions(t: SystemParaToParaTest) {
 			RuntimeEvent::PezkuwiXcm(pezpallet_xcm::Event::FeesPaid { .. }) => {},
 		]
 	);
-	AssetHubZagros::assert_xcm_pallet_sent();
+	AssetHubZagros::assert_xcm_pezpallet_sent();
 }
 
 pub fn system_para_to_para_receiver_assertions(t: SystemParaToParaTest) {
@@ -135,9 +138,9 @@ pub fn system_para_to_para_receiver_assertions(t: SystemParaToParaTest) {
 		assert_expected_events!(
 			PenpalA,
 			vec![
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == expected_id,
-					owner: *owner == t.receiver.account_id,
+					who: *who == t.receiver.account_id,
 				},
 			]
 		);
@@ -163,9 +166,9 @@ pub fn system_para_to_penpal_receiver_assertions(t: SystemParaToParaTest) {
 		assert_expected_events!(
 			PenpalA,
 			vec![
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == relative_id,
-					owner: *owner == t.receiver.account_id,
+					who: *who == t.receiver.account_id,
 				},
 			]
 		);
@@ -174,7 +177,7 @@ pub fn system_para_to_penpal_receiver_assertions(t: SystemParaToParaTest) {
 
 pub fn para_to_system_para_sender_assertions(t: ParaToSystemParaTest) {
 	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
-	PenpalA::assert_xcm_pallet_attempted_complete(None);
+	PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 	for asset in t.args.assets.into_inner().into_iter() {
 		let expected_id = asset.id.0;
 		let asset_amount = if let Fungible(a) = asset.fun { Some(a) } else { None }.unwrap();
@@ -182,11 +185,11 @@ pub fn para_to_system_para_sender_assertions(t: ParaToSystemParaTest) {
 			PenpalA,
 			vec![
 				RuntimeEvent::ForeignAssets(
-					pezpallet_assets::Event::Burned { asset_id, owner, balance }
+					pezpallet_assets::Event::Withdrawn { asset_id, who, amount }
 				) => {
 					asset_id: *asset_id == expected_id,
-					owner: *owner == t.sender.account_id,
-					balance: *balance == asset_amount,
+					who: *who == t.sender.account_id,
+					amount: *amount == asset_amount,
 				},
 			]
 		);
@@ -209,12 +212,12 @@ fn para_to_relay_receiver_assertions(t: ParaToRelayTest) {
 		vec![
 			// Amount to reserve transfer is withdrawn from Teyrchain's Sovereign account
 			RuntimeEvent::Balances(
-				pezpallet_balances::Event::Burned { who, amount }
+				pezpallet_balances::Event::Withdraw { who, amount }
 			) => {
 				who: *who == sov_penpal_on_relay.clone().into(),
 				amount: *amount == t.args.amount,
 			},
-			RuntimeEvent::Balances(pezpallet_balances::Event::Minted { .. }) => {},
+			RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { .. }) => {},
 			RuntimeEvent::MessageQueue(
 				pezpallet_message_queue::Event::Processed { success: true, .. }
 			) => {},
@@ -239,12 +242,12 @@ pub fn para_to_system_para_receiver_assertions(t: ParaToSystemParaTest) {
 				vec![
 					// Amount of native is withdrawn from Teyrchain's Sovereign account
 					RuntimeEvent::Balances(
-						pezpallet_balances::Event::Burned { who, amount }
+						pezpallet_balances::Event::Withdraw { who, amount }
 					) => {
 						who: *who == sov_acc_of_penpal.clone().into(),
 						amount: *amount == asset_amount,
 					},
-					RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+					RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, .. }) => {
 						who: *who == t.receiver.account_id,
 					},
 				]
@@ -256,17 +259,17 @@ pub fn para_to_system_para_receiver_assertions(t: ParaToSystemParaTest) {
 					// Amount of foreign asset is transferred from Teyrchain's Sovereign account
 					// to Receiver's account
 					RuntimeEvent::ForeignAssets(
-						pezpallet_assets::Event::Burned { asset_id, owner, balance },
+						pezpallet_assets::Event::Withdrawn { asset_id, who, amount },
 					) => {
 						asset_id: *asset_id == expected_id,
-						owner: *owner == sov_acc_of_penpal,
-						balance: *balance == asset_amount,
+						who: *who == sov_acc_of_penpal,
+						amount: *amount == asset_amount,
 					},
 					RuntimeEvent::ForeignAssets(
-						pezpallet_assets::Event::Issued { asset_id, owner, amount },
+						pezpallet_assets::Event::Deposited { asset_id, who, amount },
 					) => {
 						asset_id: *asset_id == expected_id,
-						owner: *owner == t.receiver.account_id,
+						who: *who == t.receiver.account_id,
 						amount: *amount == asset_amount,
 					},
 				]
@@ -286,7 +289,7 @@ pub fn para_to_system_para_receiver_assertions(t: ParaToSystemParaTest) {
 fn system_para_to_para_assets_sender_assertions(t: SystemParaToParaTest) {
 	type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;
 	// Measured against this runtime's weights.
-	AssetHubZagros::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(
+	AssetHubZagros::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(
 		1_155_268_000,
 		12_416,
 	)));
@@ -305,7 +308,7 @@ fn system_para_to_para_assets_sender_assertions(t: SystemParaToParaTest) {
 				amount: *amount == t.args.amount,
 			},
 			// Native asset to pay for fees is transferred to Teyrchain's Sovereign account
-			RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+			RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, .. }) => {
 				who: *who == TreasuryAccount::get(),
 			},
 			// Delivery fees are paid
@@ -320,24 +323,27 @@ fn para_to_system_para_assets_sender_assertions(t: ParaToSystemParaTest) {
 	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
 	let system_para_native_asset_location = RelayLocation::get();
 	let reservable_asset_location = PenpalLocalReservableFromAssetHub::get();
-	PenpalA::assert_xcm_pallet_attempted_complete(Some(Weight::from_parts(2_000_000_000, 140000)));
+	PenpalA::assert_xcm_pezpallet_attempted_complete(Some(Weight::from_parts(
+		2_000_000_000,
+		140000,
+	)));
 	assert_expected_events!(
 		PenpalA,
 		vec![
 			// Fees amount to reserve transfer is burned from Teyrchains's sender account
 			RuntimeEvent::ForeignAssets(
-				pezpallet_assets::Event::Burned { asset_id, owner, .. }
+				pezpallet_assets::Event::Withdrawn { asset_id, who, .. }
 			) => {
 				asset_id: *asset_id == system_para_native_asset_location,
-				owner: *owner == t.sender.account_id,
+				who: *who == t.sender.account_id,
 			},
 			// Amount to reserve transfer is burned from Teyrchains's sender account
 			RuntimeEvent::ForeignAssets(
-				pezpallet_assets::Event::Burned { asset_id, owner, balance }
+				pezpallet_assets::Event::Withdrawn { asset_id, who, amount }
 			) => {
 				asset_id: *asset_id == reservable_asset_location,
-				owner: *owner == t.sender.account_id,
-				balance: *balance == t.args.amount,
+				who: *who == t.sender.account_id,
+				amount: *amount == t.args.amount,
 			},
 			// Delivery fees are paid
 			RuntimeEvent::PezkuwiXcm(
@@ -354,13 +360,13 @@ fn system_para_to_para_assets_receiver_assertions(t: SystemParaToParaTest) {
 	assert_expected_events!(
 		PenpalA,
 		vec![
-			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 				asset_id: *asset_id == RelayLocation::get(),
-				owner: *owner == t.receiver.account_id,
+				who: *who == t.receiver.account_id,
 			},
-			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, amount }) => {
+			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, amount }) => {
 				asset_id: *asset_id == system_para_asset_location,
-				owner: *owner == t.receiver.account_id,
+				who: *who == t.receiver.account_id,
 				amount: *amount == t.args.amount,
 			},
 		]
@@ -377,23 +383,23 @@ fn para_to_system_para_assets_receiver_assertions(t: ParaToSystemParaTest) {
 		AssetHubZagros,
 		vec![
 			// Amount to reserve transfer is burned from Teyrchain's Sovereign account
-			RuntimeEvent::Assets(pezpallet_assets::Event::Burned { asset_id, owner, balance }) => {
+			RuntimeEvent::Assets(pezpallet_assets::Event::Withdrawn { asset_id, who, amount }) => {
 				asset_id: *asset_id == RESERVABLE_ASSET_ID,
-				owner: *owner == sov_penpal_on_ahr,
-				balance: *balance == t.args.amount,
+				who: *who == sov_penpal_on_ahr,
+				amount: *amount == t.args.amount,
 			},
 			// Fee amount is burned from Teyrchain's Sovereign account
-			RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, .. }) => {
+			RuntimeEvent::Balances(pezpallet_balances::Event::Withdraw { who, .. }) => {
 				who: *who == sov_penpal_on_ahr,
 			},
 			// Amount to reserve transfer is issued for beneficiary
-			RuntimeEvent::Assets(pezpallet_assets::Event::Issued { asset_id, owner, amount }) => {
+			RuntimeEvent::Assets(pezpallet_assets::Event::Deposited { asset_id, who, amount }) => {
 				asset_id: *asset_id == RESERVABLE_ASSET_ID,
-				owner: *owner == t.receiver.account_id,
+				who: *who == t.receiver.account_id,
 				amount: *amount == t.args.amount,
 			},
 			// Remaining fee amount is minted for for beneficiary
-			RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+			RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, .. }) => {
 				who: *who == t.receiver.account_id,
 			},
 		]
@@ -406,9 +412,9 @@ fn relay_to_para_assets_receiver_assertions(t: RelayToParaTest) {
 	assert_expected_events!(
 		PenpalA,
 		vec![
-			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+			RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 				asset_id: *asset_id == RelayLocation::get(),
-				owner: *owner == t.receiver.account_id,
+				who: *who == t.receiver.account_id,
 			},
 			RuntimeEvent::MessageQueue(
 				pezpallet_message_queue::Event::Processed { success: true, .. }
@@ -419,7 +425,7 @@ fn relay_to_para_assets_receiver_assertions(t: RelayToParaTest) {
 
 pub fn para_to_para_through_hop_sender_assertions<Hop: Clone>(mut t: Test<PenpalA, PenpalB, Hop>) {
 	type RuntimeEvent = <PenpalA as Chain>::RuntimeEvent;
-	PenpalA::assert_xcm_pallet_attempted_complete(None);
+	PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 
 	let msg_sent_id = find_xcm_sent_message_id::<PenpalA>().expect("Missing Sent Event");
 	t.insert_unique_topic_id("PenpalA", msg_sent_id.into());
@@ -432,11 +438,11 @@ pub fn para_to_para_through_hop_sender_assertions<Hop: Clone>(mut t: Test<Penpal
 			vec![
 				// Amount to reserve transfer is transferred to Teyrchain's Sovereign account
 				RuntimeEvent::ForeignAssets(
-					pezpallet_assets::Event::Burned { asset_id, owner, balance },
+					pezpallet_assets::Event::Withdrawn { asset_id, who, amount: withdrawn },
 				) => {
 					asset_id: *asset_id == expected_id,
-					owner: *owner == t.sender.account_id,
-					balance: *balance == amount,
+					who: *who == t.sender.account_id,
+					amount: *withdrawn == amount,
 				},
 			]
 		);
@@ -455,14 +461,14 @@ fn para_to_para_relay_hop_assertions(t: ParaToParaThroughRelayTest) {
 		vec![
 			// Withdrawn from sender teyrchain SA
 			RuntimeEvent::Balances(
-				pezpallet_balances::Event::Burned { who, amount }
+				pezpallet_balances::Event::Withdraw { who, amount }
 			) => {
 				who: *who == sov_penpal_a_on_zagros,
 				amount: *amount == t.args.amount,
 			},
 			// Deposited to receiver teyrchain SA
 			RuntimeEvent::Balances(
-				pezpallet_balances::Event::Minted { who, .. }
+				pezpallet_balances::Event::Deposit { who, .. }
 			) => {
 				who: *who == sov_penpal_b_on_zagros,
 			},
@@ -486,10 +492,10 @@ fn para_to_para_asset_hub_hop_assertions(t: ParaToParaThroughAHTest) {
 		vec![
 			// Withdrawn from sender teyrchain SA
 			RuntimeEvent::Assets(
-				pezpallet_assets::Event::Burned { owner, balance, .. }
+				pezpallet_assets::Event::Withdrawn { who, amount, .. }
 			) => {
-				owner: *owner == sov_penpal_a_on_ah,
-				balance: *balance == asset_amount,
+				who: *who == sov_penpal_a_on_ah,
+				amount: *amount == asset_amount,
 			},
 			RuntimeEvent::MessageQueue(
 				pezpallet_message_queue::Event::Processed { success: true, .. }
@@ -513,9 +519,9 @@ pub fn para_to_para_through_hop_receiver_assertions<Hop: Clone>(
 		assert_expected_events!(
 			PenpalB,
 			vec![
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == expected_id,
-					owner: *owner == t.receiver.account_id,
+					who: *who == t.receiver.account_id,
 				},
 			]
 		);
@@ -626,12 +632,13 @@ fn para_to_para_through_relay_limited_reserve_transfer_assets(
 fn para_to_para_through_asset_hub_limited_reserve_transfer_assets(
 	t: ParaToParaThroughAHTest,
 ) -> DispatchResult {
+	let fee_asset_index = t.args.fee_asset_index();
 	<PenpalA as PenpalAPallet>::PezkuwiXcm::limited_reserve_transfer_assets(
 		t.signed_origin,
 		bx!(t.args.dest.into()),
 		bx!(t.args.beneficiary.into()),
 		bx!(t.args.assets.into()),
-		bx!(t.args.fee_asset_id.into()),
+		fee_asset_index,
 		t.args.weight_limit,
 	)
 }
@@ -650,12 +657,13 @@ fn reserve_transfer_native_asset_from_relay_to_asset_hub_fails() {
 
 	// this should fail
 	Zagros::execute_with(|| {
+		let fee_asset_index = fee_asset_index(&assets, &fee_asset_id);
 		let result = <Zagros as ZagrosPallet>::XcmPallet::limited_reserve_transfer_assets(
 			signed_origin,
 			bx!(destination.into()),
 			bx!(beneficiary.into()),
 			bx!(assets.into()),
-			bx!(fee_asset_id.into()),
+			fee_asset_index,
 			WeightLimit::Unlimited,
 		);
 		assert_err!(
@@ -686,13 +694,14 @@ fn reserve_transfer_native_asset_from_asset_hub_to_relay_fails() {
 
 	// this should fail
 	AssetHubZagros::execute_with(|| {
+		let fee_asset_index = fee_asset_index(&assets, &fee_asset_id);
 		let result =
 			<AssetHubZagros as AssetHubZagrosPallet>::PezkuwiXcm::limited_reserve_transfer_assets(
 				signed_origin,
 				bx!(destination.into()),
 				bx!(beneficiary.into()),
 				bx!(assets.into()),
-				bx!(fee_asset_id.into()),
+				fee_asset_index,
 				WeightLimit::Unlimited,
 			);
 		assert_err!(
@@ -814,7 +823,7 @@ fn reserve_transfer_native_asset_from_para_to_relay() {
 	let receiver_balance_after = test.receiver.balance;
 
 	// Sender's balance is reduced by amount sent plus delivery fees
-	assert!(sender_assets_after < sender_assets_before - amount_to_send);
+	assert_eq!(sender_assets_after, sender_assets_before - amount_to_send);
 	// Receiver's asset balance is increased
 	assert!(receiver_balance_after > receiver_balance_before);
 	// Receiver's asset balance increased by `amount_to_send - delivery_fees - bought_execution`;
@@ -941,7 +950,7 @@ fn reserve_transfer_native_asset_from_para_to_asset_hub() {
 	let receiver_balance_after = test.receiver.balance;
 
 	// Sender's balance is reduced by amount sent plus delivery fees
-	assert!(sender_assets_after < sender_assets_before - amount_to_send);
+	assert_eq!(sender_assets_after, sender_assets_before - amount_to_send);
 	// Receiver's balance is increased
 	assert!(receiver_balance_after > receiver_balance_before);
 	// Receiver's balance increased by `amount_to_send - delivery_fees - bought_execution`;
@@ -1055,7 +1064,7 @@ fn reserve_transfer_multiple_assets_from_asset_hub_to_para() {
 
 /// Reserve Transfers of a random asset and native asset from Teyrchain to Asset Hub should work
 /// Receiver is empty account to show deposit works as long as transfer includes enough HEZ for ED.
-/// Once we have https://github.com/pezkuwichain/pezkuwi-sdk/issues/283,
+/// Once we have https://github.com/pezkuwichain/pezkuwi-DKS/issues/283,
 /// we should do equivalent test with USDT instead of HEZ.
 #[test]
 fn reserve_transfer_multiple_assets_from_para_to_asset_hub() {
@@ -1235,7 +1244,7 @@ fn reserve_transfer_native_asset_from_para_to_para_through_relay() {
 		foreign_balance_on!(PenpalB, relay_native_asset_location, &receiver);
 
 	// Sender's balance is reduced by amount sent plus delivery fees.
-	assert!(sender_assets_after < sender_assets_before - amount_to_send);
+	assert_eq!(sender_assets_after, sender_assets_before - amount_to_send);
 	// Receiver's balance is increased by `amount_to_send` minus delivery fees.
 	assert!(receiver_assets_after > receiver_assets_before);
 	assert!(receiver_assets_after < receiver_assets_before + amount_to_send);
@@ -1272,7 +1281,12 @@ fn reserve_transfer_usdt_from_asset_hub_to_para() {
 	// Setup the pool between `relay_asset_penpal_pov` and `usdt_from_asset_hub` on PenpalA.
 	// So we can swap the custom asset that comes from AssetHubZagros for native asset to pay for
 	// fees.
-	create_pool_with_wnd_on!(PenpalA, PenpalUsdtFromAssetHub::get(), true, PenpalAssetOwner::get());
+	create_foreign_pool_with_native_on!(
+		PenpalA,
+		ForeignAssets,
+		PenpalUsdtFromAssetHub::get(),
+		PenpalAssetOwner::get()
+	);
 
 	let assets: Assets = vec![(
 		[PalletInstance(ASSETS_PALLET_ID), GeneralIndex(usdt_id.into())],
@@ -1324,7 +1338,7 @@ fn reserve_transfer_usdt_from_asset_hub_to_para() {
 	});
 	let receiver_after_balance = foreign_balance_on!(PenpalA, usdt_from_asset_hub, &receiver);
 
-	// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/303): When we allow payment with different assets locally, this should be the same, since
+	// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/303): When we allow payment with different assets locally, this should be the same, since
 	// they aren't used for fees.
 	assert!(sender_after_native_balance < sender_initial_native_balance);
 	// Sender account's balance decreases.
@@ -1379,7 +1393,12 @@ fn reserve_transfer_usdt_from_para_to_para_through_asset_hub() {
 	);
 	create_pool_with_wnd_on!(AssetHubZagros, usdt, false, AssetHubZagrosSender::get());
 	// We also need a pool between ZGR and USDT on PenpalB.
-	create_pool_with_wnd_on!(PenpalB, PenpalUsdtFromAssetHub::get(), true, PenpalAssetOwner::get());
+	create_foreign_pool_with_native_on!(
+		PenpalB,
+		ForeignAssets,
+		PenpalUsdtFromAssetHub::get(),
+		PenpalAssetOwner::get()
+	);
 
 	let usdt_from_asset_hub = PenpalUsdtFromAssetHub::get();
 	PenpalA::execute_with(|| {
@@ -1400,7 +1419,7 @@ fn reserve_transfer_usdt_from_para_to_para_through_asset_hub() {
 	let fee_asset_id: AssetId = usdt_from_asset_hub.clone().into();
 
 	// Give the sender enough Relay tokens to pay for local delivery fees.
-	// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/303): When we support local delivery fee payment in other assets, we don't need this.
+	// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/303): When we support local delivery fee payment in other assets, we don't need this.
 	PenpalA::mint_foreign_asset(
 		<PenpalA as Chain>::RuntimeOrigin::signed(PenpalAssetOwner::get()),
 		RelayLocation::get(),

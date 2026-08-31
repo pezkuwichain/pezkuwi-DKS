@@ -43,12 +43,12 @@ std = [
 	"pezframe-benchmarking?/std",
 	"pezframe-support/std",
 	"pezframe-system/std",
+	"pezpallet-transaction-payment/std",
 	"pezsp-core/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
 	"scale-info/std",
 ]
-# Enable support for setting the existential deposit to zero.
 insecure_zero_ed = []
 runtime-benchmarks = [
 	"pezframe-benchmarking/runtime-benchmarks",

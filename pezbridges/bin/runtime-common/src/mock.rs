@@ -15,10 +15,8 @@
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
 //! A mock runtime for testing different stuff in the crate.
-//! Mock types are used by macros but clippy doesn't see the usage.
 
 #![cfg(test)]
-#![allow(dead_code)]
 
 use codec::Encode;
 use pezbp_header_pez_chain::ChainWithGrandpa;
@@ -51,6 +49,7 @@ pub type ThisChainHash = H256;
 /// Hasher at `ThisChain`.
 pub type ThisChainHasher = BlakeTwo256;
 /// Runtime call at `ThisChain`.
+#[allow(dead_code)]
 pub type ThisChainRuntimeCall = RuntimeCall;
 /// Header of `ThisChain`.
 pub type ThisChainHeader = pezsp_runtime::generic::Header<ThisChainBlockNumber, ThisChainHasher>;

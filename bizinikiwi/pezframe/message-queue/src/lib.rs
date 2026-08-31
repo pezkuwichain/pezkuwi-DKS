@@ -41,8 +41,8 @@
 //! queues which hold at least one unprocessed message and are thereby *ready* to be serviced. The
 //! `ServiceHead` indicates which *ready* queue is the next to be serviced.
 //! The pezpallet implements [`pezframe_support::traits::EnqueueMessage`],
-//! [`pezframe_support::traits::ServiceQueues`] and has [`pezframe_support::traits::ProcessMessage`]
-//! and [`OnQueueChanged`] hooks to communicate with the outside world.
+//! [`pezframe_support::traits::ServiceQueues`] and has [`pezframe_support::traits::ProcessMessage`] and
+//! [`OnQueueChanged`] hooks to communicate with the outside world.
 //!
 //! NOTE: The storage items are not linked since they are not public.
 //!
@@ -52,32 +52,31 @@
 //! logic of how to handle the message since they are blobs. Storage changes are not rolled back on
 //! error.
 //!
-//! A failed message can be temporarily or permanently overweight. The pezpallet will perpetually
-//! try to execute a temporarily overweight message. A permanently overweight message is skipped and
+//! A failed message can be temporarily or permanently overweight. The pezpallet will perpetually try
+//! to execute a temporarily overweight message. A permanently overweight message is skipped and
 //! must be executed manually.
 //!
 //! **Reentrancy**
 //!
 //! This pezpallet has two entry points for executing (possibly recursive) logic;
-//! [`Pezpallet::service_queues`] and [`Pezpallet::execute_overweight`]. Both entry points are
-//! guarded by the same mutex to error on reentrancy. The only functions that are explicitly
-//! **allowed** to be called by a message processor are: [`Pezpallet::enqueue_message`] and
+//! [`Pezpallet::service_queues`] and [`Pezpallet::execute_overweight`]. Both entry points are guarded by
+//! the same mutex to error on reentrancy. The only functions that are explicitly **allowed** to be
+//! called by a message processor are: [`Pezpallet::enqueue_message`] and
 //! [`Pezpallet::enqueue_messages`]. All other functions are forbidden and error with
 //! [`Error::RecursiveDisallowed`].
 //!
 //! **Pagination**
 //!
 //! Queues are stored in a *paged* manner by splitting their messages into [`Page`]s. This results
-//! in a lot of complexity when implementing the pezpallet but is completely necessary to achieve
-//! the second #[Design Goal](design-goals). The problem comes from the fact a message can
-//! *possibly* be quite large, lets say 64KiB. This then results in a *MEL* of at least 64KiB which
-//! results in a PoV of at least 64KiB. Now we have the assumption that most messages are much
-//! shorter than their maximum allowed length. This would result in most messages having a
-//! pre-dispatch PoV size which is much larger than their post-dispatch PoV size, possibly by a
-//! factor of thousand. Disregarding this observation would cripple the processing power of the
-//! pezpallet since it cannot straighten out this discrepancy at runtime. Conceptually, the
-//! implementation is packing as many messages into a single bounded vec, as actually fit into the
-//! bounds. This reduces the wasted PoV.
+//! in a lot of complexity when implementing the pezpallet but is completely necessary to achieve the
+//! second #[Design Goal](design-goals). The problem comes from the fact a message can *possibly* be
+//! quite large, lets say 64KiB. This then results in a *MEL* of at least 64KiB which results in a
+//! PoV of at least 64KiB. Now we have the assumption that most messages are much shorter than their
+//! maximum allowed length. This would result in most messages having a pre-dispatch PoV size which
+//! is much larger than their post-dispatch PoV size, possibly by a factor of thousand. Disregarding
+//! this observation would cripple the processing power of the pezpallet since it cannot straighten out
+//! this discrepancy at runtime. Conceptually, the implementation is packing as many messages into a
+//! single bounded vec, as actually fit into the bounds. This reduces the wasted PoV.
 //!
 //! **Page Data Layout**
 //!
@@ -89,13 +88,13 @@
 //!
 //! **Weight Metering**
 //!
-//! The pezpallet utilizes the [`pezsp_weights::WeightMeter`] to manually track its consumption to
-//! always stay within the required limit. This implies that the message processor hook can
-//! calculate the weight of a message without executing it. This restricts the possible use-cases
-//! but is necessary since the pezpallet runs in `on_initialize` which has a hard weight limit. The
-//! weight meter is used in a way that `can_accrue` and `check_accrue` are always used to check the
-//! remaining weight of an operation before committing to it. The process of exiting due to
-//! insufficient weight is termed "bailing".
+//! The pezpallet utilizes the [`pezsp_weights::WeightMeter`] to manually track its consumption to always
+//! stay within the required limit. This implies that the message processor hook can calculate the
+//! weight of a message without executing it. This restricts the possible use-cases but is necessary
+//! since the pezpallet runs in `on_initialize` which has a hard weight limit. The weight meter is used
+//! in a way that `can_accrue` and `check_accrue` are always used to check the remaining weight of
+//! an operation before committing to it. The process of exiting due to insufficient weight is
+//! termed "bailing".
 //!
 //! # Scenario: Message enqueuing
 //!
@@ -118,12 +117,12 @@
 //! next *ready* queue. It then starts to service this queue by servicing as many pages of it as
 //! possible. Servicing a page means to execute as many message of it as possible. Each executed
 //! message is marked as *processed* if the [`Config::MessageProcessor`] return Ok. An event
-//! [`Event::Processed`] is emitted afterwards. It is possible that the weight limit of the
-//! pezpallet will never allow a specific message to be executed. In this case it remains as
-//! unprocessed and is skipped. This process stops if either there are no more messages in the queue
-//! or the remaining weight became insufficient to service this queue. If there is enough weight it
-//! tries to advance to the next *ready* queue and service it. This continues until there are no
-//! more queues on which it can make progress or not enough weight to check that.
+//! [`Event::Processed`] is emitted afterwards. It is possible that the weight limit of the pezpallet
+//! will never allow a specific message to be executed. In this case it remains as unprocessed and
+//! is skipped. This process stops if either there are no more messages in the queue or the
+//! remaining weight became insufficient to service this queue. If there is enough weight it tries
+//! to advance to the next *ready* queue and service it. This continues until there are no more
+//! queues on which it can make progress or not enough weight to check that.
 //!
 //! # Scenario: Overweight execution
 //!
@@ -132,11 +131,11 @@
 //! [`pezframe_support::traits::ServiceQueues::service_queues`].
 //!
 //! Manual intervention in the form of
-//! [`pezframe_support::traits::ServiceQueues::execute_overweight`] is necessary. Overweight
-//! messages emit an [`Event::OverweightEnqueued`] event which can be used to extract the arguments
-//! for manual execution. This only works on permanently overweight messages. There is no guarantee
-//! that this will work since the message could be part of a stale page and be reaped before
-//! execution commences.
+//! [`pezframe_support::traits::ServiceQueues::execute_overweight`] is necessary. Overweight messages
+//! emit an [`Event::OverweightEnqueued`] event which can be used to extract the arguments for
+//! manual execution. This only works on permanently overweight messages. There is no guarantee that
+//! this will work since the message could be part of a stale page and be reaped before execution
+//! commences.
 //!
 //! # Terminology
 //!
@@ -154,8 +153,8 @@
 //!   queues via their `ready_neighbours` fields. A `Queue` is *ready* if it contains at least one
 //!   `Message` which can be processed. Can be empty.
 //! - `ServiceHead`: A pointer into the `ReadyRing` to the next `Queue` to be serviced.
-//! - (`un`)`processed`: A message is marked as *processed* after it was executed by the pezpallet.
-//!   A message which was either: not yet executed or could not be executed remains as `unprocessed`
+//! - (`un`)`processed`: A message is marked as *processed* after it was executed by the pezpallet. A
+//!   message which was either: not yet executed or could not be executed remains as `unprocessed`
 //!   which is the default state for a message after being enqueued.
 //! - `knitting`/`unknitting`: The means of adding or removing a `Queue` from the `ReadyRing`.
 //! - `MEL`: The Max Encoded Length of a type, see [`codec::MaxEncodedLen`].
@@ -247,9 +246,7 @@ pub struct ItemHeader<Size> {
 impl<Size: ConstEncodedLen> ConstEncodedLen for ItemHeader<Size> {} // marker
 
 /// A page of messages. Pages always contain at least one item.
-#[derive(
-	CloneNoBound, Encode, Decode, RuntimeDebugNoBound, DefaultNoBound, TypeInfo, MaxEncodedLen,
-)]
+#[derive(CloneNoBound, Encode, Decode, DebugNoBound, DefaultNoBound, TypeInfo, MaxEncodedLen)]
 #[scale_info(skip_type_params(HeapSize))]
 #[codec(mel_bound(Size: MaxEncodedLen))]
 pub struct Page<Size: Into<u32> + Debug + Clone + Default, HeapSize: Get<Size>> {
@@ -424,7 +421,7 @@ where
 }
 
 /// A single link in the double-linked Ready Ring list.
-#[derive(Clone, Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug, PartialEq)]
+#[derive(Clone, Encode, Decode, MaxEncodedLen, TypeInfo, Debug, PartialEq)]
 pub struct Neighbours<MessageOrigin> {
 	/// The previous queue.
 	prev: MessageOrigin,
@@ -437,7 +434,7 @@ pub struct Neighbours<MessageOrigin> {
 /// Each queue has exactly one book which holds all of its pages. All pages of a book combined
 /// contain all of the messages of its queue; hence the name *Book*.
 /// Books can be chained together in a double-linked fashion through their `ready_neighbours` field.
-#[derive(Clone, Encode, Decode, MaxEncodedLen, TypeInfo, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, MaxEncodedLen, TypeInfo, Debug)]
 pub struct BookState<MessageOrigin> {
 	/// The first page with some items to be processed in it. If this is `>= end`, then there are
 	/// no pages with items to be processing in them.
@@ -816,8 +813,8 @@ enum MessageExecutionStatus {
 	StackLimitReached,
 }
 
-/// The context to pass to [`Pezpallet::service_queues_impl`] through on_idle and on_initialize
-/// hooks We don't want to throw the defensive message if called from on_idle hook
+/// The context to pass to [`Pezpallet::service_queues_impl`] through on_idle and on_initialize hooks
+/// We don't want to throw the defensive message if called from on_idle hook
 #[derive(PartialEq)]
 enum ServiceQueuesContext {
 	/// Context of on_idle hook.
@@ -1438,7 +1435,7 @@ impl<T: Config> Pezpallet<T> {
 			ensure!(fp.ready_pages <= fp.pages, "There cannot be more ready than total pages");
 		}
 
-		//loop around this origin
+		// loop around this origin
 		let Some(starting_origin) = ServiceHead::<T>::get() else { return Ok(()) };
 
 		while let Some(head) = Self::bump_service_head(&mut WeightMeter::new()) {

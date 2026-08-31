@@ -23,9 +23,9 @@
 
 //! # Default Config Pezpallet Example
 //!
-//! A simple example of a FRAME pezpallet that utilizes [`pezframe_support::derive_impl`] to
-//! demonstrate the simpler way to implement `Config` trait of pallets. This example only showcases
-//! this in a `mock.rs` environment, but the same applies to a real runtime as well.
+//! A simple example of a FRAME pezpallet that utilizes [`pezframe_support::derive_impl`] to demonstrate
+//! the simpler way to implement `Config` trait of pezpallets. This example only showcases this in a
+//! `mock.rs` environment, but the same applies to a real runtime as well.
 //!
 //! See the source code of [`tests`] for a real examples.
 //!
@@ -63,8 +63,8 @@ pub mod pezpallet {
 		/// in our tests below.
 		type OverwrittenDefaultValue: Get<u32>;
 
-		/// An input parameter that relies on `<Self as pezframe_system::Config>::AccountId`. This
-		/// can too have a default, as long as it is present in `pezframe_system::DefaultConfig`.
+		/// An input parameter that relies on `<Self as pezframe_system::Config>::AccountId`. This can
+		/// too have a default, as long as it is present in `pezframe_system::DefaultConfig`.
 		type CanDeriveDefaultFromSystem: Get<Self::AccountId>;
 
 		/// We might choose to declare as one that doesn't have a default, for whatever semantical
@@ -110,8 +110,8 @@ pub mod pezpallet {
 			type OverwrittenDefaultType = u32;
 		}
 
-		/// A type providing default configurations for this pezpallet in another environment.
-		/// Examples could be a teyrchain, or a solochain.
+		/// A type providing default configurations for this pezpallet in another environment. Examples
+		/// could be a teyrchain, or a solochain.
 		///
 		/// Appropriate derive for `pezframe_system::DefaultConfig` needs to be provided. In this
 		/// example, we simple derive `pezframe_system::config_preludes::TestDefaultConfig` again.

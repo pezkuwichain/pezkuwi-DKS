@@ -25,6 +25,8 @@ pezpallet-asset-rewards = { workspace = true }
 pezpallet-assets = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-message-queue = { workspace = true }
+pezpallet-pez-treasury = { workspace = true }
+pezpallet-referenda = { workspace = true }
 pezpallet-treasury = { workspace = true }
 pezpallet-utility = { workspace = true }
 pezsp-core = { workspace = true }
@@ -41,6 +43,7 @@ xcm-runtime-pezapis = { workspace = true, default-features = true }
 # Pezcumulus
 asset-test-pezutils = { workspace = true, default-features = true }
 emulated-integration-tests-common = { workspace = true }
+people-pezkuwichain-emulated-chain = { workspace = true }
 pezcumulus-pezpallet-teyrchain-system = { workspace = true }
 pezkuwichain-system-emulated-network = { workspace = true }
 teyrchains-common = { workspace = true, default-features = true }
@@ -49,6 +52,7 @@ teyrchains-common = { workspace = true, default-features = true }
 runtime-benchmarks = [
 	"asset-test-pezutils/runtime-benchmarks",
 	"emulated-integration-tests-common/runtime-benchmarks",
+	"people-pezkuwichain-emulated-chain/runtime-benchmarks",
 	"pezcumulus-pezpallet-teyrchain-system/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
@@ -60,6 +64,8 @@ runtime-benchmarks = [
 	"pezpallet-assets/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
+	"pezpallet-pez-treasury/runtime-benchmarks",
+	"pezpallet-referenda/runtime-benchmarks",
 	"pezpallet-treasury/runtime-benchmarks",
 	"pezpallet-utility/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",
@@ -72,6 +78,7 @@ runtime-benchmarks = [
 std = [
 	"codec/std",
 	"emulated-integration-tests-common/std",
+	"people-pezkuwichain-emulated-chain/std",
 	"pezcumulus-pezpallet-teyrchain-system/std",
 	"pezframe-support/std",
 	"pezframe-system/std",
@@ -81,6 +88,8 @@ std = [
 	"pezpallet-assets/std",
 	"pezpallet-balances/std",
 	"pezpallet-message-queue/std",
+	"pezpallet-pez-treasury/std",
+	"pezpallet-referenda/std",
 	"pezpallet-treasury/std",
 	"pezpallet-utility/std",
 	"pezpallet-xcm/std",
@@ -92,6 +101,7 @@ std = [
 try-runtime = [
 	"asset-test-pezutils/try-runtime",
 	"emulated-integration-tests-common/try-runtime",
+	"people-pezkuwichain-emulated-chain/try-runtime",
 	"pezcumulus-pezpallet-teyrchain-system/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
@@ -102,6 +112,8 @@ try-runtime = [
 	"pezpallet-assets/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-message-queue/try-runtime",
+	"pezpallet-pez-treasury/try-runtime",
+	"pezpallet-referenda/try-runtime",
 	"pezpallet-treasury/try-runtime",
 	"pezpallet-utility/try-runtime",
 	"pezpallet-xcm/try-runtime",

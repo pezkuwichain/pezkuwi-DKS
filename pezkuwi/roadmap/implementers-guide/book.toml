@@ -1,7 +1,7 @@
 [book]
 authors = [
+	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
 	"Kurdistan Tech Institute <info@pezkuwichain.io>",
-	"Parity Technologies <admin@parity.io>",
 ]
 language = "en"
 src = "src"
@@ -22,7 +22,7 @@ optional = true
 additional-css = ["last-changed.css"]
 additional-js = ["mermaid-init.js", "mermaid.min.js"]
 # Repository URL used in the last-changed link.
-git-repository-url = "https://github.com/pezkuwichain/pezkuwi-sdk"
+git-repository-url = "https://github.com/pezkuwichain/pezkuwi-DKS"
 
 [output.linkcheck]
 optional = true

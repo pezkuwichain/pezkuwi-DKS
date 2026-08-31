@@ -132,7 +132,7 @@ impl<T: Config> StakingLedger<T> {
 		// further spoil the ledger's state. A bond is in bad state when the bonded controller is
 		// associated with a different ledger (i.e. a ledger with a different stash).
 		//
-		// See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/273> for more details.
+		// See <https://github.com/pezkuwichain/pezkuwi-DKS/issues/3245> for more details.
 		ensure!(
 			Bonded::<T>::get(&stash) == Some(controller) && ledger.stash == stash,
 			Error::<T>::BadState
@@ -241,7 +241,7 @@ impl<T: Config> StakingLedger<T> {
 		if let Some(bonded_ledger) = Ledger::<T>::get(&self.stash) {
 			// there is a ledger bonded by the stash. In this case, the stash of the bonded ledger
 			// should be the same as the ledger's stash. Otherwise fail to prevent data
-			// inconsistencies. See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/262> for more
+			// inconsistencies. See <https://github.com/pezkuwichain/pezkuwi-DKS/pull/3639> for more
 			// details.
 			ensure!(bonded_ledger.stash == self.stash, Error::<T>::BadState);
 		}

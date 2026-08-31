@@ -14,7 +14,7 @@ struct SessionInfo {
     ///
     /// NOTE: There might be more authorities in the current session, than `validators` participating
     /// in teyrchain consensus. See
-    /// [`max_validators`](https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs#L148)..
+    /// [`max_validators`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs#L148)..
     ///
     /// `SessionInfo::validators` will be limited to `max_validators` when set.
     validators: Vec<ValidatorId>,
@@ -23,14 +23,14 @@ struct SessionInfo {
     /// NOTE: The first `validators.len()` entries will match the corresponding validators in
     /// `validators`, afterwards any remaining authorities can be found. This is any authorities not
     /// participating in teyrchain consensus - see
-    /// [`max_validators`](https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs#L148).
+    /// [`max_validators`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs#L148).
     #[cfg_attr(feature = "std", ignore_malloc_size_of = "outside type")]
     discovery_keys: Vec<AuthorityDiscoveryId>,
     /// The assignment keys for validators.
     ///
     /// NOTE: There might be more authorities in the current session, than validators participating
     /// in teyrchain consensus. See
-    /// [`max_validators`](https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs#L148)..
+    /// [`max_validators`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/pezkuwi/runtime/teyrchains/src/configuration.rs#L148)..
     ///
     /// Therefore:
     /// ```ignore

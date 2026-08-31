@@ -74,7 +74,7 @@ pub enum Error<Block: BlockT> {
 
 	#[error(
 		"The light sync state extension is not provided by the chain spec. \
-		Read the `sc-sync-state-rpc` crate docs on how to do this!"
+		Read the `pezsc-sync-state-rpc` crate docs on how to do this!"
 	)]
 	LightSyncStateExtensionNotFound,
 }

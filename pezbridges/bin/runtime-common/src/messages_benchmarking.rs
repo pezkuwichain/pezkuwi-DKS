@@ -15,7 +15,7 @@
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
 //! Everything required to run benchmarks of messages module, based on
-//! `pezbridge_runtime_common::messages` implementation.
+//! `bridge_runtime_common::messages` implementation.
 
 #![cfg(feature = "runtime-benchmarks")]
 
@@ -317,7 +317,7 @@ pub fn generate_xcm_builder_bridge_message_sample(
 			min_crate_minor: 0,
 		}]));
 
-		// this is the `BridgeMessage` from pezkuwi xcm builder, but it has no constructor
+		// this is the `BridgeMessage` from polkadot xcm builder, but it has no constructor
 		// or public fields, so just tuple
 		// (double encoding, because `.encode()` is called on original Xcm BLOB when it is pushed
 		// to the storage)

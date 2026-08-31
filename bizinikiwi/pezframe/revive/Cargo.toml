@@ -2,7 +2,7 @@
 name = "pezpallet-revive"
 version = "0.1.0"
 authors.workspace = true
-edition.workspace = true
+edition = "2024"
 license = "Apache-2.0"
 homepage.workspace = true
 repository.workspace = true
@@ -35,12 +35,11 @@ num-integer = { workspace = true }
 num-traits = { workspace = true }
 paste = { workspace = true }
 pez-ethereum-standards = { workspace = true }
-polkavm = { version = "0.29.1", default-features = false }
-polkavm-common = { version = "0.29.0", default-features = false, features = [
-	"alloc",
-] }
-rand = { workspace = true }
-rand_pcg = { workspace = true }
+pezsp-crypto-hashing = { workspace = true }
+polkavm = { workspace = true }
+polkavm-common = { workspace = true, features = ["alloc"] }
+rand = { workspace = true, optional = true }
+rand_pcg = { workspace = true, optional = true }
 revm = { workspace = true }
 rlp = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
@@ -78,6 +77,10 @@ ripemd = { workspace = true }
 alloy-consensus = { workspace = true, default-features = true }
 array-bytes = { workspace = true, default-features = true }
 assert_matches = { workspace = true }
+itertools = { workspace = true }
+pezpallet-assets = { workspace = true, default-features = true }
+pezpallet-assets-freezer = { workspace = true, default-features = true }
+pezpallet-assets-holder = { workspace = true, default-features = true }
 pretty_assertions = { workspace = true }
 secp256k1 = { workspace = true, features = ["recovery"] }
 serde_json = { workspace = true }
@@ -128,6 +131,7 @@ std = [
 	"pezsp-consensus-babe/std",
 	"pezsp-consensus-slots/std",
 	"pezsp-core/std",
+	"pezsp-crypto-hashing/std",
 	"pezsp-io/std",
 	"pezsp-keystore/std",
 	"pezsp-runtime/std",
@@ -136,6 +140,7 @@ std = [
 	"polkavm-common/std",
 	"polkavm/std",
 	"rand/std",
+	"rand?/std",
 	"revm/std",
 	"ripemd/std",
 	"rlp/std",
@@ -150,6 +155,9 @@ runtime-benchmarks = [
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
 	"pezkuwi-subxt-signer?/runtime-benchmarks",
+	"pezpallet-assets-freezer/runtime-benchmarks",
+	"pezpallet-assets-holder/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-proxy/runtime-benchmarks",
 	"pezpallet-revive-fixtures",
@@ -168,11 +176,16 @@ runtime-benchmarks = [
 	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-state-machine/runtime-benchmarks",
 	"pezsp-version/runtime-benchmarks",
+	"rand",
+	"rand_pcg",
 ]
 try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
+	"pezpallet-assets-freezer/try-runtime",
+	"pezpallet-assets-holder/try-runtime",
+	"pezpallet-assets/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-proxy/try-runtime",
 	"pezpallet-timestamp/try-runtime",
@@ -188,3 +201,4 @@ serde = []
 experimental = []
 with-tracing = []
 tuples-96 = []
+trybuild = []

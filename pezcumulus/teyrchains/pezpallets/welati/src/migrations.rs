@@ -22,7 +22,7 @@ pub mod v1 {
 
 	/// Type alias for the pre-upgrade state tuple to reduce type complexity
 	#[cfg(feature = "try-runtime")]
-	type PreUpgradeState = (u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
+	type PreUpgradeState = (u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
 
 	pub struct MigrateToV1<T>(PhantomData<T>);
 
@@ -41,20 +41,18 @@ pub mod v1 {
 				// If storage format changes in the future, implement transformation here
 
 				// Count existing storage items for logging
-				let officials_count = CurrentOfficials::<T>::iter().count() as u64;
-				let ministers_count = CurrentMinisters::<T>::iter().count() as u64;
+				let officials_count = pezpallet_tiki::TikiHolder::<T>::iter().count() as u64;
 				let elections_count = ActiveElections::<T>::iter().count() as u64;
 				let proposals_count = ActiveProposals::<T>::iter().count() as u64;
 
-				let migrated =
-					officials_count + ministers_count + elections_count + proposals_count;
+				let migrated = officials_count + elections_count + proposals_count;
 
 				// Update storage version
 				STORAGE_VERSION.put::<Pezpallet<T>>();
 
 				log::info!("✅ Migrated {migrated} entries in pezpallet-welati");
 				log::info!(
-					"   Officials: {officials_count}, Ministers: {ministers_count}, Elections: {elections_count}, Proposals: {proposals_count}"
+					"   Officials: {officials_count}, Elections: {elections_count}, Proposals: {proposals_count}"
 				);
 
 				// Return weight used
@@ -79,11 +77,10 @@ pub mod v1 {
 			log::info!("   Current version: {current:?}");
 
 			// Encode current storage counts for verification
-			let officials_count = CurrentOfficials::<T>::iter().count() as u32;
-			let ministers_count = CurrentMinisters::<T>::iter().count() as u32;
+			let officials_count = pezpallet_tiki::TikiHolder::<T>::iter().count() as u32;
 			let parliament_count = ParliamentMembers::<T>::get().len() as u32;
 			let diwan_count = DiwanMembers::<T>::get().len() as u32;
-			let appointed_count = AppointedOfficials::<T>::iter().count() as u32;
+			let appointed_count = pezpallet_tiki::UserTikis::<T>::iter().count() as u32;
 			let elections_count = ActiveElections::<T>::iter().count() as u32;
 			let candidates_count = ElectionCandidates::<T>::iter().count() as u32;
 			let votes_count = ElectionVotes::<T>::iter().count() as u32;
@@ -94,11 +91,10 @@ pub mod v1 {
 			let proposals_count = ActiveProposals::<T>::iter().count() as u32;
 			let collective_votes_count = CollectiveVotes::<T>::iter().count() as u32;
 
-			log::info!("   CurrentOfficials entries: {officials_count}");
-			log::info!("   CurrentMinisters entries: {ministers_count}");
+			log::info!("   TikiHolder entries: {officials_count}");
 			log::info!("   ParliamentMembers entries: {parliament_count}");
 			log::info!("   DiwanMembers entries: {diwan_count}");
-			log::info!("   AppointedOfficials entries: {appointed_count}");
+			log::info!("   UserTikis entries: {appointed_count}");
 			log::info!("   ActiveElections entries: {elections_count}");
 			log::info!("   ElectionCandidates entries: {candidates_count}");
 			log::info!("   ElectionVotes entries: {votes_count}");
@@ -111,7 +107,6 @@ pub mod v1 {
 
 			Ok((
 				officials_count,
-				ministers_count,
 				parliament_count,
 				diwan_count,
 				appointed_count,
@@ -136,7 +131,6 @@ pub mod v1 {
 
 			let (
 				pre_officials_count,
-				pre_ministers_count,
 				pre_parliament_count,
 				pre_diwan_count,
 				pre_appointed_count,
@@ -160,11 +154,10 @@ pub mod v1 {
 			log::info!("✅ Storage version updated to {current_version:?}");
 
 			// Verify storage counts (should be same or more, never less)
-			let post_officials_count = CurrentOfficials::<T>::iter().count() as u32;
-			let post_ministers_count = CurrentMinisters::<T>::iter().count() as u32;
+			let post_officials_count = pezpallet_tiki::TikiHolder::<T>::iter().count() as u32;
 			let post_parliament_count = ParliamentMembers::<T>::get().len() as u32;
 			let post_diwan_count = DiwanMembers::<T>::get().len() as u32;
-			let post_appointed_count = AppointedOfficials::<T>::iter().count() as u32;
+			let post_appointed_count = pezpallet_tiki::UserTikis::<T>::iter().count() as u32;
 			let post_elections_count = ActiveElections::<T>::iter().count() as u32;
 			let post_candidates_count = ElectionCandidates::<T>::iter().count() as u32;
 			let post_votes_count = ElectionVotes::<T>::iter().count() as u32;
@@ -175,19 +168,12 @@ pub mod v1 {
 			let post_proposals_count = ActiveProposals::<T>::iter().count() as u32;
 			let post_collective_votes_count = CollectiveVotes::<T>::iter().count() as u32;
 
-			log::info!(
-				"   CurrentOfficials entries: {pre_officials_count} -> {post_officials_count}"
-			);
-			log::info!(
-				"   CurrentMinisters entries: {pre_ministers_count} -> {post_ministers_count}"
-			);
+			log::info!("   TikiHolder entries: {pre_officials_count} -> {post_officials_count}");
 			log::info!(
 				"   ParliamentMembers entries: {pre_parliament_count} -> {post_parliament_count}"
 			);
 			log::info!("   DiwanMembers entries: {pre_diwan_count} -> {post_diwan_count}");
-			log::info!(
-				"   AppointedOfficials entries: {pre_appointed_count} -> {post_appointed_count}"
-			);
+			log::info!("   UserTikis entries: {pre_appointed_count} -> {post_appointed_count}");
 			log::info!(
 				"   ActiveElections entries: {pre_elections_count} -> {post_elections_count}"
 			);
@@ -207,11 +193,7 @@ pub mod v1 {
 			// Verify no data was lost
 			assert!(
 				post_officials_count >= pre_officials_count,
-				"CurrentOfficials entries decreased during migration"
-			);
-			assert!(
-				post_ministers_count >= pre_ministers_count,
-				"CurrentMinisters entries decreased during migration"
+				"TikiHolder entries decreased during migration"
 			);
 			assert!(
 				post_parliament_count >= pre_parliament_count,
@@ -223,7 +205,7 @@ pub mod v1 {
 			);
 			assert!(
 				post_appointed_count >= pre_appointed_count,
-				"AppointedOfficials entries decreased during migration"
+				"UserTikis entries decreased during migration"
 			);
 			assert!(
 				post_elections_count >= pre_elections_count,
@@ -270,52 +252,21 @@ pub mod v1 {
 
 /// Example migration for future version changes
 /// This demonstrates how to handle storage format changes in governance data
-pub mod v2 {
-	use super::*;
-
-	/// Example: Migration when election or proposal format changes
-	pub struct MigrateToV2<T>(PhantomData<T>);
-
-	impl<T: Config> OnRuntimeUpgrade for MigrateToV2<T> {
-		fn on_runtime_upgrade() -> Weight {
-			let current = Pezpallet::<T>::on_chain_storage_version();
-
-			if current < StorageVersion::new(2) {
-				log::info!("🔄 Running migration for pezpallet-welati to v2");
-
-				// Example migration logic
-				// 1. Transform election data if format changed
-				// 2. Migrate proposal structure if needed
-				// 3. Update parliament/diwan member format
-				// 4. Update version
-
-				// For now, this is just a template
-				StorageVersion::new(2).put::<Pezpallet<T>>();
-
-				log::info!("✅ Completed migration to pezpallet-welati v2");
-
-				T::DbWeight::get().reads_writes(1, 1)
-			} else {
-				log::info!("👌 pezpallet-welati v2 migration not needed");
-				T::DbWeight::get().reads(1)
-			}
-		}
-
-		#[cfg(feature = "try-runtime")]
-		fn pre_upgrade() -> Result<pezsp_std::vec::Vec<u8>, pezsp_runtime::TryRuntimeError> {
-			log::info!("🔍 Pre-upgrade check for pezpallet-welati v2");
-			Ok(pezsp_std::vec::Vec::new())
-		}
-
-		#[cfg(feature = "try-runtime")]
-		fn post_upgrade(
-			_state: pezsp_std::vec::Vec<u8>,
-		) -> Result<(), pezsp_runtime::TryRuntimeError> {
-			log::info!("✅ Post-upgrade check passed for pezpallet-welati v2");
-			Ok(())
-		}
-	}
-}
+// `v2` stood here and was deleted rather than repaired.
+//
+// It transformed nothing -- its body was four comment lines and the word "template" -- and the
+// one thing it did do was wrong: it wrote `StorageVersion::new(2)` while this pallet declares
+// version 1. An on-chain version above the declared one is not a small inconsistency. FRAME
+// compares the two, a real v2 migration would later see `current >= 2` and skip itself, and the
+// transformation nobody wrote would be recorded as already done.
+//
+// It was scheduled in no runtime, which is the only reason it never fired. A placeholder that
+// is harmless only because it is unreachable is one wiring away from being harmful, and the
+// wiring is a single line somebody adds while tidying.
+//
+// When welati really needs a v2, the version in `STORAGE_VERSION` moves with it, in the same
+// commit as the transformation. `pezpallet_tiki` is the shape to copy: it declares 2, its v1
+// writes 1, its v2 writes what it declares, and both are scheduled.
 
 #[cfg(test)]
 mod tests {

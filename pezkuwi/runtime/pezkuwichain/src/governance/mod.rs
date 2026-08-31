@@ -25,10 +25,9 @@ use pezframe_system::EnsureRootWithSuccess;
 
 mod origins;
 pub use origins::{
-	pezpallet_custom_origins, AuctionAdmin, CitizenshipAdmin, Fellows, FellowshipAdmin,
-	FellowshipExperts, FellowshipInitiates, FellowshipMasters, GeneralAdmin, LeaseAdmin,
-	ReferendumCanceller, ReferendumKiller, Spender, StakingAdmin, Treasurer, WelatiAdmin,
-	WelatiElection, WhitelistedCaller,
+	pezpallet_custom_origins, AuctionAdmin, Fellows, FellowshipAdmin, FellowshipExperts,
+	FellowshipInitiates, FellowshipMasters, GeneralAdmin, LeaseAdmin, ReferendumCanceller,
+	ReferendumKiller, StakingAdmin, WhitelistedCaller,
 };
 mod tracks;
 pub use tracks::TracksInfo;
@@ -80,7 +79,6 @@ parameter_types! {
 parameter_types! {
 	pub const MaxBalance: Balance = Balance::max_value();
 }
-pub type TreasurySpender = EitherOf<EnsureRootWithSuccess<AccountId, MaxBalance>, Spender>;
 
 impl origins::pezpallet_custom_origins::Config for Runtime {}
 
@@ -88,8 +86,12 @@ impl pezpallet_whitelist::Config for Runtime {
 	type WeightInfo = weights::pezpallet_whitelist::WeightInfo<Self>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
-	type WhitelistOrigin =
-		EitherOf<EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>, Fellows>;
+	// Root, and Root alone. `Fellows` stood beside it and no track on this chain produces that
+	// origin -- there is no Fellowship collective here -- so the alternative was never an
+	// alternative. What Root means changed underneath it: with the root track gone, Root here is
+	// the register's referendum arriving over XCM. So the people whitelist and this chain's fast
+	// track enacts, which is the two-key shape the arrangement wanted all along.
+	type WhitelistOrigin = EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>;
 	type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
 	type Preimages = Preimage;
 }
@@ -103,7 +105,10 @@ impl pezpallet_referenda::Config for Runtime {
 	type SubmitOrigin = pezframe_system::EnsureSigned<AccountId>;
 	type CancelOrigin = EitherOf<EnsureRoot<AccountId>, ReferendumCanceller>;
 	type KillOrigin = EitherOf<EnsureRoot<AccountId>, ReferendumKiller>;
-	type Slash = Treasury;
+	// Referendum deposits that are killed rather than refunded. They go where every other
+	// penalty on this chain goes: accumulated here and forwarded to the Asset Hub's
+	// treasury. Not `()`, which would destroy them.
+	type Slash = crate::PenaltiesToTreasury;
 	type Votes = pezpallet_conviction_voting::VotesOf<Runtime>;
 	type Tally = pezpallet_conviction_voting::TallyOf<Runtime>;
 	type SubmissionDeposit = SubmissionDeposit;

@@ -16,7 +16,14 @@
 
 //! A module that is responsible for migration of storage.
 
-use crate::configuration::{self, migration::v11::V11HostConfiguration, Config, Pezpallet};
+use crate::configuration::{
+	self,
+	migration::{
+		v11::V11HostConfiguration,
+		v13::{V12HostConfiguration, V12SchedulerParams},
+	},
+	Config, Pezpallet,
+};
 use alloc::vec::Vec;
 use pezframe_support::{
 	migrations::VersionedMigration,
@@ -24,11 +31,8 @@ use pezframe_support::{
 	traits::{Defensive, UncheckedOnRuntimeUpgrade},
 };
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
-use pezkuwi_primitives::SchedulerParams;
 use pezsp_core::Get;
 use pezsp_staking::SessionIndex;
-
-type V12HostConfiguration<BlockNumber> = configuration::HostConfiguration<BlockNumber>;
 
 mod v11 {
 	use super::*;
@@ -144,7 +148,7 @@ fn migrate_to_v12<T: Config>() -> Weight {
 					node_features                            : pre.node_features,
 					approval_voting_params                   : pre.approval_voting_params,
 					#[allow(deprecated)]
-					scheduler_params: SchedulerParams {
+					scheduler_params: V12SchedulerParams {
 							group_rotation_frequency             : pre.group_rotation_frequency,
 							paras_availability_period            : pre.paras_availability_period,
 							max_validators_per_core              : pre.max_validators_per_core,
@@ -193,7 +197,7 @@ mod tests {
 		// Example how to get new `raw_config`:
 		// We'll obtain the raw_config at a specified a block
 		// Steps:
-		// 1. Go to Pezkuwi.js -> Developer -> Chain state -> Storage: https://pezkuwichain.io/#/chainstate
+		// 1. Go to Pezkuwi.js -> Developer -> Chain state -> Storage: https://polkadot.js.org/apps/#/chainstate
 		// 2. Set these parameters:
 		//   2.1. selected state query: configuration; activeConfig():
 		//        PezkuwiRuntimeTeyrchainsConfigurationHostConfiguration

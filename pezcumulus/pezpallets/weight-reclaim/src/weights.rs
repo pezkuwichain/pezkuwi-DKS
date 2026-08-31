@@ -31,9 +31,9 @@
 // --chain
 // dev
 // --output
-// pezcumulus/pezpallets/weight-reclaim/src/weights.rs
+// cumulus/pezpallets/weight-reclaim/src/weights.rs
 // --template
-// bizinikiwi/.maintain/frame-weight-template.hbs
+// bizinikiwi/.maintain/pezframe-weight-template.hbs
 // --extrinsic
 // *
 

@@ -16,38 +16,50 @@ all-features = true
 # Use `ignore` to suppress specific advisories.
 [advisories]
 yanked = "warn"
-# All unmaintained crates are transitive upstream dependencies we cannot replace.
-# Track via quarterly review instead of blocking CI.
-unmaintained = "none"
+# Checked, not switched off. "none" suppressed the whole class, which meant it also covered
+# any unmaintained crate we might add ourselves, and the reason recorded for it -- that these
+# are transitive upstream dependencies we cannot replace -- was measurably wrong: every one
+# of the seven listed below is declared in our own workspace manifest. "workspace" keeps the
+# check on the surface we can actually act on. The transitive-only ones stay out of scope
+# because we cannot act on them, and a gate that reports what you cannot fix teaches you to
+# skim it. An eighth unmaintained crate now fails the run instead of arriving unannounced.
+unmaintained = "workspace"
 ignore = [
 	# ── wasmtime ──────────────────────────────────────────────────────────────
-	# wasmtime is pinned at 37.x (the version sc-executor-wasmtime targets). Clearing
-	# these needs wasmtime 42.0.2+ — a 5-major-version bump requiring cranelift updates
-	# and executor API adaptation, so it is a dedicated, tested effort (issue #7), not a
-	# drop-in bump; we will NOT destabilize the fund-critical executor on a whim. The
-	# toolchain (now 1.96.0) no longer blocks it. Risk is contained regardless: these
-	# CVEs only affect the Winch backend, Component Model, or 64-bit tables — none of
-	# which PezkuwiChain's executor uses.
-	"RUSTSEC-2026-0006", # wasmtime: segfault with f64.copysign on x86-64
-	"RUSTSEC-2026-0020", # wasmtime: WASI guest-controlled resource exhaustion
-	"RUSTSEC-2026-0021", # wasmtime: panic in wasi:http/types.fields
-	"RUSTSEC-2026-0085", # wasmtime: panic lifting flags component value
-	"RUSTSEC-2026-0086", # wasmtime: host data leakage 64-bit tables + Winch
-	"RUSTSEC-2026-0087", # wasmtime: segfault f64x2.splat on Cranelift x86-64
-	"RUSTSEC-2026-0088", # wasmtime: data leakage pooling allocator instances
-	"RUSTSEC-2026-0089", # wasmtime: host panic table.fill with Winch
-	"RUSTSEC-2026-0091", # wasmtime: OOB write transcoding component model strings
-	"RUSTSEC-2026-0092", # wasmtime: panic transcoding misaligned UTF-16 strings
-	"RUSTSEC-2026-0093", # wasmtime: heap OOB read UTF-16 to latin1+utf16
-	"RUSTSEC-2026-0094", # wasmtime: masked return value table.grow Winch
-	"RUSTSEC-2026-0095", # wasmtime: Winch sandbox-escaping memory access
-	"RUSTSEC-2026-0096", # wasmtime: miscompiled guest heap aarch64 Cranelift
+	# Nothing is exempted here. The block that used to sit here listed fourteen wasmtime
+	# advisories and justified them with "wasmtime is pinned at 37.x"; the lock says 36.0.13
+	# and cargo-deny reported every one of them as "no crate matched advisory criteria",
+	# on our graph and on main's. Fifteen dead entries also meant fifteen warnings on every
+	# run, which is how a live one would have gone unread. Re-add an entry only with the
+	# advisory that actually fires and the reason it is tolerable.
+
+	# ── unmaintained ──────────────────────────────────────────────────────────
+	# None of these is a known vulnerability. The advisory says only that no further
+	# patches will come, so each needs a reason it is tolerable to carry.
+	#
+	# Macro crates: they run at compile time and no part of them reaches a binary or a blob.
+	"RUSTSEC-2024-0436", # paste
+	"RUSTSEC-2026-0173", # proc-macro-error2
+	#
+	# Host and build-time tooling, never inside a runtime blob — the same class as git2 below.
+	"RUSTSEC-2022-0061", # parity-wasm: wasm-builder, sp-version embed, contracts fixtures
+	"RUSTSEC-2025-0012", # backoff
+	"RUSTSEC-2025-0052", # async-std
+	"RUSTSEC-2025-0141", # bincode
+	#
+	# libsecp256k1 — this line records the item, it does not settle it. The crate is the
+	# host-side body of the secp256k1 ECDSA recovery host function, so every node has to
+	# agree on what it returns: replacing it is a consensus change, not a version bump.
+	# Upstream carries the same crate, so follow upstream rather than diverging alone. If it
+	# is ever to be replaced, the genesis reset is the only window where that costs nothing;
+	# after genesis, changing signature recovery breaks consensus.
+	"RUSTSEC-2025-0161", # libsecp256k1
 
 	# ── memmap2 ───────────────────────────────────────────────────────────────
-	# Unsound unchecked pointer-offset in memory-mapping. Host-side only — memmap2
-	# is not reachable from the WASM runtime (no mmap in WASM), so it cannot affect
-	# on-chain/fund logic. Transitive dep; no fixed release for the pinned versions.
-	"RUSTSEC-2026-0186", # memmap2: unchecked pointer offset (unsound, host-side)
+	# Nothing exempted. The note here said "no fixed release for the pinned versions"; 0.9.11
+	# fixes 0186 and the workspace pins it now. It was tolerable while it stood -- memmap2 is
+	# host-side and there is no mmap in WASM -- but tolerable stops being a reason the day a
+	# patched release exists.
 
 	# ── webpki ────────────────────────────────────────────────────────────────
 	# Name-constraints and CRL parsing bugs in transitive webpki dep.
@@ -56,11 +68,10 @@ ignore = [
 	"RUSTSEC-2026-0099", # webpki: wildcard name constraints incorrectly accepted
 	"RUSTSEC-2026-0104", # webpki: reachable panic in CRL parsing (onlySomeReasons BIT STRING)
 
-	# ── git2 / libgit2 (build tooling only) ───────────────────────────────────
-	# Pulled by build-time tooling (wasm-builder / cargo metadata), NOT present in
-	# the runtime WASM or the node consensus path. Track for upstream git2 bump.
-	"RUSTSEC-2026-0183", # git2: potential UB in Remote::list()
-	"RUSTSEC-2026-0184", # git2: potential UB in Signature from buffer-created BlameHunk
+	# ── git2 / libgit2 ────────────────────────────────────────────────────────
+	# Nothing exempted. The note said "track for upstream git2 bump" -- we are a fork and did
+	# not have to wait: 0183 and 0184 are fixed in 0.21.0, which the workspace pins. One crate
+	# uses it, `revive/rpc`'s build script, and only to read the branch and commit id.
 
 	# ── hickory DNS (node networking only) ────────────────────────────────────
 	# Transitive via libp2p DNS resolution. DoS on malformed/cross-zone responses.
@@ -68,8 +79,6 @@ ignore = [
 	"RUSTSEC-2026-0118", # hickory: NSEC3 closest-encloser proof unbounded loop
 	"RUSTSEC-2026-0119", # hickory: O(n^2) name-compression CPU exhaustion
 
-	# ── wasmtime (additional; see toolchain note above) ───────────────────────
-	"RUSTSEC-2026-0114", # wasmtime: panic allocating table exceeding host address space (64-bit tables; unused)
 ]
 
 # License compliance

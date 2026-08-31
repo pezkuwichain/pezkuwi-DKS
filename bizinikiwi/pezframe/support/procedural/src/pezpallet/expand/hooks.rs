@@ -103,7 +103,7 @@ pub fn expand_hooks(def: &mut Def) -> proc_macro2::TokenStream {
 
 	// If a storage version is set, we should ensure that the storage version on chain matches the
 	// in-code storage version. This assumes that `Executive` is running custom migrations before
-	// the pallets are called.
+	// the pezpallets are called.
 	let post_storage_version_check = if def.pezpallet_struct.storage_version.is_some() {
 		quote::quote! {
 			let on_chain_version = <Self as #pezframe_support::traits::GetStorageVersion>::on_chain_storage_version();

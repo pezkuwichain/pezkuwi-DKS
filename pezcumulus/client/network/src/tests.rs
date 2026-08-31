@@ -2,40 +2,40 @@
 // This file is part of Pezcumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 use super::*;
 use async_trait::async_trait;
 use futures::{executor::block_on, poll, task::Poll, FutureExt, Stream, StreamExt};
 use parking_lot::Mutex;
-use pezcumulus_primitives_core::relay_chain::{BlockId, CoreIndex};
+use pezcumulus_primitives_core::relay_chain::{BlockId, CoreIndex, Hash};
 use pezcumulus_relay_chain_inprocess_interface::{check_block_in_chain, BlockCheckStatus};
 use pezcumulus_relay_chain_interface::{
-	OverseerHandle, PHeader, ParaId, RelayChainError, RelayChainResult,
+	ChildInfo, OverseerHandle, PHeader, ParaId, RelayChainError, RelayChainResult,
 };
-use pezcumulus_test_service::runtime::{Block, Hash, Header};
+use pezcumulus_test_service::runtime::{Block, Header};
 use pezkuwi_pez_node_primitives::{SignedFullStatement, Statement};
 use pezkuwi_primitives::{
 	BlockNumber, CandidateCommitments, CandidateDescriptorV2, CandidateEvent, CollatorPair,
 	CommittedCandidateReceiptV2, CoreState, Hash as PHash, HeadData, InboundDownwardMessage,
-	InboundHrmpMessage, OccupiedCoreAssumption, PersistedValidationData, SessionIndex,
-	SigningContext, ValidationCodeHash, ValidatorId,
+	InboundHrmpMessage, NodeFeatures, OccupiedCoreAssumption, PersistedValidationData,
+	SessionIndex, SigningContext, ValidationCodeHash, ValidatorId,
 };
 use pezkuwi_primitives_test_helpers::{CandidateDescriptor, CommittedCandidateReceipt};
 use pezkuwi_test_client::{
 	Client as PClient, ClientBlockImportExt, DefaultTestClientBuilderExt, FullBackend as PBackend,
-	InitPezkuwiBlockBuilder, TestClientBuilder, TestClientBuilderExt,
+	InitPolkadotBlockBuilder, TestClientBuilder, TestClientBuilderExt,
 };
 use pezsc_client_api::{Backend, BlockchainEvents};
 use pezsp_blockchain::HeaderBackend;
@@ -245,6 +245,15 @@ impl RelayChainInterface for DummyRelayChainInterface {
 		unimplemented!("Not needed for test")
 	}
 
+	async fn prove_child_read(
+		&self,
+		_: PHash,
+		_: &ChildInfo,
+		_: &[Vec<u8>],
+	) -> RelayChainResult<pezsc_client_api::StorageProof> {
+		unimplemented!("Not needed for test")
+	}
+
 	async fn wait_for_block(&self, hash: PHash) -> RelayChainResult<()> {
 		let mut listener = match check_block_in_chain(
 			self.relay_backend.clone(),
@@ -354,6 +363,14 @@ impl RelayChainInterface for DummyRelayChainInterface {
 	async fn candidate_events(&self, _: PHash) -> RelayChainResult<Vec<CandidateEvent>> {
 		unimplemented!("Not needed for test")
 	}
+
+	async fn max_relay_parent_session_age(&self, _at: PHash) -> RelayChainResult<u32> {
+		unimplemented!("Not needed for test")
+	}
+
+	async fn node_features(&self, _at: PHash) -> RelayChainResult<NodeFeatures> {
+		unimplemented!("Not needed for test")
+	}
 }
 
 fn make_validator_and_api() -> (
@@ -432,7 +449,7 @@ async fn make_gossip_message_and_header(
 	.flatten()
 	.expect("Signing statement");
 
-	(CollationSecondedSignal { statement: signed, relay_parent }, header)
+	(CollationSecondedSignal { statement: signed, scheduling_parent: relay_parent }, header)
 }
 
 #[test]

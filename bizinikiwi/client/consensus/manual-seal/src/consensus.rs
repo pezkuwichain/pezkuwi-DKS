@@ -20,6 +20,7 @@
 use super::Error;
 
 use pezsc_consensus::BlockImportParams;
+use pezsp_api::StorageProof;
 use pezsp_inherents::InherentData;
 use pezsp_runtime::{traits::Block as BlockT, Digest};
 
@@ -30,9 +31,6 @@ pub mod timestamp;
 /// Consensus data provider, manual seal uses this trait object for authoring blocks valid
 /// for any runtime.
 pub trait ConsensusDataProvider<B: BlockT>: Send + Sync {
-	/// The proof type.
-	type Proof;
-
 	/// Attempt to create a consensus digest.
 	fn create_digest(&self, parent: &B::Header, inherents: &InherentData) -> Result<Digest, Error>;
 
@@ -42,6 +40,6 @@ pub trait ConsensusDataProvider<B: BlockT>: Send + Sync {
 		parent: &B::Header,
 		params: &mut BlockImportParams<B>,
 		inherents: &InherentData,
-		proof: Self::Proof,
+		proof: StorageProof,
 	) -> Result<(), Error>;
 }

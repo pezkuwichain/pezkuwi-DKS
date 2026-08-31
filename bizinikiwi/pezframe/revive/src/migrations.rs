@@ -23,5 +23,11 @@ pub mod v1;
 /// Migrations from the old `CodeInfoOf` to the new `CodeInfoOf` storage
 pub mod v2;
 
-/// A unique identifier across all pallets.
+/// Auto-map all existing accounts
+pub mod v3;
+
+/// Switch storage deposits from native currency to PGAS.
+pub mod v4;
+
+/// A unique identifier across all pezpallets.
 const PALLET_MIGRATIONS_ID: &[u8; 20] = b"pezpallet-revive-mbm";

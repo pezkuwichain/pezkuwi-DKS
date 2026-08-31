@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Bizinikiwi.  If not, see <http://www.gnu.org/licenses/>.
 
-//! XCM configurations for Zagros.
+//! XCM configurations for Westend.
 
 use super::{
 	teyrchains_origin, AccountId, AllPalletsWithSystem, Balances, Dmp, FellowshipAdmin,
@@ -63,7 +63,7 @@ parameter_types! {
 	pub FeeAssetId: AssetId = AssetId(TokenLocation::get());
 	/// The base fee for the message delivery fees.
 	pub const BaseDeliveryFee: u128 = CENTS.saturating_mul(3);
-	/// Zagros does not have mint authority anymore after the Asset Hub migration.
+	/// Westend does not have mint authority anymore after the Asset Hub migration.
 	pub TeleportTracking: Option<(AccountId, MintLocation)> = None;
 }
 
@@ -120,13 +120,13 @@ parameter_types! {
 	pub Encointer: Location = Teyrchain(ENCOINTER_ID).into_location();
 	pub People: Location = Teyrchain(PEOPLE_ID).into_location();
 	pub Broker: Location = Teyrchain(BROKER_ID).into_location();
-	pub Zgr: AssetFilter = Wild(AllOf { fun: WildFungible, id: AssetId(TokenLocation::get()) });
-	pub WndForAssetHub: (AssetFilter, Location) = (Zgr::get(), AssetHub::get());
-	pub WndForCollectives: (AssetFilter, Location) = (Zgr::get(), Collectives::get());
-	pub WndForBridgeHub: (AssetFilter, Location) = (Zgr::get(), BridgeHub::get());
-	pub WndForEncointer: (AssetFilter, Location) = (Zgr::get(), Encointer::get());
-	pub WndForPeople: (AssetFilter, Location) = (Zgr::get(), People::get());
-	pub WndForBroker: (AssetFilter, Location) = (Zgr::get(), Broker::get());
+	pub Wnd: AssetFilter = Wild(AllOf { fun: WildFungible, id: AssetId(TokenLocation::get()) });
+	pub WndForAssetHub: (AssetFilter, Location) = (Wnd::get(), AssetHub::get());
+	pub WndForCollectives: (AssetFilter, Location) = (Wnd::get(), Collectives::get());
+	pub WndForBridgeHub: (AssetFilter, Location) = (Wnd::get(), BridgeHub::get());
+	pub WndForEncointer: (AssetFilter, Location) = (Wnd::get(), Encointer::get());
+	pub WndForPeople: (AssetFilter, Location) = (Wnd::get(), People::get());
+	pub WndForBroker: (AssetFilter, Location) = (Wnd::get(), Broker::get());
 	pub MaxInstructions: u32 = 100;
 	pub MaxAssetsIntoHolding: u32 = 64;
 }
@@ -205,7 +205,7 @@ impl xcm_executor::Config for XcmConfig {
 	type UniversalLocation = UniversalLocation;
 	type Barrier = Barrier;
 	type Weigher = WeightInfoBounds<
-		crate::weights::xcm::ZagrosXcmWeight<RuntimeCall>,
+		crate::weights::xcm::WestendXcmWeight<RuntimeCall>,
 		RuntimeCall,
 		MaxInstructions,
 	>;
@@ -215,7 +215,6 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTrap = XcmPallet;
 	type AssetLocker = ();
 	type AssetExchanger = ();
-	type AssetClaims = XcmPallet;
 	type SubscriptionService = XcmPallet;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
@@ -301,7 +300,7 @@ impl pezpallet_xcm::Config for Runtime {
 	type XcmTeleportFilter = Everything;
 	type XcmReserveTransferFilter = Everything;
 	type Weigher = WeightInfoBounds<
-		crate::weights::xcm::ZagrosXcmWeight<RuntimeCall>,
+		crate::weights::xcm::WestendXcmWeight<RuntimeCall>,
 		RuntimeCall,
 		MaxInstructions,
 	>;

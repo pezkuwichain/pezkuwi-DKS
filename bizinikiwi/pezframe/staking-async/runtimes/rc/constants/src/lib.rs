@@ -83,7 +83,7 @@ pub mod fee {
 	impl WeightToFeePolynomial for WeightToFee {
 		type Balance = Balance;
 		fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-			// in Zagros, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
+			// in Westend, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
 			let p = super::currency::CENTS;
 			let q = 10 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
 			smallvec![WeightToFeeCoefficient {
@@ -114,7 +114,7 @@ pub mod system_teyrchain {
 	/// Brokerage teyrchain ID.
 	pub const BROKER_ID: u32 = 1005;
 
-	/// All system teyrchains of Zagros.
+	/// All system teyrchains of Westend.
 	pub type SystemTeyrchains = IsChildSystemTeyrchain<Id>;
 
 	/// Coretime constants
@@ -129,7 +129,7 @@ pub mod system_teyrchain {
 	}
 }
 
-/// Zagros Treasury pezpallet instance.
+/// Westend Treasury pezpallet instance.
 pub const TREASURY_PALLET_ID: u8 = 37;
 
 /// XCM protocol related constants.

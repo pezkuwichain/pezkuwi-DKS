@@ -13,8 +13,8 @@
 //   {{arg}}
 {{/each}}
 
-use sp_core::parameter_types;
-use sp_weights::{constants::WEIGHT_REF_TIME_PER_NANOS, Weight};
+use pezsp_core::parameter_types;
+use pezsp_weights::{constants::WEIGHT_REF_TIME_PER_NANOS, Weight};
 
 parameter_types! {
 	{{#if (eq short_name "block")}}
@@ -40,7 +40,7 @@ parameter_types! {
 
 #[cfg(test)]
 mod test_weights {
-	use sp_weights::constants;
+	use pezsp_weights::constants;
 
 	/// Checks that the weight exists and is sane.
 	// NOTE: If this test fails but you are sure that the generated values are fine,

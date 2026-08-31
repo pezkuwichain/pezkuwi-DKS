@@ -16,7 +16,6 @@
 
 use crate::cli::{Cli, Subcommand, NODE_VERSION};
 use futures::future::TryFutureExt;
-use log::{info, warn};
 use pezframe_benchmarking_cli::{
 	BenchmarkCmd, BizinikiwiRemarkBuilder, ExtrinsicFactory, BIZINIKIWI_REFERENCE_HARDWARE,
 };
@@ -46,53 +45,15 @@ fn get_exec_name() -> Option<String> {
 		.and_then(|s| s.into_string().ok())
 }
 
-fn get_invulnerable_ah_collators(
-	chain_spec: &Box<dyn pezkuwi_service::ChainSpec>,
-) -> HashSet<PeerId> {
-	// A default set of invulnerable asset hub collators
-	const DICLE: [&str; 11] = [
-		"12D3KooWHNEENyCc4R3iDLLFaJiynUp9eDZp7TtS1G6DCp459vVK",
-		"12D3KooWAVqLdQEjSezy7CPEgMLMSTuyfSBdbxPGkmik5x2aL8u4",
-		"12D3KooWBxMiVQdYa5MaQjSWAu3YsfKdrs7vgX9cPk4cCwFVAXEu",
-		"12D3KooWGbRmQ9FjwkzTVTSxfUh854wxc3LUD5agjzcucDarZrNn",
-		"12D3KooWHwXftCGdp73t4BUxW3c9UKjYTvjc7tHsrinT5M8AUmXo",
-		"12D3KooWCTSAq83D99RcT64rrV5X3sGZxc9JQ8nVtd6GbZEKnDqC",
-		"12D3KooWF63ZxKtZMYs5247WQA8fcTiGJb2osXykc31cmjwNLwem",
-		"12D3KooWGowDwrXAh9cxkbPHPHuwMouFHrMcJhCVXcFS2B8vc5Ry",
-		"12D3KooWRhoxXsZypnp1Tady6XSRqXfxu7Bj6hGk8aj6FJ1iU6pt",
-		"12D3KooWJUs11H7S3Hv9BVh72w3yVmHoYTXaoBUg1KQyYk4hL2bB",
-		"12D3KooWAeLjabo2foz6gAQvLRfwF2d3WnpUGDjhg8V5AQUnv5AZ",
-	];
-
-	const PEZKUWI: [&str; 7] = [
-		"12D3KooWEyGg3oUwYfaLWM5AJ2pvXCUxBuXNapX1tQXLsbDmMV6z",
-		"12D3KooWD9dTKLW65NFFLVjqgaXNzb3zKXBfwRS5iovxV6XaoVX6",
-		"12D3KooWPJfGGisRMkiD5yhySZggEhyMSwELb34P2bEuAmUh9RYy",
-		"12D3KooWQB9RBoJEByMtXtD8aC1WR1DJQb3QMXRcsQmNxrghsQLv",
-		"12D3KooWFhBYG98e53DQB7W2JKBL9xWrP83ANkAjzvp4enEJAt3k",
-		"12D3KooWG3GrM6XKMM4gp3cvemdwUvu96ziYoJmqmetLZBXE8bSa",
-		"12D3KooWMRyTLrCEPcAQD6c4EnudL3vVzg9zji3whvsMYPUYevpq",
-	];
-
-	let invulnerables = if chain_spec.is_dicle() {
-		DICLE.to_vec()
-	} else if chain_spec.is_pezkuwi() {
-		PEZKUWI.to_vec()
-	} else {
-		vec![]
-	};
-
-	invulnerables
-			.iter()
-			.filter_map(|invuln_str| {
-				invuln_str
-					.parse::<PeerId>()
-					.map_err(|e| {
-						warn!("Failed to parse AssetHub invulnerable peer from the default list. This should never happen. {:?}", e)
-					})
-					.ok()
-			})
-			.collect()
+/// Peer ids of the Asset Hub collators the collator protocol treats as invulnerable.
+///
+/// This is a per-network list of operator-run collators, so it cannot be inherited from
+/// anywhere: the only correct value is our own collators' peer ids, and those are fixed when
+/// the network's genesis is. Empty until then -- an empty set costs the collator protocol its
+/// preferential treatment, whereas a foreign set would reserve our slots for other people's
+/// nodes.
+fn get_invulnerable_ah_collators() -> HashSet<PeerId> {
+	HashSet::new()
 }
 
 impl BizinikiwiCli for Cli {
@@ -114,7 +75,7 @@ impl BizinikiwiCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/pezkuwichain/pezkuwi-sdk/issues/new".into()
+		"https://github.com/pezkuwichain/pezkuwi-DKS/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
@@ -131,36 +92,46 @@ impl BizinikiwiCli for Cli {
 	) -> std::result::Result<Box<dyn pezsc_service::ChainSpec>, String> {
 		let id = if id == "" {
 			let n = get_exec_name().unwrap_or_default();
-			["pezkuwi", "dicle", "zagros", "pezkuwichain", "versi"]
+			// Both networks this node serves. `pezkuwichain` is last-resort rather than a
+			// guess: running the mainnet spec by accident is loud and harmless, whereas
+			// defaulting to a testnet would have a validator quietly author on the wrong chain.
+			["zagros", "pezkuwichain"]
 				.iter()
 				.cloned()
 				.find(|&chain| n.starts_with(chain))
-				.unwrap_or("pezkuwi")
+				.unwrap_or("pezkuwichain")
 		} else {
 			id
 		};
 		Ok(match id {
-			"dicle" => Box::new(pezkuwi_service::chain_spec::dicle_config()?),
-			name if name.starts_with("dicle-") && !name.ends_with(".json") =>
-				Err(format!("`{name}` is not supported anymore as the dicle native runtime no longer part of the node."))?,
-			"pezkuwi" => Box::new(pezkuwi_service::chain_spec::pezkuwi_config()?),
-			name if name.starts_with("pezkuwi-") && !name.ends_with(".json") =>
-				Err(format!("`{name}` is not supported anymore as the pezkuwi native runtime no longer part of the node."))?,
-			"paseo" => Box::new(pezkuwi_service::chain_spec::paseo_config()?),
 			"pezkuwichain" => Box::new(pezkuwi_service::chain_spec::pezkuwichain_config()?),
 			#[cfg(feature = "pezkuwichain-native")]
 			"pezkuwichain-mainnet" => Box::new(pezkuwi_service::chain_spec::pezkuwichain_mainnet_config()?),
 			#[cfg(feature = "pezkuwichain-native")]
-			"dev" | "pezkuwichain-dev" => Box::new(pezkuwi_service::chain_spec::pezkuwichain_development_config()?),
+			"dev" | "pezkuwichain-dev" => {
+				Box::new(pezkuwi_service::chain_spec::pezkuwichain_development_config()?)
+			},
 			#[cfg(feature = "pezkuwichain-native")]
-			"pezkuwichain-local" => Box::new(pezkuwi_service::chain_spec::pezkuwichain_local_testnet_config()?),
+			"pezkuwichain-local" => {
+				Box::new(pezkuwi_service::chain_spec::pezkuwichain_local_testnet_config()?)
+			},
 			#[cfg(feature = "pezkuwichain-native")]
-			"pezkuwichain-staging" => Box::new(pezkuwi_service::chain_spec::pezkuwichain_staging_testnet_config()?),
+			"pezkuwichain-staging" => {
+				Box::new(pezkuwi_service::chain_spec::pezkuwichain_staging_testnet_config()?)
+			},
 			#[cfg(feature = "pezkuwichain-native")]
-			"mainnet-sim" | "mainnet-simulation" => Box::new(pezkuwi_service::chain_spec::pezkuwichain_mainnet_simulation_config()?),
+			"mainnet-sim" | "mainnet-simulation" => {
+				Box::new(pezkuwi_service::chain_spec::pezkuwichain_mainnet_simulation_config()?)
+			},
 			#[cfg(not(feature = "pezkuwichain-native"))]
-			name if name.starts_with("pezkuwichain-") && !name.ends_with(".json") || name == "dev" =>
-				Err(format!("`{}` only supported with `pezkuwichain-native` feature enabled.", name))?,
+			name if name.starts_with("pezkuwichain-") && !name.ends_with(".json")
+				|| name == "dev" =>
+			{
+				Err(format!(
+					"`{}` only supported with `pezkuwichain-native` feature enabled.",
+					name
+				))?
+			},
 			"zagros" => Box::new(pezkuwi_service::chain_spec::zagros_config()?),
 			#[cfg(feature = "zagros-native")]
 			"zagros-dev" => Box::new(pezkuwi_service::chain_spec::zagros_development_config()?),
@@ -168,30 +139,17 @@ impl BizinikiwiCli for Cli {
 			"zagros-local" => Box::new(pezkuwi_service::chain_spec::zagros_local_testnet_config()?),
 			#[cfg(feature = "zagros-native")]
 			"zagros-staging" => Box::new(pezkuwi_service::chain_spec::zagros_staging_testnet_config()?),
-			#[cfg(feature = "pezkuwichain-native")]
-			"versi-dev" => Box::new(pezkuwi_service::chain_spec::versi_development_config()?),
-			#[cfg(feature = "pezkuwichain-native")]
-			"versi-local" => Box::new(pezkuwi_service::chain_spec::versi_local_testnet_config()?),
-			#[cfg(feature = "pezkuwichain-native")]
-			"versi-staging" => Box::new(pezkuwi_service::chain_spec::versi_staging_testnet_config()?),
-			#[cfg(not(feature = "pezkuwichain-native"))]
-			name if name.starts_with("versi-") =>
-				Err(format!("`{}` only supported with `pezkuwichain-native` feature enabled.", name))?,
 			path => {
 				let path = std::path::PathBuf::from(path);
 
-				let chain_spec = Box::new(pezkuwi_service::GenericChainSpec::from_json_file(path.clone())?)
-					as Box<dyn pezkuwi_service::ChainSpec>;
+				let chain_spec =
+					Box::new(pezkuwi_service::GenericChainSpec::from_json_file(path.clone())?)
+						as Box<dyn pezkuwi_service::ChainSpec>;
 
 				// When `force_*` is given or the file name starts with the name of one of the known
 				// chains, we use the chain spec for the specific chain.
-				if self.run.force_pezkuwichain ||
-					chain_spec.is_pezkuwichain() ||
-					chain_spec.is_versi()
-				{
+				if self.run.force_pezkuwichain || chain_spec.is_pezkuwichain() {
 					Box::new(pezkuwi_service::PezkuwichainChainSpec::from_json_file(path)?)
-				} else if self.run.force_dicle || chain_spec.is_dicle() {
-					Box::new(pezkuwi_service::GenericChainSpec::from_json_file(path)?)
 				} else if self.run.force_zagros || chain_spec.is_zagros() {
 					Box::new(pezkuwi_service::ZagrosChainSpec::from_json_file(path)?)
 				} else {
@@ -246,14 +204,6 @@ where
 
 	set_default_ss58_version(chain_spec);
 
-	if chain_spec.is_dicle() {
-		info!("----------------------------");
-		info!("This chain is not in any way");
-		info!("      endorsed by the       ");
-		info!("     DICLE FOUNDATION      ");
-		info!("----------------------------");
-	}
-
 	let node_version =
 		if cli.run.disable_worker_version_check { None } else { Some(NODE_VERSION.to_string()) };
 
@@ -261,7 +211,8 @@ where
 
 	// Parse collator protocol hold off value and get the list of the invlunerable collators.
 	let collator_protocol_hold_off = cli.run.collator_protocol_hold_off.map(Duration::from_millis);
-	let invulnerable_ah_collators = get_invulnerable_ah_collators(&chain_spec);
+	let invulnerable_ah_collators = get_invulnerable_ah_collators();
+	let experimental_collator_protocol = cli.run.experimental_collator_protocol;
 
 	runner.run_node_until_exit(move |config| async move {
 		let hwbench = (!cli.run.no_hardware_benchmarks)
@@ -300,6 +251,11 @@ where
 				keep_finalized_for: cli.run.keep_finalized_for,
 				invulnerable_ah_collators,
 				collator_protocol_hold_off,
+				experimental_collator_protocol,
+				collator_reputation_persist_interval: cli
+					.run
+					.collator_reputation_persist_interval
+					.map(std::time::Duration::from_secs),
 			},
 		)
 		.map(|full| full.task_manager)?;
@@ -477,7 +433,7 @@ pub fn run() -> Result<()> {
 				BenchmarkCmd::Overhead(cmd) => runner.sync_run(|config| {
 					if cmd.params.runtime.is_some() {
 						return Err(pezsc_cli::Error::Input(
-							"Pezkuwi binary does not support `--runtime` flag for `benchmark overhead`. Please provide a chain spec or use the `frame-omni-bencher`."
+							"Pezkuwi binary does not support `--runtime` flag for `benchmark overhead`. Please provide a chain spec or use the `pezframe-omni-bencher`."
 								.into(),
 						)
 						.into())

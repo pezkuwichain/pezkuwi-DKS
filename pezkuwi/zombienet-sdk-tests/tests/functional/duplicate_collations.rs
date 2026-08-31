@@ -7,12 +7,11 @@
 use anyhow::anyhow;
 use tokio::time::Duration;
 
-use pezcumulus_zombienet_sdk_helpers::{assert_para_throughput, create_assign_core_call};
+use pezcumulus_zombienet_sdk_helpers::{assert_para_throughput, assign_cores};
 use pezkuwi_primitives::Id as ParaId;
 use pezkuwi_zombienet_orchestrator::network::node::LogLineCountOptions;
 use pezkuwi_zombienet_sdk::{
 	subxt::{OnlineClient, PezkuwiConfig},
-	subxt_signer::sr25519::dev,
 	NetworkConfigBuilder,
 };
 use serde_json::json;
@@ -46,8 +45,8 @@ async fn duplicate_collations_test() -> Result<(), anyhow::Error> {
 						}
 					}
 				}))
-				// Have to set a `with_node` outside of the loop below, so that `r` has the right
-				// type.
+				// Have to set a `with_validator` outside of the loop below, so that `r` has the
+				// right type.
 				.with_validator(|node| node.with_name("validator-0"));
 
 			(1..VALIDATOR_COUNT).fold(r, |acc, i| {
@@ -85,23 +84,13 @@ async fn duplicate_collations_test() -> Result<(), anyhow::Error> {
 	let relay_node = network.get_node("validator-0")?;
 
 	let relay_client: OnlineClient<PezkuwiConfig> = relay_node.wait_client().await?;
-	let alice = dev::alice();
 
 	// Assign two extra cores to teyrchain-2000.
-	relay_client
-		.tx()
-		.sign_and_submit_then_watch_default(
-			&create_assign_core_call(&[(0, 2000), (1, 2000)]),
-			&alice,
-		)
-		.await?
-		.wait_for_finalized_success()
-		.await?;
+	assign_cores(&relay_client, 2000, vec![0, 1]).await?;
 
 	log::info!("2 more cores assigned to teyrchain-2000");
 
-	assert_para_throughput(&relay_client, 15, [(ParaId::from(2000), 40..46)].into_iter().collect())
-		.await?;
+	assert_para_throughput(&relay_client, 15, [(ParaId::from(2000), 40..46)], []).await?;
 
 	let log_line_options = LogLineCountOptions::new(
 		|n| n == 1,

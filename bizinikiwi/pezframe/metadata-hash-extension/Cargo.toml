@@ -22,7 +22,7 @@ scale-info = { features = ["derive", "serde"], workspace = true }
 
 [dev-dependencies]
 bizinikiwi-test-runtime-client = { workspace = true }
-bizinikiwi-wasm-builder = { workspace = true, default-features = true }
+bizinikiwi-wasm-builder = { features = ["metadata-hash"], workspace = true, default-features = true }
 frame-metadata = { features = [
 	"current",
 	"unstable",

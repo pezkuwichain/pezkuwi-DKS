@@ -4,20 +4,20 @@
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@pezkuwi-api/cli": "^0.14.0",
+    "@polkadot-api/cli": "^0.14.0",
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "@pezkuwi-labs/hdkd": "^0.0.16",
+    "@polkadot-labs/hdkd": "^0.0.16",
     "commander": "^14.0.0",
-    "pezkuwi-api": "^1.13.1",
+    "polkadot-api": "^1.13.1",
     "strip-ansi": "^7.1.0",
     "winston": "^3.17.0"
   },
   "optionalDependencies": {
-    "@pezkuwi-api/descriptors": "file:.papi/descriptors"
+    "@polkadot-api/descriptors": "file:.papi/descriptors"
   }
 }

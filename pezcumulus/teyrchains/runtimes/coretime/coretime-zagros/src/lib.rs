@@ -40,6 +40,7 @@ use alloc::{vec, vec::Vec};
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezcumulus_pezpallet_teyrchain_system::RelayNumberMonotonicallyIncreases;
 use pezcumulus_primitives_core::{AggregateMessageOrigin, ParaId};
+use pezframe_support::traits::tokens::imbalance::ResolveTo;
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
@@ -56,6 +57,7 @@ use pezframe_system::{
 	EnsureRoot,
 };
 use pezkuwi_runtime_common::{BlockHashCount, SlowAdjustingFeeUpdate};
+use pezpallet_collator_selection::StakingPotAccountId;
 use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
 use pezsp_api::impl_runtime_apis;
 use pezsp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -65,7 +67,7 @@ use pezsp_runtime::{
 	generic, impl_opaque_keys,
 	traits::{BlakeTwo256, Block as BlockT, BlockNumberProvider},
 	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, DispatchError, MultiAddress, Perbill, RuntimeDebug,
+	ApplyExtrinsicResult, DispatchError, MultiAddress, Perbill,
 };
 #[cfg(feature = "std")]
 use pezsp_version::NativeVersion;
@@ -175,7 +177,12 @@ pub fn native_version() -> NativeVersion {
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
 		.for_class(DispatchClass::all(), |weights| {
@@ -254,7 +261,14 @@ parameter_types! {
 
 impl pezpallet_balances::Config for Runtime {
 	type Balance = Balance;
-	type DustRemoval = ();
+	/// Dust -- what is left in an account too small to keep -- goes where this chain's fee
+	/// income goes, rather than being dropped.
+	///
+	/// `()` destroys it. Small per account and not small across a population, and on a chain
+	/// that collects fees for its treasury there is no reason for the remainder to be the one
+	/// thing that vanishes. Upstream stopped dropping it too, with a pallet of its own; this
+	/// gets the same result without taking on a new pallet.
+	type DustRemoval = ResolveTo<StakingPotAccountId<Runtime>, Balances>;
 	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -304,6 +318,7 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
 	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
 	type ConsensusHook = ConsensusHook;
 	type RelayParentOffset = ConstU32<0>;
+	type SchedulingSignatureVerifier = ();
 }
 
 type ConsensusHook = pezcumulus_pezpallet_aura_ext::FixedVelocityConsensusHook<
@@ -477,7 +492,7 @@ impl pezpallet_multisig::Config for Runtime {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]
@@ -711,6 +726,10 @@ impl_runtime_apis! {
 		fn relay_parent_offset() -> u32 {
 			0
 		}
+
+		fn max_claim_queue_offset() -> u8 {
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
+		}
 	}
 
 	impl pezcumulus_primitives_aura::AuraUnincludedSegmentApi<Block> for Runtime {
@@ -788,8 +807,11 @@ impl_runtime_apis! {
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+		fn generate_session_keys(
+			owner: Vec<u8>,
+			seed: Option<Vec<u8>>,
+		) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(
@@ -992,7 +1014,12 @@ impl_runtime_apis! {
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
-			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
+			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 
 			use xcm::latest::prelude::*;
 			use xcm_config::TokenRelayLocation;
@@ -1041,7 +1068,7 @@ impl_runtime_apis! {
 					))
 				}
 
-				fn set_up_complex_asset_transfer() -> Option<(Assets, AssetId, Location, alloc::boxed::Box<dyn FnOnce()>)> {
+				fn set_up_complex_asset_transfer() -> Option<(Assets, u32, Location, alloc::boxed::Box<dyn FnOnce()>)> {
 					let native_location = Parent.into();
 					let dest = AssetHubLocation::get();
 
@@ -1081,16 +1108,15 @@ impl_runtime_apis! {
 				fn valid_destination() -> Result<Location, BenchmarkError> {
 					Ok(AssetHubLocation::get())
 				}
-				fn worst_case_holding(_depositable_count: u32) -> Assets {
-					// just concrete assets according to relay chain.
-					let assets: Vec<Asset> = vec![
-						Asset {
-							id: AssetId(TokenRelayLocation::get()),
-							fun: Fungible(1_000_000 * UNITS),
+				fn worst_case_holding(_depositable_count: u32) -> xcm_executor::AssetsInHolding {
+							use pezpallet_xcm_benchmarks::MockCredit;
+							let mut holding = xcm_executor::AssetsInHolding::new();
+							holding.fungible.insert(
+								AssetId(TokenRelayLocation::get()),
+								alloc::boxed::Box::new(MockCredit(1_000_000 * UNITS)),
+							);
+							holding
 						}
-					];
-					assets.into()
-				}
 			}
 
 			parameter_types! {

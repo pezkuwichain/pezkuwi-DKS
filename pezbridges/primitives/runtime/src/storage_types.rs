@@ -19,12 +19,11 @@
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezframe_support::traits::Get;
-use pezsp_runtime::RuntimeDebug;
 use pezsp_std::{marker::PhantomData, ops::Deref};
 use scale_info::{Type, TypeInfo};
 
 /// Error that is returned when the value size exceeds maximal configured size.
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 pub struct MaximalSizeExceededError {
 	/// Size of the value.
 	pub value_size: usize,

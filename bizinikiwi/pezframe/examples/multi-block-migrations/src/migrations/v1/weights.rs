@@ -35,7 +35,7 @@
 // --extrinsic
 //
 // --template
-// bizinikiwi/.maintain/frame-weight-template.hbs
+// bizinikiwi/.maintain/pezframe-weight-template.hbs
 // --output
 // bizinikiwi/pezframe/examples/multi-block-migrations/src/migrations/weights.rs
 

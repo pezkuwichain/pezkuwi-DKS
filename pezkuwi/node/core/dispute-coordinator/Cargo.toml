@@ -23,6 +23,7 @@ codec = { workspace = true, default-features = true }
 fatality = { workspace = true }
 futures = { workspace = true }
 gum = { workspace = true, default-features = true }
+pezkuwi-node-clock = { workspace = true, default-features = true }
 schnellru = { workspace = true }
 thiserror = { workspace = true }
 
@@ -37,6 +38,7 @@ pezsc-keystore = { workspace = true, default-features = true }
 assert_matches = { workspace = true }
 futures-timer = { workspace = true }
 kvdb-memorydb = { workspace = true }
+pezkuwi-node-clock = { workspace = true, default-features = true, features = ["test"] }
 pezkuwi-node-subsystem-test-helpers = { workspace = true }
 pezkuwi-primitives = { workspace = true, features = ["test"] }
 pezkuwi-primitives-test-helpers = { workspace = true }

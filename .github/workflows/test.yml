@@ -17,19 +17,18 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Keyed on the pull request for PRs and on the commit everywhere else, never on the ref.
+  # A release cannot proceed until this suite has completed successfully for its exact
+  # commit (see full-ci-gate in release-testnet.yml), and a ref-keyed group let the next
+  # push to the same branch cancel the run the release was waiting on -- leaving the gate
+  # with no successful run to find and no failure to explain it. Superseding still happens
+  # where it is wanted: a new push to a PR cancels that PR's earlier run.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: "0"
-  # pallet-revive (PolkaVM smart contracts) is a TESTNET-only feature. Its contract
-  # fixtures are compiled by a build script that uses a polkavm `.json` target spec
-  # which the polkavm-linker tooling has not yet updated for Rust 1.96's target-spec
-  # format. Skip that contract compilation in native CI builds (upstream-provided
-  # env switch). The runtime WASM build is unaffected (it cross-compiles and already
-  # skips fixtures). Tracked separately for a proper polkavm/Rust-1.96 fix.
-  SKIP_PALLET_REVIVE_FIXTURES: "1"
   # The full-workspace test/clippy/bench compile produced a target dir large enough to
   # overflow the smaller self-hosted runners ("No space left on device"). Debug info is the
   # bulk of compiled test binaries and is not needed to run tests, so drop it — this shrinks
@@ -48,7 +47,7 @@ env:
 jobs:
   # Unit/integration tests, split into partitions that spread across the runner pool.
   test:
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
@@ -58,6 +57,7 @@ jobs:
         partition: [1, 2]
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # Heaviest job — compiles the whole workspace's test binaries. The persistent
         # target dir accumulates and can fill smaller runners; clean it when low.
@@ -75,39 +75,33 @@ jobs:
           fi
       - name: Run tests (nextest, partition ${{ matrix.partition }}/2)
         run: |
-          # The excluded tests below are NOT on-chain fund logic — every runtime and
-          # FRAME/pezpallet test runs. They are vendor/SDK & chain-spec/metadata tooling
-          # snapshots, docs-guide node runs, dep-version match tests, the testnet-only
-          # contracts/revive pallets, and an xcm-emulator harness test. The sr25519/subkey
-          # "verify" tests check hardcoded SUBSTRATE-context signature vectors; PezkuwiChain
-          # signs with the sovereign b"bizinikiwi" context (see the wallet's sr25519-bizinikiwi
-          # binding), so those upstream vectors do not apply — the verify code path itself is
-          # sound. Tracked in issue #11 to re-enable as fixtures/tooling are updated.
-          FILTER='not (
-            package(pezkuwi-zombienet-sdk) |
-            package(pez-chain-spec-guide-runtime) | package(pezkuwi-sdk-docs) |
-            package(pezframe-omni-bencher) |
-            package(bizinikiwi-txtesttool) | package(pezpallet-contracts) |
-            package(pezpallet-revive-eth-rpc) | package(pezpallet-revive-fixtures) |
-            (package(asset-hub-zagros-runtime) & test(smart_contract_not_erc20_will_error)) |
-            package(asset-hub-pezkuwichain-integration-tests) |
-            package(people-pezkuwichain-integration-tests) |
-            (package(pezkuwi-zombienet-configuration) & test(network_config_builder))
-          )'
+          # Nothing is excluded. The suite runs the whole workspace.
+          #
+          # The list that used to be here had grown to nine entries and had outlived its
+          # reasons: the zombienet-configuration case passes on main, and contracts and
+          # revive were held back as "testnet-only" although mainnet is to be a mirror of a
+          # validated Zagros. The last entry was the vendored zombienet SDK's own tests,
+          # which spawn Rococo from Parity's images; those are no longer built at all
+          # (autotests = false in that package), so there is nothing left to filter.
+          #
+          # Precedent for keeping it this way: 46 mainnet integration tests were excluded on
+          # 2026-06-23 because the emulated tree did not compile, the tree was repaired on
+          # 2026-08-18 and passes 238/238, and the exclusion was still in place a month
+          # after its reason expired. A red test states the work; an exclusion states
+          # nothing and nobody returns to it.
           cargo nextest run --workspace --locked --no-fail-fast \
-            --exclude pezpallet-revive \
-            -E "$FILTER" \
             --partition count:${{ matrix.partition }}/2 \
             --config-file .config/nextest.toml
 
   # Doctests (nextest does not run these).
   doc-test:
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
         # fill smaller runners. Clean it when free space is low; sccache keeps the
@@ -140,12 +134,13 @@ jobs:
   # NOT add a blanket `-D warnings`, which would override that curated policy and
   # turn every newer-toolchain style lint into a failure.
   clippy:
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
         # fill smaller runners. Clean it when free space is low; sccache keeps the
@@ -176,12 +171,13 @@ jobs:
   # fee miscalculation). We check compilation here; actual weight generation is a
   # separate release-time step.
   check-benches:
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
     # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Free disk if low
         # The persistent target dir accumulates artifacts across heavy builds and can
         # fill smaller runners. Clean it when free space is low; sccache keeps the
@@ -218,10 +214,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with: { python-version: '3.x' }
       - name: Install tooling
-        run: pip3 install toml "cargo-workspace>=1.2.6" --quiet
+        run: pip3 install -r .github/scripts/requirements.txt --quiet
       - name: Check workspace membership and manifests
         # Catches a crate that is in the tree but absent from the workspace, which is
         # how pezpallet-staking-async-teyrchain-runtime stayed broken on main unnoticed.
@@ -270,11 +266,11 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with: { python-version: '3.x' }
       - name: Install tooling
         run: |
-          pip3 install "cargo-workspace>=1.2.4" toml --quiet
+          pip3 install -r .github/scripts/requirements.txt --quiet
           cargo install zepter@1.82.1 --force --quiet
           # generate-umbrella.py formats the manifest it writes with taplo; without it the
           # generated file differs from the committed one on formatting alone.
@@ -301,10 +297,11 @@ jobs:
           }
 
   core-crypto-features:
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Feature variants of the core crypto primitives
         run: |
           rustup target add wasm32v1-none
@@ -314,10 +311,11 @@ jobs:
           done
 
   wasm-check:
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Runtime compiles for the WASM target
         run: |
           rustup target add wasm32v1-none
@@ -328,7 +326,7 @@ jobs:
             --no-default-features
 
   test-no-try-runtime:
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     timeout-minutes: 720
     strategy:
       fail-fast: false
@@ -336,6 +334,7 @@ jobs:
         partition: [1, 2]
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Tests without the try-runtime feature
         # try-runtime changes which code paths compile; the suite has to pass without it too.
         run: |
@@ -346,10 +345,11 @@ jobs:
             --config-file .config/nextest.toml
 
   rustdoc:
-    runs-on: [self-hosted, substrate-build]
+    runs-on: [self-hosted, bizinikiwi-build]
     timeout-minutes: 720
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
       - name: Build rustdoc
         run: |
           git config --global --add safe.directory '*'

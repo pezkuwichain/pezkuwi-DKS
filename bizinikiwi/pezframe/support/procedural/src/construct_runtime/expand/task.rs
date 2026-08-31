@@ -83,14 +83,14 @@ pub fn expand_outer_task(
 		"cannot have an instantiated RuntimeTask without some Task variant in the runtime. QED";
 
 	let output = quote! {
-		/// An aggregation of all `Task` enums across all pallets included in the current runtime.
+		/// An aggregation of all `Task` enums across all pezpallets included in the current runtime.
 		#[derive(
 			Clone, Eq, PartialEq,
 			#scrate::__private::codec::Encode,
 			#scrate::__private::codec::Decode,
 			#scrate::__private::codec::DecodeWithMemTracking,
 			#scrate::__private::scale_info::TypeInfo,
-			#scrate::__private::RuntimeDebug,
+			#scrate::__private::Debug,
 		)]
 		pub enum RuntimeTask {
 			#( #task_variants )*

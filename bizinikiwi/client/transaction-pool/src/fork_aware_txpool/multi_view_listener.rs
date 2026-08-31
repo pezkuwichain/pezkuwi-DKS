@@ -564,9 +564,9 @@ where
 	///
 	/// This method initializes an `ExternalWatcherContext` for the provided transaction hash, sets
 	/// up the necessary communication channel with listener's task, and unfolds an external
-	/// (meaning that it can be exposed to [`pezsc_transaction_pool_api::TransactionPool`] API
-	/// client e.g. rpc) stream of transaction status events. If an external watcher is already
-	/// present for the given transaction, it returns `None`.
+	/// (meaning that it can be exposed to [`pezsc_transaction_pool_api::TransactionPool`] API client
+	/// e.g. rpc) stream of transaction status events. If an external watcher is already present for
+	/// the given transaction, it returns `None`.
 	///
 	/// The `submit_timestamp` indicates the time at which a transaction is submitted.
 	/// It is primarily used to calculate event timings for metric collection.
@@ -1044,7 +1044,7 @@ mod tests {
 		let tx_hash = H256::repeat_byte(0x0a);
 		let external_watcher = listener.create_external_watcher_for_tx(tx_hash).unwrap();
 
-		//views will keep transaction valid, invalidation shall not happen
+		// views will keep transaction valid, invalidation shall not happen
 		let view_stream0 = futures::stream::iter(std::iter::repeat(tx_hash).zip(events0.clone()))
 			.chain(stream::pending().boxed());
 		let view_stream1 = futures::stream::iter(std::iter::repeat(tx_hash).zip(events1.clone()))

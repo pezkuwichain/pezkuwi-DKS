@@ -26,7 +26,7 @@ use pezpallet_staking_async_rc_runtime_constants::currency::*;
 use xcm::{latest::prelude::*, VersionedLocation, VersionedXcm};
 use xcm_executor::traits::TransactAsset;
 
-/// A type containing the encoding of the People Chain pallets in its runtime. Used to construct any
+/// A type containing the encoding of the People Chain pezpallets in its runtime. Used to construct any
 /// remote calls. The codec index must correspond to the index of `IdentityMigrator` in the
 /// `construct_runtime` of the remote chain.
 #[derive(Encode, Decode)]
@@ -56,7 +56,7 @@ impl<Runtime, AccountId> ToTeyrchainIdentityReaper<Runtime, AccountId> {
 	fn calculate_remote_deposit(bytes: u32, subs: u32) -> Balance {
 		// Remote deposit constants. Teyrchain uses `deposit / 100`
 		// Source:
-		// https://github.com/pezkuwichain/pezkuwi-sdk/blob/a146918/pezcumulus/parachains/common/src/westend.rs#L28
+		// https://github.com/pezkuwichain/pezkuwi-DKS/blob/a146918/cumulus/teyrchains/common/src/westend.rs#L28
 		//
 		// Teyrchain Deposit Configuration:
 		//

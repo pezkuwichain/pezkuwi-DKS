@@ -146,12 +146,9 @@ const PREFIX_0: u32 = 10_000;
 const PREFIX_1: u32 = PREFIX_0 * 2;
 const MAX_UNIQUE_CHANNELS: u32 = 128;
 
-// Compile-time assertions for channel bounds
-const _: () = {
-	assert!(MAX_UNIQUE_CHANNELS < PREFIX_0);
-	assert!(HRMP_MAX_INBOUND_CHANNELS_BOUND < PREFIX_0);
-	assert!(HRMP_MAX_OUTBOUND_CHANNELS_BOUND < PREFIX_0);
-};
+static_assertions::const_assert!(MAX_UNIQUE_CHANNELS < PREFIX_0);
+static_assertions::const_assert!(HRMP_MAX_INBOUND_CHANNELS_BOUND < PREFIX_0);
+static_assertions::const_assert!(HRMP_MAX_OUTBOUND_CHANNELS_BOUND < PREFIX_0);
 
 #[benchmarks(where <T as pezframe_system::Config>::RuntimeOrigin: From<crate::Origin>)]
 mod benchmarks {

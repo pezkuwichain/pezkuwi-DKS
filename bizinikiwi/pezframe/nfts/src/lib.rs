@@ -37,10 +37,10 @@ pub mod mock;
 mod tests;
 
 mod common_functions;
-/// A library providing the feature set of this pezpallet. It contains modules with helper methods
-/// that perform storage updates and checks required by this pezpallet's dispatchables. To use
-/// pezpallet level features, make sure to set appropriate bitflags for [`Config::Features`] in your
-/// runtime configuration trait.
+/// A library providing the feature set of this pezpallet. It contains modules with helper methods that
+/// perform storage updates and checks required by this pezpallet's dispatchables. To use pezpallet level
+/// features, make sure to set appropriate bitflags for [`Config::Features`] in your runtime
+/// configuration trait.
 mod features;
 mod impl_nonfungibles;
 mod types;
@@ -59,7 +59,7 @@ use pezframe_support::traits::{
 use pezframe_system::Config as SystemConfig;
 use pezsp_runtime::{
 	traits::{BlockNumberProvider, IdentifyAccount, Saturating, StaticLookup, Verify, Zero},
-	RuntimeDebug,
+	Debug,
 };
 
 pub use pezpallet::*;

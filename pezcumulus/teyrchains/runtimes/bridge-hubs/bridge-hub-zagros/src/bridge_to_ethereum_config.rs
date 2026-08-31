@@ -131,33 +131,47 @@ impl pezsnowbridge_pezpallet_inbound_queue::Config for Runtime {
 	type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
 }
 
+// Destination the inbound queue delivers to: the Asset Hub teyrchain.
+pezframe_support::parameter_types! {
+	pub InboundQueueTargetLocation: Location =
+		Location::new(1, [Teyrchain(AssetHubParaId::get().into())]);
+}
+
+pub type InboundQueueXcmMessageProcessor =
+	pezsnowbridge_inbound_queue_primitives::v2::XcmMessageProcessor<
+		Runtime,
+		crate::XcmRouter,
+		XcmExecutor<XcmConfig>,
+		pezsnowbridge_inbound_queue_primitives::v2::MessageToXcm<
+			CreateAssetCall,
+			EthereumNetwork,
+			RelayNetwork,
+			EthereumGatewayAddress,
+			InboundQueueV2Location,
+			AssetHubParaId,
+			EthereumSystem,
+			AccountId,
+		>,
+		xcm_builder::AliasesIntoAccountId32<
+			xcm_config::RelayNetwork,
+			<Runtime as pezframe_system::Config>::AccountId,
+		>,
+		InboundQueueTargetLocation,
+	>;
+
 impl pezsnowbridge_pezpallet_inbound_queue_v2::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Verifier = EthereumBeaconClient;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type XcmSender = crate::XcmRouter;
-	#[cfg(feature = "runtime-benchmarks")]
-	type XcmSender = benchmark_helpers::DoNothingRouter;
 	type GatewayAddress = EthereumGatewayAddress;
+	// The sender, executor, converter, account mapping and destination that used to be five
+	// separate associations now sit behind one processor; the values are carried over unchanged.
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type MessageProcessor = InboundQueueXcmMessageProcessor;
+	#[cfg(feature = "runtime-benchmarks")]
+	type MessageProcessor = benchmark_helpers::DoNothingMessageProcessor;
 	#[cfg(feature = "runtime-benchmarks")]
 	type Helper = Runtime;
 	type WeightInfo = crate::weights::pezsnowbridge_pezpallet_inbound_queue_v2::WeightInfo<Runtime>;
-	type AssetHubParaId = AssetHubParaId;
-	type XcmExecutor = XcmExecutor<XcmConfig>;
-	type MessageConverter = pezsnowbridge_inbound_queue_primitives::v2::MessageToXcm<
-		CreateAssetCall,
-		EthereumNetwork,
-		RelayNetwork,
-		EthereumGatewayAddress,
-		InboundQueueV2Location,
-		AssetHubParaId,
-		EthereumSystem,
-		AccountId,
-	>;
-	type AccountToLocation = xcm_builder::AliasesIntoAccountId32<
-		xcm_config::RelayNetwork,
-		<Runtime as pezframe_system::Config>::AccountId,
-	>;
 	type RewardKind = BridgeReward;
 	type DefaultRewardKind = SnowbridgeReward;
 	type RewardPayment = BridgeRelayers;
@@ -383,6 +397,28 @@ pub mod benchmark_helpers {
 		}
 	}
 
+	/// Stands in for the inbound-queue v2 processor while benchmarking. The real one sends xcm,
+	/// converts accounts and reaches the executor; a benchmark of the queue itself should measure
+	/// none of that, so this accepts everything and reports a fixed id.
+	pub struct DoNothingMessageProcessor;
+	impl<AccountId> pezsnowbridge_inbound_queue_primitives::v2::MessageProcessor<AccountId>
+		for DoNothingMessageProcessor
+	{
+		fn can_process_message(
+			_relayer: &AccountId,
+			_message: &pezsnowbridge_inbound_queue_primitives::v2::Message,
+		) -> bool {
+			true
+		}
+
+		fn process_message(
+			_relayer: AccountId,
+			_message: pezsnowbridge_inbound_queue_primitives::v2::Message,
+		) -> Result<[u8; 32], pezsnowbridge_inbound_queue_primitives::v2::MessageProcessorError> {
+			Ok([0u8; 32])
+		}
+	}
+
 	pub struct DoNothingRouter;
 	impl SendXcm for DoNothingRouter {
 		type Ticket = Xcm<()>;
@@ -417,7 +453,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn bridge_hub_inbound_queue_pallet_index_is_correct() {
+	fn bridge_hub_inbound_queue_pezpallet_index_is_correct() {
 		assert_eq!(
 			INBOUND_QUEUE_PALLET_INDEX_V1,
 			<EthereumInboundQueue as pezframe_support::traits::PalletInfoAccess>::index() as u8
@@ -425,7 +461,7 @@ mod tests {
 	}
 
 	#[test]
-	fn bridge_hub_inbound_v2_queue_pallet_index_is_correct() {
+	fn bridge_hub_inbound_v2_queue_pezpallet_index_is_correct() {
 		assert_eq!(
 			INBOUND_QUEUE_PALLET_INDEX_V2,
 			<EthereumInboundQueueV2 as pezframe_support::traits::PalletInfoAccess>::index() as u8

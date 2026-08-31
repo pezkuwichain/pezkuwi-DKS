@@ -41,7 +41,7 @@
 //! ### Key Concepts
 //!
 //! * **Oracle Operators**: A set of trusted accounts authorized to submit data. Managed through the
-//!   [`SortedMembers`] trait, allowing integration with membership pallets.
+//!   [`SortedMembers`] trait, allowing integration with membership pezpallets.
 //! * **Data Feeds**: Key-value pairs where keys identify the data type (e.g., currency pair) and
 //!   values contain the actual data (e.g., price).
 //! * **Data Aggregation**: Configurable algorithms to combine multiple operator inputs into a
@@ -88,7 +88,7 @@ use pezframe_support::{
 use pezframe_system::pezpallet_prelude::*;
 use pezsp_runtime::{
 	traits::{AccountIdConversion, Member},
-	DispatchResult, RuntimeDebug,
+	Debug, DispatchResult,
 };
 use pezsp_std::{prelude::*, vec};
 use scale_info::TypeInfo;
@@ -139,7 +139,7 @@ pub mod pezpallet {
 	#[derive(
 		Encode,
 		Decode,
-		RuntimeDebug,
+		Debug,
 		Eq,
 		PartialEq,
 		Clone,
@@ -163,7 +163,7 @@ pub mod pezpallet {
 		/// A hook to be called when new data is received.
 		///
 		/// This hook is triggered whenever an oracle operator successfully submits new data.
-		/// It allows other pallets to react to oracle updates, enabling real-time responses to
+		/// It allows other pezpallets to react to oracle updates, enabling real-time responses to
 		/// external data changes.
 		type OnNewData: OnNewData<Self::AccountId, Self::OracleKey, Self::OracleValue>;
 
@@ -202,7 +202,7 @@ pub mod pezpallet {
 		/// The source of oracle members.
 		///
 		/// This type provides the set of accounts authorized to submit oracle data.
-		/// Typically implemented by membership pallets to allow governance-controlled
+		/// Typically implemented by membership pezpallets to allow governance-controlled
 		/// management of oracle operators.
 		type Members: SortedMembers<Self::AccountId>;
 
@@ -343,7 +343,7 @@ pub mod pezpallet {
 		///
 		/// Only one submission per oracle operator per block is allowed to prevent spam and ensure
 		/// fair participation. The function also triggers the [`OnNewData`] hook for each submitted
-		/// value, allowing other pallets to react to new oracle data.
+		/// value, allowing other pezpallets to react to new oracle data.
 		///
 		/// ## Errors
 		///
@@ -379,7 +379,7 @@ pub mod pezpallet {
 }
 
 impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
-	fn get_pallet_account() -> T::AccountId {
+	fn get_pezpallet_account() -> T::AccountId {
 		T::PalletId::get().into_account_truncating()
 	}
 
@@ -387,7 +387,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 	pub fn read_raw_values(key: &T::OracleKey) -> Vec<TimestampedValueOf<T, I>> {
 		T::Members::sorted_members()
 			.iter()
-			.chain([Self::get_pallet_account()].iter())
+			.chain([Self::get_pezpallet_account()].iter())
 			.filter_map(|x| Self::raw_values(x, key))
 			.collect()
 	}
@@ -408,7 +408,7 @@ impl<T: Config<I>, I: 'static> Pezpallet<T, I> {
 			ensure!(T::Members::contains(&who), Error::<T, I>::NoPermission);
 			Ok(who)
 		} else {
-			Ok(Self::get_pallet_account())
+			Ok(Self::get_pezpallet_account())
 		}
 	}
 

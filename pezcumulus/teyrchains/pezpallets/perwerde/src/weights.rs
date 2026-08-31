@@ -1,4 +1,4 @@
-// This file is part of Bizinikiwi.
+// This file is part of PezkuwiChain.
 
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: Apache-2.0
@@ -54,122 +54,146 @@ use pezframe_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}}
 use core::marker::PhantomData;
 
 /// Weight functions needed for `pezpallet_perwerde`.
+///
+/// One entry per call. There used to be four, shared out across nine calls -- `annul_course`,
+/// which walks a whole class, was charged as `complete_course`, a constant-time call that no
+/// longer exists. A call that costs more than it charges is a block somebody else cannot fit
+/// into, so the surface here follows the surface there.
+///
+/// The two that scale take the class size: `ratify_results` closes the course and awards
+/// every student who passed, and `annul_course` takes those awards back. Both are bounded by
+/// `MaxStudentsPerCourse`.
 pub trait WeightInfo {
 	fn create_course() -> Weight;
 	fn enroll() -> Weight;
-	fn complete_course() -> Weight;
-	fn archive_course() -> Weight;
+	fn record_result() -> Weight;
+	fn submit_results() -> Weight;
+	fn ratify_results(c: u32) -> Weight;
+	fn expire_course() -> Weight;
+	fn appoint_honorary_mamoste() -> Weight;
+	fn report_course_fraud() -> Weight;
+	fn annul_course(c: u32) -> Weight;
 }
 
 /// Weights for `pezpallet_perwerde` using the Bizinikiwi node and recommended hardware.
 pub struct BizinikiwiWeight<T>(PhantomData<T>);
 impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
-	/// Storage: `Perwerde::NextCourseId` (r:1 w:1)
-	/// Proof: `Perwerde::NextCourseId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
-	/// Storage: `Perwerde::Courses` (r:0 w:1)
-	/// Proof: `Perwerde::Courses` (`max_values`: None, `max_size`: Some(963), added: 3438, mode: `MaxEncodedLen`)
+	/// Storage: `Perwerde::NextCourseId` (r:1 w:1), `Perwerde::Courses` (r:0 w:1)
 	fn create_course() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `3`
-		//  Estimated: `1489`
-		// Minimum execution time: 21_032_000 picoseconds.
 		Weight::from_parts(22_777_000, 1489)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
-	/// Storage: `Perwerde::Courses` (r:1 w:0)
-	/// Proof: `Perwerde::Courses` (`max_values`: None, `max_size`: Some(963), added: 3438, mode: `MaxEncodedLen`)
-	/// Storage: `Perwerde::Enrollments` (r:1 w:1)
-	/// Proof: `Perwerde::Enrollments` (`max_values`: None, `max_size`: Some(101), added: 2576, mode: `MaxEncodedLen`)
-	/// Storage: `Perwerde::StudentCourses` (r:1 w:1)
-	/// Proof: `Perwerde::StudentCourses` (`max_values`: None, `max_size`: Some(249), added: 2724, mode: `MaxEncodedLen`)
+	/// Storage: `Perwerde::Courses` (r:1 w:0), `Perwerde::Enrollments` (r:1 w:1),
+	/// `Perwerde::CourseEnrollmentCount` (r:1 w:1)
 	fn enroll() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `149`
-		//  Estimated: `4428`
-		// Minimum execution time: 33_652_000 picoseconds.
-		Weight::from_parts(37_083_000, 4428)
+		Weight::from_parts(28_000_000, 3438)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
-	/// Storage: `Perwerde::Courses` (r:1 w:0)
-	/// Proof: `Perwerde::Courses` (`max_values`: None, `max_size`: Some(963), added: 3438, mode: `MaxEncodedLen`)
-	/// Storage: `Perwerde::Enrollments` (r:1 w:1)
-	/// Proof: `Perwerde::Enrollments` (`max_values`: None, `max_size`: Some(101), added: 2576, mode: `MaxEncodedLen`)
-	fn complete_course() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `307`
-		//  Estimated: `4428`
-		// Minimum execution time: 33_123_000 picoseconds.
-		Weight::from_parts(37_458_000, 4428)
+	/// Storage: `Perwerde::Courses` (r:1 w:0), `Perwerde::Enrollments` (r:1 w:1)
+	fn record_result() -> Weight {
+		Weight::from_parts(24_000_000, 3438)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `Perwerde::Courses` (r:1 w:1)
-	/// Proof: `Perwerde::Courses` (`max_values`: None, `max_size`: Some(963), added: 3438, mode: `MaxEncodedLen`)
-	fn archive_course() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `149`
-		//  Estimated: `4428`
-		// Minimum execution time: 24_529_000 picoseconds.
-		Weight::from_parts(27_529_000, 4428)
+	fn submit_results() -> Weight {
+		Weight::from_parts(20_000_000, 3438)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Storage: `Perwerde::Courses` (r:1 w:1), `Perwerde::CourseRatifiers` (r:1 w:1),
+	/// `Perwerde::RatificationCount` (r:1 w:1); on the final ratification the class is
+	/// closed and awarded, which is the `c` term.
+	fn ratify_results(c: u32) -> Weight {
+		Weight::from_parts(30_000_000, 3438)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(
+				T::DbWeight::get().reads_writes(4_u64, 4_u64).saturating_mul(c.into()),
+			)
+	}
+	/// Storage: `Perwerde::Courses` (r:1 w:1)
+	fn expire_course() -> Weight {
+		Weight::from_parts(20_000_000, 3438)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	/// Storage: `Perwerde::HonoraryMamosteCount` (r:1 w:1), tiki grant
+	fn appoint_honorary_mamoste() -> Weight {
+		Weight::from_parts(35_000_000, 3438)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Storage: `Perwerde::Courses` (r:1 w:0), `Perwerde::CoursesUnderReview` (r:0 w:1)
+	fn report_course_fraud() -> Weight {
+		Weight::from_parts(20_000_000, 3438)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	/// Storage: `Perwerde::Courses` (r:1 w:1), `Perwerde::CoursesUnderReview` (r:1 w:1),
+	/// then one class of enrolments reversed -- the `c` term.
+	fn annul_course(c: u32) -> Weight {
+		Weight::from_parts(28_000_000, 3438)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(
+				T::DbWeight::get().reads_writes(4_u64, 4_u64).saturating_mul(c.into()),
+			)
+	}
 }
 
-// For backwards compatibility and tests.
 impl WeightInfo for () {
-	/// Storage: `Perwerde::NextCourseId` (r:1 w:1)
-	/// Proof: `Perwerde::NextCourseId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
-	/// Storage: `Perwerde::Courses` (r:0 w:1)
-	/// Proof: `Perwerde::Courses` (`max_values`: None, `max_size`: Some(963), added: 3438, mode: `MaxEncodedLen`)
 	fn create_course() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `3`
-		//  Estimated: `1489`
-		// Minimum execution time: 21_032_000 picoseconds.
 		Weight::from_parts(22_777_000, 1489)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
-	/// Storage: `Perwerde::Courses` (r:1 w:0)
-	/// Proof: `Perwerde::Courses` (`max_values`: None, `max_size`: Some(963), added: 3438, mode: `MaxEncodedLen`)
-	/// Storage: `Perwerde::Enrollments` (r:1 w:1)
-	/// Proof: `Perwerde::Enrollments` (`max_values`: None, `max_size`: Some(101), added: 2576, mode: `MaxEncodedLen`)
-	/// Storage: `Perwerde::StudentCourses` (r:1 w:1)
-	/// Proof: `Perwerde::StudentCourses` (`max_values`: None, `max_size`: Some(249), added: 2724, mode: `MaxEncodedLen`)
 	fn enroll() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `149`
-		//  Estimated: `4428`
-		// Minimum execution time: 33_652_000 picoseconds.
-		Weight::from_parts(37_083_000, 4428)
+		Weight::from_parts(28_000_000, 3438)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
-	/// Storage: `Perwerde::Courses` (r:1 w:0)
-	/// Proof: `Perwerde::Courses` (`max_values`: None, `max_size`: Some(963), added: 3438, mode: `MaxEncodedLen`)
-	/// Storage: `Perwerde::Enrollments` (r:1 w:1)
-	/// Proof: `Perwerde::Enrollments` (`max_values`: None, `max_size`: Some(101), added: 2576, mode: `MaxEncodedLen`)
-	fn complete_course() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `307`
-		//  Estimated: `4428`
-		// Minimum execution time: 33_123_000 picoseconds.
-		Weight::from_parts(37_458_000, 4428)
+	fn record_result() -> Weight {
+		Weight::from_parts(24_000_000, 3438)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
-	/// Storage: `Perwerde::Courses` (r:1 w:1)
-	/// Proof: `Perwerde::Courses` (`max_values`: None, `max_size`: Some(963), added: 3438, mode: `MaxEncodedLen`)
-	fn archive_course() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `149`
-		//  Estimated: `4428`
-		// Minimum execution time: 24_529_000 picoseconds.
-		Weight::from_parts(27_529_000, 4428)
+	fn submit_results() -> Weight {
+		Weight::from_parts(20_000_000, 3438)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	fn ratify_results(c: u32) -> Weight {
+		Weight::from_parts(30_000_000, 3438)
+			.saturating_add(RocksDbWeight::get().reads(4_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+			.saturating_add(
+				RocksDbWeight::get().reads_writes(4_u64, 4_u64).saturating_mul(c.into()),
+			)
+	}
+	fn expire_course() -> Weight {
+		Weight::from_parts(20_000_000, 3438)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	fn appoint_honorary_mamoste() -> Weight {
+		Weight::from_parts(35_000_000, 3438)
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	fn report_course_fraud() -> Weight {
+		Weight::from_parts(20_000_000, 3438)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	fn annul_course(c: u32) -> Weight {
+		Weight::from_parts(28_000_000, 3438)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+			.saturating_add(
+				RocksDbWeight::get().reads_writes(4_u64, 4_u64).saturating_mul(c.into()),
+			)
 	}
 }

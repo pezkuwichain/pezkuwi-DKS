@@ -56,7 +56,7 @@ impl<T: pezframe_system::Config> pezpallet_glutton::WeightInfo for WeightInfo<T>
 	/// Storage: `Glutton::TrashData` (r:0 w:1000)
 	/// Proof: `Glutton::TrashData` (`max_values`: Some(65000), `max_size`: Some(1036), added: 3016, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 1000]`.
-	fn initialize_pallet_grow(n: u32, ) -> Weight {
+	fn initialize_pezpallet_grow(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `1489`
@@ -74,7 +74,7 @@ impl<T: pezframe_system::Config> pezpallet_glutton::WeightInfo for WeightInfo<T>
 	/// Storage: `Glutton::TrashData` (r:0 w:1000)
 	/// Proof: `Glutton::TrashData` (`max_values`: Some(65000), `max_size`: Some(1036), added: 3016, mode: `MaxEncodedLen`)
 	/// The range of component `n` is `[0, 1000]`.
-	fn initialize_pallet_shrink(n: u32, ) -> Weight {
+	fn initialize_pezpallet_shrink(n: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `45`
 		//  Estimated: `1489`

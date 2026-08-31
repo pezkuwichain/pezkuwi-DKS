@@ -38,7 +38,7 @@ pub struct Api {
 impl Api {
 	/// Create a new `Api`. The [`ApiBackend`] should be passed to [`run`](super::run::run).
 	pub fn new(config: &Config) -> (Self, ApiBackend) {
-		let (request_sender, request_receiver) = mpsc::channel(config.bizinikiwi.request_buffer);
+		let (request_sender, request_receiver) = mpsc::channel(config.substrate.request_buffer);
 		(Self { request_sender }, ApiBackend { request_receiver })
 	}
 

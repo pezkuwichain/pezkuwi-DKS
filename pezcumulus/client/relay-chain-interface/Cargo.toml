@@ -14,6 +14,7 @@ workspace = true
 
 [dependencies]
 pezkuwi-overseer = { workspace = true, default-features = true }
+pezsp-storage = { workspace = true, default-features = true }
 
 pezcumulus-primitives-core = { workspace = true, default-features = true }
 

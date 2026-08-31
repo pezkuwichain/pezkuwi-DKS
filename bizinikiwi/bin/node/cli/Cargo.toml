@@ -161,7 +161,6 @@ remote-externalities = { workspace = true, default-features = true }
 tracking-allocator = { workspace = true, default-features = true }
 
 # Direct dependency needed (not through umbrella due to macro visibility issues)
-pezsp-runtime = { workspace = true }
 
 # Shared code between the staging node and kitchensink runtime:
 node-inspect = { optional = true, workspace = true, default-features = true }
@@ -290,7 +289,6 @@ runtime-benchmarks = [
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-keyring/runtime-benchmarks",
 	"pezsp-mmr-primitives/runtime-benchmarks",
-	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-statement-store/runtime-benchmarks",
 	"pezsp-timestamp/runtime-benchmarks",
 	"pezsp-transaction-storage-proof/runtime-benchmarks",
@@ -361,7 +359,6 @@ try-runtime = [
 	"pezsp-inherents/try-runtime",
 	"pezsp-keyring/try-runtime",
 	"pezsp-mmr-primitives/try-runtime",
-	"pezsp-runtime/try-runtime",
 	"pezsp-statement-store/try-runtime",
 	"pezsp-timestamp/try-runtime",
 	"pezsp-transaction-storage-proof/try-runtime",
@@ -445,7 +442,6 @@ std = [
 	"pezsp-keyring/std",
 	"pezsp-panic-handler/std",
 	"pezsp-rpc/std",
-	"pezsp-runtime/std",
 	"prometheus-endpoint/std",
 	"remote-externalities/std",
 ]

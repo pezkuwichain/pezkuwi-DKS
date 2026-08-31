@@ -93,8 +93,7 @@ where
 	}
 }
 
-/// Checks that the best teyrchain header hash in the bridge teyrchains pezpallet equals to given
-/// one.
+/// Checks that the best teyrchain header hash in the bridge teyrchains pezpallet equals to given one.
 pub struct VerifySubmitTeyrchainHeaderProofOutcome<Runtime, PPI> {
 	bridged_para_id: u32,
 	expected_best_hash: ParaHash,
@@ -300,7 +299,7 @@ pub fn relayed_incoming_message_works<Runtime, AllPalletsWithoutSystem, MPI>(
 		vec![(
 			relayer_id_on_target.clone().into(),
 			// this value should be enough to cover all transaction costs, but computing the actual
-			// value here is tricky - there are several transaction payment pallets and we don't
+			// value here is tricky - there are several transaction payment pezpallets and we don't
 			// want to introduce additional bounds and traits here just for that, so let's just
 			// select some presumably large value
 			core::cmp::max::<Runtime::Balance>(Runtime::ExistentialDeposit::get(), 1u32.into())
@@ -396,8 +395,8 @@ fn execute_and_verify_calls<Runtime: pezframe_system::Config>(
 	}
 }
 
-pub(crate) mod for_pallet_xcm_bridge_hub {
-	use super::{super::for_pallet_xcm_bridge_hub::*, *};
+pub(crate) mod for_pezpallet_xcm_bridge_hub {
+	use super::{super::for_pezpallet_xcm_bridge_hub::*, *};
 
 	/// Helper function to open the bridge/lane for `source` and `destination` while ensuring all
 	/// required balances are placed into the SA of the source.
@@ -511,8 +510,8 @@ pub(crate) mod for_pallet_xcm_bridge_hub {
 		.ensure_complete());
 	}
 
-	/// Utility for opening bridge directly inserting data to the `pezpallet_xcm_bridge_hub`'s
-	/// storage (used only for legacy purposes).
+	/// Utility for opening bridge directly inserting data to the `pezpallet_xcm_bridge_hub`'s storage
+	/// (used only for legacy purposes).
 	pub fn open_bridge_with_storage<Runtime, XcmOverBridgePalletInstance>(
 		locations: pezpallet_xcm_bridge_hub::BridgeLocations,
 		lane_id: pezpallet_xcm_bridge_hub::LaneIdOf<Runtime, XcmOverBridgePalletInstance>,

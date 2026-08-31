@@ -2,7 +2,7 @@
 
 > NOTE: This module has suffered changes for the elastic scaling implementation. As a result, parts of this document may
 be out of date and will be updated at a later time. Issue tracking the update:
-https://github.com/pezkuwichain/pezkuwi-sdk/issues/132
+https://github.com/pezkuwichain/pezkuwi-DKS/issues/132
 
 The inclusion module is responsible for inclusion and availability of scheduled teyrchains. It also manages the UMP
 dispatch queue of each teyrchain.

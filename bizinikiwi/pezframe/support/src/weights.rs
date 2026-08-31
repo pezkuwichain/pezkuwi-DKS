@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Re-exports `sp-weights` public API, and contains benchmarked weight constants specific to FRAME.
+//! Re-exports `pezsp-weights` public API, and contains benchmarked weight constants specific to FRAME.
 
 mod block_weights;
 mod extrinsic_weights;

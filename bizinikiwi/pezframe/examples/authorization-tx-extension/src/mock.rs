@@ -44,8 +44,8 @@ mod example_runtime {
 		VerifySignature<Runtime>,
 		// Nonce check (and increment) for the caller.
 		CheckNonce<Runtime>,
-		// If activated, will mutate the origin to a `pezpallet_coownership` origin of 2 accounts
-		// that own something.
+		// If activated, will mutate the origin to a `pezpallet_coownership` origin of 2 accounts that
+		// own something.
 		AuthorizeCoownership<Runtime, MultiSigner, MultiSignature>,
 		// Some other extensions that we want to run for every possible origin and we want captured
 		// in any and all signature and authorization schemes (such as the traditional account

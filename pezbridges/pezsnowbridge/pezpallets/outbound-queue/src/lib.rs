@@ -18,8 +18,8 @@
 //! 3. The underlying message queue is implemented by [`Config::MessageQueue`]
 //! 4. The message queue delivers messages back to this pezpallet via the implementation for
 //!    [`pezframe_support::traits::ProcessMessage::process_message`]
-//! 5. The message is processed in `Pezpallet::do_process_message`: a. Assigned a nonce b.
-//!    ABI-encoded, hashed, and stored in the `MessageLeaves` vector
+//! 5. The message is processed in `Pezpallet::do_process_message`: a. Assigned a nonce b. ABI-encoded,
+//!    hashed, and stored in the `MessageLeaves` vector
 //! 6. At the end of the block, a merkle root is constructed from all the leaves in `MessageLeaves`.
 //! 7. This merkle root is inserted into the teyrchain header as a digest item
 //! 8. Offchain relayers are able to relay the message to Ethereum after: a. Generating a merkle
@@ -47,14 +47,14 @@
 //! consume on Ethereum. Using this upper bound, a final fee can be calculated.
 //!
 //! The fee calculation also requires the following parameters:
-//! * Average ETH/HEZ exchange rate over some period
+//! * Average ETH/DOT exchange rate over some period
 //! * Max fee per unit of gas that bridge is willing to refund relayers for
 //!
 //! By design, it is expected that governance should manually update these
 //! parameters every few weeks using the `set_pricing_parameters` extrinsic in the
 //! system pezpallet.
 //!
-//! This is an interim measure. Once ETH/HEZ liquidity pools are available in the Pezkuwi network,
+//! This is an interim measure. Once ETH/DOT liquidity pools are available in the Pezkuwi network,
 //! we'll use them as a source of pricing info, subject to certain safeguards.
 //!
 //! ## Fee Computation Function
@@ -62,12 +62,12 @@
 //! ```text
 //! LocalFee(Message) = WeightToFee(ProcessMessageWeight(Message))
 //! RemoteFee(Message) = MaxGasRequired(Message) * Params.MaxFeePerGas + Params.Reward
-//! RemoteFeeAdjusted(Message) = Params.Multiplier * (RemoteFee(Message) / Params.Ratio("ETH/HEZ"))
+//! RemoteFeeAdjusted(Message) = Params.Multiplier * (RemoteFee(Message) / Params.Ratio("ETH/DOT"))
 //! Fee(Message) = LocalFee(Message) + RemoteFeeAdjusted(Message)
 //! ```
 //!
 //! By design, the computed fee includes a safety factor (the `Multiplier`) to cover
-//! unfavourable fluctuations in the ETH/HEZ exchange rate.
+//! unfavourable fluctuations in the ETH/DOT exchange rate.
 //!
 //! ## Fee Settlement
 //!
@@ -409,8 +409,8 @@ pub mod pezpallet {
 			)
 		}
 
-		// 1 HEZ has 10 digits of precision
-		// 1 DCL has 12 digits of precision
+		// 1 DOT has 10 digits of precision
+		// 1 KSM has 12 digits of precision
 		// 1 ETH has 18 digits of precision
 		pub(crate) fn convert_from_ether_decimals(value: u128) -> T::Balance {
 			let decimals = ETHER_DECIMALS.saturating_sub(T::Decimals::get()) as u32;

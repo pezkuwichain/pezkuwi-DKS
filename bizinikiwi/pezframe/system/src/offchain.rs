@@ -26,8 +26,8 @@
 //!
 //! ## Usage
 //!
-//! Please refer to [`example-offchain-worker`](../../pezpallet_example_offchain_worker/index.html)
-//! for a concrete example usage of this crate.
+//! Please refer to [`example-offchain-worker`](../../pezpallet_example_offchain_worker/index.html) for
+//! a concrete example usage of this crate.
 //!
 //! ### Submit a raw unsigned transaction
 //!
@@ -61,7 +61,7 @@ use codec::Encode;
 use pezsp_runtime::{
 	app_crypto::RuntimeAppPublic,
 	traits::{ExtrinsicLike, IdentifyAccount, One},
-	RuntimeDebug,
+	Debug,
 };
 use scale_info::TypeInfo;
 
@@ -102,7 +102,7 @@ where
 /// The signer is then able to:
 /// - Submit a unsigned transaction with a signed payload
 /// - Submit a signed transaction
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 pub struct Signer<T: SigningTypes, C: AppCrypto<T::Public, T::Signature>, X = ForAny> {
 	accounts: Option<Vec<T::Public>>,
 	_phantom: core::marker::PhantomData<(X, C)>,
@@ -320,7 +320,7 @@ impl<T: SigningTypes + CreateBare<LocalCall>, C: AppCrypto<T::Public, T::Signatu
 }
 
 /// Details of an account for which a private key is contained in the keystore.
-#[derive(RuntimeDebug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Account<T: SigningTypes> {
 	/// Index on the provided list of accounts or list of all accounts.
 	pub index: usize,
@@ -542,14 +542,12 @@ pub trait SignMessage<T: SigningTypes> {
 pub trait CreateAuthorizedTransaction<LocalCall>: CreateTransaction<LocalCall> {
 	/// Create the transaction extension to be used alongside an authorized call.
 	///
-	/// For more information about authorized call see
-	/// [`pezframe_support::pezpallet_prelude::authorize`].
+	/// For more information about authorized call see [`pezframe_support::pezpallet_prelude::authorize`].
 	fn create_extension() -> Self::Extension;
 
 	/// Create a new transaction for an authorized call.
 	///
-	/// For more information about authorized call see
-	/// [`pezframe_support::pezpallet_prelude::authorize`].
+	/// For more information about authorized call see [`pezframe_support::pezpallet_prelude::authorize`].
 	fn create_authorized_transaction(call: Self::RuntimeCall) -> Self::Extrinsic {
 		Self::create_transaction(call, Self::create_extension())
 	}

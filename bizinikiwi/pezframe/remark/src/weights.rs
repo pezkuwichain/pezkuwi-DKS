@@ -39,7 +39,7 @@
 // --heap-pages=4096
 // --output=./bizinikiwi/pezframe/remark/src/weights.rs
 // --header=./bizinikiwi/HEADER-APACHE2
-// --template=./bizinikiwi/.maintain/frame-weight-template.hbs
+// --template=./bizinikiwi/.maintain/pezframe-weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]

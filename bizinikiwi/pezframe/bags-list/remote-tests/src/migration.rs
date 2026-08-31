@@ -23,7 +23,7 @@ use pezsp_runtime::{traits::Block as BlockT, DeserializeOwned};
 use remote_externalities::{Builder, Mode, OnlineConfig};
 
 /// Test voter bags migration. `currency_unit` is the number of planks per the the runtimes `UNITS`
-/// (i.e. number of decimal places per HEZ, DCL etc)
+/// (i.e. number of decimal places per DOT, KSM etc)
 pub async fn execute<Runtime, Block>(
 	currency_unit: u64,
 	currency_name: &'static str,
@@ -35,8 +35,8 @@ pub async fn execute<Runtime, Block>(
 {
 	let mut ext = Builder::<Block>::new()
 		.mode(Mode::Online(OnlineConfig {
-			transport: ws_url.to_string().into(),
-			pallets: vec![pezpallet_staking_async::Pezpallet::<Runtime>::name().to_string()],
+			transport_uris: vec![ws_url.to_string()],
+			pezpallets: vec![pezpallet_staking_async::Pezpallet::<Runtime>::name().to_string()],
 			..Default::default()
 		}))
 		.build()

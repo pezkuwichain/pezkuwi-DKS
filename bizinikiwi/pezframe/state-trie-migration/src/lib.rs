@@ -18,12 +18,12 @@
 //! # Pezpallet State Trie Migration
 //!
 //! Reads and writes all keys and values in the entire state in a systematic way. This is useful for
-//! upgrading a chain to [`pezsp_runtime::StateVersion::V1`], where all keys need to be touched.
+//! upgrading a chain to `pezsp_core::StateVersion::V1`, where all keys need to be touched.
 //!
 //! ## Migration Types
 //!
-//! This pezpallet provides 2 ways to do this, each of which is suited for a particular use-case,
-//! and can be enabled independently.
+//! This pezpallet provides 2 ways to do this, each of which is suited for a particular use-case, and
+//! can be enabled independently.
 //!
 //! ### Auto migration
 //!
@@ -43,15 +43,15 @@
 //! can be a good safe alternative, if the former system is not desirable.
 //!
 //! The (minor) caveat of this approach is that we cannot know in advance how many bytes reading a
-//! certain number of keys will incur. To overcome this, the runtime needs to configure this
-//! pezpallet with a `SignedDepositPerItem`. This is the per-item deposit that the origin of the
-//! signed migration transactions need to have in their account (on top of the normal fee) and if
-//! the size witness data that they claim is incorrect, this deposit is slashed.
+//! certain number of keys will incur. To overcome this, the runtime needs to configure this pezpallet
+//! with a `SignedDepositPerItem`. This is the per-item deposit that the origin of the signed
+//! migration transactions need to have in their account (on top of the normal fee) and if the size
+//! witness data that they claim is incorrect, this deposit is slashed.
 //!
 //! ---
 //!
-//! Initially, this pezpallet does not contain any auto migration. They must be manually enabled by
-//! the `ControlOrigin`.
+//! Initially, this pezpallet does not contain any auto migration. They must be manually enabled by the
+//! `ControlOrigin`.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -530,7 +530,7 @@ pub mod pezpallet {
 		/// keys which are then hashed and concatenated, resulting in arbitrarily long keys.
 		///
 		/// Use the *state migration RPC* to retrieve the length of the longest key in your
-		/// storage: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/322>
+		/// storage: <https://github.com/paritytech/substrate/issues/11642>
 		///
 		/// The migration will halt with a `Halted` event if this value is too small.
 		/// Since there is no real penalty from over-estimating, it is advised to use a large
@@ -542,7 +542,7 @@ pub mod pezpallet {
 		/// - [`pezframe_support::storage::StorageDoubleMap`]: 96 byte
 		///
 		/// For more info see
-		/// <https://www.shawntabrizi.com/blog/substrate/querying-substrate-storage-via-rpc/>
+		/// <https://www.shawntabrizi.com/blog/interacting-with-the-bizinikiwi-rpc-endpoint/>
 
 		#[pezpallet::constant]
 		#[pezpallet::no_default]
@@ -1878,7 +1878,11 @@ mod remote_tests_local {
 		pezsp_tracing::try_init_simple();
 		let mode = Mode::OfflineOrElseOnline(
 			OfflineConfig { state_snapshot: snap.clone() },
-			OnlineConfig { transport: ws_api, state_snapshot: Some(snap), ..Default::default() },
+			OnlineConfig {
+				transport_uris: vec![ws_api],
+				state_snapshot: Some(snap),
+				..Default::default()
+			},
 		);
 
 		// item being the bottleneck

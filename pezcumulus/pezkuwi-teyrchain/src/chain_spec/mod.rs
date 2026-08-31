@@ -22,7 +22,6 @@ use pezkuwi_omni_node_lib::{
 	},
 };
 use pezsc_chain_spec::{ChainSpec, ChainType};
-use yet_another_teyrchain::yet_another_teyrchain_config;
 
 pub mod asset_hubs;
 pub mod bridge_hubs;
@@ -31,8 +30,6 @@ pub mod coretime;
 pub mod glutton;
 pub mod penpal;
 pub mod people;
-pub mod pezkuwichain_teyrchain;
-pub mod yet_another_teyrchain;
 
 /// Extracts the normalized chain id and teyrchain id from the input chain id.
 /// (H/T to Phala for the idea)
@@ -57,10 +54,6 @@ pub(crate) struct ChainSpecLoader;
 impl LoadSpec for ChainSpecLoader {
 	fn load_spec(&self, id: &str) -> Result<Box<dyn ChainSpec>, String> {
 		Ok(match id {
-			// - Default-like
-			"staging" => {
-				Box::new(pezkuwichain_teyrchain::pezstaging_pezkuwichain_teyrchain_local_config())
-			},
 			"tick" => Box::new(GenericChainSpec::from_json_bytes(
 				&include_bytes!("../../chain-specs/tick.json")[..],
 			)?),
@@ -72,12 +65,12 @@ impl LoadSpec for ChainSpecLoader {
 			)?),
 
 			// -- Asset Hub Pezkuwi
-			"asset-hub-pezkuwi" | "statemint" => Box::new(GenericChainSpec::from_json_bytes(
+			"asset-hub-pezkuwi" => Box::new(GenericChainSpec::from_json_bytes(
 				&include_bytes!("../../chain-specs/asset-hub-pezkuwi.json")[..],
 			)?),
 
 			// -- Asset Hub Dicle
-			"asset-hub-dicle" | "statemine" => Box::new(GenericChainSpec::from_json_bytes(
+			"asset-hub-dicle" => Box::new(GenericChainSpec::from_json_bytes(
 				&include_bytes!("../../chain-specs/asset-hub-dicle.json")[..],
 			)?),
 
@@ -97,18 +90,12 @@ impl LoadSpec for ChainSpecLoader {
 			)?),
 
 			// -- Asset Hub Zagros
-			"asset-hub-zagros-dev" | "westmint-dev" => {
-				Box::new(asset_hubs::asset_hub_zagros_development_config())
-			},
-			"asset-hub-zagros-local" | "westmint-local" => {
-				Box::new(asset_hubs::asset_hub_zagros_local_config())
-			},
+			"asset-hub-zagros-dev" => Box::new(asset_hubs::asset_hub_zagros_development_config()),
+			"asset-hub-zagros-local" => Box::new(asset_hubs::asset_hub_zagros_local_config()),
 			// the chain spec as used for generating the upgrade genesis values
-			"asset-hub-zagros-genesis" | "westmint-genesis" => {
-				Box::new(asset_hubs::asset_hub_zagros_config())
-			},
+			"asset-hub-zagros-genesis" => Box::new(asset_hubs::asset_hub_zagros_config()),
 			// the shell-based chain spec as used for syncing
-			"asset-hub-zagros" | "westmint" => Box::new(GenericChainSpec::from_json_bytes(
+			"asset-hub-zagros" => Box::new(GenericChainSpec::from_json_bytes(
 				&include_bytes!("../../chain-specs/asset-hub-zagros.json")[..],
 			)?),
 
@@ -189,25 +176,6 @@ impl LoadSpec for ChainSpecLoader {
 				))
 			},
 
-			id if id.starts_with("yap-") => {
-				let tok: Vec<String> = id.split('-').map(|s| s.to_owned()).collect();
-				assert!(
-					tok.len() == 4,
-					"Invalid YAP chain id, should be 'yap-<relay>-<chaintype>-<para-id>'"
-				);
-				let relay = if &tok[2] == "live" { tok[1].clone() } else { tok[1..=2].join("-") };
-				let chain_type = match tok[2].as_str() {
-					"local" => ChainType::Local,
-					"dev" => ChainType::Development,
-					"live" => ChainType::Live,
-					_ => unimplemented!("Unknown chain type {}", tok[2]),
-				};
-				let para_id: u32 =
-					tok[3].parse().expect(&format!("Illegal para id '{}' provided", tok[3]));
-
-				Box::new(yet_another_teyrchain_config(relay, chain_type, para_id))
-			},
-
 			// -- People
 			people_like_id if people_like_id.starts_with(people::PeopleRuntimeType::ID_PREFIX) => {
 				people_like_id
@@ -218,8 +186,11 @@ impl LoadSpec for ChainSpecLoader {
 
 			// -- Fallback (generic chainspec)
 			"" => {
-				log::warn!("No ChainSpec.id specified, so using default one, based on pezkuwichain-teyrchain runtime");
-				Box::new(pezkuwichain_teyrchain::pezkuwichain_teyrchain_local_config())
+				log::warn!(
+					"No ChainSpec.id specified, so using default one, based on Penpal runtime \
+					 against a local Zagros relay"
+				);
+				Box::new(penpal::get_penpal_chain_spec(2000.into(), "zagros-local"))
 			},
 
 			// -- Loading a specific spec from disk
@@ -252,13 +223,10 @@ impl LegacyRuntime {
 		// pezkuwichain before pezkuwi.
 		if id.starts_with("asset-hub-pezkuwichain")
 			| id.starts_with("asset-hub-dicle")
-			| id.starts_with("statemine")
-			| id.starts_with("rockmine")
 			| id.starts_with("asset-hub-zagros")
-			| id.starts_with("westmint")
 		{
 			LegacyRuntime::AssetHub
-		} else if id.starts_with("asset-hub-pezkuwi") | id.starts_with("statemint") {
+		} else if id.starts_with("asset-hub-pezkuwi") {
 			LegacyRuntime::AssetHubPezkuwi
 		} else if id.starts_with("penpal") {
 			LegacyRuntime::Penpal
@@ -314,54 +282,20 @@ impl RuntimeResolverT for RuntimeResolver {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use pezsc_chain_spec::{ChainSpecExtension, ChainSpecGroup, ChainType, Extension};
-	use serde::{Deserialize, Serialize};
 
-	#[derive(
-		Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension, Default,
-	)]
-	#[serde(deny_unknown_fields)]
-	pub struct Extensions1 {
-		pub attribute1: String,
-		pub attribute2: u32,
-	}
-
-	#[derive(
-		Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension, Default,
-	)]
-	#[serde(deny_unknown_fields)]
-	pub struct Extensions2 {
-		pub attribute_x: String,
-		pub attribute_y: String,
-		pub attribute_z: u32,
-	}
-
-	pub type DummyChainSpec<E> = pezsc_service::GenericChainSpec<E>;
-
-	pub fn create_default_with_extensions<E: Extension>(
-		id: &str,
-		extension: E,
-	) -> DummyChainSpec<E> {
-		DummyChainSpec::builder(
-			pezkuwichain_teyrchain_runtime::WASM_BINARY
-				.expect("WASM binary was not built, please build it!"),
-			extension,
-		)
-		.with_name("Dummy local testnet")
-		.with_id(id)
-		.with_chain_type(ChainType::Local)
-		.with_genesis_config_preset_name(pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET)
-		.build()
-	}
-
+	// Upstream dropped the legacy teyrchain module this test used to build its chain specs
+	// from. `LegacyRuntime::from_id` is still live here, so the coverage stays -- it takes an
+	// id string, so there was never a reason to build a chain spec just to read its id back.
 	#[test]
 	fn test_legacy_runtime_for_different_chain_specs() {
-		let chain_spec =
-			create_default_with_extensions("penpal-pezkuwichain-1000", Extensions2::default());
-		assert_eq!(LegacyRuntime::Penpal, LegacyRuntime::from_id(chain_spec.id()));
+		assert_eq!(LegacyRuntime::Penpal, LegacyRuntime::from_id("penpal-pezkuwichain-1000"));
 
-		let chain_spec =
-			crate::chain_spec::pezkuwichain_teyrchain::pezkuwichain_teyrchain_local_config();
-		assert_eq!(LegacyRuntime::Omni, LegacyRuntime::from_id(chain_spec.id()));
+		// Anything unrecognised falls through to the omni runtime.
+		assert_eq!(LegacyRuntime::Omni, LegacyRuntime::from_id("some-unknown-teyrchain"));
+
+		// The prefix order matters, as the comment on `from_id` warns: "asset-hub-pezkuwichain"
+		// starts with "asset-hub-pezkuwi", so the longer one has to be recognised first.
+		assert_eq!(LegacyRuntime::AssetHub, LegacyRuntime::from_id("asset-hub-pezkuwichain"));
+		assert_eq!(LegacyRuntime::AssetHubPezkuwi, LegacyRuntime::from_id("asset-hub-pezkuwi"));
 	}
 }

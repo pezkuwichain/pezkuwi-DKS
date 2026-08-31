@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Pezcumulus teyrchain inherent
+//! Cumulus teyrchain inherent
 //!
 //! The [`TeyrchainInherentData`] is the data that is passed by the collator to the teyrchain
 //! runtime. The runtime will use this data to execute messages from other teyrchains/the relay
@@ -59,7 +59,7 @@ pub mod v0 {
 		codec::Encode,
 		codec::Decode,
 		codec::DecodeWithMemTracking,
-		pezsp_core::RuntimeDebug,
+		Debug,
 		Clone,
 		PartialEq,
 		TypeInfo,
@@ -87,13 +87,7 @@ pub mod v0 {
 
 /// The inherent data that is passed by the collator to the teyrchain runtime.
 #[derive(
-	codec::Encode,
-	codec::Decode,
-	codec::DecodeWithMemTracking,
-	pezsp_core::RuntimeDebug,
-	Clone,
-	PartialEq,
-	TypeInfo,
+	codec::Encode, codec::Decode, codec::DecodeWithMemTracking, Debug, Clone, PartialEq, TypeInfo,
 )]
 pub struct TeyrchainInherentData {
 	pub validation_data: PersistedValidationData,
@@ -172,13 +166,7 @@ impl pezsp_inherents::InherentDataProvider for TeyrchainInherentData {
 
 /// An inbound message whose content was hashed.
 #[derive(
-	codec::Encode,
-	codec::Decode,
-	codec::DecodeWithMemTracking,
-	pezsp_core::RuntimeDebug,
-	Clone,
-	PartialEq,
-	TypeInfo,
+	codec::Encode, codec::Decode, codec::DecodeWithMemTracking, Debug, Clone, PartialEq, TypeInfo,
 )]
 pub struct HashedMessage {
 	pub sent_at: RelayChainBlockNumber,

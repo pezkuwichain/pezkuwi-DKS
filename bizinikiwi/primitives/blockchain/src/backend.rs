@@ -19,6 +19,7 @@
 
 use codec::{Decode, Encode};
 use parking_lot::RwLock;
+use pezsp_core::H256;
 use pezsp_runtime::{
 	generic::BlockId,
 	traits::{Block as BlockT, Header as HeaderT, NumberFor, Zero},
@@ -181,7 +182,7 @@ pub trait Backend<Block: BlockT>:
 	/// chain or descendants of it.
 	///
 	/// Returns `Ok(None)` if `base_hash` is not found in search space.
-	// TODO: document time complexity of this, see [#1444](https://github.com/pezkuwichain/pezkuwi-sdk/issues/331)
+	// TODO: document time complexity of this, see [#1444](https://github.com/paritytech/substrate/issues/1444)
 	fn longest_containing(
 		&self,
 		base_hash: Block::Hash,
@@ -237,15 +238,27 @@ pub trait Backend<Block: BlockT>:
 		Ok(None)
 	}
 
-	/// Get single indexed transaction by content hash. Note that this will only fetch transactions
-	/// that are indexed by the runtime with `storage_index_transaction`.
-	fn indexed_transaction(&self, hash: Block::Hash) -> Result<Option<Vec<u8>>>;
+	/// Get single indexed transaction by content hash (BLAKE2b-256).
+	/// Note that this will only fetch transactions that are indexed
+	/// by the runtime with `storage_index_transaction`.
+	fn indexed_transaction(&self, hash: H256) -> Result<Option<Vec<u8>>>;
 
-	/// Check if indexed transaction exists.
-	fn has_indexed_transaction(&self, hash: Block::Hash) -> Result<bool> {
+	/// Check if indexed transaction exists given its BLAKE2b-256 hash.
+	fn has_indexed_transaction(&self, hash: H256) -> Result<bool> {
 		Ok(self.indexed_transaction(hash)?.is_some())
 	}
 
+	/// Get the BLAKE2b-256 hashes of all indexed transactions in a block, including renewed
+	/// transactions.
+	///
+	/// Note that this will only fetch transactions that are indexed by the runtime with
+	/// `storage_index_transaction`.
+	fn block_indexed_hashes(&self, hash: Block::Hash) -> Result<Option<Vec<H256>>>;
+
+	/// Get all indexed transactions for a block, including renewed transactions.
+	///
+	/// Note that this will only fetch transactions that are indexed by the runtime with
+	/// `storage_index_transaction`.
 	fn block_indexed_body(&self, hash: Block::Hash) -> Result<Option<Vec<Vec<u8>>>>;
 
 	/// Returns all leaves that will be displaced after the block finalization.

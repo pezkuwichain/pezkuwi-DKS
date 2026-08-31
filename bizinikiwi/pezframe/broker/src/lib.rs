@@ -25,6 +25,8 @@ mod benchmarking;
 mod core_mask;
 mod coretime_interface;
 mod dispatchable_impls;
+pub mod market;
+
 #[cfg(test)]
 mod mock;
 mod nonfungible_impl;
@@ -141,6 +143,12 @@ pub mod pezpallet {
 	/// The Pezkuwi Core reservations (generally tasked with the maintenance of System Chains).
 	#[pezpallet::storage]
 	pub type Reservations<T> = StorageValue<_, ReservationsRecordOf<T>, ValueQuery>;
+
+	/// Force reservations that need to be inserted into the workplan at the next sale rotation.
+	///
+	/// They are automatically freed at the next sale rotation.
+	#[pezpallet::storage]
+	pub type ForceReservations<T> = StorageValue<_, ReservationsRecordOf<T>, ValueQuery>;
 
 	/// The Pezkuwi Core legacy leases.
 	#[pezpallet::storage]
@@ -495,6 +503,18 @@ pub mod pezpallet {
 		/// This should never happen, given that enable_auto_renew checks for this before enabling
 		/// auto-renewal.
 		AutoRenewalLimitReached,
+		/// Failed to assign a force reservation due to no free cores available.
+		ForceReservationFailed {
+			/// The schedule that could not be assigned.
+			schedule: Schedule,
+		},
+		/// Potential renewal was forcefully removed.
+		PotentialRenewalRemoved {
+			/// The core associated with the potential renewal that was removed.
+			core: CoreIndex,
+			/// The timeslice associated with the potential renewal that was removed.
+			timeslice: Timeslice,
+		},
 	}
 
 	#[pezpallet::error]
@@ -1021,6 +1041,43 @@ pub mod pezpallet {
 		pub fn remove_assignment(origin: OriginFor<T>, region_id: RegionId) -> DispatchResult {
 			T::AdminOrigin::ensure_origin_or_root(origin)?;
 			Self::do_remove_assignment(region_id)
+		}
+
+		/// Forcefully remove a potential renewal record from chain.
+		///
+		/// Note that only the specified potential renewal will be removed while any related auto
+		/// renewals will stay intact and will fail.
+		///
+		/// - `origin`: Must be Root or pass `AdminOrigin`.
+		/// - `core`: Core which the target potential renewal record refers to.
+		/// - `when`: Timeslice which the target potential renewal record refers to.
+		#[pezpallet::call_index(27)]
+		pub fn remove_potential_renewal(
+			origin: OriginFor<T>,
+			core: CoreIndex,
+			when: Timeslice,
+		) -> DispatchResult {
+			T::AdminOrigin::ensure_origin_or_root(origin)?;
+			Self::do_remove_potential_renewal(core, when)
+		}
+
+		/// Transfer a Bulk Coretime Region to a new owner, ignoring the previous owner.
+		///
+		/// This can also be used to recover regions that have been "burned" (e.g., from an
+		/// XCM reserve transfer).
+		///
+		/// - `origin`: Must be Root or pass `AdminOrigin`.
+		/// - `region_id`: The Region whose ownership should change.
+		/// - `new_owner`: The new owner for the Region.
+		#[pezpallet::call_index(28)]
+		pub fn force_transfer(
+			origin: OriginFor<T>,
+			region_id: RegionId,
+			new_owner: T::AccountId,
+		) -> DispatchResult {
+			T::AdminOrigin::ensure_origin_or_root(origin)?;
+			Self::do_transfer(region_id, None, new_owner)?;
+			Ok(())
 		}
 
 		#[pezpallet::call_index(99)]

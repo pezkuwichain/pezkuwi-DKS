@@ -83,7 +83,7 @@ pub(crate) fn expand_variant_count(
 	} else {
 		// Wrapped `<`..`>` means: use default type parameter for enum.
 		//
-		// This is used for pallets without instance support or pallets with instance support when
+		// This is used for pezpallets without instance support or pezpallets with instance support when
 		// we don't specify instance:
 		//
 		// ```

@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! The overarching mock crate for all EPMB pallets.
+//! The overarching mock crate for all EPMB pezpallets.
 
 mod signed;
 mod staking;
@@ -28,7 +28,7 @@ use crate::{
 		self as unsigned_pallet,
 		miner::{MinerConfig, OffchainMinerError, OffchainWorkerMiner},
 	},
-	verifier::{self as verifier_pallet, AsynchronousVerifier, Status},
+	verifier::{self as verifier_pallet, AsynchronousVerifier, Status, StatusStorage},
 };
 use codec::{Decode, Encode, MaxEncodedLen};
 use parking_lot::RwLock;
@@ -40,7 +40,7 @@ pub use pezframe_support::{assert_noop, assert_ok};
 use pezframe_support::{
 	derive_impl, ord_parameter_types, parameter_types,
 	traits::{fungible::InspectHold, Hooks},
-	weights::{constants, Weight},
+	weights::{constants, RuntimeDbWeight, Weight},
 };
 use pezframe_system::EnsureRoot;
 use pezsp_core::{
@@ -88,6 +88,12 @@ pezframe_election_provider_support::generate_solution_type!(
 	>(16)
 );
 
+parameter_types! {
+	/// Zero disables the stalled-round watchdog, which is what most tests want.
+	pub static StalledRoundTimeout: BlockNumber = 0;
+	pub DbWeight: RuntimeDbWeight = RuntimeDbWeight { read: 1, write: 1};
+}
+
 #[derive_impl(pezframe_system::config_preludes::TestDefaultConfig)]
 impl pezframe_system::Config for Runtime {
 	type Hashing = BlakeTwo256;
@@ -97,6 +103,7 @@ impl pezframe_system::Config for Runtime {
 	type BlockWeights = BlockWeights;
 	type AccountData = pezpallet_balances::AccountData<Balance>;
 	type Block = pezframe_system::mocking::MockBlock<Self>;
+	type DbWeight = DbWeight;
 }
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
@@ -170,8 +177,6 @@ parameter_types! {
 	#[derive(Encode, Decode, PartialEq, Eq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
 	pub static MaxWinnersPerPage: u32 = (staking::Targets::get().len() as u32).min(staking::DesiredTargets::get());
 	pub static AreWeDone: AreWeDoneModes = AreWeDoneModes::Proceed;
-	/// Zero disables the stalled-round watchdog, which is what most tests want.
-	pub static StalledRoundTimeout: BlockNumber = 0;
 }
 
 ord_parameter_types! {
@@ -227,15 +232,16 @@ impl crate::Config for Runtime {
 	type Fallback = MockFallback;
 	type TargetSnapshotPerBlock = TargetSnapshotPerBlock;
 	type VoterSnapshotPerBlock = VoterSnapshotPerBlock;
+	type StalledRoundTimeout = StalledRoundTimeout;
 	type MinerConfig = Self;
-	type WeightInfo = ();
 	type Verifier = VerifierPallet;
 	type AdminOrigin = EnsureRoot<AccountId>;
 	type ManagerOrigin = pezframe_system::EnsureSignedBy<Manager, AccountId>;
 	type Pages = Pages;
 	type AreWeDone = AreWeDone;
-	type StalledRoundTimeout = StalledRoundTimeout;
+	type Signed = SignedPallet;
 	type OnRoundRotation = CleanRound<Self>;
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -276,8 +282,8 @@ impl ElectionProvider for MockFallback {
 		Ok(())
 	}
 
-	fn status() -> Result<bool, ()> {
-		Ok(true)
+	fn status() -> Result<Option<Weight>, ()> {
+		Ok(Some(Default::default()))
 	}
 }
 
@@ -335,14 +341,7 @@ impl ExtBuilder {
 		Self {}
 	}
 
-	pub fn verifier() -> Self {
-		SignedPhase::set(0);
-		SignedValidationPhase::set(0);
-		signed::SignedPhaseSwitch::set(signed::SignedSwitch::Mock);
-		Self {}
-	}
-
-	pub fn unsigned() -> Self {
+	pub fn mock_signed() -> Self {
 		SignedPhase::set(0);
 		SignedValidationPhase::set(0);
 		signed::SignedPhaseSwitch::set(signed::SignedSwitch::Mock);
@@ -492,7 +491,7 @@ impl ExecuteWithSanityChecks for pezsp_io::TestExternalities {
 }
 
 fn all_pallets_integrity_test() {
-	// ensure that all pallets are sane.
+	// ensure that all pezpallets are sane.
 	VerifierPallet::integrity_test();
 	UnsignedPallet::integrity_test();
 	MultiBlock::integrity_test();
@@ -654,11 +653,7 @@ pub fn verifier_events_since_last_call() -> Vec<crate::verifier::Event<Runtime>>
 
 /// proceed block number to `n`.
 pub fn roll_to(n: BlockNumber) {
-	crate::Pezpallet::<Runtime>::roll_to(
-		n,
-		matches!(SignedPhaseSwitch::get(), SignedSwitch::Real),
-		true,
-	);
+	crate::Pezpallet::<Runtime>::roll_to(n, true);
 }
 
 /// proceed block number to whenever the snapshot is fully created (`Phase::Snapshot(0)`).
@@ -693,10 +688,17 @@ pub fn roll_to_signed_open() {
 
 /// proceed block number to whenever the signed validation phase is open
 /// (`Phase::SignedValidation(_)`).
+///
+/// Also ensure that the start signal is already sent.
 pub fn roll_to_signed_validation_open() {
 	while !matches!(MultiBlock::current_phase(), Phase::SignedValidation(_)) {
 		roll_next()
 	}
+	assert_eq!(StatusStorage::<T>::get(), Status::Ongoing(Pages::get() - 1));
+	assert_eq!(
+		MultiBlock::current_phase(),
+		Phase::<T>::SignedValidation(SignedValidationPhase::get())
+	);
 }
 
 /// proceed block number until we reach the done phase (`Phase::Done`).
@@ -707,9 +709,34 @@ pub fn roll_to_done() {
 }
 
 /// Proceed one block.
-pub fn roll_next() {
+///
+/// This is intentionally made private and should not be exposed to tests. They should use other
+/// helper functions that impose some checks.
+fn roll_next() {
 	let now = System::block_number();
 	roll_to(now + 1);
+}
+
+/// Proceed one block and ensure the new phase is `expect`.
+pub fn roll_next_and_phase(expect: Phase<T>) {
+	let now = System::block_number();
+	roll_to(now + 1);
+	assert_eq!(MultiBlock::current_phase(), expect);
+}
+
+/// Proceed one block and ensure the new phase is `expect`, and signed validation is in `status`.
+pub fn roll_next_and_phase_verifier(expect: Phase<T>, status: Status) {
+	let now = System::block_number();
+	roll_to(now + 1);
+	assert_eq!(MultiBlock::current_phase(), expect);
+	assert_eq!(VerifierPallet::status(), status);
+}
+
+/// Proceed one block and ensure the new signed validation is in `status`.
+pub fn roll_next_and_verifier(status: Status) {
+	let now = System::block_number();
+	roll_to(now + 1);
+	assert_eq!(VerifierPallet::status(), status);
 }
 
 /// Proceed one block, and execute offchain workers as well.
@@ -743,19 +770,9 @@ pub fn roll_to_with_ocw(n: BlockNumber, maybe_pool: Option<Arc<RwLock<PoolState>
 
 		System::set_block_number(i);
 
-		MultiBlock::on_initialize(i);
-		VerifierPallet::on_initialize(i);
-		UnsignedPallet::on_initialize(i);
-		if matches!(SignedPhaseSwitch::get(), SignedSwitch::Real) {
-			SignedPallet::on_initialize(i);
-		}
+		MultiBlock::on_poll(i, &mut WeightMeter::new());
 
-		MultiBlock::offchain_worker(i);
-		VerifierPallet::offchain_worker(i);
 		UnsignedPallet::offchain_worker(i);
-		if matches!(SignedPhaseSwitch::get(), SignedSwitch::Real) {
-			SignedPallet::offchain_worker(i);
-		}
 
 		// invariants must hold at the end of each block.
 		all_pallets_sanity_checks()

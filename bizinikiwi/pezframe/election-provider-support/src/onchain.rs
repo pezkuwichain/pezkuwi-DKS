@@ -206,8 +206,8 @@ impl<T: Config> ElectionProvider for OnChainExecution<T> {
 		pezsp_runtime::traits::Zero::zero()
 	}
 
-	fn status() -> Result<bool, ()> {
-		Ok(true)
+	fn status() -> Result<Option<pezsp_runtime::Weight>, ()> {
+		Ok(Some(Default::default()))
 	}
 }
 

@@ -127,8 +127,8 @@ pub fn kill_prefix(prefix: &[u8], limit: Option<u32>) -> pezsp_io::KillStorageRe
 /// cursor need not be passed in and a `None` may be passed instead. This exception may be useful
 /// then making this call solely from a block-hook such as `on_initialize`.
 ///
-/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result. Once
-/// the resultant `maybe_cursor` field is `None`, then no further items remain to be deleted.
+/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result. Once the
+/// resultant `maybe_cursor` field is `None`, then no further items remain to be deleted.
 ///
 /// NOTE: After the initial call for any given child storage, it is important that no keys further
 /// keys are inserted. If so, then they may or may not be deleted by subsequent calls.
@@ -170,10 +170,6 @@ pub fn get_raw(key: &[u8]) -> Option<Vec<u8>> {
 }
 
 /// Put a raw byte slice into storage.
-///
-/// **WARNING**: If you set the storage of the Bizinikiwi Wasm (`well_known_keys::CODE`),
-/// you should also call `pezframe_system::RuntimeUpgraded::put(true)` to trigger the
-/// `on_runtime_upgrade` logic.
 pub fn put_raw(key: &[u8], value: &[u8]) {
 	pezsp_io::storage::set(key, value)
 }

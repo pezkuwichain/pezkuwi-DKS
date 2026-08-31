@@ -40,23 +40,18 @@ use pezbp_runtime::{BasicOperatingMode, BlockNumberOf, Chain, HashOf};
 use pezframe_support::Parameter;
 use pezsp_runtime::{
 	traits::{Convert, MaybeSerializeDeserialize},
-	RuntimeAppPublic, RuntimeDebug,
+	Debug, RuntimeAppPublic,
 };
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 
-/// Bizinikiwi-based chain with BEEFY && MMR pallets deployed.
+/// Bizinikiwi-based chain with BEEFY && MMR pezpallets deployed.
 ///
-/// Both BEEFY and MMR pallets and their clients may be configured to use different
-/// primitives. Some of types can be configured in low-level pallets, but are constrained
+/// Both BEEFY and MMR pezpallets and their clients may be configured to use different
+/// primitives. Some of types can be configured in low-level pezpallets, but are constrained
 /// when BEEFY+MMR bundle is used.
 pub trait ChainWithBeefy: Chain {
-	/// The hashing algorithm used to compute the digest of the BEEFY commitment.
-	///
-	/// Corresponds to the hashing algorithm, used by `pezsc_consensus_beefy::BeefyKeystore`.
-	type CommitmentHasher: pezsp_runtime::traits::Hash;
-
 	/// The hashing algorithm used to build the MMR.
 	///
 	/// The same algorithm is also used to compute merkle roots in BEEFY
@@ -84,7 +79,7 @@ pub trait ChainWithBeefy: Chain {
 	/// A way to identify a BEEFY validator.
 	///
 	/// Corresponds to the `BeefyId` field of the `pezpallet-beefy` configuration.
-	type AuthorityId: BeefyAuthorityId<Self::CommitmentHasher> + Parameter;
+	type AuthorityId: BeefyAuthorityId + Parameter;
 
 	/// A way to convert validator id to its raw representation in the BEEFY merkle tree.
 	///
@@ -105,8 +100,6 @@ pub type BeefyValidatorSignatureOf<C> =
 /// Signed BEEFY commitment used by given Bizinikiwi chain.
 pub type BeefySignedCommitmentOf<C> =
 	SignedCommitment<BlockNumberOf<C>, BeefyValidatorSignatureOf<C>>;
-/// Hash algorithm, used to compute the digest of the BEEFY commitment before signing it.
-pub type BeefyCommitmentHasher<C> = <C as ChainWithBeefy>::CommitmentHasher;
 /// Hash algorithm used in Beefy MMR construction by given Bizinikiwi chain.
 pub type MmrHashingOf<C> = <C as ChainWithBeefy>::MmrHashing;
 /// Hash type, used in MMR construction by given Bizinikiwi chain.
@@ -130,7 +123,7 @@ pub type BeefyMmrLeafOf<C> = pezsp_consensus_beefy::mmr::MmrLeaf<
 ///
 /// Provides the initial context that the bridge needs in order to know
 /// where to start the sync process from.
-#[derive(Encode, Decode, RuntimeDebug, PartialEq, Clone, TypeInfo, Serialize, Deserialize)]
+#[derive(Encode, Decode, Debug, PartialEq, Clone, TypeInfo, Serialize, Deserialize)]
 pub struct InitializationData<BlockNumber, Hash> {
 	/// Pezpallet operating mode.
 	pub operating_mode: BasicOperatingMode,
@@ -142,7 +135,7 @@ pub struct InitializationData<BlockNumber, Hash> {
 }
 
 /// Basic data, stored by the pezpallet for every imported commitment.
-#[derive(Encode, Decode, RuntimeDebug, PartialEq, TypeInfo)]
+#[derive(Encode, Decode, Debug, PartialEq, TypeInfo)]
 pub struct ImportedCommitment<BlockNumber, BlockHash, MmrHash> {
 	/// Block number and hash of the finalized block parent.
 	pub parent_number_and_hash: (BlockNumber, BlockHash),

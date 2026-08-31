@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! Integration of the GRANDPA finality gadget into bizinikiwi.
+//! Integration of the GRANDPA finality gadget into substrate.
 //!
 //! This crate is unstable and the API and usage may change.
 //!
@@ -150,9 +150,23 @@ use until_imported::UntilGlobalMessageBlocksImported;
 // Re-export these two because it's just so damn convenient.
 pub use pezsp_consensus_grandpa::{
 	AuthorityId, AuthorityPair, CatchUp, Commit, CompactCommit, GrandpaApi, Message, Precommit,
-	Prevote, PrimaryPropose, ScheduledChange, SignedMessage,
+	Prevote, PrimaryPropose, ScheduledChange, SignedMessage, GRANDPA_ENGINE_ID,
 };
 use std::marker::PhantomData;
+
+/// Filter that preserves blocks with GRANDPA justifications during pruning.
+///
+/// Use this filter with `DatabaseSettings::pruning_filters` to ensure that blocks
+/// required for warp sync are not pruned. GRANDPA justifications at authority set change
+/// boundaries are needed to construct warp sync proofs.
+#[derive(Debug, Clone)]
+pub struct GrandpaPruningFilter;
+
+impl pezsc_client_db::PruningFilter for GrandpaPruningFilter {
+	fn should_retain(&self, justifications: &pezsp_runtime::Justifications) -> bool {
+		justifications.get(GRANDPA_ENGINE_ID).is_some()
+	}
+}
 
 #[cfg(test)]
 mod tests;
@@ -684,8 +698,8 @@ pub struct GrandpaParams<Block: BlockT, C, N, S, SC, VR> {
 	/// The Network instance.
 	///
 	/// It is assumed that this network will feed us Grandpa notifications. When using the
-	/// `pezsc_network` crate, it is assumed that the Grandpa notifications protocol has been
-	/// passed to the configuration of the networking. See [`grandpa_peers_set_config`].
+	/// `pezsc_network` crate, it is assumed that the Grandpa notifications protocol has been passed
+	/// to the configuration of the networking. See [`grandpa_peers_set_config`].
 	pub network: N,
 	/// Event stream for syncing-related events.
 	pub sync: S,

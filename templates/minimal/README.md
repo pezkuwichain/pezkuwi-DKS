@@ -2,12 +2,12 @@
 
 # Pezkuwi SDK's Minimal Template
 
-<img height="70px" alt="Pezkuwi SDK Logo" src="https://github.com/pezkuwichain/pezkuwi-sdk/raw/master/docs/images/PezkuwiChain_Logo_Horizontal_Pink_White.png#gh-dark-mode-only"/>
-<img height="70px" alt="Pezkuwi SDK Logo" src="https://github.com/pezkuwichain/pezkuwi-sdk/raw/master/docs/images/PezkuwiChain_Logo_Horizontal_Pink_Black.png#gh-light-mode-only"/>
+<img height="70px" alt="Pezkuwi SDK Logo" src="https://github.com/pezkuwichain/pezkuwi-DKS/raw/master/docs/images/PezkuwiChain_Logo_Horizontal_Pink_White.png#gh-dark-mode-only"/>
+<img height="70px" alt="Pezkuwi SDK Logo" src="https://github.com/pezkuwichain/pezkuwi-DKS/raw/master/docs/images/PezkuwiChain_Logo_Horizontal_Pink_Black.png#gh-light-mode-only"/>
 
 > This is a minimal template for creating a blockchain based on Pezkuwi SDK.
 >
-> This template is automatically updated after releases in the main [Pezkuwi SDK monorepo](https://github.com/pezkuwichain/pezkuwi-sdk).
+> This template is automatically updated after releases in the main [Pezkuwi SDK monorepo](https://github.com/pezkuwichain/pezkuwi-DKS).
 
 </div>
 
@@ -63,7 +63,7 @@ packages required to compile this template - please take note of the Rust compil
 Fetch minimal template code.
 
 ```sh
-git clone https://github.com/pezkuwichain/pezkuwi-sdk/issues/25.git minimal-template
+git clone https://github.com/pezkuwichain/pezkuwi-DKS/issues/25.git minimal-template
 
 cd minimal-template
 ```
@@ -115,7 +115,7 @@ Portal](https://pezkuwichain.io/#/explorer?rpc=ws://localhost:9944).
 available on [IPFS](https://dotapps.io/).
 
 - 🧑‍🔧 You can also find the source code and instructions for hosting your own instance in the
-[`pezkuwi-js/apps`](https://github.com/polkadot-js/apps) repository.
+[`pezkuwi-js/apps`](https://github.com/pezkuwichain/pezkuwi-apps) repository.
 
 ### Takeaways
 
@@ -128,21 +128,21 @@ Previously minimal template's development chains:
 
 ## Contributing
 
-- 🔄 This template is automatically updated after releases in the main [Pezkuwi SDK monorepo](https://github.com/pezkuwichain/pezkuwi-sdk).
+- 🔄 This template is automatically updated after releases in the main [Pezkuwi SDK monorepo](https://github.com/pezkuwichain/pezkuwi-DKS).
 
-- ➡️ Any pull requests should be directed to this [source](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/templates/minimal).
+- ➡️ Any pull requests should be directed to this [source](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/templates/minimal).
 
 - 😇 Please refer to the monorepo's
-[contribution guidelines](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docs/contributor/CONTRIBUTING.md) and
-[Code of Conduct](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docs/contributor/CODE_OF_CONDUCT.md).
+[contribution guidelines](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docs/contributor/CONTRIBUTING.md) and
+[Code of Conduct](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docs/contributor/CODE_OF_CONDUCT.md).
 
 ## Getting Help
 
 - 🧑‍🏫 To learn about PezkuwiChain in general, [docs.PezkuwiChain.com](https://docs.pezkuwichain.io/) website is a good starting point.
 
-- 🧑‍🔧 For technical introduction, see the [Pezkuwi SDK documentation](https://github.com/pezkuwichain/pezkuwi-sdk#-documentation).
+- 🧑‍🔧 For technical introduction, see the [Pezkuwi SDK documentation](https://github.com/pezkuwichain/pezkuwi-DKS#-documentation).
 
-- 👥 Additionally, there are [GitHub issues](https://github.com/pezkuwichain/pezkuwi-sdk/issues) and
+- 👥 Additionally, there are [GitHub issues](https://github.com/pezkuwichain/pezkuwi-DKS/issues) and
 [Bizinikiwi StackExchange](https://pezkuwichain.io/community/).
 - 👥You can also reach out on the [Official PezkuwiChain discord server](https://polkadot-discord.w3f.tools/)
 - 🧑Reach out on [Telegram](https://t.me/bizinikiwidevs) for more questions and discussions

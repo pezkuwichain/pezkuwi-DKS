@@ -9,7 +9,7 @@
 //!
 //! > If starting a new teyrchain project, please use an async backing compatible template such as
 //! > the
-//! > [teyrchain template](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/templates/teyrchain).
+//! > [teyrchain template](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/templates/teyrchain).
 //! The rollout process for Async Backing has three phases. Phases 1 and 2 below put new
 //! infrastructure in place. Then we can simply turn on async backing in phase 3.
 //!

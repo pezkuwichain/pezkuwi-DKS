@@ -88,7 +88,7 @@ pezpallet-session = { workspace = true }
 pezpallet-staking = { workspace = true }
 pezpallet-staking-async-ah-client = { workspace = true }
 pezpallet-staking-async-preset-store = { workspace = true }
-pezpallet-staking-async-rc-client = { workspace = true }
+pezpallet-staking-async-rc-client = { workspace = true, features = ["xcm-sender"] }
 pezpallet-staking-async-rc-runtime-constants = { workspace = true }
 pezpallet-sudo = { workspace = true }
 pezpallet-timestamp = { workspace = true }

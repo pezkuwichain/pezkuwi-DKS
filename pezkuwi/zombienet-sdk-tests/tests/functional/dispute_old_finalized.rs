@@ -18,7 +18,6 @@
 // concluded.
 
 use anyhow::anyhow;
-
 use pezcumulus_zombienet_sdk_helpers::assert_para_throughput;
 use pezkuwi_zombienet_orchestrator::network::node::LogLineCountOptions;
 use serde_json::json;
@@ -108,12 +107,8 @@ async fn dispute_old_finalized() -> Result<(), anyhow::Error> {
 	let malus = network.get_node("malus")?;
 
 	log::info!("Waiting for parablocks to be produced");
-	assert_para_throughput(
-		&relay_client,
-		20,
-		[(pezkuwi_primitives::Id::from(2000), 10..30)].into_iter().collect(),
-	)
-	.await?;
+	assert_para_throughput(&relay_client, 20, [(pezkuwi_primitives::Id::from(2000), 10..30)], [])
+		.await?;
 
 	let result = malus
 		.wait_log_line_count_with_timeout(

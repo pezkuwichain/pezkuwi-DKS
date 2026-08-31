@@ -69,7 +69,7 @@ cargo build -p zagros-runtime --profile production --features runtime-benchmarks
 Now the benchmarking can be started with:
 
 ```sh
-frame-omni-bencher v1 \
+pezframe-omni-bencher v1 \
     benchmark pezpallet \
     --runtime target/release/wbuild/zagros-runtime/zagros-runtime.compact.compressed.wasm \
     --pezpallet "pallet_balances" --extrinsic ""

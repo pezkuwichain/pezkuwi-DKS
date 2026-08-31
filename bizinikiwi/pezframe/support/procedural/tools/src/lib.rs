@@ -28,7 +28,7 @@ use syn::parse::Error;
 
 pub mod syn_ext;
 
-// FIXME #1569, remove the following functions, which are copied from sp-api-macros
+// FIXME #1569, remove the following functions, which are copied from pezsp-api-macros
 use proc_macro2::{Span, TokenStream};
 use syn::Ident;
 
@@ -54,18 +54,22 @@ pub fn generate_crate_access(unique_id: &str, def_crate: &str) -> TokenStream {
 ///
 /// This will usually check the output of [`generate_access_from_frame_or_crate`].
 /// We want to know if whatever the `path` takes us to, is exported from `frame` or not. In that
-/// case `path` would start with `pezframe`, something like `pezframe::x::y:z` or
-/// `pezkuwi_sdk::pezframe::x::y:z`.
+/// case `path` would start with `frame`, something like `pezkuwi_sdk_frame::x::y:z` or
+/// pezframe::x::y:z.
 pub fn is_using_frame_crate(path: &syn::Path) -> bool {
+	// `pezframe` is the umbrella crate's name here. Leaving it out made every path that goes
+	// through the umbrella read as an ordinary crate path, so the pallet macro compared a
+	// supertrait it had resolved one way against an expectation built the other way and
+	// rejected its own answer.
 	path.segments
 		.first()
-		.map(|s| s.ident == "pezframe" || s.ident == "pezkuwi_sdk")
+		.map(|s| s.ident == "pezkuwi_sdk_frame" || s.ident == "pezframe" || s.ident == "frame")
 		.unwrap_or(false)
 }
 
 /// Generate the crate access for the crate using 2018 syntax.
 ///
-/// If `pezframe` is in scope, it will use `pezframe::deps::<def_crate>`. Else, it will try
+/// If `frame` is in scope, it will use `pezkuwi_sdk_frame::deps::<def_crate>`. Else, it will try
 /// and find `<def_crate>` directly.
 pub fn generate_access_from_frame_or_crate(def_crate: &str) -> Result<syn::Path, Error> {
 	if let Some(path) = get_frame_crate_path(def_crate) {
@@ -126,8 +130,16 @@ pub fn generate_hidden_includes(unique_id: &str, def_crate: &str) -> TokenStream
 
 /// Generates the path to the frame crate deps.
 fn get_frame_crate_path(def_crate: &str) -> Option<syn::Path> {
-	// This does not work if the frame crate is renamed.
-	if let Ok(FoundCrate::Name(name)) = crate_name(&"pezframe") {
+	// The umbrella crate is `pezframe` here. Upstream's comment on this function warns that it
+	// breaks if the frame crate is renamed, and it did: the rename left `pezkuwi-sdk-frame` in
+	// place but not the bare `frame`, so nothing resolved through the umbrella and every macro
+	// asking for a crate this way fell through to looking it up by name in the manifest. Pallets
+	// that reach their dependencies through `pezframe` alone -- which is the point of an umbrella
+	// -- then failed to build with "could not find X in dependencies".
+	if let Ok(FoundCrate::Name(name)) = crate_name(&"pezkuwi-sdk-frame")
+		.or_else(|_| crate_name(&"pezframe"))
+		.or_else(|_| crate_name(&"frame"))
+	{
 		let path = format!("{}::deps::{}", name, def_crate.to_string().replace("-", "_"));
 		Some(syn::parse_str::<syn::Path>(&path).expect("is a valid path; qed"))
 	} else {

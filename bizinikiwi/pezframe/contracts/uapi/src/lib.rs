@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! External C API to communicate with bizinikiwi contracts runtime module.
+//! External C API to communicate with substrate contracts runtime module.
 //!
-//! Refer to bizinikiwi FRAME contract module for more documentation.
+//! Refer to substrate FRAME contract module for more documentation.
 
 #![no_std]
 

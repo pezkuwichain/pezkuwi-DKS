@@ -102,7 +102,6 @@ pub struct ResultOnEmptyStructMetadata {
 	pub span: proc_macro2::Span,
 }
 
-///
 /// * if generics are unnamed: replace the first generic `_` by the generated prefix structure
 /// * if generics are named: reorder the generic, remove their name, and add the missing ones.
 /// * Add `#[allow(type_alias_bounds)]`
@@ -381,7 +380,6 @@ fn augment_final_docs(def: &mut Def) {
 	});
 }
 
-///
 /// * generate StoragePrefix structs (e.g. for a storage `MyStorage` a struct with the name
 ///   `_GeneratedPrefixForStorage$NameOfStorage` is generated) and implements StorageInstance trait.
 /// * if generics are unnamed: replace the first generic `_` by the generated prefix structure
@@ -861,8 +859,8 @@ pub fn expand_storages(def: &mut Def) -> proc_macro2::TokenStream {
 			.iter()
 			.filter_map(|storage| {
 				// A little hacky; don't generate for cfg gated storages to not get compile errors
-				// when building "frame-feature-testing" gated storages in the
-				// "pezframe-support-test" crate.
+				// when building "pezframe-feature-testing" gated storages in the "pezframe-support-test"
+				// crate.
 				if storage.try_decode && storage.cfg_attrs.is_empty() {
 					let ident = &storage.ident;
 					let gen = &def.type_use_generics(storage.attr_span);

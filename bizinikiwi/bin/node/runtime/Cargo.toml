@@ -36,9 +36,7 @@ primitive-types = { features = [
 	"scale-info",
 ], workspace = true }
 
-pezframe-try-runtime = { optional = true, workspace = true }
 pezkuwi-sdk = { features = ["runtime-full", "tuples-96"], workspace = true }
-pezsp-runtime = { workspace = true, default-features = false }
 
 # shared code between runtime and node
 pez-node-primitives = { workspace = true }
@@ -59,12 +57,10 @@ std = [
 	"codec/std",
 	"log/std",
 	"pez-node-primitives/std",
-	"pezframe-try-runtime?/std",
 	"pezkuwi-sdk/std",
 	"pezpallet-example-mbm/std",
 	"pezpallet-example-tasks/std",
 	"pezsp-debug-derive/std",
-	"pezsp-runtime/std",
 	"primitive-types/std",
 	"rand?/std",
 	"scale-info/std",
@@ -73,22 +69,17 @@ std = [
 runtime-benchmarks = [
 	"bizinikiwi-wasm-builder?/runtime-benchmarks",
 	"pez-node-primitives/runtime-benchmarks",
-	"pezframe-try-runtime?/runtime-benchmarks",
 	"pezkuwi-sdk/runtime-benchmarks",
 	"pezpallet-example-mbm/runtime-benchmarks",
 	"pezpallet-example-tasks/runtime-benchmarks",
-	"pezsp-runtime/runtime-benchmarks",
 	"rand",
 	"rand_pcg",
 ]
 try-runtime = [
 	"pez-node-primitives/try-runtime",
-	"pezframe-try-runtime",
-	"pezframe-try-runtime/try-runtime",
 	"pezkuwi-sdk/try-runtime",
 	"pezpallet-example-mbm/try-runtime",
 	"pezpallet-example-tasks/try-runtime",
-	"pezsp-runtime/try-runtime",
 ]
 experimental = [
 	"pezkuwi-sdk/experimental",

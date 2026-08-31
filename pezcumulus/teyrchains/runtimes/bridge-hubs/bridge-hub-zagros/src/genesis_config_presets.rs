@@ -31,7 +31,7 @@ fn bridge_hub_zagros_genesis(
 	invulnerables: Vec<(AccountId, AuraId)>,
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
-	bridges_pallet_owner: Option<AccountId>,
+	bridges_pezpallet_owner: Option<AccountId>,
 	asset_hub_para_id: ParaId,
 	opened_bridges: Vec<(Location, InteriorLocation, Option<pezbp_messages::LegacyLaneId>)>,
 ) -> serde_json::Value {
@@ -62,10 +62,10 @@ fn bridge_hub_zagros_genesis(
 		},
 		pezkuwi_xcm: PezkuwiXcmConfig { safe_xcm_version: Some(SAFE_XCM_VERSION) },
 		bridge_pezkuwichain_grandpa: BridgePezkuwichainGrandpaConfig {
-			owner: bridges_pallet_owner.clone()
+			owner: bridges_pezpallet_owner.clone()
 		},
 		bridge_pezkuwichain_messages: BridgePezkuwichainMessagesConfig {
-			owner: bridges_pallet_owner.clone()
+			owner: bridges_pezpallet_owner.clone()
 		},
 		xcm_over_bridge_hub_pezkuwichain: XcmOverBridgeHubPezkuwichainConfig { opened_bridges },
 		ethereum_system: EthereumSystemConfig { para_id: id, asset_hub_para_id },

@@ -56,7 +56,7 @@ pub fn expand_outer_lock_id(pezpallet_decls: &[Pezpallet], scrate: &TokenStream)
 			#scrate::__private::codec::DecodeWithMemTracking,
 			#scrate::__private::codec::MaxEncodedLen,
 			#scrate::__private::scale_info::TypeInfo,
-			#scrate::__private::RuntimeDebug,
+			#scrate::__private::Debug,
 		)]
 		pub enum RuntimeLockId {
 			#( #lock_id_variants )*

@@ -307,7 +307,7 @@
 //!
 //!
 //! ## API Considerations
-//! Refer to github issue: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/284>
+//! Refer to github issue: <https://github.com/pezkuwichain/pezkuwi-DKS/issues/5491>
 //!
 //! [`View`]: crate::fork_aware_txpool::view::View
 //! [`view::revalidate`]: crate::fork_aware_txpool::view::View::revalidate

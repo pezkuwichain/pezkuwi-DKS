@@ -42,7 +42,7 @@
 //! ## Disambiguation
 //!
 //! While this pezpallet shares some terminology with the `staking-pool` and similar native staking
-//! related pallets, it is distinct and is entirely unrelated to native staking.
+//! related pezpallets, it is distinct and is entirely unrelated to native staking.
 //!
 //! ## Permissioning
 //!
@@ -64,7 +64,7 @@
 //!
 //! ## Rewards Algorithm
 //!
-//! The rewards algorithm is based on the Synthetix [StakingRewards.sol](https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol)
+//! The rewards algorithm is based on the Synthetix [StakingRewards.sol](https://web.archive.org/web/20251223190741/https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol)
 //! smart contract.
 //!
 //! Rewards are calculated JIT (just-in-time), and all operations are O(1) making the approach
@@ -272,10 +272,10 @@ pub mod pezpallet {
 		/// This provider is used to determine the current block number for the pezpallet.
 		/// It must return monotonically increasing values when called from consecutive blocks.
 		///
-		/// It can be configured to use the local block number (via `pezframe_system::Pezpallet`) or
-		/// a remote block number (e.g., from a relay chain). However, note that using a remote
-		/// block number might have implications for the behavior of the pezpallet, especially if
-		/// the remote block number advances faster than the local block number.
+		/// It can be configured to use the local block number (via `pezframe_system::Pezpallet`) or a
+		/// remote block number (e.g., from a relay chain). However, note that using a remote
+		/// block number might have implications for the behavior of the pezpallet, especially if the
+		/// remote block number advances faster than the local block number.
 		///
 		/// It is recommended to use the local block number for solo chains and relay chains.
 		type BlockNumberProvider: BlockNumberProvider;

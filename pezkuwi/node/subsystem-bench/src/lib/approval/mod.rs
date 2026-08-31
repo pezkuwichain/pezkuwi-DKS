@@ -162,7 +162,7 @@ impl ApprovalsOptions {
 #[derive(Clone, Debug)]
 struct BlockTestData {
 	/// The slot this block occupies, see implementer's guide to understand what a slot
-	/// is in the context of pezkuwi.
+	/// is in the context of polkadot.
 	slot: Slot,
 	/// The hash of the block.
 	hash: Hash,

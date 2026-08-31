@@ -22,15 +22,7 @@ pub mod pezpallet_xcm_origin {
 	// Insert this custom Origin into the aggregate RuntimeOrigin
 	#[pezpallet::origin]
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		RuntimeDebug,
-		TypeInfo,
-		MaxEncodedLen,
+		PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Debug, TypeInfo, MaxEncodedLen,
 	)]
 	pub struct Origin(pub Location);
 

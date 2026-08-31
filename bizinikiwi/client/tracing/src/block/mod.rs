@@ -346,11 +346,11 @@ fn event_values_filter(event: &TraceEvent, filter_kind: &str, values: &str) -> b
 /// Filter out spans that do not match our targets and if the span is from WASM update its `name`
 /// and `target` fields to the WASM values for those fields.
 // The `tracing` crate requires trace metadata to be static. This does not work for wasm code in
-// bizinikiwi, as it is regularly updated with new code from on-chain events. The workaround for
-// this is for bizinikiwi's WASM tracing wrappers to put the `name` and `target` data in the
-// `values` map (normally they would be in the static metadata assembled at compile time). Here, if
-// a special WASM `name` or `target` key is found in the `values` we remove it and put the key value
-// pair in the span's metadata, making it consistent with spans that come from native code.
+// substrate, as it is regularly updated with new code from on-chain events. The workaround for this
+// is for substrate's WASM tracing wrappers to put the `name` and `target` data in the `values` map
+// (normally they would be in the static metadata assembled at compile time). Here, if a special
+// WASM `name` or `target` key is found in the `values` we remove it and put the key value pair in
+// the span's metadata, making it consistent with spans that come from native code.
 fn patch_and_filter(mut span: SpanDatum, targets: &str) -> Option<Span> {
 	if span.name == WASM_TRACE_IDENTIFIER {
 		span.values.bool_values.insert("wasm".to_owned(), true);

@@ -44,14 +44,14 @@ use pezsp_runtime::{
 use pezsp_staking::{
 	currency_to_vote::CurrencyToVote,
 	offence::{OffenceDetails, OnOffenceHandler},
-	EraIndex, OnStakingUpdate, Page, SessionIndex, Stake,
+	EraIndex, EraPayout, OnStakingUpdate, Page, SessionIndex, Stake,
 	StakingAccount::{self, Controller, Stash},
 	StakingInterface,
 };
 
 use crate::{
 	asset, election_size_tracker::StaticTracker, log, slashing, weights::WeightInfo, ActiveEraInfo,
-	BalanceOf, EraInfo, EraPayout, Exposure, Forcing, IndividualExposure, LedgerIntegrityState,
+	BalanceOf, EraInfo, Exposure, Forcing, IndividualExposure, LedgerIntegrityState,
 	MaxNominationsOf, MaxWinnersOf, Nominations, NominationsQuota, PositiveImbalanceOf,
 	RewardDestination, SessionInterface, StakingLedger, UnlockChunk, ValidatorPrefs, STAKING_ID,
 };
@@ -968,7 +968,7 @@ impl<T: Config> Pezpallet<T> {
 				validators_taken.saturating_inc();
 			} else {
 				// this can only happen if: 1. there a bug in the bags-list (or whatever is the
-				// sorted list) logic and the state of the two pallets is no longer compatible, or
+				// sorted list) logic and the state of the two pezpallets is no longer compatible, or
 				// because the nominators is not decodable since they have more nomination than
 				// `T::NominationsQuota::get_quota`. The latter can rarely happen, and is not
 				// really an emergency or bug if it does.
@@ -1527,7 +1527,7 @@ impl<T: Config> ElectionDataProvider for Pezpallet<T> {
 		let targets = Self::get_npos_targets(bounds);
 
 		// We can't handle this case yet -- return an error. WIP to improve handling this case in
-		// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/211>.
+		// <https://github.com/paritytech/substrate/pull/13195>.
 		if bounds.exhausted(None, CountBound(T::TargetList::count()).into()) {
 			return Err("Target snapshot too big");
 		}
@@ -1815,9 +1815,9 @@ impl<T: Config> ScoreProvider<T::AccountId> for Pezpallet<T> {
 	}
 }
 
-/// A simple sorted list implementation that does not require any additional pallets. Note, this
+/// A simple sorted list implementation that does not require any additional pezpallets. Note, this
 /// does not provide validators in sorted order. If you desire validators in a sorted order take
-/// a look at `pezpallet_bags_list`.
+/// a look at `pezpallet-bags-list`.
 pub struct UseValidatorsMap<T>(core::marker::PhantomData<T>);
 impl<T: Config> SortedListProvider<T::AccountId> for UseValidatorsMap<T> {
 	type Score = BalanceOf<T>;
@@ -1885,9 +1885,9 @@ impl<T: Config> SortedListProvider<T::AccountId> for UseValidatorsMap<T> {
 	fn unlock() {}
 }
 
-/// A simple voter list implementation that does not require any additional pallets. Note, this
+/// A simple voter list implementation that does not require any additional pezpallets. Note, this
 /// does not provide nominators in sorted order. If you desire nominators in a sorted order take
-/// a look at `pezpallet_bags_list`.
+/// a look at `pezpallet-bags-list`.
 pub struct UseNominatorsAndValidatorsMap<T>(core::marker::PhantomData<T>);
 impl<T: Config> SortedListProvider<T::AccountId> for UseNominatorsAndValidatorsMap<T> {
 	type Error = ();
@@ -2015,9 +2015,9 @@ impl<T: Config> StakingInterface for Pezpallet<T> {
 	}
 
 	fn set_payee(stash: &Self::AccountId, reward_acc: &Self::AccountId) -> DispatchResult {
-		// Since virtual stakers are not allowed to compound their rewards as this pezpallet does
-		// not manage their locks, we do not allow reward account to be set same as stash. For
-		// external pallets that manage the virtual bond, they can claim rewards and re-bond them.
+		// Since virtual stakers are not allowed to compound their rewards as this pezpallet does not
+		// manage their locks, we do not allow reward account to be set same as stash. For
+		// external pezpallets that manage the virtual bond, they can claim rewards and re-bond them.
 		ensure!(
 			!Self::is_virtual_staker(stash) || stash != reward_acc,
 			Error::<T>::RewardDestinationRestricted
@@ -2082,7 +2082,7 @@ impl<T: Config> StakingInterface for Pezpallet<T> {
 
 	fn is_exposed_in_era(who: &Self::AccountId, era: &EraIndex) -> bool {
 		// look in the non paged exposures
-		// FIXME: Can be cleaned up once non paged exposures are cleared (https://github.com/pezkuwichain/pezkuwi-sdk/issues/249)
+		// FIXME: Can be cleaned up once non paged exposures are cleared (https://github.com/pezkuwichain/pezkuwi-DKS/issues/433)
 		ErasStakers::<T>::iter_prefix(era).any(|(validator, exposures)| {
 			validator == *who || exposures.others.iter().any(|i| i.who == *who)
 		})
@@ -2147,12 +2147,15 @@ impl<T: Config> StakingInterface for Pezpallet<T> {
 			EraInfo::<T>::set_exposure(*current_era, stash, exposure);
 		}
 
-		fn set_current_era(era: EraIndex) {
-			CurrentEra::<T>::put(era);
-		}
-
 		fn max_exposure_page_size() -> Page {
 			T::MaxExposurePageSize::get()
+		}
+	}
+
+	pezsp_staking::std_or_benchmarks_enabled! {
+		fn set_era(era: EraIndex) {
+			ActiveEra::<T>::put(ActiveEraInfo { index: era, start: None });
+			CurrentEra::<T>::put(era);
 		}
 	}
 }
@@ -2237,7 +2240,7 @@ impl<T: Config> Pezpallet<T> {
 	/// * A bonded (stash, controller) pair must have an associated ledger.
 	///
 	/// NOTE: these checks result in warnings only. Once
-	/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/273> is resolved, turn warns into check
+	/// <https://github.com/pezkuwichain/pezkuwi-DKS/issues/3245> is resolved, turn warns into check
 	/// failures.
 	fn check_bonded_consistency() -> Result<(), TryRuntimeError> {
 		use alloc::collections::btree_set::BTreeSet;

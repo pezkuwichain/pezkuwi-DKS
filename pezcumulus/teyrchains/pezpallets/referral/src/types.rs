@@ -4,14 +4,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use codec::{Decode, Encode, MaxEncodedLen};
-use pezframe_support::pezpallet_prelude::RuntimeDebug;
 use scale_info::TypeInfo;
 
 // --- GENERAL TYPES ---
 
 /// Structure representing a simple NFT.
 /// Note: The actual NFT structure will be more detailed in `pezpallet-tiki`.
-#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default)]
+#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen, Default)]
 pub struct Tiki {
 	pub id: u32,
 	// metadata and other fields can be added in the future.
@@ -22,7 +21,7 @@ pub type RawScore = u32;
 
 /// Referrer statistics for direct responsibility tracking
 /// Used to apply penalties when referrals turn out to be malicious
-#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen, Default)]
+#[derive(Encode, Decode, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen, Default)]
 pub struct ReferrerStats {
 	/// Total number of successful referrals
 	pub total_referrals: u32,

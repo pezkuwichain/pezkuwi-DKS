@@ -8,7 +8,10 @@ use crate::utils::{initialize_network, BEST_BLOCK_METRIC};
 
 use pezcumulus_zombienet_sdk_helpers::assign_cores;
 use pezkuwi_zombienet_orchestrator::network::node::LogLineCountOptions;
-use pezkuwi_zombienet_sdk::{NetworkConfig, NetworkConfigBuilder};
+use pezkuwi_zombienet_sdk::{
+	subxt::{OnlineClient, PezkuwiConfig},
+	NetworkConfig, NetworkConfigBuilder,
+};
 use serde_json::json;
 
 const PARA_ID_1: u32 = 2100;
@@ -37,7 +40,8 @@ async fn elastic_scaling_slot_based_authoring() -> Result<(), anyhow::Error> {
 	log::info!("Checking if collator-single-core is up");
 	assert!(collator_single_core.wait_until_is_up(60u64).await.is_ok());
 
-	assign_cores(alice, PARA_ID_1, vec![0, 1]).await?;
+	let alice_client: OnlineClient<PezkuwiConfig> = alice.wait_client().await?;
+	assign_cores(&alice_client, PARA_ID_1, vec![0, 1]).await?;
 
 	for (node, block_cnt) in [(collator_single_core, 20.0), (collator_elastic, 40.0)] {
 		log::info!("Checking block production for {}", node.name());
@@ -89,7 +93,7 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 			let r = r
 				.with_chain("pezkuwichain-local")
 				.with_default_command("pezkuwi")
-				.with_default_image(images.polkadot.as_str())
+				.with_default_image(images.pezkuwi())
 				.with_genesis_overrides(json!({
 					"configuration": {
 						"config": {
@@ -103,7 +107,7 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 						}
 					}
 				}))
-				// Have to set a `with_node` outside of the loop below, so that `r` has the right
+				// Have to set a `with_validator` outside of the loop below, so that `r` has the right
 				// type.
 				.with_validator(|node| node.with_name("alice").with_args(vec![]));
 

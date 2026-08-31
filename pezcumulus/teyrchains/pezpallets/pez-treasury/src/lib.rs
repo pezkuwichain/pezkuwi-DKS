@@ -16,7 +16,8 @@
 //!
 //! - **Genesis Distribution**: One-time initial distribution to treasury, presale, and founder
 //!   accounts
-//! - **Halving Mechanism**: Automatic reduction of monthly releases every 48 months (4 years)
+//! - **Halving Mechanism**: Automatic reduction of monthly releases every 20,736,000 blocks
+//!   (48 releases of 432,000 blocks each; approximately 4 years)
 //! - **Monthly Releases**: Scheduled distribution to incentive and government pots
 //! - **Multi-Pot System**: Separate accounts for treasury, incentive rewards, and governance
 //!
@@ -29,10 +30,15 @@
 //!
 //! ## Halving Schedule
 //!
-//! - **Halving Period**: Every 48 months (4 years)
-//! - **Period Duration**: 20,736,000 blocks (~4 years at 10 blocks/minute)
+//! - **Halving Period**: Every 20,736,000 blocks, i.e. 48 releases of 432,000 blocks
+//! - **Period Duration**: 20,736,000 blocks — approximately 4 years
 //! - **Distribution**: 75% to Incentive Pot, 25% to Government Pot
 //! - **Automatic Halving**: Monthly release amount halves at the start of each new period
+//!
+//! The block count is the authoritative figure and the year is descriptive. A release period
+//! of 432,000 blocks is 30 days at 10 blocks per minute, so 48 of them come to 1,440 days
+//! rather than four calendar years. Quoting the years as though they were exact is how a
+//! schedule and its documentation drift apart.
 //!
 //! ## Security Features
 //!
@@ -44,18 +50,19 @@
 //!
 //! ### Extrinsics
 //!
-//! - `force_genesis_distribution()` - Perform initial token distribution (one-time only,
-//!   privileged)
-//! - `initialize_treasury()` - Initialize the halving mechanism and start monthly releases
-//!   (privileged)
-//! - `release_monthly_funds()` - Release monthly funds to incentive and government pots
-//!   (privileged)
+//! - `activate_distribution()` - Record that the population threshold has been reached and
+//!   start the schedule. Sent by the chain that holds the citizen register; irreversible.
+//!
+//! There is no extrinsic that mints PEZ, and none that releases funds by hand. Genesis is the
+//! only source of supply; releases happen in `on_initialize` and nobody can bring one forward
+//! or hold one back. Changing either takes a runtime upgrade, which is slow and visible --
+//! that is the point.
 //!
 //! ### Storage
 //!
 //! - `HalvingInfo` - Current halving period data and monthly release amount
 //! - `MonthlyReleases` - Historical record of all monthly distributions
-//! - `GenesisDistributionDone` - Flag to prevent duplicate genesis distribution
+//! - `DistributionStarted` - Whether the population threshold has been reached
 //!
 //! ### Runtime Integration Example
 //!
@@ -68,9 +75,7 @@
 //!     type TreasuryPalletId = TreasuryPalletId;
 //!     type IncentivePotId = IncentivePotId;
 //!     type GovernmentPotId = GovernmentPotId;
-//!     type PresaleAccount = PresaleAccount;
-//!     type FounderAccount = FounderAccount;
-//!     type ForceOrigin = EnsureRoot<AccountId>;
+//!     type ActivationOrigin = EnsureSiblingChain<PeopleChainLocation>;
 //! }
 //! ```
 
@@ -89,6 +94,9 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+extern crate alloc;
+
+use alloc::vec;
 use pezframe_support::{
 	traits::{
 		fungibles::{Inspect, Mutate},
@@ -98,8 +106,16 @@ use pezframe_support::{
 	PalletId,
 };
 use pezframe_system::pezpallet_prelude::BlockNumberFor;
-use pezsp_runtime::traits::{AccountIdConversion, Saturating, Zero};
+use pezsp_runtime::traits::{AccountIdConversion, Saturating, UniqueSaturatedInto, Zero};
 use scale_info::TypeInfo;
+use xcm::latest::prelude::*;
+
+/// `note_incentive_funding` in the rewards pallet on the People chain.
+///
+/// Addressed by index because the two chains do not share a runtime type. The pallet index
+/// is configured; the call index is fixed by that pallet's call surface, and a test there
+/// pins it so this constant cannot go stale unnoticed.
+const NOTE_INCENTIVE_FUNDING_CALL_INDEX: u8 = 2;
 
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
@@ -108,7 +124,10 @@ pub mod pezpallet {
 	use pezframe_system::pezpallet_prelude::*;
 	// use pezsp_runtime::traits::CheckedDiv;
 
-	pub const HALVING_PERIOD_MONTHS: u32 = 48; // 4 years = 48 months
+	/// Releases per halving period. Named "months" because a release period is 432,000 blocks,
+	/// which is 30 days at 10 blocks/minute -- so 48 of them is 1,440 days, approximately but
+	/// not exactly four years. The block count below is what the chain actually measures.
+	pub const HALVING_PERIOD_MONTHS: u32 = 48;
 	pub const BLOCKS_PER_MONTH: u32 = 432_000; // ~30 days * 24 hours * 60 minutes * 10 blocks/minute
 	pub const HALVING_PERIOD_BLOCKS: u32 = HALVING_PERIOD_MONTHS * BLOCKS_PER_MONTH;
 
@@ -120,6 +139,126 @@ pub mod pezpallet {
 	#[pezpallet::pezpallet]
 	#[pezpallet::storage_version(migrations::STORAGE_VERSION)]
 	pub struct Pezpallet<T>(_);
+
+	#[pezpallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
+		/// Releases happen here and nowhere else.
+		///
+		/// There is no extrinsic to bring one forward or hold one back; the schedule belongs
+		/// to the chain rather than to whoever holds a key. A release that fails -- a balance
+		/// short, a pot that will not accept -- must not take the block with it, so the error
+		/// is recorded and the same release is attempted again next block. It is never
+		/// skipped: a month that is not paid is not a month that goes away.
+		fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+			let idle = T::DbWeight::get().reads_writes(3, 0);
+			if !DistributionStarted::<T>::get() {
+				return idle;
+			}
+			match Self::do_monthly_release() {
+				Ok(()) => T::WeightInfo::release_monthly_funds(),
+				// `ReleaseTooEarly` is the ordinary answer on all but one block a month; the
+				// rest are worth seeing.
+				Err(e) => {
+					if e != Error::<T>::ReleaseTooEarly.into() {
+						log::warn!(target: "pez-treasury", "monthly release failed: {e:?}");
+						Self::deposit_event(Event::MonthlyReleaseFailed);
+					}
+					idle
+				},
+			}
+		}
+
+		/// What the pallet has recorded must add up to what it has actually paid.
+		///
+		/// The schedule is derived, not accumulated, so nothing here can drift by a rounding
+		/// step: every quantity below has exactly one correct value that can be recomputed
+		/// from the release index. That is what makes the check worth running -- a mismatch is
+		/// never "close enough", it means a release paid an amount no month was owed, or a
+		/// month was paid twice, or the period advanced without a release behind it. PEZ's
+		/// five billion is fixed, so those are the failures that cannot be undone.
+		#[cfg(feature = "try-runtime")]
+		fn try_state(_n: BlockNumberFor<T>) -> Result<(), pezsp_runtime::TryRuntimeError> {
+			use pezframe_support::ensure;
+
+			let started = DistributionStarted::<T>::get();
+			ensure!(
+				started == TreasuryStartBlock::<T>::get().is_some(),
+				"the latch and the start block disagree about whether the schedule has begun"
+			);
+
+			let next = NextReleaseMonth::<T>::get();
+			if !started {
+				ensure!(next == 0, "releases were made before the schedule began");
+				ensure!(
+					MonthlyReleases::<T>::iter().next().is_none(),
+					"a release was recorded before the schedule began"
+				);
+				ensure!(
+					TotalIncentiveReleased::<T>::get().is_zero(),
+					"incentive funding was reported before the schedule began"
+				);
+				return Ok(());
+			}
+
+			let halving_data = HalvingInfo::<T>::get();
+			let mut counted = 0u32;
+			let mut summed: BalanceOf<T> = Zero::zero();
+			let mut summed_incentive: BalanceOf<T> = Zero::zero();
+
+			for (index, record) in MonthlyReleases::<T>::iter() {
+				ensure!(index < next, "a release is recorded for a month that is not due yet");
+				ensure!(record.month_index == index, "a release is filed under the wrong month");
+
+				let owed = Self::amount_for_release(index)
+					.map_err(|_| "a recorded release has no derivable amount")?;
+				ensure!(record.amount_released == owed, "a release paid the wrong amount");
+
+				let incentive = record
+					.amount_released
+					.checked_mul(&75u32.into())
+					.and_then(|v| v.checked_div(&100u32.into()))
+					.ok_or("the incentive share of a recorded release does not compute")?;
+				ensure!(record.incentive_amount == incentive, "the incentive share is wrong");
+				ensure!(
+					record.government_amount == record.amount_released.saturating_sub(incentive),
+					"the government share is wrong"
+				);
+
+				counted = counted.saturating_add(1);
+				summed = summed.saturating_add(record.amount_released);
+				summed_incentive = summed_incentive.saturating_add(record.incentive_amount);
+			}
+
+			ensure!(
+				TotalIncentiveReleased::<T>::get() == summed_incentive,
+				"the reported incentive total does not match the records"
+			);
+
+			// Every month up to `next` must have been paid. Counting is enough to prove it:
+			// the loop above rejects any index at or beyond `next`, so `next` distinct records
+			// below `next` leaves no room for a gap.
+			ensure!(counted == next, "there is a gap in the release history");
+			ensure!(
+				summed == halving_data.total_released,
+				"total_released does not match the records"
+			);
+
+			let period = next.saturating_sub(1) / HALVING_PERIOD_MONTHS;
+			ensure!(
+				halving_data.current_period == period,
+				"the halving period does not follow from the releases made"
+			);
+			let period_amount =
+				Self::amount_for_release(period.saturating_mul(HALVING_PERIOD_MONTHS))
+					.map_err(|_| "the current period has no derivable amount")?;
+			ensure!(
+				halving_data.monthly_amount == period_amount,
+				"the stored monthly amount does not match the current period"
+			);
+
+			Ok(())
+		}
+	}
 
 	#[pezpallet::config]
 	pub trait Config: pezframe_system::Config + TypeInfo {
@@ -138,13 +277,42 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type GovernmentPotId: Get<PalletId>;
 
-		#[pezpallet::constant]
-		type PresaleAccount: Get<Self::AccountId>;
+		/// Who may say that the population threshold has been reached.
+		///
+		/// The citizen register lives on another chain, so this pallet cannot count for
+		/// itself; it is told once, by that chain, and the runtime binds this to that chain's
+		/// sovereign origin. What arrives is a fact, not an instruction -- a second message
+		/// changes nothing, because the latch only turns one way.
+		type ActivationOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
-		#[pezpallet::constant]
-		type FounderAccount: Get<Self::AccountId>;
+		/// Who may spend from the government pot.
+		///
+		/// The pot is on this chain; the authority to spend it is not. A payment is legitimate
+		/// when the budget behind it was approved by Parliament and the officeholder drawing
+		/// against it holds the finance portfolio -- and both of those facts live on the
+		/// People chain, with the register and the government. So this pallet does not judge
+		/// them. It accepts an instruction from that chain and nothing else, which is why the
+		/// runtime binds this to the People chain's origin rather than to root: a key that can
+		/// pay out of the government pot is a key that can ignore the budget.
+		type GovernmentSpendOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
-		type ForceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+		/// Who may spend from the incentive pot.
+		///
+		/// Same division as the government pot, for the same reason. The pot is here; the
+		/// arithmetic that says who is owed what -- trust scores, the citizen register, the
+		/// elected Parliament -- is on the People chain. This pallet holds the money and
+		/// takes instruction; it does not decide who has earned it.
+		type IncentiveSpendOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Sends the funding report to the chain that does the reward arithmetic.
+		type XcmSender: SendXcm;
+
+		/// Where that chain is.
+		type RewardsChainLocation: Get<Location>;
+
+		/// The rewards pallet's index on that chain.
+		#[pezpallet::constant]
+		type RewardsPalletIndex: Get<u8>;
 	}
 
 	pub type BalanceOf<T> =
@@ -167,11 +335,27 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn treasury_start_block)]
 	pub type TreasuryStartBlock<T: Config> = StorageValue<_, BlockNumberFor<T>, OptionQuery>;
 
+	/// Whether the population threshold has been reached and the schedule has begun.
+	///
+	/// One way only. Once the state has enough citizens to start paying them, a later fall in
+	/// the count does not stop the payments -- an economy that switched off when the
+	/// population dipped would be worse than one that never started.
 	#[pezpallet::storage]
-	#[pezpallet::getter(fn genesis_distribution_done)]
-	pub type GenesisDistributionDone<T: Config> = StorageValue<_, bool, ValueQuery>;
+	#[pezpallet::getter(fn distribution_started)]
+	pub type DistributionStarted<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	/// Everything the incentive pot has ever been given.
+	///
+	/// Kept separately rather than derived from `total_released`, because the incentive share
+	/// is rounded down each month and the sum of the roundings is not the rounding of the sum.
+	/// This is the number reported to the rewards chain, and it is reported as a running
+	/// total rather than as a monthly delta: a report that never arrives is corrected by the
+	/// next one, instead of leaving a month of funding permanently unaccounted for.
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn total_incentive_released)]
+	pub type TotalIncentiveReleased<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery>;
+
+	#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	#[scale_info(skip_type_params(T))]
 	pub struct HalvingData<T: Config> {
 		pub current_period: u32,
@@ -180,7 +364,7 @@ pub mod pezpallet {
 		pub total_released: BalanceOf<T>,
 	}
 
-	#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+	#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 	#[scale_info(skip_type_params(T))]
 	pub struct MonthlyRelease<T: Config> {
 		pub month_index: u32,
@@ -214,14 +398,26 @@ pub mod pezpallet {
 			incentive_amount: BalanceOf<T>,
 			government_amount: BalanceOf<T>,
 		},
+		/// A due release could not be made. It will be attempted again next block.
+		MonthlyReleaseFailed,
+		/// The government spent from its pot.
+		GovernmentPotSpent {
+			beneficiary: T::AccountId,
+			amount: BalanceOf<T>,
+		},
+		/// A reward was paid out of the incentive pot on the rewards chain's instruction.
+		IncentivePotSpent {
+			beneficiary: T::AccountId,
+			amount: BalanceOf<T>,
+		},
+		/// The funding report could not be sent. The next release reports the running total
+		/// again, so the rewards chain catches up without anything being lost.
+		IncentiveFundingReportFailed {
+			total: BalanceOf<T>,
+		},
 		NewHalvingPeriod {
 			period: u32,
 			new_monthly_amount: BalanceOf<T>,
-		},
-		GenesisDistributionCompleted {
-			treasury_amount: BalanceOf<T>,
-			presale_amount: BalanceOf<T>,
-			founder_amount: BalanceOf<T>,
 		},
 	}
 
@@ -233,48 +429,111 @@ pub mod pezpallet {
 		InsufficientTreasuryBalance,
 		InvalidHalvingPeriod,
 		ReleaseTooEarly,
-		GenesisDistributionAlreadyDone,
+		/// A spend of zero was requested.
+		NothingToSpend,
+		/// The government pot does not hold what was asked for.
+		InsufficientGovernmentPotBalance,
+		/// The incentive pot does not hold what was asked for.
+		InsufficientIncentivePotBalance,
 	}
 
-	#[pezpallet::genesis_config]
-	#[derive(pezframe_support::DefaultNoBound)]
-	pub struct GenesisConfig<T: Config> {
-		pub initialize_treasury: bool,
-		#[serde(skip)]
-		pub _phantom: core::marker::PhantomData<T>,
-	}
-
-	#[pezpallet::genesis_build]
-	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
-		fn build(&self) {
-			if self.initialize_treasury {
-				let _ = Pezpallet::<T>::do_initialize_treasury();
-			}
-		}
-	}
+	// There is no genesis config. The schedule cannot start at genesis: it starts in the era
+	// the citizen register first reports enough citizens, and that register lives on another
+	// chain. A genesis flag that started it early would pay the first month to a state that
+	// did not yet have the people it was paying.
 
 	#[pezpallet::call]
 	impl<T: Config> Pezpallet<T> {
+		/// Record that the population threshold has been reached, and start the schedule.
+		///
+		/// The first release is made in the same era this arrives, not a month later: the
+		/// state begins paying its citizens on the day it has enough of them. Calling it
+		/// again does nothing.
 		#[pezpallet::call_index(0)]
-		#[pezpallet::weight(T::WeightInfo::initialize_treasury())]
-		pub fn initialize_treasury(origin: OriginFor<T>) -> DispatchResult {
-			T::ForceOrigin::ensure_origin(origin)?;
-			Self::do_initialize_treasury()
+		#[pezpallet::weight(T::WeightInfo::activate_distribution())]
+		pub fn activate_distribution(origin: OriginFor<T>) -> DispatchResult {
+			T::ActivationOrigin::ensure_origin(origin)?;
+			ensure!(!DistributionStarted::<T>::get(), Error::<T>::TreasuryAlreadyInitialized);
+			Self::do_initialize_treasury()?;
+			DistributionStarted::<T>::put(true);
+			Ok(())
 		}
 
+		/// Pay `amount` out of the government pot to `beneficiary`.
+		///
+		/// This is the only way anything leaves the government pot, and it cannot originate
+		/// here: the caller has to be the People chain, speaking for a budget Parliament
+		/// approved and a minister who holds the portfolio. What arrives is already
+		/// authorised, so all this does is move the money and record that it moved.
+		///
+		/// It cannot touch the incentive pot, and it cannot touch the treasury account the
+		/// releases come from. Those two hold what has not been handed to the government yet;
+		/// only the quarter that has already been released is spendable.
 		#[pezpallet::call_index(1)]
-		#[pezpallet::weight(T::WeightInfo::release_monthly_funds())]
-		pub fn release_monthly_funds(origin: OriginFor<T>) -> DispatchResult {
-			T::ForceOrigin::ensure_origin(origin)?;
-			Self::do_monthly_release()
+		#[pezpallet::weight(T::WeightInfo::spend_from_government_pot())]
+		pub fn spend_from_government_pot(
+			origin: OriginFor<T>,
+			beneficiary: T::AccountId,
+			amount: BalanceOf<T>,
+		) -> DispatchResult {
+			T::GovernmentSpendOrigin::ensure_origin(origin)?;
+			ensure!(!amount.is_zero(), Error::<T>::NothingToSpend);
+
+			let pot = Self::government_pot_account_id();
+			T::Assets::transfer(
+				T::PezAssetId::get(),
+				&pot,
+				&beneficiary,
+				amount,
+				// The pot is a PalletId account with no provider reference of its own, so it
+				// must not be reaped by a payment that happens to empty it.
+				Preservation::Preserve,
+			)
+			.map_err(|_| Error::<T>::InsufficientGovernmentPotBalance)?;
+
+			Self::deposit_event(Event::GovernmentPotSpent { beneficiary, amount });
+			Ok(())
 		}
 
-		#[pezpallet::call_index(2)]
-		#[pezpallet::weight(T::WeightInfo::force_genesis_distribution())]
-		pub fn force_genesis_distribution(origin: OriginFor<T>) -> DispatchResult {
-			T::ForceOrigin::ensure_origin(origin)?;
-			Self::do_genesis_distribution()
+		/// Pay `amount` out of the incentive pot to `beneficiary`.
+		///
+		/// The twin of `spend_from_government_pot`, and the only way anything leaves the
+		/// incentive pot. Everything that decides the amount -- the trust score, the epoch
+		/// rate, the parliamentary seat -- is computed on the rewards chain, which is why
+		/// this accepts that chain's origin and nothing else. Root is deliberately not
+		/// accepted: a key that can pay out of the incentive pot is a key that can pay
+		/// itself the citizens' share.
+		#[pezpallet::call_index(3)]
+		#[pezpallet::weight(T::WeightInfo::pay_from_incentive_pot())]
+		pub fn pay_from_incentive_pot(
+			origin: OriginFor<T>,
+			beneficiary: T::AccountId,
+			amount: BalanceOf<T>,
+		) -> DispatchResult {
+			T::IncentiveSpendOrigin::ensure_origin(origin)?;
+			ensure!(!amount.is_zero(), Error::<T>::NothingToSpend);
+
+			let pot = Self::incentive_pot_account_id();
+			T::Assets::transfer(
+				T::PezAssetId::get(),
+				&pot,
+				&beneficiary,
+				amount,
+				// Same reason as the government pot: a PalletId account with no provider
+				// reference of its own must not be reaped by the payment that empties it.
+				Preservation::Preserve,
+			)
+			.map_err(|_| Error::<T>::InsufficientIncentivePotBalance)?;
+
+			Self::deposit_event(Event::IncentivePotSpent { beneficiary, amount });
+			Ok(())
 		}
+
+		// `force_genesis_distribution` used to live at call index 2. It minted the treasury,
+		// presale and founder allocations -- five billion PEZ -- on top of whatever genesis had
+		// already minted, guarded only by a flag that is false on a chain built from a genesis
+		// preset. There is now no path in this pallet that can create PEZ. Genesis is the only
+		// source of supply, and it is fixed.
 	}
 
 	impl<T: Config> Pezpallet<T> {
@@ -290,40 +549,40 @@ pub mod pezpallet {
 			T::GovernmentPotId::get().into_account_truncating()
 		}
 
-		pub fn do_genesis_distribution() -> DispatchResult {
-			// SECURITY: Ensure genesis distribution can only happen once
-			ensure!(
-				!GenesisDistributionDone::<T>::get(),
-				Error::<T>::GenesisDistributionAlreadyDone
-			);
+		/// Tell the rewards chain how much the incentive pot has been given in total.
+		///
+		/// Sent unpaid, for the same reason as the other messages between these two system
+		/// chains: a report the state owes its citizens should not be lost because a
+		/// sovereign account was short of fees.
+		///
+		/// The running total is sent rather than the month's share. A delta that fails to
+		/// arrive is a month of rewards nobody can ever claim; a total that fails to arrive
+		/// is corrected by the next release without anyone having to notice.
+		fn report_incentive_funding(total: BalanceOf<T>) -> Result<(), SendError> {
+			// The wire format is `u128` because the two runtimes agree on the number, not on
+			// the type: the rewards chain has no way to name this chain's `Balance`.
+			let total: u128 = UniqueSaturatedInto::<u128>::unique_saturated_into(total);
+			let call = (
+				T::RewardsPalletIndex::get(),
+				NOTE_INCENTIVE_FUNDING_CALL_INDEX,
+				codec::Compact(total),
+			)
+				.encode();
 
-			let treasury_account = Self::treasury_account_id();
-			let presale_account = T::PresaleAccount::get();
-			let founder_account = T::FounderAccount::get();
+			let message = Xcm(vec![
+				UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+				Transact {
+					origin_kind: OriginKind::Xcm,
+					fallback_max_weight: None,
+					call: call.into(),
+				},
+			]);
 
-			let treasury_amount: BalanceOf<T> = TREASURY_ALLOCATION
-				.try_into()
-				.map_err(|_| Error::<T>::InsufficientTreasuryBalance)?;
-			let presale_amount: BalanceOf<T> = PRESALE_ALLOCATION
-				.try_into()
-				.map_err(|_| Error::<T>::InsufficientTreasuryBalance)?;
-			let founder_amount: BalanceOf<T> = FOUNDER_ALLOCATION
-				.try_into()
-				.map_err(|_| Error::<T>::InsufficientTreasuryBalance)?;
-
-			T::Assets::mint_into(T::PezAssetId::get(), &treasury_account, treasury_amount)?;
-			T::Assets::mint_into(T::PezAssetId::get(), &presale_account, presale_amount)?;
-			T::Assets::mint_into(T::PezAssetId::get(), &founder_account, founder_amount)?;
-
-			// Mark genesis distribution as completed
-			GenesisDistributionDone::<T>::put(true);
-
-			Self::deposit_event(Event::GenesisDistributionCompleted {
-				treasury_amount,
-				presale_amount,
-				founder_amount,
-			});
-
+			let (ticket, _) = T::XcmSender::validate(
+				&mut Some(T::RewardsChainLocation::get()),
+				&mut Some(message),
+			)?;
+			T::XcmSender::deliver(ticket)?;
 			Ok(())
 		}
 
@@ -364,6 +623,26 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// The monthly amount for release `index`, derived rather than accumulated.
+		///
+		/// The period is a function of which release this is -- `index / 48` -- so the amount
+		/// cannot drift. The counter it replaces was advanced once per call, which meant a
+		/// release that arrived late carried the schedule forward with it: a backlog paid out
+		/// in one block would halve on every second call and settle the whole backlog at a
+		/// rate no month was ever owed. Derived from the index, a release pays what its own
+		/// month is due whenever it happens to be made.
+		fn amount_for_release(index: u32) -> Result<BalanceOf<T>, Error<T>> {
+			let first_period_total =
+				TREASURY_ALLOCATION.checked_div(2).ok_or(Error::<T>::InvalidHalvingPeriod)?;
+			let initial = first_period_total
+				.checked_div(HALVING_PERIOD_MONTHS.into())
+				.ok_or(Error::<T>::InvalidHalvingPeriod)?;
+			let period = index / HALVING_PERIOD_MONTHS;
+			// Beyond ~127 halvings the amount is zero anyway; the shift would be undefined.
+			let amount = if period >= 128 { 0u128 } else { initial >> period };
+			amount.try_into().map_err(|_| Error::<T>::InvalidHalvingPeriod)
+		}
+
 		pub fn do_monthly_release() -> DispatchResult {
 			let start_block =
 				TreasuryStartBlock::<T>::get().ok_or(Error::<T>::TreasuryNotInitialized)?;
@@ -376,26 +655,23 @@ pub mod pezpallet {
 				Error::<T>::MonthlyReleaseAlreadyDone
 			);
 
+			// Release 0 falls on the activation block itself: the first distribution is made in
+			// the era the population threshold is seen, not a month afterwards. Release `m` is
+			// due once `m` full periods have passed since then.
 			let blocks_passed = current_block.saturating_sub(start_block);
-			let months_passed: u32 = (blocks_passed / BLOCKS_PER_MONTH.into())
-				.try_into()
-				.map_err(|_| Error::<T>::InvalidHalvingPeriod)?;
-
-			// To release month 0, months_passed must be >= 1 (next_month + 1)
-			// To release month 1, months_passed must be >= 2
-			ensure!(months_passed > next_month, Error::<T>::ReleaseTooEarly);
+			let due_after: BlockNumberFor<T> = BLOCKS_PER_MONTH.saturating_mul(next_month).into();
+			ensure!(blocks_passed >= due_after, Error::<T>::ReleaseTooEarly);
 
 			let mut halving_data = HalvingInfo::<T>::get();
+			let period = next_month / HALVING_PERIOD_MONTHS;
+			let monthly_amount = Self::amount_for_release(next_month)?;
 
-			let current_period_passed_months =
-				months_passed.saturating_sub(halving_data.current_period * HALVING_PERIOD_MONTHS);
-
-			if current_period_passed_months >= HALVING_PERIOD_MONTHS {
-				halving_data.current_period = halving_data.current_period.saturating_add(1);
-				halving_data.monthly_amount = halving_data
-					.monthly_amount
-					.checked_div(&2u32.into())
-					.ok_or(Error::<T>::InvalidHalvingPeriod)?;
+			// The halving belongs to the release that opens a new period, not to the one that
+			// closes the old one. Release 47 is the forty-eighth of period 0 and is paid in
+			// full; release 48 is the first of period 1 and is the one that is halved.
+			if period > halving_data.current_period {
+				halving_data.current_period = period;
+				halving_data.monthly_amount = monthly_amount;
 				halving_data.period_start_block = current_block;
 
 				Self::deposit_event(Event::NewHalvingPeriod {
@@ -404,7 +680,6 @@ pub mod pezpallet {
 				});
 			}
 
-			let monthly_amount = halving_data.monthly_amount;
 			let incentive_amount = monthly_amount
 				.checked_mul(&75u32.into())
 				.and_then(|v| v.checked_div(&100u32.into()))
@@ -447,6 +722,16 @@ pub mod pezpallet {
 
 			MonthlyReleases::<T>::insert(next_month, release_info);
 			NextReleaseMonth::<T>::put(next_month.saturating_add(1));
+
+			let incentive_total =
+				TotalIncentiveReleased::<T>::get().saturating_add(incentive_amount);
+			TotalIncentiveReleased::<T>::put(incentive_total);
+
+			// The money has moved whether or not the report gets through, so a failed send
+			// must not undo the release. The running total makes the next report a repair.
+			if Self::report_incentive_funding(incentive_total).is_err() {
+				Self::deposit_event(Event::IncentiveFundingReportFailed { total: incentive_total });
+			}
 
 			Self::deposit_event(Event::MonthlyFundsReleased {
 				month_index: next_month,

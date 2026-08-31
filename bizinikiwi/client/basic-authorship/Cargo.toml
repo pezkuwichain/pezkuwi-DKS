@@ -30,6 +30,7 @@ pezsp-consensus = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
 pezsp-inherents = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
+pezsp-state-machine = { workspace = true, default-features = true }
 pezsp-trie = { workspace = true, default-features = true }
 prometheus-endpoint = { workspace = true, default-features = true }
 
@@ -51,6 +52,7 @@ runtime-benchmarks = [
 	"pezsp-consensus/runtime-benchmarks",
 	"pezsp-inherents/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-state-machine/runtime-benchmarks",
 	"pezsp-trie/runtime-benchmarks",
 ]
 std = [

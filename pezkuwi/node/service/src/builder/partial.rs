@@ -19,8 +19,8 @@
 #![cfg(feature = "full-node")]
 
 use crate::{
-	fake_runtime_api::RuntimeApi, grandpa_support, relay_chain_selection, Error, FullBackend,
-	FullClient, IdentifyVariant, GRANDPA_JUSTIFICATION_PERIOD,
+	fake_runtime_api::RuntimeApi, relay_chain_selection, Error, FullBackend, FullClient,
+	GRANDPA_JUSTIFICATION_PERIOD,
 };
 use pezkuwi_primitives::Block;
 use pezsc_consensus_grandpa::FinalityProofProvider as GrandpaFinalityProofProvider;
@@ -122,11 +122,14 @@ pub(crate) fn new_partial_basics(
 		.with_runtime_cache_size(config.executor.runtime_cache_size)
 		.build();
 
+	// Blocks carrying GRANDPA justifications must survive pruning, or warp sync has nothing to
+	// verify against on a pruned node.
 	let (client, backend, keystore_container, task_manager) =
 		pezsc_service::new_full_parts::<Block, RuntimeApi, _>(
 			&config,
 			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 			executor,
+			vec![Arc::new(pezsc_consensus_grandpa::GrandpaPruningFilter)],
 		)?;
 	let client = Arc::new(client);
 
@@ -163,8 +166,8 @@ where
 		.build(),
 	);
 
-	let grandpa_hard_forks =
-		if config.chain_spec.is_dicle() { grandpa_support::dicle_hard_forks() } else { Vec::new() };
+	// See the note in `builder/mod.rs`: hard forks are another network's incident history.
+	let grandpa_hard_forks = Vec::new();
 
 	let (grandpa_block_import, grandpa_link) =
 		pezsc_consensus_grandpa::block_import_with_authority_set_hard_forks(

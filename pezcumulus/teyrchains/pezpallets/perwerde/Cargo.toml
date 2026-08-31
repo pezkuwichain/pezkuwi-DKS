@@ -35,6 +35,7 @@ pezkuwi-primitives = { workspace = true, default-features = false }
 # Mock ve benchmark için gerekli olanlar buraya optional olarak eklendi
 pezpallet-balances = { workspace = true, default-features = false, optional = true }
 pezpallet-collective = { workspace = true, default-features = false, optional = true }
+pezpallet-tiki = { workspace = true, default-features = false }
 pezsp-core = { workspace = true, default-features = false, optional = true }
 pezsp-io = { workspace = true, default-features = false, optional = true }
 
@@ -53,6 +54,7 @@ std = [
 	"pezpallet-balances/std",
 	"pezpallet-collective/std",
 	"pezpallet-sudo/std",
+	"pezpallet-tiki/std",
 	"pezsp-core/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
@@ -71,6 +73,7 @@ runtime-benchmarks = [
 	"pezpallet-collective",
 	"pezpallet-collective?/runtime-benchmarks",
 	"pezpallet-sudo/runtime-benchmarks",
+	"pezpallet-tiki/runtime-benchmarks",
 	"pezsp-core",
 	"pezsp-io",
 	"pezsp-io?/runtime-benchmarks",
@@ -84,6 +87,7 @@ try-runtime = [
 	"pezpallet-balances?/try-runtime",
 	"pezpallet-collective?/try-runtime",
 	"pezpallet-sudo/try-runtime",
+	"pezpallet-tiki/try-runtime",
 	"pezsp-runtime/try-runtime",
 ]
 serde = [

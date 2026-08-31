@@ -79,6 +79,7 @@ mod tests {
 			}
 
 			impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
+				type SchedulingSignatureVerifier = ();
 				type RuntimeEvent = RuntimeEvent;
 				type OnSystemEvent = ();
 				type SelfParaId = teyrchain_info::Pezpallet<Runtime>;

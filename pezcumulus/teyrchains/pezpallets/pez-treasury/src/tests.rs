@@ -3,104 +3,108 @@
 // Copyright (C) Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: Apache-2.0
 
-// pezkuwi/pallets/pez-treasury/src/tests.rs
+//! Tests for pezpallet-pez-treasury.
+//!
+//! The pallet has one job and two hard rules. The job is to move a fixed allocation out of the
+//! treasury account and into the two pots, once a month, halving every forty-eight releases.
+//! The rules are that it may never create PEZ, and that nobody -- not root -- may bring a
+//! release forward, hold one back, or hand one out by hand. Most of what follows is there to
+//! keep those two rules honest.
 
-use crate::{mock::*, Error, Event};
+use crate::{mock::*, Error, Event, BLOCKS_PER_MONTH, HALVING_PERIOD_MONTHS, TREASURY_ALLOCATION};
 use pezframe_support::{assert_noop, assert_ok};
-use pezsp_runtime::traits::Zero; // FIXED: Import Zero trait for is_zero() method
+use pezsp_runtime::traits::Zero;
+
+/// Blocks per month as a block number.
+const MONTH: u64 = BLOCKS_PER_MONTH as u64;
+
+/// The amount release `index` is owed, computed here independently of the pallet.
+fn expected_amount(index: u32) -> u128 {
+	let initial = (TREASURY_ALLOCATION / 2) / HALVING_PERIOD_MONTHS as u128;
+	let period = index / HALVING_PERIOD_MONTHS;
+	if period >= 128 {
+		0
+	} else {
+		initial >> period
+	}
+}
+
+/// Activate at the current block, with the treasury funded as genesis would fund it.
+fn activate() {
+	fund_treasury();
+	assert_ok!(PezTreasury::activate_distribution(RuntimeOrigin::root()));
+}
 
 // =============================================================================
-// 1. GENESIS DISTRIBUTION TESTS
+// 1. THE PALLET CANNOT CREATE PEZ
 // =============================================================================
 
 #[test]
-fn genesis_distribution_works() {
+fn activation_mints_nothing() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
+		fund_treasury();
+		let supply_before = pez_total_supply();
 
-		let treasury_amount = 4_812_500_000 * 1_000_000_000_000u128;
-		let presale_amount = 93_750_000 * 1_000_000_000_000u128;
-		let founder_amount = 93_750_000 * 1_000_000_000_000u128;
+		assert_ok!(PezTreasury::activate_distribution(RuntimeOrigin::root()));
 
-		assert_pez_balance(treasury_account(), treasury_amount);
-		assert_pez_balance(presale(), presale_amount);
-		assert_pez_balance(founder(), founder_amount);
-
-		let total = treasury_amount + presale_amount + founder_amount;
-		assert_eq!(total, 5_000_000_000 * 1_000_000_000_000u128);
-
-		System::assert_has_event(
-			Event::GenesisDistributionCompleted { treasury_amount, presale_amount, founder_amount }
-				.into(),
-		);
+		assert_eq!(pez_total_supply(), supply_before);
 	});
 }
 
 #[test]
-fn force_genesis_distribution_requires_root() {
+fn supply_is_unchanged_across_the_whole_schedule() {
 	new_test_ext().execute_with(|| {
-		assert_noop!(
-			PezTreasury::force_genesis_distribution(RuntimeOrigin::signed(alice())),
-			pezsp_runtime::DispatchError::BadOrigin
-		);
+		activate();
+		let supply = pez_total_supply();
+		assert_eq!(supply, TREASURY_ALLOCATION);
+
+		// Two hundred months, which is past four halvings.
+		for month in 0..200u64 {
+			jump_to_block(1 + month * MONTH);
+			run_blocks(1);
+			assert_eq!(pez_total_supply(), supply, "supply moved at month {month}");
+		}
 	});
 }
 
 #[test]
-fn force_genesis_distribution_works_with_root() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::force_genesis_distribution(RuntimeOrigin::root()));
-
-		assert!(Assets::balance(PezAssetId::get(), treasury_account()) > 0);
-		assert!(Assets::balance(PezAssetId::get(), presale()) > 0);
-		assert!(Assets::balance(PezAssetId::get(), founder()) > 0);
-	});
-}
-
-#[test]
-fn genesis_distribution_can_only_happen_once() {
-	new_test_ext().execute_with(|| {
-		// First call should succeed
-		assert_ok!(PezTreasury::do_genesis_distribution());
-
-		// Verify flag is set
-		assert!(PezTreasury::genesis_distribution_done());
-
-		// Second call should fail
-		assert_noop!(
-			PezTreasury::do_genesis_distribution(),
-			Error::<Test>::GenesisDistributionAlreadyDone
-		);
-
-		// Verify balances didn't double
-		let treasury_amount = 4_812_500_000 * 1_000_000_000_000u128;
-		assert_pez_balance(treasury_account(), treasury_amount);
-	});
+fn the_call_surface_is_three_calls_and_none_of_them_mints() {
+	// A compile-time statement of the surface. Adding a call makes this stop matching and the
+	// test fails to build -- which is the point: a new way into this pallet has to be looked
+	// at, not merged. The three that exist move nothing into being: one starts the schedule,
+	// the other two move already-released PEZ out of the government and incentive pots.
+	use crate::pezpallet::Call;
+	fn assert_exhaustive(call: Call<Test>) {
+		match call {
+			Call::activate_distribution {} => {},
+			Call::spend_from_government_pot { .. } => {},
+			Call::pay_from_incentive_pot { .. } => {},
+			Call::__Ignore(_, _) => {},
+		}
+	}
+	let _ = assert_exhaustive;
 }
 
 // =============================================================================
-// 2. TREASURY INITIALIZATION TESTS
+// 2. ACTIVATION
 // =============================================================================
 
 #[test]
-fn initialize_treasury_works() {
+fn activation_sets_up_the_schedule() {
 	new_test_ext().execute_with(|| {
 		let start_block = System::block_number();
+		activate();
 
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		// Verify storage
+		assert!(PezTreasury::distribution_started());
 		assert_eq!(PezTreasury::treasury_start_block(), Some(start_block));
+		assert_eq!(PezTreasury::next_release_month(), 0);
 
 		let halving_info = PezTreasury::halving_info();
 		assert_eq!(halving_info.current_period, 0);
 		assert_eq!(halving_info.period_start_block, start_block);
-		assert!(!halving_info.monthly_amount.is_zero());
+		assert_eq!(halving_info.monthly_amount, expected_amount(0));
+		assert!(halving_info.total_released.is_zero());
 
-		// Verify next release month
-		assert_eq!(PezTreasury::next_release_month(), 0);
-
-		// Verify event
 		System::assert_has_event(
 			Event::TreasuryInitialized {
 				start_block,
@@ -112,861 +116,872 @@ fn initialize_treasury_works() {
 }
 
 #[test]
-fn initialize_treasury_fails_if_already_initialized() {
+fn activation_rejects_anyone_but_the_activation_origin() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		// Try to initialize again
 		assert_noop!(
-			PezTreasury::initialize_treasury(RuntimeOrigin::root()),
+			PezTreasury::activate_distribution(RuntimeOrigin::signed(alice())),
+			pezsp_runtime::DispatchError::BadOrigin
+		);
+		assert!(!PezTreasury::distribution_started());
+	});
+}
+
+#[test]
+fn the_latch_only_turns_once() {
+	new_test_ext().execute_with(|| {
+		activate();
+		let start_block = PezTreasury::treasury_start_block();
+
+		jump_to_block(500);
+		assert_noop!(
+			PezTreasury::activate_distribution(RuntimeOrigin::root()),
 			Error::<Test>::TreasuryAlreadyInitialized
 		);
+
+		// A second message must not move the start block; that would reset the whole schedule.
+		assert_eq!(PezTreasury::treasury_start_block(), start_block);
 	});
 }
 
 #[test]
-fn initialize_treasury_requires_root() {
+fn nothing_is_released_before_activation() {
 	new_test_ext().execute_with(|| {
-		assert_noop!(
-			PezTreasury::initialize_treasury(RuntimeOrigin::signed(alice())),
-			pezsp_runtime::DispatchError::BadOrigin
-		);
+		fund_treasury();
+
+		jump_to_block(10 * MONTH);
+		run_blocks(5);
+
+		assert_eq!(PezTreasury::next_release_month(), 0);
+		assert!(PezTreasury::monthly_releases(0).is_none());
+		assert!(PezTreasury::get_incentive_pot_balance().is_zero());
+		assert!(PezTreasury::get_government_pot_balance().is_zero());
 	});
 }
 
 #[test]
-fn initialize_treasury_calculates_correct_monthly_amount() {
+fn the_first_release_falls_in_the_era_of_activation() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		activate();
 
-		let halving_info = PezTreasury::halving_info();
+		// The block after activation, not a month later.
+		run_blocks(1);
 
-		// First period total = 96.25% / 2 = 48.125%
-		let treasury_total = 4_812_500_000 * 1_000_000_000_000u128;
-		let first_period = treasury_total / 2;
-		let expected_monthly = first_period / 48; // 48 months
-
-		assert_eq!(halving_info.monthly_amount, expected_monthly);
+		let release = PezTreasury::monthly_releases(0).expect("release 0 was not made");
+		assert_eq!(release.month_index, 0);
+		assert_eq!(release.amount_released, expected_amount(0));
+		assert_eq!(PezTreasury::next_release_month(), 1);
 	});
 }
 
 // =============================================================================
-// 3. MONTHLY RELEASE TESTS
+// 3. THE SCHEDULE
 // =============================================================================
 
 #[test]
-fn release_monthly_funds_works() {
+fn release_one_waits_a_full_month() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		let initial_monthly = PezTreasury::halving_info().monthly_amount;
-		let incentive_expected = initial_monthly * 75 / 100;
-		let government_expected = initial_monthly - incentive_expected;
-
-		run_to_block(432_001);
-
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		assert_pez_balance(PezTreasury::incentive_pot_account_id(), incentive_expected);
-		assert_pez_balance(PezTreasury::government_pot_account_id(), government_expected);
-
+		activate();
+		run_blocks(1); // release 0
 		assert_eq!(PezTreasury::next_release_month(), 1);
 
-		let halving_info = PezTreasury::halving_info();
-		assert_eq!(halving_info.total_released, initial_monthly);
-	});
-}
-
-#[test]
-fn release_monthly_funds_fails_if_not_initialized() {
-	new_test_ext().execute_with(|| {
-		assert_noop!(
-			PezTreasury::release_monthly_funds(RuntimeOrigin::root()),
-			Error::<Test>::TreasuryNotInitialized
-		);
-	});
-}
-
-#[test]
-fn release_monthly_funds_fails_if_too_early() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		// Try to release before time
-		run_to_block(100);
-
-		assert_noop!(
-			PezTreasury::release_monthly_funds(RuntimeOrigin::root()),
-			Error::<Test>::ReleaseTooEarly
-		);
-	});
-}
-
-#[test]
-fn release_monthly_funds_fails_if_already_released() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		run_to_block(432_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		// Try to release same month again
-		assert_noop!(
-			PezTreasury::release_monthly_funds(RuntimeOrigin::root()),
-			Error::<Test>::ReleaseTooEarly
-		);
-	});
-}
-
-#[test]
-fn release_monthly_funds_splits_correctly() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		let monthly_amount = PezTreasury::halving_info().monthly_amount;
-
-		run_to_block(432_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		let incentive_balance =
-			Assets::balance(PezAssetId::get(), PezTreasury::incentive_pot_account_id());
-		let government_balance =
-			Assets::balance(PezAssetId::get(), PezTreasury::government_pot_account_id());
-
-		// 75% to incentive, 25% to government
-		assert_eq!(incentive_balance, monthly_amount * 75 / 100);
-		// Must match the logic in lib.rs (saturating_sub)
-		let incentive_amount_calculated = monthly_amount * 75 / 100;
-		assert_eq!(government_balance, monthly_amount - incentive_amount_calculated);
-
-		// Total should equal monthly amount
-		assert_eq!(incentive_balance + government_balance, monthly_amount);
-	});
-}
-
-#[test]
-fn multiple_monthly_releases_work() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		let monthly_amount = PezTreasury::halving_info().monthly_amount;
-
-		// Release month 0
-		run_to_block(432_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
+		// Release 1 is due at block `1 + MONTH`. Land the hook one block short of it.
+		jump_to_block(1 + MONTH - 2);
+		run_blocks(1);
+		assert_eq!(System::block_number(), 1 + MONTH - 1);
 		assert_eq!(PezTreasury::next_release_month(), 1);
+		assert!(PezTreasury::monthly_releases(1).is_none());
 
-		// Release month 1
-		run_to_block(864_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
+		// The month is up.
+		run_blocks(1);
 		assert_eq!(PezTreasury::next_release_month(), 2);
+		assert!(PezTreasury::monthly_releases(1).is_some());
+	});
+}
 
-		// Release month 2
-		run_to_block(1_296_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
+#[test]
+fn each_release_splits_seventy_five_twenty_five() {
+	new_test_ext().execute_with(|| {
+		activate();
+		let monthly = expected_amount(0);
+		let incentive = monthly * 75 / 100;
+		let government = monthly - incentive;
+
+		run_blocks(1);
+
+		assert_pez_balance(PezTreasury::incentive_pot_account_id(), incentive);
+		assert_pez_balance(PezTreasury::government_pot_account_id(), government);
+		assert_eq!(incentive + government, monthly, "the split must lose nothing");
+
+		let release = PezTreasury::monthly_releases(0).unwrap();
+		assert_eq!(release.incentive_amount, incentive);
+		assert_eq!(release.government_amount, government);
+	});
+}
+
+#[test]
+fn releases_are_recorded_one_per_month() {
+	new_test_ext().execute_with(|| {
+		activate();
+		run_blocks(1);
+		jump_to_block(1 + MONTH);
+		run_blocks(1);
+
+		let zero = PezTreasury::monthly_releases(0).unwrap();
+		let one = PezTreasury::monthly_releases(1).unwrap();
+		assert_eq!(zero.month_index, 0);
+		assert_eq!(one.month_index, 1);
+		assert_ne!(zero.release_block, one.release_block);
+	});
+}
+
+#[test]
+fn a_month_only_pays_once() {
+	new_test_ext().execute_with(|| {
+		activate();
+		run_blocks(1);
+
+		let incentive_after_first = PezTreasury::get_incentive_pot_balance();
+
+		// Sit on the same month for a while. The hook runs every block and must decline.
+		run_blocks(20);
+
+		assert_eq!(PezTreasury::next_release_month(), 1);
+		assert_eq!(PezTreasury::get_incentive_pot_balance(), incentive_after_first);
+	});
+}
+
+// =============================================================================
+// 4. BACKLOG
+// =============================================================================
+
+#[test]
+fn a_backlog_drains_one_release_per_block() {
+	new_test_ext().execute_with(|| {
+		activate();
+
+		// Nothing runs for three months, then blocks resume.
+		jump_to_block(1 + 3 * MONTH);
+		run_blocks(1);
+		assert_eq!(PezTreasury::next_release_month(), 1);
+		run_blocks(1);
+		assert_eq!(PezTreasury::next_release_month(), 2);
+		run_blocks(1);
 		assert_eq!(PezTreasury::next_release_month(), 3);
+		run_blocks(1);
+		assert_eq!(PezTreasury::next_release_month(), 4);
 
-		// Verify total released
-		let halving_info = PezTreasury::halving_info();
-		assert_eq!(halving_info.total_released, monthly_amount * 3);
+		// Month 4 is not due yet, so the drain stops of its own accord.
+		run_blocks(5);
+		assert_eq!(PezTreasury::next_release_month(), 4);
+	});
+}
+
+#[test]
+fn a_backlog_pays_each_month_what_that_month_was_owed() {
+	// This is the defect the derived amount fixes. When the period was advanced once per call
+	// rather than read from the release index, a backlog halved on every forty-eighth *call*,
+	// so a hundred months paid out in a hundred consecutive blocks settled at the wrong rate.
+	new_test_ext().execute_with(|| {
+		activate();
+
+		let months = 100u32;
+		jump_to_block(1 + (months as u64 - 1) * MONTH);
+		run_blocks(months as u64);
+
+		assert_eq!(PezTreasury::next_release_month(), months);
+
+		let expected_total: u128 = (0..months).map(expected_amount).sum();
+		assert_eq!(PezTreasury::halving_info().total_released, expected_total);
+
+		for index in 0..months {
+			let release = PezTreasury::monthly_releases(index).unwrap();
+			assert_eq!(
+				release.amount_released,
+				expected_amount(index),
+				"release {index} paid the wrong amount"
+			);
+		}
 	});
 }
 
 // =============================================================================
-// 4. HALVING LOGIC TESTS
+// 5. HALVING
 // =============================================================================
 
 #[test]
-fn halving_occurs_after_48_months() {
+fn release_forty_seven_is_paid_in_full() {
+	// Forty-eight releases make a period: indices 0 through 47. The one that closes the period
+	// is not the one that is halved.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		activate();
+		let initial = expected_amount(0);
 
-		let initial_monthly = PezTreasury::halving_info().monthly_amount;
+		jump_to_block(1 + 46 * MONTH);
+		run_blocks(47); // releases 0..=46
+		assert_eq!(PezTreasury::next_release_month(), 47);
 
-		// Release 47 months (no halving yet)
-		for month in 0..47 {
-			run_to_block(1 + (month + 1) * 432_000 + 1);
-			assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-		}
+		jump_to_block(1 + 47 * MONTH);
+		run_blocks(1);
 
-		// Still period 0
+		let release = PezTreasury::monthly_releases(47).unwrap();
+		assert_eq!(release.amount_released, initial);
 		assert_eq!(PezTreasury::halving_info().current_period, 0);
-		assert_eq!(PezTreasury::halving_info().monthly_amount, initial_monthly);
+		assert_eq!(PezTreasury::halving_info().monthly_amount, initial);
+	});
+}
 
-		// Release 48th month - halving should occur
-		run_to_block(1 + 48 * 432_000 + 1);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
+#[test]
+fn release_forty_eight_is_the_first_halved_one() {
+	new_test_ext().execute_with(|| {
+		activate();
+		let initial = expected_amount(0);
 
-		// Now in period 1 with halved amount
-		let halving_info = PezTreasury::halving_info();
-		assert_eq!(halving_info.current_period, 1);
-		assert_eq!(halving_info.monthly_amount, initial_monthly / 2);
+		jump_to_block(1 + 48 * MONTH);
+		run_blocks(49); // releases 0..=48
 
-		// Verify event
+		let release = PezTreasury::monthly_releases(48).unwrap();
+		assert_eq!(release.amount_released, initial / 2);
+
+		let info = PezTreasury::halving_info();
+		assert_eq!(info.current_period, 1);
+		assert_eq!(info.monthly_amount, initial / 2);
+		assert_eq!(info.period_start_block, System::block_number());
+
 		System::assert_has_event(
-			Event::NewHalvingPeriod { period: 1, new_monthly_amount: initial_monthly / 2 }.into(),
+			Event::NewHalvingPeriod { period: 1, new_monthly_amount: initial / 2 }.into(),
 		);
 	});
 }
 
 #[test]
-fn multiple_halvings_work() {
+fn halvings_keep_coming() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		activate();
+		let initial = expected_amount(0);
 
-		let initial_monthly = PezTreasury::halving_info().monthly_amount;
+		jump_to_block(1 + 144 * MONTH);
+		run_blocks(145); // releases 0..=144
 
-		// First halving at month 48
-		run_to_block(1 + 48 * 432_000 + 1);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-		assert_eq!(PezTreasury::halving_info().current_period, 1);
-		assert_eq!(PezTreasury::halving_info().monthly_amount, initial_monthly / 2);
-
-		// Second halving at month 96
-		run_to_block(1 + 96 * 432_000 + 1);
-		for _ in 49..=96 {
-			assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-		}
-		assert_eq!(PezTreasury::halving_info().current_period, 2);
-		assert_eq!(PezTreasury::halving_info().monthly_amount, initial_monthly / 4);
-
-		// Third halving at month 144
-		run_to_block(1 + 144 * 432_000 + 1);
-		for _ in 97..=144 {
-			assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-		}
-		assert_eq!(PezTreasury::halving_info().current_period, 3);
-		assert_eq!(PezTreasury::halving_info().monthly_amount, initial_monthly / 8);
+		let info = PezTreasury::halving_info();
+		assert_eq!(info.current_period, 3);
+		assert_eq!(info.monthly_amount, initial / 8);
+		assert_eq!(PezTreasury::monthly_releases(96).unwrap().amount_released, initial / 4);
+		assert_eq!(PezTreasury::monthly_releases(144).unwrap().amount_released, initial / 8);
 	});
 }
 
 #[test]
-fn halving_period_start_block_updates() {
+fn the_halving_event_fires_once_per_period() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		activate();
+		System::reset_events();
 
-		let period_0_start = PezTreasury::halving_info().period_start_block;
+		jump_to_block(1 + 96 * MONTH);
+		run_blocks(97); // releases 0..=96
 
-		// Trigger halving
-		run_to_block(1 + 48 * 432_000 + 1);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		let period_1_start = PezTreasury::halving_info().period_start_block;
-		assert!(period_1_start > period_0_start);
-		assert_eq!(period_1_start, System::block_number());
+		let halvings = System::events()
+			.iter()
+			.filter(|e| {
+				matches!(e.event, RuntimeEvent::PezTreasury(Event::NewHalvingPeriod { .. }))
+			})
+			.count();
+		assert_eq!(halvings, 2, "one for period 1, one for period 2");
 	});
 }
 
 // =============================================================================
-// 5. ERROR CASES
+// 6. A RELEASE THAT CANNOT BE MADE
 // =============================================================================
 
 #[test]
-fn insufficient_treasury_balance_error() {
+fn an_unfundable_release_is_retried_not_skipped() {
 	new_test_ext().execute_with(|| {
-		// Initialize without genesis distribution (treasury empty)
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		// Activated with an empty treasury: the schedule is real, the money is not there yet.
+		assert_ok!(PezTreasury::activate_distribution(RuntimeOrigin::root()));
 
-		run_to_block(432_001);
+		run_blocks(1);
 
-		// This should fail due to insufficient balance
-		assert_noop!(
-			PezTreasury::release_monthly_funds(RuntimeOrigin::root()),
-			Error::<Test>::InsufficientTreasuryBalance
-		);
-	});
-}
+		assert_eq!(PezTreasury::next_release_month(), 0, "a failed release must not advance");
+		assert!(PezTreasury::monthly_releases(0).is_none());
+		assert!(System::events()
+			.iter()
+			.any(|e| matches!(e.event, RuntimeEvent::PezTreasury(Event::MonthlyReleaseFailed))));
 
-#[test]
-fn release_requires_root_origin() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		// Once the money arrives, the same release is made -- at index 0, not skipped forward.
+		fund_treasury();
+		run_blocks(1);
 
-		run_to_block(432_001);
-
-		assert_noop!(
-			PezTreasury::release_monthly_funds(RuntimeOrigin::signed(alice())),
-			pezsp_runtime::DispatchError::BadOrigin
-		);
-	});
-}
-
-// =============================================================================
-// 6. EDGE CASES
-// =============================================================================
-
-#[test]
-fn release_exactly_at_boundary_block_fails() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		// Exactly block 432_000 (since start_block=1) means 431_999 blocks have passed.
-		// This is not a full month (432_000 blocks).
-		run_to_block(432_000);
-		assert_noop!(
-			PezTreasury::release_monthly_funds(RuntimeOrigin::root()),
-			Error::<Test>::ReleaseTooEarly
-		);
-	});
-}
-
-#[test]
-fn release_one_block_before_boundary_fails() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		run_to_block(432_000 - 1);
-		assert_noop!(
-			PezTreasury::release_monthly_funds(RuntimeOrigin::root()),
-			Error::<Test>::ReleaseTooEarly
-		);
-	});
-}
-
-#[test]
-fn skip_months_and_release() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		// Skip directly to month 3
-		run_to_block(1 + 3 * 432_000 + 1);
-
-		// Should release month 0
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
+		let release = PezTreasury::monthly_releases(0).expect("release 0 was skipped");
+		assert_eq!(release.month_index, 0);
 		assert_eq!(PezTreasury::next_release_month(), 1);
-
-		// Can still release subsequent months
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-		assert_eq!(PezTreasury::next_release_month(), 2);
 	});
 }
 
 #[test]
-fn very_large_block_number() {
+fn a_failed_release_moves_no_money() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		assert_ok!(PezTreasury::activate_distribution(RuntimeOrigin::root()));
 
-		// Jump to very large block number
-		System::set_block_number(u64::MAX / 2);
+		run_blocks(3);
 
-		// Should still be able to release (if months passed)
-		// This tests overflow protection
-		let result = PezTreasury::release_monthly_funds(RuntimeOrigin::root());
-		// Result depends on whether enough months passed
-		// Main point: no panic/overflow
-		assert!(result.is_ok() || result.is_err());
+		assert!(PezTreasury::get_incentive_pot_balance().is_zero());
+		assert!(PezTreasury::get_government_pot_balance().is_zero());
+		assert!(PezTreasury::halving_info().total_released.is_zero());
 	});
 }
 
 #[test]
-fn zero_amount_division_protection() {
+fn being_too_early_is_quiet() {
+	// `ReleaseTooEarly` is the answer on all but one block a month. It must not fill the chain
+	// with failure events.
 	new_test_ext().execute_with(|| {
-		// Initialize without any balance
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		activate();
+		run_blocks(1); // release 0
+		System::reset_events();
 
-		let halving_info = PezTreasury::halving_info();
-		// Should not panic, should have some calculated amount
-		assert!(!halving_info.monthly_amount.is_zero());
+		run_blocks(50);
+
+		assert!(!System::events()
+			.iter()
+			.any(|e| matches!(e.event, RuntimeEvent::PezTreasury(Event::MonthlyReleaseFailed))));
 	});
 }
 
 // =============================================================================
-// 7. GETTER FUNCTIONS TESTS
+// 7. ACCOUNTING
 // =============================================================================
 
 #[test]
-fn get_current_halving_info_works() {
+fn what_leaves_the_treasury_equals_what_reaches_the_pots() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		activate();
+		let treasury_before = pez_balance(treasury_account());
 
-		let info = PezTreasury::get_current_halving_info();
-		assert_eq!(info.current_period, 0);
-		assert!(!info.monthly_amount.is_zero());
-		assert_eq!(info.total_released, 0);
+		jump_to_block(1 + 9 * MONTH);
+		run_blocks(10); // releases 0..=9
+
+		let treasury_after = pez_balance(treasury_account());
+		let paid_out = treasury_before - treasury_after;
+		let in_pots =
+			PezTreasury::get_incentive_pot_balance() + PezTreasury::get_government_pot_balance();
+
+		assert_eq!(paid_out, in_pots);
+		assert_eq!(paid_out, PezTreasury::halving_info().total_released);
 	});
 }
 
 #[test]
-fn get_incentive_pot_balance_works() {
+fn the_treasury_only_ever_goes_down() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		activate();
+		let mut previous = pez_balance(treasury_account());
 
-		run_to_block(432_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		let balance = PezTreasury::get_incentive_pot_balance();
-		assert!(balance > 0);
+		for month in 0..120u64 {
+			jump_to_block(1 + month * MONTH);
+			run_blocks(1);
+			let now = pez_balance(treasury_account());
+			assert!(now <= previous, "treasury grew at month {month}");
+			previous = now;
+		}
 	});
 }
 
 #[test]
-fn get_government_pot_balance_works() {
+fn the_first_period_is_half_the_allocation() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		let first_period: u128 = (0..HALVING_PERIOD_MONTHS).map(expected_amount).sum();
+		let target = TREASURY_ALLOCATION / 2;
 
-		run_to_block(432_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		let balance = PezTreasury::get_government_pot_balance();
-		assert!(balance > 0);
+		// The only difference allowed is integer division dropping at most one unit a month.
+		let lost = target - first_period;
+		assert!(lost < HALVING_PERIOD_MONTHS as u128, "rounding lost {lost}");
 	});
+}
+
+#[test]
+fn the_schedule_never_exceeds_the_allocation() {
+	// A halving series sums to twice its first period, which is the whole allocation. Rounding
+	// only ever loses, so the sum must stay under.
+	let mut total = 0u128;
+	for index in 0..(HALVING_PERIOD_MONTHS * 130) {
+		total += expected_amount(index);
+	}
+	assert!(
+		total <= TREASURY_ALLOCATION,
+		"schedule pays out {total}, allocation is {TREASURY_ALLOCATION}"
+	);
+}
+
+#[test]
+fn the_schedule_reaches_zero_and_stays_there() {
+	// Past roughly 127 halvings the amount is zero. It must not wrap, panic, or come back.
+	assert_eq!(expected_amount(HALVING_PERIOD_MONTHS * 200), 0);
+	assert_eq!(expected_amount(u32::MAX), 0);
 }
 
 // =============================================================================
-// 8. ACCOUNT ID TESTS
+// 8. POT ACCOUNTS
 // =============================================================================
 
 #[test]
-fn treasury_account_id_is_consistent() {
+fn the_three_accounts_are_distinct() {
 	new_test_ext().execute_with(|| {
-		let account1 = PezTreasury::treasury_account_id();
-		let account2 = PezTreasury::treasury_account_id();
-		assert_eq!(account1, account2);
-	});
-}
-
-#[test]
-fn pot_accounts_are_different() {
-	new_test_ext().execute_with(|| {
-		debug_pot_accounts();
-
 		let treasury = PezTreasury::treasury_account_id();
 		let incentive = PezTreasury::incentive_pot_account_id();
 		let government = PezTreasury::government_pot_account_id();
 
-		println!("\n=== Account IDs from Pezpallet ===");
-		println!("Treasury: {treasury:?}");
-		println!("Incentive: {incentive:?}");
-		println!("Government: {government:?}");
-		println!("================================\n");
-
-		// All three must be different
-		assert_ne!(treasury, incentive, "Treasury and Incentive must be different");
-		assert_ne!(treasury, government, "Treasury and Government must be different");
-		assert_ne!(incentive, government, "Incentive and Government must be different");
-
-		println!("✓ All pot accounts are different!");
-	});
-}
-
-// =============================================================================
-// 9. MONTHLY RELEASE STORAGE TESTS
-// =============================================================================
-
-#[test]
-fn monthly_release_records_stored_correctly() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		let monthly_amount = PezTreasury::halving_info().monthly_amount;
-		let incentive_expected = monthly_amount * 75 / 100;
-		let government_expected = monthly_amount - incentive_expected;
-
-		run_to_block(432_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		// Verify monthly release record
-		let release = PezTreasury::monthly_releases(0).unwrap();
-		assert_eq!(release.month_index, 0);
-		assert_eq!(release.amount_released, monthly_amount);
-		assert_eq!(release.incentive_amount, incentive_expected);
-		assert_eq!(release.government_amount, government_expected);
-		assert_eq!(release.release_block, System::block_number());
+		assert_ne!(treasury, incentive);
+		assert_ne!(treasury, government);
+		assert_ne!(incentive, government);
 	});
 }
 
 #[test]
-fn multiple_monthly_releases_stored_separately() {
+fn the_pot_accounts_have_no_key() {
+	// They are derived from PalletIds, so no seed produces them. The test states the property
+	// the design depends on: money in a pot can only move by pallet logic.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		// Release month 0
-		run_to_block(432_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		// Release month 1
-		run_to_block(864_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		// Verify both records exist
-		assert!(PezTreasury::monthly_releases(0).is_some());
-		assert!(PezTreasury::monthly_releases(1).is_some());
-
-		let release_0 = PezTreasury::monthly_releases(0).unwrap();
-		let release_1 = PezTreasury::monthly_releases(1).unwrap();
-
-		assert_eq!(release_0.month_index, 0);
-		assert_eq!(release_1.month_index, 1);
-		assert_ne!(release_0.release_block, release_1.release_block);
-	});
-}
-
-// =============================================================================
-// 10. INTEGRATION TESTS
-// =============================================================================
-
-#[test]
-fn full_lifecycle_test() {
-	new_test_ext().execute_with(|| {
-		// 1. Genesis distribution
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		let treasury_initial = Assets::balance(PezAssetId::get(), treasury_account());
-		assert!(treasury_initial > 0);
-
-		// 2. Initialize treasury
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-		let monthly_amount = PezTreasury::halving_info().monthly_amount;
-
-		// 3. Release first month
-		run_to_block(432_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		let treasury_after_month_0 = Assets::balance(PezAssetId::get(), treasury_account());
-		assert_eq!(treasury_initial - treasury_after_month_0, monthly_amount);
-
-		// 4. Release multiple months
-		for month in 1..10 {
-			run_to_block(1 + (month + 1) * 432_000 + 1);
-			assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-		}
-
-		// 5. Verify cumulative release
-		let halving_info = PezTreasury::halving_info();
-		assert_eq!(halving_info.total_released, monthly_amount * 10);
-
-		// 6. Verify treasury balance decreased correctly
-		let treasury_after_10_months = Assets::balance(PezAssetId::get(), treasury_account());
-		assert_eq!(treasury_initial - treasury_after_10_months, monthly_amount * 10);
-	});
-}
-
-#[test]
-fn full_halving_cycle_test() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		let initial_monthly = PezTreasury::halving_info().monthly_amount;
-		let mut cumulative_released = 0u128;
-
-		// Period 0: 48 months at initial rate
-		for month in 0..48 {
-			run_to_block(1 + (month + 1) * 432_000 + 1);
-			assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-			if month < 47 {
-				cumulative_released += initial_monthly;
-			} else {
-				// On the 48th release (index 47) halving is triggered and the halved amount is used
-				cumulative_released += initial_monthly / 2;
-			}
-		}
-
-		assert_eq!(PezTreasury::halving_info().current_period, 1);
-		assert_eq!(PezTreasury::halving_info().monthly_amount, initial_monthly / 2);
-
-		// Period 1: 48 months at half rate
-		for month in 48..96 {
-			run_to_block(1 + (month + 1) * 432_000 + 1);
-			assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-			if month < 95 {
-				cumulative_released += initial_monthly / 2;
-			} else {
-				// On the 96th release (index 95) the second halving is triggered
-				cumulative_released += initial_monthly / 4;
-			}
-		}
-
-		assert_eq!(PezTreasury::halving_info().current_period, 2);
-		assert_eq!(PezTreasury::halving_info().monthly_amount, initial_monthly / 4);
-
-		// Verify total released matches expectation
-		assert_eq!(PezTreasury::halving_info().total_released, cumulative_released);
-	});
-}
-
-// =============================================================================
-// 11. PRECISION AND ROUNDING TESTS
-// =============================================================================
-
-#[test]
-fn division_rounding_is_consistent() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		let monthly_amount = PezTreasury::halving_info().monthly_amount;
-		let incentive_amount = monthly_amount * 75 / 100;
-		let government_amount = monthly_amount - incentive_amount;
-
-		// Verify no rounding loss
-		assert_eq!(incentive_amount + government_amount, monthly_amount);
-	});
-}
-
-#[test]
-fn halving_precision_maintained() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		let initial = PezTreasury::halving_info().monthly_amount;
-
-		// Trigger halving
-		run_to_block(1 + 48 * 432_000 + 1);
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		let after_halving = PezTreasury::halving_info().monthly_amount;
-
-		// Check halving is exactly half (no precision loss)
-		assert_eq!(after_halving, initial / 2);
-	});
-}
-
-// =============================================================================
-// 12. EVENT EMISSION TESTS
-// =============================================================================
-
-#[test]
-fn all_events_emitted_correctly() {
-	new_test_ext().execute_with(|| {
-		// Genesis distribution event
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert!(System::events().iter().any(|e| matches!(
-			e.event,
-			RuntimeEvent::PezTreasury(Event::GenesisDistributionCompleted { .. })
-		)));
-
-		// Treasury initialized event
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-		assert!(System::events().iter().any(|e| matches!(
-			e.event,
-			RuntimeEvent::PezTreasury(Event::TreasuryInitialized { .. })
-		)));
-
-		// Monthly funds released event
-		run_to_block(432_001);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-		assert!(System::events().iter().any(|e| matches!(
-			e.event,
-			RuntimeEvent::PezTreasury(Event::MonthlyFundsReleased { .. })
-		)));
-	});
-}
-
-#[test]
-fn halving_event_emitted_at_correct_time() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		// Clear existing events
-		System::reset_events();
-
-		// Release up to halving point
-		run_to_block(1 + 48 * 432_000 + 1);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		// Verify halving event emitted
-		assert!(System::events().iter().any(|e| matches!(
-			e.event,
-			RuntimeEvent::PezTreasury(Event::NewHalvingPeriod { period: 1, .. })
-		)));
-	});
-}
-
-// =============================================================================
-// 13. STRESS TESTS
-// =============================================================================
-
-#[test]
-fn many_consecutive_releases() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		// Release 100 months consecutively
-		for month in 0..100 {
-			run_to_block(1 + (month + 1) * 432_000 + 1);
-			assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-		}
-
-		// Verify state is consistent
-		assert_eq!(PezTreasury::next_release_month(), 100);
-
-		// Should be in period 2 (after 2 halvings at months 48 and 96)
-		assert_eq!(PezTreasury::halving_info().current_period, 2);
-	});
-}
-
-#[test]
-fn treasury_never_goes_negative() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		let _initial_balance = Assets::balance(PezAssetId::get(), treasury_account()); // FIXED: Prefixed with underscore
-
-		// Try to release many months
-		for month in 0..200 {
-			run_to_block(1 + (month + 1) * 432_000 + 1);
-
-			let before_balance = Assets::balance(PezAssetId::get(), treasury_account());
-
-			let result = PezTreasury::release_monthly_funds(RuntimeOrigin::root());
-
-			if result.is_ok() {
-				let after_balance = Assets::balance(PezAssetId::get(), treasury_account());
-				// Balance should decrease or stay the same, never increase
-				assert!(after_balance <= before_balance);
-			} else {
-				// If release fails, balance should be unchanged
-				assert_eq!(before_balance, Assets::balance(PezAssetId::get(), treasury_account()));
-				break;
-			}
+		for account in [
+			PezTreasury::treasury_account_id(),
+			PezTreasury::incentive_pot_account_id(),
+			PezTreasury::government_pot_account_id(),
+		] {
+			assert_eq!(&account.as_bytes()[0..8], b"modlpy/p", "not a PalletId account");
 		}
 	});
 }
 
 // =============================================================================
-// 14. BOUNDARY CONDITION TESTS
+// 9. THE INVARIANT CAN FAIL
+// =============================================================================
+//
+// `try_state` runs after every block of every test above. That only means something if it is
+// capable of rejecting a bad state -- a check that always passes is worse than none, because
+// it reads as coverage. Each test here breaks one thing and insists the invariant sees it.
+
+#[cfg(feature = "try-runtime")]
+mod invariant {
+	use super::*;
+	use crate::{HalvingInfo, MonthlyReleases, NextReleaseMonth, TreasuryStartBlock};
+	use pezframe_support::traits::{TryState, TryStateSelect};
+
+	fn try_state_result() -> Result<(), pezsp_runtime::TryRuntimeError> {
+		AllPalletsWithSystem::try_state(System::block_number(), TryStateSelect::All)
+	}
+
+	fn assert_rejected(what: &str) {
+		assert!(try_state_result().is_err(), "try_state accepted a state where {what}");
+	}
+
+	#[test]
+	fn a_gap_in_the_history_is_caught() {
+		new_test_ext().execute_with(|| {
+			activate();
+			jump_to_block(1 + 4 * MONTH);
+			run_blocks(5); // releases 0..=4
+			assert_ok!(try_state_result());
+
+			MonthlyReleases::<Test>::remove(2);
+			assert_rejected("a month had no release record");
+		});
+	}
+
+	#[test]
+	fn a_release_of_the_wrong_size_is_caught() {
+		new_test_ext().execute_with(|| {
+			activate();
+			run_blocks(1);
+			assert_ok!(try_state_result());
+
+			MonthlyReleases::<Test>::mutate(0, |slot| {
+				let record = slot.as_mut().unwrap();
+				record.amount_released += 1;
+			});
+			assert_rejected("a release paid more than its month was owed");
+		});
+	}
+
+	#[test]
+	fn a_mismatched_total_is_caught() {
+		new_test_ext().execute_with(|| {
+			activate();
+			run_blocks(1);
+			assert_ok!(try_state_result());
+
+			HalvingInfo::<Test>::mutate(|info| info.total_released += 1);
+			assert_rejected("total_released did not match the records");
+		});
+	}
+
+	#[test]
+	fn a_period_that_no_release_earned_is_caught() {
+		new_test_ext().execute_with(|| {
+			activate();
+			run_blocks(1);
+			assert_ok!(try_state_result());
+
+			HalvingInfo::<Test>::mutate(|info| info.current_period = 1);
+			assert_rejected("the halving period ran ahead of the releases");
+		});
+	}
+
+	#[test]
+	fn a_broken_split_is_caught() {
+		new_test_ext().execute_with(|| {
+			activate();
+			run_blocks(1);
+			assert_ok!(try_state_result());
+
+			MonthlyReleases::<Test>::mutate(0, |slot| {
+				let record = slot.as_mut().unwrap();
+				record.incentive_amount += 1;
+				record.government_amount -= 1;
+			});
+			assert_rejected("the pots were credited in the wrong proportion");
+		});
+	}
+
+	#[test]
+	fn a_latch_without_a_start_block_is_caught() {
+		new_test_ext().execute_with(|| {
+			activate();
+			assert_ok!(try_state_result());
+
+			TreasuryStartBlock::<Test>::kill();
+			assert_rejected("the schedule had begun with no start block");
+		});
+	}
+
+	#[test]
+	fn releases_before_activation_are_caught() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(try_state_result());
+
+			NextReleaseMonth::<Test>::put(1);
+			assert_rejected("a release was counted before the schedule began");
+		});
+	}
+}
+
+// =============================================================================
+// 10. SPENDING FROM THE GOVERNMENT POT
 // =============================================================================
 
+/// Release once so the government pot has something in it, and return what it holds.
+fn fund_government_pot() -> u128 {
+	activate();
+	run_blocks(1);
+	PezTreasury::get_government_pot_balance()
+}
+
 #[test]
-fn first_block_initialization() {
+fn the_government_can_spend_what_was_released_to_it() {
 	new_test_ext().execute_with(|| {
-		System::set_block_number(1);
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-		assert_eq!(PezTreasury::treasury_start_block(), Some(1));
+		let pot = fund_government_pot();
+		assert!(pot > 0);
+		let supply_before = pez_total_supply();
+
+		assert_ok!(PezTreasury::spend_from_government_pot(RuntimeOrigin::root(), alice(), pot / 2));
+
+		assert_pez_balance(alice(), pot / 2);
+		assert_eq!(PezTreasury::get_government_pot_balance(), pot - pot / 2);
+		assert_eq!(pez_total_supply(), supply_before, "spending must not mint");
+
+		System::assert_has_event(
+			Event::GovernmentPotSpent { beneficiary: alice(), amount: pot / 2 }.into(),
+		);
 	});
 }
 
 #[test]
-fn last_month_of_period_before_halving() {
+fn spending_rejects_anyone_but_the_spend_origin() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		let pot = fund_government_pot();
 
-		let initial_amount = PezTreasury::halving_info().monthly_amount;
-
-		// Release month 47 (last before halving)
-		run_to_block(1 + 47 * 432_000 + 1);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
-
-		// Should still be in period 0
-		assert_eq!(PezTreasury::halving_info().current_period, 0);
-		assert_eq!(PezTreasury::halving_info().monthly_amount, initial_amount);
+		assert_noop!(
+			PezTreasury::spend_from_government_pot(RuntimeOrigin::signed(alice()), alice(), 1),
+			pezsp_runtime::DispatchError::BadOrigin
+		);
+		assert_eq!(PezTreasury::get_government_pot_balance(), pot);
 	});
 }
 
 #[test]
-fn first_month_after_halving() {
+fn the_government_cannot_spend_more_than_its_pot_holds() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		let pot = fund_government_pot();
 
-		let initial_amount = PezTreasury::halving_info().monthly_amount;
+		assert_noop!(
+			PezTreasury::spend_from_government_pot(RuntimeOrigin::root(), alice(), pot + 1),
+			Error::<Test>::InsufficientGovernmentPotBalance
+		);
+		assert_eq!(PezTreasury::get_government_pot_balance(), pot);
+	});
+}
 
-		// Trigger halving at month 48
-		run_to_block(1 + 48 * 432_000 + 1);
-		assert_ok!(PezTreasury::release_monthly_funds(RuntimeOrigin::root()));
+#[test]
+fn spending_cannot_reach_the_incentive_pot_or_the_treasury() {
+	// The government may spend its quarter and nothing else. The other two accounts hold what
+	// has not been handed to it -- the citizens' three quarters, and every month not yet due.
+	new_test_ext().execute_with(|| {
+		let pot = fund_government_pot();
+		let incentive_before = PezTreasury::get_incentive_pot_balance();
+		let treasury_before = pez_balance(treasury_account());
 
-		// Should be in period 1 with halved amount
-		assert_eq!(PezTreasury::halving_info().current_period, 1);
-		assert_eq!(PezTreasury::halving_info().monthly_amount, initial_amount / 2);
+		assert_ok!(PezTreasury::spend_from_government_pot(RuntimeOrigin::root(), alice(), pot - 1));
+
+		assert_eq!(PezTreasury::get_incentive_pot_balance(), incentive_before);
+		assert_eq!(pez_balance(treasury_account()), treasury_before);
+	});
+}
+
+#[test]
+fn a_spend_of_nothing_is_refused() {
+	new_test_ext().execute_with(|| {
+		fund_government_pot();
+		assert_noop!(
+			PezTreasury::spend_from_government_pot(RuntimeOrigin::root(), alice(), 0),
+			Error::<Test>::NothingToSpend
+		);
+	});
+}
+
+#[test]
+fn spending_does_not_disturb_the_schedule() {
+	new_test_ext().execute_with(|| {
+		let pot = fund_government_pot();
+		let next_before = PezTreasury::next_release_month();
+
+		assert_ok!(PezTreasury::spend_from_government_pot(RuntimeOrigin::root(), alice(), pot - 1));
+
+		assert_eq!(PezTreasury::next_release_month(), next_before);
+
+		// The following month still arrives, and still pays in full.
+		jump_to_block(1 + MONTH);
+		run_blocks(1);
+		assert_eq!(PezTreasury::next_release_month(), next_before + 1);
+		assert_eq!(
+			PezTreasury::monthly_releases(next_before).unwrap().amount_released,
+			expected_amount(next_before)
+		);
+	});
+}
+
+#[test]
+fn the_pot_account_is_never_emptied_to_nothing() {
+	// `Preservation::Preserve` on the transfer, stated as a decision rather than left as a
+	// surprise. The last unit -- a millionth of a millionth of one PEZ -- stays behind so the
+	// pot account is never reaped. What that buys is that the account, its balance and its
+	// history are continuously queryable: a pot that blinks out of existence between a
+	// spend and the next release reads as "no such account" to anything watching it.
+	new_test_ext().execute_with(|| {
+		let pot = fund_government_pot();
+
+		assert_noop!(
+			PezTreasury::spend_from_government_pot(RuntimeOrigin::root(), alice(), pot),
+			Error::<Test>::InsufficientGovernmentPotBalance
+		);
+
+		assert_ok!(PezTreasury::spend_from_government_pot(RuntimeOrigin::root(), alice(), pot - 1));
+		assert_eq!(PezTreasury::get_government_pot_balance(), 1);
 	});
 }
 
 // =============================================================================
-// 15. MATHEMATICAL CORRECTNESS TESTS
+// 11. PAYING OUT OF THE INCENTIVE POT
 // =============================================================================
 
+/// Release once so the incentive pot has something in it, and return what it holds.
+fn fund_incentive_pot() -> u128 {
+	activate();
+	run_blocks(1);
+	PezTreasury::get_incentive_pot_balance()
+}
+
 #[test]
-fn total_supply_equals_sum_of_allocations() {
+fn the_rewards_chain_can_pay_out_of_the_incentive_pot() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
+		let pot = fund_incentive_pot();
+		assert!(pot > 0);
+		let supply_before = pez_total_supply();
 
-		let treasury = Assets::balance(PezAssetId::get(), treasury_account());
-		let presale_acc = Assets::balance(PezAssetId::get(), presale());
-		let founder_acc = Assets::balance(PezAssetId::get(), founder());
+		assert_ok!(PezTreasury::pay_from_incentive_pot(RuntimeOrigin::root(), alice(), pot / 2));
 
-		let total = treasury + presale_acc + founder_acc;
-		let expected_total = 5_000_000_000 * 1_000_000_000_000u128;
+		assert_pez_balance(alice(), pot / 2);
+		assert_eq!(PezTreasury::get_incentive_pot_balance(), pot - pot / 2);
+		assert_eq!(pez_total_supply(), supply_before, "paying a reward must not mint");
 
-		assert_eq!(total, expected_total);
+		System::assert_has_event(
+			Event::IncentivePotSpent { beneficiary: alice(), amount: pot / 2 }.into(),
+		);
 	});
 }
 
 #[test]
-fn percentage_allocations_correct() {
+fn paying_rewards_rejects_anyone_but_the_incentive_spend_origin() {
+	// The whole point of the split: the money is here, the arithmetic is on the rewards
+	// chain. A signed account that could reach this call could pay itself the citizens' share.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
+		let pot = fund_incentive_pot();
 
-		let total_supply = 5_000_000_000 * 1_000_000_000_000u128;
-		let treasury = Assets::balance(PezAssetId::get(), treasury_account());
-		let presale_acc = Assets::balance(PezAssetId::get(), presale());
-		let founder_acc = Assets::balance(PezAssetId::get(), founder());
-
-		assert_eq!(treasury, total_supply * 9625 / 10000);
-		assert_eq!(presale_acc, total_supply * 1875 / 100000);
-		assert_eq!(founder_acc, total_supply * 1875 / 100000);
+		assert_noop!(
+			PezTreasury::pay_from_incentive_pot(RuntimeOrigin::signed(alice()), alice(), pot / 2),
+			pezsp_runtime::DispatchError::BadOrigin
+		);
+		assert_eq!(PezTreasury::get_incentive_pot_balance(), pot);
 	});
 }
 
 #[test]
-fn first_period_total_is_half_of_treasury() {
+fn a_reward_payment_of_nothing_is_refused() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::do_genesis_distribution());
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
-
-		let monthly_amount = PezTreasury::halving_info().monthly_amount;
-		let first_period_total = monthly_amount * 48;
-
-		let treasury_allocation = 4_812_500_000 * 1_000_000_000_000u128;
-		let expected_first_period = treasury_allocation / 2;
-
-		let diff = expected_first_period.saturating_sub(first_period_total);
-		// The sum of the remainders must be less than 48 (at most 1 unit of remainder per month)
-		assert!(diff < 48, "Rounding error too large: {diff}");
+		fund_incentive_pot();
+		assert_noop!(
+			PezTreasury::pay_from_incentive_pot(RuntimeOrigin::root(), alice(), 0),
+			Error::<Test>::NothingToSpend
+		);
 	});
 }
 
 #[test]
-fn geometric_series_sum_validates() {
+fn rewards_cannot_reach_the_government_pot_or_the_treasury() {
+	// Asking for more than the incentive pot holds must fail rather than quietly reach into
+	// the neighbouring pot or the undistributed allocation behind it.
 	new_test_ext().execute_with(|| {
-		assert_ok!(PezTreasury::initialize_treasury(RuntimeOrigin::root()));
+		let pot = fund_incentive_pot();
+		let government_before = PezTreasury::get_government_pot_balance();
+		let treasury_before = pez_balance(PezTreasury::treasury_account_id());
 
-		let initial_monthly = PezTreasury::halving_info().monthly_amount;
+		assert_noop!(
+			PezTreasury::pay_from_incentive_pot(RuntimeOrigin::root(), alice(), pot + 1),
+			Error::<Test>::InsufficientIncentivePotBalance
+		);
 
-		// Sum of geometric series: a(1 - r^n) / (1 - r)
-		// For halving: first_period * (1 - 0.5^n) / 0.5
-		// With infinite halvings approaches: first_period * 2
+		assert_eq!(PezTreasury::get_government_pot_balance(), government_before);
+		assert_eq!(pez_balance(PezTreasury::treasury_account_id()), treasury_before);
+	});
+}
 
-		let first_period_total = initial_monthly * 48;
-		let treasury_allocation = 4_812_500_000 * 1_000_000_000_000u128;
+#[test]
+fn the_incentive_pot_account_is_never_emptied_to_nothing() {
+	// Same `Preservation::Preserve` decision as the government pot, tested separately so
+	// that changing one of the two cannot pass on the other one's test.
+	new_test_ext().execute_with(|| {
+		let pot = fund_incentive_pot();
 
-		// After infinite halvings, total distributed = treasury_allocation
-		// first_period_total * 2 = treasury_allocation
-		let diff = treasury_allocation.saturating_sub(first_period_total * 2);
-		// The sum of the remainders (multiplied by 2) must be less than 96
-		assert!(diff < 96, "Rounding error too large: {diff}");
+		assert_noop!(
+			PezTreasury::pay_from_incentive_pot(RuntimeOrigin::root(), alice(), pot),
+			Error::<Test>::InsufficientIncentivePotBalance
+		);
+
+		assert_ok!(PezTreasury::pay_from_incentive_pot(RuntimeOrigin::root(), alice(), pot - 1));
+		assert_eq!(PezTreasury::get_incentive_pot_balance(), 1);
+	});
+}
+
+// =============================================================================
+// 12. REPORTING THE INCENTIVE FUNDING TO THE REWARDS CHAIN
+// =============================================================================
+
+/// The `Compact<u128>` total carried by the one `Transact` in `message`.
+fn reported_total(message: &xcm::latest::Xcm<()>) -> u128 {
+	use codec::Decode;
+	for instruction in message.inner() {
+		if let xcm::latest::Instruction::Transact { call, .. } = instruction {
+			let encoded = call.clone().into_encoded();
+			// pallet index, call index, then the compact total.
+			let mut rest = &encoded[2..];
+			return codec::Compact::<u128>::decode(&mut rest).expect("a compact total").0;
+		}
+	}
+	panic!("the message carries no Transact");
+}
+
+#[test]
+fn a_release_reports_the_running_incentive_total() {
+	new_test_ext().execute_with(|| {
+		clear_sent_xcm();
+		activate();
+		run_blocks(1);
+
+		let first = PezTreasury::total_incentive_released();
+		assert!(first > 0);
+		assert_eq!(first, PezTreasury::monthly_releases(0).unwrap().incentive_amount);
+
+		let sent = sent_xcm();
+		assert_eq!(sent.len(), 1, "one report per release");
+		assert_eq!(reported_total(&sent[0].1), first);
+
+		// The second release reports the sum, not the month.
+		jump_to_block(System::block_number() + MONTH - 1);
+		run_blocks(1);
+		let second = PezTreasury::total_incentive_released();
+		assert!(second > first);
+
+		let sent = sent_xcm();
+		assert_eq!(sent.len(), 2);
+		assert_eq!(
+			reported_total(&sent[1].1),
+			second,
+			"the report is a running total, so a lost message is repaired by the next one"
+		);
+	});
+}
+
+#[test]
+fn a_lost_report_does_not_undo_the_release() {
+	// The money has already moved by the time the report is attempted. If a failed send
+	// unwound the release, an unreachable sibling chain would stop the state paying itself.
+	new_test_ext().execute_with(|| {
+		clear_sent_xcm();
+		fail_sending(true);
+		activate();
+		run_blocks(1);
+
+		assert!(PezTreasury::get_incentive_pot_balance() > 0, "the release still happened");
+		assert_eq!(PezTreasury::next_release_month(), 1);
+		assert!(sent_xcm().is_empty());
+		System::assert_has_event(
+			Event::IncentiveFundingReportFailed { total: PezTreasury::total_incentive_released() }
+				.into(),
+		);
+
+		// The next release repairs it: the total sent covers both months.
+		fail_sending(false);
+		jump_to_block(System::block_number() + MONTH - 1);
+		run_blocks(1);
+		let sent = sent_xcm();
+		assert_eq!(sent.len(), 1);
+		assert_eq!(reported_total(&sent[0].1), PezTreasury::total_incentive_released());
+	});
+}
+
+#[test]
+fn the_report_is_addressed_to_the_rewards_chain_and_its_pallet() {
+	new_test_ext().execute_with(|| {
+		clear_sent_xcm();
+		activate();
+		run_blocks(1);
+
+		let (destination, message) = sent_xcm().pop().expect("a report was sent");
+		assert_eq!(destination, RewardsChain::get());
+
+		let transact = message
+			.inner()
+			.iter()
+			.find_map(|i| match i {
+				xcm::latest::Instruction::Transact { call, .. } => Some(call.clone()),
+				_ => None,
+			})
+			.expect("a Transact");
+		let encoded = transact.into_encoded();
+		assert_eq!(encoded[0], RewardsPalletIndex::get(), "the rewards pallet's index");
+		assert_eq!(encoded[1], 2, "note_incentive_funding");
+
+		// Unpaid, for the same reason as every other message between these two chains.
+		assert!(message
+			.inner()
+			.iter()
+			.any(|i| matches!(i, xcm::latest::Instruction::UnpaidExecution { .. })));
 	});
 }

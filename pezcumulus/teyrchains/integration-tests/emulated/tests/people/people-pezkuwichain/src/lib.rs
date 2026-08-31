@@ -27,15 +27,17 @@ mod imports {
 		assert_expected_events, bx, Chain, Test, TestArgs, TestContext, TestExt, Teyrchain as Para,
 	};
 	pub(crate) use pezkuwichain_system_emulated_network::{
+		asset_hub_pezkuwichain_emulated_chain::AssetHubPezkuwichainParaPallet as AssetHubPezkuwichainPallet,
 		people_pezkuwichain_emulated_chain::{
 			people_pezkuwichain_runtime::{
 				xcm_config::XcmConfig as PeoplePezkuwichainXcmConfig,
 				ExistentialDeposit as PeoplePezkuwichainExistentialDeposit,
 			},
-			PeoplePezkuwichainParaPezpallet,
-			PeoplePezkuwichainParaPezpallet as PeoplePezkuwichainPallet,
+			PeoplePezkuwichainParaPallet as PeoplePezkuwichainPallet,
 		},
-		pezkuwichain_emulated_chain::{genesis::ED as PEZKUWICHAIN_ED, PezkuwichainRelayPezpallet},
+		pezkuwichain_emulated_chain::{
+			genesis::ED as PEZKUWICHAIN_ED, PezkuwichainRelayPallet as PezkuwichainPallet,
+		},
 		AssetHubPezkuwichainPara as AssetHubPezkuwichain,
 		AssetHubPezkuwichainParaReceiver as AssetHubPezkuwichainReceiver,
 		PeoplePezkuwichainPara as PeoplePezkuwichain,

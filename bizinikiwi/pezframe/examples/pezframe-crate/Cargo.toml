@@ -2,8 +2,7 @@
 name = "pezpallet-example-pezframe-crate"
 version = "0.0.1"
 authors = [
-	"Kurdistan Tech Institute <info@pezkuwichain.io>",
-	"Parity Technologies <admin@parity.io>",
+	"Dijital Kurdistan Tech Institute <admin@pezkuwichain.io>",
 ]
 edition.workspace = true
 license = "MIT-0"

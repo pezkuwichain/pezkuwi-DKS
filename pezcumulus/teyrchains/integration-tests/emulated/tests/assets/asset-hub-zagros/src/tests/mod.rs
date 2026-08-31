@@ -16,10 +16,15 @@
 mod aliases;
 mod claim_assets;
 mod exchange_asset;
-mod fellowship_treasury;
 mod foreign_assets;
 mod hybrid_transfers;
 mod reserve_transfer;
+// `treasury` stood here, and on Zagros `fellowship_treasury` beside it. Both moved money from
+// the *relay's* treasury to this chain over XCM, with the relay's `Treasurer` origin. The
+// treasury lives here now and pays from its own account, so the relay has no treasury and no
+// treasurer: the tests could not be repaired, only rewritten against a mechanism that was
+// deliberately removed. What this chain's own treasury does is covered by `reward_pool` and,
+// on Pezkuwichain, `pez_treasury_activation`.
 mod reward_pool;
 mod send;
 mod set_asset_claimer;
@@ -33,15 +38,14 @@ mod transfer_assets_validation;
 // and AssetRate both live on the Asset Hub. The test also still assumed
 // `PalletInstance(37)` for Treasury, which was wrong even before that (it is 18). It needs
 // rewriting against the Asset Hub rather than patching.
-// mod treasury;
-mod xcm_fee_estimation;
+// mod xcm_fee_estimation;
 
 #[macro_export]
 macro_rules! foreign_balance_on {
 	( $chain:ident, $id:expr, $who:expr ) => {
 		emulated_integration_tests_common::impls::paste::paste! {
 			<$chain>::execute_with(|| {
-				type ForeignAssets = <$chain as [<$chain ParaPezpallet>]>::ForeignAssets;
+				type ForeignAssets = <$chain as [<$chain ParaPallet>]>::ForeignAssets;
 				<ForeignAssets as pezframe_support::traits::fungibles::Inspect<_>>::balance($id, $who)
 			})
 		}
@@ -53,7 +57,7 @@ macro_rules! assets_balance_on {
 	( $chain:ident, $id:expr, $who:expr ) => {
 		emulated_integration_tests_common::impls::paste::paste! {
 			<$chain>::execute_with(|| {
-				type Assets = <$chain as [<$chain ParaPezpallet>]>::Assets;
+				type Assets = <$chain as [<$chain ParaPallet>]>::Assets;
 				<Assets as pezframe_support::traits::fungibles::Inspect<_>>::balance($id, $who)
 			})
 		}
@@ -83,7 +87,7 @@ macro_rules! create_pool_with_wnd_on {
 				let signed_owner = <$chain as Chain>::RuntimeOrigin::signed(owner.clone());
 				let wnd_location: Location = Parent.into();
 				if $is_foreign {
-					assert_ok!(<$chain as [<$chain ParaPezpallet>]>::ForeignAssets::mint(
+					assert_ok!(<$chain as [<$chain ParaPallet>]>::ForeignAssets::mint(
 						signed_owner.clone(),
 						$asset_id.clone().into(),
 						owner.clone().into(),
@@ -94,7 +98,7 @@ macro_rules! create_pool_with_wnd_on {
 						Some(GeneralIndex(id)) => *id as u32,
 						_ => unreachable!(),
 					};
-					assert_ok!(<$chain as [<$chain ParaPezpallet>]>::Assets::mint(
+					assert_ok!(<$chain as [<$chain ParaPallet>]>::Assets::mint(
 						signed_owner.clone(),
 						asset_id.into(),
 						owner.clone().into(),
@@ -102,7 +106,7 @@ macro_rules! create_pool_with_wnd_on {
 					));
 				}
 
-				assert_ok!(<$chain as [<$chain ParaPezpallet>]>::AssetConversion::create_pool(
+				assert_ok!(<$chain as [<$chain ParaPallet>]>::AssetConversion::create_pool(
 					signed_owner.clone(),
 					Box::new(wnd_location.clone()),
 					Box::new($asset_id.clone()),
@@ -115,7 +119,7 @@ macro_rules! create_pool_with_wnd_on {
 					]
 				);
 
-				assert_ok!(<$chain as [<$chain ParaPezpallet>]>::AssetConversion::add_liquidity(
+				assert_ok!(<$chain as [<$chain ParaPallet>]>::AssetConversion::add_liquidity(
 					signed_owner,
 					Box::new(wnd_location),
 					Box::new($asset_id),
@@ -136,3 +140,5 @@ macro_rules! create_pool_with_wnd_on {
 		}
 	};
 }
+
+mod franchises;

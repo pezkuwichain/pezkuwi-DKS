@@ -44,13 +44,12 @@ use pezsnowbridge_core::{
 	BasicOperatingMode,
 };
 use pezsnowbridge_inbound_queue_primitives::{
-	v2::{ConvertMessage, ConvertMessageError, Message},
+	v2::{ConvertMessageError, Message, MessageProcessor, MessageProcessorError},
 	EventProof, VerificationError, Verifier,
 };
 use pezsp_core::H160;
-use pezsp_runtime::traits::TryConvert;
 use pezsp_std::prelude::*;
-use xcm::prelude::{ExecuteXcm, Junction::*, Location, SendXcm, *};
+use xcm::latest::SendError;
 
 pub use pezpallet::*;
 
@@ -85,29 +84,20 @@ pub mod pezpallet {
 			+ IsType<<Self as pezframe_system::Config>::RuntimeEvent>;
 		/// The verifier for inbound messages from Ethereum.
 		type Verifier: Verifier;
-		/// XCM message sender.
-		type XcmSender: SendXcm;
-		/// Handler for XCM fees.
-		type XcmExecutor: ExecuteXcm<Self::RuntimeCall>;
 		/// Address of the Gateway contract.
 		#[pezpallet::constant]
 		type GatewayAddress: Get<H160>;
-		/// AssetHub teyrchain ID.
-		type AssetHubParaId: Get<u32>;
-		/// Convert a command from Ethereum to an XCM message.
-		type MessageConverter: ConvertMessage;
+		/// Process the message that was submitted.
+		type MessageProcessor: MessageProcessor<Self::AccountId>;
 		#[cfg(feature = "runtime-benchmarks")]
 		type Helper: BenchmarkHelper<Self>;
 		/// Reward discriminator type.
 		type RewardKind: Parameter + MaxEncodedLen + Send + Sync + Copy + Clone;
-		/// The default RewardKind discriminator for rewards allocated to relayers from this
-		/// pezpallet.
+		/// The default RewardKind discriminator for rewards allocated to relayers from this pezpallet.
 		#[pezpallet::constant]
 		type DefaultRewardKind: Get<Self::RewardKind>;
 		/// Relayer reward payment.
 		type RewardPayment: RewardLedger<Self::AccountId, Self::RewardKind, u128>;
-		/// AccountId to Location converter
-		type AccountToLocation: for<'a> TryConvert<&'a Self::AccountId, Location>;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -129,22 +119,10 @@ pub mod pezpallet {
 	pub enum Error<T> {
 		/// Message came from an invalid outbound channel on the Ethereum side.
 		InvalidGateway,
-		/// Account could not be converted to bytes
-		InvalidAccount,
 		/// Message has an invalid envelope.
 		InvalidMessage,
 		/// Message has an unexpected nonce.
 		InvalidNonce,
-		/// Fee provided is invalid.
-		InvalidFee,
-		/// Message has an invalid payload.
-		InvalidPayload,
-		/// Message channel is invalid
-		InvalidChannel,
-		/// The max nonce for the type has been reached
-		MaxNonceReached,
-		/// Cannot convert location
-		InvalidAccountConversion,
 		/// Invalid network specified
 		InvalidNetwork,
 		/// Pezpallet is halted
@@ -244,19 +222,14 @@ pub mod pezpallet {
 			// Verify the message has not been processed
 			ensure!(!Nonce::<T>::get(nonce), Error::<T>::InvalidNonce);
 
-			let xcm =
-				T::MessageConverter::convert(message).map_err(|error| Error::<T>::from(error))?;
-
-			// Forward XCM to AH
-			let dest = Location::new(1, [Teyrchain(T::AssetHubParaId::get())]);
-
 			// Mark message as received
 			Nonce::<T>::set(nonce);
 
-			let message_id =
-				Self::send_xcm(dest.clone(), &relayer, xcm.clone()).map_err(|error| {
-					tracing::error!(target: LOG_TARGET, ?error, ?dest, ?xcm, "XCM send failed with error");
-					Error::<T>::from(error)
+			let message_id = T::MessageProcessor::process_message(relayer.clone(), message)
+				.map_err(|e| match e {
+					MessageProcessorError::ProcessMessage(e) => e,
+					MessageProcessorError::ConvertMessage(e) => Error::<T>::from(e).into(),
+					MessageProcessorError::SendMessage(e) => Error::<T>::from(e).into(),
 				})?;
 
 			// Pay relayer reward
@@ -266,34 +239,10 @@ pub mod pezpallet {
 				T::RewardPayment::register_reward(&relayer, T::DefaultRewardKind::get(), total_tip);
 			}
 
+			// Emit event with the message_id
 			Self::deposit_event(Event::MessageReceived { nonce, message_id });
 
 			Ok(())
-		}
-
-		fn send_xcm(
-			dest: Location,
-			fee_payer: &T::AccountId,
-			xcm: Xcm<()>,
-		) -> Result<XcmHash, SendError> {
-			let (ticket, fee) = validate_send::<T::XcmSender>(dest, xcm)?;
-			let fee_payer = T::AccountToLocation::try_convert(fee_payer).map_err(|err| {
-				tracing::error!(
-					target: LOG_TARGET,
-					?err,
-					"Failed to convert account to XCM location",
-				);
-				SendError::NotApplicable
-			})?;
-			T::XcmExecutor::charge_fees(fee_payer.clone(), fee.clone()).map_err(|error| {
-				tracing::error!(
-					target: LOG_TARGET,
-					?error,
-					"Charging fees failed with error",
-				);
-				SendError::Fees
-			})?;
-			T::XcmSender::deliver(ticket)
 		}
 	}
 
@@ -309,4 +258,12 @@ pub mod pezpallet {
 			return Ok(());
 		}
 	}
+}
+
+pezsp_api::decl_runtime_apis! {
+  pub trait InboundQueueV2Api
+  {
+	/// Check if a message with the given nonce has been relayed.
+	fn is_message_relayed(nonce: u64) -> bool;
+  }
 }

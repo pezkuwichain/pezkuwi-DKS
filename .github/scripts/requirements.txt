@@ -1,0 +1,25 @@
+# Python dependencies for .github/scripts.
+#
+# cmd.py loads generate-prdoc.py at import time to register its subcommand, so every
+# command it offers -- bench included -- needs the prdoc dependencies present or the
+# script dies before it parses its own arguments. The workflows install these ad hoc
+# in three different places; this file is so a machine running the tooling by hand can
+# get the same set.
+# Licences, since two of these are copyleft and the question will come up: PyGithub is LGPL and
+# cargo-workspace is GPLv3; toml and whatthepatch are MIT. They are build-time tools invoked as
+# separate processes in CI -- nothing here is linked into the node, the runtimes or anything we
+# distribute -- so neither licence reaches our code. Recorded rather than silently relied on:
+# the workflows already installed all four inline before this file existed.
+# Pinned exactly, not floated. Three of these carried no version at all, so every CI run
+# installed whatever was newest that day and the tooling could change under us without a commit
+# saying so. Pinning also lets the dependency graph resolve them, which is how their licences
+# became visible in the first place.
+# PyYAML was already needed and never written down: `check-prdoc.py` and `generate-prdoc.py`
+# both import it, and the runs worked only because something else on the runner had pulled it
+# in. `weights_request.py` makes that three. An undeclared dependency is a run that passes
+# until the day the box is rebuilt.
+PyYAML==6.0.2
+toml==0.10.2
+cargo-workspace==1.2.8
+PyGithub==2.9.1
+whatthepatch==1.0.7

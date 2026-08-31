@@ -25,6 +25,7 @@ use pezframe_election_provider_support::{
 	onchain, SequentialPhragmen,
 };
 use pezframe_support::traits::FindAuthor;
+use pezpallet_session::TestSessionHandler;
 use pezpallet_staking_async_ah_client as ah_client;
 use pezpallet_staking_async_rc_client::{self as rc_client, ValidatorSetReport};
 use pezsp_staking::SessionIndex;
@@ -132,37 +133,6 @@ impl Convert<AccountId, Option<AccountId>> for ValidatorIdOf {
 	}
 }
 
-pub struct OtherSessionHandler;
-impl OneSessionHandler<AccountId> for OtherSessionHandler {
-	type Key = UintAuthorityId;
-
-	fn on_genesis_session<'a, I: 'a>(_: I)
-	where
-		I: Iterator<Item = (&'a AccountId, Self::Key)>,
-		AccountId: 'a,
-	{
-	}
-
-	fn on_new_session<'a, I: 'a>(_: bool, _: I, _: I)
-	where
-		I: Iterator<Item = (&'a AccountId, Self::Key)>,
-		AccountId: 'a,
-	{
-	}
-
-	fn on_disabled(_validator_index: u32) {}
-}
-
-impl BoundToRuntimeAppPublic for OtherSessionHandler {
-	type Public = UintAuthorityId;
-}
-
-pezframe::deps::pezsp_runtime::impl_opaque_keys! {
-	pub struct SessionKeys {
-		pub other: OtherSessionHandler,
-	}
-}
-
 parameter_types! {
 	pub static Period: BlockNumber = 30;
 	pub static Offset: BlockNumber = 0;
@@ -182,8 +152,8 @@ impl pezpallet_session::Config for Runtime {
 
 	type DisablingStrategy = pezpallet_session::disabling::UpToLimitDisablingStrategy<1>;
 
-	type Keys = SessionKeys;
-	type SessionHandler = <SessionKeys as pezframe::traits::OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = UintAuthorityId;
+	type SessionHandler = TestSessionHandler;
 
 	type NextSessionRotation = Self::ShouldEndSession;
 	type ShouldEndSession = pezpallet_session::PeriodicSessions<Period, Offset>;
@@ -295,13 +265,13 @@ impl ah_client::Config for Runtime {
 	type CurrencyBalance = Balance;
 	type AdminOrigin = EnsureRoot<AccountId>;
 	type SendToAssetHub = DeliverToAH;
-	type AssetHubOrigin = EnsureSigned<AccountId>;
+	type AssetHubOrigin = EnsureRoot<AccountId>;
 	type UnixTime = Timestamp;
 	type MinimumValidatorSetSize = MinimumValidatorSetSize;
 	type MaximumValidatorsWithPoints = MaximumValidatorsWithPoints;
 	type PointsPerBlock = ConstU32<20>;
 	type MaxOffenceBatchSize = MaxOffenceBatchSize;
-	type SessionInterface = Self;
+	type SessionInterface = Session;
 	type Fallback = Staking;
 	type MaxSessionReportRetries = ConstU32<3>;
 }
@@ -533,8 +503,8 @@ impl ExtBuilder {
 				pezpallet_balances::Pezpallet::<T>::mint_into(&v, INITIAL_BALANCE).unwrap();
 				pezpallet_session::Pezpallet::<T>::set_keys(
 					RuntimeOrigin::signed(v),
-					SessionKeys { other: UintAuthorityId(v) },
-					vec![],
+					UintAuthorityId(v),
+					Vec::new(),
 				)
 				.unwrap();
 			}
@@ -547,8 +517,7 @@ impl ExtBuilder {
 }
 
 /// Progress until `sessions`, receive a `new_validator_set` with `id`, and go forward to `sessions
-/// + 1` such that it is queued in pezpallet-session. If `active`, then progress until `sessions +
-///   2`
+/// + 1` such that it is queued in pezpallet-session. If `active`, then progress until `sessions + 2`
 /// such that it is in the active session validators.
 pub(crate) fn receive_validator_set_at(
 	sessions: SessionIndex,

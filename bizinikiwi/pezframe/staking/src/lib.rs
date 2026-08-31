@@ -25,8 +25,8 @@
 //!
 //! ## Overview
 //!
-//! The Staking pezpallet is the means by which a set of network maintainers (known as _authorities_
-//! in some contexts and _validators_ in others) are chosen based upon those who voluntarily place
+//! The Staking pezpallet is the means by which a set of network maintainers (known as _authorities_ in
+//! some contexts and _validators_ in others) are chosen based upon those who voluntarily place
 //! funds under deposit. Under deposit, those funds are rewarded under normal operation but are held
 //! at pain of _slash_ (expropriation) should the staked maintainer be found not to be discharging
 //! its duties properly.
@@ -59,11 +59,11 @@
 //!
 //! #### Staking
 //!
-//! Almost any interaction with the Staking pezpallet requires a process of _**bonding**_ (also
-//! known as being a _staker_). To become *bonded*, a fund-holding register known as the _stash
-//! account_, which holds some or all of the funds that become frozen in place as part of the
-//! staking process. The controller account, which this pezpallet now assigns the stash account to,
-//! issues instructions on how funds shall be used.
+//! Almost any interaction with the Staking pezpallet requires a process of _**bonding**_ (also known
+//! as being a _staker_). To become *bonded*, a fund-holding register known as the _stash account_,
+//! which holds some or all of the funds that become frozen in place as part of the staking process.
+//! The controller account, which this pezpallet now assigns the stash account to, issues instructions
+//! on how funds shall be used.
 //!
 //! An account can become a bonded stash account using the [`bond`](Call::bond) call.
 //!
@@ -108,8 +108,8 @@
 //!
 //! #### Rewards and Slash
 //!
-//! The **reward and slashing** procedure is the core of the Staking pezpallet, attempting to
-//! _embrace valid behavior_ while _punishing any misbehavior or lack of availability_.
+//! The **reward and slashing** procedure is the core of the Staking pezpallet, attempting to _embrace
+//! valid behavior_ while _punishing any misbehavior or lack of availability_.
 //!
 //! Rewards must be claimed for each era before it gets too old by
 //! [`HistoryDepth`](`Config::HistoryDepth`) using the `payout_stakers` call. Any account can call
@@ -147,9 +147,8 @@
 //!
 //! ### Dispatchable Functions
 //!
-//! The dispatchable functions of the Staking pezpallet enable the steps needed for entities to
-//! accept and change their role, alongside some helper functions to get/set the metadata of the
-//! pezpallet.
+//! The dispatchable functions of the Staking pezpallet enable the steps needed for entities to accept
+//! and change their role, alongside some helper functions to get/set the metadata of the pezpallet.
 //!
 //! ### Public Functions
 //!
@@ -225,8 +224,8 @@
 //! they received during the era. Points are added to a validator using the method
 //! [`pezframe_support::traits::RewardsReporter::reward_by_ids`] implemented by the [`Pezpallet`].
 //!
-//! [`Pezpallet`] implements [`pezpallet_authorship::EventHandler`] to add reward points to block
-//! producer and block producer of referenced uncles.
+//! [`Pezpallet`] implements [`pezpallet_authorship::EventHandler`] to add reward points to block producer
+//! and block producer of referenced uncles.
 //!
 //! The validator and its nominator split their reward as following:
 //!
@@ -276,8 +275,8 @@
 //!
 //! ## GenesisConfig
 //!
-//! The Staking pezpallet depends on the [`GenesisConfig`]. The `GenesisConfig` is optional and
-//! allow to set some initial stakers.
+//! The Staking pezpallet depends on the [`GenesisConfig`]. The `GenesisConfig` is optional and allow
+//! to set some initial stakers.
 //!
 //! ## Related Modules
 //!
@@ -320,18 +319,18 @@ use pezframe_support::{
 		ConstU32, Contains, Defensive, DefensiveMax, DefensiveSaturating, Get, LockIdentifier,
 	},
 	weights::Weight,
-	BoundedVec, CloneNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound,
+	BoundedVec, CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound,
 };
 use pezsp_runtime::{
 	curve::PiecewiseLinear,
 	traits::{AtLeast32BitUnsigned, Convert, StaticLookup, Zero},
-	Perbill, Perquintill, Rounding, RuntimeDebug, Saturating,
+	Debug, Perbill, Perquintill, Rounding, Saturating,
 };
 use pezsp_staking::{
 	offence::{Offence, OffenceError, OffenceSeverity, ReportOffence},
 	EraIndex, ExposurePage, OnStakingUpdate, Page, PagedExposureMetadata, SessionIndex,
 };
-pub use pezsp_staking::{Exposure, IndividualExposure, StakerStatus};
+pub use pezsp_staking::{EraPayout, Exposure, IndividualExposure, StakerStatus};
 use scale_info::TypeInfo;
 pub use weights::WeightInfo;
 
@@ -351,8 +350,8 @@ macro_rules! log {
 	};
 }
 
-/// Alias for the maximum number of winners (aka. active validators), as defined in by this
-/// pezpallet's config.
+/// Alias for the maximum number of winners (aka. active validators), as defined in by this pezpallet's
+/// config.
 pub type MaxWinnersOf<T> = <T as Config>::MaxValidatorSet;
 
 /// Alias for the maximum number of winners per page, as expected by the election provider.
@@ -377,15 +376,7 @@ type AccountIdLookupOf<T> = <<T as pezframe_system::Config>::Lookup as StaticLoo
 
 /// Information regarding the active era (era in used in session).
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
-	PartialEq,
-	Eq,
+	Encode, Decode, DecodeWithMemTracking, Clone, Debug, TypeInfo, MaxEncodedLen, PartialEq, Eq,
 )]
 pub struct ActiveEraInfo {
 	/// Index of era.
@@ -400,7 +391,7 @@ pub struct ActiveEraInfo {
 /// Reward points of an era. Used to split era total payout between validators.
 ///
 /// This points will be used to reward validators and their respective nominators.
-#[derive(Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, DecodeWithMemTracking, Debug, TypeInfo, Clone, PartialEq, Eq)]
 pub struct EraRewardPoints<AccountId: Ord> {
 	/// Total number of points. Equals the sum of reward points for each validator.
 	pub total: RewardPoint,
@@ -423,7 +414,7 @@ impl<AccountId: Ord> Default for EraRewardPoints<AccountId> {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 )]
@@ -450,7 +441,7 @@ pub enum RewardDestination<AccountId> {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	Default,
 	MaxEncodedLen,
@@ -468,15 +459,7 @@ pub struct ValidatorPrefs {
 
 /// Just a Balance/BlockNumber tuple to encode when a chunk of funds will be unlocked.
 #[derive(
-	PartialEq,
-	Eq,
-	Clone,
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Debug, TypeInfo, MaxEncodedLen,
 )]
 pub struct UnlockChunk<Balance: HasCompact + MaxEncodedLen> {
 	/// Amount of funds to be unlocked.
@@ -495,7 +478,7 @@ pub struct UnlockChunk<Balance: HasCompact + MaxEncodedLen> {
 ///
 /// TODO: move struct definition and full implementation into `/src/ledger.rs`. Currently
 /// leaving here to enforce a clean PR diff, given how critical this logic is. Tracking issue
-/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/191>.
+/// <https://github.com/paritytech/substrate/issues/14749>.
 #[derive(
 	PartialEqNoBound,
 	EqNoBound,
@@ -503,7 +486,7 @@ pub struct UnlockChunk<Balance: HasCompact + MaxEncodedLen> {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	TypeInfo,
 	MaxEncodedLen,
 )]
@@ -531,7 +514,7 @@ pub struct StakingLedger<T: Config> {
 	/// for validators.
 	///
 	/// This is deprecated as of V14 in favor of `T::ClaimedRewards` and will be removed in future.
-	/// Refer to issue <https://github.com/pezkuwichain/pezkuwi-sdk/issues/249>
+	/// Refer to issue <https://github.com/pezkuwichain/pezkuwi-DKS/issues/433>
 	pub legacy_claimed_rewards: BoundedVec<EraIndex, T::HistoryDepth>,
 
 	/// The controller associated with this ledger's stash.
@@ -818,7 +801,7 @@ impl<T: Config> StakingLedger<T> {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebugNoBound,
+	DebugNoBound,
 	TypeInfo,
 	MaxEncodedLen,
 )]
@@ -842,7 +825,7 @@ pub struct Nominations<T: Config> {
 ///
 /// This is useful where we need to take into account the validator's own stake and total exposure
 /// in consideration, in addition to the individual nominators backing them.
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq)]
+#[derive(Encode, Decode, Debug, TypeInfo, PartialEq, Eq)]
 pub struct PagedExposure<AccountId, Balance: HasCompact + codec::MaxEncodedLen> {
 	exposure_metadata: PagedExposureMetadata<Balance>,
 	exposure_page: ExposurePage<AccountId, Balance>,
@@ -887,7 +870,7 @@ impl<AccountId, Balance: HasCompact + Copy + AtLeast32BitUnsigned + codec::MaxEn
 
 /// A pending slash record. The value of the slash has been computed but not applied yet,
 /// rather deferred for several eras.
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq, Clone, DecodeWithMemTracking)]
+#[derive(Encode, Decode, Debug, TypeInfo, PartialEq, Eq, Clone, DecodeWithMemTracking)]
 pub struct UnappliedSlash<AccountId, Balance: HasCompact> {
 	/// The stash ID of the offending validator.
 	pub validator: AccountId,
@@ -995,33 +978,10 @@ impl<AccountId> SessionInterface<AccountId> for () {
 	}
 }
 
-/// Handler for determining how much of a balance should be paid out on the current era.
-pub trait EraPayout<Balance> {
-	/// Determine the payout for this era.
-	///
-	/// Returns the amount to be paid to stakers in this era, as well as whatever else should be
-	/// paid out ("the rest").
-	fn era_payout(
-		total_staked: Balance,
-		total_issuance: Balance,
-		era_duration_millis: u64,
-	) -> (Balance, Balance);
-}
-
-impl<Balance: Default> EraPayout<Balance> for () {
-	fn era_payout(
-		_total_staked: Balance,
-		_total_issuance: Balance,
-		_era_duration_millis: u64,
-	) -> (Balance, Balance) {
-		(Default::default(), Default::default())
-	}
-}
-
 /// Adaptor to turn a `PiecewiseLinear` curve definition into an `EraPayout` impl, used for
 /// backwards compatibility.
 pub struct ConvertCurve<T>(core::marker::PhantomData<T>);
-impl<Balance, T> EraPayout<Balance> for ConvertCurve<T>
+impl<Balance, T> pezsp_staking::EraPayout<Balance> for ConvertCurve<T>
 where
 	Balance: AtLeast32BitUnsigned + Clone + Copy,
 	T: Get<&'static PiecewiseLinear<'static>>,
@@ -1052,7 +1012,7 @@ where
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	serde::Serialize,
@@ -1106,8 +1066,8 @@ impl<T: Config> Convert<T::AccountId, Option<Exposure<T::AccountId, BalanceOf<T>
 /// In the new model, we don't need to identify a validator with their full exposure anymore, and
 /// therefore [`UnitIdentificationOf`] is perfectly fine. Yet, for runtimes that used to work with
 /// [`ExposureOf`], we need to be able to decode old identification data, possibly stored in the
-/// historical session pezpallet in older blocks. Therefore, this type is a good compromise,
-/// allowing old exposure identifications to be decoded, and returning a few zero bytes
+/// historical session pezpallet in older blocks. Therefore, this type is a good compromise, allowing
+/// old exposure identifications to be decoded, and returning a few zero bytes
 /// (`Exposure::default`) for any new identification request.
 ///
 /// A typical usage of this type is:
@@ -1213,7 +1173,7 @@ impl<T: Config> EraInfo<T> {
 	/// non-paged rewards, and (2) `T::ClaimedRewards` for paged rewards. This function can be
 	/// removed once `T::HistoryDepth` eras have passed and none of the older non-paged rewards
 	/// are relevant/claimable.
-	// Refer tracker issue for cleanup: https://github.com/pezkuwichain/pezkuwi-sdk/issues/249
+	// Refer tracker issue for cleanup: https://github.com/pezkuwichain/pezkuwi-DKS/issues/433
 	pub(crate) fn is_rewards_claimed_with_legacy_fallback(
 		era: EraIndex,
 		ledger: &StakingLedger<T>,

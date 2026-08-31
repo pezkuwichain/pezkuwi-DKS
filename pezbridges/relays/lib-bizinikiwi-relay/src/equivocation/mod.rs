@@ -38,7 +38,7 @@ use relay_utils::metrics::MetricsParams;
 use std::marker::PhantomData;
 
 /// Convenience trait that adds bounds to `BizinikiwiEquivocationDetectionPipeline`.
-pub trait BaseBizinikiwiEquivocationDetectionPipeline:
+pub trait BaseSubstrateEquivocationDetectionPipeline:
 	BizinikiwiFinalityPipeline<SourceChain = Self::BoundedSourceChain>
 {
 	/// Bounded `BizinikiwiFinalityPipeline::SourceChain`.
@@ -49,7 +49,7 @@ pub trait BaseBizinikiwiEquivocationDetectionPipeline:
 		+ Send;
 }
 
-impl<T> BaseBizinikiwiEquivocationDetectionPipeline for T
+impl<T> BaseSubstrateEquivocationDetectionPipeline for T
 where
 	T: BizinikiwiFinalityPipeline,
 	T::SourceChain: ChainWithTransactions,
@@ -62,7 +62,7 @@ where
 /// Bizinikiwi -> Bizinikiwi equivocation detection pipeline.
 #[async_trait]
 pub trait BizinikiwiEquivocationDetectionPipeline:
-	BaseBizinikiwiEquivocationDetectionPipeline
+	BaseSubstrateEquivocationDetectionPipeline
 {
 	/// How the `report_equivocation` call is built ?
 	type ReportEquivocationCallBuilder: ReportEquivocationCallBuilder<Self>;

@@ -24,7 +24,7 @@ pub use pezkuwi_node_metrics::metrics::{self, prometheus, Metrics as MetricsTrai
 struct MetricsInner {
 	activated_heads_total: prometheus::Counter<prometheus::U64>,
 	deactivated_heads_total: prometheus::Counter<prometheus::U64>,
-	pez_messages_relayed_total: prometheus::Counter<prometheus::U64>,
+	messages_relayed_total: prometheus::Counter<prometheus::U64>,
 
 	to_subsystem_bounded_tof: prometheus::HistogramVec,
 	to_subsystem_bounded_sent: prometheus::GaugeVec<prometheus::U64>,
@@ -63,7 +63,7 @@ impl Metrics {
 
 	pub(crate) fn on_message_relayed(&self) {
 		if let Some(metrics) = &self.0 {
-			metrics.pez_messages_relayed_total.inc();
+			metrics.messages_relayed_total.inc();
 		}
 	}
 
@@ -153,9 +153,9 @@ impl MetricsTrait for Metrics {
 				)?,
 				registry,
 			)?,
-			pez_messages_relayed_total: prometheus::register(
+			messages_relayed_total: prometheus::register(
 				prometheus::Counter::new(
-					"pezkuwi_teyrchain_pez_messages_relayed_total",
+					"pezkuwi_teyrchain_messages_relayed_total",
 					"Number of messages relayed by Overseer.",
 				)?,
 				registry,

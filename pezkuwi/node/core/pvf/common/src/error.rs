@@ -102,7 +102,7 @@ pub enum PrepareError {
 
 impl PrepareError {
 	/// Returns whether this is a deterministic error, i.e. one that should trigger reliably. Those
-	/// errors depend on the PVF itself and the sc-executor/wasmtime logic.
+	/// errors depend on the PVF itself and the pezsc-executor/wasmtime logic.
 	///
 	/// Non-deterministic errors can happen spuriously. Typically, they occur due to resource
 	/// starvation, e.g. under heavy load or memory pressure. Those errors are typically transient

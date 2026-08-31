@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *Pezkuwi*.
 //!
-//! [![github]](https://github.com/paritytech/bizinikiwi/pezframe/fast-unstake) -
+//! [![github]](https://github.com/paritytech/substrate/pezframe/fast-unstake) -
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]: https://img.shields.io/badge/polkadot-E6007A?style=for-the-badge&logo=polkadot&logoColor=white
@@ -25,8 +25,8 @@
 //!
 //! # Treasury Pezpallet
 //!
-//! The Treasury pezpallet provides a "pot" of funds that can be managed by stakeholders in the
-//! system and a structure for making spending proposals from this pot.
+//! The Treasury pezpallet provides a "pot" of funds that can be managed by stakeholders in the system
+//! and a structure for making spending proposals from this pot.
 //!
 //! ## Overview
 //!
@@ -50,10 +50,8 @@
 //!
 //! 1. Multiple local spends approved by spend origins and received by a beneficiary.
 #![doc = docify::embed!("src/tests.rs", spend_local_origin_works)]
-//!
 //! 2. Approve a spend of some asset kind and claim it.
 #![doc = docify::embed!("src/tests.rs", spend_payout_works)]
-//!
 //! ## Pezpallet API
 //!
 //! See the [`pezpallet`] module for more information about the interfaces this pezpallet exposes,
@@ -64,10 +62,10 @@
 //! Spends can be initiated using either the `spend_local` or `spend` dispatchable. The
 //! `spend_local` dispatchable enables the creation of spends using the native currency of the
 //! chain, utilizing the funds stored in the pot. These spends are automatically paid out every
-//! [`pezpallet::Config::SpendPeriod`]. On the other hand, the `spend` dispatchable allows spending
-//! of any asset kind managed by the treasury, with payment facilitated by a designated
-//! [`pezpallet::Config::Paymaster`]. To claim these spends, the `payout` dispatchable should be
-//! called within some temporal bounds, starting from the moment they become valid and within one
+//! [`pezpallet::Config::SpendPeriod`]. On the other hand, the `spend` dispatchable allows spending of
+//! any asset kind managed by the treasury, with payment facilitated by a designated
+//! [`pezpallet::Config::Paymaster`]. To claim these spends, the `payout` dispatchable should be called
+//! within some temporal bounds, starting from the moment they become valid and within one
 //! [`pezpallet::Config::PayoutPeriod`].
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -93,7 +91,7 @@ use pezsp_runtime::{
 		AccountIdConversion, BlockNumberProvider, CheckedAdd, One, Saturating, StaticLookup,
 		UniqueSaturatedInto, Zero,
 	},
-	PerThing, Permill, RuntimeDebug,
+	Debug, PerThing, Permill,
 };
 
 use pezframe_support::{
@@ -152,15 +150,7 @@ pub type ProposalIndex = u32;
 /// A spending proposal.
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	PartialEq,
-	Eq,
-	MaxEncodedLen,
-	RuntimeDebug,
-	TypeInfo,
+	Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, MaxEncodedLen, Debug, TypeInfo,
 )]
 pub struct Proposal<AccountId, Balance> {
 	/// The account proposing it.
@@ -176,15 +166,7 @@ pub struct Proposal<AccountId, Balance> {
 /// The state of the payment claim.
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	PartialEq,
-	Eq,
-	MaxEncodedLen,
-	RuntimeDebug,
-	TypeInfo,
+	Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, MaxEncodedLen, Debug, TypeInfo,
 )]
 pub enum PaymentState<Id> {
 	/// Pending claim.
@@ -198,15 +180,7 @@ pub enum PaymentState<Id> {
 /// Info regarding an approved treasury spend.
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	PartialEq,
-	Eq,
-	MaxEncodedLen,
-	RuntimeDebug,
-	TypeInfo,
+	Encode, Decode, DecodeWithMemTracking, Clone, PartialEq, Eq, MaxEncodedLen, Debug, TypeInfo,
 )]
 pub struct SpendStatus<AssetKind, AssetBalance, Beneficiary, BlockNumber, PaymentId> {
 	// The kind of asset to be spent.
@@ -274,7 +248,7 @@ pub mod pezpallet {
 		type SpendFunds: SpendFunds<Self, I>;
 
 		/// DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
-		/// Refer to <https://github.com/pezkuwichain/pezkuwi-sdk/issues/267> for migration to `spend`.
+		/// Refer to <https://github.com/pezkuwichain/pezkuwi-DKS/pull/5961> for migration to `spend`.
 		///
 		/// The maximum number of approvals that can wait in the spending queue.
 		///
@@ -329,14 +303,14 @@ pub mod pezpallet {
 	}
 
 	/// DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
-	/// Refer to <https://github.com/pezkuwichain/pezkuwi-sdk/issues/267> for migration to `spend`.
+	/// Refer to <https://github.com/pezkuwichain/pezkuwi-DKS/pull/5961> for migration to `spend`.
 	///
 	/// Number of proposals that have been made.
 	#[pezpallet::storage]
 	pub type ProposalCount<T, I = ()> = StorageValue<_, ProposalIndex, ValueQuery>;
 
 	/// DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
-	/// Refer to <https://github.com/pezkuwichain/pezkuwi-sdk/issues/267> for migration to `spend`.
+	/// Refer to <https://github.com/pezkuwichain/pezkuwi-DKS/pull/5961> for migration to `spend`.
 	///
 	/// Proposals that have been made.
 	#[pezpallet::storage]
@@ -354,7 +328,7 @@ pub mod pezpallet {
 		StorageValue<_, BalanceOf<T, I>, ValueQuery>;
 
 	/// DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
-	/// Refer to <https://github.com/pezkuwichain/pezkuwi-sdk/issues/267> for migration to `spend`.
+	/// Refer to <https://github.com/pezkuwichain/pezkuwi-DKS/pull/5961> for migration to `spend`.
 	///
 	/// Proposal indices that have been approved but not yet awarded.
 	#[pezpallet::storage]

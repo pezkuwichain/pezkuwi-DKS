@@ -1,12 +1,12 @@
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezsp_arithmetic::traits::{BaseArithmetic, Unsigned, Zero};
 use pezsp_core::U256;
-use pezsp_runtime::{FixedU128, RuntimeDebug};
+use pezsp_runtime::FixedU128;
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
 
 #[derive(
-	Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, RuntimeDebug, MaxEncodedLen, TypeInfo,
+	Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Debug, MaxEncodedLen, TypeInfo,
 )]
 pub struct PricingParameters<Balance> {
 	/// ETH/HEZ exchange rate
@@ -20,7 +20,7 @@ pub struct PricingParameters<Balance> {
 }
 
 #[derive(
-	Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, RuntimeDebug, MaxEncodedLen, TypeInfo,
+	Clone, Encode, Decode, DecodeWithMemTracking, PartialEq, Debug, MaxEncodedLen, TypeInfo,
 )]
 pub struct Rewards<Balance> {
 	/// Local reward in HEZ
@@ -29,7 +29,7 @@ pub struct Rewards<Balance> {
 	pub remote: U256,
 }
 
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 pub struct InvalidPricingParameters;
 
 impl<Balance> PricingParameters<Balance>
@@ -57,7 +57,7 @@ where
 }
 
 /// Holder for fixed point number implemented in <https://github.com/PaulRBerg/prb-math>
-#[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Debug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(PartialEq))]
 pub struct UD60x18(U256);
 

@@ -1,4 +1,4 @@
-// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
+// Copyright (C) Parity Technologies (UK) Ltd.
 // This file is part of Pezkuwi.
 
 // Pezkuwi is free software: you can redistribute it and/or modify
@@ -14,45 +14,56 @@
 // You should have received a copy of the GNU General Public License
 // along with Pezkuwi.  If not, see <http://www.gnu.org/licenses/>.
 
-//! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.0
-//! DATE: 2024-02-29 (Y/M/D)
-//! HOSTNAME: `runner-bn-ce5rx-project-674-concurrent-0`, CPU: `Intel(R) Xeon(R) CPU @ 2.60GHz`
+//! THIS FILE WAS AUTO-GENERATED USING THE BIZINIKIWI BENCHMARK CLI VERSION 32.0.1
+//! DATE: 2026-08-28 (Y/M/D)
+//! HOSTNAME: `vmi3519825`, CPU: `AMD EPYC Processor (with IBPB)`
 //!
-//! SHORT-NAME: `extrinsic`, LONG-NAME: `ExtrinsicBase`, RUNTIME: `Development`
+//! SHORT-NAME: `extrinsic`, LONG-NAME: `ExtrinsicBase`, RUNTIME: `pezkuwichain`
 //! WARMUPS: `10`, REPEAT: `100`
 //! WEIGHT-PATH: `./pezkuwi/runtime/pezkuwichain/constants/src/weights/`
 //! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./target/production/pezkuwi
+//   ./target/production/pezframe-omni-bencher
+//   v1
 //   benchmark
 //   overhead
-//   --chain=pezkuwichain-dev
-//   --wasm-execution=compiled
-//   --weight-path=./pezkuwi/runtime/pezkuwichain/constants/src/weights/
-//   --warmup=10
-//   --repeat=100
-//   --header=./pezkuwi/file_header.txt
+//   --runtime
+//   target/production/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.wasm
+//   --genesis-builder
+//   runtime
+//   --genesis-builder-preset
+//   development
+//   --wasm-execution
+//   compiled
+//   --weight-path
+//   ./pezkuwi/runtime/pezkuwichain/constants/src/weights/
+//   --header
+//   ./pezkuwi/file_header.txt
+//   --warmup
+//   10
+//   --repeat
+//   100
 
 use pezsp_core::parameter_types;
 use pezsp_weights::{constants::WEIGHT_REF_TIME_PER_NANOS, Weight};
 
 parameter_types! {
-	/// Time to execute a NO-OP extrinsic, for example `System::remark`.
+	/// Weight of executing a NO-OP extrinsic, for example `System::remark`.
 	/// Calculated by multiplying the *Average* with `1.0` and adding `0`.
 	///
 	/// Stats nanoseconds:
-	///   Min, Max: 92_961, 94_143
-	///   Average:  93_369
-	///   Median:   93_331
-	///   Std-Dev:  217.39
+	///   Min, Max: 191_975, 300_900
+	///   Average:  223_020
+	///   Median:   217_950
+	///   Std-Dev:  20488.02
 	///
 	/// Percentiles nanoseconds:
-	///   99th: 93_848
-	///   95th: 93_691
-	///   75th: 93_514
+	///   99th: 291_014
+	///   95th: 270_295
+	///   75th: 227_617
 	pub const ExtrinsicBaseWeight: Weight =
-		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(93_369), 0);
+		Weight::from_parts(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(223_020), 0);
 }
 
 #[cfg(test)]

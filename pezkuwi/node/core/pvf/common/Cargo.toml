@@ -18,6 +18,7 @@ futures = { workspace = true }
 gum = { workspace = true, default-features = true }
 libc = { workspace = true }
 nix = { features = ["resource", "sched"], workspace = true }
+pezsp-crypto-ec-utils = { workspace = true, default-features = true, features = ["rfc163"] }
 thiserror = { workspace = true }
 
 codec = { features = ["derive"], workspace = true }
@@ -60,6 +61,7 @@ runtime-benchmarks = [
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
 	"pezsc-executor-wasmtime/runtime-benchmarks",
 	"pezsc-executor/runtime-benchmarks",
+	"pezsp-crypto-ec-utils/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 ]
 std = [

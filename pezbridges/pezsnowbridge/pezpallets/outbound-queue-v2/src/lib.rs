@@ -164,8 +164,7 @@ pub mod pezpallet {
 		type GatewayAddress: Get<H160>;
 		/// Reward discriminator type.
 		type RewardKind: Parameter + MaxEncodedLen + Send + Sync + Copy + Clone;
-		/// The default RewardKind discriminator for rewards allocated to relayers from this
-		/// pezpallet.
+		/// The default RewardKind discriminator for rewards allocated to relayers from this pezpallet.
 		#[pezpallet::constant]
 		type DefaultRewardKind: Get<Self::RewardKind>;
 		/// Relayer reward payment.

@@ -16,5 +16,9 @@
 mod aliases;
 mod collectives_salary;
 mod fellowship;
-mod fellowship_treasury;
+// `fellowship_treasury` stood here. It funded the Fellowship Treasury from the *relay's*
+// treasury, with the relay's `Treasurer` origin, and both were retired when the treasury moved
+// to the Asset Hub. The test could not be repaired, only rewritten against a funding path that
+// does not exist yet: the Fellowship Treasury on this chain now has no source of funds at all.
+// That gap is recorded as an open item rather than left as a test nobody can compile.
 mod teleport;

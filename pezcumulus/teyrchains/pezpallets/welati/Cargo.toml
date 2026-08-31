@@ -39,10 +39,10 @@ pezpallet-identity-kyc = { workspace = true, default-features = false }
 pezpallet-referral = { workspace = true, default-features = false }
 pezpallet-tiki = { workspace = true, default-features = false }
 pezpallet-trust = { workspace = true, default-features = false }
+xcm = { workspace = true, default-features = false }
 
 # Bizinikiwi core paletler
 pezpallet-collective = { default-features = false, workspace = true }
-pezpallet-democracy = { default-features = false, workspace = true }
 pezpallet-elections-phragmen = { default-features = false, workspace = true }
 pezpallet-scheduler = { default-features = false, workspace = true }
 pezpallet-timestamp = { default-features = false, workspace = true }
@@ -65,7 +65,6 @@ std = [
 	"pezframe-system/std",
 	"pezpallet-balances/std",
 	"pezpallet-collective/std",
-	"pezpallet-democracy/std",
 	"pezpallet-elections-phragmen/std",
 	"pezpallet-identity-kyc/std",
 	"pezpallet-identity/std",
@@ -83,6 +82,7 @@ std = [
 	"scale-info/std",
 	"serde",
 	"serde?/std",
+	"xcm/std",
 ]
 runtime-benchmarks = [
 	"pezframe-benchmarking/runtime-benchmarks",
@@ -90,7 +90,6 @@ runtime-benchmarks = [
 	"pezframe-system/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-collective/runtime-benchmarks",
-	"pezpallet-democracy/runtime-benchmarks",
 	"pezpallet-elections-phragmen/runtime-benchmarks",
 	"pezpallet-identity-kyc/runtime-benchmarks",
 	"pezpallet-identity/runtime-benchmarks",
@@ -105,6 +104,7 @@ runtime-benchmarks = [
 	"pezsp-io",
 	"pezsp-io?/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
@@ -112,7 +112,6 @@ try-runtime = [
 	"pezframe-system/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-collective/try-runtime",
-	"pezpallet-democracy/try-runtime",
 	"pezpallet-elections-phragmen/try-runtime",
 	"pezpallet-identity-kyc/try-runtime",
 	"pezpallet-identity/try-runtime",
@@ -124,13 +123,13 @@ try-runtime = [
 	"pezpallet-timestamp/try-runtime",
 	"pezpallet-trust/try-runtime",
 	"pezsp-runtime/try-runtime",
+	"xcm/try-runtime",
 ]
 serde = [
 	"codec/serde",
 	"dep:serde",
 	"log/serde",
 	"pezframe-benchmarking?/serde",
-	"pezpallet-democracy/serde",
 	"pezpallet-staking-score/serde",
 	"pezpallet-trust/serde",
 	"pezsp-core?/serde",

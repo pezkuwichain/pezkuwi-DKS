@@ -214,7 +214,7 @@ pub use pezsp_std;
 ///         <&mut dyn pezsp_externalities::Externalities as Interface>::gated_call_version_1(data)
 ///     }
 ///
-///     /// This type implements the `HostFunctions` trait (from `sp-wasm-interface`) and
+///     /// This type implements the `HostFunctions` trait (from `pezsp-wasm-interface`) and
 ///     /// provides the host implementation for the wasm side. The host implementation converts the
 ///     /// arguments from wasm to native and calls the corresponding native function.
 ///     ///
@@ -258,7 +258,7 @@ pub use pezsp_std;
 ///         }
 ///     }
 ///
-///     /// The type is actually `ExchangeableFunction` (from `sp-runtime-interface`) and
+///     /// The type is actually `ExchangeableFunction` (from `pezsp-runtime-interface`) and
 ///     /// by default this is initialized to jump into the corresponding function in
 ///     /// `extern_host_functions_impls`.
 ///     ///
@@ -333,11 +333,11 @@ pub use pezsp_std;
 ///
 /// 1. The generated functions are not callable from the native side.
 /// 2. The trait as shown above is not implemented for [`Externalities`] and is instead
-/// implemented for `FunctionContext` (from `sp-wasm-interface`).
+/// implemented for `FunctionContext` (from `pezsp-wasm-interface`).
 ///
 /// # Disable tracing
 /// By adding `no_tracing` to the list of options you can prevent the wasm-side interface from
-/// generating the default `sp-tracing`-calls. Note that this is rarely needed but only meant
+/// generating the default `pezsp-tracing`-calls. Note that this is rarely needed but only meant
 /// for the case when that would create a circular dependency. You usually _do not_ want to add
 /// this flag, as tracing doesn't cost you anything by default anyways (it is added as a no-op)
 /// but is super useful for debugging later.
@@ -353,7 +353,7 @@ pub use pezsp_externalities::{
 #[doc(hidden)]
 pub use codec;
 
-#[cfg(all(any(target_arch = "riscv32", target_arch = "riscv64"), bizinikiwi_runtime))]
+#[cfg(all(target_arch = "riscv64", bizinikiwi_runtime))]
 pub mod polkavm;
 
 #[cfg(not(bizinikiwi_runtime))]

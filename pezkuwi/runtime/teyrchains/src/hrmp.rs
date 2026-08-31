@@ -173,8 +173,8 @@ pub(crate) enum HrmpWatermarkAcceptanceErr<BlockNumber> {
 	LandsOnBlockWithNoMessages { new_watermark: BlockNumber },
 }
 
-/// An error returned by [`Pezpallet::check_outbound_hrmp`] that indicates an acceptance criteria
-/// check didn't pass.
+/// An error returned by [`Pezpallet::check_outbound_hrmp`] that indicates an acceptance criteria check
+/// didn't pass.
 pub(crate) enum OutboundHrmpAcceptanceErr {
 	MoreMessagesThanPermitted { sent: u32, permitted: u32 },
 	NotSorted { idx: u32 },
@@ -1440,7 +1440,7 @@ impl<T: Config> Pezpallet<T> {
 	/// accepting it.
 	///
 	/// Basically the same as [`hrmp_init_open_channel`](Pezpallet::hrmp_init_open_channel) but
-	/// intended for calling directly from other pallets rather than dispatched.
+	/// intended for calling directly from other pezpallets rather than dispatched.
 	pub fn init_open_channel(
 		origin: ParaId,
 		recipient: ParaId,
@@ -1529,7 +1529,7 @@ impl<T: Config> Pezpallet<T> {
 	/// Accept a pending open channel request from the given sender.
 	///
 	/// Basically the same as [`hrmp_accept_open_channel`](Pezpallet::hrmp_accept_open_channel) but
-	/// intended for calling directly from other pallets rather than dispatched.
+	/// intended for calling directly from other pezpallets rather than dispatched.
 	pub fn accept_open_channel(origin: ParaId, sender: ParaId) -> DispatchResult {
 		let channel_id = HrmpChannelId { sender, recipient: origin };
 		let mut channel_req = HrmpOpenChannelRequests::<T>::get(&channel_id)

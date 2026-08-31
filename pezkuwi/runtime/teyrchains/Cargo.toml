@@ -45,6 +45,7 @@ pezpallet-broker = { workspace = true }
 pezpallet-message-queue = { workspace = true }
 pezpallet-mmr = { workspace = true, optional = true }
 pezpallet-session = { workspace = true }
+pezpallet-session-benchmarking = { workspace = true, optional = true }
 pezpallet-staking = { workspace = true }
 pezpallet-timestamp = { workspace = true }
 
@@ -100,6 +101,7 @@ std = [
 	"pezpallet-broker/std",
 	"pezpallet-message-queue/std",
 	"pezpallet-mmr?/std",
+	"pezpallet-session-benchmarking?/std",
 	"pezpallet-session/std",
 	"pezpallet-staking/std",
 	"pezpallet-timestamp/std",
@@ -141,6 +143,7 @@ runtime-benchmarks = [
 	"pezpallet-broker/runtime-benchmarks",
 	"pezpallet-message-queue/runtime-benchmarks",
 	"pezpallet-mmr/runtime-benchmarks",
+	"pezpallet-session-benchmarking/runtime-benchmarks",
 	"pezpallet-session/runtime-benchmarks",
 	"pezpallet-staking/runtime-benchmarks",
 	"pezpallet-timestamp/runtime-benchmarks",
@@ -176,6 +179,7 @@ try-runtime = [
 	"pezpallet-broker/try-runtime",
 	"pezpallet-message-queue/try-runtime",
 	"pezpallet-mmr/try-runtime",
+	"pezpallet-session-benchmarking?/try-runtime",
 	"pezpallet-session/try-runtime",
 	"pezpallet-staking/try-runtime",
 	"pezpallet-timestamp/try-runtime",

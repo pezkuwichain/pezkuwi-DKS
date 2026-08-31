@@ -13,9 +13,9 @@ Alternatively, you can start a zombienet network with the zagros Asset Hub teyrc
 Prerequisites for running a local network:
 - download latest [zombienet release](https://github.com/paritytech/zombienet/releases);
 - build PezkuwiChain binary by running `cargo build -p pezkuwi --release  --features fast-runtime` command in the
-  [`pezkuwi-sdk`](https://github.com/pezkuwichain/pezkuwi-sdk) repository clone;
+  [`pezkuwi-sdk`](https://github.com/pezkuwichain/pezkuwi-DKS) repository clone;
 - build PezkuwiChain Teyrchain binary by running `cargo build -p pezkuwi-teyrchain-bin --release` command in the
-  [`pezkuwi-sdk`](https://github.com/pezkuwichain/pezkuwi-sdk) repository clone;
+  [`pezkuwi-sdk`](https://github.com/pezkuwichain/pezkuwi-DKS) repository clone;
 
 ```bash
 zombienet spawn --provider native  zagros_local_network.toml

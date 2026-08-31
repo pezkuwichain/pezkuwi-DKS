@@ -102,7 +102,8 @@ impl PalletStructDef {
 		let mut without_storage_info = None;
 		let mut storage_version_found = None;
 
-		let struct_attrs: Vec<PalletStructAttr> = helper::take_item_pallet_attrs(&mut item.attrs)?;
+		let struct_attrs: Vec<PalletStructAttr> =
+			helper::take_item_pezpallet_attrs(&mut item.attrs)?;
 		for attr in struct_attrs {
 			match attr {
 				PalletStructAttr::WithoutStorageInfoTrait(span)

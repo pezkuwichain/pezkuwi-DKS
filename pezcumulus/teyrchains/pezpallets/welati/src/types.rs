@@ -5,13 +5,12 @@
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezframe_support::pezpallet_prelude::*;
-use pezframe_system::{pezpallet_prelude::BlockNumberFor, Config as SystemConfig};
+use pezframe_system::pezpallet_prelude::BlockNumberFor;
 use pezpallet_tiki::Tiki;
-use pezsp_runtime::RuntimeDebug;
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
 
-#[derive(RuntimeDebug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum ElectionOutcome<AccountId> {
 	/// Winners have been determined.
 	Winners(BoundedVec<AccountId, ConstU32<201>>),
@@ -27,7 +26,7 @@ pub enum ElectionOutcome<AccountId> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -35,12 +34,16 @@ pub enum ElectionOutcome<AccountId> {
 #[codec(mel_bound())]
 pub enum GovernmentPosition {
 	/// President (Serok)
+	#[codec(index = 0)]
 	Serok,
 	/// Member of Parliament (Parlementer)
+	#[codec(index = 1)]
 	Parlementer,
 	/// Speaker of Parliament (SerokiMeclise)
-	MeclisBaskanı,
+	#[codec(index = 2)]
+	SerokiMeclise,
 	/// Diwan Member (EndameDiwane)
+	#[codec(index = 3)]
 	EndameDiwane,
 }
 
@@ -52,7 +55,7 @@ pub enum GovernmentPosition {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -60,79 +63,70 @@ pub enum GovernmentPosition {
 #[codec(mel_bound())]
 pub enum OfficialRole {
 	// Under the Ministry of Justice
+	#[codec(index = 0)]
 	Dadger,
+	#[codec(index = 1)]
 	Dozger,
+	#[codec(index = 2)]
 	Hiquqnas,
+	#[codec(index = 3)]
 	Noter,
 
 	// Under the Ministry of the Treasury
+	#[codec(index = 4)]
 	Xezinedar,
+	#[codec(index = 5)]
 	Bacgir,
+	#[codec(index = 6)]
 	GerinendeyeCavkaniye,
 
 	// Under the Ministry of Technology and Infrastructure
-	OperatoreTore,
-	PisporeEwlehiyaSiber,
+	#[codec(index = 7)]
+	OperatorêTorê,
+	#[codec(index = 8)]
+	PisporêEwlehiyaSîber,
+	#[codec(index = 9)]
 	GerinendeyeDaneye,
 
 	// Under the Ministry of Internal Affairs and Communications
+	#[codec(index = 10)]
 	Berdevk,
+	#[codec(index = 11)]
 	Qeydkar,
 
 	// Under the Ministry of Foreign Affairs
+	#[codec(index = 12)]
 	Balyoz,
+	#[codec(index = 13)]
 	Navbeynkar,
-	ParezvaneCandi,
+	#[codec(index = 14)]
+	ParêzvaneÇandî,
 
 	// Under the Ministry of Audit
-	Mufetis,
-	KaliteKontrolker,
+	#[codec(index = 15)]
+	Mufetîs,
+	#[codec(index = 16)]
+	KalîteKontrolker,
 
 	// Under the Ministry of Economy and Trade
+	#[codec(index = 17)]
 	Bazargan,
-	RêvebereProjeyê,
+	#[codec(index = 18)]
+	RêveberêProjeyê,
 
 	// Under the Ministry of National Education and Religious Affairs
-	Feqi,
+	#[codec(index = 19)]
+	Feqî,
+	#[codec(index = 20)]
 	Perwerdekar,
-	Rewsenbir,
+	#[codec(index = 21)]
+	Rewsenbîr,
+	#[codec(index = 22)]
 	Mamoste,
 
 	// Exceptional appointment (directly by Serok)
+	#[codec(index = 23)]
 	Mela,
-}
-
-/// Minister positions (Wezîr subcategories)
-#[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	Eq,
-	PartialEq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
-	Copy,
-)]
-#[codec(mel_bound())]
-pub enum MinisterRole {
-	/// Minister of Justice
-	AdvaletWeziri,
-	/// Minister of the Treasury
-	XezineWeziri,
-	/// Minister of Technology and Infrastructure
-	TeknolojîWeziri,
-	/// Minister of Internal Affairs and Communications
-	NavxweWeziri,
-	/// Minister of Foreign Affairs
-	DerveWeziri,
-	/// Minister of Audit
-	DenetimWeziri,
-	/// Minister of Economy and Trade
-	AbûrîWeziri,
-	/// Minister of National Education and Religious Affairs
-	PerwerdeDiyanetWeziri,
 }
 
 /// Election types
@@ -143,7 +137,7 @@ pub enum MinisterRole {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -151,12 +145,16 @@ pub enum MinisterRole {
 #[codec(mel_bound())]
 pub enum ElectionType {
 	/// Presidential election (special rules)
+	#[codec(index = 0)]
 	Presidential,
 	/// Parliamentary election (201 members)
+	#[codec(index = 1)]
 	Parliamentary,
 	/// Speaker election (among members of parliament)
+	#[codec(index = 2)]
 	SpeakerElection,
 	/// Diwan member election
+	#[codec(index = 3)]
 	ConstitutionalCourt,
 }
 
@@ -168,7 +166,7 @@ pub enum ElectionType {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -176,10 +174,13 @@ pub enum ElectionType {
 #[codec(mel_bound())]
 pub enum VoteType {
 	/// Normal citizen vote
+	#[codec(index = 0)]
 	Citizen,
 	/// Weighted vote (based on Trust Score)
+	#[codec(index = 1)]
 	Weighted,
 	/// Delegated vote
+	#[codec(index = 2)]
 	Delegated,
 }
 
@@ -212,7 +213,7 @@ pub struct NominationInfo<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -220,14 +221,19 @@ pub struct NominationInfo<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum NominationStatus {
 	/// Pending nomination
+	#[codec(index = 0)]
 	Pending,
 	/// Approved
+	#[codec(index = 1)]
 	Approved,
 	/// Rejected
+	#[codec(index = 2)]
 	Rejected,
 	/// Cancelled
+	#[codec(index = 3)]
 	Cancelled,
 	/// Expired
+	#[codec(index = 4)]
 	Expired,
 }
 
@@ -239,7 +245,7 @@ pub enum NominationStatus {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -247,20 +253,22 @@ pub enum NominationStatus {
 #[codec(mel_bound())]
 pub enum CollectiveDecisionType {
 	/// Parliament decision (simple majority - 50%+1)
+	#[codec(index = 0)]
 	ParliamentSimpleMajority,
 	/// Parliament supermajority decision (2/3)
+	#[codec(index = 1)]
 	ParliamentSuperMajority,
 	/// Parliament absolute majority (3/4 - constitutional amendment)
+	#[codec(index = 2)]
 	ParliamentAbsoluteMajority,
-	/// Diwan decision (constitutional review - 2/3)
-	ConstitutionalReview,
-	/// Diwan unanimous decision (all members)
-	ConstitutionalUnanimous,
 	/// Hybrid decision (Parliament + Serok approval)
+	#[codec(index = 3)]
 	HybridDecision,
 	/// President's sole decision
+	#[codec(index = 4)]
 	ExecutiveDecision,
 	/// Veto override (Parliament overriding a veto with 2/3)
+	#[codec(index = 5)]
 	VetoOverride,
 }
 
@@ -272,7 +280,7 @@ pub enum CollectiveDecisionType {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -280,20 +288,28 @@ pub enum CollectiveDecisionType {
 #[codec(mel_bound())]
 pub enum ProposalStatus {
 	/// In draft (not yet submitted to a vote)
+	#[codec(index = 0)]
 	Draft,
 	/// Active vote
+	#[codec(index = 1)]
 	Active,
 	/// Accepted
+	#[codec(index = 2)]
 	Approved,
 	/// Rejected
+	#[codec(index = 3)]
 	Rejected,
 	/// Cancelled
+	#[codec(index = 4)]
 	Cancelled,
 	/// Timed out
+	#[codec(index = 5)]
 	Expired,
 	/// Vetoed (by Serok)
+	#[codec(index = 6)]
 	Vetoed,
 	/// Under constitutional review (at the Diwan)
+	#[codec(index = 7)]
 	UnderConstitutionalReview,
 }
 
@@ -332,9 +348,19 @@ pub struct CollectiveProposal<T: pezframe_system::Config> {
 	pub votes_cast: u32,
 	/// Priority level
 	pub priority: ProposalPriority,
-	/// UPDATED: The call (extrinsic) to be executed if the proposal is accepted.
-	#[codec(skip)]
-	pub call: Option<Box<<T as SystemConfig>::RuntimeCall>>,
+	/// The spending allowance this proposal asks Parliament to grant, if it is a budget.
+	///
+	/// This used to be `Option<Box<RuntimeCall>>` carrying an arbitrary call -- and it was
+	/// marked `#[codec(skip)]`, because a `RuntimeCall` has no bounded size and this struct
+	/// derives `MaxEncodedLen`. Skipped means the call was dropped on the way into storage and
+	/// read back as `None`, every time. So the proposal system appeared to be able to enact
+	/// anything and could in fact enact nothing, and no amount of writing a tally would have
+	/// changed that.
+	///
+	/// A number is storable. Carrying arbitrary calls needs the call to be bounded -- stored
+	/// by hash with the body in a preimage, the way `pezpallet-democracy` does it -- and that
+	/// is a design of its own, not a field.
+	pub budget_amount: Option<u128>,
 }
 
 /// Proposal priority levels
@@ -345,7 +371,7 @@ pub struct CollectiveProposal<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -353,14 +379,19 @@ pub struct CollectiveProposal<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum ProposalPriority {
 	/// Low priority
+	#[codec(index = 0)]
 	Low,
 	/// Normal priority
+	#[codec(index = 1)]
 	Normal,
 	/// High priority
+	#[codec(index = 2)]
 	High,
 	/// Urgent (within 24 hours)
+	#[codec(index = 3)]
 	Urgent,
 	/// Critical (immediate)
+	#[codec(index = 4)]
 	Critical,
 }
 
@@ -389,7 +420,7 @@ pub struct CollectiveVote<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -397,10 +428,13 @@ pub struct CollectiveVote<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum VoteChoice {
 	/// Yes
+	#[codec(index = 0)]
 	Aye,
 	/// No
+	#[codec(index = 1)]
 	Nay,
 	/// Abstain
+	#[codec(index = 2)]
 	Abstain,
 }
 
@@ -415,7 +449,7 @@ pub enum VoteChoice {
 	TypeInfo,
 	MaxEncodedLen,
 	Default,
-	RuntimeDebug,
+	Debug,
 )]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
@@ -444,7 +478,7 @@ pub struct ParliamentMember<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -452,32 +486,31 @@ pub struct ParliamentMember<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum CommitteeType {
 	/// Budget Committee
+	#[codec(index = 0)]
 	Budget,
 	/// Foreign Affairs Committee
+	#[codec(index = 1)]
 	ForeignAffairs,
 	/// Justice Committee
+	#[codec(index = 2)]
 	Justice,
 	/// Technology Committee
+	#[codec(index = 3)]
 	Technology,
 	/// Education Committee
+	#[codec(index = 4)]
 	Education,
 	/// Health Committee
+	#[codec(index = 5)]
 	Health,
 	/// Constitutional Committee
+	#[codec(index = 6)]
 	Constitutional,
 }
 
 /// Diwan member information
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	Eq,
-	PartialEq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
 )]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
@@ -490,62 +523,29 @@ pub struct DiwanMember<T: pezframe_system::Config> {
 	pub term_ends_at: BlockNumberFor<T>,
 	/// Appointing authority (Parliament/Serok)
 	pub appointed_by: AppointmentAuthority<T>,
-	/// Area of specialization
-	pub specialization: ConstitutionalSpecialization,
-	/// Number of decisions made
-	pub decisions_made: u32,
 }
 
 /// Appointment authority
 #[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	Eq,
-	PartialEq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
+	Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
 )]
 #[codec(mel_bound())]
 #[scale_info(skip_type_params(T))]
+/// How a member reached the bench, and the two halves of it.
+///
+/// The court is eleven: six the house elects, five the President appoints. The two halves
+/// answer different needs and carry different conditions. The elected six need no
+/// qualification beyond citizenship -- their legitimacy is the vote. The appointed five must
+/// each hold one of the qualifying tikis, because a court that rules on whether an upgrade
+/// is constitutional, whether a slash was just, or whether an election counted, has to
+/// contain people who can read those things.
 pub enum AppointmentAuthority<T: pezframe_system::Config> {
-	/// Appointed by Parliament (6 members)
+	/// Elected by the sitting Parliament. Six seats.
+	#[codec(index = 0)]
 	Parliament,
-	/// Appointed by Serok (5 members)
+	/// Appointed by the President, who is named here. Five seats.
+	#[codec(index = 1)]
 	President(T::AccountId),
-}
-
-/// Constitutional areas of specialization
-#[derive(
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	Clone,
-	Eq,
-	PartialEq,
-	RuntimeDebug,
-	TypeInfo,
-	MaxEncodedLen,
-	Copy,
-)]
-#[codec(mel_bound())]
-pub enum ConstitutionalSpecialization {
-	/// Fundamental rights and freedoms
-	FundamentalRights,
-	/// State organization
-	StateOrganization,
-	/// Economic order
-	EconomicOrder,
-	/// Social rights
-	SocialRights,
-	/// Judicial independence
-	JudicialIndependence,
-	/// Local governments
-	LocalGovernment,
-	/// International law
-	InternationalLaw,
 }
 
 /// Appointment process information
@@ -569,6 +569,32 @@ pub struct AppointmentProcess<T: pezframe_system::Config> {
 	pub status: AppointmentStatus,
 	/// Supporting documents/justification
 	pub documents: BoundedVec<BoundedVec<u8, ConstU32<1000>>, ConstU32<10>>,
+	/// Which body confirmed it, once one has.
+	///
+	/// The record used to hold the nominator and stop there, so a seated official carried no
+	/// trace of who had agreed to seat him. A state that cannot answer that question cannot
+	/// hold anyone to the appointment.
+	pub confirmed_by: Option<ConfirmedBy<T::AccountId>>,
+	/// When that happened.
+	pub confirmed_at: Option<BlockNumberFor<T>>,
+}
+
+/// Who said yes to an appointment.
+///
+/// A body rather than a person. On the parliamentary track the origin is the House acting as
+/// one, and recording whichever member happened to submit the executed call would put a clerk
+/// in the register where the decision belongs. The President's track does name him, because
+/// there the decision really is one person's.
+#[derive(
+	Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
+)]
+pub enum ConfirmedBy<AccountId> {
+	/// The House confirmed it, acting as one body.
+	#[codec(index = 0)]
+	Parliament,
+	/// The appointing authority's own signature was the whole appointment.
+	#[codec(index = 1)]
+	Appointer(AccountId),
 }
 
 /// Appointment process statuses
@@ -579,7 +605,7 @@ pub struct AppointmentProcess<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -587,16 +613,22 @@ pub struct AppointmentProcess<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum AppointmentStatus {
 	/// Waiting for minister nomination
+	#[codec(index = 0)]
 	WaitingNomination,
 	/// Waiting for Serok approval
+	#[codec(index = 1)]
 	WaitingPresidentialApproval,
 	/// Waiting for parliamentary approval (for some positions)
+	#[codec(index = 2)]
 	WaitingParliamentaryApproval,
 	/// Approved
+	#[codec(index = 3)]
 	Approved,
 	/// Rejected
+	#[codec(index = 4)]
 	Rejected,
 	/// Expired
+	#[codec(index = 5)]
 	Expired,
 }
 
@@ -629,7 +661,7 @@ pub struct GovernanceMetrics<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -637,15 +669,27 @@ pub struct GovernanceMetrics<T: pezframe_system::Config> {
 #[codec(mel_bound())]
 pub enum ElectionStatus {
 	/// Candidacy registration period
+	#[codec(index = 0)]
 	CandidacyPeriod,
 	/// Campaign period
+	#[codec(index = 1)]
 	CampaignPeriod,
 	/// Voting period
+	#[codec(index = 2)]
 	VotingPeriod,
 	/// Completed
+	#[codec(index = 3)]
 	Completed,
 	/// Cancelled
+	#[codec(index = 4)]
 	Cancelled,
+	/// Closed without a result because too little of the country voted.
+	///
+	/// Distinct from `Cancelled`, which is somebody calling an election off, and from
+	/// `Completed`, which produced officeholders. This one is an ending too: the record is
+	/// final, the deposits are back, and the scheduler opens another.
+	#[codec(index = 5)]
+	FailedForTurnout,
 }
 
 /// Candidate information
@@ -682,7 +726,7 @@ pub struct ElectionResult<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Default,
@@ -754,7 +798,7 @@ pub struct ElectionVoteInfo<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -779,7 +823,7 @@ pub enum SecurityMeasure {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -802,7 +846,7 @@ pub enum VotePrivacyLevel {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -825,7 +869,7 @@ pub enum DuplicateVoteMethod {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -862,7 +906,7 @@ pub struct AuditRequirements {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -885,7 +929,7 @@ pub enum VoteWeightMethod {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -923,7 +967,7 @@ pub struct CampaignRegulations<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -964,7 +1008,7 @@ pub struct CandidacyRules {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -993,7 +1037,7 @@ pub enum EducationLevel {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1020,7 +1064,7 @@ pub enum DisqualifyingCondition {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1042,7 +1086,7 @@ pub struct CommitteeMembership<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1067,7 +1111,7 @@ pub enum CommitteeRole {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1104,7 +1148,7 @@ pub enum LegislativeStage {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1131,7 +1175,7 @@ pub enum LawType {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1156,7 +1200,7 @@ pub enum ConstitutionalReviewType {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1179,7 +1223,7 @@ pub enum VetoType {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1204,7 +1248,7 @@ pub enum SessionType {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1247,7 +1291,7 @@ pub struct ParliamentSession<T: pezframe_system::Config> {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1276,7 +1320,7 @@ pub enum BudgetCategory {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Copy,
@@ -1307,7 +1351,7 @@ impl GovernmentPositionInfo for GovernmentPosition {
 		match self {
 			GovernmentPosition::Serok => 600,
 			GovernmentPosition::Parlementer => 300,
-			GovernmentPosition::MeclisBaskanı => 400,
+			GovernmentPosition::SerokiMeclise => 400,
 			GovernmentPosition::EndameDiwane => 750,
 		}
 	}
@@ -1316,7 +1360,7 @@ impl GovernmentPositionInfo for GovernmentPosition {
 		match self {
 			GovernmentPosition::Serok => Some(Tiki::Welati),
 			GovernmentPosition::Parlementer => Some(Tiki::Welati),
-			GovernmentPosition::MeclisBaskanı => Some(Tiki::Parlementer),
+			GovernmentPosition::SerokiMeclise => Some(Tiki::Parlementer),
 			GovernmentPosition::EndameDiwane => Some(Tiki::Welati),
 		}
 	}
@@ -1325,7 +1369,7 @@ impl GovernmentPositionInfo for GovernmentPosition {
 		match self {
 			GovernmentPosition::Serok => 4 * 365 * 24 * 60 * 10, // 4 years
 			GovernmentPosition::Parlementer => 4 * 365 * 24 * 60 * 10, // 4 years
-			GovernmentPosition::MeclisBaskanı => 2 * 365 * 24 * 60 * 10, // 2 years
+			GovernmentPosition::SerokiMeclise => 2 * 365 * 24 * 60 * 10, // 2 years
 			GovernmentPosition::EndameDiwane => 9 * 365 * 24 * 60 * 10, // 9 years
 		}
 	}
@@ -1333,7 +1377,6 @@ impl GovernmentPositionInfo for GovernmentPosition {
 
 pub trait OfficialRoleInfo {
 	fn required_trust_score(&self) -> u128;
-	fn nominating_minister(&self) -> MinisterRole;
 	fn requires_parliament_approval(&self) -> bool;
 }
 
@@ -1342,51 +1385,265 @@ impl OfficialRoleInfo for OfficialRole {
 		75 // General requirement specified in the constitution
 	}
 
-	fn nominating_minister(&self) -> MinisterRole {
-		match self {
-			OfficialRole::Dadger
-			| OfficialRole::Dozger
-			| OfficialRole::Hiquqnas
-			| OfficialRole::Noter => MinisterRole::AdvaletWeziri,
-
-			OfficialRole::Xezinedar | OfficialRole::Bacgir | OfficialRole::GerinendeyeCavkaniye => {
-				MinisterRole::XezineWeziri
-			},
-
-			OfficialRole::OperatoreTore
-			| OfficialRole::PisporeEwlehiyaSiber
-			| OfficialRole::GerinendeyeDaneye => MinisterRole::TeknolojîWeziri,
-
-			OfficialRole::Berdevk | OfficialRole::Qeydkar => MinisterRole::NavxweWeziri,
-
-			OfficialRole::Balyoz | OfficialRole::Navbeynkar | OfficialRole::ParezvaneCandi => {
-				MinisterRole::DerveWeziri
-			},
-
-			OfficialRole::Mufetis | OfficialRole::KaliteKontrolker => MinisterRole::DenetimWeziri,
-
-			OfficialRole::Bazargan | OfficialRole::RêvebereProjeyê => MinisterRole::AbûrîWeziri,
-
-			OfficialRole::Feqi
-			| OfficialRole::Perwerdekar
-			| OfficialRole::Rewsenbir
-			| OfficialRole::Mamoste => MinisterRole::PerwerdeDiyanetWeziri,
-
-			// Mela is a special case - appointed directly by Serok
-			OfficialRole::Mela => MinisterRole::AdvaletWeziri, // Placeholder
-		}
-	}
-
+	/// The line as it stands at founding.
+	///
+	/// This is where the line *starts*, not where it is kept: `ConfirmationRequired` in the
+	/// pallet overrides it per office, and the legislature writes that. A constitution names
+	/// the principal offices and then leaves it to law to say which of the rest need consent,
+	/// which is exactly the seam Article II leaves open for inferior officers. Hard-coding
+	/// the whole list would have made a legislative question a compile-time one.
 	fn requires_parliament_approval(&self) -> bool {
 		match self {
 			// High-level positions require parliamentary approval
 			OfficialRole::Dadger
 			| OfficialRole::Xezinedar
-			| OfficialRole::PisporeEwlehiyaSiber
-			| OfficialRole::Mufetis
+			| OfficialRole::PisporêEwlehiyaSîber
+			| OfficialRole::Mufetîs
 			| OfficialRole::Balyoz => true,
 			// The others only require Serok approval
 			_ => false,
 		}
+	}
+}
+
+/// A referendum tally where every citizen counts once.
+///
+/// The state's own rule: in state matters one person is one vote, and stake does not weigh
+/// (see the note on `cast_vote`). `pezpallet_conviction_voting`'s tally cannot express that --
+/// it reads `Currency` and multiplies by conviction -- so state referenda carry this one and
+/// economic referenda, where the holder bears the consequence in proportion, carry that one.
+///
+/// `Electorate` is the roll a proposal must carry, not the number who turned out: `support`
+/// is measured against every citizen, so a proposal nobody voted on has no support rather
+/// than unanimous support. `approval` is measured against those who did vote.
+#[derive(
+	pezframe_support::CloneNoBound,
+	pezframe_support::PartialEqNoBound,
+	pezframe_support::EqNoBound,
+	pezframe_support::DebugNoBound,
+	TypeInfo,
+	Encode,
+	Decode,
+	DecodeWithMemTracking,
+	MaxEncodedLen,
+)]
+#[scale_info(skip_type_params(Electorate))]
+#[codec(mel_bound())]
+pub struct CitizenTally<Electorate: 'static> {
+	/// Citizens who voted aye.
+	pub ayes: u32,
+	/// Citizens who voted nay.
+	pub nays: u32,
+	#[codec(skip)]
+	dummy: core::marker::PhantomData<Electorate>,
+}
+
+impl<Electorate: Get<u32> + 'static, Class> pezframe_support::traits::VoteTally<u32, Class>
+	for CitizenTally<Electorate>
+{
+	fn new(_: Class) -> Self {
+		Self { ayes: 0, nays: 0, dummy: core::marker::PhantomData }
+	}
+
+	fn ayes(&self, _: Class) -> u32 {
+		self.ayes
+	}
+
+	fn support(&self, _: Class) -> pezsp_runtime::Perbill {
+		// Against the whole roll. An empty roll is not unanimous consent, it is no consent.
+		let electorate = Electorate::get();
+		if electorate == 0 {
+			pezsp_runtime::Perbill::zero()
+		} else {
+			pezsp_runtime::Perbill::from_rational(self.ayes, electorate)
+		}
+	}
+
+	fn approval(&self, _: Class) -> pezsp_runtime::Perbill {
+		let cast = self.ayes.saturating_add(self.nays);
+		if cast == 0 {
+			pezsp_runtime::Perbill::zero()
+		} else {
+			pezsp_runtime::Perbill::from_rational(self.ayes, cast)
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn unanimity(_: Class) -> Self {
+		Self { ayes: Electorate::get(), nays: 0, dummy: core::marker::PhantomData }
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn rejection(_: Class) -> Self {
+		Self { ayes: 0, nays: Electorate::get(), dummy: core::marker::PhantomData }
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn from_requirements(
+		support: pezsp_runtime::Perbill,
+		approval: pezsp_runtime::Perbill,
+		_: Class,
+	) -> Self {
+		// `support` is a share of the whole roll and every voter counts once, so the number who
+		// turned out is exactly that share of the electorate; `approval` then splits it.
+		let turnout = support.mul_ceil(Electorate::get());
+		let ayes = approval.mul_ceil(turnout);
+		Self { ayes, nays: turnout.saturating_sub(ayes), dummy: core::marker::PhantomData }
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn setup(_: Class, _: pezsp_runtime::Perbill) {}
+}
+
+/// A citizens' initiative: a question one citizen asks and others sign onto.
+///
+/// The proposal itself is not held here, only the preimage that carries it. What this record
+/// is for is the part that is about people: who asked, on which track, by when, and how many
+/// have joined so far.
+#[derive(
+	Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
+)]
+#[scale_info(skip_type_params(T))]
+pub struct Initiative<AccountId, BlockNumber, Hash> {
+	/// Who opened it and whose deposit is at stake.
+	pub proposer: AccountId,
+	/// The track whose authority the proposal asks for.
+	pub track: u16,
+	/// The stored preimage of the call a successful referendum would dispatch.
+	pub proposal: Hash,
+	/// Its length, which the ballot needs in order to look it up.
+	pub proposal_len: u32,
+	/// After this block no more backing may be added.
+	pub closes: BlockNumber,
+	/// How many citizens have signed, the proposer included.
+	pub backing: u32,
+	/// What the proposer put up, returned on success and forfeit on lapse.
+	pub deposit: u128,
+}
+
+// ===== STORED ENUM ENCODING =====
+//
+// SCALE encodes a fieldless enum by the variant's position, and three of these are storage
+// keys. Insert a variant in the middle -- grouping by ministry, or alphabetising, is the most
+// natural thing anyone would do -- and every key already written decodes as a different
+// value. It does not break; it quietly means something else. A judge becomes a treasurer.
+//
+// The explicit indices pin the number to the variant rather than to its position, and this
+// holds those numbers to what they were when the chain started. A variant may be added at the
+// end with the next free number; nothing here may be renumbered, and a number left behind by
+// a removed variant is not reusable.
+//
+// Generating those indices is itself the hazard this guards against: the first attempt lost
+// nineteen variants whose names carry Kurdish letters and silently shifted everything after
+// them. Two of the shifts collided and the codec derive refused to compile; the rest would
+// have gone through.
+
+#[cfg(test)]
+mod stored_enum_encoding {
+	use super::*;
+	use codec::Encode;
+
+	#[test]
+	fn electiontype_indices_are_pinned() {
+		let pinned: &[(&str, u8, &dyn Fn() -> Vec<u8>)] = &[
+			("Presidential", 0u8, &|| ElectionType::Presidential.encode()),
+			("Parliamentary", 1u8, &|| ElectionType::Parliamentary.encode()),
+			("SpeakerElection", 2u8, &|| ElectionType::SpeakerElection.encode()),
+			("ConstitutionalCourt", 3u8, &|| ElectionType::ConstitutionalCourt.encode()),
+		];
+		let moved: Vec<&str> = pinned
+			.iter()
+			.filter(|(_, want, enc)| enc() != vec![*want])
+			.map(|(name, _, _)| *name)
+			.collect();
+		assert!(moved.is_empty(), "`ElectionType` indices moved: {moved:?}");
+		assert_eq!(pinned.len(), 4, "a variant was added or removed");
+	}
+
+	#[test]
+	fn officialrole_indices_are_pinned() {
+		let pinned: &[(&str, u8, &dyn Fn() -> Vec<u8>)] = &[
+			("Dadger", 0u8, &|| OfficialRole::Dadger.encode()),
+			("Dozger", 1u8, &|| OfficialRole::Dozger.encode()),
+			("Hiquqnas", 2u8, &|| OfficialRole::Hiquqnas.encode()),
+			("Noter", 3u8, &|| OfficialRole::Noter.encode()),
+			("Xezinedar", 4u8, &|| OfficialRole::Xezinedar.encode()),
+			("Bacgir", 5u8, &|| OfficialRole::Bacgir.encode()),
+			("GerinendeyeCavkaniye", 6u8, &|| OfficialRole::GerinendeyeCavkaniye.encode()),
+			("OperatoreTore", 7u8, &|| OfficialRole::OperatorêTorê.encode()),
+			("PisporeEwlehiyaSiber", 8u8, &|| OfficialRole::PisporêEwlehiyaSîber.encode()),
+			("GerinendeyeDaneye", 9u8, &|| OfficialRole::GerinendeyeDaneye.encode()),
+			("Berdevk", 10u8, &|| OfficialRole::Berdevk.encode()),
+			("Qeydkar", 11u8, &|| OfficialRole::Qeydkar.encode()),
+			("Balyoz", 12u8, &|| OfficialRole::Balyoz.encode()),
+			("Navbeynkar", 13u8, &|| OfficialRole::Navbeynkar.encode()),
+			("ParezvaneCandi", 14u8, &|| OfficialRole::ParêzvaneÇandî.encode()),
+			("Mufetis", 15u8, &|| OfficialRole::Mufetîs.encode()),
+			("KaliteKontrolker", 16u8, &|| OfficialRole::KalîteKontrolker.encode()),
+			("Bazargan", 17u8, &|| OfficialRole::Bazargan.encode()),
+			("RêvebereProjeyê", 18u8, &|| OfficialRole::RêveberêProjeyê.encode()),
+			("Feqi", 19u8, &|| OfficialRole::Feqî.encode()),
+			("Perwerdekar", 20u8, &|| OfficialRole::Perwerdekar.encode()),
+			("Rewsenbir", 21u8, &|| OfficialRole::Rewsenbîr.encode()),
+			("Mamoste", 22u8, &|| OfficialRole::Mamoste.encode()),
+			("Mela", 23u8, &|| OfficialRole::Mela.encode()),
+		];
+		let moved: Vec<&str> = pinned
+			.iter()
+			.filter(|(_, want, enc)| enc() != vec![*want])
+			.map(|(name, _, _)| *name)
+			.collect();
+		assert!(moved.is_empty(), "`OfficialRole` indices moved: {moved:?}");
+		assert_eq!(pinned.len(), 24, "a variant was added or removed");
+	}
+
+	#[test]
+	fn governmentposition_indices_are_pinned() {
+		let pinned: &[(&str, u8, &dyn Fn() -> Vec<u8>)] = &[
+			("Serok", 0u8, &|| GovernmentPosition::Serok.encode()),
+			("Parlementer", 1u8, &|| GovernmentPosition::Parlementer.encode()),
+			("SerokiMeclise", 2u8, &|| GovernmentPosition::SerokiMeclise.encode()),
+			("EndameDiwane", 3u8, &|| GovernmentPosition::EndameDiwane.encode()),
+		];
+		let moved: Vec<&str> = pinned
+			.iter()
+			.filter(|(_, want, enc)| enc() != vec![*want])
+			.map(|(name, _, _)| *name)
+			.collect();
+		assert!(moved.is_empty(), "`GovernmentPosition` indices moved: {moved:?}");
+		assert_eq!(pinned.len(), 4, "a variant was added or removed");
+	}
+}
+
+impl OfficialRole {
+	/// Every appointed office, in declaration order.
+	pub fn iter_all() -> impl Iterator<Item = OfficialRole> {
+		[
+			OfficialRole::Dadger,
+			OfficialRole::Dozger,
+			OfficialRole::Hiquqnas,
+			OfficialRole::Noter,
+			OfficialRole::Xezinedar,
+			OfficialRole::Bacgir,
+			OfficialRole::GerinendeyeCavkaniye,
+			OfficialRole::OperatorêTorê,
+			OfficialRole::PisporêEwlehiyaSîber,
+			OfficialRole::GerinendeyeDaneye,
+			OfficialRole::Berdevk,
+			OfficialRole::Qeydkar,
+			OfficialRole::Balyoz,
+			OfficialRole::Navbeynkar,
+			OfficialRole::ParêzvaneÇandî,
+			OfficialRole::Mufetîs,
+			OfficialRole::KalîteKontrolker,
+			OfficialRole::Bazargan,
+			OfficialRole::RêveberêProjeyê,
+			OfficialRole::Feqî,
+			OfficialRole::Perwerdekar,
+			OfficialRole::Rewsenbîr,
+			OfficialRole::Mamoste,
+			OfficialRole::Mela,
+		]
+		.into_iter()
 	}
 }

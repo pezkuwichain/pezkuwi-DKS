@@ -18,7 +18,7 @@
 //! Compact proof support.
 //!
 //! This uses compact proof from trie crate and extends
-//! it to bizinikiwi specific layout and child trie system.
+//! it to substrate specific layout and child trie system.
 
 use crate::{CompactProof, HashDBT, TrieConfiguration, TrieHash, EMPTY_PREFIX};
 use alloc::{boxed::Box, vec::Vec};

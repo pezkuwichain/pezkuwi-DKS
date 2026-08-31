@@ -15,7 +15,7 @@ use alloc::{format, vec::Vec};
 /// access the real type `T` [`Self::try_decode`] needs to be used.
 // Dev notes:
 //
-// - This is adapted from [here](https://github.com/pezkuwichain/bizinikiwi/blob/master/frame/support/src/traits/misc.rs).
+// - This is adapted from [here](https://github.com/paritytech/substrate/blob/master/frame/support/src/traits/misc.rs).
 // - The encoded bytes will be a compact encoded length followed by that number of bytes.
 // - However, the TypeInfo describes the type as a composite with first a compact encoded length and
 //   next the type itself.
@@ -156,7 +156,7 @@ mod test {
 
 	use super::*;
 
-	// Copied from https://github.com/pezkuwichain/bizinikiwi/blob/master/frame/support/src/traits/misc.rs
+	// Copied from https://github.com/paritytech/substrate/blob/master/frame/support/src/traits/misc.rs
 	// and used for tests to check that we can work with the expected TypeInfo without needing to
 	// import the frame_support crate, which has quite a lot of dependencies.
 	impl<T: scale_info::TypeInfo + 'static> scale_info::TypeInfo for WrapperKeepOpaque<T> {

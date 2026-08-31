@@ -3,12 +3,6 @@
   "id": "bridge-hub-zagros",
   "chainType": "Live",
   "bootNodes": [
-    "/dns/zagros-bridge-hub-collator-node-0.parity-testnet.parity.io/tcp/30333/p2p/12D3KooWKyEuqkkWvFSrwZWKWBAsHgLV3HGfHj7yH3LNJLAVhmxY",
-    "/dns/zagros-bridge-hub-collator-node-1.parity-testnet.parity.io/tcp/30333/p2p/12D3KooWBpvudthz61XC4oP2YYFFJdhWohBeQ1ffn1BMSGWhapjd",
-    "/dns/zagros-bridge-hub-collator-node-0.parity-testnet.parity.io/tcp/30335/ws/p2p/12D3KooWKyEuqkkWvFSrwZWKWBAsHgLV3HGfHj7yH3LNJLAVhmxY",
-    "/dns/zagros-bridge-hub-collator-node-1.parity-testnet.parity.io/tcp/30335/ws/p2p/12D3KooWBpvudthz61XC4oP2YYFFJdhWohBeQ1ffn1BMSGWhapjd",
-    "/dns/zagros-bridge-hub-collator-node-0.parity-testnet.parity.io/tcp/443/wss/p2p/12D3KooWKyEuqkkWvFSrwZWKWBAsHgLV3HGfHj7yH3LNJLAVhmxY",
-    "/dns/zagros-bridge-hub-collator-node-1.parity-testnet.parity.io/tcp/443/wss/p2p/12D3KooWBpvudthz61XC4oP2YYFFJdhWohBeQ1ffn1BMSGWhapjd",
     "/dns/zagros-bridge-hub-boot-ng.dwellir.com/tcp/30338/p2p/12D3KooWJWWRYTAwBLqYkh7iMBGDr5ouJ3MHj7M3fZ7zWS4zEk6F",
     "/dns/zagros-bridge-hub-boot-ng.dwellir.com/tcp/443/wss/p2p/12D3KooWJWWRYTAwBLqYkh7iMBGDr5ouJ3MHj7M3fZ7zWS4zEk6F",
     "/dns/bridge-hub-zagros.boot.stake.plus/tcp/30332/wss/p2p/12D3KooW9rqdajWEpC3i65zaTVR1ER2RmY6e26vndPsKhBB6WJ1k",

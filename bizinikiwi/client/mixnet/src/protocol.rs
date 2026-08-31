@@ -43,11 +43,11 @@ pub fn peers_set_config<Block: BlockT, Network: NetworkBackend<Block, <Block as 
 	metrics: NotificationMetrics,
 	peerstore_handle: std::sync::Arc<dyn PeerStoreProvider>,
 ) -> (Network::NotificationProtocolConfig, Box<dyn NotificationService>) {
-	let set_config = if config.bizinikiwi.num_gateway_slots != 0 {
+	let set_config = if config.substrate.num_gateway_slots != 0 {
 		// out_peers is always 0; we are only interested in connecting to mixnodes, which we do by
 		// setting them as reserved nodes
 		SetConfig {
-			in_peers: config.bizinikiwi.num_gateway_slots,
+			in_peers: config.substrate.num_gateway_slots,
 			out_peers: 0,
 			reserved_nodes: Vec::new(),
 			non_reserved_mode: NonReservedPeerMode::Accept,

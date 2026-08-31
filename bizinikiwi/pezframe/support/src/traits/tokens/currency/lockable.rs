@@ -148,7 +148,7 @@ pub trait VestedTransfer<AccountId> {
 	) -> DispatchResult;
 }
 
-// An no-op implementation of `VestedTransfer` for pallets that require this trait, but users may
+// An no-op implementation of `VestedTransfer` for pezpallets that require this trait, but users may
 // not want to implement this functionality
 pub struct NoVestedTransfers<C> {
 	phantom: core::marker::PhantomData<C>,

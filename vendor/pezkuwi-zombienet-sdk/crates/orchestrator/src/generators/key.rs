@@ -1,6 +1,8 @@
-use pezsp_core::{
-	crypto::SecretStringError, ecdsa, ed25519, keccak_256, sr25519, Pair, H160, H256,
-};
+use pezsp_core::{crypto::SecretStringError, ecdsa, ed25519, sr25519, Pair, H160, H256};
+// `keccak_256` lives in the hashing primitives, not in the core root. The published `sp-core` this
+// tree was vendored against re-exported it; ours does not, and every other caller in the tree takes
+// it from here.
+use pezsp_crypto_hashing::keccak_256;
 
 use super::errors::GeneratorError;
 use crate::shared::types::{Accounts, NodeAccount};

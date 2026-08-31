@@ -53,7 +53,7 @@ pub use pezkuwi_approval_distribution::ApprovalDistribution as ApprovalDistribut
 pub use pezkuwi_availability_bitfield_distribution::BitfieldDistribution as BitfieldDistributionSubsystem;
 pub use pezkuwi_availability_distribution::AvailabilityDistributionSubsystem;
 pub use pezkuwi_availability_recovery::AvailabilityRecoverySubsystem;
-pub use pezkuwi_collator_protocol::{CollatorProtocolSubsystem, ProtocolSide};
+pub use pezkuwi_collator_protocol::{CollatorProtocolSubsystem, ProtocolSide, ReputationConfig};
 pub use pezkuwi_dispute_distribution::DisputeDistributionSubsystem;
 pub use pezkuwi_gossip_support::GossipSupport as GossipSupportSubsystem;
 pub use pezkuwi_network_bridge::{
@@ -147,6 +147,10 @@ pub struct ExtendedOverseerGenArgs {
 	pub invulnerable_ah_collators: HashSet<pezkuwi_node_network_protocol::PeerId>,
 	/// Override for `HOLD_OFF_DURATION` constant .
 	pub collator_protocol_hold_off: Option<Duration>,
+	/// Use experimental collator protocol
+	pub experimental_collator_protocol: bool,
+	/// Reputation DB config used by experimental collator protocol,
+	pub reputation_config: ReputationConfig,
 }
 
 /// Obtain a prepared validator `Overseer`, that is initialized with all default values.
@@ -183,6 +187,8 @@ pub fn validator_overseer_builder<Spawner, RuntimeClient>(
 		fetch_chunks_threshold,
 		invulnerable_ah_collators,
 		collator_protocol_hold_off,
+		experimental_collator_protocol,
+		reputation_config,
 	}: ExtendedOverseerGenArgs,
 ) -> Result<
 	InitializedOverseerBuilder<
@@ -300,12 +306,25 @@ where
 						"build validator overseer for teyrchain node".to_owned(),
 					)))
 				},
-				IsTeyrchainNode::No => ProtocolSide::Validator {
-					keystore: keystore.clone(),
-					eviction_policy: Default::default(),
-					metrics: Metrics::register(registry)?,
-					invulnerables: invulnerable_ah_collators,
-					collator_protocol_hold_off,
+				IsTeyrchainNode::No => {
+					if experimental_collator_protocol {
+						ProtocolSide::ValidatorExperimental {
+							keystore: keystore.clone(),
+							metrics: Metrics::register(registry)?,
+							db: teyrchains_db.clone(),
+							reputation_config,
+							clock: pezkuwi_node_clock::system_clock(),
+						}
+					} else {
+						ProtocolSide::Validator {
+							keystore: keystore.clone(),
+							eviction_policy: Default::default(),
+							metrics: Metrics::register(registry)?,
+							invulnerables: invulnerable_ah_collators,
+							collator_protocol_hold_off,
+							clock: pezkuwi_node_clock::system_clock(),
+						}
+					}
 				},
 			};
 			CollatorProtocolSubsystem::new(side)
@@ -473,6 +492,7 @@ where
 					)))
 				},
 				IsTeyrchainNode::Collator(collator_pair) => ProtocolSide::Collator {
+					clock: pezkuwi_node_clock::system_clock(),
 					peer_id: network_service.local_peer_id(),
 					collator_pair,
 					request_receiver_v2: collation_req_v2_receiver,

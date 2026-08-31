@@ -111,7 +111,7 @@ where
 							validation_code: dummy_validation_code(),
 							candidate_receipt,
 							pov: PoV { block_data: BlockData(Vec::new()) }.into(),
-							executor_params: Default::default(),
+							scheduling_session_index: 1,
 							exec_kind: PvfExecKind::Backing(dummy_hash()),
 							response_sender: tx,
 						})
@@ -283,7 +283,7 @@ fn extract_metrics(registry: &prometheus::Registry) -> HashMap<&'static str, u64
 
 	let activated = extract("pezkuwi_teyrchain_activated_heads_total");
 	let deactivated = extract("pezkuwi_teyrchain_deactivated_heads_total");
-	let relayed = extract("pezkuwi_teyrchain_pez_messages_relayed_total");
+	let relayed = extract("pezkuwi_teyrchain_messages_relayed_total");
 	let mut result = HashMap::new();
 	result.insert("activated", activated);
 	result.insert("deactivated", deactivated);
@@ -811,7 +811,7 @@ fn test_candidate_validation_msg() -> CandidateValidationMessage {
 		validation_code: dummy_validation_code(),
 		candidate_receipt,
 		pov,
-		executor_params: Default::default(),
+		scheduling_session_index: 1,
 		exec_kind: PvfExecKind::Backing(dummy_hash()),
 		response_sender,
 	}
@@ -819,7 +819,7 @@ fn test_candidate_validation_msg() -> CandidateValidationMessage {
 
 fn test_candidate_backing_msg() -> CandidateBackingMessage {
 	let (sender, _) = oneshot::channel();
-	CandidateBackingMessage::GetBackableCandidates(Default::default(), sender)
+	CandidateBackingMessage::GetBackableCandidates { candidates: Default::default(), sender }
 }
 
 fn test_chain_api_msg() -> ChainApiMessage {

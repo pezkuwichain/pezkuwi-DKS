@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2023 Snowfork <hello@snowfork.com>
-use crate as snowbridge_system;
+use crate as pezsnowbridge_system;
 use pezframe_support::{
 	derive_impl, parameter_types,
 	traits::{tokens::fungible::Mutate, ConstU128, ConstU8},
@@ -50,15 +50,7 @@ mod pezpallet_xcm_origin {
 	// Insert this custom Origin into the aggregate RuntimeOrigin
 	#[pezpallet::origin]
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		RuntimeDebug,
-		TypeInfo,
-		MaxEncodedLen,
+		PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, Debug, TypeInfo, MaxEncodedLen,
 	)]
 	pub struct Origin(pub Location);
 
@@ -86,6 +78,7 @@ mod pezpallet_xcm_origin {
 			Err(outer)
 		}
 
+		#[cfg(feature = "runtime-benchmarks")]
 		fn try_successful_origin() -> Result<O, ()> {
 			Ok(O::from(Origin(Location::new(1, [Teyrchain(2000)]))))
 		}
@@ -100,7 +93,7 @@ pezframe_support::construct_runtime!(
 		Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
 		XcmOrigin: pezpallet_xcm_origin::{Pezpallet, Origin},
 		OutboundQueue: pezsnowbridge_pezpallet_outbound_queue::{Pezpallet, Call, Storage, Event<T>},
-		EthereumSystem: snowbridge_system,
+		EthereumSystem: pezsnowbridge_system,
 		MessageQueue: pezpallet_message_queue::{Pezpallet, Call, Storage, Event<T>}
 	}
 );
@@ -184,7 +177,7 @@ parameter_types! {
 	pub EthereumDestination: Location = Location::new(2,[GlobalConsensus(EthereumNetwork::get())]);
 }
 
-pub const HEZ: u128 = 10_000_000_000;
+pub const DOT: u128 = 10_000_000_000;
 
 parameter_types! {
 	pub TreasuryAccount: AccountId = PalletId(*b"py/trsry").into_account_truncating();
@@ -196,7 +189,7 @@ parameter_types! {
 	pub Parameters: PricingParameters<u128> = PricingParameters {
 		exchange_rate: FixedU128::from_rational(1, 400),
 		fee_per_gas: gwei(20),
-		rewards: Rewards { local: HEZ, remote: meth(1) },
+		rewards: Rewards { local: DOT, remote: meth(1) },
 		multiplier: FixedU128::from_rational(4, 3)
 	};
 	pub const InboundDeliveryCost: u128 = 1_000_000_000;
@@ -256,6 +249,6 @@ pub fn new_test_ext(genesis_build: bool) -> pezsp_io::TestExternalities {
 // Test helpers
 
 pub fn make_agent_id(location: Location) -> AgentId {
-	<Test as snowbridge_system::Config>::AgentIdOf::convert_location(&location)
+	<Test as pezsnowbridge_system::Config>::AgentIdOf::convert_location(&location)
 		.expect("convert location")
 }

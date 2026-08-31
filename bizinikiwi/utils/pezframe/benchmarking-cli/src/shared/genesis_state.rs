@@ -27,7 +27,7 @@ use std::{borrow::Cow, path::PathBuf};
 const ERROR_CANNOT_BUILD_GENESIS: &str = "The runtime returned \
 an error when trying to build the genesis storage. Please ensure that all pallets \
 define a genesis config that can be built. This can be tested with: \
-https://github.com/pezkuwichain/pezkuwi-sdk/issues/260";
+https://github.com/pezkuwichain/pezkuwi-DKS/issues/260";
 
 /// Warn when using the chain spec to generate the genesis state.
 pub const WARN_SPEC_GENESIS_CTOR: &'static str = "Using the chain spec instead of the runtime to \

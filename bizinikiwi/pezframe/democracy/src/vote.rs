@@ -22,12 +22,12 @@ use codec::{Decode, DecodeWithMemTracking, Encode, EncodeLike, Input, MaxEncoded
 use pezframe_support::traits::Get;
 use pezsp_runtime::{
 	traits::{Saturating, Zero},
-	BoundedVec, RuntimeDebug,
+	BoundedVec, Debug,
 };
 use scale_info::TypeInfo;
 
 /// A number of lock periods, plus a vote, one way or the other.
-#[derive(DecodeWithMemTracking, Copy, Clone, Eq, PartialEq, Default, RuntimeDebug)]
+#[derive(DecodeWithMemTracking, Copy, Clone, Eq, PartialEq, Default, Debug)]
 pub struct Vote {
 	pub aye: bool,
 	pub conviction: Conviction,
@@ -81,7 +81,7 @@ impl TypeInfo for Vote {
 	Clone,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 )]
 pub enum AccountVote<Balance> {
@@ -135,7 +135,7 @@ impl<Balance: Saturating> AccountVote<Balance> {
 	PartialEq,
 	Ord,
 	PartialOrd,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 )]
 pub struct PriorLock<BlockNumber, Balance>(BlockNumber, Balance);
@@ -160,7 +160,7 @@ impl<BlockNumber: Ord + Copy + Zero, Balance: Ord + Copy + Zero> PriorLock<Block
 }
 
 /// An indicator for what an account is doing; it can either be delegating or voting.
-#[derive(Clone, Encode, Decode, Eq, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Encode, Decode, Eq, MaxEncodedLen, PartialEq, Debug, TypeInfo)]
 #[codec(mel_bound(skip_type_params(MaxVotes)))]
 #[scale_info(skip_type_params(MaxVotes))]
 pub enum Voting<Balance, AccountId, BlockNumber, MaxVotes: Get<u32>> {

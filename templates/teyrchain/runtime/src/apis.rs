@@ -82,6 +82,10 @@ impl_runtime_apis! {
 		fn relay_parent_offset() -> u32 {
 			0
 		}
+
+		fn max_claim_queue_offset() -> u8 {
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
+		}
 	}
 
 	impl pezcumulus_primitives_aura::AuraUnincludedSegmentApi<Block> for Runtime {
@@ -165,8 +169,11 @@ impl_runtime_apis! {
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+		fn generate_session_keys(
+			owner: Vec<u8>,
+			seed: Option<Vec<u8>>,
+		) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(
@@ -292,7 +299,13 @@ impl_runtime_apis! {
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
-			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
+			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					use codec::Encode;
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 
 			use pezkuwi_sdk::pezframe_support::traits::WhitelistedStorageKeys;
 			let whitelist = AllPalletsWithSystem::whitelisted_storage_keys();
@@ -323,6 +336,12 @@ impl_runtime_apis! {
 	impl pezcumulus_primitives_core::GetTeyrchainInfo<Block> for Runtime {
 		fn teyrchain_id() -> ParaId {
 			teyrchain_info::Pezpallet::<Runtime>::teyrchain_id()
+		}
+	}
+
+	impl pezcumulus_primitives_core::KeyToIncludeInRelayProof<Block> for Runtime {
+		fn keys_to_prove() -> pezcumulus_primitives_core::RelayProofRequest {
+			Default::default()
 		}
 	}
 }

@@ -30,18 +30,17 @@ mod builtin;
 mod tests;
 
 pub use crate::{
+	AddressMapper, TransactionLimits,
 	exec::{ExecError, PrecompileExt as Ext, PrecompileWithInfoExt as ExtWithInfo},
-	gas::{GasMeter, Token},
-	storage::meter::Diff,
+	metering::{Diff, Token},
 	vm::RuntimeCosts,
-	AddressMapper,
 };
 pub use alloy_core as alloy;
 pub use pezsp_core::{H160, H256, U256};
 
 use crate::{
-	exec::ExecResult, precompiles::builtin::Builtin, primitives::ExecReturnValue, Config,
-	Error as CrateError,
+	Config, Error as CrateError, exec::ExecResult, precompiles::builtin::Builtin,
+	primitives::ExecReturnValue,
 };
 use alloc::vec::Vec;
 use alloy::sol_types::{Panic, PanicKind, Revert, SolError, SolInterface};
@@ -406,6 +405,7 @@ impl<P: BuiltinPrecompile> PrimitivePrecompile for P {
 	}
 }
 
+/// The collision check is verified by a trybuild test in `ui-tests/src/ui/precompiles_ui.rs`.
 #[impl_trait_for_tuples::impl_for_tuples(20)]
 #[tuple_types_custom_trait_bound(PrimitivePrecompile<T=T>)]
 impl<T: Config> Precompiles<T> for Tuple {
@@ -469,6 +469,13 @@ impl<T: Config> Precompiles<T> for Tuple {
 		);
 		instance
 	}
+}
+
+/// This references the private trait inside the crate.
+#[cfg(feature = "trybuild")]
+#[allow(private_bounds)]
+pub const fn check_collision_for<T: Config, Tuple: Precompiles<T>>() {
+	let _ = <Tuple as Precompiles<T>>::CHECK_COLLISION;
 }
 
 impl<T: Config> Precompiles<T> for (Builtin<T>, <T as Config>::Precompiles) {
@@ -597,8 +604,8 @@ impl BuiltinAddressMatcher {
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub mod run {
 	pub use crate::{
-		call_builder::{CallSetup, Contract, VmBinaryModule},
 		BalanceOf, MomentOf,
+		call_builder::{CallSetup, Contract, VmBinaryModule},
 	};
 	pub use pezsp_core::{H256, U256};
 

@@ -227,7 +227,7 @@ fn storage_layer_commit_then_rollback() {
 }
 
 #[test]
-fn storage_layer_in_pallet_call() {
+fn storage_layer_in_pezpallet_call() {
 	TestExternalities::default().execute_with(|| {
 		use pezsp_runtime::traits::Dispatchable;
 		let call1 = RuntimeCall::MyPallet(pezpallet::Call::set_value { value: 2 });

@@ -5,14 +5,13 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use pezframe_support::traits::ProcessMessage;
 pub use pezsnowbridge_merkle_tree::MerkleProof;
 use pezsp_core::H256;
-use pezsp_runtime::RuntimeDebug;
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
 
 pub type ProcessMessageOriginOf<T> = <Pezpallet<T> as ProcessMessage>::Origin;
 
 /// Pending order
-#[derive(Encode, Decode, TypeInfo, Clone, Eq, PartialEq, RuntimeDebug, MaxEncodedLen)]
+#[derive(Encode, Decode, TypeInfo, Clone, Eq, PartialEq, Debug, MaxEncodedLen)]
 pub struct PendingOrder<BlockNumber> {
 	/// The nonce used to identify the message
 	pub nonce: u64,

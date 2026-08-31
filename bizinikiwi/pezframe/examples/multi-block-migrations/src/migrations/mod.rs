@@ -20,7 +20,7 @@
 /// This module showcases a simple use of the multi-block migrations framework.
 pub mod v1;
 
-/// A unique identifier across all pallets.
+/// A unique identifier across all pezpallets.
 ///
 /// This constant represents a unique identifier for the migrations of this pezpallet.
 /// It helps differentiate migrations for this pezpallet from those of others. Note that we don't

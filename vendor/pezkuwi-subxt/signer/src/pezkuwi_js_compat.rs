@@ -65,7 +65,7 @@ struct EncryptionMetadata {
 	version: String,
 }
 
-/// https://github.com/pezkuwi-js/common/blob/37fa211fdb141d4f6eb32e8f377a4651ed2d9068/packages/keyring/src/types.ts#L67
+/// https://github.com/pezkuwichain/pezkuwi-common/blob/37fa211fdb141d4f6eb32e8f377a4651ed2d9068/packages/keyring/src/types.ts#L67
 #[derive(Deserialize)]
 struct KeyringPairJson {
 	/// The encoded string
@@ -85,7 +85,7 @@ impl KeyringPairJson {
 	/// Decrypt JSON keypair.
 	fn decrypt(self, password: &str) -> Result<sr25519::Keypair, Error> {
 		// Check encoding.
-		// https://github.com/pezkuwi-js/common/blob/37fa211fdb141d4f6eb32e8f377a4651ed2d9068/packages/keyring/src/keyring.ts#L166
+		// https://github.com/pezkuwichain/pezkuwi-common/blob/37fa211fdb141d4f6eb32e8f377a4651ed2d9068/packages/keyring/src/keyring.ts#L166
 		if self.encoding.version != "3"
 			|| !self.encoding.content.contains(&"pkcs8".to_owned())
 			|| !self.encoding.content.contains(&"sr25519".to_owned())
@@ -100,7 +100,7 @@ impl KeyringPairJson {
 		let params: [u8; 68] = decoded[..68].try_into().map_err(|_| Error::UnsupportedEncoding)?;
 
 		// Extract scrypt parameters.
-		// https://github.com/pezkuwi-js/common/blob/master/packages/util-crypto/src/scrypt/fromU8a.ts
+		// https://github.com/pezkuwichain/pezkuwi-common/blob/master/packages/util-crypto/src/scrypt/fromU8a.ts
 		let salt = &params[0..32];
 		let n = slice_to_u32(&params[32..36]);
 		let p = slice_to_u32(&params[36..40]);
@@ -123,13 +123,13 @@ impl KeyringPairJson {
 			.expect("Key should be 32 bytes.");
 
 		// Decrypt keys.
-		// https://github.com/pezkuwi-js/common/blob/master/packages/util-crypto/src/json/decryptData.ts
+		// https://github.com/pezkuwichain/pezkuwi-common/blob/master/packages/util-crypto/src/json/decryptData.ts
 		let cipher = XSalsa20Poly1305::new(&key);
 		let nonce = Nonce::from_slice(&params[44..68]);
 		let ciphertext = &decoded[68..];
 		let plaintext = cipher.decrypt(nonce, ciphertext)?;
 
-		// https://github.com/pezkuwi-js/common/blob/master/packages/keyring/src/pair/decode.ts
+		// https://github.com/pezkuwichain/pezkuwi-common/blob/master/packages/keyring/src/pair/decode.ts
 		if plaintext.len() != 117 {
 			return Err(Error::InvalidKeys);
 		}

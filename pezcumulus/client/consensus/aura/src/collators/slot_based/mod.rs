@@ -2,18 +2,18 @@
 // This file is part of Pezcumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 //! # Architecture Overview
 //!
@@ -29,7 +29,7 @@
 //!
 //! 1. Awaits the next production signal from the internal timer
 //! 2. Retrieves the current best relay chain block and identifies a valid parent block (see
-//!    [find_potential_parents][pezcumulus_client_consensus_common::find_potential_parents] for
+//!    [find_parent_for_building][pezcumulus_client_consensus_common::find_parent_for_building] for
 //!    parent selection criteria)
 //! 3. Validates that:
 //!    - The teyrchain has an assigned core on the relay chain
@@ -43,7 +43,9 @@
 //!
 //! - Teyrchain slot duration
 //! - Number of assigned teyrchain cores
-//! - Teyrchain runtime configuration
+//! - The `target_block_rate` runtime API, which determines how many blocks to produce per relay
+//!   chain slot. When this API is unavailable, the block builder falls back to one block per core.
+//!   When the target exceeds the number of cores, multiple blocks are bundled per core.
 //!
 //! ## Timing Examples
 //!
@@ -69,24 +71,31 @@
 use self::{block_builder_task::run_block_builder, collation_task::run_collation_task};
 pub use block_import::{SlotBasedBlockImport, SlotBasedBlockImportHandle};
 use codec::Codec;
-use consensus_common::TeyrchainCandidate;
 use futures::FutureExt;
 use pezcumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
 use pezcumulus_client_consensus_common::{self as consensus_common, TeyrchainBlockImportMarker};
-use pezcumulus_client_consensus_proposer::ProposerInterface;
+use pezcumulus_client_proof_size_recording::register_proof_size_recording_cleanup;
 use pezcumulus_primitives_aura::AuraUnincludedSegmentApi;
-use pezcumulus_primitives_core::RelayParentOffsetApi;
+use pezcumulus_primitives_core::{
+	KeyToIncludeInRelayProof, RelayParentOffsetApi, SchedulingProof, SchedulingV3EnabledApi,
+	TargetBlockRate,
+};
 use pezcumulus_relay_chain_interface::RelayChainInterface;
 use pezkuwi_primitives::{
-	CollatorPair, CoreIndex, Hash as RelayHash, Id as ParaId, ValidationCodeHash,
+	CollatorPair, CoreIndex, Hash as RelayHash, Id as ParaId, PersistedValidationData,
+	ValidationCodeHash,
 };
-use pezsc_client_api::{backend::AuxStore, BlockBackend, BlockOf, UsageProvider};
+use pezsc_client_api::{
+	backend::AuxStore, client::PreCommitActions, BlockBackend, BlockOf, UsageProvider,
+};
 use pezsc_consensus::BlockImport;
 use pezsc_network_types::PeerId;
 use pezsc_utils::mpsc::tracing_unbounded;
-use pezsp_api::ProvideRuntimeApi;
+use pezsp_api::{ProvideRuntimeApi, StorageProof};
 use pezsp_application_crypto::AppPublic;
+use pezsp_block_builder::BlockBuilder;
 use pezsp_blockchain::HeaderBackend;
+use pezsp_consensus::Environment;
 use pezsp_consensus_aura::AuraApi;
 use pezsp_core::{crypto::Pair, traits::SpawnEssentialNamed};
 use pezsp_inherents::CreateInherentDataProviders;
@@ -98,6 +107,7 @@ mod block_builder_task;
 mod block_import;
 mod collation_task;
 mod relay_chain_data_cache;
+mod scheduling;
 mod slot_timer;
 
 #[cfg(test)]
@@ -127,12 +137,10 @@ pub struct Params<Block, BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS, 
 	pub collator_peer_id: PeerId,
 	/// The para's ID.
 	pub para_id: ParaId,
-	/// The underlying block proposer this should call into.
+	/// The proposer for building blocks.
 	pub proposer: Proposer,
 	/// The generic collator service used to plug into this consensus engine.
 	pub collator_service: CS,
-	/// The amount of time to spend authoring each block.
-	pub authoring_duration: Duration,
 	/// Whether we should reinitialize the collator config (i.e. we are transitioning to aura).
 	pub reinitialize: bool,
 	/// Offset slots by a fixed duration. This can be used to create more preferrable authoring
@@ -147,7 +155,7 @@ pub struct Params<Block, BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS, 
 	/// When set, the collator will export every produced `POV` to this folder.
 	pub export_pov: Option<PathBuf>,
 	/// The maximum percentage of the maximum PoV size that the collator can use.
-	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-sdk/issues/193> is fixed.
+	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-DKS/issues/6020> is fixed.
 	pub max_pov_percentage: Option<u32>,
 }
 
@@ -162,19 +170,25 @@ pub fn run<Block, P, BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS, Spaw
 		+ HeaderBackend<Block>
 		+ BlockBackend<Block>
 		+ UsageProvider<Block>
+		+ PreCommitActions<Block>
 		+ Send
 		+ Sync
 		+ 'static,
-	Client::Api:
-		AuraApi<Block, P::Public> + AuraUnincludedSegmentApi<Block> + RelayParentOffsetApi<Block>,
+	Client::Api: AuraApi<Block, P::Public>
+		+ AuraUnincludedSegmentApi<Block>
+		+ RelayParentOffsetApi<Block>
+		+ TargetBlockRate<Block>
+		+ BlockBuilder<Block>
+		+ KeyToIncludeInRelayProof<Block>
+		+ SchedulingV3EnabledApi<Block>,
 	Backend: pezsc_client_api::Backend<Block> + 'static,
 	RClient: RelayChainInterface + Clone + 'static,
 	CIDP: CreateInherentDataProviders<Block, ()> + 'static,
 	CIDP::InherentDataProviders: Send,
 	BI: BlockImport<Block> + TeyrchainBlockImportMarker + Send + Sync + 'static,
-	Proposer: ProposerInterface<Block> + Send + Sync + 'static,
+	Proposer: Environment<Block> + Send + Sync + 'static,
 	CS: CollatorServiceInterface<Block> + Send + Sync + Clone + 'static,
-	CHP: consensus_common::ValidationCodeHashProvider<Block::Hash> + Send + 'static,
+	CHP: consensus_common::ValidationCodeHashProvider<Block::Hash> + Send + Sync + 'static,
 	P: Pair + Send + Sync + 'static,
 	P::Public: AppPublic + Member + Codec,
 	P::Signature: TryFrom<Vec<u8>> + Member + Codec,
@@ -193,7 +207,6 @@ pub fn run<Block, P, BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS, Spaw
 		para_id,
 		proposer,
 		collator_service,
-		authoring_duration,
 		reinitialize,
 		slot_offset,
 		block_import_handle,
@@ -202,6 +215,9 @@ pub fn run<Block, P, BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS, Spaw
 		relay_chain_slot_duration,
 		max_pov_percentage,
 	} = params;
+
+	// Initialize proof size recording cleanup
+	register_proof_size_recording_cleanup(para_client.clone());
 
 	let (tx, rx) = tracing_unbounded("mpsc_builder_to_collator", 100);
 	let collator_task_params = collation_task::Params {
@@ -229,7 +245,6 @@ pub fn run<Block, P, BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS, Spaw
 		para_id,
 		proposer,
 		collator_service,
-		authoring_duration,
 		collator_sender: tx,
 		relay_chain_slot_duration,
 		slot_offset,
@@ -257,14 +272,18 @@ pub fn run<Block, P, BI, CIDP, Client, Backend, RClient, CHP, Proposer, CS, Spaw
 struct CollatorMessage<Block: BlockT> {
 	/// The hash of the relay chain block that provides the context for the teyrchain block.
 	pub relay_parent: RelayHash,
+	/// V3 scheduling proof. None for V1/V2 candidates.
+	pub scheduling_proof: Option<SchedulingProof>,
 	/// The header of the parent block.
 	pub parent_header: Block::Header,
-	/// The teyrchain block candidate.
-	pub teyrchain_candidate: TeyrchainCandidate<Block>,
+	/// The built blocks.
+	pub blocks: Vec<Block>,
+	/// The storage proof that was collected while building all the blocks.
+	pub proof: StorageProof,
 	/// The validation code hash at the parent block.
 	pub validation_code_hash: ValidationCodeHash,
 	/// Core index that this block should be submitted on
 	pub core_index: CoreIndex,
-	/// Maximum pov size. Currently needed only for exporting PoV.
-	pub max_pov_size: u32,
+	/// The persisted validation data for this collation.
+	pub validation_data: PersistedValidationData,
 }

@@ -1,12 +1,5 @@
 {
-  "bootNodes": [
-    "/dns/pezkuwichain-bridge-hub-collator-node-0.parity-testnet.parity.io/tcp/30333/p2p/12D3KooWJCFBJmFF65xz5xHeZQRSCf35BxfSEB3RHQFoLza28LWU",
-    "/dns/pezkuwichain-bridge-hub-collator-node-1.parity-testnet.parity.io/tcp/30333/p2p/12D3KooWJzLd8skcAgA24EcJey7aJAhYctfUxWGjSP5Usk9wbpPZ",
-    "/dns/pezkuwichain-bridge-hub-collator-node-0.parity-testnet.parity.io/tcp/30335/ws/p2p/12D3KooWJCFBJmFF65xz5xHeZQRSCf35BxfSEB3RHQFoLza28LWU",
-    "/dns/pezkuwichain-bridge-hub-collator-node-1.parity-testnet.parity.io/tcp/30335/ws/p2p/12D3KooWJzLd8skcAgA24EcJey7aJAhYctfUxWGjSP5Usk9wbpPZ",
-    "/dns/pezkuwichain-bridge-hub-collator-node-0.parity-testnet.parity.io/tcp/443/wss/p2p/12D3KooWJCFBJmFF65xz5xHeZQRSCf35BxfSEB3RHQFoLza28LWU",
-    "/dns/pezkuwichain-bridge-hub-collator-node-1.parity-testnet.parity.io/tcp/443/wss/p2p/12D3KooWJzLd8skcAgA24EcJey7aJAhYctfUxWGjSP5Usk9wbpPZ"
-  ],
+  "bootNodes": [],
   "chainType": "Live",
   "relay_chain": "pezkuwichain",
   "para_id": 1013,

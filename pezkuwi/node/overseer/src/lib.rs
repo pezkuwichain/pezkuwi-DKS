@@ -54,18 +54,18 @@
 //!             ..................................................................
 //! ```
 //!
-//! [overseer-page]: https://docs.pezkuwichain.io/sdk/book/node/overseer.html
+//! [overseer-page]: https://paritytech.github.io/pezkuwi-sdk/book/node/overseer.html
 
 // #![deny(unused_results)]
 // unused dependencies can not work for test and examples at the same time
 // yielding false positives
 #![warn(missing_docs)]
-// TODO https://github.com/pezkuwichain/pezkuwi-sdk/issues/144
+// TODO https://github.com/pezkuwichain/pezkuwi-DKS/issues/5793
 #![allow(dead_code, irrefutable_let_patterns)]
 
 use std::{
 	collections::{hash_map, HashMap},
-	fmt::{self, Debug},
+	fmt::{self},
 	pin::Pin,
 	sync::Arc,
 	time::Duration,
@@ -121,7 +121,7 @@ mod tests;
 
 use pezsp_core::traits::SpawnNamed;
 
-/// Glue to connect `trait orchestra::Spawner` and `SpawnNamed` from `bizinikiwi`.
+/// Glue to connect `trait orchestra::Spawner` and `SpawnNamed` from `substrate`.
 pub struct SpawnGlue<S>(pub S);
 
 impl<S> AsRef<S> for SpawnGlue<S> {
@@ -289,7 +289,7 @@ impl From<FinalityNotification<Block>> for BlockInfo {
 }
 
 /// An event from outside the overseer scope, such
-/// as the bizinikiwi framework or user interaction.
+/// as the substrate framework or user interaction.
 #[derive(Debug)]
 pub enum Event {
 	/// A new block was imported.
@@ -624,7 +624,7 @@ pub struct Overseer<SupportsTeyrchains> {
 	approval_voting_parallel: ApprovalVotingParallel,
 	#[subsystem(GossipSupportMessage, sends: [
 		NetworkBridgeTxMessage,
-		NetworkBridgeRxMessage, // TODO <https://github.com/pezkuwichain/pezkuwi-sdk/issues/303>
+		NetworkBridgeRxMessage, // TODO <https://github.com/paritytech/polkadot/issues/5626>
 		RuntimeApiMessage,
 		ChainSelectionMessage,
 		ChainApiMessage,

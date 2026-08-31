@@ -8,7 +8,10 @@ chain = "polkadot"
 default_command = "polkadot"
 default_image = "docker.io/parity/polkadot:latest"
 default_db_snapshot = "https://storage.com/path/to/db_snapshot.tgz"
-default_args = ["--flag", "-name=value"]
+default_args = [
+    "-name=value",
+    "--flag",
+]
 
 [relaychain.default_resources.requests]
 memory = "500M"

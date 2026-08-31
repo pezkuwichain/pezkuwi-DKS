@@ -10,13 +10,13 @@ to verify storage proofs, generated at the bridged relay chain.
 ## A Brief Introduction into Teyrchains Finality
 
 You can find detailed information on teyrchains finality in the
-[PezkuwiChain-SDK](https://github.com/pezkuwichain/pezkuwi-sdk) repository. This section gives a brief overview of how the
+[PezkuwiChain-SDK](https://github.com/pezkuwichain/pezkuwi-DKS) repository. This section gives a brief overview of how the
 teyrchain finality works and how to build a light client for a teyrchain.
 
 The main thing there is that the teyrchain generates blocks on its own, but it can't achieve finality without
 help of its relay chain. Instead, the teyrchain collators create a block and hand it over to the relay chain
 validators. Validators validate the block and register the new teyrchain head in the
-[`Heads` map](https://github.com/pezkuwichain/pezkuwi-sdk/blob/bc5005217a8c2e7c95b9011c96d7e619879b1200/polkadot/runtime/parachains/src/paras/mod.rs#L683-L686)
+[`Heads` map](https://github.com/pezkuwichain/pezkuwi-DKS/blob/bc5005217a8c2e7c95b9011c96d7e619879b1200/polkadot/runtime/parachains/src/paras/mod.rs#L683-L686)
 of the [`paras`](https://github.com/paritytech/polkadot-sdk/tree/master/polkadot/runtime/parachains/src/paras) pezpallet,
 deployed at the relay chain. Keep in mind that this pezpallet, deployed at a relay chain, is **NOT** a bridge pezpallet,
 even though the names are similar.

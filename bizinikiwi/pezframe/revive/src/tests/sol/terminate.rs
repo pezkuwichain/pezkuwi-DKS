@@ -16,19 +16,18 @@
 // limitations under the License.
 
 use crate::{
+	BalanceOf, Code, Config, H160, Pezpallet,
 	address::AddressMapper,
-	test_utils::{builder::Contract, ALICE, DJANGO, DJANGO_ADDR},
+	test_utils::{ALICE, DJANGO, DJANGO_ADDR, builder::Contract},
 	tests::{
-		builder,
+		Contracts, ExtBuilder, RuntimeOrigin, Test, builder,
 		test_utils::{get_balance, get_contract_checked},
-		Contracts, ExtBuilder, RuntimeOrigin, Test,
 	},
-	BalanceOf, Code, Config, Pezpallet, H160,
 };
 use alloy_core::sol_types::{SolCall, SolConstructor};
 use pezframe_support::traits::fungible::Mutate;
 use pezpallet_revive_fixtures::{
-	compile_module_with_type, FixtureType, Terminate, TerminateCaller, TerminateDelegator,
+	FixtureType, Terminate, TerminateCaller, TerminateDelegator, compile_module_with_type,
 };
 use pretty_assertions::assert_eq;
 use test_case::{test_case, test_matrix};

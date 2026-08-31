@@ -36,12 +36,15 @@ trie-db = { workspace = true }
 arbitrary = { features = ["derive"], workspace = true }
 array-bytes = { workspace = true, default-features = true }
 assert_matches = { workspace = true }
+pezsp-runtime = { workspace = true, default-features = true }
 pretty_assertions = { workspace = true }
 rand = { workspace = true, default-features = true }
 
 [features]
 default = ["std"]
-fuzzing = ["arbitrary"]
+fuzzing = [
+	"arbitrary",
+]
 std = [
 	"codec/std",
 	"hash-db/std",
@@ -51,11 +54,15 @@ std = [
 	"pezsp-externalities/std",
 	"pezsp-panic-handler",
 	"pezsp-panic-handler?/std",
+	"pezsp-runtime/std",
 	"pezsp-trie/std",
 	"rand",
 	"thiserror",
 	"tracing",
 	"trie-db/std",
 ]
-runtime-benchmarks = ["pezsp-trie/runtime-benchmarks"]
+runtime-benchmarks = [
+	"pezsp-runtime/runtime-benchmarks",
+	"pezsp-trie/runtime-benchmarks",
+]
 serde = []

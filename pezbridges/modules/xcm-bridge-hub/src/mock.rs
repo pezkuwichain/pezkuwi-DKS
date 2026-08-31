@@ -27,7 +27,7 @@ use pezbp_runtime::{messages::MessageDispatchResult, Chain, ChainId, HashOf};
 use pezbp_xcm_bridge_hub::{BridgeId, LocalXcmChannelManager};
 use pezframe_support::{
 	assert_ok, derive_impl, parameter_types,
-	traits::{EnsureOrigin, Equals, Everything, Get, OriginTrait},
+	traits::{ConstBool, EnsureOrigin, Equals, Everything, Get, OriginTrait},
 	weights::RuntimeDbWeight,
 };
 use pezkuwi_teyrchain_primitives::primitives::Sibling;
@@ -231,6 +231,8 @@ impl pezpallet_xcm_bridge_hub_router::Config<XcmOverBridgeWrappedWithExportMessa
 	type ToBridgeHubSender = ExecuteXcmOverSendXcm;
 	type LocalXcmChannelManager = TestLocalXcmChannelManager;
 
+	type UnpaidExport = ConstBool<false>;
+
 	type ByteFee = ConstU128<0>;
 	type FeeAsset = BridgeFeeAsset;
 }
@@ -250,7 +252,6 @@ impl xcm_executor::Config for XcmConfig {
 	type Trader = ();
 	type ResponseHandler = ();
 	type AssetTrap = ();
-	type AssetClaims = ();
 	type SubscriptionService = ();
 	type PalletInstancesInfo = ();
 	type MaxAssetsIntoHolding = ();
@@ -276,8 +277,8 @@ thread_local! {
 
 /// The `SendXcm` implementation directly executes XCM using `XcmExecutor`.
 ///
-/// We ensure that the `ExportMessage` produced by `pezpallet_xcm_bridge_hub_router` is compatible
-/// with the `ExportXcm` implementation of `pezpallet_xcm_bridge_hub`.
+/// We ensure that the `ExportMessage` produced by `pezpallet_xcm_bridge_hub_router` is compatible with
+/// the `ExportXcm` implementation of `pezpallet_xcm_bridge_hub`.
 ///
 /// Note: The crucial part is that `ExportMessage` is processed by `XcmExecutor`, which calls the
 /// `ExportXcm` implementation of `pezpallet_xcm_bridge_hub` as `MessageExporter`.

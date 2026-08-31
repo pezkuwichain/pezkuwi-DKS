@@ -19,6 +19,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 codec = { features = ["derive"], workspace = true }
 log = { workspace = true }
+pezcumulus-pezpallet-session-benchmarking = { default-features = false, optional = true, workspace = true }
 rand = { features = ["std_rng"], workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 
@@ -43,6 +44,7 @@ pezsp-tracing = { workspace = true, default-features = true }
 [features]
 default = ["std"]
 runtime-benchmarks = [
+	"pezcumulus-pezpallet-session-benchmarking/runtime-benchmarks",
 	"pezframe-benchmarking/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
@@ -59,6 +61,7 @@ runtime-benchmarks = [
 std = [
 	"codec/std",
 	"log/std",
+	"pezcumulus-pezpallet-session-benchmarking?/std",
 	"pezframe-benchmarking/std",
 	"pezframe-support/std",
 	"pezframe-system/std",
@@ -72,6 +75,7 @@ std = [
 ]
 
 try-runtime = [
+	"pezcumulus-pezpallet-session-benchmarking?/try-runtime",
 	"pezframe-benchmarking?/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",

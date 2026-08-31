@@ -46,7 +46,7 @@
 
 // Most of the business logic in this pezpallet has been
 // originally contributed by "https://github.com/shamb0",
-// as part of the PR - https://github.com/pezkuwichain/pezkuwi-sdk/issues/223.
+// as part of the PR - https://github.com/paritytech/substrate/pull/7965.
 // The code has been moved here and then refactored in order to
 // extract child bounties as a separate pezpallet.
 
@@ -75,7 +75,7 @@ use pezsp_runtime::{
 		AccountIdConversion, BadOrigin, BlockNumberProvider, CheckedSub, Saturating, StaticLookup,
 		Zero,
 	},
-	DispatchResult, RuntimeDebug,
+	Debug, DispatchResult,
 };
 
 use pezframe_support::pezpallet_prelude::*;
@@ -96,7 +96,7 @@ pub type BlockNumberFor<T> =
 	<<T as pezpallet_treasury::Config>::BlockNumberProvider as BlockNumberProvider>::BlockNumber;
 
 /// A child bounty proposal.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct ChildBounty<AccountId, Balance, BlockNumber> {
 	/// The parent of this child-bounty.
 	pub parent_bounty: BountyIndex,
@@ -111,7 +111,7 @@ pub struct ChildBounty<AccountId, Balance, BlockNumber> {
 }
 
 /// The status of a child-bounty.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum ChildBountyStatus<AccountId, BlockNumber> {
 	/// The child-bounty is added and waiting for curator assignment.
 	Added,
@@ -289,7 +289,7 @@ pub mod pezpallet {
 			ensure!(value >= T::ChildBountyValueMinimum::get(), BountiesError::<T>::InvalidValue);
 			ensure!(
 				ParentChildBounties::<T>::get(parent_bounty_id)
-					<= T::MaxActiveChildBountyCount::get() as u32,
+					< T::MaxActiveChildBountyCount::get(),
 				Error::<T>::TooManyChildBounties,
 			);
 

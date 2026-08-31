@@ -717,7 +717,7 @@ where
 				let mut resubmitted_to_report = 0;
 
 				resubmit_transactions.extend(
-					//todo: arctx - we need to get ref from somewhere
+					// todo: arctx - we need to get ref from somewhere
 					block_transactions.into_iter().map(Arc::from).filter_map(|tx| {
 						let tx_hash = pool.hash_of(&tx);
 						let contains = pruned_log.contains(&tx_hash);

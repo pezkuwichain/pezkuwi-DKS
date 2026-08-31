@@ -17,9 +17,9 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 // Test inspired (copied) from:
-// https://github.com/pezkuwichain/pezkuwi-sdk/blob/85b71daf7aac59da4d2186b45d589c7c619f0981/polkadot/zombienet-sdk-tests/tests/elastic_scaling/slot_based_3cores.rs#L21
+// https://github.com/pezkuwichain/pezkuwi-DKS/blob/85b71daf7aac59da4d2186b45d589c7c619f0981/polkadot/zombienet-sdk-tests/tests/elastic_scaling/slot_based_3cores.rs#L21
 // and patched as in:
-// https://github.com/pezkuwichain/pezkuwi-sdk/issues/269#issuecomment-2808830472
+// https://github.com/pezkuwichain/pezkuwi-DKS/issues/269#issuecomment-2808830472
 
 use crate::zombienet::{BlockSubscriptionType, NetworkSpawner, ScenarioBuilderSharedParams};
 use pezcumulus_zombienet_sdk_helpers::create_assign_core_call;

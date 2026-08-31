@@ -20,12 +20,10 @@ fn teleport_via_limited_teleport_assets_to_other_system_teyrchains_works() {
 	let amount = BRIDGE_HUB_PEZKUWICHAIN_ED * 100;
 	let native_asset: Assets = (Parent, amount).into();
 
-	let fee_asset_id: AssetId = Parent.into();
 	test_teyrchain_is_trusted_teleporter!(
 		BridgeHubPezkuwichain,      // Origin
 		vec![AssetHubPezkuwichain], // Destinations
 		(native_asset, amount),
-		fee_asset_id,
 		limited_teleport_assets
 	);
 }
@@ -35,12 +33,10 @@ fn teleport_via_transfer_assets_to_other_system_teyrchains_works() {
 	let amount = BRIDGE_HUB_PEZKUWICHAIN_ED * 100;
 	let native_asset: Assets = (Parent, amount).into();
 
-	let fee_asset_id: AssetId = Parent.into();
 	test_teyrchain_is_trusted_teleporter!(
 		BridgeHubPezkuwichain,      // Origin
 		vec![AssetHubPezkuwichain], // Destinations
 		(native_asset, amount),
-		fee_asset_id,
 		transfer_assets
 	);
 }
@@ -48,11 +44,12 @@ fn teleport_via_transfer_assets_to_other_system_teyrchains_works() {
 #[test]
 fn teleport_via_limited_teleport_assets_from_and_to_relay() {
 	let amount = PEZKUWICHAIN_ED * 100;
+	let native_asset: Assets = (Here, amount).into();
 
 	test_relay_is_trusted_teleporter!(
 		Pezkuwichain,
 		vec![BridgeHubPezkuwichain],
-		amount,
+		(native_asset, amount),
 		limited_teleport_assets
 	);
 
@@ -67,11 +64,12 @@ fn teleport_via_limited_teleport_assets_from_and_to_relay() {
 #[test]
 fn teleport_via_transfer_assets_from_and_to_relay() {
 	let amount = PEZKUWICHAIN_ED * 100;
+	let native_asset: Assets = (Here, amount).into();
 
 	test_relay_is_trusted_teleporter!(
 		Pezkuwichain,
 		vec![BridgeHubPezkuwichain],
-		amount,
+		(native_asset, amount),
 		transfer_assets
 	);
 

@@ -53,7 +53,7 @@ use pezframe_support::traits::{
 use pezframe_system::Config as SystemConfig;
 use pezsp_runtime::{
 	traits::{Saturating, StaticLookup, Zero},
-	ArithmeticError, RuntimeDebug,
+	ArithmeticError, Debug,
 };
 
 pub use pezpallet::*;

@@ -2,18 +2,18 @@
 // This file is part of Pezcumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 //! The AuRa consensus algorithm for teyrchains.
 //!
@@ -23,9 +23,8 @@
 //! For more information about AuRa, the Bizinikiwi crate should be checked.
 
 use codec::Encode;
-use pezcumulus_primitives_core::PersistedValidationData;
-
-use pezcumulus_primitives_core::relay_chain::HeadData;
+use pezcumulus_primitives_core::{relay_chain::HeadData, PersistedValidationData};
+use pezkuwi_pez_node_primitives::PoV;
 use pezkuwi_primitives::{BlockNumber as RBlockNumber, Hash as RHash};
 use pezsp_runtime::traits::{Block as BlockT, NumberFor};
 use std::{fs, fs::File, path::PathBuf};
@@ -33,7 +32,6 @@ use std::{fs, fs::File, path::PathBuf};
 mod import_queue;
 
 pub use import_queue::{build_verifier, import_queue, BuildVerifierParams, ImportQueueParams};
-use pezkuwi_pez_node_primitives::PoV;
 pub use pezsc_consensus_aura::{
 	slot_duration, standalone::slot_duration_at, AuraVerifier, BuildAuraWorkerParams,
 	SlotProportion,
@@ -44,7 +42,7 @@ pub mod collator;
 pub mod collators;
 pub mod equivocation_import_queue;
 
-const LOG_TARGET: &str = "aura::pezcumulus";
+const LOG_TARGET: &str = "aura::cumulus";
 
 /// Export the given `pov` to the file system at `path`.
 ///

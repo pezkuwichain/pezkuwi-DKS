@@ -37,7 +37,7 @@
 //! - Separate origins are configurable for pausing and pausing.
 //! - Pausing is triggered using the string representation of the call.
 //! - Pauses can target a single extrinsic or an entire pezpallet.
-//! - Pauses can target future extrinsics or pallets.
+//! - Pauses can target future extrinsics or pezpallets.
 //!
 //! ### Example
 //!
@@ -53,13 +53,10 @@
 //!
 //! Pause specific all:
 #![doc = docify::embed!("src/tests.rs", can_pause_specific_call)]
-//!
 //! Unpause specific all:
 #![doc = docify::embed!("src/tests.rs", can_unpause_specific_call)]
-//!
 //! Pause all calls in a pezpallet:
-#![doc = docify::embed!("src/tests.rs", can_pause_all_calls_in_pallet_except_on_whitelist)]
-//!
+#![doc = docify::embed!("src/tests.rs", can_pause_all_calls_in_pezpallet_except_on_whitelist)]
 //! ## Low Level / Implementation Details
 //!
 //! ### Use Cost

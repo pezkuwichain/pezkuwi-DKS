@@ -111,6 +111,6 @@
 //!
 //! - <https://forum.polkadot.network/t/offchain-workers-design-assumptions-vulnerabilities/2548>
 //! - <https://exchange.pezkuwichain.app/questions/11058/how-can-i-create-ocw-that-wont-activates-every-block-but-will-activates-only-w/11060#11060>
-//! - [Offchain worker example](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi/pezframe/examples/offchain-worker)
+//! - [Offchain worker example](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/bizinikiwi/pezframe/examples/offchain-worker)
 //!
 //! [`frame`]: crate::pezkuwi_sdk::frame_runtime

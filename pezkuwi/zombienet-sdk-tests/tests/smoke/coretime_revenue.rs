@@ -25,7 +25,7 @@ use pezkuwichain::runtime_types::{
 		junctions::Junctions,
 		location::Location,
 	},
-	xcm::{VersionedAssetId, VersionedAssets, VersionedLocation},
+	xcm::{VersionedAssets, VersionedLocation},
 };
 
 use pezkuwi_subxt::{events::StaticEvent, utils::AccountId32, OnlineClient, PezkuwiConfig};
@@ -313,7 +313,7 @@ async fn coretime_revenue_test() -> Result<(), anyhow::Error> {
 					id: AssetId(Location { parents: 0, interior: Junctions::Here }),
 					fun: Fungibility::Fungible(1_500_000_000),
 				}])),
-				VersionedAssetId::V4(AssetId(Location { parents: 0, interior: Junctions::Here })),
+				0,
 			),
 			&alice,
 		)

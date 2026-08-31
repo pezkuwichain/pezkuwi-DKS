@@ -46,7 +46,7 @@ use xcm::{
 	prelude::*,
 	VersionedXcm, MAX_XCM_DECODE_DEPTH,
 };
-use xcm_executor::{traits::TransactAsset, AssetsInHolding};
+use xcm_executor::traits::TransactAsset;
 
 pub mod test_cases;
 
@@ -336,14 +336,21 @@ where
 			AllPalletsWithoutSystem::on_initialize(next_block_number);
 
 			let parent_head = HeadData(header.encode());
+
+			// Get RelayParentOffset from the teyrchain system pezpallet config.
+			let relay_parent_offset =
+				<Runtime as pezcumulus_pezpallet_teyrchain_system::Config>::RelayParentOffset::get(
+				)
+				.saturated_into::<u64>();
+
 			let sproof_builder = RelayStateSproofBuilder {
 				para_id: <Runtime>::SelfParaId::get(),
 				included_para_head: parent_head.clone().into(),
 				..Default::default()
 			};
 
-			let (relay_parent_storage_root, relay_chain_state) =
-				sproof_builder.into_state_root_and_proof();
+			let (relay_parent_storage_root, relay_chain_state, relay_parent_descendants) =
+				sproof_builder.into_state_root_proof_and_descendants(relay_parent_offset);
 			let inherent_data = TeyrchainInherentData {
 				validation_data: PersistedValidationData {
 					parent_head,
@@ -354,7 +361,7 @@ where
 				relay_chain_state,
 				downward_messages: Default::default(),
 				horizontal_messages: Default::default(),
-				relay_parent_descendants: Default::default(),
+				relay_parent_descendants,
 				collator_peer_id: None,
 			};
 
@@ -403,7 +410,7 @@ impl<XcmConfig: xcm_executor::Config, AllPalletsWithoutSystem>
 		from: Location,
 		to: Location,
 		(asset, amount): (Location, u128),
-	) -> Result<AssetsInHolding, XcmError> {
+	) -> Result<Asset, XcmError> {
 		<XcmConfig::AssetTransactor as TransactAsset>::transfer_asset(
 			&Asset { id: AssetId(asset), fun: Fungible(amount) },
 			&from,
@@ -451,8 +458,8 @@ impl<
 			origin,
 			Box::new(dest.into()),
 			Box::new(beneficiary.into()),
-			Box::new((AssetId(asset.clone()), amount).into()),
-			Box::new(AssetId(asset).into()),
+			Box::new((AssetId(asset), amount).into()),
+			0,
 			Unlimited,
 		)
 	}
@@ -608,19 +615,19 @@ impl<TeyrchainSystem: pezcumulus_pezpallet_teyrchain_system::Config, AllPalletsW
 impl<Runtime: pezframe_system::Config + pezpallet_xcm::Config, AllPalletsWithoutSystem>
 	RuntimeHelper<Runtime, AllPalletsWithoutSystem>
 {
-	pub fn assert_pallet_xcm_event_outcome(
-		unwrap_pallet_xcm_event: &Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
+	pub fn assert_pezpallet_xcm_event_outcome(
+		unwrap_pezpallet_xcm_event: &Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
 		assert_outcome: fn(Outcome),
 	) {
-		assert_outcome(Self::get_pallet_xcm_event_outcome(unwrap_pallet_xcm_event));
+		assert_outcome(Self::get_pezpallet_xcm_event_outcome(unwrap_pezpallet_xcm_event));
 	}
 
-	pub fn get_pallet_xcm_event_outcome(
-		unwrap_pallet_xcm_event: &Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
+	pub fn get_pezpallet_xcm_event_outcome(
+		unwrap_pezpallet_xcm_event: &Box<dyn Fn(Vec<u8>) -> Option<pezpallet_xcm::Event<Runtime>>>,
 	) -> Outcome {
 		<pezframe_system::Pezpallet<Runtime>>::events()
 			.into_iter()
-			.filter_map(|e| unwrap_pallet_xcm_event(e.event.encode()))
+			.filter_map(|e| unwrap_pezpallet_xcm_event(e.event.encode()))
 			.find_map(|e| match e {
 				pezpallet_xcm::Event::Attempted { outcome } => Some(outcome),
 				_ => None,
@@ -683,7 +690,7 @@ pub fn assert_total<Fungibles, AccountId>(
 /// thus requires additional parameters for validating it: latest included teyrchain head and
 /// teyrchain AuRa-slot.
 ///
-/// AuRa consensus hook expects pallets to be initialized, before calling this function make sure to
+/// AuRa consensus hook expects pezpallets to be initialized, before calling this function make sure to
 /// `run_to_block` at least once.
 pub fn mock_open_hrmp_channel<
 	C: pezcumulus_pezpallet_teyrchain_system::Config,
@@ -699,6 +706,9 @@ pub fn mock_open_hrmp_channel<
 	// Convert para slot to relay chain.
 	let timestamp = slot.saturating_mul(slot_durations.para.as_millis());
 	let relay_slot = Slot::from_timestamp(timestamp.into(), slot_durations.relay);
+
+	// Get RelayParentOffset from the teyrchain system pezpallet config.
+	let relay_parent_offset = C::RelayParentOffset::get().saturated_into::<u64>();
 
 	let n = 1_u32;
 	let mut sproof_builder = RelayStateSproofBuilder {
@@ -720,7 +730,9 @@ pub fn mock_open_hrmp_channel<
 		},
 	);
 
-	let (relay_parent_storage_root, relay_chain_state) = sproof_builder.into_state_root_and_proof();
+	let (relay_parent_storage_root, relay_chain_state, relay_parent_descendants) =
+		sproof_builder.into_state_root_proof_and_descendants(relay_parent_offset);
+
 	let vfp = PersistedValidationData {
 		relay_parent_number: n as RelayChainBlockNumber,
 		relay_parent_storage_root,
@@ -735,7 +747,7 @@ pub fn mock_open_hrmp_channel<
 			relay_chain_state,
 			downward_messages: Default::default(),
 			horizontal_messages: Default::default(),
-			relay_parent_descendants: Default::default(),
+			relay_parent_descendants,
 			collator_peer_id: None,
 		};
 		inherent_data
@@ -758,7 +770,7 @@ impl<HrmpChannelSource: pezcumulus_primitives_core::XcmpMessageSource, AllPallet
 	RuntimeHelper<HrmpChannelSource, AllPalletsWithoutSystem>
 {
 	pub fn take_xcm(sent_to_para_id: ParaId) -> Option<VersionedXcm<()>> {
-		match HrmpChannelSource::take_outbound_messages(10)[..] {
+		match HrmpChannelSource::take_outbound_messages(10, &[])[..] {
 			[(para_id, ref mut xcm_message_data)] if para_id.eq(&sent_to_para_id.into()) => {
 				let mut xcm_message_data = &xcm_message_data[..];
 				// decode

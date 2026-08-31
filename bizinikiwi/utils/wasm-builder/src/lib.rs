@@ -441,14 +441,23 @@ impl RuntimeTarget {
 				}
 			},
 			RuntimeTarget::Riscv => {
-				let path = polkavm_linker::target_json_32_path().expect("riscv not found");
-				path.into_os_string().into_string().unwrap()
+				Self::riscv_target_json_path().into_os_string().into_string().unwrap()
 			},
 		}
 	}
 
+	/// Path to the riscv target specification `polkavm_linker` writes out.
+	///
+	/// The single place that decides which spec the riscv build uses, so that the `--target`
+	/// argument and the output directory derived from it cannot name different things.
+	fn riscv_target_json_path() -> std::path::PathBuf {
+		let mut args = polkavm_linker::TargetJsonArgs::default();
+		args.is_64_bit = true;
+		polkavm_linker::target_json_path(args).expect("riscv not found")
+	}
+
 	/// Figures out the target directory name used by cargo.
-	fn rustc_target_dir(self, cargo_command: &CargoCommand) -> &'static str {
+	fn rustc_target_dir(self, cargo_command: &CargoCommand) -> String {
 		match self {
 			RuntimeTarget::Wasm => {
 				if cargo_command.is_wasm32v1_none_target_available() {
@@ -457,7 +466,15 @@ impl RuntimeTarget {
 					"wasm32-unknown-unknown".into()
 				}
 			},
-			RuntimeTarget::Riscv => "riscv32emac-unknown-none-polkavm",
+			// Cargo names the output directory after the target spec, so this has to be derived
+			// from the same spec `rustc_target` passes rather than written out again. It was
+			// spelled `riscv32emac-unknown-none-polkavm` while the build asked for the 64-bit
+			// spec, and the blob was then looked for in a directory nothing ever wrote to.
+			RuntimeTarget::Riscv => Self::riscv_target_json_path()
+				.file_stem()
+				.expect("the target spec is a file with a name")
+				.to_string_lossy()
+				.into_owned(),
 		}
 	}
 

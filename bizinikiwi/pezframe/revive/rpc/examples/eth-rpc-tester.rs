@@ -17,12 +17,12 @@
 use clap::Parser;
 use jsonrpsee::http_client::HttpClientBuilder;
 use pezpallet_revive::evm::{Account, BlockTag, ReceiptInfo};
-use pezpallet_revive_eth_rpc::{example::TransactionBuilder, EthRpcClient};
+use pezpallet_revive_eth_rpc::{EthRpcClient, example::TransactionBuilder};
 use std::sync::Arc;
 use tokio::{
 	io::{AsyncBufReadExt, BufReader},
 	process::{Child, ChildStderr, Command},
-	signal::unix::{signal, SignalKind},
+	signal::unix::{SignalKind, signal},
 };
 
 const DOCKER_CONTAINER_NAME: &str = "eth-rpc-test";
@@ -141,7 +141,7 @@ async fn test_eth_rpc(rpc_url: &str) -> anyhow::Result<()> {
 	println!("-  balance: {balance:?}");
 
 	println!("\n\n=== Deploying dummy contract ===\n\n");
-	let tx = TransactionBuilder::new(&client).input(input).send().await?;
+	let tx = TransactionBuilder::new(client.clone()).input(input).send().await?;
 
 	println!("Hash: {:?}", tx.hash());
 	println!("Waiting for receipt...");
@@ -150,20 +150,20 @@ async fn test_eth_rpc(rpc_url: &str) -> anyhow::Result<()> {
 
 	let contract_address = contract_address.unwrap();
 	println!("\nReceipt:");
-	println!("Block explorer: https://westend-asset-hub-eth-explorer.parity.io/{:?}", tx.hash());
+	println!("Block explorer: https://explorer.pezkuwichain.io/{:?}", tx.hash());
 	println!("- Block number: {block_number}");
 	println!("- Gas used:     {gas_used}");
 	println!("- Address:      {contract_address:?}");
 
 	println!("\n\n=== Calling dummy contract ===\n\n");
-	let tx = TransactionBuilder::new(&client).to(contract_address).send().await?;
+	let tx = TransactionBuilder::new(client.clone()).to(contract_address).send().await?;
 
 	println!("Hash: {:?}", tx.hash());
 	println!("Waiting for receipt...");
 
 	let ReceiptInfo { block_number, gas_used, to, .. } = tx.wait_for_receipt().await?;
 	println!("\nReceipt:");
-	println!("Block explorer: https://westend-asset-hub-eth-explorer.parity.io/{:?}", tx.hash());
+	println!("Block explorer: https://explorer.pezkuwichain.io/{:?}", tx.hash());
 	println!("- Block number: {block_number}");
 	println!("- Gas used:     {gas_used}");
 	println!("- To:           {to:?}");

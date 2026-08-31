@@ -9,7 +9,7 @@ It is used by the teyrchains light client (bridge teyrchains pezpallet) and by m
 
 ## A Brief Introduction into GRANDPA Finality
 
-You can find detailed information on GRANDPA, by exploring its [repository](https://github.com/pezkuwichain/finality-grandpa).
+You can find detailed information on GRANDPA, by exploring its [repository](https://github.com/paritytech/finality-grandpa).
 Here is the minimal required GRANDPA information to understand how pezpallet works.
 
 Any Bizinikiwi chain may use different block authorship algorithms (like BABE or Aura) to determine block producers and

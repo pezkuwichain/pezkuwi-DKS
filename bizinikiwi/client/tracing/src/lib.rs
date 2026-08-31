@@ -16,13 +16,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! Instrumentation implementation for bizinikiwi.
+//! Instrumentation implementation for substrate.
 //!
 //! This crate is unstable and the API and usage may change.
 //!
 //! # Usage
 //!
-//! See `sp-tracing` for examples on how to use tracing.
+//! See `pezsp-tracing` for examples on how to use tracing.
 //!
 //! Currently we only provide `Log` (default).
 

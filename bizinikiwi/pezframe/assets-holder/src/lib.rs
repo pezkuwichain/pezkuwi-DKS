@@ -18,8 +18,8 @@
 //! # Assets Holder Pezpallet
 //!
 //! A pezpallet capable of holding fungibles from `pezpallet-assets`. This is an extension of
-//! `pezpallet-assets`, wrapping
-//! [`fungibles::Inspect`](`pezframe_support::traits::fungibles::Inspect`). It implements both
+//! `pezpallet-assets`, wrapping [`fungibles::Inspect`](`pezframe_support::traits::fungibles::Inspect`).
+//! It implements both
 //! [`fungibles::hold::Inspect`](pezframe_support::traits::fungibles::hold::Inspect),
 //! [`fungibles::hold::Mutate`](pezframe_support::traits::fungibles::hold::Mutate), and especially
 //! [`fungibles::hold::Unbalanced`](pezframe_support::traits::fungibles::hold::Unbalanced). The
@@ -34,13 +34,13 @@
 //!
 //! This pezpallet provides the following functionality:
 //!
-//! - Pezpallet hooks allowing [`pezpallet_assets`] to know the balance on hold for an account on a
-//!   given asset (see [`pezpallet_assets::BalanceOnHold`]).
+//! - Pezpallet hooks allowing `pezpallet-assets` to know the balance on hold for an account on a given
+//!   asset (see [`pezpallet_assets::BalanceOnHold`]).
 //! - An implementation of
 //!   [`fungibles::hold::Inspect`](pezframe_support::traits::fungibles::hold::Inspect),
 //!   [`fungibles::hold::Mutate`](pezframe_support::traits::fungibles::hold::Mutate) and
-//!   [`fungibles::hold::Unbalanced`](pezframe_support::traits::fungibles::hold::Unbalanced),
-//!   allowing other pallets to manage holds for the `pezpallet-assets` assets.
+//!   [`fungibles::hold::Unbalanced`](pezframe_support::traits::fungibles::hold::Unbalanced), allowing
+//!   other pezpallets to manage holds for the `pezpallet-assets` assets.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 

@@ -20,7 +20,7 @@ maintenance = { status = "actively-developed" }
 name = "pezkuwi"
 extended-description = "Implementation of a https://pezkuwichain.io node in Rust based on the Bizinikiwi framework."
 section = "misc"
-maintainer = "security@parity.io"
+maintainer = "security@pezkuwichain.io"
 license-file = ["LICENSE", "0"]
 # https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
 maintainer-scripts = "scripts/packaging/deb-maintainer-scripts"

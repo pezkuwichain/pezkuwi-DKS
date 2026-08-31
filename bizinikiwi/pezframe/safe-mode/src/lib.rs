@@ -52,13 +52,10 @@
 //!
 //! Entering safe mode with deposit:
 #![doc = docify::embed!("src/tests.rs", can_activate)]
-//!
 //! Entering safe mode via privileged origin:
 #![doc = docify::embed!("src/tests.rs", can_force_activate_with_config_origin)]
-//!
 //! Exiting safe mode via privileged origin:
 #![doc = docify::embed!("src/tests.rs", can_force_deactivate_with_config_origin)]
-//!
 //! ## Low Level / Implementation Details
 //!
 //! ### Use Cost
@@ -111,11 +108,11 @@ pub mod pezpallet {
 		/// The hold reason when reserving funds for entering or extending the safe-mode.
 		type RuntimeHoldReason: From<HoldReason>;
 
-		/// Contains all runtime calls in any pezpallet that can be dispatched even while the
-		/// safe-mode is entered.
+		/// Contains all runtime calls in any pezpallet that can be dispatched even while the safe-mode
+		/// is entered.
 		///
-		/// The safe-mode pezpallet cannot disable it's own calls, and does not need to be
-		/// explicitly added here.
+		/// The safe-mode pezpallet cannot disable it's own calls, and does not need to be explicitly
+		/// added here.
 		type WhitelistedCalls: Contains<Self::RuntimeCall>;
 
 		/// For how many blocks the safe-mode will be entered by [`Pezpallet::enter`].
@@ -236,7 +233,7 @@ pub mod pezpallet {
 		Clone,
 		PartialEq,
 		Eq,
-		RuntimeDebug,
+		Debug,
 		Encode,
 		Decode,
 		DecodeWithMemTracking,

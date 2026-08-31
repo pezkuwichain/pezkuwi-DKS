@@ -7,7 +7,7 @@ use codec::{Decode, DecodeWithMemTracking, Encode};
 use core::marker::PhantomData;
 use pezframe_support::{traits::tokens::Balance as BalanceT, PalletError};
 use pezsnowbridge_core::TokenId;
-use pezsp_core::{Get, RuntimeDebug, H160, H256};
+use pezsp_core::{Get, H160, H256};
 use pezsp_runtime::{traits::MaybeConvert, MultiAddress};
 use pezsp_std::prelude::*;
 use scale_info::TypeInfo;
@@ -18,14 +18,14 @@ const MINIMUM_DEPOSIT: u128 = 1;
 /// Messages from Ethereum are versioned. This is because in future,
 /// we may want to evolve the protocol so that the ethereum side sends XCM messages directly.
 /// Instead having BridgeHub transcode the messages into XCM.
-#[derive(Clone, Encode, Decode, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, Debug)]
 pub enum VersionedMessage {
 	V1(MessageV1),
 }
 
 /// For V1, the ethereum side sends messages which are transcoded into XCM. These messages are
 /// self-contained, in that they can be transcoded using only information in the message.
-#[derive(Clone, Encode, Decode, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, Debug)]
 pub struct MessageV1 {
 	/// EIP-155 chain id of the origin Ethereum network
 	pub chain_id: u64,
@@ -33,7 +33,7 @@ pub struct MessageV1 {
 	pub command: Command,
 }
 
-#[derive(Clone, Encode, Decode, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, Debug)]
 pub enum Command {
 	/// Register a wrapped token on the AssetHub `ForeignAssets` pezpallet
 	RegisterToken {
@@ -67,13 +67,13 @@ pub enum Command {
 }
 
 /// Destination for bridged tokens
-#[derive(Clone, Encode, Decode, RuntimeDebug)]
+#[derive(Clone, Encode, Decode, Debug)]
 pub enum Destination {
 	/// The funds will be deposited into account `id` on AssetHub
 	AccountId32 { id: [u8; 32] },
 	/// The funds will deposited into the sovereign account of destination teyrchain `para_id` on
 	/// AssetHub, Account `id` on the destination teyrchain will receive the funds via a
-	/// reserve-backed transfer. See <https://github.com/polkadot-fellows/xcm-format#depositreserveasset>
+	/// reserve-backed transfer. See <https://github.com/paritytech/xcm-format#depositreserveasset>
 	ForeignAccountId32 {
 		para_id: u32,
 		id: [u8; 32],
@@ -82,7 +82,7 @@ pub enum Destination {
 	},
 	/// The funds will deposited into the sovereign account of destination teyrchain `para_id` on
 	/// AssetHub, Account `id` on the destination teyrchain will receive the funds via a
-	/// reserve-backed transfer. See <https://github.com/polkadot-fellows/xcm-format#depositreserveasset>
+	/// reserve-backed transfer. See <https://github.com/paritytech/xcm-format#depositreserveasset>
 	ForeignAccountId20 {
 		para_id: u32,
 		id: [u8; 20],
@@ -121,9 +121,7 @@ pub struct MessageToXcm<
 }
 
 /// Reason why a message conversion failed.
-#[derive(
-	Copy, Clone, TypeInfo, PalletError, Encode, Decode, DecodeWithMemTracking, RuntimeDebug,
-)]
+#[derive(Copy, Clone, TypeInfo, PalletError, Encode, Decode, DecodeWithMemTracking, Debug)]
 pub enum ConvertMessageError {
 	/// The message version is not supported for conversion.
 	UnsupportedVersion,
@@ -254,7 +252,7 @@ where
 		let owner = EthereumLocationsConverterFor::<[u8; 32]>::from_chain_id(&chain_id);
 		let asset_id = Self::convert_token_address(network, token);
 		let create_call_index: [u8; 2] = CreateAssetCall::get();
-		let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+		let inbound_queue_pezpallet_index = InboundQueuePalletInstance::get();
 
 		let xcm: Xcm<()> = vec![
 			// Teleport required fees.
@@ -271,7 +269,7 @@ where
 				DepositAsset { assets: AllCounted(1).into(), beneficiary: bridge_location },
 			])),
 			// Only our inbound-queue pezpallet is allowed to invoke `UniversalOrigin`.
-			DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+			DescendOrigin(PalletInstance(inbound_queue_pezpallet_index).into()),
 			// Change origin to the bridge.
 			UniversalOrigin(GlobalConsensus(network)),
 			// Call create_asset on foreign assets pezpallet.
@@ -332,12 +330,12 @@ where
 
 		let total_fees = asset_hub_fee.saturating_add(dest_para_fee);
 		let total_fee_asset: Asset = (Location::parent(), total_fees).into();
-		let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+		let inbound_queue_pezpallet_index = InboundQueuePalletInstance::get();
 
 		let mut instructions = vec![
 			ReceiveTeleportedAsset(total_fee_asset.into()),
 			BuyExecution { fees: asset_hub_fee_asset, weight_limit: Unlimited },
-			DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+			DescendOrigin(PalletInstance(inbound_queue_pezpallet_index).into()),
 			UniversalOrigin(GlobalConsensus(network)),
 			ReserveAssetDeposited(asset.clone().into()),
 			ClearOrigin,
@@ -364,8 +362,15 @@ where
 						xcm: vec![
 							// Buy execution on target.
 							BuyExecution { fees: dest_para_fee_asset, weight_limit: Unlimited },
-							// Deposit assets to beneficiary.
-							DepositAsset { assets: Wild(AllCounted(2)), beneficiary },
+							// Token first, same reason as the Asset Hub branch: it is the sufficient
+							// asset, so it opens the account, and a leftover fee under the existential
+							// deposit cannot take it down with it.
+							DepositAsset {
+								assets: Definite(asset.clone().into()),
+								beneficiary: beneficiary.clone(),
+							},
+							// Then whatever fee is left.
+							DepositAsset { assets: Wild(AllCounted(1)), beneficiary },
 							// Forward message id to destination teyrchain.
 							SetTopic(message_id.into()),
 						]
@@ -375,10 +380,16 @@ where
 			},
 			None => {
 				instructions.extend(vec![
-					// Deposit both asset and fees to beneficiary so the fees will not get
-					// trapped. Another benefit is when fees left more than ED on AssetHub could be
-					// used to create the beneficiary account in case it does not exist.
-					DepositAsset { assets: Wild(AllCounted(2)), beneficiary },
+					// The token goes first, on its own. It is a sufficient asset, so depositing it
+					// opens the beneficiary account when that account does not yet exist.
+					DepositAsset {
+						assets: Definite(asset.clone().into()),
+						beneficiary: beneficiary.clone(),
+					},
+					// Then the unspent fee, into the account the token just opened. Kept in the same
+					// instruction as the token this used to fail whenever the leftover was under the
+					// existential deposit, and took the token down with it.
+					DepositAsset { assets: Wild(AllCounted(1)), beneficiary },
 				]);
 			},
 		}
@@ -439,12 +450,12 @@ where
 
 		let asset: Asset = (reanchored_asset_loc, amount).into();
 
-		let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+		let inbound_queue_pezpallet_index = InboundQueuePalletInstance::get();
 
 		let instructions = vec![
 			ReceiveTeleportedAsset(total_fee_asset.clone().into()),
 			BuyExecution { fees: asset_hub_fee_asset, weight_limit: Unlimited },
-			DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+			DescendOrigin(PalletInstance(inbound_queue_pezpallet_index).into()),
 			UniversalOrigin(GlobalConsensus(network)),
 			WithdrawAsset(asset.clone().into()),
 			// Deposit both asset and fees to beneficiary so the fees will not get
@@ -539,13 +550,13 @@ mod tests {
 		let ah_context: InteriorLocation = [GlobalConsensus(Pezkuwi), Teyrchain(1000)].into();
 		let global_ah = Location::new(1, ah_context.clone());
 		let assets = vec![
-			// HEZ
+			// DOT
 			Location::new(1, []),
 			// GLMR (Some Pezkuwi teyrchain currency)
 			Location::new(1, [Teyrchain(2004)]),
 			// AH asset
 			Location::new(0, [PalletInstance(50), GeneralIndex(42)]),
-			// DCL
+			// KSM
 			Location::new(2, [GlobalConsensus(Dicle)]),
 			// KAR (Some Dicle teyrchain currency)
 			Location::new(2, [GlobalConsensus(Dicle), Teyrchain(2000)]),

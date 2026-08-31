@@ -34,7 +34,7 @@ macro_rules! mock {
 				fn start(self, ctx: Context) -> SpawnedSubsystem {
 					let future = self.run(ctx).map(|_| Ok(())).boxed();
 
-                    // The name will appear in bizinikiwi CPU task metrics as `task_group`.`
+                    // The name will appear in substrate CPU task metrics as `task_group`.`
 					SpawnedSubsystem { name: "test-environment", future }
 				}
 			}

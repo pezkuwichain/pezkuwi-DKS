@@ -22,8 +22,14 @@ use emulated_integration_tests_common::{
 #[test]
 fn teleport_via_limited_teleport_assets_from_and_to_relay() {
 	let amount = ZAGROS_ED * 100;
+	let native_asset: Assets = (Here, amount).into();
 
-	test_relay_is_trusted_teleporter!(Zagros, vec![PeopleZagros], amount, limited_teleport_assets);
+	test_relay_is_trusted_teleporter!(
+		Zagros,
+		vec![PeopleZagros],
+		(native_asset, amount),
+		limited_teleport_assets
+	);
 
 	test_teyrchain_is_trusted_teleporter_for_relay!(
 		PeopleZagros,
@@ -36,8 +42,14 @@ fn teleport_via_limited_teleport_assets_from_and_to_relay() {
 #[test]
 fn teleport_via_transfer_assets_from_and_to_relay() {
 	let amount = ZAGROS_ED * 100;
+	let native_asset: Assets = (Here, amount).into();
 
-	test_relay_is_trusted_teleporter!(Zagros, vec![PeopleZagros], amount, transfer_assets);
+	test_relay_is_trusted_teleporter!(
+		Zagros,
+		vec![PeopleZagros],
+		(native_asset, amount),
+		transfer_assets
+	);
 
 	test_teyrchain_is_trusted_teleporter_for_relay!(PeopleZagros, Zagros, amount, transfer_assets);
 }
@@ -47,12 +59,10 @@ fn teleport_via_limited_teleport_assets_to_other_system_teyrchains_works() {
 	let amount = ZAGROS_ED * 100;
 	let native_asset: Assets = (Parent, amount).into();
 
-	let fee_asset_id: AssetId = Parent.into();
 	test_teyrchain_is_trusted_teleporter!(
 		PeopleZagros,         // Origin
 		vec![AssetHubZagros], // Destinations
 		(native_asset, amount),
-		fee_asset_id,
 		limited_teleport_assets
 	);
 }
@@ -62,12 +72,10 @@ fn teleport_via_transfer_assets_to_other_system_teyrchains_works() {
 	let amount = ZAGROS_ED * 100;
 	let native_asset: Assets = (Parent, amount).into();
 
-	let fee_asset_id: AssetId = Parent.into();
 	test_teyrchain_is_trusted_teleporter!(
 		PeopleZagros,         // Origin
 		vec![AssetHubZagros], // Destinations
 		(native_asset, amount),
-		fee_asset_id,
 		transfer_assets
 	);
 }

@@ -27,9 +27,9 @@ use pezframe_system::RawOrigin;
 use pezsp_core::storage::StorageKey;
 use pezsp_runtime::{
 	traits::{BadOrigin, Header as HeaderT, UniqueSaturatedInto},
-	RuntimeDebug,
+	Debug,
 };
-use pezsp_std::{fmt::Debug, ops::RangeInclusive, vec, vec::Vec};
+use pezsp_std::{ops::RangeInclusive, vec, vec::Vec};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 
@@ -76,7 +76,7 @@ pub const NO_INSTANCE_ID: ChainId = [0, 0, 0, 0];
 
 /// Generic header Id.
 #[derive(
-	RuntimeDebug,
+	Debug,
 	Default,
 	Clone,
 	Encode,
@@ -131,7 +131,7 @@ impl<Header: HeaderT> HeaderIdProvider<Header> for Header {
 /// Unique identifier of the chain.
 ///
 /// In addition to its main function (identifying the chain), this type may also be used to
-/// identify module instance. We have a bunch of pallets that may be used in different bridges. E.g.
+/// identify module instance. We have a bunch of pezpallets that may be used in different bridges. E.g.
 /// messages pezpallet may be deployed twice in the same runtime to bridge ThisChain with Chain1 and
 /// Chain2. Sometimes we need to be able to identify deployed instance dynamically. This type may be
 /// used for that.
@@ -165,7 +165,7 @@ impl Size for PreComputedSize {
 }
 
 /// Era of specific transaction.
-#[derive(RuntimeDebug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TransactionEra<BlockNumber, BlockHash> {
 	/// Transaction is immortal.
 	Immortal,
@@ -200,7 +200,7 @@ impl<BlockNumber: Copy + UniqueSaturatedInto<u64>, BlockHash: Copy>
 	}
 
 	/// Returns era that is used by FRAME-based runtimes.
-	pub fn frame_era(&self) -> pezsp_runtime::generic::Era {
+	pub fn pezframe_era(&self) -> pezsp_runtime::generic::Era {
 		match *self {
 			TransactionEra::Immortal => pezsp_runtime::generic::Era::immortal(),
 			// `unique_saturated_into` is fine here - mortality `u64::MAX` is not something we
@@ -348,7 +348,7 @@ pub trait OperatingMode: Send + Copy + Debug + FullCodec {
 	Copy,
 	PartialEq,
 	Eq,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 	Serialize,
@@ -441,10 +441,10 @@ pub trait OwnedBridgeModule<T: pezframe_system::Config> {
 		Ok(())
 	}
 
-	/// Pezpallet owner has a right to halt all module operations and then resume it. If it is
-	/// `None`, then there are no direct ways to halt/resume module operations, but other runtime
-	/// methods may still be used to do that (i.e. democracy::referendum to update halt flag
-	/// directly or call the `set_operating_mode`).
+	/// Pezpallet owner has a right to halt all module operations and then resume it. If it is `None`,
+	/// then there are no direct ways to halt/resume module operations, but other runtime methods
+	/// may still be used to do that (i.e. democracy::referendum to update halt flag directly
+	/// or call the `set_operating_mode`).
 	fn module_owner() -> Option<T::AccountId> {
 		Self::OwnerStorage::get()
 	}

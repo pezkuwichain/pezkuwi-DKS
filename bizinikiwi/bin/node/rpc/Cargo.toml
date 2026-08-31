@@ -44,7 +44,6 @@ pezsp-consensus-babe = { workspace = true, default-features = true }
 pezsp-consensus-beefy = { workspace = true, default-features = true }
 pezsp-keystore = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
-pezsp-statement-store = { workspace = true, default-features = true }
 
 [features]
 runtime-benchmarks = [
@@ -73,7 +72,6 @@ runtime-benchmarks = [
 	"pezsp-consensus-beefy/runtime-benchmarks",
 	"pezsp-consensus/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
-	"pezsp-statement-store/runtime-benchmarks",
 ]
 std = [
 	"bizinikiwi-frame-rpc-system/std",
@@ -120,6 +118,5 @@ try-runtime = [
 	"pezsp-consensus-beefy/try-runtime",
 	"pezsp-consensus/try-runtime",
 	"pezsp-runtime/try-runtime",
-	"pezsp-statement-store/try-runtime",
 ]
 serde = []

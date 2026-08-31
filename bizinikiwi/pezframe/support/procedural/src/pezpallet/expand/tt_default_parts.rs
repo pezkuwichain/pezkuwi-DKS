@@ -166,7 +166,7 @@ pub fn expand_tt_default_parts(def: &mut Def) -> proc_macro2::TokenStream {
 		pub use #default_parts_unique_id as tt_default_parts;
 
 
-		// This macro is similar to the `tt_default_parts!`. It expands the pallets that are declared
+		// This macro is similar to the `tt_default_parts!`. It expands the pezpallets that are declared
 		// explicitly (`System: pezframe_system::{Pezpallet, Call}`) with extra parts.
 		//
 		// For example, after expansion an explicit pezpallet would look like:

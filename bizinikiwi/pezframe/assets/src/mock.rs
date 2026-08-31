@@ -173,7 +173,11 @@ pub(crate) fn set_balance_on_hold(asset: u32, who: u64, amount: u64) {
 
 pub(crate) fn clear_balance_on_hold(asset: u32, who: u64) {
 	OnHold::mutate(|v| {
-		v.remove(&(asset, who));
+		if let Some(amount) = v.remove(&(asset, who)) {
+			if amount > 0 {
+				assert_ok!(Assets::increase_balance(asset, &who, amount, |_| Ok(())));
+			}
+		}
 	});
 }
 pub struct TestFreezer;
@@ -238,8 +242,15 @@ pub(crate) fn new_test_ext() -> pezsp_io::TestExternalities {
 	config.assimilate_storage(&mut storage).unwrap();
 
 	let mut ext: pezsp_io::TestExternalities = storage.into();
-	// Clear thread local vars for https://github.com/pezkuwichain/pezkuwi-sdk/issues/317.
+	// Clear thread local vars for https://github.com/paritytech/substrate/issues/10479.
 	ext.execute_with(|| take_hooks());
 	ext.execute_with(|| System::set_block_number(1));
 	ext
+}
+
+pub fn build_and_execute(test: impl FnOnce()) {
+	new_test_ext().execute_with(|| {
+		test();
+		Assets::do_try_state().expect("All invariants must hold after a test");
+	})
 }

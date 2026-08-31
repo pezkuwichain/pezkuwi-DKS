@@ -17,40 +17,38 @@
 
 //! Test environment for `pezpallet-derivatives`.
 //!
-//! It contains a simple NFT-like `unique_items` pezpallet that emulate both NFT collections and
-//! their tokens (depending on the pezpallet instance). This test pezpallet is instatiated three
-//! times in the test environment to cover the usage scenarios of `pezpallet-derivatives` described
-//! in it's crate doc comment.
+//! It contains a simple NFT-like `unique_items` pezpallet that emulate both NFT collections and their
+//! tokens (depending on the pezpallet instance). This test pezpallet is instatiated three times in the
+//! test environment to cover the usage scenarios of `pezpallet-derivatives` described in it's crate
+//! doc comment.
 //!
 //! * The first instance, called `PredefinedIdCollections`, emulates NFT collections that are
 //!   created with a predefined ID.
 //! The ID is set to XCM `AssetId`, so a derivative collection can be created directly using the
-//! foreign collection's ID. This pezpallet instance illustrates and tests the
-//! `pezpallet-derivatives` usage scenario #1 (i.e., when no suitable way of directly creating a
-//! derivative collection is provided by the hosting pezpallet). The configuration of this instance
-//! can be found in the [predefined_id_collections] module. The corresponding
-//! `pezpallet-derivatives` instance is called `PredefinedIdDerivativeCollections`.
+//! foreign collection's ID. This pezpallet instance illustrates and tests the `pezpallet-derivatives`
+//! usage scenario #1 (i.e., when no suitable way of directly creating a derivative collection is
+//! provided by the hosting pezpallet). The configuration of this instance can be found in the
+//! [predefined_id_collections] module. The corresponding `pezpallet-derivatives` instance is called
+//! `PredefinedIdDerivativeCollections`.
 //!
 //! * The second instance, called `AutoIdCollections`, emulates NFT collections that are created
 //!   with an automatically assigned ID (e.g., an incremental one).
 //! The ID is set to `u64`, so a mapping between the foreign collection's ID and the derivative
-//! collection ID is needed. This pezpallet instance illustrates and tests the
-//! `pezpallet-derivatives` usage scenario #2 combined with scenario #1 (since we also test manual
-//! collection creation and destruction). The configuration of this instance can be found in the
-//! [auto_id_collections] module. The corresponding `pezpallet-derivatives` instance is called
-//! `AutoIdDerivativeCollections`.
+//! collection ID is needed. This pezpallet instance illustrates and tests the `pezpallet-derivatives`
+//! usage scenario #2 combined with scenario #1 (since we also test manual collection creation and
+//! destruction). The configuration of this instance can be found in the [auto_id_collections]
+//! module. The corresponding `pezpallet-derivatives` instance is called `AutoIdDerivativeCollections`.
 //!
 //! * The third instance, called `PredefinedIdNfts`, emulates non-fungible tokens within collections
 //!   from the pezpallet's second instance.
 //! The full NFT ID is a tuple consisting of the collection ID and a token ID, both of which are of
 //! the `u64` type. Since a foreign NFT is identified by `(AssetId, AssetInstance)`, we need the
 //! mapping between it and the derivative NFT ID. This pezpallet instance illustrates and tests the
-//! `pezpallet-derivatives` usage scenario #2 without scenario #1 (the manual creation and
-//! destruction of derivative NFTs is forbidden). The configuration of this instance can be found in
-//! the [auto_id_nfts] module. The corresponding `pezpallet-derivatives` instance is called
+//! `pezpallet-derivatives` usage scenario #2 without scenario #1 (the manual creation and destruction
+//! of derivative NFTs is forbidden). The configuration of this instance can be found in the
+//! [auto_id_nfts] module. The corresponding `pezpallet-derivatives` instance is called
 //! `DerivativeNfts`. Additionally, there is an example of asset transactors dealing with derivative
-//! NFTs implemented using `pezpallet-derivatives`, which includes original-to-derivative ID
-//! mapping.
+//! NFTs implemented using `pezpallet-derivatives`, which includes original-to-derivative ID mapping.
 
 use super::*;
 use crate as pezpallet_derivatives;
@@ -238,8 +236,8 @@ pub type CreateDerivativeOwnedBySovAcc<IdAssignment, CreateOp, InvalidAssetErr> 
 		CreateOp,
 	>;
 
-/// The `pezpallet-derivatives` instance corresponding to the `PredefinedIdCollections` instance of
-/// the `unique_items` mock pezpallet.
+/// The `pezpallet-derivatives` instance corresponding to the `PredefinedIdCollections` instance of the
+/// `unique_items` mock pezpallet.
 pub type PredefinedIdDerivativeCollectionsInstance = pezpallet_derivatives::Instance1;
 impl pezpallet_derivatives::Config<PredefinedIdDerivativeCollectionsInstance> for Test {
 	type WeightInfo = pezpallet_derivatives::TestWeightInfo;
@@ -428,7 +426,6 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetTrap = ();
 	type AssetLocker = ();
 	type AssetExchanger = ();
-	type AssetClaims = ();
 	type SubscriptionService = ();
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;

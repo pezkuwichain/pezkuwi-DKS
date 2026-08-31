@@ -45,7 +45,7 @@ use pezframe_election_provider_support::{
 use pezframe_support::{
 	derive_impl,
 	dispatch::DispatchClass,
-	dynamic_params::{dynamic_pallet_params, dynamic_params},
+	dynamic_params::{dynamic_params, dynamic_pezpallet_params},
 	genesis_builder_helper::{build_state, get_preset},
 	instances::{Instance1, Instance2},
 	ord_parameter_types, parameter_types,
@@ -110,7 +110,7 @@ use pezsp_runtime::{
 	},
 	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, FixedU128, MultiSignature, MultiSigner, Perbill,
-	Percent, Permill, Perquintill, RuntimeDebug,
+	Percent, Permill, Perquintill,
 };
 use pezsp_std::{borrow::Cow, prelude::*};
 #[cfg(any(feature = "std", test))]
@@ -214,7 +214,12 @@ parameter_types! {
 	pub const BlockHashCount: BlockNumber = 2400;
 	pub const Version: RuntimeVersion = VERSION;
 	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
 		.for_class(DispatchClass::all(), |weights| {
@@ -421,7 +426,7 @@ parameter_types! {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]
@@ -612,7 +617,7 @@ impl pezpallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type OnChargeTransaction = FungibleAdapter<Balances, ResolveTo<TreasuryAccount, Balances>>;
 	type OperationalFeeMultiplier = OperationalFeeMultiplier;
-	type WeightToFee = pezpallet_revive::evm::fees::BlockRatioFee<1, 1, Self>;
+	type WeightToFee = pezpallet_revive::evm::fees::BlockRatioFee<1, 1, Self, Balance>;
 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
 	type FeeMultiplierUpdate = TargetedFeeAdjustment<
 		Self,
@@ -1357,7 +1362,18 @@ parameter_types! {
 	pub const BountyUpdatePeriod: BlockNumber = 14 * DAYS;
 }
 
+parameter_types! {
+	/// The assets a bounty account can hold, and so the ones that have to be swept back into the
+	/// treasury when a bounty is cancelled. Bounties here are funded in the native token.
+	pub BountyRelevantAssets: alloc::vec::Vec<NativeOrWithId<u32>> =
+		alloc::vec![NativeOrWithId::Native];
+}
+
 impl pezpallet_bounties::Config for Runtime {
+	// On cancellation the bounty account is emptied into the treasury. The unit type would compile
+	// and silently strand whatever the account holds, so this is wired to the real mover.
+	type TransferAllAssets =
+		pezpallet_bounties::TransferAllFungibles<AccountId, NativeAndAssets, BountyRelevantAssets>;
 	type RuntimeEvent = RuntimeEvent;
 	type BountyDepositBase = BountyDepositBase;
 	type BountyDepositPayoutDelay = BountyDepositPayoutDelay;
@@ -1514,13 +1530,25 @@ impl pezpallet_contracts::Config for Runtime {
 	type Xcm = ();
 }
 
+// The ERC20 precompiles gained EIP-2612 permits, which need somewhere to keep the nonces that
+// stop a signed approval being replayed. That is a pallet of its own, and `revive`'s config now
+// requires it to be present.
+impl pezpallet_assets_precompiles::PermitConfig for Runtime {
+	// Same chain id the EVM layer reports, or a permit signed for this chain would verify
+	// against a different domain than the one that issued it.
+	type ChainId = ConstU64<420_420_420>;
+	type WeightInfo = ();
+}
+
+// The pallet's own defaults now cover the members this runtime has no opinion about — among them
+// `OnBurn`, `Deposit` and `GasScale`, which were added with the gas-metering rework. Deriving them
+// keeps this list to the choices that are actually this chain's, which is how the revive dev node
+// wires it too.
+#[derive_impl(pezpallet_revive::config_preludes::TestDefaultConfig)]
 impl pezpallet_revive::Config for Runtime {
 	type Time = Timestamp;
 	type Balance = Balance;
 	type Currency = Balances;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type RuntimeOrigin = RuntimeOrigin;
 	type DepositPerItem = DepositPerItem;
 	type DepositPerChildTrieItem = DepositPerChildTrieItem;
 	type DepositPerByte = DepositPerByte;
@@ -1530,10 +1558,8 @@ impl pezpallet_revive::Config for Runtime {
 	type AddressMapper = pezpallet_revive::AccountId32Mapper<Self>;
 	type RuntimeMemory = ConstU32<{ 128 * 1024 * 1024 }>;
 	type PVFMemory = ConstU32<{ 512 * 1024 * 1024 }>;
-	type UnsafeUnstableInterface = ConstBool<false>;
 	type UploadOrigin = EnsureSigned<Self::AccountId>;
 	type InstantiateOrigin = EnsureSigned<Self::AccountId>;
-	type RuntimeHoldReason = RuntimeHoldReason;
 	type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
 	type ChainId = ConstU64<420_420_420>;
 	type NativeToEthRatio = ConstU32<1_000_000>; // 10^(18 - 12) Eth is 10^18, Native is 10^12.
@@ -1750,20 +1776,50 @@ impl pezpallet_identity::Config for Runtime {
 parameter_types! {
 	pub const ConfigDepositBase: Balance = 5 * DOLLARS;
 	pub const FriendDepositFactor: Balance = 50 * CENTS;
-	pub const MaxFriends: u16 = 9;
 	pub const RecoveryDeposit: Balance = 5 * DOLLARS;
+	pub const RecoveryDepositPerItem: Balance = deposit(1, 0);
+	pub const RecoveryDepositPerByte: Balance = deposit(0, 1);
+
+	pub const FriendGroupsHoldReason: RuntimeHoldReason =
+		RuntimeHoldReason::Recovery(pezpallet_recovery::HoldReason::FriendGroupsStorage);
+	pub const RecoveryAttemptHoldReason: RuntimeHoldReason =
+		RuntimeHoldReason::Recovery(pezpallet_recovery::HoldReason::AttemptStorage);
+	pub const InheritorHoldReason: RuntimeHoldReason =
+		RuntimeHoldReason::Recovery(pezpallet_recovery::HoldReason::InheritorStorage);
 }
 
+// Recovery now scales its deposits to the footprint it stores, through typed holds, rather than
+// taking flat reserves. The three storage areas each get their own hold reason so a release can
+// only touch what it paid for.
 impl pezpallet_recovery::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pezpallet_recovery::weights::BizinikiwiWeight<Runtime>;
 	type RuntimeCall = RuntimeCall;
+	type RuntimeHoldReason = RuntimeHoldReason;
 	type BlockNumberProvider = System;
 	type Currency = Balances;
-	type ConfigDepositBase = ConfigDepositBase;
-	type FriendDepositFactor = FriendDepositFactor;
-	type MaxFriends = MaxFriends;
-	type RecoveryDeposit = RecoveryDeposit;
+	type FriendGroupsConsideration = HoldConsideration<
+		AccountId,
+		Balances,
+		FriendGroupsHoldReason,
+		LinearStoragePrice<ConfigDepositBase, FriendDepositFactor, Balance>,
+	>;
+	type AttemptConsideration = HoldConsideration<
+		AccountId,
+		Balances,
+		RecoveryAttemptHoldReason,
+		LinearStoragePrice<RecoveryDepositPerItem, RecoveryDepositPerByte, Balance>,
+	>;
+	type InheritorConsideration = HoldConsideration<
+		AccountId,
+		Balances,
+		InheritorHoldReason,
+		LinearStoragePrice<RecoveryDepositPerItem, RecoveryDepositPerByte, Balance>,
+	>;
+	type SecurityDeposit = RecoveryDeposit;
+	type Slash = ResolveTo<TreasuryAccount, Balances>;
+	// Documented upstream as never safe to reduce: shrinking it makes stored bounded vectors
+	// undecodable. Held at the previous `MaxFriends` value.
+	type MaxFriendsPerConfig = ConstU32<9>;
 }
 
 parameter_types! {
@@ -1922,6 +1978,8 @@ impl pezpallet_assets::Config<Instance2> for Runtime {
 
 parameter_types! {
 	pub const AssetConversionPalletId: PalletId = PalletId(*b"py/ascon");
+	/// Liquidity provider fee. Expressed as a rate now rather than a raw numerator over 1000.
+	pub LpFee: Permill = Permill::from_rational(3u32, 1_000u32); // 0.3%, unchanged
 	pub const PoolSetupFee: Balance = 1 * DOLLARS; // should be more or equal to the existential deposit
 	pub const MintMinLiquidity: Balance = 100;  // 100 is good enough when the main currency has 10-12 decimals.
 	pub const LiquidityWithdrawalFee: Permill = Permill::from_percent(0);
@@ -1957,7 +2015,7 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type PoolSetupFeeAsset = Native;
 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
 	type PalletId = AssetConversionPalletId;
-	type LPFee = ConstU32<3>; // means 0.3%
+	type LPFee = LpFee;
 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
 	type WeightInfo = pezpallet_asset_conversion::weights::BizinikiwiWeight<Runtime>;
 	type MaxSwapPathLength = ConstU32<4>;
@@ -2462,7 +2520,7 @@ impl pezpallet_mixnet::Config for Runtime {
 pub mod dynamic_params {
 	use super::*;
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 0)]
 	pub mod storage {
 		/// Configures the base deposit of storing some data.
@@ -2474,7 +2532,7 @@ pub mod dynamic_params {
 		pub static ByteDeposit: Balance = 1 * CENTS;
 	}
 
-	#[dynamic_pallet_params]
+	#[dynamic_pezpallet_params]
 	#[codec(index = 1)]
 	pub mod referenda {
 		/// The configuration for the tracks
@@ -2859,6 +2917,9 @@ mod runtime {
 	#[runtime::pezpallet_index(85)]
 	pub type Oracle = pezpallet_oracle::Pezpallet<Runtime>;
 
+	#[runtime::pezpallet_index(86)]
+	pub type AssetsPrecompilesPermit = pezpallet_assets_precompiles::permit::Pezpallet<Runtime>;
+
 	#[runtime::pezpallet_index(89)]
 	pub type MetaTx = pezpallet_meta_tx::Pezpallet<Runtime>;
 
@@ -2904,9 +2965,12 @@ pub struct EthExtraImpl;
 
 impl EthExtra for EthExtraImpl {
 	type Config = Runtime;
-	type Extension = TxExtension;
+	// The extension is versioned now. This runtime only ever produced the one shape, so that
+	// shape is version zero and nothing else is accepted.
+	type ExtensionV0 = TxExtension;
+	type ExtensionOtherVersions = pezsp_runtime::traits::InvalidVersion;
 
-	fn get_eth_extension(nonce: u32, tip: Balance) -> Self::Extension {
+	fn get_eth_extension(nonce: u32, tip: Balance) -> Self::ExtensionV0 {
 		(
 			pezframe_system::AuthorizeCall::<Runtime>::new(),
 			pezframe_system::CheckNonZeroSender::<Runtime>::new(),
@@ -3144,7 +3208,6 @@ mod benches {
 		[pezpallet_mmr, Mmr]
 		[pezpallet_multi_asset_bounties, MultiAssetBounties]
 		[pezpallet_multisig, Multisig]
-		[pezpallet_nomination_pools, NominationPoolsBench::<Runtime>]
 		[pezpallet_offences, OffencesBench::<Runtime>]
 		[pezpallet_oracle, Oracle]
 		[pezpallet_preimage, Preimage]
@@ -3251,14 +3314,9 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 		}
 	}
 
-	impl pezsp_statement_store::runtime_api::ValidateStatement<Block> for Runtime {
-		fn validate_statement(
-			source: pezsp_statement_store::runtime_api::StatementSource,
-			statement: pezsp_statement_store::Statement,
-		) -> Result<pezsp_statement_store::runtime_api::ValidStatement, pezsp_statement_store::runtime_api::InvalidStatement> {
-			Statement::validate_statement(source, statement)
-		}
-	}
+	// The `ValidateStatement` runtime API is gone: statement validation moved out of the runtime
+	// and into the store on the client side, and `pezpallet_statement` no longer carries a
+	// `validate_statement` to call. There is nothing for the runtime to answer here any more.
 
 	impl pezsp_offchain::OffchainWorkerApi<Block> for Runtime {
 		fn offchain_worker(header: &<Block as BlockT>::Header) {
@@ -3755,8 +3813,11 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+		fn generate_session_keys(
+			owner: Vec<u8>,
+			seed: Option<Vec<u8>>,
+		) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(
@@ -3769,6 +3830,18 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 	impl pezpallet_asset_rewards::AssetRewards<Block, Balance> for Runtime {
 		fn pool_creation_cost() -> Balance {
 			StakePoolCreationDeposit::get()
+		}
+	}
+
+	impl pezsp_transaction_storage_proof::runtime_api::TransactionStorageApi<Block> for Runtime {
+		fn retention_period() -> NumberFor<Block> {
+			TransactionStorage::retention_period()
+		}
+
+		fn indexed_transactions(
+			block: NumberFor<Block>,
+		) -> Vec<pezsp_transaction_storage_proof::IndexedTransactionInfo> {
+			TransactionStorage::indexed_transactions(block)
 		}
 	}
 
@@ -3812,7 +3885,6 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use baseline::Pezpallet as BaselineBench;
-			use pezpallet_nomination_pools_benchmarking::Pezpallet as NominationPoolsBench;
 
 			let mut list = Vec::<BenchmarkList>::new();
 			list_benchmarks!(list, extra);
@@ -3838,14 +3910,18 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use baseline::Pezpallet as BaselineBench;
-			use pezpallet_nomination_pools_benchmarking::Pezpallet as NominationPoolsBench;
 
-			impl pezpallet_session_benchmarking::Config for Runtime {}
+			impl pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 			impl pezpallet_offences_benchmarking::Config for Runtime {}
 			impl pezpallet_election_provider_support_benchmarking::Config for Runtime {}
 			impl pezframe_system_benchmarking::Config for Runtime {}
+			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
 			impl baseline::Config for Runtime {}
-			impl pezpallet_nomination_pools_benchmarking::Config for Runtime {}
 
 			use pezframe_support::traits::WhitelistedStorageKeys;
 			let mut whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();

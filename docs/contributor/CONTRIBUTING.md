@@ -121,7 +121,7 @@ are creating a new crate.
 ### Is the Crate chain-specific?
 
 Chain-specific crates, for example
-[`bp-bridge-hub-pezkuwichain`](https://github.com/pezkuwichain/pezkuwi-sdk/blob/4014b9bf2bf8f74862f63e7114e5c78009529be5/bridges/chains/chain-bridge-hub-rococo/Cargo.toml#L10-L11)
+[`bp-bridge-hub-pezkuwichain`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/4014b9bf2bf8f74862f63e7114e5c78009529be5/bridges/chains/chain-bridge-hub-rococo/Cargo.toml#L10-L11)
 , should not be released as part of the Pezkuwi-SDK umbrella crate. We have a custom metadata
 attribute that is picked up by the [generate-umbrella.py](../../scripts/generate-umbrella.py)
 script, that should be applied to all chain-specific crates like such:
@@ -139,7 +139,7 @@ exclude-from-umbrella = true
 ### Is the Crate a Test, Example or Fuzzer?
 
 Test or example crates, like
-[`pezpallet-example-task`](https://github.com/pezkuwichain/pezkuwi-sdk/blob/9b4acf27b869d7cbb07b03f0857763b8c8cc7566/bizinikiwi/pezframe/examples/tasks/Cargo.toml#L9)
+[`pezpallet-example-task`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/9b4acf27b869d7cbb07b03f0857763b8c8cc7566/bizinikiwi/pezframe/examples/tasks/Cargo.toml#L9)
 , should not be released to crates.io. To ensure this, you must add `publish = false` to your
 crate's `package` section:
 
@@ -154,12 +154,12 @@ publish = false
 
 ## Helping out
 
-We use [labels](https://github.com/pezkuwichain/pezkuwi-sdk/labels) to manage PRs and issues and communicate state of a
+We use [labels](https://github.com/pezkuwichain/pezkuwi-DKS/labels) to manage PRs and issues and communicate state of a
 PR. Please familiarise yourself with them. Best way to get started is to a pick a ticket tagged
-[easy](https://github.com/pezkuwichain/pezkuwi-sdk/issues?q=is%3Aopen+is%3Aissue+label%3AD0-easy) or
-[medium](https://github.com/pezkuwichain/pezkuwi-sdk/issues?q=is%3Aopen+is%3Aissue+label%3AD1-medium) and get going.
+[easy](https://github.com/pezkuwichain/pezkuwi-DKS/issues?q=is%3Aopen+is%3Aissue+label%3AD0-easy) or
+[medium](https://github.com/pezkuwichain/pezkuwi-DKS/issues?q=is%3Aopen+is%3Aissue+label%3AD1-medium) and get going.
 Alternatively, look out for issues tagged
-[mentor](https://github.com/pezkuwichain/pezkuwi-sdk/issues?q=is%3Aopen+is%3Aissue+label%3AC1-mentor) and get in contact
+[mentor](https://github.com/pezkuwichain/pezkuwi-DKS/issues?q=is%3Aopen+is%3Aissue+label%3AC1-mentor) and get in contact
 with the mentor offering their support on that larger task.
 
 ****

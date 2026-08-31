@@ -36,7 +36,7 @@ use pezpallet_contracts_uapi::{CallFlags, ReturnFlags};
 use pezsp_io::hashing::{blake2_128, blake2_256, keccak_256, sha2_256};
 use pezsp_runtime::{
 	traits::{Bounded, Zero},
-	DispatchError, RuntimeDebug,
+	Debug, DispatchError,
 };
 use wasmi::{core::HostError, errors::LinkerError, Linker, Memory, Store};
 
@@ -61,8 +61,8 @@ pub enum AllowUnstableInterface {
 	Yes,
 }
 
-/// Trait implemented by the [`define_env`](pezpallet_contracts_proc_macro::define_env) macro for
-/// the emitted `Env` struct.
+/// Trait implemented by the [`define_env`](pezpallet_contracts_proc_macro::define_env) macro for the
+/// emitted `Env` struct.
 pub trait Environment<HostState> {
 	/// Adds all declared functions to the supplied [`Linker`](wasmi::Linker) and
 	/// [`Store`](wasmi::Store).
@@ -103,7 +103,7 @@ impl From<ExecReturnValue> for ReturnErrorCode {
 }
 
 /// The data passed through when a contract uses `seal_return`.
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 pub struct ReturnData {
 	/// The flags as passed through by the contract. They are still unchecked and
 	/// will later be parsed into a `ReturnFlags` bitflags struct.
@@ -118,7 +118,7 @@ pub struct ReturnData {
 /// occurred (the SupervisorError variant).
 /// The other case is where the trap does not constitute an error but rather was invoked
 /// as a quick way to terminate the application (all other variants).
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 pub enum TrapReason {
 	/// The supervisor trapped the contract because of an error condition occurred during
 	/// execution in privileged code.
@@ -1929,7 +1929,7 @@ pub mod env {
 	/// `out_ptr`. This call overwrites it with the size of the value. If the available
 	/// space at `out_ptr` is less than the size of the value a trap is triggered.
 	///
-	/// The data is encoded as `(T::Hash, pezframe_system::pezpallet_prelude::BlockNumberFor::<T>)`.
+	/// The data is encoded as (`T::Hash`, `pezframe_system::pezpallet_prelude::BlockNumberFor::<T>`).
 	///
 	/// # Changes from v0
 	///

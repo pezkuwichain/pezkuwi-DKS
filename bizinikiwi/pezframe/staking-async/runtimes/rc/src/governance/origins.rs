@@ -1,19 +1,18 @@
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // This file is part of Bizinikiwi.
 
-// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
-// SPDX-License-Identifier: Apache-2.0
+// Bizinikiwi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// 	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Bizinikiwi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Bizinikiwi. If not, see <http://www.gnu.org/licenses/>.
 
 //! Custom origins for governance interventions.
 
@@ -31,15 +30,7 @@ pub mod pezpallet_custom_origins {
 	pub struct Pezpallet<T>(_);
 
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		MaxEncodedLen,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		TypeInfo,
-		RuntimeDebug,
+		PartialEq, Eq, Clone, MaxEncodedLen, Encode, Decode, DecodeWithMemTracking, TypeInfo, Debug,
 	)]
 	#[pezpallet::origin]
 	pub enum Origin {
@@ -59,15 +50,15 @@ pub mod pezpallet_custom_origins {
 		ReferendumCanceller,
 		/// Origin able to kill referenda.
 		ReferendumKiller,
-		/// Origin able to spend up to 1 DCL from the treasury at once.
+		/// Origin able to spend up to 1 KSM from the treasury at once.
 		SmallTipper,
-		/// Origin able to spend up to 5 DCL from the treasury at once.
+		/// Origin able to spend up to 5 KSM from the treasury at once.
 		BigTipper,
-		/// Origin able to spend up to 50 DCL from the treasury at once.
+		/// Origin able to spend up to 50 KSM from the treasury at once.
 		SmallSpender,
-		/// Origin able to spend up to 500 DCL from the treasury at once.
+		/// Origin able to spend up to 500 KSM from the treasury at once.
 		MediumSpender,
-		/// Origin able to spend up to 5,000 DCL from the treasury at once.
+		/// Origin able to spend up to 5,000 KSM from the treasury at once.
 		BigSpender,
 		/// Origin able to dispatch a whitelisted call.
 		WhitelistedCaller,

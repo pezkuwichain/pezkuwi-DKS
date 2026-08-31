@@ -49,6 +49,10 @@ parameter_types! {
 	pub const MaxStringLen: u32 = 50;
 	pub const MaxCidLen: u32 = 128;
 	pub const PenaltyPerRevocationAmount: u32 = 3;
+	/// Small enough that a test can cross them.
+	pub const AssociationHeadThreshold: u32 = 3;
+	pub const CommunityModeratorThreshold: u32 = 5;
+	pub const ReferralFallbackPeriod: u64 = 100;
 }
 
 // Mock implementation for CitizenNftProvider
@@ -67,7 +71,19 @@ impl pezpallet_identity_kyc::types::CitizenNftProvider<AccountId> for MockCitize
 	}
 }
 
+parameter_types! {
+	pub const VouchingWaitingPeriod: u64 = 10;
+	pub const InitialVouchingCapacity: u32 = 2;
+	pub const SettledVouchesPerPlace: u32 = 2;
+	pub const MaxVouchingCapacity: u32 = 6;
+	pub const SuspensionRevocationFloor: u32 = 3;
+	pub const SuspensionRevocationPercent: u32 = 20;
+}
+
 impl pezpallet_identity_kyc::Config for Test {
+	type OnCitizenshipRestored = Referral;
+	type VouchingWaitingPeriod = VouchingWaitingPeriod;
+	type VouchingCapacity = Referral;
 	type Currency = Balances;
 	type GovernanceOrigin = EnsureRoot<AccountId>;
 	type WeightInfo = ();
@@ -75,6 +91,7 @@ impl pezpallet_identity_kyc::Config for Test {
 	type OnCitizenshipRevoked = Referral; // Referral pezpallet handles revocation penalty
 	type CitizenNftProvider = MockCitizenNftProvider;
 	type DefaultReferrer = DefaultReferrerAccount;
+	type ReferralFallbackPeriod = ReferralFallbackPeriod;
 	type KycApplicationDeposit = KycApplicationDepositAmount;
 	type MaxStringLength = MaxStringLen;
 	type MaxCidLength = MaxCidLen;
@@ -89,10 +106,20 @@ impl pezframe_support::traits::Get<AccountId> for DefaultReferrerAccount {
 }
 
 impl pezpallet_referral::Config for Test {
+	type InitialVouchingCapacity = InitialVouchingCapacity;
+	type SettledVouchesPerPlace = SettledVouchesPerPlace;
+	type MaxVouchingCapacity = MaxVouchingCapacity;
+	type SuspensionRevocationFloor = SuspensionRevocationFloor;
+	type SuspensionRevocationPercent = SuspensionRevocationPercent;
 	type WeightInfo = ();
 	type DefaultReferrer = DefaultReferrerAccount;
 	type PenaltyPerRevocation = PenaltyPerRevocationAmount;
 	type TrustScoreUpdater = ();
+	// The mock has no tiki pallet; what the tests check here is the counting, and the
+	// awarding itself is tested in `tiki`.
+	type EarnedRoles = ();
+	type AssociationHeadThreshold = AssociationHeadThreshold;
+	type CommunityModeratorThreshold = CommunityModeratorThreshold;
 }
 
 /// Build test externalities with founding citizens

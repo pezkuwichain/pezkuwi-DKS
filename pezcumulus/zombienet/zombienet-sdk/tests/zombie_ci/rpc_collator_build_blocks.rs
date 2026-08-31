@@ -31,12 +31,7 @@ async fn rpc_collator_builds_blocks() -> Result<(), anyhow::Error> {
 	let alice_client: OnlineClient<PezkuwiConfig> = alice.wait_client().await?;
 
 	log::info!("Ensuring teyrchain making progress");
-	assert_para_throughput(
-		&alice_client,
-		20,
-		[(ParaId::from(PARA_ID), 2..40)].into_iter().collect(),
-	)
-	.await?;
+	assert_para_throughput(&alice_client, 20, [(ParaId::from(PARA_ID), 2..40)], []).await?;
 
 	let dave = network.get_node("dave")?;
 	let eve = network.get_node("eve")?;
@@ -111,7 +106,7 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 		.with_relaychain(|r| {
 			r.with_chain("pezkuwichain-local")
 				.with_default_command("pezkuwi")
-				.with_default_image(images.polkadot.as_str())
+				.with_default_image(images.pezkuwi())
 				.with_default_args(vec![("-lteyrchain=debug").into()])
 				.with_validator(|node| node.with_name("alice"))
 				.with_validator(|node| node.with_name("bob"))

@@ -51,6 +51,7 @@ pezframe-executive = { workspace = true }
 pezframe-support = { features = ["tuples-96"], workspace = true }
 pezframe-system = { workspace = true }
 pezframe-system-rpc-runtime-api = { workspace = true }
+pezpallet-accumulate-and-forward = { workspace = true }
 pezpallet-authority-discovery = { workspace = true }
 pezpallet-authorship = { workspace = true }
 pezpallet-babe = { workspace = true }
@@ -79,7 +80,7 @@ pezpallet-root-testing = { workspace = true }
 pezpallet-scheduler = { workspace = true }
 pezpallet-session = { workspace = true }
 pezpallet-staking-async-ah-client = { workspace = true }
-pezpallet-staking-async-rc-client = { workspace = true }
+pezpallet-staking-async-rc-client = { workspace = true, features = ["xcm-sender"] }
 pezpallet-staking-runtime-api = { workspace = true }
 pezpallet-state-trie-migration = { workspace = true }
 pezpallet-sudo = { workspace = true }
@@ -110,7 +111,6 @@ pezkuwi-runtime-teyrchains = { workspace = true }
 pezkuwi-teyrchain-primitives = { workspace = true }
 
 # Custom Pezkuwi Pallets
-pezpallet-validator-pool = { workspace = true }
 
 xcm = { workspace = true }
 xcm-builder = { workspace = true }
@@ -150,6 +150,7 @@ std = [
 	"pezkuwi-runtime-common/std",
 	"pezkuwi-runtime-teyrchains/std",
 	"pezkuwi-teyrchain-primitives/std",
+	"pezpallet-accumulate-and-forward/std",
 	"pezpallet-authority-discovery/std",
 	"pezpallet-authorship/std",
 	"pezpallet-babe/std",
@@ -188,7 +189,6 @@ std = [
 	"pezpallet-transaction-payment/std",
 	"pezpallet-treasury/std",
 	"pezpallet-utility/std",
-	"pezpallet-validator-pool/std",
 	"pezpallet-vesting/std",
 	"pezpallet-whitelist/std",
 	"pezpallet-xcm-benchmarks?/std",
@@ -241,6 +241,7 @@ runtime-benchmarks = [
 	"pezkuwi-runtime-common/runtime-benchmarks",
 	"pezkuwi-runtime-teyrchains/runtime-benchmarks",
 	"pezkuwi-teyrchain-primitives/runtime-benchmarks",
+	"pezpallet-accumulate-and-forward/runtime-benchmarks",
 	"pezpallet-authority-discovery/runtime-benchmarks",
 	"pezpallet-authorship/runtime-benchmarks",
 	"pezpallet-babe/runtime-benchmarks",
@@ -279,7 +280,6 @@ runtime-benchmarks = [
 	"pezpallet-transaction-payment/runtime-benchmarks",
 	"pezpallet-treasury/runtime-benchmarks",
 	"pezpallet-utility/runtime-benchmarks",
-	"pezpallet-validator-pool/runtime-benchmarks",
 	"pezpallet-vesting/runtime-benchmarks",
 	"pezpallet-whitelist/runtime-benchmarks",
 	"pezpallet-xcm-benchmarks/runtime-benchmarks",
@@ -323,6 +323,7 @@ try-runtime = [
 	"pezkuwi-runtime-common/try-runtime",
 	"pezkuwi-runtime-teyrchains/try-runtime",
 	"pezkuwi-teyrchain-primitives/try-runtime",
+	"pezpallet-accumulate-and-forward/try-runtime",
 	"pezpallet-authority-discovery/try-runtime",
 	"pezpallet-authorship/try-runtime",
 	"pezpallet-babe/try-runtime",
@@ -360,7 +361,6 @@ try-runtime = [
 	"pezpallet-transaction-payment/try-runtime",
 	"pezpallet-treasury/try-runtime",
 	"pezpallet-utility/try-runtime",
-	"pezpallet-validator-pool/try-runtime",
 	"pezpallet-vesting/try-runtime",
 	"pezpallet-whitelist/try-runtime",
 	"pezpallet-xcm-benchmarks?/try-runtime",

@@ -22,6 +22,7 @@ pezsp-blockchain = { workspace = true, default-features = true }
 pezsp-core = { workspace = true }
 pezsp-runtime = { workspace = true }
 serde = { features = ["derive"], workspace = true, default-features = true }
+strum = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]
@@ -32,6 +33,12 @@ runtime-benchmarks = [
 	"pezsp-blockchain/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 ]
-std = ["log/std", "pezsp-blockchain/std", "pezsp-core/std", "pezsp-runtime/std"]
+std = [
+	"log/std",
+	"pezsp-blockchain/std",
+	"pezsp-core/std",
+	"pezsp-runtime/std",
+	"strum/std",
+]
 try-runtime = ["pezsp-blockchain/try-runtime", "pezsp-runtime/try-runtime"]
 serde = []

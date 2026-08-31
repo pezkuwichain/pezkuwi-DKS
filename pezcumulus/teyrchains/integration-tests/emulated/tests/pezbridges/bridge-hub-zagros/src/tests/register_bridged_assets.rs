@@ -93,7 +93,7 @@ fn register_asset_on_rah_from_wah(bridged_asset_at_rah: Location) {
 			bx!(xcm),
 		));
 
-		AssetHubZagros::assert_xcm_pallet_sent();
+		AssetHubZagros::assert_xcm_pezpallet_sent();
 	});
 
 	assert_bridge_hub_zagros_message_accepted(true);
@@ -105,7 +105,7 @@ fn register_asset_on_rah_from_wah(bridged_asset_at_rah: Location) {
 			AssetHubPezkuwichain,
 			vec![
 				// Burned the fee
-				RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Withdraw { who, amount }) => {
 					who: *who == sa_of_wah_on_rah.clone(),
 					amount: *amount == fee_amount,
 				},
@@ -116,7 +116,7 @@ fn register_asset_on_rah_from_wah(bridged_asset_at_rah: Location) {
 					owner: *owner == sa_of_wah_on_rah,
 				},
 				// Unspent fee minted to origin
-				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, .. }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Deposit { who, .. }) => {
 					who: *who == sa_of_wah_on_rah.clone(),
 				},
 			]

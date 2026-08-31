@@ -18,7 +18,6 @@
 use alloc::vec::Vec;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezframe_support::{traits::ConstU32, BoundedVec};
-use pezsp_runtime::RuntimeDebug;
 use scale_info::TypeInfo;
 
 /// A Multihash instance that only supports the basic functionality and no hashing.
@@ -28,7 +27,7 @@ use scale_info::TypeInfo;
 	Eq,
 	PartialOrd,
 	Ord,
-	RuntimeDebug,
+	Debug,
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
@@ -57,7 +56,7 @@ impl Multihash {
 	Eq,
 	PartialOrd,
 	Ord,
-	RuntimeDebug,
+	Debug,
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
@@ -80,7 +79,7 @@ pub enum Version {
 	Eq,
 	PartialOrd,
 	Ord,
-	RuntimeDebug,
+	Debug,
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
@@ -124,7 +123,7 @@ impl Cid {
 	DecodeWithMemTracking,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	TypeInfo,
 	Default,

@@ -41,7 +41,7 @@ mod timestamp;
 /// NOTE this is done to prevent recursive calls into the runtime
 /// (which are not supported currently).
 pub(crate) struct Api {
-	/// A provider for bizinikiwi networking.
+	/// A provider for substrate networking.
 	network_provider: Arc<dyn NetworkProvider + Send + Sync>,
 	/// Is this node a potential validator?
 	is_validator: bool,

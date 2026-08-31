@@ -194,7 +194,7 @@ mod execution {
 		Untrusted,
 	}
 
-	/// The bizinikiwi state machine.
+	/// The substrate state machine.
 	pub struct StateMachine<'a, B, H, Exec>
 	where
 		H: Hasher,
@@ -232,7 +232,7 @@ mod execution {
 		Exec: CodeExecutor + Clone + 'static,
 		B: Backend<H>,
 	{
-		/// Creates new bizinikiwi state machine.
+		/// Creates new substrate state machine.
 		pub fn new(
 			backend: &'a B,
 			overlay: &'a mut OverlayedChanges<H>,
@@ -1097,13 +1097,13 @@ mod tests {
 	use crate::{execution::CallResult, in_memory_backend::new_in_mem};
 	use assert_matches::assert_matches;
 	use codec::Encode;
-	use pezsp_core::Blake2Hasher as BlakeTwo256;
 	use pezsp_core::{
 		map,
 		storage::{ChildInfo, StateVersion},
 		traits::{CallContext, CodeExecutor, Externalities, RuntimeCode},
 		H256,
 	};
+	use pezsp_runtime::traits::BlakeTwo256;
 	use pezsp_trie::{
 		trie_types::{TrieDBMutBuilderV0, TrieDBMutBuilderV1},
 		KeySpacedDBMut, PrefixedMemoryDB,

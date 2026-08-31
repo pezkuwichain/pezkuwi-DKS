@@ -18,7 +18,9 @@
 use crate::configuration::*;
 use pezframe_benchmarking::v2::*;
 use pezframe_system::RawOrigin;
-use pezkuwi_primitives::{ExecutorParam, ExecutorParams, PvfExecKind, PvfPrepKind};
+use pezkuwi_primitives::{
+	ExecutorHostFunction, ExecutorParam, ExecutorParams, PvfExecKind, PvfPrepKind,
+};
 use pezsp_runtime::traits::One;
 
 #[benchmarks]
@@ -71,6 +73,7 @@ mod benchmarks {
 					ExecutorParam::StackLogicalMax(65536),
 					ExecutorParam::StackNativeMax(256 * 1024 * 1024),
 					ExecutorParam::WasmExtBulkMemory,
+					ExecutorParam::EnabledHostFunction(ExecutorHostFunction::EccRfc163),
 					ExecutorParam::PrecheckingMaxMemory(2 * 1024 * 1024 * 1024),
 					ExecutorParam::PvfPrepTimeout(PvfPrepKind::Precheck, 60_000),
 					ExecutorParam::PvfPrepTimeout(PvfPrepKind::Prepare, 360_000),

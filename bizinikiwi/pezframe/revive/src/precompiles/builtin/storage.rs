@@ -16,16 +16,15 @@
 // limitations under the License.
 
 use crate::{
-	limits,
+	Config, Key, limits,
 	precompiles::{BuiltinAddressMatcher, BuiltinPrecompile, Error, Ext},
 	storage::WriteOutcome,
 	vm::RuntimeCosts,
-	Config, Key,
 };
 use alloc::vec::Vec;
 use alloy_core::sol_types::SolValue;
 use core::{marker::PhantomData, num::NonZero};
-use pezpallet_revive_uapi::{precompiles::storage::IStorage, StorageFlags};
+use pezpallet_revive_uapi::{StorageFlags, precompiles::storage::IStorage};
 use pezsp_core::hexdisplay::AsBytesRef;
 
 pub struct Storage<T>(PhantomData<T>);
@@ -70,7 +69,7 @@ impl<T: Config> BuiltinPrecompile for Storage<T> {
 						RuntimeCosts::ClearStorage(len)
 					}
 				};
-				let charged = env.gas_meter_mut().charge(costs(max_size))?;
+				let charged = env.pezframe_meter_mut().charge_weight_token(costs(max_size))?;
 				let key = decode_key(key.as_bytes_ref(), *isFixedKey)
 					.map_err(|_| Error::Revert("failed decoding key".into()))?;
 				let outcome = if transient {
@@ -82,7 +81,7 @@ impl<T: Config> BuiltinPrecompile for Storage<T> {
 				};
 				let contained_key = outcome != WriteOutcome::New;
 				let ret = (contained_key, outcome.old_len());
-				env.gas_meter_mut().adjust_gas(charged, costs(outcome.old_len()));
+				env.pezframe_meter_mut().adjust_weight(charged, costs(outcome.old_len()));
 				Ok(ret.abi_encode())
 			},
 			IStorageCalls::containsStorage(IStorage::containsStorageCall {
@@ -99,7 +98,7 @@ impl<T: Config> BuiltinPrecompile for Storage<T> {
 						RuntimeCosts::ContainsStorage(len)
 					}
 				};
-				let charged = env.gas_meter_mut().charge(costs(max_size))?;
+				let charged = env.pezframe_meter_mut().charge_weight_token(costs(max_size))?;
 				let key = decode_key(key.as_bytes_ref(), *isFixedKey)
 					.map_err(|_| Error::Revert("failed decoding key".into()))?;
 				let outcome = if transient {
@@ -109,7 +108,7 @@ impl<T: Config> BuiltinPrecompile for Storage<T> {
 				};
 				let value_len = outcome.unwrap_or(0);
 				let ret = (outcome.is_some(), value_len);
-				env.gas_meter_mut().adjust_gas(charged, costs(value_len));
+				env.pezframe_meter_mut().adjust_weight(charged, costs(value_len));
 				Ok(ret.abi_encode())
 			},
 			IStorageCalls::takeStorage(IStorage::takeStorageCall { flags, key, isFixedKey }) => {
@@ -122,7 +121,7 @@ impl<T: Config> BuiltinPrecompile for Storage<T> {
 						RuntimeCosts::TakeStorage(len)
 					}
 				};
-				let charged = env.gas_meter_mut().charge(costs(max_size))?;
+				let charged = env.pezframe_meter_mut().charge_weight_token(costs(max_size))?;
 				let key = decode_key(key.as_bytes_ref(), *isFixedKey)
 					.map_err(|_| Error::Revert("failed decoding key".into()))?;
 				let outcome = if transient {
@@ -132,10 +131,10 @@ impl<T: Config> BuiltinPrecompile for Storage<T> {
 				};
 
 				if let crate::storage::WriteOutcome::Taken(value) = outcome {
-					env.gas_meter_mut().adjust_gas(charged, costs(value.len() as u32));
+					env.pezframe_meter_mut().adjust_weight(charged, costs(value.len() as u32));
 					Ok(value.abi_encode())
 				} else {
-					env.gas_meter_mut().adjust_gas(charged, costs(0));
+					env.pezframe_meter_mut().adjust_weight(charged, costs(0));
 					Ok(Vec::<u8>::new().abi_encode())
 				}
 			},

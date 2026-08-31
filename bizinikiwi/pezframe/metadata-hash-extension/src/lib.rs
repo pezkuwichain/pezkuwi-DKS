@@ -94,7 +94,7 @@ impl MetadataHash {
 /// Extension for optionally verifying the metadata hash.
 ///
 /// The metadata hash is cryptographical representation of the runtime metadata. This metadata hash
-/// is build as described in [RFC78](https://polkadot-fellows.github.io/RFCs/approved/0078-merkleized-metadata.html).
+/// is build as described in [RFC78](https://pezkuwi-fellows.github.io/RFCs/approved/0078-merkleized-metadata.html).
 /// This metadata hash should give users the confidence that what they build with an online wallet
 /// is the same they are signing with their offline wallet and then applying on chain. To ensure
 /// that the online wallet is not tricking the offline wallet into decoding and showing an incorrect

@@ -26,8 +26,8 @@
 //!  - [create a liquidity pool](`Pezpallet::create_pool()`) for 2 assets
 //!  - [provide the liquidity](`Pezpallet::add_liquidity()`) and receive back an LP token
 //!  - [exchange the LP token back to assets](`Pezpallet::remove_liquidity()`)
-//!  - [swap a specific amount of assets for another](`Pezpallet::swap_exact_tokens_for_tokens()`)
-//!    if there is a pool created, or
+//!  - [swap a specific amount of assets for another](`Pezpallet::swap_exact_tokens_for_tokens()`) if
+//!    there is a pool created, or
 //!  - [swap some assets for a specific amount of
 //!    another](`Pezpallet::swap_tokens_for_exact_tokens()`).
 //!  - [query for an exchange price](`AssetConversionApi::quote_price_exact_tokens_for_tokens`) via
@@ -37,11 +37,11 @@
 //!
 //! The `quote_price_exact_tokens_for_tokens` and `quote_price_tokens_for_exact_tokens` functions
 //! both take a path parameter of the route to take. If you want to swap from native asset to
-//! non-native asset 1, you would pass in a path of `[HEZ, 1]` or `[1, HEZ]`. If you want to swap
-//! from non-native asset 1 to non-native asset 2, you would pass in a path of `[1, HEZ, 2]`.
+//! non-native asset 1, you would pass in a path of `[DOT, 1]` or `[1, DOT]`. If you want to swap
+//! from non-native asset 1 to non-native asset 2, you would pass in a path of `[1, DOT, 2]`.
 //!
 //! (For an example of configuring this pezpallet to use `Location` as an asset id, see the
-//! pezcumulus repo).
+//! cumulus repo).
 //!
 //! Here is an example `state_call` that asks for a quote of a pool of native versus asset 1:
 //!
@@ -93,7 +93,7 @@ use pezsp_core::Get;
 use pezsp_runtime::{
 	traits::{
 		CheckedAdd, CheckedDiv, CheckedMul, CheckedSub, Ensure, IntegerSquareRoot, MaybeDisplay,
-		One, TrailingZeroInput, Zero,
+		MaybeSerializeDeserialize, One, TrailingZeroInput, Zero,
 	},
 	DispatchError, Saturating, TokenError, TransactionOutcome,
 };
@@ -103,7 +103,7 @@ pub mod pezpallet {
 	use super::*;
 	use pezframe_support::{pezpallet_prelude::*, traits::fungibles::Refund};
 	use pezframe_system::pezpallet_prelude::*;
-	use pezsp_arithmetic::{traits::Unsigned, Permill};
+	use pezsp_arithmetic::{traits::Unsigned, PerThing, Permill};
 
 	#[pezpallet::pezpallet]
 	pub struct Pezpallet<T>(_);
@@ -129,7 +129,7 @@ pub mod pezpallet {
 
 		/// Type of asset class, sourced from [`Config::Assets`], utilized to offer liquidity to a
 		/// pool.
-		type AssetKind: Parameter + MaxEncodedLen;
+		type AssetKind: Parameter + MaxEncodedLen + MaybeSerializeDeserialize;
 
 		/// Registry of assets utilized for providing liquidity to pools.
 		type Assets: Inspect<Self::AccountId, AssetId = Self::AssetKind, Balance = Self::Balance>
@@ -150,17 +150,17 @@ pub mod pezpallet {
 		/// Asset class for the lp tokens from [`Self::PoolAssets`].
 		type PoolAssetId: AssetId + PartialOrd + Incrementable + From<u32>;
 
-		/// Registry for the lp tokens. Ideally only this pezpallet should have create permissions
-		/// on the assets.
+		/// Registry for the lp tokens. Ideally only this pezpallet should have create permissions on
+		/// the assets.
 		type PoolAssets: Inspect<Self::AccountId, AssetId = Self::PoolAssetId, Balance = Self::Balance>
 			+ Create<Self::AccountId>
 			+ Mutate<Self::AccountId>
 			+ AccountTouch<Self::PoolAssetId, Self::AccountId, Balance = Self::Balance>
 			+ Refund<Self::AccountId, AssetId = Self::PoolAssetId>;
 
-		/// A % the liquidity providers will take of every swap. Represents 10ths of a percent.
+		/// The fraction of every swap that the liquidity providers take as a fee.
 		#[pezpallet::constant]
-		type LPFee: Get<u32>;
+		type LPFee: Get<Permill>;
 
 		/// A one-time fee to setup the pool.
 		#[pezpallet::constant]
@@ -207,6 +207,38 @@ pub mod pezpallet {
 	/// This gets incremented whenever a new lp pool is created.
 	#[pezpallet::storage]
 	pub type NextPoolAssetId<T: Config> = StorageValue<_, T::PoolAssetId, OptionQuery>;
+
+	/// Genesis config for the asset conversion pezpallet.
+	#[pezpallet::genesis_config]
+	#[derive(pezframe_support::DefaultNoBound)]
+	pub struct GenesisConfig<T: Config> {
+		/// Pools to create at genesis with initial liquidity.
+		///
+		/// Each entry is `(asset1, asset2, liquidity_provider, amount1, amount2)`.
+		/// The `liquidity_provider` must hold sufficient balances of both assets
+		/// (e.g. via `pezpallet_balances` / `pezpallet_assets` genesis configs).
+		/// Set both amounts to zero to create a pool without initial liquidity.
+		/// No pool setup fee is charged at genesis.
+		pub pools: Vec<(T::AssetKind, T::AssetKind, T::AccountId, T::Balance, T::Balance)>,
+	}
+
+	#[pezpallet::genesis_build]
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+		fn build(&self) {
+			for (asset1, asset2, lp_provider, amount1, amount2) in &self.pools {
+				Pezpallet::<T>::setup_pool_from_genesis(
+					asset1,
+					asset2,
+					lp_provider,
+					*amount1,
+					*amount2,
+				)
+				.unwrap_or_else(|e| {
+					panic!("Genesis pool ({asset1:?}, {asset2:?}) setup failed: {e:?}")
+				});
+			}
+		}
+	}
 
 	// Pezpallet's events.
 	#[pezpallet::event]
@@ -275,7 +307,7 @@ pub mod pezpallet {
 			/// The amount of the second asset that was received.
 			amount_out: T::Balance,
 			/// The route of asset IDs with amounts that the swap went through.
-			/// E.g. (A, amount_in) -> (Hez, amount_out) -> (B, amount_out)
+			/// E.g. (A, amount_in) -> (Dot, amount_out) -> (B, amount_out)
 			path: BalancePath<T>,
 		},
 		/// Assets have been converted from one to another.
@@ -285,7 +317,7 @@ pub mod pezpallet {
 			/// The amount of the second asset that was received.
 			amount_out: T::Balance,
 			/// The route of asset IDs with amounts that the swap went through.
-			/// E.g. (A, amount_in) -> (Hez, amount_out) -> (B, amount_out)
+			/// E.g. (A, amount_in) -> (Dot, amount_out) -> (B, amount_out)
 			path: BalancePath<T>,
 		},
 		/// Pool has been touched in order to fulfill operational requirements.
@@ -348,6 +380,8 @@ pub mod pezpallet {
 		IncorrectPoolAssetId,
 		/// The destination account cannot exist with the swapped funds.
 		BelowMinimum,
+		/// The pool exists but has no liquidity (at least one of the reserves is zero).
+		PoolEmpty,
 	}
 
 	#[pezpallet::hooks]
@@ -388,9 +422,8 @@ pub mod pezpallet {
 		///
 		/// NOTE: when encountering an incorrect exchange rate and non-withdrawable pool liquidity,
 		/// batch an atomic call with [`Pezpallet::add_liquidity`] and
-		/// [`Pezpallet::swap_exact_tokens_for_tokens`] or
-		/// [`Pezpallet::swap_tokens_for_exact_tokens`] calls to render the liquidity withdrawable
-		/// and rectify the exchange rate.
+		/// [`Pezpallet::swap_exact_tokens_for_tokens`] or [`Pezpallet::swap_tokens_for_exact_tokens`]
+		/// calls to render the liquidity withdrawable and rectify the exchange rate.
 		///
 		/// Once liquidity is added, someone may successfully call
 		/// [`Pezpallet::swap_exact_tokens_for_tokens`].
@@ -548,6 +581,70 @@ pub mod pezpallet {
 	}
 
 	impl<T: Config> Pezpallet<T> {
+		/// Create a pool at genesis, bypassing the setup fee.
+		///
+		/// The `lp_provider` must already hold sufficient balances of both assets.
+		/// If both `amount1` and `amount2` are non-zero, initial liquidity is added.
+		/// Returns the LP token amount minted to `lp_provider` (zero if no liquidity).
+		pub(crate) fn setup_pool_from_genesis(
+			asset1: &T::AssetKind,
+			asset2: &T::AssetKind,
+			lp_provider: &T::AccountId,
+			amount1: T::Balance,
+			amount2: T::Balance,
+		) -> Result<T::Balance, DispatchError> {
+			ensure!(asset1 != asset2, Error::<T>::InvalidAssetPair);
+
+			let pool_id = T::PoolLocator::pool_id(asset1, asset2)
+				.map_err(|_| Error::<T>::InvalidAssetPair)?;
+			ensure!(!Pools::<T>::contains_key(&pool_id), Error::<T>::PoolExists);
+
+			let pool_account =
+				T::PoolLocator::address(&pool_id).map_err(|_| Error::<T>::InvalidAssetPair)?;
+
+			// Allocate LP token ID.
+			let lp_token = NextPoolAssetId::<T>::get()
+				.or(T::PoolAssetId::initial_value())
+				.ok_or(Error::<T>::IncorrectPoolAssetId)?;
+			let next_lp_token_id = lp_token.increment().ok_or(Error::<T>::IncorrectPoolAssetId)?;
+			NextPoolAssetId::<T>::set(Some(next_lp_token_id));
+
+			// Create LP token asset.
+			T::PoolAssets::create(lp_token.clone(), pool_account.clone(), false, 1u32.into())?;
+
+			// Touch asset accounts for the pool account.
+			if T::Assets::should_touch(asset1.clone(), &pool_account) {
+				T::Assets::touch(asset1.clone(), &pool_account, lp_provider)?;
+			}
+			if T::Assets::should_touch(asset2.clone(), &pool_account) {
+				T::Assets::touch(asset2.clone(), &pool_account, lp_provider)?;
+			}
+			if T::PoolAssets::should_touch(lp_token.clone(), &pool_account) {
+				T::PoolAssets::touch(lp_token.clone(), &pool_account, lp_provider)?;
+			}
+
+			// Register pool.
+			Pools::<T>::insert(pool_id, PoolInfo { lp_token: lp_token.clone() });
+
+			// Add initial liquidity if amounts are non-zero.
+			if !amount1.is_zero() && !amount2.is_zero() {
+				T::Assets::transfer(asset1.clone(), lp_provider, &pool_account, amount1, Preserve)?;
+				T::Assets::transfer(asset2.clone(), lp_provider, &pool_account, amount2, Preserve)?;
+
+				let lp_token_amount = Self::calc_lp_amount_for_zero_supply(&amount1, &amount2)?;
+				T::PoolAssets::mint_into(
+					lp_token.clone(),
+					&pool_account,
+					T::MintMinLiquidity::get(),
+				)?;
+				T::PoolAssets::mint_into(lp_token, lp_provider, lp_token_amount)?;
+
+				Ok(lp_token_amount)
+			} else {
+				Ok(Zero::zero())
+			}
+		}
+
 		/// Create a new liquidity pool.
 		///
 		/// **Warning**: The storage must be rolled back on error.
@@ -1072,7 +1169,7 @@ pub mod pezpallet {
 			};
 			if preservation == Preserve {
 				// TODO drop the ensure! when this issue addressed
-				// https://github.com/pezkuwichain/pezkuwi-sdk/issues/111
+				// https://github.com/pezkuwichain/pezkuwi-DKS/issues/1698
 				let free = T::Assets::reducible_balance(asset.clone(), who, preservation, Polite);
 				ensure!(free >= value, TokenError::NotExpendable);
 			}
@@ -1193,15 +1290,16 @@ pub mod pezpallet {
 				return Err(Error::<T>::ZeroLiquidity);
 			}
 
+			let fee_complement = T::LPFee::get().left_from_one().deconstruct();
 			let amount_in_with_fee = amount_in
-				.checked_mul(&(T::HigherPrecisionBalance::from(1000u32) - (T::LPFee::get().into())))
+				.checked_mul(&T::HigherPrecisionBalance::from(fee_complement))
 				.ok_or(Error::<T>::Overflow)?;
 
 			let numerator =
 				amount_in_with_fee.checked_mul(&reserve_out).ok_or(Error::<T>::Overflow)?;
 
 			let denominator = reserve_in
-				.checked_mul(&1000u32.into())
+				.checked_mul(&T::HigherPrecisionBalance::from(Permill::ACCURACY))
 				.ok_or(Error::<T>::Overflow)?
 				.checked_add(&amount_in_with_fee)
 				.ok_or(Error::<T>::Overflow)?;
@@ -1232,16 +1330,17 @@ pub mod pezpallet {
 				Err(Error::<T>::AmountOutTooHigh)?
 			}
 
+			let fee_complement = T::LPFee::get().left_from_one().deconstruct();
 			let numerator = reserve_in
 				.checked_mul(&amount_out)
 				.ok_or(Error::<T>::Overflow)?
-				.checked_mul(&1000u32.into())
+				.checked_mul(&T::HigherPrecisionBalance::from(Permill::ACCURACY))
 				.ok_or(Error::<T>::Overflow)?;
 
 			let denominator = reserve_out
 				.checked_sub(&amount_out)
 				.ok_or(Error::<T>::Overflow)?
-				.checked_mul(&(T::HigherPrecisionBalance::from(1000u32) - T::LPFee::get().into()))
+				.checked_mul(&T::HigherPrecisionBalance::from(fee_complement))
 				.ok_or(Error::<T>::Overflow)?;
 
 			let result = numerator
@@ -1298,7 +1397,7 @@ pub mod pezpallet {
 			let balance2 = Self::get_balance(&pool_account, asset2);
 
 			if balance1.is_zero() || balance2.is_zero() {
-				Err(Error::<T>::PoolNotFound)?;
+				Err(Error::<T>::PoolEmpty)?;
 			}
 
 			Ok((balance1, balance2))
@@ -1317,19 +1416,39 @@ pub mod pezpallet {
 			amount: T::Balance,
 			include_fee: bool,
 		) -> Option<T::Balance> {
+			// Swaps reject zero amounts, match that behavior.
+			if amount.is_zero() {
+				return None;
+			}
+
 			let pool_account = T::PoolLocator::pool_address(&asset1, &asset2).ok()?;
 
 			let balance1 = Self::get_balance(&pool_account, asset1);
-			let balance2 = Self::get_balance(&pool_account, asset2);
-			if !balance1.is_zero() {
-				if include_fee {
-					Self::get_amount_out(&amount, &balance1, &balance2).ok()
-				} else {
-					Self::quote(&amount, &balance1, &balance2).ok()
-				}
-			} else {
-				None
+			let balance2 = Self::get_balance(&pool_account, asset2.clone());
+
+			if balance1.is_zero() {
+				return None;
 			}
+
+			let amount_out = if include_fee {
+				Self::get_amount_out(&amount, &balance1, &balance2).ok()?
+			} else {
+				Self::quote(&amount, &balance1, &balance2).ok()?
+			};
+
+			// Small inputs can round output to zero due to integer division.
+			if amount_out.is_zero() {
+				return None;
+			}
+
+			// Swap withdrawals from pools use `keep_alive=true` (Preserve). Use the same
+			// preservation level to determine the actual withdrawable amount.
+			let max_output = T::Assets::reducible_balance(asset2, &pool_account, Preserve, Polite);
+			if amount_out > max_output {
+				return None;
+			}
+
+			Some(amount_out)
 		}
 
 		/// Gets a quote for swapping `amount` of `asset1` for an exact amount of `asset2`.
@@ -1345,18 +1464,30 @@ pub mod pezpallet {
 			amount: T::Balance,
 			include_fee: bool,
 		) -> Option<T::Balance> {
+			// Swaps reject zero amounts, match that behavior.
+			if amount.is_zero() {
+				return None;
+			}
 			let pool_account = T::PoolLocator::pool_address(&asset1, &asset2).ok()?;
 
 			let balance1 = Self::get_balance(&pool_account, asset1);
-			let balance2 = Self::get_balance(&pool_account, asset2);
-			if !balance1.is_zero() {
-				if include_fee {
-					Self::get_amount_in(&amount, &balance1, &balance2).ok()
-				} else {
-					Self::quote(&amount, &balance2, &balance1).ok()
-				}
+			let balance2 = Self::get_balance(&pool_account, asset2.clone());
+
+			if balance1.is_zero() {
+				return None;
+			}
+
+			// Swap withdrawals from pools use `keep_alive=true` (Preserve). Use the same
+			// preservation level to determine the actual withdrawable amount.
+			let max_output = T::Assets::reducible_balance(asset2, &pool_account, Preserve, Polite);
+			if amount > max_output {
+				return None;
+			}
+
+			if include_fee {
+				Self::get_amount_in(&amount, &balance1, &balance2).ok()
 			} else {
-				None
+				Self::quote(&amount, &balance2, &balance1).ok()
 			}
 		}
 	}

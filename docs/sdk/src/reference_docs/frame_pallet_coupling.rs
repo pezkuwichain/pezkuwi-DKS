@@ -66,8 +66,8 @@
 //!
 //! Consider the following example, in which `pezpallet-foo` needs another pezpallet to provide the
 //! block author to it, and `pezpallet-author` which has access to this information.
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", pezpallet_foo)]
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", pezpallet_author)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", pezpallet_foo)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", pezpallet_author)]
 //!
 //! ### Tight Coupling Pallets
 //!
@@ -79,10 +79,10 @@
 //! 2. That it can use the other pezpallet's functionality.
 //!
 //! `pezpallet-foo`'s `Config` would then look like:
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", tight_config)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", tight_config)]
 //!
 //! And `pezpallet-foo` can use the method exposed by `pezpallet_author::Pezpallet` directly:
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", tight_usage)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", tight_usage)]
 //!
 //!
 //! ### Loosely  Coupling Pallets
@@ -90,34 +90,34 @@
 //! If `pezpallet-foo` wants to *not* rely on `pezpallet-author` directly, it can leverage its
 //! `Config`'s associated types. First, we need a trait to express the functionality that
 //! `pezpallet-foo` wants to obtain:
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", AuthorProvider)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", AuthorProvider)]
 //!
 //! > We sometimes refer to such traits that help two pallets interact as "glue traits".
 //!
 //! Next, `pezpallet-foo` states that it needs this trait to be provided to it, at the runtime
 //! level, via an associated type:
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", loose_config)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", loose_config)]
 //!
 //! Then, `pezpallet-foo` can use this trait to obtain the block author, without knowing where it
 //! comes from:
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", loose_usage)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", loose_usage)]
 //!
 //! Then, if `pezpallet-author` implements this glue-trait:
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", pezpallet_author_provider)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", pezpallet_author_provider)]
 //!
 //! And upon the creation of the runtime, the two pallets are linked together as such:
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", runtime_author_provider)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", runtime_author_provider)]
 //!
 //! Crucially, when using loose coupling, we gain the flexibility of providing different
 //! implementations of `AuthorProvider`, such that different users of a `pezpallet-foo` can use
 //! different ones, without any code change being needed. For example, in the code snippets of this
 //! module, you can find [`OtherAuthorProvider`], which is an alternative implementation of
 //! [`AuthorProvider`].
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", other_author_provider)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", other_author_provider)]
 //!
 //! A common pattern in pezkuwi-sdk is to provide an implementation of such glu traits for the unit
 //! type as a "default/test behavior".
-#![doc = docify::embed!("./src/reference_docs/frame_pallet_coupling.rs", unit_author_provider)]
+#![doc = docify::embed!("./src/reference_docs/frame_pezpallet_coupling.rs", unit_author_provider)]
 //!
 //! ## Frame System
 //!
@@ -152,8 +152,8 @@
 //! - <https://www.youtube.com/watch?v=0eNGZpNkJk4>
 //! - <https://exchange.pezkuwichain.app/questions/922/pezpallet-loose-couplingtight-coupling-and-missing-traits>
 //!
-//! [`AuthorProvider`]: crate::reference_docs::frame_pallet_coupling::AuthorProvider
-//! [`OtherAuthorProvider`]: crate::reference_docs::frame_pallet_coupling::OtherAuthorProvider
+//! [`AuthorProvider`]: crate::reference_docs::frame_pezpallet_coupling::AuthorProvider
+//! [`OtherAuthorProvider`]: crate::reference_docs::frame_pezpallet_coupling::OtherAuthorProvider
 
 #![allow(unused)]
 

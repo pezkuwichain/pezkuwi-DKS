@@ -58,6 +58,7 @@ use pezsp_version::NativeVersion;
 use pezsp_version::RuntimeVersion;
 
 use pezcumulus_primitives_core::ParaId;
+use pezframe_support::traits::tokens::imbalance::ResolveTo;
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
@@ -71,6 +72,7 @@ use pezframe_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureRoot,
 };
+use pezpallet_collator_selection::StakingPotAccountId;
 use testnet_teyrchains_constants::pezkuwichain::{
 	consensus::*, currency::*, fee::WeightToFee, time::*,
 };
@@ -208,7 +210,7 @@ parameter_types! {
 /// Migration to initialize storage versions for pallets added after genesis.
 ///
 /// Ideally this would be done automatically (see
-/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/248>), but it probably won't be ready for some
+/// <https://github.com/pezkuwichain/pezkuwi-DKS/issues/248>), but it probably won't be ready for some
 /// time and it's beneficial to get try-runtime-cli on-runtime-upgrade checks into the CI, so we're
 /// doing it manually.
 pub struct InitStorageVersions;
@@ -270,7 +272,12 @@ pub fn native_version() -> NativeVersion {
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
 		.for_class(DispatchClass::all(), |weights| {
@@ -352,7 +359,14 @@ parameter_types! {
 impl pezpallet_balances::Config for Runtime {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
-	type DustRemoval = ();
+	/// Dust -- what is left in an account too small to keep -- goes where this chain's fee
+	/// income goes, rather than being dropped.
+	///
+	/// `()` destroys it. Small per account and not small across a population, and on a chain
+	/// that collects fees for its treasury there is no reason for the remainder to be the one
+	/// thing that vanishes. Upstream stopped dropping it too, with a pallet of its own; this
+	/// gets the same result without taking on a new pallet.
+	type DustRemoval = ResolveTo<StakingPotAccountId<Runtime>, Balances>;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
@@ -402,6 +416,7 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
 	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
 	type ConsensusHook = ConsensusHook;
 	type RelayParentOffset = ConstU32<0>;
+	type SchedulingSignatureVerifier = ();
 }
 
 type ConsensusHook = pezcumulus_pezpallet_aura_ext::FixedVelocityConsensusHook<
@@ -601,7 +616,7 @@ construct_runtime!(
 		Multisig: pezpallet_multisig = 36,
 
 		// Bridge relayers pezpallet, used by several bridges here.
-		BridgeRelayers: pezpallet_bridge_relayers = 47,
+		BridgeRelayers: pezpallet_bridge_relayers = 41,
 
 		// With-Zagros GRANDPA bridge module.
 		BridgeZagrosGrandpa: pezpallet_bridge_grandpa::<Instance3> = 48,
@@ -637,7 +652,7 @@ construct_runtime!(
 
 		// Message Queue. Importantly, is registered last so that messages are processed after
 		// the `on_initialize` hooks of bridging pallets.
-		MessageQueue: pezpallet_message_queue = 175,
+		MessageQueue: pezpallet_message_queue = 250,
 	}
 );
 
@@ -732,6 +747,10 @@ impl_runtime_apis! {
 		fn relay_parent_offset() -> u32 {
 			0
 		}
+
+		fn max_claim_queue_offset() -> u8 {
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
+		}
 	}
 
 	impl pezcumulus_primitives_aura::AuraUnincludedSegmentApi<Block> for Runtime {
@@ -809,8 +828,11 @@ impl_runtime_apis! {
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+		fn generate_session_keys(
+			owner: Vec<u8>,
+			seed: Option<Vec<u8>>,
+		) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(
@@ -1058,6 +1080,9 @@ impl_runtime_apis! {
 		) {
 			use pezframe_benchmarking::BenchmarkList;
 			use pezframe_support::traits::StorageInfoTrait;
+			// The pallet's benchmarks are listed above, and they need this implemented.
+			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
+
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
@@ -1106,7 +1131,18 @@ impl_runtime_apis! {
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
-			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
+			// Imported here rather than at the top of the file: this is the only place the
+			// runtime encodes anything, and it exists only under `runtime-benchmarks`. The
+			// People chains carry `Encode` in their file-level imports and so compiled; these
+			// two did not, and the gap was invisible because no per-push job builds a runtime
+			// with this feature on -- it surfaced the first time a benchmark run reached them.
+			use codec::Encode;
+			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 
 			use xcm::latest::prelude::*;
 			use xcm_config::TokenLocation;
@@ -1149,7 +1185,7 @@ impl_runtime_apis! {
 				}
 
 				fn set_up_complex_asset_transfer(
-				) -> Option<(Assets, AssetId, Location, Box<dyn FnOnce()>)> {
+				) -> Option<(Assets, u32, Location, Box<dyn FnOnce()>)> {
 					// BH only supports teleports to system teyrchain.
 					// Relay/native token can be teleported between BH and Relay.
 					let native_location = TokenLocation::get();
@@ -1181,15 +1217,14 @@ impl_runtime_apis! {
 				fn valid_destination() -> Result<Location, BenchmarkError> {
 					Ok(AssetHubLocation::get())
 				}
-				fn worst_case_holding(_depositable_count: u32) -> Assets {
-					// just concrete assets according to relay chain.
-					let assets: Vec<Asset> = vec![
-						Asset {
-							id: AssetId(TokenLocation::get()),
-							fun: Fungible(1_000_000 * UNITS),
-						}
-					];
-					assets.into()
+				fn worst_case_holding(_depositable_count: u32) -> xcm_executor::AssetsInHolding {
+					use pezpallet_xcm_benchmarks::MockCredit;
+					let mut holding = xcm_executor::AssetsInHolding::new();
+					holding.fungible.insert(
+						AssetId(TokenLocation::get()),
+						alloc::boxed::Box::new(MockCredit(1_000_000 * UNITS)),
+					);
+					holding
 				}
 			}
 
@@ -1369,7 +1404,7 @@ impl_runtime_apis! {
 					params: MessageProofParams<LaneIdOf<Runtime, bridge_to_zagros_config::WithBridgeHubZagrosMessagesInstance>>,
 				) -> (bridge_to_zagros_config::FromZagrosBridgeHubMessagesProof<bridge_to_zagros_config::WithBridgeHubZagrosMessagesInstance>, Weight) {
 					use pezcumulus_primitives_core::XcmpMessageSource;
-					assert!(XcmpQueue::take_outbound_messages(usize::MAX).is_empty());
+					assert!(XcmpQueue::take_outbound_messages(usize::MAX, &[]).is_empty());
 					TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(42.into());
 					let universal_source = bridge_to_zagros_config::open_bridge_for_benchmarks::<
 						Runtime,
@@ -1400,7 +1435,7 @@ impl_runtime_apis! {
 
 				fn is_message_successfully_dispatched(_nonce: pezbp_messages::MessageNonce) -> bool {
 					use pezcumulus_primitives_core::XcmpMessageSource;
-					!XcmpQueue::take_outbound_messages(usize::MAX).is_empty()
+					!XcmpQueue::take_outbound_messages(usize::MAX, &[]).is_empty()
 				}
 			}
 
@@ -1414,7 +1449,7 @@ impl_runtime_apis! {
 					params: MessageProofParams<LaneIdOf<Runtime, bridge_to_bulletin_config::WithPezkuwichainBulletinMessagesInstance>>,
 				) -> (bridge_to_bulletin_config::FromPezkuwichainBulletinMessagesProof<bridge_to_bulletin_config::WithPezkuwichainBulletinMessagesInstance>, Weight) {
 					use pezcumulus_primitives_core::XcmpMessageSource;
-					assert!(XcmpQueue::take_outbound_messages(usize::MAX).is_empty());
+					assert!(XcmpQueue::take_outbound_messages(usize::MAX, &[]).is_empty());
 					TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(42.into());
 					let universal_source = bridge_to_bulletin_config::open_bridge_for_benchmarks::<
 						Runtime,
@@ -1445,7 +1480,7 @@ impl_runtime_apis! {
 
 				fn is_message_successfully_dispatched(_nonce: pezbp_messages::MessageNonce) -> bool {
 					use pezcumulus_primitives_core::XcmpMessageSource;
-					!XcmpQueue::take_outbound_messages(usize::MAX).is_empty()
+					!XcmpQueue::take_outbound_messages(usize::MAX, &[]).is_empty()
 				}
 			}
 
@@ -1490,9 +1525,10 @@ impl_runtime_apis! {
 				}
 
 				fn prepare_rewards_account(
+					_relayer: &AccountId,
 					reward_kind: Self::Reward,
 					reward: Balance,
-				) -> Option<AccountId> {
+				) -> Option<(Self::Reward, AccountId)> {
 					let rewards_account = pezbp_relayers::PayRewardFromAccount::<
 						Balances,
 						AccountId,
@@ -1520,9 +1556,10 @@ impl_runtime_apis! {
 				}
 
 				fn prepare_rewards_account(
+					_relayer: &AccountId,
 					reward_kind: Self::Reward,
 					reward: Balance,
-				) -> Option<AccountId> {
+				) -> Option<(Self::Reward, AccountId)> {
 					let rewards_account = pezbp_relayers::PayRewardFromAccount::<
 						Balances,
 						AccountId,

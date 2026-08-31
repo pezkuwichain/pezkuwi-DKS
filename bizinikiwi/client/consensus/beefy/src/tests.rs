@@ -19,7 +19,7 @@
 //! Tests and test helpers for BEEFY.
 
 use crate::{
-	aux_schema::{load_persistent, tests::verify_persisted_version},
+	aux_schema::{load_and_migrate_persistent, tests::verify_persisted_version},
 	beefy_block_import_and_links,
 	communication::{
 		gossip::{
@@ -1052,7 +1052,7 @@ async fn should_initialize_voter_at_genesis() {
 
 	// verify state also saved to db
 	assert!(verify_persisted_version(&*backend));
-	let state = load_persistent(&*backend).unwrap().unwrap();
+	let state = load_and_migrate_persistent(&*backend).unwrap().unwrap();
 	assert_eq!(state, persisted_state);
 }
 
@@ -1063,8 +1063,8 @@ async fn should_initialize_voter_at_custom_genesis() {
 	let mut net = BeefyTestNet::new(1);
 	let backend = net.peer(0).client().as_backend();
 	// custom pezpallet genesis is block number 7
-	let custom_pallet_genesis = 7;
-	let api = TestApi::new(custom_pallet_genesis, &validator_set, GOOD_MMR_ROOT);
+	let custom_pezpallet_genesis = 7;
+	let api = TestApi::new(custom_pezpallet_genesis, &validator_set, GOOD_MMR_ROOT);
 
 	// push 15 blocks with `AuthorityChange` digests every 15 blocks
 	let hashes = net.generate_blocks_and_sync(15, 15, &validator_set, false).await;
@@ -1082,52 +1082,52 @@ async fn should_initialize_voter_at_custom_genesis() {
 		voter_init_setup(&mut net, &mut finality_notifications, &api).await.unwrap();
 
 	// Test initialization at session boundary.
-	// verify voter initialized with single session starting at block `custom_pallet_genesis` (7)
+	// verify voter initialized with single session starting at block `custom_pezpallet_genesis` (7)
 	let sessions = persisted_state.voting_oracle().sessions();
 	assert_eq!(sessions.len(), 1);
-	assert_eq!(sessions[0].session_start(), custom_pallet_genesis);
+	assert_eq!(sessions[0].session_start(), custom_pezpallet_genesis);
 	let rounds = persisted_state.active_round().unwrap();
-	assert_eq!(rounds.session_start(), custom_pallet_genesis);
+	assert_eq!(rounds.session_start(), custom_pezpallet_genesis);
 	assert_eq!(rounds.validator_set_id(), validator_set.id());
 
 	// verify next vote target is mandatory block 7
 	assert_eq!(persisted_state.best_beefy(), 0);
 	assert_eq!(persisted_state.best_grandpa_number(), 8);
-	assert_eq!(persisted_state.voting_oracle().voting_target(), Some(custom_pallet_genesis));
+	assert_eq!(persisted_state.voting_oracle().voting_target(), Some(custom_pezpallet_genesis));
 
 	// verify state also saved to db
 	assert!(verify_persisted_version(&*backend));
-	let state = load_persistent(&*backend).unwrap().unwrap();
+	let state = load_and_migrate_persistent(&*backend).unwrap().unwrap();
 	assert_eq!(state, persisted_state);
 
 	// now re-init after genesis changes
 
 	// should ignore existing aux db state and reinit at new genesis
 	let new_validator_set = ValidatorSet::new(make_beefy_ids(keys), 42).unwrap();
-	let new_pallet_genesis = 10;
-	let api = TestApi::new(new_pallet_genesis, &new_validator_set, GOOD_MMR_ROOT);
+	let new_pezpallet_genesis = 10;
+	let api = TestApi::new(new_pezpallet_genesis, &new_validator_set, GOOD_MMR_ROOT);
 
 	net.peer(0).client().as_client().finalize_block(hashes[10], None).unwrap();
 	// load persistent state - state preset in DB, but with different pezpallet genesis
 	let new_persisted_state =
 		voter_init_setup(&mut net, &mut finality_notifications, &api).await.unwrap();
 
-	// verify voter initialized with single session starting at block `new_pallet_genesis` (10)
+	// verify voter initialized with single session starting at block `new_pezpallet_genesis` (10)
 	let sessions = new_persisted_state.voting_oracle().sessions();
 	assert_eq!(sessions.len(), 1);
-	assert_eq!(sessions[0].session_start(), new_pallet_genesis);
+	assert_eq!(sessions[0].session_start(), new_pezpallet_genesis);
 	let rounds = new_persisted_state.active_round().unwrap();
-	assert_eq!(rounds.session_start(), new_pallet_genesis);
+	assert_eq!(rounds.session_start(), new_pezpallet_genesis);
 	assert_eq!(rounds.validator_set_id(), new_validator_set.id());
 
 	// verify next vote target is mandatory block 10
 	assert_eq!(new_persisted_state.best_beefy(), 0);
 	assert_eq!(new_persisted_state.best_grandpa_number(), 10);
-	assert_eq!(new_persisted_state.voting_oracle().voting_target(), Some(new_pallet_genesis));
+	assert_eq!(new_persisted_state.voting_oracle().voting_target(), Some(new_pezpallet_genesis));
 
 	// verify state also saved to db
 	assert!(verify_persisted_version(&*backend));
-	let state = load_persistent(&*backend).unwrap().unwrap();
+	let state = load_and_migrate_persistent(&*backend).unwrap().unwrap();
 	assert_eq!(state, new_persisted_state);
 }
 
@@ -1184,7 +1184,7 @@ async fn should_initialize_voter_when_last_final_is_session_boundary() {
 
 	// verify state also saved to db
 	assert!(verify_persisted_version(&*backend));
-	let state = load_persistent(&*backend).unwrap().unwrap();
+	let state = load_and_migrate_persistent(&*backend).unwrap().unwrap();
 	assert_eq!(state, persisted_state);
 }
 
@@ -1239,7 +1239,7 @@ async fn should_initialize_voter_at_latest_finalized() {
 
 	// verify state also saved to db
 	assert!(verify_persisted_version(&*backend));
-	let state = load_persistent(&*backend).unwrap().unwrap();
+	let state = load_and_migrate_persistent(&*backend).unwrap().unwrap();
 	assert_eq!(state, persisted_state);
 }
 
@@ -1250,8 +1250,8 @@ async fn should_initialize_voter_at_custom_genesis_when_state_unavailable() {
 	let mut net = BeefyTestNet::new(1);
 	let backend = net.peer(0).client().as_backend();
 	// custom pezpallet genesis is block number 7
-	let custom_pallet_genesis = 7;
-	let mut api = TestApi::new(custom_pallet_genesis, &validator_set, GOOD_MMR_ROOT);
+	let custom_pezpallet_genesis = 7;
+	let mut api = TestApi::new(custom_pezpallet_genesis, &validator_set, GOOD_MMR_ROOT);
 	// remove validator set from `TestApi`, practically simulating unavailable/pruned runtime state
 	api.validator_set = None;
 
@@ -1269,7 +1269,7 @@ async fn should_initialize_voter_at_custom_genesis_when_state_unavailable() {
 
 	// Test initialization at session boundary.
 	// verify voter initialized with all sessions pending, first one starting at block 5 (start of
-	// session containing `custom_pallet_genesis`).
+	// session containing `custom_pezpallet_genesis`).
 	let sessions = persisted_state.voting_oracle().sessions();
 	// should have enqueued 6 sessions (every 5 blocks from 5 to 30)
 	assert_eq!(sessions.len(), 6);
@@ -1280,17 +1280,17 @@ async fn should_initialize_voter_at_custom_genesis_when_state_unavailable() {
 	assert_eq!(sessions[4].session_start(), 25);
 	assert_eq!(sessions[5].session_start(), 30);
 	let rounds = persisted_state.active_round().unwrap();
-	assert_eq!(rounds.session_start(), custom_pallet_genesis);
+	assert_eq!(rounds.session_start(), custom_pezpallet_genesis);
 	assert_eq!(rounds.validator_set_id(), validator_set.id());
 
 	// verify next vote target is mandatory block 7 (genesis)
 	assert_eq!(persisted_state.best_beefy(), 0);
 	assert_eq!(persisted_state.best_grandpa_number(), 30);
-	assert_eq!(persisted_state.voting_oracle().voting_target(), Some(custom_pallet_genesis));
+	assert_eq!(persisted_state.voting_oracle().voting_target(), Some(custom_pezpallet_genesis));
 
 	// verify state also saved to db
 	assert!(verify_persisted_version(&*backend));
-	let state = load_persistent(&*backend).unwrap().unwrap();
+	let state = load_and_migrate_persistent(&*backend).unwrap().unwrap();
 	assert_eq!(state, persisted_state);
 }
 
@@ -1333,7 +1333,7 @@ async fn should_catch_up_when_loading_saved_voter_state() {
 
 	// verify state also saved to db
 	assert!(verify_persisted_version(&*backend));
-	let state = load_persistent(&*backend).unwrap().unwrap();
+	let state = load_and_migrate_persistent(&*backend).unwrap().unwrap();
 	assert_eq!(state, persisted_state);
 
 	// now let's consider that the node goes offline, and then it restarts after a while
@@ -1362,7 +1362,7 @@ async fn should_catch_up_when_loading_saved_voter_state() {
 }
 
 #[tokio::test]
-async fn beefy_finalizing_after_pallet_genesis() {
+async fn beefy_finalizing_after_pezpallet_genesis() {
 	pezsp_tracing::try_init_simple();
 
 	let peers = [BeefyKeyring::Alice, BeefyKeyring::Bob];
@@ -1385,8 +1385,7 @@ async fn beefy_finalizing_after_pallet_genesis() {
 
 	// Minimum BEEFY block delta is 1.
 
-	// GRANDPA finalize blocks leading up to BEEFY pezpallet genesis -> BEEFY should finalize
-	// nothing.
+	// GRANDPA finalize blocks leading up to BEEFY pezpallet genesis -> BEEFY should finalize nothing.
 	finalize_block_and_wait_for_beefy(&net, peers.clone(), &hashes[14], &[]).await;
 
 	// GRANDPA finalize block #16 -> BEEFY should finalize #15 (genesis mandatory) and #16.

@@ -178,7 +178,7 @@ Released incentive funds are distributed by `pezpallet-pez-rewards` on a per-epo
 
 The true power of PezkuwiChain lies in the **Pezkuwi SDK**, a collection of **14 custom pezpallets** that provide the tools for digital nation-building.
 
-- **Economic Pallets (on Asset Hub):** `pezpallet-pez-treasury`, `pezpallet-presale`, `pezpallet-token-wrapper`.
+- **Economic Pallets (on Asset Hub):** `pezpallet-pez-treasury`, `pezpallet-token-wrapper`.
 - **Social & Identity Pallets (on People Chain):** `pezpallet-identity-kyc`, `pezpallet-trust`, `pezpallet-referral`, `pezpallet-perwerde`, `pezpallet-tiki`, `pezpallet-society`.
 - **Governance & Staking Pallets:** `pezpallet-welati`, `pezpallet-pez-rewards`, `pezpallet-staking-score`, `pezpallet-validator-pool`.
 

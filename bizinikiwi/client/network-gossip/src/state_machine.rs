@@ -28,7 +28,7 @@ use pezsp_runtime::traits::{Block as BlockT, Hash, HashingFor};
 use prometheus_endpoint::{register, Counter, PrometheusError, Registry, U64};
 use std::{collections::HashMap, iter, sync::Arc, time, time::Instant};
 
-// FIXME: Add additional spam/DoS attack protection: https://github.com/pezkuwichain/pezkuwi-sdk/issues/7
+// FIXME: Add additional spam/DoS attack protection: https://github.com/paritytech/substrate/issues/1115
 // NOTE: The current value is adjusted based on largest production network deployment (Dicle) and
 // the current main gossip user (GRANDPA). Currently there are ~800 validators on Dicle, as such,
 // each GRANDPA round should generate ~1600 messages, and we currently keep track of the last 2

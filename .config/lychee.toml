@@ -35,11 +35,11 @@ exclude = [
 	"https://storage.com/",
 	"https://www.backupsite.com/",
 	"https://www.urltomysnapshot.com/",
-	# TODO meta issue: <https://github.com/pezkuwichain/pezkuwi-sdk/issues/134>
+	# TODO meta issue: <https://github.com/pezkuwichain/pezkuwi-DKS/issues/134>
 	"https://github.com/ipfs/js-ipfs-bitswap/blob/",
-	"https://github.com/paritytech/bizinikiwi/pezframe/fast-unstake",
+	"https://github.com/paritytech/substrate/pezframe/fast-unstake",
 	# Exclude wiki.network.pezkuwichain.io - SSL certificate hostname mismatch
-	"https://github.com/pezkuwichain/pezkuwi-sdk/bizinikiwi/pezframe/timestamp",
+	"https://github.com/pezkuwichain/pezkuwi-DKS/bizinikiwi/pezframe/timestamp",
 	"https://github.com/zkcrypto/bls12_381/blob/e224ad4ea1babfc582ccd751c2bf128611d10936/src/test-data/mod.rs",
 	"https://polkadot.network/the-path-of-a-parachain-block/",
 	"https://research.web3.foundation/en/latest/polkadot/NPoS/3.%20Balancing.html",
@@ -115,12 +115,12 @@ exclude = [
 	# GitHub commit-specific URLs (cannot migrate)
 	# ============================================
 	"https://github.com/paritytech/polkadot-sdk/blob/.*/bizinikiwi/.*",
-	"https://github.com/pezkuwichain/pezkuwi-sdk/blob/[a-f0-9]+/.*",
-	"https://github.com/pezkuwichain/pezkuwi-sdk/issues/.*/commits/.*",
-	"https://github.com/pezkuwichain/pezkuwi-sdk/issues/.*/files.*",
-	"https://github.com/pezkuwichain/pezkuwi-sdk/tree/[a-f0-9]+/.*",
+	"https://github.com/pezkuwichain/pezkuwi-DKS/blob/[a-f0-9]+/.*",
+	"https://github.com/pezkuwichain/pezkuwi-DKS/issues/.*/commits/.*",
+	"https://github.com/pezkuwichain/pezkuwi-DKS/issues/.*/files.*",
+	"https://github.com/pezkuwichain/pezkuwi-DKS/tree/[a-f0-9]+/.*",
 	# Migrated bizinikiwi references
-	"https://github.com/pezkuwichain/bizinikiwi.*",
+	"https://github.com/paritytech/substrate.*",
 	# External site temporarily down (503)
 	"https://use.ink/migrate-ink-contracts-to-polkadot-frame-parachain/",
 ]

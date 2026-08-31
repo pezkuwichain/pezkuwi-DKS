@@ -30,6 +30,7 @@ pezframe-benchmarking = { optional = true, workspace = true }
 pezframe-support = { workspace = true }
 pezframe-system = { workspace = true }
 pezpallet-balances = { workspace = true }
+pezsp-api = { workspace = true }
 pezsp-core = { workspace = true }
 pezsp-io = { workspace = true }
 pezsp-runtime = { workspace = true }
@@ -47,15 +48,23 @@ pezsnowbridge-pezpallet-inbound-queue-v2-fixtures = { optional = true, workspace
 pezbp-relayers = { workspace = true }
 
 [dev-dependencies]
+alloy-consensus = { workspace = true, features = ["std"] }
+alloy-primitives = { workspace = true, features = ["std"] }
+alloy-rlp = { workspace = true, features = ["std"] }
 hex-literal = { workspace = true, default-features = true }
 pezframe-benchmarking = { workspace = true, default-features = true }
+pezsnowbridge-pezpallet-ethereum-client = { workspace = true, default-features = true }
+pezsnowbridge-pezpallet-ethereum-client-fixtures = { workspace = true, default-features = true }
 pezsnowbridge-test-utils = { workspace = true }
 pezsp-keyring = { workspace = true, default-features = true }
 
 [features]
 default = ["std"]
 std = [
+	"alloy-consensus/std",
 	"alloy-core/std",
+	"alloy-primitives/std",
+	"alloy-rlp/std",
 	"codec/std",
 	"pezbp-relayers/std",
 	"pezframe-benchmarking/std",
@@ -67,6 +76,7 @@ std = [
 	"pezsnowbridge-inbound-queue-primitives/std",
 	"pezsnowbridge-pezpallet-inbound-queue-v2-fixtures?/std",
 	"pezsnowbridge-test-utils/std",
+	"pezsp-api/std",
 	"pezsp-core/std",
 	"pezsp-io/std",
 	"pezsp-runtime/std",
@@ -88,8 +98,11 @@ runtime-benchmarks = [
 	"pezsnowbridge-beacon-primitives/runtime-benchmarks",
 	"pezsnowbridge-core/runtime-benchmarks",
 	"pezsnowbridge-inbound-queue-primitives/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-ethereum-client-fixtures/runtime-benchmarks",
+	"pezsnowbridge-pezpallet-ethereum-client/runtime-benchmarks",
 	"pezsnowbridge-pezpallet-inbound-queue-v2-fixtures/runtime-benchmarks",
 	"pezsnowbridge-test-utils/runtime-benchmarks",
+	"pezsp-api/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-keyring/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
@@ -106,8 +119,10 @@ try-runtime = [
 	"pezsnowbridge-beacon-primitives/try-runtime",
 	"pezsnowbridge-core/try-runtime",
 	"pezsnowbridge-inbound-queue-primitives/try-runtime",
+	"pezsnowbridge-pezpallet-ethereum-client/try-runtime",
 	"pezsnowbridge-pezpallet-inbound-queue-v2-fixtures?/try-runtime",
 	"pezsnowbridge-test-utils/try-runtime",
+	"pezsp-api/try-runtime",
 	"pezsp-keyring/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"xcm-builder/try-runtime",

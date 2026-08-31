@@ -148,7 +148,12 @@ impl pezpallet_referenda::Config<AmbassadorReferendaInstance> for Runtime {
 	>;
 	type CancelOrigin = EitherOf<EnsureRoot<AccountId>, EnsureHeadAmbassadorsVoice>;
 	type KillOrigin = EitherOf<EnsureRoot<AccountId>, EnsureHeadAmbassadorsVoice>;
-	type Slash = ToParentTreasury<ZagrosTreasuryAccount, LocationToAccountId, Runtime>;
+	type Slash = ToSiblingTreasury<
+		ZagrosTreasuryAccount,
+		LocationToAccountId,
+		AssetHubTreasuryLocation,
+		Runtime,
+	>;
 	type Votes = pezpallet_ranked_collective::Votes;
 	type Tally = pezpallet_ranked_collective::TallyOf<Runtime, AmbassadorCollectiveInstance>;
 	type SubmissionDeposit = SubmissionDeposit;
@@ -240,7 +245,7 @@ parameter_types! {
 /// [`PayOverXcm`] setup to pay the Ambassador salary on the AssetHub in ZGR.
 pub type AmbassadorSalaryPaymaster = PayOverXcm<
 	AmbassadorSalaryLocation,
-	crate::xcm_config::XcmRouter,
+	crate::xcm_config::XcmConfig,
 	crate::PezkuwiXcm,
 	ConstU32<{ 6 * HOURS }>,
 	AccountId,

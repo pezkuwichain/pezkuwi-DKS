@@ -22,7 +22,7 @@ Pezcumulus clouds are shaped sort of like dots; together they form a system that
 
 ### Consensus
 
-[`teyrchain-consensus`](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/pezcumulus/client/consensus/common/src/parachain_consensus.rs)
+[`teyrchain-consensus`](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/pezcumulus/client/consensus/common/src/parachain_consensus.rs)
 is a [consensus engine](https://docs.pezkuwichain.io/v3/advanced/consensus) for Bizinikiwi that follows a PezkuwiChain [relay
 chain](https://wiki.network.pezkuwichain.io/docs/en/learn-architecture#relay-chain). This will run a PezkuwiChain node internally,
 and dictate to the client and synchronization algorithms which chain to follow,
@@ -117,7 +117,7 @@ zombienet --provider native spawn ./zombienet/examples/small_network.toml
 
 ```bash
 # Clone
-git clone https://github.com/pezkuwichain/pezkuwi-sdk
+git clone https://github.com/pezkuwichain/pezkuwi-DKS
 
 # Compile PezkuwiChain's required binaries
 cargo build --release -p pezkuwi
@@ -190,24 +190,18 @@ See [the `bridge-hubs` readme](teyrchains/runtimes/bridge-hubs/README.md) for de
 
 ## Testnets
 
-### Paseo
+### Zagros
 
-[Paseo](https://pezkuwichain.io/?rpc=wss%3A%2F%2Fpaseo.rpc.amforc.com#/explorer) is the newest testnet for PezkuwiChain,
-replacing pezkuwichain as a decentralised, community run, stable testnet for Teyrchain teams and dapp developers to build on.
-For more information, check the [Paseo repo](https://github.com/paseo-network).
-
-### zagros
-
-[zagros](https://pezkuwichain.io/?rpc=wss%3A%2F%2Fzagros-rpc.polkadot.io#/explorer)
-is a long running testnet for PezkuwiChain,
-primarily intended to provide a testing environment for Parity to test the latest changes in the SDK.
+[Zagros](https://pezkuwichain.io/?rpc=wss%3A%2F%2Fzagros-rpc.pezkuwichain.io#/explorer) is the test
+network for PezkuwiChain: a long running environment where runtime and node changes are proven
+before they reach the production network.
 
 ### Testnet Teyrchains
 
 A few testnet teyrchain instances:
 
-- [Asset Hub zagros](https://pezkuwichain.io/?rpc=wss%3A%2F%2Fzagros-asset-hub-rpc.polkadot.io#/explorer)
-- [Frequency Paseo](https://pezkuwichain.io/?rpc=wss%3A%2F%2F0.rpc.testnet.amplica.io#/explorer)
+- [Asset Hub Zagros](https://pezkuwichain.io/?rpc=wss%3A%2F%2Fzagros-asset-hub-rpc.pezkuwichain.io#/explorer)
+- [People Zagros](https://pezkuwichain.io/?rpc=wss%3A%2F%2Fzagros-people-rpc.pezkuwichain.io#/explorer)
 
 The network uses horizontal message passing (HRMP) to enable communication between teyrchains and the relay chain and,
 in turn, between teyrchains. This means that every message is sent to the relay chain, and from the relay chain to its

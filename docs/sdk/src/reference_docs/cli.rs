@@ -1,7 +1,7 @@
 //! # Bizinikiwi CLI
 //!
 //! Let's see some examples of typical CLI arguments used when setting up and running a
-//! Bizinikiwi-based blockchain. We use the [`solochain-template`](https://github.com/pezkuwichain/pezkuwi-sdk/issues/195)
+//! Bizinikiwi-based blockchain. We use the [`solochain-template`](https://github.com/pezkuwichain/pezkuwi-DKS/issues/195)
 //! on these examples.
 //!
 //! #### Checking the available CLI arguments

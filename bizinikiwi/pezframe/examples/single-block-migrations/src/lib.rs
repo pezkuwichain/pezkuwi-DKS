@@ -35,12 +35,13 @@
 //! If weight is a concern or you are not sure which type of migration to use, you should probably
 //! use a multi-block migration.
 //!
-//! TODO: Link above to multi-block migration example.
+//! See the [`pezpallet-example-mbm`](https://paritytech.github.io/pezkuwi-sdk/master/pezpallet_example_mbm/index.html)
+//! pezpallet for an example of a multi-block migration.
 //!
 //! ## Pezpallet Overview
 //!
-//! This example pezpallet contains a single storage item [`Value`](pezpallet::Value), which may be
-//! set by any signed origin by calling the [`set_value`](crate::Call::set_value) extrinsic.
+//! This example pezpallet contains a single storage item [`Value`](pezpallet::Value), which may be set by
+//! any signed origin by calling the [`set_value`](crate::Call::set_value) extrinsic.
 //!
 //! For the purposes of this exercise, we imagine that in [`StorageVersion`] V0 of this pezpallet
 //! [`Value`](pezpallet::Value) is a `u32`, and this what is currently stored on-chain.
@@ -51,17 +52,14 @@
 //! pub type Value<T: Config> = StorageValue<_, u32>;
 //! ```
 //!
-//! In [`StorageVersion`] V1 of the pezpallet a new struct [`CurrentAndPreviousValue`] is
-//! introduced:
+//! In [`StorageVersion`] V1 of the pezpallet a new struct [`CurrentAndPreviousValue`] is introduced:
 #![doc = docify::embed!("src/lib.rs", CurrentAndPreviousValue)]
 //! and [`Value`](pezpallet::Value) is updated to store this new struct instead of a `u32`:
 #![doc = docify::embed!("src/lib.rs", Value)]
-//!
 //! In StorageVersion V1 of the pezpallet when [`set_value`](crate::Call::set_value) is called, the
 //! new value is stored in the `current` field of [`CurrentAndPreviousValue`], and the previous
 //! value (if it exists) is stored in the `previous` field.
 #![doc = docify::embed!("src/lib.rs", pezpallet_calls)]
-//!
 //! ## Why a migration is necessary
 //!
 //! Without a migration, there will be a discrepancy between the on-chain storage for [`Value`] (in
@@ -73,7 +71,7 @@
 //!
 //! ## Adding a migration module
 //!
-//! Writing a pallets migrations in a separate module is strongly recommended.
+//! Writing a pezpallets migrations in a separate module is strongly recommended.
 //!
 //! Here's how the migration module is defined for this pezpallet:
 //!
@@ -119,9 +117,9 @@
 //!
 //! Note that the storage migration logic is attached to a standalone struct implementing
 //! [`UncheckedOnRuntimeUpgrade`], rather than implementing the
-//! [`Hooks::on_runtime_upgrade`](pezframe_support::traits::Hooks::on_runtime_upgrade) hook directly
-//! on the pezpallet. The pezpallet hook is better suited for special types of logic that need to
-//! execute on every runtime upgrade, but not so much for one-off storage migrations.
+//! [`Hooks::on_runtime_upgrade`](pezframe_support::traits::Hooks::on_runtime_upgrade) hook directly on
+//! the pezpallet. The pezpallet hook is better suited for special types of logic that need to execute on
+//! every runtime upgrade, but not so much for one-off storage migrations.
 //!
 //! ### `MigrateV0ToV1`
 //!
@@ -168,14 +166,11 @@ extern crate alloc;
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezframe_support::traits::StorageVersion;
-use pezsp_runtime::RuntimeDebug;
 
 /// Example struct holding the most recently set [`u32`] and the
 /// second most recently set [`u32`] (if one existed).
 #[docify::export]
-#[derive(
-	Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
-)]
+#[derive(Clone, Eq, PartialEq, Encode, Decode, Debug, scale_info::TypeInfo, MaxEncodedLen)]
 pub struct CurrentAndPreviousValue {
 	/// The most recently set value.
 	pub current: u32,

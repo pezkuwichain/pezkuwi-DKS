@@ -10,7 +10,7 @@ The Snowbridge project lives in two repositories:
 
 - [Snowfork/PezkuwiChain-sdk](https://github.com/Snowfork/polkadot-sdk): The Snowbridge teyrchain and pallets live in
 a fork of the Pezkuwi SDK. Changes are eventually contributed back to
-[paritytech/PezkuwiChain-sdk](https://github.com/pezkuwichain/pezkuwi-sdk)
+[paritytech/PezkuwiChain-sdk](https://github.com/pezkuwichain/pezkuwi-DKS)
 - [Snowfork/snowbridge](https://github.com/Snowfork/snowbridge): The rest of the Snowbridge components, like contracts,
 off-chain relayer, end-to-end tests and test-net setup code.
 

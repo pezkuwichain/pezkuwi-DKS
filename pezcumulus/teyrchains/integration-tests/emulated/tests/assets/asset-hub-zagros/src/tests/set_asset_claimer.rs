@@ -97,7 +97,7 @@ fn account_and_location(account: &str) -> (AccountId32, Location) {
 //
 // The claim is driven from Penpal B (the Penpal that carries this network's identity;
 // Penpal A identifies with the other ecosystem) rather than the Asset Hub because this ecosystem's system
-// teyrchains deliberately refuse `pallet_xcm::send` from signed origins — see the
+// teyrchains deliberately refuse `pezpallet_xcm::send` from signed origins — see the
 // `SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, ()>` on every one of them, and the comment
 // above it. Only the testing runtimes permit it, so Penpal is where a user-initiated
 // cross-chain claim can originate from. The behaviour under test — that a remote account set

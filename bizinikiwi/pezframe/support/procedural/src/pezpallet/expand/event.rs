@@ -23,7 +23,6 @@ use crate::{
 use pezframe_support_procedural_tools::get_doc_literals;
 use syn::{spanned::Spanned, Ident};
 
-///
 /// * Add __Ignore variant on Event
 /// * Impl various trait on Event including metadata
 /// * if deposit_event is defined, implement deposit_event on module.

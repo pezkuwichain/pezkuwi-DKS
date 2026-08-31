@@ -126,8 +126,8 @@ impl<T: Config<I>, I: 'static> fungible::Inspect<T::AccountId> for Pezpallet<T, 
 
 		// Provider restriction - total account balance cannot be reduced to zero if it cannot
 		// sustain the loss of a provider reference.
-		// NOTE: This assumes that the pezpallet is a provider (which is true). Is this ever
-		// changes, then this will need to adapt accordingly.
+		// NOTE: This assumes that the pezpallet is a provider (which is true). Is this ever changes,
+		// then this will need to adapt accordingly.
 		let ed = T::ExistentialDeposit::get();
 		let success = if new_free_balance < ed {
 			if pezframe_system::Pezpallet::<T>::can_dec_provider(who) {

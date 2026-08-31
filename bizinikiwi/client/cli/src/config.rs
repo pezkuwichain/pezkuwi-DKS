@@ -189,7 +189,7 @@ pub trait CliConfiguration<DCV: DefaultConfigurationValues = ()>: Sized {
 		};
 
 		// TODO: Return error here in the next release:
-		// https://github.com/pezkuwichain/pezkuwi-sdk/issues/139
+		// https://github.com/pezkuwichain/pezkuwi-DKS/issues/139
 		// if is_validator && network_config.public_addresses.is_empty() {}
 
 		Ok(network_config)

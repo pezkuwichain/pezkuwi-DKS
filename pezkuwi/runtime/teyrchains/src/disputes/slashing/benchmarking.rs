@@ -17,13 +17,12 @@
 use super::*;
 
 use crate::{disputes::SlashingHandler, initializer, shared};
-use codec::Decode;
 use pezframe_benchmarking::v2::*;
 use pezframe_support::traits::{OnFinalize, OnInitialize};
 use pezframe_system::{pezpallet_prelude::BlockNumberFor, RawOrigin};
 use pezkuwi_primitives::{Hash, TEYRCHAIN_KEY_TYPE_ID};
 use pezpallet_staking::testing_utils::create_validators;
-use pezsp_runtime::traits::{One, OpaqueKeys, StaticLookup};
+use pezsp_runtime::traits::{One, StaticLookup};
 use pezsp_session::MembershipProof;
 
 // Candidate hash of the disputed candidate.
@@ -36,6 +35,7 @@ pub const fn max_validators_for<T: super::Config>() -> u32 {
 
 pub trait Config:
 	pezpallet_session::Config
+	+ pezpallet_session_benchmarking::Config
 	+ pezpallet_session::historical::Config
 	+ pezpallet_staking::Config
 	+ super::Config
@@ -51,29 +51,12 @@ where
 	pezpallet_staking::ValidatorCount::<T>::put(n);
 
 	let balance_factor = 1000;
-	// create validators and set random session keys
-	for (n, who) in create_validators::<T>(n, balance_factor).unwrap().into_iter().enumerate() {
-		use rand::{RngCore, SeedableRng};
-
+	// Create validators and set random session keys
+	for who in create_validators::<T>(n, balance_factor).unwrap().into_iter() {
 		let validator = T::Lookup::lookup(who).unwrap();
 		let controller = pezpallet_staking::Pezpallet::<T>::bonded(&validator).unwrap();
 
-		let keys = {
-			const SESSION_KEY_LEN: usize = 32;
-			let key_ids = T::Keys::key_ids();
-			let mut keys_len = key_ids.len() * SESSION_KEY_LEN;
-			if key_ids.contains(&pezsp_core::crypto::key_types::BEEFY) {
-				// BEEFY key is 33 bytes long, not 32.
-				keys_len += 1;
-			}
-			let mut keys = vec![0u8; keys_len];
-			let mut rng = rand_chacha::ChaCha12Rng::seed_from_u64(n as u64);
-			rng.fill_bytes(&mut keys);
-			keys
-		};
-
-		let keys: T::Keys = Decode::decode(&mut &keys[..]).expect("wrong number of session keys?");
-		let proof: Vec<u8> = vec![];
+		let (keys, proof) = T::generate_session_keys_and_proof(controller.clone());
 
 		whitelist_account!(controller);
 		pezpallet_session::Pezpallet::<T>::ensure_can_pay_key_deposit(&controller).unwrap();
@@ -113,7 +96,7 @@ where
 	let idx = crate::shared::CurrentSessionIndex::<T>::get();
 	assert!(
 		idx > session_index,
-		"session rotation should work for teyrchain pallets: {} <= {}",
+		"session rotation should work for teyrchain pezpallets: {} <= {}",
 		idx,
 		session_index,
 	);

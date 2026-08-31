@@ -1,6 +1,6 @@
 # Markdown linting
 
-Since the introduction of [PR #1309](https://github.com/pezkuwichain/pezkuwi-sdk/issues/103), the markdown
+Since the introduction of [PR #1309](https://github.com/pezkuwichain/pezkuwi-DKS/issues/103), the markdown
 files in this repository are checked by a linter for formatting and consistency.
 
 The linter used is [`markdownlint`](https://github.com/DavidAnson/markdownlint) and can be installed locally on your
@@ -8,7 +8,7 @@ machine. It can also be setup as [pre-commit hook](https://github.com/igorshubov
 to ensure that your markdown is passing all the tests.
 
 The rules in place are defined
-[the markdownlint configuration](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/.github/.markdownlint.yaml).
+[the markdownlint configuration](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/.github/.markdownlint.yaml).
 
 You may run `markdownlint` locally using:
 ```

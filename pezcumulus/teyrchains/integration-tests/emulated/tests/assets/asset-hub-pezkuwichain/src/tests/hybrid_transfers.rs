@@ -33,14 +33,14 @@ fn para_to_para_assethub_hop_assertions(t: ParaToParaThroughAHTest) {
 		vec![
 			// Withdrawn from sender teyrchain SA
 			RuntimeEvent::Balances(
-				pezpallet_balances::Event::Burned { who, amount }
+				pezpallet_balances::Event::Withdraw { who, amount }
 			) => {
 				who: *who == sov_penpal_a_on_ah,
 				amount: *amount == t.args.amount,
 			},
 			// Deposited to receiver teyrchain SA
 			RuntimeEvent::Balances(
-				pezpallet_balances::Event::Minted { who, .. }
+				pezpallet_balances::Event::Deposit { who, .. }
 			) => {
 				who: *who == sov_penpal_b_on_ah,
 			},
@@ -448,7 +448,9 @@ fn transfer_foreign_assets_from_para_to_asset_hub() {
 	});
 
 	// Sender's balance is reduced by amount sent plus delivery fees
-	assert!(sender_native_after < sender_native_before - native_amount_to_send);
+	// Delivery fees are paid in the chain's own token, not in the asset being sent, so the
+	// sender's balance in that asset drops by exactly the amount transferred.
+	assert_eq!(sender_native_after, sender_native_before - native_amount_to_send);
 	// Sender's balance is reduced by foreign amount sent
 	assert_eq!(sender_wnds_after, sender_wnds_before - foreign_amount_to_send);
 	// Receiver's balance is increased
@@ -656,7 +658,9 @@ fn transfer_foreign_assets_from_para_to_para_through_asset_hub() {
 	});
 
 	// Sender's balance is reduced by amount sent plus delivery fees
-	assert!(sender_rocs_after < sender_rocs_before - roc_to_send);
+	// Delivery fees are paid in the chain's own token, not in the asset being sent, so the
+	// sender's balance in that asset drops by exactly the amount transferred.
+	assert_eq!(sender_rocs_after, sender_rocs_before - roc_to_send);
 	assert_eq!(sender_wnds_after, sender_wnds_before - wnd_to_send);
 	// Sovereign accounts on reserve are changed accordingly
 	assert_eq!(
@@ -732,19 +736,14 @@ fn transfer_native_asset_from_relay_to_para_through_asset_hub() {
 
 	fn relay_assertions(t: RelayToParaThroughAHTest) {
 		type RuntimeEvent = <Pezkuwichain as Chain>::RuntimeEvent;
-		Pezkuwichain::assert_xcm_pallet_attempted_complete(None);
+		Pezkuwichain::assert_xcm_pezpallet_attempted_complete(None);
 		assert_expected_events!(
 			Pezkuwichain,
 			vec![
 				// Amount to teleport is withdrawn from Sender
-				RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+				RuntimeEvent::Balances(pezpallet_balances::Event::Withdraw { who, amount }) => {
 					who: *who == t.sender.account_id,
 					amount: *amount == t.args.amount,
-				},
-				// Amount to teleport is deposited in Relay's `CheckAccount`
-				RuntimeEvent::Balances(pezpallet_balances::Event::Minted { who, amount }) => {
-					who: *who == <Pezkuwichain as PezkuwichainPallet>::XcmPallet::check_account(),
-					amount:  *amount == t.args.amount,
 				},
 			]
 		);
@@ -759,7 +758,7 @@ fn transfer_native_asset_from_relay_to_para_through_asset_hub() {
 			vec![
 				// Deposited to receiver teyrchain SA
 				RuntimeEvent::Balances(
-					pezpallet_balances::Event::Minted { who, .. }
+					pezpallet_balances::Event::Deposit { who, .. }
 				) => {
 					who: *who == sov_penpal_on_ah,
 				},
@@ -778,9 +777,9 @@ fn transfer_native_asset_from_relay_to_para_through_asset_hub() {
 		assert_expected_events!(
 			PenpalA,
 			vec![
-				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Issued { asset_id, owner, .. }) => {
+				RuntimeEvent::ForeignAssets(pezpallet_assets::Event::Deposited { asset_id, who, .. }) => {
 					asset_id: *asset_id == expected_id,
-					owner: *owner == t.receiver.account_id,
+					who: *who == t.receiver.account_id,
 				},
 			]
 		);

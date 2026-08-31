@@ -340,7 +340,7 @@ where
 	/// transactions. Returns a tuple containing this stream and the controller for managing
 	/// this stream.
 	fn event_stream() -> (StreamOfDropped<C>, Controller<Command<C>>) {
-		//note: 64 allows to avoid warning messages during execution of unit tests.
+		// note: 64 allows to avoid warning messages during execution of unit tests.
 		const CHANNEL_SIZE: usize = 64;
 		let (sender, command_receiver) = pezsc_utils::mpsc::tracing_unbounded::<Command<C>>(
 			"tx-pool-dropped-watcher-cmd-stream",

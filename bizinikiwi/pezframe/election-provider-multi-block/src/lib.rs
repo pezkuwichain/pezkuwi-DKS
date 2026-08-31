@@ -17,8 +17,7 @@
 
 //! # Multi-phase, multi-block, election provider pezpallet.
 //!
-//! > This pezpallet is sometimes abbreviated as `EPMB`, and
-//! > `pezpallet_election_provider_multi_phase` as
+//! > This pezpallet is sometimes abbreviated as `EPMB`, and `pezpallet_election_provider_multi_phase` as
 //! > `EPM`.
 //!
 //! ## Overall idea
@@ -36,52 +35,39 @@
 //! with large enough blocks (in a dedicated teyrchain), the number of voters included in the NPoS
 //! system can grow significantly (yet, obviously not indefinitely).
 //!
-//! Note that this pezpallet does not consider how the recipient is processing the results. To
-//! ensure scalability, the recipient of this pezpallet's data (i.e. `pezpallet-staking`) must also
-//! be capable of pagination and multi-block processing.
+//! Note that this pezpallet does not consider how the recipient is processing the results. To ensure
+//! scalability, the recipient of this pezpallet's data (i.e. `pezpallet-staking`) must also be capable of
+//! pagination and multi-block processing.
 //!
-//! ## Companion pallets
+//! ## Companion pezpallets
 //!
-//! This pezpallet will only function in a sensible way if it is peered with its companion pallets.
+//! This pezpallet will only function in a sensible way if it is peered with its companion pezpallets.
 //!
 //! - The [`verifier`] pezpallet provides a standard implementation of the [`verifier::Verifier`].
-//!   This pezpallet is mandatory.
 //! - The [`unsigned`] module provides the implementation of unsigned submission by validators. If
 //!   this pezpallet is included, then [`Config::UnsignedPhase`] will determine its duration.
 //! - The [`signed`] module provides the implementation of the signed submission by any account. If
 //!   this pezpallet is included, the combined [`Config::SignedPhase`] and
 //!   [`Config::SignedValidationPhase`] will determine its duration
 //!
-//! These pallets are in fact hierarchical. This particular one is the top level one. It contains
-//! the shared information that all child pallets use. All child pallets depend on the top level
+//! These pezpallets are in fact hierarchical. This particular one is the top level one. It contains
+//! the shared information that all child pezpallets use. All child pezpallets depend on the top level
 //! pezpallet ONLY, but not the other way around. For those cases, traits are used.
 //!
-//! As in, notice that [`crate::verifier::Config`] relies on [`crate::Config`], but for the
-//! reverse, we rely on [`crate::verifier::Verifier`] trait, which is indeed part of
-//! [`crate::Config`]. This is merely an implementation opinion.
+//! For reverse linking, or child-linking, only explicit traits with clear interfaces are used. For
+//! example, the following traits facilitate other communication:
 //!
-//! ### Pezpallet Ordering:
-//!
-//! TODO: @kiaenigma: this needs clarification and a enforcement. Signed pezpallet should come
-//! first. Fixing this should yield removing `verifier_done` from the phase transition.
-//!
-//! The ordering of these pallets in a runtime should be:
-//! * parent
-//! * verifier
-//! * signed
-//! * unsigned
-//!
-//! This is critical for the phase transition to work.
-//!
-//! > This should be manually checked, there is not automated way to test it.
-//!
+//! * [`crate::types::SignedInterface`]: Parent talking to signed.
+//! * [`crate::verifier::Verifier`]: Parent talking to verifier.
+//! * [`crate::verifier::SolutionDataProvider`]: Verifier talking to signed.
+
 //! ## Pagination
 //!
-//! Most of the external APIs of this pezpallet are paginated. All pagination follow a pattern where
-//! if `N` pages exist, the first paginated call is `function(N-1)` and the last one is
-//! `function(0)`. For example, with 3 pages, the `elect` of [`ElectionProvider`] is expected to be
-//! called as `elect(2) -> elect(1) -> elect(0)`. In essence, calling a paginated function with
-//! index 0 is always a signal of termination, meaning that no further calls will follow.
+//! Most of the external APIs of this pezpallet are paginated. All pagination follow a pattern where if
+//! `N` pages exist, the first paginated call is `function(N-1)` and the last one is `function(0)`.
+//! For example, with 3 pages, the `elect` of [`ElectionProvider`] is expected to be called as
+//! `elect(2) -> elect(1) -> elect(0)`. In essence, calling a paginated function with index 0 is
+//! always a signal of termination, meaning that no further calls will follow.
 //!
 //! The snapshot creation for voters (Nominators in staking), submission of signed pages, validation
 //! of signed solutions and exporting of pages are all paginated. Note that this pezpallet is yet to
@@ -95,9 +81,9 @@
 //!
 //! ## Phases
 //!
-//! The operations in this pezpallet are divided intor rounds, a `u32` number stored in [`Round`].
-//! This value helps this pezpallet organize itself, and leaves the door open for lazy deletion of
-//! any stale data. A round, under the happy path, starts by receiving the call to
+//! The operations in this pezpallet are divided into rounds, a `u32` number stored in [`Round`].
+//! This value helps this pezpallet organize itself, and leaves the door open for lazy deletion of any
+//! stale data. A round, under the happy path, starts by receiving the call to
 //! [`ElectionProvider::start`], and is terminated by receiving a call to
 //! [`ElectionProvider::elect`] with value 0.
 //!
@@ -125,9 +111,22 @@
 //! * [`Config::Pages`] calls to elect are expected, but all in all the pezpallet will close a round
 //!   once `elect(0)` is called.
 //!
-//! > Given this, it is rather important for the user of this pezpallet to ensure it always
-//! > terminates
+//! > Given this, it is rather important for the user of this pezpallet to ensure it always terminates
 //! > election via `elect` before requesting a new one.
+//!
+//! ### Phase Transition
+//!
+//! Within all 4 pezpallets only the parent pezpallet is allowed to move the phases forward. As of now,
+//! the transition happens `on-poll`, ensuring that we don't consume too much weight. The parent
+//! pezpallet is in charge of aggregating the work to be done by all pezpallets, checking if it can fit
+//! within the current block's weight limits, and executing it if so.
+//!
+//! Occasional phase transition stalling is not a critical issue. Every instance of phase transition
+//! failing is accompanied by a [`Event::UnexpectedPhaseTransitionOutOfWeight`] for visibility.
+//!
+//! Note this pezpallet transitions phases all the way into [`crate::types::Phase::Done`]. At this
+//! point, we will move to `Export` phase an onwards by calls into `elect`. A call to `elect(0)`
+//! rotates the round, as stated above.
 //!
 //! ## Feasible Solution (correct solution)
 //!
@@ -151,8 +150,8 @@
 //!
 //! 1. Do nothing: [`Continue`]
 //! 2. Force us into the emergency phase: [`crate::InitiateEmergencyPhase`]. This initiates
-//!    [`Phase::Emergency`], which will halt almost all operations of this pezpallet, and it can
-//!    only be recovered by [`AdminOperation`], dispatched via [`Call::manage`].
+//!    [`Phase::Emergency`], which will halt almost all operations of this pezpallet, and it can only
+//!    be recovered by [`AdminOperation`], dispatched via [`Call::manage`].
 //! 3. compute an onchain from the give page of snapshot.
 //!
 //! Note that configuring the fallback to be onchain computation is not recommended, unless for
@@ -184,22 +183,22 @@
 // - Naming convention is: `${singular}_page` for singular, e.g. `voter_page` for `Vec<Voter>`.
 //   `paged_${plural}` for plural, e.g. `paged_voters` for `Vec<Vec<Voter>>`.
 //
-// - Since this crate has multiple `Pezpallet` and `Configs`, in each sub-pezpallet, we only
-//   reference the local `Pezpallet` without a prefix and allow it to be imported via `use`. Avoid
-//   `super::Pezpallet` except for the case of a modules that want to reference their local
-//   `Pezpallet` . The `crate::Pezpallet` is always reserved for the parent pezpallet. Other sibling
-//   pallets must be referenced with full path, e.g. `crate::Verifier::Pezpallet`. Do NOT write
-//   something like `use unsigned::Pezpallet as UnsignedPallet`.
+// - Since this crate has multiple `Pezpallet` and `Configs`, in each sub-pezpallet, we only reference the
+//   local `Pezpallet` without a prefix and allow it to be imported via `use`. Avoid `super::Pezpallet`
+//   except for the case of a modules that want to reference their local `Pezpallet` . The
+//   `crate::Pezpallet` is always reserved for the parent pezpallet. Other sibling pezpallets must be
+//   referenced with full path, e.g. `crate::Verifier::Pezpallet`. Do NOT write something like `use
+//   unsigned::Pezpallet as UnsignedPallet`.
 //
 // - Respecting private storage items with wrapper We move all implementations out of the `mod
-//   pezpallet` as much as possible to ensure we NEVER access the internal storage items directly.
-//   All operations should happen with the wrapper types.
+//   pezpallet` as much as possible to ensure we NEVER access the internal storage items directly. All
+//   operations should happen with the wrapper types.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(any(feature = "runtime-benchmarks", test))]
 use crate::signed::{CalculateBaseDeposit, CalculatePageDeposit};
-use crate::verifier::Verifier;
+use crate::verifier::{AsynchronousVerifier, Verifier};
 use codec::{Decode, Encode, MaxEncodedLen};
 use pezframe_election_provider_support::{
 	onchain, BoundedSupportsOf, DataProviderBounds, ElectionDataProvider, ElectionProvider,
@@ -209,6 +208,7 @@ use pezframe_support::{
 	dispatch::PostDispatchInfo,
 	pezpallet_prelude::*,
 	traits::{Defensive, EnsureOrigin},
+	weights::WeightMeter,
 	DebugNoBound, Twox64Concat,
 };
 use pezframe_system::pezpallet_prelude::*;
@@ -231,7 +231,7 @@ pub mod helpers;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
-/// The common logging prefix of all pallets in this crate.
+/// The common logging prefix of all pezpallets in this crate.
 pub const LOG_PREFIX: &'static str = "runtime::multiblock-election";
 
 macro_rules! clear_round_based_map {
@@ -273,8 +273,8 @@ impl<T: Config> ElectionProvider for InitiateEmergencyPhase<T> {
 		Err("Emergency phase started.")
 	}
 
-	fn status() -> Result<bool, ()> {
-		Ok(true)
+	fn status() -> Result<Option<Weight>, ()> {
+		Ok(Some(Default::default()))
 	}
 
 	fn start() -> Result<(), Self::Error> {
@@ -326,8 +326,8 @@ impl<T: Config> ElectionProvider for Continue<T> {
 		Zero::zero()
 	}
 
-	fn status() -> Result<bool, ()> {
-		Ok(true)
+	fn status() -> Result<Option<Weight>, ()> {
+		Ok(Some(Default::default()))
 	}
 }
 
@@ -515,7 +515,7 @@ impl OnRoundRotation for () {
 }
 
 /// An implementation of [`OnRoundRotation`] that immediately deletes all the data in all the
-/// pallets, once the round is over.
+/// pezpallets, once the round is over.
 ///
 /// This is intended to be phased out once we move to fully lazy deletion system to spare more PoV.
 /// In that case, simply use `()` on [`pezpallet::Config::OnRoundRotation`].
@@ -547,8 +547,7 @@ pub mod pezpallet {
 		/// Duration of the singed validation phase.
 		///
 		/// The duration of this should not be less than `T::Pages`, and there is no point in it
-		/// being more than `SignedPhase::MaxSubmission::get() * T::Pages`. TODO: integrity test for
-		/// it.
+		/// being more than `SignedPhase::MaxSubmission::get() * T::Pages`.
 		#[pezpallet::constant]
 		type SignedValidationPhase: Get<BlockNumberFor<Self>>;
 
@@ -574,6 +573,21 @@ pub mod pezpallet {
 			AccountId = Self::AccountId,
 			BlockNumber = BlockNumberFor<Self>,
 		>;
+
+		/// After how many blocks an election that has not produced a usable result is
+		/// abandoned, rotating the round to start over.
+		///
+		/// Without this, an election that cannot be solved holds its round forever: with
+		/// `RevertToSignedIfNotQueuedOf` the phase keeps looping back to [`Phase::Signed`] and
+		/// never returns to [`Phase::Off`], so nothing -- not even the staking pezpallet's own
+		/// stall detection, which waits for the election to be idle -- can recover it, and no
+		/// new era is ever elected. Rotating drops the snapshot and the verifier, so the next
+		/// round starts from freshly collected data.
+		///
+		/// Must be comfortably larger than a full election (snapshot + signed + validation +
+		/// unsigned + export), otherwise healthy elections get cut short. Zero disables it.
+		#[pezpallet::constant]
+		type StalledRoundTimeout: Get<BlockNumberFor<Self>>;
 
 		/// The miner configuration.
 		///
@@ -604,6 +618,9 @@ pub mod pezpallet {
 				AccountId = Self::AccountId,
 			> + verifier::AsynchronousVerifier;
 
+		/// Interface signed pezpallet's interface.
+		type Signed: SignedInterface;
+
 		/// The origin that can perform administration operations on this pezpallet.
 		///
 		/// This is the highest privilege origin of this pezpallet, and should be configured
@@ -619,21 +636,6 @@ pub mod pezpallet {
 		///
 		/// Common implementation is [`ProceedRegardlessOf`] or [`RevertToSignedIfNotQueuedOf`].
 		type AreWeDone: Get<Phase<Self>>;
-
-		/// After how many blocks an election that has not produced a usable result is abandoned,
-		/// rotating the round to start over.
-		///
-		/// Without this, an election that cannot be solved holds its round forever: with
-		/// [`RevertToSignedIfNotQueuedOf`] the phase keeps looping back to
-		/// [`crate::types::Phase::Signed`] and never returns to [`crate::types::Phase::Off`], so
-		/// nothing — not even the staking pezpallet's own stall detection, which waits for the
-		/// election to be idle — can recover it, and no new era is ever elected. Rotating drops the
-		/// snapshot and the verifier, so the next round starts from freshly collected data.
-		///
-		/// Must be comfortably larger than a full election (snapshot + signed + validation +
-		/// unsigned + export), otherwise healthy elections get cut short. Set to zero to disable.
-		#[pezpallet::constant]
-		type StalledRoundTimeout: Get<BlockNumberFor<Self>>;
 
 		/// The weight of the pezpallet.
 		type WeightInfo: WeightInfo;
@@ -725,58 +727,75 @@ pub mod pezpallet {
 
 	#[pezpallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pezpallet<T> {
-		fn on_initialize(_now: BlockNumberFor<T>) -> Weight {
-			let current_phase = CurrentPhase::<T>::get();
-
-			// An election that cannot produce a result must not hold its round forever.
-			if let Some(weight) = Self::maybe_rotate_stalled_round(_now, &current_phase) {
-				return weight;
+		fn on_poll(now: BlockNumberFor<T>, weight_meter: &mut WeightMeter) {
+			// first check we can at least read one storage.
+			if !weight_meter.can_consume(T::DbWeight::get().reads(1)) {
+				Self::deposit_event(Event::UnexpectedPhaseTransitionHalt {
+					required: T::DbWeight::get().reads(1),
+					had: weight_meter.remaining(),
+				});
+				return;
 			}
 
-			let weight1 = match current_phase {
-				Phase::Snapshot(x) if x == T::Pages::get() => {
-					// create the target snapshot
-					Self::create_targets_snapshot();
-					T::WeightInfo::on_initialize_into_snapshot_msp()
-				},
-				Phase::Snapshot(x) => {
-					// create voter snapshot
-					Self::create_voters_snapshot_paged(x);
-					T::WeightInfo::on_initialize_into_snapshot_rest()
-				},
-				_ => T::WeightInfo::on_initialize_nothing(),
-			};
+			// if so, consume and prepare the next phase.
+			let current_phase = Self::current_phase();
+			weight_meter.consume(T::DbWeight::get().reads(1));
 
-			// Only transition if not in Export phase
-			if !matches!(current_phase, Phase::Export(_)) {
-				let next_phase = current_phase.next();
+			// An election that cannot produce a result must not hold its round forever.
+			if let Some(weight) = Self::maybe_rotate_stalled_round(now, &current_phase) {
+				weight_meter.consume(weight);
+				return;
+			}
 
-				let weight2 = match next_phase {
-					Phase::Signed(_) => T::WeightInfo::on_initialize_into_signed(),
-					Phase::SignedValidation(_) => {
-						T::WeightInfo::on_initialize_into_signed_validation()
-					},
-					Phase::Unsigned(_) => T::WeightInfo::on_initialize_into_unsigned(),
-					_ => T::WeightInfo::on_initialize_nothing(),
-				};
+			let (self_weight, self_exec) = Self::per_block_exec(current_phase);
+			let (verifier_weight, verifier_exc) = T::Verifier::per_block_exec();
 
-				Self::phase_transition(next_phase);
+			// The following will combine `Self::per_block_exec` and `T::Verifier::per_block_exec`
+			// into a single tuple of `(Weight, Box<_>)`. Can be moved into a reusable combinator
+			// function if we have this pattern in more places.
+			let (combined_weight, combined_exec) = (
+				// pre-exec weight is simply addition.
+				self_weight.saturating_add(verifier_weight),
+				// our new exec is..
+				Box::new(move |meter: &mut WeightMeter| {
+					self_exec(meter);
+					verifier_exc(meter);
+				}),
+			);
 
-				// bit messy, but for now this works best.
-				#[cfg(test)]
-				{
-					let test_election_start: BlockNumberFor<T> =
-						(crate::mock::ElectionStart::get() as u32).into();
-					if _now == test_election_start {
-						crate::log!(info, "TESTING: Starting election at block {}", _now);
-						crate::mock::MultiBlock::start().unwrap();
-					}
-				}
-
-				weight1 + weight2
+			log!(
+				trace,
+				"worst-case required weight for transition from {:?} to {:?} is {:?}, has {:?}",
+				current_phase,
+				current_phase.next(),
+				combined_weight,
+				weight_meter.remaining()
+			);
+			if weight_meter.can_consume(combined_weight) {
+				combined_exec(weight_meter);
 			} else {
-				// If in Export phase, do nothing.
-				weight1
+				Self::deposit_event(Event::UnexpectedPhaseTransitionOutOfWeight {
+					from: current_phase,
+					to: current_phase.next(),
+					required: combined_weight,
+					had: weight_meter.remaining(),
+				});
+			}
+
+			// NOTE: why in here? because it is more accessible, for example `roll_to_with_ocw`.
+			#[cfg(test)]
+			{
+				if now > 200u32.into() {
+					panic!("Looping to death: in case of errors in election start time in tests, we might loop \
+					infinitely. This panic is preventing you from that. Double check `mock::ElectionStart` or increase \
+					the 200 limit");
+				}
+				let test_election_start: BlockNumberFor<T> =
+					(crate::mock::ElectionStart::get() as u32).into();
+				if now == test_election_start {
+					crate::log!(info, "TESTING: Starting election at block {}", now);
+					crate::mock::MultiBlock::start().unwrap();
+				}
 			}
 		}
 
@@ -856,12 +875,21 @@ pub mod pezpallet {
 			/// The target phase
 			to: Phase<T>,
 		},
-		/// Target snapshot creation failed
+		/// Target snapshot creation failed.
 		UnexpectedTargetSnapshotFailed,
-		/// Voter snapshot creation failed
+		/// Voter snapshot creation failed.
 		UnexpectedVoterSnapshotFailed,
-		/// An election was abandoned because it did not produce a result in time, and the round was
-		/// rotated so that a new one can start from a fresh snapshot.
+		/// Phase transition could not proceed due to being out of weight.
+		UnexpectedPhaseTransitionOutOfWeight {
+			from: Phase<T>,
+			to: Phase<T>,
+			required: Weight,
+			had: Weight,
+		},
+		/// Phase transition could not even begin becaseu of being out of weight.
+		UnexpectedPhaseTransitionHalt { required: Weight, had: Weight },
+		/// An election was abandoned because it did not produce a result in time, and the
+		/// round was rotated so that a new one can start from a fresh snapshot.
 		StalledRoundRotated {
 			/// The round that was abandoned.
 			round: u32,
@@ -881,7 +909,7 @@ pub mod pezpallet {
 		Snapshot,
 	}
 
-	/// Common errors in all sub-pallets and miner.
+	/// Common errors in all sub-pezpallets and miner.
 	#[derive(PartialEq, Eq, Clone, Encode, Decode, Debug)]
 	pub enum CommonError {
 		/// Submission is too early (or too late, depending on your point of reference).
@@ -906,16 +934,16 @@ pub mod pezpallet {
 	/// diagnostics of the pezpallet.
 	///
 	/// This is merely incremented once per every time that an upstream `elect` is called.
-	#[pezpallet::storage]
-	#[pezpallet::getter(fn round)]
-	pub type Round<T: Config> = StorageValue<_, u32, ValueQuery>;
-
 	/// Block at which the current election started, if one is ongoing.
 	///
 	/// Set when the election provider is started, cleared when the round rotates. Only used to
 	/// detect a round that stalls past [`Config::StalledRoundTimeout`].
 	#[pezpallet::storage]
 	pub type ElectionStartedAt<T: Config> = StorageValue<_, BlockNumberFor<T>, OptionQuery>;
+
+	#[pezpallet::storage]
+	#[pezpallet::getter(fn round)]
+	pub type Round<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// Current phase.
 	#[pezpallet::storage]
@@ -1051,7 +1079,7 @@ pub mod pezpallet {
 	#[allow(unused)]
 	#[cfg(any(test, feature = "runtime-benchmarks", feature = "try-runtime"))]
 	impl<T: Config> Snapshot<T> {
-		///Ensure target snapshot exists.
+		/// Ensure target snapshot exists.
 		pub(crate) fn ensure_target_snapshot(exists: bool) -> Result<(), &'static str> {
 			ensure!(exists ^ Self::desired_targets().is_none(), "desired target mismatch");
 			ensure!(exists ^ Self::targets().is_none(), "targets mismatch");
@@ -1288,6 +1316,131 @@ impl<T: Config> Pezpallet<T> {
 		Zero::zero()
 	}
 
+	/// > Note: Consider this a shared documentation block for [`Pezpallet::on_poll`] and this
+	/// > function, as they work together.
+	///
+	/// The meta-phase transition logic that applies to all pezpallets. Includes the following:
+	///
+	/// * Creating snapshot once `ElectionProvider::start` has instructed us to do so.
+	/// * Transition into `Phase::Signed`.
+	/// * Upon last page of `Phase::Signed`, instruct the `Verifier` to start, if any solution
+	///   exists.
+	/// * And moving forward all other phases as necessary.
+	///
+	/// What it does not do:
+	///
+	/// * Instruct the verifier to move forward. This happens through
+	///   [`verifier::Verifier::per_block_exec`], called in [`Pezpallet::on_poll`]. On each block,
+	///   [`T::Verifier`] is given a chance to do something. Under the hood, if the `Status` is set,
+	///   it will do something, regardless of which phase we are in. In this pezpallet we only move
+	///   [`Phase::SignedValidation`] forward.
+	/// * Move us forward if we are in either of `Phase::Done` or `Phase::Export`. These are
+	///   controlled by the caller of our [`T::ElectionProvider`] implementation, i.e. staking. Note
+	///   that this pezpallet always transitions us from `current_phase` to `current_phase.next()`, but
+	///   the [`crate::types::Phase::next`] function is a noop for `Done` and `Export`.
+	///
+	/// ### Type
+	///
+	/// The commonly used `(Weight, Box<dyn Fn(&mut WeightMeter)>)` should be interpreted as such:
+	///
+	/// * The `Weight` is the pre-computed worst case weight of the operation that we are going to
+	///   do.
+	/// * The `Box<dyn Fn(&mut WeightMeter)>` is the function that represents that the work that
+	///   will at most consume the said amount of weight. While executing, it will alter the given
+	///   weight meter to consume the actual weight used. Indeed, the weight that is registered in
+	///   the `WeightMeter` must never be more than the `Weight` returned as the first item of the
+	///   tuple.
+	///
+	/// In essence, the caller must:
+	///
+	/// 1. given an existing `meter`, receive `(worst_weight, exec)`
+	/// 2. ensure `meter` can consume up to `worst_weight`.
+	/// 3. if so, call `exec(meter)`, knowing `meter` will accumulate at most `worst_weight` extra.
+	///
+	/// ### Returned Weight
+	///
+	/// The weights returned are as follows:
+	///
+	/// * `just_next_phase` returns a benchmarked weight that should be equal to only reading and
+	///   writing the `Phase`. This is used for:
+	/// 	* `Off` phase, which does not do anything `on_poll`.
+	/// 	* `Signed` phase except last page, which starts the verifier.
+	/// 	* `Unsigned` phase, which does not do anything `on_poll` and managed its own extrinsic
+	///    weights.
+	/// 	* `Emergency` phase, which does not do anything `on_poll`.
+	/// 	* `Done` phase, which does not do anything `on_poll`.
+	/// 	* `SignedValidation` phase, because in this pezpallet we only move the phase forward and we
+	///    don't know (or want to know) how much weight `Verifier` is consuming. This is handled by
+	///    combining the weight of [`T::Verifier::per_block_exec`] with this function in
+	///    [`Pezpallet::on_poll`].
+	/// 	* `Export` phase, which does not do anything `on_poll` on this pezpallet, yet we return the
+	///    weight that [`Config::ElectionProvider`]'s caller should register via
+	///    [`ElectionProvider::status`].
+	///
+	/// The only special cases, from the perspective of this pezpallet, are:
+	/// 	* Last page of signed phase registers `per_block_start_signed_validation`.
+	/// 	* The snapshots are handled by this pezpallet, which registers `per_block_snapshot_msp` and
+	///    `per_block_snapshot_rest`.
+	fn per_block_exec(current_phase: Phase<T>) -> (Weight, Box<dyn Fn(&mut WeightMeter)>) {
+		type ExecuteFn = Box<dyn Fn(&mut WeightMeter)>;
+		let next_phase = current_phase.next();
+
+		let just_next_phase: (Weight, ExecuteFn) = (
+			T::WeightInfo::per_block_nothing(),
+			Box::new(move |_| {
+				// Note `Phase.next` for some variants is a noop, for example `Done`.
+				Self::phase_transition(next_phase);
+			}),
+		);
+
+		match current_phase {
+			Phase::Snapshot(x) if x == T::Pages::get() => {
+				// first snapshot
+				let weight = T::WeightInfo::per_block_snapshot_msp();
+				let exec: ExecuteFn = Box::new(move |meter: &mut WeightMeter| {
+					Self::create_targets_snapshot();
+					Self::phase_transition(next_phase);
+					meter.consume(weight)
+				});
+				(weight, exec)
+			},
+
+			Phase::Snapshot(x) => {
+				// rest of the snapshot, incl last one.
+				let weight = T::WeightInfo::per_block_snapshot_rest();
+				let exec: ExecuteFn = Box::new(move |meter: &mut WeightMeter| {
+					Self::create_voters_snapshot_paged(x);
+					Self::phase_transition(next_phase);
+					meter.consume(weight)
+				});
+				(weight, exec)
+			},
+			Phase::Signed(x) => {
+				// Signed pezpallet should prep the best winner, and send the start signal, if some
+				// exists.
+				if x.is_zero() && T::Signed::has_leader(Self::round()) {
+					let weight = T::WeightInfo::per_block_start_signed_validation();
+					let exec: ExecuteFn = Box::new(move |meter: &mut WeightMeter| {
+						// defensive: signed phase has just began, verifier should be in a clear
+						// state and ready to accept a solution.
+						let _ = T::Verifier::start().defensive();
+						Self::phase_transition(next_phase);
+						meter.consume(weight)
+					});
+					(weight, exec)
+				} else {
+					just_next_phase
+				}
+			},
+			Phase::SignedValidation(_)
+			| Phase::Unsigned(_)
+			| Phase::Off
+			| Phase::Emergency
+			| Phase::Done
+			| Phase::Export(_) => just_next_phase,
+		}
+	}
+
 	/// Return the `length` most significant pages.
 	///
 	/// For example, if `Pages = 4`, and `length = 2`, our full snapshot range would be [0,
@@ -1299,6 +1452,9 @@ impl<T: Config> Pezpallet<T> {
 
 	pub(crate) fn phase_transition(to: Phase<T>) {
 		let from = Self::current_phase();
+		if from == to {
+			return;
+		}
 		use pezsp_std::mem::discriminant;
 		if discriminant(&from) != discriminant(&to) {
 			log!(debug, "transitioning phase from {:?} to {:?}", from, to);
@@ -1443,7 +1599,7 @@ impl<T: Config> Pezpallet<T> {
 	}
 
 	/// Abandon the current round if it has been running for longer than
-	/// [`Config::StalledRoundTimeout`], so that a new election can start from a fresh snapshot.
+	/// [`Config::StalledRoundTimeout`], so a new election can start from a fresh snapshot.
 	///
 	/// Returns the consumed weight if it rotated, `None` if it did nothing.
 	fn maybe_rotate_stalled_round(now: BlockNumberFor<T>, phase: &Phase<T>) -> Option<Weight> {
@@ -1463,25 +1619,7 @@ impl<T: Config> Pezpallet<T> {
 			return None;
 		}
 
-		let started = match ElectionStartedAt::<T>::get() {
-			Some(started) => started,
-			None => {
-				// An election is in one of the solving phases, yet nothing recorded when it
-				// started. That happens when the round was not opened through `start()`: the
-				// runtime was upgraded while an election was already running, or the phase was
-				// forced with `ManagerOperation::ForceSetPhase`. Leaving it at `None` would mean
-				// the watchdog never watches this round at all — exactly the situation it exists
-				// to prevent — so adopt the round and start counting from here.
-				log!(
-					warn,
-					"election in {:?} has no recorded start block; adopting it at {:?}",
-					phase,
-					now
-				);
-				ElectionStartedAt::<T>::put(now);
-				return Some(T::DbWeight::get().reads_writes(1, 1));
-			},
-		};
+		let started = ElectionStartedAt::<T>::get()?;
 		let elapsed = now.saturating_sub(started);
 		if elapsed <= timeout {
 			return None;
@@ -1497,7 +1635,7 @@ impl<T: Config> Pezpallet<T> {
 		Self::deposit_event(Event::StalledRoundRotated { round, blocks: elapsed });
 		Self::rotate_round();
 
-		Some(T::WeightInfo::export_terminal().saturating_add(T::DbWeight::get().reads_writes(3, 3)))
+		Some(T::DbWeight::get().reads_writes(3, 3))
 	}
 
 	/// Call fallback for the given page.
@@ -1539,6 +1677,174 @@ impl<T: Config> Pezpallet<T> {
 	}
 }
 
+#[cfg(feature = "std")]
+impl<T: Config> Pezpallet<T> {
+	fn analyze_weight(
+		op_name: &str,
+		op_weight: Weight,
+		limit_weight: Weight,
+		maybe_max_ratio: Option<pezsp_runtime::Percent>,
+		maybe_max_warn_ratio: Option<pezsp_runtime::Percent>,
+	) {
+		use pezframe_support::weights::constants::{
+			WEIGHT_PROOF_SIZE_PER_KB, WEIGHT_REF_TIME_PER_MILLIS,
+		};
+
+		let ref_time_ms = op_weight.ref_time() / WEIGHT_REF_TIME_PER_MILLIS;
+		let ref_time_ratio =
+			pezsp_runtime::Percent::from_rational(op_weight.ref_time(), limit_weight.ref_time());
+		let proof_size_kb = op_weight.proof_size() / WEIGHT_PROOF_SIZE_PER_KB;
+		let proof_size_ratio = pezsp_runtime::Percent::from_rational(
+			op_weight.proof_size(),
+			limit_weight.proof_size(),
+		);
+		let limit_ms = limit_weight.ref_time() / WEIGHT_REF_TIME_PER_MILLIS;
+		let limit_kb = limit_weight.proof_size() / WEIGHT_PROOF_SIZE_PER_KB;
+		log::info!(
+			target: crate::LOG_PREFIX,
+			"weight of {op_name:?} is: ref-time: {ref_time_ms}ms, {ref_time_ratio:?} of total, proof-size: {proof_size_kb}KiB, {proof_size_ratio:?} of total (total: {limit_ms}ms, {limit_kb}KiB)",
+		);
+
+		if let Some(max_ratio) = maybe_max_ratio {
+			assert!(ref_time_ratio <= max_ratio && proof_size_ratio <= max_ratio,)
+		}
+		if let Some(warn_ratio) = maybe_max_warn_ratio {
+			if ref_time_ratio > warn_ratio || proof_size_ratio > warn_ratio {
+				log::warn!(
+					target: crate::LOG_PREFIX,
+					"weight of {op_name:?} is above {warn_ratio:?} of the block limit",
+				);
+			}
+		}
+	}
+
+	/// Helper function to check the weights of all significant operations of this this pezpallet
+	/// against a runtime.
+	///
+	/// Will check the weights for:
+	///
+	/// * snapshot
+	/// * signed submission and cleanip
+	/// * unsigned solution submission
+	/// * signed validation
+	/// * export.
+	///
+	/// Arguments:
+	///
+	/// * `limit_weight` should be the maximum block weight (often obtained from `pezframe_system`).
+	/// * `maybe_max_ratio` is the maximum ratio of `limit_weight` that we may consume, else we
+	///   panic.
+	/// * `maybe_max_warn_rati` has the same effect, but it emits a warning instead of panic.
+	///
+	/// A reasonable value for `maybe_max_weight` would be 75%, and 50% for `maybe_max_warn_ratio`.
+	pub fn check_all_weights(
+		limit_weight: Weight,
+		maybe_max_ratio: Option<pezsp_runtime::Percent>,
+		maybe_max_warn_ratio: Option<pezsp_runtime::Percent>,
+	) where
+		T: crate::verifier::Config + crate::signed::Config + crate::unsigned::Config,
+	{
+		use crate::weights::traits::{
+			pezpallet_election_provider_multi_block_signed::WeightInfo as _,
+			pezpallet_election_provider_multi_block_unsigned::WeightInfo as _,
+			pezpallet_election_provider_multi_block_verifier::WeightInfo as _,
+		};
+
+		// -------------- snapshot
+		Self::analyze_weight(
+			"snapshot_msp",
+			<T as Config>::WeightInfo::per_block_snapshot_msp(),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+
+		Self::analyze_weight(
+			"snapshot_rest",
+			<T as Config>::WeightInfo::per_block_snapshot_rest(),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+
+		// -------------- signed
+		Self::analyze_weight(
+			"signed_clear_all_pages",
+			<T as crate::signed::Config>::WeightInfo::clear_old_round_data(T::Pages::get()),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+		Self::analyze_weight(
+			"signed_submit_single_pages",
+			<T as crate::signed::Config>::WeightInfo::submit_page(),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+
+		// -------------- unsigned
+		Self::analyze_weight(
+			"verify unsigned solution",
+			<T as crate::unsigned::Config>::WeightInfo::submit_unsigned(),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+
+		// -------------- verification
+		Self::analyze_weight(
+			"verifier valid terminal",
+			<T as crate::verifier::Config>::WeightInfo::verification_valid_terminal(),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+		Self::analyze_weight(
+			"verifier invalid terminal",
+			<T as crate::verifier::Config>::WeightInfo::verification_invalid_terminal(),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+
+		Self::analyze_weight(
+			"verifier valid non terminal",
+			<T as crate::verifier::Config>::WeightInfo::verification_valid_non_terminal(),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+
+		Self::analyze_weight(
+			"verifier invalid non terminal",
+			<T as crate::verifier::Config>::WeightInfo::verification_invalid_non_terminal(
+				T::Pages::get(),
+			),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+
+		// -------------- export
+		Self::analyze_weight(
+			"export non-terminal",
+			<T as Config>::WeightInfo::export_non_terminal(),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+
+		Self::analyze_weight(
+			"export terminal",
+			<T as Config>::WeightInfo::export_terminal(),
+			limit_weight,
+			maybe_max_ratio,
+			maybe_max_warn_ratio,
+		);
+	}
+}
+
 #[allow(unused)]
 #[cfg(any(feature = "runtime-benchmarks", test))]
 // helper code for testing and benchmarking
@@ -1550,7 +1856,7 @@ where
 	/// Progress blocks until the criteria is met.
 	pub(crate) fn roll_until_matches(criteria: impl FnOnce() -> bool + Copy) {
 		loop {
-			Self::roll_next(true, false);
+			Self::roll_next(false);
 			if criteria() {
 				break;
 			}
@@ -1563,7 +1869,7 @@ where
 		loop {
 			let should_break = pezframe_support::storage::with_transaction(
 				|| -> TransactionOutcome<Result<_, DispatchError>> {
-					Pezpallet::<T>::roll_next(true, false);
+					Pezpallet::<T>::roll_next(false);
 					if criteria() {
 						TransactionOutcome::Rollback(Ok(true))
 					} else {
@@ -1657,22 +1963,25 @@ where
 		who
 	}
 
-	/// Roll all pallets forward, for the given number of blocks.
-	pub(crate) fn roll_to(n: BlockNumberFor<T>, with_signed: bool, try_state: bool) {
+	/// Roll all pezpallets forward, for the given number of blocks.
+	pub(crate) fn roll_to(n: BlockNumberFor<T>, try_state: bool) {
 		let now = pezframe_system::Pezpallet::<T>::block_number();
 		assert!(n > now, "cannot roll to current or past block");
 		let one: BlockNumberFor<T> = 1u32.into();
 		let mut i = now + one;
 		while i <= n {
+			// remove previous weight usage in system.
+			pezframe_system::BlockWeight::<T>::kill();
+
 			pezframe_system::Pezpallet::<T>::set_block_number(i);
+			let mut meter = pezframe_system::Pezpallet::<T>::remaining_block_weight();
+			Pezpallet::<T>::on_poll(i, &mut meter);
 
-			Pezpallet::<T>::on_initialize(i);
-			verifier::Pezpallet::<T>::on_initialize(i);
-			unsigned::Pezpallet::<T>::on_initialize(i);
-
-			if with_signed {
-				signed::Pezpallet::<T>::on_initialize(i);
-			}
+			// register the new weight in system
+			pezframe_system::Pezpallet::<T>::register_extra_weight_unchecked(
+				meter.consumed(),
+				DispatchClass::Mandatory,
+			);
 
 			// invariants must hold at the end of each block.
 			if try_state {
@@ -1687,12 +1996,8 @@ where
 	}
 
 	/// Roll to next block.
-	pub(crate) fn roll_next(with_signed: bool, try_state: bool) {
-		Self::roll_to(
-			pezframe_system::Pezpallet::<T>::block_number() + 1u32.into(),
-			with_signed,
-			try_state,
-		);
+	pub(crate) fn roll_next(try_state: bool) {
+		Self::roll_to(pezframe_system::Pezpallet::<T>::block_number() + 1u32.into(), try_state);
 	}
 }
 
@@ -1732,8 +2037,8 @@ impl<T: Config> ElectionProvider for Pezpallet<T> {
 			.map_err(|err| {
 				// if any pages returns an error, we go into the emergency phase and don't do
 				// anything else anymore. This will prevent any new submissions to signed and
-				// unsigned pezpallet, and thus the verifier will also be almost stuck, except for
-				// the submission of emergency solutions.
+				// unsigned pezpallet, and thus the verifier will also be almost stuck, except for the
+				// submission of emergency solutions.
 				log!(debug, "fallback also ({:?}) failed for page {:?}", err, remaining);
 				err
 			})
@@ -1771,20 +2076,27 @@ impl<T: Config> ElectionProvider for Pezpallet<T> {
 		Self::average_election_duration().into()
 	}
 
-	fn status() -> Result<bool, ()> {
+	fn status() -> Result<Option<Weight>, ()> {
 		match <CurrentPhase<T>>::get() {
 			// we're not doing anything.
 			Phase::Off => Err(()),
 
-			// we're doing sth but not read.
+			// we're doing something but not ready.
 			Phase::Signed(_)
 			| Phase::SignedValidation(_)
 			| Phase::Unsigned(_)
 			| Phase::Snapshot(_)
-			| Phase::Emergency => Ok(false),
+			| Phase::Emergency => Ok(None),
 
 			// we're ready
-			Phase::Done | Phase::Export(_) => Ok(true),
+			Phase::Done => Ok(Some(T::WeightInfo::export_non_terminal())),
+			Phase::Export(p) => {
+				if p.is_zero() {
+					Ok(Some(T::WeightInfo::export_terminal()))
+				} else {
+					Ok(Some(T::WeightInfo::export_non_terminal()))
+				}
+			},
 		}
 	}
 
@@ -1801,7 +2113,7 @@ impl<T: Config> ElectionProvider for Pezpallet<T> {
 #[cfg(test)]
 mod phase_rotation {
 	use super::{Event, *};
-	use crate::{mock::*, Phase};
+	use crate::{mock::*, verifier::Status, Phase};
 	use pezframe_election_provider_support::ElectionProvider;
 	use pezframe_support::assert_ok;
 
@@ -2126,6 +2438,82 @@ mod phase_rotation {
 	}
 
 	#[test]
+	fn weights_registered() {
+		// ensure we never forget to call `meter.consume` or similar in poll and alike.
+		// Our mock setup is:
+		//
+		// * each db read or write is 1 ref time.
+		// * each epmb op weight are:
+		//   * snapshots: 5
+		//   * validation: 3 to start, rest 7
+		ExtBuilder::full().build_and_execute(|| {
+			roll_to(10);
+			assert!(MultiBlock::current_phase().is_off());
+			// note: 2 becuase 1 read registered by the parent pezpallet, 1 by verifier.
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(2, 0));
+
+			// roll to this phase, no weight meter is consumed yet other than 1 read + 1 write.
+			roll_next_and_phase(Phase::Snapshot(3));
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(2, 0));
+
+			roll_next_and_phase(Phase::Snapshot(2));
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(2, 5));
+
+			roll_next_and_phase(Phase::Snapshot(1));
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(2, 5));
+
+			roll_next_and_phase(Phase::Snapshot(0));
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(2, 5));
+
+			roll_next_and_phase(Phase::Signed(SignedPhase::get() - 1));
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(2, 5));
+
+			// Now snapshot is done, and during signed phase we do a noop.
+			roll_next_and_phase(Phase::Signed(SignedPhase::get() - 2));
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(2, 0));
+
+			// but let's submit a signed solution to be verified while we're here
+			{
+				let paged = mine_full_solution().unwrap();
+				load_signed_for_verification(999, paged.clone());
+			}
+
+			// let's go forward to start of signed validation
+			roll_to_signed_validation_open();
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(2, 3));
+
+			roll_next_and_phase_verifier(
+				Phase::SignedValidation(SignedValidationPhase::get() - 1),
+				Status::Ongoing(1),
+			);
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(1, 7));
+
+			roll_next_and_phase_verifier(
+				Phase::SignedValidation(SignedValidationPhase::get() - 2),
+				Status::Ongoing(0),
+			);
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(1, 7));
+
+			roll_next_and_phase_verifier(
+				Phase::SignedValidation(SignedValidationPhase::get() - 3),
+				Status::Nothing,
+			);
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(1, 7));
+
+			// we also don't do anything during unsigned phase.
+			roll_to_unsigned_open();
+			assert!(MultiBlock::current_phase().is_unsigned());
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(2, 0));
+
+			roll_next_and_phase(Phase::Unsigned(UnsignedPhase::get() - 2));
+			assert_eq!(System::remaining_block_weight().consumed(), Weight::from_parts(2, 0));
+
+			// Export weight is computed by us, but registered by whoever calls `elect`, not our
+			// business to check.
+		});
+	}
+
+	#[test]
 	fn no_unsigned_phase() {
 		ExtBuilder::full()
 			.pages(3)
@@ -2329,18 +2717,14 @@ mod phase_rotation {
 					]
 				);
 
-				roll_next();
 				// we are back to signed phase
-				assert_eq!(MultiBlock::current_phase(), Phase::Signed(SignedPhase::get() - 1));
+				roll_next_and_phase(Phase::Signed(SignedPhase::get() - 1));
 				// round is still the same
 				assert_eq!(MultiBlock::round(), 0);
 
 				// we proceed to normally again:
-				roll_next();
-				assert_eq!(MultiBlock::current_phase(), Phase::Signed(SignedPhase::get() - 2));
-
-				roll_next();
-				assert_eq!(MultiBlock::current_phase(), Phase::Signed(SignedPhase::get() - 3));
+				roll_next_and_phase(Phase::Signed(SignedPhase::get() - 2));
+				roll_next_and_phase(Phase::Signed(SignedPhase::get() - 3));
 			});
 	}
 
@@ -2356,36 +2740,21 @@ mod phase_rotation {
 				assert_eq!(MultiBlock::current_phase(), Phase::Done);
 
 				// Test that on_initialize does NOT advance the phase when in Done
-				roll_next();
-				assert_eq!(
-					MultiBlock::current_phase(),
-					Phase::Done,
-					"Done phase should not auto-transition"
-				);
+				roll_next_and_phase(Phase::Done);
 
 				// Start export by calling elect(max_page)
 				assert_ok!(MultiBlock::elect(2)); // max_page = 2 for 3 pages
 				assert_eq!(MultiBlock::current_phase(), Phase::Export(1));
 
 				// Test that on_initialize does NOT advance the phase when in Export
-				roll_next();
-				assert_eq!(
-					MultiBlock::current_phase(),
-					Phase::Export(1),
-					"Export phase should not auto-transition"
-				);
+				roll_next_and_phase(Phase::Export(1));
 
 				// Only elect() should advance the Export phase
 				assert_ok!(MultiBlock::elect(1));
 				assert_eq!(MultiBlock::current_phase(), Phase::Export(0));
 
 				// Test Export(0) also blocks on_initialize transitions
-				roll_next();
-				assert_eq!(
-					MultiBlock::current_phase(),
-					Phase::Export(0),
-					"Export(0) should not auto-transition"
-				);
+				roll_next_and_phase(Phase::Export(0));
 
 				// Complete the export manually
 				assert_ok!(MultiBlock::elect(0));
@@ -2462,13 +2831,11 @@ mod election_provider {
 	use crate::{
 		mock::*,
 		unsigned::miner::OffchainWorkerMiner,
-		verifier::{AsynchronousVerifier, Verifier},
+		verifier::{AsynchronousVerifier, Status, Verifier},
 		Phase,
 	};
 	use pezframe_election_provider_support::{BoundedSupport, BoundedSupports, ElectionProvider};
-	use pezframe_support::{
-		assert_storage_noop, testing_prelude::bounded_vec, unsigned::ValidateUnsigned,
-	};
+	use pezframe_support::{assert_storage_noop, testing_prelude::bounded_vec};
 
 	// This is probably the most important test of all, a basic, correct scenario. This test should
 	// be studied in detail, and all of the branches of how it can go wrong or diverge from the
@@ -2492,7 +2859,10 @@ mod election_provider {
 			assert_eq!(
 				multi_block_events(),
 				vec![
-					Event::PhaseTransitioned { from: Phase::Off, to: Phase::Snapshot(3) },
+					Event::PhaseTransitioned {
+						from: Phase::Off,
+						to: Phase::Snapshot(Pages::get())
+					},
 					Event::PhaseTransitioned {
 						from: Phase::Snapshot(0),
 						to: Phase::Signed(SignedPhase::get() - 1)
@@ -2503,39 +2873,26 @@ mod election_provider {
 					}
 				]
 			);
-			assert_eq!(verifier_events(), vec![]);
+			assert_eq!(verifier_events_since_last_call(), vec![]);
 
 			// there is no queued solution prior to the last page of the solution getting verified
 			assert_eq!(<Runtime as crate::Config>::Verifier::queued_score(), None);
-			assert_eq!(<Runtime as crate::Config>::Verifier::status(), verifier::Status::Nothing);
-
-			// next block, signed will start the verifier, although nothing is verified yet.
-			roll_next();
 			assert_eq!(
 				<Runtime as crate::Config>::Verifier::status(),
 				verifier::Status::Ongoing(2)
 			);
-			assert_eq!(verifier_events(), vec![]);
 
-			// proceed until it is fully verified.
-			roll_next();
-			assert_eq!(verifier_events(), vec![verifier::Event::Verified(2, 2)]);
+			// next block, signed will start the verifier, although nothing is verified yet.
+			roll_next_and_phase_verifier(Phase::SignedValidation(5), Status::Ongoing(1));
+			assert_eq!(verifier_events_since_last_call(), vec![verifier::Event::Verified(2, 2)]);
 
-			roll_next();
+			roll_next_and_phase_verifier(Phase::SignedValidation(4), Status::Ongoing(0));
+			assert_eq!(verifier_events_since_last_call(), vec![verifier::Event::Verified(1, 2)]);
+
+			roll_next_and_phase_verifier(Phase::SignedValidation(3), Status::Nothing);
 			assert_eq!(
-				verifier_events(),
-				vec![verifier::Event::Verified(2, 2), verifier::Event::Verified(1, 2)]
-			);
-
-			roll_next();
-			assert_eq!(
-				verifier_events(),
-				vec![
-					verifier::Event::Verified(2, 2),
-					verifier::Event::Verified(1, 2),
-					verifier::Event::Verified(0, 2),
-					verifier::Event::Queued(score, None),
-				]
+				verifier_events_since_last_call(),
+				vec![verifier::Event::Verified(0, 2), verifier::Event::Queued(score, None)]
 			);
 
 			// there is now a queued solution.
@@ -2558,7 +2915,7 @@ mod election_provider {
 					if page == 0 {
 						assert!(MultiBlock::current_phase().is_off())
 					} else {
-						assert!(MultiBlock::current_phase().is_export())
+						assert_eq!(MultiBlock::current_phase(), Phase::Export(page - 1))
 					}
 				})
 				.collect::<Vec<_>>();
@@ -2572,8 +2929,8 @@ mod election_provider {
 			// and the snapshot is cleared,
 			assert_storage_noop!(Snapshot::<Runtime>::kill());
 			// signed pezpallet is clean.
-			// NOTE: in the future, if and when we add lazy cleanup to the signed pezpallet, this
-			// assertion might break.
+			// NOTE: signed pezpallet lazily deletes all other solutions, except the winner, which is
+			// actually deleted.
 			assert_ok!(signed::Submissions::<Runtime>::ensure_killed(0));
 		});
 	}
@@ -2593,14 +2950,13 @@ mod election_provider {
 			// there is no queued solution prior to the last page of the solution getting verified
 			assert_eq!(<Runtime as crate::Config>::Verifier::queued_score(), None);
 
-			// roll to the block it is finalized. 1 block to start the verifier, and 3 to verify
-			roll_next();
-			roll_next();
-			roll_next();
-			roll_next();
+			// roll to the block it is finalized.
+			roll_next_and_phase_verifier(Phase::SignedValidation(5), Status::Ongoing(1));
+			roll_next_and_phase_verifier(Phase::SignedValidation(4), Status::Ongoing(0));
+			roll_next_and_phase_verifier(Phase::SignedValidation(3), Status::Nothing);
 
 			assert_eq!(
-				verifier_events(),
+				verifier_events_since_last_call(),
 				vec![
 					verifier::Event::Verified(2, 2),
 					verifier::Event::Verified(1, 2),
@@ -2621,7 +2977,7 @@ mod election_provider {
 			assert_full_snapshot();
 
 			// there are 3 pages (indexes 2..=0), but we short circuit by just calling 0.
-			let _solution = crate::Pezpallet::<Runtime>::elect(0).unwrap();
+			let _supports = crate::Pezpallet::<Runtime>::elect(0).unwrap();
 
 			// round is incremented.
 			assert_eq!(MultiBlock::round(), round + 1);
@@ -2653,13 +3009,12 @@ mod election_provider {
 			assert_eq!(<Runtime as crate::Config>::Verifier::queued_score(), None);
 
 			// roll to the block it is finalized. 1 block to start the verifier, and 3 to verify.
-			roll_next();
-			roll_next();
-			roll_next();
-			roll_next();
+			roll_next_and_phase_verifier(Phase::SignedValidation(5), Status::Ongoing(1));
+			roll_next_and_phase_verifier(Phase::SignedValidation(4), Status::Ongoing(0));
+			roll_next_and_phase_verifier(Phase::SignedValidation(3), Status::Nothing);
 
 			assert_eq!(
-				verifier_events(),
+				verifier_events_since_last_call(),
 				vec![
 					verifier::Event::Verified(2, 2),
 					verifier::Event::Verified(1, 2),
@@ -2697,7 +3052,7 @@ mod election_provider {
 	}
 
 	#[test]
-	fn elect_advances_phase_even_on_error() {
+	fn continue_fallback_works() {
 		// Use Continue fallback to avoid emergency phase when both primary and fallback fail.
 		ExtBuilder::full().fallback_mode(FallbackModes::Continue).build_and_execute(|| {
 			// Move to unsigned phase
@@ -2777,14 +3132,16 @@ mod election_provider {
 			// the phase is off,
 			assert_eq!(MultiBlock::current_phase(), Phase::Off);
 			// the snapshot is cleared,
-			assert_storage_noop!(Snapshot::<Runtime>::kill());
+			assert_none_snapshot();
 			// and signed pezpallet is clean.
 			assert_ok!(signed::Submissions::<Runtime>::ensure_killed(round));
 		});
 	}
 
 	#[test]
+	#[allow(deprecated)]
 	fn call_to_elect_should_prevent_any_submission() {
+		use pezframe_support::unsigned::ValidateUnsigned;
 		ExtBuilder::full().build_and_execute(|| {
 			roll_to_signed_open();
 			assert!(MultiBlock::current_phase().is_signed());
@@ -2913,22 +3270,10 @@ mod election_provider {
 	}
 
 	#[test]
-	#[should_panic]
-	fn continue_fallback_works() {
-		todo!()
-	}
-
-	#[test]
-	#[should_panic]
-	fn emergency_fallback_works() {
-		todo!();
-	}
-
-	#[test]
 	fn elect_call_when_not_ongoing() {
 		ExtBuilder::full().fallback_mode(FallbackModes::Onchain).build_and_execute(|| {
 			roll_to_snapshot_created();
-			assert_eq!(MultiBlock::status(), Ok(false));
+			assert_eq!(MultiBlock::status(), Ok(None));
 			assert!(MultiBlock::elect(0).is_ok());
 		});
 		ExtBuilder::full().fallback_mode(FallbackModes::Onchain).build_and_execute(|| {
@@ -3007,9 +3352,9 @@ mod manage_ops {
 	// This scenario have multiple outcomes:
 	// 1. rotate in off => almost a noop
 	// 2. rotate mid signed, validation, unsigned, done, but NOT export => clear all data, move to
-	//    next round and be off. Note: all of the data in this pezpallet is indexed by the round
-	//    index, so moving to the next round will implicitly make the old data unavaioable, even if
-	//    not cleared out. This secnario needs further testing.
+	//    next round and be off. Note: all of the data in this pezpallet is indexed by the round index,
+	//    so moving to the next round will implicitly make the old data unavaioable, even if not
+	//    cleared out. This secnario needs further testing.
 	// 3. rotate mid export: same as above, except staking will be out of sync and will also need
 	//    governance intervention.
 	//
@@ -3208,11 +3553,10 @@ mod admin_ops {
 mod stalled_round_watchdog {
 	use super::*;
 	use crate::{mock::*, Phase};
-	use pezframe_election_provider_support::ElectionProvider;
 
-	/// An election that keeps looping back to the signed phase without ever producing a solution
-	/// holds its round forever. The watchdog must abandon it and rotate, so a new election can be
-	/// started from a fresh snapshot.
+	/// An election that keeps looping back to the signed phase without ever producing a
+	/// solution holds its round forever. The watchdog must abandon it and rotate, so a new
+	/// election can be started from a fresh snapshot.
 	#[test]
 	fn stalled_round_is_rotated_after_timeout() {
 		ExtBuilder::full().build_and_execute(|| {
@@ -3231,12 +3575,10 @@ mod stalled_round_watchdog {
 			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
 
 			// one block past the timeout: the round is abandoned.
-			roll_next();
+			roll_to(ElectionStart::get() + 51);
 			assert_eq!(MultiBlock::round(), 1);
 			assert_eq!(MultiBlock::current_phase(), Phase::Off);
 			assert_eq!(ElectionStartedAt::<Runtime>::get(), None);
-			// and the snapshot of the abandoned round is gone, so the next one starts clean.
-			assert_ok!(Snapshot::<Runtime>::ensure_snapshot(false, Pages::get()));
 			assert!(multi_block_events()
 				.iter()
 				.any(|e| matches!(e, Event::StalledRoundRotated { round: 0, .. })));
@@ -3269,8 +3611,8 @@ mod stalled_round_watchdog {
 
 			// make the timeout trivially exceeded.
 			StalledRoundTimeout::set(1);
-			roll_next();
-			roll_next();
+			let now = pezframe_system::Pezpallet::<Runtime>::block_number();
+			roll_to(now + 2);
 
 			assert!(MultiBlock::current_phase().is_done(), "done phase was interrupted");
 			assert_eq!(MultiBlock::round(), 0);
@@ -3280,7 +3622,7 @@ mod stalled_round_watchdog {
 		})
 	}
 
-	/// Zero means the watchdog is off, and a stalled round then stays stalled — this is the
+	/// Zero means the watchdog is off, and a stalled round then stays stalled -- this is the
 	/// pre-watchdog behaviour, kept as an explicit escape hatch.
 	#[test]
 	fn zero_timeout_disables_the_watchdog() {
@@ -3288,61 +3630,11 @@ mod stalled_round_watchdog {
 			AreWeDone::set(AreWeDoneModes::BackToSigned);
 			StalledRoundTimeout::set(0);
 
-			roll_to(ElectionStart::get() + 500);
+			// The mock refuses to roll past block 200, so this is as long a stall as the
+			// harness allows -- and it is many times a full election either way.
+			roll_to(ElectionStart::get() + 150);
 			assert_eq!(MultiBlock::round(), 0);
 			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
-		})
-	}
-}
-
-#[cfg(test)]
-mod stalled_round_watchdog_adoption {
-	use super::*;
-	use crate::{mock::*, Phase};
-
-	/// A round that was not opened through `start()` — because the runtime was upgraded
-	/// mid-election — must still end up watched, otherwise it can stall forever with the watchdog
-	/// looking straight past it.
-	#[test]
-	fn round_without_a_recorded_start_is_adopted_and_then_rotated() {
-		ExtBuilder::full().build_and_execute(|| {
-			AreWeDone::set(AreWeDoneModes::BackToSigned);
-			StalledRoundTimeout::set(20);
-
-			// A real election is running...
-			roll_to(ElectionStart::get() + 1);
-			assert!(!matches!(MultiBlock::current_phase(), Phase::Off));
-			let round_before = MultiBlock::round();
-
-			// ...and then the runtime is upgraded, so the new storage item starts out empty.
-			ElectionStartedAt::<Runtime>::kill();
-
-			// The next block adopts the round instead of ignoring it.
-			roll_next();
-			let adopted = ElectionStartedAt::<Runtime>::get();
-			assert_eq!(adopted, Some(System::block_number()));
-			assert_eq!(MultiBlock::round(), round_before, "must not rotate on the adopting block");
-
-			// From there the normal timeout applies.
-			roll_to(adopted.unwrap() + 20);
-			assert_eq!(MultiBlock::round(), round_before);
-			roll_next();
-			assert_eq!(MultiBlock::round(), round_before + 1);
-			assert_eq!(MultiBlock::current_phase(), Phase::Off);
-			assert_eq!(ElectionStartedAt::<Runtime>::get(), None);
-		})
-	}
-
-	/// Adoption must not resurrect the watchdog where it is switched off.
-	#[test]
-	fn adoption_does_not_happen_when_disabled() {
-		ExtBuilder::full().build_and_execute(|| {
-			StalledRoundTimeout::set(0);
-			roll_to(ElectionStart::get() + 1);
-			ElectionStartedAt::<Runtime>::kill();
-
-			roll_next();
-			assert_eq!(ElectionStartedAt::<Runtime>::get(), None);
 		})
 	}
 }

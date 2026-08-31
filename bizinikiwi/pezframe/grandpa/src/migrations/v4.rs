@@ -32,8 +32,8 @@ pub const OLD_PREFIX: &[u8] = b"GrandpaFinality";
 /// `<Runtime as pezframe_system::Config>::PalletInfo::name::<GrandpaPallet>`.
 ///
 /// The old storage prefix, `GrandpaFinality` is hardcoded in the migration code.
-pub fn migrate<T: crate::Config, N: AsRef<str>>(new_pallet_name: N) -> Weight {
-	if new_pallet_name.as_ref().as_bytes() == OLD_PREFIX {
+pub fn migrate<T: crate::Config, N: AsRef<str>>(new_pezpallet_name: N) -> Weight {
+	if new_pezpallet_name.as_ref().as_bytes() == OLD_PREFIX {
 		log::info!(
 			target: LOG_TARGET,
 			"New pezpallet name is equal to the old prefix. No migration needs to be done.",
@@ -48,10 +48,10 @@ pub fn migrate<T: crate::Config, N: AsRef<str>>(new_pallet_name: N) -> Weight {
 	);
 
 	if storage_version <= 3 {
-		log::info!("new prefix: {}", new_pallet_name.as_ref());
+		log::info!("new prefix: {}", new_pezpallet_name.as_ref());
 		pezframe_support::storage::migration::move_pallet(
 			OLD_PREFIX,
-			new_pallet_name.as_ref().as_bytes(),
+			new_pezpallet_name.as_ref().as_bytes(),
 		);
 
 		StorageVersion::new(4).put::<crate::Pezpallet<T>>();

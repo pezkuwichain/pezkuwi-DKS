@@ -54,7 +54,7 @@ use xcm_executor::traits::ConvertLocation;
 #[cfg(feature = "runtime-benchmarks")]
 use pezframe_support::traits::OriginTrait;
 
-pub const LOG_TARGET: &str = "snowbridge-system-v2";
+pub const LOG_TARGET: &str = "pezsnowbridge-system-v2";
 
 pub type AccountIdOf<T> = <T as pezframe_system::Config>::AccountId;
 #[cfg(feature = "runtime-benchmarks")]

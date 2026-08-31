@@ -23,14 +23,15 @@ use pezframe_support::{
 	traits::{GetStorageVersion, PalletInfoAccess},
 	weights::WeightMeter,
 };
-use pezsp_core::{twox_128, Get};
+use pezsp_core::Get;
+use pezsp_crypto_hashing::twox_128;
 use pezsp_io::{storage::clear_prefix, KillStorageResult};
 use pezsp_runtime::SaturatedConversion;
 
 /// Remove all of a pezpallet's state and re-initializes it to the current in-code storage version.
 ///
 /// It uses the multi block migration frame. Hence it is safe to use even on
-/// pallets that contain a lot of storage.
+/// pezpallets that contain a lot of storage.
 ///
 /// # Parameters
 ///
@@ -81,8 +82,9 @@ where
 			return Ok(None);
 		}
 
-		let base_weight = T::WeightInfo::reset_pallet_migration(0);
-		let weight_per_key = T::WeightInfo::reset_pallet_migration(1).saturating_sub(base_weight);
+		let base_weight = T::WeightInfo::reset_pezpallet_migration(0);
+		let weight_per_key =
+			T::WeightInfo::reset_pezpallet_migration(1).saturating_sub(base_weight);
 		let key_budget = meter
 			.remaining()
 			.saturating_sub(base_weight)
@@ -92,7 +94,7 @@ where
 
 		if key_budget == 0 {
 			return Err(SteppedMigrationError::InsufficientWeight {
-				required: T::WeightInfo::reset_pallet_migration(1),
+				required: T::WeightInfo::reset_pezpallet_migration(1),
 			});
 		}
 
@@ -101,7 +103,7 @@ where
 			KillStorageResult::SomeRemaining(value) => (value, false),
 		};
 
-		meter.consume(T::WeightInfo::reset_pallet_migration(keys_removed));
+		meter.consume(T::WeightInfo::reset_pezpallet_migration(keys_removed));
 
 		Ok(Some(is_done))
 	}

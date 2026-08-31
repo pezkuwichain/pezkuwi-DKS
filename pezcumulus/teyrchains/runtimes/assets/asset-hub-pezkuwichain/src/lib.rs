@@ -15,7 +15,7 @@
 
 //! # Asset Hub Pezkuwichain Runtime
 //!
-//! Asset Hub Pezkuwichain, formerly known as "Rockmine", is the test network for its Dicle cousin.
+//! Asset Hub Pezkuwichain, is the test network for its Dicle cousin.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "512"]
@@ -26,7 +26,9 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod bag_thresholds;
 mod genesis_config_presets;
-mod staking;
+pub mod governance;
+// Public so the integration tests can hold the emission rule to its ceiling.
+pub mod staking;
 mod weights;
 pub mod xcm_config;
 
@@ -36,6 +38,7 @@ pub use staking::*;
 extern crate alloc;
 
 use alloc::{vec, vec::Vec};
+use governance::pezpallet_custom_origins;
 use pez_assets_common::{
 	foreign_creators::ForeignCreators,
 	local_and_foreign_assets::{LocalFromLeft, TargetFromLeft},
@@ -55,7 +58,9 @@ use pezsp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, Permill, Perquintill,
 };
-use testnet_teyrchains_constants::pezkuwichain::snowbridge::EthereumNetwork;
+use testnet_teyrchains_constants::pezkuwichain::{
+	locations::PeopleLocation, snowbridge::EthereumNetwork,
+};
 
 #[cfg(feature = "std")]
 use pezsp_version::NativeVersion;
@@ -64,15 +69,17 @@ use pezsp_version::RuntimeVersion;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 pub use pez_assets_common::local_and_foreign_assets::ForeignAssetReserveData;
 use pezcumulus_primitives_core::ParaId;
+use pezframe_support::traits::tokens::imbalance::ResolveTo;
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
+	dynamic_params::{dynamic_params, dynamic_pezpallet_params},
 	genesis_builder_helper::{build_state, get_preset},
 	ord_parameter_types, parameter_types,
 	traits::{
-		fungible, fungible::HoldConsideration, fungibles, tokens::imbalance::ResolveAssetTo,
-		AsEnsureOriginWithArg, ConstBool, ConstU128, ConstU32, ConstU64, ConstU8,
-		ConstantStoragePrice, EitherOfDiverse, Equals, InstanceFilter, Nothing, TransformOrigin,
+		fungible, fungibles, tokens::imbalance::ResolveAssetTo, AsEnsureOriginWithArg, ConstBool,
+		ConstU128, ConstU32, ConstU64, ConstU8, ConstantStoragePrice, EitherOfDiverse, Equals,
+		InstanceFilter, Nothing, TransformOrigin,
 	},
 	weights::{ConstantMultiplier, Weight},
 	BoundedVec, PalletId,
@@ -82,8 +89,9 @@ use pezframe_system::{
 	EnsureRoot, EnsureSigned, EnsureSignedBy,
 };
 use pezpallet_asset_conversion_tx_payment::SwapAssetAdapter;
+use pezpallet_collator_selection::StakingPotAccountId;
 use pezpallet_nfts::PalletFeatures;
-use pezsp_runtime::{Perbill, RuntimeDebug};
+use pezsp_runtime::Perbill;
 use testnet_teyrchains_constants::pezkuwichain::{
 	consensus::*, currency::*, fee::WeightToFee, time::*,
 };
@@ -154,7 +162,12 @@ pub fn native_version() -> NativeVersion {
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
 		.for_class(DispatchClass::all(), |weights| {
@@ -229,7 +242,14 @@ impl pezpallet_balances::Config for Runtime {
 	type Balance = Balance;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
-	type DustRemoval = ();
+	/// Dust -- what is left in an account too small to keep -- goes where this chain's fee
+	/// income goes, rather than being dropped.
+	///
+	/// `()` destroys it. Small per account and not small across a population, and on a chain
+	/// that collects fees for its treasury there is no reason for the remainder to be the one
+	/// thing that vanishes. Upstream stopped dropping it too, with a pallet of its own; this
+	/// gets the same result without taking on a new pallet.
+	type DustRemoval = ResolveTo<StakingPotAccountId<Runtime>, Balances>;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = weights::pezpallet_balances::WeightInfo<Runtime>;
@@ -264,7 +284,7 @@ parameter_types! {
 	pub const ApprovalDeposit: Balance = EXISTENTIAL_DEPOSIT;
 	pub const AssetsStringLimit: u32 = 50;
 	/// Key = 32 bytes, Value = 36 bytes (32+1+1+1+1)
-	// https://github.com/pezkuwichain/pezkuwi-sdk/blob/main/bizinikiwi/pezframe/assets/src/lib.rs#L257L271
+	// https://github.com/pezkuwichain/pezkuwi-DKS/blob/main/bizinikiwi/pezframe/assets/src/lib.rs#L257L271
 	pub const MetadataDepositBase: Balance = deposit(1, 68);
 	pub const MetadataDepositPerByte: Balance = deposit(0, 1);
 }
@@ -299,7 +319,24 @@ impl pezpallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
 	type AssetAccountDeposit = AssetAccountDeposit;
 	type RemoveItemsLimit = pezframe_support::traits::ConstU32<1000>;
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
+	type BenchmarkHelper = TrustBackedAssetsBenchmarkHelper;
+}
+
+/// Genesis sets `NextAssetId`, and while it is set `force_create` accepts that id and no other.
+/// The pallet's default helper asks for id 0, which the benchmarks then fail to create; this
+/// hands out the id the chain will actually accept. Every benchmark starts from genesis and
+/// creates at most one asset, so the value is stable for the reference lookups that follow.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct TrustBackedAssetsBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_assets::BenchmarkHelper<codec::Compact<AssetIdForTrustBackedAssets>, ()>
+	for TrustBackedAssetsBenchmarkHelper
+{
+	fn create_asset_id_parameter(_id: u32) -> codec::Compact<AssetIdForTrustBackedAssets> {
+		codec::Compact(genesis_config_presets::FIRST_AUTO_ASSET_ID)
+	}
+
+	fn create_reserve_id_parameter(_id: u32) {}
 }
 
 // Allow Freezes for the `Assets` pezpallet
@@ -311,6 +348,8 @@ impl pezpallet_assets_freezer::Config<AssetsFreezerInstance> for Runtime {
 
 parameter_types! {
 	pub const AssetConversionPalletId: PalletId = PalletId(*b"py/ascon");
+	/// Liquidity provider fee, now expressed as a rate rather than a raw numerator.
+	pub LpFee: Permill = Permill::from_rational(3u32, 1_000u32); // 0.3%, unchanged
 	pub const LiquidityWithdrawalFee: Permill = Permill::from_percent(0);
 }
 
@@ -452,7 +491,7 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type PoolSetupFeeAsset = TokenLocation;
 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
-	type LPFee = ConstU32<3>;
+	type LPFee = LpFee;
 	type PalletId = AssetConversionPalletId;
 	type MaxSwapPathLength = ConstU32<3>;
 	type MintMinLiquidity = ConstU128<100>;
@@ -582,7 +621,7 @@ parameter_types! {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]
@@ -758,6 +797,7 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
 	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
 	type ConsensusHook = ConsensusHook;
 	type RelayParentOffset = ConstU32<0>;
+	type SchedulingSignatureVerifier = ();
 }
 
 type ConsensusHook = pezcumulus_pezpallet_aura_ext::FixedVelocityConsensusHook<
@@ -881,13 +921,13 @@ pub type CollatorSelectionUpdateOrigin = EitherOfDiverse<
 >;
 
 impl pezpallet_collator_selection::Config for Runtime {
+	type MaxInvulnerables = ConstU32<20>;
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type UpdateOrigin = CollatorSelectionUpdateOrigin;
 	type PotId = PotId;
 	type MaxCandidates = ConstU32<100>;
 	type MinEligibleCollators = ConstU32<4>;
-	type MaxInvulnerables = ConstU32<20>;
 	// should be a multiple of session or things will get inconsistent
 	type KickThreshold = Period;
 	type ValidatorId = <Self as pezframe_system::Config>::AccountId;
@@ -962,11 +1002,11 @@ impl pezpallet_nft_fractionalization::Config for Runtime {
 	type AssetId = <Self as pezpallet_assets::Config<TrustBackedAssetsInstance>>::AssetId;
 	type Assets = Assets;
 	type Nfts = Nfts;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = NftFractionalizationBenchmarkHelper;
 	type PalletId = NftFractionalizationPalletId;
 	type WeightInfo = weights::pezpallet_nft_fractionalization::WeightInfo<Runtime>;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
 }
 
 parameter_types! {
@@ -1014,6 +1054,7 @@ impl pezpallet_nfts::Config for Runtime {
 /// consensus with dynamic fees and back-pressure.
 pub type ToZagrosXcmRouterInstance = pezpallet_xcm_bridge_hub_router::Instance3;
 impl pezpallet_xcm_bridge_hub_router::Config<ToZagrosXcmRouterInstance> for Runtime {
+	type UnpaidExport = pezframe_support::traits::ConstBool<true>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = weights::pezpallet_xcm_bridge_hub_router::WeightInfo<Runtime>;
 
@@ -1035,7 +1076,31 @@ impl pezpallet_xcm_bridge_hub_router::Config<ToZagrosXcmRouterInstance> for Runt
 	type FeeAsset = xcm_config::bridging::XcmBridgeHubRouterFeeAssetId;
 }
 
+/// The default helper asks for asset id 0, which `force_create` refuses while genesis has
+/// `NextAssetId` set. Hands out the id the chain will accept instead.
 #[cfg(feature = "runtime-benchmarks")]
+pub struct NftFractionalizationBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl
+	pezpallet_nft_fractionalization::BenchmarkHelper<
+		AssetIdForTrustBackedAssets,
+		CollectionId,
+		ItemId,
+	> for NftFractionalizationBenchmarkHelper
+{
+	fn asset(_id: u32) -> AssetIdForTrustBackedAssets {
+		genesis_config_presets::FIRST_AUTO_ASSET_ID
+	}
+
+	fn collection(id: u32) -> CollectionId {
+		id.into()
+	}
+
+	fn nft(id: u32) -> ItemId {
+		id.into()
+	}
+}
+
 pub struct PalletAssetRewardsBenchmarkHelper;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -1045,13 +1110,19 @@ impl pezpallet_asset_rewards::benchmarking::BenchmarkHelper<xcm::v5::Location>
 	fn staked_asset() -> Location {
 		Location::new(
 			0,
-			[PalletInstance(<Assets as PalletInfoAccess>::index() as u8), GeneralIndex(100)],
+			[
+				PalletInstance(<Assets as PalletInfoAccess>::index() as u8),
+				GeneralIndex(genesis_config_presets::FIRST_AUTO_ASSET_ID as u128),
+			],
 		)
 	}
 	fn reward_asset() -> Location {
 		Location::new(
 			0,
-			[PalletInstance(<Assets as PalletInfoAccess>::index() as u8), GeneralIndex(101)],
+			[
+				PalletInstance(<Assets as PalletInfoAccess>::index() as u8),
+				GeneralIndex(genesis_config_presets::FIRST_AUTO_ASSET_ID as u128 + 1),
+			],
 		)
 	}
 }
@@ -1073,7 +1144,7 @@ impl pezpallet_asset_rewards::Config for Runtime {
 	type AssetId = xcm::v5::Location;
 	type CreatePoolOrigin = EnsureSigned<AccountId>;
 	type RuntimeFreezeReason = RuntimeFreezeReason;
-	type Consideration = HoldConsideration<
+	type Consideration = pezframe_support::traits::fungible::HoldConsideration<
 		AccountId,
 		Balances,
 		RewardsPoolCreationHoldReason,
@@ -1137,7 +1208,24 @@ impl pezpallet_nis::Config for Runtime {
 parameter_types! {
 	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 	pub const SpendPeriod: BlockNumber = 6 * DAYS;
-	pub const Burn: Permill = Permill::from_perthousand(2);
+	/// Nothing -- and this is an open question, not a settled one.
+	///
+	/// The reason written here until 2026-08-30 was that the supply is fixed and halving. That
+	/// is PEZ's property, not HEZ's: HEZ inflates, capped at ten per cent a year, so a treasury
+	/// burn is exactly the counter-inflationary sink upstream uses it as. The number stays at
+	/// zero because moving it is a monetary decision, and a wrong reason for a number is not by
+	/// itself a reason to change the number -- but it now rests on nothing rather than on
+	/// something false.
+	///
+	/// Measured, so the cost of leaving it is visible: the treasury takes 15% of a 16M HEZ
+	/// yearly emission, so 2.4M HEZ a year arrives with no sink. Unspent, that is 24M in a
+	/// decade, about seven per cent of the supply by then, and nothing takes it back.
+	///
+	/// `BurnDestination` is `()`, which drops the imbalance rather than moving it. Upstream ran
+	/// this live at two per thousand of the unspent balance every spend period: a slow leak out
+	/// of total issuance that no event names. Zero rather than a destination is deliberate --
+	/// giving the burn somewhere to go would say this chain burns and has chosen a recipient.
+	pub const Burn: Permill = Permill::zero();
 	pub const MaxApprovals: u32 = 100;
 	pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
 	pub TreasuryAccount: AccountId = Treasury::account_id();
@@ -1152,10 +1240,22 @@ impl pezpallet_treasury::Config for Runtime {
 	type Burn = Burn;
 	type BurnDestination = ();
 	type MaxApprovals = MaxApprovals;
-	type WeightInfo = ();
+	// Not `()`: that is zero weight, which prices every call in this pallet at
+	// nothing. These are the pallet's own reference figures, measured on
+	// somebody else's hardware -- the same caveat every weight file here carries
+	// -- and a wrong non-zero number is not in the same class as no number.
+	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
 	type SpendFunds = ();
-	type SpendOrigin =
-		pezframe_system::EnsureRootWithSuccess<AccountId, ConstU128<{ Balance::max_value() }>>;
+	// Root, or a spender the economic franchise elected to trust with an amount.
+	//
+	// Root alone meant there was no governance path to this treasury at all: the five
+	// spending tracks could be voted through and the origin they produced could not reach the
+	// money. `Spender` maps each tier to its ceiling, so what a referendum authorises is
+	// bounded by the track it ran on rather than by nothing.
+	type SpendOrigin = pezframe_support::traits::EitherOf<
+		pezframe_system::EnsureRootWithSuccess<AccountId, ConstU128<{ Balance::max_value() }>>,
+		governance::Spender,
+	>;
 	type AssetKind = ();
 	type Beneficiary = AccountId;
 	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
@@ -1172,7 +1272,11 @@ impl pezpallet_treasury::Config for Runtime {
 // AssetRate Pezpallet
 // -----------------------------------------------------------------------------
 impl pezpallet_asset_rate::Config for Runtime {
-	type WeightInfo = ();
+	// Not `()`: that is zero weight, which prices every call in this pallet at
+	// nothing. These are the pallet's own reference figures, measured on
+	// somebody else's hardware -- the same caveat every weight file here carries
+	// -- and a wrong non-zero number is not in the same class as no number.
+	type WeightInfo = pezpallet_asset_rate::weights::BizinikiwiWeight<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
 	type CreateOrigin = EnsureRoot<AccountId>;
 	type RemoveOrigin = EnsureRoot<AccountId>;
@@ -1196,7 +1300,21 @@ parameter_types! {
 	pub const DataDepositPerByte: Balance = 1 * CENTS;
 }
 
+parameter_types! {
+	/// Assets a bounty account can hold. Native first, as the mover requires.
+	pub BountyRelevantAssets: alloc::vec::Vec<xcm::v5::Location> =
+		alloc::vec![xcm_config::TokenLocation::get()];
+}
+
 impl pezpallet_bounties::Config for Runtime {
+	// On cancellation the bounty account is emptied into the treasury. Binding this to the
+	// unit type would compile and silently strand whatever the account holds, so it is
+	// wired to the real mover over the native token, which is what bounties here are funded in.
+	type TransferAllAssets = pezpallet_bounties::TransferAllFungibles<
+		AccountId,
+		NativeAndAllAssets,
+		BountyRelevantAssets,
+	>;
 	type RuntimeEvent = RuntimeEvent;
 	type BountyDepositBase = BountiesDepositBase;
 	type BountyDepositPayoutDelay = BountyDepositPayoutDelay;
@@ -1207,7 +1325,11 @@ impl pezpallet_bounties::Config for Runtime {
 	type BountyValueMinimum = BountyValueMinimum;
 	type DataDepositPerByte = DataDepositPerByte;
 	type MaximumReasonLength = MaximumReasonLength;
-	type WeightInfo = ();
+	// Not `()`: that is zero weight, which prices every call in this pallet at
+	// nothing. These are the pallet's own reference figures, measured on
+	// somebody else's hardware -- the same caveat every weight file here carries
+	// -- and a wrong non-zero number is not in the same class as no number.
+	type WeightInfo = pezpallet_bounties::weights::BizinikiwiWeight<Runtime>;
 	type ChildBountyManager = ChildBounties;
 	type OnSlash = Treasury;
 }
@@ -1224,7 +1346,11 @@ impl pezpallet_child_bounties::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type MaxActiveChildBountyCount = MaxActiveChildBountyCount;
 	type ChildBountyValueMinimum = ChildBountyValueMinimum;
-	type WeightInfo = ();
+	// Not `()`: that is zero weight, which prices every call in this pallet at
+	// nothing. These are the pallet's own reference figures, measured on
+	// somebody else's hardware -- the same caveat every weight file here carries
+	// -- and a wrong non-zero number is not in the same class as no number.
+	type WeightInfo = pezpallet_child_bounties::weights::BizinikiwiWeight<Runtime>;
 }
 
 // =============================================================================
@@ -1240,8 +1366,17 @@ parameter_types! {
 	pub const PezIncentivePotId: PalletId = PalletId(*b"pez/incv");
 	pub const PezGovernmentPotId: PalletId = PalletId(*b"pez/govr");
 	pub const PezAssetId: u32 = 1; // PEZ token asset ID
-	pub PezPresaleAccount: AccountId = PalletId(*b"pez/pres").into_account_truncating();
-	pub PezFounderAccount: AccountId = PalletId(*b"pez/foun").into_account_truncating();
+	/// Owner, issuer, admin and freezer of the PEZ asset.
+	///
+	/// A `PalletId` account: no seed produces it, so none of those four roles can ever be
+	/// exercised. PEZ needs none of them -- the entire supply is created at genesis and the
+	/// fixed five billion is the whole point of the token.
+	///
+	/// wHEZ and wUSDT are administered normally, because live systems mint and burn them.
+	/// PEZ must not be. Do not give this asset a signable owner.
+	pub const PezAssetTeamId: PalletId = PalletId(*b"pez/asst");
+	/// `PezRewards` on the People chain, which is where the funding report is addressed.
+	pub const PezRewardsPalletIndex: u8 = 91;
 }
 
 impl pezpallet_pez_treasury::Config for Runtime {
@@ -1251,39 +1386,21 @@ impl pezpallet_pez_treasury::Config for Runtime {
 	type TreasuryPalletId = PezTreasuryPalletId;
 	type IncentivePotId = PezIncentivePotId;
 	type GovernmentPotId = PezGovernmentPotId;
-	type PresaleAccount = PezPresaleAccount;
-	type FounderAccount = PezFounderAccount;
-	type ForceOrigin = EnsureRoot<AccountId>;
-}
-
-// -----------------------------------------------------------------------------
-// Presale Pezpallet
-// -----------------------------------------------------------------------------
-
-parameter_types! {
-	pub const PresalePalletId: PalletId = PalletId(*b"pez/sale");
-	pub PresalePlatformTreasury: AccountId = PalletId(*b"pez/plat").into_account_truncating();
-	pub PresaleStakingRewardPool: AccountId = PalletId(*b"pez/stak").into_account_truncating();
-	pub const PresalePlatformFeePercent: u8 = 2; // 2% platform fee
-	pub const PresaleMaxContributors: u32 = 10_000;
-	pub const PresaleMaxBonusTiers: u32 = 5;
-	pub const PresaleMaxWhitelistedAccounts: u32 = 1_000;
-}
-
-impl pezpallet_presale::Config for Runtime {
-	type AssetId = AssetIdForTrustBackedAssets;
-	type Balance = Balance;
-	type Assets = Assets;
-	type PalletId = PresalePalletId;
-	type PlatformTreasury = PresalePlatformTreasury;
-	type StakingRewardPool = PresaleStakingRewardPool;
-	type PlatformFeePercent = PresalePlatformFeePercent;
-	type MaxContributors = PresaleMaxContributors;
-	type MaxBonusTiers = PresaleMaxBonusTiers;
-	type MaxWhitelistedAccounts = PresaleMaxWhitelistedAccounts;
-	type CreatePresaleOrigin = EnsureSigned<AccountId>;
-	type EmergencyOrigin = EnsureRoot<AccountId>;
-	type PresaleWeightInfo = pezpallet_presale::BizinikiwiWeight<Runtime>;
+	// Only the People chain may report that the citizen register has passed the threshold.
+	// It is the chain that holds the register, so it is the only body in a position to know;
+	// root is deliberately not accepted, because a key that can start the schedule early is a
+	// key that can pay a month to a state that has not yet earned it.
+	type ActivationOrigin = EnsureXcm<Equals<PeopleLocation>>;
+	// Same chain, same reason: the budget that authorises a payment and the officeholder who
+	// draws against it both live on People. This chain only holds the money.
+	type GovernmentSpendOrigin = EnsureXcm<Equals<PeopleLocation>>;
+	// And the same again for the incentive pot. Every number behind a reward -- the trust
+	// score, the epoch rate, the parliamentary seat -- is computed on People; this chain
+	// holds the money and takes instruction.
+	type IncentiveSpendOrigin = EnsureXcm<Equals<PeopleLocation>>;
+	type XcmSender = xcm_config::XcmRouter;
+	type RewardsChainLocation = PeopleLocation;
+	type RewardsPalletIndex = PezRewardsPalletIndex;
 }
 
 // -----------------------------------------------------------------------------
@@ -1328,6 +1445,105 @@ impl pezpallet_migrations::Config for Runtime {
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
+
+// =============================================================================
+// The economic franchise
+// =============================================================================
+//
+// Weight-counted, and that is the whole point of it sitting here rather than on People. What
+// a token costs and what the treasury spends is decided by those who bear the cost of being
+// wrong about it; who holds office and who is a citizen is not, and is decided on the chain
+// that holds the register, one citizen one voice.
+//
+// The two track lists are disjoint by construction and a test holds them apart.
+
+parameter_types! {
+	pub const EconomicMaxScheduledPerBlock: u32 = 50;
+	pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) *
+		RuntimeBlockWeights::get().max_block;
+	pub const PreimageBaseDeposit: Balance = deposit(2, 64);
+	pub const PreimageByteDeposit: Balance = deposit(0, 1);
+	pub const PreimageHoldReason: RuntimeHoldReason =
+		RuntimeHoldReason::Preimage(pezpallet_preimage::HoldReason::Preimage);
+	pub const VoteLockingPeriod: BlockNumber = 7 * DAYS;
+	pub const EconomicSubmissionDeposit: Balance = 100 * UNITS;
+	pub const EconomicUndecidingTimeout: BlockNumber = 21 * DAYS;
+	pub const EconomicAlarmInterval: BlockNumber = 1;
+	pub const EconomicMaxQueued: u32 = 100;
+}
+
+impl pezpallet_scheduler::Config for Runtime {
+	type RuntimeOrigin = RuntimeOrigin;
+	type RuntimeEvent = RuntimeEvent;
+	type PalletsOrigin = OriginCaller;
+	type RuntimeCall = RuntimeCall;
+	type MaximumWeight = MaximumSchedulerWeight;
+	type ScheduleOrigin = EnsureRoot<AccountId>;
+	type MaxScheduledPerBlock = EconomicMaxScheduledPerBlock;
+	type WeightInfo = pezpallet_scheduler::weights::BizinikiwiWeight<Runtime>;
+	type OriginPrivilegeCmp = pezframe_support::traits::EqualPrivilegeOnly;
+	type Preimages = Preimage;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+}
+
+impl pezpallet_preimage::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type ManagerOrigin = EnsureRoot<AccountId>;
+	type Consideration = pezframe_support::traits::fungible::HoldConsideration<
+		AccountId,
+		Balances,
+		PreimageHoldReason,
+		pezframe_support::traits::LinearStoragePrice<
+			PreimageBaseDeposit,
+			PreimageByteDeposit,
+			Balance,
+		>,
+	>;
+	type WeightInfo = pezpallet_preimage::weights::BizinikiwiWeight<Runtime>;
+}
+
+impl pezpallet_custom_origins::Config for Runtime {}
+
+impl pezpallet_conviction_voting::Config for Runtime {
+	type WeightInfo = pezpallet_conviction_voting::weights::BizinikiwiWeight<Runtime>;
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type VoteLockingPeriod = VoteLockingPeriod;
+	type MaxVotes = ConstU32<512>;
+	type MaxTurnout =
+		pezframe_support::traits::tokens::currency::ActiveIssuanceOf<Balances, AccountId>;
+	type Polls = Referenda;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+	type VotingHooks = ();
+}
+
+impl pezpallet_referenda::Config for Runtime {
+	type WeightInfo = pezpallet_referenda::weights::BizinikiwiWeight<Runtime>;
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type Scheduler = Scheduler;
+	type Currency = Balances;
+	type SubmitOrigin = pezframe_system::EnsureSigned<AccountId>;
+	type CancelOrigin =
+		pezframe_support::traits::EitherOf<EnsureRoot<AccountId>, governance::ReferendumCanceller>;
+	type KillOrigin =
+		pezframe_support::traits::EitherOf<EnsureRoot<AccountId>, governance::ReferendumKiller>;
+	// Not `()`: dropping a negative imbalance destroys the tokens. These are HEZ, HEZ
+	// inflates, and burning it pays the slash out to every other holder instead of to the
+	// state. The treasury can spend what it takes; a burn cannot.
+	type Slash = Treasury;
+	type Votes = pezpallet_conviction_voting::VotesOf<Runtime>;
+	type Tally = pezpallet_conviction_voting::TallyOf<Runtime>;
+	type SubmissionDeposit = EconomicSubmissionDeposit;
+	type MaxQueued = EconomicMaxQueued;
+	type UndecidingTimeout = EconomicUndecidingTimeout;
+	type AlarmInterval = EconomicAlarmInterval;
+	type Tracks = governance::TracksInfo;
+	type Preimages = Preimage;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+}
+
 construct_runtime!(
 	pub enum Runtime
 	{
@@ -1388,8 +1604,16 @@ construct_runtime!(
 
 		// PezkuwiChain Custom Pallets
 		PezTreasury: pezpallet_pez_treasury = 70,
-		Presale: pezpallet_presale = 71,
 		TokenWrapper: pezpallet_token_wrapper = 73,
+
+		// The economic franchise: what the money decides, and how. Weight-counted, unlike the
+		// register's ballot on People, which counts citizens one each.
+		Scheduler: pezpallet_scheduler = 74,
+		Preimage: pezpallet_preimage = 75,
+		ConvictionVoting: pezpallet_conviction_voting = 76,
+		Referenda: pezpallet_referenda = 77,
+		Origins: pezpallet_custom_origins = 78,
+		Parameters: pezpallet_parameters = 79,
 
 		// Staking
 		Staking: pezpallet_staking_async = 80,
@@ -1491,7 +1715,7 @@ parameter_types! {
 
 /// Migration to initialize storage versions for pallets added after genesis.
 ///
-/// This is now done automatically (see <https://github.com/pezkuwichain/pezkuwi-sdk/issues/248>),
+/// This is now done automatically (see <https://github.com/pezkuwichain/pezkuwi-DKS/issues/248>),
 /// but some pallets had made it in and had storage set in them for this teyrchain before it was
 /// merged.
 pub struct InitStorageVersions;
@@ -1616,6 +1840,9 @@ impl
 }
 
 #[cfg(feature = "runtime-benchmarks")]
+type StakingRcClientBench<T> = pezpallet_staking_async_rc_client::benchmarking::Pezpallet<T>;
+
+#[cfg(feature = "runtime-benchmarks")]
 mod benches {
 	pezframe_benchmarking::define_benchmarks!(
 		[pezframe_system, SystemBench::<Runtime>]
@@ -1649,9 +1876,18 @@ mod benches {
 		[pezpallet_xcm_benchmarks::fungible, XcmBalances]
 		[pezpallet_xcm_benchmarks::generic, XcmGeneric]
 		[pezcumulus_pezpallet_weight_reclaim, WeightReclaim]
+		// Staking, voter list and the multi-block election run on this chain; without these
+		// entries their benchmarks are never listed and their weights are never measured.
+		[pezpallet_staking_async, Staking]
+		[pezpallet_staking_async_rc_client, StakingRcClientBench::<Runtime>]
+		[pezpallet_bags_list, VoterList]
+		[pezpallet_election_provider_multi_block, MultiBlockElection]
+		[pezpallet_election_provider_multi_block::verifier, MultiBlockElectionVerifier]
+		[pezpallet_election_provider_multi_block::unsigned, MultiBlockElectionUnsigned]
+		[pezpallet_election_provider_multi_block::signed, MultiBlockElectionSigned]
+		[pezpallet_nomination_pools, NominationPoolsBench::<Runtime>]
 		// PezkuwiChain Custom Pallets
 		[pezpallet_pez_treasury, PezTreasury]
-		[pezpallet_presale, Presale]
 		[pezpallet_token_wrapper, TokenWrapper]
 	);
 }
@@ -1670,6 +1906,10 @@ impl_runtime_apis! {
 	impl pezcumulus_primitives_core::RelayParentOffsetApi<Block> for Runtime {
 		fn relay_parent_offset() -> u32 {
 			0
+		}
+
+		fn max_claim_queue_offset() -> u8 {
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
 		}
 	}
 
@@ -1748,8 +1988,11 @@ impl_runtime_apis! {
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+		fn generate_session_keys(
+			owner: Vec<u8>,
+			seed: Option<Vec<u8>>,
+		) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(
@@ -2015,9 +2258,13 @@ impl_runtime_apis! {
 		) {
 			use pezframe_benchmarking::BenchmarkList;
 			use pezframe_support::traits::StorageInfoTrait;
+			// The pallet's benchmarks are listed above, and they need this implemented.
+			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
+
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
+			use pezpallet_nomination_pools_benchmarking::Pezpallet as NominationPoolsBench;
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
 			use pezpallet_xcm_bridge_hub_router::benchmarking::Pezpallet as XcmBridgeHubRouterBench;
 
@@ -2066,7 +2313,13 @@ impl_runtime_apis! {
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
-			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
+			use pezpallet_nomination_pools_benchmarking::Pezpallet as NominationPoolsBench;
+			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 
 			use pezpallet_xcm_bridge_hub_router::benchmarking::{
 				Pezpallet as XcmBridgeHubRouterBench,
@@ -2084,6 +2337,49 @@ impl_runtime_apis! {
 			}
 
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
+			// Both helper pallets need their own Config. Rust registers impls written inside a
+			// function body globally, which is how the listing block sees them too.
+			impl pezpallet_nomination_pools_benchmarking::Config for Runtime {}
+
+			impl pezpallet_staking_async_rc_client::benchmarking::Config for Runtime {
+				type DeliveryHelper = pezcumulus_primitives_utility::ToParentDeliveryHelper<
+					xcm_config::XcmConfig,
+					ExistentialDepositAsset,
+					xcm_config::PriceForParentDelivery,
+				>;
+
+				fn account_to_location(account: Self::AccountId) -> Location {
+					[AccountId32 { network: None, id: account.into() }].into()
+				}
+
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Vec<u8>, Vec<u8>) {
+					use staking::RelayChainSessionKeys;
+					let keys = RelayChainSessionKeys::generate(&owner.encode(), None);
+					(keys.keys.encode(), keys.proof.encode())
+				}
+
+				fn setup_validator() -> Self::AccountId {
+					use pezframe_benchmarking::account;
+					use pezframe_support::traits::fungible::Mutate;
+
+					let stash: Self::AccountId = account("validator", 0, 0);
+					let balance = 10_000 * UNITS;
+					let _ = Balances::mint_into(&stash, balance);
+
+					assert_ok!(Staking::bond(
+						RuntimeOrigin::signed(stash.clone()),
+						balance / 2,
+						pezpallet_staking_async::RewardDestination::Stash
+					));
+					assert_ok!(Staking::validate(
+						RuntimeOrigin::signed(stash.clone()),
+						pezpallet_staking_async::ValidatorPrefs::default()
+					));
+
+					stash
+				}
+			}
+
 			impl pezpallet_xcm::benchmarking::Config for Runtime {
 				type DeliveryHelper = (
 				pezkuwi_runtime_common::xcm_sender::ToTeyrchainDeliveryHelper<
@@ -2125,7 +2421,7 @@ impl_runtime_apis! {
 					));
 
 					// We then create USDT.
-					let usdt_id = 1984u32;
+					let usdt_id: u32 = genesis_config_presets::FIRST_AUTO_ASSET_ID;
 					let usdt_location = Location::new(0, [PalletInstance(50), GeneralIndex(usdt_id.into())]);
 					assert_ok!(Assets::force_create(
 						RuntimeOrigin::root(),
@@ -2143,7 +2439,7 @@ impl_runtime_apis! {
 				}
 
 				fn set_up_complex_asset_transfer(
-				) -> Option<(XcmAssets, AssetId, Location, alloc::boxed::Box<dyn FnOnce()>)> {
+				) -> Option<(XcmAssets, u32, Location, alloc::boxed::Box<dyn FnOnce()>)> {
 					let dest = PeopleLocation::get();
 
 					let fee_amount = EXISTENTIAL_DEPOSIT;
@@ -2172,7 +2468,8 @@ impl_runtime_apis! {
 					let transfer_asset: Asset = (asset_location, asset_amount).into();
 
 					let assets: XcmAssets = vec![fee_asset.clone(), transfer_asset].into();
-					let fee_asset_id = fee_asset.id;
+					// The api takes the fee's position in `assets` now, not its id.
+					let fee_index = if assets.get(0).unwrap().eq(&fee_asset) { 0 } else { 1 };
 
 					// verify transferred successfully
 					let verify = alloc::boxed::Box::new(move || {
@@ -2185,7 +2482,7 @@ impl_runtime_apis! {
 							initial_asset_amount - asset_amount,
 						);
 					});
-					Some((assets, fee_asset_id, dest, verify))
+					Some((assets, fee_index as u32, dest, verify))
 				}
 
 				fn get_asset() -> Asset {
@@ -2196,7 +2493,7 @@ impl_runtime_apis! {
 						&account,
 						<Balances as Inspect<_>>::minimum_balance(),
 					));
-					let asset_id = 1984;
+					let asset_id = genesis_config_presets::FIRST_AUTO_ASSET_ID;
 					assert_ok!(Assets::force_create(
 						RuntimeOrigin::root(),
 						asset_id.into(),
@@ -2260,26 +2557,39 @@ impl_runtime_apis! {
 				fn valid_destination() -> Result<Location, BenchmarkError> {
 					Ok(PeopleLocation::get())
 				}
-				fn worst_case_holding(depositable_count: u32) -> XcmAssets {
+				fn worst_case_holding(depositable_count: u32) -> xcm_executor::AssetsInHolding {
+					use pezpallet_xcm_benchmarks::MockCredit;
 					// A mix of fungible, non-fungible, and concrete assets.
 					let holding_non_fungibles = MaxAssetsIntoHolding::get() / 2 - depositable_count;
-					let holding_fungibles = holding_non_fungibles.saturating_sub(2);  // -2 for two `iter::once` bellow
+					let holding_fungibles = holding_non_fungibles.saturating_sub(2); // -2 for the two inserted below
 					let fungibles_amount: u128 = 100;
-					(0..holding_fungibles)
-						.map(|i| {
-							Asset {
-								id: GeneralIndex(i as u128).into(),
-								fun: Fungible(fungibles_amount * (i + 1) as u128), // non-zero amount
-							}
-						})
-						.chain(core::iter::once(Asset { id: Here.into(), fun: Fungible(u128::MAX) }))
-						.chain(core::iter::once(Asset { id: AssetId(TokenLocation::get()), fun: Fungible(1_000_000 * UNITS) }))
-						.chain((0..holding_non_fungibles).map(|i| Asset {
-							id: GeneralIndex(i as u128).into(),
-							fun: NonFungible(asset_instance_from(i)),
-						}))
-						.collect::<Vec<_>>()
-						.into()
+
+					let mut holding = xcm_executor::AssetsInHolding::new();
+
+					for i in 0..holding_fungibles {
+						holding.fungible.insert(
+							AssetId(GeneralIndex(i as u128).into()),
+							alloc::boxed::Box::new(MockCredit(fungibles_amount * (i + 1) as u128)),
+						);
+					}
+
+					holding.fungible.insert(
+						AssetId(Here.into()),
+						alloc::boxed::Box::new(MockCredit(u128::MAX)),
+					);
+					holding.fungible.insert(
+						AssetId(TokenLocation::get()),
+						alloc::boxed::Box::new(MockCredit(1_000_000 * UNITS)),
+					);
+
+					for i in 0..holding_non_fungibles {
+						holding.non_fungible.insert((
+							AssetId(GeneralIndex(i as u128).into()),
+							asset_instance_from(i),
+						));
+					}
+
+					holding
 				}
 			}
 
@@ -2312,7 +2622,7 @@ impl_runtime_apis! {
 						&account,
 						<Balances as Inspect<_>>::minimum_balance(),
 					));
-					let asset_id = 1984;
+					let asset_id = genesis_config_presets::FIRST_AUTO_ASSET_ID;
 					assert_ok!(Assets::force_create(
 						RuntimeOrigin::root(),
 						asset_id.into(),
@@ -2339,7 +2649,63 @@ impl_runtime_apis! {
 				}
 
 				fn worst_case_asset_exchange() -> Result<(XcmAssets, XcmAssets), BenchmarkError> {
-					Err(BenchmarkError::Skip)
+					// This used to return `Skip`, which is what a runtime says when it does not
+					// support the instruction at all. Ours does: `AssetExchanger` is
+					// `PoolAssetsExchanger`. The consequence of the stub was not a missing number
+					// but a missing FUNCTION -- the bencher omits a skipped benchmark entirely --
+					// so `weights/xcm/mod.rs` called a `WeightInfo::exchange_asset` that the
+					// generated file no longer defined. Build a pool the exchange can actually
+					// use, the way an exchange on this chain would be set up.
+					let native_asset_location = xcm_config::TokenLocation::get();
+					let native_asset_id = AssetId(native_asset_location.clone());
+					let (account, _) = pezpallet_xcm_benchmarks::account_and_location::<Runtime>(1);
+					let origin = RuntimeOrigin::signed(account.clone());
+					let asset_location = Location::new(1, [Teyrchain(2001)]);
+					let asset_id = AssetId(asset_location.clone());
+
+					assert_ok!(
+						<Balances as pezframe_support::traits::fungible::Mutate<_>>::mint_into(
+							&account,
+							ExistentialDeposit::get() + (1_000 * UNITS)
+						)
+					);
+
+					assert_ok!(ForeignAssets::force_create(
+						RuntimeOrigin::root(),
+						asset_location.clone().into(),
+						account.clone().into(),
+						true,
+						1,
+					));
+
+					assert_ok!(ForeignAssets::mint(
+						origin.clone(),
+						asset_location.clone().into(),
+						account.clone().into(),
+						3_000 * UNITS,
+					));
+
+					assert_ok!(AssetConversion::create_pool(
+						origin.clone(),
+						native_asset_location.clone().into(),
+						asset_location.clone().into(),
+					));
+
+					assert_ok!(AssetConversion::add_liquidity(
+						origin,
+						native_asset_location.into(),
+						asset_location.into(),
+						1_000 * UNITS,
+						2_000 * UNITS,
+						1,
+						1,
+						account.into(),
+					));
+
+					let give_assets: XcmAssets = (native_asset_id, 500 * UNITS).into();
+					let receive_assets: XcmAssets = (asset_id, 660 * UNITS).into();
+
+					Ok((give_assets, receive_assets))
 				}
 
 				fn universal_alias() -> Result<(Location, Junction), BenchmarkError> {
@@ -2460,6 +2826,71 @@ impl_runtime_apis! {
 			PezkuwiXcm::is_authorized_alias(origin, target)
 		}
 	}
+}
+
+/// HEZ's economic knobs, held in storage rather than in the binary.
+///
+/// The rule this follows: an upgrade is the constitution and a parameter is policy. A rate is
+/// not a fact about what this chain *is*, it is a decision about what it should do this year,
+/// and a decision that can only be changed by shipping new code is a decision nobody can
+/// revisit. These two live here so the franchise that bears them can turn them.
+///
+/// What is *not* here is as deliberate. The 200 million HEZ the emission is measured against
+/// is the token's identity rather than a policy about it, and PEZ's fixed supply and its
+/// halving are not adjustable by anyone at all.
+#[dynamic_params(RuntimeParameters, pezpallet_parameters::Parameters::<Runtime>)]
+pub mod dynamic_params {
+	use super::*;
+
+	#[dynamic_pezpallet_params]
+	#[codec(index = 0)]
+	pub mod hez {
+		/// Yearly emission, as a share of the fixed 200 million base.
+		///
+		/// Read through `EraPayout`, which clamps it to `MAX_INFLATION_RATE`. The ceiling is
+		/// in the code because a ceiling that the same body could raise is not a ceiling.
+		#[codec(index = 0)]
+		pub static InflationRate: Perbill = Perbill::from_percent(8);
+
+		/// The treasury's cut of each era's emission; the rest goes to those who staked.
+		#[codec(index = 1)]
+		pub static TreasuryShare: Perbill = Perbill::from_percent(15);
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for RuntimeParameters {
+	fn default() -> Self {
+		RuntimeParameters::Hez(dynamic_params::hez::Parameters::InflationRate(
+			dynamic_params::hez::InflationRate,
+			Some(Perbill::from_percent(8)),
+		))
+	}
+}
+
+impl pezpallet_parameters::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeParameters = RuntimeParameters;
+	// The Treasurer, arriving from the People chain.
+	//
+	// This was `EconomicAdmin`, a referendum of HEZ holders, on the argument that those who bear
+	// a decision decide it. That argument is right for fees and for the treasury's scale and
+	// wrong for money creation, which is why central banks exist: holders voting on their own
+	// dilution under-emit, and emission is what pays for the chain's security. Handing it to the
+	// executive instead is the older failure -- a government that can print pays its bills by
+	// printing.
+	//
+	// So it goes to an office that is neither: nominated by the President, confirmed by
+	// Parliament, removable only by the court, and bounded on both sides -- `MAX_INFLATION_RATE`
+	// here is the ceiling and only a runtime upgrade moves it, `MaxEmissionStep` on People is the
+	// pace. The office check itself is on People, where the register lives, exactly as it is for
+	// the finance minister's `spend_budget`.
+	type AdminOrigin =
+		pezframe_support::traits::AsEnsureOriginWithArg<EnsureXcm<Equals<PeopleLocation>>>;
+	// Upstream's reference weight rather than `()`. A zero-weight extrinsic is a free one, and
+	// a free call is a free block: measured numbers for this chain come with the next
+	// benchmarking pass.
+	type WeightInfo = weights::pezpallet_parameters::WeightInfo<Runtime>;
 }
 
 pezcumulus_pezpallet_teyrchain_system::register_validate_block! {

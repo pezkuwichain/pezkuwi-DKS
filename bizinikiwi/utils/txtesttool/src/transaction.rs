@@ -9,7 +9,7 @@ use crate::{
 	helpers::StreamOf,
 	runner::DefaultTxTask,
 	subxt_transaction::{
-		build_subxt_tx, BizinikiwTransaction, BizinikiwTransactionsSink, EthPayloadBuilderFn,
+		build_subxt_tx, BizinikiwiTransaction, BizinikiwiTransactionsSink, EthPayloadBuilderFn,
 		EthRuntimeConfig, EthTransaction, EthTransactionsSink, HashOf, SubPayloadBuilderFn,
 	},
 };
@@ -46,13 +46,13 @@ pub(crate) trait TransactionBuilder {
 
 /// Substrate transactions builder.
 #[derive(Default)]
-pub(crate) struct BizinikiwTransactionBuilder {}
+pub(crate) struct BizinikiwiTransactionBuilder {}
 
 #[async_trait]
-impl TransactionBuilder for BizinikiwTransactionBuilder {
+impl TransactionBuilder for BizinikiwiTransactionBuilder {
 	type HashType = HashOf<PezkuwiConfig>;
-	type Transaction = BizinikiwTransaction;
-	type Sink = BizinikiwTransactionsSink;
+	type Transaction = BizinikiwiTransaction;
+	type Sink = BizinikiwiTransactionsSink;
 	type PayloadBuilder = SubPayloadBuilderFn;
 
 	async fn build_transaction<'a>(

@@ -98,7 +98,7 @@
 //! 1. The old school way: Most Pezkuwi-SDK based nodes (such as the ones integrated in
 //!    [`templates`]) have a `benchmark` subcommand integrated into themselves.
 //! 2. The more [`crate::reference_docs::omni_node`] compatible way of running the benchmarks would
-//!    be using [`frame-omni-bencher`] CLI, which only relies on a runtime.
+//!    be using [`pezframe-omni-bencher`] CLI, which only relies on a runtime.
 //!
 //! Note that by convention, the runtime and pallets always have their benchmarking code feature
 //! gated as behind `runtime-benchmarks`. So, the runtime should be compiled with `--features
@@ -125,7 +125,7 @@
 //! Pezkuwi-sdk. For a basic explanation of JAM and PolkaVM, see [here](https://blog.kianenigma.com/posts/tech/demystifying-jam/#pvm).
 //!
 //!
-//! [`frame-omni-bencher`]: https://crates.io/crates/frame-omni-bencher
+//! [`pezframe-omni-bencher`]: https://crates.io/crates/pezframe-omni-bencher
 //! [`templates`]: crate::pezkuwi_sdk::templates
 //! [PolkaVM]: https://github.com/koute/polkavm
 //! [JAM]: https://graypaper.com

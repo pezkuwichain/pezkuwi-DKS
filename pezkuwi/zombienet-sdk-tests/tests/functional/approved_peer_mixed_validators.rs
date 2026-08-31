@@ -54,13 +54,13 @@ async fn approved_peer_mixed_validators_test() -> Result<(), anyhow::Error> {
 				acc.with_validator(|node| {
 					node.with_name(&format!("old-validator-{i}"))
 						.with_image(
-							std::env::var("OLD_PEZKUWI_IMAGE")
-								.expect("OLD_PEZKUWI_IMAGE needs to be set")
+							std::env::var("OLD_POLKADOT_IMAGE")
+								.expect("OLD_POLKADOT_IMAGE needs to be set")
 								.as_str(),
 						)
 						.with_command(
-							std::env::var("OLD_PEZKUWI_COMMAND")
-								.unwrap_or(String::from("pezkuwi"))
+							std::env::var("OLD_POLKADOT_COMMAND")
+								.unwrap_or(String::from("polkadot"))
 								.as_str(),
 						)
 				})
@@ -113,9 +113,8 @@ async fn approved_peer_mixed_validators_test() -> Result<(), anyhow::Error> {
 	assert_para_throughput(
 		&relay_client,
 		15,
-		[(ParaId::from(2000), 6..15), (ParaId::from(2001), 11..16)]
-			.into_iter()
-			.collect(),
+		[(ParaId::from(2000), 6..15), (ParaId::from(2001), 11..16)],
+		[],
 	)
 	.await?;
 

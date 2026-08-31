@@ -597,7 +597,9 @@ impl<T: FileSystem> Network<T> {
 	/// #   Ok(())
 	/// # }
 	/// ```
-	pub async fn register_parachain(&mut self, para_id: u32) -> Result<(), anyhow::Error> {
+	/// `register_parachain` below is the same call under the name upstream uses; the config
+	/// builder already carries both spellings (`with_teyrchain` / `with_parachain`).
+	pub async fn register_teyrchain(&mut self, para_id: u32) -> Result<(), anyhow::Error> {
 		let para = self
 			.initial_spec
 			.parachains
@@ -626,6 +628,11 @@ impl<T: FileSystem> Network<T> {
 		Parachain::register(register_para_options, &scoped_fs).await?;
 
 		Ok(())
+	}
+
+	/// Backward compatibility alias for register_teyrchain().
+	pub async fn register_parachain(&mut self, para_id: u32) -> Result<(), anyhow::Error> {
+		self.register_teyrchain(para_id).await
 	}
 
 	// deregister and stop the collator?

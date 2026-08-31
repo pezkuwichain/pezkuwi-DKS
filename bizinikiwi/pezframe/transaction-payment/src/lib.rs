@@ -58,7 +58,7 @@ use pezframe_support::{
 	pezpallet_prelude::TransactionSource,
 	traits::{Defensive, EstimateCallFee, Get, Imbalance, SuppressedDrop},
 	weights::{Weight, WeightToFee},
-	RuntimeDebugNoBound,
+	DebugNoBound,
 };
 pub use pezpallet::*;
 use pezsp_runtime::{
@@ -67,7 +67,7 @@ use pezsp_runtime::{
 		Saturating, TransactionExtension, Zero,
 	},
 	transaction_validity::{TransactionPriority, TransactionValidityError, ValidTransaction},
-	FixedPointNumber, FixedU128, Perbill, Perquintill, RuntimeDebug,
+	Debug, FixedPointNumber, FixedU128, Perbill, Perquintill,
 };
 pub use types::{FeeDetails, InclusionFee, RuntimeDispatchInfo};
 pub use weights::WeightInfo;
@@ -79,6 +79,8 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarking::Config as BenchmarkConfig;
 
 mod payment;
 mod types;
@@ -299,7 +301,7 @@ where
 }
 
 /// Storage releases of the pezpallet.
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum Releases {
 	/// Original version of the pezpallet.
 	V1Ancient,
@@ -522,9 +524,9 @@ impl<T: Config> Pezpallet<T> {
 
 	/// Query the data that we know about the fee of a given `call`.
 	///
-	/// This pezpallet is not and cannot be aware of the internals of a signed extension, for
-	/// example a tip. It only interprets the extrinsic as some encoded value and accounts for its
-	/// weight and length, the runtime's extrinsic base weight, and the current fee multiplier.
+	/// This pezpallet is not and cannot be aware of the internals of a signed extension, for example
+	/// a tip. It only interprets the extrinsic as some encoded value and accounts for its weight
+	/// and length, the runtime's extrinsic base weight, and the current fee multiplier.
 	///
 	/// All dispatchables must be annotated with weight and will have some fee info. This function
 	/// always returns.
@@ -942,7 +944,7 @@ impl<T: Config> core::fmt::Debug for ChargeTransactionPayment<T> {
 }
 
 /// The info passed between the validate and prepare steps for the `ChargeAssetTxPayment` extension.
-#[derive(RuntimeDebugNoBound)]
+#[derive(DebugNoBound)]
 pub enum Val<T: Config> {
 	Charge {
 		tip: BalanceOf<T>,

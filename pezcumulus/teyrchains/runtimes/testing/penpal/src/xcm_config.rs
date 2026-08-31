@@ -35,14 +35,14 @@
 //! `ReserveAssetTransferDeposited` message but that will but the intension will be to support this
 //! soon.
 use super::{
-	AccountId, AllPalletsWithSystem, AssetId as AssetIdPalletAssets, Assets, Authorship, Balance,
-	Balances, CollatorSelection, ForeignAssets, ForeignAssetsInstance, NonZeroIssuance, PezkuwiXcm,
-	Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, TeyrchainInfo,
-	TeyrchainSystem, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Assets, Authorship, Balance, Balances, CollatorSelection,
+	PezkuwiXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
+	TeyrchainInfo, TeyrchainSystem, WeightToFee, XcmpQueue,
 };
-use crate::{BaseDeliveryFee, FeeAssetId, TransactionByteFee};
+use crate::{
+	AssetId as AssetIdPalletAssets, BaseDeliveryFee, FeeAssetId, ForeignAssets, TransactionByteFee,
+};
 use core::marker::PhantomData;
-use pez_assets_common::TrustBackedAssetsAsLocation;
 use pezframe_support::{
 	parameter_types,
 	traits::{
@@ -56,11 +56,10 @@ use pezframe_system::EnsureRoot;
 use pezkuwi_runtime_common::{impls::ToAuthor, xcm_sender::ExponentialPrice};
 use pezkuwi_teyrchain_primitives::primitives::Sibling;
 use pezpallet_xcm::{AuthorizedAliasers, XcmPassthrough};
-use pezsp_runtime::traits::{AccountIdConversion, ConvertInto, Identity, TryConvertInto};
+use pezsp_runtime::traits::{AccountIdConversion, Identity, TryConvertInto};
 use testnet_teyrchains_constants::zagros::currency::deposit;
 use teyrchains_common::{
-	xcm_config::{AssetFeeAsExistentialDepositMultiplier, ConcreteAssetFromSystem},
-	TREASURY_PALLET_ID,
+	impls::NonZeroIssuance, xcm_config::ConcreteAssetFromSystem, TREASURY_PALLET_ID,
 };
 use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
 use xcm_builder::{
@@ -94,9 +93,9 @@ parameter_types! {
 	].into();
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
 	pub StakingPot: AccountId = CollatorSelection::account_id();
-	pub TrustBackedAssetsPalletIndex: u8 = <Assets as PalletInfoAccess>::index() as u8;
-	pub TrustBackedAssetsPalletLocation: Location =
-		PalletInstance(TrustBackedAssetsPalletIndex::get()).into();
+	pub AssetsPalletIndex: u8 = <Assets as PalletInfoAccess>::index() as u8;
+	pub AssetsPalletLocation: Location =
+		PalletInstance(AssetsPalletIndex::get()).into();
 }
 
 /// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
@@ -129,11 +128,13 @@ pub type FungibleTransactor = FungibleAdapter<
 	(),
 >;
 
-/// Means for transacting assets besides the native currency on this chain.
-pub type FungiblesTransactor = FungiblesAdapter<
+/// Means for transacting assets besides the native currency on this chain that start with a local
+/// location pattern.
+pub type LocalFungiblesTransactor = FungiblesAdapter<
 	// Use this fungibles implementation:
 	Assets,
-	// Use this currency when it is a fungible asset matching the given location or name:
+	// Locally issued assets are keyed by index, so match a location that names one — either
+	// under this chain's own assets pallet or under the Asset Hub's.
 	(
 		ConvertedConcreteId<
 			AssetIdPalletAssets,
@@ -164,7 +165,7 @@ pub type FungiblesTransactor = FungiblesAdapter<
 >;
 
 // Using the latest `Location`, we don't need to worry about migrations for Penpal.
-pub type ForeignAssetsAssetId = Location;
+pub type AssetsAssetId = Location;
 pub type ForeignAssetsConvertedConcreteId = xcm_builder::MatchedConvertedConcreteId<
 	Location,
 	Balance,
@@ -175,6 +176,21 @@ pub type ForeignAssetsConvertedConcreteId = xcm_builder::MatchedConvertedConcret
 		// assert!([Teyrchain(100)].into().starts_with(&Here));
 		StartsWith<pez_assets_common::matching::LocalLocationPattern>,
 	)>,
+	Identity,
+	TryConvertInto,
+>;
+
+pub type LocalAssetsConvertedConcreteId = xcm_builder::MatchedConvertedConcreteId<
+	Location,
+	Balance,
+	// Only allow patterns with local
+	(
+		// Here we rely on fact that something like this works:
+		// assert!(Location::new(1,
+		// [Teyrchain(100)]).starts_with(&Location::parent()));
+		// assert!([Teyrchain(100)].into().starts_with(&Here));
+		StartsWith<pez_assets_common::matching::LocalLocationPattern>,
+	),
 	Identity,
 	TryConvertInto,
 >;
@@ -196,7 +212,8 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
 >;
 
 /// Means for transacting assets on this chain.
-pub type AssetTransactors = (FungibleTransactor, ForeignFungiblesTransactor, FungiblesTransactor);
+pub type AssetTransactors =
+	(FungibleTransactor, ForeignFungiblesTransactor, LocalFungiblesTransactor);
 
 /// This is the type we use to convert an (incoming) XCM origin into a local `Origin` instance,
 /// ready for dispatching a transaction with Xcm's `Transact`. There is an `OriginKind` which can
@@ -283,30 +300,43 @@ type AssetsFrom<T> = AssetPrefixFrom<T, T>;
 // This asset can be added to AH as Asset and reserved transfer between Penpal and AH
 pub const RESERVABLE_ASSET_ID: u32 = 1;
 // This asset can be added to AH as ForeignAsset and teleported between Penpal and AH
-pub const TELEPORTABLE_ASSET_ID: u32 = 2;
+pub const PEN2_TELEPORTABLE_GENERAL_INDEX: u32 = 2;
 
-pub const ASSETS_PALLET_ID: u8 = 50;
+pub const ASSET_HUB_ASSETS_PALLET_ID: u8 = 50;
 pub const ASSET_HUB_ID: u32 = 1000;
 
+pub const PENPAL_ASSETS_PALLET_ID: u8 = 50;
+
 pub const USDT_ASSET_ID: u128 = 1984;
+
+pub const SEPOLIA_ID: u64 = 11155111;
+// The minimum balance for assets pre-registered in emulated tests.
+pub const ETHER_MIN_BALANCE: u128 = 1000;
+pub const USDT_ED: Balance = 70_000;
 
 parameter_types! {
 	/// The location that this chain recognizes as the Relay network's Asset Hub.
 	pub SystemAssetHubLocation: Location = Location::new(1, [Teyrchain(ASSET_HUB_ID)]);
 	// the Relay Chain's Asset Hub's Assets pezpallet index
 	pub SystemAssetHubAssetsPalletLocation: Location =
-		Location::new(1, [Teyrchain(ASSET_HUB_ID), PalletInstance(ASSETS_PALLET_ID)]);
-	pub AssetsPalletLocation: Location =
-		Location::new(0, [PalletInstance(ASSETS_PALLET_ID)]);
+		Location::new(1, [Teyrchain(ASSET_HUB_ID), PalletInstance(ASSET_HUB_ASSETS_PALLET_ID)]);
 	pub CheckingAccount: AccountId = PezkuwiXcm::check_account();
 	pub LocalReservableFromAssetHub: Location = Location::new(
 		1,
-		[Teyrchain(ASSET_HUB_ID), PalletInstance(ASSETS_PALLET_ID), GeneralIndex(RESERVABLE_ASSET_ID.into())]
+		[Teyrchain(ASSET_HUB_ID), PalletInstance(ASSET_HUB_ASSETS_PALLET_ID), GeneralIndex(RESERVABLE_ASSET_ID.into())]
 	);
 	pub UsdtFromAssetHub: Location = Location::new(
 		1,
-		[Teyrchain(ASSET_HUB_ID), PalletInstance(ASSETS_PALLET_ID), GeneralIndex(USDT_ASSET_ID)],
+		[Teyrchain(ASSET_HUB_ID), PalletInstance(ASSET_HUB_ASSETS_PALLET_ID), GeneralIndex(USDT_ASSET_ID)],
 	);
+
+	pub EthFromEthereum: Location = Location::new(
+		2,
+		[GlobalConsensus(Ethereum { chain_id: SEPOLIA_ID})],
+	);
+
+	/// A PEN2 test asset.
+	pub LocalPen2Asset: Location = Location::new(0, [PalletInstance(PENPAL_ASSETS_PALLET_ID), GeneralIndex(PEN2_TELEPORTABLE_GENERAL_INDEX.into())]);
 
 	/// The Penpal runtime is utilized for testing with various environment setups.
 	/// This storage item provides the opportunity to customize testing scenarios
@@ -314,10 +344,7 @@ parameter_types! {
 	///
 	/// By default, it is configured as a `SystemAssetHubLocation` and can be modified using `System::set_storage`.
 	pub storage CustomizableAssetFromSystemAssetHub: Location = SystemAssetHubLocation::get();
-	pub storage LocalTeleportableToAssetHub: Location = Location::new(
-		0,
-		[PalletInstance(ASSETS_PALLET_ID), GeneralIndex(TELEPORTABLE_ASSET_ID.into())]
-	);
+	pub storage LocalTeleportableToAssetHub: Location = LocalPen2Asset::get();
 
 	pub const NativeAssetId: AssetId = AssetId(Location::here());
 	pub const NativeAssetFilter: AssetFilter = Wild(AllOf { fun: WildFungible, id: NativeAssetId::get() });
@@ -344,6 +371,7 @@ pub type TrustedReserves = (
 );
 
 pub type TrustedTeleporters = (
+	AssetFromChain<PenpalNativeCurrency, SystemAssetHubLocation>,
 	AssetFromChain<LocalTeleportableToAssetHub, SystemAssetHubLocation>,
 	// This is used in the `IsTeleporter` configuration, meaning it accepts
 	// native tokens teleported from Asset Hub.
@@ -362,9 +390,6 @@ pub type TrustedAliasers = (
 );
 
 pub type WaivedLocations = Equals<RootLocation>;
-/// `AssetId`/`Balance` converter for `TrustBackedAssets`.
-pub type TrustBackedAssetsConvertedConcreteId =
-	pez_assets_common::TrustBackedAssetsConvertedConcreteId<AssetsPalletLocation, Balance>;
 
 /// Asset converter for pool assets.
 /// Used to convert assets in pools to the asset required for fee payment.
@@ -373,14 +398,7 @@ pub type TrustBackedAssetsConvertedConcreteId =
 pub type PoolAssetsExchanger = SingleAssetExchangeAdapter<
 	crate::AssetConversion,
 	crate::NativeAndAssets,
-	(
-		TrustBackedAssetsAsLocation<
-			TrustBackedAssetsPalletLocation,
-			Balance,
-			xcm::latest::Location,
-		>,
-		ForeignAssetsConvertedConcreteId,
-	),
+	(LocalAssetsConvertedConcreteId, ForeignAssetsConvertedConcreteId),
 	AccountId,
 >;
 
@@ -399,29 +417,22 @@ impl xcm_executor::Config for XcmConfig {
 	type Barrier = Barrier;
 	type Weigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
 	type Trader = (
-		UsingComponents<WeightToFee, RelayLocation, AccountId, Balances, ToAuthor<Runtime>>,
 		// Allow native asset to pay the execution fee
 		UsingComponents<WeightToFee, PenpalNativeCurrency, AccountId, Balances, ToAuthor<Runtime>>,
+		// This trader allows to pay with any assets exchangeable to native asset with
+		// [`AssetConversion`].
 		pezcumulus_primitives_utility::SwapFirstAssetTrader<
-			RelayLocation,
+			PenpalNativeCurrency,
 			crate::AssetConversion,
 			WeightToFee,
 			crate::NativeAndAssets,
-			(
-				TrustBackedAssetsAsLocation<
-					TrustBackedAssetsPalletLocation,
-					Balance,
-					xcm::latest::Location,
-				>,
-				ForeignAssetsConvertedConcreteId,
-			),
+			(LocalAssetsConvertedConcreteId, ForeignAssetsConvertedConcreteId),
 			ResolveAssetTo<StakingPot, crate::NativeAndAssets>,
 			AccountId,
 		>,
 	);
 	type ResponseHandler = PezkuwiXcm;
 	type AssetTrap = PezkuwiXcm;
-	type AssetClaims = PezkuwiXcm;
 	type SubscriptionService = PezkuwiXcm;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
@@ -442,20 +453,6 @@ impl xcm_executor::Config for XcmConfig {
 	type HrmpChannelClosingHandler = ();
 	type XcmRecorder = PezkuwiXcm;
 }
-
-/// Multiplier used for dedicated `TakeFirstAssetTrader` with `ForeignAssets` instance.
-pub type ForeignAssetFeeAsExistentialDepositMultiplierFeeCharger =
-	AssetFeeAsExistentialDepositMultiplier<
-		Runtime,
-		WeightToFee,
-		pezpallet_assets::BalanceToAssetBalance<
-			Balances,
-			Runtime,
-			ConvertInto,
-			ForeignAssetsInstance,
-		>,
-		ForeignAssetsInstance,
-	>;
 
 /// Converts a local signed origin into an XCM location. Forms the basis for local origins
 /// sending/executing XCMs.

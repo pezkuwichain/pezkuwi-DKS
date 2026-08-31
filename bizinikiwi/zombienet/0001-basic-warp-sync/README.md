@@ -54,7 +54,7 @@ data/chains/local_testnet/db/full/
 data/chains/local_testnet/db/full/000469.log
 ```
 
-Also refer to: [zombienet#578](https://github.com/pezkuwichain/pezkuwi-sdk/issues/191)
+Also refer to: [zombienet#578](https://github.com/pezkuwichain/pezkuwi-DKS/issues/191)
 
 The `raw` chain-spec shall also be saved: `db-test-gen/local.json`.
 

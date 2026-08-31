@@ -89,8 +89,8 @@ where
 	Key: FullCodec + MaxEncodedLen,
 {
 	fn get() -> u32 {
-		// The `max_len` of the key hash plus the pezpallet prefix and storage prefix (which both
-		// are hashed with `Twox128`).
+		// The `max_len` of the key hash plus the pezpallet prefix and storage prefix (which both are
+		// hashed with `Twox128`).
 		let z = Hasher::max_len::<Key>() + Twox128::max_len::<()>() * 2;
 		z as u32
 	}
@@ -336,9 +336,8 @@ where
 
 	/// Attempt to remove all items from the map.
 	///
-	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result.
-	/// Once the resultant `maybe_cursor` field is `None`, then no further items remain to be
-	/// deleted.
+	/// Returns [`MultiRemovalResults`](pezsp_io::MultiRemovalResults) to inform about the result. Once
+	/// the resultant `maybe_cursor` field is `None`, then no further items remain to be deleted.
 	///
 	/// NOTE: After the initial call for any given map, it is important that no further items
 	/// are inserted into the map. If so, then the map may not be empty when the resultant

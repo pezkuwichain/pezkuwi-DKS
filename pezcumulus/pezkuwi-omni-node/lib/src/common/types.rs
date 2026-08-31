@@ -23,7 +23,7 @@ use pezsc_telemetry::{Telemetry, TelemetryWorkerHandle};
 use pezsc_transaction_pool::TransactionPoolHandle;
 use pezsp_runtime::{generic, traits::BlakeTwo256};
 
-pub use teyrchains_common::{AccountId, Balance, Hash, Nonce};
+pub use teyrchains_common_types::{AccountId, Balance, Hash, Nonce};
 
 type Header<BlockNumber> = generic::Header<BlockNumber, BlakeTwo256>;
 pub type Block<BlockNumber> = generic::Block<Header<BlockNumber>, UncheckedExtrinsic>;

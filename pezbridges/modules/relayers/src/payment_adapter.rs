@@ -51,12 +51,12 @@ where
 
 	fn pay_reward(
 		lane_id: LaneIdOf<T, MI>,
-		pez_messages_relayers: VecDeque<pezbp_messages::UnrewardedRelayer<T::AccountId>>,
+		messages_relayers: VecDeque<pezbp_messages::UnrewardedRelayer<T::AccountId>>,
 		confirmation_relayer: &T::AccountId,
 		received_range: &RangeInclusive<pezbp_messages::MessageNonce>,
 	) -> MessageNonce {
 		let relayers_rewards = pezbp_messages::calc_relayers_rewards::<T::AccountId>(
-			pez_messages_relayers,
+			messages_relayers,
 			received_range,
 		);
 		let rewarded_relayers = relayers_rewards.len();

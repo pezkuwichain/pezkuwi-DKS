@@ -9,7 +9,7 @@ and this crate adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Added
 
 ### Changed
-\[**Needs Migration**\] [migrate pezpallet-elections-phragmen to attribute macros](https://github.com/pezkuwichain/pezkuwi-sdk/issues/75)
+\[**Needs Migration**\] [migrate pezpallet-elections-phragmen to attribute macros](https://github.com/pezkuwichain/pezkuwi-DKS/issues/75)
 
 ### Fixed
 
@@ -18,16 +18,16 @@ and this crate adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [3.0.0]
 
 ### Added
-[Add slashing events to elections-phragmen](https://github.com/pezkuwichain/pezkuwi-sdk/issues/70)
+[Add slashing events to elections-phragmen](https://github.com/pezkuwichain/pezkuwi-DKS/issues/70)
 
 ### Changed
 
 ### Fixed
-[Don't slash all outgoing members](https://github.com/pezkuwichain/pezkuwi-sdk/issues/68)
-[Fix wrong outgoing calculation in election](https://github.com/pezkuwichain/pezkuwi-sdk/issues/67)
+[Don't slash all outgoing members](https://github.com/pezkuwichain/pezkuwi-DKS/issues/68)
+[Fix wrong outgoing calculation in election](https://github.com/pezkuwichain/pezkuwi-DKS/issues/67)
 
 ### Security
-\[**Needs Migration**\] [Fix elections-phragmen and proxy issue + Record deposits on-chain](https://github.com/pezkuwichain/pezkuwi-sdk/issues/59)
+\[**Needs Migration**\] [Fix elections-phragmen and proxy issue + Record deposits on-chain](https://github.com/pezkuwichain/pezkuwi-DKS/issues/59)
 
 ## [2.0.0] - 2020-09-2020
 

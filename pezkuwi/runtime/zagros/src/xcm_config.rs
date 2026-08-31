@@ -18,11 +18,10 @@
 
 use super::{
 	teyrchains_origin, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId, Runtime,
-	RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasurer, Treasury, WeightToFee,
-	XcmPallet,
+	RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, WeightToFee, XcmPallet,
 };
 
-use crate::governance::{CitizenshipAdmin, StakingAdmin, WelatiAdmin, WelatiElection};
+use crate::governance::StakingAdmin;
 
 use pezframe_support::{
 	parameter_types,
@@ -30,10 +29,7 @@ use pezframe_support::{
 	weights::Weight,
 };
 use pezframe_system::EnsureRoot;
-use pezkuwi_runtime_common::{
-	xcm_sender::{ChildTeyrchainRouter, ExponentialPrice},
-	ToAuthor,
-};
+use pezkuwi_runtime_common::xcm_sender::{ChildTeyrchainRouter, ExponentialPrice};
 use pezpallet_xcm::XcmPassthrough;
 use pezsp_core::ConstU32;
 use xcm::latest::{prelude::*, ZAGROS_GENESIS_HASH};
@@ -74,7 +70,10 @@ parameter_types! {
 	/// and it is what the relay-side teleport test describes. It requires the account to be
 	/// seeded, which is a genesis matter rather than a runtime one.
 	pub TeleportTracking: Option<(AccountId, MintLocation)> = Some((CheckAccount::get(), MintLocation::Local));
-	pub TreasuryAccount: AccountId = Treasury::account_id();
+	/// Delivery fees this chain earns. The treasury is on the Asset Hub now, so they join
+	/// the accumulation account with the rest of the income and cross with it.
+	pub TreasuryAccount: AccountId =
+		pezpallet_accumulate_and_forward::Pezpallet::<Runtime>::accumulation_account();
 }
 
 pub type LocationConverter = (
@@ -103,6 +102,34 @@ pub type LocalAssetTransactor = FungibleAdapter<
 >;
 
 /// The means that we convert the XCM message origin location into a local dispatch origin.
+/// The state register's own Root, as this chain's Root.
+///
+/// Sudo is meant to retire, and when it does the relay's privileged surface has to answer to
+/// something. All of it is `EnsureRoot` -- `Configuration`, `set_code`, HRMP, the initializer
+/// -- and no converter here turned any child chain into Root, so retiring sudo would have
+/// left the constitution unreachable rather than democratic.
+///
+/// It answers to the register as a whole, not to an office within it. A referendum on the
+/// People chain's root track speaks as that chain itself (`EnsureXcmOrigin` falls back to
+/// `Here` for Root, so the message arrives bare); the three ministerial bodies speak as
+/// pluralities and are deliberately not matched here. Changing the chain's own code is the
+/// whole register's business, not a ministry's.
+pub struct StateRegisterAsRoot;
+impl xcm_executor::traits::ConvertOrigin<RuntimeOrigin> for StateRegisterAsRoot {
+	fn convert_origin(
+		origin: impl Into<Location>,
+		kind: OriginKind,
+	) -> Result<RuntimeOrigin, Location> {
+		let origin = origin.into();
+		match (kind, origin.unpack()) {
+			(OriginKind::Superuser, (0, [Teyrchain(id)])) if u32::from(*id) == PEOPLE_ID => {
+				Ok(RuntimeOrigin::root())
+			},
+			_ => Err(origin),
+		}
+	}
+}
+
 type LocalOriginConverter = (
 	// A `Signed` origin of the sovereign account that the original location controls.
 	SovereignSignedViaLocation<LocationConverter, RuntimeOrigin>,
@@ -110,6 +137,8 @@ type LocalOriginConverter = (
 	ChildTeyrchainAsNative<teyrchains_origin::Origin, RuntimeOrigin>,
 	// The AccountId32 location type can be expressed natively as a `Signed` origin.
 	SignedAccountId32AsNative<ThisNetwork, RuntimeOrigin>,
+	// A referendum of the whole register, as this chain's Root.
+	StateRegisterAsRoot,
 	// Xcm origins can be represented natively under the Xcm pezpallet's Xcm origin. Without this
 	// there is no converter for `OriginKind::Xcm` at all, so a `Transact` sent that way is
 	// rejected with `BadOrigin` no matter who sent it — which is how the Fellowship's whitelist
@@ -237,13 +266,17 @@ impl xcm_executor::Config for XcmConfig {
 		RuntimeCall,
 		MaxInstructions,
 	>;
-	type Trader =
-		UsingComponents<WeightToFee, TokenLocation, AccountId, Balances, ToAuthor<Runtime>>;
+	type Trader = UsingComponents<
+		WeightToFee,
+		TokenLocation,
+		AccountId,
+		Balances,
+		crate::DealWithFeesAccumulate,
+	>;
 	type ResponseHandler = XcmPallet;
 	type AssetTrap = XcmPallet;
 	type AssetLocker = ();
 	type AssetExchanger = ();
-	type AssetClaims = XcmPallet;
 	type SubscriptionService = XcmPallet;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
@@ -270,14 +303,6 @@ parameter_types! {
 	pub const StakingAdminBodyId: BodyId = BodyId::Defense;
 	/// Fellows pluralistic body.
 	pub const FellowsBodyId: BodyId = BodyId::Technical;
-	/// Treasury pluralistic body.
-	pub const TreasuryBodyId: BodyId = BodyId::Treasury;
-	/// Welati Election pluralistic body (People Chain governance via XCM).
-	pub const WelatiElectionBodyId: BodyId = BodyId::Index(40);
-	/// Welati Admin pluralistic body (People Chain tiki/appointment admin via XCM).
-	pub const WelatiAdminBodyId: BodyId = BodyId::Index(41);
-	/// Citizenship Admin pluralistic body (People Chain citizenship mgmt via XCM).
-	pub const CitizenshipAdminBodyId: BodyId = BodyId::Index(42);
 }
 
 /// Type to convert an `Origin` type value into a `Location` value which represents an interior
@@ -295,15 +320,6 @@ pub type StakingAdminToPlurality =
 pub type FellowsToPlurality = OriginToPluralityVoice<RuntimeOrigin, Fellows, FellowsBodyId>;
 
 /// Type to convert the Treasury origin to a Plurality `Location` value.
-pub type TreasurerToPlurality = OriginToPluralityVoice<RuntimeOrigin, Treasurer, TreasuryBodyId>;
-
-/// Welati governance origin to Plurality converters (RC → People Chain via XCM).
-pub type WelatiElectionToPlurality =
-	OriginToPluralityVoice<RuntimeOrigin, WelatiElection, WelatiElectionBodyId>;
-pub type WelatiAdminToPlurality =
-	OriginToPluralityVoice<RuntimeOrigin, WelatiAdmin, WelatiAdminBodyId>;
-pub type CitizenshipAdminToPlurality =
-	OriginToPluralityVoice<RuntimeOrigin, CitizenshipAdmin, CitizenshipAdminBodyId>;
 
 /// Type to convert a pezpallet `Origin` type value into a `Location` value which represents an
 /// interior location of this chain for a destination chain.
@@ -312,18 +328,12 @@ pub type LocalPalletOriginToLocation = (
 	StakingAdminToPlurality,
 	// Fellows origin to be used in XCM as a corresponding Plurality `Location` value.
 	FellowsToPlurality,
-	// Treasurer origin to be used in XCM as a corresponding Plurality `Location` value.
-	TreasurerToPlurality,
-	// Welati governance origins — enable RC OpenGov to dispatch XCM to People Chain.
-	WelatiElectionToPlurality,
-	WelatiAdminToPlurality,
-	CitizenshipAdminToPlurality,
 );
 
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	// Production relay: only governance-controlled pallet origins (StakingAdmin, Fellows,
-	// Treasurer, Welati bodies) may originate raw `pallet_xcm::send` messages. Ordinary signed
+	// Treasurer) may originate raw `pezpallet_xcm::send` messages. Ordinary signed
 	// accounts are intentionally excluded here (unlike the zagros/testnet config) so that no
 	// funded relay account can craft arbitrary XCM programs toward any current or future
 	// teyrchain. Local execution for signed accounts is still permitted via `ExecuteXcmOrigin`

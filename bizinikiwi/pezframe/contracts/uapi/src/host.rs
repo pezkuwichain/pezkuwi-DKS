@@ -845,9 +845,9 @@ pub trait HostFn: private::Sealed {
 	///
 	/// # Parameters
 	///
-	/// - `msg`: The message, should be decodable as a [VersionedXcm](https://docs.pezkuwichain.io/sdk/master/pezstaging_xcm/enum.VersionedXcm.html),
+	/// - `msg`: The message, should be decodable as a [VersionedXcm](https://paritytech.github.io/pezkuwi-sdk/master/staging_xcm/enum.VersionedXcm.html),
 	///   traps otherwise.
-	/// - `output`: A reference to the output data buffer to write the [Outcome](https://docs.pezkuwichain.io/sdk/master/pezstaging_xcm/v3/enum.Outcome.html)
+	/// - `output`: A reference to the output data buffer to write the [Outcome](https://paritytech.github.io/pezkuwi-sdk/master/staging_xcm/v3/enum.Outcome.html)
 	///
 	/// # Return
 	///
@@ -864,9 +864,9 @@ pub trait HostFn: private::Sealed {
 	///
 	/// # Parameters
 	///
-	/// - `dest`: The XCM destination, should be decodable as [VersionedLocation](https://docs.pezkuwichain.io/sdk/master/pezstaging_xcm/enum.VersionedLocation.html),
+	/// - `dest`: The XCM destination, should be decodable as [VersionedLocation](https://paritytech.github.io/pezkuwi-sdk/master/staging_xcm/enum.VersionedLocation.html),
 	///   traps otherwise.
-	/// - `msg`: The message, should be decodable as a [VersionedXcm](https://docs.pezkuwichain.io/sdk/master/pezstaging_xcm/enum.VersionedXcm.html),
+	/// - `msg`: The message, should be decodable as a [VersionedXcm](https://paritytech.github.io/pezkuwi-sdk/master/staging_xcm/enum.VersionedXcm.html),
 	///   traps otherwise.
 	///
 	/// # Return

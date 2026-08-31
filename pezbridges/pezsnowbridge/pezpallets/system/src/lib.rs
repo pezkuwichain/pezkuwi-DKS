@@ -50,7 +50,7 @@ use pezsnowbridge_outbound_queue_primitives::{
 	v1::{Command, Initializer, Message, SendMessage},
 	OperatingMode, SendError,
 };
-use pezsp_core::{RuntimeDebug, H160, H256};
+use pezsp_core::{H160, H256};
 use pezsp_io::hashing::blake2_256;
 use pezsp_runtime::{traits::MaybeConvert, DispatchError, SaturatedConversion};
 use pezsp_std::prelude::*;
@@ -82,7 +82,7 @@ where
 }
 
 /// Whether a fee should be withdrawn to an account for sending an outbound message
-#[derive(Clone, PartialEq, RuntimeDebug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum PaysFee<T>
 where
 	T: Config,
@@ -345,9 +345,9 @@ pub mod pezpallet {
 		///
 		/// - `origin`: Must be root
 		/// - `create_asset_xcm`: The XCM execution cost for creating a new asset class on AssetHub,
-		///   in HEZ
+		///   in DOT
 		/// - `transfer_asset_xcm`: The XCM execution cost for performing a reserve transfer on
-		///   AssetHub, in HEZ
+		///   AssetHub, in DOT
 		/// - `register_token`: The Ether fee for registering a new token, to discourage spamming
 		#[pezpallet::call_index(9)]
 		#[pezpallet::weight((T::WeightInfo::set_token_transfer_fees(), DispatchClass::Operational))]

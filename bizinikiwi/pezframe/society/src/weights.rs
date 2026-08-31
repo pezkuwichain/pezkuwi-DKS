@@ -41,7 +41,7 @@
 //! WASM-EXECUTION: `Compiled`, CHAIN: `None`, DB CACHE: `1024`
 
 // Executed Command:
-// frame-omni-bencher
+// pezframe-omni-bencher
 // v1
 // benchmark
 // pezpallet
@@ -54,11 +54,11 @@
 // --steps=50
 // --repeat=20
 // --heap-pages=4096
-// --template=bizinikiwi/.maintain/frame-weight-template.hbs
+// --template=bizinikiwi/.maintain/pezframe-weight-template.hbs
 // --no-storage-info
 // --no-min-squares
 // --no-median-slopes
-// --exclude-pallets=pezpallet_xcm,pezpallet_xcm_benchmarks::fungible,pezpallet_xcm_benchmarks::generic,pezpallet_nomination_pools,pezpallet_remark,pezpallet_transaction_storage,pezpallet_election_provider_multi_block,pezpallet_election_provider_multi_block::signed,pezpallet_election_provider_multi_block::unsigned,pezpallet_election_provider_multi_block::verifier
+// --exclude-pezpallets=pezpallet_xcm,pezpallet_xcm_benchmarks::fungible,pezpallet_xcm_benchmarks::generic,pezpallet_nomination_pools,pezpallet_remark,pezpallet_transaction_storage,pezpallet_election_provider_multi_block,pezpallet_election_provider_multi_block::signed,pezpallet_election_provider_multi_block::unsigned,pezpallet_election_provider_multi_block::verifier
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -92,6 +92,7 @@ pub trait WeightInfo {
 	fn cleanup_candidacy() -> Weight;
 	fn cleanup_challenge() -> Weight;
 	fn poke_deposit() -> Weight;
+	fn kick_member() -> Weight;
 }
 
 /// Weights for `pezpallet_society` using the Bizinikiwi node and recommended hardware.
@@ -474,6 +475,31 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	/// Storage: `Society::Founder` (r:1 w:0)
+	/// Proof: `Society::Founder` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Society::Payouts` (r:1 w:1)
+	/// Proof: `Society::Payouts` (`max_values`: None, `max_size`: Some(257), added: 2732, mode: `MaxEncodedLen`)
+	/// Storage: `Society::Head` (r:1 w:0)
+	/// Proof: `Society::Head` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Society::Members` (r:1 w:1)
+	/// Proof: `Society::Members` (`max_values`: None, `max_size`: Some(54), added: 2529, mode: `MaxEncodedLen`)
+	/// Storage: `Society::MemberCount` (r:1 w:1)
+	/// Proof: `Society::MemberCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Society::Bids` (r:1 w:1)
+	/// Proof: `Society::Bids` (`max_values`: Some(1), `max_size`: Some(971), added: 1466, mode: `MaxEncodedLen`)
+	/// Storage: `Society::SuspendedMembers` (r:0 w:1)
+	/// Proof: `Society::SuspendedMembers` (`max_values`: None, `max_size`: Some(54), added: 2529, mode: `MaxEncodedLen`)
+	/// Storage: `Society::MemberByIndex` (r:0 w:1)
+	/// Proof: `Society::MemberByIndex` (`max_values`: None, `max_size`: Some(44), added: 2519, mode: `MaxEncodedLen`)
+	fn kick_member() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `892`
+		//  Estimated: `3722`
+		// Minimum execution time: 24_000_000 picoseconds.
+		Weight::from_parts(28_000_000, 3722)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -854,5 +880,30 @@ impl WeightInfo for () {
 		Weight::from_parts(31_422_000, 2456)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `Society::Founder` (r:1 w:0)
+	/// Proof: `Society::Founder` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Society::Payouts` (r:1 w:1)
+	/// Proof: `Society::Payouts` (`max_values`: None, `max_size`: Some(257), added: 2732, mode: `MaxEncodedLen`)
+	/// Storage: `Society::Head` (r:1 w:0)
+	/// Proof: `Society::Head` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
+	/// Storage: `Society::Members` (r:1 w:1)
+	/// Proof: `Society::Members` (`max_values`: None, `max_size`: Some(54), added: 2529, mode: `MaxEncodedLen`)
+	/// Storage: `Society::MemberCount` (r:1 w:1)
+	/// Proof: `Society::MemberCount` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
+	/// Storage: `Society::Bids` (r:1 w:1)
+	/// Proof: `Society::Bids` (`max_values`: Some(1), `max_size`: Some(971), added: 1466, mode: `MaxEncodedLen`)
+	/// Storage: `Society::SuspendedMembers` (r:0 w:1)
+	/// Proof: `Society::SuspendedMembers` (`max_values`: None, `max_size`: Some(54), added: 2529, mode: `MaxEncodedLen`)
+	/// Storage: `Society::MemberByIndex` (r:0 w:1)
+	/// Proof: `Society::MemberByIndex` (`max_values`: None, `max_size`: Some(44), added: 2519, mode: `MaxEncodedLen`)
+	fn kick_member() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `892`
+		//  Estimated: `3722`
+		// Minimum execution time: 24_000_000 picoseconds.
+		Weight::from_parts(28_000_000, 3722)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(6_u64))
 	}
 }

@@ -17,12 +17,12 @@
 
 //! Bizinikiwi runtime api
 //!
-//! The Bizinikiwi runtime api is the interface between the node and the runtime. There isn't a
-//! fixed set of runtime apis, instead it is up to the user to declare and implement these runtime
-//! apis. The declaration of a runtime api is normally done outside of a runtime, while the
-//! implementation of it has to be done in the runtime. We provide the [`decl_runtime_apis!`] macro
-//! for declaring a runtime api and the [`impl_runtime_apis!`] for implementing them. The macro docs
-//! provide more information on how to use them and what kind of attributes we support.
+//! The Bizinikiwi runtime api is the interface between the node and the runtime. There isn't a fixed
+//! set of runtime apis, instead it is up to the user to declare and implement these runtime apis.
+//! The declaration of a runtime api is normally done outside of a runtime, while the implementation
+//! of it has to be done in the runtime. We provide the [`decl_runtime_apis!`] macro for declaring
+//! a runtime api and the [`impl_runtime_apis!`] for implementing them. The macro docs provide more
+//! information on how to use them and what kind of attributes we support.
 //!
 //! It is required that each runtime implements at least the [`Core`] runtime api. This runtime api
 //! provides all the core functions that Bizinikiwi expects from a runtime.
@@ -377,17 +377,17 @@ pub use pezsp_api_proc_macro::decl_runtime_apis;
 ///         fn stable_one(data: u64);
 ///
 ///         #[api_version(99)]
-///         fn pezstaging_one();
+///         fn staging_one();
 ///     }
 /// }
 ///
 /// pezsp_api::impl_runtime_apis! {
-///     #[cfg_attr(feature = "enable-pezstaging-api", api_version(99))]
+///     #[cfg_attr(feature = "enable-staging-api", api_version(99))]
 ///     impl self::ApiWithStagingMethod<Block> for Runtime {
 ///         fn stable_one(_: u64) {}
 ///
-///         #[cfg(feature = "enable-pezstaging-api")]
-///         fn pezstaging_one() {}
+///         #[cfg(feature = "enable-staging-api")]
+///         fn staging_one() {}
 ///     }
 /// }
 /// ```
@@ -395,18 +395,18 @@ pub use pezsp_api_proc_macro::decl_runtime_apis;
 /// [`decl_runtime_apis!`] declares two version of the api - 1 (the default one, which is
 /// considered stable in our example) and 99 (which is considered staging). In
 /// `impl_runtime_apis!` a `cfg_attr` attribute is attached to the `ApiWithStagingMethod`
-/// implementation. If the code is compiled with  `enable-pezstaging-api` feature a version 99
-/// of the runtime api will be built which will include `pezstaging_one`. Note that
-/// `pezstaging_one` implementation is feature gated by `#[cfg(feature = ... )]` attribute.
+/// implementation. If the code is compiled with  `enable-staging-api` feature a version 99 of
+/// the runtime api will be built which will include `staging_one`. Note that `staging_one`
+/// implementation is feature gated by `#[cfg(feature = ... )]` attribute.
 ///
-/// If the code is compiled without `enable-pezstaging-api` version 1 (the default one) will be
-/// built which doesn't include `pezstaging_one`.
+/// If the code is compiled without `enable-staging-api` version 1 (the default one) will be
+/// built which doesn't include `staging_one`.
 ///
 /// `cfg_attr` can also be used together with `api_version`. For the next snippet will build
-/// version 99 if `enable-pezstaging-api` is enabled and version 2 otherwise because both
+/// version 99 if `enable-staging-api` is enabled and version 2 otherwise because both
 /// `cfg_attr` and `api_version` are attached to the impl block:
 /// ```ignore
-/// #[cfg_attr(feature = "enable-pezstaging-api", api_version(99))]
+/// #[cfg_attr(feature = "enable-staging-api", api_version(99))]
 /// #[api_version(2)]
 /// impl self::ApiWithStagingAndVersionedMethods<Block> for Runtime {
 ///  // impl skipped
@@ -652,6 +652,9 @@ pub trait ApiExt<Block: BlockT> {
 
 	/// Register an [`Extension`] that will be accessible while executing a runtime api call.
 	fn register_extension<E: Extension>(&mut self, extension: E);
+
+	/// Replace the overlayed changes used by subsequent runtime API calls on this instance.
+	fn set_overlayed_changes(&mut self, changes: OverlayedChanges<HashingFor<Block>>);
 }
 
 /// Parameters for [`CallApiAt::call_api_at`].
@@ -684,7 +687,11 @@ pub trait CallApiAt<Block: BlockT> {
 	fn call_api_at(&self, params: CallApiAtParams<Block>) -> Result<Vec<u8>, ApiError>;
 
 	/// Returns the runtime version at the given block.
-	fn runtime_version_at(&self, at_hash: Block::Hash) -> Result<RuntimeVersion, ApiError>;
+	fn runtime_version_at(
+		&self,
+		at_hash: Block::Hash,
+		call_context: CallContext,
+	) -> Result<RuntimeVersion, ApiError>;
 
 	/// Get the state `at` the given block.
 	fn state_at(&self, at: Block::Hash) -> Result<Self::StateBackend, ApiError>;
@@ -708,8 +715,9 @@ impl<Block: BlockT, T: CallApiAt<Block>> CallApiAt<Block> for std::sync::Arc<T> 
 	fn runtime_version_at(
 		&self,
 		at_hash: <Block as BlockT>::Hash,
+		call_context: CallContext,
 	) -> Result<RuntimeVersion, ApiError> {
-		(**self).runtime_version_at(at_hash)
+		(**self).runtime_version_at(at_hash, call_context)
 	}
 
 	fn state_at(&self, at: <Block as BlockT>::Hash) -> Result<Self::StateBackend, ApiError> {
@@ -854,4 +862,4 @@ decl_runtime_apis! {
 
 pezsp_core::generate_feature_enabled_macro!(std_enabled, feature = "std", $);
 pezsp_core::generate_feature_enabled_macro!(std_disabled, not(feature = "std"), $);
-pezsp_core::generate_feature_enabled_macro!(frame_metadata_enabled, feature = "frame-metadata", $);
+pezsp_core::generate_feature_enabled_macro!(pezframe_metadata_enabled, feature = "frame-metadata", $);

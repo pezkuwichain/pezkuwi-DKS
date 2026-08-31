@@ -1,25 +1,26 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // This file is part of Pezcumulus.
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus.  If not, see <http://www.gnu.org/licenses/>.
+// along with Cumulus.  If not, see <http://www.gnu.org/licenses/>.
 
-//! A Pezcumulus test client.
+//! A Cumulus test client.
 
 mod block_builder;
 pub use bizinikiwi_test_client::*;
 pub use block_builder::*;
 use codec::{Decode, Encode};
+use pezcumulus_pezpallet_teyrchain_system::block_weight::DynamicMaxBlockWeight;
 pub use pezcumulus_test_runtime as runtime;
 use pezcumulus_test_runtime::AuraId;
 pub use pezkuwi_teyrchain_primitives::primitives::{
@@ -43,8 +44,8 @@ use pezsp_runtime::{
 	generic::Era, traits::Header, BuildStorage, MultiAddress, SaturatedConversion,
 };
 use runtime::{
-	Balance, Block, BlockHashCount, Runtime, RuntimeCall, Signature, SignedPayload, TxExtension,
-	UncheckedExtrinsic, VERSION,
+	test_pallet, Balance, Block, BlockHashCount, Runtime, RuntimeCall, Signature, SignedPayload,
+	TxExtension, UncheckedExtrinsic, VERSION,
 };
 use std::sync::Arc;
 
@@ -63,7 +64,7 @@ pub type Executor = client::LocalCallExecutor<
 	)>,
 >;
 
-/// Test client builder for Pezcumulus
+/// Test client builder for Cumulus
 pub type TestClientBuilder =
 	bizinikiwi_test_client::TestClientBuilder<Block, Executor, Backend, GenesisParameters>;
 
@@ -143,24 +144,27 @@ pub fn generate_extrinsic_with_pair(
 	let period =
 		BlockHashCount::get().checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
 	let tip = 0;
-	let tx_ext: TxExtension = (
-		pezframe_system::AuthorizeCall::<Runtime>::new(),
-		pezframe_system::CheckNonZeroSender::<Runtime>::new(),
-		pezframe_system::CheckSpecVersion::<Runtime>::new(),
-		pezframe_system::CheckGenesis::<Runtime>::new(),
-		pezframe_system::CheckEra::<Runtime>::from(Era::mortal(period, current_block)),
-		pezframe_system::CheckNonce::<Runtime>::from(nonce),
-		pezframe_system::CheckWeight::<Runtime>::new(),
-		pezpallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
-	)
-		.into();
+	let tx_ext: TxExtension = DynamicMaxBlockWeight::new(
+		(
+			pezframe_system::AuthorizeCall::<Runtime>::new(),
+			pezframe_system::CheckNonZeroSender::<Runtime>::new(),
+			pezframe_system::CheckSpecVersion::<Runtime>::new(),
+			pezframe_system::CheckGenesis::<Runtime>::new(),
+			pezframe_system::CheckEra::<Runtime>::from(Era::mortal(period, current_block)),
+			pezframe_system::CheckNonce::<Runtime>::from(nonce),
+			pezframe_system::CheckWeight::<Runtime>::new(),
+			pezpallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+			test_pallet::TestTransactionExtension::<Runtime>::default(),
+		)
+			.into(),
+	);
 
 	let function = function.into();
 
 	let raw_payload = SignedPayload::from_raw(
 		function.clone(),
 		tx_ext.clone(),
-		((), (), VERSION.spec_version, genesis_block, current_block_hash, (), (), ()),
+		((), (), VERSION.spec_version, genesis_block, current_block_hash, (), (), (), ()),
 	);
 	let signature = raw_payload.using_encoded(|e| origin.sign(e));
 

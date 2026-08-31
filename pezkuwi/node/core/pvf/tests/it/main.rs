@@ -24,12 +24,15 @@ use pezkuwi_node_core_pvf::{
 	PossiblyInvalidError, PrepareError, PrepareJobKind, PvfPrepData, ValidationError,
 	ValidationHost, JOB_TIMEOUT_WALL_CLOCK_FACTOR,
 };
-use pezkuwi_node_core_pvf_common::{compute_checksum, ArtifactChecksum};
+use pezkuwi_node_core_pvf_common::{
+	compute_checksum, execute::ValidationContext, ArtifactChecksum,
+};
 use pezkuwi_node_subsystem::messages::PvfExecKind;
 use pezkuwi_pez_node_primitives::{PoV, POV_BOMB_LIMIT};
 use pezkuwi_primitives::{
 	ExecutorParam, ExecutorParams, Hash, PersistedValidationData, PvfExecKind as RuntimePvfExecKind,
 };
+use pezkuwi_primitives_test_helpers::dummy_candidate_receipt;
 use pezkuwi_teyrchain_primitives::primitives::{BlockData, ValidationResult};
 use pezsp_core::H256;
 
@@ -115,6 +118,18 @@ impl TestHost {
 	) -> Result<ValidationResult, ValidationError> {
 		let (result_tx, result_rx) = futures::channel::oneshot::channel();
 
+		// The per-execution arguments moved behind one `ValidationContext`.
+		let candidate_receipt: pezkuwi_primitives::CandidateReceiptV2 =
+			dummy_candidate_receipt(relay_parent).into();
+		let validation_context = ValidationContext {
+			candidate_receipt,
+			pvd: Arc::new(pvd),
+			pov: Arc::new(pov),
+			executor_params: executor_params.clone(),
+			exec_timeout: TEST_EXECUTION_TIMEOUT,
+			v3_seen: false,
+		};
+
 		self.host
 			.lock()
 			.await
@@ -126,9 +141,7 @@ impl TestHost {
 					PrepareJobKind::Compilation,
 					VALIDATION_CODE_BOMB_LIMIT,
 				),
-				TEST_EXECUTION_TIMEOUT,
-				Arc::new(pvd),
-				Arc::new(pov),
+				validation_context,
 				pezkuwi_node_core_pvf::Priority::Normal,
 				PvfExecKind::Backing(relay_parent),
 				result_tx,
@@ -764,8 +777,11 @@ async fn artifact_does_reprepare_on_meaningful_exec_parameter_change() {
 	.await;
 	let cache_dir = host.cache_dir.path();
 
+	// The parameter has to be one `prep_hash` actually covers, or no second artifact is
+	// produced and the test asserts the opposite of the code. `MaxMemoryPages` was such a
+	// parameter until it moved to the exclusion list; `StackLogicalMax` is one now.
 	let set1 = ExecutorParams::default();
-	let set2 = ExecutorParams::from(&[ExecutorParam::MaxMemoryPages(128)][..]);
+	let set2 = ExecutorParams::from(&[ExecutorParam::StackLogicalMax(1024)][..]);
 
 	let _stats = host
 		.precheck_pvf(test_teyrchain_halt::wasm_binary_unwrap(), set1)

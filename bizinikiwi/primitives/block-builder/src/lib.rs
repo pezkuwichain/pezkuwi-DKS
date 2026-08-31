@@ -21,14 +21,13 @@
 
 extern crate alloc;
 
+use pezsp_inherents::{CheckInherentsResult, InherentData};
+use pezsp_runtime::{traits::Block as BlockT, ApplyExtrinsicResult};
 #[cfg(feature = "std")]
 mod client_side;
 
 #[cfg(feature = "std")]
 pub use client_side::*;
-
-use pezsp_inherents::{CheckInherentsResult, InherentData};
-use pezsp_runtime::{traits::Block as BlockT, ApplyExtrinsicResult};
 
 pezsp_api::decl_runtime_apis! {
 	/// The `BlockBuilder` api trait that provides the required functionality for building a block.

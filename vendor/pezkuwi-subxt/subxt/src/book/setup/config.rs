@@ -6,22 +6,22 @@
 //! shipped with Subxt:
 //!
 //! - [`PezkuwiConfig`](crate::config::PezkuwiConfig) for talking to Pezkuwi nodes, and
-//! - [`BizinikiwConfig`](crate::config::BizinikiwConfig) for talking to generic nodes built with
+//! - [`BizinikiwiConfig`](crate::config::BizinikiwiConfig) for talking to generic nodes built with
 //!   Bizinikiwi.
 //!
 //! # How to create a Config for a custom chain?
 //!
 //! Some chains may use config that is not compatible with our
 //! [`PezkuwiConfig`](crate::config::PezkuwiConfig) or
-//! [`BizinikiwConfig`](crate::config::BizinikiwConfig).
+//! [`BizinikiwiConfig`](crate::config::BizinikiwiConfig).
 //!
 //! We now walk through creating a custom [`crate::config::Config`] for a parachain, using the
 //! ["Statemint"](https://parachains.info/details/statemint) parachain, also known as "Asset Hub", as an example. It
 //! is currently (as of 2023-06-26) deployed on Pezkuwi and [Dicle (as "Statemine")](https://parachains.info/details/statemine).
 //!
 //! To construct a valid [`crate::config::Config`] implementation, we need to find out which types
-//! to use for `AccountId`, `Hasher`, etc. For this, we need to take a look at the source code of Statemint, which is currently a part of the [Pezcumulus directory in pezkuwi-sdk](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/pezcumulus).
-//! The crate defining the asset hub runtime can be found [here](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain).
+//! to use for `AccountId`, `Hasher`, etc. For this, we need to take a look at the source code of Statemint, which is currently a part of the [Pezcumulus directory in pezkuwi-sdk](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/pezcumulus).
+//! The crate defining the asset hub runtime can be found [here](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/pezcumulus/teyrchains/runtimes/assets/asset-hub-pezkuwichain).
 //!
 //! ## `AccountId`, `Hash`, `Hasher` and `Header`
 //!

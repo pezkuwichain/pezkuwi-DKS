@@ -88,7 +88,13 @@ pub fn build(input: TokenStream) -> TokenStream {
 			let ident = syn::Ident::new(&pezsp_runtime, Span::call_site());
 			quote!( #[doc(hidden)] pub use #ident as _sp_runtime; )
 		},
-		Err(e) => syn::Error::new(Span::call_site(), e).to_compile_error(),
+		Err(e) => match crate_name("pezkuwi-sdk") {
+			Ok(FoundCrate::Name(pezkuwi_sdk)) => {
+				let ident = syn::Ident::new(&pezkuwi_sdk, Span::call_site());
+				quote!( #[doc(hidden)] pub use #ident::pezsp_runtime as _sp_runtime; )
+			},
+			_ => syn::Error::new(Span::call_site(), e).to_compile_error(),
+		},
 	};
 
 	let const_name = input.ident;
@@ -394,7 +400,7 @@ fn generate_test_module(input: &INposInput) -> TokenStream2 {
 
 	quote!(
 		#[cfg(test)]
-		mod __pallet_staking_reward_curve_test_module {
+		mod __pezpallet_staking_reward_curve_test_module {
 			fn i_npos(x: f64) -> f64 {
 				if x <= #x_ideal {
 					#i_0 + x * (#i_ideal - #i_0 / #x_ideal)

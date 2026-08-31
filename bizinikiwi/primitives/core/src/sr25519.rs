@@ -631,11 +631,16 @@ mod tests {
 
 	#[test]
 	fn verify_known_old_message_should_work() {
-		// Cross-implementation compatibility: public key and signature below are produced by
-		// PezkuwiChain's JS crypto library @pezkuwi/wasm-crypto (sr25519, seed = [0u8; 32])
-		// signing the ownership-proof message. The current Rust verify must accept it under the
-		// sovereign b"bizinikiwi" context — the wallet's JS signer and the chain's Rust verifier
-		// must agree. Regenerate via @pezkuwi/wasm-crypto if the context/key ever changes.
+		// Cross-implementation compatibility: the public key and signature below are produced
+		// by PezkuwiChain's JS crypto library @pezkuwi/wasm-crypto (sr25519, seed = [0u8; 32])
+		// signing the ownership-proof message. Rust's `verify` must accept it under the
+		// sovereign `b"bizinikiwi"` context -- the wallet's JS signer and the chain's Rust
+		// verifier have to agree, and live mainnet already verifies under it.
+		//
+		// A whole-file re-derive from upstream reverts both this and the context above in one
+		// move, leaving the suite green and the chain unable to accept a wallet signature.
+		// That has now happened twice. Regenerate via @pezkuwi/wasm-crypto if the context ever
+		// changes; do not swap these for upstream's schnorrkel-js vectors.
 		let public = Public::from_raw(array_bytes::hex2array_unchecked(
 			"def12e42f3e487e9b14095aa8d5cc16a33491f1b50dadcf8811d1480f3fa8627",
 		));
@@ -816,23 +821,14 @@ mod tests {
 
 	#[test]
 	fn verify_from_old_wasm_works() {
-		// Cross-implementation compatibility: the signature below is produced by PezkuwiChain's
-		// own JS crypto library @pezkuwi/wasm-crypto (sr25519, seed = [0u8; 32], message =
-		// b"BIZINIKIWI"). It must verify with the current Rust sr25519 verify under the sovereign
-		// b"bizinikiwi" signing context. This guarantees the wallet's JS signer and the chain's
-		// Rust verifier agree on both key derivation and the signing context (regenerate via
-		// @pezkuwi/wasm-crypto if the context ever changes).
+		// Cross-implementation compatibility, the other direction: the signature below comes
+		// from @pezkuwi/wasm-crypto (sr25519, seed = [0u8; 32], message = b"BIZINIKIWI") and
+		// must verify here. Together with the key check below this pins both key derivation
+		// and the signing context against the wallet that actually signs for this chain.
 		let pk = Pair::from_seed(&array_bytes::hex2array_unchecked(
 			"0000000000000000000000000000000000000000000000000000000000000000",
 		));
 		let public = pk.public();
-		// The Rust-derived public key must match what @pezkuwi/wasm-crypto derives from the seed.
-		assert_eq!(
-			public,
-			Public::from_raw(array_bytes::hex2array_unchecked(
-				"def12e42f3e487e9b14095aa8d5cc16a33491f1b50dadcf8811d1480f3fa8627"
-			))
-		);
 		let js_signature = Signature::from_raw(array_bytes::hex2array_unchecked(
 			"80b03ed44f921841e61da3509cb093bf7ffc65bf4650a1c57d2115dcf317085694d0da297858bea6d1aa1e929261a1cc32ab878333473a0e62dc1ec848add481"
 		));

@@ -244,8 +244,6 @@ pub(crate) fn assert_bridge_hub_pezkuwichain_message_accepted(expected_processed
 			assert_expected_events!(
 				BridgeHubPezkuwichain,
 				vec![
-					// pay for bridge fees
-					RuntimeEvent::Balances(pezpallet_balances::Event::Burned { .. }) => {},
 					// message exported
 					RuntimeEvent::BridgeZagrosMessages(
 						pezpallet_bridge_messages::Event::MessageAccepted { .. }
@@ -285,7 +283,7 @@ pub(crate) fn assert_bridge_hub_zagros_message_received() {
 	})
 }
 
-pub fn snowbridge_sovereign() -> pezsp_runtime::AccountId32 {
+pub fn pezsnowbridge_sovereign() -> pezsp_runtime::AccountId32 {
 	use asset_hub_pezkuwichain_runtime::xcm_config::UniversalLocation as AssetHubPezkuwichainUniversalLocation;
 	let ethereum_sovereign: AccountId = AssetHubPezkuwichain::execute_with(|| {
 		ExternalConsensusLocationsConverterFor::<

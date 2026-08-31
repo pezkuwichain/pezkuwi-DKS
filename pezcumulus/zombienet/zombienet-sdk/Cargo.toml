@@ -23,34 +23,43 @@ pezkuwi-zombienet-sdk = { workspace = true }
 pezkuwi-zombienet-orchestrator = { workspace = true }
 pezkuwi-zombienet-configuration = { workspace = true }
 pezcumulus-zombienet-sdk-helpers = { workspace = true }
-pezsp-statement-store = { workspace = true, default-features = true }
+pezsp-statement-store = { workspace = true, default-features = true, features = ["serde"] }
 pezsc-statement-store = { workspace = true, default-features = true }
 pezsp-keyring = { workspace = true, default-features = true }
 pezsp-core = { workspace = true, default-features = true }
+pezsp-crypto-hashing = { workspace = true, default-features = true }
+pezcumulus-test-runtime = { workspace = true }
 codec = { workspace = true }
 rstest = { workspace = true }
+# Direct, for `migrate_solo`'s dynamic tx and -- the reason for the feature -- so the
+# reconnecting RPC client the runtime-upgrade test builds is compiled in. The SDK re-exports
+# the same crate, but a re-export cannot turn a feature on.
+pezkuwi-subxt = { workspace = true, default-features = true, features = ["reconnecting-rpc-client"] }
 
 [features]
 zombie-ci = []
 runtime-benchmarks = [
-  "pezcumulus-zombienet-sdk-helpers/runtime-benchmarks",
-  "pezkuwi-primitives/runtime-benchmarks",
-  "pezsc-statement-store/runtime-benchmarks",
-  "pezsp-keyring/runtime-benchmarks",
-  "pezsp-statement-store/runtime-benchmarks",
-  "pezkuwi-zombienet-orchestrator/runtime-benchmarks",
-  "pezkuwi-zombienet-sdk/runtime-benchmarks",
+	"pezcumulus-zombienet-sdk-helpers/runtime-benchmarks",
+	"pezkuwi-primitives/runtime-benchmarks",
+	"pezsc-statement-store/runtime-benchmarks",
+	"pezsp-keyring/runtime-benchmarks",
+	"pezsp-statement-store/runtime-benchmarks",
+	"pezkuwi-zombienet-orchestrator/runtime-benchmarks",
+	"pezkuwi-zombienet-sdk/runtime-benchmarks",
+	"pezcumulus-test-runtime/runtime-benchmarks",
+	"pezkuwi-subxt/runtime-benchmarks",
 ]
 std = [
-  "anyhow/std",
-  "log/std",
-  "codec/std",
-  "pezcumulus-zombienet-sdk-helpers/std",
-  "pezkuwi-zombienet-configuration/std",
-  "pezkuwi-zombienet-orchestrator/std",
-  "pezkuwi-zombienet-sdk/std",
-  "pezsc-statement-store/std",
-  "serde/std",
-  "serde_json/std",
+	"anyhow/std",
+	"log/std",
+	"codec/std",
+	"pezcumulus-zombienet-sdk-helpers/std",
+	"pezkuwi-zombienet-configuration/std",
+	"pezkuwi-zombienet-orchestrator/std",
+	"pezkuwi-zombienet-sdk/std",
+	"pezsc-statement-store/std",
+	"serde/std",
+	"serde_json/std",
+	"pezkuwi-subxt/std",
 ]
 serde = []

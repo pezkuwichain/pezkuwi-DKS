@@ -328,7 +328,7 @@ pub struct Pair<
 	_phantom: PhantomData<fn() -> SubTag>,
 }
 
-///Implementation of Clone for PairedCrypto
+/// Implementation of Clone for PairedCrypto
 impl<
 		LeftPair: PairT + Clone,
 		RightPair: PairT + Clone,
@@ -343,7 +343,7 @@ impl<
 	}
 }
 
-///Implementation of keypair for paired cryptographic keys
+/// Implementation of keypair for paired cryptographic keys
 impl<
 		LeftPair: PairT,
 		RightPair: PairT,

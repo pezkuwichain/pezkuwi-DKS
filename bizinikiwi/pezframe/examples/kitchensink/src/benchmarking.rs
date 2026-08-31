@@ -34,16 +34,16 @@ use pezframe_benchmarking::v2::*;
 use pezframe_support::pezpallet_prelude::TransactionSource;
 use pezframe_system::RawOrigin;
 
-// To actually run this benchmark on pezpallet-example-kitchensink, we need to put this pezpallet
-// into the   runtime and compile it with `runtime-benchmarks` feature. The detail procedures are
+// To actually run this benchmark on pezpallet-example-kitchensink, we need to put this pezpallet into the
+//   runtime and compile it with `runtime-benchmarks` feature. The detail procedures are
 //   documented at:
-//   https://docs.pezkuwichain.io/reference/how-to-guides/weights/add-benchmarks/
+//   https://docs.substrate.io/reference/how-to-guides/weights/add-benchmarks/
 //
 // The auto-generated weight estimate of this pezpallet is copied over to the `weights.rs` file.
 // The exact command of how the estimate generated is printed at the top of the file.
 
 // Details on using the benchmarks macro can be seen at:
-//   https://docs.pezkuwichain.io/bizinikiwi/master/pezframe_benchmarking/trait.Benchmarking.html#tymethod.benchmarks
+//   https://paritytech.github.io/bizinikiwi/master/pezframe_benchmarking/trait.Benchmarking.html#tymethod.benchmarks
 #[benchmarks]
 mod benchmarks {
 	use super::*;
@@ -98,8 +98,8 @@ mod benchmarks {
 	}
 
 	// This line generates test cases for benchmarking, and could be run by:
-	//   `cargo test -p pezpallet-example-kitchensink --all-features`, you will see one line per
-	// case:   `test benchmarking::bench_set_foo_benchmark ... ok`
+	//   `cargo test -p pezpallet-example-kitchensink --all-features`, you will see one line per case:
+	//   `test benchmarking::bench_set_foo_benchmark ... ok`
 	//   `test benchmarking::bench_set_foo_using_authorize_benchmark ... ok` in the result.
 	//   `test benchmarking::bench_authorize_set_foo_using_authorize_benchmark ... ok` in the
 	// result.

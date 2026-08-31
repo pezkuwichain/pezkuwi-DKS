@@ -20,7 +20,7 @@
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezsp_runtime::{
 	traits::{Bounded, CheckedDiv, CheckedMul, Zero},
-	RuntimeDebug,
+	Debug,
 };
 use scale_info::TypeInfo;
 
@@ -37,7 +37,7 @@ use crate::types::Delegations;
 	PartialEq,
 	Ord,
 	PartialOrd,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	MaxEncodedLen,
 )]

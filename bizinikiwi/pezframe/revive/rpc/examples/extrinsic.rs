@@ -16,8 +16,8 @@
 // limitations under the License.
 use pezkuwi_subxt::OnlineClient;
 use pezkuwi_subxt_signer::sr25519::dev;
-use pezpallet_revive_eth_rpc::subxt_client::{
-	self, revive::calls::types::InstantiateWithCode, SrcChainConfig,
+use pezpallet_revive_eth_rpc::pezkuwi_subxt_client::{
+	self, SrcChainConfig, revive::calls::types::InstantiateWithCode,
 };
 use pezsp_weights::Weight;
 
@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 	let (bytes, _) = pezpallet_revive_fixtures::compile_module("dummy")?;
 
-	let tx_payload = subxt_client::tx().revive().instantiate_with_code(
+	let tx_payload = pezkuwi_subxt_client::tx().revive().instantiate_with_code(
 		0u32.into(),
 		Weight::from_parts(100_000, 0).into(),
 		3_000_000_000_000_000_000,

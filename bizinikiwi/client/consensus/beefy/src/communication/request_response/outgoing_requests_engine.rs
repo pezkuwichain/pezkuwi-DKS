@@ -181,7 +181,7 @@ impl<B: Block, AuthorityId: AuthorityIdBound> OnDemandJustificationsEngine<B, Au
 			.map_err(|e| {
 				debug!(
 					target: BEEFY_SYNC_LOG_TARGET,
-					"🥩 on-demand sc-network channel sender closed, err: {:?}", e
+					"🥩 on-demand pezsc-network channel sender closed, err: {:?}", e
 				);
 				Error::ResponseError
 			})?

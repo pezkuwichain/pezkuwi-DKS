@@ -291,7 +291,7 @@ pub trait Benchmarking {
 
 	/// Commit pending storage changes to the trie database and clear the database cache.
 	fn commit_db(&mut self) {
-		self.commit()
+		self.commit();
 	}
 
 	/// Get the read/write count.
@@ -317,7 +317,10 @@ pub trait Benchmarking {
 	// Add a new item to the DB whitelist.
 	fn add_to_whitelist(&mut self, add: PassFatPointerAndDecode<TrackedStorageKey>) {
 		let mut whitelist = self.get_whitelist();
-		match whitelist.iter_mut().find(|x| x.key == add.key) {
+		match whitelist
+			.iter_mut()
+			.find(|x| x.key == add.key && x.child_trie_key == add.child_trie_key)
+		{
 			// If we already have this key in the whitelist, update to be the most constrained
 			// value.
 			Some(item) => {
@@ -459,7 +462,7 @@ impl<'a> BenchmarkRecording<'a> {
 /// The required setup for creating a benchmark.
 ///
 /// Instance generic parameter is optional and can be used in order to capture unused generics for
-/// instantiable pallets.
+/// instantiable pezpallets.
 pub trait BenchmarkingSetup<T, I = ()> {
 	/// Return the components and their ranges which should be tested in this benchmark.
 	fn components(&self) -> Vec<(BenchmarkParameter, u32, u32)>;
@@ -509,4 +512,11 @@ macro_rules! whitelist_account {
 			pezframe_system::Account::<T>::hashed_key_for(&$acc).into(),
 		);
 	};
+}
+
+/// Helper function to whitelist a child trie storage key.
+pub fn add_to_whitelist_child(child_trie_key: Vec<u8>, key: Vec<u8>) {
+	let mut tracked_key = pezsp_storage::TrackedStorageKey::new_child(child_trie_key, key);
+	tracked_key.whitelist();
+	self::benchmarking::add_to_whitelist(tracked_key);
 }

@@ -97,7 +97,7 @@ pub fn reload_filter() -> Result<(), String> {
 
 /// Resets the log filter back to the original state when the node was started.
 ///
-/// Includes bizinikiwi defaults and CLI supplied directives.
+/// Includes substrate defaults and CLI supplied directives.
 pub fn reset_log_filter() -> Result<(), String> {
 	let directive = DEFAULT_DIRECTIVES.get_or_init(|| Mutex::new(Vec::new())).lock().clone();
 

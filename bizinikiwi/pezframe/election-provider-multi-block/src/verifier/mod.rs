@@ -17,8 +17,8 @@
 
 //! # The Verifier Pezpallet
 //!
-//! This pezpallet has no end-user functionality, and is only used internally by other pallets in
-//! the EPMB machinery to verify solutions.
+//! This pezpallet has no end-user functionality, and is only used internally by other pezpallets in the
+//! EPMB machinery to verify solutions.
 //!
 //! ### *Feasibility* Check
 //!
@@ -79,8 +79,10 @@ pub use crate::weights::traits::pezpallet_election_provider_multi_block_verifier
 use impls::SupportsOfVerifier;
 pub use impls::{feasibility_check_page_inner_with_snapshot, pezpallet::*, Status};
 use pezframe_election_provider_support::PageIndex;
+use pezframe_support::weights::WeightMeter;
 use pezsp_core::Get;
 use pezsp_npos_elections::ElectionScore;
+use pezsp_runtime::Weight;
 use pezsp_std::{fmt::Debug, prelude::*};
 
 /// Errors that can happen in the feasibility check.
@@ -133,7 +135,7 @@ impl From<pezsp_npos_elections::Error> for FeasibilityError {
 	}
 }
 
-/// The interface of something that can verify solutions for other sub-pallets in the multi-block
+/// The interface of something that can verify solutions for other sub-pezpallets in the multi-block
 /// election pezpallet-network.
 pub trait Verifier {
 	/// The solution type.
@@ -213,6 +215,12 @@ pub trait Verifier {
 		page: PageIndex,
 		score: ElectionScore,
 	);
+
+	/// Return the execution schedule of this pezpallet's work to be done per-block (`on_poll`,
+	/// `on_init` independent).
+	///
+	/// Returns a `(Weight, ExecFn)` tuple in-line with `per_block_exec` of the parent block.
+	fn per_block_exec() -> (Weight, Box<dyn Fn(&mut WeightMeter)>);
 }
 
 /// Simple enum to encapsulate the result of the verification of a candidate solution.
@@ -227,9 +235,8 @@ pub enum VerificationResult {
 
 /// Something that can provide candidate solutions to the verifier.
 ///
-/// In reality, this can be implemented by the [`crate::signed::Pezpallet`], where signed solutions
-/// are queued and sorted based on claimed score, and they are put forth one by one, from best to
-/// worse.
+/// In reality, this can be implemented by the [`crate::signed::Pezpallet`], where signed solutions are
+/// queued and sorted based on claimed score, and they are put forth one by one, from best to worse.
 pub trait SolutionDataProvider {
 	/// The opaque solution type.
 	type Solution;

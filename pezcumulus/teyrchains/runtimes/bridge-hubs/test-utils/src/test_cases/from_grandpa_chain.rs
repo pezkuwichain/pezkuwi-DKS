@@ -51,7 +51,7 @@ pub trait WithRemoteGrandpaChainHelper {
 			InboundPayload = XcmAsPlainPayload,
 			OutboundPayload = XcmAsPlainPayload,
 		> + pezpallet_bridge_relayers::Config<Self::RPI, Reward = Self::RelayerReward>;
-	/// All pallets of this chain, excluding system pezpallet.
+	/// All pezpallets of this chain, excluding system pezpallet.
 	type AllPalletsWithoutSystem: OnInitialize<BlockNumberFor<Self::Runtime>>
 		+ OnFinalize<BlockNumberFor<Self::Runtime>>;
 	/// Instance of the `pezpallet-bridge-grandpa`, used to bridge with remote GRANDPA chain.

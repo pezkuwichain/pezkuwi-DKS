@@ -29,8 +29,7 @@ use pezsp_io::{hashing::twox_128, storage};
 
 use crate as pezpallet_bounties;
 
-/// Migrate the storage of the bounties pezpallet to a new prefix, leaving all other storage
-/// untouched
+/// Migrate the storage of the bounties pezpallet to a new prefix, leaving all other storage untouched
 ///
 /// This new prefix must be the same as the one set in construct_runtime. For safety, use
 /// `PalletInfo` to get it, as:
@@ -44,13 +43,13 @@ pub fn migrate<
 	P: GetStorageVersion + PalletInfoAccess,
 	N: AsRef<str>,
 >(
-	old_pallet_name: N,
-	new_pallet_name: N,
+	old_pezpallet_name: N,
+	new_pezpallet_name: N,
 ) -> Weight {
-	let old_pallet_name = old_pallet_name.as_ref();
-	let new_pallet_name = new_pallet_name.as_ref();
+	let old_pezpallet_name = old_pezpallet_name.as_ref();
+	let new_pezpallet_name = new_pezpallet_name.as_ref();
 
-	if new_pallet_name == old_pallet_name {
+	if new_pezpallet_name == old_pezpallet_name {
 		log::info!(
 			target: "runtime::bounties",
 			"New pezpallet name is equal to the old prefix. No migration needs to be done.",
@@ -69,34 +68,34 @@ pub fn migrate<
 		let storage_prefix = pezpallet_bounties::BountyCount::<T>::storage_prefix();
 		pezframe_support::storage::migration::move_storage_from_pallet(
 			storage_prefix,
-			old_pallet_name.as_bytes(),
-			new_pallet_name.as_bytes(),
+			old_pezpallet_name.as_bytes(),
+			new_pezpallet_name.as_bytes(),
 		);
-		log_migration("migration", storage_prefix, old_pallet_name, new_pallet_name);
+		log_migration("migration", storage_prefix, old_pezpallet_name, new_pezpallet_name);
 
 		let storage_prefix = pezpallet_bounties::Bounties::<T>::storage_prefix();
 		pezframe_support::storage::migration::move_storage_from_pallet(
 			storage_prefix,
-			old_pallet_name.as_bytes(),
-			new_pallet_name.as_bytes(),
+			old_pezpallet_name.as_bytes(),
+			new_pezpallet_name.as_bytes(),
 		);
-		log_migration("migration", storage_prefix, old_pallet_name, new_pallet_name);
+		log_migration("migration", storage_prefix, old_pezpallet_name, new_pezpallet_name);
 
 		let storage_prefix = pezpallet_bounties::BountyDescriptions::<T>::storage_prefix();
 		pezframe_support::storage::migration::move_storage_from_pallet(
 			storage_prefix,
-			old_pallet_name.as_bytes(),
-			new_pallet_name.as_bytes(),
+			old_pezpallet_name.as_bytes(),
+			new_pezpallet_name.as_bytes(),
 		);
-		log_migration("migration", storage_prefix, old_pallet_name, new_pallet_name);
+		log_migration("migration", storage_prefix, old_pezpallet_name, new_pezpallet_name);
 
 		let storage_prefix = pezpallet_bounties::BountyApprovals::<T>::storage_prefix();
 		pezframe_support::storage::migration::move_storage_from_pallet(
 			storage_prefix,
-			old_pallet_name.as_bytes(),
-			new_pallet_name.as_bytes(),
+			old_pezpallet_name.as_bytes(),
+			new_pezpallet_name.as_bytes(),
 		);
-		log_migration("migration", storage_prefix, old_pallet_name, new_pallet_name);
+		log_migration("migration", storage_prefix, old_pezpallet_name, new_pezpallet_name);
 
 		StorageVersion::new(4).put::<P>();
 		<T as pezframe_system::Config>::BlockWeights::get().max_block
@@ -119,52 +118,57 @@ pub fn pre_migration<
 	P: GetStorageVersion + 'static,
 	N: AsRef<str>,
 >(
-	old_pallet_name: N,
-	new_pallet_name: N,
+	old_pezpallet_name: N,
+	new_pezpallet_name: N,
 ) {
-	let old_pallet_name = old_pallet_name.as_ref();
-	let new_pallet_name = new_pallet_name.as_ref();
+	let old_pezpallet_name = old_pezpallet_name.as_ref();
+	let new_pezpallet_name = new_pezpallet_name.as_ref();
 	let storage_prefix_bounties_count = pezpallet_bounties::BountyCount::<T>::storage_prefix();
 	let storage_prefix_bounties = pezpallet_bounties::Bounties::<T>::storage_prefix();
 	let storage_prefix_bounties_description =
 		pezpallet_bounties::BountyDescriptions::<T>::storage_prefix();
 	let storage_prefix_bounties_approvals =
 		pezpallet_bounties::BountyApprovals::<T>::storage_prefix();
-	log_migration("pre-migration", storage_prefix_bounties_count, old_pallet_name, new_pallet_name);
-	log_migration("pre-migration", storage_prefix_bounties, old_pallet_name, new_pallet_name);
+	log_migration(
+		"pre-migration",
+		storage_prefix_bounties_count,
+		old_pezpallet_name,
+		new_pezpallet_name,
+	);
+	log_migration("pre-migration", storage_prefix_bounties, old_pezpallet_name, new_pezpallet_name);
 	log_migration(
 		"pre-migration",
 		storage_prefix_bounties_description,
-		old_pallet_name,
-		new_pallet_name,
+		old_pezpallet_name,
+		new_pezpallet_name,
 	);
 	log_migration(
 		"pre-migration",
 		storage_prefix_bounties_approvals,
-		old_pallet_name,
-		new_pallet_name,
+		old_pezpallet_name,
+		new_pezpallet_name,
 	);
 
-	let new_pallet_prefix = twox_128(new_pallet_name.as_bytes());
+	let new_pezpallet_prefix = twox_128(new_pezpallet_name.as_bytes());
 	let storage_version_key =
-		[&new_pallet_prefix, &twox_128(STORAGE_VERSION_STORAGE_KEY_POSTFIX)[..]].concat();
+		[&new_pezpallet_prefix, &twox_128(STORAGE_VERSION_STORAGE_KEY_POSTFIX)[..]].concat();
 
 	// ensure nothing is stored in the new prefix.
 	assert!(
-		storage::next_key(&new_pallet_prefix).map_or(
+		storage::next_key(&new_pezpallet_prefix).map_or(
 			// either nothing is there
 			true,
 			// or we ensure that the next key has no common prefix with twox_128(new),
 			// or is the pezpallet version that is already stored using the pezpallet name
 			|next_key| {
 				storage::next_key(&next_key).map_or(true, |next_key| {
-					!next_key.starts_with(&new_pallet_prefix) || next_key == storage_version_key
+					!next_key.starts_with(&new_pezpallet_prefix) || next_key == storage_version_key
 				})
 			},
 		),
 		"unexpected next_key({}) = {:?}",
-		new_pallet_name,
-		HexDisplay::from(&pezsp_io::storage::next_key(&new_pallet_prefix).unwrap()),
+		new_pezpallet_name,
+		HexDisplay::from(&pezsp_io::storage::next_key(&new_pezpallet_prefix).unwrap()),
 	);
 	assert!(<P as GetStorageVersion>::on_chain_storage_version() < 4);
 }
@@ -174,11 +178,11 @@ pub fn pre_migration<
 ///
 /// Panics if anything goes wrong.
 pub fn post_migration<T: pezpallet_bounties::Config, P: GetStorageVersion, N: AsRef<str>>(
-	old_pallet_name: N,
-	new_pallet_name: N,
+	old_pezpallet_name: N,
+	new_pezpallet_name: N,
 ) {
-	let old_pallet_name = old_pallet_name.as_ref();
-	let new_pallet_name = new_pallet_name.as_ref();
+	let old_pezpallet_name = old_pezpallet_name.as_ref();
+	let new_pezpallet_name = new_pezpallet_name.as_ref();
 	let storage_prefix_bounties_count = pezpallet_bounties::BountyCount::<T>::storage_prefix();
 	let storage_prefix_bounties = pezpallet_bounties::Bounties::<T>::storage_prefix();
 	let storage_prefix_bounties_description =
@@ -188,31 +192,36 @@ pub fn post_migration<T: pezpallet_bounties::Config, P: GetStorageVersion, N: As
 	log_migration(
 		"post-migration",
 		storage_prefix_bounties_count,
-		old_pallet_name,
-		new_pallet_name,
+		old_pezpallet_name,
+		new_pezpallet_name,
 	);
-	log_migration("post-migration", storage_prefix_bounties, old_pallet_name, new_pallet_name);
+	log_migration(
+		"post-migration",
+		storage_prefix_bounties,
+		old_pezpallet_name,
+		new_pezpallet_name,
+	);
 	log_migration(
 		"post-migration",
 		storage_prefix_bounties_description,
-		old_pallet_name,
-		new_pallet_name,
+		old_pezpallet_name,
+		new_pezpallet_name,
 	);
 	log_migration(
 		"post-migration",
 		storage_prefix_bounties_approvals,
-		old_pallet_name,
-		new_pallet_name,
+		old_pezpallet_name,
+		new_pezpallet_name,
 	);
 
-	let old_pallet_prefix = twox_128(old_pallet_name.as_bytes());
+	let old_pezpallet_prefix = twox_128(old_pezpallet_name.as_bytes());
 	let old_bounties_count_key =
-		[&old_pallet_prefix, &twox_128(storage_prefix_bounties_count)[..]].concat();
-	let old_bounties_key = [&old_pallet_prefix, &twox_128(storage_prefix_bounties)[..]].concat();
+		[&old_pezpallet_prefix, &twox_128(storage_prefix_bounties_count)[..]].concat();
+	let old_bounties_key = [&old_pezpallet_prefix, &twox_128(storage_prefix_bounties)[..]].concat();
 	let old_bounties_description_key =
-		[&old_pallet_prefix, &twox_128(storage_prefix_bounties_description)[..]].concat();
+		[&old_pezpallet_prefix, &twox_128(storage_prefix_bounties_description)[..]].concat();
 	let old_bounties_approvals_key =
-		[&old_pallet_prefix, &twox_128(storage_prefix_bounties_approvals)[..]].concat();
+		[&old_pezpallet_prefix, &twox_128(storage_prefix_bounties_approvals)[..]].concat();
 	assert!(storage::next_key(&old_bounties_count_key)
 		.map_or(true, |next_key| !next_key.starts_with(&old_bounties_count_key)));
 	assert!(storage::next_key(&old_bounties_key)
@@ -225,13 +234,18 @@ pub fn post_migration<T: pezpallet_bounties::Config, P: GetStorageVersion, N: As
 	assert_eq!(<P as GetStorageVersion>::on_chain_storage_version(), 4);
 }
 
-fn log_migration(stage: &str, storage_prefix: &[u8], old_pallet_name: &str, new_pallet_name: &str) {
+fn log_migration(
+	stage: &str,
+	storage_prefix: &[u8],
+	old_pezpallet_name: &str,
+	new_pezpallet_name: &str,
+) {
 	log::info!(
 		target: "runtime::bounties",
 		"{} prefix of storage '{}': '{}' ==> '{}'",
 		stage,
 		str::from_utf8(storage_prefix).unwrap_or("<Invalid UTF8>"),
-		old_pallet_name,
-		new_pallet_name,
+		old_pezpallet_name,
+		new_pezpallet_name,
 	);
 }

@@ -13,13 +13,13 @@ host functions that are not part of the PezkuwiChain host specification.
 Directly via crates.io:
 
 ```sh
-cargo install frame-omni-bencher --profile=production --locked
+cargo install pezframe-omni-bencher --profile=production --locked
 ```
 
 from GitHub:
 
 ```sh
-cargo install --git https://github.com/pezkuwichain/pezkuwi-sdk frame-omni-bencher --profile=production --locked
+cargo install --git https://github.com/pezkuwichain/pezkuwi-DKS pezframe-omni-bencher --profile=production --locked
 ```
 
 or locally from the sources:
@@ -31,7 +31,7 @@ cargo install --path bizinikiwi/utils/pezframe/omni-bencher --profile=production
 Check the installed version and print the docs:
 
 ```sh
-frame-omni-bencher --help
+pezframe-omni-bencher --help
 ```
 
 ## Usage
@@ -46,7 +46,7 @@ cargo build -p zagros-runtime --profile production --features runtime-benchmarks
 Now as an example, we benchmark the `balances` pezpallet:
 
 ```sh
-frame-omni-bencher v1 benchmark pezpallet \
+pezframe-omni-bencher v1 benchmark pezpallet \
 --runtime target/release/wbuild/zagros-runtime/zagros-runtime.compact.compressed.wasm \
 --pezpallet "pallet_balances" --extrinsic ""
 ```
@@ -60,7 +60,7 @@ To render Rust weight files from benchmark results, pass an output path. Optiona
 custom header and a Handlebars template (defaults are provided):
 
 ```sh
-frame-omni-bencher v1 benchmark pezpallet \
+pezframe-omni-bencher v1 benchmark pezpallet \
   --runtime target/release/wbuild/zagros-runtime/zagros-runtime.compact.compressed.wasm \
   --pezpallet "pallet_balances" --extrinsic "*" \
   --output ./weights/ \

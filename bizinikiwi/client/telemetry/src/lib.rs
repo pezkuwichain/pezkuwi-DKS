@@ -16,8 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! Bizinikiwi's client telemetry is a part of bizinikiwi that allows ingesting telemetry data
-//! with for example [Pezkuwi telemetry](https://docs.pezkuwichain.io/telemetry).
+//! Bizinikiwi's client telemetry is a part of substrate that allows ingesting telemetry data
+//! with for example [Pezkuwi telemetry](https://github.com/pezkuwichain/pezkuwi-telemetry).
 //!
 //! It works using Tokio's [tracing](https://github.com/tokio-rs/tracing/) library. The telemetry
 //! information uses tracing's logging to report the telemetry data which is then retrieved by a
@@ -25,8 +25,8 @@
 //! background task called [`TelemetryWorker`] which will send the information to the configured
 //! remote telemetry servers.
 //!
-//! If multiple bizinikiwi nodes are running in the same process, it uses a `tracing::Span` to
-//! identify which bizinikiwi node is reporting the telemetry. Every task spawned using sc-service's
+//! If multiple substrate nodes are running in the same process, it uses a `tracing::Span` to
+//! identify which substrate node is reporting the telemetry. Every task spawned using pezsc-service's
 //! `TaskManager` automatically inherit this span.
 //!
 //! Bizinikiwi's nodes initialize/register with the [`TelemetryWorker`] using a
@@ -395,10 +395,10 @@ pub struct Telemetry {
 }
 
 impl Telemetry {
-	/// Initialize the telemetry with the endpoints provided in argument for the current bizinikiwi
+	/// Initialize the telemetry with the endpoints provided in argument for the current substrate
 	/// node.
 	///
-	/// This method must be called during the bizinikiwi node initialization.
+	/// This method must be called during the substrate node initialization.
 	///
 	/// The `endpoints` argument is a collection of telemetry WebSocket servers with a corresponding
 	/// verbosity level.

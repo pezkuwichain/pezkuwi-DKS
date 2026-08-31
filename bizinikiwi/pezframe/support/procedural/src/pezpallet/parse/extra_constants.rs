@@ -89,7 +89,7 @@ impl ExtraConstantsDef {
 
 		let instances = vec![
 			helper::check_impl_gen(&item.generics, item.impl_token.span())?,
-			helper::check_pallet_struct_usage(&item.self_ty)?,
+			helper::check_pezpallet_struct_usage(&item.self_ty)?,
 		];
 
 		if let Some((_, _, for_)) = item.trait_ {
@@ -132,7 +132,7 @@ impl ExtraConstantsDef {
 
 			// parse metadata_name
 			let mut extra_constant_attrs: Vec<ExtraConstAttr> =
-				helper::take_item_pallet_attrs(method)?;
+				helper::take_item_pezpallet_attrs(method)?;
 
 			if extra_constant_attrs.len() > 1 {
 				let msg =

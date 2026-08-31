@@ -23,7 +23,6 @@ use crate::{
 	},
 };
 
-use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use codec::Decode;
 use futures::{
@@ -35,6 +34,8 @@ use pez_finality_relay::{SourceClient, SourceClientBase};
 use pezbp_header_pez_chain::FinalityProof;
 use relay_bizinikiwi_client::{BlockNumberOf, BlockWithJustification, Client, Error, HeaderOf};
 use relay_utils::{relay_loop::Client as RelayClient, UniqueSaturatedInto};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 /// Shared updatable reference to the maximal header number that we want to sync from the source.
 pub type RequiredHeaderNumberRef<C> = Arc<Mutex<<C as pezbp_runtime::Chain>::BlockNumber>>;

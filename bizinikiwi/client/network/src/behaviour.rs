@@ -57,7 +57,7 @@ pub struct Behaviour<B: BlockT> {
 	/// Connection limits.
 	connection_limits: libp2p::connection_limits::Behaviour,
 	/// All the bizinikiwi-specific protocols.
-	bizinikiwi: Protocol<B>,
+	substrate: Protocol<B>,
 	/// Periodically pings and identifies the nodes we are connected to, and store information in a
 	/// cache.
 	peer_info: peer_info::PeerInfoBehaviour,
@@ -177,7 +177,7 @@ pub enum BehaviourOut {
 impl<B: BlockT> Behaviour<B> {
 	/// Builds a new `Behaviour`.
 	pub fn new(
-		bizinikiwi: Protocol<B>,
+		substrate: Protocol<B>,
 		user_agent: String,
 		local_public_key: PublicKey,
 		disco_config: DiscoveryConfig,
@@ -188,7 +188,7 @@ impl<B: BlockT> Behaviour<B> {
 		connection_limits: ConnectionLimits,
 	) -> Result<Self, request_responses::RegisterError> {
 		Ok(Self {
-			bizinikiwi,
+			substrate,
 			peer_info: peer_info::PeerInfoBehaviour::new(
 				user_agent,
 				local_public_key,
@@ -262,12 +262,12 @@ impl<B: BlockT> Behaviour<B> {
 
 	/// Returns a shared reference to the user protocol.
 	pub fn user_protocol(&self) -> &Protocol<B> {
-		&self.bizinikiwi
+		&self.substrate
 	}
 
 	/// Returns a mutable reference to the user protocol.
 	pub fn user_protocol_mut(&mut self) -> &mut Protocol<B> {
-		&mut self.bizinikiwi
+		&mut self.substrate
 	}
 
 	/// Add a self-reported address of a remote peer to the k-buckets of the supported
@@ -462,11 +462,5 @@ impl From<DiscoveryOut> for BehaviourOut {
 impl From<void::Void> for BehaviourOut {
 	fn from(e: void::Void) -> Self {
 		void::unreachable(e)
-	}
-}
-
-impl From<std::convert::Infallible> for BehaviourOut {
-	fn from(value: std::convert::Infallible) -> Self {
-		match value {}
 	}
 }

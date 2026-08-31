@@ -19,12 +19,14 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod genesis_config_presets;
+pub mod governance;
+use governance::pezpallet_custom_origins;
 pub mod people;
 mod weights;
 pub mod xcm_config;
 
-// Re-export komisyon tipleri (lib.rs'de kullanım için)
-pub use people::CouncilCollective;
+// Re-exported so `lib.rs` can name the collectives.
+pub use people::{CouncilCollective, DiwanCollective, ParliamentCollective};
 
 extern crate alloc;
 
@@ -32,9 +34,11 @@ use alloc::{vec, vec::Vec};
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezcumulus_pezpallet_teyrchain_system::RelayNumberMonotonicallyIncreases;
 use pezcumulus_primitives_core::{AggregateMessageOrigin, ParaId};
+use pezframe_support::traits::tokens::imbalance::ResolveTo;
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
+	dynamic_params::{dynamic_params, dynamic_pezpallet_params},
 	genesis_builder_helper::{build_state, get_preset},
 	parameter_types,
 	traits::{
@@ -49,6 +53,7 @@ use pezframe_system::{
 	EnsureRoot,
 };
 use pezkuwi_runtime_common::{identity_migrator, BlockHashCount, SlowAdjustingFeeUpdate};
+use pezpallet_collator_selection::StakingPotAccountId;
 use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
 use pezsp_api::impl_runtime_apis;
 pub use pezsp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -61,7 +66,7 @@ use pezsp_runtime::{
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult,
 };
-pub use pezsp_runtime::{MultiAddress, Perbill, Permill, RuntimeDebug};
+pub use pezsp_runtime::{MultiAddress, Perbill, Permill};
 #[cfg(feature = "std")]
 use pezsp_version::NativeVersion;
 use pezsp_version::RuntimeVersion;
@@ -171,7 +176,12 @@ pub fn native_version() -> NativeVersion {
 parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+		BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
 		.for_class(DispatchClass::all(), |weights| {
@@ -238,7 +248,14 @@ parameter_types! {
 
 impl pezpallet_balances::Config for Runtime {
 	type Balance = Balance;
-	type DustRemoval = ();
+	/// Dust -- what is left in an account too small to keep -- goes where this chain's fee
+	/// income goes, rather than being dropped.
+	///
+	/// `()` destroys it. Small per account and not small across a population, and on a chain
+	/// that collects fees for its treasury there is no reason for the remainder to be the one
+	/// thing that vanishes. Upstream stopped dropping it too, with a pallet of its own; this
+	/// gets the same result without taking on a new pallet.
+	type DustRemoval = ResolveTo<StakingPotAccountId<Runtime>, Balances>;
 	type RuntimeEvent = RuntimeEvent;
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
@@ -292,6 +309,7 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
 	type ConsensusHook = ConsensusHook;
 	type WeightInfo = weights::pezcumulus_pezpallet_teyrchain_system::WeightInfo<Runtime>;
 	type RelayParentOffset = ConstU32<0>;
+	type SchedulingSignatureVerifier = ();
 }
 
 type ConsensusHook = pezcumulus_pezpallet_aura_ext::FixedVelocityConsensusHook<
@@ -345,75 +363,120 @@ pub type RootOrFellows = EitherOfDiverse<
 >;
 
 // =============================================================================
-// Kademeli Yetki Devri Origin Tanımları (Progressive Decentralization)
+// Origins for progressive decentralisation
 // =============================================================================
 //
-// Bu origin'ler başlangıçta Root (Sudo) ile çalışır, ancak Welati pezpallet'i
-// aracılığıyla seçimler yapıldığında yetki demokratik organlara devredilir.
+// These begin as Root (sudo) and hand over to the elected bodies as Welati seats them.
 //
-// Kullanım:
-// - Başlangıç: Root (Sudo) tüm yetkilere sahip
-// - Seçim sonrası: Root VEYA ilgili demokratik organ
-// - Sudo kaldırıldığında: Sadece demokratik organlar
+// At first Root holds everything; after an election, Root or the elected body; once sudo
+// retires, the elected body alone.
 // =============================================================================
 
-/// Root VEYA Serok (Cumhurbaşkanı) yetkisi
-/// Kullanım: Yüksek düzey yönetim kararları, atamalar
+/// Root, or the President.
+/// For high-level administrative decisions and appointments.
 pub type RootOrSerok =
 	EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_welati::EnsureSerok<Runtime>>;
 
-/// Root VEYA Parlamento üyesi yetkisi
-/// Kullanım: Yasama işlemleri, bütçe onayları
-pub type RootOrParliament =
-	EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_welati::EnsureParlementer<Runtime>>;
+// `RootOrParliament` used to sit here. Its comment said "legislative acts, budget
+// approvals"; its body accepted **one** member of the house. Nothing used it. An origin
+// meaning "the house resolved" belongs with the state franchise, and it is not this.
 
-/// Root VEYA Divan (Anayasa Mahkemesi) yetkisi
-/// Kullanım: Anayasal kararlar, vatandaşlık işlemleri
-pub type RootOrDiwan =
-	EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_welati::EnsureDiwan<Runtime>>;
-
-/// Root VEYA Council (Genel Konsey) yetkisi
-/// Kullanım: Genel yönetişim kararları
-pub type RootOrCouncil = EitherOfDiverse<
+/// Root, or the house resolving by simple majority.
+///
+/// The alias that used to carry this name accepted a single member of Parliament while its
+/// comment said "legislative acts, budget approvals". Nothing used it, which is the only
+/// reason that was harmless. This one means what it says.
+pub type RootOrParliament = EitherOfDiverse<
 	EnsureRoot<AccountId>,
-	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+	pezpallet_collective::EnsureProportionMoreThan<AccountId, people::ParliamentCollective, 1, 2>,
 >;
 
-/// Root VEYA Serok VEYA Council yetkisi
-/// Kullanım: Çoğu yönetim işlemi için esnek yetki
+/// Root, or the Diwan.
+/// For constitutional decisions and citizenship.
+/// Root, or the Diwan deciding as a court.
+///
+/// Two thirds of the bench -- eight of eleven. It used to accept any single member, which
+/// meant the powers behind it (citizenship, impeachment, fraud) each had eleven independent
+/// keys. A court convenes and rules; one judge acting alone is not the court.
+pub type RootOrDiwan = EitherOfDiverse<
+	EnsureRoot<AccountId>,
+	pezpallet_collective::EnsureProportionAtLeast<AccountId, people::DiwanCollective, 2, 3>,
+>;
+
+/// Two thirds of the bench -- and Root, but only until there is a bench.
+///
+/// The register is the one thing no other organ should write. Whoever writes the electorate
+/// wins the election, so an executive that can add or remove citizens does not need to win
+/// one, and Root reaches this chain from the relay: from the executive, for as long as sudo
+/// exists.
+///
+/// Yet a register with no correction at all is worse during the founding period than one the
+/// executive can correct, because a forged citizen compounds -- each one can vouch for more.
+/// So the exemption exists and expires by construction rather than by promise: Root is
+/// admitted only while the court is not yet whole, and the day the bench is seated that door
+/// shuts on its own. Nobody has to remember to close it.
+pub struct RegisterAuthority;
+impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for RegisterAuthority {
+	type Success = ();
+
+	fn try_origin(o: RuntimeOrigin) -> Result<Self::Success, RuntimeOrigin> {
+		type Bench =
+			pezpallet_collective::EnsureProportionAtLeast<AccountId, people::DiwanCollective, 2, 3>;
+		match Bench::try_origin(o) {
+			Ok(_) => Ok(()),
+			Err(o) => {
+				let seated =
+					pezpallet_collective::Members::<Runtime, people::DiwanCollective>::get().len()
+						as u32;
+				if seated < <Runtime as pezpallet_welati::Config>::DiwanSize::get() {
+					EnsureRoot::<AccountId>::try_origin(o).map(|_| ())
+				} else {
+					Err(o)
+				}
+			},
+		}
+	}
+
+	#[cfg(feature = "runtime-benchmarks")]
+	fn try_successful_origin() -> Result<RuntimeOrigin, ()> {
+		Ok(pezframe_system::RawOrigin::Root.into())
+	}
+}
+
+/// Root, the President, or the Council.
+/// The looser authority most administrative work runs under.
 pub type RootOrSerokOrCouncil = EitherOfDiverse<
 	RootOrSerok,
 	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
 >;
 
 // =============================================================================
-// Welati-Based Origin Combinations (Welati Tabanlı Origin Kombinasyonları)
+// Origin combinations built on Welati
 // =============================================================================
 //
-// Bu origin'ler şu an için sadece Welati pezpallet origin'lerini kullanıyor.
-// İleride pezpallet_collective instance'ları eklendiğinde genişletilebilir.
+// These currently name only Welati's origins; collective instances can join them later.
 //
-// Fee Muafiyeti Notu: Komisyon üyeleri (Serok, Parlementer, Diwan) resmi
-// görevlerini yaparken fee'den muaf olmalı. Bu SignedExtension ile sağlanabilir.
+// Fee exemption: office holders acting in office should not pay one. A `SignedExtension`
+// is where that would go; it is not written yet.
 // =============================================================================
 
-/// Root VEYA Serok VEYA Council için esnek yetki
-/// Kullanım: Teknik kararlar, NFT/Tiki yönetimi
-pub type RootOrTechnicalCommittee = EitherOfDiverse<
-	RootOrSerok,
-	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
->;
-
-/// Root VEYA Serok VEYA Council için hazine yetkisi
-/// Kullanım: PEZ dağıtım yönetimi, ekonomik kararlar
-pub type RootOrTreasuryCommittee = EitherOfDiverse<
+/// Root, the President, or two thirds of the Council.
+///
+/// Named for what it contains. The alias that used to sit here was called
+/// `RootOrTreasuryCommittee` and there is no treasury committee; a reader had to open the
+/// definition to learn that one signature from the President satisfies it.
+pub type RootOrSerokOrCouncilTwoThirds = EitherOfDiverse<
 	RootOrSerok,
 	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 2, 3>,
 >;
 
-/// Root VEYA Diwan VEYA Council
-/// Kullanım: Vatandaşlık ve kimlik işlemleri için kademeli yetki devri
-pub type RootOrDiwanOrTechnical = EitherOfDiverse<
+/// Root, two thirds of the Diwan, or more than half the Council.
+///
+/// Named `RootOrDiwanOrTechnical` until now, which promised a technical committee. There is no
+/// technical committee on this chain and never has been; the third arm is the Council. A name
+/// that describes a body the chain does not have is how a reader concludes a power is narrower
+/// than it is.
+pub type RootOrDiwanOrCouncil = EitherOfDiverse<
 	RootOrDiwan,
 	pezpallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
 >;
@@ -526,7 +589,7 @@ impl pezpallet_multisig::Config for Runtime {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]
@@ -558,7 +621,14 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				c,
 				RuntimeCall::Balances { .. } |
 				// `request_judgement` puts up a deposit to transfer to a registrar
-				RuntimeCall::Identity(pezpallet_identity::Call::request_judgement { .. })
+				RuntimeCall::Identity(pezpallet_identity::Call::request_judgement { .. }) |
+				// This filter names what a delegate may *not* do, so every pallet added to
+				// the runtime is granted to every existing NonTransfer proxy unless it is
+				// named here. These two reserve the principal's balance.
+				RuntimeCall::Referenda(pezpallet_referenda::Call::submit { .. }) |
+				RuntimeCall::Referenda(
+					pezpallet_referenda::Call::place_decision_deposit { .. }
+				)
 			),
 			ProxyType::CancelProxy => matches!(
 				c,
@@ -714,21 +784,32 @@ construct_runtime!(
 		// Governance - Core Council
 		Council: pezpallet_collective::<Instance1> = 70,
 		Scheduler: pezpallet_scheduler = 71,
-		Democracy: pezpallet_democracy = 72,
-		Elections: pezpallet_elections_phragmen = 73,
+		Referenda: pezpallet_referenda = 62,
+		Preimage: pezpallet_preimage = 64,
+		AccumulateAndForward: pezpallet_accumulate_and_forward = 65,
+		Origins: pezpallet_custom_origins = 63,
+
+		// RIP Democracy 72, Elections 73. Indices left unused on purpose.
 
 		// PezkuwiChain Governance (Welati handles committees internally)
 		Welati: pezpallet_welati = 75,
 
+		Diwan: pezpallet_collective::<Instance2> = 74,
+
+		Parliament: pezpallet_collective::<Instance3> = 78,
+
 		// Reserved slots for future committee instances:
-		// EducationCommittee: pezpallet_collective::<Instance2> = 74,
-		// TechnicalCommittee: pezpallet_collective::<Instance3> = 76,
-		// TreasuryCommittee: pezpallet_collective::<Instance4> = 77,
+		// TechnicalCommittee: pezpallet_collective::<Instance4> = 76,
+		// TreasuryCommittee: pezpallet_collective::<Instance5> = 77,
 
 		// Trust & Staking
+		Parameters: pezpallet_parameters = 79,
 		StakingScore: pezpallet_staking_score = 80,
 		Trust: pezpallet_trust = 81,
 		Society: pezpallet_society = 82,
+		// The validator committee. It lives here rather than on the relay because all five
+		// scores it reads are pallets on this chain -- see `RegisterScores` in `people.rs`.
+		Tnpos: pezpallet_tnpos = 83,
 
 		// Assets & Rewards
 		Assets: pezpallet_assets = 90,
@@ -752,6 +833,7 @@ mod benches {
 		[pezpallet_identity, Identity]
 		[pezpallet_message_queue, MessageQueue]
 		[pezpallet_multisig, Multisig]
+		[pezpallet_parameters, Parameters]
 		[pezpallet_nfts, Nfts]
 		[pezpallet_proxy, Proxy]
 		[pezpallet_recovery, Recovery]
@@ -764,8 +846,8 @@ mod benches {
 		[pezpallet_transaction_payment, TransactionPayment]
 		// Governance pallets
 		[pezpallet_scheduler, Scheduler]
-		[pezpallet_democracy, Democracy]
-		[pezpallet_elections_phragmen, Elections]
+		[pezpallet_preimage, Preimage]
+		[pezpallet_referenda, Referenda]
 		[pezpallet_assets, PeopleAssets]
 		// Pezkuwi - Custom People Pallets
 		[pezpallet_identity_kyc, IdentityKyc]
@@ -774,6 +856,8 @@ mod benches {
 		[pezpallet_referral, Referral]
 		[pezpallet_tiki, Tiki]
 		[pezpallet_staking_score, StakingScore]
+		[pezpallet_accumulate_and_forward, AccumulateAndForward]
+		[pezpallet_tnpos, Tnpos]
 		[pezpallet_trust, Trust]
 		[pezpallet_welati, Welati]
 		[pezpallet_pez_rewards, PezRewards]
@@ -804,6 +888,10 @@ impl_runtime_apis! {
 	impl pezcumulus_primitives_core::RelayParentOffsetApi<Block> for Runtime {
 		fn relay_parent_offset() -> u32 {
 			0
+		}
+
+		fn max_claim_queue_offset() -> u8 {
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
 		}
 	}
 
@@ -882,8 +970,11 @@ impl_runtime_apis! {
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+		fn generate_session_keys(
+			owner: Vec<u8>,
+			seed: Option<Vec<u8>>,
+		) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(
@@ -1020,6 +1111,11 @@ impl_runtime_apis! {
 			use pezframe_benchmarking::BenchmarkList;
 			use pezframe_support::traits::StorageInfoTrait;
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
+			// The pallet's benchmarks are listed above, and they need this to be implemented.
+			// Upstream's people runtime does not list the pallet at all, so there was nothing to
+			// copy: the runtimes that do list it implement this empty trait alongside.
+			impl pezpallet_transaction_payment::BenchmarkConfig for Runtime {}
+
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
 
@@ -1057,7 +1153,12 @@ impl_runtime_apis! {
 			}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
-			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
+			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 			use testnet_teyrchains_constants::zagros::locations::{AssetHubParaId, AssetHubLocation};
 
 			use pezpallet_xcm::benchmarking::Pezpallet as PalletXcmExtrinsicsBenchmark;
@@ -1089,7 +1190,7 @@ impl_runtime_apis! {
 					None
 				}
 
-				fn set_up_complex_asset_transfer() -> Option<(Assets, AssetId, Location, alloc::boxed::Box<dyn FnOnce()>)> {
+				fn set_up_complex_asset_transfer() -> Option<(Assets, u32, Location, alloc::boxed::Box<dyn FnOnce()>)> {
 					let native_location = Parent.into();
 					let dest = AssetHubLocation::get();
 
@@ -1130,15 +1231,15 @@ impl_runtime_apis! {
 				fn valid_destination() -> Result<Location, BenchmarkError> {
 					Ok(AssetHubLocation::get())
 				}
-				fn worst_case_holding(_depositable_count: u32) -> Assets {
+				fn worst_case_holding(_depositable_count: u32) -> xcm_executor::AssetsInHolding {
+					use pezpallet_xcm_benchmarks::MockCredit;
 					// just concrete assets according to relay chain.
-					let assets: Vec<Asset> = vec![
-						Asset {
-							id: AssetId(RelayLocation::get()),
-							fun: Fungible(1_000_000 * UNITS),
-						}
-					];
-					assets.into()
+					let mut holding = xcm_executor::AssetsInHolding::new();
+					holding.fungible.insert(
+						AssetId(RelayLocation::get()),
+						alloc::boxed::Box::new(MockCredit(1_000_000 * UNITS)),
+					);
+					holding
 				}
 			}
 
@@ -1267,6 +1368,90 @@ impl_runtime_apis! {
 			1
 		}
 	}
+}
+
+/// The register's own rules, in storage rather than in the binary.
+///
+/// These are the numbers that decide how fast the electorate can grow and how wide one
+/// person's mistake reaches. They were compile-time constants, which meant changing one took a
+/// runtime upgrade -- a referendum. Moving them to storage is what gives a governance track
+/// something to turn; it is also, by itself, a loosening, so `AdminOrigin` below is deliberately
+/// Root until the register-rules track exists to hold them at their proper pace.
+///
+/// The defaults are the constants they replace, so genesis behaves exactly as it did.
+#[dynamic_params(RuntimeParameters, pezpallet_parameters::Parameters::<Runtime>)]
+pub mod dynamic_params {
+	use super::*;
+
+	#[dynamic_pezpallet_params]
+	#[codec(index = 0)]
+	pub mod qeyd {
+		/// How long a new citizen waits before vouching for anyone.
+		///
+		/// Bounds how *fast* a chain of vouching can deepen; capacity below bounds how *wide*
+		/// one person's mistake can be. The two are often confused, and confusing them costs
+		/// the register its growth.
+		#[codec(index = 0)]
+		pub static VouchingWaitingPeriod: BlockNumber = 1 * DAYS;
+
+		/// How many a new citizen may vouch for at first.
+		#[codec(index = 1)]
+		pub static InitialVouchingCapacity: u32 = 5;
+
+		/// How many settled vouches earn one more place.
+		#[codec(index = 2)]
+		pub static SettledVouchesPerPlace: u32 = 3;
+
+		/// The ceiling on one citizen's vouching width.
+		#[codec(index = 3)]
+		pub static MaxVouchingCapacity: u32 = 50;
+
+		/// Revocations before a voucher's record is judged at all.
+		///
+		/// The floor keeps a rate from meaning anything on small numbers; the share below keeps
+		/// a prolific and honest voucher from being stopped by three mistakes in a hundred.
+		#[codec(index = 4)]
+		pub static SuspensionRevocationFloor: u32 = 3;
+
+		/// The share of revocations that suspends a voucher.
+		#[codec(index = 5)]
+		pub static SuspensionRevocationPercent: u32 = 20;
+
+		/// Trust lost per revoked referral.
+		#[codec(index = 6)]
+		pub static PenaltyPerRevocation: u32 = 10;
+	}
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for RuntimeParameters {
+	fn default() -> Self {
+		RuntimeParameters::Qeyd(dynamic_params::qeyd::Parameters::InitialVouchingCapacity(
+			dynamic_params::qeyd::InitialVouchingCapacity,
+			Some(5),
+		))
+	}
+}
+
+impl pezpallet_parameters::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeParameters = RuntimeParameters;
+	// The `qeyd_rules` track, and deliberately nothing else -- not Root.
+	//
+	// Root reaches this chain two ways: track 0, a referendum that decides in twenty-eight
+	// days, and the relay. Leaving either of them here would make the ninety-day track
+	// optional, and an optional slow path is a fast path: nobody takes the long road when the
+	// short one arrives at the same place.
+	//
+	// Not `RegisterAuthority` either. The court writes the register's *entries*; these are the
+	// *rules under which entries are made*, and a body that holds both has no rule above it.
+	//
+	// The escape hatch is the honest one: a runtime upgrade can still change the defaults, and
+	// an upgrade is the constitution being amended, which is what changing this ought to be.
+	type AdminOrigin = pezframe_support::traits::AsEnsureOriginWithArg<governance::QeydRules>;
+	// The pallet's reference weight. A zero-weight extrinsic is a free block; a measured
+	// number for this chain comes with the next benchmarking pass.
+	type WeightInfo = weights::pezpallet_parameters::WeightInfo<Runtime>;
 }
 
 pezcumulus_pezpallet_teyrchain_system::register_validate_block! {

@@ -23,7 +23,7 @@
 use codec::{Decode, Encode};
 use pezcumulus_primitives_core::ParaId;
 pub use pezpallet::*;
-use pezsp_runtime::{traits::BadOrigin, RuntimeDebug};
+use pezsp_runtime::traits::BadOrigin;
 use scale_info::TypeInfo;
 use xcm::latest::{ExecuteXcm, Outcome};
 
@@ -61,15 +61,7 @@ pub mod pezpallet {
 
 	/// Origin for the teyrchains module.
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		TypeInfo,
-		RuntimeDebug,
-		MaxEncodedLen,
+		PartialEq, Eq, Clone, Encode, Decode, DecodeWithMemTracking, TypeInfo, Debug, MaxEncodedLen,
 	)]
 	#[pezpallet::origin]
 	pub enum Origin {

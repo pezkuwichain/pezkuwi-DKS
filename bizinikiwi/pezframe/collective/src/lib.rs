@@ -49,7 +49,7 @@ use core::{marker::PhantomData, result};
 use pezsp_io::storage;
 use pezsp_runtime::{
 	traits::{Dispatchable, Hash},
-	DispatchError, RuntimeDebug,
+	Debug, DispatchError,
 };
 use scale_info::TypeInfo;
 
@@ -138,15 +138,7 @@ impl DefaultVote for MoreThanMajorityThenPrimeDefaultVote {
 
 /// Origin for the collective module.
 #[derive(
-	PartialEq,
-	Eq,
-	Clone,
-	RuntimeDebug,
-	Encode,
-	Decode,
-	DecodeWithMemTracking,
-	TypeInfo,
-	MaxEncodedLen,
+	PartialEq, Eq, Clone, Debug, Encode, Decode, DecodeWithMemTracking, TypeInfo, MaxEncodedLen,
 )]
 #[scale_info(skip_type_params(I))]
 #[codec(mel_bound(AccountId: MaxEncodedLen))]
@@ -169,7 +161,7 @@ impl<AccountId, I> GetBacking for RawOrigin<AccountId, I> {
 }
 
 /// Info for keeping track of a motion being voted on.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Debug, TypeInfo)]
 pub struct Votes<AccountId, BlockNumber> {
 	/// The proposal's unique index.
 	index: ProposalIndex,
@@ -192,13 +184,8 @@ pub struct Votes<AccountId, BlockNumber> {
 /// ### Example:
 ///
 /// 1. Linear increasing with helper types.
-#[doc = docify::embed!("src/tests.rs", deposit_types_with_linear_work)]
-///
 /// 2. Geometrically increasing with helper types.
-#[doc = docify::embed!("src/tests.rs", deposit_types_with_geometric_work)]
-///
 /// 3. Geometrically increasing with rounding.
-#[doc = docify::embed!("src/tests.rs", deposit_round_with_geometric_work)]
 pub mod deposit {
 	use core::marker::PhantomData;
 	use pezsp_core::Get;
@@ -566,8 +553,8 @@ pub mod pezpallet {
 		///
 		/// # WARNING:
 		///
-		/// The `pezpallet-collective` can also be managed by logic outside of the pezpallet through
-		/// the implementation of the trait [`ChangeMembers`].
+		/// The `pezpallet-collective` can also be managed by logic outside of the pezpallet through the
+		/// implementation of the trait [`ChangeMembers`].
 		/// Any call to `set_members` must be careful that the member set doesn't get out of sync
 		/// with other logic managing the member set.
 		///

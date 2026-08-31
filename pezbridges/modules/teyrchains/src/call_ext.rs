@@ -26,11 +26,11 @@ use pezpallet_bridge_grandpa::SubmitFinalityProofHelper;
 use pezsp_runtime::{
 	traits::Zero,
 	transaction_validity::{InvalidTransaction, TransactionValidityError},
-	RuntimeDebug,
+	Debug,
 };
 
 /// Verified `SubmitTeyrchainHeadsInfo`.
-#[derive(PartialEq, RuntimeDebug)]
+#[derive(PartialEq, Debug)]
 pub struct VerifiedSubmitTeyrchainHeadsInfo {
 	/// Base call information.
 	pub base: SubmitTeyrchainHeadsInfo,
@@ -343,7 +343,7 @@ mod tests {
 	}
 
 	#[test]
-	fn extension_rejects_header_if_pallet_is_halted() {
+	fn extension_rejects_header_if_pezpallet_is_halted() {
 		run_test(|| {
 			// when pezpallet is halted => tx is rejected
 			sync_to_relay_header_10();

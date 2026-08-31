@@ -22,9 +22,9 @@ use crate::{
 	},
 };
 
-use async_std::sync::{Arc, RwLock};
 use async_trait::async_trait;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
+use tokio::sync::RwLock;
 
 /// Value update interval.
 const UPDATE_INTERVAL: Duration = Duration::from_secs(300);
@@ -64,9 +64,12 @@ impl FloatJsonValueMetric {
 	}
 
 	/// Request value from HTTP service.
+	///
+	/// Goes through `reqwest` with rustls rather than `isahc`, which links libcurl and through it
+	/// OpenSSL. The manifest already named `reqwest` for that reason; this is the call site that
+	/// was still asking for the other one.
 	async fn request_value(&self) -> anyhow::Result<String> {
-		let client = reqwest::Client::new();
-		let raw_response = client
+		let raw_response = reqwest::Client::new()
 			.get(&self.url)
 			.header("Accept", "application/json")
 			.send()

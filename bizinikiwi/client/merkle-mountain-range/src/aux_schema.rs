@@ -26,7 +26,7 @@ use pezsp_blockchain::{Error as ClientError, Result as ClientResult};
 use pezsp_runtime::traits::{Block, NumberFor};
 
 const VERSION_KEY: &[u8] = b"mmr_auxschema_version";
-const GADGET_STATE: &[u8] = b"pezmmr_gadget_state";
+const GADGET_STATE: &[u8] = b"mmr_gadget_state";
 
 const CURRENT_VERSION: u32 = 1;
 pub(crate) type PersistedState<B> = NumberFor<B>;
@@ -105,9 +105,7 @@ where
 #[cfg(test)]
 pub(crate) mod tests {
 	use super::*;
-	use crate::test_utils::{
-		run_test_with_pezmmr_gadget_pre_post_using_client, MmrBlock, MockClient,
-	};
+	use crate::test_utils::{run_test_with_mmr_gadget_pre_post_using_client, MmrBlock, MockClient};
 	use bizinikiwi_test_runtime_client::{runtime::Block, Backend};
 	use parking_lot::Mutex;
 	use pezsp_runtime::generic::BlockId;
@@ -142,7 +140,7 @@ pub(crate) mod tests {
 		// state not available in db -> None
 		assert_eq!(load_state::<Block, Backend>(&*backend).unwrap(), None);
 		// run the gadget while importing and finalizing 3 blocks
-		run_test_with_pezmmr_gadget_pre_post_using_client(
+		run_test_with_mmr_gadget_pre_post_using_client(
 			client.clone(),
 			|_| async {},
 			|client| async move {
@@ -157,7 +155,7 @@ pub(crate) mod tests {
 		);
 
 		// verify previous progress was persisted and run the gadget again
-		run_test_with_pezmmr_gadget_pre_post_using_client(
+		run_test_with_mmr_gadget_pre_post_using_client(
 			client.clone(),
 			|client| async move {
 				let backend = &*client.backend;
@@ -189,7 +187,7 @@ pub(crate) mod tests {
 		let blocks_clone = blocks.clone();
 
 		// run the gadget while importing and finalizing 3 blocks
-		run_test_with_pezmmr_gadget_pre_post_using_client(
+		run_test_with_mmr_gadget_pre_post_using_client(
 			client.clone(),
 			|_| async {},
 			|client| async move {
@@ -212,7 +210,7 @@ pub(crate) mod tests {
 
 		let blocks_clone = blocks.clone();
 		// verify new gadget continues from block 4 and ignores 1, 2, 3 based on persisted state
-		run_test_with_pezmmr_gadget_pre_post_using_client(
+		run_test_with_mmr_gadget_pre_post_using_client(
 			client.clone(),
 			|client| async move {
 				let blocks = blocks_clone.lock();

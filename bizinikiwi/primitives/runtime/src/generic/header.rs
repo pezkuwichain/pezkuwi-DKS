@@ -27,10 +27,8 @@ use pezsp_core::U256;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// Abstraction over a block header for a bizinikiwi chain.
-#[derive(
-	Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, Clone, pezsp_core::RuntimeDebug, TypeInfo,
-)]
+/// Abstraction over a block header for a substrate chain.
+#[derive(Encode, Decode, DecodeWithMemTracking, PartialEq, Eq, Clone, Debug, TypeInfo)]
 #[scale_info(skip_type_params(Hash))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]

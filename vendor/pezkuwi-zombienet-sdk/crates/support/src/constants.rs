@@ -18,7 +18,7 @@ pub const INDEGREE_CONTAINS_NAME: &str =
 pub const QUEUE_NOT_EMPTY: &str = "queue is not empty; we're looping over its length";
 
 pub const THIS_IS_A_BUG: &str =
-	"- this is a bug please report it: https://github.com/paritytech/zombienet-sdk/issues";
+	"- this is a bug please report it: https://github.com/pezkuwichain/pezkuwi-zombienet-sdk/issues";
 
 /// environment variable which can be used to override node spawn timeout
 pub const ZOMBIE_NODE_SPAWN_TIMEOUT_SECONDS: &str = "ZOMBIE_NODE_SPAWN_TIMEOUT_SECONDS";

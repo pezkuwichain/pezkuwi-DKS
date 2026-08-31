@@ -15,8 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! End-to-end testing pezpallet for PoV benchmarking. Should only be deployed in a  testing
-//! runtime.
+//! End-to-end testing pezpallet for PoV benchmarking. Should only be deployed in a  testing runtime.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 

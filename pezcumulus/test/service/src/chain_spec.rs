@@ -1,18 +1,18 @@
 // Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // This file is part of Pezcumulus.
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus.  If not, see <http://www.gnu.org/licenses/>.
+// along with Cumulus.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(missing_docs)]
 
@@ -125,11 +125,11 @@ pub fn get_elastic_scaling_mvp_chain_spec(id: Option<ParaId>) -> GenericChainSpe
 	)
 }
 
-pub fn get_elastic_scaling_multi_block_slot_chain_spec(id: Option<ParaId>) -> GenericChainSpec {
+pub fn get_block_bundling_chain_spec(id: Option<ParaId>) -> GenericChainSpec {
 	get_chain_spec_with_extra_endowed(
 		id,
 		Default::default(),
-		pezcumulus_test_runtime::elastic_scaling_multi_block_slot::WASM_BINARY
+		pezcumulus_test_runtime::block_bundling::WASM_BINARY
 			.expect("WASM binary was not built, please build it!"),
 	)
 }
@@ -139,6 +139,36 @@ pub fn get_sync_backing_chain_spec(id: Option<ParaId>) -> GenericChainSpec {
 		id,
 		Default::default(),
 		pezcumulus_test_runtime::sync_backing::WASM_BINARY
+			.expect("WASM binary was not built, please build it!"),
+	)
+}
+
+// Async backing with scheduling V3 enabled.
+pub fn get_async_backing_v3_chain_spec(id: Option<ParaId>) -> GenericChainSpec {
+	get_chain_spec_with_extra_endowed(
+		id,
+		Default::default(),
+		pezcumulus_test_runtime::async_backing_v3::WASM_BINARY
+			.expect("WASM binary was not built, please build it!"),
+	)
+}
+
+// Async backing with scheduling V3 and relay parent offset enabled.
+pub fn get_async_backing_v3_rpo_chain_spec(id: Option<ParaId>) -> GenericChainSpec {
+	get_chain_spec_with_extra_endowed(
+		id,
+		Default::default(),
+		pezcumulus_test_runtime::async_backing_v3_rpo::WASM_BINARY
+			.expect("WASM binary was not built, please build it!"),
+	)
+}
+
+// Elastic scaling with scheduling V3 enabled.
+pub fn get_elastic_scaling_v3_chain_spec(id: Option<ParaId>) -> GenericChainSpec {
+	get_chain_spec_with_extra_endowed(
+		id,
+		Default::default(),
+		pezcumulus_test_runtime::elastic_scaling_v3::WASM_BINARY
 			.expect("WASM binary was not built, please build it!"),
 	)
 }

@@ -1,6 +1,6 @@
 # PRDoc
 
-A [prdoc](https://github.com/pezkuwichain/prdoc) is like a changelog but for a Pull Request. We use
+A [prdoc](https://github.com/paritytech/prdoc) is like a changelog but for a Pull Request. We use
 this approach to record changes on a crate level. This information is then processed by the release
 team to apply the correct crate version bumps and to generate the CHANGELOG of the next release.
 
@@ -53,11 +53,11 @@ Options:
 A `.prdoc` file is a YAML file with a defined structure (ie JSON Schema). Please follow these steps
 to generate one:
 
-1. Install the [`prdoc` CLI](https://github.com/pezkuwichain/prdoc) by running `cargo install`
+1. Install the [`prdoc` CLI](https://github.com/paritytech/prdoc) by running `cargo install`
 1. Open a Pull Request and get the PR number.
 1. Generate the file with `prdoc generate <PR_NUMBER>`. The output filename will be printed.
 1. Optional: Install the `prdoc/schema_user.json` schema in your editor, for example
-   [VsCode](https://github.com/pezkuwichain/prdoc?tab=readme-ov-file#schemas).
+   [VsCode](https://github.com/paritytech/prdoc?tab=readme-ov-file#schemas).
 1. Edit your `.prdoc` file according to the [Audience](#pick-an-audience) and
    [SemVer](#record-semver-changes) sections.
 1. Check your prdoc with `prdoc check -n <PR_NUMBER>`. This is optional since the CI will also check

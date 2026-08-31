@@ -20,6 +20,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 codec = { features = ["derive"], workspace = true }
 impl-serde = { optional = true, workspace = true }
 parity-wasm = { optional = true, workspace = true }
+pezsp-core = { workspace = true }
 pezsp-crypto-hashing-proc-macro = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true }
 pezsp-std = { workspace = true }
@@ -34,6 +35,7 @@ std = [
 	"codec/std",
 	"impl-serde/std",
 	"parity-wasm",
+	"pezsp-core/std",
 	"pezsp-crypto-hashing-proc-macro/std",
 	"pezsp-runtime/std",
 	"pezsp-std/std",
@@ -42,8 +44,6 @@ std = [
 	"serde/std",
 	"thiserror",
 ]
-
-# Serde support without relying on std features.
 serde = [
 	"codec/serde",
 	"dep:serde",
@@ -55,4 +55,6 @@ runtime-benchmarks = [
 	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-version-proc-macro/runtime-benchmarks",
 ]
-try-runtime = ["pezsp-runtime/try-runtime"]
+try-runtime = [
+	"pezsp-runtime/try-runtime",
+]

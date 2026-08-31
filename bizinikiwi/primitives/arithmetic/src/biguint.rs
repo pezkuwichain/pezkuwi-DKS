@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Infinite precision unsigned integer for bizinikiwi runtime.
+//! Infinite precision unsigned integer for substrate runtime.
 
 use alloc::{vec, vec::Vec};
 use codec::{Decode, Encode};

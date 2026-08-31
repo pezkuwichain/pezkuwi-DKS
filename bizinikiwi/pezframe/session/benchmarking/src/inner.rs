@@ -18,10 +18,9 @@
 //! Benchmarks for the Session Pezpallet.
 // This is separated into its own crate due to cyclic dependency issues.
 
-use alloc::{vec, vec::Vec};
-use pezsp_runtime::traits::{One, StaticLookup, TrailingZeroInput};
+use alloc::vec::Vec;
+use pezsp_runtime::traits::{One, StaticLookup};
 
-use codec::Decode;
 use pezframe_benchmarking::v2::*;
 use pezframe_support::{
 	assert_ok,
@@ -37,9 +36,16 @@ use pezpallet_staking::{
 const MAX_VALIDATORS: u32 = 1000;
 
 pub struct Pezpallet<T: Config>(pezpallet_session::Pezpallet<T>);
+/// Configuration trait for the benchmarking of `pezpallet-session`.
 pub trait Config:
 	pezpallet_session::Config + pezpallet_session::historical::Config + pezpallet_staking::Config
 {
+	/// Generate a session key and a proof of ownership.
+	///
+	/// The given `owner` is the account that will call `set_keys` using the returned session keys
+	/// and proof. This means that the proof should prove the ownership of `owner` over the private
+	/// keys associated to the session keys.
+	fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>);
 }
 
 impl<T: Config> OnInitialize<BlockNumberFor<T>> for Pezpallet<T> {
@@ -65,8 +71,7 @@ mod benchmarks {
 		let v_controller =
 			pezpallet_staking::Pezpallet::<T>::bonded(&v_stash).ok_or("not stash")?;
 
-		let keys = T::Keys::decode(&mut TrailingZeroInput::zeroes()).unwrap();
-		let proof: Vec<u8> = vec![0, 1, 2, 3];
+		let (keys, proof) = T::generate_session_keys_and_proof(v_controller.clone());
 		// Whitelist controller account from further DB operations.
 		let v_controller_key = pezframe_system::Account::<T>::hashed_key_for(&v_controller);
 		pezframe_benchmarking::benchmarking::add_to_whitelist(v_controller_key.into());
@@ -90,8 +95,7 @@ mod benchmarks {
 		)?;
 		let v_controller =
 			pezpallet_staking::Pezpallet::<T>::bonded(&v_stash).ok_or("not stash")?;
-		let keys = T::Keys::decode(&mut TrailingZeroInput::zeroes()).unwrap();
-		let proof: Vec<u8> = vec![0, 1, 2, 3];
+		let (keys, proof) = T::generate_session_keys_and_proof(v_controller.clone());
 		assert_ok!(Session::<T>::ensure_can_pay_key_deposit(&v_controller));
 		Session::<T>::set_keys(RawOrigin::Signed(v_controller.clone()).into(), keys, proof)?;
 		// Whitelist controller account from further DB operations.
@@ -158,7 +162,7 @@ fn check_membership_proof_setup<T: Config>(
 		let validator = T::Lookup::lookup(who).unwrap();
 		let controller = pezpallet_staking::Pezpallet::<T>::bonded(&validator).unwrap();
 
-		let keys = {
+		let _keys = {
 			let mut keys = [0u8; 128];
 
 			// we keep the keys for the first validator as 0x00000...
@@ -172,8 +176,7 @@ fn check_membership_proof_setup<T: Config>(
 
 		// TODO: this benchmark is broken, session keys cannot be decoded into 128 bytes anymore,
 		// but not an issue for CI since it is `extra`.
-		let keys: T::Keys = Decode::decode(&mut &keys[..]).unwrap();
-		let proof: Vec<u8> = vec![];
+		let (keys, proof) = T::generate_session_keys_and_proof(controller.clone());
 
 		Session::<T>::set_keys(RawOrigin::Signed(controller).into(), keys, proof).unwrap();
 	}

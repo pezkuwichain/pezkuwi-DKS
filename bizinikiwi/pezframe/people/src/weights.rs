@@ -22,7 +22,7 @@
 //! EXECUTION: None, WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// /Users/gav/Core/bizinikiwi/target/release/bizinikiwi
+// /Users/gav/Core/bizinikiwi/target/release/substrate
 // benchmark
 // pezpallet
 // --pezpallet
@@ -32,7 +32,7 @@
 // --steps=50
 // --repeat=20
 // --output=../../../frame/ranked-collective/src/weights.rs
-// --template=../../../.maintain/frame-weight-template.hbs
+// --template=../../../.maintain/pezframe-weight-template.hbs
 // --header=../../../HEADER-APACHE2
 // --record-proof
 

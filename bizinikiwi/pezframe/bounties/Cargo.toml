@@ -29,6 +29,7 @@ pezsp-runtime = { workspace = true }
 scale-info = { features = ["derive"], workspace = true }
 
 [dev-dependencies]
+pezpallet-assets = { workspace = true, default-features = true }
 pezpallet-balances = { workspace = true, default-features = true }
 
 [features]
@@ -50,6 +51,7 @@ runtime-benchmarks = [
 	"pezframe-benchmarking/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-treasury/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
@@ -59,6 +61,7 @@ try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
+	"pezpallet-assets/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-treasury/try-runtime",
 	"pezsp-runtime/try-runtime",

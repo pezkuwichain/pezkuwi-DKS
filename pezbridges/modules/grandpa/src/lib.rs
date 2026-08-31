@@ -22,10 +22,9 @@
 //! verified, finalized headers are stored in the pezpallet, thereby creating a sparse header chain.
 //! This sparse header chain can be used as a source of truth for other higher-level applications.
 //!
-//! The pezpallet is responsible for tracking GRANDPA validator set hand-offs. We only import
-//! headers with justifications signed by the current validator set we know of. The header is
-//! inspected for a `ScheduledChanges` digest item, which is then used to update to next validator
-//! set.
+//! The pezpallet is responsible for tracking GRANDPA validator set hand-offs. We only import headers
+//! with justifications signed by the current validator set we know of. The header is inspected for
+//! a `ScheduledChanges` digest item, which is then used to update to next validator set.
 //!
 //! Since this pezpallet only tracks finalized headers it does not deal with forks. Forks can only
 //! occur if the GRANDPA validator set on the bridged chain is either colluding or there is a severe
@@ -199,8 +198,7 @@ pub mod pezpallet {
 			)
 		}
 
-		/// Bootstrap the bridge pezpallet with an initial header and authority set from which to
-		/// sync.
+		/// Bootstrap the bridge pezpallet with an initial header and authority set from which to sync.
 		///
 		/// The initial configuration provided does not need to be the genesis header of the bridged
 		/// chain, it can be any arbitrary header. You can also provide the next scheduled set
@@ -374,8 +372,8 @@ pub mod pezpallet {
 		/// No other checks are made. Previously imported headers stay in the storage and
 		/// are still accessible after the call.
 		#[pezpallet::call_index(5)]
-		#[pezpallet::weight(T::WeightInfo::force_set_pallet_state())]
-		pub fn force_set_pallet_state(
+		#[pezpallet::weight(T::WeightInfo::force_set_pezpallet_state())]
+		pub fn force_set_pezpallet_state(
 			origin: OriginFor<T>,
 			new_current_set_id: SetId,
 			new_authorities: AuthorityList,
@@ -519,8 +517,7 @@ pub mod pezpallet {
 		InvalidJustification,
 		/// The authority set from the underlying header chain is invalid.
 		InvalidAuthoritySet,
-		/// The header being imported is older than the best finalized header known to the
-		/// pezpallet.
+		/// The header being imported is older than the best finalized header known to the pezpallet.
 		OldHeader,
 		/// The scheduled authority set change found in the header is unsupported by the pezpallet.
 		///
@@ -1021,7 +1018,7 @@ mod tests {
 	}
 
 	#[test]
-	fn init_can_only_initialize_pallet_once() {
+	fn init_can_only_initialize_pezpallet_once() {
 		run_test(|| {
 			initialize_bizinikiwi_bridge();
 			assert_noop!(
@@ -1758,7 +1755,7 @@ mod tests {
 	}
 
 	#[test]
-	fn force_set_pallet_state_works() {
+	fn force_set_pezpallet_state_works() {
 		run_test(|| {
 			let header25 = test_header(25);
 			let header50 = test_header(50);
@@ -1775,7 +1772,7 @@ mod tests {
 
 			// wrong origin => error
 			assert_noop!(
-				Pezpallet::<TestRuntime>::force_set_pallet_state(
+				Pezpallet::<TestRuntime>::force_set_pezpallet_state(
 					RuntimeOrigin::signed(1),
 					ok_new_set_id,
 					ok_new_authorities.clone(),
@@ -1786,7 +1783,7 @@ mod tests {
 
 			// too many authorities in the set => error
 			assert_noop!(
-				Pezpallet::<TestRuntime>::force_set_pallet_state(
+				Pezpallet::<TestRuntime>::force_set_pezpallet_state(
 					RuntimeOrigin::root(),
 					bad_new_set_id,
 					bad_new_authorities.clone(),
@@ -1796,7 +1793,7 @@ mod tests {
 			);
 
 			// force import header 50 => ok
-			assert_ok!(Pezpallet::<TestRuntime>::force_set_pallet_state(
+			assert_ok!(Pezpallet::<TestRuntime>::force_set_pezpallet_state(
 				RuntimeOrigin::root(),
 				ok_new_set_id,
 				ok_new_authorities.clone(),
@@ -1804,7 +1801,7 @@ mod tests {
 			),);
 
 			// force import header 25 after 50 => ok
-			assert_ok!(Pezpallet::<TestRuntime>::force_set_pallet_state(
+			assert_ok!(Pezpallet::<TestRuntime>::force_set_pezpallet_state(
 				RuntimeOrigin::root(),
 				ok_new_set_id,
 				ok_new_authorities.clone(),

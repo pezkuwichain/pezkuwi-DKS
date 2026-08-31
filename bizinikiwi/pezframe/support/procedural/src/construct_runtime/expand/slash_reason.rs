@@ -59,7 +59,7 @@ pub fn expand_outer_slash_reason(
 			#scrate::__private::codec::DecodeWithMemTracking,
 			#scrate::__private::codec::MaxEncodedLen,
 			#scrate::__private::scale_info::TypeInfo,
-			#scrate::__private::RuntimeDebug,
+			#scrate::__private::Debug,
 		)]
 		pub enum RuntimeSlashReason {
 			#( #slash_reason_variants )*

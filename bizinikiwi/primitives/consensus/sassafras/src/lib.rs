@@ -26,7 +26,7 @@ extern crate alloc;
 use alloc::vec::Vec;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezsp_core::crypto::KeyTypeId;
-use pezsp_runtime::{ConsensusEngineId, RuntimeDebug};
+use pezsp_runtime::ConsensusEngineId;
 use scale_info::TypeInfo;
 
 pub use pezsp_consensus_slots::{Slot, SlotDuration};
@@ -93,7 +93,7 @@ pub type Randomness = [u8; RANDOMNESS_LENGTH];
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	TypeInfo,
 	Default,

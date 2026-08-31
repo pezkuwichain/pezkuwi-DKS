@@ -17,7 +17,7 @@
 //! BEEFY bridge pezpallet.
 //!
 //! This pezpallet is an on-chain BEEFY light client for Bizinikiwi-based chains that are using the
-//! following pallets bundle: `pezpallet-mmr`, `pezpallet-beefy` and `pezpallet-beefy-mmr`.
+//! following pezpallets bundle: `pezpallet-mmr`, `pezpallet-beefy` and `pezpallet-beefy-mmr`.
 //!
 //! The pezpallet is able to verify MMR leaf proofs and BEEFY commitments, so it has access
 //! to the following data of the bridged chain:
@@ -26,7 +26,7 @@
 //! - changes of BEEFY authorities
 //! - extra data of MMR leafs
 //!
-//! Given the header hash, other pallets are able to verify header-based proofs
+//! Given the header hash, other pezpallets are able to verify header-based proofs
 //! (e.g. storage proofs, transaction inclusion proofs, etc.).
 
 #![warn(missing_docs)]
@@ -58,9 +58,6 @@ pub type BridgedBlockHash<T, I> = pezbp_runtime::HashOf<BridgedChain<T, I>>;
 /// Pezpallet initialization data.
 pub type InitializationDataOf<T, I> =
 	InitializationData<BridgedBlockNumber<T, I>, pezbp_beefy::MmrHashOf<BridgedChain<T, I>>>;
-/// BEEFY commitment hasher, used by configured bridged chain.
-pub type BridgedBeefyCommitmentHasher<T, I> =
-	pezbp_beefy::BeefyCommitmentHasher<BridgedChain<T, I>>;
 /// BEEFY validator id, used by configured bridged chain.
 pub type BridgedBeefyAuthorityId<T, I> = pezbp_beefy::BeefyAuthorityIdOf<BridgedChain<T, I>>;
 /// BEEFY validator set, used by configured bridged chain.
@@ -280,8 +277,8 @@ pub mod pezpallet {
 
 	/// The current number of requests which have written to storage.
 	///
-	/// If the `RequestCount` hits `MaxRequests`, no more calls will be allowed to the pezpallet
-	/// until the request capacity is increased.
+	/// If the `RequestCount` hits `MaxRequests`, no more calls will be allowed to the pezpallet until
+	/// the request capacity is increased.
 	///
 	/// The `RequestCount` is decreased by one at the beginning of every block. This is to ensure
 	/// that the pezpallet can always make progress.

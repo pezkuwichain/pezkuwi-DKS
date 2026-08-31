@@ -60,7 +60,10 @@ fn burn_at_relay(stash: &AccountId, value: Balance) -> Result<(), XcmError> {
 
 	AssetTransactor::can_check_out(&dest, &asset, &dummy_xcm_context)?;
 
-	let parent_assets = Into::<Assets>::into(withdrawn)
+	// `withdraw_asset` now hands back holding assets rather than a plain `Assets`; dropping the
+	// value burns the inner imbalance, which is what the relay's own coretime module relies on.
+	let withdrawn_assets: Vec<Asset> = withdrawn.into_assets_iter().collect();
+	let parent_assets = Into::<Assets>::into(withdrawn_assets)
 		.reanchored(&dest, &Here.into())
 		.defensive_map_err(|_| XcmError::ReanchorFailed)?;
 

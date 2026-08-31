@@ -44,9 +44,9 @@
 // --execution=wasm
 // --wasm-execution=compiled
 // --output
-// pallets/template/src/weights.rs
+// pezpallets/template/src/weights.rs
 // --template
-// ../../.maintain/frame-weight-template.hbs
+// ../../.maintain/pezframe-weight-template.hbs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]

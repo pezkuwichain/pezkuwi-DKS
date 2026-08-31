@@ -66,7 +66,7 @@ pub fn expand_outer_hold_reason(
 			#scrate::__private::codec::DecodeWithMemTracking,
 			#scrate::__private::codec::MaxEncodedLen,
 			#scrate::__private::scale_info::TypeInfo,
-			#scrate::__private::RuntimeDebug,
+			#scrate::__private::Debug,
 		)]
 		pub enum RuntimeHoldReason {
 			#( #hold_reason_variants )*

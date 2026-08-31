@@ -104,13 +104,23 @@ pub enum Junction {
 	GlobalConsensus(NetworkId),
 }
 
-/// The genesis hash of the Zagros testnet. Used to identify it.
-pub const ZAGROS_GENESIS_HASH: [u8; 32] =
-	hex!["e143f23803ac50e8f6f8e62695d1ce9e4e1d68aa36c1cd2cfd15340213f3423e"];
+/// The genesis hash of the Zagros test network. Used to identify it.
+///
+/// Zero because Zagros has no genesis yet: the network was torn down and is being rebuilt,
+/// so its hash comes into existence with its new chain spec. It held Westend's hash until
+/// then, which is worse than zero -- a real foreign network's identity, plausible enough
+/// that nothing questions it. Fill this in from the new spec before the network launches;
+/// until it is set, anything keyed on `ByGenesis` will not recognise Zagros.
+pub const ZAGROS_GENESIS_HASH: [u8; 32] = [0; 32];
 
-/// The genesis hash of the Pezkuwichain testnet. Used to identify it.
+/// The genesis hash of the Pezkuwichain network. Used to identify it.
+///
+/// Read from the live chain (`chain_getBlockHash[0]`). This constant held Rococo's hash,
+/// which meant every `ByGenesis` comparison against our own network silently failed to
+/// match -- including the Asset Hub Migration guard in pezpallet-xcm, which was therefore
+/// inert. It must be re-read after the genesis reset, since the value changes with it.
 pub const PEZKUWICHAIN_GENESIS_HASH: [u8; 32] =
-	hex!["6408de7737c59c238890533af25896a2c20608d8b380bb01029acb392781063e"];
+	hex!["1aa94987791a5544e9667ec249d2cef1b8fdd6083c85b93fc37892d54a1156ca"];
 
 /// Dummy genesis hash used instead of defunct networks like Wococo (and soon Pezkuwichain).
 pub const DUMMY_GENESIS_HASH: [u8; 32] = [0; 32];
@@ -137,12 +147,27 @@ pub const DUMMY_GENESIS_HASH: [u8; 32] = [0; 32];
 )]
 pub enum NetworkId {
 	/// Network specified by the first 32 bytes of its genesis block.
+	///
+	/// This is how our chains name themselves and each other, everywhere: a hundred and nine
+	/// uses across the production runtimes, against none for the two named variants below.
+	/// Prefer it. A genesis hash cannot be claimed by another network; a name can.
+	#[codec(index = 0)]
 	ByGenesis([u8; 32]),
 	/// Network defined by the first 32-bytes of the hash and number of some block it contains.
+	#[codec(index = 1)]
 	ByFork { block_number: u64, block_hash: [u8; 32] },
 	/// The Pezkuwi mainnet Relay-chain.
+	///
+	/// Unused, and kept at this index deliberately rather than moved. It occupies the position
+	/// upstream gives to Polkadot, so on the wire the two are the same byte -- a bridge peer
+	/// running upstream's codec reads this as its own relay chain. That costs nothing while
+	/// nothing sends it, and everything here sends `ByGenesis` instead. Anyone building a
+	/// bridge to a network that uses upstream's `NetworkId` has to settle this first.
+	#[codec(index = 2)]
 	Pezkuwi,
-	/// The Dicle canary-net Relay-chain.
+	/// The Dicle canary-net Relay-chain. Same position and same caveat as `Pezkuwi`, against
+	/// upstream's Kusama.
+	#[codec(index = 3)]
 	Dicle,
 	/// An Ethereum network specified by its chain ID.
 	#[codec(index = 7)]

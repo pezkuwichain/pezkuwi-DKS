@@ -43,6 +43,7 @@ mod mock;
 extern crate alloc;
 
 use pezframe_support::{
+	dispatch::DispatchClass,
 	parameter_types,
 	traits::{ConstU32, Currency, OneSessionHandler},
 	weights::{constants::WEIGHT_REF_TIME_PER_SECOND, Weight},
@@ -62,7 +63,7 @@ pub use pezsp_runtime::traits::Bounded;
 pub use pezsp_runtime::BuildStorage;
 
 /// Implementations of some helper traits passed into runtime modules as associated types.
-pub use impls::ToAuthor;
+pub use impls::{DealWithFees, ToAuthor};
 
 #[deprecated(
 	note = "Please use fungible::Credit instead. This type will be removed some time after March 2024."
@@ -101,7 +102,12 @@ parameter_types! {
 	pub MaximumMultiplier: Multiplier = Bounded::max_value();
 	/// Maximum length of block. Up to 5MB.
 	pub BlockLength: limits::BlockLength =
-	limits::BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+	limits::BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 }
 
 /// Parameterized slow adjusting fee updated based on

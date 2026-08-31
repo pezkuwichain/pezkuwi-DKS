@@ -5,7 +5,7 @@
 //!
 //! > As of now, many of these important types are generated within the internals of
 //! > [`construct_runtime`], and there is no easy way for you to visually know they exist.
-//! > [#pezkuwi-sdk#1378](https://github.com/pezkuwichain/pezkuwi-sdk/issues/251) is meant to
+//! > [#pezkuwi-sdk#1378](https://github.com/pezkuwichain/pezkuwi-DKS/issues/251) is meant to
 //! > significantly improve this. Exploring the rust-docs of a runtime, such as [`runtime`] which is
 //! > defined in this module is as of now the best way to learn about these types.
 //!
@@ -104,7 +104,7 @@
 #![doc = docify::embed!("./src/reference_docs/frame_runtime_types.rs", custom_runtime_call_usages)]
 //!
 //! > Once Rust's "_Associated Type Bounds RFC_" is usable, this syntax can be used to
-//! > simplify the above scenario. See [this](https://github.com/pezkuwichain/pezkuwi-sdk/issues/278)
+//! > simplify the above scenario. See [this](https://github.com/pezkuwichain/pezkuwi-DKS/issues/278)
 //! > issue for more information.
 //!
 //! ### Asserting Equality of Multiple Runtime Composite Enums
@@ -170,15 +170,7 @@ pub mod pezpallet_foo {
 
 	#[pezpallet::origin]
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		RuntimeDebug,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		TypeInfo,
-		MaxEncodedLen,
+		PartialEq, Eq, Clone, Debug, Encode, Decode, DecodeWithMemTracking, TypeInfo, MaxEncodedLen,
 	)]
 	pub enum Origin {
 		A,

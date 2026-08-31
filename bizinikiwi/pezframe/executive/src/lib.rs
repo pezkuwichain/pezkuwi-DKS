@@ -24,10 +24,9 @@
 //!
 //! ## Overview
 //!
-//! The executive module is not a typical pezpallet providing functionality around a specific
-//! feature. It is a cross-cutting framework component for the FRAME. It works in conjunction with
-//! the [FRAME System module](../pezframe_system/index.html) to perform these cross-cutting
-//! functions.
+//! The executive module is not a typical pezpallet providing functionality around a specific feature.
+//! It is a cross-cutting framework component for the FRAME. It works in conjunction with the
+//! [FRAME System module](../pezframe_system/index.html) to perform these cross-cutting functions.
 //!
 //! The Executive module provides functions to:
 //!
@@ -69,14 +68,6 @@
 //! # use pezsp_runtime::transaction_validity::{
 //! #    TransactionValidity, UnknownTransaction, TransactionSource,
 //! # };
-//! # use pezsp_runtime::traits::ValidateUnsigned;
-//! # impl ValidateUnsigned for Runtime {
-//! #     type Call = ();
-//! #
-//! #     fn validate_unsigned(_source: TransactionSource, _call: &Self::Call) -> TransactionValidity {
-//! #         UnknownTransaction::NoUnsignedValidator.into()
-//! #     }
-//! # }
 //! /// Executive: handles dispatch to the various modules.
 //! pub type Executive = executive::Executive<Runtime, Block, Context, Runtime, AllPalletsWithSystem>;
 //! ```
@@ -136,11 +127,14 @@ use pezsp_runtime::{
 	generic::Digest,
 	traits::{
 		self, Applyable, CheckEqual, Checkable, Dispatchable, Header, LazyBlock, NumberFor, One,
-		ValidateUnsigned, Zero,
+		Zero,
 	},
 	transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
 	ApplyExtrinsicResult, ExtrinsicInclusionMode,
 };
+
+#[allow(deprecated)]
+use pezsp_runtime::traits::ValidateUnsigned;
 
 #[cfg(feature = "try-runtime")]
 use ::{
@@ -166,18 +160,18 @@ pub type OriginOf<E, C> = <CallOf<E, C> as Dispatchable>::RuntimeOrigin;
 pub struct TryRuntimeUpgradeConfig {
 	/// Whether to execute `pre/post_upgrade` and `try_state` hooks.
 	pub checks: UpgradeCheckSelect,
-	/// Which pallets' try_state hooks to execute.
+	/// Which pezpallets' try_state hooks to execute.
 	pub try_state_select: TryStateSelect,
 }
 
 #[cfg(feature = "try-runtime")]
 impl TryRuntimeUpgradeConfig {
-	/// Create a new config with default settings (run all checks for all pallets).
+	/// Create a new config with default settings (run all checks for all pezpallets).
 	pub fn new(checks: UpgradeCheckSelect) -> Self {
 		Self { checks, try_state_select: TryStateSelect::All }
 	}
 
-	/// Set which pallets' try_state hooks to execute.
+	/// Set which pezpallets' try_state hooks to execute.
 	pub fn with_try_state_select(mut self, try_state_select: TryStateSelect) -> Self {
 		self.try_state_select = try_state_select;
 		self
@@ -222,8 +216,8 @@ impl core::fmt::Debug for ExecutiveError {
 /// - `Block`: The block type of the runtime
 /// - `Context`: The context that is used when checking an extrinsic.
 /// - `UnsignedValidator`: The unsigned transaction validator of the runtime.
-/// - `AllPalletsWithSystem`: Tuple that contains all pallets including frame system pezpallet. Will
-///   be used to call hooks e.g. `on_initialize`.
+/// - `AllPalletsWithSystem`: Tuple that contains all pezpallets including frame system pezpallet. Will be
+///   used to call hooks e.g. `on_initialize`.
 /// - [**DEPRECATED** `OnRuntimeUpgrade`]: This parameter is deprecated and will be removed after
 ///   September 2026. Use type `SingleBlockMigrations` in pezframe_system::Config instead.
 #[allow(deprecated)]
@@ -372,7 +366,7 @@ where
 		Self::on_idle_hook(*header.number());
 		Self::on_finalize_hook(*header.number());
 
-		// run the try-state checks of all pallets, ensuring they don't alter any state.
+		// run the try-state checks of all pezpallets, ensuring they don't alter any state.
 		let _guard = pezframe_support::StorageNoopGuard::default();
 		<AllPalletsWithSystem as pezframe_support::traits::TryState<
 			BlockNumberFor<System>,
@@ -429,8 +423,8 @@ where
 	/// migrations execute. This is important for idempotency checks, because some migrations use
 	/// this value to determine whether or not they should execute.
 	///
-	/// This function runs `try_state` hooks for all pallets. Use
-	/// [`Self::try_runtime_upgrade_with_config`] if you need more control over which pallets'
+	/// This function runs `try_state` hooks for all pezpallets. Use
+	/// [`Self::try_runtime_upgrade_with_config`] if you need more control over which pezpallets'
 	/// `try_state` hooks to execute.
 	pub fn try_runtime_upgrade(checks: UpgradeCheckSelect) -> Result<Weight, TryRuntimeError> {
 		Self::try_runtime_upgrade_with_config(TryRuntimeUpgradeConfig::new(checks))
@@ -440,7 +434,7 @@ where
 	///
 	/// This function provides more granular control over runtime upgrade testing compared to
 	/// [`Self::try_runtime_upgrade`]. Use [`TryRuntimeUpgradeConfig`] to specify which checks
-	/// to run and which pallets' try_state hooks to execute.
+	/// to run and which pezpallets' try_state hooks to execute.
 	///
 	/// [`pezframe_system::LastRuntimeUpgrade`] is set to the current runtime version after
 	/// migrations execute. This is important for idempotency checks, because some migrations use
@@ -457,7 +451,7 @@ where
 			<(
 				COnRuntimeUpgrade,
 				<System as pezframe_system::Config>::SingleBlockMigrations,
-				// We want to run the migrations before we call into the pallets as they may
+				// We want to run the migrations before we call into the pezpallets as they may
 				// access any state that would then not be migrated.
 				AllPalletsWithSystem,
 			) as OnRuntimeUpgrade>::try_on_runtime_upgrade(checks.pre_and_post())?;
@@ -590,7 +584,7 @@ where
 		let runtime_upgrade_weight = <(
 			COnRuntimeUpgrade,
 			<System as pezframe_system::Config>::SingleBlockMigrations,
-			// We want to run the migrations before we call into the pallets as they may
+			// We want to run the migrations before we call into the pezpallets as they may
 			// access any state that would then not be migrated.
 			AllPalletsWithSystem,
 		) as OnRuntimeUpgrade>::on_runtime_upgrade();
@@ -726,6 +720,7 @@ where
 			let header = block.header();
 			Self::on_idle_hook(*header.number());
 			Self::on_finalize_hook(*header.number());
+			<pezframe_system::Pezpallet<System>>::maybe_apply_pending_code_upgrade();
 			Self::final_checks(&header);
 		}
 	}
@@ -803,11 +798,12 @@ where
 		let block_number = <pezframe_system::Pezpallet<System>>::block_number();
 		Self::on_idle_hook(block_number);
 		Self::on_finalize_hook(block_number);
+		<pezframe_system::Pezpallet<System>>::maybe_apply_pending_code_upgrade();
 		<pezframe_system::Pezpallet<System>>::finalize()
 	}
 
-	/// Run the `on_idle` hook of all pezpallet, but only if there is weight remaining and there are
-	/// no ongoing MBMs.
+	/// Run the `on_idle` hook of all pezpallet, but only if there is weight remaining and there are no
+	/// ongoing MBMs.
 	fn on_idle_hook(block_number: NumberFor<Block>) {
 		if <System as pezframe_system::Config>::MultiBlockMigrator::ongoing() {
 			return;
@@ -874,8 +870,10 @@ where
 		pezsp_io::init_tracing();
 		let encoded = uxt.encode();
 		let encoded_len = encoded.len();
-		pezsp_tracing::enter_span!(pezsp_tracing::info_span!("apply_extrinsic",
-			ext=?pezsp_core::hexdisplay::HexDisplay::from(&encoded)));
+		pezsp_tracing::enter_span!(pezsp_tracing::info_span!(
+			"apply_extrinsic",
+			ext=?pezsp_core::hexdisplay::HexDisplay::from(&encoded)
+		));
 
 		let uxt = <Block::Extrinsic as codec::DecodeLimit>::decode_all_with_depth_limit(
 			MAX_EXTRINSIC_DEPTH,

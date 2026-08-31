@@ -27,11 +27,11 @@ use pezbp_runtime::{
 };
 use pezframe_support::{
 	dispatch::DispatchClass,
-	pezsp_runtime::{MultiAddress, MultiSigner, RuntimeDebug, StateVersion},
+	pezsp_runtime::{MultiAddress, MultiSigner, StateVersion},
 };
 
 /// BridgeHubPezkuwichain teyrchain.
-#[derive(RuntimeDebug)]
+#[derive(Debug)]
 pub struct BridgeHubPezkuwichain;
 
 impl Chain for BridgeHubPezkuwichain {

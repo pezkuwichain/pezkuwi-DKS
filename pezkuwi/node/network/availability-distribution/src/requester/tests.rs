@@ -21,7 +21,7 @@ use pezkuwi_node_network_protocol::request_response::ReqProtocolNames;
 use pezkuwi_node_subsystem_util::runtime::RuntimeInfo;
 use pezkuwi_pez_node_primitives::{BlockData, ErasureChunk, PoV};
 use pezkuwi_primitives::{
-	BlockNumber, ChunkIndex, CoreState, ExecutorParams, GroupIndex, Hash, Id as ParaId,
+	ApprovalVotingParams, BlockNumber, ChunkIndex, CoreState, GroupIndex, Hash, Id as ParaId,
 	ScheduledCore, SessionIndex, SessionInfo,
 };
 use pezsp_core::{testing::TaskExecutor, traits::SpawnNamed};
@@ -119,12 +119,12 @@ fn spawn_virtual_overseer(
 								tx.send(Ok(Some(test_state.session_info.clone())))
 									.expect("Receiver should be alive.");
 							},
-							RuntimeApiRequest::SessionExecutorParams(_, tx) => {
-								tx.send(Ok(Some(ExecutorParams::default())))
-									.expect("Receiver should be alive.");
-							},
 							RuntimeApiRequest::NodeFeatures(_, tx) => {
 								tx.send(Ok(node_features_with_mapping_enabled()))
+									.expect("Receiver should be alive.");
+							},
+							RuntimeApiRequest::ApprovalVotingParams(_, tx) => {
+								tx.send(Ok(ApprovalVotingParams::default()))
 									.expect("Receiver should be alive.");
 							},
 							RuntimeApiRequest::AvailabilityCores(tx) => {

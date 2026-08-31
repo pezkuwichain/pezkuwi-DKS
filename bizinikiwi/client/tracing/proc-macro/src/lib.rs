@@ -23,7 +23,7 @@ use syn::{Error, Expr, ItemFn, Path, Result};
 
 /// This prefixes all the log lines with `[<name>]` (after the timestamp). It works by making a
 /// tracing's span that is propagated to all the child calls and child tasks (futures) if they are
-/// spawned properly with the `SpawnHandle` (see `TaskManager` in sc-cli) or if the futures use
+/// spawned properly with the `SpawnHandle` (see `TaskManager` in pezsc-cli) or if the futures use
 /// `.in_current_span()` (see tracing-futures).
 ///
 /// See Tokio's [tracing documentation](https://docs.rs/tracing-core/) and
@@ -55,7 +55,7 @@ use syn::{Error, Expr, ItemFn, Path, Result};
 /// 2020-10-16 08:03:14  📋 Chain specification: Local Testnet
 /// 2020-10-16 08:03:14  🏷  Node name: nice-glove-1401
 /// 2020-10-16 08:03:14  👤 Role: LIGHT
-/// 2020-10-16 08:03:14  💾 Database: RocksDb at /tmp/bizinikiwi95w2Dk/chains/local_testnet/db
+/// 2020-10-16 08:03:14  💾 Database: RocksDb at /tmp/substrate95w2Dk/chains/local_testnet/db
 /// 2020-10-16 08:03:14  ⛓  Native runtime: node-template-1 (node-template-1.tx1.au1)
 /// 2020-10-16 08:03:14  [light] 🔨 Initializing Genesis block/state (state: 0x121d…8e36, header-hash: 0x24ef…8ff6)
 /// 2020-10-16 08:03:14  [light] Loading GRANDPA authorities from genesis on what appears to be first startup.
@@ -89,7 +89,7 @@ use syn::{Error, Expr, ItemFn, Path, Result};
 /// 2020-10-16 08:12:57  📋 Chain specification: Local Testnet
 /// 2020-10-16 08:12:57  🏷  Node name: open-harbor-1619
 /// 2020-10-16 08:12:57  👤 Role: LIGHT
-/// 2020-10-16 08:12:57  💾 Database: RocksDb at /tmp/bizinikiwi9T9Mtb/chains/local_testnet/db
+/// 2020-10-16 08:12:57  💾 Database: RocksDb at /tmp/substrate9T9Mtb/chains/local_testnet/db
 /// 2020-10-16 08:12:57  ⛓  Native runtime: node-template-1 (node-template-1.tx1.au1)
 /// 2020-10-16 08:12:58  [open-harbor-1619] 🔨 Initializing Genesis block/state (state: 0x121d…8e36, header-hash: 0x24ef…8ff6)
 /// 2020-10-16 08:12:58  [open-harbor-1619] Loading GRANDPA authorities from genesis on what appears to be first startup.
@@ -123,19 +123,40 @@ pub fn prefix_logs_with(arg: TokenStream, item: TokenStream) -> TokenStream {
 
 	let syn::ItemFn { attrs, vis, sig, block } = item_fn;
 
-	(quote! {
-		#(#attrs)*
-		#vis #sig {
-			let span = #crate_name::tracing::info_span!(
-				#crate_name::logging::PREFIX_LOG_SPAN,
-				name = #prefix_expr,
-			);
-			let _enter = span.enter();
+	if sig.asyncness.is_some() {
+		// For async functions, use `Instrument::instrument` to properly propagate the span
+		// across `.await` points. Using `span.enter()` in async functions is incorrect because
+		// the guard can be held across `.await` points where the task may migrate between
+		// threads, losing the span from thread-local state.
+		(quote! {
+			#(#attrs)*
+			#vis #sig {
+				let span = #crate_name::tracing::info_span!(
+					#crate_name::logging::PREFIX_LOG_SPAN,
+					name = #prefix_expr,
+				);
 
-			#block
-		}
-	})
-	.into()
+				#crate_name::tracing::Instrument::instrument(async move {
+					#block
+				}, span).await
+			}
+		})
+		.into()
+	} else {
+		(quote! {
+			#(#attrs)*
+			#vis #sig {
+				let span = #crate_name::tracing::info_span!(
+					#crate_name::logging::PREFIX_LOG_SPAN,
+					name = #prefix_expr,
+				);
+				let _enter = span.enter();
+
+				#block
+			}
+		})
+		.into()
+	}
 }
 
 /// Resolve the correct path for pezsc_tracing:

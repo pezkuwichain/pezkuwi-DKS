@@ -128,8 +128,8 @@ pub type CallOf<C> = <C as Chain>::Call;
 /// Transaction status of the chain.
 pub type TransactionStatusOf<C> = TransactionStatus<HashOf<C>, HashOf<C>>;
 
-/// Bizinikiwi-based chain with `AccountData` generic argument of `pezframe_system::AccountInfo` set
-/// to the `pezpallet_balances::AccountData<Balance>`.
+/// Bizinikiwi-based chain with `AccountData` generic argument of `pezframe_system::AccountInfo` set to
+/// the `pezpallet_balances::AccountData<Balance>`.
 pub trait ChainWithBalances: Chain {
 	/// Return runtime storage key for getting `pezframe_system::AccountInfo` of given account.
 	fn account_info_storage_key(account_id: &Self::AccountId) -> StorageKey;

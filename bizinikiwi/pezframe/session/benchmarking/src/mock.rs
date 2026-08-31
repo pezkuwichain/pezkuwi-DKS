@@ -19,6 +19,7 @@
 
 #![cfg(test)]
 
+use codec::Encode;
 use pezframe_election_provider_support::{
 	bounds::{ElectionBounds, ElectionBoundsBuilder},
 	onchain, SequentialPhragmen,
@@ -155,7 +156,13 @@ impl pezpallet_staking::Config for Test {
 	type TargetList = pezpallet_staking::UseValidatorsMap<Self>;
 }
 
-impl crate::Config for Test {}
+impl crate::Config for Test {
+	fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+		let keys = SessionKeys::generate(&owner.encode(), None);
+
+		(keys.keys, keys.proof.encode())
+	}
+}
 
 pub fn new_test_ext() -> pezsp_io::TestExternalities {
 	let t = pezframe_system::GenesisConfig::<Test>::default().build_storage().unwrap();

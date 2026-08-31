@@ -1,6 +1,6 @@
 [package]
 name = "pezkuwi-sdk"
-version = "0.0.0"
+version = "0.2.0"
 description = "Pezkuwi SDK umbrella crate."
 license = "Apache-2.0"
 
@@ -41,7 +41,6 @@ std = [
 	"pezcumulus-client-collator?/std",
 	"pezcumulus-client-consensus-aura?/std",
 	"pezcumulus-client-consensus-common?/std",
-	"pezcumulus-client-consensus-proposer?/std",
 	"pezcumulus-client-consensus-relay-chain?/std",
 	"pezcumulus-client-network?/std",
 	"pezcumulus-client-pov-recovery?/std",
@@ -84,6 +83,7 @@ std = [
 	"pezframe-system-benchmarking?/std",
 	"pezframe-system-rpc-runtime-api?/std",
 	"pezframe-system?/std",
+	"pezframe-try-runtime?/std",
 	"pezframe?/std",
 	"pezkuwi-approval-distribution?/std",
 	"pezkuwi-availability-bitfield-distribution?/std",
@@ -151,6 +151,7 @@ std = [
 	"pezkuwi-zombienet-support?/std",
 	"pezmmr-gadget?/std",
 	"pezmmr-rpc?/std",
+	"pezpallet-accumulate-and-forward?/std",
 	"pezpallet-alliance?/std",
 	"pezpallet-asset-conversion-ops?/std",
 	"pezpallet-asset-conversion-tx-payment?/std",
@@ -187,6 +188,7 @@ std = [
 	"pezpallet-contracts?/std",
 	"pezpallet-conviction-voting?/std",
 	"pezpallet-core-fellowship?/std",
+	"pezpallet-dap?/std",
 	"pezpallet-delegated-staking?/std",
 	"pezpallet-democracy?/std",
 	"pezpallet-derivatives?/std",
@@ -349,9 +351,11 @@ std = [
 	"pezsp-crypto-ec-utils?/std",
 	"pezsp-crypto-hashing-proc-macro?/std",
 	"pezsp-crypto-hashing?/std",
+	"pezsp-dap?/std",
 	"pezsp-debug-derive?/std",
 	"pezsp-externalities?/std",
 	"pezsp-genesis-builder?/std",
+	"pezsp-hop?/std",
 	"pezsp-inherents?/std",
 	"pezsp-io?/std",
 	"pezsp-keyring?/std",
@@ -364,6 +368,7 @@ std = [
 	"pezsp-panic-handler?/std",
 	"pezsp-rpc?/std",
 	"pezsp-runtime-interface?/std",
+	"pezsp-runtime?/std",
 	"pezsp-session?/std",
 	"pezsp-ss58-registry?/std",
 	"pezsp-staking?/std",
@@ -378,6 +383,7 @@ std = [
 	"pezsp-trie?/std",
 	"pezsp-version-proc-macro?/std",
 	"pezsp-version?/std",
+	"pezsp-virtualization?/std",
 	"pezsp-wasm-interface?/std",
 	"pezsp-weights?/std",
 	"pezstaging-chain-spec-builder?/std",
@@ -387,6 +393,7 @@ std = [
 	"pezstaging-xcm-executor?/std",
 	"pezstaging-xcm?/std",
 	"testnet-teyrchains-constants?/std",
+	"teyrchains-common-types?/std",
 	"teyrchains-common?/std",
 	"teyrchains-runtimes-test-utils?/std",
 	"xcm-pez-emulator?/std",
@@ -425,7 +432,6 @@ runtime-benchmarks = [
 	"pezcumulus-client-collator?/runtime-benchmarks",
 	"pezcumulus-client-consensus-aura?/runtime-benchmarks",
 	"pezcumulus-client-consensus-common?/runtime-benchmarks",
-	"pezcumulus-client-consensus-proposer?/runtime-benchmarks",
 	"pezcumulus-client-consensus-relay-chain?/runtime-benchmarks",
 	"pezcumulus-client-network?/runtime-benchmarks",
 	"pezcumulus-client-pov-recovery?/runtime-benchmarks",
@@ -466,6 +472,7 @@ runtime-benchmarks = [
 	"pezframe-system-benchmarking?/runtime-benchmarks",
 	"pezframe-system-rpc-runtime-api?/runtime-benchmarks",
 	"pezframe-system?/runtime-benchmarks",
+	"pezframe-try-runtime?/runtime-benchmarks",
 	"pezframe?/runtime-benchmarks",
 	"pezkuwi-approval-distribution?/runtime-benchmarks",
 	"pezkuwi-availability-bitfield-distribution?/runtime-benchmarks",
@@ -524,6 +531,7 @@ runtime-benchmarks = [
 	"pezkuwi-zombienet-sdk?/runtime-benchmarks",
 	"pezmmr-gadget?/runtime-benchmarks",
 	"pezmmr-rpc?/runtime-benchmarks",
+	"pezpallet-accumulate-and-forward?/runtime-benchmarks",
 	"pezpallet-alliance?/runtime-benchmarks",
 	"pezpallet-asset-conversion-ops?/runtime-benchmarks",
 	"pezpallet-asset-conversion-tx-payment?/runtime-benchmarks",
@@ -559,6 +567,7 @@ runtime-benchmarks = [
 	"pezpallet-contracts?/runtime-benchmarks",
 	"pezpallet-conviction-voting?/runtime-benchmarks",
 	"pezpallet-core-fellowship?/runtime-benchmarks",
+	"pezpallet-dap?/runtime-benchmarks",
 	"pezpallet-delegated-staking?/runtime-benchmarks",
 	"pezpallet-democracy?/runtime-benchmarks",
 	"pezpallet-derivatives?/runtime-benchmarks",
@@ -711,6 +720,7 @@ runtime-benchmarks = [
 	"pezsp-npos-elections?/runtime-benchmarks",
 	"pezsp-offchain?/runtime-benchmarks",
 	"pezsp-runtime-interface?/runtime-benchmarks",
+	"pezsp-runtime?/runtime-benchmarks",
 	"pezsp-session?/runtime-benchmarks",
 	"pezsp-staking?/runtime-benchmarks",
 	"pezsp-state-machine?/runtime-benchmarks",
@@ -761,7 +771,6 @@ try-runtime = [
 	"pezcumulus-client-collator?/try-runtime",
 	"pezcumulus-client-consensus-aura?/try-runtime",
 	"pezcumulus-client-consensus-common?/try-runtime",
-	"pezcumulus-client-consensus-proposer?/try-runtime",
 	"pezcumulus-client-consensus-relay-chain?/try-runtime",
 	"pezcumulus-client-network?/try-runtime",
 	"pezcumulus-client-pov-recovery?/try-runtime",
@@ -793,6 +802,7 @@ try-runtime = [
 	"pezframe-support?/try-runtime",
 	"pezframe-system-benchmarking?/try-runtime",
 	"pezframe-system?/try-runtime",
+	"pezframe-try-runtime?/try-runtime",
 	"pezframe?/try-runtime",
 	"pezkuwi-cli?/try-runtime",
 	"pezkuwi-collator-protocol?/try-runtime",
@@ -812,6 +822,7 @@ try-runtime = [
 	"pezkuwi-teyrchain-primitives?/try-runtime",
 	"pezmmr-gadget?/try-runtime",
 	"pezmmr-rpc?/try-runtime",
+	"pezpallet-accumulate-and-forward?/try-runtime",
 	"pezpallet-alliance?/try-runtime",
 	"pezpallet-asset-conversion-ops?/try-runtime",
 	"pezpallet-asset-conversion-tx-payment?/try-runtime",
@@ -847,6 +858,7 @@ try-runtime = [
 	"pezpallet-contracts?/try-runtime",
 	"pezpallet-conviction-voting?/try-runtime",
 	"pezpallet-core-fellowship?/try-runtime",
+	"pezpallet-dap?/try-runtime",
 	"pezpallet-delegated-staking?/try-runtime",
 	"pezpallet-democracy?/try-runtime",
 	"pezpallet-derivatives?/try-runtime",
@@ -985,6 +997,7 @@ try-runtime = [
 	"pezsp-mmr-primitives?/try-runtime",
 	"pezsp-npos-elections?/try-runtime",
 	"pezsp-offchain?/try-runtime",
+	"pezsp-runtime?/try-runtime",
 	"pezsp-session?/try-runtime",
 	"pezsp-staking?/try-runtime",
 	"pezsp-statement-store?/try-runtime",
@@ -1038,7 +1051,6 @@ serde = [
 	"pezcumulus-client-collator?/serde",
 	"pezcumulus-client-consensus-aura?/serde",
 	"pezcumulus-client-consensus-common?/serde",
-	"pezcumulus-client-consensus-proposer?/serde",
 	"pezcumulus-client-consensus-relay-chain?/serde",
 	"pezcumulus-client-network?/serde",
 	"pezcumulus-client-pov-recovery?/serde",
@@ -1077,6 +1089,7 @@ serde = [
 	"pezframe-system-benchmarking?/serde",
 	"pezframe-system-rpc-runtime-api?/serde",
 	"pezframe-system?/serde",
+	"pezframe-try-runtime?/serde",
 	"pezframe?/serde",
 	"pezkuwi-approval-distribution?/serde",
 	"pezkuwi-availability-bitfield-distribution?/serde",
@@ -1347,6 +1360,7 @@ serde = [
 	"pezsp-panic-handler?/serde",
 	"pezsp-rpc?/serde",
 	"pezsp-runtime-interface?/serde",
+	"pezsp-runtime?/serde",
 	"pezsp-session?/serde",
 	"pezsp-ss58-registry?/serde",
 	"pezsp-staking?/serde",
@@ -1410,6 +1424,7 @@ experimental = [
 	"pezframe-support?/experimental",
 	"pezframe-system-benchmarking?/experimental",
 	"pezframe-system?/experimental",
+	"pezframe-try-runtime?/experimental",
 	"pezframe?/experimental",
 	"pezkuwi-omni-node-lib?/experimental",
 	"pezkuwi-pez-node-primitives?/experimental",
@@ -1533,6 +1548,7 @@ experimental = [
 	"pezsp-consensus-beefy?/experimental",
 	"pezsp-core?/experimental",
 	"pezsp-maybe-compressed-blob?/experimental",
+	"pezsp-runtime?/experimental",
 	"pezstaging-teyrchain-info?/experimental",
 	"pezstaging-xcm-builder?/experimental",
 	"pezstaging-xcm-executor?/experimental",
@@ -1716,6 +1732,7 @@ with-tracing = [
 	"pezsp-consensus-beefy?/with-tracing",
 	"pezsp-io?/with-tracing",
 	"pezsp-runtime-interface?/with-tracing",
+	"pezsp-runtime?/with-tracing",
 	"pezsp-tracing?/with-tracing",
 	"pezstaging-chain-spec-builder?/with-tracing",
 	"pezstaging-node-inspect?/with-tracing",
@@ -1777,12 +1794,14 @@ runtime-full = [
 	"pezframe-system",
 	"pezframe-system-benchmarking",
 	"pezframe-system-rpc-runtime-api",
+	"pezframe-try-runtime",
 	"pezkuwi-core-primitives",
 	"pezkuwi-primitives",
 	"pezkuwi-runtime-common",
 	"pezkuwi-runtime-metrics",
 	"pezkuwi-runtime-teyrchains",
 	"pezkuwi-teyrchain-primitives",
+	"pezpallet-accumulate-and-forward",
 	"pezpallet-alliance",
 	"pezpallet-asset-conversion",
 	"pezpallet-asset-conversion-ops",
@@ -1818,6 +1837,7 @@ runtime-full = [
 	"pezpallet-contracts-uapi",
 	"pezpallet-conviction-voting",
 	"pezpallet-core-fellowship",
+	"pezpallet-dap",
 	"pezpallet-delegated-staking",
 	"pezpallet-democracy",
 	"pezpallet-derivatives",
@@ -1925,9 +1945,11 @@ runtime-full = [
 	"pezsp-crypto-ec-utils",
 	"pezsp-crypto-hashing",
 	"pezsp-crypto-hashing-proc-macro",
+	"pezsp-dap",
 	"pezsp-debug-derive",
 	"pezsp-externalities",
 	"pezsp-genesis-builder",
+	"pezsp-hop",
 	"pezsp-inherents",
 	"pezsp-io",
 	"pezsp-keyring",
@@ -1937,6 +1959,7 @@ runtime-full = [
 	"pezsp-mmr-primitives",
 	"pezsp-npos-elections",
 	"pezsp-offchain",
+	"pezsp-runtime",
 	"pezsp-runtime-interface",
 	"pezsp-runtime-interface-proc-macro",
 	"pezsp-session",
@@ -1961,6 +1984,7 @@ runtime-full = [
 	"pezstaging-xcm-executor",
 	"testnet-teyrchains-constants",
 	"teyrchains-common",
+	"teyrchains-common-types",
 	"xcm-pez-procedural",
 	"xcm-runtime-pezapis",
 ]
@@ -1979,8 +2003,58 @@ runtime = [
 	"pezframe-system",
 	"pezframe-system-benchmarking",
 	"pezframe-system-rpc-runtime-api",
+	"pezframe-try-runtime",
 	"pezframe?/runtime",
 	"pezkuwi-subxt?/runtime",
+	"pezsp-api",
+	"pezsp-api-proc-macro",
+	"pezsp-application-crypto",
+	"pezsp-arithmetic",
+	"pezsp-authority-discovery",
+	"pezsp-block-builder",
+	"pezsp-consensus-aura",
+	"pezsp-consensus-babe",
+	"pezsp-consensus-beefy",
+	"pezsp-consensus-grandpa",
+	"pezsp-consensus-pow",
+	"pezsp-consensus-slots",
+	"pezsp-core",
+	"pezsp-crypto-ec-utils",
+	"pezsp-crypto-hashing",
+	"pezsp-crypto-hashing-proc-macro",
+	"pezsp-dap",
+	"pezsp-debug-derive",
+	"pezsp-externalities",
+	"pezsp-genesis-builder",
+	"pezsp-hop",
+	"pezsp-inherents",
+	"pezsp-io",
+	"pezsp-keyring",
+	"pezsp-keystore",
+	"pezsp-metadata-ir",
+	"pezsp-mixnet",
+	"pezsp-mmr-primitives",
+	"pezsp-npos-elections",
+	"pezsp-offchain",
+	"pezsp-runtime",
+	"pezsp-runtime-interface",
+	"pezsp-runtime-interface-proc-macro",
+	"pezsp-session",
+	"pezsp-ss58-registry",
+	"pezsp-staking",
+	"pezsp-state-machine",
+	"pezsp-statement-store",
+	"pezsp-std",
+	"pezsp-storage",
+	"pezsp-timestamp",
+	"pezsp-tracing",
+	"pezsp-transaction-pool",
+	"pezsp-transaction-storage-proof",
+	"pezsp-trie",
+	"pezsp-version",
+	"pezsp-version-proc-macro",
+	"pezsp-wasm-interface",
+	"pezsp-weights",
 ]
 node = [
 	"asset-test-pezutils",
@@ -2002,10 +2076,10 @@ node = [
 	"pezcumulus-client-collator",
 	"pezcumulus-client-consensus-aura",
 	"pezcumulus-client-consensus-common",
-	"pezcumulus-client-consensus-proposer",
 	"pezcumulus-client-consensus-relay-chain",
 	"pezcumulus-client-network",
 	"pezcumulus-client-pov-recovery",
+	"pezcumulus-client-proof-size-recording",
 	"pezcumulus-client-service",
 	"pezcumulus-client-teyrchain-inherent",
 	"pezcumulus-relay-chain-inprocess-interface",
@@ -2027,6 +2101,7 @@ node = [
 	"pezkuwi-erasure-coding",
 	"pezkuwi-gossip-support",
 	"pezkuwi-network-bridge",
+	"pezkuwi-node-clock",
 	"pezkuwi-node-collation-generation",
 	"pezkuwi-node-core-approval-voting",
 	"pezkuwi-node-core-approval-voting-parallel",
@@ -2100,6 +2175,7 @@ node = [
 	"pezsc-executor-common",
 	"pezsc-executor-polkavm",
 	"pezsc-executor-wasmtime",
+	"pezsc-hop",
 	"pezsc-informant",
 	"pezsc-keystore",
 	"pezsc-mixnet",
@@ -2129,6 +2205,7 @@ node = [
 	"pezsc-transaction-pool",
 	"pezsc-transaction-pool-api",
 	"pezsc-utils",
+	"pezsc-virtualization",
 	"pezsp-blockchain",
 	"pezsp-consensus",
 	"pezsp-core-hashing",
@@ -2137,6 +2214,8 @@ node = [
 	"pezsp-maybe-compressed-blob",
 	"pezsp-panic-handler",
 	"pezsp-rpc",
+	"pezsp-virtualization",
+	"pezsp-virtualization-test-fixture",
 	"pezstaging-chain-spec-builder",
 	"pezstaging-node-inspect",
 	"pezstaging-tracking-allocator",
@@ -2181,6 +2260,7 @@ tuples-96 = [
 	"pezframe-support?/tuples-96",
 	"pezframe-system-benchmarking?/tuples-96",
 	"pezframe-system?/tuples-96",
+	"pezframe-try-runtime?/tuples-96",
 	"pezframe?/tuples-96",
 	"pezkuwi-omni-node-lib?/tuples-96",
 	"pezkuwi-runtime-common?/tuples-96",
@@ -2325,1991 +2405,2461 @@ workspace = true
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/bizinikiwi-bip39"
+version = "0.4.7"
 
 [dependencies.pez-assets-common]
 default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/runtimes/assets/common"
+version = "0.7.1"
 
 [dependencies.pez-binary-merkle-tree]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/binary-merkle-tree"
+version = "14.0.1"
 
 [dependencies.pez-ethereum-standards]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/pez-ethereum-standards"
+version = "0.1.1"
 
 [dependencies.pez-slot-range-helper]
 default-features = false
 optional = true
 path = "../pezkuwi/runtime/common/pez-slot-range-helper"
+version = "7.0.0"
 
 [dependencies.pez-tracing-gum-proc-macro]
 default-features = false
 optional = true
 path = "../pezkuwi/node/gum/proc-macro"
+version = "5.0.0"
 
 [dependencies.pezbp-header-pez-chain]
 default-features = false
 optional = true
 path = "../pezbridges/primitives/header-chain"
+version = "0.7.0"
 
 [dependencies.pezbp-messages]
 default-features = false
 optional = true
 path = "../pezbridges/primitives/messages"
+version = "0.7.0"
 
 [dependencies.pezbp-pezkuwi-core]
 default-features = false
 optional = true
 path = "../pezbridges/primitives/pezkuwi-core"
+version = "0.7.0"
 
 [dependencies.pezbp-relayers]
 default-features = false
 optional = true
 path = "../pezbridges/primitives/relayers"
+version = "0.7.0"
 
 [dependencies.pezbp-runtime]
 default-features = false
 optional = true
 path = "../pezbridges/primitives/runtime"
+version = "0.7.0"
 
 [dependencies.pezbp-test-utils]
 default-features = false
 optional = true
 path = "../pezbridges/primitives/test-utils"
+version = "0.7.0"
 
 [dependencies.pezbp-teyrchains]
 default-features = false
 optional = true
 path = "../pezbridges/primitives/teyrchains"
+version = "0.7.0"
 
 [dependencies.pezbp-xcm-bridge-hub]
 default-features = false
 optional = true
 path = "../pezbridges/primitives/xcm-bridge-hub"
+version = "0.2.0"
 
 [dependencies.pezbp-xcm-bridge-hub-router]
 default-features = false
 optional = true
 path = "../pezbridges/primitives/xcm-bridge-hub-router"
+version = "0.7.0"
 
 [dependencies.pezbridge-hub-common]
 default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/runtimes/bridge-hubs/common"
+version = "0.1.1"
 
 [dependencies.pezbridge-runtime-common]
 default-features = false
 optional = true
 path = "../pezbridges/bin/runtime-common"
+version = "0.7.0"
 
 [dependencies.pezcumulus-pezpallet-aura-ext]
 default-features = false
 optional = true
 path = "../pezcumulus/pezpallets/aura-ext"
+version = "0.7.0"
 
 [dependencies.pezcumulus-pezpallet-dmp-queue]
 default-features = false
 optional = true
 path = "../pezcumulus/pezpallets/dmp-queue"
+version = "0.7.0"
 
 [dependencies.pezcumulus-pezpallet-session-benchmarking]
 default-features = false
 optional = true
 path = "../pezcumulus/pezpallets/session-benchmarking"
+version = "9.0.0"
 
 [dependencies.pezcumulus-pezpallet-solo-to-para]
 default-features = false
 optional = true
 path = "../pezcumulus/pezpallets/solo-to-para"
+version = "0.7.0"
 
 [dependencies.pezcumulus-pezpallet-teyrchain-system]
 default-features = false
 optional = true
 path = "../pezcumulus/pezpallets/teyrchain-system"
+version = "0.7.0"
 
 [dependencies.pezcumulus-pezpallet-teyrchain-system-proc-macro]
 default-features = false
 optional = true
 path = "../pezcumulus/pezpallets/teyrchain-system/proc-macro"
+version = "0.6.0"
 
 [dependencies.pezcumulus-pezpallet-weight-reclaim]
 default-features = false
 optional = true
 path = "../pezcumulus/pezpallets/weight-reclaim"
+version = "1.0.0"
 
 [dependencies.pezcumulus-pezpallet-xcm]
 default-features = false
 optional = true
 path = "../pezcumulus/pezpallets/xcm"
+version = "0.7.0"
 
 [dependencies.pezcumulus-pezpallet-xcmp-queue]
 default-features = false
 optional = true
 path = "../pezcumulus/pezpallets/xcmp-queue"
+version = "0.7.1"
 
 [dependencies.pezcumulus-ping]
 default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/pezpallets/ping"
+version = "0.7.0"
 
 [dependencies.pezcumulus-primitives-aura]
 default-features = false
 optional = true
 path = "../pezcumulus/primitives/aura"
+version = "0.7.0"
 
 [dependencies.pezcumulus-primitives-core]
 default-features = false
 optional = true
 path = "../pezcumulus/primitives/core"
+version = "0.7.0"
 
 [dependencies.pezcumulus-primitives-proof-size-hostfunction]
 default-features = false
 optional = true
 path = "../pezcumulus/primitives/proof-size-hostfunction"
+version = "0.2.0"
 
 [dependencies.pezcumulus-primitives-storage-weight-reclaim]
 default-features = false
 optional = true
 path = "../pezcumulus/primitives/storage-weight-reclaim"
+version = "1.0.0"
 
 [dependencies.pezcumulus-primitives-teyrchain-inherent]
 default-features = false
 optional = true
 path = "../pezcumulus/primitives/teyrchain-inherent"
+version = "0.7.0"
 
 [dependencies.pezcumulus-primitives-timestamp]
 default-features = false
 optional = true
 path = "../pezcumulus/primitives/timestamp"
+version = "0.7.0"
 
 [dependencies.pezcumulus-primitives-utility]
 default-features = false
 optional = true
 path = "../pezcumulus/primitives/utility"
+version = "0.7.0"
 
 [dependencies.pezframe]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe"
+version = "0.1.0"
 
 [dependencies.pezframe-benchmarking]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/benchmarking"
+version = "28.0.0"
 
 [dependencies.pezframe-benchmarking-pezpallet-pov]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/benchmarking/pov"
+version = "18.0.0"
 
 [dependencies.pezframe-election-provider-solution-type]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/election-provider-support/solution-type"
+version = "13.0.0"
 
 [dependencies.pezframe-election-provider-support]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/election-provider-support"
+version = "28.0.0"
 
 [dependencies.pezframe-executive]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/executive"
+version = "28.0.0"
 
 [dependencies.pezframe-metadata]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/pezframe-metadata"
+version = "23.0.1"
 
 [dependencies.pezframe-metadata-hash-extension]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/metadata-hash-extension"
+version = "0.1.0"
 
 [dependencies.pezframe-support]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/support"
+version = "28.0.0"
 
 [dependencies.pezframe-support-procedural]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/support/procedural"
+version = "23.0.0"
 
 [dependencies.pezframe-support-procedural-tools-derive]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/support/procedural/tools/derive"
+version = "11.0.0"
 
 [dependencies.pezframe-system]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/system"
+version = "28.0.0"
 
 [dependencies.pezframe-system-benchmarking]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/system/benchmarking"
+version = "28.0.0"
 
 [dependencies.pezframe-system-rpc-runtime-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/system/rpc/runtime-api"
+version = "26.0.0"
+
+[dependencies.pezframe-try-runtime]
+default-features = false
+optional = true
+path = "../bizinikiwi/pezframe/try-runtime"
+version = "0.34.0"
 
 [dependencies.pezkuwi-core-primitives]
 default-features = false
 optional = true
 path = "../pezkuwi/core-primitives"
+version = "7.0.0"
 
 [dependencies.pezkuwi-primitives]
 default-features = false
 optional = true
 path = "../pezkuwi/primitives"
+version = "7.0.0"
 
 [dependencies.pezkuwi-runtime-common]
 default-features = false
 optional = true
 path = "../pezkuwi/runtime/common"
+version = "7.0.0"
 
 [dependencies.pezkuwi-runtime-metrics]
 default-features = false
 optional = true
 path = "../pezkuwi/runtime/metrics"
+version = "7.0.0"
 
 [dependencies.pezkuwi-runtime-teyrchains]
 default-features = false
 optional = true
 path = "../pezkuwi/runtime/teyrchains"
+version = "7.0.0"
 
 [dependencies.pezkuwi-subxt-core]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/core"
+version = "0.44.0"
 
 [dependencies.pezkuwi-subxt-macro]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/macro"
+version = "0.44.0"
 
 [dependencies.pezkuwi-subxt-metadata]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/metadata"
+version = "0.44.0"
 
 [dependencies.pezkuwi-subxt-signer]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/signer"
+version = "0.44.0"
 
 [dependencies.pezkuwi-teyrchain-primitives]
 default-features = false
 optional = true
 path = "../pezkuwi/teyrchain"
+version = "6.0.0"
+
+[dependencies.pezpallet-accumulate-and-forward]
+default-features = false
+optional = true
+path = "../bizinikiwi/pezframe/accumulate-and-forward"
+version = "0.4.0"
 
 [dependencies.pezpallet-alliance]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/alliance"
+version = "27.0.0"
 
 [dependencies.pezpallet-asset-conversion]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/asset-conversion"
+version = "10.0.0"
 
 [dependencies.pezpallet-asset-conversion-ops]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/asset-conversion/ops"
+version = "0.1.0"
 
 [dependencies.pezpallet-asset-conversion-tx-payment]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/transaction-payment/asset-conversion-tx-payment"
+version = "10.0.0"
 
 [dependencies.pezpallet-asset-rate]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/asset-rate"
+version = "7.0.0"
 
 [dependencies.pezpallet-asset-rewards]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/asset-rewards"
+version = "0.1.0"
 
 [dependencies.pezpallet-asset-tx-payment]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/transaction-payment/asset-tx-payment"
+version = "28.0.0"
 
 [dependencies.pezpallet-assets]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/assets"
+version = "29.1.0"
 
 [dependencies.pezpallet-assets-freezer]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/assets-freezer"
+version = "0.44.0"
 
 [dependencies.pezpallet-assets-holder]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/assets-holder"
+version = "0.1.0"
 
 [dependencies.pezpallet-assets-precompiles]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/assets/precompiles"
+version = "0.1.0"
 
 [dependencies.pezpallet-atomic-swap]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/atomic-swap"
+version = "28.0.0"
 
 [dependencies.pezpallet-aura]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/aura"
+version = "27.0.0"
 
 [dependencies.pezpallet-authority-discovery]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/authority-discovery"
+version = "28.0.0"
 
 [dependencies.pezpallet-authorship]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/authorship"
+version = "28.0.0"
 
 [dependencies.pezpallet-babe]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/babe"
+version = "28.0.0"
 
 [dependencies.pezpallet-bags-list]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/bags-list"
+version = "27.0.0"
 
 [dependencies.pezpallet-balances]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/balances"
+version = "28.0.0"
 
 [dependencies.pezpallet-beefy]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/beefy"
+version = "28.0.0"
 
 [dependencies.pezpallet-beefy-mmr]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/beefy-mmr"
+version = "28.0.0"
 
 [dependencies.pezpallet-bounties]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/bounties"
+version = "27.0.0"
 
 [dependencies.pezpallet-bridge-grandpa]
 default-features = false
 optional = true
 path = "../pezbridges/modules/grandpa"
+version = "0.7.0"
 
 [dependencies.pezpallet-bridge-messages]
 default-features = false
 optional = true
 path = "../pezbridges/modules/messages"
+version = "0.7.0"
 
 [dependencies.pezpallet-bridge-relayers]
 default-features = false
 optional = true
 path = "../pezbridges/modules/relayers"
+version = "0.7.0"
 
 [dependencies.pezpallet-bridge-teyrchains]
 default-features = false
 optional = true
 path = "../pezbridges/modules/teyrchains"
+version = "0.7.0"
 
 [dependencies.pezpallet-broker]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/broker"
+version = "0.6.0"
 
 [dependencies.pezpallet-child-bounties]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/child-bounties"
+version = "27.0.0"
 
 [dependencies.pezpallet-collator-selection]
 default-features = false
 optional = true
 path = "../pezcumulus/pezpallets/collator-selection"
+version = "9.0.0"
 
 [dependencies.pezpallet-collective]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/collective"
+version = "28.0.0"
 
 [dependencies.pezpallet-collective-content]
 default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/pezpallets/collective-content"
+version = "0.6.0"
 
 [dependencies.pezpallet-contracts]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/contracts"
+version = "27.0.0"
 
 [dependencies.pezpallet-contracts-proc-macro]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/contracts/proc-macro"
+version = "18.0.0"
 
 [dependencies.pezpallet-contracts-uapi]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/contracts/uapi"
+version = "5.0.0"
 
 [dependencies.pezpallet-conviction-voting]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/conviction-voting"
+version = "28.0.0"
 
 [dependencies.pezpallet-core-fellowship]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/core-fellowship"
+version = "12.0.0"
+
+[dependencies.pezpallet-dap]
+default-features = false
+optional = true
+path = "../bizinikiwi/pezframe/dap"
+version = "0.6.0"
 
 [dependencies.pezpallet-delegated-staking]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/delegated-staking"
+version = "1.0.0"
 
 [dependencies.pezpallet-democracy]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/democracy"
+version = "28.0.0"
 
 [dependencies.pezpallet-derivatives]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/derivatives"
+version = "1.0.0"
 
 [dependencies.pezpallet-dummy-dim]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/dummy-dim"
+version = "1.0.0"
 
 [dependencies.pezpallet-election-provider-multi-block]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/election-provider-multi-block"
+version = "0.9.0"
 
 [dependencies.pezpallet-election-provider-multi-phase]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/election-provider-multi-phase"
+version = "27.0.0"
 
 [dependencies.pezpallet-election-provider-support-benchmarking]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/election-provider-support/benchmarking"
+version = "27.0.0"
 
 [dependencies.pezpallet-elections-phragmen]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/elections-phragmen"
+version = "29.0.0"
 
 [dependencies.pezpallet-fast-unstake]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/fast-unstake"
+version = "27.0.0"
 
 [dependencies.pezpallet-glutton]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/glutton"
+version = "14.0.0"
 
 [dependencies.pezpallet-grandpa]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/grandpa"
+version = "28.0.0"
 
 [dependencies.pezpallet-identity]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/identity"
+version = "29.0.0"
 
 [dependencies.pezpallet-im-online]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/im-online"
+version = "27.0.0"
 
 [dependencies.pezpallet-indices]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/indices"
+version = "28.0.0"
 
 [dependencies.pezpallet-insecure-randomness-collective-flip]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/insecure-randomness-collective-flip"
+version = "16.0.0"
 
 [dependencies.pezpallet-lottery]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/lottery"
+version = "28.0.0"
 
 [dependencies.pezpallet-membership]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/membership"
+version = "28.0.0"
 
 [dependencies.pezpallet-message-queue]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/message-queue"
+version = "31.0.0"
 
 [dependencies.pezpallet-meta-tx]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/meta-tx"
+version = "0.44.0"
 
 [dependencies.pezpallet-migrations]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/migrations"
+version = "1.0.0"
 
 [dependencies.pezpallet-minimal-template]
 default-features = false
 optional = true
 path = "../templates/minimal/pezpallets/template"
+version = "0.1.0"
 
 [dependencies.pezpallet-mixnet]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/mixnet"
+version = "0.4.0"
 
 [dependencies.pezpallet-mmr]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/merkle-mountain-range"
+version = "27.0.0"
 
 [dependencies.pezpallet-multi-asset-bounties]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/multi-asset-bounties"
+version = "1.0.0"
 
 [dependencies.pezpallet-multisig]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/multisig"
+version = "28.0.0"
 
 [dependencies.pezpallet-nft-fractionalization]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/nft-fractionalization"
+version = "10.0.0"
 
 [dependencies.pezpallet-nfts]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/nfts"
+version = "22.0.0"
 
 [dependencies.pezpallet-nfts-runtime-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/nfts/runtime-api"
+version = "14.0.0"
 
 [dependencies.pezpallet-nis]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/nis"
+version = "28.0.0"
 
 [dependencies.pezpallet-node-authorization]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/node-authorization"
+version = "28.0.0"
 
 [dependencies.pezpallet-nomination-pools]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/nomination-pools"
+version = "25.0.0"
 
 [dependencies.pezpallet-nomination-pools-benchmarking]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/nomination-pools/benchmarking"
+version = "26.0.0"
 
 [dependencies.pezpallet-nomination-pools-runtime-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/nomination-pools/runtime-api"
+version = "23.0.0"
 
 [dependencies.pezpallet-offences]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/offences"
+version = "27.0.0"
 
 [dependencies.pezpallet-offences-benchmarking]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/offences/benchmarking"
+version = "28.0.0"
 
 [dependencies.pezpallet-oracle]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/honzon/oracle"
+version = "1.0.0"
 
 [dependencies.pezpallet-oracle-runtime-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/honzon/oracle/runtime-api"
+version = "1.0.0"
 
 [dependencies.pezpallet-origin-restriction]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/origin-restriction"
+version = "1.0.0"
 
 [dependencies.pezpallet-paged-list]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/paged-list"
+version = "0.6.0"
 
 [dependencies.pezpallet-parameters]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/parameters"
+version = "0.44.0"
 
 [dependencies.pezpallet-people]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/people"
+version = "1.0.0"
 
 [dependencies.pezpallet-preimage]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/preimage"
+version = "28.0.0"
 
 [dependencies.pezpallet-proxy]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/proxy"
+version = "28.0.0"
 
 [dependencies.pezpallet-ranked-collective]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/ranked-collective"
+version = "28.0.0"
 
 [dependencies.pezpallet-recovery]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/recovery"
+version = "28.0.0"
 
 [dependencies.pezpallet-referenda]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/referenda"
+version = "28.0.0"
 
 [dependencies.pezpallet-remark]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/remark"
+version = "28.0.0"
 
 [dependencies.pezpallet-revive]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/revive"
+version = "0.1.0"
 
 [dependencies.pezpallet-revive-proc-macro]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/revive/proc-macro"
+version = "0.44.0"
 
 [dependencies.pezpallet-revive-uapi]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/revive/uapi"
+version = "0.44.0"
 
 [dependencies.pezpallet-root-offences]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/root-offences"
+version = "25.0.0"
 
 [dependencies.pezpallet-root-testing]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/root-testing"
+version = "4.0.0"
 
 [dependencies.pezpallet-safe-mode]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/safe-mode"
+version = "9.0.0"
 
 [dependencies.pezpallet-salary]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/salary"
+version = "13.0.0"
 
 [dependencies.pezpallet-scheduler]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/scheduler"
+version = "29.0.0"
 
 [dependencies.pezpallet-scored-pool]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/scored-pool"
+version = "28.0.0"
 
 [dependencies.pezpallet-session]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/session"
+version = "28.0.0"
 
 [dependencies.pezpallet-session-benchmarking]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/session/benchmarking"
+version = "28.0.0"
 
 [dependencies.pezpallet-skip-feeless-payment]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/transaction-payment/skip-feeless-payment"
+version = "3.0.0"
 
 [dependencies.pezpallet-society]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/society"
+version = "28.0.0"
 
 [dependencies.pezpallet-staking]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/staking"
+version = "28.0.0"
 
 [dependencies.pezpallet-staking-async]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/staking-async"
+version = "0.1.0"
 
 [dependencies.pezpallet-staking-async-ah-client]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/staking-async/ah-client"
+version = "0.1.0"
 
 [dependencies.pezpallet-staking-async-rc-client]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/staking-async/rc-client"
+version = "0.1.0"
 
 [dependencies.pezpallet-staking-async-reward-fn]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/staking-async/reward-fn"
+version = "19.0.0"
 
 [dependencies.pezpallet-staking-async-runtime-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/staking-async/runtime-api"
+version = "14.0.0"
 
 [dependencies.pezpallet-staking-reward-curve]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/staking/reward-curve"
+version = "11.0.0"
 
 [dependencies.pezpallet-staking-reward-fn]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/staking/reward-fn"
+version = "19.0.0"
 
 [dependencies.pezpallet-staking-runtime-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/staking/runtime-api"
+version = "14.0.0"
 
 [dependencies.pezpallet-state-trie-migration]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/state-trie-migration"
+version = "29.0.0"
 
 [dependencies.pezpallet-statement]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/statement"
+version = "10.0.0"
 
 [dependencies.pezpallet-sudo]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/sudo"
+version = "28.0.0"
 
 [dependencies.pezpallet-timestamp]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/timestamp"
+version = "27.0.0"
 
 [dependencies.pezpallet-tips]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/tips"
+version = "27.0.0"
 
 [dependencies.pezpallet-transaction-payment]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/transaction-payment"
+version = "28.0.0"
 
 [dependencies.pezpallet-transaction-payment-rpc-runtime-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/transaction-payment/rpc/runtime-api"
+version = "28.0.0"
 
 [dependencies.pezpallet-transaction-storage]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/transaction-storage"
+version = "27.0.0"
 
 [dependencies.pezpallet-treasury]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/treasury"
+version = "27.0.0"
 
 [dependencies.pezpallet-tx-pause]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/tx-pause"
+version = "9.0.0"
 
 [dependencies.pezpallet-uniques]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/uniques"
+version = "28.0.0"
 
 [dependencies.pezpallet-utility]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/utility"
+version = "28.0.0"
 
 [dependencies.pezpallet-verify-signature]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/verify-signature"
+version = "1.0.0"
 
 [dependencies.pezpallet-vesting]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/vesting"
+version = "28.0.0"
 
 [dependencies.pezpallet-whitelist]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/whitelist"
+version = "27.0.0"
 
 [dependencies.pezpallet-xcm]
 default-features = false
 optional = true
 path = "../pezkuwi/xcm/pezpallet-xcm"
+version = "7.0.0"
 
 [dependencies.pezpallet-xcm-benchmarks]
 default-features = false
 optional = true
 path = "../pezkuwi/xcm/pezpallet-xcm-benchmarks"
+version = "7.0.0"
 
 [dependencies.pezpallet-xcm-bridge-hub]
 default-features = false
 optional = true
 path = "../pezbridges/modules/xcm-bridge-hub"
+version = "0.2.0"
 
 [dependencies.pezpallet-xcm-bridge-hub-router]
 default-features = false
 optional = true
 path = "../pezbridges/modules/xcm-bridge-hub-router"
+version = "0.5.0"
 
 [dependencies.pezpallet-xcm-precompiles]
 default-features = false
 optional = true
 path = "../pezkuwi/xcm/pezpallet-xcm/precompiles"
+version = "0.1.0"
 
 [dependencies.pezsc-chain-spec-derive]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/chain-spec/derive"
+version = "11.0.0"
 
 [dependencies.pezsc-tracing-proc-macro]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/tracing/proc-macro"
+version = "11.0.0"
 
 [dependencies.pezsp-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/api"
+version = "26.0.0"
 
 [dependencies.pezsp-api-proc-macro]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/api/proc-macro"
+version = "15.0.0"
 
 [dependencies.pezsp-application-crypto]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/application-crypto"
+version = "30.0.0"
 
 [dependencies.pezsp-arithmetic]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/arithmetic"
+version = "23.0.0"
 
 [dependencies.pezsp-authority-discovery]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/authority-discovery"
+version = "26.0.0"
 
 [dependencies.pezsp-block-builder]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/block-builder"
+version = "26.0.0"
 
 [dependencies.pezsp-consensus-aura]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/consensus/aura"
+version = "0.32.0"
 
 [dependencies.pezsp-consensus-babe]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/consensus/babe"
+version = "0.32.0"
 
 [dependencies.pezsp-consensus-beefy]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/consensus/beefy"
+version = "13.0.0"
 
 [dependencies.pezsp-consensus-grandpa]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/consensus/grandpa"
+version = "13.0.0"
 
 [dependencies.pezsp-consensus-pow]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/consensus/pow"
+version = "0.32.0"
 
 [dependencies.pezsp-consensus-slots]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/consensus/slots"
+version = "0.32.0"
 
 [dependencies.pezsp-core]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/core"
+version = "28.0.0"
 
 [dependencies.pezsp-crypto-ec-utils]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/crypto/ec-utils"
+version = "0.10.0"
 
 [dependencies.pezsp-crypto-hashing]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/crypto/hashing"
+version = "0.1.0"
 
 [dependencies.pezsp-crypto-hashing-proc-macro]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/crypto/hashing/proc-macro"
+version = "0.1.0"
+
+[dependencies.pezsp-dap]
+default-features = false
+optional = true
+path = "../bizinikiwi/primitives/dap"
+version = "0.3.0"
 
 [dependencies.pezsp-debug-derive]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/debug-derive"
+version = "14.0.0"
 
 [dependencies.pezsp-externalities]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/externalities"
+version = "0.25.0"
 
 [dependencies.pezsp-genesis-builder]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/genesis-builder"
+version = "0.8.0"
+
+[dependencies.pezsp-hop]
+default-features = false
+optional = true
+path = "../bizinikiwi/primitives/hop"
+version = "0.3.0"
 
 [dependencies.pezsp-inherents]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/inherents"
+version = "26.0.0"
 
 [dependencies.pezsp-io]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/io"
+version = "30.0.0"
 
 [dependencies.pezsp-keyring]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/keyring"
+version = "31.0.0"
 
 [dependencies.pezsp-keystore]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/keystore"
+version = "0.34.0"
 
 [dependencies.pezsp-metadata-ir]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/metadata-ir"
+version = "0.6.0"
 
 [dependencies.pezsp-mixnet]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/mixnet"
+version = "0.4.0"
 
 [dependencies.pezsp-mmr-primitives]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/merkle-mountain-range"
+version = "26.0.0"
 
 [dependencies.pezsp-npos-elections]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/npos-elections"
+version = "26.0.0"
 
 [dependencies.pezsp-offchain]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/offchain"
+version = "26.0.0"
+
+[dependencies.pezsp-runtime]
+default-features = false
+optional = true
+path = "../bizinikiwi/primitives/runtime"
+version = "31.0.1"
 
 [dependencies.pezsp-runtime-interface]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/runtime-interface"
+version = "24.0.0"
 
 [dependencies.pezsp-runtime-interface-proc-macro]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/runtime-interface/proc-macro"
+version = "17.0.0"
 
 [dependencies.pezsp-session]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/session"
+version = "27.0.0"
 
 [dependencies.pezsp-ss58-registry]
 default-features = false
 optional = true
 path = "../vendor/ss58-registry"
+version = "1.52.0"
 
 [dependencies.pezsp-staking]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/staking"
+version = "26.0.0"
 
 [dependencies.pezsp-state-machine]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/state-machine"
+version = "0.35.0"
 
 [dependencies.pezsp-statement-store]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/statement-store"
+version = "10.0.0"
 
 [dependencies.pezsp-std]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/std"
+version = "14.0.0"
 
 [dependencies.pezsp-storage]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/storage"
+version = "19.0.0"
 
 [dependencies.pezsp-timestamp]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/timestamp"
+version = "26.0.0"
 
 [dependencies.pezsp-tracing]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/tracing"
+version = "16.0.0"
 
 [dependencies.pezsp-transaction-pool]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/transaction-pool"
+version = "26.0.0"
 
 [dependencies.pezsp-transaction-storage-proof]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/transaction-storage-proof"
+version = "26.0.0"
 
 [dependencies.pezsp-trie]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/trie"
+version = "29.0.0"
 
 [dependencies.pezsp-version]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/version"
+version = "29.0.0"
 
 [dependencies.pezsp-version-proc-macro]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/version/proc-macro"
+version = "13.0.0"
 
 [dependencies.pezsp-wasm-interface]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/wasm-interface"
+version = "20.0.0"
 
 [dependencies.pezsp-weights]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/weights"
+version = "27.0.0"
 
 [dependencies.pezstaging-teyrchain-info]
 default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/pezpallets/teyrchain-info"
+version = "0.7.0"
 
 [dependencies.pezstaging-xcm]
 default-features = false
 optional = true
 path = "../pezkuwi/xcm"
+version = "7.0.1"
 
 [dependencies.pezstaging-xcm-builder]
 default-features = false
 optional = true
 path = "../pezkuwi/xcm/xcm-builder"
+version = "7.0.0"
 
 [dependencies.pezstaging-xcm-executor]
 default-features = false
 optional = true
 path = "../pezkuwi/xcm/xcm-executor"
+version = "7.0.0"
 
 [dependencies.testnet-teyrchains-constants]
 default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/runtimes/constants"
+version = "1.0.0"
 
 [dependencies.teyrchains-common]
 default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/common"
+version = "7.0.0"
+
+[dependencies.teyrchains-common-types]
+default-features = false
+optional = true
+path = "../pezcumulus/teyrchains/common/types"
+version = "0.4.0"
 
 [dependencies.xcm-pez-procedural]
 default-features = false
 optional = true
 path = "../pezkuwi/xcm/procedural"
+version = "7.0.0"
 
 [dependencies.xcm-runtime-pezapis]
 default-features = false
 optional = true
 path = "../pezkuwi/xcm/xcm-runtime-pezapis"
+version = "0.1.1"
 
 [dependencies.asset-test-pezutils]
 default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/runtimes/assets/test-utils"
+version = "7.0.0"
 
 [dependencies.bizinikiwi-build-script-utils]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/build-script-utils"
+version = "11.0.0"
 
 [dependencies.bizinikiwi-frame-rpc-support]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/pezframe/rpc/support"
+version = "29.0.0"
 
 [dependencies.bizinikiwi-frame-rpc-system]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/pezframe/rpc/system"
+version = "28.0.0"
 
 [dependencies.bizinikiwi-prometheus-endpoint]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/prometheus"
+version = "0.17.0"
 
 [dependencies.bizinikiwi-rpc-client]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/pezframe/rpc/client"
+version = "0.33.0"
 
 [dependencies.bizinikiwi-state-trie-migration-rpc]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/pezframe/rpc/state-trie-migration-rpc"
+version = "27.0.0"
 
 [dependencies.bizinikiwi-txtesttool]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/txtesttool"
+version = "0.7.0"
 
 [dependencies.bizinikiwi-wasm-builder]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/wasm-builder"
+version = "17.0.0"
 
 [dependencies.pez-fork-tree]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/pez-fork-tree"
+version = "12.0.0"
 
 [dependencies.pez-generate-bags]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/pezframe/pez-generate-bags"
+version = "28.0.0"
 
 [dependencies.pez-subkey]
 default-features = false
 optional = true
 path = "../bizinikiwi/bin/utils/pez-subkey"
+version = "9.0.0"
 
 [dependencies.pez-tracing-gum]
 default-features = false
 optional = true
 path = "../pezkuwi/node/gum"
+version = "7.0.0"
 
 [dependencies.pezbridge-hub-test-utils]
 default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/runtimes/bridge-hubs/test-utils"
+version = "0.7.0"
 
 [dependencies.pezcumulus-client-bootnodes]
 default-features = false
 optional = true
 path = "../pezcumulus/client/bootnodes"
+version = "0.1.0"
 
 [dependencies.pezcumulus-client-cli]
 default-features = false
 optional = true
 path = "../pezcumulus/client/cli"
+version = "0.7.0"
 
 [dependencies.pezcumulus-client-collator]
 default-features = false
 optional = true
 path = "../pezcumulus/client/collator"
+version = "0.7.0"
 
 [dependencies.pezcumulus-client-consensus-aura]
 default-features = false
 optional = true
 path = "../pezcumulus/client/consensus/aura"
+version = "0.7.0"
 
 [dependencies.pezcumulus-client-consensus-common]
 default-features = false
 optional = true
 path = "../pezcumulus/client/consensus/common"
-
-[dependencies.pezcumulus-client-consensus-proposer]
-default-features = false
-optional = true
-path = "../pezcumulus/client/consensus/proposer"
+version = "0.7.0"
 
 [dependencies.pezcumulus-client-consensus-relay-chain]
 default-features = false
 optional = true
 path = "../pezcumulus/client/consensus/relay-chain"
+version = "0.7.0"
 
 [dependencies.pezcumulus-client-network]
 default-features = false
 optional = true
 path = "../pezcumulus/client/network"
+version = "0.7.0"
 
 [dependencies.pezcumulus-client-pov-recovery]
 default-features = false
 optional = true
 path = "../pezcumulus/client/pov-recovery"
+version = "0.7.0"
+
+[dependencies.pezcumulus-client-proof-size-recording]
+default-features = false
+optional = true
+path = "../pezcumulus/client/proof-size-recording"
+version = "0.3.0"
 
 [dependencies.pezcumulus-client-service]
 default-features = false
 optional = true
 path = "../pezcumulus/client/service"
+version = "0.7.0"
 
 [dependencies.pezcumulus-client-teyrchain-inherent]
 default-features = false
 optional = true
 path = "../pezcumulus/client/teyrchain-inherent"
+version = "0.1.1"
 
 [dependencies.pezcumulus-relay-chain-inprocess-interface]
 default-features = false
 optional = true
 path = "../pezcumulus/client/relay-chain-inprocess-interface"
+version = "0.7.0"
 
 [dependencies.pezcumulus-relay-chain-interface]
 default-features = false
 optional = true
 path = "../pezcumulus/client/relay-chain-interface"
+version = "0.7.0"
 
 [dependencies.pezcumulus-relay-chain-minimal-node]
 default-features = false
 optional = true
 path = "../pezcumulus/client/relay-chain-minimal-node"
+version = "0.7.0"
 
 [dependencies.pezcumulus-relay-chain-rpc-interface]
 default-features = false
 optional = true
 path = "../pezcumulus/client/relay-chain-rpc-interface"
+version = "0.7.0"
 
 [dependencies.pezcumulus-relay-chain-streams]
 default-features = false
 optional = true
 path = "../pezcumulus/client/relay-chain-streams"
+version = "0.7.0"
 
 [dependencies.pezcumulus-test-relay-sproof-builder]
 default-features = false
 optional = true
 path = "../pezcumulus/test/relay-sproof-builder"
+version = "0.7.0"
 
 [dependencies.pezframe-benchmarking-cli]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/pezframe/benchmarking-cli"
+version = "32.0.1"
 
 [dependencies.pezframe-remote-externalities]
 default-features = false
 optional = true
 path = "../bizinikiwi/utils/pezframe/remote-externalities"
+version = "0.35.0"
 
 [dependencies.pezframe-support-procedural-tools]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/support/procedural/tools"
+version = "10.0.1"
 
 [dependencies.pezkuwi-approval-distribution]
 default-features = false
 optional = true
 path = "../pezkuwi/node/network/approval-distribution"
+version = "7.0.0"
 
 [dependencies.pezkuwi-availability-bitfield-distribution]
 default-features = false
 optional = true
 path = "../pezkuwi/node/network/bitfield-distribution"
+version = "7.0.0"
 
 [dependencies.pezkuwi-availability-distribution]
 default-features = false
 optional = true
 path = "../pezkuwi/node/network/availability-distribution"
+version = "7.0.0"
 
 [dependencies.pezkuwi-availability-recovery]
 default-features = false
 optional = true
 path = "../pezkuwi/node/network/availability-recovery"
+version = "7.0.0"
 
 [dependencies.pezkuwi-cli]
 default-features = false
 optional = true
 path = "../pezkuwi/cli"
+version = "7.0.0"
 
 [dependencies.pezkuwi-collator-protocol]
 default-features = false
 optional = true
 path = "../pezkuwi/node/network/collator-protocol"
+version = "7.0.0"
 
 [dependencies.pezkuwi-dispute-distribution]
 default-features = false
 optional = true
 path = "../pezkuwi/node/network/dispute-distribution"
+version = "7.0.0"
 
 [dependencies.pezkuwi-erasure-coding]
 default-features = false
 optional = true
 path = "../pezkuwi/erasure-coding"
+version = "7.0.0"
 
 [dependencies.pezkuwi-gossip-support]
 default-features = false
 optional = true
 path = "../pezkuwi/node/network/gossip-support"
+version = "7.0.0"
 
 [dependencies.pezkuwi-network-bridge]
 default-features = false
 optional = true
 path = "../pezkuwi/node/network/bridge"
+version = "7.0.0"
+
+[dependencies.pezkuwi-node-clock]
+default-features = false
+optional = true
+path = "../pezkuwi/node/clock"
+version = "0.3.0"
 
 [dependencies.pezkuwi-node-collation-generation]
 default-features = false
 optional = true
 path = "../pezkuwi/node/collation-generation"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-approval-voting]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/approval-voting"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-approval-voting-parallel]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/approval-voting-parallel"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-av-store]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/av-store"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-backing]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/backing"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-bitfield-signing]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/bitfield-signing"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-candidate-validation]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/candidate-validation"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-chain-api]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/chain-api"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-chain-selection]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/chain-selection"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-dispute-coordinator]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/dispute-coordinator"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-prospective-teyrchains]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/prospective-teyrchains"
+version = "6.0.0"
 
 [dependencies.pezkuwi-node-core-provisioner]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/provisioner"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-pvf]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/pvf"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-pvf-checker]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/pvf-checker"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-pvf-common]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/pvf/common"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-pvf-execute-worker]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/pvf/execute-worker"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-pvf-prepare-worker]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/pvf/prepare-worker"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-runtime-api]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/runtime-api"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-core-teyrchains-inherent]
 default-features = false
 optional = true
 path = "../pezkuwi/node/core/teyrchains-inherent"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-metrics]
 default-features = false
 optional = true
 path = "../pezkuwi/node/metrics"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-network-protocol]
 default-features = false
 optional = true
 path = "../pezkuwi/node/network/protocol"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-subsystem]
 default-features = false
 optional = true
 path = "../pezkuwi/node/subsystem"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-subsystem-types]
 default-features = false
 optional = true
 path = "../pezkuwi/node/subsystem-types"
+version = "7.0.0"
 
 [dependencies.pezkuwi-node-subsystem-util]
 default-features = false
 optional = true
 path = "../pezkuwi/node/subsystem-util"
+version = "7.0.0"
 
 [dependencies.pezkuwi-omni-node-lib]
 default-features = false
 optional = true
 path = "../pezcumulus/pezkuwi-omni-node/lib"
+version = "0.1.0"
 
 [dependencies.pezkuwi-overseer]
 default-features = false
 optional = true
 path = "../pezkuwi/node/overseer"
+version = "7.0.0"
 
 [dependencies.pezkuwi-pez-node-primitives]
 default-features = false
 optional = true
 path = "../pezkuwi/node/primitives"
+version = "7.0.0"
 
 [dependencies.pezkuwi-primitives-test-helpers]
 default-features = false
 optional = true
 path = "../pezkuwi/primitives/test-helpers"
+version = "1.0.0"
 
 [dependencies.pezkuwi-rpc]
 default-features = false
 optional = true
 path = "../pezkuwi/rpc"
+version = "7.0.0"
 
 [dependencies.pezkuwi-service]
 default-features = false
 optional = true
 path = "../pezkuwi/node/service"
+version = "7.0.1"
 
 [dependencies.pezkuwi-statement-distribution]
 default-features = false
 optional = true
 path = "../pezkuwi/node/network/statement-distribution"
+version = "7.0.0"
 
 [dependencies.pezkuwi-statement-table]
 default-features = false
 optional = true
 path = "../pezkuwi/statement-table"
+version = "7.0.0"
 
 [dependencies.pezkuwi-subxt]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/subxt"
+version = "0.44.0"
 
 [dependencies.pezkuwi-subxt-codegen]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/codegen"
+version = "0.44.0"
 
 [dependencies.pezkuwi-subxt-lightclient]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/lightclient"
+version = "0.44.0"
 
 [dependencies.pezkuwi-subxt-rpcs]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/rpcs"
+version = "0.44.0"
 
 [dependencies.pezkuwi-subxt-utils-fetchmetadata]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/utils/fetch-metadata"
+version = "0.44.0"
 
 [dependencies.pezkuwi-subxt-utils-stripmetadata]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-subxt/utils/strip-metadata"
+version = "0.44.0"
 
 [dependencies.pezkuwi-zombienet-configuration]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-zombienet-sdk/crates/configuration"
+version = "0.44.0"
 
 [dependencies.pezkuwi-zombienet-orchestrator]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-zombienet-sdk/crates/orchestrator"
+version = "0.44.0"
 
 [dependencies.pezkuwi-zombienet-prom-metrics-parser]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-zombienet-sdk/crates/prom-metrics-parser"
+version = "0.44.0"
 
 [dependencies.pezkuwi-zombienet-provider]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-zombienet-sdk/crates/provider"
+version = "0.44.0"
 
 [dependencies.pezkuwi-zombienet-sdk]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-zombienet-sdk/crates/sdk"
+version = "0.44.0"
 
 [dependencies.pezkuwi-zombienet-support]
 default-features = false
 optional = true
 path = "../vendor/pezkuwi-zombienet-sdk/crates/support"
+version = "0.44.0"
 
 [dependencies.pezmmr-gadget]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/merkle-mountain-range"
+version = "29.0.0"
 
 [dependencies.pezmmr-rpc]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/merkle-mountain-range/rpc"
+version = "28.0.0"
 
 [dependencies.pezpallet-contracts-fixtures]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/contracts/fixtures"
+version = "1.0.0"
 
 [dependencies.pezpallet-contracts-mock-network]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/contracts/mock-network"
+version = "3.0.0"
 
 [dependencies.pezpallet-transaction-payment-rpc]
 default-features = false
 optional = true
 path = "../bizinikiwi/pezframe/transaction-payment/rpc"
+version = "30.0.0"
 
 [dependencies.pezsc-allocator]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/allocator"
+version = "23.0.0"
 
 [dependencies.pezsc-authority-discovery]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/authority-discovery"
+version = "0.34.0"
 
 [dependencies.pezsc-basic-authorship]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/basic-authorship"
+version = "0.34.0"
 
 [dependencies.pezsc-block-builder]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/block-builder"
+version = "0.33.0"
 
 [dependencies.pezsc-chain-spec]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/chain-spec"
+version = "28.0.0"
 
 [dependencies.pezsc-cli]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/cli"
+version = "0.36.0"
 
 [dependencies.pezsc-client-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/api"
+version = "28.0.0"
 
 [dependencies.pezsc-client-db]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/db"
+version = "0.35.0"
 
 [dependencies.pezsc-consensus]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/common"
+version = "0.33.0"
 
 [dependencies.pezsc-consensus-aura]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/aura"
+version = "0.34.0"
 
 [dependencies.pezsc-consensus-babe]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/babe"
+version = "0.34.0"
 
 [dependencies.pezsc-consensus-babe-rpc]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/babe/rpc"
+version = "0.34.0"
 
 [dependencies.pezsc-consensus-beefy]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/beefy"
+version = "13.0.0"
 
 [dependencies.pezsc-consensus-beefy-rpc]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/beefy/rpc"
+version = "13.0.0"
 
 [dependencies.pezsc-consensus-epochs]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/epochs"
+version = "0.33.0"
 
 [dependencies.pezsc-consensus-grandpa]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/grandpa"
+version = "0.19.0"
 
 [dependencies.pezsc-consensus-grandpa-rpc]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/grandpa/rpc"
+version = "0.19.0"
 
 [dependencies.pezsc-consensus-manual-seal]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/manual-seal"
+version = "0.35.0"
 
 [dependencies.pezsc-consensus-pow]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/pow"
+version = "0.33.0"
 
 [dependencies.pezsc-consensus-slots]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/consensus/slots"
+version = "0.33.0"
 
 [dependencies.pezsc-executor]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/executor"
+version = "0.32.0"
 
 [dependencies.pezsc-executor-common]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/executor/common"
+version = "0.29.0"
 
 [dependencies.pezsc-executor-polkavm]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/executor/polkavm"
+version = "0.29.0"
 
 [dependencies.pezsc-executor-wasmtime]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/executor/wasmtime"
+version = "0.29.0"
+
+[dependencies.pezsc-hop]
+default-features = false
+optional = true
+path = "../bizinikiwi/client/hop"
+version = "0.2.0"
 
 [dependencies.pezsc-informant]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/informant"
+version = "0.33.0"
 
 [dependencies.pezsc-keystore]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/keystore"
+version = "25.0.0"
 
 [dependencies.pezsc-mixnet]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/mixnet"
+version = "0.4.0"
 
 [dependencies.pezsc-network]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/network"
+version = "0.34.0"
 
 [dependencies.pezsc-network-common]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/network/common"
+version = "0.33.0"
 
 [dependencies.pezsc-network-gossip]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/network-gossip"
+version = "0.34.0"
 
 [dependencies.pezsc-network-light]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/network/light"
+version = "0.33.0"
 
 [dependencies.pezsc-network-statement]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/network/statement"
+version = "0.16.0"
 
 [dependencies.pezsc-network-sync]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/network/sync"
+version = "0.33.0"
 
 [dependencies.pezsc-network-transactions]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/network/transactions"
+version = "0.33.0"
 
 [dependencies.pezsc-network-types]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/network/types"
+version = "0.10.0"
 
 [dependencies.pezsc-offchain]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/offchain"
+version = "29.0.0"
 
 [dependencies.pezsc-proposer-metrics]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/proposer-metrics"
+version = "0.17.0"
 
 [dependencies.pezsc-rpc]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/rpc"
+version = "29.0.0"
 
 [dependencies.pezsc-rpc-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/rpc-api"
+version = "0.33.0"
 
 [dependencies.pezsc-rpc-server]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/rpc-servers"
+version = "11.0.0"
 
 [dependencies.pezsc-rpc-spec-v2]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/rpc-spec-v2"
+version = "0.34.0"
 
 [dependencies.pezsc-runtime-utilities]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/runtime-utilities"
+version = "0.1.0"
 
 [dependencies.pezsc-service]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/service"
+version = "0.35.0"
 
 [dependencies.pezsc-state-db]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/state-db"
+version = "0.30.0"
 
 [dependencies.pezsc-statement-store]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/statement-store"
+version = "10.0.0"
 
 [dependencies.pezsc-storage-monitor]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/storage-monitor"
+version = "0.16.0"
 
 [dependencies.pezsc-sync-state-rpc]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/sync-state-rpc"
+version = "0.34.0"
 
 [dependencies.pezsc-sysinfo]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/sysinfo"
+version = "27.0.0"
 
 [dependencies.pezsc-telemetry]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/telemetry"
+version = "15.0.0"
 
 [dependencies.pezsc-tracing]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/tracing"
+version = "28.0.0"
 
 [dependencies.pezsc-transaction-pool]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/transaction-pool"
+version = "28.0.0"
 
 [dependencies.pezsc-transaction-pool-api]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/transaction-pool/api"
+version = "28.0.0"
 
 [dependencies.pezsc-utils]
 default-features = false
 optional = true
 path = "../bizinikiwi/client/utils"
+version = "14.0.0"
+
+[dependencies.pezsc-virtualization]
+default-features = false
+optional = true
+path = "../bizinikiwi/client/virtualization"
+version = "0.3.0"
 
 [dependencies.pezsp-blockchain]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/blockchain"
+version = "28.0.0"
 
 [dependencies.pezsp-consensus]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/consensus/common"
+version = "0.32.0"
 
 [dependencies.pezsp-core-hashing]
 default-features = false
 optional = true
 path = "../bizinikiwi/deprecated/hashing"
+version = "15.0.0"
 
 [dependencies.pezsp-core-hashing-proc-macro]
 default-features = false
 optional = true
 path = "../bizinikiwi/deprecated/hashing/proc-macro"
+version = "15.0.0"
 
 [dependencies.pezsp-database]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/database"
+version = "10.0.0"
 
 [dependencies.pezsp-maybe-compressed-blob]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/maybe-compressed-blob"
+version = "11.0.0"
 
 [dependencies.pezsp-panic-handler]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/panic-handler"
+version = "13.0.0"
 
 [dependencies.pezsp-rpc]
 default-features = false
 optional = true
 path = "../bizinikiwi/primitives/rpc"
+version = "26.0.0"
+
+[dependencies.pezsp-virtualization]
+default-features = false
+optional = true
+path = "../bizinikiwi/primitives/virtualization"
+version = "0.4.0"
+
+[dependencies.pezsp-virtualization-test-fixture]
+default-features = false
+optional = true
+path = "../bizinikiwi/primitives/virtualization/test-fixture"
+version = "0.3.0"
 
 [dependencies.pezstaging-chain-spec-builder]
 default-features = false
 optional = true
 path = "../bizinikiwi/bin/utils/chain-spec-builder"
+version = "1.6.1"
 
 [dependencies.pezstaging-node-inspect]
 default-features = false
 optional = true
 path = "../bizinikiwi/bin/node/inspect"
+version = "0.12.0"
 
 [dependencies.pezstaging-tracking-allocator]
 default-features = false
 optional = true
 path = "../pezkuwi/node/tracking-allocator"
+version = "2.0.0"
 
 [dependencies.teyrchains-runtimes-test-utils]
 default-features = false
 optional = true
 path = "../pezcumulus/teyrchains/runtimes/test-utils"
+version = "7.0.0"
 
 [dependencies.xcm-pez-emulator]
 default-features = false
 optional = true
 path = "../pezcumulus/xcm/xcm-pez-emulator"
+version = "0.5.0"
 
 [dependencies.xcm-pez-simulator]
 default-features = false
 optional = true
 path = "../pezkuwi/xcm/xcm-pez-simulator"
+version = "7.0.0"
 
 [package.metadata.docs.rs]
 features = ["node", "runtime-full"]

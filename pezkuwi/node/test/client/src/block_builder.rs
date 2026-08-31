@@ -29,7 +29,7 @@ use pezsp_runtime::{traits::Block as BlockT, Digest, DigestItem};
 use pezsp_state_machine::BasicExternalities;
 
 /// An extension for the test client to initialize a Pezkuwi specific block builder.
-pub trait InitPezkuwiBlockBuilder {
+pub trait InitPolkadotBlockBuilder {
 	/// Init a Pezkuwi specific block builder that works for the test runtime.
 	///
 	/// This will automatically create and push the inherents for you to make the block valid for
@@ -38,7 +38,7 @@ pub trait InitPezkuwiBlockBuilder {
 
 	/// Init a Pezkuwi specific block builder at a specific block that works for the test runtime.
 	///
-	/// Same as [`InitPezkuwiBlockBuilder::init_pezkuwi_block_builder`] besides that it takes a
+	/// Same as [`InitPolkadotBlockBuilder::init_pezkuwi_block_builder`] besides that it takes a
 	/// `Hash` to say which should be the parent block of the block that is being build.
 	fn init_pezkuwi_block_builder_at(
 		&self,
@@ -46,7 +46,7 @@ pub trait InitPezkuwiBlockBuilder {
 	) -> pezsc_block_builder::BlockBuilder<'_, Block, Client>;
 }
 
-impl InitPezkuwiBlockBuilder for Client {
+impl InitPolkadotBlockBuilder for Client {
 	fn init_pezkuwi_block_builder(&self) -> BlockBuilder<'_, Block, Client> {
 		let chain_info = self.chain_info();
 		self.init_pezkuwi_block_builder_at(chain_info.best_hash)

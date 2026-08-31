@@ -35,7 +35,14 @@ use crate::{
 use alloc::format;
 use alloc::{vec, vec::Vec};
 use pezframe_support::build_struct_json_patch;
-use pezkuwi_primitives::{AccountId, AssignmentId, SchedulerParams, ValidatorId};
+use pezkuwi_primitives::{
+	// HostConfiguration carries the vstaging shape, which added on_demand_queue_max_size;
+	// the root re-export still points at v9 and no longer matches the field it fills.
+	vstaging::SchedulerParams,
+	AccountId,
+	AssignmentId,
+	ValidatorId,
+};
 use pezkuwichain_runtime_constants::currency::UNITS as HEZ;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use pezsp_consensus_babe::AuthorityId as BabeId;
@@ -175,7 +182,7 @@ fn default_teyrchains_host_configuration(
 			lookahead: 3,
 			group_rotation_frequency: 20,
 			paras_availability_period: 4,
-			// System teyrchains için 2 core gerekli (Asset Hub + People Chain)
+			// Two cores, one for each system teyrchain: the Asset Hub and People.
 			num_cores: 2,
 			..Default::default()
 		},

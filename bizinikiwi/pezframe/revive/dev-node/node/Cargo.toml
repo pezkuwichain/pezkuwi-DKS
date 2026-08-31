@@ -35,6 +35,7 @@ pezkuwi-sdk = { workspace = true, features = [
 	"pezsp-core",
 	"pezsp-genesis-builder",
 	"pezsp-io",
+	"pezsp-runtime",
 	"pezsp-timestamp",
 ] }
 

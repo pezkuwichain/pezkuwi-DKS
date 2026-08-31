@@ -66,7 +66,7 @@ pub fn expand_outer_freeze_reason(
 			#scrate::__private::codec::DecodeWithMemTracking,
 			#scrate::__private::codec::MaxEncodedLen,
 			#scrate::__private::scale_info::TypeInfo,
-			#scrate::__private::RuntimeDebug,
+			#scrate::__private::Debug,
 		)]
 		pub enum RuntimeFreezeReason {
 			#( #freeze_reason_variants )*

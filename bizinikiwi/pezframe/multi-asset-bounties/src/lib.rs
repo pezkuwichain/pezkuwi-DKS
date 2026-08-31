@@ -17,7 +17,7 @@
 
 //! > Made with *Bizinikiwi*, for *Pezkuwi*.
 //!
-//! [![github]](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi/pezframe/multi-asset-bounties) -
+//! [![github]](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/bizinikiwi/pezframe/multi-asset-bounties) -
 //! [![pezkuwi]](https://pezkuwichain.io)
 //!
 //! [pezkuwi]: https://img.shields.io/badge/polkadot-E6007A?style=for-the-badge&logo=polkadot&logoColor=white
@@ -98,7 +98,7 @@ use pezframe_system::pezpallet_prelude::{
 };
 use pezsp_runtime::{
 	traits::{AccountIdConversion, BadOrigin, Convert, Saturating, StaticLookup, TryConvert, Zero},
-	Permill, RuntimeDebug,
+	Permill,
 };
 use scale_info::TypeInfo;
 
@@ -127,7 +127,7 @@ pub type ChildBountyOf<T, I> = ChildBounty<
 >;
 
 /// A funded bounty.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct Bounty<AccountId, Balance, AssetKind, Hash, PaymentId, Beneficiary> {
 	/// The kind of asset this bounty is rewarded in.
 	pub asset_kind: AssetKind,
@@ -146,7 +146,7 @@ pub struct Bounty<AccountId, Balance, AssetKind, Hash, PaymentId, Beneficiary> {
 }
 
 /// A funded child-bounty.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct ChildBounty<AccountId, Balance, Hash, PaymentId, Beneficiary> {
 	/// The parent bounty index of this child-bounty.
 	pub parent_bounty: BountyIndex,
@@ -164,7 +164,7 @@ pub struct ChildBounty<AccountId, Balance, Hash, PaymentId, Beneficiary> {
 }
 
 /// The status of a child-/bounty proposal.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub enum BountyStatus<AccountId, PaymentId, Beneficiary> {
 	/// The child-/bounty funding has been attempted and is waiting to confirm the funds
 	/// allocation.
@@ -229,7 +229,7 @@ pub enum BountyStatus<AccountId, PaymentId, Beneficiary> {
 /// When a payment is initiated via `Paymaster::pay`, it begins in the `Pending` state. The
 /// `check_status` call updates the payment state and advances the child-/bounty status. The
 /// `retry_payment` call can be used to reattempt payments in either `Pending` or `Failed` states.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, MaxEncodedLen, RuntimeDebug, TypeInfo)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, MaxEncodedLen, Debug, TypeInfo)]
 pub enum PaymentState<Id> {
 	/// Pending claim.
 	Pending,

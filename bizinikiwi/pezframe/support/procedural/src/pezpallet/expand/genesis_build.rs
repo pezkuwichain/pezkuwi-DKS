@@ -17,7 +17,6 @@
 
 use crate::pezpallet::Def;
 
-///
 /// * implement the trait `pezsp_runtime::BuildStorage`
 pub fn expand_genesis_build(def: &mut Def) -> proc_macro2::TokenStream {
 	let genesis_config = if let Some(genesis_config) = &def.genesis_config {

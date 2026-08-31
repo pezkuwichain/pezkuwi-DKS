@@ -66,15 +66,7 @@ mod module1 {
 
 	#[pezpallet::origin]
 	#[derive(
-		Clone,
-		PartialEq,
-		Eq,
-		RuntimeDebug,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		MaxEncodedLen,
-		TypeInfo,
+		Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeWithMemTracking, MaxEncodedLen, TypeInfo,
 	)]
 	#[scale_info(skip_type_params(I))]
 	pub struct Origin<T, I = ()>(pub PhantomData<(T, I)>);
@@ -122,15 +114,7 @@ mod module2 {
 
 	#[pezpallet::origin]
 	#[derive(
-		Clone,
-		PartialEq,
-		Eq,
-		RuntimeDebug,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		MaxEncodedLen,
-		TypeInfo,
+		Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeWithMemTracking, MaxEncodedLen, TypeInfo,
 	)]
 	pub struct Origin;
 
@@ -183,7 +167,7 @@ mod nested {
 			Clone,
 			PartialEq,
 			Eq,
-			RuntimeDebug,
+			Debug,
 			Encode,
 			Decode,
 			DecodeWithMemTracking,
@@ -274,15 +258,7 @@ pub mod module3 {
 
 	#[pezpallet::origin]
 	#[derive(
-		Clone,
-		PartialEq,
-		Eq,
-		RuntimeDebug,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		MaxEncodedLen,
-		TypeInfo,
+		Clone, PartialEq, Eq, Debug, Encode, Decode, DecodeWithMemTracking, MaxEncodedLen, TypeInfo,
 	)]
 	pub struct Origin<T>(pub PhantomData<T>);
 

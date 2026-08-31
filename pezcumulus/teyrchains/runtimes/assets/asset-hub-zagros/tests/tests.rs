@@ -15,7 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Tests for the Westmint (Zagros Assets Hub) chain.
+//! Tests for the Zagros Asset Hub chain.
+
+extern crate alloc;
 
 use alloy_core::{
 	primitives::U256,
@@ -58,9 +60,9 @@ use pezframe_support::{
 };
 use pezpallet_revive::{
 	test_utils::builder::{BareInstantiateBuilder, Contract},
-	Code,
+	Code, TransactionLimits,
 };
-use pezpallet_revive_fixtures::compile_module;
+use pezpallet_revive_fixtures::{compile_module, compile_module_with_type, FixtureType};
 use pezpallet_uniques::{asset_ops::Item, asset_strategies::Attribute};
 use pezsp_consensus_aura::SlotDuration;
 use pezsp_core::crypto::Ss58Codec;
@@ -86,16 +88,20 @@ const ALICE: [u8; 32] = [1u8; 32];
 const BOB: [u8; 32] = [2u8; 32];
 const SOME_ASSET_ADMIN: [u8; 32] = [5u8; 32];
 
-const ERC20_PVM: &[u8] =
-	include_bytes!("../../../../../../bizinikiwi/pezframe/revive/fixtures/erc20/erc20.polkavm");
-
-const FAKE_ERC20_PVM: &[u8] = include_bytes!(
-	"../../../../../../bizinikiwi/pezframe/revive/fixtures/erc20/fake_erc20.polkavm"
-);
-
-const EXPENSIVE_ERC20_PVM: &[u8] = include_bytes!(
-	"../../../../../../bizinikiwi/pezframe/revive/fixtures/erc20/expensive_erc20.polkavm"
-);
+/// The three ERC20 fixtures, compiled from their Solidity rather than read as bytes.
+///
+/// They used to be `include_bytes!` of three `.polkavm` blobs checked in beside their sources,
+/// and nothing in the tree built them. Editing the `.sol` left the blob untouched, so the test
+/// went on passing against the old binary and said nothing -- and `fake_erc20.polkavm` had no
+/// source at all, a binary in the tree that nobody could regenerate or read.
+///
+/// `compile_module_with_type` is what the rest of the fixtures already use, and the crate
+/// already requires resolc to build its other thirty contracts, so this costs no new tooling.
+fn erc20_code(name: &str) -> Vec<u8> {
+	compile_module_with_type(name, FixtureType::Resolc)
+		.unwrap_or_else(|e| panic!("compiling {name}: {e}"))
+		.0
+}
 
 parameter_types! {
 	pub Governance: GovernanceOrigin<RuntimeOrigin> = GovernanceOrigin::Origin(RuntimeOrigin::root());
@@ -161,14 +167,28 @@ fn test_buy_and_refund_weight_in_native() {
 			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
 			let payment: Asset = (native_location.clone(), fee + extra_amount).into();
 
+			// AssetsInHolding no longer converts from an Asset: it carries imbalances now, so the
+			// payment has to come out of a real account.
+			let bob_location: Location =
+				Junction::AccountId32 { network: None, id: bob.clone().into() }.into();
+			let payment_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&payment,
+					&bob_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw payment");
+
 			// init trader and buy weight.
 			let mut trader = <XcmConfig as xcm_executor::Config>::Trader::new();
 			let unused_asset =
-				trader.buy_weight(weight, payment.into(), &ctx).expect("Expected Ok");
+				trader.buy_weight(weight, payment_holding, &ctx).expect("Expected Ok");
 
 			// assert.
-			let unused_amount =
-				unused_asset.fungible.get(&native_location.clone().into()).map_or(0, |a| *a);
+			let unused_amount = unused_asset
+				.fungible
+				.get(&native_location.clone().into())
+				.map_or(0, |a| a.amount());
 			assert_eq!(unused_amount, extra_amount);
 			assert_eq!(Balances::total_issuance(), total_issuance);
 
@@ -178,7 +198,11 @@ fn test_buy_and_refund_weight_in_native() {
 
 			// refund.
 			let actual_refund = trader.refund_weight(refund_weight, &ctx).unwrap();
-			assert_eq!(actual_refund, (native_location, refund).into());
+			let actual_refund_amount = actual_refund
+				.fungible
+				.get(&native_location.clone().into())
+				.map_or(0, |a| a.amount());
+			assert_eq!(actual_refund_amount, refund);
 
 			// assert.
 			assert_eq!(Balances::balance(&staking_pot), initial_balance);
@@ -186,7 +210,13 @@ fn test_buy_and_refund_weight_in_native() {
 			// account.
 			drop(trader);
 			assert_eq!(Balances::balance(&staking_pot), initial_balance + fee - refund);
-			assert_eq!(Balances::total_issuance(), total_issuance + fee - refund);
+			// Unchanged, not raised by the fee. The fee is *moved* -- withdrawn from the payer
+			// and deposited to the pot -- so nothing is created by charging it. The old
+			// expectation came from the holding model this file was half-migrated away from,
+			// where a trader's fee appeared out of the accounting rather than out of an
+			// account, and a fee that inflates the supply is the last thing a fixed-supply
+			// chain should assert as correct.
+			assert_eq!(Balances::total_issuance(), total_issuance);
 		})
 }
 
@@ -244,7 +274,7 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 				pool_liquidity,
 				1,
 				1,
-				bob,
+				bob.clone(),
 			));
 
 			// keep initial total issuance to assert later.
@@ -260,16 +290,33 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
 			let payment: Asset = (asset_1_location.clone(), asset_fee + extra_amount).into();
 
+			// AssetsInHolding no longer converts from an Asset: it carries imbalances now, so the
+			// payment has to come out of a real account.
+			let bob_location: Location =
+				Junction::AccountId32 { network: None, id: bob.clone().into() }.into();
+			let payment_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&payment,
+					&bob_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw payment");
+
 			// init trader and buy weight.
 			let mut trader = <XcmConfig as xcm_executor::Config>::Trader::new();
 			let unused_asset =
-				trader.buy_weight(weight, payment.into(), &ctx).expect("Expected Ok");
+				trader.buy_weight(weight, payment_holding, &ctx).expect("Expected Ok");
 
 			// assert.
-			let unused_amount =
-				unused_asset.fungible.get(&asset_1_location.clone().into()).map_or(0, |a| *a);
+			let unused_amount = unused_asset
+				.fungible
+				.get(&asset_1_location.clone().into())
+				.map_or(0, |a| a.amount());
 			assert_eq!(unused_amount, extra_amount);
-			assert_eq!(Assets::total_issuance(asset_1), asset_total_issuance + asset_fee);
+			// Unchanged: the fee is taken from the payer and swapped, not minted. See the
+			// note on the native trader above -- the `+ fee` expectations are leftovers from
+			// the holding model this file was half-migrated away from.
+			assert_eq!(Assets::total_issuance(asset_1), asset_total_issuance);
 
 			// prepare input to refund weight.
 			let refund_weight = Weight::from_parts(1_000_000_000, 0);
@@ -284,7 +331,11 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 
 			// refund.
 			let actual_refund = trader.refund_weight(refund_weight, &ctx).unwrap();
-			assert_eq!(actual_refund, (asset_1_location, asset_refund).into());
+			let actual_refund_amount = actual_refund
+				.fungible
+				.get(&asset_1_location.clone().into())
+				.map_or(0, |a| a.amount());
+			assert_eq!(actual_refund_amount, asset_refund);
 
 			// assert.
 			assert_eq!(Balances::balance(&staking_pot), initial_balance);
@@ -292,10 +343,10 @@ fn test_buy_and_refund_weight_with_swap_local_asset_xcm_trader() {
 			// account.
 			drop(trader);
 			assert_eq!(Balances::balance(&staking_pot), initial_balance + fee - refund);
-			assert_eq!(
-				Assets::total_issuance(asset_1),
-				asset_total_issuance + asset_fee - asset_refund
-			);
+			// Unchanged: the fee is taken from the payer and swapped, not minted. See the
+			// note on the native trader above -- the `+ fee` expectations are leftovers from
+			// the holding model this file was half-migrated away from.
+			assert_eq!(Assets::total_issuance(asset_1), asset_total_issuance);
 			assert_eq!(Balances::total_issuance(), native_total_issuance);
 		})
 }
@@ -355,7 +406,7 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 				pool_liquidity,
 				1,
 				1,
-				bob,
+				bob.clone(),
 			));
 
 			// keep initial total issuance to assert later.
@@ -371,18 +422,35 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 			let ctx = XcmContext { origin: None, message_id: XcmHash::default(), topic: None };
 			let payment: Asset = (foreign_location.clone(), asset_fee + extra_amount).into();
 
+			// AssetsInHolding no longer converts from an Asset: it carries imbalances now, so the
+			// payment has to come out of a real account.
+			let bob_location: Location =
+				Junction::AccountId32 { network: None, id: bob.clone().into() }.into();
+			let payment_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&payment,
+					&bob_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw payment");
+
 			// init trader and buy weight.
 			let mut trader = <XcmConfig as xcm_executor::Config>::Trader::new();
 			let unused_asset =
-				trader.buy_weight(weight, payment.into(), &ctx).expect("Expected Ok");
+				trader.buy_weight(weight, payment_holding, &ctx).expect("Expected Ok");
 
 			// assert.
-			let unused_amount =
-				unused_asset.fungible.get(&foreign_location.clone().into()).map_or(0, |a| *a);
+			let unused_amount = unused_asset
+				.fungible
+				.get(&foreign_location.clone().into())
+				.map_or(0, |a| a.amount());
 			assert_eq!(unused_amount, extra_amount);
+			// Unchanged: the fee is taken from the payer and swapped, not minted. See the
+			// note on the native trader above -- the `+ fee` expectations are leftovers from
+			// the holding model this file was half-migrated away from.
 			assert_eq!(
 				ForeignAssets::total_issuance(foreign_location.clone()),
-				asset_total_issuance + asset_fee
+				asset_total_issuance
 			);
 
 			// prepare input to refund weight.
@@ -395,7 +463,11 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 
 			// refund.
 			let actual_refund = trader.refund_weight(refund_weight, &ctx).unwrap();
-			assert_eq!(actual_refund, (foreign_location.clone(), asset_refund).into());
+			let actual_refund_amount = actual_refund
+				.fungible
+				.get(&foreign_location.clone().into())
+				.map_or(0, |a| a.amount());
+			assert_eq!(actual_refund_amount, asset_refund);
 
 			// assert.
 			assert_eq!(Balances::balance(&staking_pot), initial_balance);
@@ -403,10 +475,9 @@ fn test_buy_and_refund_weight_with_swap_foreign_asset_xcm_trader() {
 			// account.
 			drop(trader);
 			assert_eq!(Balances::balance(&staking_pot), initial_balance + fee - refund);
-			assert_eq!(
-				ForeignAssets::total_issuance(foreign_location),
-				asset_total_issuance + asset_fee - asset_refund
-			);
+			// Unchanged, for the same reason as every other issuance assertion here: the fee
+			// moves, it is not created.
+			assert_eq!(ForeignAssets::total_issuance(foreign_location), asset_total_issuance);
 			assert_eq!(Balances::total_issuance(), native_total_issuance);
 		})
 }
@@ -451,10 +522,40 @@ fn test_asset_xcm_take_first_trader_refund_not_possible_since_amount_less_than_e
 				"we are testing what happens when the amount does not exceed ED"
 			);
 
-			let asset: Asset = (asset_location, amount_bought).into();
+			let asset: Asset = (asset_location.clone(), amount_bought).into();
 
 			// Buy weight should return an error
-			assert_noop!(trader.buy_weight(bought, asset.into(), &ctx), XcmError::TooExpensive);
+			// The holding is built by withdrawing, so the account needs a balance to withdraw
+			// from -- at least ED, or the mint itself is rejected.
+			let mint_amount = amount_bought.max(ExistentialDeposit::get() + 1);
+			assert_ok!(Assets::mint(
+				RuntimeHelper::origin_of(AccountId::from(ALICE)),
+				1.into(),
+				AccountId::from(ALICE).into(),
+				mint_amount
+			));
+			let alice_location: Location =
+				Junction::AccountId32 { network: None, id: ALICE.into() }.into();
+			let asset_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&asset,
+					&alice_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw asset");
+
+			// Buy weight fails and hands the asset back inside the error.
+			let result = trader.buy_weight(bought, asset_holding, &ctx);
+			assert!(result.is_err());
+			if let Err((returned_asset, xcm_error)) = result {
+				assert_eq!(xcm_error, XcmError::TooExpensive);
+				// The whole minted amount comes back: withdrawing only `amount_bought` would
+				// leave a sub-ED remainder, so the transactor takes the account down.
+				assert_eq!(
+					returned_asset.fungible.get(&asset_location.into()).map_or(0, |a| a.amount()),
+					mint_amount
+				);
+			}
 
 			// not credited since the ED is higher than this value
 			assert_eq!(Assets::balance(1, AccountId::from(ALICE)), 0);
@@ -508,10 +609,35 @@ fn test_asset_xcm_take_first_trader_not_possible_for_non_sufficient_assets() {
 
 			let asset_location = AssetIdForTrustBackedAssetsConvert::convert_back(&1).unwrap();
 
-			let asset: Asset = (asset_location, asset_amount_needed).into();
+			let asset: Asset = (asset_location.clone(), asset_amount_needed).into();
 
-			// Make sure again buy_weight does return an error
-			assert_noop!(trader.buy_weight(bought, asset.into(), &ctx), XcmError::TooExpensive);
+			// Mint what the withdraw below takes; alice only holds the minimum balance.
+			assert_ok!(Assets::mint(
+				RuntimeHelper::origin_of(AccountId::from(ALICE)),
+				1.into(),
+				AccountId::from(ALICE).into(),
+				asset_amount_needed
+			));
+
+			// Make sure again buy_weight does return an error, handing the asset back.
+			let alice_location: Location =
+				Junction::AccountId32 { network: None, id: ALICE.into() }.into();
+			let asset_holding =
+				<XcmConfig as xcm_executor::Config>::AssetTransactor::withdraw_asset(
+					&asset,
+					&alice_location,
+					Some(&ctx),
+				)
+				.expect("Failed to withdraw asset");
+			let result = trader.buy_weight(bought, asset_holding, &ctx);
+			assert!(result.is_err());
+			if let Err((returned_asset, xcm_error)) = result {
+				assert_eq!(xcm_error, XcmError::TooExpensive);
+				assert_eq!(
+					returned_asset.fungible.get(&asset_location.into()).map_or(0, |a| a.amount()),
+					asset_amount_needed
+				);
+			}
 
 			// Drop trader
 			drop(trader);
@@ -572,16 +698,20 @@ fn test_nft_asset_transactor_works<T: TransactAsset>() {
 				.appended_with(GeneralIndex(collection_id.into()))
 				.unwrap();
 			let item_asset: Asset =
-				(collection_location, AssetInstance::Index(item_id.into())).into();
+				(collection_location.clone(), AssetInstance::Index(item_id.into())).into();
 
 			let alice_account_location: Location = alice.clone().into();
 			let bob_account_location: Location = bob.clone().into();
 
 			// Can't deposit the token that isn't withdrawn
-			assert_err!(
-				T::deposit_asset(&item_asset, &alice_account_location, Some(&ctx),),
-				XcmError::FailedToTransactAsset("AlreadyExists")
+			let item_holding = xcm_executor::AssetsInHolding::new_from_non_fungible(
+				collection_location.clone().into(),
+				AssetInstance::Index(item_id.into()),
 			);
+			assert!(matches!(
+				T::deposit_asset(item_holding, &alice_account_location, Some(&ctx)),
+				Err((_, XcmError::FailedToTransactAsset("AlreadyExists")))
+			));
 
 			// Alice isn't the owner, she can't withdraw the token
 			assert_noop!(
@@ -589,8 +719,11 @@ fn test_nft_asset_transactor_works<T: TransactAsset>() {
 				XcmError::FailedToTransactAsset("NoPermission")
 			);
 
-			// Bob, the owner, can withdraw the token
-			assert_ok!(T::withdraw_asset(&item_asset, &bob_account_location, Some(&ctx),));
+			// Bob, the owner, can withdraw the token. The holding it returns is what the
+			// deposit below consumes -- deposit_asset takes a holding, not an asset.
+			let withdrawn_holding =
+				T::withdraw_asset(&item_asset, &bob_account_location, Some(&ctx))
+					.expect("Bob owns the token");
 
 			// The token is withdrawn
 			assert_eq!(
@@ -613,8 +746,8 @@ fn test_nft_asset_transactor_works<T: TransactAsset>() {
 				XcmError::FailedToTransactAsset("UnknownCollection")
 			);
 
-			// Deposit the token to alice
-			assert_ok!(T::deposit_asset(&item_asset, &alice_account_location, Some(&ctx),));
+			// Deposit the token to alice, using the holding bob's withdraw produced
+			assert_ok!(T::deposit_asset(withdrawn_holding, &alice_account_location, Some(&ctx),));
 
 			// The token is deposited
 			assert_eq!(
@@ -632,10 +765,14 @@ fn test_nft_asset_transactor_works<T: TransactAsset>() {
 			);
 
 			// Can't deposit the token twice
-			assert_err!(
-				T::deposit_asset(&item_asset, &alice_account_location, Some(&ctx),),
-				XcmError::FailedToTransactAsset("AlreadyExists")
+			let item_holding_again = xcm_executor::AssetsInHolding::new_from_non_fungible(
+				collection_location.clone().into(),
+				AssetInstance::Index(item_id.into()),
 			);
+			assert!(matches!(
+				T::deposit_asset(item_holding_again, &alice_account_location, Some(&ctx)),
+				Err((_, XcmError::FailedToTransactAsset("AlreadyExists")))
+			));
 
 			// Transfer the token directly
 			assert_ok!(T::transfer_asset(
@@ -950,7 +1087,7 @@ asset_test_pezutils::include_asset_transactor_transfer_with_local_consensus_curr
 	})
 );
 
-asset_test_pezutils::include_asset_transactor_transfer_with_pallet_assets_instance_works!(
+asset_test_pezutils::include_asset_transactor_transfer_with_pezpallet_assets_instance_works!(
 	asset_transactor_transfer_with_trust_backed_assets_works,
 	Runtime,
 	XcmConfig,
@@ -968,7 +1105,7 @@ asset_test_pezutils::include_asset_transactor_transfer_with_pallet_assets_instan
 	})
 );
 
-asset_test_pezutils::include_asset_transactor_transfer_with_pallet_assets_instance_works!(
+asset_test_pezutils::include_asset_transactor_transfer_with_pezpallet_assets_instance_works!(
 	asset_transactor_transfer_with_foreign_assets_works,
 	Runtime,
 	XcmConfig,
@@ -1063,7 +1200,17 @@ fn limited_reserve_transfer_assets_for_native_asset_to_asset_hub_pezkuwichain_wo
 		}),
 		bridging_to_asset_hub_pezkuwichain,
 		WeightLimit::Unlimited,
-		Some(xcm_config::bridging::XcmBridgeHubRouterFeeAssetId::get()),
+		// `None`: this chain's router is configured `UnpaidExport = true`, so the export
+		// message it sends to the Bridge Hub carries no `WithdrawAsset`/`BuyExecution`.
+		// Upstream's equivalent is paid, which is why this argument was `Some(fee_asset)`
+		// and why the test was red.
+		//
+		// OPEN, and worth a decision rather than a default: `XcmBridgeHubRouterBaseFee` and
+		// `XcmBridgeHubRouterByteFee` are configured, and the router's doc comment above its
+		// `Config` impl promises "dynamic fees and back-pressure" -- all of which
+		// `UnpaidExport = true` makes inert. Either the bridge should charge and this becomes
+		// `Some(..)` again, or it should not and the fee apparatus should go.
+		None,
 		Some(xcm_config::TreasuryAccount::get()),
 	)
 }
@@ -1116,7 +1263,7 @@ fn receive_reserve_asset_deposited_roc_from_asset_hub_pezkuwichain_fees_paid_by_
 			(
 				[PalletInstance(pezbp_bridge_hub_zagros::WITH_BRIDGE_ZAGROS_TO_PEZKUWICHAIN_MESSAGES_PALLET_INDEX)].into(),
 				GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH)),
-				[Teyrchain(1000)].into()
+				[xcm::latest::Junction::Teyrchain(1000)].into()
 			),
 			|| {
 				// check staking pot for ED
@@ -1192,7 +1339,7 @@ fn receive_reserve_asset_deposited_roc_from_asset_hub_pezkuwichain_fees_paid_by_
 		(
 			[PalletInstance(pezbp_bridge_hub_zagros::WITH_BRIDGE_ZAGROS_TO_PEZKUWICHAIN_MESSAGES_PALLET_INDEX)].into(),
 			GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH)),
-			[Teyrchain(1000)].into()
+			[xcm::latest::Junction::Teyrchain(1000)].into()
 		),
 		|| {
 			// check block author before
@@ -1361,6 +1508,11 @@ fn reserve_transfer_native_asset_to_non_teleport_para_works() {
 
 #[test]
 fn location_conversion_works() {
+	// The expected accounts are derived, not chosen: `blake2_256` over the location's standard
+	// description. The Pezkuwichain ones therefore move with `PEZKUWICHAIN_GENESIS_HASH`,
+	// which the genesis reset will change -- when it does they all change, and this test is
+	// what will say so. Regenerate them from the failure output; do not hand-edit one and
+	// leave the rest.
 	// the purpose of hardcoded values is to catch an unintended location conversion logic change.
 	struct TestCase {
 		description: &'static str,
@@ -1421,7 +1573,10 @@ fn location_conversion_works() {
 			description: "DescribeAccountKey20Terminal Sibling",
 			location: Location::new(
 				1,
-				[Teyrchain(1111), AccountKey20 { network: None, key: [0u8; 20] }],
+				[
+					xcm::latest::Junction::Teyrchain(1111),
+					AccountKey20 { network: None, key: [0u8; 20] },
+				],
 			),
 			expected_account_id_str: "5CB2FbUds2qvcJNhDiTbRZwiS3trAy6ydFGMSVutmYijpPAg",
 		},
@@ -1435,7 +1590,10 @@ fn location_conversion_works() {
 			description: "DescribeTreasuryVoiceTerminal Sibling",
 			location: Location::new(
 				1,
-				[Teyrchain(1111), Plurality { id: BodyId::Treasury, part: BodyPart::Voice }],
+				[
+					xcm::latest::Junction::Teyrchain(1111),
+					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
+				],
 			),
 			expected_account_id_str: "5G6TDwaVgbWmhqRUKjBhRRnH4ry9L9cjRymUEmiRsLbSE4gB",
 		},
@@ -1449,7 +1607,10 @@ fn location_conversion_works() {
 			description: "DescribeBodyTerminal Sibling",
 			location: Location::new(
 				1,
-				[Teyrchain(1111), Plurality { id: BodyId::Unit, part: BodyPart::Voice }],
+				[
+					xcm::latest::Junction::Teyrchain(1111),
+					Plurality { id: BodyId::Unit, part: BodyPart::Voice },
+				],
 			),
 			expected_account_id_str: "5DBoExvojy8tYnHgLL97phNH975CyT45PWTZEeGoBZfAyRMH",
 		},
@@ -1476,7 +1637,7 @@ fn location_conversion_works() {
 		TestCase {
 			description: "Describe Pezkuwichain Location",
 			location: Location::new(2, [GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH))]),
-			expected_account_id_str: "5FfpYGrFybJXFsQk7dabr1vEbQ5ycBBu85vrDjPJsF3q4A8P",
+			expected_account_id_str: "5E6J1ejfunz1TCubgoyiikAwkE428ZvaauUix2gZhrHpmEkS",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain AccountID",
@@ -1487,7 +1648,7 @@ fn location_conversion_works() {
 					AccountId32 { network: None, id: AccountId::from(ALICE).into() },
 				],
 			),
-			expected_account_id_str: "5CXVYinTeQKQGWAP9RqaPhitk7ybrqBZf66kCJmtAjV4Xwbg",
+			expected_account_id_str: "5Gm6deLdMkksbrhEVTbAGq98KLHdMDfCivSQqrMEehf4dCuq",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain AccountKey",
@@ -1498,7 +1659,7 @@ fn location_conversion_works() {
 					AccountKey20 { network: None, key: [0u8; 20] },
 				],
 			),
-			expected_account_id_str: "5GbRhbJWb2hZY7TCeNvTqZXaP3x3UY5xt4ccxpV1ZtJS1gFL",
+			expected_account_id_str: "5DnrfFF8jo81EnWzd5JYix9CZXtPLfe1z14i79UAi2uJU1kw",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain Treasury Plurality",
@@ -1509,7 +1670,7 @@ fn location_conversion_works() {
 					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
 				],
 			),
-			expected_account_id_str: "5EGi9NgJNGoMawY8ubnCDLmbdEW6nt2W2U2G3j9E3jXmspT7",
+			expected_account_id_str: "5FKvWJ56DNLk3q3iefGTDNdaQX4iQRqHSYeh4LaqA8ggsi1E",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain Teyrchain Location",
@@ -1517,7 +1678,7 @@ fn location_conversion_works() {
 				2,
 				[GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH)), Teyrchain(1000)],
 			),
-			expected_account_id_str: "5CQeLKM7XC1xNBiQLp26Wa948cudjYRD5VzvaTG3BjnmUvLL",
+			expected_account_id_str: "5Fv6bZR6xp7sJuneVnKb1RTnjFFo9np565TyesbTFCen3DJW",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain Teyrchain AccountID",
@@ -1529,7 +1690,7 @@ fn location_conversion_works() {
 					AccountId32 { network: None, id: AccountId::from(ALICE).into() },
 				],
 			),
-			expected_account_id_str: "5H8HsK17dV7i7J8fZBNd438rvwd7rHviZxJqyZpLEGJn6vb6",
+			expected_account_id_str: "5CB473zfRKXcCRsBDvTgzMLeVcDHmaEBgoVa7LUDq1bnHhSg",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain Teyrchain AccountKey",
@@ -1541,7 +1702,7 @@ fn location_conversion_works() {
 					AccountKey20 { network: None, key: [0u8; 20] },
 				],
 			),
-			expected_account_id_str: "5G121Rtddxn6zwMD2rZZGXxFHZ2xAgzFUgM9ki4A8wMGo4e2",
+			expected_account_id_str: "5FCWfUszuKE2rTivaefRiPVkdGk3i5ceWj3eKPYkh79dQbhq",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain Teyrchain Treasury Plurality",
@@ -1553,7 +1714,7 @@ fn location_conversion_works() {
 					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
 				],
 			),
-			expected_account_id_str: "5FNk7za2pQ71NHnN1jA63hJxJwdQywiVGnK6RL3nYjCdkWDF",
+			expected_account_id_str: "5HKfgKEsizaizuoTdNAttXWyJTHh6TdgobsKHgXRwVViRb8E",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain USDT Location",
@@ -1566,7 +1727,7 @@ fn location_conversion_works() {
 					GeneralIndex(1984),
 				],
 			),
-			expected_account_id_str: "5HNfT779KHeAL7PaVBTQDVxrT6dfJZJoQMTScxLSahBc9kxF",
+			expected_account_id_str: "5DFXbT1vuKAF8GfYP54VxxksYxf7FedtVEjVRZ9zUVJF6woj",
 		},
 	];
 
@@ -1576,6 +1737,10 @@ fn location_conversion_works() {
 		.with_para_id(1000.into())
 		.build()
 		.execute_with(|| {
+			// Collected rather than asserted one at a time: these expectations are derived
+			// from this chain's own constants, so when one is stale the rest usually are
+			// too, and finding them one test run at a time is a waste of an afternoon.
+			let mut wrong = alloc::vec::Vec::new();
 			for tc in test_cases {
 				let expected = AccountId::from_string(tc.expected_account_id_str)
 					.expect("Invalid AccountId string");
@@ -1585,8 +1750,16 @@ fn location_conversion_works() {
 					)
 					.unwrap();
 
-				assert_eq!(got, expected, "{}", tc.description);
+				if got != expected {
+					wrong.push(alloc::format!(
+						"{}: expected {}, derived {}",
+						tc.description,
+						tc.expected_account_id_str,
+						got.to_ss58check()
+					));
+				}
 			}
+			assert!(wrong.is_empty(), "location conversions disagree:\n{}", wrong.join("\n"));
 		});
 }
 
@@ -1635,12 +1808,16 @@ fn governance_authorize_upgrade_works() {
 		RuntimeOrigin,
 	>(GovernanceOrigin::Origin(RuntimeOrigin::root())));
 	// no - Collectives
+	//
+	// Refused at the barrier (instruction 0) rather than at the origin check. Upstream lets a
+	// sibling's message in and turns it away when it asks to Transact; this chain never lets
+	// it in. Same answer, reached sooner -- see the People runtimes, which say the same.
 	assert_err!(
 		teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
 			Runtime,
 			RuntimeOrigin,
 		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(COLLECTIVES_ID)))),
-		Either::Right(InstructionError { index: 1, error: XcmError::BadOrigin })
+		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
 	);
 	// no - Collectives Voice of Fellows plurality
 	assert_err!(
@@ -1651,7 +1828,8 @@ fn governance_authorize_upgrade_works() {
 			Location::new(1, Teyrchain(COLLECTIVES_ID)),
 			Plurality { id: BodyId::Technical, part: BodyPart::Voice }.into()
 		)),
-		Either::Right(InstructionError { index: 2, error: XcmError::BadOrigin })
+		// Barrier again, for the reason given on the Collectives case above.
+		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
 	);
 
 	// ok - relaychain
@@ -1706,13 +1884,15 @@ fn withdraw_and_deposit_erc20s() {
 		assert_ok!(Revive::map_account(RuntimeOrigin::signed(sender.clone())));
 		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
 
-		let code = ERC20_PVM.to_vec();
+		let code = erc20_code("MyToken");
 
 		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
 		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
 		let Contract { addr: erc20_address, .. } = bare_instantiate(&sender, code)
-			.gas_limit(Weight::from_parts(500_000_000_000, 10 * 1024 * 1024))
-			.storage_deposit_limit(Balance::MAX)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
 			.data(constructor_data)
 			.build_and_unwrap_contract();
 
@@ -1824,8 +2004,10 @@ fn smart_contract_not_erc20_will_error() {
 		let (code, _) = compile_module("dummy").unwrap();
 
 		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
-			.gas_limit(Weight::from_parts(500_000_000_000, 10 * 1024 * 1024))
-			.storage_deposit_limit(Balance::MAX)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
 			.build_and_unwrap_contract();
 
 		let wnd_amount_for_fees = 1_000_000_000_000u128;
@@ -1876,14 +2058,16 @@ fn smart_contract_does_not_return_bool_fails() {
 		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
 
 		// This contract implements the ERC20 interface for `transfer` except it returns a uint256.
-		let code = FAKE_ERC20_PVM.to_vec();
+		let code = erc20_code("MyTokenFake");
 
 		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
 		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
 
 		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
-			.gas_limit(Weight::from_parts(500_000_000_000, 10 * 1024 * 1024))
-			.storage_deposit_limit(Balance::MAX)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
 			.data(constructor_data)
 			.build_and_unwrap_contract();
 
@@ -1933,13 +2117,15 @@ fn expensive_erc20_runs_out_of_gas() {
 		assert_ok!(Revive::map_account(RuntimeOrigin::signed(beneficiary.clone())));
 
 		// This contract does a lot more storage writes in `transfer`.
-		let code = EXPENSIVE_ERC20_PVM.to_vec();
+		let code = erc20_code("MyTokenExpensive");
 
 		let initial_amount_u256 = U256::from(1_000_000_000_000u128);
 		let constructor_data = sol_data::Uint::<256>::abi_encode(&initial_amount_u256);
 		let Contract { addr: non_erc20_address, .. } = bare_instantiate(&sender, code)
-			.gas_limit(Weight::from_parts(500_000_000_000, 10 * 1024 * 1024))
-			.storage_deposit_limit(Balance::MAX)
+			.transaction_limits(TransactionLimits::WeightAndDeposit {
+				weight_limit: Weight::from_parts(500_000_000_000, 10 * 1024 * 1024),
+				deposit_limit: Balance::MAX,
+			})
 			.data(constructor_data)
 			.build_and_unwrap_contract();
 
@@ -1962,4 +2148,318 @@ fn expensive_erc20_runs_out_of_gas() {
 		)
 		.is_err());
 	});
+}
+
+/// This chain must be able to receive a teleport at all.
+///
+/// `teleports_for_foreign_assets_works` fails here with an opaque `Overflow` raised during
+/// weight calculation, three layers down in a shared helper. This says why, in one place:
+/// `receive_teleported_asset` carries `u64::MAX`, the value the benchmark generator writes
+/// when an instruction's benchmark did not produce a measurement. An instruction weighted at
+/// `u64::MAX` can never fit in a block, so every incoming teleport is refused before it
+/// executes.
+///
+/// It is not a policy. This runtime sets `TeleportTracking = Some(..)`, which is a chain
+/// saying it means to account for teleports; its twin, asset-hub-pezkuwichain, carries a real
+/// measurement here (21_550_000). One of the two ran the benchmark and one did not.
+///
+/// The fix is not a number typed into the weights file -- a fabricated weight is worse than a
+/// red test. Re-run `pezpallet_xcm_benchmarks::fungible` against this runtime and import the
+/// result. Until then this stays red, which is the correct state for a chain that cannot
+/// receive value.
+#[test]
+fn this_chain_can_be_teleported_to() {
+	use asset_hub_zagros_runtime::weights::xcm::pezpallet_xcm_benchmarks_fungible::WeightInfo as XcmFungibleWeight;
+
+	let weight = XcmFungibleWeight::<Runtime>::receive_teleported_asset();
+	assert!(
+		weight.ref_time() < u64::MAX / 2,
+		"receive_teleported_asset is weighted at {} -- the benchmark for it never ran, and \
+		 this chain therefore rejects every teleport into it",
+		weight.ref_time()
+	);
+}
+
+/// The register decides and the treasury pays, so a spend voted on People has to reach the
+/// Asset Hub. Two gates stand in the way and only one of them was open: `WaivedLocations`
+/// already charges a sibling system chain nothing, but the barrier runs first and named only
+/// the relay, its pluralities, the relay treasury, the Fellowship payout accounts and the Bridge Hub -- so the
+/// message `welati::send_government_spend` builds was refused before the fee policy was ever
+/// consulted, and the origin check it was written against was never reached.
+///
+/// Neither side of that pair is exercised by the runtime's other tests, and the pallet's own
+/// tests use a mock sender, so nothing caught it.
+#[test]
+fn people_may_execute_unpaid_on_this_asset_hub() {
+	use pezframe_support::traits::Contains;
+	use testnet_teyrchains_constants::zagros::locations::PeopleLocation;
+	use xcm::latest::prelude::*;
+	use xcm_executor::traits::{Properties, ShouldExecute};
+
+	let people = PeopleLocation::get();
+
+	pezsp_io::TestExternalities::new_empty().execute_with(|| {
+		// The shape `send_government_spend` produces, instruction for instruction.
+		let mut message: Vec<Instruction<()>> = vec![
+			UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+			Transact {
+				origin_kind: OriginKind::Xcm,
+				call: vec![0u8; 8].into(),
+				fallback_max_weight: None,
+			},
+		];
+		let mut properties = Properties { weight_credit: Weight::zero(), message_id: None };
+
+		assert!(
+			<xcm_config::Barrier as ShouldExecute>::should_execute(
+				&people,
+				&mut message,
+				Weight::from_parts(1_000_000_000, 100_000),
+				&mut properties,
+			)
+			.is_ok(),
+			"the barrier refuses the government spend People sends",
+		);
+
+		// The fee side has to agree, or the spend is charged to a sovereign account that holds
+		// nothing here.
+		assert!(
+			<xcm_config::WaivedLocations as Contains<Location>>::contains(&people),
+			"People pays a fee it has no balance for",
+		);
+	});
+}
+
+/// `welati` cannot name this runtime's `RuntimeCall`, so `send_government_spend` builds the
+/// treasury call by hand: pallet index, call index, beneficiary, amount. That hand-built
+/// encoding is an ABI between two crates that never see each other, and nothing here fails
+/// if it drifts -- the `Transact` simply cannot decode, while `welati` has already docked the
+/// budget and emitted `BudgetSpent`. This pins the bytes it has to produce.
+#[test]
+fn the_treasury_call_encodes_the_way_welati_builds_it() {
+	use codec::Encode;
+
+	let beneficiary: AccountId = [7u8; 32].into();
+	let amount: Balance = 1_000_000_000_000;
+
+	let real = RuntimeCall::PezTreasury(
+		pezpallet_pez_treasury::Call::<Runtime>::spend_from_government_pot {
+			beneficiary: beneficiary.clone(),
+			amount,
+		},
+	)
+	.encode();
+
+	// Exactly what `welati::send_government_spend` puts on the wire.
+	let by_hand = (70u8, 1u8, beneficiary, amount).encode();
+
+	assert_eq!(real, by_hand, "welati builds a treasury call this runtime cannot decode");
+}
+
+/// `welati` builds the emission call by hand, and nothing fails if the bytes drift.
+///
+/// The Treasurer's call lives on the People chain, which cannot name this runtime's types, so
+/// `send_emission_rate` writes the address itself: pallet index, call index, then the two
+/// variant indices that reach `InflationRate` inside `RuntimeParameters`. If any of the four
+/// moves, the `Transact` stops decoding -- silently, because the sending chain has already
+/// recorded the change and emitted its event. This pins the bytes it has to produce, exactly
+/// as `the_treasury_call_encodes_the_way_welati_builds_it` does for the spending call.
+#[test]
+fn the_emission_call_encodes_the_way_welati_builds_it() {
+	use asset_hub_zagros_runtime::dynamic_params::hez;
+	use codec::Encode;
+
+	let rate = pezsp_runtime::Perbill::from_percent(9);
+
+	let real = RuntimeCall::Parameters(pezpallet_parameters::Call::<Runtime>::set_parameter {
+		key_value: asset_hub_zagros_runtime::RuntimeParameters::Hez(
+			hez::Parameters::InflationRate(hez::InflationRate, Some(rate)),
+		),
+	})
+	.encode();
+
+	// Exactly what `welati::send_emission_rate` puts on the wire: pallet 79, call 0, then
+	// `Hez` (0), `InflationRate` (0), and the value.
+	let by_hand = (79u8, 0u8, 0u8, 0u8, Some(rate)).encode();
+
+	assert_eq!(real, by_hand, "welati builds an emission call this runtime cannot decode");
+}
+
+// `state_and_economic_origins_do_not_overlap` stood here and moved to the emulated tests.
+//
+// It compared this chain's track names against a *hardcoded copy* of the register's three, and
+// never read the relay at all. A sentinel holding a copy of the thing it guards goes stale the
+// first time the original changes. The emulated crate can see all three runtimes, so the
+// version there reads the real lists instead of remembering them.
+
+/// PEZ cannot be minted or destroyed by anything arriving over XCM, including the relay's sudo.
+///
+/// The path this closes: relay sudo sends `Transact` with `OriginKind::Superuser`,
+/// `ParentAsSuperuser` turns it into this chain's Root, and `Assets`' `ForceOrigin` is
+/// `EnsureRoot`. From there `force_asset_status` reassigns the issuer and `mint` has no
+/// ceiling, or `start_destroy` removes the supply outright. Five billion PEZ, fixed and
+/// halving, held open by nobody having tried it.
+///
+/// The filter is written against the asset id rather than the call, so every other asset on
+/// the hub is administered exactly as before. Both halves are asserted here, because a filter
+/// that rejects everything would also pass the first half.
+#[test]
+fn pez_cannot_be_minted_or_destroyed_over_xcm() {
+	use asset_hub_zagros_runtime::{xcm_config::NoTouchingPez, PezAssetId, RuntimeCall};
+	use pezframe_support::traits::{Contains, Get};
+
+	let who = || -> pezsp_runtime::MultiAddress<pezsp_runtime::AccountId32, ()> {
+		pezsp_runtime::MultiAddress::Id(pezsp_runtime::AccountId32::new([0u8; 32]))
+	};
+	let who = || -> pezsp_runtime::MultiAddress<pezsp_runtime::AccountId32, ()> {
+		pezsp_runtime::MultiAddress::Id(pezsp_runtime::AccountId32::new([0u8; 32]))
+	};
+	let pez = PezAssetId::get();
+	let other = pez + 1;
+
+	let calls = |id: u32| -> Vec<(&'static str, RuntimeCall)> {
+		vec![
+			(
+				"force_asset_status",
+				RuntimeCall::Assets(pezpallet_assets::Call::force_asset_status {
+					id: id.into(),
+					owner: who(),
+					issuer: who(),
+					admin: who(),
+					freezer: who(),
+					min_balance: 1,
+					is_sufficient: false,
+					is_frozen: false,
+				}),
+			),
+			(
+				"start_destroy",
+				RuntimeCall::Assets(pezpallet_assets::Call::start_destroy { id: id.into() }),
+			),
+			(
+				"mint",
+				RuntimeCall::Assets(pezpallet_assets::Call::mint {
+					id: id.into(),
+					beneficiary: who(),
+					amount: 1,
+				}),
+			),
+		]
+	};
+
+	for (name, call) in calls(pez) {
+		assert!(!NoTouchingPez::contains(&call), "XCM can still reach `{name}` on PEZ");
+	}
+	for (name, call) in calls(other) {
+		assert!(
+			NoTouchingPez::contains(&call),
+			"`{name}` on another asset was refused; the filter names the asset, not the call"
+		);
+	}
+}
+
+/// HEZ's rate is policy, its ceiling and its base are not.
+///
+/// The two knobs moved from the binary into storage so the franchise that bears them can turn
+/// them; the ceiling stayed compiled in, because a ceiling the same body could raise is not a
+/// ceiling.
+mod hez_parameters {
+	use asset_hub_zagros_runtime::{
+		dynamic_params::hez, staking::MAX_INFLATION_RATE, Runtime, RuntimeOrigin,
+	};
+	use pezframe_support::{assert_noop, assert_ok, traits::Get};
+	use pezpallet_staking_async::EraPayout as _;
+	use pezsp_runtime::{traits::BadOrigin, BuildStorage, Perbill};
+
+	fn new_test_ext() -> pezsp_io::TestExternalities {
+		pezframe_system::GenesisConfig::<Runtime>::default()
+			.build_storage()
+			.unwrap()
+			.into()
+	}
+
+	const YEAR_MS: u64 = (1000 * 3600 * 24 * 36525) / 100;
+
+	/// The People chain speaking as itself -- what `welati::set_emission_rate` produces after
+	/// the Treasurer's tiki has been checked over there. This chain trusts the register's chain
+	/// and does not re-check which office sent it, exactly as it does for `spend_budget`.
+	fn people_origin() -> RuntimeOrigin {
+		// `EnsureXcm` reads `pezpallet_xcm::Origin::Xcm(location)` -- the location an incoming
+		// message was converted from -- not the sibling-teyrchain origin. Those are two
+		// different things and only the first one carries where the message came from.
+		pezpallet_xcm::Origin::Xcm(xcm::latest::Location::new(
+			1,
+			[xcm::latest::Junction::Teyrchain(
+				zagros_runtime_constants::system_teyrchain::PEOPLE_ID,
+			)],
+		))
+		.into()
+	}
+
+	fn yearly_payout() -> (u128, u128) {
+		<asset_hub_zagros_runtime::staking::EraPayout as pezpallet_staking_async::EraPayout<
+			u128,
+		>>::era_payout(0, 0, YEAR_MS)
+	}
+
+	#[test]
+	fn the_defaults_are_what_the_constants_were() {
+		new_test_ext().execute_with(|| {
+			assert_eq!(hez::InflationRate::get(), Perbill::from_percent(8));
+			assert_eq!(hez::TreasuryShare::get(), Perbill::from_percent(15));
+
+			// 8% of 200M, split 85/15. Moving these to storage must not have moved the money.
+			let (stakers, treasury) = yearly_payout();
+			let emission = 16_000_000_000_000_000_000u128;
+			assert_eq!(treasury, Perbill::from_percent(15).mul_floor(emission));
+			assert_eq!(stakers + treasury, emission);
+		});
+	}
+
+	#[test]
+	fn the_people_chain_turns_them_and_nobody_else_does() {
+		new_test_ext().execute_with(|| {
+			let raise = |o: RuntimeOrigin| {
+				pezpallet_parameters::Pezpallet::<Runtime>::set_parameter(
+					o,
+					asset_hub_zagros_runtime::RuntimeParameters::Hez(
+						hez::Parameters::InflationRate(
+							hez::InflationRate,
+							Some(Perbill::from_percent(9)),
+						),
+					),
+				)
+			};
+
+			// Neither Root nor a signed account: the rate is the Treasurer's, and the Treasurer
+			// is an office on the People chain. What arrives here is that chain's message.
+			assert_noop!(raise(RuntimeOrigin::root()), BadOrigin);
+			assert_noop!(raise(RuntimeOrigin::signed([1u8; 32].into())), BadOrigin);
+
+			assert_ok!(raise(people_origin()));
+			assert_eq!(hez::InflationRate::get(), Perbill::from_percent(9));
+			assert_eq!(yearly_payout().0 + yearly_payout().1, 18_000_000_000_000_000_000);
+		});
+	}
+
+	#[test]
+	fn the_ceiling_holds_whatever_the_parameter_says() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(pezpallet_parameters::Pezpallet::<Runtime>::set_parameter(
+				people_origin(),
+				asset_hub_zagros_runtime::RuntimeParameters::Hez(hez::Parameters::InflationRate(
+					hez::InflationRate,
+					Some(Perbill::from_percent(90)),
+				)),
+			));
+
+			// The parameter took the value; the payout did not.
+			assert_eq!(hez::InflationRate::get(), Perbill::from_percent(90));
+			let (stakers, treasury) = yearly_payout();
+			assert_eq!(
+				stakers + treasury,
+				MAX_INFLATION_RATE.mul_floor(200_000_000_000_000_000_000u128)
+			);
+		});
+	}
 }

@@ -20,7 +20,6 @@ use pezframe_support_procedural_tools::get_doc_literals;
 use quote::ToTokens;
 use syn::{spanned::Spanned, Ident};
 
-///
 /// * add various derive trait on GenesisConfig struct.
 pub fn expand_genesis_config(def: &mut Def) -> proc_macro2::TokenStream {
 	let count = COUNTER.with(|counter| counter.borrow_mut().inc());
@@ -90,7 +89,7 @@ pub fn expand_genesis_config(def: &mut Def) -> proc_macro2::TokenStream {
 				attrs.push(syn::parse_quote!(
 					#[doc = r"
 					Can be used to configure the
-					[genesis state](https://docs.pezkuwichain.io/build/genesis-configuration/)
+					[genesis state](https://docs.substrate.io/build/genesis-configuration/)
 					of this pezpallet.
 					"]
 				));

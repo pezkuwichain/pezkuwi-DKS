@@ -181,11 +181,11 @@ fn export_from_system_teyrchain_but_not_root_will_fail() {
 	create_pools_on_ah();
 
 	let sub_location = PalletInstance(100);
-	let assethub_pallet_sovereign = BridgeHubZagros::sovereign_account_id_of(Location::new(
+	let assethub_pezpallet_sovereign = BridgeHubZagros::sovereign_account_id_of(Location::new(
 		1,
 		[Teyrchain(AssetHubZagros::para_id().into()), sub_location],
 	));
-	BridgeHubZagros::fund_accounts(vec![(assethub_pallet_sovereign.clone(), INITIAL_FUND)]);
+	BridgeHubZagros::fund_accounts(vec![(assethub_pezpallet_sovereign.clone(), INITIAL_FUND)]);
 
 	AssetHubZagros::execute_with(|| {
 		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;

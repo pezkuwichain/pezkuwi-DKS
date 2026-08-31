@@ -38,7 +38,7 @@ fn lock_behavior_when_consumer_limit_fully_exhausted() {
 			assert_eq!(System::consumers(&1), 0);
 
 			// Fill up all consumer refs.
-			// Note: asset-pallets prevents all the consumers to be filled and leaves one untouched.
+			// Note: asset-pezpallets prevents all the consumers to be filled and leaves one untouched.
 			// But other operations in the runtime, notably `uniques::set_accept_ownership` might
 			// overrule it.
 			let max_consumers: u32 = <Test as pezframe_system::Config>::MaxConsumers::get();

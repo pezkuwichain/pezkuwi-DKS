@@ -4,7 +4,7 @@
 
 //! This module provides a [`Config`] type, which is used to define various
 //! types that are important in order to speak to a particular chain.
-//! [`BizinikiwConfig`] provides a default set of these types suitable for the
+//! [`BizinikiwiConfig`] provides a default set of these types suitable for the
 //! default Bizinikiwi node implementation, and [`PezkuwiConfig`] for a
 //! Pezkuwi node.
 
@@ -23,7 +23,7 @@ use scale_encode::EncodeAsType;
 use serde::{de::DeserializeOwned, Serialize};
 
 pub use bizinikiwi::{
-	BizinikiwConfig, BizinikiwiExtrinsicParams, BizinikiwiExtrinsicParamsBuilder,
+	BizinikiwiConfig, BizinikiwiExtrinsicParams, BizinikiwiExtrinsicParamsBuilder,
 };
 pub use default_extrinsic_params::{DefaultExtrinsicParams, DefaultExtrinsicParamsBuilder};
 pub use extrinsic_params::{ExtrinsicParams, ExtrinsicParamsEncoder};

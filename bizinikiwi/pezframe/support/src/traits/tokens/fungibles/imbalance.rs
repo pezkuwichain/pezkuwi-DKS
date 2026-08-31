@@ -25,12 +25,17 @@ use crate::traits::{
 	fungible,
 	misc::{SameOrOther, TryDrop},
 	tokens::{
-		imbalance::{Imbalance as ImbalanceT, TryMerge},
+		imbalance::{
+			Imbalance as ImbalanceT, ImbalanceAccounting, TryMerge, UnsafeConstructorDestructor,
+			UnsafeManualAccounting,
+		},
 		AssetId, Balance,
 	},
 };
+use alloc::boxed::Box;
 use core::marker::PhantomData;
-use pezframe_support_procedural::{EqNoBound, PartialEqNoBound, RuntimeDebugNoBound};
+use pezframe_support_procedural::{DebugNoBound, EqNoBound, PartialEqNoBound};
+use pezsp_arithmetic::traits::SaturatedConversion;
 use pezsp_runtime::traits::Zero;
 
 /// Handler for when an imbalance gets dropped. This could handle either a credit (negative) or
@@ -45,7 +50,7 @@ pub trait HandleImbalanceDrop<AssetId, Balance> {
 ///
 /// Importantly, it has a special `Drop` impl, and cannot be created outside of this module.
 #[must_use]
-#[derive(EqNoBound, PartialEqNoBound, RuntimeDebugNoBound)]
+#[derive(EqNoBound, PartialEqNoBound, DebugNoBound)]
 pub struct Imbalance<
 	A: AssetId,
 	B: Balance,
@@ -191,12 +196,61 @@ impl<
 	}
 }
 
+impl<
+		A: AssetId + 'static,
+		B: Balance + 'static,
+		OnDrop: HandleImbalanceDrop<A, B> + 'static,
+		OppositeOnDrop: HandleImbalanceDrop<A, B> + 'static,
+	> UnsafeConstructorDestructor<u128> for Imbalance<A, B, OnDrop, OppositeOnDrop>
+{
+	fn unsafe_clone(&self) -> Box<dyn ImbalanceAccounting<u128>> {
+		let clone = Self {
+			asset: self.asset.clone(),
+			amount: self.amount,
+			_phantom: PhantomData::default(),
+		};
+		Box::new(clone)
+	}
+	fn forget_imbalance(&mut self) -> u128 {
+		let amount = self.amount.saturated_into();
+		self.amount = 0u128.saturated_into();
+		amount
+	}
+}
+
+impl<
+		A: AssetId + 'static,
+		B: Balance + 'static,
+		OnDrop: HandleImbalanceDrop<A, B> + 'static,
+		OppositeOnDrop: HandleImbalanceDrop<A, B> + 'static,
+	> UnsafeManualAccounting<u128> for Imbalance<A, B, OnDrop, OppositeOnDrop>
+{
+	fn saturating_subsume(&mut self, mut other: Box<dyn ImbalanceAccounting<u128>>) {
+		let amount = other.forget_imbalance();
+		self.amount = self.amount.saturating_add(amount.saturated_into());
+	}
+}
+
+impl<
+		A: AssetId + 'static,
+		B: Balance + 'static,
+		OnDrop: HandleImbalanceDrop<A, B> + 'static,
+		OppositeOnDrop: HandleImbalanceDrop<A, B> + 'static,
+	> ImbalanceAccounting<u128> for Imbalance<A, B, OnDrop, OppositeOnDrop>
+{
+	fn amount(&self) -> u128 {
+		self.peek().saturated_into()
+	}
+	fn saturating_take(&mut self, amount: u128) -> Box<dyn ImbalanceAccounting<u128>> {
+		Box::new(self.extract(amount.saturated_into()))
+	}
+}
+
 /// Converts a `fungible` `imbalance` instance to an instance of a `fungibles` imbalance type using
 /// a specified `asset`.
 ///
 /// This function facilitates imbalance conversions within the implementations of
-/// [`pezframe_support::traits::fungibles::UnionOf`],
-/// [`pezframe_support::traits::fungible::UnionOf`], and
+/// [`pezframe_support::traits::fungibles::UnionOf`], [`pezframe_support::traits::fungible::UnionOf`], and
 /// [`pezframe_support::traits::fungible::ItemOf`] adapters. It is intended only for internal use
 /// within the current crate.
 pub(crate) fn from_fungible<
@@ -218,8 +272,7 @@ pub(crate) fn from_fungible<
 /// Converts a `fungibles` `imbalance` instance of one type to another using a specified `asset`.
 ///
 /// This function facilitates imbalance conversions within the implementations of
-/// [`pezframe_support::traits::fungibles::UnionOf`],
-/// [`pezframe_support::traits::fungible::UnionOf`], and
+/// [`pezframe_support::traits::fungibles::UnionOf`], [`pezframe_support::traits::fungible::UnionOf`], and
 /// [`pezframe_support::traits::fungible::ItemOf`] adapters. It is intended only for internal use
 /// within the current crate.
 pub(crate) fn from_fungibles<

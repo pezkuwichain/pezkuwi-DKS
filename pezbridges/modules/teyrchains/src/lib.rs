@@ -98,8 +98,7 @@ pub mod pezpallet {
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config<I>, I: 'static = ()> {
-		/// The caller has provided head of teyrchain that the pezpallet is not configured to
-		/// track.
+		/// The caller has provided head of teyrchain that the pezpallet is not configured to track.
 		UntrackedTeyrchainRejected {
 			/// Identifier of the teyrchain that is not tracked by the pezpallet.
 			teyrchain: ParaId,
@@ -120,8 +119,7 @@ pub mod pezpallet {
 			/// Actual teyrchain head hash.
 			actual_teyrchain_head_hash: ParaHash,
 		},
-		/// The caller has provided obsolete teyrchain head, which is already known to the
-		/// pezpallet.
+		/// The caller has provided obsolete teyrchain head, which is already known to the pezpallet.
 		RejectedObsoleteTeyrchainHead {
 			/// Identifier of the teyrchain with obsolete head.
 			teyrchain: ParaId,
@@ -191,8 +189,7 @@ pub mod pezpallet {
 		/// Benchmarks results from runtime we're plugged into.
 		type WeightInfo: WeightInfoExt;
 
-		/// Instance of bridges GRANDPA pezpallet (within this runtime) that this pezpallet is
-		/// linked to.
+		/// Instance of bridges GRANDPA pezpallet (within this runtime) that this pezpallet is linked to.
 		///
 		/// The GRANDPA pezpallet instance must be configured to import headers of relay chain that
 		/// we're interested in.
@@ -217,7 +214,7 @@ pub mod pezpallet {
 		/// chain.
 		///
 		/// Please keep in mind that this should be the name of the `runtime_teyrchains::paras`
-		/// pezpallet from pezkuwi repository, not the `pezpallet-bridge-teyrchains`.
+		/// pezpallet from polkadot repository, not the `pezpallet-bridge-teyrchains`.
 		#[pezpallet::constant]
 		type ParasPalletName: Get<&'static str>;
 
@@ -798,8 +795,7 @@ impl<T: Config<I>, I: 'static, C: Teyrchain<Hash = ParaHash>> HeaderChain<C>
 	}
 }
 
-/// (Re)initialize pezpallet with given header for using it in `pezpallet-bridge-messages`
-/// benchmarks.
+/// (Re)initialize pezpallet with given header for using it in `pezpallet-bridge-messages` benchmarks.
 #[cfg(feature = "runtime-benchmarks")]
 pub fn initialize_for_benchmarks<T: Config<I>, I: 'static, PC: Teyrchain<Hash = ParaHash>>(
 	header: HeaderOf<PC>,

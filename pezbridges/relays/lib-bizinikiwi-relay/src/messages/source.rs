@@ -29,7 +29,6 @@ use crate::{
 	TransactionParams,
 };
 
-use async_std::sync::Arc;
 use async_trait::async_trait;
 use codec::{Decode, Encode};
 use num_traits::Zero;
@@ -55,7 +54,7 @@ use relay_bizinikiwi_client::{
 	UnsignedTransaction,
 };
 use relay_utils::relay_loop::Client as RelayClient;
-use std::ops::RangeInclusive;
+use std::{ops::RangeInclusive, sync::Arc};
 
 /// Intermediate message proof returned by the source Bizinikiwi node. Includes everything
 /// required to submit to the target node: cumulative dispatch weight of bundled messages and
@@ -66,7 +65,7 @@ type MessagesToRefine<'a> = Vec<(MessagePayload, &'a mut OutboundMessageDetails)
 /// Outbound lane data - for backwards compatibility with `pezbp_messages::OutboundLaneData` which has
 /// additional `lane_state` attribute.
 ///
-/// TODO: remove - https://github.com/pezkuwichain/pezkuwi-sdk/issues/22
+/// TODO: remove - https://github.com/pezkuwichain/pezkuwi-DKS/issues/5923
 #[derive(Decode)]
 struct LegacyOutboundLaneData {
 	#[allow(unused)]
@@ -123,8 +122,8 @@ impl<P: BizinikiwiMessageLane, SourceClnt: Client<P::SourceChain>, TargetClnt>
 	}
 
 	/// Ensure that the messages pezpallet at source chain is active.
-	async fn ensure_pallet_active(&self) -> Result<(), BizinikiwiError> {
-		ensure_messages_pallet_active::<P::SourceChain, P::TargetChain, _>(&self.source_client)
+	async fn ensure_pezpallet_active(&self) -> Result<(), BizinikiwiError> {
+		ensure_messages_pezpallet_active::<P::SourceChain, P::TargetChain, _>(&self.source_client)
 			.await
 	}
 }
@@ -163,7 +162,7 @@ impl<
 		//
 		// this may lead to multiple reconnects to the same node during the same call and it
 		// needs to be addressed in the future
-		// TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/82
+		// TODO: https://github.com/paritytech/parity-bridges-common/issues/1928
 		if let Some(ref mut target_to_source_headers_relay) = self.target_to_source_headers_relay {
 			target_to_source_headers_relay.reconnect().await?;
 		}
@@ -194,7 +193,7 @@ where
 		self.source_client.ensure_synced().await?;
 		self.target_client.ensure_synced().await?;
 		// we can't relay confirmations if messages pezpallet at source chain is halted
-		self.ensure_pallet_active().await?;
+		self.ensure_pezpallet_active().await?;
 
 		read_client_state_from_both_chains(&self.source_client, &self.target_client).await
 	}
@@ -411,7 +410,7 @@ where
 }
 
 /// Ensure that the messages pezpallet at source chain is active.
-pub(crate) async fn ensure_messages_pallet_active<AtChain, WithChain, AtChainClient>(
+pub(crate) async fn ensure_messages_pezpallet_active<AtChain, WithChain, AtChainClient>(
 	client: &AtChainClient,
 ) -> Result<(), BizinikiwiError>
 where

@@ -33,6 +33,8 @@ pub trait VoteTally<Votes, Class> {
 	/// (e.g. conviction, ranks, etc.).
 	fn support(&self, class: Class) -> Perbill;
 	/// Returns the approval ratio (positive to total votes) for the tally.
+	///
+	/// If no votes have been cast (i.e. `ayes + nays == 0`), it should resolve to `0%`.
 	fn approval(&self, class: Class) -> Perbill;
 	/// Returns an instance of the tally representing a unanimous approval, for benchmarking
 	/// purposes.
@@ -49,8 +51,8 @@ pub trait VoteTally<Votes, Class> {
 	/// A function that should be called before any use of the `runtime-benchmarks` gated functions
 	/// of the `VoteTally` trait.
 	///
-	/// Should be used to set up any needed state in a Pezpallet which implements `VoteTally` so
-	/// that benchmarks that execute will complete successfully. `class` can be used to set up a
+	/// Should be used to set up any needed state in a Pezpallet which implements `VoteTally` so that
+	/// benchmarks that execute will complete successfully. `class` can be used to set up a
 	/// particular class of voters, and `granularity` is used to determine the weight of one vote
 	/// relative to total unanimity.
 	///

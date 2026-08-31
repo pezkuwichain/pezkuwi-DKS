@@ -184,8 +184,8 @@ fn initialize_bridge_by_governance_works() {
 }
 
 #[test]
-fn change_bridge_grandpa_pallet_mode_by_governance_works() {
-	pezbridge_hub_test_utils::test_cases::change_bridge_grandpa_pallet_mode_by_governance_works::<
+fn change_bridge_grandpa_pezpallet_mode_by_governance_works() {
+	pezbridge_hub_test_utils::test_cases::change_bridge_grandpa_pezpallet_mode_by_governance_works::<
 		Runtime,
 		BridgeGrandpaPezkuwichainInstance,
 	>(
@@ -196,8 +196,8 @@ fn change_bridge_grandpa_pallet_mode_by_governance_works() {
 }
 
 #[test]
-fn change_bridge_teyrchains_pallet_mode_by_governance_works() {
-	pezbridge_hub_test_utils::test_cases::change_bridge_teyrchains_pallet_mode_by_governance_works::<
+fn change_bridge_teyrchains_pezpallet_mode_by_governance_works() {
+	pezbridge_hub_test_utils::test_cases::change_bridge_teyrchains_pezpallet_mode_by_governance_works::<
 		Runtime,
 		BridgeTeyrchainPezkuwichainInstance,
 	>(
@@ -208,8 +208,8 @@ fn change_bridge_teyrchains_pallet_mode_by_governance_works() {
 }
 
 #[test]
-fn change_bridge_messages_pallet_mode_by_governance_works() {
-	pezbridge_hub_test_utils::test_cases::change_bridge_messages_pallet_mode_by_governance_works::<
+fn change_bridge_messages_pezpallet_mode_by_governance_works() {
+	pezbridge_hub_test_utils::test_cases::change_bridge_messages_pezpallet_mode_by_governance_works::<
 		Runtime,
 		WithBridgeHubPezkuwichainMessagesInstance,
 	>(
@@ -255,6 +255,7 @@ fn handle_export_message_from_system_teyrchain_add_to_outbound_queue_works() {
 			Runtime,
 			XcmConfig,
 			WithBridgeHubPezkuwichainMessagesInstance,
+			LocationToAccountId,
 		>(
 			collator_session_keys(),
 			pezbp_bridge_hub_zagros::BRIDGE_HUB_ZAGROS_TEYRCHAIN_ID,
@@ -569,7 +570,7 @@ fn location_conversion_works() {
 		TestCase {
 			description: "Describe Pezkuwichain Location",
 			location: Location::new(2, [GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH))]),
-			expected_account_id_str: "5FfpYGrFybJXFsQk7dabr1vEbQ5ycBBu85vrDjPJsF3q4A8P",
+			expected_account_id_str: "5E6J1ejfunz1TCubgoyiikAwkE428ZvaauUix2gZhrHpmEkS",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain AccountID",
@@ -580,7 +581,7 @@ fn location_conversion_works() {
 					xcm::prelude::AccountId32 { network: None, id: AccountId::from(Alice).into() },
 				],
 			),
-			expected_account_id_str: "5CYn32qPAc8FpQP55Br6AS2ZKhfCHD8Tt3v4CnCZo1rhDPd4",
+			expected_account_id_str: "5DYpLGYaB6CY4voJu3H5rJbPcfSe1CuSSQTMawdHuuR77ucm",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain AccountKey",
@@ -591,7 +592,7 @@ fn location_conversion_works() {
 					AccountKey20 { network: None, key: [0u8; 20] },
 				],
 			),
-			expected_account_id_str: "5GbRhbJWb2hZY7TCeNvTqZXaP3x3UY5xt4ccxpV1ZtJS1gFL",
+			expected_account_id_str: "5DnrfFF8jo81EnWzd5JYix9CZXtPLfe1z14i79UAi2uJU1kw",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain Treasury Plurality",
@@ -602,7 +603,7 @@ fn location_conversion_works() {
 					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
 				],
 			),
-			expected_account_id_str: "5EGi9NgJNGoMawY8ubnCDLmbdEW6nt2W2U2G3j9E3jXmspT7",
+			expected_account_id_str: "5FKvWJ56DNLk3q3iefGTDNdaQX4iQRqHSYeh4LaqA8ggsi1E",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain Teyrchain Location",
@@ -610,7 +611,7 @@ fn location_conversion_works() {
 				2,
 				[GlobalConsensus(ByGenesis(PEZKUWICHAIN_GENESIS_HASH)), Teyrchain(1000)],
 			),
-			expected_account_id_str: "5CQeLKM7XC1xNBiQLp26Wa948cudjYRD5VzvaTG3BjnmUvLL",
+			expected_account_id_str: "5Fv6bZR6xp7sJuneVnKb1RTnjFFo9np565TyesbTFCen3DJW",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain Teyrchain AccountID",
@@ -622,7 +623,7 @@ fn location_conversion_works() {
 					xcm::prelude::AccountId32 { network: None, id: AccountId::from(Alice).into() },
 				],
 			),
-			expected_account_id_str: "5CWnqmyXccGPg27BTxGmycvdEs5HvQq2FQY61xsS8H7uAvmW",
+			expected_account_id_str: "5CiALsE8x8WScFUWqnVhts1E3saMZ2pBmMT4fJYYeu1voEzx",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain Teyrchain AccountKey",
@@ -634,7 +635,7 @@ fn location_conversion_works() {
 					AccountKey20 { network: None, key: [0u8; 20] },
 				],
 			),
-			expected_account_id_str: "5G121Rtddxn6zwMD2rZZGXxFHZ2xAgzFUgM9ki4A8wMGo4e2",
+			expected_account_id_str: "5FCWfUszuKE2rTivaefRiPVkdGk3i5ceWj3eKPYkh79dQbhq",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain Teyrchain Treasury Plurality",
@@ -646,7 +647,7 @@ fn location_conversion_works() {
 					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
 				],
 			),
-			expected_account_id_str: "5FNk7za2pQ71NHnN1jA63hJxJwdQywiVGnK6RL3nYjCdkWDF",
+			expected_account_id_str: "5HKfgKEsizaizuoTdNAttXWyJTHh6TdgobsKHgXRwVViRb8E",
 		},
 		TestCase {
 			description: "Describe Pezkuwichain USDT Location",
@@ -659,7 +660,7 @@ fn location_conversion_works() {
 					GeneralIndex(1984),
 				],
 			),
-			expected_account_id_str: "5HNfT779KHeAL7PaVBTQDVxrT6dfJZJoQMTScxLSahBc9kxF",
+			expected_account_id_str: "5DFXbT1vuKAF8GfYP54VxxksYxf7FedtVEjVRZ9zUVJF6woj",
 		},
 	];
 
@@ -809,11 +810,27 @@ fn governance_authorize_upgrade_works() {
 		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(12334)))),
 		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
 	);
-	// ok - AssetHub
-	assert_ok!(teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
-		Runtime,
-		RuntimeOrigin,
-	>(GovernanceOrigin::Location(Location::new(1, Teyrchain(ASSET_HUB_ID)))));
+	// no - Asset Hub. Upstream expects this to pass because their governance moved there; ours
+	// did not. `GovernanceLocation` on this network is the relay, and its own declaration says
+	// so: administering a coretime broker or a bridge is not an economic question, and the
+	// Asset Hub holds the economy rather than the constitution.
+	//
+	// The assertion never held here. It arrived with the fork asserting upstream's arrangement
+	// and nothing ran it -- the per-push gate type-checked the runtimes without running their
+	// integration tests. It surfaced the first time that job reached this file.
+	assert_err!(
+		teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
+			Runtime,
+			RuntimeOrigin,
+		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(ASSET_HUB_ID)))),
+		// `BadOrigin` at index 1, not `Barrier` at index 0, and the difference is the point.
+		// The Asset Hub is admitted by the barrier now -- it has to be, it sends this chain the
+		// Snowbridge export -- so the refusal comes from the origin check, which is the layer
+		// that is meant to decide who may govern. Before, the Asset Hub was kept out by a
+		// barrier that excluded it for an unrelated reason, and "cannot authorize an upgrade"
+		// rested on that accident. It rests on the origin now.
+		Either::Right(InstructionError { index: 1, error: XcmError::BadOrigin })
+	);
 	// no - Collectives
 	assert_err!(
 		teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<

@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//!Types, and traits to integrate pezpallet-revive with EVM.
+//! Types, and traits to integrate pezpallet-revive with EVM.
 #![warn(missing_docs)]
 
 mod receipt;
@@ -30,7 +30,7 @@ pub use block_builder::{EthereumBlockBuilder, EthereumBlockBuilderIR};
 use crate::evm::Block;
 
 use alloc::vec::Vec;
-use alloy_core::primitives::{bytes::BufMut, B256};
+use alloy_core::primitives::{B256, bytes::BufMut};
 
 use codec::{Decode, Encode};
 use pezsp_core::{H256, U256};

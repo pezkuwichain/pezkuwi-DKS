@@ -58,8 +58,7 @@ impl pezframe_system::Config for Test {
 	Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, Debug, TypeInfo,
 )]
 pub enum HoldReason {
-	/// The safe-mode pezpallet holds funds since an account either entered or extended the
-	/// safe-mode.
+	/// The safe-mode pezpallet holds funds since an account either entered or extended the safe-mode.
 	SafeMode,
 }
 
@@ -87,7 +86,7 @@ impl pezpallet_utility::Config for Test {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	scale_info::TypeInfo,
 )]

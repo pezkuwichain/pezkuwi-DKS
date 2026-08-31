@@ -271,7 +271,7 @@ pub fn header_id<H: HeaderT>(index: u8) -> (H::Hash, H::Number) {
 /// - `Pezpallet::<TestRuntime>`
 /// - `PalletOwner::<TestRuntime>`
 /// - `PalletOperatingMode::<TestRuntime>`
-/// While this is not ideal, all the pallets use the same names, so it works for the moment.
+/// While this is not ideal, all the pezpallets use the same names, so it works for the moment.
 /// We can revisit this in the future if anything changes.
 macro_rules! generate_owned_bridge_module_tests {
 	($normal_operating_mode: expr, $halted_operating_mode: expr) => {

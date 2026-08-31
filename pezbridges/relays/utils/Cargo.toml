@@ -15,7 +15,6 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true, default-features = true }
-async-std = { workspace = true }
 async-trait = { workspace = true }
 backoff = { workspace = true }
 futures = { workspace = true }

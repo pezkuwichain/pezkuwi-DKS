@@ -50,7 +50,7 @@ impl BizinikiwiCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/pezkuwichain/pezkuwi-sdk/issues/new".into()
+		"https://github.com/pezkuwichain/pezkuwi-DKS/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {
@@ -89,7 +89,7 @@ impl BizinikiwiCli for RelayChainCli {
 	}
 
 	fn support_url() -> String {
-		"https://github.com/pezkuwichain/pezkuwi-sdk/issues/new".into()
+		"https://github.com/pezkuwichain/pezkuwi-DKS/issues/new".into()
 	}
 
 	fn copyright_start_year() -> i32 {

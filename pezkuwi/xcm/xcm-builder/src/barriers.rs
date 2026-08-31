@@ -550,7 +550,7 @@ where
 	}
 }
 
-// See issue <https://github.com/pezkuwichain/pezkuwi-sdk/issues/298>
+// See issue <https://github.com/paritytech/polkadot/issues/5233>
 pub struct DenyReserveTransferToRelayChain;
 impl DenyExecution for DenyReserveTransferToRelayChain {
 	fn deny_execution<RuntimeCall>(

@@ -22,12 +22,12 @@ use pezkuwi_sdk::{
 	pezsc_executor::WasmExecutor,
 	pezsc_service::{error::Error as ServiceError, Configuration, TaskManager},
 	pezsc_telemetry::{Telemetry, TelemetryWorker},
+	pezsp_runtime::traits::Block as BlockT,
 	*,
 };
-use pezsp_runtime::traits::Block as BlockT;
 use std::sync::Arc;
 
-type HostFunctions = pezkuwi_sdk::pezsp_io::BizinikiwiHostFunctions;
+type HostFunctions = (pezsp_io::BizinikiwiHostFunctions, pezsp_virtualization::HostFunctions);
 
 #[docify::export]
 pub(crate) type FullClient =
@@ -65,6 +65,7 @@ pub fn new_partial(config: &Configuration) -> Result<Service, ServiceError> {
 			config,
 			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 			executor,
+			Default::default(),
 		)?;
 	let client = Arc::new(client);
 
@@ -133,6 +134,7 @@ pub fn new_full<Network: pezsc_network::NetworkBackend<Block, <Block as BlockT>:
 			client: client.clone(),
 			transaction_pool: transaction_pool.clone(),
 			spawn_handle: task_manager.spawn_handle(),
+			spawn_essential_handle: task_manager.spawn_essential_handle(),
 			import_queue,
 			block_announce_validator_builder: None,
 			warp_sync_config: None,
@@ -190,10 +192,10 @@ pub fn new_full<Network: pezsc_network::NetworkBackend<Block, <Block as BlockT>:
 		move |parent, ()| {
 			let client = client.clone();
 			async move {
-				let key = pezkuwi_sdk::pezsp_core::storage::StorageKey(
+				let key = pezsp_core::storage::StorageKey(
 					pezkuwi_sdk::pezpallet_timestamp::Now::<Runtime>::hashed_key().to_vec(),
 				);
-				let current = pezkuwi_sdk::pezsp_timestamp::Timestamp::current();
+				let current = pezsp_timestamp::Timestamp::current();
 				let next = client
 					.storage(parent, &key)
 					.ok()
@@ -201,10 +203,10 @@ pub fn new_full<Network: pezsc_network::NetworkBackend<Block, <Block as BlockT>:
 					.and_then(|data| data.0.try_into().ok())
 					.map(|data| {
 						let last = u64::from_le_bytes(data) / 1000;
-						pezkuwi_sdk::pezsp_timestamp::Timestamp::new((last + 1) * 1000)
+						pezsp_timestamp::Timestamp::new((last + 1) * 1000)
 					})
 					.unwrap_or(current);
-				Ok(pezkuwi_sdk::pezsp_timestamp::InherentDataProvider::new(current.max(next)))
+				Ok(pezsp_timestamp::InherentDataProvider::new(current.max(next)))
 			}
 		}
 	};

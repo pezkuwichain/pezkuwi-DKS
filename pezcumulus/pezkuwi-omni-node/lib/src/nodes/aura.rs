@@ -46,12 +46,12 @@ use pezcumulus_client_consensus_aura::{
 	},
 	equivocation_import_queue::Verifier as EquivocationVerifier,
 };
-use pezcumulus_client_consensus_proposer::ProposerInterface;
 use pezcumulus_client_consensus_relay_chain::Verifier as RelayChainVerifier;
 use pezcumulus_client_service::CollatorSybilResistance;
 use pezcumulus_client_teyrchain_inherent::MockValidationDataInherentDataProvider;
 use pezcumulus_primitives_core::{
 	relay_chain::ValidationCode, CollectCollationInfo, GetTeyrchainInfo, ParaId,
+	RelayParentOffsetApi, TargetBlockRate,
 };
 use pezcumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface};
 use pezkuwi_primitives::{CollatorPair, UpgradeGoAhead};
@@ -67,7 +67,8 @@ use pezsc_service::{Configuration, Error, PartialComponents, TaskManager};
 use pezsc_telemetry::TelemetryHandle;
 use pezsc_transaction_pool::TransactionPoolHandle;
 use pezsc_transaction_pool_api::OffchainTransactionPoolFactory;
-use pezsp_api::ProvideRuntimeApi;
+use pezsp_api::{ApiExt, ProvideRuntimeApi};
+use pezsp_consensus::Environment;
 use pezsp_core::traits::SpawnEssentialNamed;
 use pezsp_inherents::CreateInherentDataProviders;
 use pezsp_keystore::KeystorePtr;
@@ -75,8 +76,9 @@ use pezsp_runtime::{
 	app_crypto::AppCrypto,
 	traits::{Block as BlockT, Header as HeaderT, UniqueSaturatedInto},
 };
+use pezsp_transaction_storage_proof::runtime_api::TransactionStorageApi;
 use prometheus_endpoint::Registry;
-use std::{marker::PhantomData, sync::Arc, time::Duration};
+use std::{marker::PhantomData, ops::Sub, sync::Arc, time::Duration};
 
 struct Verifier<Block, Client, AuraId> {
 	client: Arc<Client>,
@@ -215,7 +217,32 @@ where
 	fn start_dev_node(
 		mut config: Configuration,
 		mode: DevSealMode,
+		node_extra_args: NodeExtraArgs,
 	) -> pezsc_service::error::Result<TaskManager> {
+		// Destructure all fields so the compiler enforces handling new args.
+		let NodeExtraArgs {
+			authoring_policy,
+			ref export_pov,
+			max_pov_percentage,
+			ref statement_store_config,
+			ref storage_monitor,
+			ref hop,
+		} = node_extra_args;
+
+		// Warn about args that have no effect in dev mode (collation-specific).
+		if authoring_policy != AuthoringPolicy::Lookahead {
+			log::warn!(
+				"Authoring policy `{}` has no effect in dev mode (manual/instant seal is used).",
+				authoring_policy,
+			);
+		}
+		if export_pov.is_some() {
+			log::warn!("`--export-pov` has no effect in dev mode (no PoVs are produced).");
+		}
+		if max_pov_percentage.is_some() {
+			log::warn!("`--max-pov-percentage` has no effect in dev mode (no PoVs are produced).");
+		}
+
 		let PartialComponents {
 			client,
 			backend,
@@ -230,11 +257,23 @@ where
 		// Since this is a dev node, prevent it from connecting to peers.
 		config.network.default_peers_set.in_peers = 0;
 		config.network.default_peers_set.out_peers = 0;
-		let net_config =
+		let mut net_config =
 			FullNetworkConfiguration::<_, _, pezsc_network::Litep2pNetworkBackend>::new(
 				&config.network,
 				None,
 			);
+
+		let metrics = NotificationMetrics::new(None);
+
+		let statement_handler_proto = statement_store_config.as_ref().map(|ss_config| {
+			let proto = crate::common::statement_store::new_statement_handler_proto(
+				&*client,
+				&config,
+				&metrics,
+				&mut net_config,
+			);
+			(proto, *ss_config)
+		});
 
 		let (network, system_rpc_tx, tx_handler_controller, sync_service) =
 			pezsc_service::build_network(pezsc_service::BuildNetworkParams {
@@ -242,15 +281,42 @@ where
 				client: client.clone(),
 				transaction_pool: transaction_pool.clone(),
 				spawn_handle: task_manager.spawn_handle(),
+				spawn_essential_handle: task_manager.spawn_essential_handle(),
 				import_queue,
 				net_config,
 				block_announce_validator_builder: None,
 				warp_sync_config: None,
 				block_relay: None,
-				metrics: NotificationMetrics::new(None),
+				metrics,
 			})?;
 
+		let statement_store = statement_handler_proto
+			.map(|(statement_handler_proto, ss_config)| {
+				crate::common::statement_store::build_statement_store(
+					&config,
+					&mut task_manager,
+					client.clone(),
+					network.clone(),
+					sync_service.clone(),
+					keystore_container.local_keystore(),
+					statement_handler_proto,
+					ss_config,
+				)
+			})
+			.transpose()?;
+
 		if config.offchain_worker.enabled {
+			let custom_extensions = {
+				let statement_store = statement_store.clone();
+				move |_| {
+					if let Some(statement_store) = &statement_store {
+						vec![Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>]
+					} else {
+						vec![]
+					}
+				}
+			};
+
 			let offchain_workers =
 				pezsc_offchain::OffchainWorkers::new(pezsc_offchain::OffchainWorkerOptions {
 					runtime_api_provider: client.clone(),
@@ -262,7 +328,7 @@ where
 					network_provider: Arc::new(network.clone()),
 					is_validator: config.role.is_authority(),
 					enable_http_requests: true,
-					custom_extensions: move |_| vec![],
+					custom_extensions,
 				})?;
 			task_manager.spawn_handle().spawn(
 				"offchain-workers-runner",
@@ -285,7 +351,8 @@ where
 
 		// The aura digest provider will provide digests that match the provided timestamp data.
 		// Without this, the AURA teyrchain runtimes complain about slot mismatches.
-		let aura_digest_provider = AuraConsensusDataProvider::new_with_slot_duration(slot_duration);
+		let aura_digest_provider =
+			AuraConsensusDataProvider::<Block>::new_with_slot_duration(slot_duration);
 
 		let para_id =
 			Self::teyrchain_id(&client, &config).ok_or("Failed to retrieve the teyrchain id")?;
@@ -352,22 +419,44 @@ where
 				);
 			},
 		}
+		let hop_pool = hop
+			.as_ref()
+			.map(|params| params.build_pool(config.database.path().map(|p| p.to_path_buf())))
+			.transpose()
+			.map_err(|e| pezsc_service::Error::Application(Box::new(e)))?;
+		if let (Some(pool), Some(hop)) = (hop_pool.as_ref(), hop.as_ref()) {
+			let task = pezsc_hop::build_maintenance_task::<Block, _, _>(
+				&client,
+				&transaction_pool,
+				pool.clone(),
+				hop.promotion_buffer_secs,
+				hop.check_interval,
+			);
+			task_manager.spawn_handle().spawn("hop-maintenance", None, task.run());
+		}
 
+		let spawn_handle = Arc::new(task_manager.spawn_handle());
 		let rpc_extensions_builder = {
 			let client = client.clone();
 			let transaction_pool = transaction_pool.clone();
 			let backend_for_rpc = backend.clone();
+			let statement_store = statement_store.clone();
+			let hop_pool = hop_pool.clone();
 
 			Box::new(move |_| {
 				let module = Self::BuildRpcExtensions::build_rpc_extensions(
 					client.clone(),
 					backend_for_rpc.clone(),
 					transaction_pool.clone(),
-					None,
+					statement_store.clone(),
+					hop_pool.clone(),
+					spawn_handle.clone(),
 				)?;
 				Ok(module)
 			})
 		};
+
+		let database_path = config.database.path().map(|p| p.to_path_buf());
 
 		let _rpc_handlers = pezsc_service::spawn_tasks(pezsc_service::SpawnTasksParams {
 			network,
@@ -384,6 +473,16 @@ where
 			telemetry: telemetry.as_mut(),
 			tracing_execute_block: None,
 		})?;
+
+		// Spawn the storage monitor.
+		if let Some(database_path) = database_path {
+			pezsc_storage_monitor::StorageMonitorService::try_spawn(
+				storage_monitor.clone(),
+				database_path,
+				&task_manager.spawn_essential_handle(),
+			)
+			.map_err(|e| pezsc_service::Error::Application(Box::new(e) as Box<_>))?;
+		}
 
 		Ok(task_manager)
 	}
@@ -415,6 +514,16 @@ where
 		>,
 	> + Send
 	       + Sync {
+		const RELAY_CHAIN_SLOT_DURATION_MILLIS: u64 = 6000;
+
+		// Start 2 hours in the past to avoid timestamps immediately running into the future.
+		let initial_relay_slot = std::time::SystemTime::now()
+			.duration_since(std::time::UNIX_EPOCH)
+			.expect("Current time is always after UNIX_EPOCH; qed")
+			.sub(Duration::from_secs(2 * 60 * 60))
+			.as_millis() as u64
+			/ RELAY_CHAIN_SLOT_DURATION_MILLIS;
+
 		move |block: Hash, ()| {
 			let current_para_head = client
 				.header(block)
@@ -433,11 +542,27 @@ where
 				UniqueSaturatedInto::<u32>::unique_saturated_into(*current_para_head.number()) + 1;
 			log::info!("Current block number: {current_block_number}");
 
+			let relay_parent_offset =
+				client.runtime_api().relay_parent_offset(block).unwrap_or_default();
+
+			let relay_blocks_per_para_block =
+				(slot_duration.as_millis() / RELAY_CHAIN_SLOT_DURATION_MILLIS).max(1) as u32;
+
+			// Each para block gets a unique relay slot: initial_relay_slot +
+			// relay_blocks_per_para_block * block_number
+			let target_relay_slot = initial_relay_slot
+				+ u64::from(current_block_number) * u64::from(relay_blocks_per_para_block);
+
+			let relay_offset = (target_relay_slot as u32)
+				.saturating_sub(relay_blocks_per_para_block * current_block_number);
+
 			let mocked_teyrchain = MockValidationDataInherentDataProvider::<()> {
 				current_para_block: current_block_number,
 				para_id,
 				current_para_block_head,
-				relay_blocks_per_para_block: 1,
+				relay_blocks_per_para_block,
+				relay_offset,
+				relay_parent_offset,
 				para_blocks_per_relay_epoch: 10,
 				upgrade_go_ahead: should_send_go_ahead.then(|| {
 					log::info!("Detected pending validation code, sending go-ahead signal.");
@@ -446,9 +571,9 @@ where
 				..Default::default()
 			};
 
-			let timestamp_provider = pezsp_timestamp::InherentDataProvider::new(
-				(slot_duration.as_millis() * current_block_number as u64).into(),
-			);
+			let timestamp = target_relay_slot * RELAY_CHAIN_SLOT_DURATION_MILLIS;
+
+			let timestamp_provider = pezsp_timestamp::InherentDataProvider::new(timestamp.into());
 
 			futures::future::ready(Ok((timestamp_provider, mocked_teyrchain)))
 		}
@@ -464,6 +589,7 @@ where
 	RuntimeApi::RuntimeApi: AuraRuntimeApi<Block, AuraId>
 		+ pezpallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>
 		+ bizinikiwi_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>
+		+ TargetBlockRate<Block>
 		+ GetTeyrchainInfo<Block>,
 	AuraId: AuraIdT + Sync + Send,
 	<AuraId as AppCrypto>::Pair: Send + Sync,
@@ -496,7 +622,7 @@ impl<Block: BlockT<Hash = DbHash>, RuntimeApi, AuraId>
 	StartSlotBasedAuraConsensus<Block, RuntimeApi, AuraId>
 where
 	RuntimeApi: ConstructNodeRuntimeApi<Block, TeyrchainClient<Block, RuntimeApi>>,
-	RuntimeApi::RuntimeApi: AuraRuntimeApi<Block, AuraId>,
+	RuntimeApi::RuntimeApi: AuraRuntimeApi<Block, AuraId> + TargetBlockRate<Block>,
 	AuraId: AuraIdT + Sync + Send,
 	<AuraId as AppCrypto>::Pair: Send + Sync,
 {
@@ -524,8 +650,11 @@ where
 	) where
 		CIDP: CreateInherentDataProviders<Block, ()> + 'static,
 		CIDP::InherentDataProviders: Send,
-		CHP: pezcumulus_client_consensus_common::ValidationCodeHashProvider<Hash> + Send + 'static,
-		Proposer: ProposerInterface<Block> + Send + Sync + 'static,
+		CHP: pezcumulus_client_consensus_common::ValidationCodeHashProvider<Hash>
+			+ Send
+			+ Sync
+			+ 'static,
+		Proposer: Environment<Block> + Send + Sync + 'static,
 		CS: CollatorServiceInterface<Block> + Send + Sync + Clone + 'static,
 		Spawner: SpawnEssentialNamed + Clone + 'static,
 	{
@@ -548,7 +677,7 @@ impl<Block: BlockT<Hash = DbHash>, RuntimeApi, AuraId>
 	> for StartSlotBasedAuraConsensus<Block, RuntimeApi, AuraId>
 where
 	RuntimeApi: ConstructNodeRuntimeApi<Block, TeyrchainClient<Block, RuntimeApi>>,
-	RuntimeApi::RuntimeApi: AuraRuntimeApi<Block, AuraId>,
+	RuntimeApi::RuntimeApi: AuraRuntimeApi<Block, AuraId> + TargetBlockRate<Block>,
 	AuraId: AuraIdT + Sync + Send,
 	<AuraId as AppCrypto>::Pair: Send + Sync,
 {
@@ -578,7 +707,7 @@ where
 		node_extra_args: NodeExtraArgs,
 		block_import_handle: SlotBasedBlockImportHandle<Block>,
 	) -> Result<(), Error> {
-		let proposer = pezsc_basic_authorship::ProposerFactory::with_proof_recording(
+		let proposer = pezsc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool,
@@ -594,8 +723,28 @@ where
 		);
 
 		let client_for_aura = client.clone();
+		let client_clone = client.clone();
 		let params = SlotBasedParams {
-			create_inherent_data_providers: move |_, ()| async move { Ok(()) },
+			create_inherent_data_providers: move |parent, ()| {
+				let client_clone = client_clone.clone();
+				async move {
+					let has_tx_storage_api = client_clone
+						.runtime_api()
+						.has_api_with::<dyn TransactionStorageApi<Block>, _>(parent, |v| v >= 1)
+						.unwrap_or(false);
+					if has_tx_storage_api {
+						let storage_proof =
+							pezsp_transaction_storage_proof::registration::new_data_provider(
+								&*client_clone,
+								&parent,
+								client_clone.runtime_api().retention_period(parent)?,
+							)?;
+						Ok(vec![storage_proof])
+					} else {
+						Ok(vec![])
+					}
+				}
+			},
 			block_import,
 			para_client: client.clone(),
 			para_backend: backend.clone(),
@@ -610,7 +759,6 @@ where
 			para_id,
 			proposer,
 			collator_service,
-			authoring_duration: Duration::from_millis(2000),
 			reinitialize: false,
 			slot_offset: Duration::from_secs(1),
 			block_import_handle,
@@ -619,10 +767,14 @@ where
 			max_pov_percentage: node_extra_args.max_pov_percentage,
 		};
 
-		// We have a separate function only to be able to use `docify::export` on this piece of
-		// code.
-
-		Self::launch_slot_based_collator(params);
+		let wait_client = client.clone();
+		let fut = async move {
+			wait_for_aura::<Block, RuntimeApi, AuraId>(wait_client).await;
+			// We have a separate function only to be able to use `docify::export` on this
+			// piece of code.
+			Self::launch_slot_based_collator(params);
+		};
+		task_manager.spawn_handle().spawn("slot-based-collator-init", None, fut);
 
 		Ok(())
 	}
@@ -705,7 +857,7 @@ where
 		node_extra_args: NodeExtraArgs,
 		_: (),
 	) -> Result<(), Error> {
-		let proposer = pezsc_basic_authorship::ProposerFactory::with_proof_recording(
+		let proposer = pezsc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
 			transaction_pool,
@@ -719,10 +871,30 @@ where
 			client.clone(),
 		);
 
+		let client_clone = client.clone();
 		let params = aura::ParamsWithExport {
 			export_pov: node_extra_args.export_pov,
 			params: AuraParams {
-				create_inherent_data_providers: move |_, ()| async move { Ok(()) },
+				create_inherent_data_providers: move |parent, ()| {
+					let client_clone = client_clone.clone();
+					async move {
+						let has_tx_storage_api = client_clone
+							.runtime_api()
+							.has_api_with::<dyn TransactionStorageApi<Block>, _>(parent, |v| v >= 1)
+							.unwrap_or(false);
+						if has_tx_storage_api {
+							let storage_proof =
+								pezsp_transaction_storage_proof::registration::new_data_provider(
+									&*client_clone,
+									&parent,
+									client_clone.runtime_api().retention_period(parent)?,
+								)?;
+							Ok(vec![storage_proof])
+						} else {
+							Ok(vec![])
+						}
+					}
+				},
 				block_import,
 				para_client: client.clone(),
 				para_backend: backend,

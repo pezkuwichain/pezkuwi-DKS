@@ -24,14 +24,13 @@ pub use genesis::{genesis, PenpalAssetOwner, PenpalSudoAccount, ED, PARA_ID_A, P
 use pezframe_support::traits::OnInitialize;
 use pezsp_core::Encode;
 
-// Pezcumulus
+// Cumulus
 use emulated_integration_tests_common::{
 	impl_accounts_helpers_for_teyrchain, impl_assert_events_helpers_for_teyrchain,
 	impl_assets_helpers_for_teyrchain, impl_foreign_assets_helpers_for_teyrchain,
 	impl_xcm_helpers_for_teyrchain,
 	impls::{NetworkId, Teyrchain},
 	xcm_pez_emulator::decl_test_teyrchains,
-	AuraDigestProvider,
 };
 
 // Pezkuwi
@@ -54,7 +53,6 @@ decl_test_teyrchains! {
 			LocationToAccountId: pez_penpal_runtime::xcm_config::LocationToAccountId,
 			TeyrchainInfo: pez_penpal_runtime::TeyrchainInfo,
 			MessageOrigin: pezcumulus_primitives_core::AggregateMessageOrigin,
-			DigestProvider: AuraDigestProvider,
 		},
 		pallets = {
 			PezkuwiXcm: pez_penpal_runtime::PezkuwiXcm,
@@ -79,7 +77,6 @@ decl_test_teyrchains! {
 			LocationToAccountId: pez_penpal_runtime::xcm_config::LocationToAccountId,
 			TeyrchainInfo: pez_penpal_runtime::TeyrchainInfo,
 			MessageOrigin: pezcumulus_primitives_core::AggregateMessageOrigin,
-			DigestProvider: AuraDigestProvider,
 		},
 		pallets = {
 			PezkuwiXcm: pez_penpal_runtime::PezkuwiXcm,
@@ -96,9 +93,21 @@ impl_accounts_helpers_for_teyrchain!(PenpalA);
 impl_accounts_helpers_for_teyrchain!(PenpalB);
 impl_assert_events_helpers_for_teyrchain!(PenpalA);
 impl_assert_events_helpers_for_teyrchain!(PenpalB);
+// This chain carries an index-keyed assets instance alongside the location-keyed one, so it
+// needs both helper sets; upstream's penpal has only the latter.
 impl_assets_helpers_for_teyrchain!(PenpalA);
-impl_foreign_assets_helpers_for_teyrchain!(PenpalA, xcm::latest::Location, ForeignAssetReserveData);
 impl_assets_helpers_for_teyrchain!(PenpalB);
-impl_foreign_assets_helpers_for_teyrchain!(PenpalB, xcm::latest::Location, ForeignAssetReserveData);
+impl_foreign_assets_helpers_for_teyrchain!(
+	PenpalA,
+	xcm::latest::Location,
+	ForeignAssetReserveData,
+	ForeignAssets
+);
+impl_foreign_assets_helpers_for_teyrchain!(
+	PenpalB,
+	xcm::latest::Location,
+	ForeignAssetReserveData,
+	ForeignAssets
+);
 impl_xcm_helpers_for_teyrchain!(PenpalA);
 impl_xcm_helpers_for_teyrchain!(PenpalB);

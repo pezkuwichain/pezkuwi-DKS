@@ -49,7 +49,7 @@ mod tests;
 const SPAWNED_TASK_DELAY: Duration = Duration::from_millis(1500);
 const LOG_TARGET: &str = "teyrchain::bitfield-signing";
 
-// TODO: use `fatality` (https://github.com/pezkuwichain/pezkuwi-sdk/issues/301).
+// TODO: use `fatality` (https://github.com/pezkuwichain/pezkuwi-DKS/issues/301).
 /// Errors we may encounter in the course of executing the `BitfieldSigningSubsystem`.
 #[derive(Debug, thiserror::Error)]
 #[allow(missing_docs)]

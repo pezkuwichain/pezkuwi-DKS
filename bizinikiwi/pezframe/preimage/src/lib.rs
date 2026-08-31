@@ -23,7 +23,7 @@
 //! ## Overview
 //!
 //! The Preimage pezpallet allows for the users and the runtime to store the preimage
-//! of a hash on chain. This can be used by other pallets for storing and managing
+//! of a hash on chain. This can be used by other pezpallets for storing and managing
 //! large byte-blobs.
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -66,15 +66,7 @@ pub use pezpallet::*;
 
 /// A type to note whether a preimage is owned by a user or the system.
 #[derive(
-	Clone,
-	Eq,
-	PartialEq,
-	Encode,
-	Decode,
-	TypeInfo,
-	MaxEncodedLen,
-	RuntimeDebug,
-	DecodeWithMemTracking,
+	Clone, Eq, PartialEq, Encode, Decode, TypeInfo, MaxEncodedLen, Debug, DecodeWithMemTracking,
 )]
 pub enum OldRequestStatus<AccountId, Balance> {
 	/// The associated preimage has not yet been requested by the system. The given deposit (if
@@ -88,15 +80,7 @@ pub enum OldRequestStatus<AccountId, Balance> {
 
 /// A type to note whether a preimage is owned by a user or the system.
 #[derive(
-	Clone,
-	Eq,
-	PartialEq,
-	Encode,
-	Decode,
-	TypeInfo,
-	MaxEncodedLen,
-	RuntimeDebug,
-	DecodeWithMemTracking,
+	Clone, Eq, PartialEq, Encode, Decode, TypeInfo, MaxEncodedLen, Debug, DecodeWithMemTracking,
 )]
 pub enum RequestStatus<AccountId, Ticket> {
 	/// The associated preimage has not yet been requested by the system. The given deposit (if

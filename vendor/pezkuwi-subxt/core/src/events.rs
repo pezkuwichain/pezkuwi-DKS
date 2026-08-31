@@ -466,7 +466,7 @@ pub struct EventMetadataDetails<'a> {
 #[cfg(test)]
 pub(crate) mod test_utils {
 	use super::*;
-	use crate::config::{BizinikiwConfig, HashFor};
+	use crate::config::{BizinikiwiConfig, HashFor};
 	use codec::Encode;
 	use frame_metadata::{
 		v15::{
@@ -499,12 +499,12 @@ pub(crate) mod test_utils {
 	pub struct EventRecord<E: Encode> {
 		phase: Phase,
 		event: AllEvents<E>,
-		topics: Vec<HashFor<BizinikiwConfig>>,
+		topics: Vec<HashFor<BizinikiwiConfig>>,
 	}
 
 	impl<E: Encode> EventRecord<E> {
 		/// Create a new event record with the given phase, event, and topics.
-		pub fn new(phase: Phase, event: E, topics: Vec<HashFor<BizinikiwConfig>>) -> Self {
+		pub fn new(phase: Phase, event: E, topics: Vec<HashFor<BizinikiwiConfig>>) -> Self {
 			Self { phase, event: AllEvents::Test(event), topics }
 		}
 	}
@@ -585,7 +585,7 @@ pub(crate) mod test_utils {
 	pub fn events<E: Decode + Encode>(
 		metadata: Metadata,
 		event_records: Vec<EventRecord<E>>,
-	) -> Events<BizinikiwConfig> {
+	) -> Events<BizinikiwiConfig> {
 		let num_events = event_records.len() as u32;
 		let mut event_bytes = Vec::new();
 		for ev in event_records {
@@ -600,7 +600,7 @@ pub(crate) mod test_utils {
 		metadata: Metadata,
 		event_bytes: Vec<u8>,
 		num_events: u32,
-	) -> Events<BizinikiwConfig> {
+	) -> Events<BizinikiwiConfig> {
 		// Prepend compact encoded length to event bytes:
 		let mut all_event_bytes = Compact(num_events).encode();
 		all_event_bytes.extend(event_bytes);
@@ -614,7 +614,7 @@ mod tests {
 		test_utils::{event_record, events, events_raw, AllEvents, EventRecord},
 		*,
 	};
-	use crate::{config::BizinikiwConfig, events::Phase};
+	use crate::{config::BizinikiwiConfig, events::Phase};
 	use codec::Encode;
 	use primitive_types::H256;
 	use scale_info::TypeInfo;
@@ -642,7 +642,7 @@ mod tests {
 	/// Compare some actual [`RawEventDetails`] with a hand-constructed
 	/// (probably) [`TestRawEventDetails`].
 	pub fn assert_raw_events_match(
-		actual: EventDetails<BizinikiwConfig>,
+		actual: EventDetails<BizinikiwiConfig>,
 		expected: TestRawEventDetails,
 	) {
 		let actual_fields_no_context: Vec<_> = actual

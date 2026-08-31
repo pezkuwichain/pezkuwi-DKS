@@ -54,8 +54,8 @@ use pez_assets_common::{
 	local_and_foreign_assets::{LocalFromLeft, TargetFromLeft},
 	AssetIdForTrustBackedAssetsConvert,
 };
-use pezcumulus_pezpallet_teyrchain_system::RelayNumberStrictlyIncreases;
-use pezcumulus_primitives_core::{AggregateMessageOrigin, ParaId};
+use pezcumulus_pezpallet_teyrchain_system::RelayNumberMonotonicallyIncreases;
+use pezcumulus_primitives_core::{AggregateMessageOrigin, ParaId, VerifySchedulingSignature};
 use pezframe_support::{
 	construct_runtime, derive_impl,
 	dispatch::DispatchClass,
@@ -63,7 +63,10 @@ use pezframe_support::{
 	ord_parameter_types, parameter_types,
 	pezpallet_prelude::Weight,
 	traits::{
-		tokens::{fungible, fungibles, imbalance::ResolveAssetTo},
+		tokens::{
+			fungible, fungibles,
+			imbalance::{MaybeResolveAssetTo, ResolveAssetTo},
+		},
 		AsEnsureOriginWithArg, ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Everything,
 		TransformOrigin,
 	},
@@ -92,13 +95,13 @@ pub use pezsp_runtime::{traits::ConvertInto, MultiAddress, Perbill, Permill};
 use smallvec::smallvec;
 use testnet_teyrchains_constants::zagros::{consensus::*, time::*};
 use teyrchains_common::{
-	impls::{AssetsToBlockAuthor, NonZeroIssuance},
+	impls::BlockAuthor,
 	message_queue::{NarrowOriginToSibling, ParaIdToSibling},
 	AccountId, Balance, BlockNumber, Hash, Header, Nonce, Signature,
 };
 use weights::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight};
 use xcm::{
-	latest::prelude::{AssetId as AssetLocationId, BodyId},
+	latest::prelude::{AssetId as AssetLocationId, BodyId, Location},
 	Version as XcmVersion, VersionedAsset, VersionedAssetId, VersionedAssets, VersionedLocation,
 	VersionedXcm,
 };
@@ -113,7 +116,7 @@ pub use pezsp_runtime::BuildStorage;
 use pezsp_version::NativeVersion;
 use pezsp_version::RuntimeVersion;
 use xcm_config::{
-	ForeignAssetsAssetId, LocationToAccountId, XcmConfig, XcmOriginToTransactDispatchOrigin,
+	AssetsAssetId, LocationToAccountId, XcmConfig, XcmOriginToTransactDispatchOrigin,
 };
 
 /// The address format for describing accounts.
@@ -141,7 +144,7 @@ pub type TxExtension = (
 	pezframe_system::CheckEra<Runtime>,
 	pezframe_system::CheckNonce<Runtime>,
 	pezframe_system::CheckWeight<Runtime>,
-	pezpallet_asset_tx_payment::ChargeAssetTxPayment<Runtime>,
+	pezpallet_asset_conversion_tx_payment::ChargeAssetTxPayment<Runtime>,
 	pezframe_metadata_hash_extension::CheckMetadataHash<Runtime>,
 	pezpallet_revive::evm::tx_extension::SetOrigin<Runtime>,
 	pezframe_system::WeightReclaim<Runtime>,
@@ -153,9 +156,10 @@ pub struct EthExtraImpl;
 
 impl EthExtra for EthExtraImpl {
 	type Config = Runtime;
-	type Extension = TxExtension;
+	type ExtensionV0 = TxExtension;
+	type ExtensionOtherVersions = pezsp_runtime::traits::InvalidVersion;
 
-	fn get_eth_extension(nonce: u32, tip: Balance) -> Self::Extension {
+	fn get_eth_extension(nonce: u32, tip: Balance) -> Self::ExtensionV0 {
 		(
 			pezframe_system::AuthorizeCall::<Runtime>::new(),
 			pezframe_system::CheckNonZeroSender::<Runtime>::new(),
@@ -165,7 +169,7 @@ impl EthExtra for EthExtraImpl {
 			pezframe_system::CheckEra::<Runtime>::from(generic::Era::Immortal),
 			pezframe_system::CheckNonce::<Runtime>::from(nonce),
 			pezframe_system::CheckWeight::<Runtime>::new(),
-			pezpallet_asset_tx_payment::ChargeAssetTxPayment::<Runtime>::from(tip, None),
+			pezpallet_asset_conversion_tx_payment::ChargeAssetTxPayment::<Runtime>::from(tip, None),
 			pezframe_metadata_hash_extension::CheckMetadataHash::<Runtime>::new(false),
 			pezpallet_revive::evm::tx_extension::SetOrigin::<Runtime>::new_from_eth_transaction(),
 			pezframe_system::WeightReclaim::<Runtime>::new(),
@@ -304,6 +308,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	system_version: 1,
 };
 
+const RELAY_PARENT_OFFSET: u32 = 0;
+
 // Unit = the base number of indivisible units for balances
 pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = 1_000_000_000;
@@ -315,8 +321,11 @@ pub const MICROUNIT: Balance = 1_000_000;
 pub const CENTS: Balance = UNIT / 30_000;
 pub const MILLICENTS: Balance = CENTS / 1_000;
 
-/// The existential deposit. Set to 1/10 of the Connected Relay Chain.
-pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
+/// The existential deposit. Set to 1/10 of the Connected Relay Chain, whose own deposit is
+/// one cent. Deriving it from `CENTS` keeps it in step with the sibling teyrchains, which
+/// take the same tenth; spelling it as `MILLIUNIT` only agreed with that while a cent was a
+/// hundredth of a unit, and left this chain at three hundred times their deposit.
+pub const EXISTENTIAL_DEPOSIT: Balance = CENTS / 10;
 
 /// We assume that ~5% of the block weight is consumed by `on_initialize` handlers. This is
 /// used to limit the maximal weight of a single extrinsic.
@@ -345,8 +354,12 @@ parameter_types! {
 	//  The `RuntimeBlockLength` and `RuntimeBlockWeights` exist here because the
 	// `DeletionWeightLimit` and `DeletionQueueDepth` depend on those to parameterize
 	// the lazy contract deletion.
-	pub RuntimeBlockLength: BlockLength =
-		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
+	pub RuntimeBlockLength: BlockLength = BlockLength::builder()
+		.max_length(5 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 	pub RuntimeBlockWeights: BlockWeights = BlockWeights::builder()
 		.base_block(BlockExecutionWeight::get())
 		.for_class(DispatchClass::all(), |weights| {
@@ -368,7 +381,7 @@ parameter_types! {
 	pub const SS58Prefix: u16 = 42;
 }
 
-// Configure FRAME pallets to include in runtime.
+// Configure FRAME pezpallets to include in runtime.
 
 #[derive_impl(pezframe_system::config_preludes::TestDefaultConfig)]
 impl pezframe_system::Config for Runtime {
@@ -424,7 +437,7 @@ impl pezpallet_timestamp::Config for Runtime {
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = u64;
 	type OnTimestampSet = Aura;
-	type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
+	type MinimumPeriod = ConstU64<0>;
 	type WeightInfo = ();
 }
 
@@ -451,24 +464,21 @@ impl pezpallet_balances::Config for Runtime {
 	type ReserveIdentifier = [u8; 8];
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeFreezeReason = RuntimeFreezeReason;
-	type FreezeIdentifier = ();
-	type MaxFreezes = ConstU32<0>;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type MaxFreezes = pezframe_support::traits::VariantCountOf<RuntimeFreezeReason>;
 	type DoneSlashHandler = ();
 }
 
 parameter_types! {
-	/// Relay Chain `TransactionByteFee` / 10, expressed in this ecosystem's cent scale.
-	/// The literal this replaced (`10 * MICROUNIT`) was `MILLICENTS` under the upstream
-	/// assumption that a unit is a hundred cents; here a cent is a thirty-thousandth, so
-	/// it charged 300x. Delivery fees are paid in the relay token and must agree with what
-	/// the Asset Hub charges for the same message — see `BaseDeliveryFee` below.
+	/// Relay Chain `TransactionByteFee` / 10. `10 * MICROUNIT` said the same thing only while
+	/// a cent was a hundredth of a unit; it is three hundred times a millicent here.
 	pub const TransactionByteFee: Balance = MILLICENTS;
 }
 
 impl pezpallet_transaction_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type OnChargeTransaction = pezpallet_transaction_payment::FungibleAdapter<Balances, ()>;
-	type WeightToFee = pezpallet_revive::evm::fees::BlockRatioFee<1, 1, Self>;
+	type WeightToFee = pezpallet_revive::evm::fees::BlockRatioFee<1, 1, Self, Balance>;
 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 	type OperationalFeeMultiplier = ConstU8<5>;
@@ -484,12 +494,12 @@ parameter_types! {
 	pub const MetadataDepositPerByte: Balance = 0;
 }
 
-// /// We allow root and the Relay Chain council to execute privileged asset operations.
-// pub type AssetsForceOrigin =
-// 	EnsureOneOf<EnsureRoot<AccountId>, EnsureXcm<IsMajorityOfBody<KsmLocation, ExecutiveBody>>>;
-
+/// Locally issued, trust-backed assets, keyed by a plain index the way an Asset Hub keys its
+/// own. Upstream folded this instance into the location-keyed one below, leaving its penpal
+/// with a single instance. Ours keeps both, because both Asset Hubs we run are two-instance
+/// chains and a counterparty that models only half of that tests only half of the paths — the
+/// emulated suites exercise the index-keyed and the location-keyed side separately.
 pub type TrustBackedAssetsInstance = pezpallet_assets::Instance1;
-
 impl pezpallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
@@ -525,16 +535,17 @@ parameter_types! {
 	pub const ForeignAssetsMetadataDepositPerByte: Balance = MetadataDepositPerByte::get();
 }
 
-/// Another pezpallet assets instance to store foreign assets from bridgehub.
+/// Assets that arrive from somewhere else, keyed by the location that issued them — foreign
+/// assets from a bridge hub, and anything the relay or a sibling reserves here.
 pub type ForeignAssetsInstance = pezpallet_assets::Instance2;
 impl pezpallet_assets::Config<ForeignAssetsInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
-	type AssetId = ForeignAssetsAssetId;
-	type AssetIdParameter = ForeignAssetsAssetId;
+	type AssetId = AssetsAssetId;
+	type AssetIdParameter = AssetsAssetId;
 	type ReserveData = ForeignAssetReserveData;
 	type Currency = Balances;
-	// This is to allow any other remote location to create foreign assets. Used in tests, not
+	// This is to allow any other location to create assets. Used in tests, not
 	// recommended on real chains.
 	type CreateOrigin =
 		ForeignCreators<Everything, LocationToAccountId, AccountId, xcm::latest::Location>;
@@ -557,6 +568,7 @@ impl pezpallet_assets::Config<ForeignAssetsInstance> for Runtime {
 
 parameter_types! {
 	pub const AssetConversionPalletId: PalletId = PalletId(*b"py/ascon");
+	pub const LpFee: Permill = Permill::zero(); // Makes account balance tracking in tests a bit easier
 	pub const LiquidityWithdrawalFee: Permill = Permill::from_percent(0);
 }
 
@@ -594,16 +606,16 @@ impl pezpallet_assets::Config<PoolAssetsInstance> for Runtime {
 	type BenchmarkHelper = ();
 }
 
-/// Union fungibles implementation for `Assets` and `ForeignAssets`.
+/// Union fungibles implementation for `Assets` and `ForeignAssets`. The two instances are keyed
+/// differently — one by index, one by the location that issued the asset — so this presents them
+/// under a single location-keyed view: a location naming this chain's assets pallet resolves to
+/// the index-keyed instance, everything else to the location-keyed one.
 pub type LocalAndForeignAssets = fungibles::UnionOf<
 	Assets,
 	ForeignAssets,
 	LocalFromLeft<
-		AssetIdForTrustBackedAssetsConvert<
-			xcm_config::TrustBackedAssetsPalletLocation,
-			xcm::latest::Location,
-		>,
-		teyrchains_common::AssetIdForTrustBackedAssets,
+		AssetIdForTrustBackedAssetsConvert<xcm_config::AssetsPalletLocation, xcm::latest::Location>,
+		AssetId,
 		xcm::latest::Location,
 	>,
 	xcm::latest::Location,
@@ -614,7 +626,7 @@ pub type LocalAndForeignAssets = fungibles::UnionOf<
 pub type NativeAndAssets = fungible::UnionOf<
 	Balances,
 	LocalAndForeignAssets,
-	TargetFromLeft<xcm_config::RelayLocation, xcm::latest::Location>,
+	TargetFromLeft<xcm_config::PenpalNativeCurrency, xcm::latest::Location>,
 	xcm::latest::Location,
 	AccountId,
 >;
@@ -632,7 +644,7 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type Assets = NativeAndAssets;
 	type PoolId = (Self::AssetKind, Self::AssetKind);
 	type PoolLocator = pezpallet_asset_conversion::WithFirstAsset<
-		xcm_config::RelayLocation,
+		xcm_config::PenpalNativeCurrency,
 		AccountId,
 		Self::AssetKind,
 		PoolIdToAccountId,
@@ -640,19 +652,19 @@ impl pezpallet_asset_conversion::Config for Runtime {
 	type PoolAssetId = u32;
 	type PoolAssets = PoolAssets;
 	type PoolSetupFee = ConstU128<0>; // Asset class deposit fees are sufficient to prevent spam
-	type PoolSetupFeeAsset = xcm_config::RelayLocation;
+	type PoolSetupFeeAsset = xcm_config::PenpalNativeCurrency;
 	type PoolSetupFeeTarget = ResolveAssetTo<AssetConversionOrigin, Self::Assets>;
 	type LiquidityWithdrawalFee = LiquidityWithdrawalFee;
-	type LPFee = ConstU32<3>;
+	type LPFee = LpFee;
 	type PalletId = AssetConversionPalletId;
 	type MaxSwapPathLength = ConstU32<3>;
 	type MintMinLiquidity = ConstU128<100>;
 	type WeightInfo = ();
 	#[cfg(feature = "runtime-benchmarks")]
 	type BenchmarkHelper = pez_assets_common::benchmarks::AssetPairFactory<
-		xcm_config::RelayLocation,
+		xcm_config::PenpalNativeCurrency,
 		teyrchain_info::Pezpallet<Runtime>,
-		xcm_config::TrustBackedAssetsPalletIndex,
+		xcm_config::AssetsPalletIndex,
 		xcm::latest::Location,
 	>;
 }
@@ -680,7 +692,7 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
 	type OutboundXcmpMessageSource = XcmpQueue;
 	type XcmpMessageHandler = XcmpQueue;
 	type ReservedXcmpWeight = ReservedXcmpWeight;
-	type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+	type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
 	type ConsensusHook = pezcumulus_pezpallet_aura_ext::FixedVelocityConsensusHook<
 		Runtime,
 		RELAY_CHAIN_SLOT_DURATION_MILLIS,
@@ -688,7 +700,8 @@ impl pezcumulus_pezpallet_teyrchain_system::Config for Runtime {
 		UNINCLUDED_SEGMENT_CAPACITY,
 	>;
 
-	type RelayParentOffset = ConstU32<0>;
+	type RelayParentOffset = ConstU32<RELAY_PARENT_OFFSET>;
+	type SchedulingSignatureVerifier = ();
 }
 
 impl teyrchain_info::Config for Runtime {}
@@ -719,14 +732,11 @@ impl pezcumulus_pezpallet_aura_ext::Config for Runtime {}
 
 parameter_types! {
 	/// The asset ID for the asset that we use to pay for message delivery fees.
-	pub FeeAssetId: AssetLocationId = AssetLocationId(xcm_config::RelayLocation::get());
+	pub FeeAssetId: AssetLocationId = AssetLocationId(xcm_config::PenpalNativeCurrency::get());
 	/// The base fee for the message delivery fees (3 CENTS).
-	/// The base fee for message delivery, charged in the relay token (see `FeeAssetId`).
-	///
-	/// This read `(UNIT / 100) * 3` and called itself three cents. In this ecosystem a
-	/// cent is `UNIT / 30_000`, so it charged three hundred times what it claimed — and
-	/// three hundred times what the Asset Hub charges to deliver the same message. Any
-	/// transfer sized in existential-deposit terms could not cover it.
+	/// Three cents, the same delivery fee the Asset Hub charges. Spelled out as a unit over a
+	/// hundred it named three cents only under the old scale, and priced delivery three
+	/// hundred times too high against a sender quoting Asset Hub rates.
 	pub const BaseDeliveryFee: u128 = CENTS.saturating_mul(3);
 }
 
@@ -809,33 +819,33 @@ impl pezpallet_collator_selection::Config for Runtime {
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-pub struct AssetTxHelper;
+pub struct AssetTxConversionHelper;
 
 #[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_asset_tx_payment::BenchmarkHelperTrait<AccountId, u32, u32> for AssetTxHelper {
-	fn create_asset_id_parameter(_id: u32) -> (u32, u32) {
+impl pezpallet_asset_conversion_tx_payment::BenchmarkHelperTrait<AccountId, Location, Location>
+	for AssetTxConversionHelper
+{
+	fn create_asset_id_parameter(_id: u32) -> (Location, Location) {
 		unimplemented!("Penpal uses default weights");
 	}
-	fn setup_balances_and_pool(_asset_id: u32, _account: AccountId) {
+	fn setup_balances_and_pool(_asset_id: Location, _account: AccountId) {
 		unimplemented!("Penpal uses default weights");
 	}
 }
 
-impl pezpallet_asset_tx_payment::Config for Runtime {
+impl pezpallet_asset_conversion_tx_payment::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Fungibles = Assets;
-	type OnChargeAssetTransaction = pezpallet_asset_tx_payment::FungiblesAdapter<
-		pezpallet_assets::BalanceToAssetBalance<
-			Balances,
-			Runtime,
-			ConvertInto,
-			TrustBackedAssetsInstance,
-		>,
-		AssetsToBlockAuthor<Runtime, TrustBackedAssetsInstance>,
+	type AssetId = Location;
+	type OnChargeAssetTransaction = pezpallet_asset_conversion_tx_payment::SwapAssetAdapter<
+		xcm_config::PenpalNativeCurrency,
+		NativeAndAssets,
+		AssetConversion,
+		MaybeResolveAssetTo<BlockAuthor<Runtime>, NativeAndAssets, AccountId>,
 	>;
 	type WeightInfo = ();
+
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = AssetTxHelper;
+	type BenchmarkHelper = AssetTxConversionHelper;
 }
 
 parameter_types! {
@@ -861,7 +871,6 @@ impl pezpallet_revive::Config for Runtime {
 	type AddressMapper = pezpallet_revive::AccountId32Mapper<Self>;
 	type RuntimeMemory = ConstU32<{ 128 * 1024 * 1024 }>;
 	type PVFMemory = ConstU32<{ 512 * 1024 * 1024 }>;
-	type UnsafeUnstableInterface = ConstBool<true>;
 	type AllowEVMBytecode = ConstBool<true>;
 	type UploadOrigin = EnsureSigned<Self::AccountId>;
 	type InstantiateOrigin = EnsureSigned<Self::AccountId>;
@@ -873,6 +882,10 @@ impl pezpallet_revive::Config for Runtime {
 	type FeeInfo = pezpallet_revive::evm::fees::Info<Address, Signature, EthExtraImpl>;
 	type MaxEthExtrinsicWeight = MaxEthExtrinsicWeight;
 	type DebugEnabled = ConstBool<false>;
+	type AutoMap = ConstBool<false>;
+	type GasScale = ConstU32<1000>;
+	type OnBurn = ();
+	type Deposit = ();
 }
 
 impl pezpallet_sudo::Config for Runtime {
@@ -888,7 +901,7 @@ impl pezpallet_utility::Config for Runtime {
 	type WeightInfo = pezpallet_utility::weights::BizinikiwiWeight<Runtime>;
 }
 
-// Create the runtime by composing the FRAME pallets that were previously configured.
+// Create the runtime by composing the FRAME pezpallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime
 	{
@@ -901,7 +914,7 @@ construct_runtime!(
 		// Monetary stuff.
 		Balances: pezpallet_balances = 10,
 		TransactionPayment: pezpallet_transaction_payment = 11,
-		AssetTxPayment: pezpallet_asset_tx_payment = 12,
+		AssetTxPayment: pezpallet_asset_conversion_tx_payment = 12,
 
 		// Collator support. The order of these 4 are important and shall not change.
 		Authorship: pezpallet_authorship = 20,
@@ -920,6 +933,8 @@ construct_runtime!(
 		Utility: pezpallet_utility = 40,
 
 		// The main stage.
+
+		// Removed, i.e. merged into the foreign assets pezpallet.
 		Assets: pezpallet_assets::<Instance1> = 50,
 		ForeignAssets: pezpallet_assets::<Instance2> = 51,
 		PoolAssets: pezpallet_assets::<Instance3> = 52,
@@ -1030,8 +1045,8 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 	}
 
 	impl pezsp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			SessionKeys::generate(seed)
+		fn generate_session_keys(owner: Vec<u8>, seed: Option<Vec<u8>>) -> pezsp_session::OpaqueGeneratedSessionKeys {
+			SessionKeys::generate(&owner, seed).into()
 		}
 
 		fn decode_session_keys(
@@ -1099,7 +1114,7 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 
 	impl xcm_runtime_pezapis::fees::XcmPaymentApi<Block> for Runtime {
 		fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
-			let acceptable_assets = vec![AssetLocationId(xcm_config::RelayLocation::get())];
+			let acceptable_assets = vec![AssetLocationId(xcm_config::PenpalNativeCurrency::get())];
 			PezkuwiXcm::query_acceptable_payment_assets(xcm_version, acceptable_assets)
 		}
 
@@ -1208,13 +1223,19 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 		) -> Result<Vec<pezframe_benchmarking::BenchmarkBatch>, alloc::string::String> {
 			use pezframe_benchmarking::BenchmarkBatch;
 			use pezsp_storage::TrackedStorageKey;
+			use codec::Encode;
 
 			use pezframe_system_benchmarking::Pezpallet as SystemBench;
 			use pezframe_system_benchmarking::extensions::Pezpallet as SystemExtensionsBench;
 			impl pezframe_system_benchmarking::Config for Runtime {}
 
 			use pezcumulus_pezpallet_session_benchmarking::Pezpallet as SessionBench;
-			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {}
+			impl pezcumulus_pezpallet_session_benchmarking::Config for Runtime {
+				fn generate_session_keys_and_proof(owner: Self::AccountId) -> (Self::Keys, Vec<u8>) {
+					let keys = SessionKeys::generate(&owner.encode(), None);
+					(keys.keys, keys.proof.encode())
+				}
+			}
 
 			use pezframe_support::traits::WhitelistedStorageKeys;
 			let whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
@@ -1254,6 +1275,22 @@ pezpallet_revive::impl_runtime_apis_plus_revive_traits!(
 			slot: pezcumulus_primitives_aura::Slot,
 		) -> bool {
 			ConsensusHook::can_build_upon(included_hash, slot)
+		}
+	}
+
+	impl pezcumulus_primitives_core::RelayParentOffsetApi<Block> for Runtime {
+		fn relay_parent_offset() -> u32 {
+			RELAY_PARENT_OFFSET
+		}
+
+		fn max_claim_queue_offset() -> u8 {
+			pezcumulus_pezpallet_teyrchain_system::Pezpallet::<Runtime>::max_claim_queue_offset()
+		}
+	}
+
+	impl pezcumulus_primitives_core::SchedulingV3EnabledApi<Block> for Runtime {
+		fn scheduling_v3_enabled() -> bool {
+			<Runtime as pezcumulus_pezpallet_teyrchain_system::Config>::SchedulingSignatureVerifier::V3_SCHEDULING_ENABLED
 		}
 	}
 );

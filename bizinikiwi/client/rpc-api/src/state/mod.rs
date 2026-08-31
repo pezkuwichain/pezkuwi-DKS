@@ -168,9 +168,9 @@ pub trait StateApi<Hash> {
 	/// ## Creating tracing enabled WASM runtimes
 	///
 	/// - Checkout commit of chain version to compile with WASM traces
-	/// - [diener][1] can help to peg commit of bizinikiwi to what the chain expects.
+	/// - [diener][1] can help to peg commit of substrate to what the chain expects.
 	/// - Navigate to the `runtime` folder/package of the chain
-	/// - Add feature `with-tracing = ["pezframe-executive/with-tracing", "sp-io/with-tracing"]`
+	/// - Add feature `with-tracing = ["pezframe-executive/with-tracing", "pezsp-io/with-tracing"]`
 	/// under `[features]` to the `runtime` packages' `Cargo.toml`.
 	/// - Compile the runtime with `cargo build --release --features with-tracing`
 	/// - Tracing-enabled WASM runtime should be found in
@@ -180,7 +180,7 @@ pub trait StateApi<Hash> {
 	/// - Run the node with the wasm blob overrides by placing them in a folder with all your
 	///   runtimes,
 	/// and passing the path of this folder to your chain, e.g.:
-	/// - `./target/release/pezkuwi --wasm-runtime-overrides /home/user/my-custom-wasm-runtimes`
+	/// - `./target/release/polkadot --wasm-runtime-overrides /home/user/my-custom-wasm-runtimes`
 	///
 	/// You can also find some pre-built tracing enabled wasm runtimes in [bizinikiwi-archive][2]
 	///
@@ -276,13 +276,13 @@ pub trait StateApi<Hash> {
 	/// Additionally you would want to track the extrinsic index, which is under the
 	/// `:extrinsic_index` key. The key for this would be the aforementioned string as bytes
 	/// in hex: `3a65787472696e7369635f696e646578`.
-	/// The following are some resources to learn more about storage keys in bizinikiwi:
-	/// [bizinikiwi storage][1], [transparent keys in bizinikiwi][2],
-	/// [querying bizinikiwi storage via rpc][3].
+	/// The following are some resources to learn more about storage keys in substrate:
+	/// [substrate storage][1], [transparent keys in substrate][2],
+	/// [querying substrate storage via rpc][3].
 	///
-	/// [1]: https://docs.pezkuwichain.io/main-docs/fundamentals/state-transitions-and-storage/
-	/// [2]: https://www.shawntabrizi.com/blog/substrate/transparent-keys-in-substrate/
-	/// [3]: https://www.shawntabrizi.com/blog/substrate/querying-substrate-storage-via-rpc/
+	/// [1]: https://docs.substrate.io/main-docs/fundamentals/state-transitions-and-storage/
+	/// [2]: https://www.shawntabrizi.com/blog/transparent-keys-in-bizinikiwi/
+	/// [3]: https://www.shawntabrizi.com/blog/interacting-with-the-bizinikiwi-rpc-endpoint/
 	///
 	/// ### Maximum payload size
 	///

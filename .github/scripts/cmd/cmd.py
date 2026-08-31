@@ -24,15 +24,21 @@ common_args = {
     '--image': {"help": "Override docker image '--image ghcr.io/pezkuwichain/ci-unified:latest'"},
 }
 
-def print_and_log(message, output_file='/tmp/cmd/command_output.log'):
+# A fixed /tmp/cmd belongs to whoever created it first, so on a host where more than one
+# account runs this -- a CI runner beside an operator shell, which is exactly the weights
+# machine -- the second one gets EACCES before the script has done anything. Keep the path
+# per-user, and let the caller override it.
+LOG_DIR = os.environ.get('CMD_LOG_DIR') or f'/tmp/cmd-{os.getuid()}'
+
+
+def print_and_log(message, output_file=f'{LOG_DIR}/command_output.log'):
     print(message)
     with open(output_file, 'a') as f:
         f.write(message + '\n')
 
 def setup_logging():
-    if not os.path.exists('/tmp/cmd'):
-        os.makedirs('/tmp/cmd')
-    open('/tmp/cmd/command_output.log', 'w')
+    os.makedirs(LOG_DIR, exist_ok=True)
+    open(f'{LOG_DIR}/command_output.log', 'w')
 
 def fetch_repo_labels():
     """Fetch current labels from the GitHub repository"""
@@ -206,6 +212,17 @@ for arg, config in common_args.items():
 parser_bench.add_argument('--runtime', help='Runtime(s) space separated', choices=runtimeNames, nargs='*', default=runtimeNames)
 parser_bench.add_argument('--pezpallet', help='Pezpallet(s) space separated', nargs='*', default=[])
 parser_bench.add_argument('--fail-fast', help='Fail fast on first failed benchmark', action='store_true')
+# Steps and repeat were written into the command below and could not be changed without editing
+# this file. They are the two knobs that decide whether a fitted weight is a measurement or a
+# draw: `pezcumulus_pezpallet_xcmp_queue`'s `enqueue_n_full_pages` came back from two separate
+# runs at 50/20 with a base twelve times its own recorded minimum, because a steep slope leaves
+# the intercept poorly determined and 20 samples do not pin it down. The defaults stay where
+# they were so every existing run reproduces; a pallet that needs a tighter fit can ask for one.
+parser_bench.add_argument('--steps', help='Benchmark steps per component (default 50)',
+                          type=int, default=50)
+parser_bench.add_argument('--repeat', help='Repetitions per step (default 20). Raise it for a '
+                          'pallet whose fitted base disagrees with its measured minimum.',
+                          type=int, default=20)
 
 
 """
@@ -330,6 +347,7 @@ def main():
         runtime_pallets_map = {}
         failed_benchmarks = {}
         successful_benchmarks = {}
+        failed_builds = []
 
         profile = "production"
 
@@ -339,9 +357,9 @@ def main():
         runtimesMatrix = {x['name']: x for x in runtimesMatrix}
         print(f'Filtered out runtimes: {runtimesMatrix}')
 
-        compile_bencher = os.system(f"cargo install -q --path substrate/utils/frame/omni-bencher --locked --profile {profile}")
+        compile_bencher = os.system(f"cargo install -q --path bizinikiwi/utils/pezframe/omni-bencher --locked --profile {profile}")
         if compile_bencher != 0:
-            print_and_log('❌ Failed to compile frame-omni-bencher')
+            print_and_log('❌ Failed to compile pezframe-omni-bencher')
             sys.exit(1)
 
         # loop over remaining runtimes to collect available pallets
@@ -351,6 +369,7 @@ def main():
             build_status = os.system(build_command)
             if build_status != 0:
                 print_and_log(f'❌ Failed to build {runtime["name"]}')
+                failed_builds.append(runtime["name"])
                 if args.fail_fast:
                     sys.exit(1)
                 else:
@@ -358,7 +377,7 @@ def main():
 
             print(f'-- listing pallets for benchmark for {runtime["name"]}')
             wasm_file = f"target/{profile}/wbuild/{runtime['package']}/{runtime['package'].replace('-', '_')}.wasm"
-            list_command = f"frame-omni-bencher v1 benchmark pallet " \
+            list_command = f"pezframe-omni-bencher v1 benchmark pezpallet " \
                 f"--no-csv-header " \
                 f"--no-storage-info " \
                 f"--no-min-squares " \
@@ -437,13 +456,16 @@ def main():
                         uses_polkadot_sdk_frame = False
                     template = config['template']
                     if uses_polkadot_sdk_frame and re.match(r"frame-(:?umbrella-)?weight-template\.hbs", os.path.normpath(template).split(os.path.sep)[-1]):
-                        template = "substrate/.maintain/frame-umbrella-weight-template.hbs"
+                        template = "bizinikiwi/.maintain/frame-umbrella-weight-template.hbs"
                     print(f'template: {template}')
                 else:
                     default_path = f"./{config['path']}/src/weights"
                     xcm_path = f"./{config['path']}/src/weights/xcm"
                     output_path = default_path
-                    if pallet.startswith("pallet_xcm_benchmarks"):
+                    # Our pallets are `pezpallet_*`, so this never matched and every XCM
+                    # benchmark was written to the flat weights directory instead of the xcm
+                    # subdirectory the runtimes actually read.
+                    if pallet.startswith("pezpallet_xcm_benchmarks"):
                         template = config['template']
                         output_path = xcm_path
 
@@ -455,8 +477,8 @@ def main():
                     f"--header={header_path} " \
                     f"--output={output_path} " \
                     f"--wasm-execution=compiled " \
-                    f"--steps=50 " \
-                    f"--repeat=20 " \
+                    f"--steps={args.steps} " \
+                    f"--repeat={args.repeat} " \
                     f"--heap-pages=4096 " \
                     f"{f'--template={template} ' if template else ''}" \
                     f"--no-storage-info --no-min-squares --no-median-slopes " \
@@ -484,6 +506,22 @@ def main():
             print_and_log('✅ Successful benchmarks of runtimes/pallets:')
             for runtime, pallets in successful_benchmarks.items():
                 print_and_log(f'-- {runtime}: {pallets}')
+
+        # A runtime that never built produced no weights at all, which is a worse outcome than
+        # a pallet whose benchmark failed -- and until now it was the quieter one: the loop
+        # moved on, the summary above only counts benchmarks, and the command exited 0. A run
+        # could report success having skipped four runtimes, which is exactly what happened on
+        # 2026-08-21 (both asset hubs and both bridge hubs).
+        if failed_builds:
+            print_and_log('❌ Runtimes that did not build, so produced NO weights:')
+            for name in failed_builds:
+                print_and_log(f'-- {name}')
+
+        # A pallet whose benchmark failed has no weights either, and the summary above was the
+        # only trace of it: the command still exited 0. The 2026-08-21 run reported success
+        # having produced nothing for twelve pallets across the two asset hubs.
+        if failed_builds or failed_benchmarks:
+            sys.exit(1)
 
     elif args.command == 'fmt':
         command = f"cargo +nightly fmt"

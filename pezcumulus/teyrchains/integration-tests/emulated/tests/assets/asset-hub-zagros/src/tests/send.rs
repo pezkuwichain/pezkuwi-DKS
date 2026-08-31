@@ -26,7 +26,7 @@ fn send_transact_as_superuser_from_relay_to_asset_hub_works() {
 		AssetHubZagrosSender::get().into(),
 		// Measured against this runtime's weights; the previous value predates the
 		// weight files the Asset Hub now carries.
-		Some(Weight::from_parts(171_967_000, 3675)),
+		Some(Weight::from_parts(296_289_000, 3675)),
 	)
 }
 
@@ -72,7 +72,7 @@ pub fn penpal_register_foreign_asset_on_asset_hub(asset_location_on_penpal: Loca
 			bx!(xcm),
 		));
 
-		PenpalA::assert_xcm_pallet_sent();
+		PenpalA::assert_xcm_pezpallet_sent();
 	});
 
 	AssetHubZagros::execute_with(|| {
@@ -81,8 +81,8 @@ pub fn penpal_register_foreign_asset_on_asset_hub(asset_location_on_penpal: Loca
 		assert_expected_events!(
 			AssetHubZagros,
 			vec![
-				// Burned the fee
-				RuntimeEvent::Balances(pezpallet_balances::Event::Burned { who, amount }) => {
+				// Withdraw the fee
+				RuntimeEvent::Balances(pezpallet_balances::Event::Withdraw { who, amount }) => {
 					who: *who == penpal_sovereign_account,
 					amount: *amount == fee_amount,
 				},
@@ -127,7 +127,7 @@ fn send_xcm_from_para_to_asset_hub_paying_fee_with_sufficient_asset() {
 		ASSET_MIN_BALANCE,
 		true,
 		para_sovereign_account.clone(),
-		Some(Weight::from_parts(171_967_000, 3675)),
+		Some(Weight::from_parts(296_289_000, 3675)),
 		ASSET_MIN_BALANCE * 1000000000,
 	);
 
@@ -174,7 +174,7 @@ fn send_xcm_from_para_to_asset_hub_paying_fee_with_sufficient_asset() {
 			bx!(xcm),
 		));
 
-		PenpalA::assert_xcm_pallet_sent();
+		PenpalA::assert_xcm_pezpallet_sent();
 	});
 
 	AssetHubZagros::execute_with(|| {
@@ -183,11 +183,11 @@ fn send_xcm_from_para_to_asset_hub_paying_fee_with_sufficient_asset() {
 		assert_expected_events!(
 			AssetHubZagros,
 			vec![
-				// Burned the fee
-				RuntimeEvent::Assets(pezpallet_assets::Event::Burned { asset_id, owner, balance }) => {
+				// Withdrew the fee
+				RuntimeEvent::Assets(pezpallet_assets::Event::Withdrawn { asset_id, who, amount }) => {
 					asset_id: *asset_id == ASSET_ID,
-					owner: *owner == para_sovereign_account,
-					balance: *balance == fee_amount,
+					who: *who == para_sovereign_account,
+					amount: *amount == fee_amount,
 				},
 				// Asset created
 				RuntimeEvent::Assets(pezpallet_assets::Event::Created { asset_id, creator, owner }) => {

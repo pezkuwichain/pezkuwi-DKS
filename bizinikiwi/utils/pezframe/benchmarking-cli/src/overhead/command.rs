@@ -36,18 +36,13 @@ use crate::{
 	},
 };
 use clap::{error::ErrorKind, Args, CommandFactory, Parser};
-use codec::Decode;
-#[cfg(feature = "teyrchain-benchmarks")]
-use codec::Encode;
+use codec::{Decode, Encode};
 use fake_runtime_api::RuntimeApi as FakeRuntimeApi;
 use genesis_state::WARN_SPEC_GENESIS_CTOR;
 use log::info;
-// MockValidationDataInherentDataProvider is feature-gated because it requires pezcumulus-test-relay-sproof-builder
-#[cfg(feature = "teyrchain-benchmarks")]
 use pezcumulus_client_teyrchain_inherent::MockValidationDataInherentDataProvider;
 use pezframe_support::Deserialize;
 use pezkuwi_subxt::{client::RuntimeVersion, ext::futures, Metadata};
-#[cfg(feature = "teyrchain-benchmarks")]
 use pezkuwi_teyrchain_primitives::primitives::Id as ParaId;
 use pezsc_block_builder::BlockBuilderApi;
 use pezsc_chain_spec::{ChainSpec, ChainSpecExtension, GenesisBlockBuilder};
@@ -209,8 +204,6 @@ fn create_inherent_data<Client: UsageProvider<Block> + HeaderBackend<Block>, Blo
 	let mut inherent_data = InherentData::new();
 
 	// Para inherent can only makes sense when we are handling a teyrchain.
-	// This requires the teyrchain-benchmarks feature which depends on pezcumulus-test-relay-sproof-builder
-	#[cfg(feature = "teyrchain-benchmarks")]
 	if let Teyrchain(para_id) = chain_type {
 		let teyrchain_validation_data_provider = MockValidationDataInherentDataProvider::<()> {
 			para_id: ParaId::from(*para_id),
@@ -222,11 +215,6 @@ fn create_inherent_data<Client: UsageProvider<Block> + HeaderBackend<Block>, Blo
 			teyrchain_validation_data_provider.provide_inherent_data(&mut inherent_data),
 		);
 	}
-	#[cfg(not(feature = "teyrchain-benchmarks"))]
-	if let Teyrchain(_) = chain_type {
-		log::warn!("Teyrchain benchmark inherents not available. Enable the 'teyrchain-benchmarks' feature.");
-	}
-
 	// Teyrchain inherent that is used on relay chains to perform teyrchain validation.
 	let para_inherent = pezkuwi_primitives::InherentData {
 		bitfields: Vec::new(),
@@ -504,6 +492,7 @@ impl OverheadCmd {
 			trie_cache_maximum_size: self.trie_cache_maximum_size()?,
 			state_pruning: None,
 			blocks_pruning: BlocksPruning::KeepAll,
+			pruning_filters: Default::default(),
 			source: database_source,
 			metrics_registry: None,
 		})?;

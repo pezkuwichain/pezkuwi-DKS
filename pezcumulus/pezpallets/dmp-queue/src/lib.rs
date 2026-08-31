@@ -42,7 +42,7 @@ pub type MaxDmpMessageLenOf<T> =
 
 #[pezframe_support::pezpallet]
 #[deprecated(
-	note = "`pezcumulus-pezpallet-dmp-queue` will be removed after November 2024. It can be removed once its lazy migration completed. See <https://github.com/pezkuwichain/pezkuwi-sdk/issues/247>."
+	note = "`pezcumulus-pezpallet-dmp-queue` will be removed after November 2024. It can be removed once its lazy migration completed. See <https://github.com/paritytech/polkadot-sdk/pull/1246>."
 )]
 pub mod pezpallet {
 	use super::*;
@@ -163,7 +163,7 @@ pub mod pezpallet {
 			let mut meter = WeightMeter::with_limit(limit);
 
 			if meter.try_consume(Self::on_idle_weight()).is_err() {
-				log::debug!(target: LOG, "Not enough weight for on_idle. {limit:?} < {:?}", Self::on_idle_weight());
+				log::debug!(target: LOG, "Not enough weight for on_idle. {} < {}", Self::on_idle_weight(), limit);
 				return meter.consumed();
 			}
 
@@ -181,7 +181,7 @@ pub mod pezpallet {
 					Self::deposit_event(Event::StartedExport);
 				},
 				MigrationState::StartedExport { next_begin_used } => {
-					log::debug!(target: LOG, "Exporting page {next_begin_used}");
+					log::debug!(target: LOG, "Exporting page {}", next_begin_used);
 
 					if next_begin_used == index.end_used {
 						MigrationStatus::<T>::put(MigrationState::CompletedExport);
@@ -195,7 +195,7 @@ pub mod pezpallet {
 						});
 
 						if let Ok(()) = res {
-							log::debug!(target: LOG, "Exported page {next_begin_used}");
+							log::debug!(target: LOG, "Exported page {}", next_begin_used);
 							Self::deposit_event(Event::Exported { page: next_begin_used });
 						} else {
 							Self::deposit_event(Event::ExportFailed { page: next_begin_used });
@@ -211,7 +211,7 @@ pub mod pezpallet {
 					Self::deposit_event(Event::StartedOverweightExport);
 				},
 				MigrationState::StartedOverweightExport { next_overweight_index } => {
-					log::debug!(target: LOG, "Exporting overweight index {next_overweight_index}");
+					log::debug!(target: LOG, "Exporting overweight index {}", next_overweight_index);
 
 					if next_overweight_index == index.overweight_count {
 						MigrationStatus::<T>::put(MigrationState::CompletedOverweightExport);

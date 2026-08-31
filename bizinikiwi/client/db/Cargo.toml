@@ -54,9 +54,11 @@ kvdb-rocksdb = { workspace = true }
 pez-kitchensink-runtime = { workspace = true }
 pezsp-tracing = { workspace = true, default-features = true }
 rand = { workspace = true, default-features = true }
+rstest = { workspace = true }
 tempfile = { workspace = true }
 
 [features]
+jemalloc-allocator = ["kvdb-rocksdb?/jemalloc"]
 default = []
 test-helpers = []
 runtime-benchmarks = [
@@ -68,7 +70,7 @@ runtime-benchmarks = [
 	"pezsp-state-machine/runtime-benchmarks",
 	"pezsp-trie/runtime-benchmarks",
 ]
-rocksdb = ["kvdb-rocksdb"]
+rocksdb = ["kvdb-rocksdb", "pezsp-database/rocksdb"]
 std = [
 	"bizinikiwi-test-runtime-client/std",
 	"log/std",

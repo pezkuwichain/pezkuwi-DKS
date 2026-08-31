@@ -4,15 +4,15 @@ A fresh [Bizinikiwi](https://bizinikiwi.pezkuwichain.io/) node, ready for hackin
 
 A standalone version of this template is available for each release of PezkuwiChain
 in the [Bizinikiwi Developer Hub Teyrchain
-Template](https://github.com/bizinikiwi-developer-hub/bizinikiwi-node-template/)
+Template](https://github.com/paritytech/polkadot-sdk-solochain-template/)
 repository. The teyrchain template is generated directly at each PezkuwiChain
 release branch from the [Solochain Template in
-Bizinikiwi](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/templates/solochain)
+Bizinikiwi](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/templates/solochain)
 upstream
 
 It is usually best to use the stand-alone version to start a new project. All
 bugs, suggestions, and feature requests should be made upstream in the
-[Bizinikiwi](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi)
+[Bizinikiwi](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/bizinikiwi)
 repository.
 
 ## Getting Started
@@ -26,7 +26,7 @@ installation](#alternatives-installations) options.
 Fetch solochain template code:
 
 ```sh
-git clone https://github.com/pezkuwichain/pezkuwi-sdk/issues/25.git solochain-template
+git clone https://github.com/pezkuwichain/pezkuwi-DKS/issues/25.git solochain-template
 
 cd solochain-template
 ```
@@ -113,7 +113,7 @@ Portal](https://pezkuwichain.io/#/explorer?rpc=ws://localhost:9944)
 front-end by connecting to the local node endpoint. A hosted version is also
 available on [IPFS](https://dotapps.io/). You can
 also find the source code and instructions for hosting your own instance in the
-[`pezkuwi-js/apps`](https://github.com/polkadot-js/apps) repository.
+[`pezkuwi-js/apps`](https://github.com/pezkuwichain/pezkuwi-apps) repository.
 
 ### Multi-Node Local Testnet
 
@@ -193,7 +193,7 @@ template and note the following:
 
 The runtime in this project is constructed using many FRAME pallets that ship
 with [the Bizinikiwi
-repository](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bizinikiwi/frame) and a
+repository](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/bizinikiwi/frame) and a
 template pezpallet that is [defined in the
 `pallets`](./pallets/template/src/lib.rs) directory.
 
@@ -228,5 +228,5 @@ the correct dependencies, activate direnv `direnv allow`.
 ### Docker
 
 Please follow the [Bizinikiwi Docker instructions
-here](https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/bizinikiwi/docker/README.md) to
+here](https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/bizinikiwi/docker/README.md) to
 build the Docker container with the Bizinikiwi Node Template binary.

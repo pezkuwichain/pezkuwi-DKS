@@ -202,7 +202,7 @@ parameter_types! {
 #[derive_impl(pezframe_system::config_preludes::TestDefaultConfig)]
 impl pezframe_system::Config for TestRuntime {
 	type Block = ThisChainBlock;
-	// TODO: remove when https://github.com/pezkuwichain/pezkuwi-sdk/issues/265 merged
+	// TODO: remove when https://github.com/pezkuwichain/pezkuwi-DKS/pull/4543 merged
 	type BlockHashCount = ConstU32<10>;
 	type AccountData = pezpallet_balances::AccountData<ThisChainBalance>;
 	type DbWeight = DbWeight;
@@ -303,9 +303,10 @@ impl pezpallet_bridge_relayers::benchmarking::Config for TestRuntime {
 	}
 
 	fn prepare_rewards_account(
+		_relayer: &ThisChainAccountId,
 		account_params: RewardsAccountParams<TestLaneIdType>,
 		reward: Self::RewardBalance,
-	) -> Option<ThisChainAccountId> {
+	) -> Option<(RewardsAccountParams<TestLaneIdType>, ThisChainAccountId)> {
 		let rewards_account = PayRewardFromAccount::<
 			Balances,
 			ThisChainAccountId,
@@ -314,7 +315,7 @@ impl pezpallet_bridge_relayers::benchmarking::Config for TestRuntime {
 		>::rewards_account(account_params);
 		Self::deposit_account(rewards_account, reward.into());
 
-		Some(REGULAR_RELAYER2)
+		Some((account_params, REGULAR_RELAYER2))
 	}
 
 	fn deposit_account(account: Self::AccountId, balance: Self::Balance) {

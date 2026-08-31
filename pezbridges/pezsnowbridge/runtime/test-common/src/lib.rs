@@ -565,7 +565,8 @@ pub fn ethereum_extrinsic<Runtime>(
 			// Checkpoint is a free operation
 			assert!(balance_before == balance_after_checkpoint);
 			let gap =
-				<Runtime as pezsnowbridge_pezpallet_ethereum_client::Config>::FreeHeadersInterval::get();
+				<Runtime as pezsnowbridge_pezpallet_ethereum_client::Config>::FreeHeadersInterval::get(
+				);
 			// Large enough header gap is free
 			if update.finalized_header.slot >= initial_checkpoint.header.slot + gap as u64 {
 				assert!(balance_after_checkpoint == balance_after_update);

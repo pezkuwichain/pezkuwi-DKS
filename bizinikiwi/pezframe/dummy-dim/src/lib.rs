@@ -58,8 +58,8 @@ pub mod pezpallet {
 		type RuntimeEvent: From<Event<Self>>
 			+ IsType<<Self as pezframe_system::Config>::RuntimeEvent>;
 
-		/// The origin which may command personhood updates through this pezpallet. Root can always
-		/// do this.
+		/// The origin which may command personhood updates through this pezpallet. Root can always do
+		/// this.
 		type UpdateOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
 		/// The maximum number of people supported in a single operation.
@@ -71,15 +71,7 @@ pub mod pezpallet {
 
 	/// The record of recognized people.
 	#[derive(
-		Clone,
-		PartialEq,
-		Eq,
-		RuntimeDebug,
-		Encode,
-		Decode,
-		MaxEncodedLen,
-		TypeInfo,
-		DecodeWithMemTracking,
+		Clone, PartialEq, Eq, Debug, Encode, Decode, MaxEncodedLen, TypeInfo, DecodeWithMemTracking,
 	)]
 	pub struct Record<Key> {
 		/// The key of the person.

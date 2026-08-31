@@ -35,8 +35,11 @@ pub fn generate_crate_access() -> TokenStream {
 			quote!(#renamed_name::__private)
 		},
 		Err(e) => {
-			if let Ok(FoundCrate::Name(name)) =
-				crate_name(&"pezkuwi-sdk-frame").or_else(|_| crate_name(&"frame"))
+			// `pezframe` is the umbrella crate here; see the same lookup in
+			// pezframe-support-procedural-tools for what its absence broke.
+			if let Ok(FoundCrate::Name(name)) = crate_name(&"pezkuwi-sdk-frame")
+				.or_else(|_| crate_name(&"pezframe"))
+				.or_else(|_| crate_name(&"frame"))
 			{
 				let path = format!("{}::deps::pezsp_api::__private", name);
 				let path = syn::parse_str::<syn::Path>(&path).expect("is a valid path; qed");
@@ -345,7 +348,7 @@ pub fn get_deprecation(crate_: &TokenStream, attrs: &[syn::Attribute]) -> Result
 pub struct ApiVersion {
 	/// Corresponds to `#[api_version(X)]` attribute.
 	pub custom: Option<u32>,
-	/// Corresponds to `#[cfg_attr(feature = "enable-pezstaging-api", api_version(99))]`
+	/// Corresponds to `#[cfg_attr(feature = "enable-staging-api", api_version(99))]`
 	/// attribute. `String` is the feature name, `u32` the staging api version.
 	pub feature_gated: Option<(String, u32)>,
 }
@@ -381,7 +384,7 @@ pub fn extract_api_version(attrs: &[Attribute], span: Span) -> Result<ApiVersion
 }
 
 /// Parse feature flagged api_version.
-/// E.g. `#[cfg_attr(feature = "enable-pezstaging-api", api_version(99))]`
+/// E.g. `#[cfg_attr(feature = "enable-staging-api", api_version(99))]`
 fn extract_cfg_api_version(attrs: &[Attribute], span: Span) -> Result<Option<(String, u32)>> {
 	let cfg_attrs = attrs.iter().filter(|a| a.path().is_ident("cfg_attr")).collect::<Vec<_>>();
 

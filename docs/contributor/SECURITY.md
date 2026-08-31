@@ -2,16 +2,15 @@
 
 # Security Policy
 
-Parity Technologies is committed to resolving security vulnerabilities in our
+The Dijital Kurdistan Tech Institute is committed to resolving security vulnerabilities in our
 software quickly and carefully. We take the necessary steps to minimize risk,
 provide timely information, and deliver vulnerability fixes and mitigations
 required to address security issues.
 
 ## Reporting a Vulnerability
 
-Security vulnerabilities in Parity software should be reported by email to
-security@parity.io. If you think your report might be eligible for the Parity
-Bug Bounty Program, your email should be sent to bugbounty@parity.io.
+Security vulnerabilities in PezkuwiChain software should be reported by email to
+security@pezkuwichain.io.
 
 Your report should include the following:
 

@@ -28,13 +28,10 @@ use pezframe_system::EnsureRoot;
 use pezkuwi_teyrchain_primitives::primitives::Sibling;
 use pezpallet_collator_selection::StakingPotAccountId;
 use pezpallet_xcm::XcmPassthrough;
-use pezsp_runtime::traits::AccountIdConversion;
-use teyrchains_common::{
-	xcm_config::{
-		AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
-		RelayOrOtherSystemTeyrchains,
-	},
-	TREASURY_PALLET_ID,
+use testnet_teyrchains_constants::pezkuwichain::locations::AssetHubLocation;
+use teyrchains_common::xcm_config::{
+	AllSiblingSystemTeyrchains, ConcreteAssetFromSystem, ParentRelayOrSiblingTeyrchains,
+	RelayOrOtherSystemTeyrchains,
 };
 use xcm::latest::{prelude::*, PEZKUWICHAIN_GENESIS_HASH};
 use xcm_builder::{
@@ -42,11 +39,11 @@ use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
 	DenyRecursively, DenyReserveTransferToRelayChain, DenyThenTry, DescribeAllTerminal,
 	DescribeFamily, DescribeTerminus, EnsureXcmOrigin, FrameTransactionalProcessor,
-	FungibleAdapter, HashedDescription, IsConcrete, ParentAsSuperuser, ParentIsPreset,
-	RelayChainAsNative, SendXcmFeeToAccount, SiblingTeyrchainAsNative, SiblingTeyrchainConvertsVia,
-	SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit,
-	TrailingSetTopicAsId, UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
-	XcmFeeManagerFromComponents,
+	FungibleAdapter, HashedDescription, IsConcrete, OriginToPluralityVoice, ParentAsSuperuser,
+	ParentIsPreset, RelayChainAsNative, SendXcmFeeToAccount, SiblingTeyrchainAsNative,
+	SiblingTeyrchainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
+	SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+	WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
 };
 use xcm_executor::XcmExecutor;
 
@@ -65,9 +62,14 @@ parameter_types! {
 	pub FeeAssetId: AssetId = AssetId(RelayLocation::get());
 	/// The base fee for the message delivery fees.
 	pub const BaseDeliveryFee: u128 = CENTS.saturating_mul(3);
-	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
-	pub RelayTreasuryLocation: Location =
-		(Parent, PalletInstance(pezkuwichain_runtime_constants::TREASURY_PALLET_ID)).into();
+	/// Delivery fees for messages this chain forwards.
+	///
+	/// They used to go to an address derived from the treasury's pallet id, which is right on a
+	/// chain that has a treasury and meaningless on one that does not: the money arrived at an
+	/// address with no pallet behind it and stayed there. This chain has no treasury, so the
+	/// fee goes where its other operating income goes -- the collators who did the delivering.
+	pub StakingPot: AccountId =
+		<StakingPotAccountId<Runtime> as pezframe_support::traits::TypedGet>::get();
 }
 
 pub type PriceForParentDelivery = pezkuwi_runtime_common::xcm_sender::ExponentialPrice<
@@ -115,30 +117,39 @@ pub type FungibleTransactor = FungibleAdapter<
 	(),
 >;
 
-/// Converts relay chain Welati governance Plurality origins to Root.
+/// No message from another chain may write the register, whoever sends it.
 ///
-/// When an RC OpenGov referendum passes on a Welati track (40/41/42), the enacted call sends
-/// an XCM Transact to this People Chain. The Welati origins are encoded as Plurality
-/// (BodyId::Index(40/41/42)) from the relay parent. This converter maps them to Root so that
-/// the welati pallet's `ensure_root` calls succeed.
+/// `ParentAsSuperuser` gives the relay Root here, and Root is what every register call asks
+/// for. This chain's referenda count heads; the relay's weigh tokens and conviction. So a
+/// token vote upstairs could revoke a citizenship, seat an official or run an election,
+/// without ever appearing on this chain's own tracks.
 ///
-/// Recognized Welati body IDs:
-/// - Index(40): WelatiElection — initiate/finalize elections
-/// - Index(41): WelatiAdmin — tiki grants, official appointments
-/// - Index(42): CitizenshipAdmin — citizenship revocation, trust score updates
-pub struct RelayWelatiPluralityAsRoot;
-impl xcm_executor::traits::ConvertOrigin<RuntimeOrigin> for RelayWelatiPluralityAsRoot {
-	fn convert_origin(
-		origin: impl Into<Location>,
-		kind: OriginKind,
-	) -> Result<RuntimeOrigin, Location> {
-		let origin = origin.into();
-		match (kind, origin.unpack()) {
-			(OriginKind::Superuser, (1, [Plurality { id: BodyId::Index(40..=42), .. }])) => {
-				Ok(RuntimeOrigin::root())
-			},
-			_ => Err(origin),
-		}
+/// The narrowing is written as a call filter rather than a narrower origin because FRAME's
+/// Root origin bypasses origin filters by construction -- `add_filter` on a Root origin is a
+/// no-op, so a converter that handed out "Root, but only for upgrades" would have handed out
+/// plain Root. `SafeCallFilter` runs on every incoming `Transact` before the origin is even
+/// resolved, which is the honest place for this rule: it is not a fact about the relay, it is
+/// a fact about the register. Who is a person, who holds office and who sits in the house are
+/// decided here or not at all.
+///
+/// The relay keeps everything else, including this chain's code. A runtime upgrade can of
+/// course reinstate anything -- but it is a published artefact on the slowest track there is,
+/// and every citizen can read what it would do before it lands. `Transact` is none of those
+/// things. What remains after this is the founding hand: the relay's sudo, which is retired
+/// with the rest of sudo.
+pub struct TheRegisterIsNotWritableFromAbroad;
+impl Contains<RuntimeCall> for TheRegisterIsNotWritableFromAbroad {
+	fn contains(call: &RuntimeCall) -> bool {
+		!matches!(
+			call,
+			RuntimeCall::IdentityKyc(..)
+				| RuntimeCall::Referral(..)
+				| RuntimeCall::Tiki(..)
+				| RuntimeCall::Welati(..)
+				| RuntimeCall::Diwan(..)
+				| RuntimeCall::Parliament(..)
+				| RuntimeCall::Trust(..)
+		)
 	}
 }
 
@@ -159,8 +170,6 @@ pub type XcmOriginToTransactDispatchOrigin = (
 	// Superuser converter for the Relay-chain (Parent) location. This will allow it to issue a
 	// transaction from the Root origin.
 	ParentAsSuperuser<RuntimeOrigin>,
-	// Welati governance origins from relay chain — converts Plurality(Index(40/41/42)) to Root.
-	RelayWelatiPluralityAsRoot,
 	// Native signed account converter; this just converts an `AccountId32` origin into a normal
 	// `RuntimeOrigin::Signed` origin of the same 32-byte value.
 	SignedAccountId32AsNative<RelayNetwork, RuntimeOrigin>,
@@ -196,7 +205,15 @@ pub type Barrier = TrailingSetTopicAsId<
 					// allow it.
 					AllowTopLevelPaidExecutionFrom<Everything>,
 					// Parent and its pluralities (i.e. governance bodies) get free execution.
-					AllowExplicitUnpaidExecutionFrom<ParentOrParentsPlurality>,
+					AllowExplicitUnpaidExecutionFrom<(
+						ParentOrParentsPlurality,
+						// The rewards pallet here is funded from the Asset Hub, and the
+						// treasury there is reached from here. Both directions were
+						// configured and only the Asset Hub's door was open: this barrier
+						// named the relay and its bodies alone, so a sibling's message was
+						// turned away before the origin check that was written for it.
+						Equals<AssetHubLocation>,
+					)>,
 					// Subscriptions for version tracking are OK.
 					AllowSubscriptionsFrom<ParentRelayOrSiblingTeyrchains>,
 					// HRMP notifications from the relay chain are OK.
@@ -213,7 +230,11 @@ pub type Barrier = TrailingSetTopicAsId<
 /// only waive fees for system functions, which these locations represent.
 pub type WaivedLocations = (
 	RelayOrOtherSystemTeyrchains<AllSiblingSystemTeyrchains, Runtime>,
-	Equals<RelayTreasuryLocation>,
+	// The relay's treasury used to be waived here because it paid over XCM. It is retired:
+	// the treasury is on the Asset Hub now and pays from its own account, so no treasury
+	// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
+	// sending body has to be waived again or every payment is charged a fee it cannot pay
+	// and is dropped without an error.
 	Equals<RootLocation>,
 	LocalPlurality,
 );
@@ -246,7 +267,6 @@ impl xcm_executor::Config for XcmConfig {
 	>;
 	type ResponseHandler = PezkuwiXcm;
 	type AssetTrap = PezkuwiXcm;
-	type AssetClaims = PezkuwiXcm;
 	type SubscriptionService = PezkuwiXcm;
 	type PalletInstancesInfo = AllPalletsWithSystem;
 	type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
@@ -254,12 +274,12 @@ impl xcm_executor::Config for XcmConfig {
 	type AssetExchanger = ();
 	type FeeManager = XcmFeeManagerFromComponents<
 		WaivedLocations,
-		SendXcmFeeToAccount<Self::AssetTransactor, TreasuryAccount>,
+		SendXcmFeeToAccount<Self::AssetTransactor, StakingPot>,
 	>;
 	type MessageExporter = ();
 	type UniversalAliases = Nothing;
 	type CallDispatcher = RuntimeCall;
-	type SafeCallFilter = Everything;
+	type SafeCallFilter = TheRegisterIsNotWritableFromAbroad;
 	type Aliasers = Nothing;
 	type TransactionalProcessor = FrameTransactionalProcessor;
 	type HrmpNewChannelOpenRequestHandler = ();
@@ -281,10 +301,48 @@ pub type XcmRouter = WithUniqueTopic<(
 	XcmpQueue,
 )>;
 
+parameter_types! {
+	/// The three bodies the register speaks as when it sends a message out.
+	///
+	/// The relay used to address these same indices inbound, and a converter here turned them
+	/// into Root -- so the relay's token-weighted electorate could revoke a citizenship. That
+	/// converter is gone and these indices are now outbound only: this chain's head-counted
+	/// tracks naming which office decided, never a way in.
+	pub const WelatiElectionBodyId: BodyId = BodyId::Index(40);
+	pub const WelatiAdminBodyId: BodyId = BodyId::Index(41);
+	pub const CitizenshipAdminBodyId: BodyId = BodyId::Index(42);
+}
+
+/// The state governance origins, as the voice of the body that holds them.
+///
+/// A message sent this way carries which office decided it, rather than only that this chain
+/// did -- a building asks its own question at its own door, and the answer has to say who is
+/// standing there. Only the three administrative origins convert: `ReferendumCanceller` and
+/// `ReferendumKiller` act on this chain's own referenda and have nothing to say elsewhere.
+pub type GovernanceToPlurality = (
+	OriginToPluralityVoice<
+		RuntimeOrigin,
+		crate::governance::pezpallet_custom_origins::WelatiElection,
+		WelatiElectionBodyId,
+	>,
+	OriginToPluralityVoice<
+		RuntimeOrigin,
+		crate::governance::pezpallet_custom_origins::WelatiAdmin,
+		WelatiAdminBodyId,
+	>,
+	OriginToPluralityVoice<
+		RuntimeOrigin,
+		crate::governance::pezpallet_custom_origins::CitizenshipAdmin,
+		CitizenshipAdminBodyId,
+	>,
+);
+
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	// We want to disallow users sending (arbitrary) XCM programs from this chain.
-	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, ()>;
+	// Users may not send arbitrary XCM from here. The state governance origins may, as the
+	// voice of their body; `EnsureXcmOrigin`'s root fallback covers a referendum that carries
+	// the whole chain rather than one office.
+	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, GovernanceToPlurality>;
 	type XcmRouter = XcmRouter;
 	// We support local origins dispatching XCM executions.
 	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;

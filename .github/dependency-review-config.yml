@@ -1,0 +1,476 @@
+# Configuration for actions/dependency-review-action.
+#
+# Why the allow-list below exists
+# -------------------------------
+# dependency-review resolves a package's licence from GitHub's dependency graph, not from the
+# crate's own manifest. Our crates are published to crates.io with their licence set -- measured:
+# 348 Apache-2.0, 241 GPL-3.0-or-later WITH Classpath-exception-2.0, 13 MIT-0, 12 Unlicense, and
+# every one of those is in deny.toml's allow list -- but the graph has not indexed them, so all
+# 408 of them came back "unknown licence" on every pull request.
+#
+# That is not a finding, it is 95% of the report. A warning that large hides the part that is
+# real: the same run flagged four Python CI tools, one of them LGPL, which is genuinely not in
+# our allow list. Nobody would have seen it under four hundred lines of our own crate names.
+#
+# So the licence check stays ON -- it is the only gate covering npm, PyPI and actions, which
+# cargo-deny does not see -- and our own crates are excluded from it. cargo-deny already checks
+# them against the real manifests and passes.
+#
+# Keys here are kebab-case, matching the action's inputs. They were snake_case first, and the
+# action accepted the file, ran green and ignored every one of them -- a config that parses and
+# does nothing looks exactly like a config that works.
+#
+# Regenerate after changing umbrella/Cargo.toml:
+#   python3 -c "import re;print('\n'.join(sorted(set('  - pkg:cargo/'+m for m in re.findall(r'^\[dependencies\.([A-Za-z0-9][A-Za-z0-9_-]*)\]', open('umbrella/Cargo.toml').read(), re.M)))))"
+
+fail-on-severity: high
+
+# Put the verdict on the pull request, not only in the job summary. The unknown-licence
+# count is the thing this file exists to keep readable, and it is worth seeing where it was
+# first noticed.
+comment-summary-in-pr: on-failure
+
+allow-dependencies-licenses:
+  # Not ours, but measured and allowed by name rather than left to the graph. Each of these
+  # publishes a licence we accept; the graph reports null because it cannot resolve them, not
+  # because anything is missing. Verified 2026-08-19:
+  #
+  #   ark-vrf MIT · aws-lc-sys ISC/Apache-2.0/MIT/BSD-3-Clause · litep2p MIT
+  #   w3f-pcs, w3f-plonk-common, w3f-ring-proof MIT/Apache-2.0
+  #   const-crypto MIT OR Apache-2.0 · time-macros MIT OR Apache-2.0
+  #   @polkadot-labs/hdkd MIT · polkadot-api MIT · @pezkuwi/api, @pezkuwi/util Apache-2.0
+  #
+  # cargo-deny checks the Rust ones against their real manifests on every run and passes, so
+  # they are covered by a gate that can actually read them. The npm ones are not covered by
+  # anything else, which is why they are named here individually rather than the ecosystem
+  # being switched off.
+  #
+  # PyGithub is deliberately NOT listed. It is LGPL -- the only copyleft in our CI tooling and
+  # the one licence here outside deny.toml's allow list -- and it reports null only because the
+  # package leaves its metadata licence field empty and states LGPL in a classifier instead.
+  # Leaving it visible costs one warning line and keeps the fact in view.
+  - pkg:cargo/ark-vrf
+  - pkg:cargo/aws-lc-sys
+  - pkg:cargo/const-crypto
+  - pkg:cargo/litep2p
+  - pkg:cargo/time-macros
+  - pkg:cargo/w3f-pcs
+  - pkg:cargo/w3f-plonk-common
+  - pkg:cargo/w3f-ring-proof
+  - pkg:npm/%40pezkuwi/api
+  - pkg:npm/%40pezkuwi/util
+  - pkg:npm/%40polkadot-labs/hdkd
+  - pkg:npm/polkadot-api
+  # GitHub's own actions, MIT, licence file present in each repo. The graph reports null
+  # because a floating major tag (@v7) does not resolve to a release it can look up.
+  - pkg:githubactions/actions/checkout
+  - pkg:githubactions/actions/setup-python
+  - pkg:githubactions/actions/upload-artifact
+  - pkg:cargo/asset-test-pezutils
+  - pkg:cargo/bizinikiwi-bip39
+  - pkg:cargo/bizinikiwi-build-script-utils
+  - pkg:cargo/bizinikiwi-frame-rpc-support
+  - pkg:cargo/bizinikiwi-frame-rpc-system
+  - pkg:cargo/bizinikiwi-prometheus-endpoint
+  - pkg:cargo/bizinikiwi-rpc-client
+  - pkg:cargo/bizinikiwi-state-trie-migration-rpc
+  - pkg:cargo/bizinikiwi-txtesttool
+  - pkg:cargo/bizinikiwi-wasm-builder
+  - pkg:cargo/pez-assets-common
+  - pkg:cargo/pez-binary-merkle-tree
+  - pkg:cargo/pez-ethereum-standards
+  - pkg:cargo/pez-fork-tree
+  - pkg:cargo/pez-generate-bags
+  - pkg:cargo/pez-slot-range-helper
+  - pkg:cargo/pez-subkey
+  - pkg:cargo/pez-tracing-gum
+  - pkg:cargo/pez-tracing-gum-proc-macro
+  - pkg:cargo/pezbp-header-pez-chain
+  - pkg:cargo/pezbp-messages
+  - pkg:cargo/pezbp-pezkuwi-core
+  - pkg:cargo/pezbp-relayers
+  - pkg:cargo/pezbp-runtime
+  - pkg:cargo/pezbp-test-utils
+  - pkg:cargo/pezbp-teyrchains
+  - pkg:cargo/pezbp-xcm-bridge-hub
+  - pkg:cargo/pezbp-xcm-bridge-hub-router
+  - pkg:cargo/pezbridge-hub-common
+  - pkg:cargo/pezbridge-hub-test-utils
+  - pkg:cargo/pezbridge-runtime-common
+  - pkg:cargo/pezcumulus-client-bootnodes
+  - pkg:cargo/pezcumulus-client-cli
+  - pkg:cargo/pezcumulus-client-collator
+  - pkg:cargo/pezcumulus-client-consensus-aura
+  - pkg:cargo/pezcumulus-client-consensus-common
+  - pkg:cargo/pezcumulus-client-consensus-relay-chain
+  - pkg:cargo/pezcumulus-client-network
+  - pkg:cargo/pezcumulus-client-pov-recovery
+  - pkg:cargo/pezcumulus-client-proof-size-recording
+  - pkg:cargo/pezcumulus-client-service
+  - pkg:cargo/pezcumulus-client-teyrchain-inherent
+  - pkg:cargo/pezcumulus-pezpallet-aura-ext
+  - pkg:cargo/pezcumulus-pezpallet-dmp-queue
+  - pkg:cargo/pezcumulus-pezpallet-session-benchmarking
+  - pkg:cargo/pezcumulus-pezpallet-solo-to-para
+  - pkg:cargo/pezcumulus-pezpallet-teyrchain-system
+  - pkg:cargo/pezcumulus-pezpallet-teyrchain-system-proc-macro
+  - pkg:cargo/pezcumulus-pezpallet-weight-reclaim
+  - pkg:cargo/pezcumulus-pezpallet-xcm
+  - pkg:cargo/pezcumulus-pezpallet-xcmp-queue
+  - pkg:cargo/pezcumulus-ping
+  - pkg:cargo/pezcumulus-primitives-aura
+  - pkg:cargo/pezcumulus-primitives-core
+  - pkg:cargo/pezcumulus-primitives-proof-size-hostfunction
+  - pkg:cargo/pezcumulus-primitives-storage-weight-reclaim
+  - pkg:cargo/pezcumulus-primitives-teyrchain-inherent
+  - pkg:cargo/pezcumulus-primitives-timestamp
+  - pkg:cargo/pezcumulus-primitives-utility
+  - pkg:cargo/pezcumulus-relay-chain-inprocess-interface
+  - pkg:cargo/pezcumulus-relay-chain-interface
+  - pkg:cargo/pezcumulus-relay-chain-minimal-node
+  - pkg:cargo/pezcumulus-relay-chain-rpc-interface
+  - pkg:cargo/pezcumulus-relay-chain-streams
+  - pkg:cargo/pezcumulus-test-relay-sproof-builder
+  - pkg:cargo/pezframe
+  - pkg:cargo/pezframe-benchmarking
+  - pkg:cargo/pezframe-benchmarking-cli
+  - pkg:cargo/pezframe-benchmarking-pezpallet-pov
+  - pkg:cargo/pezframe-election-provider-solution-type
+  - pkg:cargo/pezframe-election-provider-support
+  - pkg:cargo/pezframe-executive
+  - pkg:cargo/pezframe-metadata
+  - pkg:cargo/pezframe-metadata-hash-extension
+  - pkg:cargo/pezframe-remote-externalities
+  - pkg:cargo/pezframe-support
+  - pkg:cargo/pezframe-support-procedural
+  - pkg:cargo/pezframe-support-procedural-tools
+  - pkg:cargo/pezframe-support-procedural-tools-derive
+  - pkg:cargo/pezframe-system
+  - pkg:cargo/pezframe-system-benchmarking
+  - pkg:cargo/pezframe-system-rpc-runtime-api
+  - pkg:cargo/pezkuwi-approval-distribution
+  - pkg:cargo/pezkuwi-availability-bitfield-distribution
+  - pkg:cargo/pezkuwi-availability-distribution
+  - pkg:cargo/pezkuwi-availability-recovery
+  - pkg:cargo/pezkuwi-cli
+  - pkg:cargo/pezkuwi-collator-protocol
+  - pkg:cargo/pezkuwi-core-primitives
+  - pkg:cargo/pezkuwi-dispute-distribution
+  - pkg:cargo/pezkuwi-erasure-coding
+  - pkg:cargo/pezkuwi-gossip-support
+  - pkg:cargo/pezkuwi-network-bridge
+  - pkg:cargo/pezkuwi-node-clock
+  - pkg:cargo/pezkuwi-node-collation-generation
+  - pkg:cargo/pezkuwi-node-core-approval-voting
+  - pkg:cargo/pezkuwi-node-core-approval-voting-parallel
+  - pkg:cargo/pezkuwi-node-core-av-store
+  - pkg:cargo/pezkuwi-node-core-backing
+  - pkg:cargo/pezkuwi-node-core-bitfield-signing
+  - pkg:cargo/pezkuwi-node-core-candidate-validation
+  - pkg:cargo/pezkuwi-node-core-chain-api
+  - pkg:cargo/pezkuwi-node-core-chain-selection
+  - pkg:cargo/pezkuwi-node-core-dispute-coordinator
+  - pkg:cargo/pezkuwi-node-core-prospective-teyrchains
+  - pkg:cargo/pezkuwi-node-core-provisioner
+  - pkg:cargo/pezkuwi-node-core-pvf
+  - pkg:cargo/pezkuwi-node-core-pvf-checker
+  - pkg:cargo/pezkuwi-node-core-pvf-common
+  - pkg:cargo/pezkuwi-node-core-pvf-execute-worker
+  - pkg:cargo/pezkuwi-node-core-pvf-prepare-worker
+  - pkg:cargo/pezkuwi-node-core-runtime-api
+  - pkg:cargo/pezkuwi-node-core-teyrchains-inherent
+  - pkg:cargo/pezkuwi-node-metrics
+  - pkg:cargo/pezkuwi-node-network-protocol
+  - pkg:cargo/pezkuwi-node-subsystem
+  - pkg:cargo/pezkuwi-node-subsystem-types
+  - pkg:cargo/pezkuwi-node-subsystem-util
+  - pkg:cargo/pezkuwi-omni-node-lib
+  - pkg:cargo/pezkuwi-overseer
+  - pkg:cargo/pezkuwi-pez-node-primitives
+  - pkg:cargo/pezkuwi-primitives
+  - pkg:cargo/pezkuwi-primitives-test-helpers
+  - pkg:cargo/pezkuwi-rpc
+  - pkg:cargo/pezkuwi-runtime-common
+  - pkg:cargo/pezkuwi-runtime-metrics
+  - pkg:cargo/pezkuwi-runtime-teyrchains
+  - pkg:cargo/pezkuwi-service
+  - pkg:cargo/pezkuwi-statement-distribution
+  - pkg:cargo/pezkuwi-statement-table
+  - pkg:cargo/pezkuwi-subxt
+  - pkg:cargo/pezkuwi-subxt-codegen
+  - pkg:cargo/pezkuwi-subxt-core
+  - pkg:cargo/pezkuwi-subxt-lightclient
+  - pkg:cargo/pezkuwi-subxt-macro
+  - pkg:cargo/pezkuwi-subxt-metadata
+  - pkg:cargo/pezkuwi-subxt-rpcs
+  - pkg:cargo/pezkuwi-subxt-signer
+  - pkg:cargo/pezkuwi-subxt-utils-fetchmetadata
+  - pkg:cargo/pezkuwi-subxt-utils-stripmetadata
+  - pkg:cargo/pezkuwi-teyrchain-primitives
+  - pkg:cargo/pezkuwi-zombienet-configuration
+  - pkg:cargo/pezkuwi-zombienet-orchestrator
+  - pkg:cargo/pezkuwi-zombienet-prom-metrics-parser
+  - pkg:cargo/pezkuwi-zombienet-provider
+  - pkg:cargo/pezkuwi-zombienet-sdk
+  - pkg:cargo/pezkuwi-zombienet-support
+  - pkg:cargo/pezmmr-gadget
+  - pkg:cargo/pezmmr-rpc
+  - pkg:cargo/pezpallet-accumulate-and-forward
+  - pkg:cargo/pezpallet-alliance
+  - pkg:cargo/pezpallet-asset-conversion
+  - pkg:cargo/pezpallet-asset-conversion-ops
+  - pkg:cargo/pezpallet-asset-conversion-tx-payment
+  - pkg:cargo/pezpallet-asset-rate
+  - pkg:cargo/pezpallet-asset-rewards
+  - pkg:cargo/pezpallet-asset-tx-payment
+  - pkg:cargo/pezpallet-assets
+  - pkg:cargo/pezpallet-assets-freezer
+  - pkg:cargo/pezpallet-assets-holder
+  - pkg:cargo/pezpallet-assets-precompiles
+  - pkg:cargo/pezpallet-atomic-swap
+  - pkg:cargo/pezpallet-aura
+  - pkg:cargo/pezpallet-authority-discovery
+  - pkg:cargo/pezpallet-authorship
+  - pkg:cargo/pezpallet-babe
+  - pkg:cargo/pezpallet-bags-list
+  - pkg:cargo/pezpallet-balances
+  - pkg:cargo/pezpallet-beefy
+  - pkg:cargo/pezpallet-beefy-mmr
+  - pkg:cargo/pezpallet-bounties
+  - pkg:cargo/pezpallet-bridge-grandpa
+  - pkg:cargo/pezpallet-bridge-messages
+  - pkg:cargo/pezpallet-bridge-relayers
+  - pkg:cargo/pezpallet-bridge-teyrchains
+  - pkg:cargo/pezpallet-broker
+  - pkg:cargo/pezpallet-child-bounties
+  - pkg:cargo/pezpallet-collator-selection
+  - pkg:cargo/pezpallet-collective
+  - pkg:cargo/pezpallet-collective-content
+  - pkg:cargo/pezpallet-contracts
+  - pkg:cargo/pezpallet-contracts-fixtures
+  - pkg:cargo/pezpallet-contracts-mock-network
+  - pkg:cargo/pezpallet-contracts-proc-macro
+  - pkg:cargo/pezpallet-contracts-uapi
+  - pkg:cargo/pezpallet-conviction-voting
+  - pkg:cargo/pezpallet-core-fellowship
+  - pkg:cargo/pezpallet-dap
+  - pkg:cargo/pezpallet-delegated-staking
+  - pkg:cargo/pezpallet-democracy
+  - pkg:cargo/pezpallet-derivatives
+  - pkg:cargo/pezpallet-dummy-dim
+  - pkg:cargo/pezpallet-election-provider-multi-block
+  - pkg:cargo/pezpallet-election-provider-multi-phase
+  - pkg:cargo/pezpallet-election-provider-support-benchmarking
+  - pkg:cargo/pezpallet-elections-phragmen
+  - pkg:cargo/pezpallet-fast-unstake
+  - pkg:cargo/pezpallet-glutton
+  - pkg:cargo/pezpallet-grandpa
+  - pkg:cargo/pezpallet-identity
+  - pkg:cargo/pezpallet-im-online
+  - pkg:cargo/pezpallet-indices
+  - pkg:cargo/pezpallet-insecure-randomness-collective-flip
+  - pkg:cargo/pezpallet-lottery
+  - pkg:cargo/pezpallet-membership
+  - pkg:cargo/pezpallet-message-queue
+  - pkg:cargo/pezpallet-meta-tx
+  - pkg:cargo/pezpallet-migrations
+  - pkg:cargo/pezpallet-minimal-template
+  - pkg:cargo/pezpallet-mixnet
+  - pkg:cargo/pezpallet-mmr
+  - pkg:cargo/pezpallet-multi-asset-bounties
+  - pkg:cargo/pezpallet-multisig
+  - pkg:cargo/pezpallet-nft-fractionalization
+  - pkg:cargo/pezpallet-nfts
+  - pkg:cargo/pezpallet-nfts-runtime-api
+  - pkg:cargo/pezpallet-nis
+  - pkg:cargo/pezpallet-node-authorization
+  - pkg:cargo/pezpallet-nomination-pools
+  - pkg:cargo/pezpallet-nomination-pools-benchmarking
+  - pkg:cargo/pezpallet-nomination-pools-runtime-api
+  - pkg:cargo/pezpallet-offences
+  - pkg:cargo/pezpallet-offences-benchmarking
+  - pkg:cargo/pezpallet-oracle
+  - pkg:cargo/pezpallet-oracle-runtime-api
+  - pkg:cargo/pezpallet-origin-restriction
+  - pkg:cargo/pezpallet-paged-list
+  - pkg:cargo/pezpallet-parameters
+  - pkg:cargo/pezpallet-people
+  - pkg:cargo/pezpallet-preimage
+  - pkg:cargo/pezpallet-proxy
+  - pkg:cargo/pezpallet-ranked-collective
+  - pkg:cargo/pezpallet-recovery
+  - pkg:cargo/pezpallet-referenda
+  - pkg:cargo/pezpallet-remark
+  - pkg:cargo/pezpallet-revive
+  - pkg:cargo/pezpallet-revive-proc-macro
+  - pkg:cargo/pezpallet-revive-uapi
+  - pkg:cargo/pezpallet-root-offences
+  - pkg:cargo/pezpallet-root-testing
+  - pkg:cargo/pezpallet-safe-mode
+  - pkg:cargo/pezpallet-salary
+  - pkg:cargo/pezpallet-scheduler
+  - pkg:cargo/pezpallet-scored-pool
+  - pkg:cargo/pezpallet-session
+  - pkg:cargo/pezpallet-session-benchmarking
+  - pkg:cargo/pezpallet-skip-feeless-payment
+  - pkg:cargo/pezpallet-society
+  - pkg:cargo/pezpallet-staking
+  - pkg:cargo/pezpallet-staking-async
+  - pkg:cargo/pezpallet-staking-async-ah-client
+  - pkg:cargo/pezpallet-staking-async-rc-client
+  - pkg:cargo/pezpallet-staking-async-reward-fn
+  - pkg:cargo/pezpallet-staking-async-runtime-api
+  - pkg:cargo/pezpallet-staking-reward-curve
+  - pkg:cargo/pezpallet-staking-reward-fn
+  - pkg:cargo/pezpallet-staking-runtime-api
+  - pkg:cargo/pezpallet-state-trie-migration
+  - pkg:cargo/pezpallet-statement
+  - pkg:cargo/pezpallet-sudo
+  - pkg:cargo/pezpallet-timestamp
+  - pkg:cargo/pezpallet-tips
+  - pkg:cargo/pezpallet-transaction-payment
+  - pkg:cargo/pezpallet-transaction-payment-rpc
+  - pkg:cargo/pezpallet-transaction-payment-rpc-runtime-api
+  - pkg:cargo/pezpallet-transaction-storage
+  - pkg:cargo/pezpallet-treasury
+  - pkg:cargo/pezpallet-tx-pause
+  - pkg:cargo/pezpallet-uniques
+  - pkg:cargo/pezpallet-utility
+  - pkg:cargo/pezpallet-verify-signature
+  - pkg:cargo/pezpallet-vesting
+  - pkg:cargo/pezpallet-whitelist
+  - pkg:cargo/pezpallet-xcm
+  - pkg:cargo/pezpallet-xcm-benchmarks
+  - pkg:cargo/pezpallet-xcm-bridge-hub
+  - pkg:cargo/pezpallet-xcm-bridge-hub-router
+  - pkg:cargo/pezpallet-xcm-precompiles
+  - pkg:cargo/pezsc-allocator
+  - pkg:cargo/pezsc-authority-discovery
+  - pkg:cargo/pezsc-basic-authorship
+  - pkg:cargo/pezsc-block-builder
+  - pkg:cargo/pezsc-chain-spec
+  - pkg:cargo/pezsc-chain-spec-derive
+  - pkg:cargo/pezsc-cli
+  - pkg:cargo/pezsc-client-api
+  - pkg:cargo/pezsc-client-db
+  - pkg:cargo/pezsc-consensus
+  - pkg:cargo/pezsc-consensus-aura
+  - pkg:cargo/pezsc-consensus-babe
+  - pkg:cargo/pezsc-consensus-babe-rpc
+  - pkg:cargo/pezsc-consensus-beefy
+  - pkg:cargo/pezsc-consensus-beefy-rpc
+  - pkg:cargo/pezsc-consensus-epochs
+  - pkg:cargo/pezsc-consensus-grandpa
+  - pkg:cargo/pezsc-consensus-grandpa-rpc
+  - pkg:cargo/pezsc-consensus-manual-seal
+  - pkg:cargo/pezsc-consensus-pow
+  - pkg:cargo/pezsc-consensus-slots
+  - pkg:cargo/pezsc-executor
+  - pkg:cargo/pezsc-executor-common
+  - pkg:cargo/pezsc-executor-polkavm
+  - pkg:cargo/pezsc-executor-wasmtime
+  - pkg:cargo/pezsc-hop
+  - pkg:cargo/pezsc-informant
+  - pkg:cargo/pezsc-keystore
+  - pkg:cargo/pezsc-mixnet
+  - pkg:cargo/pezsc-network
+  - pkg:cargo/pezsc-network-common
+  - pkg:cargo/pezsc-network-gossip
+  - pkg:cargo/pezsc-network-light
+  - pkg:cargo/pezsc-network-statement
+  - pkg:cargo/pezsc-network-sync
+  - pkg:cargo/pezsc-network-transactions
+  - pkg:cargo/pezsc-network-types
+  - pkg:cargo/pezsc-offchain
+  - pkg:cargo/pezsc-proposer-metrics
+  - pkg:cargo/pezsc-rpc
+  - pkg:cargo/pezsc-rpc-api
+  - pkg:cargo/pezsc-rpc-server
+  - pkg:cargo/pezsc-rpc-spec-v2
+  - pkg:cargo/pezsc-runtime-utilities
+  - pkg:cargo/pezsc-service
+  - pkg:cargo/pezsc-state-db
+  - pkg:cargo/pezsc-statement-store
+  - pkg:cargo/pezsc-storage-monitor
+  - pkg:cargo/pezsc-sync-state-rpc
+  - pkg:cargo/pezsc-sysinfo
+  - pkg:cargo/pezsc-telemetry
+  - pkg:cargo/pezsc-tracing
+  - pkg:cargo/pezsc-tracing-proc-macro
+  - pkg:cargo/pezsc-transaction-pool
+  - pkg:cargo/pezsc-transaction-pool-api
+  - pkg:cargo/pezsc-utils
+  - pkg:cargo/pezsc-virtualization
+  - pkg:cargo/pezsp-api
+  - pkg:cargo/pezsp-api-proc-macro
+  - pkg:cargo/pezsp-application-crypto
+  - pkg:cargo/pezsp-arithmetic
+  - pkg:cargo/pezsp-authority-discovery
+  - pkg:cargo/pezsp-block-builder
+  - pkg:cargo/pezsp-blockchain
+  - pkg:cargo/pezsp-consensus
+  - pkg:cargo/pezsp-consensus-aura
+  - pkg:cargo/pezsp-consensus-babe
+  - pkg:cargo/pezsp-consensus-beefy
+  - pkg:cargo/pezsp-consensus-grandpa
+  - pkg:cargo/pezsp-consensus-pow
+  - pkg:cargo/pezsp-consensus-slots
+  - pkg:cargo/pezsp-core
+  - pkg:cargo/pezsp-core-hashing
+  - pkg:cargo/pezsp-core-hashing-proc-macro
+  - pkg:cargo/pezsp-crypto-ec-utils
+  - pkg:cargo/pezsp-crypto-hashing
+  - pkg:cargo/pezsp-crypto-hashing-proc-macro
+  - pkg:cargo/pezsp-dap
+  - pkg:cargo/pezsp-database
+  - pkg:cargo/pezsp-debug-derive
+  - pkg:cargo/pezsp-externalities
+  - pkg:cargo/pezsp-genesis-builder
+  - pkg:cargo/pezsp-hop
+  - pkg:cargo/pezsp-inherents
+  - pkg:cargo/pezsp-io
+  - pkg:cargo/pezsp-keyring
+  - pkg:cargo/pezsp-keystore
+  - pkg:cargo/pezsp-maybe-compressed-blob
+  - pkg:cargo/pezsp-metadata-ir
+  - pkg:cargo/pezsp-mixnet
+  - pkg:cargo/pezsp-mmr-primitives
+  - pkg:cargo/pezsp-npos-elections
+  - pkg:cargo/pezsp-offchain
+  - pkg:cargo/pezsp-panic-handler
+  - pkg:cargo/pezsp-rpc
+  - pkg:cargo/pezsp-runtime-interface
+  - pkg:cargo/pezsp-runtime-interface-proc-macro
+  - pkg:cargo/pezsp-session
+  - pkg:cargo/pezsp-ss58-registry
+  - pkg:cargo/pezsp-staking
+  - pkg:cargo/pezsp-state-machine
+  - pkg:cargo/pezsp-statement-store
+  - pkg:cargo/pezsp-std
+  - pkg:cargo/pezsp-storage
+  - pkg:cargo/pezsp-timestamp
+  - pkg:cargo/pezsp-tracing
+  - pkg:cargo/pezsp-transaction-pool
+  - pkg:cargo/pezsp-transaction-storage-proof
+  - pkg:cargo/pezsp-trie
+  - pkg:cargo/pezsp-version
+  - pkg:cargo/pezsp-version-proc-macro
+  - pkg:cargo/pezsp-virtualization
+  - pkg:cargo/pezsp-virtualization-test-fixture
+  - pkg:cargo/pezsp-wasm-interface
+  - pkg:cargo/pezsp-weights
+  - pkg:cargo/pezstaging-chain-spec-builder
+  - pkg:cargo/pezstaging-node-inspect
+  - pkg:cargo/pezstaging-teyrchain-info
+  - pkg:cargo/pezstaging-tracking-allocator
+  - pkg:cargo/pezstaging-xcm
+  - pkg:cargo/pezstaging-xcm-builder
+  - pkg:cargo/pezstaging-xcm-executor
+  - pkg:cargo/testnet-teyrchains-constants
+  - pkg:cargo/teyrchains-common
+  - pkg:cargo/teyrchains-common-types
+  - pkg:cargo/teyrchains-runtimes-test-utils
+  - pkg:cargo/xcm-pez-emulator
+  - pkg:cargo/xcm-pez-procedural
+  - pkg:cargo/xcm-pez-simulator
+  - pkg:cargo/xcm-runtime-pezapis

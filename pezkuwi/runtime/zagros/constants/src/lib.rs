@@ -25,6 +25,10 @@ pub mod currency {
 	/// The existential deposit.
 	pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
+	/// One ZGR, the testnet counterpart of a HEZ. Balances are carried in the smallest
+	/// indivisible amount and one ZGR is 10^12 of them, the same relationship a DOT has to
+	/// a planck. Chain specs pair this with `tokenDecimals: 12`; the two have to agree or
+	/// every displayed balance is wrong by a power of ten.
 	pub const UNITS: Balance = 1_000_000_000_000;
 	pub const CENTS: Balance = UNITS / 30_000;
 	/// One unit, named for what a deposit or a spend is reckoned in.
@@ -135,17 +139,14 @@ pub mod system_teyrchain {
 	/// Collectives teyrchain ID. Zagros keeps a collectives chain, so the ID stays here
 	/// even though mainnet has none.
 	pub const COLLECTIVES_ID: u32 = 1001;
-	/// Reserved ID for a second Asset Hub used in migration rehearsals.
-	pub const ASSET_HUB_NEXT_ID: u32 = 1005;
-	/// Contracts teyrchain ID.
-	pub const CONTRACTS_ID: u32 = 1002;
-	/// Encointer teyrchain ID.
-	pub const ENCOINTER_ID: u32 = 1003;
 	/// People teyrchain ID.
 	pub const PEOPLE_ID: u32 = 1004;
 	/// BridgeHub teyrchain ID.
 	pub const BRIDGE_HUB_ID: u32 = 1002;
 	/// Brokerage teyrchain ID.
+	/// 1005 was also declared as `ASSET_HUB_NEXT_ID`, reserved for a migration rehearsal that
+	/// this network never ran. Two names for one para ID is how a location ends up pointing at
+	/// the wrong chain, so the unused one is gone rather than renumbered.
 	pub const BROKER_ID: u32 = 1005;
 
 	/// All system teyrchains of Pezkuwichain.
@@ -163,8 +164,12 @@ pub mod system_teyrchain {
 	}
 }
 
-/// Pezkuwichain Treasury pezpallet instance.
-pub const TREASURY_PALLET_ID: u8 = 18;
+// `TREASURY_PALLET_ID: u8 = 18` stood here, naming the relay's Treasury pallet so a
+// `PalletInstance` location could address it. The treasury moved to the Asset Hub and index 18
+// is retired; the constant outlived the pallet and named a number nothing answers on. Nothing
+// consumed it, which is the only reason it was harmless -- a location built from it would have
+// addressed an empty slot. The Asset Hub's treasury is reached by its own `PalletId`
+// (`teyrchains_common::TREASURY_PALLET_ID`), which is a different thing with the same name.
 
 #[cfg(test)]
 mod tests {

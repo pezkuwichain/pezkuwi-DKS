@@ -2,20 +2,20 @@
 // This file is part of Pezcumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
-//! Pezcumulus CLI library.
+//! Cumulus CLI library.
 
 #![warn(missing_docs)]
 
@@ -277,7 +277,7 @@ fn validate_relay_chain_url(arg: &str) -> Result<Url, String> {
 #[derive(Debug, clap::Parser)]
 #[group(skip)]
 pub struct RunCmd {
-	/// The pezcumulus RunCmd inherents from pezsc_cli's
+	/// The cumulus RunCmd inherents from pezsc_cli's
 	#[command(flatten)]
 	pub base: pezsc_cli::RunCmd,
 
@@ -307,7 +307,7 @@ pub struct RunCmd {
 	/// building blocks that do not fit in the max_pov_size. It is a percentage of the max_pov_size
 	/// configuration of the relay-chain.
 	///
-	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-sdk/issues/193> is fixed.
+	/// It will be removed once <https://github.com/pezkuwichain/pezkuwi-DKS/issues/6020> is fixed.
 	#[arg(long)]
 	pub experimental_max_pov_percentage: Option<u32>,
 
@@ -375,7 +375,7 @@ pub struct CollatorOptions {
 /// original `RunCmd` had the `collator` field.
 /// This is how we make `--collator` imply `--validator`.
 pub struct NormalizedRunCmd {
-	/// The pezcumulus RunCmd inherents from pezsc_cli's
+	/// The cumulus RunCmd inherents from pezsc_cli's
 	pub base: pezsc_cli::RunCmd,
 }
 

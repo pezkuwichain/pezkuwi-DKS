@@ -161,7 +161,7 @@ pub fn reconstruct_from_systematic<T: Decode>(
 	let k = code_params.k();
 
 	for chunk_data in chunks.iter().take(k) {
-		if !chunk_data.len().is_multiple_of(2) {
+		if chunk_data.len() % 2 != 0 {
 			return Err(Error::UnevenLength);
 		}
 	}
@@ -227,7 +227,7 @@ where
 	let params = code_params(n_validators)?;
 	let mut received_shards: Vec<Option<WrappedShard>> = vec![None; n_validators];
 	for (chunk_data, chunk_idx) in chunks.into_iter().take(n_validators) {
-		if !chunk_data.len().is_multiple_of(2) {
+		if chunk_data.len() % 2 != 0 {
 			return Err(Error::UnevenLength);
 		}
 

@@ -1,0 +1,93 @@
+name: Install Solidity compilers
+description: >-
+  Install pinned solc and resolc, which pallet-revive's fixtures need to compile the
+  Solidity contracts its tests run against.
+
+inputs:
+  solc-version:
+    description: solc release tag, without the leading v
+    required: false
+    default: "0.8.33"
+  resolc-version:
+    description: resolc release tag, without the leading v
+    required: false
+    default: "1.0.0"
+  solc-sha256:
+    description: sha256 of solc-static-linux for solc-version, from binaries.soliditylang.org
+    required: false
+    default: "1274e5c4621ae478090c5a1f48466fd3c5f658ed9e14b15a0b213dc806215468"
+  resolc-sha256:
+    description: sha256 of resolc-x86_64-unknown-linux-musl, from upstream's checksums.txt
+    required: false
+    default: "e626ba7a1a0d26828c14713781b0082ececc9a0fbfe984f11f0d93d66bbd7806"
+
+runs:
+  using: composite
+  steps:
+    - name: Install solc and resolc
+      shell: bash
+      env:
+        SOLC_VERSION: ${{ inputs.solc-version }}
+        RESOLC_VERSION: ${{ inputs.resolc-version }}
+        SOLC_SHA256: ${{ inputs.solc-sha256 }}
+        RESOLC_SHA256: ${{ inputs.resolc-sha256 }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$HOME/.local/bin"
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+        # Pinned rather than latest: two machines on different compilers produce different
+        # bytecode from the same contract, and nothing about that failure points at the
+        # compiler. resolc 1.0.0 also refuses solc newer than 0.8.33, while the fixtures'
+        # pragmas require at least 0.8.30 -- the window is one version wide.
+        have() { command -v "$1" >/dev/null 2>&1 && "$1" --version 2>/dev/null | grep -qF "$2"; }
+
+        # Verify what was downloaded before trusting it. Neither compiler was checked before,
+        # and the failure that costs the most is not a tampered binary but a truncated one:
+        # a partial download still has a valid ELF header, so it installs and then misbehaves
+        # somewhere far from here. Measured on 2026-08-19 -- an interrupted transfer produced
+        # 13.9 MB of a 71 MB file and nothing complained.
+        # Download beside the destination and rename into place, never write the destination
+        # directly. Two jobs share a runner's $HOME, and the version check above EXECUTES the
+        # binary -- so one job running `solc --version` while another curls over the same path
+        # gets ETXTBSY, which bash reports as "Text file busy" and exit 126. That took down
+        # test-runtimes twice on 2026-08-23. `rename` swaps the directory entry instead of
+        # writing the in-use inode, so it cannot fail that way, and two jobs racing here now
+        # simply write the same verified bytes.
+        fetch() { # url  dest  sha256
+          tmp="$2.$$.tmp"
+          curl -fsSL --retry 3 -o "$tmp" "$1"
+          echo "$3  $tmp" | sha256sum -c - >/dev/null || {
+            echo "::error::$(basename "$2") does not match its expected sha256"
+            echo "  expected $3"
+            echo "  got      $(sha256sum "$tmp" | cut -d" " -f1)"
+            rm -f "$tmp"; exit 1
+          }
+          chmod +x "$tmp"
+          mv -f "$tmp" "$2"
+        }
+
+        if have solc "$SOLC_VERSION"; then
+          echo "solc $SOLC_VERSION already present"
+        else
+          fetch "https://github.com/ethereum/solidity/releases/download/v${SOLC_VERSION}/solc-static-linux" \
+            "$HOME/.local/bin/solc" "$SOLC_SHA256"
+        fi
+
+        if have resolc "$RESOLC_VERSION"; then
+          echo "resolc $RESOLC_VERSION already present"
+        else
+          # Our own mirror of upstream's release, byte-identical and pinned by the hash below.
+          # It had pointed at pezkuwichain/revive before with no such release published -- only
+          # v0.5.0 -- so the download 404d. Nobody noticed because the step skips downloading
+          # when a matching resolc is already on the runner, and every runner had one from
+          # before the URL changed; a fresh runner would have failed with nothing explaining it.
+          # The mirror exists so our builds do not depend on another organisation keeping a
+          # release URL alive. The checksum is what makes it honest: we host the bytes, we do
+          # not claim to have built them.
+          fetch "https://github.com/pezkuwichain/revive/releases/download/v${RESOLC_VERSION}/resolc-x86_64-unknown-linux-musl" \
+            "$HOME/.local/bin/resolc" "$RESOLC_SHA256"
+        fi
+
+        "$HOME/.local/bin/solc" --version | tail -1
+        "$HOME/.local/bin/resolc" --version | head -1

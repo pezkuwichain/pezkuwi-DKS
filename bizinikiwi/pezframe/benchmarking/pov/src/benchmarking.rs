@@ -392,6 +392,31 @@ mod benchmarks {
 		}
 	}
 
+	#[benchmark(pov_mode = Measured)]
+	fn storage_whitelisted_read() {
+		let key = b"key1".to_vec();
+		pezframe_support::storage::unhashed::put_raw(&key, b"value");
+		pezframe_benchmarking::benchmarking::add_to_whitelist(key.clone().into());
+
+		#[block]
+		{
+			assert!(pezframe_support::storage::unhashed::get_raw(&key).is_some());
+		}
+	}
+
+	#[benchmark(pov_mode = Measured)]
+	fn child_storage_whitelisted_read() {
+		let child_trie_key = b":child_storage:default:my_trie".to_vec();
+		let key = b"my_key".to_vec();
+		pezsp_io::default_child_storage::set(&child_trie_key, &key, b"value");
+		pezframe_benchmarking::add_to_whitelist_child(child_trie_key.clone(), key.clone());
+
+		#[block]
+		{
+			assert!(pezsp_io::default_child_storage::get(&child_trie_key, &key).is_some());
+		}
+	}
+
 	impl_benchmark_test_suite!(Pezpallet, super::mock::new_test_ext(), super::mock::Test,);
 }
 

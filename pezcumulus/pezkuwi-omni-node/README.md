@@ -10,16 +10,16 @@ Download & expose it via `PATH`:
 
 ```bash
 # Download and set it on PATH.
-wget https://github.com/pezkuwichain/pezkuwi-sdk/releases/download/<stable_release_tag>/pezkuwi-omni-node
+wget https://github.com/pezkuwichain/pezkuwi-DKS/releases/download/<stable_release_tag>/pezkuwi-omni-node
 chmod +x pezkuwi-omni-node
 export PATH="$PATH:`pwd`"
 ```
 
-> Replace `<stable_release_tag>` with the latest stable tag from the [Pezkuwi SDK releases](https://github.com/pezkuwichain/pezkuwi-sdk/releases)
+> Replace `<stable_release_tag>` with the latest stable tag from the [Pezkuwi SDK releases](https://github.com/pezkuwichain/pezkuwi-DKS/releases)
 >
 > For example:
 > ```bash
-> wget https://github.com/pezkuwichain/pezkuwi-sdk/releases/download/pezkuwi-stable2506-1/pezkuwi-omni-node
+> wget https://github.com/pezkuwichain/pezkuwi-DKS/releases/download/pezkuwi-stable2506-1/pezkuwi-omni-node
 > ```
 
 Compile & install via `cargo`:
@@ -47,12 +47,12 @@ cargo install pezstaging-chain-spec-builder --locked
 ### 2. Generate a chain spec
 
 Omni Node requires the chain spec to include a JSON key named `relay_chain`. It is set to a chain id,
-representing the chain name, e.g. `zagros`, `paseo`, `pezkuwichain`, `pezkuwi`, or `dicle`, but
+representing the chain name, e.g. `zagros` or `pezkuwichain`, but
 there are also local variants that can be used for testing, like `pezkuwichain-local` or `zagros-local`. The
 local variants are available only for a build of `pezkuwi-omni-node` with
 `zagros-native` and `pezkuwichain-native` features respectively.
 
-<!-- TODO: https://github.com/pezkuwichain/pezkuwi-sdk/issues/156 -->
+<!-- TODO: https://github.com/pezkuwichain/pezkuwi-DKS/issues/156 -->
 Additionaly, the `--para-id` flag can be used to set the JSON key named `para_id`. This flag is used
 by nodes to determine the teyrchain id, and it is especially useful when the teyrchain id can not be
 fetched from the runtime, when the state points to a runtime that does not implement the
@@ -78,6 +78,6 @@ pezkuwi-omni-node --dev --chain <chain_spec.json>
 * [`Omni Node Pezkuwi SDK Docs`](https://docs.pezkuwichain.io/sdk/master/pezkuwi_sdk_docs/reference_docs/omni_node/index.html)
 * [`Chain Spec Genesis Reference Docs`](https://docs.pezkuwichain.io/sdk/master/pezkuwi_sdk_docs/reference_docs/chain_spec_genesis/index.html)
 * `pezkuwi-teyrchain-bin`
-* [`pezkuwi-sdk-teyrchain-template`](https://github.com/pezkuwichain/pezkuwi-sdk-teyrchain-template)
-* [`frame-omni-bencher`](https://crates.io/crates/frame-omni-bencher)
+* [`pezkuwi-sdk-teyrchain-template`](https://github.com/pezkuwichain/pez-teyrchain-template)
+* [`pezframe-omni-bencher`](https://crates.io/crates/pezframe-omni-bencher)
 * [`pezstaging-chain-spec-builder`](https://crates.io/crates/pezstaging-chain-spec-builder)

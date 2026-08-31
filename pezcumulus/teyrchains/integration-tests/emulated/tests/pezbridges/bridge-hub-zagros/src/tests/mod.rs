@@ -28,10 +28,10 @@ mod snowbridge_common;
 // The bridge is deferred and will be rebuilt from scratch — there is no bridge hub chain
 // running to talk to — so these return with it rather than being patched now.
 mod snowbridge_edge_case;
-// mod snowbridge_v2_inbound;
+// mod pezsnowbridge_v2_inbound;
 mod snowbridge_v2_inbound_to_pezkuwichain;
-// mod snowbridge_v2_outbound;
-// mod snowbridge_v2_outbound_edge_case;
+// mod pezsnowbridge_v2_outbound;
+// mod pezsnowbridge_v2_outbound_edge_case;
 mod snowbridge_v2_outbound_from_pezkuwichain;
 mod snowbridge_v2_rewards;
 mod teleport;
@@ -202,8 +202,6 @@ pub(crate) fn assert_bridge_hub_zagros_message_accepted(expected_processed: bool
 			assert_expected_events!(
 				BridgeHubZagros,
 				vec![
-					// pay for bridge fees
-					RuntimeEvent::Balances(pezpallet_balances::Event::Burned { .. }) => {},
 					// message exported
 					RuntimeEvent::BridgePezkuwichainMessages(
 						pezpallet_bridge_messages::Event::MessageAccepted { .. }

@@ -21,7 +21,7 @@
 //! example:
 //!
 //! * If the majority of token holders agreed upon this. This is more or less what the
-//!   [`pezpallet_democracy`] does under the hood ([reference](https://github.com/pezkuwichain/pezkuwi-sdk/blob/edd95b3749754d2ed0c5738588e872c87be91624/bizinikiwi/pezframe/democracy/src/lib.rs#L1603-L1633)).
+//!   [`pezpallet_democracy`] does under the hood ([reference](https://github.com/pezkuwichain/pezkuwi-DKS/blob/edd95b3749754d2ed0c5738588e872c87be91624/bizinikiwi/pezframe/democracy/src/lib.rs#L1603-L1633)).
 //! * If a specific ratio of an instance of [`pezpallet_collective`]/DAO agrees upon this.
 //! * If another consensus system, for example a bridged network or a teyrchain, agrees upon this.
 //! * If the majority of validator/authority set agrees upon this[^1].
@@ -169,15 +169,7 @@ pub mod pezpallet_with_custom_origin {
 	/// A dummy custom origin.
 	#[pezpallet::origin]
 	#[derive(
-		PartialEq,
-		Eq,
-		Clone,
-		RuntimeDebug,
-		Encode,
-		Decode,
-		DecodeWithMemTracking,
-		TypeInfo,
-		MaxEncodedLen,
+		PartialEq, Eq, Clone, Debug, Encode, Decode, DecodeWithMemTracking, TypeInfo, MaxEncodedLen,
 	)]
 	pub enum Origin {
 		/// If all holders of a particular NFT have agreed upon this.

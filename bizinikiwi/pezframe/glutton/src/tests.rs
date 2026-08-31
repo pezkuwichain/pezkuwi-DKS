@@ -26,7 +26,7 @@ const CALIBRATION_ERROR: &'static str =
 	"Weight calibration failed. Please re-run the benchmarks on the same hardware.";
 
 #[test]
-fn initialize_pallet_works() {
+fn initialize_pezpallet_works() {
 	new_test_ext().execute_with(|| {
 		assert_eq!(TrashData::<Test>::get(0), None);
 

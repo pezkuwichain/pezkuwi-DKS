@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity Bridges Common.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Defines traits which represent a common interface for Bizinikiwi pallets which want to
+//! Defines traits which represent a common interface for Bizinikiwi pezpallets which want to
 //! incorporate bridge functionality.
 
 #![warn(missing_docs)]
@@ -33,7 +33,7 @@ use pezframe_support::PalletError;
 use pezsp_consensus_grandpa::{
 	AuthorityList, ConsensusLog, ScheduledChange, SetId, GRANDPA_ENGINE_ID,
 };
-use pezsp_runtime::{traits::Header as HeaderT, Digest, RuntimeDebug, SaturatedConversion};
+use pezsp_runtime::{traits::Header as HeaderT, Digest, SaturatedConversion};
 use pezsp_std::{boxed::Box, vec::Vec};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
@@ -60,7 +60,7 @@ pub enum HeaderChainError {
 ///
 /// Even though we may store full header, our applications (XCM) only use couple of header
 /// fields. Extracting those values makes on-chain storage and PoV smaller, which is good.
-#[derive(Clone, Decode, Encode, Eq, MaxEncodedLen, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(Clone, Decode, Encode, Eq, MaxEncodedLen, PartialEq, Debug, TypeInfo)]
 pub struct StoredHeaderData<Number, Hash> {
 	/// Header number.
 	pub number: Number,
@@ -103,9 +103,7 @@ pub trait Parameter: Codec + EncodeLike + Clone + Eq + Debug + TypeInfo {}
 impl<T> Parameter for T where T: Codec + EncodeLike + Clone + Eq + Debug + TypeInfo {}
 
 /// A GRANDPA Authority List and ID.
-#[derive(
-	Default, Encode, Eq, Decode, DecodeWithMemTracking, RuntimeDebug, PartialEq, Clone, TypeInfo,
-)]
+#[derive(Default, Encode, Eq, Decode, DecodeWithMemTracking, Debug, PartialEq, Clone, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct AuthoritySet {
 	/// List of GRANDPA authorities for the current round.
@@ -129,7 +127,7 @@ impl AuthoritySet {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	PartialEq,
 	Eq,
 	Clone,
@@ -251,8 +249,8 @@ pub trait FindEquivocations<FinalityProof, FinalityVerificationContext, Equivoca
 /// Keep in mind that teyrchains are relying on relay chain GRANDPA, so they should not implement
 /// this trait.
 pub trait ChainWithGrandpa: Chain {
-	/// Name of the bridge GRANDPA pezpallet (used in `construct_runtime` macro call) that is
-	/// deployed at some other chain to bridge with this `ChainWithGrandpa`.
+	/// Name of the bridge GRANDPA pezpallet (used in `construct_runtime` macro call) that is deployed
+	/// at some other chain to bridge with this `ChainWithGrandpa`.
 	///
 	/// We assume that all chains that are bridging with this `ChainWithGrandpa` are using
 	/// the same name.

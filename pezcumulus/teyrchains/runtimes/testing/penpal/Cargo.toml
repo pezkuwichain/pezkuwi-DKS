@@ -34,7 +34,7 @@ pezframe-system-benchmarking = { optional = true, workspace = true }
 pezframe-system-rpc-runtime-api = { workspace = true }
 pezframe-try-runtime = { optional = true, workspace = true }
 pezpallet-asset-conversion = { workspace = true }
-pezpallet-asset-tx-payment = { workspace = true }
+pezpallet-asset-conversion-tx-payment = { workspace = true }
 pezpallet-assets = { workspace = true }
 pezpallet-aura = { workspace = true }
 pezpallet-authorship = { workspace = true }
@@ -92,6 +92,9 @@ primitive-types = { workspace = true, default-features = false, features = [
   "scale-info",
 ] }
 
+[dev-dependencies]
+pezsp-io = { workspace = true, default-features = true }
+
 [build-dependencies]
 bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features = true }
 
@@ -122,7 +125,7 @@ std = [
   "pezkuwi-runtime-common/std",
   "pezkuwi-teyrchain-primitives/std",
   "pezpallet-asset-conversion/std",
-  "pezpallet-asset-tx-payment/std",
+  "pezpallet-asset-conversion-tx-payment/std",
   "pezpallet-assets/std",
   "pezpallet-aura/std",
   "pezpallet-authorship/std",
@@ -187,7 +190,7 @@ runtime-benchmarks = [
   "pezkuwi-runtime-common/runtime-benchmarks",
   "pezkuwi-teyrchain-primitives/runtime-benchmarks",
   "pezpallet-asset-conversion/runtime-benchmarks",
-  "pezpallet-asset-tx-payment/runtime-benchmarks",
+  "pezpallet-asset-conversion-tx-payment/runtime-benchmarks",
   "pezpallet-assets/runtime-benchmarks",
   "pezpallet-aura/runtime-benchmarks",
   "pezpallet-authorship/runtime-benchmarks",
@@ -207,6 +210,7 @@ runtime-benchmarks = [
   "pezsp-consensus-aura/runtime-benchmarks",
   "pezsp-genesis-builder/runtime-benchmarks",
   "pezsp-inherents/runtime-benchmarks",
+  "pezsp-io/runtime-benchmarks",
   "pezsp-keyring/runtime-benchmarks",
   "pezsp-offchain/runtime-benchmarks",
   "pezsp-runtime/runtime-benchmarks",
@@ -242,7 +246,7 @@ try-runtime = [
   "pezkuwi-runtime-common/try-runtime",
   "pezkuwi-teyrchain-primitives/try-runtime",
   "pezpallet-asset-conversion/try-runtime",
-  "pezpallet-asset-tx-payment/try-runtime",
+  "pezpallet-asset-conversion-tx-payment/try-runtime",
   "pezpallet-assets/try-runtime",
   "pezpallet-aura/try-runtime",
   "pezpallet-authorship/try-runtime",

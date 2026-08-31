@@ -351,18 +351,18 @@ mod test {
 		client::{OfflineClientT, OnlineClientT},
 		config::{Config, HashFor},
 		tx::TxProgress,
-		BizinikiwConfig,
+		BizinikiwiConfig,
 	};
 
-	type MockTxProgress = TxProgress<BizinikiwConfig, MockClient>;
-	type MockHash = HashFor<BizinikiwConfig>;
+	type MockTxProgress = TxProgress<BizinikiwiConfig, MockClient>;
+	type MockHash = HashFor<BizinikiwiConfig>;
 	type MockBizinikiwiTxStatus = TransactionStatus<MockHash>;
 
 	/// a mock client to satisfy trait bounds in tests
 	#[derive(Clone, Debug)]
 	struct MockClient;
 
-	impl OfflineClientT<BizinikiwConfig> for MockClient {
+	impl OfflineClientT<BizinikiwiConfig> for MockClient {
 		fn metadata(&self) -> crate::Metadata {
 			unimplemented!("just a mock impl to satisfy trait bounds")
 		}
@@ -375,17 +375,17 @@ mod test {
 			unimplemented!("just a mock impl to satisfy trait bounds")
 		}
 
-		fn hasher(&self) -> <BizinikiwConfig as Config>::Hasher {
+		fn hasher(&self) -> <BizinikiwiConfig as Config>::Hasher {
 			unimplemented!("just a mock impl to satisfy trait bounds")
 		}
 
-		fn client_state(&self) -> pezkuwi_subxt_core::client::ClientState<BizinikiwConfig> {
+		fn client_state(&self) -> pezkuwi_subxt_core::client::ClientState<BizinikiwiConfig> {
 			unimplemented!("just a mock impl to satisfy trait bounds")
 		}
 	}
 
-	impl OnlineClientT<BizinikiwConfig> for MockClient {
-		fn backend(&self) -> &dyn crate::backend::Backend<BizinikiwConfig> {
+	impl OnlineClientT<BizinikiwiConfig> for MockClient {
+		fn backend(&self) -> &dyn crate::backend::Backend<BizinikiwiConfig> {
 			unimplemented!("just a mock impl to satisfy trait bounds")
 		}
 	}

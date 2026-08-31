@@ -197,7 +197,7 @@ mod tests {
 	use super::*;
 	use crate::backend::{AsTrieBackend, Backend};
 	use pezsp_core::storage::StateVersion;
-	use pezsp_core::Blake2Hasher as BlakeTwo256;
+	use pezsp_runtime::traits::BlakeTwo256;
 
 	/// Assert in memory backend with only child trie keys works as trie backend.
 	#[test]

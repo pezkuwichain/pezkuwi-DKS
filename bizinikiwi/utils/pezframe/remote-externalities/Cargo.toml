@@ -27,26 +27,32 @@ pezsp-crypto-hashing = { workspace = true, default-features = true }
 pezsp-io = { workspace = true, default-features = true }
 pezsp-runtime = { workspace = true, default-features = true }
 pezsp-state-machine = { workspace = true, default-features = true }
+rand = { workspace = true, default-features = true }
 serde = { workspace = true, default-features = true }
 spinners = { workspace = true }
 tokio = { features = [
 	"macros",
 	"rt-multi-thread",
 ], workspace = true, default-features = true }
-tokio-retry = { workspace = true }
 
 [dev-dependencies]
+pezframe-support = { workspace = true, default-features = true }
 pezsp-tracing = { workspace = true, default-features = true }
 
 [features]
 remote-test = []
 runtime-benchmarks = [
 	"bizinikiwi-rpc-client/runtime-benchmarks",
+	"pezframe-support/runtime-benchmarks",
 	"pezsp-io/runtime-benchmarks",
 	"pezsp-runtime/runtime-benchmarks",
 	"pezsp-state-machine/runtime-benchmarks",
 ]
 std = ["bizinikiwi-rpc-client/std", "log/std"]
-try-runtime = ["bizinikiwi-rpc-client/try-runtime", "pezsp-runtime/try-runtime"]
+try-runtime = [
+	"bizinikiwi-rpc-client/try-runtime",
+	"pezframe-support/try-runtime",
+	"pezsp-runtime/try-runtime",
+]
 serde = []
 with-tracing = []

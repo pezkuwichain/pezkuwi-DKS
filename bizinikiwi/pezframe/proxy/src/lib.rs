@@ -16,8 +16,8 @@
 // limitations under the License.
 
 //! # Proxy Pezpallet
-//! A pezpallet allowing accounts to give permission to other accounts to dispatch types of calls
-//! from their signed origin.
+//! A pezpallet allowing accounts to give permission to other accounts to dispatch types of calls from
+//! their signed origin.
 //!
 //! The accounts to which permission is delegated may be required to announce the action that they
 //! wish to execute some duration prior to execution happens. In this case, the target account may
@@ -64,7 +64,7 @@ type AccountIdLookupOf<T> = <<T as pezframe_system::Config>::Lookup as StaticLoo
 	PartialEq,
 	Ord,
 	PartialOrd,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	TypeInfo,
 )]
@@ -87,7 +87,7 @@ pub struct ProxyDefinition<AccountId, ProxyType, BlockNumber> {
 	Copy,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	TypeInfo,
 )]
@@ -108,7 +108,7 @@ pub struct Announcement<AccountId, Hash, BlockNumber> {
 	Copy,
 	Eq,
 	PartialEq,
-	RuntimeDebug,
+	Debug,
 	MaxEncodedLen,
 	TypeInfo,
 	DecodeWithMemTracking,
@@ -220,8 +220,8 @@ pub mod pezpallet {
 		///   - are freshly deploying this pezpallet: `RelaychainDataProvider`
 		/// - Teyrchains with a reliably block production rate (PLO or bulk-coretime):
 		///   - already have the pezpallet deployed: `pezframe_system::Pezpallet`
-		///   - are freshly deploying this pezpallet: no strong recommendation. Both local and
-		///     remote providers can be used. Relay provider can be a bit better in cases where the
+		///   - are freshly deploying this pezpallet: no strong recommendation. Both local and remote
+		///     providers can be used. Relay provider can be a bit better in cases where the
 		///     teyrchain is lagging its block production to avoid clock skew.
 		type BlockNumberProvider: BlockNumberProvider;
 	}

@@ -54,7 +54,7 @@
 //!
 //! ```bash
 //! # Install only `pez_subkey`, at a specific version of the pez_subkey crate
-//! cargo install --force pez_subkey --git https://github.com/pezkuwichain/pezkuwi-sdk --version <SET VERSION> --locked
+//! cargo install --force pez_subkey --git https://github.com/pezkuwichain/pezkuwi-DKS --version <SET VERSION> --locked
 //! # If you run into issues building, you likely are missing deps defined in https://docs.pezkuwichain.io/install/
 //! ```
 //!
@@ -317,7 +317,7 @@ use pezsc_cli::{
 #[derive(Debug, Parser)]
 #[command(
 	name = "pez_subkey",
-	author = "Parity Team <admin@parity.io>",
+	author = "Parity Team <admin@pezkuwichain.io>",
 	about = "Utility for generating and restoring with Bizinikiwi keys",
 	version
 )]

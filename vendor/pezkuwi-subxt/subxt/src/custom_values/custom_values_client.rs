@@ -46,7 +46,7 @@ impl<T: Config, Client: OfflineClientT<T>> CustomValuesClient<T, Client> {
 mod tests {
 	use crate::{
 		custom_values::{self, CustomValuesClient},
-		BizinikiwConfig, Metadata, OfflineClient,
+		BizinikiwiConfig, Metadata, OfflineClient,
 	};
 	use codec::Encode;
 	use pezkuwi_subxt_core::client::RuntimeVersion;
@@ -102,7 +102,7 @@ mod tests {
 
 	#[test]
 	fn test_decoding() {
-		let client = OfflineClient::<BizinikiwConfig>::new(
+		let client = OfflineClient::<BizinikiwiConfig>::new(
 			Default::default(),
 			RuntimeVersion { spec_version: 0, transaction_version: 0 },
 			mock_metadata(),

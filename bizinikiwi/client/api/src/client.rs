@@ -19,7 +19,7 @@
 //! A set of APIs supported by the client along with their primitives.
 
 use pezsp_consensus::BlockOrigin;
-use pezsp_core::storage::StorageKey;
+use pezsp_core::{storage::StorageKey, H256};
 use pezsp_runtime::{
 	generic::SignedBlock,
 	traits::{Block as BlockT, NumberFor},
@@ -73,7 +73,7 @@ pub trait BlockchainEvents<Block: BlockT> {
 	///
 	/// The events for this notification stream are emitted:
 	/// - During initial sync process: if there is a re-org while importing blocks. See
-	/// [here](https://github.com/pezkuwichain/pezkuwi-sdk/issues/222#issuecomment-694091901) for the
+	/// [here](https://github.com/paritytech/substrate/pull/7118#issuecomment-694091901) for the
 	/// rationale behind this.
 	/// - After initial sync process: on every imported block, regardless of whether it is
 	/// the new best block or not, causes a re-org or not.
@@ -132,15 +132,24 @@ pub trait BlockBackend<Block: BlockT> {
 		hash: Block::Hash,
 	) -> pezsp_blockchain::Result<Option<Vec<<Block as BlockT>::Extrinsic>>>;
 
-	/// Get all indexed transactions for a block,
-	/// including renewed transactions.
+	/// Get all indexed transactions for a block, including renewed transactions.
 	///
-	/// Note that this will only fetch transactions
-	/// that are indexed by the runtime with `storage_index_transaction`.
+	/// Note that this will only fetch transactions that are indexed by the runtime with
+	/// `storage_index_transaction`.
 	fn block_indexed_body(
 		&self,
 		hash: Block::Hash,
 	) -> pezsp_blockchain::Result<Option<Vec<Vec<u8>>>>;
+
+	/// Get the BLAKE2b-256 hashes of all indexed transactions in a block, including renewed
+	/// transactions.
+	///
+	/// Note that this will only fetch transactions that are indexed by the runtime with
+	/// `storage_index_transaction`.
+	fn block_indexed_hashes(
+		&self,
+		hash: Block::Hash,
+	) -> pezsp_blockchain::Result<Option<Vec<H256>>>;
 
 	/// Get full block by hash.
 	fn block(&self, hash: Block::Hash) -> pezsp_blockchain::Result<Option<SignedBlock<Block>>>;
@@ -159,14 +168,14 @@ pub trait BlockBackend<Block: BlockT> {
 	fn block_hash(&self, number: NumberFor<Block>)
 		-> pezsp_blockchain::Result<Option<Block::Hash>>;
 
-	/// Get single indexed transaction by content hash.
+	/// Get single indexed transaction by content hash (BLAKE2b-256).
 	///
 	/// Note that this will only fetch transactions
 	/// that are indexed by the runtime with `storage_index_transaction`.
-	fn indexed_transaction(&self, hash: Block::Hash) -> pezsp_blockchain::Result<Option<Vec<u8>>>;
+	fn indexed_transaction(&self, hash: H256) -> pezsp_blockchain::Result<Option<Vec<u8>>>;
 
-	/// Check if transaction index exists.
-	fn has_indexed_transaction(&self, hash: Block::Hash) -> pezsp_blockchain::Result<bool> {
+	/// Check if transaction index exists given its BLAKE2b-256 hash.
+	fn has_indexed_transaction(&self, hash: H256) -> pezsp_blockchain::Result<bool> {
 		Ok(self.indexed_transaction(hash)?.is_some())
 	}
 

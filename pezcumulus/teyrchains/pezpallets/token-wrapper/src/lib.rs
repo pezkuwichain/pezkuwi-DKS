@@ -48,7 +48,15 @@ pub mod pezpallet {
 	type BalanceOf<T> =
 		<<T as Config>::Currency as Currency<<T as pezframe_system::Config>::AccountId>>::Balance;
 
+	/// The version this pallet's storage layout is at.
+	///
+	/// Declared so that the first migration has a baseline to compare against. Without it the
+	/// in-code and on-chain versions are both an implicit zero, and a migration cannot tell a
+	/// chain that has never been migrated from one that has been migrated to zero.
+	const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
 	#[pezpallet::pezpallet]
+	#[pezpallet::storage_version(STORAGE_VERSION)]
 	pub struct Pezpallet<T>(_);
 
 	#[pezpallet::config]
@@ -195,8 +203,8 @@ pub mod pezpallet {
 			ensure!(wrapped_balance >= amount, Error::<T>::InsufficientWrappedBalance);
 
 			// Verify pallet has sufficient backing before any state changes
-			let pallet_balance = T::Currency::free_balance(&Self::account_id());
-			ensure!(pallet_balance >= amount, Error::<T>::TransferFailed);
+			let pezpallet_balance = T::Currency::free_balance(&Self::account_id());
+			ensure!(pezpallet_balance >= amount, Error::<T>::TransferFailed);
 
 			// Burn wrapped tokens from user
 			T::Assets::burn_from(

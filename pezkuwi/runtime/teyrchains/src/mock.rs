@@ -17,16 +17,15 @@
 //! Mocks for all the traits.
 
 use crate::{
-	assigner_coretime, configuration, coretime, disputes, dmp, hrmp,
+	configuration, coretime, disputes,
+	disputes::slashing as disputes_slashing,
+	dmp, hrmp,
 	inclusion::{self, AggregateMessageOrigin, UmpQueueId},
 	initializer, on_demand, origin, paras,
 	paras::ParaKind,
-	paras_inherent, scheduler,
-	scheduler::common::AssignmentProvider,
-	session_info, shared, ParaId,
+	paras_inherent, scheduler, session_info, shared, ParaId,
 };
 use pezframe_support::pezpallet_prelude::*;
-use pezkuwi_primitives::CoreIndex;
 
 use codec::Decode;
 use pezframe_support::{
@@ -42,19 +41,21 @@ use pezframe_support::{
 use pezframe_support_test::TestRandomness;
 use pezframe_system::{limits, EnsureRoot};
 use pezkuwi_primitives::{
-	AuthorityDiscoveryId, Balance, BlockNumber, CandidateHash, Moment, SessionIndex, UpwardMessage,
-	ValidationCode, ValidatorIndex,
+	slashing::DisputesTimeSlot, AuthorityDiscoveryId, Balance, BlockNumber, CandidateHash,
+	DisputeOffenceKind, Moment, SessionIndex, UpwardMessage, ValidationCode, ValidatorId,
+	ValidatorIndex, TEYRCHAIN_KEY_TYPE_ID,
 };
-use pezsp_core::{ConstU32, H256};
+use pezsp_core::{crypto::KeyTypeId, ConstU32, H256};
 use pezsp_io::TestExternalities;
 use pezsp_runtime::{
 	traits::{AccountIdConversion, BlakeTwo256, IdentityLookup},
 	transaction_validity::TransactionPriority,
 	BuildStorage, FixedU128, Perbill, Permill,
 };
+use pezsp_staking::offence::OffenceError;
 use std::{
 	cell::RefCell,
-	collections::{btree_map::BTreeMap, vec_deque::VecDeque, HashMap},
+	collections::{btree_map::BTreeMap, HashMap},
 };
 use xcm::{
 	prelude::XcmVersion,
@@ -77,9 +78,7 @@ pezframe_support::construct_runtime!(
 		ParaInclusion: inclusion,
 		ParaInherent: paras_inherent,
 		Scheduler: scheduler,
-		MockAssigner: mock_assigner,
 		OnDemand: on_demand,
-		CoretimeAssigner: assigner_coretime,
 		Coretime: coretime,
 		Initializer: initializer,
 		Dmp: dmp,
@@ -87,6 +86,7 @@ pezframe_support::construct_runtime!(
 		TeyrchainsOrigin: origin,
 		SessionInfo: session_info,
 		Disputes: disputes,
+		Slashing: disputes_slashing,
 		Babe: pezpallet_babe,
 	}
 );
@@ -113,7 +113,12 @@ parameter_types! {
 		pezframe_system::limits::BlockWeights::simple_max(
 			Weight::from_parts(4 * 1024 * 1024, u64::MAX),
 		);
-	pub static BlockLength: limits::BlockLength = limits::BlockLength::max_with_normal_ratio(u32::MAX, Perbill::from_percent(75));
+	pub static BlockLength: limits::BlockLength = limits::BlockLength::builder()
+		.max_length(u32::MAX)
+		.modify_max_length_for_class(pezframe_support::dispatch::DispatchClass::Normal, |m| {
+			*m = Perbill::from_percent(75) * u32::MAX
+		})
+		.build();
 }
 
 pub type AccountId = u64;
@@ -271,7 +276,7 @@ impl WrapVersion for TestUsesOnlyStoredVersionWrapper {
 	) -> Result<VersionedXcm<RuntimeCall>, ()> {
 		match VERSION_WRAPPER.with(|r| r.borrow().get(dest).map_or(None, |v| *v)) {
 			Some(v) => xcm.into().into_version(v),
-			None => return Err(()),
+			None => Err(()),
 		}
 	}
 }
@@ -347,9 +352,163 @@ impl crate::disputes::SlashingHandler<BlockNumber> for Test {
 	fn initializer_on_new_session(_: SessionIndex) {}
 }
 
-impl crate::scheduler::Config for Test {
-	type AssignmentProvider = MockAssigner;
+parameter_types! {
+	pub const SlashingReportLongevity: u64 = 100;
 }
+
+thread_local! {
+	pub static MOCK_KEY_OWNERSHIP_PROOFS:
+		RefCell<HashMap<(KeyTypeId, ValidatorId, MockKeyOwnerProof), AccountId>>
+		= RefCell::new(HashMap::new());
+	pub static MOCK_REPORTED_OFFENCES:
+		RefCell<Vec<(DisputesTimeSlot, DisputeOffenceKind, Vec<(AccountId, ())>)>>
+		= RefCell::new(Vec::new());
+	pub static MOCK_KNOWN_OFFENCES: RefCell<Vec<(DisputesTimeSlot, AccountId)>>
+		= RefCell::new(Vec::new());
+	pub static MOCK_REPORT_OFFENCE_RESULT: RefCell<MockReportResult>
+		= const { RefCell::new(MockReportResult::Ok) };
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum MockReportResult {
+	Ok,
+	DuplicateReport,
+	#[allow(dead_code)]
+	Other(u8),
+}
+
+impl MockReportResult {
+	fn as_offence_result(self) -> Result<(), OffenceError> {
+		match self {
+			MockReportResult::Ok => Ok(()),
+			MockReportResult::DuplicateReport => Err(OffenceError::DuplicateReport),
+			MockReportResult::Other(e) => Err(OffenceError::Other(e)),
+		}
+	}
+}
+
+#[derive(
+	Clone,
+	PartialEq,
+	Eq,
+	Hash,
+	Debug,
+	codec::Encode,
+	codec::Decode,
+	codec::DecodeWithMemTracking,
+	scale_info::TypeInfo,
+)]
+pub struct MockKeyOwnerProof {
+	pub session: SessionIndex,
+	pub validator_count: u32,
+	pub tag: u32,
+}
+
+impl pezsp_session::GetSessionNumber for MockKeyOwnerProof {
+	fn session(&self) -> SessionIndex {
+		self.session
+	}
+}
+
+impl pezsp_session::GetValidatorCount for MockKeyOwnerProof {
+	fn validator_count(&self) -> pezsp_session::ValidatorCount {
+		self.validator_count
+	}
+}
+
+pub struct MockKeyOwnerProofSystem;
+
+impl pezframe_support::traits::KeyOwnerProofSystem<(KeyTypeId, ValidatorId)>
+	for MockKeyOwnerProofSystem
+{
+	type Proof = MockKeyOwnerProof;
+	type IdentificationTuple = (AccountId, ());
+
+	fn prove(_key: (KeyTypeId, ValidatorId)) -> Option<Self::Proof> {
+		None
+	}
+
+	fn check_proof(
+		key: (KeyTypeId, ValidatorId),
+		proof: Self::Proof,
+	) -> Option<Self::IdentificationTuple> {
+		MOCK_KEY_OWNERSHIP_PROOFS.with(|m| {
+			m.borrow()
+				.get(&(key.0, key.1, proof))
+				.cloned()
+				.map(|account_id| (account_id, ()))
+		})
+	}
+}
+
+pub fn register_mock_key_owner_proof(
+	validator_id: ValidatorId,
+	proof: MockKeyOwnerProof,
+	account_id: AccountId,
+) {
+	MOCK_KEY_OWNERSHIP_PROOFS.with(|m| {
+		m.borrow_mut().insert((TEYRCHAIN_KEY_TYPE_ID, validator_id, proof), account_id);
+	});
+}
+
+pub fn mock_reported_offences() -> Vec<(DisputesTimeSlot, DisputeOffenceKind, Vec<(AccountId, ())>)>
+{
+	MOCK_REPORTED_OFFENCES.with(|r| r.borrow().clone())
+}
+
+pub fn set_mock_known_offence(time_slot: DisputesTimeSlot, account_id: AccountId) {
+	MOCK_KNOWN_OFFENCES.with(|r| r.borrow_mut().push((time_slot, account_id)));
+}
+
+pub fn set_mock_report_offence_result(result: MockReportResult) {
+	MOCK_REPORT_OFFENCE_RESULT.with(|r| *r.borrow_mut() = result);
+}
+
+pub struct MockHandleReports;
+
+impl crate::disputes::slashing::HandleReports<Test> for MockHandleReports {
+	type ReportLongevity = SlashingReportLongevity;
+
+	fn report_offence(
+		offence: crate::disputes::slashing::SlashingOffence<(AccountId, ())>,
+	) -> Result<(), OffenceError> {
+		let result = MOCK_REPORT_OFFENCE_RESULT.with(|r| *r.borrow()).as_offence_result();
+		if result.is_ok() {
+			MOCK_REPORTED_OFFENCES.with(|r| {
+				r.borrow_mut()
+					.push((offence.time_slot.clone(), offence.kind, offence.offenders));
+			});
+		}
+		result
+	}
+
+	fn is_known_offence(offenders: &[(AccountId, ())], time_slot: &DisputesTimeSlot) -> bool {
+		MOCK_KNOWN_OFFENCES.with(|r| {
+			let known = r.borrow();
+			offenders.iter().any(|(account, _)| {
+				known.iter().any(|(slot, acc)| slot == time_slot && acc == account)
+			})
+		})
+	}
+
+	fn submit_unsigned_slashing_report(
+		_dispute_proof: pezkuwi_primitives::slashing::DisputeProof,
+		_key_owner_proof: <Test as crate::disputes::slashing::Config>::KeyOwnerProof,
+	) -> Result<(), pezsp_runtime::TryRuntimeError> {
+		Ok(())
+	}
+}
+
+impl crate::disputes::slashing::Config for Test {
+	type KeyOwnerProof = MockKeyOwnerProof;
+	type KeyOwnerIdentification = (AccountId, ());
+	type KeyOwnerProofSystem = MockKeyOwnerProofSystem;
+	type HandleReports = MockHandleReports;
+	type WeightInfo = crate::disputes::slashing::TestWeightInfo;
+	type BenchmarkingConfig = crate::disputes::slashing::BenchConfig<200>;
+}
+
+impl crate::scheduler::Config for Test {}
 
 pub struct TestMessageQueueWeight;
 impl pezpallet_message_queue::WeightInfo for TestMessageQueueWeight {
@@ -423,8 +582,6 @@ impl on_demand::Config for Test {
 	type PalletId = OnDemandPalletId;
 }
 
-impl assigner_coretime::Config for Test {}
-
 parameter_types! {
 	pub const BrokerId: u32 = 10u32;
 	pub MaxXcmTransactWeight: Weight = Weight::from_parts(10_000_000, 10_000);
@@ -488,83 +645,25 @@ impl ValidatorSet<AccountId> for MockValidatorSet {
 	type ValidatorId = AccountId;
 	type ValidatorIdOf = ValidatorIdOf;
 	fn session_index() -> SessionIndex {
-		0
+		MOCK_CURRENT_SESSION.with(|s| *s.borrow())
 	}
 	fn validators() -> Vec<Self::ValidatorId> {
 		Vec::new()
 	}
 }
 
+thread_local! {
+	pub static MOCK_CURRENT_SESSION: RefCell<SessionIndex> = const { RefCell::new(0) };
+}
+
+pub fn set_mock_current_session(session: SessionIndex) {
+	MOCK_CURRENT_SESSION.with(|s| *s.borrow_mut() = session);
+}
+
 impl ValidatorSetWithIdentification<AccountId> for MockValidatorSet {
 	type Identification = ();
 	type IdentificationOf = FoolIdentificationOf;
 }
-
-/// A mock assigner which acts as the scheduler's `AssignmentProvider` for tests. The mock
-/// assigner provides bare minimum functionality to test scheduler internals. Since they
-/// have no direct effect on scheduler state, AssignmentProvider functions such as
-/// `push_back_assignment` can be left empty.
-pub mod mock_assigner {
-	use crate::scheduler::common::Assignment;
-
-	use super::*;
-	pub use pezpallet::*;
-
-	#[pezframe_support::pezpallet]
-	pub mod pezpallet {
-		use super::*;
-
-		#[pezpallet::pezpallet]
-		#[pezpallet::without_storage_info]
-		pub struct Pezpallet<T>(_);
-
-		#[pezpallet::config]
-		pub trait Config: pezframe_system::Config + configuration::Config + paras::Config {}
-
-		#[pezpallet::storage]
-		pub(super) type MockAssignmentQueue<T: Config> =
-			StorageValue<_, VecDeque<Assignment>, ValueQuery>;
-	}
-
-	impl<T: Config> Pezpallet<T> {
-		/// Adds a claim to the `MockAssignmentQueue` this claim can later be popped by the
-		/// scheduler when filling the claim queue for tests.
-		pub fn add_test_assignment(assignment: Assignment) {
-			MockAssignmentQueue::<T>::mutate(|queue| queue.push_back(assignment));
-		}
-	}
-
-	impl<T: Config> AssignmentProvider<BlockNumber> for Pezpallet<T> {
-		// With regards to popping_assignments, the scheduler just needs to be tested under
-		// the following two conditions:
-		// 1. An assignment is provided
-		// 2. No assignment is provided
-		// A simple assignment queue populated to fit each test fulfills these needs.
-		fn pop_assignment_for_core(_core_idx: CoreIndex) -> Option<Assignment> {
-			let mut queue: VecDeque<Assignment> = MockAssignmentQueue::<T>::get();
-			let front = queue.pop_front();
-			// Write changes to storage.
-			MockAssignmentQueue::<T>::set(queue);
-			front
-		}
-
-		// We don't care about core affinity in the test assigner
-		fn report_processed(_: Assignment) {}
-
-		fn push_back_assignment(assignment: Assignment) {
-			Self::add_test_assignment(assignment);
-		}
-
-		#[cfg(any(feature = "runtime-benchmarks", test))]
-		fn get_mock_assignment(_: CoreIndex, para_id: ParaId) -> Assignment {
-			Assignment::Bulk(para_id)
-		}
-
-		fn assignment_duplicated(_: &Assignment) {}
-	}
-}
-
-impl mock_assigner::pezpallet::Config for Test {}
 
 pub struct FoolIdentificationOf;
 impl pezsp_runtime::traits::Convert<AccountId, Option<()>> for FoolIdentificationOf {

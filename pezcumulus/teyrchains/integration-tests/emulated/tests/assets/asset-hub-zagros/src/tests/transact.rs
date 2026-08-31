@@ -32,7 +32,7 @@ fn transfer_and_transact_in_same_xcm(
 
 	let Fungible(total_usdt) = usdt.fun else { unreachable!() };
 
-	// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/290): dry-run to get local fees, for now use hardcoded value.
+	// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/290): dry-run to get local fees, for now use hardcoded value.
 	let local_fees_amount = 80_000_000_000; // current exact value 69_200_786_622
 	let ah_fees_amount = 90_000_000_000; // current exact value 79_948_099_299
 	let usdt_to_ah_then_onward_amount = total_usdt - local_fees_amount - ah_fees_amount;
@@ -121,9 +121,19 @@ fn transact_from_para_to_para_through_asset_hub() {
 		20_000_000_000
 	);
 	// We also need a pool between ZGR and USDT on PenpalA.
-	create_pool_with_wnd_on!(PenpalA, PenpalUsdtFromAssetHub::get(), true, PenpalAssetOwner::get());
+	create_foreign_pool_with_native_on!(
+		PenpalA,
+		ForeignAssets,
+		PenpalUsdtFromAssetHub::get(),
+		PenpalAssetOwner::get()
+	);
 	// We also need a pool between ZGR and USDT on PenpalB.
-	create_pool_with_wnd_on!(PenpalB, PenpalUsdtFromAssetHub::get(), true, PenpalAssetOwner::get());
+	create_foreign_pool_with_native_on!(
+		PenpalB,
+		ForeignAssets,
+		PenpalUsdtFromAssetHub::get(),
+		PenpalAssetOwner::get()
+	);
 
 	let usdt_from_asset_hub = PenpalUsdtFromAssetHub::get();
 	PenpalA::execute_with(|| {
@@ -173,7 +183,7 @@ fn transact_from_para_to_para_through_asset_hub() {
 		transfer_and_transact_in_same_xcm(destination, usdt_to_send, receiver.clone().into(), call);
 
 		// verify expected events;
-		PenpalA::assert_xcm_pallet_attempted_complete(None);
+		PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 	});
 	AssetHubZagros::execute_with(|| {
 		let sov_penpal_a_on_ah = AssetHubZagros::sovereign_account_id_of(
@@ -362,7 +372,7 @@ fn transact_using_authorized_alias_from_para_to_asset_hub_and_back_to_para() {
 		.unwrap();
 
 		// verify expected events;
-		PenpalA::assert_xcm_pallet_attempted_complete(None);
+		PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 
 		let msg_sent_id = find_xcm_sent_message_id::<PenpalA>().expect("Missing Sent Event");
 		topic_id_tracker.insert("PenpalA_sent", msg_sent_id.into());
@@ -571,7 +581,7 @@ fn transact_using_sov_account_from_para_to_asset_hub_and_back_to_para() {
 		.unwrap();
 
 		// verify expected events;
-		PenpalA::assert_xcm_pallet_attempted_complete(None);
+		PenpalA::assert_xcm_pezpallet_attempted_complete(None);
 
 		let msg_sent_id = find_xcm_sent_message_id::<PenpalA>().expect("Missing Sent Event");
 		topic_id_tracker.insert("PenpalA_sent", msg_sent_id.into());
@@ -636,9 +646,9 @@ fn asset_hub_hop_assertions(sender_sa: AccountId) {
 		vec![
 			// Withdrawn from sender teyrchain SA
 			RuntimeEvent::Assets(
-				pezpallet_assets::Event::Burned { owner, .. }
+				pezpallet_assets::Event::Withdrawn { who, .. }
 			) => {
-				owner: *owner == sender_sa,
+				who: *who == sender_sa,
 			},
 			RuntimeEvent::MessageQueue(
 				pezpallet_message_queue::Event::Processed { success: true, .. }

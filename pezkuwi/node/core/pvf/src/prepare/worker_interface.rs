@@ -208,7 +208,7 @@ async fn handle_response(
 	preparation_timeout: Duration,
 ) -> Outcome {
 	// TODO: Add `checksum` to `ArtifactPathId`. See:
-	//       https://github.com/pezkuwichain/pezkuwi-sdk/issues/122
+	//       https://github.com/pezkuwichain/pezkuwi-DKS/issues/122
 	let PrepareWorkerSuccess {
 		checksum,
 		stats: PrepareStats { cpu_time_elapsed, memory_stats, observed_wasm_code_len },

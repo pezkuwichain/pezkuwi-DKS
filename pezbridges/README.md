@@ -31,14 +31,14 @@ rustup target add wasm32-unknown-unknown --toolchain nightly
 Once this is configured you can build and test the repo as follows:
 
 ```
-git clone https://github.com/pezkuwichain/pezkuwi-sdk/tree/main/bridges
+git clone https://github.com/pezkuwichain/pezkuwi-DKS/tree/main/bridges
 cd parity-bridges-common
 cargo build --all
 cargo test --all
 ```
 
 Also you can build the repo with [Parity CI Docker
-image](https://github.com/pezkuwichain/scripts/tree/master/dockerfiles/ci-unified):
+image](https://github.com/paritytech/scripts/tree/master/dockerfiles/ci-unified):
 
 ```bash
 docker pull paritytech/ci-unified:latest
@@ -54,7 +54,7 @@ docker run --rm -it -w /shellhere/parity-bridges-common \
 ```
 
 If you want to reproduce other steps of CI process you can use the following
-[guide](https://github.com/pezkuwichain/scripts#reproduce-ci-locally).
+[guide](https://github.com/paritytech/scripts#reproduce-ci-locally).
 
 If you need more information about setting up your development environment [Bizinikiwi's Installation
 page](https://docs.pezkuwichain.io/main-docs/install/) is a good resource.
@@ -113,4 +113,4 @@ messages between chains.
 
 Apart from live pezkuwichain <> zagros bridge, you may spin up local networks and test see how it works locally. More
 details may be found in
-[this document](https://github.com/pezkuwichain/pezkuwi-sdk/tree/main//pezcumulus/parachains/runtimes/bridge-hubs/README.md).
+[this document](https://github.com/pezkuwichain/pezkuwi-DKS/tree/main//pezcumulus/parachains/runtimes/bridge-hubs/README.md).

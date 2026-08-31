@@ -36,13 +36,13 @@ use pezsp_runtime::traits::BlakeTwo256;
 /// Directly via crates.io:
 ///
 /// ```sh
-/// cargo install frame-omni-bencher --profile=production
+/// cargo install pezframe-omni-bencher --profile=production
 /// ```
 ///
 /// from GitHub:
 ///
 /// ```sh
-/// cargo install --git https://github.com/pezkuwichain/pezkuwi-sdk frame-omni-bencher --profile=production
+/// cargo install --git https://github.com/pezkuwichain/pezkuwi-DKS pezframe-omni-bencher --profile=production
 /// ```
 ///
 /// or locally from the sources:
@@ -54,7 +54,7 @@ use pezsp_runtime::traits::BlakeTwo256;
 /// Check the installed version and print the docs:
 ///
 /// ```sh
-/// frame-omni-bencher --help
+/// pezframe-omni-bencher --help
 /// ```
 ///
 /// ## Usage
@@ -69,7 +69,7 @@ use pezsp_runtime::traits::BlakeTwo256;
 /// Now as an example, we benchmark the `balances` pezpallet:
 ///
 /// ```sh
-/// frame-omni-bencher v1 benchmark pezpallet \
+/// pezframe-omni-bencher v1 benchmark pezpallet \
 ///     --runtime target/release/wbuild/zagros-runtime/zagros-runtime.compact.compressed.wasm \
 ///     --pezpallet "pezpallet_balances" --extrinsic ""
 /// ```

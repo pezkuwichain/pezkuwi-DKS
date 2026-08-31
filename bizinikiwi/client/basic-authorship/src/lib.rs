@@ -20,9 +20,9 @@
 //!
 //! # Example
 //!
-//! ```no_run
+//! ```
 //! # use pezsc_basic_authorship::ProposerFactory;
-//! # use pezsp_consensus::{Environment, Proposer};
+//! # use pezsp_consensus::{Environment, Proposer, ProposeArgs};
 //! # use pezsp_runtime::generic::BlockId;
 //! # use std::{sync::Arc, time::Duration};
 //! # use bizinikiwi_test_runtime_client::{
@@ -60,10 +60,10 @@
 //! // The proposer will grab transactions from the transaction pool, and put them into the block.
 //! let future = Proposer::propose(
 //! 	proposer,
-//! 	Default::default(),
-//! 	Default::default(),
-//! 	Duration::from_secs(2),
-//! 	None,
+//!     ProposeArgs {
+//! 	    max_duration: Duration::from_secs(2),
+//! 	    ..Default::default()
+//!     }
 //! );
 //!
 //! // We wait until the proposition is performed.
@@ -73,6 +73,5 @@
 
 mod basic_authorship;
 
-pub use crate::basic_authorship::{
-	ProposeArgs, Proposer, ProposerFactory, DEFAULT_BLOCK_SIZE_LIMIT,
-};
+pub use crate::basic_authorship::{Proposer, ProposerFactory, DEFAULT_BLOCK_SIZE_LIMIT};
+pub use pezsp_consensus::ProposeArgs;

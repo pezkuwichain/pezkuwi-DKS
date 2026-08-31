@@ -21,7 +21,6 @@ use crate::{ParaHash, ParaId, RelayBlockHash, RelayBlockNumber};
 use codec::{Decode, Encode};
 use pezbp_pezkuwi_core::teyrchains::ParaHeadsProof;
 use pezbp_runtime::HeaderId;
-use pezsp_runtime::RuntimeDebug;
 use pezsp_std::vec::Vec;
 use scale_info::TypeInfo;
 
@@ -44,7 +43,7 @@ pub enum BridgeTeyrchainCall {
 /// Info about a `SubmitTeyrchainHeads` call which tries to update a single teyrchain.
 ///
 /// The pezpallet supports updating multiple teyrchain heads at once,
-#[derive(PartialEq, RuntimeDebug)]
+#[derive(PartialEq, Debug)]
 pub struct SubmitTeyrchainHeadsInfo {
 	/// Number and hash of the finalized relay block that has been used to prove teyrchain
 	/// finality.

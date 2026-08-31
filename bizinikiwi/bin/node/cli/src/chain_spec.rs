@@ -25,7 +25,7 @@ use pez_kitchensink_runtime::{
 	wasm_binary_unwrap, Block, MaxNominations, StakerStatus,
 };
 use pezpallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use pezpallet_revive::is_eth_derived;
+use pezpallet_revive::AddressMapper;
 use pezsc_chain_spec::ChainSpecExtension;
 use pezsc_service::ChainType;
 use pezsc_service::Properties;
@@ -364,7 +364,7 @@ pub fn testnet_genesis_patch(
 			"key": root_key,
 		},
 		"revive": {
-			"mappedAccounts": endowed_accounts.iter().filter(|x| ! is_eth_derived(x)).cloned().collect::<Vec<_>>()
+			"mappedAccounts": endowed_accounts.iter().filter(|x| !<pez_kitchensink_runtime::Runtime as pezpallet_revive::Config>::AddressMapper::is_eth_derived(x)).cloned().collect::<Vec<_>>()
 		}
 	})
 }

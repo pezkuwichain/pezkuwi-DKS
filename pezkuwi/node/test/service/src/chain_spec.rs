@@ -17,7 +17,7 @@
 //! Chain specifications for the test runtime.
 
 use pezkuwi_primitives::{
-	node_features, AccountId, AssignmentId, NodeFeatures, SchedulerParams, ValidatorId,
+	node_features, vstaging::SchedulerParams, AccountId, AssignmentId, NodeFeatures, ValidatorId,
 	MAX_CODE_SIZE, MAX_POV_SIZE,
 };
 use pezkuwi_service::chain_spec::Extensions;
@@ -32,9 +32,9 @@ use pezsp_keyring::Sr25519Keyring;
 use pezsp_runtime::Perbill;
 use peztest_runtime_constants::currency::DOTS;
 
-const DEFAULT_PROTOCOL_ID: &str = "hez";
+const DEFAULT_PROTOCOL_ID: &str = "dot";
 
-/// The `ChainSpec` parameterized for pezkuwi test runtime.
+/// The `ChainSpec` parameterized for polkadot test runtime.
 pub type PezkuwiChainSpec = pezsc_service::GenericChainSpec<Extensions>;
 
 /// Returns the properties for the [`PezkuwiChainSpec`].
@@ -90,7 +90,7 @@ fn testnet_accounts() -> Vec<AccountId> {
 	Sr25519Keyring::well_known().map(|k| k.to_account_id()).collect()
 }
 
-/// Helper function to create pezkuwi `RuntimeGenesisConfig` for testing
+/// Helper function to create polkadot `RuntimeGenesisConfig` for testing
 fn pezkuwi_testnet_genesis(
 	initial_authorities: Vec<(
 		AccountId,

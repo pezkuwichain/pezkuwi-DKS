@@ -22,7 +22,7 @@ use core::{fmt::Debug, ops::Mul};
 use pezsp_arithmetic::PerThing;
 
 /// an aggregator trait for a generic type of a voter/target identifier. This usually maps to
-/// bizinikiwi's account id.
+/// substrate's account id.
 pub trait IdentifierT: Clone + Eq + Ord + Debug + codec::Codec {}
 impl<T: Clone + Eq + Ord + Debug + codec::Codec> IdentifierT for T {}
 

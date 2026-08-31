@@ -20,15 +20,13 @@ use codec::{Decode, Encode};
 use pezkuwi_subxt::{
 	client::RuntimeVersion as SubxtRuntimeVersion,
 	config::{bizinikiwi::BizinikiwiExtrinsicParamsBuilder as ParamsBuilder, HashFor},
-	BizinikiwConfig, Config, OfflineClient,
+	BizinikiwiConfig, Config, OfflineClient,
 };
 use pezsc_client_api::UsageProvider;
 use pezsp_api::{ApiExt, Core, Metadata, ProvideRuntimeApi};
 use pezsp_runtime::{traits::Block as BlockT, OpaqueExtrinsic};
 use std::sync::Arc;
 
-/// Bizinikiwi configuration
-pub type BizinikiwiConfig = BizinikiwConfig;
 /// Bizinikiwi extrinsic params builder
 pub type BizinikiwiExtrinsicParamsBuilder = ParamsBuilder<BizinikiwiConfig>;
 

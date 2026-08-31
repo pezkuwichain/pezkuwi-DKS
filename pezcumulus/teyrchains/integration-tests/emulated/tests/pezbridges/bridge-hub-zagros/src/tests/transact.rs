@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::tests::{snowbridge_common::snowbridge_sovereign, *};
+use crate::tests::{snowbridge_common::pezsnowbridge_sovereign, *};
 use pezsp_core::Get;
 use xcm::latest::AssetTransferFilter;
 
@@ -24,10 +24,10 @@ const ETHEREUM_BOB: [u8; 20] = hex_literal::hex!("11b0b11000011b0b11000011b0b110
 ///
 /// This particular test is not testing snowbridge, but only Bridge Hub, so the tested XCM flow from
 /// Ethereum starts from Bridge Hub.
-// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/292): Once Snowbridge supports Transact, start the flow from Ethereum and test completely e2e.
+// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/292): Once Snowbridge supports Transact, start the flow from Ethereum and test completely e2e.
 /// What the Asset Hub leg charges, paid out of the WETH the message carries.
 ///
-/// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/290): dry-run to get local fees, for
+/// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/290): dry-run to get local fees, for
 /// now use a hardcoded value. Current exact value 79_948_099_299.
 const AH_FEES_AMOUNT: u128 = 90_000_000_000;
 
@@ -89,7 +89,7 @@ fn transfer_and_transact_in_same_xcm(
 ///
 /// This particular test is not testing snowbridge, but only Bridge Hub, so the tested XCM flow from
 /// Ethereum starts from Bridge Hub.
-// TODO(https://github.com/pezkuwichain/pezkuwi-sdk/issues/292): Once Snowbridge supports Transact, start the flow from Ethereum and test completely e2e.
+// TODO(https://github.com/pezkuwichain/pezkuwi-DKS/issues/292): Once Snowbridge supports Transact, start the flow from Ethereum and test completely e2e.
 #[test]
 fn transact_from_ethereum_to_penpalb_through_asset_hub() {
 	// Snowbridge doesn't support transact yet, we are emulating it by sending one from Bridge Hub
@@ -141,24 +141,23 @@ fn transact_from_ethereum_to_penpalb_through_asset_hub() {
 	AssetHubZagros::fund_accounts(vec![
 		(sov_of_sender_on_asset_hub.clone().into(), ASSET_HUB_ZAGROS_ED),
 		(sov_of_receiver_on_asset_hub.clone().into(), ASSET_HUB_ZAGROS_ED),
-		(snowbridge_sovereign().into(), 10_000_000_000_00),
+		(pezsnowbridge_sovereign().into(), 10_000_000_000_00),
 	]);
 
 	// We create a pool between ZGR and WETH in AssetHub to support paying for fees with WETH.
-	let snowbridge_sovereign = snowbridge_sovereign();
-	create_pool_with_native_on!(
+	let pezsnowbridge_sovereign = pezsnowbridge_sovereign();
+	create_foreign_pool_with_parent_native_on!(
 		AssetHubZagros,
 		bridged_weth.clone(),
-		true,
-		snowbridge_sovereign,
+		pezsnowbridge_sovereign.clone(),
 		1_000_000_000_000,
 		20_000_000_000
 	);
 	// We also need a pool between ZGR and WETH on PenpalB to support paying for fees with WETH.
-	create_pool_with_native_on!(
+	create_foreign_pool_with_native_on!(
 		PenpalB,
+		ForeignAssets,
 		bridged_weth.clone(),
-		true,
 		PenpalAssetOwner::get(),
 		1_000_000_000_000,
 		20_000_000_000

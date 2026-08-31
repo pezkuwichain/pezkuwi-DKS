@@ -19,7 +19,7 @@
 use codec::Encode;
 use pezframe_support::weights::Weight;
 use pezkuwi_test_client::{
-	BlockBuilderExt, ClientBlockImportExt, DefaultTestClientBuilderExt, InitPezkuwiBlockBuilder,
+	BlockBuilderExt, ClientBlockImportExt, DefaultTestClientBuilderExt, InitPolkadotBlockBuilder,
 	TestClientBuilder, TestClientBuilderExt,
 };
 use pezkuwi_test_runtime::{pezpallet_test_notifier, xcm_config::XcmConfig};
@@ -328,7 +328,7 @@ fn query_response_elicits_handler() {
 /// Simulates a cross-chain message from Teyrchain to Teyrchain through Relay Chain
 /// that deposits assets into the reserve of the destination.
 /// Regression test for `DepositReserveAsset` changes in
-/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/259>
+/// <https://github.com/pezkuwichain/pezkuwi-DKS/pull/3340>
 #[test]
 fn deposit_reserve_asset_works_for_any_xcm_sender() {
 	pezsp_tracing::try_init_simple();
@@ -337,9 +337,9 @@ fn deposit_reserve_asset_works_for_any_xcm_sender() {
 	// Init values for the simulated origin Teyrchain
 	let amount_to_send: u128 = 1_000_000_000_000;
 	let assets: Assets = (Parent, amount_to_send).into();
-	let fee_asset_id: AssetId = Parent.into();
+	let fee_asset_item = 0;
 	let max_assets = assets.len() as u32;
-	let fees = assets.inner().iter().find(|a| a.id == fee_asset_id).unwrap().clone();
+	let fees = assets.get(fee_asset_item as usize).unwrap().clone();
 	let weight_limit = Unlimited;
 	let reserve = Location::parent();
 	let dest = Location::new(1, [Teyrchain(2000)]);

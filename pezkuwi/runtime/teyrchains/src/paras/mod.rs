@@ -127,7 +127,6 @@ use pezkuwi_primitives::{
 	ConsensusLog, HeadData, Id as ParaId, PvfCheckStatement, SessionIndex, UpgradeGoAhead,
 	UpgradeRestriction, ValidationCode, ValidationCodeHash, ValidatorSignature, MIN_CODE_SIZE,
 };
-use pezsp_core::RuntimeDebug;
 use pezsp_runtime::{
 	traits::{AppVerify, One, Saturating},
 	DispatchResult, SaturatedConversion,
@@ -183,7 +182,7 @@ pub struct ParaPastCodeMeta<N> {
 /// If the para is in a "transition state", it is expected that the teyrchain is
 /// queued in the `ActionsQueue` to transition it into a stable state. Its lifecycle
 /// state will be used to determine the state transition to apply to the para.
-#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(PartialEq, Eq, Clone, Encode, Decode, Debug, TypeInfo)]
 pub enum ParaLifecycle {
 	/// Para is new and is onboarding as an on-demand or lease holding Teyrchain.
 	Onboarding,
@@ -301,7 +300,7 @@ impl<N: Ord + Copy + PartialEq> ParaPastCodeMeta<N> {
 	Encode,
 	Decode,
 	DecodeWithMemTracking,
-	RuntimeDebug,
+	Debug,
 	TypeInfo,
 	Serialize,
 	Deserialize,
@@ -317,7 +316,7 @@ pub struct ParaGenesisArgs {
 }
 
 /// Distinguishes between lease holding Teyrchain and Parathread (on-demand teyrchain)
-#[derive(DecodeWithMemTracking, PartialEq, Eq, Clone, RuntimeDebug)]
+#[derive(DecodeWithMemTracking, PartialEq, Eq, Clone, Debug)]
 pub enum ParaKind {
 	Parathread,
 	Teyrchain,
@@ -398,7 +397,7 @@ pub(crate) enum PvfCheckCause<BlockNumber> {
 		/// instead of its relay parent -- in order to keep PVF available in case of chain
 		/// reversions.
 		///
-		/// See https://github.com/pezkuwichain/pezkuwi-sdk/issues/294 for detailed explanation.
+		/// See https://github.com/paritytech/polkadot/issues/4601 for detailed explanation.
 		included_at: BlockNumber,
 		/// Whether or not the upgrade should be enacted directly.
 		///
@@ -439,7 +438,7 @@ impl<BlockNumber> PvfCheckCause<BlockNumber> {
 }
 
 /// Specifies what was the outcome of a PVF pre-checking vote.
-#[derive(Copy, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
+#[derive(Copy, Clone, Encode, Decode, Debug, TypeInfo)]
 enum PvfCheckOutcome {
 	Accepted,
 	Rejected,
@@ -707,9 +706,8 @@ pub mod pezpallet {
 
 		/// The origin that can authorize [`Pezpallet::authorize_force_set_current_code_hash`].
 		///
-		/// In the end this allows [`Pezpallet::apply_authorized_force_set_current_code`] to force
-		/// set the current code without paying any fee. So, the origin should be chosen with
-		/// care.
+		/// In the end this allows [`Pezpallet::apply_authorized_force_set_current_code`] to force set
+		/// the current code without paying any fee. So, the origin should be chosen with care.
 		type AuthorizeCurrentCodeOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 	}
 
@@ -1367,6 +1365,7 @@ pub mod pezpallet {
 		}
 	}
 
+	#[allow(deprecated)]
 	#[pezpallet::validate_unsigned]
 	impl<T: Config> ValidateUnsigned for Pezpallet<T> {
 		type Call = Call<T>;
@@ -1464,7 +1463,7 @@ const INVALID_TX_DOUBLE_VOTE: u8 = 3;
 const INVALID_TX_UNAUTHORIZED_CODE: u8 = 4;
 
 /// This is intermediate "fix" for this issue:
-/// <https://github.com/pezkuwichain/pezkuwi-sdk/issues/281>
+/// <https://github.com/pezkuwichain/pezkuwi-DKS/issues/4737>
 ///
 /// It does not actually fix it, but makes the worst case better. Without that limit someone
 /// could completely DoS the relay chain by registering a ridiculously high amount of paras.
@@ -1569,7 +1568,7 @@ impl<T: Config> Pezpallet<T> {
 		for para in actions {
 			let lifecycle = ParaLifecycles::<T>::get(&para);
 			match lifecycle {
-				None | Some(ParaLifecycle::Parathread) | Some(ParaLifecycle::Teyrchain) => { /* Nothing to do... */
+				None | Some(ParaLifecycle::Parathread) | Some(ParaLifecycle::Teyrchain) => { // Nothing to do...
 				},
 				Some(ParaLifecycle::Onboarding) => {
 					if let Some(genesis_data) = UpcomingParasGenesis::<T>::take(&para) {
@@ -2085,7 +2084,7 @@ impl<T: Config> Pezpallet<T> {
 		//
 		// This is only an intermediate solution and should be fixed in foreseeable future.
 		//
-		// [soaking issue]: https://github.com/pezkuwichain/pezkuwi-sdk/issues/146
+		// [soaking issue]: https://github.com/paritytech/polkadot/issues/3918
 		let validation_code =
 			mem::replace(&mut genesis_data.validation_code, ValidationCode(Vec::new()));
 		UpcomingParasGenesis::<T>::insert(&id, genesis_data);

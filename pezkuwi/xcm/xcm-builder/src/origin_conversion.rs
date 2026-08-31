@@ -301,8 +301,8 @@ where
 /// `Convert` implementation to convert from some an origin which implements `Backing` into a
 /// corresponding `Plurality` `Location`.
 ///
-/// Typically used when configuring `pezpallet-xcm` for allowing a collective's Origin to dispatch
-/// an XCM from a `Plurality` origin.
+/// Typically used when configuring `pezpallet-xcm` for allowing a collective's Origin to dispatch an
+/// XCM from a `Plurality` origin.
 pub struct BackingToPlurality<RuntimeOrigin, COrigin, Body>(
 	PhantomData<(RuntimeOrigin, COrigin, Body)>,
 );

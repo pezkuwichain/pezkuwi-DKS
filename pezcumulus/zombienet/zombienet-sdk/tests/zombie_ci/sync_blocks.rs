@@ -28,12 +28,7 @@ async fn sync_blocks_from_tip_without_connected_collator() -> Result<(), anyhow:
 	let relay_client: OnlineClient<PezkuwiConfig> = relay_alice.wait_client().await?;
 
 	log::info!("Ensuring teyrchain making progress");
-	assert_para_throughput(
-		&relay_client,
-		10,
-		[(ParaId::from(PARA_ID), 5..11)].into_iter().collect(),
-	)
-	.await?;
+	assert_para_throughput(&relay_client, 10, [(ParaId::from(PARA_ID), 5..11)], []).await?;
 
 	let para_ferdie = network.get_node("ferdie")?;
 	let para_eve = network.get_node("eve")?;
@@ -76,7 +71,7 @@ async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
 		.with_relaychain(|r| {
 			r.with_chain("pezkuwichain-local")
 				.with_default_command("pezkuwi")
-				.with_default_image(images.polkadot.as_str())
+				.with_default_image(images.pezkuwi())
 				.with_default_args(vec![("-lteyrchain=debug").into()])
 				.with_default_resources(|resources| {
 					// These settings are applicable only for `k8s` provider.

@@ -583,11 +583,13 @@ mod tests {
 			Err("Can't load the module into wasmi!")
 		);
 
+		// `anyfunc` is the pre-reference-types spelling of `funcref`; the `wat` version this
+		// tree now builds against only accepts the current one.
 		prepare_test!(
 			table_import,
 			r#"
 			(module
-				(import "seal0" "table" (table 1 anyfunc))
+				(import "seal0" "table" (table 1 funcref))
 
 				(func (export "call"))
 				(func (export "deploy"))

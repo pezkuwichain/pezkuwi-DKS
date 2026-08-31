@@ -23,10 +23,7 @@ pub use call_info::XcmBridgeHubCall;
 use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use pezbp_messages::LaneIdType;
 use pezbp_runtime::{AccountIdOf, BalanceOf, Chain};
-use pezframe_support::{
-	ensure, pezsp_runtime::RuntimeDebug, CloneNoBound, PalletError, PartialEqNoBound,
-	RuntimeDebugNoBound,
-};
+use pezframe_support::{ensure, CloneNoBound, DebugNoBound, PalletError, PartialEqNoBound};
 use pezsp_core::H256;
 use pezsp_io::hashing::blake2_256;
 use pezsp_std::boxed::Box;
@@ -142,7 +139,7 @@ impl LocalXcmChannelManager for () {
 }
 
 /// Bridge state.
-#[derive(Clone, Copy, Decode, Encode, Eq, PartialEq, TypeInfo, MaxEncodedLen, RuntimeDebug)]
+#[derive(Clone, Copy, Decode, Encode, Eq, PartialEq, TypeInfo, MaxEncodedLen, Debug)]
 pub enum BridgeState {
 	/// Bridge is opened. Associated lanes are also opened.
 	Opened,
@@ -158,7 +155,7 @@ pub enum BridgeState {
 
 /// Bridge metadata.
 #[derive(
-	CloneNoBound, Decode, Encode, Eq, PartialEqNoBound, TypeInfo, MaxEncodedLen, RuntimeDebugNoBound,
+	CloneNoBound, Decode, Encode, Eq, PartialEqNoBound, TypeInfo, MaxEncodedLen, DebugNoBound,
 )]
 #[scale_info(skip_type_params(ThisChain, LaneId))]
 pub struct Bridge<ThisChain: Chain, LaneId: LaneIdType> {
@@ -185,7 +182,7 @@ pub struct Bridge<ThisChain: Chain, LaneId: LaneIdType> {
 }
 
 /// Locations of bridge endpoints at both sides of the bridge.
-#[derive(Clone, RuntimeDebug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BridgeLocations {
 	/// Relative (to this bridge hub) location of this side of the bridge.
 	bridge_origin_relative_location: Location,
@@ -198,9 +195,7 @@ pub struct BridgeLocations {
 }
 
 /// Errors that may happen when we check bridge locations.
-#[derive(
-	Encode, Decode, DecodeWithMemTracking, RuntimeDebug, PartialEq, Eq, PalletError, TypeInfo,
-)]
+#[derive(Encode, Decode, DecodeWithMemTracking, Debug, PartialEq, Eq, PalletError, TypeInfo)]
 pub enum BridgeLocationsError {
 	/// Origin or destination locations are not universal.
 	NonUniversalLocation,

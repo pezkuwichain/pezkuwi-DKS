@@ -23,7 +23,7 @@ use partial::PezkuwiPartialComponents;
 pub(crate) use partial::{new_partial, new_partial_basics};
 
 use crate::{
-	grandpa_support, open_database,
+	open_database,
 	overseer::{ExtendedOverseerGenArgs, OverseerGen, OverseerGenArgs},
 	relay_chain_selection::SelectRelayChain,
 	teyrchains_db, workers, Chain, Error, FullBackend, FullClient, IdentifyVariant,
@@ -32,6 +32,7 @@ use crate::{
 use gum::info;
 use pezframe_benchmarking_cli::BIZINIKIWI_REFERENCE_HARDWARE;
 use pezkuwi_availability_recovery::FETCH_CHUNKS_THRESHOLD;
+use pezkuwi_collator_protocol::ReputationConfig;
 use pezkuwi_node_core_approval_voting::Config as ApprovalVotingConfig;
 use pezkuwi_node_core_av_store::Config as AvailabilityConfig;
 use pezkuwi_node_core_candidate_validation::Config as CandidateValidationConfig;
@@ -97,6 +98,10 @@ pub struct NewFullParams<OverseerGenerator: OverseerGen> {
 	pub invulnerable_ah_collators: HashSet<pezkuwi_node_network_protocol::PeerId>,
 	/// Override for `HOLD_OFF_DURATION` constant .
 	pub collator_protocol_hold_off: Option<Duration>,
+	/// Use experimental collator protocol
+	pub experimental_collator_protocol: bool,
+	/// Collator reputation persistence interval. If None, defaults to 600 seconds.
+	pub collator_reputation_persist_interval: Option<Duration>,
 }
 
 /// Completely built pezkuwi node service.
@@ -208,6 +213,8 @@ where
 					keep_finalized_for,
 					invulnerable_ah_collators,
 					collator_protocol_hold_off,
+					experimental_collator_protocol,
+					collator_reputation_persist_interval,
 				},
 			overseer_connector,
 			partial_components:
@@ -231,22 +238,17 @@ where
 		let force_authoring = config.force_authoring;
 		let disable_grandpa = config.disable_grandpa;
 		let name = config.network.node_name.clone();
-		let backoff_authoring_blocks = if !force_authoring_backoff
-			&& (config.chain_spec.is_pezkuwi() || config.chain_spec.is_dicle())
-		{
+		let chain = config.chain_spec.identify_chain();
+		let backoff_authoring_blocks = if !force_authoring_backoff && chain.is_production() {
 			// the block authoring backoff is disabled by default on production networks
 			None
 		} else {
 			let mut backoff =
 				pezsc_consensus_slots::BackoffAuthoringOnFinalizedHeadLagging::default();
 
-			if config.chain_spec.is_pezkuwichain()
-				|| config.chain_spec.is_versi()
-				|| config.chain_spec.is_dev()
-			{
-				// on testnets that are in flux (like pezkuwichain or versi), finality has stalled
-				// sometimes due to operational issues and it's annoying to slow down block
-				// production to 1 block per hour.
+			if chain == Chain::Zagros || config.chain_spec.is_dev() {
+				// on a testnet in flux, finality has stalled sometimes due to operational issues
+				// and it's annoying to slow down block production to 1 block per hour.
 				backoff.max_interval = 10;
 			}
 
@@ -359,11 +361,10 @@ where
 			IncomingRequest::get_config_receiver::<_, Network>(&req_protocol_names);
 		net_config.add_request_response_protocol(cfg);
 
-		let grandpa_hard_forks = if config.chain_spec.is_dicle() {
-			grandpa_support::dicle_hard_forks()
-		} else {
-			Vec::new()
-		};
+		// GRANDPA hard forks are per-network recovery data for a specific historical incident.
+		// Neither of our chains has one, and inheriting another network's would ask GRANDPA to
+		// substitute an authority set at block heights that mean nothing here.
+		let grandpa_hard_forks = Vec::new();
 
 		let warp_sync = Arc::new(pezsc_consensus_grandpa::warp_proof::NetworkProvider::new(
 			backend.clone(),
@@ -421,21 +422,26 @@ where
 				stagnant_check_interval: Default::default(),
 				stagnant_check_mode: chain_selection_subsystem::StagnantCheckMode::PruneOnly,
 			};
+			let reputation_config = ReputationConfig {
+				col_reputation_data: teyrchains_db::REAL_COLUMNS.col_collator_reputation_data,
+				persist_interval: collator_reputation_persist_interval,
+			};
 
-			// Dicle + testnets get a higher threshold, we are conservative on Pezkuwi for now.
+			// Testnets get a higher threshold; we stay conservative on the production network,
+			// where recovering from chunks rather than the full PoV is the safer default.
 			let fetch_chunks_threshold =
-				if config.chain_spec.is_pezkuwi() { None } else { Some(FETCH_CHUNKS_THRESHOLD) };
+				if chain.is_production() { None } else { Some(FETCH_CHUNKS_THRESHOLD) };
 
 			let availability_config = AvailabilityConfig {
 				col_data: teyrchains_db::REAL_COLUMNS.col_availability_data,
 				col_meta: teyrchains_db::REAL_COLUMNS.col_availability_meta,
-				keep_finalized_for: if matches!(
-					config.chain_spec.identify_chain(),
-					Chain::Pezkuwichain
-				) {
-					keep_finalized_for.unwrap_or(1)
-				} else {
+				// A live network keeps finalized availability data long enough to serve peers
+				// that are catching up; a testnet only needs it long enough to make progress,
+				// and paying the retention there is pointless disk.
+				keep_finalized_for: if chain.is_production() {
 					KEEP_FINALIZED_FOR_LIVE_NETWORKS
+				} else {
+					keep_finalized_for.unwrap_or(1)
 				},
 			};
 
@@ -455,6 +461,8 @@ where
 				fetch_chunks_threshold,
 				invulnerable_ah_collators,
 				collator_protocol_hold_off,
+				experimental_collator_protocol,
+				reputation_config,
 			})
 		};
 
@@ -465,6 +473,7 @@ where
 				client: client.clone(),
 				transaction_pool: transaction_pool.clone(),
 				spawn_handle: task_manager.spawn_handle(),
+				spawn_essential_handle: task_manager.spawn_essential_handle(),
 				import_queue,
 				block_announce_validator_builder: None,
 				warp_sync_config: Some(WarpSyncConfig::WithProvider(warp_sync)),
@@ -794,7 +803,7 @@ where
 		let config = pezsc_consensus_grandpa::Config {
 			// FIXME bizinikiwi#1578 make this available through chainspec
 			// Grandpa performance can be improved a bit by tuning this parameter, see:
-			// https://github.com/pezkuwichain/pezkuwi-sdk/issues/157
+			// https://github.com/pezkuwichain/pezkuwi-DKS/issues/157
 			gossip_duration: Duration::from_millis(1000),
 			justification_generation_period: GRANDPA_JUSTIFICATION_PERIOD,
 			name: Some(name),

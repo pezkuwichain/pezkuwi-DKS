@@ -24,7 +24,6 @@ use pezframe_support::traits::{
 };
 use pezsp_runtime::traits::TryConvert;
 use xcm::prelude::*;
-use xcm_executor::traits::WaiveDeliveryFees;
 
 /// Implementation of the `pezframe_support::traits::tokens::Pay` trait, to allow
 /// for XCM-based payments of a given `Balance` of some asset ID existing on some chain under
@@ -56,7 +55,7 @@ use xcm_executor::traits::WaiveDeliveryFees;
 /// fee is waived.
 pub type PayOverXcm<
 	Interior,
-	Router,
+	XcmConfig,
 	Querier,
 	Timeout,
 	Beneficiary,
@@ -66,9 +65,8 @@ pub type PayOverXcm<
 > = PayOverXcmWithHelper<
 	Interior,
 	TransferOverXcmHelper<
-		Router,
+		XcmConfig,
 		Querier,
-		WaiveDeliveryFees,
 		Timeout,
 		Beneficiary,
 		AssetKind,
@@ -143,14 +141,14 @@ where
 pub type PayAccountId32OnChainOverXcm<
 	DestinationChain,
 	Interior,
-	Router,
+	XcmConfig,
 	Querier,
 	Timeout,
 	Beneficiary,
 	AssetKind,
 > = PayOverXcm<
 	Interior,
-	Router,
+	XcmConfig,
 	Querier,
 	Timeout,
 	Beneficiary,

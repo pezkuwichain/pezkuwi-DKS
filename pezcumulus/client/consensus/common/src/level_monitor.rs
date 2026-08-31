@@ -2,18 +2,18 @@
 // This file is part of Pezcumulus.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
-// Pezcumulus is free software: you can redistribute it and/or modify
+// Cumulus is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Pezcumulus is distributed in the hope that it will be useful,
+// Cumulus is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Pezcumulus. If not, see <https://www.gnu.org/licenses/>.
+// along with Cumulus. If not, see <https://www.gnu.org/licenses/>.
 
 use pezsc_client_api::{blockchain::Backend as _, Backend, HeaderBackend as _};
 use pezsp_blockchain::{HashAndNumber, HeaderMetadata, TreeRoute};
@@ -326,7 +326,7 @@ where
 		let mut remove_leaf = |number, hash| {
 			log::debug!(target: LOG_TARGET, "Removing block (@{}) {:?}", number, hash);
 			if let Err(err) = self.backend.remove_leaf_block(hash) {
-				log::debug!(target: LOG_TARGET, "Remove not possible for {hash}: {err}");
+				log::debug!(target: LOG_TARGET, "Remove not possible for {}: {}", hash, err);
 				return false;
 			}
 			self.levels.get_mut(&number).map(|level| level.remove(&hash));

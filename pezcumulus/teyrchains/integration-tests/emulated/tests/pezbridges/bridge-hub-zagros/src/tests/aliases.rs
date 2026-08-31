@@ -36,7 +36,7 @@ const RESERVE_TRANSFER_FEES: bool = false;
 /// message. `ZAGROS_ED * 10` left that half short and the transfer failed before the alias these
 /// tests exist to check was ever attempted. Same figure as the Asset Hub, People and Collectives
 /// copies of these tests, derived on the Asset Hub from measurement.
-const ALIAS_FEES: u128 = ZAGROS_ED * 20;
+const ALIAS_FEES: u128 = ZAGROS_ED * 40;
 
 #[test]
 fn account_on_sibling_syschain_aliases_into_same_local_account() {

@@ -54,23 +54,23 @@ pub const MAX_AUTHORITIES_COUNT: u32 = 100;
 
 /// Name of the With-Pezkuwi Bulletin chain GRANDPA pezpallet instance that is deployed at bridged
 /// chains.
-pub const WITH_PEZKUWI_BULLETIN_GRANDPA_PALLET_NAME: &str = "BridgePezkuwiBulletinGrandpa";
+pub const WITH_POLKADOT_BULLETIN_GRANDPA_PALLET_NAME: &str = "BridgePolkadotBulletinGrandpa";
 /// Name of the With-Pezkuwi Bulletin chain messages pezpallet instance that is deployed at bridged
 /// chains.
-pub const WITH_PEZKUWI_BULLETIN_MESSAGES_PALLET_NAME: &str = "BridgePezkuwiBulletinMessages";
+pub const WITH_POLKADOT_BULLETIN_MESSAGES_PALLET_NAME: &str = "BridgePolkadotBulletinMessages";
 
 // There are fewer system operations on this chain (e.g. staking, governance, etc.). Use a higher
 // percentage of the block for data storage.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(90);
 
-// Re following constants - we are using the same values at Pezcumulus teyrchains. They are limited
+// Re following constants - we are using the same values at Cumulus teyrchains. They are limited
 // by the maximal transaction weight/size. Since block limits at Bulletin Chain are larger than
-// at the Pezcumulus Bridge Hubs, we could reuse the same values.
+// at the Cumulus Bridge Hubs, we could reuse the same values.
 
-/// Maximal number of unrewarded relayer entries at inbound lane for Pezcumulus-based teyrchains.
+/// Maximal number of unrewarded relayer entries at inbound lane for Cumulus-based teyrchains.
 pub const MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX: MessageNonce = 1024;
 
-/// Maximal number of unconfirmed messages at inbound lane for Pezcumulus-based teyrchains.
+/// Maximal number of unconfirmed messages at inbound lane for Cumulus-based teyrchains.
 pub const MAX_UNCONFIRMED_MESSAGES_IN_CONFIRMATION_TX: MessageNonce = 4096;
 
 /// This signed extension is used to ensure that the chain transactions are signed by proper
@@ -125,13 +125,13 @@ impl TransactionExtension {
 		Self(GenericTransactionExtension::new(
 			(
 				(
-					(),              // non-zero sender
-					(),              // spec version
-					(),              // tx version
-					(),              // genesis
-					era.frame_era(), // era
-					nonce.into(),    // nonce (compact encoding)
-					(),              // Check weight
+					(),                 // non-zero sender
+					(),                 // spec version
+					(),                 // tx version
+					(),                 // genesis
+					era.pezframe_era(), // era
+					nonce.into(),       // nonce (compact encoding)
+					(),                 // Check weight
 				),
 				(),
 			),
@@ -166,10 +166,12 @@ parameter_types! {
 	// Note: Max transaction size is 8 MB. Set max block size to 10 MB to facilitate data storage.
 	// This is double the "normal" Relay Chain block length limit.
 	/// Maximal block length at Pezkuwi Bulletin chain.
-	pub BlockLength: limits::BlockLength = limits::BlockLength::max_with_normal_ratio(
-		10 * 1024 * 1024,
-		NORMAL_DISPATCH_RATIO,
-	);
+	pub BlockLength: limits::BlockLength = limits::BlockLength::builder()
+		.max_length(10 * 1024 * 1024)
+		.modify_max_length_for_class(DispatchClass::Normal, |m| {
+			*m = NORMAL_DISPATCH_RATIO * *m
+		})
+		.build();
 }
 
 /// Pezkuwi Bulletin Chain declaration.
@@ -206,7 +208,7 @@ impl Chain for PezkuwiBulletin {
 }
 
 impl ChainWithGrandpa for PezkuwiBulletin {
-	const WITH_CHAIN_GRANDPA_PALLET_NAME: &'static str = WITH_PEZKUWI_BULLETIN_GRANDPA_PALLET_NAME;
+	const WITH_CHAIN_GRANDPA_PALLET_NAME: &'static str = WITH_POLKADOT_BULLETIN_GRANDPA_PALLET_NAME;
 	const MAX_AUTHORITIES_COUNT: u32 = MAX_AUTHORITIES_COUNT;
 	const REASONABLE_HEADERS_IN_JUSTIFICATION_ANCESTRY: u32 =
 		REASONABLE_HEADERS_IN_JUSTIFICATION_ANCESTRY;
@@ -216,7 +218,7 @@ impl ChainWithGrandpa for PezkuwiBulletin {
 
 impl ChainWithMessages for PezkuwiBulletin {
 	const WITH_CHAIN_MESSAGES_PALLET_NAME: &'static str =
-		WITH_PEZKUWI_BULLETIN_MESSAGES_PALLET_NAME;
+		WITH_POLKADOT_BULLETIN_MESSAGES_PALLET_NAME;
 
 	const MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX: MessageNonce =
 		MAX_UNREWARDED_RELAYERS_IN_CONFIRMATION_TX;

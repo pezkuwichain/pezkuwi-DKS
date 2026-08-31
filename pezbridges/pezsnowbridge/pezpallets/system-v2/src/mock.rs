@@ -7,7 +7,7 @@ use pezframe_support::{
 };
 use pezsp_core::H256;
 
-use crate as snowbridge_system_v2;
+use crate as pezsnowbridge_system_v2;
 use pezframe_system::EnsureRootWithSuccess;
 use pezsnowbridge_core::{
 	gwei, meth, sibling_sovereign_account, AllowSiblingsOnly, ParaId, PricingParameters, Rewards,
@@ -38,7 +38,7 @@ pezframe_support::construct_runtime!(
 		Balances: pezpallet_balances::{Pezpallet, Call, Storage, Config<T>, Event<T>},
 		XcmOrigin: pezpallet_xcm_origin::{Pezpallet, Origin},
 		EthereumSystem: pezsnowbridge_pezpallet_system,
-		EthereumSystemV2: snowbridge_system_v2,
+		EthereumSystemV2: pezsnowbridge_system_v2,
 	}
 );
 
