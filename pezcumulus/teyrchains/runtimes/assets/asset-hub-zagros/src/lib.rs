@@ -316,6 +316,14 @@ pub type AssetsForceOrigin = EnsureRoot<AccountId>;
 // Called "Trust Backed" assets because these are generally registered by some account, and users of
 // the asset assume it has some claimed backing. The pezpallet is called `Assets` in
 // `construct_runtime` to avoid breaking changes on storage reads.
+/// The airdrop pot, as a second treasury.
+///
+/// `Instance2` because `Instance1` is free but reads as "the first one of these", and there is
+/// only ever meant to be one ordinary treasury. Numbered rather than named for the same reason
+/// every instance here is: the type is what the storage prefix is derived from, and renaming it
+/// after genesis moves every key it owns.
+pub type AirdropPotInstance = pezpallet_treasury::Instance2;
+
 pub type TrustBackedAssetsInstance = pezpallet_assets::Instance1;
 type TrustBackedAssetsCall = pezpallet_assets::Call<Runtime, TrustBackedAssetsInstance>;
 impl pezpallet_assets::Config<TrustBackedAssetsInstance> for Runtime {
@@ -1289,6 +1297,69 @@ impl pezpallet_treasury::Config for Runtime {
 	type BenchmarkHelper = ();
 }
 
+parameter_types! {
+	/// The airdrop pot: a treasury of its own, holding the 40M HEZ genesis sets aside for
+	/// distribution.
+	///
+	/// A second `pezpallet_treasury` instance rather than a new pallet. Everything this needs
+	/// -- a keyless account nobody holds a key to, a per-spend ceiling bound to an origin, the
+	/// payout machinery -- the treasury already has and upstream already audits. What is left
+	/// to write is the authorisation, and that lives on People with the offices that give it.
+	pub const AirdropPotPalletId: PalletId = PalletId(*b"py/airdr");
+	pub AirdropPotAccount: AccountId = AirdropPot::account_id();
+	/// What one authorised spend may move without a third signature.
+	///
+	/// An exchange listing campaign is a few tenths of a per cent of supply, so a million HEZ
+	/// clears one on two signatures and forty of them cannot empty the pot. Above this the
+	/// People chain requires the Treasurer as well and holds the payment for seven days --
+	/// long enough that a week containing a weekend still leaves five days in which anyone can
+	/// see it coming.
+	pub const AirdropSpendCeiling: Balance = 1_000_000 * UNITS;
+}
+
+/// The airdrop pot.
+///
+/// Deliberately *not* reachable from this chain's own governance tracks. The Asset Hub counts
+/// holdings and the airdrop is not an economic question -- who receives a distribution is a
+/// question for the offices the register seats, and the register is on People. So the only
+/// origin that can spend here is People speaking as itself; a HEZ referendum cannot reach it,
+/// and neither can Root.
+///
+/// `SpendPeriod` and `Burn` are inherited from the main treasury's shape but do nothing here:
+/// nothing is ever burned (HEZ inflates -- burning pays a confiscation out to whoever still
+/// holds some) and there are no proposals to expire, because the only path in is an approved
+/// spend that People has already agreed twice over.
+impl pezpallet_treasury::Config<AirdropPotInstance> for Runtime {
+	type PalletId = AirdropPotPalletId;
+	type Currency = Balances;
+	type RejectOrigin = EnsureRoot<AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	type SpendPeriod = SpendPeriod;
+	type Burn = Burn;
+	type BurnDestination = ();
+	type MaxApprovals = MaxApprovals;
+	type WeightInfo = pezpallet_treasury::weights::BizinikiwiWeight<Runtime>;
+	type SpendFunds = ();
+	// People, and only People -- with a ceiling. `EnsureWithSuccess` is what turns "this
+	// origin may spend" into "this origin may spend up to this much", and the amount it
+	// returns is what the pallet checks the spend against.
+	type SpendOrigin = pezframe_support::traits::EnsureWithSuccess<
+		EnsureXcm<Equals<PeopleLocation>>,
+		AccountId,
+		AirdropSpendCeiling,
+	>;
+	type AssetKind = ();
+	type Beneficiary = AccountId;
+	type BeneficiaryLookup = pezsp_runtime::traits::IdentityLookup<Self::Beneficiary>;
+	type Paymaster =
+		pezframe_support::traits::tokens::pay::PayFromAccount<Balances, AirdropPotAccount>;
+	type BalanceConverter = pezframe_support::traits::tokens::UnityAssetBalanceConversion;
+	type PayoutPeriod = PayoutSpendPeriod;
+	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
+}
+
 // -----------------------------------------------------------------------------
 // AssetRate Pezpallet
 // -----------------------------------------------------------------------------
@@ -1720,6 +1791,7 @@ construct_runtime!(
 		AssetsPrecompilesPermit: pezpallet_assets_precompiles::permit::pezpallet = 67,
 		ChildBounties: pezpallet_child_bounties = 64,
 		Treasury: pezpallet_treasury = 65,
+		AirdropPot: pezpallet_treasury::<AirdropPotInstance> = 66,
 		Revive: pezpallet_revive = 66,
 
 		// PezkuwiChain Custom Pallets

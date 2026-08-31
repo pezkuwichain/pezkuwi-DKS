@@ -1244,6 +1244,31 @@ parameter_types! {
 	/// `pezpallet-parameters` on the Asset Hub, where HEZ's emission rate is stored.
 	pub const WelatiParametersPalletIndex: u8 = 79;
 
+	/// The airdrop pot on the Asset Hub -- `pezpallet_treasury`'s second instance, at 66.
+	///
+	/// Its own index because it is its own pallet over there, sharing only the treasury's
+	/// code. A message addressed to 65 instead would reach the ordinary treasury, which would
+	/// accept it and pay out of the wrong pot; the encoding pin in the Asset Hub's tests is
+	/// what holds the number, not this comment.
+	pub const WelatiAirdropPotPalletIndex: u8 = 66;
+
+	/// What one airdrop may move on two signatures.
+	///
+	/// A million HEZ clears an exchange listing campaign -- those run to a few tenths of a per
+	/// cent of supply -- and forty of them cannot empty a forty-million pot. Above this the
+	/// Treasurer signs too. The Asset Hub enforces the same ceiling on its spend origin; this
+	/// copy exists so the escalation is decided where the offices are, before a message is
+	/// sent that the other chain would refuse.
+	pub const WelatiAirdropCeiling: u128 = 1_000_000 * UNITS;
+
+	/// How long a large airdrop waits after its last signature.
+	///
+	/// Seven days rather than three: a three-day window that falls across a weekend is not a
+	/// window. The wait is the whole value of the third signature -- without it the Treasurer
+	/// signs and the money moves in the same block, and nobody outside the three could object
+	/// in time. Small airdrops do not wait at all.
+	pub const WelatiLargeAirdropDelay: BlockNumber = 7 * DAYS;
+
 	/// The most the Treasurer may move the emission rate in one step: one point.
 	///
 	/// The ceiling on the Asset Hub says how high the rate may ever be; this says how long it
@@ -1398,6 +1423,9 @@ impl pezpallet_welati::Config for Runtime {
 	type TreasuryChainLocation = WelatiTreasuryChain;
 	type TreasuryPalletIndex = WelatiTreasuryPalletIndex;
 	type ParametersPalletIndex = WelatiParametersPalletIndex;
+	type AirdropPotPalletIndex = WelatiAirdropPotPalletIndex;
+	type AirdropCeiling = WelatiAirdropCeiling;
+	type LargeAirdropDelay = WelatiLargeAirdropDelay;
 	type MaxEmissionStep = WelatiMaxEmissionStep;
 	type MinEmissionInterval = WelatiMinEmissionInterval;
 	type PopulationThreshold = WelatiPopulationThreshold;

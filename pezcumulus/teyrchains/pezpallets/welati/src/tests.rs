@@ -6,11 +6,11 @@
 use crate::{
 	mock::{
 		add_parliament_member, endorsed_by, install_prime_minister, last_event, make_citizen,
-		run_to_block, seat_president, ExtBuilder, RuntimeEvent, RuntimeOrigin, System, Test,
-		Welati,
+		run_to_block, seat_president, AirdropCeiling, ExtBuilder, LargeAirdropDelay, RuntimeEvent,
+		RuntimeOrigin, System, Test, Welati,
 	},
 	types::*,
-	Error, Event as WelatiEvent, GovernmentPosition,
+	AirdropProposals, Error, Event as WelatiEvent, GovernmentPosition, NextAirdropId,
 };
 use pezframe_support::{assert_noop, assert_ok, BoundedVec};
 use pezpallet_tiki::Tiki;
@@ -4015,5 +4015,233 @@ fn an_expired_president_holds_no_authority() {
 			Welati::appoint_diwan_member(RuntimeOrigin::signed(president), nominee),
 			Error::<Test>::NotAuthorizedToNominate
 		);
+	});
+}
+
+// ===== THE AIRDROP POT =====
+//
+// Forty million HEZ sits in a keyless treasury instance on the Asset Hub and this chain is the
+// only thing that can spend it. What follows holds the shape of that authority: who may
+// propose, who must sign, when a third signature is required, and that the wait above the
+// ceiling is real rather than decorative.
+//
+// The recipients are usually exchanges, whose customers cannot be enumerated on chain -- which
+// is why the mechanism is discretionary at all. What replaces a rule is the signature count.
+
+const PM: u64 = 7;
+const TREASURER: u64 = 8;
+const OUTSIDER: u64 = 9;
+const EXCHANGE: u64 = 77;
+
+fn seat_the_three_offices() {
+	pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, SEROK);
+	pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::SerokWeziran, PM);
+	pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Xezinedar, TREASURER);
+}
+
+/// Only the Prime Minister proposes.
+#[test]
+fn an_airdrop_is_proposed_by_the_prime_minister_alone() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		for who in [SEROK, TREASURER, OUTSIDER] {
+			assert_noop!(
+				Welati::propose_airdrop(RuntimeOrigin::signed(who), EXCHANGE, 100, b"x".to_vec()),
+				Error::<Test>::NotThePrimeMinister
+			);
+		}
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			100,
+			b"listing".to_vec()
+		));
+		assert!(AirdropProposals::<Test>::get(0).is_some());
+	});
+}
+
+/// A proposal alone moves nothing, and the President's signature is what completes a small one.
+#[test]
+fn a_small_airdrop_needs_the_president_and_nobody_else() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			100,
+			b"listing".to_vec()
+		));
+
+		// Proposed is not approved.
+		assert_noop!(
+			Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::AirdropNotApproved
+		);
+
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+		let p = AirdropProposals::<Test>::get(0).unwrap();
+		assert!(p.approved_by_president);
+		// Below the ceiling there is no wait: payable in the block it was approved.
+		assert_eq!(p.payable_from, System::block_number());
+	});
+}
+
+/// Above the ceiling the President is not enough.
+#[test]
+fn a_large_airdrop_needs_the_treasurer_too() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		let large = AirdropCeiling::get() + 1;
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			large,
+			b"big".to_vec()
+		));
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+
+		// One signature short, and the shortfall is what stops it -- not the delay.
+		assert_noop!(
+			Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::AirdropNotApproved
+		);
+
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(TREASURER), 0));
+		let p = AirdropProposals::<Test>::get(0).unwrap();
+		assert!(p.approved_by_president && p.approved_by_treasurer);
+	});
+}
+
+/// The wait above the ceiling is real, and it starts at the last signature.
+///
+/// If it started at the proposal, a proposal left sitting for a week would be payable the
+/// moment it was signed -- and the week in which anyone could have objected would have passed
+/// before there was anything to object to.
+#[test]
+fn a_large_airdrop_waits_and_the_wait_starts_at_the_last_signature() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		let large = AirdropCeiling::get() + 1;
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			large,
+			b"big".to_vec()
+		));
+
+		// A week passes with the proposal sitting unsigned.
+		System::set_block_number(System::block_number() + LargeAirdropDelay::get() * 2);
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+		let signed_at = System::block_number();
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(TREASURER), 0));
+
+		let p = AirdropProposals::<Test>::get(0).unwrap();
+		assert_eq!(
+			p.payable_from,
+			signed_at + LargeAirdropDelay::get(),
+			"the wait must start when the last signature lands, not when the proposal was made"
+		);
+		assert_noop!(
+			Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::AirdropNotYetPayable
+		);
+
+		System::set_block_number(p.payable_from);
+		assert_ok!(Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert!(AirdropProposals::<Test>::get(0).is_none(), "a paid proposal is gone");
+	});
+}
+
+/// The same office cannot sign twice to make up the numbers.
+#[test]
+fn one_office_cannot_supply_two_signatures() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		let large = AirdropCeiling::get() + 1;
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			large,
+			b"big".to_vec()
+		));
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+		assert_noop!(
+			Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0),
+			Error::<Test>::AlreadyApproved
+		);
+		// And someone holding no office at all supplies none.
+		assert_noop!(
+			Welati::approve_airdrop(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::NotThePresident
+		);
+	});
+}
+
+/// A paid proposal cannot be paid again.
+#[test]
+fn an_airdrop_cannot_be_paid_twice() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			100,
+			b"listing".to_vec()
+		));
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+		assert_ok!(Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert_noop!(
+			Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::AirdropNotFound
+		);
+	});
+}
+
+/// The proposer may withdraw, and the President may refuse.
+#[test]
+fn a_proposal_can_be_withdrawn_or_refused() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		for canceller in [PM, SEROK] {
+			assert_ok!(Welati::propose_airdrop(
+				RuntimeOrigin::signed(PM),
+				EXCHANGE,
+				100,
+				b"x".to_vec()
+			));
+			let id = NextAirdropId::<Test>::get() - 1;
+			assert_noop!(
+				Welati::cancel_airdrop(RuntimeOrigin::signed(OUTSIDER), id),
+				Error::<Test>::NotThePresident
+			);
+			assert_ok!(Welati::cancel_airdrop(RuntimeOrigin::signed(canceller), id));
+			assert!(AirdropProposals::<Test>::get(id).is_none());
+		}
+	});
+}
+
+/// Ids are never reused, so an id in a log always names the same proposal.
+#[test]
+fn airdrop_ids_are_not_reused() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		for _ in 0..3 {
+			assert_ok!(Welati::propose_airdrop(
+				RuntimeOrigin::signed(PM),
+				EXCHANGE,
+				100,
+				b"x".to_vec()
+			));
+		}
+		assert_ok!(Welati::cancel_airdrop(RuntimeOrigin::signed(PM), 1));
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			100,
+			b"x".to_vec()
+		));
+		assert_eq!(NextAirdropId::<Test>::get(), 4, "a cancelled id is not handed out again");
+		assert!(AirdropProposals::<Test>::get(1).is_none());
+		assert!(AirdropProposals::<Test>::get(3).is_some());
 	});
 }

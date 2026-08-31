@@ -142,9 +142,25 @@ fn asset_hub_pezkuwichain_genesis(
 		"PEZ genesis allocations must equal total supply"
 	);
 
+	// The airdrop pot's 40M HEZ, minted here rather than on the relay.
+	//
+	// The pot is `pezpallet_treasury`'s second instance and its account is derived from a
+	// pallet id, so nobody holds a key to it -- the balance can only leave through an
+	// approved spend, which the People chain authorises with two signatures under a million
+	// HEZ and three above. Minting it straight here means no key ever holds the amount and no
+	// post-launch transfer has to be remembered; the relay's `hez_allocations_sum_to_200m`
+	// asserts the other side of this split.
+	let airdrop_pot: AccountId = AirdropPotPalletId::get().into_account_truncating();
+	const AIRDROP_ALLOCATION: Balance = 40_000_000 * UNITS;
+
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|k| (k, endowment)).collect(),
+			balances: endowed_accounts
+				.iter()
+				.cloned()
+				.map(|k| (k, endowment))
+				.chain(core::iter::once((airdrop_pot, AIRDROP_ALLOCATION)))
+				.collect(),
 		},
 		teyrchain_info: TeyrchainInfoConfig { teyrchain_id: id },
 		collator_selection: CollatorSelectionConfig {

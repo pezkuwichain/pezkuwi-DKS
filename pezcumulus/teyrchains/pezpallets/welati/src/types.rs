@@ -548,6 +548,39 @@ pub enum AppointmentAuthority<T: pezframe_system::Config> {
 	President(T::AccountId),
 }
 
+/// One proposed airdrop, and who has signed it so far.
+///
+/// The shape is `AppointmentProcess`'s below: one office proposes, another agrees, and nothing
+/// happens until it does. What differs is the third signature and the wait, and both exist for
+/// the same reason -- above the ceiling the amount is large enough that two people agreeing in
+/// private should not be the whole of it.
+#[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
+#[codec(mel_bound())]
+#[scale_info(skip_type_params(T))]
+pub struct AirdropProposal<T: pezframe_system::Config> {
+	/// Who receives it. Usually an exchange: the recipients of a listing campaign are that
+	/// exchange's customers and cannot be enumerated on chain, which is the reason this
+	/// mechanism is discretionary rather than a rule over the register.
+	pub beneficiary: T::AccountId,
+	/// HEZ, in the smallest unit.
+	pub amount: u128,
+	/// Why. Recorded because a discretionary payment that states no reason is exactly the
+	/// shape the rest of this design spends its effort avoiding, and because the reason is
+	/// what anyone reading the chain afterwards has to judge it by.
+	pub reason: BoundedVec<u8, ConstU32<256>>,
+	/// The Prime Minister who proposed it.
+	pub proposer: T::AccountId,
+	/// Set when the President signs.
+	pub approved_by_president: bool,
+	/// Set when the Treasurer signs. Required only above the ceiling.
+	pub approved_by_treasurer: bool,
+	/// When it was proposed.
+	pub proposed_at: BlockNumberFor<T>,
+	/// The earliest block it may be paid: the approval block for a small airdrop, and the
+	/// delay later for one above the ceiling.
+	pub payable_from: BlockNumberFor<T>,
+}
+
 /// Appointment process information
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]

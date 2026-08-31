@@ -538,6 +538,11 @@ parameter_types! {
 	pub TreasuryChain: xcm::latest::Location = xcm::latest::Location::new(1, [xcm::latest::Junction::Teyrchain(1000)]);
 	pub const TreasuryPalletIndex: u8 = 70;
 	pub const ParametersPalletIndex: u8 = 79;
+	pub const AirdropPotPalletIndex: u8 = 66;
+	/// Small next to the balances the tests use, so a test can cross it on purpose without
+	/// having to mint a realistic amount first.
+	pub const AirdropCeiling: u128 = 1_000;
+	pub const LargeAirdropDelay: u64 = 100;
 	/// One point per step and ten blocks between them. The production values are a point per
 	/// quarter; what the tests need is the shape, not the calendar.
 	pub const MaxEmissionStep: pezsp_runtime::Perbill = pezsp_runtime::Perbill::from_percent(1);
@@ -775,6 +780,9 @@ impl pezpallet_welati::Config for Test {
 	type TreasuryChainLocation = TreasuryChain;
 	type TreasuryPalletIndex = TreasuryPalletIndex;
 	type ParametersPalletIndex = ParametersPalletIndex;
+	type AirdropPotPalletIndex = AirdropPotPalletIndex;
+	type AirdropCeiling = AirdropCeiling;
+	type LargeAirdropDelay = LargeAirdropDelay;
 	type MaxEmissionStep = MaxEmissionStep;
 	type MinEmissionInterval = MinEmissionInterval;
 	type PopulationThreshold = PopulationThreshold;
