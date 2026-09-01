@@ -152,46 +152,16 @@ mod mock;
 mod tests;
 
 use crate::types::*;
+use crate::weights::WeightInfo;
 
-/// Weight functions trait for this pezpallet.
-pub trait WeightInfo {
-	fn initiate_election() -> Weight;
-	fn register_candidate() -> Weight;
-	fn cast_vote() -> Weight;
-	fn finalize_election() -> Weight;
-	fn nominate_official() -> Weight;
-	fn approve_appointment() -> Weight;
-	fn submit_proposal() -> Weight;
-	fn vote_on_proposal() -> Weight;
-}
+// The `WeightInfo` trait and its `()` impl live in `weights.rs`, with the numbers the
+// benchmarks produce. A second copy of both used to sit here -- eight hand-written figures
+// with no storage costs attached at all -- and it was the one the pallet's `Config` named, so
+// `weights.rs` was dead and both People runtimes bound `type WeightInfo = ()` to the hand
+// figures. Every call on both chains was priced without the reads and writes it makes.
+// `check-zero-weights.py` did not see it: the fallback is not zero, it is merely wrong, and
+// wrong in the direction where nobody notices.
 
-// Unit type implementation for tests
-impl WeightInfo for () {
-	fn initiate_election() -> Weight {
-		Weight::from_parts(12_265_000, 1489)
-	}
-	fn register_candidate() -> Weight {
-		Weight::from_parts(21_958_000, 32819)
-	}
-	fn cast_vote() -> Weight {
-		Weight::from_parts(29_505_000, 32819)
-	}
-	fn finalize_election() -> Weight {
-		Weight::from_parts(28_574_000, 32819)
-	}
-	fn nominate_official() -> Weight {
-		Weight::from_parts(26_238_000, 3638)
-	}
-	fn approve_appointment() -> Weight {
-		Weight::from_parts(27_599_000, 13584)
-	}
-	fn submit_proposal() -> Weight {
-		Weight::from_parts(21_824_000, 12542)
-	}
-	fn vote_on_proposal() -> Weight {
-		Weight::from_parts(23_225_000, 12542)
-	}
-}
 // Not feature-gated. `return_candidacy_deposits` names `Currency<T::AccountId>::Balance` in
 // every configuration, so gating the import to `not(runtime-benchmarks)` did not silence a
 // warning -- it removed the trait from scope in the build that check-benches runs.
@@ -358,7 +328,7 @@ pub mod pezpallet {
 		+ pezpallet_identity_kyc::Config
 		+ core::fmt::Debug
 	{
-		type WeightInfo: crate::WeightInfo;
+		type WeightInfo: crate::weights::WeightInfo;
 		type Randomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
 		type RuntimeCall: Parameter
 			+ Dispatchable<RuntimeOrigin = Self::RuntimeOrigin, PostInfo = PostDispatchInfo>
@@ -1678,15 +1648,16 @@ pub mod pezpallet {
 		/// them. What replaces the rule is the signature count, the ceiling, and the fact that
 		/// the pot has no key -- so this is the only door.
 		#[pezpallet::call_index(56)]
-		// Borrowed from `finalize_election`, the heaviest benchmark this pallet has (4 reads,
-		// 3 writes, 38.6ms) -- deliberately more than this call does, because a borrowed
-		// weight is only defensible while it overcharges. The earlier note here claimed
+		// Borrowed from `finalize_election` at zero candidates: this pallet's heaviest base,
+		// four reads and three writes, without the ballot term that has nothing to do with a
+		// pot. Deliberately more than this call does, because a borrowed weight is only
+		// defensible while it overcharges. The earlier note here claimed
 		// `nominate_official` was "the same shape of work"; measuring the set showed no
 		// existing benchmark sends an XCM and two of these calls do, so the shape argument was
 		// wrong in the direction that lets a call be repeated cheaply. Benchmarks for all
 		// seven are now in `benchmarking.rs` and `.github/weights-request.yml` asks for the
 		// numbers; when they land these attributes name their own functions.
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
 		pub fn propose_airdrop(
 			origin: OriginFor<T>,
 			beneficiary: T::AccountId,
@@ -1739,7 +1710,7 @@ pub mod pezpallet {
 		/// President's approval completes the proposal and it becomes payable at once, which
 		/// is what a listing needs.
 		#[pezpallet::call_index(57)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
 		pub fn approve_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let holder =
@@ -1785,7 +1756,7 @@ pub mod pezpallet {
 		#[pezpallet::call_index(58)]
 		// `vote_on_proposal`'s, which is what `spend_budget` next door uses for the same
 		// read-check-send shape.
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
 		pub fn pay_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 			let p = AirdropProposals::<T>::get(id).ok_or(Error::<T>::AirdropNotFound)?;
@@ -1819,7 +1790,7 @@ pub mod pezpallet {
 		/// the other to refuse it. Kept as its own call rather than letting a proposal expire:
 		/// a refusal that leaves a record is worth more than one that looks like forgetting.
 		#[pezpallet::call_index(59)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
 		pub fn cancel_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let p = AirdropProposals::<T>::get(id).ok_or(Error::<T>::AirdropNotFound)?;
@@ -1852,7 +1823,7 @@ pub mod pezpallet {
 		/// full, and a ceiling would make the amounts below it free and the ones above it
 		/// forbidden -- a rule nobody voted for.
 		#[pezpallet::call_index(60)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
 		pub fn propose_presale(
 			origin: OriginFor<T>,
 			verb: PresaleVerb,
@@ -1927,7 +1898,7 @@ pub mod pezpallet {
 		/// `finalize_proposal` has to have run first -- that is what turns a tally into a
 		/// status, and this reads the status.
 		#[pezpallet::call_index(61)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
 		pub fn execute_presale(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 			let p = PresaleProposals::<T>::get(id).ok_or(Error::<T>::PresaleNotFound)?;
@@ -1971,7 +1942,7 @@ pub mod pezpallet {
 		/// alone would mean a minister who stops caring, or stops holding the office, leaves
 		/// the entry behind for good.
 		#[pezpallet::call_index(62)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election())]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
 		pub fn cancel_presale(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let p = PresaleProposals::<T>::get(id).ok_or(Error::<T>::PresaleNotFound)?;
@@ -2798,9 +2769,20 @@ pub mod pezpallet {
 		}
 
 		/// Finalizes election and determines winners
+		///
+		/// Charged for a full ballot and refunded down to the one it counted. The fee has to
+		/// be known before dispatch and the candidate list is only readable after, so the
+		/// ceiling is what a caller pays up front -- five hundred candidates, the bound the
+		/// type enforces. Returning the actual weight is what keeps a three-candidate election
+		/// from paying for four hundred and ninety-seven it never read.
 		#[pezpallet::call_index(3)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election())]
-		pub fn finalize_election(origin: OriginFor<T>, election_id: u32) -> DispatchResult {
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(
+			MAX_ELECTION_CANDIDATES
+		))]
+		pub fn finalize_election(
+			origin: OriginFor<T>,
+			election_id: u32,
+		) -> DispatchResultWithPostInfo {
 			// Permissionless. Counting decides nothing: the votes are cast, the rules were
 			// fixed when the election opened, and the result is whatever the arithmetic says.
 			// Requiring root here meant the count -- not just the calling of an election, the
@@ -2809,6 +2791,8 @@ pub mod pezpallet {
 
 			let mut election =
 				ActiveElections::<T>::get(election_id).ok_or(Error::<T>::ElectionNotFound)?;
+			// What the count will actually walk.
+			let counted = election.candidates.len() as u32;
 
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
 			ensure!(current_block > election.end_block, Error::<T>::ElectionNotActive);
@@ -2836,7 +2820,9 @@ pub mod pezpallet {
 						election_id,
 						election_type: election.election_type,
 					});
-					return Ok(());
+					return Ok(
+						Some(<T as pezpallet::Config>::WeightInfo::finalize_election(0)).into()
+					);
 				},
 				Err(e) => return Err(e.into()),
 			};
@@ -2888,7 +2874,7 @@ pub mod pezpallet {
 				},
 			}
 
-			Ok(())
+			Ok(Some(<T as pezpallet::Config>::WeightInfo::finalize_election(counted)).into())
 		}
 
 		#[pezpallet::call_index(10)]

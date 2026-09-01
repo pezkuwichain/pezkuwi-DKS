@@ -1398,7 +1398,12 @@ impl pezpallet_tiki::TikiScoreProvider<AccountId> for WelatiTikiScoreSource {
 }
 
 impl pezpallet_welati::Config for Runtime {
-	type WeightInfo = ();
+	// This runtime's own measurement, like every other pallet here. It was generated and
+	// then never declared in `weights/mod.rs`, so it was not compiled, so the binding fell
+	// back to `()` -- and `()` resolved to a hand-written copy of the trait in the pallet's
+	// `lib.rs` carrying eight round numbers and no storage costs at all. Three weight
+	// sources for one pallet, and the one in use was the only one nobody measured.
+	type WeightInfo = weights::pezpallet_welati::WeightInfo<Runtime>;
 	type Randomness = TimestampRandomness;
 	type RuntimeCall = RuntimeCall;
 	type TrustScoreSource = WelatiTrustScoreSource;

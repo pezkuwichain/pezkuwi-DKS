@@ -803,6 +803,13 @@ pub struct CandidateInfo<T: pezframe_system::Config> {
 	pub campaign_data: BoundedVec<u8, ConstU32<500>>,
 }
 
+/// The most candidates one election may carry.
+///
+/// Read by the type below and by `finalize_election`'s weight, which is why it is a named
+/// constant: counting walks this list, so the ceiling the weight charges and the ceiling the
+/// type enforces have to be the same number, and two literals drift.
+pub const MAX_ELECTION_CANDIDATES: u32 = 500;
+
 /// Election results
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
@@ -857,7 +864,7 @@ pub struct ElectionInfo<T: pezframe_system::Config> {
 	/// End block of the election
 	pub end_block: BlockNumberFor<T>,
 	/// List of candidates
-	pub candidates: BoundedVec<T::AccountId, ConstU32<500>>, // Generous limit
+	pub candidates: BoundedVec<T::AccountId, ConstU32<MAX_ELECTION_CANDIDATES>>,
 	/// Total number of votes
 	pub total_votes: u32,
 	/// Election status

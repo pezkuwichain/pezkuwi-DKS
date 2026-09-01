@@ -58,7 +58,8 @@ pub trait WeightInfo {
 	fn initiate_election() -> Weight;
 	fn register_candidate() -> Weight;
 	fn cast_vote() -> Weight;
-	fn finalize_election() -> Weight;
+	/// `c` is how many candidates the ballot carries; counting walks the list.
+	fn finalize_election(c: u32) -> Weight;
 	fn nominate_official() -> Weight;
 	fn approve_appointment() -> Weight;
 	fn submit_proposal() -> Weight;
@@ -119,7 +120,13 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 	/// Proof: `Welati::ElectionResults` (`max_values`: None, `max_size`: Some(6467), added: 8942, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::ParliamentMembers` (r:0 w:1)
 	/// Proof: `Welati::ParliamentMembers` (`max_values`: Some(1), `max_size`: Some(11057), added: 11552, mode: `MaxEncodedLen`)
-	fn finalize_election() -> Weight {
+	/// The `c` term is a placeholder, and the base is older than this pallet's current shape.
+	///
+	/// Both stand until the reference host measures this call, which it could not do before:
+	/// the benchmark handed `Root` to a signed-origin call and registered one candidate.
+	/// Counting reads one `ElectionCandidates` entry per candidate, so the slope is a storage
+	/// read -- taken from the runtime's own `DbWeight` rather than from a figure guessed here.
+	fn finalize_election(c: u32) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `3682`
 		//  Estimated: `32819`
@@ -127,6 +134,7 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 		Weight::from_parts(38_634_000, 32819)
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().reads(c.into()))
 	}
 	/// Storage: `Welati::CurrentOfficials` (r:1 w:0)
 	/// Proof: `Welati::CurrentOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
@@ -251,7 +259,13 @@ impl WeightInfo for () {
 	/// Proof: `Welati::ElectionResults` (`max_values`: None, `max_size`: Some(6467), added: 8942, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::ParliamentMembers` (r:0 w:1)
 	/// Proof: `Welati::ParliamentMembers` (`max_values`: Some(1), `max_size`: Some(11057), added: 11552, mode: `MaxEncodedLen`)
-	fn finalize_election() -> Weight {
+	/// The `c` term is a placeholder, and the base is older than this pallet's current shape.
+	///
+	/// Both stand until the reference host measures this call, which it could not do before:
+	/// the benchmark handed `Root` to a signed-origin call and registered one candidate.
+	/// Counting reads one `ElectionCandidates` entry per candidate, so the slope is a storage
+	/// read -- taken from the runtime's own `DbWeight` rather than from a figure guessed here.
+	fn finalize_election(c: u32) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `3682`
 		//  Estimated: `32819`
@@ -259,6 +273,7 @@ impl WeightInfo for () {
 		Weight::from_parts(38_634_000, 32819)
 			.saturating_add(RocksDbWeight::get().reads(4_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
+			.saturating_add(RocksDbWeight::get().reads(c.into()))
 	}
 	/// Storage: `Welati::CurrentOfficials` (r:1 w:0)
 	/// Proof: `Welati::CurrentOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
