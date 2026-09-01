@@ -294,19 +294,26 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			// belongs to mainnet; sharing it would put one key on two chains.
 			let founder_account: AccountId =
 				hex!("a0f36b1ed6006a5ed8e492a1a5c5820cec6cb6feba17282f0bd41faacc1f8c12").into();
-			// Zagros's own presale account: 5GuRXa4KPEaXLTG5YKDMyFTJqosjRJSBTpyxy8nTNNsZJiV8
+			// Zagros's PEZ custody board: 5C6ztLrVzG5JzsGMgUkgMhzVVsQMdDv9wn8ignZu9JdJtB4D
 			//
-			// Not the exchange's cold multisig, which is what the Pezkuwichain hub uses. That
-			// address belongs to the live exchange, and minting a testnet's PEZ into it would
-			// put the same account on two chains -- so a key leaked here would be a key to
-			// mainnet funds. This one is generated for Zagros alone and its key is recorded
-			// with the rest of the Zagros set.
+			// 3-of-5, and a multisig rather than a plain account for the same reason mainnet
+			// uses one -- but with Zagros's own signatories. Mainnet's holder is the live
+			// exchange's cold multisig; putting that address here would mint a testnet's PEZ
+			// into a mainnet wallet and leave one key controlling both chains.
 			//
-			// HEZ's presale needs no account at all on either chain: it is a keyless pot that
-			// only Parliament can release. PEZ does need one, because PEZ is an asset sold on
-			// an exchange rather than a balance a treasury pallet can hold.
+			// The structure has to match even though the keys must not. Zagros exists to
+			// rehearse mainnet, so a plain account here would mean the three-signature
+			// withdrawal path is first exercised on the chain holding real money -- the one
+			// place a rehearsal is worth nothing.
+			//
+			// Derived, not stored: `blake2_256(b"modlpy/utilisuba" ++ sorted signatories ++
+			// 3u16)`, so a genesis reset does not move it.
+			//
+			// HEZ's presale needs no account at all on either chain: it is a keyless pot only
+			// Parliament can release. PEZ does need one, because PEZ is an asset sold on an
+			// exchange rather than a balance a treasury pallet can hold.
 			let pez_presale_custody: AccountId =
-				hex!("d618fd4845b1027672b1ee16fc0f5e27c8d6a96bc277b924916176fa8200e964").into();
+				hex!("01bfd0a9b680e04e0ac4e736df93009e297f7f490a8c83e62202bba35b473303").into();
 
 			asset_hub_pezkuwichain_genesis(
 				// initial collators - 2 Asset Hub collators - Generated 2026-01-29
