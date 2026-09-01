@@ -152,46 +152,16 @@ mod mock;
 mod tests;
 
 use crate::types::*;
+use crate::weights::WeightInfo;
 
-/// Weight functions trait for this pezpallet.
-pub trait WeightInfo {
-	fn initiate_election() -> Weight;
-	fn register_candidate() -> Weight;
-	fn cast_vote() -> Weight;
-	fn finalize_election() -> Weight;
-	fn nominate_official() -> Weight;
-	fn approve_appointment() -> Weight;
-	fn submit_proposal() -> Weight;
-	fn vote_on_proposal() -> Weight;
-}
+// The `WeightInfo` trait and its `()` impl live in `weights.rs`, with the numbers the
+// benchmarks produce. A second copy of both used to sit here -- eight hand-written figures
+// with no storage costs attached at all -- and it was the one the pallet's `Config` named, so
+// `weights.rs` was dead and both People runtimes bound `type WeightInfo = ()` to the hand
+// figures. Every call on both chains was priced without the reads and writes it makes.
+// `check-zero-weights.py` did not see it: the fallback is not zero, it is merely wrong, and
+// wrong in the direction where nobody notices.
 
-// Unit type implementation for tests
-impl WeightInfo for () {
-	fn initiate_election() -> Weight {
-		Weight::from_parts(12_265_000, 1489)
-	}
-	fn register_candidate() -> Weight {
-		Weight::from_parts(21_958_000, 32819)
-	}
-	fn cast_vote() -> Weight {
-		Weight::from_parts(29_505_000, 32819)
-	}
-	fn finalize_election() -> Weight {
-		Weight::from_parts(28_574_000, 32819)
-	}
-	fn nominate_official() -> Weight {
-		Weight::from_parts(26_238_000, 3638)
-	}
-	fn approve_appointment() -> Weight {
-		Weight::from_parts(27_599_000, 13584)
-	}
-	fn submit_proposal() -> Weight {
-		Weight::from_parts(21_824_000, 12542)
-	}
-	fn vote_on_proposal() -> Weight {
-		Weight::from_parts(23_225_000, 12542)
-	}
-}
 // Not feature-gated. `return_candidacy_deposits` names `Currency<T::AccountId>::Balance` in
 // every configuration, so gating the import to `not(runtime-benchmarks)` did not silence a
 // warning -- it removed the trait from scope in the build that check-benches runs.
@@ -223,6 +193,43 @@ const ACTIVATE_DISTRIBUTION_CALL_INDEX: u8 = 0;
 
 /// `pezpallet-pez-treasury::spend_from_government_pot`, by call index.
 const SPEND_FROM_GOVERNMENT_POT_CALL_INDEX: u8 = 1;
+
+/// What a benchmark needs true before a pot's spend can leave this chain.
+///
+/// Both payment calls send an XCM, and on a real People runtime the router refuses one to a
+/// sibling with no open channel -- `CouldNotReachTreasury`, which is the pallet reporting the
+/// truth. A benchmark starting from a bare genesis has no channel, so without this the two
+/// calls cannot be measured at all and their weights stay borrowed from a call that does no
+/// such work.
+///
+/// Benchmark-only. Nothing in production may reach it, because a pallet that could open its
+/// own delivery route would be deciding a thing the runtime decides.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkHelper<AccountId> {
+	/// Open whatever the sender needs so a spend addressed to the treasury chain leaves.
+	fn ensure_treasury_reachable();
+
+	/// Give `who` the citizen NFT the register needs before it will seat anybody.
+	///
+	/// Here rather than in the benchmark because the NFT lives in `pezpallet-nfts`, which this
+	/// pallet does not depend on and should not start depending on to make a measurement
+	/// possible. The runtime has both pallets already.
+	fn make_citizen(who: &AccountId);
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<AccountId> BenchmarkHelper<AccountId> for () {
+	fn ensure_treasury_reachable() {}
+	fn make_citizen(_who: &AccountId) {}
+}
+
+/// `pezpallet_treasury::spend` on the Asset Hub's airdrop instance, by call index.
+///
+/// Five, because that is where `spend` sits in the treasury pallet -- the same number for
+/// every instance, since instances share the pallet's call enum and differ only by which
+/// pallet index carries them. The instance is addressed by `AirdropPotPalletIndex`, not by
+/// this.
+const TREASURY_SPEND_CALL_INDEX: u8 = 5;
 
 /// `pezpallet-parameters::set_parameter` on the treasury chain, by call index.
 const SET_PARAMETER_CALL_INDEX: u8 = 0;
@@ -321,7 +328,7 @@ pub mod pezpallet {
 		+ pezpallet_identity_kyc::Config
 		+ core::fmt::Debug
 	{
-		type WeightInfo: crate::WeightInfo;
+		type WeightInfo: crate::weights::WeightInfo;
 		type Randomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
 		type RuntimeCall: Parameter
 			+ Dispatchable<RuntimeOrigin = Self::RuntimeOrigin, PostInfo = PostDispatchInfo>
@@ -456,6 +463,55 @@ pub mod pezpallet {
 		/// in the emulated tests is what holds the two ends together.
 		#[pezpallet::constant]
 		type TreasuryPalletIndex: Get<u8>;
+
+		/// Where the airdrop pot sits in the treasury chain's runtime.
+		///
+		/// A second `pezpallet_treasury` instance, so it has its own pallet index and its own
+		/// account while sharing the pallet's code. Named separately from
+		/// `TreasuryPalletIndex` because they are two different pallets on that chain and a
+		/// message addressed to the wrong one is accepted by whatever happens to sit there.
+		#[pezpallet::constant]
+		type AirdropPotPalletIndex: Get<u8>;
+
+		/// How long an approved airdrop above the ceiling waits before it can be paid.
+		///
+		/// Only the large ones wait. Below the ceiling two signatures pay immediately, which
+		/// is what a listing needs; above it the third signature buys nothing if the payment
+		/// lands in the same block as the last approval, because nobody outside the three can
+		/// see it in time to object.
+		#[pezpallet::constant]
+		type LargeAirdropDelay: Get<BlockNumberFor<Self>>;
+
+		/// What one airdrop may move without the Treasurer's signature.
+		///
+		/// The Asset Hub enforces its own ceiling on the spend origin as well; this one is
+		/// here because the decision to escalate has to be made where the offices are, before
+		/// a message is sent that the other chain would refuse.
+		#[pezpallet::constant]
+		type AirdropCeiling: Get<u128>;
+
+		/// Where the presale pot sits in the treasury chain's runtime.
+		///
+		/// A third `pezpallet_treasury` instance. Its own index for the same reason the
+		/// airdrop pot has one: the instances share the pallet's code and nothing else, and a
+		/// spend addressed to the wrong index is paid out of the wrong pot by a pallet that
+		/// has no way to notice.
+		#[pezpallet::constant]
+		type PresalePotPalletIndex: Get<u8>;
+
+		/// How long one month of a presale lock is, in blocks of this chain.
+		///
+		/// This chain's blocks, not the treasury chain's. The two count separately and neither
+		/// can read the other's height, so a lock expressed in the pot's block numbers would
+		/// be a number this chain cannot compute. The wait is therefore held here and the
+		/// spend is not sent until it is over -- which also keeps the money in the pot for the
+		/// whole term rather than in the buyer's hands behind a lock.
+		#[pezpallet::constant]
+		type PresaleLockMonth: Get<BlockNumberFor<Self>>;
+
+		/// Opens the delivery route the two payment calls use, for benchmarking only.
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::BenchmarkHelper<Self::AccountId>;
 
 		/// The index `pezpallet-parameters` occupies in the treasury chain's runtime.
 		#[pezpallet::constant]
@@ -613,6 +669,41 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type AppointmentProcesses<T: Config> =
 		StorageMap<_, Blake2_128Concat, u32, AppointmentProcess<T>, OptionQuery>;
+
+	/// Airdrop proposals, by id. An entry is removed when it is paid or rejected.
+	#[pezpallet::storage]
+	pub type AirdropProposals<T: Config> =
+		StorageMap<_, Blake2_128Concat, u32, AirdropProposal<T>, OptionQuery>;
+
+	/// The next airdrop proposal's id. Never reused, so an id in an event or a log always
+	/// names the same proposal however long afterwards it is read.
+	#[pezpallet::storage]
+	pub type NextAirdropId<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+	/// Presale releases, by id. An entry is removed when it is paid or withdrawn.
+	#[pezpallet::storage]
+	pub type PresaleProposals<T: Config> =
+		StorageMap<_, Blake2_128Concat, u32, PresaleProposal<T>, OptionQuery>;
+
+	/// The next presale release's id. Never reused.
+	#[pezpallet::storage]
+	pub type NextPresaleId<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+	/// How much presale HEZ this chain has *sent for payment*, in HEZ.
+	///
+	/// Sent, not paid, and the name says so because the difference is real and this chain
+	/// cannot see it: the spend crosses to the Asset Hub as an XCM, and the pot there can
+	/// still refuse it -- the origin may not match, or the balance may not cover it -- with no
+	/// reply that reaches here. A counter called `Released` would drift upward every time that
+	/// happened and never drift back, and an accounting error that only inflates is the kind
+	/// that survives being looked at.
+	///
+	/// Kept even so, because the pot's balance does not answer the question either: it falls
+	/// for payments and rises for anything ever paid back in, so it measures what is left
+	/// rather than what has gone out. What was actually paid is answerable on the Asset Hub,
+	/// where the payments are.
+	#[pezpallet::storage]
+	pub type PresaleSentTotal<T: Config> = StorageValue<_, u128, ValueQuery>;
 
 	/// The emission rate this chain last told the treasury chain to apply, and when.
 	///
@@ -947,6 +1038,29 @@ pub mod pezpallet {
 		BudgetApproved { amount: u128, total: u128 },
 		/// The finance minister spent against the approved budget.
 		BudgetSpent { beneficiary: T::AccountId, amount: u128 },
+		/// An airdrop was proposed by the Prime Minister.
+		AirdropProposed { id: u32, beneficiary: T::AccountId, amount: u128 },
+		/// The President signed it.
+		AirdropApprovedByPresident { id: u32 },
+		/// The Treasurer signed it. Only large airdrops reach this.
+		AirdropApprovedByTreasurer { id: u32 },
+		/// Fully signed, and payable from the block named. For a small airdrop that is now;
+		/// for a large one it is `LargeAirdropDelay` later, and the wait is the point.
+		AirdropReady { id: u32, payable_from: BlockNumberFor<T> },
+		/// Sent to the airdrop pot's chain. Sent, not paid: the pot checks the amount against
+		/// its own ceiling on arrival, and this chain never hears the answer.
+		AirdropSent { id: u32, beneficiary: T::AccountId, amount: u128 },
+		/// Withdrawn before payment by the Prime Minister who proposed it, or refused by the
+		/// President.
+		AirdropCancelled { id: u32 },
+
+		/// The Finance Minister opened a presale release for Parliament to vote on.
+		PresaleProposed { id: u32, vote_id: u32, beneficiary: T::AccountId, amount: u128 },
+		/// Sent to the pot's chain. Sent, not paid: the pot checks the amount against its own
+		/// balance and the origin against its own rule, and either can still refuse.
+		PresaleSent { id: u32, beneficiary: T::AccountId, amount: u128, sent_total: u128 },
+		/// Withdrawn before payment by the Finance Minister who proposed it.
+		PresaleCancelled { id: u32 },
 
 		/// The President named a Prime Minister.
 		PrimeMinisterAppointed { who: T::AccountId },
@@ -1034,6 +1148,31 @@ pub mod pezpallet {
 		NotAParliamentMember,
 		/// The caller does not hold the finance portfolio.
 		NotTheFinanceMinister,
+		/// Only the President approves one.
+		NotThePresident,
+		/// No proposal under that id.
+		AirdropNotFound,
+		/// Already signed by this office. Signing twice would look like two approvals.
+		AlreadyApproved,
+		/// Still missing a signature.
+		AirdropNotApproved,
+		/// Approved, but the delay has not elapsed. Only large airdrops wait.
+		AirdropNotYetPayable,
+		/// A reason has to be given, and it has to fit.
+		AirdropReasonTooLong,
+		/// Only the Finance Minister may open a presale release.
+		NotTheFinanceMinisterForPresale,
+		/// No presale release with that id.
+		PresaleNotFound,
+		/// Parliament has not agreed to it -- either the vote is still open, or it failed.
+		PresaleNotApproved,
+		/// Agreed, but the lock has not run out. Only a `Locked` release waits.
+		PresaleStillLocked,
+		/// The terms do not fit in the record.
+		PresaleTermsTooLong,
+		/// A lock of no months is a plain transfer wearing the other verb's name; a lock
+		/// longer than ten years outlives every office that agreed to it.
+		PresaleLockOutOfRange,
 		/// A payment of nothing was requested.
 		NothingToSpend,
 		/// The payment is more than Parliament has approved.
@@ -1494,6 +1633,325 @@ pub mod pezpallet {
 				.map_err(|_| Error::<T>::CouldNotReachTreasury)?;
 
 			Self::deposit_event(Event::BudgetSpent { beneficiary, amount });
+			Ok(())
+		}
+
+		/// Propose an airdrop out of the pot.
+		///
+		/// The Prime Minister's call. Nothing moves on this call alone: the President has to
+		/// sign, and above `AirdropCeiling` the Treasurer as well, after which a large one
+		/// still waits `LargeAirdropDelay` before it can be paid.
+		///
+		/// Discretionary on purpose, and the reason is a shape the register cannot express: a
+		/// listing campaign pays an exchange's customers, and they are that exchange's
+		/// customers rather than this chain's citizens. A rule over the register cannot reach
+		/// them. What replaces the rule is the signature count, the ceiling, and the fact that
+		/// the pot has no key -- so this is the only door.
+		#[pezpallet::call_index(56)]
+		// Borrowed from `finalize_election` at zero candidates: this pallet's heaviest base,
+		// four reads and three writes, without the ballot term that has nothing to do with a
+		// pot. Deliberately more than this call does, because a borrowed weight is only
+		// defensible while it overcharges. The earlier note here claimed
+		// `nominate_official` was "the same shape of work"; measuring the set showed no
+		// existing benchmark sends an XCM and two of these calls do, so the shape argument was
+		// wrong in the direction that lets a call be repeated cheaply. Benchmarks for all
+		// seven are now in `benchmarking.rs` and `.github/weights-request.yml` asks for the
+		// numbers; when they land these attributes name their own functions.
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		pub fn propose_airdrop(
+			origin: OriginFor<T>,
+			beneficiary: T::AccountId,
+			amount: u128,
+			reason: Vec<u8>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(
+				pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::SerokWeziran)
+					== Some(who.clone()),
+				Error::<T>::NotThePrimeMinister
+			);
+			ensure!(amount > 0, Error::<T>::NothingToSpend);
+			let reason: BoundedVec<u8, ConstU32<256>> =
+				reason.try_into().map_err(|_| Error::<T>::AirdropReasonTooLong)?;
+
+			let id = NextAirdropId::<T>::mutate(|n| {
+				let id = *n;
+				*n = n.saturating_add(1);
+				id
+			});
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			AirdropProposals::<T>::insert(
+				id,
+				AirdropProposal::<T> {
+					beneficiary: beneficiary.clone(),
+					amount,
+					reason,
+					proposer: who,
+					approved_by_president: false,
+					approved_by_treasurer: false,
+					proposed_at: now,
+					// Filled in when the last signature lands; until then there is nothing to
+					// wait for and a date here would be a promise the proposal has not earned.
+					payable_from: now,
+				},
+			);
+			Self::deposit_event(Event::AirdropProposed { id, beneficiary, amount });
+			Ok(())
+		}
+
+		/// Sign a proposed airdrop.
+		///
+		/// The same call for the President and the Treasurer, because which signature a caller
+		/// supplies is decided by which office they hold rather than by which extrinsic they
+		/// reach for -- and an office that holds neither is refused here rather than leaving a
+		/// second entry point to keep in step.
+		///
+		/// The Treasurer's signature is only required above the ceiling. Below it the
+		/// President's approval completes the proposal and it becomes payable at once, which
+		/// is what a listing needs.
+		#[pezpallet::call_index(57)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		pub fn approve_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let holder =
+				|t: Tiki| pezpallet_tiki::Pezpallet::<T>::current_holder(&t) == Some(who.clone());
+
+			AirdropProposals::<T>::try_mutate(id, |maybe| -> DispatchResult {
+				let p = maybe.as_mut().ok_or(Error::<T>::AirdropNotFound)?;
+				let large = p.amount > T::AirdropCeiling::get();
+
+				if holder(Tiki::Serok) {
+					ensure!(!p.approved_by_president, Error::<T>::AlreadyApproved);
+					p.approved_by_president = true;
+					Self::deposit_event(Event::AirdropApprovedByPresident { id });
+				} else if holder(Tiki::Xezinedar) {
+					ensure!(!p.approved_by_treasurer, Error::<T>::AlreadyApproved);
+					p.approved_by_treasurer = true;
+					Self::deposit_event(Event::AirdropApprovedByTreasurer { id });
+				} else {
+					return Err(Error::<T>::NotThePresident.into());
+				}
+
+				let complete = p.approved_by_president && (!large || p.approved_by_treasurer);
+				if complete {
+					let now = pezframe_system::Pezpallet::<T>::block_number();
+					// The delay starts when the last signature lands, not when the proposal
+					// was made -- otherwise a proposal left sitting would be payable the
+					// moment it was signed, and the week nobody could object to it would have
+					// passed before there was anything to object to.
+					p.payable_from =
+						if large { now.saturating_add(T::LargeAirdropDelay::get()) } else { now };
+					Self::deposit_event(Event::AirdropReady { id, payable_from: p.payable_from });
+				}
+				Ok(())
+			})
+		}
+
+		/// Pay a fully signed airdrop.
+		///
+		/// Anyone may call this: every condition it checks is already recorded on chain, so
+		/// requiring an office here would only mean an approved payment waits on somebody
+		/// remembering to press the button. What it does is send; whether the pot accepts is
+		/// the pot's own check, against its own ceiling, on arrival.
+		#[pezpallet::call_index(58)]
+		// `vote_on_proposal`'s, which is what `spend_budget` next door uses for the same
+		// read-check-send shape.
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		pub fn pay_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
+			ensure_signed(origin)?;
+			let p = AirdropProposals::<T>::get(id).ok_or(Error::<T>::AirdropNotFound)?;
+			let large = p.amount > T::AirdropCeiling::get();
+			ensure!(
+				p.approved_by_president && (!large || p.approved_by_treasurer),
+				Error::<T>::AirdropNotApproved
+			);
+			ensure!(
+				pezframe_system::Pezpallet::<T>::block_number() >= p.payable_from,
+				Error::<T>::AirdropNotYetPayable
+			);
+
+			// Removed before sending. If the send fails the whole call reverts, so the
+			// proposal cannot be paid twice; removing it afterwards would leave a window in
+			// which the money is gone and the proposal still says it is owed.
+			AirdropProposals::<T>::remove(id);
+			Self::send_airdrop_spend(&p.beneficiary, p.amount)
+				.map_err(|_| Error::<T>::CouldNotReachTreasury)?;
+			Self::deposit_event(Event::AirdropSent {
+				id,
+				beneficiary: p.beneficiary,
+				amount: p.amount,
+			});
+			Ok(())
+		}
+
+		/// Withdraw a proposal before it is paid.
+		///
+		/// The Prime Minister who proposed it, or the President -- one to think better of it,
+		/// the other to refuse it. Kept as its own call rather than letting a proposal expire:
+		/// a refusal that leaves a record is worth more than one that looks like forgetting.
+		#[pezpallet::call_index(59)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		pub fn cancel_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let p = AirdropProposals::<T>::get(id).ok_or(Error::<T>::AirdropNotFound)?;
+			let is_president =
+				pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok) == Some(who.clone());
+			ensure!(who == p.proposer || is_president, Error::<T>::NotThePresident);
+			AirdropProposals::<T>::remove(id);
+			Self::deposit_event(Event::AirdropCancelled { id });
+			Ok(())
+		}
+
+		/// Open a presale release for Parliament to vote on.
+		///
+		/// The Finance Minister's call, and it moves nothing. What it writes is a release --
+		/// what leaves, to whom, on what terms, and whether it waits -- together with the
+		/// proposal the house votes on. The money moves in `execute_presale`, and only if the
+		/// vote carried.
+		///
+		/// Parliament rather than this chain's own referenda, and members rather than
+		/// holdings: conviction voting weighs how much HEZ a voter has, and letting holdings
+		/// decide how much unsold supply is released would hand the question to whoever has
+		/// most of the answer already. Parliament counts members.
+		///
+		/// The Finance Minister rather than the Treasurer, because the office that already
+		/// spends against a parliamentary allowance is this one -- `spend_budget` is bound to
+		/// the same tiki. A second spending office reached by a different appointment would be
+		/// a second door to the same money.
+		///
+		/// There is no ceiling. How much of the presale goes out is Parliament's to decide in
+		/// full, and a ceiling would make the amounts below it free and the ones above it
+		/// forbidden -- a rule nobody voted for.
+		#[pezpallet::call_index(60)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		pub fn propose_presale(
+			origin: OriginFor<T>,
+			verb: PresaleVerb,
+			beneficiary: T::AccountId,
+			amount: u128,
+			terms: Vec<u8>,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(
+				pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::WezireDarayiye)
+					== Some(who.clone()),
+				Error::<T>::NotTheFinanceMinisterForPresale
+			);
+			ensure!(amount > 0, Error::<T>::NothingToSpend);
+			let terms: BoundedVec<u8, ConstU32<256>> =
+				terms.try_into().map_err(|_| Error::<T>::PresaleTermsTooLong)?;
+
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			// The verb decides the date here, once, and `execute_presale` reads the date. A
+			// months field checked at execution time instead would be a second place the same
+			// rule is written.
+			let payable_from = match verb {
+				PresaleVerb::Transfer => now,
+				PresaleVerb::Locked { months } => {
+					ensure!(months > 0 && months <= 120, Error::<T>::PresaleLockOutOfRange);
+					now.saturating_add(T::PresaleLockMonth::get().saturating_mul(months.into()))
+				},
+			};
+
+			// The house votes on this. `budget_amount` is deliberately `None`: that field
+			// tops up the standing allowance `spend_budget` draws on, and a presale release is
+			// not an allowance -- counting it there would let the same vote be spent twice,
+			// once as this release and once as budget.
+			let vote_id = Self::open_proposal(
+				who.clone(),
+				b"Presale release".to_vec().try_into().unwrap_or_default(),
+				terms.clone().into_inner().try_into().unwrap_or_default(),
+				CollectiveDecisionType::ParliamentSimpleMajority,
+				ProposalPriority::High,
+				None,
+			);
+
+			let id = NextPresaleId::<T>::mutate(|n| {
+				let id = *n;
+				*n = n.saturating_add(1);
+				id
+			});
+			PresaleProposals::<T>::insert(
+				id,
+				PresaleProposal::<T> {
+					verb,
+					beneficiary: beneficiary.clone(),
+					amount,
+					terms,
+					proposer: who,
+					vote_id,
+					proposed_at: now,
+					payable_from,
+				},
+			);
+			Self::deposit_event(Event::PresaleProposed { id, vote_id, beneficiary, amount });
+			Ok(())
+		}
+
+		/// Carry out a presale release the house has agreed to.
+		///
+		/// Permissionless, like `finalize_proposal` and for the same reason: it decides
+		/// nothing. The vote is recorded, the lock is a date written when the release was
+		/// proposed, and both are checked here rather than taken on trust. Anyone may ask for
+		/// an agreed release to be carried out, and nobody can hold one back by declining to.
+		///
+		/// `finalize_proposal` has to have run first -- that is what turns a tally into a
+		/// status, and this reads the status.
+		#[pezpallet::call_index(61)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		pub fn execute_presale(origin: OriginFor<T>, id: u32) -> DispatchResult {
+			ensure_signed(origin)?;
+			let p = PresaleProposals::<T>::get(id).ok_or(Error::<T>::PresaleNotFound)?;
+
+			let vote = ActiveProposals::<T>::get(p.vote_id).ok_or(Error::<T>::ProposalNotFound)?;
+			ensure!(vote.status == ProposalStatus::Approved, Error::<T>::PresaleNotApproved);
+			ensure!(
+				pezframe_system::Pezpallet::<T>::block_number() >= p.payable_from,
+				Error::<T>::PresaleStillLocked
+			);
+
+			// Removed before sending, so a send that fails reverts the whole call and a
+			// release cannot be paid twice. Removing it afterwards would leave a window in
+			// which the money is gone and the record still says it is owed.
+			PresaleProposals::<T>::remove(id);
+			let sent_total = PresaleSentTotal::<T>::mutate(|r| {
+				*r = r.saturating_add(p.amount);
+				*r
+			});
+			Self::send_presale_spend(&p.beneficiary, p.amount)
+				.map_err(|_| Error::<T>::CouldNotReachTreasury)?;
+			Self::deposit_event(Event::PresaleSent {
+				id,
+				beneficiary: p.beneficiary,
+				amount: p.amount,
+				sent_total,
+			});
+			Ok(())
+		}
+
+		/// Withdraw a release, or clear one the house refused.
+		///
+		/// Two callers, because there are two ways a release ends without being paid and
+		/// leaving either one in storage costs the chain a record it will never read again.
+		///
+		/// Before the vote closes it is the proposer's call and nobody else's: a house that
+		/// has changed its mind votes the proposal down, so this is for the minister who finds
+		/// the terms were wrong. Once the house has voted it down, anyone may clear it -- the
+		/// decision is already made and recorded in the vote, so removing the release decides
+		/// nothing, exactly as `finalize_proposal` decides nothing. Leaving it to the proposer
+		/// alone would mean a minister who stops caring, or stops holding the office, leaves
+		/// the entry behind for good.
+		#[pezpallet::call_index(62)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		pub fn cancel_presale(origin: OriginFor<T>, id: u32) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let p = PresaleProposals::<T>::get(id).ok_or(Error::<T>::PresaleNotFound)?;
+			let refused = ActiveProposals::<T>::get(p.vote_id)
+				.map(|v| v.status == ProposalStatus::Rejected)
+				.unwrap_or(false);
+			ensure!(refused || who == p.proposer, Error::<T>::NotTheFinanceMinisterForPresale);
+			PresaleProposals::<T>::remove(id);
+			Self::deposit_event(Event::PresaleCancelled { id });
 			Ok(())
 		}
 
@@ -2311,9 +2769,20 @@ pub mod pezpallet {
 		}
 
 		/// Finalizes election and determines winners
+		///
+		/// Charged for a full ballot and refunded down to the one it counted. The fee has to
+		/// be known before dispatch and the candidate list is only readable after, so the
+		/// ceiling is what a caller pays up front -- five hundred candidates, the bound the
+		/// type enforces. Returning the actual weight is what keeps a three-candidate election
+		/// from paying for four hundred and ninety-seven it never read.
 		#[pezpallet::call_index(3)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election())]
-		pub fn finalize_election(origin: OriginFor<T>, election_id: u32) -> DispatchResult {
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(
+			MAX_ELECTION_CANDIDATES
+		))]
+		pub fn finalize_election(
+			origin: OriginFor<T>,
+			election_id: u32,
+		) -> DispatchResultWithPostInfo {
 			// Permissionless. Counting decides nothing: the votes are cast, the rules were
 			// fixed when the election opened, and the result is whatever the arithmetic says.
 			// Requiring root here meant the count -- not just the calling of an election, the
@@ -2322,6 +2791,8 @@ pub mod pezpallet {
 
 			let mut election =
 				ActiveElections::<T>::get(election_id).ok_or(Error::<T>::ElectionNotFound)?;
+			// What the count will actually walk.
+			let counted = election.candidates.len() as u32;
 
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
 			ensure!(current_block > election.end_block, Error::<T>::ElectionNotActive);
@@ -2349,7 +2820,9 @@ pub mod pezpallet {
 						election_id,
 						election_type: election.election_type,
 					});
-					return Ok(());
+					return Ok(
+						Some(<T as pezpallet::Config>::WeightInfo::finalize_election(0)).into()
+					);
 				},
 				Err(e) => return Err(e.into()),
 			};
@@ -2401,7 +2874,7 @@ pub mod pezpallet {
 				},
 			}
 
-			Ok(())
+			Ok(Some(<T as pezpallet::Config>::WeightInfo::finalize_election(counted)).into())
 		}
 
 		#[pezpallet::call_index(10)]
@@ -2702,41 +3175,14 @@ pub mod pezpallet {
 				Error::<T>::NotAuthorizedToPropose
 			);
 
-			let proposal_id = NextProposalId::<T>::get();
-			NextProposalId::<T>::put(proposal_id.saturating_add(1));
-
-			let current_block = <pezframe_system::Pezpallet<T>>::block_number();
-			let voting_starts_at = current_block + 14400u32.into();
-			let expires_at = voting_starts_at + T::ElectionPeriod::get();
-
-			let proposal = CollectiveProposal {
-				proposal_id,
-				proposer: proposer.clone(),
+			Self::open_proposal(
+				proposer,
 				title,
 				description,
-				proposed_at: current_block,
-				voting_starts_at,
-				expires_at,
 				decision_type,
-				status: ProposalStatus::Active,
-				aye_votes: 0,
-				nay_votes: 0,
-				abstain_votes: 0,
-				threshold: Self::get_voting_threshold(&decision_type),
-				votes_cast: 0,
 				priority,
 				budget_amount,
-			};
-
-			ActiveProposals::<T>::insert(proposal_id, proposal);
-
-			Self::deposit_event(Event::ProposalSubmitted {
-				proposal_id,
-				proposer,
-				decision_type,
-				voting_deadline: expires_at,
-			});
-
+			);
 			Ok(())
 		}
 
@@ -3719,6 +4165,86 @@ pub mod pezpallet {
 		/// Sent unpaid for the same reason as the population report: this is a sibling system
 		/// chain, and a payment Parliament has approved should not fail because a sovereign
 		/// account was short of fees.
+		/// Tell the airdrop pot's chain to pay.
+		///
+		/// `pezpallet_treasury::spend` on the pot's instance. Four arguments and each one is
+		/// load-bearing in a way the compiler cannot see from here:
+		///
+		/// - `asset_kind` is `()` -- the pot holds the native token and nothing else.
+		/// - `amount` is **compact**, unlike `spend_from_government_pot` next door. That is
+		///   not a style difference: the treasury's `spend` declares `#[pezpallet::compact]`,
+		///   and sending it at full width decodes as a different value on the other side.
+		/// - `beneficiary` is a lookup, and this chain's runtime uses `IdentityLookup`, so the
+		///   account id goes on the wire as itself.
+		/// - `valid_from` is `None`: the wait already happened here, and asking the other
+		///   chain to wait again would put the same delay in two places where only one of them
+		///   is the one anybody reads.
+		///
+		/// `OriginKind::Xcm` so the pot sees this chain speaking as itself, which is what its
+		/// `EnsureXcm<Equals<PeopleLocation>>` accepts.
+		fn send_airdrop_spend(beneficiary: &T::AccountId, amount: u128) -> Result<(), SendError> {
+			let call = (
+				T::AirdropPotPalletIndex::get(),
+				TREASURY_SPEND_CALL_INDEX,
+				(),
+				codec::Compact(amount),
+				beneficiary,
+				Option::<BlockNumberFor<T>>::None,
+			)
+				.encode();
+
+			let message = Xcm(vec![
+				UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+				Transact {
+					origin_kind: OriginKind::Xcm,
+					fallback_max_weight: None,
+					call: call.into(),
+				},
+			]);
+
+			let (ticket, _) = T::XcmSender::validate(
+				&mut Some(T::TreasuryChainLocation::get()),
+				&mut Some(message),
+			)?;
+			T::XcmSender::deliver(ticket).map(|_| ())
+		}
+
+		/// Ask the presale pot to pay.
+		///
+		/// The same treasury call as the airdrop's, addressed to a different pallet index --
+		/// the instances share the pallet's call enum, so the call index is the same for both
+		/// and only `PresalePotPalletIndex` distinguishes them. Get that wrong and the spend
+		/// is paid out of whichever pot sits at the number.
+		///
+		/// `valid_from` is `None`: the wait already happened here. It cannot be used for the
+		/// lock because it is the other chain's block height and this chain cannot read it.
+		fn send_presale_spend(beneficiary: &T::AccountId, amount: u128) -> Result<(), SendError> {
+			let call = (
+				T::PresalePotPalletIndex::get(),
+				TREASURY_SPEND_CALL_INDEX,
+				(),
+				codec::Compact(amount),
+				beneficiary,
+				Option::<BlockNumberFor<T>>::None,
+			)
+				.encode();
+
+			let message = Xcm(vec![
+				UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+				Transact {
+					origin_kind: OriginKind::Xcm,
+					fallback_max_weight: None,
+					call: call.into(),
+				},
+			]);
+
+			let (ticket, _) = T::XcmSender::validate(
+				&mut Some(T::TreasuryChainLocation::get()),
+				&mut Some(message),
+			)?;
+			T::XcmSender::deliver(ticket).map(|_| ())
+		}
+
 		fn send_government_spend(
 			beneficiary: &T::AccountId,
 			amount: u128,
@@ -3814,6 +4340,62 @@ pub mod pezpallet {
 		}
 
 		/// Calculate voting threshold
+		/// Open a proposal for the house to vote on, and return its id.
+		///
+		/// Shared by `submit_proposal` and `propose_presale`, which differ only in who may
+		/// call them: one asks `can_propose`, the other asks whether the caller holds the
+		/// finance portfolio. What follows the authority check is the same proposal, counted
+		/// by the same tally, closed by the same `finalize_proposal` -- and it has to be, or
+		/// the chain would hold two records of one vote and eventually disagree with itself.
+		///
+		/// Authorisation is the caller's to establish. This writes the record.
+		fn open_proposal(
+			proposer: T::AccountId,
+			title: BoundedVec<u8, ConstU32<100>>,
+			description: BoundedVec<u8, ConstU32<1000>>,
+			decision_type: CollectiveDecisionType,
+			priority: ProposalPriority,
+			budget_amount: Option<u128>,
+		) -> u32 {
+			let proposal_id = NextProposalId::<T>::get();
+			NextProposalId::<T>::put(proposal_id.saturating_add(1));
+
+			let current_block = <pezframe_system::Pezpallet<T>>::block_number();
+			let voting_starts_at = current_block + 14400u32.into();
+			let expires_at = voting_starts_at + T::ElectionPeriod::get();
+
+			ActiveProposals::<T>::insert(
+				proposal_id,
+				CollectiveProposal {
+					proposal_id,
+					proposer: proposer.clone(),
+					title,
+					description,
+					proposed_at: current_block,
+					voting_starts_at,
+					expires_at,
+					decision_type,
+					status: ProposalStatus::Active,
+					aye_votes: 0,
+					nay_votes: 0,
+					abstain_votes: 0,
+					threshold: Self::get_voting_threshold(&decision_type),
+					votes_cast: 0,
+					priority,
+					budget_amount,
+				},
+			);
+
+			Self::deposit_event(Event::ProposalSubmitted {
+				proposal_id,
+				proposer,
+				decision_type,
+				voting_deadline: expires_at,
+			});
+
+			proposal_id
+		}
+
 		fn get_voting_threshold(decision_type: &CollectiveDecisionType) -> u32 {
 			match decision_type {
 				CollectiveDecisionType::ParliamentSimpleMajority => {

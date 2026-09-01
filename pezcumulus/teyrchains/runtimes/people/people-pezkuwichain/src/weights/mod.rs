@@ -39,6 +39,7 @@ pub mod pezpallet_timestamp;
 pub mod pezpallet_tnpos;
 pub mod pezpallet_transaction_payment;
 pub mod pezpallet_utility;
+pub mod pezpallet_welati;
 pub mod pezpallet_xcm;
 pub mod rocksdb_weights;
 pub mod xcm;

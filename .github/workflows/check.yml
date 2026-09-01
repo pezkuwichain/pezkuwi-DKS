@@ -78,6 +78,19 @@ jobs:
       # `meter.try_consume(...)` that can never refuse. Both were live on 2026-08-30.
       - name: No runtime binds a zero-weight fallback
         run: python3 .github/scripts/check-zero-weights.py
+      # `construct_runtime!` refuses a duplicate index itself, so this only moves the answer
+      # earlier -- but a runtime build does not run on the development box, so "earlier" is
+      # the whole point. The airdrop pot took 66 on both hubs without anyone counting; Zagros
+      # already had `pezpallet_revive` there, and five jobs reported the cascade instead.
+      - name: No runtime holds one pallet index twice
+        run: python3 .github/scripts/check-pallet-indices.py --verbose
+      # `check-zero-weights.py` asks whether a bound fallback returns zero. This asks the
+      # question underneath it: which of a pallet's weight files is the one in use. Welati had
+      # three -- a hand-written trait in `lib.rs`, a generated `weights.rs`, and a generated
+      # file in the runtime that was never declared in `mod.rs` -- and the one in use was the
+      # only one nobody had measured, with no storage cost on any call.
+      - name: One WeightInfo per pallet, and every weights file compiled
+        run: python3 .github/scripts/check-weights-wiring.py
 
   # A note describing the tree goes stale the moment the tree moves. These measure the tree.
   # The gaps are the backlog and do not fail a build; work that came undone does.

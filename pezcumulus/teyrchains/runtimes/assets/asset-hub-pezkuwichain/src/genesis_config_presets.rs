@@ -114,10 +114,13 @@ const _: () = assert!(
 ///   not among them -- see `pez_asset_team()`.
 /// - `founder_account`: Account holding the Founder PEZ allocation. This one is genuinely
 ///   owned -- it is property, and what happens to it is the founder's to decide.
-/// - `presale_account`: Account holding the presale allocation. Owned, like the founder's:
-///   the sale happens on the exchange, not on chain, so this allocation is moved by whoever
-///   holds it rather than released by a pallet. Once the sale is done the account has no
-///   further role.
+/// - `pez_presale_custody`: Account holding the PEZ presale allocation. The sale happens on
+///   the exchange, not on chain, so this allocation is moved by whoever holds it rather than
+///   released by a pallet -- but "whoever holds it" is a board rather than a person: it is
+///   the exchange's 3-of-5 cold multisig, whose signatories are the offices of Serok,
+///   SerokWeziran, WezireDarayiye, Noter and a validator. Where, how much and for how long
+///   the PEZ presale runs is that board's to decide; no key can move it alone. HEZ's presale
+///   is not here at all -- it is a pot on this chain that only Parliament can release.
 /// - `foreign_assets`: Foreign assets to create at genesis
 /// - `foreign_assets_endowed_accounts`: Initial balances for foreign assets
 fn asset_hub_pezkuwichain_genesis(
@@ -127,7 +130,7 @@ fn asset_hub_pezkuwichain_genesis(
 	id: ParaId,
 	asset_owner: AccountId,
 	founder_account: AccountId,
-	presale_account: AccountId,
+	pez_presale_custody: AccountId,
 	foreign_assets: Vec<(Location, AccountId, Balance)>,
 	foreign_assets_endowed_accounts: Vec<(Location, AccountId, Balance)>,
 	dev_stakers: Option<(u32, u32)>,
@@ -142,9 +145,33 @@ fn asset_hub_pezkuwichain_genesis(
 		"PEZ genesis allocations must equal total supply"
 	);
 
+	// The airdrop pot's 40M HEZ, minted here rather than on the relay.
+	//
+	// The pot is `pezpallet_treasury`'s second instance and its account is derived from a
+	// pallet id, so nobody holds a key to it -- the balance can only leave through an
+	// approved spend, which the People chain authorises with two signatures under a million
+	// HEZ and three above. Minting it straight here means no key ever holds the amount and no
+	// post-launch transfer has to be remembered; the relay's `hez_allocations_sum_to_200m`
+	// asserts the other side of this split.
+	let airdrop_pot: AccountId = AirdropPotPalletId::get().into_account_truncating();
+	const AIRDROP_ALLOCATION: Balance = 40_000_000 * UNITS;
+
+	// The presale pot's 100M HEZ -- half the supply -- minted here for the same reason and by
+	// the same means, but answering to Parliament rather than to the two offices above. It
+	// used to be a plain balance on a single key called `Presale_1`; a key holding half the
+	// supply is not a presale mechanism, it is a person who can end one.
+	let presale_pot: AccountId = PresalePotPalletId::get().into_account_truncating();
+	const PRESALE_ALLOCATION: Balance = 100_000_000 * UNITS;
+
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|k| (k, endowment)).collect(),
+			balances: endowed_accounts
+				.iter()
+				.cloned()
+				.map(|k| (k, endowment))
+				.chain(core::iter::once((airdrop_pot, AIRDROP_ALLOCATION)))
+				.chain(core::iter::once((presale_pot, PRESALE_ALLOCATION)))
+				.collect(),
 		},
 		teyrchain_info: TeyrchainInfoConfig { teyrchain_id: id },
 		collator_selection: CollatorSelectionConfig {
@@ -209,8 +236,9 @@ fn asset_hub_pezkuwichain_genesis(
 				// Founder allocation: 1.875% = 93,750,000 PEZ. Property, not treasury.
 				(PEZ_ASSET_ID, founder_account.clone(), PEZ_FOUNDER_ALLOCATION),
 				// Presale allocation: 1.875% = 93,750,000 PEZ. Sold on the exchange, so it
-				// is held by an account that can move it, not by a pallet.
-				(PEZ_ASSET_ID, presale_account.clone(), PEZ_PRESALE_ALLOCATION),
+				// is held by an account that can move it, not by a pallet -- and that account
+				// is the exchange's own 3-of-5 cold multisig, not a key.
+				(PEZ_ASSET_ID, pez_presale_custody.clone(), PEZ_PRESALE_ALLOCATION),
 				// wHEZ starts with 0 balance - only created via TokenWrapper
 				// wUSDT starts with 0 balance - minted via Custodial Bridge
 			],
@@ -262,11 +290,15 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			// Founder_Satoshi_Qazi_Muhammed: 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
 			let founder_account: AccountId =
 				hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
-			// Presale_1: 5Fs1VXbPVvmHAaQ8a7bKcdJ8h8c1mgJKLJ6Pwce69fSqhLJ5
-			// Holds the whole presale allocation. Presale_2 and Presale_3 exist in the same
-			// wallet set if the allocation is ever to be split across several holders.
-			let presale_account: AccountId =
-				hex!("a8055af9df1db60bea4277f7e91157246a6245123564bff10435f461f284bf55").into();
+			// The exchange's cold multisig: 5FHJnBk2ZaseiuE46GCSpbiT5weGFS31LQ842FnTKa6UzVqr
+			//
+			// 3-of-5, signatories Serok, SerokWeziran, WezireDarayiye, Noter and a validator.
+			// The address is `blake2_256(b"modlpy/utilisuba" ++ sorted signatories ++ 3u16)`,
+			// so it is a function of who signs and how many are needed and nothing else --
+			// which is why a genesis reset does not change it and why the exchange side needs
+			// no update. It replaces `Presale_1`, a single key that held this whole share.
+			let pez_presale_custody: AccountId =
+				hex!("8e51349e1f479fe672eacf82cf79c2da4a3579d260b6d99e1b3660e93b371fd0").into();
 
 			asset_hub_pezkuwichain_genesis(
 				// initial collators - 2 Asset Hub collators - Generated 2026-01-29
@@ -291,7 +323,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				1000.into(),
 				asset_owner,
 				founder_account,
-				presale_account,
+				pez_presale_custody,
 				vec![],
 				vec![],
 				None,
@@ -305,7 +337,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			// For local testnet, Alice acts as treasury/founder/presale
 			let asset_owner = Sr25519Keyring::Alice.to_account_id();
 			let founder_account = Sr25519Keyring::Alice.to_account_id();
-			let presale_account = Sr25519Keyring::Alice.to_account_id();
+			let pez_presale_custody = Sr25519Keyring::Alice.to_account_id();
 
 			asset_hub_pezkuwichain_genesis(
 				// initial collators.
@@ -318,7 +350,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				1000.into(),
 				asset_owner,
 				founder_account,
-				presale_account,
+				pez_presale_custody,
 				vec![
 					// bridged ZGR
 					(
@@ -349,7 +381,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			// For dev, Alice acts as all special accounts
 			let asset_owner = Sr25519Keyring::Alice.to_account_id();
 			let founder_account = Sr25519Keyring::Alice.to_account_id();
-			let presale_account = Sr25519Keyring::Alice.to_account_id();
+			let pez_presale_custody = Sr25519Keyring::Alice.to_account_id();
 
 			asset_hub_pezkuwichain_genesis(
 				// initial collators.
@@ -367,7 +399,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				1000.into(),
 				asset_owner,
 				founder_account,
-				presale_account,
+				pez_presale_custody,
 				vec![],
 				vec![],
 				Some((1000, 25_000)),

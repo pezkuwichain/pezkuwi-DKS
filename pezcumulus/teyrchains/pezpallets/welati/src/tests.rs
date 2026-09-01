@@ -6,11 +6,12 @@
 use crate::{
 	mock::{
 		add_parliament_member, endorsed_by, install_prime_minister, last_event, make_citizen,
-		run_to_block, seat_president, ExtBuilder, RuntimeEvent, RuntimeOrigin, System, Test,
-		Welati,
+		run_to_block, seat_president, sent_xcm, AirdropCeiling, ExtBuilder, LargeAirdropDelay,
+		RuntimeEvent, RuntimeOrigin, System, Test, Welati,
 	},
 	types::*,
-	Error, Event as WelatiEvent, GovernmentPosition,
+	ActiveProposals, AirdropProposals, Error, Event as WelatiEvent, GovernmentPosition,
+	NextAirdropId, PresaleProposals, PresaleSentTotal,
 };
 use pezframe_support::{assert_noop, assert_ok, BoundedVec};
 use pezpallet_tiki::Tiki;
@@ -4015,5 +4016,514 @@ fn an_expired_president_holds_no_authority() {
 			Welati::appoint_diwan_member(RuntimeOrigin::signed(president), nominee),
 			Error::<Test>::NotAuthorizedToNominate
 		);
+	});
+}
+
+// ===== THE AIRDROP POT =====
+//
+// Forty million HEZ sits in a keyless treasury instance on the Asset Hub and this chain is the
+// only thing that can spend it. What follows holds the shape of that authority: who may
+// propose, who must sign, when a third signature is required, and that the wait above the
+// ceiling is real rather than decorative.
+//
+// The recipients are usually exchanges, whose customers cannot be enumerated on chain -- which
+// is why the mechanism is discretionary at all. What replaces a rule is the signature count.
+
+const PM: u64 = 7;
+const TREASURER: u64 = 8;
+const OUTSIDER: u64 = 9;
+const EXCHANGE: u64 = 77;
+
+fn seat_the_three_offices() {
+	pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Serok, SEROK);
+	pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::SerokWeziran, PM);
+	pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::Xezinedar, TREASURER);
+}
+
+/// Only the Prime Minister proposes.
+#[test]
+fn an_airdrop_is_proposed_by_the_prime_minister_alone() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		for who in [SEROK, TREASURER, OUTSIDER] {
+			assert_noop!(
+				Welati::propose_airdrop(RuntimeOrigin::signed(who), EXCHANGE, 100, b"x".to_vec()),
+				Error::<Test>::NotThePrimeMinister
+			);
+		}
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			100,
+			b"listing".to_vec()
+		));
+		assert!(AirdropProposals::<Test>::get(0).is_some());
+	});
+}
+
+/// A proposal alone moves nothing, and the President's signature is what completes a small one.
+#[test]
+fn a_small_airdrop_needs_the_president_and_nobody_else() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			100,
+			b"listing".to_vec()
+		));
+
+		// Proposed is not approved.
+		assert_noop!(
+			Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::AirdropNotApproved
+		);
+
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+		let p = AirdropProposals::<Test>::get(0).unwrap();
+		assert!(p.approved_by_president);
+		// Below the ceiling there is no wait: payable in the block it was approved.
+		assert_eq!(p.payable_from, System::block_number());
+	});
+}
+
+/// Above the ceiling the President is not enough.
+#[test]
+fn a_large_airdrop_needs_the_treasurer_too() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		let large = AirdropCeiling::get() + 1;
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			large,
+			b"big".to_vec()
+		));
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+
+		// One signature short, and the shortfall is what stops it -- not the delay.
+		assert_noop!(
+			Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::AirdropNotApproved
+		);
+
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(TREASURER), 0));
+		let p = AirdropProposals::<Test>::get(0).unwrap();
+		assert!(p.approved_by_president && p.approved_by_treasurer);
+	});
+}
+
+/// The wait above the ceiling is real, and it starts at the last signature.
+///
+/// If it started at the proposal, a proposal left sitting for a week would be payable the
+/// moment it was signed -- and the week in which anyone could have objected would have passed
+/// before there was anything to object to.
+#[test]
+fn a_large_airdrop_waits_and_the_wait_starts_at_the_last_signature() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		let large = AirdropCeiling::get() + 1;
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			large,
+			b"big".to_vec()
+		));
+
+		// A week passes with the proposal sitting unsigned.
+		System::set_block_number(System::block_number() + LargeAirdropDelay::get() * 2);
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+		let signed_at = System::block_number();
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(TREASURER), 0));
+
+		let p = AirdropProposals::<Test>::get(0).unwrap();
+		assert_eq!(
+			p.payable_from,
+			signed_at + LargeAirdropDelay::get(),
+			"the wait must start when the last signature lands, not when the proposal was made"
+		);
+		assert_noop!(
+			Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::AirdropNotYetPayable
+		);
+
+		System::set_block_number(p.payable_from);
+		assert_ok!(Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert!(AirdropProposals::<Test>::get(0).is_none(), "a paid proposal is gone");
+	});
+}
+
+/// The same office cannot sign twice to make up the numbers.
+#[test]
+fn one_office_cannot_supply_two_signatures() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		let large = AirdropCeiling::get() + 1;
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			large,
+			b"big".to_vec()
+		));
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+		assert_noop!(
+			Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0),
+			Error::<Test>::AlreadyApproved
+		);
+		// And someone holding no office at all supplies none.
+		assert_noop!(
+			Welati::approve_airdrop(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::NotThePresident
+		);
+	});
+}
+
+/// A paid proposal cannot be paid again.
+#[test]
+fn an_airdrop_cannot_be_paid_twice() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			100,
+			b"listing".to_vec()
+		));
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+		assert_ok!(Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert_noop!(
+			Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::AirdropNotFound
+		);
+	});
+}
+
+/// The proposer may withdraw, and the President may refuse.
+#[test]
+fn a_proposal_can_be_withdrawn_or_refused() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		for canceller in [PM, SEROK] {
+			assert_ok!(Welati::propose_airdrop(
+				RuntimeOrigin::signed(PM),
+				EXCHANGE,
+				100,
+				b"x".to_vec()
+			));
+			let id = NextAirdropId::<Test>::get() - 1;
+			assert_noop!(
+				Welati::cancel_airdrop(RuntimeOrigin::signed(OUTSIDER), id),
+				Error::<Test>::NotThePresident
+			);
+			assert_ok!(Welati::cancel_airdrop(RuntimeOrigin::signed(canceller), id));
+			assert!(AirdropProposals::<Test>::get(id).is_none());
+		}
+	});
+}
+
+/// Ids are never reused, so an id in a log always names the same proposal.
+#[test]
+fn airdrop_ids_are_not_reused() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		for _ in 0..3 {
+			assert_ok!(Welati::propose_airdrop(
+				RuntimeOrigin::signed(PM),
+				EXCHANGE,
+				100,
+				b"x".to_vec()
+			));
+		}
+		assert_ok!(Welati::cancel_airdrop(RuntimeOrigin::signed(PM), 1));
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			100,
+			b"x".to_vec()
+		));
+		assert_eq!(NextAirdropId::<Test>::get(), 4, "a cancelled id is not handed out again");
+		assert!(AirdropProposals::<Test>::get(1).is_none());
+		assert!(AirdropProposals::<Test>::get(3).is_some());
+	});
+}
+
+// ============================================================================
+// PRESALE
+// ============================================================================
+
+const MINISTER: u64 = 11;
+const BUYER: u64 = 78;
+
+fn seat_the_finance_minister() {
+	pezpallet_tiki::TikiHolder::<Test>::insert(Tiki::WezireDarayiye, MINISTER);
+}
+
+/// Carry a vote the way the house would, without seating a hundred and one members.
+///
+/// The tally is written directly and `finalize_proposal` is then called for real, so what is
+/// short-circuited is the voting and not the counting: the threshold, the status transition and
+/// the permissionless finalize are all the pallet's own. Setting the status directly instead
+/// would test nothing -- `execute_presale` reads the status, so a test that wrote it would be
+/// asserting its own arrangement.
+fn carry_the_vote(vote_id: u32) {
+	ActiveProposals::<Test>::mutate(vote_id, |maybe| {
+		let p = maybe.as_mut().expect("the vote exists");
+		p.aye_votes = p.threshold;
+	});
+	assert_ok!(Welati::finalize_proposal(RuntimeOrigin::signed(OUTSIDER), vote_id));
+}
+
+/// Only the Finance Minister opens a release.
+#[test]
+fn a_presale_is_proposed_by_the_finance_minister_alone() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		seat_the_finance_minister();
+		// The President, the Prime Minister and the Treasurer are all refused here. The
+		// Treasurer especially: that office is the one this was nearly bound to.
+		for who in [SEROK, PM, TREASURER, OUTSIDER] {
+			assert_noop!(
+				Welati::propose_presale(
+					RuntimeOrigin::signed(who),
+					PresaleVerb::Transfer,
+					BUYER,
+					100,
+					b"x".to_vec()
+				),
+				Error::<Test>::NotTheFinanceMinisterForPresale
+			);
+		}
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			100,
+			b"1M HEZ to PEX at listing price".to_vec()
+		));
+		assert!(PresaleProposals::<Test>::get(0).is_some());
+	});
+}
+
+/// A release the house has not agreed to moves nothing.
+#[test]
+fn a_presale_release_waits_for_parliament() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			1_000,
+			b"terms".to_vec()
+		));
+		assert_noop!(
+			Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::PresaleNotApproved
+		);
+		assert!(sent_xcm().is_empty(), "nothing may be sent before the vote carries");
+	});
+}
+
+/// The verb decides when, and a locked release cannot be carried out as an immediate one.
+///
+/// This is the whole reason the verb is a field rather than a note beside the amount. The
+/// house agreed to a sale locked for six months; if `execute_presale` could pay it out today
+/// the lock would be a sentence in the terms and nothing else.
+#[test]
+fn a_locked_presale_cannot_be_paid_early() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Locked { months: 6 },
+			BUYER,
+			1_000,
+			b"early buyer, six months".to_vec()
+		));
+		let p = PresaleProposals::<Test>::get(0).unwrap();
+		let vote_id = p.vote_id;
+		assert_eq!(
+			p.payable_from,
+			p.proposed_at + 6 * crate::mock::PresaleLockMonth::get(),
+			"the lock is six of this chain's months from the proposal"
+		);
+
+		carry_the_vote(vote_id);
+
+		// Agreed, and still not payable.
+		assert_noop!(
+			Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::PresaleStillLocked
+		);
+		assert!(sent_xcm().is_empty(), "the money stays in the pot for the whole term");
+
+		// One block before it opens, still refused.
+		run_to_block(p.payable_from - 1);
+		assert_noop!(
+			Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::PresaleStillLocked
+		);
+
+		run_to_block(p.payable_from);
+		// The delta, not the total: `check_population_gate` runs in `on_initialize` and sends
+		// its own message once the citizen count crosses the threshold, which it does while
+		// these blocks go by. Counting everything sent would make this test fail for a reason
+		// that has nothing to do with the presale.
+		let before = sent_xcm().len();
+		assert_ok!(Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert_eq!(sent_xcm().len(), before + 1, "and then exactly one spend is sent");
+	});
+}
+
+/// A plain transfer is payable as soon as the vote carries, and pays once.
+#[test]
+fn a_plain_presale_transfer_pays_when_the_vote_carries() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			1_000,
+			b"to the exchange cold wallet".to_vec()
+		));
+		let vote_id = PresaleProposals::<Test>::get(0).unwrap().vote_id;
+		carry_the_vote(vote_id);
+
+		assert_ok!(Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert_eq!(sent_xcm().len(), 1);
+		// The record is gone, so a second call cannot pay the same release twice.
+		assert_noop!(
+			Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::PresaleNotFound
+		);
+		assert_eq!(sent_xcm().len(), 1);
+	});
+}
+
+/// What has left the pot is counted, because the pot's balance does not answer that question.
+#[test]
+fn the_released_total_counts_what_left() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_eq!(PresaleSentTotal::<Test>::get(), 0);
+		for (id, amount) in [(0u32, 1_000u128), (1, 250)] {
+			assert_ok!(Welati::propose_presale(
+				RuntimeOrigin::signed(MINISTER),
+				PresaleVerb::Transfer,
+				BUYER,
+				amount,
+				b"terms".to_vec()
+			));
+			let vote_id = PresaleProposals::<Test>::get(id).unwrap().vote_id;
+			carry_the_vote(vote_id);
+			assert_ok!(Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), id));
+		}
+		assert_eq!(PresaleSentTotal::<Test>::get(), 1_250);
+	});
+}
+
+/// A lock of no months, or one longer than ten years, is refused.
+#[test]
+fn a_presale_lock_is_bounded_at_both_ends() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		for months in [0u8, 121] {
+			assert_noop!(
+				Welati::propose_presale(
+					RuntimeOrigin::signed(MINISTER),
+					PresaleVerb::Locked { months },
+					BUYER,
+					100,
+					b"x".to_vec()
+				),
+				Error::<Test>::PresaleLockOutOfRange
+			);
+		}
+	});
+}
+
+/// The proposer may withdraw before the vote closes; nobody else may.
+#[test]
+fn only_the_proposer_withdraws_a_presale() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			100,
+			b"terms".to_vec()
+		));
+		for who in [SEROK, PM, OUTSIDER] {
+			assert_noop!(
+				Welati::cancel_presale(RuntimeOrigin::signed(who), 0),
+				Error::<Test>::NotTheFinanceMinisterForPresale
+			);
+		}
+		assert_ok!(Welati::cancel_presale(RuntimeOrigin::signed(MINISTER), 0));
+		assert!(PresaleProposals::<Test>::get(0).is_none());
+	});
+}
+
+/// A release the house refused is anyone's to clear.
+///
+/// Otherwise it stays in storage until the minister who proposed it happens to remove it, and
+/// a minister who leaves office cannot: the record would outlive the office that made it.
+#[test]
+fn a_refused_presale_can_be_cleared_by_anyone() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			100,
+			b"terms".to_vec()
+		));
+		let vote_id = PresaleProposals::<Test>::get(0).unwrap().vote_id;
+
+		// While the vote is open an outsider is still refused.
+		assert_noop!(
+			Welati::cancel_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::NotTheFinanceMinisterForPresale
+		);
+
+		// Let the window close with no ayes. `finalize_proposal` takes it as a refusal.
+		let expires_at = ActiveProposals::<Test>::get(vote_id).unwrap().expires_at;
+		run_to_block(expires_at + 1);
+		assert_ok!(Welati::finalize_proposal(RuntimeOrigin::signed(OUTSIDER), vote_id));
+		assert_eq!(ActiveProposals::<Test>::get(vote_id).unwrap().status, ProposalStatus::Rejected);
+
+		assert_ok!(Welati::cancel_presale(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert!(PresaleProposals::<Test>::get(0).is_none());
+	});
+}
+
+/// A refused release cannot be carried out, cleared or not.
+#[test]
+fn a_refused_presale_is_never_paid() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			100,
+			b"terms".to_vec()
+		));
+		let vote_id = PresaleProposals::<Test>::get(0).unwrap().vote_id;
+		let expires_at = ActiveProposals::<Test>::get(vote_id).unwrap().expires_at;
+		run_to_block(expires_at + 1);
+		assert_ok!(Welati::finalize_proposal(RuntimeOrigin::signed(OUTSIDER), vote_id));
+
+		let before = sent_xcm().len();
+		assert_noop!(
+			Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::PresaleNotApproved
+		);
+		assert_eq!(sent_xcm().len(), before, "a refused release sends nothing");
+		assert_eq!(PresaleSentTotal::<Test>::get(), 0);
 	});
 }

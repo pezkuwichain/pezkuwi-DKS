@@ -59,17 +59,31 @@ use zagros_runtime_constants::currency::UNITS as HEZ;
 /// Founder allocation: 10% = 20,000,000 HEZ
 pub const HEZ_FOUNDER_ALLOCATION: u128 = 20_000_000 * HEZ;
 
-/// Presale allocation: 50% = 100,000,000 HEZ
+/// Presale allocation: 50% = 100,000,000 HEZ.
+///
+/// **Minted on the Asset Hub, not here** -- into `PresalePot`, a keyless treasury instance
+/// that only Parliament can release. It used to be a plain balance on `Presale_1`, a single
+/// key holding half the supply.
 pub const HEZ_PRESALE_ALLOCATION: u128 = 100_000_000 * HEZ;
 
 /// Kurdistan Treasury allocation: 20% = 40,000,000 HEZ
 pub const HEZ_TREASURY_ALLOCATION: u128 = 40_000_000 * HEZ;
 
-/// Airdrop allocation: 20% = 40,000,000 HEZ
+/// Airdrop allocation: 20% = 40,000,000 HEZ.
+///
+/// **Minted on the Asset Hub, not here** -- into `AirdropPot`, a keyless treasury instance
+/// spendable only by the People chain. The number lives in this file because this is where
+/// the 200M is split and where anyone changing one share will look; the chain that holds it
+/// is a separate question from the share it holds.
 pub const HEZ_AIRDROP_ALLOCATION: u128 = 40_000_000 * HEZ;
 
 // ===========================================================================
-// COMPILE-TIME VALIDATION: Ensure allocations sum to 200M genesis supply
+// COMPILE-TIME VALIDATION: the four shares still sum to 200M.
+//
+// Unchanged by the airdrop and the presale moving to the Asset Hub: what moved is where a
+// share is minted, not how the supply is divided. `hez_allocations_sum_to_200m` below checks
+// the other half of that -- which chain mints which share -- because this assert cannot see
+// it, and a share that moved chain while keeping its number would pass here in silence.
 // ===========================================================================
 const _: () = assert!(
 	HEZ_FOUNDER_ALLOCATION
@@ -195,14 +209,71 @@ fn default_teyrchains_host_configuration_is_consistent() {
 	default_teyrchains_host_configuration().panic_if_not_consistent();
 }
 
+/// The four allocations still sum to 200M, across two chains rather than one.
+///
+/// Two are minted here; the airdrop's 40M and the presale's 100M are minted into the Asset
+/// Hub's `AirdropPot` and `PresalePot`. The constants stay in this file because this is where
+/// the split is decided and where anybody changing one share will look -- moving them to the
+/// chain that holds the money would leave half the arithmetic here and half somewhere else.
+///
+/// The two that stay are the two with an owner: the founder's is property, and the treasury's
+/// is the relay's own. The two that moved are the two that answer to a body rather than to a
+/// key, and the pots that hold them live on the Asset Hub.
 #[test]
 fn hez_allocations_sum_to_200m() {
-	// Runtime validation that allocations sum to 200M
-	let total = HEZ_FOUNDER_ALLOCATION
-		+ HEZ_PRESALE_ALLOCATION
-		+ HEZ_TREASURY_ALLOCATION
-		+ HEZ_AIRDROP_ALLOCATION;
-	assert_eq!(total, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
+	let here = HEZ_FOUNDER_ALLOCATION + HEZ_TREASURY_ALLOCATION;
+	let on_asset_hub = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION;
+	assert_eq!(here, 60_000_000 * HEZ, "the relay mints 60M: founder and treasury");
+	assert_eq!(on_asset_hub, 140_000_000 * HEZ, "the Asset Hub mints the airdrop and presale pots");
+	assert_eq!(here + on_asset_hub, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
+}
+
+/// The relay's genesis mints the two shares it keeps, and neither of the two that moved.
+///
+/// `hez_allocations_sum_to_200m` above cannot see this. It does arithmetic on four constants,
+/// and the constants are unchanged by a share moving chain -- so it would have passed with the
+/// presale's hundred million still minted here beside the pot's copy on the Asset Hub, which
+/// is a hundred million HEZ of supply appearing twice. What that test checks is the division;
+/// what this one checks is where the money lands, and only the second one notices a line that
+/// was supposed to be deleted and was not.
+#[test]
+fn the_relay_mints_only_the_shares_it_keeps() {
+	let genesis = pezkuwichain_genesis_config();
+	let balances = genesis["balances"]["balances"]
+		.as_array()
+		.expect("the balances patch is an array of (account, amount)");
+
+	let amounts: Vec<u128> = balances
+		.iter()
+		.map(|entry| {
+			entry[1].as_u64().map(u128::from).unwrap_or_else(|| {
+				// Anything past u64 arrives as a JSON number too large for `as_u64`; the
+				// allocations are all in that range, so parse rather than silently skip.
+				entry[1].to_string().parse().expect("a balance is a number")
+			})
+		})
+		.collect();
+
+	let count = |v: u128| amounts.iter().filter(|a| **a == v).count();
+
+	assert_eq!(count(HEZ_FOUNDER_ALLOCATION), 1, "the founder's 20M is minted here, once");
+	assert_eq!(
+		count(HEZ_PRESALE_ALLOCATION),
+		0,
+		"the presale's 100M belongs to `PresalePot` on the Asset Hub, not to any account here"
+	);
+	// The treasury and the airdrop are both forty million, so no assertion can name one of
+	// them by its amount -- the first draft of this test asked for zero accounts holding the
+	// airdrop's figure and failed on the treasury. What the count still answers is the
+	// question that matters: one such account is the treasury, and two would mean the airdrop
+	// line came back while the pot on the Asset Hub kept its copy.
+	assert_eq!(HEZ_TREASURY_ALLOCATION, HEZ_AIRDROP_ALLOCATION, "the two shares are equal");
+	assert_eq!(
+		count(HEZ_TREASURY_ALLOCATION),
+		1,
+		"exactly one account here holds forty million, and it is the treasury -- the airdrop's \
+		 forty million belongs to `AirdropPot` on the Asset Hub"
+	);
 }
 
 fn pezkuwichain_testnet_genesis(
@@ -581,22 +652,22 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 		hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
 
 	// Presale account - receives 50% (100M HEZ)
-	// Presale_1
-	// SS58: 5Fs1VXbPVvmHAaQ8a7bKcdJ8h8c1mgJKLJ6Pwce69fSqhLJ5
-	let presale_account: AccountId =
-		hex!("a8055af9df1db60bea4277f7e91157246a6245123564bff10435f461f284bf55").into();
-
 	// Kurdistan Treasury account - receives 20% (40M HEZ)
 	// Treasury_1
 	// SS58: 5EhCpn82QtdU53MF6PoNFrKHgSrsfcAxFTMwrn3JYf9dioQw
 	let treasury_account: AccountId =
 		hex!("744ed0812d6096827376b4625fe4f840d4950d5aef0ab12902e64c444c8e9d29").into();
 
-	// Airdrop/Staking Rewards account - receives 20% (40M HEZ)
-	// Staking_Rewards_Pool
-	// SS58: 5EhNrCuXujRKefXrY76wkFMUHVNNpDZpGXvf2L1zTuEK1KsZ
-	let airdrop_account: AccountId =
-		hex!("74708f70ad76a617a8c90032bf69869b983660b37f917268c0934fd782b1e350").into();
+	// There is no airdrop account here any more, and that is the fix rather than an omission.
+	// It used to hold 40M HEZ that nothing in the tree ever read: `Claims` is wired but its
+	// genesis list is empty, and Claims pays Ethereum-signed claims out of newly minted funds
+	// anyway, so it never touched this balance. The only way to distribute it was for whoever
+	// held the key to send transfers by hand.
+	//
+	// The 40M is minted into the Asset Hub's `AirdropPot` instead -- a keyless treasury
+	// instance, spendable only by the People chain, two signatures under a million HEZ and
+	// three above it. No key holds it, so none can be lost or leaked, and no post-launch
+	// transfer has to be remembered.
 
 	// ==========================================================================
 	// INITIAL VALIDATORS - 21 validators - Generated 2026-01-29
@@ -998,10 +1069,12 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 		balances: BalancesConfig {
 			balances: vec![
 				// HEZ Genesis Distribution (200M Total)
+				// The airdrop's 40M is not here. It is minted straight into the Asset Hub's
+				// airdrop pot, a keyless treasury instance -- so no key ever holds it and no
+				// manual transfer has to be remembered after launch. See
+				// `HEZ_AIRDROP_ALLOCATION`'s comment and the Asset Hub's `AirdropPot`.
 				(founder_account.clone(), HEZ_FOUNDER_ALLOCATION), // 10% = 20M HEZ
-				(presale_account.clone(), HEZ_PRESALE_ALLOCATION), // 50% = 100M HEZ
 				(treasury_account.clone(), HEZ_TREASURY_ALLOCATION), // 20% = 40M HEZ
-				(airdrop_account.clone(), HEZ_AIRDROP_ALLOCATION), // 20% = 40M HEZ
 			]
 			.into_iter()
 			// Add validator stash balances (STASH * 2 to cover bond + existential deposit)

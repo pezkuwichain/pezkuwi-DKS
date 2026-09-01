@@ -14,6 +14,32 @@ mod benchmarks {
 	use super::*;
 
 	// ----------------------------------------------------------------
+	// SHARED SETUP
+	//
+	// Four of this pallet's benchmarks did not execute at all, and the weights recorded for
+	// them could not be regenerated. Each failure was the runtime refusing something the setup
+	// had not arranged -- which is the benchmark being wrong, not the pallet.
+	// ----------------------------------------------------------------
+
+	/// Record the endorsements `register_candidate` insists on, and return the endorsers.
+	///
+	/// The check reads `Endorsements` and asks that each name on the list put itself there for
+	/// this candidate. It is deliberately not behind the `runtime-benchmarks` bypass the trust
+	/// and KYC checks use -- what it replaced was a check that did not check -- so a benchmark
+	/// has to satisfy it rather than skip it. Writing the storage directly is the setup doing
+	/// what `endorse_candidate` would do, without measuring a hundred of those calls inside
+	/// this one.
+	fn endorse_for<T: Config>(election_id: u32, candidate: &T::AccountId) -> Vec<T::AccountId> {
+		let endorsers: Vec<T::AccountId> = (0..T::ParliamentaryEndorsements::get())
+			.map(|i| account("endorser", i, 0))
+			.collect();
+		for endorser in &endorsers {
+			Endorsements::<T>::insert(election_id, endorser, candidate.clone());
+		}
+		endorsers
+	}
+
+	// ----------------------------------------------------------------
 	// ELECTION SYSTEM BENCHMARKS
 	// ----------------------------------------------------------------
 	#[benchmark]
@@ -37,14 +63,8 @@ mod benchmarks {
 		)
 		.unwrap();
 
-		// Simplified endorsers for benchmark - KYC bypass
-		let endorsers: Vec<T::AccountId> = (0..T::ParliamentaryEndorsements::get())
-			.map(|i| account("endorser", i, 0))
-			.collect();
-
 		let new_candidate: T::AccountId = whitelisted_caller();
-
-		// KYC check is already bypassed in test environment
+		let endorsers = endorse_for::<T>(0, &new_candidate);
 
 		#[extrinsic_call]
 		register_candidate(RawOrigin::Signed(new_candidate.clone()), 0, None, endorsers);
@@ -67,12 +87,7 @@ mod benchmarks {
 		let candidate: T::AccountId = account("candidate", 1, 0);
 		let voter: T::AccountId = whitelisted_caller();
 
-		// Simplified endorsers for benchmark
-		let endorsers: Vec<T::AccountId> = (0..T::ParliamentaryEndorsements::get())
-			.map(|i| account("endorser", i, 0))
-			.collect();
-
-		// KYC check is already bypassed in test environment
+		let endorsers = endorse_for::<T>(0, &candidate);
 
 		Pezpallet::<T>::register_candidate(
 			RawOrigin::Signed(candidate.clone()).into(),
@@ -94,10 +109,22 @@ mod benchmarks {
 		assert!(ElectionVotes::<T>::get(0, &voter).is_some());
 	}
 
+	/// Counting a full ballot, which is what this call costs on its worst day.
+	///
+	/// The cost is in the candidate list: votes are tallied as they are cast, and this walks
+	/// `election.candidates` reading each one's running total. The list is bounded at five
+	/// hundred, so five hundred is the number to measure -- the previous benchmark registered
+	/// one candidate, and had it ever run it would have priced a five-hundred-candidate count
+	/// at a one-candidate count. It did not run: it handed `Root` to a call that takes a
+	/// signed origin, so it failed with `BadOrigin` and the recorded weight came from
+	/// somewhere else.
+	///
+	/// A linear component would let a three-candidate election pay for three. That is the
+	/// better shape and it changes `WeightInfo`'s signature, so it is written down as work
+	/// rather than smuggled in here; a ceiling that overcharges is the safe direction to be
+	/// wrong in while it waits.
 	#[benchmark]
 	fn finalize_election() {
-		// --- SETUP ---
-		// 1. Prepare election, candidate and a vote
 		Pezpallet::<T>::initiate_election(
 			RawOrigin::Root.into(),
 			ElectionType::Parliamentary,
@@ -106,38 +133,44 @@ mod benchmarks {
 		)
 		.unwrap();
 
-		let candidate: T::AccountId = account("candidate", 1, 0);
-		let voter: T::AccountId = account("voter", 2, 0);
+		let mut election = ActiveElections::<T>::get(0).unwrap();
 
-		let endorsers: Vec<T::AccountId> = (0..T::ParliamentaryEndorsements::get())
-			.map(|i| account("endorser", i, 0))
-			.collect();
+		// The ballot, written straight to storage. Five hundred `register_candidate` calls
+		// would be five hundred calls' worth of setup for a list this only reads.
+		let full: u32 = 500;
+		let mut candidates = Vec::new();
+		for i in 0..full {
+			let candidate: T::AccountId = account("candidate", i, 0);
+			ElectionCandidates::<T>::insert(
+				0,
+				&candidate,
+				CandidateInfo::<T> {
+					account: candidate.clone(),
+					district_id: None,
+					registered_at: pezframe_system::Pezpallet::<T>::block_number(),
+					endorsers: Default::default(),
+					vote_count: full.saturating_sub(i),
+					deposit_paid: 0,
+					campaign_data: Default::default(),
+				},
+			);
+			candidates.push(candidate);
+		}
+		election.candidates = candidates.try_into().expect("five hundred is the bound");
 
-		// KYC check is already bypassed in test environment
+		// Turnout, so the count reaches the tally rather than stopping at the quorum. A
+		// benchmark that failed for turnout would measure the refusal.
+		election.total_votes = u32::MAX;
+		election.status = ElectionStatus::VotingPeriod;
+		ActiveElections::<T>::insert(0, &election);
 
-		Pezpallet::<T>::register_candidate(
-			RawOrigin::Signed(candidate.clone()).into(),
-			0,
-			None,
-			endorsers,
-		)
-		.unwrap();
-
-		let election = ActiveElections::<T>::get(0).unwrap();
-		pezframe_system::Pezpallet::<T>::set_block_number(election.voting_start);
-		Pezpallet::<T>::cast_vote(
-			RawOrigin::Signed(voter.clone()).into(),
-			0,
-			vec![candidate],
-			None,
-		)
-		.unwrap();
-
-		// 2. Advance to election end time
 		pezframe_system::Pezpallet::<T>::set_block_number(election.end_block + 1u32.into());
 
+		// Permissionless, and has been since the count stopped waiting on an outside key.
+		let counter: T::AccountId = whitelisted_caller();
+
 		#[extrinsic_call]
-		finalize_election(RawOrigin::Root, 0);
+		finalize_election(RawOrigin::Signed(counter), 0);
 
 		assert!(ElectionResults::<T>::get(0).is_some());
 	}
@@ -194,6 +227,9 @@ mod benchmarks {
 
 		// Set approver as Serok to pass authorization check for approval
 		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, approver.clone());
+
+		// Seating writes the nominee's register NFT metadata, so the nominee has to have one.
+		<T as Config>::BenchmarkHelper::make_citizen(&nominee);
 
 		#[extrinsic_call]
 		approve_appointment(RawOrigin::Signed(approver), 0);
@@ -304,6 +340,183 @@ mod benchmarks {
 		// This benchmark successfully tests:
 		// 1. NotAuthorizedToVote check (voter is in ParliamentMembers)
 		// 2. ProposalAlreadyVoted check (voter hasn't voted before)
+	}
+
+	// ----------------------------------------------------------------
+	// AIRDROP AND PRESALE POT BENCHMARKS
+	//
+	// These seven shipped borrowing `nominate_official` and friends, on the reasoning that the
+	// work is the same shape. It is not: `propose_presale` also opens a proposal, which is two
+	// more writes, and both payment calls send an XCM. A stand-in was measured wrong in this
+	// tree once already -- the TNPoS committee weights undercharged by a hundredfold -- and the
+	// direction of that error is the dangerous one, because a call that costs less than it
+	// takes is a call somebody can repeat.
+	// ----------------------------------------------------------------
+
+	/// Seat the offices these calls check, and return them.
+	fn seat_pot_offices<T: Config>() -> (T::AccountId, T::AccountId, T::AccountId) {
+		let president: T::AccountId = account("president", 20, 0);
+		let prime_minister: T::AccountId = account("prime_minister", 21, 0);
+		let finance_minister: T::AccountId = account("finance_minister", 22, 0);
+		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, president.clone());
+		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::SerokWeziran, prime_minister.clone());
+		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::WezireDarayiye, finance_minister.clone());
+		(president, prime_minister, finance_minister)
+	}
+
+	#[benchmark]
+	fn propose_airdrop() {
+		let (_, prime_minister, _) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+
+		#[extrinsic_call]
+		propose_airdrop(
+			RawOrigin::Signed(prime_minister),
+			beneficiary,
+			1_000u128,
+			// The bound, not a short string: the record is a `BoundedVec` and the worst case
+			// is the one that fills it.
+			vec![0u8; 256],
+		);
+
+		assert!(AirdropProposals::<T>::get(0).is_some());
+	}
+
+	#[benchmark]
+	fn approve_airdrop() {
+		let (president, prime_minister, _) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		Pezpallet::<T>::propose_airdrop(
+			RawOrigin::Signed(prime_minister).into(),
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		)
+		.unwrap();
+
+		#[extrinsic_call]
+		approve_airdrop(RawOrigin::Signed(president), 0);
+
+		assert!(AirdropProposals::<T>::get(0).unwrap().approved_by_president);
+	}
+
+	#[benchmark]
+	fn pay_airdrop() {
+		let (president, prime_minister, _) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		let caller: T::AccountId = whitelisted_caller();
+		Pezpallet::<T>::propose_airdrop(
+			RawOrigin::Signed(prime_minister).into(),
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		)
+		.unwrap();
+		Pezpallet::<T>::approve_airdrop(RawOrigin::Signed(president).into(), 0).unwrap();
+
+		// Without this the router refuses the spend and the benchmark measures the
+		// refusal instead of the send -- which is how a call that sends an XCM ends up
+		// priced as one that does not.
+		<T as Config>::BenchmarkHelper::ensure_treasury_reachable();
+
+		#[extrinsic_call]
+		pay_airdrop(RawOrigin::Signed(caller), 0);
+
+		assert!(AirdropProposals::<T>::get(0).is_none());
+	}
+
+	#[benchmark]
+	fn cancel_airdrop() {
+		let (_, prime_minister, _) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		Pezpallet::<T>::propose_airdrop(
+			RawOrigin::Signed(prime_minister.clone()).into(),
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		)
+		.unwrap();
+
+		#[extrinsic_call]
+		cancel_airdrop(RawOrigin::Signed(prime_minister), 0);
+
+		assert!(AirdropProposals::<T>::get(0).is_none());
+	}
+
+	#[benchmark]
+	fn propose_presale() {
+		let (_, _, finance_minister) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+
+		#[extrinsic_call]
+		// `Locked` rather than `Transfer`: it is the arm that does the extra arithmetic, and a
+		// benchmark of the cheaper arm would price the dearer one.
+		propose_presale(
+			RawOrigin::Signed(finance_minister),
+			PresaleVerb::Locked { months: 12 },
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		);
+
+		// Both records: the release and the vote it hangs on. This call writes two.
+		assert!(PresaleProposals::<T>::get(0).is_some());
+		assert!(ActiveProposals::<T>::get(0).is_some());
+	}
+
+	#[benchmark]
+	fn execute_presale() {
+		let (_, _, finance_minister) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		let caller: T::AccountId = whitelisted_caller();
+		Pezpallet::<T>::propose_presale(
+			RawOrigin::Signed(finance_minister).into(),
+			PresaleVerb::Transfer,
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		)
+		.unwrap();
+
+		// Carry the vote. The tally is written here rather than cast, because a hundred and
+		// one `vote_on_proposal` calls would be benchmarked into this one's cost.
+		let vote_id = PresaleProposals::<T>::get(0).unwrap().vote_id;
+		ActiveProposals::<T>::mutate(vote_id, |maybe| {
+			let p = maybe.as_mut().unwrap();
+			p.aye_votes = p.threshold;
+		});
+		Pezpallet::<T>::finalize_proposal(RawOrigin::Signed(caller.clone()).into(), vote_id)
+			.unwrap();
+
+		// Without this the router refuses the spend and the benchmark measures the
+		// refusal instead of the send -- which is how a call that sends an XCM ends up
+		// priced as one that does not.
+		<T as Config>::BenchmarkHelper::ensure_treasury_reachable();
+
+		#[extrinsic_call]
+		execute_presale(RawOrigin::Signed(caller), 0);
+
+		assert!(PresaleProposals::<T>::get(0).is_none());
+		assert_eq!(PresaleSentTotal::<T>::get(), 1_000u128);
+	}
+
+	#[benchmark]
+	fn cancel_presale() {
+		let (_, _, finance_minister) = seat_pot_offices::<T>();
+		let beneficiary: T::AccountId = account("beneficiary", 23, 0);
+		Pezpallet::<T>::propose_presale(
+			RawOrigin::Signed(finance_minister.clone()).into(),
+			PresaleVerb::Transfer,
+			beneficiary,
+			1_000u128,
+			vec![0u8; 256],
+		)
+		.unwrap();
+
+		#[extrinsic_call]
+		cancel_presale(RawOrigin::Signed(finance_minister), 0);
+
+		assert!(PresaleProposals::<T>::get(0).is_none());
 	}
 
 	impl_benchmark_test_suite!(

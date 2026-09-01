@@ -1244,6 +1244,48 @@ parameter_types! {
 	/// `pezpallet-parameters` on the Asset Hub, where HEZ's emission rate is stored.
 	pub const WelatiParametersPalletIndex: u8 = 79;
 
+	/// The airdrop pot on the Asset Hub -- `pezpallet_treasury`'s second instance, at 68.
+	///
+	/// Its own index because it is its own pallet over there, sharing only the treasury's
+	/// code. A message addressed to 65 instead would reach the ordinary treasury, which would
+	/// accept it and pay out of the wrong pot; the encoding pin in the Asset Hub's tests is
+	/// what holds the number, not this comment.
+	///
+	/// 68 rather than 66: `pezpallet_revive` holds 66 on the Zagros hub, and the twins keep
+	/// one index map, so the pot could not take it on either.
+	pub const WelatiAirdropPotPalletIndex: u8 = 68;
+
+	/// What one airdrop may move on two signatures.
+	///
+	/// A million HEZ clears an exchange listing campaign -- those run to a few tenths of a per
+	/// cent of supply -- and forty of them cannot empty a forty-million pot. Above this the
+	/// Treasurer signs too. The Asset Hub enforces the same ceiling on its spend origin; this
+	/// copy exists so the escalation is decided where the offices are, before a message is
+	/// sent that the other chain would refuse.
+	pub const WelatiAirdropCeiling: u128 = 1_000_000 * UNITS;
+
+	/// The presale pot on the Asset Hub -- `pezpallet_treasury`'s third instance, at 69.
+	///
+	/// Its own index, like the airdrop pot's: the instances share the treasury's call enum, so
+	/// the call index is identical for both and this number is the only thing that decides
+	/// which pot pays. Addressed to 68 it would empty the airdrop.
+	pub const WelatiPresalePotPalletIndex: u8 = 69;
+
+	/// One month of a presale lock, in this chain's blocks.
+	///
+	/// Thirty days rather than a calendar month, because a lock measured in blocks has no
+	/// calendar and a term the buyer can compute beats one that depends on which months it
+	/// crosses.
+	pub const WelatiPresaleLockMonth: BlockNumber = 30 * DAYS;
+
+	/// How long a large airdrop waits after its last signature.
+	///
+	/// Seven days rather than three: a three-day window that falls across a weekend is not a
+	/// window. The wait is the whole value of the third signature -- without it the Treasurer
+	/// signs and the money moves in the same block, and nobody outside the three could object
+	/// in time. Small airdrops do not wait at all.
+	pub const WelatiLargeAirdropDelay: BlockNumber = 7 * DAYS;
+
 	/// The most the Treasurer may move the emission rate in one step: one point.
 	///
 	/// The ceiling on the Asset Hub says how high the rate may ever be; this says how long it
@@ -1356,7 +1398,12 @@ impl pezpallet_tiki::TikiScoreProvider<AccountId> for WelatiTikiScoreSource {
 }
 
 impl pezpallet_welati::Config for Runtime {
-	type WeightInfo = ();
+	// This runtime's own measurement, like every other pallet here. It was generated and
+	// then never declared in `weights/mod.rs`, so it was not compiled, so the binding fell
+	// back to `()` -- and `()` resolved to a hand-written copy of the trait in the pallet's
+	// `lib.rs` carrying eight round numbers and no storage costs at all. Three weight
+	// sources for one pallet, and the one in use was the only one nobody measured.
+	type WeightInfo = weights::pezpallet_welati::WeightInfo<Runtime>;
 	type Randomness = TimestampRandomness;
 	type RuntimeCall = RuntimeCall;
 	type TrustScoreSource = WelatiTrustScoreSource;
@@ -1398,6 +1445,13 @@ impl pezpallet_welati::Config for Runtime {
 	type TreasuryChainLocation = WelatiTreasuryChain;
 	type TreasuryPalletIndex = WelatiTreasuryPalletIndex;
 	type ParametersPalletIndex = WelatiParametersPalletIndex;
+	type AirdropPotPalletIndex = WelatiAirdropPotPalletIndex;
+	type AirdropCeiling = WelatiAirdropCeiling;
+	type PresalePotPalletIndex = WelatiPresalePotPalletIndex;
+	type PresaleLockMonth = WelatiPresaleLockMonth;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = WelatiBenchmarkHelper;
+	type LargeAirdropDelay = WelatiLargeAirdropDelay;
 	type MaxEmissionStep = WelatiMaxEmissionStep;
 	type MinEmissionInterval = WelatiMinEmissionInterval;
 	type PopulationThreshold = WelatiPopulationThreshold;
@@ -1864,5 +1918,54 @@ impl pezpallet_tnpos::SendCommitteeToRelay<AccountId> for CommitteeToRelay {
 			committee, era, None,
 		);
 		send_to_relay(RelayRuntimePallets::AhClient(AhClientCalls::ValidatorSet(report)))
+	}
+}
+
+/// Opens the People -> Asset Hub channel so the pot spends can be benchmarked.
+///
+/// Both pots live on the Asset Hub and both payment calls address them over XCM. A benchmark
+/// runs against a bare genesis with no HRMP channel, so the router refuses the send and the
+/// call reports `CouldNotReachTreasury` -- correctly, which is why the fix belongs here rather
+/// than in the pallet.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct WelatiBenchmarkHelper;
+
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
+	/// Create the register's NFT collection if genesis did not, then mint `who` a citizen NFT.
+	///
+	/// The collection exists only when genesis names a founding citizen, and a benchmark
+	/// genesis does not -- so `approve_appointment` failed with `CitizenNftNotFound` and its
+	/// recorded weight could not be regenerated.
+	fn make_citizen(who: &AccountId) {
+		use pezsp_runtime::traits::Zero;
+		let collection = <Runtime as pezpallet_tiki::Config>::TikiCollectionId::get();
+		if !pezpallet_nfts::Collection::<Runtime>::contains_key(collection) {
+			pezpallet_nfts::Pezpallet::<Runtime>::do_create_collection(
+				collection,
+				who.clone(),
+				who.clone(),
+				pezpallet_nfts::CollectionConfig {
+					settings: pezpallet_nfts::CollectionSettings(
+						pezpallet_nfts::CollectionSetting::DepositRequired.into(),
+					),
+					max_supply: None,
+					mint_settings: Default::default(),
+				},
+				Zero::zero(),
+				pezpallet_nfts::Event::ForceCreated { collection, owner: who.clone() },
+			)
+			.expect("the collection does not exist yet");
+		}
+		if pezpallet_tiki::CitizenNft::<Runtime>::get(who).is_none() {
+			pezpallet_tiki::Pezpallet::<Runtime>::mint_citizen_nft_for_user(who)
+				.expect("the collection exists and this account has none");
+		}
+	}
+
+	fn ensure_treasury_reachable() {
+		crate::TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
+			testnet_teyrchains_constants::pezkuwichain::locations::AssetHubParaId::get(),
+		);
 	}
 }

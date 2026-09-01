@@ -538,6 +538,14 @@ parameter_types! {
 	pub TreasuryChain: xcm::latest::Location = xcm::latest::Location::new(1, [xcm::latest::Junction::Teyrchain(1000)]);
 	pub const TreasuryPalletIndex: u8 = 70;
 	pub const ParametersPalletIndex: u8 = 79;
+	pub const AirdropPotPalletIndex: u8 = 68;
+	pub const PresalePotPalletIndex: u8 = 69;
+	// Short, so a lock can be waited out in a test without a hundred thousand blocks.
+	pub const PresaleLockMonth: u64 = 30;
+	/// Small next to the balances the tests use, so a test can cross it on purpose without
+	/// having to mint a realistic amount first.
+	pub const AirdropCeiling: u128 = 1_000;
+	pub const LargeAirdropDelay: u64 = 100;
 	/// One point per step and ten blocks between them. The production values are a point per
 	/// quarter; what the tests need is the shape, not the calendar.
 	pub const MaxEmissionStep: pezsp_runtime::Perbill = pezsp_runtime::Perbill::from_percent(1);
@@ -775,6 +783,13 @@ impl pezpallet_welati::Config for Test {
 	type TreasuryChainLocation = TreasuryChain;
 	type TreasuryPalletIndex = TreasuryPalletIndex;
 	type ParametersPalletIndex = ParametersPalletIndex;
+	type AirdropPotPalletIndex = AirdropPotPalletIndex;
+	type AirdropCeiling = AirdropCeiling;
+	type PresalePotPalletIndex = PresalePotPalletIndex;
+	type PresaleLockMonth = PresaleLockMonth;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = WelatiBenchmarkHelper;
+	type LargeAirdropDelay = LargeAirdropDelay;
 	type MaxEmissionStep = MaxEmissionStep;
 	type MinEmissionInterval = MinEmissionInterval;
 	type PopulationThreshold = PopulationThreshold;
@@ -959,5 +974,26 @@ impl<A: pezframe_support::traits::Get<AccountId>>
 	fn on_nonzero_unbalanced(amount: pezpallet_balances::NegativeImbalance<Test>) {
 		use pezframe_support::traits::Currency;
 		Balances::resolve_creating(&A::get(), amount);
+	}
+}
+
+/// What the benchmarks need arranged here, mirroring what the People runtimes arrange.
+///
+/// A no-op `()` would compile and then fail every benchmark that seats somebody, which is how
+/// `approve_appointment` came to have a recorded weight nobody could regenerate. The mock is
+/// the local gate for the benchmark suite, so it has to do the real thing.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct WelatiBenchmarkHelper;
+
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
+	/// `RecordingXcmSender` accepts everything, so there is no route to open.
+	fn ensure_treasury_reachable() {}
+
+	fn make_citizen(who: &AccountId) {
+		if pezpallet_tiki::CitizenNft::<Test>::get(who).is_none() {
+			pezpallet_tiki::Pezpallet::<Test>::mint_citizen_nft_for_user(who)
+				.expect("the mock's genesis creates the collection");
+		}
 	}
 }

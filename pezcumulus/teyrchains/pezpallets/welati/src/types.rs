@@ -548,6 +548,109 @@ pub enum AppointmentAuthority<T: pezframe_system::Config> {
 	President(T::AccountId),
 }
 
+/// One proposed airdrop, and who has signed it so far.
+///
+/// The shape is `AppointmentProcess`'s below: one office proposes, another agrees, and nothing
+/// happens until it does. What differs is the third signature and the wait, and both exist for
+/// the same reason -- above the ceiling the amount is large enough that two people agreeing in
+/// private should not be the whole of it.
+#[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
+#[codec(mel_bound())]
+#[scale_info(skip_type_params(T))]
+pub struct AirdropProposal<T: pezframe_system::Config> {
+	/// Who receives it. Usually an exchange: the recipients of a listing campaign are that
+	/// exchange's customers and cannot be enumerated on chain, which is the reason this
+	/// mechanism is discretionary rather than a rule over the register.
+	pub beneficiary: T::AccountId,
+	/// HEZ, in the smallest unit.
+	pub amount: u128,
+	/// Why. Recorded because a discretionary payment that states no reason is exactly the
+	/// shape the rest of this design spends its effort avoiding, and because the reason is
+	/// what anyone reading the chain afterwards has to judge it by.
+	pub reason: BoundedVec<u8, ConstU32<256>>,
+	/// The Prime Minister who proposed it.
+	pub proposer: T::AccountId,
+	/// Set when the President signs.
+	pub approved_by_president: bool,
+	/// Set when the Treasurer signs. Required only above the ceiling.
+	pub approved_by_treasurer: bool,
+	/// When it was proposed.
+	pub proposed_at: BlockNumberFor<T>,
+	/// The earliest block it may be paid: the approval block for a small airdrop, and the
+	/// delay later for one above the ceiling.
+	pub payable_from: BlockNumberFor<T>,
+}
+
+/// What a presale release does.
+///
+/// A verb rather than a note beside the amount, because the two do different things and the
+/// difference has to survive the vote. A note saying "this one is locked" is a claim about a
+/// plain transfer; a verb is the transfer the code performs. `execute_presale` reads this and
+/// nothing else to decide when the money may move, so a `Locked` release cannot be carried
+/// out as an immediate one -- not by mistake and not on purpose.
+///
+/// The indices are pinned because the encoding follows declaration order until they are, and a
+/// release Parliament has voted on is a stored, encoded record. Reordering these two after
+/// genesis would turn every stored `Transfer` into a `Locked`.
+#[derive(
+	Encode,
+	Decode,
+	DecodeWithMemTracking,
+	Clone,
+	Copy,
+	Eq,
+	PartialEq,
+	Debug,
+	TypeInfo,
+	MaxEncodedLen,
+)]
+pub enum PresaleVerb {
+	/// Pay as soon as Parliament has agreed.
+	#[codec(index = 0)]
+	Transfer,
+	/// Pay, but not before `months` have passed since the proposal.
+	///
+	/// The money stays in the pot for the whole of that time -- the buyer never holds it, so
+	/// there is nothing to sell early and no lock to enforce on an account this chain does not
+	/// control. A vesting schedule would put the balance in the buyer's hands and rely on a
+	/// lock; this does not hand it over at all.
+	#[codec(index = 1)]
+	Locked { months: u8 },
+}
+
+/// A release from the presale pot, waiting on Parliament.
+///
+/// Unlike `AirdropProposal` this record carries no approval flags. The approval is a vote and
+/// votes are counted somewhere already -- `vote_id` names the proposal Parliament is voting
+/// on, and `execute_presale` reads its tally rather than a copy of it. Two tallies of the same
+/// decision is one tally too many; the second one is always the one that goes stale.
+#[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
+#[codec(mel_bound())]
+#[scale_info(skip_type_params(T))]
+pub struct PresaleProposal<T: pezframe_system::Config> {
+	/// What this release does.
+	pub verb: PresaleVerb,
+	/// Who receives it. An exchange's cold wallet, a bot, an early buyer -- named in the
+	/// proposal itself, which is what Parliament reads before voting. There is no register of
+	/// permitted addresses: a register would mean voting twice on the same address, once to
+	/// allow it and once to fund it, and the second vote already shows the first one.
+	pub beneficiary: T::AccountId,
+	/// HEZ, in the smallest unit.
+	pub amount: u128,
+	/// The terms of the sale: price, venue, who the buyer is. Recorded because this is the
+	/// half of the decision the amount does not carry, and because half the supply leaving on
+	/// a bare number is exactly what this replaces.
+	pub terms: BoundedVec<u8, ConstU32<256>>,
+	/// The Finance Minister who proposed it.
+	pub proposer: T::AccountId,
+	/// The `ActiveProposals` entry Parliament votes on. The authority is there, not here.
+	pub vote_id: u32,
+	/// When it was proposed. A `Locked` release counts its months from this block.
+	pub proposed_at: BlockNumberFor<T>,
+	/// The earliest block it may be paid. Equal to `proposed_at` for a plain transfer.
+	pub payable_from: BlockNumberFor<T>,
+}
+
 /// Appointment process information
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
@@ -706,6 +809,13 @@ pub struct CandidateInfo<T: pezframe_system::Config> {
 	pub campaign_data: BoundedVec<u8, ConstU32<500>>,
 }
 
+/// The most candidates one election may carry.
+///
+/// Read by the type below and by `finalize_election`'s weight, which is why it is a named
+/// constant: counting walks this list, so the ceiling the weight charges and the ceiling the
+/// type enforces have to be the same number, and two literals drift.
+pub const MAX_ELECTION_CANDIDATES: u32 = 500;
+
 /// Election results
 #[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo, MaxEncodedLen)]
 #[codec(mel_bound())]
@@ -760,7 +870,7 @@ pub struct ElectionInfo<T: pezframe_system::Config> {
 	/// End block of the election
 	pub end_block: BlockNumberFor<T>,
 	/// List of candidates
-	pub candidates: BoundedVec<T::AccountId, ConstU32<500>>, // Generous limit
+	pub candidates: BoundedVec<T::AccountId, ConstU32<MAX_ELECTION_CANDIDATES>>,
 	/// Total number of votes
 	pub total_votes: u32,
 	/// Election status

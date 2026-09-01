@@ -49,7 +49,7 @@ use core::marker::PhantomData;
 
 /// Weight functions for `pezpallet_welati`.
 pub struct WeightInfo<T>(PhantomData<T>);
-impl<T: pezframe_system::Config> pezpallet_welati::WeightInfo for WeightInfo<T> {
+impl<T: pezframe_system::Config> pezpallet_welati::weights::WeightInfo for WeightInfo<T> {
 	/// Storage: `Welati::NextElectionId` (r:1 w:1)
 	/// Proof: `Welati::NextElectionId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::ActiveElections` (r:0 w:1)
@@ -104,7 +104,9 @@ impl<T: pezframe_system::Config> pezpallet_welati::WeightInfo for WeightInfo<T> 
 	/// Proof: `Welati::ElectionResults` (`max_values`: None, `max_size`: Some(6467), added: 8942, mode: `MaxEncodedLen`)
 	/// Storage: `Welati::ParliamentMembers` (r:0 w:1)
 	/// Proof: `Welati::ParliamentMembers` (`max_values`: Some(1), `max_size`: Some(11057), added: 11552, mode: `MaxEncodedLen`)
-	fn finalize_election() -> Weight {
+	/// The `c` term is a placeholder: this file predates the component and the benchmark that
+	/// would fit it could not run. The slope is one `ElectionCandidates` read per candidate.
+	fn finalize_election(c: u32) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `3715`
 		//  Estimated: `32819`
@@ -113,6 +115,7 @@ impl<T: pezframe_system::Config> pezpallet_welati::WeightInfo for WeightInfo<T> 
 			.saturating_add(Weight::from_parts(0, 32819))
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(3))
+			.saturating_add(T::DbWeight::get().reads(c.into()))
 	}
 	/// Storage: `Welati::CurrentOfficials` (r:1 w:0)
 	/// Proof: `Welati::CurrentOfficials` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
