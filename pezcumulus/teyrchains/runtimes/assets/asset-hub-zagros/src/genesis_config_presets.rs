@@ -116,11 +116,10 @@ const _: () = assert!(
 ///   owned -- it is property, and what happens to it is the founder's to decide.
 /// - `pez_presale_custody`: Account holding the PEZ presale allocation. The sale happens on
 ///   the exchange, not on chain, so this allocation is moved by whoever holds it rather than
-///   released by a pallet -- but "whoever holds it" is a board rather than a person: it is
-///   the exchange's 3-of-5 cold multisig, whose signatories are the offices of Serok,
-///   SerokWeziran, WezireDarayiye, Noter and a validator. Where, how much and for how long
-///   the PEZ presale runs is that board's to decide; no key can move it alone. HEZ's presale
-///   is not here at all -- it is a pot on this chain that only Parliament can release.
+///   released by a pallet -- and "whoever holds it" is a board rather than a person, so no
+///   single key can move it. Where, how much and for how long the PEZ presale runs is that
+///   board's to decide. HEZ's presale is not here at all -- it is a pot on this chain that
+///   only Parliament can release.
 /// - `foreign_assets`: Foreign assets to create at genesis
 /// - `foreign_assets_endowed_accounts`: Initial balances for foreign assets
 fn asset_hub_pezkuwichain_genesis(
@@ -237,7 +236,7 @@ fn asset_hub_pezkuwichain_genesis(
 				(PEZ_ASSET_ID, founder_account.clone(), PEZ_FOUNDER_ALLOCATION),
 				// Presale allocation: 1.875% = 93,750,000 PEZ. Sold on the exchange, so it
 				// is held by an account that can move it, not by a pallet -- and that account
-				// is the exchange's own 3-of-5 cold multisig, not a key.
+				// answers to a board rather than to a key.
 				(PEZ_ASSET_ID, pez_presale_custody.clone(), PEZ_PRESALE_ALLOCATION),
 				// wHEZ starts with 0 balance - only created via TokenWrapper
 				// wUSDT starts with 0 balance - minted via Custodial Bridge
@@ -284,37 +283,41 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			// Administrator of wHEZ and wUSDT only -- both are minted and burned by live
 			// systems, so they need a team that can act. PEZ is deliberately not among
 			// them; see `PezAssetTeamId`.
-			// Asset_Admin_1: 5EhCpn82QtdU53MF6PoNFrKHgSrsfcAxFTMwrn3JYf9dioQw
+			// Asset_Admin_1 on Zagros is the Zagros treasury account, mirroring the hub on
+			// Pezkuwichain where the same two roles share an address -- but this is Zagros's
+			// treasury, not mainnet's: 5E5Go6imnF68WRN7pmHyKo3vVZmg71YCMaUbMkHeJdTYzWfY
 			let asset_owner: AccountId =
-				hex!("744ed0812d6096827376b4625fe4f840d4950d5aef0ab12902e64c444c8e9d29").into();
-			// Founder_Satoshi_Qazi_Muhammed: 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
+				hex!("58e758ff62a1ca0ce950986596aa24607826d506b685351cc3c04abd7a07614a").into();
+			// Zagros founder: 5Fhjq3KmYHgChQ7mfaRGz3hotzC1XTSsGXK8HChaid5sUrNS
+			// Zagros's own, from the Zagros wallet set. The Pezkuwichain hub's value here
+			// belongs to mainnet; sharing it would put one key on two chains.
 			let founder_account: AccountId =
-				hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
-			// The exchange's cold multisig: 5FHJnBk2ZaseiuE46GCSpbiT5weGFS31LQ842FnTKa6UzVqr
+				hex!("a0f36b1ed6006a5ed8e492a1a5c5820cec6cb6feba17282f0bd41faacc1f8c12").into();
+			// Custody for the PEZ presale share, generated for Zagros and used nowhere else.
+			// It is not the account the Pezkuwichain hub uses; `check-chain-key-overlap.py`
+			// is what keeps the two apart.
 			//
-			// 3-of-5, signatories Serok, SerokWeziran, WezireDarayiye, Noter and a validator.
-			// The address is `blake2_256(b"modlpy/utilisuba" ++ sorted signatories ++ 3u16)`,
-			// so it is a function of who signs and how many are needed and nothing else --
-			// which is why a genesis reset does not change it and why the exchange side needs
-			// no update. It replaces `Presale_1`, a single key that held this whole share.
+			// HEZ's presale needs no account at all on either chain: it is a keyless pot only
+			// Parliament can release. PEZ does need one, because PEZ is an asset sold on an
+			// exchange rather than a balance a treasury pallet can hold.
 			let pez_presale_custody: AccountId =
-				hex!("8e51349e1f479fe672eacf82cf79c2da4a3579d260b6d99e1b3660e93b371fd0").into();
+				hex!("01bfd0a9b680e04e0ac4e736df93009e297f7f490a8c83e62202bba35b473303").into();
 
 			asset_hub_pezkuwichain_genesis(
 				// initial collators - 2 Asset Hub collators - Generated 2026-01-29
 				vec![
-					// Azad (5Et1WgtNjUdMxyvHjAKGN8Nq1ivhUyANYjwKpCL8a46D8mCp)
+					// Zagros asset-hub collator 1 (5DcWq9WApLoE2uARnoZVUvmsbqM8ViXtucTSFzcsTJHw9KfD)
 					(
-						hex!("7c8c6f463d124a601fbc7d425daad82651193f35730957982519dbcff6d55f71")
+						hex!("447ef802e3935074908b7ac522875806f5510bc49a4ae88908b59a920485df08")
 							.into(),
-						hex!("7c8c6f463d124a601fbc7d425daad82651193f35730957982519dbcff6d55f71")
+						hex!("447ef802e3935074908b7ac522875806f5510bc49a4ae88908b59a920485df08")
 							.unchecked_into(),
 					),
-					// Beritan (5F4GeiJE2oBcPdxfeYfWL4bu4iJfduzJk4aHhttemwhpscpQ)
+					// Zagros asset-hub collator 2 (5Et6HY6CtjCAmQpMrQaDtogH6AWaKj9f9RMZ4T5oPNQtVodg)
 					(
-						hex!("845fd9541c46c3dc4325ddcbae06596382771d943f49d9659bdbbed4abd4eb09")
+						hex!("7c9c80baaa9e925dd338ad3069850cd7be17c047bd92b4f59dc10460d4ff0843")
 							.into(),
-						hex!("845fd9541c46c3dc4325ddcbae06596382771d943f49d9659bdbbed4abd4eb09")
+						hex!("7c9c80baaa9e925dd338ad3069850cd7be17c047bd92b4f59dc10460d4ff0843")
 							.unchecked_into(),
 					),
 				],

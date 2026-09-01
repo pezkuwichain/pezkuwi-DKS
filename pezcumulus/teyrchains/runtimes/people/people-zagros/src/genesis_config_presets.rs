@@ -123,25 +123,27 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 		// ====================================================================
 		PRESET_GENESIS => {
 			// MAINNET FOUNDER ACCOUNT - NEW SECURE WALLET (2026-01-29)
-			// Founder_Satoshi_Qazi_Muhammed: 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
+			// Zagros founder: 5Fhjq3KmYHgChQ7mfaRGz3hotzC1XTSsGXK8HChaid5sUrNS
+			// Zagros's own, from the Zagros wallet set. The Pezkuwichain hub's value here
+			// belongs to mainnet; sharing it would put one key on two chains.
 			let founder_account: AccountId =
-				hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
+				hex!("a0f36b1ed6006a5ed8e492a1a5c5820cec6cb6feba17282f0bd41faacc1f8c12").into();
 
 			people_pezkuwichain_genesis(
 				// initial collators - 2 People Chain collators - Generated 2026-01-29
 				vec![
-					// Erin (5G4iuN7MvkhdwN4ikZd9uijBzxV78LUWQro3rc9HrfWWzeuS)
+					// Zagros people collator 1 (5Cr51WBkgnrDtDVNmp19JHLfZ9nnSJbTPqRpU4w1cVXXvDFB)
 					(
-						hex!("b0f474e2f94868485e7269e503d6b327af392449c0878670021365ac7e173206")
+						hex!("22993f9027fe8bbdfaa5a3815922144539b03590d3e8aee15503ba19211ee42c")
 							.into(),
-						hex!("b0f474e2f94868485e7269e503d6b327af392449c0878670021365ac7e173206")
+						hex!("22993f9027fe8bbdfaa5a3815922144539b03590d3e8aee15503ba19211ee42c")
 							.unchecked_into(),
 					),
-					// Firaz (5EeXnoiPoXko3Hqggy74oSgxCFKpkNoppqTcV9MWUQAtmZHj)
+					// Zagros people collator 2 (5GYcxRhUGpnBkc4NQBtxDR9jEThcRrBrQqyAJFbRUyMvCaar)
 					(
-						hex!("7244ec68c6f873e386ef8039ad6e9436e5e97c0d28bab4499090b9443034eb04")
+						hex!("c63b4ecd42df29151b511f4d9fcc7e2cd4a872b3ae81bd3e206fe0ae5901f719")
 							.into(),
-						hex!("7244ec68c6f873e386ef8039ad6e9436e5e97c0d28bab4499090b9443034eb04")
+						hex!("c63b4ecd42df29151b511f4d9fcc7e2cd4a872b3ae81bd3e206fe0ae5901f719")
 							.unchecked_into(),
 					),
 				],

@@ -228,51 +228,41 @@ fn hez_allocations_sum_to_200m() {
 	assert_eq!(here + on_asset_hub, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
 }
 
-/// The relay's genesis mints the two shares it keeps, and neither of the two that moved.
+/// The relay's genesis mints exactly the share it keeps -- to the planck.
 ///
-/// `hez_allocations_sum_to_200m` above cannot see this. It does arithmetic on four constants,
-/// and the constants are unchanged by a share moving chain -- so it would have passed with the
-/// presale's hundred million still minted here beside the pot's copy on the Asset Hub, which
-/// is a hundred million HEZ of supply appearing twice. What that test checks is the division;
-/// what this one checks is where the money lands, and only the second one notices a line that
-/// was supposed to be deleted and was not.
+/// `hez_allocations_sum_to_200m` adds four constants and is right about them, but constants are
+/// not what a chain mints. This builds the genesis and adds up what is in it, which is the only
+/// way to see the thing that was there before: every validator was funded `STASH * 2` on top of
+/// the allocations, so the relay minted 200,000,800 HEZ while asserting 200,000,000.
+///
+/// It also catches a share that moved chain without its line being deleted -- a hundred million
+/// minted here and again on the Asset Hub would pass the constant check untouched.
 #[test]
-fn the_relay_mints_only_the_shares_it_keeps() {
+fn the_relay_mints_exactly_its_share() {
 	let genesis = pezkuwichain_genesis_config();
-	let balances = genesis["balances"]["balances"]
+	let total: u128 = genesis["balances"]["balances"]
 		.as_array()
-		.expect("the balances patch is an array of (account, amount)");
-
-	let amounts: Vec<u128> = balances
+		.expect("the balances patch is an array of (account, amount)")
 		.iter()
 		.map(|entry| {
 			entry[1].as_u64().map(u128::from).unwrap_or_else(|| {
-				// Anything past u64 arrives as a JSON number too large for `as_u64`; the
-				// allocations are all in that range, so parse rather than silently skip.
+				// Anything past u64 arrives as a JSON number too large for `as_u64`; parse
+				// rather than silently skip it.
 				entry[1].to_string().parse().expect("a balance is a number")
 			})
 		})
-		.collect();
+		.sum();
 
-	let count = |v: u128| amounts.iter().filter(|a| **a == v).count();
-
-	assert_eq!(count(HEZ_FOUNDER_ALLOCATION), 1, "the founder's 20M is minted here, once");
 	assert_eq!(
-		count(HEZ_PRESALE_ALLOCATION),
-		0,
-		"the presale's 100M belongs to `PresalePot` on the Asset Hub, not to any account here"
+		total,
+		HEZ_FOUNDER_ALLOCATION + HEZ_TREASURY_ALLOCATION,
+		"the relay mints the founder's and the treasury's shares and nothing else -- validator \
+		 stashes come out of the treasury's, and the presale and airdrop are pots on the Asset Hub"
 	);
-	// The treasury and the airdrop are both forty million, so no assertion can name one of
-	// them by its amount -- the first draft of this test asked for zero accounts holding the
-	// airdrop's figure and failed on the treasury. What the count still answers is the
-	// question that matters: one such account is the treasury, and two would mean the airdrop
-	// line came back while the pot on the Asset Hub kept its copy.
-	assert_eq!(HEZ_TREASURY_ALLOCATION, HEZ_AIRDROP_ALLOCATION, "the two shares are equal");
 	assert_eq!(
-		count(HEZ_TREASURY_ALLOCATION),
-		1,
-		"exactly one account here holds forty million, and it is the treasury -- the airdrop's \
-		 forty million belongs to `AirdropPot` on the Asset Hub"
+		total + HEZ_PRESALE_ALLOCATION + HEZ_AIRDROP_ALLOCATION,
+		200_000_000 * HEZ,
+		"and the two chains together mint two hundred million exactly"
 	);
 }
 
@@ -642,21 +632,28 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	use pezsp_core::crypto::UncheckedInto;
 
 	// ==========================================================================
-	// MAINNET ACCOUNTS - Generated 2026-01-29 (NEW SECURE WALLETS)
+	// ZAGROS ACCOUNTS - generated 2026-08-31, keys held with the Zagros wallet set
+	//
+	// Every address in this function used to be mainnet's: the same twenty-one validators,
+	// the same founder, the same treasury, on both chains. A testnet exists to be broken
+	// into, so a key that leaked here was a key to mainnet funds -- and a testnet whose
+	// validators are mainnet's cannot be restarted from scratch without touching mainnet's
+	// keystores, which is the one thing a testnet has to allow.
 	// ==========================================================================
 
 	// Founder account - receives 10% (20M HEZ)
-	// Founder_Satoshi_Qazi_Muhammed
-	// SS58: 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
+	// SS58: 5Fhjq3KmYHgChQ7mfaRGz3hotzC1XTSsGXK8HChaid5sUrNS
 	let founder_account: AccountId =
-		hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
+		hex!("a0f36b1ed6006a5ed8e492a1a5c5820cec6cb6feba17282f0bd41faacc1f8c12").into();
 
-	// Presale account - receives 50% (100M HEZ)
 	// Kurdistan Treasury account - receives 20% (40M HEZ)
-	// Treasury_1
-	// SS58: 5EhCpn82QtdU53MF6PoNFrKHgSrsfcAxFTMwrn3JYf9dioQw
+	// SS58: 5E5Go6imnF68WRN7pmHyKo3vVZmg71YCMaUbMkHeJdTYzWfY
+	//
+	// The presale's 100M and the airdrop's 40M have no account here at all: both are keyless
+	// pots on the Asset Hub, one released by Parliament and one by the President and the
+	// Prime Minister together.
 	let treasury_account: AccountId =
-		hex!("744ed0812d6096827376b4625fe4f840d4950d5aef0ab12902e64c444c8e9d29").into();
+		hex!("58e758ff62a1ca0ce950986596aa24607826d506b685351cc3c04abd7a07614a").into();
 
 	// There is no airdrop account here any more, and that is the fix rather than an omission.
 	// It used to hold 40M HEZ that nothing in the tree ever read: `Claims` is wired but its
@@ -670,7 +667,20 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	// transfer has to be remembered.
 
 	// ==========================================================================
-	// INITIAL VALIDATORS - 21 validators - Generated 2026-01-29
+	// INITIAL VALIDATORS - four
+	//
+	// Four, not the twenty-one Pezkuwichain seats, and the number is decided here rather
+	// than by starting fewer nodes. This relay has no staking pallet -- elections live on
+	// the Asset Hub -- so the genesis authority set is exactly what `SessionConfig` lists.
+	// Seat twenty-one and run four and GRANDPA never finalises: four is under a fifth of
+	// the set and the threshold is two thirds.
+	//
+	// Four rather than two because two makes the threshold two: a single restart stops
+	// finality, so there is no maintenance window. At four the threshold is three and one
+	// node can go down.
+	//
+	// Generated by `emit_relay_authorities.py --count 4` from the Zagros wallet set, which
+	// holds twenty-one; the remaining seventeen are spare rather than missing.
 	// ==========================================================================
 	let initial_authorities: Vec<(
 		AccountId,
@@ -683,387 +693,96 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 		BeefyId,
 	)> = Vec::from([
 		(
-			// Validator 01 (5GipBJs2uNWTCazyZQ2vG3DEqLz4tXNmNZtBAT1Mtm1orZ5i)
-			hex!("ce0189f16649560a8e250ee51233b97f20b528d9f534c54b40da5e1b785fb422").into(),
-			hex!("781f2da4ec1f954ddbd96365b93d5b991427980475e10dd9f823979665399137").into(),
-			hex!("e63ad8e22976bc2bdbc9776b3d104472ff70cfcd6a5247a2f62efdb09f66520f")
+			// Validator 01 (5Gbb57WXHVrtVG6ozytVjAm9BCg1sNdBLLmtR1UmVcTm2UJB)
+			hex!("c87eb313036e491d0b5c7b0777e89e84b1259191f434977acc47270c76754803").into(),
+			hex!("52407c5c2f729c9637479999bacedf5ecde25e6f1f210c784964fdecc98b3850").into(),
+			hex!("746f4eee0a4272db06bba47fdd9ed400bd9d33d2201fdc42b72ebab9a8ab0b2b")
 				.unchecked_into(),
-			hex!("9497e1dabb5b7688da148813629076596c77eb47f0a18c971777c70bb38cd30d")
+			hex!("8d999d5795b1b925ae8c8ea8e3c3f5d0b83cdcd48a828587b8a12db561f23841")
 				.unchecked_into(),
-			hex!("5e365f9c23e9fd65f28b63bd118f46faca2f82d286d00ac23ddb69fdd61b342f")
+			hex!("700fd76572b1fca1efba093b3b58e2d2feca4240ac38156b8273ad18f71d644a")
 				.unchecked_into(),
-			hex!("a854fce593b83d3a97ac4b0dc3ef220f69134753894cb16f28c67ae12db00419")
+			hex!("a04f2696209fc3d68541873eeb5ea5c9481966a8ae0917f770f2a81086fd0a2d")
 				.unchecked_into(),
-			hex!("4859a231daa597501f616c189699afa576ec79b704f633267c5b940dc76a895d")
+			hex!("e64c61be956d9535ec0db95a7cf9d7bdf90f5430fd9745a2271157a0b1368d7d")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02b97d26cb0553d662c52006fd6215736d0138d5dda92661422951a41dfa9d8f3a")
-				.unchecked_into(),
-		),
-		(
-			// Validator 02 (5HWFZbhkZuTUySXu6ZXYKrTHBnWXHvWRKLozE22zhnwXGGxk)
-			hex!("f0a90883d86793bce27217a0070f61d66efe56033c876624ffa3468698175058").into(),
-			hex!("86384da0a3d7dc41b1d2837c824f022dd34196d0e3ba40075934d4c216b5ea0f").into(),
-			hex!("bc79edcffd121970d471b6811b167b21bb8aa158d5ce9143fd0d45f71aa4ba1a")
-				.unchecked_into(),
-			hex!("1b453491a1ad16feb2e4cc5b4bf85f21a54fbfaa9321e9dbd9b668b83355146c")
-				.unchecked_into(),
-			hex!("2ad0684fe19374a4c1ed49f92226cb1af5bb9977d6395de879c556ada080e759")
-				.unchecked_into(),
-			hex!("ee3de83cc3deaadb3e1159e1de5a677a47bd828d3899bf7579753293389d0655")
-				.unchecked_into(),
-			hex!("5eea9bf553a04467d3dafe9a5ed196410cffb96248519ab5a491c09fb5b68c2b")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("031a58225fbca7430f406dfa8917517f81284cc991f7b9e9f8f7d37f24a85869f7")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("038dc15e2d91f12e2da4fcbc9f6f50df286443c3b134fa07154f24adc4a35add79")
 				.unchecked_into(),
 		),
 		(
-			// Validator 03 (5CrB5BWJfLNWEZAsAXDKXdJUGzFMXKvYnwRX4DVMcgBwxSdx)
-			hex!("22ada8d8e51affa8aa9169628a87f251ad6b99d191a7cff0d6a2bc6355f9827d").into(),
-			hex!("36f6b0c0e42774526e76c1b7f6f1f35e1cad7594dd7928ef125b85dbbdd2b420").into(),
-			hex!("a233520afef4b7d268b69a2c67074938eb536cb3f77b825f78d61f2d16353571")
+			// Validator 02 (5ED8FZU9u2xDYqdT2gX1p9QM96ivmCPTRMmNXT3Z9jSGkmQR)
+			hex!("5ee48ccb625f4bbc567a535fc9afcda4609df861a3320d1910d99ec90e97eb65").into(),
+			hex!("eaec3a7618960ab351c247c4d7a1b66f1e6481ddfe4c4a31e5fd71ef7e61917c").into(),
+			hex!("58d1961601286709f5881ad74470979da6fb46bfced790f867699406a8fc6a6b")
 				.unchecked_into(),
-			hex!("c22f1b4411879654538c11f088622d0b1ba695f9809e4ca5c79435e6f91f9fa3")
+			hex!("bdc3feef9c3c9f6691581db9ba742c2ab1d32a7a7a02443d51bf1cf46e94fdd1")
 				.unchecked_into(),
-			hex!("68b6a3c0aaa9264d1ac04cf8a698c0a82db09d1edab3c37b34e52b543b85393b")
+			hex!("c460392d5a5f645c0cfe7ccb18d92eb73cff220d6f4c1895493759afd4a30a6a")
 				.unchecked_into(),
-			hex!("ec31a2d91f9e55ede3239ee11eea5fe3bcf8ada2e0a5502b9fb84ef09466e47c")
+			hex!("966c1394a7ec07e7737b1645f29ec1228ac90ec7455e8ea936e014ee96dda834")
 				.unchecked_into(),
-			hex!("3c6035a77aa676b10959ba408bf4ad6cd37966fca825a8c5c444627f40b61b10")
+			hex!("6a269400ea93792c187348da0aa39fd067f4114d221b31af8f6230be5bebc717")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03d5503ae0eb6fc5c7f368e2e43a1189ff0129de6c1cdd5d5090c8283df0dd43e6")
-				.unchecked_into(),
-		),
-		(
-			// Validator 04 (5ELgySrX5ZyK7EWXjj6bAedyTCcTNWDANbiiipsT5gnpoCEp)
-			hex!("64a96ba3228df496787dcf68c7456ab1a8ad8381baa64e3d917fedce90debc13").into(),
-			hex!("b2a232c9e62f3a143b053129714fdc96aafea4aa6e2323cbe07a88648043db19").into(),
-			hex!("806af944dee83e7d61ee56d3d58703613e283f0946f4eb27ae527e5548dde80f")
-				.unchecked_into(),
-			hex!("f51ef76f99bdee1137836fe9554d24302c060200b601a6ef778fefef9d0c7793")
-				.unchecked_into(),
-			hex!("c6563f0e1f657d47cd84aa877b5b9ad507eca878f0d104767add32dc0b709f7a")
-				.unchecked_into(),
-			hex!("a61fed1300423685e286cbcb5ff993a8300614051117f16340f4b3ceceffe570")
-				.unchecked_into(),
-			hex!("f2bae1ba3625520d9eee4c3c3e35415dae8bf818c1cd218cde37d24477152748")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("031350bb37bb741b06b0b966168a0b8c75e1787886bcae1abb0d22ed947b7937c6")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("03aba644665a0e35f7ec9fa6b710bacda721c818d2cefab7004b0e22137c9e747c")
 				.unchecked_into(),
 		),
 		(
-			// Validator 05 (5GCZQNjRdHofEHPvVq4ePrfDYcjRzQ1HQ2awHMX6AawpRYuM)
-			hex!("b6ee70cad1183361924ac3fbd237d9e398a8dcbee56340a3d0e431ed16af4c3c").into(),
-			hex!("fceb174bd5553d61f5059b3017622f4b8f6600ae9b95df524704cf11ea2c5b2f").into(),
-			hex!("705b39924a158ea2257f0e58b04ead3886e689690cd7965bf5e392b3e06d835b")
+			// Validator 03 (5Dkd9PhMvuvYGSQmfBrqeH2F8FVnmaQ1MW8pM5Fe5MmhnjBU)
+			hex!("4aae3051a6d781b8e25f9cace9488aacb31afc2a9e2a03120f52767bb0e8a908").into(),
+			hex!("4afeeb5b2f7b7b5bf6963a97d451729327fcd02c816cb04939c36471758d9557").into(),
+			hex!("6eef96d024a9c8a37ad485289e405882bbdfeb5c05c7be90aa8d3f7a67728b34")
 				.unchecked_into(),
-			hex!("7f228a7bb20f0a2e0843e92713ea02bf253eb235fc24d24a2473ebaf461a014d")
+			hex!("97c9acdf6049bbbe3469cbef37ff8e299fe2e9d22eaeb2f09998f3f805540767")
 				.unchecked_into(),
-			hex!("7c0bbc0078052b82102dc15c1c031f4af70dc771274203acac13ad07c8022309")
+			hex!("002edd41eac61588ad360ba4fd6f7b4631f38e17a2acac0487c9ea689437456a")
 				.unchecked_into(),
-			hex!("c8f2141d2bb0d307ad7871440699c31efa4d560aa0c28515979f4377b4e57c40")
+			hex!("62ab60c4087087a260ffd2cd0c74d4d2da33e9331e9357962298e7cdfaf4747a")
 				.unchecked_into(),
-			hex!("eaf152cfc6d9c2ade7951c8d009f70942c85c1df734cc6769b162e5c0ff6bc5f")
+			hex!("806bde0f35c591028a1e5ff2924915637460d02080cb2fdc19296a28fd2a0c2d")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02a306f71752509dce6386f04b914cc957949f627a90c4ef4e1773febef96c2f0c")
-				.unchecked_into(),
-		),
-		(
-			// Validator 06 (5H8jTzi4Gm4rbFtXw6h5enhLhgsuhNAqR5K2itmPiz83ymWy)
-			hex!("e03f90c7f34fc73016c71523c698d8bd869c960f4e401575fe93ba90f51b1d7f").into(),
-			hex!("c409a6d1e6d034a05ded26b3fa8f0d7ad54648926c438f0f0927238edd7f8758").into(),
-			hex!("c416f06351d396128eb3f5b3608007e15d72c3c9bb670434522f4591af928276")
-				.unchecked_into(),
-			hex!("1667de8cd9a2da709f9efd662dc8e983d936b85eb6cd89c49795f9a0c4560128")
-				.unchecked_into(),
-			hex!("cc04b11029a9fe6164735018b74d74e8d1ef6b8e7d4a9d9e73cee0abe545ed4f")
-				.unchecked_into(),
-			hex!("46b29a24719e7f39698dab9f38f382f2cf33d880bb31ab84442b26ff2f913034")
-				.unchecked_into(),
-			hex!("566dc53c011abee57f7085c4938f22a5a488e8f633391f353669390f9b659137")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03b08173722e8bd87ee7a5d362ff4bc5d98d17fe1acfb4181e224085e71b3d89c1")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("03b9664d708ddced935acf5b8b4d67a4dae68b372ada17589e464f5b8af5a3c156")
 				.unchecked_into(),
 		),
 		(
-			// Validator 07 (5Fs3P5tHuL9cvwPQojsheViRRAjFkMMFa32jAkDSwW9mbTfU)
-			hex!("a80bb6c971fd1746c40e2d7602c0b5c0c0caa4a3b65091da35d35815cd63a453").into(),
-			hex!("c636188c6d24698cace1b83add20206842843a124279f99863ef2c68c0f08236").into(),
-			hex!("549a6a2050c088c9425656f58c744fa0b43ee665c2880cea6c35d0ce49288515")
+			// Validator 04 (5HYNdbYjhvZaFUvtZK2q8MqQL1F46jccH1eRL5TXnemNaJZQ)
+			hex!("f24751f6eeb86f2636cbf9679fcb8aacc6cf5e266c7f472505c9173fdc3b5458").into(),
+			hex!("244b0b47c1b627b28a05531cb5d76539bb5a0bc6c9f0c51cd6a22403cdb38e6d").into(),
+			hex!("d6e5a2fad0c8fe7bf656bafceee4e5019fda7d7bce94604a605cdf6a21634e51")
 				.unchecked_into(),
-			hex!("835670e0c86151c2cb4749cff8fbd71f122322d545091c361da7855987119bbf")
+			hex!("a47126f0b1da217ba52f9d7b039d489f55c16c7d465068eefa13881eb4b8dd78")
 				.unchecked_into(),
-			hex!("f8d63771080fc2c251048ba73ccce131cdc5ff83daaa1578e947c3e7a8116340")
+			hex!("9492aec0d4e38e920ebed4d274df6fe026dceab04b6652b8536dc51db299d223")
 				.unchecked_into(),
-			hex!("3cb203eb8bea5a42cfd1f0154ae503add616314e6964ce27582ee01d4c97fa2d")
+			hex!("6e218a3c2e5d2140174996a7046c1ca9dbb58829cd2c268e6a07108fcd0cb713")
 				.unchecked_into(),
-			hex!("2ef9481ba1e76727b2a479860ef1fdc6ab3ab701712b6c258e73dc21f6b50367")
+			hex!("c6c2ba4c04c5157169d3e6e5c4575222cbc71b3c8a3136c469c9faf72a76a139")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("028d8719a1a5147db239bacfe9cf0fabf239dc5639da038fe63d466c46f2aab5fe")
-				.unchecked_into(),
-		),
-		(
-			// Validator 08 (5DXgq7uDXog6zcubT3wgtaYosoibjudz4w5ScPW2phLuAy3V)
-			hex!("40d067361a3d1f954d4258509d4f27b9bf3d6a3d0a3e2a5ca079ee896cab375f").into(),
-			hex!("622fa71e37f6854293e1f766b580001f9a9793330064305b76f1fc232f93ca35").into(),
-			hex!("fa4df66ef8c5dab3a135e680d1fad0dd40454c147da6b2ebb33e0abf199c9736")
-				.unchecked_into(),
-			hex!("d45cef628619987beda6cb2537930441c2cfa8a58cb523271912d98b02b06c24")
-				.unchecked_into(),
-			hex!("2e9845a40efff2c8f68492e90aa341b9e56fc2a17d0c3a108a73c6e22d283a31")
-				.unchecked_into(),
-			hex!("a6f75e66cdb1dbb9df9b28dd648b165a7486fb24497d646b8a4592d12cecf029")
-				.unchecked_into(),
-			hex!("6e7fdf190030d2f5a1a7af0e03f774c2f038e89a548d5ff44590d76d2b7a8402")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02c0c80f02c56a9a67c5dbf443b7c53136d30f477356f99ef64e026997286bd4e5")
-				.unchecked_into(),
-		),
-		(
-			// Validator 09 (5FyFwbGLgPXun3azh6Gx83wCuUt5FTavb2WAVDYrjziVB9rN)
-			hex!("acc977fd38e3d1347ab8973db0afb2b5a06b7e2b91ac94ac285b2b9513ccea2f").into(),
-			hex!("be08aa2e9926a6affd87d8a2eef8a67826c6a132308231aaeeaa51cff39af33d").into(),
-			hex!("4ee0b888b296eb13c5283f9ef739d154758dd2efa8c71cfed46b638cb8be9857")
-				.unchecked_into(),
-			hex!("2b6fe25b1b8b9111c8715339f3faa5509b3f222ec735f4fb3a4330bf4177001f")
-				.unchecked_into(),
-			hex!("504578b39414c45d565bbc19987337a8e180397af472308af23a97bae3e2bf38")
-				.unchecked_into(),
-			hex!("c0995d8c57bad9700fe8ef1e43451dfe47b2ae1a8db610da32273d1679a1ba1d")
-				.unchecked_into(),
-			hex!("bc5acf1e3df528b64d680227f560e104301727083b4586d7706cd52a77c69317")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02cb75ef6f6d501de0bd3222a6c619fbf6ca14733839f0470dbc2a66823f75a729")
-				.unchecked_into(),
-		),
-		(
-			// Validator 10 (5HEcuuypLDeJaSj6ZgH57aXhuviyeLNdw9QrCDJ8u6gsnjnL)
-			hex!("e4bcfa69c15f955817e15325269e023d2ee7dd3db362794cc7a03e25d6dc5b47").into(),
-			hex!("38c752203223f6e79585f47ae644bfbe8f9152c950eb79b2db9115eb7b05c118").into(),
-			hex!("c2570f50468e73614cac294dcee7b228b969df53160c2a491dab9837aca3fd46")
-				.unchecked_into(),
-			hex!("add76170ef4ac4120824f85e0be728b5984b771512a91bc30c70a0194e973313")
-				.unchecked_into(),
-			hex!("dc2e8f2349da00d88fcccecd7b905179878223f1f4ca8e68f7d09eb2d8bfe92c")
-				.unchecked_into(),
-			hex!("a44329940eaad42d23d456c995f09c90c4f3eb91774c4037ccd3d9e4ddabd523")
-				.unchecked_into(),
-			hex!("e0e09485ba5823ac1752952f6f6506f409c0d0d2facdfc064a1956e13d5e0778")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03d1256d431fdb43b5f10a3367334241d964fa24f75cbf617c4daca092d2807268")
-				.unchecked_into(),
-		),
-		(
-			// Validator 11 (5EpmpTXbMXpz6ixy3WhutdzcexzPbvybNKv4eiiN1kvTnQH5)
-			hex!("7a149a024f1e0b8b6935829a8b966ad369fe9484df3a82104d9d1d1ee01ed572").into(),
-			hex!("6cb70f3b6abf38b6624c9d66931237ce0e1402bbc2ed5d2697485d1f509cde3d").into(),
-			hex!("727272a3bbf7a86a1cf83ae396f21497e768a0dab34774f7be95b86d2dfa4f41")
-				.unchecked_into(),
-			hex!("46b44ef1edfd35e48996a00dd1621439342370e551467e2e83d92b4b68cbae4b")
-				.unchecked_into(),
-			hex!("400de6b7b9cab9b0e99616ec1847251776fad2e3ebe5befad65037501711f022")
-				.unchecked_into(),
-			hex!("be473d7b91a725007cc4e415ef501435e84b4d75f7d02666399b9a38db3f5937")
-				.unchecked_into(),
-			hex!("ba2e8b94884e5537c30a4e20e98b5b7fe12fee836859006d96d37aff76484a69")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02b1e027acb11655b805365858ee9ca98fadc29622a44e0682ea681731e6069db6")
-				.unchecked_into(),
-		),
-		(
-			// Validator 12 (5DFsm3BBEgHmSEZkvwGKB7c7tiH2avhfuQE1SEjfMDGuczsW)
-			hex!("34c144e4a1dcf884c75ef9b9f08fca1d5f77b8220f4df61514322f0f591a0938").into(),
-			hex!("661f3c412ba5a9d7800484ec5758630aea077fdae81705548a09160a54135334").into(),
-			hex!("ea38b9f19a7ec2d0fd5561a6e8fa6bb5719c422a1e69905b460a3435da32df3f")
-				.unchecked_into(),
-			hex!("30b77c85132f3f03b65751c8931e47d32973bfca1a638cf50a060bc4313d8c95")
-				.unchecked_into(),
-			hex!("641c34d47e356e3819af577e0263351ef7238d91726be728402f61d9ca374840")
-				.unchecked_into(),
-			hex!("66e28f11b84ea0f3de439280e098a080b980fc81d0f25bdc51ca5e85c5085122")
-				.unchecked_into(),
-			hex!("da614c956a74ff0e791a5ce6e5b2acfcf6de251279034d58e40d47817e3eeb1c")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("0268ec971d851bc687b7792d8818e833b4f86296117de1e2bae220d8a54cb98668")
-				.unchecked_into(),
-		),
-		(
-			// Validator 13 (5HePVUXjGSM2hVZ1YMz2V3KoX6EdQNEmmzUnUvpfGV95ofUR)
-			hex!("f6ddb003fed15c7ca1b266bd244e65a639a444b9e2bc715c0dd5434565c7eb07").into(),
-			hex!("8a86427d6fa47d9a8444ac83373d23b475da9b5495ab1347bb0aec96976c8f03").into(),
-			hex!("c8fb1829d4b387ce30ac97733d7e0f1b680434d40eb6ff5853cede0bc8fcf626")
-				.unchecked_into(),
-			hex!("628e5573c7741078d2ad579a4f029b42b196c7f1ef9acc52326fbca0e5c915ed")
-				.unchecked_into(),
-			hex!("069a61fd8aaff5a526632ef31c0aabdf9efdd3b8414cd637b4e51e568428dc52")
-				.unchecked_into(),
-			hex!("8053465ddf970e400e0ec2a190781bb9c5619c986512580dc84f4b61e8af2f3f")
-				.unchecked_into(),
-			hex!("de45dfac7a51d17898bb238dca449bf1c8f6fb95de547b2c788392e51e971f04")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03a03589b0023447c56d789e6074430bb08498ee132dae418be9ec0f753c196acb")
-				.unchecked_into(),
-		),
-		(
-			// Validator 14 (5GP4nAcwtETTg1oAHQNvevmmhG8GEstGQeCirKEhaDTwpFgx)
-			hex!("bef1c8373f3bf894c4de8f645e2d319302502bf3f53be8639e9f49b6e2994315").into(),
-			hex!("369bb1432aabcdb9c867007ced947675221299435cc817e4f3716ff0b926d56e").into(),
-			hex!("68d8f4c3d74ba60bad6dfcf8241556a940606d0bc5874611a3f2be0fe1b57d76")
-				.unchecked_into(),
-			hex!("3fbaa2101aaeaaa3f3fc150c79c5b98f8329a2846dea20e8a02e1bb5c13818b8")
-				.unchecked_into(),
-			hex!("9099637497a754e54e252eb689f77cefb2b921d70722f8aed7380f27f371eb27")
-				.unchecked_into(),
-			hex!("88b009545c03cb600264489ba8b8e61f62eedc99064a51d3405fb517542da04a")
-				.unchecked_into(),
-			hex!("d06475ed615fec5b4b3c900f7779903d6e95173ab944840ce4acf8c30b5f3b32")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("035f1efad44a7de67474b9425bc3000e4cab8363e498e8f9804b9e3d8401a9b144")
-				.unchecked_into(),
-		),
-		(
-			// Validator 15 (5FYoCM3oeEGeoFY94EgXBhmABkRCabvPp72ur5bJNG3cK619)
-			hex!("9a218b96cf0267b1a7f8d9d1932ed60ecb0a7a681fb882479a93c2ce4b869610").into(),
-			hex!("9a3cf4772d884077680b268a76ee703d1aefb9a4c48f1576e9874a61db3a0406").into(),
-			hex!("241fa3be1b57d3be4ff6fc7808fab44d8df93856699bcfe9d5768c219003c70a")
-				.unchecked_into(),
-			hex!("3d07a507b495b2eb295b1045e550ad657fd55ac7dea773bdfd5f80403b3d8f4f")
-				.unchecked_into(),
-			hex!("ec9a49b0a41d20eb40356c3bd1186fc8281a300c92cfac167c3d27bdfbb3bf28")
-				.unchecked_into(),
-			hex!("aa1af739a5525dd6a186ec367b227b2c76859230d458329713edaebc48f7b74d")
-				.unchecked_into(),
-			hex!("509fc3e6d9edc45539fae863e9a81be33e5f0ee370c78533a0eb0a975786af39")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("033ac8624837a0ed5fb7f1ab9c08d58469c42e2598c49e12947b97f5cceabab930")
-				.unchecked_into(),
-		),
-		(
-			// Validator 16 (5GspwkKF6aYzFkmAyBBQg7coSCSgDCore79fbW8uxJNAH347)
-			hex!("d4e153a229ac679831421ab2604b6fc347c8a1180f6c977d60a32cb7cac9eb03").into(),
-			hex!("3e5672b2a4a19ed8fe9c5483940753d7e3edf062ea64af35db529de084890c3b").into(),
-			hex!("ae0eb849027893c9f5fbe2512e0c0e1bd330e51d7afbe5ee9345ca997691c004")
-				.unchecked_into(),
-			hex!("7ff1b4e854560d0d7739957dffaf182ab36ba67c2290016274376638493d95eb")
-				.unchecked_into(),
-			hex!("e022e8ba625a94452df5058127c4471289e08bc026561a428962b43032ea8d4e")
-				.unchecked_into(),
-			hex!("7e83a62c3c60106c7b448453827e300ac75c269bed996b69e5bb5a7b99aeee7e")
-				.unchecked_into(),
-			hex!("7875d43192c57dc8028a9468d7b18e66ae46b065731e28b6691b5614fa505740")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("0392e5b4d2653b0409fcc25649536516d16c89587e44ddccfd4edda779358418ad")
-				.unchecked_into(),
-		),
-		(
-			// Validator 17 (5GmuX11pN2fC4Fyq1V7MuiYt3aevZcVQs3HZWKyzmap9bKfe)
-			hex!("d05d3fde48e6a9b739f2ebac00881248dcb04000c1953dc17a325318e7678b74").into(),
-			hex!("7ce0889313160507a7cefaae2bd9cdea763e5ad57a1a294739bca41bf4fc336d").into(),
-			hex!("e495464eaac8f8a56bbf0171e78d43b5da1d4f5bca5fa22afe2bdbec3588df62")
-				.unchecked_into(),
-			hex!("1229786eeff8c0bf22358d63de43812a9c3315fc3f77d871e41828f42d39d4c3")
-				.unchecked_into(),
-			hex!("ec7e5b3ada32f54173bb0e4cbf5b22eef6dba0f6e3e380353fddce1dea0e5a4f")
-				.unchecked_into(),
-			hex!("68a2ff42beef103bd09ce879d2d64ca2aa6dcb91211653c9a4a66802cb19db16")
-				.unchecked_into(),
-			hex!("5e28fa8dea95c520ed42509a7c5050617688148805c211ff634553b8b734db38")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03d1d118b8a51a1cb72f3f0ebcf11cae21963c6dd1418e010d17e5c52996c302cb")
-				.unchecked_into(),
-		),
-		(
-			// Validator 18 (5FQptVCtM1qsxkLbQkATkw4Kio4M9LxWvM6TwgEo3QjmTXF3)
-			hex!("940d47307adb77756d7d99677120ec176bdee0e88df1b877f3a3b36a6168a13e").into(),
-			hex!("d26c61d2a79befe1ed1522dc79dc487a1b01b7b0424bbee233c3b6d6133b0b36").into(),
-			hex!("de9e6dc042e3192934b495c01b665ce5024e77bb3516397b0d8b8d9a3f22e346")
-				.unchecked_into(),
-			hex!("bbeccb7ece29ad0831840ff0a620e039c464323a7b5539e7df48c60084099198")
-				.unchecked_into(),
-			hex!("5c9292dd791104d019291f495caea1662bef2dfa4c6b7e39fe26a03ff64e1d2f")
-				.unchecked_into(),
-			hex!("40fba87e041a3fc317f15e72f98c2b45a411e262122bfedcdacbfc88c7677e4e")
-				.unchecked_into(),
-			hex!("0ecdca8ea4479ea078041778a72ba70a591c19b380620ef8ec22eb3e883be36e")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03cab73da1d53c5fa60ea2a52ca5f9c11998c07fbd9cec89707ee1db87051e3e65")
-				.unchecked_into(),
-		),
-		(
-			// Validator 19 (5E7VD2qmso1yRfyq3t9u2qhauAgtmjZTybVsCARF5Zz9bXy6)
-			hex!("5a979f8534d09e40776fc69aa27659fec47023281e1192bf2eda74adc8779f1b").into(),
-			hex!("4268358bfd339d689b2a2330f14671c474ae154bf5659d65f8b621f0643db515").into(),
-			hex!("0406457ca0553ea12faaa39ec9e486c33852aa2733299b413451e156dbab5820")
-				.unchecked_into(),
-			hex!("29eb2da3b8063c893792729c504ea67a1eb7179bfeb2d46770fb1b2e751fd9ea")
-				.unchecked_into(),
-			hex!("a0a72ce07da14e83c75abaf1c6e498193f15a0a6f696c24107f0d5e267240e2a")
-				.unchecked_into(),
-			hex!("e81cc87d913aa31e46df7bedcbe57b1284111fe7abaedb3fc18377d9364b845a")
-				.unchecked_into(),
-			hex!("0a823f91ad2e5cf332a41777ee62c8f29c727ef4b24bb3c739dcc17ea5a32725")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03821bf29d19ce075bc045f245c4e10e06bce58695ba0f1e6a31e94e4a435cfeb2")
-				.unchecked_into(),
-		),
-		(
-			// Validator 20 (5Ccz5W7Q21g4UPCytzHxD3VSMLJ1BbbWSkJKFwsNtYRk3HkX)
-			hex!("189e75681b36a25fce4709241ce16863c6b4bddef2a7c55f5249d2c7fe77ba50").into(),
-			hex!("8878312c9ddd3c5071c21a96baa751e6668a6d0428ba9897d714340084168e57").into(),
-			hex!("e68bd3aefd3003c06404eba43dacd5aa3888217a07f9df7cdaa17918e63bb92f")
-				.unchecked_into(),
-			hex!("046ddb7c2a1466ab4ed203e3a64d7b0552917cd75bb70c52db4c1b2e8470de27")
-				.unchecked_into(),
-			hex!("d4fb75a88fb9e4a3b954643852d6a80e75f41d8dfe599e905639fcaa09b8c43a")
-				.unchecked_into(),
-			hex!("3e1438dacaf7ed4355e5207136a8eaa505ac042c385cfee1110ee647b05e2541")
-				.unchecked_into(),
-			hex!("c2821fde10d149743cf7f6cf3249c8e2e5bc17d9364b8a6af0119fbc8cbf8469")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("020ba75ce3c26fab250a4abe8fdd5b45c2b9feec308ff6b8bab98e8f25b5e8f686")
-				.unchecked_into(),
-		),
-		(
-			// Validator 21 (5D7WPmK1SAJyYDdCtgqEzGJpWXQe3Lj9FqWL8z9waLTkUNv3)
-			hex!("2e5f60fd87b662097c182f409f49d23da112b132c3057bfe0956094436663854").into(),
-			hex!("ee53261dfdee7320d2738d7eb249510244ba70d70acd668b03c219f79ab3400c").into(),
-			hex!("9a00b890d45479714957e233fb4f5e197f912d5b7ab31c976af3926b9b279d7d")
-				.unchecked_into(),
-			hex!("81ff23b7233abbc8411099391d860582b870f4003184e5ea18c02d8554e6f9eb")
-				.unchecked_into(),
-			hex!("5a7f4f5995829f9f7626b45cbbffd5cbaea392eda7299d297cd58dadabdb1531")
-				.unchecked_into(),
-			hex!("04f83a2cc77593e656073e9b189de1d960a98222f269a66aec483fa299a9816f")
-				.unchecked_into(),
-			hex!("a6f0d33a810d2023f0b05bb1aeda000307c66e608a2ec096df2075a2d8d3204e")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("027820252d089e6e9e95e8a328ffef1f1e03173d04be4f2957aeb54fa36a94303b")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("0337f726c06697901ca27f0e6ba2b17ad3174dd19210589e7741937890329b31a5")
 				.unchecked_into(),
 		),
 	]);
 
 	// Validator stash amount
 	const STASH: u128 = 100 * HEZ;
+
+	// What the validators are funded with, taken out of the treasury's share rather than added
+	// beside it.
+	//
+	// It used to be added: the four allocations summed to 200M and then every validator got
+	// `STASH * 2` on top, so genesis actually minted 200,000,800 HEZ here and 200,004,200 on
+	// Pezkuwichain. `hez_allocations_sum_to_200m` did not see it -- it adds four constants,
+	// and the constants were right; what was wrong was the sentence beside them saying the
+	// constants are the genesis supply. Two hundred million is a claim this project makes in
+	// public, so the arithmetic is made to match the claim rather than the claim relaxed to
+	// match the arithmetic.
+	//
+	// The treasury pays because bootstrapping the validators is what a state treasury is for,
+	// and because it is the only allocation here big enough not to notice.
+	let validator_funding: u128 = initial_authorities.len() as u128 * STASH * 2;
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
@@ -1074,7 +793,8 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				// manual transfer has to be remembered after launch. See
 				// `HEZ_AIRDROP_ALLOCATION`'s comment and the Asset Hub's `AirdropPot`.
 				(founder_account.clone(), HEZ_FOUNDER_ALLOCATION), // 10% = 20M HEZ
-				(treasury_account.clone(), HEZ_TREASURY_ALLOCATION), // 20% = 40M HEZ
+				// 20% = 40M HEZ, less what the validator stashes take out of it.
+				(treasury_account.clone(), HEZ_TREASURY_ALLOCATION - validator_funding),
 			]
 			.into_iter()
 			// Add validator stash balances (STASH * 2 to cover bond + existential deposit)
@@ -1099,7 +819,11 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				.collect::<Vec<_>>(),
 		},
 		babe: BabeConfig { epoch_config: BABE_GENESIS_EPOCH_CONFIG },
-		sudo: SudoConfig { key: Some(founder_account) },
+		// Alice, and on purpose. Zagros is a testnet: every developer already holds this key,
+		// there is nothing here worth protecting from them, and the alternative -- mainnet's
+		// founder key -- is the one thing that must never be needed to operate a testnet.
+		// Mainnet's sudo is the Founder, and the two chains do not share it.
+		sudo: SudoConfig { key: Some(Sr25519Keyring::Alice.to_account_id()) },
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },
 		registrar: RegistrarConfig { next_free_para_id: pezkuwi_primitives::LOWEST_PUBLIC_ID },
 	})
