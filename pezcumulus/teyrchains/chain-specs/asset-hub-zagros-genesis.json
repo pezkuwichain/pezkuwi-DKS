@@ -2,9 +2,7 @@
   "name": "Zagros Asset Hub",
   "id": "asset-hub-zagros",
   "chainType": "Live",
-  "bootNodes": [
-    "/ip4/127.0.0.1/tcp/30333/p2p/12D3KooWQWfQ6EBNgik1sW5by9vYagzrdsohc6NafeGPU4upnLRp"
-  ],
+  "bootNodes": [],
   "telemetryEndpoints": null,
   "protocolId": null,
   "properties": {
