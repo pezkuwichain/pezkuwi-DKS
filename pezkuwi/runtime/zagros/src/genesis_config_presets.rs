@@ -228,51 +228,41 @@ fn hez_allocations_sum_to_200m() {
 	assert_eq!(here + on_asset_hub, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
 }
 
-/// The relay's genesis mints the two shares it keeps, and neither of the two that moved.
+/// The relay's genesis mints exactly the share it keeps -- to the planck.
 ///
-/// `hez_allocations_sum_to_200m` above cannot see this. It does arithmetic on four constants,
-/// and the constants are unchanged by a share moving chain -- so it would have passed with the
-/// presale's hundred million still minted here beside the pot's copy on the Asset Hub, which
-/// is a hundred million HEZ of supply appearing twice. What that test checks is the division;
-/// what this one checks is where the money lands, and only the second one notices a line that
-/// was supposed to be deleted and was not.
+/// `hez_allocations_sum_to_200m` adds four constants and is right about them, but constants are
+/// not what a chain mints. This builds the genesis and adds up what is in it, which is the only
+/// way to see the thing that was there before: every validator was funded `STASH * 2` on top of
+/// the allocations, so the relay minted 200,000,800 HEZ while asserting 200,000,000.
+///
+/// It also catches a share that moved chain without its line being deleted -- a hundred million
+/// minted here and again on the Asset Hub would pass the constant check untouched.
 #[test]
-fn the_relay_mints_only_the_shares_it_keeps() {
+fn the_relay_mints_exactly_its_share() {
 	let genesis = pezkuwichain_genesis_config();
-	let balances = genesis["balances"]["balances"]
+	let total: u128 = genesis["balances"]["balances"]
 		.as_array()
-		.expect("the balances patch is an array of (account, amount)");
-
-	let amounts: Vec<u128> = balances
+		.expect("the balances patch is an array of (account, amount)")
 		.iter()
 		.map(|entry| {
 			entry[1].as_u64().map(u128::from).unwrap_or_else(|| {
-				// Anything past u64 arrives as a JSON number too large for `as_u64`; the
-				// allocations are all in that range, so parse rather than silently skip.
+				// Anything past u64 arrives as a JSON number too large for `as_u64`; parse
+				// rather than silently skip it.
 				entry[1].to_string().parse().expect("a balance is a number")
 			})
 		})
-		.collect();
+		.sum();
 
-	let count = |v: u128| amounts.iter().filter(|a| **a == v).count();
-
-	assert_eq!(count(HEZ_FOUNDER_ALLOCATION), 1, "the founder's 20M is minted here, once");
 	assert_eq!(
-		count(HEZ_PRESALE_ALLOCATION),
-		0,
-		"the presale's 100M belongs to `PresalePot` on the Asset Hub, not to any account here"
+		total,
+		HEZ_FOUNDER_ALLOCATION + HEZ_TREASURY_ALLOCATION,
+		"the relay mints the founder's and the treasury's shares and nothing else -- validator \
+		 stashes come out of the treasury's, and the presale and airdrop are pots on the Asset Hub"
 	);
-	// The treasury and the airdrop are both forty million, so no assertion can name one of
-	// them by its amount -- the first draft of this test asked for zero accounts holding the
-	// airdrop's figure and failed on the treasury. What the count still answers is the
-	// question that matters: one such account is the treasury, and two would mean the airdrop
-	// line came back while the pot on the Asset Hub kept its copy.
-	assert_eq!(HEZ_TREASURY_ALLOCATION, HEZ_AIRDROP_ALLOCATION, "the two shares are equal");
 	assert_eq!(
-		count(HEZ_TREASURY_ALLOCATION),
-		1,
-		"exactly one account here holds forty million, and it is the treasury -- the airdrop's \
-		 forty million belongs to `AirdropPot` on the Asset Hub"
+		total + HEZ_PRESALE_ALLOCATION + HEZ_AIRDROP_ALLOCATION,
+		200_000_000 * HEZ,
+		"and the two chains together mint two hundred million exactly"
 	);
 }
 
@@ -779,6 +769,21 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	// Validator stash amount
 	const STASH: u128 = 100 * HEZ;
 
+	// What the validators are funded with, taken out of the treasury's share rather than added
+	// beside it.
+	//
+	// It used to be added: the four allocations summed to 200M and then every validator got
+	// `STASH * 2` on top, so genesis actually minted 200,000,800 HEZ here and 200,004,200 on
+	// Pezkuwichain. `hez_allocations_sum_to_200m` did not see it -- it adds four constants,
+	// and the constants were right; what was wrong was the sentence beside them saying the
+	// constants are the genesis supply. Two hundred million is a claim this project makes in
+	// public, so the arithmetic is made to match the claim rather than the claim relaxed to
+	// match the arithmetic.
+	//
+	// The treasury pays because bootstrapping the validators is what a state treasury is for,
+	// and because it is the only allocation here big enough not to notice.
+	let validator_funding: u128 = initial_authorities.len() as u128 * STASH * 2;
+
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
 			balances: vec![
@@ -788,7 +793,8 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				// manual transfer has to be remembered after launch. See
 				// `HEZ_AIRDROP_ALLOCATION`'s comment and the Asset Hub's `AirdropPot`.
 				(founder_account.clone(), HEZ_FOUNDER_ALLOCATION), // 10% = 20M HEZ
-				(treasury_account.clone(), HEZ_TREASURY_ALLOCATION), // 20% = 40M HEZ
+				// 20% = 40M HEZ, less what the validator stashes take out of it.
+				(treasury_account.clone(), HEZ_TREASURY_ALLOCATION - validator_funding),
 			]
 			.into_iter()
 			// Add validator stash balances (STASH * 2 to cover bond + existential deposit)
