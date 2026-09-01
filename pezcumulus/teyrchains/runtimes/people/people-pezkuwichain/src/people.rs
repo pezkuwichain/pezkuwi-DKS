@@ -1444,6 +1444,8 @@ impl pezpallet_welati::Config for Runtime {
 	type AirdropCeiling = WelatiAirdropCeiling;
 	type PresalePotPalletIndex = WelatiPresalePotPalletIndex;
 	type PresaleLockMonth = WelatiPresaleLockMonth;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = WelatiBenchmarkHelper;
 	type LargeAirdropDelay = WelatiLargeAirdropDelay;
 	type MaxEmissionStep = WelatiMaxEmissionStep;
 	type MinEmissionInterval = WelatiMinEmissionInterval;
@@ -1911,5 +1913,23 @@ impl pezpallet_tnpos::SendCommitteeToRelay<AccountId> for CommitteeToRelay {
 			committee, era, None,
 		);
 		send_to_relay(RelayRuntimePallets::AhClient(AhClientCalls::ValidatorSet(report)))
+	}
+}
+
+/// Opens the People -> Asset Hub channel so the pot spends can be benchmarked.
+///
+/// Both pots live on the Asset Hub and both payment calls address them over XCM. A benchmark
+/// runs against a bare genesis with no HRMP channel, so the router refuses the send and the
+/// call reports `CouldNotReachTreasury` -- correctly, which is why the fix belongs here rather
+/// than in the pallet.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct WelatiBenchmarkHelper;
+
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_welati::BenchmarkHelper for WelatiBenchmarkHelper {
+	fn ensure_treasury_reachable() {
+		crate::TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
+			testnet_teyrchains_constants::pezkuwichain::locations::AssetHubParaId::get(),
+		);
 	}
 }

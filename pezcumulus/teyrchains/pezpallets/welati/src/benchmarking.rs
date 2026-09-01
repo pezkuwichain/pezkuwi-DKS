@@ -378,6 +378,11 @@ mod benchmarks {
 		.unwrap();
 		Pezpallet::<T>::approve_airdrop(RawOrigin::Signed(president).into(), 0).unwrap();
 
+		// Without this the router refuses the spend and the benchmark measures the
+		// refusal instead of the send -- which is how a call that sends an XCM ends up
+		// priced as one that does not.
+		<T as Config>::BenchmarkHelper::ensure_treasury_reachable();
+
 		#[extrinsic_call]
 		pay_airdrop(RawOrigin::Signed(caller), 0);
 
@@ -447,11 +452,16 @@ mod benchmarks {
 		Pezpallet::<T>::finalize_proposal(RawOrigin::Signed(caller.clone()).into(), vote_id)
 			.unwrap();
 
+		// Without this the router refuses the spend and the benchmark measures the
+		// refusal instead of the send -- which is how a call that sends an XCM ends up
+		// priced as one that does not.
+		<T as Config>::BenchmarkHelper::ensure_treasury_reachable();
+
 		#[extrinsic_call]
 		execute_presale(RawOrigin::Signed(caller), 0);
 
 		assert!(PresaleProposals::<T>::get(0).is_none());
-		assert_eq!(PresaleReleased::<T>::get(), 1_000u128);
+		assert_eq!(PresaleSentTotal::<T>::get(), 1_000u128);
 	}
 
 	#[benchmark]

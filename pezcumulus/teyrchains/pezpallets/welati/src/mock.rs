@@ -787,6 +787,9 @@ impl pezpallet_welati::Config for Test {
 	type AirdropCeiling = AirdropCeiling;
 	type PresalePotPalletIndex = PresalePotPalletIndex;
 	type PresaleLockMonth = PresaleLockMonth;
+	// `RecordingXcmSender` accepts everything, so there is no route to open.
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 	type LargeAirdropDelay = LargeAirdropDelay;
 	type MaxEmissionStep = MaxEmissionStep;
 	type MinEmissionInterval = MinEmissionInterval;

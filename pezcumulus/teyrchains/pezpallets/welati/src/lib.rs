@@ -224,6 +224,27 @@ const ACTIVATE_DISTRIBUTION_CALL_INDEX: u8 = 0;
 /// `pezpallet-pez-treasury::spend_from_government_pot`, by call index.
 const SPEND_FROM_GOVERNMENT_POT_CALL_INDEX: u8 = 1;
 
+/// What a benchmark needs true before a pot's spend can leave this chain.
+///
+/// Both payment calls send an XCM, and on a real People runtime the router refuses one to a
+/// sibling with no open channel -- `CouldNotReachTreasury`, which is the pallet reporting the
+/// truth. A benchmark starting from a bare genesis has no channel, so without this the two
+/// calls cannot be measured at all and their weights stay borrowed from a call that does no
+/// such work.
+///
+/// Benchmark-only. Nothing in production may reach it, because a pallet that could open its
+/// own delivery route would be deciding a thing the runtime decides.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkHelper {
+	/// Open whatever the sender needs so a spend addressed to the treasury chain leaves.
+	fn ensure_treasury_reachable();
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl BenchmarkHelper for () {
+	fn ensure_treasury_reachable() {}
+}
+
 /// `pezpallet_treasury::spend` on the Asset Hub's airdrop instance, by call index.
 ///
 /// Five, because that is where `spend` sits in the treasury pallet -- the same number for
@@ -510,6 +531,10 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type PresaleLockMonth: Get<BlockNumberFor<Self>>;
 
+		/// Opens the delivery route the two payment calls use, for benchmarking only.
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: crate::BenchmarkHelper;
+
 		/// The index `pezpallet-parameters` occupies in the treasury chain's runtime.
 		#[pezpallet::constant]
 		type ParametersPalletIndex: Get<u8>;
@@ -686,14 +711,21 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type NextPresaleId<T: Config> = StorageValue<_, u32, ValueQuery>;
 
-	/// How much of the presale has left the pot, in HEZ.
+	/// How much presale HEZ this chain has *sent for payment*, in HEZ.
 	///
-	/// Kept because the pot's balance alone does not answer the question anyone asks of a
-	/// presale -- how much of the supply has been released -- and because the balance gives
-	/// the wrong answer the moment anything is ever paid back into it. What is still held is
-	/// the pot's balance; what has gone is this.
+	/// Sent, not paid, and the name says so because the difference is real and this chain
+	/// cannot see it: the spend crosses to the Asset Hub as an XCM, and the pot there can
+	/// still refuse it -- the origin may not match, or the balance may not cover it -- with no
+	/// reply that reaches here. A counter called `Released` would drift upward every time that
+	/// happened and never drift back, and an accounting error that only inflates is the kind
+	/// that survives being looked at.
+	///
+	/// Kept even so, because the pot's balance does not answer the question either: it falls
+	/// for payments and rises for anything ever paid back in, so it measures what is left
+	/// rather than what has gone out. What was actually paid is answerable on the Asset Hub,
+	/// where the payments are.
 	#[pezpallet::storage]
-	pub type PresaleReleased<T: Config> = StorageValue<_, u128, ValueQuery>;
+	pub type PresaleSentTotal<T: Config> = StorageValue<_, u128, ValueQuery>;
 
 	/// The emission rate this chain last told the treasury chain to apply, and when.
 	///
@@ -1048,7 +1080,7 @@ pub mod pezpallet {
 		PresaleProposed { id: u32, vote_id: u32, beneficiary: T::AccountId, amount: u128 },
 		/// Sent to the pot's chain. Sent, not paid: the pot checks the amount against its own
 		/// balance and the origin against its own rule, and either can still refuse.
-		PresaleSent { id: u32, beneficiary: T::AccountId, amount: u128, released: u128 },
+		PresaleSent { id: u32, beneficiary: T::AccountId, amount: u128, sent_total: u128 },
 		/// Withdrawn before payment by the Finance Minister who proposed it.
 		PresaleCancelled { id: u32 },
 
@@ -1903,7 +1935,7 @@ pub mod pezpallet {
 			// release cannot be paid twice. Removing it afterwards would leave a window in
 			// which the money is gone and the record still says it is owed.
 			PresaleProposals::<T>::remove(id);
-			let released = PresaleReleased::<T>::mutate(|r| {
+			let sent_total = PresaleSentTotal::<T>::mutate(|r| {
 				*r = r.saturating_add(p.amount);
 				*r
 			});
@@ -1913,22 +1945,32 @@ pub mod pezpallet {
 				id,
 				beneficiary: p.beneficiary,
 				amount: p.amount,
-				released,
+				sent_total,
 			});
 			Ok(())
 		}
 
-		/// Withdraw a release before it is carried out.
+		/// Withdraw a release, or clear one the house refused.
 		///
-		/// The Finance Minister who proposed it, and nobody else -- the house does not need
-		/// this call, because a house that has changed its mind votes the proposal down. What
-		/// this is for is the minister who finds the terms were wrong before the vote closes.
+		/// Two callers, because there are two ways a release ends without being paid and
+		/// leaving either one in storage costs the chain a record it will never read again.
+		///
+		/// Before the vote closes it is the proposer's call and nobody else's: a house that
+		/// has changed its mind votes the proposal down, so this is for the minister who finds
+		/// the terms were wrong. Once the house has voted it down, anyone may clear it -- the
+		/// decision is already made and recorded in the vote, so removing the release decides
+		/// nothing, exactly as `finalize_proposal` decides nothing. Leaving it to the proposer
+		/// alone would mean a minister who stops caring, or stops holding the office, leaves
+		/// the entry behind for good.
 		#[pezpallet::call_index(62)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election())]
 		pub fn cancel_presale(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let p = PresaleProposals::<T>::get(id).ok_or(Error::<T>::PresaleNotFound)?;
-			ensure!(who == p.proposer, Error::<T>::NotTheFinanceMinisterForPresale);
+			let refused = ActiveProposals::<T>::get(p.vote_id)
+				.map(|v| v.status == ProposalStatus::Rejected)
+				.unwrap_or(false);
+			ensure!(refused || who == p.proposer, Error::<T>::NotTheFinanceMinisterForPresale);
 			PresaleProposals::<T>::remove(id);
 			Self::deposit_event(Event::PresaleCancelled { id });
 			Ok(())

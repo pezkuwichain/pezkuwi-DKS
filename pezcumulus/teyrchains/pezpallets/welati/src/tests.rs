@@ -11,7 +11,7 @@ use crate::{
 	},
 	types::*,
 	ActiveProposals, AirdropProposals, Error, Event as WelatiEvent, GovernmentPosition,
-	NextAirdropId, PresaleProposals, PresaleReleased,
+	NextAirdropId, PresaleProposals, PresaleSentTotal,
 };
 use pezframe_support::{assert_noop, assert_ok, BoundedVec};
 use pezpallet_tiki::Tiki;
@@ -4406,7 +4406,7 @@ fn a_plain_presale_transfer_pays_when_the_vote_carries() {
 fn the_released_total_counts_what_left() {
 	ExtBuilder::default().build().execute_with(|| {
 		seat_the_finance_minister();
-		assert_eq!(PresaleReleased::<Test>::get(), 0);
+		assert_eq!(PresaleSentTotal::<Test>::get(), 0);
 		for (id, amount) in [(0u32, 1_000u128), (1, 250)] {
 			assert_ok!(Welati::propose_presale(
 				RuntimeOrigin::signed(MINISTER),
@@ -4419,7 +4419,7 @@ fn the_released_total_counts_what_left() {
 			carry_the_vote(vote_id);
 			assert_ok!(Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), id));
 		}
-		assert_eq!(PresaleReleased::<Test>::get(), 1_250);
+		assert_eq!(PresaleSentTotal::<Test>::get(), 1_250);
 	});
 }
 
@@ -4464,5 +4464,66 @@ fn only_the_proposer_withdraws_a_presale() {
 		}
 		assert_ok!(Welati::cancel_presale(RuntimeOrigin::signed(MINISTER), 0));
 		assert!(PresaleProposals::<Test>::get(0).is_none());
+	});
+}
+
+/// A release the house refused is anyone's to clear.
+///
+/// Otherwise it stays in storage until the minister who proposed it happens to remove it, and
+/// a minister who leaves office cannot: the record would outlive the office that made it.
+#[test]
+fn a_refused_presale_can_be_cleared_by_anyone() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			100,
+			b"terms".to_vec()
+		));
+		let vote_id = PresaleProposals::<Test>::get(0).unwrap().vote_id;
+
+		// While the vote is open an outsider is still refused.
+		assert_noop!(
+			Welati::cancel_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::NotTheFinanceMinisterForPresale
+		);
+
+		// Let the window close with no ayes. `finalize_proposal` takes it as a refusal.
+		let expires_at = ActiveProposals::<Test>::get(vote_id).unwrap().expires_at;
+		run_to_block(expires_at + 1);
+		assert_ok!(Welati::finalize_proposal(RuntimeOrigin::signed(OUTSIDER), vote_id));
+		assert_eq!(ActiveProposals::<Test>::get(vote_id).unwrap().status, ProposalStatus::Rejected);
+
+		assert_ok!(Welati::cancel_presale(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert!(PresaleProposals::<Test>::get(0).is_none());
+	});
+}
+
+/// A refused release cannot be carried out, cleared or not.
+#[test]
+fn a_refused_presale_is_never_paid() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_finance_minister();
+		assert_ok!(Welati::propose_presale(
+			RuntimeOrigin::signed(MINISTER),
+			PresaleVerb::Transfer,
+			BUYER,
+			100,
+			b"terms".to_vec()
+		));
+		let vote_id = PresaleProposals::<Test>::get(0).unwrap().vote_id;
+		let expires_at = ActiveProposals::<Test>::get(vote_id).unwrap().expires_at;
+		run_to_block(expires_at + 1);
+		assert_ok!(Welati::finalize_proposal(RuntimeOrigin::signed(OUTSIDER), vote_id));
+
+		let before = sent_xcm().len();
+		assert_noop!(
+			Welati::execute_presale(RuntimeOrigin::signed(OUTSIDER), 0),
+			Error::<Test>::PresaleNotApproved
+		);
+		assert_eq!(sent_xcm().len(), before, "a refused release sends nothing");
+		assert_eq!(PresaleSentTotal::<Test>::get(), 0);
 	});
 }

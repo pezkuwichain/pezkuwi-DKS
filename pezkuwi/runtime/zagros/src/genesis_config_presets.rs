@@ -228,6 +228,54 @@ fn hez_allocations_sum_to_200m() {
 	assert_eq!(here + on_asset_hub, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
 }
 
+/// The relay's genesis mints the two shares it keeps, and neither of the two that moved.
+///
+/// `hez_allocations_sum_to_200m` above cannot see this. It does arithmetic on four constants,
+/// and the constants are unchanged by a share moving chain -- so it would have passed with the
+/// presale's hundred million still minted here beside the pot's copy on the Asset Hub, which
+/// is a hundred million HEZ of supply appearing twice. What that test checks is the division;
+/// what this one checks is where the money lands, and only the second one notices a line that
+/// was supposed to be deleted and was not.
+#[test]
+fn the_relay_mints_only_the_shares_it_keeps() {
+	let genesis = pezkuwichain_genesis_config();
+	let balances = genesis["balances"]["balances"]
+		.as_array()
+		.expect("the balances patch is an array of (account, amount)");
+
+	let amounts: Vec<u128> = balances
+		.iter()
+		.map(|entry| {
+			entry[1].as_u64().map(u128::from).unwrap_or_else(|| {
+				// Anything past u64 arrives as a JSON number too large for `as_u64`; the
+				// allocations are all in that range, so parse rather than silently skip.
+				entry[1].to_string().parse().expect("a balance is a number")
+			})
+		})
+		.collect();
+
+	let count = |v: u128| amounts.iter().filter(|a| **a == v).count();
+
+	assert_eq!(count(HEZ_FOUNDER_ALLOCATION), 1, "the founder's 20M is minted here, once");
+	assert_eq!(
+		count(HEZ_PRESALE_ALLOCATION),
+		0,
+		"the presale's 100M belongs to `PresalePot` on the Asset Hub, not to any account here"
+	);
+	// The treasury and the airdrop are both forty million, so no assertion can name one of
+	// them by its amount -- the first draft of this test asked for zero accounts holding the
+	// airdrop's figure and failed on the treasury. What the count still answers is the
+	// question that matters: one such account is the treasury, and two would mean the airdrop
+	// line came back while the pot on the Asset Hub kept its copy.
+	assert_eq!(HEZ_TREASURY_ALLOCATION, HEZ_AIRDROP_ALLOCATION, "the two shares are equal");
+	assert_eq!(
+		count(HEZ_TREASURY_ALLOCATION),
+		1,
+		"exactly one account here holds forty million, and it is the treasury -- the airdrop's \
+		 forty million belongs to `AirdropPot` on the Asset Hub"
+	);
+}
+
 fn pezkuwichain_testnet_genesis(
 	initial_authorities: Vec<(
 		AccountId,
