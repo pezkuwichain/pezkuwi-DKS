@@ -787,9 +787,8 @@ impl pezpallet_welati::Config for Test {
 	type AirdropCeiling = AirdropCeiling;
 	type PresalePotPalletIndex = PresalePotPalletIndex;
 	type PresaleLockMonth = PresaleLockMonth;
-	// `RecordingXcmSender` accepts everything, so there is no route to open.
 	#[cfg(feature = "runtime-benchmarks")]
-	type BenchmarkHelper = ();
+	type BenchmarkHelper = WelatiBenchmarkHelper;
 	type LargeAirdropDelay = LargeAirdropDelay;
 	type MaxEmissionStep = MaxEmissionStep;
 	type MinEmissionInterval = MinEmissionInterval;
@@ -975,5 +974,26 @@ impl<A: pezframe_support::traits::Get<AccountId>>
 	fn on_nonzero_unbalanced(amount: pezpallet_balances::NegativeImbalance<Test>) {
 		use pezframe_support::traits::Currency;
 		Balances::resolve_creating(&A::get(), amount);
+	}
+}
+
+/// What the benchmarks need arranged here, mirroring what the People runtimes arrange.
+///
+/// A no-op `()` would compile and then fail every benchmark that seats somebody, which is how
+/// `approve_appointment` came to have a recorded weight nobody could regenerate. The mock is
+/// the local gate for the benchmark suite, so it has to do the real thing.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct WelatiBenchmarkHelper;
+
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
+	/// `RecordingXcmSender` accepts everything, so there is no route to open.
+	fn ensure_treasury_reachable() {}
+
+	fn make_citizen(who: &AccountId) {
+		if pezpallet_tiki::CitizenNft::<Test>::get(who).is_none() {
+			pezpallet_tiki::Pezpallet::<Test>::mint_citizen_nft_for_user(who)
+				.expect("the mock's genesis creates the collection");
+		}
 	}
 }

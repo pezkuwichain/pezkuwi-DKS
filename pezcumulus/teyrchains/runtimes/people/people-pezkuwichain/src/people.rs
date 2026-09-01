@@ -1926,7 +1926,38 @@ impl pezpallet_tnpos::SendCommitteeToRelay<AccountId> for CommitteeToRelay {
 pub struct WelatiBenchmarkHelper;
 
 #[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_welati::BenchmarkHelper for WelatiBenchmarkHelper {
+impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
+	/// Create the register's NFT collection if genesis did not, then mint `who` a citizen NFT.
+	///
+	/// The collection exists only when genesis names a founding citizen, and a benchmark
+	/// genesis does not -- so `approve_appointment` failed with `CitizenNftNotFound` and its
+	/// recorded weight could not be regenerated.
+	fn make_citizen(who: &AccountId) {
+		use pezsp_runtime::traits::Zero;
+		let collection = <Runtime as pezpallet_tiki::Config>::TikiCollectionId::get();
+		if !pezpallet_nfts::Collection::<Runtime>::contains_key(collection) {
+			pezpallet_nfts::Pezpallet::<Runtime>::do_create_collection(
+				collection,
+				who.clone(),
+				who.clone(),
+				pezpallet_nfts::CollectionConfig {
+					settings: pezpallet_nfts::CollectionSettings(
+						pezpallet_nfts::CollectionSetting::DepositRequired.into(),
+					),
+					max_supply: None,
+					mint_settings: Default::default(),
+				},
+				Zero::zero(),
+				pezpallet_nfts::Event::ForceCreated { collection, owner: who.clone() },
+			)
+			.expect("the collection does not exist yet");
+		}
+		if pezpallet_tiki::CitizenNft::<Runtime>::get(who).is_none() {
+			pezpallet_tiki::Pezpallet::<Runtime>::mint_citizen_nft_for_user(who)
+				.expect("the collection exists and this account has none");
+		}
+	}
+
 	fn ensure_treasury_reachable() {
 		crate::TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
 			testnet_teyrchains_constants::pezkuwichain::locations::AssetHubParaId::get(),

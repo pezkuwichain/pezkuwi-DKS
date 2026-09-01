@@ -235,14 +235,22 @@ const SPEND_FROM_GOVERNMENT_POT_CALL_INDEX: u8 = 1;
 /// Benchmark-only. Nothing in production may reach it, because a pallet that could open its
 /// own delivery route would be deciding a thing the runtime decides.
 #[cfg(feature = "runtime-benchmarks")]
-pub trait BenchmarkHelper {
+pub trait BenchmarkHelper<AccountId> {
 	/// Open whatever the sender needs so a spend addressed to the treasury chain leaves.
 	fn ensure_treasury_reachable();
+
+	/// Give `who` the citizen NFT the register needs before it will seat anybody.
+	///
+	/// Here rather than in the benchmark because the NFT lives in `pezpallet-nfts`, which this
+	/// pallet does not depend on and should not start depending on to make a measurement
+	/// possible. The runtime has both pallets already.
+	fn make_citizen(who: &AccountId);
 }
 
 #[cfg(feature = "runtime-benchmarks")]
-impl BenchmarkHelper for () {
+impl<AccountId> BenchmarkHelper<AccountId> for () {
 	fn ensure_treasury_reachable() {}
+	fn make_citizen(_who: &AccountId) {}
 }
 
 /// `pezpallet_treasury::spend` on the Asset Hub's airdrop instance, by call index.
@@ -533,7 +541,7 @@ pub mod pezpallet {
 
 		/// Opens the delivery route the two payment calls use, for benchmarking only.
 		#[cfg(feature = "runtime-benchmarks")]
-		type BenchmarkHelper: crate::BenchmarkHelper;
+		type BenchmarkHelper: crate::BenchmarkHelper<Self::AccountId>;
 
 		/// The index `pezpallet-parameters` occupies in the treasury chain's runtime.
 		#[pezpallet::constant]

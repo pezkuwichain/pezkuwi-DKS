@@ -14,6 +14,32 @@ mod benchmarks {
 	use super::*;
 
 	// ----------------------------------------------------------------
+	// SHARED SETUP
+	//
+	// Four of this pallet's benchmarks did not execute at all, and the weights recorded for
+	// them could not be regenerated. Each failure was the runtime refusing something the setup
+	// had not arranged -- which is the benchmark being wrong, not the pallet.
+	// ----------------------------------------------------------------
+
+	/// Record the endorsements `register_candidate` insists on, and return the endorsers.
+	///
+	/// The check reads `Endorsements` and asks that each name on the list put itself there for
+	/// this candidate. It is deliberately not behind the `runtime-benchmarks` bypass the trust
+	/// and KYC checks use -- what it replaced was a check that did not check -- so a benchmark
+	/// has to satisfy it rather than skip it. Writing the storage directly is the setup doing
+	/// what `endorse_candidate` would do, without measuring a hundred of those calls inside
+	/// this one.
+	fn endorse_for<T: Config>(election_id: u32, candidate: &T::AccountId) -> Vec<T::AccountId> {
+		let endorsers: Vec<T::AccountId> = (0..T::ParliamentaryEndorsements::get())
+			.map(|i| account("endorser", i, 0))
+			.collect();
+		for endorser in &endorsers {
+			Endorsements::<T>::insert(election_id, endorser, candidate.clone());
+		}
+		endorsers
+	}
+
+	// ----------------------------------------------------------------
 	// ELECTION SYSTEM BENCHMARKS
 	// ----------------------------------------------------------------
 	#[benchmark]
@@ -37,14 +63,8 @@ mod benchmarks {
 		)
 		.unwrap();
 
-		// Simplified endorsers for benchmark - KYC bypass
-		let endorsers: Vec<T::AccountId> = (0..T::ParliamentaryEndorsements::get())
-			.map(|i| account("endorser", i, 0))
-			.collect();
-
 		let new_candidate: T::AccountId = whitelisted_caller();
-
-		// KYC check is already bypassed in test environment
+		let endorsers = endorse_for::<T>(0, &new_candidate);
 
 		#[extrinsic_call]
 		register_candidate(RawOrigin::Signed(new_candidate.clone()), 0, None, endorsers);
@@ -67,12 +87,7 @@ mod benchmarks {
 		let candidate: T::AccountId = account("candidate", 1, 0);
 		let voter: T::AccountId = whitelisted_caller();
 
-		// Simplified endorsers for benchmark
-		let endorsers: Vec<T::AccountId> = (0..T::ParliamentaryEndorsements::get())
-			.map(|i| account("endorser", i, 0))
-			.collect();
-
-		// KYC check is already bypassed in test environment
+		let endorsers = endorse_for::<T>(0, &candidate);
 
 		Pezpallet::<T>::register_candidate(
 			RawOrigin::Signed(candidate.clone()).into(),
@@ -94,10 +109,22 @@ mod benchmarks {
 		assert!(ElectionVotes::<T>::get(0, &voter).is_some());
 	}
 
+	/// Counting a full ballot, which is what this call costs on its worst day.
+	///
+	/// The cost is in the candidate list: votes are tallied as they are cast, and this walks
+	/// `election.candidates` reading each one's running total. The list is bounded at five
+	/// hundred, so five hundred is the number to measure -- the previous benchmark registered
+	/// one candidate, and had it ever run it would have priced a five-hundred-candidate count
+	/// at a one-candidate count. It did not run: it handed `Root` to a call that takes a
+	/// signed origin, so it failed with `BadOrigin` and the recorded weight came from
+	/// somewhere else.
+	///
+	/// A linear component would let a three-candidate election pay for three. That is the
+	/// better shape and it changes `WeightInfo`'s signature, so it is written down as work
+	/// rather than smuggled in here; a ceiling that overcharges is the safe direction to be
+	/// wrong in while it waits.
 	#[benchmark]
 	fn finalize_election() {
-		// --- SETUP ---
-		// 1. Prepare election, candidate and a vote
 		Pezpallet::<T>::initiate_election(
 			RawOrigin::Root.into(),
 			ElectionType::Parliamentary,
@@ -106,38 +133,44 @@ mod benchmarks {
 		)
 		.unwrap();
 
-		let candidate: T::AccountId = account("candidate", 1, 0);
-		let voter: T::AccountId = account("voter", 2, 0);
+		let mut election = ActiveElections::<T>::get(0).unwrap();
 
-		let endorsers: Vec<T::AccountId> = (0..T::ParliamentaryEndorsements::get())
-			.map(|i| account("endorser", i, 0))
-			.collect();
+		// The ballot, written straight to storage. Five hundred `register_candidate` calls
+		// would be five hundred calls' worth of setup for a list this only reads.
+		let full: u32 = 500;
+		let mut candidates = Vec::new();
+		for i in 0..full {
+			let candidate: T::AccountId = account("candidate", i, 0);
+			ElectionCandidates::<T>::insert(
+				0,
+				&candidate,
+				CandidateInfo::<T> {
+					account: candidate.clone(),
+					district_id: None,
+					registered_at: pezframe_system::Pezpallet::<T>::block_number(),
+					endorsers: Default::default(),
+					vote_count: full.saturating_sub(i),
+					deposit_paid: 0,
+					campaign_data: Default::default(),
+				},
+			);
+			candidates.push(candidate);
+		}
+		election.candidates = candidates.try_into().expect("five hundred is the bound");
 
-		// KYC check is already bypassed in test environment
+		// Turnout, so the count reaches the tally rather than stopping at the quorum. A
+		// benchmark that failed for turnout would measure the refusal.
+		election.total_votes = u32::MAX;
+		election.status = ElectionStatus::VotingPeriod;
+		ActiveElections::<T>::insert(0, &election);
 
-		Pezpallet::<T>::register_candidate(
-			RawOrigin::Signed(candidate.clone()).into(),
-			0,
-			None,
-			endorsers,
-		)
-		.unwrap();
-
-		let election = ActiveElections::<T>::get(0).unwrap();
-		pezframe_system::Pezpallet::<T>::set_block_number(election.voting_start);
-		Pezpallet::<T>::cast_vote(
-			RawOrigin::Signed(voter.clone()).into(),
-			0,
-			vec![candidate],
-			None,
-		)
-		.unwrap();
-
-		// 2. Advance to election end time
 		pezframe_system::Pezpallet::<T>::set_block_number(election.end_block + 1u32.into());
 
+		// Permissionless, and has been since the count stopped waiting on an outside key.
+		let counter: T::AccountId = whitelisted_caller();
+
 		#[extrinsic_call]
-		finalize_election(RawOrigin::Root, 0);
+		finalize_election(RawOrigin::Signed(counter), 0);
 
 		assert!(ElectionResults::<T>::get(0).is_some());
 	}
@@ -194,6 +227,9 @@ mod benchmarks {
 
 		// Set approver as Serok to pass authorization check for approval
 		pezpallet_tiki::TikiHolder::<T>::insert(Tiki::Serok, approver.clone());
+
+		// Seating writes the nominee's register NFT metadata, so the nominee has to have one.
+		<T as Config>::BenchmarkHelper::make_citizen(&nominee);
 
 		#[extrinsic_call]
 		approve_appointment(RawOrigin::Signed(approver), 0);
