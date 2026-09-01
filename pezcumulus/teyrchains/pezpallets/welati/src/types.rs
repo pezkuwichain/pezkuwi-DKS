@@ -588,6 +588,10 @@ pub struct AirdropProposal<T: pezframe_system::Config> {
 /// plain transfer; a verb is the transfer the code performs. `execute_presale` reads this and
 /// nothing else to decide when the money may move, so a `Locked` release cannot be carried
 /// out as an immediate one -- not by mistake and not on purpose.
+///
+/// The indices are pinned because the encoding follows declaration order until they are, and a
+/// release Parliament has voted on is a stored, encoded record. Reordering these two after
+/// genesis would turn every stored `Transfer` into a `Locked`.
 #[derive(
 	Encode,
 	Decode,
@@ -602,6 +606,7 @@ pub struct AirdropProposal<T: pezframe_system::Config> {
 )]
 pub enum PresaleVerb {
 	/// Pay as soon as Parliament has agreed.
+	#[codec(index = 0)]
 	Transfer,
 	/// Pay, but not before `months` have passed since the proposal.
 	///
@@ -609,6 +614,7 @@ pub enum PresaleVerb {
 	/// there is nothing to sell early and no lock to enforce on an account this chain does not
 	/// control. A vesting schedule would put the balance in the buyer's hands and rely on a
 	/// lock; this does not hand it over at all.
+	#[codec(index = 1)]
 	Locked { months: u8 },
 }
 
