@@ -9,9 +9,16 @@ production validators and restarting means touching their keystores.
 
 Measured on 2026-08-31, before this check existed: 178 addresses appeared in both. The whole
 Zagros validator set, its founder, its treasury, four collators, and -- added the same day, in
-a commit meant to *fix* the single-key presale -- the live exchange's cold multisig as the
-holder of Zagros's PEZ. That last one is why this is a check and not a cleanup: the defect was
-reintroduced by someone who had spent the morning removing it.
+a commit meant to *fix* a single-key allocation -- one more, copied from the production chain
+onto the testnet by someone who had spent the morning removing exactly that. That last one is
+why this is a check and not a cleanup.
+
+The rule is one line and needs no context to apply: an address that appears in both chains'
+genesis is one key with authority on both, and the testnet half is the half people are invited
+to attack. What each address is for, and who can move it, is recorded outside this repository
+-- deliberately. An annotation naming a balance's custodian beside the balance turns a public
+genesis file into a target list, so the reasoning lives here, in a rule about addresses, rather
+than in a comment about wallets.
 
 Two things are deliberately allowed:
   - `mainnet_simulation`, whose entire purpose is to run mainnet's genesis locally, real keys

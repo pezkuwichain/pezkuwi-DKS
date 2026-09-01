@@ -93,8 +93,8 @@ jobs:
         run: python3 .github/scripts/check-weights-wiring.py
       # The twins share a pallet index map on purpose; they must not share a genesis key.
       # 178 addresses were in both on 2026-08-31 -- the whole Zagros validator set, its
-      # founder, its treasury -- so a key leaked on the testnet was a key to mainnet funds,
-      # and the testnet could not be restarted without touching mainnet's keystores.
+      # founder, its treasury -- so a key leaked on the testnet was a key to production
+      # funds, and the testnet could not be restarted without touching production keystores.
       - name: Zagros and Pezkuwichain share no genesis key
         run: python3 .github/scripts/check-chain-key-overlap.py
 

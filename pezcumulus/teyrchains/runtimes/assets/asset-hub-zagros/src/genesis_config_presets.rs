@@ -116,11 +116,10 @@ const _: () = assert!(
 ///   owned -- it is property, and what happens to it is the founder's to decide.
 /// - `pez_presale_custody`: Account holding the PEZ presale allocation. The sale happens on
 ///   the exchange, not on chain, so this allocation is moved by whoever holds it rather than
-///   released by a pallet -- but "whoever holds it" is a board rather than a person: it is
-///   the exchange's 3-of-5 cold multisig, whose signatories are the offices of Serok,
-///   SerokWeziran, WezireDarayiye, Noter and a validator. Where, how much and for how long
-///   the PEZ presale runs is that board's to decide; no key can move it alone. HEZ's presale
-///   is not here at all -- it is a pot on this chain that only Parliament can release.
+///   released by a pallet -- and "whoever holds it" is a board rather than a person, so no
+///   single key can move it. Where, how much and for how long the PEZ presale runs is that
+///   board's to decide. HEZ's presale is not here at all -- it is a pot on this chain that
+///   only Parliament can release.
 /// - `foreign_assets`: Foreign assets to create at genesis
 /// - `foreign_assets_endowed_accounts`: Initial balances for foreign assets
 fn asset_hub_pezkuwichain_genesis(
@@ -237,7 +236,7 @@ fn asset_hub_pezkuwichain_genesis(
 				(PEZ_ASSET_ID, founder_account.clone(), PEZ_FOUNDER_ALLOCATION),
 				// Presale allocation: 1.875% = 93,750,000 PEZ. Sold on the exchange, so it
 				// is held by an account that can move it, not by a pallet -- and that account
-				// is the exchange's own 3-of-5 cold multisig, not a key.
+				// answers to a board rather than to a key.
 				(PEZ_ASSET_ID, pez_presale_custody.clone(), PEZ_PRESALE_ALLOCATION),
 				// wHEZ starts with 0 balance - only created via TokenWrapper
 				// wUSDT starts with 0 balance - minted via Custodial Bridge
@@ -294,20 +293,9 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			// belongs to mainnet; sharing it would put one key on two chains.
 			let founder_account: AccountId =
 				hex!("a0f36b1ed6006a5ed8e492a1a5c5820cec6cb6feba17282f0bd41faacc1f8c12").into();
-			// Zagros's PEZ custody board: 5C6ztLrVzG5JzsGMgUkgMhzVVsQMdDv9wn8ignZu9JdJtB4D
-			//
-			// 3-of-5, and a multisig rather than a plain account for the same reason mainnet
-			// uses one -- but with Zagros's own signatories. Mainnet's holder is the live
-			// exchange's cold multisig; putting that address here would mint a testnet's PEZ
-			// into a mainnet wallet and leave one key controlling both chains.
-			//
-			// The structure has to match even though the keys must not. Zagros exists to
-			// rehearse mainnet, so a plain account here would mean the three-signature
-			// withdrawal path is first exercised on the chain holding real money -- the one
-			// place a rehearsal is worth nothing.
-			//
-			// Derived, not stored: `blake2_256(b"modlpy/utilisuba" ++ sorted signatories ++
-			// 3u16)`, so a genesis reset does not move it.
+			// Custody for the PEZ presale share, generated for Zagros and used nowhere else.
+			// It is not the account the Pezkuwichain hub uses; `check-chain-key-overlap.py`
+			// is what keeps the two apart.
 			//
 			// HEZ's presale needs no account at all on either chain: it is a keyless pot only
 			// Parliament can release. PEZ does need one, because PEZ is an asset sold on an
