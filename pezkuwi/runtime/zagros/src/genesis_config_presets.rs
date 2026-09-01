@@ -642,21 +642,28 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	use pezsp_core::crypto::UncheckedInto;
 
 	// ==========================================================================
-	// MAINNET ACCOUNTS - Generated 2026-01-29 (NEW SECURE WALLETS)
+	// ZAGROS ACCOUNTS - generated 2026-08-31, keys held with the Zagros wallet set
+	//
+	// Every address in this function used to be mainnet's: the same twenty-one validators,
+	// the same founder, the same treasury, on both chains. A testnet exists to be broken
+	// into, so a key that leaked here was a key to mainnet funds -- and a testnet whose
+	// validators are mainnet's cannot be restarted from scratch without touching mainnet's
+	// keystores, which is the one thing a testnet has to allow.
 	// ==========================================================================
 
 	// Founder account - receives 10% (20M HEZ)
-	// Founder_Satoshi_Qazi_Muhammed
-	// SS58: 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
+	// SS58: 5Fhjq3KmYHgChQ7mfaRGz3hotzC1XTSsGXK8HChaid5sUrNS
 	let founder_account: AccountId =
-		hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
+		hex!("a0f36b1ed6006a5ed8e492a1a5c5820cec6cb6feba17282f0bd41faacc1f8c12").into();
 
-	// Presale account - receives 50% (100M HEZ)
 	// Kurdistan Treasury account - receives 20% (40M HEZ)
-	// Treasury_1
-	// SS58: 5EhCpn82QtdU53MF6PoNFrKHgSrsfcAxFTMwrn3JYf9dioQw
+	// SS58: 5E5Go6imnF68WRN7pmHyKo3vVZmg71YCMaUbMkHeJdTYzWfY
+	//
+	// The presale's 100M and the airdrop's 40M have no account here at all: both are keyless
+	// pots on the Asset Hub, one released by Parliament and one by the President and the
+	// Prime Minister together.
 	let treasury_account: AccountId =
-		hex!("744ed0812d6096827376b4625fe4f840d4950d5aef0ab12902e64c444c8e9d29").into();
+		hex!("58e758ff62a1ca0ce950986596aa24607826d506b685351cc3c04abd7a07614a").into();
 
 	// There is no airdrop account here any more, and that is the fix rather than an omission.
 	// It used to hold 40M HEZ that nothing in the tree ever read: `Claims` is wired but its
@@ -683,381 +690,381 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 		BeefyId,
 	)> = Vec::from([
 		(
-			// Validator 01 (5GipBJs2uNWTCazyZQ2vG3DEqLz4tXNmNZtBAT1Mtm1orZ5i)
-			hex!("ce0189f16649560a8e250ee51233b97f20b528d9f534c54b40da5e1b785fb422").into(),
-			hex!("781f2da4ec1f954ddbd96365b93d5b991427980475e10dd9f823979665399137").into(),
-			hex!("e63ad8e22976bc2bdbc9776b3d104472ff70cfcd6a5247a2f62efdb09f66520f")
+			// Validator 01 (5Gbb57WXHVrtVG6ozytVjAm9BCg1sNdBLLmtR1UmVcTm2UJB)
+			hex!("c87eb313036e491d0b5c7b0777e89e84b1259191f434977acc47270c76754803").into(),
+			hex!("52407c5c2f729c9637479999bacedf5ecde25e6f1f210c784964fdecc98b3850").into(),
+			hex!("746f4eee0a4272db06bba47fdd9ed400bd9d33d2201fdc42b72ebab9a8ab0b2b")
 				.unchecked_into(),
-			hex!("9497e1dabb5b7688da148813629076596c77eb47f0a18c971777c70bb38cd30d")
+			hex!("8d999d5795b1b925ae8c8ea8e3c3f5d0b83cdcd48a828587b8a12db561f23841")
 				.unchecked_into(),
-			hex!("5e365f9c23e9fd65f28b63bd118f46faca2f82d286d00ac23ddb69fdd61b342f")
+			hex!("700fd76572b1fca1efba093b3b58e2d2feca4240ac38156b8273ad18f71d644a")
 				.unchecked_into(),
-			hex!("a854fce593b83d3a97ac4b0dc3ef220f69134753894cb16f28c67ae12db00419")
+			hex!("a04f2696209fc3d68541873eeb5ea5c9481966a8ae0917f770f2a81086fd0a2d")
 				.unchecked_into(),
-			hex!("4859a231daa597501f616c189699afa576ec79b704f633267c5b940dc76a895d")
+			hex!("e64c61be956d9535ec0db95a7cf9d7bdf90f5430fd9745a2271157a0b1368d7d")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02b97d26cb0553d662c52006fd6215736d0138d5dda92661422951a41dfa9d8f3a")
-				.unchecked_into(),
-		),
-		(
-			// Validator 02 (5HWFZbhkZuTUySXu6ZXYKrTHBnWXHvWRKLozE22zhnwXGGxk)
-			hex!("f0a90883d86793bce27217a0070f61d66efe56033c876624ffa3468698175058").into(),
-			hex!("86384da0a3d7dc41b1d2837c824f022dd34196d0e3ba40075934d4c216b5ea0f").into(),
-			hex!("bc79edcffd121970d471b6811b167b21bb8aa158d5ce9143fd0d45f71aa4ba1a")
-				.unchecked_into(),
-			hex!("1b453491a1ad16feb2e4cc5b4bf85f21a54fbfaa9321e9dbd9b668b83355146c")
-				.unchecked_into(),
-			hex!("2ad0684fe19374a4c1ed49f92226cb1af5bb9977d6395de879c556ada080e759")
-				.unchecked_into(),
-			hex!("ee3de83cc3deaadb3e1159e1de5a677a47bd828d3899bf7579753293389d0655")
-				.unchecked_into(),
-			hex!("5eea9bf553a04467d3dafe9a5ed196410cffb96248519ab5a491c09fb5b68c2b")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("031a58225fbca7430f406dfa8917517f81284cc991f7b9e9f8f7d37f24a85869f7")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("038dc15e2d91f12e2da4fcbc9f6f50df286443c3b134fa07154f24adc4a35add79")
 				.unchecked_into(),
 		),
 		(
-			// Validator 03 (5CrB5BWJfLNWEZAsAXDKXdJUGzFMXKvYnwRX4DVMcgBwxSdx)
-			hex!("22ada8d8e51affa8aa9169628a87f251ad6b99d191a7cff0d6a2bc6355f9827d").into(),
-			hex!("36f6b0c0e42774526e76c1b7f6f1f35e1cad7594dd7928ef125b85dbbdd2b420").into(),
-			hex!("a233520afef4b7d268b69a2c67074938eb536cb3f77b825f78d61f2d16353571")
+			// Validator 02 (5ED8FZU9u2xDYqdT2gX1p9QM96ivmCPTRMmNXT3Z9jSGkmQR)
+			hex!("5ee48ccb625f4bbc567a535fc9afcda4609df861a3320d1910d99ec90e97eb65").into(),
+			hex!("eaec3a7618960ab351c247c4d7a1b66f1e6481ddfe4c4a31e5fd71ef7e61917c").into(),
+			hex!("58d1961601286709f5881ad74470979da6fb46bfced790f867699406a8fc6a6b")
 				.unchecked_into(),
-			hex!("c22f1b4411879654538c11f088622d0b1ba695f9809e4ca5c79435e6f91f9fa3")
+			hex!("bdc3feef9c3c9f6691581db9ba742c2ab1d32a7a7a02443d51bf1cf46e94fdd1")
 				.unchecked_into(),
-			hex!("68b6a3c0aaa9264d1ac04cf8a698c0a82db09d1edab3c37b34e52b543b85393b")
+			hex!("c460392d5a5f645c0cfe7ccb18d92eb73cff220d6f4c1895493759afd4a30a6a")
 				.unchecked_into(),
-			hex!("ec31a2d91f9e55ede3239ee11eea5fe3bcf8ada2e0a5502b9fb84ef09466e47c")
+			hex!("966c1394a7ec07e7737b1645f29ec1228ac90ec7455e8ea936e014ee96dda834")
 				.unchecked_into(),
-			hex!("3c6035a77aa676b10959ba408bf4ad6cd37966fca825a8c5c444627f40b61b10")
+			hex!("6a269400ea93792c187348da0aa39fd067f4114d221b31af8f6230be5bebc717")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03d5503ae0eb6fc5c7f368e2e43a1189ff0129de6c1cdd5d5090c8283df0dd43e6")
-				.unchecked_into(),
-		),
-		(
-			// Validator 04 (5ELgySrX5ZyK7EWXjj6bAedyTCcTNWDANbiiipsT5gnpoCEp)
-			hex!("64a96ba3228df496787dcf68c7456ab1a8ad8381baa64e3d917fedce90debc13").into(),
-			hex!("b2a232c9e62f3a143b053129714fdc96aafea4aa6e2323cbe07a88648043db19").into(),
-			hex!("806af944dee83e7d61ee56d3d58703613e283f0946f4eb27ae527e5548dde80f")
-				.unchecked_into(),
-			hex!("f51ef76f99bdee1137836fe9554d24302c060200b601a6ef778fefef9d0c7793")
-				.unchecked_into(),
-			hex!("c6563f0e1f657d47cd84aa877b5b9ad507eca878f0d104767add32dc0b709f7a")
-				.unchecked_into(),
-			hex!("a61fed1300423685e286cbcb5ff993a8300614051117f16340f4b3ceceffe570")
-				.unchecked_into(),
-			hex!("f2bae1ba3625520d9eee4c3c3e35415dae8bf818c1cd218cde37d24477152748")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("031350bb37bb741b06b0b966168a0b8c75e1787886bcae1abb0d22ed947b7937c6")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("03aba644665a0e35f7ec9fa6b710bacda721c818d2cefab7004b0e22137c9e747c")
 				.unchecked_into(),
 		),
 		(
-			// Validator 05 (5GCZQNjRdHofEHPvVq4ePrfDYcjRzQ1HQ2awHMX6AawpRYuM)
-			hex!("b6ee70cad1183361924ac3fbd237d9e398a8dcbee56340a3d0e431ed16af4c3c").into(),
-			hex!("fceb174bd5553d61f5059b3017622f4b8f6600ae9b95df524704cf11ea2c5b2f").into(),
-			hex!("705b39924a158ea2257f0e58b04ead3886e689690cd7965bf5e392b3e06d835b")
+			// Validator 03 (5Dkd9PhMvuvYGSQmfBrqeH2F8FVnmaQ1MW8pM5Fe5MmhnjBU)
+			hex!("4aae3051a6d781b8e25f9cace9488aacb31afc2a9e2a03120f52767bb0e8a908").into(),
+			hex!("4afeeb5b2f7b7b5bf6963a97d451729327fcd02c816cb04939c36471758d9557").into(),
+			hex!("6eef96d024a9c8a37ad485289e405882bbdfeb5c05c7be90aa8d3f7a67728b34")
 				.unchecked_into(),
-			hex!("7f228a7bb20f0a2e0843e92713ea02bf253eb235fc24d24a2473ebaf461a014d")
+			hex!("97c9acdf6049bbbe3469cbef37ff8e299fe2e9d22eaeb2f09998f3f805540767")
 				.unchecked_into(),
-			hex!("7c0bbc0078052b82102dc15c1c031f4af70dc771274203acac13ad07c8022309")
+			hex!("002edd41eac61588ad360ba4fd6f7b4631f38e17a2acac0487c9ea689437456a")
 				.unchecked_into(),
-			hex!("c8f2141d2bb0d307ad7871440699c31efa4d560aa0c28515979f4377b4e57c40")
+			hex!("62ab60c4087087a260ffd2cd0c74d4d2da33e9331e9357962298e7cdfaf4747a")
 				.unchecked_into(),
-			hex!("eaf152cfc6d9c2ade7951c8d009f70942c85c1df734cc6769b162e5c0ff6bc5f")
+			hex!("806bde0f35c591028a1e5ff2924915637460d02080cb2fdc19296a28fd2a0c2d")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02a306f71752509dce6386f04b914cc957949f627a90c4ef4e1773febef96c2f0c")
-				.unchecked_into(),
-		),
-		(
-			// Validator 06 (5H8jTzi4Gm4rbFtXw6h5enhLhgsuhNAqR5K2itmPiz83ymWy)
-			hex!("e03f90c7f34fc73016c71523c698d8bd869c960f4e401575fe93ba90f51b1d7f").into(),
-			hex!("c409a6d1e6d034a05ded26b3fa8f0d7ad54648926c438f0f0927238edd7f8758").into(),
-			hex!("c416f06351d396128eb3f5b3608007e15d72c3c9bb670434522f4591af928276")
-				.unchecked_into(),
-			hex!("1667de8cd9a2da709f9efd662dc8e983d936b85eb6cd89c49795f9a0c4560128")
-				.unchecked_into(),
-			hex!("cc04b11029a9fe6164735018b74d74e8d1ef6b8e7d4a9d9e73cee0abe545ed4f")
-				.unchecked_into(),
-			hex!("46b29a24719e7f39698dab9f38f382f2cf33d880bb31ab84442b26ff2f913034")
-				.unchecked_into(),
-			hex!("566dc53c011abee57f7085c4938f22a5a488e8f633391f353669390f9b659137")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03b08173722e8bd87ee7a5d362ff4bc5d98d17fe1acfb4181e224085e71b3d89c1")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("03b9664d708ddced935acf5b8b4d67a4dae68b372ada17589e464f5b8af5a3c156")
 				.unchecked_into(),
 		),
 		(
-			// Validator 07 (5Fs3P5tHuL9cvwPQojsheViRRAjFkMMFa32jAkDSwW9mbTfU)
-			hex!("a80bb6c971fd1746c40e2d7602c0b5c0c0caa4a3b65091da35d35815cd63a453").into(),
-			hex!("c636188c6d24698cace1b83add20206842843a124279f99863ef2c68c0f08236").into(),
-			hex!("549a6a2050c088c9425656f58c744fa0b43ee665c2880cea6c35d0ce49288515")
+			// Validator 04 (5HYNdbYjhvZaFUvtZK2q8MqQL1F46jccH1eRL5TXnemNaJZQ)
+			hex!("f24751f6eeb86f2636cbf9679fcb8aacc6cf5e266c7f472505c9173fdc3b5458").into(),
+			hex!("244b0b47c1b627b28a05531cb5d76539bb5a0bc6c9f0c51cd6a22403cdb38e6d").into(),
+			hex!("d6e5a2fad0c8fe7bf656bafceee4e5019fda7d7bce94604a605cdf6a21634e51")
 				.unchecked_into(),
-			hex!("835670e0c86151c2cb4749cff8fbd71f122322d545091c361da7855987119bbf")
+			hex!("a47126f0b1da217ba52f9d7b039d489f55c16c7d465068eefa13881eb4b8dd78")
 				.unchecked_into(),
-			hex!("f8d63771080fc2c251048ba73ccce131cdc5ff83daaa1578e947c3e7a8116340")
+			hex!("9492aec0d4e38e920ebed4d274df6fe026dceab04b6652b8536dc51db299d223")
 				.unchecked_into(),
-			hex!("3cb203eb8bea5a42cfd1f0154ae503add616314e6964ce27582ee01d4c97fa2d")
+			hex!("6e218a3c2e5d2140174996a7046c1ca9dbb58829cd2c268e6a07108fcd0cb713")
 				.unchecked_into(),
-			hex!("2ef9481ba1e76727b2a479860ef1fdc6ab3ab701712b6c258e73dc21f6b50367")
+			hex!("c6c2ba4c04c5157169d3e6e5c4575222cbc71b3c8a3136c469c9faf72a76a139")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("028d8719a1a5147db239bacfe9cf0fabf239dc5639da038fe63d466c46f2aab5fe")
-				.unchecked_into(),
-		),
-		(
-			// Validator 08 (5DXgq7uDXog6zcubT3wgtaYosoibjudz4w5ScPW2phLuAy3V)
-			hex!("40d067361a3d1f954d4258509d4f27b9bf3d6a3d0a3e2a5ca079ee896cab375f").into(),
-			hex!("622fa71e37f6854293e1f766b580001f9a9793330064305b76f1fc232f93ca35").into(),
-			hex!("fa4df66ef8c5dab3a135e680d1fad0dd40454c147da6b2ebb33e0abf199c9736")
-				.unchecked_into(),
-			hex!("d45cef628619987beda6cb2537930441c2cfa8a58cb523271912d98b02b06c24")
-				.unchecked_into(),
-			hex!("2e9845a40efff2c8f68492e90aa341b9e56fc2a17d0c3a108a73c6e22d283a31")
-				.unchecked_into(),
-			hex!("a6f75e66cdb1dbb9df9b28dd648b165a7486fb24497d646b8a4592d12cecf029")
-				.unchecked_into(),
-			hex!("6e7fdf190030d2f5a1a7af0e03f774c2f038e89a548d5ff44590d76d2b7a8402")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02c0c80f02c56a9a67c5dbf443b7c53136d30f477356f99ef64e026997286bd4e5")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("0337f726c06697901ca27f0e6ba2b17ad3174dd19210589e7741937890329b31a5")
 				.unchecked_into(),
 		),
 		(
-			// Validator 09 (5FyFwbGLgPXun3azh6Gx83wCuUt5FTavb2WAVDYrjziVB9rN)
-			hex!("acc977fd38e3d1347ab8973db0afb2b5a06b7e2b91ac94ac285b2b9513ccea2f").into(),
-			hex!("be08aa2e9926a6affd87d8a2eef8a67826c6a132308231aaeeaa51cff39af33d").into(),
-			hex!("4ee0b888b296eb13c5283f9ef739d154758dd2efa8c71cfed46b638cb8be9857")
+			// Validator 05 (5CFtjvxmmFAbbGyhcjtLTog9y2LaCqTTToGWZJZF4UuzaLj5)
+			hex!("08885673b3a38cf674d5d16876d3ebd45b02aa2b3a4449e1b401a15ca7aaaa07").into(),
+			hex!("b46efe1b8ba12fd9ab7bab52fcadd5e8a9c0fcdbca8dd8b5c93daa445a58a10f").into(),
+			hex!("b43f2123994a5a1036d346656e883f97779963e7d94a9e8bd99593c640fc0674")
 				.unchecked_into(),
-			hex!("2b6fe25b1b8b9111c8715339f3faa5509b3f222ec735f4fb3a4330bf4177001f")
+			hex!("7fc7e3c6cc5cb966908a54d5b39c489801b36d6188bc376591f657a2a5dabf9d")
 				.unchecked_into(),
-			hex!("504578b39414c45d565bbc19987337a8e180397af472308af23a97bae3e2bf38")
+			hex!("9816b4b5174604341bfa8658162eaa0bb483a82fb95e7eebe48de905d56e0b1e")
 				.unchecked_into(),
-			hex!("c0995d8c57bad9700fe8ef1e43451dfe47b2ae1a8db610da32273d1679a1ba1d")
+			hex!("f221719a0aa3bc0046642ca82c648378d343c35c7ad04b2bb7c0f6d7c417e02f")
 				.unchecked_into(),
-			hex!("bc5acf1e3df528b64d680227f560e104301727083b4586d7706cd52a77c69317")
+			hex!("7099179922be6f565449f449f57cbae2a2ac4e4f8b3caae1deacbf4590feb05f")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02cb75ef6f6d501de0bd3222a6c619fbf6ca14733839f0470dbc2a66823f75a729")
-				.unchecked_into(),
-		),
-		(
-			// Validator 10 (5HEcuuypLDeJaSj6ZgH57aXhuviyeLNdw9QrCDJ8u6gsnjnL)
-			hex!("e4bcfa69c15f955817e15325269e023d2ee7dd3db362794cc7a03e25d6dc5b47").into(),
-			hex!("38c752203223f6e79585f47ae644bfbe8f9152c950eb79b2db9115eb7b05c118").into(),
-			hex!("c2570f50468e73614cac294dcee7b228b969df53160c2a491dab9837aca3fd46")
-				.unchecked_into(),
-			hex!("add76170ef4ac4120824f85e0be728b5984b771512a91bc30c70a0194e973313")
-				.unchecked_into(),
-			hex!("dc2e8f2349da00d88fcccecd7b905179878223f1f4ca8e68f7d09eb2d8bfe92c")
-				.unchecked_into(),
-			hex!("a44329940eaad42d23d456c995f09c90c4f3eb91774c4037ccd3d9e4ddabd523")
-				.unchecked_into(),
-			hex!("e0e09485ba5823ac1752952f6f6506f409c0d0d2facdfc064a1956e13d5e0778")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03d1256d431fdb43b5f10a3367334241d964fa24f75cbf617c4daca092d2807268")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("03148915afbe638659111970c0fe20a1b477f20af8e249f23a0ee41e59b6dc51b4")
 				.unchecked_into(),
 		),
 		(
-			// Validator 11 (5EpmpTXbMXpz6ixy3WhutdzcexzPbvybNKv4eiiN1kvTnQH5)
-			hex!("7a149a024f1e0b8b6935829a8b966ad369fe9484df3a82104d9d1d1ee01ed572").into(),
-			hex!("6cb70f3b6abf38b6624c9d66931237ce0e1402bbc2ed5d2697485d1f509cde3d").into(),
-			hex!("727272a3bbf7a86a1cf83ae396f21497e768a0dab34774f7be95b86d2dfa4f41")
+			// Validator 06 (5Frz5EdTUCeM7Rz7kNuQrF9zs4jU4B16bRULvVeCJQZYXYZN)
+			hex!("a8009443023621e91f94b7b280408c9339d6c3ef1a9c8dcdf512e527786c042d").into(),
+			hex!("66709ff7ca56708c30ec13d7efb2d32125b38ea041cdce0c8c8a3728ba38f90b").into(),
+			hex!("d659e06fd66faf0571304ecd8870078a8258174b8c9e600887419b2a93e0cc64")
 				.unchecked_into(),
-			hex!("46b44ef1edfd35e48996a00dd1621439342370e551467e2e83d92b4b68cbae4b")
+			hex!("66f15217ec651f191bddb7e2aebc34ec25a0132535c9de666ef2f0ba478b3c6a")
 				.unchecked_into(),
-			hex!("400de6b7b9cab9b0e99616ec1847251776fad2e3ebe5befad65037501711f022")
+			hex!("aaa79968a5419839887a67585d127d4b929891e42869a79ea4b0628bbbd0224a")
 				.unchecked_into(),
-			hex!("be473d7b91a725007cc4e415ef501435e84b4d75f7d02666399b9a38db3f5937")
+			hex!("3c458c5f766e257b60dc623f840c0b42a0648d9a01d0ff35d0bd3890f2966b18")
 				.unchecked_into(),
-			hex!("ba2e8b94884e5537c30a4e20e98b5b7fe12fee836859006d96d37aff76484a69")
+			hex!("dcced1af4fa6d8a3a1e058f0036d001326c4aae96c28ac6b4d9b5b0c163b883a")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02b1e027acb11655b805365858ee9ca98fadc29622a44e0682ea681731e6069db6")
-				.unchecked_into(),
-		),
-		(
-			// Validator 12 (5DFsm3BBEgHmSEZkvwGKB7c7tiH2avhfuQE1SEjfMDGuczsW)
-			hex!("34c144e4a1dcf884c75ef9b9f08fca1d5f77b8220f4df61514322f0f591a0938").into(),
-			hex!("661f3c412ba5a9d7800484ec5758630aea077fdae81705548a09160a54135334").into(),
-			hex!("ea38b9f19a7ec2d0fd5561a6e8fa6bb5719c422a1e69905b460a3435da32df3f")
-				.unchecked_into(),
-			hex!("30b77c85132f3f03b65751c8931e47d32973bfca1a638cf50a060bc4313d8c95")
-				.unchecked_into(),
-			hex!("641c34d47e356e3819af577e0263351ef7238d91726be728402f61d9ca374840")
-				.unchecked_into(),
-			hex!("66e28f11b84ea0f3de439280e098a080b980fc81d0f25bdc51ca5e85c5085122")
-				.unchecked_into(),
-			hex!("da614c956a74ff0e791a5ce6e5b2acfcf6de251279034d58e40d47817e3eeb1c")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("0268ec971d851bc687b7792d8818e833b4f86296117de1e2bae220d8a54cb98668")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("030cb7477e00235992f67b668d127042c3f14bb3e2369432a7ca11a28c3e6acc91")
 				.unchecked_into(),
 		),
 		(
-			// Validator 13 (5HePVUXjGSM2hVZ1YMz2V3KoX6EdQNEmmzUnUvpfGV95ofUR)
-			hex!("f6ddb003fed15c7ca1b266bd244e65a639a444b9e2bc715c0dd5434565c7eb07").into(),
-			hex!("8a86427d6fa47d9a8444ac83373d23b475da9b5495ab1347bb0aec96976c8f03").into(),
-			hex!("c8fb1829d4b387ce30ac97733d7e0f1b680434d40eb6ff5853cede0bc8fcf626")
+			// Validator 07 (5HBjvKZxPP33wDodBoYd2R7ukfwkZwRT4mXrywa8og58njmg)
+			hex!("e28ad4652571df7c1c6abfceb1945ef36bb0d294b9217f81776fb8aa1beb2222").into(),
+			hex!("e03f6d9bde421d7bf3f1f4b9740c0c2efb2257900743a5eeffc67656edccce26").into(),
+			hex!("84fb64243a48199a450ad747ffa4db10093cbf8da71cd89fcdf6bed5bf83660e")
 				.unchecked_into(),
-			hex!("628e5573c7741078d2ad579a4f029b42b196c7f1ef9acc52326fbca0e5c915ed")
+			hex!("8e1e4847c0d9c11a49005ac9c571428d7514bd7efa9c8174624b52abeb3315e9")
 				.unchecked_into(),
-			hex!("069a61fd8aaff5a526632ef31c0aabdf9efdd3b8414cd637b4e51e568428dc52")
+			hex!("86287fd17ba591add5f1c614e43d2fdd9c0dfad45089af0d65078d4b26a16844")
 				.unchecked_into(),
-			hex!("8053465ddf970e400e0ec2a190781bb9c5619c986512580dc84f4b61e8af2f3f")
+			hex!("fe1cc793a31ff49fc7dc061d19e89531d6d5eb5cebbac8908e3456d0bbc4c069")
 				.unchecked_into(),
-			hex!("de45dfac7a51d17898bb238dca449bf1c8f6fb95de547b2c788392e51e971f04")
+			hex!("7648523ead03cd6926e5b95342c0f55d9a131a4b91241ebb593194adef3fa444")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03a03589b0023447c56d789e6074430bb08498ee132dae418be9ec0f753c196acb")
-				.unchecked_into(),
-		),
-		(
-			// Validator 14 (5GP4nAcwtETTg1oAHQNvevmmhG8GEstGQeCirKEhaDTwpFgx)
-			hex!("bef1c8373f3bf894c4de8f645e2d319302502bf3f53be8639e9f49b6e2994315").into(),
-			hex!("369bb1432aabcdb9c867007ced947675221299435cc817e4f3716ff0b926d56e").into(),
-			hex!("68d8f4c3d74ba60bad6dfcf8241556a940606d0bc5874611a3f2be0fe1b57d76")
-				.unchecked_into(),
-			hex!("3fbaa2101aaeaaa3f3fc150c79c5b98f8329a2846dea20e8a02e1bb5c13818b8")
-				.unchecked_into(),
-			hex!("9099637497a754e54e252eb689f77cefb2b921d70722f8aed7380f27f371eb27")
-				.unchecked_into(),
-			hex!("88b009545c03cb600264489ba8b8e61f62eedc99064a51d3405fb517542da04a")
-				.unchecked_into(),
-			hex!("d06475ed615fec5b4b3c900f7779903d6e95173ab944840ce4acf8c30b5f3b32")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("035f1efad44a7de67474b9425bc3000e4cab8363e498e8f9804b9e3d8401a9b144")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("033d91131da6d4fd70d0b5f6a0b6847797d7247e7a3201bc5605187a2555aaba26")
 				.unchecked_into(),
 		),
 		(
-			// Validator 15 (5FYoCM3oeEGeoFY94EgXBhmABkRCabvPp72ur5bJNG3cK619)
-			hex!("9a218b96cf0267b1a7f8d9d1932ed60ecb0a7a681fb882479a93c2ce4b869610").into(),
-			hex!("9a3cf4772d884077680b268a76ee703d1aefb9a4c48f1576e9874a61db3a0406").into(),
-			hex!("241fa3be1b57d3be4ff6fc7808fab44d8df93856699bcfe9d5768c219003c70a")
+			// Validator 08 (5D7aLzbTqgaqzj2WKrTZ9QNyWPFkL2Q1Rjd6fXKrkMHJhAkJ)
+			hex!("2e6caee8fe28d196f3c3be329b5ac5b46c0509ebaebfba83ab75329d5997c67a").into(),
+			hex!("2a9294e4baf83c5cda061effd051dec3aab03c6a874557fb3624a4443064f12d").into(),
+			hex!("e018d296ccb409e83e88067fe326ebdfbec6f417486db81f12b01e655aad674f")
 				.unchecked_into(),
-			hex!("3d07a507b495b2eb295b1045e550ad657fd55ac7dea773bdfd5f80403b3d8f4f")
+			hex!("b8e985d3459edb50850353ee9cfdb6c7b646d4508bdb011e6e6d5ee53da51ecf")
 				.unchecked_into(),
-			hex!("ec9a49b0a41d20eb40356c3bd1186fc8281a300c92cfac167c3d27bdfbb3bf28")
+			hex!("68f5eda51ffba1838fe1dba50275e75b764abea507cefd5ed3b7adf4acf66c3a")
 				.unchecked_into(),
-			hex!("aa1af739a5525dd6a186ec367b227b2c76859230d458329713edaebc48f7b74d")
+			hex!("9a5e0f3d7898843de3cb68642442de1e988050d26a294d17160daec2f267e860")
 				.unchecked_into(),
-			hex!("509fc3e6d9edc45539fae863e9a81be33e5f0ee370c78533a0eb0a975786af39")
+			hex!("1cc860706be8b5ff4b457d7b0d1a6382ddd4a0a8759c493b23da7f16c571e71d")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("033ac8624837a0ed5fb7f1ab9c08d58469c42e2598c49e12947b97f5cceabab930")
-				.unchecked_into(),
-		),
-		(
-			// Validator 16 (5GspwkKF6aYzFkmAyBBQg7coSCSgDCore79fbW8uxJNAH347)
-			hex!("d4e153a229ac679831421ab2604b6fc347c8a1180f6c977d60a32cb7cac9eb03").into(),
-			hex!("3e5672b2a4a19ed8fe9c5483940753d7e3edf062ea64af35db529de084890c3b").into(),
-			hex!("ae0eb849027893c9f5fbe2512e0c0e1bd330e51d7afbe5ee9345ca997691c004")
-				.unchecked_into(),
-			hex!("7ff1b4e854560d0d7739957dffaf182ab36ba67c2290016274376638493d95eb")
-				.unchecked_into(),
-			hex!("e022e8ba625a94452df5058127c4471289e08bc026561a428962b43032ea8d4e")
-				.unchecked_into(),
-			hex!("7e83a62c3c60106c7b448453827e300ac75c269bed996b69e5bb5a7b99aeee7e")
-				.unchecked_into(),
-			hex!("7875d43192c57dc8028a9468d7b18e66ae46b065731e28b6691b5614fa505740")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("0392e5b4d2653b0409fcc25649536516d16c89587e44ddccfd4edda779358418ad")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("02e48a09deff37094756e1c9013f16b46b7f90e1a88938bf141c110b1485be68f7")
 				.unchecked_into(),
 		),
 		(
-			// Validator 17 (5GmuX11pN2fC4Fyq1V7MuiYt3aevZcVQs3HZWKyzmap9bKfe)
-			hex!("d05d3fde48e6a9b739f2ebac00881248dcb04000c1953dc17a325318e7678b74").into(),
-			hex!("7ce0889313160507a7cefaae2bd9cdea763e5ad57a1a294739bca41bf4fc336d").into(),
-			hex!("e495464eaac8f8a56bbf0171e78d43b5da1d4f5bca5fa22afe2bdbec3588df62")
+			// Validator 09 (5GQn5q3WeigPGJW3eLhmCdx9MsS8cqLzMsfvemPKEyp2m3pd)
+			hex!("c04012281a2fdc305d0d6a39a56b56bd19db393631f194e3d7e474232423d27c").into(),
+			hex!("f03b7d3690a54c7c97d367b7a510716814cc54aefd36cd8b3dd131f52aa38a27").into(),
+			hex!("184d5f0a9093f19d27eee404131cfac2b5773f1713caf74777277c66a805de42")
 				.unchecked_into(),
-			hex!("1229786eeff8c0bf22358d63de43812a9c3315fc3f77d871e41828f42d39d4c3")
+			hex!("186ec5e77d18dd9fbe0b1d52e11638dfcc82ccb557e8bab30a9bfe7752d07368")
 				.unchecked_into(),
-			hex!("ec7e5b3ada32f54173bb0e4cbf5b22eef6dba0f6e3e380353fddce1dea0e5a4f")
+			hex!("029e9cff86a1cbf563de65d1d387ffa0b489f3f36048a1d0b869d6628de8ad0f")
 				.unchecked_into(),
-			hex!("68a2ff42beef103bd09ce879d2d64ca2aa6dcb91211653c9a4a66802cb19db16")
+			hex!("7ef255d5130d5a1bf963cc992d6c44ceba3178e256add8e243b4a32715834a38")
 				.unchecked_into(),
-			hex!("5e28fa8dea95c520ed42509a7c5050617688148805c211ff634553b8b734db38")
+			hex!("ae5b1835ef9797db94c7858c359115469aab33d594d20f30778458947a54ee15")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03d1d118b8a51a1cb72f3f0ebcf11cae21963c6dd1418e010d17e5c52996c302cb")
-				.unchecked_into(),
-		),
-		(
-			// Validator 18 (5FQptVCtM1qsxkLbQkATkw4Kio4M9LxWvM6TwgEo3QjmTXF3)
-			hex!("940d47307adb77756d7d99677120ec176bdee0e88df1b877f3a3b36a6168a13e").into(),
-			hex!("d26c61d2a79befe1ed1522dc79dc487a1b01b7b0424bbee233c3b6d6133b0b36").into(),
-			hex!("de9e6dc042e3192934b495c01b665ce5024e77bb3516397b0d8b8d9a3f22e346")
-				.unchecked_into(),
-			hex!("bbeccb7ece29ad0831840ff0a620e039c464323a7b5539e7df48c60084099198")
-				.unchecked_into(),
-			hex!("5c9292dd791104d019291f495caea1662bef2dfa4c6b7e39fe26a03ff64e1d2f")
-				.unchecked_into(),
-			hex!("40fba87e041a3fc317f15e72f98c2b45a411e262122bfedcdacbfc88c7677e4e")
-				.unchecked_into(),
-			hex!("0ecdca8ea4479ea078041778a72ba70a591c19b380620ef8ec22eb3e883be36e")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03cab73da1d53c5fa60ea2a52ca5f9c11998c07fbd9cec89707ee1db87051e3e65")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("023fdbd0b140bf5509abd3e60b46012ddc2c900d7cb06799c27e94ffee0a309db4")
 				.unchecked_into(),
 		),
 		(
-			// Validator 19 (5E7VD2qmso1yRfyq3t9u2qhauAgtmjZTybVsCARF5Zz9bXy6)
-			hex!("5a979f8534d09e40776fc69aa27659fec47023281e1192bf2eda74adc8779f1b").into(),
-			hex!("4268358bfd339d689b2a2330f14671c474ae154bf5659d65f8b621f0643db515").into(),
-			hex!("0406457ca0553ea12faaa39ec9e486c33852aa2733299b413451e156dbab5820")
+			// Validator 10 (5Gsbq6zawNN499k21xVtCdqCRKQFBV9cp1Afd6JE4m1zje9J)
+			hex!("d4b52de0832345973457761ba112f90cc583ccf035a8ffa634e3b70a2cda210b").into(),
+			hex!("749a4c070708bf87b7b8f45054e03531e394f197bd9df30cfb2a2e3e33677e11").into(),
+			hex!("0a45d8ba948a92a68d516644201d9345f3ffab05800d6af0a33fe1236b21601d")
 				.unchecked_into(),
-			hex!("29eb2da3b8063c893792729c504ea67a1eb7179bfeb2d46770fb1b2e751fd9ea")
+			hex!("656a859cfc131670a2a5ef4d4d5a53fae953c03062cb53ae3ecdbdff9c8f4f5d")
 				.unchecked_into(),
-			hex!("a0a72ce07da14e83c75abaf1c6e498193f15a0a6f696c24107f0d5e267240e2a")
+			hex!("02357adc64877e3eb3bfbefb96c27106997ca7bcabc2869daa295fbb39594336")
 				.unchecked_into(),
-			hex!("e81cc87d913aa31e46df7bedcbe57b1284111fe7abaedb3fc18377d9364b845a")
+			hex!("4c8bf9007b8f86a2929e835a28a59a1dee6ad37ac5975f450b7370c1bca04530")
 				.unchecked_into(),
-			hex!("0a823f91ad2e5cf332a41777ee62c8f29c727ef4b24bb3c739dcc17ea5a32725")
+			hex!("361a02dcf9ade709409b8d2250d4515d6f108c0fb9e61e13a0f63f2846679a69")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("03821bf29d19ce075bc045f245c4e10e06bce58695ba0f1e6a31e94e4a435cfeb2")
-				.unchecked_into(),
-		),
-		(
-			// Validator 20 (5Ccz5W7Q21g4UPCytzHxD3VSMLJ1BbbWSkJKFwsNtYRk3HkX)
-			hex!("189e75681b36a25fce4709241ce16863c6b4bddef2a7c55f5249d2c7fe77ba50").into(),
-			hex!("8878312c9ddd3c5071c21a96baa751e6668a6d0428ba9897d714340084168e57").into(),
-			hex!("e68bd3aefd3003c06404eba43dacd5aa3888217a07f9df7cdaa17918e63bb92f")
-				.unchecked_into(),
-			hex!("046ddb7c2a1466ab4ed203e3a64d7b0552917cd75bb70c52db4c1b2e8470de27")
-				.unchecked_into(),
-			hex!("d4fb75a88fb9e4a3b954643852d6a80e75f41d8dfe599e905639fcaa09b8c43a")
-				.unchecked_into(),
-			hex!("3e1438dacaf7ed4355e5207136a8eaa505ac042c385cfee1110ee647b05e2541")
-				.unchecked_into(),
-			hex!("c2821fde10d149743cf7f6cf3249c8e2e5bc17d9364b8a6af0119fbc8cbf8469")
-				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("020ba75ce3c26fab250a4abe8fdd5b45c2b9feec308ff6b8bab98e8f25b5e8f686")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("022570f9ba31fae96a247dbda569e097287d15e2469a4ec7e684fb8a02dd8bf24e")
 				.unchecked_into(),
 		),
 		(
-			// Validator 21 (5D7WPmK1SAJyYDdCtgqEzGJpWXQe3Lj9FqWL8z9waLTkUNv3)
-			hex!("2e5f60fd87b662097c182f409f49d23da112b132c3057bfe0956094436663854").into(),
-			hex!("ee53261dfdee7320d2738d7eb249510244ba70d70acd668b03c219f79ab3400c").into(),
-			hex!("9a00b890d45479714957e233fb4f5e197f912d5b7ab31c976af3926b9b279d7d")
+			// Validator 11 (5GGw2UPCwE9PcfH22oQnRns88GiccGyN9BAveofpDuqvWCaa)
+			hex!("ba4435a82075bf7a9e606656e9267c5c42b696aca20fa084b4bb210083d8324e").into(),
+			hex!("2207c5b9296cc336777fc4a614be9b9d4eff6bfa8f09b68875fee8edf8894674").into(),
+			hex!("dcec24f74cf4f601031a945b4365d7902dbf17fe106c21a8eee2bb0e7daa0a4d")
 				.unchecked_into(),
-			hex!("81ff23b7233abbc8411099391d860582b870f4003184e5ea18c02d8554e6f9eb")
+			hex!("171f4037c0301d849a784d02f701e13466ee592d38f08d5cc262126bd5099d3f")
 				.unchecked_into(),
-			hex!("5a7f4f5995829f9f7626b45cbbffd5cbaea392eda7299d297cd58dadabdb1531")
+			hex!("2ec4d7bb5ed83d74c53c7fe7690d1fa6e301b336924daaed0096164eff90c731")
 				.unchecked_into(),
-			hex!("04f83a2cc77593e656073e9b189de1d960a98222f269a66aec483fa299a9816f")
+			hex!("d431ba6be611397c89f3b7b4133787a90efcbbcc0de326ea8089890620a4213d")
 				.unchecked_into(),
-			hex!("a6f0d33a810d2023f0b05bb1aeda000307c66e608a2ec096df2075a2d8d3204e")
+			hex!("6445f0b0bf2f66d8ca29c0e0c88f84b8c00204b9e4fa5b7e71e5f05236cbc407")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("027820252d089e6e9e95e8a328ffef1f1e03173d04be4f2957aeb54fa36a94303b")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("0303a0d5cc2b5b0e7f4af80ac1d77cb9822064dc15ce46af08be82860e8362d8b9")
+				.unchecked_into(),
+		),
+		(
+			// Validator 12 (5Ff98t6HHunQobRwccfki63STGu4qUKQyetbjfx3jS5zVrrw)
+			hex!("9ef824819f5c8f1d0efa4edd583e0d37a30a11844ae350adbc7c01d895fedc12").into(),
+			hex!("3cffd8c24bf313cc1aed384484e8dbb932378b12a5700c81cfab4ab80dc00510").into(),
+			hex!("b834acf6ceaf113b61215c4405bd186ecea37ce2223d98b78e5dc0701d3e1f0f")
+				.unchecked_into(),
+			hex!("0dfd67cc61e19e3ae36c902da5cceb7fbcb5feb0def1414030061b5a879eb865")
+				.unchecked_into(),
+			hex!("c20cedcbafaaaebefb4c66c39e7db24bca0807b1ffa1e55d138c4bc986ede06f")
+				.unchecked_into(),
+			hex!("b89c1ad9ed7e5b1568a8ebc6daf41a049f04abd711f5c3c052a6c818a139ab05")
+				.unchecked_into(),
+			hex!("4c610cb57336509daf9897a6e4a41a5b306a9da31e7e01ed80798b96ed37726c")
+				.unchecked_into(),
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("03c66856ff20b8ce94bd22c7290a3d70cc671910c34facae82c38b7f18a4264eb0")
+				.unchecked_into(),
+		),
+		(
+			// Validator 13 (5DtGLJVrVCmvt6U1ZPPDKXiFEir8EQ9PK6ch9Dv8srBUYZix)
+			hex!("508217c92d869f7de21e1ecbcfcedd234da64d5736f4e4ff4965f57c3a8d265d").into(),
+			hex!("76c2960107e163d460b80c1d28d477c58b8289f9c6cf13b70bb7748fa2f6c061").into(),
+			hex!("86dea6244e682f69f70940f1e445087101cf46f827e5762ddbec6a545d32165a")
+				.unchecked_into(),
+			hex!("ea7592d1356c5c44a360315b171ed1fef5eca64cb1c5538e44fe5c5f97e2363f")
+				.unchecked_into(),
+			hex!("480380fab357161bd8950a3a44915dc6c46886235f52d36faa1f86106a4c5035")
+				.unchecked_into(),
+			hex!("72cc277c55ba600ea47c3a91c1d82cdd5407abd4283e8ebb10b7dc12cd777061")
+				.unchecked_into(),
+			hex!("98c703e9940a79683f6cd16356d0614e9920cc2db42fefd7435ecddecf1b4c6c")
+				.unchecked_into(),
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("03520c47829b43a2345005c514d8b3ca32b59874c8031270b9e8abaa5db8c3823b")
+				.unchecked_into(),
+		),
+		(
+			// Validator 14 (5Ca76u3BkhBvmiegytLheAR82bRpH4h6drSLDmJ4GpGmCLsk)
+			hex!("166c5e13d23fd2c515bf1fe045fe19ed319b911edc00c7ae124b5ce180b9715c").into(),
+			hex!("18a6ada80e48f5aaef073eeddeea08ef48ed2b216c7544cf30015c840079796c").into(),
+			hex!("127ca34c916b0d8e450225d7c763d70356ea6aa723e097ee27753a1f7ec2fd0d")
+				.unchecked_into(),
+			hex!("1b218a1c42131984d84389964876fe84023649546a95e43731981469d48ce74c")
+				.unchecked_into(),
+			hex!("94c3950dae35fa0c7f7fdea96a41d40095570c3644838a46cf5474089de81e65")
+				.unchecked_into(),
+			hex!("c4d44b62e0dffe7211e1d01d941c0be7afcd347697100794318ec433a0f68009")
+				.unchecked_into(),
+			hex!("92ba609081ae9d3c5c2187d9bb2d566dc5fdf3fdc00b3655ba2cfb53ae016d03")
+				.unchecked_into(),
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("02906a8f221d91dc42207fc71075bd83e6c9218fdf3a42735779c8f5266250b9a0")
+				.unchecked_into(),
+		),
+		(
+			// Validator 15 (5HmFZJGHeteZPQBQtDtMZUun1o894dB2YdWQ171AZHLD9aBQ)
+			hex!("fc19b2667ba8907f09298460c8feaae2b0ae7c9f6a68eb08eea3f47ecca48350").into(),
+			hex!("6202a6efe45eb7a5f693ad418ae70977783df3462d03286fe4e330e30da78f35").into(),
+			hex!("504c4902ca027c4ac66aa91958af81599dc62c37469ae8041f458da39d588c2e")
+				.unchecked_into(),
+			hex!("3c3f2e40938f95a59316aab90a2127664f71be110f0aa63303d2635f5d8dc03f")
+				.unchecked_into(),
+			hex!("6222ffcc3bacc7beca82044c872b4e2f4bb8775fb312825d6617ba09facdc110")
+				.unchecked_into(),
+			hex!("fc2ed1fdf2742024401fa33b24a6d6dc2afc62a6eb7d16c0ba48ac8f9e63b52e")
+				.unchecked_into(),
+			hex!("c2e78f70a8479d44b374372bba349b5b0036e4e5a84156a5c691324677ef4e02")
+				.unchecked_into(),
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("02b7c509e5cfd8942a63219316ae8eba247c7b1d092666e6a8231b07ad338d7ed3")
+				.unchecked_into(),
+		),
+		(
+			// Validator 16 (5He6cxfVsj4K1CzPqHYvojwMQm46YDiaVbLRPAzzuxMQAJNu)
+			hex!("f6a4e5178aacc29a6858d029a81c03abd3b804af36e6063fa1e53e07121f8341").into(),
+			hex!("e8e51fa58a34261499666f33b75167b53c372ee231926a8f721870bd017e2c4c").into(),
+			hex!("28b56aaddf8c18e12ea8a6071063e14b5ad2bdc2e562b24d025e0e28311f6f44")
+				.unchecked_into(),
+			hex!("058e1abc180e75c9507954da65dea96e7affac77a4de71bc86b29cf36384d1cb")
+				.unchecked_into(),
+			hex!("7e56399cc241828e746f0cfe1cc5dc6039839736a5cab3901bde83f4149f281d")
+				.unchecked_into(),
+			hex!("3036f6c50856620f4469b783ed876c95de66e36ec06e0e4a02c47f5d443e8560")
+				.unchecked_into(),
+			hex!("e8e730803cb9c046af280c5fc670d24b7d3cbc2112de4f6ebf67ea06fc012c16")
+				.unchecked_into(),
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("02d944c3de619d8d96eb1ce3fde0325a39e7270c6ae7d76cc572ed3de195d621f6")
+				.unchecked_into(),
+		),
+		(
+			// Validator 17 (5HWePM6Eqz1UmxBsnrUAJxdYSqYudzTV8z9oxoHCAg6FV5DV)
+			hex!("f0f5dcf70ce8ad6ea3e499e7240601ddf48287d1eed0b5c39565943893e04f40").into(),
+			hex!("8e76b9a314b0d37391f3546dee54423d0b2852d3f1827893b98ba42a64a11022").into(),
+			hex!("6a4c4bed9e2d3b83157e439381df4e7dea1de644769f570f55855fc8c50aa859")
+				.unchecked_into(),
+			hex!("e54d29b6f722ff4b4011ac883eb119b1838bb3752ef7ca735650e1a019d47ee3")
+				.unchecked_into(),
+			hex!("4861a5a5d54d2b73625420eaede155cf8bbe7a52d1defbdc63a61d9c1ca9e471")
+				.unchecked_into(),
+			hex!("72b8250f819540eef38b168e21d2745f6b71e5c0635c5f8b7cabb66088264b05")
+				.unchecked_into(),
+			hex!("600acbb79793455dca687d00623fbd2a4b633c2a838b69f7f4bd8447a506f557")
+				.unchecked_into(),
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("03756c50f357b472a9bdd926eb250d5b69323b1d6364da0c22f6a8c36d95faa80a")
+				.unchecked_into(),
+		),
+		(
+			// Validator 18 (5G6Np5NFZrFjxeG3YVP7ayvXtkPGrjD44L4E5nZuUCjt4A4A)
+			hex!("b237507f4ed024a2c41ac04d6a6d5e40c4d4d563dc81bd32a2411ce05988af5e").into(),
+			hex!("9c817d7842bb5c01cd28cdb39a708a9e59c0da43c6a196c6da0f7763a481e209").into(),
+			hex!("2607bc3f24e780015ede7ee2578cdaa8ff4dff5796c93bd29372080ab41d7b57")
+				.unchecked_into(),
+			hex!("e57aefeb021d2ade9dd21b5e0c722e5a8f4e22934579611e8a24ee381bd8a08a")
+				.unchecked_into(),
+			hex!("2ade09daf03f20cf90a34a6c2878b67c1f9a80e61e4de3f92a2e020a6fba3d5d")
+				.unchecked_into(),
+			hex!("f8667054955372469b4d3f36fe2adf131e889950cb24b9729863b6e94a77b211")
+				.unchecked_into(),
+			hex!("2cdc0473f74017e3b0e4ff91cbe73c4b9fc7fd399916de812797ab3d33d1676b")
+				.unchecked_into(),
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("02835676a28f4fd21941de8a06b3c84127837c63fed261793945d9825e1e362793")
+				.unchecked_into(),
+		),
+		(
+			// Validator 19 (5HNmaney8umfgsj4xU21Mpv9ohJgivda94CsyhN8CXaPQT9f)
+			hex!("eaf420c676c4865da7e8a61d5bc65b0203649f933aa1cfad3fe65062a725e75f").into(),
+			hex!("74b53ad36faabfdb27f7b53f8e08d0a5fa404b14a44d4933cdcf4c75def6290a").into(),
+			hex!("2280fa2713e016110b84ba566d84b296e2dde4c2b99bd242ef543dd240ca585a")
+				.unchecked_into(),
+			hex!("b11fd332d288daff75d185f6efc80f5a902453ec37474341e19318b93bf4a19c")
+				.unchecked_into(),
+			hex!("b2061ec8ac51b33eb9a753825a001d1a1a6b725b4164fcde5ed4aceb6e9c0a06")
+				.unchecked_into(),
+			hex!("1ef5e74d45bd2bba5f8667822c5f0c5672bcf36b7ae49eacd05e9e9aba74d514")
+				.unchecked_into(),
+			hex!("3ebfe92ddc680f8e90af107ad255ff0c86868f07215f9ef42489414dee5f3368")
+				.unchecked_into(),
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("0381e178d86503b85a2c3bd9d03a5471fd05e86d18912a5b0ccaea9a24aade2bb3")
+				.unchecked_into(),
+		),
+		(
+			// Validator 20 (5FgsyRL63SbwZq9Jd1Ux3JwY3FMANQVF3fcw2BqsJPQnEC6n)
+			hex!("a04b96fb6229192bab52009fe494361fd7c15dff4efc11d53120153636544c3a").into(),
+			hex!("0af05da6322d1c0167a75f14ccbed41a1b07347f340cb9add2bc41bb3a22b411").into(),
+			hex!("5678f9393f7d9f562ff31e5395d8fa7dc301a5cd00ca8365008d3fca5a55ca09")
+				.unchecked_into(),
+			hex!("dc0aae01a5b843043de3f0f7fbbf5443625327cd8e5af734098c4c66977385ea")
+				.unchecked_into(),
+			hex!("7a3ecdb5379399b9572bbc829152813bcbb541c5faa96d6b515fddbcfdd2b40e")
+				.unchecked_into(),
+			hex!("32fdcba83ed752d040779039f872ef911e1cb4a6cc4f3fa2883696c991a24b57")
+				.unchecked_into(),
+			hex!("74ea002d042ed483af46b45a134b8b7d0c0383cc50283fda2c0ca3eb4667ba42")
+				.unchecked_into(),
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("0361fe685f554926dd75eee747dc34493302119de70badde22295c87894699b28b")
+				.unchecked_into(),
+		),
+		(
+			// Validator 21 (5Gb1jVbXVYcVJsdvVBNdXUy5PLNnrJnveQLGT3GLJi2fxtYE)
+			hex!("c80e7910eee6666c70b3bf2809ddd8ae5ae5d6c9370c631b8b40a3d96a4dcf1d").into(),
+			hex!("d8f386b956523029846b6e20964c305bf36b890357ce21bb558c10ff2b0ea26e").into(),
+			hex!("c046e4cd5fa76f302430fe0daccc3a4e43b20019309a290a34bf25c0f9214558")
+				.unchecked_into(),
+			hex!("174f4a44dc96b2a254257ed2d1c078357276a9b62a9934ed00f0aba476667642")
+				.unchecked_into(),
+			hex!("2c785f855bff76ad8f7bea6ee4982af3cfe02fa9bf33190cfe332002f6bca65b")
+				.unchecked_into(),
+			hex!("3ec5698aba1fd4489932a86e8e462d95d2da8fca8a2b4ce7f340491454a5561b")
+				.unchecked_into(),
+			hex!("145c08411a8cc81045aa01890651913df9c6f137381610d0704f6d468477f03c")
+				.unchecked_into(),
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("03016b4d3b1008f2ea872b0dee42268581fcc95f08f2e80517ffdc44ce1cd22125")
 				.unchecked_into(),
 		),
 	]);
@@ -1099,7 +1106,11 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				.collect::<Vec<_>>(),
 		},
 		babe: BabeConfig { epoch_config: BABE_GENESIS_EPOCH_CONFIG },
-		sudo: SudoConfig { key: Some(founder_account) },
+		// Alice, and on purpose. Zagros is a testnet: every developer already holds this key,
+		// there is nothing here worth protecting from them, and the alternative -- mainnet's
+		// founder key -- is the one thing that must never be needed to operate a testnet.
+		// Mainnet's sudo is the Founder, and the two chains do not share it.
+		sudo: SudoConfig { key: Some(Sr25519Keyring::Alice.to_account_id()) },
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },
 		registrar: RegistrarConfig { next_free_para_id: pezkuwi_primitives::LOWEST_PUBLIC_ID },
 	})
