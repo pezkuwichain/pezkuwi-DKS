@@ -59,8 +59,33 @@ fn coretime_zagros_genesis(
 }
 
 /// Provides the JSON representation of predefined genesis config for given `id`.
+mod preset_names {
+	pub const PRESET_GENESIS: &str = "genesis";
+}
+
 pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 	let patch = match id.as_ref() {
+		// The preset a real Zagros launch uses. Endows nobody, which is what upstream's own live
+		// system-parachain specs do -- measured from the raw genesis in `chain-specs/`: bridge
+		// hub, coretime and people all carry zero balance, and collectives carries four HEZ
+		// across nine accounts. The `dev` and `local` presets below hand `well_known()` large
+		// sums because a test network needs spendable keys; shipping that to a launch is how
+		// the live Pezkuwichain bridge hub ended up with 1,152,921 HEZ -- `1u128 << 60`, held
+		// by a migration account inherited from the fork base rather than chosen here.
+		PRESET_GENESIS => coretime_zagros_genesis(
+			// Alice and Bob as collators, deliberately: Zagros is a testnet whose sudo is Alice
+			// for the same reason. Producing blocks is not a privileged switch; Pezkuwichain
+			// names real collators.
+			vec![
+				(Sr25519Keyring::Alice.to_account_id(), Sr25519Keyring::Alice.public().into()),
+				(Sr25519Keyring::Bob.to_account_id(), Sr25519Keyring::Bob.public().into()),
+			],
+			// No endowed accounts: a launched chain funds nobody here. Test accounts are
+			// funded after launch by teleport, which is the path mainnet uses.
+			Vec::new(),
+			ZGR * 1_000_000,
+			CORETIME_PARA_ID,
+		),
 		pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET => coretime_zagros_genesis(
 			// initial collators.
 			vec![
@@ -95,7 +120,9 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 
 /// List of supported presets.
 pub fn preset_names() -> Vec<PresetId> {
+	use preset_names::*;
 	vec![
+		PresetId::from(PRESET_GENESIS),
 		PresetId::from(pezsp_genesis_builder::DEV_RUNTIME_PRESET),
 		PresetId::from(pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET),
 	]

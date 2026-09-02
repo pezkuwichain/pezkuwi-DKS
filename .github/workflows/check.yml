@@ -97,6 +97,11 @@ jobs:
       # funds, and the testnet could not be restarted without touching production keystores.
       - name: Zagros and Pezkuwichain share no genesis key
         run: python3 .github/scripts/check-chain-key-overlap.py
+      # A local hook narrower than CI returns green and sends the commit anyway. Twice in two
+      # days the gate it was missing was the one that would have caught the commit. Advisory
+      # when no hook exists -- on a runner there is none -- and enforcing when one does.
+      - name: The pre-commit hook runs every gate CI runs
+        run: python3 .github/scripts/check-hook-covers-ci.py --verbose
 
   # A note describing the tree goes stale the moment the tree moves. These measure the tree.
   # The gaps are the backlog and do not fail a build; work that came undone does.

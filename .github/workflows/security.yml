@@ -52,6 +52,24 @@ jobs:
     # single source of truth for the ignore policy (see deny.toml). A separate cargo-audit
     # job is intentionally omitted to avoid maintaining two divergent ignore lists.
 
+  # What cargo-deny does not cover, and it is two different gaps.
+  #
+  # RustSec does not carry every advisory -- `yamux 0.12.1` has a remote-panic GHSA and no
+  # RustSec entry, so no configuration of cargo-deny could find it. And on 2026-09-01 cargo-deny
+  # was silent on advisories it *did* have: `hickory-proto 0.24.4` in the graph, the advisory in
+  # the database it had just fetched, not ignored, and no diagnostic. It still reported the
+  # unmaintained class that same run, so the tool works -- the vulnerability class does not
+  # reach the output, and why is an open item.
+  #
+  # `dependency-review` above uses GitHub's database but only reads what a PR adds, so it says
+  # nothing about the tree already here. This audits the resolved graph.
+  osv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Every resolved crate, against GHSA and RustSec together
+        run: python3 .github/scripts/check-osv-advisories.py --verbose
+
   # Block PRs that introduce dependencies with known vulnerabilities or bad licenses.
   dependency-review:
     if: github.event_name == 'pull_request'

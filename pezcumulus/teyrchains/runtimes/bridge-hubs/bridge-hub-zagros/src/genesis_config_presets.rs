@@ -73,8 +73,51 @@ fn bridge_hub_zagros_genesis(
 }
 
 /// Provides the JSON representation of predefined genesis config for given `id`.
+mod preset_names {
+	pub const PRESET_GENESIS: &str = "genesis";
+}
+
 pub fn get_preset(id: &pezsp_genesis_builder::PresetId) -> Option<pezsp_std::vec::Vec<u8>> {
+	use preset_names::*;
 	let patch = match id.as_ref() {
+		// The preset a real Zagros launch uses. Endows nobody, which is what upstream's own live
+		// system-parachain specs do -- measured from the raw genesis in `chain-specs/`: bridge
+		// hub, coretime and people all carry zero balance, and collectives carries four HEZ
+		// across nine accounts. The `dev` and `local` presets below hand `well_known()` large
+		// sums because a test network needs spendable keys; shipping that to a launch is how
+		// the live Pezkuwichain bridge hub ended up with 1,152,921 HEZ -- `1u128 << 60`, held
+		// by a migration account inherited from the fork base rather than chosen here.
+		PRESET_GENESIS => bridge_hub_zagros_genesis(
+			// Alice and Bob as collators, and on purpose: Zagros is a testnet whose sudo is
+			// Alice for the same reason -- every developer already holds these keys and there
+			// is nothing here to protect from them. Producing blocks is not a privileged
+			// position the way owning the bridge switch is; the account above is the one that
+			// mattered. Pezkuwichain names real collators.
+			vec![
+				(Sr25519Keyring::Alice.to_account_id(), Sr25519Keyring::Alice.public().into()),
+				(Sr25519Keyring::Bob.to_account_id(), Sr25519Keyring::Bob.public().into()),
+			],
+			// No endowed accounts: a launched chain funds nobody here. Relayers and test
+			// accounts are funded after launch by teleport -- `TrustedTeleporters` accepts
+			// HEZ from the relay and every system chain -- which is the path mainnet will
+			// use, so Zagros rehearsing it is the point rather than an inconvenience.
+			Vec::new(),
+			1002.into(),
+			// No pallet owner: halting and resuming a bridge is root's, which here means
+			// governance. Copied from the local preset this was `Some(Bob)` -- a keyring
+			// account holding a privileged switch on a launched chain. Measured against the
+			// live Pezkuwichain bridge hub, whose raw genesis carries no owner at all.
+			None,
+			zagros_runtime_constants::system_teyrchain::ASSET_HUB_ID.into(),
+			vec![(
+				Location::new(1, [Teyrchain(1000)]),
+				Junctions::from([
+					NetworkId::ByGenesis(PEZKUWICHAIN_GENESIS_HASH).into(),
+					Teyrchain(1000),
+				]),
+				Some(pezbp_messages::LegacyLaneId([0, 0, 0, 2])),
+			)],
+		),
 		pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET => bridge_hub_zagros_genesis(
 			// initial collators.
 			vec![
@@ -117,7 +160,9 @@ pub fn get_preset(id: &pezsp_genesis_builder::PresetId) -> Option<pezsp_std::vec
 
 /// List of supported presets.
 pub fn preset_names() -> Vec<PresetId> {
+	use preset_names::*;
 	vec![
+		PresetId::from(PRESET_GENESIS),
 		PresetId::from(pezsp_genesis_builder::DEV_RUNTIME_PRESET),
 		PresetId::from(pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET),
 	]

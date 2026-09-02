@@ -253,16 +253,24 @@ fn the_relay_mints_exactly_its_share() {
 		})
 		.sum();
 
+	// Owned balances: the founder's and the treasury's, with the validator stashes taken out
+	// of the treasury's rather than added beside it.
+	let owned = HEZ_FOUNDER_ALLOCATION + HEZ_TREASURY_ALLOCATION;
+	// Escrow: the mirror of what the Asset Hub holds, so a teleport back has something to
+	// release. Not new supply -- the same HEZ, represented there and held here.
+	let escrow = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION;
+
 	assert_eq!(
 		total,
-		HEZ_FOUNDER_ALLOCATION + HEZ_TREASURY_ALLOCATION,
-		"the relay mints the founder's and the treasury's shares and nothing else -- validator \
-		 stashes come out of the treasury's, and the presale and airdrop are pots on the Asset Hub"
+		owned + escrow,
+		"the relay mints two things and no third: what it owns, and the escrow behind what the \
+		 Asset Hub holds"
 	);
 	assert_eq!(
-		total + HEZ_PRESALE_ALLOCATION + HEZ_AIRDROP_ALLOCATION,
+		owned + escrow,
 		200_000_000 * HEZ,
-		"and the two chains together mint two hundred million exactly"
+		"and those two are the whole supply -- the Asset Hub's hundred and forty million is \
+		 this escrow seen from the other side, not a second hundred and forty million"
 	);
 }
 
@@ -1070,6 +1078,28 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	// and because it is the only allocation here big enough not to notice.
 	let validator_funding: u128 = initial_authorities.len() as u128 * STASH * 2;
 
+	// The XCM checking account's seed.
+	//
+	// `TeleportTracking` is `Some((CheckAccount::get(), MintLocation::Local))` here, so HEZ
+	// that leaves for a teyrchain is held in this account rather than burned, and HEZ coming
+	// back is released from it. An empty account therefore does not mean "nothing has moved";
+	// it means nothing *can* move back, and the teleport is refused. That refusal is correct
+	// and it is what two relay-side tests assert -- which is why this is a genesis matter and
+	// not something to notice in production.
+	//
+	// The size is derived, not chosen. The rule: the seed must cover the most that could ever
+	// come back, which is the HEZ in circulation on the other chains. At genesis that is the
+	// airdrop pot and the presale pot, both minted on the Asset Hub -- everything the relay
+	// does not mint itself. Writing a round number here instead would make the testnet
+	// rehearse a flow the mainnet then fails, which is the whole reason a rehearsal exists.
+	//
+	// This is a mirror rather than new supply: the same HEZ is represented on the Asset Hub
+	// and escrowed here, exactly as a teleport out would have left it. Governance is not
+	// distorted by the size because `MaxTurnout` reads `VotableIssuance`, which is active
+	// issuance minus this account.
+	let checking_account_seed: u128 = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION;
+	let checking_account: AccountId = crate::XcmPallet::check_account();
+
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
 			balances: vec![
@@ -1081,6 +1111,8 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				(founder_account.clone(), HEZ_FOUNDER_ALLOCATION), // 10% = 20M HEZ
 				// 20% = 40M HEZ, less what the validator stashes take out of it.
 				(treasury_account.clone(), HEZ_TREASURY_ALLOCATION - validator_funding),
+				// Escrow for what the Asset Hub holds -- see `checking_account_seed`.
+				(checking_account, checking_account_seed),
 			]
 			.into_iter()
 			// Add validator stash balances (STASH * 2 to cover bond + existential deposit)
