@@ -102,6 +102,11 @@ jobs:
       # when no hook exists -- on a runner there is none -- and enforcing when one does.
       - name: The pre-commit hook runs every gate CI runs
         run: python3 .github/scripts/check-hook-covers-ci.py --verbose
+      # A branch with no open pull request is built by nothing: the workflows fire on push to
+      # main and on pull_request. Twice now, work continued on a branch after its PR merged
+      # and the commits went out unverified -- no red, because no run.
+      - name: This branch is one CI will build
+        run: python3 .github/scripts/check-branch-has-ci.py --verbose
 
   # A note describing the tree goes stale the moment the tree moves. These measure the tree.
   # The gaps are the backlog and do not fail a build; work that came undone does.

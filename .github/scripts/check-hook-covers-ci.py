@@ -36,6 +36,15 @@ NOT_A_GATE = {
     "weights_request.py",
 }
 
+# Gates that belong to a different hook. Each names the one it runs in, and that hook is
+# checked for it instead -- so the coverage question is still answered, just against the
+# right file. A gate listed here and wired nowhere still fails below.
+OTHER_HOOK = {
+    # Asks whether anything will build this push. Meaningless before a commit and correct
+    # before a push, which is where it runs.
+    "check-branch-has-ci.py": "pre-push",
+}
+
 
 def hook_path():
     """The hook lives in the common git dir, which is not `.git` inside a worktree."""
@@ -67,10 +76,23 @@ def main():
         return 0
 
     local = set(SCRIPT.findall(hook.read_text(errors="replace")))
-    missing = sorted(ci - local)
+
+    # A gate assigned to another hook is covered if that hook runs it.
+    elsewhere, misplaced = set(), []
+    for name, other in OTHER_HOOK.items():
+        p = hook.with_name(other)
+        if p.is_file() and name in SCRIPT.findall(p.read_text(errors="replace")):
+            elsewhere.add(name)
+        else:
+            misplaced.append((name, other))
+
+    missing = sorted(ci - local - elsewhere)
 
     for m in missing:
         print(f"  the pre-commit hook does not run {m}, and CI does")
+    for name, other in misplaced:
+        print(f"  {name} is assigned to the {other} hook and that hook does not run it")
+    missing += [n for n, _ in misplaced]
 
     if missing:
         print()
@@ -80,7 +102,8 @@ def main():
         return 1
 
     extra = sorted(local - ci)
-    print(f"the pre-commit hook runs all {len(ci)} gate scripts CI runs"
+    print(f"the pre-commit hook runs all {len(ci) - len(elsewhere)} gate scripts CI runs"
+          + (f" ({len(elsewhere)} in another hook)" if elsewhere else "")
           + (f", plus {len(extra)} of its own" if extra else ""))
     if verbose:
         for s in sorted(ci):
