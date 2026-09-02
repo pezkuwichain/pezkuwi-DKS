@@ -851,11 +851,23 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				.collect::<Vec<_>>(),
 		},
 		babe: BabeConfig { epoch_config: BABE_GENESIS_EPOCH_CONFIG },
-		// Alice, and on purpose. Zagros is a testnet: every developer already holds this key,
-		// there is nothing here worth protecting from them, and the alternative -- mainnet's
-		// founder key -- is the one thing that must never be needed to operate a testnet.
-		// Mainnet's sudo is the Founder, and the two chains do not share it.
-		sudo: SudoConfig { key: Some(Sr25519Keyring::Alice.to_account_id()) },
+		// Zagros's own root key: 5HpEXEim6dogBSXRmWEzXXNjFeS97EYRVsfSpyfGBhGfpn4x
+		//
+		// This was Alice, and the reasoning was that every developer already holds her key and
+		// a testnet has nothing to protect from them. The second half of that sentence is why
+		// it was wrong: every developer holds her key, and so does everyone else. On a network
+		// anyone can reach, Alice as root means anyone can upgrade the runtime, mint, or halt
+		// the chain. Upstream draws the line in the same place -- its public testnet's sudo is
+		// a real address, and Alice belongs to `dev` and `local`, which keep her below.
+		//
+		// The rehearsal argument is the stronger one. Mainnet's root is a key somebody guards,
+		// and retiring sudo is a step this chain exists to practise; neither can be practised
+		// with a key the world has. Held with the rest of the Zagros wallet set.
+		sudo: SudoConfig {
+			key: Some(
+				hex!("fe5ff27956998b38004d1c49eb4ef1f1cd8d11bd4c89d3a8c12c00aa6fd5ee15").into()
+			),
+		},
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },
 		registrar: RegistrarConfig { next_free_para_id: pezkuwi_primitives::LOWEST_PUBLIC_ID },
 	})
