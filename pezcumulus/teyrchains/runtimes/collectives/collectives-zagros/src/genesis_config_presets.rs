@@ -76,12 +76,15 @@ pub fn get_preset(id: &pezsp_genesis_builder::PresetId) -> Option<pezsp_std::vec
 		// the live Pezkuwichain bridge hub ended up with 1,152,921 HEZ -- `1u128 << 60`, to
 		// Westend's migration controller, inherited rather than chosen.
 		PRESET_GENESIS => collectives_zagros_genesis(
-			// initial collators.
+			// Alice and Bob as collators, deliberately: Zagros is a testnet whose sudo is Alice
+			// for the same reason. Producing blocks is not a privileged switch; Pezkuwichain
+			// names real collators.
 			vec![
 				(Sr25519Keyring::Alice.to_account_id(), Sr25519Keyring::Alice.public().into()),
 				(Sr25519Keyring::Bob.to_account_id(), Sr25519Keyring::Bob.public().into()),
 			],
-			// No endowed accounts: a launched chain funds nobody here.
+			// No endowed accounts: a launched chain funds nobody here. Test accounts are
+			// funded after launch by teleport, which is the path mainnet uses.
 			Vec::new(),
 			1001.into(),
 		),
