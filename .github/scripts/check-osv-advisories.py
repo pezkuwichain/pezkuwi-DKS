@@ -23,10 +23,14 @@ So this asks OSV directly, which aggregates GHSA and RustSec both.
 
 Two things it is careful about, because the first draft of this measurement got both wrong:
 
-  - It reads the *resolved graph* from `cargo metadata`, not `Cargo.lock`. A lock file keeps
-    entries nothing depends on any more -- nine of the thirty a raw lock scan reported were
-    orphans, including the `ring 0.16.20` and `jsonwebtoken 9.3.1` that Dependabot keeps
-    failing to update. Reporting those would be reporting work that does not exist.
+  - It reads the *resolved graph* from `cargo metadata --all-features`, not `Cargo.lock`, and
+    it takes the whole feature space rather than the default one. Both halves were learned the
+    hard way. A raw lock scan reports entries by text; the graph is what cargo can actually
+    build. But `cargo tree` with default features could not reach nine of the thirty, and the
+    first reading of that was "orphans, ignore them" -- wrong. `ring 0.16.20` comes in behind
+    `rcgen`, `jsonwebtoken 9.3.1` behind `alloy-rpc-types-engine`, `h2 0.3.27` behind an old
+    `hyper`. Reachable under a feature is reachable, so the wide scope is the honest one and
+    matches what `deny.toml` already uses.
   - It compares against a recorded baseline rather than a threshold. The list can only shrink:
     a new advisory fails, and an entry that stops applying fails too, so the record cannot
     quietly outlive what it describes.
