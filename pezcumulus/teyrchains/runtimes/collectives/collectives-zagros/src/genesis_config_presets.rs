@@ -73,8 +73,8 @@ pub fn get_preset(id: &pezsp_genesis_builder::PresetId) -> Option<pezsp_std::vec
 		// hub, coretime and people all carry zero balance, and collectives carries four HEZ
 		// across nine accounts. The `dev` and `local` presets below hand `well_known()` large
 		// sums because a test network needs spendable keys; shipping that to a launch is how
-		// the live Pezkuwichain bridge hub ended up with 1,152,921 HEZ -- `1u128 << 60`, to
-		// Westend's migration controller, inherited rather than chosen.
+		// the live Pezkuwichain bridge hub ended up with 1,152,921 HEZ -- `1u128 << 60`, held
+		// by a migration account inherited from the fork base rather than chosen here.
 		PRESET_GENESIS => collectives_zagros_genesis(
 			// Alice and Bob as collators, deliberately: Zagros is a testnet whose sudo is Alice
 			// for the same reason. Producing blocks is not a privileged switch; Pezkuwichain
