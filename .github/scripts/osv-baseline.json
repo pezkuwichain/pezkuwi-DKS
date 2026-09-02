@@ -27,12 +27,6 @@
     "GHSA-q2qq-hmj6-3wpp",
     "RUSTSEC-2026-0119"
   ],
-  "hickory-proto@0.25.2": [
-    "GHSA-3v94-mw7p-v465",
-    "GHSA-q2qq-hmj6-3wpp",
-    "RUSTSEC-2026-0118",
-    "RUSTSEC-2026-0119"
-  ],
   "instant@0.1.13": [
     "RUSTSEC-2024-0384"
   ],
