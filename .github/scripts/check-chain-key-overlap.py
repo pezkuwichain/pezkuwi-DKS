@@ -7,11 +7,11 @@ both, and a testnet is the half of that pair which exists to be broken into. It 
 half that has to be restartable from nothing -- which it is not, if its validators are the
 production validators and restarting means touching their keystores.
 
-Measured on 2026-08-31, before this check existed: 178 addresses appeared in both. The whole
-Zagros validator set, its founder, its treasury, four collators, and -- added the same day, in
-a commit meant to *fix* a single-key allocation -- one more, copied from the production chain
-onto the testnet by someone who had spent the morning removing exactly that. That last one is
-why this is a check and not a cleanup.
+Measured on 2026-08-31, before this check existed: 178 addresses appeared in both -- the whole
+Zagros validator set, its founder, its treasury, four collators, and a custody account copied
+from the production chain onto the testnet in a change meant to *remove* a shared key. A
+defect that arrives inside its own fix is one a review will not catch, which is why this is a
+check rather than a cleanup.
 
 The rule is one line and needs no context to apply: an address that appears in both chains'
 genesis is one key with authority on both, and the testnet half is the half people are invited

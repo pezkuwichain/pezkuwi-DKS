@@ -4,15 +4,11 @@
 The workflows here fire on `push` to `main` and on `pull_request`. A branch with no open
 pull request therefore gets no CI at all -- pushes land, report nothing, and look fine.
 
-That has happened twice. Both times the sequence was the same: a pull request merged, the
-branch stayed checked out, work continued on it, and the next several commits went out
-unchecked. The first time it was four commits and the gap was found by reading the workflow
-file; the second time it was one commit, and it was found because the run list was empty
-where a run was expected.
-
 Nothing announces this. `git push` succeeds, GitHub shows no failure because there is no run
-to fail, and the branch looks as healthy as one that passed. It is the quietest way to ship
-something unverified.
+to fail, and the branch looks as healthy as one that passed -- so an unbuilt push is
+indistinguishable from a green one until somebody goes looking for the run.
+
+The gap opens whenever a pull request merges and work continues on the same branch.
 
 So this asks the question before the push: is this branch one that CI will look at? Yes if it
 is a `push` target in some workflow, or if it has an open pull request. No otherwise, and then
@@ -57,10 +53,9 @@ def current_branch():
 def push_targets():
     """Branch names some workflow watches for `push`.
 
-    Parsed, not matched. The first version of this used a regex with a nested quantifier
-    around the lines between `push:` and `branches:`; on these files it backtracked long
-    enough to look like a hang, which in a pre-commit hook is indistinguishable from a
-    machine that has stopped.
+    Parsed rather than matched: a regex spanning the lines between `push:` and `branches:`
+    needs a nested quantifier, and on these files that backtracks long enough to be
+    indistinguishable from a stopped machine when it runs inside a hook.
     """
     names = set()
     for wf in sorted((REPO / ".github" / "workflows").glob("*.yml")):

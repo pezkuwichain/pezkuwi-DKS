@@ -21,7 +21,7 @@ matter:
 
 So this asks OSV directly, which aggregates GHSA and RustSec both.
 
-Two things it is careful about, because the first draft of this measurement got both wrong:
+Two things it is careful about, each of which reads as a detail and is not:
 
   - It reads the *resolved graph* from `cargo metadata --all-features`, not `Cargo.lock`, and
     it takes the whole feature space rather than the default one. Both halves were learned the
