@@ -21,9 +21,9 @@ issue_details = {}
 
 for comment in wishlist_issue.get_comments():
     # in the comment body, if there is a string `#(\d)`, replace it with
-    # https://github.com/pezkuwichain/pezkuwi-sdk/issues/(number)
+    # https://github.com/pezkuwichain/pezkuwi-DKS/issues/(number)
     updated_body = re.sub(
-        r"#(\d+)", r"https://github.com/pezkuwichain/pezkuwi-sdk/issues/\1", comment.body
+        r"#(\d+)", r"https://github.com/pezkuwichain/pezkuwi-DKS/issues/\1", comment.body
     )
 
     matches = wish_pattern.findall(updated_body)

@@ -3,8 +3,8 @@ error: use of deprecated constant `pezpallet::warnings::ImplicitCallIndex_0::_w`
                Please instead ensure that all calls have a `pezpallet::call_index` attribute or put the pezpallet into `dev` mode.
 
                For more info see:
-                   <https://github.com/pezkuwichain/pezkuwi-sdk/issues/208>
-                   <https://github.com/pezkuwichain/pezkuwi-sdk/issues/205>
+                   <https://github.com/pezkuwichain/pezkuwi-DKS/issues/208>
+                   <https://github.com/pezkuwichain/pezkuwi-DKS/issues/205>
   --> tests/pezpallet_ui/dev_mode_without_arg_call_index.rs:39:10
    |
 39 |         pub fn my_call(_origin: OriginFor<T>) -> DispatchResult {
@@ -18,7 +18,7 @@ error: use of deprecated constant `pezpallet::warnings::ConstantWeight_0::_w`:
                Please instead benchmark all calls or put the pezpallet into `dev` mode.
 
                For more info see:
-                   <https://github.com/pezkuwichain/pezkuwi-sdk/issues/215>
+                   <https://github.com/pezkuwichain/pezkuwi-DKS/issues/215>
   --> tests/pezpallet_ui/dev_mode_without_arg_call_index.rs:38:23
    |
 38 |         #[pezpallet::weight(0)]

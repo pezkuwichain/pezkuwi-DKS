@@ -337,7 +337,7 @@ fetch_release_artifacts_from_s3() {
 # return the release download base URL (GitHub Releases)
 function get_s3_url_base() {
     # All binaries served from GitHub Releases
-    printf "https://github.com/pezkuwichain/pezkuwi-sdk/releases/download"
+    printf "https://github.com/pezkuwichain/pezkuwi-DKS/releases/download"
 }
 
 
@@ -488,7 +488,7 @@ check_release_id() {
 # output: latest_release_tag
 get_latest_release_tag() {
     TOKEN="Authorization: Bearer $GITHUB_TOKEN"
-    latest_release_tag=$(curl -s -H "$TOKEN" $api_base/pezkuwichain/pezkuwi-sdk/releases/latest | jq -r '.tag_name')
+    latest_release_tag=$(curl -s -H "$TOKEN" $api_base/pezkuwichain/pezkuwi-DKS/releases/latest | jq -r '.tag_name')
     printf $latest_release_tag
 }
 

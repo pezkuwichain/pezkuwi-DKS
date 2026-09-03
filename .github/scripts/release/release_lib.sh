@@ -143,7 +143,7 @@ upload_s3_release() {
       gh release upload "$version" "$file" --clobber || true
     done
 
-    echo "✅ Release artifacts uploaded to https://github.com/pezkuwichain/pezkuwi-sdk/releases/tag/${version}"
+    echo "✅ Release artifacts uploaded to https://github.com/pezkuwichain/pezkuwi-DKS/releases/tag/${version}"
 }
 
 # Upload runtimes artifacts to GitHub Releases.
@@ -169,7 +169,7 @@ upload_s3_runtimes_release_artifacts() {
     gh release upload "$version" "$file" --clobber || true
   done
 
-  echo "✅ Runtimes uploaded to https://github.com/pezkuwichain/pezkuwi-sdk/releases/tag/${version}"
+  echo "✅ Runtimes uploaded to https://github.com/pezkuwichain/pezkuwi-DKS/releases/tag/${version}"
 }
 
 
@@ -177,5 +177,5 @@ upload_s3_runtimes_release_artifacts() {
 # return the GitHub release download base URL
 function get_s3_url_base() {
     # All binaries are now served from GitHub Releases
-    printf "github.com/pezkuwichain/pezkuwi-sdk/releases/download"
+    printf "github.com/pezkuwichain/pezkuwi-DKS/releases/download"
 }

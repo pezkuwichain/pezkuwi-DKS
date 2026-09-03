@@ -11,10 +11,10 @@ LABEL io.parity.image.authors="devops-team@parity.io" \
 	io.parity.image.vendor="Parity Technologies" \
 	io.parity.image.title="parity/pezkuwi" \
 	io.parity.image.description="Pezkuwi: a platform for web3. This is the official Parity image with an injected binary." \
-	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-sdk/blob/${VCS_REF}/docker/dockerfiles/pezkuwi/pezkuwi_injected.Dockerfile" \
+	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-DKS/blob/${VCS_REF}/docker/dockerfiles/pezkuwi/pezkuwi_injected.Dockerfile" \
 	io.parity.image.revision="${VCS_REF}" \
 	io.parity.image.created="${BUILD_DATE}" \
-	io.parity.image.documentation="https://github.com/pezkuwichain/pezkuwi-sdk/"
+	io.parity.image.documentation="https://github.com/pezkuwichain/pezkuwi-DKS/"
 
 # show backtraces
 ENV RUST_BACKTRACE 1

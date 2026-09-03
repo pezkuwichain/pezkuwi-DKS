@@ -27,11 +27,11 @@ check_workspace = importlib.import_module("check-workspace")
 
 README_TEMPLATE = """<div align="center">
 
-<img src="https://raw.githubusercontent.com/pezkuwichain/pezkuwi-sdk/master/docs/images/Pezkuwi_Logo.png" alt="Pezkuwi logo" width="200">
+<img src="https://raw.githubusercontent.com/pezkuwichain/pezkuwi-DKS/master/docs/images/Pezkuwi_Logo.png" alt="Pezkuwi logo" width="200">
 
 # {name}
 
-This crate is part of the [Pezkuwi SDK](https://github.com/pezkuwichain/pezkuwi-sdk/).
+This crate is part of the [Pezkuwi SDK](https://github.com/pezkuwichain/pezkuwi-DKS/).
 
 </div>
 

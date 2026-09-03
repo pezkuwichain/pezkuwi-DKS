@@ -3,7 +3,7 @@
 # A script that checks each workspace crate individually.
 # It's relevant to check workspace crates individually because otherwise their compilation problems
 # due to feature misconfigurations won't be caught, as exemplified by
-# https://github.com/pezkuwichain/pezkuwi-sdk/issues/163 (upstream tracking)
+# https://github.com/pezkuwichain/pezkuwi-DKS/issues/163 (upstream tracking)
 #
 # `check-each-crate.py target_group groups_total`
 #

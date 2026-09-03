@@ -54,7 +54,7 @@ async function run(nodeName, networkInfo, _jsArgs) {
         unsub();
         return resolve();
       } else if (result.isError) {
-        // Probably happens because of: https://github.com/pezkuwichain/pezkuwi-sdk/issues/1202.
+        // Probably happens because of: https://github.com/pezkuwichain/pezkuwi-DKS/issues/1202.
         console.log(`Transaction error`);
         // We ignore the error because it is very likely misleading, because of the issue mentioned above.
         unsub();

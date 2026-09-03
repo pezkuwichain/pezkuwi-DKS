@@ -12,8 +12,8 @@ LABEL description="Multistage Docker image for Bizinikiwi: a platform for web3" 
 	io.parity.image.authors="chevdor@gmail.com, devops-team@parity.io" \
 	io.parity.image.vendor="Parity Technologies" \
 	io.parity.image.description="Bizinikiwi is a next-generation framework for blockchain innovation" \
-	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-sdk/blob/${VCS_REF}/bizinikiwi/docker/bizinikiwi_builder.Dockerfile" \
-	io.parity.image.documentation="https://github.com/pezkuwichain/pezkuwi-sdk"
+	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-DKS/blob/${VCS_REF}/bizinikiwi/docker/bizinikiwi_builder.Dockerfile" \
+	io.parity.image.documentation="https://github.com/pezkuwichain/pezkuwi-DKS"
 
 COPY --from=builder /bizinikiwi/target/release/bizinikiwi /usr/local/bin
 COPY --from=builder /bizinikiwi/target/release/subkey /usr/local/bin

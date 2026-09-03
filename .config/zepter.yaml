@@ -54,5 +54,5 @@ help:
     It looks like one or more checks failed; please check the console output. You can try to automatically address them by running `zepter`.
     Otherwise please ask directly in the Merge Request, GitHub Discussions or on Matrix Chat, thank you.
   links:
-    - "https://github.com/pezkuwichain/pezkuwi-sdk/issues/1831"
+    - "https://github.com/pezkuwichain/pezkuwi-DKS/issues/1831"
     - "https://github.com/ggwpez/zepter"

@@ -1,4 +1,4 @@
-# This file is sourced from https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docker/dockerfiles/test-teyrchain-collator.Dockerfile
+# This file is sourced from https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docker/dockerfiles/test-teyrchain-collator.Dockerfile
 FROM docker.io/paritytech/ci-linux:production as builder
 
 WORKDIR /pezcumulus
