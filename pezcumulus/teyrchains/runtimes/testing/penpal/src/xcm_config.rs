@@ -297,8 +297,10 @@ where
 
 type AssetsFrom<T> = AssetPrefixFrom<T, T>;
 
-// This asset can be added to AH as Asset and reserved transfer between Penpal and AH
-pub const RESERVABLE_ASSET_ID: u32 = 1;
+// This asset can be added to AH as Asset and reserved transfer between Penpal and AH.
+// Must equal `RESERVABLE_ASSET_ID` in the emulated test commons, which explains why it is not
+// 1: on this fork id 1 is PEZ.
+pub const RESERVABLE_ASSET_ID: u32 = 1985;
 // This asset can be added to AH as ForeignAsset and teleported between Penpal and AH
 pub const PEN2_TELEPORTABLE_GENERAL_INDEX: u32 = 2;
 

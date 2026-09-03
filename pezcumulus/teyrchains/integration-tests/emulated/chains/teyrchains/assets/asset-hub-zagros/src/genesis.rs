@@ -14,7 +14,7 @@
 // limitations under the License.
 
 // Bizinikiwi
-use pezframe_support::parameter_types;
+use pezframe_support::{parameter_types, pezsp_runtime::traits::AccountIdConversion};
 use pezsp_core::storage::Storage;
 use pezsp_keyring::Sr25519Keyring as Keyring;
 
@@ -109,6 +109,17 @@ pub fn genesis() -> Storage {
 		},
 		assets: asset_hub_zagros_runtime::AssetsConfig {
 			assets: vec![
+				// PEZ, exactly as the launch preset creates it: keyless team, sufficient,
+				// minimum balance of one. The runtime reads `PezAssetId = 1`, so this entry is
+				// not an addition to the fixture -- it is the entry that was missing, and
+				// without it every call that reaches for PEZ found a keyring-owned test asset
+				// in its place. Metadata is left off: it carries no behaviour.
+				(
+					asset_hub_zagros_runtime::genesis_config_presets::PEZ_ASSET_ID,
+					asset_hub_zagros_runtime::PezAssetTeamId::get().into_account_truncating(),
+					true,
+					1,
+				),
 				(RESERVABLE_ASSET_ID, AssetHubZagrosAssetOwner::get(), false, ED),
 				(USDT_ID, AssetHubZagrosAssetOwner::get(), true, USDT_ED),
 			],

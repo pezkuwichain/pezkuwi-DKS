@@ -18,6 +18,7 @@ codec = { workspace = true }
 
 # Bizinikiwi
 pezframe-support = { workspace = true }
+pezpallet-assets = { workspace = true }
 pezpallet-balances = { workspace = true }
 pezpallet-identity = { workspace = true }
 pezpallet-identity-kyc = { workspace = true }
@@ -40,6 +41,7 @@ zagros-system-emulated-network = { workspace = true }
 runtime-benchmarks = [
 	"emulated-integration-tests-common/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
+	"pezpallet-assets/runtime-benchmarks",
 	"pezpallet-balances/runtime-benchmarks",
 	"pezpallet-identity-kyc/runtime-benchmarks",
 	"pezpallet-identity/runtime-benchmarks",
@@ -57,6 +59,7 @@ std = [
 	"codec/std",
 	"emulated-integration-tests-common/std",
 	"pezframe-support/std",
+	"pezpallet-assets/std",
 	"pezpallet-balances/std",
 	"pezpallet-identity-kyc/std",
 	"pezpallet-identity/std",
@@ -72,6 +75,7 @@ std = [
 try-runtime = [
 	"emulated-integration-tests-common/try-runtime",
 	"pezframe-support/try-runtime",
+	"pezpallet-assets/try-runtime",
 	"pezpallet-balances/try-runtime",
 	"pezpallet-identity-kyc/try-runtime",
 	"pezpallet-identity/try-runtime",
