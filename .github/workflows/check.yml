@@ -107,6 +107,11 @@ jobs:
       # and the commits went out unverified -- no red, because no run.
       - name: This branch is one CI will build
         run: python3 .github/scripts/check-branch-has-ci.py --verbose
+      # The compiler catches a renamed crate in code and not in a doc example: `///` blocks
+      # compile only under `cargo test --doc`, which runs in the nightly suite. A stale name
+      # sat in one for weeks and surfaced as a release blocker.
+      - name: No source names an upstream crate this fork renamed
+        run: python3 .github/scripts/check-crate-names-renamed.py --verbose
 
   # A note describing the tree goes stale the moment the tree moves. These measure the tree.
   # The gaps are the backlog and do not fail a build; work that came undone does.
