@@ -179,9 +179,24 @@ mod tests {
 	#[test]
 	// Test that the fee for `MAXIMUM_BLOCK_WEIGHT` of weight has sane bounds.
 	fn full_block_fee_is_correct() {
-		// A full block should cost between 1,000 and 10,000 CENTS.
+		// A full block costs what fits in it, and what fits is a property of the reference
+		// hardware rather than of the fee schedule. `WeightToFee` anchors `ExtrinsicBaseWeight`
+		// at a tenth of a CENT -- that is the economic decision, and
+		// `extrinsic_base_fee_is_correct` below is what holds it. This test only asks that the
+		// resulting block price stay in a sane range.
+		//
+		// The range was [1_000, 10_000], upstream's numbers for upstream's machine: their
+		// extrinsic base is around 100 microseconds, so twenty thousand extrinsics fit in two
+		// seconds and a full block comes to 2_000 CENTS. Ours is 223 microseconds, measured on
+		// the weakest validator class we intend to support, so 8_968 fit and a full block is
+		// 897 CENTS. A slower reference machine means fewer transactions per block, not cheaper
+		// transactions.
+		//
+		// 500 rather than 897 so the bound survives re-benchmarking: this figure moves whenever
+		// the reference hardware is re-measured, and a bound pinned to today's number would go
+		// red on a routine measurement rather than on a defect.
 		let full_block = WeightToFee::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);
-		assert!(full_block >= 1_000 * CENTS);
+		assert!(full_block >= 500 * CENTS);
 		assert!(full_block <= 10_000 * CENTS);
 	}
 
