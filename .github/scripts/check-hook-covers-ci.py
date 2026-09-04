@@ -36,6 +36,17 @@ NOT_A_GATE = {
     "weights_request.py",
 }
 
+# Gates that judge a run rather than the tree. They read something a full test run
+# produces -- a JUnit report, a timing file -- so before that run exists there is nothing
+# for them to read and nothing they could say. Listing one here asserts that: the coverage
+# question below still applies to every gate that judges the tree, which is all of them
+# except these.
+NEEDS_RUN_ARTIFACT = {
+    # Reads the JUnit report nextest writes, to fail a test that only passed because the
+    # retries nearly ran out. There is no report until the suite has run.
+    "check-retry-exhaustion.py",
+}
+
 # Gates that belong to a different hook. Each names the one it runs in, and that hook is
 # checked for it instead -- so the coverage question is still answered, just against the
 # right file. A gate listed here and wired nowhere still fails below.
@@ -64,7 +75,7 @@ def main():
 
     ci = set()
     for wf in sorted((REPO / ".github" / "workflows").glob("*.yml")):
-        ci |= set(SCRIPT.findall(wf.read_text(errors="replace"))) - NOT_A_GATE
+        ci |= set(SCRIPT.findall(wf.read_text(errors="replace"))) - NOT_A_GATE - NEEDS_RUN_ARTIFACT
     if not ci:
         print("  no gate scripts found in any workflow -- the parser stopped seeing them,")
         print("  which is not the same as there being none")

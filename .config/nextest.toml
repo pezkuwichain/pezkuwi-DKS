@@ -75,7 +75,16 @@ fail-fast = true
 # which will cause slow tests to be terminated after the specified number of
 # periods have passed.
 # Example: slow-timeout = { period = "60s", terminate-after = 2 }
-slow-timeout = { period = "60s" }
+# A slow test is worth a line in the log; a hung test is worth killing.
+#
+# Without `terminate-after` nextest prints SLOW forever and waits, so a hung test costs the
+# whole job timeout -- twelve hours of a runner -- and reports nothing at all, which is worse
+# than a red because a red at least says something. Measured on the 2026-09-03 run of 6,831
+# tests: p99 is 52s, sixty tests exceed 60s, twenty-eight exceed 300s, and only two exceed
+# 1800s. Thirty periods of sixty seconds therefore kills a hang in half an hour while leaving
+# every legitimately slow test in the suite untouched but those two, which get their own
+# budget below.
+slow-timeout = { period = "60s", terminate-after = 30 }
 
 # Treat a test as leaky if after the process is shut down, standard output and standard error
 # aren't closed within this duration.
@@ -141,3 +150,10 @@ threads-required = 'num-cpus'
 filter = 'test(benchmark_extrinsic_works)'
 threads-required = 'num-cpus'
 slow-timeout = { period = "120s", terminate-after = 10 }
+
+# The two longest tests in the suite are here, at 3849s and 3720s, and almost none of that is
+# testing: `your_first_node` shells out to `cargo build --release` for a runtime and a node
+# before it can run them. Until that build moves out of the test, the budget has to cover it.
+[[profile.default.overrides]]
+filter = 'package(pezkuwi-sdk-docs)'
+slow-timeout = { period = "300s", terminate-after = 20 }

@@ -93,6 +93,16 @@ jobs:
             --partition count:${{ matrix.partition }}/2 \
             --config-file .config/nextest.toml
 
+      - name: A test that only passed on its last retry is a broken test
+        if: always()
+        run: |
+          # `retries = 5` absorbs genuine intermittence and should. But nextest reports a
+          # test that needed all six attempts as FLAKY and counts it among the passes, so
+          # the summary reads green and nobody looks again. This reads the JUnit report
+          # nextest already writes and fails when a test came that close to the limit.
+          python3 .github/scripts/check-retry-exhaustion.py \
+            'target/nextest/default/junit.xml' --max-attempts 3
+
   # Doctests (nextest does not run these).
   doc-test:
     runs-on: [self-hosted, bizinikiwi-build]
@@ -343,6 +353,16 @@ jobs:
             --features experimental,ci-only-tests \
             --partition count:${{ matrix.partition }}/2 \
             --config-file .config/nextest.toml
+
+      - name: A test that only passed on its last retry is a broken test
+        if: always()
+        run: |
+          # `retries = 5` absorbs genuine intermittence and should. But nextest reports a
+          # test that needed all six attempts as FLAKY and counts it among the passes, so
+          # the summary reads green and nobody looks again. This reads the JUnit report
+          # nextest already writes and fails when a test came that close to the limit.
+          python3 .github/scripts/check-retry-exhaustion.py \
+            'target/nextest/default/junit.xml' --max-attempts 3
 
   rustdoc:
     runs-on: [self-hosted, bizinikiwi-build]
