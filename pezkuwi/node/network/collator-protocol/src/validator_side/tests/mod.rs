@@ -52,6 +52,19 @@ const ACTIVITY_TIMEOUT: Duration = Duration::from_millis(500);
 const DECLARE_TIMEOUT: Duration = Duration::from_millis(25);
 const REPUTATION_CHANGE_TEST_INTERVAL: Duration = Duration::from_millis(10);
 
+/// Eviction timeouts no test run can reach.
+///
+/// A test that is not about inactivity eviction uses this so the wall-clock cost of its own
+/// setup cannot make the subsystem evict a peer the test never asked about. `ACTIVITY_POLL` is
+/// 10ms under `cfg(test)` and `disconnect_inactive_peers` deliberately leaves `peer_data` alone
+/// — the entry is cleared on `PeerDisconnected`, which a test that never sends one will never
+/// deliver. So one peer ageing out mid-setup means a `DisconnectPeers` on every tick from then
+/// on, into a queue nobody is draining.
+const NO_EVICTION: crate::CollatorEvictionPolicy = crate::CollatorEvictionPolicy {
+	inactive_collator: Duration::from_secs(3600),
+	undeclared: Duration::from_secs(3600),
+};
+
 fn dummy_pvd() -> PersistedValidationData {
 	PersistedValidationData {
 		parent_head: HeadData(vec![7, 8, 9]),
@@ -201,6 +214,23 @@ fn test_harness<T: Future<Output = VirtualOverseer>>(
 	ah_invulnerable_collators: HashSet<PeerId>,
 	test: impl FnOnce(TestHarness) -> T,
 ) {
+	test_harness_with_eviction_policy(
+		reputation,
+		ah_invulnerable_collators,
+		crate::CollatorEvictionPolicy {
+			inactive_collator: ACTIVITY_TIMEOUT,
+			undeclared: DECLARE_TIMEOUT,
+		},
+		test,
+	)
+}
+
+fn test_harness_with_eviction_policy<T: Future<Output = VirtualOverseer>>(
+	reputation: ReputationAggregator,
+	ah_invulnerable_collators: HashSet<PeerId>,
+	eviction_policy: crate::CollatorEvictionPolicy,
+	test: impl FnOnce(TestHarness) -> T,
+) {
 	pezsp_tracing::init_for_tests();
 
 	let pool = pezsp_core::testing::TaskExecutor::new();
@@ -219,10 +249,7 @@ fn test_harness<T: Future<Output = VirtualOverseer>>(
 	let subsystem = run_inner(
 		context,
 		keystore.clone(),
-		crate::CollatorEvictionPolicy {
-			inactive_collator: ACTIVITY_TIMEOUT,
-			undeclared: DECLARE_TIMEOUT,
-		},
+		eviction_policy,
 		Metrics::default(),
 		reputation,
 		REPUTATION_CHANGE_TEST_INTERVAL,
