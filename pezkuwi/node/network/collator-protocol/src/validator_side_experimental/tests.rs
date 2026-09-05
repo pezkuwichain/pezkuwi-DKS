@@ -545,17 +545,17 @@ impl TestState {
 			}
 		);
 
-		let mut extra_msg = loop {
-			let had_buffered_msg = self.buffered_msg.is_some();
+		// Answer the finality-path requests as they arrive and stop on the one this step is
+		// waiting for, rather than draining for a fixed window and then expecting it.
+		// The subsystem issues `CandidateEvents` and `CandidatesPendingAvailability` while
+		// bumping reputations, and on a loaded runner one of them can arrive after any
+		// silence worth waiting for. Ending the drain on a 100 ms timeout meant a late
+		// request landed in the matcher below and failed the test for its timing rather
+		// than for anything it asserts.
+		let session_index = loop {
 			let msg = match self.buffered_msg.take() {
 				Some(msg) => msg,
-				None => {
-					if let Some(Some(msg)) = self.recv.next().timeout(TIMEOUT).await {
-						msg
-					} else {
-						break None;
-					}
-				},
+				None => self.timeout_recv().await,
 			};
 
 			match msg {
@@ -597,31 +597,16 @@ impl TestState {
 						.collect();
 					tx.send(Ok(candidates)).unwrap();
 				},
-				other => {
-					if had_buffered_msg {
-						panic!("Unexpected message: {:?}", other);
-					} else {
-						break Some(other);
-					}
+				AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+					rp,
+					RuntimeApiRequest::SessionIndexForChild(tx),
+				)) => {
+					let index = self.rp_info.get(&rp).map(|info| info.session_index).unwrap_or(1);
+					tx.send(Ok(index)).unwrap();
+					break index;
 				},
+				other => panic!("Unexpected message: {:?}", other),
 			};
-		};
-
-		let msg = match extra_msg.take() {
-			Some(msg) => msg,
-			None => self.timeout_recv().await,
-		};
-
-		let session_index = match msg {
-			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-				rp,
-				RuntimeApiRequest::SessionIndexForChild(tx),
-			)) => {
-				let index = self.rp_info.get(&rp).map(|info| info.session_index).unwrap_or(1);
-				tx.send(Ok(index)).unwrap();
-				index
-			},
-			other => panic!("Unexpected message: {:?}", other),
 		};
 
 		let msg = if let Some(Some(msg)) = self.recv.next().timeout(TIMEOUT).await {
