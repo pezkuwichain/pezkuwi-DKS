@@ -157,3 +157,14 @@ slow-timeout = { period = "120s", terminate-after = 10 }
 [[profile.default.overrides]]
 filter = 'package(pezkuwi-sdk-docs)'
 slow-timeout = { period = "300s", terminate-after = 20 }
+
+# Sixty end-to-end sub-tests against a node and an RPC server this test starts itself. It used
+# to carry its own 300s deadline; on a runner also building a release binary it blew that on
+# five attempts and passed the sixth in 224s, which tripped the retry-exhaustion gate and
+# failed the job. The budget was not the defect — sharing the machine was. Give it the runner,
+# and let the harness bound the hang: 120s x 10 is twenty minutes, ample for a 224s test that
+# is not competing for cores.
+[[profile.default.overrides]]
+filter = 'test(run_all_eth_rpc_tests)'
+threads-required = 'num-cpus'
+slow-timeout = { period = "120s", terminate-after = 10 }
