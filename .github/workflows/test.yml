@@ -335,7 +335,7 @@ jobs:
           cargo check -p pezkuwichain-runtime --locked --target wasm32v1-none \
             --no-default-features
 
-  test-no-try-runtime:
+  test-extra-features:
     runs-on: [self-hosted, bizinikiwi-build]
     timeout-minutes: 720
     strategy:
@@ -345,8 +345,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/install-solidity
-      - name: Tests without the try-runtime feature
-        # try-runtime changes which code paths compile; the suite has to pass without it too.
+      - name: Tests with the experimental and ci-only features
+        # The `test` job above runs the suite with no `--features` at all. This one adds
+        # `experimental` and `ci-only-tests`, which compile code paths the default build
+        # leaves out, so both sets have to pass. Neither job enables `try-runtime` — that
+        # gate is `check-try-runtime` in check.yml, and this job was called
+        # `test-no-try-runtime` for long enough to send at least one investigation looking
+        # for a feature-gating bug that was never here.
         run: |
           git config --global --add safe.directory '*'
           cargo nextest run --workspace --locked --no-fail-fast \
