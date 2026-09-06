@@ -494,7 +494,13 @@ impl pezpallet_session::Config for Runtime {
 	type SessionManager = pezpallet_session::historical::NoteHistoricalRoot<Self, StakingAhClient>;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
-	type DisablingStrategy = ();
+	// The relay carries the whole offence machinery -- BABE and GRANDPA equivocation, dispute
+	// reports -- and this is its last step: `report_offence` asks the strategy whether to disable,
+	// and `()` answers `None` every time. Left as `()`, an equivocating validator kept authoring
+	// here while its slash travelled to the Asset Hub. The byzantine default holds the set to at
+	// most `(n - 1) / 3` disabled, and re-enables a lighter offender to make room for a heavier
+	// one rather than refusing outright.
+	type DisablingStrategy = pezpallet_session::disabling::UpToLimitWithReEnablingDisablingStrategy;
 	type WeightInfo = weights::pezpallet_session::WeightInfo<Runtime>;
 	type Currency = Balances;
 	type KeyDeposit = ();

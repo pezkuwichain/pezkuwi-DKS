@@ -569,6 +569,32 @@ fn every_preset_starts_the_validator_set_door_active() {
 	}
 }
 
+/// A named preset as a whole genesis, ready for `build_state`.
+///
+/// A preset is a patch over the default config, not a complete one, so it has to be merged onto
+/// `RuntimeGenesisConfig::default()` before it describes a chain.
+fn genesis_from_preset(name: &str) -> Vec<u8> {
+	use pezsp_genesis_builder::PresetId;
+
+	fn merge(base: &mut serde_json::Value, patch: serde_json::Value) {
+		match (base, patch) {
+			(serde_json::Value::Object(base), serde_json::Value::Object(patch)) => {
+				for (k, v) in patch {
+					merge(base.entry(k).or_insert(serde_json::Value::Null), v);
+				}
+			},
+			(base, patch) => *base = patch,
+		}
+	}
+
+	let raw = crate::genesis_config_presets::get_preset(&PresetId::from(name))
+		.unwrap_or_else(|| panic!("the `{name}` preset must exist"));
+	let patch: serde_json::Value = serde_json::from_slice(&raw).expect("preset must be json");
+	let mut config = serde_json::to_value(RuntimeGenesisConfig::default()).unwrap();
+	merge(&mut config, patch);
+	serde_json::to_vec(&config).unwrap()
+}
+
 /// The whole door, opened from the state a real preset builds.
 ///
 /// `every_preset_starts_the_validator_set_door_active` proves the field is written; this proves
@@ -584,28 +610,6 @@ fn every_preset_starts_the_validator_set_door_active() {
 /// arrangement nobody tested.
 #[test]
 fn the_people_chain_can_seat_validators_on_a_genesis_chain() {
-	use pezsp_genesis_builder::PresetId;
-
-	// A preset is a patch over the default config, so it has to be merged onto one before it
-	// describes a whole genesis.
-	fn merge(base: &mut serde_json::Value, patch: serde_json::Value) {
-		match (base, patch) {
-			(serde_json::Value::Object(base), serde_json::Value::Object(patch)) => {
-				for (k, v) in patch {
-					merge(base.entry(k).or_insert(serde_json::Value::Null), v);
-				}
-			},
-			(base, patch) => *base = patch,
-		}
-	}
-
-	let raw = crate::genesis_config_presets::get_preset(&PresetId::from("development"))
-		.expect("the development preset must exist");
-	let patch: serde_json::Value = serde_json::from_slice(&raw).expect("preset must be json");
-	let mut config = serde_json::to_value(RuntimeGenesisConfig::default()).unwrap();
-	merge(&mut config, patch);
-	let json = serde_json::to_vec(&config).unwrap();
-
 	let people = RuntimeOrigin::from(teyrchains_origin::Origin::Teyrchain(PEOPLE_ID.into()));
 	let report = pezpallet_staking_async_rc_client::ValidatorSetReport {
 		new_validator_set: vec![Alice.to_account_id()],
@@ -615,8 +619,10 @@ fn the_people_chain_can_seat_validators_on_a_genesis_chain() {
 	};
 
 	pezsp_io::TestExternalities::default().execute_with(|| {
-		pezframe_support::genesis_builder_helper::build_state::<RuntimeGenesisConfig>(json)
-			.expect("the development preset must build valid state");
+		pezframe_support::genesis_builder_helper::build_state::<RuntimeGenesisConfig>(
+			genesis_from_preset("development"),
+		)
+		.expect("the development preset must build valid state");
 
 		// Both doors, in the arrangement that ships.
 		assert_ok!(StakingAhClient::validator_set(people.clone(), report.clone()));
@@ -642,12 +648,10 @@ fn the_people_chain_can_seat_validators_on_a_genesis_chain() {
 /// exist. `StakingAhClient` closes both halves, reporting an ongoing offence to the session
 /// pezpallet at once and queueing the economic slash for the Asset Hub, where the stake is.
 ///
-/// This asserts the wiring, not the behaviour, and the distinction is worth stating: the send
-/// queue the handler appends to is `pub(crate)` in the pezpallet, so a runtime crate cannot
-/// observe it, and the disabling half only fires for an offence in an already-applied validator
-/// set. What can be checked from here is the one thing that regressed -- the associated type
-/// silently going back to `()` -- and that is what this catches. The behaviour itself is covered
-/// by the pezpallet's own tests.
+/// This asserts the wiring only. The half that can be watched end to end from here is covered
+/// separately by `an_offence_disables_the_validator_on_this_chain`; what this one adds is a check
+/// that survives even if the offence never reaches the disabling branch, so the associated type
+/// cannot quietly go back to `()` again.
 #[test]
 fn offences_are_handed_to_the_asset_hub_client() {
 	use core::any::TypeId;
@@ -657,4 +661,72 @@ fn offences_are_handed_to_the_asset_hub_client() {
 		TypeId::of::<StakingAhClient>(),
 		"offences must reach the Asset Hub client; `()` records them and drops them"
 	);
+}
+
+/// The disabling half of the offence path, watched from end to end.
+///
+/// `offences_are_handed_to_the_asset_hub_client` asserts the type is wired. This asserts that
+/// wiring it changes what the chain does: an offence from the validator set currently in force
+/// reaches `pezpallet_session` and disables the offender here, on the relay, without waiting for
+/// the Asset Hub.
+///
+/// Three conditions gate that branch, and all three are part of what is being asserted. `Mode`
+/// must be `Active` -- it comes from genesis and is not set here. `ValidatorSetAppliedAt` must be
+/// `Some`, since `is_ongoing_offence` refuses to disable for a set this chain never applied; that
+/// is the chain's own bookkeeping, written when a set is put into force, and genesis has not been
+/// through a session yet, so the test writes it. And `DisablingStrategy` must actually return a
+/// decision -- it was `()`, which returns `None` for every offence ever reported.
+///
+/// The preset is `versi_local_testnet` rather than `development` for a reason worth keeping: the
+/// strategy will not disable more than `(n - 1) / 3` of the set, so on the one-validator
+/// `development` chain the correct answer is to disable nobody. Four validators is the smallest
+/// set where disabling is permitted at all, which makes the choice of preset part of the claim.
+///
+/// The economic half -- the slash queued for the Asset Hub -- is not visible from here: its queue
+/// is `pub(crate)` in the pezpallet and emits no event. It is covered by the pezpallet's tests.
+#[test]
+fn an_offence_disables_the_validator_on_this_chain() {
+	use pezsp_staking::offence::{OffenceDetails, OnOffenceHandler};
+
+	pezsp_io::TestExternalities::default().execute_with(|| {
+		pezframe_support::genesis_builder_helper::build_state::<RuntimeGenesisConfig>(
+			genesis_from_preset("versi_local_testnet"),
+		)
+		.expect("the preset must build valid state");
+
+		let validators = pezpallet_session::Pezpallet::<Runtime>::validators();
+		let offender = validators.first().cloned().expect("genesis must seat validators");
+		assert!(
+			pezpallet_session::Pezpallet::<Runtime>::disabled_validators().is_empty(),
+			"nobody is disabled on a chain that has just been born"
+		);
+
+		// The set the offence belongs to has to be one this chain has applied, or the handler
+		// queues the slash and skips the disabling.
+		pezpallet_staking_async_ah_client::ValidatorSetAppliedAt::<Runtime>::put(0);
+
+		// Routed through the runtime's own associated type, not through `StakingAhClient` by
+		// name: that way this covers the wiring as well as the behaviour, and setting the type
+		// back to `()` fails here too.
+		type Offender = <Runtime as pezpallet_offences::Config>::IdentificationTuple;
+		<<Runtime as pezpallet_offences::Config>::OnOffenceHandler as OnOffenceHandler<
+			AccountId,
+			Offender,
+			Weight,
+		>>::on_offence(
+			&[OffenceDetails { offender: (offender, Default::default()), reporters: vec![] }],
+			&[Perbill::from_percent(25)],
+			0,
+		);
+
+		assert_eq!(
+			pezpallet_session::Pezpallet::<Runtime>::disabled_validators(),
+			vec![0],
+			"an offence from the live set must disable the offender on this chain"
+		);
+		assert!(
+			validators.len() >= 4,
+			"the preset must seat enough validators for disabling to be allowed at all"
+		);
+	});
 }
