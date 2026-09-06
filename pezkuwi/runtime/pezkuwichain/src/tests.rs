@@ -20,7 +20,7 @@ use crate::*;
 use std::collections::HashSet;
 
 use crate::xcm_config::LocationConverter;
-use pezframe_support::traits::WhitelistedStorageKeys;
+use pezframe_support::{assert_noop, assert_ok, traits::WhitelistedStorageKeys};
 use pezsp_core::{crypto::Ss58Codec, hexdisplay::HexDisplay};
 use pezsp_keyring::Sr25519Keyring::Alice;
 use xcm_runtime_pezapis::conversions::LocationToAccountHelper;
@@ -567,4 +567,94 @@ fn every_preset_starts_the_validator_set_door_active() {
 			"preset `{name}` seats the validator-set door in {mode}, so the set could never change"
 		);
 	}
+}
+
+/// The whole door, opened from the state a real preset builds.
+///
+/// `every_preset_starts_the_validator_set_door_active` proves the field is written; this proves
+/// the call it exists for actually gets through. They are not the same claim: the field could be
+/// present and `validator_set` still refuse, because it has *two* doors -- an origin check and a
+/// mode check -- and until now nothing exercised both together on a chain born from genesis.
+///
+/// The gap this closes was real. `only_the_two_named_chains_may_seat_validators` calls
+/// `EnsureAssetHub::try_origin` in isolation and never reaches the mode check, and the only
+/// end-to-end caller in the tree is `staking-async/ahm-test`, whose harness runs
+/// `on_migration_end()` first and so flips the mode to `Active` by a path our chains do not have
+/// -- they are born at genesis and never migrate. So the one arrangement that ships was the one
+/// arrangement nobody tested.
+#[test]
+fn the_people_chain_can_seat_validators_on_a_genesis_chain() {
+	use pezsp_genesis_builder::PresetId;
+
+	// A preset is a patch over the default config, so it has to be merged onto one before it
+	// describes a whole genesis.
+	fn merge(base: &mut serde_json::Value, patch: serde_json::Value) {
+		match (base, patch) {
+			(serde_json::Value::Object(base), serde_json::Value::Object(patch)) => {
+				for (k, v) in patch {
+					merge(base.entry(k).or_insert(serde_json::Value::Null), v);
+				}
+			},
+			(base, patch) => *base = patch,
+		}
+	}
+
+	let raw = crate::genesis_config_presets::get_preset(&PresetId::from("development"))
+		.expect("the development preset must exist");
+	let patch: serde_json::Value = serde_json::from_slice(&raw).expect("preset must be json");
+	let mut config = serde_json::to_value(RuntimeGenesisConfig::default()).unwrap();
+	merge(&mut config, patch);
+	let json = serde_json::to_vec(&config).unwrap();
+
+	let people = RuntimeOrigin::from(teyrchains_origin::Origin::Teyrchain(PEOPLE_ID.into()));
+	let report = pezpallet_staking_async_rc_client::ValidatorSetReport {
+		new_validator_set: vec![Alice.to_account_id()],
+		id: 1,
+		prune_up_to: None,
+		leftover: false,
+	};
+
+	pezsp_io::TestExternalities::default().execute_with(|| {
+		pezframe_support::genesis_builder_helper::build_state::<RuntimeGenesisConfig>(json)
+			.expect("the development preset must build valid state");
+
+		// Both doors, in the arrangement that ships.
+		assert_ok!(StakingAhClient::validator_set(people.clone(), report.clone()));
+
+		// And the mode door specifically: put the pallet back to its derived default and the same
+		// call must be refused. Without this the test would still pass if `Mode` stopped being
+		// checked at all, which is the failure it exists to catch.
+		pezpallet_staking_async_ah_client::Mode::<Runtime>::put(
+			pezpallet_staking_async_ah_client::OperatingMode::Passive,
+		);
+		assert_noop!(
+			StakingAhClient::validator_set(people, report),
+			pezpallet_staking_async_ah_client::Error::<Runtime>::Blocked
+		);
+	});
+}
+
+/// The offence handler is wired, and stays wired.
+///
+/// `pezpallet_offences` records a report and hands it to `OnOffenceHandler`. That was `()` here,
+/// so BABE, GRANDPA and dispute reports arrived, were stored, and stopped: no disabling on this
+/// chain and no slash on the Asset Hub. Nothing failed loudly -- the penalty simply did not
+/// exist. `StakingAhClient` closes both halves, reporting an ongoing offence to the session
+/// pezpallet at once and queueing the economic slash for the Asset Hub, where the stake is.
+///
+/// This asserts the wiring, not the behaviour, and the distinction is worth stating: the send
+/// queue the handler appends to is `pub(crate)` in the pezpallet, so a runtime crate cannot
+/// observe it, and the disabling half only fires for an offence in an already-applied validator
+/// set. What can be checked from here is the one thing that regressed -- the associated type
+/// silently going back to `()` -- and that is what this catches. The behaviour itself is covered
+/// by the pezpallet's own tests.
+#[test]
+fn offences_are_handed_to_the_asset_hub_client() {
+	use core::any::TypeId;
+
+	assert_eq!(
+		TypeId::of::<<Runtime as pezpallet_offences::Config>::OnOffenceHandler>(),
+		TypeId::of::<StakingAhClient>(),
+		"offences must reach the Asset Hub client; `()` records them and drops them"
+	);
 }
