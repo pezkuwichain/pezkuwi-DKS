@@ -723,7 +723,12 @@ parameter_types! {
 impl pezpallet_offences::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type IdentificationTuple = pezpallet_session::historical::IdentificationTuple<Self>;
-	type OnOffenceHandler = ();
+	// The relay holds no stake -- staking lives on the Asset Hub -- so there is nothing here
+	// to slash. `StakingAhClient` is what closes both halves: it reports an ongoing offence to
+	// the session pezpallet immediately, which disables the validator on this chain, and queues
+	// the economic slash for the Asset Hub, where the money actually is. Left as `()`, both
+	// halves were dropped: an equivocation was recorded by `Offences` and went nowhere.
+	type OnOffenceHandler = StakingAhClient;
 }
 
 impl pezpallet_authority_discovery::Config for Runtime {
