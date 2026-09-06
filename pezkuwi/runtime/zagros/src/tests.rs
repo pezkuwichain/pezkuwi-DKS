@@ -523,3 +523,48 @@ fn the_committee_call_encodes_the_way_people_builds_it() {
 		.encode();
 	assert_eq!(real, by_hand, "ValidatorSetReport's field order changed");
 }
+
+/// Every named preset must seat the validator-set door in `Active`.
+///
+/// `ah_client::validator_set` is the only way this relay's validator set can ever change, and
+/// it has two doors. The origin door is pinned by
+/// `only_the_two_named_chains_may_seat_validators` above. This is the other one: the call also
+/// requires `Mode == Active`, and `OperatingMode`'s derived default is `Passive`.
+///
+/// Nothing flips it for us. The one automatic transition is `on_migration_end()`, which fires
+/// during an Asset Hub migration -- and neither of our chains has one, because staking starts
+/// on the Asset Hub. That leaves `set_mode`, an `AdminOrigin` call, i.e. a manual Root step at
+/// genesis, which the plan forbids. So the mode has to arrive in the genesis patch or it never
+/// arrives at all.
+///
+/// A chain born `Passive` looks healthy from every angle: blocks are produced, People builds
+/// and sends the committee, the origin check passes, and the call dies at `Error::Blocked`
+/// with the set it started with. It would validate forever with its genesis validators, and no
+/// offence could remove them.
+///
+/// Checked against `preset_names()` rather than against a list written here, so a preset added
+/// later cannot quietly ship without the field.
+#[test]
+fn every_preset_starts_the_validator_set_door_active() {
+	use crate::genesis_config_presets::{get_preset, preset_names};
+
+	let names = preset_names();
+	assert!(!names.is_empty(), "there must be presets to check");
+
+	for id in names {
+		let name: &str = id.as_ref();
+		let raw = get_preset(&id).unwrap_or_else(|| panic!("preset `{name}` must build"));
+		let json: serde_json::Value =
+			serde_json::from_slice(&raw).expect("a preset must be valid json");
+
+		let mode = json
+			.get("stakingAhClient")
+			.and_then(|v| v.get("operatingMode"))
+			.unwrap_or_else(|| panic!("preset `{name}` never sets stakingAhClient.operatingMode"));
+
+		assert_eq!(
+			mode, "Active",
+			"preset `{name}` seats the validator-set door in {mode}, so the set could never change"
+		);
+	}
+}
