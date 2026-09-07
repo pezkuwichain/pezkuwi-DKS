@@ -159,7 +159,7 @@ Then, grab the Pezkuwi source code:
 
 ```bash
 git clone https://github.com/pezkuwichain/pezkuwi-DKS.git
-cd pezkuwi-sdk
+cd pezkuwi-DKS
 ```
 
 Then build the code. You will need to build in release mode (`--release`) to start a network. Only

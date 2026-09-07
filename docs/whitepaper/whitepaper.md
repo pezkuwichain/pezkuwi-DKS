@@ -1,295 +1,592 @@
-# PezkuwiChain: A Sovereign Blockchain for a Digital Nation
-**Technical Whitepaper · Version 3.0 · June 2026**
+# PezkuwiChain
 
-*Revision 3.0 supersedes v2.0 (October 2025): restructured with a dedicated Philosophy section and a code-verified TNPoS trust-score model — main formula, the four component scores, and on-chain constants — with module terminology corrected to* pezpallet*.*
-**Prepared by:** Digital Kurdistan Tech Institute & PezkuwiChain Contributors
+### A state that runs as software
 
-![PezkuwiChain Logo](../images/Pezkuwi_Logo_Horizontal_Pink_Black.png)
+**Whitepaper v6.0 — Mainnet Edition**
+Dijital Kurdistan Tech Institute
 
 ---
 
 ## Abstract
 
-PezkuwiChain is a sovereign Layer-1 blockchain engineered to provide digital public infrastructure for the Kurdish people and their global diaspora. It is built on the **Pezkuwi SDK** — a self-contained, modular runtime framework derived from battle-tested open-source components and now fully independent, building entirely from source with no dependency on any external package registry.
+PezkuwiChain is a sovereign public blockchain built to carry the functions of a state:
+a citizen register, elected institutions, a treasury, a currency, and courts. It is not a
+company issuing a token. Its constitution is its runtime, its statute book is its pallet
+set, and its separation of powers is enforced by the type system rather than by promise.
 
-The protocol's central contribution is **Trust-enhanced Nominated Proof-of-Stake (TNPoS)**, a consensus and reward model that augments conventional economic stake with an on-chain reputation signal — the *trust score* — computed by the `pezpallet-trust` module from each account's staking activity, referrals, on-chain education credentials, and community participation. By weighting influence and rewards by both stake and trust, PezkuwiChain mitigates the stake-only plutocracy of traditional Proof-of-Stake while preserving its economic security guarantees.
+Two properties distinguish it. First, **there are two electorates and they are deliberately
+different.** Matters of the state — citizenship, offices, the register — are decided by
+counting citizens, one person one vote, on a chain where a token balance buys nothing.
+Matters of the network — parameters, upgrades, the treasury of last resort — are decided by
+stake, on the relay chain. Neither can vote in the other's house.
 
-PezkuwiChain pairs a **dual-token economy** — HEZ (the inflationary security and fee token) and PEZ (a fixed 5-billion-supply governance and reward token) — with a multi-chain **"teyrchain" architecture**: a Relay Chain for shared security, an Asset Hub for the economy, and a People Chain for identity and governance. A suite of **14 custom pezpallets** provides digital identity, education, reputation, and governance as native on-chain primitives.
+Second, **money and the authority to move it live on different chains.** Every fund sits on
+the Asset Hub. Every authority to draw from it sits on the People chain. A payment is a
+cross-chain message from an office to a vault, and the vault's own configuration names the
+one chain it will listen to. An officeholder cannot reach the money by holding a key; they
+reach it by holding an office, and the office is an entry in a register that citizens elect.
 
-This document specifies the PezkuwiChain architecture, the TNPoS consensus and trust-score model, the dual-token economy, the custom pezpallet suite, and the network's technical parameters.
-
-## Our Philosophy
-
-### The Age of Noise
-
-Blockchain technology arrived with the promise of decentralization, transparency, and freedom. Much of that promise, however, was turned into a speculative casino — thousands of projects and tens of thousands of tokens engineered to glitter briefly on exchange listings before fading, exploiting the hopes of their holders. Exchanges became gatekeepers of volume rather than technology, and genuine engineering was lost amid meme tokens and projects of no technical substance. PezkuwiChain is built in deliberate opposition to that noise: we treat technology not as an instrument of speculation, but as infrastructure for building a society.
-
-### Trust, Not Capital
-
-Power has historically concentrated around capital, and traditional Proof-of-Stake carried that pattern into the digital realm — those who hold the most tokens make the rules. PezkuwiChain rejects *pure* stake-plutocracy. In its trust model (Section 4.2), stake is a necessary foundation — and is itself rewarded — but per unit, verifiable contribution (referrals, education, community) is weighted three times more heavily than capital (300 vs 100). Capital opens the door; contribution earns standing within it.
-
-TNPoS is therefore based not only on the balance in a wallet (stake), but on the value an account brings to the network — its reputation and trustworthiness (trust). The network is governed by the trustworthy as well as the wealthy; validators earn standing by demonstrating contribution, not only by locking tokens. The **HEZ** token provides security and economic foundation, while the **PEZ** token rewards labor, participation, and trust. This balance between the power of capital and the value of contribution is enforced in code (Section 4.2), not by policy alone.
-
-### A Clean Slate: The Stateless Advantage
-
-PezkuwiChain also reflects a particular historical circumstance. Established states must refactor centuries of bureaucracy and centralized, paper-based institutions to enter the blockchain era; they cannot build anew without first dismantling the old. A stateless people carries no such legacy — no inefficient bureaucracies to transform, no decrepit institutions to tear down. That absence becomes a digital clean slate: an opportunity to **build rather than adapt**, constructing advanced technology, transparent governance, and an equitable economy directly from the ground up.
-
-In an age where borders are increasingly drawn in code rather than soil, this is PezkuwiChain's ambition — to give the people of this region a direct path to an advanced, fully digital civic infrastructure: a **Type-1 digital civilization** founded on trust and shared values rather than capital and borders alone.
+This document describes the system as it is written. Every figure in it is taken from the
+source.
 
 ---
 
-## 1. Executive Summary
+## 1. Why a state, and not a platform
 
-PezkuwiChain is a sovereign Layer-1 blockchain network meticulously engineered to serve the digital infrastructure needs of the Kurdistan region and its global diaspora. Built using the **Pezkuwi SDK**—a powerful framework forged from battle-tested, open-source components—PezkuwiChain introduces a novel **Trust-enhanced Nominated Proof-of-Stake (TNPoS)** consensus mechanism, a sophisticated dual-token economic model, and a comprehensive suite of custom-built pallets for governance, identity, and education.
+Most chains are platforms looking for applications. PezkuwiChain begins from the opposite
+end: a nation without a state apparatus, and a question about which parts of one can be
+built from software.
 
-The project's vision is to empower the Kurdish nation through decentralized technology, fostering a transparent, community-driven ecosystem that integrates financial inclusion, digital identity, and social trust into its core consensus layer. This whitepaper provides a comprehensive overview of the PezkuwiChain architecture, its groundbreaking TNPoS consensus, technical specifications, and strategic roadmap.
+Some cannot. A blockchain does not hold territory, and it does not enforce a judgment with
+anything but the consent of those who run it. What it can do is hold a register that nobody
+can quietly edit, run an election whose count is reproducible by anyone, and hold a treasury
+whose every movement carries the name of the office that authorised it. Those three — the
+register, the ballot, and the ledger — are what a state must get right before anything else,
+and they are precisely what software is good at.
 
-**Core Innovations:**
-*   **TNPoS Consensus:** The world's first trust-augmented PoS mechanism.
-*   **Dual-Token Economy:** HEZ (inflationary) + PEZ (fixed 5B supply).
-*   **Multi-Layered "Teyrchain" Architecture:** A Relay Chain for consensus, an Asset Hub for economy, and a People Chain for identity and governance.
-*   **The Pezkuwi SDK:** A powerful and flexible framework with **14** specialized pezpallets for digital sovereignty.
+So the design is narrow on purpose. PezkuwiChain does not attempt to be a world computer. It
+attempts to be a **civil service that cannot be captured by whoever holds the most coins**,
+and it spends its architecture on that single problem.
+
+### 1.1 The stateless advantage
+
+A nation building institutions for the first time inherits no legacy system to migrate, no
+ministry to placate, and no incumbent to compensate. What is a disadvantage in every other
+respect is, here, a clean slate. Rules that established states must retrofit — a register
+that cannot be forged, an election whose count is public arithmetic, a budget that cannot
+be moved without a named authority — can be written into the foundation rather than bolted
+on afterwards.
+
+---
+
+## 2. Architecture
+
+PezkuwiChain is a relay chain with system chains attached to it. The relay provides shared
+security and finality; each system chain carries one function of the state and nothing else.
+This is not a scaling decision. It is a **separation-of-powers decision expressed as
+topology**: the chain that holds the register is not the chain that holds the money, and
+neither is the chain that produces blocks.
+
+| Chain | Id | Carries |
+|---|---|---|
+| **Pezkuwichain** (relay) | — | Consensus, finality, the validator session, cross-chain routing, and the HEZ escrow |
+| **Asset Hub** | 1000 | Every fund. PEZ, wHEZ and wUSDT. Staking and validator elections. |
+| **People** | 1004 | The citizen register, every office, the courts, trust, and the validator pool |
+| **Bridge Hub** | 1002 | Bridges to other consensus systems, including Ethereum |
+| **Coretime** | 1005 | Blockspace allocation |
+
+The relay schedules exactly two cores at genesis, one for the Asset Hub and one for People —
+the two chains a state cannot run without.
+
+### 2.1 The one door into the relay's root
+
+The relay chain has no `root` governance track. There is no referendum that can dispatch as
+root, and no collective that can. Root arrives from exactly one place: a message from the
+People chain, carried as `OriginKind::Superuser`, converted by a single origin converter
+that matches that chain's identifier and nothing else.
+
+This is the constitutional core of the design, and it is eleven lines of code. The consensus
+layer is subordinate to the civil layer, structurally, and no amount of stake on the relay
+can reverse the direction.
 
 ---
 
-## 2. Introduction
+## 3. Two electorates
 
-The emergence of blockchain technology has offered unprecedented opportunities to create decentralized, transparent, and secure digital infrastructures. However, most existing blockchain solutions are designed as general-purpose platforms, often failing to address the specific cultural, economic, and governance needs of distinct communities. PezkuwiChain was born from the vision of creating a dedicated digital state for the Kurdish nation, aiming to leverage the power of the blockchain to address long-standing challenges and build a foundation for a prosperous digital future. The mission is to serve the public by providing the Kurdish people with a secure and decentralized platform for financial services, digital identity, democratic governance, and education.
+The most consequential decision in this system is that **the franchise is split**, and the
+two halves count differently.
 
----
+### 3.1 The People chain — one citizen, one vote
 
-## 3. The Problem
+Referenda on the People chain are tallied by a citizen count. Support is measured as *ayes
+divided by the entire citizen roll*, not by tokens, and approval as ayes over ayes-plus-nays.
+The roll is the number of citizens in the register. A wallet holding a billion HEZ has
+exactly the weight of a wallet holding none: one, if it belongs to a citizen, and zero if it
+does not.
 
-Traditional financial and administrative systems often present significant barriers to entry, lack transparency, and are ill-suited to the unique needs of a globally dispersed yet culturally unified nation. The Kurdish people face distinct challenges that a sovereign digital infrastructure can address:
+Five tracks exist, each dispatching a different authority:
 
-- **Financial Exclusion:** A significant portion of the population lacks access to modern banking and financial services.
-- **Lack of Digital Sovereignty:** The absence of a unified, sovereign digital identity system complicates civic participation and access to services.
-- **Governance Gaps:** Centralized governance models can be opaque and lack mechanisms for broad, democratic participation.
-- **Economic Volatility:** National economies are often vulnerable to the volatility of external currencies.
-- **The Trust Deficit in Blockchain:** Existing consensus mechanisms fail to incorporate social trust and reputation.
-
----
-## 4. The Solution: PezkuwiChain Architecture
-
-PezkuwiChain is architected as a comprehensive solution for digital sovereignty. It is built using the **Pezkuwi SDK**, a state-of-the-art, modular framework forged from the battle-tested open-source Bizinikiwi framework.
-
-### 4.1. Our Technological Foundation
-Our choice of a modular, open-source framework provides PezkuwiChain with a robust and future-proof foundation. The core of this architecture is **Bizinikiwi**, a framework that separates the blockchain's core logic (Runtime) from its client-side functions (Client), allowing for forkless, on-chain upgrades.
-
-![System Architecture](system_architecture.png)
-*Figure 1: PezkuwiChain System Architecture*
-
-### 4.1.1. Technological Heritage & Independence
-PezkuwiChain did not begin in a vacuum. We laid our first stone upon **Polkadot SDK** — the open-source framework engineered by Parity Technologies and the Web3 Foundation, among the most rigorously battle-tested infrastructure ever written for decentralized systems. We are grateful for it, and we say so plainly. The open-source ideal exists precisely so that a stateless nation — with no treasury to commission an army of engineers, and no sovereign to grant it permission — can stand on solid ground and build something of its own. Polkadot gave us that ground, and we honor it.
-
-From there our paths diverged — deliberately, and in time, completely. What began as a fork has forged its own soul: its own framework (**Bizinikiwi**), its own SDK (**Pezkuwi SDK**), its own brand, governance, token economy, and chain identity. Today the entire stack lives in a single self-contained repository that builds from source with **zero dependency on any external registry** — because a sovereign chain must remain buildable and verifiable no matter what happens to any third-party platform.
-
-We preserve our origins in full. Every license, attribution, and record of change is kept in our `NOTICE` and `LICENSE` files, exactly as the Apache-2.0 and GPL-3.0 licenses intend — not as a footnote, but as a matter of honor. We took what was freely given, we gave thanks, and we made it our own. This is the open-source ideal working as it was meant to: not extraction, but inheritance; not imitation, but independence.
-
-### 4.2. Consensus Innovation: Trust-enhanced Nominated Proof-of-Stake (TNPoS)
-PezkuwiChain extends conventional Nominated Proof-of-Stake (NPoS) by integrating an on-chain reputation layer into validator selection and reward distribution. This mechanism, **TNPoS**, combines the economic security of NPoS with a social-reputation signal computed by the custom `pezpallet-trust`.
-
-**The Trust Score.** A citizen's trust score is computed by `pezpallet-trust::calculate_trust_score` from four component scores — staking, referral, education (*perwerde*), and community (*tiki*) — combined as a weighted sum that is then gated and scaled by staking:
-
-```
-weighted_sum = 100·staking + 300·(referral + perwerde + tiki)
-trust_score  = staking × weighted_sum / base
-```
-
-where `base` is the configurable `ScoreMultiplierBase`, set to **10,000** in the production People-chain runtime. An account with zero staking has a trust score of zero, regardless of its other components.
-
-| Component | Source pezpallet | Weight | Signal |
+| Track | Decision period | Confirms | For |
 |---|---|---|---|
-| `staking_score` | `pezpallet-staking-score` | 100 (also gate & multiplier) | Economic commitment and staking history |
-| `referral_score` | `pezpallet-referral` | 300 | Verified network growth contributed by the account |
-| `perwerde_score` | `pezpallet-perwerde` | 300 | On-chain education and certification credentials (*perwerde* = "education") |
-| `tiki_score` | community participation | 300 | Social-graph and engagement signal |
+| `root` | 28 days | 24 h | Anything on this chain |
+| `welati_election` | 14 days | 12 h | Electoral machinery |
+| `welati_admin` | 7 days | 3 h | Routine administration |
+| `citizenship_admin` | 14 days | 6 h | The register's own administration |
+| `qeyd_rules` | **90 days** | 7 days | The rules governing the register itself |
 
-Two design properties follow directly from this formula. First, **staking is the foundation**: trust is gated on economic commitment — zero stake yields zero trust — and stake also enters the formula multiplicatively, amplifying the entire score. Second, **contribution outweighs capital per unit**: referral, education, and community signals each carry three times the per-unit weight of staking (300 vs 100), rewarding verifiable contribution over capital alone, once the staking foundation is met.
+The last one is the notable entry. The parameters that decide who may vouch for a new
+citizen, how many people one citizen may vouch for, and what suspends that right, are held
+in a parameter store whose only administrator is a referendum on the ninety-day track. Not
+root. Not the court. Not the president. Changing the rules of admission takes three months
+of deliberation by the people already admitted, and there is no faster path.
 
-**Component Scores.** Each input to the trust score is itself computed on-chain by a dedicated pezpallet.
+### 3.2 The relay chain — stake, with conviction
 
-*Staking score* (`pezpallet-staking-score`) rewards both the size and the duration of a citizen's stake. A tiered amount score (by total HEZ staked) is multiplied by a duration factor:
+The relay uses conviction voting over HEZ. Turnout is measured against votable issuance,
+which deliberately excludes the escrow account holding the Asset Hub's mirror of the supply —
+140 million HEZ that exists on both sides of a teleport and must not be counted twice.
 
-| Staked (HEZ) | Amount score | | Stake duration | Multiplier |
+Eight tracks exist for network matters: whitelisted upgrades, staking administration, lease
+and auction administration, general administration, and the two cancellation tracks. There is
+no track for root, because root is not the relay's to give.
+
+### 3.3 The citizens' initiative
+
+Citizens may open a referendum without any office's involvement. One percent of the roll,
+recomputed live against the current register, backing a proposal within fourteen days, opens
+it on the track it names. The deposit is ten HEZ and the cooldown is thirty days.
+
+---
+
+## 4. Citizenship
+
+Citizenship is a non-transferable NFT in collection zero. Holding it is what makes an account
+a *welatî*, and every office, every vote, and every trust score is downstream of it.
+
+Admission has three steps and no administrator:
+
+1. **Apply.** The applicant reserves a one-HEZ deposit and registers an identity hash. The
+   hash is globally unique and is claimed at application time, so two applications cannot
+   describe the same person.
+2. **Vouch.** An existing citizen approves the referral. A citizen begins with five vouching
+   places and earns one more for every three that settle, to a ceiling of fifty. Vouching is
+   not free of consequence: a voucher whose referrals are revoked three or more times, and
+   whose revoked share passes twenty percent, is suspended.
+3. **Confirm.** The applicant confirms, the NFT is minted, and the roll increases by one.
+
+If nobody vouches within ninety days, the founding account may admit the applicant and
+becomes their referrer of record. The fallback exists so that having no connections is not
+a permanent bar, and it is recorded rather than hidden.
+
+---
+
+## 5. The institutions
+
+Every office in PezkuwiChain is a *tiki* — an entry in the register attached to an account.
+Fifty-six exist. What matters is not the list but the four ways a tiki is obtained:
+**automatic** (citizenship itself), **elected**, **earned** (by contribution, at published
+thresholds), and **appointed**. An office may never be granted by the same route that grants
+a community badge, and the code refuses it.
+
+### 5.1 Serok — the President
+
+One seat, four years, elected by every citizen. To stand, a candidate needs an approved
+identity, a trust score of at least 250, a thousand endorsements each from a citizen with a
+trust score of at least 40, and a hundred-HEZ deposit. Nobody may serve more than two
+consecutive terms.
+
+The election requires fifty percent turnout — waived only after one failed attempt, so that
+a boycott delays rather than vetoes. A candidate wins outright with more than half the valid
+votes; otherwise the top two go to a runoff whose campaign is one third the length.
+
+### 5.2 Meclis — the Parliament
+
+Two hundred and one seats, four years, elected across ten districts. A candidate needs a
+trust score of at least 100 and a hundred endorsements, and the election requires forty
+percent turnout.
+
+**The first parliament sits for half a term.** This is deliberate: it staggers the
+legislature against the presidency permanently, so that no single election ever renews the
+whole state at once.
+
+### 5.3 Serokê Meclisê — the Speaker
+
+Elected, but only from among sitting members of parliament, and requiring a trust score of
+at least 200. The Speaker holds no term of their own — the office is vacated whenever a new
+house is seated, because a speaker without a house is not a speaker.
+
+### 5.4 Dîwan — the Constitutional Court
+
+Eleven seats, nine years — the longest term in the system, and longer than any body that
+appoints to it.
+
+**Six are elected by the Parliament and five are appointed by the President.** Neither can
+seat a majority. The split is not written as "five"; it is derived, as *total minus elected*,
+so that changing the size of the court cannot silently change the balance between the two
+powers that fill it.
+
+Elected members need a trust score of at least 275. Appointed members must already hold one
+of fourteen qualifying professional tikis — jurist, judge, prosecutor, engineer, cyber-security
+specialist, network operator, economist, accountant, planner, electoral officer, statistician,
+auditor, scholar, or cultural custodian. A president may choose, but only from people the
+register already recognises as qualified.
+
+**There is no call to dismiss a member of the court.** The absence is the point.
+
+The court is not decorative. Two thirds of it constitutes the *register authority*, which
+governs the citizen register itself, administers the validator pool, and can strip an elected
+or earned office. It is also the fraud origin for education credentials and, together with
+the council, the slashing origin for staking scores.
+
+### 5.5 Serokwezîran — the Prime Minister, and the cabinet
+
+The President nominates; the Parliament confirms. Neither alone suffices, and either may end
+it. Once confirmed, the Prime Minister appoints and dismisses the cabinet alone — seven named
+ministries (finance, defence, justice, education, health, infrastructure, culture) plus
+general ministers without portfolio.
+
+Two ministries carry spending authority, and they are the subject of Section 8.
+
+### 5.6 The civil service
+
+Twenty-four professional offices, from judge and prosecutor to notary, registrar, tax
+collector, ambassador and teacher. Any minister or the President may nominate; nobody may
+nominate themselves; every nomination needs a trust score of at least 75 and lapses in seven
+days.
+
+**Five of the twenty-four cannot be seated by the President alone** — judge, treasurer,
+cyber-security specialist, inspector, and ambassador require parliamentary confirmation. And
+the list of which five is itself amendable **only by the Parliament**. The executive cannot
+shorten the list of offices it does not control.
+
+---
+
+## 6. Trust
+
+Trust is a single number between zero and a thousand, recomputed per citizen, and it is the
+currency of standing in this system — for candidacy, for endorsement, for the validator pool,
+and for the citizens' share of the reward pool.
+
+It is composed of four measured parts, each normalised against its own maximum and weighted:
+
+| Part | Weight | Measures | Maximum |
+|---|---|---|---|
+| **Perwerde** (education) | 30 | Points from completed, certified courses | 50,000 |
+| **Referral** | 25 | Citizens vouched for, net of revocations | 500 |
+| **Tiki** | 25 | Community and contribution badges held | 1,000 |
+| **Staking** | 20 | Size and duration of stake | 100 |
+
+The weights sum to one hundred, and the runtime asserts it.
+
+Two properties follow from the arithmetic, and both are intentional.
+
+**Zero stake is zero trust.** The staking part is not merely weighted; it is a gate. A
+citizen with no economic exposure scores zero however educated or well-connected. Standing
+requires something at risk.
+
+**But capital is the smallest component.** Stake carries the lowest weight of the four, and
+its own scale saturates: the amount tiers stop rewarding size above 750 HEZ, and the largest
+remaining multiplier comes from *holding for twelve months*, not from holding more. Beyond a
+modest threshold, patience buys more standing than wealth does.
+
+**Offices are excluded.** Holding an office adds nothing to the tiki component — the code
+filters offices out before summing. Otherwise power would compound: an office would raise
+trust, trust would qualify for more offices, and the register would drift toward whoever
+already held it.
+
+---
+
+## 7. TNPoS — the validator pool
+
+Nominated proof-of-stake elects the wealthiest set that nomination can assemble. Over time
+that is the same set. **TNPoS breaks the correlation by construction**: it fills the committee
+from nine independent strata, and gives each stratum the same number of seats regardless of
+how much stake sits behind it.
+
+### 7.1 The nine strata
+
+| Stratum | Admits a citizen who has |
+|---|---|
+| **Stake** | Any staking score above zero |
+| **Meclis** | Any trust, standing on the parliamentary path |
+| **Dîwan** | Any trust, standing on the judicial path |
+| **Perwerde** | Any education score above zero |
+| **Tiki** | Any community score above zero |
+| **Welatî lottery** | Any trust — the open seat of ordinary citizenship |
+| **Geography** | Any trust, on regional distribution |
+| **Tenure** | Any trust, on length of service |
+| **Infrastructure** | Any trust, on operational contribution |
+
+Each stratum seats **three** validators. A full committee is **twenty-seven**.
+
+### 7.2 Membership is a gate, not a ranking
+
+This is the part that most distinguishes TNPoS from anything score-weighted. Inside a
+stratum, a higher trust score buys **no advantage whatsoever**. The score decides whether you
+are in the pool; a uniform random draw decides whether you sit. The wealthiest citizen and
+the barely-qualified citizen have the same chance in the same stratum.
+
+The draw is seeded by commit–reveal across the era: commitments in the first half, reveals in
+the second, each era's seed derived from the previous one and the revealed preimage. No
+single participant chooses the seed, and the seed for an era does not exist until that era
+is underway.
+
+### 7.3 The floors that refuse to seat a weak committee
+
+A stratum with fewer than **fifty** eligible members is not seated at all, and **its seats are
+not redistributed**. A committee is refused if it draws from fewer than five strata, or has
+fewer than fifteen members, or more than sixty-four.
+
+Refusing to fill a committee is a safer failure than filling it from whoever happens to be
+available, and the code treats it that way: a thin field produces a smaller committee, never
+a captured one.
+
+### 7.4 What the committee needs to act
+
+| Committee | Quorum | Halt | Fork |
+|---|---|---|---|
+| 27 (full) | 19 | 9 | 11 |
+
+Quorum is two thirds plus one. The halt threshold is the number who can stop the chain by
+abstaining; the fork threshold is the number who would have to collude to split it. Both are
+derived from the committee size rather than fixed, so a smaller committee is honest about
+being easier to disrupt.
+
+### 7.5 Misconduct costs standing, and separately costs money
+
+TNPoS itself touches no funds. Its sanction is exclusion: unavailability bans a validator for
+twenty-four eras, equivocation for three hundred and sixty. A ban may only ever be extended,
+never shortened, and removal from the committee is immediate.
+
+Economic slashing is the Asset Hub's business, and **nothing is burned**. Slashed HEZ is
+resolved to the treasury. Burning an inflating token would hand the confiscated value to
+everyone still holding it — a quiet dividend paid by the victim to the bystanders. A penalty
+should become something the state can spend.
+
+---
+
+## 8. Two tokens
+
+HEZ and PEZ are not two flavours of the same thing. They answer to different authorities,
+live on different chains, and behave in opposite directions.
+
+### 8.1 HEZ — the currency
+
+The native token of the relay, the Asset Hub and People. One HEZ is 10¹² TYR. It pays fees,
+it secures the network, and it inflates.
+
+**Two hundred million HEZ exist at genesis**, and the split is:
+
+| Allocation | Amount | Held on | By |
+|---|---|---|---|
+| Presale | 100,000,000 (50%) | Asset Hub | A keyless pot |
+| Treasury | 40,000,000 (20%) | Relay | The treasury account |
+| Airdrop | 40,000,000 (20%) | Asset Hub | A keyless pot |
+| Founder | 20,000,000 (10%) | Relay | The founding account |
+
+The relay mints its own sixty million plus a hundred and forty million of **escrow** — the
+mirror of what the Asset Hub holds, so that a teleport moves a token rather than creating
+one. The runtime carries a test that builds the genesis and asserts owned plus escrow equals
+exactly two hundred million.
+
+**Inflation is bounded and its base is fixed.** The rate is a governance parameter, eight
+percent by default, hard-capped at ten percent by a constant no parameter can exceed. It is
+applied to a *fixed base of two hundred million*, not to total issuance — so the emission
+does not compound, and at the default it is sixteen million HEZ a year, of which fifteen
+percent goes to the treasury and the rest to those securing the chain. Only the Treasurer, an
+office on the People chain, may change the rate — never HEZ holders, and never by more than
+one percentage point at a time, no more often than every ninety days.
+
+### 8.2 PEZ — the franchise
+
+An asset on the Asset Hub, asset id one, **five billion units, fixed forever**. No inflation,
+no mint path, no burn path.
+
+Its owner, issuer, admin and freezer are all one keyless account derived from a pallet
+identifier. **No seed produces it, so nobody holds it.** PEZ cannot be minted, force-frozen,
+or destroyed, because there is no account that could sign it. Beyond that, a call filter
+refuses `mint`, `burn`, `force_create`, `force_asset_status` and `start_destroy` for asset one
+arriving over a cross-chain message — so even the relay's superuser cannot reach it.
+
+| Allocation | Amount | Held by |
+|---|---|---|
+| Treasury + rewards pool | 4,812,500,000 (96.25%) | Keyless treasury pot |
+| Founder | 93,750,000 (1.875%) | The founding account |
+| Presale | 93,750,000 (1.875%) | Presale custody |
+
+### 8.3 The halving
+
+The rewards pool is not distributed by decision. It is released by arithmetic, monthly, and
+the amount halves every forty-eight releases — approximately four years.
+
+The first period releases half the pool across forty-eight months: about **50,130,208 PEZ**
+per month. Release forty-eight pays half that, release ninety-six half again, and the
+schedule reaches zero at the hundred and twenty-eighth period. Each release is derived from
+the release index rather than accumulated, so no drift is possible and no missed release can
+be double-paid.
+
+Every release splits the same way: **seventy-five percent to the incentive pot** (the
+citizens' share, distributed by trust) and **twenty-five percent to the government pot** (the
+state's budget). Nobody signs this. It happens on block initialisation.
+
+---
+
+## 9. The four funds, and who may move them
+
+This is the section the architecture exists for. Every fund is on the Asset Hub. Every
+authority is on the People chain. Read each row as a sentence: *this office proposes, this
+body decides, this vault pays.*
+
+### 9.1 The map
+
+| Fund | Token | Who may propose | Who decides | How it pays |
 |---|---|---|---|---|
-| ≤ 100 | 20 | | ≥ 12 months | ×2.0 |
-| ≤ 250 | 30 | | 6–11 months | ×1.7 |
-| ≤ 750 | 40 | | 3–5 months | ×1.4 |
-| 751+ | 50 | | 1–2 months | ×1.2 |
-| | | | < 1 month | ×1.0 |
+| **Treasury** | HEZ | Network governance, by spender track, at five tiers from 250 to 1,000,000 HEZ | The referendum on that track | Payout within 30 days |
+| **Airdrop pot** | HEZ | **The Prime Minister** | **The President** — and the **Treasurer** as a second signature above 1,000,000 HEZ, with a seven-day delay | Payout within 30 days |
+| **Presale pot** | HEZ | **The Finance Minister** | **The Parliament**, by simple majority | Payout within 365 days, after the lock |
+| **Government pot** | PEZ | **The Finance Minister**, bounded by the approved budget | The Parliament, when it passed the budget | Immediate transfer |
+| **Incentive pot** | PEZ | No proposal — a citizen claims | The trust score, arithmetically | Immediate transfer |
 
-`staking_score = amount_score × duration_multiplier`  — zero if the citizen has no stake.
+### 9.2 What the vaults refuse
 
-*Referral score* (`pezpallet-referral`) rewards verified network growth, counting only *good* referrals (total minus those later revoked) on a saturating tiered curve capped at 500, less any accumulated penalty:
+Three of the five vaults name **exactly one chain** they will accept instruction from: the
+People chain. Not the relay. Not root. Not a key. The airdrop pot, the presale pot, and both
+PEZ pots are configured with an origin that matches the People chain's location and has no
+root arm at all.
 
-```
-good = total_referrals − revoked_referrals
-base = good × 10              for 1–10     (→ 10…100)
-     = 100 + (good − 10) × 5  for 11–50    (→ 105…300)
-     = 300 + (good − 50) × 4  for 51–100   (→ 304…500)
-     = 500                    for 101+
-referral_score = base − penalty
-```
+The consequence is worth stating plainly: **the relay's superuser cannot spend the airdrop,
+the presale, or either PEZ pot.** It can halt the chain, it can upgrade the runtime, it can
+reject a proposed spend — but it cannot pay itself. To move that money it would have to
+become the People chain, and the People chain is a register of elected offices.
 
-*Education score* (`pezpallet-perwerde`; *perwerde* = "education") is the sum of points earned across all **completed** courses, each capped by `MaxPointsPerCourse` (**1,000** points):
+The HEZ treasury is the exception and is documented as such: root can spend it without limit.
+It is the fund of last resort and it is the one place where the network's own governance,
+rather than the state's, holds the purse.
 
-`perwerde_score = Σ points_earned`  (over completed course enrollments)
+### 9.3 A payment, end to end
 
-*Community score* (`pezpallet-tiki`) is the sum of fixed bonuses attached to the role and contribution badges ("tikis") a citizen holds; each tiki type carries a protocol-defined value:
+The airdrop path shows the whole shape:
 
-`tiki_score = Σ bonus(tiki)`  (over the citizen's tikis)
+1. The **Prime Minister** proposes an amount and a beneficiary.
+2. The **President** approves. If the amount exceeds one million HEZ, the **Treasurer** must
+   also sign, and the payment cannot execute for seven days after the last signature — a
+   cooling period proportional to the size.
+3. **Anyone** may then execute. Execution is permissionless because every discretionary
+   decision has already been made and recorded; what remains is arithmetic, and arithmetic
+   should not wait on a signature.
+4. The People chain sends a message to the Asset Hub naming the pot, the beneficiary and the
+   amount. The pot's origin check confirms the sender is the People chain.
+5. The beneficiary collects, within the payout window.
 
-The composite trust score is cached per account in `pezpallet-trust` (alongside a network-wide `TotalActiveTrustScore`) and consumed by other modules through the `TrustScoreProvider` interface — most notably the reward module (`pezpallet-pez-rewards`), which weights PEZ reward distribution by trust, and the governance layer.
+Every step is an event. The proposal names its proposer, the approval names its approver, and
+the amount is on the wire in the clear.
 
-### Computation Model and State Efficiency
+### 9.4 The budget
 
-Trust scores are maintained through a hybrid of event-driven updates and bounded periodic reconciliation, rather than by a naïve full-population recomputation. When an account's underlying data changes — a new confirmed referral, a completed course, or a staking update — the corresponding component pezpallet (`pezpallet-staking-score`, `pezpallet-referral`, `pezpallet-perwerde`, `pezpallet-tiki`) notifies `pezpallet-trust` via a callback (`on_score_component_changed`), which immediately recomputes and caches the trust score for that single account. A periodic reconciliation pass also exists, but it is explicitly bounded: each cycle processes only an optimally-sized batch of accounts and persists a resume cursor (`LastProcessedAccount`, with O(1) `iter_from` resume), so the population is swept incrementally across blocks — no single block ever processes the entire user base.
+The government pot is not spent proposal by proposal. The Parliament passes a budget, which
+credits an approved figure; the Finance Minister then spends against that figure and cannot
+exceed it. This is the ordinary shape of public finance, and it is enforced by a bound rather
+than by an audit after the fact.
 
-Component scores are derived on read from their source data rather than stored as separate state: the education score is computed at query time from a citizen's completed course enrollments, and the referral score from accumulated referrer statistics. Only the composite trust score is cached. As a result, the trust system's persistent state grows with genuine activity, not with raw population. A dormant account produces no recurring *write* cost: the bounded sweep still visits it, but because its score is unchanged it triggers no state mutation — the update path writes to chain state only when `old_score != new_score`.
+### 9.5 The citizens' share
 
-Large or content-heavy data is never placed on-chain. Course materials are referenced by IPFS content links (`content_link`); only the reference and minimal scoring metadata live in chain state. The citizenship layer is privacy-preserving by construction: no personal data is stored on-chain — only an `H256` commitment hash derived off-chain from a citizen's identity. Together, these keep the People-chain state footprint proportional to genuine network activity rather than to the total number of registered citizens.
+The incentive pot is distributed per epoch, weighted by trust: a citizen's share is their
+trust score over the network's total active trust, times the epoch's pool. Ten percent of each
+epoch is reserved for holders of role badges. Unclaimed rewards are clawed back after a week
+so that the pool cannot silently drain into abandoned accounts.
 
-![TNPoS Flow](tnpos_consensus_flow.png)
-*Figure 2: TNPoS Consensus Flow*
-
----
-
-## 5. Dual-Token Economic Model
-
-PezkuwiChain introduces an innovative dual-token economic model.
-
-![Dual-Token Economy](dual_token_economy.png)
-*Figure 3: Dual-Token Economy Flow*
-
-### 5.1. HEZ: The Currency of Security
-HEZ is the native token used for staking, transaction fees, and network security. It is inflationary: staking rewards are funded by era-based inflation bounded between **2.5% and 10%** per annum (`MinInflation` / `MaxInflation`), perpetually incentivizing staking participation.
-
-### 5.2. PEZ: The Currency of Governance
-PEZ is a fixed-supply token — **5,000,000,000 units**, fixed at genesis — used for trust-based rewards and as the backing of governance. Of total supply, **76% (3.8 billion PEZ)** forms the rewards pool, released on a **synthetic halving schedule** managed by `pezpallet-pez-treasury`: funds are released monthly to the incentive and government pots, and the monthly release amount halves at the start of every **48-month period** (`HALVING_PERIOD_BLOCKS` = 20,736,000 blocks, ~4 years at 6-second blocks).
-
-Released incentive funds are distributed by `pezpallet-pez-rewards` on a per-epoch basis, **weighted by trust rather than holdings**: each citizen's share is `user_trust_score / total_active_trust_score × epoch_pool`, with 10% of each epoch's pool reserved for role-badge (NFT) holders and a one-week claim window after which unclaimed rewards are clawed back. Rewards therefore flow to verifiable contribution and trust, consistent with the TNPoS design.
-
-![PEZ Halving Schedule](pez_halving_timeline.png)
-*Figure 4: PEZ Token Halving Schedule*
-
----
-## 6. Core Features & Custom Pezpallets
-
-The true power of PezkuwiChain lies in the **Pezkuwi SDK**, a collection of **14 custom pezpallets** that provide the tools for digital nation-building.
-
-- **Economic Pallets (on Asset Hub):** `pezpallet-pez-treasury`, `pezpallet-token-wrapper`.
-- **Social & Identity Pallets (on People Chain):** `pezpallet-identity-kyc`, `pezpallet-trust`, `pezpallet-referral`, `pezpallet-perwerde`, `pezpallet-tiki`, `pezpallet-society`.
-- **Governance & Staking Pallets:** `pezpallet-welati`, `pezpallet-pez-rewards`, `pezpallet-staking-score`, `pezpallet-validator-pool`.
+No office signs a citizen's reward. It is claimed, and the arithmetic is the authority.
 
 ---
 
-## 7. Technical Specifications & 8. Network Architecture
-PezkuwiChain is a decentralized network of validators, nominators, and full nodes, secured by **Nominated Proof-of-Stake (NPoS)** with validators elected through a Sequential Phragmén algorithm. It uses a hybrid consensus: **BABE** for block production — a fixed **6-second block time** (`MILLISECS_PER_BLOCK = 6000`) — and **GRANDPA** for deterministic, provable finality. The runtime is a Wasm binary, enabling forkless on-chain upgrades.
+## 10. Security
+
+**At the implementation layer**, the runtime is Rust compiled to WebAssembly, and upgrades are
+forkless — a defect is patched by a runtime upgrade, not by asking the network to migrate.
+
+**At the consensus layer**, block production and finality are separate mechanisms, so that a
+chain that stops finalising still produces blocks and a chain that stops producing does not
+finalise garbage. Equivocation and disputes are reported on-chain.
+
+**At the economic layer**, slashing removes stake, and the removed stake becomes treasury
+rather than vanishing.
+
+**At the civil layer** — the one this design adds — misconduct costs standing. A banned
+validator loses the committee seat, the reward weight, and the candidacy threshold that trust
+confers. Because trust is earned over years and cannot be bought, it is the one thing an
+attacker cannot re-acquire quickly.
+
+**And structurally**, the separations are real: the money is on a chain that only accepts
+instruction from the register; the register is governed by a court that neither the president
+nor the parliament can seat alone; the rules for admission to the register can only be changed
+by a ninety-day referendum of the people already in it; and the relay's root can be reached
+from exactly one place.
 
 ---
 
-## 9. Governance Model & 10. Security
-Governance is conducted on-chain through the `welati` pezpallet as a **citizen-based electoral system — not a token-weighted vote**. Participation requires verified citizenship (a KYC-approved identity), and each citizen casts one vote per election. Major elections use strict **one-citizen-one-vote** (equal weight); for other ballots, vote weight is derived from trust score and **bounded to a 1–10× range** (`trust_score / 100`, clamped), so influence reflects reputation without being dominated — and is **never a function of token balance**. Candidacy is itself trust-gated: standing for an elected office requires a minimum trust score, and endorsements require endorsers to hold trust above a threshold. Citizens elect officeholders and representative bodies and vote on proposals; in keeping with the TNPoS principle, governance weight derives from citizenship and trust, never from capital. Security is multi-layered. At the implementation layer, the runtime is written in memory-safe Rust on the battle-tested Bizinikiwi framework, and forkless on-chain upgrades allow vulnerabilities to be patched without a hard fork. At the consensus layer, validator misbehaviour — equivocation and disputes — is penalized by **economic slashing** and **automatic validator disabling** (`AlwaysDisableForSlashGreaterThan`). At the social layer, TNPoS adds reputational disincentives: a bad actor forfeits the trust-weighted rewards and governance standing that the trust score confers.
+## 11. Heritage and independence
+
+PezkuwiChain is built on the Polkadot SDK, and says so.
+
+The framework — its consensus, its cross-chain messaging format, its runtime machinery — is
+the work of Parity Technologies and the wider Polkadot community, released as free software.
+That inheritance is not incidental; it is the reason a small institute could build a state
+layer at all rather than spending a decade on a consensus engine. The debt is acknowledged in
+every file: four thousand eight hundred and thirty source files carry a copyright line naming
+Parity Technologies alongside the Dijital Kurdistan Tech Institute, and the files this project
+has not modified carry Parity's alone.
+
+What is ours is the layer above: the citizen register, the offices and their elections, the
+courts, the trust computation, the validator pool, the treasuries and the authority chains
+that reach them. Those are original work, and they are what this document describes.
+
+Independence is technical as well as legal. PezkuwiChain is not a Polkadot parachain; it is a
+sovereign relay chain with its own validators, its own token, and its own governance. It
+shares an ancestry with Polkadot in the way two states may share a legal tradition — visibly,
+and without either governing the other.
 
 ---
-## 11. Roadmap & 12. Use Cases
-PezkuwiChain advanced through a disciplined, phased rollout: Alpha and Beta testnets, the Zagros staging network, and a production Mainnet. With the base layer in production, development focus is on ecosystem growth — a treasury-funded grants program, developer onboarding, and the wallet, exchange, and citizenship applications. Target use cases span Digital Identity, on-chain Governance, Decentralized Finance, and Education, each served by dedicated pezpallets.
+
+## 12. Licence and legal position
+
+The project is free software, multi-licensed in the pattern its heritage requires:
+
+| Layer | Licence |
+|---|---|
+| Framework libraries | Apache-2.0 |
+| Node and runtime | GPL-3.0-or-later with the Classpath exception |
+| Documentation examples | MIT-0 |
+| Project templates | Unlicense |
+
+The workspace default is GPL-3.0-or-later with the Classpath exception, and the repository
+carries the full text of each licence it uses. Copyright is jointly attributed to Parity
+Technologies (UK) Ltd. and the Dijital Kurdistan Tech Institute.
+
+PezkuwiChain is a public infrastructure project of the **Dijital Kurdistan Tech Institute**.
+HEZ and PEZ are utility tokens of a functioning network. They are not securities, not shares,
+and not claims on the assets or revenue of any entity. Nothing in this document is an offer,
+a solicitation, or investment advice.
 
 ---
 
-## 13. Team & 14. Ecosystem
-PezkuwiChain is an initiative led by the Digital Kurdistan Tech Institute, supported by a global community of contributors. The architecture is designed for interoperability within the broader blockchain ecosystem.
+## 13. Appendix A — Glossary
+
+| Term | Meaning |
+|---|---|
+| **welatî** | Citizen; the holder of a citizen NFT |
+| **tiki** | An office, role or badge recorded against a citizen |
+| **Serok** | President |
+| **Meclis** | Parliament |
+| **Serokê Meclisê** | Speaker of the Parliament |
+| **Dîwan** | Constitutional Court |
+| **Serokwezîran** | Prime Minister |
+| **Wezîr** | Minister |
+| **Wezîrê Darayiyê** | Minister of Finance |
+| **Xezinedar** | Treasurer |
+| **perwerde** | Education |
+| **qeyd** | The register, and the rules governing it |
+| **teyrchain** | A system chain secured by the relay |
+| **bizinikiwi** | The framework layer |
+| **HEZ** | The native currency; 1 HEZ = 10¹² TYR |
+| **TYR** | The smallest unit of HEZ |
+| **PEZ** | The fixed-supply asset backing the citizens' reward pool and the state budget |
 
 ---
-## 15. Legal & 16. Conclusion
-The project operates under the Kurdistan Talent Institute License. It is a utility-focused platform, not an investment vehicle. PezkuwiChain represents a paradigm shift, providing a foundational layer for a new digital state, built on the principles of trust, transparency, and sovereignty.
 
----
-## 17. References
+## 14. Appendix B — Figures at a glance
 
-### Academic and Technical Papers
-1.  **Polkadot: Vision for a Heterogeneous Multi-Chain Framework** - Dr. Gavin Wood, 2016.
-2.  **BABE: Blind Assignment for Blockchain Extension** - Web3 Foundation Research.
-3.  **GRANDPA: A Byzantine Finality Gadget** - Web3 Foundation Research.
-4.  **Nominated Proof-of-Stake (NPoS)** - Web3 Foundation Documentation.
-5.  **XCM: The Cross-Consensus Message Format** - Polkadot Wiki.
-6.  **Substrate: A Blockchain Framework for a Multichain Future** — Parity Technologies. *(PezkuwiChain's Bizinikiwi framework is a renamed, independently-maintained derivative of Substrate; see the project `NOTICE` file.)*
-
-### Project Resources
-1.  **PezkuwiChain GitHub Repository** - `https://github.com/pezkuwichain/pezkuwi-DKS`
-2.  **pezpallet-pez-treasury Source Code** - `pezcumulus/teyrchains/pezpallets/pez-treasury`
-3.  **pezpallet-pez-rewards Source Code** - `pezcumulus/teyrchains/pezpallets/pez-rewards`
-4.  **pezpallet-trust Source Code** - `pezcumulus/teyrchains/pezpallets/trust`
-
----
-## 18. Contact & Resources
-
-### Official Channels
-*   **Website:** `https://pezkuwichain.io`
-*   **GitHub:** `https://github.com/pezkuwichain/pezkuwi-DKS`
-*   **Documentation:** `https://docs.pezkuwichain.io`
-*   **Block Explorer:** `https://explorer.pezkuwichain.io`
-
-### Email Contacts
-*   **General Inquiries:** `info@pezkuwichain.io`
-*   **Technical Support:** `tech@pezkuwichain.io`
-*   **Institutional Relations:** `gov@pezkuwichain.io`, `admin@pezkuwichain.io`
-
-### Developer Resources
-*   **Developer Portal:** `https://developers.pezkuwichain.io`
-*   **API Documentation:** `https://api.pezkuwichain.io/docs`
-*   **Testnet Faucet:** `https://faucet.pezkuwichain.io`
-*   **Grants Program:** `https://grants.pezkuwichain.io`
-
----
-## 19. Appendix A: Glossary
-
-- **BABE (Blind Assignment for Blockchain Extension):** The block production mechanism that randomly assigns slots to validators.
-- **Teyrchain:** The Pezkuwi SDK term for a parachain; a blockchain that connects to a relay chain for shared security.
-- **Era:** A period in the staking system (typically ~24 hours) after which HEZ staking rewards are calculated.
-- **Epoch:** A longer period (432,000 blocks, ~30 days) used for PEZ reward distribution.
-- **Finality:** The guarantee that a block cannot be reverted. GRANDPA provides finality for PezkuwiChain.
-- **FRAME:** The framework used for building blockchain runtimes with modular pallets.
-- **HEZ:** The native inflationary token of PezkuwiChain, used for staking, transaction fees, and network security.
-- **NPoS (Nominated Proof-of-Stake):** The consensus mechanism where nominators elect validators.
-- **Pezpallet:** A modular component in the Bizinikiwi runtime that provides specific functionality.
-- **PEZ:** The fixed-supply governance token of PezkuwiChain (5 billion total), used for governance and rewards.
-- **TNPoS (Trust-enhanced Nominated Proof-of-Stake):** PezkuwiChain's novel consensus mechanism that integrates trust scores.
-- **Trust Score:** A reputation metric calculated by `pezpallet-trust`.
-- **Wasm (WebAssembly):** The portable binary instruction format used for the PezkuwiChain runtime, enabling forkless upgrades.
-- **welati:** The governance pezpallet for PezkuwiChain. The name means "citizen" in Kurdish.
-- **perwerde:** The education and certification pezpallet. The name means "education" in Kurdish.
-- **XCM (Cross-Consensus Messaging):** A messaging format for communication between different consensus systems.
-
----
-## 20. Appendix B: Developer Resources
-
-### Getting Started
-**Node Setup:**
-```bash
-# Clone the repository
-git clone https://github.com/pezkuwichain/pezkuwi-DKS.git
-cd pezkuwi-DKS
-# Compile the node
-cargo build --release
-# Run a development node
-./target/release/pezkuwi-node --dev
-```
-
-### SDKs & Libraries
-**JavaScript/TypeScript:**
-```bash
-npm install @pezkuwichain/api
-```
-```typescript
-import { ApiPromise, WsProvider } from '@pezkuwichain/api';
-const provider = new WsProvider('wss://rpc.pezkuwichain.io');
-const api = await ApiPromise.create({ provider });
-// Query the trust score
-const trustScore = await api.query.trust.trustScores(accountId);
-```
-
-### Community Support
-*   **Developer Forum:** `https://forum.pezkuwichain.io`
-*   **Discord #developers:** `https://discord.gg/pezkuwichain`
+| | |
+|---|---|
+| HEZ genesis supply | 200,000,000 |
+| HEZ inflation, default / ceiling | 8% / 10% of a fixed 200M base |
+| PEZ supply | 5,000,000,000, fixed |
+| PEZ halving period | 48 monthly releases (~4 years) |
+| PEZ release split | 75% citizens / 25% state |
+| Presidential term | 4 years, maximum 2 consecutive |
+| Parliamentary seats / term | 201 / 4 years (first term halved) |
+| Constitutional Court | 11 seats — 6 elected, 5 appointed — 9 years |
+| Register-rules referendum | 90-day decision period |
+| Citizens' initiative threshold | 1% of the roll |
+| TNPoS committee | 9 strata × 3 seats = 27 |
+| TNPoS quorum / halt / fork | 19 / 9 / 11 |
+| Minimum eligible per stratum | 50 |

@@ -74,7 +74,7 @@ popd
 
 # Replace Parity's CI files, that we have overwritten in our fork, to run our own CI
 rm -rf .github
-git remote -v | grep -w parity || git remote add parity https://github.com/pezkuwichain/pezkuwi-sdk
+git remote -v | grep -w parity || git remote add parity https://github.com/pezkuwichain/pezkuwi-DKS
 git fetch parity master
 git checkout parity/master -- .github
 git add -- .github

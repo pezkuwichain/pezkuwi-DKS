@@ -14,7 +14,7 @@ error: use of deprecated constant `pezpallet::RuntimeEvent::_w`:
                pub trait Config: pezframe_system::Config<RuntimeEvent: From<Event<Self>>> { }.
 
                For more info see:
-                   <https://github.com/pezkuwichain/pezkuwi-sdk/issues/270>
+                   <https://github.com/pezkuwichain/pezkuwi-DKS/issues/270>
   --> tests/pezpallet_ui/event_deprecated_runtime_event.rs:26:8
    |
 26 |         type RuntimeEvent: IsType<<Self as pezframe_system::Config>::RuntimeEvent> + From<Event<Self>>;

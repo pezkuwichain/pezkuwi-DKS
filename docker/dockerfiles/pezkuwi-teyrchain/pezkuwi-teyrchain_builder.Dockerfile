@@ -1,4 +1,4 @@
-# This file is sourced from https://github.com/pezkuwichain/pezkuwi-sdk/blob/master/docker/dockerfiles/pezkuwi-teyrchain/pezkuwi-teyrchain_builder.Dockerfile
+# This file is sourced from https://github.com/pezkuwichain/pezkuwi-DKS/blob/master/docker/dockerfiles/pezkuwi-teyrchain/pezkuwi-teyrchain_builder.Dockerfile
 # This is the build stage for pezkuwi-teyrchain. Here we create the binary in a temporary image.
 FROM docker.io/paritytech/ci-linux:production as builder
 
@@ -14,8 +14,8 @@ LABEL io.parity.image.type="builder" \
     io.parity.image.authors="devops-team@parity.io" \
     io.parity.image.vendor="Parity Technologies" \
     io.parity.image.description="Multistage Docker image for pezkuwi-teyrchain" \
-    io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-sdk/blob/${VCS_REF}/docker/dockerfiles/pezkuwi-teyrchain/pezkuwi-teyrchain_builder.Dockerfile" \
-    io.parity.image.documentation="https://github.com/pezkuwichain/pezkuwi-sdk/tree/master/pezcumulus"
+    io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-DKS/blob/${VCS_REF}/docker/dockerfiles/pezkuwi-teyrchain/pezkuwi-teyrchain_builder.Dockerfile" \
+    io.parity.image.documentation="https://github.com/pezkuwichain/pezkuwi-DKS/tree/master/pezcumulus"
 
 COPY --from=builder /pezcumulus/target/release/pezkuwi-teyrchain /usr/local/bin
 

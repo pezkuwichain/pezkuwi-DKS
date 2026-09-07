@@ -52,8 +52,17 @@ pub const PROOF_SIZE_THRESHOLD: u64 = 33;
 /// The default XCM version to set in genesis config.
 pub const SAFE_XCM_VERSION: u32 = xcm::prelude::XCM_VERSION;
 
-// (trust-backed) Asset registered on AH and reserve-transferred between Teyrchain and AH
-pub const RESERVABLE_ASSET_ID: u32 = 1;
+// (trust-backed) Asset registered on AH and reserve-transferred between Teyrchain and AH.
+//
+// 1985 rather than 1, which is where the mirror left it. On this fork the Asset Hub runtime
+// reads `PezAssetId = 1`, so id 1 on any Asset Hub is PEZ -- and a fixture that creates it as
+// a keyring-owned, non-sufficient test asset does not shadow PEZ, it *is* PEZ, configured
+// wrongly. Every reserve-transfer test was moving the governance token, and no test could
+// reach the real one. Kept next to `USDT_ID` so the two fixture assets read as a pair.
+//
+// This constant is duplicated in the Penpal runtime's `xcm_config`, which builds the location
+// this id is addressed by; the two must move together.
+pub const RESERVABLE_ASSET_ID: u32 = 1985;
 // ForeignAsset registered on AH and teleported between Penpal and AH
 pub const PEN2_TELEPORTABLE_ASSET_ID: u32 = 2;
 

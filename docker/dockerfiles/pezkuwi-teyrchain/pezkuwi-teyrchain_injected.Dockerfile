@@ -9,10 +9,10 @@ LABEL io.parity.image.authors="devops-team@parity.io" \
 	io.parity.image.vendor="Parity Technologies" \
 	io.parity.image.title="${IMAGE_NAME}" \
 	io.parity.image.description="Pezcumulus, the Pezkuwi collator." \
-	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-sdk/blob/${VCS_REF}/docker/dockerfiles/pezkuwi-teyrchain/pezkuwi-teyrchain_injected.Dockerfile" \
+	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-DKS/blob/${VCS_REF}/docker/dockerfiles/pezkuwi-teyrchain/pezkuwi-teyrchain_injected.Dockerfile" \
 	io.parity.image.revision="${VCS_REF}" \
 	io.parity.image.created="${BUILD_DATE}" \
-	io.parity.image.documentation="https://github.com/pezkuwichain/pezkuwi-sdk/"
+	io.parity.image.documentation="https://github.com/pezkuwichain/pezkuwi-DKS/"
 
 # show backtraces
 ENV RUST_BACKTRACE 1

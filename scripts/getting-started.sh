@@ -40,7 +40,7 @@ clone_and_enter_template() {
             cp -r "$PEZKUWI_TEMPLATE_SOURCE/${template}" "${template}-template"
         else
             printf "\n↓ Let's grab the ${template} template from github.\n"
-            git clone --quiet https://github.com/pezkuwichain/pezkuwi-sdk-${template}-template.git ${template}-template
+            git clone --quiet https://github.com/pezkuwichain/pezkuwi-DKS-${template}-template.git ${template}-template
         fi
     fi
     cd ${template}-template

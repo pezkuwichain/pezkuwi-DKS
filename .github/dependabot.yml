@@ -1,6 +1,9 @@
 version: 2
 updates:
-  # GitHub Actions — one grouped PR/week for all workflow action bumps.
+  # GitHub Actions — grouped weekly, but majors kept apart from the routine churn.
+  # A single "*" group put a breaking major in the same PR as a pile of patches, where it
+  # reads as routine and gets merged as routine. Splitting by update type is what makes the
+  # major visible; it is the same split the root workspace already uses below.
   - package-ecosystem: github-actions
     directory: '/'
     labels: ["A1-insubstantial", "R0-no-crate-publish-required"]
@@ -8,9 +11,10 @@ updates:
       interval: weekly
     open-pull-requests-limit: 3
     groups:
-      ci_dependencies:
-        patterns:
-        - "*"
+      ci-minor-patch:
+        update-types: ["minor", "patch"]
+      ci-major:
+        update-types: ["major"]
 
   # Rust workspace (root). Collapse the routine churn into TWO grouped PRs a week
   # (minor/patch together, major together) instead of one PR per crate — otherwise
@@ -31,6 +35,8 @@ updates:
 
   # usdt-bridge is a separate crate/workspace with its own Cargo.lock; group its bumps
   # so the bridge never spawns per-crate PRs of its own (e.g. the stray rand/rustls ones).
+  # Majors are separated for the same reason as above: this workspace signs and submits
+  # transactions, so a breaking bump riding along in a patch PR is the worst place for one.
   - package-ecosystem: "cargo"
     directory: "/tools/usdt-bridge"
     labels: ["A1-insubstantial"]
@@ -38,6 +44,7 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 3
     groups:
-      bridge-deps:
-        patterns:
-        - "*"
+      bridge-minor-patch:
+        update-types: ["minor", "patch"]
+      bridge-major:
+        update-types: ["major"]

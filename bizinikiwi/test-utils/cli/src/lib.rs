@@ -217,11 +217,6 @@ where
 	Err(String::from("Stream closed without any lines matching the regex."))
 }
 
-/// Run the given `future` and panic if the `timeout` is hit.
-pub async fn run_with_timeout(timeout: Duration, future: impl futures::Future<Output = ()>) {
-	tokio::time::timeout(timeout, future).await.expect("Hit timeout");
-}
-
 /// Wait for at least n blocks to be finalized from a specified node
 pub async fn wait_n_finalized_blocks(n: usize, url: &str) {
 	use bizinikiwi_rpc_client::{ws_client, ChainApi};
@@ -242,33 +237,37 @@ pub async fn wait_n_finalized_blocks(n: usize, url: &str) {
 	}
 }
 
-/// Run the node for a while (3 blocks)
+/// Run the node for a while (3 blocks).
+///
+/// Deliberately unbounded: the caller's own budget is nextest's, which is what prints SLOW
+/// lines and classifies a kill as a timeout. A wall clock in here instead produced a bare
+/// `Hit timeout` panic that nextest counted as an ordinary failure and retried, so one slow
+/// runner cost five ten-minute attempts and tripped the retry-exhaustion gate. Measured on
+/// the 2026-09-06 green run, `inspect_works` was already at 595s against the 600s this used
+/// to impose.
 pub async fn run_node_for_a_while(base_path: &Path, args: &[&str]) {
-	run_with_timeout(Duration::from_secs(60 * 10), async move {
-		let mut cmd = Command::new(bizinikiwi_node_path())
-			.stdout(process::Stdio::piped())
-			.stderr(process::Stdio::piped())
-			.args(args)
-			.arg("-d")
-			.arg(base_path)
-			.spawn()
-			.unwrap();
+	let mut cmd = Command::new(bizinikiwi_node_path())
+		.stdout(process::Stdio::piped())
+		.stderr(process::Stdio::piped())
+		.args(args)
+		.arg("-d")
+		.arg(base_path)
+		.spawn()
+		.unwrap();
 
-		let stderr = cmd.stderr.take().unwrap();
+	let stderr = cmd.stderr.take().unwrap();
 
-		let mut child = KillChildOnDrop(cmd);
+	let mut child = KillChildOnDrop(cmd);
 
-		let ws_url = extract_info_from_output(stderr).0.ws_url;
+	let ws_url = extract_info_from_output(stderr).0.ws_url;
 
-		// Let it produce some blocks.
-		wait_n_finalized_blocks(3, &ws_url).await;
+	// Let it produce some blocks.
+	wait_n_finalized_blocks(3, &ws_url).await;
 
-		child.assert_still_running();
+	child.assert_still_running();
 
-		// Stop the process
-		child.stop();
-	})
-	.await
+	// Stop the process
+	child.stop();
 }
 
 pub async fn block_hash(block_number: u64, url: &str) -> Result<Hash, String> {

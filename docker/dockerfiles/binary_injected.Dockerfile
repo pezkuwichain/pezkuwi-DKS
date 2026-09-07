@@ -15,7 +15,7 @@ ARG IMAGE_NAME
 ARG BINARY=pezkuwi
 
 ARG BIN_FOLDER=.
-ARG DOC_URL=https://github.com/pezkuwichain/pezkuwi-sdk
+ARG DOC_URL=https://github.com/pezkuwichain/pezkuwi-DKS
 ARG DESCRIPTION="Pezkuwi: a platform for web3"
 ARG AUTHORS="devops-team@parity.io"
 ARG VENDOR="Parity Technologies"
@@ -27,7 +27,7 @@ LABEL io.parity.image.authors=${AUTHORS} \
 	io.parity.image.created="${BUILD_DATE}" \
 	io.parity.image.documentation="${DOC_URL}" \
 	io.parity.image.description="${DESCRIPTION}" \
-	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-sdk/blob/${VCS_REF}/docker/dockerfiles/binary_injected.Dockerfile"
+	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-DKS/blob/${VCS_REF}/docker/dockerfiles/binary_injected.Dockerfile"
 
 USER root
 WORKDIR /app

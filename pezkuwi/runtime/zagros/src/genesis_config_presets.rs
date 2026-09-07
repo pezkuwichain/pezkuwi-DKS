@@ -29,7 +29,7 @@
 
 use crate::{
 	BabeConfig, BalancesConfig, ConfigurationConfig, RegistrarConfig, RuntimeGenesisConfig,
-	SessionConfig, SessionKeys, SudoConfig, BABE_GENESIS_EPOCH_CONFIG,
+	SessionConfig, SessionKeys, StakingAhClientConfig, SudoConfig, BABE_GENESIS_EPOCH_CONFIG,
 };
 #[cfg(not(feature = "std"))]
 use alloc::format;
@@ -327,6 +327,10 @@ fn pezkuwichain_testnet_genesis(
 			},
 		},
 		registrar: RegistrarConfig { next_free_para_id: pezkuwi_primitives::LOWEST_PUBLIC_ID },
+		staking_ah_client: StakingAhClientConfig {
+			operating_mode: pezpallet_staking_async_ah_client::OperatingMode::Active,
+			..Default::default()
+		},
 	})
 }
 
@@ -571,6 +575,10 @@ fn pezkuwichain_staging_testnet_config_genesis() -> serde_json::Value {
 		sudo: SudoConfig { key: Some(endowed_accounts[0].clone()) },
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },
 		registrar: RegistrarConfig { next_free_para_id: pezkuwi_primitives::LOWEST_PUBLIC_ID },
+		staking_ah_client: StakingAhClientConfig {
+			operating_mode: pezpallet_staking_async_ah_client::OperatingMode::Active,
+			..Default::default()
+		},
 	})
 }
 
@@ -870,6 +878,10 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 		},
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },
 		registrar: RegistrarConfig { next_free_para_id: pezkuwi_primitives::LOWEST_PUBLIC_ID },
+		staking_ah_client: StakingAhClientConfig {
+			operating_mode: pezpallet_staking_async_ah_client::OperatingMode::Active,
+			..Default::default()
+		},
 	})
 }
 
@@ -974,6 +986,10 @@ fn pezkuwichain_mainnet_simulation_genesis() -> serde_json::Value {
 		sudo: SudoConfig { key: Some(founder_account) },
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },
 		registrar: RegistrarConfig { next_free_para_id: pezkuwi_primitives::LOWEST_PUBLIC_ID },
+		staking_ah_client: StakingAhClientConfig {
+			operating_mode: pezpallet_staking_async_ah_client::OperatingMode::Active,
+			..Default::default()
+		},
 	})
 }
 

@@ -4,7 +4,7 @@
 set -e
 cd /home/mamostehp/pezkuwi-sdk
 
-REPO="pezkuwichain/pezkuwi-sdk"
+REPO="pezkuwichain/pezkuwi-DKS"
 LABEL="upstream-tracking"
 TODAY=$(date +%Y-%m-%d)
 NEXT_CHECK=$(date -d '+1 month' +%Y-%m-%d 2>/dev/null || date -v+1m +%Y-%m-%d 2>/dev/null || echo "2026-01-23")

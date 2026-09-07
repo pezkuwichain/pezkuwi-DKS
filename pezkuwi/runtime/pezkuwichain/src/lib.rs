@@ -72,7 +72,7 @@ use pezkuwi_runtime_teyrchains::{
 	shared as teyrchains_shared,
 };
 use pezkuwichain_runtime_constants::system_teyrchain::{
-	coretime::TIMESLICE_PERIOD, ASSET_HUB_ID, BROKER_ID,
+	coretime::TIMESLICE_PERIOD, ASSET_HUB_ID, BROKER_ID, PEOPLE_ID,
 };
 use pezpallet_balances::WeightInfo;
 use pezsp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -494,9 +494,30 @@ impl pezpallet_session::Config for Runtime {
 	type SessionManager = pezpallet_session::historical::NoteHistoricalRoot<Self, StakingAhClient>;
 	type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = SessionKeys;
-	type DisablingStrategy = ();
+	// The relay carries the whole offence machinery -- BABE and GRANDPA equivocation, dispute
+	// reports -- and this is its last step: `report_offence` asks the strategy whether to disable,
+	// and `()` answers `None` every time. Left as `()`, an equivocating validator kept authoring
+	// here while its slash travelled to the Asset Hub. The byzantine default holds the set to at
+	// most `(n - 1) / 3` disabled, and re-enables a lighter offender to make room for a heavier
+	// one rather than refusing outright.
+	type DisablingStrategy = pezpallet_session::disabling::UpToLimitWithReEnablingDisablingStrategy;
 	type WeightInfo = weights::pezpallet_session::WeightInfo<Runtime>;
 	type Currency = Balances;
+	// Zero here on purpose, and not the same kind of `()` as the two this file used to carry
+	// for offences. The deposit for session keys is charged on the Asset Hub, by
+	// `pezpallet_staking_async_rc_client` at `10 * UNITS`, behind an `is_validator` check --
+	// that is where staking lives and where validators actually register. The Asset Hub then
+	// forwards the validated keys over XCM through `SessionInterface::set_keys`, which
+	// deliberately bypasses this hold; charging again here would charge twice for one
+	// registration.
+	//
+	// The public `set_keys` on this chain stays reachable, and the pezpallet is written for
+	// that: `ExternallySetKeys` exists to track which registrations came over XCM, and
+	// `do_set_keys` handles the external-to-local transition explicitly. It is the only way to
+	// rotate keys if the Asset Hub cannot reach us, which is not hypothetical here. What it
+	// costs an abuser is the existential deposit plus a fee, for seven storage entries instead
+	// of one; it confers no validator status, and it cannot squat another operator's keys,
+	// since the proof is a possession signature per key.
 	type KeyDeposit = ();
 }
 
@@ -590,6 +611,16 @@ impl Get<Location> for AssetHubLocation {
 	}
 }
 
+/// The chains allowed to tell this one who validates it.
+///
+/// Two, and they do different halves. The Asset Hub sends session reports and the staking
+/// bookkeeping that follows from them; the People chain sends the committee itself, because
+/// that is where it is drawn -- the scores every stratum rests on are written there, and a
+/// relay-side draw would have to import five of them across a chain boundary.
+///
+/// Named `EnsureAssetHub` still, because the pallet it feeds is `ah_client` and renaming the
+/// type would not rename that. What matters is the list, and the list is checked by
+/// `only_the_two_named_chains_may_seat_validators`.
 pub struct EnsureAssetHub;
 impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for EnsureAssetHub {
 	type Success = ();
@@ -597,7 +628,11 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for EnsureAssetHub {
 		match <RuntimeOrigin as Into<Result<teyrchains_origin::Origin, RuntimeOrigin>>>::into(
 			o.clone(),
 		) {
-			Ok(teyrchains_origin::Origin::Teyrchain(id)) if id == ASSET_HUB_ID.into() => Ok(()),
+			Ok(teyrchains_origin::Origin::Teyrchain(id))
+				if id == ASSET_HUB_ID.into() || id == PEOPLE_ID.into() =>
+			{
+				Ok(())
+			},
 			_ => Err(o),
 		}
 	}
@@ -709,7 +744,12 @@ parameter_types! {
 impl pezpallet_offences::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type IdentificationTuple = pezpallet_session::historical::IdentificationTuple<Self>;
-	type OnOffenceHandler = ();
+	// The relay holds no stake -- staking lives on the Asset Hub -- so there is nothing here
+	// to slash. `StakingAhClient` is what closes both halves: it reports an ongoing offence to
+	// the session pezpallet immediately, which disables the validator on this chain, and queues
+	// the economic slash for the Asset Hub, where the money actually is. Left as `()`, both
+	// halves were dropped: an equivocation was recorded by `Offences` and went nowhere.
+	type OnOffenceHandler = StakingAhClient;
 }
 
 impl pezpallet_authority_discovery::Config for Runtime {

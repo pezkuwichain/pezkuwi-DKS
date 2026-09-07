@@ -22,8 +22,8 @@ while read -r upstream_num pezkuwi_num; do
     echo "Upstream #$upstream_num -> Pezkuwi #$pezkuwi_num"
     for f in $files; do
       # Tam URL'yi değiştir (sadece tam eşleşme)
-      sed -i "s|pezkuwichain/pezkuwi-sdk/issues/$upstream_num\([^0-9]\)|pezkuwichain/pezkuwi-sdk/issues/$pezkuwi_num\1|g" "$f"
-      sed -i "s|pezkuwichain/pezkuwi-sdk/issues/$upstream_num\$|pezkuwichain/pezkuwi-sdk/issues/$pezkuwi_num|g" "$f"
+      sed -i "s|pezkuwichain/pezkuwi-DKS/issues/$upstream_num\([^0-9]\)|pezkuwichain/pezkuwi-DKS/issues/$pezkuwi_num\1|g" "$f"
+      sed -i "s|pezkuwichain/pezkuwi-DKS/issues/$upstream_num\$|pezkuwichain/pezkuwi-DKS/issues/$pezkuwi_num|g" "$f"
     done
   fi
 done < "$MAPPING_FILE"

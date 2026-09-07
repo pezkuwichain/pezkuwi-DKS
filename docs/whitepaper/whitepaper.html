@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PezkuwiChain Whitepaper v6.0</title>
+<meta name="description" content="PezkuwiChain whitepaper: a sovereign blockchain carrying the functions of a state — a citizen register, elected institutions, two electorates, and a treasury that moves only on a named authority.">
+<meta property="og:title" content="PezkuwiChain Whitepaper v6.0">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://pezkuwichain.io/whitepaper/">
+<meta property="og:description" content="A state that runs as software. Every figure taken from the source.">
+<link rel="canonical" href="https://pezkuwichain.io/whitepaper/">
+<style>
+:root{--bg:#0a0a0f;--panel:#0d0d14;--card:#12121a;--border:#2a2a3a;--text:#d8d8e2;--dim:#9090a6;--green:#21A038;--green2:#4ade80;--pink:#f472b6;
+ --ink:#ffffff;--line:#2a2a3a;--raise:#12121a;--faint:#6b6b80;--sun:#E8B33A;--red:#C8433B;
+ --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;padding-top:54px;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,-apple-system,sans-serif;line-height:1.75;font-size:16px}
+a{color:var(--green2);text-decoration:none}a:hover{text-decoration:underline}
+.topbar{position:fixed;top:0;left:0;right:0;height:54px;background:rgba(13,13,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 22px;z-index:50}
+.topbar .brand{font-weight:800;color:#fff;letter-spacing:.3px;margin-right:auto;font-size:15px}
+.topbar a.btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;padding:8px 16px;border-radius:9px}
+.topbar a.dl{background:var(--green);color:#fff}.topbar a.home{background:transparent;border:1px solid var(--border);color:var(--dim)}
+.layout{display:flex}
+.sidebar{position:fixed;top:54px;bottom:0;left:0;width:332px;overflow-y:auto;background:var(--panel);border-right:1px solid var(--border);padding:22px 14px 60px}
+.sidebar::-webkit-scrollbar{width:8px}.sidebar::-webkit-scrollbar-thumb{background:#2a2a3a;border-radius:4px}
+.sb-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--green2);padding:0 10px 14px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.sidebar ul{list-style:none;margin:0;padding-left:13px}.sidebar>ul,.sidebar>nav>ul{padding-left:0}.sidebar li{margin:1px 0}
+.sidebar a{display:block;color:var(--dim);padding:5px 10px;border-radius:7px;font-size:13px;line-height:1.4;border-left:2px solid transparent}
+.sidebar a:hover{color:#fff;background:var(--card);text-decoration:none;border-left-color:var(--green)}
+.sidebar>ul>li>a,.sidebar>nav>ul>li>a{color:#c8c8d8;font-weight:600}
+.content{margin-left:332px;max-width:840px;padding:44px 56px 100px}.content h1:first-child{margin-top:0}
+h1{color:#fff;font-size:2.3rem;font-weight:900;letter-spacing:-.5px;border-bottom:3px solid var(--green);padding-bottom:14px;scroll-margin-top:70px}
+h2{color:#fff;font-size:1.55rem;font-weight:800;margin-top:2.4em;border-bottom:1px solid var(--border);padding-bottom:8px;scroll-margin-top:70px}
+h3{color:var(--green2);font-size:1.18rem;font-weight:700;margin-top:1.7em;scroll-margin-top:70px}
+code{background:var(--card);padding:2px 7px;border-radius:5px;font-size:.88em;color:var(--pink);border:1px solid var(--border)}
+pre{background:#12121a;border:1px solid var(--border);border-left:4px solid var(--green);padding:16px 18px;border-radius:10px;overflow-x:auto;font-size:.92em}
+pre code{background:none;color:#a8e6b8;border:none;padding:0}
+table{border-collapse:collapse;width:100%;margin:1.6em 0;font-size:.92em}
+th,td{border:1px solid var(--border);padding:10px 13px;text-align:left}th{background:var(--green);color:#fff}tr:nth-child(even){background:var(--card)}
+img{max-width:100%;display:block;margin:2em auto;border:1px solid var(--border);border-radius:10px;background:#fff;padding:8px}
+em{color:var(--dim)}strong{color:#fff}hr{border:none;border-top:1px solid var(--border);margin:2.6em 0}
+blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;background:var(--card);border-radius:0 8px 8px 0;color:#b0b0c0}
+
+/* ---- additions: the cinematic opening, the schema, and figure strips ---- */
+.poster-hero{margin:-44px -56px 2.6em;overflow:hidden;border-bottom:1px solid var(--border);background:#05050a}
+.poster-hero .over{padding-top:clamp(30px,4vw,52px)}
+.poster-hero .art{display:block;width:100%;height:auto;border-top:1px solid var(--border)}
+.poster-hero .over{padding:clamp(26px,4vw,46px) clamp(20px,4vw,44px) clamp(22px,3.4vw,34px);
+ background:linear-gradient(180deg,#0a0c10 0%,#05070a 100%)}
+.poster-hero .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--green2);margin:0 0 10px}
+.poster-hero .title{color:#fff;font-size:clamp(2rem,6.4vw,3.6rem);font-weight:900;letter-spacing:-1.2px;line-height:1;margin:0}
+.poster-hero .line{color:#c8c8d8;font-size:clamp(.95rem,2.1vw,1.18rem);line-height:1.45;margin:14px 0 0;max-width:34em}
+.poster-hero .credits{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);
+ margin:20px 0 0;display:flex;flex-wrap:wrap;gap:6px 18px}
+.poster-hero .credits b{color:var(--dim);font-weight:600}
+@media(max-width:980px){.poster-hero{margin:-32px -22px 2em}}
+
+.schema{margin:2.4em -56px;padding:26px 0;background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.schema-head{padding:0 56px 18px}
+.schema-head h3{margin-top:0}
+.schema-head p{color:var(--dim);margin:.4em 0 0;font-size:.95em}
+.schema .canvas{overflow-x:auto;padding:0 56px}
+.schema svg{display:block;min-width:60rem;width:100%;height:auto}
+.schema .legend{padding:16px 56px 0;display:flex;flex-wrap:wrap;gap:8px 22px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+.schema .legend i{display:inline-block;width:22px;height:0;border-top-width:2px;border-top-style:solid;vertical-align:middle;margin-right:7px}
+@media(max-width:980px){.schema{margin:2em -22px}.schema-head,.schema .canvas,.schema .legend{padding-left:22px;padding-right:22px}}
+
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);margin:1.8em 0}
+.figs div{background:var(--card);padding:14px 16px}
+.figs b{display:block;font-family:var(--mono);font-size:1.4rem;color:#fff;font-weight:700;letter-spacing:-.5px}
+.figs span{display:block;font-size:.78rem;color:var(--dim);margin-top:4px;line-height:1.4}
+.tenet{border-left:4px solid var(--sun);margin:1.4em 0;padding:10px 20px;background:var(--card);border-radius:0 8px 8px 0;color:#e6e6ee;font-size:1.05em;line-height:1.6}
+
+@media print{
+ @page{size:A4;margin:16mm 14mm}
+ body{padding-top:0;background:#fff;color:#15161a;font-size:10.5pt;line-height:1.55}
+ .topbar,.sidebar{display:none!important}
+ .content{margin-left:0;max-width:none;padding:0}
+ a{color:#0f5c1e;border:0}
+ h1,h2,h3,strong{color:#000}
+ h1{font-size:22pt;border-bottom:2px solid #21A038;page-break-after:avoid}
+ h2{font-size:15pt;border-bottom:1px solid #bbb;page-break-after:avoid;margin-top:1.6em}
+ h3{color:#177A29;font-size:12pt;page-break-after:avoid}
+ p,li{orphans:3;widows:3}
+ table{page-break-inside:avoid;font-size:8.6pt}
+ th{background:#21A038!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ td,th{border:1px solid #bbb}
+ tr:nth-child(even){background:#f2f2ee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ code{color:#a3306e;background:#f2f2ee;border-color:#ddd}
+ em{color:#4a4d55}
+ .tenet{background:#f5f4ef;border-left-color:#E8B33A;color:#15161a;page-break-inside:avoid}
+ .figs{page-break-inside:avoid}.figs div{background:#f5f4ef}.figs b{color:#000}.figs span{color:#4a4d55}
+ .poster-hero{margin:0 0 14mm;background:#05070a!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:always}
+ .poster-hero .over{background:#0a0c10!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .poster-hero .title,.poster-hero .line,.poster-hero .kicker,.poster-hero .credits{color:#fff!important}
+ .poster-hero .line{color:#c8c8d8!important}
+ .schema{margin:8mm 0;background:#0d0d14!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;
+   page-break-inside:avoid;border-color:#333}
+ .schema-head,.schema .canvas,.schema .legend{padding-left:0;padding-right:0}
+ .schema-head h3{color:#4ade80!important}.schema-head p,.schema .legend{color:#9090a6!important}
+ .schema svg{min-width:0}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">PezkuwiChain &#183; Whitepaper</span>
+  <a class="btn home" href="https://pezkuwichain.io">Home</a>
+  <a class="btn dl" href="whitepaper.pdf">Download PDF</a>
+</div>
+
+<div class="layout">
+<nav class="sidebar">
+  <div class="sb-title">Contents</div>
+  <ul>
+    <li><a href="#abstract">Abstract</a></li>
+    <li><a href="#philosophy">Our Philosophy</a>
+      <ul>
+        <li><a href="#noise">The Age of Noise</a></li>
+        <li><a href="#trust-not-capital">Trust, Not Capital</a></li>
+        <li><a href="#clean-slate">A Clean Slate: The Stateless Advantage</a></li>
+      </ul>
+    </li>
+    <li><a href="#why">1. Why a State, and Not a Platform</a></li>
+    <li><a href="#architecture">2. Architecture</a>
+      <ul><li><a href="#one-door">2.1. The One Door into the Relay&#8217;s Root</a></li></ul>
+    </li>
+    <li><a href="#electorates">3. Two Electorates</a>
+      <ul>
+        <li><a href="#people-vote">3.1. The People Chain &#8212; One Citizen, One Vote</a></li>
+        <li><a href="#relay-vote">3.2. The Relay Chain &#8212; Stake, with Conviction</a></li>
+        <li><a href="#initiative">3.3. The Citizens&#8217; Initiative</a></li>
+      </ul>
+    </li>
+    <li><a href="#citizenship">4. Citizenship</a></li>
+    <li><a href="#institutions">5. The Institutions</a>
+      <ul>
+        <li><a href="#serok">5.1. Serok &#8212; the President</a></li>
+        <li><a href="#meclis">5.2. Meclis &#8212; the Parliament</a></li>
+        <li><a href="#speaker">5.3. Serok&#234; Meclis&#234; &#8212; the Speaker</a></li>
+        <li><a href="#diwan">5.4. D&#238;wan &#8212; the Constitutional Court</a></li>
+        <li><a href="#pm">5.5. Serokwez&#238;ran and the Cabinet</a></li>
+        <li><a href="#civil">5.6. The Civil Service</a></li>
+      </ul>
+    </li>
+    <li><a href="#trust">6. Trust</a></li>
+    <li><a href="#tnpos">7. TNPoS &#8212; the Validator Pool</a>
+      <ul>
+        <li><a href="#gate">7.1. Membership is a Gate, Not a Ranking</a></li>
+        <li><a href="#floors">7.2. The Floors</a></li>
+        <li><a href="#sanction">7.3. Misconduct and Slashing</a></li>
+      </ul>
+    </li>
+    <li><a href="#schema">The State Schema</a></li>
+    <li><a href="#tokens">8. Two Tokens</a>
+      <ul>
+        <li><a href="#hez">8.1. HEZ &#8212; the Currency</a></li>
+        <li><a href="#pez">8.2. PEZ &#8212; the Franchise</a></li>
+        <li><a href="#halving">8.3. The Halving</a></li>
+      </ul>
+    </li>
+    <li><a href="#funds">9. The Vaults, and Who May Move Them</a>
+      <ul>
+        <li><a href="#refuse">9.1. What the Vaults Refuse</a></li>
+        <li><a href="#endtoend">9.2. A Payment, End to End</a></li>
+        <li><a href="#budget">9.3. The Budget and the Citizens&#8217; Share</a></li>
+      </ul>
+    </li>
+    <li><a href="#security">10. Security</a></li>
+    <li><a href="#heritage">11. Heritage and Independence</a></li>
+    <li><a href="#licence">12. Licence and Legal Position</a></li>
+    <li><a href="#glossary">13. Appendix A: Glossary</a></li>
+    <li><a href="#figures">14. Appendix B: Figures at a Glance</a></li>
+    <li><a href="#resources">15. Resources</a>
+      <ul>
+        <li><a href="#channels">Official Channels</a></li>
+        <li><a href="#developer">Developer Resources</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+<div class="content">
+
+<div class="poster-hero">
+<div class="over">
+    <p class="kicker">Whitepaper v6.0 &#183; Mainnet Edition</p>
+    <p class="title">A state that runs<br>as software</p>
+    <p class="line">A register nobody can quietly edit. A ballot anyone can recount. A treasury that moves only on a named authority. Borders drawn in code rather than soil.</p>
+    <p class="credits">
+      <span><b>Dijital Kurdistan Tech Institute</b></span>
+      <span>Two tokens</span><span>Five chains</span><span>Two electorates</span>
+      <span>Every figure taken from the source</span>
+    </p>
+  </div>
+<svg class="art" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid meet" role="img" aria-label="The state at a glance: citizens elect the President, the Parliament and six seats of the Constitutional Court; the President appoints the remaining five and nominates a Prime Minister who forms the cabinet; offices and badges are tikis in the register; and the two tokens are distributed in the proportions shown, with the citizens pool released on a halving schedule.">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="0" stop-color="#06080b"/><stop offset="1" stop-color="#04060a"/></linearGradient>
+<style>
+ .k{font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.22em;fill:#5a6258}
+ .n{font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:600;letter-spacing:.04em;fill:#fff}
+ .m{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;fill:#8a9488}
+ .t{font-family:ui-monospace,Menlo,monospace;font-size:9.5px;letter-spacing:.1em;fill:#5a6258}
+</style>
+<marker id="a1" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+ <path d="M0,0 L6,3 L0,6 z" fill="#21A038"/></marker>
+<marker id="a2" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+ <path d="M0,0 L6,3 L0,6 z" fill="#E8B33A"/></marker>
+</defs>
+<rect width="1200" height="760" fill="url(#bg)"/>
+<text x="46" y="44" class="k">WELAT&#206; &#183; THE ROLL</text>
+<line x1="46" y1="52" x2="346" y2="52" stroke="#8a9488" stroke-width="1" opacity=".35"/>
+<circle cx="52" cy="76" r="2.4" fill="#21A038" opacity="0.37"/>
+<circle cx="71" cy="76" r="2.4" fill="#21A038" opacity="0.34"/>
+<circle cx="90" cy="76" r="2.4" fill="#21A038" opacity="0.24"/>
+<circle cx="109" cy="76" r="2.4" fill="#21A038" opacity="0.54"/>
+<circle cx="128" cy="76" r="2.4" fill="#21A038" opacity="0.18"/>
+<circle cx="147" cy="76" r="2.4" fill="#21A038" opacity="0.39"/>
+<circle cx="166" cy="76" r="2.4" fill="#21A038" opacity="0.56"/>
+<circle cx="185" cy="76" r="2.4" fill="#21A038" opacity="0.21"/>
+<circle cx="204" cy="76" r="2.4" fill="#21A038" opacity="0.41"/>
+<circle cx="223" cy="76" r="2.4" fill="#21A038" opacity="0.44"/>
+<circle cx="242" cy="76" r="2.4" fill="#21A038" opacity="0.20"/>
+<circle cx="261" cy="76" r="2.4" fill="#21A038" opacity="0.34"/>
+<circle cx="280" cy="76" r="2.4" fill="#21A038" opacity="0.48"/>
+<circle cx="299" cy="76" r="2.4" fill="#21A038" opacity="0.37"/>
+<circle cx="318" cy="76" r="2.4" fill="#21A038" opacity="0.48"/>
+<circle cx="61" cy="91" r="2.4" fill="#21A038" opacity="0.25"/>
+<circle cx="80" cy="91" r="2.4" fill="#21A038" opacity="0.28"/>
+<circle cx="99" cy="91" r="2.4" fill="#21A038" opacity="0.23"/>
+<circle cx="118" cy="91" r="2.4" fill="#21A038" opacity="0.39"/>
+<circle cx="137" cy="91" r="2.4" fill="#21A038" opacity="0.57"/>
+<circle cx="156" cy="91" r="2.4" fill="#21A038" opacity="0.43"/>
+<circle cx="175" cy="91" r="2.4" fill="#21A038" opacity="0.51"/>
+<circle cx="194" cy="91" r="2.4" fill="#21A038" opacity="0.34"/>
+<circle cx="213" cy="91" r="2.4" fill="#21A038" opacity="0.49"/>
+<circle cx="232" cy="91" r="2.4" fill="#21A038" opacity="0.22"/>
+<circle cx="251" cy="91" r="2.4" fill="#21A038" opacity="0.30"/>
+<circle cx="270" cy="91" r="2.4" fill="#21A038" opacity="0.46"/>
+<circle cx="289" cy="91" r="2.4" fill="#21A038" opacity="0.48"/>
+<circle cx="308" cy="91" r="2.4" fill="#21A038" opacity="0.36"/>
+<circle cx="327" cy="91" r="2.4" fill="#21A038" opacity="0.22"/>
+<circle cx="52" cy="106" r="2.4" fill="#21A038" opacity="0.29"/>
+<circle cx="71" cy="106" r="2.4" fill="#21A038" opacity="0.27"/>
+<circle cx="90" cy="106" r="2.4" fill="#21A038" opacity="0.30"/>
+<circle cx="109" cy="106" r="2.4" fill="#21A038" opacity="0.52"/>
+<circle cx="128" cy="106" r="2.4" fill="#21A038" opacity="0.26"/>
+<circle cx="147" cy="106" r="2.4" fill="#21A038" opacity="0.55"/>
+<circle cx="166" cy="106" r="2.4" fill="#21A038" opacity="0.55"/>
+<circle cx="185" cy="106" r="2.4" fill="#21A038" opacity="0.20"/>
+<circle cx="204" cy="106" r="2.4" fill="#21A038" opacity="0.34"/>
+<circle cx="223" cy="106" r="2.4" fill="#21A038" opacity="0.39"/>
+<circle cx="242" cy="106" r="2.4" fill="#21A038" opacity="0.19"/>
+<circle cx="261" cy="106" r="2.4" fill="#21A038" opacity="0.36"/>
+<circle cx="280" cy="106" r="2.4" fill="#21A038" opacity="0.56"/>
+<circle cx="299" cy="106" r="2.4" fill="#21A038" opacity="0.23"/>
+<circle cx="318" cy="106" r="2.4" fill="#21A038" opacity="0.43"/>
+<circle cx="61" cy="121" r="2.4" fill="#21A038" opacity="0.23"/>
+<circle cx="80" cy="121" r="2.4" fill="#21A038" opacity="0.42"/>
+<circle cx="99" cy="121" r="2.4" fill="#21A038" opacity="0.56"/>
+<circle cx="118" cy="121" r="2.4" fill="#21A038" opacity="0.27"/>
+<circle cx="137" cy="121" r="2.4" fill="#21A038" opacity="0.18"/>
+<circle cx="156" cy="121" r="2.4" fill="#21A038" opacity="0.22"/>
+<circle cx="175" cy="121" r="2.4" fill="#21A038" opacity="0.41"/>
+<circle cx="194" cy="121" r="2.4" fill="#21A038" opacity="0.19"/>
+<circle cx="213" cy="121" r="2.4" fill="#21A038" opacity="0.22"/>
+<circle cx="232" cy="121" r="2.4" fill="#21A038" opacity="0.39"/>
+<circle cx="251" cy="121" r="2.4" fill="#21A038" opacity="0.57"/>
+<circle cx="270" cy="121" r="2.4" fill="#21A038" opacity="0.36"/>
+<circle cx="289" cy="121" r="2.4" fill="#21A038" opacity="0.35"/>
+<circle cx="308" cy="121" r="2.4" fill="#21A038" opacity="0.45"/>
+<circle cx="327" cy="121" r="2.4" fill="#21A038" opacity="0.22"/>
+<circle cx="52" cy="136" r="2.4" fill="#21A038" opacity="0.42"/>
+<circle cx="71" cy="136" r="2.4" fill="#21A038" opacity="0.25"/>
+<circle cx="90" cy="136" r="2.4" fill="#21A038" opacity="0.44"/>
+<circle cx="109" cy="136" r="2.4" fill="#21A038" opacity="0.58"/>
+<circle cx="128" cy="136" r="2.4" fill="#21A038" opacity="0.20"/>
+<circle cx="147" cy="136" r="2.4" fill="#21A038" opacity="0.41"/>
+<circle cx="166" cy="136" r="2.4" fill="#21A038" opacity="0.43"/>
+<circle cx="185" cy="136" r="2.4" fill="#21A038" opacity="0.24"/>
+<circle cx="204" cy="136" r="2.4" fill="#21A038" opacity="0.29"/>
+<circle cx="223" cy="136" r="2.4" fill="#21A038" opacity="0.60"/>
+<circle cx="242" cy="136" r="2.4" fill="#21A038" opacity="0.60"/>
+<circle cx="261" cy="136" r="2.4" fill="#21A038" opacity="0.23"/>
+<circle cx="280" cy="136" r="2.4" fill="#21A038" opacity="0.48"/>
+<circle cx="299" cy="136" r="2.4" fill="#21A038" opacity="0.58"/>
+<circle cx="318" cy="136" r="2.4" fill="#21A038" opacity="0.28"/>
+<circle cx="61" cy="151" r="2.4" fill="#21A038" opacity="0.44"/>
+<circle cx="80" cy="151" r="2.4" fill="#21A038" opacity="0.20"/>
+<circle cx="99" cy="151" r="2.4" fill="#21A038" opacity="0.33"/>
+<circle cx="118" cy="151" r="2.4" fill="#21A038" opacity="0.46"/>
+<circle cx="137" cy="151" r="2.4" fill="#21A038" opacity="0.43"/>
+<circle cx="156" cy="151" r="2.4" fill="#21A038" opacity="0.51"/>
+<circle cx="175" cy="151" r="2.4" fill="#21A038" opacity="0.22"/>
+<circle cx="194" cy="151" r="2.4" fill="#21A038" opacity="0.33"/>
+<circle cx="213" cy="151" r="2.4" fill="#21A038" opacity="0.54"/>
+<circle cx="232" cy="151" r="2.4" fill="#21A038" opacity="0.43"/>
+<circle cx="251" cy="151" r="2.4" fill="#21A038" opacity="0.37"/>
+<circle cx="270" cy="151" r="2.4" fill="#21A038" opacity="0.35"/>
+<circle cx="289" cy="151" r="2.4" fill="#21A038" opacity="0.59"/>
+<circle cx="308" cy="151" r="2.4" fill="#21A038" opacity="0.42"/>
+<circle cx="327" cy="151" r="2.4" fill="#21A038" opacity="0.19"/>
+<circle cx="52" cy="166" r="2.4" fill="#21A038" opacity="0.52"/>
+<circle cx="71" cy="166" r="2.4" fill="#21A038" opacity="0.32"/>
+<circle cx="90" cy="166" r="2.4" fill="#21A038" opacity="0.36"/>
+<circle cx="109" cy="166" r="2.4" fill="#21A038" opacity="0.27"/>
+<circle cx="128" cy="166" r="2.4" fill="#21A038" opacity="0.37"/>
+<circle cx="147" cy="166" r="2.4" fill="#21A038" opacity="0.32"/>
+<circle cx="166" cy="166" r="2.4" fill="#21A038" opacity="0.22"/>
+<circle cx="185" cy="166" r="2.4" fill="#21A038" opacity="0.44"/>
+<circle cx="204" cy="166" r="2.4" fill="#21A038" opacity="0.22"/>
+<circle cx="223" cy="166" r="2.4" fill="#21A038" opacity="0.51"/>
+<circle cx="242" cy="166" r="2.4" fill="#21A038" opacity="0.19"/>
+<circle cx="261" cy="166" r="2.4" fill="#21A038" opacity="0.51"/>
+<circle cx="280" cy="166" r="2.4" fill="#21A038" opacity="0.52"/>
+<circle cx="299" cy="166" r="2.4" fill="#21A038" opacity="0.39"/>
+<circle cx="318" cy="166" r="2.4" fill="#21A038" opacity="0.48"/>
+<circle cx="61" cy="181" r="2.4" fill="#21A038" opacity="0.28"/>
+<circle cx="80" cy="181" r="2.4" fill="#21A038" opacity="0.49"/>
+<circle cx="99" cy="181" r="2.4" fill="#21A038" opacity="0.36"/>
+<circle cx="118" cy="181" r="2.4" fill="#21A038" opacity="0.28"/>
+<circle cx="137" cy="181" r="2.4" fill="#21A038" opacity="0.58"/>
+<circle cx="156" cy="181" r="2.4" fill="#21A038" opacity="0.35"/>
+<circle cx="175" cy="181" r="2.4" fill="#21A038" opacity="0.34"/>
+<circle cx="194" cy="181" r="2.4" fill="#21A038" opacity="0.54"/>
+<circle cx="213" cy="181" r="2.4" fill="#21A038" opacity="0.34"/>
+<circle cx="232" cy="181" r="2.4" fill="#21A038" opacity="0.46"/>
+<circle cx="251" cy="181" r="2.4" fill="#21A038" opacity="0.25"/>
+<circle cx="270" cy="181" r="2.4" fill="#21A038" opacity="0.53"/>
+<circle cx="289" cy="181" r="2.4" fill="#21A038" opacity="0.29"/>
+<circle cx="308" cy="181" r="2.4" fill="#21A038" opacity="0.20"/>
+<circle cx="327" cy="181" r="2.4" fill="#21A038" opacity="0.59"/>
+<circle cx="52" cy="196" r="2.4" fill="#21A038" opacity="0.25"/>
+<circle cx="71" cy="196" r="2.4" fill="#21A038" opacity="0.58"/>
+<circle cx="90" cy="196" r="2.4" fill="#21A038" opacity="0.59"/>
+<circle cx="109" cy="196" r="2.4" fill="#21A038" opacity="0.43"/>
+<circle cx="128" cy="196" r="2.4" fill="#21A038" opacity="0.18"/>
+<circle cx="147" cy="196" r="2.4" fill="#21A038" opacity="0.21"/>
+<circle cx="166" cy="196" r="2.4" fill="#21A038" opacity="0.27"/>
+<circle cx="185" cy="196" r="2.4" fill="#21A038" opacity="0.34"/>
+<circle cx="204" cy="196" r="2.4" fill="#21A038" opacity="0.44"/>
+<circle cx="223" cy="196" r="2.4" fill="#21A038" opacity="0.59"/>
+<circle cx="242" cy="196" r="2.4" fill="#21A038" opacity="0.33"/>
+<circle cx="261" cy="196" r="2.4" fill="#21A038" opacity="0.24"/>
+<circle cx="280" cy="196" r="2.4" fill="#21A038" opacity="0.42"/>
+<circle cx="299" cy="196" r="2.4" fill="#21A038" opacity="0.24"/>
+<circle cx="318" cy="196" r="2.4" fill="#21A038" opacity="0.22"/>
+<text x="46" y="236" class="m">Every office, every vote and every</text>
+<text x="46" y="251" class="m">reward begins with the citizen NFT.</text>
+<text x="46" y="300" class="k">HELB&#304;JARTIN &#183; THE ELECTIONS</text>
+<line x1="46" y1="308" x2="346" y2="308" stroke="#8a9488" stroke-width="1" opacity=".35"/>
+<rect x="46" y="320" width="300" height="52" fill="#21A038" fill-opacity="0.1" stroke="#21A038" stroke-width="1.5"/>
+<rect x="46" y="320" width="3" height="52" fill="#21A038"/>
+<text x="59" y="341" class="n">SEROK</text>
+<text x="59" y="357" class="m">Elected by every citizen</text>
+<rect x="46" y="386" width="300" height="52" fill="#21A038" fill-opacity="0.1" stroke="#21A038" stroke-width="1.5"/>
+<rect x="46" y="386" width="3" height="52" fill="#21A038"/>
+<text x="59" y="407" class="n">MECLIS</text>
+<text x="59" y="423" class="m">Elected across ten districts</text>
+<rect x="46" y="452" width="300" height="52" fill="#21A038" fill-opacity="0.1" stroke="#21A038" stroke-width="1.5"/>
+<rect x="46" y="452" width="3" height="52" fill="#21A038"/>
+<text x="59" y="473" class="n">SEROK&#202; MECLIS&#202;</text>
+<text x="59" y="489" class="m">Elected from sitting members</text>
+<path d="M196,150 V320" fill="none" stroke="#21A038" stroke-width="1.6" marker-end="url(#a1)"/>
+<path d="M120,196 V386" fill="none" stroke="#21A038" stroke-width="1.6" marker-end="url(#a1)"/>
+<path d="M196,438 V452" fill="none" stroke="#21A038" stroke-width="1.6" marker-end="url(#a1)"/>
+<text x="392" y="44" class="k">MAK&#194;M &#183; THE OFFICES</text>
+<line x1="392" y1="52" x2="692" y2="52" stroke="#8a9488" stroke-width="1" opacity=".35"/>
+<rect x="392" y="64" width="300" height="64" fill="#C8433B" fill-opacity="0.1" stroke="#C8433B" stroke-width="1.5"/>
+<rect x="392" y="64" width="3" height="64" fill="#C8433B"/>
+<text x="405" y="85" class="n">D&#206;WAN</text>
+<text x="405" y="101" class="m">The court neither power seats alone</text>
+<rect x="406" y="136" width="18" height="26" fill="#21A038" fill-opacity=".35" stroke="#21A038" stroke-width="1.2"/>
+<rect x="432" y="136" width="18" height="26" fill="#21A038" fill-opacity=".35" stroke="#21A038" stroke-width="1.2"/>
+<rect x="458" y="136" width="18" height="26" fill="#21A038" fill-opacity=".35" stroke="#21A038" stroke-width="1.2"/>
+<rect x="484" y="136" width="18" height="26" fill="#21A038" fill-opacity=".35" stroke="#21A038" stroke-width="1.2"/>
+<rect x="510" y="136" width="18" height="26" fill="#21A038" fill-opacity=".35" stroke="#21A038" stroke-width="1.2"/>
+<rect x="536" y="136" width="18" height="26" fill="#21A038" fill-opacity=".35" stroke="#21A038" stroke-width="1.2"/>
+<rect x="562" y="136" width="18" height="26" fill="#E8B33A" fill-opacity=".35" stroke="#E8B33A" stroke-width="1.2"/>
+<rect x="588" y="136" width="18" height="26" fill="#E8B33A" fill-opacity=".35" stroke="#E8B33A" stroke-width="1.2"/>
+<rect x="614" y="136" width="18" height="26" fill="#E8B33A" fill-opacity=".35" stroke="#E8B33A" stroke-width="1.2"/>
+<rect x="640" y="136" width="18" height="26" fill="#E8B33A" fill-opacity=".35" stroke="#E8B33A" stroke-width="1.2"/>
+<rect x="666" y="136" width="18" height="26" fill="#E8B33A" fill-opacity=".35" stroke="#E8B33A" stroke-width="1.2"/>
+<text x="392" y="180" class="t">ELECTED BY THE MECLIS</text>
+<text x="692" y="180" class="t" text-anchor="end">APPOINTED BY THE SEROK</text>
+<path d="M346,412 H370 V100 H392" fill="none" stroke="#21A038" stroke-width="1.6" marker-end="url(#a1)"/>
+<path d="M346,346 H364 V148 H392" fill="none" stroke="#E8B33A" stroke-width="1.6" marker-end="url(#a2)"/>
+<rect x="392" y="206" width="300" height="52" fill="#E8B33A" fill-opacity="0.1" stroke="#E8B33A" stroke-width="1.5"/>
+<rect x="392" y="206" width="3" height="52" fill="#E8B33A"/>
+<text x="405" y="227" class="n">SEROKWEZ&#206;RAN</text>
+<text x="405" y="243" class="m">Nominated, then confirmed</text>
+<path d="M346,352 H376 V232 H392" fill="none" stroke="#E8B33A" stroke-width="1.6" marker-end="url(#a2)"/>
+<path d="M346,418 H382 V246 H392" fill="none" stroke="#21A038" stroke-width="1.6" marker-end="url(#a1)"/>
+<rect x="392" y="272" width="300" height="52" fill="#E8B33A" fill-opacity="0.1" stroke="#E8B33A" stroke-width="1.5"/>
+<rect x="392" y="272" width="3" height="52" fill="#E8B33A"/>
+<text x="405" y="293" class="n">KAB&#206;NE</text>
+<text x="405" y="309" class="m">Formed by the Serokwez&#238;ran alone</text>
+<path d="M542,258 V272" fill="none" stroke="#E8B33A" stroke-width="1.6" marker-end="url(#a2)"/>
+<text x="392" y="364" class="k">T&#206;K&#206; &#183; OFFICE, ROLE AND BADGE</text>
+<line x1="392" y1="372" x2="692" y2="372" stroke="#8a9488" stroke-width="1" opacity=".35"/>
+<text x="392" y="400" class="m">One register holds them all &#8212; the elected,</text>
+<text x="392" y="415" class="m">the appointed, and the earned. An office</text>
+<text x="392" y="430" class="m">may never be granted the way a badge is.</text>
+<rect x="613" y="506" width="9" height="9" fill="#21A038" opacity="0.64" transform="rotate(45 613 506)"/>
+<rect x="632" y="515" width="9" height="9" fill="#21A038" opacity="0.54" transform="rotate(45 632 515)"/>
+<rect x="611" y="520" width="9" height="9" fill="#4ade80" opacity="0.70" transform="rotate(45 611 520)"/>
+<rect x="626" y="533" width="9" height="9" fill="#E8B33A" opacity="0.56" transform="rotate(45 626 533)"/>
+<rect x="605" y="536" width="9" height="9" fill="#C8433B" opacity="0.42" transform="rotate(45 605 536)"/>
+<rect x="581" y="533" width="9" height="9" fill="#21A038" opacity="0.49" transform="rotate(45 581 533)"/>
+<rect x="582" y="548" width="9" height="9" fill="#21A038" opacity="0.33" transform="rotate(45 582 548)"/>
+<rect x="569" y="555" width="9" height="9" fill="#4ade80" opacity="0.42" transform="rotate(45 569 555)"/>
+<rect x="549" y="545" width="9" height="9" fill="#E8B33A" opacity="0.32" transform="rotate(45 549 545)"/>
+<rect x="532" y="562" width="9" height="9" fill="#C8433B" opacity="0.67" transform="rotate(45 532 562)"/>
+<rect x="514" y="557" width="9" height="9" fill="#21A038" opacity="0.61" transform="rotate(45 514 557)"/>
+<rect x="513" y="537" width="9" height="9" fill="#21A038" opacity="0.46" transform="rotate(45 513 537)"/>
+<rect x="491" y="542" width="9" height="9" fill="#4ade80" opacity="0.36" transform="rotate(45 491 542)"/>
+<rect x="465" y="543" width="9" height="9" fill="#E8B33A" opacity="0.48" transform="rotate(45 465 543)"/>
+<rect x="482" y="526" width="9" height="9" fill="#C8433B" opacity="0.71" transform="rotate(45 482 526)"/>
+<rect x="477" y="519" width="9" height="9" fill="#21A038" opacity="0.76" transform="rotate(45 477 519)"/>
+<rect x="460" y="514" width="9" height="9" fill="#21A038" opacity="0.58" transform="rotate(45 460 514)"/>
+<rect x="463" y="506" width="9" height="9" fill="#4ade80" opacity="0.54" transform="rotate(45 463 506)"/>
+<rect x="471" y="499" width="9" height="9" fill="#E8B33A" opacity="0.32" transform="rotate(45 471 499)"/>
+<rect x="448" y="487" width="9" height="9" fill="#C8433B" opacity="0.42" transform="rotate(45 448 487)"/>
+<rect x="459" y="479" width="9" height="9" fill="#21A038" opacity="0.40" transform="rotate(45 459 479)"/>
+<rect x="464" y="469" width="9" height="9" fill="#21A038" opacity="0.75" transform="rotate(45 464 469)"/>
+<rect x="484" y="466" width="9" height="9" fill="#4ade80" opacity="0.68" transform="rotate(45 484 466)"/>
+<rect x="502" y="464" width="9" height="9" fill="#E8B33A" opacity="0.66" transform="rotate(45 502 464)"/>
+<rect x="523" y="471" width="9" height="9" fill="#C8433B" opacity="0.54" transform="rotate(45 523 471)"/>
+<rect x="533" y="454" width="9" height="9" fill="#21A038" opacity="0.40" transform="rotate(45 533 454)"/>
+<rect x="552" y="452" width="9" height="9" fill="#21A038" opacity="0.74" transform="rotate(45 552 452)"/>
+<rect x="564" y="465" width="9" height="9" fill="#4ade80" opacity="0.48" transform="rotate(45 564 465)"/>
+<rect x="579" y="467" width="9" height="9" fill="#E8B33A" opacity="0.49" transform="rotate(45 579 467)"/>
+<rect x="606" y="461" width="9" height="9" fill="#C8433B" opacity="0.49" transform="rotate(45 606 461)"/>
+<rect x="591" y="483" width="9" height="9" fill="#21A038" opacity="0.35" transform="rotate(45 591 483)"/>
+<rect x="622" y="480" width="9" height="9" fill="#21A038" opacity="0.80" transform="rotate(45 622 480)"/>
+<rect x="622" y="490" width="9" height="9" fill="#4ade80" opacity="0.55" transform="rotate(45 622 490)"/>
+<rect x="628" y="498" width="9" height="9" fill="#E8B33A" opacity="0.67" transform="rotate(45 628 498)"/>
+<text x="738" y="44" class="k">HEZ &#183; THE CURRENCY</text>
+<line x1="738" y1="52" x2="1038" y2="52" stroke="#8a9488" stroke-width="1" opacity=".35"/>
+<path d="M816.0,92.0 A58,58 0 0 1 816.0,208.0" fill="none" stroke="#21A038" stroke-width="26" opacity="0.95"/>
+<path d="M814.6,208.0 A58,58 0 0 1 760.4,166.6" fill="none" stroke="#4ade80" stroke-width="26" opacity="0.75"/>
+<path d="M760.0,165.2 A58,58 0 0 1 784.2,101.5" fill="none" stroke="#E8B33A" stroke-width="26" opacity="0.8"/>
+<path d="M785.4,100.7 A58,58 0 0 1 820.2,92.2" fill="none" stroke="#C8433B" stroke-width="26" opacity="0.7"/>
+<rect x="900" y="96" width="10" height="10" fill="#21A038"/>
+<text x="918" y="105" class="m">Presale</text>
+<rect x="900" y="120" width="10" height="10" fill="#4ade80"/>
+<text x="918" y="129" class="m">Treasury</text>
+<rect x="900" y="144" width="10" height="10" fill="#E8B33A"/>
+<text x="918" y="153" class="m">Airdrop</text>
+<rect x="900" y="168" width="10" height="10" fill="#C8433B"/>
+<text x="918" y="177" class="m">Founder</text>
+<text x="738" y="232" class="m">Half of it waits in a keyless pot for the</text>
+<text x="738" y="247" class="m">presale; none of it can move on a key.</text>
+<text x="738" y="300" class="k">PEZ &#183; THE FRANCHISE</text>
+<line x1="738" y1="308" x2="1038" y2="308" stroke="#8a9488" stroke-width="1" opacity=".35"/>
+<path d="M816.0,346.0 A58,58 0 1 1 802.5,347.6" fill="none" stroke="#21A038" stroke-width="26" opacity="0.95"/>
+<path d="M803.8,347.3 A58,58 0 0 1 810.6,346.3" fill="none" stroke="#E8B33A" stroke-width="26" opacity="0.9"/>
+<path d="M812.0,346.1 A58,58 0 0 1 818.8,346.1" fill="none" stroke="#C8433B" stroke-width="26" opacity="0.9"/>
+<rect x="900" y="356" width="10" height="10" fill="#21A038"/>
+<text x="918" y="365" class="m">The commons &#8212; treasury and citizens&#8217; pool</text>
+<rect x="900" y="380" width="10" height="10" fill="#E8B33A"/>
+<text x="918" y="389" class="m">Founder</text>
+<rect x="900" y="404" width="10" height="10" fill="#C8433B"/>
+<text x="918" y="413" class="m">Presale</text>
+<text x="738" y="486" class="m">Nearly all of it is the commons. Fixed</text>
+<text x="738" y="501" class="m">forever &#8212; no mint, no burn, no owner.</text>
+<text x="738" y="548" class="k">BER&#194;WERD &#183; THE RELEASE</text>
+<line x1="738" y1="556" x2="1038" y2="556" stroke="#8a9488" stroke-width="1" opacity=".35"/>
+<rect x="744" y="574.0" width="42" height="86.0" fill="#21A038" fill-opacity=".22" stroke="#21A038" stroke-width="1.3"/>
+<rect x="744" y="574.0" width="42" height="21.5" fill="#E8B33A" fill-opacity=".55"/>
+<rect x="798" y="617.0" width="42" height="43.0" fill="#21A038" fill-opacity=".22" stroke="#21A038" stroke-width="1.3"/>
+<rect x="798" y="617.0" width="42" height="10.8" fill="#E8B33A" fill-opacity=".55"/>
+<rect x="852" y="638.5" width="42" height="21.5" fill="#21A038" fill-opacity=".22" stroke="#21A038" stroke-width="1.3"/>
+<rect x="852" y="638.5" width="42" height="5.4" fill="#E8B33A" fill-opacity=".55"/>
+<rect x="906" y="649.25" width="42" height="10.75" fill="#21A038" fill-opacity=".22" stroke="#21A038" stroke-width="1.3"/>
+<rect x="906" y="649.25" width="42" height="2.7" fill="#E8B33A" fill-opacity=".55"/>
+<rect x="960" y="654.625" width="42" height="5.375" fill="#21A038" fill-opacity=".22" stroke="#21A038" stroke-width="1.3"/>
+<rect x="960" y="654.625" width="42" height="1.3" fill="#E8B33A" fill-opacity=".55"/>
+<text x="744" y="678" class="t">EACH PERIOD HALVES THE ONE BEFORE IT</text>
+<rect x="1024" y="574" width="10" height="10" fill="#E8B33A" opacity=".7"/>
+<text x="1042" y="583" class="m">the state</text>
+<rect x="1024" y="598" width="10" height="10" fill="#21A038" opacity=".7"/>
+<text x="1042" y="607" class="m">the citizens</text>
+<text x="1024" y="632" class="m">Released by arithmetic.</text>
+<text x="1024" y="647" class="m">Nobody signs it.</text>
+<rect x="0" y="734" width="1200" height="26" fill="#04070a"/>
+<line x1="0" y1="734" x2="1200" y2="734" stroke="#21A038" stroke-width="1" opacity=".45"/>
+<path d="M0,753 L12,741 L24,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M24,753 L36,741 L48,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M48,753 L60,741 L72,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M72,753 L84,741 L96,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M96,753 L108,741 L120,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M120,753 L132,741 L144,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M144,753 L156,741 L168,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M168,753 L180,741 L192,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M192,753 L204,741 L216,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M216,753 L228,741 L240,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M240,753 L252,741 L264,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M264,753 L276,741 L288,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M288,753 L300,741 L312,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M312,753 L324,741 L336,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M336,753 L348,741 L360,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M360,753 L372,741 L384,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M384,753 L396,741 L408,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M408,753 L420,741 L432,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M432,753 L444,741 L456,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M456,753 L468,741 L480,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M480,753 L492,741 L504,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M504,753 L516,741 L528,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M528,753 L540,741 L552,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M552,753 L564,741 L576,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M576,753 L588,741 L600,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M600,753 L612,741 L624,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M624,753 L636,741 L648,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M648,753 L660,741 L672,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M672,753 L684,741 L696,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M696,753 L708,741 L720,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M720,753 L732,741 L744,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M744,753 L756,741 L768,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M768,753 L780,741 L792,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M792,753 L804,741 L816,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M816,753 L828,741 L840,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M840,753 L852,741 L864,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M864,753 L876,741 L888,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M888,753 L900,741 L912,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M912,753 L924,741 L936,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M936,753 L948,741 L960,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M960,753 L972,741 L984,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M984,753 L996,741 L1008,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M1008,753 L1020,741 L1032,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M1032,753 L1044,741 L1056,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M1056,753 L1068,741 L1080,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M1080,753 L1092,741 L1104,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M1104,753 L1116,741 L1128,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M1128,753 L1140,741 L1152,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M1152,753 L1164,741 L1176,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+<path d="M1176,753 L1188,741 L1200,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M1200,753 L1212,741 L1224,753" fill="none" stroke="#21A038" stroke-width="1.1" opacity="0.22"/>
+<path d="M1224,753 L1236,741 L1248,753" fill="none" stroke="#E8B33A" stroke-width="1.1" opacity="0.4"/>
+</svg>
+
+</div>
+
+<h1 id="abstract">Abstract</h1>
+<p>PezkuwiChain is a sovereign public blockchain built to carry the functions of a state: a citizen register, elected institutions, a treasury, a currency, and courts. It is not a company issuing a token. Its constitution is its runtime, its statute book is its pallet set, and its separation of powers is enforced by the type system rather than by promise.</p>
+<p>Two properties distinguish it.</p>
+<p><strong>There are two electorates and they are deliberately different.</strong> Matters of the state &#8212; citizenship, offices, the register &#8212; are decided by counting citizens, one person one vote, on a chain where a token balance buys nothing. Matters of the network &#8212; parameters, upgrades, the treasury of last resort &#8212; are decided by stake, on the relay chain. Neither can vote in the other&#8217;s house.</p>
+<p><strong>Money and the authority to move it live on different chains.</strong> Every fund sits on the Asset Hub. Every authority to draw from it sits on the People chain. A payment is a cross-chain message from an office to a vault, and the vault&#8217;s own configuration names the one chain it will listen to. An officeholder cannot reach the money by holding a key; they reach it by holding an office, and the office is an entry in a register that citizens elect.</p>
+<p>This document describes the system as it is written. Every figure in it is taken from the source.</p>
+
+<h2 id="philosophy">Our Philosophy</h2>
+
+<h3 id="noise">The Age of Noise</h3>
+<p>Blockchain technology arrived promising decentralisation, transparency and freedom. Much of that promise became a speculative casino &#8212; tens of thousands of tokens engineered to glitter briefly on a listing and fade, exchanges acting as gatekeepers of volume rather than of engineering, and genuine work lost in the noise.</p>
+<p>PezkuwiChain is built in deliberate opposition to that. We treat this technology not as an instrument of speculation but as infrastructure for a society &#8212; which means the measure of the project is not a price, but whether a citizen can be registered, an office can be filled, and a payment can be traced to the authority that ordered it.</p>
+
+<h3 id="trust-not-capital">Trust, Not Capital</h3>
+<p>Power has always gathered around capital, and proof-of-stake carried that pattern into the digital world: those who hold the most make the rules. PezkuwiChain does not abolish stake &#8212; a citizen with nothing at risk has no standing here either. What it refuses is the equation of stake with standing.</p>
+<p>Standing is a <em>trust score</em>, and stake is its smallest component: education carries the greatest weight, then the citizens one has vouched for and the contributions one has made, and only then capital. Even within its own share, capital saturates &#8212; the tiers stop rewarding size well before large holdings, and the largest remaining multiplier is granted for holding through twelve months rather than for holding more. Beyond a modest threshold, patience buys more standing than wealth does.</p>
+<p>And in the body that secures the chain, standing does not compound at all: a score decides whether a citizen may enter the validator pool, and a uniform draw decides who sits. Above the threshold, the wealthiest citizen and the barely-qualified citizen have exactly the same chance.</p>
+
+<h3 id="clean-slate">A Clean Slate: The Stateless Advantage</h3>
+<p>Established states must refactor centuries of bureaucracy to enter this era; they cannot build anew without first dismantling the old. A stateless people carries no such legacy &#8212; no inefficient ministry to transform, no incumbent to compensate. That absence becomes a clean slate: the chance to <strong>build rather than adapt</strong>.</p>
+<p>So the rules that established states retrofit painfully &#8212; a register that cannot be forged, an election whose count is public arithmetic, a budget that cannot move without a named authority &#8212; are written into the foundation here rather than bolted on afterwards. In an age where borders are increasingly drawn in code rather than soil, that is this project&#8217;s ambition: a direct path to civic infrastructure founded on trust and shared values rather than on capital and borders alone.</p>
+
+<h2 id="why">1. Why a State, and Not a Platform</h2>
+<p>Most chains are platforms looking for applications. PezkuwiChain begins from the opposite end: a nation without a state apparatus, and a question about which parts of one can be built from software.</p>
+<p>Some cannot. A blockchain does not hold territory, and it does not enforce a judgment with anything but the consent of those who run it. What it can do is hold a register that nobody can quietly edit, run an election whose count is reproducible by anyone, and hold a treasury whose every movement carries the name of the office that authorised it. Those three &#8212; the register, the ballot and the ledger &#8212; are what a state must get right before anything else, and they are precisely what software is good at.</p>
+<div class="tenet">The design is narrow on purpose. This is not a world computer. It is a civil service that cannot be captured by whoever holds the most coins.</div>
+
+<h2 id="architecture">2. Architecture</h2>
+<p>PezkuwiChain is a relay chain with system chains attached to it. The relay provides shared security and finality; each system chain carries one function of the state and nothing else. This is not a scaling decision. It is a <strong>separation-of-powers decision expressed as topology</strong>: the chain that holds the register is not the chain that holds the money, and neither is the chain that produces blocks.</p>
+<table>
+  <thead><tr><th>Chain</th><th>Id</th><th>Carries</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Pezkuwichain</strong> (relay)</td><td>&#8212;</td><td>Consensus, finality, the validator session, cross-chain routing, and the HEZ escrow</td></tr>
+    <tr><td><strong>Asset Hub</strong></td><td>1000</td><td>Every fund. PEZ, wHEZ and wUSDT. Staking and validator elections.</td></tr>
+    <tr><td><strong>People</strong></td><td>1004</td><td>The citizen register, every office, the courts, trust, and the validator pool</td></tr>
+    <tr><td><strong>Bridge Hub</strong></td><td>1002</td><td>Bridges to other consensus systems, including Ethereum</td></tr>
+    <tr><td><strong>Coretime</strong></td><td>1005</td><td>Blockspace allocation</td></tr>
+  </tbody>
+</table>
+<p>The relay schedules exactly two cores at genesis, one for the Asset Hub and one for People &#8212; the two chains a state cannot run without.</p>
+
+<h3 id="one-door">2.1. The One Door into the Relay&#8217;s Root</h3>
+<p>The relay chain has no <code>root</code> governance track. There is no referendum that can dispatch as root, and no collective that can. Root arrives from exactly one place: a message from the People chain, carried as a superuser instruction, converted by a single origin converter that matches that chain&#8217;s identifier and nothing else.</p>
+<div class="tenet">The constitutional core of this design is eleven lines of code. The consensus layer is subordinate to the civil layer, structurally, and no amount of stake can reverse the direction.</div>
+
+<h2 id="electorates">3. Two Electorates</h2>
+<p>The most consequential decision in this system is that <strong>the franchise is split</strong>, and the two halves count differently.</p>
+
+<h3 id="people-vote">3.1. The People Chain &#8212; One Citizen, One Vote</h3>
+<p>Referenda on the People chain are tallied by a citizen count. Support is measured as <em>ayes divided by the entire citizen roll</em>, not by tokens, and approval as ayes over ayes-plus-nays. A wallet holding a billion HEZ has exactly the weight of a wallet holding none: one, if it belongs to a citizen, and zero if it does not.</p>
+<table>
+  <thead><tr><th>Track</th><th>Decision</th><th>Confirm</th><th>For</th></tr></thead>
+  <tbody>
+    <tr><td><code>root</code></td><td>28 days</td><td>24 h</td><td>Anything on this chain</td></tr>
+    <tr><td><code>welati_election</code></td><td>14 days</td><td>12 h</td><td>Electoral machinery</td></tr>
+    <tr><td><code>welati_admin</code></td><td>7 days</td><td>3 h</td><td>Routine administration</td></tr>
+    <tr><td><code>citizenship_admin</code></td><td>14 days</td><td>6 h</td><td>The register&#8217;s administration</td></tr>
+    <tr><td><code>qeyd_rules</code></td><td><strong>90 days</strong></td><td>7 days</td><td>The rules governing the register itself</td></tr>
+  </tbody>
+</table>
+<p>The last row is the notable one. The parameters deciding who may vouch for a new citizen, how many people one citizen may vouch for, and what suspends that right, live in a parameter store whose only administrator is a referendum on the ninety-day track. Not root. Not the court. Not the president. <strong>Changing the rules of admission takes three months of deliberation by the people already admitted, and there is no faster path.</strong></p>
+
+<h3 id="relay-vote">3.2. The Relay Chain &#8212; Stake, with Conviction</h3>
+<p>The relay uses conviction voting over HEZ. Turnout is measured against votable issuance, which deliberately excludes the escrow account holding the Asset Hub&#8217;s mirror of the supply &#8212; 140 million HEZ that exists on both sides of a teleport and must not be counted twice. Eight tracks exist for network matters. There is no track for root, because root is not the relay&#8217;s to give.</p>
+
+<h3 id="initiative">3.3. The Citizens&#8217; Initiative</h3>
+<p>Citizens may open a referendum without any office&#8217;s involvement. One percent of the roll, recomputed live against the current register, backing a proposal within fourteen days, opens it on the track it names. The deposit is ten HEZ and the cooldown is thirty days.</p>
+
+<h2 id="citizenship">4. Citizenship</h2>
+<p>Citizenship is a non-transferable NFT in collection zero. Holding it is what makes an account a <em>welat&#238;</em>, and every office, every vote and every trust score is downstream of it. Admission has three steps and no administrator:</p>
+<p><strong>Apply.</strong> The applicant reserves a one-HEZ deposit and registers an identity hash. The hash is globally unique and claimed at application time, so two applications cannot describe the same person.</p>
+<p><strong>Vouch.</strong> An existing citizen approves the referral. A citizen begins with five vouching places and earns one more for every three that settle, to a ceiling of fifty. Vouching is not free of consequence: a voucher whose referrals are revoked three or more times, and whose revoked share passes twenty percent, is suspended.</p>
+<p><strong>Confirm.</strong> The applicant confirms, the NFT is minted, and the roll increases by one.</p>
+<p>If nobody vouches within ninety days, the founding account may admit the applicant and becomes their referrer of record. The fallback exists so that having no connections is not a permanent bar, and it is recorded rather than hidden.</p>
+
+<h2 id="institutions">5. The Institutions</h2>
+<p>Every office is a <em>tiki</em> &#8212; an entry in the register attached to an account. Fifty-six exist. What matters is not the list but the four ways one is obtained: <strong>automatic</strong> (citizenship itself), <strong>elected</strong>, <strong>earned</strong> (by contribution, at published thresholds), and <strong>appointed</strong>. An office may never be granted by the route that grants a community badge, and the code refuses it.</p>
+
+<h3 id="serok">5.1. Serok &#8212; the President</h3>
+<p>One seat, four years, elected by every citizen. To stand, a candidate needs an approved identity, a trust score of at least 250, a thousand endorsements each from a citizen with a trust score of at least 40, and a hundred-HEZ deposit. Nobody may serve more than two consecutive terms.</p>
+<p>The election requires fifty percent turnout &#8212; waived only after one failed attempt, so that a boycott delays rather than vetoes. A candidate wins outright with more than half the valid votes; otherwise the top two go to a runoff whose campaign is one third the length.</p>
+
+<h3 id="meclis">5.2. Meclis &#8212; the Parliament</h3>
+<p>Two hundred and one seats, four years, elected across ten districts. A candidate needs a trust score of at least 100 and a hundred endorsements, and the election requires forty percent turnout.</p>
+<p><strong>The first parliament sits for half a term.</strong> This is deliberate: it staggers the legislature against the presidency permanently, so that no single election ever renews the whole state at once.</p>
+
+<h3 id="speaker">5.3. Serok&#234; Meclis&#234; &#8212; the Speaker</h3>
+<p>Elected, but only from among sitting members of parliament, and requiring a trust score of at least 200. The Speaker holds no term of their own &#8212; the office is vacated whenever a new house is seated, because a speaker without a house is not a speaker.</p>
+
+<h3 id="diwan">5.4. D&#238;wan &#8212; the Constitutional Court</h3>
+<p>Eleven seats, nine years &#8212; the longest term in the system, and longer than any body that appoints to it.</p>
+<p><strong>Six are elected by the Parliament and five are appointed by the President. Neither can seat a majority.</strong> The split is not written as &#8220;five&#8221;; it is derived, as <em>total minus elected</em>, so that changing the size of the court cannot silently change the balance between the two powers that fill it.</p>
+<p>Elected members need a trust score of at least 275. Appointed members must already hold one of fourteen qualifying professional tikis &#8212; jurist, judge, prosecutor, engineer, cyber-security specialist, network operator, economist, accountant, planner, electoral officer, statistician, auditor, scholar or cultural custodian. A president may choose, but only from people the register already recognises as qualified.</p>
+<div class="tenet">There is no call to dismiss a member of the court. The absence is the point.</div>
+<p>The court is not decorative. Two thirds of it constitutes the <em>register authority</em>, which governs the citizen register itself, administers the validator pool, and can strip an elected or earned office. It is also the fraud origin for education credentials and, with the council, the slashing origin for staking scores.</p>
+
+<h3 id="pm">5.5. Serokwez&#238;ran and the Cabinet</h3>
+<p>The President nominates; the Parliament confirms. Neither alone suffices, and either may end it. Once confirmed, the Prime Minister appoints and dismisses the cabinet alone &#8212; seven named ministries (finance, defence, justice, education, health, infrastructure, culture) plus general ministers without portfolio. Two of those ministries carry spending authority, and they are the subject of section 9.</p>
+
+<h3 id="civil">5.6. The Civil Service</h3>
+<p>Twenty-four professional offices, from judge and prosecutor to notary, registrar, tax collector, ambassador and teacher. Any minister or the President may nominate; nobody may nominate themselves; every nomination needs a trust score of at least 75 and lapses in seven days.</p>
+<p><strong>Five of the twenty-four cannot be seated by the President alone</strong> &#8212; judge, treasurer, cyber-security specialist, inspector and ambassador require parliamentary confirmation. And the list of which five is itself amendable <strong>only by the Parliament</strong>. The executive cannot shorten the list of offices it does not control.</p>
+
+<h2 id="trust">6. Trust</h2>
+<p>Trust is a single number between zero and a thousand, recomputed per citizen, and it is the currency of standing &#8212; for candidacy, for endorsement, for the validator pool, and for the citizens&#8217; share of the reward pool. It is composed of four measured parts, each normalised against its own maximum and weighted:</p>
+<table>
+  <thead><tr><th>Part</th><th>Weight</th><th>Measures</th><th>Maximum</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Perwerde</strong> (education)</td><td>30</td><td>Points from completed, certified courses</td><td>50,000</td></tr>
+    <tr><td><strong>Referral</strong></td><td>25</td><td>Citizens vouched for, net of revocations</td><td>500</td></tr>
+    <tr><td><strong>Tiki</strong></td><td>25</td><td>Community and contribution badges held</td><td>1,000</td></tr>
+    <tr><td><strong>Staking</strong></td><td>20</td><td>Size and duration of stake</td><td>100</td></tr>
+  </tbody>
+</table>
+<p>The weights sum to one hundred, and the runtime asserts it. Three properties follow from the arithmetic, and all three are intentional.</p>
+<p><strong>Zero stake is zero trust.</strong> The staking part is not merely weighted; it is a gate. A citizen with no economic exposure scores zero however educated or well-connected. Standing requires something at risk.</p>
+<p><strong>But capital is the smallest component.</strong> Stake carries the lowest weight of the four, and its own scale saturates: the amount tiers stop rewarding size above 750 HEZ, and the largest remaining multiplier comes from <em>holding for twelve months</em>, not from holding more.</p>
+<p><strong>Offices are excluded.</strong> Holding an office adds nothing to the tiki component &#8212; the code filters offices out before summing. Otherwise power would compound: an office would raise trust, trust would qualify for more offices, and the register would drift toward whoever already held it.</p>
+
+<h2 id="tnpos">7. TNPoS &#8212; the Validator Pool</h2>
+<p>Nominated proof-of-stake elects the wealthiest set that nomination can assemble. Over time that is the same set. <strong>TNPoS breaks the correlation by construction</strong>: it fills the committee from nine independent strata and gives each stratum the same number of seats regardless of how much stake sits behind it. Each stratum seats three validators; a full committee is twenty-seven.</p>
+
+<h3 id="gate">7.1. Membership is a Gate, Not a Ranking</h3>
+<p>This is what most distinguishes TNPoS from anything score-weighted. Inside a stratum, a higher trust score buys <strong>no advantage whatsoever</strong>. The score decides whether you are in the pool; a uniform random draw decides whether you sit.</p>
+<p>The draw is seeded by commit&#8211;reveal across the era: commitments in the first half, reveals in the second, each era&#8217;s seed derived from the previous one and the revealed preimage. No single participant chooses the seed, and the seed for an era does not exist until that era is underway.</p>
+
+<h3 id="floors">7.2. The Floors</h3>
+<p>A stratum with fewer than <strong>fifty</strong> eligible members is not seated at all, and <strong>its seats are not redistributed</strong>. A committee is refused if it draws from fewer than five strata, or has fewer than fifteen members, or more than sixty-four. Refusing to fill a committee is a safer failure than filling it from whoever happens to be available: a thin field produces a smaller committee, never a captured one.</p>
+<div class="figs">
+  <div><b>27</b><span>Full committee</span></div>
+  <div><b>19</b><span>Quorum &#8212; two thirds plus one</span></div>
+  <div><b>9</b><span>Can halt it by abstaining</span></div>
+  <div><b>11</b><span>Would have to collude to fork it</span></div>
+</div>
+<p>All four are derived from the committee size rather than fixed, so a smaller committee is honest about being easier to disrupt.</p>
+
+<h3 id="sanction">7.3. Misconduct and Slashing</h3>
+<p>TNPoS itself touches no funds. Its sanction is exclusion: unavailability bans a validator for twenty-four eras, equivocation for three hundred and sixty. A ban may only ever be extended, never shortened, and removal from the committee is immediate.</p>
+<p>Economic slashing is the Asset Hub&#8217;s business, and <strong>nothing is burned</strong>. Slashed HEZ is resolved to the treasury. Burning an inflating token would hand the confiscated value to everyone still holding it &#8212; a quiet dividend paid by the victim to the bystanders. A penalty should become something the state can spend.</p>
+
+<div class="schema" id="schema">
+  <div class="schema-head">
+    <h3 style="margin-top:0">The State Schema</h3>
+    <p>Four registers: the roll that makes a citizen, the offices the roll fills, the pool that secures the chain, and the vaults &#8212; each naming the single chain whose instruction it accepts.</p>
+  </div>
+  <div class="canvas">
+<svg viewBox="0 0 1200 1120" role="img" aria-label="The Pezkuwichain state schema: the citizen roll, the offices and how each is chosen, the TNPoS validator pool, and the vaults with the authority that moves each one.">
+<defs>
+<style>
+ .bt{font-family:var(--mono);font-size:13px;font-weight:600;fill:var(--ink);letter-spacing:.02em}
+ .bn{font-family:var(--mono);font-size:11px;font-weight:600;fill:var(--sun)}
+ .bl{font-family:var(--mono);font-size:10.5px;fill:var(--dim)}
+ .band{font-family:var(--mono);font-size:10px;font-weight:600;fill:var(--faint);letter-spacing:.24em}
+ .tag{font-family:var(--mono);font-size:9.5px;fill:var(--faint);letter-spacing:.06em}
+ .ttl{font-family:var(--display);font-size:26px;font-weight:600;fill:var(--ink)}
+ .sub{font-family:var(--mono);font-size:10px;fill:var(--faint);letter-spacing:.2em}
+ .str{font-family:var(--mono);font-size:10.5px;fill:var(--dim)}
+ .strn{font-family:var(--mono);font-size:10.5px;font-weight:600;fill:var(--ink)}
+</style>
+<marker id="ag" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto">
+  <path d="M0,0 L6,3 L0,6 z" fill="var(--green)"/></marker>
+<marker id="as" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto">
+  <path d="M0,0 L6,3 L0,6 z" fill="var(--sun)"/></marker>
+<marker id="ar" markerWidth="7" markerHeight="7" refX="5.4" refY="3" orient="auto">
+  <path d="M0,0 L6,3 L0,6 z" fill="var(--red)"/></marker>
+</defs>
+<text x="34" y="34" class="ttl">The state, as written</text>
+<text x="34" y="54" class="sub">WHO IS CHOSEN HOW &#183; WHO MAY MOVE WHAT</text>
+<line x1="34" y1="92" x2="880" y2="92" stroke="var(--line)" stroke-width="1"/><text x="34" y="83" class="band">I &#183; THE ROLL &#8212; PEOPLE CHAIN</text>
+<rect x="34" y="108" width="268" height="86" fill="var(--raise)" stroke="var(--green)" stroke-width="1.5"/><rect x="34" y="108" width="4" height="86" fill="var(--green)"/><text x="50" y="131" class="bt">WELATÎ</text><text x="50" y="151" class="bl">Citizen NFT, collection 0</text><text x="50" y="166" class="bl">Identity hash, unique</text><text x="50" y="181" class="bl">Vouched by a citizen</text>
+<rect x="322" y="108" width="270" height="86" fill="var(--raise)" stroke="var(--green)" stroke-width="1.5"/><rect x="322" y="108" width="4" height="86" fill="var(--green)"/><text x="338" y="131" class="bt">ONE CITIZEN, ONE VOTE</text><text x="338" y="151" class="bl">Tally counts the roll,</text><text x="338" y="166" class="bl">not the balance</text><text x="338" y="181" class="bl">Initiative: 1% of the roll</text>
+<rect x="612" y="108" width="268" height="86" fill="var(--panel)" stroke="var(--dim)" stroke-width="1.5"/><rect x="612" y="108" width="4" height="86" fill="var(--dim)"/><text x="628" y="131" class="bt">RELAY ELECTORATE</text><text x="628" y="151" class="bl">Conviction voting on HEZ</text><text x="628" y="166" class="bl">Network matters only</text><text x="628" y="181" class="bl">No root track exists</text>
+<line x1="34" y1="248" x2="880" y2="248" stroke="var(--line)" stroke-width="1"/><text x="34" y="239" class="band">II &#183; THE OFFICES</text>
+<rect x="34" y="266" width="268" height="82" fill="var(--raise)" stroke="var(--green)" stroke-width="1.5"/><rect x="34" y="266" width="4" height="82" fill="var(--green)"/><text x="50" y="289" class="bt">SEROK</text><text x="288" y="289" class="bn" text-anchor="end">1</text><text x="50" y="309" class="bl">Elected by all citizens &#183; 4 years</text><text x="50" y="324" class="bl">Trust 250 &#183; 1000 endorsements</text><text x="50" y="339" class="bl">Two consecutive terms at most</text>
+<rect x="322" y="266" width="270" height="82" fill="var(--raise)" stroke="var(--green)" stroke-width="1.5"/><rect x="322" y="266" width="4" height="82" fill="var(--green)"/><text x="338" y="289" class="bt">MECLIS</text><text x="578" y="289" class="bn" text-anchor="end">201</text><text x="338" y="309" class="bl">Elected by all citizens &#183; 4 years</text><text x="338" y="324" class="bl">Trust 100 &#183; 10 districts</text><text x="338" y="339" class="bl">First term halved, on purpose</text>
+<rect x="612" y="266" width="268" height="108" fill="var(--raise)" stroke="var(--red)" stroke-width="1.5"/><rect x="612" y="266" width="4" height="108" fill="var(--red)"/><text x="628" y="289" class="bt">DÎWAN</text><text x="866" y="289" class="bn" text-anchor="end">11</text><text x="628" y="309" class="bl">9 years &#8212; the longest term</text><text x="628" y="324" class="bl">6 elected by the Meclis</text><text x="628" y="339" class="bl">5 appointed by the Serok</text><text x="628" y="354" class="bl">Neither seats a majority</text><text x="628" y="369" class="bl">No call exists to dismiss</text>
+<rect x="322" y="388" width="270" height="72" fill="var(--raise)" stroke="var(--green)" stroke-width="1.5"/><rect x="322" y="388" width="4" height="72" fill="var(--green)"/><text x="338" y="411" class="bt">SEROKÊ MECLISÊ</text><text x="578" y="411" class="bn" text-anchor="end">1</text><text x="338" y="431" class="bl">Elected, from sitting members</text><text x="338" y="446" class="bl">Vacated when a house is seated</text>
+<rect x="34" y="388" width="268" height="72" fill="var(--raise)" stroke="var(--sun)" stroke-width="1.5"/><rect x="34" y="388" width="4" height="72" fill="var(--sun)"/><text x="50" y="411" class="bt">SEROKWEZÎRAN</text><text x="288" y="411" class="bn" text-anchor="end">1</text><text x="50" y="431" class="bl">Serok nominates &#183; Meclis confirms</text><text x="50" y="446" class="bl">Either alone may end it</text>
+<rect x="34" y="496" width="268" height="82" fill="var(--raise)" stroke="var(--sun)" stroke-width="1.5"/><rect x="34" y="496" width="4" height="82" fill="var(--sun)"/><text x="50" y="519" class="bt">KABÎNE</text><text x="288" y="519" class="bn" text-anchor="end">7+</text><text x="50" y="539" class="bl">Appointed by the Serokwezîran</text><text x="50" y="554" class="bl">Darayî &#183; Parêz &#183; Dad &#183; Belaw</text><text x="50" y="569" class="bl">Tend &#183; Ava &#183; Çand &#183; Wezîr</text>
+<rect x="322" y="496" width="270" height="82" fill="var(--raise)" stroke="var(--sun)" stroke-width="1.5"/><rect x="322" y="496" width="4" height="82" fill="var(--sun)"/><text x="338" y="519" class="bt">CIVIL SERVICE</text><text x="578" y="519" class="bn" text-anchor="end">24</text><text x="338" y="539" class="bl">Nominated by Serok or a Wezîr</text><text x="338" y="554" class="bl">Five need the Meclis: Dadger,</text><text x="338" y="569" class="bl">Xezinedar, Ewlehî, Mufetîs, Balyoz</text>
+<text x="600" y="296" class="tag" text-anchor="end">6</text>
+<text x="600" y="336" class="tag" text-anchor="end">5</text>
+<line x1="34" y1="636" x2="880" y2="636" stroke="var(--line)" stroke-width="1"/><text x="34" y="627" class="band">III &#183; THE VAULTS &#8212; ASSET HUB</text>
+<rect x="34" y="654" width="268" height="88" fill="var(--panel)" stroke="var(--dim)" stroke-width="1.5"/><rect x="34" y="654" width="4" height="88" fill="var(--dim)"/><text x="50" y="677" class="bt">TREASURY</text><text x="50" y="697" class="bl">HEZ &#183; network governance</text><text x="50" y="712" class="bl">Five spender tiers, 250 &#8594; 1M</text><text x="50" y="727" class="bl">Root may spend it &#8212; by design</text>
+<rect x="322" y="654" width="270" height="88" fill="var(--raise)" stroke="var(--sun)" stroke-width="1.5"/><rect x="322" y="654" width="4" height="88" fill="var(--sun)"/><text x="338" y="677" class="bt">AIRDROP POT</text><text x="338" y="697" class="bl">HEZ 40,000,000 at genesis</text><text x="338" y="712" class="bl">PM proposes &#183; Serok approves</text><text x="338" y="727" class="bl">Above 1M: Xezinedar + 7 days</text>
+<rect x="612" y="654" width="268" height="88" fill="var(--raise)" stroke="var(--sun)" stroke-width="1.5"/><rect x="612" y="654" width="4" height="88" fill="var(--sun)"/><text x="628" y="677" class="bt">PRESALE POT</text><text x="628" y="697" class="bl">HEZ 100,000,000 at genesis</text><text x="628" y="712" class="bl">Wezîrê Darayiyê proposes</text><text x="628" y="727" class="bl">The Meclis decides &#183; then locked</text>
+<rect x="34" y="766" width="268" height="88" fill="var(--raise)" stroke="var(--sun)" stroke-width="1.5"/><rect x="34" y="766" width="4" height="88" fill="var(--sun)"/><text x="50" y="789" class="bt">GOVERNMENT POT</text><text x="50" y="809" class="bl">PEZ &#183; 25% of every release</text><text x="50" y="824" class="bl">Wezîrê Darayiyê spends</text><text x="50" y="839" class="bl">Bounded by the passed budget</text>
+<rect x="322" y="766" width="270" height="88" fill="var(--raise)" stroke="var(--green)" stroke-width="1.5"/><rect x="322" y="766" width="4" height="88" fill="var(--green)"/><text x="338" y="789" class="bt">INCENTIVE POT</text><text x="338" y="809" class="bl">PEZ &#183; 75% of every release</text><text x="338" y="824" class="bl">No office signs a citizen&#8217;s share</text><text x="338" y="839" class="bl">Claimed, weighted by trust</text>
+<rect x="612" y="766" width="268" height="88" fill="var(--raise)" stroke="var(--green)" stroke-width="1.5"/><rect x="612" y="766" width="4" height="88" fill="var(--green)"/><text x="628" y="789" class="bt">PEZ VAULT</text><text x="628" y="809" class="bl">5,000,000,000 fixed, keyless</text><text x="628" y="824" class="bl">Releases monthly by arithmetic</text><text x="628" y="839" class="bl">Halves every 48 releases</text>
+<text x="880" y="700" class="tag">Every vault names</text>
+<text x="880" y="713" class="tag">one chain it obeys:</text>
+<text x="880" y="726" class="tag" fill="var(--green)">the People chain.</text>
+<line x1="890" y1="92" x2="890" y2="1044" stroke="var(--line)"/>
+<text x="906" y="83" class="band">IV &#183; THE POOL &#8212; TNPoS</text>
+<rect x="906" y="108" width="260" height="86" fill="var(--raise)" stroke="var(--green)" stroke-width="1.5"/>
+<rect x="906" y="108" width="4" height="86" fill="var(--green)"/>
+<text x="922" y="131" class="bt">NINE STRATA</text>
+<text x="1150" y="131" class="bn" text-anchor="end">27</text>
+<text x="922" y="151" class="bl">Three seats each, regardless</text>
+<text x="922" y="166" class="bl">of the stake behind them.</text>
+<text x="922" y="181" class="bl">Score admits; a draw seats.</text>
+<rect x="906" y="224" width="260" height="38" fill="var(--panel)" stroke="var(--line)"/>
+<rect x="906" y="224" width="3" height="38" fill="var(--green)" opacity="0.55"/>
+<text x="920" y="240" class="strn">Stake</text>
+<text x="920" y="254" class="str">staking score &gt; 0</text>
+<text x="1152" y="247" class="tag" text-anchor="end">3</text>
+<rect x="906" y="270" width="260" height="38" fill="var(--panel)" stroke="var(--line)"/>
+<rect x="906" y="270" width="3" height="38" fill="var(--green)" opacity="0.55"/>
+<text x="920" y="286" class="strn">Meclis</text>
+<text x="920" y="300" class="str">parliamentary path</text>
+<text x="1152" y="293" class="tag" text-anchor="end">3</text>
+<rect x="906" y="316" width="260" height="38" fill="var(--panel)" stroke="var(--line)"/>
+<rect x="906" y="316" width="3" height="38" fill="var(--green)" opacity="0.55"/>
+<text x="920" y="332" class="strn">Dîwan</text>
+<text x="920" y="346" class="str">judicial path</text>
+<text x="1152" y="339" class="tag" text-anchor="end">3</text>
+<rect x="906" y="362" width="260" height="38" fill="var(--panel)" stroke="var(--line)"/>
+<rect x="906" y="362" width="3" height="38" fill="var(--green)" opacity="0.55"/>
+<text x="920" y="378" class="strn">Perwerde</text>
+<text x="920" y="392" class="str">education score &gt; 0</text>
+<text x="1152" y="385" class="tag" text-anchor="end">3</text>
+<rect x="906" y="408" width="260" height="38" fill="var(--panel)" stroke="var(--line)"/>
+<rect x="906" y="408" width="3" height="38" fill="var(--green)" opacity="0.55"/>
+<text x="920" y="424" class="strn">Tiki</text>
+<text x="920" y="438" class="str">community score &gt; 0</text>
+<text x="1152" y="431" class="tag" text-anchor="end">3</text>
+<rect x="906" y="454" width="260" height="38" fill="var(--panel)" stroke="var(--line)"/>
+<rect x="906" y="454" width="3" height="38" fill="var(--green)" opacity="0.55"/>
+<text x="920" y="470" class="strn">Welatî lottery</text>
+<text x="920" y="484" class="str">the open seat</text>
+<text x="1152" y="477" class="tag" text-anchor="end">3</text>
+<rect x="906" y="500" width="260" height="38" fill="var(--panel)" stroke="var(--line)"/>
+<rect x="906" y="500" width="3" height="38" fill="var(--green)" opacity="0.55"/>
+<text x="920" y="516" class="strn">Geography</text>
+<text x="920" y="530" class="str">regional spread</text>
+<text x="1152" y="523" class="tag" text-anchor="end">3</text>
+<rect x="906" y="546" width="260" height="38" fill="var(--panel)" stroke="var(--line)"/>
+<rect x="906" y="546" width="3" height="38" fill="var(--green)" opacity="0.55"/>
+<text x="920" y="562" class="strn">Tenure</text>
+<text x="920" y="576" class="str">length of service</text>
+<text x="1152" y="569" class="tag" text-anchor="end">3</text>
+<rect x="906" y="592" width="260" height="38" fill="var(--panel)" stroke="var(--line)"/>
+<rect x="906" y="592" width="3" height="38" fill="var(--green)" opacity="0.55"/>
+<text x="920" y="608" class="strn">Infrastructure</text>
+<text x="920" y="622" class="str">operational contribution</text>
+<text x="1152" y="615" class="tag" text-anchor="end">3</text>
+<rect x="906" y="644" width="260" height="76" fill="var(--raise)" stroke="var(--red)" stroke-width="1.5"/>
+<rect x="906" y="644" width="4" height="76" fill="var(--red)"/>
+<text x="922" y="667" class="bt">THRESHOLDS</text>
+<text x="922" y="687" class="bl">Quorum 19 &#183; halt 9 &#183; fork 11</text>
+<text x="922" y="702" class="bl">A stratum under 50 is not seated,</text>
+<text x="922" y="717" class="bl">and its seats are not given away.</text>
+<path d="M168,194 V266" fill="none" stroke="var(--green)" stroke-width="1.6" marker-end="url(#ag)"/>
+<path d="M457,194 V266" fill="none" stroke="var(--green)" stroke-width="1.6" marker-end="url(#ag)"/>
+<path d="M457,348 V388" fill="none" stroke="var(--green)" stroke-width="1.6" marker-end="url(#ag)"/>
+<path d="M592,300 V310 L602,300 H602 L612,290 V300" fill="none" stroke="var(--green)" stroke-width="1.6" marker-end="url(#ag)"/>
+<path d="M302,292 V250 L312,240 H602 L612,250 V340" fill="none" stroke="var(--sun)" stroke-width="1.6" marker-end="url(#as)"/>
+<path d="M168,348 V388" fill="none" stroke="var(--sun)" stroke-width="1.6" marker-end="url(#as)"/>
+<path d="M340,348 V362 L330,372 H250 L240,382 V388" fill="none" stroke="var(--green)" stroke-width="1.6" marker-end="url(#ag)"/>
+<path d="M168,460 V496" fill="none" stroke="var(--sun)" stroke-width="1.6" marker-end="url(#as)"/>
+<path d="M220,348 V468 L230,478 H390 L400,488 V496" fill="none" stroke="var(--sun)" stroke-width="1.6" marker-end="url(#as)"/>
+<path d="M880,330 V340 L890,330 H896 L906,320 V330" fill="none" stroke="var(--red)" stroke-width="1.6" marker-end="url(#ar)"/>
+<path d="M168,460 V610 L178,620 H410 L420,630 V654" fill="none" stroke="var(--sun)" stroke-width="1.6" marker-end="url(#as)" stroke-dasharray="5 4"/>
+<path d="M200,348 V618 L210,628 H460 L470,638 V654" fill="none" stroke="var(--green)" stroke-width="1.6" marker-end="url(#ag)" stroke-dasharray="5 4"/>
+<path d="M120,578 V602 L130,612 H690 L700,622 V654" fill="none" stroke="var(--sun)" stroke-width="1.6" marker-end="url(#as)" stroke-dasharray="5 4"/>
+<path d="M90,578 V766" fill="none" stroke="var(--sun)" stroke-width="1.6" marker-end="url(#as)" stroke-dasharray="5 4"/>
+<path d="M500,194 V596 L490,606 H430 L420,616 V766" fill="none" stroke="var(--green)" stroke-width="1.6" marker-end="url(#ag)" stroke-dasharray="5 4"/>
+<path d="M746,742 V766" fill="none" stroke="var(--green)" stroke-width="1.6" marker-end="url(#ag)"/>
+<path d="M302,150 V160 L312,150 H896 L906,140 V150" fill="none" stroke="var(--green)" stroke-width="1.6" marker-end="url(#ag)"/>
+</svg>
+  </div>
+  <div class="legend">
+    <span><i style="border-color:var(--green)"></i>Elected by citizens, or claimed by arithmetic</span>
+    <span><i style="border-color:var(--sun)"></i>Appointed, nominated, or proposed by an office</span>
+    <span><i style="border-color:var(--red)"></i>Judicial authority and sanction</span>
+    <span><i style="border-color:var(--dim);border-top-style:dashed"></i>Cross-chain spend instruction</span>
+  </div>
+</div>
+
+<h2 id="tokens">8. Two Tokens</h2>
+<p>HEZ and PEZ are not two flavours of the same thing. They answer to different authorities, live on different chains, and behave in opposite directions.</p>
+
+<h3 id="hez">8.1. HEZ &#8212; the Currency</h3>
+<p>The native token of the relay, the Asset Hub and People. One HEZ is 10<sup>12</sup> TYR. It pays fees, it secures the network, and it inflates. <strong>Two hundred million exist at genesis:</strong></p>
+<table>
+  <thead><tr><th>Allocation</th><th>Amount</th><th>Held on</th><th>By</th></tr></thead>
+  <tbody>
+    <tr><td>Presale</td><td>100,000,000 &#183; 50%</td><td>Asset Hub</td><td>A keyless pot</td></tr>
+    <tr><td>Treasury</td><td>40,000,000 &#183; 20%</td><td>Relay</td><td>The treasury account</td></tr>
+    <tr><td>Airdrop</td><td>40,000,000 &#183; 20%</td><td>Asset Hub</td><td>A keyless pot</td></tr>
+    <tr><td>Founder</td><td>20,000,000 &#183; 10%</td><td>Relay</td><td>The founding account</td></tr>
+  </tbody>
+</table>
+<p>The relay mints its own sixty million plus a hundred and forty million of <strong>escrow</strong> &#8212; the mirror of what the Asset Hub holds, so that a teleport moves a token rather than creating one. The runtime carries a test that builds the genesis and asserts owned plus escrow equals exactly two hundred million.</p>
+<p><strong>Inflation is bounded and its base is fixed.</strong> The rate is a governance parameter, eight percent by default, hard-capped at ten percent by a constant no parameter can exceed. It applies to a <em>fixed base of two hundred million</em>, not to total issuance &#8212; so emission does not compound. At the default that is sixteen million HEZ a year, of which fifteen percent goes to the treasury and the rest to those securing the chain. Only the Treasurer, an office on the People chain, may change the rate &#8212; never HEZ holders, never by more than one percentage point at a time, and no more often than every ninety days.</p>
+
+<h3 id="pez">8.2. PEZ &#8212; the Franchise</h3>
+<p>An asset on the Asset Hub, asset id one, <strong>five billion units, fixed forever</strong>. No inflation, no mint path, no burn path.</p>
+<p>Its owner, issuer, admin and freezer are all one keyless account derived from a pallet identifier. <strong>No seed produces it, so nobody holds it.</strong> Beyond that, a call filter refuses <code>mint</code>, <code>burn</code>, <code>force_create</code>, <code>force_asset_status</code> and <code>start_destroy</code> for asset one arriving over a cross-chain message &#8212; so even the relay&#8217;s superuser cannot reach it.</p>
+<table>
+  <thead><tr><th>Allocation</th><th>Amount</th><th>Held by</th></tr></thead>
+  <tbody>
+    <tr><td>Treasury + rewards pool</td><td>4,812,500,000 &#183; 96.25%</td><td>Keyless treasury pot</td></tr>
+    <tr><td>Founder</td><td>93,750,000 &#183; 1.875%</td><td>The founding account</td></tr>
+    <tr><td>Presale</td><td>93,750,000 &#183; 1.875%</td><td>Presale custody</td></tr>
+  </tbody>
+</table>
+
+<h3 id="halving">8.3. The Halving</h3>
+<p>The rewards pool is not distributed by decision. It is released by arithmetic, monthly, and the amount halves every forty-eight releases &#8212; approximately four years.</p>
+<p>The first period releases half the pool across forty-eight months: about <strong>50,130,208 PEZ</strong> per month. Release forty-eight pays half that, release ninety-six half again, and the schedule reaches zero at the hundred and twenty-eighth period. Each release is derived from the release index rather than accumulated, so no drift is possible and no missed release can be double-paid.</p>
+<div class="tenet">Every release splits the same way: seventy-five percent to the citizens, twenty-five percent to the state. Nobody signs it. It happens on block initialisation.</div>
+
+<h2 id="funds">9. The Vaults, and Who May Move Them</h2>
+<p>This is the section the architecture exists for. Every fund is on the Asset Hub. Every authority is on the People chain. Read each row as a sentence: <em>this office proposes, this body decides, this vault pays.</em></p>
+<table>
+  <thead><tr><th>Fund</th><th>Token</th><th>Who may propose</th><th>Who decides</th><th>How it pays</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Treasury</strong></td><td>HEZ</td><td>Network governance, five spender tiers from 250 to 1,000,000</td><td>The referendum on that track</td><td>Within 30 days</td></tr>
+    <tr><td><strong>Airdrop pot</strong></td><td>HEZ</td><td>The Prime Minister</td><td>The President &#8212; plus the Treasurer above 1,000,000, with a seven-day delay</td><td>Within 30 days</td></tr>
+    <tr><td><strong>Presale pot</strong></td><td>HEZ</td><td>The Finance Minister</td><td>The Parliament, simple majority</td><td>Within 365 days, after the lock</td></tr>
+    <tr><td><strong>Government pot</strong></td><td>PEZ</td><td>The Finance Minister, bounded by the approved budget</td><td>The Parliament, when it passed the budget</td><td>Immediate</td></tr>
+    <tr><td><strong>Incentive pot</strong></td><td>PEZ</td><td>No proposal &#8212; a citizen claims</td><td>The trust score, arithmetically</td><td>Immediate</td></tr>
+  </tbody>
+</table>
+
+<h3 id="refuse">9.1. What the Vaults Refuse</h3>
+<p>Four of the five vaults name <strong>exactly one chain</strong> they accept instruction from: the People chain. Not the relay. Not root. Not a key. The airdrop pot, the presale pot and both PEZ pots are configured with an origin that matches the People chain&#8217;s location and has no root arm at all.</p>
+<div class="tenet">The relay&#8217;s superuser cannot spend the airdrop, the presale, or either PEZ pot. It can halt the chain, upgrade the runtime, and reject a proposed spend &#8212; but it cannot pay itself.</div>
+<p>The HEZ treasury is the exception and is documented as such: root can spend it without limit. It is the fund of last resort, and the one place where the network&#8217;s own governance rather than the state&#8217;s holds the purse.</p>
+
+<h3 id="endtoend">9.2. A Payment, End to End</h3>
+<p>The airdrop path shows the whole shape. The <strong>Prime Minister</strong> proposes an amount and a beneficiary. The <strong>President</strong> approves &#8212; and if the amount exceeds one million HEZ the <strong>Treasurer</strong> must also sign, after which the payment cannot execute for seven days: a cooling period proportional to the size. <strong>Anyone</strong> may then execute, because every discretionary decision has already been made and recorded; what remains is arithmetic, and arithmetic should not wait on a signature. The People chain sends a message naming the pot, the beneficiary and the amount; the pot&#8217;s origin check confirms the sender. The beneficiary collects within the payout window.</p>
+<p>Every step is an event. The proposal names its proposer, the approval names its approver, and the amount is on the wire in the clear.</p>
+
+<h3 id="budget">9.3. The Budget and the Citizens&#8217; Share</h3>
+<p>The government pot is not spent proposal by proposal. The Parliament passes a budget, which credits an approved figure; the Finance Minister then spends against that figure and cannot exceed it. This is the ordinary shape of public finance, enforced by a bound rather than by an audit after the fact.</p>
+<p>The incentive pot is distributed per epoch, weighted by trust: a citizen&#8217;s share is their trust score over the network&#8217;s total active trust, times the epoch&#8217;s pool. Ten percent of each epoch is reserved for holders of role badges, and unclaimed rewards are clawed back after a week so the pool cannot silently drain into abandoned accounts. <strong>No office signs a citizen&#8217;s reward. It is claimed, and the arithmetic is the authority.</strong></p>
+
+<h2 id="security">10. Security</h2>
+<p><strong>At the implementation layer</strong>, the runtime is Rust compiled to WebAssembly and upgrades are forkless &#8212; a defect is patched by a runtime upgrade, not by asking the network to migrate.</p>
+<p><strong>At the consensus layer</strong>, block production and finality are separate mechanisms, so a chain that stops finalising still produces blocks and a chain that stops producing does not finalise garbage.</p>
+<p><strong>At the economic layer</strong>, slashing removes stake, and the removed stake becomes treasury rather than vanishing.</p>
+<p><strong>At the civil layer</strong> &#8212; the one this design adds &#8212; misconduct costs standing. A banned validator loses the committee seat, the reward weight and the candidacy threshold that trust confers. Because trust is earned over years and cannot be bought, it is the one thing an attacker cannot re-acquire quickly.</p>
+<p><strong>And structurally</strong>, the separations are real: the money is on a chain that only accepts instruction from the register; the register is governed by a court neither the president nor the parliament can seat alone; the rules for admission can only be changed by a ninety-day referendum of the people already admitted; and the relay&#8217;s root can be reached from exactly one place.</p>
+
+<h2 id="heritage">11. Heritage and Independence</h2>
+<p>PezkuwiChain is built on the Polkadot SDK, and says so.</p>
+<p>The framework &#8212; its consensus, its cross-chain messaging format, its runtime machinery &#8212; is the work of Parity Technologies and the wider Polkadot community, released as free software. That inheritance is not incidental; it is the reason a small institute could build a state layer at all rather than spending a decade on a consensus engine. The debt is acknowledged in every file: four thousand eight hundred and thirty source files carry a copyright line naming Parity Technologies alongside the Dijital Kurdistan Tech Institute, and the files this project has not modified carry Parity&#8217;s alone.</p>
+<p>What is ours is the layer above: the citizen register, the offices and their elections, the courts, the trust computation, the validator pool, the treasuries and the authority chains that reach them. Those are original work, and they are what this document describes.</p>
+<p>Independence is technical as well as legal. PezkuwiChain is not a Polkadot parachain; it is a sovereign relay chain with its own validators, its own token and its own governance. It shares an ancestry with Polkadot the way two states may share a legal tradition &#8212; visibly, and without either governing the other.</p>
+
+<h2 id="licence">12. Licence and Legal Position</h2>
+<p>The project is free software, multi-licensed in the pattern its heritage requires:</p>
+<table>
+  <thead><tr><th>Layer</th><th>Licence</th></tr></thead>
+  <tbody>
+    <tr><td>Framework libraries</td><td>Apache-2.0</td></tr>
+    <tr><td>Node and runtime</td><td>GPL-3.0-or-later with the Classpath exception</td></tr>
+    <tr><td>Documentation examples</td><td>MIT-0</td></tr>
+    <tr><td>Project templates</td><td>Unlicense</td></tr>
+  </tbody>
+</table>
+<p>The workspace default is GPL-3.0-or-later with the Classpath exception, and the repository carries the full text of each licence it uses. Copyright is jointly attributed to Parity Technologies (UK) Ltd. and the Dijital Kurdistan Tech Institute.</p>
+<p>PezkuwiChain is a public infrastructure project of the <strong>Dijital Kurdistan Tech Institute</strong>. HEZ and PEZ are utility tokens of a functioning network. They are not securities, not shares, and not claims on the assets or revenue of any entity. Nothing in this document is an offer, a solicitation, or investment advice.</p>
+
+<h2 id="glossary">13. Appendix A: Glossary</h2>
+<table>
+  <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><strong>welat&#238;</strong></td><td>Citizen; the holder of a citizen NFT</td></tr>
+    <tr><td><strong>tiki</strong></td><td>An office, role or badge recorded against a citizen</td></tr>
+    <tr><td><strong>Serok</strong></td><td>President</td></tr>
+    <tr><td><strong>Meclis</strong></td><td>Parliament</td></tr>
+    <tr><td><strong>Serok&#234; Meclis&#234;</strong></td><td>Speaker of the Parliament</td></tr>
+    <tr><td><strong>D&#238;wan</strong></td><td>Constitutional Court</td></tr>
+    <tr><td><strong>Serokwez&#238;ran</strong></td><td>Prime Minister</td></tr>
+    <tr><td><strong>Wez&#238;r</strong> / <strong>Wez&#238;r&#234; Darayiy&#234;</strong></td><td>Minister / Minister of Finance</td></tr>
+    <tr><td><strong>Xezinedar</strong></td><td>Treasurer</td></tr>
+    <tr><td><strong>perwerde</strong></td><td>Education</td></tr>
+    <tr><td><strong>qeyd</strong></td><td>The register, and the rules governing it</td></tr>
+    <tr><td><strong>teyrchain</strong></td><td>A system chain secured by the relay</td></tr>
+    <tr><td><strong>HEZ</strong> / <strong>TYR</strong></td><td>The native currency / its smallest unit; 1 HEZ = 10<sup>12</sup> TYR</td></tr>
+    <tr><td><strong>PEZ</strong></td><td>The fixed-supply asset backing the citizens&#8217; reward pool and the state budget</td></tr>
+  </tbody>
+</table>
+
+<h2 id="figures">14. Appendix B: Figures at a Glance</h2>
+<table>
+  <tbody>
+    <tr><td>HEZ genesis supply</td><td>200,000,000</td></tr>
+    <tr><td>HEZ inflation &#8212; default / ceiling</td><td>8% / 10% of a fixed 200M base</td></tr>
+    <tr><td>PEZ supply</td><td>5,000,000,000, fixed</td></tr>
+    <tr><td>PEZ halving period</td><td>48 monthly releases (~4 years)</td></tr>
+    <tr><td>PEZ release split</td><td>75% citizens / 25% state</td></tr>
+    <tr><td>Presidential term</td><td>4 years, maximum 2 consecutive</td></tr>
+    <tr><td>Parliamentary seats / term</td><td>201 / 4 years (first term halved)</td></tr>
+    <tr><td>Constitutional Court</td><td>11 seats &#8212; 6 elected, 5 appointed &#8212; 9 years</td></tr>
+    <tr><td>Register-rules referendum</td><td>90-day decision period</td></tr>
+    <tr><td>Citizens&#8217; initiative threshold</td><td>1% of the roll</td></tr>
+    <tr><td>TNPoS committee</td><td>9 strata &#215; 3 seats = 27</td></tr>
+    <tr><td>TNPoS quorum / halt / fork</td><td>19 / 9 / 11</td></tr>
+    <tr><td>Minimum eligible per stratum</td><td>50</td></tr>
+  </tbody>
+</table>
+
+<h2 id="resources">15. Resources</h2>
+<h3 id="channels">Official Channels</h3>
+<ul>
+  <li>Website &#8212; <a href="https://pezkuwichain.io">pezkuwichain.io</a></li>
+  <li>Wallet and citizenship &#8212; <a href="https://app.pezkuwichain.io">app.pezkuwichain.io</a></li>
+  <li>Exchange &#8212; <a href="https://pex.network">pex.network</a></li>
+</ul>
+<h3 id="developer">Developer Resources</h3>
+<ul>
+  <li>Source &#8212; <a href="https://github.com/pezkuwichain/pezkuwi-DKS">github.com/pezkuwichain/pezkuwi-DKS</a></li>
+  <li>JavaScript API &#8212; <code>@pezkuwi/api</code>. Polkadot tooling is not interchangeable with it; the fork&#8217;s types differ.</li>
+  <li>Everything in this document can be checked against the runtime source in that repository. Where a figure here and the code disagree, the code is correct and this document is a defect.</li>
+</ul>
+
+</div>
+</div>
+
+</body>
+</html>

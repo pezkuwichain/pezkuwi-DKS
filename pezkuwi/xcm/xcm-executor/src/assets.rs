@@ -450,7 +450,7 @@ impl AssetsInHolding {
 	/// Example:
 	///
 	/// ```
-	/// use staging_xcm_executor::AssetsInHolding;
+	/// use pezstaging_xcm_executor::AssetsInHolding;
 	/// use xcm::latest::prelude::*;
 	/// // Note: In real usage, AssetsInHolding is created through TransactAsset operations
 	/// // For this example, we use Assets type instead to demonstrate the min() output

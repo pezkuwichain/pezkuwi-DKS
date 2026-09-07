@@ -654,13 +654,14 @@ pub mod pezpallet {
 		/// state owes a citizen should not be lost because a sovereign account was short of
 		/// fees.
 		fn send_payment(who: &T::AccountId, amount: u128) -> Result<(), SendError> {
-			let call = (
-				T::TreasuryPalletIndex::get(),
-				PAY_FROM_INCENTIVE_POT_CALL_INDEX,
-				who,
-				codec::Compact(amount),
-			)
-				.encode();
+			// `pay_from_incentive_pot` takes a plain `Balance`, not a compact one, so the amount
+			// goes on the wire at full width. A compact here shifts every byte after it and the
+			// Asset Hub decodes a different call -- and nothing reports it, because `Transact`
+			// tells the sender the message was processed either way. The epoch is already marked
+			// claimed by the time the payment is refused.
+			let call =
+				(T::TreasuryPalletIndex::get(), PAY_FROM_INCENTIVE_POT_CALL_INDEX, who, amount)
+					.encode();
 
 			let message = Xcm(vec![
 				UnpaidExecution { weight_limit: Unlimited, check_origin: None },

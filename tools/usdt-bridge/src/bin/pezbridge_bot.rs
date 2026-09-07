@@ -25,8 +25,10 @@ use serde::{Deserialize, Serialize};
 use sp_core::crypto::Ss58Codec;
 use std::path::PathBuf;
 use std::time::Duration;
-use subxt::dynamic::{At, Value};
-use subxt::{OnlineClient, SubstrateConfig};
+use pezkuwi_subxt::dynamic::{At, Value};
+// See the note in main.rs: `BizinikiwConfig` is how the published 0.44.0 spells it.
+use pezkuwi_subxt::utils::AccountId32 as SubxtAccountId32;
+use pezkuwi_subxt::{BizinikiwConfig as BizinikiwiConfig, OnlineClient};
 use tracing::{error, info, warn};
 
 const WUSDT_ASSET_ID: u32 = 1000;
@@ -102,7 +104,7 @@ fn save_state(path: &PathBuf, state: &BotState) -> Result<()> {
 // ============================================================================
 
 async fn get_approval_remaining(
-    client: &OnlineClient<SubstrateConfig>,
+    client: &OnlineClient<BizinikiwiConfig>,
     asset_id: u32,
     owner: &str,
     delegate: &str,
@@ -112,19 +114,22 @@ async fn get_approval_remaining(
     let delegate_bytes = sp_core::crypto::AccountId32::from_ss58check(delegate)
         .map_err(|e| anyhow!("invalid delegate address: {e:?}"))?;
 
-    let storage_query = subxt::dynamic::storage(
-        "Assets",
-        "Approvals",
-        vec![
-            Value::primitive(asset_id.into()),
-            Value::from_bytes(<sp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&owner_bytes)),
-            Value::from_bytes(<sp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&delegate_bytes)),
-        ],
-    );
+    let storage_query = pezkuwi_subxt::dynamic::storage::<
+        (u32, SubxtAccountId32, SubxtAccountId32),
+        Value,
+    >("Assets", "Approvals");
 
-    let result = client.storage().at_latest().await?.fetch(&storage_query).await?;
+    let at = client.storage().at_latest().await?;
+    let result = at
+        .entry(storage_query)?
+        .try_fetch((
+            asset_id,
+            SubxtAccountId32(*<sp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&owner_bytes)),
+            SubxtAccountId32(*<sp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&delegate_bytes)),
+        ))
+        .await?;
     if let Some(v) = result {
-        if let Some(amount) = v.to_value()?.at("amount").and_then(|a| a.as_u128()) {
+        if let Some(amount) = v.decode()?.at("amount").and_then(|a| a.as_u128()) {
             return Ok(amount);
         }
     }
@@ -166,7 +171,7 @@ async fn notify(http: &reqwest::Client, token: &str, config: &BotConfig, msg: &s
 // ============================================================================
 
 async fn check_allowance_and_maybe_notify(
-    read_client: &OnlineClient<SubstrateConfig>,
+    read_client: &OnlineClient<BizinikiwiConfig>,
     http: &reqwest::Client,
     token: &str,
     config: &BotConfig,
@@ -221,7 +226,7 @@ async fn main() -> Result<()> {
     let token = std::env::var("PEZBRIDGE_TELEGRAM_TOKEN").context("PEZBRIDGE_TELEGRAM_TOKEN env var not set")?;
 
     info!("Connecting to {}...", config.pezkuwi_rpc);
-    let read_client = OnlineClient::<SubstrateConfig>::from_url(&config.pezkuwi_rpc)
+    let read_client = OnlineClient::<BizinikiwiConfig>::from_url(&config.pezkuwi_rpc)
         .await
         .context("failed to connect")?;
 

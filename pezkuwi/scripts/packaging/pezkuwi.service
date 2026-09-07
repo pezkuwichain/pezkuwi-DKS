@@ -1,7 +1,7 @@
 [Unit]
 Description=Pezkuwi Node
 After=network.target
-Documentation=https://github.com/pezkuwichain/pezkuwi-sdk
+Documentation=https://github.com/pezkuwichain/pezkuwi-DKS
 
 [Service]
 EnvironmentFile=-/etc/default/pezkuwi

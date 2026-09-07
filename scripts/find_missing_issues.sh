@@ -2,9 +2,9 @@
 cd /home/mamostehp/pezkuwi-sdk
 
 # Koddaki tüm upstream issue numaraları
-CODE_ISSUES=$(grep -rho "github.com/pezkuwichain/pezkuwi-sdk/issues/[0-9]*" --include="*.rs" 2>/dev/null | \
+CODE_ISSUES=$(grep -rho "github.com/pezkuwichain/pezkuwi-DKS/issues/[0-9]*" --include="*.rs" 2>/dev/null | \
   grep -v target | grep -v vendor | \
-  sed 's|github.com/pezkuwichain/pezkuwi-sdk/issues/||' | \
+  sed 's|github.com/pezkuwichain/pezkuwi-DKS/issues/||' | \
   sort -n | uniq)
 
 # Zaten tracking issue olanlar (mapping dosyasından)

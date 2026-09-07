@@ -4,7 +4,7 @@ error: use of deprecated constant `WhereSection::_w`:
                It is planned to be removed in December 2023.
 
                For more info see:
-                   <https://github.com/pezkuwichain/pezkuwi-sdk/issues/218>
+                   <https://github.com/pezkuwichain/pezkuwi-DKS/issues/218>
   --> tests/construct_runtime_ui/deprecated_where_block.rs:20:1
    |
 20 | / construct_runtime! {
