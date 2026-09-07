@@ -79,11 +79,19 @@ fail-fast = true
 #
 # Without `terminate-after` nextest prints SLOW forever and waits, so a hung test costs the
 # whole job timeout -- twelve hours of a runner -- and reports nothing at all, which is worse
-# than a red because a red at least says something. Measured on the 2026-09-03 run of 6,831
-# tests: p99 is 52s, sixty tests exceed 60s, twenty-eight exceed 300s, and only two exceed
-# 1800s. Thirty periods of sixty seconds therefore kills a hang in half an hour while leaving
-# every legitimately slow test in the suite untouched but those two, which get their own
-# budget below.
+# than a red because a red at least says something. Re-measured on the 2026-09-06 green run
+# (34014730362, 16,947 results across all four test jobs): p99 is 35s, 110 exceed 60s, 56
+# exceed 300s, 20 exceed 1200s, and four exceed 1800s -- all four `pezkuwi-sdk-docs`, which
+# has its own budget below.
+#
+# Thirty periods of sixty seconds kills a hang in half an hour. What that number cannot do is
+# tell a hang apart from a test that honestly takes that long, so anything running close to it
+# on a *green* run is one contended runner away from being killed and reported as a failure
+# with nothing to read. Two families were in that position and now have budgets of their own:
+# `export_import_revert` at 1696s was using 94% of this, and the nine `pezkuwi-node-core-pvf`
+# integration tests 78-90%. Raising the global instead would have bought them room by giving
+# every genuine hang another half hour, which is the wrong trade for 16,000 tests whose p99 is
+# 35 seconds.
 slow-timeout = { period = "60s", terminate-after = 30 }
 
 # Treat a test as leaky if after the process is shut down, standard output and standard error
@@ -168,3 +176,27 @@ slow-timeout = { period = "300s", terminate-after = 20 }
 filter = 'test(run_all_eth_rpc_tests)'
 threads-required = 'num-cpus'
 slow-timeout = { period = "120s", terminate-after = 10 }
+
+# `export_import_revert` builds a chain, exports it, re-imports it and reverts it, all through
+# the node binary. Measured at 1696s on a green run -- 94% of the global budget, which exists
+# to kill hangs and would kill this instead the first time the runner is busy. An hour is
+# still a hang by any reading.
+[[profile.default.overrides]]
+filter = 'binary_id(pezstaging-node-cli::export_import_flow)'
+slow-timeout = { period = "120s", terminate-after = 30 }
+
+# The PVF integration tests each prepare and execute real PVF artifacts in spawned worker
+# processes, and there are nine of them between 1397s and 1626s -- 78-90% of the global
+# budget. Same reasoning as above: they are slow because of what they do, not because they
+# are stuck.
+[[profile.default.overrides]]
+filter = 'binary_id(pezkuwi-node-core-pvf::it)'
+slow-timeout = { period = "120s", terminate-after = 30 }
+
+# `full_native_block_import_works` and its siblings import blocks through the real node at
+# 1235s and below. Further from the line than the two above, but the same shape, and the
+# whole binary is given the budget so a slower sibling does not have to be discovered by
+# being killed.
+[[profile.default.overrides]]
+filter = 'binary_id(pezstaging-node-cli::basic)'
+slow-timeout = { period = "120s", terminate-after = 20 }
