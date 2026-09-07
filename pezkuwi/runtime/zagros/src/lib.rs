@@ -508,6 +508,21 @@ impl pezpallet_session::Config for Runtime {
 	type DisablingStrategy = pezpallet_session::disabling::UpToLimitWithReEnablingDisablingStrategy;
 	type WeightInfo = weights::pezpallet_session::WeightInfo<Runtime>;
 	type Currency = Balances;
+	// Zero here on purpose, and not the same kind of `()` as the two this file used to carry
+	// for offences. The deposit for session keys is charged on the Asset Hub, by
+	// `pezpallet_staking_async_rc_client` at `10 * UNITS`, behind an `is_validator` check --
+	// that is where staking lives and where validators actually register. The Asset Hub then
+	// forwards the validated keys over XCM through `SessionInterface::set_keys`, which
+	// deliberately bypasses this hold; charging again here would charge twice for one
+	// registration.
+	//
+	// The public `set_keys` on this chain stays reachable, and the pezpallet is written for
+	// that: `ExternallySetKeys` exists to track which registrations came over XCM, and
+	// `do_set_keys` handles the external-to-local transition explicitly. It is the only way to
+	// rotate keys if the Asset Hub cannot reach us, which is not hypothetical here. What it
+	// costs an abuser is the existential deposit plus a fee, for seven storage entries instead
+	// of one; it confers no validator status, and it cannot squat another operator's keys,
+	// since the proof is a possession signature per key.
 	type KeyDeposit = ();
 }
 
