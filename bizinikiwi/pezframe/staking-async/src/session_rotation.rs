@@ -707,17 +707,45 @@ impl<T: Config> Rotator<T> {
 				// We rotate the era if we have the activation timestamp.
 				Self::start_era(active_era, starting, time);
 			},
-			Some((_time, id)) => {
-				// RC has done something wrong -- we received the wrong ID. Don't start a new era.
-				crate::log!(
-					warn,
-					"received wrong ID with activation timestamp. Got {}, expected {:?}",
-					id,
-					current_planned_era
-				);
+			Some((time, id)) => {
+				// The id belongs to a validator set this chain did not send.
+				//
+				// Upstream treats this as the relay misbehaving, because upstream assumes the
+				// chain that elects and the chain that keeps the books are the same chain. Here
+				// they are not: the committee is chosen on the People chain, so the id the relay
+				// echoes is that chain's era, and it will never match the one planned here.
+				//
+				// Refusing to start the era on that mismatch is what stopped the clock. `end_era`
+				// never ran, so `EraPayout` never ran, so HEZ emission halted entirely -- staker
+				// rewards and the treasury share with it -- while the zombie-era watchdog stood
+				// ready to write a second exposure against the same index and double a slash.
+				//
+				// Once this chain stops choosing validators, its era stops being the term of a
+				// set it picked and becomes the accounting period it settles. An accounting
+				// period should advance on schedule, not on someone else's activation. So the
+				// mismatch is recorded and the era is started anyway, provided a new era was
+				// actually planned and the sessions for it have elapsed.
 				Pezpallet::<T>::deposit_event(Event::Unexpected(
 					UnexpectedKind::UnknownValidatorActivation,
 				));
+
+				if current_planned_era.is_some() && Self::is_era_duration_elapsed(starting) {
+					crate::log!(
+						info,
+						"activation id {} is not ours (planned {:?}); starting the era on \
+						 schedule -- the books do not wait on another chain's set",
+						id,
+						current_planned_era
+					);
+					Self::start_era(active_era, starting, time);
+				} else {
+					crate::log!(
+						warn,
+						"received unknown activation id {} (planned {:?}); era not yet due",
+						id,
+						current_planned_era
+					);
+				}
 			},
 			None => (),
 		}
@@ -1007,6 +1035,17 @@ impl<T: Config> Rotator<T> {
 	}
 
 	/// Returns whether we are at the session where we should plan the new era.
+	/// Have the sessions that make up an era elapsed since the active era began?
+	///
+	/// The sibling of `is_plan_era_deadline`, measured against the full `SessionsPerEra`
+	/// rather than the planning offset. It is what lets the era clock run on its own when the
+	/// validator set is chosen elsewhere and no activation of ours will ever come back.
+	fn is_era_duration_elapsed(start_session: SessionIndex) -> bool {
+		let era_start_session = Self::active_era_start_session_index();
+		let session_progress = start_session.defensive_saturating_sub(era_start_session);
+		session_progress >= T::SessionsPerEra::get()
+	}
+
 	fn is_plan_era_deadline(start_session: SessionIndex) -> bool {
 		let planning_era_offset = T::PlanningEraOffset::get().min(T::SessionsPerEra::get());
 		// session at which we should plan the new era.

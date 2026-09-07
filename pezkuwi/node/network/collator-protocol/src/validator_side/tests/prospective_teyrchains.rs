@@ -3667,9 +3667,17 @@ mod ah_stop_gap {
 		);
 		test_state.claim_queue = claim_queue;
 
-		test_harness(
+		// This test connects 299 collators in a loop that reads nothing back, and it asserts on
+		// the very next message after the 300th. Under the default policy the earliest of those
+		// collators age out while the loop is still running — 299 keygens and 299 in-subsystem
+		// signature verifies take longer than the 500ms inactivity timeout — and the evictor
+		// then fills the queue with `DisconnectPeers` for arbitrary earlier peers on every 10ms
+		// tick. That is correct behaviour for peers that have gone quiet, and it is nothing to
+		// do with the connection limit this test is about, so it is switched off here.
+		test_harness_with_eviction_policy(
 			ReputationAggregator::new(|_| true),
 			invulnerables,
+			NO_EVICTION,
 			|test_harness| async move {
 				let TestHarness { mut virtual_overseer, keystore: _ } = test_harness;
 

@@ -46,6 +46,7 @@ pub use xcm::{
 pub use xcm_executor::traits::{DropAssets, TransferType};
 
 // Cumulus
+pub use crate::RESERVABLE_ASSET_ID;
 pub use asset_test_pezutils;
 pub use pezcumulus_pezpallet_xcmp_queue;
 pub use teyrchains_common::AccountId;
@@ -1033,7 +1034,8 @@ macro_rules! test_xcm_fee_querying_apis_work_for_asset_hub {
 					$crate::macros::VersionedAssetId::from(
 						$crate::macros::AssetId($crate::macros::Location::new(0,
 							[$crate::macros::PalletInstance($crate::macros::ASSETS_PALLET_ID),
-								$crate::macros::GeneralIndex(1)]
+								$crate::macros::GeneralIndex(
+									$crate::macros::RESERVABLE_ASSET_ID.into())]
 							)
 						)
 					)

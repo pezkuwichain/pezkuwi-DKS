@@ -36,7 +36,7 @@ use hex_literal::hex;
 use pezbridge_hub_zagros_runtime::{
 	bridge_to_ethereum_config::EthereumGatewayAddress, EthereumBeaconClient, EthereumInboundQueue,
 };
-use pezframe_support::traits::fungibles::Mutate;
+use pezframe_support::traits::{fungibles::Mutate, Get};
 use pezkuwichain_zagros_system_emulated_network::{
 	asset_hub_zagros_emulated_chain::genesis::AssetHubZagrosAssetOwner,
 	pez_penpal_emulated_chain::PARA_ID_B, zagros_emulated_chain::zagros_runtime::Dmp,
@@ -543,14 +543,38 @@ fn send_weth_from_ethereum_to_non_existent_account_on_asset_hub_with_insufficien
 /// hold a stablecoin on this chain without holding the native token, so the deposit path the old
 /// test named is never reached by this route.
 ///
-/// Measured while establishing that: the Asset Hub leg charges 6_323_242 and the existential
-/// deposit is 3_333_333, a thirtieth of the relay's. Sending 8_000_000 leaves 1_676_758 — half an
-/// existential deposit, deliberately — and the account is still created, by the token rather than
-/// by the balance.
+/// The fee is derived here rather than written down. It has to sit in a window one existential
+/// deposit wide -- above what the Asset Hub leg costs, below that cost plus an existential
+/// deposit -- and both ends of that window move with every weight change. A literal went stale
+/// exactly that way: the leg grew past it, the message stopped executing at all, and the test
+/// read as a failure of the property it exists to prove rather than as a number needing to be
+/// measured again. So the first leg pays generously and reports what is left over, which is the
+/// cost; the second pays that cost plus half an existential deposit.
 #[test]
 fn send_weth_from_ethereum_opens_the_account_by_the_token_not_the_remainder() {
+	// Calibration leg. A different beneficiary, so it cannot colour what the real leg observes.
+	let probe: [u8; 32] = [2; 32];
+	send_weth_from_ethereum_to_asset_hub_with_fee(probe, XCM_FEE);
+	let (asset_hub_leg_cost, existential_deposit): (u128, u128) =
+		AssetHubZagros::execute_with(|| {
+			type Runtime = <AssetHubZagros as Chain>::Runtime;
+			let remainder = <<AssetHubZagros as AssetHubZagrosPallet>::Balances as
+				pezframe_support::traits::fungible::Inspect<_>>::balance(&probe.into());
+			assert!(
+				remainder > 0,
+				"calibration leg delivered nothing: XCM_FEE no longer covers the Asset Hub leg"
+			);
+			(
+				XCM_FEE - remainder,
+				<<Runtime as pezpallet_balances::Config>::ExistentialDeposit as Get<_>>::get(),
+			)
+		});
+
 	let beneficiary: [u8; 32] = [1; 32];
-	send_weth_from_ethereum_to_asset_hub_with_fee(beneficiary, 8_000_000);
+	send_weth_from_ethereum_to_asset_hub_with_fee(
+		beneficiary,
+		asset_hub_leg_cost + existential_deposit / 2,
+	);
 
 	AssetHubZagros::execute_with(|| {
 		type RuntimeEvent = <AssetHubZagros as Chain>::RuntimeEvent;

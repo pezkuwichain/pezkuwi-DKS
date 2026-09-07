@@ -36,21 +36,38 @@ use sp_core::{crypto::Ss58Codec, sr25519, Pair};
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
-use subxt::{OnlineClient, SubstrateConfig};
-use subxt::backend::legacy::LegacyRpcMethods;
-use subxt::backend::rpc::RpcClient;
-use subxt::dynamic::{At, Value};
-use subxt_signer::bip39::Mnemonic;
-use subxt_signer::sr25519::Keypair as PolkadotKeypair;
-// Pezkuwi-side signing MUST go through this fork, not vanilla subxt - vanilla subxt's default
-// extrinsic params don't match Pezkuwi's signed-extension/hasher setup and produce "bad
-// signature" errors on submission (see examples/migrate_wusdt_to_multisig.rs, which hit this
-// first). Aliased to avoid clashing with the vanilla `Value`/`OnlineClient` already imported
-// above and used throughout this file for read-only queries on both chains.
-use pezkuwi_subxt::dynamic::Value as PValue;
-use pezkuwi_subxt::{OnlineClient as PezkuwiSigningClient, PezkuwiConfig};
-use pezkuwi_subxt_signer::bip39::Mnemonic as PezkuwiMnemonic;
-use pezkuwi_subxt_signer::sr25519::Keypair as PezkuwiKeypair;
+// One client library, two chain configurations. Both chains are reached through
+// `pezkuwi-subxt`: `BizinikiwiConfig` for Polkadot Asset Hub and `PezkuwiConfig` for ours.
+// The two differ in exactly one field -- Pezkuwi's address carries no account index -- and
+// getting that wrong produces "bad signature" on submission rather than a compile error, so
+// the aliases below name the chain a value belongs to and are worth keeping for that alone.
+//
+// This used to link vanilla `subxt 0.38` as well, for the Polkadot side and for read-only
+// queries on both -- two subxt/jsonrpsee/scale stacks in one binary that moves money, the
+// older of them on the read path.
+//
+// It does NOT by itself close the 2026-07-15 stall, and it should not be read as doing so.
+// That failure came from the WS client having no application-layer ping, so a socket the
+// network had dropped never woke `subscribe_finalized` again and two deposits went missing
+// until backfill found them. 0.44 ships a `ReconnectingRpcClient` that does ping, but it is
+// behind the `reconnecting-rpc-client` feature and `OnlineClient::from_url` does not use it --
+// what we build here is still the plain client. Adopting it means reconciling its reconnection
+// with the 120s read timeout and manual reconnect loop added in f02f831e, which is proven in
+// production and currently the only thing standing between us and another silent stall. That
+// is the next piece of work, not this one.
+use pezkuwi_subxt::backend::legacy::LegacyRpcMethods;
+use pezkuwi_subxt::utils::AccountId32 as SubxtAccountId32;
+use pezkuwi_subxt::backend::rpc::RpcClient;
+use pezkuwi_subxt::dynamic::{At, Value, Value as PValue};
+// `BizinikiwConfig`, not `BizinikiwiConfig`: the published 0.44.0 misspells it at the crate
+// root. The vendored source in this repository already has the `i`, so the name will change
+// when that is next published -- aliased here so exactly one line has to move when it does.
+use pezkuwi_subxt::{
+	BizinikiwConfig as BizinikiwiConfig, OnlineClient, OnlineClient as PezkuwiSigningClient,
+	PezkuwiConfig,
+};
+use pezkuwi_subxt_signer::bip39::{Mnemonic, Mnemonic as PezkuwiMnemonic};
+use pezkuwi_subxt_signer::sr25519::{Keypair as PezkuwiKeypair, Keypair as PolkadotKeypair};
 use tokio::sync::Mutex as AsyncMutex;
 use tracing::{info, warn, error};
 
@@ -331,8 +348,10 @@ fn convert_ss58_prefix(addr: &str, target_prefix: u16) -> Result<String> {
 /// SS58 text - that call could never have succeeded). AccountId32 fields decode as a composite
 /// of 32 byte-sized primitives, sometimes wrapped in one extra single-item composite layer (the
 /// same nesting observed in Tiki storage this session) - this peels exactly that.
-fn account_id_from_dynamic(value: &subxt::ext::scale_value::Value<u32>) -> Option<[u8; 32]> {
-    use subxt::ext::scale_value::{Composite, ValueDef};
+// Generic over the context type: events now decode to `Value<()>` while other call sites
+// still hand it a `Value<u32>`, and the body reads only the shape, never the context.
+fn account_id_from_dynamic<C>(value: &pezkuwi_subxt::ext::scale_value::Value<C>) -> Option<[u8; 32]> {
+    use pezkuwi_subxt::ext::scale_value::{Composite, ValueDef};
     let mut current = value;
     loop {
         match &current.value {
@@ -549,14 +568,14 @@ fn init_db(db_path: &PathBuf) -> Result<()> {
 /// of just waiting the blip out. Observed live 2026-07-16: the public Polkadot Asset Hub RPC
 /// briefly 429'd, which without this retry crashed the whole process and then kept re-crashing
 /// every RestartSec, hammering the same rate-limited endpoint harder instead of backing off.
-async fn connect_to_chain(url: &str) -> Result<OnlineClient<SubstrateConfig>> {
+async fn connect_to_chain(url: &str) -> Result<OnlineClient<BizinikiwiConfig>> {
     const MAX_ATTEMPTS: u32 = 6;
     let mut delay = Duration::from_secs(2);
 
     for attempt in 1..=MAX_ATTEMPTS {
         info!("Connecting to {}... (attempt {attempt}/{MAX_ATTEMPTS})", url);
 
-        match OnlineClient::<SubstrateConfig>::from_url(url).await {
+        match OnlineClient::<BizinikiwiConfig>::from_url(url).await {
             Ok(client) => {
                 info!("Connected successfully");
                 return Ok(client);
@@ -577,7 +596,7 @@ async fn connect_to_chain(url: &str) -> Result<OnlineClient<SubstrateConfig>> {
 
 /// Get asset balance using dynamic API
 async fn get_asset_balance(
-    client: &OnlineClient<SubstrateConfig>,
+    client: &OnlineClient<BizinikiwiConfig>,
     asset_id: u32,
     account: &str,
 ) -> Result<u128> {
@@ -586,21 +605,19 @@ async fn get_asset_balance(
         .map_err(|e| anyhow!("Invalid account: {:?}", e))?;
 
     // Build storage query for Assets.Account
-    let storage_query = subxt::dynamic::storage(
-        "Assets",
-        "Account",
-        vec![
-            Value::primitive(asset_id.into()),
-            Value::from_bytes(<sp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&account_bytes)),
-        ],
-    );
+    let storage_query =
+        pezkuwi_subxt::dynamic::storage::<(u32, SubxtAccountId32), Value>("Assets", "Account");
 
-    let result = client.storage().at_latest().await?.fetch(&storage_query).await?;
+    let at = client.storage().at_latest().await?;
+    let result = at
+        .entry(storage_query)?
+        .try_fetch((asset_id, SubxtAccountId32(*<sp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&account_bytes))))
+        .await?;
 
     if let Some(value) = result {
         // Parse the balance from the storage value
         // AssetAccount { balance: u128, ... }
-        if let Some(balance) = value.to_value()?.at("balance") {
+        if let Some(balance) = value.decode()?.at("balance") {
             if let Some(b) = balance.as_u128() {
                 return Ok(b);
             }
@@ -612,22 +629,23 @@ async fn get_asset_balance(
 
 /// Get native balance
 async fn get_native_balance(
-    client: &OnlineClient<SubstrateConfig>,
+    client: &OnlineClient<BizinikiwiConfig>,
     account: &str,
 ) -> Result<u128> {
     let account_bytes = sp_core::crypto::AccountId32::from_ss58check(account)
         .map_err(|e| anyhow!("Invalid account: {:?}", e))?;
 
-    let storage_query = subxt::dynamic::storage(
-        "System",
-        "Account",
-        vec![Value::from_bytes(<sp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&account_bytes))],
-    );
+    let storage_query =
+        pezkuwi_subxt::dynamic::storage::<(SubxtAccountId32,), Value>("System", "Account");
 
-    let result = client.storage().at_latest().await?.fetch(&storage_query).await?;
+    let at = client.storage().at_latest().await?;
+    let result = at
+        .entry(storage_query)?
+        .try_fetch((SubxtAccountId32(*<sp_core::crypto::AccountId32 as AsRef<[u8; 32]>>::as_ref(&account_bytes)),))
+        .await?;
 
     if let Some(value) = result {
-        if let Some(data) = value.to_value()?.at("data") {
+        if let Some(data) = value.decode()?.at("data") {
             if let Some(free) = data.at("free") {
                 if let Some(b) = free.as_u128() {
                     return Ok(b);
@@ -695,7 +713,7 @@ async fn notify_telegram(config: &BridgeConfig, msg: &str) {
 struct AutomationContext {
     pezkuwi_signing_client: Option<PezkuwiSigningClient<PezkuwiConfig>>,
     pezkuwi_keypair: Option<PezkuwiKeypair>,
-    polkadot_signing_client: Option<OnlineClient<SubstrateConfig>>,
+    polkadot_signing_client: Option<OnlineClient<BizinikiwiConfig>>,
     polkadot_keypair: Option<PolkadotKeypair>,
 }
 
@@ -743,7 +761,7 @@ async fn init_automation_context(config: &BridgeConfig) -> AutomationContext {
         Ok(c) => Some(c),
         Err(e) => { error!("Auto-pay (deposit/wUSDT leg) disabled - failed to connect signing client: {e:#}"); None }
     };
-    let polkadot_signing_client = match OnlineClient::<SubstrateConfig>::from_url(&config.polkadot_rpc).await {
+    let polkadot_signing_client = match OnlineClient::<BizinikiwiConfig>::from_url(&config.polkadot_rpc).await {
         Ok(c) => Some(c),
         Err(e) => { error!("Auto-pay (withdrawal/USDT leg) disabled - failed to connect signing client: {e:#}"); None }
     };
@@ -805,14 +823,14 @@ async fn execute_wusdt_auto_payout(
 /// - the bad-signature gotcha only applies to Pezkuwi's custom chain). Used for the wUSDT->USDT
 /// withdrawal leg (paying real USDT out of the multisig's Polkadot-side reserve).
 async fn execute_usdt_auto_payout(
-    client: &OnlineClient<SubstrateConfig>,
+    client: &OnlineClient<BizinikiwiConfig>,
     keypair: &PolkadotKeypair,
     asset_id: u32,
     owner_bytes: [u8; 32],
     destination_bytes: [u8; 32],
     amount: u128,
 ) -> Result<String> {
-    let call = subxt::dynamic::tx(
+    let call = pezkuwi_subxt::dynamic::tx(
         "Assets",
         "transfer_approved",
         vec![
@@ -825,7 +843,7 @@ async fn execute_usdt_auto_payout(
     let mut progress = client.tx().sign_and_submit_then_watch_default(&call, keypair).await
         .context("submitting transfer_approved (polkadot)")?;
     let hash = format!("0x{}", hex::encode(progress.extrinsic_hash().as_ref()));
-    use subxt::tx::TxStatus;
+    use pezkuwi_subxt::tx::TxStatus;
     loop {
         match progress.next().await {
             Some(Ok(TxStatus::InBestBlock(details))) => {
@@ -975,19 +993,17 @@ async fn show_balances(config: &BridgeConfig) -> Result<()> {
 
 /// Get an asset's total circulating supply (Assets.Asset(asset_id).supply)
 async fn get_asset_total_supply(
-    client: &OnlineClient<SubstrateConfig>,
+    client: &OnlineClient<BizinikiwiConfig>,
     asset_id: u32,
 ) -> Result<u128> {
-    let storage_query = subxt::dynamic::storage(
-        "Assets",
-        "Asset",
-        vec![Value::primitive(asset_id.into())],
-    );
+    let storage_query =
+        pezkuwi_subxt::dynamic::storage::<(u32,), Value>("Assets", "Asset");
 
-    let result = client.storage().at_latest().await?.fetch(&storage_query).await?;
+    let at = client.storage().at_latest().await?;
+    let result = at.entry(storage_query)?.try_fetch((asset_id,)).await?;
 
     if let Some(value) = result {
-        if let Some(supply) = value.to_value()?.at("supply") {
+        if let Some(supply) = value.decode()?.at("supply") {
             if let Some(s) = supply.as_u128() {
                 return Ok(s);
             }
@@ -1043,7 +1059,7 @@ fn calculate_fee(amount: u128, fee_basis_points: u32) -> u128 {
 async fn process_deposit_block(
     config: &BridgeConfig,
     automation: &AutomationContext,
-    block: &subxt::blocks::Block<SubstrateConfig, OnlineClient<SubstrateConfig>>,
+    block: &pezkuwi_subxt::blocks::Block<BizinikiwiConfig, OnlineClient<BizinikiwiConfig>>,
 ) -> Result<()> {
     let polkadot_addr = &config.custody_multisig_polkadot;
     let block_number = block.number();
@@ -1055,7 +1071,9 @@ async fn process_deposit_block(
         // Check for Assets.Transferred event
         if event.pallet_name() == "Assets" && event.variant_name() == "Transferred" {
                 // Parse event data
-                if let Ok(fields) = event.field_values() {
+                if let Ok(fields) = event
+                    .decode_as_fields::<pezkuwi_subxt::ext::scale_value::Value<()>>()
+                {
                     // Fields: asset_id, from, to, amount
                     let asset_id = fields.at("asset_id")
                         .and_then(|v| v.as_u128())
@@ -1263,9 +1281,9 @@ async fn process_deposit_block(
 /// plain block NUMBER to a hash, which the high-level `Blocks` API doesn't expose directly). Two
 /// lightweight connections to the same endpoint is simpler and safer than threading a shared
 /// RPC client through `connect_to_chain`'s existing callers.
-async fn connect_legacy_rpc(url: &str) -> Result<LegacyRpcMethods<SubstrateConfig>> {
+async fn connect_legacy_rpc(url: &str) -> Result<LegacyRpcMethods<BizinikiwiConfig>> {
     let rpc_client = RpcClient::from_url(url).await?;
-    Ok(LegacyRpcMethods::<SubstrateConfig>::new(rpc_client))
+    Ok(LegacyRpcMethods::<BizinikiwiConfig>::new(rpc_client))
 }
 
 /// Fetches block `block_number` by hash and runs it through `process_deposit_block`, then
@@ -1274,8 +1292,8 @@ async fn connect_legacy_rpc(url: &str) -> Result<LegacyRpcMethods<SubstrateConfi
 async fn backfill_deposit_block(
     config: &BridgeConfig,
     automation: &AutomationContext,
-    client: &OnlineClient<SubstrateConfig>,
-    legacy_rpc: &LegacyRpcMethods<SubstrateConfig>,
+    client: &OnlineClient<BizinikiwiConfig>,
+    legacy_rpc: &LegacyRpcMethods<BizinikiwiConfig>,
     block_number: u64,
 ) -> Result<()> {
     let hash = legacy_rpc
@@ -1420,7 +1438,7 @@ async fn listen_deposits(config: &BridgeConfig, automation: &AutomationContext) 
 async fn process_withdrawal_block(
     config: &BridgeConfig,
     automation: &AutomationContext,
-    block: &subxt::blocks::Block<SubstrateConfig, OnlineClient<SubstrateConfig>>,
+    block: &pezkuwi_subxt::blocks::Block<BizinikiwiConfig, OnlineClient<BizinikiwiConfig>>,
 ) -> Result<()> {
     let polkadot_bridge_addr = &config.custody_multisig_polkadot;
     let pezkuwi_bridge_addr = &config.custody_multisig_pezkuwi;
@@ -1431,7 +1449,9 @@ async fn process_withdrawal_block(
         let event = event?;
 
         if event.pallet_name() == "Assets" && event.variant_name() == "Transferred" {
-                if let Ok(fields) = event.field_values() {
+                if let Ok(fields) = event
+                    .decode_as_fields::<pezkuwi_subxt::ext::scale_value::Value<()>>()
+                {
                     let asset_id = fields.at("asset_id")
                         .and_then(|v| v.as_u128())
                         .unwrap_or(0) as u32;
@@ -1575,7 +1595,7 @@ async fn process_withdrawal_block(
                                                                 // was observed live twice on this leg before this fix.
                                                                 let result = if first.is_err() {
                                                                     warn!("   ⚠️ Auto-pay attempt failed ({:?}) - retrying once with a fresh connection", first.as_ref().err());
-                                                                    match OnlineClient::<SubstrateConfig>::from_url(&config.polkadot_rpc).await {
+                                                                    match OnlineClient::<BizinikiwiConfig>::from_url(&config.polkadot_rpc).await {
                                                                         Ok(fresh_client) => execute_usdt_auto_payout(&fresh_client, keypair, config.polkadot_usdt_asset_id, owner_bytes, dest_bytes, net_amount).await,
                                                                         Err(_) => first,
                                                                     }
@@ -1712,8 +1732,8 @@ async fn process_withdrawal_block(
 async fn backfill_withdrawal_block(
     config: &BridgeConfig,
     automation: &AutomationContext,
-    client: &OnlineClient<SubstrateConfig>,
-    legacy_rpc: &LegacyRpcMethods<SubstrateConfig>,
+    client: &OnlineClient<BizinikiwiConfig>,
+    legacy_rpc: &LegacyRpcMethods<BizinikiwiConfig>,
     block_number: u64,
 ) -> Result<()> {
     let hash = legacy_rpc

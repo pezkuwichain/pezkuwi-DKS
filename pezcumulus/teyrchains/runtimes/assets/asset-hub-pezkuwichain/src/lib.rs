@@ -25,7 +25,9 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod bag_thresholds;
-mod genesis_config_presets;
+// Public so the emulated test fixtures can build their Asset Hub from the same asset
+// ids the launch preset uses, rather than from a copy that drifts.
+pub mod genesis_config_presets;
 pub mod governance;
 // Public so the integration tests can hold the emission rule to its ceiling.
 pub mod staking;

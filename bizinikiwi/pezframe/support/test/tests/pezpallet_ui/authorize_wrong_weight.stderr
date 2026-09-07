@@ -3,7 +3,7 @@ error: use of deprecated constant `pezpallet::warnings::ConstantWeight_0::_w`:
                Please instead benchmark all calls or put the pezpallet into `dev` mode.
 
                For more info see:
-                   <https://github.com/pezkuwichain/pezkuwi-sdk/issues/215>
+                   <https://github.com/pezkuwichain/pezkuwi-DKS/issues/215>
   --> tests/pezpallet_ui/authorize_wrong_weight.rs:37:36
    |
 37 |         #[pezpallet::weight_of_authorize("foo")]

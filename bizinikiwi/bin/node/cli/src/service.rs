@@ -188,6 +188,7 @@ fn statement_store_config() -> pezsc_statement_store::Config {
 	Default::default()
 }
 
+/// Creates a new partial node.
 pub fn new_partial(
 	config: &Configuration,
 	mixnet_config: Option<&pezsc_mixnet::Config>,

@@ -34,7 +34,8 @@
 use crate::imports::*;
 
 use codec::Encode;
-use pezframe_support::pezsp_runtime::traits::Dispatchable;
+use pezframe_support::{pezsp_runtime::traits::Dispatchable, traits::fungibles::Mutate};
+use pezpallet_assets::Instance1;
 use teyrchains_common::{AccountId, Balance};
 
 /// The Asset Hub, as People addresses it.
@@ -48,10 +49,21 @@ fn people_can_spend_from_the_government_pot_on_asset_hub() {
 	let amount: Balance = 1_000_000_000_000;
 
 	// Fund the government pot so a refusal here can only be about authority, never balance.
-	let pot = pezpallet_pez_treasury::Pezpallet::<
-		<AssetHubZagros as Chain>::Runtime,
-	>::government_pot_account_id();
-	AssetHubZagros::fund_accounts(vec![(pot, amount * 10)]);
+	//
+	// In PEZ, not in HEZ. `spend_from_government_pot` pays in `T::PezAssetId`, an asset on this
+	// chain, and the pot's native balance has no bearing on whether it can pay. Funding the
+	// native side left the pot holding nothing it could spend, so the call failed on balance --
+	// and `Transact` reports the enclosing message as processed either way, which is why the
+	// only visible symptom was a missing event.
+	AssetHubZagros::execute_with(|| {
+		type Runtime = <AssetHubZagros as Chain>::Runtime;
+		let pot = pezpallet_pez_treasury::Pezpallet::<Runtime>::government_pot_account_id();
+		assert_ok!(<pezpallet_assets::Pezpallet<Runtime, Instance1> as Mutate<_>>::mint_into(
+			<Runtime as pezpallet_pez_treasury::Config>::PezAssetId::get(),
+			&pot,
+			amount * 10,
+		));
+	});
 
 	PeopleZagros::execute_with(|| {
 		type Runtime = <PeopleZagros as Chain>::Runtime;

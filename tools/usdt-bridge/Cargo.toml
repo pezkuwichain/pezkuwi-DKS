@@ -20,13 +20,15 @@ path = "src/bin/pezbridge_bot.rs"
 # Async runtime
 tokio = { version = "1.36", features = ["full"] }
 
-# Subxt for blockchain interaction
-subxt = { version = "0.38" }
-subxt-signer = { version = "0.38", features = ["sr25519", "subxt"] }
-
-# Pezkuwi's own subxt fork - required for signing/submitting real transactions against
-# Pezkuwi chains (vanilla subxt's default extrinsic params don't match this chain's actual
-# signed-extension/hasher setup and produce "bad signature" errors on submission).
+# Both chains are reached through Pezkuwi's own subxt fork: `BizinikiwConfig` for Polkadot
+# Asset Hub, `PezkuwiConfig` for ours. Vanilla subxt was also linked here until now, for the
+# Polkadot side and for reads -- two subxt/jsonrpsee/scale stacks in one binary. One library,
+# one lineage, and it is the one this repository vendors and can patch.
+#
+# Not yet enabled: `reconnecting-rpc-client`. It is the feature that would put an
+# application-layer ping under the subscriptions, which is the root cause of the July stall;
+# taking it means reconciling library-level reconnection with the manual reconnect loop the
+# bridge already has.
 pezkuwi-subxt = "0.44.0"
 pezkuwi-subxt-signer = { version = "0.44.0", features = ["sr25519"] }
 

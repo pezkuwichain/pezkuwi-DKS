@@ -31,16 +31,26 @@ enum EnumLongName<A> {
 	VariantLongName { a: A, b: String },
 }
 
+/// What `#[derive(Debug)]` prints for the shapes this crate's own macro used to cover.
+///
+/// The types above moved from `RuntimeDebug` to the standard derive when that macro was
+/// deprecated, and the expectations did not move with them: the three enum cases still
+/// asserted the `EnumLongName::` prefix, which is the deprecated macro's format and not
+/// std's. The structs agreed either way, which is why only half the test was wrong.
+///
+/// It reads as a test of the standard library because that is now what these types use. The
+/// value is in the shapes -- a generic parameter, a unit variant, a tuple variant, a named
+/// variant -- which is the set anything replacing the derive has to keep rendering the same.
 #[test]
 fn should_display_proper_debug() {
 	use self::EnumLongName as Enum;
 
 	assert_eq!(format!("{:?}", Unnamed(1, "abc".into())), "Unnamed(1, \"abc\")");
 	assert_eq!(format!("{:?}", Named { a: 1, b: "abc".into() }), "Named { a: 1, b: \"abc\" }");
-	assert_eq!(format!("{:?}", Enum::<u64>::A), "EnumLongName::A");
-	assert_eq!(format!("{:?}", Enum::B(1, "abc".into())), "EnumLongName::B(1, \"abc\")");
+	assert_eq!(format!("{:?}", Enum::<u64>::A), "A");
+	assert_eq!(format!("{:?}", Enum::B(1, "abc".into())), "B(1, \"abc\")");
 	assert_eq!(
 		format!("{:?}", Enum::VariantLongName { a: 1, b: "abc".into() }),
-		"EnumLongName::VariantLongName { a: 1, b: \"abc\" }"
+		"VariantLongName { a: 1, b: \"abc\" }"
 	);
 }

@@ -339,7 +339,9 @@ impl StorageCmd {
 
 		let mut durations_in_nanos = Vec::new();
 		let wasm_module = get_wasm_module();
-		let mut instance = wasm_module.new_instance().expect("Failed to create wasm instance");
+		let mut instance = wasm_module
+			.new_instance(super::HEAP_ALLOC_STRATEGY)
+			.expect("Failed to create wasm instance");
 		let dry_run_encoded = params.as_dry_run().encode();
 		let encoded = params.encode();
 

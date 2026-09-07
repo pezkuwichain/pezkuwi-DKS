@@ -8,7 +8,7 @@ create_issue() {
     echo "Creating tracking issue for upstream #$i..."
 
     result=$(gh issue create \
-        --repo pezkuwichain/pezkuwi-sdk \
+        --repo pezkuwichain/pezkuwi-DKS \
         --title "[Upstream] Track Polkadot SDK #$i" \
         --body "## Upstream Reference Tracking
 

@@ -188,6 +188,54 @@ fn forcing_force_new() {
 }
 
 #[test]
+fn era_starts_on_schedule_when_the_activation_id_belongs_to_another_chain() {
+	// When the validator set is chosen on a third chain, the id the relay echoes back is that
+	// chain's era and never matches the one planned here. Upstream treats the mismatch as the
+	// relay misbehaving and refuses to start the era -- which stops `end_era`, and with it
+	// `EraPayout`, so emission halts entirely while the books wait for an activation that can
+	// never arrive. Once this chain stops picking validators its era is an accounting period,
+	// and an accounting period advances on its own sessions.
+	ExtBuilder::default().session_per_era(6).build_and_execute(|| {
+		Session::roll_until_active_era(2);
+
+		// Roll to the point where an era has been planned and is waiting to be activated.
+		while Rotator::<T>::planned_era() == Rotator::<T>::active_era() {
+			Session::roll_next();
+		}
+		assert_eq!(Rotator::<T>::active_era(), 2);
+		assert_eq!(Rotator::<T>::planned_era(), 3);
+
+		let _ = staking_events_since_last_call();
+
+		// WHEN: sessions run their course, and the id the relay echoes belongs to some other
+		// chain's era -- which is what happens once the committee is chosen off this chain.
+		// Overwritten before every roll, because planning re-queues the local id.
+		// Bounded on purpose: without the fix the era never arrives, and an unbounded loop
+		// would hang the suite instead of failing it. Two eras' worth of sessions is far more
+		// than one rotation needs.
+		let mut rolls = 0;
+		while Rotator::<T>::active_era() != 3 && rolls < 2 * 6 * crate::tests::Period::get() {
+			crate::tests::session_mock::QueuedId::set(Some(999));
+			Session::roll_next();
+			rolls += 1;
+		}
+
+		// THEN: the mismatch is recorded -- it genuinely is not our set -- and the era starts
+		// anyway, so the books keep moving and emission continues.
+		let events = staking_events_since_last_call();
+		assert!(
+			events.contains(&Event::Unexpected(UnexpectedKind::UnknownValidatorActivation)),
+			"the foreign id must still be recorded: {events:?}"
+		);
+		assert_eq!(Rotator::<T>::active_era(), 3);
+		assert!(
+			ErasValidatorReward::<T>::contains_key(2),
+			"era 2 must have been paid out; if it was not, EraPayout never ran and emission stopped"
+		);
+	});
+}
+
+#[test]
 fn activation_timestamp_when_no_planned_era() {
 	// maybe not needed, as we have the id check
 	ExtBuilder::default().session_per_era(6).build_and_execute(|| {

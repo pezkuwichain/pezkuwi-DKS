@@ -1172,7 +1172,7 @@ async fn reserved_only_rejects_non_reserved_peers() {
 		true,
 		reserved_peers.clone(),
 		connected_peers.clone(),
-		peerstore_handle,
+		peerstore_handle.clone(),
 		NotificationMetrics::new(None),
 	);
 	assert_eq!(peerset.num_in(), 0usize);
@@ -1252,6 +1252,10 @@ async fn reserved_only_rejects_non_reserved_peers() {
 	}
 
 	// Move peers out of the backoff state (ie simulate 5s elapsed time).
+	//
+	// Backoff expiry in `Peerset::poll_next` does two things: it moves the peer to
+	// `Disconnected`, and it reports the peer to the `Peerstore`. The second half is what makes
+	// the peer visible to `outgoing_candidates`, so both have to be simulated -- see below.
 	for (peer, state) in peerset.peers_mut() {
 		if normal_peers.contains(peer) {
 			match state {
@@ -1266,6 +1270,14 @@ async fn reserved_only_rejects_non_reserved_peers() {
 		} else {
 			panic!("invalid peer={peer:?} not present");
 		}
+	}
+
+	// The second half. Without it these peers reach the `Peerstore` only when their real 5s
+	// backoff timers fire, one at a time, racing the independent 1s slot-allocation tick -- and a
+	// tick landing inside that spread hands out a partial batch, which is legitimate behaviour and
+	// made this assertion fail once in six runs under CI load.
+	for peer in &normal_peers {
+		peerstore_handle.add_known_peer(*peer);
 	}
 
 	// Step 3. Allow connections from non-reserved peers.

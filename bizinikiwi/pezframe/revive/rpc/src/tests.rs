@@ -307,18 +307,17 @@ async fn verify_transactions_in_single_block(
 	Ok(())
 }
 
+// No wall-clock deadline of its own. This starts a node and an RPC server and runs sixty
+// sub-tests against them, so how long it takes depends on what else the machine is doing;
+// a fixed 300s budget measured on an idle box lost five attempts out of six under full-suite
+// concurrency and passed the sixth in 224s, on the same runner and the same commit. Bounding
+// a hang is the harness's job and nextest already does it — see the override for this test in
+// `.config/nextest.toml`, which also gives it the runner so it is not racing a release build.
+// The old wrapper additionally called `std::process::exit(1)`, which tears down the whole test
+// process rather than failing the test that ran over.
 #[tokio::test]
 async fn run_all_eth_rpc_tests() -> anyhow::Result<()> {
-	let timeout_duration = tokio::time::Duration::from_secs(300);
-	let result = tokio::time::timeout(timeout_duration, run_all_eth_rpc_tests_inner()).await;
-
-	match result {
-		Ok(inner_result) => inner_result,
-		Err(_) => {
-			log::error!(target: LOG_TARGET, "Test timed out after {}s!", timeout_duration.as_secs());
-			std::process::exit(1);
-		},
-	}
+	run_all_eth_rpc_tests_inner().await
 }
 
 async fn run_all_eth_rpc_tests_inner() -> anyhow::Result<()> {

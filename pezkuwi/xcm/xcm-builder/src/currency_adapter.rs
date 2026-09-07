@@ -63,7 +63,7 @@ impl From<Error> for XcmError {
 /// use pezframe_support::{parameter_types, PalletId};
 /// use pezsp_runtime::traits::{AccountIdConversion, TrailingZeroInput};
 /// use xcm::latest::prelude::*;
-/// use staging_xcm_builder::{ParentIsPreset, CurrencyAdapter, IsConcrete};
+/// use pezstaging_xcm_builder::{ParentIsPreset, CurrencyAdapter, IsConcrete};
 ///
 /// /// Our chain's account id.
 /// type AccountId = pezsp_runtime::AccountId32;

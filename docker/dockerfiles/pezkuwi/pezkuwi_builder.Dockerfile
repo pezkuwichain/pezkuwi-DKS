@@ -14,8 +14,8 @@ LABEL description="Multistage Docker image for Pezkuwi: a platform for web3" \
 	io.parity.image.authors="chevdor@gmail.com, devops-team@parity.io" \
 	io.parity.image.vendor="Parity Technologies" \
 	io.parity.image.description="Pezkuwi: a platform for web3" \
-	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-sdk/blob/${VCS_REF}/docker/dockerfiles/pezkuwi/pezkuwi_builder.Dockerfile" \
-	io.parity.image.documentation="https://github.com/pezkuwichain/pezkuwi-sdk/"
+	io.parity.image.source="https://github.com/pezkuwichain/pezkuwi-DKS/blob/${VCS_REF}/docker/dockerfiles/pezkuwi/pezkuwi_builder.Dockerfile" \
+	io.parity.image.documentation="https://github.com/pezkuwichain/pezkuwi-DKS/"
 
 COPY --from=builder /pezkuwi/target/release/pezkuwi /usr/local/bin
 

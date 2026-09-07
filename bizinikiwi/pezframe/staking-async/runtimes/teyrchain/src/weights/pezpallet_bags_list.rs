@@ -21,7 +21,7 @@
 //! DATE: 2023-06-14, STEPS: `50`, REPEAT: `20`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
 //! HOSTNAME: upstream (see note below)
-//! EXECUTION: Some(Wasm), WASM-EXECUTION: Compiled, CHAIN: Some("<upstream reference runtime>"), DB CACHE: 1024
+//! EXECUTION: `Some(Wasm)`, WASM-EXECUTION: `Compiled`, CHAIN: `Some("<upstream reference runtime>")`, DB CACHE: 1024
 //! NOTE: derived from upstream, not measured on our hardware. This runtime is a
 //! staking-async test fixture: it is not in the runtimes job, has no chain spec, and
 //! is never deployed, so nothing prices anything from these numbers. They are here

@@ -10246,6 +10246,7 @@ dependencies = [
  "emulated-integration-tests-common",
  "parity-scale-codec",
  "pezframe-support",
+ "pezpallet-assets",
  "pezpallet-balances",
  "pezpallet-identity",
  "pezpallet-identity-kyc",

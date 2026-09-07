@@ -26,6 +26,15 @@ pub use cmd::StorageCmd;
 /// Bigger sizes may cause problems with runtime memory allocation.
 pub(crate) const MAX_BATCH_SIZE_FOR_BLOCK_VALIDATION: usize = 10_000;
 
+/// The heap the storage benchmark's wasm instances run with.
+///
+/// Named because `new_instance` takes it and `get_wasm_module` builds the module with it, so
+/// the two have to agree. They are set in one place rather than repeated at each call site:
+/// a module compiled for one heap and instantiated with another measures a machine nobody
+/// runs.
+pub(crate) const HEAP_ALLOC_STRATEGY: pezsc_executor_common::wasm_runtime::HeapAllocStrategy =
+	pezsc_executor_common::wasm_runtime::HeapAllocStrategy::Dynamic { maximum_pages: Some(4096) };
+
 pub(crate) fn get_wasm_module() -> Box<dyn pezsc_executor_common::wasm_runtime::WasmModule> {
 	let blob = pezsc_executor_common::runtime_blob::RuntimeBlob::uncompress_if_needed(
 		pezframe_storage_access_test_runtime::WASM_BINARY
@@ -36,9 +45,7 @@ pub(crate) fn get_wasm_module() -> Box<dyn pezsc_executor_common::wasm_runtime::
 		allow_missing_func_imports: true,
 		cache_path: None,
 		semantics: pezsc_executor_wasmtime::Semantics {
-			heap_alloc_strategy: pezsc_executor_common::wasm_runtime::HeapAllocStrategy::Dynamic {
-				maximum_pages: Some(4096),
-			},
+			heap_alloc_strategy: HEAP_ALLOC_STRATEGY,
 			instantiation_strategy:
 				pezsc_executor::WasmtimeInstantiationStrategy::PoolingCopyOnWrite,
 			deterministic_stack_limit: None,

@@ -52,6 +52,19 @@ const ACTIVITY_TIMEOUT: Duration = Duration::from_millis(500);
 const DECLARE_TIMEOUT: Duration = Duration::from_millis(25);
 const REPUTATION_CHANGE_TEST_INTERVAL: Duration = Duration::from_millis(10);
 
+/// Eviction timeouts no test run can reach.
+///
+/// A test that is not about inactivity eviction uses this so the wall-clock cost of its own
+/// setup cannot make the subsystem evict a peer the test never asked about. `ACTIVITY_POLL` is
+/// 10ms under `cfg(test)` and `disconnect_inactive_peers` deliberately leaves `peer_data` alone
+/// — the entry is cleared on `PeerDisconnected`, which a test that never sends one will never
+/// deliver. So one peer ageing out mid-setup means a `DisconnectPeers` on every tick from then
+/// on, into a queue nobody is draining.
+const NO_EVICTION: crate::CollatorEvictionPolicy = crate::CollatorEvictionPolicy {
+	inactive_collator: Duration::from_secs(3600),
+	undeclared: Duration::from_secs(3600),
+};
+
 fn dummy_pvd() -> PersistedValidationData {
 	PersistedValidationData {
 		parent_head: HeadData(vec![7, 8, 9]),
@@ -201,6 +214,23 @@ fn test_harness<T: Future<Output = VirtualOverseer>>(
 	ah_invulnerable_collators: HashSet<PeerId>,
 	test: impl FnOnce(TestHarness) -> T,
 ) {
+	test_harness_with_eviction_policy(
+		reputation,
+		ah_invulnerable_collators,
+		crate::CollatorEvictionPolicy {
+			inactive_collator: ACTIVITY_TIMEOUT,
+			undeclared: DECLARE_TIMEOUT,
+		},
+		test,
+	)
+}
+
+fn test_harness_with_eviction_policy<T: Future<Output = VirtualOverseer>>(
+	reputation: ReputationAggregator,
+	ah_invulnerable_collators: HashSet<PeerId>,
+	eviction_policy: crate::CollatorEvictionPolicy,
+	test: impl FnOnce(TestHarness) -> T,
+) {
 	pezsp_tracing::init_for_tests();
 
 	let pool = pezsp_core::testing::TaskExecutor::new();
@@ -219,10 +249,7 @@ fn test_harness<T: Future<Output = VirtualOverseer>>(
 	let subsystem = run_inner(
 		context,
 		keystore.clone(),
-		crate::CollatorEvictionPolicy {
-			inactive_collator: ACTIVITY_TIMEOUT,
-			undeclared: DECLARE_TIMEOUT,
-		},
+		eviction_policy,
 		Metrics::default(),
 		reputation,
 		REPUTATION_CHANGE_TEST_INTERVAL,
@@ -1178,6 +1205,16 @@ fn delay_reputation_change() {
 		// Wait enough to fire reputation delay
 		futures_timer::Delay::new(REPUTATION_CHANGE_TEST_INTERVAL).await;
 
+		let mut expected_change = HashMap::new();
+		for rep in vec![COST_UNNEEDED_COLLATOR, COST_UNNEEDED_COLLATOR] {
+			add_reputation(&mut expected_change, peer_b, rep);
+		}
+
+		// The aggregator flushes on a 10 ms timer, so a loaded runner can flush between the two
+		// declares and send them as two batches instead of one. Requiring both in the first batch
+		// made this fail once in ten runs under load. Accumulating asserts the same thing -- both
+		// declares were charged, and charged the same -- without asserting where the flush landed.
+		let mut seen: HashMap<PeerId, i32> = HashMap::new();
 		loop {
 			match overseer_recv(&mut virtual_overseer).await {
 				AllMessages::NetworkBridgeTx(NetworkBridgeTxMessage::DisconnectPeers(_, _)) => {
@@ -1187,12 +1224,14 @@ fn delay_reputation_change() {
 				AllMessages::NetworkBridgeTx(NetworkBridgeTxMessage::ReportPeer(
 					ReportPeerMessage::Batch(v),
 				)) => {
-					let mut expected_change = HashMap::new();
-					for rep in vec![COST_UNNEEDED_COLLATOR, COST_UNNEEDED_COLLATOR] {
-						add_reputation(&mut expected_change, peer_b, rep);
+					for (peer, cost) in v {
+						seen.entry(peer)
+							.and_modify(|acc| *acc = acc.saturating_add(cost))
+							.or_insert(cost);
 					}
-					assert_eq!(v, expected_change);
-					break;
+					if seen == expected_change {
+						break;
+					}
 				},
 				_ => panic!("Message should be either `DisconnectPeer` or `ReportPeer`"),
 			}

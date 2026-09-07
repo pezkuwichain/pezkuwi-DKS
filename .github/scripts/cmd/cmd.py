@@ -45,7 +45,7 @@ def fetch_repo_labels():
     try:
         # Use GitHub API to get current labels
         repo_owner = os.environ.get('GITHUB_REPOSITORY_OWNER', 'pezkuwichain')
-        repo_name = os.environ.get('GITHUB_REPOSITORY', 'pezkuwichain/pezkuwi-sdk').split('/')[-1]
+        repo_name = os.environ.get('GITHUB_REPOSITORY', 'pezkuwichain/pezkuwi-DKS').split('/')[-1]
 
         api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/labels?per_page=100"
 
@@ -81,7 +81,7 @@ def check_pr_status(pr_number):
             return False  # Prevent labeling if we can't check status
 
         repo_owner = os.environ.get('GITHUB_REPOSITORY_OWNER', 'pezkuwichain')
-        repo_name = os.environ.get('GITHUB_REPOSITORY', 'pezkuwichain/pezkuwi-sdk').split('/')[-1]
+        repo_name = os.environ.get('GITHUB_REPOSITORY', 'pezkuwichain/pezkuwi-DKS').split('/')[-1]
         api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/pulls/{pr_number}"
 
         headers = {
