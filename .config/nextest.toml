@@ -177,26 +177,22 @@ filter = 'test(run_all_eth_rpc_tests)'
 threads-required = 'num-cpus'
 slow-timeout = { period = "120s", terminate-after = 10 }
 
-# `export_import_revert` builds a chain, exports it, re-imports it and reverts it, all through
-# the node binary. Measured at 1696s on a green run -- 94% of the global budget, which exists
-# to kill hangs and would kill this instead the first time the runner is busy. An hour is
-# still a hang by any reading.
+# Every test in this package drives a real node binary end to end -- spawning it, building
+# and importing blocks, exporting and reverting a chain. They are slow for what they do, not
+# because they are stuck, and on the 2026-09-06 green run seven of them were over 900s, led
+# by `export_import_revert` at 1696s: 94% of the global budget, which exists to kill hangs
+# and would have killed this instead the first time the runner was busy.
+#
+# The budget is given to the package rather than to the three binaries that happened to be
+# measured near the line, so a slower sibling does not have to be discovered by being killed.
+# An hour is still plainly a hang for any of them.
 [[profile.default.overrides]]
-filter = 'binary_id(pezstaging-node-cli::export_import_flow)'
+filter = 'package(pezstaging-node-cli)'
 slow-timeout = { period = "120s", terminate-after = 30 }
 
 # The PVF integration tests each prepare and execute real PVF artifacts in spawned worker
 # processes, and there are nine of them between 1397s and 1626s -- 78-90% of the global
-# budget. Same reasoning as above: they are slow because of what they do, not because they
-# are stuck.
+# budget. Same reasoning as above.
 [[profile.default.overrides]]
 filter = 'binary_id(pezkuwi-node-core-pvf::it)'
 slow-timeout = { period = "120s", terminate-after = 30 }
-
-# `full_native_block_import_works` and its siblings import blocks through the real node at
-# 1235s and below. Further from the line than the two above, but the same shape, and the
-# whole binary is given the budget so a slower sibling does not have to be discovered by
-# being killed.
-[[profile.default.overrides]]
-filter = 'binary_id(pezstaging-node-cli::basic)'
-slow-timeout = { period = "120s", terminate-after = 20 }
