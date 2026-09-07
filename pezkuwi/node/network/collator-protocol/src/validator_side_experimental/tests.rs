@@ -70,7 +70,19 @@ use std::{
 	time::Duration,
 };
 
-const TIMEOUT: Duration = Duration::from_millis(100);
+/// How long to wait before concluding that nothing more is coming.
+///
+/// This one is an assertion: the test is claiming the subsystem stays quiet, and the window is
+/// how strong that claim is.
+const QUIET: Duration = Duration::from_millis(100);
+
+/// How long to wait for a message the subsystem is known to be sending.
+///
+/// This one is not an assertion. Nothing here is measuring latency -- the deadline exists so a
+/// subsystem that never answers fails with a readable panic instead of hanging the suite. It is
+/// generous on purpose: at 100 ms a loaded runner could miss a message that was on its way, and
+/// `test_connection_flow` failed exactly that way roughly once in fifteen runs under load.
+const RECV_TIMEOUT: Duration = Duration::from_secs(1);
 
 fn peer_id(i: u8) -> PeerId {
 	let data = [i; 32];
@@ -182,6 +194,9 @@ struct TestState {
 	session_info: HashMap<SessionIndex, SessionInfo>,
 	buffered_msg: Option<AllMessages>,
 	finalized_block: BlockNumber,
+	/// Mirrors `PeerManager::latest_finalized_session`, so the harness knows whether the
+	/// subsystem is going to ask for the registered paras on this finalized block.
+	latest_finalized_session: Option<SessionIndex>,
 	// The key is the block at which it is included.
 	candidates_pending_availability: HashMap<Hash, Vec<CommittedCandidateReceipt>>,
 	candidate_nonce: u64,
@@ -289,6 +304,7 @@ impl Default for TestState {
 			session_info,
 			rp_info,
 			buffered_msg: None,
+			latest_finalized_session: None,
 			sender,
 			recv,
 			finalized_block: 0,
@@ -359,12 +375,121 @@ impl TestState {
 	async fn timeout_recv(&mut self) -> AllMessages {
 		self.recv
 			.next()
-			.timeout(TIMEOUT)
+			.timeout(RECV_TIMEOUT)
 			.await
 			.expect("Receiver timed out")
 			.expect("Sender dropped")
 	}
 
+	/// Answer one request that a view change generates.
+	///
+	/// Returns the message untouched when it is not part of a view change, so the caller can
+	/// decide what to do with it.
+	fn serve_view_update_request(
+		rp_info: &HashMap<Hash, RelayParentInfo>,
+		session_info: &HashMap<SessionIndex, SessionInfo>,
+		slot_overrides: &HashMap<Hash, pezsp_consensus_slots::Slot>,
+		msg: AllMessages,
+	) -> Option<AllMessages> {
+		match msg {
+			AllMessages::ChainApi(ChainApiMessage::BlockHeader(rp, tx)) => {
+				let slot = slot_overrides.get(&rp).copied().unwrap_or_else(|| {
+					pezsp_consensus_slots::Slot::from_timestamp(
+						pezsp_timestamp::Timestamp::current(),
+						pezsp_consensus_slots::SlotDuration::from_millis(
+							pezkuwi_primitives::RELAY_CHAIN_SLOT_DURATION_MILLIS,
+						),
+					)
+				});
+				let pre_digest =
+					pezsp_consensus_babe::digests::CompatibleDigestItem::babe_pre_digest(
+						PreDigest::SecondaryPlain(SecondaryPlainPreDigest {
+							authority_index: 0,
+							slot,
+						}),
+					);
+				tx.send(Ok(Some(
+					rp_info
+						.get(&rp)
+						.map(|info| Header {
+							parent_hash: info.parent,
+							number: info.number,
+							state_root: Hash::zero(),
+							extrinsics_root: Hash::zero(),
+							digest: pezsp_runtime::Digest { logs: vec![pre_digest] },
+						})
+						.unwrap(),
+				)))
+				.unwrap();
+			},
+			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+				_rp,
+				RuntimeApiRequest::SchedulingLookahead(session_index, tx),
+			)) => {
+				let session_info = session_info.get(&session_index).unwrap();
+				tx.send(Ok(session_info.scheduling_lookahead)).unwrap();
+			},
+			AllMessages::ChainApi(ChainApiMessage::Ancestors { hash, k, response_channel }) => {
+				let this = rp_info.get(&hash).unwrap();
+				let ancestors: Vec<Hash> = (1..=k as u32)
+					.map(|i| this.number.saturating_sub(i))
+					.take_while(|n| *n > 0)
+					.filter_map(|n| {
+						rp_info.iter().find(|(_, info)| info.number == n).map(|(h, _)| *h)
+					})
+					.collect();
+				response_channel.send(Ok(ancestors)).unwrap();
+			},
+			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+				rp,
+				RuntimeApiRequest::SessionIndexForChild(tx),
+			)) => {
+				tx.send(Ok(rp_info.get(&rp).unwrap().session_index)).unwrap();
+			},
+			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+				rp,
+				RuntimeApiRequest::Validators(tx),
+			)) => {
+				let session_index = rp_info.get(&rp).unwrap().session_index;
+				let session_info = session_info.get(&session_index).unwrap();
+				tx.send(Ok(session_info.validators.clone())).unwrap();
+			},
+			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+				rp,
+				RuntimeApiRequest::ValidatorGroups(tx),
+			)) => {
+				let session_index = rp_info.get(&rp).unwrap().session_index;
+				let session_info = session_info.get(&session_index).unwrap();
+				tx.send(Ok((
+					session_info.validator_groups.clone(),
+					session_info.group_rotation_info.clone(),
+				)))
+				.unwrap();
+			},
+			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
+				rp,
+				RuntimeApiRequest::ClaimQueue(tx),
+			)) => {
+				let this = rp_info.get(&rp).unwrap();
+
+				tx.send(Ok(this
+					.claim_queue
+					.clone()
+					.into_iter()
+					.map(|(i, cq)| (i, cq.into_iter().collect()))
+					.collect()))
+					.unwrap();
+			},
+			other => return Some(other),
+		}
+		None
+	}
+
+	/// Drain the requests one view change generates, stopping at the first message that does not
+	/// belong to it.
+	///
+	/// Only correct where such a message is known to follow. Where the caller instead joins the
+	/// subsystem's own view-change future, use `drive_view_change`, which ends on the future.
 	async fn handle_view_update(&mut self, active_leaves: Vec<Hash>) {
 		if active_leaves.is_empty() {
 			return;
@@ -378,135 +503,83 @@ impl TestState {
 			let had_buffered_msg = self.buffered_msg.is_some();
 			let msg = match self.buffered_msg.take() {
 				Some(msg) => msg,
-				None => {
-					if let Some(Some(msg)) = self.recv.next().timeout(TIMEOUT).await {
-						msg
-					} else {
-						break None;
-					}
-				},
+				None => self.timeout_recv().await,
 			};
 
-			match msg {
-				AllMessages::ChainApi(ChainApiMessage::BlockHeader(rp, tx)) => {
-					let slot = self.slot_overrides.get(&rp).copied().unwrap_or_else(|| {
-						pezsp_consensus_slots::Slot::from_timestamp(
-							pezsp_timestamp::Timestamp::current(),
-							pezsp_consensus_slots::SlotDuration::from_millis(
-								pezkuwi_primitives::RELAY_CHAIN_SLOT_DURATION_MILLIS,
-							),
-						)
-					});
-					let pre_digest =
-						pezsp_consensus_babe::digests::CompatibleDigestItem::babe_pre_digest(
-							PreDigest::SecondaryPlain(SecondaryPlainPreDigest {
-								authority_index: 0,
-								slot,
-							}),
-						);
-					tx.send(Ok(Some(
-						self.rp_info
-							.get(&rp)
-							.map(|info| Header {
-								parent_hash: info.parent,
-								number: info.number,
-								state_root: Hash::zero(),
-								extrinsics_root: Hash::zero(),
-								digest: pezsp_runtime::Digest { logs: vec![pre_digest] },
-							})
-							.unwrap(),
-					)))
-					.unwrap();
-				},
-				AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-					_rp,
-					RuntimeApiRequest::SchedulingLookahead(session_index, tx),
-				)) => {
-					let session_info = self.session_info.get(&session_index).unwrap();
-					tx.send(Ok(session_info.scheduling_lookahead)).unwrap();
-				},
-				AllMessages::ChainApi(ChainApiMessage::Ancestors { hash, k, response_channel }) => {
-					let rp_info = self.rp_info.get(&hash).unwrap();
-					let ancestors: Vec<Hash> = (1..=k as u32)
-						.map(|i| rp_info.number.saturating_sub(i))
-						.take_while(|n| *n > 0)
-						.filter_map(|n| {
-							self.rp_info.iter().find(|(_, info)| info.number == n).map(|(h, _)| *h)
-						})
-						.collect();
-					response_channel.send(Ok(ancestors)).unwrap();
-				},
-				AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-					rp,
-					RuntimeApiRequest::SessionIndexForChild(tx),
-				)) => {
-					tx.send(Ok(self.rp_info.get(&rp).unwrap().session_index)).unwrap();
-				},
-				AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-					rp,
-					RuntimeApiRequest::Validators(tx),
-				)) => {
-					let session_index = self.rp_info.get(&rp).unwrap().session_index;
-					let session_info = self.session_info.get(&session_index).unwrap();
-					tx.send(Ok(session_info.validators.clone())).unwrap();
-				},
-				AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-					rp,
-					RuntimeApiRequest::ValidatorGroups(tx),
-				)) => {
-					let session_index = self.rp_info.get(&rp).unwrap().session_index;
-					let session_info = self.session_info.get(&session_index).unwrap();
-					tx.send(Ok((
-						session_info.validator_groups.clone(),
-						session_info.group_rotation_info.clone(),
-					)))
-					.unwrap();
-				},
-				AllMessages::RuntimeApi(RuntimeApiMessage::Request(
-					rp,
-					RuntimeApiRequest::ClaimQueue(tx),
-				)) => {
-					let rp_info = self.rp_info.get(&rp).unwrap();
-
-					tx.send(Ok(rp_info
-						.claim_queue
-						.clone()
-						.into_iter()
-						.map(|(i, cq)| (i, cq.into_iter().collect()))
-						.collect()))
-						.unwrap();
-				},
-				other => {
+			match Self::serve_view_update_request(
+				&self.rp_info,
+				&self.session_info,
+				&self.slot_overrides,
+				msg,
+			) {
+				None => continue,
+				Some(other) => {
 					if had_buffered_msg {
 						panic!("Unexpected message: {:?}", other);
 					} else {
 						break Some(other);
 					}
 				},
-			};
+			}
 		};
 
 		self.buffered_msg = extra_msg;
 	}
 
-	async fn activate_leaf<B: Backend>(&mut self, state: &mut State<B>, height: BlockNumber) {
+	/// Run one view change and serve its requests until the subsystem reports it is finished.
+	///
+	/// This used to be a `join!` of `handle_view_update` and the view-change future, where the
+	/// drain ended after 100 ms of quiet. Two things were wrong with that. Every activation paid
+	/// the full 100 ms -- measured, it was the normal exit, not an edge case -- and on a runner
+	/// slow enough for a request to miss that window the drain ended with the request still in
+	/// flight, leaving the joined future waiting forever for a response nobody would send.
+	///
+	/// Ending on the future itself is the structural condition: the subsystem cannot report that
+	/// it has finished a view change while one of its own requests is still unanswered.
+	async fn drive_view_change<B: Backend>(&mut self, state: &mut State<B>, leaves: Vec<Hash>) {
+		for active in leaves.iter() {
+			assert!(self.rp_info.contains_key(active));
+		}
+
 		let mut sender = self.sender.clone();
-		futures::join!(self.handle_view_update(vec![get_hash(height)]), async {
-			state
-				.handle_our_view_change(&mut sender, OurView::new([get_hash(height)], 0))
-				.await
-				.unwrap()
-		});
+		let view_change = state.handle_our_view_change(&mut sender, OurView::new(leaves, 0)).fuse();
+		futures::pin_mut!(view_change);
+
+		// Disjoint field borrows: the drain reads the fixtures while it polls the channel.
+		let TestState { recv, rp_info, session_info, slot_overrides, buffered_msg, .. } = self;
+
+		if let Some(msg) = buffered_msg.take() {
+			if let Some(other) =
+				Self::serve_view_update_request(rp_info, session_info, slot_overrides, msg)
+			{
+				panic!("Unexpected buffered message: {:?}", other);
+			}
+		}
+
+		loop {
+			futures::select! {
+				res = view_change => {
+					res.unwrap();
+					break;
+				},
+				msg = recv.next() => {
+					let msg = msg.expect("Sender dropped");
+					if let Some(other) =
+						Self::serve_view_update_request(rp_info, session_info, slot_overrides, msg)
+					{
+						panic!("Unexpected message during view change: {:?}", other);
+					}
+				},
+			}
+		}
+	}
+
+	async fn activate_leaf<B: Backend>(&mut self, state: &mut State<B>, height: BlockNumber) {
+		self.drive_view_change(state, vec![get_hash(height)]).await;
 	}
 
 	async fn activate_leaves<B: Backend>(&mut self, state: &mut State<B>, leaves: Vec<Hash>) {
-		let mut sender = self.sender.clone();
-		futures::join!(self.handle_view_update(leaves.clone()), async {
-			state
-				.handle_our_view_change(&mut sender, OurView::new(leaves, 0))
-				.await
-				.unwrap()
-		});
+		self.drive_view_change(state, leaves).await;
 	}
 
 	async fn handle_finalized_block(&mut self, finalized: BlockNumber) {
@@ -609,14 +682,23 @@ impl TestState {
 			};
 		};
 
-		let msg = if let Some(Some(msg)) = self.recv.next().timeout(TIMEOUT).await {
-			msg
-		} else {
+		// The subsystem queries the registered paras once per session, and skips the query
+		// entirely when the finalized session has not moved (`PeerManager::prune_registered_paras`
+		// returns early). Mirroring that condition is what lets this stop waiting on a clock: the
+		// harness knows whether a request is coming, so a slow runner can no longer be mistaken
+		// for a subsystem that decided not to ask.
+		let needs_paras = self
+			.latest_finalized_session
+			.map(|last_stored| last_stored < session_index)
+			.unwrap_or(true);
+		self.latest_finalized_session = Some(session_index);
+
+		if !needs_paras {
 			return;
-		};
+		}
 
 		assert_matches!(
-			msg,
+			self.timeout_recv().await,
 			AllMessages::RuntimeApi(RuntimeApiMessage::Request(
 				_rp,
 				RuntimeApiRequest::ParaIds(index, tx),
@@ -1672,12 +1754,7 @@ async fn test_peer_connections_across_schedule_change() {
 			assigned_core: prev_leaf_info.assigned_core,
 		},
 	);
-	futures::join!(test_state.handle_view_update(vec![get_hash(17), fork_hash]), async {
-		state
-			.handle_our_view_change(&mut sender, OurView::new([get_hash(17), fork_hash], 0))
-			.await
-			.unwrap()
-	});
+	test_state.drive_view_change(&mut state, vec![get_hash(17), fork_hash]).await;
 
 	assert_eq!(state.connected_peers(), expected_connected_peers);
 	test_state.assert_no_messages().await;
@@ -2445,7 +2522,7 @@ async fn test_collation_response_out_of_view() {
 	assert!(state
 		.collation_response_stream()
 		.select_next_some()
-		.timeout(TIMEOUT)
+		.timeout(QUIET)
 		.await
 		.is_none());
 
@@ -2454,7 +2531,7 @@ async fn test_collation_response_out_of_view() {
 	assert!(state
 		.collation_response_stream()
 		.select_next_some()
-		.timeout(TIMEOUT)
+		.timeout(QUIET)
 		.await
 		.is_none());
 
@@ -2463,7 +2540,7 @@ async fn test_collation_response_out_of_view() {
 	let resp = state
 		.collation_response_stream()
 		.select_next_some()
-		.timeout(TIMEOUT)
+		.timeout(RECV_TIMEOUT)
 		.await
 		.unwrap();
 
@@ -3038,7 +3115,7 @@ async fn test_outdated_fetching_collations_are_pruned() {
 	assert!(state
 		.collation_response_stream()
 		.select_next_some()
-		.timeout(TIMEOUT)
+		.timeout(QUIET)
 		.await
 		.is_none());
 
@@ -3047,7 +3124,7 @@ async fn test_outdated_fetching_collations_are_pruned() {
 	assert!(state
 		.collation_response_stream()
 		.select_next_some()
-		.timeout(TIMEOUT)
+		.timeout(QUIET)
 		.await
 		.is_none());
 
@@ -3056,7 +3133,7 @@ async fn test_outdated_fetching_collations_are_pruned() {
 	let resp = state
 		.collation_response_stream()
 		.select_next_some()
-		.timeout(TIMEOUT)
+		.timeout(RECV_TIMEOUT)
 		.await
 		.expect("cancellation response should arrive");
 	assert_eq!(resp.0, first_adv);
@@ -4114,7 +4191,7 @@ async fn fork_drop_reclaims_capacity_and_disconnects_peers() {
 	let resp = state
 		.collation_response_stream()
 		.select_next_some()
-		.timeout(TIMEOUT)
+		.timeout(RECV_TIMEOUT)
 		.await
 		.expect("cancellation should arrive");
 	assert_matches::assert_matches!(resp.1, Err(CollationFetchError::Cancelled));

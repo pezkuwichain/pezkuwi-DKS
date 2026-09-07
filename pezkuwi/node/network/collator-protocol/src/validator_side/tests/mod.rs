@@ -1205,6 +1205,16 @@ fn delay_reputation_change() {
 		// Wait enough to fire reputation delay
 		futures_timer::Delay::new(REPUTATION_CHANGE_TEST_INTERVAL).await;
 
+		let mut expected_change = HashMap::new();
+		for rep in vec![COST_UNNEEDED_COLLATOR, COST_UNNEEDED_COLLATOR] {
+			add_reputation(&mut expected_change, peer_b, rep);
+		}
+
+		// The aggregator flushes on a 10 ms timer, so a loaded runner can flush between the two
+		// declares and send them as two batches instead of one. Requiring both in the first batch
+		// made this fail once in ten runs under load. Accumulating asserts the same thing -- both
+		// declares were charged, and charged the same -- without asserting where the flush landed.
+		let mut seen: HashMap<PeerId, i32> = HashMap::new();
 		loop {
 			match overseer_recv(&mut virtual_overseer).await {
 				AllMessages::NetworkBridgeTx(NetworkBridgeTxMessage::DisconnectPeers(_, _)) => {
@@ -1214,12 +1224,14 @@ fn delay_reputation_change() {
 				AllMessages::NetworkBridgeTx(NetworkBridgeTxMessage::ReportPeer(
 					ReportPeerMessage::Batch(v),
 				)) => {
-					let mut expected_change = HashMap::new();
-					for rep in vec![COST_UNNEEDED_COLLATOR, COST_UNNEEDED_COLLATOR] {
-						add_reputation(&mut expected_change, peer_b, rep);
+					for (peer, cost) in v {
+						seen.entry(peer)
+							.and_modify(|acc| *acc = acc.saturating_add(cost))
+							.or_insert(cost);
 					}
-					assert_eq!(v, expected_change);
-					break;
+					if seen == expected_change {
+						break;
+					}
 				},
 				_ => panic!("Message should be either `DisconnectPeer` or `ReportPeer`"),
 			}
