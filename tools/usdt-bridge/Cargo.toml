@@ -33,9 +33,9 @@ pezkuwi-subxt = "0.44.0"
 pezkuwi-subxt-signer = { version = "0.44.0", features = ["sr25519"] }
 
 # Crypto
-sp-core = { version = "34.0.0", default-features = false }
-sp-keyring = { version = "39.0.0" }
-sp-runtime = { version = "39.0.5", default-features = false }
+sp-core = { version = "39.0.0", default-features = false }
+sp-keyring = { version = "45.0.0" }
+sp-runtime = { version = "45.0.0", default-features = false }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -66,7 +66,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 
 # Error handling
 anyhow = "1.0"
-thiserror = "1.0"
+thiserror = "2.0"
 
 # Simple file-based storage (no native compilation needed)
 # Database tracking via JSON files for simplicity
