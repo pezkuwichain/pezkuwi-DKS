@@ -109,9 +109,17 @@ can reverse the direction.
 
 **What root can do, stated plainly.** Root in this system is not an office; it is a seat, and
 two things sit in it. One is the People chain's own referendum, on the twenty-eight-day track,
-counted by citizens. The other is a sudo key held for the founding period, which retires once
-the chain has been proved end to end on the test network; until it does, it is absolute, and
-this document would be worth less if it said otherwise.
+counted by citizens. The other is a sudo key held for the founding period. Until
+it retires it is absolute, and this document would be worth less if it said otherwise.
+
+**When it retires is a measurement, not a date.** The referendum seat is only occupied once
+the register can actually fill it: the support floor in §3.1 means a question needs two
+thousand citizens voting aye, and a roll that cannot produce them has a civil path in name
+only. Retiring the key before then would not hand authority to the people — it would leave the
+chain with no working authority at all. So the key goes when three things are true together:
+the chain has been proved end to end on the test network, the roll can carry the floor, and a
+referendum has actually decided something under it. The third is the one that is easy to skip
+and the one that matters: an authority that has never been exercised is not known to work.
 
 Root can upgrade a runtime, and a runtime is where every rule in this document lives —
 including the origin filters that make the vaults refuse. So every claim below of the form
@@ -140,6 +148,21 @@ divided by the entire citizen roll*, not by tokens, and approval as ayes over ay
 The roll is the number of citizens in the register. A wallet holding a billion HEZ has
 exactly the weight of a wallet holding none: one, if it belongs to a citizen, and zero if it
 does not.
+
+**Support is measured against the roll, or against a hundred thousand, whichever is larger.**
+The support thresholds below fall to two percent, and two percent of a young register is a
+handful of people — the curves are written for a state with millions on the roll, and applied
+to a few hundred they would let a couple of dozen citizens amend the constitution. So the
+denominator has a floor. Below it a question is not cheap to carry; it is refused, in the same
+way a stratum with too few members is refused a seat in §7.2. The floor is not a quorum a
+referendum has to assemble on top of its own rules — it is the same rule, honestly denominated.
+
+Two things follow. Nothing can pass before the roll reaches two thousand, because a question
+needs two thousand ayes and there is nobody else to cast them — and that is a necessary size
+rather than a sufficient one, since two thousand citizens must actually vote aye, not merely
+exist. And the floor **retires itself**:
+once the register is larger than a hundred thousand the denominator is the roll again, and the
+rule has no further effect for the rest of the chain's life.
 
 Five tracks exist, each dispatching a different authority:
 
@@ -727,6 +750,8 @@ a solicitation, or investment advice.
 | Parliamentary seats / term | 201 / 4 years (first term halved) |
 | Constitutional Court | 11 seats — 6 elected, 5 appointed — 9 years |
 | Register-rules referendum | 90-day decision period |
+| Support denominator | The roll, or 100,000, whichever is larger |
+| Ayes needed to reach root | 2,000 |
 | Citizens' initiative threshold | 1% of the roll |
 | TNPoS committee | 9 strata × 3 seats = 27 |
 | TNPoS quorum / halt / fork | 19 / 9 / 11 |
