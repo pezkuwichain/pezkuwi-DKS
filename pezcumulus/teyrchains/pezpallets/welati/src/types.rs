@@ -1537,19 +1537,19 @@ impl OfficialRoleInfo for OfficialRole {
 	DecodeWithMemTracking,
 	MaxEncodedLen,
 )]
-#[scale_info(skip_type_params(Electorate))]
+#[scale_info(skip_type_params(Electorate, MinElectorate))]
 #[codec(mel_bound())]
-pub struct CitizenTally<Electorate: 'static> {
+pub struct CitizenTally<Electorate: 'static, MinElectorate: 'static> {
 	/// Citizens who voted aye.
 	pub ayes: u32,
 	/// Citizens who voted nay.
 	pub nays: u32,
 	#[codec(skip)]
-	dummy: core::marker::PhantomData<Electorate>,
+	dummy: core::marker::PhantomData<(Electorate, MinElectorate)>,
 }
 
-impl<Electorate: Get<u32> + 'static, Class> pezframe_support::traits::VoteTally<u32, Class>
-	for CitizenTally<Electorate>
+impl<Electorate: Get<u32> + 'static, MinElectorate: Get<u32> + 'static, Class>
+	pezframe_support::traits::VoteTally<u32, Class> for CitizenTally<Electorate, MinElectorate>
 {
 	fn new(_: Class) -> Self {
 		Self { ayes: 0, nays: 0, dummy: core::marker::PhantomData }
@@ -1560,8 +1560,26 @@ impl<Electorate: Get<u32> + 'static, Class> pezframe_support::traits::VoteTally<
 	}
 
 	fn support(&self, _: Class) -> pezsp_runtime::Perbill {
-		// Against the whole roll. An empty roll is not unanimous consent, it is no consent.
-		let electorate = Electorate::get();
+		// Against the whole roll, or against `MinElectorate` while the roll is smaller than that.
+		//
+		// A share of a small roll is a small number, and the support curves here are calibrated
+		// for a register with millions in it. At launch scale the two per cent the root track
+		// settles at is a couple of dozen people -- and this chain's root is the only door into
+		// the relay's, so those few would reach runtime upgrades, the treasury, everything. The
+		// floor turns the requirement into an absolute count until the roll outgrows it: two per
+		// cent of a hundred thousand is two thousand citizens, whatever the roll happens to be.
+		//
+		// It retires itself. Once the roll passes the floor the denominator is the roll again and
+		// the curves mean what they say -- at forty million welatî, root asks for eight hundred
+		// thousand ayes.
+		//
+		// Deliberately not on the `Electorate` provider: `unanimity`, `rejection` and
+		// `from_requirements` build tallies from it, and a floored provider would have them
+		// describe a state the chain cannot reach. Deliberately not on `approval` either -- that
+		// is the share among those who voted, and its denominator is already `ayes + nays`.
+		//
+		// An empty roll is not unanimous consent, it is no consent.
+		let electorate = Electorate::get().max(MinElectorate::get());
 		if electorate == 0 {
 			pezsp_runtime::Perbill::zero()
 		} else {
