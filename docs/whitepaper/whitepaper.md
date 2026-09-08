@@ -490,6 +490,11 @@ percent goes to the treasury and the rest to those securing the chain. Only the 
 office on the People chain, may change the rate — never HEZ holders, and never by more than
 one percentage point at a time, no more often than every ninety days.
 
+Emission is not the only income. Transaction fees on the relay split **eighty percent to the
+treasury and twenty percent to the block's author**; on the teyrchains the whole fee goes to
+the collator pot, which is a collator's only income, since inflation pays the relay's
+validators and not them.
+
 ### 8.2 PEZ — the franchise
 
 An asset on the Asset Hub, asset id one, **five billion units, fixed forever**. No inflation,

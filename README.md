@@ -115,7 +115,8 @@ bearers.
 | subject | counted | where |
 |---|---|---|
 | Citizenship, offices, the judiciary, the constitution | one citizen, one vote | People chain |
-| Token parameters, fees, treasury scale | by holding | Asset Hub |
+| Fees, treasury scale, staking and lease administration | by holding | Asset Hub and the relay |
+| The emission rate | the Xezinedar, an office | Asset Hub, administered from People |
 
 The two track lists are disjoint and held apart by a gate. An origin appearing in both would
 let a holding reach a state power, and the register would be for sale.
