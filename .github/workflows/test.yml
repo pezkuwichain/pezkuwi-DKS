@@ -4,13 +4,21 @@ name: test
 # benches, doc-tests). To keep the push/PR feedback loop fast, these do NOT run on
 # every push — the every-push gate (compile + runtime build + try-runtime + security
 # + quick-checks) lives in check.yml / quick-checks.yml / security.yml. This heavy
-# suite runs nightly and on demand (e.g. before a release). They run on the dedicated
+# suite runs weekly and on demand (e.g. before a release). They run on the dedicated
 # self-hosted build runners and — for security on this public repo — never on
 # pull requests from forks.
+#
+# Weekly, not nightly. The suite takes most of a day on six build runners, and a nightly
+# firing spent them on whatever `main` happened to be rather than on a tree anyone was
+# waiting for. In one sitting it started three times against a `main` that was already
+# superseded, and each one had to be cancelled by hand -- while the pull request that did
+# need the runners sat queued behind it. The runs that matter are dispatched deliberately,
+# before a merge or a release; the schedule is a backstop for a week with no dispatch, not
+# the main way this suite is meant to run.
 
 on:
   schedule:
-    - cron: "0 2 * * *" # nightly 02:00 UTC
+    - cron: "0 2 * * 0" # weekly Sunday 02:00 UTC
   workflow_dispatch:
 
 permissions:
