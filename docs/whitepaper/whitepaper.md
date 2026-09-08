@@ -27,8 +27,7 @@ what that means and what it does not.
 
 Second, **money and the authority to move it live on different chains.** Every fund sits on
 the Asset Hub. The relay holds no fund of its own — only the escrow mirroring what the Asset
-Hub carries, and the founder's allocation, which is property under a vesting schedule rather
-than a fund. Every authority to draw from it sits on the People chain. A payment is a
+Hub carries, and the founder's allocation, which is property rather than a fund. Every authority to draw from it sits on the People chain. A payment is a
 cross-chain message from an office to a vault, and the vault's own configuration names the
 one chain it will listen to. An officeholder cannot reach the money by holding a key; they
 reach it by holding an office, and the office is an entry in a register that citizens elect.
@@ -457,14 +456,36 @@ it secures the network, and it inflates.
 | Presale | 100,000,000 (50%) | Asset Hub | A keyless pot |
 | Treasury | 40,000,000 (20%) | Asset Hub | A keyless pot |
 | Airdrop | 40,000,000 (20%) | Asset Hub | A keyless pot |
-| Founder | 20,000,000 (10%) | Relay | The founding account, vested |
+| Founder | 20,000,000 (10%) | Relay | The founding account, liquid |
 
 Three of the four are keyless: no seed produces the account, so the balance leaves only
 through an authorised spend. The fourth is the founder's, and it is property rather than a
-fund — held on a key, and released on a genesis vesting schedule of four years with a
-one-year cliff, matched to the presidential term so that the number has a civic meaning
-rather than a venture one. It is the one allocation in this system a person can hold, and it
-is stated here rather than left to be discovered.
+fund — held on a key, and liquid from the first block. That is deliberate, and it is stated
+here rather than left to be discovered.
+
+It is liquid because it is the network's launch capital. A chain secured by stake cannot seat
+the validators that produce its blocks until somebody has staked; at genesis there is no
+market and no one else holding HEZ, so the founder's share is what the first validators are
+bonded with and what the founding team is paid from. The undertaking is that it is **lent to
+the network's security rather than sold** — put behind validators so the chain has weight
+defending it, and returned to circulation as the roll and the market can carry it.
+
+That is an undertaking and not a lock, and the difference is the point of this document: no
+runtime rule enforces it. What makes it checkable is that the account is public and the
+ledger is public: every transfer out of the founding account is on the chain, with its
+destination, its amount and its block. Whether the HEZ went to a validator's stash or
+somewhere else is not a matter of trust — it is a query anyone can run, against an address
+published here. An undertaking that can be audited is a different thing from one that has to
+be believed, and this is the only kind this document is willing to make.
+
+What the runtime does enforce is on the other side of the ledger — the founder's PEZ.
+
+The founder's **PEZ** is the share that waits, and there the rule is in code. It is minted
+into a keyless pot and leaves only when the population gate fires — the same latch, in the
+same call, that starts the citizens' payments. If the roll never reaches the threshold the
+founder's share stays locked as permanently as the citizens' does. The two allocations are
+treated differently because they do different jobs: the HEZ brings the network up, and the
+PEZ is a share of what it becomes.
 
 The treasury's share is minted into the treasury pallet's own account on the Asset Hub, which
 is where the pallet that spends it lives. The relay has no treasury pallet, so money held
@@ -750,7 +771,7 @@ a solicitation, or investment advice.
 | PEZ halving period | 48 monthly releases (~4 years) |
 | PEZ release split | 75% citizens / 25% state |
 | PEZ schedule starts at | 100,000 citizens on the roll |
-| Founder allocation | 4-year vesting, 1-year cliff, bound to the same gate |
+| Founder allocation | HEZ liquid at genesis, undertaken as launch capital for validator security; PEZ bound to the population gate in code |
 | Presidential term | 4 years, maximum 2 consecutive |
 | Parliamentary seats / term | 201 / 4 years (first term halved) |
 | Constitutional Court | 11 seats — 6 elected, 5 appointed — 9 years |
