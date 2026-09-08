@@ -120,6 +120,7 @@ xcm = { workspace = true }
 xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
 xcm-runtime-pezapis = { workspace = true }
+zagros-runtime-constants = { workspace = true }
 
 # Pezcumulus
 pez-assets-common = { workspace = true }
@@ -158,7 +159,6 @@ pezsp-tracing = { workspace = true, default-features = true }
 teyrchains-runtimes-test-utils = { workspace = true, default-features = true }
 # The runtime takes its constants from the mainnet set; the governance test still
 # has to name the Collectives chain, which exists only on Zagros.
-zagros-runtime-constants = { workspace = true, default-features = true }
 
 [build-dependencies]
 bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features = true }
@@ -498,6 +498,7 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-pezapis/std",
 	"xcm/std",
+	"zagros-runtime-constants/std",
 ]
 
 # Enable the metadata hash generation in the wasm builder.

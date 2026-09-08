@@ -66,7 +66,14 @@ pub const HEZ_FOUNDER_ALLOCATION: u128 = 20_000_000 * HEZ;
 /// key holding half the supply.
 pub const HEZ_PRESALE_ALLOCATION: u128 = 100_000_000 * HEZ;
 
-/// Kurdistan Treasury allocation: 20% = 40,000,000 HEZ
+/// Kurdistan Treasury allocation: 20% = 40,000,000 HEZ.
+///
+/// **Minted on the Asset Hub, not here** -- into the account `pezpallet_treasury` pays from,
+/// which is derived from a pallet id and holds no key. It used to be minted on the relay onto
+/// `Treasury_1`, and the relay has no treasury pallet: the pot with the authority held nothing
+/// and the balance with no authority held everything, reachable by a key or by root and by no
+/// vote. The five spender tracks that decide these payments are on the Asset Hub, so the money
+/// is now where the authority is. Same reasoning as the airdrop and presale pots above.
 pub const HEZ_TREASURY_ALLOCATION: u128 = 40_000_000 * HEZ;
 
 /// Airdrop allocation: 20% = 40,000,000 HEZ.
@@ -216,15 +223,24 @@ fn default_teyrchains_host_configuration_is_consistent() {
 /// the split is decided and where anybody changing one share will look -- moving them to the
 /// chain that holds the money would leave half the arithmetic here and half somewhere else.
 ///
-/// The two that stay are the two with an owner: the founder's is property, and the treasury's
-/// is the relay's own. The two that moved are the two that answer to a body rather than to a
-/// key, and the pots that hold them live on the Asset Hub.
+/// One stays whole: the founder's, which is property and has an owner. The other three answer
+/// to a body rather than to a key, and the pots that hold them are on the Asset Hub. The
+/// treasury was the last to move -- it was minted here, onto a key, while the pallet that
+/// spends it has always been there.
+///
+/// What still starts on the relay out of the treasury's share is the validators' funding, and
+/// only because the accounts that need it are here.
 #[test]
 fn hez_allocations_sum_to_200m() {
-	let here = HEZ_FOUNDER_ALLOCATION + HEZ_TREASURY_ALLOCATION;
-	let on_asset_hub = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION;
-	assert_eq!(here, 60_000_000 * HEZ, "the relay mints 60M: founder and treasury");
-	assert_eq!(on_asset_hub, 140_000_000 * HEZ, "the Asset Hub mints the airdrop and presale pots");
+	let here =
+		HEZ_FOUNDER_ALLOCATION + pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+	let on_asset_hub = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
+		- pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+	assert_eq!(
+		here,
+		20_001_000 * HEZ,
+		"the relay mints the founder's 20M and the validators' funding out of the treasury"
+	);
 	assert_eq!(here + on_asset_hub, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
 }
 
@@ -253,12 +269,15 @@ fn the_relay_mints_exactly_its_share() {
 		})
 		.sum();
 
-	// Owned balances: the founder's and the treasury's, with the validator stashes taken out
-	// of the treasury's rather than added beside it.
-	let owned = HEZ_FOUNDER_ALLOCATION + HEZ_TREASURY_ALLOCATION;
+	// Owned balances: the founder's, and the validators' funding carved out of the treasury's
+	// share. The rest of the treasury is not here -- it is minted into the pot on the Asset Hub
+	// that the spender tracks pay from.
+	let owned =
+		HEZ_FOUNDER_ALLOCATION + pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
 	// Escrow: the mirror of what the Asset Hub holds, so a teleport back has something to
 	// release. Not new supply -- the same HEZ, represented there and held here.
-	let escrow = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION;
+	let escrow = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
+		- pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
 
 	assert_eq!(
 		total,
@@ -658,12 +677,6 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 		hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
 
 	// Presale account - receives 50% (100M HEZ)
-	// Kurdistan Treasury account - receives 20% (40M HEZ)
-	// Treasury_1
-	// SS58: 5EhCpn82QtdU53MF6PoNFrKHgSrsfcAxFTMwrn3JYf9dioQw
-	let treasury_account: AccountId =
-		hex!("744ed0812d6096827376b4625fe4f840d4950d5aef0ab12902e64c444c8e9d29").into();
-
 	// There is no airdrop account here any more, and that is the fix rather than an omission.
 	// It used to hold 40M HEZ that nothing in the tree ever read: `Claims` is wired but its
 	// genesis list is empty, and Claims pays Ethereum-signed claims out of newly minted funds
@@ -1084,7 +1097,14 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	//
 	// The treasury pays because bootstrapping the validators is what a state treasury is for,
 	// and because it is the only allocation here big enough not to notice.
-	let validator_funding: u128 = initial_authorities.len() as u128 * STASH * 2;
+	// Divided out of the constant rather than multiplied up from a count, so seating another
+	// validator moves nobody else's share and the Asset Hub's subtraction stays correct.
+	let validator_funding: u128 = pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+	let validator_count = initial_authorities.len() as u128;
+	let per_validator: u128 = validator_funding / validator_count;
+	// Integer division leaves a remainder whenever the count does not divide the constant, and
+	// dropping it would mint less than two hundred million. The first validator carries it.
+	let first_validator_extra: u128 = validator_funding - per_validator * validator_count;
 
 	// The XCM checking account's seed.
 	//
@@ -1105,7 +1125,9 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	// and escrowed here, exactly as a teleport out would have left it. Governance is not
 	// distorted by the size because `MaxTurnout` reads `VotableIssuance`, which is active
 	// issuance minus this account.
-	let checking_account_seed: u128 = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION;
+	let checking_account_seed: u128 =
+		HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
+			- pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
 	let checking_account: AccountId = crate::XcmPallet::check_account();
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
@@ -1117,14 +1139,20 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				// manual transfer has to be remembered after launch. See
 				// `HEZ_AIRDROP_ALLOCATION`'s comment and the Asset Hub's `AirdropPot`.
 				(founder_account.clone(), HEZ_FOUNDER_ALLOCATION), // 10% = 20M HEZ
-				// 20% = 40M HEZ, less what the validator stashes take out of it.
-				(treasury_account.clone(), HEZ_TREASURY_ALLOCATION - validator_funding),
+				// The treasury's 40M is not here either. It is minted into the account the
+				// Asset Hub's treasury pallet pays from -- see `HEZ_TREASURY_ALLOCATION`. What
+				// stays on this side of it is the validator funding, below.
 				// Escrow for what the Asset Hub holds -- see `checking_account_seed`.
 				(checking_account, checking_account_seed),
 			]
 			.into_iter()
 			// Add validator stash balances (STASH * 2 to cover bond + existential deposit)
-			.chain(initial_authorities.iter().map(|x| (x.0.clone(), STASH * 2)))
+			.chain(initial_authorities.iter().enumerate().map(|(i, x)| {
+				(
+					x.0.clone(),
+					if i == 0 { per_validator + first_validator_extra } else { per_validator },
+				)
+			}))
 			.collect::<Vec<_>>(),
 		},
 		session: SessionConfig {

@@ -136,6 +136,22 @@ pub mod pezpallet {
 	pub const PRESALE_ALLOCATION: u128 = 93_750_000 * 1_000_000_000_000; // %1.875
 	pub const FOUNDER_ALLOCATION: u128 = 93_750_000 * 1_000_000_000_000; // %1.875
 
+	#[pezpallet::genesis_config]
+	#[derive(pezframe_support::DefaultNoBound)]
+	pub struct GenesisConfig<T: Config> {
+		/// The account the founder's pot pays when the population gate fires.
+		pub founder: Option<T::AccountId>,
+	}
+
+	#[pezpallet::genesis_build]
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+		fn build(&self) {
+			if let Some(founder) = &self.founder {
+				FounderAccount::<T>::put(founder);
+			}
+		}
+	}
+
 	#[pezpallet::pezpallet]
 	#[pezpallet::storage_version(migrations::STORAGE_VERSION)]
 	pub struct Pezpallet<T>(_);
@@ -277,6 +293,15 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type GovernmentPotId: Get<PalletId>;
 
+		/// The pot the founder's PEZ waits in until the population gate fires.
+		///
+		/// Keyless, derived from a pallet id. The allocation is property and it has an owner,
+		/// but it is not liquid on day one: it is bound to the same latch the citizens' share
+		/// is, so the people who built this cannot be paid by a state that never came into
+		/// being. A schedule can slip past a date; a latch cannot slip past a fact.
+		#[pezpallet::constant]
+		type FounderPotId: Get<PalletId>;
+
 		/// Who may say that the population threshold has been reached.
 		///
 		/// The citizen register lives on another chain, so this pallet cannot count for
@@ -343,6 +368,14 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	#[pezpallet::getter(fn distribution_started)]
 	pub type DistributionStarted<T: Config> = StorageValue<_, bool, ValueQuery>;
+
+	/// The account the founder's pot pays out to when the gate fires.
+	///
+	/// Written at genesis rather than bound as a runtime constant, so it is whatever the
+	/// preset that built this chain chose -- a development chain keeps its development
+	/// founder, and the real chain keeps the real one, from one source in each case.
+	#[pezpallet::storage]
+	pub type FounderAccount<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
 
 	/// Everything the incentive pot has ever been given.
 	///
@@ -610,6 +643,29 @@ pub mod pezpallet {
 				monthly_amount: monthly_amount_balance,
 				total_released: Zero::zero(),
 			};
+
+			// The founder's share leaves its pot here, in the same call that starts the
+			// citizens' payments -- that is the whole of what binds the two. `activate_
+			// distribution` is atomic, so a transfer that cannot be made reverts the
+			// activation with it and the People chain's message can be sent again; there is no
+			// state where the schedule has started and the founder has not been paid, or the
+			// reverse.
+			//
+			// Nothing here if genesis named no founder: a chain built without one has nothing
+			// to pay, and that is not an error.
+			if let Some(founder) = FounderAccount::<T>::get() {
+				let pot = T::FounderPotId::get().into_account_truncating();
+				let held = T::Assets::balance(T::PezAssetId::get(), &pot);
+				if !held.is_zero() {
+					T::Assets::transfer(
+						T::PezAssetId::get(),
+						&pot,
+						&founder,
+						held,
+						Preservation::Expendable,
+					)?;
+				}
+			}
 
 			TreasuryStartBlock::<T>::put(current_block);
 			HalvingInfo::<T>::put(halving_data);

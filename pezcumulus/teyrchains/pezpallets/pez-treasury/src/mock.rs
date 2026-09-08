@@ -128,6 +128,7 @@ parameter_types! {
 	pub const PezTreasuryPalletId: PalletId = PalletId(*b"py/pztrs");
 	pub const PezIncentivePotId: PalletId = PalletId(*b"py/pzinc");
 	pub const PezGovernmentPotId: PalletId = PalletId(*b"py/pzgov");
+	pub const PezFounderPotId: PalletId = PalletId(*b"py/pzfnd");
 	pub const PezAssetId: u32 = 1;
 }
 
@@ -217,6 +218,7 @@ impl pezpallet_pez_treasury::Config for Test {
 	type TreasuryPalletId = PezTreasuryPalletId;
 	type IncentivePotId = PezIncentivePotId;
 	type GovernmentPotId = PezGovernmentPotId;
+	type FounderPotId = PezFounderPotId;
 	// On the real chains this is the People chain's XCM origin. Root stands in here only
 	// because the mock has no sibling chain to speak for the citizen register.
 	type ActivationOrigin = pezframe_system::EnsureRoot<Self::AccountId>;
@@ -356,6 +358,12 @@ pub fn incentive_pot_account() -> H256 {
 #[allow(dead_code)]
 pub fn government_pot_account() -> H256 {
 	PezGovernmentPotId::get().into_account_truncating()
+}
+
+/// The pot the founder's PEZ waits in until the population gate fires.
+#[allow(dead_code)]
+pub fn founder_pot() -> H256 {
+	PezFounderPotId::get().into_account_truncating()
 }
 
 // V3: Debug helper

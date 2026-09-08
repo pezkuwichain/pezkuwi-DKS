@@ -162,6 +162,20 @@ fn asset_hub_pezkuwichain_genesis(
 	let presale_pot: AccountId = PresalePotPalletId::get().into_account_truncating();
 	const PRESALE_ALLOCATION: Balance = 100_000_000 * UNITS;
 
+	// The treasury's 40M HEZ, minted into the account `pezpallet_treasury` pays from.
+	//
+	// It used to be minted on the relay, onto a key called `Treasury_1` -- and the relay has no
+	// treasury pallet, so that balance had no governance path at all: the pot with the authority
+	// held nothing and the money with no authority held everything. The five spender tracks that
+	// decide these payments are here, so the money is here.
+	//
+	// Less the validators' initial stashes, which are carved out of this share and minted on the
+	// relay because the accounts that need them are there. The relay subtracts the same constant
+	// from what it escrows, and `hez_allocations_sum_to_200m` asserts both halves.
+	let treasury_pot: AccountId = TreasuryPalletId::get().into_account_truncating();
+	const TREASURY_ALLOCATION: Balance =
+		40_000_000 * UNITS - pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
 			balances: endowed_accounts
@@ -170,8 +184,12 @@ fn asset_hub_pezkuwichain_genesis(
 				.map(|k| (k, endowment))
 				.chain(core::iter::once((airdrop_pot, AIRDROP_ALLOCATION)))
 				.chain(core::iter::once((presale_pot, PRESALE_ALLOCATION)))
+				.chain(core::iter::once((treasury_pot, TREASURY_ALLOCATION)))
 				.collect(),
 		},
+		// The account the founder's pot pays when the gate fires -- whatever this preset
+		// chose above, so a development chain keeps its development founder.
+		pez_treasury: PezTreasuryConfig { founder: Some(founder_account.clone()) },
 		teyrchain_info: TeyrchainInfoConfig { teyrchain_id: id },
 		collator_selection: CollatorSelectionConfig {
 			invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
@@ -233,7 +251,15 @@ fn asset_hub_pezkuwichain_genesis(
 				// releases; nothing else can move it.
 				(PEZ_ASSET_ID, pez_treasury_pot(), PEZ_TREASURY_ALLOCATION + PEZ_REWARDS_POOL),
 				// Founder allocation: 1.875% = 93,750,000 PEZ. Property, not treasury.
-				(PEZ_ASSET_ID, founder_account.clone(), PEZ_FOUNDER_ALLOCATION),
+				// The founder's PEZ waits in a keyless pot, not in the founder's account. It
+				// leaves when the population gate fires and the citizens' payments start --
+				// the same latch, not a parallel schedule. See `pezpallet_pez_treasury`'s
+				// `FounderPotId` and `do_initialize_treasury`.
+				(
+					PEZ_ASSET_ID,
+					PezFounderPotId::get().into_account_truncating(),
+					PEZ_FOUNDER_ALLOCATION
+				),
 				// Presale allocation: 1.875% = 93,750,000 PEZ. Sold on the exchange, so it
 				// is held by an account that can move it, not by a pallet -- and that account
 				// answers to a board rather than to a key.
