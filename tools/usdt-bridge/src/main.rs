@@ -2017,3 +2017,55 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use sp_core::crypto::Ss58Codec;
+
+    /// The wallet generator and the signer have to agree on what a phrase derives.
+    ///
+    /// `generate_wallet` derives the key with upstream `sp_core` and prints an address from it,
+    /// while everything that actually signs derives the key with `pezkuwi_subxt_signer`. Nothing
+    /// checked that the two agree, so the generator could hand out an address the signer would
+    /// never reproduce, and funds sent there would belong to no one.
+    ///
+    /// The automation path already guards itself -- it refuses a mnemonic that does not derive
+    /// `AUTOMATION_KEY_ADDRESS`. This is the same guarantee for the generator, asserted instead
+    /// of assumed, and it is what makes an `sp-core` major bump safe to take: the two
+    /// derivations diverging fails here rather than in a signature for the wrong account.
+    ///
+    /// The two renderings are pinned for the same reason. `sp-core` is what turns the key into
+    /// an address on each side, and a format that shifted under a version bump would send
+    /// funds to an account nobody holds.
+    #[test]
+    fn the_generator_and_the_signer_derive_the_same_key() {
+        // The Substrate development phrase, so the expectations can be checked by hand.
+        const PHRASE: &str = "bottom drive obey lake curtain smoke basket hold race lonely fit walk";
+
+        let (pair, _) = <sp_core::sr25519::Pair as sp_core::Pair>::from_phrase(PHRASE, None)
+            .expect("the development phrase is valid bip39");
+        let mnemonic = pezkuwi_subxt_signer::bip39::Mnemonic::parse(PHRASE)
+            .expect("the development phrase is valid bip39");
+        let keypair = pezkuwi_subxt_signer::sr25519::Keypair::from_phrase(&mnemonic, None)
+            .expect("the development phrase is valid bip39");
+
+        let public = <sp_core::sr25519::Pair as sp_core::Pair>::public(&pair);
+
+        assert_eq!(
+            public.0,
+            keypair.public_key().0,
+            "the wallet generator and the signer disagree on what key a phrase derives; every \
+             address `generate-wallet` printed for this phrase belongs to a different key"
+        );
+        assert_eq!(
+            public.to_ss58check_with_version(sp_core::crypto::Ss58AddressFormat::custom(0)),
+            "12bzRJfh7arnnfPPUZHeJUaE62QLEwhK48QnH9LXeK2m1iZU",
+            "the Polkadot-side address rendering moved"
+        );
+        assert_eq!(
+            public.to_ss58check_with_version(sp_core::crypto::Ss58AddressFormat::custom(42)),
+            "5DfhGyQdFobKM8NsWvEeAKk5EQQgYe9AydgJ7rMB6E1EqRzV",
+            "the Pezkuwi-side address rendering moved"
+        );
+    }
+}
