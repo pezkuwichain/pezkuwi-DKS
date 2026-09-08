@@ -91,7 +91,7 @@ specification rather than a running chain.
 
 HEZ is native on all three running chains and moves between them by teleport, against the
 escrow the relay holds. Two wrapped assets also live on the Asset Hub and are not part of
-that mechanism: **wHEZ** (asset 0) is HEZ wrapped one-for-one so that it can be traded by
+that mechanism: **wHEZ** (asset 2) is HEZ wrapped one-for-one so that it can be traded by
 pallets that handle assets rather than the native balance, and **wUSDT** (asset 1000) is the
 custodial bridge's representation of USDT. Neither is a second HEZ, and neither is minted by
 a teleport.
