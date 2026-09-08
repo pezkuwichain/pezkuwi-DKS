@@ -16,18 +16,26 @@ set, and its separation of powers is enforced by the type system rather than by 
 
 Two properties distinguish it. First, **there are two electorates and they are deliberately
 different.** Matters of the state — citizenship, offices, the register — are decided by
-counting citizens, one person one vote, on a chain where a token balance buys nothing.
-Matters of the network — parameters, upgrades, the treasury of last resort — are decided by
-stake, on the relay chain. Neither can vote in the other's house.
+counting citizens, one person one vote, on a chain where a token balance buys no vote — the
+deposits that make a proposal or a candidacy serious are reserved in HEZ, and reserved is not
+spent. Matters of the network's administration — staking, leases, auctions, the treasury of
+last resort — are decided by stake. Neither electorate votes in the other's ballot.
+
+They are not equals, and this document does not pretend otherwise. The civil layer holds the
+only door into the consensus layer's root; the reverse door does not exist. Section 2.1 says
+what that means and what it does not.
 
 Second, **money and the authority to move it live on different chains.** Every fund sits on
-the Asset Hub. Every authority to draw from it sits on the People chain. A payment is a
+the Asset Hub. The relay holds no fund of its own — only the escrow mirroring what the Asset
+Hub carries, and the founder's allocation, which is property under a vesting schedule rather
+than a fund. Every authority to draw from it sits on the People chain. A payment is a
 cross-chain message from an office to a vault, and the vault's own configuration names the
 one chain it will listen to. An officeholder cannot reach the money by holding a key; they
 reach it by holding an office, and the office is an entry in a register that citizens elect.
 
-This document describes the system as it is written. Every figure in it is taken from the
-source.
+This document describes the system as it is written, and every figure in it is read from the
+source. Where a figure here and the code disagree, the code is correct and this document is
+the defect.
 
 ---
 
@@ -70,13 +78,23 @@ neither is the chain that produces blocks.
 | Chain | Id | Carries |
 |---|---|---|
 | **Pezkuwichain** (relay) | — | Consensus, finality, the validator session, cross-chain routing, and the HEZ escrow |
-| **Asset Hub** | 1000 | Every fund. PEZ, wHEZ and wUSDT. Staking and validator elections. |
+| **Asset Hub** | 1000 | Every fund. HEZ, PEZ, wHEZ and wUSDT. Staking and validator elections. |
 | **People** | 1004 | The citizen register, every office, the courts, trust, and the validator pool |
 | **Bridge Hub** | 1002 | Bridges to other consensus systems, including Ethereum |
 | **Coretime** | 1005 | Blockspace allocation |
 
-The relay schedules exactly two cores at genesis, one for the Asset Hub and one for People —
-the two chains a state cannot run without.
+**Five chains are specified; two of them run from the first block.** The relay schedules
+exactly two cores at genesis, one for the Asset Hub and one for People — the two chains a
+state cannot run without. Bridge Hub and Coretime are written and will be seated when there
+is traffic for them to carry; every figure in this document about those two describes a
+specification rather than a running chain.
+
+HEZ is native on all three running chains and moves between them by teleport, against the
+escrow the relay holds. Two wrapped assets also live on the Asset Hub and are not part of
+that mechanism: **wHEZ** (asset 0) is HEZ wrapped one-for-one so that it can be traded by
+pallets that handle assets rather than the native balance, and **wUSDT** (asset 1000) is the
+custodial bridge's representation of USDT. Neither is a second HEZ, and neither is minted by
+a teleport.
 
 ### 2.1 The one door into the relay's root
 
@@ -88,6 +106,25 @@ that matches that chain's identifier and nothing else.
 This is the constitutional core of the design, and it is eleven lines of code. The consensus
 layer is subordinate to the civil layer, structurally, and no amount of stake on the relay
 can reverse the direction.
+
+**What root can do, stated plainly.** Root in this system is not an office; it is a seat, and
+two things sit in it. One is the People chain's own referendum, on the twenty-eight-day track,
+counted by citizens. The other is a sudo key held for the founding period, which retires once
+the chain has been proved end to end on the test network; until it does, it is absolute, and
+this document would be worth less if it said otherwise.
+
+Root can upgrade a runtime, and a runtime is where every rule in this document lives —
+including the origin filters that make the vaults refuse. So every claim below of the form
+*"X cannot reach this money"* means **"X cannot reach it short of a runtime upgrade."** There
+is no formulation that would make it stronger, and a document that implied one would be
+describing a different kind of machine.
+
+What protects the invariants is therefore not impossibility. It is that the only path runs
+through an upgrade; that an upgrade is a constitutional amendment rather than an
+administrative act; and that the path is slow, public, and counted by people rather than by
+holdings. Two things are deliberately kept off even that path: the register's own admission
+rules, which no root arm administers (§3.1), and PEZ's supply, which a call filter refuses
+over any cross-chain message whatever origin it carries (§8.2).
 
 ---
 
@@ -108,7 +145,7 @@ Five tracks exist, each dispatching a different authority:
 
 | Track | Decision period | Confirms | For |
 |---|---|---|---|
-| `root` | 28 days | 24 h | Anything on this chain |
+| `root` | 28 days | 24 h | Anything on this chain except the register's own rules |
 | `welati_election` | 14 days | 12 h | Electoral machinery |
 | `welati_admin` | 7 days | 3 h | Routine administration |
 | `citizenship_admin` | 14 days | 6 h | The register's own administration |
@@ -120,11 +157,17 @@ in a parameter store whose only administrator is a referendum on the ninety-day 
 root. Not the court. Not the president. Changing the rules of admission takes three months
 of deliberation by the people already admitted, and there is no faster path.
 
+That exclusion is literal: the twenty-eight-day root track is an arm of nothing in this
+store, and neither is the relay. An optional slow path is a fast path — nobody takes the long
+road when the short one arrives at the same place — so the short road was not built. The
+escape hatch is the one named in §2.1 and no other: a runtime upgrade can change the
+defaults, and changing them is what amending a constitution ought to feel like.
+
 ### 3.2 The relay chain — stake, with conviction
 
 The relay uses conviction voting over HEZ. Turnout is measured against votable issuance,
 which deliberately excludes the escrow account holding the Asset Hub's mirror of the supply —
-140 million HEZ that exists on both sides of a teleport and must not be counted twice.
+180 million HEZ that exists on both sides of a teleport and must not be counted twice.
 
 Eight tracks exist for network matters: whitelisted upgrades, staking administration, lease
 and auction administration, general administration, and the two cancellation tracks. There is
@@ -143,7 +186,8 @@ it on the track it names. The deposit is ten HEZ and the cooldown is thirty days
 Citizenship is a non-transferable NFT in collection zero. Holding it is what makes an account
 a *welatî*, and every office, every vote, and every trust score is downstream of it.
 
-Admission has three steps and no administrator:
+Admission has three steps and no gatekeeper — nobody sits between an applicant and the
+register whose approval must be sought, and no office can admit at will:
 
 1. **Apply.** The applicant reserves a one-HEZ deposit and registers an identity hash. The
    hash is globally unique and is claimed at application time, so two applications cannot
@@ -154,9 +198,13 @@ Admission has three steps and no administrator:
    whose revoked share passes twenty percent, is suspended.
 3. **Confirm.** The applicant confirms, the NFT is minted, and the roll increases by one.
 
-If nobody vouches within ninety days, the founding account may admit the applicant and
-becomes their referrer of record. The fallback exists so that having no connections is not
-a permanent bar, and it is recorded rather than hidden.
+Two hands do touch the register, and both are named rather than implied. If nobody vouches
+within ninety days, the **founding account** may admit the applicant and becomes their
+referrer of record — the fallback exists so that having no connections is not a permanent
+bar, and admissions made this way are stored apart from ordinary vouches, so standing in for
+somebody is never counted as having chosen them. And the **court**, as the register
+authority, can revoke a citizenship or a vouch after the fact. Neither is an administrator
+of admission: one cannot refuse, the other cannot admit.
 
 ---
 
@@ -218,6 +266,15 @@ governs the citizen register itself, administers the validator pool, and can str
 or earned office. It is also the fraud origin for education credentials and, together with
 the council, the slashing origin for staking scores.
 
+**The council** is the parliament's own standing body: a collective of up to a hundred whose
+roster is written from the sitting Meclis rather than elected separately, so it holds no
+mandate of its own and cannot outlive the house that seats it. It matters in three places and
+nowhere else — it is an alternative arm where the court or the president would otherwise act
+alone, it is half of the slashing origin for staking scores, and a single member of it may
+freeze a suspicious staking-score submission pending review. That last one is deliberately
+cheap to use and cannot take anything: freezing is not slashing, and only the two bodies
+together can slash.
+
 ### 5.5 Serokwezîran — the Prime Minister, and the cabinet
 
 The President nominates; the Parliament confirms. Neither alone suffices, and either may end
@@ -225,7 +282,7 @@ it. Once confirmed, the Prime Minister appoints and dismisses the cabinet alone 
 ministries (finance, defence, justice, education, health, infrastructure, culture) plus
 general ministers without portfolio.
 
-Two ministries carry spending authority, and they are the subject of Section 8.
+Two ministries carry spending authority, and they are the subject of Section 9.
 
 ### 5.6 The civil service
 
@@ -252,11 +309,16 @@ It is composed of four measured parts, each normalised against its own maximum a
 | Part | Weight | Measures | Maximum |
 |---|---|---|---|
 | **Perwerde** (education) | 30 | Points from completed, certified courses | 50,000 |
-| **Referral** | 25 | Citizens vouched for, net of revocations | 500 |
+| **Referral** | 25 | Citizens vouched for, net of revocations | The score at the current vouching ceiling |
 | **Tiki** | 25 | Community and contribution badges held | 1,000 |
 | **Staking** | 20 | Size and duration of stake | 100 |
 
-The weights sum to one hundred, and the runtime asserts it.
+The weights sum to one hundred, and the runtime asserts it. Each part is divided by what is
+*attainable*, not by a number written beside it: the education maximum is every rewarded
+course taken at full value, and the referral maximum is the score a citizen reaches at the
+vouching ceiling the register's rules currently set. A weight that says twenty-five is
+therefore twenty-five, and stays twenty-five if a ninety-day referendum moves the ceiling —
+a component cannot quietly stop being able to reach its own top.
 
 Two properties follow from the arithmetic, and both are intentional.
 
@@ -264,8 +326,8 @@ Two properties follow from the arithmetic, and both are intentional.
 citizen with no economic exposure scores zero however educated or well-connected. Standing
 requires something at risk.
 
-**But capital is the smallest component.** Stake carries the lowest weight of the four, and
-its own scale saturates: the amount tiers stop rewarding size above 750 HEZ, and the largest
+**But capital is the smallest component, and it is not the only thing that can be given.**
+Stake carries the lowest weight of the four, and its own scale saturates: the amount tiers stop rewarding size above 750 HEZ, and the largest
 remaining multiplier comes from *holding for twelve months*, not from holding more. Beyond a
 modest threshold, patience buys more standing than wealth does.
 
@@ -298,6 +360,16 @@ how much stake sits behind it.
 | **Infrastructure** | Any trust, on operational contribution |
 
 Each stratum seats **three** validators. A full committee is **twenty-seven**.
+
+The security argument rests on the strata being gated by *different* authorities: two strata
+answering to the same institution are one stratum, not two, and the committee's independence
+is counted from that number. Three of the nine gates are measured on this chain today —
+stake, education and community tikis each read their own score. The other six are attested by
+authorities whose dedicated channels are still being built, and until those land they reach
+this chain as trust standing, which means they are not yet independent of one another. The
+figure to hold onto is therefore this: **nine strata are specified, and the count of
+independent gates is what the network should be judged on at any given moment.** It is
+published on chain, and it is not nine yet.
 
 ### 7.2 Membership is a gate, not a ranking
 
@@ -360,14 +432,32 @@ it secures the network, and it inflates.
 | Allocation | Amount | Held on | By |
 |---|---|---|---|
 | Presale | 100,000,000 (50%) | Asset Hub | A keyless pot |
-| Treasury | 40,000,000 (20%) | Relay | The treasury account |
+| Treasury | 40,000,000 (20%) | Asset Hub | A keyless pot |
 | Airdrop | 40,000,000 (20%) | Asset Hub | A keyless pot |
-| Founder | 20,000,000 (10%) | Relay | The founding account |
+| Founder | 20,000,000 (10%) | Relay | The founding account, vested |
 
-The relay mints its own sixty million plus a hundred and forty million of **escrow** — the
-mirror of what the Asset Hub holds, so that a teleport moves a token rather than creating
-one. The runtime carries a test that builds the genesis and asserts owned plus escrow equals
-exactly two hundred million.
+Three of the four are keyless: no seed produces the account, so the balance leaves only
+through an authorised spend. The fourth is the founder's, and it is property rather than a
+fund — held on a key, and released on a genesis vesting schedule of four years with a
+one-year cliff, matched to the presidential term so that the number has a civic meaning
+rather than a venture one. It is the one allocation in this system a person can hold, and it
+is stated here rather than left to be discovered.
+
+The treasury's share is minted into the treasury pallet's own account on the Asset Hub, which
+is where the pallet that spends it lives. The relay has no treasury pallet, so money held
+there would have had authority nowhere: a pot with no governance path, reachable only by a
+key. Splitting the money from the authority that spends it is exactly the failure this
+architecture exists to prevent, and it is not excused by the two halves belonging to the same
+state.
+
+The relay mints the founder's twenty million, the validators' initial stashes, and a hundred
+and eighty million of **escrow** — the mirror of what the Asset Hub holds, so that a teleport
+moves a token rather than creating one. The escrow is not supply: it is the same HEZ, held
+here and represented there, and the relay's turnout figure excludes it so that governance is
+not distorted by its size. The runtime carries a test that builds the genesis and adds up
+what is actually in it, asserting owned plus escrow equals exactly two hundred million —
+constants are not what a chain mints, so the test reads the genesis rather than the
+constants.
 
 **Inflation is bounded and its base is fixed.** The rate is a governance parameter, eight
 percent by default, hard-capped at ten percent by a constant no parameter can exceed. It is
@@ -391,8 +481,16 @@ arriving over a cross-chain message — so even the relay's superuser cannot rea
 | Allocation | Amount | Held by |
 |---|---|---|
 | Treasury + rewards pool | 4,812,500,000 (96.25%) | Keyless treasury pot |
-| Founder | 93,750,000 (1.875%) | The founding account |
+| Founder | 93,750,000 (1.875%) | The founding account, locked |
 | Presale | 93,750,000 (1.875%) | Presale custody |
+
+The founder's PEZ is locked on the same schedule as the founder's HEZ and released to the
+same gate described in §8.3: none of it moves before the state has the citizens it exists to
+pay. The symmetry is complete rather than convenient — if the roll never reaches the
+threshold, the founder's share stays locked as permanently as the citizens' does. That is the
+point of binding the two to one latch instead of two schedules: the people who built this
+cannot be paid by a state that never came into being. The presale's share is held by a custody account rather than a pallet because it is sold
+and therefore has to move; it answers to a board rather than to a single key.
 
 ### 8.3 The halving
 
@@ -400,22 +498,49 @@ The rewards pool is not distributed by decision. It is released by arithmetic, m
 the amount halves every forty-eight releases — approximately four years.
 
 The first period releases half the pool across forty-eight months: about **50,130,208 PEZ**
-per month. Release forty-eight pays half that, release ninety-six half again, and the
-schedule reaches zero at the hundred and twenty-eighth period. Each release is derived from
-the release index rather than accumulated, so no drift is possible and no missed release can
-be double-paid.
+per month. Release forty-eight pays half that, release ninety-six half again, and the amount
+reaches zero when halving has consumed the last unit of the smallest denomination — around
+the sixty-sixth halving, which is roughly two hundred and sixty years out. Each release is
+derived from the release index rather than accumulated, so no drift is possible and no missed
+release can be double-paid.
 
 Every release splits the same way: **seventy-five percent to the incentive pot** (the
 citizens' share, distributed by trust) and **twenty-five percent to the government pot** (the
-state's budget). Nobody signs this. It happens on block initialisation.
+state's budget). Nobody signs a release. Once the schedule is running it happens on block
+initialisation, and no office can bring one forward or hold one back.
+
+**But the schedule does not start at genesis. It starts at a hundred thousand citizens.**
+
+Nothing is released — not the citizens' share, not the state's budget — until the register
+reports that the roll has passed a hundred thousand. The report is automatic, it is made by
+the chain that holds the register rather than by anyone who could be asked to make it, and it
+latches: once crossed, a later fall in population does not stop the payroll, because a state
+that stopped paying its citizens the month its population dipped would be worse than one that
+never started.
+
+The reason is arithmetic. The first month pays about fifty million PEZ. Divided among two
+hundred citizens that is a founding distribution wearing a payroll's clothes; divided among a
+hundred thousand it is what it says it is. The threshold is the point at which a single
+month's share stops being large enough to be worth forging the register for — which is the
+same security argument §4 makes, applied to the money instead of the roll.
+
+Two consequences follow, and both are written into the chain rather than promised here. The
+**founder's allocation is bound to the same gate**, so the first tokens that move for the
+people who built this are not earlier than the first tokens that move for the people it was
+built for. And if the threshold turns out to be wrong, a **ninety-day referendum of the
+citizens already admitted may lower it once** — the same track that governs the register's own
+rules, on the same reasoning: a number that could lock the pool forever should be answerable
+to the people the pool belongs to, and to no office at all.
 
 ---
 
 ## 9. The four funds, and who may move them
 
-This is the section the architecture exists for. Every fund is on the Asset Hub. Every
-authority is on the People chain. Read each row as a sentence: *this office proposes, this
-body decides, this vault pays.*
+This is the section the architecture exists for. Every fund is on the Asset Hub, and every
+authority over the state's money is on the People chain. The single exception is the HEZ
+treasury, whose authority is the economic franchise itself and therefore sits with the
+holders — §9.2 says why that one is different. Read each row as a sentence: *this office
+proposes, this body decides, this vault pays.*
 
 ### 9.1 The map
 
@@ -429,19 +554,24 @@ body decides, this vault pays.*
 
 ### 9.2 What the vaults refuse
 
-Three of the five vaults name **exactly one chain** they will accept instruction from: the
-People chain. Not the relay. Not root. Not a key. The airdrop pot, the presale pot, and both
+Four of the five vaults name **exactly one chain** they will accept instruction from: the
+People chain. Not the relay. Not root. Not a key. The airdrop pot, the presale pot and both
 PEZ pots are configured with an origin that matches the People chain's location and has no
-root arm at all.
+root arm at all — the arm was never built, which is a stronger statement than one that was
+built and then disabled.
 
-The consequence is worth stating plainly: **the relay's superuser cannot spend the airdrop,
-the presale, or either PEZ pot.** It can halt the chain, it can upgrade the runtime, it can
-reject a proposed spend — but it cannot pay itself. To move that money it would have to
-become the People chain, and the People chain is a register of elected offices.
+The consequence, with §2.1's caveat carried forward: **the relay's superuser cannot spend the
+airdrop, the presale, or either PEZ pot without replacing the runtime that refuses it.** It
+can halt the chain and it can reject a proposed spend, but there is no call it can make that
+pays it. To move that money by an ordinary act it would have to become the People chain, and
+the People chain is a register of elected offices.
 
-The HEZ treasury is the exception and is documented as such: root can spend it without limit.
-It is the fund of last resort and it is the one place where the network's own governance,
-rather than the state's, holds the purse.
+The HEZ treasury is the exception, and it is the exception on purpose. Its five spender tracks
+are conviction voting over HEZ — the economic franchise deciding an economic question — and
+root is an additional arm above them. It is the fund of last resort, and the one place where
+the network's own governance rather than the state's holds the purse. It is also the only
+vault whose ceiling is a track rather than a chain, which is why it is the one a reader should
+watch.
 
 ### 9.3 A payment, end to end
 
@@ -493,8 +623,11 @@ rather than vanishing.
 
 **At the civil layer** — the one this design adds — misconduct costs standing. A banned
 validator loses the committee seat, the reward weight, and the candidacy threshold that trust
-confers. Because trust is earned over years and cannot be bought, it is the one thing an
-attacker cannot re-acquire quickly.
+confers. Trust is not unbuyable — a fifth of it is stake, and another quarter is badges that
+institutions award — but the two largest paths into it, education and a record of vouching
+that survived revocation, are paid for in time by definition. That is the property the
+security rests on: not that standing cannot be bought, but that it cannot be bought
+*quickly*, and an attacker who has lost it is starting from where everyone else started.
 
 **And structurally**, the separations are real: the money is on a chain that only accepts
 instruction from the register; the register is governed by a court that neither the president
@@ -566,6 +699,11 @@ a solicitation, or investment advice.
 | **perwerde** | Education |
 | **qeyd** | The register, and the rules governing it |
 | **teyrchain** | A system chain secured by the relay |
+| **council** | The parliament's standing collective; its roster is written from the sitting Meclis |
+| **escrow** | The relay-held mirror of the HEZ the Asset Hub carries; not supply, and excluded from turnout |
+| **root** | A seat, not an office: the People chain's referendum, and a sudo key for the founding period |
+| **wHEZ** | HEZ wrapped one-for-one as an asset so that asset-handling pallets can trade it |
+| **wUSDT** | The custodial bridge's representation of USDT on the Asset Hub |
 | **bizinikiwi** | The framework layer |
 | **HEZ** | The native currency; 1 HEZ = 10¹² TYR |
 | **TYR** | The smallest unit of HEZ |
@@ -578,10 +716,13 @@ a solicitation, or investment advice.
 | | |
 |---|---|
 | HEZ genesis supply | 200,000,000 |
+| Held on the Asset Hub / on the relay | 180,000,000 / 20,000,000 — less the validators' initial stashes, which are carved out of the treasury's share and minted on the relay |
 | HEZ inflation, default / ceiling | 8% / 10% of a fixed 200M base |
 | PEZ supply | 5,000,000,000, fixed |
 | PEZ halving period | 48 monthly releases (~4 years) |
 | PEZ release split | 75% citizens / 25% state |
+| PEZ schedule starts at | 100,000 citizens on the roll |
+| Founder allocation | 4-year vesting, 1-year cliff, bound to the same gate |
 | Presidential term | 4 years, maximum 2 consecutive |
 | Parliamentary seats / term | 201 / 4 years (first term halved) |
 | Constitutional Court | 11 seats — 6 elected, 5 appointed — 9 years |
@@ -590,3 +731,4 @@ a solicitation, or investment advice.
 | TNPoS committee | 9 strata × 3 seats = 27 |
 | TNPoS quorum / halt / fork | 19 / 9 / 11 |
 | Minimum eligible per stratum | 50 |
+| Chains specified / running at genesis | 5 / 2 |
