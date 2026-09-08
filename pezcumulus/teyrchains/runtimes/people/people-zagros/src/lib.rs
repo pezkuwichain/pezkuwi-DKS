@@ -1420,6 +1420,20 @@ pub mod dynamic_params {
 		/// Trust lost per revoked referral.
 		#[codec(index = 6)]
 		pub static PenaltyPerRevocation: u32 = 10;
+
+		/// A lower figure for the population gate, if the register decides the specified one
+		/// was wrong.
+		///
+		/// Defaults to the specified threshold, so until a referendum says otherwise this
+		/// changes nothing. It is read as a minimum against that constant, so it can only move
+		/// the gate down -- pushing the citizens' first payment further away is not something
+		/// any origin here should be able to do.
+		///
+		/// Safe to leave on the register's own track even though the gate guards most of the
+		/// supply: below `MinElectorate` a referendum on this chain cannot carry at all, so the
+		/// handful of citizens who exist before the gate fires cannot reach it.
+		#[codec(index = 7)]
+		pub static PopulationThresholdOverride: u32 = 100_000;
 	}
 }
 

@@ -603,18 +603,25 @@ pub fn clear_sent_xcm() {
 /// How many citizens the roll holds, as the tally divides by.
 parameter_types! {
 	pub static MockElectorate: u32 = 100;
+	/// Zero, so the existing tests keep measuring support against the mock roll itself. The
+	/// floor has its own tests; leaving it off here keeps every other case reading the way it
+	/// did before the floor existed.
+	pub static MockMinElectorate: u32 = 0;
+	/// Defaults to the mock threshold, so the gate reads as it did before the override
+	/// existed; the cases that exercise lowering set it themselves.
+	pub static MockPopulationThresholdOverride: u32 = 100;
 	pub static MockPolls: BTreeMap<u32, MockPollState> =
-		vec![(1u32, MockPollState::Ongoing(<CitizenTally<MockElectorate> as pezframe_support::traits::VoteTally<u32, u16>>::new(0), 0u16))].into_iter().collect();
+		vec![(1u32, MockPollState::Ongoing(<CitizenTally<MockElectorate, MockMinElectorate> as pezframe_support::traits::VoteTally<u32, u16>>::new(0), 0u16))].into_iter().collect();
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum MockPollState {
-	Ongoing(CitizenTally<MockElectorate>, u16),
+	Ongoing(CitizenTally<MockElectorate, MockMinElectorate>, u16),
 	Completed(u64, bool),
 }
 
 pub struct TestPolls;
-impl Polling<CitizenTally<MockElectorate>> for TestPolls {
+impl Polling<CitizenTally<MockElectorate, MockMinElectorate>> for TestPolls {
 	type Index = u32;
 	type Votes = u32;
 	type Moment = u64;
@@ -624,7 +631,7 @@ impl Polling<CitizenTally<MockElectorate>> for TestPolls {
 		vec![0]
 	}
 
-	fn as_ongoing(index: u32) -> Option<(CitizenTally<MockElectorate>, u16)> {
+	fn as_ongoing(index: u32) -> Option<(CitizenTally<MockElectorate, MockMinElectorate>, u16)> {
 		match MockPolls::get().remove(&index) {
 			Some(MockPollState::Ongoing(tally, class)) => Some((tally, class)),
 			_ => None,
@@ -633,7 +640,7 @@ impl Polling<CitizenTally<MockElectorate>> for TestPolls {
 
 	fn access_poll<R>(
 		index: u32,
-		f: impl FnOnce(PollStatus<&mut CitizenTally<MockElectorate>, u64, u16>) -> R,
+		f: impl FnOnce(PollStatus<&mut CitizenTally<MockElectorate, MockMinElectorate>, u64, u16>) -> R,
 	) -> R {
 		let mut polls = MockPolls::get();
 		let r = match polls.get_mut(&index) {
@@ -650,7 +657,7 @@ impl Polling<CitizenTally<MockElectorate>> for TestPolls {
 	fn try_access_poll<R>(
 		index: u32,
 		f: impl FnOnce(
-			PollStatus<&mut CitizenTally<MockElectorate>, u64, u16>,
+			PollStatus<&mut CitizenTally<MockElectorate, MockMinElectorate>, u64, u16>,
 		) -> Result<R, pezsp_runtime::DispatchError>,
 	) -> Result<R, pezsp_runtime::DispatchError> {
 		let mut polls = MockPolls::get();
@@ -669,7 +676,7 @@ impl Polling<CitizenTally<MockElectorate>> for TestPolls {
 	fn create_ongoing(class: u16) -> Result<u32, ()> {
 		let mut polls = MockPolls::get();
 		let i = polls.keys().next_back().map_or(0, |x| x + 1);
-		polls.insert(i, MockPollState::Ongoing(<CitizenTally<MockElectorate> as pezframe_support::traits::VoteTally<u32, u16>>::new(0), class));
+		polls.insert(i, MockPollState::Ongoing(<CitizenTally<MockElectorate, MockMinElectorate> as pezframe_support::traits::VoteTally<u32, u16>>::new(0), class));
 		MockPolls::set(polls);
 		Ok(i)
 	}
@@ -751,6 +758,7 @@ impl pezpallet_welati::Config for Test {
 	type TikiSource = MockTikiScoreProvider; // Use the mock Tiki provider
 	type CitizenSource = MockTrustProvider; // Use the mock provider
 	type Electorate = MockElectorate;
+	type MinElectorate = MockMinElectorate;
 	type Polls = TestPolls;
 	type Initiatives = MockInitiativeLaunch;
 	type InitiativeThreshold = MockInitiativeThreshold;
@@ -793,6 +801,7 @@ impl pezpallet_welati::Config for Test {
 	type MaxEmissionStep = MaxEmissionStep;
 	type MinEmissionInterval = MinEmissionInterval;
 	type PopulationThreshold = PopulationThreshold;
+	type PopulationThresholdOverride = MockPopulationThresholdOverride;
 	type PopulationCheckPeriod = PopulationCheckPeriod;
 }
 
