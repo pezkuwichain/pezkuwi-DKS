@@ -62,8 +62,16 @@ ignore = [
 	# patched release exists.
 
 	# ── webpki ────────────────────────────────────────────────────────────────
-	# Name-constraints and CRL parsing bugs in transitive webpki dep.
-	# We do not use CRLs or rely on certificate name constraints in our P2P/RPC stack.
+	# All three land on `rustls-webpki` 0.101.7, and nothing a node ships reaches it. The one
+	# path is `kube-client` -> `kube` -> `pezkuwi-zombienet-provider`, the Kubernetes client the
+	# zombienet test harness uses to spawn networks; the versions our own TLS resolves are
+	# `rustls-webpki` 0.103.13, which is the patched release for all three.
+	#
+	# The reason recorded here before was "we do not use CRLs or rely on certificate name
+	# constraints", which was an assertion nobody had checked and is not what makes these safe.
+	# What makes them safe is reachability, and that is measurable:
+	#   cargo tree -i rustls-webpki@0.101.7
+	# This exemption is void the moment that command reports a path that is not test tooling.
 	"RUSTSEC-2026-0098", # webpki: URI name constraints incorrectly accepted
 	"RUSTSEC-2026-0099", # webpki: wildcard name constraints incorrectly accepted
 	"RUSTSEC-2026-0104", # webpki: reachable panic in CRL parsing (onlySomeReasons BIT STRING)
@@ -73,10 +81,23 @@ ignore = [
 	# not have to wait: 0183 and 0184 are fixed in 0.21.0, which the workspace pins. One crate
 	# uses it, `revive/rpc`'s build script, and only to read the branch and commit id.
 
-	# ── hickory DNS (node networking only) ────────────────────────────────────
-	# Transitive via libp2p DNS resolution. DoS on malformed/cross-zone responses.
-	# Affects node networking availability only, not the runtime. Track upstream.
-	"RUSTSEC-2026-0118", # hickory: NSEC3 closest-encloser proof unbounded loop
+	# ── hickory DNS ───────────────────────────────────────────────────────────
+	# 0119 lands on `hickory-proto` 0.24.4, which arrives only through `libp2p-dns` ->
+	# `libp2p`. The node compiles both P2P stacks but runs one, and the default is litep2p,
+	# which resolves `hickory-proto` 0.26.1 -- the release that fixes this. So the whole of
+	# the exemption rests on that default, and on nothing else: a node started with
+	# `--network-backend libp2p` is running the affected code.
+	#
+	# That default is not left to be remembered. `pezsc_network::config::tests::
+	# the_default_network_backend_is_litep2p` fails if it ever flips, which is the case that
+	# would otherwise move every node onto the vulnerable stack while this file stayed green
+	# -- the gate reasons about the dependency graph, not about which half of it runs.
+	#
+	# Measure before trusting this entry:
+	#   cargo tree -i hickory-proto@0.24.4     # must show only the libp2p path
+	# 0118 was here too and never matched our graph; cargo-deny reported it as
+	# `advisory-not-detected` on every run, so it is gone. A dead entry is a warning that
+	# teaches you to skim the live ones.
 	"RUSTSEC-2026-0119", # hickory: O(n^2) name-compression CPU exhaustion
 
 ]

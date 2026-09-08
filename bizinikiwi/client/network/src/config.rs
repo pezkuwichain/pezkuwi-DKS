@@ -984,6 +984,28 @@ mod tests {
 	use super::*;
 	use tempfile::TempDir;
 
+	/// The default backend has to stay litep2p, and this is a security gate rather than a
+	/// preference.
+	///
+	/// Both stacks are compiled into the node, and the libp2p one carries dependencies with open
+	/// advisories -- `hickory-proto` 0.24.4 (RUSTSEC-2026-0119) through `libp2p-dns`, and `yamux`
+	/// 0.12.1 through `libp2p-yamux`, which selects the 0.12 line for its default config. litep2p
+	/// reaches neither: it resolves `hickory-proto` 0.26.1 and `yamux` 0.13.10, both patched.
+	///
+	/// So the reason those advisories are tolerable is *this default*, and nothing else. The
+	/// exemptions recorded in `deny.toml` name this test as what holds them up. A framework sync
+	/// that flips the default would otherwise move every node onto the vulnerable stack silently,
+	/// with a green advisory gate, because the gate reasons about the graph and not about which
+	/// half of it runs.
+	#[test]
+	fn the_default_network_backend_is_litep2p() {
+		assert!(
+			matches!(NetworkBackendType::default(), NetworkBackendType::Litep2p),
+			"the libp2p stack pulls hickory-proto 0.24.4 and yamux 0.12.1, both with open \
+			 advisories; see the `webpki`/`hickory` entries in deny.toml"
+		);
+	}
+
 	fn tempdir_with_prefix(prefix: &str) -> TempDir {
 		tempfile::Builder::new().prefix(prefix).tempdir().unwrap()
 	}
