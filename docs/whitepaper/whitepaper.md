@@ -6,8 +6,9 @@
 Dijital Kurdistan Tech Institute
 
 *The chain described here runs on a test network. Six months live, 2.7 million blocks
-finalised, no mainnet genesis yet. §10.1 lists what is specified but not yet built, in full
-and without softening — a reader who finds a gap there before finding it in the code is
+finalised, no mainnet genesis yet. §10.1 accounts for every gap the last edition named — what
+was built, what was decided, and the one thing this design deliberately does not do — in full
+and without softening. A reader who finds something there before finding it in the code is
 reading the document this was written to be.*
 
 ---
@@ -859,16 +860,16 @@ nor the parliament can seat alone; the rules for admission to the register can o
 by a ninety-day referendum of the people already in it; and the relay's root can be reached
 from exactly one place.
 
-### 10.1 What is specified but not yet built
+### 10.1 What is built, what was decided, and what is left
 
 A design document that lists only what works is an advertisement. This section is the other
-half, and it is written to be complete rather than reassuring: everything below is a gap a
-reader could otherwise find in the code and conclude we had hidden. The chain is on a test
-network precisely so that these close before a genesis freezes them — a structural fix costs
-one commit today and a coordinated operation across every operator afterwards.
+half, and it is written to be complete rather than reassuring: anything here is something a
+reader could otherwise find in the code and conclude we had hidden.
 
-**Nothing is left in this half.** Every gap the previous edition listed as agreed-and-unbuilt
-has landed; what remains below is the part nobody has decided.
+**Nothing is outstanding.** The previous edition of this section listed thirteen items — ten
+agreed and unbuilt, three undecided. All ten are built. All three are decided, and the two
+that turned out to rest on a misreading of the code are gone rather than answered. What
+follows is where each went, and the one thing this design deliberately does not do.
 
 **Closed since the last edition, and described where they belong.** Listed here so that a
 reader who was given the previous version can see what moved: the emergency upgrade path (§10),
@@ -878,12 +879,18 @@ gates, which now read nine different things rather than six of them reading one 
 a mechanism and not a promise; the sections named are where it is described, and the code is
 what settles it.
 
-**Open, and not yet decided.** These are judgements rather than engineering, and this document
-will not pretend they are settled.
+**What the register publishes, and why that is a decision rather than an oversight.** No
+personal data is on chain: an identity is a hash, and the documents behind it never leave the
+applicant. What is public is what people *did* — who vouched for whom, who endorsed whom, how
+each account voted. That is deliberate and it is the same principle throughout: acts are public,
+persons are not. A vouch that nobody could see would be a guarantee nobody could hold the
+guarantor to, and the accountability the register runs on is exactly that visibility.
 
-| Question | Why it is hard |
-|---|---|
-| **Whether membership proofs should be zero-knowledge** | No personal data is on chain — an identity is a hash and the documents behind it never leave the applicant. What *is* public, and permanently so, is the graph: who vouched for whom. Its protection is that an account is a number rather than a name, which holds until one node is identified and then unwinds outward along the vouches. Deleting the edges later would not help, because the vouch was an extrinsic and the blocks keep it. Only a zero-knowledge membership proof closes this, and that is a project rather than a change |
+The protection is that an account is a number and not a name, and the register never learns the
+name. It is a real protection and a bounded one: somebody who identifies one account can read
+outward along its vouches, and deleting the edges later would not help, because a vouch was an
+extrinsic and the blocks keep it. A zero-knowledge membership proof would close that, and it
+sits on the roadmap rather than in this list — it is a project, not a gap in what was built.
 
 **And one thing that is not a gap.** There is no proof of personhood, by decision rather than
 by omission. §4 says what the vouching chain does and does not buy. We would rather state a

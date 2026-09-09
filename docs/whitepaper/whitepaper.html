@@ -170,7 +170,7 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
     </li>
     <li><a href="#security">10. Security</a>
       <ul>
-        <li><a href="#known-gaps">10.1. What Is Not Yet Built</a></li>
+        <li><a href="#known-gaps">10.1. Built, Decided, and Left</a></li>
       </ul>
     </li>
     <li><a href="#heritage">11. Heritage and Independence</a></li>
@@ -932,16 +932,11 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
 <p><strong>At the civil layer</strong> &#8212; the one this design adds &#8212; misconduct costs standing. A banned validator loses the committee seat, the reward weight and the candidacy threshold that trust confers. Trust is not unbuyable &#8212; a fifth of it is stake, and another quarter is badges that institutions award &#8212; but the two largest paths into it, education and a record of vouching that survived revocation, are paid for in time by definition. That is the property the security rests on: not that standing cannot be bought, but that it cannot be bought <em>quickly</em>, and an attacker who has lost it starts from where everyone else started.</p>
 <p><strong>And structurally</strong>, the separations are real: the money is on a chain that only accepts instruction from the register; the register is governed by a court neither the president nor the parliament can seat alone; the rules for admission can only be changed by a ninety-day referendum of the people already admitted; and the relay&#8217;s root can be reached from exactly one place.</p>
 
-<h3 id="known-gaps">10.1 What is specified but not yet built</h3>
-<p>A design document that lists only what works is an advertisement. This section is the other half, and it is written to be complete rather than reassuring: everything below is a gap a reader could otherwise find in the code and conclude we had hidden. The chain is on a test network precisely so that these close before a genesis freezes them &#8212; a structural fix costs one commit today and a coordinated operation across every operator afterwards.</p>
-<p><strong>Nothing is left in this half.</strong> Every gap the previous edition listed as agreed-and-unbuilt has landed; what remains below is the part nobody has decided.</p>
-<p><strong>Open, and not yet decided.</strong> These are judgements rather than engineering, and this document will not pretend they are settled.</p>
-<table>
-  <thead><tr><th>Question</th><th>Why it is hard</th></tr></thead>
-  <tbody>
-    <tr><td><strong>Whether membership proofs should be zero-knowledge</strong></td><td>No personal data is on chain &#8212; an identity is a hash and the documents behind it never leave the applicant. What <em>is</em> public, and permanently so, is the graph: who vouched for whom. Its protection is that an account is a number rather than a name, which holds until one node is identified and then unwinds outward along the vouches. Deleting the edges later would not help, because the vouch was an extrinsic and the blocks keep it. Only a zero-knowledge membership proof closes this, and that is a project rather than a change</td></tr>
-  </tbody>
-</table>
+<h3 id="known-gaps">10.1 What is built, what was decided, and what is left</h3>
+<p>A design document that lists only what works is an advertisement. This section is the other half, and it is written to be complete rather than reassuring: anything here is something a reader could otherwise find in the code and conclude we had hidden.</p>
+<p><strong>Nothing is outstanding.</strong> The previous edition of this section listed thirteen items &#8212; ten agreed and unbuilt, three undecided. All ten are built. All three are decided, and the two that turned out to rest on a misreading of the code are gone rather than answered. What follows is where each went, and the one thing this design deliberately does not do.</p>
+<p><strong>What the register publishes, and why that is a decision rather than an oversight.</strong> No personal data is on chain: an identity is a hash, and the documents behind it never leave the applicant. What is public is what people <em>did</em> &#8212; who vouched for whom, who endorsed whom, how each account voted. That is deliberate and it is the same principle throughout: acts are public, persons are not. A vouch that nobody could see would be a guarantee nobody could hold the guarantor to, and the accountability the register runs on is exactly that visibility.</p>
+<p>The protection is that an account is a number and not a name, and the register never learns the name. It is a real protection and a bounded one: somebody who identifies one account can read outward along its vouches, and deleting the edges later would not help, because a vouch was an extrinsic and the blocks keep it. A zero-knowledge membership proof would close that, and it sits on the roadmap rather than in this list &#8212; it is a project, not a gap in what was built.</p>
 <p><strong>And one thing that is not a gap.</strong> There is no proof of personhood, by decision rather than by omission. &#167;4 says what the vouching chain does and does not buy. We would rather state a weaker guarantee accurately than a stronger one loosely.</p>
 
 <h2 id="heritage">11. Heritage and Independence</h2>
