@@ -228,7 +228,13 @@ impl<AccountId> OnCitizenshipRevoked<AccountId> for () {
 }
 
 /// Losing citizenship concerns more than one pallet: the referral record has a penalty to
-/// apply, and the trust score has to stop existing. Both, in order.
+/// apply, the trust score has to stop existing, and the register's dormancy count has to let
+/// the citizen go or the electorate is short by one for good. Each in order.
+///
+/// A hand-written pair and triple rather than a macro over every arity. Three is what the
+/// runtime wires and a fourth would be a deliberate act -- adding it here is the moment to ask
+/// what else a revocation now has to reach, which is exactly the question that goes unasked
+/// when a tuple impl silently accepts any length.
 impl<AccountId, A, B> OnCitizenshipRevoked<AccountId> for (A, B)
 where
 	A: OnCitizenshipRevoked<AccountId>,
@@ -237,6 +243,19 @@ where
 	fn on_citizenship_revoked(who: &AccountId) {
 		A::on_citizenship_revoked(who);
 		B::on_citizenship_revoked(who);
+	}
+}
+
+impl<AccountId, A, B, C> OnCitizenshipRevoked<AccountId> for (A, B, C)
+where
+	A: OnCitizenshipRevoked<AccountId>,
+	B: OnCitizenshipRevoked<AccountId>,
+	C: OnCitizenshipRevoked<AccountId>,
+{
+	fn on_citizenship_revoked(who: &AccountId) {
+		A::on_citizenship_revoked(who);
+		B::on_citizenship_revoked(who);
+		C::on_citizenship_revoked(who);
 	}
 }
 

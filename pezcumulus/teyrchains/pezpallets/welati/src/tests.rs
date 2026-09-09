@@ -3456,6 +3456,104 @@ fn an_unqualified_appointee_is_caught() {
 	});
 }
 
+mod a_denominator_that_can_shrink {
+	use super::*;
+
+	// Support is ayes over the roll, and the roll only ever grew. Lost keys, deaths and people
+	// who registered once and never returned stayed in it for good, so the share a question
+	// needs climbed for ever while the people who could supply it did not. That ends in an
+	// unpassable referendum, which is a captured state arrived at by arithmetic.
+
+	fn a_citizen_who_has_never_voted() -> u64 {
+		let who = 30u64;
+		make_citizen(who);
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+			who,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
+		pezpallet_identity_kyc::CitizenSince::<Test>::insert(who, System::block_number());
+		// `citizen_count()` reads a maintained counter, not the status map, so writing the
+		// status directly leaves the roll at zero and `active_electorate` measures nothing.
+		pezpallet_identity_kyc::CitizenCount::<Test>::mutate(|c| *c = c.saturating_add(1));
+		who
+	}
+
+	#[test]
+	fn silence_leaves_the_denominator_and_one_vote_returns_to_it() {
+		ExtBuilder::default().build().execute_with(|| {
+			let who = a_citizen_who_has_never_voted();
+			let roll = Welati::active_electorate();
+
+			// Not yet: one block short of the period, however plainly gone they look.
+			System::set_block_number(
+				System::block_number() + crate::mock::DormancyPeriod::get() - 1,
+			);
+			assert_noop!(
+				Welati::mark_dormant(RuntimeOrigin::signed(OUTSIDER), who),
+				Error::<Test>::CitizenIsStillTakingPart
+			);
+
+			System::set_block_number(System::block_number() + 1);
+			// Permissionless: a body that could choose whose absence counts could shrink the
+			// electorate before a vote it cared about.
+			assert_ok!(Welati::mark_dormant(RuntimeOrigin::signed(OUTSIDER), who));
+			assert_eq!(Welati::active_electorate(), roll - 1);
+			assert_noop!(
+				Welati::mark_dormant(RuntimeOrigin::signed(OUTSIDER), who),
+				Error::<Test>::AlreadyDormant
+			);
+
+			// Still a citizen. Dormancy is a statement about a denominator, not a person.
+			assert!(pezpallet_identity_kyc::Pezpallet::<Test>::is_citizen(&who));
+
+			// And taking part puts them back in the same block, with nobody having to notice.
+			Welati::note_governance_activity(&who);
+			assert_eq!(Welati::active_electorate(), roll);
+		});
+	}
+
+	#[test]
+	fn a_new_citizen_is_not_dormant_for_never_having_voted() {
+		ExtBuilder::default().build().execute_with(|| {
+			// The clock runs from admission, not from zero -- otherwise everybody admitted
+			// after the chain has been up for a period is dormant on arrival.
+			System::set_block_number(crate::mock::DormancyPeriod::get() * 3);
+			let who = a_citizen_who_has_never_voted();
+			assert_noop!(
+				Welati::mark_dormant(RuntimeOrigin::signed(OUTSIDER), who),
+				Error::<Test>::CitizenIsStillTakingPart
+			);
+		});
+	}
+
+	#[test]
+	fn a_struck_off_dormant_citizen_is_not_subtracted_twice() {
+		ExtBuilder::default().build().execute_with(|| {
+			use pezpallet_identity_kyc::types::OnCitizenshipRevoked;
+			// A roll with room in it. With one citizen on the roll the arithmetic saturates at
+			// zero and the double subtraction is invisible -- the first version of this test
+			// passed with the hook removed for exactly that reason.
+			pezpallet_identity_kyc::CitizenCount::<Test>::mutate(|c| *c = c.saturating_add(9));
+			let who = a_citizen_who_has_never_voted();
+			System::set_block_number(System::block_number() + crate::mock::DormancyPeriod::get());
+			assert_ok!(Welati::mark_dormant(RuntimeOrigin::signed(OUTSIDER), who));
+			let after_dormant = Welati::active_electorate();
+
+			// Revocation moves the roll. Without the hook the dormancy flag survives it and the
+			// electorate drifts below the truth by one, in the direction that makes questions
+			// easier to carry -- and it never comes back.
+			Welati::on_citizenship_revoked(&who);
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+				who,
+				pezpallet_identity_kyc::types::KycLevel::Revoked,
+			);
+			pezpallet_identity_kyc::CitizenCount::<Test>::mutate(|c| *c = c.saturating_sub(1));
+
+			assert_eq!(Welati::active_electorate(), after_dormant);
+		});
+	}
+}
+
 mod the_courts_fast_track {
 	use super::*;
 	use xcm::latest::prelude::*;

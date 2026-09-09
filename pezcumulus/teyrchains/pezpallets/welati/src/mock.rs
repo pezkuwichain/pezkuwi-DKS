@@ -534,6 +534,7 @@ parameter_types! {
 	pub const CourtInactivityPeriod: u64 = 500;
 	pub const RelayWhitelistPalletIndex: u8 = 44;
 	pub const AirdropWindow: u64 = 1_000;
+	pub const DormancyPeriod: u64 = 5_000;
 	pub const AirdropWindowCeiling: u128 = 2_500;
 }
 
@@ -805,6 +806,7 @@ impl pezpallet_welati::Config for Test {
 	type ReissueCarries = (RebindReferral, RebindTiki, RebindTrust, RebindStakingScore);
 	type FastTrackOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
+	type DormancyPeriod = DormancyPeriod;
 	type AirdropWindow = AirdropWindow;
 	type AirdropWindowCeiling = AirdropWindowCeiling;
 	type MaxConsecutiveTerms = MaxConsecutiveTerms;

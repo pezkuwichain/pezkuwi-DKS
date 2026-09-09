@@ -329,6 +329,25 @@ pub trait RebindAccount<AccountId> {
 	fn rebind(from: &AccountId, to: &AccountId) -> DispatchResult;
 }
 
+/// A revoked citizen leaves the denominator by leaving the register, so their dormancy has to
+/// go with them.
+///
+/// `active_electorate` is `citizen_count() - DormantCount`, and revocation moves the first
+/// term without this. A dormant citizen struck off would be subtracted twice: once by the roll
+/// shrinking and once by a dormancy flag nothing clears -- and the electorate would drift a
+/// little further below the truth with every revocation, in the direction that makes questions
+/// easier to carry.
+impl<T: Config> pezpallet_identity_kyc::types::OnCitizenshipRevoked<T::AccountId>
+	for Pezpallet<T>
+{
+	fn on_citizenship_revoked(who: &T::AccountId) {
+		if Dormant::<T>::take(who).is_some() {
+			DormantCount::<T>::mutate(|n| *n = n.saturating_sub(1));
+		}
+		LastSeenInGovernance::<T>::remove(who);
+	}
+}
+
 /// Build the `RebindAccount` adapters a runtime needs, one per pallet that keys on a citizen.
 ///
 /// The pallets cannot implement the trait themselves: it is declared here and this pallet
@@ -598,6 +617,26 @@ pub mod pezpallet {
 		/// who waits for the reset -- pay the maximum at the end of one period and again at the
 		/// start of the next -- and a limit that doubles for whoever reads the clock is not a
 		/// limit. Draining continuously has no boundary to wait for.
+		/// How long a citizen may take no part in anything before they stop counting towards
+		/// the denominator a referendum is measured against.
+		///
+		/// Support is *ayes over the roll*, and the roll only ever grows. Every lost key, every
+		/// death and everybody who registered once and never came back stays in it for good, so
+		/// the share a question needs climbs for ever while the people who could supply it do
+		/// not. Left alone, a large enough register makes every referendum unpassable -- which
+		/// is the same failure as a captured one, arrived at by arithmetic instead of by
+		/// anybody deciding it.
+		///
+		/// `MIN_ELECTORATE` holds the other end of this and the two must not be confused: that
+		/// one stops a *small* roll being decided by a handful, this one stops a *large* one
+		/// being decided by nobody. Neither substitutes for the other.
+		///
+		/// A citizen is never struck off for it. Dormancy is a statement about a denominator,
+		/// not about a person: they keep the NFT, the standing and the vote, and casting one
+		/// puts them straight back in the count.
+		#[pezpallet::constant]
+		type DormancyPeriod: Get<BlockNumberFor<Self>>;
+
 		#[pezpallet::constant]
 		type AirdropWindow: Get<BlockNumberFor<Self>>;
 
@@ -749,6 +788,27 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn diwan_members)]
 	pub type DiwanMembers<T: Config> =
 		StorageValue<_, BoundedVec<DiwanMember<T>, T::DiwanSize>, ValueQuery>;
+
+	/// When each citizen last took part in anything the register counts as participation.
+	///
+	/// Absent means they have not, which is not the same as never having been counted: the
+	/// reader falls back to the day they were admitted, so somebody who joined yesterday is not
+	/// dormant for never having voted in a referendum that has not been held.
+	#[pezpallet::storage]
+	pub type LastSeenInGovernance<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
+	/// Citizens currently out of the denominator.
+	#[pezpallet::storage]
+	pub type Dormant<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, (), OptionQuery>;
+
+	/// How many of them there are.
+	///
+	/// Kept rather than counted, for the same reason `CitizenCount` is: the electorate is read
+	/// on every tally of every live referendum, and walking a map of forty million to answer it
+	/// is a cost that grows with the thing it measures.
+	#[pezpallet::storage]
+	pub type DormantCount<T: Config> = StorageValue<_, u32, ValueQuery>;
 
 	/// Recent airdrop spending, and when it was last measured.
 	///
@@ -1189,6 +1249,12 @@ pub mod pezpallet {
 		/// A member of the court proved their key still signs.
 		CourtMemberCheckedIn { member: T::AccountId, at: BlockNumberFor<T> },
 
+		/// A citizen stopped counting towards the denominator. They are still a citizen.
+		CitizenIsDormant { who: T::AccountId, since: BlockNumberFor<T> },
+
+		/// A dormant citizen took part in something and is back in the count.
+		CitizenIsCountedAgain { who: T::AccountId },
+
 		/// The court asked the relay to add a call hash to its whitelist.
 		///
 		/// Emitted on the asking, not on the arrival: this chain sends the message and never
@@ -1344,6 +1410,12 @@ pub mod pezpallet {
 		CourtMemberIsStillReachable,
 		/// The message to the relay could not be sent.
 		CouldNotReachTheRelay,
+		/// The account named is not a citizen of this register.
+		NotACitizenHere,
+		/// The citizen is already out of the denominator.
+		AlreadyDormant,
+		/// The citizen has taken part inside the dormancy period.
+		CitizenIsStillTakingPart,
 		/// Only the sitting house elects the court's six elected seats.
 		NotAParliamentMember,
 		/// The caller does not hold the finance portfolio.
@@ -2280,6 +2352,37 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// Take a citizen who has stopped taking part out of the denominator.
+		///
+		/// Permissionless, and it has to be. A body that could choose whose absence counts
+		/// could shrink the electorate before a vote it cared about; the condition here is
+		/// arithmetic anybody can check, the caller gives no reason, and a citizen one block
+		/// short of the period is refused however plainly gone they are.
+		///
+		/// It takes nothing away. The citizenship, the trust, the offices and the vote all
+		/// stay, and using any of them puts the citizen back in the count in the same block --
+		/// so the worst a wrongly-timed call can do is be undone by its subject for free.
+		#[pezpallet::call_index(67)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn mark_dormant(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
+			ensure_signed(origin)?;
+			ensure!(
+				pezpallet_identity_kyc::Pezpallet::<T>::is_citizen(&who),
+				Error::<T>::NotACitizenHere
+			);
+			ensure!(!Dormant::<T>::contains_key(&who), Error::<T>::AlreadyDormant);
+			let since = Self::last_seen_in_governance(&who);
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			ensure!(
+				now.saturating_sub(since) >= T::DormancyPeriod::get(),
+				Error::<T>::CitizenIsStillTakingPart
+			);
+			Dormant::<T>::insert(&who, ());
+			DormantCount::<T>::mutate(|n| *n = n.saturating_add(1));
+			Self::deposit_event(Event::CitizenIsDormant { who, since });
+			Ok(())
+		}
+
 		/// Ask the relay to whitelist a call, so a defect can be patched in hours.
 		///
 		/// The relay's root track is twenty-eight days and there is no shorter path to it. That
@@ -2362,6 +2465,7 @@ pub mod pezpallet {
 					deposit,
 				},
 			);
+			Self::note_governance_activity(&proposer);
 			InitiativeBacking::<T>::insert(id, &proposer, ());
 
 			Self::deposit_event(Event::InitiativeOpened { id, proposer, track, closes });
@@ -2405,6 +2509,7 @@ pub mod pezpallet {
 					Ok(init.backing)
 				})?;
 
+			Self::note_governance_activity(&who);
 			InitiativeBacking::<T>::insert(id, &who, ());
 			Self::deposit_event(Event::InitiativeBacked { id, who, backing });
 			Ok(())
@@ -2527,6 +2632,7 @@ pub mod pezpallet {
 				} else {
 					tally.nays = tally.nays.saturating_add(1);
 				}
+				Self::note_governance_activity(&who);
 				ReferendumVotes::<T>::insert(poll, &who, aye);
 				Ok(())
 			})?;
@@ -2595,6 +2701,7 @@ pub mod pezpallet {
 				Error::<T>::AlreadyEndorsed
 			);
 
+			Self::note_governance_activity(&endorser);
 			Endorsements::<T>::insert(election_id, &endorser, &candidate);
 			Self::deposit_event(Event::CandidateEndorsed { election_id, endorser, candidate });
 			Ok(())
@@ -3103,6 +3210,7 @@ pub mod pezpallet {
 				district_id,
 			};
 
+			Self::note_governance_activity(&voter);
 			ElectionVotes::<T>::insert(election_id, &voter, vote_info);
 
 			for candidate in &candidates {
@@ -3600,6 +3708,7 @@ pub mod pezpallet {
 				rationale,
 			};
 
+			Self::note_governance_activity(&voter);
 			CollectiveVotes::<T>::insert(proposal_id, &voter, vote_info);
 
 			// Update proposal vote counts
@@ -4250,6 +4359,15 @@ pub mod pezpallet {
 			if let Some(until) = InitiativeCooldownUntil::<T>::take(from) {
 				InitiativeCooldownUntil::<T>::insert(to, until);
 			}
+			// Participation follows the person. Left behind, a citizen who voted last week
+			// would be dormant from the day they were admitted, and a reissue would quietly
+			// shrink the electorate by one.
+			if let Some(seen) = LastSeenInGovernance::<T>::take(from) {
+				LastSeenInGovernance::<T>::insert(to, seen);
+			}
+			if Dormant::<T>::take(from).is_some() {
+				Dormant::<T>::insert(to, ());
+			}
 			PendingPrimeMinister::<T>::mutate(|pending| {
 				if pending.as_ref() == Some(from) {
 					*pending = Some(to.clone());
@@ -4619,6 +4737,40 @@ pub mod pezpallet {
 				&mut Some(message),
 			)?;
 			T::XcmSender::deliver(ticket).map(|_| ())
+		}
+
+		/// Note that this citizen is still here.
+		///
+		/// Called from every path the register counts as participation, and it does two things
+		/// at once on purpose: it records the moment, and it undoes dormancy. A citizen who
+		/// votes is in the electorate again from that vote, without anybody having to notice
+		/// them or call anything.
+		pub fn note_governance_activity(who: &T::AccountId) {
+			LastSeenInGovernance::<T>::insert(
+				who,
+				pezframe_system::Pezpallet::<T>::block_number(),
+			);
+			if Dormant::<T>::take(who).is_some() {
+				DormantCount::<T>::mutate(|n| *n = n.saturating_sub(1));
+				Self::deposit_event(Event::CitizenIsCountedAgain { who: who.clone() });
+			}
+		}
+
+		/// The last block this citizen was seen taking part, or the day they were admitted.
+		pub fn last_seen_in_governance(who: &T::AccountId) -> BlockNumberFor<T> {
+			LastSeenInGovernance::<T>::get(who).unwrap_or_else(|| {
+				pezpallet_identity_kyc::CitizenSince::<T>::get(who).unwrap_or_default()
+			})
+		}
+
+		/// The electorate a referendum is measured against: the roll, less the dormant.
+		///
+		/// Dormancy subtracts from the denominator and from nothing else. A dormant citizen
+		/// keeps the NFT, the standing, the offices and the vote; what they stop doing is
+		/// making everybody else's question harder to carry.
+		pub fn active_electorate() -> u32 {
+			pezpallet_identity_kyc::Pezpallet::<T>::citizen_count()
+				.saturating_sub(DormantCount::<T>::get())
 		}
 
 		/// What the airdrop has spent recently, with the drain applied.

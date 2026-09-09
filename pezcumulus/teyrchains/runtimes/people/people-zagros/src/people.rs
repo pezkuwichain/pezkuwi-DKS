@@ -348,7 +348,9 @@ impl pezpallet_identity_kyc::Config for Runtime {
 	type OnKycApproved = Referral;
 	// Losing citizenship concerns both: the referral record has a penalty to apply, and the
 	// trust score has to stop existing rather than being left behind at its last value.
-	type OnCitizenshipRevoked = (Referral, Trust);
+	// Welati is here for the dormancy count: a struck-off dormant citizen would otherwise
+	// be subtracted from the electorate twice.
+	type OnCitizenshipRevoked = (Referral, Trust, Welati);
 	// The other direction: a revocation the court reverses refunds what it charged the voucher.
 	type OnCitizenshipRestored = Referral;
 	type CitizenNftProvider = Tiki;
@@ -1128,11 +1130,21 @@ parameter_types! {
 	pub const StateMaxQueued: u32 = 20;
 }
 
-/// The roll, as the tally measures itself against.
+/// The roll, as the tally measures itself against: the citizens still taking part.
+///
+/// Not `citizen_count()`, and the difference is the whole of WP-14. Support is ayes over this
+/// number, and the register only ever grows -- every lost key, every death and everybody who
+/// registered once and never returned would stay in the denominator for good, so the share a
+/// question needs would climb for ever while the people who could supply it did not. A large
+/// enough roll would make every referendum unpassable, which is the same end as a captured one
+/// reached by arithmetic rather than by anybody deciding it.
+///
+/// Dormancy subtracts from this and from nothing else. A dormant citizen keeps the NFT, the
+/// trust, any office and the vote; casting one puts them back in the count in the same block.
 pub struct CitizenRoll;
 impl pezsp_core::Get<u32> for CitizenRoll {
 	fn get() -> u32 {
-		<WelatiCitizenSource as pezpallet_welati::CitizenInfo>::citizen_count()
+		pezpallet_welati::Pezpallet::<Runtime>::active_electorate()
 	}
 }
 
@@ -1248,6 +1260,14 @@ parameter_types! {
 	/// dead seat has not demonstrated the mechanism, and this network exists to demonstrate the
 	/// mechanisms before a genesis freezes them. Fourteen days still bites: it is far longer
 	/// than any test run, so nothing trips it by accident.
+	/// How long a citizen may take no part in anything before they leave the denominator.
+	///
+	/// **Deliberately not the mainnet figure.** Two years here would mean the rule could never
+	/// be seen working: a test network is not run for two years, so the denominator would never
+	/// be observed shrinking and the mechanism would ship unexercised. Thirty days is still far
+	/// longer than any test run, so nothing goes dormant by accident inside one.
+	pub const WelatiDormancyPeriod: BlockNumber = 30 * DAYS;
+
 	/// How long recent airdrop spending takes to drain away: two days.
 	///
 	/// **Deliberately not the mainnet figure.** The drain is measured in the time an oversight
@@ -1510,6 +1530,7 @@ impl pezpallet_welati::Config for Runtime {
 	// readable on the side that exercises it.
 	type FastTrackOrigin = crate::RootOrDiwan;
 	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
+	type DormancyPeriod = WelatiDormancyPeriod;
 	type AirdropWindow = WelatiAirdropWindow;
 	type AirdropWindowCeiling = WelatiAirdropWindowCeiling;
 	type CourtTermLength = WelatiCourtTermLength;
