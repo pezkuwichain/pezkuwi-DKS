@@ -337,9 +337,7 @@ pub trait RebindAccount<AccountId> {
 /// shrinking and once by a dormancy flag nothing clears -- and the electorate would drift a
 /// little further below the truth with every revocation, in the direction that makes questions
 /// easier to carry.
-impl<T: Config> pezpallet_identity_kyc::types::OnCitizenshipRevoked<T::AccountId>
-	for Pezpallet<T>
-{
+impl<T: Config> pezpallet_identity_kyc::types::OnCitizenshipRevoked<T::AccountId> for Pezpallet<T> {
 	fn on_citizenship_revoked(who: &T::AccountId) {
 		if Dormant::<T>::take(who).is_some() {
 			DormantCount::<T>::mutate(|n| *n = n.saturating_sub(1));
@@ -1783,37 +1781,37 @@ pub mod pezpallet {
 				ElectionType::SpeakerElection => {
 					pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::SerokiMeclise).is_none()
 				},
-			// The two bodies. Both used to fall through to `false`, on the grounds that
-			// asking whether a house of two hundred and one is empty meant decoding the whole
-			// roll every block. `decode_len` reads the length prefix and decodes none of it,
-			// so the cost that justified leaving this open was never the real one.
-			ElectionType::Parliamentary => {
-				// Empty means empty: every member removed by the Diwan, or stripped of
-				// citizenship, inside one term. Rare to the point of never, and the reason it
-				// needs an arm at all is that there is no other way out -- an empty house
-				// cannot vote itself back, and the clock would leave the country without a
-				// legislature until the term it can no longer serve runs out.
-				ParliamentMembers::<T>::decode_len().unwrap_or(0) == 0
-			},
-			ElectionType::ConstitutionalCourt => {
-				// The elected half short of its seats. The appointed five are the President's
-				// to fill the moment one opens; the elected six have no such route, so without
-				// this a seat vacated for silence would stay empty for the rest of a nine-year
-				// term -- and the vacancy rule in §5.4 would repair the court's ability to
-				// decide while quietly shrinking it for a decade.
-				//
-				// The whole elected half turns over, not just the empty seat. That half is
-				// seated as a unit by one house and has always been replaced as one; patching
-				// a single seat would give it members on two different clocks, and the
-				// derivation that keeps six and five apart is written for a half that moves
-				// together.
-				let elected = DiwanMembers::<T>::get()
-					.iter()
-					.filter(|m| matches!(m.appointed_by, AppointmentAuthority::Parliament))
-					.count() as u32;
-				elected < T::DiwanElectedSeats::get()
-			},
-			_ => false,
+				// The two bodies. Both used to fall through to `false`, on the grounds that
+				// asking whether a house of two hundred and one is empty meant decoding the whole
+				// roll every block. `decode_len` reads the length prefix and decodes none of it,
+				// so the cost that justified leaving this open was never the real one.
+				ElectionType::Parliamentary => {
+					// Empty means empty: every member removed by the Diwan, or stripped of
+					// citizenship, inside one term. Rare to the point of never, and the reason it
+					// needs an arm at all is that there is no other way out -- an empty house
+					// cannot vote itself back, and the clock would leave the country without a
+					// legislature until the term it can no longer serve runs out.
+					ParliamentMembers::<T>::decode_len().unwrap_or(0) == 0
+				},
+				ElectionType::ConstitutionalCourt => {
+					// The elected half short of its seats. The appointed five are the President's
+					// to fill the moment one opens; the elected six have no such route, so without
+					// this a seat vacated for silence would stay empty for the rest of a nine-year
+					// term -- and the vacancy rule in §5.4 would repair the court's ability to
+					// decide while quietly shrinking it for a decade.
+					//
+					// The whole elected half turns over, not just the empty seat. That half is
+					// seated as a unit by one house and has always been replaced as one; patching
+					// a single seat would give it members on two different clocks, and the
+					// derivation that keeps six and five apart is written for a half that moves
+					// together.
+					let elected = DiwanMembers::<T>::get()
+						.iter()
+						.filter(|m| matches!(m.appointed_by, AppointmentAuthority::Parliament))
+						.count() as u32;
+					elected < T::DiwanElectedSeats::get()
+				},
+				_ => false,
 			}
 		}
 
@@ -5009,10 +5007,7 @@ pub mod pezpallet {
 		/// votes is in the electorate again from that vote, without anybody having to notice
 		/// them or call anything.
 		pub fn note_governance_activity(who: &T::AccountId) {
-			LastSeenInGovernance::<T>::insert(
-				who,
-				pezframe_system::Pezpallet::<T>::block_number(),
-			);
+			LastSeenInGovernance::<T>::insert(who, pezframe_system::Pezpallet::<T>::block_number());
 			if Dormant::<T>::take(who).is_some() {
 				DormantCount::<T>::mutate(|n| *n = n.saturating_sub(1));
 				Self::deposit_event(Event::CitizenIsCountedAgain { who: who.clone() });
@@ -5043,8 +5038,7 @@ pub mod pezpallet {
 		/// has spent anything.
 		pub fn airdrop_spent_recently() -> u128 {
 			use pezsp_runtime::SaturatedConversion;
-			let window: u128 =
-				T::AirdropWindow::get().saturated_into::<u128>();
+			let window: u128 = T::AirdropWindow::get().saturated_into::<u128>();
 			if window == 0 {
 				return 0;
 			}
@@ -5098,9 +5092,7 @@ pub mod pezpallet {
 
 			let message = Xcm(vec![
 				UnpaidExecution { weight_limit: Unlimited, check_origin: None },
-				DescendOrigin(
-					[Plurality { id: BodyId::Judicial, part: BodyPart::Voice }].into(),
-				),
+				DescendOrigin([Plurality { id: BodyId::Judicial, part: BodyPart::Voice }].into()),
 				Transact {
 					origin_kind: OriginKind::Xcm,
 					fallback_max_weight: None,

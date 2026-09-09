@@ -160,8 +160,7 @@ impl xcm_executor::traits::ConvertOrigin<RuntimeOrigin> for CourtOfPeopleAsXcmOr
 			(
 				OriginKind::Xcm,
 				(0, [Teyrchain(id), Plurality { id: BodyId::Judicial, part: BodyPart::Voice }]),
-			) if u32::from(*id) == PEOPLE_ID =>
-				Ok(pezpallet_xcm::Origin::Xcm(origin).into()),
+			) if u32::from(*id) == PEOPLE_ID => Ok(pezpallet_xcm::Origin::Xcm(origin).into()),
 			_ => Err(origin),
 		}
 	}

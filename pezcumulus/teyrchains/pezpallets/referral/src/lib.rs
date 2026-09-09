@@ -533,7 +533,8 @@ pub mod pezpallet {
 				// for that account today. A citizenship reissued after a lost key moves the
 				// standing to the new account, and a penalty addressed to the retired one
 				// would let the successor keep the score without the liability.
-				let referrer = pezpallet_identity_kyc::Pezpallet::<T>::account_answering_for(&named);
+				let referrer =
+					pezpallet_identity_kyc::Pezpallet::<T>::account_answering_for(&named);
 				let penalty_per_revocation = T::PenaltyPerRevocation::get();
 
 				// Update referrer stats - DIRECT RESPONSIBILITY
@@ -579,7 +580,8 @@ pub mod pezpallet {
 				// for that account today. A citizenship reissued after a lost key moves the
 				// standing to the new account, and a penalty addressed to the retired one
 				// would let the successor keep the score without the liability.
-				let referrer = pezpallet_identity_kyc::Pezpallet::<T>::account_answering_for(&named);
+				let referrer =
+					pezpallet_identity_kyc::Pezpallet::<T>::account_answering_for(&named);
 				let penalty_per_revocation = T::PenaltyPerRevocation::get();
 				ReferrerStatsStorage::<T>::mutate(&referrer, |stats| {
 					stats.revoked_referrals = stats.revoked_referrals.saturating_sub(1);

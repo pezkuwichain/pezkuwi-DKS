@@ -2180,9 +2180,13 @@ mod tests {
 		let scored: Vec<AccountId> = vec![[1u8; 32].into(), [2u8; 32].into()];
 		let failed: Vec<AccountId> = vec![[3u8; 32].into()];
 
-		let real = crate::RuntimeCall::Tnpos(pezpallet_tnpos::Call::<crate::Runtime>::
-			note_session_performance { scored: scored.clone(), failed: failed.clone() })
-			.encode();
+		let real = crate::RuntimeCall::Tnpos(
+			pezpallet_tnpos::Call::<crate::Runtime>::note_session_performance {
+				scored: scored.clone(),
+				failed: failed.clone(),
+			},
+		)
+		.encode();
 
 		// The literals are what `tell_the_register` builds on the relay.
 		assert_eq!(

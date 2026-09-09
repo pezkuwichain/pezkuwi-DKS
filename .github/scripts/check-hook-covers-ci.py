@@ -10,6 +10,14 @@ comment naming a foreign network.
 Both were the same shape and neither was visible from either side: the hook lists what it
 runs, the workflows list what they run, and nobody was comparing the two lists.
 
+Then it happened a third time, to this script. It compared only `.github/scripts/*` and so
+said "the hook runs all 16 gate scripts CI runs" while the hook ran none of `cargo fmt`,
+`zepter` or `.gitlab/rust-features.sh`. A green sentence narrower than it sounds is the
+same defect it was written to prevent, so the comparison now spans both classes: the gate
+scripts, and the tools a workflow invokes directly. A tool that regenerates rather than
+judges is excluded by name, with the reason, and anything new fails until it is one or the
+other.
+
 The hook is local and outside the repository -- it is not shared, and a checkout does not
 install it. So this check is advisory when the hook is absent (a fresh clone, or CI itself)
 and enforcing when it is present. What it will not do is let a hook that exists quietly
@@ -26,6 +34,30 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = re.compile(r"\.github/scripts/([a-z0-9_-]+\.(?:py|sh))")
+
+# Tools a workflow runs directly. Keyed by tool rather than by full command: the same tool
+# appears with different arguments in different jobs, and what the hook has to run is the
+# checking form of it. `cargo check`/`build`/`test` are deliberately absent -- they are the
+# work CI exists to do, and a commit hook that started them would be unusable.
+TOOL = re.compile(
+    r"(?:^|\s)((?:cargo\s+(?:\+\S+\s+)?fmt|taplo|zepter|bash\s+\.gitlab/[a-z-]+\.sh))\b")
+
+# Tool invocations that regenerate a file instead of judging one. They are not gates, and
+# running them from a hook would write to the tree mid-commit. Each is keyed by tool, so a
+# tool listed here is still required whenever some job also runs its checking form -- which
+# is why `cargo fmt` and `zepter` are covered despite both also appearing as regeneration.
+REGENERATES = {
+    # `zepter run default` and `cargo +nightly fmt -p pezkuwi-sdk` rewrite the umbrella
+    # crate after `generate-umbrella.py`; the job then diffs the tree to see if it moved.
+    "generate-umbrella",
+}
+
+
+def tool_key(cmd):
+    """`cargo +nightly fmt` and `cargo fmt` are one tool; so are every zepter subcommand."""
+    c = re.sub(r"\s+", " ", cmd.strip())
+    c = re.sub(r"^cargo \+\S+ ", "cargo ", c)
+    return c
 
 # Scripts a workflow invokes that are not gates, with the reason each is excluded. A gate
 # answers pass or fail about the tree; these do work, and running them from a commit hook
@@ -73,9 +105,11 @@ def hook_path():
 def main():
     verbose = "--verbose" in sys.argv
 
-    ci = set()
+    ci, ci_tools = set(), set()
     for wf in sorted((REPO / ".github" / "workflows").glob("*.yml")):
-        ci |= set(SCRIPT.findall(wf.read_text(errors="replace"))) - NOT_A_GATE - NEEDS_RUN_ARTIFACT
+        text = wf.read_text(errors="replace")
+        ci |= set(SCRIPT.findall(text)) - NOT_A_GATE - NEEDS_RUN_ARTIFACT
+        ci_tools |= {tool_key(t) for t in TOOL.findall(text)}
     if not ci:
         print("  no gate scripts found in any workflow -- the parser stopped seeing them,")
         print("  which is not the same as there being none")
@@ -83,10 +117,17 @@ def main():
 
     hook = hook_path()
     if hook is None:
-        print(f"CI runs {len(ci)} gate scripts; no local pre-commit hook to compare against")
+        print(f"CI runs {len(ci)} gate scripts and {len(ci_tools)} tools; "
+              "no local pre-commit hook to compare against")
         return 0
 
-    local = set(SCRIPT.findall(hook.read_text(errors="replace")))
+    hook_text = hook.read_text(errors="replace")
+    local = set(SCRIPT.findall(hook_text))
+    # A tool gated in `pre-push` is gated. Only the scripts above care which hook they run
+    # in, because only they are cheap enough that the answer differs.
+    push = hook.with_name("pre-push")
+    tool_text = hook_text + (push.read_text(errors="replace") if push.is_file() else "")
+    local_tools = {tool_key(t) for t in TOOL.findall(tool_text)}
 
     # A gate assigned to another hook is covered if that hook runs it.
     elsewhere, misplaced = set(), []
@@ -98,9 +139,13 @@ def main():
             misplaced.append((name, other))
 
     missing = sorted(ci - local - elsewhere)
+    missing_tools = sorted(ci_tools - local_tools)
 
     for m in missing:
         print(f"  the pre-commit hook does not run {m}, and CI does")
+    for m in missing_tools:
+        print(f"  no hook runs `{m}`, and CI does")
+    missing += missing_tools
     for name, other in misplaced:
         print(f"  {name} is assigned to the {other} hook and that hook does not run it")
     missing += [n for n, _ in misplaced]
@@ -113,7 +158,8 @@ def main():
         return 1
 
     extra = sorted(local - ci)
-    print(f"the pre-commit hook runs all {len(ci) - len(elsewhere)} gate scripts CI runs"
+    print(f"the pre-commit hook runs all {len(ci) - len(elsewhere)} gate scripts "
+          f"and {len(ci_tools)} tools CI runs"
           + (f" ({len(elsewhere)} in another hook)" if elsewhere else "")
           + (f", plus {len(extra)} of its own" if extra else ""))
     if verbose:
@@ -121,6 +167,8 @@ def main():
             print(f"  both  {s}")
         for s in extra:
             print(f"  local {s}")
+        for t in sorted(ci_tools):
+            print(f"  both  {t}")
     return 0
 
 

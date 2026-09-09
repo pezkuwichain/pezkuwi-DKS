@@ -778,10 +778,8 @@ impl StakingXcmToAssetHub {
 			.into_iter()
 			.partition(|who| report.validator_points.iter().any(|(a, p)| a == who && *p > 0));
 
-		let call = PeopleRuntimePallets::Tnpos(TnposCalls::NoteSessionPerformance {
-			scored,
-			failed,
-		});
+		let call =
+			PeopleRuntimePallets::Tnpos(TnposCalls::NoteSessionPerformance { scored, failed });
 		let message = Xcm(vec![
 			Instruction::UnpaidExecution {
 				weight_limit: WeightLimit::Unlimited,

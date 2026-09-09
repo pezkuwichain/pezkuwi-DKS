@@ -466,10 +466,9 @@ fn the_whitelist_call_encodes_the_way_people_builds_it() {
 	use codec::Encode;
 
 	let call_hash = pezsp_core::H256::repeat_byte(9);
-	let real = RuntimeCall::Whitelist(pezpallet_whitelist::Call::<Runtime>::whitelist_call {
-		call_hash,
-	})
-	.encode();
+	let real =
+		RuntimeCall::Whitelist(pezpallet_whitelist::Call::<Runtime>::whitelist_call { call_hash })
+			.encode();
 
 	// The literals are what People sends: `RelayWhitelistPalletIndex` and `WHITELIST_CALL_INDEX`.
 	assert_eq!(real, (44u8, 0u8, call_hash).encode(), "the whitelist call's address moved");
@@ -489,17 +488,11 @@ fn only_the_courts_plurality_reaches_the_whitelist() {
 
 	let court = Location::new(
 		0,
-		[
-			Teyrchain(PEOPLE_ID),
-			Plurality { id: BodyId::Judicial, part: BodyPart::Voice },
-		],
+		[Teyrchain(PEOPLE_ID), Plurality { id: BodyId::Judicial, part: BodyPart::Voice }],
 	);
 	assert!(
-		crate::xcm_config::CourtOfPeopleAsXcmOrigin::convert_origin(
-			court.clone(),
-			OriginKind::Xcm
-		)
-		.is_ok(),
+		crate::xcm_config::CourtOfPeopleAsXcmOrigin::convert_origin(court.clone(), OriginKind::Xcm)
+			.is_ok(),
 		"the court can no longer reach the relay"
 	);
 
@@ -545,11 +538,8 @@ fn only_the_courts_plurality_reaches_the_whitelist() {
 	// Superuser is the register's kind and belongs to `StateRegisterAsRoot`. If this converter
 	// answered it too, the court would be able to ask for Root.
 	assert!(
-		crate::xcm_config::CourtOfPeopleAsXcmOrigin::convert_origin(
-			court,
-			OriginKind::Superuser
-		)
-		.is_err(),
+		crate::xcm_config::CourtOfPeopleAsXcmOrigin::convert_origin(court, OriginKind::Superuser)
+			.is_err(),
 		"the court was accepted as a superuser"
 	);
 }

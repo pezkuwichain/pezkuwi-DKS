@@ -544,7 +544,16 @@ pub struct DiwanMember<T: pezframe_system::Config> {
 /// Indices are pinned because they are a storage key. A variant may be renamed once its index
 /// is fixed; it may not be inserted in the middle.
 #[derive(
-	Encode, Decode, DecodeWithMemTracking, Clone, Copy, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
+	Encode,
+	Decode,
+	DecodeWithMemTracking,
+	Clone,
+	Copy,
+	Eq,
+	PartialEq,
+	Debug,
+	TypeInfo,
+	MaxEncodedLen,
 )]
 pub enum Region {
 	#[codec(index = 0)]

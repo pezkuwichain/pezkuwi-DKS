@@ -3649,8 +3649,8 @@ mod a_geographic_mark {
 			assert_ok!(Welati::withdraw_region(RuntimeOrigin::signed(APPLICANT)));
 			assert!(crate::ClaimedRegion::<Test>::get(APPLICANT).is_none());
 
-            // And an attested one, for the same reason. Nothing to game: giving it up only
-            // removes the citizen from the stratum it opens.
+			// And an attested one, for the same reason. Nothing to game: giving it up only
+			// removes the citizen from the stratum it opens.
 			a_notary();
 			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Kafkasya));
 			assert_ok!(Welati::attest_region(
@@ -3713,10 +3713,7 @@ mod a_candidacy_bar_that_fits_the_country {
 			// register of two thousand -- half the population, each needing standing that comes
 			// mostly from education, which is zero on the day the chain starts.
 			roll_of(mature / 2);
-			assert_eq!(
-				Welati::get_required_endorsements(&ElectionType::Presidential),
-				ceiling / 2
-			);
+			assert_eq!(Welati::get_required_endorsements(&ElectionType::Presidential), ceiling / 2);
 		});
 	}
 
@@ -3947,15 +3944,9 @@ mod a_reissued_citizenship {
 
 			// The hash still names exactly one living account, or the same person could be
 			// admitted a second time under the successor.
-			assert_eq!(
-				pezpallet_identity_kyc::IdentityHashToAccount::<Test>::get(hash),
-				Some(NEW)
-			);
+			assert_eq!(pezpallet_identity_kyc::IdentityHashToAccount::<Test>::get(hash), Some(NEW));
 			// One person left and the same person arrived.
-			assert_eq!(
-				pezpallet_identity_kyc::Pezpallet::<Test>::citizen_count(),
-				roll_before
-			);
+			assert_eq!(pezpallet_identity_kyc::Pezpallet::<Test>::citizen_count(), roll_before);
 		});
 	}
 

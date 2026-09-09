@@ -225,10 +225,7 @@ mod the_courts_floor {
 			.find(|c| c.id == StratumId::Divan)
 			.expect("the court is one of the nine");
 		court.min_eligible = SEATS_PER_STRATUM - 1;
-		assert!(matches!(
-			seat(&low, &eligible_with_court(11)),
-			Err(InvariantError::FloorTooLow)
-		));
+		assert!(matches!(seat(&low, &eligible_with_court(11)), Err(InvariantError::FloorTooLow)));
 	}
 }
 

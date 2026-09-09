@@ -98,8 +98,7 @@ impl<T: Config> Pezpallet<T> {
 		// filtered list -- and when the two disagreed the draw came back short and the whole
 		// era failed. Members deregistering their keys was enough to do it. Judging and
 		// drawing from the same list means they cannot disagree.
-		let pools: Vec<Vec<T::AccountId>> =
-			strata.iter().map(|c| Self::candidates(c.id)).collect();
+		let pools: Vec<Vec<T::AccountId>> = strata.iter().map(|c| Self::candidates(c.id)).collect();
 		let by_region = Self::group_by_region(
 			strata
 				.iter()

@@ -110,10 +110,8 @@ impl pezpallet_whitelist::Config for Runtime {
 	// and is already trusted with the register and with impeachment. It is bounded to the
 	// whitelist: it cannot spend, cannot touch the register from here, and cannot dispatch the
 	// whitelisted call itself, which still has to go through the track and be confirmed.
-	type WhitelistOrigin = EitherOfDiverse<
-		EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
-		CourtOfPeople,
-	>;
+	type WhitelistOrigin =
+		EitherOfDiverse<EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>, CourtOfPeople>;
 	type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
 	type Preimages = Preimage;
 }
