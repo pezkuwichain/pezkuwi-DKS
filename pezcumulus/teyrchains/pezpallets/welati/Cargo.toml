@@ -25,8 +25,8 @@ serde = { version = "1.0", default-features = false, features = [
 	"derive",
 ], optional = true }
 
-log = { default-features = false, workspace = true }
 impl-trait-for-tuples = { workspace = true }
+log = { default-features = false, workspace = true }
 pezframe-benchmarking = { optional = true, workspace = true }
 pezframe-support = { default-features = false, workspace = true }
 pezframe-system = { default-features = false, workspace = true }
