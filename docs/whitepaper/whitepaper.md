@@ -2,8 +2,13 @@
 
 ### A state that runs as software
 
-**Whitepaper v6.0 — Mainnet Edition**
+**Whitepaper v6.1 — Testnet Edition**
 Dijital Kurdistan Tech Institute
+
+*The chain described here runs on a test network. Six months live, 2.7 million blocks
+finalised, no mainnet genesis yet. §10.1 lists what is specified but not yet built, in full
+and without softening — a reader who finds a gap there before finding it in the code is
+reading the document this was written to be.*
 
 ---
 
@@ -228,6 +233,25 @@ somebody is never counted as having chosen them. And the **court**, as the regis
 authority, can revoke a citizenship or a vouch after the fact. Neither is an administrator
 of admission: one cannot refuse, the other cannot admit.
 
+**What the identity hash does and does not prove.** Uniqueness of the hash stops the same
+document being registered twice. It does not stop one person registering twice with two
+documents, and this system claims no proof of personhood. The defence against a manufactured
+population is the vouching chain and its cost: a fabricated citizen needs an existing citizen
+to stand for them, vouching places are finite, and a voucher whose referrals are revoked
+loses the right to vouch at all. That is accountability rather than impossibility, and it is
+priced accordingly — a hostile register-stuffer must either buy citizens who have something
+to lose or burn their own standing at three revocations. We state the bound rather than
+overclaim the mechanism: the register is as honest as the citizens who fill it, which is a
+weaker guarantee than cryptography and a stronger one than an administrator's judgement.
+
+**Losing the key.** A citizenship NFT is non-transferable and its identity hash is claimed
+for good, so an applicant who loses their key cannot simply register again — the hash would
+collide with the one they already own. The remedy is judicial rather than automatic: the
+court, sitting as the register authority at two thirds, may reissue a citizenship to a new
+account. It is deliberately not a self-service path. A recovery anybody can invoke is a theft
+mechanism wearing a helpful name, and the register is the one asset in this system with no
+market price and no way to be made whole after the fact.
+
 ---
 
 ## 5. The institutions
@@ -281,7 +305,17 @@ specialist, network operator, economist, accountant, planner, electoral officer,
 auditor, scholar, or cultural custodian. A president may choose, but only from people the
 register already recognises as qualified.
 
-**There is no call to dismiss a member of the court.** The absence is the point.
+**There is no call to dismiss a member of the court.** The absence is the point: a court
+that can be removed by the powers it rules on is not a court, and nine years is longer than
+any body that appoints to it precisely so that no single alignment outlives it.
+
+**Dismissal and vacancy are different questions, and only the first is closed.** Death, a lost
+key, and permanent silence are not misconduct, but they subtract from the same two-thirds a
+decision needs; four silent seats out of eleven make that threshold unreachable for good, and
+every authority the court carries — the register, the validator pool, and the fast upgrade
+path in §10.1 — freezes with it. So the court's seats are vacated on measured inactivity and
+refilled by the body that seated them. Removal for cause remains impossible; absence is not
+cause, and treating it as such would be the loophole this section exists to refuse.
 
 The court is not decorative. Two thirds of it constitutes the *register authority*, which
 governs the citizen register itself, administers the validator pool, and can strip an elected
@@ -382,6 +416,10 @@ how much stake sits behind it.
 | **Infrastructure** | Any trust, on operational contribution |
 
 Each stratum seats **three** validators. A full committee is **twenty-seven**.
+
+The stratum named Dîwan is a route into the validator pool and confers no judicial
+office; it is not the eleven-seat court of §5.4, and its fifty-member floor has nothing to do
+with the court's size.
 
 The security argument rests on the strata being gated by *different* authorities: two strata
 answering to the same institution are one stratum, not two, and the committee's independence
@@ -510,6 +548,16 @@ does not compound, and at the default it is sixteen million HEZ a year, of which
 percent goes to the treasury and the rest to those securing the chain. Only the Treasurer, an
 office on the People chain, may change the rate — never HEZ holders, and never by more than
 one percentage point at a time, no more often than every ninety days.
+
+**What a fixed base means for a holder.** Because the rate applies to the fixed two hundred
+million rather than to circulating supply, emission does not compound: the same number of HEZ
+arrives every year, and the *effective* rate falls as the supply grows — about eight percent
+in year one, four and a half in year ten, under three by year twenty-five. Supply is
+nonetheless unbounded. It doubles in roughly twelve and a half years and triples in
+twenty-five. A genesis holder who never stakes is therefore diluted linearly and permanently,
+and this is a property of the design rather than an oversight: the emission buys validator
+security, which a state cannot pay for out of fees it does not yet collect. Stated plainly so
+that nobody has to derive it from the schedule.
 
 Emission is not the only income. Transaction fees on the relay split **eighty percent to the
 treasury and twenty percent to the block's author**; on the teyrchains the whole fee goes to
@@ -683,6 +731,42 @@ instruction from the register; the register is governed by a court that neither 
 nor the parliament can seat alone; the rules for admission to the register can only be changed
 by a ninety-day referendum of the people already in it; and the relay's root can be reached
 from exactly one place.
+
+### 10.1 What is specified but not yet built
+
+A design document that lists only what works is an advertisement. This section is the other
+half, and it is written to be complete rather than reassuring: everything below is a gap a
+reader could otherwise find in the code and conclude we had hidden. The chain is on a test
+network precisely so that these close before a genesis freezes them — a structural fix costs
+one commit today and a coordinated operation across every operator afterwards.
+
+**Decided, and being built.** These have an agreed remedy; the code has not landed yet.
+
+| Gap | What breaks without it | The remedy |
+|---|---|---|
+| **No fast path to a runtime upgrade** | The whitelist machinery exists and can enact in hours, but only root may whitelist a call, and root is the twenty-eight-day referendum. A zero-day defect cannot wait twenty-eight days, and the call to be whitelisted cannot be known in advance | The court, at two thirds, gains the power to whitelist — upgrades only, never the treasury and never the register |
+| **The court cannot lose a silent member** | Four unreachable seats out of eleven freeze the register authority, the validator pool, and the fast path above, permanently | Vacancy on measured inactivity (§5.4) |
+| **A lost key ends a citizenship** | The identity hash is claimed for good, so re-registration collides. In a real population this is a certainty, not an exception | Judicial reissue by the court at two thirds (§4) |
+| **The airdrop ceiling is per payment, not cumulative** | One million HEZ moves on two signatures without the Treasurer. Nothing counts the second such payment, or the fortieth | A rolling window above which the third signature and the delay become mandatory |
+| **The support denominator only grows** | Lost keys, deaths and permanent absentees stay in the roll for ever. At scale no referendum passes, and the hundred-thousand floor in §3.1 fixes the opposite end of this problem | A dormancy rule, and a way to record a death |
+| **Six of the nine strata share one gate** | Stated already in §7.1: the committee's independence is three today, not nine | Dedicated attestation channels, one per stratum |
+| **Succession is unwritten** | The death or key loss of a president, a vacant ministry, a by-election — none of these has a rule | Written with the vacancy work above; it is the same defect in a different organ |
+| **"Region" has no definition** | The geography stratum distributes seats by a boundary nobody has drawn. For a dispersed population this is the easiest thing in the system to draw self-servingly | A definition fixed before the stratum is seated |
+| **Election thresholds are absolute numbers** | The first presidential election needs a thousand endorsements from a roll that may hold two thousand, and thirty percent of trust — education — is zero at launch. The thresholds were written for a large register, exactly as the support curves were | Thresholds expressed as a share of the roll with a floor, as §3.1 already does |
+| **Civil calls are not fee-exempt** | The fee-sponsorship mechanism is installed but no civil extrinsic is marked with it, so a citizen with no HEZ cannot transact with their own state | Mark the register's own calls |
+
+**Open, and not yet decided.** These are judgements rather than engineering, and this document
+will not pretend they are settled.
+
+| Question | Why it is hard |
+|---|---|
+| **Who can see the referral graph** | Every vouch, every geographic stratum and every vote is public. Public acts are a deliberate choice — protection comes from the account being a number rather than a name — but a vouching graph is a social graph, and for a population under pressure from four states that is a different exposure from a public vote. Whether membership proofs should be zero-knowledge is unsettled |
+| **Whether the court should be staggered** | Six seats seated by one parliament and five by one president, nine years, no removal. A single aligned cycle seats the whole court. Staggered renewal is the obvious answer and it costs the derived split its simplicity |
+| **Who accredits education** | Perwerde is the largest component of trust at thirty percent, and its administering origin sits with the executive. Trust decides candidacy, the validator pool and reward weight. An executive that accredits is an executive that shapes its own electorate |
+
+**And one thing that is not a gap.** There is no proof of personhood, by decision rather than
+by omission. §4 says what the vouching chain does and does not buy. We would rather state a
+weaker guarantee accurately than a stronger one loosely.
 
 ---
 
