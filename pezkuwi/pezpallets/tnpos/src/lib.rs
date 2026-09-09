@@ -156,6 +156,27 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type TenurePeriod: Get<BlockNumberFor<Self>>;
 
+		/// Standing an ordinary citizen needs before the open lottery will draw them.
+		///
+		/// Forty, and it is not an arbitrary number: it is exactly what the cheapest possible
+		/// account scores. Trust weights staking at twenty of a hundred against a maximum of a
+		/// hundred, so a citizen who stakes the smallest tier and does nothing else normalises
+		/// to two hundred of a thousand and lands on forty precisely. *Above* forty therefore
+		/// means "has done something beyond the cheapest act" -- held the stake long enough for
+		/// the duration multiplier, or vouched for somebody, or earned a badge or a course.
+		///
+		/// That is the whole of the gate, and it is meant to be light. This stratum's security
+		/// is the size of the pool it draws from, not the height of its bar: three seats drawn
+		/// uniformly from thousands means an attacker needs roughly a third of every
+		/// participating citizen to expect a single seat. A hard gate here would only duplicate
+		/// one of the other eight and shut out the ordinary people this stratum exists to seat.
+		/// What the floor removes is the one profile the pool cannot dilute cheaply -- an
+		/// account minted for the draw, holding one HEZ and nothing else.
+		///
+		/// The same forty the register asks of an endorser. One number, one meaning.
+		#[pezpallet::constant]
+		type LotteryTrustFloor: Get<u128>;
+
 		/// Whether an account has registered session keys.
 		///
 		/// A validator without keys is silently dropped when the session rotates, which

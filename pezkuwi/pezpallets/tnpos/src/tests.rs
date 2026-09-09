@@ -186,6 +186,38 @@ fn the_pool_is_bounded() {
 	});
 }
 
+/// The open seat asks for something, and the something is "more than the cheapest possible act".
+///
+/// Forty is not a number somebody picked. Trust weights staking at twenty of a hundred against
+/// a maximum of a hundred, so an account that stakes the smallest tier and does nothing else
+/// lands on exactly forty. Above it means the citizen has held the stake long enough to earn
+/// the duration multiplier, or vouched for somebody, or earned a badge or a course -- and any
+/// of those is beyond what an account minted for the draw will bother with.
+///
+/// The gate stays light on purpose. This stratum's security is the size of the pool, not the
+/// height of the bar; a hard gate would duplicate one of the other eight and shut out the
+/// ordinary citizens it exists to seat.
+#[test]
+fn the_open_lottery_refuses_the_account_that_did_the_minimum_and_nothing_else() {
+	new_test_ext().execute_with(|| {
+		let floor = LotteryTrustFloor::get();
+		ensure_has_keys(ALICE);
+
+		// Exactly the floor: one HEZ staked, nothing else done. This is the profile the pool
+		// cannot dilute cheaply, because it costs an attacker almost nothing per identity.
+		set_trust(ALICE, floor);
+		assert_noop!(
+			Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::WelatiLottery),
+			Error::<Test>::NotEligible
+		);
+
+		// One step past it -- any duration, any referral, any badge -- and the seat is open.
+		set_trust(ALICE, floor + 1);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::WelatiLottery));
+		assert_eq!(PoolMembers::<Test>::get(ALICE), Some(StratumId::WelatiLottery));
+	});
+}
+
 /// Time is the one qualification nobody can grant, and the grace window closes itself.
 #[test]
 fn tenure_admits_on_trust_until_the_chain_is_old_enough_to_have_any() {

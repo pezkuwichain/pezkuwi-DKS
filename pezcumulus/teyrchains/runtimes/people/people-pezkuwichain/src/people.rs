@@ -1936,6 +1936,14 @@ pezframe_support::parameter_types! {
 	/// in the nine strata that nobody can grant. Its own grace window is the same length: the
 	/// chain admits on trust until it is a year old, and the people admitted that way are
 	/// exactly the ones serving the year.
+	/// Standing the open lottery asks of an ordinary citizen: forty.
+	///
+	/// Exactly what an account that stakes the smallest tier and does nothing else scores, so
+	/// *above* it means "has done something beyond the cheapest act". The same forty the
+	/// register asks of an endorser -- one number, one meaning. Identical on both twins: it is
+	/// a property of the trust arithmetic, not of the network's size.
+	pub const TnposLotteryTrustFloor: u128 = 40;
+
 	pub const TnposTenurePeriod: BlockNumber = 365 * DAYS;
 }
 
@@ -1945,6 +1953,7 @@ impl pezpallet_tnpos::Config for Runtime {
 	// The register itself, read locally. This is the reason the pallet is on this chain.
 	type Scores = RegisterScores;
 	type TenurePeriod = TnposTenurePeriod;
+	type LotteryTrustFloor = TnposLotteryTrustFloor;
 	// The pallet's own register: it decides who may validate, so it holds the record of who
 	// has keys to validate with. Anything else here would be a second opinion about a fact it
 	// already keeps.

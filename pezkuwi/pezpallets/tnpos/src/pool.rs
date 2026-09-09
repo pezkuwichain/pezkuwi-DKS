@@ -82,14 +82,22 @@ impl<T: Config> Pezpallet<T> {
 					ensure!(now.saturating_sub(since) >= period, Error::<T>::NotEligible);
 				}
 			},
-			StratumId::WelatiLottery
-			| StratumId::Infrastructure => {
-				// Still trust, and still M7.1's work. Each needs a decision first, and they are
-				// not the same shape: `WelatiLottery` reads "gated only by citizenship" in its
-				// own definition, and citizenship is *weaker* than trust because trust gates on
-				// stake -- moving to it would loosen this stratum. The other three have no
-				// measured quantity behind them yet: there is no definition of a region, of
-				// service, or of operational contribution to read.
+			StratumId::WelatiLottery => {
+				// The open seat, and the only gate in the nine that is meant to be light. Its
+				// security is the size of the pool rather than the height of the bar -- three
+				// seats drawn uniformly from thousands means an attacker needs about a third
+				// of every participating citizen to expect one. See `LotteryTrustFloor` for
+				// why the number is forty and not zero.
+				ensure!(
+					fresh(T::Scores::trust_of(who))? > T::LotteryTrustFloor::get(),
+					Error::<T>::NotEligible
+				);
+			},
+			StratumId::Infrastructure => {
+				// The last one still reading bare trust, and the only one waiting on data
+				// rather than on a decision: its definition asks for a measured record on
+				// *independent* infrastructure, and nothing on this chain records network or
+				// geographic diversity to measure it against.
 				ensure!(fresh(T::Scores::trust_of(who))? > 0, Error::<T>::NotEligible);
 			},
 		}
