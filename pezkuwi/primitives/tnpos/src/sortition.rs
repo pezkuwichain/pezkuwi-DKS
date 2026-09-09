@@ -17,11 +17,17 @@ pub trait Sortition<AccountId> {
 	/// The members seated for `stratum` in `era`, or `None` if this era cannot be drawn --
 	/// no seed yet, or not enough tickets. `None` degrades the committee (the stratum is
 	/// left unseated); it never falls back to an order an adversary could have chosen.
+	///
+	/// `salt` separates draws *within* one stratum in one era. The geography stratum draws one
+	/// member from each of several regions, and without it every region would be shuffled by
+	/// the same domain and pick the same position of its own list. Empty for every other
+	/// stratum, which draws once.
 	fn select(
 		era: u32,
 		stratum: StratumId,
 		candidates: &[AccountId],
 		k: u32,
+		salt: &[u8],
 	) -> Option<Vec<AccountId>>;
 }
 

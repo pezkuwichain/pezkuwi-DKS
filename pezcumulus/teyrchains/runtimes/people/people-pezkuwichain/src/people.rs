@@ -1784,6 +1784,13 @@ impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for
 		pezpallet_welati::Pezpallet::<Runtime>::is_diwan_member(who)
 	}
 
+	fn region_of(who: &AccountId) -> Option<u8> {
+		// The register's settled answer: claimed by the citizen, attested by a notary, and
+		// cancellable by the court. The index rather than the name, because the consensus
+		// layer groups by regions and never has to say one out loud.
+		pezpallet_welati::AttestedRegion::<Runtime>::get(who).map(|r| r.index())
+	}
+
 	fn trust_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
 		ScoreSnapshot {
 			value: <Trust as pezpallet_trust::TrustScoreProvider<AccountId>>::trust_score_of(who),

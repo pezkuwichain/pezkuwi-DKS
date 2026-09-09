@@ -202,6 +202,9 @@ thread_local! {
 	/// Who sits on the court, for the stratum that reads it.
 	pub static DIWAN: core::cell::RefCell<alloc::vec::Vec<AccountId>> =
 		const { core::cell::RefCell::new(alloc::vec::Vec::new()) };
+	/// Attested regions, for the stratum that rotates across them.
+	pub static REGIONS: core::cell::RefCell<alloc::vec::Vec<(AccountId, u8)>> =
+		const { core::cell::RefCell::new(alloc::vec::Vec::new()) };
 }
 
 impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for MockScores {
@@ -211,6 +214,10 @@ impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for
 
 	fn is_diwan_member(who: &AccountId) -> bool {
 		DIWAN.with(|d| d.borrow().contains(who))
+	}
+
+	fn region_of(who: &AccountId) -> Option<u8> {
+		REGIONS.with(|r| r.borrow().iter().find(|(a, _)| a == who).map(|(_, x)| *x))
 	}
 
 	fn trust_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
@@ -324,6 +331,15 @@ pub fn seat_on_the_diwan(who: AccountId) {
 	});
 }
 
+/// Attest this account's region, for the stratum that reads it.
+pub fn attest_region(who: AccountId, region: u8) {
+	REGIONS.with(|r| {
+		let mut r = r.borrow_mut();
+		r.retain(|(a, _)| *a != who);
+		r.push((who, region));
+	});
+}
+
 /// Put `per` eligible members into every stratum.
 pub fn fill_every_stratum(per: u32) {
 	let mut who: AccountId = 100;
@@ -338,6 +354,8 @@ pub fn fill_every_stratum(per: u32) {
 			match s {
 				StratumId::Meclis => seat_in_meclis(who),
 				StratumId::Divan => seat_on_the_diwan(who),
+				// Spread across all six so the stratum has the regions its rotation needs.
+				StratumId::Geography => attest_region(who, (who % 6) as u8),
 				_ => {},
 			}
 			ensure_has_keys(who);

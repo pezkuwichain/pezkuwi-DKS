@@ -76,6 +76,7 @@ impl<T: Config> pezkuwi_tnpos_primitives::sortition::Sortition<T::AccountId>
 		stratum: StratumId,
 		candidates: &[T::AccountId],
 		k: u32,
+		salt: &[u8],
 	) -> Option<Vec<T::AccountId>> {
 		// No contribution this era means no draw. Refusing degrades the committee; the
 		// alternative -- a predictable fallback seed -- would hand the draw to whoever
@@ -91,6 +92,9 @@ impl<T: Config> pezkuwi_tnpos_primitives::sortition::Sortition<T::AccountId>
 		buf[..32].copy_from_slice(&base);
 		buf[32..].copy_from_slice(&era.to_le_bytes());
 		let seed = blake2_256(&buf);
-		Some(pezkuwi_tnpos_primitives::sortition::sample_k(candidates, k, &seed, &[stratum as u8]))
+		let mut domain = alloc::vec::Vec::with_capacity(1 + salt.len());
+		domain.push(stratum as u8);
+		domain.extend_from_slice(salt);
+		Some(pezkuwi_tnpos_primitives::sortition::sample_k(candidates, k, &seed, &domain))
 	}
 }

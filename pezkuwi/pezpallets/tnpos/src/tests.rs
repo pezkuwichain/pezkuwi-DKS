@@ -186,6 +186,76 @@ fn the_pool_is_bounded() {
 	});
 }
 
+/// Three seats, six regions, and the label has to decide something.
+///
+/// A uniform draw over the whole marked pool would let the most populous region take all three
+/// and the stratum would be "citizens a notary vouched for" -- which is not what it is named
+/// after. The seats rotate instead, so which regions are served is a guarantee rather than an
+/// average, and randomness decides only *who* inside each region.
+#[test]
+fn the_geography_seats_land_in_three_different_regions_and_move_on() {
+	new_test_ext().execute_with(|| {
+		// Six regions, plenty of members in each.
+		let mut who = 500u64;
+		for region in 0..6u8 {
+			for _ in 0..10 {
+				set_trust(who, 1_000);
+				attest_region(who, region);
+				ensure_has_keys(who);
+				assert_ok!(Tnpos::join(RuntimeOrigin::signed(who), StratumId::Geography));
+				who += 1;
+			}
+		}
+
+		let served = |era: u32| -> Vec<usize> { Tnpos::regions_for_era(era, 6) };
+
+		// Three distinct regions, every era.
+		for era in 0..12u32 {
+			let s = served(era);
+			assert_eq!(s.len(), 3, "era {era} did not serve three regions");
+			let mut sorted = s.clone();
+			sorted.sort_unstable();
+			sorted.dedup();
+			assert_eq!(sorted.len(), 3, "era {era} served the same region twice");
+		}
+
+		// And the six are covered in two eras: nobody waits while another is served twice.
+		let mut two_eras: Vec<usize> = served(0).into_iter().chain(served(1)).collect();
+		two_eras.sort_unstable();
+		two_eras.dedup();
+		assert_eq!(two_eras.len(), 6, "a full cycle did not reach every region");
+	});
+}
+
+/// Fewer regions than seats stands the stratum down; it does not cost the chain its committee.
+#[test]
+fn too_few_regions_shrinks_the_committee_rather_than_failing_the_era() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+
+		// Collapse geography onto two regions. There are still sixty marked members, so the
+		// floor is met and only the rotation cannot be satisfied -- which is exactly the case
+		// that would otherwise fail the whole draw rather than one stratum.
+		let geography: Vec<u64> = PoolMembers::<Test>::iter()
+			.filter(|(_, s)| *s == StratumId::Geography)
+			.map(|(w, _)| w)
+			.collect();
+		for member in geography {
+			attest_region(member, (member % 2) as u8);
+		}
+
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+
+		let seated = CurrentCommittee::<Test>::get();
+		assert!(!seated.is_empty(), "the era produced no committee at all");
+		assert_eq!(
+			seated.len() as u32,
+			SEATS_PER_STRATUM * (StratumId::ALL.len() as u32 - 1),
+			"geography should have stood down and taken exactly its own seats with it"
+		);
+	});
+}
+
 /// The two institutional strata admit the institution, and a full trust score is not it.
 ///
 /// This is the whole of the independence argument in one test. Both gates used to read trust

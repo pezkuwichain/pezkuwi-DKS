@@ -62,8 +62,13 @@ impl<T: Config> Pezpallet<T> {
 				// same graceful failure any short stratum has.
 				ensure!(T::Scores::is_diwan_member(who), Error::<T>::NotEligible);
 			},
+			StratumId::Geography => {
+				// An attested region, and nothing else. The register decides who has one: the
+				// citizen claims it, a notary confirms it, and the court can cancel it. What
+				// this gate reads is the settled answer.
+				ensure!(T::Scores::region_of(who).is_some(), Error::<T>::NotEligible);
+			},
 			StratumId::WelatiLottery
-			| StratumId::Geography
 			| StratumId::Tenure
 			| StratumId::Infrastructure => {
 				// Still trust, and still M7.1's work. Each needs a decision first, and they are

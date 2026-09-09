@@ -69,6 +69,16 @@ pub trait ScoreProvider<AccountId, BlockNumber> {
 	/// general fifty -- see `min_eligible_for`. Same reasoning as the house above.
 	fn is_diwan_member(who: &AccountId) -> bool;
 
+	/// The region this account's residence has been attested in, if any.
+	///
+	/// An index rather than a named type. The regions are the register's own list and live in
+	/// its pallet; naming them here would put a type from the civil layer into the consensus
+	/// layer's primitives for no gain, because this crate only ever needs to group by them and
+	/// rotate. What it must not do is invent its own count -- the set is whatever the accounts
+	/// in the pool actually carry, so a region added or dropped in the register needs no change
+	/// here at all.
+	fn region_of(who: &AccountId) -> Option<u8>;
+
 	fn trust_of(who: &AccountId) -> ScoreSnapshot<BlockNumber>;
 	fn tiki_of(who: &AccountId) -> ScoreSnapshot<BlockNumber>;
 	fn perwerde_of(who: &AccountId) -> ScoreSnapshot<BlockNumber>;
