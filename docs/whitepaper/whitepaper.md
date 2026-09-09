@@ -940,7 +940,7 @@ a solicitation, or investment advice.
 | | |
 |---|---|
 | HEZ genesis supply | 200,000,000 |
-| Held on the Asset Hub / on the relay | 180,000,000 / 20,000,000 — less the validators' initial stashes, which are carved out of the treasury's share and minted on the relay |
+| Held on the Asset Hub / on the relay | 180,000,000 / 20,000,000 — less the validators' initial stashes, which are carved out of the treasury's share and minted on the relay, so the four allocations still sum to exactly 200,000,000 |
 | HEZ inflation, default / ceiling | 8% / 10% of a fixed 200M base |
 | PEZ supply | 5,000,000,000, fixed |
 | PEZ halving period | 48 monthly releases (~4 years) |
