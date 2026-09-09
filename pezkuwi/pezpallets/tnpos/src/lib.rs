@@ -140,6 +140,22 @@ pub mod pezpallet {
 		/// Cached People-chain scores. Reads go through `ScoreSnapshot::value_if_fresh`.
 		type Scores: ScoreProvider<Self::AccountId, BlockNumberFor<Self>>;
 
+		/// How long uninterrupted, offence-free pool membership must run before it is standing.
+		///
+		/// The one gate in the nine that answers to no authority at all. Not the President, not
+		/// the court, not the house, not the market -- only elapsed time without an offence,
+		/// and time is the single qualification nobody can grant, sell or manufacture. An
+		/// attacker can buy stake and forge a reputation; they cannot forge a past.
+		///
+		/// **It admits on trust for the chain's first period, and closes itself.** At genesis
+		/// nobody has a past here, so a strict gate would leave the stratum empty until the
+		/// period had run once -- and the people who would have filled it are exactly the ones
+		/// serving that period. The grace window *is* the qualifying window: those who join
+		/// during it and behave qualify on the day it ends. No governance action turns it off,
+		/// and the date it ends is knowable from genesis.
+		#[pezpallet::constant]
+		type TenurePeriod: Get<BlockNumberFor<Self>>;
+
 		/// Whether an account has registered session keys.
 		///
 		/// A validator without keys is silently dropped when the session rotates, which
@@ -267,11 +283,23 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type Banned<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u32, OptionQuery>;
 
+	/// When each member's current, unbroken spell in the pool began.
+	///
+	/// Cleared on every way out -- leaving, and being removed for an offence -- because the
+	/// stratum that reads it is defined on *uninterrupted* membership. Rejoining starts a new
+	/// spell rather than resuming the old one, which is what makes the qualification something
+	/// an offender has to earn again rather than wait out.
+	#[pezpallet::storage]
+	pub type InPoolSince<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A member joined `stratum`.
 		Joined { who: T::AccountId, stratum: StratumId },
+		/// A member moved between strata without leaving the pool, so their spell continues.
+		StratumSwitched { who: T::AccountId, from: StratumId, to: StratumId },
 		/// A member left the pool.
 		Left { who: T::AccountId },
 		/// A seated committee was handed to the router for the relay.
@@ -504,6 +532,33 @@ pub mod pezpallet {
 			RelayKeys::<T>::insert(&who, bounded);
 
 			Self::deposit_event(Event::RelayKeysSet { who });
+			Ok(())
+		}
+
+		/// Move to another stratum without leaving the pool.
+		///
+		/// Necessary rather than convenient, and the tenure stratum is why. Standing there is
+		/// unbroken pool membership, which is cleared by `leave` -- so without this the only
+		/// way to reach that stratum would be to leave and start the clock at zero, and after
+		/// the grace window nobody could ever enter it again. Switching is not an
+		/// interruption: the member never stops being in the pool, so the spell continues.
+		///
+		/// The new stratum's gate is checked exactly as `join` checks it. Somebody who cannot
+		/// enter a stratum from outside cannot enter it from inside either.
+		#[pezpallet::call_index(9)]
+		#[pezpallet::weight(T::WeightInfo::join())]
+		pub fn switch_stratum(origin: OriginFor<T>, stratum: StratumId) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let current = PoolMembers::<T>::get(&who).ok_or(Error::<T>::NotInPool)?;
+			ensure!(current != stratum, Error::<T>::AlreadyInPool);
+			Self::eligible_for(&who, stratum)?;
+
+			StratumSize::<T>::mutate(current, |n| *n = n.saturating_sub(1));
+			StratumSize::<T>::mutate(stratum, |n| *n = n.saturating_add(1));
+			PoolMembers::<T>::insert(&who, stratum);
+			// `InPoolSince` is deliberately untouched.
+
+			Self::deposit_event(Event::StratumSwitched { who, from: current, to: stratum });
 			Ok(())
 		}
 

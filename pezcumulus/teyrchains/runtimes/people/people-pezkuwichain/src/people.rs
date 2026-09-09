@@ -1929,11 +1929,22 @@ parameter_types! {
 	pub const TnposMaxPoolSize: u32 = 1_000;
 }
 
+pezframe_support::parameter_types! {
+	/// How long unbroken, offence-free pool membership must run before it is standing: one year.
+	///
+	/// Long enough that it cannot be waited out inside one attack, and the only qualification
+	/// in the nine strata that nobody can grant. Its own grace window is the same length: the
+	/// chain admits on trust until it is a year old, and the people admitted that way are
+	/// exactly the ones serving the year.
+	pub const TnposTenurePeriod: BlockNumber = 365 * DAYS;
+}
+
 impl pezpallet_tnpos::Config for Runtime {
 	type WeightInfo = crate::weights::pezpallet_tnpos::WeightInfo<Runtime>;
 	type Sortition = pezpallet_tnpos::seed::CommitRevealSortition<Runtime>;
 	// The register itself, read locally. This is the reason the pallet is on this chain.
 	type Scores = RegisterScores;
+	type TenurePeriod = TnposTenurePeriod;
 	// The pallet's own register: it decides who may validate, so it holds the record of who
 	// has keys to validate with. Anything else here would be a second opinion about a fact it
 	// already keeps.

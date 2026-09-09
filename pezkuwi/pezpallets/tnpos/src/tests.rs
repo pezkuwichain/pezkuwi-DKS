@@ -186,6 +186,87 @@ fn the_pool_is_bounded() {
 	});
 }
 
+/// Time is the one qualification nobody can grant, and the grace window closes itself.
+#[test]
+fn tenure_admits_on_trust_until_the_chain_is_old_enough_to_have_any() {
+	new_test_ext().execute_with(|| {
+		let period = TenurePeriod::get();
+		set_trust(ALICE, 1_000);
+		ensure_has_keys(ALICE);
+
+		// Younger than one period: nobody can have served one, so the stratum admits on trust
+		// and the members admitted that way are the ones serving it.
+		assert!(System::block_number() < period);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Tenure));
+		assert_eq!(InPoolSince::<Test>::get(ALICE), Some(System::block_number()));
+
+		// Past the window the gate is strict, and a newcomer with a perfect score is refused.
+		System::set_block_number(period + 1);
+		set_trust(BOB, 1_000);
+		ensure_has_keys(BOB);
+		assert_noop!(
+			Tnpos::join(RuntimeOrigin::signed(BOB), StratumId::Tenure),
+			Error::<Test>::NotEligible
+		);
+
+		// Nothing switched the window off: the chain simply got older than the period.
+	});
+}
+
+/// An offence costs the spell, not just the ban.
+#[test]
+fn an_offender_starts_their_tenure_again_rather_than_waiting_the_ban_out() {
+	new_test_ext().execute_with(|| {
+		let period = TenurePeriod::get();
+		set_trust(ALICE, 1_000);
+		ensure_has_keys(ALICE);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Tenure));
+
+		// A long, clean spell.
+		System::set_block_number(period * 3);
+		assert!(InPoolSince::<Test>::get(ALICE).is_some());
+
+		// The offence removes them from the pool and takes the spell with it. Without that the
+		// ban would expire and the offender would walk back in carrying the standing they had
+		// before it -- costing them a few eras and nothing in the stratum that measures a
+		// clean record.
+		assert_ok!(Tnpos::do_report_offence(ALICE, Offence::Equivocation));
+		assert!(InPoolSince::<Test>::get(ALICE).is_none());
+
+		// The way back in is the way everybody else takes: serve somewhere else, then switch.
+		// Straight back into tenure is refused, because the spell it measures is gone.
+		Banned::<Test>::remove(ALICE);
+		// The snapshot has to be current: `fresh` refuses a stale score, which is the point of
+		// it, and the clock has moved a long way in this test.
+		set_trust(ALICE, 1_000);
+		assert_noop!(
+			Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Tenure),
+			Error::<Test>::NotEligible
+		);
+
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::WelatiLottery));
+		let restarted = System::block_number();
+		assert_eq!(InPoolSince::<Test>::get(ALICE), Some(restarted));
+
+		// Still short of a period, so switching is refused too -- the gate is the same from
+		// inside the pool as from outside it.
+		System::set_block_number(restarted + period - 1);
+		set_trust(ALICE, 1_000);
+		assert_noop!(
+			Tnpos::switch_stratum(RuntimeOrigin::signed(ALICE), StratumId::Tenure),
+			Error::<Test>::NotEligible
+		);
+
+		// A full clean spell later, the switch is allowed and it does not reset the clock:
+		// moving stratum is not leaving the pool.
+		System::set_block_number(restarted + period);
+		set_trust(ALICE, 1_000);
+		assert_ok!(Tnpos::switch_stratum(RuntimeOrigin::signed(ALICE), StratumId::Tenure));
+		assert_eq!(InPoolSince::<Test>::get(ALICE), Some(restarted));
+		assert_eq!(PoolMembers::<Test>::get(ALICE), Some(StratumId::Tenure));
+	});
+}
+
 /// Three seats, six regions, and the label has to decide something.
 ///
 /// A uniform draw over the whole marked pool would let the most populous region take all three

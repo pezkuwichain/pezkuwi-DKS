@@ -57,6 +57,11 @@ impl<T: Config> Pezpallet<T> {
 		if let Some(stratum) = PoolMembers::<T>::take(&who) {
 			StratumSize::<T>::mutate(stratum, |n| *n = n.saturating_sub(1));
 		}
+		// An offence breaks the spell, and the tenure stratum is defined on unbroken,
+		// offence-free membership. Without this the ban would expire and the offender would
+		// walk back in carrying the standing they had before it -- the penalty would cost them
+		// a few eras and nothing at all in the one stratum that measures a clean record.
+		InPoolSince::<T>::remove(&who);
 
 		// Leave the seated committee too. A member who equivocated must stop counting
 		// towards quorum immediately, not at the end of the era.

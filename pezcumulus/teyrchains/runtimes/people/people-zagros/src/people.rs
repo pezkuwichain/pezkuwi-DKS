@@ -1924,11 +1924,23 @@ parameter_types! {
 	pub const TnposMaxPoolSize: u32 = 1_000;
 }
 
+pezframe_support::parameter_types! {
+	/// How long unbroken, offence-free pool membership must run before it is standing.
+	///
+	/// **Deliberately not the mainnet figure.** A year here would mean the gate never closes
+	/// inside the life of a test network, so the strict half would ship unexercised -- and the
+	/// grace window doubles as the qualifying window, so a network that never leaves grace
+	/// never demonstrates either. Thirty days closes inside a testnet's life and is still far
+	/// longer than any single run.
+	pub const TnposTenurePeriod: BlockNumber = 30 * DAYS;
+}
+
 impl pezpallet_tnpos::Config for Runtime {
 	type WeightInfo = crate::weights::pezpallet_tnpos::WeightInfo<Runtime>;
 	type Sortition = pezpallet_tnpos::seed::CommitRevealSortition<Runtime>;
 	// The register itself, read locally. This is the reason the pallet is on this chain.
 	type Scores = RegisterScores;
+	type TenurePeriod = TnposTenurePeriod;
 	// The pallet's own register: it decides who may validate, so it holds the record of who
 	// has keys to validate with. Anything else here would be a second opinion about a fact it
 	// already keeps.

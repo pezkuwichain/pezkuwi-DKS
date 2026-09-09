@@ -68,8 +68,21 @@ impl<T: Config> Pezpallet<T> {
 				// this gate reads is the settled answer.
 				ensure!(T::Scores::region_of(who).is_some(), Error::<T>::NotEligible);
 			},
+			StratumId::Tenure => {
+				let now = pezframe_system::Pezpallet::<T>::block_number();
+				let period = T::TenurePeriod::get();
+				if now < period {
+					// The chain is younger than one period, so nobody can have served one.
+					// Admitting on trust here is what gives the stratum members to *be*
+					// serving it -- and the window closes on its own the moment the chain is
+					// older than the period, with nothing to switch off.
+					ensure!(fresh(T::Scores::trust_of(who))? > 0, Error::<T>::NotEligible);
+				} else {
+					let since = InPoolSince::<T>::get(who).ok_or(Error::<T>::NotEligible)?;
+					ensure!(now.saturating_sub(since) >= period, Error::<T>::NotEligible);
+				}
+			},
 			StratumId::WelatiLottery
-			| StratumId::Tenure
 			| StratumId::Infrastructure => {
 				// Still trust, and still M7.1's work. Each needs a decision first, and they are
 				// not the same shape: `WelatiLottery` reads "gated only by citizenship" in its
@@ -104,12 +117,16 @@ impl<T: Config> Pezpallet<T> {
 		Self::eligible_for(&who, stratum)?;
 
 		PoolMembers::<T>::insert(&who, stratum);
+		InPoolSince::<T>::insert(&who, pezframe_system::Pezpallet::<T>::block_number());
 		StratumSize::<T>::mutate(stratum, |n| *n = n.saturating_add(1));
 		Self::deposit_event(Event::Joined { who, stratum });
 		Ok(())
 	}
 
 	pub(crate) fn do_leave(who: T::AccountId) -> DispatchResult {
+		// The spell ends here. Tenure is defined on unbroken membership, so leaving and
+		// rejoining must start the clock again rather than pick it up.
+		InPoolSince::<T>::remove(&who);
 		let stratum = PoolMembers::<T>::take(&who).ok_or(Error::<T>::NotInPool)?;
 		StratumSize::<T>::mutate(stratum, |n| *n = n.saturating_sub(1));
 		Self::deposit_event(Event::Left { who });

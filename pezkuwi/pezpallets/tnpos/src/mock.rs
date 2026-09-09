@@ -35,6 +35,7 @@ impl pezframe_system::Config for Test {
 }
 
 parameter_types! {
+	pub const TenurePeriod: BlockNumber = 1_000;
 	pub const MaxScoreAge: BlockNumber = 100;
 	pub const EraLength: BlockNumber = 50;
 	pub const MaxPoolSize: u32 = 2_000;
@@ -247,6 +248,7 @@ impl pezpallet_tnpos::Config for Test {
 	type WeightInfo = ();
 	type Sortition = crate::seed::CommitRevealSortition<Test>;
 	type Scores = MockScores;
+	type TenurePeriod = TenurePeriod;
 	type HasSessionKeys = Tnpos;
 	// A one-field mirror: the tests are about who may join and who gets seated, not about the
 	// relay's key layout. The real mirror is checked against the relay's own definition in the
