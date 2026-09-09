@@ -1248,6 +1248,13 @@ parameter_types! {
 	/// keeps the seat -- none of those is what this removes, and the term is the remedy for the
 	/// last of them. Short enough that a court paralysed by four unreachable seats is repaired
 	/// inside one year rather than waiting out nine.
+	/// Where `pezpallet_whitelist` sits in the relay's runtime.
+	///
+	/// Pinned by `the_whitelist_call_encodes_the_way_people_builds_it` on the relay side. If
+	/// the relay renumbers and this does not follow, the court's fast track lands on whatever
+	/// pallet now holds 44 -- and nothing here would notice.
+	pub const RelayWhitelistPalletIndex: u8 = 44;
+
 	pub const WelatiCourtInactivityPeriod: BlockNumber = 180 * DAYS;
 
 	/// How many terms in a row one person may hold the same elected office.
@@ -1487,6 +1494,11 @@ impl pezpallet_welati::Config for Runtime {
 	// which is why the list is spelled out where all of them are visible rather than derived.
 	type ReissueCarries =
 		(RebindReferral, RebindPerwerde, RebindTiki, RebindTrust, RebindStakingScore);
+	// The court, and nothing else on this chain, may ask the relay to whitelist a call. The
+	// relay refuses it from anybody else in any case; checking here as well keeps the grant
+	// readable on the side that exercises it.
+	type FastTrackOrigin = crate::RootOrDiwan;
+	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
 	type CourtTermLength = WelatiCourtTermLength;
 	type MaxConsecutiveTerms = WelatiMaxConsecutiveTerms;
 	type XcmSender = crate::xcm_config::XcmRouter;

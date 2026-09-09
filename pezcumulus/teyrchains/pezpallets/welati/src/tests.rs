@@ -3456,6 +3456,71 @@ fn an_unqualified_appointee_is_caught() {
 	});
 }
 
+mod the_courts_fast_track {
+	use super::*;
+	use xcm::latest::prelude::*;
+
+	#[test]
+	fn the_message_descends_to_the_judicial_body_after_asking_for_free_execution() {
+		ExtBuilder::default().build().execute_with(|| {
+			crate::mock::clear_sent_xcm();
+			let call_hash = pezsp_core::H256::repeat_byte(9);
+
+			assert_ok!(Welati::court_whitelists_on_the_relay(RuntimeOrigin::root(), call_hash));
+
+			let sent = crate::mock::sent_xcm();
+			assert_eq!(sent.len(), 1, "the court's request never left the chain");
+			let (dest, message) = sent.into_iter().next().unwrap();
+			assert_eq!(dest, Location::parent(), "the whitelist lives on the relay");
+
+			// The order is the test. The relay computes the origin from any leading
+			// `DescendOrigin` *before* it decides whether the sender may skip the fee, so
+			// descending first would present a plurality where a bare system teyrchain is
+			// expected and the message would be refused before its origin was ever judged --
+			// silently, from this chain's point of view, because nothing comes back.
+			let instructions: Vec<_> = message.into_iter().collect();
+			assert!(
+				matches!(instructions.first(), Some(UnpaidExecution { .. })),
+				"free execution must be asked for before the origin descends"
+			);
+			assert!(
+				matches!(
+					instructions.get(1),
+					Some(DescendOrigin(junctions))
+						if junctions.clone().into_iter().eq([Plurality {
+							id: BodyId::Judicial,
+							part: BodyPart::Voice,
+						}])
+				),
+				"the message did not descend to the judicial body"
+			);
+			// Without the descent the relay reads this chain speaking as itself, which is the
+			// origin its register-as-root converter answers -- the court would be asking for
+			// the constitution rather than for the whitelist.
+			assert!(
+				matches!(instructions.get(2), Some(Transact { origin_kind: OriginKind::Xcm, .. })),
+				"the call must travel as an Xcm origin, not a native one"
+			);
+		});
+	}
+
+	#[test]
+	fn nobody_but_the_court_may_ask() {
+		ExtBuilder::default().build().execute_with(|| {
+			crate::mock::clear_sent_xcm();
+			make_citizen(9);
+			assert_noop!(
+				Welati::court_whitelists_on_the_relay(
+					RuntimeOrigin::signed(9),
+					pezsp_core::H256::repeat_byte(9)
+				),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert!(crate::mock::sent_xcm().is_empty());
+		});
+	}
+}
+
 mod a_reissued_citizenship {
 	use super::*;
 	use crate::mock::holder_of;

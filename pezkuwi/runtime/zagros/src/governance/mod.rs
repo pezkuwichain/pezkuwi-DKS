@@ -84,6 +84,15 @@ parameter_types! {
 
 impl origins::pezpallet_custom_origins::Config for Runtime {}
 
+/// The People chain's court, as this chain's fast-track key.
+///
+/// A second gate behind `CourtOfPeopleAsXcmOrigin`, which already refuses every location but
+/// this one. Two checks for one grant is deliberate: the converter decides what may become an
+/// XCM origin at all, this decides what that origin may then do, and a later change to either
+/// cannot widen this authority on its own.
+pub type CourtOfPeople =
+	pezpallet_xcm::EnsureXcm<pezframe_support::traits::Equals<xcm_config::PeopleCourtLocation>>;
+
 impl pezpallet_whitelist::Config for Runtime {
 	type WeightInfo = weights::pezpallet_whitelist::WeightInfo<Self>;
 	type RuntimeCall = RuntimeCall;
@@ -98,9 +107,20 @@ impl pezpallet_whitelist::Config for Runtime {
 	/// caller able to whitelist anything, and the whole `whitelisted_caller` fast path unusable
 	/// by the body it was built for. Mainnet has no Collectives chain and therefore no second
 	/// arm at all; that asymmetry is recorded as C9 and closes with the Fellowship decision.
+	///
+	/// A third arm now, and it is the one that makes the fast path real. The two above both
+	/// depend on something that has not happened: Root means the twenty-eight-day referendum,
+	/// so it cannot outrun the delay the whitelist exists to escape, and the Fellowship arm
+	/// waits on a Collectives chain that is specified and not seated. The court is elected,
+	/// sitting, and already trusted with the register and with impeachment. It is bounded to
+	/// this pallet: it cannot spend, cannot reach the register from here, and cannot dispatch
+	/// the whitelisted call, which still goes through the track and is confirmed.
 	type WhitelistOrigin = EitherOfDiverse<
-		EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
-		EnsureXcm<IsVoiceOfBody<Collectives, FellowsBodyId>>,
+		EitherOfDiverse<
+			EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
+			EnsureXcm<IsVoiceOfBody<Collectives, FellowsBodyId>>,
+		>,
+		CourtOfPeople,
 	>;
 	type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
 	type Preimages = Preimage;

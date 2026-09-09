@@ -231,6 +231,14 @@ impl<AccountId> BenchmarkHelper<AccountId> for () {
 /// this.
 const TREASURY_SPEND_CALL_INDEX: u8 = 5;
 
+/// `whitelist_call` in the relay's `pezpallet_whitelist`.
+///
+/// Load-bearing and unchecked by the compiler, like every other index this pallet sends. The
+/// relay's `the_whitelist_call_encodes_the_way_people_builds_it` is what holds the two ends
+/// together; without it a renumbering upstream would send the court's fast track to whatever
+/// call now sits at zero.
+const WHITELIST_CALL_INDEX: u8 = 0;
+
 /// `pezpallet-parameters::set_parameter` on the treasury chain, by call index.
 const SET_PARAMETER_CALL_INDEX: u8 = 0;
 
@@ -528,6 +536,18 @@ pub mod pezpallet {
 		/// Where the PEZ treasury lives -- the Asset Hub, as seen from here.
 		#[pezpallet::constant]
 		type TreasuryChainLocation: Get<Location>;
+
+		/// Who may ask the relay to whitelist a call.
+		///
+		/// The court, and nothing else on this chain. The relay refuses the message from any
+		/// other body in any case -- its converter matches one plurality -- but the check is
+		/// made here too so that the grant is readable on the side that exercises it rather
+		/// than only on the side that accepts it.
+		type FastTrackOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Where `pezpallet_whitelist` sits in the relay's runtime.
+		#[pezpallet::constant]
+		type RelayWhitelistPalletIndex: Get<u8>;
 
 		/// The index `pezpallet-pez-treasury` occupies in the treasury chain's runtime.
 		///
@@ -1133,6 +1153,12 @@ pub mod pezpallet {
 		/// A member of the court proved their key still signs.
 		CourtMemberCheckedIn { member: T::AccountId, at: BlockNumberFor<T> },
 
+		/// The court asked the relay to add a call hash to its whitelist.
+		///
+		/// Emitted on the asking, not on the arrival: this chain sends the message and never
+		/// hears the answer, exactly as it does not hear whether a vault paid.
+		CourtAskedTheRelayToWhitelist { call_hash: T::Hash },
+
 		/// A citizenship, and everything downstream of it, moved to a new account.
 		///
 		/// The retired account is named because this is the only public notice that an
@@ -1280,6 +1306,8 @@ pub mod pezpallet {
 		NotOnTheCourt,
 		/// The seat has signed inside the inactivity period, so it is not vacant.
 		CourtMemberIsStillReachable,
+		/// The message to the relay could not be sent.
+		CouldNotReachTheRelay,
 		/// Only the sitting house elects the court's six elected seats.
 		NotAParliamentMember,
 		/// The caller does not hold the finance portfolio.
@@ -2203,6 +2231,35 @@ pub mod pezpallet {
 			Self::rebind_account(&from, &to)?;
 
 			Self::deposit_event(Event::CitizenshipReissued { from, to });
+			Ok(())
+		}
+
+		/// Ask the relay to whitelist a call, so a defect can be patched in hours.
+		///
+		/// The relay's root track is twenty-eight days and there is no shorter path to it. That
+		/// is the right speed for a constitutional amendment and the wrong one for a defect
+		/// somebody is exploiting: a runtime bug does not wait a month, and the call that fixes
+		/// it cannot have been whitelisted in advance because nobody knew it would be needed.
+		///
+		/// So the court holds the first of two keys. It may put a hash on the relay's list; it
+		/// may not enact what is on the list, which still goes through `whitelisted_caller` and
+		/// is confirmed there. Neither key alone changes anything, and the second one is public
+		/// for the whole of its confirmation.
+		///
+		/// The court and not a ministry, because this is the one authority that has to be
+		/// exercised while something is going wrong, and the body that holds it must not be the
+		/// body most likely to be the reason. It is the court's narrowest power by some way:
+		/// it names a hash, and a hash names a call that this chain never sees.
+		#[pezpallet::call_index(66)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn court_whitelists_on_the_relay(
+			origin: OriginFor<T>,
+			call_hash: T::Hash,
+		) -> DispatchResult {
+			T::FastTrackOrigin::ensure_origin(origin)?;
+			Self::send_whitelist_to_relay(call_hash)
+				.map_err(|_| Error::<T>::CouldNotReachTheRelay)?;
+			Self::deposit_event(Event::CourtAskedTheRelayToWhitelist { call_hash });
 			Ok(())
 		}
 
@@ -4515,6 +4572,40 @@ pub mod pezpallet {
 				&mut Some(T::TreasuryChainLocation::get()),
 				&mut Some(message),
 			)?;
+			T::XcmSender::deliver(ticket).map(|_| ())
+		}
+
+		/// Ask the relay to put a call hash on its whitelist.
+		///
+		/// `DescendOrigin` is the whole message. Without it the relay sees this chain speaking
+		/// as itself, which is the origin its register-as-root converter answers, and the court
+		/// would be asking for the relay's constitution rather than for its whitelist. With it
+		/// the origin is the judicial body of this chain, which the relay converts for this one
+		/// pallet and nothing else.
+		///
+		/// It comes *after* `UnpaidExecution` and that order is load-bearing. The relay's
+		/// barrier computes the origin from any leading `DescendOrigin` before it checks
+		/// whether the sender may skip the fee, so descending first would present it with
+		/// a plurality where it expects a bare system teyrchain, and the message would be
+		/// refused before the origin was ever judged.
+		fn send_whitelist_to_relay(call_hash: T::Hash) -> Result<(), SendError> {
+			let call =
+				(T::RelayWhitelistPalletIndex::get(), WHITELIST_CALL_INDEX, call_hash).encode();
+
+			let message = Xcm(vec![
+				UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+				DescendOrigin(
+					[Plurality { id: BodyId::Judicial, part: BodyPart::Voice }].into(),
+				),
+				Transact {
+					origin_kind: OriginKind::Xcm,
+					fallback_max_weight: None,
+					call: call.into(),
+				},
+			]);
+
+			let (ticket, _) =
+				T::XcmSender::validate(&mut Some(Location::parent()), &mut Some(message))?;
 			T::XcmSender::deliver(ticket).map(|_| ())
 		}
 

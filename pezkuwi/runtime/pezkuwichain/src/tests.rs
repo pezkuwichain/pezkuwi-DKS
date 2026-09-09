@@ -454,6 +454,106 @@ fn the_key_calls_encode_the_way_people_builds_them() {
 	assert_eq!(real_purge, (67u8, 4u8, stash).encode(), "purge_keys address moved");
 }
 
+/// The court's fast track, pinned at both the pallet number and the call number.
+///
+/// The People chain cannot name this call by type: it addresses it as pallet 44, call 0, and
+/// nothing in either tree compares the two. If this pallet is renumbered, or `whitelist_call`
+/// stops being the first call in it, the court's message lands on whatever now sits at that
+/// address -- and the failure is the worst kind, because the send succeeds, the court believes
+/// it has whitelisted a fix, and the relay executes something else entirely.
+#[test]
+fn the_whitelist_call_encodes_the_way_people_builds_it() {
+	use codec::Encode;
+
+	let call_hash = pezsp_core::H256::repeat_byte(9);
+	let real = RuntimeCall::Whitelist(pezpallet_whitelist::Call::<Runtime>::whitelist_call {
+		call_hash,
+	})
+	.encode();
+
+	// The literals are what People sends: `RelayWhitelistPalletIndex` and `WHITELIST_CALL_INDEX`.
+	assert_eq!(real, (44u8, 0u8, call_hash).encode(), "the whitelist call's address moved");
+}
+
+/// Only the People chain's court may reach the whitelist over XCM, and only for the whitelist.
+///
+/// Two things are being held down here and they fail in opposite directions. If the converter
+/// stops recognising the court, the fast path goes quietly dead -- exactly the state this work
+/// was done to leave, and nothing on either chain reports it. If it starts recognising anything
+/// wider, some other body acquires the power to put calls in front of a ten-minute confirmation.
+#[test]
+fn only_the_courts_plurality_reaches_the_whitelist() {
+	use pezkuwichain_runtime_constants::system_teyrchain::{ASSET_HUB_ID, PEOPLE_ID};
+	use xcm::latest::prelude::*;
+	use xcm_executor::traits::ConvertOrigin;
+
+	let court = Location::new(
+		0,
+		[
+			Teyrchain(PEOPLE_ID),
+			Plurality { id: BodyId::Judicial, part: BodyPart::Voice },
+		],
+	);
+	assert!(
+		crate::xcm_config::CourtOfPeopleAsXcmOrigin::convert_origin(
+			court.clone(),
+			OriginKind::Xcm
+		)
+		.is_ok(),
+		"the court can no longer reach the relay"
+	);
+
+	// The People chain speaking as itself is the register, not the court, and it has its own
+	// converter and its own authority. Accepting it here would give a root referendum a second
+	// and narrower door it does not need.
+	assert!(
+		crate::xcm_config::CourtOfPeopleAsXcmOrigin::convert_origin(
+			Location::new(0, [Teyrchain(PEOPLE_ID)]),
+			OriginKind::Xcm
+		)
+		.is_err(),
+		"the whole register was accepted where only the court should be"
+	);
+	// Another chain's judicial body is not this state's court.
+	assert!(
+		crate::xcm_config::CourtOfPeopleAsXcmOrigin::convert_origin(
+			Location::new(
+				0,
+				[
+					Teyrchain(ASSET_HUB_ID),
+					Plurality { id: BodyId::Judicial, part: BodyPart::Voice }
+				]
+			),
+			OriginKind::Xcm
+		)
+		.is_err(),
+		"a judicial body on another chain was accepted"
+	);
+	// A different body on the right chain is a ministry, and ministries are deliberately
+	// unmatched -- see `StateRegisterAsRoot`.
+	assert!(
+		crate::xcm_config::CourtOfPeopleAsXcmOrigin::convert_origin(
+			Location::new(
+				0,
+				[Teyrchain(PEOPLE_ID), Plurality { id: BodyId::Executive, part: BodyPart::Voice }]
+			),
+			OriginKind::Xcm
+		)
+		.is_err(),
+		"a ministry was accepted as the court"
+	);
+	// Superuser is the register's kind and belongs to `StateRegisterAsRoot`. If this converter
+	// answered it too, the court would be able to ask for Root.
+	assert!(
+		crate::xcm_config::CourtOfPeopleAsXcmOrigin::convert_origin(
+			court,
+			OriginKind::Superuser
+		)
+		.is_err(),
+		"the court was accepted as a superuser"
+	);
+}
+
 /// Exactly two chains may tell this one who validates it, and one of them is new.
 ///
 /// The People chain draws the committee, so it has to be admitted here or every message it

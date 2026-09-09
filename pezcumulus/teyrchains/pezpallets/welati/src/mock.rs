@@ -532,6 +532,7 @@ parameter_types! {
 	pub const TermLength: u64 = 1_000;
 	pub const CourtTermLength: u64 = 2_250;
 	pub const CourtInactivityPeriod: u64 = 500;
+	pub const RelayWhitelistPalletIndex: u8 = 44;
 }
 
 pezpallet_welati::impl_rebind_adapters!(Test;
@@ -800,6 +801,8 @@ impl pezpallet_welati::Config for Test {
 	type CourtInactivityPeriod = CourtInactivityPeriod;
 	type ReissueOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type ReissueCarries = (RebindReferral, RebindTiki, RebindTrust, RebindStakingScore);
+	type FastTrackOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
 	type MaxConsecutiveTerms = MaxConsecutiveTerms;
 	type XcmSender = RecordingXcmSender;
 	type TreasuryChainLocation = TreasuryChain;
