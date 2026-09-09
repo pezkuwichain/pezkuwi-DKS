@@ -3633,6 +3633,37 @@ mod a_geographic_mark {
 	}
 
 	#[test]
+	fn what_a_citizen_volunteered_a_citizen_can_take_back() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_a_record(APPLICANT, crate::mock::GeographicMarkReferrals::get());
+
+			// Nothing to take back yet.
+			assert_noop!(
+				Welati::withdraw_region(RuntimeOrigin::signed(APPLICANT)),
+				Error::<Test>::NoRegionClaimed
+			);
+
+			// A claim no notary ever looked at would otherwise sit in the register for good:
+			// the exposure of saying where you live, with none of the standing it buys.
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Kafkasya));
+			assert_ok!(Welati::withdraw_region(RuntimeOrigin::signed(APPLICANT)));
+			assert!(crate::ClaimedRegion::<Test>::get(APPLICANT).is_none());
+
+            // And an attested one, for the same reason. Nothing to game: giving it up only
+            // removes the citizen from the stratum it opens.
+			a_notary();
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Kafkasya));
+			assert_ok!(Welati::attest_region(
+				RuntimeOrigin::signed(NOTARY),
+				APPLICANT,
+				Region::Kafkasya
+			));
+			assert_ok!(Welati::withdraw_region(RuntimeOrigin::signed(APPLICANT)));
+			assert!(crate::AttestedRegion::<Test>::get(APPLICANT).is_none());
+		});
+	}
+
+	#[test]
 	fn the_court_undoes_what_a_notary_wrote_and_the_notary_cannot() {
 		ExtBuilder::default().build().execute_with(|| {
 			a_citizen_with_a_record(APPLICANT, crate::mock::GeographicMarkReferrals::get());

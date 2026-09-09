@@ -1309,6 +1309,9 @@ pub mod pezpallet {
 		/// held to is not an attestation.
 		RegionAttested { who: T::AccountId, region: Region, notary: T::AccountId },
 
+		/// A citizen took back a region they had volunteered.
+		RegionWithdrawn { who: T::AccountId },
+
 		/// The court cancelled an attested region.
 		RegionRevoked { who: T::AccountId, region: Region },
 
@@ -2500,6 +2503,30 @@ pub mod pezpallet {
 			ClaimedRegion::<T>::remove(&who);
 			AttestedRegion::<T>::insert(&who, region);
 			Self::deposit_event(Event::RegionAttested { who, region, notary });
+			Ok(())
+		}
+
+		/// Take back a region you volunteered.
+		///
+		/// The mark is opt-in and this is the other half of that: what a citizen chose to
+		/// publish, a citizen can stop publishing. Without it a claim no notary ever looked at
+		/// would sit in the register for good -- the exposure of saying where you live, with
+		/// none of the standing it was meant to buy.
+		///
+		/// It clears an attested mark as well as a pending claim, and there is nothing to game
+		/// in that: giving it up only removes the citizen from the one stratum it opens.
+		///
+		/// What it cannot do is unsay it. The claim was an extrinsic and the blocks keep it;
+		/// this removes the register's answer, not the record that it was once given. A
+		/// document that implied otherwise would be promising something no chain can do.
+		#[pezpallet::call_index(71)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn withdraw_region(origin: OriginFor<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let claimed = ClaimedRegion::<T>::take(&who);
+			let attested = AttestedRegion::<T>::take(&who);
+			ensure!(claimed.is_some() || attested.is_some(), Error::<T>::NoRegionClaimed);
+			Self::deposit_event(Event::RegionWithdrawn { who });
 			Ok(())
 		}
 
