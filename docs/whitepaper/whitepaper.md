@@ -447,16 +447,22 @@ with the court's size.
 
 The security argument rests on the strata being gated by *different* authorities: two strata
 answering to the same institution are one stratum, not two, and the committee's independence
-is counted from that number. Eight of the nine gates are measured on this chain today.
-Stake, education and community tikis each read their own score. The parliamentary and judicial
-strata read the membership they are named after, so a citizen with a perfect trust score and no
-seat is refused by both. Geography reads an attested region — claimed by the citizen, confirmed
-by a notary, cancellable by the court — and its three seats rotate across the regions rather
-than pooling, so the label decides something. Tenure reads unbroken, offence-free time in the
-pool, and answers to nobody at all: it is the one qualification that cannot be granted, bought
-or manufactured. The ninth, the open lottery, still reads trust, and moving it to the
-citizenship its own definition names would *loosen* it rather than tighten it — which is a
-decision rather than a gap, and it has not been taken. The
+is counted from that number. Eight of the nine gates are measured on this chain today, and
+they are eight different measurements. Stake, education and community tikis each read their own
+score. The parliamentary and judicial strata read the membership they are named after, so a
+citizen with a perfect trust score and no seat is refused by both. Geography reads an attested
+region — claimed by the citizen, confirmed by a notary, cancellable by the court — and its three
+seats rotate across the regions rather than pooling, so the label decides something. Tenure
+reads unbroken, offence-free time in the pool and answers to no authority at all: it is the one
+qualification that cannot be granted, bought or manufactured. The open lottery asks only that a
+citizen has done more than the cheapest possible act — its bar is exactly what an account that
+stakes the smallest tier and does nothing else scores — because that stratum's security is the
+size of the pool rather than the height of its bar, and a hard gate there would duplicate one of
+the other eight and shut out the ordinary citizens it exists to seat.
+
+The ninth is infrastructure, and it is the only one still reading trust. It asks for a measured
+record on *independent* operation, and this chain records nothing about network or geographic
+diversity to measure that against — so it is waiting on data rather than on a decision. The
 figure to hold onto is therefore this: **nine strata are specified, and the count of
 independent gates is what the network should be judged on at any given moment.** It is
 published on chain, and it is not nine yet.
@@ -794,7 +800,7 @@ one commit today and a coordinated operation across every operator afterwards.
 
 | Gap | What breaks without it | The remedy |
 |---|---|---|
-| **The last two gates** | §7.1: independence is eight of nine. What remains is the open lottery, whose own definition says citizenship and where adopting it would loosen the gate rather than tighten it — a decision nobody has taken. Infrastructure is the ninth and needs something the chain cannot yet see: an attested measure of *independent* operation, which means network and geographic diversity nothing here records | A decision on the lottery, and an attestation of operating independence |
+| **The ninth gate** | §7.1: eight of nine strata are measured by eight different things. Infrastructure is the one left, and it needs something the chain cannot see — its definition asks for a record on *independent* operation, and nothing here records the network or geographic diversity that would establish independence | An attestation of operating independence |
 | **An emptied body has no by-election** | Succession for the single-holder offices is written — the Speaker acts for an absent President, and a vacancy opens an election without waiting for the calendar. What has no arm is a *body*: a parliament that lost every seat inside one term, or an elected court seat vacated for silence, waits for the scheduled election. The court still rules, because two thirds counts over the members who sit; the house does not | A vacancy arm for the elected bodies, and a decision on whether a replacement serves the remainder or a fresh term |
 | **"Region" has no definition** | The geography stratum distributes seats by a boundary nobody has drawn. For a dispersed population this is the easiest thing in the system to draw self-servingly | A definition fixed before the stratum is seated |
 
