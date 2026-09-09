@@ -36,6 +36,51 @@ fn activate() {
 }
 
 // =============================================================================
+// 0. THE FOUNDER'S SHARE IS BOUND TO THE SAME LATCH
+// =============================================================================
+
+/// The founder's PEZ leaves its pot when the citizens' payments start, and not before.
+///
+/// Genesis mints the allocation into a keyless pot rather than into the founder's account.
+/// It is property and it has an owner, but a tenth of the supply liquid on day one is what
+/// this project says it is not -- so it is bound to the population gate the citizens' share
+/// is bound to. One latch, not two schedules: a schedule can slip past a date, and the two
+/// could then move apart.
+///
+/// The symmetry runs both ways, and that is deliberate: if the roll never reaches the
+/// threshold, the founder's share stays locked as permanently as the citizens' does.
+#[test]
+fn the_founders_pot_pays_only_when_distribution_starts() {
+	new_test_ext().execute_with(|| {
+		let founder = pezsp_core::H256::from([9u8; 32]);
+		crate::FounderAccount::<Test>::put(founder);
+
+		// Genesis would put the founder's share here, not in the founder's account.
+		let allocation = TREASURY_ALLOCATION / 2;
+		assert_ok!(<Assets as pezframe_support::traits::fungibles::Mutate<_>>::mint_into(
+			PezAssetId::get(),
+			&founder_pot(),
+			allocation,
+		));
+
+		assert_eq!(
+			pez_balance(founder),
+			0,
+			"before the gate the founder holds nothing -- the pot does"
+		);
+
+		activate();
+
+		assert_eq!(
+			pez_balance(founder_pot()),
+			0,
+			"the pot is emptied by the same call that starts the citizens' payments"
+		);
+		assert_eq!(pez_balance(founder), allocation, "and the founder is paid in full");
+	});
+}
+
+// =============================================================================
 // 1. THE PALLET CANNOT CREATE PEZ
 // =============================================================================
 

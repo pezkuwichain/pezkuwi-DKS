@@ -859,8 +859,22 @@ impl pezpallet_trust::StakingScoreProvider<AccountId, BlockNumber> for StakingSc
 /// Uses the referral pallet's tiered scoring with penalty system
 pub struct ReferralScoreSource;
 impl pezpallet_trust::ReferralScoreProvider<AccountId> for ReferralScoreSource {
+	/// The score reachable at the ceiling the register's rules currently set -- not the tier
+	/// table's own top, which needs a hundred vouches and a lifetime ceiling of fifty can never
+	/// reach. Written out here as `MAX_REFERRAL_SCORE` the declared weight of 25 was really 15,
+	/// and the highest trust anyone could hold was 900 rather than the 1000 the tables say.
+	///
+	/// It follows the ceiling rather than being written beside it, so a ninety-day referendum
+	/// moving `MaxVouchingCapacity` re-weights the source instead of quietly drifting from it.
+	/// Same pattern as `PerwerdeScoreSource` below. Note what that means: moving the ceiling
+	/// rescales every citizen's referral component, and trust feeds candidacy, pool membership
+	/// and reward share -- so the parameter is not the small dial it looks like.
 	fn max_score() -> u32 {
-		pezpallet_referral::MAX_REFERRAL_SCORE
+		pezpallet_referral::score_for(
+			<crate::dynamic_params::qeyd::MaxVouchingCapacity as pezframe_support::traits::Get<
+				u32,
+			>>::get(),
+		)
 	}
 
 	fn get_referral_score(who: &AccountId) -> u32 {
@@ -1144,7 +1158,7 @@ impl pezpallet_referenda::Config for Runtime {
 	// handler `pezpallet_identity` slashes into, one line 60-odd above.
 	type Slash = PenaltiesToTreasury;
 	type Votes = u32;
-	type Tally = pezpallet_welati::types::CitizenTally<CitizenRoll>;
+	type Tally = pezpallet_welati::types::CitizenTally<CitizenRoll, MinElectorate>;
 	type SubmissionDeposit = StateSubmissionDeposit;
 	type MaxQueued = StateMaxQueued;
 	type UndecidingTimeout = StateUndecidingTimeout;
@@ -1301,6 +1315,12 @@ parameter_types! {
 
 	/// The state starts paying its citizens once there are a hundred thousand of them.
 	pub const WelatiPopulationThreshold: u32 = 100_000;
+	/// The size support is measured against while the roll is smaller than it.
+	///
+	/// the population gate, so the state's ballot and its payroll open at the same size. A hard constant, not a `qeyd` parameter: a floor the same electorate
+	/// could lower is not a floor. The two networks carry different numbers on purpose -- see
+	/// `CitizenTally::support` and `pezpallet_welati::Config::MinElectorate`.
+	pub const MinElectorate: u32 = 100_000;
 
 	/// Checked once a day. The answer only matters on the era it flips.
 	pub const WelatiPopulationCheckPeriod: BlockNumber = DAYS;
@@ -1412,6 +1432,7 @@ impl pezpallet_welati::Config for Runtime {
 	// The same roll the tally divides by, so a question is counted and decided against one
 	// register rather than two.
 	type Electorate = CitizenRoll;
+	type MinElectorate = MinElectorate;
 	type Polls = Referenda;
 	type Initiatives = LaunchBackedInitiative;
 	type InitiativeThreshold = StateInitiativeThreshold;
@@ -1455,6 +1476,7 @@ impl pezpallet_welati::Config for Runtime {
 	type MaxEmissionStep = WelatiMaxEmissionStep;
 	type MinEmissionInterval = WelatiMinEmissionInterval;
 	type PopulationThreshold = WelatiPopulationThreshold;
+	type PopulationThresholdOverride = crate::dynamic_params::qeyd::PopulationThresholdOverride;
 	type PopulationCheckPeriod = WelatiPopulationCheckPeriod;
 }
 
@@ -1967,5 +1989,41 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 		crate::TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
 			testnet_teyrchains_constants::pezkuwichain::locations::AssetHubParaId::get(),
 		);
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	/// The declared weight of a trust source is only true if the source is normalised by the
+	/// score that can actually be reached.
+	///
+	/// `ReferralScoreSource` declares 25 out of 1000. It used to normalise by
+	/// `MAX_REFERRAL_SCORE`, the tier table's own top, which needs a hundred vouches -- while
+	/// the register's lifetime ceiling is fifty. So the most anyone could contribute was 300
+	/// of 500, the weight was really 15, and the highest trust anyone could hold was 900 rather
+	/// than the 1000 the whitepaper and the tables both state.
+	///
+	/// Pulling the ceiling from the live parameter fixes the arithmetic and keeps it fixed: a
+	/// ninety-day referendum moving `MaxVouchingCapacity` moves this with it.
+	#[test]
+	fn the_referral_weight_is_normalised_by_the_reachable_score() {
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			let ceiling = <crate::dynamic_params::qeyd::MaxVouchingCapacity as
+				pezframe_support::traits::Get<u32>>::get();
+			let reachable = pezpallet_referral::score_for(ceiling);
+
+			assert_eq!(
+				<ReferralScoreSource as pezpallet_trust::ReferralScoreProvider<AccountId>>::max_score(),
+				reachable,
+				"the source must be normalised by what the current ceiling can reach"
+			);
+			assert!(
+				reachable < pezpallet_referral::MAX_REFERRAL_SCORE,
+				"if these are equal the ceiling reaches the table's top and this test proves \
+				 nothing -- re-derive the expectation instead of deleting it"
+			);
+		});
 	}
 }

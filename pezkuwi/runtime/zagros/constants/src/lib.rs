@@ -30,6 +30,16 @@ pub mod currency {
 	/// a planck. Chain specs pair this with `tokenDecimals: 12`; the two have to agree or
 	/// every displayed balance is wrong by a power of ten.
 	pub const UNITS: Balance = 1_000_000_000_000;
+
+	/// What the initial validators are funded with at genesis, carved out of the treasury's
+	/// 40M share rather than added beside it.
+	///
+	/// It lives here because two chains have to agree on it and neither can derive it: the
+	/// relay mints it onto the validator stashes, and the Asset Hub subtracts the same number
+	/// from the treasury's share before minting the rest into the pot the spender tracks pay
+	/// from. A constant rather than `authorities.len() * stash`, so seating another validator
+	/// cannot silently change what either side mints.
+	pub const HEZ_VALIDATOR_FUNDING: Balance = 1_000 * UNITS;
 	pub const CENTS: Balance = UNITS / 30_000;
 	/// One unit, named for what a deposit or a spend is reckoned in.
 	///

@@ -1535,6 +1535,7 @@ parameter_types! {
 	pub const PezTreasuryPalletId: PalletId = PalletId(*b"pez/trea");
 	pub const PezIncentivePotId: PalletId = PalletId(*b"pez/incv");
 	pub const PezGovernmentPotId: PalletId = PalletId(*b"pez/govr");
+	pub const PezFounderPotId: PalletId = PalletId(*b"pez/fndr");
 	pub const PezAssetId: u32 = 1; // PEZ token asset ID
 	/// Owner, issuer, admin and freezer of the PEZ asset.
 	///
@@ -1556,6 +1557,7 @@ impl pezpallet_pez_treasury::Config for Runtime {
 	type TreasuryPalletId = PezTreasuryPalletId;
 	type IncentivePotId = PezIncentivePotId;
 	type GovernmentPotId = PezGovernmentPotId;
+	type FounderPotId = PezFounderPotId;
 	// Only the People chain may report that the citizen register has passed the threshold.
 	// It is the chain that holds the register, so it is the only body in a position to know;
 	// root is deliberately not accepted, because a key that can start the schedule early is a

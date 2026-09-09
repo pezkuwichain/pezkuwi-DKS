@@ -159,11 +159,17 @@ filter = 'test(benchmark_extrinsic_works)'
 threads-required = 'num-cpus'
 slow-timeout = { period = "120s", terminate-after = 10 }
 
-# The two longest tests in the suite are here, at 3849s and 3720s, and almost none of that is
-# testing: `your_first_node` shells out to `cargo build --release` for a runtime and a node
-# before it can run them. Until that build moves out of the test, the budget has to cover it.
+# The longest tests in the suite are here, and almost none of it is testing: `your_first_node`
+# shells out to `cargo build --release` for a runtime and a node before it can run them. Until
+# that build moves out of the test, the budget has to cover it.
+#
+# The budget alone was not enough. This is the heaviest thing the suite does -- two release
+# builds -- and it was the only heavy job still sharing a runner with everything else, so on a
+# six-core box it went from 4270s to over the 6000s ceiling and had to be retried. Giving it
+# the runner is the same remedy the three overrides above got, and for the same reason.
 [[profile.default.overrides]]
 filter = 'package(pezkuwi-sdk-docs)'
+threads-required = 'num-cpus'
 slow-timeout = { period = "300s", terminate-after = 20 }
 
 # Sixty end-to-end sub-tests against a node and an RPC server this test starts itself. It used

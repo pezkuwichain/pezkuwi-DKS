@@ -13,7 +13,7 @@
 //! ## Overview
 //!
 //! This pezpallet provides:
-//! - `wrap`: Convert native HEZ to wHEZ (Asset ID 0)
+//! - `wrap`: Convert native HEZ to wHEZ (asset 2 -- the runtimes bind `WrappedAssetId = 2`)
 //! - `unwrap`: Convert wHEZ back to native HEZ
 //!
 //! The pezpallet maintains a 1:1 backing between HEZ and wHEZ.

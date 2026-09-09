@@ -119,6 +119,26 @@ use crate::weights::WeightInfo;
 /// component reports for weighting.
 pub const MAX_REFERRAL_SCORE: u32 = 500;
 
+/// The tiered score a referrer reaches with `good_referrals` vouches, before penalties.
+///
+/// Public because the weighting has to read it. A trust score is a weighted sum, and the
+/// weight a source declares is only true if the source is normalised by the score actually
+/// reachable -- which is this table evaluated at the current vouching ceiling, not
+/// `MAX_REFERRAL_SCORE`. The table's own top needs a hundred vouches; a lifetime ceiling of
+/// fifty can never get there.
+pub fn score_for(good_referrals: u32) -> u32 {
+	// 0 vouches = 0 · 1-10 = 10 each · 11-50 = 5 each · 51-100 = 4 each · 101+ = the ceiling.
+	// The first vouches are worth the most: the score rewards starting a subtree, not running
+	// a farm.
+	match good_referrals {
+		0 => 0,
+		1..=10 => good_referrals * 10,
+		11..=50 => 100 + ((good_referrals - 10) * 5),
+		51..=100 => 300 + ((good_referrals - 50) * 4),
+		_ => MAX_REFERRAL_SCORE,
+	}
+}
+
 /// Trait for notifying trust score system when referral score changes.
 /// Defined locally to avoid cyclic dependency with pezpallet-trust.
 pub trait TrustScoreUpdater<AccountId> {
@@ -578,13 +598,7 @@ pub mod pezpallet {
 			// 11-50 referrals = 100 + ((count - 10) * 5) = 105, 110, ..., 300
 			// 51-100 referrals = 300 + ((count - 50) * 4) = 304, 308, ..., 500
 			// 101+ referrals = 500 points (maximum)
-			let base_score = match good_referrals {
-				0 => 0,
-				1..=10 => good_referrals * 10,
-				11..=50 => 100 + ((good_referrals - 10) * 5),
-				51..=100 => 300 + ((good_referrals - 50) * 4),
-				_ => MAX_REFERRAL_SCORE,
-			};
+			let base_score = score_for(good_referrals);
 
 			// Step 3: "Punishment" - Apply stored penalty from PenaltyPerRevocation
 			// Uses the pre-calculated penalty_score accumulated in on_citizenship_revoked()

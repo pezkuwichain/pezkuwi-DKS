@@ -376,13 +376,36 @@ pub mod pezpallet {
 		/// counted against one roll and decided against another.
 		type Electorate: Get<u32> + 'static;
 
+		/// The size the roll is measured against while it is smaller than this.
+		///
+		/// A hard constant per runtime, deliberately not a `qeyd` parameter: a floor the same
+		/// electorate can lower is not a floor. It differs between the two networks on purpose --
+		/// mainnet carries the real number, and the test network carries one small enough that
+		/// the path can be exercised at all. Mirroring the mainnet value onto Zagros would make
+		/// its governance untestable, and sudo's retirement depends on a referendum having
+		/// actually decided something there.
+		#[pezpallet::constant]
+		type MinElectorate: Get<u32> + 'static;
+
+		/// A lower figure for the population gate, if the register decides the specified one
+		/// was wrong.
+		///
+		/// Read as a minimum against `PopulationThreshold`, so it can only ever move the gate
+		/// *down*: raising it would push the citizens' first payment further away, and no origin
+		/// should be able to do that. There is no counter and none is needed -- the gate latches
+		/// the moment it fires, and after that nothing here is read again.
+		///
+		/// What stops a handful of early citizens lowering it to nothing is not a second floor
+		/// here but `CitizenTally`'s: below `MinElectorate` a referendum cannot carry at all.
+		type PopulationThresholdOverride: Get<u32>;
+
 		/// The state referenda whose questions this pallet's citizens answer.
 		///
 		/// Voting lives here rather than beside the ballot box because the question of who may
 		/// vote is this pallet's: it holds the roll, and it already answers that question for
 		/// elections. Two pallets answering it would be two answers.
 		type Polls: Polling<
-			crate::types::CitizenTally<Self::Electorate>,
+			crate::types::CitizenTally<Self::Electorate, Self::MinElectorate>,
 			Index = u32,
 			Votes = u32,
 			Class = u16,
@@ -1472,7 +1495,11 @@ pub mod pezpallet {
 			if PopulationGateReported::<T>::get() {
 				return T::DbWeight::get().reads(1);
 			}
-			if T::CitizenSource::citizen_count() < T::PopulationThreshold::get() {
+			// The specified gate, or a lower one the register has since decided on. `min` and
+			// not `max`: the override exists so a number that proved wrong can be corrected
+			// downwards, never so the citizens' first payment can be pushed further away.
+			let gate = T::PopulationThreshold::get().min(T::PopulationThresholdOverride::get());
+			if T::CitizenSource::citizen_count() < gate {
 				return T::DbWeight::get().reads(2);
 			}
 

@@ -1926,7 +1926,7 @@ fn proposal_and_election_storage_independent() {
 mod population_gate {
 	use super::*;
 	use crate::{
-		mock::{clear_sent_xcm, sent_xcm, set_citizen_count},
+		mock::{clear_sent_xcm, sent_xcm, set_citizen_count, MockPopulationThresholdOverride},
 		PopulationGateReported,
 	};
 
@@ -1959,6 +1959,47 @@ mod population_gate {
 
 			assert!(PopulationGateReported::<Test>::get());
 			assert_eq!(sent_xcm().len(), 1);
+		});
+	}
+
+	/// A referendum can lower the gate, and lowering it fires it.
+	///
+	/// The specified figure is a guess about how many citizens make a payroll worth defrauding.
+	/// If it turns out wrong, the alternative to correcting it is leaving most of the supply
+	/// locked with no written way out -- so the register can move it, on its own ninety-day
+	/// track.
+	#[test]
+	fn the_register_can_lower_the_gate() {
+		ExtBuilder::default().build().execute_with(|| {
+			set_citizen_count(50); // half the mock threshold of 100
+			clear_sent_xcm();
+			run_to_block(30);
+			assert!(!PopulationGateReported::<Test>::get(), "fifty is under the specified gate");
+
+			MockPopulationThresholdOverride::set(40);
+			run_to_block(40);
+
+			assert!(
+				PopulationGateReported::<Test>::get(),
+				"the register lowered the gate below the roll, so the gate is met"
+			);
+		});
+	}
+
+	/// But only downwards. Raising it would push the citizens' first payment further away.
+	#[test]
+	fn the_register_cannot_raise_the_gate() {
+		ExtBuilder::default().build().execute_with(|| {
+			set_citizen_count(100); // exactly the mock threshold
+			clear_sent_xcm();
+
+			MockPopulationThresholdOverride::set(1_000_000);
+			run_to_block(40);
+
+			assert!(
+				PopulationGateReported::<Test>::get(),
+				"an override above the specified figure must not delay the gate"
+			);
 		});
 	}
 
@@ -3423,8 +3464,11 @@ mod citizen_tally {
 
 	pezframe_support::parameter_types! {
 		pub storage Roll: u32 = 0;
+		/// The floor these cases set for themselves, so each one says what it is measuring
+		/// against rather than borrowing the mock runtime's number.
+		pub storage Floor: u32 = 0;
 	}
-	type Tally = CitizenTally<Roll>;
+	type Tally = CitizenTally<Roll, Floor>;
 
 	fn tally(ayes: u32, nays: u32) -> Tally {
 		let mut t = <Tally as VoteTally<u32, ()>>::new(());
@@ -3493,6 +3537,72 @@ mod citizen_tally {
 			assert_eq!(VoteTally::<u32, ()>::approval(&t, ()), Perbill::one());
 		});
 	}
+
+	/// Below the floor, support is a share of the floor rather than of the roll.
+	///
+	/// This is the whole point of it. The support curves are calibrated for a register with
+	/// millions in it, and the root track settles at two per cent: on a roll of a thousand that
+	/// is twenty people, and this chain's root is the only door into the relay's. With the floor
+	/// at a hundred thousand the same two per cent is two thousand citizens, whatever the roll
+	/// happens to be — so the requirement stops shrinking with the register.
+	#[test]
+	fn below_the_floor_support_is_measured_against_the_floor() {
+		ExtBuilder::default().build().execute_with(|| {
+			Roll::set(&1_000);
+			Floor::set(&100_000);
+
+			// Twenty ayes clears two per cent of the roll, and would have carried a root referendum.
+			let t = tally(20, 0);
+			assert!(
+				<Tally as VoteTally<u32, ()>>::support(&t, ()) < Perbill::from_percent(2),
+				"twenty citizens must not reach the root track's floor"
+			);
+
+			// Two per cent of the floor is what it takes instead.
+			let t = tally(2_000, 0);
+			assert_eq!(
+				<Tally as VoteTally<u32, ()>>::support(&t, ()),
+				Perbill::from_percent(2),
+				"two per cent of the floor is the requirement while the roll is under it"
+			);
+		});
+	}
+
+	/// And it retires itself: once the roll passes the floor the denominator is the roll again.
+	#[test]
+	fn above_the_floor_the_roll_is_the_denominator_again() {
+		ExtBuilder::default().build().execute_with(|| {
+			Floor::set(&100_000);
+			Roll::set(&40_000_000);
+
+			let t = tally(800_000, 0);
+			assert_eq!(
+				<Tally as VoteTally<u32, ()>>::support(&t, ()),
+				Perbill::from_percent(2),
+				"at forty million welatî, two per cent is eight hundred thousand ayes"
+			);
+		});
+	}
+
+	/// The floor moves `support` and nothing else.
+	///
+	/// `approval` is the share among those who voted, and its denominator is `ayes + nays`. If
+	/// the floor reached it, a question could be carried by a minority of the people who
+	/// actually answered it.
+	#[test]
+	fn the_floor_does_not_touch_approval() {
+		ExtBuilder::default().build().execute_with(|| {
+			Roll::set(&1_000);
+			Floor::set(&100_000);
+
+			let t = tally(30, 10);
+			assert_eq!(
+				<Tally as VoteTally<u32, ()>>::approval(&t, ()),
+				Perbill::from_percent(75),
+				"three ayes in four stays three ayes in four whatever the support floor is"
+			);
+		});
+	}
 }
 
 // ===== ANSWERING A STATE REFERENDUM =====
@@ -3504,7 +3614,9 @@ mod citizen_tally {
 mod state_referendum {
 	use super::*;
 	use crate::{
-		mock::{set_trust_score, MockElectorate, MockPollState, MockPolls, TestPolls},
+		mock::{
+			set_trust_score, MockElectorate, MockMinElectorate, MockPollState, MockPolls, TestPolls,
+		},
 		ReferendumVotes,
 	};
 	use pezframe_support::traits::{Polling, VoteTally};
@@ -3514,7 +3626,7 @@ mod state_referendum {
 	/// The poll the mock starts with, open and empty.
 	const OPEN: u32 = 1;
 
-	fn tally() -> crate::types::CitizenTally<MockElectorate> {
+	fn tally() -> crate::types::CitizenTally<MockElectorate, MockMinElectorate> {
 		TestPolls::as_ongoing(OPEN).expect("poll 1 is open in the mock").0
 	}
 
