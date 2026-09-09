@@ -913,6 +913,12 @@ a solicitation, or investment advice.
 | **council** | The parliament's standing collective; its roster is written from the sitting Meclis |
 | **escrow** | The relay-held mirror of the HEZ the Asset Hub carries; not supply, and excluded from turnout |
 | **root** | A seat, not an office: the People chain's referendum, and a sudo key for the founding period |
+| **stratum** | One of the nine pools the validator committee is drawn from, each gated by a different authority |
+| **dormancy** | Having taken no part for two years; it removes a citizen from the support denominator and from nothing else |
+| **geographic mark** | An attested region of residence: claimed by the citizen, confirmed by a notary, cancellable by the court |
+| **tenure** | Unbroken, offence-free membership of the validator pool; the one qualification no authority can grant |
+| **Noter** | Notary; the office whose attestation the register relies on |
+| **whitelist** | The relay's fast path: a call the court has listed can be enacted in hours instead of twenty-eight days |
 | **wHEZ** | HEZ wrapped one-for-one as an asset so that asset-handling pallets can trade it |
 | **wUSDT** | The custodial bridge's representation of USDT on the Asset Hub |
 | **bizinikiwi** | The framework layer |
@@ -938,10 +944,18 @@ a solicitation, or investment advice.
 | Parliamentary seats / term | 201 / 4 years (first term halved) |
 | Constitutional Court | 11 seats — 6 elected, 5 appointed — 9 years |
 | Register-rules referendum | 90-day decision period |
-| Support denominator | The roll, or 100,000, whichever is larger |
+| Support denominator | The active roll, or 100,000, whichever is larger |
+| Dormancy — leaves the denominator after | 2 years with no participation; one vote returns |
 | Ayes needed to reach root | 2,000 |
 | Citizens' initiative threshold | 1% of the roll |
 | TNPoS committee | 9 strata × 3 seats = 27 |
 | TNPoS quorum / halt / fork | 19 / 9 / 11 |
-| Minimum eligible per stratum | 50 |
+| Minimum eligible per stratum | 50 — except the court's, which is 3, its seat count |
+| Independent gates measured today | 8 of 9 |
+| Court seat vacated after | 180 days without a signature |
+| Tenure — unbroken pool membership | 1 year; admits on trust until the chain is that old |
+| Open lottery — trust floor | 40, exactly what the cheapest account scores |
+| Geographic regions | 6 — Başûr, Bakur, Rojava, Rojhilat, diaspora, Caucasus |
+| Geographic mark — referrals to apply | 25 settled |
+| Airdrop — one payment / a month's payments | 1,000,000 HEZ / 3,000,000 HEZ before the Treasurer signs |
 | Chains specified / running at genesis | 5 / 2 |

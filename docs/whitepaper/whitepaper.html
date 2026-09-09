@@ -989,6 +989,12 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
     <tr><td><strong>council</strong></td><td>The parliament&#8217;s standing collective; its roster is written from the sitting Meclis</td></tr>
     <tr><td><strong>escrow</strong></td><td>The relay-held mirror of the HEZ the Asset Hub carries; not supply, and excluded from turnout</td></tr>
     <tr><td><strong>root</strong></td><td>A seat, not an office: the People chain&#8217;s referendum, and a sudo key for the founding period</td></tr>
+    <tr><td><strong>stratum</strong></td><td>One of the nine pools the validator committee is drawn from, each gated by a different authority</td></tr>
+    <tr><td><strong>dormancy</strong></td><td>Having taken no part for two years; it removes a citizen from the support denominator and from nothing else</td></tr>
+    <tr><td><strong>geographic mark</strong></td><td>An attested region of residence: claimed by the citizen, confirmed by a notary, cancellable by the court</td></tr>
+    <tr><td><strong>tenure</strong></td><td>Unbroken, offence-free membership of the validator pool; the one qualification no authority can grant</td></tr>
+    <tr><td><strong>Noter</strong></td><td>Notary; the office whose attestation the register relies on</td></tr>
+    <tr><td><strong>whitelist</strong></td><td>The relay&#8217;s fast path: a call the court has listed can be enacted in hours instead of twenty-eight days</td></tr>
     <tr><td><strong>wHEZ</strong></td><td>HEZ wrapped one-for-one as an asset so that asset-handling pallets can trade it</td></tr>
     <tr><td><strong>wUSDT</strong></td><td>The custodial bridge&#8217;s representation of USDT on the Asset Hub</td></tr>
     <tr><td><strong>HEZ</strong> / <strong>TYR</strong></td><td>The native currency / its smallest unit; 1 HEZ = 10¹² TYR</td></tr>
@@ -1011,12 +1017,20 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
     <tr><td>Parliamentary seats / term</td><td>201 / 4 years (first term halved)</td></tr>
     <tr><td>Constitutional Court</td><td>11 seats &#8212; 6 elected, 5 appointed &#8212; 9 years</td></tr>
     <tr><td>Register-rules referendum</td><td>90-day decision period</td></tr>
-    <tr><td>Support denominator</td><td>The roll, or 100,000, whichever is larger</td></tr>
+    <tr><td>Support denominator</td><td>The active roll, or 100,000, whichever is larger</td></tr>
+    <tr><td>Dormancy &#8212; leaves the denominator after</td><td>2 years with no participation; one vote returns</td></tr>
     <tr><td>Ayes needed to reach root</td><td>2,000</td></tr>
     <tr><td>Citizens&#8217; initiative threshold</td><td>1% of the roll</td></tr>
     <tr><td>TNPoS committee</td><td>9 strata &#215; 3 seats = 27</td></tr>
     <tr><td>TNPoS quorum / halt / fork</td><td>19 / 9 / 11</td></tr>
-    <tr><td>Minimum eligible per stratum</td><td>50</td></tr>
+    <tr><td>Minimum eligible per stratum</td><td>50 &#8212; except the court&#8217;s, which is 3, its seat count</td></tr>
+    <tr><td>Independent gates measured today</td><td>8 of 9</td></tr>
+    <tr><td>Court seat vacated after</td><td>180 days without a signature</td></tr>
+    <tr><td>Tenure &#8212; unbroken pool membership</td><td>1 year; admits on trust until the chain is that old</td></tr>
+    <tr><td>Open lottery &#8212; trust floor</td><td>40, exactly what the cheapest account scores</td></tr>
+    <tr><td>Geographic regions</td><td>6 &#8212; Ba&#351;&#251;r, Bakur, Rojava, Rojhilat, diaspora, Caucasus</td></tr>
+    <tr><td>Geographic mark &#8212; referrals to apply</td><td>25 settled</td></tr>
+    <tr><td>Airdrop &#8212; one payment / a month&#8217;s payments</td><td>1,000,000 HEZ / 3,000,000 HEZ before the Treasurer signs</td></tr>
     <tr><td>Chains specified / running at genesis</td><td>5 / 2</td></tr>
   </tbody>
 </table>
