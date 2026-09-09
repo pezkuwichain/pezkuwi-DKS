@@ -4508,6 +4508,83 @@ fn a_large_airdrop_needs_the_treasurer_too() {
 	});
 }
 
+/// The ceiling bounds one payment; the window bounds a run of them.
+///
+/// Before this the pot had no memory: two signatures could move the ceiling, and then move it
+/// again, forty times over. The office that would have noticed is the office being skipped.
+#[test]
+fn the_window_pulls_in_the_treasurer_once_recent_spending_adds_up() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		let each = AirdropCeiling::get(); // at the single-payment limit, never over it
+
+		// Two payments at the limit: each is small on its own and together they are still
+		// inside the window.
+		for id in 0..2u32 {
+			assert_ok!(Welati::propose_airdrop(
+				RuntimeOrigin::signed(PM),
+				EXCHANGE,
+				each,
+				b"listing".to_vec()
+			));
+			assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), id));
+			assert_ok!(Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), id));
+		}
+		assert_eq!(Welati::airdrop_spent_recently(), each * 2);
+
+		// The third is identical to the first two and is no longer the same decision.
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			each,
+			b"listing".to_vec()
+		));
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 2));
+		assert_noop!(
+			Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 2),
+			Error::<Test>::AirdropNotApproved
+		);
+
+		// And the Treasurer's signature brings the wait with it, measured from the signature.
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(TREASURER), 2));
+		let p = AirdropProposals::<Test>::get(2).unwrap();
+		assert_eq!(p.payable_from, System::block_number() + LargeAirdropDelay::get());
+	});
+}
+
+/// The window drains rather than resetting, and that is the whole point of it.
+///
+/// A window that resets on a boundary is worth twice its ceiling to anybody who reads the
+/// clock: pay the maximum at the end of one period and again at the start of the next. There
+/// is no boundary here to wait for -- the level falls continuously, so half a window returns
+/// half the room.
+#[test]
+fn the_window_drains_continuously_and_has_no_boundary_to_wait_for() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		let each = AirdropCeiling::get();
+
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			each,
+			b"listing".to_vec()
+		));
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+		assert_ok!(Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert_eq!(Welati::airdrop_spent_recently(), each);
+
+		// Half a window later, half of it is forgotten.
+		System::set_block_number(System::block_number() + crate::mock::AirdropWindow::get() / 2);
+		assert_eq!(Welati::airdrop_spent_recently(), each / 2);
+
+		// A whole window later, nothing is remembered and the pot is unencumbered again.
+		System::set_block_number(System::block_number() + crate::mock::AirdropWindow::get());
+		assert_eq!(Welati::airdrop_spent_recently(), 0);
+		assert!(!Welati::airdrop_needs_the_treasurer(each));
+	});
+}
+
 /// The wait above the ceiling is real, and it starts at the last signature.
 ///
 /// If it started at the proposal, a proposal left sitting for a week would be payable the

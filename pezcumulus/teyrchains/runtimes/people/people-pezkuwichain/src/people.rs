@@ -1248,6 +1248,20 @@ parameter_types! {
 	/// keeps the seat -- none of those is what this removes, and the term is the remedy for the
 	/// last of them. Short enough that a court paralysed by four unreachable seats is repaired
 	/// inside one year rather than waiting out nine.
+	/// How long recent airdrop spending takes to drain away: thirty days.
+	///
+	/// A month is what an oversight cycle looks like -- long enough that a campaign of payments
+	/// cannot hide inside one, short enough that a pot doing ordinary work is never held up.
+	pub const WelatiAirdropWindow: BlockNumber = 30 * DAYS;
+
+	/// What may be paid in a window on two signatures: three million HEZ.
+	///
+	/// Three times the single-payment ceiling. Enough that the Treasurer is not asked about
+	/// routine work, small enough that the fourth full-size payment in a month is a decision
+	/// somebody has to defend. The pot holds forty million; before this, two signatures could
+	/// move all of it a million at a time.
+	pub const WelatiAirdropWindowCeiling: u128 = 3_000_000 * UNITS;
+
 	/// Where `pezpallet_whitelist` sits in the relay's runtime.
 	///
 	/// Pinned by `the_whitelist_call_encodes_the_way_people_builds_it` on the relay side. If
@@ -1499,6 +1513,8 @@ impl pezpallet_welati::Config for Runtime {
 	// readable on the side that exercises it.
 	type FastTrackOrigin = crate::RootOrDiwan;
 	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
+	type AirdropWindow = WelatiAirdropWindow;
+	type AirdropWindowCeiling = WelatiAirdropWindowCeiling;
 	type CourtTermLength = WelatiCourtTermLength;
 	type MaxConsecutiveTerms = WelatiMaxConsecutiveTerms;
 	type XcmSender = crate::xcm_config::XcmRouter;

@@ -585,6 +585,29 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type AirdropCeiling: Get<u128>;
 
+		/// How long it takes for the airdrop's recent spending to be forgotten.
+		///
+		/// `AirdropCeiling` bounds one payment and nothing bounded the next one. Two
+		/// signatures could move the ceiling, and then move it again, and the pot has no
+		/// memory: forty payments a hair under the limit empty a forty-million pot without the
+		/// Treasurer ever being asked. The office that would notice is the office being
+		/// skipped.
+		///
+		/// So recent spending is remembered and drains away over this period rather than
+		/// resetting on a boundary. A window that resets is worth twice its ceiling to anybody
+		/// who waits for the reset -- pay the maximum at the end of one period and again at the
+		/// start of the next -- and a limit that doubles for whoever reads the clock is not a
+		/// limit. Draining continuously has no boundary to wait for.
+		#[pezpallet::constant]
+		type AirdropWindow: Get<BlockNumberFor<Self>>;
+
+		/// What may be paid across a whole window before the Treasurer has to sign.
+		///
+		/// Deliberately a small multiple of `AirdropCeiling` rather than a large one: the point
+		/// is not to make routine payments awkward but to make a *campaign* of them visible.
+		#[pezpallet::constant]
+		type AirdropWindowCeiling: Get<u128>;
+
 		/// Where the presale pot sits in the treasury chain's runtime.
 		///
 		/// A third `pezpallet_treasury` instance. Its own index for the same reason the
@@ -726,6 +749,19 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn diwan_members)]
 	pub type DiwanMembers<T: Config> =
 		StorageValue<_, BoundedVec<DiwanMember<T>, T::DiwanSize>, ValueQuery>;
+
+	/// Recent airdrop spending, and when it was last measured.
+	///
+	/// A draining total rather than a list of payments: a list would be bounded by nothing and
+	/// pruning it would cost more the busier the pot got. What is stored is the level of the
+	/// bucket at `AirdropSpentAt`; every reader drains it for the time since, so the value on
+	/// chain is only ever a starting point and is never read raw.
+	#[pezpallet::storage]
+	pub type AirdropSpent<T: Config> = StorageValue<_, u128, ValueQuery>;
+
+	/// The block `AirdropSpent` was measured at.
+	#[pezpallet::storage]
+	pub type AirdropSpentAt<T: Config> = StorageValue<_, BlockNumberFor<T>, ValueQuery>;
 
 	/// When each sitting member last proved their key still signs.
 	///
@@ -1886,7 +1922,10 @@ pub mod pezpallet {
 
 			AirdropProposals::<T>::try_mutate(id, |maybe| -> DispatchResult {
 				let p = maybe.as_mut().ok_or(Error::<T>::AirdropNotFound)?;
-				let large = p.amount > T::AirdropCeiling::get();
+				// Measured now rather than at proposal time. A payment that was small when it
+				// was written can be large by the time it is signed, because what makes it
+				// large is partly what other payments have done since.
+				let large = Self::airdrop_needs_the_treasurer(p.amount);
 
 				if holder(Tiki::Serok) {
 					ensure!(!p.approved_by_president, Error::<T>::AlreadyApproved);
@@ -1928,7 +1967,11 @@ pub mod pezpallet {
 		pub fn pay_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 			let p = AirdropProposals::<T>::get(id).ok_or(Error::<T>::AirdropNotFound)?;
-			let large = p.amount > T::AirdropCeiling::get();
+			// Judged here as well as at approval, and against the window as it stands at the
+			// moment the money would actually move. Two proposals can each be small when they
+			// are signed and only the second one is large -- which one that is depends on the
+			// order they are paid in, and nothing before this point knows that order.
+			let large = Self::airdrop_needs_the_treasurer(p.amount);
 			ensure!(
 				p.approved_by_president && (!large || p.approved_by_treasurer),
 				Error::<T>::AirdropNotApproved
@@ -1944,6 +1987,9 @@ pub mod pezpallet {
 			AirdropProposals::<T>::remove(id);
 			Self::send_airdrop_spend(&p.beneficiary, p.amount)
 				.map_err(|_| Error::<T>::CouldNotReachTreasury)?;
+			// After the send, so a failed send leaves the window untouched along with
+			// everything else this call reverts.
+			Self::note_airdrop_paid(p.amount);
 			Self::deposit_event(Event::AirdropSent {
 				id,
 				beneficiary: p.beneficiary,
@@ -4573,6 +4619,49 @@ pub mod pezpallet {
 				&mut Some(message),
 			)?;
 			T::XcmSender::deliver(ticket).map(|_| ())
+		}
+
+		/// What the airdrop has spent recently, with the drain applied.
+		///
+		/// Never reads `AirdropSpent` raw. The stored number is the level at the moment it was
+		/// written; what matters is the level now, and between the two is however long nobody
+		/// has spent anything.
+		pub fn airdrop_spent_recently() -> u128 {
+			use pezsp_runtime::SaturatedConversion;
+			let window: u128 =
+				T::AirdropWindow::get().saturated_into::<u128>();
+			if window == 0 {
+				return 0;
+			}
+			let elapsed: u128 = pezframe_system::Pezpallet::<T>::block_number()
+				.saturating_sub(AirdropSpentAt::<T>::get())
+				.saturated_into::<u128>();
+			if elapsed >= window {
+				return 0;
+			}
+			// Drains to nothing over one window. Multiply before dividing, or a small elapsed
+			// fraction rounds to zero drain and the bucket never empties.
+			AirdropSpent::<T>::get()
+				.saturating_mul(window.saturating_sub(elapsed))
+				.checked_div(window)
+				.unwrap_or(0)
+		}
+
+		/// Does this payment need the Treasurer's signature and the wait?
+		///
+		/// Two ways to be large and either is enough: the payment on its own, or the payment on
+		/// top of what has been paid lately. The second is the one that had no answer.
+		pub fn airdrop_needs_the_treasurer(amount: u128) -> bool {
+			amount > T::AirdropCeiling::get()
+				|| Self::airdrop_spent_recently().saturating_add(amount)
+					> T::AirdropWindowCeiling::get()
+		}
+
+		/// Record a payment against the window.
+		fn note_airdrop_paid(amount: u128) {
+			let level = Self::airdrop_spent_recently().saturating_add(amount);
+			AirdropSpent::<T>::put(level);
+			AirdropSpentAt::<T>::put(pezframe_system::Pezpallet::<T>::block_number());
 		}
 
 		/// Ask the relay to put a call hash on its whitelist.

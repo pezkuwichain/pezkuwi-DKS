@@ -1248,6 +1248,17 @@ parameter_types! {
 	/// dead seat has not demonstrated the mechanism, and this network exists to demonstrate the
 	/// mechanisms before a genesis freezes them. Fourteen days still bites: it is far longer
 	/// than any test run, so nothing trips it by accident.
+	/// How long recent airdrop spending takes to drain away: two days.
+	///
+	/// **Deliberately not the mainnet figure.** The drain is measured in the time an oversight
+	/// cycle takes, and thirty days here would mean the window could never be seen to refill --
+	/// a limit nobody can watch working is a limit nobody has tested. Two days is still far
+	/// longer than a test run, so nothing trips it by accident.
+	pub const WelatiAirdropWindow: BlockNumber = 2 * DAYS;
+
+	/// What may be paid in a window on two signatures, at this network's scale.
+	pub const WelatiAirdropWindowCeiling: u128 = 3_000_000 * UNITS;
+
 	/// Where `pezpallet_whitelist` sits in the relay's runtime.
 	///
 	/// Pinned by `the_whitelist_call_encodes_the_way_people_builds_it` on the relay side. If
@@ -1499,6 +1510,8 @@ impl pezpallet_welati::Config for Runtime {
 	// readable on the side that exercises it.
 	type FastTrackOrigin = crate::RootOrDiwan;
 	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
+	type AirdropWindow = WelatiAirdropWindow;
+	type AirdropWindowCeiling = WelatiAirdropWindowCeiling;
 	type CourtTermLength = WelatiCourtTermLength;
 	type MaxConsecutiveTerms = WelatiMaxConsecutiveTerms;
 	type XcmSender = crate::xcm_config::XcmRouter;
