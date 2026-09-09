@@ -178,6 +178,11 @@ Five tracks exist, each dispatching a different authority:
 | `citizenship_admin` | 14 days | 6 h | The register's own administration |
 | `qeyd_rules` | **90 days** | 7 days | The rules governing the register itself |
 
+**Voting costs nothing.** Answering a referendum, casting a ballot and endorsing a candidacy
+are free the first time each citizen does them — the fee is skipped in the runtime rather than
+refunded — because a franchise that costs money is not one this document can claim. A repeat is
+paid for, which is what stops a free call being a free call twice.
+
 The last one is the notable entry. The parameters that decide who may vouch for a new
 citizen, how many people one citizen may vouch for, and what suspends that right, are held
 in a parameter store whose only administrator is a referendum on the ninety-day track. Not
@@ -753,7 +758,6 @@ one commit today and a coordinated operation across every operator afterwards.
 | **Succession is unwritten** | The death or key loss of a president, a vacant ministry, a by-election — none of these has a rule | Written with the vacancy work above; it is the same defect in a different organ |
 | **"Region" has no definition** | The geography stratum distributes seats by a boundary nobody has drawn. For a dispersed population this is the easiest thing in the system to draw self-servingly | A definition fixed before the stratum is seated |
 | **Election thresholds are absolute numbers** | The first presidential election needs a thousand endorsements from a roll that may hold two thousand, and thirty percent of trust — education — is zero at launch. The thresholds were written for a large register, exactly as the support curves were | Thresholds expressed as a share of the roll with a floor, as §3.1 already does |
-| **Civil calls are not fee-exempt** | The fee-sponsorship mechanism is installed but no civil extrinsic is marked with it, so a citizen with no HEZ cannot transact with their own state | Mark the register's own calls |
 
 **Open, and not yet decided.** These are judgements rather than engineering, and this document
 will not pretend they are settled.

@@ -2613,6 +2613,22 @@ pub mod pezpallet {
 		/// is not a second vote -- the tally moves by one either way, never by two.
 		#[pezpallet::call_index(50)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		/// Free the first time, and paid after that.
+		///
+		/// Voting is the act this whole register exists to carry, and charging for it makes the
+		/// franchise cost money -- which is the thing §1 says this chain refuses, written into
+		/// the one call where it would actually bite. A citizen with no HEZ has a vote they
+		/// cannot cast, and "zero stake is zero trust" already means they are the citizens
+		/// least likely to have any.
+		///
+		/// The predicate is narrow on purpose. Free requires that the vote is real *and* that
+		/// this account has not already cast one: a repeat is paid for, so a free call cannot
+		/// be repeated, and a call naming something that does not exist was never a vote.
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, poll: &u32, _aye: &bool| -> bool {
+			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
+			T::Polls::as_ongoing(*poll).is_some()
+				&& !ReferendumVotes::<T>::contains_key(poll, &who)
+		})]
 		pub fn answer_referendum(
 			origin: OriginFor<T>,
 			#[pezpallet::compact] poll: u32,
@@ -2691,6 +2707,16 @@ pub mod pezpallet {
 		/// rather than gathered from people who have already seen the field.
 		#[pezpallet::call_index(4)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::register_candidate())]
+		/// Free the first time, and paid after that -- see `answer_referendum`.
+		///
+		/// An endorsement is how a citizen with no money takes part in *choosing who stands*,
+		/// which is the half of an election that happens before anybody votes. Charging for it
+		/// puts the earlier and more consequential half behind the same wall.
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, election_id: &u32, _candidate: &T::AccountId| -> bool {
+			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
+			ActiveElections::<T>::contains_key(election_id)
+				&& !Endorsements::<T>::contains_key(election_id, &who)
+		})]
 		pub fn endorse_candidate(
 			origin: OriginFor<T>,
 			election_id: u32,
@@ -3163,6 +3189,22 @@ pub mod pezpallet {
 		/// Cast vote
 		#[pezpallet::call_index(2)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::cast_vote())]
+		/// Free the first time, and paid after that.
+		///
+		/// Voting is the act this whole register exists to carry, and charging for it makes the
+		/// franchise cost money -- which is the thing §1 says this chain refuses, written into
+		/// the one call where it would actually bite. A citizen with no HEZ has a vote they
+		/// cannot cast, and "zero stake is zero trust" already means they are the citizens
+		/// least likely to have any.
+		///
+		/// The predicate is narrow on purpose. Free requires that the vote is real *and* that
+		/// this account has not already cast one: a repeat is paid for, so a free call cannot
+		/// be repeated, and a call naming something that does not exist was never a vote.
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, election_id: &u32, _candidates: &Vec<T::AccountId>, _district_id: &Option<u32>| -> bool {
+			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
+			ActiveElections::<T>::contains_key(election_id)
+				&& !ElectionVotes::<T>::contains_key(election_id, &who)
+		})]
 		pub fn cast_vote(
 			origin: OriginFor<T>,
 			election_id: u32,
