@@ -19369,6 +19369,7 @@ dependencies = [
 name = "pezpallet-welati"
 version = "1.0.0"
 dependencies = [
+ "impl-trait-for-tuples",
  "log",
  "parity-scale-codec",
  "pezframe-benchmarking",
