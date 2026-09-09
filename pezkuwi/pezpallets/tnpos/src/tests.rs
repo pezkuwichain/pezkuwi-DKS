@@ -120,38 +120,78 @@ fn joining_without_session_keys_is_refused() {
 
 #[test]
 fn an_account_that_loses_its_keys_after_joining_is_not_drawn() {
-	// `join` only catches a keyless account at the door; an account that deregisters its
-	// keys afterwards stays in `PoolMembers`, so the draw itself has to filter it too.
-	// Stripping all but three of Perwerde's sixty members down to no keys makes this
-	// deterministic: with exactly three candidates left, all three must be seated and
-	// none of the other fifty-seven can be, regardless of the seed.
+	// `join` only catches a keyless account at the door; an account that deregisters
+	// afterwards stays in `PoolMembers`, so the draw has to filter it too. Five of Perwerde's
+	// sixty lose their keys, which leaves fifty-five -- still above the floor, so the stratum
+	// is seated and the five simply cannot be among its three.
 	new_test_ext().execute_with(|| {
 		fill_every_stratum(60);
 		let perwerde: Vec<AccountId> = PoolMembers::<Test>::iter()
 			.filter_map(|(w, s)| (s == StratumId::Perwerde).then_some(w))
 			.collect();
-		let (keep, drop) = perwerde.split_at(3);
-		for &who in drop {
+		let dropped = &perwerde[..5];
+		for &who in dropped {
 			remove_keys(who);
 		}
 		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
 		let committee = CurrentCommittee::<Test>::get();
-		for &who in keep {
-			assert!(committee.contains(&who), "a keyed account must be seated");
-		}
-		for &who in drop {
+		for &who in dropped {
 			assert!(!committee.contains(&who), "a keyless account must not be seated");
+		}
+		assert_eq!(committee.len(), 27, "the stratum is still above its floor");
+	});
+}
+
+/// A gate that reads a state has to be read again at the draw, not only at the door.
+///
+/// This is what the disqualifying gates are for. A member whose court seat is vacated for
+/// silence, whose term ends, or whose region is cancelled stays in `PoolMembers` -- and if
+/// eligibility were checked only on the way in, they would go on being seated as the court's
+/// representative long after the court stopped recognising them. The gate would disqualify
+/// nobody who was already inside, which is everybody it exists to catch.
+///
+/// Deterministic by construction: the court's stratum carries a floor of three, so leaving
+/// exactly three live members means those three and nobody else can fill its three seats.
+#[test]
+fn a_member_who_stops_qualifying_stops_being_drawn() {
+	new_test_ext().execute_with(|| {
+		fill_every_stratum(60);
+		let bench: Vec<AccountId> = PoolMembers::<Test>::iter()
+			.filter_map(|(w, s)| (s == StratumId::Divan).then_some(w))
+			.collect();
+		let (keep, vacated) = bench.split_at(3);
+		for &who in vacated {
+			unseat_from_the_diwan(who);
+		}
+
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+		let committee = CurrentCommittee::<Test>::get();
+
+		for &who in keep {
+			assert!(committee.contains(&who), "a sitting judge must still be drawable");
+		}
+		for &who in vacated {
+			assert!(
+				!committee.contains(&who),
+				"a vacated seat must stop being drawn, not wait for the member to leave"
+			);
 		}
 	});
 }
 
 #[test]
-fn a_stratum_short_on_keyed_candidates_refuses_the_era_rather_than_seating_short() {
-	// `seat` judges a stratum seatable from `StratumSize`, which counts pool membership;
-	// the draw filters that same pool by session keys. Leaving Perwerde only two keyed
-	// candidates for its three seats keeps it counted as seatable while its real candidate
-	// pool cannot fill it -- the whole era must be refused, not seated with a stratum short
-	// of its announced size.
+fn a_stratum_whose_live_candidates_fall_below_the_floor_stands_down() {
+	// This used to fail the whole era, and the reason was a mismatch rather than a decision:
+	// `seat` judged a stratum from `StratumSize`, which counts membership, while the draw ran
+	// against a list filtered by session keys. When the two disagreed the draw came back short
+	// and the era was refused -- so a handful of members deregistering could stop the committee
+	// rotating at all.
+	//
+	// Both now read the same list. Perwerde keeps two keyed candidates out of sixty, which is
+	// below the floor, so it stands down exactly as a stratum short of members does: the era
+	// succeeds, the committee is twenty-four, and its three seats go to nobody. Seating those
+	// two would have been the other error -- three candidates for three seats is not a lottery,
+	// which is what the floor exists to prevent.
 	new_test_ext().execute_with(|| {
 		fill_every_stratum(60);
 		let perwerde: Vec<AccountId> = PoolMembers::<Test>::iter()
@@ -160,12 +200,21 @@ fn a_stratum_short_on_keyed_candidates_refuses_the_era_rather_than_seating_short
 		for &who in &perwerde[2..] {
 			remove_keys(who);
 		}
-		let before = CurrentCommittee::<Test>::get();
-		assert_noop!(
-			Tnpos::force_new_era(RuntimeOrigin::root()),
-			Error::<Test>::UnseatableConfiguration
+		assert_ok!(Tnpos::force_new_era(RuntimeOrigin::root()));
+
+		let committee = CurrentCommittee::<Test>::get();
+		assert_eq!(
+			committee.len() as u32,
+			SEATS_PER_STRATUM * (StratumId::ALL.len() as u32 - 1),
+			"perwerde should have stood down and taken exactly its own seats with it"
 		);
-		assert_eq!(CurrentCommittee::<Test>::get(), before, "the old committee stays");
+		for who in committee.iter() {
+			assert_ne!(
+				PoolMembers::<Test>::get(who),
+				Some(StratumId::Perwerde),
+				"a stratum below its floor must seat nobody"
+			);
+		}
 	});
 }
 

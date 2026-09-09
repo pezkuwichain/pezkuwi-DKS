@@ -288,7 +288,10 @@ pub fn nine_strata() -> Vec<StratumConfig> {
 		.map(|&id| StratumConfig {
 			id,
 			seats: 3,
-			min_eligible: pezpallet_tnpos::MIN_ELIGIBLE_PER_STRATUM,
+			// Per stratum, exactly as the runtime genesis builds it. A flat floor here made
+			// the mock disagree with every real chain about the court, whose floor is its
+			// seat count.
+			min_eligible: pezkuwi_tnpos_primitives::invariant::min_eligible_for(id),
 		})
 		.collect()
 }
@@ -342,6 +345,11 @@ pub fn attest_region(who: AccountId, region: u8) {
 		r.retain(|(a, _)| *a != who);
 		r.push((who, region));
 	});
+}
+
+/// Take this account off the court, as a vacancy for silence would.
+pub fn unseat_from_the_diwan(who: AccountId) {
+	DIWAN.with(|d| d.borrow_mut().retain(|a| *a != who));
 }
 
 /// Put `per` eligible members into every stratum.

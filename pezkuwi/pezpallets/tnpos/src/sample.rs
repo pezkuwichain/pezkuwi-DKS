@@ -18,7 +18,17 @@ impl<T: Config> Pezpallet<T> {
 		PoolMembers::<T>::iter()
 			.take(T::MaxPoolSize::get() as usize)
 			.filter_map(|(who, s)| {
-				(s == stratum && T::HasSessionKeys::has_keys(&who)).then_some(who)
+				// Eligibility is re-read here and not trusted from the day they joined.
+				// Every gate that reads a *state* rather than a score can stop being true
+				// while the member sits: a term ends, a court seat is vacated for silence, a
+				// region is cancelled, an operating record develops a pattern. Checked only
+				// at the door, a stratum would go on seating people the register no longer
+				// recognises -- and the disqualifying gates would disqualify nobody who was
+				// already inside, which is the whole of what they are for.
+				(s == stratum
+					&& T::HasSessionKeys::has_keys(&who)
+					&& Self::eligible_for(&who, stratum).is_ok())
+				.then_some(who)
 			})
 			.collect()
 	}
@@ -28,9 +38,9 @@ impl<T: Config> Pezpallet<T> {
 	/// Sorted so the rotation below is a function of the era and the regions present, and not
 	/// of whatever order the pool happens to iterate in -- storage order is not something a
 	/// reader can reproduce, and a seat allocation nobody can reproduce is not auditable.
-	fn candidates_by_region() -> Vec<(u8, Vec<T::AccountId>)> {
+	fn group_by_region(pool: &[T::AccountId]) -> Vec<(u8, Vec<T::AccountId>)> {
 		let mut groups: Vec<(u8, Vec<T::AccountId>)> = Vec::new();
-		for who in Self::candidates(StratumId::Geography) {
+		for who in pool.iter().cloned() {
 			let Some(region) = T::Scores::region_of(&who) else { continue };
 			match groups.iter_mut().find(|(r, _)| *r == region) {
 				Some((_, members)) => members.push(who),
@@ -82,22 +92,35 @@ impl<T: Config> Pezpallet<T> {
 
 	fn try_seat_committee() -> Result<Seating, Error<T>> {
 		let strata = Strata::<T>::get();
-		let by_region = Self::candidates_by_region();
+
+		// One list per stratum, drawn once and used for both decisions. `seat` used to judge
+		// a stratum on `StratumSize`, which counts membership, while the draw ran against a
+		// filtered list -- and when the two disagreed the draw came back short and the whole
+		// era failed. Members deregistering their keys was enough to do it. Judging and
+		// drawing from the same list means they cannot disagree.
+		let pools: Vec<Vec<T::AccountId>> =
+			strata.iter().map(|c| Self::candidates(c.id)).collect();
+		let by_region = Self::group_by_region(
+			strata
+				.iter()
+				.position(|c| c.id == StratumId::Geography)
+				.map(|i| pools[i].as_slice())
+				.unwrap_or(&[]),
+		);
 
 		let sizes: Vec<u32> = strata
 			.iter()
-			.map(|c| {
-				let size = StratumSize::<T>::get(c.id);
+			.zip(pools.iter())
+			.map(|(c, pool)| {
 				// Geography needs one region per seat, so fewer regions than seats means the
 				// stratum cannot be drawn however many marks exist. Reported as zero here
 				// rather than discovered in the draw: `seat` decides seating from this number,
 				// and a stratum that stands down leaves a committee of twenty-four with its
-				// seats unredistributed -- whereas a short draw further down fails the whole
-				// era, and one thin stratum must not cost the chain its validators.
+				// seats unredistributed.
 				if c.id == StratumId::Geography && by_region.len() < SEATS_PER_STRATUM as usize {
 					0
 				} else {
-					size
+					pool.len() as u32
 				}
 			})
 			.collect();
@@ -116,6 +139,11 @@ impl<T: Config> Pezpallet<T> {
 		let era = CurrentEra::<T>::get().saturating_add(1);
 		let mut committee = Vec::with_capacity(seating.n as usize);
 		for cfg in seating.seated.iter() {
+			let pool = strata
+				.iter()
+				.position(|c| c.id == cfg.id)
+				.map(|i| pools[i].clone())
+				.unwrap_or_default();
 			// Geography draws once per region rather than once for the stratum, so that the
 			// three seats land in three different places. Every other stratum draws once.
 			let drawn = if cfg.id == StratumId::Geography {
@@ -130,7 +158,6 @@ impl<T: Config> Pezpallet<T> {
 				}
 				picked
 			} else {
-				let pool = Self::candidates(cfg.id);
 				T::Sortition::select(era, cfg.id, &pool, cfg.seats, &[])
 					.ok_or(Error::<T>::UnseatableConfiguration)?
 			};
