@@ -447,10 +447,12 @@ with the court's size.
 
 The security argument rests on the strata being gated by *different* authorities: two strata
 answering to the same institution are one stratum, not two, and the committee's independence
-is counted from that number. Three of the nine gates are measured on this chain today —
-stake, education and community tikis each read their own score. The other six are attested by
-authorities whose dedicated channels are still being built, and until those land they reach
-this chain as trust standing, which means they are not yet independent of one another. The
+is counted from that number. Five of the nine gates are measured on this chain today.
+Stake, education and community tikis each read their own score; the parliamentary and judicial
+strata read the membership they are named after, so a citizen with a perfect trust score and no
+seat is refused by both. The other four are attested by authorities whose dedicated channels are
+still being built, and until those land they reach this chain as trust standing, which means
+they are not yet independent of one another. The
 figure to hold onto is therefore this: **nine strata are specified, and the count of
 independent gates is what the network should be judged on at any given moment.** It is
 published on chain, and it is not nine yet.
@@ -788,7 +790,7 @@ one commit today and a coordinated operation across every operator afterwards.
 
 | Gap | What breaks without it | The remedy |
 |---|---|---|
-| **Six of the nine strata share one gate** | Stated already in §7.1: the committee's independence is three today, not nine | Dedicated attestation channels, one per stratum |
+| **Four of the nine strata share one gate** | Stated already in §7.1: the committee's independence is five today, not nine. The court's stratum needed its own floor to get there — eleven judges can never be the fifty a stratum normally needs, and a seat on it cannot be manufactured, so that exception is defensible where a general one would not be | Dedicated attestation channels for the remaining four, each waiting on a definition: what a region is, what service counts, what operational contribution means, and whether the open stratum should be gated on citizenship alone |
 | **An emptied body has no by-election** | Succession for the single-holder offices is written — the Speaker acts for an absent President, and a vacancy opens an election without waiting for the calendar. What has no arm is a *body*: a parliament that lost every seat inside one term, or an elected court seat vacated for silence, waits for the scheduled election. The court still rules, because two thirds counts over the members who sit; the house does not | A vacancy arm for the elected bodies, and a decision on whether a replacement serves the remainder or a fresh term |
 | **"Region" has no definition** | The geography stratum distributes seats by a boundary nobody has drawn. For a dispersed population this is the easiest thing in the system to draw self-servingly | A definition fixed before the stratum is seated |
 
