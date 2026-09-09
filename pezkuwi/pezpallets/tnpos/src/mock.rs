@@ -37,6 +37,10 @@ impl pezframe_system::Config for Test {
 parameter_types! {
 	pub const TenurePeriod: BlockNumber = 1_000;
 	pub const LotteryTrustFloor: u128 = 40;
+	pub const InfrastructureSessions: u32 = 12;
+	pub const InfrastructureWindow: u32 = 240;
+	pub const CoFailureGroup: u32 = 3;
+	pub const CoFailureRepeats: u32 = 3;
 	pub const MaxScoreAge: BlockNumber = 100;
 	pub const EraLength: BlockNumber = 50;
 	pub const MaxPoolSize: u32 = 2_000;
@@ -251,6 +255,11 @@ impl pezpallet_tnpos::Config for Test {
 	type Scores = MockScores;
 	type TenurePeriod = TenurePeriod;
 	type LotteryTrustFloor = LotteryTrustFloor;
+	type PerformanceOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type InfrastructureSessions = InfrastructureSessions;
+	type InfrastructureWindow = InfrastructureWindow;
+	type CoFailureGroup = CoFailureGroup;
+	type CoFailureRepeats = CoFailureRepeats;
 	type HasSessionKeys = Tnpos;
 	// A one-field mirror: the tests are about who may join and who gets seated, not about the
 	// relay's key layout. The real mirror is checked against the relay's own definition in the
@@ -347,6 +356,11 @@ pub fn attest_region(who: AccountId, region: u8) {
 	});
 }
 
+/// Give this account a clean operating record of `n` seated sessions.
+pub fn credit_sessions(who: AccountId, n: u32) {
+	pezpallet_tnpos::SeatedSessions::<Test>::insert(who, n);
+}
+
 /// Take this account off the court, as a vacancy for silence would.
 pub fn unseat_from_the_diwan(who: AccountId) {
 	DIWAN.with(|d| d.borrow_mut().retain(|a| *a != who));
@@ -368,6 +382,9 @@ pub fn fill_every_stratum(per: u32) {
 				StratumId::Divan => seat_on_the_diwan(who),
 				// Spread across all six so the stratum has the regions its rotation needs.
 				StratumId::Geography => attest_region(who, (who % 6) as u8),
+				// A clean operating record. Three strata read a state rather than a score, so
+				// a fixture that only sets scores reaches none of them.
+				StratumId::Infrastructure => credit_sessions(who, InfrastructureSessions::get()),
 				_ => {},
 			}
 			ensure_has_keys(who);

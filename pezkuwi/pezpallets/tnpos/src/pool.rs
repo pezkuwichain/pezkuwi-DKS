@@ -94,11 +94,28 @@ impl<T: Config> Pezpallet<T> {
 				);
 			},
 			StratumId::Infrastructure => {
-				// The last one still reading bare trust, and the only one waiting on data
-				// rather than on a decision: its definition asks for a measured record on
-				// *independent* infrastructure, and nothing on this chain records network or
-				// geographic diversity to measure it against.
-				ensure!(fresh(T::Scores::trust_of(who))? > 0, Error::<T>::NotEligible);
+				// Work done, and it is the only gate that asks for it. The other eight are
+				// passed with money, an identity, a vouch, a seat or a signature; this one is
+				// passed by having actually validated, which nobody can grant and no forged
+				// account arrives holding.
+				ensure!(
+					SeatedSessions::<T>::get(who) >= T::InfrastructureSessions::get(),
+					Error::<T>::NotEligible
+				);
+				ensure!(!Banned::<T>::contains_key(who), Error::<T>::NotEligible);
+
+				// What the record disqualifies on is failing *with others*, repeatedly. Two
+				// validators behind one rack go down together, and that is the only trace
+				// shared infrastructure leaves on a chain. It is a disqualifier and not a
+				// proof: a cluster that has never had an outage looks exactly like independent
+				// operators, and no measurement from inside can tell them apart.
+				let now = SessionsObserved::<T>::get();
+				let window = T::InfrastructureWindow::get();
+				let recent = CoFailures::<T>::get(who)
+					.iter()
+					.filter(|at| now.saturating_sub(**at) <= window)
+					.count() as u32;
+				ensure!(recent < T::CoFailureRepeats::get(), Error::<T>::NotEligible);
 			},
 		}
 		Ok(())

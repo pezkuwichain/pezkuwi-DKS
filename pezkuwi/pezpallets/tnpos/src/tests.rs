@@ -267,6 +267,130 @@ fn the_open_lottery_refuses_the_account_that_did_the_minimum_and_nothing_else() 
 	});
 }
 
+mod the_operating_record {
+	use super::*;
+
+	fn report(scored: Vec<AccountId>, failed: Vec<AccountId>) {
+		assert_ok!(Tnpos::note_session_performance(RuntimeOrigin::root(), scored, failed));
+	}
+
+	/// The ninth gate is the only one that asks for work done, and nobody else may report it.
+	#[test]
+	fn only_the_relay_says_what_a_session_produced() {
+		new_test_ext().execute_with(|| {
+			assert_noop!(
+				Tnpos::note_session_performance(RuntimeOrigin::signed(ALICE), vec![ALICE], vec![]),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert_eq!(SessionsObserved::<Test>::get(), 0);
+		});
+	}
+
+	#[test]
+	fn a_record_is_earned_by_validating_and_cannot_be_bought() {
+		new_test_ext().execute_with(|| {
+			set_trust(ALICE, 1_000);
+			ensure_has_keys(ALICE);
+
+			// Maximum trust, maximum everything: none of it is work done.
+			assert_noop!(
+				Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Infrastructure),
+				Error::<Test>::NotEligible
+			);
+
+			// One short of the requirement is still short.
+			let need = InfrastructureSessions::get();
+			for _ in 0..need - 1 {
+				report(vec![ALICE], vec![]);
+			}
+			assert_noop!(
+				Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Infrastructure),
+				Error::<Test>::NotEligible
+			);
+
+			report(vec![ALICE], vec![]);
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Infrastructure));
+		});
+	}
+
+	#[test]
+	fn failing_alone_costs_nothing_and_failing_in_company_repeatedly_costs_the_seat() {
+		new_test_ext().execute_with(|| {
+			set_trust(ALICE, 1_000);
+			ensure_has_keys(ALICE);
+			credit_sessions(ALICE, InfrastructureSessions::get());
+
+			// Down on their own, over and over. That is an operator's own outage and says
+			// nothing about whose ground they share.
+			for _ in 0..10 {
+				report(vec![BOB, 3, 4, 5, 6, 7, 8, 9], vec![ALICE]);
+			}
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Infrastructure));
+			assert_ok!(Tnpos::leave(RuntimeOrigin::signed(ALICE)));
+			credit_sessions(ALICE, InfrastructureSessions::get());
+
+			// Down with three others, twice. A pattern is not yet established.
+			let group = vec![ALICE, BOB, 3, 4];
+			for _ in 0..(CoFailureRepeats::get() - 1) {
+				report(vec![5, 6, 7, 8, 9, 10, 11, 12], group.clone());
+			}
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Infrastructure));
+			assert_ok!(Tnpos::leave(RuntimeOrigin::signed(ALICE)));
+			credit_sessions(ALICE, InfrastructureSessions::get());
+
+			// The third time is the pattern.
+			report(vec![5, 6, 7, 8, 9, 10, 11, 12], group);
+			assert_noop!(
+				Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Infrastructure),
+				Error::<Test>::NotEligible
+			);
+		});
+	}
+
+	#[test]
+	fn a_chain_wide_outage_marks_nobody() {
+		new_test_ext().execute_with(|| {
+			set_trust(ALICE, 1_000);
+			ensure_has_keys(ALICE);
+			credit_sessions(ALICE, InfrastructureSessions::get());
+
+			// More than half the committee down. That is the network having a bad day, and it
+			// says nothing about who shares a rack -- counting it would mark every honest
+			// operator at once and empty this stratum on the first real incident.
+			for _ in 0..10 {
+				report(vec![9, 10], vec![ALICE, BOB, 3, 4, 5, 6, 7, 8]);
+			}
+			assert!(CoFailures::<Test>::get(ALICE).is_empty());
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Infrastructure));
+		});
+	}
+
+	#[test]
+	fn the_window_forgives_a_pattern_that_stopped() {
+		new_test_ext().execute_with(|| {
+			set_trust(ALICE, 1_000);
+			ensure_has_keys(ALICE);
+			credit_sessions(ALICE, InfrastructureSessions::get());
+
+			let group = vec![ALICE, BOB, 3, 4];
+			for _ in 0..CoFailureRepeats::get() {
+				report(vec![5, 6, 7, 8, 9, 10, 11, 12], group.clone());
+			}
+			assert_noop!(
+				Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Infrastructure),
+				Error::<Test>::NotEligible
+			);
+
+			// An operator who moves off a bad host should not carry it for ever. A window of
+			// clean sessions later, the record is spent.
+			for _ in 0..InfrastructureWindow::get() + 1 {
+				report(vec![ALICE], vec![]);
+			}
+			assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Infrastructure));
+		});
+	}
+}
+
 /// Time is the one qualification nobody can grant, and the grace window closes itself.
 #[test]
 fn tenure_admits_on_trust_until_the_chain_is_old_enough_to_have_any() {

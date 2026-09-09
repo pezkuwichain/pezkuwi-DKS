@@ -177,6 +177,41 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type LotteryTrustFloor: Get<u128>;
 
+		/// Who may report what a session produced. The relay, and nothing else.
+		type PerformanceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Sessions a candidate must have been seated for before the record counts as one.
+		///
+		/// The ninth gate is the only one that asks for *work done*. Money, an identity, a
+		/// vouch and an institution's signature all buy their way past the other eight; this
+		/// one is bought with sessions actually validated, which nobody can grant.
+		#[pezpallet::constant]
+		type InfrastructureSessions: Get<u32>;
+
+		/// How far back the co-failure record is read.
+		///
+		/// A quarter, so a repeated pattern shows and a fixed one is forgiven. An operator who
+		/// moves off a bad host should not carry it for ever.
+		#[pezpallet::constant]
+		type InfrastructureWindow: Get<u32>;
+
+		/// How many must fail together before it counts as failing *together*.
+		///
+		/// Two validators down in one session is coincidence often enough to matter: across a
+		/// window of thousands of sessions an honest operator would be caught by a threshold
+		/// set that low. Four is where a committee of twenty-seven stops looking unlucky and
+		/// starts looking like shared ground.
+		#[pezpallet::constant]
+		type CoFailureGroup: Get<u32>;
+
+		/// How many such sessions inside the window disqualify.
+		///
+		/// One is too brittle whatever the group size: pick any threshold and a slightly worse
+		/// network starts disqualifying honest operators. Shared infrastructure does not
+		/// produce one event, it produces a pattern, so the rule reads the pattern.
+		#[pezpallet::constant]
+		type CoFailureRepeats: Get<u32>;
+
 		/// Whether an account has registered session keys.
 		///
 		/// A validator without keys is silently dropped when the session rotates, which
@@ -304,6 +339,25 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type Banned<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u32, OptionQuery>;
 
+	/// How many sessions the relay has reported. The clock the co-failure window is read on.
+	#[pezpallet::storage]
+	pub type SessionsObserved<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+	/// How many sessions each account has been seated for, ever.
+	#[pezpallet::storage]
+	pub type SeatedSessions<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
+
+	/// The sessions in which this account failed in company, most recent last.
+	///
+	/// Only the last few are kept, because only the last few can matter: the rule asks whether
+	/// `CoFailureRepeats` of them fall inside the window, so anything older than the
+	/// `CoFailureRepeats`-th most recent cannot change the answer. A bounded list rather than a
+	/// counter, because a counter cannot forget and this record has to.
+	#[pezpallet::storage]
+	pub type CoFailures<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BoundedVec<u32, ConstU32<8>>, ValueQuery>;
+
 	/// When each member's current, unbroken spell in the pool began.
 	///
 	/// Cleared on every way out -- leaving, and being removed for an offence -- because the
@@ -319,6 +373,8 @@ pub mod pezpallet {
 	pub enum Event<T: Config> {
 		/// A member joined `stratum`.
 		Joined { who: T::AccountId, stratum: StratumId },
+		/// A group failed in one session, large enough to be recorded against each of them.
+		FailedTogether { session: u32, count: u32 },
 		/// A member moved between strata without leaving the pool, so their spell continues.
 		StratumSwitched { who: T::AccountId, from: StratumId, to: StratumId },
 		/// A member left the pool.
@@ -553,6 +609,56 @@ pub mod pezpallet {
 			RelayKeys::<T>::insert(&who, bounded);
 
 			Self::deposit_event(Event::RelayKeysSet { who });
+			Ok(())
+		}
+
+		/// Record what a session produced: who authored, and who was seated and did not.
+		///
+		/// Sent by the relay at the end of every session. This chain draws the committee but
+		/// does not run it, so it cannot see a missed block; and it must not guess, because the
+		/// set it drew and the set the relay seated differ for a session or two after every
+		/// handover. The chain that knows reports.
+		///
+		/// The length of `failed` is the whole of the signal. One name is an operator's own
+		/// outage. Eight names in one session is eight operators who went down together, which
+		/// is what sharing a rack, a host or a provider looks like from here -- and it is the
+		/// only view of infrastructure independence a chain can have, because it is the only
+		/// consequence of it that reaches the chain at all.
+		#[pezpallet::call_index(10)]
+		#[pezpallet::weight(T::WeightInfo::join())]
+		pub fn note_session_performance(
+			origin: OriginFor<T>,
+			scored: Vec<T::AccountId>,
+			failed: Vec<T::AccountId>,
+		) -> DispatchResult {
+			T::PerformanceOrigin::ensure_origin(origin)?;
+
+			let now = SessionsObserved::<T>::mutate(|n| {
+				*n = n.saturating_add(1);
+				*n
+			});
+
+			for who in scored.iter().chain(failed.iter()) {
+				SeatedSessions::<T>::mutate(who, |n| *n = n.saturating_add(1));
+			}
+
+			// A session where more than half the committee is down says nothing about who
+			// shares ground with whom -- it is the network having a bad day, and counting it
+			// would mark every honest operator at once. The first chain-wide incident would
+			// otherwise empty this stratum.
+			let group = failed.len() as u32;
+			let seated = group.saturating_add(scored.len() as u32);
+			if group > T::CoFailureGroup::get() && group.saturating_mul(2) <= seated {
+				for who in failed.iter() {
+					CoFailures::<T>::mutate(who, |marks| {
+						if marks.is_full() {
+							marks.remove(0);
+						}
+						let _ = marks.try_push(now);
+					});
+				}
+				Self::deposit_event(Event::FailedTogether { session: now, count: group });
+			}
 			Ok(())
 		}
 

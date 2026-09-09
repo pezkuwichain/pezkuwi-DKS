@@ -1944,6 +1944,22 @@ pezframe_support::parameter_types! {
 	/// a property of the trust arithmetic, not of the network's size.
 	pub const TnposLotteryTrustFloor: u128 = 40;
 
+	/// Sessions seated before an operating record counts: forty-eight.
+	///
+	/// Eight eras of six sessions. A pool member is drawn for roughly three seats in every
+	/// fifty, so eight seatings is about a month of being picked, produced and observed --
+	/// enough that the record is a record rather than one lucky draw.
+	pub const TnposInfrastructureSessions: u32 = 48;
+
+	/// How far back co-failures are read: ninety days of hourly sessions.
+	pub const TnposInfrastructureWindow: u32 = 2_160;
+
+	/// Failing with three others is where twenty-seven validators stop looking unlucky.
+	pub const TnposCoFailureGroup: u32 = 3;
+
+	/// Three such sessions in the window. One is coincidence; a pattern is infrastructure.
+	pub const TnposCoFailureRepeats: u32 = 3;
+
 	pub const TnposTenurePeriod: BlockNumber = 365 * DAYS;
 }
 
@@ -1954,6 +1970,13 @@ impl pezpallet_tnpos::Config for Runtime {
 	type Scores = RegisterScores;
 	type TenurePeriod = TnposTenurePeriod;
 	type LotteryTrustFloor = TnposLotteryTrustFloor;
+	// The relay, and only the relay: it arrives as `Superuser` from the parent, which this
+	// chain converts to Root. Nothing else reports what a session produced.
+	type PerformanceOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type InfrastructureSessions = TnposInfrastructureSessions;
+	type InfrastructureWindow = TnposInfrastructureWindow;
+	type CoFailureGroup = TnposCoFailureGroup;
+	type CoFailureRepeats = TnposCoFailureRepeats;
 	// The pallet's own register: it decides who may validate, so it holds the record of who
 	// has keys to validate with. Anything else here would be a second opinion about a fact it
 	// already keeps.
@@ -2124,6 +2147,33 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	/// The relay addresses this chain's `pezpallet_tnpos` as pallet 83, call 10.
+	///
+	/// It cannot name the call by type -- the relay does not depend on this runtime and must
+	/// not -- so it builds the bytes by hand, and nothing in either tree compares the two. If
+	/// this pallet is renumbered, or `note_session_performance` stops being call ten, the
+	/// relay's report lands on whatever now sits at that address. The failure is the quiet
+	/// kind: the send succeeds, and the register simply stops learning who validated, so the
+	/// ninth stratum goes empty for a reason nobody is looking at.
+	#[test]
+	fn the_performance_call_encodes_the_way_the_relay_builds_it() {
+		use codec::Encode;
+
+		let scored: Vec<AccountId> = vec![[1u8; 32].into(), [2u8; 32].into()];
+		let failed: Vec<AccountId> = vec![[3u8; 32].into()];
+
+		let real = crate::RuntimeCall::Tnpos(pezpallet_tnpos::Call::<crate::Runtime>::
+			note_session_performance { scored: scored.clone(), failed: failed.clone() })
+			.encode();
+
+		// The literals are what `tell_the_register` builds on the relay.
+		assert_eq!(
+			real,
+			(83u8, 10u8, scored, failed).encode(),
+			"the performance call's address moved"
+		);
+	}
 
 	/// The declared weight of a trust source is only true if the source is normalised by the
 	/// score that can actually be reached.
