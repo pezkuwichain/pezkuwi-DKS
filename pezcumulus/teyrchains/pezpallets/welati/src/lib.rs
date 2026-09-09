@@ -438,9 +438,26 @@ pub mod pezpallet {
 		type ElectoralDistricts: Get<u32>;
 		#[pezpallet::constant]
 		type CandidacyDeposit: Get<u128>;
+		/// Endorsements a presidential candidacy needs **once the roll is mature**.
+		///
+		/// A ceiling now rather than a flat requirement. Read as a flat number it was written
+		/// for a country and applied to a village: a thousand endorsements from a roll of two
+		/// thousand is half the population, and every endorser needs standing that mostly comes
+		/// from education, which is zero on the day the chain starts. The first election was
+		/// unwinnable by anybody outside the circle that could hand out the remaining trust --
+		/// the same defect the support curves had, in the one place it decides who may stand.
 		#[pezpallet::constant]
 		type PresidentialEndorsements: Get<u32>;
 		type ParliamentaryEndorsements: Get<u32>;
+
+		/// The roll at which endorsement thresholds reach their full value.
+		///
+		/// Below it they scale down in proportion, above it nothing changes. Deliberately the
+		/// same number as the tally's `MIN_ELECTORATE`: one constant, one story about when this
+		/// register is grown up. Two numbers for the same idea is how one of them gets moved
+		/// and the other forgotten.
+		#[pezpallet::constant]
+		type MatureRoll: Get<u32>;
 
 		/// The roll, as the state tally measures support against.
 		///
@@ -3825,13 +3842,32 @@ pub mod pezpallet {
 			}
 		}
 
-		/// Required number of endorsers
+		/// Required number of endorsers, in proportion to how large the register is.
+		///
+		/// `ceiling * roll / MatureRoll`, held between a floor and the ceiling. At the mature
+		/// roll it is the ceiling and this changes nothing; below it the requirement is the
+		/// same *share* of a smaller country rather than the same number out of it.
+		///
+		/// The floor is what stops the other failure. A share of a roll of forty is nothing,
+		/// and a candidacy that needs nothing is not a candidacy -- the endorsement exists so
+		/// that standing costs somebody else's reputation as well as your own.
+		///
+		/// Measured against the active electorate, the same number the tally divides by. Two
+		/// definitions of "the register" would eventually disagree, and the disagreement would
+		/// surface as a threshold nobody could explain.
 		pub fn get_required_endorsements(election_type: &ElectionType) -> u32 {
-			match election_type {
+			let ceiling = match election_type {
 				ElectionType::Presidential => T::PresidentialEndorsements::get(),
 				ElectionType::Parliamentary => T::ParliamentaryEndorsements::get(),
-				_ => 0,
-			}
+				_ => return 0,
+			};
+			let mature = T::MatureRoll::get().max(1);
+			let roll = Self::active_electorate().min(mature);
+			let scaled =
+				(u64::from(ceiling).saturating_mul(u64::from(roll)) / u64::from(mature)) as u32;
+			// A twentieth of the mature requirement, and never fewer than ten.
+			let floor = ceiling.saturating_div(20).max(10);
+			scaled.max(floor).min(ceiling)
 		}
 
 		/// Minimum turnout rate

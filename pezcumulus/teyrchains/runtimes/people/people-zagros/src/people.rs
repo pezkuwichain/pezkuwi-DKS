@@ -1530,6 +1530,8 @@ impl pezpallet_welati::Config for Runtime {
 	// readable on the side that exercises it.
 	type FastTrackOrigin = crate::RootOrDiwan;
 	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
+	// The same number as the tally's floor, on purpose -- see `MatureRoll`.
+	type MatureRoll = MinElectorate;
 	type DormancyPeriod = WelatiDormancyPeriod;
 	type AirdropWindow = WelatiAirdropWindow;
 	type AirdropWindowCeiling = WelatiAirdropWindowCeiling;

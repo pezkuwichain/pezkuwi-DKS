@@ -788,13 +788,23 @@ fn get_required_trust_score_works() {
 	});
 }
 
+/// The named requirements, at the roll they were written for.
+///
+/// This used to assert them against an empty register, which is where the defect lived: the
+/// numbers are what a mature country asks and they were being asked of a village. The roll is
+/// now part of the question, so the test has to say which roll it means.
 #[test]
 fn get_required_endorsements_works() {
 	ExtBuilder::default().build().execute_with(|| {
+		pezpallet_identity_kyc::CitizenCount::<Test>::put(crate::mock::MatureRoll::get());
+
 		assert_eq!(Welati::get_required_endorsements(&ElectionType::Presidential), 100);
 
 		assert_eq!(Welati::get_required_endorsements(&ElectionType::Parliamentary), 50);
 
+		// Offices filled from a body rather than from the register endorse nothing: the
+		// speaker is chosen by the house, and a house of two hundred cannot supply a hundred
+		// endorsements without the vote and the endorsement being the same act.
 		assert_eq!(Welati::get_required_endorsements(&ElectionType::SpeakerElection), 0);
 	});
 }
@@ -3454,6 +3464,55 @@ fn an_unqualified_appointee_is_caught() {
 		crate::DiwanMembers::<Test>::put(members);
 		crate::mock::check_invariants();
 	});
+}
+
+mod a_candidacy_bar_that_fits_the_country {
+	use super::*;
+
+	fn roll_of(n: u32) {
+		pezpallet_identity_kyc::CitizenCount::<Test>::put(n);
+	}
+
+	#[test]
+	fn the_bar_is_a_share_of_the_register_not_a_number_out_of_it() {
+		ExtBuilder::default().build().execute_with(|| {
+			let mature = crate::mock::MatureRoll::get();
+			let ceiling = crate::mock::PresidentialEndorsements::get();
+
+			// At the mature roll nothing changes: this is the number the constitution names.
+			roll_of(mature);
+			assert_eq!(Welati::get_required_endorsements(&ElectionType::Presidential), ceiling);
+			// And it does not keep climbing past it. A share of forty million would be a bar
+			// no candidate could clear either, in the opposite direction.
+			roll_of(mature * 400);
+			assert_eq!(Welati::get_required_endorsements(&ElectionType::Presidential), ceiling);
+
+			// Half the country, half the bar. Before this the same thousand were required of a
+			// register of two thousand -- half the population, each needing standing that comes
+			// mostly from education, which is zero on the day the chain starts.
+			roll_of(mature / 2);
+			assert_eq!(
+				Welati::get_required_endorsements(&ElectionType::Presidential),
+				ceiling / 2
+			);
+		});
+	}
+
+	#[test]
+	fn a_tiny_register_still_has_a_bar() {
+		ExtBuilder::default().build().execute_with(|| {
+			// A share of nearly nobody is nothing, and a candidacy that costs nothing is not a
+			// candidacy: the endorsement exists so that standing spends somebody else's
+			// reputation as well as your own.
+			roll_of(1);
+			let floor = crate::mock::PresidentialEndorsements::get() / 20;
+			assert_eq!(
+				Welati::get_required_endorsements(&ElectionType::Presidential),
+				floor.max(10)
+			);
+			assert!(Welati::get_required_endorsements(&ElectionType::Parliamentary) >= 10);
+		});
+	}
 }
 
 mod a_denominator_that_can_shrink {

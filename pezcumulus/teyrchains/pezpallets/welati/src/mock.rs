@@ -535,6 +535,7 @@ parameter_types! {
 	pub const RelayWhitelistPalletIndex: u8 = 44;
 	pub const AirdropWindow: u64 = 1_000;
 	pub const DormancyPeriod: u64 = 5_000;
+	pub const MatureRoll: u32 = 100;
 	pub const AirdropWindowCeiling: u128 = 2_500;
 }
 
@@ -807,6 +808,7 @@ impl pezpallet_welati::Config for Test {
 	type FastTrackOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
 	type DormancyPeriod = DormancyPeriod;
+	type MatureRoll = MatureRoll;
 	type AirdropWindow = AirdropWindow;
 	type AirdropWindowCeiling = AirdropWindowCeiling;
 	type MaxConsecutiveTerms = MaxConsecutiveTerms;
