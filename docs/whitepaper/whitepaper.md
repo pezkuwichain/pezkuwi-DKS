@@ -2,8 +2,14 @@
 
 ### A state that runs as software
 
-**Whitepaper v6.0 — Mainnet Edition**
+**Whitepaper v6.1 — Testnet Edition**
 Dijital Kurdistan Tech Institute
+
+*The chain described here runs on a test network. Six months live, 2.7 million blocks
+finalised, no mainnet genesis yet. §10.1 accounts for every gap the last edition named — what
+was built, what was decided, and the one thing this design deliberately does not do — in full
+and without softening. A reader who finds something there before finding it in the code is
+reading the document this was written to be.*
 
 ---
 
@@ -156,6 +162,15 @@ denominator has a floor. Below it a question is not cheap to carry; it is refuse
 way a stratum with too few members is refused a seat in §7.2. The floor is not a quorum a
 referendum has to assemble on top of its own rules — it is the same rule, honestly denominated.
 
+**And the roll can fall as well as rise.** A denominator that only grows has the same end as
+a captured one: every lost key, every death and everybody who registered once and never came
+back would stay in it for good, so the share a question needs would climb for ever while the
+people who could supply it did not. A citizen who has taken no part in anything for two years
+stops counting towards it. Nothing is taken away — the citizenship, the standing and the vote
+all remain, and casting one puts them back in the count in the same block — and anybody may
+mark a silence that the chain can already see, because a body that chose whose absence counted
+could shrink the electorate before a vote it cared about.
+
 Two things follow. Nothing can pass before the roll reaches two thousand, because a question
 needs two thousand ayes and there is nobody else to cast them — and that is a necessary size
 rather than a sufficient one, since two thousand citizens must actually vote aye, not merely
@@ -172,6 +187,11 @@ Five tracks exist, each dispatching a different authority:
 | `welati_admin` | 7 days | 3 h | Routine administration |
 | `citizenship_admin` | 14 days | 6 h | The register's own administration |
 | `qeyd_rules` | **90 days** | 7 days | The rules governing the register itself |
+
+**Voting costs nothing.** Answering a referendum, casting a ballot and endorsing a candidacy
+are free the first time each citizen does them — the fee is skipped in the runtime rather than
+refunded — because a franchise that costs money is not one this document can claim. A repeat is
+paid for, which is what stops a free call being a free call twice.
 
 The last one is the notable entry. The parameters that decide who may vouch for a new
 citizen, how many people one citizen may vouch for, and what suspends that right, are held
@@ -228,6 +248,30 @@ somebody is never counted as having chosen them. And the **court**, as the regis
 authority, can revoke a citizenship or a vouch after the fact. Neither is an administrator
 of admission: one cannot refuse, the other cannot admit.
 
+**What the identity hash does and does not prove.** Uniqueness of the hash stops the same
+document being registered twice. It does not stop one person registering twice with two
+documents, and this system claims no proof of personhood. The defence against a manufactured
+population is the vouching chain and its cost: a fabricated citizen needs an existing citizen
+to stand for them, vouching places are finite, and a voucher whose referrals are revoked
+loses the right to vouch at all. That is accountability rather than impossibility, and it is
+priced accordingly — a hostile register-stuffer must either buy citizens who have something
+to lose or burn their own standing at three revocations. We state the bound rather than
+overclaim the mechanism: the register is as honest as the citizens who fill it, which is a
+weaker guarantee than cryptography and a stronger one than an administrator's judgement.
+
+**Losing the key.** A citizenship NFT is non-transferable and its identity hash is claimed
+for good, so an applicant who loses their key cannot simply register again — the hash would
+collide with the one they already own. The remedy is judicial rather than automatic: the
+court, sitting as the register authority at two thirds, may reissue a citizenship to a new
+account. It is deliberately not a self-service path. A recovery anybody can invoke is a theft
+mechanism wearing a helpful name, and the register is the one asset in this system with no
+market price and no way to be made whole after the fact.
+
+The old account is retired for good. It can be neither reissued again nor reissued *to*, which
+is what stops a chain of accounts being used to launder standing through a series of court
+orders. It stays on the record as superseded rather than being erased: history keeps the name it
+was written under, and only what a person is owed or answerable for follows them forward.
+
 ---
 
 ## 5. The institutions
@@ -241,8 +285,14 @@ a community badge, and the code refuses it.
 ### 5.1 Serok — the President
 
 One seat, four years, elected by every citizen. To stand, a candidate needs an approved
-identity, a trust score of at least 250, a thousand endorsements each from a citizen with a
-trust score of at least 40, and a hundred-HEZ deposit. Nobody may serve more than two
+identity, a trust score of at least 250, a hundred-HEZ deposit, and endorsements from citizens with
+a trust score of at least 40 — a thousand of them once the register is grown, and the same
+*share* of a smaller one before that. Written flat, a thousand was half the population of a
+young roll, each endorser needing standing that comes mostly from education nobody could have
+earned yet; the first election would have been winnable only from inside whatever circle could
+hand out the rest. The threshold now scales with the register up to the figure named here and
+never past it, with a floor so that a candidacy in a small country still costs somebody else's
+reputation. Nobody may serve more than two
 consecutive terms.
 
 The election requires fifty percent turnout — waived only after one failed attempt, so that
@@ -265,6 +315,14 @@ Elected, but only from among sitting members of parliament, and requiring a trus
 at least 200. The Speaker holds no term of their own — the office is vacated whenever a new
 house is seated, because a speaker without a house is not a speaker.
 
+**An office that falls empty does not wait for the calendar.** A vacancy opens its election at
+once rather than at the end of a term nobody is serving, and that holds for the bodies as well
+as for the single-holder offices: a house that lost every seat cannot vote itself back, and an
+elected seat on the court has no other route to being refilled — the President fills an
+appointed vacancy the moment one opens, but the elected six are the house's to seat. In the
+meantime the Speaker acts for an absent President, which is the ordinary rule: the presiding
+officer of the elected house, chosen by that house, and already in the country's confidence.
+
 ### 5.4 Dîwan — the Constitutional Court
 
 Eleven seats, nine years — the longest term in the system, and longer than any body that
@@ -281,7 +339,38 @@ specialist, network operator, economist, accountant, planner, electoral officer,
 auditor, scholar, or cultural custodian. A president may choose, but only from people the
 register already recognises as qualified.
 
-**There is no call to dismiss a member of the court.** The absence is the point.
+**There is no call to dismiss a member of the court.** The absence is the point: a court
+that can be removed by the powers it rules on is not a court, and nine years is longer than
+any body that appoints to it precisely so that no single alignment outlives it.
+
+**The seats are not staggered, and that is a choice rather than an omission.** A staggered
+bench is harder for one election to capture, and giving that up is a real cost — but a
+staggered court is one whose seats are always about to fall vacant, so its members always sit
+in front of the body that will next fill them. This court is meant to be eleven people the
+nation already follows, seated once, irremovable, owing nothing to whoever seated them; a
+rolling appointment would let the calendar back in exactly what the missing dismissal call
+keeps out. The capture worry is answered by arithmetic instead: taking all eleven needs the
+house *and* the presidency in one moment, and both run for four years against the court's nine
+— so the alignment that seated it faces the electorate twice before a single seat turns over.
+
+**Dismissal and vacancy are different questions, and only the first is closed.** Death, a lost
+key, and permanent silence are not misconduct, but they subtract from the same two-thirds a
+decision needs; four silent seats out of eleven make that threshold unreachable for good, and
+every authority the court carries — the register, the validator pool, and the fast upgrade
+path in §10.1 — freezes with it. So the court's seats are vacated on measured inactivity, and
+the duty that goes with a seat is one signature every hundred and eighty days. It decides
+nothing — a check-in is not a vote and says nothing about how a member would rule — because a
+duty that required agreeing with anybody would make the court answer to whoever set the test.
+Anyone may then vacate a seat that has missed it; the condition is arithmetic that anybody can
+check for themselves, and no body is given the power to choose whose absence counts, because
+every body that could hold it is one the court exists to rule on.
+
+Vacating is itself the repair: two thirds is counted over the members who sit, so a bench of
+seven needs five rather than eight, and the court resumes the moment the silent seats leave it.
+Refilling is the slower half — the President may appoint into a vacancy at once, while an
+elected seat waits for the court's next scheduled election. Removal for cause remains
+impossible; absence is not cause, and treating it as such would be the loophole this rule
+exists to refuse.
 
 The court is not decorative. Two thirds of it constitutes the *register authority*, which
 governs the citizen register itself, administers the validator pool, and can strip an elected
@@ -369,26 +458,74 @@ how much stake sits behind it.
 
 ### 7.1 The nine strata
 
-| Stratum | Admits a citizen who has |
-|---|---|
-| **Stake** | Any staking score above zero |
-| **Meclis** | Any trust, standing on the parliamentary path |
-| **Dîwan** | Any trust, standing on the judicial path |
-| **Perwerde** | Any education score above zero |
-| **Tiki** | Any community score above zero |
-| **Welatî lottery** | Any trust — the open seat of ordinary citizenship |
-| **Geography** | Any trust, on regional distribution |
-| **Tenure** | Any trust, on length of service |
-| **Infrastructure** | Any trust, on operational contribution |
+| Stratum | Admits a citizen who has | Answers to |
+|---|---|---|
+| **Stake** | Any staking score above zero | The market |
+| **Meclis** | A seat in the elected house | The house |
+| **Dîwan** | A seat on the court | The court |
+| **Perwerde** | Any education score above zero | Accredited institutions |
+| **Tiki** | Any community score above zero | The community |
+| **Welatî lottery** | Trust above forty — more than the cheapest act | Nobody; the pool dilutes |
+| **Geography** | An attested belonging to a part of the nation | A notary, undone by the court |
+| **Tenure** | A year of unbroken, offence-free membership | Nobody; only elapsed time |
+| **Infrastructure** | Forty-eight sessions validated, and no pattern of failing with others | Nobody; the chain's own record |
+
+The third column is the one the security argument counts. Two strata answering to the same
+institution are one stratum, and eight distinct answers is what "nine independent gates" has to
+mean before it can be claimed.
 
 Each stratum seats **three** validators. A full committee is **twenty-seven**.
 
+The stratum named Dîwan is the court of §5.4, and a seat there confers no judicial
+office in the other direction: a judge who validates is a judge who runs a node, and the court
+still decides as a body of two thirds. Its floor is the one exception in §7.3, and the court's
+size is exactly the reason for it.
+
 The security argument rests on the strata being gated by *different* authorities: two strata
 answering to the same institution are one stratum, not two, and the committee's independence
-is counted from that number. Three of the nine gates are measured on this chain today —
-stake, education and community tikis each read their own score. The other six are attested by
-authorities whose dedicated channels are still being built, and until those land they reach
-this chain as trust standing, which means they are not yet independent of one another. The
+is counted from that number. All nine gates are measured on this chain today, and
+they are nine different measurements. Stake, education and community tikis each read their own
+score. The parliamentary and judicial strata read the membership they are named after, so a
+citizen with a perfect trust score and no seat is refused by both. Geography reads an attested belonging — where a citizen is
+*from*, not where they are sitting. Somebody from Rojava living in Germany marks Rojava: this is
+the register of a dispersed nation, and what is worth spreading seats across is which part of it
+a person comes from. Six are recognised: **Başûr, Bakur, Rojava, Rojhilat, the diaspora and the
+Caucasus**, the last two for citizens whose belonging is to neither of the four. A citizen may
+ask for a mark once twenty-five settled referrals stand behind them, a notary confirms the
+region they claimed and no other, the court can cancel it — and the citizen can take it back,
+because it is volunteered and nothing else asks for it. Where a validator's machine physically
+stands is a different question, and the ninth stratum answers it by measurement rather than by
+asking. The three seats rotate across the regions
+rather than pooling — six complete a cycle in two eras — because three seats drawn from one pool
+would go to whichever region is most populous and the label would decide nothing. Tenure
+reads unbroken, offence-free time in the pool and answers to no authority at all: it is the one
+qualification that cannot be granted, bought or manufactured. Moving between strata does not
+break it — a member never stops being in the pool — but leaving does, and so does an offence, so
+a validator who equivocates begins that record again rather than waiting out a ban. The open lottery asks only that a
+citizen has done more than the cheapest possible act — its bar is exactly what an account that
+stakes the smallest tier and does nothing else scores — because that stratum's security is the
+size of the pool rather than the height of its bar, and a hard gate there would duplicate one of
+the other eight and shut out the ordinary citizens it exists to seat.
+
+Infrastructure is the ninth, and it is the only gate that asks for *work done*. Forty-eight
+sessions seated, no ban, and no repeated pattern of failing alongside others. The other eight
+are passed with money, an identity, a vouch, a seat or a signature; this one is passed by having
+validated, which nobody can grant and no manufactured account arrives holding.
+
+**It measures failing together rather than being apart, and that is deliberate.** Location
+matters only because validators in one place go down at the same moment, and that moment is the
+only consequence of shared infrastructure that reaches a chain at all. So the relay reports, at
+the end of each session, who was seated and who authored nothing; one name is an operator's own
+outage, eight names is eight operators who share something. A session where more than half the
+committee is down marks nobody — that is the network having a bad day, and counting it would
+mark every honest operator at once.
+
+**It disqualifies; it does not certify.** A cluster that has never had an outage looks exactly
+like independent operators, and no measurement from inside a chain can separate them — two
+validators that have never diverged leave no trace of their difference. A declaration would not
+solve that, only hide it, and would put an authority and a lie where there is currently
+neither. What this gate does is make shared ground detectable once it costs anything, and it
+says so rather than promising more. The
 figure to hold onto is therefore this: **nine strata are specified, and the count of
 independent gates is what the network should be judged on at any given moment.** It is
 published on chain, and it is not nine yet.
@@ -396,7 +533,11 @@ published on chain, and it is not nine yet.
 ### 7.2 Membership is a gate, not a ranking
 
 This is the part that most distinguishes TNPoS from anything score-weighted. Inside a
-stratum, a higher trust score buys **no advantage whatsoever**. The score decides whether you
+stratum, a higher trust score buys **no advantage whatsoever**. Nor is admission permanent:
+every gate is read again at each draw, so a member whose term ended, whose court seat was
+vacated for silence, or whose mark the court cancelled stops being drawn in that era rather
+than at whatever point they get round to leaving. A gate read only at the door disqualifies
+nobody already inside. The score decides whether you
 are in the pool; a uniform random draw decides whether you sit. The wealthiest citizen and
 the barely-qualified citizen have the same chance in the same stratum.
 
@@ -408,7 +549,12 @@ is underway.
 ### 7.3 The floors that refuse to seat a weak committee
 
 A stratum with fewer than **fifty** eligible members is not seated at all, and **its seats are
-not redistributed**. A committee is refused if it draws from fewer than five strata, or has
+not redistributed**. The court is the single exception and carries its own floor of three, which
+is its seat count: fifty is sized against an adversary who can *manufacture* eligible members,
+and a seat on an eleven-member court cannot be manufactured — taking six of them means taking
+the house and the presidency together, at which point three validator seats are not what stopped
+anybody. Applying fifty there would have left the judicial stratum permanently unseatable, since
+eleven can never be fifty. A committee is refused if it draws from fewer than five strata, or has
 fewer than fifteen members, or more than sixty-four.
 
 Refusing to fill a committee is a safer failure than filling it from whoever happens to be
@@ -511,6 +657,16 @@ percent goes to the treasury and the rest to those securing the chain. Only the 
 office on the People chain, may change the rate — never HEZ holders, and never by more than
 one percentage point at a time, no more often than every ninety days.
 
+**What a fixed base means for a holder.** Because the rate applies to the fixed two hundred
+million rather than to circulating supply, emission does not compound: the same number of HEZ
+arrives every year, and the *effective* rate falls as the supply grows — about eight percent
+in year one, four and a half in year ten, under three by year twenty-five. Supply is
+nonetheless unbounded. It doubles in roughly twelve and a half years and triples in
+twenty-five. A genesis holder who never stakes is therefore diluted linearly and permanently,
+and this is a property of the design rather than an oversight: the emission buys validator
+security, which a state cannot pay for out of fees it does not yet collect. Stated plainly so
+that nobody has to derive it from the schedule.
+
 Emission is not the only income. Transaction fees on the relay split **eighty percent to the
 treasury and twenty percent to the block's author**; on the teyrchains the whole fee goes to
 the collator pot, which is a collator's only income, since inflation pays the relay's
@@ -603,6 +759,16 @@ proposes, this body decides, this vault pays.*
 
 ### 9.2 What the vaults refuse
 
+**A ceiling on one payment is not a ceiling on spending.** The airdrop pot pays on two
+signatures below a million HEZ and needs the Treasurer above it, which bounded any single
+payment and nothing else: a million could be moved, and then another million, until a
+forty-million pot was empty and the office being skipped was the only one that would have
+noticed. The pot now remembers. Recent payments drain away over a month rather than resetting
+on a boundary — a window that resets is worth twice its ceiling to whoever reads the clock —
+and once three million have moved inside one, the Treasurer signs and the week's wait applies
+however small the next payment is.
+
+
 Four of the five vaults name **exactly one chain** they will accept instruction from: the
 People chain. Not the relay. Not root. Not a key. The airdrop pot, the presale pot and both
 PEZ pots are configured with an origin that matches the People chain's location and has no
@@ -663,6 +829,16 @@ No office signs a citizen's reward. It is claimed, and the arithmetic is the aut
 **At the implementation layer**, the runtime is Rust compiled to WebAssembly, and upgrades are
 forkless — a defect is patched by a runtime upgrade, not by asking the network to migrate.
 
+**And a defect can be patched in hours, on two keys.** The ordinary route to the relay's root
+is the twenty-eight-day referendum, which is the right speed for a constitutional amendment and
+the wrong one for something being exploited — and the call that fixes an unknown defect cannot
+have been approved in advance. So the court, at two thirds, may put a call hash on the relay's
+whitelist, and a whitelisted call confirms in ten minutes. Neither key is enough alone: the
+court cannot dispatch what it lists, and what it lists is public for the whole of its
+confirmation. The court holds it rather than a ministry because this is the one authority that
+has to be used while something is going wrong, and the body holding it must not be the body
+most likely to be the reason.
+
 **At the consensus layer**, block production and finality are separate mechanisms, so that a
 chain that stops finalising still produces blocks and a chain that stops producing does not
 finalise garbage. Equivocation and disputes are reported on-chain.
@@ -683,6 +859,42 @@ instruction from the register; the register is governed by a court that neither 
 nor the parliament can seat alone; the rules for admission to the register can only be changed
 by a ninety-day referendum of the people already in it; and the relay's root can be reached
 from exactly one place.
+
+### 10.1 What is built, what was decided, and what is left
+
+A design document that lists only what works is an advertisement. This section is the other
+half, and it is written to be complete rather than reassuring: anything here is something a
+reader could otherwise find in the code and conclude we had hidden.
+
+**Nothing is outstanding.** The previous edition of this section listed thirteen items — ten
+agreed and unbuilt, three undecided. All ten are built. All three are decided, and the two
+that turned out to rest on a misreading of the code are gone rather than answered. What
+follows is where each went, and the one thing this design deliberately does not do.
+
+**Closed since the last edition, and described where they belong.** Listed here so that a
+reader who was given the previous version can see what moved: the emergency upgrade path (§10),
+vacancy on silence and judicial reissue (§4, §5.4), the airdrop's memory (§9.2), the dormancy
+rule, the candidacy bar as a share of the roll and free voting (§3.1) — and all nine validator
+gates, which now read nine different things rather than six of them reading one (§7.1). Each is
+a mechanism and not a promise; the sections named are where it is described, and the code is
+what settles it.
+
+**What the register publishes, and why that is a decision rather than an oversight.** No
+personal data is on chain: an identity is a hash, and the documents behind it never leave the
+applicant. What is public is what people *did* — who vouched for whom, who endorsed whom, how
+each account voted. That is deliberate and it is the same principle throughout: acts are public,
+persons are not. A vouch that nobody could see would be a guarantee nobody could hold the
+guarantor to, and the accountability the register runs on is exactly that visibility.
+
+The protection is that an account is a number and not a name, and the register never learns the
+name. It is a real protection and a bounded one: somebody who identifies one account can read
+outward along its vouches, and deleting the edges later would not help, because a vouch was an
+extrinsic and the blocks keep it. A zero-knowledge membership proof would close that, and it
+sits on the roadmap rather than in this list — it is a project, not a gap in what was built.
+
+**And one thing that is not a gap.** There is no proof of personhood, by decision rather than
+by omission. §4 says what the vouching chain does and does not buy. We would rather state a
+weaker guarantee accurately than a stronger one loosely.
 
 ---
 
@@ -751,6 +963,12 @@ a solicitation, or investment advice.
 | **council** | The parliament's standing collective; its roster is written from the sitting Meclis |
 | **escrow** | The relay-held mirror of the HEZ the Asset Hub carries; not supply, and excluded from turnout |
 | **root** | A seat, not an office: the People chain's referendum, and a sudo key for the founding period |
+| **stratum** | One of the nine pools the validator committee is drawn from, each gated by a different authority |
+| **dormancy** | Having taken no part for two years; it removes a citizen from the support denominator and from nothing else |
+| **geographic mark** | Which part of the nation a citizen belongs to — not where they live: claimed by the citizen, confirmed by a notary, cancellable by the court, and withdrawable by the citizen |
+| **tenure** | Unbroken, offence-free membership of the validator pool; the one qualification no authority can grant |
+| **Noter** | Notary; the office whose attestation the register relies on |
+| **whitelist** | The relay's fast path: a call the court has listed can be enacted in hours instead of twenty-eight days |
 | **wHEZ** | HEZ wrapped one-for-one as an asset so that asset-handling pallets can trade it |
 | **wUSDT** | The custodial bridge's representation of USDT on the Asset Hub |
 | **bizinikiwi** | The framework layer |
@@ -765,7 +983,7 @@ a solicitation, or investment advice.
 | | |
 |---|---|
 | HEZ genesis supply | 200,000,000 |
-| Held on the Asset Hub / on the relay | 180,000,000 / 20,000,000 — less the validators' initial stashes, which are carved out of the treasury's share and minted on the relay |
+| Held on the Asset Hub / on the relay | 180,000,000 / 20,000,000 — less the validators' initial stashes, which are carved out of the treasury's share and minted on the relay, so the four allocations still sum to exactly 200,000,000 |
 | HEZ inflation, default / ceiling | 8% / 10% of a fixed 200M base |
 | PEZ supply | 5,000,000,000, fixed |
 | PEZ halving period | 48 monthly releases (~4 years) |
@@ -776,10 +994,20 @@ a solicitation, or investment advice.
 | Parliamentary seats / term | 201 / 4 years (first term halved) |
 | Constitutional Court | 11 seats — 6 elected, 5 appointed — 9 years |
 | Register-rules referendum | 90-day decision period |
-| Support denominator | The roll, or 100,000, whichever is larger |
+| Support denominator | The active roll, or 100,000, whichever is larger |
+| Dormancy — leaves the denominator after | 2 years with no participation; one vote returns |
 | Ayes needed to reach root | 2,000 |
 | Citizens' initiative threshold | 1% of the roll |
 | TNPoS committee | 9 strata × 3 seats = 27 |
 | TNPoS quorum / halt / fork | 19 / 9 / 11 |
-| Minimum eligible per stratum | 50 |
+| Minimum eligible per stratum | 50 — except the court's, which is 3, its seat count |
+| Independent gates measured today | 9 of 9 |
+| Court seat vacated after | 180 days without a signature |
+| Tenure — unbroken pool membership | 1 year; admits on trust until the chain is that old |
+| Open lottery — trust floor | 40, exactly what the cheapest account scores |
+| Infrastructure — sessions seated | 48 (≈8 eras of being drawn) |
+| Infrastructure — co-failure | disqualified by 3 sessions in 90 days failing with more than 3 others |
+| Geographic regions | 6 — Başûr, Bakur, Rojava, Rojhilat, diaspora, Caucasus |
+| Geographic mark — referrals to apply | 25 settled |
+| Airdrop — one payment / a month's payments | 1,000,000 HEZ / 3,000,000 HEZ before the Treasurer signs |
 | Chains specified / running at genesis | 5 / 2 |

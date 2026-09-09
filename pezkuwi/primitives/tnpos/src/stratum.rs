@@ -49,7 +49,12 @@ pub enum StratumId {
 	/// Drawn by lot from every citizen; gated only by citizenship.
 	#[codec(index = 5)]
 	WelatiLottery,
-	/// Attested residence outside the region.
+	/// Attested belonging to one of the parts of the nation.
+	///
+	/// Where somebody *is from*, not where they are sitting. A citizen from Rojava living in
+	/// Germany marks Rojava: this is a register of a dispersed nation, and the thing worth
+	/// spreading seats across is which part of it a person belongs to. Where the machine
+	/// stands is the ninth stratum's business, and it measures that directly.
 	#[codec(index = 6)]
 	Geography,
 	/// Uninterrupted, offence-free pool membership. Time cannot be bought or granted.

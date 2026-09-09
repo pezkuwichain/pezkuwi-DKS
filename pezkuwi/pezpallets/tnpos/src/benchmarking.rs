@@ -87,7 +87,7 @@ mod benchmarks {
 					.map(|&id| StratumConfig {
 						id,
 						seats: SEATS_PER_STRATUM,
-						min_eligible: MIN_ELIGIBLE_PER_STRATUM,
+						min_eligible: pezkuwi_tnpos_primitives::invariant::min_eligible_for(id),
 					})
 					.collect::<Vec<_>>(),
 			)
@@ -126,7 +126,7 @@ mod benchmarks {
 			.map(|&id| StratumConfig {
 				id,
 				seats: SEATS_PER_STRATUM,
-				min_eligible: MIN_ELIGIBLE_PER_STRATUM,
+				min_eligible: pezkuwi_tnpos_primitives::invariant::min_eligible_for(id),
 			})
 			.collect();
 
@@ -147,7 +147,7 @@ mod benchmarks {
 					.map(|&id| StratumConfig {
 						id,
 						seats: SEATS_PER_STRATUM,
-						min_eligible: MIN_ELIGIBLE_PER_STRATUM,
+						min_eligible: pezkuwi_tnpos_primitives::invariant::min_eligible_for(id),
 					})
 					.collect::<Vec<_>>(),
 			)

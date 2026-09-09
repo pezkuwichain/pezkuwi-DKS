@@ -348,7 +348,9 @@ impl pezpallet_identity_kyc::Config for Runtime {
 	type OnKycApproved = Referral;
 	// Losing citizenship concerns both: the referral record has a penalty to apply, and the
 	// trust score has to stop existing rather than being left behind at its last value.
-	type OnCitizenshipRevoked = (Referral, Trust);
+	// Welati is here for the dormancy count: a struck-off dormant citizen would otherwise
+	// be subtracted from the electorate twice.
+	type OnCitizenshipRevoked = (Referral, Trust, Welati);
 	// The other direction: a revocation the court reverses refunds what it charged the voucher.
 	type OnCitizenshipRestored = Referral;
 	type CitizenNftProvider = Tiki;
@@ -1128,11 +1130,21 @@ parameter_types! {
 	pub const StateMaxQueued: u32 = 20;
 }
 
-/// The roll, as the tally measures itself against.
+/// The roll, as the tally measures itself against: the citizens still taking part.
+///
+/// Not `citizen_count()`, and the difference is the whole of WP-14. Support is ayes over this
+/// number, and the register only ever grows -- every lost key, every death and everybody who
+/// registered once and never returned would stay in the denominator for good, so the share a
+/// question needs would climb for ever while the people who could supply it did not. A large
+/// enough roll would make every referendum unpassable, which is the same end as a captured one
+/// reached by arithmetic rather than by anybody deciding it.
+///
+/// Dormancy subtracts from this and from nothing else. A dormant citizen keeps the NFT, the
+/// trust, any office and the vote; casting one puts them back in the count in the same block.
 pub struct CitizenRoll;
 impl pezsp_core::Get<u32> for CitizenRoll {
 	fn get() -> u32 {
-		<WelatiCitizenSource as pezpallet_welati::CitizenInfo>::citizen_count()
+		pezpallet_welati::Pezpallet::<Runtime>::active_electorate()
 	}
 }
 
@@ -1233,12 +1245,78 @@ parameter_types! {
 	/// An elected mandate: four years.
 	pub const WelatiTermLength: BlockNumber = 4 * 365 * DAYS;
 
-	/// A seat on the Diwan: nine years.
+	/// A seat on the Diwan: nine years, and the whole of it at once.
 	///
 	/// The exception, and deliberately. The Diwan judges the President and the government; a
 	/// court seated on the same cycle as the people it judges leaves with them, and a court
 	/// that leaves with the government it was meant to check was never a check.
+	///
+	/// **Staggering was considered and refused.** A staggered bench is harder for one electoral
+	/// moment to capture, and that is a real property to give up -- so the reason is worth
+	/// writing down rather than leaving as an omission somebody later reads as an oversight.
+	///
+	/// A staggered court is one whose seats are always about to fall vacant, which means its
+	/// members are always sitting in front of the body that will next fill them. What this
+	/// court is for is the opposite: eleven people the nation already follows, seated once,
+	/// irremovable, and owing nothing to whoever seated them. Removal for cause does not exist
+	/// here (§5.4) for the same reason, and a rolling appointment would reintroduce through the
+	/// calendar exactly what the missing dismissal call keeps out.
+	///
+	/// The capture worry is answered by arithmetic rather than by rotation. Taking all eleven
+	/// needs the house *and* the presidency in one moment -- six elected, five appointed,
+	/// neither able to seat a majority alone -- and both of those bodies run for four years
+	/// against this nine. The alignment that seated the court faces the electorate twice before
+	/// a single seat turns over, and by then it is not the alignment any more.
 	pub const WelatiCourtTermLength: BlockNumber = 9 * 365 * DAYS;
+
+	/// How long a court seat may stay silent before anyone may vacate it: one hundred and
+	/// eighty days.
+	///
+	/// Long enough that it can only be reached by a seat nobody is operating. A judge who is
+	/// ill, travelling, or deliberately refusing to hear a case signs once in six months and
+	/// keeps the seat -- none of those is what this removes, and the term is the remedy for the
+	/// last of them. Short enough that a court paralysed by four unreachable seats is repaired
+	/// inside one year rather than waiting out nine.
+	/// How long a citizen may take no part in anything before they leave the denominator: two
+	/// years.
+	///
+	/// Long by design. This is not a participation requirement and must not become one -- a
+	/// citizen who votes once every eighteen months is exercising the franchise exactly as much
+	/// as the constitution asks of them. What two years of complete silence identifies is a
+	/// register entry with nobody behind it any more, and the cost of guessing wrong is a
+	/// single vote that puts them straight back.
+	pub const WelatiDormancyPeriod: BlockNumber = 2 * 365 * DAYS;
+
+	/// How long recent airdrop spending takes to drain away: thirty days.
+	///
+	/// A month is what an oversight cycle looks like -- long enough that a campaign of payments
+	/// cannot hide inside one, short enough that a pot doing ordinary work is never held up.
+	pub const WelatiAirdropWindow: BlockNumber = 30 * DAYS;
+
+	/// What may be paid in a window on two signatures: three million HEZ.
+	///
+	/// Three times the single-payment ceiling. Enough that the Treasurer is not asked about
+	/// routine work, small enough that the fourth full-size payment in a month is a decision
+	/// somebody has to defend. The pot holds forty million; before this, two signatures could
+	/// move all of it a million at a time.
+	pub const WelatiAirdropWindowCeiling: u128 = 3_000_000 * UNITS;
+
+	/// Where `pezpallet_whitelist` sits in the relay's runtime.
+	///
+	/// Pinned by `the_whitelist_call_encodes_the_way_people_builds_it` on the relay side. If
+	/// the relay renumbers and this does not follow, the court's fast track lands on whatever
+	/// pallet now holds 44 -- and nothing here would notice.
+	pub const RelayWhitelistPalletIndex: u8 = 44;
+
+	/// Settled referrals needed before a citizen may ask for a geographic mark.
+	///
+	/// Twenty-five, against a lifetime vouching ceiling of fifty: half a full record. High
+	/// enough that a manufactured account cannot reach it -- every referral is another citizen
+	/// who was admitted and stayed -- and low enough that somebody who has actually brought
+	/// people into the register is not kept out of one stratum by arithmetic.
+	pub const WelatiGeographicMarkReferrals: u32 = 25;
+
+	pub const WelatiCourtInactivityPeriod: BlockNumber = 180 * DAYS;
 
 	/// How many terms in a row one person may hold the same elected office.
 	///
@@ -1417,6 +1495,14 @@ impl pezpallet_tiki::TikiScoreProvider<AccountId> for WelatiTikiScoreSource {
 	}
 }
 
+pezpallet_welati::impl_rebind_adapters!(Runtime;
+	RebindReferral => pezpallet_referral,
+	RebindPerwerde => pezpallet_perwerde,
+	RebindTiki => pezpallet_tiki,
+	RebindTrust => pezpallet_trust,
+	RebindStakingScore => pezpallet_staking_score,
+);
+
 impl pezpallet_welati::Config for Runtime {
 	// This runtime's own measurement, like every other pallet here. It was generated and
 	// then never declared in `weights/mod.rs`, so it was not compiled, so the binding fell
@@ -1460,6 +1546,29 @@ impl pezpallet_welati::Config for Runtime {
 	type NativeCurrency = Balances;
 	type MaxEndorsers = WelatiMaxEndorsers;
 	type TermLength = WelatiTermLength;
+	type CourtInactivityPeriod = WelatiCourtInactivityPeriod;
+	// The register authority, and nothing weaker: this is the only call that hands one
+	// account's offices to another.
+	type ReissueOrigin = crate::RootOrDiwan;
+	// Every pallet that keys anything on a citizen. A pallet added later has to be added here
+	// too or its records are quietly left behind by every reissue -- the failure is silent,
+	// which is why the list is spelled out where all of them are visible rather than derived.
+	type ReissueCarries =
+		(RebindReferral, RebindPerwerde, RebindTiki, RebindTrust, RebindStakingScore);
+	// The court, and nothing else on this chain, may ask the relay to whitelist a call. The
+	// relay refuses it from anybody else in any case; checking here as well keeps the grant
+	// readable on the side that exercises it.
+	type FastTrackOrigin = crate::RootOrDiwan;
+	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
+	// The same number as the tally's floor, on purpose -- see `MatureRoll`.
+	type MatureRoll = MinElectorate;
+	type GeographicMarkReferrals = WelatiGeographicMarkReferrals;
+	// The court, not the President who appoints the notaries. Attestation is administrative
+	// and stays with the administration; undoing a false one is adjudication.
+	type GeographicRevokeOrigin = crate::RootOrDiwan;
+	type DormancyPeriod = WelatiDormancyPeriod;
+	type AirdropWindow = WelatiAirdropWindow;
+	type AirdropWindowCeiling = WelatiAirdropWindowCeiling;
 	type CourtTermLength = WelatiCourtTermLength;
 	type MaxConsecutiveTerms = WelatiMaxConsecutiveTerms;
 	type XcmSender = crate::xcm_config::XcmRouter;
@@ -1682,6 +1791,23 @@ impl pezpallet_vesting::Config for Runtime {
 /// current by construction and say so.
 pub struct RegisterScores;
 impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for RegisterScores {
+	fn is_meclis_member(who: &AccountId) -> bool {
+		// The register's own answer, read locally: both pallets are on this chain, so there is
+		// no channel between them to go quiet and no snapshot to age.
+		pezpallet_welati::Pezpallet::<Runtime>::is_parliament_member(who)
+	}
+
+	fn is_diwan_member(who: &AccountId) -> bool {
+		pezpallet_welati::Pezpallet::<Runtime>::is_diwan_member(who)
+	}
+
+	fn region_of(who: &AccountId) -> Option<u8> {
+		// The register's settled answer: claimed by the citizen, attested by a notary, and
+		// cancellable by the court. The index rather than the name, because the consensus
+		// layer groups by regions and never has to say one out loud.
+		pezpallet_welati::AttestedRegion::<Runtime>::get(who).map(|r| r.index())
+	}
+
 	fn trust_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
 		ScoreSnapshot {
 			value: <Trust as pezpallet_trust::TrustScoreProvider<AccountId>>::trust_score_of(who),
@@ -1820,11 +1946,54 @@ parameter_types! {
 	pub const TnposMaxPoolSize: u32 = 1_000;
 }
 
+pezframe_support::parameter_types! {
+	/// How long unbroken, offence-free pool membership must run before it is standing: one year.
+	///
+	/// Long enough that it cannot be waited out inside one attack, and the only qualification
+	/// in the nine strata that nobody can grant. Its own grace window is the same length: the
+	/// chain admits on trust until it is a year old, and the people admitted that way are
+	/// exactly the ones serving the year.
+	/// Standing the open lottery asks of an ordinary citizen: forty.
+	///
+	/// Exactly what an account that stakes the smallest tier and does nothing else scores, so
+	/// *above* it means "has done something beyond the cheapest act". The same forty the
+	/// register asks of an endorser -- one number, one meaning. Identical on both twins: it is
+	/// a property of the trust arithmetic, not of the network's size.
+	pub const TnposLotteryTrustFloor: u128 = 40;
+
+	/// Sessions seated before an operating record counts: forty-eight.
+	///
+	/// Eight eras of six sessions. A pool member is drawn for roughly three seats in every
+	/// fifty, so eight seatings is about a month of being picked, produced and observed --
+	/// enough that the record is a record rather than one lucky draw.
+	pub const TnposInfrastructureSessions: u32 = 48;
+
+	/// How far back co-failures are read: ninety days of hourly sessions.
+	pub const TnposInfrastructureWindow: u32 = 2_160;
+
+	/// Failing with three others is where twenty-seven validators stop looking unlucky.
+	pub const TnposCoFailureGroup: u32 = 3;
+
+	/// Three such sessions in the window. One is coincidence; a pattern is infrastructure.
+	pub const TnposCoFailureRepeats: u32 = 3;
+
+	pub const TnposTenurePeriod: BlockNumber = 365 * DAYS;
+}
+
 impl pezpallet_tnpos::Config for Runtime {
 	type WeightInfo = crate::weights::pezpallet_tnpos::WeightInfo<Runtime>;
 	type Sortition = pezpallet_tnpos::seed::CommitRevealSortition<Runtime>;
 	// The register itself, read locally. This is the reason the pallet is on this chain.
 	type Scores = RegisterScores;
+	type TenurePeriod = TnposTenurePeriod;
+	type LotteryTrustFloor = TnposLotteryTrustFloor;
+	// The relay, and only the relay: it arrives as `Superuser` from the parent, which this
+	// chain converts to Root. Nothing else reports what a session produced.
+	type PerformanceOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type InfrastructureSessions = TnposInfrastructureSessions;
+	type InfrastructureWindow = TnposInfrastructureWindow;
+	type CoFailureGroup = TnposCoFailureGroup;
+	type CoFailureRepeats = TnposCoFailureRepeats;
 	// The pallet's own register: it decides who may validate, so it holds the record of who
 	// has keys to validate with. Anything else here would be a second opinion about a fact it
 	// already keeps.
@@ -1995,6 +2164,37 @@ impl pezpallet_welati::BenchmarkHelper<AccountId> for WelatiBenchmarkHelper {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	/// The relay addresses this chain's `pezpallet_tnpos` as pallet 83, call 10.
+	///
+	/// It cannot name the call by type -- the relay does not depend on this runtime and must
+	/// not -- so it builds the bytes by hand, and nothing in either tree compares the two. If
+	/// this pallet is renumbered, or `note_session_performance` stops being call ten, the
+	/// relay's report lands on whatever now sits at that address. The failure is the quiet
+	/// kind: the send succeeds, and the register simply stops learning who validated, so the
+	/// ninth stratum goes empty for a reason nobody is looking at.
+	#[test]
+	fn the_performance_call_encodes_the_way_the_relay_builds_it() {
+		use codec::Encode;
+
+		let scored: Vec<AccountId> = vec![[1u8; 32].into(), [2u8; 32].into()];
+		let failed: Vec<AccountId> = vec![[3u8; 32].into()];
+
+		let real = crate::RuntimeCall::Tnpos(
+			pezpallet_tnpos::Call::<crate::Runtime>::note_session_performance {
+				scored: scored.clone(),
+				failed: failed.clone(),
+			},
+		)
+		.encode();
+
+		// The literals are what `tell_the_register` builds on the relay.
+		assert_eq!(
+			real,
+			(83u8, 10u8, scored, failed).encode(),
+			"the performance call's address moved"
+		);
+	}
 
 	/// The declared weight of a trust source is only true if the source is normalised by the
 	/// score that can actually be reached.

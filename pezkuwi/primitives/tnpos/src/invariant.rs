@@ -26,6 +26,37 @@ pub const MIN_COMMITTEE: u32 = 15;
 /// boundary that only one of them crosses.
 pub const MIN_ELIGIBLE_PER_STRATUM: u32 = 50;
 
+/// Seats each stratum carries in the specified committee.
+///
+/// Moved here from the pallet because the court's floor below is derived from it. A floor whose
+/// input lives in another crate is a floor that can be changed without anybody seeing what it
+/// moved.
+pub const SEATS_PER_STRATUM: u32 = 3;
+
+/// The floor for one stratum: the general one everywhere, the seat count on the court.
+///
+/// **The court is the only exception, and the reason is that its members cannot be
+/// manufactured.** Fifty is sized against an adversary who can *make* eligible members: a
+/// lottery dilutes a fixed number of infiltrators only when the pool is far larger than they
+/// are, and a pool anyone may enter can be filled with people the attacker controls. The Dîwan
+/// is eleven by constitution -- six elected by the house, five appointed by the President, nine
+/// years each. Holding six of them means holding the house *and* the presidency, and whoever
+/// has done that owns the chain already; three validator seats are not what stopped them. The
+/// general floor guards against a threat this stratum does not have.
+///
+/// So the floor here is the seat count. Below three the stratum cannot fill its seats and is
+/// not seated -- the committee is twenty-four rather than twenty-seven, still above
+/// `MIN_COMMITTEE` and still drawing from more than `MIN_STRATA`, and the seats are not handed
+/// to another stratum. At exactly three the draw is not yet a draw. Applying fifty would have
+/// left this stratum permanently unseatable, because eleven can never be fifty, and the
+/// judicial arm of the design would have been a name with nothing behind it.
+pub const fn min_eligible_for(id: crate::stratum::StratumId) -> u32 {
+	match id {
+		crate::stratum::StratumId::Divan => SEATS_PER_STRATUM,
+		_ => MIN_ELIGIBLE_PER_STRATUM,
+	}
+}
+
 /// The most seats a committee may carry. The pallet stores the seated committee in a
 /// bounded vector of exactly this size, so a configuration above it would pass validation
 /// and then fail at an era boundary -- which is the one moment a configuration must not be
@@ -92,7 +123,7 @@ pub fn seat(strata: &[StratumConfig], eligible: &[u32]) -> Result<Seating, Invar
 	// `min_eligible` is compared against below, never validated on its own -- a
 	// configuration could declare a floor under the design minimum, clear every other
 	// check here, and then seat a committee smaller than the one its event announces.
-	if strata.iter().any(|c| c.min_eligible < MIN_ELIGIBLE_PER_STRATUM) {
+	if strata.iter().any(|c| c.min_eligible < min_eligible_for(c.id)) {
 		return Err(InvariantError::FloorTooLow);
 	}
 
@@ -123,6 +154,79 @@ pub fn seat(strata: &[StratumConfig], eligible: &[u32]) -> Result<Seating, Invar
 	}
 
 	Ok(Seating { seated, n })
+}
+
+#[cfg(test)]
+mod the_courts_floor {
+	use super::*;
+	use crate::stratum::StratumId;
+
+	#[test]
+	fn only_the_court_carries_its_own_floor() {
+		// Eleven can never be fifty. Applying the general floor here would have left the
+		// judicial gate permanently unseatable: the stratum would exist, be counted among the
+		// nine, and never once seat a validator.
+		assert_eq!(min_eligible_for(StratumId::Divan), SEATS_PER_STRATUM);
+		for id in StratumId::ALL.iter().filter(|id| **id != StratumId::Divan) {
+			assert_eq!(
+				min_eligible_for(*id),
+				MIN_ELIGIBLE_PER_STRATUM,
+				"the exception widened past the court"
+			);
+		}
+	}
+
+	fn strata() -> Vec<StratumConfig> {
+		StratumId::ALL
+			.iter()
+			.map(|&id| StratumConfig {
+				id,
+				seats: SEATS_PER_STRATUM,
+				min_eligible: min_eligible_for(id),
+			})
+			.collect()
+	}
+
+	fn eligible_with_court(court: u32) -> Vec<u32> {
+		StratumId::ALL
+			.iter()
+			.map(|&id| if id == StratumId::Divan { court } else { MIN_ELIGIBLE_PER_STRATUM })
+			.collect()
+	}
+
+	#[test]
+	fn a_full_bench_seats_where_fifty_judges_never_could() {
+		let all = SEATS_PER_STRATUM * StratumId::ALL.len() as u32;
+		assert_eq!(seat(&strata(), &eligible_with_court(11)).unwrap().n, all);
+		// The whole point: eleven is a full court and would fail the general floor.
+		assert!(11 < MIN_ELIGIBLE_PER_STRATUM);
+	}
+
+	#[test]
+	fn too_few_judges_costs_three_seats_and_nothing_else() {
+		// Two is below the seat count, so the stratum is not seated -- and its seats are not
+		// handed to anybody. Twenty-four is still a committee: above `MIN_COMMITTEE`, drawn
+		// from more than `MIN_STRATA`.
+		let short = seat(&strata(), &eligible_with_court(2)).expect("the rest still stands");
+		assert_eq!(short.n, SEATS_PER_STRATUM * (StratumId::ALL.len() as u32 - 1));
+		assert!(short.n >= MIN_COMMITTEE);
+		assert!(short.seated.len() as u32 >= MIN_STRATA);
+		assert!(!short.seated.iter().any(|c| c.id == StratumId::Divan));
+	}
+
+	#[test]
+	fn a_configured_floor_below_the_courts_own_is_still_refused() {
+		// The exception is a floor for one stratum, not the removal of the check. A config
+		// that declares less than the court's own floor is as invalid as one that declares
+		// less than fifty anywhere else.
+		let mut low = strata();
+		let court = low
+			.iter_mut()
+			.find(|c| c.id == StratumId::Divan)
+			.expect("the court is one of the nine");
+		court.min_eligible = SEATS_PER_STRATUM - 1;
+		assert!(matches!(seat(&low, &eligible_with_court(11)), Err(InvariantError::FloorTooLow)));
+	}
 }
 
 #[cfg(test)]

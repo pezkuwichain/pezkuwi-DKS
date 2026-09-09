@@ -788,13 +788,23 @@ fn get_required_trust_score_works() {
 	});
 }
 
+/// The named requirements, at the roll they were written for.
+///
+/// This used to assert them against an empty register, which is where the defect lived: the
+/// numbers are what a mature country asks and they were being asked of a village. The roll is
+/// now part of the question, so the test has to say which roll it means.
 #[test]
 fn get_required_endorsements_works() {
 	ExtBuilder::default().build().execute_with(|| {
+		pezpallet_identity_kyc::CitizenCount::<Test>::put(crate::mock::MatureRoll::get());
+
 		assert_eq!(Welati::get_required_endorsements(&ElectionType::Presidential), 100);
 
 		assert_eq!(Welati::get_required_endorsements(&ElectionType::Parliamentary), 50);
 
+		// Offices filled from a body rather than from the register endorse nothing: the
+		// speaker is chosen by the house, and a house of two hundred cannot supply a hundred
+		// endorsements without the vote and the endorsement being the same act.
 		assert_eq!(Welati::get_required_endorsements(&ElectionType::SpeakerElection), 0);
 	});
 }
@@ -3241,9 +3251,10 @@ fn a_winner_who_is_no_longer_a_citizen_does_not_stall_the_queue() {
 
 #[test]
 fn the_clock_and_not_the_roll_opens_the_next_election() {
-	// Parliament is replaced by its term running out. There is no "the house is empty" arm
-	// in the scheduler for it -- see `office_is_vacant` -- so this pins what does open the
-	// election, and that seating the founding house is what starts that clock at all.
+	// The ordinary path: a house is replaced when its term runs out. There is an emptiness
+	// arm beside it now -- see `an_emptied_house_does_not_wait_for_its_term` -- and this pins
+	// that the clock still opens the election on its own, and that seating the founding house
+	// is what starts that clock at all.
 	ExtBuilder::default().build().execute_with(|| {
 		seat_president(1);
 		assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
@@ -3274,6 +3285,76 @@ fn a_seat_nobody_was_given_is_caught() {
 			pezpallet_tiki::Tiki::Parlementer
 		));
 		crate::mock::check_invariants();
+	});
+}
+
+/// A house that lost every seat cannot vote itself back, so the scheduler has to.
+///
+/// Rare to the point of never -- it takes every member removed by the court or stripped of
+/// citizenship inside one term -- and that is exactly why it needed an arm: there is no other
+/// way out. Without it the country has no legislature until a term nobody can serve runs out.
+#[test]
+fn an_emptied_house_does_not_wait_for_its_term() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_president(1);
+		assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
+		run_to_block(System::block_number() + 2);
+		assert!(
+			Welati::scheduled_election(ElectionType::Parliamentary).is_none(),
+			"a sitting house schedules nothing"
+		);
+
+		// Every seat gone, long before the term ends.
+		crate::ParliamentMembers::<Test>::kill();
+		run_to_block(System::block_number() + 1);
+
+		assert!(
+			Welati::scheduled_election(ElectionType::Parliamentary).is_some(),
+			"an empty house must open an election without waiting for the calendar"
+		);
+	});
+}
+
+/// A court seat vacated for silence has no other way back.
+///
+/// The President fills an appointed vacancy the moment one opens; the elected six have no such
+/// route. Without this arm the vacancy rule in §5.4 would restore the court's ability to decide
+/// -- two thirds counts over the members who sit -- while quietly leaving it smaller for the
+/// rest of a nine-year term.
+#[test]
+fn an_elected_court_seat_short_opens_an_election() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_president(1);
+		let term_end = System::block_number() + 999_999;
+		crate::TermEnds::<Test>::insert(ElectionType::ConstitutionalCourt, term_end);
+
+		let mut bench = Welati::diwan_members();
+		for who in 20..20 + crate::mock::DiwanElectedSeats::get() as u64 {
+			make_citizen(who);
+			let _ = bench.try_push(crate::types::DiwanMember {
+				account: who,
+				appointed_at: 1,
+				term_ends_at: term_end,
+				appointed_by: crate::types::AppointmentAuthority::Parliament,
+			});
+		}
+		crate::DiwanMembers::<Test>::put(bench.clone());
+		run_to_block(System::block_number() + 1);
+		assert!(
+			Welati::scheduled_election(ElectionType::ConstitutionalCourt).is_none(),
+			"a full elected half schedules nothing"
+		);
+
+		// One seat vacated, as a silence would.
+		let mut short = bench;
+		short.remove(0);
+		crate::DiwanMembers::<Test>::put(short);
+		run_to_block(System::block_number() + 1);
+
+		assert!(
+			Welati::scheduled_election(ElectionType::ConstitutionalCourt).is_some(),
+			"an elected seat left empty must open an election"
+		);
 	});
 }
 
@@ -3454,6 +3535,578 @@ fn an_unqualified_appointee_is_caught() {
 		crate::DiwanMembers::<Test>::put(members);
 		crate::mock::check_invariants();
 	});
+}
+
+mod a_geographic_mark {
+	use super::*;
+	use crate::types::Region;
+
+	const NOTARY: u64 = 40;
+	const APPLICANT: u64 = 41;
+
+	fn a_citizen_with_a_record(who: u64, referrals: u32) {
+		make_citizen(who);
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+			who,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
+		pezpallet_referral::ReferralCount::<Test>::insert(who, referrals);
+	}
+
+	fn a_notary() {
+		make_citizen(NOTARY);
+		assert_ok!(pezpallet_tiki::Pezpallet::<Test>::internal_grant_role(
+			&NOTARY,
+			pezpallet_tiki::Tiki::Noter
+		));
+	}
+
+	#[test]
+	fn a_record_built_out_of_other_people_is_what_buys_the_right_to_ask() {
+		ExtBuilder::default().build().execute_with(|| {
+			let threshold = crate::mock::GeographicMarkReferrals::get();
+			a_citizen_with_a_record(APPLICANT, threshold - 1);
+
+			// One short. The mark opens a stratum of the validator pool, so what qualifies
+			// somebody to ask for it has to be something a manufactured account cannot have.
+			assert_noop!(
+				Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Bakur),
+				Error::<Test>::NotEnoughReferralsForARegion
+			);
+
+			pezpallet_referral::ReferralCount::<Test>::insert(APPLICANT, threshold);
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Bakur));
+			// A claim is not a record.
+			assert!(crate::AttestedRegion::<Test>::get(APPLICANT).is_none());
+		});
+	}
+
+	#[test]
+	fn only_a_notary_attests_and_only_the_claim_that_was_made() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_a_record(APPLICANT, crate::mock::GeographicMarkReferrals::get());
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Bakur));
+
+			// A citizen who is not a notary cannot confirm anything.
+			make_citizen(42);
+			assert_noop!(
+				Welati::attest_region(RuntimeOrigin::signed(42), APPLICANT, Region::Bakur),
+				Error::<Test>::NotANotary
+			);
+
+			a_notary();
+			// A notary who could write any region would be placing citizens rather than
+			// verifying them, so the attestation has to match the claim.
+			assert_noop!(
+				Welati::attest_region(RuntimeOrigin::signed(NOTARY), APPLICANT, Region::Rojava),
+				Error::<Test>::AttestedADifferentRegion
+			);
+
+			assert_ok!(Welati::attest_region(
+				RuntimeOrigin::signed(NOTARY),
+				APPLICANT,
+				Region::Bakur
+			));
+			assert_eq!(crate::AttestedRegion::<Test>::get(APPLICANT), Some(Region::Bakur));
+			assert!(crate::ClaimedRegion::<Test>::get(APPLICANT).is_none());
+		});
+	}
+
+	#[test]
+	fn nobody_attests_their_own_claim() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_notary();
+			pezpallet_referral::ReferralCount::<Test>::insert(
+				NOTARY,
+				crate::mock::GeographicMarkReferrals::get(),
+			);
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+				NOTARY,
+				pezpallet_identity_kyc::types::KycLevel::Approved,
+			);
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(NOTARY), Region::Diaspora));
+			assert_noop!(
+				Welati::attest_region(RuntimeOrigin::signed(NOTARY), NOTARY, Region::Diaspora),
+				Error::<Test>::CannotAttestYourOwnRegion
+			);
+		});
+	}
+
+	#[test]
+	fn what_a_citizen_volunteered_a_citizen_can_take_back() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_a_record(APPLICANT, crate::mock::GeographicMarkReferrals::get());
+
+			// Nothing to take back yet.
+			assert_noop!(
+				Welati::withdraw_region(RuntimeOrigin::signed(APPLICANT)),
+				Error::<Test>::NoRegionClaimed
+			);
+
+			// A claim no notary ever looked at would otherwise sit in the register for good:
+			// the exposure of saying where you live, with none of the standing it buys.
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Kafkasya));
+			assert_ok!(Welati::withdraw_region(RuntimeOrigin::signed(APPLICANT)));
+			assert!(crate::ClaimedRegion::<Test>::get(APPLICANT).is_none());
+
+			// And an attested one, for the same reason. Nothing to game: giving it up only
+			// removes the citizen from the stratum it opens.
+			a_notary();
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Kafkasya));
+			assert_ok!(Welati::attest_region(
+				RuntimeOrigin::signed(NOTARY),
+				APPLICANT,
+				Region::Kafkasya
+			));
+			assert_ok!(Welati::withdraw_region(RuntimeOrigin::signed(APPLICANT)));
+			assert!(crate::AttestedRegion::<Test>::get(APPLICANT).is_none());
+		});
+	}
+
+	#[test]
+	fn the_court_undoes_what_a_notary_wrote_and_the_notary_cannot() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_a_record(APPLICANT, crate::mock::GeographicMarkReferrals::get());
+			a_notary();
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Rojhilat));
+			assert_ok!(Welati::attest_region(
+				RuntimeOrigin::signed(NOTARY),
+				APPLICANT,
+				Region::Rojhilat
+			));
+
+			// Notaries are the President's appointees. If one could also cancel, the whole
+			// mark would be the executive's and this stratum would answer to the same office
+			// the community stratum does.
+			assert_noop!(
+				Welati::revoke_region(RuntimeOrigin::signed(NOTARY), APPLICANT),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert_ok!(Welati::revoke_region(RuntimeOrigin::root(), APPLICANT));
+			assert!(crate::AttestedRegion::<Test>::get(APPLICANT).is_none());
+		});
+	}
+}
+
+mod a_candidacy_bar_that_fits_the_country {
+	use super::*;
+
+	fn roll_of(n: u32) {
+		pezpallet_identity_kyc::CitizenCount::<Test>::put(n);
+	}
+
+	#[test]
+	fn the_bar_is_a_share_of_the_register_not_a_number_out_of_it() {
+		ExtBuilder::default().build().execute_with(|| {
+			let mature = crate::mock::MatureRoll::get();
+			let ceiling = crate::mock::PresidentialEndorsements::get();
+
+			// At the mature roll nothing changes: this is the number the constitution names.
+			roll_of(mature);
+			assert_eq!(Welati::get_required_endorsements(&ElectionType::Presidential), ceiling);
+			// And it does not keep climbing past it. A share of forty million would be a bar
+			// no candidate could clear either, in the opposite direction.
+			roll_of(mature * 400);
+			assert_eq!(Welati::get_required_endorsements(&ElectionType::Presidential), ceiling);
+
+			// Half the country, half the bar. Before this the same thousand were required of a
+			// register of two thousand -- half the population, each needing standing that comes
+			// mostly from education, which is zero on the day the chain starts.
+			roll_of(mature / 2);
+			assert_eq!(Welati::get_required_endorsements(&ElectionType::Presidential), ceiling / 2);
+		});
+	}
+
+	#[test]
+	fn a_tiny_register_still_has_a_bar() {
+		ExtBuilder::default().build().execute_with(|| {
+			// A share of nearly nobody is nothing, and a candidacy that costs nothing is not a
+			// candidacy: the endorsement exists so that standing spends somebody else's
+			// reputation as well as your own.
+			roll_of(1);
+			let floor = crate::mock::PresidentialEndorsements::get() / 20;
+			assert_eq!(
+				Welati::get_required_endorsements(&ElectionType::Presidential),
+				floor.max(10)
+			);
+			assert!(Welati::get_required_endorsements(&ElectionType::Parliamentary) >= 10);
+		});
+	}
+}
+
+mod a_denominator_that_can_shrink {
+	use super::*;
+
+	// Support is ayes over the roll, and the roll only ever grew. Lost keys, deaths and people
+	// who registered once and never returned stayed in it for good, so the share a question
+	// needs climbed for ever while the people who could supply it did not. That ends in an
+	// unpassable referendum, which is a captured state arrived at by arithmetic.
+
+	fn a_citizen_who_has_never_voted() -> u64 {
+		let who = 30u64;
+		make_citizen(who);
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+			who,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
+		pezpallet_identity_kyc::CitizenSince::<Test>::insert(who, System::block_number());
+		// `citizen_count()` reads a maintained counter, not the status map, so writing the
+		// status directly leaves the roll at zero and `active_electorate` measures nothing.
+		pezpallet_identity_kyc::CitizenCount::<Test>::mutate(|c| *c = c.saturating_add(1));
+		who
+	}
+
+	#[test]
+	fn silence_leaves_the_denominator_and_one_vote_returns_to_it() {
+		ExtBuilder::default().build().execute_with(|| {
+			let who = a_citizen_who_has_never_voted();
+			let roll = Welati::active_electorate();
+
+			// Not yet: one block short of the period, however plainly gone they look.
+			System::set_block_number(
+				System::block_number() + crate::mock::DormancyPeriod::get() - 1,
+			);
+			assert_noop!(
+				Welati::mark_dormant(RuntimeOrigin::signed(OUTSIDER), who),
+				Error::<Test>::CitizenIsStillTakingPart
+			);
+
+			System::set_block_number(System::block_number() + 1);
+			// Permissionless: a body that could choose whose absence counts could shrink the
+			// electorate before a vote it cared about.
+			assert_ok!(Welati::mark_dormant(RuntimeOrigin::signed(OUTSIDER), who));
+			assert_eq!(Welati::active_electorate(), roll - 1);
+			assert_noop!(
+				Welati::mark_dormant(RuntimeOrigin::signed(OUTSIDER), who),
+				Error::<Test>::AlreadyDormant
+			);
+
+			// Still a citizen. Dormancy is a statement about a denominator, not a person.
+			assert!(pezpallet_identity_kyc::Pezpallet::<Test>::is_citizen(&who));
+
+			// And taking part puts them back in the same block, with nobody having to notice.
+			Welati::note_governance_activity(&who);
+			assert_eq!(Welati::active_electorate(), roll);
+		});
+	}
+
+	#[test]
+	fn a_new_citizen_is_not_dormant_for_never_having_voted() {
+		ExtBuilder::default().build().execute_with(|| {
+			// The clock runs from admission, not from zero -- otherwise everybody admitted
+			// after the chain has been up for a period is dormant on arrival.
+			System::set_block_number(crate::mock::DormancyPeriod::get() * 3);
+			let who = a_citizen_who_has_never_voted();
+			assert_noop!(
+				Welati::mark_dormant(RuntimeOrigin::signed(OUTSIDER), who),
+				Error::<Test>::CitizenIsStillTakingPart
+			);
+		});
+	}
+
+	#[test]
+	fn a_struck_off_dormant_citizen_is_not_subtracted_twice() {
+		ExtBuilder::default().build().execute_with(|| {
+			use pezpallet_identity_kyc::types::OnCitizenshipRevoked;
+			// A roll with room in it. With one citizen on the roll the arithmetic saturates at
+			// zero and the double subtraction is invisible -- the first version of this test
+			// passed with the hook removed for exactly that reason.
+			pezpallet_identity_kyc::CitizenCount::<Test>::mutate(|c| *c = c.saturating_add(9));
+			let who = a_citizen_who_has_never_voted();
+			System::set_block_number(System::block_number() + crate::mock::DormancyPeriod::get());
+			assert_ok!(Welati::mark_dormant(RuntimeOrigin::signed(OUTSIDER), who));
+			let after_dormant = Welati::active_electorate();
+
+			// Revocation moves the roll. Without the hook the dormancy flag survives it and the
+			// electorate drifts below the truth by one, in the direction that makes questions
+			// easier to carry -- and it never comes back.
+			Welati::on_citizenship_revoked(&who);
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+				who,
+				pezpallet_identity_kyc::types::KycLevel::Revoked,
+			);
+			pezpallet_identity_kyc::CitizenCount::<Test>::mutate(|c| *c = c.saturating_sub(1));
+
+			assert_eq!(Welati::active_electorate(), after_dormant);
+		});
+	}
+}
+
+mod the_courts_fast_track {
+	use super::*;
+	use xcm::latest::prelude::*;
+
+	#[test]
+	fn the_message_descends_to_the_judicial_body_after_asking_for_free_execution() {
+		ExtBuilder::default().build().execute_with(|| {
+			crate::mock::clear_sent_xcm();
+			let call_hash = pezsp_core::H256::repeat_byte(9);
+
+			assert_ok!(Welati::court_whitelists_on_the_relay(RuntimeOrigin::root(), call_hash));
+
+			let sent = crate::mock::sent_xcm();
+			assert_eq!(sent.len(), 1, "the court's request never left the chain");
+			let (dest, message) = sent.into_iter().next().unwrap();
+			assert_eq!(dest, Location::parent(), "the whitelist lives on the relay");
+
+			// The order is the test. The relay computes the origin from any leading
+			// `DescendOrigin` *before* it decides whether the sender may skip the fee, so
+			// descending first would present a plurality where a bare system teyrchain is
+			// expected and the message would be refused before its origin was ever judged --
+			// silently, from this chain's point of view, because nothing comes back.
+			let instructions: Vec<_> = message.into_iter().collect();
+			assert!(
+				matches!(instructions.first(), Some(UnpaidExecution { .. })),
+				"free execution must be asked for before the origin descends"
+			);
+			assert!(
+				matches!(
+					instructions.get(1),
+					Some(DescendOrigin(junctions))
+						if junctions.clone().into_iter().eq([Plurality {
+							id: BodyId::Judicial,
+							part: BodyPart::Voice,
+						}])
+				),
+				"the message did not descend to the judicial body"
+			);
+			// Without the descent the relay reads this chain speaking as itself, which is the
+			// origin its register-as-root converter answers -- the court would be asking for
+			// the constitution rather than for the whitelist.
+			assert!(
+				matches!(instructions.get(2), Some(Transact { origin_kind: OriginKind::Xcm, .. })),
+				"the call must travel as an Xcm origin, not a native one"
+			);
+		});
+	}
+
+	#[test]
+	fn nobody_but_the_court_may_ask() {
+		ExtBuilder::default().build().execute_with(|| {
+			crate::mock::clear_sent_xcm();
+			make_citizen(9);
+			assert_noop!(
+				Welati::court_whitelists_on_the_relay(
+					RuntimeOrigin::signed(9),
+					pezsp_core::H256::repeat_byte(9)
+				),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert!(crate::mock::sent_xcm().is_empty());
+		});
+	}
+}
+
+mod a_reissued_citizenship {
+	use super::*;
+	use crate::mock::holder_of;
+	use pezpallet_identity_kyc::types::KycLevel;
+
+	const LOST: u64 = 20;
+	const NEW: u64 = 21;
+
+	/// A citizen with something to lose: a hash, an office, a trust score and a vouching record.
+	fn a_citizen_with_standing() {
+		make_citizen(LOST);
+		let hash = pezsp_core::H256::repeat_byte(7);
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(LOST, KycLevel::Approved);
+		pezpallet_identity_kyc::IdentityHashes::<Test>::insert(LOST, hash);
+		pezpallet_identity_kyc::IdentityHashToAccount::<Test>::insert(hash, LOST);
+		pezpallet_identity_kyc::CitizenSince::<Test>::insert(LOST, 1);
+
+		assert_ok!(Welati::seat_unique_tiki(&LOST, pezpallet_tiki::Tiki::Xezinedar));
+		pezpallet_trust::TrustScores::<Test>::insert(LOST, 640u128);
+		pezpallet_referral::ReferralCount::<Test>::insert(LOST, 12u32);
+	}
+
+	#[test]
+	fn everything_follows_the_person_and_nothing_stays_behind() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_standing();
+			let hash = pezpallet_identity_kyc::IdentityHashes::<Test>::get(LOST).unwrap();
+			let roll_before = pezpallet_identity_kyc::Pezpallet::<Test>::citizen_count();
+
+			assert_ok!(Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, NEW));
+
+			// Arrived.
+			assert!(pezpallet_identity_kyc::Pezpallet::<Test>::is_citizen(&NEW));
+			assert_eq!(pezpallet_identity_kyc::IdentityHashes::<Test>::get(NEW), Some(hash));
+			assert_eq!(pezpallet_trust::TrustScores::<Test>::get(NEW), 640u128);
+			assert_eq!(pezpallet_referral::ReferralCount::<Test>::get(NEW), 12u32);
+			assert_eq!(holder_of(pezpallet_tiki::Tiki::Xezinedar), Some(NEW));
+
+			// And left. A copy would be a duplication of standing, which is worse than the
+			// loss the reissue exists to repair.
+			assert!(!pezpallet_identity_kyc::Pezpallet::<Test>::is_citizen(&LOST));
+			assert!(pezpallet_identity_kyc::IdentityHashes::<Test>::get(LOST).is_none());
+			assert_eq!(pezpallet_trust::TrustScores::<Test>::get(LOST), 0u128);
+			assert_eq!(pezpallet_referral::ReferralCount::<Test>::get(LOST), 0u32);
+
+			// The hash still names exactly one living account, or the same person could be
+			// admitted a second time under the successor.
+			assert_eq!(pezpallet_identity_kyc::IdentityHashToAccount::<Test>::get(hash), Some(NEW));
+			// One person left and the same person arrived.
+			assert_eq!(pezpallet_identity_kyc::Pezpallet::<Test>::citizen_count(), roll_before);
+		});
+	}
+
+	#[test]
+	fn a_retired_account_stays_retired_at_both_ends() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_standing();
+			assert_ok!(Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, NEW));
+
+			// Not reissued again...
+			assert_noop!(
+				Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, 22),
+				pezpallet_identity_kyc::Error::<Test>::AccountAlreadyRetired
+			);
+			// ...and not reissued *to*, which is what stops a chain of accounts being used to
+			// launder standing through a series of court orders.
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(23, KycLevel::Approved);
+			assert_noop!(
+				Welati::reissue_citizenship(RuntimeOrigin::root(), 23, LOST),
+				pezpallet_identity_kyc::Error::<Test>::AccountAlreadyRetired
+			);
+		});
+	}
+
+	#[test]
+	fn a_reissue_moves_and_never_merges() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_standing();
+			// The successor is already somebody. Grafting one person's record onto another's
+			// is the one thing this call must never be able to do.
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(NEW, KycLevel::Approved);
+
+			assert_noop!(
+				Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, NEW),
+				pezpallet_identity_kyc::Error::<Test>::SuccessorIsNotEmpty
+			);
+			assert_noop!(
+				Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, LOST),
+				pezpallet_identity_kyc::Error::<Test>::CannotReissueToTheSameAccount
+			);
+		});
+	}
+
+	#[test]
+	fn nobody_but_the_register_authority_may_reissue() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_standing();
+			// Least of all the holder of the account being moved to: the premise is that the
+			// signature is gone, so a signed recovery is a theft mechanism.
+			assert_noop!(
+				Welati::reissue_citizenship(RuntimeOrigin::signed(NEW), LOST, NEW),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert!(!pezpallet_identity_kyc::Pezpallet::<Test>::is_citizen(&NEW));
+		});
+	}
+
+	#[test]
+	fn observed_stake_is_the_one_thing_left_behind() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_standing();
+			// The bonded funds are on another chain, held by the key that was lost. Carrying
+			// this across would credit the successor with money nobody can move, and no noter
+			// will ever observe a stake for an account that has none, so nothing would correct
+			// it. Conduct as a noter does move -- a bad record must not be shed with a key.
+			pezpallet_staking_score::StakingStartBlock::<Test>::insert(LOST, 1u64);
+			pezpallet_staking_score::DisputesAgainstNoter::<Test>::insert(LOST, 3u32);
+
+			assert_ok!(Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, NEW));
+
+			assert!(pezpallet_staking_score::StakingStartBlock::<Test>::get(NEW).is_none());
+			assert_eq!(pezpallet_staking_score::DisputesAgainstNoter::<Test>::get(NEW), 3u32);
+			assert_eq!(pezpallet_staking_score::DisputesAgainstNoter::<Test>::get(LOST), 0u32);
+		});
+	}
+}
+
+mod a_silent_court_seat {
+	use super::*;
+
+	// The court is the one body with no dismissal call, which is what makes it a court -- and
+	// which is exactly why a seat that stops signing had to be given its own way out. Four
+	// unreachable seats out of eleven put a two-thirds decision beyond the remaining nine for
+	// the rest of a nine-year term, and every authority the court carries stops with it.
+
+	fn a_seated_judge() -> u64 {
+		seat_president(1);
+		make_qualified(8, pezpallet_tiki::Tiki::Bernamenivîs);
+		assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(1), 8));
+		8
+	}
+
+	#[test]
+	fn a_seat_that_still_signs_cannot_be_taken() {
+		ExtBuilder::default().build().execute_with(|| {
+			let judge = a_seated_judge();
+			let period = <Test as crate::Config>::CourtInactivityPeriod::get();
+
+			// One block short of the period, and the seat is obviously idle. It stays.
+			System::set_block_number(1 + period - 1);
+			assert_noop!(
+				Welati::vacate_inactive_court_seat(RuntimeOrigin::signed(99), judge),
+				Error::<Test>::CourtMemberIsStillReachable
+			);
+			assert_eq!(bench(), vec![judge]);
+
+			// A check-in resets the clock, so the seat survives the period it was about to fail.
+			assert_ok!(Welati::court_check_in(RuntimeOrigin::signed(judge)));
+			System::set_block_number(1 + period + 10);
+			assert_noop!(
+				Welati::vacate_inactive_court_seat(RuntimeOrigin::signed(99), judge),
+				Error::<Test>::CourtMemberIsStillReachable
+			);
+			assert_eq!(bench(), vec![judge]);
+		});
+	}
+
+	#[test]
+	fn a_seat_that_has_gone_silent_is_vacated_by_anyone() {
+		ExtBuilder::default().build().execute_with(|| {
+			let judge = a_seated_judge();
+			let period = <Test as crate::Config>::CourtInactivityPeriod::get();
+
+			// Never checked in, so the clock runs from the appointment rather than from zero.
+			System::set_block_number(1 + period);
+
+			// Permissionless: 99 holds no office and needs none. Handing this call to the
+			// president or the house would hand them a way to empty a seat.
+			assert_ok!(Welati::vacate_inactive_court_seat(RuntimeOrigin::signed(99), judge));
+
+			assert!(bench().is_empty());
+			assert!(!pezpallet_tiki::Pezpallet::<Test>::has_tiki(
+				&judge,
+				&pezpallet_tiki::Tiki::EndameDiwane
+			));
+			// The mock relays nothing to a collective (`CourtRoster = ()`), so the roster
+			// itself cannot be read here. What can be checked is the state the pallet is left
+			// in, and try_state is what holds the bench and its tikis together.
+			crate::mock::check_invariants();
+		});
+	}
+
+	#[test]
+	fn only_a_sitting_member_may_check_in_or_be_vacated() {
+		ExtBuilder::default().build().execute_with(|| {
+			let judge = a_seated_judge();
+			make_citizen(9);
+
+			assert_noop!(
+				Welati::court_check_in(RuntimeOrigin::signed(9)),
+				Error::<Test>::NotOnTheCourt
+			);
+			System::set_block_number(1 + <Test as crate::Config>::CourtInactivityPeriod::get());
+			assert_noop!(
+				Welati::vacate_inactive_court_seat(RuntimeOrigin::signed(99), 9),
+				Error::<Test>::NotOnTheCourt
+			);
+			assert_eq!(bench(), vec![judge]);
+		});
+	}
 }
 
 mod citizen_tally {
@@ -4222,6 +4875,83 @@ fn a_large_airdrop_needs_the_treasurer_too() {
 		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(TREASURER), 0));
 		let p = AirdropProposals::<Test>::get(0).unwrap();
 		assert!(p.approved_by_president && p.approved_by_treasurer);
+	});
+}
+
+/// The ceiling bounds one payment; the window bounds a run of them.
+///
+/// Before this the pot had no memory: two signatures could move the ceiling, and then move it
+/// again, forty times over. The office that would have noticed is the office being skipped.
+#[test]
+fn the_window_pulls_in_the_treasurer_once_recent_spending_adds_up() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		let each = AirdropCeiling::get(); // at the single-payment limit, never over it
+
+		// Two payments at the limit: each is small on its own and together they are still
+		// inside the window.
+		for id in 0..2u32 {
+			assert_ok!(Welati::propose_airdrop(
+				RuntimeOrigin::signed(PM),
+				EXCHANGE,
+				each,
+				b"listing".to_vec()
+			));
+			assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), id));
+			assert_ok!(Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), id));
+		}
+		assert_eq!(Welati::airdrop_spent_recently(), each * 2);
+
+		// The third is identical to the first two and is no longer the same decision.
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			each,
+			b"listing".to_vec()
+		));
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 2));
+		assert_noop!(
+			Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 2),
+			Error::<Test>::AirdropNotApproved
+		);
+
+		// And the Treasurer's signature brings the wait with it, measured from the signature.
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(TREASURER), 2));
+		let p = AirdropProposals::<Test>::get(2).unwrap();
+		assert_eq!(p.payable_from, System::block_number() + LargeAirdropDelay::get());
+	});
+}
+
+/// The window drains rather than resetting, and that is the whole point of it.
+///
+/// A window that resets on a boundary is worth twice its ceiling to anybody who reads the
+/// clock: pay the maximum at the end of one period and again at the start of the next. There
+/// is no boundary here to wait for -- the level falls continuously, so half a window returns
+/// half the room.
+#[test]
+fn the_window_drains_continuously_and_has_no_boundary_to_wait_for() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_the_three_offices();
+		let each = AirdropCeiling::get();
+
+		assert_ok!(Welati::propose_airdrop(
+			RuntimeOrigin::signed(PM),
+			EXCHANGE,
+			each,
+			b"listing".to_vec()
+		));
+		assert_ok!(Welati::approve_airdrop(RuntimeOrigin::signed(SEROK), 0));
+		assert_ok!(Welati::pay_airdrop(RuntimeOrigin::signed(OUTSIDER), 0));
+		assert_eq!(Welati::airdrop_spent_recently(), each);
+
+		// Half a window later, half of it is forgotten.
+		System::set_block_number(System::block_number() + crate::mock::AirdropWindow::get() / 2);
+		assert_eq!(Welati::airdrop_spent_recently(), each / 2);
+
+		// A whole window later, nothing is remembered and the pot is unencumbered again.
+		System::set_block_number(System::block_number() + crate::mock::AirdropWindow::get());
+		assert_eq!(Welati::airdrop_spent_recently(), 0);
+		assert!(!Welati::airdrop_needs_the_treasurer(each));
 	});
 }
 

@@ -124,6 +124,38 @@ impl xcm_executor::traits::ConvertOrigin<RuntimeOrigin> for StateRegisterAsRoot 
 	}
 }
 
+/// The People chain's court, speaking for itself rather than for the register.
+///
+/// One body, one authority, and both are named here rather than filtered later. The court may
+/// put a call on the relay's whitelist so that a defect can be patched in hours instead of the
+/// twenty-eight days a root referendum takes; it may do nothing else, because nothing else on
+/// this chain accepts the origin this produces.
+///
+/// It is separate from `StateRegisterAsRoot` on purpose and the two must not be collapsed. That
+/// one answers *"the whole register decided"* and grants everything; this one answers *"the
+/// court decided"* and grants one call. Matching a plurality there instead would have handed a
+/// ministry the constitution.
+///
+/// The two-thirds threshold is not checked here and cannot be: a message carries a body, not a
+/// vote count. It is enforced where the vote happens, by the origin on the People chain that
+/// emits this, and the trust placed here is in that chain rather than in the message.
+pub struct CourtOfPeopleAsXcmOrigin;
+impl xcm_executor::traits::ConvertOrigin<RuntimeOrigin> for CourtOfPeopleAsXcmOrigin {
+	fn convert_origin(
+		origin: impl Into<Location>,
+		kind: OriginKind,
+	) -> Result<RuntimeOrigin, Location> {
+		let origin = origin.into();
+		match (kind, origin.unpack()) {
+			(
+				OriginKind::Xcm,
+				(0, [Teyrchain(id), Plurality { id: BodyId::Judicial, part: BodyPart::Voice }]),
+			) if u32::from(*id) == PEOPLE_ID => Ok(pezpallet_xcm::Origin::Xcm(origin).into()),
+			_ => Err(origin),
+		}
+	}
+}
+
 type LocalOriginConverter = (
 	// A `Signed` origin of the sovereign account that the original location controls.
 	SovereignSignedViaLocation<LocationConverter, RuntimeOrigin>,
@@ -133,6 +165,8 @@ type LocalOriginConverter = (
 	SignedAccountId32AsNative<ThisNetwork, RuntimeOrigin>,
 	// A referendum of the whole register, as this chain's Root.
 	StateRegisterAsRoot,
+	// The court of the People chain, for the whitelist and nothing else.
+	CourtOfPeopleAsXcmOrigin,
 );
 
 parameter_types! {
@@ -276,6 +310,14 @@ parameter_types! {
 	pub const StakingAdminBodyId: BodyId = BodyId::Defense;
 	/// Fellows pluralistic body.
 	pub const FellowsBodyId: BodyId = BodyId::Technical;
+	/// Where the People chain's court speaks from, as this chain sees it.
+	pub PeopleCourtLocation: Location = Location::new(
+		0,
+		[Teyrchain(PEOPLE_ID.into()), Plurality {
+			id: BodyId::Judicial,
+			part: BodyPart::Voice,
+		}],
+	);
 }
 
 /// Type to convert an `Origin` type value into a `Location` value which represents an interior

@@ -643,6 +643,46 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for EnsureAssetHub {
 	}
 }
 
+pub struct PeopleLocation;
+impl Get<Location> for PeopleLocation {
+	fn get() -> Location {
+		Location::new(0, [Junction::Teyrchain(PEOPLE_ID)])
+	}
+}
+
+/// What the register is told about a session that has ended.
+///
+/// Not the points, and not the committee: the two lists the register cannot work out for
+/// itself. It knows who it *drew*, but the relay is what actually seated them, and the two
+/// differ for a session or two after every handover -- attributing a failure to the wrong
+/// committee is worse than not attributing it, because the record it feeds is a disqualifier.
+/// So the chain that knows says who authored and who did not.
+#[derive(codec::Encode, codec::Decode)]
+pub struct SessionPerformance {
+	/// Seated and authored something.
+	pub scored: Vec<AccountId>,
+	/// Seated and authored nothing. Its length is the whole of the signal: one name here is
+	/// an operator's own outage, eight names is eight operators sharing something.
+	pub failed: Vec<AccountId>,
+}
+
+/// The register's `pezpallet_tnpos`, addressed the way `welati` addresses the treasury: pallet
+/// index, then call index. Both numbers are load-bearing and neither is checked by the
+/// compiler; `the_performance_call_encodes_the_way_the_relay_builds_it` on the People side is
+/// what holds the two ends together.
+#[derive(codec::Encode, codec::Decode)]
+enum PeopleRuntimePallets {
+	#[codec(index = 83)]
+	Tnpos(TnposCalls),
+}
+
+#[derive(codec::Encode, codec::Decode)]
+enum TnposCalls {
+	// `fn note_session_performance`.
+	#[codec(index = 10)]
+	NoteSessionPerformance { scored: Vec<AccountId>, failed: Vec<AccountId> },
+}
+
 pub struct SessionReportToXcm;
 impl pezsp_runtime::traits::Convert<rc_client::SessionReport<AccountId>, Xcm<()>>
 	for SessionReportToXcm
@@ -694,6 +734,12 @@ impl ah_client::SendToAssetHub for StakingXcmToAssetHub {
 	fn relay_session_report(
 		session_report: rc_client::SessionReport<Self::AccountId>,
 	) -> Result<(), ()> {
+		// The register is told the same thing, reduced to what it cannot compute. It is told
+		// first and its failure is swallowed on purpose: the Asset Hub's copy pays the
+		// validators and must not be lost because a second message could not be delivered.
+		// A missed performance report costs one session of evidence in a ninety-day window.
+		Self::tell_the_register(&session_report);
+
 		rc_client::XCMSender::<
 			xcm_config::XcmRouter,
 			AssetHubLocation,
@@ -711,6 +757,46 @@ impl ah_client::SendToAssetHub for StakingXcmToAssetHub {
 			Vec<ah_client::QueuedOffenceOf<Runtime>>,
 			QueuedOffenceToXcm,
 		>::send(offences)
+	}
+}
+
+impl StakingXcmToAssetHub {
+	/// Send the register who authored and who did not, out of the session that just ended.
+	///
+	/// Computed here rather than there because this chain is the one that knows: the active
+	/// set is `Session::validators()`, and anybody in it who is absent from the points is a
+	/// validator that produced nothing. The register drew the committee but does not know
+	/// when it took effect, and a failure attributed to the wrong set is worse than none.
+	fn tell_the_register(report: &rc_client::SessionReport<AccountId>) {
+		use codec::Encode;
+
+		let seated = pezpallet_session::Pezpallet::<Runtime>::validators();
+		if seated.is_empty() {
+			return;
+		}
+		let (scored, failed): (Vec<AccountId>, Vec<AccountId>) = seated
+			.into_iter()
+			.partition(|who| report.validator_points.iter().any(|(a, p)| a == who && *p > 0));
+
+		let call =
+			PeopleRuntimePallets::Tnpos(TnposCalls::NoteSessionPerformance { scored, failed });
+		let message = Xcm(vec![
+			Instruction::UnpaidExecution {
+				weight_limit: WeightLimit::Unlimited,
+				check_origin: None,
+			},
+			Instruction::Transact {
+				origin_kind: OriginKind::Superuser,
+				fallback_max_weight: None,
+				call: call.encode().into(),
+			},
+		]);
+		if let Ok((ticket, _)) = <xcm_config::XcmRouter as SendXcm>::validate(
+			&mut Some(PeopleLocation::get()),
+			&mut Some(message),
+		) {
+			let _ = <xcm_config::XcmRouter as SendXcm>::deliver(ticket);
+		}
 	}
 }
 

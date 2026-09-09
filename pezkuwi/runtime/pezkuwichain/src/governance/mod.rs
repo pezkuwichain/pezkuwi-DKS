@@ -19,7 +19,7 @@
 use super::*;
 use pezframe_support::{
 	parameter_types,
-	traits::{ConstU16, EitherOf, Get},
+	traits::{ConstU16, EitherOf, EitherOfDiverse, Get},
 };
 use pezframe_system::EnsureRootWithSuccess;
 
@@ -82,16 +82,36 @@ parameter_types! {
 
 impl origins::pezpallet_custom_origins::Config for Runtime {}
 
+/// The People chain's court, as this chain's fast-track key.
+///
+/// A second gate behind `CourtOfPeopleAsXcmOrigin`, which already refuses every location but
+/// this one. Two checks for one grant is deliberate: the converter decides what may become an
+/// XCM origin at all, this decides what that origin may then do, and a later change to either
+/// cannot widen this authority on its own.
+pub type CourtOfPeople =
+	pezpallet_xcm::EnsureXcm<pezframe_support::traits::Equals<xcm_config::PeopleCourtLocation>>;
+
 impl pezpallet_whitelist::Config for Runtime {
 	type WeightInfo = weights::pezpallet_whitelist::WeightInfo<Self>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
-	// Root, and Root alone. `Fellows` stood beside it and no track on this chain produces that
-	// origin -- there is no Fellowship collective here -- so the alternative was never an
-	// alternative. What Root means changed underneath it: with the root track gone, Root here is
-	// the register's referendum arriving over XCM. So the people whitelist and this chain's fast
-	// track enacts, which is the two-key shape the arrangement wanted all along.
-	type WhitelistOrigin = EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>;
+	// Two keys, and until now only the second one existed.
+	//
+	// The whitelist is the fast path: `whitelisted_caller` confirms in ten minutes, so a call
+	// that is already on the list can be enacted in hours. What was missing was the first key.
+	// Root alone could whitelist, and with the root track gone Root here means the People
+	// chain's twenty-eight-day referendum -- so the fast half was reachable only after the slow
+	// half had already run. That is fine for a change somebody planned and useless for the case
+	// the whitelist exists to serve: a defect nobody knew about yesterday, whose call hash
+	// cannot have been listed in advance.
+	//
+	// `Fellows` stood here once and was never an alternative -- there is no Fellowship on this
+	// chain and no track produces the origin. The court is the body that does exist, is elected,
+	// and is already trusted with the register and with impeachment. It is bounded to the
+	// whitelist: it cannot spend, cannot touch the register from here, and cannot dispatch the
+	// whitelisted call itself, which still has to go through the track and be confirmed.
+	type WhitelistOrigin =
+		EitherOfDiverse<EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>, CourtOfPeople>;
 	type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
 	type Preimages = Preimage;
 }

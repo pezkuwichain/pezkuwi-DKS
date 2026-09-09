@@ -69,6 +69,12 @@ jobs:
       # measures and discards.
       - name: No claim confuses the two tokens' supply rules
         run: python3 .github/scripts/check-token-claims.py
+      # Both whitepaper files are published and both are hand-maintained: the landing page
+      # builds its contents from the markdown, the canonical page serves the HTML, the wiki
+      # fetches the markdown. §9 was "The four funds" in one and "The Vaults" in the other,
+      # and the runtimes call it neither -- two of our own sites, one institution, two names.
+      - name: The two whitepaper files agree on their sections
+        run: python3 .github/scripts/check-whitepaper-twins.py --verbose
       # A missing barrier entry turns a message away before any of it runs, and leaves no
       # symptom on either side. `bridge-hub-zagros` lost the Asset Hub while still waiving its
       # fees, so the Snowbridge export path was dead on Zagros and the money side looked right.

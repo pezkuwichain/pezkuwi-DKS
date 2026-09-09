@@ -531,6 +531,23 @@ parameter_types! {
 	/// inside it several times over.
 	pub const TermLength: u64 = 1_000;
 	pub const CourtTermLength: u64 = 2_250;
+	pub const CourtInactivityPeriod: u64 = 500;
+	pub const RelayWhitelistPalletIndex: u8 = 44;
+	pub const AirdropWindow: u64 = 1_000;
+	pub const DormancyPeriod: u64 = 5_000;
+	pub const MatureRoll: u32 = 100;
+	pub const GeographicMarkReferrals: u32 = 25;
+	pub const AirdropWindowCeiling: u128 = 2_500;
+}
+
+pezpallet_welati::impl_rebind_adapters!(Test;
+	RebindReferral => pezpallet_referral,
+	RebindTiki => pezpallet_tiki,
+	RebindTrust => pezpallet_trust,
+	RebindStakingScore => pezpallet_staking_score,
+);
+
+parameter_types! {
 	pub const MaxConsecutiveTerms: u32 = 2;
 
 	/// Stands in for the Asset Hub. The mock never delivers anything there; what the tests
@@ -786,6 +803,17 @@ impl pezpallet_welati::Config for Test {
 	type MaxEndorsers = MaxEndorsers;
 	type TermLength = TermLength;
 	type CourtTermLength = CourtTermLength;
+	type CourtInactivityPeriod = CourtInactivityPeriod;
+	type ReissueOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type ReissueCarries = (RebindReferral, RebindTiki, RebindTrust, RebindStakingScore);
+	type FastTrackOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
+	type DormancyPeriod = DormancyPeriod;
+	type MatureRoll = MatureRoll;
+	type GeographicMarkReferrals = GeographicMarkReferrals;
+	type GeographicRevokeOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type AirdropWindow = AirdropWindow;
+	type AirdropWindowCeiling = AirdropWindowCeiling;
 	type MaxConsecutiveTerms = MaxConsecutiveTerms;
 	type XcmSender = RecordingXcmSender;
 	type TreasuryChainLocation = TreasuryChain;

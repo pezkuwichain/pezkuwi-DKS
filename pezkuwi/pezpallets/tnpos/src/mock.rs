@@ -35,6 +35,12 @@ impl pezframe_system::Config for Test {
 }
 
 parameter_types! {
+	pub const TenurePeriod: BlockNumber = 1_000;
+	pub const LotteryTrustFloor: u128 = 40;
+	pub const InfrastructureSessions: u32 = 12;
+	pub const InfrastructureWindow: u32 = 240;
+	pub const CoFailureGroup: u32 = 3;
+	pub const CoFailureRepeats: u32 = 3;
 	pub const MaxScoreAge: BlockNumber = 100;
 	pub const EraLength: BlockNumber = 50;
 	pub const MaxPoolSize: u32 = 2_000;
@@ -85,6 +91,11 @@ pub fn set_tiki(who: AccountId, v: u128) {
 pub fn set_office_tiki_only(who: AccountId) {
 	put_score(who, TIKI, 0, System::block_number());
 	put_score(who, TRUST, 1_000, System::block_number());
+}
+
+/// Set this account's trust standing, for the strata that read it.
+pub fn set_trust(who: AccountId, v: u128) {
+	put_score(who, TRUST, v, System::block_number());
 }
 
 /// Advance the block number, running `on_initialize` at every step.
@@ -190,7 +201,31 @@ fn read_score(who: &AccountId, kind: u8) -> ScoreSnapshot<BlockNumber> {
 }
 
 pub struct MockScores;
+thread_local! {
+	/// Who sits in the house, for the stratum that reads it.
+	pub static MECLIS: core::cell::RefCell<alloc::vec::Vec<AccountId>> =
+		const { core::cell::RefCell::new(alloc::vec::Vec::new()) };
+	/// Who sits on the court, for the stratum that reads it.
+	pub static DIWAN: core::cell::RefCell<alloc::vec::Vec<AccountId>> =
+		const { core::cell::RefCell::new(alloc::vec::Vec::new()) };
+	/// Attested regions, for the stratum that rotates across them.
+	pub static REGIONS: core::cell::RefCell<alloc::vec::Vec<(AccountId, u8)>> =
+		const { core::cell::RefCell::new(alloc::vec::Vec::new()) };
+}
+
 impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for MockScores {
+	fn is_meclis_member(who: &AccountId) -> bool {
+		MECLIS.with(|m| m.borrow().contains(who))
+	}
+
+	fn is_diwan_member(who: &AccountId) -> bool {
+		DIWAN.with(|d| d.borrow().contains(who))
+	}
+
+	fn region_of(who: &AccountId) -> Option<u8> {
+		REGIONS.with(|r| r.borrow().iter().find(|(a, _)| a == who).map(|(_, x)| *x))
+	}
+
 	fn trust_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
 		read_score(who, TRUST)
 	}
@@ -218,6 +253,13 @@ impl pezpallet_tnpos::Config for Test {
 	type WeightInfo = ();
 	type Sortition = crate::seed::CommitRevealSortition<Test>;
 	type Scores = MockScores;
+	type TenurePeriod = TenurePeriod;
+	type LotteryTrustFloor = LotteryTrustFloor;
+	type PerformanceOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type InfrastructureSessions = InfrastructureSessions;
+	type InfrastructureWindow = InfrastructureWindow;
+	type CoFailureGroup = CoFailureGroup;
+	type CoFailureRepeats = CoFailureRepeats;
 	type HasSessionKeys = Tnpos;
 	// A one-field mirror: the tests are about who may join and who gets seated, not about the
 	// relay's key layout. The real mirror is checked against the relay's own definition in the
@@ -255,7 +297,10 @@ pub fn nine_strata() -> Vec<StratumConfig> {
 		.map(|&id| StratumConfig {
 			id,
 			seats: 3,
-			min_eligible: pezpallet_tnpos::MIN_ELIGIBLE_PER_STRATUM,
+			// Per stratum, exactly as the runtime genesis builds it. A flat floor here made
+			// the mock disagree with every real chain about the court, whose floor is its
+			// seat count.
+			min_eligible: pezkuwi_tnpos_primitives::invariant::min_eligible_for(id),
 		})
 		.collect()
 }
@@ -282,6 +327,45 @@ pub fn new_test_ext_with_strata(n: usize) -> pezsp_io::TestExternalities {
 	ext
 }
 
+/// Seat this account in the house, for the stratum that reads it.
+pub fn seat_in_meclis(who: AccountId) {
+	MECLIS.with(|m| {
+		let mut m = m.borrow_mut();
+		if !m.contains(&who) {
+			m.push(who);
+		}
+	});
+}
+
+/// Seat this account on the court, for the stratum that reads it.
+pub fn seat_on_the_diwan(who: AccountId) {
+	DIWAN.with(|d| {
+		let mut d = d.borrow_mut();
+		if !d.contains(&who) {
+			d.push(who);
+		}
+	});
+}
+
+/// Attest this account's region, for the stratum that reads it.
+pub fn attest_region(who: AccountId, region: u8) {
+	REGIONS.with(|r| {
+		let mut r = r.borrow_mut();
+		r.retain(|(a, _)| *a != who);
+		r.push((who, region));
+	});
+}
+
+/// Give this account a clean operating record of `n` seated sessions.
+pub fn credit_sessions(who: AccountId, n: u32) {
+	pezpallet_tnpos::SeatedSessions::<Test>::insert(who, n);
+}
+
+/// Take this account off the court, as a vacancy for silence would.
+pub fn unseat_from_the_diwan(who: AccountId) {
+	DIWAN.with(|d| d.borrow_mut().retain(|a| *a != who));
+}
+
 /// Put `per` eligible members into every stratum.
 pub fn fill_every_stratum(per: u32) {
 	let mut who: AccountId = 100;
@@ -289,6 +373,19 @@ pub fn fill_every_stratum(per: u32) {
 		for _ in 0..per {
 			for kind in [TRUST, TIKI, PERWERDE, STAKING] {
 				put_score(who, kind, 1_000, System::block_number());
+			}
+			// Two strata read a membership rather than a score, so a fixture that only sets
+			// scores cannot reach them. Seating is what "eligible" means for those two, the
+			// same as a full trust score is for the rest.
+			match s {
+				StratumId::Meclis => seat_in_meclis(who),
+				StratumId::Divan => seat_on_the_diwan(who),
+				// Spread across all six so the stratum has the regions its rotation needs.
+				StratumId::Geography => attest_region(who, (who % 6) as u8),
+				// A clean operating record. Three strata read a state rather than a score, so
+				// a fixture that only sets scores reaches none of them.
+				StratumId::Infrastructure => credit_sessions(who, InfrastructureSessions::get()),
+				_ => {},
 			}
 			ensure_has_keys(who);
 			assert!(Tnpos::join(RuntimeOrigin::signed(who), s).is_ok());

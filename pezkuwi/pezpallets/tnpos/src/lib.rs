@@ -116,8 +116,9 @@ pub mod pezpallet {
 	/// can tell whether it has run.
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
-	/// Seats each stratum carries in the specified committee.
-	pub const SEATS_PER_STRATUM: u32 = 3;
+	/// Seats each stratum carries. Defined in `invariant` beside the floor derived from it,
+	/// and re-exported here for genesis and the benchmarks.
+	pub use pezkuwi_tnpos_primitives::invariant::SEATS_PER_STRATUM;
 
 	/// Eligible members a stratum needs before it may be seated. Defined in `invariant`
 	/// alongside `FloorTooLow`, the check that enforces it, and re-exported here for
@@ -138,6 +139,78 @@ pub mod pezpallet {
 
 		/// Cached People-chain scores. Reads go through `ScoreSnapshot::value_if_fresh`.
 		type Scores: ScoreProvider<Self::AccountId, BlockNumberFor<Self>>;
+
+		/// How long uninterrupted, offence-free pool membership must run before it is standing.
+		///
+		/// The one gate in the nine that answers to no authority at all. Not the President, not
+		/// the court, not the house, not the market -- only elapsed time without an offence,
+		/// and time is the single qualification nobody can grant, sell or manufacture. An
+		/// attacker can buy stake and forge a reputation; they cannot forge a past.
+		///
+		/// **It admits on trust for the chain's first period, and closes itself.** At genesis
+		/// nobody has a past here, so a strict gate would leave the stratum empty until the
+		/// period had run once -- and the people who would have filled it are exactly the ones
+		/// serving that period. The grace window *is* the qualifying window: those who join
+		/// during it and behave qualify on the day it ends. No governance action turns it off,
+		/// and the date it ends is knowable from genesis.
+		#[pezpallet::constant]
+		type TenurePeriod: Get<BlockNumberFor<Self>>;
+
+		/// Standing an ordinary citizen needs before the open lottery will draw them.
+		///
+		/// Forty, and it is not an arbitrary number: it is exactly what the cheapest possible
+		/// account scores. Trust weights staking at twenty of a hundred against a maximum of a
+		/// hundred, so a citizen who stakes the smallest tier and does nothing else normalises
+		/// to two hundred of a thousand and lands on forty precisely. *Above* forty therefore
+		/// means "has done something beyond the cheapest act" -- held the stake long enough for
+		/// the duration multiplier, or vouched for somebody, or earned a badge or a course.
+		///
+		/// That is the whole of the gate, and it is meant to be light. This stratum's security
+		/// is the size of the pool it draws from, not the height of its bar: three seats drawn
+		/// uniformly from thousands means an attacker needs roughly a third of every
+		/// participating citizen to expect a single seat. A hard gate here would only duplicate
+		/// one of the other eight and shut out the ordinary people this stratum exists to seat.
+		/// What the floor removes is the one profile the pool cannot dilute cheaply -- an
+		/// account minted for the draw, holding one HEZ and nothing else.
+		///
+		/// The same forty the register asks of an endorser. One number, one meaning.
+		#[pezpallet::constant]
+		type LotteryTrustFloor: Get<u128>;
+
+		/// Who may report what a session produced. The relay, and nothing else.
+		type PerformanceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Sessions a candidate must have been seated for before the record counts as one.
+		///
+		/// The ninth gate is the only one that asks for *work done*. Money, an identity, a
+		/// vouch and an institution's signature all buy their way past the other eight; this
+		/// one is bought with sessions actually validated, which nobody can grant.
+		#[pezpallet::constant]
+		type InfrastructureSessions: Get<u32>;
+
+		/// How far back the co-failure record is read.
+		///
+		/// A quarter, so a repeated pattern shows and a fixed one is forgiven. An operator who
+		/// moves off a bad host should not carry it for ever.
+		#[pezpallet::constant]
+		type InfrastructureWindow: Get<u32>;
+
+		/// How many must fail together before it counts as failing *together*.
+		///
+		/// Two validators down in one session is coincidence often enough to matter: across a
+		/// window of thousands of sessions an honest operator would be caught by a threshold
+		/// set that low. Four is where a committee of twenty-seven stops looking unlucky and
+		/// starts looking like shared ground.
+		#[pezpallet::constant]
+		type CoFailureGroup: Get<u32>;
+
+		/// How many such sessions inside the window disqualify.
+		///
+		/// One is too brittle whatever the group size: pick any threshold and a slightly worse
+		/// network starts disqualifying honest operators. Shared infrastructure does not
+		/// produce one event, it produces a pattern, so the rule reads the pattern.
+		#[pezpallet::constant]
+		type CoFailureRepeats: Get<u32>;
 
 		/// Whether an account has registered session keys.
 		///
@@ -266,11 +339,44 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type Banned<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, u32, OptionQuery>;
 
+	/// How many sessions the relay has reported. The clock the co-failure window is read on.
+	#[pezpallet::storage]
+	pub type SessionsObserved<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+	/// How many sessions each account has been seated for, ever.
+	#[pezpallet::storage]
+	pub type SeatedSessions<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, u32, ValueQuery>;
+
+	/// The sessions in which this account failed in company, most recent last.
+	///
+	/// Only the last few are kept, because only the last few can matter: the rule asks whether
+	/// `CoFailureRepeats` of them fall inside the window, so anything older than the
+	/// `CoFailureRepeats`-th most recent cannot change the answer. A bounded list rather than a
+	/// counter, because a counter cannot forget and this record has to.
+	#[pezpallet::storage]
+	pub type CoFailures<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BoundedVec<u32, ConstU32<8>>, ValueQuery>;
+
+	/// When each member's current, unbroken spell in the pool began.
+	///
+	/// Cleared on every way out -- leaving, and being removed for an offence -- because the
+	/// stratum that reads it is defined on *uninterrupted* membership. Rejoining starts a new
+	/// spell rather than resuming the old one, which is what makes the qualification something
+	/// an offender has to earn again rather than wait out.
+	#[pezpallet::storage]
+	pub type InPoolSince<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
 	#[pezpallet::event]
 	#[pezpallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// A member joined `stratum`.
 		Joined { who: T::AccountId, stratum: StratumId },
+		/// A group failed in one session, large enough to be recorded against each of them.
+		FailedTogether { session: u32, count: u32 },
+		/// A member moved between strata without leaving the pool, so their spell continues.
+		StratumSwitched { who: T::AccountId, from: StratumId, to: StratumId },
 		/// A member left the pool.
 		Left { who: T::AccountId },
 		/// A seated committee was handed to the router for the relay.
@@ -374,7 +480,9 @@ pub mod pezpallet {
 					.map(|&id| StratumConfig {
 						id,
 						seats: SEATS_PER_STRATUM,
-						min_eligible: MIN_ELIGIBLE_PER_STRATUM,
+						// Per stratum: the court's floor is its seat count rather than fifty,
+						// because eleven judges can never be fifty. See `min_eligible_for`.
+						min_eligible: pezkuwi_tnpos_primitives::invariant::min_eligible_for(id),
 					})
 					.collect(),
 				members: Vec::new(),
@@ -501,6 +609,83 @@ pub mod pezpallet {
 			RelayKeys::<T>::insert(&who, bounded);
 
 			Self::deposit_event(Event::RelayKeysSet { who });
+			Ok(())
+		}
+
+		/// Record what a session produced: who authored, and who was seated and did not.
+		///
+		/// Sent by the relay at the end of every session. This chain draws the committee but
+		/// does not run it, so it cannot see a missed block; and it must not guess, because the
+		/// set it drew and the set the relay seated differ for a session or two after every
+		/// handover. The chain that knows reports.
+		///
+		/// The length of `failed` is the whole of the signal. One name is an operator's own
+		/// outage. Eight names in one session is eight operators who went down together, which
+		/// is what sharing a rack, a host or a provider looks like from here -- and it is the
+		/// only view of infrastructure independence a chain can have, because it is the only
+		/// consequence of it that reaches the chain at all.
+		#[pezpallet::call_index(10)]
+		#[pezpallet::weight(T::WeightInfo::join())]
+		pub fn note_session_performance(
+			origin: OriginFor<T>,
+			scored: Vec<T::AccountId>,
+			failed: Vec<T::AccountId>,
+		) -> DispatchResult {
+			T::PerformanceOrigin::ensure_origin(origin)?;
+
+			let now = SessionsObserved::<T>::mutate(|n| {
+				*n = n.saturating_add(1);
+				*n
+			});
+
+			for who in scored.iter().chain(failed.iter()) {
+				SeatedSessions::<T>::mutate(who, |n| *n = n.saturating_add(1));
+			}
+
+			// A session where more than half the committee is down says nothing about who
+			// shares ground with whom -- it is the network having a bad day, and counting it
+			// would mark every honest operator at once. The first chain-wide incident would
+			// otherwise empty this stratum.
+			let group = failed.len() as u32;
+			let seated = group.saturating_add(scored.len() as u32);
+			if group > T::CoFailureGroup::get() && group.saturating_mul(2) <= seated {
+				for who in failed.iter() {
+					CoFailures::<T>::mutate(who, |marks| {
+						if marks.is_full() {
+							marks.remove(0);
+						}
+						let _ = marks.try_push(now);
+					});
+				}
+				Self::deposit_event(Event::FailedTogether { session: now, count: group });
+			}
+			Ok(())
+		}
+
+		/// Move to another stratum without leaving the pool.
+		///
+		/// Necessary rather than convenient, and the tenure stratum is why. Standing there is
+		/// unbroken pool membership, which is cleared by `leave` -- so without this the only
+		/// way to reach that stratum would be to leave and start the clock at zero, and after
+		/// the grace window nobody could ever enter it again. Switching is not an
+		/// interruption: the member never stops being in the pool, so the spell continues.
+		///
+		/// The new stratum's gate is checked exactly as `join` checks it. Somebody who cannot
+		/// enter a stratum from outside cannot enter it from inside either.
+		#[pezpallet::call_index(9)]
+		#[pezpallet::weight(T::WeightInfo::join())]
+		pub fn switch_stratum(origin: OriginFor<T>, stratum: StratumId) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let current = PoolMembers::<T>::get(&who).ok_or(Error::<T>::NotInPool)?;
+			ensure!(current != stratum, Error::<T>::AlreadyInPool);
+			Self::eligible_for(&who, stratum)?;
+
+			StratumSize::<T>::mutate(current, |n| *n = n.saturating_sub(1));
+			StratumSize::<T>::mutate(stratum, |n| *n = n.saturating_add(1));
+			PoolMembers::<T>::insert(&who, stratum);
+			// `InPoolSince` is deliberately untouched.
+
+			Self::deposit_event(Event::StratumSwitched { who, from: current, to: stratum });
 			Ok(())
 		}
 

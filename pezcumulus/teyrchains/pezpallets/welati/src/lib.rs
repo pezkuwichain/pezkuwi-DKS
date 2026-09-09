@@ -231,6 +231,14 @@ impl<AccountId> BenchmarkHelper<AccountId> for () {
 /// this.
 const TREASURY_SPEND_CALL_INDEX: u8 = 5;
 
+/// `whitelist_call` in the relay's `pezpallet_whitelist`.
+///
+/// Load-bearing and unchecked by the compiler, like every other index this pallet sends. The
+/// relay's `the_whitelist_call_encodes_the_way_people_builds_it` is what holds the two ends
+/// together; without it a renumbering upstream would send the court's fast track to whatever
+/// call now sits at zero.
+const WHITELIST_CALL_INDEX: u8 = 0;
+
 /// `pezpallet-parameters::set_parameter` on the treasury chain, by call index.
 const SET_PARAMETER_CALL_INDEX: u8 = 0;
 
@@ -307,6 +315,68 @@ impl<AccountId> HouseRoster<AccountId> for () {
 	fn set_members(_members: Vec<AccountId>) {}
 }
 
+/// Move everything one pallet holds about an account onto another account.
+///
+/// Implemented by every pallet that keys anything on a citizen, and wired as a tuple by the
+/// runtime. Defined here rather than in a shared crate because this pallet is the only caller
+/// and the register is the only reason the operation exists -- and because the alternative,
+/// a dependency edge from six pallets to a seventh, buys nothing the tuple does not.
+///
+/// Implementations move rather than copy. A reissue that left the retired account holding a
+/// copy of anything would be a duplication of standing, which is worse than the loss it is
+/// meant to repair.
+pub trait RebindAccount<AccountId> {
+	fn rebind(from: &AccountId, to: &AccountId) -> DispatchResult;
+}
+
+/// A revoked citizen leaves the denominator by leaving the register, so their dormancy has to
+/// go with them.
+///
+/// `active_electorate` is `citizen_count() - DormantCount`, and revocation moves the first
+/// term without this. A dormant citizen struck off would be subtracted twice: once by the roll
+/// shrinking and once by a dormancy flag nothing clears -- and the electorate would drift a
+/// little further below the truth with every revocation, in the direction that makes questions
+/// easier to carry.
+impl<T: Config> pezpallet_identity_kyc::types::OnCitizenshipRevoked<T::AccountId> for Pezpallet<T> {
+	fn on_citizenship_revoked(who: &T::AccountId) {
+		if Dormant::<T>::take(who).is_some() {
+			DormantCount::<T>::mutate(|n| *n = n.saturating_sub(1));
+		}
+		LastSeenInGovernance::<T>::remove(who);
+	}
+}
+
+/// Build the `RebindAccount` adapters a runtime needs, one per pallet that keys on a citizen.
+///
+/// The pallets cannot implement the trait themselves: it is declared here and this pallet
+/// already depends on most of them, so an implementation on their side would close a cycle.
+/// The runtime is also the only place that knows which pallets it actually has, which is the
+/// same reason the tuple is wired there rather than assumed here.
+#[macro_export]
+macro_rules! impl_rebind_adapters {
+	($runtime:ty; $( $adapter:ident => $pallet:ident ),+ $(,)?) => { $(
+		pub struct $adapter;
+		impl $crate::RebindAccount<<$runtime as pezframe_system::Config>::AccountId>
+			for $adapter
+		{
+			fn rebind(
+				from: &<$runtime as pezframe_system::Config>::AccountId,
+				to: &<$runtime as pezframe_system::Config>::AccountId,
+			) -> pezframe_support::pezpallet_prelude::DispatchResult {
+				$pallet::Pezpallet::<$runtime>::rebind_account(from, to)
+			}
+		}
+	)+ };
+}
+
+#[impl_trait_for_tuples::impl_for_tuples(8)]
+impl<AccountId> RebindAccount<AccountId> for Tuple {
+	fn rebind(from: &AccountId, to: &AccountId) -> DispatchResult {
+		for_tuples!( #( Tuple::rebind(from, to)?; )* );
+		Ok(())
+	}
+}
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
@@ -326,6 +396,7 @@ pub mod pezpallet {
 		+ pezpallet_tiki::Config
 		+ pezpallet_trust::Config
 		+ pezpallet_identity_kyc::Config
+		+ pezpallet_referral::Config
 		+ core::fmt::Debug
 	{
 		type WeightInfo: crate::weights::WeightInfo;
@@ -366,9 +437,47 @@ pub mod pezpallet {
 		type ElectoralDistricts: Get<u32>;
 		#[pezpallet::constant]
 		type CandidacyDeposit: Get<u128>;
+		/// Endorsements a presidential candidacy needs **once the roll is mature**.
+		///
+		/// A ceiling now rather than a flat requirement. Read as a flat number it was written
+		/// for a country and applied to a village: a thousand endorsements from a roll of two
+		/// thousand is half the population, and every endorser needs standing that mostly comes
+		/// from education, which is zero on the day the chain starts. The first election was
+		/// unwinnable by anybody outside the circle that could hand out the remaining trust --
+		/// the same defect the support curves had, in the one place it decides who may stand.
 		#[pezpallet::constant]
 		type PresidentialEndorsements: Get<u32>;
 		type ParliamentaryEndorsements: Get<u32>;
+
+		/// The roll at which endorsement thresholds reach their full value.
+		///
+		/// Below it they scale down in proportion, above it nothing changes. Deliberately the
+		/// same number as the tally's `MIN_ELECTORATE`: one constant, one story about when this
+		/// register is grown up. Two numbers for the same idea is how one of them gets moved
+		/// and the other forgotten.
+		#[pezpallet::constant]
+		type MatureRoll: Get<u32>;
+
+		/// Settled referrals a citizen needs before they may ask for a geographic mark.
+		///
+		/// The mark opens one stratum of the validator pool, so the thing that qualifies
+		/// somebody to ask for it has to cost something a manufactured account does not have.
+		/// A referral is another citizen who was admitted and stayed admitted, the vouching
+		/// ceiling is finite, and a voucher whose referrals are revoked loses the right to
+		/// vouch at all -- so this is a record built out of other people rather than a number
+		/// anybody can reach alone.
+		#[pezpallet::constant]
+		type GeographicMarkReferrals: Get<u32>;
+
+		/// Who may cancel a geographic mark after it has been attested.
+		///
+		/// The court, and not the notary who wrote it or the office that appointed the notary.
+		/// A notary is appointed by the President, so leaving cancellation with the executive
+		/// would have made this stratum answer to him in the last analysis, exactly as the
+		/// community stratum does -- and two strata answering to one institution are one
+		/// stratum. Attestation is administrative and stays where the administration is;
+		/// undoing a false one is adjudication, and that is the court's.
+		type GeographicRevokeOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
 		/// The roll, as the state tally measures support against.
 		///
@@ -462,6 +571,13 @@ pub mod pezpallet {
 		/// he nominates, and one person is not both parties to an appointment.
 		type ConfirmationOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
+		/// Who may move a citizenship to a new account after a lost key.
+		///
+		/// The register authority and nothing weaker. This is the only call in the system that
+		/// hands one account's offices to another, so the body that exercises it has to be the
+		/// one the constitution already trusts with the register itself.
+		type ReissueOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
 		/// Currency used for candidacy deposits
 		type NativeCurrency: ReservableCurrency<Self::AccountId>;
 
@@ -476,6 +592,18 @@ pub mod pezpallet {
 		/// Where the PEZ treasury lives -- the Asset Hub, as seen from here.
 		#[pezpallet::constant]
 		type TreasuryChainLocation: Get<Location>;
+
+		/// Who may ask the relay to whitelist a call.
+		///
+		/// The court, and nothing else on this chain. The relay refuses the message from any
+		/// other body in any case -- its converter matches one plurality -- but the check is
+		/// made here too so that the grant is readable on the side that exercises it rather
+		/// than only on the side that accepts it.
+		type FastTrackOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Where `pezpallet_whitelist` sits in the relay's runtime.
+		#[pezpallet::constant]
+		type RelayWhitelistPalletIndex: Get<u8>;
 
 		/// The index `pezpallet-pez-treasury` occupies in the treasury chain's runtime.
 		///
@@ -512,6 +640,49 @@ pub mod pezpallet {
 		/// a message is sent that the other chain would refuse.
 		#[pezpallet::constant]
 		type AirdropCeiling: Get<u128>;
+
+		/// How long it takes for the airdrop's recent spending to be forgotten.
+		///
+		/// `AirdropCeiling` bounds one payment and nothing bounded the next one. Two
+		/// signatures could move the ceiling, and then move it again, and the pot has no
+		/// memory: forty payments a hair under the limit empty a forty-million pot without the
+		/// Treasurer ever being asked. The office that would notice is the office being
+		/// skipped.
+		///
+		/// So recent spending is remembered and drains away over this period rather than
+		/// resetting on a boundary. A window that resets is worth twice its ceiling to anybody
+		/// who waits for the reset -- pay the maximum at the end of one period and again at the
+		/// start of the next -- and a limit that doubles for whoever reads the clock is not a
+		/// limit. Draining continuously has no boundary to wait for.
+		/// How long a citizen may take no part in anything before they stop counting towards
+		/// the denominator a referendum is measured against.
+		///
+		/// Support is *ayes over the roll*, and the roll only ever grows. Every lost key, every
+		/// death and everybody who registered once and never came back stays in it for good, so
+		/// the share a question needs climbs for ever while the people who could supply it do
+		/// not. Left alone, a large enough register makes every referendum unpassable -- which
+		/// is the same failure as a captured one, arrived at by arithmetic instead of by
+		/// anybody deciding it.
+		///
+		/// `MIN_ELECTORATE` holds the other end of this and the two must not be confused: that
+		/// one stops a *small* roll being decided by a handful, this one stops a *large* one
+		/// being decided by nobody. Neither substitutes for the other.
+		///
+		/// A citizen is never struck off for it. Dormancy is a statement about a denominator,
+		/// not about a person: they keep the NFT, the standing and the vote, and casting one
+		/// puts them straight back in the count.
+		#[pezpallet::constant]
+		type DormancyPeriod: Get<BlockNumberFor<Self>>;
+
+		#[pezpallet::constant]
+		type AirdropWindow: Get<BlockNumberFor<Self>>;
+
+		/// What may be paid across a whole window before the Treasurer has to sign.
+		///
+		/// Deliberately a small multiple of `AirdropCeiling` rather than a large one: the point
+		/// is not to make routine payments awkward but to make a *campaign* of them visible.
+		#[pezpallet::constant]
+		type AirdropWindowCeiling: Get<u128>;
 
 		/// Where the presale pot sits in the treasury chain's runtime.
 		///
@@ -568,6 +739,32 @@ pub mod pezpallet {
 		/// length is what makes it independent.
 		#[pezpallet::constant]
 		type CourtTermLength: Get<BlockNumberFor<Self>>;
+
+		/// How long a seat may stay silent before anyone may vacate it.
+		///
+		/// This is not a performance standard and it must not be read as one. A member who
+		/// signs but votes against everything is doing the job; the term is the remedy for
+		/// that, and dismissal for cause stays impossible on purpose. What this measures is
+		/// something else and permanent: a seat that cannot act at all. Death, a lost key and
+		/// an abandoned account are indistinguishable from outside and identical in effect --
+		/// they subtract from the same two thirds every court decision needs, and four of
+		/// eleven put that threshold out of reach for the remaining nine years.
+		///
+		/// Signing is the signal because reachability is what is being measured. The court
+		/// votes through a collective this pallet cannot observe per member, and a vote-based
+		/// test would in any case answer the wrong question: it would catch a judge who
+		/// disagrees and miss one whose key is in a drawer. A key that can sign is a seat that
+		/// can be reached, whatever it then decides.
+		#[pezpallet::constant]
+		type CourtInactivityPeriod: Get<BlockNumberFor<Self>>;
+
+		/// The pallets a reissued citizenship has to be carried across.
+		///
+		/// A tuple rather than a list this pallet knows: what keys itself on a citizen is a
+		/// property of the runtime, and a pallet added later has to be added here or its
+		/// records are silently left behind. That failure is quiet, so the wiring is made
+		/// explicit at the one place that can see all of them.
+		type ReissueCarries: super::RebindAccount<Self::AccountId>;
 
 		/// How many consecutive terms one person may serve in the same office.
 		///
@@ -628,6 +825,65 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn diwan_members)]
 	pub type DiwanMembers<T: Config> =
 		StorageValue<_, BoundedVec<DiwanMember<T>, T::DiwanSize>, ValueQuery>;
+
+	/// A claimed region, waiting for a notary to confirm or ignore it.
+	///
+	/// The applicant names the region rather than the notary choosing it, so what a notary does
+	/// is confirm a specific claim somebody made in public. An attestation that could name any
+	/// region would let the notary place people rather than verify them.
+	#[pezpallet::storage]
+	pub type ClaimedRegion<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, Region, OptionQuery>;
+
+	/// Where each citizen's residence has been attested.
+	#[pezpallet::storage]
+	pub type AttestedRegion<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, Region, OptionQuery>;
+
+	/// When each citizen last took part in anything the register counts as participation.
+	///
+	/// Absent means they have not, which is not the same as never having been counted: the
+	/// reader falls back to the day they were admitted, so somebody who joined yesterday is not
+	/// dormant for never having voted in a referendum that has not been held.
+	#[pezpallet::storage]
+	pub type LastSeenInGovernance<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
+	/// Citizens currently out of the denominator.
+	#[pezpallet::storage]
+	pub type Dormant<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, (), OptionQuery>;
+
+	/// How many of them there are.
+	///
+	/// Kept rather than counted, for the same reason `CitizenCount` is: the electorate is read
+	/// on every tally of every live referendum, and walking a map of forty million to answer it
+	/// is a cost that grows with the thing it measures.
+	#[pezpallet::storage]
+	pub type DormantCount<T: Config> = StorageValue<_, u32, ValueQuery>;
+
+	/// Recent airdrop spending, and when it was last measured.
+	///
+	/// A draining total rather than a list of payments: a list would be bounded by nothing and
+	/// pruning it would cost more the busier the pot got. What is stored is the level of the
+	/// bucket at `AirdropSpentAt`; every reader drains it for the time since, so the value on
+	/// chain is only ever a starting point and is never read raw.
+	#[pezpallet::storage]
+	pub type AirdropSpent<T: Config> = StorageValue<_, u128, ValueQuery>;
+
+	/// The block `AirdropSpent` was measured at.
+	#[pezpallet::storage]
+	pub type AirdropSpentAt<T: Config> = StorageValue<_, BlockNumberFor<T>, ValueQuery>;
+
+	/// When each sitting member last proved their key still signs.
+	///
+	/// A separate map rather than a field on `DiwanMember`, because activity is an observation
+	/// about a seat rather than a term of its appointment -- and because the appointment
+	/// already carries the baseline this needs. An absent key is not "never active": it is a
+	/// member who has not checked in since they were seated, so the reader falls back to
+	/// `appointed_at` and a new member gets a full period before anything is expected of them.
+	#[pezpallet::storage]
+	pub type CourtLastActive<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
 
 	// --- ELECTION SYSTEM STORAGE ---
 
@@ -1041,6 +1297,51 @@ pub mod pezpallet {
 		/// Diwan member appointed
 		DiwanMemberAppointed { member: T::AccountId, appointed_by: AppointmentAuthority<T> },
 
+		/// A member of the court proved their key still signs.
+		CourtMemberCheckedIn { member: T::AccountId, at: BlockNumberFor<T> },
+
+		/// A citizen said where they live. Nothing follows from it until a notary agrees.
+		RegionClaimed { who: T::AccountId, region: Region },
+
+		/// A notary confirmed it. The notary is named because an attestation nobody can be
+		/// held to is not an attestation.
+		RegionAttested { who: T::AccountId, region: Region, notary: T::AccountId },
+
+		/// A citizen took back a region they had volunteered.
+		RegionWithdrawn { who: T::AccountId },
+
+		/// The court cancelled an attested region.
+		RegionRevoked { who: T::AccountId, region: Region },
+
+		/// A citizen stopped counting towards the denominator. They are still a citizen.
+		CitizenIsDormant { who: T::AccountId, since: BlockNumberFor<T> },
+
+		/// A dormant citizen took part in something and is back in the count.
+		CitizenIsCountedAgain { who: T::AccountId },
+
+		/// The court asked the relay to add a call hash to its whitelist.
+		///
+		/// Emitted on the asking, not on the arrival: this chain sends the message and never
+		/// hears the answer, exactly as it does not hear whether a vault paid.
+		CourtAskedTheRelayToWhitelist { call_hash: T::Hash },
+
+		/// A citizenship, and everything downstream of it, moved to a new account.
+		///
+		/// The retired account is named because this is the only public notice that an
+		/// identity changed hands, and an observer has to be able to follow the person across
+		/// the two accounts to read their history at all.
+		CitizenshipReissued { from: T::AccountId, to: T::AccountId },
+
+		/// A seat was vacated because nothing had signed for it in a full inactivity period.
+		///
+		/// Carries who seated it, because that is the authority that has to fill it again and
+		/// the event is the only notice they get.
+		CourtSeatVacatedForSilence {
+			member: T::AccountId,
+			silent_since: BlockNumberFor<T>,
+			seated_by: AppointmentAuthority<T>,
+		},
+
 		/// A citizen endorsed a candidacy.
 		CandidateEndorsed { election_id: u32, endorser: T::AccountId, candidate: T::AccountId },
 
@@ -1167,6 +1468,32 @@ pub mod pezpallet {
 		AppointedCourtSeatsAreFull,
 		/// This account already sits on the court.
 		AlreadyOnTheCourt,
+		/// This account does not sit on the court.
+		NotOnTheCourt,
+		/// The seat has signed inside the inactivity period, so it is not vacant.
+		CourtMemberIsStillReachable,
+		/// The message to the relay could not be sent.
+		CouldNotReachTheRelay,
+		/// The account named is not a citizen of this register.
+		NotACitizenHere,
+		/// The citizen is already out of the denominator.
+		AlreadyDormant,
+		/// The citizen has taken part inside the dormancy period.
+		CitizenIsStillTakingPart,
+		/// This citizen already has an attested region.
+		RegionAlreadyAttested,
+		/// Not enough settled referrals to ask for a geographic mark.
+		NotEnoughReferralsForARegion,
+		/// Only a notary may attest a region.
+		NotANotary,
+		/// Nobody attests their own claim.
+		CannotAttestYourOwnRegion,
+		/// This citizen has claimed no region.
+		NoRegionClaimed,
+		/// The region attested is not the one that was claimed.
+		AttestedADifferentRegion,
+		/// This citizen has no attested region.
+		NoRegionAttested,
 		/// Only the sitting house elects the court's six elected seats.
 		NotAParliamentMember,
 		/// The caller does not hold the finance portfolio.
@@ -1454,17 +1781,36 @@ pub mod pezpallet {
 				ElectionType::SpeakerElection => {
 					pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::SerokiMeclise).is_none()
 				},
-				// Parliament has no vacancy arm, deliberately. The two offices above are
-				// held by one person each, so "empty" is one storage read. A house is empty
-				// only when none of its two hundred and one members still holds a seat, and
-				// asking that on every block means decoding the whole roll on every block.
-				//
-				// What is left is the clock, which covers the case the design actually has:
-				// a house is replaced when its term runs out. A house that lost every seat
-				// at once -- every member removed by the Diwan, or stripped of citizenship,
-				// inside one term -- would sit empty until the term ended. That is recorded
-				// as a gap rather than papered over with a check that costs a block read
-				// every block for a case that has never happened.
+				// The two bodies. Both used to fall through to `false`, on the grounds that
+				// asking whether a house of two hundred and one is empty meant decoding the whole
+				// roll every block. `decode_len` reads the length prefix and decodes none of it,
+				// so the cost that justified leaving this open was never the real one.
+				ElectionType::Parliamentary => {
+					// Empty means empty: every member removed by the Diwan, or stripped of
+					// citizenship, inside one term. Rare to the point of never, and the reason it
+					// needs an arm at all is that there is no other way out -- an empty house
+					// cannot vote itself back, and the clock would leave the country without a
+					// legislature until the term it can no longer serve runs out.
+					ParliamentMembers::<T>::decode_len().unwrap_or(0) == 0
+				},
+				ElectionType::ConstitutionalCourt => {
+					// The elected half short of its seats. The appointed five are the President's
+					// to fill the moment one opens; the elected six have no such route, so without
+					// this a seat vacated for silence would stay empty for the rest of a nine-year
+					// term -- and the vacancy rule in §5.4 would repair the court's ability to
+					// decide while quietly shrinking it for a decade.
+					//
+					// The whole elected half turns over, not just the empty seat. That half is
+					// seated as a unit by one house and has always been replaced as one; patching
+					// a single seat would give it members on two different clocks, and the
+					// derivation that keeps six and five apart is written for a half that moves
+					// together.
+					let elected = DiwanMembers::<T>::get()
+						.iter()
+						.filter(|m| matches!(m.appointed_by, AppointmentAuthority::Parliament))
+						.count() as u32;
+					elected < T::DiwanElectedSeats::get()
+				},
 				_ => false,
 			}
 		}
@@ -1745,7 +2091,10 @@ pub mod pezpallet {
 
 			AirdropProposals::<T>::try_mutate(id, |maybe| -> DispatchResult {
 				let p = maybe.as_mut().ok_or(Error::<T>::AirdropNotFound)?;
-				let large = p.amount > T::AirdropCeiling::get();
+				// Measured now rather than at proposal time. A payment that was small when it
+				// was written can be large by the time it is signed, because what makes it
+				// large is partly what other payments have done since.
+				let large = Self::airdrop_needs_the_treasurer(p.amount);
 
 				if holder(Tiki::Serok) {
 					ensure!(!p.approved_by_president, Error::<T>::AlreadyApproved);
@@ -1787,7 +2136,11 @@ pub mod pezpallet {
 		pub fn pay_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 			let p = AirdropProposals::<T>::get(id).ok_or(Error::<T>::AirdropNotFound)?;
-			let large = p.amount > T::AirdropCeiling::get();
+			// Judged here as well as at approval, and against the window as it stands at the
+			// moment the money would actually move. Two proposals can each be small when they
+			// are signed and only the second one is large -- which one that is depends on the
+			// order they are paid in, and nothing before this point knows that order.
+			let large = Self::airdrop_needs_the_treasurer(p.amount);
 			ensure!(
 				p.approved_by_president && (!large || p.approved_by_treasurer),
 				Error::<T>::AirdropNotApproved
@@ -1803,6 +2156,9 @@ pub mod pezpallet {
 			AirdropProposals::<T>::remove(id);
 			Self::send_airdrop_spend(&p.beneficiary, p.amount)
 				.map_err(|_| Error::<T>::CouldNotReachTreasury)?;
+			// After the send, so a failed send leaves the window untouched along with
+			// everything else this call reverts.
+			Self::note_airdrop_paid(p.amount);
 			Self::deposit_event(Event::AirdropSent {
 				id,
 				beneficiary: p.beneficiary,
@@ -1982,6 +2338,271 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// Prove the seat can still be reached.
+		///
+		/// The only thing a member has to do to keep a seat, and it decides nothing: a check-in
+		/// is not a vote, cannot be counted as one, and says nothing about how the member would
+		/// rule. That separation is the whole design. If keeping the seat required agreeing with
+		/// anybody, the court would answer to whoever set the test.
+		#[pezpallet::call_index(63)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn court_check_in(origin: OriginFor<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(Self::is_diwan_member(&who), Error::<T>::NotOnTheCourt);
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			CourtLastActive::<T>::insert(&who, now);
+			Self::deposit_event(Event::CourtMemberCheckedIn { member: who, at: now });
+			Ok(())
+		}
+
+		/// Vacate a seat whose key has stopped signing.
+		///
+		/// Permissionless on purpose. Every body that could be given this power is a body the
+		/// court exists to rule on, and handing the president or the house a call that empties
+		/// a seat would undo §5.4 whatever the conditions written beside it. So no judgement is
+		/// exercised here at all: the caller supplies no reason, the chain checks arithmetic
+		/// that anybody can check for themselves, and a member one block short of the period is
+		/// refused however obviously absent they look.
+		///
+		/// A vacated seat is refilled by whichever authority seated it -- the house re-elects
+		/// its own, the President re-appoints their own -- so this removes a member and never
+		/// shifts the balance between the two halves.
+		#[pezpallet::call_index(64)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn vacate_inactive_court_seat(
+			origin: OriginFor<T>,
+			who: T::AccountId,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			let bench = DiwanMembers::<T>::get();
+			let member = bench
+				.iter()
+				.find(|member| member.account == who)
+				.ok_or(Error::<T>::NotOnTheCourt)?;
+
+			// No entry means the member has not checked in since they were seated, which is
+			// not the same as never having been reachable -- they get the period from the day
+			// they took the seat.
+			let last = CourtLastActive::<T>::get(&who).unwrap_or(member.appointed_at);
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			ensure!(
+				now.saturating_sub(last) >= T::CourtInactivityPeriod::get(),
+				Error::<T>::CourtMemberIsStillReachable
+			);
+			let seated_by = member.appointed_by.clone();
+
+			let remaining: BoundedVec<DiwanMember<T>, T::DiwanSize> = bench
+				.into_iter()
+				.filter(|member| member.account != who)
+				.collect::<Vec<_>>()
+				.try_into()
+				.map_err(|_| Error::<T>::DiwanFull)?;
+			DiwanMembers::<T>::put(remaining);
+			CourtLastActive::<T>::remove(&who);
+			let _ = pezpallet_tiki::Pezpallet::<T>::internal_revoke_role(&who, Tiki::EndameDiwane);
+			Self::publish_the_bench();
+
+			Self::deposit_event(Event::CourtSeatVacatedForSilence {
+				member: who,
+				silent_since: last,
+				seated_by,
+			});
+			Ok(())
+		}
+
+		/// Move a citizenship, and everything that follows from it, to a new account.
+		///
+		/// A citizenship NFT cannot be transferred and its identity hash is claimed for good,
+		/// so somebody who loses their key cannot register again: the hash they already own
+		/// would refuse the second application. Without a way out, a lost key ends a
+		/// citizenship, and in a real population that is a certainty rather than an exception.
+		///
+		/// It is judicial rather than automatic, and deliberately not something the holder can
+		/// invoke. A recovery anybody may call is a theft mechanism wearing a helpful name --
+		/// there is no signature to check, because the whole premise is that the signature is
+		/// gone, so the only thing standing between a citizen and an impostor is a body that
+		/// looks at evidence. The register authority is that body.
+		///
+		/// **Everything moves, offices included.** Standing that was left behind would make the
+		/// remedy worthless to the people most likely to need it, and splitting a person across
+		/// two accounts is its own defect. The one exception is stake observed on another
+		/// chain, which cannot move because the funds cannot -- see `staking-score`.
+		///
+		/// The old account is retired permanently and can be neither reissued again nor
+		/// reissued to, which is what stops a chain of accounts being used to launder standing.
+		#[pezpallet::call_index(65)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn reissue_citizenship(
+			origin: OriginFor<T>,
+			from: T::AccountId,
+			to: T::AccountId,
+		) -> DispatchResult {
+			T::ReissueOrigin::ensure_origin(origin)?;
+
+			// identity-kyc first, and it is the guard as well as the first move: it decides
+			// whether the reissue is legal at all, and nothing below runs if it refuses.
+			pezpallet_identity_kyc::Pezpallet::<T>::rebind_account(&from, &to)?;
+			<T::ReissueCarries as super::RebindAccount<T::AccountId>>::rebind(&from, &to)?;
+			Self::rebind_account(&from, &to)?;
+
+			Self::deposit_event(Event::CitizenshipReissued { from, to });
+			Ok(())
+		}
+
+		/// Ask for a geographic mark, naming the region you live in.
+		///
+		/// A claim, not a record: it does nothing until a notary confirms it, and it is public
+		/// from the moment it is made so that a false claim is visible before it is attested
+		/// rather than after.
+		#[pezpallet::call_index(68)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn claim_region(origin: OriginFor<T>, region: Region) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(
+				pezpallet_identity_kyc::Pezpallet::<T>::is_citizen(&who),
+				Error::<T>::NotACitizenHere
+			);
+			ensure!(!AttestedRegion::<T>::contains_key(&who), Error::<T>::RegionAlreadyAttested);
+			ensure!(
+				pezpallet_referral::ReferralCount::<T>::get(&who)
+					>= T::GeographicMarkReferrals::get(),
+				Error::<T>::NotEnoughReferralsForARegion
+			);
+			ClaimedRegion::<T>::insert(&who, region);
+			Self::deposit_event(Event::RegionClaimed { who, region });
+			Ok(())
+		}
+
+		/// Confirm somebody's claimed region.
+		///
+		/// A notary and nothing else -- the office whose entire worth is that its word about a
+		/// fact can be relied on. The region named here has to be the region that was claimed:
+		/// a notary confirms an assertion somebody else made in public, and one who could write
+		/// any region would be placing citizens rather than verifying them.
+		///
+		/// Nobody attests their own claim. The check is the same one `grant_tiki` makes for the
+		/// same reason: an attestation has two parties and neither is both of them.
+		#[pezpallet::call_index(69)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn attest_region(
+			origin: OriginFor<T>,
+			who: T::AccountId,
+			region: Region,
+		) -> DispatchResult {
+			let notary = ensure_signed(origin)?;
+			ensure!(
+				pezpallet_tiki::Pezpallet::<T>::has_tiki(&notary, &Tiki::Noter),
+				Error::<T>::NotANotary
+			);
+			ensure!(notary != who, Error::<T>::CannotAttestYourOwnRegion);
+			let claimed = ClaimedRegion::<T>::get(&who).ok_or(Error::<T>::NoRegionClaimed)?;
+			ensure!(claimed == region, Error::<T>::AttestedADifferentRegion);
+
+			ClaimedRegion::<T>::remove(&who);
+			AttestedRegion::<T>::insert(&who, region);
+			Self::deposit_event(Event::RegionAttested { who, region, notary });
+			Ok(())
+		}
+
+		/// Take back a region you volunteered.
+		///
+		/// The mark is opt-in and this is the other half of that: what a citizen chose to
+		/// publish, a citizen can stop publishing. Without it a claim no notary ever looked at
+		/// would sit in the register for good -- the exposure of saying where you live, with
+		/// none of the standing it was meant to buy.
+		///
+		/// It clears an attested mark as well as a pending claim, and there is nothing to game
+		/// in that: giving it up only removes the citizen from the one stratum it opens.
+		///
+		/// What it cannot do is unsay it. The claim was an extrinsic and the blocks keep it;
+		/// this removes the register's answer, not the record that it was once given. A
+		/// document that implied otherwise would be promising something no chain can do.
+		#[pezpallet::call_index(71)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn withdraw_region(origin: OriginFor<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			let claimed = ClaimedRegion::<T>::take(&who);
+			let attested = AttestedRegion::<T>::take(&who);
+			ensure!(claimed.is_some() || attested.is_some(), Error::<T>::NoRegionClaimed);
+			Self::deposit_event(Event::RegionWithdrawn { who });
+			Ok(())
+		}
+
+		/// Cancel an attested region.
+		///
+		/// The court's, because this is the half of the arrangement that has to be able to
+		/// correct the other half. Notaries are appointed by the President; if he could also
+		/// undo their attestations, the whole mark would be his and this stratum would answer
+		/// to the same office the community stratum does.
+		#[pezpallet::call_index(70)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn revoke_region(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
+			T::GeographicRevokeOrigin::ensure_origin(origin)?;
+			let region = AttestedRegion::<T>::take(&who).ok_or(Error::<T>::NoRegionAttested)?;
+			Self::deposit_event(Event::RegionRevoked { who, region });
+			Ok(())
+		}
+
+		/// Take a citizen who has stopped taking part out of the denominator.
+		///
+		/// Permissionless, and it has to be. A body that could choose whose absence counts
+		/// could shrink the electorate before a vote it cared about; the condition here is
+		/// arithmetic anybody can check, the caller gives no reason, and a citizen one block
+		/// short of the period is refused however plainly gone they are.
+		///
+		/// It takes nothing away. The citizenship, the trust, the offices and the vote all
+		/// stay, and using any of them puts the citizen back in the count in the same block --
+		/// so the worst a wrongly-timed call can do is be undone by its subject for free.
+		#[pezpallet::call_index(67)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn mark_dormant(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
+			ensure_signed(origin)?;
+			ensure!(
+				pezpallet_identity_kyc::Pezpallet::<T>::is_citizen(&who),
+				Error::<T>::NotACitizenHere
+			);
+			ensure!(!Dormant::<T>::contains_key(&who), Error::<T>::AlreadyDormant);
+			let since = Self::last_seen_in_governance(&who);
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			ensure!(
+				now.saturating_sub(since) >= T::DormancyPeriod::get(),
+				Error::<T>::CitizenIsStillTakingPart
+			);
+			Dormant::<T>::insert(&who, ());
+			DormantCount::<T>::mutate(|n| *n = n.saturating_add(1));
+			Self::deposit_event(Event::CitizenIsDormant { who, since });
+			Ok(())
+		}
+
+		/// Ask the relay to whitelist a call, so a defect can be patched in hours.
+		///
+		/// The relay's root track is twenty-eight days and there is no shorter path to it. That
+		/// is the right speed for a constitutional amendment and the wrong one for a defect
+		/// somebody is exploiting: a runtime bug does not wait a month, and the call that fixes
+		/// it cannot have been whitelisted in advance because nobody knew it would be needed.
+		///
+		/// So the court holds the first of two keys. It may put a hash on the relay's list; it
+		/// may not enact what is on the list, which still goes through `whitelisted_caller` and
+		/// is confirmed there. Neither key alone changes anything, and the second one is public
+		/// for the whole of its confirmation.
+		///
+		/// The court and not a ministry, because this is the one authority that has to be
+		/// exercised while something is going wrong, and the body that holds it must not be the
+		/// body most likely to be the reason. It is the court's narrowest power by some way:
+		/// it names a hash, and a hash names a call that this chain never sees.
+		#[pezpallet::call_index(66)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn court_whitelists_on_the_relay(
+			origin: OriginFor<T>,
+			call_hash: T::Hash,
+		) -> DispatchResult {
+			T::FastTrackOrigin::ensure_origin(origin)?;
+			Self::send_whitelist_to_relay(call_hash)
+				.map_err(|_| Error::<T>::CouldNotReachTheRelay)?;
+			Self::deposit_event(Event::CourtAskedTheRelayToWhitelist { call_hash });
+			Ok(())
+		}
+
 		/// Open a citizens' initiative.
 		///
 		/// No state anywhere lets one person put a question to the whole country by themselves,
@@ -2035,6 +2656,7 @@ pub mod pezpallet {
 					deposit,
 				},
 			);
+			Self::note_governance_activity(&proposer);
 			InitiativeBacking::<T>::insert(id, &proposer, ());
 
 			Self::deposit_event(Event::InitiativeOpened { id, proposer, track, closes });
@@ -2078,6 +2700,7 @@ pub mod pezpallet {
 					Ok(init.backing)
 				})?;
 
+			Self::note_governance_activity(&who);
 			InitiativeBacking::<T>::insert(id, &who, ());
 			Self::deposit_event(Event::InitiativeBacked { id, who, backing });
 			Ok(())
@@ -2164,6 +2787,22 @@ pub mod pezpallet {
 		/// is not a second vote -- the tally moves by one either way, never by two.
 		#[pezpallet::call_index(50)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::vote_on_proposal())]
+		/// Free the first time, and paid after that.
+		///
+		/// Voting is the act this whole register exists to carry, and charging for it makes the
+		/// franchise cost money -- which is the thing §1 says this chain refuses, written into
+		/// the one call where it would actually bite. A citizen with no HEZ has a vote they
+		/// cannot cast, and "zero stake is zero trust" already means they are the citizens
+		/// least likely to have any.
+		///
+		/// The predicate is narrow on purpose. Free requires that the vote is real *and* that
+		/// this account has not already cast one: a repeat is paid for, so a free call cannot
+		/// be repeated, and a call naming something that does not exist was never a vote.
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, poll: &u32, _aye: &bool| -> bool {
+			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
+			T::Polls::as_ongoing(*poll).is_some()
+				&& !ReferendumVotes::<T>::contains_key(poll, &who)
+		})]
 		pub fn answer_referendum(
 			origin: OriginFor<T>,
 			#[pezpallet::compact] poll: u32,
@@ -2200,6 +2839,7 @@ pub mod pezpallet {
 				} else {
 					tally.nays = tally.nays.saturating_add(1);
 				}
+				Self::note_governance_activity(&who);
 				ReferendumVotes::<T>::insert(poll, &who, aye);
 				Ok(())
 			})?;
@@ -2241,6 +2881,16 @@ pub mod pezpallet {
 		/// rather than gathered from people who have already seen the field.
 		#[pezpallet::call_index(4)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::register_candidate())]
+		/// Free the first time, and paid after that -- see `answer_referendum`.
+		///
+		/// An endorsement is how a citizen with no money takes part in *choosing who stands*,
+		/// which is the half of an election that happens before anybody votes. Charging for it
+		/// puts the earlier and more consequential half behind the same wall.
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, election_id: &u32, _candidate: &T::AccountId| -> bool {
+			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
+			ActiveElections::<T>::contains_key(election_id)
+				&& !Endorsements::<T>::contains_key(election_id, &who)
+		})]
 		pub fn endorse_candidate(
 			origin: OriginFor<T>,
 			election_id: u32,
@@ -2268,6 +2918,7 @@ pub mod pezpallet {
 				Error::<T>::AlreadyEndorsed
 			);
 
+			Self::note_governance_activity(&endorser);
 			Endorsements::<T>::insert(election_id, &endorser, &candidate);
 			Self::deposit_event(Event::CandidateEndorsed { election_id, endorser, candidate });
 			Ok(())
@@ -2712,6 +3363,22 @@ pub mod pezpallet {
 		/// Cast vote
 		#[pezpallet::call_index(2)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::cast_vote())]
+		/// Free the first time, and paid after that.
+		///
+		/// Voting is the act this whole register exists to carry, and charging for it makes the
+		/// franchise cost money -- which is the thing §1 says this chain refuses, written into
+		/// the one call where it would actually bite. A citizen with no HEZ has a vote they
+		/// cannot cast, and "zero stake is zero trust" already means they are the citizens
+		/// least likely to have any.
+		///
+		/// The predicate is narrow on purpose. Free requires that the vote is real *and* that
+		/// this account has not already cast one: a repeat is paid for, so a free call cannot
+		/// be repeated, and a call naming something that does not exist was never a vote.
+		#[pezpallet::feeless_if(|origin: &OriginFor<T>, election_id: &u32, _candidates: &Vec<T::AccountId>, _district_id: &Option<u32>| -> bool {
+			let Ok(who) = pezframe_system::ensure_signed(origin.clone()) else { return false };
+			ActiveElections::<T>::contains_key(election_id)
+				&& !ElectionVotes::<T>::contains_key(election_id, &who)
+		})]
 		pub fn cast_vote(
 			origin: OriginFor<T>,
 			election_id: u32,
@@ -2776,6 +3443,7 @@ pub mod pezpallet {
 				district_id,
 			};
 
+			Self::note_governance_activity(&voter);
 			ElectionVotes::<T>::insert(election_id, &voter, vote_info);
 
 			for candidate in &candidates {
@@ -3273,6 +3941,7 @@ pub mod pezpallet {
 				rationale,
 			};
 
+			Self::note_governance_activity(&voter);
 			CollectiveVotes::<T>::insert(proposal_id, &voter, vote_info);
 
 			// Update proposal vote counts
@@ -3389,13 +4058,32 @@ pub mod pezpallet {
 			}
 		}
 
-		/// Required number of endorsers
+		/// Required number of endorsers, in proportion to how large the register is.
+		///
+		/// `ceiling * roll / MatureRoll`, held between a floor and the ceiling. At the mature
+		/// roll it is the ceiling and this changes nothing; below it the requirement is the
+		/// same *share* of a smaller country rather than the same number out of it.
+		///
+		/// The floor is what stops the other failure. A share of a roll of forty is nothing,
+		/// and a candidacy that needs nothing is not a candidacy -- the endorsement exists so
+		/// that standing costs somebody else's reputation as well as your own.
+		///
+		/// Measured against the active electorate, the same number the tally divides by. Two
+		/// definitions of "the register" would eventually disagree, and the disagreement would
+		/// surface as a threshold nobody could explain.
 		pub fn get_required_endorsements(election_type: &ElectionType) -> u32 {
-			match election_type {
+			let ceiling = match election_type {
 				ElectionType::Presidential => T::PresidentialEndorsements::get(),
 				ElectionType::Parliamentary => T::ParliamentaryEndorsements::get(),
-				_ => 0,
-			}
+				_ => return 0,
+			};
+			let mature = T::MatureRoll::get().max(1);
+			let roll = Self::active_electorate().min(mature);
+			let scaled =
+				(u64::from(ceiling).saturating_mul(u64::from(roll)) / u64::from(mature)) as u32;
+			// A twentieth of the mature requirement, and never fewer than ten.
+			let floor = ceiling.saturating_div(20).max(10);
+			scaled.max(floor).min(ceiling)
 		}
 
 		/// Minimum turnout rate
@@ -3892,6 +4580,82 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// Move this pallet's own record of one account onto another.
+		///
+		/// Seats move and ballots do not. Who sits on the bench or in the house is live state
+		/// and has to follow the person, or an office moves in `tiki` while the register still
+		/// lists the retired account as its holder. A vote already cast is the opposite: it is
+		/// a public act by an account at a moment, the chain's answer to *who decided this*,
+		/// and rewriting it to name a different account would falsify the record the ballot
+		/// exists to keep. Endorsements, backings and referendum votes stay where they were
+		/// cast. A candidacy in flight is not moved either -- it is re-made, and it costs one
+		/// call rather than a scan of every election ever held.
+		pub fn rebind_account(from: &T::AccountId, to: &T::AccountId) -> DispatchResult {
+			DiwanMembers::<T>::mutate(|bench| {
+				for member in bench.iter_mut() {
+					if &member.account == from {
+						member.account = to.clone();
+					}
+				}
+			});
+			ParliamentMembers::<T>::mutate(|house| {
+				for member in house.iter_mut() {
+					if &member.account == from {
+						member.account = to.clone();
+					}
+				}
+			});
+			if let Some(at) = CourtLastActive::<T>::take(from) {
+				CourtLastActive::<T>::insert(to, at);
+			}
+			if let Some(until) = InitiativeCooldownUntil::<T>::take(from) {
+				InitiativeCooldownUntil::<T>::insert(to, until);
+			}
+			// Participation follows the person. Left behind, a citizen who voted last week
+			// would be dormant from the day they were admitted, and a reissue would quietly
+			// shrink the electorate by one.
+			if let Some(seen) = LastSeenInGovernance::<T>::take(from) {
+				LastSeenInGovernance::<T>::insert(to, seen);
+			}
+			if Dormant::<T>::take(from).is_some() {
+				Dormant::<T>::insert(to, ());
+			}
+			// Where somebody lives does not change because their key did. Left behind, a
+			// reissued citizen would lose a mark a notary has already checked and would have
+			// to find one again.
+			if let Some(region) = AttestedRegion::<T>::take(from) {
+				AttestedRegion::<T>::insert(to, region);
+			}
+			if let Some(region) = ClaimedRegion::<T>::take(from) {
+				ClaimedRegion::<T>::insert(to, region);
+			}
+			PendingPrimeMinister::<T>::mutate(|pending| {
+				if pending.as_ref() == Some(from) {
+					*pending = Some(to.clone());
+				}
+			});
+			// Term limits follow the person, or losing a key resets a career. Four election
+			// types, so this is a fixed four reads whatever the register grows to.
+			for election in [
+				ElectionType::Presidential,
+				ElectionType::Parliamentary,
+				ElectionType::SpeakerElection,
+				ElectionType::ConstitutionalCourt,
+			] {
+				let served = ConsecutiveTerms::<T>::take(election.clone(), from);
+				if served != 0 {
+					ConsecutiveTerms::<T>::insert(election, to, served);
+				}
+			}
+			// Both collectives are told, for the same reason `publish_the_bench` exists: the
+			// roster and the register may disagree for the length of one call and no longer.
+			Self::publish_the_bench();
+			T::HouseRoster::set_members(
+				ParliamentMembers::<T>::get().iter().map(|m| m.account.clone()).collect(),
+			);
+			Ok(())
+		}
+
 		/// Tell the collective who sits on the court.
 		///
 		/// Called after every change to the bench and nowhere else, so the two can only
@@ -4233,6 +4997,111 @@ pub mod pezpallet {
 				&mut Some(T::TreasuryChainLocation::get()),
 				&mut Some(message),
 			)?;
+			T::XcmSender::deliver(ticket).map(|_| ())
+		}
+
+		/// Note that this citizen is still here.
+		///
+		/// Called from every path the register counts as participation, and it does two things
+		/// at once on purpose: it records the moment, and it undoes dormancy. A citizen who
+		/// votes is in the electorate again from that vote, without anybody having to notice
+		/// them or call anything.
+		pub fn note_governance_activity(who: &T::AccountId) {
+			LastSeenInGovernance::<T>::insert(who, pezframe_system::Pezpallet::<T>::block_number());
+			if Dormant::<T>::take(who).is_some() {
+				DormantCount::<T>::mutate(|n| *n = n.saturating_sub(1));
+				Self::deposit_event(Event::CitizenIsCountedAgain { who: who.clone() });
+			}
+		}
+
+		/// The last block this citizen was seen taking part, or the day they were admitted.
+		pub fn last_seen_in_governance(who: &T::AccountId) -> BlockNumberFor<T> {
+			LastSeenInGovernance::<T>::get(who).unwrap_or_else(|| {
+				pezpallet_identity_kyc::CitizenSince::<T>::get(who).unwrap_or_default()
+			})
+		}
+
+		/// The electorate a referendum is measured against: the roll, less the dormant.
+		///
+		/// Dormancy subtracts from the denominator and from nothing else. A dormant citizen
+		/// keeps the NFT, the standing, the offices and the vote; what they stop doing is
+		/// making everybody else's question harder to carry.
+		pub fn active_electorate() -> u32 {
+			pezpallet_identity_kyc::Pezpallet::<T>::citizen_count()
+				.saturating_sub(DormantCount::<T>::get())
+		}
+
+		/// What the airdrop has spent recently, with the drain applied.
+		///
+		/// Never reads `AirdropSpent` raw. The stored number is the level at the moment it was
+		/// written; what matters is the level now, and between the two is however long nobody
+		/// has spent anything.
+		pub fn airdrop_spent_recently() -> u128 {
+			use pezsp_runtime::SaturatedConversion;
+			let window: u128 = T::AirdropWindow::get().saturated_into::<u128>();
+			if window == 0 {
+				return 0;
+			}
+			let elapsed: u128 = pezframe_system::Pezpallet::<T>::block_number()
+				.saturating_sub(AirdropSpentAt::<T>::get())
+				.saturated_into::<u128>();
+			if elapsed >= window {
+				return 0;
+			}
+			// Drains to nothing over one window. Multiply before dividing, or a small elapsed
+			// fraction rounds to zero drain and the bucket never empties.
+			AirdropSpent::<T>::get()
+				.saturating_mul(window.saturating_sub(elapsed))
+				.checked_div(window)
+				.unwrap_or(0)
+		}
+
+		/// Does this payment need the Treasurer's signature and the wait?
+		///
+		/// Two ways to be large and either is enough: the payment on its own, or the payment on
+		/// top of what has been paid lately. The second is the one that had no answer.
+		pub fn airdrop_needs_the_treasurer(amount: u128) -> bool {
+			amount > T::AirdropCeiling::get()
+				|| Self::airdrop_spent_recently().saturating_add(amount)
+					> T::AirdropWindowCeiling::get()
+		}
+
+		/// Record a payment against the window.
+		fn note_airdrop_paid(amount: u128) {
+			let level = Self::airdrop_spent_recently().saturating_add(amount);
+			AirdropSpent::<T>::put(level);
+			AirdropSpentAt::<T>::put(pezframe_system::Pezpallet::<T>::block_number());
+		}
+
+		/// Ask the relay to put a call hash on its whitelist.
+		///
+		/// `DescendOrigin` is the whole message. Without it the relay sees this chain speaking
+		/// as itself, which is the origin its register-as-root converter answers, and the court
+		/// would be asking for the relay's constitution rather than for its whitelist. With it
+		/// the origin is the judicial body of this chain, which the relay converts for this one
+		/// pallet and nothing else.
+		///
+		/// It comes *after* `UnpaidExecution` and that order is load-bearing. The relay's
+		/// barrier computes the origin from any leading `DescendOrigin` before it checks
+		/// whether the sender may skip the fee, so descending first would present it with
+		/// a plurality where it expects a bare system teyrchain, and the message would be
+		/// refused before the origin was ever judged.
+		fn send_whitelist_to_relay(call_hash: T::Hash) -> Result<(), SendError> {
+			let call =
+				(T::RelayWhitelistPalletIndex::get(), WHITELIST_CALL_INDEX, call_hash).encode();
+
+			let message = Xcm(vec![
+				UnpaidExecution { weight_limit: Unlimited, check_origin: None },
+				DescendOrigin([Plurality { id: BodyId::Judicial, part: BodyPart::Voice }].into()),
+				Transact {
+					origin_kind: OriginKind::Xcm,
+					fallback_max_weight: None,
+					call: call.into(),
+				},
+			]);
+
+			let (ticket, _) =
+				T::XcmSender::validate(&mut Some(Location::parent()), &mut Some(message))?;
 			T::XcmSender::deliver(ticket).map(|_| ())
 		}
 

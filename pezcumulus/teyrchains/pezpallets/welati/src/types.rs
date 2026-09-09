@@ -525,6 +525,75 @@ pub struct DiwanMember<T: pezframe_system::Config> {
 	pub appointed_by: AppointmentAuthority<T>,
 }
 
+/// Which part of the nation a citizen has been attested as belonging to.
+///
+/// **Belonging, not residence.** A citizen from Rojava living in Germany marks Rojava. This is
+/// the register of a dispersed nation, and what is worth spreading validator seats across is
+/// which part of it somebody comes from -- not which jurisdiction their landlord is in. Where
+/// the machine physically stands is a different question with a different answer: the ninth
+/// stratum measures it, and measures it directly rather than by asking.
+///
+/// It also settles what this field costs a citizen to publish. Saying where you are from is
+/// not saying where you can be found, which is the difference between a fact somebody may
+/// volunteer and one a hostile state can act on.
+///
+/// Six, and deliberately not "countries". Four are the parts of Kurdistan; the other two are
+/// for citizens whose belonging is to neither -- born into the diaspora, or to the communities
+/// of the Caucasus.
+///
+/// Indices are pinned because they are a storage key. A variant may be renamed once its index
+/// is fixed; it may not be inserted in the middle.
+#[derive(
+	Encode,
+	Decode,
+	DecodeWithMemTracking,
+	Clone,
+	Copy,
+	Eq,
+	PartialEq,
+	Debug,
+	TypeInfo,
+	MaxEncodedLen,
+)]
+pub enum Region {
+	#[codec(index = 0)]
+	Başûr,
+	#[codec(index = 1)]
+	Bakur,
+	#[codec(index = 2)]
+	Rojava,
+	#[codec(index = 3)]
+	Rojhilat,
+	#[codec(index = 4)]
+	Diaspora,
+	#[codec(index = 5)]
+	Kafkasya,
+}
+
+impl Region {
+	/// Every region, in index order.
+	pub const ALL: [Region; 6] = [
+		Region::Başûr,
+		Region::Bakur,
+		Region::Rojava,
+		Region::Rojhilat,
+		Region::Diaspora,
+		Region::Kafkasya,
+	];
+
+	/// The index this region encodes as, for the committee draw that rotates across them.
+	pub const fn index(&self) -> u8 {
+		match self {
+			Region::Başûr => 0,
+			Region::Bakur => 1,
+			Region::Rojava => 2,
+			Region::Rojhilat => 3,
+			Region::Diaspora => 4,
+			Region::Kafkasya => 5,
+		}
+	}
+}
+
 /// Appointment authority
 #[derive(
 	Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,

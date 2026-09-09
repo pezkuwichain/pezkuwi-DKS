@@ -310,6 +310,26 @@ pub mod pezpallet {
 	pub type CitizenReferrers<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, T::AccountId>;
 
+	/// An account the court has retired, and the one that took its place.
+	///
+	/// Written when a citizenship is reissued after a lost key and never cleared. Two different
+	/// things need it and they need it for opposite reasons.
+	///
+	/// The first is correctness. Everything the register holds *about* an account is moved by
+	/// the reissue, but references to it held by *other* records are not: a citizen A brought
+	/// in stays recorded as brought in by A for ever, because that is what happened. Those
+	/// references are read on the penalty path -- a revoked referral debits the referrer -- and
+	/// a debit addressed to a retired account would leave the successor holding the score with
+	/// none of the liability. So writers resolve through this map, and readers of history do
+	/// not: provenance keeps the name it had, accountability follows the person.
+	///
+	/// The second is that a retired account must stay retired. Both ends are checked at reissue
+	/// -- a superseded account cannot be reissued again, and cannot be reissued *to* -- which is
+	/// what stops a chain being built to launder standing through a series of accounts.
+	#[pezpallet::storage]
+	pub type SupersededBy<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, T::AccountId, OptionQuery>;
+
 	/// How many accounts currently hold `KycLevel::Approved`.
 	///
 	/// Kept rather than counted. `citizen_count()` walks the whole of `KycStatuses`, which is
@@ -456,6 +476,13 @@ pub mod pezpallet {
 		CannotRevokeInCurrentState,
 		/// User is not a citizen (cannot renounce)
 		NotACitizen,
+		/// A reissue must name two different accounts.
+		CannotReissueToTheSameAccount,
+		/// One of the two accounts has already been retired by an earlier reissue.
+		AccountAlreadyRetired,
+		/// The account a citizenship would move to already holds a record of its own. A
+		/// reissue moves rather than merges, so it refuses rather than overwriting.
+		SuccessorIsNotEmpty,
 		/// Only the referrer can approve this application
 		NotTheReferrer,
 		/// Cannot cancel application in current state (must be PendingReferral)
@@ -864,6 +891,87 @@ impl<T: Config> Pezpallet<T> {
 	/// Check if account is a citizen
 	pub fn is_citizen(who: &T::AccountId) -> bool {
 		KycStatuses::<T>::get(who) == KycLevel::Approved
+	}
+
+	/// How many retirements one lookup will walk before giving up.
+	///
+	/// A person can lose a key twice, so chains are legitimate; a chain long enough to matter
+	/// is not. The bound exists because this is read on a write path and an unbounded walk
+	/// there is a weight nobody has measured -- and because a cycle, which the reissue checks
+	/// are meant to make impossible, must not be able to hang a block if one is ever written
+	/// by a migration or a genesis.
+	const MAX_SUPERSESSION_HOPS: u32 = 8;
+
+	/// The account that answers for this one today.
+	///
+	/// Identity for a writer, not for a reader. History keeps the name it was written with;
+	/// anything that debits, credits or penalises resolves first, or the successor keeps the
+	/// standing while the retired account keeps the liability.
+	pub fn account_answering_for(who: &T::AccountId) -> T::AccountId {
+		let mut current = who.clone();
+		for _ in 0..Self::MAX_SUPERSESSION_HOPS {
+			match SupersededBy::<T>::get(&current) {
+				Some(next) => current = next,
+				None => return current,
+			}
+		}
+		current
+	}
+
+	/// Whether this account has been retired by a reissue.
+	pub fn is_superseded(who: &T::AccountId) -> bool {
+		SupersededBy::<T>::contains_key(who)
+	}
+
+	/// Move everything the register holds about `from` onto `to`.
+	///
+	/// A move rather than a copy, and the distinction is the whole safety argument: at no
+	/// point do two accounts hold the same citizenship, the same identity hash or the same
+	/// standing. `to` is required to be empty of all of it, so nothing is overwritten and the
+	/// call cannot be used to graft one person's record onto another's.
+	///
+	/// The reverse index is rewritten too. `IdentityHashToAccount` is what makes a hash
+	/// unique, and leaving it pointing at the retired account would let the same person be
+	/// admitted a second time under the successor -- the exact hole the hash exists to close.
+	pub fn rebind_account(from: &T::AccountId, to: &T::AccountId) -> DispatchResult {
+		ensure!(from != to, Error::<T>::CannotReissueToTheSameAccount);
+		ensure!(!SupersededBy::<T>::contains_key(from), Error::<T>::AccountAlreadyRetired);
+		ensure!(!SupersededBy::<T>::contains_key(to), Error::<T>::AccountAlreadyRetired);
+		ensure!(Self::is_citizen(from), Error::<T>::NotACitizen);
+		ensure!(
+			KycStatuses::<T>::get(to) == KycLevel::NotStarted
+				&& !IdentityHashes::<T>::contains_key(to)
+				&& !Applications::<T>::contains_key(to),
+			Error::<T>::SuccessorIsNotEmpty
+		);
+
+		if let Some(v) = Applications::<T>::take(from) {
+			Applications::<T>::insert(to, v);
+		}
+		let level = KycStatuses::<T>::take(from);
+		KycStatuses::<T>::insert(to, level);
+		if let Some(hash) = IdentityHashes::<T>::take(from) {
+			IdentityHashes::<T>::insert(to, hash);
+			// The hash points back at whoever owns it now, or uniqueness stops being checked
+			// against the living account.
+			IdentityHashToAccount::<T>::insert(hash, to.clone());
+		}
+		if let Some(v) = CitizenSince::<T>::take(from) {
+			CitizenSince::<T>::insert(to, v);
+		}
+		if let Some(v) = CitizenReferrers::<T>::take(from) {
+			CitizenReferrers::<T>::insert(to, v);
+		}
+		if ApprovedByFallback::<T>::take(from).is_some() {
+			ApprovedByFallback::<T>::insert(to, ());
+		}
+		if HonoraryCitizens::<T>::take(from).is_some() {
+			HonoraryCitizens::<T>::insert(to, ());
+		}
+
+		// The counters are unchanged on purpose: one person left and the same person arrived.
+		SupersededBy::<T>::insert(from, to.clone());
+		Ok(())
 	}
 
 	/// Count total number of citizens.

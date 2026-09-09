@@ -521,7 +521,7 @@ pub mod pezpallet {
 			// invited them either, nobody vouched for them in any sense, and nobody pays.
 			if let Some(referral_info) = Referrals::<T>::get(who) {
 				let stood_in = pezpallet_identity_kyc::ApprovedByFallback::<T>::contains_key(who);
-				let referrer = if stood_in {
+				let named = if stood_in {
 					match InvitedBy::<T>::get(who) {
 						Some(inviter) => inviter,
 						None => return,
@@ -529,6 +529,12 @@ pub mod pezpallet {
 				} else {
 					referral_info.referrer
 				};
+				// Who was named is history and stays as written; who pays is whoever answers
+				// for that account today. A citizenship reissued after a lost key moves the
+				// standing to the new account, and a penalty addressed to the retired one
+				// would let the successor keep the score without the liability.
+				let referrer =
+					pezpallet_identity_kyc::Pezpallet::<T>::account_answering_for(&named);
 				let penalty_per_revocation = T::PenaltyPerRevocation::get();
 
 				// Update referrer stats - DIRECT RESPONSIBILITY
@@ -562,7 +568,7 @@ pub mod pezpallet {
 		fn on_citizenship_restored(who: &T::AccountId) {
 			if let Some(referral_info) = Referrals::<T>::get(who) {
 				let stood_in = pezpallet_identity_kyc::ApprovedByFallback::<T>::contains_key(who);
-				let referrer = if stood_in {
+				let named = if stood_in {
 					match InvitedBy::<T>::get(who) {
 						Some(inviter) => inviter,
 						None => return,
@@ -570,6 +576,12 @@ pub mod pezpallet {
 				} else {
 					referral_info.referrer
 				};
+				// Who was named is history and stays as written; who pays is whoever answers
+				// for that account today. A citizenship reissued after a lost key moves the
+				// standing to the new account, and a penalty addressed to the retired one
+				// would let the successor keep the score without the liability.
+				let referrer =
+					pezpallet_identity_kyc::Pezpallet::<T>::account_answering_for(&named);
 				let penalty_per_revocation = T::PenaltyPerRevocation::get();
 				ReferrerStatsStorage::<T>::mutate(&referrer, |stats| {
 					stats.revoked_referrals = stats.revoked_referrals.saturating_sub(1);
@@ -646,6 +658,48 @@ pub mod pezpallet {
 use pezframe_support::traits::Get as _;
 
 impl<T: Config> Pezpallet<T> {
+	/// Move this pallet's record of one account onto another, for a court-ordered reissue.
+	///
+	/// Only what is keyed *by* the account moves. Records that merely name it -- who invited
+	/// whom -- are left as written, because they are statements about what happened and the
+	/// account that did it is the account that did it. Nothing is lost by leaving them: every
+	/// path that acts on a named referrer resolves through `account_answering_for` first.
+	///
+	/// `Invitations` is a claim waiting to be settled rather than a record of anything, so the
+	/// rows keyed by the account move with it and any claim still naming it as the inviter is
+	/// resolved at settlement like every other reference.
+	pub fn rebind_account(
+		from: &T::AccountId,
+		to: &T::AccountId,
+	) -> pezframe_support::pezpallet_prelude::DispatchResult {
+		// `alloc::` spelled out: this impl block sits outside the pallet module, so the
+		// prelude that would have brought `Vec` in does not reach it -- and a std-only check
+		// never notices, because std has it either way.
+		let claims: alloc::vec::Vec<T::AccountId> =
+			Invitations::<T>::iter_key_prefix(from).collect();
+		for inviter in claims {
+			Invitations::<T>::remove(from, &inviter);
+			Invitations::<T>::insert(to, &inviter, ());
+		}
+		if let Some(v) = InvitedBy::<T>::take(from) {
+			InvitedBy::<T>::insert(to, v);
+		}
+		let invitations = InvitationCount::<T>::take(from);
+		if invitations != 0 {
+			InvitationCount::<T>::insert(to, invitations);
+		}
+		let referrals = ReferralCount::<T>::take(from);
+		if referrals != 0 {
+			ReferralCount::<T>::insert(to, referrals);
+		}
+		if let Some(v) = Referrals::<T>::take(from) {
+			Referrals::<T>::insert(to, v);
+		}
+		let stats = ReferrerStatsStorage::<T>::take(from);
+		ReferrerStatsStorage::<T>::insert(to, stats);
+		Ok(())
+	}
+
 	/// How many people this account may still vouch into the register.
 	///
 	/// `initial + settled / per_place`, capped, minus those already brought in. Settled means

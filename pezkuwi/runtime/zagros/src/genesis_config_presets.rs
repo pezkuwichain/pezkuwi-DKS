@@ -790,9 +790,6 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 		),
 	]);
 
-	// Validator stash amount
-	const STASH: u128 = 100 * HEZ;
-
 	// What the validators are funded with, taken out of the treasury's share rather than added
 	// beside it.
 	//
@@ -855,7 +852,8 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				(checking_account, checking_account_seed),
 			]
 			.into_iter()
-			// Add validator stash balances (STASH * 2 to cover bond + existential deposit)
+			// The validators' stashes, divided out of `HEZ_VALIDATOR_FUNDING` rather than
+			// added on top of the allocations -- see the constant's own comment.
 			.chain(initial_authorities.iter().enumerate().map(|(i, x)| {
 				(
 					x.0.clone(),

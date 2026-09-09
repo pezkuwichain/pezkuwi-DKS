@@ -748,6 +748,41 @@ pub mod pezpallet {
 	// --- Helpers ---
 
 	impl<T: Config> Pezpallet<T> {
+		/// Move what a court-ordered reissue may honestly move, and no more.
+		///
+		/// **The observed stake deliberately does not move, and this is the one place a
+		/// reissue leaves something behind.** Everything else a reissue carries is a record of
+		/// what a person did -- a certificate earned, a citizen vouched for, an office won --
+		/// and those are facts about the person whatever key wrote them down. Cached stake is
+		/// not that. It is this chain's belief about funds bonded on another one, and those
+		/// funds are bonded to the key that was lost. Carrying the belief across would credit
+		/// the successor with money nobody can move, and nothing would ever correct it: the
+		/// cache is only written when a noter observes a stake, and no noter will ever observe
+		/// one for an account that has none. The successor's stake is whatever they bond.
+		///
+		/// What does move is the account's standing *as a noter* -- its bond, its submission
+		/// clock and the disputes recorded against it. Those are conduct, not holdings, and
+		/// leaving them behind would let somebody shed a bad noting record by losing a key.
+		pub fn rebind_account(
+			from: &T::AccountId,
+			to: &T::AccountId,
+		) -> pezframe_support::pezpallet_prelude::DispatchResult {
+			if let Some(bond) = NoterBonds::<T>::take(from) {
+				NoterBonds::<T>::insert(to, bond);
+			}
+			if let Some(at) = NoterLastSubmission::<T>::take(from) {
+				NoterLastSubmission::<T>::insert(to, at);
+			}
+			let disputes = DisputesAgainstNoter::<T>::take(from);
+			if disputes != 0 {
+				DisputesAgainstNoter::<T>::insert(to, disputes);
+			}
+			if TrackingOptIn::<T>::take(from).is_some() {
+				TrackingOptIn::<T>::insert(to, ());
+			}
+			Ok(())
+		}
+
 		/// Calculate total cached stake across all sources for a given account.
 		pub fn total_cached_stake(who: &T::AccountId) -> T::Balance {
 			let mut total = T::Balance::zero();
