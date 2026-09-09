@@ -569,6 +569,24 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type CourtTermLength: Get<BlockNumberFor<Self>>;
 
+		/// How long a seat may stay silent before anyone may vacate it.
+		///
+		/// This is not a performance standard and it must not be read as one. A member who
+		/// signs but votes against everything is doing the job; the term is the remedy for
+		/// that, and dismissal for cause stays impossible on purpose. What this measures is
+		/// something else and permanent: a seat that cannot act at all. Death, a lost key and
+		/// an abandoned account are indistinguishable from outside and identical in effect --
+		/// they subtract from the same two thirds every court decision needs, and four of
+		/// eleven put that threshold out of reach for the remaining nine years.
+		///
+		/// Signing is the signal because reachability is what is being measured. The court
+		/// votes through a collective this pallet cannot observe per member, and a vote-based
+		/// test would in any case answer the wrong question: it would catch a judge who
+		/// disagrees and miss one whose key is in a drawer. A key that can sign is a seat that
+		/// can be reached, whatever it then decides.
+		#[pezpallet::constant]
+		type CourtInactivityPeriod: Get<BlockNumberFor<Self>>;
+
 		/// How many consecutive terms one person may serve in the same office.
 		///
 		/// Zero means no limit. What this exists to prevent is not a long career but a
@@ -628,6 +646,17 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn diwan_members)]
 	pub type DiwanMembers<T: Config> =
 		StorageValue<_, BoundedVec<DiwanMember<T>, T::DiwanSize>, ValueQuery>;
+
+	/// When each sitting member last proved their key still signs.
+	///
+	/// A separate map rather than a field on `DiwanMember`, because activity is an observation
+	/// about a seat rather than a term of its appointment -- and because the appointment
+	/// already carries the baseline this needs. An absent key is not "never active": it is a
+	/// member who has not checked in since they were seated, so the reader falls back to
+	/// `appointed_at` and a new member gets a full period before anything is expected of them.
+	#[pezpallet::storage]
+	pub type CourtLastActive<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
 
 	// --- ELECTION SYSTEM STORAGE ---
 
@@ -1041,6 +1070,19 @@ pub mod pezpallet {
 		/// Diwan member appointed
 		DiwanMemberAppointed { member: T::AccountId, appointed_by: AppointmentAuthority<T> },
 
+		/// A member of the court proved their key still signs.
+		CourtMemberCheckedIn { member: T::AccountId, at: BlockNumberFor<T> },
+
+		/// A seat was vacated because nothing had signed for it in a full inactivity period.
+		///
+		/// Carries who seated it, because that is the authority that has to fill it again and
+		/// the event is the only notice they get.
+		CourtSeatVacatedForSilence {
+			member: T::AccountId,
+			silent_since: BlockNumberFor<T>,
+			seated_by: AppointmentAuthority<T>,
+		},
+
 		/// A citizen endorsed a candidacy.
 		CandidateEndorsed { election_id: u32, endorser: T::AccountId, candidate: T::AccountId },
 
@@ -1167,6 +1209,10 @@ pub mod pezpallet {
 		AppointedCourtSeatsAreFull,
 		/// This account already sits on the court.
 		AlreadyOnTheCourt,
+		/// This account does not sit on the court.
+		NotOnTheCourt,
+		/// The seat has signed inside the inactivity period, so it is not vacant.
+		CourtMemberIsStillReachable,
 		/// Only the sitting house elects the court's six elected seats.
 		NotAParliamentMember,
 		/// The caller does not hold the finance portfolio.
@@ -1979,6 +2025,78 @@ pub mod pezpallet {
 			ensure!(refused || who == p.proposer, Error::<T>::NotTheFinanceMinisterForPresale);
 			PresaleProposals::<T>::remove(id);
 			Self::deposit_event(Event::PresaleCancelled { id });
+			Ok(())
+		}
+
+		/// Prove the seat can still be reached.
+		///
+		/// The only thing a member has to do to keep a seat, and it decides nothing: a check-in
+		/// is not a vote, cannot be counted as one, and says nothing about how the member would
+		/// rule. That separation is the whole design. If keeping the seat required agreeing with
+		/// anybody, the court would answer to whoever set the test.
+		#[pezpallet::call_index(63)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn court_check_in(origin: OriginFor<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(Self::is_diwan_member(&who), Error::<T>::NotOnTheCourt);
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			CourtLastActive::<T>::insert(&who, now);
+			Self::deposit_event(Event::CourtMemberCheckedIn { member: who, at: now });
+			Ok(())
+		}
+
+		/// Vacate a seat whose key has stopped signing.
+		///
+		/// Permissionless on purpose. Every body that could be given this power is a body the
+		/// court exists to rule on, and handing the president or the house a call that empties
+		/// a seat would undo §5.4 whatever the conditions written beside it. So no judgement is
+		/// exercised here at all: the caller supplies no reason, the chain checks arithmetic
+		/// that anybody can check for themselves, and a member one block short of the period is
+		/// refused however obviously absent they look.
+		///
+		/// A vacated seat is refilled by whichever authority seated it -- the house re-elects
+		/// its own, the President re-appoints their own -- so this removes a member and never
+		/// shifts the balance between the two halves.
+		#[pezpallet::call_index(64)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn vacate_inactive_court_seat(
+			origin: OriginFor<T>,
+			who: T::AccountId,
+		) -> DispatchResult {
+			ensure_signed(origin)?;
+			let bench = DiwanMembers::<T>::get();
+			let member = bench
+				.iter()
+				.find(|member| member.account == who)
+				.ok_or(Error::<T>::NotOnTheCourt)?;
+
+			// No entry means the member has not checked in since they were seated, which is
+			// not the same as never having been reachable -- they get the period from the day
+			// they took the seat.
+			let last = CourtLastActive::<T>::get(&who).unwrap_or(member.appointed_at);
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			ensure!(
+				now.saturating_sub(last) >= T::CourtInactivityPeriod::get(),
+				Error::<T>::CourtMemberIsStillReachable
+			);
+			let seated_by = member.appointed_by.clone();
+
+			let remaining: BoundedVec<DiwanMember<T>, T::DiwanSize> = bench
+				.into_iter()
+				.filter(|member| member.account != who)
+				.collect::<Vec<_>>()
+				.try_into()
+				.map_err(|_| Error::<T>::DiwanFull)?;
+			DiwanMembers::<T>::put(remaining);
+			CourtLastActive::<T>::remove(&who);
+			let _ = pezpallet_tiki::Pezpallet::<T>::internal_revoke_role(&who, Tiki::EndameDiwane);
+			Self::publish_the_bench();
+
+			Self::deposit_event(Event::CourtSeatVacatedForSilence {
+				member: who,
+				silent_since: last,
+				seated_by,
+			});
 			Ok(())
 		}
 

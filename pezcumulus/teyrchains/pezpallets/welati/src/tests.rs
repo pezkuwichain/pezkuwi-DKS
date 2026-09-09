@@ -3456,6 +3456,91 @@ fn an_unqualified_appointee_is_caught() {
 	});
 }
 
+mod a_silent_court_seat {
+	use super::*;
+
+	// The court is the one body with no dismissal call, which is what makes it a court -- and
+	// which is exactly why a seat that stops signing had to be given its own way out. Four
+	// unreachable seats out of eleven put a two-thirds decision beyond the remaining nine for
+	// the rest of a nine-year term, and every authority the court carries stops with it.
+
+	fn a_seated_judge() -> u64 {
+		seat_president(1);
+		make_qualified(8, pezpallet_tiki::Tiki::Bernamenivîs);
+		assert_ok!(Welati::appoint_diwan_member(RuntimeOrigin::signed(1), 8));
+		8
+	}
+
+	#[test]
+	fn a_seat_that_still_signs_cannot_be_taken() {
+		ExtBuilder::default().build().execute_with(|| {
+			let judge = a_seated_judge();
+			let period = <Test as crate::Config>::CourtInactivityPeriod::get();
+
+			// One block short of the period, and the seat is obviously idle. It stays.
+			System::set_block_number(1 + period - 1);
+			assert_noop!(
+				Welati::vacate_inactive_court_seat(RuntimeOrigin::signed(99), judge),
+				Error::<Test>::CourtMemberIsStillReachable
+			);
+			assert_eq!(bench(), vec![judge]);
+
+			// A check-in resets the clock, so the seat survives the period it was about to fail.
+			assert_ok!(Welati::court_check_in(RuntimeOrigin::signed(judge)));
+			System::set_block_number(1 + period + 10);
+			assert_noop!(
+				Welati::vacate_inactive_court_seat(RuntimeOrigin::signed(99), judge),
+				Error::<Test>::CourtMemberIsStillReachable
+			);
+			assert_eq!(bench(), vec![judge]);
+		});
+	}
+
+	#[test]
+	fn a_seat_that_has_gone_silent_is_vacated_by_anyone() {
+		ExtBuilder::default().build().execute_with(|| {
+			let judge = a_seated_judge();
+			let period = <Test as crate::Config>::CourtInactivityPeriod::get();
+
+			// Never checked in, so the clock runs from the appointment rather than from zero.
+			System::set_block_number(1 + period);
+
+			// Permissionless: 99 holds no office and needs none. Handing this call to the
+			// president or the house would hand them a way to empty a seat.
+			assert_ok!(Welati::vacate_inactive_court_seat(RuntimeOrigin::signed(99), judge));
+
+			assert!(bench().is_empty());
+			assert!(!pezpallet_tiki::Pezpallet::<Test>::has_tiki(
+				&judge,
+				&pezpallet_tiki::Tiki::EndameDiwane
+			));
+			// The mock relays nothing to a collective (`CourtRoster = ()`), so the roster
+			// itself cannot be read here. What can be checked is the state the pallet is left
+			// in, and try_state is what holds the bench and its tikis together.
+			crate::mock::check_invariants();
+		});
+	}
+
+	#[test]
+	fn only_a_sitting_member_may_check_in_or_be_vacated() {
+		ExtBuilder::default().build().execute_with(|| {
+			let judge = a_seated_judge();
+			make_citizen(9);
+
+			assert_noop!(
+				Welati::court_check_in(RuntimeOrigin::signed(9)),
+				Error::<Test>::NotOnTheCourt
+			);
+			System::set_block_number(1 + <Test as crate::Config>::CourtInactivityPeriod::get());
+			assert_noop!(
+				Welati::vacate_inactive_court_seat(RuntimeOrigin::signed(99), 9),
+				Error::<Test>::NotOnTheCourt
+			);
+			assert_eq!(bench(), vec![judge]);
+		});
+	}
+}
+
 mod citizen_tally {
 	use super::*;
 	use crate::types::CitizenTally;

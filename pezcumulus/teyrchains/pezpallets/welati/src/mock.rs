@@ -531,6 +531,7 @@ parameter_types! {
 	/// inside it several times over.
 	pub const TermLength: u64 = 1_000;
 	pub const CourtTermLength: u64 = 2_250;
+	pub const CourtInactivityPeriod: u64 = 500;
 	pub const MaxConsecutiveTerms: u32 = 2;
 
 	/// Stands in for the Asset Hub. The mock never delivers anything there; what the tests
@@ -786,6 +787,7 @@ impl pezpallet_welati::Config for Test {
 	type MaxEndorsers = MaxEndorsers;
 	type TermLength = TermLength;
 	type CourtTermLength = CourtTermLength;
+	type CourtInactivityPeriod = CourtInactivityPeriod;
 	type MaxConsecutiveTerms = MaxConsecutiveTerms;
 	type XcmSender = RecordingXcmSender;
 	type TreasuryChainLocation = TreasuryChain;

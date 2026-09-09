@@ -1240,6 +1240,16 @@ parameter_types! {
 	/// that leaves with the government it was meant to check was never a check.
 	pub const WelatiCourtTermLength: BlockNumber = 9 * 365 * DAYS;
 
+	/// How long a court seat may stay silent before anyone may vacate it: fourteen days.
+	///
+	/// **Deliberately not the mainnet figure.** This constant is measured in the time a human
+	/// takes to notice something, so mirroring mainnet's hundred and eighty days would make the
+	/// rule untestable here -- a test network whose court cannot be shown recovering from a
+	/// dead seat has not demonstrated the mechanism, and this network exists to demonstrate the
+	/// mechanisms before a genesis freezes them. Fourteen days still bites: it is far longer
+	/// than any test run, so nothing trips it by accident.
+	pub const WelatiCourtInactivityPeriod: BlockNumber = 14 * DAYS;
+
 	/// How many terms in a row one person may hold the same elected office.
 	///
 	/// Two, as in most republics. Zero here would mean no limit.
@@ -1460,6 +1470,7 @@ impl pezpallet_welati::Config for Runtime {
 	type NativeCurrency = Balances;
 	type MaxEndorsers = WelatiMaxEndorsers;
 	type TermLength = WelatiTermLength;
+	type CourtInactivityPeriod = WelatiCourtInactivityPeriod;
 	type CourtTermLength = WelatiCourtTermLength;
 	type MaxConsecutiveTerms = WelatiMaxConsecutiveTerms;
 	type XcmSender = crate::xcm_config::XcmRouter;
