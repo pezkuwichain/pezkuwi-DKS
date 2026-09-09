@@ -161,6 +161,15 @@ denominator has a floor. Below it a question is not cheap to carry; it is refuse
 way a stratum with too few members is refused a seat in §7.2. The floor is not a quorum a
 referendum has to assemble on top of its own rules — it is the same rule, honestly denominated.
 
+**And the roll can fall as well as rise.** A denominator that only grows has the same end as
+a captured one: every lost key, every death and everybody who registered once and never came
+back would stay in it for good, so the share a question needs would climb for ever while the
+people who could supply it did not. A citizen who has taken no part in anything for two years
+stops counting towards it. Nothing is taken away — the citizenship, the standing and the vote
+all remain, and casting one puts them back in the count in the same block — and anybody may
+mark a silence that the chain can already see, because a body that chose whose absence counted
+could shrink the electorate before a vote it cared about.
+
 Two things follow. Nothing can pass before the roll reaches two thousand, because a question
 needs two thousand ayes and there is nobody else to cast them — and that is a necessary size
 rather than a sufficient one, since two thousand citizens must actually vote aye, not merely
@@ -270,8 +279,14 @@ a community badge, and the code refuses it.
 ### 5.1 Serok — the President
 
 One seat, four years, elected by every citizen. To stand, a candidate needs an approved
-identity, a trust score of at least 250, a thousand endorsements each from a citizen with a
-trust score of at least 40, and a hundred-HEZ deposit. Nobody may serve more than two
+identity, a trust score of at least 250, a hundred-HEZ deposit, and endorsements from citizens with
+a trust score of at least 40 — a thousand of them once the register is grown, and the same
+*share* of a smaller one before that. Written flat, a thousand was half the population of a
+young roll, each endorser needing standing that comes mostly from education nobody could have
+earned yet; the first election would have been winnable only from inside whatever circle could
+hand out the rest. The threshold now scales with the register up to the figure named here and
+never past it, with a floor so that a candidacy in a small country still costs somebody else's
+reputation. Nobody may serve more than two
 consecutive terms.
 
 The election requires fifty percent turnout — waived only after one failed attempt, so that
@@ -318,9 +333,13 @@ any body that appoints to it precisely so that no single alignment outlives it.
 key, and permanent silence are not misconduct, but they subtract from the same two-thirds a
 decision needs; four silent seats out of eleven make that threshold unreachable for good, and
 every authority the court carries — the register, the validator pool, and the fast upgrade
-path in §10.1 — freezes with it. So the court's seats are vacated on measured inactivity and
-refilled by the body that seated them. Removal for cause remains impossible; absence is not
-cause, and treating it as such would be the loophole this section exists to refuse.
+path in §10.1 — freezes with it. So the court's seats are vacated on measured inactivity.
+Vacating is itself the repair: two thirds is counted over the members who sit, so a bench of
+seven needs five rather than eight, and the court resumes the moment the silent seats leave it.
+Refilling is the slower half — the President may appoint into a vacancy at once, while an
+elected seat waits for the court's next scheduled election. Removal for cause remains
+impossible; absence is not cause, and treating it as such would be the loophole this rule
+exists to refuse.
 
 The court is not decorative. Two thirds of it constitutes the *register authority*, which
 governs the citizen register itself, administers the validator pool, and can strip an elected
@@ -656,6 +675,16 @@ proposes, this body decides, this vault pays.*
 
 ### 9.2 What the vaults refuse
 
+**A ceiling on one payment is not a ceiling on spending.** The airdrop pot pays on two
+signatures below a million HEZ and needs the Treasurer above it, which bounded any single
+payment and nothing else: a million could be moved, and then another million, until a
+forty-million pot was empty and the office being skipped was the only one that would have
+noticed. The pot now remembers. Recent payments drain away over a month rather than resetting
+on a boundary — a window that resets is worth twice its ceiling to whoever reads the clock —
+and once three million have moved inside one, the Treasurer signs and the week's wait applies
+however small the next payment is.
+
+
 Four of the five vaults name **exactly one chain** they will accept instruction from: the
 People chain. Not the relay. Not root. Not a key. The airdrop pot, the presale pot and both
 PEZ pots are configured with an origin that matches the People chain's location and has no
@@ -716,6 +745,16 @@ No office signs a citizen's reward. It is claimed, and the arithmetic is the aut
 **At the implementation layer**, the runtime is Rust compiled to WebAssembly, and upgrades are
 forkless — a defect is patched by a runtime upgrade, not by asking the network to migrate.
 
+**And a defect can be patched in hours, on two keys.** The ordinary route to the relay's root
+is the twenty-eight-day referendum, which is the right speed for a constitutional amendment and
+the wrong one for something being exploited — and the call that fixes an unknown defect cannot
+have been approved in advance. So the court, at two thirds, may put a call hash on the relay's
+whitelist, and a whitelisted call confirms in ten minutes. Neither key is enough alone: the
+court cannot dispatch what it lists, and what it lists is public for the whole of its
+confirmation. The court holds it rather than a ministry because this is the one authority that
+has to be used while something is going wrong, and the body holding it must not be the body
+most likely to be the reason.
+
 **At the consensus layer**, block production and finality are separate mechanisms, so that a
 chain that stops finalising still produces blocks and a chain that stops producing does not
 finalise garbage. Equivocation and disputes are reported on-chain.
@@ -745,19 +784,20 @@ reader could otherwise find in the code and conclude we had hidden. The chain is
 network precisely so that these close before a genesis freezes them — a structural fix costs
 one commit today and a coordinated operation across every operator afterwards.
 
-**Decided, and being built.** These have an agreed remedy; the code has not landed yet.
+**Still to build.** These have an agreed remedy; the code has not landed yet.
 
 | Gap | What breaks without it | The remedy |
 |---|---|---|
-| **No fast path to a runtime upgrade** | The whitelist machinery exists and can enact in hours, but only root may whitelist a call, and root is the twenty-eight-day referendum. A zero-day defect cannot wait twenty-eight days, and the call to be whitelisted cannot be known in advance | The court, at two thirds, gains the power to whitelist — upgrades only, never the treasury and never the register |
-| **The court cannot lose a silent member** | Four unreachable seats out of eleven freeze the register authority, the validator pool, and the fast path above, permanently | Vacancy on measured inactivity (§5.4) |
-| **A lost key ends a citizenship** | The identity hash is claimed for good, so re-registration collides. In a real population this is a certainty, not an exception | Judicial reissue by the court at two thirds (§4) |
-| **The airdrop ceiling is per payment, not cumulative** | One million HEZ moves on two signatures without the Treasurer. Nothing counts the second such payment, or the fortieth | A rolling window above which the third signature and the delay become mandatory |
-| **The support denominator only grows** | Lost keys, deaths and permanent absentees stay in the roll for ever. At scale no referendum passes, and the hundred-thousand floor in §3.1 fixes the opposite end of this problem | A dormancy rule, and a way to record a death |
 | **Six of the nine strata share one gate** | Stated already in §7.1: the committee's independence is three today, not nine | Dedicated attestation channels, one per stratum |
-| **Succession is unwritten** | The death or key loss of a president, a vacant ministry, a by-election — none of these has a rule | Written with the vacancy work above; it is the same defect in a different organ |
+| **An emptied body has no by-election** | Succession for the single-holder offices is written — the Speaker acts for an absent President, and a vacancy opens an election without waiting for the calendar. What has no arm is a *body*: a parliament that lost every seat inside one term, or an elected court seat vacated for silence, waits for the scheduled election. The court still rules, because two thirds counts over the members who sit; the house does not | A vacancy arm for the elected bodies, and a decision on whether a replacement serves the remainder or a fresh term |
 | **"Region" has no definition** | The geography stratum distributes seats by a boundary nobody has drawn. For a dispersed population this is the easiest thing in the system to draw self-servingly | A definition fixed before the stratum is seated |
-| **Election thresholds are absolute numbers** | The first presidential election needs a thousand endorsements from a roll that may hold two thousand, and thirty percent of trust — education — is zero at launch. The thresholds were written for a large register, exactly as the support curves were | Thresholds expressed as a share of the roll with a floor, as §3.1 already does |
+
+**Closed since the last edition, and described where they belong.** Listed here so that a
+reader who was given the previous version can see what moved: the emergency upgrade path
+(§10), vacancy on silence and judicial reissue (§4, §5.4), the airdrop's memory (§9.2), the
+dormancy rule (§3.1), candidacy thresholds as a share of the roll (§3.1), and free voting
+(§3.1). Each is a mechanism now and not a promise; the sections named are where it is
+described, and the code is what settles it.
 
 **Open, and not yet decided.** These are judgements rather than engineering, and this document
 will not pretend they are settled.
