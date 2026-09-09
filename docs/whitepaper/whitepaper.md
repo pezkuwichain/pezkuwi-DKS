@@ -449,7 +449,7 @@ how much stake sits behind it.
 | **Welatî lottery** | Trust above forty — more than the cheapest act | Nobody; the pool dilutes |
 | **Geography** | An attested region of residence | A notary, undone by the court |
 | **Tenure** | A year of unbroken, offence-free membership | Nobody; only elapsed time |
-| **Infrastructure** | *Any trust* — the gate is not built yet | — |
+| **Infrastructure** | Forty-eight sessions validated, and no pattern of failing with others | Nobody; the chain's own record |
 
 The third column is the one the security argument counts. Two strata answering to the same
 institution are one stratum, and eight distinct answers is what "nine independent gates" has to
@@ -464,8 +464,8 @@ size is exactly the reason for it.
 
 The security argument rests on the strata being gated by *different* authorities: two strata
 answering to the same institution are one stratum, not two, and the committee's independence
-is counted from that number. Eight of the nine gates are measured on this chain today, and
-they are eight different measurements. Stake, education and community tikis each read their own
+is counted from that number. All nine gates are measured on this chain today, and
+they are nine different measurements. Stake, education and community tikis each read their own
 score. The parliamentary and judicial strata read the membership they are named after, so a
 citizen with a perfect trust score and no seat is refused by both. Geography reads an attested region. Six are recognised —
 **Başûr, Bakur, Rojava, Rojhilat, the diaspora and the Caucasus** — and the last two are not an
@@ -484,9 +484,25 @@ stakes the smallest tier and does nothing else scores — because that stratum's
 size of the pool rather than the height of its bar, and a hard gate there would duplicate one of
 the other eight and shut out the ordinary citizens it exists to seat.
 
-The ninth is infrastructure, and it is the only one still reading trust. It asks for a measured
-record on *independent* operation, and this chain records nothing about network or geographic
-diversity to measure that against — so it is waiting on data rather than on a decision. The
+Infrastructure is the ninth, and it is the only gate that asks for *work done*. Forty-eight
+sessions seated, no ban, and no repeated pattern of failing alongside others. The other eight
+are passed with money, an identity, a vouch, a seat or a signature; this one is passed by having
+validated, which nobody can grant and no manufactured account arrives holding.
+
+**It measures failing together rather than being apart, and that is deliberate.** Location
+matters only because validators in one place go down at the same moment, and that moment is the
+only consequence of shared infrastructure that reaches a chain at all. So the relay reports, at
+the end of each session, who was seated and who authored nothing; one name is an operator's own
+outage, eight names is eight operators who share something. A session where more than half the
+committee is down marks nobody — that is the network having a bad day, and counting it would
+mark every honest operator at once.
+
+**It disqualifies; it does not certify.** A cluster that has never had an outage looks exactly
+like independent operators, and no measurement from inside a chain can separate them — two
+validators that have never diverged leave no trace of their difference. A declaration would not
+solve that, only hide it, and would put an authority and a lie where there is currently
+neither. What this gate does is make shared ground detectable once it costs anything, and it
+says so rather than promising more. The
 figure to hold onto is therefore this: **nine strata are specified, and the count of
 independent gates is what the network should be judged on at any given moment.** It is
 published on chain, and it is not nine yet.
@@ -829,16 +845,15 @@ one commit today and a coordinated operation across every operator afterwards.
 
 | Gap | What breaks without it | The remedy |
 |---|---|---|
-| **The ninth gate** | §7.1: eight of nine strata are measured by eight different things. Infrastructure is the one left, and it needs something the chain cannot see — its definition asks for a record on *independent* operation, and nothing here records the network or geographic diversity that would establish independence | An attestation of operating independence |
 | **An emptied body has no by-election** | Succession for the single-holder offices is written — the Speaker acts for an absent President, and a vacancy opens an election without waiting for the calendar. What has no arm is a *body*: a parliament that lost every seat inside one term, or an elected court seat vacated for silence, waits for the scheduled election. The court still rules, because two thirds counts over the members who sit; the house does not | A vacancy arm for the elected bodies, and a decision on whether a replacement serves the remainder or a fresh term |
-| **"Region" has no definition** | The geography stratum distributes seats by a boundary nobody has drawn. For a dispersed population this is the easiest thing in the system to draw self-servingly | A definition fixed before the stratum is seated |
 
 **Closed since the last edition, and described where they belong.** Listed here so that a
-reader who was given the previous version can see what moved: the emergency upgrade path
-(§10), vacancy on silence and judicial reissue (§4, §5.4), the airdrop's memory (§9.2), the
-dormancy rule (§3.1), candidacy thresholds as a share of the roll (§3.1), and free voting
-(§3.1). Each is a mechanism now and not a promise; the sections named are where it is
-described, and the code is what settles it.
+reader who was given the previous version can see what moved: the emergency upgrade path (§10),
+vacancy on silence and judicial reissue (§4, §5.4), the airdrop's memory (§9.2), the dormancy
+rule, the candidacy bar as a share of the roll and free voting (§3.1) — and all nine validator
+gates, which now read nine different things rather than six of them reading one (§7.1). Each is
+a mechanism and not a promise; the sections named are where it is described, and the code is
+what settles it.
 
 **Open, and not yet decided.** These are judgements rather than engineering, and this document
 will not pretend they are settled.
@@ -958,10 +973,12 @@ a solicitation, or investment advice.
 | TNPoS committee | 9 strata × 3 seats = 27 |
 | TNPoS quorum / halt / fork | 19 / 9 / 11 |
 | Minimum eligible per stratum | 50 — except the court's, which is 3, its seat count |
-| Independent gates measured today | 8 of 9 |
+| Independent gates measured today | 9 of 9 |
 | Court seat vacated after | 180 days without a signature |
 | Tenure — unbroken pool membership | 1 year; admits on trust until the chain is that old |
 | Open lottery — trust floor | 40, exactly what the cheapest account scores |
+| Infrastructure — sessions seated | 48 (≈8 eras of being drawn) |
+| Infrastructure — co-failure | disqualified by 3 sessions in 90 days failing with more than 3 others |
 | Geographic regions | 6 — Başûr, Bakur, Rojava, Rojhilat, diaspora, Caucasus |
 | Geographic mark — referrals to apply | 25 settled |
 | Airdrop — one payment / a month's payments | 1,000,000 HEZ / 3,000,000 HEZ before the Treasurer signs |
