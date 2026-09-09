@@ -314,6 +314,14 @@ Elected, but only from among sitting members of parliament, and requiring a trus
 at least 200. The Speaker holds no term of their own — the office is vacated whenever a new
 house is seated, because a speaker without a house is not a speaker.
 
+**An office that falls empty does not wait for the calendar.** A vacancy opens its election at
+once rather than at the end of a term nobody is serving, and that holds for the bodies as well
+as for the single-holder offices: a house that lost every seat cannot vote itself back, and an
+elected seat on the court has no other route to being refilled — the President fills an
+appointed vacancy the moment one opens, but the elected six are the house's to seat. In the
+meantime the Speaker acts for an absent President, which is the ordinary rule: the presiding
+officer of the elected house, chosen by that house, and already in the country's confidence.
+
 ### 5.4 Dîwan — the Constitutional Court
 
 Eleven seats, nine years — the longest term in the system, and longer than any body that
@@ -524,7 +532,11 @@ published on chain, and it is not nine yet.
 ### 7.2 Membership is a gate, not a ranking
 
 This is the part that most distinguishes TNPoS from anything score-weighted. Inside a
-stratum, a higher trust score buys **no advantage whatsoever**. The score decides whether you
+stratum, a higher trust score buys **no advantage whatsoever**. Nor is admission permanent:
+every gate is read again at each draw, so a member whose term ended, whose court seat was
+vacated for silence, or whose mark the court cancelled stops being drawn in that era rather
+than at whatever point they get round to leaving. A gate read only at the door disqualifies
+nobody already inside. The score decides whether you
 are in the pool; a uniform random draw decides whether you sit. The wealthiest citizen and
 the barely-qualified citizen have the same chance in the same stratum.
 
