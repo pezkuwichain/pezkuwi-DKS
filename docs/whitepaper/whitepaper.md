@@ -334,6 +334,16 @@ register already recognises as qualified.
 that can be removed by the powers it rules on is not a court, and nine years is longer than
 any body that appoints to it precisely so that no single alignment outlives it.
 
+**The seats are not staggered, and that is a choice rather than an omission.** A staggered
+bench is harder for one election to capture, and giving that up is a real cost — but a
+staggered court is one whose seats are always about to fall vacant, so its members always sit
+in front of the body that will next fill them. This court is meant to be eleven people the
+nation already follows, seated once, irremovable, owing nothing to whoever seated them; a
+rolling appointment would let the calendar back in exactly what the missing dismissal call
+keeps out. The capture worry is answered by arithmetic instead: taking all eleven needs the
+house *and* the presidency in one moment, and both run for four years against the court's nine
+— so the alignment that seated it faces the electorate twice before a single seat turns over.
+
 **Dismissal and vacancy are different questions, and only the first is closed.** Death, a lost
 key, and permanent silence are not misconduct, but they subtract from the same two-thirds a
 decision needs; four silent seats out of eleven make that threshold unreachable for good, and
@@ -862,7 +872,6 @@ will not pretend they are settled.
 | Question | Why it is hard |
 |---|---|
 | **Whether membership proofs should be zero-knowledge** | No personal data is on chain — an identity is a hash and the documents behind it never leave the applicant. What *is* public, and permanently so, is the graph: who vouched for whom. Its protection is that an account is a number rather than a name, which holds until one node is identified and then unwinds outward along the vouches. Deleting the edges later would not help, because the vouch was an extrinsic and the blocks keep it. Only a zero-knowledge membership proof closes this, and that is a project rather than a change |
-| **Whether the court should be staggered** | Six seats seated by one parliament and five by one president, nine years, no removal. A single aligned cycle seats the whole court. Staggered renewal is the obvious answer and it costs the derived split its simplicity |
 
 **And one thing that is not a gap.** There is no proof of personhood, by decision rather than
 by omission. §4 says what the vouching chain does and does not buy. We would rather state a

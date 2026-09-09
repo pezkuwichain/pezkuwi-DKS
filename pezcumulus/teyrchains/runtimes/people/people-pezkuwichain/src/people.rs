@@ -1245,11 +1245,28 @@ parameter_types! {
 	/// An elected mandate: four years.
 	pub const WelatiTermLength: BlockNumber = 4 * 365 * DAYS;
 
-	/// A seat on the Diwan: nine years.
+	/// A seat on the Diwan: nine years, and the whole of it at once.
 	///
 	/// The exception, and deliberately. The Diwan judges the President and the government; a
 	/// court seated on the same cycle as the people it judges leaves with them, and a court
 	/// that leaves with the government it was meant to check was never a check.
+	///
+	/// **Staggering was considered and refused.** A staggered bench is harder for one electoral
+	/// moment to capture, and that is a real property to give up -- so the reason is worth
+	/// writing down rather than leaving as an omission somebody later reads as an oversight.
+	///
+	/// A staggered court is one whose seats are always about to fall vacant, which means its
+	/// members are always sitting in front of the body that will next fill them. What this
+	/// court is for is the opposite: eleven people the nation already follows, seated once,
+	/// irremovable, and owing nothing to whoever seated them. Removal for cause does not exist
+	/// here (§5.4) for the same reason, and a rolling appointment would reintroduce through the
+	/// calendar exactly what the missing dismissal call keeps out.
+	///
+	/// The capture worry is answered by arithmetic rather than by rotation. Taking all eleven
+	/// needs the house *and* the presidency in one moment -- six elected, five appointed,
+	/// neither able to seat a majority alone -- and both of those bodies run for four years
+	/// against this nine. The alignment that seated the court faces the electorate twice before
+	/// a single seat turns over, and by then it is not the alignment any more.
 	pub const WelatiCourtTermLength: BlockNumber = 9 * 365 * DAYS;
 
 	/// How long a court seat may stay silent before anyone may vacate it: one hundred and
