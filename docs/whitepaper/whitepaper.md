@@ -338,7 +338,14 @@ any body that appoints to it precisely so that no single alignment outlives it.
 key, and permanent silence are not misconduct, but they subtract from the same two-thirds a
 decision needs; four silent seats out of eleven make that threshold unreachable for good, and
 every authority the court carries — the register, the validator pool, and the fast upgrade
-path in §10.1 — freezes with it. So the court's seats are vacated on measured inactivity.
+path in §10.1 — freezes with it. So the court's seats are vacated on measured inactivity, and
+the duty that goes with a seat is one signature every hundred and eighty days. It decides
+nothing — a check-in is not a vote and says nothing about how a member would rule — because a
+duty that required agreeing with anybody would make the court answer to whoever set the test.
+Anyone may then vacate a seat that has missed it; the condition is arithmetic that anybody can
+check for themselves, and no body is given the power to choose whose absence counts, because
+every body that could hold it is one the court exists to rule on.
+
 Vacating is itself the repair: two thirds is counted over the members who sit, so a bench of
 seven needs five rather than eight, and the court resumes the moment the silent seats leave it.
 Refilling is the slower half — the President may appoint into a vacancy at once, while an
