@@ -447,7 +447,7 @@ how much stake sits behind it.
 | **Perwerde** | Any education score above zero | Accredited institutions |
 | **Tiki** | Any community score above zero | The community |
 | **Welatî lottery** | Trust above forty — more than the cheapest act | Nobody; the pool dilutes |
-| **Geography** | An attested region of residence | A notary, undone by the court |
+| **Geography** | An attested belonging to a part of the nation | A notary, undone by the court |
 | **Tenure** | A year of unbroken, offence-free membership | Nobody; only elapsed time |
 | **Infrastructure** | Forty-eight sessions validated, and no pattern of failing with others | Nobody; the chain's own record |
 
@@ -467,12 +467,16 @@ answering to the same institution are one stratum, not two, and the committee's 
 is counted from that number. All nine gates are measured on this chain today, and
 they are nine different measurements. Stake, education and community tikis each read their own
 score. The parliamentary and judicial strata read the membership they are named after, so a
-citizen with a perfect trust score and no seat is refused by both. Geography reads an attested region. Six are recognised —
-**Başûr, Bakur, Rojava, Rojhilat, the diaspora and the Caucasus** — and the last two are not an
-afterthought: a register that recognised only people inside the region would exclude the
-citizens most able to run infrastructure without anybody's permission. A citizen may ask for a
-mark once twenty-five settled referrals stand behind them, a notary confirms the region they
-claimed and no other, and the court can cancel it. The three seats rotate across the regions
+citizen with a perfect trust score and no seat is refused by both. Geography reads an attested belonging — where a citizen is
+*from*, not where they are sitting. Somebody from Rojava living in Germany marks Rojava: this is
+the register of a dispersed nation, and what is worth spreading seats across is which part of it
+a person comes from. Six are recognised: **Başûr, Bakur, Rojava, Rojhilat, the diaspora and the
+Caucasus**, the last two for citizens whose belonging is to neither of the four. A citizen may
+ask for a mark once twenty-five settled referrals stand behind them, a notary confirms the
+region they claimed and no other, the court can cancel it — and the citizen can take it back,
+because it is volunteered and nothing else asks for it. Where a validator's machine physically
+stands is a different question, and the ninth stratum answers it by measurement rather than by
+asking. The three seats rotate across the regions
 rather than pooling — six complete a cycle in two eras — because three seats drawn from one pool
 would go to whichever region is most populous and the label would decide nothing. Tenure
 reads unbroken, offence-free time in the pool and answers to no authority at all: it is the one
@@ -857,9 +861,8 @@ will not pretend they are settled.
 
 | Question | Why it is hard |
 |---|---|
-| **Who can see the referral graph** | Every vouch, every geographic stratum and every vote is public. Public acts are a deliberate choice — protection comes from the account being a number rather than a name — but a vouching graph is a social graph, and for a population under pressure from four states that is a different exposure from a public vote. Whether membership proofs should be zero-knowledge is unsettled |
+| **Whether membership proofs should be zero-knowledge** | No personal data is on chain — an identity is a hash and the documents behind it never leave the applicant. What *is* public, and permanently so, is the graph: who vouched for whom. Its protection is that an account is a number rather than a name, which holds until one node is identified and then unwinds outward along the vouches. Deleting the edges later would not help, because the vouch was an extrinsic and the blocks keep it. Only a zero-knowledge membership proof closes this, and that is a project rather than a change |
 | **Whether the court should be staggered** | Six seats seated by one parliament and five by one president, nine years, no removal. A single aligned cycle seats the whole court. Staggered renewal is the obvious answer and it costs the derived split its simplicity |
-| **Who accredits education** | Perwerde is the largest component of trust at thirty percent, and its administering origin sits with the executive. Trust decides candidacy, the validator pool and reward weight. An executive that accredits is an executive that shapes its own electorate |
 
 **And one thing that is not a gap.** There is no proof of personhood, by decision rather than
 by omission. §4 says what the vouching chain does and does not buy. We would rather state a
@@ -934,7 +937,7 @@ a solicitation, or investment advice.
 | **root** | A seat, not an office: the People chain's referendum, and a sudo key for the founding period |
 | **stratum** | One of the nine pools the validator committee is drawn from, each gated by a different authority |
 | **dormancy** | Having taken no part for two years; it removes a citizen from the support denominator and from nothing else |
-| **geographic mark** | An attested region of residence: claimed by the citizen, confirmed by a notary, cancellable by the court |
+| **geographic mark** | Which part of the nation a citizen belongs to — not where they live: claimed by the citizen, confirmed by a notary, cancellable by the court, and withdrawable by the citizen |
 | **tenure** | Unbroken, offence-free membership of the validator pool; the one qualification no authority can grant |
 | **Noter** | Notary; the office whose attestation the register relies on |
 | **whitelist** | The relay's fast path: a call the court has listed can be enacted in hours instead of twenty-eight days |
