@@ -525,6 +525,57 @@ pub struct DiwanMember<T: pezframe_system::Config> {
 	pub appointed_by: AppointmentAuthority<T>,
 }
 
+/// Where a citizen's residence has been attested.
+///
+/// Six, and the list is deliberately not "countries". Four are the parts of Kurdistan, and the
+/// other two are where the rest of the nation actually lives: a register that only recognised
+/// people inside the region would exclude the citizens most likely to be able to run
+/// infrastructure freely, which is the opposite of what this stratum is for.
+///
+/// Indices are pinned because they are a storage key. A variant may be renamed once its index
+/// is fixed; it may not be inserted in the middle.
+#[derive(
+	Encode, Decode, DecodeWithMemTracking, Clone, Copy, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,
+)]
+pub enum Region {
+	#[codec(index = 0)]
+	Başûr,
+	#[codec(index = 1)]
+	Bakur,
+	#[codec(index = 2)]
+	Rojava,
+	#[codec(index = 3)]
+	Rojhilat,
+	#[codec(index = 4)]
+	Diaspora,
+	#[codec(index = 5)]
+	Kafkasya,
+}
+
+impl Region {
+	/// Every region, in index order.
+	pub const ALL: [Region; 6] = [
+		Region::Başûr,
+		Region::Bakur,
+		Region::Rojava,
+		Region::Rojhilat,
+		Region::Diaspora,
+		Region::Kafkasya,
+	];
+
+	/// The index this region encodes as, for the committee draw that rotates across them.
+	pub const fn index(&self) -> u8 {
+		match self {
+			Region::Başûr => 0,
+			Region::Bakur => 1,
+			Region::Rojava => 2,
+			Region::Rojhilat => 3,
+			Region::Diaspora => 4,
+			Region::Kafkasya => 5,
+		}
+	}
+}
+
 /// Appointment authority
 #[derive(
 	Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, Debug, TypeInfo, MaxEncodedLen,

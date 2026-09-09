@@ -536,6 +536,7 @@ parameter_types! {
 	pub const AirdropWindow: u64 = 1_000;
 	pub const DormancyPeriod: u64 = 5_000;
 	pub const MatureRoll: u32 = 100;
+	pub const GeographicMarkReferrals: u32 = 25;
 	pub const AirdropWindowCeiling: u128 = 2_500;
 }
 
@@ -809,6 +810,8 @@ impl pezpallet_welati::Config for Test {
 	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
 	type DormancyPeriod = DormancyPeriod;
 	type MatureRoll = MatureRoll;
+	type GeographicMarkReferrals = GeographicMarkReferrals;
+	type GeographicRevokeOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type AirdropWindow = AirdropWindow;
 	type AirdropWindowCeiling = AirdropWindowCeiling;
 	type MaxConsecutiveTerms = MaxConsecutiveTerms;

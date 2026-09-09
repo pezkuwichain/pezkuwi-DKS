@@ -398,6 +398,7 @@ pub mod pezpallet {
 		+ pezpallet_tiki::Config
 		+ pezpallet_trust::Config
 		+ pezpallet_identity_kyc::Config
+		+ pezpallet_referral::Config
 		+ core::fmt::Debug
 	{
 		type WeightInfo: crate::weights::WeightInfo;
@@ -458,6 +459,27 @@ pub mod pezpallet {
 		/// and the other forgotten.
 		#[pezpallet::constant]
 		type MatureRoll: Get<u32>;
+
+		/// Settled referrals a citizen needs before they may ask for a geographic mark.
+		///
+		/// The mark opens one stratum of the validator pool, so the thing that qualifies
+		/// somebody to ask for it has to cost something a manufactured account does not have.
+		/// A referral is another citizen who was admitted and stayed admitted, the vouching
+		/// ceiling is finite, and a voucher whose referrals are revoked loses the right to
+		/// vouch at all -- so this is a record built out of other people rather than a number
+		/// anybody can reach alone.
+		#[pezpallet::constant]
+		type GeographicMarkReferrals: Get<u32>;
+
+		/// Who may cancel a geographic mark after it has been attested.
+		///
+		/// The court, and not the notary who wrote it or the office that appointed the notary.
+		/// A notary is appointed by the President, so leaving cancellation with the executive
+		/// would have made this stratum answer to him in the last analysis, exactly as the
+		/// community stratum does -- and two strata answering to one institution are one
+		/// stratum. Attestation is administrative and stays where the administration is;
+		/// undoing a false one is adjudication, and that is the court's.
+		type GeographicRevokeOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
 		/// The roll, as the state tally measures support against.
 		///
@@ -805,6 +827,20 @@ pub mod pezpallet {
 	#[pezpallet::getter(fn diwan_members)]
 	pub type DiwanMembers<T: Config> =
 		StorageValue<_, BoundedVec<DiwanMember<T>, T::DiwanSize>, ValueQuery>;
+
+	/// A claimed region, waiting for a notary to confirm or ignore it.
+	///
+	/// The applicant names the region rather than the notary choosing it, so what a notary does
+	/// is confirm a specific claim somebody made in public. An attestation that could name any
+	/// region would let the notary place people rather than verify them.
+	#[pezpallet::storage]
+	pub type ClaimedRegion<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, Region, OptionQuery>;
+
+	/// Where each citizen's residence has been attested.
+	#[pezpallet::storage]
+	pub type AttestedRegion<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::AccountId, Region, OptionQuery>;
 
 	/// When each citizen last took part in anything the register counts as participation.
 	///
@@ -1266,6 +1302,16 @@ pub mod pezpallet {
 		/// A member of the court proved their key still signs.
 		CourtMemberCheckedIn { member: T::AccountId, at: BlockNumberFor<T> },
 
+		/// A citizen said where they live. Nothing follows from it until a notary agrees.
+		RegionClaimed { who: T::AccountId, region: Region },
+
+		/// A notary confirmed it. The notary is named because an attestation nobody can be
+		/// held to is not an attestation.
+		RegionAttested { who: T::AccountId, region: Region, notary: T::AccountId },
+
+		/// The court cancelled an attested region.
+		RegionRevoked { who: T::AccountId, region: Region },
+
 		/// A citizen stopped counting towards the denominator. They are still a citizen.
 		CitizenIsDormant { who: T::AccountId, since: BlockNumberFor<T> },
 
@@ -1433,6 +1479,20 @@ pub mod pezpallet {
 		AlreadyDormant,
 		/// The citizen has taken part inside the dormancy period.
 		CitizenIsStillTakingPart,
+		/// This citizen already has an attested region.
+		RegionAlreadyAttested,
+		/// Not enough settled referrals to ask for a geographic mark.
+		NotEnoughReferralsForARegion,
+		/// Only a notary may attest a region.
+		NotANotary,
+		/// Nobody attests their own claim.
+		CannotAttestYourOwnRegion,
+		/// This citizen has claimed no region.
+		NoRegionClaimed,
+		/// The region attested is not the one that was claimed.
+		AttestedADifferentRegion,
+		/// This citizen has no attested region.
+		NoRegionAttested,
 		/// Only the sitting house elects the court's six elected seats.
 		NotAParliamentMember,
 		/// The caller does not hold the finance portfolio.
@@ -2366,6 +2426,76 @@ pub mod pezpallet {
 			Self::rebind_account(&from, &to)?;
 
 			Self::deposit_event(Event::CitizenshipReissued { from, to });
+			Ok(())
+		}
+
+		/// Ask for a geographic mark, naming the region you live in.
+		///
+		/// A claim, not a record: it does nothing until a notary confirms it, and it is public
+		/// from the moment it is made so that a false claim is visible before it is attested
+		/// rather than after.
+		#[pezpallet::call_index(68)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn claim_region(origin: OriginFor<T>, region: Region) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(
+				pezpallet_identity_kyc::Pezpallet::<T>::is_citizen(&who),
+				Error::<T>::NotACitizenHere
+			);
+			ensure!(!AttestedRegion::<T>::contains_key(&who), Error::<T>::RegionAlreadyAttested);
+			ensure!(
+				pezpallet_referral::ReferralCount::<T>::get(&who)
+					>= T::GeographicMarkReferrals::get(),
+				Error::<T>::NotEnoughReferralsForARegion
+			);
+			ClaimedRegion::<T>::insert(&who, region);
+			Self::deposit_event(Event::RegionClaimed { who, region });
+			Ok(())
+		}
+
+		/// Confirm somebody's claimed region.
+		///
+		/// A notary and nothing else -- the office whose entire worth is that its word about a
+		/// fact can be relied on. The region named here has to be the region that was claimed:
+		/// a notary confirms an assertion somebody else made in public, and one who could write
+		/// any region would be placing citizens rather than verifying them.
+		///
+		/// Nobody attests their own claim. The check is the same one `grant_tiki` makes for the
+		/// same reason: an attestation has two parties and neither is both of them.
+		#[pezpallet::call_index(69)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn attest_region(
+			origin: OriginFor<T>,
+			who: T::AccountId,
+			region: Region,
+		) -> DispatchResult {
+			let notary = ensure_signed(origin)?;
+			ensure!(
+				pezpallet_tiki::Pezpallet::<T>::has_tiki(&notary, &Tiki::Noter),
+				Error::<T>::NotANotary
+			);
+			ensure!(notary != who, Error::<T>::CannotAttestYourOwnRegion);
+			let claimed = ClaimedRegion::<T>::get(&who).ok_or(Error::<T>::NoRegionClaimed)?;
+			ensure!(claimed == region, Error::<T>::AttestedADifferentRegion);
+
+			ClaimedRegion::<T>::remove(&who);
+			AttestedRegion::<T>::insert(&who, region);
+			Self::deposit_event(Event::RegionAttested { who, region, notary });
+			Ok(())
+		}
+
+		/// Cancel an attested region.
+		///
+		/// The court's, because this is the half of the arrangement that has to be able to
+		/// correct the other half. Notaries are appointed by the President; if he could also
+		/// undo their attestations, the whole mark would be his and this stratum would answer
+		/// to the same office the community stratum does.
+		#[pezpallet::call_index(70)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn revoke_region(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
+			T::GeographicRevokeOrigin::ensure_origin(origin)?;
+			let region = AttestedRegion::<T>::take(&who).ok_or(Error::<T>::NoRegionAttested)?;
+			Self::deposit_event(Event::RegionRevoked { who, region });
 			Ok(())
 		}
 
@@ -4445,6 +4575,15 @@ pub mod pezpallet {
 			}
 			if Dormant::<T>::take(from).is_some() {
 				Dormant::<T>::insert(to, ());
+			}
+			// Where somebody lives does not change because their key did. Left behind, a
+			// reissued citizen would lose a mark a notary has already checked and would have
+			// to find one again.
+			if let Some(region) = AttestedRegion::<T>::take(from) {
+				AttestedRegion::<T>::insert(to, region);
+			}
+			if let Some(region) = ClaimedRegion::<T>::take(from) {
+				ClaimedRegion::<T>::insert(to, region);
 			}
 			PendingPrimeMinister::<T>::mutate(|pending| {
 				if pending.as_ref() == Some(from) {

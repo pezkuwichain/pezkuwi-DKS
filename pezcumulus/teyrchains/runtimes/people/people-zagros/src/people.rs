@@ -1286,6 +1286,14 @@ parameter_types! {
 	/// pallet now holds 44 -- and nothing here would notice.
 	pub const RelayWhitelistPalletIndex: u8 = 44;
 
+	/// Settled referrals needed before a citizen may ask for a geographic mark.
+	///
+	/// Twenty-five, against a lifetime vouching ceiling of fifty: half a full record. High
+	/// enough that a manufactured account cannot reach it -- every referral is another citizen
+	/// who was admitted and stayed -- and low enough that somebody who has actually brought
+	/// people into the register is not kept out of one stratum by arithmetic.
+	pub const WelatiGeographicMarkReferrals: u32 = 25;
+
 	pub const WelatiCourtInactivityPeriod: BlockNumber = 14 * DAYS;
 
 	/// How many terms in a row one person may hold the same elected office.
@@ -1532,6 +1540,10 @@ impl pezpallet_welati::Config for Runtime {
 	type RelayWhitelistPalletIndex = RelayWhitelistPalletIndex;
 	// The same number as the tally's floor, on purpose -- see `MatureRoll`.
 	type MatureRoll = MinElectorate;
+	type GeographicMarkReferrals = WelatiGeographicMarkReferrals;
+	// The court, not the President who appoints the notaries. Attestation is administrative
+	// and stays with the administration; undoing a false one is adjudication.
+	type GeographicRevokeOrigin = crate::RootOrDiwan;
 	type DormancyPeriod = WelatiDormancyPeriod;
 	type AirdropWindow = WelatiAirdropWindow;
 	type AirdropWindowCeiling = WelatiAirdropWindowCeiling;

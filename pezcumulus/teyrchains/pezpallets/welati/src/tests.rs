@@ -3466,6 +3466,126 @@ fn an_unqualified_appointee_is_caught() {
 	});
 }
 
+mod a_geographic_mark {
+	use super::*;
+	use crate::types::Region;
+
+	const NOTARY: u64 = 40;
+	const APPLICANT: u64 = 41;
+
+	fn a_citizen_with_a_record(who: u64, referrals: u32) {
+		make_citizen(who);
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+			who,
+			pezpallet_identity_kyc::types::KycLevel::Approved,
+		);
+		pezpallet_referral::ReferralCount::<Test>::insert(who, referrals);
+	}
+
+	fn a_notary() {
+		make_citizen(NOTARY);
+		assert_ok!(pezpallet_tiki::Pezpallet::<Test>::internal_grant_role(
+			&NOTARY,
+			pezpallet_tiki::Tiki::Noter
+		));
+	}
+
+	#[test]
+	fn a_record_built_out_of_other_people_is_what_buys_the_right_to_ask() {
+		ExtBuilder::default().build().execute_with(|| {
+			let threshold = crate::mock::GeographicMarkReferrals::get();
+			a_citizen_with_a_record(APPLICANT, threshold - 1);
+
+			// One short. The mark opens a stratum of the validator pool, so what qualifies
+			// somebody to ask for it has to be something a manufactured account cannot have.
+			assert_noop!(
+				Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Bakur),
+				Error::<Test>::NotEnoughReferralsForARegion
+			);
+
+			pezpallet_referral::ReferralCount::<Test>::insert(APPLICANT, threshold);
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Bakur));
+			// A claim is not a record.
+			assert!(crate::AttestedRegion::<Test>::get(APPLICANT).is_none());
+		});
+	}
+
+	#[test]
+	fn only_a_notary_attests_and_only_the_claim_that_was_made() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_a_record(APPLICANT, crate::mock::GeographicMarkReferrals::get());
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Bakur));
+
+			// A citizen who is not a notary cannot confirm anything.
+			make_citizen(42);
+			assert_noop!(
+				Welati::attest_region(RuntimeOrigin::signed(42), APPLICANT, Region::Bakur),
+				Error::<Test>::NotANotary
+			);
+
+			a_notary();
+			// A notary who could write any region would be placing citizens rather than
+			// verifying them, so the attestation has to match the claim.
+			assert_noop!(
+				Welati::attest_region(RuntimeOrigin::signed(NOTARY), APPLICANT, Region::Rojava),
+				Error::<Test>::AttestedADifferentRegion
+			);
+
+			assert_ok!(Welati::attest_region(
+				RuntimeOrigin::signed(NOTARY),
+				APPLICANT,
+				Region::Bakur
+			));
+			assert_eq!(crate::AttestedRegion::<Test>::get(APPLICANT), Some(Region::Bakur));
+			assert!(crate::ClaimedRegion::<Test>::get(APPLICANT).is_none());
+		});
+	}
+
+	#[test]
+	fn nobody_attests_their_own_claim() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_notary();
+			pezpallet_referral::ReferralCount::<Test>::insert(
+				NOTARY,
+				crate::mock::GeographicMarkReferrals::get(),
+			);
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(
+				NOTARY,
+				pezpallet_identity_kyc::types::KycLevel::Approved,
+			);
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(NOTARY), Region::Diaspora));
+			assert_noop!(
+				Welati::attest_region(RuntimeOrigin::signed(NOTARY), NOTARY, Region::Diaspora),
+				Error::<Test>::CannotAttestYourOwnRegion
+			);
+		});
+	}
+
+	#[test]
+	fn the_court_undoes_what_a_notary_wrote_and_the_notary_cannot() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_a_record(APPLICANT, crate::mock::GeographicMarkReferrals::get());
+			a_notary();
+			assert_ok!(Welati::claim_region(RuntimeOrigin::signed(APPLICANT), Region::Rojhilat));
+			assert_ok!(Welati::attest_region(
+				RuntimeOrigin::signed(NOTARY),
+				APPLICANT,
+				Region::Rojhilat
+			));
+
+			// Notaries are the President's appointees. If one could also cancel, the whole
+			// mark would be the executive's and this stratum would answer to the same office
+			// the community stratum does.
+			assert_noop!(
+				Welati::revoke_region(RuntimeOrigin::signed(NOTARY), APPLICANT),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert_ok!(Welati::revoke_region(RuntimeOrigin::root(), APPLICANT));
+			assert!(crate::AttestedRegion::<Test>::get(APPLICANT).is_none());
+		});
+	}
+}
+
 mod a_candidacy_bar_that_fits_the_country {
 	use super::*;
 
