@@ -944,6 +944,37 @@ pub mod pezpallet {
 			Ok(())
 		}
 
+		/// Move every tiki this account holds onto another, for a court-ordered reissue.
+		///
+		/// Offices move. That was decided rather than derived, and it is the one part of a
+		/// reissue that transfers authority rather than record, so what stands around it is
+		/// the court at two thirds and nothing else. It is a move: the retired account is left
+		/// holding none of them, because the same office in two places is worse than the
+		/// office in the wrong one.
+		///
+		/// `UserTikis` is what keeps this bounded. It already lists exactly what has to be
+		/// fixed in the three maps keyed the other way round, so nothing here walks the
+		/// register looking for the account.
+		pub fn rebind_account(from: &T::AccountId, to: &T::AccountId) -> DispatchResult {
+			if let Some(nft) = CitizenNft::<T>::take(from) {
+				CitizenNft::<T>::insert(to, nft);
+			}
+			let held = UserTikis::<T>::take(from);
+			for tiki in held.iter() {
+				if TikiHolder::<T>::get(tiki).as_ref() == Some(from) {
+					TikiHolder::<T>::insert(tiki, to.clone());
+				}
+				if let Some(kind) = RoleAssignmentTypeOf::<T>::take(from, tiki) {
+					RoleAssignmentTypeOf::<T>::insert(to, tiki, kind);
+				}
+				if let Some(expiry) = TikiExpiry::<T>::take(from, tiki) {
+					TikiExpiry::<T>::insert(to, tiki, expiry);
+				}
+			}
+			UserTikis::<T>::insert(to, held);
+			Ok(())
+		}
+
 		/// Internal role granting function (to avoid code duplication)
 		pub fn internal_grant_role(dest_account: &T::AccountId, tiki: Tiki) -> DispatchResult {
 			// Check if citizenship NFT exists

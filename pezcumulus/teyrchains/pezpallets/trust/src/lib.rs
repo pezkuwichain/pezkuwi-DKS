@@ -454,6 +454,20 @@ pub mod pezpallet {
 	}
 
 	impl<T: Config> Pezpallet<T> {
+		/// Move the trust score from one account to the other.
+		///
+		/// The running total is untouched: the same score is held, by a different account.
+		/// Recomputing instead of moving would be wrong -- the components are moved by their
+		/// own pallets in the same call, and a recomputation halfway through would read some
+		/// of them from the old account and some from the new.
+		pub fn rebind_account(from: &T::AccountId, to: &T::AccountId) -> pezframe_support::pezpallet_prelude::DispatchResult {
+			let score = TrustScores::<T>::take(from);
+			if !score.is_zero() {
+				TrustScores::<T>::insert(to, score);
+			}
+			Ok(())
+		}
+
 		/// Bring one component onto the common scale.
 		///
 		/// A component that reports no maximum would divide by zero, so it contributes

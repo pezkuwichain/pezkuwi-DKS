@@ -3456,6 +3456,139 @@ fn an_unqualified_appointee_is_caught() {
 	});
 }
 
+mod a_reissued_citizenship {
+	use super::*;
+	use crate::mock::holder_of;
+	use pezpallet_identity_kyc::types::KycLevel;
+
+	const LOST: u64 = 20;
+	const NEW: u64 = 21;
+
+	/// A citizen with something to lose: a hash, an office, a trust score and a vouching record.
+	fn a_citizen_with_standing() {
+		make_citizen(LOST);
+		let hash = pezsp_core::H256::repeat_byte(7);
+		pezpallet_identity_kyc::KycStatuses::<Test>::insert(LOST, KycLevel::Approved);
+		pezpallet_identity_kyc::IdentityHashes::<Test>::insert(LOST, hash);
+		pezpallet_identity_kyc::IdentityHashToAccount::<Test>::insert(hash, LOST);
+		pezpallet_identity_kyc::CitizenSince::<Test>::insert(LOST, 1);
+
+		assert_ok!(Welati::seat_unique_tiki(&LOST, pezpallet_tiki::Tiki::Xezinedar));
+		pezpallet_trust::TrustScores::<Test>::insert(LOST, 640u128);
+		pezpallet_referral::ReferralCount::<Test>::insert(LOST, 12u32);
+	}
+
+	#[test]
+	fn everything_follows_the_person_and_nothing_stays_behind() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_standing();
+			let hash = pezpallet_identity_kyc::IdentityHashes::<Test>::get(LOST).unwrap();
+			let roll_before = pezpallet_identity_kyc::Pezpallet::<Test>::citizen_count();
+
+			assert_ok!(Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, NEW));
+
+			// Arrived.
+			assert!(pezpallet_identity_kyc::Pezpallet::<Test>::is_citizen(&NEW));
+			assert_eq!(pezpallet_identity_kyc::IdentityHashes::<Test>::get(NEW), Some(hash));
+			assert_eq!(pezpallet_trust::TrustScores::<Test>::get(NEW), 640u128);
+			assert_eq!(pezpallet_referral::ReferralCount::<Test>::get(NEW), 12u32);
+			assert_eq!(holder_of(pezpallet_tiki::Tiki::Xezinedar), Some(NEW));
+
+			// And left. A copy would be a duplication of standing, which is worse than the
+			// loss the reissue exists to repair.
+			assert!(!pezpallet_identity_kyc::Pezpallet::<Test>::is_citizen(&LOST));
+			assert!(pezpallet_identity_kyc::IdentityHashes::<Test>::get(LOST).is_none());
+			assert_eq!(pezpallet_trust::TrustScores::<Test>::get(LOST), 0u128);
+			assert_eq!(pezpallet_referral::ReferralCount::<Test>::get(LOST), 0u32);
+
+			// The hash still names exactly one living account, or the same person could be
+			// admitted a second time under the successor.
+			assert_eq!(
+				pezpallet_identity_kyc::IdentityHashToAccount::<Test>::get(hash),
+				Some(NEW)
+			);
+			// One person left and the same person arrived.
+			assert_eq!(
+				pezpallet_identity_kyc::Pezpallet::<Test>::citizen_count(),
+				roll_before
+			);
+		});
+	}
+
+	#[test]
+	fn a_retired_account_stays_retired_at_both_ends() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_standing();
+			assert_ok!(Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, NEW));
+
+			// Not reissued again...
+			assert_noop!(
+				Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, 22),
+				pezpallet_identity_kyc::Error::<Test>::AccountAlreadyRetired
+			);
+			// ...and not reissued *to*, which is what stops a chain of accounts being used to
+			// launder standing through a series of court orders.
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(23, KycLevel::Approved);
+			assert_noop!(
+				Welati::reissue_citizenship(RuntimeOrigin::root(), 23, LOST),
+				pezpallet_identity_kyc::Error::<Test>::AccountAlreadyRetired
+			);
+		});
+	}
+
+	#[test]
+	fn a_reissue_moves_and_never_merges() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_standing();
+			// The successor is already somebody. Grafting one person's record onto another's
+			// is the one thing this call must never be able to do.
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(NEW, KycLevel::Approved);
+
+			assert_noop!(
+				Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, NEW),
+				pezpallet_identity_kyc::Error::<Test>::SuccessorIsNotEmpty
+			);
+			assert_noop!(
+				Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, LOST),
+				pezpallet_identity_kyc::Error::<Test>::CannotReissueToTheSameAccount
+			);
+		});
+	}
+
+	#[test]
+	fn nobody_but_the_register_authority_may_reissue() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_standing();
+			// Least of all the holder of the account being moved to: the premise is that the
+			// signature is gone, so a signed recovery is a theft mechanism.
+			assert_noop!(
+				Welati::reissue_citizenship(RuntimeOrigin::signed(NEW), LOST, NEW),
+				pezsp_runtime::DispatchError::BadOrigin
+			);
+			assert!(!pezpallet_identity_kyc::Pezpallet::<Test>::is_citizen(&NEW));
+		});
+	}
+
+	#[test]
+	fn observed_stake_is_the_one_thing_left_behind() {
+		ExtBuilder::default().build().execute_with(|| {
+			a_citizen_with_standing();
+			// The bonded funds are on another chain, held by the key that was lost. Carrying
+			// this across would credit the successor with money nobody can move, and no noter
+			// will ever observe a stake for an account that has none, so nothing would correct
+			// it. Conduct as a noter does move -- a bad record must not be shed with a key.
+			pezpallet_staking_score::StakingStartBlock::<Test>::insert(LOST, 1u64);
+			pezpallet_staking_score::DisputesAgainstNoter::<Test>::insert(LOST, 3u32);
+
+			assert_ok!(Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, NEW));
+
+			assert!(pezpallet_staking_score::StakingStartBlock::<Test>::get(NEW).is_none());
+			assert_eq!(pezpallet_staking_score::DisputesAgainstNoter::<Test>::get(NEW), 3u32);
+			assert_eq!(pezpallet_staking_score::DisputesAgainstNoter::<Test>::get(LOST), 0u32);
+		});
+	}
+}
+
 mod a_silent_court_seat {
 	use super::*;
 

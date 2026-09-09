@@ -1427,6 +1427,14 @@ impl pezpallet_tiki::TikiScoreProvider<AccountId> for WelatiTikiScoreSource {
 	}
 }
 
+pezpallet_welati::impl_rebind_adapters!(Runtime;
+	RebindReferral => pezpallet_referral,
+	RebindPerwerde => pezpallet_perwerde,
+	RebindTiki => pezpallet_tiki,
+	RebindTrust => pezpallet_trust,
+	RebindStakingScore => pezpallet_staking_score,
+);
+
 impl pezpallet_welati::Config for Runtime {
 	// This runtime's own measurement, like every other pallet here. It was generated and
 	// then never declared in `weights/mod.rs`, so it was not compiled, so the binding fell
@@ -1471,6 +1479,14 @@ impl pezpallet_welati::Config for Runtime {
 	type MaxEndorsers = WelatiMaxEndorsers;
 	type TermLength = WelatiTermLength;
 	type CourtInactivityPeriod = WelatiCourtInactivityPeriod;
+	// The register authority, and nothing weaker: this is the only call that hands one
+	// account's offices to another.
+	type ReissueOrigin = crate::RootOrDiwan;
+	// Every pallet that keys anything on a citizen. A pallet added later has to be added here
+	// too or its records are quietly left behind by every reissue -- the failure is silent,
+	// which is why the list is spelled out where all of them are visible rather than derived.
+	type ReissueCarries =
+		(RebindReferral, RebindPerwerde, RebindTiki, RebindTrust, RebindStakingScore);
 	type CourtTermLength = WelatiCourtTermLength;
 	type MaxConsecutiveTerms = WelatiMaxConsecutiveTerms;
 	type XcmSender = crate::xcm_config::XcmRouter;

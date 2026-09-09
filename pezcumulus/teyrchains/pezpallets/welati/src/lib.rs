@@ -307,6 +307,51 @@ impl<AccountId> HouseRoster<AccountId> for () {
 	fn set_members(_members: Vec<AccountId>) {}
 }
 
+/// Move everything one pallet holds about an account onto another account.
+///
+/// Implemented by every pallet that keys anything on a citizen, and wired as a tuple by the
+/// runtime. Defined here rather than in a shared crate because this pallet is the only caller
+/// and the register is the only reason the operation exists -- and because the alternative,
+/// a dependency edge from six pallets to a seventh, buys nothing the tuple does not.
+///
+/// Implementations move rather than copy. A reissue that left the retired account holding a
+/// copy of anything would be a duplication of standing, which is worse than the loss it is
+/// meant to repair.
+pub trait RebindAccount<AccountId> {
+	fn rebind(from: &AccountId, to: &AccountId) -> DispatchResult;
+}
+
+/// Build the `RebindAccount` adapters a runtime needs, one per pallet that keys on a citizen.
+///
+/// The pallets cannot implement the trait themselves: it is declared here and this pallet
+/// already depends on most of them, so an implementation on their side would close a cycle.
+/// The runtime is also the only place that knows which pallets it actually has, which is the
+/// same reason the tuple is wired there rather than assumed here.
+#[macro_export]
+macro_rules! impl_rebind_adapters {
+	($runtime:ty; $( $adapter:ident => $pallet:ident ),+ $(,)?) => { $(
+		pub struct $adapter;
+		impl $crate::RebindAccount<<$runtime as pezframe_system::Config>::AccountId>
+			for $adapter
+		{
+			fn rebind(
+				from: &<$runtime as pezframe_system::Config>::AccountId,
+				to: &<$runtime as pezframe_system::Config>::AccountId,
+			) -> pezframe_support::pezpallet_prelude::DispatchResult {
+				$pallet::Pezpallet::<$runtime>::rebind_account(from, to)
+			}
+		}
+	)+ };
+}
+
+#[impl_trait_for_tuples::impl_for_tuples(8)]
+impl<AccountId> RebindAccount<AccountId> for Tuple {
+	fn rebind(from: &AccountId, to: &AccountId) -> DispatchResult {
+		for_tuples!( #( Tuple::rebind(from, to)?; )* );
+		Ok(())
+	}
+}
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
@@ -462,6 +507,13 @@ pub mod pezpallet {
 		/// he nominates, and one person is not both parties to an appointment.
 		type ConfirmationOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
+		/// Who may move a citizenship to a new account after a lost key.
+		///
+		/// The register authority and nothing weaker. This is the only call in the system that
+		/// hands one account's offices to another, so the body that exercises it has to be the
+		/// one the constitution already trusts with the register itself.
+		type ReissueOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
 		/// Currency used for candidacy deposits
 		type NativeCurrency: ReservableCurrency<Self::AccountId>;
 
@@ -586,6 +638,14 @@ pub mod pezpallet {
 		/// can be reached, whatever it then decides.
 		#[pezpallet::constant]
 		type CourtInactivityPeriod: Get<BlockNumberFor<Self>>;
+
+		/// The pallets a reissued citizenship has to be carried across.
+		///
+		/// A tuple rather than a list this pallet knows: what keys itself on a citizen is a
+		/// property of the runtime, and a pallet added later has to be added here or its
+		/// records are silently left behind. That failure is quiet, so the wiring is made
+		/// explicit at the one place that can see all of them.
+		type ReissueCarries: super::RebindAccount<Self::AccountId>;
 
 		/// How many consecutive terms one person may serve in the same office.
 		///
@@ -1072,6 +1132,13 @@ pub mod pezpallet {
 
 		/// A member of the court proved their key still signs.
 		CourtMemberCheckedIn { member: T::AccountId, at: BlockNumberFor<T> },
+
+		/// A citizenship, and everything downstream of it, moved to a new account.
+		///
+		/// The retired account is named because this is the only public notice that an
+		/// identity changed hands, and an observer has to be able to follow the person across
+		/// the two accounts to read their history at all.
+		CitizenshipReissued { from: T::AccountId, to: T::AccountId },
 
 		/// A seat was vacated because nothing had signed for it in a full inactivity period.
 		///
@@ -2097,6 +2164,45 @@ pub mod pezpallet {
 				silent_since: last,
 				seated_by,
 			});
+			Ok(())
+		}
+
+		/// Move a citizenship, and everything that follows from it, to a new account.
+		///
+		/// A citizenship NFT cannot be transferred and its identity hash is claimed for good,
+		/// so somebody who loses their key cannot register again: the hash they already own
+		/// would refuse the second application. Without a way out, a lost key ends a
+		/// citizenship, and in a real population that is a certainty rather than an exception.
+		///
+		/// It is judicial rather than automatic, and deliberately not something the holder can
+		/// invoke. A recovery anybody may call is a theft mechanism wearing a helpful name --
+		/// there is no signature to check, because the whole premise is that the signature is
+		/// gone, so the only thing standing between a citizen and an impostor is a body that
+		/// looks at evidence. The register authority is that body.
+		///
+		/// **Everything moves, offices included.** Standing that was left behind would make the
+		/// remedy worthless to the people most likely to need it, and splitting a person across
+		/// two accounts is its own defect. The one exception is stake observed on another
+		/// chain, which cannot move because the funds cannot -- see `staking-score`.
+		///
+		/// The old account is retired permanently and can be neither reissued again nor
+		/// reissued to, which is what stops a chain of accounts being used to launder standing.
+		#[pezpallet::call_index(65)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn reissue_citizenship(
+			origin: OriginFor<T>,
+			from: T::AccountId,
+			to: T::AccountId,
+		) -> DispatchResult {
+			T::ReissueOrigin::ensure_origin(origin)?;
+
+			// identity-kyc first, and it is the guard as well as the first move: it decides
+			// whether the reissue is legal at all, and nothing below runs if it refuses.
+			pezpallet_identity_kyc::Pezpallet::<T>::rebind_account(&from, &to)?;
+			<T::ReissueCarries as super::RebindAccount<T::AccountId>>::rebind(&from, &to)?;
+			Self::rebind_account(&from, &to)?;
+
+			Self::deposit_event(Event::CitizenshipReissued { from, to });
 			Ok(())
 		}
 
@@ -4007,6 +4113,64 @@ pub mod pezpallet {
 			for who in incoming {
 				Self::seat_on_the_bench(who, ends_at)?;
 			}
+			Ok(())
+		}
+
+		/// Move this pallet's own record of one account onto another.
+		///
+		/// Seats move and ballots do not. Who sits on the bench or in the house is live state
+		/// and has to follow the person, or an office moves in `tiki` while the register still
+		/// lists the retired account as its holder. A vote already cast is the opposite: it is
+		/// a public act by an account at a moment, the chain's answer to *who decided this*,
+		/// and rewriting it to name a different account would falsify the record the ballot
+		/// exists to keep. Endorsements, backings and referendum votes stay where they were
+		/// cast. A candidacy in flight is not moved either -- it is re-made, and it costs one
+		/// call rather than a scan of every election ever held.
+		pub fn rebind_account(from: &T::AccountId, to: &T::AccountId) -> DispatchResult {
+			DiwanMembers::<T>::mutate(|bench| {
+				for member in bench.iter_mut() {
+					if &member.account == from {
+						member.account = to.clone();
+					}
+				}
+			});
+			ParliamentMembers::<T>::mutate(|house| {
+				for member in house.iter_mut() {
+					if &member.account == from {
+						member.account = to.clone();
+					}
+				}
+			});
+			if let Some(at) = CourtLastActive::<T>::take(from) {
+				CourtLastActive::<T>::insert(to, at);
+			}
+			if let Some(until) = InitiativeCooldownUntil::<T>::take(from) {
+				InitiativeCooldownUntil::<T>::insert(to, until);
+			}
+			PendingPrimeMinister::<T>::mutate(|pending| {
+				if pending.as_ref() == Some(from) {
+					*pending = Some(to.clone());
+				}
+			});
+			// Term limits follow the person, or losing a key resets a career. Four election
+			// types, so this is a fixed four reads whatever the register grows to.
+			for election in [
+				ElectionType::Presidential,
+				ElectionType::Parliamentary,
+				ElectionType::SpeakerElection,
+				ElectionType::ConstitutionalCourt,
+			] {
+				let served = ConsecutiveTerms::<T>::take(election.clone(), from);
+				if served != 0 {
+					ConsecutiveTerms::<T>::insert(election, to, served);
+				}
+			}
+			// Both collectives are told, for the same reason `publish_the_bench` exists: the
+			// roster and the register may disagree for the length of one call and no longer.
+			Self::publish_the_bench();
+			T::HouseRoster::set_members(
+				ParliamentMembers::<T>::get().iter().map(|m| m.account.clone()).collect(),
+			);
 			Ok(())
 		}
 

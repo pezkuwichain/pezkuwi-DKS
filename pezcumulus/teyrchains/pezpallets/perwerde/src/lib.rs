@@ -822,6 +822,44 @@ pub mod pezpallet {
 	}
 
 	impl<T: Config> Pezpallet<T> {
+		/// Move this pallet's record of one account onto another, for a court-ordered reissue.
+		///
+		/// The score and its counters move; enrolments and ratifications do not, and the split
+		/// is the same one drawn everywhere else in the reissue. A score is what somebody has
+		/// earned and belongs to the person. An enrolment is a course in progress, tied to the
+		/// key that started it, and a ratification is a statement already made -- moving that
+		/// would rewrite who said it. So an in-flight course is re-taken and a cast
+		/// ratification keeps the name that cast it.
+		///
+		/// Leaving them also keeps this call bounded. Both are keyed by course first and
+		/// account second, so finding one account's rows means walking every course that has
+		/// ever existed, and a reissue must not cost more as the curriculum grows.
+		pub fn rebind_account(
+			from: &T::AccountId,
+			to: &T::AccountId,
+		) -> pezframe_support::pezpallet_prelude::DispatchResult {
+			let score = PerwerdeScores::<T>::take(from);
+			if score != 0 {
+				PerwerdeScores::<T>::insert(to, score);
+			}
+			let rewarded = RewardedCourses::<T>::take(from);
+			if rewarded != 0 {
+				RewardedCourses::<T>::insert(to, rewarded);
+			}
+			let completed = CompletedCourses::<T>::take(from);
+			if completed != 0 {
+				CompletedCourses::<T>::insert(to, completed);
+			}
+			let annulled = AnnulledRatifications::<T>::take(from);
+			if annulled != 0 {
+				AnnulledRatifications::<T>::insert(to, annulled);
+			}
+			if HonoraryMamoste::<T>::take(from).is_some() {
+				HonoraryMamoste::<T>::insert(to, ());
+			}
+			Ok(())
+		}
+
 		/// Close a ratified course and turn its recorded passes into points.
 		fn close_and_award(course_id: u32) -> DispatchResult {
 			let course = Courses::<T>::get(course_id).ok_or(Error::<T>::CourseNotFound)?;

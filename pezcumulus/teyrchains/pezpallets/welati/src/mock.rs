@@ -532,6 +532,16 @@ parameter_types! {
 	pub const TermLength: u64 = 1_000;
 	pub const CourtTermLength: u64 = 2_250;
 	pub const CourtInactivityPeriod: u64 = 500;
+}
+
+pezpallet_welati::impl_rebind_adapters!(Test;
+	RebindReferral => pezpallet_referral,
+	RebindTiki => pezpallet_tiki,
+	RebindTrust => pezpallet_trust,
+	RebindStakingScore => pezpallet_staking_score,
+);
+
+parameter_types! {
 	pub const MaxConsecutiveTerms: u32 = 2;
 
 	/// Stands in for the Asset Hub. The mock never delivers anything there; what the tests
@@ -788,6 +798,8 @@ impl pezpallet_welati::Config for Test {
 	type TermLength = TermLength;
 	type CourtTermLength = CourtTermLength;
 	type CourtInactivityPeriod = CourtInactivityPeriod;
+	type ReissueOrigin = pezframe_system::EnsureRoot<AccountId>;
+	type ReissueCarries = (RebindReferral, RebindTiki, RebindTrust, RebindStakingScore);
 	type MaxConsecutiveTerms = MaxConsecutiveTerms;
 	type XcmSender = RecordingXcmSender;
 	type TreasuryChainLocation = TreasuryChain;
