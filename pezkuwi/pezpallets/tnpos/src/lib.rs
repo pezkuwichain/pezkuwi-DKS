@@ -116,8 +116,9 @@ pub mod pezpallet {
 	/// can tell whether it has run.
 	pub const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
-	/// Seats each stratum carries in the specified committee.
-	pub const SEATS_PER_STRATUM: u32 = 3;
+	/// Seats each stratum carries. Defined in `invariant` beside the floor derived from it,
+	/// and re-exported here for genesis and the benchmarks.
+	pub use pezkuwi_tnpos_primitives::invariant::SEATS_PER_STRATUM;
 
 	/// Eligible members a stratum needs before it may be seated. Defined in `invariant`
 	/// alongside `FloorTooLow`, the check that enforces it, and re-exported here for
@@ -374,7 +375,9 @@ pub mod pezpallet {
 					.map(|&id| StratumConfig {
 						id,
 						seats: SEATS_PER_STRATUM,
-						min_eligible: MIN_ELIGIBLE_PER_STRATUM,
+						// Per stratum: the court's floor is its seat count rather than fifty,
+						// because eleven judges can never be fifty. See `min_eligible_for`.
+						min_eligible: pezkuwi_tnpos_primitives::invariant::min_eligible_for(id),
 					})
 					.collect(),
 				members: Vec::new(),

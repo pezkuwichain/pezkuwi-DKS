@@ -186,6 +186,47 @@ fn the_pool_is_bounded() {
 	});
 }
 
+/// The two institutional strata admit the institution, and a full trust score is not it.
+///
+/// This is the whole of the independence argument in one test. Both gates used to read trust
+/// like five others, so the stratum named for the house and the stratum named for the court
+/// admitted anybody in the country with standing -- nine strata on paper and one authority
+/// behind six of them. A citizen with a perfect score and no seat must be refused, or the name
+/// is the only thing separating these gates from the rest.
+#[test]
+fn the_house_and_the_bench_admit_their_own_members_and_nobody_else() {
+	new_test_ext().execute_with(|| {
+		ensure_has_keys(ALICE);
+		set_trust(ALICE, 1_000);
+
+		// Maximum trust, no seat: refused by both.
+		assert_noop!(
+			Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Meclis),
+			Error::<Test>::NotEligible
+		);
+		assert_noop!(
+			Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Divan),
+			Error::<Test>::NotEligible
+		);
+
+		// A seat in the house opens the house's stratum and not the court's.
+		seat_in_meclis(ALICE);
+		assert_noop!(
+			Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Divan),
+			Error::<Test>::NotEligible
+		);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(ALICE), StratumId::Meclis));
+		assert_eq!(PoolMembers::<Test>::get(ALICE), Some(StratumId::Meclis));
+
+		// And the bench opens the bench's, for somebody else.
+		ensure_has_keys(BOB);
+		set_trust(BOB, 0);
+		seat_on_the_diwan(BOB);
+		assert_ok!(Tnpos::join(RuntimeOrigin::signed(BOB), StratumId::Divan));
+		assert_eq!(PoolMembers::<Test>::get(BOB), Some(StratumId::Divan));
+	});
+}
+
 #[test]
 fn a_healthy_pool_seats_twenty_seven_across_nine_strata() {
 	new_test_ext().execute_with(|| {

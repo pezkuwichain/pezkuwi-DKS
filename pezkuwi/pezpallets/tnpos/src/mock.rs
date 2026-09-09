@@ -87,6 +87,11 @@ pub fn set_office_tiki_only(who: AccountId) {
 	put_score(who, TRUST, 1_000, System::block_number());
 }
 
+/// Set this account's trust standing, for the strata that read it.
+pub fn set_trust(who: AccountId, v: u128) {
+	put_score(who, TRUST, v, System::block_number());
+}
+
 /// Advance the block number, running `on_initialize` at every step.
 pub fn run_to_block(n: BlockNumber) {
 	use pezframe_support::traits::OnInitialize;
@@ -190,7 +195,24 @@ fn read_score(who: &AccountId, kind: u8) -> ScoreSnapshot<BlockNumber> {
 }
 
 pub struct MockScores;
+thread_local! {
+	/// Who sits in the house, for the stratum that reads it.
+	pub static MECLIS: core::cell::RefCell<alloc::vec::Vec<AccountId>> =
+		const { core::cell::RefCell::new(alloc::vec::Vec::new()) };
+	/// Who sits on the court, for the stratum that reads it.
+	pub static DIWAN: core::cell::RefCell<alloc::vec::Vec<AccountId>> =
+		const { core::cell::RefCell::new(alloc::vec::Vec::new()) };
+}
+
 impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for MockScores {
+	fn is_meclis_member(who: &AccountId) -> bool {
+		MECLIS.with(|m| m.borrow().contains(who))
+	}
+
+	fn is_diwan_member(who: &AccountId) -> bool {
+		DIWAN.with(|d| d.borrow().contains(who))
+	}
+
 	fn trust_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
 		read_score(who, TRUST)
 	}
@@ -282,6 +304,26 @@ pub fn new_test_ext_with_strata(n: usize) -> pezsp_io::TestExternalities {
 	ext
 }
 
+/// Seat this account in the house, for the stratum that reads it.
+pub fn seat_in_meclis(who: AccountId) {
+	MECLIS.with(|m| {
+		let mut m = m.borrow_mut();
+		if !m.contains(&who) {
+			m.push(who);
+		}
+	});
+}
+
+/// Seat this account on the court, for the stratum that reads it.
+pub fn seat_on_the_diwan(who: AccountId) {
+	DIWAN.with(|d| {
+		let mut d = d.borrow_mut();
+		if !d.contains(&who) {
+			d.push(who);
+		}
+	});
+}
+
 /// Put `per` eligible members into every stratum.
 pub fn fill_every_stratum(per: u32) {
 	let mut who: AccountId = 100;
@@ -289,6 +331,14 @@ pub fn fill_every_stratum(per: u32) {
 		for _ in 0..per {
 			for kind in [TRUST, TIKI, PERWERDE, STAKING] {
 				put_score(who, kind, 1_000, System::block_number());
+			}
+			// Two strata read a membership rather than a score, so a fixture that only sets
+			// scores cannot reach them. Seating is what "eligible" means for those two, the
+			// same as a full trust score is for the rest.
+			match s {
+				StratumId::Meclis => seat_in_meclis(who),
+				StratumId::Divan => seat_on_the_diwan(who),
+				_ => {},
 			}
 			ensure_has_keys(who);
 			assert!(Tnpos::join(RuntimeOrigin::signed(who), s).is_ok());

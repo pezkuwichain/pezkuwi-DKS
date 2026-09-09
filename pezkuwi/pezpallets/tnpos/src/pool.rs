@@ -38,14 +38,40 @@ impl<T: Config> Pezpallet<T> {
 				// including them would tie this stratum to Meclis.
 				ensure!(fresh(T::Scores::tiki_of(who))? > 0, Error::<T>::NotEligible);
 			},
-			StratumId::Meclis
-			| StratumId::Divan
-			| StratumId::WelatiLottery
+			StratumId::Meclis => {
+				// The house itself, not a score anybody in the country can reach. Until now
+				// this read trust like the four below, which meant the stratum claiming
+				// parliamentary independence was filled by citizens who were not in
+				// parliament: the name promised a separate authority and the gate delivered
+				// the same one as five others.
+				//
+				// Two hundred and one seats against a floor of fifty, so it can be seated;
+				// whether it is depends on fifty members running nodes, and if they do not it
+				// stays empty and its seats are not redistributed. A stratum that cannot be
+				// filled by the body it names should be empty rather than filled by somebody
+				// else.
+				ensure!(T::Scores::is_meclis_member(who), Error::<T>::NotEligible);
+			},
+			StratumId::Divan => {
+				// The bench itself, for the same reason -- and with its own floor, because
+				// eleven can never be fifty. That exception is defensible here and nowhere
+				// else: a court seat cannot be manufactured, and six of eleven means holding
+				// the house and the presidency together.
+				//
+				// If fewer than three judges run nodes the stratum is not seated, which is the
+				// same graceful failure any short stratum has.
+				ensure!(T::Scores::is_diwan_member(who), Error::<T>::NotEligible);
+			},
+			StratumId::WelatiLottery
 			| StratumId::Geography
 			| StratumId::Tenure
 			| StratumId::Infrastructure => {
-				// These gates are attested by their own authorities and reach this chain as
-				// trust standing until their dedicated channels land in M7.1.
+				// Still trust, and still M7.1's work. Each needs a decision first, and they are
+				// not the same shape: `WelatiLottery` reads "gated only by citizenship" in its
+				// own definition, and citizenship is *weaker* than trust because trust gates on
+				// stake -- moving to it would loosen this stratum. The other three have no
+				// measured quantity behind them yet: there is no definition of a region, of
+				// service, or of operational contribution to read.
 				ensure!(fresh(T::Scores::trust_of(who))? > 0, Error::<T>::NotEligible);
 			},
 		}

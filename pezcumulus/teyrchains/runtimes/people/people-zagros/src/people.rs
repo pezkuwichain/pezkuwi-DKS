@@ -1757,6 +1757,16 @@ impl pezpallet_vesting::Config for Runtime {
 /// current by construction and say so.
 pub struct RegisterScores;
 impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for RegisterScores {
+	fn is_meclis_member(who: &AccountId) -> bool {
+		// The register's own answer, read locally: both pallets are on this chain, so there is
+		// no channel between them to go quiet and no snapshot to age.
+		pezpallet_welati::Pezpallet::<Runtime>::is_parliament_member(who)
+	}
+
+	fn is_diwan_member(who: &AccountId) -> bool {
+		pezpallet_welati::Pezpallet::<Runtime>::is_diwan_member(who)
+	}
+
 	fn trust_of(who: &AccountId) -> ScoreSnapshot<BlockNumber> {
 		ScoreSnapshot {
 			value: <Trust as pezpallet_trust::TrustScoreProvider<AccountId>>::trust_score_of(who),
