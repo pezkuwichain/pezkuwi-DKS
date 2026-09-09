@@ -670,7 +670,11 @@ impl<T: Config> Pezpallet<T> {
 		from: &T::AccountId,
 		to: &T::AccountId,
 	) -> pezframe_support::pezpallet_prelude::DispatchResult {
-		let claims: Vec<T::AccountId> = Invitations::<T>::iter_key_prefix(from).collect();
+		// `alloc::` spelled out: this impl block sits outside the pallet module, so the
+		// prelude that would have brought `Vec` in does not reach it -- and a std-only check
+		// never notices, because std has it either way.
+		let claims: alloc::vec::Vec<T::AccountId> =
+			Invitations::<T>::iter_key_prefix(from).collect();
 		for inviter in claims {
 			Invitations::<T>::remove(from, &inviter);
 			Invitations::<T>::insert(to, &inviter, ());
