@@ -266,6 +266,11 @@ account. It is deliberately not a self-service path. A recovery anybody can invo
 mechanism wearing a helpful name, and the register is the one asset in this system with no
 market price and no way to be made whole after the fact.
 
+The old account is retired for good. It can be neither reissued again nor reissued *to*, which
+is what stops a chain of accounts being used to launder standing through a series of court
+orders. It stays on the record as superseded rather than being erased: history keeps the name it
+was written under, and only what a person is owed or answerable for follows them forward.
+
 ---
 
 ## 5. The institutions
@@ -427,34 +432,46 @@ how much stake sits behind it.
 
 ### 7.1 The nine strata
 
-| Stratum | Admits a citizen who has |
-|---|---|
-| **Stake** | Any staking score above zero |
-| **Meclis** | Any trust, standing on the parliamentary path |
-| **Dîwan** | Any trust, standing on the judicial path |
-| **Perwerde** | Any education score above zero |
-| **Tiki** | Any community score above zero |
-| **Welatî lottery** | Any trust — the open seat of ordinary citizenship |
-| **Geography** | Any trust, on regional distribution |
-| **Tenure** | Any trust, on length of service |
-| **Infrastructure** | Any trust, on operational contribution |
+| Stratum | Admits a citizen who has | Answers to |
+|---|---|---|
+| **Stake** | Any staking score above zero | The market |
+| **Meclis** | A seat in the elected house | The house |
+| **Dîwan** | A seat on the court | The court |
+| **Perwerde** | Any education score above zero | Accredited institutions |
+| **Tiki** | Any community score above zero | The community |
+| **Welatî lottery** | Trust above forty — more than the cheapest act | Nobody; the pool dilutes |
+| **Geography** | An attested region of residence | A notary, undone by the court |
+| **Tenure** | A year of unbroken, offence-free membership | Nobody; only elapsed time |
+| **Infrastructure** | *Any trust* — the gate is not built yet | — |
+
+The third column is the one the security argument counts. Two strata answering to the same
+institution are one stratum, and eight distinct answers is what "nine independent gates" has to
+mean before it can be claimed.
 
 Each stratum seats **three** validators. A full committee is **twenty-seven**.
 
-The stratum named Dîwan is a route into the validator pool and confers no judicial
-office; it is not the eleven-seat court of §5.4, and its fifty-member floor has nothing to do
-with the court's size.
+The stratum named Dîwan is the court of §5.4, and a seat there confers no judicial
+office in the other direction: a judge who validates is a judge who runs a node, and the court
+still decides as a body of two thirds. Its floor is the one exception in §7.3, and the court's
+size is exactly the reason for it.
 
 The security argument rests on the strata being gated by *different* authorities: two strata
 answering to the same institution are one stratum, not two, and the committee's independence
 is counted from that number. Eight of the nine gates are measured on this chain today, and
 they are eight different measurements. Stake, education and community tikis each read their own
 score. The parliamentary and judicial strata read the membership they are named after, so a
-citizen with a perfect trust score and no seat is refused by both. Geography reads an attested
-region — claimed by the citizen, confirmed by a notary, cancellable by the court — and its three
-seats rotate across the regions rather than pooling, so the label decides something. Tenure
+citizen with a perfect trust score and no seat is refused by both. Geography reads an attested region. Six are recognised —
+**Başûr, Bakur, Rojava, Rojhilat, the diaspora and the Caucasus** — and the last two are not an
+afterthought: a register that recognised only people inside the region would exclude the
+citizens most able to run infrastructure without anybody's permission. A citizen may ask for a
+mark once twenty-five settled referrals stand behind them, a notary confirms the region they
+claimed and no other, and the court can cancel it. The three seats rotate across the regions
+rather than pooling — six complete a cycle in two eras — because three seats drawn from one pool
+would go to whichever region is most populous and the label would decide nothing. Tenure
 reads unbroken, offence-free time in the pool and answers to no authority at all: it is the one
-qualification that cannot be granted, bought or manufactured. The open lottery asks only that a
+qualification that cannot be granted, bought or manufactured. Moving between strata does not
+break it — a member never stops being in the pool — but leaving does, and so does an offence, so
+a validator who equivocates begins that record again rather than waiting out a ban. The open lottery asks only that a
 citizen has done more than the cheapest possible act — its bar is exactly what an account that
 stakes the smallest tier and does nothing else scores — because that stratum's security is the
 size of the pool rather than the height of its bar, and a hard gate there would duplicate one of
@@ -482,7 +499,12 @@ is underway.
 ### 7.3 The floors that refuse to seat a weak committee
 
 A stratum with fewer than **fifty** eligible members is not seated at all, and **its seats are
-not redistributed**. A committee is refused if it draws from fewer than five strata, or has
+not redistributed**. The court is the single exception and carries its own floor of three, which
+is its seat count: fifty is sized against an adversary who can *manufacture* eligible members,
+and a seat on an eleven-member court cannot be manufactured — taking six of them means taking
+the house and the presidency together, at which point three validator seats are not what stopped
+anybody. Applying fifty there would have left the judicial stratum permanently unseatable, since
+eleven can never be fifty. A committee is refused if it draws from fewer than five strata, or has
 fewer than fifteen members, or more than sixty-four.
 
 Refusing to fill a committee is a safer failure than filling it from whoever happens to be
