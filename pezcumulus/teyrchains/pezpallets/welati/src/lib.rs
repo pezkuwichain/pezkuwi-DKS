@@ -1780,18 +1780,37 @@ pub mod pezpallet {
 				ElectionType::SpeakerElection => {
 					pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::SerokiMeclise).is_none()
 				},
-				// Parliament has no vacancy arm, deliberately. The two offices above are
-				// held by one person each, so "empty" is one storage read. A house is empty
-				// only when none of its two hundred and one members still holds a seat, and
-				// asking that on every block means decoding the whole roll on every block.
+			// The two bodies. Both used to fall through to `false`, on the grounds that
+			// asking whether a house of two hundred and one is empty meant decoding the whole
+			// roll every block. `decode_len` reads the length prefix and decodes none of it,
+			// so the cost that justified leaving this open was never the real one.
+			ElectionType::Parliamentary => {
+				// Empty means empty: every member removed by the Diwan, or stripped of
+				// citizenship, inside one term. Rare to the point of never, and the reason it
+				// needs an arm at all is that there is no other way out -- an empty house
+				// cannot vote itself back, and the clock would leave the country without a
+				// legislature until the term it can no longer serve runs out.
+				ParliamentMembers::<T>::decode_len().unwrap_or(0) == 0
+			},
+			ElectionType::ConstitutionalCourt => {
+				// The elected half short of its seats. The appointed five are the President's
+				// to fill the moment one opens; the elected six have no such route, so without
+				// this a seat vacated for silence would stay empty for the rest of a nine-year
+				// term -- and the vacancy rule in §5.4 would repair the court's ability to
+				// decide while quietly shrinking it for a decade.
 				//
-				// What is left is the clock, which covers the case the design actually has:
-				// a house is replaced when its term runs out. A house that lost every seat
-				// at once -- every member removed by the Diwan, or stripped of citizenship,
-				// inside one term -- would sit empty until the term ended. That is recorded
-				// as a gap rather than papered over with a check that costs a block read
-				// every block for a case that has never happened.
-				_ => false,
+				// The whole elected half turns over, not just the empty seat. That half is
+				// seated as a unit by one house and has always been replaced as one; patching
+				// a single seat would give it members on two different clocks, and the
+				// derivation that keeps six and five apart is written for a half that moves
+				// together.
+				let elected = DiwanMembers::<T>::get()
+					.iter()
+					.filter(|m| matches!(m.appointed_by, AppointmentAuthority::Parliament))
+					.count() as u32;
+				elected < T::DiwanElectedSeats::get()
+			},
+			_ => false,
 			}
 		}
 

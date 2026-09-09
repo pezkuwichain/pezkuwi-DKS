@@ -3251,9 +3251,10 @@ fn a_winner_who_is_no_longer_a_citizen_does_not_stall_the_queue() {
 
 #[test]
 fn the_clock_and_not_the_roll_opens_the_next_election() {
-	// Parliament is replaced by its term running out. There is no "the house is empty" arm
-	// in the scheduler for it -- see `office_is_vacant` -- so this pins what does open the
-	// election, and that seating the founding house is what starts that clock at all.
+	// The ordinary path: a house is replaced when its term runs out. There is an emptiness
+	// arm beside it now -- see `an_emptied_house_does_not_wait_for_its_term` -- and this pins
+	// that the clock still opens the election on its own, and that seating the founding house
+	// is what starts that clock at all.
 	ExtBuilder::default().build().execute_with(|| {
 		seat_president(1);
 		assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
@@ -3284,6 +3285,76 @@ fn a_seat_nobody_was_given_is_caught() {
 			pezpallet_tiki::Tiki::Parlementer
 		));
 		crate::mock::check_invariants();
+	});
+}
+
+/// A house that lost every seat cannot vote itself back, so the scheduler has to.
+///
+/// Rare to the point of never -- it takes every member removed by the court or stripped of
+/// citizenship inside one term -- and that is exactly why it needed an arm: there is no other
+/// way out. Without it the country has no legislature until a term nobody can serve runs out.
+#[test]
+fn an_emptied_house_does_not_wait_for_its_term() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_president(1);
+		assert_ok!(Welati::seat_founding_parliament(RuntimeOrigin::signed(1), vec![2, 3]));
+		run_to_block(System::block_number() + 2);
+		assert!(
+			Welati::scheduled_election(ElectionType::Parliamentary).is_none(),
+			"a sitting house schedules nothing"
+		);
+
+		// Every seat gone, long before the term ends.
+		crate::ParliamentMembers::<Test>::kill();
+		run_to_block(System::block_number() + 1);
+
+		assert!(
+			Welati::scheduled_election(ElectionType::Parliamentary).is_some(),
+			"an empty house must open an election without waiting for the calendar"
+		);
+	});
+}
+
+/// A court seat vacated for silence has no other way back.
+///
+/// The President fills an appointed vacancy the moment one opens; the elected six have no such
+/// route. Without this arm the vacancy rule in §5.4 would restore the court's ability to decide
+/// -- two thirds counts over the members who sit -- while quietly leaving it smaller for the
+/// rest of a nine-year term.
+#[test]
+fn an_elected_court_seat_short_opens_an_election() {
+	ExtBuilder::default().build().execute_with(|| {
+		seat_president(1);
+		let term_end = System::block_number() + 999_999;
+		crate::TermEnds::<Test>::insert(ElectionType::ConstitutionalCourt, term_end);
+
+		let mut bench = Welati::diwan_members();
+		for who in 20..20 + crate::mock::DiwanElectedSeats::get() as u64 {
+			make_citizen(who);
+			let _ = bench.try_push(crate::types::DiwanMember {
+				account: who,
+				appointed_at: 1,
+				term_ends_at: term_end,
+				appointed_by: crate::types::AppointmentAuthority::Parliament,
+			});
+		}
+		crate::DiwanMembers::<Test>::put(bench.clone());
+		run_to_block(System::block_number() + 1);
+		assert!(
+			Welati::scheduled_election(ElectionType::ConstitutionalCourt).is_none(),
+			"a full elected half schedules nothing"
+		);
+
+		// One seat vacated, as a silence would.
+		let mut short = bench;
+		short.remove(0);
+		crate::DiwanMembers::<Test>::put(short);
+		run_to_block(System::block_number() + 1);
+
+		assert!(
+			Welati::scheduled_election(ElectionType::ConstitutionalCourt).is_some(),
+			"an elected seat left empty must open an election"
+		);
 	});
 }
 

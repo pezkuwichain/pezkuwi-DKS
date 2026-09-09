@@ -841,11 +841,8 @@ reader could otherwise find in the code and conclude we had hidden. The chain is
 network precisely so that these close before a genesis freezes them — a structural fix costs
 one commit today and a coordinated operation across every operator afterwards.
 
-**Still to build.** These have an agreed remedy; the code has not landed yet.
-
-| Gap | What breaks without it | The remedy |
-|---|---|---|
-| **An emptied body has no by-election** | Succession for the single-holder offices is written — the Speaker acts for an absent President, and a vacancy opens an election without waiting for the calendar. What has no arm is a *body*: a parliament that lost every seat inside one term, or an elected court seat vacated for silence, waits for the scheduled election. The court still rules, because two thirds counts over the members who sit; the house does not | A vacancy arm for the elected bodies, and a decision on whether a replacement serves the remainder or a fresh term |
+**Nothing is left in this half.** Every gap the previous edition listed as agreed-and-unbuilt
+has landed; what remains below is the part nobody has decided.
 
 **Closed since the last edition, and described where they belong.** Listed here so that a
 reader who was given the previous version can see what moved: the emergency upgrade path (§10),
