@@ -1849,12 +1849,16 @@ impl pezkuwi_tnpos_primitives::scores::ScoreProvider<AccountId, BlockNumber> for
 	}
 }
 
-/// The relay's `SessionKeys`, mirrored so a registration can be checked before it is sent.
-///
-/// Must match the relay's definition field for field and in order -- it is what decodes the
-/// bytes, and a mismatch would accept a payload the relay then refuses, leaving this chain
-/// holding a key the relay does not have. `the_relay_key_mirror_matches` in the relay's tests
-/// compares the two; this comment is not the check.
+// The relay's `SessionKeys`, mirrored so a registration can be checked before it is sent.
+//
+// Must match the relay's definition field for field and in order -- it is what decodes the
+// bytes, and a mismatch would accept a payload the relay then refuses, leaving this chain
+// holding a key the relay does not have. `the_relay_key_mirror_matches` in the relay's tests
+// compares the two; this comment is not the check.
+//
+// `//` and not `///`: a doc comment here attaches to nothing -- the item that follows is a
+// macro invocation, and rustc warns `unused doc comment`. The words are the mirror invariant
+// and they stay; only their form changes.
 pezsp_runtime::impl_opaque_keys! {
 	pub struct RelaySessionKeys {
 		pub grandpa: pezsp_consensus_grandpa::AuthorityId,

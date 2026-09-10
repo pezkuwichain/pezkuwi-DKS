@@ -53,35 +53,93 @@ env:
   # build with high parallelism while the small 11GB runners stay RAM-safe at a lower count.
 
 jobs:
-  # Unit/integration tests, split into partitions that spread across the runner pool.
-  test:
+  # Build the test binaries once, for the partitions below to run without building them
+  # again. Measured on the 2026-09-09 suite: `test (1)` took 497 minutes, of which 246 were
+  # spent compiling 1773 crates cold and 244 running tests. Both partitions paid that 246
+  # minutes separately, so half of the lane's cost was the same compile done twice.
+  #
+  # That is also why raising the partition count on its own would have made this worse rather
+  # than better: at six partitions the compile is paid six times, and with six build runners
+  # in the pool the extra work has nowhere to go. Archiving first inverts it -- the compile is
+  # paid once and each added partition costs only the tests it runs.
+  #
+  # sccache is deliberately not used here (its server crashing mid-build failed jobs across
+  # retries); this achieves the same end without a daemon in the build path.
+  archive:
     runs-on: [self-hosted, bizinikiwi-build]
-    # sccache is intentionally NOT used (its server crashing mid-build failed jobs across
-    # retries); builds compile cold, so allow generous wall-clock instead of the 6h default.
     timeout-minutes: 720
-    strategy:
-      fail-fast: false
-      matrix:
-        partition: [1, 2]
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/install-solidity
       - name: Free disk if low
-        # Heaviest job — compiles the whole workspace's test binaries. The persistent
-        # target dir accumulates and can fill smaller runners; clean it when low.
         run: |
           avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
           echo "free: ${avail}G"
           if [ "${avail:-999}" -lt 80 ]; then echo "cleaning target"; rm -rf target; fi
-          # Backstop on small-disk runners: if still critically low, drop the sccache cache too
-          # so a build can never fill the host disk (these runners share VPSs with validators,
-          # the bridge and web services — a full disk would take those down).
+      - name: Archive the test binaries
+        run: |
+          git config --global --add safe.directory '*'
+          cargo nextest archive --workspace --locked \
+            --archive-file workspace-tests.tar.zst
+          ls -lh workspace-tests.tar.zst
+      - uses: actions/upload-artifact@v7
+        with:
+          name: workspace-tests
+          path: workspace-tests.tar.zst
+          # One day: this exists only for the jobs in this same run.
+          retention-days: 1
+          compression-level: 0
+
+  # The same, for the feature set `test-extra-features` needs. A separate archive and not a
+  # flag on the one above: `--features experimental,ci-only-tests` compiles different code, so
+  # the binaries genuinely differ and one archive cannot serve both.
+  archive-extra-features:
+    runs-on: [self-hosted, bizinikiwi-build]
+    timeout-minutes: 720
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-solidity
+      - name: Free disk if low
+        run: |
           avail=$(df -BG --output=avail "$PWD" | tail -1 | tr -dc 0-9)
-          if [ "${avail:-999}" -lt 40 ]; then
-            echo "critically low (${avail}G): clearing sccache"
-            rm -rf "${SCCACHE_DIR:-$HOME/.cache/sccache}"/* 2>/dev/null || true
-          fi
-      - name: Run tests (nextest, partition ${{ matrix.partition }}/2)
+          echo "free: ${avail}G"
+          if [ "${avail:-999}" -lt 80 ]; then echo "cleaning target"; rm -rf target; fi
+      - name: Archive the test binaries with the extra features
+        run: |
+          git config --global --add safe.directory '*'
+          cargo nextest archive --workspace --locked \
+            --features experimental,ci-only-tests \
+            --archive-file workspace-tests-extra.tar.zst
+          ls -lh workspace-tests-extra.tar.zst
+      - uses: actions/upload-artifact@v7
+        with:
+          name: workspace-tests-extra
+          path: workspace-tests-extra.tar.zst
+          retention-days: 1
+          compression-level: 0
+
+  # Unit/integration tests, split into partitions that spread across the runner pool.
+  test:
+    needs: archive
+    runs-on: [self-hosted, bizinikiwi-build]
+    # Six partitions, matching the six build runners in the pool. Only worth doing because
+    # `archive` built the binaries already: each partition now costs the tests it runs plus
+    # the archive download, not another 246-minute compile.
+    #
+    # The floor is not 244/6. One test, `pezstaging-node-cli::export_import_flow`, takes 49
+    # minutes by itself, so whichever partition draws it sets the lane's length -- past about
+    # five partitions the split stops buying anything.
+    timeout-minutes: 720
+    strategy:
+      fail-fast: false
+      matrix:
+        partition: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: workspace-tests
+      - name: Run tests (nextest, partition ${{ matrix.partition }}/6)
         run: |
           # Nothing is excluded. The suite runs the whole workspace.
           #
@@ -97,8 +155,12 @@ jobs:
           # 2026-08-18 and passes 238/238, and the exclusion was still in place a month
           # after its reason expired. A red test states the work; an exclusion states
           # nothing and nobody returns to it.
-          cargo nextest run --workspace --locked --no-fail-fast \
-            --partition count:${{ matrix.partition }}/2 \
+          # `--workspace-remap` because the archive was built in another job's checkout: it
+          # tells nextest that this checkout is the same workspace, so tests that read files
+          # from the repository find them. Nothing is compiled here.
+          cargo nextest run --archive-file workspace-tests.tar.zst \
+            --workspace-remap . --no-fail-fast \
+            --partition count:${{ matrix.partition }}/6 \
             --config-file .config/nextest.toml
 
       - name: A test that only passed on its last retry is a broken test
@@ -344,15 +406,18 @@ jobs:
             --no-default-features
 
   test-extra-features:
+    needs: archive-extra-features
     runs-on: [self-hosted, bizinikiwi-build]
     timeout-minutes: 720
     strategy:
       fail-fast: false
       matrix:
-        partition: [1, 2]
+        partition: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/install-solidity
+      - uses: actions/download-artifact@v8
+        with:
+          name: workspace-tests-extra
       - name: Tests with the experimental and ci-only features
         # The `test` job above runs the suite with no `--features` at all. This one adds
         # `experimental` and `ci-only-tests`, which compile code paths the default build
@@ -362,9 +427,11 @@ jobs:
         # for a feature-gating bug that was never here.
         run: |
           git config --global --add safe.directory '*'
-          cargo nextest run --workspace --locked --no-fail-fast \
-            --features experimental,ci-only-tests \
-            --partition count:${{ matrix.partition }}/2 \
+          # The features are already baked into the archive; naming them again here would be
+          # a build flag on a job that does not build.
+          cargo nextest run --archive-file workspace-tests-extra.tar.zst \
+            --workspace-remap . --no-fail-fast \
+            --partition count:${{ matrix.partition }}/4 \
             --config-file .config/nextest.toml
 
       - name: A test that only passed on its last retry is a broken test
