@@ -904,7 +904,14 @@ linked-hash-map = { version = "0.5.4" }
 linked_hash_set = { version = "0.1.4" }
 linregress = { version = "0.5.1" }
 lite-json = { version = "0.2.0", default-features = false }
-litep2p = { version = "0.15.1", features = ["rsa", "websocket"] }
+# The backend the nodes actually run, so it is the one that gets the attention. Upstream
+# stable2606 is on 0.15.2 and this follows it.
+#
+# What is deliberately not followed is upstream's `webrtc` feature. Nothing in this tree uses
+# the WebRTC transport -- measured, zero references -- and the whole reason libp2p is left
+# alone rather than upgraded is that we do not carry code we do not run. Enabling a transport
+# for symmetry with upstream would contradict that on the very line that states it.
+litep2p = { version = "0.15.2", features = ["rsa", "websocket"] }
 log = { version = "0.4.22", default-features = false }
 macro_magic = { version = "0.5.1" }
 maplit = { version = "1.0.2" }
