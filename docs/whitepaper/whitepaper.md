@@ -5,11 +5,15 @@
 **Whitepaper v6.1 — Testnet Edition**
 Dijital Kurdistan Tech Institute
 
-*The chain described here runs on a test network. Six months live, 2.7 million blocks
-finalised, no mainnet genesis yet. §10.1 accounts for every gap the last edition named — what
-was built, what was decided, and the one thing this design deliberately does not do — in full
-and without softening. A reader who finds something there before finding it in the code is
-reading the document this was written to be.*
+*This is a design document, and the system it describes has no genesis yet. The runtime is
+written, its invariants are held by gates that run in continuous integration, and the chain
+will be launched from the code at the commit that produces it. §10.1 lists the gaps without
+softening — what was built, what was decided, and the one thing this design deliberately
+does not do.*
+
+*A closed simulation of this design ran with an invited group of testers from the third
+quarter of 2025 to the second quarter of 2026. It was private, it was not this chain, and it
+was retired once the design was settled. Nothing in this document rests on it.*
 
 ---
 
@@ -27,14 +31,14 @@ deposits that make a proposal or a candidacy serious are reserved in HEZ, and re
 spent. Matters of the network's administration — staking, leases, auctions, the treasury of
 last resort — are decided by stake. Neither electorate votes in the other's ballot.
 
-They are not equals, and this document does not pretend otherwise. The civil layer holds the
-only door into the consensus layer's root; the reverse door does not exist. Section 2.1 says
-what that means and what it does not.
+They are not equals. The civil layer holds the only door into the consensus layer's root,
+and the reverse door does not exist: no referendum of holders, and no collective, can reach
+the register.
 
 Second, **money and the authority to move it live on different chains.** Every fund sits on
 the Asset Hub. The relay holds no fund of its own — only the escrow mirroring what the Asset
 Hub carries, and the founder's allocation, which is property rather than a fund. Every authority to draw from it sits on the People chain. A payment is a
-cross-chain message from an office to a vault, and the vault's own configuration names the
+cross-chain message from an office to a fund, and the fund's own configuration names the
 one chain it will listen to. An officeholder cannot reach the money by holding a key; they
 reach it by holding an office, and the office is an entry in a register that citizens elect.
 
@@ -127,7 +131,7 @@ referendum has actually decided something under it. The third is the one that is
 and the one that matters: an authority that has never been exercised is not known to work.
 
 Root can upgrade a runtime, and a runtime is where every rule in this document lives —
-including the origin filters that make the vaults refuse. So every claim below of the form
+including the origin filters that make the funds refuse. So every claim below of the form
 *"X cannot reach this money"* means **"X cannot reach it short of a runtime upgrade."** There
 is no formulation that would make it stronger, and a document that implied one would be
 describing a different kind of machine.
@@ -622,7 +626,7 @@ ledger is public: every transfer out of the founding account is on the chain, wi
 destination, its amount and its block. Whether the HEZ went to a validator's stash or
 somewhere else is not a matter of trust — it is a query anyone can run, against an address
 published here. An undertaking that can be audited is a different thing from one that has to
-be believed, and this is the only kind this document is willing to make.
+be believed.
 
 What the runtime does enforce is on the other side of the ledger — the founder's PEZ.
 
@@ -739,13 +743,13 @@ to the people the pool belongs to, and to no office at all.
 
 ---
 
-## 9. The four funds, and who may move them
+## 9. The five funds, and who may move them
 
 This is the section the architecture exists for. Every fund is on the Asset Hub, and every
 authority over the state's money is on the People chain. The single exception is the HEZ
-treasury, whose authority is the economic franchise itself and therefore sits with the
-holders — §9.2 says why that one is different. Read each row as a sentence: *this office
-proposes, this body decides, this vault pays.*
+treasury: it answers to a spender track rather than to one named chain, because the authority
+over it is the economic franchise itself and therefore sits with the holders. Read each row as a sentence: *this office
+proposes, this body decides, this fund pays.*
 
 ### 9.1 The map
 
@@ -757,7 +761,7 @@ proposes, this body decides, this vault pays.*
 | **Government pot** | PEZ | **The Finance Minister**, bounded by the approved budget | The Parliament, when it passed the budget | Immediate transfer |
 | **Incentive pot** | PEZ | No proposal — a citizen claims | The trust score, arithmetically | Immediate transfer |
 
-### 9.2 What the vaults refuse
+### 9.2 What the funds refuse
 
 **A ceiling on one payment is not a ceiling on spending.** The airdrop pot pays on two
 signatures below a million HEZ and needs the Treasurer above it, which bounded any single
@@ -769,7 +773,7 @@ and once three million have moved inside one, the Treasurer signs and the week's
 however small the next payment is.
 
 
-Four of the five vaults name **exactly one chain** they will accept instruction from: the
+Four of the five funds name **exactly one chain** they will accept instruction from: the
 People chain. Not the relay. Not root. Not a key. The airdrop pot, the presale pot and both
 PEZ pots are configured with an origin that matches the People chain's location and has no
 root arm at all — the arm was never built, which is a stronger statement than one that was
@@ -785,7 +789,7 @@ The HEZ treasury is the exception, and it is the exception on purpose. Its five 
 are conviction voting over HEZ — the economic franchise deciding an economic question — and
 root is an additional arm above them. It is the fund of last resort, and the one place where
 the network's own governance rather than the state's holds the purse. It is also the only
-vault whose ceiling is a track rather than a chain, which is why it is the one a reader should
+fund whose ceiling is a track rather than a chain, which is why it is the one a reader should
 watch.
 
 ### 9.3 A payment, end to end
@@ -892,27 +896,35 @@ outward along its vouches, and deleting the edges later would not help, because 
 extrinsic and the blocks keep it. A zero-knowledge membership proof would close that, and it
 sits on the roadmap rather than in this list — it is a project, not a gap in what was built.
 
-**And one thing that is not a gap.** There is no proof of personhood, by decision rather than
-by omission. §4 says what the vouching chain does and does not buy. We would rather state a
-weaker guarantee accurately than a stronger one loosely.
+**And one thing that is not a gap.** There is no proof of personhood, and that is a decision
+rather than an omission. A fabricated citizen needs a real one to stand for them, vouching
+places are finite, and a voucher whose referrals are revoked three times loses the right to
+vouch again. That makes a manufactured population expensive and traceable to whoever signed
+for it. It does not make one impossible, and nothing here says it does.
 
 ---
 
 ## 11. Heritage and independence
 
-PezkuwiChain is built on the Polkadot SDK, and says so.
+Polkadot's open-source code was used as the foundation, and on that foundation a new
+ecosystem was built. Both halves of that sentence are meant literally, and the second one is
+checkable: nothing in the dependency graph is named `polkadot-`, `substrate-` or `cumulus-`.
+All six hundred and seventeen crates were renamed when the code was taken, and the tooling
+does not cross over — an application written against `@polkadot/api` cannot talk to this
+chain, which is why `@pezkuwi/api` exists. Nothing is fetched from Polkadot at build time;
+the code was taken once, and what has happened to it since happened here.
 
-The framework — its consensus, its cross-chain messaging format, its runtime machinery — is
-the work of Parity Technologies and the wider Polkadot community, released as free software.
-That inheritance is not incidental; it is the reason a small institute could build a state
-layer at all rather than spending a decade on a consensus engine. The debt is acknowledged in
-every file: four thousand eight hundred and thirty source files carry a copyright line naming
-Parity Technologies alongside the Dijital Kurdistan Tech Institute, and the files this project
-has not modified carry Parity's alone.
+What was taken is the framework: the consensus, the cross-chain messaging format, the runtime
+machinery. That is the work of Parity Technologies and the wider Polkadot community, released
+as free software, and it is the reason a small institute could build a state layer at all
+rather than spending a decade on a consensus engine. The debt is recorded in the files rather
+than asserted here: four thousand nine hundred and twenty source files carry a copyright line
+naming Parity Technologies alongside the Dijital Kurdistan Tech Institute, and the files this
+project has not modified carry Parity's alone.
 
 What is ours is the layer above: the citizen register, the offices and their elections, the
 courts, the trust computation, the validator pool, the treasuries and the authority chains
-that reach them. Those are original work, and they are what this document describes.
+that reach them.
 
 Independence is technical as well as legal. PezkuwiChain is not a Polkadot parachain; it is a
 sovereign relay chain with its own validators, its own token, and its own governance. It
