@@ -100,6 +100,23 @@ ignore = [
 	# teaches you to skim the live ones.
 	"RUSTSEC-2026-0119", # hickory: O(n^2) name-compression CPU exhaustion
 
+	# ── when these two entries close ──────────────────────────────────────────
+	# Measured 2026-09-09, and written here because an exemption without an end is the worst
+	# kind: upstream `stable2606`, the release this fork syncs to, pins `libp2p = "0.54.1"` --
+	# the same version we carry. So upgrading libp2p would not be following upstream, it would
+	# be leaving it, alone, in the crate that carries the node's networking, to repair a stack
+	# the nodes do not run. Deleting it instead means deleting the crate's original
+	# implementation (litep2p lives in its own subtree; libp2p is the body of the crate) and
+	# re-resolving that deletion on every framework sync, forever.
+	#
+	# So neither was done, and the trigger is upstream's: **when polkadot-sdk moves libp2p, we
+	# take it with the sync**, not as a separate job. Until then the tolerance rests on the
+	# default backend, and the default is held by a test.
+	#
+	# What did change: a node started with `--network-backend libp2p` now says so at `error!`
+	# level from `NetworkWorker::new`, the one constructor every path to that backend passes
+	# through. The residual risk was never the advisory -- it was a misconfiguration nobody
+	# could see.
 ]
 
 # License compliance

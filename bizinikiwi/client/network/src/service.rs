@@ -261,6 +261,28 @@ where
 	/// for the network processing to advance. From it, you can extract a `NetworkService` using
 	/// `worker.service()`. The `NetworkService` can be shared through the codebase.
 	pub fn new(params: Params<B, H, Self>) -> Result<Self, Error> {
+		// Every path that starts the libp2p backend arrives here -- the six places that match on
+		// `NetworkBackendType::Libp2p` all end in this constructor -- so this is the one place
+		// where selecting it can be made audible.
+		//
+		// The default is litep2p and a test in `config.rs` holds it there, because this stack
+		// pulls `hickory-proto` 0.24.4 and `yamux` 0.12.1, both with open advisories, while
+		// litep2p resolves the patched 0.26.1 and 0.13.10. That default is what makes the
+		// advisories tolerable. But a default is not a lock: `--network-backend libp2p` still
+		// selects this stack, and until now it did so in silence -- the node came up, the fleet
+		// looked healthy, and nothing said which half of the binary was running.
+		//
+		// So the residual risk is not the vulnerability, it is a misconfiguration nobody can
+		// see. `error!` and not `warn!`: a warning scrolls past, and this needs to reach whoever
+		// reads the logs when something is wrong at three in the morning.
+		log::error!(
+			target: "sub-libp2p",
+			"Starting with the libp2p network backend. This stack carries dependencies with \
+			 open security advisories (hickory-proto 0.24.4, yamux 0.12.1) and is in \
+			 best-effort maintenance upstream. litep2p is the supported backend and reaches \
+			 neither; drop `--network-backend libp2p` unless you are deliberately testing it."
+		);
+
 		let peer_store_handle = params.network_config.peer_store_handle();
 		let FullNetworkConfiguration {
 			notification_protocols,
