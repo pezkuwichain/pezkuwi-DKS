@@ -255,18 +255,17 @@ fn hez_allocations_sum_to_200m() {
 #[test]
 fn the_relay_mints_exactly_its_share() {
 	let genesis = pezkuwichain_genesis_config();
-	let total: u128 = genesis["balances"]["balances"]
+	let balances = genesis["balances"]["balances"]
 		.as_array()
-		.expect("the balances patch is an array of (account, amount)")
-		.iter()
-		.map(|entry| {
-			entry[1].as_u64().map(u128::from).unwrap_or_else(|| {
-				// Anything past u64 arrives as a JSON number too large for `as_u64`; parse
-				// rather than silently skip it.
-				entry[1].to_string().parse().expect("a balance is a number")
-			})
+		.expect("the balances patch is an array of (account, amount)");
+	fn amount(entry: &serde_json::Value) -> u128 {
+		entry[1].as_u64().map(u128::from).unwrap_or_else(|| {
+			// Anything past u64 arrives as a JSON number too large for `as_u64`; parse
+			// rather than silently skip it.
+			entry[1].to_string().parse().expect("a balance is a number")
 		})
-		.sum();
+	}
+	let total: u128 = balances.iter().map(amount).sum();
 
 	// Owned balances: the founder's, and the validators' funding carved out of the treasury's
 	// share. The rest of the treasury is not here -- it is minted into the pot on the Asset Hub
@@ -275,7 +274,26 @@ fn the_relay_mints_exactly_its_share() {
 	// Escrow: under `MintLocation::NonLocal` this is what the chain may send out, so it mirrors
 	// what the chain holds rather than what the Asset Hub holds. Not new supply -- the same HEZ,
 	// recorded so a teleport moves a token rather than creating one.
-	let escrow = owned;
+	//
+	// Read out of the genesis rather than restated from the constants. The rule is that the
+	// escrow equals what this chain holds, and a test that computes both sides from the same
+	// two constants agrees with itself no matter what the preset actually wrote. This splits
+	// the built balances in two and compares them, which is the rule and not a restatement of
+	// it. The equality is what makes the number permanent: a teleport in mints to a holder and
+	// accrues the same amount here, a teleport out burns from a holder and reduces the same
+	// amount here, so the two move together forever -- the chain can never send out what it
+	// does not hold, and never fails to send out what it does.
+	let check_account =
+		serde_json::to_value(crate::XcmPallet::check_account()).expect("an account id serialises");
+	let (escrowed, held): (Vec<_>, Vec<_>) =
+		balances.iter().partition(|entry| entry[0] == check_account);
+	let escrow: u128 = escrowed.iter().copied().map(amount).sum();
+	let held_total: u128 = held.iter().copied().map(amount).sum();
+	assert_eq!(
+		escrow, held_total,
+		"the escrow must equal what this chain holds -- `NonLocal` moves the two together on \
+		 every teleport, so genesis is the only place they can be set apart"
+	);
 
 	assert_eq!(
 		total,
