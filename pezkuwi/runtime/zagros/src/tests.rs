@@ -820,3 +820,83 @@ fn an_offence_disables_the_validator_on_this_chain() {
 		);
 	});
 }
+
+/// A teleport in may exceed the checking account, because this chain does not mint HEZ.
+///
+/// This is the evidence for `TeleportTracking` being `NonLocal` here, and it is evidence
+/// rather than an argument: the reasoning that inflation on the Asset Hub would one day
+/// outgrow a seeded ceiling is sound, but sound reasoning is not a demonstration and the
+/// change was made on reasoning alone. So the case is executed.
+///
+/// The checking account is deliberately seeded with far less than the amount arriving. Under
+/// `MintLocation::Local` that is exactly the failure a user would hit -- an arriving teleport
+/// is paid out of the account, an account holding less than the amount cannot pay, and the
+/// executor answers `NotWithdrawable` while the sending chain's extrinsic reported success.
+/// Under `NonLocal` the arrival accrues instead, so the size of the account is not a ceiling
+/// on anything.
+///
+/// Flip the setting back and this test goes red. That is the point of it.
+#[test]
+fn a_teleport_in_may_exceed_the_checking_account() {
+	use pezframe_support::traits::fungible::{Inspect, Mutate};
+	use xcm::latest::prelude::*;
+	use xcm_executor::XcmExecutor;
+
+	pezsp_io::TestExternalities::new_empty().execute_with(|| {
+		let check_account = XcmPallet::check_account();
+		let beneficiary = Alice.to_account_id();
+
+		// A thousand HEZ standing behind a fifty-million teleport: the ratio is the whole
+		// point. Nothing about the seed's size may decide whether this arrives.
+		let seeded = 1_000 * UNITS;
+		let arriving = 50_000_000 * UNITS;
+		Balances::mint_into(&check_account, seeded).unwrap();
+		assert!(
+			arriving > seeded,
+			"the arriving amount must exceed the seed or this tests nothing"
+		);
+
+		let hez = Location::here();
+		let xcm = Xcm::<RuntimeCall>(vec![
+			ReceiveTeleportedAsset(Assets::from(vec![Asset {
+				id: AssetId(hez.clone()),
+				fun: Fungible(arriving),
+			}])),
+			ClearOrigin,
+			BuyExecution {
+				fees: Asset { id: AssetId(hez), fun: Fungible(arriving / 100) },
+				weight_limit: Unlimited,
+			},
+			DepositAsset {
+				assets: Wild(AllCounted(1)),
+				beneficiary: Location {
+					parents: 0,
+					interior: [AccountId32 { network: None, id: beneficiary.clone().into() }]
+						.into(),
+				},
+			},
+		]);
+
+		// From the Asset Hub: a child of this chain, and a trusted teleporter of HEZ.
+		let origin = Location::new(0, [Teyrchain(1000)]);
+		let mut hash = xcm.using_encoded(pezsp_io::hashing::blake2_256);
+		let outcome = XcmExecutor::<xcm_config::XcmConfig>::prepare_and_execute(
+			origin,
+			xcm,
+			&mut hash,
+			Weight::from_parts(10_000_000_000, 1_000_000),
+			Weight::zero(),
+		);
+
+		assert_ok!(outcome.ensure_complete());
+		assert!(
+			Balances::balance(&beneficiary) > 0,
+			"the teleport must land: a chain that does not mint must still be able to receive"
+		);
+		assert_eq!(
+			Balances::balance(&check_account),
+			seeded + arriving,
+			"`NonLocal` records an arrival by accruing, so the account grows rather than paying"
+		);
+	});
+}

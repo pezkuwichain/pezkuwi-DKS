@@ -8,7 +8,7 @@
   "relay_chain": "zagros",
   "properties": {
     "tokenDecimals": 12,
-    "tokenSymbol": "ZGR"
+    "tokenSymbol": "HEZ"
   },
   "para_id": 1000,
   "consensusEngine": null,

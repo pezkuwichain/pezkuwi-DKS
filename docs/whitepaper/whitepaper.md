@@ -36,8 +36,8 @@ and the reverse door does not exist: no referendum of holders, and no collective
 the register.
 
 Second, **money and the authority to move it live on different chains.** Every fund sits on
-the Asset Hub. The relay holds no fund of its own — only the escrow mirroring what the Asset
-Hub carries, and the founder's allocation, which is property rather than a fund. Every authority to draw from it sits on the People chain. A payment is a
+the Asset Hub. The relay holds no fund of its own — only the founder's allocation, which is
+property rather than a fund, and an escrow account that records what may cross a teleport. Every authority to draw from it sits on the People chain. A payment is a
 cross-chain message from an office to a fund, and the fund's own configuration names the
 one chain it will listen to. An officeholder cannot reach the money by holding a key; they
 reach it by holding an office, and the office is an entry in a register that citizens elect.
@@ -98,8 +98,15 @@ state cannot run without. Bridge Hub and Coretime are written and will be seated
 is traffic for them to carry; every figure in this document about those two describes a
 specification rather than a running chain.
 
-HEZ is native on all three running chains and moves between them by teleport, against the
-escrow the relay holds. Two wrapped assets also live on the Asset Hub and are not part of
+HEZ is native on all three running chains and moves between them by teleport, against an
+escrow account each chain keeps. **The Asset Hub is where HEZ is minted** — staking, and with
+it inflation, runs there — so the Asset Hub's escrow records what exists elsewhere and caps
+what may arrive, while the relay's records what the relay may send out. Written the other way
+round, the relay's escrow would have become a ceiling on everything that could ever come home,
+and inflation minted on the Asset Hub would have grown past it: on the day it did, teleports
+to the relay would have begun failing and the sender's balance would have been gone with the
+sending transaction reporting success. Neither direction is capped by a figure that can go
+stale; what is enforced is that no chain emits HEZ it never held. Two wrapped assets also live on the Asset Hub and are not part of
 that mechanism: **wHEZ** (asset 2) is HEZ wrapped one-for-one so that it can be traded by
 pallets that handle assets rather than the native balance, and **wUSDT** (asset 1000) is the
 custodial bridge's representation of USDT. Neither is a second HEZ, and neither is minted by
@@ -212,8 +219,11 @@ defaults, and changing them is what amending a constitution ought to feel like.
 ### 3.2 The relay chain — stake, with conviction
 
 The relay uses conviction voting over HEZ. Turnout is measured against votable issuance,
-which deliberately excludes the escrow account holding the Asset Hub's mirror of the supply —
-180 million HEZ that exists on both sides of a teleport and must not be counted twice.
+which deliberately excludes the escrow account: it is the same HEZ counted a second time for
+teleport accounting, no key can move it, and it must not be counted twice. The Asset Hub
+excludes its own escrow the same way, for the same reason — there it is a tenth of the supply,
+and counting HEZ that nobody can move would quietly raise the bar on every referendum held
+there.
 
 Eight tracks exist for network matters: whitelisted upgrades, staking administration, lease
 and auction administration, general administration, and the two cancellation tracks. There is
@@ -644,11 +654,15 @@ key. Splitting the money from the authority that spends it is exactly the failur
 architecture exists to prevent, and it is not excused by the two halves belonging to the same
 state.
 
-The relay mints the founder's twenty million, the validators' initial stashes, and a hundred
-and eighty million of **escrow** — the mirror of what the Asset Hub holds, so that a teleport
-moves a token rather than creating one. The escrow is not supply: it is the same HEZ, held
-here and represented there, and the relay's turnout figure excludes it so that governance is
-not distorted by its size. The runtime carries a test that builds the genesis and adds up
+The relay mints the founder's twenty million, the validators' initial stashes, and an equal
+sum of **escrow** — what it may send out, so that a teleport moves a token rather than
+creating one. The Asset Hub mints the three pots and an escrow of the same size, standing for
+the HEZ that exists off its own chain. The escrow is not supply: it is the same HEZ recorded
+for accounting, and each chain's turnout figure excludes its own so that governance is not
+distorted by its size. Adding the two chains' issuance figures together is therefore wrong by
+construction. The two hundred million is the two chains' **holdings**: twenty million and one
+thousand on the relay, a hundred and seventy-nine million nine hundred and ninety-nine
+thousand on the Asset Hub. The runtime carries a test that builds the genesis and adds up
 what is actually in it, asserting owned plus escrow equals exactly two hundred million —
 constants are not what a chain mints, so the test reads the genesis rather than the
 constants.

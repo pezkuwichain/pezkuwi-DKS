@@ -65,11 +65,28 @@ parameter_types! {
 	/// setting: the checking account has never existed and no teyrchain sovereign account exists
 	/// either, so nothing has ever backed a teleport in this direction.
 	///
-	/// With `MintLocation::Local` the chain can only mint back what previously left, because an
-	/// arriving teleport is checked in against this account. That is the property worth having,
-	/// and it is what the relay-side teleport test describes. It requires the account to be
-	/// seeded, which is a genesis matter rather than a runtime one.
-	pub TeleportTracking: Option<(AccountId, MintLocation)> = Some((CheckAccount::get(), MintLocation::Local));
+	/// `NonLocal`, because this chain does not mint HEZ. The Asset Hub does.
+	///
+	/// The setting is about mint authority, in the adapter's own words -- `Local` is "this chain
+	/// is allowed to mint the asset", `NonLocal` is "this chain is not". It is not about where
+	/// the asset's identity lives: HEZ is `Here` from this chain, and stays so.
+	///
+	/// This was `Local`, and that was wrong in a way that only shows up years out. Under `Local`
+	/// an arriving teleport is paid out of this account, so the seed is a ceiling on everything
+	/// that can ever come back. Inflation is minted on the Asset Hub -- the staking pallet and
+	/// `MAX_INFLATION_RATE` are both there and this chain has neither -- so the supply over there
+	/// grows past any figure seeded here, and the day it does, teleports to this chain start
+	/// failing with `NotWithdrawable`. The sender's balance would be gone and their extrinsic
+	/// would report success, which is exactly the failure the Asset Hub already suffered from the
+	/// other direction.
+	///
+	/// Under `NonLocal` an arriving teleport *accrues* to this account instead: no ceiling, and
+	/// inflation flows in however large it grows. What is capped is the other direction -- this
+	/// chain cannot send out more than it was given -- and that is the invariant worth keeping,
+	/// because a chain that does not mint should not be able to emit what it never held. The
+	/// seed is therefore what this chain holds at genesis, not what the Asset Hub holds.
+	pub TeleportTracking: Option<(AccountId, MintLocation)> =
+		Some((CheckAccount::get(), MintLocation::NonLocal));
 	/// Delivery fees this chain earns. The treasury is on the Asset Hub now, so they join
 	/// the accumulation account with the rest of the income and cross with it.
 	pub TreasuryAccount: AccountId =

@@ -256,40 +256,68 @@ fn hez_allocations_sum_to_200m() {
 #[test]
 fn the_relay_mints_exactly_its_share() {
 	let genesis = pezkuwichain_genesis_config();
-	let total: u128 = genesis["balances"]["balances"]
+	let balances = genesis["balances"]["balances"]
 		.as_array()
-		.expect("the balances patch is an array of (account, amount)")
-		.iter()
-		.map(|entry| {
-			entry[1].as_u64().map(u128::from).unwrap_or_else(|| {
-				// Anything past u64 arrives as a JSON number too large for `as_u64`; parse
-				// rather than silently skip it.
-				entry[1].to_string().parse().expect("a balance is a number")
-			})
+		.expect("the balances patch is an array of (account, amount)");
+	fn amount(entry: &serde_json::Value) -> u128 {
+		entry[1].as_u64().map(u128::from).unwrap_or_else(|| {
+			// Anything past u64 arrives as a JSON number too large for `as_u64`; parse
+			// rather than silently skip it.
+			entry[1].to_string().parse().expect("a balance is a number")
 		})
-		.sum();
+	}
+	let total: u128 = balances.iter().map(amount).sum();
 
 	// Owned balances: the founder's, and the validators' funding carved out of the treasury's
 	// share. The rest of the treasury is not here -- it is minted into the pot on the Asset Hub
 	// that the spender tracks pay from.
 	let owned =
 		HEZ_FOUNDER_ALLOCATION + pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
-	// Escrow: the mirror of what the Asset Hub holds, so a teleport back has something to
-	// release. Not new supply -- the same HEZ, represented there and held here.
-	let escrow = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
-		- pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+	// Escrow: under `MintLocation::NonLocal` this is what the chain may send out, so it mirrors
+	// what the chain holds rather than what the Asset Hub holds. Not new supply -- the same HEZ,
+	// recorded so a teleport moves a token rather than creating one.
+	//
+	// Read out of the genesis rather than restated from the constants. The rule is that the
+	// escrow equals what this chain holds, and a test that computes both sides from the same
+	// two constants agrees with itself no matter what the preset actually wrote. This splits
+	// the built balances in two and compares them, which is the rule and not a restatement of
+	// it. The equality is what makes the number permanent: a teleport in mints to a holder and
+	// accrues the same amount here, a teleport out burns from a holder and reduces the same
+	// amount here, so the two move together forever -- the chain can never send out what it
+	// does not hold, and never fails to send out what it does.
+	let check_account =
+		serde_json::to_value(crate::XcmPallet::check_account()).expect("an account id serialises");
+	let (escrowed, held): (Vec<_>, Vec<_>) =
+		balances.iter().partition(|entry| entry[0] == check_account);
+	let escrow: u128 = escrowed.iter().copied().map(amount).sum();
+	let held_total: u128 = held.iter().copied().map(amount).sum();
+	assert_eq!(
+		escrow, held_total,
+		"the escrow must equal what this chain holds -- `NonLocal` moves the two together on \
+		 every teleport, so genesis is the only place they can be set apart"
+	);
 
 	assert_eq!(
 		total,
 		owned + escrow,
-		"the relay mints two things and no third: what it owns, and the escrow behind what the \
-		 Asset Hub holds"
+		"the relay mints two things and no third: what it owns, and the escrow that lets it \
+		 leave"
 	);
 	assert_eq!(
-		owned + escrow,
+		owned,
+		20_001_000 * HEZ,
+		"this chain's whole share: the founder's twenty million and the validators' funding"
+	);
+	// The supply is 200M across the two chains, and this chain is not where most of it lives.
+	// Asserting 200M *here* is what the old version did, and it only held while the escrow was
+	// sized to the Asset Hub's holdings -- a figure that could not survive inflation being
+	// minted over there. The whole-supply assertion belongs where the supply is: the Asset
+	// Hub's `the_asset_hub_mints_exactly_its_share`.
+	assert_eq!(
+		owned + HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
+			- pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING,
 		200_000_000 * HEZ,
-		"and those two are the whole supply -- the Asset Hub's hundred and forty million is \
-		 this escrow seen from the other side, not a second hundred and forty million"
+		"and the two chains' holdings are the whole supply between them"
 	);
 }
 
@@ -1112,19 +1140,23 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	// and it is what two relay-side tests assert -- which is why this is a genesis matter and
 	// not something to notice in production.
 	//
-	// The size is derived, not chosen. The rule: the seed must cover the most that could ever
-	// come back, which is the HEZ in circulation on the other chains. At genesis that is the
-	// airdrop pot and the presale pot, both minted on the Asset Hub -- everything the relay
-	// does not mint itself. Writing a round number here instead would make the testnet
-	// rehearse a flow the mainnet then fails, which is the whole reason a rehearsal exists.
+	// The size is derived, not chosen. Under `MintLocation::NonLocal` this account is what
+	// this chain may send *out* -- it is reduced on the way out and accrued on the way in --
+	// so the seed is what this chain holds at genesis and could therefore emit: the founder's
+	// allocation and the validators' funding.
 	//
-	// This is a mirror rather than new supply: the same HEZ is represented on the Asset Hub
-	// and escrowed here, exactly as a teleport out would have left it. Governance is not
-	// distorted by the size because `MaxTurnout` reads `VotableIssuance`, which is active
-	// issuance minus this account.
+	// It used to be the other three allocations, the Asset Hub's share, because this chain was
+	// `Local` and the seed capped what could come *back*. That direction cannot be capped by a
+	// figure: inflation is minted on the Asset Hub, its supply grows past any number written
+	// here, and the day it passed this one every teleport inbound would have failed with
+	// `NotWithdrawable` -- the sender's balance gone, their extrinsic green. Writing a bigger
+	// number would have deferred the same failure rather than removed it.
+	//
+	// This is not new supply: it is the same HEZ this chain already holds, recorded so that a
+	// teleport moves a token rather than creating one. Governance is not distorted by the size
+	// because `MaxTurnout` reads `VotableIssuance`, which is active issuance minus this account.
 	let checking_account_seed: u128 =
-		HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
-			- pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+		HEZ_FOUNDER_ALLOCATION + pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
 	let checking_account: AccountId = crate::XcmPallet::check_account();
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
