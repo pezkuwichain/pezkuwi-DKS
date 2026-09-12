@@ -61,6 +61,19 @@ pub fn genesis() -> Storage {
 				.iter()
 				.cloned()
 				.map(|k| (k, ED * 4096 * 4096))
+				// The XCM checking account. This chain runs
+				// `TeleportTracking = Some((CheckingAccount, MintLocation::Local))`, so an
+				// arriving teleport is paid out of here -- an unseeded account means the first
+				// one fails with `NotWithdrawable`, which is exactly how the live Zagros Asset
+				// Hub swallowed a transfer before the seed was added to its preset.
+				//
+				// Two orders of magnitude over the largest single teleport these tests make,
+				// since several of them teleport in more than once. The Zagros twin sizes it
+				// the same way and explains the arithmetic there.
+				.chain(std::iter::once((
+					asset_hub_pezkuwichain_runtime::xcm_config::CheckingAccount::get(),
+					ED * 100_000,
+				)))
 				.collect(),
 			..Default::default()
 		},

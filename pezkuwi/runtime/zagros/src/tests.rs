@@ -821,23 +821,25 @@ fn an_offence_disables_the_validator_on_this_chain() {
 	});
 }
 
-/// A teleport in may exceed the checking account, because this chain does not mint HEZ.
+/// A teleport in beyond the checking account is refused, and that is the protection.
 ///
-/// This is the evidence for `TeleportTracking` being `NonLocal` here, and it is evidence
-/// rather than an argument: the reasoning that inflation on the Asset Hub would one day
-/// outgrow a seeded ceiling is sound, but sound reasoning is not a demonstration and the
-/// change was made on reasoning alone. So the case is executed.
+/// The relay runs `MintLocation::Local`: an arriving teleport is paid out of the checking
+/// account rather than minted freely, so the chain can only give back what previously left
+/// it. An account holding less than the amount arriving cannot pay, and the executor answers
+/// `NotWithdrawable` -- which is the refusal working, not a fault.
 ///
-/// The checking account is deliberately seeded with far less than the amount arriving. Under
-/// `MintLocation::Local` that is exactly the failure a user would hit -- an arriving teleport
-/// is paid out of the account, an account holding less than the amount cannot pay, and the
-/// executor answers `NotWithdrawable` while the sending chain's extrinsic reported success.
-/// Under `NonLocal` the arrival accrues instead, so the size of the account is not a ceiling
-/// on anything.
+/// This exists because the setting was briefly changed to `NonLocal` on the argument that the
+/// seed is a ceiling inflation would outgrow. The arithmetic says otherwise: the constraint is
+/// `inbound - outbound <= seed`, and with the seed set to the Asset Hub's share the relay can
+/// hold the entire genesis supply before it binds. A ceiling nobody can reach is not a defect,
+/// and trading this refusal away to remove it was the wrong exchange. The emulated tree already
+/// pins the same property for the mainnet twin
+/// (`limited_teleport_native_assets_from_system_para_to_relay_fails`); Zagros had nothing, so
+/// the reversal broke no test here and would have shipped.
 ///
-/// Flip the setting back and this test goes red. That is the point of it.
+/// Flip the setting to `NonLocal` and this test goes red. That is the point of it.
 #[test]
-fn a_teleport_in_may_exceed_the_checking_account() {
+fn a_teleport_in_beyond_the_checking_account_is_refused() {
 	use pezframe_support::traits::fungible::{Inspect, Mutate};
 	use xcm::latest::prelude::*;
 	use xcm_executor::XcmExecutor;
@@ -846,15 +848,11 @@ fn a_teleport_in_may_exceed_the_checking_account() {
 		let check_account = XcmPallet::check_account();
 		let beneficiary = Alice.to_account_id();
 
-		// A thousand HEZ standing behind a fifty-million teleport: the ratio is the whole
-		// point. Nothing about the seed's size may decide whether this arrives.
+		// A thousand HEZ standing behind a fifty-million teleport: the account cannot pay,
+		// so the arrival must be refused rather than minted from nothing.
 		let seeded = 1_000 * UNITS;
 		let arriving = 50_000_000 * UNITS;
 		Balances::mint_into(&check_account, seeded).unwrap();
-		assert!(
-			arriving > seeded,
-			"the arriving amount must exceed the seed or this tests nothing"
-		);
 
 		let hez = Location::here();
 		let xcm = Xcm::<RuntimeCall>(vec![
@@ -888,15 +886,19 @@ fn a_teleport_in_may_exceed_the_checking_account() {
 			Weight::zero(),
 		);
 
-		assert_ok!(outcome.ensure_complete());
 		assert!(
-			Balances::balance(&beneficiary) > 0,
-			"the teleport must land: a chain that does not mint must still be able to receive"
+			outcome.ensure_complete().is_err(),
+			"an arrival larger than the escrow must be refused, or the chain mints from nothing"
+		);
+		assert_eq!(
+			Balances::balance(&beneficiary),
+			0,
+			"and nothing may reach the beneficiary when the arrival was refused"
 		);
 		assert_eq!(
 			Balances::balance(&check_account),
-			seeded + arriving,
-			"`NonLocal` records an arrival by accruing, so the account grows rather than paying"
+			seeded,
+			"the escrow is untouched by a refused arrival"
 		);
 	});
 }
