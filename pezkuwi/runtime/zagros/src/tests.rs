@@ -820,3 +820,85 @@ fn an_offence_disables_the_validator_on_this_chain() {
 		);
 	});
 }
+
+/// A teleport in beyond the checking account is refused, and that is the protection.
+///
+/// The relay runs `MintLocation::Local`: an arriving teleport is paid out of the checking
+/// account rather than minted freely, so the chain can only give back what previously left
+/// it. An account holding less than the amount arriving cannot pay, and the executor answers
+/// `NotWithdrawable` -- which is the refusal working, not a fault.
+///
+/// This exists because the setting was briefly changed to `NonLocal` on the argument that the
+/// seed is a ceiling inflation would outgrow. The arithmetic says otherwise: the constraint is
+/// `inbound - outbound <= seed`, and with the seed set to the Asset Hub's share the relay can
+/// hold the entire genesis supply before it binds. A ceiling nobody can reach is not a defect,
+/// and trading this refusal away to remove it was the wrong exchange. The emulated tree already
+/// pins the same property for the mainnet twin
+/// (`limited_teleport_native_assets_from_system_para_to_relay_fails`); Zagros had nothing, so
+/// the reversal broke no test here and would have shipped.
+///
+/// Flip the setting to `NonLocal` and this test goes red. That is the point of it.
+#[test]
+fn a_teleport_in_beyond_the_checking_account_is_refused() {
+	use pezframe_support::traits::fungible::{Inspect, Mutate};
+	use xcm::latest::prelude::*;
+	use xcm_executor::XcmExecutor;
+
+	pezsp_io::TestExternalities::new_empty().execute_with(|| {
+		let check_account = XcmPallet::check_account();
+		let beneficiary = Alice.to_account_id();
+
+		// A thousand HEZ standing behind a fifty-million teleport: the account cannot pay,
+		// so the arrival must be refused rather than minted from nothing.
+		let seeded = 1_000 * UNITS;
+		let arriving = 50_000_000 * UNITS;
+		Balances::mint_into(&check_account, seeded).unwrap();
+
+		let hez = Location::here();
+		let xcm = Xcm::<RuntimeCall>(vec![
+			ReceiveTeleportedAsset(Assets::from(vec![Asset {
+				id: AssetId(hez.clone()),
+				fun: Fungible(arriving),
+			}])),
+			ClearOrigin,
+			BuyExecution {
+				fees: Asset { id: AssetId(hez), fun: Fungible(arriving / 100) },
+				weight_limit: Unlimited,
+			},
+			DepositAsset {
+				assets: Wild(AllCounted(1)),
+				beneficiary: Location {
+					parents: 0,
+					interior: [AccountId32 { network: None, id: beneficiary.clone().into() }]
+						.into(),
+				},
+			},
+		]);
+
+		// From the Asset Hub: a child of this chain, and a trusted teleporter of HEZ.
+		let origin = Location::new(0, [Teyrchain(1000)]);
+		let mut hash = xcm.using_encoded(pezsp_io::hashing::blake2_256);
+		let outcome = XcmExecutor::<xcm_config::XcmConfig>::prepare_and_execute(
+			origin,
+			xcm,
+			&mut hash,
+			Weight::from_parts(10_000_000_000, 1_000_000),
+			Weight::zero(),
+		);
+
+		assert!(
+			outcome.ensure_complete().is_err(),
+			"an arrival larger than the escrow must be refused, or the chain mints from nothing"
+		);
+		assert_eq!(
+			Balances::balance(&beneficiary),
+			0,
+			"and nothing may reach the beneficiary when the arrival was refused"
+		);
+		assert_eq!(
+			Balances::balance(&check_account),
+			seeded,
+			"the escrow is untouched by a refused arrival"
+		);
+	});
+}

@@ -93,9 +93,22 @@ parameter_types! {
 	pub UniquesPalletLocation: Location =
 		PalletInstance(<Uniques as PalletInfoAccess>::index() as u8).into();
 	pub CheckingAccount: AccountId = PezkuwiXcm::check_account();
-	/// Teleport tracking disabled — both RC and AH use None so teleports work without
-	/// a pre-seeded CheckingAccount. RC burns on send, AH mints on receive directly.
-	pub TeleportTracking: Option<(AccountId, MintLocation)> = None;
+	/// Teleports are checked in against this account, so this chain can only mint back what
+	/// previously left it.
+	///
+	/// This used to be `None`, and the comment justifying it said "both RC and AH use None" —
+	/// which was not true of the relay: it has carried
+	/// `Some((CheckAccount, MintLocation::Local))` and a seeded escrow throughout. So one side
+	/// of every teleport was accounted for and the other was not.
+	///
+	/// Turning it on requires the checking account to be seeded at genesis, which is why it
+	/// could not simply be flipped: without the seed every inbound teleport fails with
+	/// `NotWithdrawable` and the sender's balance is gone on the far side while its extrinsic
+	/// reported success. Zagros launched in exactly that state on 2026-09-11 and lost the
+	/// first teleport sent through it. The seed is now in the genesis preset of both twins,
+	/// and `VotableIssuance` keeps the escrow out of the governance denominator.
+	pub TeleportTracking: Option<(AccountId, MintLocation)> =
+		Some((CheckingAccount::get(), MintLocation::Local));
 	pub const GovernanceLocation: Location = Location::parent();
 	pub StakingPot: AccountId = CollatorSelection::account_id();
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();

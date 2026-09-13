@@ -46,9 +46,11 @@ decl_test_teyrchains! {
 			AdditionalInherentCode: (),
 			// This chain runs `TeleportTracking = Some((CheckingAccount, MintLocation::Local))`, so a
 			// teleport out parks the amount in the check account rather than burning it, and local
-			// total issuance stays the authoritative figure. Mainnet's Asset Hub has that tracking
-			// off for now and does burn, which is why only this one carries the flag — the two are
-			// not interchangeable here.
+			// total issuance stays the authoritative figure.
+			//
+			// Mainnet's Asset Hub used to have that tracking off and to burn, so this comment
+			// used to say only Zagros carried the flag. Both carry it now: the tracking was
+			// turned on there once its check account was seeded at genesis.
 			native_total_supply_tracker: true,
 		},
 		pallets = {

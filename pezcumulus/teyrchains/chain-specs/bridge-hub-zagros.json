@@ -7,7 +7,7 @@
   "protocolId": null,
   "properties": {
     "tokenDecimals": 12,
-    "tokenSymbol": "ZGR"
+    "tokenSymbol": "HEZ"
   },
   "relay_chain": "zagros",
   "para_id": 1002,

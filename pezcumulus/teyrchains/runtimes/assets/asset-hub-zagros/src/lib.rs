@@ -1765,14 +1765,30 @@ impl pezpallet_preimage::Config for Runtime {
 
 impl pezpallet_custom_origins::Config for Runtime {}
 
+/// Issuance that can actually vote: active issuance, less the XCM escrow.
+///
+/// The escrow holds the mirror of the HEZ that lives on the other chains. It is the same
+/// money counted from this side, no key can vote it, and it is a tenth of the supply -- so
+/// counting it in the denominator would silently raise the bar on every referendum here.
+///
+/// The relay has carried this since its own escrow was seeded; this chain used plain
+/// `ActiveIssuanceOf` because it had no escrow to exclude. Seeding one without changing this
+/// would have moved the threshold and left no trace of why.
+pub struct VotableIssuance;
+impl pezframe_support::traits::Get<Balance> for VotableIssuance {
+	fn get() -> Balance {
+		use pezframe_support::traits::fungible::Inspect;
+		Balances::active_issuance().saturating_sub(Balances::balance(&PezkuwiXcm::check_account()))
+	}
+}
+
 impl pezpallet_conviction_voting::Config for Runtime {
 	type WeightInfo = pezpallet_conviction_voting::weights::BizinikiwiWeight<Runtime>;
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type VoteLockingPeriod = VoteLockingPeriod;
 	type MaxVotes = ConstU32<512>;
-	type MaxTurnout =
-		pezframe_support::traits::tokens::currency::ActiveIssuanceOf<Balances, AccountId>;
+	type MaxTurnout = VotableIssuance;
 	type Polls = Referenda;
 	type BlockNumberProvider = pezframe_system::Pezpallet<Runtime>;
 	type VotingHooks = ();

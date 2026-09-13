@@ -11,6 +11,7 @@ use pezkuwi_subxt::utils::AccountId32;
 use pezkuwi_subxt::{OnlineClient, PezkuwiConfig};
 use pezkuwi_subxt_signer::bip39::Mnemonic;
 use pezkuwi_subxt_signer::sr25519::Keypair;
+use pezkuwi_subxt_signer::SecretUri;
 use std::str::FromStr;
 
 const PLANCKS_PER_HEZ: u128 = 1_000_000_000_000;
@@ -26,9 +27,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let api = OnlineClient::<PezkuwiConfig>::from_insecure_url(&url).await?;
 	println!("Connected: {}", url);
 
+	// Every key in this wallet set is a derivation of one phrase. Signing with the bare
+	// phrase signs as an unfunded stranger, and the chain reports "inability to pay some
+	// fees" -- which reads like the destination is the problem when the sender is.
 	let mnemonic_str = std::env::var("SENDER_MNEMONIC").expect("SENDER_MNEMONIC required");
-	let mnemonic = Mnemonic::from_str(&mnemonic_str)?;
-	let sender = Keypair::from_phrase(&mnemonic, None)?;
+	let path = std::env::var("SENDER_PATH").unwrap_or_default();
+	let uri = SecretUri::from_str(&format!("{mnemonic_str}{path}"))?;
+	let sender = Keypair::from_uri(&uri)?;
+	println!("sender: {}", sender.public_key().to_account_id());
 	println!("Sender: {}", sender.public_key().to_account_id());
 
 	let dest: AccountId32 = dest_ss58.parse()?;

@@ -256,14 +256,20 @@ jobs:
           gen zagros-runtime.compact.compressed.wasm \
               "Zagros" zagros "ss58Format=42,tokenDecimals=12,tokenSymbol=HEZ"
 
+          # HEZ on all three, and the reason is arithmetic rather than taste. TYR is HEZ's
+          # subunit -- one HEZ is 10^12 TYR, the way a bitcoin is 10^8 satoshi -- so pairing
+          # `tokenSymbol=TYR` with `tokenDecimals=12` tells a wallet that the unit is TYR and
+          # that it subdivides twelve more places. A balance of one HEZ then renders as "1 TYR",
+          # naming the token wrong by a factor of a trillion. The native balance on both
+          # teyrchains is teleported HEZ; it is the same token the relay calls HEZ.
           gen asset-hub-zagros-runtime.compact.compressed.wasm \
               "Zagros Asset Hub" asset-hub-zagros \
-              "ss58Format=42,tokenDecimals=12,tokenSymbol=TYR" \
+              "ss58Format=42,tokenDecimals=12,tokenSymbol=HEZ" \
               -p 1000 -c zagros
 
           gen people-zagros-runtime.compact.compressed.wasm \
               "Zagros People" people-zagros \
-              "ss58Format=42,tokenDecimals=12,tokenSymbol=TYR" \
+              "ss58Format=42,tokenDecimals=12,tokenSymbol=HEZ" \
               -p 1004 -c zagros
 
       - name: Assert the specs do not inherit the mainnet identity

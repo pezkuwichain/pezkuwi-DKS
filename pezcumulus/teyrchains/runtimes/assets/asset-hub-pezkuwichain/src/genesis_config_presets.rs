@@ -176,6 +176,26 @@ fn asset_hub_pezkuwichain_genesis(
 	const TREASURY_ALLOCATION: Balance =
 		40_000_000 * UNITS - pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
 
+	// The XCM checking account, holding everything that does *not* live here.
+	//
+	// This chain sets `TeleportTracking` to `MintLocation::Local`, which means an arriving
+	// teleport is paid out of this account rather than minted freely -- the ledger entry that
+	// makes the invariant "no more returns than was sent out" enforceable. Without a seed the
+	// account does not exist, every inbound teleport fails with `NotWithdrawable`, and the
+	// sender's balance is gone on the other side while its extrinsic reported success. That
+	// is what the Zagros launch did on 2026-09-11: 10 HEZ left the relay and never arrived.
+	//
+	// The rule is `total supply - what this chain holds`, not a figure: the relay's preset
+	// writes the mirror of it, and the two must not be able to drift apart. Today it is
+	// 20,001,000 HEZ, the relay's whole share, because that is all the HEZ there is outside
+	// this chain -- the People chain mints none, so nothing can reach here except by way of
+	// the relay's holdings. It does not need to cover this chain's own pots: sending those
+	// out accrues to this same account and raises the ceiling for their return.
+	const TOTAL_SUPPLY: Balance = 200_000_000 * UNITS;
+	const CHECKING_ACCOUNT_SEED: Balance =
+		TOTAL_SUPPLY - (AIRDROP_ALLOCATION + PRESALE_ALLOCATION + TREASURY_ALLOCATION);
+	let checking_account: AccountId = crate::PezkuwiXcm::check_account();
+
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
 			balances: endowed_accounts
@@ -185,6 +205,7 @@ fn asset_hub_pezkuwichain_genesis(
 				.chain(core::iter::once((airdrop_pot, AIRDROP_ALLOCATION)))
 				.chain(core::iter::once((presale_pot, PRESALE_ALLOCATION)))
 				.chain(core::iter::once((treasury_pot, TREASURY_ALLOCATION)))
+				.chain(core::iter::once((checking_account, CHECKING_ACCOUNT_SEED)))
 				.collect(),
 		},
 		// The account the founder's pot pays when the gate fires -- whatever this preset
@@ -446,4 +467,69 @@ pub fn preset_names() -> Vec<PresetId> {
 		PresetId::from(pezsp_genesis_builder::DEV_RUNTIME_PRESET),
 		PresetId::from(pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET),
 	]
+}
+
+/// The Asset Hub mints its own share and the escrow behind the relay's, and no third thing.
+///
+/// The mirror of the relay's `the_relay_mints_exactly_its_share`. It exists because the relay's
+/// half was written and this half was not: the relay seeded its escrow, this chain seeded none,
+/// and `TeleportTracking` here is `MintLocation::Local` -- so every inbound teleport failed with
+/// `NotWithdrawable` and the sender's balance was gone on the far side while its extrinsic
+/// reported success. Zagros launched in that state on 2026-09-11 and lost the first teleport sent
+/// through it; this chain had `TeleportTracking` off entirely, which hid the same gap behind a
+/// different symptom -- teleports worked and nothing was accounted for.
+///
+/// Summing alone would not have caught it, and does not catch it now: a sum is equally happy if
+/// the escrow is handed to the wrong account. So the last assertion names the account.
+#[test]
+fn the_asset_hub_mints_exactly_its_share() {
+	let bytes = get_preset(&PresetId::from(preset_names::PRESET_GENESIS))
+		.expect("the genesis preset exists");
+	let genesis: serde_json::Value =
+		serde_json::from_slice(&bytes).expect("the preset is valid json");
+	let entries = genesis["balances"]["balances"]
+		.as_array()
+		.expect("the balances patch is an array of (account, amount)");
+
+	let amount = |entry: &serde_json::Value| -> u128 {
+		entry[1].as_u64().map(u128::from).unwrap_or_else(|| {
+			// Anything past u64 arrives as a JSON number too large for `as_u64`; parse
+			// rather than silently skip it.
+			entry[1].to_string().parse().expect("a balance is a number")
+		})
+	};
+	let total: u128 = entries.iter().map(amount).sum();
+
+	// Held here: the three pots. Everything else in the supply lives on the relay.
+	let held = 40_000_000 * UNITS
+		+ 100_000_000 * UNITS
+		+ (40_000_000 * UNITS - pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING);
+	let escrow = 200_000_000 * UNITS - held;
+
+	assert_eq!(
+		total,
+		held + escrow,
+		"the Asset Hub mints two things and no third: the pots it holds, and the escrow \
+		 behind what the relay holds"
+	);
+	assert_eq!(
+		held + escrow,
+		200_000_000 * UNITS,
+		"and those two are the whole supply -- the relay's twenty million is this escrow \
+		 seen from the other side, not a second twenty million"
+	);
+
+	let checking =
+		serde_json::to_value(crate::PezkuwiXcm::check_account()).expect("an account id serialises");
+	let seeded = entries.iter().find(|entry| entry[0] == checking).map(amount).expect(
+		"the XCM checking account must be seeded at genesis: `TeleportTracking` is \
+			 `MintLocation::Local` here, so an arriving teleport is paid out of it, and an \
+			 account that does not exist pays nothing -- every inbound teleport fails with \
+			 `NotWithdrawable` and the sender's funds are lost",
+	);
+	assert_eq!(
+		seeded, escrow,
+		"the escrow is the supply that does not live here, so that no more can arrive than \
+		 exists elsewhere"
+	);
 }

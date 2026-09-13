@@ -75,6 +75,11 @@ jobs:
       # and the runtimes call it neither -- two of our own sites, one institution, two names.
       - name: The two whitepaper files agree on their sections
         run: python3 .github/scripts/check-whitepaper-twins.py --verbose
+      # Three different answers were live at once: the release workflow said TYR, the Zagros
+      # reference specs said ZGR, the Pezkuwichain ones said HEZ. TYR is HEZ's subunit, so
+      # `tokenSymbol=TYR` with twelve decimals renders one HEZ as "1 TYR" in a wallet.
+      - name: One token, one symbol
+        run: python3 .github/scripts/check-token-symbol.py --verbose
       # A missing barrier entry turns a message away before any of it runs, and leaves no
       # symptom on either side. `bridge-hub-zagros` lost the Asset Hub while still waiving its
       # fees, so the Snowbridge export path was dead on Zagros and the money side looked right.

@@ -699,7 +699,12 @@ asset_test_pezutils::include_teleports_for_native_asset_works!(
 	Runtime,
 	AllPalletsWithoutSystem,
 	XcmConfig,
-	(),
+	// The checking account, not `()`. This read `()` while `TeleportTracking` was `None`:
+	// with no accounting there was none to check, and the test passed by not looking. Turning
+	// tracking on made it fail with the very error the chain would have given a user --
+	// `NotWithdrawable`, because the test builds its own genesis and nothing seeded the
+	// account. The Zagros twin has always passed `CheckingAccount` here.
+	CheckingAccount,
 	WeightToFee,
 	TeyrchainSystem,
 	collator_session_keys(),

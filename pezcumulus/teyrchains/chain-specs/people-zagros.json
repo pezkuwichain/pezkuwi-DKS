@@ -8,7 +8,7 @@
   "properties": {
     "ss58Format": 42,
     "tokenDecimals": 12,
-    "tokenSymbol": "ZGR"
+    "tokenSymbol": "HEZ"
   },
   "relay_chain": "zagros",
   "para_id": 1004,

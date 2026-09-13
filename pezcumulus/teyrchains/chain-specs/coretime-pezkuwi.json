@@ -21,7 +21,7 @@
   "protocolId": null,
   "properties": {
     "ss58Format": 0,
-    "tokenDecimals": 10,
+    "tokenDecimals": 12,
     "tokenSymbol": "HEZ"
   },
   "relay_chain": "pezkuwi",
