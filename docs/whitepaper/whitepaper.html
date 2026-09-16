@@ -862,11 +862,12 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
   <thead><tr><th>Allocation</th><th>Amount</th><th>Held on</th><th>By</th></tr></thead>
   <tbody>
     <tr><td>Presale</td><td>100,000,000 &#183; 50%</td><td>Asset Hub</td><td>A keyless pot</td></tr>
-    <tr><td>Treasury</td><td>40,000,000 &#183; 20%</td><td>Asset Hub</td><td>A keyless pot</td></tr>
+    <tr><td>Treasury</td><td>40,000,000 &#183; 20%</td><td>Asset Hub</td><td>A keyless pot, less 1,000 &#8594; the validators&#8217; stashes</td></tr>
     <tr><td>Airdrop</td><td>40,000,000 &#183; 20%</td><td>Asset Hub</td><td>A keyless pot</td></tr>
-    <tr><td>Founder</td><td>20,000,000 &#183; 10%</td><td>Relay</td><td>The founding account, liquid</td></tr>
+    <tr><td>Founder</td><td>20,000,000 &#183; 10%</td><td>Relay</td><td>The founding account, liquid, less 1,000 &#8594; the root account</td></tr>
   </tbody>
 </table>
+<p>Two of the four are minted a thousand HEZ lighter than their share, and both carve-outs are subtractions rather than additions, so the four still sum to exactly 200,000,000. The validators&#8217; initial stashes come out of the treasury&#8217;s share and are minted on the relay, because that is where the accounts that need them are. The root account&#8217;s thousand comes out of the founder&#8217;s, and it exists so that the chain&#8217;s first governing action can pay its own transaction fee: root holds no other funds and is not a treasury. Measured, the amount is generous by a wide margin &#8212; five root calls on a running chain cost 0.000641 HEZ in total.</p>
 <p>Three of the four are keyless: no seed produces the account, so the balance leaves only through an authorised spend. The fourth is the founder&#8217;s, and it is property rather than a fund &#8212; held on a key, and liquid from the first block. That is deliberate, and it is stated here rather than left to be discovered.</p>
 <p>It is liquid because it is the network&#8217;s launch capital. A chain secured by stake cannot seat the validators that produce its blocks until somebody has staked; at genesis there is no market and no one else holding HEZ, so the founder&#8217;s share is what the first validators are bonded with and what the founding team is paid from. The undertaking is that it is <strong>lent to the network&#8217;s security rather than sold</strong> &#8212; put behind validators so the chain has weight defending it, and returned to circulation as the roll and the market can carry it.</p>
 <p>That is an undertaking and not a lock, and the difference is the point of this document: no runtime rule enforces it. What makes it checkable is that the account is public and the ledger is public: every transfer out of the founding account is on the chain, with its destination, its amount and its block. Whether the HEZ went to a validator&#8217;s stash or somewhere else is not a matter of trust &#8212; it is a query anyone can run, against an address published here. An undertaking that can be audited is a different thing from one that has to be believed.</p>
@@ -884,7 +885,7 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
   <thead><tr><th>Allocation</th><th>Amount</th><th>Held by</th></tr></thead>
   <tbody>
     <tr><td>Treasury + rewards pool</td><td>4,812,500,000 &#183; 96.25%</td><td>Keyless treasury pot</td></tr>
-    <tr><td>Founder</td><td>93,750,000 &#183; 1.875%</td><td>The founding account, locked</td></tr>
+    <tr><td>Founder</td><td>93,750,000 &#183; 1.875%</td><td>A keyless pot until distribution activates, then the founding account</td></tr>
     <tr><td>Presale</td><td>93,750,000 &#183; 1.875%</td><td>Presale custody</td></tr>
   </tbody>
 </table>
@@ -997,7 +998,7 @@ blockquote{border-left:4px solid var(--green);margin:1.2em 0;padding:6px 18px;ba
 <table>
   <tbody>
     <tr><td>HEZ genesis supply</td><td>200,000,000</td></tr>
-    <tr><td>Held on the Asset Hub / on the relay</td><td>180,000,000 / 20,000,000 &#8212; less the validators&#8217; initial stashes, which are carved out of the treasury&#8217;s share and minted on the relay, so the four allocations still sum to exactly 200,000,000</td></tr>
+    <tr><td>Held on the Asset Hub / on the relay</td><td>179,999,000 / 20,001,000 &#8212; the validators&#8217; stashes are carved out of the treasury&#8217;s share and the root account&#8217;s fee budget out of the founder&#8217;s, both minted on the relay, so the four allocations still sum to exactly 200,000,000</td></tr>
     <tr><td>HEZ inflation &#8212; default / ceiling</td><td>8% / 10% of a fixed 200M base</td></tr>
     <tr><td>PEZ supply</td><td>5,000,000,000, fixed</td></tr>
     <tr><td>PEZ halving period</td><td>48 monthly releases (~4 years)</td></tr>

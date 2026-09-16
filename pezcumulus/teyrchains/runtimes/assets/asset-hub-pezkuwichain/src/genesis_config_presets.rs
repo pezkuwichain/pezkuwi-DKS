@@ -540,3 +540,122 @@ fn the_asset_hub_mints_exactly_its_share() {
 		 exists elsewhere"
 	);
 }
+
+#[cfg(test)]
+mod genesis_ledger {
+	use super::*;
+
+	/// Every pot named, and the amount in it -- not just the totals.
+	///
+	/// `PEZ_TOTAL_SUPPLY` and the debug_assert above it add the constants and are right about
+	/// them, but constants are not what a chain mints. A share that moved from one pot to
+	/// another, or to a key, passes every constant check untouched: the sum is the same and the
+	/// owner is not. That is the failure this pins, because the owner is the whole point --
+	/// three of these accounts are keyless by design, and "keyless" is a property of the
+	/// address, not of the number beside it.
+	#[test]
+	fn the_asset_hub_mints_into_the_accounts_it_is_supposed_to() {
+		let raw = get_preset(&PresetId::from(preset_names::PRESET_GENESIS))
+			.expect("the genesis preset exists");
+		let g: serde_json::Value = serde_json::from_slice(&raw).expect("valid json");
+		let n = |e: &serde_json::Value, i: usize| -> u128 {
+			e[i].as_u64()
+				.map(u128::from)
+				.unwrap_or_else(|| e[i].to_string().parse().unwrap())
+		};
+
+		// A `modl`-prefixed account is a pallet account: no seed produces it, so nothing can
+		// sign for it. Checking the prefix is checking that claim, rather than trusting a name.
+		let keyless = |addr: &str| -> bool {
+			use pezsp_core::crypto::Ss58Codec;
+			AccountId::from_ss58check(addr)
+				.map(|a| <[u8; 32]>::from(a).starts_with(b"modl"))
+				.unwrap_or(false)
+		};
+
+		let hez: alloc::collections::BTreeMap<String, u128> = g["balances"]["balances"]
+			.as_array()
+			.expect("balances")
+			.iter()
+			.map(|e| (e[0].as_str().unwrap().to_string(), n(e, 1)))
+			.collect();
+
+		let airdrop = AirdropPotPalletId::get().into_account_truncating();
+		let presale = PresalePotPalletId::get().into_account_truncating();
+		let treasury: AccountId = TreasuryPalletId::get().into_account_truncating();
+		let checking = crate::PezkuwiXcm::check_account();
+		let ss58 = |a: &AccountId| -> String {
+			use pezsp_core::crypto::Ss58Codec;
+			a.to_ss58check()
+		};
+
+		// Written out rather than read back from the constants that built this. A test that
+		// recomputes from the same constant proves the code is consistent with itself and
+		// nothing about whether the number is the agreed one; changing an allocation has to
+		// cost an edit here, which is the whole friction a genesis number deserves.
+		//
+		// The treasury's 39,999,000 is not a typo: `HEZ_VALIDATOR_FUNDING` (1,000 HEZ) is carved
+		// out of its share and minted onto the relay's validator stashes, so the four still sum
+		// to two hundred million.
+		for (name, acc, want) in [
+			("airdrop", &airdrop, 40_000_000 * UNITS),
+			("presale", &presale, 100_000_000 * UNITS),
+			("treasury", &treasury, 39_999_000 * UNITS),
+			("checking", &checking, 20_001_000 * UNITS),
+		] {
+			let addr = ss58(acc);
+			assert_eq!(
+				hez.get(&addr).copied(),
+				Some(want),
+				"the {name} pot must hold exactly its allocation"
+			);
+			assert!(
+				keyless(&addr),
+				"the {name} pot must be keyless -- {addr} is not a modl account"
+			);
+		}
+		assert_eq!(hez.len(), 4, "the Asset Hub mints HEZ into four accounts and no fifth");
+		assert_eq!(
+			hez.values().sum::<u128>(),
+			200_000_000 * UNITS,
+			"and they are the whole supply, mirrored"
+		);
+
+		// PEZ. The founder's share is the one that must NOT be on a key at genesis: it is held
+		// in a keyless pot and leaves only through `activate_distribution`, in the same atomic
+		// call that starts the citizens' payments. Minting it straight to the founder would
+		// silently untie that knot while every total still added up.
+		let mut pez: alloc::vec::Vec<(String, u128)> = g["assets"]["accounts"]
+			.as_array()
+			.expect("asset accounts")
+			.iter()
+			.filter(|e| n(e, 0) == PEZ_ASSET_ID as u128)
+			.map(|e| (e[1].as_str().unwrap().to_string(), n(e, 2)))
+			.collect();
+		pez.sort_by_key(|(_, v)| core::cmp::Reverse(*v));
+
+		assert_eq!(pez.len(), 3, "PEZ is minted into three accounts");
+		assert_eq!(
+			pez[0],
+			(ss58(&pez_treasury_pot()), 4_812_500_000 * UNITS),
+			"the treasury pot holds the treasury allocation and the rewards pool together"
+		);
+		assert!(keyless(&pez[0].0), "the PEZ treasury pot must be keyless");
+
+		let founder_pot: AccountId = PezFounderPotId::get().into_account_truncating();
+		let founder_line = pez.iter().find(|(a, _)| *a == ss58(&founder_pot));
+		assert_eq!(
+			founder_line.map(|(_, v)| *v),
+			Some(93_750_000 * UNITS),
+			"the founder's PEZ starts in its pot, not on the founder's key -- it is released by \
+			 `activate_distribution`, the same call that starts paying citizens"
+		);
+		assert!(keyless(&ss58(&founder_pot)), "the founder pot must be keyless");
+
+		assert_eq!(
+			pez.iter().map(|(_, v)| *v).sum::<u128>(),
+			5_000_000_000 * UNITS,
+			"PEZ genesis must mint exactly five billion"
+		);
+	}
+}

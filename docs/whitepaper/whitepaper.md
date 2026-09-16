@@ -610,9 +610,17 @@ it secures the network, and it inflates.
 | Allocation | Amount | Held on | By |
 |---|---|---|---|
 | Presale | 100,000,000 (50%) | Asset Hub | A keyless pot |
-| Treasury | 40,000,000 (20%) | Asset Hub | A keyless pot |
+| Treasury | 40,000,000 (20%) | Asset Hub | A keyless pot, less 1,000 → the validators' stashes |
 | Airdrop | 40,000,000 (20%) | Asset Hub | A keyless pot |
-| Founder | 20,000,000 (10%) | Relay | The founding account, liquid |
+| Founder | 20,000,000 (10%) | Relay | The founding account, liquid, less 1,000 → the root account |
+
+Two of the four are minted a thousand HEZ lighter than their share, and both carve-outs are
+subtractions rather than additions, so the four still sum to exactly 200,000,000. The
+validators' initial stashes come out of the treasury's share and are minted on the relay,
+because that is where the accounts that need them are. The root account's thousand comes out of
+the founder's, and it exists so that the chain's first governing action can pay its own
+transaction fee: root holds no other funds and is not a treasury. Measured, the amount is
+generous by a wide margin — five root calls on a running chain cost 0.000641 HEZ in total.
 
 Three of the four are keyless: no seed produces the account, so the balance leaves only
 through an authorised spend. The fourth is the founder's, and it is property rather than a
@@ -699,7 +707,7 @@ arriving over a cross-chain message — so even the relay's superuser cannot rea
 | Allocation | Amount | Held by |
 |---|---|---|
 | Treasury + rewards pool | 4,812,500,000 (96.25%) | Keyless treasury pot |
-| Founder | 93,750,000 (1.875%) | The founding account, locked |
+| Founder | 93,750,000 (1.875%) | A keyless pot until distribution activates, then the founding account |
 | Presale | 93,750,000 (1.875%) | Presale custody |
 
 The founder's PEZ is locked on the same schedule as the founder's HEZ and released to the
@@ -1004,7 +1012,7 @@ a solicitation, or investment advice.
 | | |
 |---|---|
 | HEZ genesis supply | 200,000,000 |
-| Held on the Asset Hub / on the relay | 180,000,000 / 20,000,000 — less the validators' initial stashes, which are carved out of the treasury's share and minted on the relay, so the four allocations still sum to exactly 200,000,000 |
+| Held on the Asset Hub / on the relay | 179,999,000 / 20,001,000 — the validators' stashes are carved out of the treasury's share and the root account's fee budget out of the founder's, both minted on the relay, so the four allocations still sum to exactly 200,000,000 |
 | HEZ inflation, default / ceiling | 8% / 10% of a fixed 200M base |
 | PEZ supply | 5,000,000,000, fixed |
 | PEZ halving period | 48 monthly releases (~4 years) |
