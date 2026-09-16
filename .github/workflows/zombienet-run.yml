@@ -62,14 +62,26 @@ jobs:
         env:
           ZOMBIE_PROVIDER: native
           RUST_LOG: info
+          # Through the environment, never interpolated into the script.
+          #
+          # `${{ inputs.test }}` written inline is substituted into the shell text before bash
+          # sees it, so a dispatch input containing a quote and a semicolon runs as a command
+          # with this job's token and checkout. Only somebody who can already dispatch the
+          # workflow could do it, which lowers the severity and changes nothing about the fix:
+          # bash reads an environment variable as a value and never as syntax.
+          TEST_FILTER: ${{ inputs.test }}
         run: |
+          set -euo pipefail
+          # An empty filter would expand to `test()`, which matches nothing and reports success
+          # -- a run that proves the opposite of what it claims.
+          filter="${TEST_FILTER:-state_rehearsal}"
           cargo nextest run \
             --manifest-path pezcumulus/zombienet/zombienet-sdk/Cargo.toml \
             --locked \
             --cargo-profile testnet \
             --features zombie-ci \
             --no-fail-fast \
-            -E 'test(${{ inputs.test }})'
+            -E "test(${filter})"
 
       - name: Keep the network logs
         if: always()
