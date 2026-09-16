@@ -15,6 +15,7 @@ use pezkuwi_subxt::dynamic::Value;
 use pezkuwi_subxt::{OnlineClient, PezkuwiConfig};
 use pezkuwi_subxt_signer::bip39::Mnemonic;
 use pezkuwi_subxt_signer::sr25519::Keypair;
+use pezkuwi_subxt_signer::SecretUri;
 use std::str::FromStr;
 
 // Para id of the Asset Hub being upgraded; both mainnet and Zagros use 1000.
@@ -25,13 +26,21 @@ fn ah_para_id() -> u128 {
 /// Read the chain sudo mnemonic from a file under `res/`, never from an env var or
 /// argument, so the seed never lands in the process list or in shell history.
 ///
-/// `SUDO_KEY_FILE` selects the chain: mainnet keeps its key in `res/sudo.json`
-/// (JSON, `mnemonic` field), Zagros has a separate key documented in
-/// `res/zagros.md` (markdown, `**Mnemonic:** ` + backticks). Mainnet and Zagros
-/// deliberately do NOT share a sudo key — Zagros was rotated away from the
-/// mainnet founder key on 2026-07-07 — so pointing this at the wrong file simply
-/// produces a keypair the target chain rejects, rather than acting on the wrong
-/// chain.
+/// `SUDO_KEY_FILE` selects the chain, and the two chains keep their keys in different
+/// shapes:
+///
+/// - mainnet: `res/sudo.json`, JSON with a `mnemonic` field, used bare.
+/// - Zagros: `res/genesis/zagros/zagros-wallets.json`, JSON with a `_master_phrase` from
+///   which every key in the set derives. The root key is not the bare phrase, it is
+///   `//zagros//sudo` — so `SUDO_PATH` has to be given with it.
+///
+/// `res/zagros.md` used to be the Zagros source and is **not** any more: it records the
+/// key from the 2026-07-07 rotation, and Zagros was relaunched from a new genesis on
+/// 2026-09-14 with a different one. Pointing here at a stale file produces a keypair the
+/// chain rejects rather than acting on the wrong chain, which is the safe failure -- but
+/// it is still a wasted deploy attempt, and this comment is what prevents it.
+///
+/// Mainnet and Zagros deliberately do not share a sudo key.
 fn load_sudo_keypair() -> Keypair {
 	let path =
 		std::env::var("SUDO_KEY_FILE").unwrap_or_else(|_| "/home/myhez/res/sudo.json".to_string());
@@ -41,9 +50,14 @@ fn load_sudo_keypair() -> Keypair {
 	let mnemonic_str = if path.ends_with(".json") {
 		let json: serde_json::Value =
 			serde_json::from_str(&content).expect("sudo key file is not valid JSON");
+		// `mnemonic` is mainnet's shape; `_master_phrase` is the generated wallet set's, where
+		// the root key is a derivation rather than the phrase itself.
 		json["mnemonic"]
 			.as_str()
-			.unwrap_or_else(|| panic!("{} has no `mnemonic` field", path))
+			.or_else(|| json["_master_phrase"].as_str())
+			.unwrap_or_else(|| {
+				panic!("{} has neither a `mnemonic` nor a `_master_phrase` field", path)
+			})
 			.to_string()
 	} else {
 		// Markdown: the line reads ``- **Mnemonic:** `word word ...` ``
@@ -56,9 +70,23 @@ fn load_sudo_keypair() -> Keypair {
 			.to_string()
 	};
 
-	let mnemonic = Mnemonic::from_str(&mnemonic_str).expect("invalid mnemonic in sudo key file");
-	println!("  [sudo] Loaded from {}", path);
-	Keypair::from_phrase(&mnemonic, None).expect("cannot derive keypair from mnemonic")
+	// The bare phrase is a different account from any derivation of it. Signing with the
+	// phrase where the chain expects `//zagros//sudo` produces a stranger with no balance,
+	// and the chain reports it as an inability to pay fees -- which reads like the target
+	// is wrong when the signer is.
+	let path_suffix = std::env::var("SUDO_PATH").unwrap_or_default();
+	let signer = if path_suffix.is_empty() {
+		let mnemonic =
+			Mnemonic::from_str(&mnemonic_str).expect("invalid mnemonic in sudo key file");
+		Keypair::from_phrase(&mnemonic, None).expect("cannot derive keypair from mnemonic")
+	} else {
+		let uri = SecretUri::from_str(&format!("{mnemonic_str}{path_suffix}"))
+			.expect("phrase + SUDO_PATH is not a valid secret uri");
+		Keypair::from_uri(&uri).expect("cannot derive keypair from phrase and path")
+	};
+	println!("  [sudo] Loaded from {} (path {:?})", path, path_suffix);
+	println!("  [sudo] {}", signer.public_key().to_account_id());
+	signer
 }
 
 #[tokio::main]

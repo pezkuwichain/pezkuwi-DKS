@@ -160,7 +160,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: alloc::borrow::Cow::Borrowed("people-zagros"),
 	impl_name: alloc::borrow::Cow::Borrowed("people-zagros"),
 	authoring_version: 1,
-	spec_version: 1_020_011,
+	spec_version: 1_020_012,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -1432,8 +1432,12 @@ pub mod dynamic_params {
 		/// Safe to leave on the register's own track even though the gate guards most of the
 		/// supply: below `MinElectorate` a referendum on this chain cannot carry at all, so the
 		/// handful of citizens who exist before the gate fires cannot reach it.
+		///
+		/// Defaults to this chain's `WelatiPopulationThreshold`, which is a hundred here and a
+		/// hundred thousand on the mainnet -- the default has to follow the constant it can
+		/// only lower, or the `min()` above silently reinstates the mainnet's gate on a testnet.
 		#[codec(index = 7)]
-		pub static PopulationThresholdOverride: u32 = 100_000;
+		pub static PopulationThresholdOverride: u32 = 100;
 	}
 }
 

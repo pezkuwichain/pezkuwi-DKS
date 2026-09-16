@@ -37,12 +37,11 @@ fn agent_id_from_location() {
 			],
 		);
 		let agent_id = EthereumSystemV2::location_to_message_origin(origin.clone()).unwrap();
-		// Derived from `ZAGROS_GENESIS_HASH`, which is still `[0; 32]`: Zagros was torn down
-		// and its hash comes into existence with the new chain spec. Regenerate this in the
-		// commit that fills the hash in -- the same applies to the eighteen account vectors in
-		// the two bridge hub `location_conversion_works` tests.
+		// Derived from `ZAGROS_GENESIS_HASH`, filled in on 2026-09-16 from the launched chain.
+		// The value below moved with it, and will move again if Zagros's genesis is ever reset:
+		// it is a function of the network id, not a constant of this pallet.
 		let expected_agent_id =
-			hex_literal::hex!("1049731b97cfd3b8e900255015c4c3bb5a2a690c462a11395604a30b56841c24")
+			hex_literal::hex!("67eed521ccde62af896306131452336571adc1c7e0e16d438e172fecf7669e6f")
 				.into();
 		assert_eq!(agent_id, expected_agent_id);
 	});

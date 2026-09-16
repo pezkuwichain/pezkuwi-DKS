@@ -124,26 +124,27 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 		// Founder account is the founding citizen
 		// ====================================================================
 		PRESET_GENESIS => {
-			// MAINNET FOUNDER ACCOUNT - NEW SECURE WALLET (2026-01-29)
-			// Founder_Satoshi_Qazi_Muhammed: 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
+			// MAINNET FOUNDER ACCOUNT - generated 2026-09-15 for the genesis reset.
+			// The same account the relay and the Asset Hub endow; one person, one key.
+			// SS58: 5DPA5ctyUhFZcLoqNj11w1xEn3QqtDSmUjk4L6YxQNBWiDxS
 			let founder_account: AccountId =
-				hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
+				hex!("3a4eed1ba224f6d76dec6f24da10b850248dc8db5e8de7effcaf25bea977fe7f").into();
 
 			people_pezkuwichain_genesis(
-				// initial collators - 2 People Chain collators - Generated 2026-01-29
+				// initial collators - 2 People Chain collators - generated 2026-09-15
 				vec![
-					// Erin (5G4iuN7MvkhdwN4ikZd9uijBzxV78LUWQro3rc9HrfWWzeuS)
+					// Erin (5C7WutzWPuGJN2HV6a59e6nVnGZmZ2WK3oEPifJznn4YVp12)
 					(
-						hex!("b0f474e2f94868485e7269e503d6b327af392449c0878670021365ac7e173206")
+						hex!("0224e4f04a88bd2d1c2b140dfda031755a87e81873bfcde6c47b2a2da1fe9f51")
 							.into(),
-						hex!("b0f474e2f94868485e7269e503d6b327af392449c0878670021365ac7e173206")
+						hex!("0224e4f04a88bd2d1c2b140dfda031755a87e81873bfcde6c47b2a2da1fe9f51")
 							.unchecked_into(),
 					),
-					// Firaz (5EeXnoiPoXko3Hqggy74oSgxCFKpkNoppqTcV9MWUQAtmZHj)
+					// Firaz (5DG28PmnZeLhg2kJCdgfBz9Pwc4nEgAeku45Dm8UUjtFPXLC)
 					(
-						hex!("7244ec68c6f873e386ef8039ad6e9436e5e97c0d28bab4499090b9443034eb04")
+						hex!("34dd705f8a54f8b195e602556960a1181862b8bd7a2fd231f4d99b5cdd30d165")
 							.into(),
-						hex!("7244ec68c6f873e386ef8039ad6e9436e5e97c0d28bab4499090b9443034eb04")
+						hex!("34dd705f8a54f8b195e602556960a1181862b8bd7a2fd231f4d99b5cdd30d165")
 							.unchecked_into(),
 					),
 				],

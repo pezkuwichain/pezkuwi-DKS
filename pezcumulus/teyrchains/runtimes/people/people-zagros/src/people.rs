@@ -495,13 +495,22 @@ impl pezpallet_tiki::ensure::GetTiki for EducationMinisterRole {
 // =============================================================================
 
 parameter_types! {
-	/// Default referrer account - Founder address
-	/// SS58: 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
+	/// The account the register falls back to, and the only one exempt from the vouching
+	/// limits. This chain's own founder -- `5Fhjq3KmYHgChQ7mfaRGz3hotzC1XTSsGXK8HChaid5sUrNS`.
+	///
+	/// It held the mainnet founder's January address until 2026-09-16, on both twins, and
+	/// that was not cosmetic. `DefaultReferrer` does three jobs in `identity-kyc`: it is
+	/// the referrer an application falls back to when none is named, it is the account
+	/// exempt from the waiting period and the earned vouching capacity, and it is the one
+	/// that can rescue an application whose referrer never answered. Pointed at an account
+	/// that is not a citizen here, all three stop: measured on the live Zagros People
+	/// chain, that address had no `KycStatuses` entry at all, so the register could not be
+	/// bootstrapped through the path built for it.
 	pub DefaultReferrer: AccountId = AccountId::from([
-		0x28, 0x92, 0x5e, 0xd8, 0xb4, 0xc0, 0xc9, 0x54,
-		0x02, 0xb3, 0x15, 0x63, 0x25, 0x1f, 0xd3, 0x18,
-		0x41, 0x43, 0x51, 0x11, 0x4b, 0x1c, 0x77, 0x97,
-		0xee, 0x78, 0x86, 0x66, 0xd2, 0x7d, 0x63, 0x05,
+		0xa0, 0xf3, 0x6b, 0x1e, 0xd6, 0x00, 0x6a, 0x5e,
+		0xd8, 0xe4, 0x92, 0xa1, 0xa5, 0xc5, 0x82, 0x0c,
+		0xec, 0x6c, 0xb6, 0xfe, 0xba, 0x17, 0x28, 0x2f,
+		0x0b, 0xd4, 0x1f, 0xaa, 0xcc, 0x1f, 0x8c, 0x12,
 	]);
 }
 
@@ -1386,8 +1395,22 @@ parameter_types! {
 	/// a rate moved faster than its own effect can be observed is not policy, it is guessing.
 	pub const WelatiMinEmissionInterval: BlockNumber = 90 * DAYS;
 
-	/// The state starts paying its citizens once there are a hundred thousand of them.
-	pub const WelatiPopulationThreshold: u32 = 100_000;
+	/// The state starts paying its citizens once there are a hundred of them.
+	///
+	/// A hundred, not the mainnet's hundred thousand, and the number is chosen to keep a
+	/// relationship rather than to be small: on the mainnet this gate and `MinElectorate` are
+	/// the same figure, so the roll that can carry a question is exactly the roll that opens
+	/// the treasury. `MinElectorate` was scaled to a hundred here on 2026-09-08 and this was
+	/// left behind, which broke that relationship and with it the testnet: referenda could
+	/// carry at a hundred citizens while the gate still waited for a hundred thousand, so the
+	/// activation path -- the People chain telling the Asset Hub the roll is full -- could
+	/// never fire, and the founder's share could never leave its pot. Neither is something a
+	/// testnet can be asked to demonstrate once and it is the first thing FAZ 3 asks for.
+	///
+	/// This is the recorded exception to "both twins or neither": a constant that means
+	/// something in terms of population makes the testnet untestable when it is mirrored by
+	/// value. The code is the twin; the number is not.
+	pub const WelatiPopulationThreshold: u32 = 100;
 	/// The size support is measured against while the roll is smaller than it.
 	///
 	/// small enough that a test roll can carry a question, large enough that the floor still bites. A hard constant, not a `qeyd` parameter: a floor the same electorate
@@ -2172,6 +2195,79 @@ mod tests {
 	/// relay's report lands on whatever now sits at that address. The failure is the quiet
 	/// kind: the send succeeds, and the register simply stops learning who validated, so the
 	/// ninth stratum goes empty for a reason nobody is looking at.
+	/// The register's fallback referrer is this chain's own founder.
+	///
+	/// `DefaultReferrer` is not a name for a person, it is three mechanisms: the referrer an
+	/// application falls back to when none is named, the one account exempt from the waiting
+	/// period and the earned vouching capacity, and the one that can rescue an application whose
+	/// referrer never answered. All three read the same `Get`, so an address that is not a
+	/// citizen here disables all three at once -- and does it silently, because each failure
+	/// surfaces as an ordinary refusal on somebody else's extrinsic.
+	///
+	/// Both twins carried the mainnet founder's January address here until 2026-09-16. On Zagros
+	/// that was never right; on the mainnet it stopped being right the day the genesis accounts
+	/// were regenerated. Neither `check-chain-key-overlap.py` nor the genesis tests could see it:
+	/// they read the presets, and this is a `parameter_types!` in the runtime config.
+	///
+	/// So the test compares the two rather than pinning a literal. An address written twice can
+	/// drift; an address checked against the genesis that endows it cannot.
+	/// The treasury's population gate and the electorate floor are the same number.
+	///
+	/// They are equal on the mainnet by design: the roll that can carry a question is the roll
+	/// that opens the treasury. That relationship is the thing worth holding, not either figure
+	/// alone -- and it is exactly what broke here. `MinElectorate` was scaled down for the
+	/// testnet on 2026-09-08 and the gate it feeds was left at the mainnet's number, so
+	/// referenda could carry while the gate stayed shut. Nothing failed; the activation path
+	/// simply became unreachable, which is the kind of defect that surfaces only when somebody
+	/// asks the chain to demonstrate it.
+	///
+	/// Comparing the two rather than pinning either means the testnet can be rescaled again
+	/// without editing this test, and cannot be rescaled by halves.
+	#[test]
+	fn the_population_gate_matches_the_electorate_floor() {
+		assert_eq!(
+			WelatiPopulationThreshold::get(),
+			MinElectorate::get(),
+			"the roll that can carry a referendum must be the roll that opens the treasury"
+		);
+		// The override reads through the parameters pallet, so it needs storage to read from.
+		// Empty storage is the point: what is being checked is the *default*, which is what a
+		// chain carries until a referendum says otherwise.
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			assert_eq!(
+				<crate::dynamic_params::qeyd::PopulationThresholdOverride as pezframe_support::traits::Get<u32>>::get(),
+				WelatiPopulationThreshold::get(),
+				"the override defaults to the gate it can only lower -- a larger default \
+				 silently reinstates a gate this chain was scaled away from"
+			);
+		});
+	}
+
+	#[test]
+	fn the_fallback_referrer_is_the_founder_the_genesis_endows() {
+		let preset = crate::genesis_config_presets::get_preset(
+			&pezsp_genesis_builder::PresetId::from("genesis"),
+		)
+		.expect("the genesis preset exists");
+		let json: serde_json::Value = serde_json::from_slice(&preset).expect("valid json");
+
+		let founding: Vec<&str> = json["identityKyc"]["foundingCitizens"]
+			.as_array()
+			.expect("the genesis names its founding citizens")
+			.iter()
+			.map(|e| e[0].as_str().expect("an account"))
+			.collect();
+
+		use pezsp_core::crypto::Ss58Codec;
+		let fallback = DefaultReferrer::get().to_ss58check();
+		assert!(
+			founding.contains(&fallback.as_str()),
+			"DefaultReferrer {fallback} is not among the founding citizens {founding:?} -- the \
+			 fallback referrer must be a citizen of this chain, or the register cannot be \
+			 bootstrapped through the path built for it"
+		);
+	}
+
 	#[test]
 	fn the_performance_call_encodes_the_way_the_relay_builds_it() {
 		use codec::Encode;

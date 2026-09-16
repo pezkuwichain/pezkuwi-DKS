@@ -243,6 +243,92 @@ fn hez_allocations_sum_to_200m() {
 	assert_eq!(here + on_asset_hub, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
 }
 
+/// The genesis seats the four validators Zagros runs.
+///
+/// The authority block is generated (`res/genesis/zagros/emit_relay_authorities.py`) and the
+/// generator takes a `--count`. Run it with the wrong one and the chain launches with a
+/// smaller set than the machines standing behind it -- which is not a shortfall that shows up
+/// as an error. The relay has no staking pallet; the genesis authority list *is* the set. Seat
+/// more than are running and GRANDPA never finalises, because the threshold is two thirds;
+/// seat fewer and the extra nodes sync without ever being asked to sign. Both look like a healthy chain from the logs of the node you happen to be reading.
+#[test]
+fn the_genesis_seats_four_validators() {
+	let genesis = pezkuwichain_genesis_config();
+	let keys = genesis["session"]["keys"].as_array().expect("the session patch lists keys");
+	assert_eq!(
+		keys.len(),
+		4,
+		"Zagros runs four validators -- regenerate the authority block with \
+		 `emit_relay_authorities.py --count 4` if this moved"
+	);
+
+	// One stash, one seat. A duplicated tuple would pass the count and give one key two votes.
+	let mut stashes: Vec<&str> = keys.iter().map(|k| k[0].as_str().expect("a stash")).collect();
+	stashes.sort_unstable();
+	let seated = stashes.len();
+	stashes.dedup();
+	assert_eq!(seated, stashes.len(), "a validator is seated twice -- one key, two votes");
+
+	// Every seat is funded, or its first heartbeat cannot pay.
+	let funded: Vec<&str> = genesis["balances"]["balances"]
+		.as_array()
+		.expect("balances")
+		.iter()
+		.map(|e| e[0].as_str().expect("an account"))
+		.collect();
+	for s in &stashes {
+		assert!(funded.contains(s), "validator {s} is seated but holds nothing at genesis");
+	}
+}
+/// Root can pay for its own first call.
+///
+/// The two supply tests above both stay green whether root is funded or not, because the
+/// funding is carved out of the founder's share -- the total never moves. That is the right
+/// shape for the supply and the wrong shape for a guard, so the guard is here: it reads the
+/// key out of `SudoConfig` and asks what the genesis actually mints to it.
+///
+/// Measured 2026-09-14 on the relaunched chain: root held nothing, `sudo_schedule_para_initialize`
+/// could not pay its fee, and the teyrchains could not be registered until an account was funded
+/// by hand. A chain that is up but cannot be governed looks healthy from every angle except this
+/// one.
+#[test]
+fn sudo_starts_with_a_fee_budget() {
+	let genesis = pezkuwichain_genesis_config();
+	let root = genesis["sudo"]["key"].as_str().expect("the genesis names a root key");
+
+	let amount = |entry: &serde_json::Value| -> u128 {
+		entry[1]
+			.as_u64()
+			.map(u128::from)
+			.unwrap_or_else(|| entry[1].to_string().parse().expect("a balance is a number"))
+	};
+	let balances = genesis["balances"]["balances"]
+		.as_array()
+		.expect("the balances patch is an array of (account, amount)");
+
+	let to_root: u128 = balances.iter().filter(|e| e[0].as_str() == Some(root)).map(amount).sum();
+	assert_eq!(
+		to_root,
+		zagros_runtime_constants::currency::HEZ_SUDO_FUNDING,
+		"root must launch with its fee budget -- without it the first sudo call cannot pay"
+	);
+
+	// Carved, not added. If someone later funds root by minting extra, the supply tests catch
+	// it; if they fund it by taking from somewhere that is not the founder, only this does.
+	let founder_line: u128 = balances
+		.iter()
+		.map(amount)
+		.find(|&a| {
+			a == HEZ_FOUNDER_ALLOCATION - zagros_runtime_constants::currency::HEZ_SUDO_FUNDING
+		})
+		.unwrap_or(0);
+	assert_eq!(
+		founder_line,
+		HEZ_FOUNDER_ALLOCATION - zagros_runtime_constants::currency::HEZ_SUDO_FUNDING,
+		"root's budget comes out of the founder's allocation, not on top of it"
+	);
+}
+
 /// The relay's genesis mints exactly the share it keeps -- to the planck.
 ///
 /// `hez_allocations_sum_to_200m` adds four constants and is right about them, but constants are
@@ -679,6 +765,16 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	let founder_account: AccountId =
 		hex!("a0f36b1ed6006a5ed8e492a1a5c5820cec6cb6feba17282f0bd41faacc1f8c12").into();
 
+	// Zagros's root key -- a separate account, not the founder's. See the `SudoConfig` note
+	// below for why a testnet keeps its own.
+	//
+	// It is derived here rather than inline in `SudoConfig` so the key that receives
+	// `HEZ_SUDO_FUNDING` and the key that holds root are the same one by construction. Written
+	// twice, they could drift, and the failure would be silent: a funded stranger and a
+	// penniless root.
+	let sudo_account: AccountId =
+		hex!("fe5ff27956998b38004d1c49eb4ef1f1cd8d11bd4c89d3a8c12c00aa6fd5ee15").into();
+
 	// There is no airdrop account here any more, and that is the fix rather than an omission.
 	// It used to hold 40M HEZ that nothing in the tree ever read: `Claims` is wired but its
 	// genesis list is empty, and Claims pays Ethereum-signed claims out of newly minted funds
@@ -844,7 +940,17 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				// airdrop pot, a keyless treasury instance -- so no key ever holds it and no
 				// manual transfer has to be remembered after launch. See
 				// `HEZ_AIRDROP_ALLOCATION`'s comment and the Asset Hub's `AirdropPot`.
-				(founder_account.clone(), HEZ_FOUNDER_ALLOCATION), // 10% = 20M HEZ
+				// 10% = 20M HEZ, less the fee budget carved out for root below.
+				(
+					founder_account.clone(),
+					HEZ_FOUNDER_ALLOCATION - zagros_runtime_constants::currency::HEZ_SUDO_FUNDING,
+				),
+				// Root's fee budget. Carved out of the founder's share, not added to it, so the
+				// genesis total is untouched -- the same shape as `HEZ_VALIDATOR_FUNDING` coming
+				// out of the treasury's. Without it the first `sudo` call cannot pay its fee and
+				// the chain launches ungovernable; measured on 2026-09-14, when registering the
+				// teyrchains needed a hand transfer before it would go through.
+				(sudo_account.clone(), zagros_runtime_constants::currency::HEZ_SUDO_FUNDING,),
 				// The treasury's 40M is not here either. It is minted into the account the
 				// Asset Hub's treasury pallet pays from -- see `HEZ_TREASURY_ALLOCATION`. What
 				// stays on this side of it is the validator funding, below.
@@ -892,11 +998,7 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 		// The rehearsal argument is the stronger one. Mainnet's root is a key somebody guards,
 		// and retiring sudo is a step this chain exists to practise; neither can be practised
 		// with a key the world has. Held with the rest of the Zagros wallet set.
-		sudo: SudoConfig {
-			key: Some(
-				hex!("fe5ff27956998b38004d1c49eb4ef1f1cd8d11bd4c89d3a8c12c00aa6fd5ee15").into()
-			),
-		},
+		sudo: SudoConfig { key: Some(sudo_account) },
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },
 		registrar: RegistrarConfig { next_free_para_id: pezkuwi_primitives::LOWEST_PUBLIC_ID },
 		staking_ah_client: StakingAhClientConfig {
@@ -918,9 +1020,10 @@ fn pezkuwichain_mainnet_simulation_genesis() -> serde_json::Value {
 	use hex_literal::hex;
 	use pezsp_core::crypto::UncheckedInto;
 
-	// Real founder account (sudo) — 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
+	// Real founder account -- the new mainnet founder, generated 2026-09-15.
+	// SS58: 5DPA5ctyUhFZcLoqNj11w1xEn3QqtDSmUjk4L6YxQNBWiDxS
 	let founder_account: AccountId =
-		hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
+		hex!("3a4eed1ba224f6d76dec6f24da10b850248dc8db5e8de7effcaf25bea977fe7f").into();
 
 	// 2 validators — real mainnet Validator_01 and Validator_02 keys
 	// Seed phrases stored offline in secure wallet storage
@@ -935,39 +1038,39 @@ fn pezkuwichain_mainnet_simulation_genesis() -> serde_json::Value {
 		BeefyId,
 	)> = Vec::from([
 		(
-			// Validator 01 (5GipBJs2uNWTCazyZQ2vG3DEqLz4tXNmNZtBAT1Mtm1orZ5i)
-			hex!("ce0189f16649560a8e250ee51233b97f20b528d9f534c54b40da5e1b785fb422").into(),
-			hex!("781f2da4ec1f954ddbd96365b93d5b991427980475e10dd9f823979665399137").into(),
-			hex!("e63ad8e22976bc2bdbc9776b3d104472ff70cfcd6a5247a2f62efdb09f66520f")
+			// Validator 01 (5G4e6KKUViiwUp6qPgvdqNxwtaGM7LzYB2KVr9bXMjJAfMDF)
+			hex!("b0e442bf467ef368a9247474bf1a97a1c08ad9213673e3180fdab407a758ac3c").into(),
+			hex!("10aec0daa42782e62b375845a5a496d6943a3b28c0d8803c12df0be24a641d22").into(),
+			hex!("5872d64bd3a67b8c8272c9b3eaaa4853333509076f09942d0560236756e8cb37")
 				.unchecked_into(),
-			hex!("9497e1dabb5b7688da148813629076596c77eb47f0a18c971777c70bb38cd30d")
+			hex!("40316a0bf1f562ad339556975360bcd97dc688b53b93c230f08f5ddab4dd79e2")
 				.unchecked_into(),
-			hex!("5e365f9c23e9fd65f28b63bd118f46faca2f82d286d00ac23ddb69fdd61b342f")
+			hex!("eaa8333a15b4d18ca40aeb5e53154f56acb8d5ce024129ee17904f5140d2464c")
 				.unchecked_into(),
-			hex!("a854fce593b83d3a97ac4b0dc3ef220f69134753894cb16f28c67ae12db00419")
+			hex!("7a30d53d07680b55bffc423d0dd75cf4c0d86e82d0c6ee3320c07e7c389c746b")
 				.unchecked_into(),
-			hex!("4859a231daa597501f616c189699afa576ec79b704f633267c5b940dc76a895d")
+			hex!("f8784e05c19f61e58eaeaa780c9315ec15e9e794110fb0f511e89baec1e38c7a")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("02b97d26cb0553d662c52006fd6215736d0138d5dda92661422951a41dfa9d8f3a")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("03559f13b26109776b0cd0074b6612cf1b9f0e2198af6f3d66c2a4ec6ddcf39407")
 				.unchecked_into(),
 		),
 		(
-			// Validator 02 (5HWFZbhkZuTUySXu6ZXYKrTHBnWXHvWRKLozE22zhnwXGGxk)
-			hex!("f0a90883d86793bce27217a0070f61d66efe56033c876624ffa3468698175058").into(),
-			hex!("86384da0a3d7dc41b1d2837c824f022dd34196d0e3ba40075934d4c216b5ea0f").into(),
-			hex!("bc79edcffd121970d471b6811b167b21bb8aa158d5ce9143fd0d45f71aa4ba1a")
+			// Validator 02 (5E5239nsL71Qb2MUmPwPtUM8pLb1Md4KkNBajmJ6wAHQwZP1)
+			hex!("58b5ab34bfef86ccd2fda24b4b4034d8e77f03e24b19c810b1d3025456036806").into(),
+			hex!("9cb78ac63399b9257d8ccb5a4fd0160e251f971b0ca5d4a8fb98d196e4b7721a").into(),
+			hex!("d874b6f6f9bf67d55ec69838129744fec8237fd8e77c2828ce9460a20916e42e")
 				.unchecked_into(),
-			hex!("1b453491a1ad16feb2e4cc5b4bf85f21a54fbfaa9321e9dbd9b668b83355146c")
+			hex!("e8f1ba8114c0eb72f540c7be75d675effbc87318154da4b53ca03f849960669a")
 				.unchecked_into(),
-			hex!("2ad0684fe19374a4c1ed49f92226cb1af5bb9977d6395de879c556ada080e759")
+			hex!("bce8e0618ad82b86e5fc775363fbbd5c230657fc431501e2c7229f289e477c62")
 				.unchecked_into(),
-			hex!("ee3de83cc3deaadb3e1159e1de5a677a47bd828d3899bf7579753293389d0655")
+			hex!("887b1a1d2d1155c16dcf64b070684a8a981b7ab99077ad66848739cc8f87c952")
 				.unchecked_into(),
-			hex!("5eea9bf553a04467d3dafe9a5ed196410cffb96248519ab5a491c09fb5b68c2b")
+			hex!("764f5241852f479240812f969cd1393242cb318b8f2f9cee800dafef6803983a")
 				.unchecked_into(),
-			// BEEFY: from mainnet keystore (substrate ECDSA derivation)
-			hex!("031a58225fbca7430f406dfa8917517f81284cc991f7b9e9f8f7d37f24a85869f7")
+			// BEEFY is ecdsa: 33 compressed bytes, not an AccountId
+			hex!("024d226f333f7d0a9f82bd3eba49e4585139f84934cd71dc052412768cd62a811f")
 				.unchecked_into(),
 		),
 	]);
@@ -1004,7 +1107,14 @@ fn pezkuwichain_mainnet_simulation_genesis() -> serde_json::Value {
 				.collect::<Vec<_>>(),
 		},
 		babe: BabeConfig { epoch_config: BABE_GENESIS_EPOCH_CONFIG },
-		sudo: SudoConfig { key: Some(founder_account) },
+		// Mainnet's root is its own key now, not the founder's. A simulation that keeps
+		// the old shape rehearses a chain that no longer exists.
+		// SS58: 5D4o1HMKEntLafi1f2tz4U9XVZpg1gz5YAR6mgcgoPT4jgzU
+		sudo: SudoConfig {
+			key: Some(
+				hex!("2c4d909d9cba926dcf9cad71a154cc64adbbb0e8066b353a10e062707199c97c").into(),
+			),
+		},
 		configuration: ConfigurationConfig { config: default_teyrchains_host_configuration() },
 		registrar: RegistrarConfig { next_free_para_id: pezkuwi_primitives::LOWEST_PUBLIC_ID },
 		staking_ah_client: StakingAhClientConfig {
