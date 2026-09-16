@@ -495,13 +495,22 @@ impl pezpallet_tiki::ensure::GetTiki for EducationMinisterRole {
 // =============================================================================
 
 parameter_types! {
-	/// Default referrer account - Founder address
-	/// SS58: 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
+	/// The account the register falls back to, and the only one exempt from the vouching
+	/// limits. This chain's own founder -- `5DPA5ctyUhFZcLoqNj11w1xEn3QqtDSmUjk4L6YxQNBWiDxS`.
+	///
+	/// It held the mainnet founder's January address until 2026-09-16, on both twins, and
+	/// that was not cosmetic. `DefaultReferrer` does three jobs in `identity-kyc`: it is
+	/// the referrer an application falls back to when none is named, it is the account
+	/// exempt from the waiting period and the earned vouching capacity, and it is the one
+	/// that can rescue an application whose referrer never answered. Pointed at an account
+	/// that is not a citizen here, all three stop: measured on the live Zagros People
+	/// chain, that address had no `KycStatuses` entry at all, so the register could not be
+	/// bootstrapped through the path built for it.
 	pub DefaultReferrer: AccountId = AccountId::from([
-		0x28, 0x92, 0x5e, 0xd8, 0xb4, 0xc0, 0xc9, 0x54,
-		0x02, 0xb3, 0x15, 0x63, 0x25, 0x1f, 0xd3, 0x18,
-		0x41, 0x43, 0x51, 0x11, 0x4b, 0x1c, 0x77, 0x97,
-		0xee, 0x78, 0x86, 0x66, 0xd2, 0x7d, 0x63, 0x05,
+		0x3a, 0x4e, 0xed, 0x1b, 0xa2, 0x24, 0xf6, 0xd7,
+		0x6d, 0xec, 0x6f, 0x24, 0xda, 0x10, 0xb8, 0x50,
+		0x24, 0x8d, 0xc8, 0xdb, 0x5e, 0x8d, 0xe7, 0xef,
+		0xfc, 0xaf, 0x25, 0xbe, 0xa9, 0x77, 0xfe, 0x7f,
 	]);
 }
 
@@ -2177,6 +2186,47 @@ mod tests {
 	/// relay's report lands on whatever now sits at that address. The failure is the quiet
 	/// kind: the send succeeds, and the register simply stops learning who validated, so the
 	/// ninth stratum goes empty for a reason nobody is looking at.
+	/// The register's fallback referrer is this chain's own founder.
+	///
+	/// `DefaultReferrer` is not a name for a person, it is three mechanisms: the referrer an
+	/// application falls back to when none is named, the one account exempt from the waiting
+	/// period and the earned vouching capacity, and the one that can rescue an application whose
+	/// referrer never answered. All three read the same `Get`, so an address that is not a
+	/// citizen here disables all three at once -- and does it silently, because each failure
+	/// surfaces as an ordinary refusal on somebody else's extrinsic.
+	///
+	/// Both twins carried the mainnet founder's January address here until 2026-09-16. On Zagros
+	/// that was never right; on the mainnet it stopped being right the day the genesis accounts
+	/// were regenerated. Neither `check-chain-key-overlap.py` nor the genesis tests could see it:
+	/// they read the presets, and this is a `parameter_types!` in the runtime config.
+	///
+	/// So the test compares the two rather than pinning a literal. An address written twice can
+	/// drift; an address checked against the genesis that endows it cannot.
+	#[test]
+	fn the_fallback_referrer_is_the_founder_the_genesis_endows() {
+		let preset = crate::genesis_config_presets::get_preset(
+			&pezsp_genesis_builder::PresetId::from("genesis"),
+		)
+		.expect("the genesis preset exists");
+		let json: serde_json::Value = serde_json::from_slice(&preset).expect("valid json");
+
+		let founding: Vec<&str> = json["identityKyc"]["foundingCitizens"]
+			.as_array()
+			.expect("the genesis names its founding citizens")
+			.iter()
+			.map(|e| e[0].as_str().expect("an account"))
+			.collect();
+
+		use pezsp_core::crypto::Ss58Codec;
+		let fallback = DefaultReferrer::get().to_ss58check();
+		assert!(
+			founding.contains(&fallback.as_str()),
+			"DefaultReferrer {fallback} is not among the founding citizens {founding:?} -- the \
+			 fallback referrer must be a citizen of this chain, or the register cannot be \
+			 bootstrapped through the path built for it"
+		);
+	}
+
 	#[test]
 	fn the_performance_call_encodes_the_way_the_relay_builds_it() {
 		use codec::Encode;
