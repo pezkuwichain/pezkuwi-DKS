@@ -56,7 +56,15 @@ runs:
         # simply write the same verified bytes.
         fetch() { # url  dest  sha256
           tmp="$2.$$.tmp"
-          curl -fsSL --retry 3 -o "$tmp" "$1"
+          # `--retry 3` alone gives up after seven seconds: curl's default backoff is 1s, 2s,
+          # 4s. Measured 2026-09-16, a GitHub release download answered 500 four times inside
+          # that window and took the whole `workspace` job down with it -- a heavy job failed in
+          # twenty-three seconds for a reason that had nothing to do with the tree, and the URL
+          # answered 200 again minutes later. A CDN blip outlasts seven seconds routinely, so
+          # the window is widened rather than the failure accepted: a fixed ten-second delay,
+          # six attempts, and a hard ceiling so a genuinely dead URL still fails promptly.
+          curl -fsSL --retry 6 --retry-delay 10 --retry-max-time 180 \
+               --connect-timeout 20 -o "$tmp" "$1"
           echo "$3  $tmp" | sha256sum -c - >/dev/null || {
             echo "::error::$(basename "$2") does not match its expected sha256"
             echo "  expected $3"
