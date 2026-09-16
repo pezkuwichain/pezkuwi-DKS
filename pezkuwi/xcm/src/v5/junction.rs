@@ -106,12 +106,19 @@ pub enum Junction {
 
 /// The genesis hash of the Zagros test network. Used to identify it.
 ///
-/// Zero because Zagros has no genesis yet: the network was torn down and is being rebuilt,
-/// so its hash comes into existence with its new chain spec. It held Westend's hash until
-/// then, which is worse than zero -- a real foreign network's identity, plausible enough
-/// that nothing questions it. Fill this in from the new spec before the network launches;
-/// until it is set, anything keyed on `ByGenesis` will not recognise Zagros.
-pub const ZAGROS_GENESIS_HASH: [u8; 32] = [0; 32];
+/// Read from the live chain on 2026-09-16 (`chain_getBlockHash[0]` against all three Zagros
+/// endpoints). It was `[0; 32]` while the network was being rebuilt, and Westend's hash before
+/// that -- a real foreign network's identity, plausible enough that nothing questioned it.
+///
+/// This constant is a fixed point and the order it is filled in matters. The genesis hash is
+/// the hash of the genesis header, whose state root covers `:code` -- so writing the hash into
+/// the runtime changes the runtime, and a chain spec built from the changed runtime has a
+/// *different* genesis hash than the one written here. The only order that closes is: launch,
+/// read the hash off the running chain, then deliver this constant as a runtime upgrade, which
+/// leaves the genesis block untouched. Rebuilding Zagros's spec from this runtime would make
+/// the value stale again, and that is not a defect to fix but the property to respect.
+pub const ZAGROS_GENESIS_HASH: [u8; 32] =
+	hex!["481070f2d0f4cd33c2bed6e92bdaa48baf878af0677a384777b6400e9c2902af"];
 
 /// The genesis hash of the Pezkuwichain network. Used to identify it.
 ///

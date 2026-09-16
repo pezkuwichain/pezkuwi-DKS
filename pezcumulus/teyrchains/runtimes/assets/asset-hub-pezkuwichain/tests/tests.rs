@@ -1365,7 +1365,7 @@ fn location_conversion_works() {
 		TestCase {
 			description: "Describe Zagros Location",
 			location: Location::new(2, [GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH))]),
-			expected_account_id_str: "5GLzMCt7Y59gpYxwuuHk9jJpuzm5k72j7KYYt7uKWkFUbKN3",
+			expected_account_id_str: "5DmzfokodabuJQr5yMawZ18uC2S2Z88r29ExvgYM2r7LXF8Z",
 		},
 		TestCase {
 			description: "Describe Zagros AccountID",
@@ -1376,7 +1376,7 @@ fn location_conversion_works() {
 					AccountId32 { network: None, id: AccountId::from(ALICE).into() },
 				],
 			),
-			expected_account_id_str: "5HXrf6D64DkCsfy6NjQ6yszkTjM6syymGQPRcwiHsWazPRMj",
+			expected_account_id_str: "5CixjKRF2A7PLa3FYvQYnWPAPXuTx3mV184dzeK522DheHEG",
 		},
 		TestCase {
 			description: "Describe Zagros AccountKey",
@@ -1387,7 +1387,7 @@ fn location_conversion_works() {
 					AccountKey20 { network: None, key: [0u8; 20] },
 				],
 			),
-			expected_account_id_str: "5CtpmbSqTRhn5UP9YYJUaZBqScmcze1yAzerTSTKtU2qA75m",
+			expected_account_id_str: "5GSBqXk1SMzH1ZknySHVdZscdUUoAd3X2pnFMcoFzHPuDZHn",
 		},
 		TestCase {
 			description: "Describe Zagros Treasury Plurality",
@@ -1398,7 +1398,7 @@ fn location_conversion_works() {
 					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
 				],
 			),
-			expected_account_id_str: "5GA4VgZ19uBK7Yaj5UGSw2yVURE6x1V9yd6hkvpw9KD7yK2G",
+			expected_account_id_str: "5ChNb2mGFthXxG4XSZeb66uSX51nAV3V9imzZXQzFwfR2Dh5",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain Location",
@@ -1406,7 +1406,7 @@ fn location_conversion_works() {
 				2,
 				[GlobalConsensus(ByGenesis(ZAGROS_GENESIS_HASH)), Teyrchain(1000)],
 			),
-			expected_account_id_str: "5Hk6aXbnUHUMeuWwN7LLy7NSb3SCMNExMwLDovsTezhRuRqS",
+			expected_account_id_str: "5HQZrSZUMA1yycLwvfHvUG2Br8r4fxHeJd3EGJ73oZdibtUn",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain AccountID",
@@ -1418,7 +1418,7 @@ fn location_conversion_works() {
 					AccountId32 { network: None, id: AccountId::from(ALICE).into() },
 				],
 			),
-			expected_account_id_str: "5CbgDcpiCPZDp5XvhQ5ioVpaaMcWrJ53sm6LuzXDYHSpm7Ds",
+			expected_account_id_str: "5GJAogPfMwgf4fsVAGdrMApGQtdoKyv6EgZrDWJ2TJNvpvEo",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain AccountKey",
@@ -1430,7 +1430,7 @@ fn location_conversion_works() {
 					AccountKey20 { network: None, key: [0u8; 20] },
 				],
 			),
-			expected_account_id_str: "5CopacobxcMvQwyX3kT999BAqrR3WntS7cti45JD5KaY7Zup",
+			expected_account_id_str: "5DMuMx1vjQ9AF2FsbpaTRzcwX3FbYM5A6fVhqHiLEGHcgoA5",
 		},
 		TestCase {
 			description: "Describe Zagros Teyrchain Treasury Plurality",
@@ -1442,7 +1442,7 @@ fn location_conversion_works() {
 					Plurality { id: BodyId::Treasury, part: BodyPart::Voice },
 				],
 			),
-			expected_account_id_str: "5FAbFYKCLMf4JYbhTLPpxTkWYzzpRZs1k6gubbAkErY21Nde",
+			expected_account_id_str: "5Gc2jgiBmKExTFF87xLCcHiNJF2TkJrbr3pJaphpkda2dt3A",
 		},
 		TestCase {
 			description: "Describe Zagros USDT Location",
@@ -1455,7 +1455,7 @@ fn location_conversion_works() {
 					GeneralIndex(1984),
 				],
 			),
-			expected_account_id_str: "5F4KnP35Jy8H4tBzuSw1eMjuMMBkMgYaczuqifHEsEYUFV7E",
+			expected_account_id_str: "5DAGSgLe8bWhKHH7zUHjgUn5CkEWh9TthkghjvWQiDxqdqMs",
 		},
 	];
 
