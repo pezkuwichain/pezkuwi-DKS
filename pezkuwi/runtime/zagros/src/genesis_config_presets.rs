@@ -280,6 +280,44 @@ fn the_genesis_seats_four_validators() {
 		assert!(funded.contains(s), "validator {s} is seated but holds nothing at genesis");
 	}
 }
+/// A local or dev chain can reproduce a teleport, because its escrow exists.
+///
+/// `TeleportTracking` is `MintLocation::Local` here, so HEZ arriving from a teyrchain is paid
+/// out of the checking account rather than minted. An unseeded account does not exist, every
+/// inbound teleport fails with `NotWithdrawable`, and the sender's balance is gone on the far
+/// side while its extrinsic reported success. That is the defect the Zagros launch shipped on
+/// 2026-09-11 -- and the preset a developer reaches for first could not have shown it, because
+/// the account was missing here too. A defect the testnet cannot reproduce is one the testnet
+/// cannot catch, which is the whole argument for this test existing at all.
+#[test]
+fn the_local_preset_seeds_the_escrow() {
+	let genesis = pezkuwichain_local_testnet_genesis();
+	let amount = |e: &serde_json::Value| -> u128 {
+		e[1].as_u64()
+			.map(u128::from)
+			.unwrap_or_else(|| e[1].to_string().parse().unwrap())
+	};
+	let rows = genesis["balances"]["balances"].as_array().expect("balances");
+
+	use pezsp_core::crypto::Ss58Codec;
+	let checking = crate::XcmPallet::check_account().to_ss58check();
+	let seeded = rows
+		.iter()
+		.find(|e| e[0].as_str() == Some(checking.as_str()))
+		.map(amount)
+		.unwrap_or(0);
+	assert!(seeded > 0, "the checking account must be seeded or no teleport can arrive");
+
+	// And the rule is the production one: the two halves are the whole supply, counted once.
+	let total: u128 = rows.iter().map(amount).sum();
+	assert_eq!(
+		total,
+		200_000_000 * HEZ,
+		"a testnet that mints a different supply than the mainnet is rehearsing a different \
+		 chain -- the endowments and the escrow together are the two hundred million"
+	);
+}
+
 /// Root can pay for its own first call.
 ///
 /// The two supply tests above both stay green whether root is funded or not, because the
@@ -395,9 +433,30 @@ fn pezkuwichain_testnet_genesis(
 
 	const ENDOWMENT: u128 = 1_000_000 * HEZ;
 
+	// The XCM checking account, seeded here for the same reason the production preset seeds it.
+	//
+	// `TeleportTracking` is `MintLocation::Local`, so an arriving teleport is paid out of this
+	// account rather than minted. Without a seed the account does not exist, every inbound
+	// teleport fails with `NotWithdrawable`, and the sender's balance is gone on the other side
+	// while its extrinsic reported success. That is what the Zagros launch did on 2026-09-11 --
+	// and a local or dev chain built from this preset could not reproduce it, because the
+	// account was missing here too. A defect the testnet cannot show is a defect the testnet
+	// cannot catch.
+	//
+	// The rule is the production one: total supply less what this chain holds. Written as an
+	// expression rather than a figure so it cannot drift from the endowments above.
+	const TOTAL_SUPPLY: u128 = 200_000_000 * HEZ;
+	let owned: u128 = ENDOWMENT.saturating_mul(endowed_accounts.len() as u128);
+	let checking_account_seed = TOTAL_SUPPLY.saturating_sub(owned);
+	let checking_account: AccountId = crate::XcmPallet::check_account();
+
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().map(|k| (k.clone(), ENDOWMENT)).collect::<Vec<_>>(),
+			balances: endowed_accounts
+				.iter()
+				.map(|k| (k.clone(), ENDOWMENT))
+				.chain(core::iter::once((checking_account, checking_account_seed)))
+				.collect::<Vec<_>>(),
 		},
 		session: SessionConfig {
 			keys: initial_authorities
