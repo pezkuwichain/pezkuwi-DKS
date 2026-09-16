@@ -326,38 +326,45 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 		// keyless pallet account, and so is the PEZ asset team.
 		// ====================================================================
 		PRESET_GENESIS => {
-			// MAINNET ACCOUNTS - NEW SECURE WALLETS (2026-01-29)
+			// MAINNET ACCOUNTS - generated 2026-09-15 for the genesis reset.
+			//
+			// New keys, not the January set: the reset replaces the ledger, and leaving the
+			// old accounts in place would mean it did not replace who holds it. Recorded in
+			// `res/genesis/mainnet/mainnet-wallets.json`, which stays out of this repository.
+			//
 			// Administrator of wHEZ and wUSDT only -- both are minted and burned by live
 			// systems, so they need a team that can act. PEZ is deliberately not among
 			// them; see `PezAssetTeamId`.
-			// Asset_Admin_1: 5EhCpn82QtdU53MF6PoNFrKHgSrsfcAxFTMwrn3JYf9dioQw
+			// SS58: 5FRp6DBpM24irn5mrDeAAUB2ypB3ozu7kjLRvqhJ3JK1rpGn
 			let asset_owner: AccountId =
-				hex!("744ed0812d6096827376b4625fe4f840d4950d5aef0ab12902e64c444c8e9d29").into();
-			// Founder_Satoshi_Qazi_Muhammed: 5CyuFfbF95rzBxru7c9yEsX4XmQXUxpLUcbj9RLg9K1cGiiF
+				hex!("94cdd66f332e0c7759fee3e49b3706b3a8cf63b948a642c57f0c8bf0eb16f202").into();
+			// SS58: 5DPA5ctyUhFZcLoqNj11w1xEn3QqtDSmUjk4L6YxQNBWiDxS -- the same founder the
+			// relay endows; one person, one account, two chains.
 			let founder_account: AccountId =
-				hex!("28925ed8b4c0c95402b31563251fd318414351114b1c7797ee788666d27d6305").into();
-			// Custody for the PEZ presale share. No single key holds it, and it is not the
-			// account this used to be. Which account it is, and who can move it, is recorded
+				hex!("3a4eed1ba224f6d76dec6f24da10b850248dc8db5e8de7effcaf25bea977fe7f").into();
+			// Custody for the PEZ presale share. No single key holds it: a three-of-five
+			// multisig, derived from the signatory set rather than chosen, so the address is a
+			// consequence of who signs and cannot drift from it. Who those five are is recorded
 			// off-repository -- see `check-chain-key-overlap.py` for why that is not written
 			// beside the address.
 			let pez_presale_custody: AccountId =
-				hex!("8e51349e1f479fe672eacf82cf79c2da4a3579d260b6d99e1b3660e93b371fd0").into();
+				hex!("ab445602ed2049270de70fcb1d52cb445e5580de63edd8b215f0b2039cb36f1f").into();
 
 			asset_hub_pezkuwichain_genesis(
 				// initial collators - 2 Asset Hub collators - Generated 2026-01-29
 				vec![
-					// Azad (5Et1WgtNjUdMxyvHjAKGN8Nq1ivhUyANYjwKpCL8a46D8mCp)
+					// Azad (5CoxwDrivErLrWGh2wUBwto4kACphxeqMDsvgUVTBgzwiBdR)
 					(
-						hex!("7c8c6f463d124a601fbc7d425daad82651193f35730957982519dbcff6d55f71")
+						hex!("20fe4fa9e8289dae29099651f6f525845c5f379eda42c63dad86fe458d16916e")
 							.into(),
-						hex!("7c8c6f463d124a601fbc7d425daad82651193f35730957982519dbcff6d55f71")
+						hex!("20fe4fa9e8289dae29099651f6f525845c5f379eda42c63dad86fe458d16916e")
 							.unchecked_into(),
 					),
-					// Beritan (5F4GeiJE2oBcPdxfeYfWL4bu4iJfduzJk4aHhttemwhpscpQ)
+					// Beritan (5DAgtoFmatt8MVWBRfk2u6JGgiwRXquavjfXKBSb3x2eQky4)
 					(
-						hex!("845fd9541c46c3dc4325ddcbae06596382771d943f49d9659bdbbed4abd4eb09")
+						hex!("30cc7692d41b1119dd5f67b1e04d21e8a46c1aa76aa3cd237db8b8b9aa742b22")
 							.into(),
-						hex!("845fd9541c46c3dc4325ddcbae06596382771d943f49d9659bdbbed4abd4eb09")
+						hex!("30cc7692d41b1119dd5f67b1e04d21e8a46c1aa76aa3cd237db8b8b9aa742b22")
 							.unchecked_into(),
 					),
 				],

@@ -40,6 +40,23 @@ pub mod currency {
 	/// from. A constant rather than `authorities.len() * stash`, so seating another validator
 	/// cannot silently change what either side mints.
 	pub const HEZ_VALIDATOR_FUNDING: Balance = 1_000 * UNITS;
+
+	/// What sudo starts with, so its first call can pay for itself.
+	///
+	/// Zagros's root is a separate key rather than the founder's, and on 2026-09-14 that key
+	/// launched with nothing: registering the teyrchains failed because the extrinsic could not
+	/// pay its fee, and the chain came up ungovernable until an account was funded by hand.
+	/// Mainnet does not have this gap -- its sudo *is* the founder account -- which is exactly
+	/// why the twins differ here: the deliberate separate-key decision is what created the need.
+	///
+	/// Carved out of the founder's allocation rather than added on top, the same way
+	/// `HEZ_VALIDATOR_FUNDING` is carved out of the treasury's, so the genesis total stays at
+	/// two hundred million to the planck.
+	///
+	/// Sized from measurement, not from a round number that looks generous: five sudo calls on
+	/// the live chain cost 0.000641 HEZ in total. A thousand is a fee budget with a very wide
+	/// margin, and small enough that the root account can never be mistaken for a treasury.
+	pub const HEZ_SUDO_FUNDING: Balance = 1_000 * UNITS;
 	pub const CENTS: Balance = UNITS / 30_000;
 	/// One unit, named for what a deposit or a spend is reckoned in.
 	///
