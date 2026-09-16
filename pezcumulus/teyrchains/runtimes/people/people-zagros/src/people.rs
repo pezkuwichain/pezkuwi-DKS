@@ -1395,8 +1395,22 @@ parameter_types! {
 	/// a rate moved faster than its own effect can be observed is not policy, it is guessing.
 	pub const WelatiMinEmissionInterval: BlockNumber = 90 * DAYS;
 
-	/// The state starts paying its citizens once there are a hundred thousand of them.
-	pub const WelatiPopulationThreshold: u32 = 100_000;
+	/// The state starts paying its citizens once there are a hundred of them.
+	///
+	/// A hundred, not the mainnet's hundred thousand, and the number is chosen to keep a
+	/// relationship rather than to be small: on the mainnet this gate and `MinElectorate` are
+	/// the same figure, so the roll that can carry a question is exactly the roll that opens
+	/// the treasury. `MinElectorate` was scaled to a hundred here on 2026-09-08 and this was
+	/// left behind, which broke that relationship and with it the testnet: referenda could
+	/// carry at a hundred citizens while the gate still waited for a hundred thousand, so the
+	/// activation path -- the People chain telling the Asset Hub the roll is full -- could
+	/// never fire, and the founder's share could never leave its pot. Neither is something a
+	/// testnet can be asked to demonstrate once and it is the first thing FAZ 3 asks for.
+	///
+	/// This is the recorded exception to "both twins or neither": a constant that means
+	/// something in terms of population makes the testnet untestable when it is mirrored by
+	/// value. The code is the twin; the number is not.
+	pub const WelatiPopulationThreshold: u32 = 100;
 	/// The size support is measured against while the roll is smaller than it.
 	///
 	/// small enough that a test roll can carry a question, large enough that the floor still bites. A hard constant, not a `qeyd` parameter: a floor the same electorate
@@ -2197,6 +2211,38 @@ mod tests {
 	///
 	/// So the test compares the two rather than pinning a literal. An address written twice can
 	/// drift; an address checked against the genesis that endows it cannot.
+	/// The treasury's population gate and the electorate floor are the same number.
+	///
+	/// They are equal on the mainnet by design: the roll that can carry a question is the roll
+	/// that opens the treasury. That relationship is the thing worth holding, not either figure
+	/// alone -- and it is exactly what broke here. `MinElectorate` was scaled down for the
+	/// testnet on 2026-09-08 and the gate it feeds was left at the mainnet's number, so
+	/// referenda could carry while the gate stayed shut. Nothing failed; the activation path
+	/// simply became unreachable, which is the kind of defect that surfaces only when somebody
+	/// asks the chain to demonstrate it.
+	///
+	/// Comparing the two rather than pinning either means the testnet can be rescaled again
+	/// without editing this test, and cannot be rescaled by halves.
+	#[test]
+	fn the_population_gate_matches_the_electorate_floor() {
+		assert_eq!(
+			WelatiPopulationThreshold::get(),
+			MinElectorate::get(),
+			"the roll that can carry a referendum must be the roll that opens the treasury"
+		);
+		// The override reads through the parameters pallet, so it needs storage to read from.
+		// Empty storage is the point: what is being checked is the *default*, which is what a
+		// chain carries until a referendum says otherwise.
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			assert_eq!(
+				<crate::dynamic_params::qeyd::PopulationThresholdOverride as pezframe_support::traits::Get<u32>>::get(),
+				WelatiPopulationThreshold::get(),
+				"the override defaults to the gate it can only lower -- a larger default \
+				 silently reinstates a gate this chain was scaled away from"
+			);
+		});
+	}
+
 	#[test]
 	fn the_fallback_referrer_is_the_founder_the_genesis_endows() {
 		let preset = crate::genesis_config_presets::get_preset(

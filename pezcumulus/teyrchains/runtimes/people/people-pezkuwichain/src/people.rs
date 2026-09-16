@@ -2202,6 +2202,38 @@ mod tests {
 	///
 	/// So the test compares the two rather than pinning a literal. An address written twice can
 	/// drift; an address checked against the genesis that endows it cannot.
+	/// The treasury's population gate and the electorate floor are the same number.
+	///
+	/// They are equal on the mainnet by design: the roll that can carry a question is the roll
+	/// that opens the treasury. That relationship is the thing worth holding, not either figure
+	/// alone -- and it is exactly what broke here. `MinElectorate` was scaled down for the
+	/// testnet on 2026-09-08 and the gate it feeds was left at the mainnet's number, so
+	/// referenda could carry while the gate stayed shut. Nothing failed; the activation path
+	/// simply became unreachable, which is the kind of defect that surfaces only when somebody
+	/// asks the chain to demonstrate it.
+	///
+	/// Comparing the two rather than pinning either means the testnet can be rescaled again
+	/// without editing this test, and cannot be rescaled by halves.
+	#[test]
+	fn the_population_gate_matches_the_electorate_floor() {
+		assert_eq!(
+			WelatiPopulationThreshold::get(),
+			MinElectorate::get(),
+			"the roll that can carry a referendum must be the roll that opens the treasury"
+		);
+		// The override reads through the parameters pallet, so it needs storage to read from.
+		// Empty storage is the point: what is being checked is the *default*, which is what a
+		// chain carries until a referendum says otherwise.
+		pezsp_io::TestExternalities::default().execute_with(|| {
+			assert_eq!(
+				<crate::dynamic_params::qeyd::PopulationThresholdOverride as pezframe_support::traits::Get<u32>>::get(),
+				WelatiPopulationThreshold::get(),
+				"the override defaults to the gate it can only lower -- a larger default \
+				 silently reinstates a gate this chain was scaled away from"
+			);
+		});
+	}
+
 	#[test]
 	fn the_fallback_referrer_is_the_founder_the_genesis_endows() {
 		let preset = crate::genesis_config_presets::get_preset(
