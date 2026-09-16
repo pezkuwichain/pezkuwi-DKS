@@ -1392,7 +1392,12 @@ pub mod dynamic_params {
 		/// one person's mistake can be. The two are often confused, and confusing them costs
 		/// the register its growth.
 		#[codec(index = 0)]
-		pub static VouchingWaitingPeriod: BlockNumber = 1 * DAYS;
+		/// Compressed in a rehearsal build, for the same reason the track periods are: a
+		/// register that takes a day per generation cannot be grown to the population gate
+		/// inside a test run, and the gate is what opens the first cross-chain path.
+		/// Production keeps the day.
+		pub static VouchingWaitingPeriod: BlockNumber =
+			pezkuwi_runtime_common::rehearsal_period!(1 * DAYS, DAYS);
 
 		/// How many a new citizen may vouch for at first.
 		#[codec(index = 1)]
