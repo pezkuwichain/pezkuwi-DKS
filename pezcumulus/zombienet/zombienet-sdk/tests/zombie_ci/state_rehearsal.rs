@@ -205,12 +205,30 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 					vec![Value::from_bytes(applicant.public_key().to_account_id().0)],
 				)],
 			);
-			people
+			// The one failure worth naming. A node built without `fast-runtime` runs this test
+			// perfectly well and simply waits: the vouching period is a day, so the second
+			// generation is refused with `VouchingTooSoon` and, if that were retried, the run
+			// would sit there until something killed it. A timeout carries no information --
+			// it looks the same whether the flag was missing, the network never came up, or
+			// the register is genuinely stuck. Saying which turns three silences into one
+			// sentence.
+			if let Err(e) = people
 				.tx()
 				.sign_and_submit_then_watch_default(&approve, voucher)
 				.await?
 				.wait_for_finalized_success()
-				.await?;
+				.await
+			{
+				let msg = e.to_string();
+				if msg.contains("VouchingTooSoon") {
+					return Err(anyhow!(
+						"vouching refused as too soon at generation boundary -- the nodes were \
+						 built without `fast-runtime`, so the waiting period is a day rather \
+						 than two blocks and this run cannot finish: {msg}"
+					));
+				}
+				return Err(anyhow!("approve_referral failed: {msg}"));
+			}
 
 			let confirm = pezkuwi_zombienet_sdk::subxt::dynamic::tx(
 				"IdentityKyc",

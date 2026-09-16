@@ -1,0 +1,82 @@
+# Runs the zombienet rehearsal against real node binaries.
+#
+# `zombienet-archive` compiles these tests and keeps the archive; until this workflow existed
+# nothing executed it, and its own comment said so: "the archive we produce here is what a
+# future zombienet job will execute." This is that job. An archive nobody runs is a suite that
+# compiles, which is a weaker claim than it looks -- the bridge attack PoC compiled for months
+# while proving nothing.
+#
+# Dispatch-only, and deliberately. The tests spawn real networks and the binaries they need take
+# hours to build; putting that on every pull request would make the repository unpushable. The
+# rehearsal is run when there is something to rehearse -- before a genesis, after a change to
+# governance or the register -- not on every commit.
+#
+# `fast-runtime` is what makes the run finish. Without it the slowest governance track prepares
+# for ninety days and decides for ninety more; with it a day is a block. Production values are
+# untouched, because no deployed build carries the feature -- `rehearsal_period!` in
+# `pezkuwi-runtime-common` is where that is written down and tested.
+name: zombienet-run
+
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'Test filter passed to nextest (empty runs the whole rehearsal)'
+        required: false
+        default: 'state_rehearsal'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-xlarge
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+
+      # The relay forwards `fast-runtime` down to the runtime it embeds, and so does the
+      # teyrchain binary -- to every runtime it can serve, which it did not until 2026-09-16.
+      # The tests ask for `zagros-local` and the teyrchain equivalents, so the compression has
+      # to be inside these binaries; there is nowhere else for it to come from.
+      - name: Build the nodes with rehearsal timings
+        run: |
+          cargo build --locked --profile testnet --features fast-runtime -p pezkuwi
+          cargo build --locked --profile testnet --features fast-runtime -p pezkuwi-teyrchain-bin
+
+      - name: Put them where zombienet looks
+        run: |
+          echo "$GITHUB_WORKSPACE/target/testnet" >> "$GITHUB_PATH"
+
+      - name: Run the rehearsal
+        env:
+          ZOMBIE_PROVIDER: native
+          RUST_LOG: info
+        run: |
+          cargo nextest run \
+            --manifest-path pezcumulus/zombienet/zombienet-sdk/Cargo.toml \
+            --locked \
+            --cargo-profile testnet \
+            --features zombie-ci \
+            --no-fail-fast \
+            -E 'test(${{ inputs.test }})'
+
+      - name: Keep the network logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zombienet-logs
+          path: |
+            /tmp/zombie-*/**/*.log
+          retention-days: 7
+          if-no-files-found: ignore

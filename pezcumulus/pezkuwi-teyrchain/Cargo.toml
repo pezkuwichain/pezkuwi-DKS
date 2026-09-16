@@ -111,9 +111,19 @@ try-runtime = [
 	"teyrchains-common/try-runtime",
 	"xcm/try-runtime",
 ]
+# Forwards to every runtime this binary can serve, not a subset. It reached only coretime and
+# the bridge hubs until 2026-09-16, which meant a `fast-runtime` build of this binary carried
+# production governance periods on the Asset Hub and the People chain -- the two that hold the
+# treasury and the register, and therefore the two a rehearsal is about. Nothing failed; the
+# compression simply did not arrive, and a feature that silently does less than its name says is
+# worse than one that is absent.
 fast-runtime = [
+	"asset-hub-pezkuwichain-runtime/fast-runtime",
+	"asset-hub-zagros-runtime/fast-runtime",
 	"coretime-pezkuwichain-runtime/fast-runtime",
 	"coretime-zagros-runtime/fast-runtime",
+	"people-pezkuwichain-runtime/fast-runtime",
+	"people-zagros-runtime/fast-runtime",
 	"pezbridge-hub-pezkuwichain-runtime/fast-runtime",
 	"pezbridge-hub-zagros-runtime/fast-runtime",
 ]
