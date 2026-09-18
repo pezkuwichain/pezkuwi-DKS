@@ -170,7 +170,7 @@ fn relay_root_into_people(encoded_call: Vec<u8>) -> DynamicPayload {
 /// sent, nothing more: execution on the other side is a separate block on a separate chain and
 /// can fail there with the relay none the wiser. So every caller supplies the question whose
 /// answer changes, and this returns only when the chain itself says so.
-async fn root_call_on_people<F, Fut>(
+pub(crate) async fn root_call_on_people<F, Fut>(
 	relay: &OnlineClient<PezkuwiConfig>,
 	people: &OnlineClient<PezkuwiConfig>,
 	pallet: &str,
