@@ -36,10 +36,14 @@ jobs:
   run:
     # Our own hardware, and one box in particular. A rehearsal spawns a relay, two validators
     # and two collators and then drives hundreds of extrinsics through them; five Substrate
-    # nodes want something like ten cores and twenty gigabytes between them. Measured
-    # 2026-09-18: of the five runner hosts only VPS3 has that spare -- 18 cores and 36GB free
-    # against six cores and five to eight gigabytes everywhere else. `bizinikiwi-build` is on
-    # all five, so scheduling by that label is a coin flip on whether the run thrashes.
+    # nodes want roughly twenty gigabytes between them, and memory is the binding constraint
+    # rather than cores. Measured 2026-09-18: VPS3's runner is capped at six cores and 24GB
+    # (`CPUQuota=6s`, `MemoryMax=24G`, `Nice=15`) so that the fourteen chain services sharing
+    # that box always win -- the cap is deliberate and stays. The other four runner hosts have
+    # the same six cores and five to eight gigabytes *free*, which is where they fall short.
+    # So the choice is about the 24GB, not about VPS3 being an eighteen-core machine: the
+    # runner never sees those cores. `bizinikiwi-build` is on all five hosts, so scheduling by
+    # it would be a coin flip on whether the run runs out of memory.
     #
     # `zombienet-host` exists to say which box can host one. It is on `dks-runner-4` only, and
     # it is a claim about capacity rather than a name, so moving the work to a bigger machine
