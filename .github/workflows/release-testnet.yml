@@ -40,28 +40,45 @@ jobs:
   # than per-PR. So before producing a deployable blob, require a *successful test.yml
   # run for this exact commit*. If there is none, trigger it and stop: the operator
   # re-runs the release once it is green.
+  # On our own hardware, like the three jobs it gates. This asks the API two questions and
+  # needs nothing a build needs, so a hosted runner bought it nothing — and on 2026-09-17 it
+  # cost everything: the account was locked over an unpaid Advanced Security invoice, hosted
+  # runners stopped being allocated, and a release whose suite was already green could not be
+  # cut because a ten-second query had nowhere to run. The blobs are built by `dks-runner-1`;
+  # the permission to build them now comes from the same place.
   full-ci-gate:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, dks-runner-1]
     timeout-minutes: 10
     steps:
       - name: Require a green full test suite for this commit
         env:
+          # `curl` and `jq`, not `gh`: the self-hosted images do not carry the CLI, and two
+          # requests are not worth installing one onto a box that also runs chain services.
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
           SHA: ${{ github.event.inputs.ref || github.sha }}
         run: |
           set -euo pipefail
-          SHA=$(gh api "repos/${{ github.repository }}/commits/$SHA" --jq .sha)
+          api() {
+            curl -sS --fail-with-body \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" "$@"
+          }
+          SHA=$(api "https://api.github.com/repos/$REPO/commits/$SHA" | jq -r .sha)
           echo "commit under release: $SHA"
-          CONCLUSION=$(gh api \
-            "repos/${{ github.repository }}/actions/workflows/test.yml/runs?head_sha=$SHA&status=completed" \
-            --jq '[.workflow_runs[] | select(.conclusion=="success")] | length')
+          CONCLUSION=$(api \
+            "https://api.github.com/repos/$REPO/actions/workflows/test.yml/runs?head_sha=$SHA&status=completed" \
+            | jq '[.workflow_runs[] | select(.conclusion=="success")] | length')
           if [ "$CONCLUSION" -gt 0 ]; then
             echo "full test suite is green for this commit"
             exit 0
           fi
           echo "::error::No successful test.yml run for $SHA."
-          echo "Dispatching the full suite now; re-run this release once it is green."
-          gh workflow run test.yml --ref "$SHA" || true
+          # Deliberately not dispatched from here. `test.yml` takes a branch or tag, never the
+          # bare SHA this gate holds, so the call that used to sit here always failed and was
+          # swallowed by `|| true` — a line that looked like a recovery and was not.
+          echo "Dispatch the full suite against a branch at this commit, then re-run this release."
           exit 1
 
   build-runtime:
