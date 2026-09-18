@@ -95,6 +95,14 @@ jobs:
       # already had `pezpallet_revive` there, and five jobs reported the cascade instead.
       - name: No runtime holds one pallet index twice
         run: python3 .github/scripts/check-pallet-indices.py --verbose
+      # The step above keeps each runtime's map internally consistent and the twins equal to
+      # each other. This asks the question neither answers: is the number the *sender* wrote
+      # down still the number the receiver answers on. Welati addresses the Asset Hub and the
+      # relay by encoding `(pallet_index, call_index)` by hand, so a renumber on the far side
+      # changes the meaning of a constant nobody edited -- both runtimes still compile, the
+      # message still sends, and whatever now sits at that address runs instead.
+      - name: Every cross-chain call address still points where it says
+        run: python3 .github/scripts/check-cross-chain-call-addresses.py --verbose
       # `check-zero-weights.py` asks whether a bound fallback returns zero. This asks the
       # question underneath it: which of a pallet's weight files is the one in use. Welati had
       # three -- a hand-written trait in `lib.rs`, a generated `weights.rs`, and a generated
