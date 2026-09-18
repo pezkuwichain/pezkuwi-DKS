@@ -239,6 +239,29 @@ async fn tiki_holder(
 		.await
 }
 
+/// Does this account hold a given tiki?
+///
+/// Reads `Tiki::UserTikis`, which is the list the court's qualification check reads, and looks
+/// for the variant by name. Comparing rendered names rather than decoding the enum keeps this
+/// from carrying a copy of an index that the runtime is free to renumber.
+async fn has_tiki(
+	people: &OnlineClient<PezkuwiConfig>,
+	who: &Keypair,
+	variant: &str,
+) -> Result<bool, anyhow::Error> {
+	let held = storage_value(
+		people,
+		"Tiki",
+		"UserTikis",
+		vec![Value::from_bytes(who.public_key().to_account_id().0)],
+	)
+	.await?;
+	Ok(match held {
+		None => false,
+		Some(v) => format!("{v}").contains(variant),
+	})
+}
+
 fn account_value(k: &Keypair) -> Value {
 	Value::unnamed_variant("Id", vec![Value::from_bytes(k.public_key().to_account_id().0)])
 }
@@ -303,57 +326,126 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 		"the house holds {seated} members, not the {FOUNDING_MEMBERS} that were seated"
 	);
 
-	// ---- The Dîwan --------------------------------------------------------------------
+	// ---- The President ----------------------------------------------------------------
 	//
-	// Appointed one at a time: `appoint_diwan_member` checks a seat is open for *this*
-	// person, so a batch would hide which name the bench refused. The court is deliberately
-	// left short of `DiwanSize` -- the remaining seats are the elected ones, and electing
-	// them needs standing this roll does not have yet. What is being proved here is that the
-	// appointment path works and that the roster grows by exactly what was appointed.
-	let court: Vec<&Keypair> = bench.iter().take(3).collect();
-	for (i, member) in court.iter().enumerate() {
-		let want = i + 1;
-		log::info!("appointing court member {want}");
-		root_call_on_people(
-			&relay,
-			&people,
-			"Welati",
-			"appoint_diwan_member",
-			vec![account_value(member)],
-			|| {
-				let people = &people;
-				async move { Ok(bench_size(people, "DiwanMembers").await? >= want) }
-			},
-		)
-		.await?;
-	}
-	let court_size = bench_size(&people, "DiwanMembers").await?;
-	assert_eq!(court_size, court.len(), "the court seated {court_size} of {}", court.len());
-
-	// ---- The executive ----------------------------------------------------------------
+	// Root grants the office; it is not won here. `Tiki::Serok` is an *Elected* role in the
+	// taxonomy, so it comes through `grant_elected_role`, whose origin on this runtime is
+	// Root alone -- the ordinary `AdminOrigin` deliberately cannot reach it, because a body
+	// that can appoint the President is no longer checked by him.
 	//
-	// Named by Root here, as the Serok would name them; confirmed by Parliament, which is
-	// why the house had to be seated first. The runtime puts Root and Parliament on
-	// `ConfirmationOrigin` and deliberately leaves the President off it: one person cannot
-	// be both parties to an appointment. This rehearses the two-step, not a shortcut.
-	let pm = bench[1].clone();
-	log::info!("nominating a Prime Minister");
+	// Everything below this line then runs on the President's own authority rather than on
+	// Root's, which is the point: it is the sequence the live chain will follow.
+	let serok = bench[0].clone();
+	log::info!("granting the presidency");
 	root_call_on_people(
 		&relay,
 		&people,
-		"Welati",
-		"appoint_prime_minister",
-		vec![account_value(&pm)],
+		"Tiki",
+		"grant_elected_role",
+		vec![account_value(&serok), Value::unnamed_variant("Serok", vec![])],
 		|| {
 			let people = &people;
-			async move {
-				Ok(storage_value(people, "Welati", "PendingPrimeMinister", Vec::new())
-					.await?
-					.is_some())
-			}
+			async move { Ok(tiki_holder(people, "Serok").await?.is_some()) }
 		},
 	)
 	.await?;
+
+	// ---- The Dîwan, by the ordinary procedure -------------------------------------------
+	//
+	// Five seats, not eleven, and that is the design rather than a shortfall: `DiwanSize` is
+	// eleven and `DiwanElectedSeats` six, so `appoint_diwan_member` refuses a sixth
+	// appointment. The other six are Parliament's to elect once citizens have standing, and
+	// `RootOrDiwan` is a *proportion* of whatever bench exists -- two thirds of five is four
+	// -- so a court of five is a working court, not a broken one.
+	//
+	// A qualifying professional tiki first. The court check asks for one of fourteen, and on
+	// the day a chain starts nobody holds any, so the grant is part of the founding act. It
+	// is Root's here only because the President cannot yet be relied on to have granted
+	// himself nothing: `grant_tiki` takes `RootOrSerokOrCouncil`, and using Root keeps the
+	// qualification and the appointment in different hands.
+	//
+	// Then the appointment itself is *signed by the President*. That is the whole reason the
+	// presidency is granted above: Root could do this, and doing it that way would rehearse a
+	// path the state does not use once it has a head.
+	let court: Vec<&Keypair> = bench.iter().skip(1).take(3).collect();
+	for (i, member) in court.iter().enumerate() {
+		let want = i + 1;
+		log::info!("qualifying and appointing court member {want}");
+		root_call_on_people(
+			&relay,
+			&people,
+			"Tiki",
+			"grant_tiki",
+			vec![account_value(member), Value::unnamed_variant("Hiquqnas", vec![])],
+			|| {
+				let people = &people;
+				let who = (*member).clone();
+				async move { has_tiki(people, &who, "Hiquqnas").await }
+			},
+		)
+		.await?;
+
+		let appoint = dynamic::tx(
+			"Welati",
+			"appoint_diwan_member",
+			vec![Value::from_bytes(member.public_key().to_account_id().0)],
+		);
+		people
+			.tx()
+			.sign_and_submit_then_watch_default(&appoint, &serok)
+			.await?
+			.wait_for_finalized_success()
+			.await
+			.map_err(|e| {
+				anyhow!(
+					"the President could not seat court member {want}: {e}. \
+					 `NotQualifiedForTheCourt` means the professional tiki did not land; \
+					 `AppointedCourtSeatsAreFull` means more than \
+					 `DiwanSize - DiwanElectedSeats` were attempted, which is a fault in this \
+					 test rather than in the chain"
+				)
+			})?;
+	}
+	let court_size = bench_size(&people, "DiwanMembers").await?;
+	assert_eq!(
+		court_size,
+		court.len(),
+		"the President seated {court_size} of {} court members",
+		court.len()
+	);
+
+	// ---- The executive ----------------------------------------------------------------
+	//
+	// The President names, Parliament confirms, and the two are deliberately different
+	// bodies: `ConfirmationOrigin` is Root or Parliament and leaves the President off it,
+	// because one person cannot be both parties to an appointment. So the nomination is
+	// signed by the President -- on his own authority, not Root's -- and the confirmation
+	// comes from the other side. The house had to be seated first for that to be possible.
+	let pm = bench[4].clone();
+	log::info!("the President nominating a Prime Minister");
+	let nominate = dynamic::tx(
+		"Welati",
+		"appoint_prime_minister",
+		vec![Value::from_bytes(pm.public_key().to_account_id().0)],
+	);
+	people
+		.tx()
+		.sign_and_submit_then_watch_default(&nominate, &serok)
+		.await?
+		.wait_for_finalized_success()
+		.await
+		.map_err(|e| {
+			anyhow!(
+				"the President could not nominate a Prime Minister: {e}. This call takes Root \
+				 or the Serok, so a refusal here means the presidency never landed"
+			)
+		})?;
+	assert!(
+		storage_value(&people, "Welati", "PendingPrimeMinister", Vec::new())
+			.await?
+			.is_some(),
+		"the nomination was accepted but no pending Prime Minister is recorded"
+	);
 
 	log::info!("Parliament confirming");
 	root_call_on_people(&relay, &people, "Welati", "confirm_prime_minister", Vec::new(), || {
