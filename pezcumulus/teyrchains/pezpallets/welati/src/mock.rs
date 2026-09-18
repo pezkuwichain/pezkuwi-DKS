@@ -520,6 +520,10 @@ parameter_types! {
 	// longer than a term in this mock: every office was permanently overdue for an election,
 	// and every test that ran a term walked through eight hundred thousand blocks to do it.
 	pub const ElectionPeriod: u64 = 30;
+	// Notice before a vote opens, on the same compressed scale as the periods above: long
+	// enough that a test can tell "not yet" from "now", short enough to step over.
+	pub const ProposalVotingDelay: u64 = 5;
+	pub const NominationPeriod: u64 = 35;
 	pub const CandidacyPeriod: u64 = 10;
 	pub const CampaignPeriod: u64 = 20;
 	pub const ElectoralDistricts: u32 = 10;
@@ -793,6 +797,8 @@ impl pezpallet_welati::Config for Test {
 	type HouseRoster = ();
 	type CourtRoster = ();
 	type ElectionPeriod = ElectionPeriod;
+	type ProposalVotingDelay = ProposalVotingDelay;
+	type NominationPeriod = NominationPeriod;
 	type CandidacyPeriod = CandidacyPeriod;
 	type CampaignPeriod = CampaignPeriod;
 	type ElectoralDistricts = ElectoralDistricts;

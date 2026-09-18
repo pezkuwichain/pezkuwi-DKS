@@ -25,6 +25,7 @@ use pezframe_support::{
 	CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound,
 };
 use pezframe_system::EnsureRoot;
+use pezkuwi_runtime_common::rehearsal_period;
 use pezkuwi_tnpos_primitives::scores::ScoreSnapshot;
 use pezpallet_identity::{Data, IdentityInformationProvider};
 use pezpallet_xcm::EnsureXcm;
@@ -1236,6 +1237,12 @@ parameter_types! {
 	pub const WelatiDiwanElectedSeats: u32 = 6;
 	/// Election period (~4 months = ~120 days)
 	pub const WelatiElectionPeriod: BlockNumber = 120 * DAYS;
+	/// A day's notice before the house may vote on a proposal, and a week for a nomination
+	/// to be acted on. Both were bare block counts inside the pallet written against a
+	/// six-second chain; here they are a day and a week of *this* chain, and they compress
+	/// under `fast-runtime` like every other period a rehearsal has to step over.
+	pub const WelatiProposalVotingDelay: BlockNumber = rehearsal_period!(DAYS, DAYS);
+	pub const WelatiNominationPeriod: BlockNumber = rehearsal_period!(7 * DAYS, DAYS);
 	/// Candidacy period (~3 days)
 	pub const WelatiCandidacyPeriod: BlockNumber = 3 * DAYS;
 	/// Campaign period (~10 days)
@@ -1546,6 +1553,8 @@ impl pezpallet_welati::Config for Runtime {
 	type CourtRoster = DiwanRoster;
 	type HouseRoster = ParliamentRoster;
 	type ElectionPeriod = WelatiElectionPeriod;
+	type ProposalVotingDelay = WelatiProposalVotingDelay;
+	type NominationPeriod = WelatiNominationPeriod;
 	type CandidacyPeriod = WelatiCandidacyPeriod;
 	type CampaignPeriod = WelatiCampaignPeriod;
 	type ElectoralDistricts = WelatiElectoralDistricts;
@@ -2232,6 +2241,45 @@ mod tests {
 				 silently reinstates a gate this chain was scaled away from"
 			);
 		});
+	}
+
+	/// A candidacy cannot need more endorsers than the chain has citizens.
+	///
+	/// The pallet scales the endorsement ceilings down in proportion below `MatureRoll`, and
+	/// `MatureRoll` is `MinElectorate`. So the two move together or the relief stops working:
+	/// scaling the roll down a thousandfold and leaving the ceilings alone made a mature roll
+	/// take the *full* mainnet requirement, and a presidential candidacy asked a hundred
+	/// citizens for a thousand endorsements. Nothing failed to compile and no test went red --
+	/// the chain simply could not hold an election, which is the sort of thing only a
+	/// rehearsal asks it to prove.
+	///
+	/// Stated against `MinElectorate` rather than against literals, so this chain can be
+	/// rescaled again and cannot be rescaled by halves. The floor is checked too: it is a
+	/// flat `max(ceiling / 20, 10)` inside the pallet and does not scale with anything, so a
+	/// small enough roll would run into it on its own.
+	#[test]
+	fn no_candidacy_can_need_more_endorsers_than_the_roll_holds() {
+		let mature = MinElectorate::get();
+		for (office, ceiling) in [
+			("President", WelatiPresidentialEndorsements::get()),
+			("a seat", WelatiParliamentaryEndorsements::get()),
+		] {
+			assert!(
+				ceiling <= mature,
+				"standing for {office} needs {ceiling} endorsements but a mature roll is only \
+				 {mature} citizens -- the ceilings were left at another chain's scale"
+			);
+			// Mirrors `get_required_endorsements`: below the mature roll the requirement
+			// falls away in proportion, but never past this floor.
+			let floor = core::cmp::max(ceiling / 20, 10);
+			assert!(
+				floor <= mature,
+				"the endorsement floor for {office} is {floor}, more than the whole roll of \
+				 {mature} -- scaling the ceiling alone does not move the floor"
+			);
+			// And it still has to cost something, or the endorsement is decoration.
+			assert!(ceiling > 0, "a candidacy for {office} that needs nothing is not a candidacy");
+		}
 	}
 
 	#[test]
