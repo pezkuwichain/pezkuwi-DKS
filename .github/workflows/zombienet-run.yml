@@ -34,7 +34,21 @@ permissions:
 
 jobs:
   run:
-    runs-on: ubuntu-xlarge
+    # Our own hardware, and one box in particular. A rehearsal spawns a relay, two validators
+    # and two collators and then drives hundreds of extrinsics through them; five Substrate
+    # nodes want something like ten cores and twenty gigabytes between them. Measured
+    # 2026-09-18: of the five runner hosts only VPS3 has that spare -- 18 cores and 36GB free
+    # against six cores and five to eight gigabytes everywhere else. `bizinikiwi-build` is on
+    # all five, so scheduling by that label is a coin flip on whether the run thrashes.
+    #
+    # `zombienet-host` exists to say which box can host one. It is on `dks-runner-4` only, and
+    # it is a claim about capacity rather than a name, so moving the work to a bigger machine
+    # later is a label move and not a workflow edit.
+    #
+    # The hosted `ubuntu-xlarge` this replaced was also unreachable for another reason: an
+    # unpaid invoice locks the account out of hosted runners entirely, and a rehearsal that can
+    # only run when the bill is paid is not a rehearsal anybody will run.
+    runs-on: [self-hosted, zombienet-host]
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@v7
@@ -82,6 +96,22 @@ jobs:
             --features zombie-ci \
             --no-fail-fast \
             -E "test(${filter})"
+
+      # Before the upload, and on the runner, because the upload is the step an account-level
+      # problem can stop outright -- and a rehearsal that failed is exactly when its logs are
+      # the only thing worth having. A blocked artifact store took five good WASM blobs on
+      # 2026-09-18 for the same reason.
+      - name: Keep the network logs where the runner can be asked for them
+        if: always()
+        run: |
+          set -euo pipefail
+          keep="$HOME/zombienet-logs/$(date -u +%Y%m%d-%H%M)-${GITHUB_RUN_ID}"
+          mkdir -p "$keep"
+          # `|| true` on the copy alone: a run that crashed before spawning anything leaves no
+          # logs, and that is not a second failure to report on top of the first.
+          cp -r /tmp/zombie-*/ "$keep/" 2>/dev/null || true
+          echo "logs kept in $keep on $(hostname)"
+          du -sh "$keep" 2>/dev/null || true
 
       - name: Keep the network logs
         if: always()
