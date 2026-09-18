@@ -326,7 +326,7 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 /// how long that takes. Returning a bool rather than asserting lets each caller say what its
 /// own failure means -- a timeout on the gate and a timeout on the Asset Hub point at
 /// completely different things.
-async fn wait_for<F>(
+pub(crate) async fn wait_for<F>(
 	api: &OnlineClient<PezkuwiConfig>,
 	pallet: &str,
 	item: &str,

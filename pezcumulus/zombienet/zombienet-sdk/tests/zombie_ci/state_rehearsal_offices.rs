@@ -43,6 +43,7 @@ use pezkuwi_zombienet_sdk::{
 	NetworkConfig, NetworkConfigBuilder,
 };
 
+use super::state_rehearsal::wait_for;
 use crate::utils::initialize_network;
 
 const ASSET_HUB_ID: u32 = 1000;
@@ -63,6 +64,11 @@ const XCM_SETTLE_SECS: u64 = 180;
 /// PEZ on the Asset Hub. The governance token is an asset there, not a native balance, so a
 /// spend is read out of `Assets::Account` rather than `System::Account`.
 const PEZ_ASSET_ID: u32 = 1;
+
+/// Longer than the XCM budget, because this one waits for a period rather than a message: an
+/// epoch closes on People's own clock, compressed in a rehearsal build but still several
+/// blocks away.
+const EPOCH_SETTLE_SECS: u64 = 300;
 
 // ---------------------------------------------------------------------------------------
 // Sending Root into People
@@ -799,6 +805,130 @@ async fn a_citizen_initiative_reaches_a_referendum() -> Result<(), anyhow::Error
 		 pallet is where this path breaks, and it breaks silently"
 	);
 	log::info!("initiative {id} carried; the chain holds {count} referenda");
+	Ok(())
+}
+
+/// The treasury funds the payroll, and the payroll pays a claim back across.
+///
+/// Paths three and four of the four, and they are a pair: the incentive pot is filled by the
+/// Asset Hub reporting a release to People, and emptied by People asking the Asset Hub to pay
+/// a claim. Neither is submitted from here; the funding report fires on the hub's own
+/// `on_initialize` as soon as distribution is active, and the payment goes out when somebody
+/// claims what an epoch owed them.
+///
+/// What makes this walkable at founding is the seat share. A citizen's reward is their trust
+/// score times a rate, and trust is gated absolutely on a stake nobody has on day one -- but a
+/// seated member of Parliament is paid a fixed share of the parliamentary pool regardless.
+/// So the founding bench, seated by Root, is exactly the cohort that can claim before anybody
+/// has staked anything, which is also true of the real chain's first month.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<(), anyhow::Error> {
+	let _ = env_logger::try_init_from_env(
+		env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
+	);
+
+	let network = initialize_network(build_network_config().await?).await?;
+	let relay: OnlineClient<PezkuwiConfig> =
+		network.get_node("validator-01")?.wait_client().await?;
+	let people: OnlineClient<PezkuwiConfig> =
+		network.get_node("people-collator-01")?.wait_client().await?;
+	let asset_hub: OnlineClient<PezkuwiConfig> =
+		network.get_node("asset-hub-collator-01")?.wait_client().await?;
+
+	// The bench first: its members are the only accounts that can be owed anything this early.
+	let bench = founding_bench();
+	let members: Vec<Value> = bench.iter().map(account_value).collect();
+	root_call_on_people(
+		&relay,
+		&people,
+		"Welati",
+		"seat_founding_parliament",
+		vec![Value::unnamed_composite(members)],
+		|| {
+			let people = &people;
+			async move { Ok(bench_size(people, "ParliamentMembers").await? >= FOUNDING_MEMBERS) }
+		},
+	)
+	.await?;
+
+	// Distribution has to be running before the hub has anything to release. On the real chain
+	// the population gate does this; here it is asked for directly, because what this test is
+	// about is what happens *after* -- `state_rehearsal` is where the gate itself is proved.
+	root_call_on_people(
+		&relay,
+		&people,
+		"Welati",
+		"report_population_threshold_reached",
+		Vec::new(),
+		|| {
+			let asset_hub = &asset_hub;
+			async move {
+				Ok(storage_value(asset_hub, "PezTreasury", "DistributionStarted", Vec::new())
+					.await?
+					.map(|v| format!("{v}").contains("true"))
+					.unwrap_or(false))
+			}
+		},
+	)
+	.await
+	.unwrap_or_else(|e| log::info!("distribution may already be active: {e}"));
+
+	// ---- path 4: the hub reports what it released ---------------------------------------
+	//
+	// Release zero is due the moment distribution starts -- the schedule is derived from the
+	// release index, and index zero is due after no blocks at all, so the state begins paying
+	// in the era it has enough citizens rather than a month later. The report crosses to
+	// People and lands as a running total, which is what the payroll spends against.
+	log::info!("waiting for the treasury's funding report to reach People");
+	let funded = wait_for(&people, "PezRewards", "ReportedIncentiveTotal", XCM_SETTLE_SECS, |v| {
+		v.as_u128().map(|n| n > 0).unwrap_or(false)
+	})
+	.await;
+	assert!(
+		funded,
+		"distribution is active on the Asset Hub but People's `ReportedIncentiveTotal` is still 		 zero. The report is sent from the hub's `on_initialize`, so this is either the release 		 not happening -- look for `MonthlyReleaseFailed` there -- or the message not arriving: 		 `NOTE_INCENTIVE_FUNDING_CALL_INDEX` and `PezRewardsPalletIndex` are what address it"
+	);
+
+	// ---- path 3: a member claims, and the hub pays ---------------------------------------
+	//
+	// An epoch has to close first. It closes on People's own `on_initialize` after
+	// `EpochLength`, which is compressed in a rehearsal build and thirty days otherwise --
+	// so a failure here is very often a node built without `fast-runtime`.
+	log::info!("waiting for the first epoch to finalise");
+	let closed = wait_for(&people, "PezRewards", "EpochInfo", EPOCH_SETTLE_SECS, |v| {
+		v.at("total_epochs_completed")
+			.and_then(|n| n.as_u128())
+			.map(|n| n > 0)
+			.unwrap_or(false)
+	})
+	.await;
+	assert!(
+		closed,
+		"no epoch finalised within {EPOCH_SETTLE_SECS}s. `EpochLength` is thirty days unless 		 the runtime was built with `fast-runtime`, and nothing downstream of a closed epoch 		 can be reached until one is"
+	);
+
+	let claimant = bench[0].clone();
+	let claim = dynamic::tx("PezRewards", "claim_reward", vec![Value::u128(0)]);
+	people
+		.tx()
+		.sign_and_submit_then_watch_default(&claim, &claimant)
+		.await?
+		.wait_for_finalized_success()
+		.await
+		.map_err(|e| {
+			anyhow!(
+				"a seated member could not claim epoch 0: {e}. `NothingToClaim` means the seat 				 share was zero, which happens when the pot was never funded -- check path 4 				 above before looking at the claim"
+			)
+		})?;
+
+	// And the proof is on the hub again. People records the claim either way; whether the PEZ
+	// moved is a fact about the other chain.
+	let paid = wait_for_pez(&asset_hub, &claimant, 1, XCM_SETTLE_SECS).await?;
+	assert!(
+		paid,
+		"the claim was accepted on People but no PEZ reached the claimant on the Asset Hub. 		 The incentive pot is the one that pays this, and it is a different pot from the 		 government one -- an empty incentive pot means the release never credited it"
+	);
+	log::info!("paths 3 and 4 carried: funding reported, claim paid across");
 	Ok(())
 }
 
