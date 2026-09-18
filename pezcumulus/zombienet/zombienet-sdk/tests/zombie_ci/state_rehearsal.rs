@@ -15,10 +15,16 @@
 //! A `-local` chain without those could not even reproduce the teleport defect that cost the
 //! first genesis, which is why the preset was fixed rather than worked around.
 //!
-//! This file covers the first and hardest step: filling the register until the population gate
-//! opens, which is what sends the People chain's first message to the Asset Hub. The remaining
-//! steps -- the election, the offices, the Dîwan, a budget and a spend -- build on the register
-//! this leaves behind and are their own tests.
+//! This file covers the first and hardest step, and the first of the four paths with it:
+//! filling the register until the population gate opens, and then following that gate across
+//! to the Asset Hub. Nothing is submitted for the crossing -- `check_population_gate` runs on
+//! People's own `on_initialize` and sends `pez-treasury::activate_distribution` when the roll
+//! is large enough, and People's `SendXcmOrigin` converts only the three governance origins,
+//! so not even the relay's sudo can forge that message. The mechanism is the only way through,
+//! which is precisely what makes it worth rehearsing rather than asserting.
+//!
+//! The offices, the budget and the citizen's initiative are in `state_rehearsal_offices`, and
+//! build on the register this leaves behind.
 //!
 //! Two things it deliberately does not do. It never uses sudo: `Tiki::grant_honorary_citizenship`
 //! accepts Root and the relay reaches this chain as Root, so a hundred citizens could be
@@ -52,6 +58,12 @@ const POPULATION_GATE: u32 = 100;
 /// the deposit still has to *be there*, and an account that cannot reserve it fails with an
 /// error about funds that reads like the wrong account was used.
 const FUND_PER_CITIZEN: u128 = 2_000_000_000_000;
+
+/// How long to let the gate report and the Asset Hub answer.
+///
+/// Not a guess about XCM's speed: both uses poll until the effect appears and only fail when
+/// this runs out. What it bounds is how long a *broken* path takes to say so.
+const GATE_SETTLE_SECS: u64 = 240;
 
 /// Derive the cohort from one phrase by path, so a rerun addresses the same accounts.
 fn cohort(
@@ -256,7 +268,88 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 		"the roll is {roll}, the gate opens at {POPULATION_GATE} -- the register did not fill"
 	);
 
+	// ---- and the gate opens ------------------------------------------------------------
+	//
+	// Filling the register was never the point on its own; it is the precondition for the
+	// first of the four cross-chain paths, and until this file asserted it the test's own name
+	// promised more than it delivered.
+	//
+	// Nothing is submitted here. `check_population_gate` runs on the People chain's own
+	// `on_initialize`, compares the roll against `min(PopulationThreshold, override)`, and if
+	// it has been reached sends the Asset Hub a `Transact` carrying
+	// `pez-treasury::activate_distribution`. So the whole path is the chain acting on its own
+	// -- which is exactly why it is worth rehearsing: nobody can make it happen by hand.
+	// People's `SendXcmOrigin` converts only the three governance origins, and not Root, so
+	// even the relay's sudo cannot forge this message. The mechanism is the only way through.
+	log::info!("waiting for the population gate to report");
+	let reported = wait_for(&people, "Welati", "PopulationGateReported", GATE_SETTLE_SECS, |v| {
+		format!("{v}").contains("true")
+	})
+	.await;
+	if !reported {
+		return Err(anyhow!(
+			"the roll reached {roll} but `PopulationGateReported` never turned true within \
+			 {GATE_SETTLE_SECS}s. The check runs every `PopulationCheckPeriod` -- a day of \
+			 blocks unless the node was built with `fast-runtime`, which is the usual cause. \
+			 If the flag is set and this still fails, look for `PopulationReportFailed`: the \
+			 send is deliberately not latched, so a closed channel retries rather than sticking"
+		));
+	}
+
+	// The proof is on the other chain. A report that never arrived leaves People looking
+	// perfectly healthy, so asking People whether it sent something is not evidence that
+	// anything was received.
+	let asset_hub: OnlineClient<PezkuwiConfig> =
+		network.get_node("asset-hub-collator-01")?.wait_client().await?;
+	log::info!("waiting for the Asset Hub to activate distribution");
+	let started =
+		wait_for(&asset_hub, "PezTreasury", "DistributionStarted", GATE_SETTLE_SECS, |v| {
+			format!("{v}").contains("true")
+		})
+		.await;
+	assert!(
+		started,
+		"People reported the threshold but the Asset Hub never set `DistributionStarted`. The \
+		 message was accepted for delivery, so this is execution on the far side: check the \
+		 HRMP channel, and check that `TreasuryPalletIndex`/`ACTIVATE_DISTRIBUTION_CALL_INDEX` \
+		 still address `pez-treasury::activate_distribution` (`check-cross-chain-call-addresses.py`)"
+	);
+
+	log::info!("path 1 carried: register {roll} -> gate reported -> distribution active");
 	Ok(())
+}
+
+/// Poll one storage item until it satisfies `done`, or give up.
+///
+/// Every cross-chain assertion here needs the same shape, and the shape matters: the effect
+/// lands in a later block on another chain, so a single read after a sleep is a guess about
+/// how long that takes. Returning a bool rather than asserting lets each caller say what its
+/// own failure means -- a timeout on the gate and a timeout on the Asset Hub point at
+/// completely different things.
+async fn wait_for<F>(
+	api: &OnlineClient<PezkuwiConfig>,
+	pallet: &str,
+	item: &str,
+	secs: u64,
+	done: F,
+) -> bool
+where
+	F: Fn(&Value) -> bool,
+{
+	let addr = pezkuwi_zombienet_sdk::subxt::dynamic::storage::<Vec<Value>, Value>(pallet, item);
+	for _ in 0..(secs / 6) {
+		if let Ok(at) = api.storage().at_latest().await {
+			if let Ok(Some(raw)) = at.try_fetch(addr.clone(), Vec::new()).await {
+				if let Ok(v) = raw.decode() {
+					if done(&v) {
+						return true;
+					}
+				}
+			}
+		}
+		tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+	}
+	false
 }
 
 async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
