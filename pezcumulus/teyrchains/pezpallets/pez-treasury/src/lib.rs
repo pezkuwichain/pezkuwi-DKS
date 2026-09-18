@@ -124,11 +124,24 @@ pub mod pezpallet {
 	use pezframe_system::pezpallet_prelude::*;
 	// use pezsp_runtime::traits::CheckedDiv;
 
-	/// Releases per halving period. Named "months" because a release period is 432,000 blocks,
-	/// which is 30 days at 10 blocks/minute -- so 48 of them is 1,440 days, approximately but
-	/// not exactly four years. The block count below is what the chain actually measures.
+	/// A day on the chain this pallet runs on.
+	///
+	/// Written out rather than left inside the numbers below, because that is where it went
+	/// wrong: the periods were `432_000`, commented "10 blocks/minute", which is a six-second
+	/// chain. This pallet only ever runs on the Asset Hub, and a teyrchain's blocks are twelve
+	/// seconds (`MILLISECS_PER_BLOCK = 12000`). So every period here was exactly double what it
+	/// was named -- a "month" was sixty days and the halving was near eight years, against a
+	/// whitepaper that promises four. Nothing failed; the schedule simply ran at half speed.
+	///
+	/// The assumption is now one constant that a test can check, instead of an arithmetic
+	/// nobody re-did.
+	pub const BLOCKS_PER_DAY: u32 = 7_200; // 24h at 12s
+
+	/// Releases per halving period. Forty-eight thirty-day releases is 1,440 days -- close to
+	/// four years, which is the interval the whitepaper states and Bitcoin set the expectation
+	/// for.
 	pub const HALVING_PERIOD_MONTHS: u32 = 48;
-	pub const BLOCKS_PER_MONTH: u32 = 432_000; // ~30 days * 24 hours * 60 minutes * 10 blocks/minute
+	pub const BLOCKS_PER_MONTH: u32 = 30 * BLOCKS_PER_DAY;
 	pub const HALVING_PERIOD_BLOCKS: u32 = HALVING_PERIOD_MONTHS * BLOCKS_PER_MONTH;
 
 	pub const TOTAL_SUPPLY: u128 = 5_000_000_000 * 1_000_000_000_000; // 5 billion PEZ (12 decimal)

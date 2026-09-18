@@ -124,12 +124,19 @@ pub mod pezpallet {
 	use pezframe_support::pezpallet_prelude::*;
 	use pezframe_system::pezpallet_prelude::*;
 
-	/// One month at 10 blocks a minute -- the same period the treasury releases on, so an
-	/// epoch is funded by exactly one release.
-	pub const BLOCKS_PER_EPOCH: u32 = 432_000;
+	/// A day on the chain this pallet runs on: People, a teyrchain, at twelve seconds a block.
+	///
+	/// Both periods below were written for a six-second chain and were therefore twice what
+	/// they were named -- an epoch of sixty days and a fortnight to claim a week's reward. See
+	/// `pez-treasury`, which carried the same mistake in the constant this one has to match.
+	pub const BLOCKS_PER_DAY: u32 = 7_200; // 24h at 12s
+
+	/// One month -- the same period the treasury releases on, so an epoch is funded by exactly
+	/// one release. The two constants have to stay equal, and a test in each pallet says so.
+	pub const BLOCKS_PER_EPOCH: u32 = 30 * BLOCKS_PER_DAY;
 
 	/// One week to claim.
-	pub const CLAIM_PERIOD_BLOCKS: u32 = 100_800;
+	pub const CLAIM_PERIOD_BLOCKS: u32 = 7 * BLOCKS_PER_DAY;
 
 	/// Seats in the house. The divisor of the parliamentary share, always -- see the module
 	/// documentation for why it is not the number of members.
