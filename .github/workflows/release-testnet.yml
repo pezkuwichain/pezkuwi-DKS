@@ -139,7 +139,12 @@ jobs:
             echo ""
             echo "| field | value |"
             echo "|---|---|"
-            echo "| commit | \`${GITHUB_SHA}\` |"
+            # What was *checked out*, not what was dispatched. `GITHUB_SHA` is the ref the
+            # workflow was started from, which for a `workflow_dispatch` carrying an explicit
+            # `ref` input is a different commit from the one whose code became this blob. The
+            # digest is the record that says where a deployed runtime came from; naming the
+            # wrong commit in it is worse than naming none.
+            echo "| commit | \`$(git rev-parse HEAD)\` |"
             echo "| toolchain | \`$(rustc --version)\` |"
             echo "| size (bytes) | ${size} |"
             echo "| blake2-256 (authorize_upgrade) | \`0x${b2}\` |"
@@ -153,6 +158,19 @@ jobs:
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: ${{ steps.wasm.outputs.wasm }}
+
+      # The blob has to outlive the job, and the workspace does not: every job in this run
+      # checks out afresh, `actions/checkout` cleans what it does not track, and both the
+      # staged artifact and `target/` go with it. So five successful builds can leave one
+      # surviving blob, which is exactly what happened on 2026-09-18.
+      - name: Keep the blob where the next job cannot delete it
+        run: |
+          set -euo pipefail
+          keep="$HOME/release-artifacts/$(git rev-parse HEAD)"
+          mkdir -p "$keep"
+          cp artifacts/* "$keep/"
+          test -s "$keep/${{ matrix.runtime }}.compact.compressed.wasm"
+          echo "kept in $keep"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -219,6 +237,16 @@ jobs:
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: artifacts/*
+
+      # See `build-runtime`: the workspace does not survive the next job's checkout.
+      - name: Keep the binaries where the next job cannot delete them
+        run: |
+          set -euo pipefail
+          keep="$HOME/release-artifacts/$(git rev-parse HEAD)"
+          mkdir -p "$keep"
+          cp artifacts/* "$keep/"
+          test -s "$keep/${{ matrix.package }}.digest.md"
+          echo "kept in $keep"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -344,6 +372,16 @@ jobs:
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: chain-specs/*.json
+
+      # See `build-runtime`: the workspace does not survive the next checkout.
+      - name: Keep the specs where the next job cannot delete them
+        run: |
+          set -euo pipefail
+          keep="$HOME/release-artifacts/$(git rev-parse HEAD)/chain-specs"
+          mkdir -p "$keep"
+          cp chain-specs/* "$keep/"
+          test -s "$keep/digest.md"
+          echo "kept in $keep"
 
       - uses: actions/upload-artifact@v7
         with:
