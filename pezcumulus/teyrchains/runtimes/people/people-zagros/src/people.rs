@@ -2386,6 +2386,44 @@ mod tests {
 		assert_eq!(super::HOURS as u64, blocks_per_day / 24, "HOURS does not divide DAYS by 24");
 	}
 
+	/// The three terms Serok named, in years and days rather than in blocks.
+	///
+	/// A mandate of four years, a court of nine, and a hundred and twenty days from the call of
+	/// an election to its close. They were two, four and a half, and sixty until 2026-09-18,
+	/// because this file counted in a day borrowed from a crate with a different block time --
+	/// and a term of office cannot report that it is short. These are not derived numbers that
+	/// happen to be right today; they are the decision, so they are checked as the decision.
+	///
+	/// Measured in seconds against the slot duration Aura is configured with, not against
+	/// `DAYS`. Checking a period against the constant it was built from proves only that
+	/// multiplication works.
+	#[test]
+	fn the_terms_of_office_are_the_ones_the_state_decided_on() {
+		use testnet_teyrchains_constants::zagros::consensus::MILLISECS_PER_BLOCK;
+		let secs = |blocks: BlockNumber| blocks as u64 * MILLISECS_PER_BLOCK / 1000;
+		const YEAR: u64 = 365 * 24 * 60 * 60;
+		const DAY: u64 = 24 * 60 * 60;
+
+		assert_eq!(
+			secs(WelatiTermLength::get()) / YEAR,
+			4,
+			"an elected mandate is {} years; the state decided on four",
+			secs(WelatiTermLength::get()) / YEAR
+		);
+		assert_eq!(
+			secs(WelatiCourtTermLength::get()) / YEAR,
+			9,
+			"a court term is {} years; the state decided on nine",
+			secs(WelatiCourtTermLength::get()) / YEAR
+		);
+		assert_eq!(
+			secs(WelatiElectionPeriod::get()) / DAY,
+			120,
+			"an election runs {} days; the state decided on a hundred and twenty",
+			secs(WelatiElectionPeriod::get()) / DAY
+		);
+	}
+
 	#[test]
 	fn no_candidacy_can_need_more_endorsers_than_the_roll_holds() {
 		let mature = MinElectorate::get();
