@@ -8,13 +8,19 @@
 //! named and confirmed, a finance portfolio handed out, a budget voted and spent, and a
 //! citizen's initiative carried from one signature to a live referendum.
 //!
-//! **Why the founding offices come from Root and not from an election.** Standing for office
-//! needs a trust score -- a hundred out of a thousand for a seat, two hundred and fifty for the
-//! presidency -- and trust is gated absolutely on having something staked, then weighted across
-//! education, referrals and offices held. On the day a chain starts nobody has any of that, so
-//! the first Parliament cannot be elected; it is seated, and its mandate is explicitly
-//! temporary. Rehearsing it the other way round would prove nothing about the path the state
-//! actually takes, which is the whole point of doing this before mainnet rather than after.
+//! **Why the first offices are not won.** Standing for office needs a trust score -- a hundred
+//! out of a thousand for a seat, two hundred and fifty for the presidency -- and trust is gated
+//! absolutely on having something staked, then weighted across education, referrals and offices
+//! held. On the day a chain starts nobody has any of that, so the first Parliament cannot be
+//! elected: it is seated, and the pallet makes its mandate temporary by construction.
+//!
+//! **Root does only what nobody else can, and then stops.** It seats the founding Parliament and
+//! it grants the presidency -- `Tiki::Serok` is an *Elected* role whose origin is Root alone,
+//! deliberately out of reach of the ordinary `AdminOrigin`, because a body that can appoint the
+//! President is no longer checked by him. After that the President acts on his own authority: he
+//! appoints the court, and he nominates the Prime Minister, whom Parliament and not he confirms.
+//! Root could have done all of it, which is exactly why doing it that way would prove nothing --
+//! the state stops using Root the moment it has a head, so that is where this stops too.
 //!
 //! Root reaches People from the relay: `ParentAsSuperuser` in the People runtime's XCM config
 //! turns a message from the parent into Root here, and the relay has a sudo key on a testnet.
