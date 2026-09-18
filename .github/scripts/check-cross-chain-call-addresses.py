@@ -15,9 +15,14 @@ runs whatever now sits at that address.
 each other. Neither of those is this: an index can be unique, and identical on both twins, and
 still be the wrong number for the sender to be aiming at.
 
+Three pallets build addresses this way -- `welati` and `pez-rewards` on People, `pez-treasury`
+on the Asset Hub -- so the check runs in both directions. The two paths that cross *back* were
+the two nothing was holding, and they are the two the first version of this file also missed.
+
 What is checked, for both twins:
 
-  * every `Welati*PalletIndex` constant names the pallet the sender means to reach
+  * every `*PalletIndex` constant names the pallet the sender means to reach, on whichever
+    chain declares it -- People naming the hub, and the hub naming People
   * every `*_CALL_INDEX` constant equals the `#[pezpallet::call_index]` of the call it names
 
 Usage: check-cross-chain-call-addresses.py [--verbose]
@@ -29,7 +34,13 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-WELATI = REPO / "pezcumulus/teyrchains/pezpallets/welati/src/lib.rs"
+# Every pallet that builds a cross-chain call address by hand. Both directions: People
+# addresses the Asset Hub, and the Asset Hub addresses People back.
+SENDERS = [
+    REPO / "pezcumulus/teyrchains/pezpallets/welati/src/lib.rs",
+    REPO / "pezcumulus/teyrchains/pezpallets/pez-rewards/src/lib.rs",
+    REPO / "pezcumulus/teyrchains/pezpallets/pez-treasury/src/lib.rs",
+]
 
 # Each twin's People runtime, and the Asset Hub its calls are addressed to.
 TWINS = [
@@ -53,7 +64,15 @@ PALLET_ADDRESSES = {
     "WelatiParametersPalletIndex": ("asset_hub", "Parameters"),
     "WelatiAirdropPotPalletIndex": ("asset_hub", "AirdropPot"),
     "WelatiPresalePotPalletIndex": ("asset_hub", "PresalePot"),
+    "PezRewardsTreasuryPalletIndex": ("asset_hub", "PezTreasury"),
     "RelayWhitelistPalletIndex": ("relay", "Whitelist"),
+}
+
+# The same thing pointed the other way: constants in the Asset Hub runtime naming pallets on
+# People. Path 4 -- the treasury reporting what it has released -- runs along this one, and
+# until it was added here the two paths that cross back were the two nothing was holding.
+REVERSE_PALLET_ADDRESSES = {
+    "PezRewardsPalletIndex": "PezRewards",
 }
 
 # constant in the welati pallet -> (file declaring the call, the call it names)
@@ -77,6 +96,14 @@ CALL_ADDRESSES = {
     "WHITELIST_CALL_INDEX": (
         "bizinikiwi/pezframe/whitelist/src/lib.rs",
         "whitelist_call",
+    ),
+    "PAY_FROM_INCENTIVE_POT_CALL_INDEX": (
+        "pezcumulus/teyrchains/pezpallets/pez-treasury/src/lib.rs",
+        "pay_from_incentive_pot",
+    ),
+    "NOTE_INCENTIVE_FUNDING_CALL_INDEX": (
+        "pezcumulus/teyrchains/pezpallets/pez-rewards/src/lib.rs",
+        "note_incentive_funding",
     ),
 }
 
@@ -123,15 +150,22 @@ def main() -> int:
     problems = []
     checked = 0
 
-    if not WELATI.exists():
-        print(f"::error::{WELATI} not found", file=sys.stderr)
+    # Every sender's constants in one table. They are private to their pallets and the names
+    # do not collide, so which file a number came from does not change what it has to equal.
+    sender_consts = {}
+    for f in SENDERS:
+        if not f.exists():
+            problems.append(f"{f} not found; this check is stale")
+            continue
+        sender_consts.update(constants(f.read_text()))
+    if not sender_consts:
+        print("::error::no sending pallets could be read", file=sys.stderr)
         return 1
-    welati_consts = constants(WELATI.read_text())
 
     # --- the call half: does the number name the call the sender thinks it does? -----------
     for const, (rel, call) in CALL_ADDRESSES.items():
-        if const not in welati_consts:
-            problems.append(f"{const} is gone from the welati pallet; this check is stale")
+        if const not in sender_consts:
+            problems.append(f"{const} is gone from every sending pallet; this check is stale")
             continue
         target = REPO / rel
         found = call_indices(target)
@@ -142,13 +176,13 @@ def main() -> int:
             problems.append(f"{const} names `{call}`, which {rel} no longer declares")
             continue
         checked += 1
-        if welati_consts[const] != found[call]:
+        if sender_consts[const] != found[call]:
             problems.append(
-                f"{const} is {welati_consts[const]} but `{call}` sits at call_index "
+                f"{const} is {sender_consts[const]} but `{call}` sits at call_index "
                 f"{found[call]} in {rel} -- the message would reach a different call"
             )
         elif verbose:
-            print(f"  ok  {const} = {welati_consts[const]} -> {call}")
+            print(f"  ok  {const} = {sender_consts[const]} -> {call}")
 
     # --- the pallet half, once per twin ----------------------------------------------------
     for twin, people, asset_hub, relay in TWINS:
@@ -179,6 +213,28 @@ def main() -> int:
                 )
             elif verbose:
                 print(f"  ok  [{twin}] {const} = {want} -> {chain}.{pallet}")
+
+        # And back the other way: the Asset Hub naming pallets on People.
+        people_map = indices(people.parent / "lib.rs")
+        ah_consts = constants(asset_hub.read_text()) if asset_hub.exists() else {}
+        for const, pallet in REVERSE_PALLET_ADDRESSES.items():
+            if const not in ah_consts:
+                problems.append(f"[{twin}] {const} is gone from the hub; this check is stale")
+                continue
+            want = ah_consts[const]
+            at = [name for name, i in people_map.items() if i == want]
+            checked += 1
+            if not at:
+                problems.append(
+                    f"[{twin}] {const} = {want}, and the People runtime has no pallet at {want}"
+                )
+            elif at[0] != pallet:
+                problems.append(
+                    f"[{twin}] {const} = {want}, meaning `{pallet}`, but People has `{at[0]}` "
+                    f"at {want} -- the report would run in the wrong pallet"
+                )
+            elif verbose:
+                print(f"  ok  [{twin}] {const} = {want} -> people.{pallet}")
 
     if problems:
         for p in problems:
