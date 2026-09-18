@@ -34,7 +34,7 @@
 use anyhow::anyhow;
 use pezkuwi_zombienet_sdk::{
 	subxt::{
-		dynamic::{self, Value},
+		dynamic::{self, At, Value},
 		ext::scale_value,
 		tx::{DynamicPayload, Payload},
 		OnlineClient, PezkuwiConfig,
@@ -59,6 +59,10 @@ const FOUNDING_MEMBERS: usize = 5;
 /// and only fails when this runs out, so a slow lane costs seconds and a broken one is still
 /// reported as a broken lane rather than as a timeout.
 const XCM_SETTLE_SECS: u64 = 180;
+
+/// PEZ on the Asset Hub. The governance token is an asset there, not a native balance, so a
+/// spend is read out of `Assets::Account` rather than `System::Account`.
+const PEZ_ASSET_ID: u32 = 1;
 
 // ---------------------------------------------------------------------------------------
 // Sending Root into People
@@ -652,7 +656,61 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 		 was not drawn down, which would let the same money be spent again"
 	);
 	log::info!("budget drawn down from {budget} to {left}");
+
+	// ---- and the money arrives, which is the half People cannot show -------------------
+	//
+	// Drawing the allowance down happens on People whether or not anything reaches the Asset
+	// Hub. The budget is an authorisation; the PEZ is on the other chain, and the only proof
+	// that the authorisation carried is the beneficiary's balance there. Reading People twice
+	// would have shown a spend that went nowhere as a complete success.
+	//
+	// This is path 2 of the four: People's finance minister spending, `GovernmentSpendOrigin`
+	// on the far side accepting it because it arrived from People and from nowhere else.
+	let asset_hub: OnlineClient<PezkuwiConfig> =
+		network.get_node("asset-hub-collator-01")?.wait_client().await?;
+	let paid = wait_for_pez(&asset_hub, &dev::ferdie(), amount, XCM_SETTLE_SECS).await?;
+	assert!(
+		paid,
+		"the minister's spend was accepted on People and the allowance fell, but the Asset Hub \
+		 never credited {amount} PEZ to the beneficiary. The message was sent, so look at \
+		 execution there: `InsufficientGovernmentPotBalance` means the pot was never funded \
+		 (distribution has to be active first), while nothing at all in the queue points at \
+		 `SPEND_FROM_GOVERNMENT_POT_CALL_INDEX` addressing the wrong call"
+	);
+	log::info!("path 2 carried: {amount} PEZ left the government pot on the Asset Hub");
 	Ok(())
+}
+
+/// Wait until an account holds at least `want` PEZ on the Asset Hub.
+///
+/// PEZ is asset 1 there, so this is `Assets::Account(1, who)` — a map with two keys, which is
+/// the reason it does not share the plain `storage_value` helper above.
+async fn wait_for_pez(
+	asset_hub: &OnlineClient<PezkuwiConfig>,
+	who: &Keypair,
+	want: u128,
+	secs: u64,
+) -> Result<bool, anyhow::Error> {
+	let addr = dynamic::storage::<Vec<Value>, Value>("Assets", "Account");
+	let keys = vec![
+		Value::u128(PEZ_ASSET_ID as u128),
+		Value::from_bytes(who.public_key().to_account_id().0),
+	];
+	for _ in 0..(secs / 6) {
+		let at = asset_hub.storage().at_latest().await?;
+		if let Some(raw) = at.try_fetch(addr.clone(), keys.clone()).await? {
+			let v = raw.decode()?;
+			// The account record carries more than the balance, so pull the named field out
+			// rather than trusting a position that a later field could shift.
+			if let Some(bal) = v.at("balance").and_then(|b| b.as_u128()) {
+				if bal >= want {
+					return Ok(true);
+				}
+			}
+		}
+		tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+	}
+	Ok(false)
 }
 
 /// One citizen opens a question, the roll backs it, and it becomes a referendum.
