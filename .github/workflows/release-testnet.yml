@@ -182,8 +182,14 @@ jobs:
   # genesis needs the processes that run it. The PVF workers are built here too
   # and deliberately shipped as a set: the node refuses to start against workers
   # whose version does not match its own, so they are only ever valid together.
+  # After the runtimes, not beside them. Everything here is pinned to one runner, so these
+  # five builds are serial whatever the graph says -- and when the node builds win the
+  # scheduler, the blob a release exists to produce waits three hours behind binaries that
+  # gate nothing. Measured 2026-09-18: `zagros-runtime` sat queued behind 179 minutes of node
+  # builds while an upgrade waited on it. Ordering costs nothing when the work is serial
+  # anyway; it only decides what comes out first.
   build-node:
-    needs: full-ci-gate
+    needs: build-runtime
     runs-on: [self-hosted, dks-runner-1]
     strategy:
       fail-fast: false
