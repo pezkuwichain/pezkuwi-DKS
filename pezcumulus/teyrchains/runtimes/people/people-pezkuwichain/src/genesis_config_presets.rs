@@ -174,10 +174,24 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			Sr25519Keyring::well_known().map(|x| x.to_account_id()).collect(),
 			HEZ * 1_000_000,
 			PEOPLE_PARA_ID,
-			// Founding citizens: Alice and Bob are founding citizens for testing
+			// The founding register of the local chain.
+			//
+			// Five rather than two, and the reason is the rehearsal: a citizen is the unit of
+			// almost everything this chain does. Trust is only computed for one
+			// (`calculate_trust_score` refuses a non-citizen outright), and without trust there
+			// is no vote, so a bench seated from non-citizens can hold a seat and still not
+			// answer a referendum. Measured 2026-09-18: the rehearsal seated five, three of
+			// them were not on the register, and the runs died waiting for a trust score that
+			// could never be computed.
+			//
+			// This is the *local* preset -- a fixture whose job is to make the rehearsal
+			// possible. The genesis preset seats the founder alone and is untouched.
 			vec![
 				(Sr25519Keyring::Alice.to_account_id(), default_founding_citizen_identity_hash()),
 				(Sr25519Keyring::Bob.to_account_id(), default_founding_citizen_identity_hash()),
+				(Sr25519Keyring::Charlie.to_account_id(), default_founding_citizen_identity_hash()),
+				(Sr25519Keyring::Dave.to_account_id(), default_founding_citizen_identity_hash()),
+				(Sr25519Keyring::Eve.to_account_id(), default_founding_citizen_identity_hash()),
 			],
 			// Alice gets NFT #0 for testing
 			Some(Sr25519Keyring::Alice.to_account_id()),

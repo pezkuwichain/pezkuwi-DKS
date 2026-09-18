@@ -278,8 +278,20 @@ async fn has_tiki(
 	})
 }
 
-fn account_value(k: &Keypair) -> Value {
+/// A `MultiAddress`, for the calls that take one.
+///
+/// `Lookup::Source` is an enum and wants the `Id` variant around the bytes. Everything in this
+/// tree that takes a *plain* `AccountId` wants `raw_account` instead, and the two are not
+/// interchangeable: passing a `MultiAddress` where an `AccountId` belongs fails at encoding
+/// with "Cannot encode Str into type with ID 2", which reads like a string problem and is
+/// really a variant that the target type has no place for. Measured 2026-09-18, on four calls.
+fn multi_address(k: &Keypair) -> Value {
 	Value::unnamed_variant("Id", vec![Value::from_bytes(k.public_key().to_account_id().0)])
+}
+
+/// A bare `AccountId`: thirty-two bytes and no wrapper.
+fn raw_account(k: &Keypair) -> Value {
+	Value::from_bytes(k.public_key().to_account_id().0)
 }
 
 /// The bench this rehearsal seats: the well-known keys, which the local preset endows and
@@ -323,7 +335,7 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 	// `seat_founding_parliament` refuses a second call once the house is non-empty, so this
 	// is also the check that nothing seated it earlier.
 	log::info!("seating a founding Parliament of {}", bench.len());
-	let members: Vec<Value> = bench.iter().map(account_value).collect();
+	let members: Vec<Value> = bench.iter().map(raw_account).collect();
 	root_call_on_people(
 		&relay,
 		&people,
@@ -358,7 +370,7 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 		&people,
 		"Tiki",
 		"grant_elected_role",
-		vec![account_value(&serok), Value::unnamed_variant("Serok", vec![])],
+		vec![multi_address(&serok), Value::unnamed_variant("Serok", vec![])],
 		|| {
 			let people = &people;
 			async move { Ok(tiki_holder(people, "Serok").await?.is_some()) }
@@ -392,7 +404,7 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 			&people,
 			"Tiki",
 			"grant_tiki",
-			vec![account_value(member), Value::unnamed_variant("Hiquqnas", vec![])],
+			vec![multi_address(member), Value::unnamed_variant("Hiquqnas", vec![])],
 			|| {
 				let people = &people;
 				let who = (*member).clone();
@@ -489,7 +501,7 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 	let appoint = dynamic::tx(
 		"Welati",
 		"appoint_minister",
-		vec![account_value(&treasurer), Value::unnamed_variant("WezireDarayiye", vec![])],
+		vec![raw_account(&treasurer), Value::unnamed_variant("WezireDarayiye", vec![])],
 	);
 	people
 		.tx()
@@ -534,7 +546,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 		network.get_node("people-collator-01")?.wait_client().await?;
 
 	let bench = founding_bench();
-	let members: Vec<Value> = bench.iter().map(account_value).collect();
+	let members: Vec<Value> = bench.iter().map(raw_account).collect();
 	root_call_on_people(
 		&relay,
 		&people,
@@ -837,7 +849,7 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 
 	// The bench first: its members are the only accounts that can be owed anything this early.
 	let bench = founding_bench();
-	let members: Vec<Value> = bench.iter().map(account_value).collect();
+	let members: Vec<Value> = bench.iter().map(raw_account).collect();
 	root_call_on_people(
 		&relay,
 		&people,
