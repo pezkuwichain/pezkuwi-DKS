@@ -1621,6 +1621,14 @@ impl pezpallet_welati::Config for Runtime {
 parameter_types! {
 	/// The Asset Hub holds the incentive pot; this chain only instructs payments out of it.
 	pub const PezRewardsTreasuryPalletIndex: u8 = 70;
+	/// The epoch and its claim window, from the pallet's own production constants -- one home
+	/// for the number -- wrapped so a rehearsal build can see an epoch close. Thirty days of
+	/// blocks is not something a test can wait for, and until an epoch closes nothing can be
+	/// claimed and the path that pays a claim across to the Asset Hub stays unproven.
+	pub const PezRewardsEpochLength: BlockNumber =
+		rehearsal_period!(pezpallet_pez_rewards::BLOCKS_PER_EPOCH, DAYS);
+	pub const PezRewardsClaimPeriod: BlockNumber =
+		rehearsal_period!(pezpallet_pez_rewards::CLAIM_PERIOD_BLOCKS, DAYS);
 }
 
 /// The trust roll the payroll is drawn against.
@@ -1669,6 +1677,8 @@ impl pezpallet_pez_rewards::Config for Runtime {
 	type XcmSender = crate::xcm_config::XcmRouter;
 	type TreasuryChainLocation = WelatiTreasuryChain;
 	type TreasuryPalletIndex = PezRewardsTreasuryPalletIndex;
+	type EpochLength = PezRewardsEpochLength;
+	type ClaimPeriod = PezRewardsClaimPeriod;
 	// Only ever used on a chain whose genesis did not start the clock.
 	type ForceOrigin = crate::RootOrSerokOrCouncilTwoThirds;
 }
@@ -2287,6 +2297,8 @@ mod tests {
 			("ProposalVotingDelay", WelatiProposalVotingDelay::get()),
 			("NominationPeriod", WelatiNominationPeriod::get()),
 			("PopulationCheckPeriod", WelatiPopulationCheckPeriod::get()),
+			("PezRewardsEpochLength", PezRewardsEpochLength::get()),
+			("PezRewardsClaimPeriod", PezRewardsClaimPeriod::get()),
 		] {
 			if cfg!(feature = "fast-runtime") {
 				assert!(
