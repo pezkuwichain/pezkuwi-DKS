@@ -124,12 +124,14 @@ pub mod pezpallet {
 	use pezframe_support::pezpallet_prelude::*;
 	use pezframe_system::pezpallet_prelude::*;
 
-	/// A day on the chain this pallet runs on: People, a teyrchain, at twelve seconds a block.
+	/// A day on the chain this pallet runs on: People, at six seconds a block.
 	///
-	/// Both periods below were written for a six-second chain and were therefore twice what
-	/// they were named -- an epoch of sixty days and a fortnight to claim a week's reward. See
-	/// `pez-treasury`, which carried the same mistake in the constant this one has to match.
-	pub const BLOCKS_PER_DAY: u32 = 7_200; // 24h at 12s
+	/// Six is the measured figure -- the running chain answers `AuraApi_slot_duration` with
+	/// 6000 -- and not the one a reader arrives at from `teyrchains_common`, which declares a
+	/// same-named `MILLISECS_PER_BLOCK` of 12000 and does not govern this chain's cadence. The
+	/// two constants are easy to confuse and the confusion halves or doubles every period
+	/// derived from them, silently, so the value is written out here with what it came from.
+	pub const BLOCKS_PER_DAY: u32 = 14_400; // 24h at 6s
 
 	/// One month in production -- the same period the treasury releases on, so an epoch is
 	/// funded by exactly one release. The two constants have to stay equal, and a test in each

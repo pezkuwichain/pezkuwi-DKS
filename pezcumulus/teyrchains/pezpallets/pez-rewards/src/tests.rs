@@ -571,7 +571,7 @@ fn a_reward_paid_against_an_open_epoch_is_caught() {
 /// cannot repeat the code's own arithmetic back at it.
 #[test]
 fn an_epoch_is_a_month_and_matches_the_treasury_release() {
-	const SECS_PER_BLOCK: u64 = 12;
+	const SECS_PER_BLOCK: u64 = 6;
 	const DAY: u64 = 24 * 60 * 60;
 
 	let epoch_days = crate::BLOCKS_PER_EPOCH as u64 * SECS_PER_BLOCK / DAY;

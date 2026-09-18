@@ -1045,7 +1045,7 @@ fn the_report_is_addressed_to_the_rewards_chain_and_its_pallet() {
 /// with the code by repeating its mistake.
 #[test]
 fn the_halving_is_four_years_on_a_twelve_second_chain() {
-	const SECS_PER_BLOCK: u64 = 12;
+	const SECS_PER_BLOCK: u64 = 6;
 	const DAY: u64 = 24 * 60 * 60;
 
 	let month_secs = BLOCKS_PER_MONTH as u64 * SECS_PER_BLOCK;
@@ -1053,7 +1053,7 @@ fn the_halving_is_four_years_on_a_twelve_second_chain() {
 		month_secs / DAY,
 		30,
 		"a release period is {} days, not the thirty it is named for -- at {SECS_PER_BLOCK}s a \
-		 block, BLOCKS_PER_MONTH has to be 30 * 7200",
+		 block, BLOCKS_PER_MONTH has to be 30 * 14400",
 		month_secs / DAY
 	);
 

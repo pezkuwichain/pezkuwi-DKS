@@ -126,16 +126,16 @@ pub mod pezpallet {
 
 	/// A day on the chain this pallet runs on.
 	///
-	/// Written out rather than left inside the numbers below, because that is where it went
-	/// wrong: the periods were `432_000`, commented "10 blocks/minute", which is a six-second
-	/// chain. This pallet only ever runs on the Asset Hub, and a teyrchain's blocks are twelve
-	/// seconds (`MILLISECS_PER_BLOCK = 12000`). So every period here was exactly double what it
-	/// was named -- a "month" was sixty days and the halving was near eight years, against a
-	/// whitepaper that promises four. Nothing failed; the schedule simply ran at half speed.
+	/// Six seconds a block, and that is measured rather than assumed: the running chain answers
+	/// `AuraApi_slot_duration` with 6000, `BLOCK_PROCESSING_VELOCITY` is one block per relay
+	/// slot, and the relay slot is 6000 too. Live intervals on the testnet are longer and more
+	/// irregular than that, but a period has to be written against the cadence the chain is
+	/// built for -- otherwise every collator that catches up changes what "a month" means.
 	///
-	/// The assumption is now one constant that a test can check, instead of an arithmetic
-	/// nobody re-did.
-	pub const BLOCKS_PER_DAY: u32 = 7_200; // 24h at 12s
+	/// Written out because the periods below used to carry it implicitly, in a comment, where
+	/// it could be read as the wrong number by someone checking against a differently-named
+	/// constant in another crate. It is now one value a test can check.
+	pub const BLOCKS_PER_DAY: u32 = 14_400; // 24h at 6s
 
 	/// Releases per halving period. Forty-eight thirty-day releases is 1,440 days -- close to
 	/// four years, which is the interval the whitepaper states and Bitcoin set the expectation
