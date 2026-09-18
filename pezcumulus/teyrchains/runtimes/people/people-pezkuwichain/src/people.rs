@@ -1417,7 +1417,14 @@ parameter_types! {
 	pub const MinElectorate: u32 = 100_000;
 
 	/// Checked once a day. The answer only matters on the era it flips.
-	pub const WelatiPopulationCheckPeriod: BlockNumber = DAYS;
+	///
+	/// Compressed for a rehearsal like every other period this chain is measured against. It
+	/// was a bare `DAYS`, and that put the keystone of the whole cross-chain sequence out of
+	/// reach: the register can fill to the gate inside a test, but the check that notices only
+	/// runs every seven thousand two hundred blocks, so the report never fires and the XCM that
+	/// activates distribution on the Asset Hub is never sent. Nothing failed -- the path simply
+	/// could not be demonstrated, which is the defect a rehearsal exists to find.
+	pub const WelatiPopulationCheckPeriod: BlockNumber = rehearsal_period!(DAYS, DAYS);
 }
 
 /// Randomness source for elections (using timestamp for now)
@@ -2257,6 +2264,58 @@ mod tests {
 	/// rescaled again and cannot be rescaled by halves. The floor is checked too: it is a
 	/// flat `max(ceiling / 20, 10)` inside the pallet and does not scale with anything, so a
 	/// small enough roll would run into it on its own.
+	/// The periods a rehearsal has to step over are compressed, and the ones it must not be
+	/// allowed to step over are left alone.
+	///
+	/// Three of these were found one at a time, each by a rehearsal stage that could not run:
+	/// the delay before a collective vote opens, the life of a nomination, and the interval at
+	/// which the population gate is checked -- the last of which is the keystone of the whole
+	/// cross-chain sequence, because nothing reaches the Asset Hub until that report fires.
+	/// Finding them one at a time is the failure this test exists to stop.
+	///
+	/// The second list matters as much. A term of office compressed to a handful of blocks
+	/// would expire *during* a rehearsal, and every office would fall vacant halfway through a
+	/// test that was measuring something else entirely -- so these are asserted to stay long.
+	/// "Compress everything" and "compress nothing" are both wrong; the line is whether a test
+	/// has to wait for it or live inside it.
+	#[test]
+	fn the_periods_a_rehearsal_steps_over_are_compressed() {
+		let day = super::DAYS;
+		let compressed = |p: BlockNumber| p < day;
+
+		for (name, period) in [
+			("ProposalVotingDelay", WelatiProposalVotingDelay::get()),
+			("NominationPeriod", WelatiNominationPeriod::get()),
+			("PopulationCheckPeriod", WelatiPopulationCheckPeriod::get()),
+		] {
+			if cfg!(feature = "fast-runtime") {
+				assert!(
+					compressed(period),
+					"{name} is {period} blocks under `fast-runtime` -- a rehearsal has to wait \
+					 for it, so it must compress. Wrap it in `rehearsal_period!`"
+				);
+			} else {
+				assert!(
+					!compressed(period),
+					"{name} is {period} blocks in production, under a day -- the compression \
+					 leaked out of the rehearsal build"
+				);
+			}
+		}
+
+		// Mandates, not waits. A rehearsal lives inside these rather than waiting for them.
+		for (name, period) in [
+			("TermLength", WelatiTermLength::get()),
+			("CourtTermLength", WelatiCourtTermLength::get()),
+		] {
+			assert!(
+				period >= 365 * day,
+				"{name} is {period} blocks -- a term this short expires during a test and \
+				 empties every office it covers"
+			);
+		}
+	}
+
 	#[test]
 	fn no_candidacy_can_need_more_endorsers_than_the_roll_holds() {
 		let mature = MinElectorate::get();
