@@ -38,7 +38,7 @@ use pezkuwi_runtime_common::rehearsal_period;
 use pezpallet_referenda::Curve;
 use pezsp_runtime::{str_array as s, FixedI64};
 use testnet_teyrchains_constants::pezkuwichain::currency::UNITS;
-use teyrchains_common::{DAYS, HOURS, MINUTES};
+use testnet_teyrchains_constants::pezkuwichain::time::{DAYS, HOURS, MINUTES};
 
 const fn percent(x: i32) -> FixedI64 {
 	FixedI64::from_rational(x as u128, 100)

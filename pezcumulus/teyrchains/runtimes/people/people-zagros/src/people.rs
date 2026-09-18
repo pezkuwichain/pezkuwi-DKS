@@ -33,7 +33,7 @@ use pezsp_runtime::traits::{AccountIdConversion, ConvertInto, Verify};
 use scale_info::TypeInfo;
 use testnet_teyrchains_constants::zagros::currency::UNITS;
 use testnet_teyrchains_constants::zagros::locations::AssetHubLocation;
-use teyrchains_common::{DAYS, HOURS};
+use testnet_teyrchains_constants::zagros::time::{DAYS, HOURS};
 
 parameter_types! {
 	//   27 | Min encoded size of `Registration`
@@ -652,10 +652,16 @@ parameter_types! {
 	// Real-world analogy: a notarized document's recording/contestability
 	// period — a noter-signed submission only takes effect after this many
 	// blocks unchallenged. Root/XCM-Transact submissions (chain-authenticated,
-	// not a personal key) are exempt. One real hour, using this runtime's
-	// actual `HOURS` constant (`testnet_teyrchains_constants::pezkuwichain`,
-	// derived from the real 6s slot duration this runtime is configured
-	// with) — matches staking-score's own internal `HOUR_IN_BLOCKS`.
+	// not a personal key) are exempt. One real hour, from this file's `HOURS`,
+	// and it does now match staking-score's own `HOUR_IN_BLOCKS` of 600.
+	//
+	// It did not until 2026-09-18. This file was importing `HOURS` from
+	// `teyrchains_common`, whose block time is 12s, so the constant was 300
+	// against the 600 the sentence claimed — the comment described the intent
+	// correctly and the code did not follow it. The import is fixed and
+	// `the_day_this_file_counts_in_matches_the_chain_it_runs_on` now holds the
+	// two together against the runtime's actual slot duration, so the sentence
+	// is checked rather than asserted.
 	pub const StakingNoterDisputeWindow: BlockNumber = HOURS;
 }
 
@@ -2348,6 +2354,36 @@ mod tests {
 				 empties every office it covers"
 			);
 		}
+	}
+
+	/// The day this file counts in is the day this chain actually has.
+	///
+	/// Two crates declare a `MILLISECS_PER_BLOCK` and they disagree. `teyrchains_common` says
+	/// 12000 -- it is upstream's default for a parachain without async backing, and these
+	/// runtimes depend on the crate for other things. `testnet_teyrchains_constants` says 6000,
+	/// and that is the one `SLOT_DURATION` comes from, which is what Aura is configured with,
+	/// which is what the running chain answers `AuraApi_slot_duration` with.
+	///
+	/// Importing `DAYS` from the first while running on the second halves every period derived
+	/// from it, and nothing complains: a four-year term becomes two, a nine-year court term
+	/// four and a half, and every governance track decides in half the time its name promises.
+	/// That is what was happening here until 2026-09-18, across eighty-one periods in three
+	/// files per twin.
+	///
+	/// So this checks the arithmetic against the slot duration rather than against another
+	/// constant -- comparing two constants is exactly how the wrong one gets confirmed.
+	#[test]
+	fn the_day_this_file_counts_in_matches_the_chain_it_runs_on() {
+		use testnet_teyrchains_constants::zagros::consensus::MILLISECS_PER_BLOCK;
+		let blocks_per_day = 24 * 60 * 60 * 1000 / MILLISECS_PER_BLOCK;
+		assert_eq!(
+			super::DAYS as u64,
+			blocks_per_day,
+			"DAYS is {} blocks but a day at {MILLISECS_PER_BLOCK}ms a block is {blocks_per_day} \
+			 -- this file is importing its day from a crate that does not govern this chain",
+			super::DAYS
+		);
+		assert_eq!(super::HOURS as u64, blocks_per_day / 24, "HOURS does not divide DAYS by 24");
 	}
 
 	#[test]
