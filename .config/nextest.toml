@@ -145,6 +145,21 @@ test-group = 'serial-integration'
 # 512-key sync committee. They pass in isolation but aborted under full-suite concurrency on
 # the capped self-hosted runners (memory pressure). Reserve all threads so each runs alone,
 # without concurrent contention.
+# Each rehearsal stage raises a whole network -- a relay, two validators and two collators --
+# from the same `zagros-local` spec, which means the same Alice and Bob authority keys every
+# time. Run two of them at once and the two relays find each other and vote twice with one
+# identity: BABE and GRANDPA equivocation, then "Essential task `grandpa-voter` failed" and the
+# node shuts down. Measured 2026-09-19: all six stages failed this way on the first run, and
+# none of the failures named the cause, because from inside a test the symptom is a chain that
+# stops finalising.
+#
+# Concurrency is not an optimisation to recover here. Six networks is thirty nodes on one box,
+# and the run would thrash even if the keys were distinct.
+[[profile.default.overrides]]
+filter = 'test(/state_rehearsal/)'
+threads-required = 'num-cpus'
+slow-timeout = { period = "300s", terminate-after = 24 }
+
 [[profile.default.overrides]]
 filter = 'package(pezsnowbridge-pezpallet-ethereum-client)'
 threads-required = 'num-cpus'
