@@ -429,6 +429,22 @@ pub mod pezpallet {
 		type DiwanElectedSeats: Get<u32>;
 		#[pezpallet::constant]
 		type ElectionPeriod: Get<BlockNumberFor<Self>>;
+		/// Notice between a proposal being opened and the house being able to vote on it.
+		///
+		/// It was a bare `14400` in the body, which is a day only if blocks are six seconds.
+		/// This pallet lives on People, whose blocks are twelve, so the house actually waited
+		/// two days — and because the number was not a constant, `fast-runtime` could not
+		/// compress it either, which put every collective vote out of reach of a rehearsal.
+		/// A period the chain is measured against belongs in `Config`, where the runtime that
+		/// knows its own block time sets it.
+		#[pezpallet::constant]
+		type ProposalVotingDelay: Get<BlockNumberFor<Self>>;
+		/// How long a nomination stays open for the confirming body to act on.
+		///
+		/// Same defect as `ProposalVotingDelay`: written `14400 * 7` and commented "7 days",
+		/// which on this chain was fourteen.
+		#[pezpallet::constant]
+		type NominationPeriod: Get<BlockNumberFor<Self>>;
 		#[pezpallet::constant]
 		type CandidacyPeriod: Get<BlockNumberFor<Self>>;
 		#[pezpallet::constant]
@@ -2987,7 +3003,11 @@ pub mod pezpallet {
 		/// cannot pass anything a house of two hundred and one could not. The arithmetic
 		/// already gates this; a second gate here would only repeat it.
 		///
-		/// Root is accepted for as long as sudo exists, like every other Presidential power.
+		/// Root is accepted as well as the Serok, but mind where that Root has to come from.
+		/// On a People chain the register is closed to `Transact`, so it is the Root track of
+		/// that chain's own referenda and never the relay's sudo. On the founding day the roll
+		/// is far too small for a referendum, which is why this call is the Serok's in
+		/// practice: genesis seats the holder of `Tiki::Serok`, and that holder signs this.
 		#[pezpallet::call_index(34)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
 		pub fn seat_founding_parliament(
@@ -3631,7 +3651,7 @@ pub mod pezpallet {
 			NextAppointmentId::<T>::mutate(|id| *id = id.saturating_add(1));
 
 			let current_block = pezframe_system::Pezpallet::<T>::block_number();
-			let deadline = current_block + BlockNumberFor::<T>::from(14400u32 * 7u32); // 7 days
+			let deadline = current_block + T::NominationPeriod::get();
 
 			// Create nomination info
 			let nomination = NominationInfo {
@@ -5257,7 +5277,7 @@ pub mod pezpallet {
 			NextProposalId::<T>::put(proposal_id.saturating_add(1));
 
 			let current_block = <pezframe_system::Pezpallet<T>>::block_number();
-			let voting_starts_at = current_block + 14400u32.into();
+			let voting_starts_at = current_block + T::ProposalVotingDelay::get();
 			let expires_at = voting_starts_at + T::ElectionPeriod::get();
 
 			ActiveProposals::<T>::insert(

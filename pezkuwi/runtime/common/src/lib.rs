@@ -271,6 +271,84 @@ impl pezsp_runtime::traits::Convert<pezsp_core::U256, Balance> for U256ToBalance
 /// 		prod_or_fast!(1 * HOURS, "fast-runtime", 1 * MINUTES, "fast-runtime-10m", 10 * MINUTES);
 /// }
 /// ```
+#[cfg(test)]
+mod rehearsal_period_tests {
+	use pezkuwi_primitives::BlockNumber;
+
+	const MINUTES: BlockNumber = 10;
+	const HOURS: BlockNumber = 60 * MINUTES;
+	const DAYS: BlockNumber = 24 * HOURS;
+
+	/// This crate has no `fast-runtime` feature, so here the macro takes its production branch.
+	///
+	/// That is the half a reader is least likely to check and the one that matters most: every
+	/// runtime this project deploys is built without the feature, so a wrong production branch
+	/// would reach the live chains -- and a governance period shorter than it says it is cannot
+	/// be noticed by reading the code.
+	#[test]
+	fn production_periods_are_untouched() {
+		for prod in [10 * MINUTES, 3 * HOURS, 24 * HOURS, 7 * DAYS, 28 * DAYS, 90 * DAYS] {
+			let got: BlockNumber = crate::rehearsal_period!(prod, DAYS);
+			assert_eq!(got, prod, "a runtime built without `fast-runtime` keeps its periods");
+		}
+	}
+
+	/// The compression branch. Written out rather than reached through the feature, which this
+	/// crate does not carry -- the point is that the rule is checked once here instead of being
+	/// trusted six times over in the runtimes that call it.
+	#[test]
+	fn the_rule_compresses_and_keeps_its_order() {
+		let fast = |prod: BlockNumber| -> BlockNumber {
+			if prod / 14_400 < 2 {
+				2
+			} else {
+				prod / 14_400
+			}
+		};
+		assert_eq!(fast(90 * DAYS), 90);
+		assert_eq!(fast(28 * DAYS), 28);
+		assert_eq!(fast(7 * DAYS), 7);
+		// Below a day, the floor rather than zero: a confirm period of no length confirms
+		// instantly, which would pass a track that production would hold open.
+		assert_eq!(fast(3 * HOURS), 2);
+		assert_eq!(fast(10 * MINUTES), 2);
+		assert!(fast(90 * DAYS) > fast(28 * DAYS));
+		assert!(fast(28 * DAYS) > fast(7 * DAYS));
+		assert!(fast(7 * DAYS) > fast(3 * HOURS));
+	}
+}
+
+/// A macro and not a function, and the reason is the whole mechanism. `cfg!` is evaluated in
+/// the crate where it is written: inside a function here it would read *this* crate's features,
+/// which do not include `fast-runtime` and never will -- so the compression would be
+/// permanently off while the code looked correct. Expanded at the call site it reads the
+/// runtime's own features, which is where the flag is set. The first version of this was a
+/// function and a test is what caught it.
+///
+/// The day length is a parameter rather than a constant for the same class of reason. The relay
+/// produces a block every six seconds and the teyrchains every twelve, so a day is 14,400
+/// blocks on one and 7,200 on the other. A single figure baked in here compressed the
+/// teyrchains by half what it claimed -- also caught by a test, after the first one was written.
+/// Passing the caller's own `DAYS` makes the rule read the same on every chain.
+#[macro_export]
+macro_rules! rehearsal_period {
+	($prod:expr, $day:expr) => {
+		if cfg!(feature = "fast-runtime") {
+			// One day becomes one block, so the order the constitution gives the tracks
+			// survives: what deliberates longer still does.
+			if $prod / $day < 2 {
+				// A confirm period of no length confirms instantly, which would pass a track
+				// that production would hold open. The floor keeps the mechanism biting.
+				2
+			} else {
+				$prod / $day
+			}
+		} else {
+			$prod
+		}
+	};
+}
+
 #[macro_export]
 macro_rules! prod_or_fast {
 	($prod:expr, $test:expr) => {

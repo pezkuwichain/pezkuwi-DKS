@@ -42,6 +42,10 @@ pezsp-io = { workspace = true, default-features = false, optional = true }
 pezsp-core = { workspace = true, default-features = false, features = ["std"] }
 pezsp-io = { workspace = true, default-features = false, features = ["std"] }
 xcm = { workspace = true, default-features = false, features = ["std"] }
+# Test-only, and for one assertion: an epoch is funded by exactly one treasury release, so the
+# two periods have to be the same number. They live in different crates and nothing else
+# compares them -- a drift would not fail, it would quietly pay the wrong amount.
+pezpallet-pez-treasury = { workspace = true, default-features = false, features = ["std"] }
 
 [features]
 default = ["std"]
@@ -51,6 +55,7 @@ std = [
 	"pezframe-benchmarking?/std",
 	"pezframe-support/std",
 	"pezframe-system/std",
+	"pezpallet-pez-treasury/std",
 	"pezsp-core?/std",
 	"pezsp-io?/std",
 	"pezsp-runtime/std",
@@ -64,6 +69,7 @@ runtime-benchmarks = [
 	"pezframe-benchmarking/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
+	"pezpallet-pez-treasury/runtime-benchmarks",
 	"pezsp-core",
 	"pezsp-io",
 	"pezsp-io?/runtime-benchmarks",
@@ -74,6 +80,7 @@ try-runtime = [
 	"pezframe-benchmarking?/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",
+	"pezpallet-pez-treasury/try-runtime",
 	"pezsp-runtime/try-runtime",
 	"xcm/try-runtime",
 ]

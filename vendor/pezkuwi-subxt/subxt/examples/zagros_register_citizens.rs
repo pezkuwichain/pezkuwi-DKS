@@ -5,13 +5,16 @@
 //! the Asset Hub, and the Asset Hub starts paying. On Zagros that figure is a hundred, scaled
 //! from the mainnet's hundred thousand so the testnet can reach it.
 //!
-//! There is a shortcut and it is not taken here. `Tiki::grant_honorary_citizenship` accepts
-//! Root, and the relay's sudo reaches this chain as Root through `ParentAsSuperuser`, so a
-//! hundred citizens could be conjured in one batch. Three reasons not to: L-5 says sudo does
-//! not do governance's work; the runtime's own comment says Root stands on that origin only
-//! while sudo exists; and a register filled that way never exercises the path the forty million
-//! will use. The real path costs three extrinsics per citizen and a returned deposit, which is
-//! not a price worth avoiding.
+//! There is a shortcut that looks available and is not. `Tiki::grant_honorary_citizenship`
+//! accepts Root, so a hundred citizens look like one batch from the relay's sudo -- but
+//! `TheRegisterIsNotWritableFromAbroad` drops every `Tiki` call arriving by `Transact`, and
+//! drops it without failing the relay extrinsic that sent it. The register is written on the
+//! register's own chain or not at all.
+//!
+//! It would be the wrong route even if it worked: L-5 says sudo does not do governance's work,
+//! and a register filled that way never exercises the path the forty million will use. The
+//! real path costs three extrinsics per citizen and a returned deposit, which is not a price
+//! worth avoiding.
 //!
 //! Each citizen therefore walks the whole route:
 //!   1. `apply_for_citizenship(hash, Some(founder), None)` -- reserves the deposit

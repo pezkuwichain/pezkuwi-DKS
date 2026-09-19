@@ -124,12 +124,28 @@ pub mod pezpallet {
 	use pezframe_support::pezpallet_prelude::*;
 	use pezframe_system::pezpallet_prelude::*;
 
-	/// One month at 10 blocks a minute -- the same period the treasury releases on, so an
-	/// epoch is funded by exactly one release.
-	pub const BLOCKS_PER_EPOCH: u32 = 432_000;
+	/// A day on the chain this pallet runs on: People, at six seconds a block.
+	///
+	/// Six is the measured figure -- the running chain answers `AuraApi_slot_duration` with
+	/// 6000 -- and not the one a reader arrives at from `teyrchains_common`, which declares a
+	/// same-named `MILLISECS_PER_BLOCK` of 12000 and does not govern this chain's cadence. The
+	/// two constants are easy to confuse and the confusion halves or doubles every period
+	/// derived from them, silently, so the value is written out here with what it came from.
+	pub const BLOCKS_PER_DAY: u32 = 14_400; // 24h at 6s
 
-	/// One week to claim.
-	pub const CLAIM_PERIOD_BLOCKS: u32 = 100_800;
+	/// One month in production -- the same period the treasury releases on, so an epoch is
+	/// funded by exactly one release. The two constants have to stay equal, and a test in each
+	/// pallet says so.
+	///
+	/// The runtimes pass this to `Config::EpochLength`, which is what the pallet actually
+	/// reads. The indirection exists so a rehearsal build can compress the period; the number
+	/// here stays the production truth and the cross-crate check compares it, not the
+	/// compressed one.
+	pub const BLOCKS_PER_EPOCH: u32 = 30 * BLOCKS_PER_DAY;
+
+	/// One week to claim, in production. Reached through `Config::ClaimPeriod` for the same
+	/// reason as `BLOCKS_PER_EPOCH`.
+	pub const CLAIM_PERIOD_BLOCKS: u32 = 7 * BLOCKS_PER_DAY;
 
 	/// Seats in the house. The divisor of the parliamentary share, always -- see the module
 	/// documentation for why it is not the number of members.
@@ -178,6 +194,23 @@ pub mod pezpallet {
 
 		/// Who may start the very first epoch, on a chain whose genesis did not.
 		type ForceOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// How long an epoch collects before it is finalised.
+		///
+		/// `BLOCKS_PER_EPOCH` is what this is in production and the runtimes pass it through,
+		/// so the number has one home. It is a `Config` item rather than a bare constant for
+		/// one reason: a rehearsal has to see an epoch close, and thirty days of blocks is not
+		/// something a test can wait for. Nothing else in this pallet could be exercised past
+		/// the first epoch either -- a claim needs a finalised epoch, and the path that pays it
+		/// crosses to the Asset Hub, so an epoch that never ends leaves that whole path
+		/// unproven.
+		#[pezpallet::constant]
+		type EpochLength: Get<BlockNumberFor<Self>>;
+
+		/// How long a finalised epoch stays claimable. `CLAIM_PERIOD_BLOCKS` in production,
+		/// and a `Config` item for the same reason as `EpochLength`.
+		#[pezpallet::constant]
+		type ClaimPeriod: Get<BlockNumberFor<Self>>;
 	}
 
 	/// Where the epoch clock is.
@@ -501,7 +534,7 @@ pub mod pezpallet {
 			if EpochStatus::<T>::get(epoch_data.current_epoch) != EpochState::Open {
 				return false;
 			}
-			now.saturating_sub(epoch_data.epoch_start_block) >= BLOCKS_PER_EPOCH.into()
+			now.saturating_sub(epoch_data.epoch_start_block) >= T::EpochLength::get()
 		}
 
 		fn claim_window_has_closed(epoch: u32, now: BlockNumberFor<T>) -> bool {
@@ -521,7 +554,7 @@ pub mod pezpallet {
 			let epoch = epoch_data.current_epoch;
 
 			let available = Self::available_funds();
-			let claim_deadline = now.saturating_add(CLAIM_PERIOD_BLOCKS.into());
+			let claim_deadline = now.saturating_add(T::ClaimPeriod::get());
 
 			// An epoch with nothing behind it still has to end, or the clock stops and every
 			// later month is lost with it. It simply pays nothing.

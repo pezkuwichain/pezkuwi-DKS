@@ -35,12 +35,32 @@ mod tests {
 		assert!(listener.is_some());
 	}
 
+	/// Asking for a specific port gives you that port.
+	///
+	/// The number is not the subject and must not be written down. This asserted on a hardcoded
+	/// 33056, which sits inside Linux's default ephemeral range (32768-60999): the kernel hands
+	/// those out to outgoing connections, so on any host with network traffic the test is a coin
+	/// flip. It came up tails on 2026-09-17 and failed a twenty-hour release gate with
+	/// `PortGeneration(33056, "Can't bind")` -- on a box running fourteen chain services, which
+	/// is to say on a box doing exactly what the fleet does.
+	///
+	/// So the port is borrowed from the OS first. Binding zero returns something free, and the
+	/// same machinery is then asked for it by number. There is a window between dropping the
+	/// probe and rebinding where something else could take it, and that window is microseconds
+	/// against the near-certainty of the old approach; more to the point, a failure here would
+	/// now mean the mechanism is broken rather than that the host was busy.
 	#[test]
 	fn generate_fixed_port() {
-		let port = generate(Some(33056)).unwrap();
+		let free = TcpListener::bind("0.0.0.0:0")
+			.expect("the OS can always give out a free port")
+			.local_addr()
+			.expect("a bound listener has a local address")
+			.port();
+
+		let port = generate(Some(free)).unwrap();
 		let listener = port.1.write().unwrap();
 
 		assert!(listener.is_some());
-		assert_eq!(port.0, 33056);
+		assert_eq!(port.0, free, "generate(Some(p)) must return p, not a port of its choosing");
 	}
 }

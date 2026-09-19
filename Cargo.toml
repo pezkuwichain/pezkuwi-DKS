@@ -1748,8 +1748,17 @@ serde_core = { git = "https://github.com/pezkuwichain/serde.git", branch = "fix-
 # patch is gone and we take arrayvec from crates.io again.
 # core2 is yanked on crates.io in its entirety — every version, with 0.0.0 as the only
 # thing left — and wasm sub-builds resolve dependencies without --locked, so it cannot be
-# fetched at all. It is still reached through litep2p 0.12.3 -> multihash 0.17.0, neither
-# of which we control; the newer cid dropped core2, but that is not the path that pulls it
-# in. Vendored in-tree so the build stays self-contained. Re-check when litep2p moves off
-# multihash 0.17. Verified still required 2026-07-31.
+# fetched at all. It used to be reached through litep2p 0.12.3 -> multihash 0.17.0, which is
+# why it was vendored.
+#
+# That path is gone. Measured 2026-09-19 against Cargo.lock: litep2p is 0.15.2, multihash is
+# 0.19.5, and no package in the lock depends on core2 at all — so this patch applies to
+# nothing and cargo says so on every single build in this workspace ("patch `core2 v0.4.0`
+# was not used in the crate"). A warning that fires on every build is a warning nobody reads.
+#
+# The line above this one asked for exactly this re-check — "when litep2p moves off
+# multihash 0.17" — and the move happened without it being done. Removing the patch and
+# `vendor/core2` is the fix and it is provably safe for the resolved graph, but it wants a
+# full CI run behind it rather than a lockfile edit made while the org's billing lock keeps
+# every workflow from starting. Recorded in res/plans/PLAN.md; do it on the first green run.
 core2 = { path = "vendor/core2" }

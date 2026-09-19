@@ -18097,6 +18097,7 @@ dependencies = [
  "pezframe-benchmarking",
  "pezframe-support",
  "pezframe-system",
+ "pezpallet-pez-treasury",
  "pezsp-core",
  "pezsp-io",
  "pezsp-runtime",

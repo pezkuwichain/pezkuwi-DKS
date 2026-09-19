@@ -25,6 +25,7 @@ use pezframe_support::{
 	CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound,
 };
 use pezframe_system::EnsureRoot;
+use pezkuwi_runtime_common::rehearsal_period;
 use pezkuwi_tnpos_primitives::scores::ScoreSnapshot;
 use pezpallet_identity::{Data, IdentityInformationProvider};
 use pezpallet_xcm::EnsureXcm;
@@ -32,7 +33,7 @@ use pezsp_runtime::traits::{AccountIdConversion, ConvertInto, Verify};
 use scale_info::TypeInfo;
 use testnet_teyrchains_constants::zagros::currency::UNITS;
 use testnet_teyrchains_constants::zagros::locations::AssetHubLocation;
-use teyrchains_common::{DAYS, HOURS};
+use testnet_teyrchains_constants::zagros::time::{DAYS, HOURS};
 
 parameter_types! {
 	//   27 | Min encoded size of `Registration`
@@ -651,10 +652,16 @@ parameter_types! {
 	// Real-world analogy: a notarized document's recording/contestability
 	// period — a noter-signed submission only takes effect after this many
 	// blocks unchallenged. Root/XCM-Transact submissions (chain-authenticated,
-	// not a personal key) are exempt. One real hour, using this runtime's
-	// actual `HOURS` constant (`testnet_teyrchains_constants::pezkuwichain`,
-	// derived from the real 6s slot duration this runtime is configured
-	// with) — matches staking-score's own internal `HOUR_IN_BLOCKS`.
+	// not a personal key) are exempt. One real hour, from this file's `HOURS`,
+	// and it does now match staking-score's own `HOUR_IN_BLOCKS` of 600.
+	//
+	// It did not until 2026-09-18. This file was importing `HOURS` from
+	// `teyrchains_common`, whose block time is 12s, so the constant was 300
+	// against the 600 the sentence claimed — the comment described the intent
+	// correctly and the code did not follow it. The import is fixed and
+	// `the_day_this_file_counts_in_matches_the_chain_it_runs_on` now holds the
+	// two together against the runtime's actual slot duration, so the sentence
+	// is checked rather than asserted.
 	pub const StakingNoterDisputeWindow: BlockNumber = HOURS;
 }
 
@@ -1236,6 +1243,12 @@ parameter_types! {
 	pub const WelatiDiwanElectedSeats: u32 = 6;
 	/// Election period (~4 months = ~120 days)
 	pub const WelatiElectionPeriod: BlockNumber = 120 * DAYS;
+	/// A day's notice before the house may vote on a proposal, and a week for a nomination
+	/// to be acted on. Both were bare block counts inside the pallet written against a
+	/// six-second chain; here they are a day and a week of *this* chain, and they compress
+	/// under `fast-runtime` like every other period a rehearsal has to step over.
+	pub const WelatiProposalVotingDelay: BlockNumber = rehearsal_period!(DAYS, DAYS);
+	pub const WelatiNominationPeriod: BlockNumber = rehearsal_period!(7 * DAYS, DAYS);
 	/// Candidacy period (~3 days)
 	pub const WelatiCandidacyPeriod: BlockNumber = 3 * DAYS;
 	/// Campaign period (~10 days)
@@ -1244,10 +1257,23 @@ parameter_types! {
 	pub const WelatiElectoralDistricts: u32 = 10;
 	/// Candidacy deposit (100 PEZ)
 	pub const WelatiCandidacyDeposit: u128 = 100 * UNITS as u128;
-	/// Presidential endorsements required
-	pub const WelatiPresidentialEndorsements: u32 = 1000;
-	/// Parliamentary endorsements required
-	pub const WelatiParliamentaryEndorsements: u32 = 100;
+	/// Endorsements a candidacy needs once the roll is mature — scaled to *this* roll.
+	///
+	/// The pallet scales these down in proportion below `MatureRoll` and `MatureRoll` is
+	/// `MinElectorate`, which this chain sets to a hundred against the mainnet's hundred
+	/// thousand. Carrying the mainnet ceilings across that thousand-fold divergence left the
+	/// relief switched off: a roll of a hundred counted as mature, took the full ceiling, and
+	/// a presidential candidacy needed a thousand endorsements from a hundred citizens — ten
+	/// times the whole electorate. Parliamentary needed every single one. Measured, not
+	/// reasoned: the twin check only holds pallet indices, so nothing caught the half-done
+	/// divergence.
+	///
+	/// Twenty and ten keep the mechanism biting at rehearsal scale — a fifth of the roll to
+	/// stand for President, a tenth for a seat — which is the standard the other Zagros
+	/// scale constants are set by. A candidacy that needs nothing is not a candidacy.
+	pub const WelatiPresidentialEndorsements: u32 = 20;
+	/// See `WelatiPresidentialEndorsements`.
+	pub const WelatiParliamentaryEndorsements: u32 = 10;
 	/// Maximum endorsers per candidate registration
 	pub const WelatiMaxEndorsers: u32 = 1000;
 
@@ -1419,7 +1445,14 @@ parameter_types! {
 	pub const MinElectorate: u32 = 100;
 
 	/// Checked once a day. The answer only matters on the era it flips.
-	pub const WelatiPopulationCheckPeriod: BlockNumber = DAYS;
+	///
+	/// Compressed for a rehearsal like every other period this chain is measured against. It
+	/// was a bare `DAYS`, and that put the keystone of the whole cross-chain sequence out of
+	/// reach: the register can fill to the gate inside a test, but the check that notices only
+	/// runs every seven thousand two hundred blocks, so the report never fires and the XCM that
+	/// activates distribution on the Asset Hub is never sent. Nothing failed -- the path simply
+	/// could not be demonstrated, which is the defect a rehearsal exists to find.
+	pub const WelatiPopulationCheckPeriod: BlockNumber = rehearsal_period!(DAYS, DAYS);
 }
 
 /// Randomness source for elections (using timestamp for now)
@@ -1555,6 +1588,8 @@ impl pezpallet_welati::Config for Runtime {
 	type CourtRoster = DiwanRoster;
 	type HouseRoster = ParliamentRoster;
 	type ElectionPeriod = WelatiElectionPeriod;
+	type ProposalVotingDelay = WelatiProposalVotingDelay;
+	type NominationPeriod = WelatiNominationPeriod;
 	type CandidacyPeriod = WelatiCandidacyPeriod;
 	type CampaignPeriod = WelatiCampaignPeriod;
 	type ElectoralDistricts = WelatiElectoralDistricts;
@@ -1614,6 +1649,14 @@ impl pezpallet_welati::Config for Runtime {
 parameter_types! {
 	/// The Asset Hub holds the incentive pot; this chain only instructs payments out of it.
 	pub const PezRewardsTreasuryPalletIndex: u8 = 70;
+	/// The epoch and its claim window, from the pallet's own production constants -- one home
+	/// for the number -- wrapped so a rehearsal build can see an epoch close. Thirty days of
+	/// blocks is not something a test can wait for, and until an epoch closes nothing can be
+	/// claimed and the path that pays a claim across to the Asset Hub stays unproven.
+	pub const PezRewardsEpochLength: BlockNumber =
+		rehearsal_period!(pezpallet_pez_rewards::BLOCKS_PER_EPOCH, DAYS);
+	pub const PezRewardsClaimPeriod: BlockNumber =
+		rehearsal_period!(pezpallet_pez_rewards::CLAIM_PERIOD_BLOCKS, DAYS);
 }
 
 /// The trust roll the payroll is drawn against.
@@ -1662,6 +1705,8 @@ impl pezpallet_pez_rewards::Config for Runtime {
 	type XcmSender = crate::xcm_config::XcmRouter;
 	type TreasuryChainLocation = WelatiTreasuryChain;
 	type TreasuryPalletIndex = PezRewardsTreasuryPalletIndex;
+	type EpochLength = PezRewardsEpochLength;
+	type ClaimPeriod = PezRewardsClaimPeriod;
 	// Only ever used on a chain whose genesis did not start the clock.
 	type ForceOrigin = crate::RootOrSerokOrCouncilTwoThirds;
 }
@@ -2241,6 +2286,167 @@ mod tests {
 				 silently reinstates a gate this chain was scaled away from"
 			);
 		});
+	}
+
+	/// A candidacy cannot need more endorsers than the chain has citizens.
+	///
+	/// The pallet scales the endorsement ceilings down in proportion below `MatureRoll`, and
+	/// `MatureRoll` is `MinElectorate`. So the two move together or the relief stops working:
+	/// scaling the roll down a thousandfold and leaving the ceilings alone made a mature roll
+	/// take the *full* mainnet requirement, and a presidential candidacy asked a hundred
+	/// citizens for a thousand endorsements. Nothing failed to compile and no test went red --
+	/// the chain simply could not hold an election, which is the sort of thing only a
+	/// rehearsal asks it to prove.
+	///
+	/// Stated against `MinElectorate` rather than against literals, so this chain can be
+	/// rescaled again and cannot be rescaled by halves. The floor is checked too: it is a
+	/// flat `max(ceiling / 20, 10)` inside the pallet and does not scale with anything, so a
+	/// small enough roll would run into it on its own.
+	/// The periods a rehearsal has to step over are compressed, and the ones it must not be
+	/// allowed to step over are left alone.
+	///
+	/// Three of these were found one at a time, each by a rehearsal stage that could not run:
+	/// the delay before a collective vote opens, the life of a nomination, and the interval at
+	/// which the population gate is checked -- the last of which is the keystone of the whole
+	/// cross-chain sequence, because nothing reaches the Asset Hub until that report fires.
+	/// Finding them one at a time is the failure this test exists to stop.
+	///
+	/// The second list matters as much. A term of office compressed to a handful of blocks
+	/// would expire *during* a rehearsal, and every office would fall vacant halfway through a
+	/// test that was measuring something else entirely -- so these are asserted to stay long.
+	/// "Compress everything" and "compress nothing" are both wrong; the line is whether a test
+	/// has to wait for it or live inside it.
+	#[test]
+	fn the_periods_a_rehearsal_steps_over_are_compressed() {
+		let day = super::DAYS;
+		let compressed = |p: BlockNumber| p < day;
+
+		for (name, period) in [
+			("ProposalVotingDelay", WelatiProposalVotingDelay::get()),
+			("NominationPeriod", WelatiNominationPeriod::get()),
+			("PopulationCheckPeriod", WelatiPopulationCheckPeriod::get()),
+			("PezRewardsEpochLength", PezRewardsEpochLength::get()),
+			("PezRewardsClaimPeriod", PezRewardsClaimPeriod::get()),
+		] {
+			if cfg!(feature = "fast-runtime") {
+				assert!(
+					compressed(period),
+					"{name} is {period} blocks under `fast-runtime` -- a rehearsal has to wait \
+					 for it, so it must compress. Wrap it in `rehearsal_period!`"
+				);
+			} else {
+				assert!(
+					!compressed(period),
+					"{name} is {period} blocks in production, under a day -- the compression \
+					 leaked out of the rehearsal build"
+				);
+			}
+		}
+
+		// Mandates, not waits. A rehearsal lives inside these rather than waiting for them.
+		for (name, period) in [
+			("TermLength", WelatiTermLength::get()),
+			("CourtTermLength", WelatiCourtTermLength::get()),
+		] {
+			assert!(
+				period >= 365 * day,
+				"{name} is {period} blocks -- a term this short expires during a test and \
+				 empties every office it covers"
+			);
+		}
+	}
+
+	/// The day this file counts in is the day this chain actually has.
+	///
+	/// Two crates declare a `MILLISECS_PER_BLOCK` and they disagree. `teyrchains_common` says
+	/// 12000 -- it is upstream's default for a parachain without async backing, and these
+	/// runtimes depend on the crate for other things. `testnet_teyrchains_constants` says 6000,
+	/// and that is the one `SLOT_DURATION` comes from, which is what Aura is configured with,
+	/// which is what the running chain answers `AuraApi_slot_duration` with.
+	///
+	/// Importing `DAYS` from the first while running on the second halves every period derived
+	/// from it, and nothing complains: a four-year term becomes two, a nine-year court term
+	/// four and a half, and every governance track decides in half the time its name promises.
+	/// That is what was happening here until 2026-09-18, across eighty-one periods in three
+	/// files per twin.
+	///
+	/// So this checks the arithmetic against the slot duration rather than against another
+	/// constant -- comparing two constants is exactly how the wrong one gets confirmed.
+	#[test]
+	fn the_day_this_file_counts_in_matches_the_chain_it_runs_on() {
+		use testnet_teyrchains_constants::zagros::consensus::MILLISECS_PER_BLOCK;
+		let blocks_per_day = 24 * 60 * 60 * 1000 / MILLISECS_PER_BLOCK;
+		assert_eq!(
+			super::DAYS as u64,
+			blocks_per_day,
+			"DAYS is {} blocks but a day at {MILLISECS_PER_BLOCK}ms a block is {blocks_per_day} \
+			 -- this file is importing its day from a crate that does not govern this chain",
+			super::DAYS
+		);
+		assert_eq!(super::HOURS as u64, blocks_per_day / 24, "HOURS does not divide DAYS by 24");
+	}
+
+	/// The three terms Serok named, in years and days rather than in blocks.
+	///
+	/// A mandate of four years, a court of nine, and a hundred and twenty days from the call of
+	/// an election to its close. They were two, four and a half, and sixty until 2026-09-18,
+	/// because this file counted in a day borrowed from a crate with a different block time --
+	/// and a term of office cannot report that it is short. These are not derived numbers that
+	/// happen to be right today; they are the decision, so they are checked as the decision.
+	///
+	/// Measured in seconds against the slot duration Aura is configured with, not against
+	/// `DAYS`. Checking a period against the constant it was built from proves only that
+	/// multiplication works.
+	#[test]
+	fn the_terms_of_office_are_the_ones_the_state_decided_on() {
+		use testnet_teyrchains_constants::zagros::consensus::MILLISECS_PER_BLOCK;
+		let secs = |blocks: BlockNumber| blocks as u64 * MILLISECS_PER_BLOCK / 1000;
+		const YEAR: u64 = 365 * 24 * 60 * 60;
+		const DAY: u64 = 24 * 60 * 60;
+
+		assert_eq!(
+			secs(WelatiTermLength::get()) / YEAR,
+			4,
+			"an elected mandate is {} years; the state decided on four",
+			secs(WelatiTermLength::get()) / YEAR
+		);
+		assert_eq!(
+			secs(WelatiCourtTermLength::get()) / YEAR,
+			9,
+			"a court term is {} years; the state decided on nine",
+			secs(WelatiCourtTermLength::get()) / YEAR
+		);
+		assert_eq!(
+			secs(WelatiElectionPeriod::get()) / DAY,
+			120,
+			"an election runs {} days; the state decided on a hundred and twenty",
+			secs(WelatiElectionPeriod::get()) / DAY
+		);
+	}
+
+	#[test]
+	fn no_candidacy_can_need_more_endorsers_than_the_roll_holds() {
+		let mature = MinElectorate::get();
+		for (office, ceiling) in [
+			("President", WelatiPresidentialEndorsements::get()),
+			("a seat", WelatiParliamentaryEndorsements::get()),
+		] {
+			assert!(
+				ceiling <= mature,
+				"standing for {office} needs {ceiling} endorsements but a mature roll is only \
+				 {mature} citizens -- the ceilings were left at another chain's scale"
+			);
+			// Mirrors `get_required_endorsements`: below the mature roll the requirement
+			// falls away in proportion, but never past this floor.
+			let floor = core::cmp::max(ceiling / 20, 10);
+			assert!(
+				floor <= mature,
+				"the endorsement floor for {office} is {floor}, more than the whole roll of \
+				 {mature} -- scaling the ceiling alone does not move the floor"
+			);
+			// And it still has to cost something, or the endorsement is decoration.
+			assert!(ceiling > 0, "a candidacy for {office} that needs nothing is not a candidacy");
+		}
 	}
 
 	#[test]

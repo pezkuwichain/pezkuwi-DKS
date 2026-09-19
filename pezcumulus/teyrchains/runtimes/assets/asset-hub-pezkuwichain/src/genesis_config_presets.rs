@@ -120,6 +120,7 @@ const _: () = assert!(
 ///   single key can move it. Where, how much and for how long the PEZ presale runs is that
 ///   board's to decide. HEZ's presale is not here at all -- it is a pot on this chain that
 ///   only Parliament can release.
+/// - `founding_office`: Holder of `Tiki::Serok`, funded here for its calls on this chain
 /// - `foreign_assets`: Foreign assets to create at genesis
 /// - `foreign_assets_endowed_accounts`: Initial balances for foreign assets
 fn asset_hub_pezkuwichain_genesis(
@@ -129,6 +130,11 @@ fn asset_hub_pezkuwichain_genesis(
 	id: ParaId,
 	asset_owner: AccountId,
 	founder_account: AccountId,
+	// The holder of `Tiki::Serok` on People, or `None` on a chain that has no founding to do.
+	// It is funded here as well as on People and on the relay because the office spends from
+	// the pots this chain holds, and a budget on two chains out of three is a gap found on the
+	// day rather than in a test.
+	founding_office: Option<AccountId>,
 	pez_presale_custody: AccountId,
 	foreign_assets: Vec<(Location, AccountId, Balance)>,
 	foreign_assets_endowed_accounts: Vec<(Location, AccountId, Balance)>,
@@ -187,13 +193,20 @@ fn asset_hub_pezkuwichain_genesis(
 	//
 	// The rule is `total supply - what this chain holds`, not a figure: the relay's preset
 	// writes the mirror of it, and the two must not be able to drift apart. Today it is
-	// 20,001,000 HEZ, the relay's whole share, because that is all the HEZ there is outside
-	// this chain -- the People chain mints none, so nothing can reach here except by way of
-	// the relay's holdings. It does not need to cover this chain's own pots: sending those
+	// 20,000,000 HEZ: the relay's share, plus the founding office's budget on People, minus
+	// the office's budget held here. The People chain is no longer empty -- it mints the one
+	// budget its register cannot be written without -- so "the relay's whole share" stopped
+	// being the right figure the day that landed, and the expression below is what keeps the
+	// two presets from drifting. It does not need to cover this chain's own pots: sending those
 	// out accrues to this same account and raises the ceiling for their return.
 	const TOTAL_SUPPLY: Balance = 200_000_000 * UNITS;
-	const CHECKING_ACCOUNT_SEED: Balance =
-		TOTAL_SUPPLY - (AIRDROP_ALLOCATION + PRESALE_ALLOCATION + TREASURY_ALLOCATION);
+	let office_here: Balance = match founding_office {
+		Some(_) => pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING,
+		None => 0,
+	};
+	let checking_account_seed: Balance = TOTAL_SUPPLY
+		- (AIRDROP_ALLOCATION + PRESALE_ALLOCATION + TREASURY_ALLOCATION)
+		- office_here;
 	let checking_account: AccountId = crate::PezkuwiXcm::check_account();
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
@@ -205,7 +218,8 @@ fn asset_hub_pezkuwichain_genesis(
 				.chain(core::iter::once((airdrop_pot, AIRDROP_ALLOCATION)))
 				.chain(core::iter::once((presale_pot, PRESALE_ALLOCATION)))
 				.chain(core::iter::once((treasury_pot, TREASURY_ALLOCATION)))
-				.chain(core::iter::once((checking_account, CHECKING_ACCOUNT_SEED)))
+				.chain(founding_office.clone().map(|office| (office, office_here)))
+				.chain(core::iter::once((checking_account, checking_account_seed)))
 				.collect(),
 		},
 		// The account the founder's pot pays when the gate fires -- whatever this preset
@@ -340,6 +354,12 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				hex!("94cdd66f332e0c7759fee3e49b3706b3a8cf63b948a642c57f0c8bf0eb16f202").into();
 			// SS58: 5DPA5ctyUhFZcLoqNj11w1xEn3QqtDSmUjk4L6YxQNBWiDxS -- the same founder the
 			// relay endows; one person, one account, two chains.
+			// The founding office, funded here for the calls it makes against this chain's
+			// pots. Same key as People's `founding_government` and the relay's line; SS58
+			// 5CZyVmWocD8mQ3YDHEyjPGqZqeooS6u91CujcTEEszSCZ7ge, path `//pezkuwichain//office//serok` in
+			// res/genesis/mainnet/mainnet-wallets.json.
+			let serok_account: AccountId =
+				hex!("1652c3b477df81cc819fd3813faee7667dc62ed0a29a2a3522f4c6186e955802").into();
 			let founder_account: AccountId =
 				hex!("3a4eed1ba224f6d76dec6f24da10b850248dc8db5e8de7effcaf25bea977fe7f").into();
 			// Custody for the PEZ presale share. No single key holds it: a three-of-five
@@ -373,6 +393,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				1000.into(),
 				asset_owner,
 				founder_account,
+				Some(serok_account),
 				pez_presale_custody,
 				vec![],
 				vec![],
@@ -400,6 +421,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				1000.into(),
 				asset_owner,
 				founder_account,
+				None,
 				pez_presale_custody,
 				vec![
 					// bridged ZGR
@@ -449,6 +471,7 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				1000.into(),
 				asset_owner,
 				founder_account,
+				None,
 				pez_presale_custody,
 				vec![],
 				vec![],
@@ -508,9 +531,13 @@ fn the_asset_hub_mints_exactly_its_share() {
 	let total: u128 = entries.iter().map(amount).sum();
 
 	// Held here: the three pots. Everything else in the supply lives on the relay.
+	// The three pots, and the founding office's fee budget -- the fourth thing this chain now
+	// holds. It is carved out of the founder's line on the relay, so the total does not move;
+	// what moves is which side of the escrow it sits on.
 	let held = 40_000_000 * UNITS
 		+ 100_000_000 * UNITS
-		+ (40_000_000 * UNITS - pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING);
+		+ (40_000_000 * UNITS - pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING)
+		+ pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING;
 	let escrow = 200_000_000 * UNITS - held;
 
 	assert_eq!(
@@ -595,13 +622,17 @@ mod genesis_ledger {
 		// cost an edit here, which is the whole friction a genesis number deserves.
 		//
 		// The treasury's 39,999,000 is not a typo: `HEZ_VALIDATOR_FUNDING` (1,000 HEZ) is carved
-		// out of its share and minted onto the relay's validator stashes, so the four still sum
-		// to two hundred million.
+		// out of its share and minted onto the relay's validator stashes.
+		//
+		// The checking pot's 20,000,000 moved for the same kind of reason and in the other
+		// direction: the founding office's fee budget is now held *here*, so the escrow behind
+		// what the relay holds is a thousand smaller. The rule has not changed -- this account
+		// is always `total supply - what this chain holds` -- only what this chain holds has.
 		for (name, acc, want) in [
 			("airdrop", &airdrop, 40_000_000 * UNITS),
 			("presale", &presale, 100_000_000 * UNITS),
 			("treasury", &treasury, 39_999_000 * UNITS),
-			("checking", &checking, 20_001_000 * UNITS),
+			("checking", &checking, 20_000_000 * UNITS),
 		] {
 			let addr = ss58(acc);
 			assert_eq!(
@@ -614,7 +645,37 @@ mod genesis_ledger {
 				"the {name} pot must be keyless -- {addr} is not a modl account"
 			);
 		}
-		assert_eq!(hez.len(), 4, "the Asset Hub mints HEZ into four accounts and no fifth");
+		// The fifth, and the only one of them that is allowed to have a key.
+		//
+		// Every pot above is keyless by design: a balance that can only leave through an
+		// approved spend. The founding office is the deliberate opposite -- it exists to sign,
+		// and a keyless account signs nothing. So it is asserted separately rather than added
+		// to the loop, because dropping it into that list would have quietly relaxed the
+		// keyless rule for all four.
+		// Found as "the account that is not one of the four pots" rather than by a copy of its
+		// public key. A second copy of a genesis key is a second thing to update, and the one
+		// that gets missed is always the copy -- *which* key it is is asserted on People, where
+		// the tiki that makes it the founding office actually lives.
+		let pots: alloc::collections::BTreeSet<String> =
+			[ss58(&airdrop), ss58(&presale), ss58(&treasury), ss58(&checking)]
+				.into_iter()
+				.collect();
+		let office = hez
+			.keys()
+			.find(|k| !pots.contains(*k))
+			.expect("the genesis mints the founding office's fee budget on this chain")
+			.clone();
+		assert_eq!(
+			hez.get(&office).copied(),
+			Some(pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING),
+			"the founding office must hold exactly its fee budget on this chain"
+		);
+		assert!(
+			!keyless(&office),
+			"the founding office must be a key -- a keyless account cannot sign the founding \
+			 calls it is the only origin for"
+		);
+		assert_eq!(hez.len(), 5, "the Asset Hub mints HEZ into five accounts and no sixth");
 		assert_eq!(
 			hez.values().sum::<u128>(),
 			200_000_000 * UNITS,

@@ -139,8 +139,20 @@ pub type FungibleTransactor = FungibleAdapter<
 /// The relay keeps everything else, including this chain's code. A runtime upgrade can of
 /// course reinstate anything -- but it is a published artefact on the slowest track there is,
 /// and every citizen can read what it would do before it lands. `Transact` is none of those
-/// things. What remains after this is the founding hand: the relay's sudo, which is retired
-/// with the rest of sudo.
+/// things.
+///
+/// The filter reads the call and never the origin, so it holds against the relay's sudo too.
+/// That is the point of writing it here, and it settles where the founding hand lives: not on
+/// the relay. This chain has no sudo pallet, so the only Root it can raise is its own -- the
+/// Root track of its own referenda, which counts heads. That track is unusable on the first
+/// day, when the roll is five. So the founding calls are signed by an office instead:
+/// `TikiConfig::founding_government` seats the first `Tiki::Serok` in this chain's genesis,
+/// and `ensure_root_or_serok` accepts that holder.
+///
+/// This paragraph used to name the relay's sudo as the founding hand. It is the one hand this
+/// filter takes away, and a rehearsal was written against the sentence rather than against the
+/// code: it drove the whole founding sequence through `Transact`, and every call was dropped
+/// here, silently, because a filtered `Transact` is not a failed extrinsic on the relay.
 pub struct TheRegisterIsNotWritableFromAbroad;
 impl Contains<RuntimeCall> for TheRegisterIsNotWritableFromAbroad {
 	fn contains(call: &RuntimeCall) -> bool {

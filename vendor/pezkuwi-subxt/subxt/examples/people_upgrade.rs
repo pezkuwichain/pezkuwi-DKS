@@ -5,10 +5,10 @@
 //! 2. People direct: System.apply_authorized_upgrade(wasm)
 //!
 //! Run:
-//!   SUDO_MNEMONIC="..." \
-//!   RC_RPC="ws://217.77.6.126:9944" \
-//!   PEOPLE_RPC="ws://217.77.6.126:41944" \
-//!   WASM_FILE="target/release/wbuild/people-pezkuwichain-runtime/people_pezkuwichain_runtime.compact.compressed.wasm" \
+//!   SUDO_KEY_FILE=/home/myhez/res/genesis/zagros/zagros-wallets.json SUDO_PATH=//zagros//sudo \
+//!   RC_RPC="wss://zagros-rpc.pezkuwichain.io" \
+//!   PEOPLE_RPC="wss://zagros-people-rpc.pezkuwichain.io" \
+//!   WASM_FILE=<people_zagros_runtime.compact.compressed.wasm> \
 //!   cargo run --release -p pezkuwi-subxt --example people_upgrade
 
 #![allow(missing_docs)]
@@ -16,39 +16,69 @@ use pezkuwi_subxt::dynamic::Value;
 use pezkuwi_subxt::{OnlineClient, PezkuwiConfig};
 use pezkuwi_subxt_signer::bip39::Mnemonic;
 use pezkuwi_subxt_signer::sr25519::Keypair;
+use pezkuwi_subxt_signer::SecretUri;
 use std::str::FromStr;
 
 const PEOPLE_PARA_ID: u128 = 1004;
 
+/// The sudo signer, from a file and a derivation path.
+///
+/// This is `ah_upgrade`'s loader. That file was fixed on 2026-09-16 and this one, which does
+/// the same job on the sibling chain, was not -- the half-ported pair that keeps costing here.
+/// What it was doing wrong:
+///
+/// It derived from the bare phrase, with no path. The chain's sudo lives at `//zagros//sudo`,
+/// and the bare phrase is a *different account* -- a stranger with no balance. The chain then
+/// reports an inability to pay fees, which reads like the target is wrong when the signer is.
+///
+/// It also fell back to `/home/mamostehp/res/test_seeds.json`, a path on a machine that is not
+/// this one, so the fallback could only ever fail -- while still being a hardcoded location to
+/// read a secret from.
+///
+/// And it took the phrase from the environment, where it lands in the process list. A file
+/// read keeps it out.
 fn load_sudo_keypair() -> Keypair {
-	// 1. Try SUDO_MNEMONIC env var
-	if let Ok(mnemonic_str) = std::env::var("SUDO_MNEMONIC") {
-		if !mnemonic_str.is_empty() {
-			if let Ok(mnemonic) = Mnemonic::from_str(&mnemonic_str) {
-				if let Ok(kp) = Keypair::from_phrase(&mnemonic, None) {
-					println!("  [sudo] Loaded from SUDO_MNEMONIC env var");
-					return kp;
-				}
-			}
-		}
-	}
+	let path =
+		std::env::var("SUDO_KEY_FILE").unwrap_or_else(|_| "/home/myhez/res/sudo.json".to_string());
+	let content =
+		std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("cannot read {}: {}", path, e));
 
-	// 2. Fallback to seeds file
-	let seeds_path = "/home/mamostehp/res/test_seeds.json";
-	if let Ok(content) = std::fs::read_to_string(seeds_path) {
-		if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-			if let Some(mnemonic_str) = json["sudo_mnemonic"].as_str() {
-				if let Ok(mnemonic) = Mnemonic::from_str(mnemonic_str) {
-					if let Ok(kp) = Keypair::from_phrase(&mnemonic, None) {
-						println!("  [sudo] Loaded from {}", seeds_path);
-						return kp;
-					}
-				}
-			}
-		}
-	}
+	let mnemonic_str = if path.ends_with(".json") {
+		let json: serde_json::Value =
+			serde_json::from_str(&content).expect("sudo key file is not valid JSON");
+		// `mnemonic` is mainnet's shape; `_master_phrase` is the generated wallet set's, where
+		// the root key is a derivation rather than the phrase itself.
+		json["mnemonic"]
+			.as_str()
+			.or_else(|| json["_master_phrase"].as_str())
+			.unwrap_or_else(|| {
+				panic!("{} has neither a `mnemonic` nor a `_master_phrase` field", path)
+			})
+			.to_string()
+	} else {
+		// Markdown: the line reads ``- **Mnemonic:** `word word ...` ``
+		content
+			.lines()
+			.find(|l| l.contains("Mnemonic:"))
+			.and_then(|l| l.split('`').nth(1))
+			.unwrap_or_else(|| panic!("{} has no `**Mnemonic:** \\`...\\`` line", path))
+			.trim()
+			.to_string()
+	};
 
-	panic!("SUDO_MNEMONIC required! Set env var or create /home/mamostehp/res/test_seeds.json");
+	let path_suffix = std::env::var("SUDO_PATH").unwrap_or_default();
+	let signer = if path_suffix.is_empty() {
+		let mnemonic =
+			Mnemonic::from_str(&mnemonic_str).expect("invalid mnemonic in sudo key file");
+		Keypair::from_phrase(&mnemonic, None).expect("cannot derive keypair from mnemonic")
+	} else {
+		let uri = SecretUri::from_str(&format!("{mnemonic_str}{path_suffix}"))
+			.expect("phrase + SUDO_PATH is not a valid secret uri");
+		Keypair::from_uri(&uri).expect("cannot derive keypair from phrase and path")
+	};
+	println!("  [sudo] Loaded from {} (path {:?})", path, path_suffix);
+	println!("  [sudo] {}", signer.public_key().to_account_id());
+	signer
 }
 
 #[tokio::main]
@@ -361,22 +391,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	// ═══════════════════════════════════════════
 	// STEP 3: Verify
 	// ═══════════════════════════════════════════
-	println!("\nWaiting 12 seconds for new runtime...");
-	tokio::time::sleep(std::time::Duration::from_secs(12)).await;
-
-	let people_api2 = OnlineClient::<PezkuwiConfig>::from_insecure_url(&people_url).await?;
-	let new_spec = people_api2.runtime_version().spec_version;
-	println!("\n  People Chain spec_version: {} → {}", old_spec, new_spec);
-
-	if new_spec > old_spec {
-		println!("  UPGRADE VERIFIED!");
-	} else {
-		println!("  WARNING: spec_version did not increase!");
+	// `ValidationFunctionStored` means the teyrchain accepted the code, not that it is running
+	// it: enactment waits for the relay, which takes a couple of minutes. A single sleep is a
+	// guess about that, and on 2026-09-18 the guess was twelve seconds against a wait of nearly
+	// three -- so this printed "did not increase" and then "UPGRADE COMPLETE" underneath it,
+	// while the chain had in fact upgraded. A banner that is right by the time anybody reads it
+	// is worse than a red one, because nobody goes back to check.
+	//
+	// So poll, like `ah_upgrade` does, and make the exit code carry the answer.
+	let mut new_spec = old_spec;
+	for attempt in 1..=15 {
+		tokio::time::sleep(std::time::Duration::from_secs(12)).await;
+		// A fresh client each time. The runtime version is cached at connect, so asking the
+		// same handle again would be the check confirming itself.
+		let probe = OnlineClient::<PezkuwiConfig>::from_insecure_url(&people_url).await?;
+		new_spec = probe.runtime_version().spec_version;
+		if new_spec > old_spec {
+			println!(
+				"  People spec_version: {old_spec} → {new_spec} — VERIFIED (attempt {attempt})"
+			);
+			println!("\n╔══════════════════════════════════════════╗");
+			println!("║  PEOPLE CHAIN UPGRADE COMPLETE           ║");
+			println!("╚══════════════════════════════════════════╝");
+			return Ok(());
+		}
+		println!("    Attempt {attempt}/15: spec still {new_spec} — waiting...");
 	}
 
-	println!("\n╔══════════════════════════════════════════╗");
-	println!("║  PEOPLE CHAIN UPGRADE COMPLETE           ║");
-	println!("╚══════════════════════════════════════════╝");
-
-	Ok(())
+	Err(format!(
+		"People never left spec_version {old_spec} after three minutes. The code was stored, so \
+		 look at relay enactment rather than at the submission -- and do not re-run the upgrade \
+		 until you know which, because a second authorize would queue a second enactment."
+	)
+	.into())
 }

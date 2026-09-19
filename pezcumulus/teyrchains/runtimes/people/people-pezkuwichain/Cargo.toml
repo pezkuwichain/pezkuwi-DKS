@@ -127,6 +127,11 @@ bizinikiwi-wasm-builder = { optional = true, workspace = true, default-features 
 
 [features]
 default = ["std"]
+# Compresses the governance track periods so a zombienet can raise the state, hold a
+# referendum on every track and tear it down inside a test run. Never enabled for a
+# deployed build -- see `rehearsal_period!` in `pezkuwi-runtime-common`.
+fast-runtime = []
+
 std = [
 	"bizinikiwi-wasm-builder",
 	"bizinikiwi-wasm-builder?/std",

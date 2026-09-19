@@ -39,10 +39,28 @@ mod constants {
 	/// slot_duration()`.
 	///
 	/// Change this to adjust the block time.
+	///
+	/// **This is upstream's default and it does not govern any chain in this tree.** Every
+	/// Pezkuwi teyrchain takes its `SLOT_DURATION` from `testnet_teyrchains_constants::<chain>
+	/// ::consensus`, where it is 6000 -- confirmed by asking a running chain for
+	/// `AuraApi_slot_duration`. The constant is left here because the crate is upstream's and
+	/// the rest of it is used.
+	///
+	/// The `MINUTES`/`HOURS`/`DAYS` below are derived from it and are therefore **half** a
+	/// Pezkuwi teyrchain's real day. Do not import them into a runtime. Doing so is not a
+	/// compile error and not a test failure; it silently halves every period built from them,
+	/// which is what happened to eighty-one periods across the People and Asset Hub runtimes
+	/// until 2026-09-18 -- a four-year term of office that ran two years, and every governance
+	/// track deciding in half the time its name promised.
+	///
+	/// The runtimes now import time from their own chain's constants, and each holds a test
+	/// comparing its `DAYS` against its own slot duration rather than against another
+	/// constant, because comparing two constants is how the wrong one gets confirmed.
 	pub const MILLISECS_PER_BLOCK: u64 = 12000;
 	pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
 
-	// Time is measured by number of blocks.
+	// Time is measured by number of blocks. See the warning on `MILLISECS_PER_BLOCK`: these are
+	// upstream's twelve-second day, not this tree's six-second one.
 	pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 	pub const HOURS: BlockNumber = MINUTES * 60;
 	pub const DAYS: BlockNumber = HOURS * 24;

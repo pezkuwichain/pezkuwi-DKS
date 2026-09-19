@@ -13,7 +13,7 @@
 use crate as pezpallet_pez_rewards;
 use pezframe_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU32, OnFinalize, OnInitialize},
+	traits::{ConstU32, ConstU64, OnFinalize, OnInitialize},
 };
 use pezframe_system::EnsureRoot;
 use pezsp_runtime::{
@@ -210,6 +210,8 @@ impl pezpallet_pez_rewards::Config for Test {
 	type TreasuryChainLocation = TreasuryChain;
 	type TreasuryPalletIndex = TreasuryPalletIndex;
 	type ForceOrigin = EnsureRoot<AccountId>;
+	type EpochLength = ConstU64<{ crate::BLOCKS_PER_EPOCH as u64 }>;
+	type ClaimPeriod = ConstU64<{ crate::CLAIM_PERIOD_BLOCKS as u64 }>;
 }
 
 pub fn new_test_ext() -> pezsp_io::TestExternalities {

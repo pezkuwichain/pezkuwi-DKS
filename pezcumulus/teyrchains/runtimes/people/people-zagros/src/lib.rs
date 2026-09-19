@@ -18,7 +18,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-mod genesis_config_presets;
+pub mod genesis_config_presets;
 pub mod governance;
 use governance::pezpallet_custom_origins;
 pub mod people;
@@ -407,8 +407,13 @@ pub type RootOrDiwan = EitherOfDiverse<
 ///
 /// The register is the one thing no other organ should write. Whoever writes the electorate
 /// wins the election, so an executive that can add or remove citizens does not need to win
-/// one, and Root reaches this chain from the relay: from the executive, for as long as sudo
-/// exists.
+/// one.
+///
+/// The Root admitted here is this chain's own. `TheRegisterIsNotWritableFromAbroad` stops
+/// every register call that arrives by `Transact`, so the relay's sudo cannot reach this
+/// origin however loud it shouts; what reaches it is the Root track of this chain's referenda,
+/// which counts heads rather than tokens. The correction stays with the electorate whose
+/// register it is.
 ///
 /// Yet a register with no correction at all is worse during the founding period than one the
 /// executive can correct, because a forged citizen compounds -- each one can vouch for more.
@@ -1392,7 +1397,12 @@ pub mod dynamic_params {
 		/// one person's mistake can be. The two are often confused, and confusing them costs
 		/// the register its growth.
 		#[codec(index = 0)]
-		pub static VouchingWaitingPeriod: BlockNumber = 1 * DAYS;
+		/// Compressed in a rehearsal build, for the same reason the track periods are: a
+		/// register that takes a day per generation cannot be grown to the population gate
+		/// inside a test run, and the gate is what opens the first cross-chain path.
+		/// Production keeps the day.
+		pub static VouchingWaitingPeriod: BlockNumber =
+			pezkuwi_runtime_common::rehearsal_period!(1 * DAYS, DAYS);
 
 		/// How many a new citizen may vouch for at first.
 		#[codec(index = 1)]

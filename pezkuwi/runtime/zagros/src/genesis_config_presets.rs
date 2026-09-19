@@ -232,15 +232,21 @@ fn default_teyrchains_host_configuration_is_consistent() {
 /// only because the accounts that need it are here.
 #[test]
 fn hez_allocations_sum_to_200m() {
-	let here = HEZ_FOUNDER_ALLOCATION + zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
-	let on_asset_hub = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
-		- zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+	// Two of the founding office's three budgets are minted on the other two chains, so they
+	// leave the relay's side of the ledger even though they come out of the founder's share.
+	let off_relay = 2 * zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING;
+	let here = HEZ_FOUNDER_ALLOCATION - off_relay
+		+ zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+	let elsewhere = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
+		- zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING
+		+ off_relay;
 	assert_eq!(
 		here,
-		20_001_000 * HEZ,
-		"the relay mints the founder's 20M and the validators' funding out of the treasury"
+		19_999_000 * HEZ,
+		"the relay mints the founder's 20M less the two office budgets held on the Asset Hub \
+		 and on People, plus the validators' funding out of the treasury"
 	);
-	assert_eq!(here + on_asset_hub, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
+	assert_eq!(here + elsewhere, 200_000_000 * HEZ, "HEZ total supply must equal 200M");
 }
 
 /// The genesis seats the four validators Zagros runs.
@@ -280,6 +286,44 @@ fn the_genesis_seats_four_validators() {
 		assert!(funded.contains(s), "validator {s} is seated but holds nothing at genesis");
 	}
 }
+/// A local or dev chain can reproduce a teleport, because its escrow exists.
+///
+/// `TeleportTracking` is `MintLocation::Local` here, so HEZ arriving from a teyrchain is paid
+/// out of the checking account rather than minted. An unseeded account does not exist, every
+/// inbound teleport fails with `NotWithdrawable`, and the sender's balance is gone on the far
+/// side while its extrinsic reported success. That is the defect the Zagros launch shipped on
+/// 2026-09-11 -- and the preset a developer reaches for first could not have shown it, because
+/// the account was missing here too. A defect the testnet cannot reproduce is one the testnet
+/// cannot catch, which is the whole argument for this test existing at all.
+#[test]
+fn the_local_preset_seeds_the_escrow() {
+	let genesis = pezkuwichain_local_testnet_genesis();
+	let amount = |e: &serde_json::Value| -> u128 {
+		e[1].as_u64()
+			.map(u128::from)
+			.unwrap_or_else(|| e[1].to_string().parse().unwrap())
+	};
+	let rows = genesis["balances"]["balances"].as_array().expect("balances");
+
+	use pezsp_core::crypto::Ss58Codec;
+	let checking = crate::XcmPallet::check_account().to_ss58check();
+	let seeded = rows
+		.iter()
+		.find(|e| e[0].as_str() == Some(checking.as_str()))
+		.map(amount)
+		.unwrap_or(0);
+	assert!(seeded > 0, "the checking account must be seeded or no teleport can arrive");
+
+	// And the rule is the production one: the two halves are the whole supply, counted once.
+	let total: u128 = rows.iter().map(amount).sum();
+	assert_eq!(
+		total,
+		200_000_000 * HEZ,
+		"a testnet that mints a different supply than the mainnet is rehearsing a different \
+		 chain -- the endowments and the escrow together are the two hundred million"
+	);
+}
+
 /// Root can pay for its own first call.
 ///
 /// The two supply tests above both stay green whether root is funded or not, because the
@@ -319,13 +363,18 @@ fn sudo_starts_with_a_fee_budget() {
 		.iter()
 		.map(amount)
 		.find(|&a| {
-			a == HEZ_FOUNDER_ALLOCATION - zagros_runtime_constants::currency::HEZ_SUDO_FUNDING
+			a == HEZ_FOUNDER_ALLOCATION
+				- zagros_runtime_constants::currency::HEZ_SUDO_FUNDING
+				- zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
 		})
 		.unwrap_or(0);
 	assert_eq!(
 		founder_line,
-		HEZ_FOUNDER_ALLOCATION - zagros_runtime_constants::currency::HEZ_SUDO_FUNDING,
-		"root's budget comes out of the founder's allocation, not on top of it"
+		HEZ_FOUNDER_ALLOCATION
+			- zagros_runtime_constants::currency::HEZ_SUDO_FUNDING
+			- zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT,
+		"root's budget and the founding office's come out of the founder's allocation, not on \
+		 top of it"
 	);
 }
 
@@ -357,11 +406,16 @@ fn the_relay_mints_exactly_its_share() {
 	// Owned balances: the founder's, and the validators' funding carved out of the treasury's
 	// share. The rest of the treasury is not here -- it is minted into the pot on the Asset Hub
 	// that the spender tracks pay from.
-	let owned = HEZ_FOUNDER_ALLOCATION + zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+	// Less the two office budgets that are minted on the Asset Hub and on People: they are
+	// carved from the founder's share but they are not held here.
+	let owned = HEZ_FOUNDER_ALLOCATION
+		- 2 * zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING
+		+ zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
 	// Escrow: the mirror of what the Asset Hub holds, so a teleport back has something to
 	// release. Not new supply -- the same HEZ, represented there and held here.
 	let escrow = HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
-		- zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+		- zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING
+		+ 2 * zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING;
 
 	assert_eq!(
 		total,
@@ -395,9 +449,30 @@ fn pezkuwichain_testnet_genesis(
 
 	const ENDOWMENT: u128 = 1_000_000 * HEZ;
 
+	// The XCM checking account, seeded here for the same reason the production preset seeds it.
+	//
+	// `TeleportTracking` is `MintLocation::Local`, so an arriving teleport is paid out of this
+	// account rather than minted. Without a seed the account does not exist, every inbound
+	// teleport fails with `NotWithdrawable`, and the sender's balance is gone on the other side
+	// while its extrinsic reported success. That is what the Zagros launch did on 2026-09-11 --
+	// and a local or dev chain built from this preset could not reproduce it, because the
+	// account was missing here too. A defect the testnet cannot show is a defect the testnet
+	// cannot catch.
+	//
+	// The rule is the production one: total supply less what this chain holds. Written as an
+	// expression rather than a figure so it cannot drift from the endowments above.
+	const TOTAL_SUPPLY: u128 = 200_000_000 * HEZ;
+	let owned: u128 = ENDOWMENT.saturating_mul(endowed_accounts.len() as u128);
+	let checking_account_seed = TOTAL_SUPPLY.saturating_sub(owned);
+	let checking_account: AccountId = crate::XcmPallet::check_account();
+
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().map(|k| (k.clone(), ENDOWMENT)).collect::<Vec<_>>(),
+			balances: endowed_accounts
+				.iter()
+				.map(|k| (k.clone(), ENDOWMENT))
+				.chain(core::iter::once((checking_account, checking_account_seed)))
+				.collect::<Vec<_>>(),
 		},
 		session: SessionConfig {
 			keys: initial_authorities
@@ -775,6 +850,16 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	let sudo_account: AccountId =
 		hex!("fe5ff27956998b38004d1c49eb4ef1f1cd8d11bd4c89d3a8c12c00aa6fd5ee15").into();
 
+	// The founding office: holder of `Tiki::Serok` on the People chain, funded on all three.
+	//
+	// It is declared on the relay because the relay is where the founder's line is computed,
+	// and the carve-out has to be subtracted exactly once. The People chain names the same
+	// account in `TikiConfig::founding_government`; the two are the same key by the address
+	// below, and `//zagros//office//serok` in res/genesis/zagros/zagros-wallets.json is where it comes from.
+	// SS58: 5FP4tMpDaoURCktetrc7LeCm8cncHdE78L5L3CNDVX5hZrJ2
+	let serok_account: AccountId =
+		hex!("92b5e877ed42d604c921154f456dd2effe85991d07c1577b9709beb7dee41119").into();
+
 	// There is no airdrop account here any more, and that is the fix rather than an omission.
 	// It used to hold 40M HEZ that nothing in the tree ever read: `Claims` is wired but its
 	// genesis list is empty, and Claims pays Ethereum-signed claims out of newly minted funds
@@ -927,9 +1012,15 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	// and escrowed here, exactly as a teleport out would have left it. Governance is not
 	// distorted by the size because `MaxTurnout` reads `VotableIssuance`, which is active
 	// issuance minus this account.
+	//
+	// Two of the founding office's three budgets are held off this chain -- one on the Asset
+	// Hub, one on People -- so the escrow covers them too. Without this the seed would be
+	// short by exactly what those two chains mint, and the first teleport home of that size
+	// would be refused with nothing on either chain saying why.
 	let checking_account_seed: u128 =
 		HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
-			- zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING;
+			- zagros_runtime_constants::currency::HEZ_VALIDATOR_FUNDING
+			+ 2 * zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING;
 	let checking_account: AccountId = crate::XcmPallet::check_account();
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
@@ -943,7 +1034,9 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				// 10% = 20M HEZ, less the fee budget carved out for root below.
 				(
 					founder_account.clone(),
-					HEZ_FOUNDER_ALLOCATION - zagros_runtime_constants::currency::HEZ_SUDO_FUNDING,
+					HEZ_FOUNDER_ALLOCATION
+						- zagros_runtime_constants::currency::HEZ_SUDO_FUNDING
+						- zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT,
 				),
 				// Root's fee budget. Carved out of the founder's share, not added to it, so the
 				// genesis total is untouched -- the same shape as `HEZ_VALIDATOR_FUNDING` coming
@@ -951,6 +1044,15 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				// the chain launches ungovernable; measured on 2026-09-14, when registering the
 				// teyrchains needed a hand transfer before it would go through.
 				(sudo_account.clone(), zagros_runtime_constants::currency::HEZ_SUDO_FUNDING,),
+				// The founding office's fee budget on this chain. Two more like it are minted
+				// on the Asset Hub and on People; all three come out of the founder's line
+				// above through `HEZ_FOUNDING_OFFICE_CARVE_OUT`, and the two that are held
+				// elsewhere are escrowed in `checking_account_seed` below. Nothing is added
+				// to the supply and nothing is taken from anyone but the founder.
+				(
+					serok_account.clone(),
+					zagros_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING,
+				),
 				// The treasury's 40M is not here either. It is minted into the account the
 				// Asset Hub's treasury pallet pays from -- see `HEZ_TREASURY_ALLOCATION`. What
 				// stays on this side of it is the validator funding, below.

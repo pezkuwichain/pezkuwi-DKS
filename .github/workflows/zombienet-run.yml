@@ -1,0 +1,128 @@
+# Runs the zombienet rehearsal against real node binaries.
+#
+# `zombienet-archive` compiles these tests and keeps the archive; until this workflow existed
+# nothing executed it, and its own comment said so: "the archive we produce here is what a
+# future zombienet job will execute." This is that job. An archive nobody runs is a suite that
+# compiles, which is a weaker claim than it looks -- the bridge attack PoC compiled for months
+# while proving nothing.
+#
+# Dispatch-only, and deliberately. The tests spawn real networks and the binaries they need take
+# hours to build; putting that on every pull request would make the repository unpushable. The
+# rehearsal is run when there is something to rehearse -- before a genesis, after a change to
+# governance or the register -- not on every commit.
+#
+# `fast-runtime` is what makes the run finish. Without it the slowest governance track prepares
+# for ninety days and decides for ninety more; with it a day is a block. Production values are
+# untouched, because no deployed build carries the feature -- `rehearsal_period!` in
+# `pezkuwi-runtime-common` is where that is written down and tested.
+name: zombienet-run
+
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: 'Test filter passed to nextest (empty runs the whole rehearsal)'
+        required: false
+        default: 'state_rehearsal'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    # Our own hardware, and one box in particular. A rehearsal spawns a relay, two validators
+    # and two collators and then drives hundreds of extrinsics through them; five Substrate
+    # nodes want roughly twenty gigabytes between them, and memory is the binding constraint
+    # rather than cores. Measured 2026-09-18: VPS3's runner is capped at six cores and 24GB
+    # (`CPUQuota=6s`, `MemoryMax=24G`, `Nice=15`) so that the fourteen chain services sharing
+    # that box always win -- the cap is deliberate and stays. The other four runner hosts have
+    # the same six cores and five to eight gigabytes *free*, which is where they fall short.
+    # So the choice is about the 24GB, not about VPS3 being an eighteen-core machine: the
+    # runner never sees those cores. `bizinikiwi-build` is on all five hosts, so scheduling by
+    # it would be a coin flip on whether the run runs out of memory.
+    #
+    # `zombienet-host` exists to say which box can host one. It is on `dks-runner-4` only, and
+    # it is a claim about capacity rather than a name, so moving the work to a bigger machine
+    # later is a label move and not a workflow edit.
+    #
+    # The hosted `ubuntu-xlarge` this replaced was also unreachable for another reason: an
+    # unpaid invoice locks the account out of hosted runners entirely, and a rehearsal that can
+    # only run when the bill is paid is not a rehearsal anybody will run.
+    runs-on: [self-hosted, zombienet-host]
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Toolchain & targets
+        run: |
+          rustup show
+          rustup component add rust-src
+          rustup target add wasm32v1-none wasm32-unknown-unknown
+
+      # The relay forwards `fast-runtime` down to the runtime it embeds, and so does the
+      # teyrchain binary -- to every runtime it can serve, which it did not until 2026-09-16.
+      # The tests ask for `zagros-local` and the teyrchain equivalents, so the compression has
+      # to be inside these binaries; there is nowhere else for it to come from.
+      - name: Build the nodes with rehearsal timings
+        run: |
+          cargo build --locked --profile testnet --features fast-runtime -p pezkuwi
+          cargo build --locked --profile testnet --features fast-runtime -p pezkuwi-teyrchain-bin
+
+      - name: Put them where zombienet looks
+        run: |
+          echo "$GITHUB_WORKSPACE/target/testnet" >> "$GITHUB_PATH"
+
+      - name: Run the rehearsal
+        env:
+          ZOMBIE_PROVIDER: native
+          RUST_LOG: info
+          # Through the environment, never interpolated into the script.
+          #
+          # `${{ inputs.test }}` written inline is substituted into the shell text before bash
+          # sees it, so a dispatch input containing a quote and a semicolon runs as a command
+          # with this job's token and checkout. Only somebody who can already dispatch the
+          # workflow could do it, which lowers the severity and changes nothing about the fix:
+          # bash reads an environment variable as a value and never as syntax.
+          TEST_FILTER: ${{ inputs.test }}
+        run: |
+          set -euo pipefail
+          # An empty filter would expand to `test()`, which matches nothing and reports success
+          # -- a run that proves the opposite of what it claims.
+          filter="${TEST_FILTER:-state_rehearsal}"
+          cargo nextest run \
+            --manifest-path pezcumulus/zombienet/zombienet-sdk/Cargo.toml \
+            --locked \
+            --cargo-profile testnet \
+            --features zombie-ci \
+            --no-fail-fast \
+            -E "test(${filter})"
+
+      # Before the upload, and on the runner, because the upload is the step an account-level
+      # problem can stop outright -- and a rehearsal that failed is exactly when its logs are
+      # the only thing worth having. A blocked artifact store took five good WASM blobs on
+      # 2026-09-18 for the same reason.
+      - name: Keep the network logs where the runner can be asked for them
+        if: always()
+        run: |
+          set -euo pipefail
+          keep="$HOME/zombienet-logs/$(date -u +%Y%m%d-%H%M)-${GITHUB_RUN_ID}"
+          mkdir -p "$keep"
+          # `|| true` on the copy alone: a run that crashed before spawning anything leaves no
+          # logs, and that is not a second failure to report on top of the first.
+          cp -r /tmp/zombie-*/ "$keep/" 2>/dev/null || true
+          echo "logs kept in $keep on $(hostname)"
+          du -sh "$keep" 2>/dev/null || true
+
+      - name: Keep the network logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zombienet-logs
+          path: |
+            /tmp/zombie-*/**/*.log
+          retention-days: 7
+          if-no-files-found: ignore
