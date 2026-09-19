@@ -328,9 +328,13 @@ where
 		.await
 		.map_err(|e| anyhow!("the house would not receive a motion on {pallet}::{call}: {e}"))?;
 
-	// The proposer's aye is recorded by `propose` itself, so the rest of the threshold comes
-	// from here.
-	for member in bench.iter().skip(1).take(threshold as usize - 1) {
+	// Every one of the threshold votes explicitly, the proposer included.
+	//
+	// Measured against `do_propose_proposed` rather than assumed from upstream: this collective
+	// opens the motion with `ayes: vec![]`, so proposing is not voting here. Skipping the
+	// proposer would leave the tally one short and `close` would fail with `TooEarly` -- forty
+	// minutes after the mistake, which is the cost of reading a pallet by memory.
+	for member in bench.iter().take(threshold as usize) {
 		let vote = dynamic::tx(
 			"Parliament",
 			"vote",
@@ -470,10 +474,42 @@ async fn bench_size(
 	match storage_value(people, "Welati", item, Vec::new()).await? {
 		None => Ok(0),
 		Some(v) => match v.value {
-			scale_value::ValueDef::Composite(c) => Ok(c.len()),
+			scale_value::ValueDef::Composite(c) => Ok(bounded_len(c)),
 			other => Err(anyhow!("Welati::{item} decoded as {other:?}, not a list")),
 		},
 	}
+}
+
+/// How many items a decoded list holds, seeing through the `BoundedVec` wrapper.
+///
+/// `BoundedVec<T, S>` encodes exactly like `Vec<T>`, but it is *described* in the metadata as a
+/// composite with one unnamed field that is the vector -- so decoding by type gives a list of
+/// length one whose only element is the real list. Counting the outer one returns 1 no matter
+/// how many members are seated.
+///
+/// That cost a rehearsal run on 2026-09-19. `seat_founding_parliament` was accepted, the storage
+/// was written, and the test waited ninety seconds for `1 >= 5` to become true. The failure read
+/// as "the call did nothing", which is the most expensive kind of wrong: it points at the chain
+/// when the fault is in the reader.
+///
+/// The discriminator is the child's *naming*, not the outer length, and the difference matters:
+/// a list that genuinely holds one member is also a composite of length one. `ParliamentMember`
+/// is a named struct, so a one-member bench decodes as `[Named{..}]` and is left alone; the
+/// `BoundedVec` wrapper's only child is the unnamed vector, so that one is descended into. A
+/// length-only test would have counted a lone member's fields and returned a plausible number.
+///
+/// One level either way. Deeper would start unwrapping the members themselves.
+fn bounded_len<T>(c: scale_value::Composite<T>) -> usize {
+	if let scale_value::Composite::Unnamed(items) = &c {
+		if items.len() == 1 {
+			if let scale_value::ValueDef::Composite(scale_value::Composite::Unnamed(inner)) =
+				&items[0].value
+			{
+				return inner.len();
+			}
+		}
+	}
+	c.len()
 }
 
 /// Who holds an office, if anybody does.
@@ -1098,27 +1134,35 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 	)
 	.await?;
 
-	// Distribution has to be running before the hub has anything to release. On the real chain
-	// the population gate does this; here it is asked for directly, because what this test is
-	// about is what happens *after* -- `state_rehearsal` is where the gate itself is proved.
-	office_call_on_people(
-		&people,
-		&serok,
-		"Welati",
-		"report_population_threshold_reached",
-		Vec::new(),
-		|| {
-			let asset_hub = &asset_hub;
-			async move {
-				Ok(storage_value(asset_hub, "PezTreasury", "DistributionStarted", Vec::new())
-					.await?
-					.map(|v| format!("{v}").contains("true"))
-					.unwrap_or(false))
-			}
-		},
-	)
-	.await
-	.unwrap_or_else(|e| log::info!("distribution may already be active: {e}"));
+	// Distribution has to be running before the hub has anything to release, and there is no
+	// way to ask for it.
+	//
+	// This stage used to send `Welati::report_population_threshold_reached` and swallow the
+	// error. Two things were wrong with that and the swallow hid both. There is no such
+	// dispatchable -- the name belongs to an internal function the era hook calls, so the
+	// message could never encode. And even if it could, `PezTreasury::activate_distribution`
+	// takes `EnsureXcm<Equals<PeopleLocation>>` on the hub, with Root explicitly refused:
+	// "a key that can start the schedule early is a key that can pay a month to a state that
+	// has not yet earned it". The precondition is not reachable by any shortcut, by design.
+	//
+	// So it is asserted rather than arranged, and loudly. The real fix is structural and is
+	// recorded in res/plans/PLAN.md: these stages belong on the same network as
+	// `state_rehearsal`, after the register has actually filled, instead of on a second
+	// network that cannot get there on its own.
+	let distributing =
+		wait_for(&asset_hub, "PezTreasury", "DistributionStarted", SETTLE_SECS, |v| {
+			format!("{v}").contains("true")
+		})
+		.await;
+	if !distributing {
+		return Err(anyhow!(
+			"distribution has not started on the Asset Hub, so there is nothing for the payroll \
+			 to draw against. Only People can start it, and only by its register reaching the \
+			 population gate -- which this network's genesis roll of {FOUNDING_MEMBERS} cannot \
+			 do. Nothing below this line is being measured until these stages move onto the \
+			 register test's network"
+		));
+	}
 
 	// ---- path 4: the hub reports what it released ---------------------------------------
 	//

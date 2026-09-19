@@ -121,8 +121,25 @@ can reverse the direction.
 
 **What root can do, stated plainly.** Root in this system is not an office; it is a seat, and
 two things sit in it. One is the People chain's own referendum, on the twenty-eight-day track,
-counted by citizens. The other is a sudo key held for the founding period. Until
-it retires it is absolute, and this document would be worth less if it said otherwise.
+counted by citizens. The other is a sudo key held for the founding period, and it lives on the
+relay rather than on the People chain, which has no sudo key of its own.
+
+That distinction is the whole of what follows, so it is stated before the powers are. Until it
+retires the key is absolute over everything the relay governs — the code of every chain
+included, which is the largest power in the system and is admitted here rather than softened.
+It is not absolute over the register. Citizenship, the offices and the two houses can be written
+only from the People chain itself, by a call signed there, and every message carrying such a
+call from another chain is refused before its sender is even examined. The key cannot revoke a
+citizenship, seat a member or grant an office, and no amount of sudo changes that: the refusal
+reads the call, not the caller.
+
+The reason is that the register is the electorate. A body that can add or remove citizens does
+not need to win an election, and the relay's own governance weighs tokens where this chain
+counts heads — so a token majority upstairs must not be able to decide who is a person
+downstairs. What remains for the founding period is narrower and named: an office the People
+chain's genesis seats, holding `Tiki::Serok`, which can seat the first parliament once and
+appoint the first court. Its authority expires the way an elected one does, by the term clock
+that seating starts.
 
 **When it retires is a measurement, not a date.** The referendum seat is only occupied once
 the register can actually fill it: the support floor in §3.1 means a question needs two
@@ -318,6 +335,15 @@ percent turnout.
 **The first parliament sits for half a term.** This is deliberate: it staggers the
 legislature against the presidency permanently, so that no single election ever renews the
 whole state at once.
+
+**It is seated rather than elected, and by a named office rather than by root.** Standing for a
+seat needs a trust score, trust needs stake and history, and on the first day nobody has either
+— so the first house cannot be elected into existence. It is seated once, by the holder of
+`Tiki::Serok`, whom the chain's genesis names. That is not a convenience: the register is closed
+to messages from other chains, so no external root can reach it, and the chain's own root track
+needs the very electorate the register has yet to record. The founding office is the only hand
+that exists, it can seat the house exactly once, and the seats it fills carry the ordinary term
+clock that brings the first real election.
 
 ### 5.3 Serokê Meclisê — the Speaker
 
@@ -612,15 +638,25 @@ it secures the network, and it inflates.
 | Presale | 100,000,000 (50%) | Asset Hub | A keyless pot |
 | Treasury | 40,000,000 (20%) | Asset Hub | A keyless pot, less 1,000 → the validators' stashes |
 | Airdrop | 40,000,000 (20%) | Asset Hub | A keyless pot |
-| Founder | 20,000,000 (10%) | Relay | The founding account, liquid, less 1,000 → the root account |
+| Founder | 20,000,000 (10%) | Relay | The founding account, liquid, less 1,000 → the root account and 3,000 → the founding office |
 
-Two of the four are minted a thousand HEZ lighter than their share, and both carve-outs are
-subtractions rather than additions, so the four still sum to exactly 200,000,000. The
-validators' initial stashes come out of the treasury's share and are minted on the relay,
-because that is where the accounts that need them are. The root account's thousand comes out of
-the founder's, and it exists so that the chain's first governing action can pay its own
-transaction fee: root holds no other funds and is not a treasury. Measured, the amount is
-generous by a wide margin — five root calls on a running chain cost 0.000641 HEZ in total.
+Two of the four are minted lighter than their share, and every carve-out is a subtraction
+rather than an addition, so the four still sum to exactly 200,000,000. The validators' initial
+stashes come out of the treasury's share and are minted on the relay, because that is where the
+accounts that need them are.
+
+Two carve-outs come out of the founder's, and both exist so that a first action can pay its own
+transaction fee. The root account's thousand is one. The other is the founding office's, and it
+is three thousand because the office has to act on three chains: the People chain, where it
+writes the register; the Asset Hub, where the pots it spends from are held; and the relay.
+
+That office is the holder of `Tiki::Serok`, and the state cannot be founded without it. The
+register is closed to messages from other chains, whatever origin carries them, so the relay's
+root cannot seat the first parliament however loudly it asks. The People chain has no root key
+of its own, and its root track wants a referendum, which wants an electorate that does not exist
+on the first day. So the first officeholder is named in the People chain's genesis and signs
+from there. Neither budget is a treasury: measured, five root calls on a running chain cost
+0.000641 HEZ in total, so a thousand is a fee budget with a very wide margin and nothing more.
 
 Three of the four are keyless: no seed produces the account, so the balance leaves only
 through an authorised spend. The fourth is the founder's, and it is property rather than a
@@ -991,7 +1027,7 @@ a solicitation, or investment advice.
 | **teyrchain** | A system chain secured by the relay |
 | **council** | The parliament's standing collective; its roster is written from the sitting Meclis |
 | **escrow** | The relay-held mirror of the HEZ the Asset Hub carries; not supply, and excluded from turnout |
-| **root** | A seat, not an office: the People chain's referendum, and a sudo key for the founding period |
+| **root** | A seat, not an office: the People chain's referendum, and a relay sudo key for the founding period — absolute over the relay and over code, but never over the register, which only the People chain itself can write |
 | **stratum** | One of the nine pools the validator committee is drawn from, each gated by a different authority |
 | **dormancy** | Having taken no part for two years; it removes a citizen from the support denominator and from nothing else |
 | **geographic mark** | Which part of the nation a citizen belongs to — not where they live: claimed by the citizen, confirmed by a notary, cancellable by the court, and withdrawable by the citizen |
@@ -1012,7 +1048,7 @@ a solicitation, or investment advice.
 | | |
 |---|---|
 | HEZ genesis supply | 200,000,000 |
-| Held on the Asset Hub / on the relay | 179,999,000 / 20,001,000 — the validators' stashes are carved out of the treasury's share and the root account's fee budget out of the founder's, both minted on the relay, so the four allocations still sum to exactly 200,000,000 |
+| Held on the Asset Hub / on the relay / on People | 180,000,000 / 19,999,000 / 1,000 — the validators' stashes are carved out of the treasury's share and minted on the relay; the root account's fee budget and the founding office's three come out of the founder's, and the two of those held off the relay are escrowed on it, so the four allocations still sum to exactly 200,000,000 |
 | HEZ inflation, default / ceiling | 8% / 10% of a fixed 200M base |
 | PEZ supply | 5,000,000,000, fixed |
 | PEZ halving period | 48 monthly releases (~4 years) |
