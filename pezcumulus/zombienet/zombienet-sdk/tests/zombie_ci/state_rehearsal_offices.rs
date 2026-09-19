@@ -467,7 +467,7 @@ async fn storage_value(
 ///
 /// Reads the roster the pallet keeps rather than counting what this file asked for: the two
 /// disagree exactly when something went wrong, which is the only time the number matters.
-async fn bench_size(
+pub(crate) async fn bench_size(
 	people: &OnlineClient<PezkuwiConfig>,
 	item: &str,
 ) -> Result<usize, anyhow::Error> {
@@ -564,7 +564,7 @@ fn raw_account(k: &Keypair) -> Value {
 /// makes founding citizens. Deriving strangers would only add a funding round to reach the
 /// same place, and the offices here are seated by Root rather than won, so standing does not
 /// enter into it.
-fn founding_bench() -> Vec<Keypair> {
+pub(crate) fn founding_bench() -> Vec<Keypair> {
 	vec![dev::alice(), dev::bob(), dev::charlie(), dev::dave(), dev::eve()]
 		.into_iter()
 		.take(FOUNDING_MEMBERS)
@@ -1085,85 +1085,24 @@ async fn a_citizen_initiative_reaches_a_referendum() -> Result<(), anyhow::Error
 	log::info!("initiative {id} carried; the chain holds {count} referenda");
 	Ok(())
 }
-
-/// The treasury funds the payroll, and the payroll pays a claim back across.
+/// Paths 3 and 4, on a network whose register has already opened the gate.
 ///
-/// Paths three and four of the four, and they are a pair: the incentive pot is filled by the
-/// Asset Hub reporting a release to People, and emptied by People asking the Asset Hub to pay
-/// a claim. Neither is submitted from here; the funding report fires on the hub's own
-/// `on_initialize` as soon as distribution is active, and the payment goes out when somebody
-/// claims what an epoch owed them.
+/// Not a test of its own any more, and the reason is a precondition it could never meet. These
+/// stages need `DistributionStarted` on the Asset Hub, and the only thing that sets it is the
+/// People chain's register reaching the population gate -- `activate_distribution` takes
+/// `EnsureXcm<Equals<PeopleLocation>>` with root explicitly refused, so there is no shortcut and
+/// there was never going to be one. On its own network, with a genesis roll of five, the stage
+/// stood on a precondition it could not arrange; the earlier version sent a call that does not
+/// exist and swallowed the error, which is how it looked like it was running for so long.
 ///
-/// What makes this walkable at founding is the seat share. A citizen's reward is their trust
-/// score times a rate, and trust is gated absolutely on a stake nobody has on day one -- but a
-/// seated member of Parliament is paid a fixed share of the parliamentary pool regardless.
-/// So the founding bench, seated by Root, is exactly the cohort that can claim before anybody
-/// has staked anything, which is also true of the real chain's first month.
-#[tokio::test(flavor = "multi_thread")]
-async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<(), anyhow::Error> {
-	let _ = env_logger::try_init_from_env(
-		env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
-	);
-
-	let network = initialize_network(build_network_config().await?).await?;
-	let relay: OnlineClient<PezkuwiConfig> =
-		network.get_node("validator-01")?.wait_client().await?;
-	assign_cores(&relay).await?;
-	let people: OnlineClient<PezkuwiConfig> =
-		network.get_node("people-collator-01")?.wait_client().await?;
-	let asset_hub: OnlineClient<PezkuwiConfig> =
-		network.get_node("asset-hub-collator-01")?.wait_client().await?;
-
-	// The bench first: its members are the only accounts that can be owed anything this early.
-	let bench = founding_bench();
-	// The founding hand, seated by genesis rather than granted here -- see the note in
-	// `the_founding_offices_are_filled_and_the_executive_is_confirmed`. `seat_founding_parliament`
-	// takes `ensure_root_or_serok`, and on this chain only the second half exists.
-	let serok = bench[0].clone();
-	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-	office_call_on_people(
-		&people,
-		&serok,
-		"Welati",
-		"seat_founding_parliament",
-		vec![Value::unnamed_composite(members)],
-		|| {
-			let people = &people;
-			async move { Ok(bench_size(people, "ParliamentMembers").await? >= FOUNDING_MEMBERS) }
-		},
-	)
-	.await?;
-
-	// Distribution has to be running before the hub has anything to release, and there is no
-	// way to ask for it.
-	//
-	// This stage used to send `Welati::report_population_threshold_reached` and swallow the
-	// error. Two things were wrong with that and the swallow hid both. There is no such
-	// dispatchable -- the name belongs to an internal function the era hook calls, so the
-	// message could never encode. And even if it could, `PezTreasury::activate_distribution`
-	// takes `EnsureXcm<Equals<PeopleLocation>>` on the hub, with Root explicitly refused:
-	// "a key that can start the schedule early is a key that can pay a month to a state that
-	// has not yet earned it". The precondition is not reachable by any shortcut, by design.
-	//
-	// So it is asserted rather than arranged, and loudly. The real fix is structural and is
-	// recorded in res/plans/PLAN.md: these stages belong on the same network as
-	// `state_rehearsal`, after the register has actually filled, instead of on a second
-	// network that cannot get there on its own.
-	let distributing =
-		wait_for(&asset_hub, "PezTreasury", "DistributionStarted", SETTLE_SECS, |v| {
-			format!("{v}").contains("true")
-		})
-		.await;
-	if !distributing {
-		return Err(anyhow!(
-			"distribution has not started on the Asset Hub, so there is nothing for the payroll \
-			 to draw against. Only People can start it, and only by its register reaching the \
-			 population gate -- which this network's genesis roll of {FOUNDING_MEMBERS} cannot \
-			 do. Nothing below this line is being measured until these stages move onto the \
-			 register test's network"
-		));
-	}
-
+/// So it runs where the precondition is true: `state_rehearsal` fills the register, proves the
+/// gate, and then calls this. One network instead of two, and the ten minutes a second spawn
+/// costs are returned as well.
+pub(crate) async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across(
+	people: &OnlineClient<PezkuwiConfig>,
+	asset_hub: &OnlineClient<PezkuwiConfig>,
+	bench: &[Keypair],
+) -> Result<(), anyhow::Error> {
 	// ---- path 4: the hub reports what it released ---------------------------------------
 	//
 	// Release zero is due the moment distribution starts -- the schedule is derived from the
@@ -1171,7 +1110,7 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 	// in the era it has enough citizens rather than a month later. The report crosses to
 	// People and lands as a running total, which is what the payroll spends against.
 	log::info!("waiting for the treasury's funding report to reach People");
-	let funded = wait_for(&people, "PezRewards", "ReportedIncentiveTotal", XCM_SETTLE_SECS, |v| {
+	let funded = wait_for(people, "PezRewards", "ReportedIncentiveTotal", XCM_SETTLE_SECS, |v| {
 		v.as_u128().map(|n| n > 0).unwrap_or(false)
 	})
 	.await;
@@ -1186,7 +1125,7 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 	// `EpochLength`, which is compressed in a rehearsal build and thirty days otherwise --
 	// so a failure here is very often a node built without `fast-runtime`.
 	log::info!("waiting for the first epoch to finalise");
-	let closed = wait_for(&people, "PezRewards", "EpochInfo", EPOCH_SETTLE_SECS, |v| {
+	let closed = wait_for(people, "PezRewards", "EpochInfo", EPOCH_SETTLE_SECS, |v| {
 		v.at("total_epochs_completed")
 			.and_then(|n| n.as_u128())
 			.map(|n| n > 0)
@@ -1214,7 +1153,7 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 
 	// And the proof is on the hub again. People records the claim either way; whether the PEZ
 	// moved is a fact about the other chain.
-	let paid = wait_for_pez(&asset_hub, &claimant, 1, XCM_SETTLE_SECS).await?;
+	let paid = wait_for_pez(asset_hub, &claimant, 1, XCM_SETTLE_SECS).await?;
 	assert!(
 		paid,
 		"the claim was accepted on People but no PEZ reached the claimant on the Asset Hub. 		 The incentive pot is the one that pays this, and it is a different pot from the 		 government one -- an empty incentive pot means the release never credited it"

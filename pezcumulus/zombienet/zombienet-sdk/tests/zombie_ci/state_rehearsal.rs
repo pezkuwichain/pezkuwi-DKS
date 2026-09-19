@@ -364,6 +364,46 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 	);
 
 	log::info!("path 1 carried: register {roll} -> gate reported -> distribution active");
+
+	// ---- and now the three paths that needed this one to have happened --------------------
+	//
+	// Paths 3 and 4 used to raise their own network and then stand on a precondition they had
+	// no way to arrange: only the register reaching the gate starts distribution, and a genesis
+	// roll of five never gets there. They belong here, on the one network where the gate has
+	// actually opened.
+	//
+	// The bench is seated first because the payroll pays *seated members*; the founding hand
+	// that seats it is named in this chain's genesis, not granted by anything running.
+	let bench = super::state_rehearsal_offices::founding_bench();
+	let serok = bench[0].clone();
+	// Read the count out before the closure: `settled` is an `Fn`, so anything it touches has to
+	// outlive every call, and `bench` is handed to the payroll stages afterwards.
+	let want = bench.len();
+	let members: Vec<Value> = bench
+		.iter()
+		.map(|k| Value::from_bytes(k.public_key().to_account_id().0))
+		.collect();
+	super::state_rehearsal_offices::office_call_on_people(
+		&people,
+		&serok,
+		"Welati",
+		"seat_founding_parliament",
+		vec![Value::unnamed_composite(members)],
+		|| {
+			let people = &people;
+			async move {
+				Ok(super::state_rehearsal_offices::bench_size(people, "ParliamentMembers").await?
+					>= want)
+			}
+		},
+	)
+	.await?;
+
+	super::state_rehearsal_offices::the_treasury_funds_the_payroll_and_the_payroll_pays_across(
+		&people, &asset_hub, &bench,
+	)
+	.await?;
+
 	Ok(())
 }
 
