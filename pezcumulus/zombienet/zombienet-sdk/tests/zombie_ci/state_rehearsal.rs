@@ -374,12 +374,26 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 	//
 	// The bench is seated first because the payroll pays *seated members*; the founding hand
 	// that seats it is named in this chain's genesis, not granted by anything running.
+	//
+	// The whole house, not a token five, and the reason is arithmetic rather than thoroughness.
+	// `get_voting_threshold` counts against `ParliamentSize` -- the constant, two hundred and
+	// one -- never against the number of people sitting, so a simple majority is a hundred and
+	// one ayes whatever the bench holds. A founding house of five can be seated, can open a
+	// proposal, can vote on it, and can never carry one. Measured 2026-09-19: the budget stage
+	// did exactly that, five ayes, and `finalize_proposal` refused. The pallet says so in its
+	// own words -- "a founding house of twenty cannot pass anything a house of two hundred and
+	// one could not" -- so the rehearsal seats the house the state actually starts with, which
+	// is also what the mainnet founding sequence does.
+	//
+	// Seating asks for no citizenship and voting asks only for a seat, so the rest are plain
+	// derived keys: one call to seat them, and a majority of them to carry a question.
+	let house = super::state_rehearsal_offices::founding_house()?;
 	let bench = super::state_rehearsal_offices::founding_bench();
 	let serok = bench[0].clone();
 	// Read the count out before the closure: `settled` is an `Fn`, so anything it touches has to
-	// outlive every call, and `bench` is handed to the payroll stages afterwards.
-	let want = bench.len();
-	let members: Vec<Value> = bench
+	// outlive every call, and `house` is voted with afterwards.
+	let want = house.len();
+	let members: Vec<Value> = house
 		.iter()
 		.map(|k| Value::from_bytes(k.public_key().to_account_id().0))
 		.collect();
@@ -396,6 +410,13 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 					>= want)
 			}
 		},
+	)
+	.await?;
+
+	// Path 2 before paths 3 and 4: a budget is the first thing a seated house does, and the
+	// government pot it draws on is filled by the same release the payroll reports.
+	super::state_rehearsal_offices::a_budget_is_voted_and_the_treasurer_spends_it(
+		&people, &asset_hub, &house, &bench,
 	)
 	.await?;
 

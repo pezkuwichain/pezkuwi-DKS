@@ -62,6 +62,16 @@ const PEOPLE_ID: u32 = 1004;
 /// real count rather than a single vote deciding everything.
 const FOUNDING_MEMBERS: usize = 5;
 
+/// `WelatiParliamentSize` on both twins. Written here rather than read from the chain because a
+/// rehearsal that adapts to whatever the chain says cannot notice the chain saying the wrong
+/// thing: if this ever disagrees with the runtime, the seating call fails and that is the report
+/// worth having.
+const PARLIAMENT_SIZE: u32 = 201;
+
+/// Ayes a simple majority needs: `ParliamentSize / 2 + 1`, counted against the constant and not
+/// against the number of people sitting.
+const SIMPLE_MAJORITY: usize = (PARLIAMENT_SIZE as usize) / 2 + 1;
+
 /// How long to wait for a message the relay sends to arrive and execute on People.
 ///
 /// Not a guess about how fast XCM is: every use of it polls storage until the effect appears
@@ -564,6 +574,27 @@ fn raw_account(k: &Keypair) -> Value {
 /// makes founding citizens. Deriving strangers would only add a funding round to reach the
 /// same place, and the offices here are seated by Root rather than won, so standing does not
 /// enter into it.
+/// The full house the state starts with: `ParliamentSize` seats.
+///
+/// Separate from `founding_bench`, which is the handful that holds *offices* -- the President,
+/// the court, the Prime Minister. A seat and an office are different things: the office-holders
+/// are named well-known keys so a failure names a person, while the house only has to be large
+/// enough that a majority of `ParliamentSize` can exist at all.
+///
+/// The first five are the bench, so the President and the ministers sit in the house they act
+/// in rather than beside it, which is what the constitution describes.
+pub(crate) fn founding_house() -> Result<Vec<Keypair>, anyhow::Error> {
+	use pezkuwi_zombienet_sdk::subxt_signer::SecretUri;
+	use std::str::FromStr;
+	let mut house = founding_bench();
+	for i in (house.len() as u32 + 1)..=PARLIAMENT_SIZE {
+		let uri = SecretUri::from_str(&format!("//Alice//seat//{i}"))
+			.map_err(|e| anyhow!("seat {i}: {e}"))?;
+		house.push(Keypair::from_uri(&uri).map_err(|e| anyhow!("seat {i}: {e}"))?);
+	}
+	Ok(house)
+}
+
 pub(crate) fn founding_bench() -> Vec<Keypair> {
 	vec![dev::alice(), dev::bob(), dev::charlie(), dev::dave(), dev::eve()]
 		.into_iter()
@@ -789,42 +820,23 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 	);
 	Ok(())
 }
-
-/// A budget voted by the house and spent by the minister who holds the purse.
+/// Path 2, on a network whose register has opened the gate and whose house is fully seated.
 ///
-/// This is the path that reaches the Asset Hub: `spend_budget` sends value across, so a pass
-/// here is also a live cross-chain path rather than a local bookkeeping entry.
-#[tokio::test(flavor = "multi_thread")]
-async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::Error> {
-	let _ = env_logger::try_init_from_env(
-		env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
-	);
-
-	let network = initialize_network(build_network_config().await?).await?;
-	let relay: OnlineClient<PezkuwiConfig> =
-		network.get_node("validator-01")?.wait_client().await?;
-	assign_cores(&relay).await?;
-	let people: OnlineClient<PezkuwiConfig> =
-		network.get_node("people-collator-01")?.wait_client().await?;
-
-	let bench = founding_bench();
+/// Two preconditions it could not meet alone, and it used to raise its own network and stand on
+/// both. The government pot is filled by the monthly release, which only `activate_distribution`
+/// starts, and only the register reaching the population gate does that. And a question needs a
+/// hundred and one ayes -- `ParliamentSize / 2 + 1`, counted against the constant -- so the five
+/// office-holders could open a proposal and never carry it.
+pub(crate) async fn a_budget_is_voted_and_the_treasurer_spends_it(
+	people: &OnlineClient<PezkuwiConfig>,
+	asset_hub: &OnlineClient<PezkuwiConfig>,
+	house: &[Keypair],
+	bench: &[Keypair],
+) -> Result<(), anyhow::Error> {
 	// The founding hand, seated by genesis rather than granted here -- see the note in
 	// `the_founding_offices_are_filled_and_the_executive_is_confirmed`. `seat_founding_parliament`
 	// takes `ensure_root_or_serok`, and on this chain only the second half exists.
-	let serok = bench[0].clone();
 	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-	office_call_on_people(
-		&people,
-		&serok,
-		"Welati",
-		"seat_founding_parliament",
-		vec![Value::unnamed_composite(members)],
-		|| {
-			let people = &people;
-			async move { Ok(bench_size(people, "ParliamentMembers").await? >= FOUNDING_MEMBERS) }
-		},
-	)
-	.await?;
 
 	// Only a sitting member or the President may propose, which is why the house comes first.
 	let proposer = bench[0].clone();
@@ -849,7 +861,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 
 	// The proposal's id is whatever the chain gave it. Reading `NextProposalId` and stepping
 	// back one is the only way to learn it without trusting this file's own count.
-	let next = storage_value(&people, "Welati", "NextProposalId", Vec::new())
+	let next = storage_value(people, "Welati", "NextProposalId", Vec::new())
 		.await?
 		.ok_or_else(|| anyhow!("Welati::NextProposalId is unset after a successful proposal"))?;
 	let next = next
@@ -860,7 +872,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 
 	// Every member votes aye. A simple majority would do; all of them makes the tally
 	// unambiguous if `finalize_proposal` later says it did not pass.
-	for member in &bench {
+	for member in house.iter().take(SIMPLE_MAJORITY) {
 		let vote = dynamic::tx(
 			"Welati",
 			"vote_on_proposal",
@@ -896,7 +908,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 		.wait_for_finalized_success()
 		.await?;
 
-	let budget = storage_value(&people, "Welati", "ApprovedBudget", Vec::new())
+	let budget = storage_value(people, "Welati", "ApprovedBudget", Vec::new())
 		.await?
 		.and_then(|v| v.as_u128())
 		.unwrap_or(0);
@@ -911,7 +923,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 	// -- that is the previous test's business -- so if the portfolio is vacant here, say so
 	// plainly rather than reporting the refusal as a fault in the spending path.
 	let treasurer = bench[2].clone();
-	if tiki_holder(&people, "WezireDarayiye").await?.is_none() {
+	if tiki_holder(people, "WezireDarayiye").await?.is_none() {
 		return Err(anyhow!(
 			"the budget was approved but no finance minister holds the purse, so the spend \
 			 cannot be rehearsed here -- run \
@@ -930,7 +942,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 		.wait_for_finalized_success()
 		.await?;
 
-	let left = storage_value(&people, "Welati", "ApprovedBudget", Vec::new())
+	let left = storage_value(people, "Welati", "ApprovedBudget", Vec::new())
 		.await?
 		.and_then(|v| v.as_u128())
 		.unwrap_or(0);
@@ -950,9 +962,9 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 	//
 	// This is path 2 of the four: People's finance minister spending, `GovernmentSpendOrigin`
 	// on the far side accepting it because it arrived from People and from nowhere else.
-	let asset_hub: OnlineClient<PezkuwiConfig> =
-		network.get_node("asset-hub-collator-01")?.wait_client().await?;
-	let paid = wait_for_pez(&asset_hub, &dev::ferdie(), amount, XCM_SETTLE_SECS).await?;
+	// The hub client is the caller's: this stage runs on the network the register filled, so
+	// raising a second connection here would be raising it to the same node twice.
+	let paid = wait_for_pez(asset_hub, &dev::ferdie(), amount, XCM_SETTLE_SECS).await?;
 	assert!(
 		paid,
 		"the minister's spend was accepted on People and the allowance fell, but the Asset Hub \
