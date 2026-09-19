@@ -192,12 +192,14 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 				"apply_for_citizenship",
 				vec![
 					Value::from_bytes(hash),
+					// `Option<AccountId>`, not `Option<MultiAddress>`. Thirty-two bytes with no
+					// `Id` wrapper: this pallet takes the account directly, and a variant
+					// offered to a type with no place for one fails at encoding with a message
+					// about strings. Found by reading the signature rather than by a run --
+					// the same mistake cost four call sites on 2026-09-18.
 					Value::unnamed_variant(
 						"Some",
-						vec![Value::unnamed_variant(
-							"Id",
-							vec![Value::from_bytes(voucher.public_key().to_account_id().0)],
-						)],
+						vec![Value::from_bytes(voucher.public_key().to_account_id().0)],
 					),
 					Value::unnamed_variant("None", vec![]),
 				],
@@ -212,10 +214,8 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 			let approve = pezkuwi_zombienet_sdk::subxt::dynamic::tx(
 				"IdentityKyc",
 				"approve_referral",
-				vec![Value::unnamed_variant(
-					"Id",
-					vec![Value::from_bytes(applicant.public_key().to_account_id().0)],
-				)],
+				// `applicant: T::AccountId` -- bare, like `apply_for_citizenship`'s referrer.
+				vec![Value::from_bytes(applicant.public_key().to_account_id().0)],
 			);
 			// The one failure worth naming. A node built without `fast-runtime` runs this test
 			// perfectly well and simply waits: the vouching period is a day, so the second
