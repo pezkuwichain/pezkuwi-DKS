@@ -182,21 +182,32 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 		}
 		log::info!("generation of {} applicants", this_generation.len());
 
-		for (i, (applicant, voucher)) in this_generation.iter().enumerate() {
+		// Applicants apply in parallel, vouchers approve in sequence *per voucher*.
+		//
+		// The first version waited for finalisation on every one of three extrinsics per
+		// applicant, one applicant at a time: ninety-five of them is two hundred and eighty-five
+		// round trips of about twelve seconds, which is the best part of an hour and is why this
+		// stage was the one that ran out of its twenty-minute ceiling on 2026-09-19 while the
+		// other five finished.
+		//
+		// Applicants are independent signers, so their applications can all be in flight at
+		// once. Vouchers are not: one voucher approves five applicants and those five share a
+		// nonce, so they are grouped and each group runs in order while the groups run beside
+		// each other. Submitting a voucher's five at once would have them race for one nonce and
+		// four would be dropped as duplicates -- a failure that reads like the chain refusing
+		// the approval.
+		let base = admitted - this_generation.len();
+		let applies = this_generation.iter().enumerate().map(|(i, (applicant, voucher))| {
 			let mut hash = [0u8; 32];
-			hash[..4]
-				.copy_from_slice(&((admitted - this_generation.len() + i) as u32).to_le_bytes());
+			hash[..4].copy_from_slice(&((base + i) as u32).to_le_bytes());
 			hash[4..8].copy_from_slice(b"rhsl");
 			let apply = pezkuwi_zombienet_sdk::subxt::dynamic::tx(
 				"IdentityKyc",
 				"apply_for_citizenship",
 				vec![
 					Value::from_bytes(hash),
-					// `Option<AccountId>`, not `Option<MultiAddress>`. Thirty-two bytes with no
-					// `Id` wrapper: this pallet takes the account directly, and a variant
-					// offered to a type with no place for one fails at encoding with a message
-					// about strings. Found by reading the signature rather than by a run --
-					// the same mistake cost four call sites on 2026-09-18.
+					// `Option<AccountId>`, not `Option<MultiAddress>`: thirty-two bytes with no
+					// `Id` wrapper, because this pallet takes the account directly.
 					Value::unnamed_variant(
 						"Some",
 						vec![Value::from_bytes(voucher.public_key().to_account_id().0)],
@@ -204,56 +215,89 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 					Value::unnamed_variant("None", vec![]),
 				],
 			);
-			people
-				.tx()
-				.sign_and_submit_then_watch_default(&apply, applicant)
-				.await?
-				.wait_for_finalized_success()
-				.await?;
-
-			let approve = pezkuwi_zombienet_sdk::subxt::dynamic::tx(
-				"IdentityKyc",
-				"approve_referral",
-				// `applicant: T::AccountId` -- bare, like `apply_for_citizenship`'s referrer.
-				vec![Value::from_bytes(applicant.public_key().to_account_id().0)],
-			);
-			// The one failure worth naming. A node built without `fast-runtime` runs this test
-			// perfectly well and simply waits: the vouching period is a day, so the second
-			// generation is refused with `VouchingTooSoon` and, if that were retried, the run
-			// would sit there until something killed it. A timeout carries no information --
-			// it looks the same whether the flag was missing, the network never came up, or
-			// the register is genuinely stuck. Saying which turns three silences into one
-			// sentence.
-			if let Err(e) = people
-				.tx()
-				.sign_and_submit_then_watch_default(&approve, voucher)
-				.await?
-				.wait_for_finalized_success()
-				.await
-			{
-				let msg = e.to_string();
-				if msg.contains("VouchingTooSoon") {
-					return Err(anyhow!(
-						"vouching refused as too soon at generation boundary -- the nodes were \
-						 built without `fast-runtime`, so the waiting period is a day rather \
-						 than two blocks and this run cannot finish: {msg}"
-					));
-				}
-				return Err(anyhow!("approve_referral failed: {msg}"));
+			let people = &people;
+			let applicant = applicant.clone();
+			async move {
+				people
+					.tx()
+					.sign_and_submit_then_watch_default(&apply, &applicant)
+					.await?
+					.wait_for_finalized_success()
+					.await
+					.map_err(|e| anyhow!("apply_for_citizenship: {e}"))?;
+				Ok::<_, anyhow::Error>(())
 			}
+		});
+		futures::future::try_join_all(applies).await?;
 
+		// Group by voucher so each voucher's approvals keep their order.
+		let mut by_voucher: std::collections::BTreeMap<[u8; 32], Vec<_>> = Default::default();
+		for (applicant, voucher) in &this_generation {
+			by_voucher
+				.entry(voucher.public_key().to_account_id().0)
+				.or_default()
+				.push((applicant.clone(), voucher.clone()));
+		}
+		let approvals = by_voucher.into_values().map(|group| {
+			let people = &people;
+			async move {
+				for (applicant, voucher) in group {
+					let approve = pezkuwi_zombienet_sdk::subxt::dynamic::tx(
+						"IdentityKyc",
+						"approve_referral",
+						vec![Value::from_bytes(applicant.public_key().to_account_id().0)],
+					);
+					// The one failure worth naming. A node built without `fast-runtime` runs
+					// this perfectly well and simply waits: the vouching period is a day, so the
+					// second generation is refused with `VouchingTooSoon` and the run would sit
+					// there until something killed it. A timeout carries no information -- it
+					// looks the same whether the flag was missing, the network never came up, or
+					// the register is genuinely stuck.
+					if let Err(e) = people
+						.tx()
+						.sign_and_submit_then_watch_default(&approve, &voucher)
+						.await?
+						.wait_for_finalized_success()
+						.await
+					{
+						let msg = e.to_string();
+						if msg.contains("VouchingTooSoon") {
+							return Err(anyhow!(
+								"vouching refused as too soon at a generation boundary -- the \
+								 nodes were built without `fast-runtime`, so the waiting period \
+								 is a day rather than two blocks and this run cannot finish: \
+								 {msg}"
+							));
+						}
+						return Err(anyhow!("approve_referral failed: {msg}"));
+					}
+				}
+				Ok::<_, anyhow::Error>(())
+			}
+		});
+		futures::future::try_join_all(approvals).await?;
+
+		// Confirmations are the applicant's own again, so they go back in parallel.
+		let confirms = this_generation.iter().map(|(applicant, _)| {
 			let confirm = pezkuwi_zombienet_sdk::subxt::dynamic::tx(
 				"IdentityKyc",
 				"confirm_citizenship",
 				Vec::<Value>::new(),
 			);
-			people
-				.tx()
-				.sign_and_submit_then_watch_default(&confirm, applicant)
-				.await?
-				.wait_for_finalized_success()
-				.await?;
-		}
+			let people = &people;
+			let applicant = applicant.clone();
+			async move {
+				people
+					.tx()
+					.sign_and_submit_then_watch_default(&confirm, &applicant)
+					.await?
+					.wait_for_finalized_success()
+					.await
+					.map_err(|e| anyhow!("confirm_citizenship: {e}"))?;
+				Ok::<_, anyhow::Error>(())
+			}
+		});
+		futures::future::try_join_all(confirms).await?;
 
 		// The generation just admitted becomes the next one's vouchers, after the waiting
 		// period -- two blocks in a rehearsal build, a day in production.
