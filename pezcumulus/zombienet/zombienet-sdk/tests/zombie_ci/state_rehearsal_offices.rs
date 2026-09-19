@@ -204,6 +204,48 @@ fn relay_root_into_people(encoded_call: Vec<u8>) -> DynamicPayload {
 /// parent, because none of them was ever backed. The only line that named anything was the
 /// collator's database finally refusing the pile: "Too many sibling blocks at #1 inserted".
 ///
+/// Open the HRMP channels the two system teyrchains talk over.
+///
+/// Without these the register can fill, the gate can fire, the pallet can build its message --
+/// and the send returns `Transport("NoChannel")` every time. Measured 2026-09-19: the roll
+/// reached a hundred, the gate fired on schedule, and thirty-nine consecutive reports were
+/// dropped at the transport for want of a lane. Nothing in the runtimes was wrong; there was
+/// simply no road. The report is deliberately not latched, which is why it kept trying rather
+/// than sticking -- and why the only symptom was a flag that never turned true.
+///
+/// `establish_system_channel` rather than `force_open_hrmp_channel`: it takes any signed origin
+/// provided both ends are system chains, which 1000 and 1004 are, so this rehearses the call a
+/// launch would actually make instead of reaching for sudo.
+///
+/// Both directions, because a channel is one-way. People sends the population report to the hub;
+/// the hub sends the release report back.
+pub(crate) async fn open_system_channels(
+	relay: &OnlineClient<PezkuwiConfig>,
+) -> Result<(), anyhow::Error> {
+	for (from, to) in [(PEOPLE_ID, ASSET_HUB_ID), (ASSET_HUB_ID, PEOPLE_ID)] {
+		let tx = dynamic::tx(
+			"Hrmp",
+			"establish_system_channel",
+			vec![Value::u128(from as u128), Value::u128(to as u128)],
+		);
+		match relay
+			.tx()
+			.sign_and_submit_then_watch_default(&tx, &dev::alice())
+			.await?
+			.wait_for_finalized_success()
+			.await
+		{
+			Ok(_) => log::info!("hrmp channel {from} -> {to} open"),
+			// An already-open channel is the state this wants, not a failure. Anything else is.
+			Err(e) if format!("{e}").contains("ChannelAlreadyExists") => {
+				log::info!("hrmp channel {from} -> {to} was already open")
+			},
+			Err(e) => return Err(anyhow!("could not open the hrmp channel {from} -> {to}: {e}")),
+		}
+	}
+	Ok(())
+}
+
 /// `assign_core` takes Root or the broker para, so the relay's sudo can do it directly. 57600
 /// is the whole of a core; the assignment runs from block zero with no end.
 pub(crate) async fn assign_cores(relay: &OnlineClient<PezkuwiConfig>) -> Result<(), anyhow::Error> {
@@ -623,6 +665,7 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 	let relay: OnlineClient<PezkuwiConfig> =
 		network.get_node("validator-01")?.wait_client().await?;
 	assign_cores(&relay).await?;
+	open_system_channels(&relay).await?;
 	let people: OnlineClient<PezkuwiConfig> =
 		network.get_node("people-collator-01")?.wait_client().await?;
 
