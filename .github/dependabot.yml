@@ -32,6 +32,23 @@ updates:
         update-types: ["minor", "patch"]
       cargo-major:
         update-types: ["major"]
+    # The one advisory that cannot be answered by a bump, and so fails on every attempt.
+    #
+    # `libp2p-quic` is patched in 0.13.1; `libp2p 0.54.1` pins `^0.11`, so the fix arrives only
+    # by upgrading libp2p itself -- measured and rejected on 2026-09-09 as decision C, because
+    # the vulnerable path is not one this tree runs. The default network backend is litep2p and
+    # no validator in the fleet passes `--network-backend`; `pezsc-network` does not even enable
+    # the `quic` feature, so the crate sits in the lockfile and never in the build.
+    #
+    # Left unignored, dependabot opens a security job weekly, finds no reachable version, and
+    # leaves a red run that reads like a new problem -- and somebody spends an hour
+    # rediscovering a closed decision. That is the treadmill, not diligence.
+    #
+    # The exemption ends where `deny.toml`'s does: with the sync that brings a newer libp2p. It
+    # is bounded to the affected range, so a different advisory on the same crate still speaks.
+    ignore:
+      - dependency-name: "libp2p-quic"
+        versions: ["< 0.13.1"]
 
   # usdt-bridge is a separate crate/workspace with its own Cargo.lock; group its bumps
   # so the bridge never spawns per-crate PRs of its own (e.g. the stray rand/rustls ones).

@@ -107,7 +107,7 @@
 //!     type ReferralWeight = ConstU32<25>;
 //!     type PerwerdeWeight = ConstU32<30>;
 //!     type TikiWeight = ConstU32<25>;
-//!     type UpdateInterval = ConstU32<14400>; // ~1 day in blocks
+//!     type UpdateInterval = ConstU32<7_200>; // a day, at a teyrchain's 12s blocks
 //!     type StakingScoreSource = StakingScore;
 //!     type ReferralScoreSource = Referral;
 //!     type PerwerdeScoreSource = Perwerde;

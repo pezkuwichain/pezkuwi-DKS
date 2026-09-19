@@ -557,3 +557,36 @@ fn a_reward_paid_against_an_open_epoch_is_caught() {
 		check_invariants();
 	});
 }
+
+/// An epoch is a month, and it is the same month the treasury releases on.
+///
+/// The second half is the part that cannot be left to a comment. An epoch is funded by exactly
+/// one release, so if the two periods drift apart the payroll either runs dry or accumulates
+/// money it never pays -- and neither shows up as a failure, only as a balance that is wrong
+/// by a factor nobody notices. The constants live in two crates and nothing but this holds
+/// them together.
+///
+/// Both were `432_000`, written for a six-second chain. People is a teyrchain at twelve, so an
+/// epoch was sixty days and the week to claim was a fortnight. Checked in seconds so the test
+/// cannot repeat the code's own arithmetic back at it.
+#[test]
+fn an_epoch_is_a_month_and_matches_the_treasury_release() {
+	const SECS_PER_BLOCK: u64 = 6;
+	const DAY: u64 = 24 * 60 * 60;
+
+	let epoch_days = crate::BLOCKS_PER_EPOCH as u64 * SECS_PER_BLOCK / DAY;
+	assert_eq!(epoch_days, 30, "an epoch is {epoch_days} days, not the month it is named for");
+
+	let claim_days = crate::CLAIM_PERIOD_BLOCKS as u64 * SECS_PER_BLOCK / DAY;
+	assert_eq!(
+		claim_days, 7,
+		"the claim window is {claim_days} days, not the week it is named for"
+	);
+
+	assert_eq!(
+		crate::BLOCKS_PER_EPOCH,
+		pezpallet_pez_treasury::BLOCKS_PER_MONTH,
+		"an epoch is funded by exactly one treasury release, so the two periods have to be the \
+		 same number -- they are in different crates and nothing else compares them"
+	);
+}

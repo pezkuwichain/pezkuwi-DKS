@@ -1030,3 +1030,36 @@ fn the_report_is_addressed_to_the_rewards_chain_and_its_pallet() {
 			.any(|i| matches!(i, xcm::latest::Instruction::UnpaidExecution { .. })));
 	});
 }
+
+/// The halving lands where the whitepaper says it does, and the day it is built from is the
+/// day this chain actually has.
+///
+/// Both numbers used to be written as block counts with the arithmetic in a comment, and the
+/// comment said "10 blocks/minute" -- a six-second chain. This pallet only runs on the Asset
+/// Hub, whose blocks are twelve seconds, so every period was exactly double its name: a
+/// "month" of sixty days and a halving at close to eight years against a promise of four.
+/// Nothing failed and no test went red; the schedule simply ran at half speed, and it would
+/// have kept running that way because a schedule has no way of complaining.
+///
+/// Checked against seconds rather than against another block count, so the test cannot agree
+/// with the code by repeating its mistake.
+#[test]
+fn the_halving_is_four_years_on_a_twelve_second_chain() {
+	const SECS_PER_BLOCK: u64 = 6;
+	const DAY: u64 = 24 * 60 * 60;
+
+	let month_secs = BLOCKS_PER_MONTH as u64 * SECS_PER_BLOCK;
+	assert_eq!(
+		month_secs / DAY,
+		30,
+		"a release period is {} days, not the thirty it is named for -- at {SECS_PER_BLOCK}s a \
+		 block, BLOCKS_PER_MONTH has to be 30 * 14400",
+		month_secs / DAY
+	);
+
+	let halving_years = (HALVING_PERIOD_MONTHS as u64 * month_secs) as f64 / (365.0 * DAY as f64);
+	assert!(
+		(3.8..=4.1).contains(&halving_years),
+		"the halving falls at {halving_years:.2} years; the whitepaper says approximately four"
+	);
+}

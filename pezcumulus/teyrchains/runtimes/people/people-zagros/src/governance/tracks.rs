@@ -34,10 +34,11 @@ use super::origins;
 use crate::{Balance, BlockNumber, RuntimeOrigin};
 
 use alloc::borrow::Cow;
+use pezkuwi_runtime_common::rehearsal_period;
 use pezpallet_referenda::Curve;
 use pezsp_runtime::{str_array as s, FixedI64};
 use testnet_teyrchains_constants::zagros::currency::UNITS;
-use teyrchains_common::{DAYS, HOURS, MINUTES};
+use testnet_teyrchains_constants::zagros::time::{DAYS, HOURS, MINUTES};
 
 const fn percent(x: i32) -> FixedI64 {
 	FixedI64::from_rational(x as u128, 100)
@@ -83,10 +84,10 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 5] = 
 			name: s("root"),
 			max_deciding: 5,
 			decision_deposit: 100 * UNITS,
-			prepare_period: 7 * DAYS,
-			decision_period: 28 * DAYS,
-			confirm_period: 24 * HOURS,
-			min_enactment_period: 24 * HOURS,
+			prepare_period: rehearsal_period!(7 * DAYS, DAYS),
+			decision_period: rehearsal_period!(28 * DAYS, DAYS),
+			confirm_period: rehearsal_period!(24 * HOURS, DAYS),
+			min_enactment_period: rehearsal_period!(24 * HOURS, DAYS),
 			min_approval: APP_ROOT,
 			min_support: SUP_ROOT,
 		},
@@ -97,10 +98,10 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 5] = 
 			name: s("welati_election"),
 			max_deciding: 1,
 			decision_deposit: 50 * UNITS,
-			prepare_period: 7 * DAYS,
-			decision_period: 14 * DAYS,
-			confirm_period: 12 * HOURS,
-			min_enactment_period: 24 * HOURS,
+			prepare_period: rehearsal_period!(7 * DAYS, DAYS),
+			decision_period: rehearsal_period!(14 * DAYS, DAYS),
+			confirm_period: rehearsal_period!(12 * HOURS, DAYS),
+			min_enactment_period: rehearsal_period!(24 * HOURS, DAYS),
 			min_approval: APP_WELATI_ELECTION,
 			min_support: SUP_WELATI_ELECTION,
 		},
@@ -111,10 +112,10 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 5] = 
 			name: s("welati_admin"),
 			max_deciding: 10,
 			decision_deposit: 10 * UNITS,
-			prepare_period: 2 * HOURS,
-			decision_period: 7 * DAYS,
-			confirm_period: 3 * HOURS,
-			min_enactment_period: 10 * MINUTES,
+			prepare_period: rehearsal_period!(2 * HOURS, DAYS),
+			decision_period: rehearsal_period!(7 * DAYS, DAYS),
+			confirm_period: rehearsal_period!(3 * HOURS, DAYS),
+			min_enactment_period: rehearsal_period!(10 * MINUTES, DAYS),
 			min_approval: APP_WELATI_ADMIN,
 			min_support: SUP_WELATI_ADMIN,
 		},
@@ -125,10 +126,10 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 5] = 
 			name: s("citizenship_admin"),
 			max_deciding: 10,
 			decision_deposit: 20 * UNITS,
-			prepare_period: 2 * DAYS,
-			decision_period: 14 * DAYS,
-			confirm_period: 6 * HOURS,
-			min_enactment_period: 24 * HOURS,
+			prepare_period: rehearsal_period!(2 * DAYS, DAYS),
+			decision_period: rehearsal_period!(14 * DAYS, DAYS),
+			confirm_period: rehearsal_period!(6 * HOURS, DAYS),
+			min_enactment_period: rehearsal_period!(24 * HOURS, DAYS),
 			min_approval: APP_CITIZENSHIP_ADMIN,
 			min_support: SUP_CITIZENSHIP_ADMIN,
 		},
@@ -141,10 +142,10 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 5] = 
 			// decided against each other's assumptions, and both would enact.
 			max_deciding: 1,
 			decision_deposit: 100 * UNITS,
-			prepare_period: 90 * DAYS,
-			decision_period: 90 * DAYS,
-			confirm_period: 7 * DAYS,
-			min_enactment_period: 30 * DAYS,
+			prepare_period: rehearsal_period!(90 * DAYS, DAYS),
+			decision_period: rehearsal_period!(90 * DAYS, DAYS),
+			confirm_period: rehearsal_period!(7 * DAYS, DAYS),
+			min_enactment_period: rehearsal_period!(30 * DAYS, DAYS),
 			min_approval: APP_QEYD_RULES,
 			min_support: SUP_QEYD_RULES,
 		},
@@ -181,5 +182,64 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 		} else {
 			Err(())
 		}
+	}
+}
+
+#[cfg(test)]
+mod rehearsal_tests {
+	use super::TRACKS_DATA;
+
+	fn track(
+		name: &str,
+	) -> &'static pezpallet_referenda::Track<u16, crate::Balance, crate::BlockNumber> {
+		TRACKS_DATA
+			.iter()
+			// `str_array` zero-pads to a fixed width, so the stored name carries trailing nulls
+			// and a direct comparison against the literal never matches.
+			.find(|t| {
+				let stored: &[u8] = t.info.name.as_ref();
+				stored.iter().position(|b| *b == 0).map_or(stored, |n| &stored[..n])
+					== name.as_bytes()
+			})
+			.expect("the track exists")
+	}
+
+	/// A deployed runtime carries the periods as the constitution states them.
+	///
+	/// `qeyd_rules` is the one to check because it is the slowest and therefore the one a
+	/// compression would most obviously help with -- which is exactly why it must not be
+	/// compressed by accident. Every runtime this project deploys is built without
+	/// `fast-runtime`, so this is the branch the live chains take.
+	#[test]
+	#[cfg(not(feature = "fast-runtime"))]
+	fn deployed_tracks_keep_the_constitution_periods() {
+		let t = &track("qeyd_rules").info;
+		assert_eq!(t.prepare_period, 90 * super::DAYS, "ninety days of preparation");
+		assert_eq!(t.decision_period, 90 * super::DAYS, "ninety days to decide");
+		assert_eq!(t.confirm_period, 7 * super::DAYS, "a week to confirm");
+		assert_eq!(t.min_enactment_period, 30 * super::DAYS, "a month before it takes effect");
+	}
+
+	/// A rehearsal runtime compresses them, and the order the constitution gives them survives.
+	///
+	/// The order is the part worth asserting: a compression that made every track the same
+	/// length would let a rehearsal pass arrangements the real chain would refuse, because a
+	/// track meant to deliberate longer than another no longer does.
+	#[test]
+	#[cfg(feature = "fast-runtime")]
+	fn rehearsal_tracks_compress_and_stay_ordered() {
+		let slow = &track("qeyd_rules").info;
+		let fast = &track("welati_admin").info;
+		assert_eq!(slow.prepare_period, 90, "one block per day");
+		assert_eq!(slow.decision_period, 90);
+		assert_eq!(slow.confirm_period, 7);
+		assert_eq!(slow.min_enactment_period, 30);
+		// Below a day the floor applies rather than zero.
+		assert_eq!(fast.prepare_period, 2, "two hours floors at two blocks, not zero");
+		assert_eq!(fast.min_enactment_period, 2, "ten minutes floors at two blocks, not zero");
+		assert!(
+			slow.decision_period > fast.decision_period,
+			"the constitutional track still deliberates longer than the administrative one"
+		);
 	}
 }

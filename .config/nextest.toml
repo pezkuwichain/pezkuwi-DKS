@@ -145,6 +145,36 @@ test-group = 'serial-integration'
 # 512-key sync committee. They pass in isolation but aborted under full-suite concurrency on
 # the capped self-hosted runners (memory pressure). Reserve all threads so each runs alone,
 # without concurrent contention.
+# Each rehearsal stage raises a whole network -- a relay, two validators and two collators --
+# from the same `zagros-local` spec, which means the same Alice and Bob authority keys every
+# time. Run two of them at once and the two relays find each other and vote twice with one
+# identity: BABE and GRANDPA equivocation, then "Essential task `grandpa-voter` failed" and the
+# node shuts down. Measured 2026-09-19: all six stages failed this way on the first run, and
+# none of the failures named the cause, because from inside a test the symptom is a chain that
+# stops finalising.
+#
+# Concurrency is not an optimisation to recover here. Six networks is thirty nodes on one box,
+# and the run would thrash even if the keys were distinct.
+[[profile.default.overrides]]
+filter = 'test(/state_rehearsal/)'
+threads-required = 'num-cpus'
+# Twenty minutes, and no retries, and both numbers are the correction of a much worse first
+# guess. Two hours an attempt against the global `retries = 5` is six attempts of two hours per
+# stage -- seventy-two hours for six stages, and the run measured on 2026-09-19 was five and a
+# half hours in with not one stage finished.
+#
+# Retrying is worse than useless for these. A stage that fails does so because a chain did not
+# do something, which the next attempt will reproduce exactly; meanwhile the terminated
+# attempt's nodes are not always reaped, and a leftover relay carrying the same Alice and Bob
+# keys equivocates against the next attempt's relay. The retry does not just waste two hours,
+# it poisons what follows.
+#
+# Twenty minutes is the honest ceiling: a stage raises a network in two or three and then walks
+# its extrinsics. One that has not finished in twenty is not slow, it is waiting for something
+# that will not arrive, and the sooner it says so the sooner the log can be read.
+slow-timeout = { period = "60s", terminate-after = 20 }
+retries = 0
+
 [[profile.default.overrides]]
 filter = 'package(pezsnowbridge-pezpallet-ethereum-client)'
 threads-required = 'num-cpus'
