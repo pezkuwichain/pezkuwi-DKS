@@ -158,7 +158,22 @@ test-group = 'serial-integration'
 [[profile.default.overrides]]
 filter = 'test(/state_rehearsal/)'
 threads-required = 'num-cpus'
-slow-timeout = { period = "300s", terminate-after = 24 }
+# Twenty minutes, and no retries, and both numbers are the correction of a much worse first
+# guess. Two hours an attempt against the global `retries = 5` is six attempts of two hours per
+# stage -- seventy-two hours for six stages, and the run measured on 2026-09-19 was five and a
+# half hours in with not one stage finished.
+#
+# Retrying is worse than useless for these. A stage that fails does so because a chain did not
+# do something, which the next attempt will reproduce exactly; meanwhile the terminated
+# attempt's nodes are not always reaped, and a leftover relay carrying the same Alice and Bob
+# keys equivocates against the next attempt's relay. The retry does not just waste two hours,
+# it poisons what follows.
+#
+# Twenty minutes is the honest ceiling: a stage raises a network in two or three and then walks
+# its extrinsics. One that has not finished in twenty is not slow, it is waiting for something
+# that will not arrive, and the sooner it says so the sooner the log can be read.
+slow-timeout = { period = "60s", terminate-after = 20 }
+retries = 0
 
 [[profile.default.overrides]]
 filter = 'package(pezsnowbridge-pezpallet-ethereum-client)'
