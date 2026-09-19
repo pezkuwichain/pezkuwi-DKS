@@ -164,6 +164,50 @@ fn relay_root_into_people(encoded_call: Vec<u8>) -> DynamicPayload {
 	)
 }
 
+/// Give each teyrchain a core, without which it is registered and never scheduled.
+///
+/// The relay runs agile coretime: `Coretime` and `OnDemandAssignmentProvider`, not the legacy
+/// fixed mapping. Registration puts a para in `ParaLifecycles` as `Parachain` and gives it a
+/// code hash, and that is where the genesis stops -- a core is assigned afterwards, normally by
+/// the coretime chain over XCM. A rehearsal network has no coretime chain, so nothing ever
+/// assigns one and the para sits there collating into the void.
+///
+/// Measured 2026-09-19, and none of it was visible from inside a test: the relay was healthy at
+/// 159 blocks and fifteen epochs, both paras were `Parachain` with their code present, the
+/// collator said "Is collating: yes" and proposed blocks 1, 2, 3 -- over and over from the same
+/// parent, because none of them was ever backed. The only line that named anything was the
+/// collator's database finally refusing the pile: "Too many sibling blocks at #1 inserted".
+///
+/// `assign_core` takes Root or the broker para, so the relay's sudo can do it directly. 57600
+/// is the whole of a core; the assignment runs from block zero with no end.
+pub(crate) async fn assign_cores(relay: &OnlineClient<PezkuwiConfig>) -> Result<(), anyhow::Error> {
+	for (core, para) in [(0u32, ASSET_HUB_ID), (1u32, PEOPLE_ID)] {
+		let assign = dynamic::tx(
+			"Coretime",
+			"assign_core",
+			vec![
+				Value::u128(core as u128),
+				Value::u128(0),
+				Value::unnamed_composite(vec![Value::unnamed_composite(vec![
+					Value::unnamed_variant("Task", vec![Value::u128(para as u128)]),
+					Value::u128(57_600),
+				])]),
+				Value::unnamed_variant("None", vec![]),
+			],
+		);
+		let sudo = dynamic::tx("Sudo", "sudo", vec![assign.into_value()]);
+		relay
+			.tx()
+			.sign_and_submit_then_watch_default(&sudo, &dev::alice())
+			.await?
+			.wait_for_finalized_success()
+			.await
+			.map_err(|e| anyhow!("assigning core {core} to para {para}: {e}"))?;
+		log::info!("core {core} assigned to teyrchain {para}");
+	}
+	Ok(())
+}
+
 /// Send one Root call into People and wait for the effect to show up in People's storage.
 ///
 /// `settled` is what makes this honest. The relay extrinsic finalising means the *message* was
@@ -325,6 +369,7 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 	let network = initialize_network(build_network_config().await?).await?;
 	let relay: OnlineClient<PezkuwiConfig> =
 		network.get_node("validator-01")?.wait_client().await?;
+	assign_cores(&relay).await?;
 	let people: OnlineClient<PezkuwiConfig> =
 		network.get_node("people-collator-01")?.wait_client().await?;
 
@@ -542,6 +587,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 	let network = initialize_network(build_network_config().await?).await?;
 	let relay: OnlineClient<PezkuwiConfig> =
 		network.get_node("validator-01")?.wait_client().await?;
+	assign_cores(&relay).await?;
 	let people: OnlineClient<PezkuwiConfig> =
 		network.get_node("people-collator-01")?.wait_client().await?;
 
@@ -842,6 +888,7 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 	let network = initialize_network(build_network_config().await?).await?;
 	let relay: OnlineClient<PezkuwiConfig> =
 		network.get_node("validator-01")?.wait_client().await?;
+	assign_cores(&relay).await?;
 	let people: OnlineClient<PezkuwiConfig> =
 		network.get_node("people-collator-01")?.wait_client().await?;
 	let asset_hub: OnlineClient<PezkuwiConfig> =

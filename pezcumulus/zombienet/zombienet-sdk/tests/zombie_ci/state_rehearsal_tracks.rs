@@ -38,6 +38,7 @@ use pezkuwi_zombienet_sdk::{
 };
 
 use super::state_rehearsal::wait_for;
+use super::state_rehearsal_offices::assign_cores;
 use crate::utils::initialize_network;
 
 const ASSET_HUB_ID: u32 = 1000;
@@ -144,6 +145,7 @@ async fn every_governance_track_carries_a_question() -> Result<(), anyhow::Error
 	let network = initialize_network(build_network_config().await?).await?;
 	let relay: OnlineClient<PezkuwiConfig> =
 		network.get_node("validator-01")?.wait_client().await?;
+	assign_cores(&relay).await?;
 	let people: OnlineClient<PezkuwiConfig> =
 		network.get_node("people-collator-01")?.wait_client().await?;
 

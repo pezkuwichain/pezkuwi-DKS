@@ -107,6 +107,10 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 
 	log::info!("Spawning relay + Asset Hub + People");
 	let network = initialize_network(build_network_config().await?).await?;
+	// Before anything else: a registered teyrchain with no core collates into the void.
+	let relay: OnlineClient<PezkuwiConfig> =
+		network.get_node("validator-01")?.wait_client().await?;
+	super::state_rehearsal_offices::assign_cores(&relay).await?;
 	let people: OnlineClient<PezkuwiConfig> =
 		network.get_node("people-collator-01")?.wait_client().await?;
 
