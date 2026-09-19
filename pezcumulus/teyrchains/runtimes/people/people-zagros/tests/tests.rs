@@ -370,6 +370,41 @@ mod the_register_is_not_writable_from_abroad {
 		}
 	}
 
+	/// The founding calls are refused too, so the founding hand is not the relay's.
+	///
+	/// Three true facts that do not compose: `seat_founding_parliament` accepts Root, a testnet
+	/// relay holds a sudo key, and `ParentAsSuperuser` turns the parent into Root here. The
+	/// filter runs before the origin is resolved, so the composition never happens -- and it
+	/// fails quietly, because a `Transact` dropped on this side does not fail the relay
+	/// extrinsic that carried it. A rehearsal was built on exactly that composition and every
+	/// call of it vanished.
+	///
+	/// The second half is the one that matters. A refusal with no local signer behind it is not
+	/// a design, it is a chain that cannot be founded: this runtime has no sudo pallet, and its
+	/// own Root track wants a referendum, which wants a roll. So the founding hand has to be
+	/// named in genesis, and `ensure_root_or_serok` is what accepts the holder.
+	#[test]
+	fn the_founding_calls_are_refused_and_genesis_names_the_hand_that_can_make_them() {
+		let seat = RuntimeCall::Welati(pezpallet_welati::Call::seat_founding_parliament {
+			members: vec![AccountId::from(ALICE)],
+		});
+		assert!(!Filter::contains(&seat), "the founding sequence could be driven from the relay");
+
+		// `PresetId` is a `String`, so the name is spelled out rather than imported: naming
+		// `pezsp_genesis_builder` here would mean adding it as a dev-dependency of a runtime
+		// that already carries it as a normal one, and a preset id is a wire-level name that
+		// has to keep working when it is spelled out anyway.
+		let preset =
+			people_zagros_runtime::genesis_config_presets::get_preset(&"local_testnet".into())
+				.expect("the local preset exists");
+		let json = core::str::from_utf8(&preset).expect("a preset is utf-8 json");
+		assert!(
+			json.contains("\"Serok\""),
+			"the local preset seats no Serok, so nothing on this chain can make the founding \
+			 calls the filter above has just refused to carry"
+		);
+	}
+
 	#[test]
 	fn the_relay_keeps_this_chains_code() {
 		let upgrade = RuntimeCall::System(pezframe_system::Call::authorize_upgrade {

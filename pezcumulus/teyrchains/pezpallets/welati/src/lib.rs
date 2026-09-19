@@ -3003,7 +3003,11 @@ pub mod pezpallet {
 		/// cannot pass anything a house of two hundred and one could not. The arithmetic
 		/// already gates this; a second gate here would only repeat it.
 		///
-		/// Root is accepted for as long as sudo exists, like every other Presidential power.
+		/// Root is accepted as well as the Serok, but mind where that Root has to come from.
+		/// On a People chain the register is closed to `Transact`, so it is the Root track of
+		/// that chain's own referenda and never the relay's sudo. On the founding day the roll
+		/// is far too small for a referendum, which is why this call is the Serok's in
+		/// practice: genesis seats the holder of `Tiki::Serok`, and that holder signs this.
 		#[pezpallet::call_index(34)]
 		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
 		pub fn seat_founding_parliament(

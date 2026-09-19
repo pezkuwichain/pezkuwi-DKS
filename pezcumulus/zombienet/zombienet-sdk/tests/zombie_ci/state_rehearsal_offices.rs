@@ -14,18 +14,22 @@
 //! held. On the day a chain starts nobody has any of that, so the first Parliament cannot be
 //! elected: it is seated, and the pallet makes its mandate temporary by construction.
 //!
-//! **Root does only what nobody else can, and then stops.** It seats the founding Parliament and
-//! it grants the presidency -- `Tiki::Serok` is an *Elected* role whose origin is Root alone,
-//! deliberately out of reach of the ordinary `AdminOrigin`, because a body that can appoint the
-//! President is no longer checked by him. After that the President acts on his own authority: he
-//! appoints the court, and he nominates the Prime Minister, whom Parliament and not he confirms.
-//! Root could have done all of it, which is exactly why doing it that way would prove nothing --
-//! the state stops using Root the moment it has a head, so that is where this stops too.
+//! **The founding hand lives on this chain.** The presidency is not granted here: genesis seats
+//! `Tiki::Serok` through `TikiConfig::founding_government`, because nothing running can grant it
+//! afterwards. From there the President seats the founding Parliament, qualifies and appoints the
+//! court, and nominates a Prime Minister whom Parliament -- and deliberately not he -- confirms.
 //!
-//! Root reaches People from the relay: `ParentAsSuperuser` in the People runtime's XCM config
-//! turns a message from the parent into Root here, and the relay has a sudo key on a testnet.
-//! That is the same route the live chain uses for its founding acts, so it is the route this
-//! rehearses -- not a `#[cfg(test)]` shortcut that exists nowhere else.
+//! An earlier version of this file drove all of that from the relay's sudo, through
+//! `XcmPallet::send` and `Transact{Superuser}`. Every call of it was dropped on arrival and the
+//! runs died waiting: `TheRegisterIsNotWritableFromAbroad` refuses `Welati`, `Tiki`, `Diwan`,
+//! `Parliament`, `Trust` and `IdentityKyc` before the origin is even resolved, so the relay's
+//! sudo is exactly the hand it takes away. Worse, it refuses them *quietly* -- a filtered
+//! `Transact` does not fail the relay extrinsic that carried it, so the send reported success
+//! and the effect never came. Three comments in the tree said the relay's sudo was the founding
+//! hand; the filter had said otherwise since the day it was written.
+//!
+//! So this rehearses what the live chain can actually do, which is the only thing worth
+//! rehearsing: an office named at genesis, signing on the chain whose register it writes.
 //!
 //! Nothing here asserts on its own bookkeeping. Every stage reads back the storage the *chain*
 //! keeps and compares against that, because a test that counts its own loop only proves the
@@ -34,10 +38,14 @@
 use anyhow::anyhow;
 use pezkuwi_zombienet_sdk::{
 	subxt::{
+		// `Hasher` is the trait behind `client.hasher()`; `parliament_decides` needs it in scope
+		// to hash the encoded call into the proposal hash the collective stores.
+		config::Hasher,
 		dynamic::{self, At, Value},
 		ext::scale_value,
 		tx::{DynamicPayload, Payload},
-		OnlineClient, PezkuwiConfig,
+		OnlineClient,
+		PezkuwiConfig,
 	},
 	subxt_signer::sr25519::{dev, Keypair},
 	NetworkConfig, NetworkConfigBuilder,
@@ -60,6 +68,14 @@ const FOUNDING_MEMBERS: usize = 5;
 /// and only fails when this runs out, so a slow lane costs seconds and a broken one is still
 /// reported as a broken lane rather than as a timeout.
 const XCM_SETTLE_SECS: u64 = 180;
+
+/// How long to wait for a call signed *on People* to show its effect in People's storage.
+///
+/// Shorter than the XCM figure and for a different reason: there is no lane to cross, so what
+/// is being waited on is block production and nothing else. Kept as its own constant rather
+/// than shared, because a timeout here and a timeout on `XCM_SETTLE_SECS` point at completely
+/// different faults and a single number would hide which one happened.
+const SETTLE_SECS: u64 = 90;
 
 /// PEZ on the Asset Hub. The governance token is an asset there, not a native balance, so a
 /// spend is read out of `Assets::Account` rather than `System::Account`.
@@ -208,7 +224,177 @@ pub(crate) async fn assign_cores(relay: &OnlineClient<PezkuwiConfig>) -> Result<
 	Ok(())
 }
 
-/// Send one Root call into People and wait for the effect to show up in People's storage.
+/// Send one call to People signed by an office that lives there, and wait for the effect.
+///
+/// `settled` is what makes this honest, and it is the half that mattered when this helper sent
+/// its calls from the relay instead: an extrinsic that finalises has been *included*, which is
+/// not the same as having done what it was sent to do. Every caller supplies the question whose
+/// answer changes, and this returns only when the chain itself says so.
+pub(crate) async fn office_call_on_people<F, Fut>(
+	people: &OnlineClient<PezkuwiConfig>,
+	signer: &Keypair,
+	pallet: &str,
+	call: &str,
+	fields: Vec<Value>,
+	settled: F,
+) -> Result<(), anyhow::Error>
+where
+	F: Fn() -> Fut,
+	Fut: std::future::Future<Output = Result<bool, anyhow::Error>>,
+{
+	if settled().await? {
+		return Ok(());
+	}
+	let tx = dynamic::tx(pallet, call, fields);
+	people
+		.tx()
+		.sign_and_submit_then_watch_default(&tx, signer)
+		.await?
+		.wait_for_finalized_success()
+		.await
+		.map_err(|e| {
+			anyhow!(
+				"{pallet}::{call} was refused on People: {e}. The signer is the founding office \
+				 seated by genesis, so a `BadOrigin` here means `TikiConfig::founding_government` \
+				 did not name this key -- check the preset before the call"
+			)
+		})?;
+
+	for _ in 0..(SETTLE_SECS / 6) {
+		tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+		if settled().await? {
+			return Ok(());
+		}
+	}
+	Err(anyhow!(
+		"{pallet}::{call} was accepted on People but the effect never showed within \
+		 {SETTLE_SECS}s -- the extrinsic succeeded, so look at what the call did rather than at \
+		 whether it arrived"
+	))
+}
+
+/// Carry one call through the Parliament collective, because Root is not available to do it.
+///
+/// `confirm_prime_minister` takes `RootOrParliament`, and on this chain neither half is a
+/// shortcut: Root arrives only through a twenty-eight-day referendum on a roll that does not
+/// exist yet, and the relay's Root is refused by the register filter. That leaves the house
+/// itself, which is the right answer anyway -- the President nominates and Parliament confirms
+/// precisely so that one person is not both parties to the appointment.
+///
+/// The proposal hash is computed rather than read back from the `Proposed` event: the collective
+/// hashes the encoded `RuntimeCall`, which is exactly what `encode_call_data` produces, and a
+/// hash derived from the same bytes the chain saw cannot disagree with it.
+async fn parliament_decides<F, Fut>(
+	people: &OnlineClient<PezkuwiConfig>,
+	bench: &[Keypair],
+	pallet: &str,
+	call: &str,
+	settled: F,
+) -> Result<(), anyhow::Error>
+where
+	F: Fn() -> Fut,
+	Fut: std::future::Future<Output = Result<bool, anyhow::Error>>,
+{
+	if settled().await? {
+		return Ok(());
+	}
+	let encoded = encode_people_call(people, pallet, call, Vec::new())?;
+	let hash = people.hasher().hash(&encoded);
+	let length_bound = encoded.len() as u64 + 8;
+
+	// The index the collective will give this motion. Read rather than assumed: a rehearsal
+	// that has already proposed something would otherwise vote on the wrong number and time
+	// out with nothing to show for it.
+	let index: u64 = storage_value(people, "Parliament", "ProposalCount", Vec::new())
+		.await?
+		.map(|v| format!("{v}").trim().parse().unwrap_or(0))
+		.unwrap_or(0);
+
+	// More than half of the bench, which is what `RootOrParliament` asks for. Written from the
+	// bench's own length so a change to `FOUNDING_MEMBERS` cannot leave this silently short.
+	let threshold = (bench.len() / 2 + 1) as u64;
+	let proposal = Value::unnamed_variant(pallet, vec![Value::unnamed_variant(call, vec![])]);
+
+	let propose = dynamic::tx(
+		"Parliament",
+		"propose",
+		vec![Value::u128(threshold as u128), proposal, Value::u128(length_bound as u128)],
+	);
+	people
+		.tx()
+		.sign_and_submit_then_watch_default(&propose, &bench[0])
+		.await?
+		.wait_for_finalized_success()
+		.await
+		.map_err(|e| anyhow!("the house would not receive a motion on {pallet}::{call}: {e}"))?;
+
+	// The proposer's aye is recorded by `propose` itself, so the rest of the threshold comes
+	// from here.
+	for member in bench.iter().skip(1).take(threshold as usize - 1) {
+		let vote = dynamic::tx(
+			"Parliament",
+			"vote",
+			vec![Value::from_bytes(hash.as_ref()), Value::u128(index as u128), Value::bool(true)],
+		);
+		people
+			.tx()
+			.sign_and_submit_then_watch_default(&vote, member)
+			.await?
+			.wait_for_finalized_success()
+			.await
+			.map_err(|e| anyhow!("a member could not vote on {pallet}::{call}: {e}"))?;
+	}
+
+	let close = dynamic::tx(
+		"Parliament",
+		"close",
+		vec![
+			Value::from_bytes(hash.as_ref()),
+			Value::u128(index as u128),
+			Value::named_composite([
+				("ref_time", Value::u128(10_000_000_000)),
+				("proof_size", Value::u128(1_000_000)),
+			]),
+			Value::u128(length_bound as u128),
+		],
+	);
+	people
+		.tx()
+		.sign_and_submit_then_watch_default(&close, &bench[0])
+		.await?
+		.wait_for_finalized_success()
+		.await
+		.map_err(|e| {
+			anyhow!(
+				"the motion on {pallet}::{call} could not be closed: {e}. `TooEarly` means the \
+				 threshold was not reached; `WrongProposalWeight` means the bound above is under \
+				 what the call actually costs"
+			)
+		})?;
+
+	for _ in 0..(SETTLE_SECS / 6) {
+		tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+		if settled().await? {
+			return Ok(());
+		}
+	}
+	Err(anyhow!(
+		"the house carried {pallet}::{call} but the effect never showed within {SETTLE_SECS}s -- \
+		 a closed motion whose inner call failed leaves `Executed` with an error inside it, so \
+		 read that event rather than the close"
+	))
+}
+
+/// Send one Root call into People from the relay, for the calls the register filter lets through.
+///
+/// This is not the founding path and it must not be used as one. `TheRegisterIsNotWritableFromAbroad`
+/// refuses `Welati`, `Tiki`, `Diwan`, `Parliament`, `Trust` and `IdentityKyc` whatever origin
+/// carries them, and refuses them without failing the relay extrinsic -- so a register call sent
+/// this way reports a clean send and then never happens. Use `office_call_on_people` for those.
+///
+/// What is left is real and is why this stayed: `StakingScore::receive_staking_details` is a fact
+/// the relay owns and People only records, so the relay reporting it over `Transact` is the
+/// production path rather than a shortcut around one.
 ///
 /// `settled` is what makes this honest. The relay extrinsic finalising means the *message* was
 /// sent, nothing more: execution on the other side is a separate block on a separate chain and
@@ -375,15 +561,33 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 
 	let bench = founding_bench();
 
+	// ---- The President, already in office -----------------------------------------------
+	//
+	// Not granted here, and there is no way to grant it: `Tiki::Serok` is an *Elected* role
+	// whose dispatchable origin is Root alone, and Root is not reachable on this chain on its
+	// first day -- the relay's is refused by the register filter and this chain's own Root
+	// track wants a referendum on a roll that does not exist. So genesis seats it, through
+	// `TikiConfig::founding_government`, and the rehearsal's job here is to *check* that
+	// rather than to perform it.
+	//
+	// It is read before anything else because everything below depends on it: the seating of
+	// the house, the court's qualifications and the nomination are all this account's to sign.
+	let serok = bench[0].clone();
+	assert!(
+		has_tiki(&people, &serok, "Serok").await?,
+		"genesis did not seat this key as Serok, so nothing below can be signed -- the local \
+		 preset's `founding_government` is where that is decided"
+	);
+
 	// ---- Parliament -------------------------------------------------------------------
 	//
 	// `seat_founding_parliament` refuses a second call once the house is non-empty, so this
 	// is also the check that nothing seated it earlier.
 	log::info!("seating a founding Parliament of {}", bench.len());
 	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-	root_call_on_people(
-		&relay,
+	office_call_on_people(
 		&people,
+		&serok,
 		"Welati",
 		"seat_founding_parliament",
 		vec![Value::unnamed_composite(members)],
@@ -398,30 +602,6 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 		seated, FOUNDING_MEMBERS,
 		"the house holds {seated} members, not the {FOUNDING_MEMBERS} that were seated"
 	);
-
-	// ---- The President ----------------------------------------------------------------
-	//
-	// Root grants the office; it is not won here. `Tiki::Serok` is an *Elected* role in the
-	// taxonomy, so it comes through `grant_elected_role`, whose origin on this runtime is
-	// Root alone -- the ordinary `AdminOrigin` deliberately cannot reach it, because a body
-	// that can appoint the President is no longer checked by him.
-	//
-	// Everything below this line then runs on the President's own authority rather than on
-	// Root's, which is the point: it is the sequence the live chain will follow.
-	let serok = bench[0].clone();
-	log::info!("granting the presidency");
-	root_call_on_people(
-		&relay,
-		&people,
-		"Tiki",
-		"grant_elected_role",
-		vec![multi_address(&serok), Value::unnamed_variant("Serok", vec![])],
-		|| {
-			let people = &people;
-			async move { Ok(tiki_holder(people, "Serok").await?.is_some()) }
-		},
-	)
-	.await?;
 
 	// ---- The Dîwan, by the ordinary procedure -------------------------------------------
 	//
@@ -444,9 +624,9 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 	for (i, member) in court.iter().enumerate() {
 		let want = i + 1;
 		log::info!("qualifying and appointing court member {want}");
-		root_call_on_people(
-			&relay,
+		office_call_on_people(
 			&people,
+			&serok,
 			"Tiki",
 			"grant_tiki",
 			vec![multi_address(member), Value::unnamed_variant("Hiquqnas", vec![])],
@@ -521,7 +701,7 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 	);
 
 	log::info!("Parliament confirming");
-	root_call_on_people(&relay, &people, "Welati", "confirm_prime_minister", Vec::new(), || {
+	parliament_decides(&people, &bench, "Welati", "confirm_prime_minister", || {
 		let people = &people;
 		async move { Ok(tiki_holder(people, "SerokeWezir").await?.is_some()) }
 	})
@@ -592,10 +772,14 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 		network.get_node("people-collator-01")?.wait_client().await?;
 
 	let bench = founding_bench();
+	// The founding hand, seated by genesis rather than granted here -- see the note in
+	// `the_founding_offices_are_filled_and_the_executive_is_confirmed`. `seat_founding_parliament`
+	// takes `ensure_root_or_serok`, and on this chain only the second half exists.
+	let serok = bench[0].clone();
 	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-	root_call_on_people(
-		&relay,
+	office_call_on_people(
 		&people,
+		&serok,
 		"Welati",
 		"seat_founding_parliament",
 		vec![Value::unnamed_composite(members)],
@@ -896,10 +1080,14 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 
 	// The bench first: its members are the only accounts that can be owed anything this early.
 	let bench = founding_bench();
+	// The founding hand, seated by genesis rather than granted here -- see the note in
+	// `the_founding_offices_are_filled_and_the_executive_is_confirmed`. `seat_founding_parliament`
+	// takes `ensure_root_or_serok`, and on this chain only the second half exists.
+	let serok = bench[0].clone();
 	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-	root_call_on_people(
-		&relay,
+	office_call_on_people(
 		&people,
+		&serok,
 		"Welati",
 		"seat_founding_parliament",
 		vec![Value::unnamed_composite(members)],
@@ -913,9 +1101,9 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 	// Distribution has to be running before the hub has anything to release. On the real chain
 	// the population gate does this; here it is asked for directly, because what this test is
 	// about is what happens *after* -- `state_rehearsal` is where the gate itself is proved.
-	root_call_on_people(
-		&relay,
+	office_call_on_people(
 		&people,
+		&serok,
 		"Welati",
 		"report_population_threshold_reached",
 		Vec::new(),

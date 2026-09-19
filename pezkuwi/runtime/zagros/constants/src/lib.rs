@@ -57,6 +57,35 @@ pub mod currency {
 	/// the live chain cost 0.000641 HEZ in total. A thousand is a fee budget with a very wide
 	/// margin, and small enough that the root account can never be mistaken for a treasury.
 	pub const HEZ_SUDO_FUNDING: Balance = 1_000 * UNITS;
+
+	/// What the founding office starts with, on each chain it has to act on.
+	///
+	/// The holder of `Tiki::Serok` is the only origin that can write the People chain's
+	/// register on the founding day. `TheRegisterIsNotWritableFromAbroad` drops every register
+	/// call arriving over XCM, so the relay's sudo cannot seat the founding Parliament; People
+	/// has no sudo pallet of its own; and its Root track wants a referendum, which wants a roll
+	/// that does not exist yet. `seat_founding_parliament` is signed by that key or the house
+	/// never sits -- and a key with no balance cannot sign anything.
+	///
+	/// Three chains rather than one, decided 2026-09-19. The office acts on People (the
+	/// register), on the Asset Hub (the pots the state spends from) and on the relay (the chain
+	/// itself), and a fee budget on one of the three is a gap discovered on the day. That is not
+	/// hypothetical here: Zagros launched on 2026-09-14 with an unfunded root key and came up
+	/// ungovernable, which is the same failure one chain over.
+	///
+	/// Carved out of the founder's allocation rather than added on top, exactly as
+	/// `HEZ_SUDO_FUNDING` is, so the genesis total stays at two hundred million to the planck.
+	/// The size rests on the same measurement: five sudo calls on the live chain cost 0.000641
+	/// HEZ altogether, so a thousand is a very wide fee budget and far too small to be mistaken
+	/// for a treasury.
+	pub const HEZ_FOUNDING_OFFICE_FUNDING: Balance = 1_000 * UNITS;
+
+	/// The whole carve-out, so the founder's line is reduced once and by the right amount.
+	///
+	/// Written as a product rather than three subtractions at three call sites: the relay is
+	/// where the founder's line is computed, and it has to know what the other two chains mint
+	/// without being able to see them.
+	pub const HEZ_FOUNDING_OFFICE_CARVE_OUT: Balance = 3 * HEZ_FOUNDING_OFFICE_FUNDING;
 	pub const CENTS: Balance = UNITS / 30_000;
 	/// One unit, named for what a deposit or a spend is reckoned in.
 	///

@@ -72,7 +72,33 @@ fn people_pezkuwichain_genesis(
 ) -> serde_json::Value {
 	build_struct_json_patch!(RuntimeGenesisConfig {
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|k| (k, endowment)).collect(),
+			balances: endowed_accounts
+				.iter()
+				.cloned()
+				.map(|k| (k, endowment))
+				// The founding office pays for its own calls, and the account funded is read
+				// out of the bench rather than passed in beside it. Two parameters that have to
+				// name the same key are two parameters that can disagree, and the disagreement
+				// here is silent both ways: a funded account holding no tiki signs nothing, and
+				// a seated Serok with no balance is a chain that cannot be founded at all.
+				//
+				// `filter` on what is already endowed, because `pezpallet_balances` panics on a
+				// duplicate account at genesis -- and on the local preset the Serok is Alice,
+				// who is endowed by the line above.
+				.chain(
+					founding_government
+						.iter()
+						.filter(|(who, tiki)| {
+							*tiki == Tiki::Serok && !endowed_accounts.contains(who)
+						})
+						.map(|(who, _)| {
+							(
+								who.clone(),
+								pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING,
+							)
+						}),
+				)
+				.collect(),
 		},
 		teyrchain_info: TeyrchainInfoConfig { teyrchain_id: id },
 		collator_selection: CollatorSelectionConfig {
@@ -127,6 +153,23 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			// MAINNET FOUNDER ACCOUNT - generated 2026-09-15 for the genesis reset.
 			// The same account the relay and the Asset Hub endow; one person, one key.
 			// SS58: 5DPA5ctyUhFZcLoqNj11w1xEn3QqtDSmUjk4L6YxQNBWiDxS
+			// The founding hand: holder of `Tiki::Serok`, and the only origin that can
+			// write this chain's register on day one.
+			//
+			// `TheRegisterIsNotWritableFromAbroad` drops every register call arriving over
+			// XCM, so the relay's sudo cannot seat the founding Parliament; this runtime has
+			// no sudo pallet of its own; and its Root track wants a referendum, which wants a
+			// roll that does not exist yet. What is left is `ensure_root_or_serok`.
+			//
+			// Deliberately not the founder above. That account holds HEZ and citizen NFT #0;
+			// this one holds the executive. One key for both would make one compromise take
+			// the allocation and the register together.
+			//
+			// SS58: 5CZyVmWocD8mQ3YDHEyjPGqZqeooS6u91CujcTEEszSCZ7ge
+			// Path: //pezkuwichain//office//serok in res/genesis/mainnet/mainnet-wallets.json
+			let serok_account: AccountId =
+				hex!("1652c3b477df81cc819fd3813faee7667dc62ed0a29a2a3522f4c6186e955802").into();
+
 			let founder_account: AccountId =
 				hex!("3a4eed1ba224f6d76dec6f24da10b850248dc8db5e8de7effcaf25bea977fe7f").into();
 
@@ -155,10 +198,16 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 				vec![(founder_account.clone(), default_founding_citizen_identity_hash())],
 				// Founding citizen gets NFT #0 and Collection 0 ownership
 				Some(founder_account),
-				// The founding bench and cabinet. Named by whoever launches the chain; empty
-				// until then, and empty means the register cannot be corrected until an
-				// election seats a court.
-				vec![],
+				// The founding government: one office, and the chain cannot be founded
+				// without it. The Serok named above signs `seat_founding_parliament`, and
+				// nothing else on this chain can.
+				//
+				// The bench itself stays empty, and that is still a decision rather than an
+				// omission: two hundred and one members and eleven judges are people, not
+				// keys, and they are seated by extrinsic once the chain is running. Until
+				// that call lands the register cannot be corrected -- the cost of not
+				// pretending an unelected court exists.
+				vec![(serok_account, Tiki::Serok)],
 			)
 		},
 
@@ -195,7 +244,19 @@ pub fn get_preset(id: &PresetId) -> Option<Vec<u8>> {
 			],
 			// Alice gets NFT #0 for testing
 			Some(Sr25519Keyring::Alice.to_account_id()),
-			vec![],
+			// The founding hand, and the local chain cannot be founded without it.
+			//
+			// `seat_founding_parliament` takes `ensure_root_or_serok`, and neither origin
+			// exists here by default: this chain has no sudo pallet, and Root arriving from
+			// the relay is dropped by `TheRegisterIsNotWritableFromAbroad` before its origin
+			// is even resolved. Its own Root track needs a referendum, which needs a roll.
+			// So the first Serok is named here or the register is never written at all.
+			//
+			// Measured 2026-09-19: the rehearsal drove the whole founding sequence from the
+			// relay's sudo and every call was dropped, because three comments in this tree
+			// said that was the founding hand and none of them had been checked against the
+			// filter.
+			vec![(Sr25519Keyring::Alice.to_account_id(), Tiki::Serok)],
 		),
 
 		// ====================================================================
@@ -237,4 +298,55 @@ pub fn preset_names() -> Vec<PresetId> {
 		PresetId::from(pezsp_genesis_builder::DEV_RUNTIME_PRESET),
 		PresetId::from(pezsp_genesis_builder::LOCAL_TESTNET_RUNTIME_PRESET),
 	]
+}
+
+/// The hand the genesis names can also pay.
+///
+/// Seating an office and funding it are two edits in two places, and the failure when they
+/// disagree is the quiet kind: the chain comes up, the register reads as correctly configured,
+/// and the first founding call is rejected for a fee. That is not hypothetical -- Zagros
+/// launched on 2026-09-14 with an unfunded root key and came up ungovernable until an account
+/// was funded by hand, which is not a repair available on a chain whose register is closed to
+/// outside help.
+///
+/// Read out of the production preset. The local preset endows the whole dev keyring, so the
+/// same assertion there would pass with the office funding deleted outright.
+///
+/// The two halves are read from different places on purpose: the seated account comes from
+/// `tiki.foundingGovernment` and the balance from `balances.balances`, so the test fails if
+/// they ever name different keys.
+#[test]
+fn the_founding_hand_can_pay_for_the_founding_call() {
+	let preset = get_preset(&PresetId::from(preset_names::PRESET_GENESIS))
+		.expect("the genesis preset exists");
+	let genesis: serde_json::Value =
+		serde_json::from_slice(&preset).expect("the preset is valid json");
+
+	let seated = genesis["tiki"]["foundingGovernment"]
+		.as_array()
+		.expect("the genesis seats a founding government")
+		.iter()
+		.find(|entry| entry[1] == "Serok")
+		.map(|entry| entry[0].clone())
+		.expect("the genesis seats a Serok");
+
+	let funded = genesis["balances"]["balances"]
+		.as_array()
+		.expect("the balances patch is an array of (account, amount)")
+		.iter()
+		.find(|entry| entry[0] == seated)
+		.map(|entry| {
+			entry[1]
+				.as_u64()
+				.map(u128::from)
+				.unwrap_or_else(|| entry[1].to_string().parse().expect("a balance is a number"))
+		})
+		.unwrap_or(0);
+
+	assert_eq!(
+		funded,
+		pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING,
+		"the account this genesis seats as Serok holds {funded} here, so the founding call \
+		 it is the only origin for cannot pay its fee"
+	);
 }

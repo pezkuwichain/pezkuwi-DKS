@@ -18,7 +18,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-mod genesis_config_presets;
+pub mod genesis_config_presets;
 pub mod governance;
 use governance::pezpallet_custom_origins;
 pub mod people;
@@ -407,8 +407,13 @@ pub type RootOrDiwan = EitherOfDiverse<
 ///
 /// The register is the one thing no other organ should write. Whoever writes the electorate
 /// wins the election, so an executive that can add or remove citizens does not need to win
-/// one, and Root reaches this chain from the relay: from the executive, for as long as sudo
-/// exists.
+/// one.
+///
+/// The Root admitted here is this chain's own. `TheRegisterIsNotWritableFromAbroad` stops
+/// every register call that arrives by `Transact`, so the relay's sudo cannot reach this
+/// origin however loud it shouts; what reaches it is the Root track of this chain's referenda,
+/// which counts heads rather than tokens. The correction stays with the electorate whose
+/// register it is.
 ///
 /// Yet a register with no correction at all is worse during the founding period than one the
 /// executive can correct, because a forged citizen compounds -- each one can vouch for more.
