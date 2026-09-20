@@ -414,6 +414,14 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 	)
 	.await?;
 
+	// The seats that will vote need a fee budget: seating touches no balances, and a vote is an
+	// extrinsic. Only the majority votes, so only the majority is funded.
+	super::state_rehearsal_offices::fund_seats(
+		&people,
+		&house[..super::state_rehearsal_offices::simple_majority()],
+	)
+	.await?;
+
 	// Path 2 before paths 3 and 4: a budget is the first thing a seated house does, and the
 	// government pot it draws on is filled by the same release the payroll reports.
 	super::state_rehearsal_offices::a_budget_is_voted_and_the_treasurer_spends_it(

@@ -72,6 +72,20 @@ const PARLIAMENT_SIZE: u32 = 201;
 /// against the number of people sitting.
 const SIMPLE_MAJORITY: usize = (PARLIAMENT_SIZE as usize) / 2 + 1;
 
+/// Ten HEZ a seat, out of the founder's account, decided by Serok on 2026-09-19.
+///
+/// A fee budget rather than an endowment: a vote, a proposal and the existential deposit, with
+/// room to spare and nothing that could be mistaken for a stake. It comes from the founder
+/// because on this chain the founder is the only account that holds anything at genesis -- the
+/// same place the register's cohort is funded from, and the same place mainnet's launch capital
+/// sits.
+const FUND_PER_SEAT: u128 = 10_000_000_000_000;
+
+/// `SIMPLE_MAJORITY` for callers outside this module.
+pub(crate) fn simple_majority() -> usize {
+	SIMPLE_MAJORITY
+}
+
 /// How long to wait for a message the relay sends to arrive and execute on People.
 ///
 /// Not a guess about how fast XCM is: every use of it polls storage until the effect appears
@@ -616,6 +630,56 @@ fn raw_account(k: &Keypair) -> Value {
 /// makes founding citizens. Deriving strangers would only add a funding round to reach the
 /// same place, and the offices here are seated by Root rather than won, so standing does not
 /// enter into it.
+/// Put a fee budget on every seat that is going to vote.
+///
+/// Seating a house and voting in one are different asks: `seat_founding_parliament` takes a list
+/// of accounts and never touches their balances, but a vote is an extrinsic and an extrinsic is
+/// paid for. Measured 2026-09-19: the house was seated, the proposal opened, and the first vote
+/// came back `Invalid Transaction (1010)` -- the signer could not pay. Only the hundred accounts
+/// the register funded had anything, and a simple majority of two hundred and one is a hundred
+/// and one, so the rehearsal was exactly one funded account short of being able to carry a
+/// question.
+///
+/// Funded in chunks, like the register's cohort, because a batch of a hundred and one transfers
+/// is a larger block than the runtime wants to build in one go.
+pub(crate) async fn fund_seats(
+	people: &OnlineClient<PezkuwiConfig>,
+	seats: &[Keypair],
+) -> Result<(), anyhow::Error> {
+	for chunk in seats.chunks(25) {
+		let calls: Vec<Value> = chunk
+			.iter()
+			.map(|k| {
+				dynamic::tx(
+					"Balances",
+					"transfer_keep_alive",
+					vec![
+						Value::unnamed_variant(
+							"Id",
+							vec![Value::from_bytes(k.public_key().to_account_id().0)],
+						),
+						Value::u128(FUND_PER_SEAT),
+					],
+				)
+				.into_value()
+			})
+			.collect();
+		let batch = dynamic::tx("Utility", "batch_all", vec![Value::unnamed_composite(calls)]);
+		// The founder pays. `dev::alice()` is the founding citizen in the local preset -- the
+		// account that holds NFT #0 and the endowment -- so this is the founder's account and
+		// not a convenient key that happens to have money.
+		people
+			.tx()
+			.sign_and_submit_then_watch_default(&batch, &dev::alice())
+			.await?
+			.wait_for_finalized_success()
+			.await
+			.map_err(|e| anyhow!("could not fund a chunk of seats: {e}"))?;
+	}
+	log::info!("{} seats funded", seats.len());
+	Ok(())
+}
+
 /// The full house the state starts with: `ParliamentSize` seats.
 ///
 /// Separate from `founding_bench`, which is the handful that holds *offices* -- the President,

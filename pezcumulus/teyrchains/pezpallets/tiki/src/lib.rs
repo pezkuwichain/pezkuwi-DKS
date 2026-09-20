@@ -691,7 +691,38 @@ pub mod pezpallet {
 				Pezpallet::<T>::mint_citizen_nft_for_user(founder)
 					.expect("Tiki genesis: failed to mint the founder's citizen NFT");
 
-				// Step 3: Seat the founding government.
+				// Step 3: Every other founding citizen gets the same NFT.
+				//
+				// `identity-kyc`'s genesis writes the KYC status, the identity hash and
+				// `CitizenSince` for each founding citizen, and stops there -- while the running
+				// path, `confirm_citizenship`, ends with
+				// `T::CitizenNftProvider::mint_citizen_nft_confirmed`. So genesis produced
+				// citizens the register counted and this pallet did not: `citizen_nft` returned
+				// `None` for them, and `internal_grant_role` refuses that with
+				// `CitizenNftNotFound`.
+				//
+				// The consequence was not cosmetic. A founding citizen could hold no tiki at
+				// all, and there was no way back: already being a citizen, they could not apply
+				// again to earn the mint they had been skipped. On a launch that named its
+				// founding citizens and then tried to appoint them, every appointment would
+				// have failed -- measured 2026-09-19, when the rehearsal's court could not be
+				// qualified because three of the five founding citizens had no NFT.
+				//
+				// Read from `identity-kyc`'s storage rather than from a second list in this
+				// config: two lists that have to name the same people are two lists that can
+				// disagree, and the one that would be wrong is the copy. `identity-kyc` builds
+				// first -- pallet index 51 against this pallet's 61 -- so its storage is already
+				// written by the time this runs.
+				for (who, level) in pezpallet_identity_kyc::KycStatuses::<T>::iter() {
+					if level == pezpallet_identity_kyc::types::KycLevel::Approved
+						&& CitizenNft::<T>::get(&who).is_none()
+					{
+						Pezpallet::<T>::mint_citizen_nft_for_user(&who)
+							.expect("Tiki genesis: failed to mint a founding citizen's NFT");
+					}
+				}
+
+				// Step 4: Seat the founding government.
 				for (holder, tiki) in self.founding_government.iter() {
 					if CitizenNft::<T>::get(holder).is_none() {
 						Pezpallet::<T>::mint_citizen_nft_for_user(holder)

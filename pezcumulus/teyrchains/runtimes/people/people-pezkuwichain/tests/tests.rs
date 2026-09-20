@@ -228,6 +228,54 @@ mod the_court_roster {
 		raw.into()
 	}
 
+	/// A founding citizen can be given an office.
+	///
+	/// Genesis writes citizenship in two pallets and they used to disagree.
+	/// `identity-kyc`'s genesis sets the KYC status, the identity hash and `CitizenSince`; the
+	/// running path, `confirm_citizenship`, does all of that *and* mints the citizen NFT through
+	/// `CitizenNftProvider`. Genesis skipped the mint, so a founding citizen was a citizen by the
+	/// register's reckoning and not by `tiki`'s -- and `internal_grant_role` refuses an account
+	/// with no NFT.
+	///
+	/// The failure had no way out. Already being a citizen, the account could not apply again to
+	/// earn the mint it had been skipped, so every founding citizen named in genesis was
+	/// permanently unappointable. Found on 2026-09-19 when the rehearsal could not qualify its
+	/// court.
+	///
+	/// The assertion is the grant itself rather than the presence of an NFT: what matters is that
+	/// the office can be filled, and reading the NFT would pass on a chain where the grant still
+	/// refused for some other reason.
+	#[test]
+	fn a_founding_citizen_can_be_given_an_office() {
+		// Not [9u8; 32]: that is `FOUNDER`, and tiki's genesis mints the founder's NFT in its
+		// own step. Granting to the founder passes whether or not founding citizens are minted
+		// for, which is how the first version of this test came out green with the fix reverted.
+		let citizen = account([12u8; 32]);
+		let mut t = pezframe_system::GenesisConfig::<Runtime>::default().build_storage().unwrap();
+
+		pezpallet_identity_kyc::GenesisConfig::<Runtime> {
+			founding_citizens: vec![(citizen.clone(), pezsp_core::H256::repeat_byte(9))],
+			..Default::default()
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
+		pezpallet_tiki::GenesisConfig::<Runtime> {
+			founding_citizen: Some(account(FOUNDER)),
+			..Default::default()
+		}
+		.assimilate_storage(&mut t)
+		.unwrap();
+
+		let mut ext = pezsp_io::TestExternalities::new(t);
+		ext.execute_with(|| {
+			pezframe_system::Pezpallet::<Runtime>::set_block_number(1);
+			assert_ok!(pezpallet_tiki::Pezpallet::<Runtime>::internal_grant_role(
+				&citizen,
+				pezpallet_tiki::Tiki::Hiquqnas,
+			));
+		});
+	}
+
 	/// Genesis with a citizen register that exists and two people qualified for the bench.
 	pub(crate) fn new_test_ext() -> pezsp_io::TestExternalities {
 		let mut t = pezframe_system::GenesisConfig::<Runtime>::default().build_storage().unwrap();
