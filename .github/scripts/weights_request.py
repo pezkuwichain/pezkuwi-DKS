@@ -71,10 +71,19 @@ def from_file():
 
 def build(run):
     args = []
+    # Both of these are `nargs='*'` on the other side, so a whitespace-separated value becomes
+    # several arguments rather than one oddly-named pallet.
+    #
+    # Passing "a b" as a single argv element asked the bencher for a pallet called "a b" and it
+    # failed, so the only way to measure seven pallets was seven dispatches -- seven runtime
+    # builds of about two hours each on the reference box, with its validators stopped for the
+    # duration. Measured 2026-09-20. One build and seven benchmarks is the same measurement in a
+    # fraction of the time.
     for key in ("runtime", "pallet"):
         value = run.get(key)
         if value:
-            args += [f"--{'pezpallet' if key == 'pallet' else key}", str(value)]
+            parts = str(value).split()
+            args += [f"--{'pezpallet' if key == 'pallet' else key}", *parts]
     for key in ("repeat", "steps"):
         value = digits(key, run.get(key))
         if value:
