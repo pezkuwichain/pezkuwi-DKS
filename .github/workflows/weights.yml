@@ -106,6 +106,26 @@ jobs:
 
       # A weight is a timing, so anything else running on the box is part of the measurement.
       # Refuse rather than record a number the fleet cannot reproduce.
+      # Let the previous measurement's load decay before judging this one.
+      #
+      # The gate below is right to refuse a busy box, but "busy" and "was busy a minute ago" are
+      # not the same thing, and a load average takes minutes to fall. Measured 2026-09-20: five
+      # queued pallet measurements failed here in a row, each killed by the heat of the one
+      # before it, while the box itself was idle. Waiting preserves what the gate is for and
+      # makes a queue possible; the gate still fires if the load never comes down, which is the
+      # case it exists for.
+      - name: Wait for the box to go quiet
+        run: |
+          set -uo pipefail
+          for i in $(seq 1 30); do
+            load=$(awk '{print $1}' /proc/loadavg)
+            ok=$(awk -v l="$load" 'BEGIN{print (l < 1.0) ? 1 : 0}')
+            if [ "$ok" = "1" ]; then echo "load $load after ${i}0s"; exit 0; fi
+            echo "load $load; waiting"
+            sleep 10
+          done
+          echo "::warning::load did not fall below 1.0 in five minutes; the gate below decides"
+
       - name: Refuse to measure a busy machine
         run: |
           load=$(awk '{print int($1 + 0.5)}' /proc/loadavg)
