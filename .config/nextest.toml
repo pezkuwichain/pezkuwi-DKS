@@ -179,6 +179,24 @@ threads-required = 'num-cpus'
 slow-timeout = { period = "60s", terminate-after = 60 }
 retries = 0
 
+# The governance-track stage is sized by the tracks, not by a guess.
+#
+# It walks every track the chain declares -- five on People -- and each one waits up to
+# `TRACK_SETTLE_SECS` (420s) for its referendum to reach `Deciding`. The worst case is therefore
+# about thirty-five minutes of waiting plus the setup, against a general cap of twenty: two slow
+# tracks were enough to end the stage before it had reported on the rest. Measured 2026-09-20.
+#
+# Not made concurrent, and the reason is a real constraint rather than caution: the same three
+# voters answer every track's referendum, so submitting them together would race their nonces.
+# The votes inside a single proposal *are* concurrent, because there each voter is distinct.
+#
+# Above the general override on purpose -- nextest takes the first match.
+[[profile.default.overrides]]
+filter = 'test(/state_rehearsal_tracks/)'
+threads-required = 'num-cpus'
+slow-timeout = { period = "60s", terminate-after = 45 }
+retries = 0
+
 [[profile.default.overrides]]
 filter = 'test(/state_rehearsal/)'
 threads-required = 'num-cpus'
