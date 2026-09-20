@@ -422,6 +422,12 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 	)
 	.await?;
 
+	// The offices before the budget: a spend needs a minister to hold the purse, and the
+	// minister is the last appointment in that sequence. Run 12 approved a budget and then had
+	// nobody who could spend it.
+	super::state_rehearsal_offices::the_founding_offices_are_filled(&relay, &people, &bench)
+		.await?;
+
 	// Path 2 before paths 3 and 4: a budget is the first thing a seated house does, and the
 	// government pot it draws on is filled by the same release the payroll reports.
 	super::state_rehearsal_offices::a_budget_is_voted_and_the_treasurer_spends_it(

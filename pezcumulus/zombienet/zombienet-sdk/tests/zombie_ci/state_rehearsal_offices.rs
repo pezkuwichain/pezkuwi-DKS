@@ -711,30 +711,22 @@ pub(crate) fn founding_bench() -> Vec<Keypair> {
 // ---------------------------------------------------------------------------------------
 // The stages
 // ---------------------------------------------------------------------------------------
-
-/// Parliament and the Dîwan, seated from Root, then the executive named and confirmed.
+/// The offices, on a network whose register has filled and whose house is already seated.
 ///
-/// One test rather than four, because each stage is the next one's precondition and a chain
-/// raised for the purpose takes minutes to come up. Splitting them would either re-raise the
-/// network four times or leave three tests that only pass in order, which is worse than one
-/// test that says where it stopped.
-#[tokio::test(flavor = "multi_thread")]
-async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
+/// Not a test of its own: the budget stage needs a finance minister to hold the purse, and the
+/// minister is appointed at the end of this sequence. Run on separate networks, the budget was
+/// approved and then had nobody to spend it -- "the budget was approved but no finance minister
+/// holds the purse", measured 2026-09-20 on run 12, one layer after the votes started carrying.
+///
+/// The seating of the house is *not* here. The merged flow seats two hundred and one before this
+/// runs, because the threshold is counted against `ParliamentSize` and a smaller bench can carry
+/// nothing -- see `founding_house`.
+pub(crate) async fn the_founding_offices_are_filled(
+	relay: &OnlineClient<PezkuwiConfig>,
+	people: &OnlineClient<PezkuwiConfig>,
+	bench: &[Keypair],
 ) -> Result<(), anyhow::Error> {
-	let _ = env_logger::try_init_from_env(
-		env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
-	);
-
-	let network = initialize_network(build_network_config().await?).await?;
-	let relay: OnlineClient<PezkuwiConfig> =
-		network.get_node("validator-01")?.wait_client().await?;
-	assign_cores(&relay).await?;
-	open_system_channels(&relay).await?;
-	let people: OnlineClient<PezkuwiConfig> =
-		network.get_node("people-collator-01")?.wait_client().await?;
-
-	let bench = founding_bench();
-
+	let serok = bench[0].clone();
 	// ---- The President, already in office -----------------------------------------------
 	//
 	// Not granted here, and there is no way to grant it: `Tiki::Serok` is an *Elected* role
@@ -748,33 +740,9 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 	// the house, the court's qualifications and the nomination are all this account's to sign.
 	let serok = bench[0].clone();
 	assert!(
-		has_tiki(&people, &serok, "Serok").await?,
+		has_tiki(people, &serok, "Serok").await?,
 		"genesis did not seat this key as Serok, so nothing below can be signed -- the local \
 		 preset's `founding_government` is where that is decided"
-	);
-
-	// ---- Parliament -------------------------------------------------------------------
-	//
-	// `seat_founding_parliament` refuses a second call once the house is non-empty, so this
-	// is also the check that nothing seated it earlier.
-	log::info!("seating a founding Parliament of {}", bench.len());
-	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-	office_call_on_people(
-		&people,
-		&serok,
-		"Welati",
-		"seat_founding_parliament",
-		vec![Value::unnamed_composite(members)],
-		|| {
-			let people = &people;
-			async move { Ok(bench_size(people, "ParliamentMembers").await? >= FOUNDING_MEMBERS) }
-		},
-	)
-	.await?;
-	let seated = bench_size(&people, "ParliamentMembers").await?;
-	assert_eq!(
-		seated, FOUNDING_MEMBERS,
-		"the house holds {seated} members, not the {FOUNDING_MEMBERS} that were seated"
 	);
 
 	// ---- The Dîwan, by the ordinary procedure -------------------------------------------
@@ -799,13 +767,13 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 		let want = i + 1;
 		log::info!("qualifying and appointing court member {want}");
 		office_call_on_people(
-			&people,
+			people,
 			&serok,
 			"Tiki",
 			"grant_tiki",
 			vec![multi_address(member), Value::unnamed_variant("Hiquqnas", vec![])],
 			|| {
-				let people = &people;
+				let people = people;
 				let who = (*member).clone();
 				async move { has_tiki(people, &who, "Hiquqnas").await }
 			},
@@ -833,7 +801,7 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 				)
 			})?;
 	}
-	let court_size = bench_size(&people, "DiwanMembers").await?;
+	let court_size = bench_size(people, "DiwanMembers").await?;
 	assert_eq!(
 		court_size,
 		court.len(),
@@ -868,15 +836,15 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 			)
 		})?;
 	assert!(
-		storage_value(&people, "Welati", "PendingPrimeMinister", Vec::new())
+		storage_value(people, "Welati", "PendingPrimeMinister", Vec::new())
 			.await?
 			.is_some(),
 		"the nomination was accepted but no pending Prime Minister is recorded"
 	);
 
 	log::info!("Parliament confirming");
-	parliament_decides(&people, &bench, "Welati", "confirm_prime_minister", || {
-		let people = &people;
+	parliament_decides(people, &bench, "Welati", "confirm_prime_minister", || {
+		let people = people;
 		async move { Ok(tiki_holder(people, "SerokeWezir").await?.is_some()) }
 	})
 	.await
@@ -916,17 +884,19 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 			)
 		})?;
 
-	let holder = tiki_holder(&people, "WezireDarayiye").await?;
+	let holder = tiki_holder(people, "WezireDarayiye").await?;
 	assert!(
 		holder.is_some(),
 		"the finance portfolio is still vacant after a successful appointment"
 	);
 
 	log::info!(
-		"offices filled: {seated} in the house, {court_size} on the bench, executive seated"
+		"offices filled: {} in the house, {court_size} on the bench, executive seated",
+		bench_size(people, "ParliamentMembers").await?
 	);
 	Ok(())
 }
+
 /// Path 2, on a network whose register has opened the gate and whose house is fully seated.
 ///
 /// Two preconditions it could not meet alone, and it used to raise its own network and stand on
