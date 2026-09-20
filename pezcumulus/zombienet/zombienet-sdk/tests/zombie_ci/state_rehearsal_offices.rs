@@ -845,7 +845,7 @@ pub(crate) async fn the_founding_offices_are_filled(
 	log::info!("Parliament confirming");
 	parliament_decides(people, &bench, "Welati", "confirm_prime_minister", || {
 		let people = people;
-		async move { Ok(tiki_holder(people, "SerokeWezir").await?.is_some()) }
+		async move { Ok(tiki_holder(people, "SerokWeziran").await?.is_some()) }
 	})
 	.await
 	.map_err(|e| {
