@@ -145,6 +145,7 @@ async fn every_governance_track_carries_a_question() -> Result<(), anyhow::Error
 	let network = initialize_network(build_network_config().await?).await?;
 	let relay: OnlineClient<PezkuwiConfig> =
 		network.get_node("validator-01")?.wait_client().await?;
+	super::state_rehearsal_offices::open_system_channels(&relay).await?;
 	assign_cores(&relay).await?;
 	let people: OnlineClient<PezkuwiConfig> =
 		network.get_node("people-collator-01")?.wait_client().await?;

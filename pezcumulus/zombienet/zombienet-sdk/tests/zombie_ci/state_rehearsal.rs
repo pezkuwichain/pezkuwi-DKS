@@ -111,6 +111,7 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 	let relay: OnlineClient<PezkuwiConfig> =
 		network.get_node("validator-01")?.wait_client().await?;
 	super::state_rehearsal_offices::assign_cores(&relay).await?;
+	super::state_rehearsal_offices::open_system_channels(&relay).await?;
 	let people: OnlineClient<PezkuwiConfig> =
 		network.get_node("people-collator-01")?.wait_client().await?;
 
@@ -364,6 +365,81 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 	);
 
 	log::info!("path 1 carried: register {roll} -> gate reported -> distribution active");
+
+	// ---- and now the three paths that needed this one to have happened --------------------
+	//
+	// Paths 3 and 4 used to raise their own network and then stand on a precondition they had
+	// no way to arrange: only the register reaching the gate starts distribution, and a genesis
+	// roll of five never gets there. They belong here, on the one network where the gate has
+	// actually opened.
+	//
+	// The bench is seated first because the payroll pays *seated members*; the founding hand
+	// that seats it is named in this chain's genesis, not granted by anything running.
+	//
+	// The whole house, not a token five, and the reason is arithmetic rather than thoroughness.
+	// `get_voting_threshold` counts against `ParliamentSize` -- the constant, two hundred and
+	// one -- never against the number of people sitting, so a simple majority is a hundred and
+	// one ayes whatever the bench holds. A founding house of five can be seated, can open a
+	// proposal, can vote on it, and can never carry one. Measured 2026-09-19: the budget stage
+	// did exactly that, five ayes, and `finalize_proposal` refused. The pallet says so in its
+	// own words -- "a founding house of twenty cannot pass anything a house of two hundred and
+	// one could not" -- so the rehearsal seats the house the state actually starts with, which
+	// is also what the mainnet founding sequence does.
+	//
+	// Seating asks for no citizenship and voting asks only for a seat, so the rest are plain
+	// derived keys: one call to seat them, and a majority of them to carry a question.
+	let house = super::state_rehearsal_offices::founding_house()?;
+	let bench = super::state_rehearsal_offices::founding_bench();
+	let serok = bench[0].clone();
+	// Read the count out before the closure: `settled` is an `Fn`, so anything it touches has to
+	// outlive every call, and `house` is voted with afterwards.
+	let want = house.len();
+	let members: Vec<Value> = house
+		.iter()
+		.map(|k| Value::from_bytes(k.public_key().to_account_id().0))
+		.collect();
+	super::state_rehearsal_offices::office_call_on_people(
+		&people,
+		&serok,
+		"Welati",
+		"seat_founding_parliament",
+		vec![Value::unnamed_composite(members)],
+		|| {
+			let people = &people;
+			async move {
+				Ok(super::state_rehearsal_offices::bench_size(people, "ParliamentMembers").await?
+					>= want)
+			}
+		},
+	)
+	.await?;
+
+	// The seats that will vote need a fee budget: seating touches no balances, and a vote is an
+	// extrinsic. Only the majority votes, so only the majority is funded.
+	super::state_rehearsal_offices::fund_seats(
+		&people,
+		&house[..super::state_rehearsal_offices::simple_majority()],
+	)
+	.await?;
+
+	// The offices before the budget: a spend needs a minister to hold the purse, and the
+	// minister is the last appointment in that sequence. Run 12 approved a budget and then had
+	// nobody who could spend it.
+	super::state_rehearsal_offices::the_founding_offices_are_filled(&relay, &people, &bench)
+		.await?;
+
+	// Path 2 before paths 3 and 4: a budget is the first thing a seated house does, and the
+	// government pot it draws on is filled by the same release the payroll reports.
+	super::state_rehearsal_offices::a_budget_is_voted_and_the_treasurer_spends_it(
+		&people, &asset_hub, &house, &bench,
+	)
+	.await?;
+
+	super::state_rehearsal_offices::the_treasury_funds_the_payroll_and_the_payroll_pays_across(
+		&people, &asset_hub, &bench,
+	)
+	.await?;
+
 	Ok(())
 }
 

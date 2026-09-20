@@ -62,6 +62,30 @@ const PEOPLE_ID: u32 = 1004;
 /// real count rather than a single vote deciding everything.
 const FOUNDING_MEMBERS: usize = 5;
 
+/// `WelatiParliamentSize` on both twins. Written here rather than read from the chain because a
+/// rehearsal that adapts to whatever the chain says cannot notice the chain saying the wrong
+/// thing: if this ever disagrees with the runtime, the seating call fails and that is the report
+/// worth having.
+const PARLIAMENT_SIZE: u32 = 201;
+
+/// Ayes a simple majority needs: `ParliamentSize / 2 + 1`, counted against the constant and not
+/// against the number of people sitting.
+const SIMPLE_MAJORITY: usize = (PARLIAMENT_SIZE as usize) / 2 + 1;
+
+/// Ten HEZ a seat, out of the founder's account, decided by Serok on 2026-09-19.
+///
+/// A fee budget rather than an endowment: a vote, a proposal and the existential deposit, with
+/// room to spare and nothing that could be mistaken for a stake. It comes from the founder
+/// because on this chain the founder is the only account that holds anything at genesis -- the
+/// same place the register's cohort is funded from, and the same place mainnet's launch capital
+/// sits.
+const FUND_PER_SEAT: u128 = 10_000_000_000_000;
+
+/// `SIMPLE_MAJORITY` for callers outside this module.
+pub(crate) fn simple_majority() -> usize {
+	SIMPLE_MAJORITY
+}
+
 /// How long to wait for a message the relay sends to arrive and execute on People.
 ///
 /// Not a guess about how fast XCM is: every use of it polls storage until the effect appears
@@ -194,6 +218,48 @@ fn relay_root_into_people(encoded_call: Vec<u8>) -> DynamicPayload {
 /// parent, because none of them was ever backed. The only line that named anything was the
 /// collator's database finally refusing the pile: "Too many sibling blocks at #1 inserted".
 ///
+/// Open the HRMP channels the two system teyrchains talk over.
+///
+/// Without these the register can fill, the gate can fire, the pallet can build its message --
+/// and the send returns `Transport("NoChannel")` every time. Measured 2026-09-19: the roll
+/// reached a hundred, the gate fired on schedule, and thirty-nine consecutive reports were
+/// dropped at the transport for want of a lane. Nothing in the runtimes was wrong; there was
+/// simply no road. The report is deliberately not latched, which is why it kept trying rather
+/// than sticking -- and why the only symptom was a flag that never turned true.
+///
+/// `establish_system_channel` rather than `force_open_hrmp_channel`: it takes any signed origin
+/// provided both ends are system chains, which 1000 and 1004 are, so this rehearses the call a
+/// launch would actually make instead of reaching for sudo.
+///
+/// Both directions, because a channel is one-way. People sends the population report to the hub;
+/// the hub sends the release report back.
+pub(crate) async fn open_system_channels(
+	relay: &OnlineClient<PezkuwiConfig>,
+) -> Result<(), anyhow::Error> {
+	for (from, to) in [(PEOPLE_ID, ASSET_HUB_ID), (ASSET_HUB_ID, PEOPLE_ID)] {
+		let tx = dynamic::tx(
+			"Hrmp",
+			"establish_system_channel",
+			vec![Value::u128(from as u128), Value::u128(to as u128)],
+		);
+		match relay
+			.tx()
+			.sign_and_submit_then_watch_default(&tx, &dev::alice())
+			.await?
+			.wait_for_finalized_success()
+			.await
+		{
+			Ok(_) => log::info!("hrmp channel {from} -> {to} open"),
+			// An already-open channel is the state this wants, not a failure. Anything else is.
+			Err(e) if format!("{e}").contains("ChannelAlreadyExists") => {
+				log::info!("hrmp channel {from} -> {to} was already open")
+			},
+			Err(e) => return Err(anyhow!("could not open the hrmp channel {from} -> {to}: {e}")),
+		}
+	}
+	Ok(())
+}
+
 /// `assign_core` takes Root or the broker para, so the relay's sudo can do it directly. 57600
 /// is the whole of a core; the assignment runs from block zero with no end.
 pub(crate) async fn assign_cores(relay: &OnlineClient<PezkuwiConfig>) -> Result<(), anyhow::Error> {
@@ -467,7 +533,7 @@ async fn storage_value(
 ///
 /// Reads the roster the pallet keeps rather than counting what this file asked for: the two
 /// disagree exactly when something went wrong, which is the only time the number matters.
-async fn bench_size(
+pub(crate) async fn bench_size(
 	people: &OnlineClient<PezkuwiConfig>,
 	item: &str,
 ) -> Result<usize, anyhow::Error> {
@@ -564,7 +630,78 @@ fn raw_account(k: &Keypair) -> Value {
 /// makes founding citizens. Deriving strangers would only add a funding round to reach the
 /// same place, and the offices here are seated by Root rather than won, so standing does not
 /// enter into it.
-fn founding_bench() -> Vec<Keypair> {
+/// Put a fee budget on every seat that is going to vote.
+///
+/// Seating a house and voting in one are different asks: `seat_founding_parliament` takes a list
+/// of accounts and never touches their balances, but a vote is an extrinsic and an extrinsic is
+/// paid for. Measured 2026-09-19: the house was seated, the proposal opened, and the first vote
+/// came back `Invalid Transaction (1010)` -- the signer could not pay. Only the hundred accounts
+/// the register funded had anything, and a simple majority of two hundred and one is a hundred
+/// and one, so the rehearsal was exactly one funded account short of being able to carry a
+/// question.
+///
+/// Funded in chunks, like the register's cohort, because a batch of a hundred and one transfers
+/// is a larger block than the runtime wants to build in one go.
+pub(crate) async fn fund_seats(
+	people: &OnlineClient<PezkuwiConfig>,
+	seats: &[Keypair],
+) -> Result<(), anyhow::Error> {
+	for chunk in seats.chunks(25) {
+		let calls: Vec<Value> = chunk
+			.iter()
+			.map(|k| {
+				dynamic::tx(
+					"Balances",
+					"transfer_keep_alive",
+					vec![
+						Value::unnamed_variant(
+							"Id",
+							vec![Value::from_bytes(k.public_key().to_account_id().0)],
+						),
+						Value::u128(FUND_PER_SEAT),
+					],
+				)
+				.into_value()
+			})
+			.collect();
+		let batch = dynamic::tx("Utility", "batch_all", vec![Value::unnamed_composite(calls)]);
+		// The founder pays. `dev::alice()` is the founding citizen in the local preset -- the
+		// account that holds NFT #0 and the endowment -- so this is the founder's account and
+		// not a convenient key that happens to have money.
+		people
+			.tx()
+			.sign_and_submit_then_watch_default(&batch, &dev::alice())
+			.await?
+			.wait_for_finalized_success()
+			.await
+			.map_err(|e| anyhow!("could not fund a chunk of seats: {e}"))?;
+	}
+	log::info!("{} seats funded", seats.len());
+	Ok(())
+}
+
+/// The full house the state starts with: `ParliamentSize` seats.
+///
+/// Separate from `founding_bench`, which is the handful that holds *offices* -- the President,
+/// the court, the Prime Minister. A seat and an office are different things: the office-holders
+/// are named well-known keys so a failure names a person, while the house only has to be large
+/// enough that a majority of `ParliamentSize` can exist at all.
+///
+/// The first five are the bench, so the President and the ministers sit in the house they act
+/// in rather than beside it, which is what the constitution describes.
+pub(crate) fn founding_house() -> Result<Vec<Keypair>, anyhow::Error> {
+	use pezkuwi_zombienet_sdk::subxt_signer::SecretUri;
+	use std::str::FromStr;
+	let mut house = founding_bench();
+	for i in (house.len() as u32 + 1)..=PARLIAMENT_SIZE {
+		let uri = SecretUri::from_str(&format!("//Alice//seat//{i}"))
+			.map_err(|e| anyhow!("seat {i}: {e}"))?;
+		house.push(Keypair::from_uri(&uri).map_err(|e| anyhow!("seat {i}: {e}"))?);
+	}
+	Ok(house)
+}
+
+pub(crate) fn founding_bench() -> Vec<Keypair> {
 	vec![dev::alice(), dev::bob(), dev::charlie(), dev::dave(), dev::eve()]
 		.into_iter()
 		.take(FOUNDING_MEMBERS)
@@ -574,29 +711,22 @@ fn founding_bench() -> Vec<Keypair> {
 // ---------------------------------------------------------------------------------------
 // The stages
 // ---------------------------------------------------------------------------------------
-
-/// Parliament and the Dîwan, seated from Root, then the executive named and confirmed.
+/// The offices, on a network whose register has filled and whose house is already seated.
 ///
-/// One test rather than four, because each stage is the next one's precondition and a chain
-/// raised for the purpose takes minutes to come up. Splitting them would either re-raise the
-/// network four times or leave three tests that only pass in order, which is worse than one
-/// test that says where it stopped.
-#[tokio::test(flavor = "multi_thread")]
-async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
+/// Not a test of its own: the budget stage needs a finance minister to hold the purse, and the
+/// minister is appointed at the end of this sequence. Run on separate networks, the budget was
+/// approved and then had nobody to spend it -- "the budget was approved but no finance minister
+/// holds the purse", measured 2026-09-20 on run 12, one layer after the votes started carrying.
+///
+/// The seating of the house is *not* here. The merged flow seats two hundred and one before this
+/// runs, because the threshold is counted against `ParliamentSize` and a smaller bench can carry
+/// nothing -- see `founding_house`.
+pub(crate) async fn the_founding_offices_are_filled(
+	relay: &OnlineClient<PezkuwiConfig>,
+	people: &OnlineClient<PezkuwiConfig>,
+	bench: &[Keypair],
 ) -> Result<(), anyhow::Error> {
-	let _ = env_logger::try_init_from_env(
-		env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
-	);
-
-	let network = initialize_network(build_network_config().await?).await?;
-	let relay: OnlineClient<PezkuwiConfig> =
-		network.get_node("validator-01")?.wait_client().await?;
-	assign_cores(&relay).await?;
-	let people: OnlineClient<PezkuwiConfig> =
-		network.get_node("people-collator-01")?.wait_client().await?;
-
-	let bench = founding_bench();
-
+	let serok = bench[0].clone();
 	// ---- The President, already in office -----------------------------------------------
 	//
 	// Not granted here, and there is no way to grant it: `Tiki::Serok` is an *Elected* role
@@ -610,33 +740,9 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 	// the house, the court's qualifications and the nomination are all this account's to sign.
 	let serok = bench[0].clone();
 	assert!(
-		has_tiki(&people, &serok, "Serok").await?,
+		has_tiki(people, &serok, "Serok").await?,
 		"genesis did not seat this key as Serok, so nothing below can be signed -- the local \
 		 preset's `founding_government` is where that is decided"
-	);
-
-	// ---- Parliament -------------------------------------------------------------------
-	//
-	// `seat_founding_parliament` refuses a second call once the house is non-empty, so this
-	// is also the check that nothing seated it earlier.
-	log::info!("seating a founding Parliament of {}", bench.len());
-	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-	office_call_on_people(
-		&people,
-		&serok,
-		"Welati",
-		"seat_founding_parliament",
-		vec![Value::unnamed_composite(members)],
-		|| {
-			let people = &people;
-			async move { Ok(bench_size(people, "ParliamentMembers").await? >= FOUNDING_MEMBERS) }
-		},
-	)
-	.await?;
-	let seated = bench_size(&people, "ParliamentMembers").await?;
-	assert_eq!(
-		seated, FOUNDING_MEMBERS,
-		"the house holds {seated} members, not the {FOUNDING_MEMBERS} that were seated"
 	);
 
 	// ---- The Dîwan, by the ordinary procedure -------------------------------------------
@@ -661,13 +767,13 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 		let want = i + 1;
 		log::info!("qualifying and appointing court member {want}");
 		office_call_on_people(
-			&people,
+			people,
 			&serok,
 			"Tiki",
 			"grant_tiki",
 			vec![multi_address(member), Value::unnamed_variant("Hiquqnas", vec![])],
 			|| {
-				let people = &people;
+				let people = people;
 				let who = (*member).clone();
 				async move { has_tiki(people, &who, "Hiquqnas").await }
 			},
@@ -695,7 +801,7 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 				)
 			})?;
 	}
-	let court_size = bench_size(&people, "DiwanMembers").await?;
+	let court_size = bench_size(people, "DiwanMembers").await?;
 	assert_eq!(
 		court_size,
 		court.len(),
@@ -730,16 +836,16 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 			)
 		})?;
 	assert!(
-		storage_value(&people, "Welati", "PendingPrimeMinister", Vec::new())
+		storage_value(people, "Welati", "PendingPrimeMinister", Vec::new())
 			.await?
 			.is_some(),
 		"the nomination was accepted but no pending Prime Minister is recorded"
 	);
 
 	log::info!("Parliament confirming");
-	parliament_decides(&people, &bench, "Welati", "confirm_prime_minister", || {
-		let people = &people;
-		async move { Ok(tiki_holder(people, "SerokeWezir").await?.is_some()) }
+	parliament_decides(people, &bench, "Welati", "confirm_prime_minister", || {
+		let people = people;
+		async move { Ok(tiki_holder(people, "SerokWeziran").await?.is_some()) }
 	})
 	.await
 	.map_err(|e| {
@@ -778,53 +884,36 @@ async fn the_founding_offices_are_filled_and_the_executive_is_confirmed(
 			)
 		})?;
 
-	let holder = tiki_holder(&people, "WezireDarayiye").await?;
+	let holder = tiki_holder(people, "WezireDarayiye").await?;
 	assert!(
 		holder.is_some(),
 		"the finance portfolio is still vacant after a successful appointment"
 	);
 
 	log::info!(
-		"offices filled: {seated} in the house, {court_size} on the bench, executive seated"
+		"offices filled: {} in the house, {court_size} on the bench, executive seated",
+		bench_size(people, "ParliamentMembers").await?
 	);
 	Ok(())
 }
 
-/// A budget voted by the house and spent by the minister who holds the purse.
+/// Path 2, on a network whose register has opened the gate and whose house is fully seated.
 ///
-/// This is the path that reaches the Asset Hub: `spend_budget` sends value across, so a pass
-/// here is also a live cross-chain path rather than a local bookkeeping entry.
-#[tokio::test(flavor = "multi_thread")]
-async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::Error> {
-	let _ = env_logger::try_init_from_env(
-		env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
-	);
-
-	let network = initialize_network(build_network_config().await?).await?;
-	let relay: OnlineClient<PezkuwiConfig> =
-		network.get_node("validator-01")?.wait_client().await?;
-	assign_cores(&relay).await?;
-	let people: OnlineClient<PezkuwiConfig> =
-		network.get_node("people-collator-01")?.wait_client().await?;
-
-	let bench = founding_bench();
+/// Two preconditions it could not meet alone, and it used to raise its own network and stand on
+/// both. The government pot is filled by the monthly release, which only `activate_distribution`
+/// starts, and only the register reaching the population gate does that. And a question needs a
+/// hundred and one ayes -- `ParliamentSize / 2 + 1`, counted against the constant -- so the five
+/// office-holders could open a proposal and never carry it.
+pub(crate) async fn a_budget_is_voted_and_the_treasurer_spends_it(
+	people: &OnlineClient<PezkuwiConfig>,
+	asset_hub: &OnlineClient<PezkuwiConfig>,
+	house: &[Keypair],
+	bench: &[Keypair],
+) -> Result<(), anyhow::Error> {
 	// The founding hand, seated by genesis rather than granted here -- see the note in
 	// `the_founding_offices_are_filled_and_the_executive_is_confirmed`. `seat_founding_parliament`
 	// takes `ensure_root_or_serok`, and on this chain only the second half exists.
-	let serok = bench[0].clone();
 	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-	office_call_on_people(
-		&people,
-		&serok,
-		"Welati",
-		"seat_founding_parliament",
-		vec![Value::unnamed_composite(members)],
-		|| {
-			let people = &people;
-			async move { Ok(bench_size(people, "ParliamentMembers").await? >= FOUNDING_MEMBERS) }
-		},
-	)
-	.await?;
 
 	// Only a sitting member or the President may propose, which is why the house comes first.
 	let proposer = bench[0].clone();
@@ -849,7 +938,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 
 	// The proposal's id is whatever the chain gave it. Reading `NextProposalId` and stepping
 	// back one is the only way to learn it without trusting this file's own count.
-	let next = storage_value(&people, "Welati", "NextProposalId", Vec::new())
+	let next = storage_value(people, "Welati", "NextProposalId", Vec::new())
 		.await?
 		.ok_or_else(|| anyhow!("Welati::NextProposalId is unset after a successful proposal"))?;
 	let next = next
@@ -860,30 +949,42 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 
 	// Every member votes aye. A simple majority would do; all of them makes the tally
 	// unambiguous if `finalize_proposal` later says it did not pass.
-	for member in &bench {
-		let vote = dynamic::tx(
-			"Welati",
-			"vote_on_proposal",
-			vec![
-				Value::u128(proposal_id as u128),
-				Value::unnamed_variant("Aye", vec![]),
-				Value::unnamed_variant("None", vec![]),
-			],
-		);
-		people
-			.tx()
-			.sign_and_submit_then_watch_default(&vote, member)
-			.await?
-			.wait_for_finalized_success()
-			.await
-			.map_err(|e| {
-				anyhow!(
-					"a seated member could not vote on proposal {proposal_id}: {e}. Voting \
-					 opens after `ProposalVotingDelay`; on a node built without `fast-runtime` \
-					 that is a full day of blocks and this run cannot reach it"
-				)
-			})?;
-	}
+	// All at once, not one after another.
+	//
+	// A hundred and one votes submitted in sequence, each awaited to finalisation, is a hundred
+	// and one block times: measured 2026-09-20, it ate the rest of a sixty-minute budget after
+	// the register had already spent thirty-five minutes filling. Every voter is a different
+	// signer with its own nonce, so nothing forces them to queue -- this is the same shape the
+	// register uses for its applications.
+	let votes = house.iter().take(SIMPLE_MAJORITY).map(|member| {
+		let people = &people;
+		async move {
+			let vote = dynamic::tx(
+				"Welati",
+				"vote_on_proposal",
+				vec![
+					Value::u128(proposal_id as u128),
+					Value::unnamed_variant("Aye", vec![]),
+					Value::unnamed_variant("None", vec![]),
+				],
+			);
+			people
+				.tx()
+				.sign_and_submit_then_watch_default(&vote, member)
+				.await?
+				.wait_for_finalized_success()
+				.await
+				.map_err(|e| {
+					anyhow!(
+						"a seated member could not vote on proposal {proposal_id}: {e}. Voting \
+						 opens after `ProposalVotingDelay`; on a node built without \
+						 `fast-runtime` that is a full day of blocks and this run cannot reach it"
+					)
+				})?;
+			Ok::<(), anyhow::Error>(())
+		}
+	});
+	futures::future::try_join_all(votes).await?;
 
 	// `finalize_proposal` passes a proposal as soon as the ayes reach the threshold -- it
 	// does not wait for the window to close. Anybody may call it.
@@ -896,7 +997,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 		.wait_for_finalized_success()
 		.await?;
 
-	let budget = storage_value(&people, "Welati", "ApprovedBudget", Vec::new())
+	let budget = storage_value(people, "Welati", "ApprovedBudget", Vec::new())
 		.await?
 		.and_then(|v| v.as_u128())
 		.unwrap_or(0);
@@ -911,7 +1012,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 	// -- that is the previous test's business -- so if the portfolio is vacant here, say so
 	// plainly rather than reporting the refusal as a fault in the spending path.
 	let treasurer = bench[2].clone();
-	if tiki_holder(&people, "WezireDarayiye").await?.is_none() {
+	if tiki_holder(people, "WezireDarayiye").await?.is_none() {
 		return Err(anyhow!(
 			"the budget was approved but no finance minister holds the purse, so the spend \
 			 cannot be rehearsed here -- run \
@@ -930,7 +1031,7 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 		.wait_for_finalized_success()
 		.await?;
 
-	let left = storage_value(&people, "Welati", "ApprovedBudget", Vec::new())
+	let left = storage_value(people, "Welati", "ApprovedBudget", Vec::new())
 		.await?
 		.and_then(|v| v.as_u128())
 		.unwrap_or(0);
@@ -950,9 +1051,9 @@ async fn a_budget_is_voted_and_the_treasurer_spends_it() -> Result<(), anyhow::E
 	//
 	// This is path 2 of the four: People's finance minister spending, `GovernmentSpendOrigin`
 	// on the far side accepting it because it arrived from People and from nowhere else.
-	let asset_hub: OnlineClient<PezkuwiConfig> =
-		network.get_node("asset-hub-collator-01")?.wait_client().await?;
-	let paid = wait_for_pez(&asset_hub, &dev::ferdie(), amount, XCM_SETTLE_SECS).await?;
+	// The hub client is the caller's: this stage runs on the network the register filled, so
+	// raising a second connection here would be raising it to the same node twice.
+	let paid = wait_for_pez(asset_hub, &dev::ferdie(), amount, XCM_SETTLE_SECS).await?;
 	assert!(
 		paid,
 		"the minister's spend was accepted on People and the allowance fell, but the Asset Hub \
@@ -1085,85 +1186,24 @@ async fn a_citizen_initiative_reaches_a_referendum() -> Result<(), anyhow::Error
 	log::info!("initiative {id} carried; the chain holds {count} referenda");
 	Ok(())
 }
-
-/// The treasury funds the payroll, and the payroll pays a claim back across.
+/// Paths 3 and 4, on a network whose register has already opened the gate.
 ///
-/// Paths three and four of the four, and they are a pair: the incentive pot is filled by the
-/// Asset Hub reporting a release to People, and emptied by People asking the Asset Hub to pay
-/// a claim. Neither is submitted from here; the funding report fires on the hub's own
-/// `on_initialize` as soon as distribution is active, and the payment goes out when somebody
-/// claims what an epoch owed them.
+/// Not a test of its own any more, and the reason is a precondition it could never meet. These
+/// stages need `DistributionStarted` on the Asset Hub, and the only thing that sets it is the
+/// People chain's register reaching the population gate -- `activate_distribution` takes
+/// `EnsureXcm<Equals<PeopleLocation>>` with root explicitly refused, so there is no shortcut and
+/// there was never going to be one. On its own network, with a genesis roll of five, the stage
+/// stood on a precondition it could not arrange; the earlier version sent a call that does not
+/// exist and swallowed the error, which is how it looked like it was running for so long.
 ///
-/// What makes this walkable at founding is the seat share. A citizen's reward is their trust
-/// score times a rate, and trust is gated absolutely on a stake nobody has on day one -- but a
-/// seated member of Parliament is paid a fixed share of the parliamentary pool regardless.
-/// So the founding bench, seated by Root, is exactly the cohort that can claim before anybody
-/// has staked anything, which is also true of the real chain's first month.
-#[tokio::test(flavor = "multi_thread")]
-async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<(), anyhow::Error> {
-	let _ = env_logger::try_init_from_env(
-		env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
-	);
-
-	let network = initialize_network(build_network_config().await?).await?;
-	let relay: OnlineClient<PezkuwiConfig> =
-		network.get_node("validator-01")?.wait_client().await?;
-	assign_cores(&relay).await?;
-	let people: OnlineClient<PezkuwiConfig> =
-		network.get_node("people-collator-01")?.wait_client().await?;
-	let asset_hub: OnlineClient<PezkuwiConfig> =
-		network.get_node("asset-hub-collator-01")?.wait_client().await?;
-
-	// The bench first: its members are the only accounts that can be owed anything this early.
-	let bench = founding_bench();
-	// The founding hand, seated by genesis rather than granted here -- see the note in
-	// `the_founding_offices_are_filled_and_the_executive_is_confirmed`. `seat_founding_parliament`
-	// takes `ensure_root_or_serok`, and on this chain only the second half exists.
-	let serok = bench[0].clone();
-	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-	office_call_on_people(
-		&people,
-		&serok,
-		"Welati",
-		"seat_founding_parliament",
-		vec![Value::unnamed_composite(members)],
-		|| {
-			let people = &people;
-			async move { Ok(bench_size(people, "ParliamentMembers").await? >= FOUNDING_MEMBERS) }
-		},
-	)
-	.await?;
-
-	// Distribution has to be running before the hub has anything to release, and there is no
-	// way to ask for it.
-	//
-	// This stage used to send `Welati::report_population_threshold_reached` and swallow the
-	// error. Two things were wrong with that and the swallow hid both. There is no such
-	// dispatchable -- the name belongs to an internal function the era hook calls, so the
-	// message could never encode. And even if it could, `PezTreasury::activate_distribution`
-	// takes `EnsureXcm<Equals<PeopleLocation>>` on the hub, with Root explicitly refused:
-	// "a key that can start the schedule early is a key that can pay a month to a state that
-	// has not yet earned it". The precondition is not reachable by any shortcut, by design.
-	//
-	// So it is asserted rather than arranged, and loudly. The real fix is structural and is
-	// recorded in res/plans/PLAN.md: these stages belong on the same network as
-	// `state_rehearsal`, after the register has actually filled, instead of on a second
-	// network that cannot get there on its own.
-	let distributing =
-		wait_for(&asset_hub, "PezTreasury", "DistributionStarted", SETTLE_SECS, |v| {
-			format!("{v}").contains("true")
-		})
-		.await;
-	if !distributing {
-		return Err(anyhow!(
-			"distribution has not started on the Asset Hub, so there is nothing for the payroll \
-			 to draw against. Only People can start it, and only by its register reaching the \
-			 population gate -- which this network's genesis roll of {FOUNDING_MEMBERS} cannot \
-			 do. Nothing below this line is being measured until these stages move onto the \
-			 register test's network"
-		));
-	}
-
+/// So it runs where the precondition is true: `state_rehearsal` fills the register, proves the
+/// gate, and then calls this. One network instead of two, and the ten minutes a second spawn
+/// costs are returned as well.
+pub(crate) async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across(
+	people: &OnlineClient<PezkuwiConfig>,
+	asset_hub: &OnlineClient<PezkuwiConfig>,
+	bench: &[Keypair],
+) -> Result<(), anyhow::Error> {
 	// ---- path 4: the hub reports what it released ---------------------------------------
 	//
 	// Release zero is due the moment distribution starts -- the schedule is derived from the
@@ -1171,7 +1211,7 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 	// in the era it has enough citizens rather than a month later. The report crosses to
 	// People and lands as a running total, which is what the payroll spends against.
 	log::info!("waiting for the treasury's funding report to reach People");
-	let funded = wait_for(&people, "PezRewards", "ReportedIncentiveTotal", XCM_SETTLE_SECS, |v| {
+	let funded = wait_for(people, "PezRewards", "ReportedIncentiveTotal", XCM_SETTLE_SECS, |v| {
 		v.as_u128().map(|n| n > 0).unwrap_or(false)
 	})
 	.await;
@@ -1186,7 +1226,7 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 	// `EpochLength`, which is compressed in a rehearsal build and thirty days otherwise --
 	// so a failure here is very often a node built without `fast-runtime`.
 	log::info!("waiting for the first epoch to finalise");
-	let closed = wait_for(&people, "PezRewards", "EpochInfo", EPOCH_SETTLE_SECS, |v| {
+	let closed = wait_for(people, "PezRewards", "EpochInfo", EPOCH_SETTLE_SECS, |v| {
 		v.at("total_epochs_completed")
 			.and_then(|n| n.as_u128())
 			.map(|n| n > 0)
@@ -1214,7 +1254,7 @@ async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across() -> Result<
 
 	// And the proof is on the hub again. People records the claim either way; whether the PEZ
 	// moved is a fact about the other chain.
-	let paid = wait_for_pez(&asset_hub, &claimant, 1, XCM_SETTLE_SECS).await?;
+	let paid = wait_for_pez(asset_hub, &claimant, 1, XCM_SETTLE_SECS).await?;
 	assert!(
 		paid,
 		"the claim was accepted on People but no PEZ reached the claimant on the Asset Hub. 		 The incentive pot is the one that pays this, and it is a different pot from the 		 government one -- an empty incentive pot means the release never credited it"
