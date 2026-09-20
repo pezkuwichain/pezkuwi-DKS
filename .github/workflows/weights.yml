@@ -138,6 +138,35 @@ jobs:
         if: always()
         run: git diff --stat -- '*weights*' | tail -20
 
+      # A copy that survives both the artifact quota and the next job's checkout.
+      #
+      # The upload below is the intended route and it is the one that breaks first: an artifact
+      # storage quota stops it outright, and the run then reports failure over a measurement that
+      # succeeded. Worse, the next queued job begins with `actions/checkout`, which restores the
+      # tree and erases what this one generated -- so a queue of pallet measurements would leave
+      # exactly one survivor, and not the one anybody chose.
+      #
+      # Measured 2026-09-20: welati's file was written at 09:12 and `git status` showed a clean
+      # tree minutes later, because the following job had already checked out over it.
+      - name: Keep the weights where the next checkout cannot reach them
+        if: always()
+        run: |
+          set -uo pipefail
+          dest="$HOME/weights-out/${{ github.sha }}/${{ inputs.runtime || 'all' }}/${{ inputs.pallet || 'all' }}"
+          mkdir -p "$dest"
+          changed=$(git diff --name-only -- '*weights*' || true)
+          if [ -z "$changed" ]; then
+            echo "::warning::no weight file changed; nothing to keep"
+          else
+            echo "$changed" | while read -r f; do
+              [ -n "$f" ] || continue
+              mkdir -p "$dest/$(dirname "$f")"
+              cp "$f" "$dest/$f"
+            done
+            echo "kept under $dest:"
+            echo "$changed" | sed 's/^/  /'
+          fi
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
