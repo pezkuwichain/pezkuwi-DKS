@@ -48,9 +48,15 @@ permissions:
   contents: read
 
 concurrency:
-  # Keyed on the commit, and never cancelled: a half-finished weights run leaves some files
-  # measured and some not, which is worse than no run at all.
-  group: weights-${{ github.sha }}
+  # Keyed on the commit *and the inputs*, and never cancelled: a half-finished weights run
+  # leaves some files measured and some not, which is worse than no run at all.
+  #
+  # The inputs are part of the key because two pallets are not the same piece of work.
+  # `cancel-in-progress: false` protects the running job, but GitHub keeps only one *pending*
+  # run per group and a newer one supersedes the older -- so with a commit-only key, queueing
+  # seven pallet measurements cancelled six of them. Measured 2026-09-20, after doing exactly
+  # that. A push-triggered run has empty inputs and keeps the old key.
+  group: weights-${{ github.sha }}-${{ inputs.runtime }}-${{ inputs.pallet }}
   cancel-in-progress: false
 
 env:
