@@ -64,6 +64,19 @@ pub trait WeightInfo {
 	fn approve_appointment() -> Weight;
 	fn submit_proposal() -> Weight;
 	fn vote_on_proposal() -> Weight;
+	// The airdrop and presale calls. Their benchmarks existed from the start and their
+	// measurements could never be used: without a method here the generated impl does not
+	// compile (`E0407`), so every one of the seven was annotated
+	// `WeightInfo::finalize_election(0)` instead -- an unrelated call, in its cheapest
+	// component. Measured 2026-09-20: that borrowed figure is between seventy-eight and a
+	// hundred and ninety times what these calls actually cost.
+	fn propose_airdrop() -> Weight;
+	fn approve_airdrop() -> Weight;
+	fn pay_airdrop() -> Weight;
+	fn cancel_airdrop() -> Weight;
+	fn propose_presale() -> Weight;
+	fn execute_presale() -> Weight;
+	fn cancel_presale() -> Weight;
 }
 
 /// Weights for `pezpallet_welati` using the Bizinikiwi node and recommended hardware.
@@ -204,6 +217,76 @@ impl<T: pezframe_system::Config> WeightInfo for BizinikiwiWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
+	fn propose_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `430`
+		//  Estimated: `3534`
+		// Minimum execution time: 33_963_000 picoseconds.
+		Weight::from_parts(56_005_000, 0)
+			.saturating_add(Weight::from_parts(0, 3534))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(2))
+	}
+	fn approve_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `849`
+		//  Estimated: `3833`
+		// Minimum execution time: 42_901_000 picoseconds.
+		Weight::from_parts(69_329_000, 0)
+			.saturating_add(Weight::from_parts(0, 3833))
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	fn pay_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `593`
+		//  Estimated: `4058`
+		// Minimum execution time: 64_650_000 picoseconds.
+		Weight::from_parts(108_302_000, 0)
+			.saturating_add(Weight::from_parts(0, 4058))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().writes(5))
+	}
+	fn cancel_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `849`
+		//  Estimated: `3833`
+		// Minimum execution time: 37_279_000 picoseconds.
+		Weight::from_parts(59_310_000, 0)
+			.saturating_add(Weight::from_parts(0, 3833))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	fn propose_presale() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `430`
+		//  Estimated: `3534`
+		// Minimum execution time: 42_650_000 picoseconds.
+		Weight::from_parts(69_599_000, 0)
+			.saturating_add(Weight::from_parts(0, 3534))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(4))
+	}
+	fn execute_presale() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1010`
+		//  Estimated: `4677`
+		// Minimum execution time: 65_963_000 picoseconds.
+		Weight::from_parts(110_196_000, 0)
+			.saturating_add(Weight::from_parts(0, 4677))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().writes(4))
+	}
+	fn cancel_presale() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `878`
+		//  Estimated: `4677`
+		// Minimum execution time: 26_880_000 picoseconds.
+		Weight::from_parts(45_045_000, 0)
+			.saturating_add(Weight::from_parts(0, 4677))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
 }
 
 // For backwards compatibility and tests.
@@ -342,5 +425,75 @@ impl WeightInfo for () {
 		Weight::from_parts(21_455_000, 12542)
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
+	}
+	fn propose_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `430`
+		//  Estimated: `3534`
+		// Minimum execution time: 33_963_000 picoseconds.
+		Weight::from_parts(56_005_000, 0)
+			.saturating_add(Weight::from_parts(0, 3534))
+			.saturating_add(RocksDbWeight::get().reads(3))
+			.saturating_add(RocksDbWeight::get().writes(2))
+	}
+	fn approve_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `849`
+		//  Estimated: `3833`
+		// Minimum execution time: 42_901_000 picoseconds.
+		Weight::from_parts(69_329_000, 0)
+			.saturating_add(Weight::from_parts(0, 3833))
+			.saturating_add(RocksDbWeight::get().reads(5))
+			.saturating_add(RocksDbWeight::get().writes(1))
+	}
+	fn pay_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `593`
+		//  Estimated: `4058`
+		// Minimum execution time: 64_650_000 picoseconds.
+		Weight::from_parts(108_302_000, 0)
+			.saturating_add(Weight::from_parts(0, 4058))
+			.saturating_add(RocksDbWeight::get().reads(7))
+			.saturating_add(RocksDbWeight::get().writes(5))
+	}
+	fn cancel_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `849`
+		//  Estimated: `3833`
+		// Minimum execution time: 37_279_000 picoseconds.
+		Weight::from_parts(59_310_000, 0)
+			.saturating_add(Weight::from_parts(0, 3833))
+			.saturating_add(RocksDbWeight::get().reads(3))
+			.saturating_add(RocksDbWeight::get().writes(1))
+	}
+	fn propose_presale() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `430`
+		//  Estimated: `3534`
+		// Minimum execution time: 42_650_000 picoseconds.
+		Weight::from_parts(69_599_000, 0)
+			.saturating_add(Weight::from_parts(0, 3534))
+			.saturating_add(RocksDbWeight::get().reads(4))
+			.saturating_add(RocksDbWeight::get().writes(4))
+	}
+	fn execute_presale() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1010`
+		//  Estimated: `4677`
+		// Minimum execution time: 65_963_000 picoseconds.
+		Weight::from_parts(110_196_000, 0)
+			.saturating_add(Weight::from_parts(0, 4677))
+			.saturating_add(RocksDbWeight::get().reads(7))
+			.saturating_add(RocksDbWeight::get().writes(4))
+	}
+	fn cancel_presale() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `878`
+		//  Estimated: `4677`
+		// Minimum execution time: 26_880_000 picoseconds.
+		Weight::from_parts(45_045_000, 0)
+			.saturating_add(Weight::from_parts(0, 4677))
+			.saturating_add(RocksDbWeight::get().reads(2))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
 }

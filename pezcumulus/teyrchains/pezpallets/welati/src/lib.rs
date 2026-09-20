@@ -2046,7 +2046,7 @@ pub mod pezpallet {
 		// wrong in the direction that lets a call be repeated cheaply. Benchmarks for all
 		// seven are now in `benchmarking.rs` and `.github/weights-request.yml` asks for the
 		// numbers; when they land these attributes name their own functions.
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::propose_airdrop())]
 		pub fn propose_airdrop(
 			origin: OriginFor<T>,
 			beneficiary: T::AccountId,
@@ -2099,7 +2099,7 @@ pub mod pezpallet {
 		/// President's approval completes the proposal and it becomes payable at once, which
 		/// is what a listing needs.
 		#[pezpallet::call_index(57)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::approve_airdrop())]
 		pub fn approve_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let holder =
@@ -2148,7 +2148,7 @@ pub mod pezpallet {
 		#[pezpallet::call_index(58)]
 		// `vote_on_proposal`'s, which is what `spend_budget` next door uses for the same
 		// read-check-send shape.
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::pay_airdrop())]
 		pub fn pay_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 			let p = AirdropProposals::<T>::get(id).ok_or(Error::<T>::AirdropNotFound)?;
@@ -2189,7 +2189,7 @@ pub mod pezpallet {
 		/// the other to refuse it. Kept as its own call rather than letting a proposal expire:
 		/// a refusal that leaves a record is worth more than one that looks like forgetting.
 		#[pezpallet::call_index(59)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::cancel_airdrop())]
 		pub fn cancel_airdrop(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let p = AirdropProposals::<T>::get(id).ok_or(Error::<T>::AirdropNotFound)?;
@@ -2222,7 +2222,7 @@ pub mod pezpallet {
 		/// full, and a ceiling would make the amounts below it free and the ones above it
 		/// forbidden -- a rule nobody voted for.
 		#[pezpallet::call_index(60)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::propose_presale())]
 		pub fn propose_presale(
 			origin: OriginFor<T>,
 			verb: PresaleVerb,
@@ -2297,7 +2297,7 @@ pub mod pezpallet {
 		/// `finalize_proposal` has to have run first -- that is what turns a tally into a
 		/// status, and this reads the status.
 		#[pezpallet::call_index(61)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::execute_presale())]
 		pub fn execute_presale(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			ensure_signed(origin)?;
 			let p = PresaleProposals::<T>::get(id).ok_or(Error::<T>::PresaleNotFound)?;
@@ -2341,7 +2341,7 @@ pub mod pezpallet {
 		/// alone would mean a minister who stops caring, or stops holding the office, leaves
 		/// the entry behind for good.
 		#[pezpallet::call_index(62)]
-		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::finalize_election(0))]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::cancel_presale())]
 		pub fn cancel_presale(origin: OriginFor<T>, id: u32) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let p = PresaleProposals::<T>::get(id).ok_or(Error::<T>::PresaleNotFound)?;
