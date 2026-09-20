@@ -979,30 +979,42 @@ pub(crate) async fn a_budget_is_voted_and_the_treasurer_spends_it(
 
 	// Every member votes aye. A simple majority would do; all of them makes the tally
 	// unambiguous if `finalize_proposal` later says it did not pass.
-	for member in house.iter().take(SIMPLE_MAJORITY) {
-		let vote = dynamic::tx(
-			"Welati",
-			"vote_on_proposal",
-			vec![
-				Value::u128(proposal_id as u128),
-				Value::unnamed_variant("Aye", vec![]),
-				Value::unnamed_variant("None", vec![]),
-			],
-		);
-		people
-			.tx()
-			.sign_and_submit_then_watch_default(&vote, member)
-			.await?
-			.wait_for_finalized_success()
-			.await
-			.map_err(|e| {
-				anyhow!(
-					"a seated member could not vote on proposal {proposal_id}: {e}. Voting \
-					 opens after `ProposalVotingDelay`; on a node built without `fast-runtime` \
-					 that is a full day of blocks and this run cannot reach it"
-				)
-			})?;
-	}
+	// All at once, not one after another.
+	//
+	// A hundred and one votes submitted in sequence, each awaited to finalisation, is a hundred
+	// and one block times: measured 2026-09-20, it ate the rest of a sixty-minute budget after
+	// the register had already spent thirty-five minutes filling. Every voter is a different
+	// signer with its own nonce, so nothing forces them to queue -- this is the same shape the
+	// register uses for its applications.
+	let votes = house.iter().take(SIMPLE_MAJORITY).map(|member| {
+		let people = &people;
+		async move {
+			let vote = dynamic::tx(
+				"Welati",
+				"vote_on_proposal",
+				vec![
+					Value::u128(proposal_id as u128),
+					Value::unnamed_variant("Aye", vec![]),
+					Value::unnamed_variant("None", vec![]),
+				],
+			);
+			people
+				.tx()
+				.sign_and_submit_then_watch_default(&vote, member)
+				.await?
+				.wait_for_finalized_success()
+				.await
+				.map_err(|e| {
+					anyhow!(
+						"a seated member could not vote on proposal {proposal_id}: {e}. Voting \
+						 opens after `ProposalVotingDelay`; on a node built without \
+						 `fast-runtime` that is a full day of blocks and this run cannot reach it"
+					)
+				})?;
+			Ok::<(), anyhow::Error>(())
+		}
+	});
+	futures::future::try_join_all(votes).await?;
 
 	// `finalize_proposal` passes a proposal as soon as the ayes reach the threshold -- it
 	// does not wait for the window to close. Anybody may call it.
