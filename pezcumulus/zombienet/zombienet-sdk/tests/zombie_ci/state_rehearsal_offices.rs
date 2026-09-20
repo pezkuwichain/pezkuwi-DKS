@@ -428,7 +428,7 @@ where
 			Value::u128(length_bound as u128),
 		],
 	);
-	people
+	let closed = people
 		.tx()
 		.sign_and_submit_then_watch_default(&close, &bench[0])
 		.await?
@@ -441,6 +441,34 @@ where
 				 what the call actually costs"
 			)
 		})?;
+
+	// A closed motion says nothing about the call it carried.
+	//
+	// `close` succeeds when the tally is reached; the inner dispatch runs afterwards and its
+	// result is reported in `Executed`, not in the extrinsic. So a motion can carry, the call can
+	// fail, and both the close and the tally look perfect. Measured 2026-09-20: the house carried
+	// `confirm_prime_minister` and the tiki never moved, and the only thing the rehearsal could
+	// say was that an effect had not appeared within ninety seconds -- which points at the chain
+	// when the answer was in an event nobody read.
+	for ev in closed.iter().filter_map(Result::ok) {
+		if ev.pallet_name() == "Parliament" && ev.variant_name() == "Executed" {
+			// `decode_as_fields` into a `scale_value` composite: the event's shape comes from
+			// the metadata, so this does not need a static type for `Executed` and does not go
+			// stale when the variant gains a field.
+			let rendered = ev
+				.decode_as_fields::<scale_value::Composite<()>>()
+				.map(|f| format!("{f}"))
+				.unwrap_or_else(|e| format!("<undecodable: {e}>"));
+			if !rendered.contains("Ok") {
+				return Err(anyhow!(
+					"the house carried {pallet}::{call} and the call itself failed: {rendered}. \
+					 The tally and the close are both fine; what failed is the dispatch the \
+					 motion was carrying"
+				));
+			}
+			log::info!("{pallet}::{call} executed: {rendered}");
+		}
+	}
 
 	for _ in 0..(SETTLE_SECS / 6) {
 		tokio::time::sleep(std::time::Duration::from_secs(6)).await;
