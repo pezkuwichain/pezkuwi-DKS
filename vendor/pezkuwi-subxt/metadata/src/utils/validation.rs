@@ -1040,7 +1040,10 @@ mod tests {
 
 			fn type_info() -> scale_info::Type {
 				scale_info::Type {
-					path: scale_info::Path { segments: vec!["sp_runtime", "DispatchError"] },
+					// The path a real chain in this ecosystem emits. `sp-runtime` is `pezsp-runtime`
+					// here, so `scale_info` writes `pezsp_runtime`; a fixture carrying the upstream
+					// spelling let a lookup that can never match anything pass its own test.
+					path: scale_info::Path { segments: vec!["pezsp_runtime", "DispatchError"] },
 					type_params: vec![],
 					type_def: TypeDef::Variant(TypeDefVariant { variants: vec![] }),
 					docs: vec![],
@@ -1095,6 +1098,22 @@ mod tests {
 			},
 			v15::CustomMetadata { map: Default::default() },
 		)
+	}
+
+	/// The runtime's `DispatchError` is found, under the name this ecosystem gives it.
+	///
+	/// Without this the failure is silent and total: `dispatch_error_ty` stays `None` and every
+	/// failed extrinsic decodes as "could not find the corresponding type ID in the metadata"
+	/// rather than as the module error the chain returned. Two rehearsal stages reported exactly
+	/// that on 2026-09-20 and both looked like chain faults.
+	#[test]
+	fn the_dispatch_error_type_is_found() {
+		let metadata = Metadata::try_from(metadata_with_pallet_events()).unwrap();
+		assert!(
+			metadata.dispatch_error_ty().is_some(),
+			"the registry holds a DispatchError and the conversion did not find it; the lookup \
+			 is matching a type path no chain here emits"
+		);
 	}
 
 	#[test]

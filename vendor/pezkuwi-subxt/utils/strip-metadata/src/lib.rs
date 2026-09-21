@@ -381,8 +381,19 @@ fn find_dispatch_error_type(types: &mut PortableRegistry) -> u32 {
 		.types
 		.iter()
 		.enumerate()
-		.find(|(_idx, ty)| ty.ty.path.segments == ["sp_runtime", "DispatchError"])
-		.expect("Metadata must contain sp_runtime::DispatchError")
+		// `pezsp_runtime`, not `sp_runtime`: this ecosystem renamed the crate, so that is the
+		// path `scale_info` writes and the only one a real chain's metadata carries. The
+		// upstream spelling is still accepted so this keeps working against an unforked chain.
+		// Matched wrongly, this line does not misbehave quietly -- it panics, and stripping is
+		// the first thing a light client or an indexer does with metadata.
+		.find(|(_idx, ty)| {
+			let segments: Vec<&str> = ty.ty.path.segments.iter().map(|s| s.as_ref()).collect();
+			matches!(
+				segments.as_slice(),
+				["pezsp_runtime", "DispatchError"] | ["sp_runtime", "DispatchError"]
+			)
+		})
+		.expect("Metadata must contain pezsp_runtime::DispatchError")
 		.0 as u32
 }
 
@@ -458,7 +469,7 @@ mod test {
 
 		fn type_info() -> scale_info::Type {
 			scale_info::Type {
-				path: scale_info::Path { segments: vec!["sp_runtime", "DispatchError"] },
+				path: scale_info::Path { segments: vec!["pezsp_runtime", "DispatchError"] },
 				type_params: vec![],
 				type_def: scale_info::TypeDef::Variant(scale_info::TypeDefVariant {
 					variants: vec![],

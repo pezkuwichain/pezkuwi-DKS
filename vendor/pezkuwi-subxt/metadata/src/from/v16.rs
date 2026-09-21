@@ -148,7 +148,7 @@ impl TryFrom<v16::RuntimeMetadataV16> for Metadata {
 		let dispatch_error_ty = types
 			.types
 			.iter()
-			.find(|ty| ty.ty.path.segments == ["sp_runtime", "DispatchError"])
+			.find(|ty| super::is_dispatch_error_path(&ty.ty.path.segments))
 			.map(|ty| ty.id);
 
 		Ok(Metadata {
