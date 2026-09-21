@@ -1713,7 +1713,7 @@ impl pezpallet_pez_rewards::BenchmarkSetup<AccountId> for PezRewardsBenchmarkSet
 
 		pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
 
-		let seat = |account: AccountId| pezpallet_welati::ParliamentMember::<Runtime> {
+		let seat = |account: AccountId| pezpallet_welati::types::ParliamentMember::<Runtime> {
 			account,
 			elected_at: 0,
 			term_ends_at: BlockNumber::MAX,
