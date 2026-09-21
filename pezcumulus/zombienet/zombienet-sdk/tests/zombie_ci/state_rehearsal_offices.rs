@@ -798,7 +798,6 @@ pub(crate) fn founding_bench() -> Vec<Keypair> {
 /// runs, because the threshold is counted against `ParliamentSize` and a smaller bench can carry
 /// nothing -- see `founding_house`.
 pub(crate) async fn the_founding_offices_are_filled(
-	relay: &OnlineClient<PezkuwiConfig>,
 	people: &OnlineClient<PezkuwiConfig>,
 	house: &[Keypair],
 ) -> Result<(), anyhow::Error> {
@@ -992,8 +991,6 @@ pub(crate) async fn a_budget_is_voted_and_the_treasurer_spends_it(
 	// The founding hand, seated by genesis rather than granted here -- see the note in
 	// `the_founding_offices_are_filled_and_the_executive_is_confirmed`. `seat_founding_parliament`
 	// takes `ensure_root_or_serok`, and on this chain only the second half exists.
-	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-
 	// Only a sitting member or the President may propose, which is why the house comes first.
 	let proposer = bench[0].clone();
 	let amount: u128 = 1_000_000_000_000; // one HEZ, in the smallest unit
@@ -1230,7 +1227,8 @@ async fn a_citizen_initiative_reaches_a_referendum() -> Result<(), anyhow::Error
 	// citizens there are. Everybody available backs it; the launch below is what decides
 	// whether that was enough, and its error names the shortfall.
 	log::info!("initiative {id} is open; collecting backing");
-	for (n, backer) in [dev::bob(), dev::charlie(), dev::dave(), dev::eve()].iter().enumerate() {
+	for (n, backer) in [dev::bob(), dev::charlie(), dev::dave(), dev::eve()].into_iter().enumerate()
+	{
 		log::info!("backer {} of 4 signing initiative {id}", n + 1);
 		let back = dynamic::tx("Welati", "back_initiative", vec![Value::u128(id as u128)]);
 		// A citizen who cannot back it is not a failure of this path -- an account that never
