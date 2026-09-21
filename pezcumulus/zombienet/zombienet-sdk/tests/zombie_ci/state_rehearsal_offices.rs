@@ -78,6 +78,9 @@ const SIMPLE_MAJORITY: usize = (PARLIAMENT_SIZE as usize) / 2 + 1;
 /// the votes needed it too.
 const VOTE_CHUNK: usize = 25;
 
+/// The stake reported for the initiative's proposer, mirroring `state_rehearsal_tracks`.
+const INITIATIVE_STAKE: u128 = 1_000_000_000_000;
+
 /// Ten HEZ a seat, out of the founder's account, decided by Serok on 2026-09-19.
 ///
 /// A fee budget rather than an endowment: a vote, a proposal and the existential deposit, with
@@ -1206,8 +1209,48 @@ async fn wait_for_pez(
 /// waited nineteen minutes for a finality that was never coming. The stage was sound; the network
 /// under it was not.
 pub(crate) async fn a_citizen_initiative_reaches_a_referendum(
+	relay: &OnlineClient<PezkuwiConfig>,
 	people: &OnlineClient<PezkuwiConfig>,
 ) -> Result<(), anyhow::Error> {
+	// Standing first, or the first call is refused before the path is even entered.
+	//
+	// `open_initiative` wants `trust_score_of(who) > 0`, and trust is gated absolutely on a
+	// reported stake -- a founding citizen with no stake has none. Run 22 came back
+	// `Welati::NoTrustToVote` from the opening call, which reads as a governance failure and is
+	// really an economy that never started for this account. `state_rehearsal_tracks` already
+	// does exactly this for its voters.
+	let proposer = dev::alice();
+	let who = proposer.clone();
+	root_call_on_people(
+		relay,
+		people,
+		"StakingScore",
+		"receive_staking_details",
+		vec![
+			Value::from_bytes(who.public_key().to_account_id().0),
+			Value::unnamed_variant("RelayChain", vec![]),
+			Value::u128(INITIATIVE_STAKE),
+			Value::u128(0),
+			Value::u128(0),
+		],
+		|| {
+			let people = people;
+			let who = who.clone();
+			async move {
+				Ok(storage_value(
+					people,
+					"Trust",
+					"TrustScores",
+					vec![Value::from_bytes(who.public_key().to_account_id().0)],
+				)
+				.await?
+				.and_then(|v| v.as_u128())
+				.unwrap_or(0) > 0)
+			}
+		},
+	)
+	.await
+	.map_err(|e| anyhow!("the proposer could not be given standing: {e}"))?;
 	// Any preimage hash will do: `launch_initiative` hands the proposal to the referenda
 	// pallet, which accepts a hash it has not seen -- the preimage only has to exist by the
 	// time the referendum would enact. What is being rehearsed is the route to the ballot,
@@ -1215,7 +1258,6 @@ pub(crate) async fn a_citizen_initiative_reaches_a_referendum(
 	let proposal_hash = [7u8; 32];
 	let track: u16 = 0; // `root`, the first track People declares
 
-	let proposer = dev::alice();
 	let open = dynamic::tx(
 		"Welati",
 		"open_initiative",
@@ -1333,53 +1375,66 @@ pub(crate) async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across(
 	// An epoch has to close first. It closes on People's own `on_initialize` after
 	// `EpochLength`, which is compressed in a rehearsal build and thirty days otherwise --
 	// so a failure here is very often a node built without `fast-runtime`.
-	log::info!("waiting for a claim window to open");
-	let closed = wait_for(people, "PezRewards", "EpochInClaim", EPOCH_SETTLE_SECS, |v| {
-		v.as_u128().is_some()
-	})
-	.await;
-	assert!(
-		closed,
-		"no claim window opened within {EPOCH_SETTLE_SECS}s. `EpochLength` is thirty days unless 		 the runtime was built with `fast-runtime`, and nothing downstream of a closed epoch 		 can be reached until one is"
-	);
-
-	// Which epoch is claimable is the chain's to say, and it is only true for a while.
+	// Claim inside a window, and if the window shuts first, take the next one.
 	//
-	// Two wrong signals preceded this one. Run 20 claimed epoch zero by number, and under
-	// `fast-runtime` epoch zero has long since been closed by its successor -- `NotInClaimPeriod`,
-	// a correct refusal against a wrong assumption. Run 21 then read `EpochInClaim` after waiting
-	// on `total_epochs_completed > 0`, which is *cumulative*: it is true forever after the first
-	// epoch, so the wait returned instantly and the read landed at an arbitrary moment. The
-	// rehearsal build compresses thirty days to thirty blocks and seven to seven, so the window
-	// is open for seven blocks in every thirty -- the read had a better than two in three chance
-	// of finding nothing, and did.
+	// The window is `ClaimPeriod` blocks wide -- seven in a rehearsal build, about forty
+	// seconds -- and it reopens every thirty. Run 22 read `EpochInClaim` as 6 and still came
+	// back `NotInClaimPeriod`: the read was near the end of a window and the extrinsic needed
+	// a block or two to land. Two wrong shapes preceded that one: claiming epoch zero by
+	// number, and waiting on `total_epochs_completed > 0`, which is cumulative and so returns
+	// the instant the first epoch ever closed.
 	//
-	// So: wait on the window itself, and read the epoch out of the same poll.
-	let epoch = storage_value(people, "PezRewards", "EpochInClaim", Vec::new())
-		.await?
-		.and_then(|v| v.as_u128())
-		.ok_or_else(|| {
-			anyhow!(
-				"a claim window opened and had closed again before the claim could be read. \
-				 It is `ClaimPeriod` blocks wide -- seven in a rehearsal build -- so anything \
-				 slow between the wait and the claim loses it"
-			)
-		})? as u32;
-	log::info!("epoch {epoch} is in its claim window");
-
+	// So this asks the chain which epoch is open, claims it, and on `NotInClaimPeriod` waits
+	// for the next window rather than calling a missed window a failure. A real claimant does
+	// the same thing.
+	let mut claimed = None;
+	let mut last: Option<String> = None;
 	let claimant = bench[0].clone();
-	let claim = dynamic::tx("PezRewards", "claim_reward", vec![Value::u128(epoch as u128)]);
-	people
-		.tx()
-		.sign_and_submit_then_watch_default(&claim, &claimant)
-		.await?
-		.wait_for_finalized_success()
-		.await
-		.map_err(|e| {
-			anyhow!(
-				"a seated member could not claim epoch {epoch}: {e}. `NothingToClaim` means the seat 				 share was zero, which happens when the pot was never funded -- check path 4 				 above before looking at the claim"
-			)
-		})?;
+	for _ in 0..(EPOCH_SETTLE_SECS / 2) {
+		let open = storage_value(people, "PezRewards", "EpochInClaim", Vec::new())
+			.await?
+			.and_then(|v| v.as_u128());
+		let Some(epoch) = open else {
+			tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+			continue;
+		};
+		log::info!("epoch {epoch} is in its claim window");
+		let claim = dynamic::tx("PezRewards", "claim_reward", vec![Value::u128(epoch)]);
+		match people
+			.tx()
+			.sign_and_submit_then_watch_default(&claim, &claimant)
+			.await?
+			.wait_for_finalized_success()
+			.await
+		{
+			Ok(_) => {
+				claimed = Some(epoch);
+				break;
+			},
+			Err(e) if format!("{e}").contains("NotInClaimPeriod") => {
+				log::info!("epoch {epoch} closed before the claim landed; waiting for the next");
+				last = Some(format!("{e}"));
+			},
+			Err(e) => {
+				return Err(anyhow!(
+					"a seated member could not claim epoch {epoch}: {e}. `NoRewardToClaim` means \
+					 the entitlement came out zero -- no trust score and no seat -- and \
+					 `CouldNotReachTreasury` means the claim was owed but the XCM to the hub had \
+					 no lane"
+				))
+			},
+		}
+	}
+	let epoch = claimed.ok_or_else(|| {
+		anyhow!(
+			"no claim landed inside a window within {EPOCH_SETTLE_SECS}s. Last refusal: {}. \
+			 An epoch is thirty blocks in a rehearsal build and its window is seven of them, so \
+			 either no epoch is closing at all -- a node built without `fast-runtime` -- or every \
+			 attempt is arriving late",
+			last.unwrap_or_else(|| "none; no window ever opened".to_string())
+		)
+	})?;
+	log::info!("epoch {epoch} claimed on People; waiting for the PEZ on the Asset Hub");
 
 	// And the proof is on the hub again. People records the claim either way; whether the PEZ
 	// moved is a fact about the other chain.
