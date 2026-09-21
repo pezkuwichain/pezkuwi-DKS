@@ -352,7 +352,7 @@ where
 /// hash derived from the same bytes the chain saw cannot disagree with it.
 async fn parliament_decides<F, Fut>(
 	people: &OnlineClient<PezkuwiConfig>,
-	bench: &[Keypair],
+	voters: &[Keypair],
 	pallet: &str,
 	call: &str,
 	settled: F,
@@ -376,9 +376,25 @@ where
 		.map(|v| format!("{v}").trim().parse().unwrap_or(0))
 		.unwrap_or(0);
 
-	// More than half of the bench, which is what `RootOrParliament` asks for. Written from the
-	// bench's own length so a change to `FOUNDING_MEMBERS` cannot leave this silently short.
-	let threshold = (bench.len() / 2 + 1) as u64;
+	// More than half of the *seated collective*, which is what `RootOrParliament` asks for.
+	//
+	// Written from the founding bench's length until run 18, and that is the run it cost.
+	// `close` hands the inner call `RawOrigin::Members(ayes, seats)`, where `seats` is the
+	// collective's own roster -- two hundred and one here -- and
+	// `EnsureProportionMoreThan<1, 2>` then asks `ayes * 2 > seats`. A threshold of three
+	// passed the collective's own tally and failed that arithmetic, so the motion carried and
+	// `confirm_prime_minister` came back `BadOrigin`: a green close over a refused dispatch,
+	// which is exactly the shape the `Executed` reading below was added to catch.
+	let seated = collective_size(people).await?;
+	let threshold = (seated / 2 + 1) as u64;
+	if voters.len() < threshold as usize {
+		return Err(anyhow!(
+			"{pallet}::{call} needs {threshold} ayes of the {seated} seats the collective holds, \
+			 and only {} signers were handed to this call. Seat and fund the majority before \
+			 asking the house a question",
+			voters.len()
+		));
+	}
 	let proposal = Value::unnamed_variant(pallet, vec![Value::unnamed_variant(call, vec![])]);
 
 	let propose = dynamic::tx(
@@ -388,7 +404,7 @@ where
 	);
 	people
 		.tx()
-		.sign_and_submit_then_watch_default(&propose, &bench[0])
+		.sign_and_submit_then_watch_default(&propose, &voters[0])
 		.await?
 		.wait_for_finalized_success()
 		.await
@@ -400,20 +416,33 @@ where
 	// opens the motion with `ayes: vec![]`, so proposing is not voting here. Skipping the
 	// proposer would leave the tally one short and `close` would fail with `TooEarly` -- forty
 	// minutes after the mistake, which is the cost of reading a pallet by memory.
-	for member in bench.iter().take(threshold as usize) {
-		let vote = dynamic::tx(
-			"Parliament",
-			"vote",
-			vec![Value::from_bytes(hash.as_ref()), Value::u128(index as u128), Value::bool(true)],
-		);
-		people
-			.tx()
-			.sign_and_submit_then_watch_default(&vote, member)
-			.await?
-			.wait_for_finalized_success()
-			.await
-			.map_err(|e| anyhow!("a member could not vote on {pallet}::{call}: {e}"))?;
-	}
+	//
+	// All at once, not one after another: a hundred and one votes each awaited to finalisation
+	// is a hundred and one block times, and that alone overruns this test's budget. Every voter
+	// signs with its own nonce, so nothing forces them to queue.
+	let votes = voters.iter().take(threshold as usize).map(|member| {
+		let people = &people;
+		async move {
+			let vote = dynamic::tx(
+				"Parliament",
+				"vote",
+				vec![
+					Value::from_bytes(hash.as_ref()),
+					Value::u128(index as u128),
+					Value::bool(true),
+				],
+			);
+			people
+				.tx()
+				.sign_and_submit_then_watch_default(&vote, member)
+				.await?
+				.wait_for_finalized_success()
+				.await
+				.map_err(|e| anyhow!("a member could not vote on {pallet}::{call}: {e}"))?;
+			Ok::<(), anyhow::Error>(())
+		}
+	});
+	futures::future::try_join_all(votes).await?;
 
 	let close = dynamic::tx(
 		"Parliament",
@@ -428,9 +457,9 @@ where
 			Value::u128(length_bound as u128),
 		],
 	);
-	people
+	let closed = people
 		.tx()
-		.sign_and_submit_then_watch_default(&close, &bench[0])
+		.sign_and_submit_then_watch_default(&close, &voters[0])
 		.await?
 		.wait_for_finalized_success()
 		.await
@@ -441,6 +470,34 @@ where
 				 what the call actually costs"
 			)
 		})?;
+
+	// A closed motion says nothing about the call it carried.
+	//
+	// `close` succeeds when the tally is reached; the inner dispatch runs afterwards and its
+	// result is reported in `Executed`, not in the extrinsic. So a motion can carry, the call can
+	// fail, and both the close and the tally look perfect. Measured 2026-09-20: the house carried
+	// `confirm_prime_minister` and the tiki never moved, and the only thing the rehearsal could
+	// say was that an effect had not appeared within ninety seconds -- which points at the chain
+	// when the answer was in an event nobody read.
+	for ev in closed.iter().filter_map(Result::ok) {
+		if ev.pallet_name() == "Parliament" && ev.variant_name() == "Executed" {
+			// `decode_as_fields` into a `scale_value` composite: the event's shape comes from
+			// the metadata, so this does not need a static type for `Executed` and does not go
+			// stale when the variant gains a field.
+			let rendered = ev
+				.decode_as_fields::<scale_value::Composite<()>>()
+				.map(|f| format!("{f}"))
+				.unwrap_or_else(|e| format!("<undecodable: {e}>"));
+			if !rendered.contains("Ok") {
+				return Err(anyhow!(
+					"the house carried {pallet}::{call} and the call itself failed: {rendered}. \
+					 The tally and the close are both fine; what failed is the dispatch the \
+					 motion was carrying"
+				));
+			}
+			log::info!("{pallet}::{call} executed: {rendered}");
+		}
+	}
 
 	for _ in 0..(SETTLE_SECS / 6) {
 		tokio::time::sleep(std::time::Duration::from_secs(6)).await;
@@ -542,6 +599,25 @@ pub(crate) async fn bench_size(
 		Some(v) => match v.value {
 			scale_value::ValueDef::Composite(c) => Ok(bounded_len(c)),
 			other => Err(anyhow!("Welati::{item} decoded as {other:?}, not a list")),
+		},
+	}
+}
+
+/// How many seats the Parliament *collective* holds.
+///
+/// Not the same number as `Welati::ParliamentMembers`, and the difference is the whole point:
+/// `EnsureProportionMoreThan` divides by the collective's roster, so that is the roster a
+/// threshold has to be written against. Reading it here rather than deriving it from
+/// `PARLIAMENT_SIZE` also means a partly seated house produces a threshold that still passes
+/// instead of one that is silently too small.
+pub(crate) async fn collective_size(
+	people: &OnlineClient<PezkuwiConfig>,
+) -> Result<usize, anyhow::Error> {
+	match storage_value(people, "Parliament", "Members", Vec::new()).await? {
+		None => Ok(0),
+		Some(v) => match v.value {
+			scale_value::ValueDef::Composite(c) => Ok(bounded_len(c)),
+			other => Err(anyhow!("Parliament::Members decoded as {other:?}, not a list")),
 		},
 	}
 }
@@ -722,11 +798,13 @@ pub(crate) fn founding_bench() -> Vec<Keypair> {
 /// runs, because the threshold is counted against `ParliamentSize` and a smaller bench can carry
 /// nothing -- see `founding_house`.
 pub(crate) async fn the_founding_offices_are_filled(
-	relay: &OnlineClient<PezkuwiConfig>,
 	people: &OnlineClient<PezkuwiConfig>,
-	bench: &[Keypair],
+	house: &[Keypair],
 ) -> Result<(), anyhow::Error> {
-	let serok = bench[0].clone();
+	// The whole seated house, not the founding five: the one motion this stage carries is
+	// weighed against the collective's roster, so a majority of that roster has to sign it.
+	// `founding_house()` opens with `founding_bench()`, so `house[0]` is still the Serok and
+	// the offices below are still filled from the same five accounts.
 	// ---- The President, already in office -----------------------------------------------
 	//
 	// Not granted here, and there is no way to grant it: `Tiki::Serok` is an *Elected* role
@@ -738,7 +816,7 @@ pub(crate) async fn the_founding_offices_are_filled(
 	//
 	// It is read before anything else because everything below depends on it: the seating of
 	// the house, the court's qualifications and the nomination are all this account's to sign.
-	let serok = bench[0].clone();
+	let serok = house[0].clone();
 	assert!(
 		has_tiki(people, &serok, "Serok").await?,
 		"genesis did not seat this key as Serok, so nothing below can be signed -- the local \
@@ -762,7 +840,7 @@ pub(crate) async fn the_founding_offices_are_filled(
 	// Then the appointment itself is *signed by the President*. That is the whole reason the
 	// presidency is granted above: Root could do this, and doing it that way would rehearse a
 	// path the state does not use once it has a head.
-	let court: Vec<&Keypair> = bench.iter().skip(1).take(3).collect();
+	let court: Vec<&Keypair> = house.iter().skip(1).take(3).collect();
 	for (i, member) in court.iter().enumerate() {
 		let want = i + 1;
 		log::info!("qualifying and appointing court member {want}");
@@ -816,7 +894,7 @@ pub(crate) async fn the_founding_offices_are_filled(
 	// because one person cannot be both parties to an appointment. So the nomination is
 	// signed by the President -- on his own authority, not Root's -- and the confirmation
 	// comes from the other side. The house had to be seated first for that to be possible.
-	let pm = bench[4].clone();
+	let pm = house[4].clone();
 	log::info!("the President nominating a Prime Minister");
 	let nominate = dynamic::tx(
 		"Welati",
@@ -843,7 +921,7 @@ pub(crate) async fn the_founding_offices_are_filled(
 	);
 
 	log::info!("Parliament confirming");
-	parliament_decides(people, &bench, "Welati", "confirm_prime_minister", || {
+	parliament_decides(people, house, "Welati", "confirm_prime_minister", || {
 		let people = people;
 		async move { Ok(tiki_holder(people, "SerokWeziran").await?.is_some()) }
 	})
@@ -863,7 +941,7 @@ pub(crate) async fn the_founding_offices_are_filled(
 	// Root: `appoint_minister` checks the caller *is* the Prime Minister, so this only works
 	// if the confirmation above genuinely put them in office. It is the one assertion here
 	// that the previous stage cannot fake.
-	let treasurer = bench[2].clone();
+	let treasurer = house[2].clone();
 	log::info!("the Prime Minister appointing a finance minister");
 	let appoint = dynamic::tx(
 		"Welati",
@@ -913,8 +991,6 @@ pub(crate) async fn a_budget_is_voted_and_the_treasurer_spends_it(
 	// The founding hand, seated by genesis rather than granted here -- see the note in
 	// `the_founding_offices_are_filled_and_the_executive_is_confirmed`. `seat_founding_parliament`
 	// takes `ensure_root_or_serok`, and on this chain only the second half exists.
-	let members: Vec<Value> = bench.iter().map(raw_account).collect();
-
 	// Only a sitting member or the President may propose, which is why the house comes first.
 	let proposer = bench[0].clone();
 	let amount: u128 = 1_000_000_000_000; // one HEZ, in the smallest unit
@@ -1125,12 +1201,20 @@ async fn a_citizen_initiative_reaches_a_referendum() -> Result<(), anyhow::Error
 		"open_initiative",
 		vec![Value::u128(track as u128), Value::from_bytes(proposal_hash), Value::u128(32)],
 	);
+	// Logged step by step from here on, and the reason is a nineteen-minute silence.
+	//
+	// Run 18 spawned this stage's network, assigned its cores, and then printed nothing at all
+	// until the twenty-minute cap killed it. Every line between here and the end was a submit
+	// awaiting finalisation, so the log could not say which one never came back -- a stall and
+	// a slow chain look identical when neither is narrated. Measured 2026-09-20.
+	log::info!("opening an initiative on track {track}");
 	people
 		.tx()
 		.sign_and_submit_then_watch_default(&open, &proposer)
 		.await?
 		.wait_for_finalized_success()
-		.await?;
+		.await
+		.map_err(|e| anyhow!("the initiative could not be opened on track {track}: {e}"))?;
 
 	let next = storage_value(&people, "Welati", "NextInitiativeId", Vec::new())
 		.await?
@@ -1142,7 +1226,10 @@ async fn a_citizen_initiative_reaches_a_referendum() -> Result<(), anyhow::Error
 	// Backing is a share of the roll, so how many signatures are needed depends on how many
 	// citizens there are. Everybody available backs it; the launch below is what decides
 	// whether that was enough, and its error names the shortfall.
-	for backer in [dev::bob(), dev::charlie(), dev::dave(), dev::eve()] {
+	log::info!("initiative {id} is open; collecting backing");
+	for (n, backer) in [dev::bob(), dev::charlie(), dev::dave(), dev::eve()].into_iter().enumerate()
+	{
+		log::info!("backer {} of 4 signing initiative {id}", n + 1);
 		let back = dynamic::tx("Welati", "back_initiative", vec![Value::u128(id as u128)]);
 		// A citizen who cannot back it is not a failure of this path -- an account that never
 		// completed registration is simply not on the roll. Only the launch is decisive.
@@ -1157,6 +1244,7 @@ async fn a_citizen_initiative_reaches_a_referendum() -> Result<(), anyhow::Error
 		}
 	}
 
+	log::info!("launching initiative {id}");
 	let launch = dynamic::tx("Welati", "launch_initiative", vec![Value::u128(id as u128)]);
 	people
 		.tx()

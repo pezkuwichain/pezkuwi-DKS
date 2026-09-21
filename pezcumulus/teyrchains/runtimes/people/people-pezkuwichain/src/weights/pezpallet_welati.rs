@@ -191,4 +191,74 @@ impl<T: pezframe_system::Config> pezpallet_welati::weights::WeightInfo for Weigh
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(2))
 	}
+	fn propose_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `430`
+		//  Estimated: `3534`
+		// Minimum execution time: 33_963_000 picoseconds.
+		Weight::from_parts(56_005_000, 0)
+			.saturating_add(Weight::from_parts(0, 3534))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(2))
+	}
+	fn approve_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `849`
+		//  Estimated: `3833`
+		// Minimum execution time: 42_901_000 picoseconds.
+		Weight::from_parts(69_329_000, 0)
+			.saturating_add(Weight::from_parts(0, 3833))
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	fn pay_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `593`
+		//  Estimated: `4058`
+		// Minimum execution time: 64_650_000 picoseconds.
+		Weight::from_parts(108_302_000, 0)
+			.saturating_add(Weight::from_parts(0, 4058))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().writes(5))
+	}
+	fn cancel_airdrop() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `849`
+		//  Estimated: `3833`
+		// Minimum execution time: 37_279_000 picoseconds.
+		Weight::from_parts(59_310_000, 0)
+			.saturating_add(Weight::from_parts(0, 3833))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	fn propose_presale() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `430`
+		//  Estimated: `3534`
+		// Minimum execution time: 42_650_000 picoseconds.
+		Weight::from_parts(69_599_000, 0)
+			.saturating_add(Weight::from_parts(0, 3534))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(4))
+	}
+	fn execute_presale() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1010`
+		//  Estimated: `4677`
+		// Minimum execution time: 65_963_000 picoseconds.
+		Weight::from_parts(110_196_000, 0)
+			.saturating_add(Weight::from_parts(0, 4677))
+			.saturating_add(T::DbWeight::get().reads(7))
+			.saturating_add(T::DbWeight::get().writes(4))
+	}
+	fn cancel_presale() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `878`
+		//  Estimated: `4677`
+		// Minimum execution time: 26_880_000 picoseconds.
+		Weight::from_parts(45_045_000, 0)
+			.saturating_add(Weight::from_parts(0, 4677))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
 }

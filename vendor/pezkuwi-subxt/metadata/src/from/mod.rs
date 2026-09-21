@@ -12,6 +12,26 @@ mod v16;
 #[cfg(feature = "legacy")]
 pub mod legacy;
 
+/// Whether a registered type is the runtime's `DispatchError`.
+///
+/// Matched by path, and the path is not the upstream one. This ecosystem renamed
+/// `sp-runtime` to `pezsp-runtime`, so `scale_info` derives the segments from
+/// `module_path!()` as `pezsp_runtime::DispatchError` and a literal `sp_runtime` comparison
+/// finds nothing. What it costs is not a compile error but a silent one: `dispatch_error_ty`
+/// stays `None`, and every failed extrinsic anywhere in the ecosystem -- rehearsals, wallets,
+/// indexers -- comes back as *"could not find the corresponding type ID in the metadata"*
+/// instead of the module error the chain actually returned. Measured against a live node on
+/// 2026-09-20: its metadata contains no bare `sp_runtime` path at all.
+///
+/// Upstream's spelling is still accepted so this client keeps working against an unforked
+/// chain, which the bridge work needs.
+pub(crate) fn is_dispatch_error_path<S: AsRef<str>>(segments: &[S]) -> bool {
+	matches!(
+		segments.iter().map(|s| s.as_ref()).collect::<alloc::vec::Vec<_>>().as_slice(),
+		["pezsp_runtime", "DispatchError"] | ["sp_runtime", "DispatchError"]
+	)
+}
+
 /// The metadata versions that we support converting into [`crate::Metadata`].
 /// These are ordest from highest to lowest, so that the metadata we'd want to
 /// pick first is first in the array.

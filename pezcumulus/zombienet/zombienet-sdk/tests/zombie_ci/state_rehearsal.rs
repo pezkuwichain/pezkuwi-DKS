@@ -422,24 +422,58 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 	)
 	.await?;
 
+	// From here the stages are collected rather than chained, and the reason is arithmetic.
+	//
+	// A cycle costs about a hundred minutes -- twenty to build, eighty to run -- and stopping at
+	// the first failure yields exactly one finding per cycle. Runs 10 through 13 each surfaced a
+	// single layer that had been hidden behind the one before it: no lane, then votes too slow,
+	// then no minister, then a mistyped tiki. Four cycles, nearly seven hours, four facts that
+	// were all true at the same time and could have been reported together.
+	//
+	// The stages after this point do not depend on each other's *success*: the payroll does not
+	// need the budget to have been spent, and the tracks do not need either. They depend on the
+	// register and the seated house, which are above and still fail hard. So each one runs, its
+	// error is kept, and the whole set is reported at the end.
+	let mut failures: Vec<String> = Vec::new();
+
 	// The offices before the budget: a spend needs a minister to hold the purse, and the
 	// minister is the last appointment in that sequence. Run 12 approved a budget and then had
 	// nobody who could spend it.
-	super::state_rehearsal_offices::the_founding_offices_are_filled(&relay, &people, &bench)
-		.await?;
+	if let Err(e) =
+		super::state_rehearsal_offices::the_founding_offices_are_filled(&people, &house).await
+	{
+		failures.push(format!("offices: {e}"));
+	}
 
-	// Path 2 before paths 3 and 4: a budget is the first thing a seated house does, and the
-	// government pot it draws on is filled by the same release the payroll reports.
-	super::state_rehearsal_offices::a_budget_is_voted_and_the_treasurer_spends_it(
+	// Path 2: a budget is the first thing a seated house does, and the government pot it draws
+	// on is filled by the same release the payroll reports.
+	if let Err(e) = super::state_rehearsal_offices::a_budget_is_voted_and_the_treasurer_spends_it(
 		&people, &asset_hub, &house, &bench,
 	)
-	.await?;
+	.await
+	{
+		failures.push(format!("budget (path 2): {e}"));
+	}
 
-	super::state_rehearsal_offices::the_treasury_funds_the_payroll_and_the_payroll_pays_across(
-		&people, &asset_hub, &bench,
-	)
-	.await?;
+	if let Err(e) =
+		super::state_rehearsal_offices::the_treasury_funds_the_payroll_and_the_payroll_pays_across(
+			&people, &asset_hub, &bench,
+		)
+		.await
+	{
+		failures.push(format!("payroll (paths 3 and 4): {e}"));
+	}
 
+	if !failures.is_empty() {
+		return Err(anyhow!(
+			"{} of the founding stages failed; all of them are reported here rather than only \
+			 the first, because each cycle costs an hour and a half:\n  - {}",
+			failures.len(),
+			failures.join("\n  - ")
+		));
+	}
+
+	log::info!("the founding sequence carried end to end");
 	Ok(())
 }
 

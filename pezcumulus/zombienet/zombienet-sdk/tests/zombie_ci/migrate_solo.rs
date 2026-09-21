@@ -10,9 +10,7 @@ use crate::utils::{initialize_network, BEST_BLOCK_METRIC};
 use pezcumulus_zombienet_sdk_helpers::assert_para_throughput;
 use pezkuwi_primitives::Id as ParaId;
 use pezkuwi_zombienet_sdk::{
-	subxt::{
-		self, dynamic::Value, tx::DynamicPayload, BizinikiwiConfig, OnlineClient, PezkuwiConfig,
-	},
+	subxt::{dynamic::Value, tx::DynamicPayload, BizinikiwiConfig, OnlineClient, PezkuwiConfig},
 	subxt_signer::sr25519::dev,
 	NetworkConfig, NetworkConfigBuilder, RegistrationStrategy,
 };
