@@ -464,6 +464,13 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 		failures.push(format!("payroll (paths 3 and 4): {e}"));
 	}
 
+	// Last, because it needs the register full: backing an initiative is a share of the roll.
+	if let Err(e) =
+		super::state_rehearsal_offices::a_citizen_initiative_reaches_a_referendum(&people).await
+	{
+		failures.push(format!("initiative: {e}"));
+	}
+
 	if !failures.is_empty() {
 		return Err(anyhow!(
 			"{} of the founding stages failed; all of them are reported here rather than only \

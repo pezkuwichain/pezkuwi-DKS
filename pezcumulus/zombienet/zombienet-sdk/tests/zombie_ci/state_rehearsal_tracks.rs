@@ -37,7 +37,6 @@ use pezkuwi_zombienet_sdk::{
 	NetworkConfig, NetworkConfigBuilder,
 };
 
-use super::state_rehearsal::wait_for;
 use super::state_rehearsal_offices::assign_cores;
 use crate::utils::initialize_network;
 
@@ -134,6 +133,22 @@ async fn storage(
 		Some(v) => Some(v.decode()?),
 		None => None,
 	})
+}
+
+/// One referendum's state, rendered.
+///
+/// `Referenda::ReferendumInfoFor` is a map and needs its index. Reading it without one returns
+/// nothing no matter what the chain holds, which is how this file waited four hundred and twenty
+/// seconds per track for a condition it could not observe: no run has ever reported a track as
+/// carrying a question. Measured 2026-09-21.
+async fn referendum_state(
+	api: &OnlineClient<PezkuwiConfig>,
+	index: u32,
+) -> Result<String, anyhow::Error> {
+	Ok(storage(api, "Referenda", "ReferendumInfoFor", vec![Value::u128(index as u128)])
+		.await?
+		.map(|v| format!("{v}"))
+		.unwrap_or_else(|| "<no such referendum>".to_string()))
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -273,6 +288,14 @@ async fn every_governance_track_carries_a_question() -> Result<(), anyhow::Error
 			.await
 			.map_err(|e| anyhow!("track {id} (`{name}`) refused a decision deposit: {e}"))?;
 
+		// What the chain thinks of it, before anybody votes.
+		//
+		// Run 21 came back `Welati::ReferendumNotOngoing` on track 40 and the message could not
+		// say what state the referendum *was* in -- so the next cycle would have been spent
+		// finding that out. It is logged here and carried into the error below.
+		let before = referendum_state(&people, index).await?;
+		log::info!("referendum {index} on track {id} (`{name}`) before voting: {before}");
+
 		for voter in &voters {
 			let vote = dynamic::tx(
 				"Welati",
@@ -288,7 +311,9 @@ async fn every_governance_track_carries_a_question() -> Result<(), anyhow::Error
 				.map_err(|e| {
 					anyhow!(
 						"a citizen with standing could not answer referendum {index} on track \
-						 {id} (`{name}`): {e}"
+						 {id} (`{name}`): {e}. The referendum read as {before} just before this \
+						 vote -- `ReferendumNotOngoing` against a state that is not `Ongoing` is \
+						 the chain being right and this file asking at the wrong moment"
 					)
 				})?;
 		}
@@ -296,11 +321,15 @@ async fn every_governance_track_carries_a_question() -> Result<(), anyhow::Error
 		// Deciding or confirming is the proof the lane works. Waiting for enactment as well
 		// would measure the enactment period rather than the track, and the tracks differ in
 		// that period by two orders of magnitude.
-		let moved = wait_for(&people, "Referenda", "ReferendumInfoFor", TRACK_SETTLE_SECS, |v| {
-			let s = format!("{v}");
-			s.contains("Confirming") || s.contains("Approved") || s.contains("deciding")
-		})
-		.await;
+		let mut moved = false;
+		for _ in 0..(TRACK_SETTLE_SECS / 2) {
+			let s = referendum_state(&people, index).await?;
+			if s.contains("Confirming") || s.contains("Approved") || s.contains("deciding") {
+				moved = true;
+				break;
+			}
+			tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+		}
 		if moved {
 			carried.push(format!("{id}:{name}"));
 			log::info!("track {id} (`{name}`) carried a question");
