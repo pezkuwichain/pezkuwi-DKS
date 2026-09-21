@@ -173,10 +173,16 @@ test-group = 'serial-integration'
 # Deliberately not a blanket raise. A timeout is a statement about what normal looks like, and
 # the other five stages wait on chains rather than on a loop -- if one of them runs long, that is
 # a fault and twenty minutes should still say so.
+# Raised again on 2026-09-21, and again against a measurement rather than a feeling. This stage
+# is no longer only the register: the offices, the budget, the payroll and now the citizen
+# initiative all run on the network it raises, because each of them needs a register that is
+# full and a chain that is actually producing. Run 21 took forty-nine minutes before the
+# initiative stage joined it, which left five minutes of margin under a sixty-minute cap --
+# not enough to tell a slow run from a stuck one.
 [[profile.default.overrides]]
 filter = 'test(/the_register_fills/)'
 threads-required = 'num-cpus'
-slow-timeout = { period = "60s", terminate-after = 60 }
+slow-timeout = { period = "60s", terminate-after = 75 }
 retries = 0
 
 # The governance-track stage is sized by the tracks, not by a guess.

@@ -48,11 +48,9 @@ use pezkuwi_zombienet_sdk::{
 		PezkuwiConfig,
 	},
 	subxt_signer::sr25519::{dev, Keypair},
-	NetworkConfig, NetworkConfigBuilder,
 };
 
 use super::state_rehearsal::wait_for;
-use crate::utils::initialize_network;
 
 const ASSET_HUB_ID: u32 = 1000;
 const PEOPLE_ID: u32 = 1004;
@@ -1197,17 +1195,19 @@ async fn wait_for_pez(
 /// One citizen opens a question, the roll backs it, and it becomes a referendum.
 ///
 /// The initiative is the path that does not go through Parliament at all, which is why it is
-/// worth its own rehearsal: everything else here is the state acting on itself.
-#[tokio::test(flavor = "multi_thread")]
-async fn a_citizen_initiative_reaches_a_referendum() -> Result<(), anyhow::Error> {
-	let _ = env_logger::try_init_from_env(
-		env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
-	);
-
-	let network = initialize_network(build_network_config().await?).await?;
-	let people: OnlineClient<PezkuwiConfig> =
-		network.get_node("people-collator-01")?.wait_client().await?;
-
+/// worth rehearsing: everything else here is the state acting on itself.
+///
+/// Not a test of its own any more, and for both of the reasons the payroll stages were folded in
+/// before it. Its own error message already said what it needed -- *"fill the register first with
+/// `state_rehearsal`"* -- because backing is a share of the roll, and a network seated with five
+/// citizens cannot produce a share of anything. And raising a third network was the thing that
+/// kept killing it: on run 21 the relay scheduled that network's People chain onto `CoreIndex(3)`,
+/// which two validators cannot back, so the chain stopped at block three and the first submission
+/// waited nineteen minutes for a finality that was never coming. The stage was sound; the network
+/// under it was not.
+pub(crate) async fn a_citizen_initiative_reaches_a_referendum(
+	people: &OnlineClient<PezkuwiConfig>,
+) -> Result<(), anyhow::Error> {
 	// Any preimage hash will do: `launch_initiative` hands the proposal to the referenda
 	// pallet, which accepts a hash it has not seen -- the preimage only has to exist by the
 	// time the referendum would enact. What is being rehearsed is the route to the ballot,
@@ -1236,7 +1236,7 @@ async fn a_citizen_initiative_reaches_a_referendum() -> Result<(), anyhow::Error
 		.await
 		.map_err(|e| anyhow!("the initiative could not be opened on track {track}: {e}"))?;
 
-	let next = storage_value(&people, "Welati", "NextInitiativeId", Vec::new())
+	let next = storage_value(people, "Welati", "NextInitiativeId", Vec::new())
 		.await?
 		.and_then(|v| v.as_u128())
 		.ok_or_else(|| anyhow!("Welati::NextInitiativeId is unset after opening one"))?
@@ -1282,7 +1282,7 @@ async fn a_citizen_initiative_reaches_a_referendum() -> Result<(), anyhow::Error
 
 	// The proof is a referendum existing, on the referenda pallet, not a flag on the
 	// initiative. `ReferendumCount` is the referenda pallet's own counter.
-	let count = storage_value(&people, "Referenda", "ReferendumCount", Vec::new())
+	let count = storage_value(people, "Referenda", "ReferendumCount", Vec::new())
 		.await?
 		.and_then(|v| v.as_u128())
 		.unwrap_or(0);
@@ -1390,40 +1390,4 @@ pub(crate) async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across(
 	);
 	log::info!("paths 3 and 4 carried: funding reported, claim paid across");
 	Ok(())
-}
-
-async fn build_network_config() -> Result<NetworkConfig, anyhow::Error> {
-	let images = pezkuwi_zombienet_sdk::environment::get_images_from_env();
-	NetworkConfigBuilder::new()
-		.with_relaychain(|r| {
-			r.with_chain("zagros-local")
-				.with_default_command("pezkuwi")
-				.with_default_image(images.pezkuwi())
-				.with_default_args(vec!["-lruntime=info".into()])
-				.with_validator(|n| n.with_name("validator-01"))
-				.with_validator(|n| n.with_name("validator-02"))
-		})
-		.with_teyrchain(|p| {
-			p.with_id(ASSET_HUB_ID)
-				.with_chain("asset-hub-zagros-local")
-				.with_default_command("pezkuwi-teyrchain")
-				.with_default_image(images.pezcumulus())
-				.with_collator(|n| n.with_name("asset-hub-collator-01"))
-		})
-		.with_teyrchain(|p| {
-			p.with_id(PEOPLE_ID)
-				.with_chain("people-zagros-local")
-				.with_default_command("pezkuwi-teyrchain")
-				.with_default_image(images.pezcumulus())
-				.with_collator(|n| n.with_name("people-collator-01"))
-		})
-		.with_global_settings(|g| match std::env::var("ZOMBIENET_SDK_BASE_DIR") {
-			Ok(val) => g.with_base_dir(val),
-			_ => g,
-		})
-		.build()
-		.map_err(|e| {
-			let errs = e.into_iter().map(|e| e.to_string()).collect::<Vec<_>>().join(" ");
-			anyhow!("config errs: {errs}")
-		})
 }
