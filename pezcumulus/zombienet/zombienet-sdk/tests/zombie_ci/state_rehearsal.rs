@@ -440,7 +440,7 @@ async fn the_register_fills_and_the_population_gate_opens() -> Result<(), anyhow
 	// minister is the last appointment in that sequence. Run 12 approved a budget and then had
 	// nobody who could spend it.
 	if let Err(e) =
-		super::state_rehearsal_offices::the_founding_offices_are_filled(&relay, &people, &bench)
+		super::state_rehearsal_offices::the_founding_offices_are_filled(&relay, &people, &house)
 			.await
 	{
 		failures.push(format!("offices: {e}"));
