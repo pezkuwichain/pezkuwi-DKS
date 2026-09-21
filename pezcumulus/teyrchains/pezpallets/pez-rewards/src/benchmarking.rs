@@ -14,7 +14,7 @@
 use super::*;
 use crate::Pezpallet as PezRewards;
 use pezframe_benchmarking::v2::*;
-use pezframe_support::assert_ok;
+use pezframe_support::{assert_ok, traits::EnsureOrigin};
 use pezframe_system::RawOrigin;
 
 #[benchmarks]
@@ -30,17 +30,36 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn note_incentive_funding() {
+	fn note_incentive_funding() -> Result<(), BenchmarkError> {
+		// Ask the configured origin for one it will accept, rather than assuming Root.
+		//
+		// The mock binds `FundingOrigin` to `EnsureRoot`, so `RawOrigin::Root` passes every test
+		// in this crate. The People runtimes bind it to
+		// `EnsureXcm<Equals<WelatiTreasuryChain>>` -- only the treasury chain, over XCM -- so the
+		// same line benchmarked against a real runtime returns `Bad origin` and takes the whole
+		// pallet's weights down with it. Measured 2026-09-20.
+		let origin =
+			T::FundingOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
+
 		#[extrinsic_call]
-		_(RawOrigin::Root, 1_000_000_000_000u128);
+		_(origin as T::RuntimeOrigin, 1_000_000_000_000u128);
 
 		assert_eq!(ReportedIncentiveTotal::<T>::get(), 1_000_000_000_000u128);
+		Ok(())
 	}
 
 	#[benchmark]
 	fn claim_reward() {
 		let caller: T::AccountId = whitelisted_caller();
 		let now = pezframe_system::Pezpallet::<T>::block_number();
+
+		// Worth paying, on the branch that costs the most.
+		//
+		// `entitlement` short-circuits: an account that holds no seat never reaches
+		// `seated_at`, and `seated_at` is the expensive half -- it decodes the whole
+		// `ParliamentMembers` roll and scans it. Measuring an unseated caller would price this
+		// call below what every seated member actually pays for it.
+		T::BenchmarkHelper::make_claimable(&caller);
 
 		assert_ok!(PezRewards::<T>::do_initialize_rewards_system());
 		ReportedIncentiveTotal::<T>::put(1_000_000_000_000u128);
@@ -57,6 +76,12 @@ mod benchmarks {
 
 		#[extrinsic_call]
 		_(RawOrigin::Signed(caller.clone()), 0);
+
+		assert!(
+			ClaimedRewards::<T>::contains_key(0, &caller),
+			"claim_reward returned without recording a payment; the benchmark measured a \
+			 refusal rather than the call"
+		);
 	}
 
 	impl_benchmark_test_suite!(PezRewards, crate::mock::new_test_ext(), crate::mock::Test);

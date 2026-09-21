@@ -118,6 +118,19 @@ pub trait ParliamentRoll<AccountId, BlockNumber> {
 	fn holds_seat(who: &AccountId) -> bool;
 }
 
+/// What a benchmark has to arrange before `claim_reward` can be measured.
+///
+/// The entitlement is read from two other pallets -- trust for the score, welati and tiki for
+/// the seat -- and this pallet depends on neither, so it cannot build that state itself. The
+/// mock bound it to accounts that happen to score; a real runtime scores nobody by default and
+/// the benchmark measured `NoRewardToClaim` instead of a payment. Measured 2026-09-20.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkSetup<AccountId> {
+	/// Make `who` worth paying, on the worst-case path: a trust score **and** a seat, with the
+	/// roll full and `who` at the end of it, because `seated_at` scans it linearly.
+	fn make_claimable(who: &AccountId);
+}
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
@@ -174,6 +187,10 @@ pub mod pezpallet {
 
 		/// Who sits in Parliament and who holds a seat.
 		type ParliamentSource: ParliamentRoll<Self::AccountId, BlockNumberFor<Self>>;
+
+		/// Builds the state `claim_reward` is measured against. Benchmarks only.
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: super::BenchmarkSetup<Self::AccountId>;
 
 		/// Who may report what the incentive pot has been given.
 		///

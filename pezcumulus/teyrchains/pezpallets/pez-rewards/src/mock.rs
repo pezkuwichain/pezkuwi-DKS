@@ -127,6 +127,22 @@ pub fn freezes() -> Vec<BlockNumber> {
 // The parliamentary roll
 // ---------------------------------------------------------------------------
 
+/// The benchmark's setup, in the mock.
+///
+/// Deliberately written with the same shape the runtimes use -- a score and a held seat -- so a
+/// benchmark that passes here is measuring the branch it will measure there. The mock's
+/// `EnsureRoot` bindings once let a benchmark pass here and fail against every real runtime, and
+/// that is the mistake this exists to not repeat.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct MockBenchmarkSetup;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_pez_rewards::BenchmarkSetup<AccountId> for MockBenchmarkSetup {
+	fn make_claimable(who: &AccountId) {
+		set_trust(*who, 1_000);
+		set_seat(*who, 0, true);
+	}
+}
+
 pub struct MockParliamentRoll;
 impl pezpallet_pez_rewards::ParliamentRoll<AccountId, BlockNumber> for MockParliamentRoll {
 	fn seated_at(who: &AccountId) -> Option<BlockNumber> {
@@ -204,6 +220,8 @@ impl pezpallet_pez_rewards::Config for Test {
 	type WeightInfo = ();
 	type TrustSource = MockTrustRoll;
 	type ParliamentSource = MockParliamentRoll;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = MockBenchmarkSetup;
 	// The Asset Hub's XCM origin on the real runtimes; root stands in here.
 	type FundingOrigin = EnsureRoot<AccountId>;
 	type XcmSender = RecordingXcmSender;

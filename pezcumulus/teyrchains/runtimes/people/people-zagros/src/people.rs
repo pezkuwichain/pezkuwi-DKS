@@ -1693,10 +1693,62 @@ impl pezpallet_pez_rewards::ParliamentRoll<AccountId, BlockNumber> for PezReward
 	}
 }
 
+/// What a `claim_reward` benchmark needs before the call can be measured.
+///
+/// The entitlement is assembled from three pallets this one does not depend on, so the setup
+/// has to live where they are all in scope. Everything here is the worst case on purpose:
+///
+/// * a trust score, because `reward_per_trust_point * 0` is zero and the call refuses with
+///   `NoRewardToClaim` -- which is what the benchmark measured until 2026-09-20;
+/// * the `Parlementer` tiki, because `holds_seat` short-circuits and an unseated caller never
+///   reaches the expensive half;
+/// * a **full** roll with the caller at the end of it, because `seated_at` decodes
+///   `ParliamentMembers` and scans it linearly. A roll of one would price the scan at nothing.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct PezRewardsBenchmarkSetup;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_pez_rewards::BenchmarkSetup<AccountId> for PezRewardsBenchmarkSetup {
+	fn make_claimable(who: &AccountId) {
+		use pezframe_support::BoundedVec;
+
+		pezpallet_trust::TrustScores::<Runtime>::insert(who, 1_000u128);
+
+		let seat = |account: AccountId| pezpallet_welati::ParliamentMember::<Runtime> {
+			account,
+			elected_at: 0,
+			term_ends_at: BlockNumber::MAX,
+			votes_participated: 0,
+			total_votes_eligible: 0,
+			participation_rate: 0,
+			committees: BoundedVec::default(),
+		};
+
+		let size = <Runtime as pezpallet_welati::Config>::ParliamentSize::get();
+		let mut roll: Vec<_> = (0..size.saturating_sub(1))
+			.map(|i| {
+				let mut bytes = [0u8; 32];
+				bytes[..4].copy_from_slice(&i.to_le_bytes());
+				seat(AccountId::new(bytes))
+			})
+			.collect();
+		// Last, so the linear scan in `seated_at` runs the whole length.
+		roll.push(seat(who.clone()));
+		pezpallet_welati::ParliamentMembers::<Runtime>::put(
+			BoundedVec::try_from(roll).expect("the roll is built to ParliamentSize; qed"),
+		);
+
+		pezpallet_tiki::UserTikis::<Runtime>::mutate(who, |tikis| {
+			let _ = tikis.try_push(pezpallet_tiki::Tiki::Parlementer);
+		});
+	}
+}
+
 impl pezpallet_pez_rewards::Config for Runtime {
 	type WeightInfo = pezpallet_pez_rewards::weights::BizinikiwiWeight<Runtime>;
 	type TrustSource = PezRewardsTrustRoll;
 	type ParliamentSource = PezRewardsParliamentRoll;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = PezRewardsBenchmarkSetup;
 	// Only the chain that holds the pot may say what the pot has been given. Root is
 	// deliberately not accepted: a key that can report funding is a key that can promise a
 	// payroll out of money that is not there, and the failure would land on the far side of

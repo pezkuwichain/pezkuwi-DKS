@@ -95,7 +95,11 @@ mod benchmarks {
 		// Use the funded `whitelisted_caller` as the 'dest' account that will receive the NFT.
 		let dest: T::AccountId = whitelisted_caller();
 		// Use an appointed role (Wezir instead of Serok)
-		let tiki = crate::Tiki::Wezir;
+		// Not `Wezir`: it is a cabinet tiki, so `is_seated_by_governance` is true for it and
+		// `grant_tiki` refuses with `SeatedByGovernance`. The benchmark measured nothing and
+		// the whole pallet's weights failed with it -- measured 2026-09-20. `Hiquqnas` is an
+		// appointed tiki this call actually grants, which is what the weight should describe.
+		let tiki = crate::Tiki::Hiquqnas;
 
 		// Ensure the dest account has a citizen NFT before granting a tiki
 		ensure_citizen_nft::<T>(dest.clone())?;
@@ -112,7 +116,9 @@ mod benchmarks {
 	fn revoke_tiki() -> Result<(), BenchmarkError> {
 		// Use the funded `whitelisted_caller` as the 'dest' account that will receive the NFT.
 		let dest: T::AccountId = whitelisted_caller();
-		let tiki = crate::Tiki::Wezir; // Use appointed role
+		// Same reason as `grant_tiki`: a cabinet tiki cannot be granted or revoked through
+		// this call at all, so measuring one measured a refusal.
+		let tiki = crate::Tiki::Hiquqnas;
 
 		// Ensure the dest account has a citizen NFT and the tiki before revoking
 		ensure_citizen_nft::<T>(dest.clone())?;
