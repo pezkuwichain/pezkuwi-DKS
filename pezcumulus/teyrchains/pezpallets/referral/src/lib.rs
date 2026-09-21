@@ -106,13 +106,20 @@ mod mock;
 pub mod types; // Adding our new types module
 pub mod weights;
 
+// Re-exported so the generated runtime weights can name it.
+//
+// `pezframe-omni-bencher` writes `impl<T> pezpallet_{name}::WeightInfo for WeightInfo<T>` -- the
+// crate root, never the module. Without this line the generated file does not compile and the
+// only way to use it was to edit the path by hand after every regeneration, which is a patch
+// that silently disappears the next time the weights are taken. Measured 2026-09-21.
+pub use weights::WeightInfo;
+
 #[cfg(test)]
 mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 extern crate alloc;
-use crate::weights::WeightInfo;
 
 /// The ceiling of the tiered referral score: what somebody who has brought in a hundred or
 /// more citizens is worth. Named because it is both the top tier and the maximum this

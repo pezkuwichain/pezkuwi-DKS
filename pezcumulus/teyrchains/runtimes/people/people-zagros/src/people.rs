@@ -345,7 +345,7 @@ impl pezpallet_identity_kyc::Config for Runtime {
 	// period keeps a way to undo a forged registration -- and loses it the day the court is
 	// whole, without anyone having to remember.
 	type GovernanceOrigin = crate::RegisterAuthority;
-	type WeightInfo = pezpallet_identity_kyc::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_identity_kyc::WeightInfo<Runtime>;
 	type OnKycApproved = Referral;
 	// Losing citizenship concerns both: the referral record has a penalty to apply, and the
 	// trust score has to stop existing rather than being left behind at its last value.
@@ -516,7 +516,7 @@ parameter_types! {
 }
 
 impl pezpallet_referral::Config for Runtime {
-	type WeightInfo = pezpallet_referral::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_referral::WeightInfo<Runtime>;
 	type InitialVouchingCapacity = crate::dynamic_params::qeyd::InitialVouchingCapacity;
 	type SettledVouchesPerPlace = crate::dynamic_params::qeyd::SettledVouchesPerPlace;
 	type MaxVouchingCapacity = crate::dynamic_params::qeyd::MaxVouchingCapacity;
@@ -607,7 +607,7 @@ impl pezpallet_tiki::Config for Runtime {
 	// while sudo exists; removing sudo means deleting the first arm here.
 	type HonoraryCitizenshipOrigin =
 		EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_tiki::ensure::EnsureSerokWeziran<Runtime>>;
-	type WeightInfo = pezpallet_tiki::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_tiki::WeightInfo<Runtime>;
 	type TikiCollectionId = TikiCollectionId;
 	type MaxTikisPerUser = MaxTikisPerUser;
 	type Tiki = pezpallet_tiki::Tiki;
@@ -666,7 +666,7 @@ parameter_types! {
 }
 
 impl pezpallet_staking_score::Config for Runtime {
-	type WeightInfo = pezpallet_staking_score::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_staking_score::WeightInfo<Runtime>;
 	type Balance = Balance;
 	type OnStakingUpdate = Trust;
 	type NoterChecker = TikiNoterChecker;
@@ -950,7 +950,7 @@ impl pezpallet_trust::CitizenshipStatusProvider<AccountId> for CitizenshipSource
 }
 
 impl pezpallet_trust::Config for Runtime {
-	type WeightInfo = pezpallet_trust::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_trust::WeightInfo<Runtime>;
 	type Score = u128;
 	type ScoreScale = TrustScoreScale;
 	// What the state considers a citizen to be made of. They add to a hundred; `try_state`
@@ -1707,7 +1707,7 @@ impl pezpallet_pez_rewards::ParliamentRoll<AccountId, BlockNumber> for PezReward
 #[cfg(feature = "runtime-benchmarks")]
 pub struct PezRewardsBenchmarkSetup;
 #[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_pez_rewards::BenchmarkSetup<AccountId> for PezRewardsBenchmarkSetup {
+impl pezpallet_pez_rewards::BenchmarkSetup<AccountId, RuntimeOrigin> for PezRewardsBenchmarkSetup {
 	fn make_claimable(who: &AccountId) {
 		use pezframe_support::BoundedVec;
 
@@ -1740,11 +1740,33 @@ impl pezpallet_pez_rewards::BenchmarkSetup<AccountId> for PezRewardsBenchmarkSet
 		pezpallet_tiki::UserTikis::<Runtime>::mutate(who, |tikis| {
 			let _ = tikis.try_push(pezpallet_tiki::Tiki::Parlementer);
 		});
+
+		// The lane the payment leaves by.
+		//
+		// `claim_reward` ends in an XCM to the treasury chain, and a benchmark runs on a chain
+		// with no channels at all: the send came back `NoChannel`, the call came back
+		// `CouldNotReachTreasury`, and the benchmark measured the refund path instead of the
+		// payment. Measured 2026-09-21.
+		// Derived from the location the payment is addressed to rather than from a second
+		// constant, so the lane and the destination cannot drift apart.
+		if let Some(xcm::latest::Junction::Teyrchain(id)) =
+			WelatiTreasuryChain::get().interior().first()
+		{
+			TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
+				pezcumulus_primitives_core::ParaId::from(*id),
+			);
+		}
+	}
+
+	fn funding_origin() -> RuntimeOrigin {
+		// `EnsureXcm<Equals<WelatiTreasuryChain>>` accepts one location and no other, and
+		// upstream's `try_successful_origin()` offers `Here`. Only this file knows the answer.
+		pezpallet_xcm::Origin::Xcm(WelatiTreasuryChain::get()).into()
 	}
 }
 
 impl pezpallet_pez_rewards::Config for Runtime {
-	type WeightInfo = pezpallet_pez_rewards::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_pez_rewards::WeightInfo<Runtime>;
 	type TrustSource = PezRewardsTrustRoll;
 	type ParliamentSource = PezRewardsParliamentRoll;
 	#[cfg(feature = "runtime-benchmarks")]

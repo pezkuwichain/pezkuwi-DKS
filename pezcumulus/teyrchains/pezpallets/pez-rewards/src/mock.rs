@@ -136,10 +136,16 @@ pub fn freezes() -> Vec<BlockNumber> {
 #[cfg(feature = "runtime-benchmarks")]
 pub struct MockBenchmarkSetup;
 #[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_pez_rewards::BenchmarkSetup<AccountId> for MockBenchmarkSetup {
+impl pezpallet_pez_rewards::BenchmarkSetup<AccountId, RuntimeOrigin> for MockBenchmarkSetup {
 	fn make_claimable(who: &AccountId) {
 		set_trust(*who, 1_000);
 		set_seat(*who, 0, true);
+	}
+
+	fn funding_origin() -> RuntimeOrigin {
+		// Matches this mock's `FundingOrigin = EnsureRoot`. The runtimes answer differently,
+		// which is the whole reason this is the runtime's to say.
+		RuntimeOrigin::root()
 	}
 }
 

@@ -61,6 +61,14 @@ mod tests;
 
 pub mod weights;
 
+// Re-exported so the generated runtime weights can name it.
+//
+// `pezframe-omni-bencher` writes `impl<T> pezpallet_{name}::WeightInfo for WeightInfo<T>` -- the
+// crate root, never the module. Without this line the generated file does not compile and the
+// only way to use it was to edit the path by hand after every regeneration, which is a patch
+// that silently disappears the next time the weights are taken. Measured 2026-09-21.
+pub use weights::WeightInfo;
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::weights::WeightInfo;

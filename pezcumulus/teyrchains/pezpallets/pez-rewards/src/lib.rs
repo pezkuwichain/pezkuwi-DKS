@@ -125,10 +125,19 @@ pub trait ParliamentRoll<AccountId, BlockNumber> {
 /// mock bound it to accounts that happen to score; a real runtime scores nobody by default and
 /// the benchmark measured `NoRewardToClaim` instead of a payment. Measured 2026-09-20.
 #[cfg(feature = "runtime-benchmarks")]
-pub trait BenchmarkSetup<AccountId> {
+pub trait BenchmarkSetup<AccountId, RuntimeOrigin> {
 	/// Make `who` worth paying, on the worst-case path: a trust score **and** a seat, with the
-	/// roll full and `who` at the end of it, because `seated_at` scans it linearly.
+	/// roll full and `who` at the end of it, because `seated_at` scans it linearly. Also opens
+	/// the lane the payment leaves by -- a claim that cannot be delivered is a claim that
+	/// measures `CouldNotReachTreasury`.
 	fn make_claimable(who: &AccountId);
+
+	/// An origin `FundingOrigin` accepts.
+	///
+	/// Not `try_successful_origin()`: `EnsureXcm`'s implementation of it answers
+	/// `Origin::Xcm(Here)`, and `Equals<WelatiTreasuryChain>` refuses `Here` exactly as it
+	/// should. Only the runtime knows which location this is, so the runtime says it.
+	fn funding_origin() -> RuntimeOrigin;
 }
 
 #[pezframe_support::pezpallet]
@@ -190,7 +199,7 @@ pub mod pezpallet {
 
 		/// Builds the state `claim_reward` is measured against. Benchmarks only.
 		#[cfg(feature = "runtime-benchmarks")]
-		type BenchmarkHelper: super::BenchmarkSetup<Self::AccountId>;
+		type BenchmarkHelper: super::BenchmarkSetup<Self::AccountId, Self::RuntimeOrigin>;
 
 		/// Who may report what the incentive pot has been given.
 		///

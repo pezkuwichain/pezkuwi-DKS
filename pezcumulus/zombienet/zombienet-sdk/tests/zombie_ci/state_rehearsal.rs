@@ -495,7 +495,12 @@ where
 	F: Fn(&Value) -> bool,
 {
 	let addr = pezkuwi_zombienet_sdk::subxt::dynamic::storage::<Vec<Value>, Value>(pallet, item);
-	for _ in 0..(secs / 6) {
+	// Every two seconds rather than every six, and the reason is a state that is true only for a
+	// while. `PezRewards::EpochInClaim` is set for seven blocks in every thirty in a rehearsal
+	// build; a poll as coarse as the block time can spend a third of that window before it looks,
+	// and whatever the caller does next has to fit in what is left. Reading a storage key is
+	// cheap next to the cost of losing a cycle. Measured 2026-09-21.
+	for _ in 0..(secs / 2) {
 		if let Ok(at) = api.storage().at_latest().await {
 			if let Ok(Some(raw)) = at.try_fetch(addr.clone(), Vec::new()).await {
 				if let Ok(v) = raw.decode() {
@@ -505,7 +510,7 @@ where
 				}
 			}
 		}
-		tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+		tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 	}
 	false
 }

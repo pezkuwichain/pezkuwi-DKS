@@ -144,6 +144,14 @@ pub mod migrations;
 pub mod types;
 pub mod weights; // Storage migrations
 
+// Re-exported so the generated runtime weights can name it.
+//
+// `pezframe-omni-bencher` writes `impl<T> pezpallet_{name}::WeightInfo for WeightInfo<T>` -- the
+// crate root, never the module. Without this line the generated file does not compile and the
+// only way to use it was to edit the path by hand after every regeneration, which is a patch
+// that silently disappears the next time the weights are taken. Measured 2026-09-21.
+pub use weights::WeightInfo;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 #[cfg(test)]
@@ -152,7 +160,6 @@ mod mock;
 mod tests;
 
 use crate::types::*;
-use crate::weights::WeightInfo;
 
 // The `WeightInfo` trait and its `()` impl live in `weights.rs`, with the numbers the
 // benchmarks produce. A second copy of both used to sit here -- eight hand-written figures
