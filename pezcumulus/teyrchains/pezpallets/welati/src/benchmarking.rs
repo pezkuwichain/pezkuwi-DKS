@@ -124,7 +124,7 @@ mod benchmarks {
 	/// rather than smuggled in here; a ceiling that overcharges is the safe direction to be
 	/// wrong in while it waits.
 	#[benchmark]
-	fn finalize_election() {
+	fn finalize_election(c: Linear<0, MAX_ELECTION_CANDIDATES>) {
 		Pezpallet::<T>::initiate_election(
 			RawOrigin::Root.into(),
 			ElectionType::Parliamentary,
@@ -137,7 +137,15 @@ mod benchmarks {
 
 		// The ballot, written straight to storage. Five hundred `register_candidate` calls
 		// would be five hundred calls' worth of setup for a list this only reads.
-		let full: u32 = 500;
+		//
+		// Sized by the component rather than fixed at the bound, and the call is why: it charges
+		// `finalize_election(MAX_ELECTION_CANDIDATES)` up front and refunds
+		// `finalize_election(counted)` once it knows the real number, so the weight function has
+		// to have a slope for the refund to mean anything. Fixed at five hundred the bencher
+		// emitted `finalize_election()` with no argument at all -- it would not even compile
+		// against the trait, and the slope in the hand-written body was derived from `DbWeight`
+		// by a person rather than measured. Measured 2026-09-21.
+		let full: u32 = c;
 		let mut candidates = Vec::new();
 		for i in 0..full {
 			let candidate: T::AccountId = account("candidate", i, 0);
@@ -156,7 +164,9 @@ mod benchmarks {
 			);
 			candidates.push(candidate);
 		}
-		election.candidates = candidates.try_into().expect("five hundred is the bound");
+		election.candidates = candidates
+			.try_into()
+			.expect("the component is bounded by MAX_ELECTION_CANDIDATES; qed");
 
 		// Turnout, so the count reaches the tally rather than stopping at the quorum. A
 		// benchmark that failed for turnout would measure the refusal.
