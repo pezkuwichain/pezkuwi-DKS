@@ -1707,7 +1707,7 @@ impl pezpallet_pez_rewards::ParliamentRoll<AccountId, BlockNumber> for PezReward
 #[cfg(feature = "runtime-benchmarks")]
 pub struct PezRewardsBenchmarkSetup;
 #[cfg(feature = "runtime-benchmarks")]
-impl pezpallet_pez_rewards::BenchmarkSetup<AccountId> for PezRewardsBenchmarkSetup {
+impl pezpallet_pez_rewards::BenchmarkSetup<AccountId, RuntimeOrigin> for PezRewardsBenchmarkSetup {
 	fn make_claimable(who: &AccountId) {
 		use pezframe_support::BoundedVec;
 
@@ -1740,6 +1740,28 @@ impl pezpallet_pez_rewards::BenchmarkSetup<AccountId> for PezRewardsBenchmarkSet
 		pezpallet_tiki::UserTikis::<Runtime>::mutate(who, |tikis| {
 			let _ = tikis.try_push(pezpallet_tiki::Tiki::Parlementer);
 		});
+
+		// The lane the payment leaves by.
+		//
+		// `claim_reward` ends in an XCM to the treasury chain, and a benchmark runs on a chain
+		// with no channels at all: the send came back `NoChannel`, the call came back
+		// `CouldNotReachTreasury`, and the benchmark measured the refund path instead of the
+		// payment. Measured 2026-09-21.
+		// Derived from the location the payment is addressed to rather than from a second
+		// constant, so the lane and the destination cannot drift apart.
+		if let Some(xcm::latest::Junction::Teyrchain(id)) =
+			WelatiTreasuryChain::get().interior().first()
+		{
+			TeyrchainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
+				pezcumulus_primitives_core::ParaId::from(*id),
+			);
+		}
+	}
+
+	fn funding_origin() -> RuntimeOrigin {
+		// `EnsureXcm<Equals<WelatiTreasuryChain>>` accepts one location and no other, and
+		// upstream's `try_successful_origin()` offers `Here`. Only this file knows the answer.
+		pezpallet_xcm::Origin::Xcm(WelatiTreasuryChain::get()).into()
 	}
 }
 

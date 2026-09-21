@@ -14,7 +14,7 @@
 use super::*;
 use crate::Pezpallet as PezRewards;
 use pezframe_benchmarking::v2::*;
-use pezframe_support::{assert_ok, traits::EnsureOrigin};
+use pezframe_support::assert_ok;
 use pezframe_system::RawOrigin;
 
 #[benchmarks]
@@ -30,22 +30,23 @@ mod benchmarks {
 	}
 
 	#[benchmark]
-	fn note_incentive_funding() -> Result<(), BenchmarkError> {
-		// Ask the configured origin for one it will accept, rather than assuming Root.
+	fn note_incentive_funding() {
+		// The origin comes from the runtime, not from an assumption and not from upstream's
+		// stand-in.
 		//
 		// The mock binds `FundingOrigin` to `EnsureRoot`, so `RawOrigin::Root` passes every test
 		// in this crate. The People runtimes bind it to
-		// `EnsureXcm<Equals<WelatiTreasuryChain>>` -- only the treasury chain, over XCM -- so the
-		// same line benchmarked against a real runtime returns `Bad origin` and takes the whole
-		// pallet's weights down with it. Measured 2026-09-20.
-		let origin =
-			T::FundingOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
+		// `EnsureXcm<Equals<WelatiTreasuryChain>>` -- only the treasury chain, over XCM -- and
+		// against a real runtime `RawOrigin::Root` is `Bad origin`. `try_successful_origin()`
+		// looks like the answer and is not: `EnsureXcm`'s implementation answers
+		// `Origin::Xcm(Here)`, which `Equals<WelatiTreasuryChain>` refuses exactly as it should,
+		// so the benchmark still measured a refusal. Measured 2026-09-21.
+		let origin = T::BenchmarkHelper::funding_origin();
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, 1_000_000_000_000u128);
 
 		assert_eq!(ReportedIncentiveTotal::<T>::get(), 1_000_000_000_000u128);
-		Ok(())
 	}
 
 	#[benchmark]
