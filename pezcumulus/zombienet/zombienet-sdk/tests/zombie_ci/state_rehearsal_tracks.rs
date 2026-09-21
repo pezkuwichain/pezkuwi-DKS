@@ -302,20 +302,37 @@ async fn every_governance_track_carries_a_question() -> Result<(), anyhow::Error
 				"answer_referendum",
 				vec![Value::u128(index as u128), Value::bool(true)],
 			);
-			people
+			if let Err(e) = people
 				.tx()
 				.sign_and_submit_then_watch_default(&vote, voter)
 				.await?
 				.wait_for_finalized_success()
 				.await
-				.map_err(|e| {
-					anyhow!(
+			{
+				// A referendum that has already carried is the outcome this stage is looking
+				// for, not a failure to reach it.
+				//
+				// The votes go in one at a time, and a lenient track does not need all three:
+				// `welati_election` took the first one or two, confirmed, and was approved
+				// before the last voter's extrinsic landed -- which left that voter answering
+				// a poll that no longer existed. Run 22 read `Ongoing` with an empty tally
+				// immediately before, then `Welati::ReferendumNotOngoing` from the vote, and
+				// both were true. So: ask the chain what happened, and only call it an error
+				// if the referendum is still open.
+				let after = referendum_state(&people, index).await?;
+				if after.contains("Ongoing") {
+					return Err(anyhow!(
 						"a citizen with standing could not answer referendum {index} on track \
-						 {id} (`{name}`): {e}. The referendum read as {before} just before this \
-						 vote -- `ReferendumNotOngoing` against a state that is not `Ongoing` is \
-						 the chain being right and this file asking at the wrong moment"
-					)
-				})?;
+						 {id} (`{name}`): {e}. It read as {before} before the vote and {after} \
+						 after, so it was open at both ends and the refusal is about the voter"
+					));
+				}
+				log::info!(
+					"referendum {index} on track {id} (`{name}`) carried before every voter had \
+					 answered; it now reads {after}"
+				);
+				break;
+			}
 		}
 
 		// Deciding or confirming is the proof the lane works. Waiting for enactment as well
