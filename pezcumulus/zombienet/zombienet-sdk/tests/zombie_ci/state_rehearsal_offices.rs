@@ -72,6 +72,14 @@ const PARLIAMENT_SIZE: u32 = 201;
 /// against the number of people sitting.
 const SIMPLE_MAJORITY: usize = (PARLIAMENT_SIZE as usize) / 2 + 1;
 
+/// How many extrinsics this rehearsal sends at one node at once.
+///
+/// Not a throughput knob: every in-flight submission holds an RPC subscription open until its
+/// extrinsic finalises, and past that point the node answers `Request timeout` rather than
+/// anything about the chain. Twenty-five was already the figure `fund_seats` used; run 20 showed
+/// the votes needed it too.
+const VOTE_CHUNK: usize = 25;
+
 /// Ten HEZ a seat, out of the founder's account, decided by Serok on 2026-09-19.
 ///
 /// A fee budget rather than an endowment: a vote, a proposal and the existential deposit, with
@@ -417,32 +425,39 @@ where
 	// proposer would leave the tally one short and `close` would fail with `TooEarly` -- forty
 	// minutes after the mistake, which is the cost of reading a pallet by memory.
 	//
-	// All at once, not one after another: a hundred and one votes each awaited to finalisation
-	// is a hundred and one block times, and that alone overruns this test's budget. Every voter
-	// signs with its own nonce, so nothing forces them to queue.
-	let votes = voters.iter().take(threshold as usize).map(|member| {
-		let people = &people;
-		async move {
-			let vote = dynamic::tx(
-				"Parliament",
-				"vote",
-				vec![
-					Value::from_bytes(hash.as_ref()),
-					Value::u128(index as u128),
-					Value::bool(true),
-				],
-			);
-			people
-				.tx()
-				.sign_and_submit_then_watch_default(&vote, member)
-				.await?
-				.wait_for_finalized_success()
-				.await
-				.map_err(|e| anyhow!("a member could not vote on {pallet}::{call}: {e}"))?;
-			Ok::<(), anyhow::Error>(())
-		}
-	});
-	futures::future::try_join_all(votes).await?;
+	// Concurrently, but in chunks, and both halves of that are measured.
+	//
+	// One after another is a hundred and one block times and overruns this test's budget. All
+	// hundred and one at once is worse in a way that reads as a chain fault: each submission
+	// holds an RPC subscription open until its extrinsic finalises, and run 20 came back
+	// *"Could not fetch event bytes ... Request timeout"* -- the node's RPC saturated, the votes
+	// themselves were fine. Twenty-five is the size `fund_seats` already uses on this node for
+	// the same reason.
+	for chunk in voters.iter().take(threshold as usize).collect::<Vec<_>>().chunks(VOTE_CHUNK) {
+		let votes = chunk.iter().map(|member| {
+			let people = &people;
+			async move {
+				let vote = dynamic::tx(
+					"Parliament",
+					"vote",
+					vec![
+						Value::from_bytes(hash.as_ref()),
+						Value::u128(index as u128),
+						Value::bool(true),
+					],
+				);
+				people
+					.tx()
+					.sign_and_submit_then_watch_default(&vote, *member)
+					.await?
+					.wait_for_finalized_success()
+					.await
+					.map_err(|e| anyhow!("a member could not vote on {pallet}::{call}: {e}"))?;
+				Ok::<(), anyhow::Error>(())
+			}
+		});
+		futures::future::try_join_all(votes).await?;
+	}
 
 	let close = dynamic::tx(
 		"Parliament",
@@ -1032,35 +1047,40 @@ pub(crate) async fn a_budget_is_voted_and_the_treasurer_spends_it(
 	// the register had already spent thirty-five minutes filling. Every voter is a different
 	// signer with its own nonce, so nothing forces them to queue -- this is the same shape the
 	// register uses for its applications.
-	let votes = house.iter().take(SIMPLE_MAJORITY).map(|member| {
-		let people = &people;
-		async move {
-			let vote = dynamic::tx(
-				"Welati",
-				"vote_on_proposal",
-				vec![
-					Value::u128(proposal_id as u128),
-					Value::unnamed_variant("Aye", vec![]),
-					Value::unnamed_variant("None", vec![]),
-				],
-			);
-			people
-				.tx()
-				.sign_and_submit_then_watch_default(&vote, member)
-				.await?
-				.wait_for_finalized_success()
-				.await
-				.map_err(|e| {
-					anyhow!(
-						"a seated member could not vote on proposal {proposal_id}: {e}. Voting \
-						 opens after `ProposalVotingDelay`; on a node built without \
-						 `fast-runtime` that is a full day of blocks and this run cannot reach it"
-					)
-				})?;
-			Ok::<(), anyhow::Error>(())
-		}
-	});
-	futures::future::try_join_all(votes).await?;
+	// In chunks, for the same reason the parliamentary votes are: a hundred and one open RPC
+	// subscriptions saturate this node and it answers `Request timeout` instead of anything
+	// about the chain. Measured on run 20.
+	for chunk in house.iter().take(SIMPLE_MAJORITY).collect::<Vec<_>>().chunks(VOTE_CHUNK) {
+		let votes = chunk.iter().map(|member| {
+			let people = &people;
+			async move {
+				let vote = dynamic::tx(
+					"Welati",
+					"vote_on_proposal",
+					vec![
+						Value::u128(proposal_id as u128),
+						Value::unnamed_variant("Aye", vec![]),
+						Value::unnamed_variant("None", vec![]),
+					],
+				);
+				people
+					.tx()
+					.sign_and_submit_then_watch_default(&vote, *member)
+					.await?
+					.wait_for_finalized_success()
+					.await
+					.map_err(|e| {
+						anyhow!(
+							"a seated member could not vote on proposal {proposal_id}: {e}. Voting \
+							 opens after `ProposalVotingDelay`; on a node built without \
+							 `fast-runtime` that is a full day of blocks and this run cannot reach it"
+						)
+					})?;
+				Ok::<(), anyhow::Error>(())
+			}
+		});
+		futures::future::try_join_all(votes).await?;
+	}
 
 	// `finalize_proposal` passes a proposal as soon as the ayes reach the threshold -- it
 	// does not wait for the window to close. Anybody may call it.
@@ -1326,8 +1346,25 @@ pub(crate) async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across(
 		"no epoch finalised within {EPOCH_SETTLE_SECS}s. `EpochLength` is thirty days unless 		 the runtime was built with `fast-runtime`, and nothing downstream of a closed epoch 		 can be reached until one is"
 	);
 
+	// Which epoch is claimable is the chain's to say, not this file's.
+	//
+	// It used to claim epoch zero. Under `fast-runtime` an epoch lasts minutes, so by the time
+	// the stages above have run, epoch zero has been finalised *and* closed by the next one, and
+	// the claim comes back `NotInClaimPeriod` -- a correct refusal against a wrong assumption.
+	// `EpochInClaim` is the pallet's own answer and moves with it. Measured on run 20.
+	let epoch = storage_value(people, "PezRewards", "EpochInClaim", Vec::new())
+		.await?
+		.and_then(|v| v.as_u128())
+		.ok_or_else(|| {
+			anyhow!(
+				"an epoch finalised but `PezRewards::EpochInClaim` is unset, so nothing is \
+				 claimable. The window is `ClaimPeriod` blocks wide and closes on its own"
+			)
+		})? as u32;
+	log::info!("epoch {epoch} is in its claim window");
+
 	let claimant = bench[0].clone();
-	let claim = dynamic::tx("PezRewards", "claim_reward", vec![Value::u128(0)]);
+	let claim = dynamic::tx("PezRewards", "claim_reward", vec![Value::u128(epoch as u128)]);
 	people
 		.tx()
 		.sign_and_submit_then_watch_default(&claim, &claimant)
@@ -1336,7 +1373,7 @@ pub(crate) async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across(
 		.await
 		.map_err(|e| {
 			anyhow!(
-				"a seated member could not claim epoch 0: {e}. `NothingToClaim` means the seat 				 share was zero, which happens when the pot was never funded -- check path 4 				 above before looking at the claim"
+				"a seated member could not claim epoch {epoch}: {e}. `NothingToClaim` means the seat 				 share was zero, which happens when the pot was never funded -- check path 4 				 above before looking at the claim"
 			)
 		})?;
 
