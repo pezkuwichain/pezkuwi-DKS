@@ -345,7 +345,7 @@ impl pezpallet_identity_kyc::Config for Runtime {
 	// period keeps a way to undo a forged registration -- and loses it the day the court is
 	// whole, without anyone having to remember.
 	type GovernanceOrigin = crate::RegisterAuthority;
-	type WeightInfo = pezpallet_identity_kyc::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_identity_kyc::WeightInfo<Runtime>;
 	type OnKycApproved = Referral;
 	// Losing citizenship concerns both: the referral record has a penalty to apply, and the
 	// trust score has to stop existing rather than being left behind at its last value.
@@ -516,7 +516,7 @@ parameter_types! {
 }
 
 impl pezpallet_referral::Config for Runtime {
-	type WeightInfo = pezpallet_referral::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_referral::WeightInfo<Runtime>;
 	type InitialVouchingCapacity = crate::dynamic_params::qeyd::InitialVouchingCapacity;
 	type SettledVouchesPerPlace = crate::dynamic_params::qeyd::SettledVouchesPerPlace;
 	type MaxVouchingCapacity = crate::dynamic_params::qeyd::MaxVouchingCapacity;
@@ -607,7 +607,7 @@ impl pezpallet_tiki::Config for Runtime {
 	// while sudo exists; removing sudo means deleting the first arm here.
 	type HonoraryCitizenshipOrigin =
 		EitherOfDiverse<EnsureRoot<AccountId>, pezpallet_tiki::ensure::EnsureSerokWeziran<Runtime>>;
-	type WeightInfo = pezpallet_tiki::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_tiki::WeightInfo<Runtime>;
 	type TikiCollectionId = TikiCollectionId;
 	type MaxTikisPerUser = MaxTikisPerUser;
 	type Tiki = pezpallet_tiki::Tiki;
@@ -666,7 +666,7 @@ parameter_types! {
 }
 
 impl pezpallet_staking_score::Config for Runtime {
-	type WeightInfo = pezpallet_staking_score::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_staking_score::WeightInfo<Runtime>;
 	type Balance = Balance;
 	type OnStakingUpdate = Trust;
 	type NoterChecker = TikiNoterChecker;
@@ -950,7 +950,7 @@ impl pezpallet_trust::CitizenshipStatusProvider<AccountId> for CitizenshipSource
 }
 
 impl pezpallet_trust::Config for Runtime {
-	type WeightInfo = pezpallet_trust::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_trust::WeightInfo<Runtime>;
 	type Score = u128;
 	type ScoreScale = TrustScoreScale;
 	// What the state considers a citizen to be made of. They add to a hundred; `try_state`
@@ -1744,7 +1744,7 @@ impl pezpallet_pez_rewards::BenchmarkSetup<AccountId, RuntimeOrigin> for PezRewa
 }
 
 impl pezpallet_pez_rewards::Config for Runtime {
-	type WeightInfo = pezpallet_pez_rewards::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_pez_rewards::WeightInfo<Runtime>;
 	type TrustSource = PezRewardsTrustRoll;
 	type ParliamentSource = PezRewardsParliamentRoll;
 	#[cfg(feature = "runtime-benchmarks")]

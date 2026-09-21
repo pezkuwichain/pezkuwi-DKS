@@ -1333,32 +1333,36 @@ pub(crate) async fn the_treasury_funds_the_payroll_and_the_payroll_pays_across(
 	// An epoch has to close first. It closes on People's own `on_initialize` after
 	// `EpochLength`, which is compressed in a rehearsal build and thirty days otherwise --
 	// so a failure here is very often a node built without `fast-runtime`.
-	log::info!("waiting for the first epoch to finalise");
-	let closed = wait_for(people, "PezRewards", "EpochInfo", EPOCH_SETTLE_SECS, |v| {
-		v.at("total_epochs_completed")
-			.and_then(|n| n.as_u128())
-			.map(|n| n > 0)
-			.unwrap_or(false)
+	log::info!("waiting for a claim window to open");
+	let closed = wait_for(people, "PezRewards", "EpochInClaim", EPOCH_SETTLE_SECS, |v| {
+		v.as_u128().is_some()
 	})
 	.await;
 	assert!(
 		closed,
-		"no epoch finalised within {EPOCH_SETTLE_SECS}s. `EpochLength` is thirty days unless 		 the runtime was built with `fast-runtime`, and nothing downstream of a closed epoch 		 can be reached until one is"
+		"no claim window opened within {EPOCH_SETTLE_SECS}s. `EpochLength` is thirty days unless 		 the runtime was built with `fast-runtime`, and nothing downstream of a closed epoch 		 can be reached until one is"
 	);
 
-	// Which epoch is claimable is the chain's to say, not this file's.
+	// Which epoch is claimable is the chain's to say, and it is only true for a while.
 	//
-	// It used to claim epoch zero. Under `fast-runtime` an epoch lasts minutes, so by the time
-	// the stages above have run, epoch zero has been finalised *and* closed by the next one, and
-	// the claim comes back `NotInClaimPeriod` -- a correct refusal against a wrong assumption.
-	// `EpochInClaim` is the pallet's own answer and moves with it. Measured on run 20.
+	// Two wrong signals preceded this one. Run 20 claimed epoch zero by number, and under
+	// `fast-runtime` epoch zero has long since been closed by its successor -- `NotInClaimPeriod`,
+	// a correct refusal against a wrong assumption. Run 21 then read `EpochInClaim` after waiting
+	// on `total_epochs_completed > 0`, which is *cumulative*: it is true forever after the first
+	// epoch, so the wait returned instantly and the read landed at an arbitrary moment. The
+	// rehearsal build compresses thirty days to thirty blocks and seven to seven, so the window
+	// is open for seven blocks in every thirty -- the read had a better than two in three chance
+	// of finding nothing, and did.
+	//
+	// So: wait on the window itself, and read the epoch out of the same poll.
 	let epoch = storage_value(people, "PezRewards", "EpochInClaim", Vec::new())
 		.await?
 		.and_then(|v| v.as_u128())
 		.ok_or_else(|| {
 			anyhow!(
-				"an epoch finalised but `PezRewards::EpochInClaim` is unset, so nothing is \
-				 claimable. The window is `ClaimPeriod` blocks wide and closes on its own"
+				"a claim window opened and had closed again before the claim could be read. \
+				 It is `ClaimPeriod` blocks wide -- seven in a rehearsal build -- so anything \
+				 slow between the wait and the claim loses it"
 			)
 		})? as u32;
 	log::info!("epoch {epoch} is in its claim window");
