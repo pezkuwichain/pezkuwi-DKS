@@ -12,7 +12,7 @@
 use super::*;
 use crate::Pezpallet as PezTreasury;
 use pezframe_benchmarking::v2::*;
-use pezframe_support::traits::{fungibles::Mutate, EnsureOrigin, Get};
+use pezframe_support::traits::{fungibles::Mutate, Get};
 use pezsp_runtime::traits::{Saturating, Zero};
 
 #[benchmarks]
@@ -26,8 +26,7 @@ mod benchmarks {
 		crate::NextReleaseMonth::<T>::kill();
 		crate::DistributionStarted::<T>::kill();
 
-		let origin =
-			T::ActivationOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
+		let origin = T::BenchmarkHelper::people_chain_origin();
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin);
@@ -101,13 +100,52 @@ mod benchmarks {
 
 		let pot = PezTreasury::<T>::get_government_pot_balance();
 		let beneficiary: T::AccountId = whitelisted_caller();
-		let origin = T::GovernmentSpendOrigin::try_successful_origin()
-			.map_err(|_| BenchmarkError::Weightless)?;
+		let origin = T::BenchmarkHelper::people_chain_origin();
 
 		#[extrinsic_call]
 		_(origin as T::RuntimeOrigin, beneficiary.clone(), pot / 2u32.into());
 
 		assert!(PezTreasury::<T>::get_government_pot_balance() < pot);
+
+		Ok(())
+	}
+
+	/// The citizens' payout, which had no benchmark at all until 2026-09-22.
+	///
+	/// Its weight was whatever the hand-written body said, never measured -- and this is the
+	/// call that actually moves PEZ to a citizen, the far end of the payroll the rehearsal
+	/// proves in path 3. The setup mirrors `spend_from_government_pot`: release once so a pot
+	/// exists, then draw from it.
+	#[benchmark]
+	fn pay_from_incentive_pot() -> Result<(), BenchmarkError> {
+		crate::TreasuryStartBlock::<T>::kill();
+		crate::HalvingInfo::<T>::kill();
+		crate::NextReleaseMonth::<T>::kill();
+		let _ = crate::MonthlyReleases::<T>::clear(u32::MAX, None);
+
+		PezTreasury::<T>::do_initialize_treasury().unwrap();
+
+		let treasury_account = PezTreasury::<T>::treasury_account_id();
+		let monthly_amount = PezTreasury::<T>::halving_info().monthly_amount;
+		let _ = T::Assets::mint_into(
+			T::PezAssetId::get(),
+			&treasury_account,
+			monthly_amount * 10u32.into(),
+		);
+		PezTreasury::<T>::do_monthly_release().unwrap();
+
+		let pot = PezTreasury::<T>::get_incentive_pot_balance();
+		assert!(!pot.is_zero(), "the release left the incentive pot empty; nothing to pay from");
+		let beneficiary: T::AccountId = whitelisted_caller();
+		let origin = T::BenchmarkHelper::people_chain_origin();
+
+		#[extrinsic_call]
+		_(origin as T::RuntimeOrigin, beneficiary.clone(), pot / 2u32.into());
+
+		assert!(
+			PezTreasury::<T>::get_incentive_pot_balance() < pot,
+			"the call returned without drawing the pot down"
+		);
 
 		Ok(())
 	}

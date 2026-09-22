@@ -1521,6 +1521,21 @@ parameter_types! {
 	pub const PezRewardsPalletIndex: u8 = 91;
 }
 
+/// The origin the Asset Hub's treasury origins accept, for benchmarks.
+///
+/// All three -- `ActivationOrigin`, `GovernmentSpendOrigin`, `IncentiveSpendOrigin` -- are
+/// `EnsureXcm<Equals<PeopleLocation>>`, and upstream's `try_successful_origin()` offers
+/// `Origin::Xcm(Here)`, which `Equals` refuses exactly as it should. Only this file knows the
+/// location, so this file says it. Measured 2026-09-22.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct PezTreasuryBenchmarkSetup;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_pez_treasury::BenchmarkSetup<RuntimeOrigin> for PezTreasuryBenchmarkSetup {
+	fn people_chain_origin() -> RuntimeOrigin {
+		pezpallet_xcm::Origin::Xcm(PeopleLocation::get()).into()
+	}
+}
+
 impl pezpallet_pez_treasury::Config for Runtime {
 	type Assets = Assets;
 	type WeightInfo = pezpallet_pez_treasury::weights::BizinikiwiWeight<Runtime>;
@@ -1541,6 +1556,8 @@ impl pezpallet_pez_treasury::Config for Runtime {
 	// score, the epoch rate, the parliamentary seat -- is computed on People; this chain
 	// holds the money and takes instruction.
 	type IncentiveSpendOrigin = EnsureXcm<Equals<PeopleLocation>>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = PezTreasuryBenchmarkSetup;
 	type XcmSender = xcm_config::XcmRouter;
 	type RewardsChainLocation = PeopleLocation;
 	type RewardsPalletIndex = PezRewardsPalletIndex;

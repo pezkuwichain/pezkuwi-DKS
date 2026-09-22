@@ -211,6 +211,17 @@ pub fn fail_sending(on: bool) {
 	SENDING_FAILS.with(|f| *f.borrow_mut() = on);
 }
 
+/// Matches this mock's `EnsureRoot` bindings. The runtimes answer differently, which is the
+/// whole reason the origin is theirs to say.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct MockBenchmarkSetup;
+#[cfg(feature = "runtime-benchmarks")]
+impl crate::BenchmarkSetup<RuntimeOrigin> for MockBenchmarkSetup {
+	fn people_chain_origin() -> RuntimeOrigin {
+		RuntimeOrigin::root()
+	}
+}
+
 impl pezpallet_pez_treasury::Config for Test {
 	type Assets = Assets;
 	type WeightInfo = weights::BizinikiwiWeight<Test>;
@@ -226,6 +237,8 @@ impl pezpallet_pez_treasury::Config for Test {
 	type GovernmentSpendOrigin = pezframe_system::EnsureRoot<Self::AccountId>;
 	// The rewards chain on the real runtimes; root stands in here for the same reason.
 	type IncentiveSpendOrigin = pezframe_system::EnsureRoot<Self::AccountId>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = MockBenchmarkSetup;
 	type XcmSender = RecordingXcmSender;
 	type RewardsChainLocation = RewardsChain;
 	type RewardsPalletIndex = RewardsPalletIndex;
