@@ -47,7 +47,12 @@ jobs:
   # cut because a ten-second query had nowhere to run. The blobs are built by `dks-runner-1`;
   # the permission to build them now comes from the same place.
   full-ci-gate:
-    runs-on: [self-hosted, dks-runner-1]
+    # The pool, not one box. This was pinned to `dks-runner-1` only because hosted runners had
+    # stopped being allocated -- it is two `curl` calls against the API and needs nothing a build
+    # needs, so any runner serves. `dks-runner-1`'s host was suspended for non-payment on
+    # 2026-09-22 and is not coming back (Serok: new machines instead), which would have left a
+    # ten-second query with nowhere to run and no testnet release possible.
+    runs-on: [self-hosted, bizinikiwi-build]
     timeout-minutes: 10
     steps:
       - name: Require a green full test suite for this commit
