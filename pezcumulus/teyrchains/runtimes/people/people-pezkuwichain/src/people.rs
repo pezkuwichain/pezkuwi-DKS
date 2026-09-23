@@ -714,10 +714,10 @@ impl pezpallet_staking_score::Config for Runtime {
 // from the elected parliament.
 //
 // An education committee, a technical committee and a treasury committee are named in places
-// that expect them and none of them has been constituted. Until they are, the origins that
-// stand in for them come from `welati` -- `EnsureSerok`, `EnsureParlementer`, `EnsureDiwan` --
-// and an origin whose name promises one of those bodies is naming something that does not
-// exist yet. Adding a body is a runtime upgrade, not a genesis matter.
+// that expect them and none of them has been constituted. Until they are, what stands in
+// for them is an office or a body that does exist -- the head of state through welati's
+// `EnsureSerok`, the court through `RootOrDiwan` -- and an origin whose name promises one of
+// those committees is naming something that does not exist yet. Adding a body is a runtime upgrade, not a genesis matter.
 // =============================================================================
 
 parameter_types! {
