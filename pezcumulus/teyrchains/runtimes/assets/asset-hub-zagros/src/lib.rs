@@ -1567,7 +1567,7 @@ impl pezpallet_pez_treasury::BenchmarkSetup<RuntimeOrigin> for PezTreasuryBenchm
 
 impl pezpallet_pez_treasury::Config for Runtime {
 	type Assets = Assets;
-	type WeightInfo = pezpallet_pez_treasury::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_pez_treasury::WeightInfo<Runtime>;
 	type PezAssetId = PezAssetId;
 	type TreasuryPalletId = PezTreasuryPalletId;
 	type IncentivePotId = PezIncentivePotId;
@@ -1602,7 +1602,7 @@ parameter_types! {
 }
 
 impl pezpallet_token_wrapper::Config for Runtime {
-	type WeightInfo = pezpallet_token_wrapper::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_token_wrapper::WeightInfo<Runtime>;
 	type Currency = Balances;
 	type AssetId = AssetIdForTrustBackedAssets;
 	type Assets = Assets;

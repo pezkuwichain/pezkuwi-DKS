@@ -472,7 +472,7 @@ impl pezpallet_perwerde::BenchmarkSetup<AccountId> for PerwerdeBenchmarkSetup {
 
 impl pezpallet_perwerde::Config for Runtime {
 	type AdminOrigin = PerwerdeAdminOrigin;
-	type WeightInfo = pezpallet_perwerde::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_perwerde::WeightInfo<Runtime>;
 	type MaxCourseNameLength = MaxCourseNameLength;
 	type MaxCourseDescLength = MaxCourseDescLength;
 	type MaxCourseLinkLength = MaxCourseLinkLength;
@@ -1044,7 +1044,7 @@ parameter_types! {
 }
 
 impl pezpallet_messaging::Config for Runtime {
-	type WeightInfo = pezpallet_messaging::weights::BizinikiwiWeight<Runtime>;
+	type WeightInfo = weights::pezpallet_messaging::WeightInfo<Runtime>;
 	type CitizenshipChecker = MessagingCitizenshipChecker;
 	type TrustScoreChecker = MessagingTrustScoreChecker;
 	type MinTrustScore = MessagingMinTrustScore;
