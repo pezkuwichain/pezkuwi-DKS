@@ -133,6 +133,15 @@ impl pezpallet_tiki::TikiProvider<AccountId> for MockTikiProvider {
 	}
 }
 
+/// Nothing to arrange: this mock's `EarnedRoles` accepts any account, which is precisely why
+/// the runtimes disagreed with it.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct MockBenchmarkSetup;
+#[cfg(feature = "runtime-benchmarks")]
+impl crate::BenchmarkSetup<AccountId> for MockBenchmarkSetup {
+	fn make_citizen(_who: &AccountId) {}
+}
+
 impl pezpallet_perwerde::Config for Test {
 	// We bind AdminOrigin to our own provider, which accepts only 0 as admin.
 	type AdminOrigin = EnsureSignedBy<TestAdminProvider, AccountId>;
@@ -147,6 +156,8 @@ impl pezpallet_perwerde::Config for Test {
 	type FraudOrigin = EnsureRoot<AccountId>;
 	// The mock has no tiki pallet wired for granting; the awarding itself is tested there.
 	type EarnedRoles = ();
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = MockBenchmarkSetup;
 	type TikiSource = MockTikiProvider;
 	type MinCourseDuration = MinCourseDuration;
 	type MaxCourseDuration = MaxCourseDuration;

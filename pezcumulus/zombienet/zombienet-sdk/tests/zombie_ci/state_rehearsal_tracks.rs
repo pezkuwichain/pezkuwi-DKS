@@ -328,8 +328,8 @@ async fn every_governance_track_carries_a_question() -> Result<(), anyhow::Error
 					));
 				}
 				log::info!(
-					"referendum {index} on track {id} (`{name}`) carried before every voter had \
-					 answered; it now reads {after}"
+					"referendum {index} on track {id} (`{name}`) reached a decision before every \
+					 voter had answered; it now reads {after}"
 				);
 				break;
 			}
@@ -338,10 +338,24 @@ async fn every_governance_track_carries_a_question() -> Result<(), anyhow::Error
 		// Deciding or confirming is the proof the lane works. Waiting for enactment as well
 		// would measure the enactment period rather than the track, and the tracks differ in
 		// that period by two orders of magnitude.
+		// A track has carried a question once the chain has *decided* it, whichever way.
+		//
+		// `Rejected` counts, and that is not a loosening -- it is what this stage already said it
+		// measured: *"deciding or confirming is the proof the lane works"*. The outcome belongs to
+		// the tally, and the tally here is three founding citizens against a curve written for a
+		// national electorate. Run 23 measured exactly that: `welati_election` took two ayes, went
+		// to deciding at block 63 and was `Rejected` at 77 -- the lane carried the question from
+		// submission to decision, which is the thing that would be broken if the track were
+		// misconfigured. Reading only `Approved` left that track reported as unreached while the
+		// other four passed.
 		let mut moved = false;
 		for _ in 0..(TRACK_SETTLE_SECS / 2) {
 			let s = referendum_state(&people, index).await?;
-			if s.contains("Confirming") || s.contains("Approved") || s.contains("deciding") {
+			if s.contains("Confirming")
+				|| s.contains("Approved")
+				|| s.contains("Rejected")
+				|| s.contains("deciding")
+			{
 				moved = true;
 				break;
 			}

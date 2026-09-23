@@ -117,6 +117,16 @@ use xcm::latest::prelude::*;
 /// pins it so this constant cannot go stale unnoticed.
 const NOTE_INCENTIVE_FUNDING_CALL_INDEX: u8 = 2;
 
+/// The origin a benchmark needs, supplied by whoever configured the pallet.
+///
+/// One method rather than three: all three of this pallet's privileged origins accept the same
+/// caller -- the rewards chain -- so one answer serves. Measured 2026-09-22.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkSetup<RuntimeOrigin> {
+	/// An origin `ActivationOrigin`, `GovernmentSpendOrigin` and `IncentiveSpendOrigin` accept.
+	fn people_chain_origin() -> RuntimeOrigin;
+}
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
@@ -341,6 +351,16 @@ pub mod pezpallet {
 		/// elected Parliament -- is on the People chain. This pallet holds the money and
 		/// takes instruction; it does not decide who has earned it.
 		type IncentiveSpendOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+
+		/// Origins a benchmark can actually use. Benchmarks only.
+		///
+		/// Not `try_successful_origin()`: the three origins above are bound to
+		/// `EnsureXcm<Equals<PeopleLocation>>` on the Asset Hub, and `EnsureXcm`'s
+		/// implementation of that method answers `Origin::Xcm(Here)` -- which `Equals` refuses,
+		/// exactly as it should. The mock binds all three to `EnsureRoot`, so the gap only
+		/// exists where the real runtime is, which is where weights are taken.
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: super::BenchmarkSetup<Self::RuntimeOrigin>;
 
 		/// Sends the funding report to the chain that does the reward arithmetic.
 		type XcmSender: SendXcm;

@@ -52,6 +52,28 @@ NC='\033[0m'
 # ===== VPS Bilgileri (vps.json'dan) =====
 
 # Bootnode IP
+# ---------------------------------------------------------------------------
+# HARD STOP: this script's fleet no longer exists.
+#
+# Measured 2026-09-22: of the sixteen IPs in `VPS_VALIDATORS` below, **fourteen**
+# are absent from the current inventory (`res/vps.json`). Contabo reclaimed the
+# suspended machines and reassigned their addresses -- `62.146.235.186`, listed
+# here as VPS2 with validators 5 6 7 21, now answers on 443 with a Let's Encrypt
+# certificate for `test.btube.me`, a domain that is not ours. Validators 5 and 6
+# run on NEW-8 today, 7 and 21 on NEW-9.
+#
+# This script does not merely fail against those hosts: it injects session keys.
+# Run as it stands, it would try to write validator keys onto machines belonging
+# to other people. That is why the stop is here and not a comment.
+#
+# To use it again, rewrite `VPS_VALIDATORS` against the live fleet and delete
+# this block in the same commit.
+# ---------------------------------------------------------------------------
+echo "deploy-mainnet.sh: refusing to run -- the IP map is from a fleet that no longer exists." >&2
+echo "  Fourteen of its sixteen addresses are not ours any more (measured 2026-09-22)." >&2
+echo "  Rewrite VPS_VALIDATORS against res/vps.json first; see the block above." >&2
+exit 2
+
 BOOTNODE_IP="217.77.6.126"
 
 # Tüm VPS IP'leri (validator çalıştıranlar)
