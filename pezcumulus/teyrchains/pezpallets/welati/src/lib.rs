@@ -1794,8 +1794,12 @@ pub mod pezpallet {
 		///
 		/// Emptied by death, resignation, the loss of citizenship, an impeachment, or a term
 		/// running past its grace. Whichever it was, the answer is the same: hold the
-		/// election. Bodies rather than single offices -- Parliament, the Diwan -- are not
-		/// checked here; losing one member of two hundred is not a vacancy in the office.
+		/// election. For the two bodies the test is narrower: Parliament is vacant only when
+		/// its roll is empty, and the Diwan only when its elected half is short of its seats;
+		/// losing one member of two hundred is not a vacancy in the office.
+		///
+		/// The match is exhaustive on purpose. A new kind of election must decide here what
+		/// "vacant" means for it, rather than inherit a silent `false` and never be called.
 		fn office_is_vacant(election_type: &ElectionType) -> bool {
 			match election_type {
 				ElectionType::Presidential => {
@@ -1834,7 +1838,6 @@ pub mod pezpallet {
 						.count() as u32;
 					elected < T::DiwanElectedSeats::get()
 				},
-				_ => false,
 			}
 		}
 
