@@ -42,6 +42,8 @@ BASE = REPO / "pezcumulus/teyrchains/runtimes"
 RECORDED = {
     ("asset-hub", "barrier", "zagros", "Equals<SecretarySalaryLocation>"):
         "The Secretary lives on the Collectives chain, which only Zagros runs.",
+    ("asset-hub", "barrier", "zagros", "Equals<AmbassadorSalaryLocation>"):
+        "The Ambassador programme lives on the Collectives chain, which only Zagros runs.",
     ("bridge-hub", "barrier", "zagros", "Equals<SnowbridgeFrontendLocation>"):
         "Snowbridge's frontend pallet sits on the Zagros side of the bridge.",
     ("bridge-hub", "barrier", "zagros", "Equals<GovernanceLocation>"):
@@ -59,12 +61,14 @@ RECORDED = {
         "The same chain as the twin's AssetHubPezkuwichainLocation.",
     ("coretime", "barrier", "zagros", "Equals<GovernanceLocation>"):
         "Zagros governance addresses coretime directly; on mainnet it arrives as Parent.",
-    # The same body again, in the fee list rather than the barrier. Recorded twice on
+    # The same bodies again, in the fee list rather than the barrier. Recorded twice on
     # purpose: the two lists are separate decisions and a body can plausibly be let through
     # without being waived, or waived without being let through. Sharing one record would hide
     # exactly the mismatch that broke the Zagros bridge hub.
     ("asset-hub", "waived", "zagros", "Equals<SecretarySalaryLocation>"):
         "The Secretary lives on the Collectives chain, which only Zagros runs.",
+    ("asset-hub", "waived", "zagros", "Equals<AmbassadorSalaryLocation>"):
+        "The Ambassador programme lives on the Collectives chain, which only Zagros runs.",
 }
 
 MARKER = "AllowExplicitUnpaidExecutionFrom<"
