@@ -43,7 +43,6 @@ decl_test_teyrchains! {
 		pallets = {
 			PezkuwiXcm: collectives_zagros_runtime::PezkuwiXcm,
 			Balances: collectives_zagros_runtime::Balances,
-			FellowshipTreasury: collectives_zagros_runtime::FellowshipTreasury,
 			AssetRate: collectives_zagros_runtime::AssetRate,
 		}
 	},

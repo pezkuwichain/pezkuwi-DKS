@@ -263,7 +263,8 @@ def inv_twin(p, kind):
     """
     # Upstream ships one variant of these and it is the test network's. Glutton exists to
     # eat block space in load tests and has no business on a live chain; the collectives
-    # chain is where the fellowship sits while the network is a testnet. Measured against
+    # chain carries the Ambassador and Secretary programs while the network is a testnet
+    # (the Fellowship it was built for is retired). Measured against
     # `polkadot-stable2606-1`, which carries `glutton-westend` and `collectives-westend` and
     # no other variant of either. One variant here too, on our testnet, is the same shape.
     TESTNET_ONLY = {"collectives", "glutton"}

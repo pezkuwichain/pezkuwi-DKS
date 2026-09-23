@@ -30,10 +30,7 @@ mod imports {
 			genesis::ED as ASSET_HUB_ZAGROS_ED, AssetHubZagrosParaPallet as AssetHubZagrosPallet,
 		},
 		collectives_zagros_emulated_chain::{
-			collectives_zagros_runtime::{
-				fellowship as collectives_fellowship,
-				xcm_config::XcmConfig as CollectivesZagrosXcmConfig,
-			},
+			collectives_zagros_runtime::xcm_config::XcmConfig as CollectivesZagrosXcmConfig,
 			genesis::ED as COLLECTIVES_ZAGROS_ED,
 			CollectivesZagrosParaPallet as CollectivesZagrosPallet,
 		},

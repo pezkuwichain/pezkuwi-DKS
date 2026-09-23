@@ -113,20 +113,12 @@ parameter_types! {
 	pub const GovernanceLocation: Location = Location::parent();
 	pub StakingPot: AccountId = CollatorSelection::account_id();
 	pub TreasuryAccount: AccountId = TREASURY_PALLET_ID.into_account_truncating();
-	/// The Fellowship's salary and treasury pallets on the Collectives chain. Both dispatch
-	/// unpaid XCM to this chain to settle their spends, so both need free execution here.
+	/// The Secretary's salary pallet on the Collectives chain, which pays in USDT held here and
+	/// so dispatches unpaid XCM to this chain to settle each payout. Without this entry the
+	/// barrier rejects every payout with `Barrier` before the message is read.
 	///
 	/// This entry is local to this runtime rather than mirrored from the mainnet Asset Hub:
-	/// that ecosystem runs no Collectives chain, so it has nothing to admit. Without it the
-	/// barrier rejects every Fellowship payout with `Barrier` before the message is read.
-	pub FellowshipSalaryLocation: Location =
-		(Parent, Teyrchain(COLLECTIVES_PARA_ID), PalletInstance(FELLOWSHIP_SALARY_PALLET_INDEX)).into();
-	pub FellowshipTreasuryLocation: Location =
-		(Parent, Teyrchain(COLLECTIVES_PARA_ID), PalletInstance(FELLOWSHIP_TREASURY_PALLET_INDEX)).into();
-	/// The Secretary's salary pallet on the Collectives chain, which pays in USDT held here and
-	/// so dispatches the same unpaid XCM the Fellowship salary does. It was left out when the
-	/// Fellowship entries were added, which left the Secretary collective fully configured —
-	/// ranks, budget, paymaster — yet unable to pay anyone: the barrier rejected every payout.
+	/// that ecosystem runs no Collectives chain, so it has nothing to admit.
 	pub SecretarySalaryLocation: Location =
 		(Parent, Teyrchain(COLLECTIVES_PARA_ID), PalletInstance(SECRETARY_SALARY_PALLET_INDEX)).into();
 }
@@ -134,8 +126,6 @@ parameter_types! {
 /// Para id of the Collectives chain in this ecosystem, and the indices of the pallets there that
 /// settle their spends on this chain.
 const COLLECTIVES_PARA_ID: u32 = 1001;
-const FELLOWSHIP_SALARY_PALLET_INDEX: u8 = 64;
-const FELLOWSHIP_TREASURY_PALLET_INDEX: u8 = 65;
 const SECRETARY_SALARY_PALLET_INDEX: u8 = 91;
 
 /// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
@@ -355,8 +345,6 @@ pub type Barrier = TrailingSetTopicAsId<
 						// sends messages to this chain. Should that ever change back to `PayOverXcm`, the
 						// sending body has to be waived again or every payment is charged a fee it cannot pay
 						// and is dropped without an error.
-						Equals<FellowshipSalaryLocation>,
-						Equals<FellowshipTreasuryLocation>,
 						Equals<SecretarySalaryLocation>,
 						// The register decides and the treasury pays, so the chain holding the
 						// register has to be able to reach the one holding the money.
@@ -394,8 +382,6 @@ pub type WaivedLocations = (
 	// this the delivery fee is charged to the paying pallet's sovereign account here, which holds
 	// no native balance, and the payout fails with `FundsUnavailable`. Making each collective
 	// keep a balance on this chain just to acknowledge its own spends would be the wrong fix.
-	Equals<FellowshipSalaryLocation>,
-	Equals<FellowshipTreasuryLocation>,
 	Equals<SecretarySalaryLocation>,
 );
 

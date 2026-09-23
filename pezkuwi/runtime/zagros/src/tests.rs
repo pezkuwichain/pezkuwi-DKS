@@ -64,6 +64,19 @@ fn retired_indices_stay_retired() {
 }
 
 #[test]
+fn retired_custom_origins_stay_retired() {
+	// A custom origin is stored inside every referendum that runs on it. 2 held
+	// `FellowshipAdmin` and 17 to 29 the Fellowship's ranks until the Fellowship was retired;
+	// 14 to 16 held the register's three before they moved to the People chain. Handing any of
+	// these numbers to a new origin would make a stored referendum decode as that origin.
+	use codec::Decode;
+	use governance::pezpallet_custom_origins::Origin;
+	for index in [2u8, 14, 15, 16].into_iter().chain(17..=29) {
+		assert!(Origin::decode(&mut &[index][..]).is_err(), "origin {index} is retired");
+	}
+}
+
+#[test]
 fn location_conversion_works() {
 	// the purpose of hardcoded values is to catch an unintended location conversion logic change.
 	struct TestCase {
@@ -195,7 +208,6 @@ fn governance_production_periods_match_spec() {
 		(1, "whitelisted_caller", 30 * MINUTES, 28 * DAYS, 10 * MINUTES, 10 * MINUTES),
 		(10, "staking_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(12, "lease_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
-		(13, "fellowship_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(14, "general_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(15, "auction_admin", 2 * HOURS, 14 * DAYS, 3 * HOURS, 10 * MINUTES),
 		(20, "referendum_canceller", 2 * HOURS, 7 * DAYS, 3 * HOURS, 10 * MINUTES),
@@ -269,7 +281,6 @@ fn root_is_not_reachable_from_this_chains_ballot() {
 	for origin in [
 		Origin::StakingAdmin,
 		Origin::LeaseAdmin,
-		Origin::FellowshipAdmin,
 		Origin::GeneralAdmin,
 		Origin::AuctionAdmin,
 		Origin::ReferendumCanceller,
@@ -338,7 +349,6 @@ fn governance_track_for_origin_mapping() {
 		(Origin::WhitelistedCaller, 1),
 		(Origin::StakingAdmin, 10),
 		(Origin::LeaseAdmin, 12),
-		(Origin::FellowshipAdmin, 13),
 		(Origin::GeneralAdmin, 14),
 		(Origin::AuctionAdmin, 15),
 		(Origin::ReferendumCanceller, 20),

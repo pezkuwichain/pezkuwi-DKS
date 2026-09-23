@@ -238,7 +238,7 @@ Asset Hub excludes its own escrow the same way, for the same reason: no key can 
 counting a tenth of the supply that nobody can move would quietly raise the bar on every
 referendum held there.
 
-Eight tracks exist for network matters: whitelisted upgrades, staking administration, lease
+Seven tracks exist for network matters: whitelisted upgrades, staking administration, lease
 and auction administration, general administration, and the two cancellation tracks. There is
 no track for root, because root is not the relay's to give.
 

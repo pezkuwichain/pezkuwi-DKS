@@ -31,14 +31,12 @@ emulated-integration-tests-common = { workspace = true }
 
 # Local
 asset-hub-zagros-runtime = { workspace = true }
-collectives-zagros-runtime = { workspace = true }
 zagros-runtime = { workspace = true }
 zagros-system-emulated-network = { workspace = true }
 
 [features]
 runtime-benchmarks = [
 	"asset-hub-zagros-runtime/runtime-benchmarks",
-	"collectives-zagros-runtime/runtime-benchmarks",
 	"emulated-integration-tests-common/runtime-benchmarks",
 	"pezframe-support/runtime-benchmarks",
 	"pezframe-system/runtime-benchmarks",
@@ -57,7 +55,6 @@ std = [
 ]
 try-runtime = [
 	"asset-hub-zagros-runtime/try-runtime",
-	"collectives-zagros-runtime/try-runtime",
 	"emulated-integration-tests-common/try-runtime",
 	"pezframe-support/try-runtime",
 	"pezframe-system/try-runtime",

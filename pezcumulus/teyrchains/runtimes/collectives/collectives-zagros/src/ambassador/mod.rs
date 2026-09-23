@@ -32,7 +32,7 @@ pub mod origins;
 mod tracks;
 
 use super::*;
-use crate::xcm_config::{FellowshipAdminBodyId, LocationToAccountId, WndAssetHub};
+use crate::xcm_config::{LocationToAccountId, WndAssetHub};
 pub use origins::pezpallet_origins as pezpallet_ambassador_origins;
 use origins::pezpallet_origins::{
 	EnsureAmbassadorsVoice, EnsureAmbassadorsVoiceFrom, EnsureHeadAmbassadorsVoice, Origin,
@@ -69,25 +69,19 @@ pub type AmbassadorCollectiveInstance = pezpallet_ranked_collective::Instance2;
 
 /// Demotion is by any of:
 /// - Root can demote arbitrarily.
-/// - the FellowshipAdmin origin (i.e. token holder referendum);
 /// - a senior members vote by the rank two above the current rank.
+///
+/// The relay's `FellowshipAdmin` voice was a third arm; it went with the Fellowship.
 pub type DemoteOrigin = EitherOf<
 	pezframe_system::EnsureRootWithSuccess<AccountId, ConstU16<65535>>,
-	EitherOf<
-		MapSuccess<
-			EnsureXcm<IsVoiceOfBody<GovernanceLocation, FellowshipAdminBodyId>>,
-			Replace<ConstU16<{ ranks::MASTER_AMBASSADOR_TIER_9 }>>,
-		>,
-		TryMapSuccess<
-			EnsureAmbassadorsVoiceFrom<ConstU16<{ ranks::SENIOR_AMBASSADOR_TIER_3 }>>,
-			CheckedReduceBy<ConstU16<2>>,
-		>,
+	TryMapSuccess<
+		EnsureAmbassadorsVoiceFrom<ConstU16<{ ranks::SENIOR_AMBASSADOR_TIER_3 }>>,
+		CheckedReduceBy<ConstU16<2>>,
 	>,
 >;
 
 /// Promotion and approval (rank-retention) is by any of:
 /// - Root can promote arbitrarily.
-/// - the FellowshipAdmin origin (i.e. token holder referendum);
 /// - a senior members vote by the rank two above the new/current rank.
 /// - a member of rank `5` or above can add a candidate (rank `0`).
 pub type PromoteOrigin = EitherOf<
@@ -102,10 +96,8 @@ pub type PromoteOrigin = EitherOf<
 	>,
 >;
 
-/// Exchange is by any of:
-/// - Root can exchange arbitrarily.
-/// - the Fellows origin
-pub type ExchangeOrigin = EitherOf<EnsureRootWithSuccess<AccountId, ConstU16<65535>>, Fellows>;
+/// Exchange is by Root alone. The Fellows were the other arm and went with the Fellowship.
+pub type ExchangeOrigin = EnsureRootWithSuccess<AccountId, ConstU16<65535>>;
 
 impl pezpallet_ranked_collective::Config<AmbassadorCollectiveInstance> for Runtime {
 	type WeightInfo =
@@ -199,32 +191,21 @@ impl pezpallet_core_fellowship::Config<AmbassadorCoreInstance> for Runtime {
 	type Balance = Balance;
 	// Parameters are set by any of:
 	// - Root;
-	// - the FellowshipAdmin origin (i.e. token holder referendum);
 	// - a vote among all Head Ambassadors.
-	type ParamsOrigin = EitherOfDiverse<
-		EnsureRoot<AccountId>,
-		EitherOfDiverse<
-			EnsureXcm<IsVoiceOfBody<GovernanceLocation, FellowshipAdminBodyId>>,
-			EnsureHeadAmbassadorsVoice,
-		>,
-	>;
+	type ParamsOrigin = EitherOfDiverse<EnsureRoot<AccountId>, EnsureHeadAmbassadorsVoice>;
 	// Induction (creating a candidate) is by any of:
 	// - Root;
-	// - the FellowshipAdmin origin (i.e. token holder referendum);
 	// - a single Head Ambassador;
 	// - a vote among all senior members.
 	type InductOrigin = EitherOfDiverse<
 		EnsureRoot<AccountId>,
 		EitherOfDiverse<
-			EnsureXcm<IsVoiceOfBody<GovernanceLocation, FellowshipAdminBodyId>>,
-			EitherOfDiverse<
-				pezpallet_ranked_collective::EnsureMember<
-					Runtime,
-					AmbassadorCollectiveInstance,
-					{ ranks::HEAD_AMBASSADOR_TIER_5 },
-				>,
-				EnsureAmbassadorsVoiceFrom<ConstU16<{ ranks::SENIOR_AMBASSADOR_TIER_3 }>>,
+			pezpallet_ranked_collective::EnsureMember<
+				Runtime,
+				AmbassadorCollectiveInstance,
+				{ ranks::HEAD_AMBASSADOR_TIER_5 },
 			>,
+			EnsureAmbassadorsVoiceFrom<ConstU16<{ ranks::SENIOR_AMBASSADOR_TIER_3 }>>,
 		>,
 	>;
 	type ApproveOrigin = PromoteOrigin;

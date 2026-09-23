@@ -3679,7 +3679,6 @@ dependencies = [
  "pezpallet-timestamp",
  "pezpallet-transaction-payment",
  "pezpallet-transaction-payment-rpc-runtime-api",
- "pezpallet-treasury",
  "pezpallet-utility",
  "pezpallet-xcm",
  "pezpallet-xcm-benchmarks",
@@ -6429,7 +6428,6 @@ name = "governance-zagros-integration-tests"
 version = "0.0.0"
 dependencies = [
  "asset-hub-zagros-runtime",
- "collectives-zagros-runtime",
  "emulated-integration-tests-common",
  "parity-scale-codec",
  "pezframe-support",
