@@ -5369,3 +5369,125 @@ fn a_refused_presale_is_never_paid() {
 		assert_eq!(PresaleSentTotal::<Test>::get(), 0);
 	});
 }
+
+mod a_silent_office {
+	use super::*;
+	use crate::mock::holder_of;
+	use pezpallet_identity_kyc::types::KycLevel;
+
+	const PRESIDENT: u64 = 2;
+	const SPEAKER: u64 = 3;
+
+	fn period() -> u64 {
+		<Test as crate::Config>::OfficeInactivityPeriod::get()
+	}
+
+	fn seat_president(who: u64) {
+		System::set_block_number(1);
+		assert_ok!(Welati::seat_unique_tiki(&who, Tiki::Serok));
+	}
+
+	#[test]
+	fn a_president_who_still_signs_cannot_be_removed() {
+		ExtBuilder::default().build().execute_with(|| {
+			seat_president(PRESIDENT);
+
+			// One block short of the period: the office stays, however idle it looks.
+			System::set_block_number(1 + period() - 1);
+			assert_noop!(
+				Welati::vacate_silent_office(RuntimeOrigin::signed(99), Tiki::Serok),
+				Error::<Test>::OfficeHolderIsStillReachable
+			);
+
+			// A check-in resets the clock, so the office survives the period it was about to fail.
+			assert_ok!(Welati::office_check_in(RuntimeOrigin::signed(PRESIDENT), Tiki::Serok));
+			System::set_block_number(1 + period() + 10);
+			assert_noop!(
+				Welati::vacate_silent_office(RuntimeOrigin::signed(99), Tiki::Serok),
+				Error::<Test>::OfficeHolderIsStillReachable
+			);
+			assert_eq!(holder_of(Tiki::Serok), Some(PRESIDENT));
+		});
+	}
+
+	#[test]
+	fn a_silent_president_is_removed_by_anyone_and_the_speaker_acts() {
+		ExtBuilder::default().build().execute_with(|| {
+			seat_president(PRESIDENT);
+			assert_ok!(Welati::seat_unique_tiki(&SPEAKER, Tiki::SerokiMeclise));
+			assert_eq!(Welati::acting_president(), Some(PRESIDENT));
+
+			// Never checked in, so the clock runs from the day the office was filled.
+			System::set_block_number(1 + period());
+			// Permissionless: 99 holds no office and needs none.
+			assert_ok!(Welati::vacate_silent_office(RuntimeOrigin::signed(99), Tiki::Serok));
+
+			assert_eq!(holder_of(Tiki::Serok), None);
+			// The vacancy rules that already existed now reach a silent office: the Speaker
+			// acts, and the empty office is what keeps the scheduler calling the by-election.
+			assert_eq!(Welati::acting_president(), Some(SPEAKER));
+			assert!(crate::OfficeLastActive::<Test>::get(Tiki::Serok).is_none());
+		});
+	}
+
+	#[test]
+	fn only_the_holder_checks_in_and_only_two_offices_qualify() {
+		ExtBuilder::default().build().execute_with(|| {
+			// An empty office has nobody to check in or to remove.
+			assert_noop!(
+				Welati::vacate_silent_office(RuntimeOrigin::signed(99), Tiki::Serok),
+				Error::<Test>::OfficeIsEmpty
+			);
+
+			seat_president(PRESIDENT);
+			assert_noop!(
+				Welati::office_check_in(RuntimeOrigin::signed(9), Tiki::Serok),
+				Error::<Test>::NotTheOfficeHolder
+			);
+
+			// Appointed offices are refilled by whoever appointed them, and the court has its
+			// own rule; neither can be emptied this way.
+			for office in [Tiki::SerokWeziran, Tiki::EndameDiwane, Tiki::Parlementer] {
+				assert_noop!(
+					Welati::vacate_silent_office(RuntimeOrigin::signed(99), office),
+					Error::<Test>::NotASilenceVacatableOffice
+				);
+				assert_noop!(
+					Welati::office_check_in(RuntimeOrigin::signed(PRESIDENT), office),
+					Error::<Test>::NotASilenceVacatableOffice
+				);
+			}
+		});
+	}
+
+	#[test]
+	fn a_reissued_president_keeps_the_last_check_in() {
+		const LOST: u64 = 20;
+		const NEW: u64 = 21;
+		ExtBuilder::default().build().execute_with(|| {
+			make_citizen(LOST);
+			let hash = pezsp_core::H256::repeat_byte(9);
+			pezpallet_identity_kyc::KycStatuses::<Test>::insert(LOST, KycLevel::Approved);
+			pezpallet_identity_kyc::IdentityHashes::<Test>::insert(LOST, hash);
+			pezpallet_identity_kyc::IdentityHashToAccount::<Test>::insert(hash, LOST);
+			pezpallet_identity_kyc::CitizenSince::<Test>::insert(LOST, 1);
+			seat_president(LOST);
+
+			// The president checks in late in the period, then loses the key and the court
+			// moves the citizenship.
+			System::set_block_number(period() - 10);
+			assert_ok!(Welati::office_check_in(RuntimeOrigin::signed(LOST), Tiki::Serok));
+			assert_ok!(Welati::reissue_citizenship(RuntimeOrigin::root(), LOST, NEW));
+			assert_eq!(holder_of(Tiki::Serok), Some(NEW));
+
+			// Past a period from the seating, but not from the check-in: the restored president
+			// is still reachable. Had the check-in stayed under the old account, the reader
+			// would have fallen back to the start of the term and emptied the office.
+			System::set_block_number(1 + period() + 5);
+			assert_noop!(
+				Welati::vacate_silent_office(RuntimeOrigin::signed(99), Tiki::Serok),
+				Error::<Test>::OfficeHolderIsStillReachable
+			);
+		});
+	}
+}

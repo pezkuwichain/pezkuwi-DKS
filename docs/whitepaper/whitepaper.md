@@ -359,6 +359,13 @@ appointed vacancy the moment one opens, but the elected six are the house's to s
 meantime the Speaker acts for an absent President, which is the ordinary rule: the presiding
 officer of the elected house, chosen by that house, and already in the country's confidence.
 
+The two elected offices one person holds fall empty on silence exactly as the court's seats do
+(§5.4). A President or a Speaker who has died or lost a key would otherwise hold the office to
+the end of the term — four years in which the Speaker never acts, because nothing ever reads
+the presidency as empty. So each owes one signature every hundred and eighty days; it decides
+nothing and is not a vote, and anyone may declare the office empty once it is missed. The
+by-election and the acting presidency above then follow on their own.
+
 ### 5.4 Dîwan — the Constitutional Court
 
 Eleven seats, nine years — the longest term in the system, and longer than any body that

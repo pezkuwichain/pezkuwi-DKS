@@ -1357,6 +1357,10 @@ parameter_types! {
 	pub const WelatiGeographicMarkReferrals: u32 = 25;
 
 	pub const WelatiCourtInactivityPeriod: BlockNumber = 180 * DAYS;
+	/// The President's and the Speaker's silence rule. The court's period on purpose -- a head
+	/// of state out of reach for longer than a judge is not a smaller problem -- but its own
+	/// constant, so the two can be tuned apart.
+	pub const WelatiOfficeInactivityPeriod: BlockNumber = 180 * DAYS;
 
 	/// How many terms in a row one person may hold the same elected office.
 	///
@@ -1596,6 +1600,7 @@ impl pezpallet_welati::Config for Runtime {
 	type MaxEndorsers = WelatiMaxEndorsers;
 	type TermLength = WelatiTermLength;
 	type CourtInactivityPeriod = WelatiCourtInactivityPeriod;
+	type OfficeInactivityPeriod = WelatiOfficeInactivityPeriod;
 	// The register authority, and nothing weaker: this is the only call that hands one
 	// account's offices to another.
 	type ReissueOrigin = crate::RootOrDiwan;
