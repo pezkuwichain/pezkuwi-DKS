@@ -13,7 +13,7 @@
 
 use super::{Pezpallet as Perwerde, *};
 use pezframe_benchmarking::v2::*;
-use pezframe_support::{assert_ok, pezpallet_prelude::Get, BoundedVec};
+use pezframe_support::{assert_ok, pezpallet_prelude::Get, traits::EnsureOrigin, BoundedVec};
 use pezframe_system::RawOrigin;
 use pezsp_runtime::traits::Saturating;
 
@@ -27,8 +27,14 @@ fn bounded<L: Get<u32>>(s: &[u8]) -> BoundedVec<u8, L> {
 /// Open a course owned by `owner` and return its id.
 fn open_course<T: Config>(owner: &T::AccountId) -> u32 {
 	let course_id = NextCourseId::<T>::get();
+	// The configured origin, not an assumed one. `create_course` takes `AdminOrigin`, which the
+	// mock binds to `EnsureSignedBy` -- Root is refused there and accepted by the runtime, so a
+	// hardcoded `RawOrigin::Root` made this whole suite unrunnable in-crate while passing where
+	// it mattered least. Measured 2026-09-22.
+	let admin = T::AdminOrigin::try_successful_origin()
+		.expect("AdminOrigin must be satisfiable for benchmarks; qed");
 	assert_ok!(Perwerde::<T>::create_course(
-		RawOrigin::Root.into(),
+		admin,
 		owner.clone(),
 		bounded(b"Benchmark Course"),
 		bounded(b"Description"),
@@ -61,10 +67,12 @@ fn make_teachers<T: Config>(count: u32) -> Vec<T::AccountId> {
 	let mut teachers = Vec::new();
 	for i in 0..count {
 		let teacher: T::AccountId = account("mamoste", i, 0);
-		assert_ok!(Perwerde::<T>::appoint_honorary_mamoste(
-			RawOrigin::Root.into(),
-			teacher.clone()
-		));
+		// A citizen first: the appointment grants a tiki, and the tiki pallet refuses an
+		// account that holds no citizen NFT.
+		T::BenchmarkHelper::make_citizen(&teacher);
+		let minister = T::EducationMinisterOrigin::try_successful_origin()
+			.expect("EducationMinisterOrigin must be satisfiable for benchmarks; qed");
+		assert_ok!(Perwerde::<T>::appoint_honorary_mamoste(minister, teacher.clone()));
 		teachers.push(teacher);
 	}
 	teachers
@@ -86,9 +94,12 @@ mod benchmarks {
 	fn create_course() {
 		let owner: T::AccountId = whitelisted_caller();
 
+		let admin = T::AdminOrigin::try_successful_origin()
+			.expect("AdminOrigin must be satisfiable for benchmarks; qed");
+
 		#[extrinsic_call]
 		_(
-			RawOrigin::Root,
+			admin as T::RuntimeOrigin,
 			owner.clone(),
 			bounded::<T::MaxCourseNameLength>(b"Benchmark Course"),
 			bounded::<T::MaxCourseDescLength>(b"Description"),
@@ -189,9 +200,13 @@ mod benchmarks {
 	#[benchmark]
 	fn appoint_honorary_mamoste() {
 		let teacher: T::AccountId = whitelisted_caller();
+		T::BenchmarkHelper::make_citizen(&teacher);
+
+		let minister = T::EducationMinisterOrigin::try_successful_origin()
+			.expect("EducationMinisterOrigin must be satisfiable for benchmarks; qed");
 
 		#[extrinsic_call]
-		_(RawOrigin::Root, teacher.clone());
+		_(minister as T::RuntimeOrigin, teacher.clone());
 
 		assert!(HonoraryMamoste::<T>::contains_key(&teacher));
 	}
@@ -201,8 +216,11 @@ mod benchmarks {
 		let owner: T::AccountId = account("owner", 0, 0);
 		let course_id = open_course::<T>(&owner);
 
+		let minister = T::EducationMinisterOrigin::try_successful_origin()
+			.expect("EducationMinisterOrigin must be satisfiable for benchmarks; qed");
+
 		#[extrinsic_call]
-		_(RawOrigin::Root, course_id);
+		_(minister as T::RuntimeOrigin, course_id);
 
 		assert!(CoursesUnderReview::<T>::contains_key(course_id));
 	}
@@ -221,10 +239,15 @@ mod benchmarks {
 		for teacher in make_teachers::<T>(T::RatificationsRequired::get()) {
 			assert_ok!(Perwerde::<T>::ratify_results(RawOrigin::Signed(teacher).into(), course_id));
 		}
-		assert_ok!(Perwerde::<T>::report_course_fraud(RawOrigin::Root.into(), course_id));
+		let minister = T::EducationMinisterOrigin::try_successful_origin()
+			.expect("EducationMinisterOrigin must be satisfiable for benchmarks; qed");
+		assert_ok!(Perwerde::<T>::report_course_fraud(minister, course_id));
+
+		let fraud = T::FraudOrigin::try_successful_origin()
+			.expect("FraudOrigin must be satisfiable for benchmarks; qed");
 
 		#[extrinsic_call]
-		_(RawOrigin::Root, course_id);
+		_(fraud as T::RuntimeOrigin, course_id);
 
 		assert_eq!(Courses::<T>::get(course_id).unwrap().status, CourseStatus::Annulled);
 	}

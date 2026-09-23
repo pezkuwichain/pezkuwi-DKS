@@ -454,6 +454,22 @@ impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for PerwerdeAdminOrig
 	}
 }
 
+/// Citizenship, for `perwerde`'s benchmarks.
+///
+/// Appointing an honorary Mamoste grants a tiki, and the tiki pallet refuses an account with no
+/// citizen NFT. Only a runtime that actually wires the two together can arrange that, so it does
+/// it here. Measured 2026-09-22.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct PerwerdeBenchmarkSetup;
+#[cfg(feature = "runtime-benchmarks")]
+impl pezpallet_perwerde::BenchmarkSetup<AccountId> for PerwerdeBenchmarkSetup {
+	fn make_citizen(who: &AccountId) {
+		if pezpallet_tiki::CitizenNft::<Runtime>::get(who).is_none() {
+			let _ = pezpallet_tiki::Pezpallet::<Runtime>::mint_citizen_nft_for_user(who);
+		}
+	}
+}
+
 impl pezpallet_perwerde::Config for Runtime {
 	type AdminOrigin = PerwerdeAdminOrigin;
 	type WeightInfo = pezpallet_perwerde::weights::BizinikiwiWeight<Runtime>;
@@ -471,6 +487,8 @@ impl pezpallet_perwerde::Config for Runtime {
 	>;
 	type FraudOrigin = crate::RootOrDiwan;
 	type EarnedRoles = Tiki;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = PerwerdeBenchmarkSetup;
 	type TikiSource = Tiki;
 	type MinCourseDuration = MinCourseDuration;
 	type MaxCourseDuration = MaxCourseDuration;

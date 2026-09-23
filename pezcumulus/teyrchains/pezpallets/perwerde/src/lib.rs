@@ -117,6 +117,13 @@ mod tests;
 
 pub use weights::WeightInfo;
 
+/// What a benchmark has to arrange before this pallet's appointments are accepted.
+#[cfg(feature = "runtime-benchmarks")]
+pub trait BenchmarkSetup<AccountId> {
+	/// Make `who` a citizen the tiki pallet will grant a role to.
+	fn make_citizen(who: &AccountId);
+}
+
 #[pezframe_support::pezpallet]
 pub mod pezpallet {
 	use super::*;
@@ -240,6 +247,16 @@ pub mod pezpallet {
 
 		/// How an earned role is awarded once the record supports it.
 		type EarnedRoles: EarnedRoleGranter<Self::AccountId, Tiki>;
+
+		/// Makes an account into something this pallet's calls will accept. Benchmarks only.
+		///
+		/// `appoint_honorary_mamoste` ends in `EarnedRoles::grant_earned`, and on a real runtime
+		/// that is the tiki pallet, which refuses an account with no citizen NFT
+		/// (`CitizenNftNotFound`). The mock binds `EarnedRoles` to a stub that accepts anyone, so
+		/// every benchmark here passed in this crate and three of them failed against the People
+		/// runtimes -- two by panicking inside `make_teachers`. Measured 2026-09-22.
+		#[cfg(feature = "runtime-benchmarks")]
+		type BenchmarkHelper: super::BenchmarkSetup<Self::AccountId>;
 
 		type WeightInfo: WeightInfo;
 
