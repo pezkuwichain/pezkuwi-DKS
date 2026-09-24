@@ -529,6 +529,88 @@ mod benchmarks {
 		assert!(PresaleProposals::<T>::get(0).is_none());
 	}
 
+	// ----------------------------------------------------------------
+	// LIVENESS: the court's seats and the two elected single-holder offices
+	//
+	// These four borrowed `nominate_official`'s weight until they had benchmarks of their own.
+	// ----------------------------------------------------------------
+
+	/// Fill the bench to its size, `member` among them, so a vacating filter walks every seat.
+	fn a_full_bench_with<T: Config>(member: &T::AccountId) {
+		let seats = T::DiwanSize::get();
+		let bench: Vec<DiwanMember<T>> = (0..seats)
+			.map(|i| {
+				let account = if i == 0 { member.clone() } else { account("judge", i, 0) };
+				DiwanMember {
+					account,
+					appointed_at: Zero::zero(),
+					term_ends_at: T::CourtTermLength::get(),
+					appointed_by: AppointmentAuthority::Parliament,
+				}
+			})
+			.collect();
+		DiwanMembers::<T>::put(BoundedVec::<_, T::DiwanSize>::try_from(bench).unwrap());
+	}
+
+	#[benchmark]
+	fn court_check_in() {
+		let judge: T::AccountId = whitelisted_caller();
+		a_full_bench_with::<T>(&judge);
+
+		#[extrinsic_call]
+		court_check_in(RawOrigin::Signed(judge.clone()));
+
+		assert!(CourtLastActive::<T>::get(&judge).is_some());
+	}
+
+	#[benchmark]
+	fn vacate_inactive_court_seat() {
+		let judge: T::AccountId = account("silent", 0, 0);
+		let caller: T::AccountId = whitelisted_caller();
+		// A real citizen holding the court's tiki, so the revocation does its full work.
+		<T as Config>::BenchmarkHelper::make_citizen(&judge);
+		pezpallet_tiki::Pezpallet::<T>::internal_grant_role(&judge, Tiki::EndameDiwane).unwrap();
+		a_full_bench_with::<T>(&judge);
+		pezframe_system::Pezpallet::<T>::set_block_number(T::CourtInactivityPeriod::get());
+
+		#[extrinsic_call]
+		vacate_inactive_court_seat(RawOrigin::Signed(caller), judge.clone());
+
+		assert!(!Pezpallet::<T>::is_diwan_member(&judge));
+		assert_eq!(DiwanMembers::<T>::get().len() as u32, T::DiwanSize::get() - 1);
+	}
+
+	#[benchmark]
+	fn office_check_in() {
+		let president: T::AccountId = whitelisted_caller();
+		<T as Config>::BenchmarkHelper::make_citizen(&president);
+		Pezpallet::<T>::seat_unique_tiki(&president, Tiki::Serok).unwrap();
+
+		#[extrinsic_call]
+		office_check_in(RawOrigin::Signed(president.clone()), Tiki::Serok);
+
+		assert_eq!(
+			OfficeLastActive::<T>::get(Tiki::Serok).map(|(holder, _)| holder),
+			Some(president)
+		);
+	}
+
+	#[benchmark]
+	fn vacate_silent_office() {
+		let president: T::AccountId = account("silent", 1, 0);
+		let caller: T::AccountId = whitelisted_caller();
+		<T as Config>::BenchmarkHelper::make_citizen(&president);
+		Pezpallet::<T>::seat_unique_tiki(&president, Tiki::Serok).unwrap();
+		let now = pezframe_system::Pezpallet::<T>::block_number();
+		pezframe_system::Pezpallet::<T>::set_block_number(now + T::OfficeInactivityPeriod::get());
+
+		#[extrinsic_call]
+		vacate_silent_office(RawOrigin::Signed(caller), Tiki::Serok);
+
+		assert!(pezpallet_tiki::Pezpallet::<T>::current_holder(&Tiki::Serok).is_none());
+		assert!(OfficeLastActive::<T>::get(Tiki::Serok).is_none());
+	}
+
 	impl_benchmark_test_suite!(
 		Pezpallet,
 		crate::mock::ExtBuilder::default().build(),
