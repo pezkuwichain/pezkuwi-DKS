@@ -196,16 +196,15 @@ jobs:
           echo "kept in $keep"
 
       - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.runtime }}
+          path: artifacts/*
+          if-no-files-found: error
 
       - name: Remove the build tree
         # Gigabytes of target per runtime, in a path no later job reuses.
         if: always()
         run: rm -rf "/tmp/pezkuwi-build/${{ matrix.runtime }}"
-
-        with:
-          name: ${{ matrix.runtime }}
-          path: artifacts/*
-          if-no-files-found: error
 
   # A runtime upgrade only needs the WASM, but starting a chain from a fresh
   # genesis needs the processes that run it. The PVF workers are built here too
