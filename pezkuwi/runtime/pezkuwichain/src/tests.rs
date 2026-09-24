@@ -161,11 +161,11 @@ use std::collections::HashMap;
 #[test]
 fn governance_tracks_total_count() {
 	let count = <TracksInfo as TracksInfoTrait<Balance, BlockNumber>>::tracks().count();
-	// Eight. The treasury moved to the Asset Hub and took its six tracks with it -- the
+	// Seven. The treasury moved to the Asset Hub and took its six tracks with it -- the
 	// treasurer and the five spenders -- the three register tracks moved to the People chain,
-	// and `root` was removed: Root here is the register's referendum arriving over XCM, not a
-	// ballot of this chain's holders.
-	assert_eq!(count, 8, "Expected 8 relay tracks, got {count}");
+	// `root` was removed (Root here is the register's referendum arriving over XCM, not a
+	// ballot of this chain's holders), and `fellowship_admin` went with the Fellowship.
+	assert_eq!(count, 7, "Expected 7 relay tracks, got {count}");
 }
 
 #[test]
