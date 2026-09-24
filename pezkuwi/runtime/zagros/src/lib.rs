@@ -134,7 +134,7 @@ pub mod xcm_config;
 
 // Governance and configurations.
 pub mod governance;
-use governance::{pezpallet_custom_origins, AuctionAdmin, Fellows, LeaseAdmin};
+use governance::{pezpallet_custom_origins, AuctionAdmin, LeaseAdmin};
 use xcm_config::XcmConfig;
 use xcm_runtime_pezapis::{
 	dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},

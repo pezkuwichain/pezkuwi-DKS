@@ -47,7 +47,6 @@ pezpallet-state-trie-migration = { workspace = true }
 pezpallet-timestamp = { workspace = true }
 pezpallet-transaction-payment = { workspace = true }
 pezpallet-transaction-payment-rpc-runtime-api = { workspace = true }
-pezpallet-treasury = { workspace = true }
 pezpallet-utility = { workspace = true }
 pezsp-api = { workspace = true }
 pezsp-arithmetic = { workspace = true }
@@ -146,7 +145,6 @@ runtime-benchmarks = [
 	"pezpallet-timestamp/runtime-benchmarks",
 	"pezpallet-transaction-payment-rpc-runtime-api/runtime-benchmarks",
 	"pezpallet-transaction-payment/runtime-benchmarks",
-	"pezpallet-treasury/runtime-benchmarks",
 	"pezpallet-utility/runtime-benchmarks",
 	"pezpallet-xcm-benchmarks/runtime-benchmarks",
 	"pezpallet-xcm/runtime-benchmarks",
@@ -212,7 +210,6 @@ try-runtime = [
 	"pezpallet-timestamp/try-runtime",
 	"pezpallet-transaction-payment-rpc-runtime-api/try-runtime",
 	"pezpallet-transaction-payment/try-runtime",
-	"pezpallet-treasury/try-runtime",
 	"pezpallet-utility/try-runtime",
 	"pezpallet-xcm-benchmarks?/try-runtime",
 	"pezpallet-xcm/try-runtime",
@@ -282,7 +279,6 @@ std = [
 	"pezpallet-timestamp/std",
 	"pezpallet-transaction-payment-rpc-runtime-api/std",
 	"pezpallet-transaction-payment/std",
-	"pezpallet-treasury/std",
 	"pezpallet-utility/std",
 	"pezpallet-xcm-benchmarks?/std",
 	"pezpallet-xcm/std",

@@ -40,12 +40,10 @@ BASE = REPO / "pezcumulus/teyrchains/runtimes"
 # Differences that are decided rather than accidental. Keyed by (pair, list, side, entry).
 # Every one has to say why, and every one is checked for still being real.
 RECORDED = {
-    ("asset-hub", "barrier", "zagros", "Equals<FellowshipSalaryLocation>"):
-        "Fellowship lives on Zagros only; mainnet has no fellowship to pay.",
-    ("asset-hub", "barrier", "zagros", "Equals<FellowshipTreasuryLocation>"):
-        "Same body, same reason.",
     ("asset-hub", "barrier", "zagros", "Equals<SecretarySalaryLocation>"):
-        "Secretary is a Fellowship office; Zagros only.",
+        "The Secretary lives on the Collectives chain, which only Zagros runs.",
+    ("asset-hub", "barrier", "zagros", "Equals<AmbassadorSalaryLocation>"):
+        "The Ambassador programme lives on the Collectives chain, which only Zagros runs.",
     ("bridge-hub", "barrier", "zagros", "Equals<SnowbridgeFrontendLocation>"):
         "Snowbridge's frontend pallet sits on the Zagros side of the bridge.",
     ("bridge-hub", "barrier", "zagros", "Equals<GovernanceLocation>"):
@@ -61,20 +59,16 @@ RECORDED = {
         "The same chain as the twin's AssetHubLocation, under the bridge primitives' name.",
     ("bridge-hub", "barrier", "zagros", "Equals<AssetHubLocation>"):
         "The same chain as the twin's AssetHubPezkuwichainLocation.",
-    ("coretime", "barrier", "zagros", "FellowsPlurality"):
-        "Fellowship is Zagros-only.",
     ("coretime", "barrier", "zagros", "Equals<GovernanceLocation>"):
         "Zagros governance addresses coretime directly; on mainnet it arrives as Parent.",
-    # The same three bodies again, in the fee list rather than the barrier. Recorded twice on
+    # The same bodies again, in the fee list rather than the barrier. Recorded twice on
     # purpose: the two lists are separate decisions and a body can plausibly be let through
     # without being waived, or waived without being let through. Sharing one record would hide
     # exactly the mismatch that broke the Zagros bridge hub.
-    ("asset-hub", "waived", "zagros", "Equals<FellowshipSalaryLocation>"):
-        "Fellowship lives on Zagros only; mainnet has no fellowship to pay.",
-    ("asset-hub", "waived", "zagros", "Equals<FellowshipTreasuryLocation>"):
-        "Same body, same reason.",
     ("asset-hub", "waived", "zagros", "Equals<SecretarySalaryLocation>"):
-        "Secretary is a Fellowship office; Zagros only.",
+        "The Secretary lives on the Collectives chain, which only Zagros runs.",
+    ("asset-hub", "waived", "zagros", "Equals<AmbassadorSalaryLocation>"):
+        "The Ambassador programme lives on the Collectives chain, which only Zagros runs.",
 }
 
 MARKER = "AllowExplicitUnpaidExecutionFrom<"

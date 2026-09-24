@@ -6,10 +6,10 @@ name: release
 # rust-toolchain.toml) + the committed Cargo.lock and compare the blake2-256 hash to
 # what governance authorizes.
 #
-# NOTE: this is pinned-toolchain reproducibility (deterministic given the same
-# toolchain + lockfile + flags), not yet fully hermetic. srtool has no Rust 1.96
-# image yet (latest is 1.93); a hermetic srtool/custom-container step will be added
-# when available. Tracked in the release-process issue.
+# Hermetic without srtool (which has no Rust 1.96 image): the pinned toolchain, the
+# committed lockfile, a fixed build path per runtime and remapped cargo/rustup homes.
+# Rebuild at `/tmp/pezkuwi-build/<runtime>/pezkuwi-DKS` with the same flags and the hash
+# matches, on any box and as any user.
 
 on:
   push:
@@ -68,13 +68,9 @@ jobs:
 
   build-runtime:
     needs: full-ci-gate
-    # Pinned to one specific runner (not the whole bizinikiwi-build pool): these
-    # builds aren't hermetic yet (pending srtool), and the self-hosted fleet
-    # doesn't share a common absolute install path, so which runner picks up
-    # the job changes the resulting WASM hash even for identical source. Fixing
-    # the runner fixes the path, so the published hash is reproducible by
-    # rebuilding at the same path on the same box until srtool lands.
-    runs-on: [self-hosted, dks-runner-1]
+    # Any runner in the pool: the build is hermetic (fixed path + remapped homes below), so
+    # the published hash does not depend on which box picked the job up.
+    runs-on: [self-hosted, bizinikiwi-build]
     strategy:
       fail-fast: false
       matrix:
@@ -88,6 +84,19 @@ jobs:
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
+      - name: Move to the fixed build path
+        # The build path is part of the wasm: cargo folds a path dependency's absolute
+        # location into the crate's metadata hash, and that hash is in every mangled symbol.
+        # So the path is fixed -- per runtime, so two matrix jobs on one box cannot share a
+        # tree -- and the same on every runner. Measured 2026-09-24: two boxes, two users,
+        # one path, one hash; two paths on one box, two hashes.
+        run: |
+          set -euo pipefail
+          b="/tmp/pezkuwi-build/${{ matrix.runtime }}/pezkuwi-DKS"
+          rm -rf "$b" && mkdir -p "$b"
+          cp -a "$GITHUB_WORKSPACE/." "$b/"
+          echo "BUILD_DIR=$b" >> "$GITHUB_ENV"
+
       - name: Toolchain & targets
         run: |
           rustup show
@@ -95,7 +104,13 @@ jobs:
           rustup target add wasm32v1-none wasm32-unknown-unknown
 
       - name: Build deployable runtime WASM (release, locked)
-        run: cargo build --release --locked -p ${{ matrix.runtime }}
+        # The cargo and rustup homes differ between runners and do reach the wasm as path
+        # strings; remapped, they leave nothing of the host in the blob.
+        run: |
+          set -euo pipefail
+          cd "$BUILD_DIR"
+          export WASM_BUILD_RUSTFLAGS="--remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}=/cargo --remap-path-prefix=${RUSTUP_HOME:-$HOME/.rustup}=/rustup"
+          cargo build --release --locked -p ${{ matrix.runtime }}
 
       - name: Locate WASM and compute upgrade hashes
         id: wasm
@@ -108,7 +123,7 @@ jobs:
           # one up here. Fail loudly on anything else ambiguous rather than
           # silently taking whichever file a bare `find | head -1` returns
           # first (directory order is not guaranteed).
-          wbuild_dir="target/release/wbuild/${{ matrix.runtime }}"
+          wbuild_dir="$BUILD_DIR/target/release/wbuild/${{ matrix.runtime }}"
           mapfile -t candidates < <(find "$wbuild_dir" -maxdepth 1 \
                  -name '*.compact.compressed.wasm' ! -name 'fast_runtime_binary*')
           if [ "${#candidates[@]}" -eq 0 ]; then
@@ -150,6 +165,11 @@ jobs:
           name: ${{ matrix.runtime }}
           path: artifacts/*
           if-no-files-found: error
+
+      - name: Remove the build tree
+        # Gigabytes of target per runtime, in a path no later job reuses.
+        if: always()
+        run: rm -rf "/tmp/pezkuwi-build/${{ matrix.runtime }}"
 
   publish:
     needs: build-runtime

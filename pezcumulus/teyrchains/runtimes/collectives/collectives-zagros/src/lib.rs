@@ -41,8 +41,6 @@ mod genesis_config_presets;
 pub mod impls;
 mod weights;
 pub mod xcm_config;
-// Fellowship configurations.
-pub mod fellowship;
 
 // Secretary Configuration
 pub mod secretary;
@@ -53,7 +51,6 @@ pub use ambassador::pezpallet_ambassador_origins;
 
 use alloc::{vec, vec::Vec};
 use ambassador::AmbassadorCoreInstance;
-use fellowship::{pezpallet_fellowship_origins, Fellows, FellowshipCoreInstance};
 use impls::{AllianceProposalProvider, EqualOrGreatestRootCmp};
 use pezcumulus_pezpallet_teyrchain_system::RelayNumberMonotonicallyIncreases;
 use pezsp_api::impl_runtime_apis;
@@ -317,20 +314,27 @@ parameter_types! {
 )]
 pub enum ProxyType {
 	/// Fully permissioned proxy. Can execute any call on behalf of _proxied_.
+	#[codec(index = 0)]
 	Any,
 	/// Can execute any call that does not transfer funds.
+	#[codec(index = 1)]
 	NonTransfer,
 	/// Proxy with the ability to reject time-delay proxy announcements.
+	#[codec(index = 2)]
 	CancelProxy,
 	/// Collator selection proxy. Can execute calls related to collator selection mechanism.
+	#[codec(index = 3)]
 	Collator,
 	/// Alliance proxy. Allows calls related to the Alliance.
+	#[codec(index = 4)]
 	Alliance,
-	/// Fellowship proxy. Allows calls related to the Fellowship.
-	Fellowship,
+	// RIP Fellowship 5. The Fellowship is retired; the index stays empty so a proxy
+	// stored under it can never decode as another kind.
 	/// Ambassador proxy. Allows calls related to the Ambassador Program.
+	#[codec(index = 6)]
 	Ambassador,
 	/// Secretary proxy. Allows calls related to the Secretary collective
+	#[codec(index = 7)]
 	Secretary,
 }
 impl Default for ProxyType {
@@ -359,16 +363,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				c,
 				RuntimeCall::AllianceMotion { .. }
 					| RuntimeCall::Alliance { .. }
-					| RuntimeCall::Utility { .. }
-					| RuntimeCall::Multisig { .. }
-			),
-			ProxyType::Fellowship => matches!(
-				c,
-				RuntimeCall::FellowshipCollective { .. }
-					| RuntimeCall::FellowshipReferenda { .. }
-					| RuntimeCall::FellowshipCore { .. }
-					| RuntimeCall::FellowshipSalary { .. }
-					| RuntimeCall::FellowshipTreasury { .. }
 					| RuntimeCall::Utility { .. }
 					| RuntimeCall::Multisig { .. }
 			),
@@ -502,7 +496,7 @@ impl pezcumulus_pezpallet_xcmp_queue::Config for Runtime {
 	// Most on-chain HRMP channels are configured to use 102400 bytes of max message size, so we
 	// need to set the page size larger than that until we reduce the channel size on-chain.
 	type MaxPageSize = ConstU32<{ 103 * 1024 }>;
-	type ControllerOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Fellows>;
+	type ControllerOrigin = EnsureRoot<AccountId>;
 	type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
 	type WeightInfo = weights::pezcumulus_pezpallet_xcmp_queue::WeightInfo<Runtime>;
 	type PriceForSiblingDelivery = PriceForSiblingTeyrchainDelivery;
@@ -700,7 +694,7 @@ impl pezpallet_asset_rate::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type CreateOrigin = EitherOfDiverse<
 		EnsureRoot<AccountId>,
-		EitherOfDiverse<EnsureXcm<IsVoiceOfBody<GovernanceLocation, TreasurerBodyId>>, Fellows>,
+		EnsureXcm<IsVoiceOfBody<GovernanceLocation, TreasurerBodyId>>,
 	>;
 	type RemoveOrigin = Self::CreateOrigin;
 	type UpdateOrigin = Self::CreateOrigin;
@@ -752,18 +746,12 @@ construct_runtime!(
 		Alliance: pezpallet_alliance = 50,
 		AllianceMotion: pezpallet_collective::<Instance1> = 51,
 
-		// The Fellowship.
-		// pub type FellowshipCollectiveInstance = pezpallet_ranked_collective::Instance1;
-		FellowshipCollective: pezpallet_ranked_collective::<Instance1> = 60,
-		// pub type FellowshipReferendaInstance = pezpallet_referenda::Instance1;
-		FellowshipReferenda: pezpallet_referenda::<Instance1> = 61,
-		FellowshipOrigins: pezpallet_fellowship_origins = 62,
-		// pub type FellowshipCoreInstance = pezpallet_core_fellowship::Instance1;
-		FellowshipCore: pezpallet_core_fellowship::<Instance1> = 63,
-		// pub type FellowshipSalaryInstance = pezpallet_salary::Instance1;
-		FellowshipSalary: pezpallet_salary::<Instance1> = 64,
-		// pub type FellowshipTreasuryInstance = pezpallet_treasury::Instance1;
-		FellowshipTreasury: pezpallet_treasury::<Instance1> = 65,
+		// RIP FellowshipCollective 60, FellowshipReferenda 61, FellowshipOrigins 62,
+		// FellowshipCore 63, FellowshipSalary 64, FellowshipTreasury 65. The Fellowship ranked
+		// itself -- its members granted the ranks that decided who sat on it -- and it held the
+		// whitelist that fast-tracks a runtime upgrade: a self-selecting body at the door of
+		// constitutional change. Attesting an upgrade blob now sits with the Diwan. The indices
+		// stay empty so old calls and events can never decode as a new pallet.
 
 		// Ambassador Program.
 		AmbassadorCollective: pezpallet_ranked_collective::<Instance2> = 70,
@@ -821,8 +809,6 @@ type Migrations = (
 	// permanent
 	pezpallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
 	// unreleased
-	pezpallet_core_fellowship::migration::MigrateV0ToV1<Runtime, FellowshipCoreInstance>,
-	// unreleased
 	pezpallet_core_fellowship::migration::MigrateV0ToV1<Runtime, AmbassadorCoreInstance>,
 	pezcumulus_pezpallet_aura_ext::migration::MigrateV0ToV1<Runtime>,
 	pezpallet_session::migrations::v1::MigrateV0ToV1<
@@ -860,11 +846,6 @@ mod benches {
 		[pezpallet_collective, AllianceMotion]
 		[pezpallet_preimage, Preimage]
 		[pezpallet_scheduler, Scheduler]
-		[pezpallet_referenda, FellowshipReferenda]
-		[pezpallet_ranked_collective, FellowshipCollective]
-		[pezpallet_core_fellowship, FellowshipCore]
-		[pezpallet_salary, FellowshipSalary]
-		[pezpallet_treasury, FellowshipTreasury]
 		[pezpallet_referenda, AmbassadorReferenda]
 		[pezpallet_ranked_collective, AmbassadorCollective]
 		[pezpallet_collective_content, AmbassadorContent]

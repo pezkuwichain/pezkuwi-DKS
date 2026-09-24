@@ -12,13 +12,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-use crate::{common::*, imports::*};
+use crate::imports::*;
 use emulated_integration_tests_common::{
 	assert_whitelisted,
 	impls::RelayChain,
 	xcm_pez_emulator::{Chain, TestExt, Teyrchain},
 };
-use pezframe_support::traits::PalletInfoAccess;
+use pezframe_support::traits::{OriginTrait, PalletInfoAccess};
 use zagros_runtime::governance::pezpallet_custom_origins::Origin;
 use zagros_system_emulated_network::{
 	AssetHubZagrosPara as AssetHubZagros, BridgeHubZagrosPara as BridgeHubZagros,
@@ -66,12 +66,14 @@ fn relaychain_can_authorize_upgrade_for_itself() {
 		})
 	);
 
-	// whitelist
-	collectives_send_whitelist(Location::parent(), || {
-		ZagrosRuntimeCall::Whitelist(pezpallet_whitelist::Call::<ZagrosRuntime>::whitelist_call {
-			call_hash,
-		})
-		.encode()
+	// whitelist, with Root: one of the two keys the relay's whitelist takes. The other is the
+	// People chain's court, which this network does not run. The Fellowship's voice from the
+	// Collectives chain was used here until the Fellowship was retired.
+	Zagros::execute_with(|| {
+		assert_ok!(ZagrosRuntimeCall::Whitelist(
+			pezpallet_whitelist::Call::<ZagrosRuntime>::whitelist_call { call_hash }
+		)
+		.dispatch(<Zagros as Chain>::RuntimeOrigin::root()));
 	});
 
 	// Err - when dispatch wrong origin
@@ -170,15 +172,14 @@ fn relaychain_can_authorize_upgrade_for_system_chains() {
 		})
 	);
 
-	// whitelist
-	collectives_send_whitelist(Location::parent(), || {
-		ZagrosRuntimeCall::Whitelist(pezpallet_whitelist::Call::<ZagrosRuntime>::whitelist_call {
-			call_hash,
-		})
-		.encode()
-	});
-
+	// whitelist, with Root: one of the two keys the relay's whitelist takes. The other is the
+	// People chain's court, which this network does not run. The Fellowship's voice from the
+	// Collectives chain was used here until the Fellowship was retired.
 	Zagros::execute_with(|| {
+		assert_ok!(ZagrosRuntimeCall::Whitelist(
+			pezpallet_whitelist::Call::<ZagrosRuntime>::whitelist_call { call_hash }
+		)
+		.dispatch(<Zagros as Chain>::RuntimeOrigin::root()));
 		assert_whitelisted!(Zagros, call_hash);
 	});
 

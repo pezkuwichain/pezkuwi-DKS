@@ -186,7 +186,9 @@ fn governance_authorize_upgrade_works() {
 		>(GovernanceOrigin::Location(Location::new(1, Teyrchain(COLLECTIVES_ID)))),
 		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
 	);
-	// no - Collectives Voice of Fellows plurality
+	// no - Collectives Voice of Fellows plurality. The barrier used to admit it and the origin
+	// check refused it; with the Fellowship retired the barrier no longer names it, so it is
+	// turned away at the first instruction instead.
 	assert_err!(
 		teyrchains_runtimes_test_utils::test_cases::can_governance_authorize_upgrade::<
 			Runtime,
@@ -195,7 +197,7 @@ fn governance_authorize_upgrade_works() {
 			Location::new(1, Teyrchain(COLLECTIVES_ID)),
 			Plurality { id: BodyId::Technical, part: BodyPart::Voice }.into()
 		)),
-		Either::Right(InstructionError { index: 2, error: XcmError::BadOrigin })
+		Either::Right(InstructionError { index: 0, error: XcmError::Barrier })
 	);
 
 	// ok - relaychain

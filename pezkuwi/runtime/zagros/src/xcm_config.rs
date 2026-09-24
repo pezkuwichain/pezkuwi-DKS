@@ -17,7 +17,7 @@
 //! XCM configuration for Pezkuwichain.
 
 use super::{
-	teyrchains_origin, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId, Runtime,
+	teyrchains_origin, AccountId, AllPalletsWithSystem, Balances, Dmp, ParaId, Runtime,
 	RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, WeightToFee, XcmPallet,
 };
 
@@ -180,8 +180,7 @@ type LocalOriginConverter = (
 	CourtOfPeopleAsXcmOrigin,
 	// Xcm origins can be represented natively under the Xcm pezpallet's Xcm origin. Without this
 	// there is no converter for `OriginKind::Xcm` at all, so a `Transact` sent that way is
-	// rejected with `BadOrigin` no matter who sent it — which is how the Fellowship's whitelist
-	// call was refused even before its origin could be judged.
+	// rejected with `BadOrigin` no matter who sent it, before its origin can be judged.
 	XcmPassthrough<RuntimeOrigin>,
 );
 
@@ -241,23 +240,6 @@ impl Contains<Location> for OnlyTeyrchains {
 	}
 }
 
-/// The Fellowship's voice on the Collectives chain, as this chain sees it.
-///
-/// The Fellowship is a body on Collectives, not here, so a message it sends arrives as that
-/// chain's id followed by its plurality. `IsChildSystemTeyrchain` matches a bare teyrchain and
-/// stops there, which is why the trailing `Plurality` made every Fellowship message fail the
-/// barrier before it could be read — including the one that whitelists a call for the
-/// `whitelisted_caller` track, leaving that track reachable by root alone.
-pub struct FellowsPlurality;
-impl Contains<Location> for FellowsPlurality {
-	fn contains(loc: &Location) -> bool {
-		matches!(
-			loc.unpack(),
-			(0, [Teyrchain(COLLECTIVES_ID), Plurality { id: BodyId::Technical, .. }])
-		)
-	}
-}
-
 pub struct LocalPlurality;
 impl Contains<Location> for LocalPlurality {
 	fn contains(loc: &Location) -> bool {
@@ -275,8 +257,8 @@ pub type Barrier = TrailingSetTopicAsId<(
 		(
 			// If the message is one that immediately attempts to pay for execution, then allow it.
 			AllowTopLevelPaidExecutionFrom<Everything>,
-			// Messages from system teyrchains or the Fellows plurality need not pay for execution.
-			AllowExplicitUnpaidExecutionFrom<(IsChildSystemTeyrchain<ParaId>, FellowsPlurality)>,
+			// Messages from system teyrchains need not pay for execution.
+			AllowExplicitUnpaidExecutionFrom<IsChildSystemTeyrchain<ParaId>>,
 			// Subscriptions for version tracking are OK.
 			AllowSubscriptionsFrom<OnlyTeyrchains>,
 		),
@@ -340,8 +322,6 @@ parameter_types! {
 	pub const CollectiveBodyId: BodyId = BodyId::Unit;
 	/// StakingAdmin pluralistic body.
 	pub const StakingAdminBodyId: BodyId = BodyId::Defense;
-	/// Fellows pluralistic body.
-	pub const FellowsBodyId: BodyId = BodyId::Technical;
 	/// Where the People chain's court speaks from, as this chain sees it.
 	pub PeopleCourtLocation: Location = Location::new(
 		0,
@@ -363,24 +343,17 @@ pub type LocalOriginToLocation = (
 pub type StakingAdminToPlurality =
 	OriginToPluralityVoice<RuntimeOrigin, StakingAdmin, StakingAdminBodyId>;
 
-/// Type to convert the Fellows origin to a Plurality `Location` value.
-pub type FellowsToPlurality = OriginToPluralityVoice<RuntimeOrigin, Fellows, FellowsBodyId>;
-
-/// Type to convert the Treasury origin to a Plurality `Location` value.
-
 /// Type to convert a pezpallet `Origin` type value into a `Location` value which represents an
 /// interior location of this chain for a destination chain.
 pub type LocalPalletOriginToLocation = (
 	// StakingAdmin origin to be used in XCM as a corresponding Plurality `Location` value.
 	StakingAdminToPlurality,
-	// Fellows origin to be used in XCM as a corresponding Plurality `Location` value.
-	FellowsToPlurality,
 );
 
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	// Production relay: only governance-controlled pallet origins (StakingAdmin, Fellows,
-	// Treasurer) may originate raw `pezpallet_xcm::send` messages. Ordinary signed
+	// Production relay: only a governance-controlled pallet origin (StakingAdmin) may
+	// originate raw `pezpallet_xcm::send` messages. Ordinary signed
 	// accounts are intentionally excluded here (unlike the zagros/testnet config) so that no
 	// funded relay account can craft arbitrary XCM programs toward any current or future
 	// teyrchain. Local execution for signed accounts is still permitted via `ExecuteXcmOrigin`

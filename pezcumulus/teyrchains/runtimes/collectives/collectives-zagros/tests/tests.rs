@@ -210,3 +210,27 @@ fn governance_authorize_upgrade_works() {
 		RuntimeOrigin,
 	>(GovernanceOrigin::Location(GovernanceLocation::get())));
 }
+
+#[test]
+fn retired_indices_stay_retired() {
+	// The Fellowship held 60 to 65 until it was retired. A pallet index is part of the composite
+	// `RuntimeCall` and `RuntimeEvent` encodings, so giving one of these numbers to a new pallet
+	// makes old bytes decode as that pallet.
+	use pezframe_support::traits::PalletsInfoAccess;
+	let taken: Vec<usize> =
+		<collectives_zagros_runtime::AllPalletsWithSystem as PalletsInfoAccess>::infos()
+			.iter()
+			.map(|i| i.index)
+			.collect();
+	for index in 60usize..=65 {
+		assert!(!taken.contains(&index), "index {index} is retired and was handed to a pallet");
+	}
+
+	// The same holds for the Fellowship proxy kind, which is stored with every proxy: byte 5
+	// must not decode as another kind.
+	use codec::Decode;
+	use collectives_zagros_runtime::ProxyType;
+	assert!(ProxyType::decode(&mut &[5u8][..]).is_err(), "proxy kind 5 is retired");
+	assert_eq!(ProxyType::decode(&mut &[6u8][..]), Ok(ProxyType::Ambassador));
+	assert_eq!(ProxyType::decode(&mut &[7u8][..]), Ok(ProxyType::Secretary));
+}

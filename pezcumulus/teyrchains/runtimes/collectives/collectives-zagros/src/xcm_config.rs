@@ -14,15 +14,15 @@
 // limitations under the License.
 
 use super::{
-	AccountId, AllPalletsWithSystem, Balance, Balances, BaseDeliveryFee, FeeAssetId, Fellows,
-	PezkuwiXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin,
-	TeyrchainInfo, TeyrchainSystem, TransactionByteFee, WeightToFee, XcmpQueue,
+	AccountId, AllPalletsWithSystem, Balance, Balances, BaseDeliveryFee, FeeAssetId, PezkuwiXcm,
+	Runtime, RuntimeCall, RuntimeEvent, RuntimeHoldReason, RuntimeOrigin, TeyrchainInfo,
+	TeyrchainSystem, TransactionByteFee, WeightToFee, XcmpQueue,
 };
 use pezframe_support::{
 	parameter_types,
 	traits::{
 		fungible::HoldConsideration, tokens::imbalance::ResolveTo, ConstU32, Contains, Equals,
-		Everything, LinearStoragePrice, Nothing, PalletInfoAccess,
+		Everything, LinearStoragePrice, NeverEnsureOrigin, Nothing, PalletInfoAccess,
 	},
 };
 use pezframe_system::EnsureRoot;
@@ -41,15 +41,14 @@ use xcm_builder::{
 	AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
 	DenyRecursively, DenyReserveTransferToRelayChain, DenyThenTry, DescribeAllTerminal,
 	DescribeFamily, EnsureXcmOrigin, FrameTransactionalProcessor, FungibleAdapter,
-	HashedDescription, IsConcrete, LocatableAssetId, LocationAsSuperuser, OriginToPluralityVoice,
-	ParentAsSuperuser, ParentIsPreset, RelayChainAsNative, SendXcmFeeToAccount,
-	SiblingTeyrchainAsNative, SiblingTeyrchainConvertsVia, SignedAccountId32AsNative,
-	SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-	UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
-	XcmFeeManagerFromComponents,
+	HashedDescription, IsConcrete, LocatableAssetId, LocationAsSuperuser, ParentAsSuperuser,
+	ParentIsPreset, RelayChainAsNative, SendXcmFeeToAccount, SiblingTeyrchainAsNative,
+	SiblingTeyrchainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
+	SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+	WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
 };
 use xcm_executor::XcmExecutor;
-use zagros_runtime_constants::{system_teyrchain::ASSET_HUB_ID, xcm as xcm_constants};
+use zagros_runtime_constants::system_teyrchain::ASSET_HUB_ID;
 
 // Re-export
 pub use testnet_teyrchains_constants::zagros::locations::GovernanceLocation;
@@ -69,18 +68,13 @@ parameter_types! {
 	pub RelayChainOrigin: RuntimeOrigin = pezcumulus_pezpallet_xcm::Origin::Relay.into();
 	pub UniversalLocation: InteriorLocation =
 		[GlobalConsensus(RelayNetwork::get().unwrap()), Teyrchain(TeyrchainInfo::teyrchain_id().into())].into();
-	/// The four bodies on this chain that pay out over XCM. Each is named by its own pallet
+	/// The two bodies on this chain that pay out over XCM. Each is named by its own pallet
 	/// index so the location cannot drift if the index moves.
-	pub FellowshipTreasuryLocation: Location =
-		PalletInstance(<crate::FellowshipTreasury as PalletInfoAccess>::index() as u8).into();
-	pub FellowshipSalaryLocation: Location =
-		PalletInstance(<crate::FellowshipSalary as PalletInfoAccess>::index() as u8).into();
 	pub SecretarySalaryLocation: Location =
 		PalletInstance(<crate::SecretarySalary as PalletInfoAccess>::index() as u8).into();
 	pub AmbassadorSalaryLocation: Location =
 		PalletInstance(<crate::AmbassadorSalary as PalletInfoAccess>::index() as u8).into();
 	pub CheckingAccount: AccountId = PezkuwiXcm::check_account();
-	pub const FellowshipAdminBodyId: BodyId = BodyId::Index(xcm_constants::body::FELLOWSHIP_ADMIN_INDEX);
 	pub AssetHub: Location = (Parent, Teyrchain(ASSET_HUB_ID)).into();
 	pub const TreasurerBodyId: BodyId = BodyId::Treasury;
 	pub AssetHubUsdtId: AssetId = (PalletInstance(50), GeneralIndex(1984)).into();
@@ -151,8 +145,6 @@ pub type XcmOriginToTransactDispatchOrigin = (
 parameter_types! {
 	pub const MaxInstructions: u32 = 100;
 	pub const MaxAssetsIntoHolding: u32 = 64;
-	// Fellows pluralistic body.
-	pub const FellowsBodyId: BodyId = BodyId::Technical;
 }
 
 pub struct ParentOrParentsPlurality;
@@ -212,10 +204,8 @@ pub type WaivedLocations = (
 	// and is dropped without an error.
 	// The bodies that live on this chain. Their payouts travel to the Asset Hub over XCM and the
 	// delivery fee is withdrawn from the paying pallet's own account, which holds nothing — so
-	// without these entries every cross-chain payout from the fellowship treasury and from the
-	// three salary pallets fails with `PayoutError`, and the money never leaves.
-	Equals<FellowshipTreasuryLocation>,
-	Equals<FellowshipSalaryLocation>,
+	// without these entries every cross-chain payout from the two salary pallets fails with
+	// `PayoutError`, and the money never leaves.
 	Equals<SecretarySalaryLocation>,
 	Equals<AmbassadorSalaryLocation>,
 	Equals<RootLocation>,
@@ -308,9 +298,6 @@ parameter_types! {
 	pub ReachableDest: Option<Location> = Some(Parent.into());
 }
 
-/// Type to convert the Fellows origin to a Plurality `Location` value.
-pub type FellowsToPlurality = OriginToPluralityVoice<RuntimeOrigin, Fellows, FellowsBodyId>;
-
 parameter_types! {
 	pub const DepositPerItem: Balance = crate::deposit(1, 0);
 	pub const DepositPerByte: Balance = crate::deposit(0, 1);
@@ -319,8 +306,9 @@ parameter_types! {
 
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	// We only allow the Fellows to send messages.
-	type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, FellowsToPlurality>;
+	// Nothing on this chain sends arbitrary XCM. The Fellows were the only sender and are
+	// retired; the salaries pay out through their own `PayOverXcm`, which does not come here.
+	type SendXcmOrigin = NeverEnsureOrigin<Location>;
 	type XcmRouter = XcmRouter;
 	// We support local origins dispatching XCM executions.
 	type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;

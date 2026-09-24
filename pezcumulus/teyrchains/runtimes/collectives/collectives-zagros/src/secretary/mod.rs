@@ -18,15 +18,14 @@
 
 //! The Pezkuwi Secretary Collective.
 
-use crate::{xcm_config::FellowshipAdminBodyId, *};
+use crate::*;
 use pezframe_support::{
 	parameter_types,
-	traits::{tokens::GetSalary, EitherOf, MapSuccess, NoOpPoll, PalletInfoAccess},
+	traits::{tokens::GetSalary, NoOpPoll, PalletInfoAccess},
 };
 use pezframe_system::{pezpallet_prelude::BlockNumberFor, EnsureRootWithSuccess};
-use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
 use pezsp_core::{ConstU128, ConstU32};
-use pezsp_runtime::traits::{ConstU16, ConvertToValue, Identity, Replace};
+use pezsp_runtime::traits::{ConstU16, ConvertToValue, Identity};
 use zagros_runtime_constants::time::HOURS;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -45,21 +44,10 @@ pub mod ranks {
 	pub const SECRETARY: Rank = 1;
 }
 
-/// Origins of:
-/// - Root;
-/// - FellowshipAdmin (i.e. token holder referendum);
-/// - Plurality vote from Fellows can promote, demote, remove and approve rank retention of members
-///   of the Secretary Collective (rank `2`).
-type ApproveOrigin = EitherOf<
-	EnsureRootWithSuccess<AccountId, ConstU16<65535>>,
-	EitherOf<
-		MapSuccess<
-			EnsureXcm<IsVoiceOfBody<GovernanceLocation, FellowshipAdminBodyId>>,
-			Replace<ConstU16<65535>>,
-		>,
-		MapSuccess<Fellows, Replace<ConstU16<65535>>>,
-	>,
->;
+/// Root alone -- the relay's referendum, arriving over XCM -- adds, removes, promotes and
+/// demotes Secretary members. Two more arms stood here, the relay's `FellowshipAdmin` voice and
+/// the Fellows; both went with the Fellowship.
+type ApproveOrigin = EnsureRootWithSuccess<AccountId, ConstU16<65535>>;
 
 pub type SecretaryCollectiveInstance = pezpallet_ranked_collective::Instance3;
 

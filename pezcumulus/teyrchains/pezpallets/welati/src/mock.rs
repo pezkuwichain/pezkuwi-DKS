@@ -536,6 +536,7 @@ parameter_types! {
 	pub const TermLength: u64 = 1_000;
 	pub const CourtTermLength: u64 = 2_250;
 	pub const CourtInactivityPeriod: u64 = 500;
+	pub const OfficeInactivityPeriod: u64 = 500;
 	pub const RelayWhitelistPalletIndex: u8 = 44;
 	pub const AirdropWindow: u64 = 1_000;
 	pub const DormancyPeriod: u64 = 5_000;
@@ -810,6 +811,7 @@ impl pezpallet_welati::Config for Test {
 	type TermLength = TermLength;
 	type CourtTermLength = CourtTermLength;
 	type CourtInactivityPeriod = CourtInactivityPeriod;
+	type OfficeInactivityPeriod = OfficeInactivityPeriod;
 	type ReissueOrigin = pezframe_system::EnsureRoot<AccountId>;
 	type ReissueCarries = (RebindReferral, RebindTiki, RebindTrust, RebindStakingScore);
 	type FastTrackOrigin = pezframe_system::EnsureRoot<AccountId>;

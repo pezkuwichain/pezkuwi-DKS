@@ -284,8 +284,23 @@ cargo build --release
 cargo build --release --features runtime-benchmarks
 ```
 
-The pinned toolchain is declared in [`rust-toolchain.toml`](./rust-toolchain.toml). Builds are
-reproducible from a tagged commit together with the committed `Cargo.lock`.
+The pinned toolchain is declared in [`rust-toolchain.toml`](./rust-toolchain.toml).
+
+**Verifying a runtime upgrade.** A release publishes each runtime's blake2-256 hash, the one
+governance authorizes. To rebuild it yourself, the commit, the toolchain and the lockfile are not
+enough: cargo folds the absolute path of the source tree into every symbol, so the tree has to
+sit at the path the release used. Host paths that reach the wasm as strings are remapped:
+
+```bash
+B=/tmp/pezkuwi-build/pezkuwichain-runtime/pezkuwi-DKS
+git clone https://github.com/pezkuwichain/pezkuwi-DKS.git "$B" && cd "$B" && git checkout <tag>
+export WASM_BUILD_RUSTFLAGS="--remap-path-prefix=$HOME/.cargo=/cargo --remap-path-prefix=$HOME/.rustup=/rustup"
+cargo build --release --locked -p pezkuwichain-runtime
+b2sum -l 256 target/release/wbuild/pezkuwichain-runtime/pezkuwichain_runtime.compact.compressed.wasm
+```
+
+Replace `pezkuwichain-runtime` with the runtime being checked, in the path as well as in `-p`.
+The result does not depend on the machine or the user doing the build.
 
 ---
 

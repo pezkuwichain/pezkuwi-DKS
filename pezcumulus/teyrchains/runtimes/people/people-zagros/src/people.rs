@@ -714,10 +714,10 @@ impl pezpallet_staking_score::Config for Runtime {
 // from the elected parliament.
 //
 // An education committee, a technical committee and a treasury committee are named in places
-// that expect them and none of them has been constituted. Until they are, the origins that
-// stand in for them come from `welati` -- `EnsureSerok`, `EnsureParlementer`, `EnsureDiwan` --
-// and an origin whose name promises one of those bodies is naming something that does not
-// exist yet. Adding a body is a runtime upgrade, not a genesis matter.
+// that expect them and none of them has been constituted. Until they are, what stands in
+// for them is an office or a body that does exist -- the head of state through welati's
+// `EnsureSerok`, the court through `RootOrDiwan` -- and an origin whose name promises one of
+// those committees is naming something that does not exist yet. Adding a body is a runtime upgrade, not a genesis matter.
 // =============================================================================
 
 parameter_types! {
@@ -1365,6 +1365,10 @@ parameter_types! {
 	pub const WelatiGeographicMarkReferrals: u32 = 25;
 
 	pub const WelatiCourtInactivityPeriod: BlockNumber = 14 * DAYS;
+	/// The President's and the Speaker's silence rule. The court's period on purpose -- a head
+	/// of state out of reach for longer than a judge is not a smaller problem -- but its own
+	/// constant, so the two can be tuned apart.
+	pub const WelatiOfficeInactivityPeriod: BlockNumber = 14 * DAYS;
 
 	/// How many terms in a row one person may hold the same elected office.
 	///
@@ -1618,6 +1622,7 @@ impl pezpallet_welati::Config for Runtime {
 	type MaxEndorsers = WelatiMaxEndorsers;
 	type TermLength = WelatiTermLength;
 	type CourtInactivityPeriod = WelatiCourtInactivityPeriod;
+	type OfficeInactivityPeriod = WelatiOfficeInactivityPeriod;
 	// The register authority, and nothing weaker: this is the only call that hands one
 	// account's offices to another.
 	type ReissueOrigin = crate::RootOrDiwan;

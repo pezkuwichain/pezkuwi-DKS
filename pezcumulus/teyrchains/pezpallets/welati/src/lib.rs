@@ -781,6 +781,17 @@ pub mod pezpallet {
 		#[pezpallet::constant]
 		type CourtInactivityPeriod: Get<BlockNumberFor<Self>>;
 
+		/// How long the President or the Speaker may go without signing before anyone may
+		/// declare the office empty.
+		///
+		/// The court's rule, applied to the two elected offices one person holds. Without it a
+		/// President who died or lost a key held the office until the term ran out -- up to four
+		/// years -- and the Speaker never became acting President, because nothing ever read
+		/// the office as empty. Its own constant rather than the court's, so that tuning one
+		/// cannot quietly move the other.
+		#[pezpallet::constant]
+		type OfficeInactivityPeriod: Get<BlockNumberFor<Self>>;
+
 		/// The pallets a reissued citizenship has to be carried across.
 		///
 		/// A tuple rather than a list this pallet knows: what keys itself on a citizen is a
@@ -907,6 +918,16 @@ pub mod pezpallet {
 	#[pezpallet::storage]
 	pub type CourtLastActive<T: Config> =
 		StorageMap<_, Blake2_128Concat, T::AccountId, BlockNumberFor<T>, OptionQuery>;
+
+	/// When the holder of a silence-vacatable office last proved their key signs.
+	///
+	/// Keyed by office, and the holder is stored beside the block: an entry written for one
+	/// holder says nothing about the next, so a reader that finds a different account treats
+	/// the entry as absent. Written when the office is filled and on every check-in; with no
+	/// usable entry the period runs from the start of the term.
+	#[pezpallet::storage]
+	pub type OfficeLastActive<T: Config> =
+		StorageMap<_, Blake2_128Concat, Tiki, (T::AccountId, BlockNumberFor<T>), OptionQuery>;
 
 	// --- ELECTION SYSTEM STORAGE ---
 
@@ -1323,6 +1344,18 @@ pub mod pezpallet {
 		/// A member of the court proved their key still signs.
 		CourtMemberCheckedIn { member: T::AccountId, at: BlockNumberFor<T> },
 
+		/// The President or the Speaker proved their key still signs.
+		OfficeHolderCheckedIn { office: Tiki, holder: T::AccountId, at: BlockNumberFor<T> },
+
+		/// An elected office was declared empty because nothing had signed for it in a full
+		/// inactivity period. The by-election opens on its own; for the presidency the Speaker
+		/// acts until it is decided.
+		OfficeVacatedForSilence {
+			office: Tiki,
+			holder: T::AccountId,
+			silent_since: BlockNumberFor<T>,
+		},
+
 		/// A citizen said where they live. Nothing follows from it until a notary agrees.
 		RegionClaimed { who: T::AccountId, region: Region },
 
@@ -1495,6 +1528,14 @@ pub mod pezpallet {
 		NotOnTheCourt,
 		/// The seat has signed inside the inactivity period, so it is not vacant.
 		CourtMemberIsStillReachable,
+		/// Only the presidency and the speakership can be declared empty for silence.
+		NotASilenceVacatableOffice,
+		/// The office has no holder to check in or to remove.
+		OfficeIsEmpty,
+		/// The caller does not hold this office.
+		NotTheOfficeHolder,
+		/// The office has been signed for inside the inactivity period, so it is not vacant.
+		OfficeHolderIsStillReachable,
 		/// The message to the relay could not be sent.
 		CouldNotReachTheRelay,
 		/// The account named is not a citizen of this register.
@@ -2432,6 +2473,58 @@ pub mod pezpallet {
 				member: who,
 				silent_since: last,
 				seated_by,
+			});
+			Ok(())
+		}
+
+		/// Prove that the President's or the Speaker's key still signs.
+		///
+		/// The court's check-in, for the two elected offices one person holds. It decides
+		/// nothing and is not a vote; it only keeps the office from being read as empty.
+		#[pezpallet::call_index(72)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn office_check_in(origin: OriginFor<T>, office: Tiki) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			ensure!(
+				Self::silence_vacatable_office(&office).is_some(),
+				Error::<T>::NotASilenceVacatableOffice
+			);
+			let holder = pezpallet_tiki::Pezpallet::<T>::current_holder(&office)
+				.ok_or(Error::<T>::OfficeIsEmpty)?;
+			ensure!(holder == who, Error::<T>::NotTheOfficeHolder);
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			OfficeLastActive::<T>::insert(office, (who.clone(), now));
+			Self::deposit_event(Event::OfficeHolderCheckedIn { office, holder: who, at: now });
+			Ok(())
+		}
+
+		/// Declare the presidency or the speakership empty because its key has stopped signing.
+		///
+		/// Permissionless, and for the court's reason: any body given this power is a body with
+		/// a stake in who holds the office. The caller supplies no reason and the chain checks
+		/// only arithmetic anybody can check. The office then reads as vacant, which opens the
+		/// by-election at once and, for the presidency, makes the Speaker acting President --
+		/// the rules that already existed for a vacancy and were never reached by a silent one.
+		#[pezpallet::call_index(73)]
+		#[pezpallet::weight(<T as pezpallet::Config>::WeightInfo::nominate_official())]
+		pub fn vacate_silent_office(origin: OriginFor<T>, office: Tiki) -> DispatchResult {
+			ensure_signed(origin)?;
+			let election_type = Self::silence_vacatable_office(&office)
+				.ok_or(Error::<T>::NotASilenceVacatableOffice)?;
+			let holder = pezpallet_tiki::Pezpallet::<T>::current_holder(&office)
+				.ok_or(Error::<T>::OfficeIsEmpty)?;
+			let last = Self::office_active_since(&office, &holder, election_type);
+			let now = pezframe_system::Pezpallet::<T>::block_number();
+			ensure!(
+				now.saturating_sub(last) >= T::OfficeInactivityPeriod::get(),
+				Error::<T>::OfficeHolderIsStillReachable
+			);
+			Self::vacate_unique_tiki(office)?;
+			OfficeLastActive::<T>::remove(office);
+			Self::deposit_event(Event::OfficeVacatedForSilence {
+				office,
+				holder,
+				silent_since: last,
 			});
 			Ok(())
 		}
@@ -4638,6 +4731,18 @@ pub mod pezpallet {
 			if let Some(at) = CourtLastActive::<T>::take(from) {
 				CourtLastActive::<T>::insert(to, at);
 			}
+			// The office moves with the citizenship, so its last check-in has to move too: left
+			// under the old account, the reader would fall back to the start of the term and a
+			// reissued President could be declared silent the day after the court restored them.
+			for office in [Tiki::Serok, Tiki::SerokiMeclise] {
+				OfficeLastActive::<T>::mutate(office, |entry| {
+					if let Some((holder, _)) = entry {
+						if holder == from {
+							*holder = to.clone();
+						}
+					}
+				});
+			}
 			if let Some(until) = InitiativeCooldownUntil::<T>::take(from) {
 				InitiativeCooldownUntil::<T>::insert(to, until);
 			}
@@ -4954,7 +5059,43 @@ pub mod pezpallet {
 				}
 				pezpallet_tiki::Pezpallet::<T>::internal_revoke_role(&current, tiki)?;
 			}
-			pezpallet_tiki::Pezpallet::<T>::internal_grant_role(to, tiki)
+			pezpallet_tiki::Pezpallet::<T>::internal_grant_role(to, tiki)?;
+			// A new holder gets a full period from the day they are seated, whatever the last
+			// one did.
+			if Self::silence_vacatable_office(&tiki).is_some() {
+				let now = pezframe_system::Pezpallet::<T>::block_number();
+				OfficeLastActive::<T>::insert(tiki, (to.clone(), now));
+			}
+			Ok(())
+		}
+
+		/// The offices that can be declared empty for silence, and the election that refills
+		/// each. Deliberately two: an appointed office is refilled by whoever appointed it, and
+		/// the court has its own rule.
+		pub fn silence_vacatable_office(office: &Tiki) -> Option<ElectionType> {
+			match office {
+				Tiki::Serok => Some(ElectionType::Presidential),
+				Tiki::SerokiMeclise => Some(ElectionType::SpeakerElection),
+				_ => None,
+			}
+		}
+
+		/// The block from which an office's silence is counted.
+		///
+		/// The last check-in by this holder, or -- when there is none, or it belongs to someone
+		/// who held the office before -- the start of the current term. A holder is never
+		/// expected to have signed before they were seated.
+		pub fn office_active_since(
+			office: &Tiki,
+			holder: &T::AccountId,
+			election_type: ElectionType,
+		) -> BlockNumberFor<T> {
+			match OfficeLastActive::<T>::get(office) {
+				Some((recorded, at)) if &recorded == holder => at,
+				_ => TermEnds::<T>::get(election_type)
+					.map(|ends| ends.saturating_sub(T::TermLength::get()))
+					.unwrap_or_default(),
+			}
 		}
 
 		/// Remove a single-holder office from whoever holds it. Empty is not an error.

@@ -44,8 +44,8 @@ jobs:
   # needs nothing a build needs, so a hosted runner bought it nothing — and on 2026-09-17 it
   # cost everything: the account was locked over an unpaid Advanced Security invoice, hosted
   # runners stopped being allocated, and a release whose suite was already green could not be
-  # cut because a ten-second query had nowhere to run. The blobs are built by `dks-runner-1`;
-  # the permission to build them now comes from the same place.
+  # cut because a ten-second query had nowhere to run. The blobs are built on the self-hosted
+  # pool; the permission to build them now comes from the same place.
   full-ci-gate:
     # The pool, not one box. This was pinned to `dks-runner-1` only because hosted runners had
     # stopped being allocated -- it is two `curl` calls against the API and needs nothing a build
@@ -88,10 +88,9 @@ jobs:
 
   build-runtime:
     needs: full-ci-gate
-    # Pinned to the same runner as `release.yml`: these builds are not hermetic
-    # yet (pending srtool) and the absolute build path leaks into the WASM, so a
-    # fixed runner is what makes the published hash reproducible.
-    runs-on: [self-hosted, dks-runner-1]
+    # Any runner in the pool: the build is hermetic (fixed path + remapped homes below), so
+    # the published hash does not depend on which box picked the job up.
+    runs-on: [self-hosted, bizinikiwi-build]
     strategy:
       fail-fast: false
       matrix:
@@ -104,6 +103,19 @@ jobs:
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
+      - name: Move to the fixed build path
+        # The build path is part of the wasm: cargo folds a path dependency's absolute
+        # location into the crate's metadata hash, and that hash is in every mangled symbol.
+        # So the path is fixed -- per runtime, so two matrix jobs on one box cannot share a
+        # tree -- and the same on every runner. Measured 2026-09-24: two boxes, two users,
+        # one path, one hash; two paths on one box, two hashes.
+        run: |
+          set -euo pipefail
+          b="/tmp/pezkuwi-build/${{ matrix.runtime }}/pezkuwi-DKS"
+          rm -rf "$b" && mkdir -p "$b"
+          cp -a "$GITHUB_WORKSPACE/." "$b/"
+          echo "BUILD_DIR=$b" >> "$GITHUB_ENV"
+
       - name: Toolchain & targets
         run: |
           rustup show
@@ -111,7 +123,13 @@ jobs:
           rustup target add wasm32v1-none wasm32-unknown-unknown
 
       - name: Build deployable runtime WASM (release, locked)
-        run: cargo build --release --locked -p ${{ matrix.runtime }}
+        # The cargo and rustup homes differ between runners and do reach the wasm as path
+        # strings; remapped, they leave nothing of the host in the blob.
+        run: |
+          set -euo pipefail
+          cd "$BUILD_DIR"
+          export WASM_BUILD_RUSTFLAGS="--remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}=/cargo --remap-path-prefix=${RUSTUP_HOME:-$HOME/.rustup}=/rustup"
+          cargo build --release --locked -p ${{ matrix.runtime }}
 
       - name: Locate WASM and compute upgrade hashes
         id: wasm
@@ -122,7 +140,7 @@ jobs:
           # same dir for zombienet; never pick that up, and fail loudly on
           # anything else ambiguous rather than taking whichever file `find`
           # happens to return first.
-          wbuild_dir="target/release/wbuild/${{ matrix.runtime }}"
+          wbuild_dir="$BUILD_DIR/target/release/wbuild/${{ matrix.runtime }}"
           mapfile -t candidates < <(find "$wbuild_dir" -maxdepth 1 \
                  -name '*.compact.compressed.wasm' ! -name 'fast_runtime_binary*')
           if [ "${#candidates[@]}" -eq 0 ]; then
@@ -183,19 +201,24 @@ jobs:
           path: artifacts/*
           if-no-files-found: error
 
+      - name: Remove the build tree
+        # Gigabytes of target per runtime, in a path no later job reuses.
+        if: always()
+        run: rm -rf "/tmp/pezkuwi-build/${{ matrix.runtime }}"
+
   # A runtime upgrade only needs the WASM, but starting a chain from a fresh
   # genesis needs the processes that run it. The PVF workers are built here too
   # and deliberately shipped as a set: the node refuses to start against workers
   # whose version does not match its own, so they are only ever valid together.
-  # After the runtimes, not beside them. Everything here is pinned to one runner, so these
-  # five builds are serial whatever the graph says -- and when the node builds win the
+  # After the runtimes, not beside them. When everything here was pinned to one runner these
+  # five builds were serial whatever the graph said -- and when the node builds won the
   # scheduler, the blob a release exists to produce waits three hours behind binaries that
   # gate nothing. Measured 2026-09-18: `zagros-runtime` sat queued behind 179 minutes of node
   # builds while an upgrade waited on it. Ordering costs nothing when the work is serial
   # anyway; it only decides what comes out first.
   build-node:
     needs: build-runtime
-    runs-on: [self-hosted, dks-runner-1]
+    runs-on: [self-hosted, bizinikiwi-build]
     strategy:
       fail-fast: false
       matrix:
@@ -273,7 +296,7 @@ jobs:
   # from the spec `id` prefix, so the testnet must not carry the mainnet's id.
   chain-specs:
     needs: build-runtime
-    runs-on: [self-hosted, dks-runner-1]
+    runs-on: [self-hosted, bizinikiwi-build]
     steps:
       - uses: actions/checkout@v7
         with:

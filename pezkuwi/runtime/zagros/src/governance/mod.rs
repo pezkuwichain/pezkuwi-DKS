@@ -17,18 +17,15 @@
 //! New governance configurations for the Pezkuwichain runtime.
 
 use super::*;
-use crate::xcm_config::{Collectives, FellowsBodyId};
 use pezframe_support::{
 	parameter_types,
 	traits::{ConstU16, EitherOf, EitherOfDiverse, Get},
 };
 use pezframe_system::EnsureRootWithSuccess;
-use pezpallet_xcm::{EnsureXcm, IsVoiceOfBody};
 
 mod origins;
 pub use origins::{
-	pezpallet_custom_origins, AuctionAdmin, Fellows, FellowshipAdmin, FellowshipExperts,
-	FellowshipInitiates, FellowshipMasters, GeneralAdmin, LeaseAdmin, ReferendumCanceller,
+	pezpallet_custom_origins, AuctionAdmin, GeneralAdmin, LeaseAdmin, ReferendumCanceller,
 	ReferendumKiller, StakingAdmin, WhitelistedCaller,
 };
 mod tracks;
@@ -97,31 +94,21 @@ impl pezpallet_whitelist::Config for Runtime {
 	type WeightInfo = weights::pezpallet_whitelist::WeightInfo<Self>;
 	type RuntimeCall = RuntimeCall;
 	type RuntimeEvent = RuntimeEvent;
-	/// Two keys, and what the first one means changed underneath this line. With the root track
-	/// removed, Root on this chain is the register's referendum arriving over XCM -- so the
-	/// people approve a call hash and this chain's own fast track enacts it.
+	/// Two keys. With the root track removed, Root on this chain is the register's referendum
+	/// arriving over XCM -- so the people approve a call hash and this chain's own fast track
+	/// enacts it. Root alone cannot outrun the delay the whitelist exists to escape, which is
+	/// what the second key is for.
 	///
-	/// The Fellowship is a body on the Collectives chain, so its authority reaches this pallet
-	/// over XCM. The second arm used to be the local `Fellows` custom origin, which no track in
-	/// `tracks.rs` maps to and no collective on this chain can raise — leaving root as the only
-	/// caller able to whitelist anything, and the whole `whitelisted_caller` fast path unusable
-	/// by the body it was built for. Mainnet has no Collectives chain and therefore no second
-	/// arm at all; that asymmetry is recorded as C9 and closes with the Fellowship decision.
+	/// The second key is the court. It is elected, sitting, and already trusted with the register
+	/// and with impeachment. It is bounded to this pallet: it cannot spend, cannot reach the
+	/// register from here, and cannot dispatch the whitelisted call, which still goes through the
+	/// track and is confirmed.
 	///
-	/// A third arm now, and it is the one that makes the fast path real. The two above both
-	/// depend on something that has not happened: Root means the twenty-eight-day referendum,
-	/// so it cannot outrun the delay the whitelist exists to escape, and the Fellowship arm
-	/// waits on a Collectives chain that is specified and not seated. The court is elected,
-	/// sitting, and already trusted with the register and with impeachment. It is bounded to
-	/// this pallet: it cannot spend, cannot reach the register from here, and cannot dispatch
-	/// the whitelisted call, which still goes through the track and is confirmed.
-	type WhitelistOrigin = EitherOfDiverse<
-		EitherOfDiverse<
-			EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
-			EnsureXcm<IsVoiceOfBody<Collectives, FellowsBodyId>>,
-		>,
-		CourtOfPeople,
-	>;
+	/// A third arm stood here, the Fellowship's voice from the Collectives chain. The Fellowship
+	/// ranked itself, and a self-selecting body does not hold a key to constitutional change; it
+	/// is retired, and this pallet now takes the same two keys as mainnet's.
+	type WhitelistOrigin =
+		EitherOfDiverse<EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>, CourtOfPeople>;
 	type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
 	type Preimages = Preimage;
 }

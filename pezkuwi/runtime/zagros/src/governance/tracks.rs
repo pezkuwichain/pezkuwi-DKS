@@ -26,15 +26,8 @@ const fn percent(x: i32) -> pezsp_arithmetic::FixedI64 {
 }
 use pezkuwi_runtime_common::rehearsal_period;
 use pezpallet_referenda::Curve;
-const APP_ROOT: Curve = Curve::make_reciprocal(4, 28, percent(80), percent(50), percent(100));
-const SUP_ROOT: Curve = Curve::make_linear(28, 28, percent(0), percent(50));
 const APP_STAKING_ADMIN: Curve = Curve::make_linear(17, 28, percent(50), percent(100));
 const SUP_STAKING_ADMIN: Curve =
-	Curve::make_reciprocal(12, 28, percent(1), percent(0), percent(50));
-const APP_TREASURER: Curve = Curve::make_reciprocal(4, 28, percent(80), percent(50), percent(100));
-const SUP_TREASURER: Curve = Curve::make_linear(28, 28, percent(0), percent(50));
-const APP_FELLOWSHIP_ADMIN: Curve = Curve::make_linear(17, 28, percent(50), percent(100));
-const SUP_FELLOWSHIP_ADMIN: Curve =
 	Curve::make_reciprocal(12, 28, percent(1), percent(0), percent(50));
 const APP_GENERAL_ADMIN: Curve =
 	Curve::make_reciprocal(4, 28, percent(80), percent(50), percent(100));
@@ -52,18 +45,6 @@ const SUP_REFERENDUM_CANCELLER: Curve =
 const APP_REFERENDUM_KILLER: Curve = Curve::make_linear(17, 28, percent(50), percent(100));
 const SUP_REFERENDUM_KILLER: Curve =
 	Curve::make_reciprocal(12, 28, percent(1), percent(0), percent(50));
-const APP_SMALL_TIPPER: Curve = Curve::make_linear(10, 28, percent(50), percent(100));
-const SUP_SMALL_TIPPER: Curve = Curve::make_reciprocal(1, 28, percent(4), percent(0), percent(50));
-const APP_BIG_TIPPER: Curve = Curve::make_linear(10, 28, percent(50), percent(100));
-const SUP_BIG_TIPPER: Curve = Curve::make_reciprocal(8, 28, percent(1), percent(0), percent(50));
-const APP_SMALL_SPENDER: Curve = Curve::make_linear(17, 28, percent(50), percent(100));
-const SUP_SMALL_SPENDER: Curve =
-	Curve::make_reciprocal(12, 28, percent(1), percent(0), percent(50));
-const APP_MEDIUM_SPENDER: Curve = Curve::make_linear(23, 28, percent(50), percent(100));
-const SUP_MEDIUM_SPENDER: Curve =
-	Curve::make_reciprocal(16, 28, percent(1), percent(0), percent(50));
-const APP_BIG_SPENDER: Curve = Curve::make_linear(28, 28, percent(50), percent(100));
-const SUP_BIG_SPENDER: Curve = Curve::make_reciprocal(20, 28, percent(1), percent(0), percent(50));
 const APP_WHITELISTED_CALLER: Curve =
 	Curve::make_reciprocal(16, 28 * 24, percent(96), percent(50), percent(100));
 const SUP_WHITELISTED_CALLER: Curve =
@@ -86,7 +67,7 @@ const SUP_WHITELISTED_CALLER: Curve =
 // approve a call hash and this chain's own fast track enacts it. Neither half alone suffices.
 //
 // Sudo remains for the founding period and is the one hand outside this arrangement.
-const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 8] = [
+const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 7] = [
 	pezpallet_referenda::Track {
 		id: 1,
 		info: pezpallet_referenda::TrackInfo {
@@ -127,20 +108,6 @@ const TRACKS_DATA: [pezpallet_referenda::Track<u16, Balance, BlockNumber>; 8] = 
 			min_enactment_period: rehearsal_period!(10 * MINUTES, DAYS),
 			min_approval: APP_LEASE_ADMIN,
 			min_support: SUP_LEASE_ADMIN,
-		},
-	},
-	pezpallet_referenda::Track {
-		id: 13,
-		info: pezpallet_referenda::TrackInfo {
-			name: s("fellowship_admin"),
-			max_deciding: 10,
-			decision_deposit: 5 * GRAND,
-			prepare_period: rehearsal_period!(2 * HOURS, DAYS),
-			decision_period: rehearsal_period!(14 * DAYS, DAYS),
-			confirm_period: rehearsal_period!(3 * HOURS, DAYS),
-			min_enactment_period: rehearsal_period!(10 * MINUTES, DAYS),
-			min_approval: APP_FELLOWSHIP_ADMIN,
-			min_support: SUP_FELLOWSHIP_ADMIN,
 		},
 	},
 	pezpallet_referenda::Track {
@@ -222,7 +189,6 @@ impl pezpallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
 				// General admin
 				origins::Origin::StakingAdmin => Ok(10),
 				origins::Origin::LeaseAdmin => Ok(12),
-				origins::Origin::FellowshipAdmin => Ok(13),
 				origins::Origin::GeneralAdmin => Ok(14),
 				origins::Origin::AuctionAdmin => Ok(15),
 				// Referendum admins

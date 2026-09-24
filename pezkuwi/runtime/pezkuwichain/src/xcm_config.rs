@@ -17,7 +17,7 @@
 //! XCM configuration for Pezkuwichain.
 
 use super::{
-	teyrchains_origin, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId, Runtime,
+	teyrchains_origin, AccountId, AllPalletsWithSystem, Balances, Dmp, ParaId, Runtime,
 	RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, WeightToFee, XcmPallet,
 };
 
@@ -308,8 +308,6 @@ parameter_types! {
 	pub const CollectiveBodyId: BodyId = BodyId::Unit;
 	/// StakingAdmin pluralistic body.
 	pub const StakingAdminBodyId: BodyId = BodyId::Defense;
-	/// Fellows pluralistic body.
-	pub const FellowsBodyId: BodyId = BodyId::Technical;
 	/// Where the People chain's court speaks from, as this chain sees it.
 	pub PeopleCourtLocation: Location = Location::new(
 		0,
@@ -331,24 +329,17 @@ pub type LocalOriginToLocation = (
 pub type StakingAdminToPlurality =
 	OriginToPluralityVoice<RuntimeOrigin, StakingAdmin, StakingAdminBodyId>;
 
-/// Type to convert the Fellows origin to a Plurality `Location` value.
-pub type FellowsToPlurality = OriginToPluralityVoice<RuntimeOrigin, Fellows, FellowsBodyId>;
-
-/// Type to convert the Treasury origin to a Plurality `Location` value.
-
 /// Type to convert a pezpallet `Origin` type value into a `Location` value which represents an
 /// interior location of this chain for a destination chain.
 pub type LocalPalletOriginToLocation = (
 	// StakingAdmin origin to be used in XCM as a corresponding Plurality `Location` value.
 	StakingAdminToPlurality,
-	// Fellows origin to be used in XCM as a corresponding Plurality `Location` value.
-	FellowsToPlurality,
 );
 
 impl pezpallet_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	// Production relay: only governance-controlled pallet origins (StakingAdmin, Fellows,
-	// Treasurer) may originate raw `pezpallet_xcm::send` messages. Ordinary signed
+	// Production relay: only a governance-controlled pallet origin (StakingAdmin) may
+	// originate raw `pezpallet_xcm::send` messages. Ordinary signed
 	// accounts are intentionally excluded here (unlike the zagros/testnet config) so that no
 	// funded relay account can craft arbitrary XCM programs toward any current or future
 	// teyrchain. Local execution for signed accounts is still permitted via `ExecuteXcmOrigin`

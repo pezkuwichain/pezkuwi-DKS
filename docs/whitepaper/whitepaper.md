@@ -238,7 +238,7 @@ Asset Hub excludes its own escrow the same way, for the same reason: no key can 
 counting a tenth of the supply that nobody can move would quietly raise the bar on every
 referendum held there.
 
-Eight tracks exist for network matters: whitelisted upgrades, staking administration, lease
+Seven tracks exist for network matters: whitelisted upgrades, staking administration, lease
 and auction administration, general administration, and the two cancellation tracks. There is
 no track for root, because root is not the relay's to give.
 
@@ -358,6 +358,13 @@ elected seat on the court has no other route to being refilled — the President
 appointed vacancy the moment one opens, but the elected six are the house's to seat. In the
 meantime the Speaker acts for an absent President, which is the ordinary rule: the presiding
 officer of the elected house, chosen by that house, and already in the country's confidence.
+
+The two elected offices one person holds fall empty on silence exactly as the court's seats do
+(§5.4). A President or a Speaker who has died or lost a key would otherwise hold the office to
+the end of the term — four years in which the Speaker never acts, because nothing ever reads
+the presidency as empty. So each owes one signature every hundred and eighty days; it decides
+nothing and is not a vote, and anyone may declare the office empty once it is missed. The
+by-election and the acting presidency above then follow on their own.
 
 ### 5.4 Dîwan — the Constitutional Court
 
