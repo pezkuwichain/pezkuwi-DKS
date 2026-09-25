@@ -602,6 +602,8 @@ mod benchmarks {
 		<T as Config>::BenchmarkHelper::make_citizen(&president);
 		Pezpallet::<T>::seat_unique_tiki(&president, Tiki::Serok).unwrap();
 		let now = pezframe_system::Pezpallet::<T>::block_number();
+		// An elected mandate: only an office with a recorded term can be emptied for silence.
+		TermEnds::<T>::insert(ElectionType::Presidential, now + T::TermLength::get());
 		pezframe_system::Pezpallet::<T>::set_block_number(now + T::OfficeInactivityPeriod::get());
 
 		#[extrinsic_call]

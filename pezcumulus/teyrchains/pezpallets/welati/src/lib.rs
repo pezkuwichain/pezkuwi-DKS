@@ -1536,6 +1536,8 @@ pub mod pezpallet {
 		NotTheOfficeHolder,
 		/// The office has been signed for inside the inactivity period, so it is not vacant.
 		OfficeHolderIsStillReachable,
+		/// The office has no recorded term, so emptying it would open no by-election.
+		OfficeHasNoElectedTerm,
 		/// The message to the relay could not be sent.
 		CouldNotReachTheRelay,
 		/// The account named is not a citizen of this register.
@@ -1808,9 +1810,10 @@ pub mod pezpallet {
 						n.saturating_add(lead_time) >= ends_at
 							|| Self::office_is_vacant(&election_type)
 					},
-					// No term recorded means the office has never been filled by a vote.
-					// Genesis records a term for the founding government, so this is only
-					// reached by an office that is meant to exist and does not yet.
+					// No term recorded means the office has never been filled by a vote. The
+					// founding government is seated by genesis without one -- genesis does not
+					// write `TermEnds` -- so this also covers a founding office: its first
+					// election is opened by hand, not by this scheduler.
 					None => false,
 				};
 
@@ -2511,6 +2514,12 @@ pub mod pezpallet {
 			ensure_signed(origin)?;
 			let election_type = Self::silence_vacatable_office(&office)
 				.ok_or(Error::<T>::NotASilenceVacatableOffice)?;
+			// Only a mandate the calendar knows. Emptying an office is only a repair if the
+			// emptiness opens its by-election, and the scheduler opens one only for an office
+			// with a recorded term. A founding office has none -- genesis seats it without one
+			// -- so emptying it would leave the state headless with no election coming, which
+			// is worse than the silence this rule exists to end.
+			ensure!(TermEnds::<T>::contains_key(election_type), Error::<T>::OfficeHasNoElectedTerm);
 			let holder = pezpallet_tiki::Pezpallet::<T>::current_holder(&office)
 				.ok_or(Error::<T>::OfficeIsEmpty)?;
 			let last = Self::office_active_since(&office, &holder, election_type);

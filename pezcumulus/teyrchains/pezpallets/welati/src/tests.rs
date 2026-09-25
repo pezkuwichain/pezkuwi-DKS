@@ -5382,9 +5382,32 @@ mod a_silent_office {
 		<Test as crate::Config>::OfficeInactivityPeriod::get()
 	}
 
+	/// An elected President: seated, and with the term the calendar refills from.
 	fn seat_president(who: u64) {
 		System::set_block_number(1);
 		assert_ok!(Welati::seat_unique_tiki(&who, Tiki::Serok));
+		crate::TermEnds::<Test>::insert(
+			crate::types::ElectionType::Presidential,
+			1 + <Test as crate::Config>::TermLength::get(),
+		);
+	}
+
+	#[test]
+	fn a_founding_president_is_not_emptied_for_silence() {
+		ExtBuilder::default().build().execute_with(|| {
+			// Seated the way genesis seats the founding office: the tiki, and no term.
+			System::set_block_number(1);
+			assert_ok!(Welati::seat_unique_tiki(&PRESIDENT, Tiki::Serok));
+			System::set_block_number(1 + period() * 10);
+
+			// However long the silence, emptying it would open no by-election -- the scheduler
+			// only refills an office with a recorded term -- so the state would be left headless.
+			assert_noop!(
+				Welati::vacate_silent_office(RuntimeOrigin::signed(99), Tiki::Serok),
+				Error::<Test>::OfficeHasNoElectedTerm
+			);
+			assert_eq!(holder_of(Tiki::Serok), Some(PRESIDENT));
+		});
 	}
 
 	#[test]
@@ -5433,6 +5456,11 @@ mod a_silent_office {
 	#[test]
 	fn only_the_holder_checks_in_and_only_two_offices_qualify() {
 		ExtBuilder::default().build().execute_with(|| {
+			// An elected office that has since emptied: a term is on the calendar, nobody holds it.
+			crate::TermEnds::<Test>::insert(
+				crate::types::ElectionType::Presidential,
+				1 + <Test as crate::Config>::TermLength::get(),
+			);
 			// An empty office has nobody to check in or to remove.
 			assert_noop!(
 				Welati::vacate_silent_office(RuntimeOrigin::signed(99), Tiki::Serok),
