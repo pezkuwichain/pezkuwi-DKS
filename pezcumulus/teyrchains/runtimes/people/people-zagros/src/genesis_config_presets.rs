@@ -96,6 +96,14 @@ fn people_pezkuwichain_genesis(
 							)
 						}),
 				)
+				// The accumulation account at its existential deposit. Fees and dust reach it
+				// through `resolve`, which refuses a deposit that would leave an account below
+				// the deposit -- unfunded, every small fee is turned away and burned. Carved out
+				// of the founder's line on the relay and escrowed there, like the office budget.
+				.chain(core::iter::once((
+					pezpallet_accumulate_and_forward::Pezpallet::<Runtime>::accumulation_account(),
+					pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_PEOPLE,
+				)))
 				.collect(),
 		},
 		teyrchain_info: TeyrchainInfoConfig { teyrchain_id: id },
@@ -355,4 +363,45 @@ fn the_founding_hand_can_pay_for_the_founding_call() {
 		"the account this genesis seats as Serok holds {funded} here, so the founding call \
 		 it is the only origin for cannot pay its fee"
 	);
+}
+
+/// The accumulation account starts at this chain's existential deposit, and the relay escrows
+/// exactly that.
+///
+/// Two facts, pinned together because each alone is wrong in a quiet way. Unfunded, the account
+/// refuses every deposit smaller than the existential deposit and the credit is burned
+/// (measured 2026-09-25: the account did not exist on People on either network). And the
+/// relay carves `HEZ_ACCUMULATION_PEOPLE` out of the founder and escrows it for this line
+/// without being able to see this chain's existential deposit: if the two ever differ, either
+/// the account starts short or the relay's escrow does not match what was minted here.
+#[test]
+fn the_accumulation_account_starts_at_its_existential_deposit() {
+	let ed = <Runtime as pezpallet_balances::Config>::ExistentialDeposit::get();
+	assert_eq!(
+		pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_PEOPLE,
+		ed,
+		"the relay escrows what it believes this chain's existential deposit is"
+	);
+
+	let preset = get_preset(&PresetId::from(preset_names::PRESET_GENESIS))
+		.expect("the genesis preset exists");
+	let genesis: serde_json::Value =
+		serde_json::from_slice(&preset).expect("the preset is valid json");
+	let account = serde_json::to_value(
+		pezpallet_accumulate_and_forward::Pezpallet::<Runtime>::accumulation_account(),
+	)
+	.expect("an account id serialises");
+	let funded: u128 = genesis["balances"]["balances"]
+		.as_array()
+		.expect("the balances patch is an array of (account, amount)")
+		.iter()
+		.filter(|entry| entry[0] == account)
+		.map(|entry| {
+			entry[1]
+				.as_u64()
+				.map(u128::from)
+				.unwrap_or_else(|| entry[1].to_string().parse().expect("a balance is a number"))
+		})
+		.sum();
+	assert_eq!(funded, ed, "the accumulation account must start at the existential deposit");
 }

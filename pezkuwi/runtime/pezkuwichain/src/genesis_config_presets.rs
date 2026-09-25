@@ -291,15 +291,50 @@ fn sudo_starts_with_a_fee_budget() {
 			a == HEZ_FOUNDER_ALLOCATION
 				- pezkuwichain_runtime_constants::currency::HEZ_SUDO_FUNDING
 				- pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
+				- pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT
 		})
 		.unwrap_or(0);
 	assert_eq!(
 		founder_line,
 		HEZ_FOUNDER_ALLOCATION
 			- pezkuwichain_runtime_constants::currency::HEZ_SUDO_FUNDING
-			- pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT,
-		"root's budget and the founding office's come out of the founder's allocation, not on \
-		 top of it"
+			- pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
+			- pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT,
+		"root's budget, the founding office's and the accumulation accounts' come out of the \
+		 founder's allocation, not on top of it"
+	);
+}
+
+/// The accumulation account starts at its existential deposit.
+///
+/// Every fee, every bit of dust and all coretime revenue reach it through `resolve`, which
+/// refuses a deposit that would leave the account below the existential deposit. Unfunded,
+/// the account turns each such deposit away and the credit is burned -- measured 2026-09-25 on
+/// both live chains, where the account did not exist. This reads the genesis the chain is
+/// built from, not the constant, so a line dropped from the balances list turns it red.
+#[test]
+fn the_accumulation_account_starts_at_its_existential_deposit() {
+	let genesis = pezkuwichain_genesis_config();
+	let account = serde_json::to_value(
+		pezpallet_accumulate_and_forward::Pezpallet::<crate::Runtime>::accumulation_account(),
+	)
+	.expect("an account id serialises");
+	let funded: u128 = genesis["balances"]["balances"]
+		.as_array()
+		.expect("the balances patch is an array of (account, amount)")
+		.iter()
+		.filter(|entry| entry[0] == account)
+		.map(|entry| {
+			entry[1]
+				.as_u64()
+				.map(u128::from)
+				.unwrap_or_else(|| entry[1].to_string().parse().expect("a balance is a number"))
+		})
+		.sum();
+	assert_eq!(
+		funded,
+		<crate::Runtime as pezpallet_balances::Config>::ExistentialDeposit::get(),
+		"the accumulation account must start at the existential deposit, or small fees are burned"
 	);
 }
 
@@ -1350,7 +1385,8 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 	let checking_account_seed: u128 =
 		HEZ_AIRDROP_ALLOCATION + HEZ_PRESALE_ALLOCATION + HEZ_TREASURY_ALLOCATION
 			- pezkuwichain_runtime_constants::currency::HEZ_VALIDATOR_FUNDING
-			+ 2 * pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING;
+			+ 2 * pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING
+			+ pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_PEOPLE;
 	let checking_account: AccountId = crate::XcmPallet::check_account();
 
 	build_struct_json_patch!(RuntimeGenesisConfig {
@@ -1366,7 +1402,8 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 					founder_account.clone(),
 					HEZ_FOUNDER_ALLOCATION
 						- pezkuwichain_runtime_constants::currency::HEZ_SUDO_FUNDING
-						- pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT,
+						- pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_CARVE_OUT
+						- pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_CARVE_OUT,
 				),
 				// Root's fee budget. Carved out of the founder's share, not added to it, so the
 				// genesis total is untouched -- the same shape as `HEZ_VALIDATOR_FUNDING` coming
@@ -1381,6 +1418,14 @@ fn pezkuwichain_genesis_config() -> serde_json::Value {
 				(
 					serok_account.clone(),
 					pezkuwichain_runtime_constants::currency::HEZ_FOUNDING_OFFICE_FUNDING,
+				),
+				// The accumulation account, funded to its existential deposit so a fee smaller
+				// than that deposit is kept rather than refused and burned. Out of the founder's
+				// line through `HEZ_ACCUMULATION_CARVE_OUT`, like the office budgets; People's
+				// twin is minted there and escrowed below.
+				(
+					pezpallet_accumulate_and_forward::Pezpallet::<crate::Runtime>::accumulation_account(),
+					pezkuwichain_runtime_constants::currency::HEZ_ACCUMULATION_RELAY,
 				),
 				// The treasury's 40M is not here either. It is minted into the account the
 				// Asset Hub's treasury pallet pays from -- see `HEZ_TREASURY_ALLOCATION`. What

@@ -86,6 +86,26 @@ pub mod currency {
 	/// where the founder's line is computed, and it has to know what the other two chains mint
 	/// without being able to see them.
 	pub const HEZ_FOUNDING_OFFICE_CARVE_OUT: Balance = 3 * HEZ_FOUNDING_OFFICE_FUNDING;
+
+	/// What the relay's accumulation account starts with: its existential deposit.
+	///
+	/// Fees, dust and coretime revenue are paid into that account by `resolve`, and `resolve`
+	/// refuses any deposit that would leave an account below the existential deposit. With the
+	/// account unfunded every such deposit smaller than the deposit itself is refused, and the
+	/// credit is dropped -- burned, with a defensive log and nothing else. Measured 2026-09-25:
+	/// the account did not exist on the relay or on People, on mainnet or on Zagros, and the
+	/// benchmark run logged the burn ninety-eight thousand times. The pallet's own setup notes
+	/// say to fund it in genesis; nothing did.
+	pub const HEZ_ACCUMULATION_RELAY: Balance = EXISTENTIAL_DEPOSIT;
+
+	/// The same for People's accumulation account. People's existential deposit is a tenth of
+	/// the relay's; the People runtime pins that the two agree, since this crate cannot see it.
+	pub const HEZ_ACCUMULATION_PEOPLE: Balance = EXISTENTIAL_DEPOSIT / 10;
+
+	/// Both, carved out of the founder's allocation as the office budgets are, so the genesis
+	/// total stays at two hundred million to the planck.
+	pub const HEZ_ACCUMULATION_CARVE_OUT: Balance =
+		HEZ_ACCUMULATION_RELAY + HEZ_ACCUMULATION_PEOPLE;
 	pub const CENTS: Balance = UNITS / 30_000;
 	/// One unit, named for what a deposit or a spend is reckoned in.
 	///
