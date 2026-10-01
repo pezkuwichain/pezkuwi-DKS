@@ -1,6 +1,6 @@
 // This file is part of PezkuwiChain.
 
-// Copyright (C) Dijital Kurdistan Tech Institute
+// Copyright (C) Parity Technologies (UK) Ltd. and Dijital Kurdistan Tech Institute
 // SPDX-License-Identifier: Apache-2.0
 
 //! Origins the economic franchise dispatches with.

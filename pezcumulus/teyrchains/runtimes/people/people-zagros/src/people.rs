@@ -405,19 +405,13 @@ parameter_types! {
 /// 2. The Council at half, once elections have run.
 /// 3. The President, by appointment.
 ///
-/// Returns an `AccountId`, used as the owner of the course.
+/// Returns an `AccountId`, which `create_course` does not use: the course's teacher is named
+/// in the call, so a course opened by Root or the Council has a teacher who can sign results.
 ///
-/// SECURITY: Root and Council origins carry no real signer/AccountId of their own. This
-/// origin previously stood in with the well-known dev keypair `//Alice`, whose private key
-/// is public knowledge — anyone could derive it and then sign `complete_course` as the
-/// "owner" of any Root/Council-created course, forging arbitrary trust-affecting course
-/// completions. It now resolves to a `PalletId`-derived sovereign account instead, which has
-/// no private key at all, so it can authenticate privileged *creation/archival* (which also
-/// goes through `AdminOrigin`) but can never be used to sign a `complete_course` extrinsic.
-/// Only Serok-originated courses (which have a genuine on-chain account) can currently be
-/// completed via the owner-signature path; enabling completions for Root/Council-created
-/// courses requires a follow-up that lets the privileged caller nominate a real owner
-/// account explicitly (e.g. an added `owner` parameter on `create_course`).
+/// SECURITY: Root and Council carry no signer of their own. This origin once stood in with
+/// the dev keypair `//Alice`, whose key is public, so anyone could have graded a course as
+/// its "owner". It resolves to a `PalletId`-derived account instead, which has no private key
+/// and so can never sign anything.
 pub struct PerwerdeAdminOrigin;
 impl pezframe_support::traits::EnsureOrigin<RuntimeOrigin> for PerwerdeAdminOrigin {
 	type Success = AccountId;
@@ -1256,6 +1250,9 @@ parameter_types! {
 	/// Diwan council size
 	/// The court: eleven seats.
 	pub const WelatiDiwanSize: u32 = 11;
+	/// Rewsenbîr appointed while `perwerde` has no graduates of its own; the same order as
+	/// the honorary teachers, and spent once over the chain's life.
+	pub const WelatiMaxAppointedRewsenbir: u32 = 100;
 	/// Six of them the sitting house elects; the remaining five are the President's to
 	/// appoint, derived rather than declared so the two cannot disagree.
 	pub const WelatiDiwanElectedSeats: u32 = 6;
@@ -1612,6 +1609,7 @@ impl pezpallet_welati::Config for Runtime {
 	type ElectionPeriod = WelatiElectionPeriod;
 	type ProposalVotingDelay = WelatiProposalVotingDelay;
 	type NominationPeriod = WelatiNominationPeriod;
+	type MaxAppointedRewsenbir = WelatiMaxAppointedRewsenbir;
 	type CandidacyPeriod = WelatiCandidacyPeriod;
 	type CampaignPeriod = WelatiCampaignPeriod;
 	type ElectoralDistricts = WelatiElectoralDistricts;

@@ -1,5 +1,5 @@
 Pezkuwi SDK
-Copyright (C) Kurdistan Tech Institute
+Copyright (C) Dijital Kurdistan Tech Institute
 
 This product includes software originally developed by:
   Parity Technologies (UK) Ltd. — https://www.parity.io
@@ -11,7 +11,7 @@ ORIGINAL WORK
 
 Pezkuwi SDK is a derivative work based on Polkadot SDK:
   Source: https://github.com/paritytech/polkadot-sdk
-  Snapshot: stable2512
+  Snapshot: stable2512 (framework since synchronized with stable2606)
   Original License: Apache-2.0 AND GPL-3.0-only
   Original Authors: Parity Technologies (UK) Ltd.
 
@@ -23,7 +23,9 @@ The following significant modifications have been made to the original work:
 
 1. PROJECT RENAME AND REBRAND
    - Project renamed from "Polkadot SDK" to "Pezkuwi SDK"
-   - Organization renamed from "Parity Technologies" to "Kurdistan Tech Institute"
+   - Maintainer references (repository URLs, contact addresses) point to
+     Dijital Kurdistan Tech Institute; Parity Technologies (UK) Ltd. copyright
+     notices in source file headers and crate authors are retained
    - All crate prefixes updated (sp- -> pezsp-, sc- -> pezsc-, frame- -> pezframe-,
      pallet- -> pezpallet-, cumulus- -> pezcumulus-)
    - Core framework renamed from "Substrate" to "Bizinikiwi"
@@ -33,13 +35,23 @@ The following significant modifications have been made to the original work:
    - Relay chain network renamed to "Pezkuwi" (was "Polkadot")
    - Test networks renamed: Westend -> Zagros, Rococo -> Pezkuwichain
    - Native token: HEZ (relay chain), PEZ (Asset Hub)
-   - Genesis configuration updated for Kurdistan Tech Institute deployment
+   - Genesis configuration updated for Dijital Kurdistan Tech Institute deployment
 
-3. CUSTOM PALLETS ADDED
-   - pezpallet-presale: Token presale functionality
-   - pezpallet-tiki: Custom governance pallet
-   - pezpallet-referral: Referral program pallet
-   - pezpallet-identity-kyc: KYC identity verification
+3. CUSTOM PALLETS ADDED (original work of Dijital Kurdistan Tech Institute)
+   - pezpallet-identity-kyc: identity and KYC management
+   - pezpallet-messaging: ephemeral encrypted peer-to-peer messaging
+   - pezpallet-perwerde: education management
+   - pezpallet-pez-rewards: trust-score-based rewards distribution
+   - pezpallet-pez-treasury: programmatic treasury with synthetic halving
+   - pezpallet-referral: referral management
+   - pezpallet-staking-score: staking score calculation
+   - pezpallet-tiki: role NFT management
+   - pezpallet-token-wrapper: wrapping native HEZ into the wHEZ asset
+   - pezpallet-trust: trust score engine
+   - pezpallet-welati: governance and state administration
+   - pezpallet-tnpos: trust-enhanced nominated proof-of-stake committee selection
+   The governance origins and tracks of the Asset Hub and People runtimes are
+   adapted from the Asset Hub Westend runtime of Polkadot SDK.
 
 4. INFRASTRUCTURE
    - CI/CD pipeline adapted for self-hosted runners
@@ -61,7 +73,7 @@ each with their own license terms:
     Source: https://github.com/paritytech/subxt
 
   - vendor/pezkuwi-zombienet-sdk (based on zombienet-sdk):
-    License: Apache-2.0 OR MIT
+    License: Apache-2.0 OR GPL-3.0
     Source: https://github.com/paritytech/zombienet-sdk
 
 ================================================================================
